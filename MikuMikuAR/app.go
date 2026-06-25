@@ -145,6 +145,7 @@ type Config struct {
 	DisplayNamePriority  string         `json:"display_name_priority"` // "name_jp" | "name_en" | "filename"
 	DownloadWatchDir     string         `json:"download_watch_dir"`     // 监听目录，空则不监听
 	DownloadAutoImport   bool           `json:"download_auto_import"`  // true 则跳过确认直接导入
+	Favorites            []string       `json:"favorites"`             // libraryRef 数组，收藏的模型
 }
 
 // userConfigDir is a hook for testing — production code calls os.UserConfigDir.
@@ -500,6 +501,34 @@ func (a *App) SetBlenderPath(path string) error {
 // SetDisplayNamePriority persists the display name priority setting.
 func (a *App) SetDisplayNamePriority(priority string) error {
 	return a.updateConfig(func(cfg *Config) { cfg.DisplayNamePriority = priority }, false)
+}
+
+// ToggleFavorite adds or removes a libraryRef from the favorites list.
+func (a *App) ToggleFavorite(libraryRef string) error {
+	return a.updateConfig(func(cfg *Config) {
+		found := false
+		filtered := make([]string, 0, len(cfg.Favorites))
+		for _, f := range cfg.Favorites {
+			if f == libraryRef {
+				found = true
+				continue
+			}
+			filtered = append(filtered, f)
+		}
+		if !found {
+			filtered = append(filtered, libraryRef)
+		}
+		cfg.Favorites = filtered
+	}, false) // false = 不触发 rescan，轻写
+}
+
+// GetFavorites returns the current favorites list.
+func (a *App) GetFavorites() []string {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil {
+		return nil
+	}
+	return cfg.Favorites
 }
 
 // ======== Blender Integration ========

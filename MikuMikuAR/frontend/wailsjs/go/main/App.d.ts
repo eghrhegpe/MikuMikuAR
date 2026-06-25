@@ -12,6 +12,8 @@ export function ExtractZip(arg1:string,arg2:string):Promise<main.ExtractResult>;
 
 export function GetConfig():Promise<main.Config>;
 
+export function GetFavorites():Promise<Array<string>>;
+
 export function GetLibraryIndex():Promise<Array<main.ModelEntry>>;
 
 export function GetModelMeta(arg1:string):Promise<main.ModelMeta>;
@@ -63,3 +65,5 @@ export function SetLibraryRoot(arg1:string):Promise<void>;
 export function StartFileServer(arg1:string):Promise<number>;
 
 export function StopFileServer(arg1:string):Promise<void>;
+
+export function ToggleFavorite(arg1:string):Promise<void>;

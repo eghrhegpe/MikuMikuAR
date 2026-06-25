@@ -89,7 +89,7 @@ html, body {
     flex-direction: column; overflow: hidden;
     max-height: 80vh;
 }
-.overlay.visible { display: flex; }
+.overlay.visible { display: flex; flex-direction: column; }
 
 /* ===== 弹窗 header ===== */
 .overlay-header {
@@ -481,17 +481,11 @@ html, body {
 .menu-item:hover { background: var(--white-04); border-left-color: rgba(74,108,247,0.3); }
 .menu-item .menu-icon { width: 22px; text-align: center; font-size: 17px; flex-shrink: 0; }
 .menu-item .menu-icon-svg { width: 18px; height: 18px; display: block; margin: 0 auto; color: var(--text); }
-
-/* Iconify web component */
-iconify-icon { display: inline-block; vertical-align: middle; }
 .menu-item .menu-label {
     flex: 1; font-size: 13px; color: var(--text);
-    white-space: normal; overflow: hidden;
-    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-    line-height: 1.35;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
-.menu-item .menu-sub { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+.menu-item .menu-arrow { color: var(--text-dark); font-size: 12px; flex-shrink: 0; }
 .menu-item .menu-arrow { color: var(--text-dark); font-size: 12px; flex-shrink: 0; }
 .menu-item .menu-tag {
     font-size: 9px; padding: 1px 6px; border-radius: 6px;

@@ -22,6 +22,10 @@ export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }
 
+export function GetFavorites() {
+  return window['go']['main']['App']['GetFavorites']();
+}
+
 export function GetLibraryIndex() {
   return window['go']['main']['App']['GetLibraryIndex']();
 }
@@ -124,4 +128,8 @@ export function StartFileServer(arg1) {
 
 export function StopFileServer(arg1) {
   return window['go']['main']['App']['StopFileServer'](arg1);
+}
+
+export function ToggleFavorite(arg1) {
+  return window['go']['main']['App']['ToggleFavorite'](arg1);
 }

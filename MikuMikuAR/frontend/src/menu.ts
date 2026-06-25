@@ -2,7 +2,7 @@
 // Inspired by DanceXR's multi-panel drill-down: push creates a new card
 // (slightly offset, fade in), pop removes it and reveals the previous one.
 
-import { PopupLevel, PopupRow, showHint, hideHint } from "./config";
+import { PopupLevel, PopupRow, showHint, hideHint, favorites } from "./config";
 import { createIconifyIcon } from "./icons";
 
 export class MenuStack {
@@ -23,6 +23,8 @@ export class MenuStack {
     onAfterRender?: (level: PopupLevel, stack: MenuStack) => void;
     /** Called when the back/close button is clicked at root level. */
     onClose?: () => void;
+    /** Called when the ★/☆ fav button is clicked on a row. */
+    onFavToggle?: (row: PopupRow) => void;
 
     /** How many pixels each successive layer is offset (for card-stack effect). */
     offsetX = 4;
@@ -37,6 +39,7 @@ export class MenuStack {
         extraButtonFactory?: () => HTMLElement[];
         onAfterRender?: (level: PopupLevel, stack: MenuStack) => void;
         onClose?: () => void;
+        onFavToggle?: (row: PopupRow) => void;
     }) {
         this.parentEl = opts.parentEl;
         this.layerClass = opts.layerClass || "popup-layer";
@@ -46,6 +49,7 @@ export class MenuStack {
         this.extraButtonFactory = opts.extraButtonFactory;
         this.onAfterRender = opts.onAfterRender;
         this.onClose = opts.onClose;
+        this.onFavToggle = opts.onFavToggle;
     }
 
     get currentLevel(): PopupLevel | undefined {
@@ -108,10 +112,9 @@ export class MenuStack {
         for (let i = 0; i < this.levels.length; i++) {
             this.createLayer(this.levels[i], i, false);
         }
-        // Restore opacity/pointer-events for correct stack state
+        // Restore display state for correct stack: show only top layer
         for (let i = 0; i < this.layers.length; i++) {
-            this.layers[i].style.opacity = i < this.layers.length - 1 ? "0.5" : "1";
-            this.layers[i].style.pointerEvents = i < this.layers.length - 1 ? "none" : "auto";
+            this.layers[i].style.display = i < this.layers.length - 1 ? "none" : "flex";
         }
     }
     // ======== Layer management ========
@@ -167,8 +170,7 @@ export class MenuStack {
         // Dim previous layer
         if (this.layers.length > 1) {
             const prev = this.layers[this.layers.length - 2];
-            prev.style.opacity = "0.5";
-            prev.style.pointerEvents = "none";
+            prev.style.display = "none";
         }
 
         // Remove enter animation class after it completes
@@ -224,13 +226,6 @@ export class MenuStack {
         labelSpan.textContent = row.label;
         el.appendChild(labelSpan);
 
-        if (row.sublabel) {
-            const subSpan = document.createElement("span");
-            subSpan.className = "menu-sub";
-            subSpan.textContent = row.sublabel;
-            el.appendChild(subSpan);
-        }
-
         if (row.catTag) {
             const tagSpan = document.createElement("span");
             tagSpan.className = "menu-tag";
@@ -257,6 +252,23 @@ export class MenuStack {
         // Hover help text
         el.addEventListener("mouseenter", () => this.onHover?.(row, true));
         el.addEventListener("mouseleave", () => this.onHover?.(row, false));
+
+        // ★/☆ Favorites toggle button
+        if (row.favRef) {
+            const favBtn = document.createElement("span");
+            favBtn.className = "menu-fav";
+            favBtn.style.cssText = "cursor:pointer;margin-left:8px;display:inline-flex;align-items:center;user-select:none;";
+            const isFav = favorites.has(row.favRef);
+            const iconEl = document.createElement("iconify-icon");
+            iconEl.setAttribute("icon", isFav ? "tabler:star-filled" : "tabler:star");
+            iconEl.style.cssText = "width:16px;height:16px;color:" + (isFav ? "var(--accent,#ffc107)" : "var(--text-dim,#888)") + ";transition:color 0.15s;";
+            favBtn.appendChild(iconEl);
+            favBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                this.onFavToggle?.(row);
+            });
+            el.appendChild(favBtn);
+        }
 
         return el;
     }

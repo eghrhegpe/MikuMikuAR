@@ -50,6 +50,8 @@ export type PopupRow = {
     model?: LibraryModel;
     catTag?: string;
     editable?: boolean;
+    /** If set, render a ★/☆ toggle button. Value is the libraryRef to toggle. */
+    favRef?: string;
 };
 
 export type PopupLevel = {
@@ -113,6 +115,12 @@ export function setSearchMode(v: boolean): void { searchMode = v; }
 /** In-memory cache of base64-encoded thumbnails keyed by model path. */
 export let thumbnailCache = new Map<string, string>();
 export function setThumbnailCache(m: Map<string, string>): void { thumbnailCache = m; }
+
+// ======== Favorites ========
+
+/** Set of libraryRefs that the user has starred as favorites. */
+export let favorites = new Set<string>();
+export function setFavorites(f: Set<string>): void { favorites = f; }
 
 // ======== Display Name Priority ========
 

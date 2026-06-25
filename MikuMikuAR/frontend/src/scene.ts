@@ -627,7 +627,6 @@ export function resetModelTransform(id: string): void {
     }
     syncModelVisibility(inst);
     syncModelTransform(inst);
-    arrangeModels();
     triggerAutoSave();
 }
 

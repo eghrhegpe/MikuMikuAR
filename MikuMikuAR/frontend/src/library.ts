@@ -11,6 +11,8 @@ import {
   ClearExtractCache,
   GetThumbnailBatch,
   GetModelMetaBatch,
+  ToggleFavorite,
+  GetFavorites,
 } from "../wailsjs/go/main/App";
 import {
   dom,
@@ -46,6 +48,9 @@ import {
   autoLoop,
   setAutoLoop,
   mmdRuntime,
+  favorites,
+  setFavorites,
+  computeLibraryRef,
 } from "./config";
 import {
   loadPMXFile,
@@ -74,6 +79,7 @@ const makeModelStack = (): MenuStack => {
     onFolderEnter: (row) => {
       // Model detail submenu: scene:${id}
       if (row.target && row.target.startsWith("scene:")) {
+        motionBindingTargetId = null;
         const id = row.target.replace("scene:", "");
         const inst = modelRegistry.get(id);
         if (!inst) return null;
@@ -81,6 +87,7 @@ const makeModelStack = (): MenuStack => {
       }
       // Detail sub-submenus: detail:type:${id}
       if (row.target && row.target.startsWith("detail:")) {
+        motionBindingTargetId = null;
         const parts = row.target.split(":");
         const type = parts[1];
         const id = parts.slice(2).join(":");
@@ -104,6 +111,18 @@ const makeModelStack = (): MenuStack => {
         const inst = modelRegistry.get(id);
         level.label = `绑定动作 → ${inst?.name || "模型"}`;
         return level;
+      }
+      // Favorites collection
+      if (row.target === "__favorites__") {
+        const favModels = allModels.filter(m => {
+          const ref = computeLibraryRef(m.file_path);
+          return ref && favorites.has(ref);
+        });
+        return {
+          label: "★ 收藏",
+          dir: "",
+          items: favModels.map(m => modelToRow(m)),
+        };
       }
       if (row.target === "models:browse") {
         if (!libraryRoot) {
@@ -253,6 +272,24 @@ const makeModelStack = (): MenuStack => {
       const hint = hints[row.target || ""];
       if (hint) setStatus(hint, false);
     },
+    onFavToggle: (row) => {
+      if (!row.favRef) return;
+      const ref = row.favRef;
+      const isFav = favorites.has(ref);
+      ToggleFavorite(ref).then(() => {
+        if (isFav) {
+          favorites.delete(ref);
+        } else {
+          favorites.add(ref);
+        }
+        setFavorites(new Set(favorites));
+        modelStack?.reRender();
+        setStatus(isFav ? "☆ 已取消收藏" : "★ 已收藏", true);
+      }).catch((err) => {
+        console.warn("ToggleFavorite failed:", err);
+        setStatus("✗ 收藏操作失败", false);
+      });
+    },
   });
 };
 
@@ -323,6 +360,13 @@ export function showPopup(): void {
   rootItems.push(
     {
       kind: "folder",
+      label: "★ 收藏",
+      icon: "star",
+      target: "__favorites__",
+      sublabel: favorites.size > 0 ? `${favorites.size} 个模型` : "暂无收藏",
+    },
+    {
+      kind: "folder",
       label: "加载模型",
       icon: "folder",
       target: "models:browse",
@@ -346,6 +390,7 @@ export function showPopup(): void {
 }
 
 export function hidePopup(): void {
+  motionBindingTargetId = null;
   closeAllOverlays();
 }
 
@@ -511,6 +556,7 @@ function modelToRow(m: LibraryModel): PopupRow {
       break;
   }
   const comment = cached?.comment || m.comment || "";
+  const libRef = m.file_path ? computeLibraryRef(m.file_path) : null;
   return {
     kind: "model",
     label,
@@ -520,6 +566,7 @@ function modelToRow(m: LibraryModel): PopupRow {
     model: m,
     catTag: m.category || undefined,
     editable: m.format === "pmx",
+    favRef: libRef,
   };
 }
 
@@ -554,8 +601,6 @@ function isSearchLayer(): boolean {
 function buildModelDetailLevel(id: string): PopupLevel {
   const inst = modelRegistry.get(id);
   if (!inst) return { label: "未知模型", dir: "", items: [] };
-  setFocusedModelId(id);
-  focusModel(id);
   return {
     label: inst.name,
     dir: "",
@@ -843,6 +888,15 @@ export async function initLibrary(): Promise<void> {
     // Load saved display name priority
     if (cfg.display_name_priority) {
       setDisplayNamePriority(cfg.display_name_priority as DisplayNamePriority);
+    }
+    // Load favorites
+    try {
+      const favs = await GetFavorites();
+      if (favs && favs.length > 0) {
+        setFavorites(new Set(favs));
+      }
+    } catch (err) {
+      console.warn("Load favorites:", err);
     }
     try {
       const cached = await GetLibraryIndex();

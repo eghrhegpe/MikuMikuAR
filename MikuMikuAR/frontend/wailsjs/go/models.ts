@@ -21,6 +21,7 @@ export namespace main {
 	    display_name_priority: string;
 	    download_watch_dir: string;
 	    download_auto_import: boolean;
+	    favorites: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -34,6 +35,7 @@ export namespace main {
 	        this.display_name_priority = source["display_name_priority"];
 	        this.download_watch_dir = source["download_watch_dir"];
 	        this.download_auto_import = source["download_auto_import"];
+	        this.favorites = source["favorites"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
