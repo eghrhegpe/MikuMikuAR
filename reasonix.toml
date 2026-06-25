@@ -1,0 +1,77 @@
+# Reasonix configuration.
+# Resolution order: flag > ./reasonix.toml > ~/AppData/Roaming/reasonix/config.toml > built-in defaults.
+# Secrets come from the environment via api_key_env; never put keys here.
+
+config_version = 3   # schema marker for diagnostics; old versions may ignore it
+default_model = "deepseek-flash"
+# language      = "zh"   # ui/model language; empty = auto-detect from $LANG / $REASONIX_LANG
+
+[agent]
+# system_prompt = """..."""   # omit to use the built-in prompt for this version
+# system_prompt_file = "prompts/system.md"   # overrides system_prompt when set
+# max_steps         = 0   # executor tool-call rounds; 0 = no limit
+# planner_max_steps = 12   # planner read-only tool-call rounds; 0 = no limit
+temperature       = 0.0
+auto_plan   = "off"   # off|on; off keeps plan mode manual
+# reasoning_language = "zh"   # visible reasoning language: auto|zh|en
+# auto_plan_classifier = "deepseek-flash"   # optional; only used for borderline tasks
+soft_compact_ratio  = 0.5   # notice only; keeps cache-first prefix intact
+compact_ratio       = 0.8   # try compacting when prompt reaches this fraction
+compact_force_ratio = 0.9   # force compacting at this high-water mark
+# keep                = ["errors"]   # compaction keep policy: errors, user_marked
+# recent_keep         = 2   # minimum recent messages kept verbatim
+cold_resume_prune   = true   # elide stale tool results when reopening a session past the provider cache window
+# planner_model = "mimo"   # optional: enable two-model collaboration
+# subagent_model = "deepseek-pro"   # optional default for runAs=subagent skills
+# subagent_models = { review = "deepseek-pro", security_review = "deepseek-pro" }   # per-skill overrides
+# subagent_effort = "high"   # optional default effort for subagents
+# subagent_efforts = { review = "max", task = "high" }   # per-tool/skill effort overrides
+# output_style = "explanatory"   # explanatory | learning | concise | custom; empty = default
+
+[tools]
+enabled = []   # empty = all built-in tools
+bash_timeout_seconds = 120   # foreground safety cap; set 0 for no tool-local cap
+
+[tools.background_jobs]
+stalled_warning_seconds = 900   # warn once per background job after this many quiet seconds; 0 disables
+
+[lsp]
+enabled = true   # language server tools; servers launch lazily when used
+# [lsp.servers.go]
+# command = "gopls"
+# args = []
+# extensions = [".go"]
+
+[skills]
+# paths = ["~/my-skills", "../shared/skills"]   # extra custom skill roots
+# excluded_paths = ["~/.agents/skills"]   # hide convention roots without deleting folders
+# max_depth = 3   # nested scan depth; set 1 for legacy root-only discovery
+# disabled_skills = ["review"]   # hide noisy or unwanted skills
+
+[permissions]
+allow = ["Bash(ls /c/Users/zhujieling11/total-mikumikudance-viewer/mmdhub/frontend/vite.config* 2>&1; echo \"---\"; ls /c/Users/zhujieling11/total-mikumikudance-viewer/mmdhub/frontend/node_modules/.vite/ 2>&1)", "Bash(ls -la /c/Users/zhujieling11/total-mikumikudance-viewer/mmdhub/frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/wasm/spr/ 2>&1)", "Bash(cd C:/Users/zhujieling11/MikuMikuAR && git log --oneline -3)", "Edit", "Bash(grep -n \"currentPort\\|toBase64\\|unescape\" \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/main.ts\")", "Bash(cd \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR\" && go build ./... 2>&1)", "Bash(cd \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend\" && npx tsc && npx vite build 2>&1 | tail -3)", "Bash(grep -n \"Remove old model\\|loadPMXFile\\|arrangeModels\\|isLoadingModel\" \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/main.ts\")", "Bash(cd \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend\" && npx tsc --noEmit 2>&1)", "Bash(grep -n \"function removeModel\\|arrangeModels\\|renderScenePanel\\|focusModel\\|function loadVMDMotion\\|function loadVMDFromPath\\|function updatePlaybackUI\\|function removeFocusedModel\" \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/main.ts\")", "Bash(cd C:/Users/zhujieling11/MikuMikuAR && git log --oneline -5)", "Bash(cd MikuMikuAR/frontend && npx tsc --noEmit 2>&1)", "Bash(cd /c/Users/zhujieling11/MikuMikuAR/MikuMikuAR && go build ./... 2>&1)", "Bash(cd MikuMikuAR && wails build 2>&1)", "Bash(cd \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend\" && npx vite build 2>&1)", "Bash(cd \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend\" && grep -r \"ImportMeshAsync\" node_modules/@babylonjs/core/Loading/sceneLoader.d.ts 2>/dev/null | head -20)", "Bash(cd /c/Users/zhujieling11/MikuMikuAR/MikuMikuAR && go test -v -run TestDecodeZip 2>&1)", "Bash(cd /c/Users/zhujieling11/MikuMikuAR/MikuMikuAR && grep -r \"transform\\.\" app.go | head -5)", "Bash(cd MikuMikuAR && go clean -testcache && go test ./... -v 2>&1)", "Bash(mkdir -p:*)", "Bash(cd MikuMikuAR && go get github.com/fsnotify/fsnotify 2>&1)", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1)", "Bash(ls docs/status.md 2>&1)", "explore", "Bash(test -d \"C:/Users/zhujieling11/MikuMikuAR/docs/dancexr-zh\" && echo \"EXISTS\" || echo \"NOT_FOUND\")", "Bash(find \"C:/Users/zhujieling11/MikuMikuAR/docs/dancexr-zh\" -type f | wc -l && du -sh \"C:/Users/zhujieling11/MikuMikuAR/docs/dancexr-zh\" 2>/dev/null || echo \"du not available\")", "Bash(cd MikuMikuAR && go build ./... 2>&1)", "Bash(cd \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend\" && npx vite build 2>&1 | grep -E \"✓|error|Error\")", "Bash(cd \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend\" && npx vite build 2>&1 | grep -E \"✓|error\" && echo \"OK\")", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1 | tail -10)", "Bash(cd \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR\" && go build ./... 2>&1 && echo \"GO OK\")", "Bash(cd MikuMikuAR/frontend && npx tsc --noEmit 2>&1 | grep -v \"download\\.ts\\|menu\\.ts\")", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1 | tail -15)", "Bash(cd \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend\" && grep -n \"height.*80vh\" src/app.css)", "Bash(cd MikuMikuAR/frontend && sed -n '94,100p' index.html | cat -A)", "Bash(grep -n \"scenePanel\\|sceneList\\|sceneCount\\|sp-header\\|sp-count\\|scene-row\\|sr-icon\\|sr-info\\|sr-name\\|sr-vmd\\|sr-del\\|#scene\" \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/app.css\")", "Bash(sed -n '366,376p' MikuMikuAR/frontend/src/scene.ts | cat -A)", "Bash(sed -n '429p' MikuMikuAR/app.go | cat -A)", "Bash(cd MikuMikuAR/frontend && npx tsc --noEmit 2>&1 && npx vite build 2>&1 | tail -3 && echo \"OK\")", "Bash(cd MikuMikuAR/frontend && npx tsc --noEmit 2>&1 && echo \"OK\")", "Bash(cd MikuMikuAR && cat <<'GOEOF' > /tmp/encoding_check.go\npackage main\n\nimport (\n\t\"fmt\"\n\t\"golang.org/x/text/encoding/japanese\"\n\t\"golang.org/x/text/transform\"\n\t\"strings\"\n\t\"unicode/utf8\"\n)\n\n// Simulates the garbled filename from user report\n// The half-width katakana character: ｡ｾｿｨﾀｭｱﾋﾇ...\nfunc main() {\n\t// These are the actual Unicode code points for half-width katakana\n\tgarbled := \"｡ｾｿｨﾀｭｱﾋﾇ\"\n\tfmt.Printf(\"Input (escaped): %+q\\n\", garbled)\n\n\t// Step 1: Encode the garbled string as Shift-JIS (to get back the \"raw bytes\")\n\tencoder := japanese.ShiftJIS.NewEncoder()\n\tsjisBytes, _, _ := transform.String(encoder, garbled)\n\tfmt.Printf(\"Shift-JIS bytes: % x\\n\", []byte(sjisBytes))\n\tfmt.Printf(\"Valid UTF-8: %v\\n\", utf8.ValidString(sjisBytes))\n\n\t// Step 2: Decode those bytes as... well what would Chinese be?\n\t// If the original was Chinese in UTF-8, what bytes would give this garbled output?\n\t// Try: treat sjisBytes as UTF-8 directly\n\tfmt.Printf(\"As UTF-8 string: %s\\n\", sjisBytes)\n\t\n\t// Try: the actual decode approach - if filename was already corrupt UTF-16LE \n\t// from wrong ANSI conversion, the fix is:\n\t// corrupt_utf8 → (encode as Latin-1) → raw bytes → decode as Shift-JIS → correct name\n\tlatin1Bytes := make([]byte, 0, len(garbled))\n\tfor _, r := range garbled {\n\t\tif r <= 0xFF {\n\t\t\tlatin1Bytes = append(latin1Bytes, byte(r))\n\t\t}\n\t}\n\tfmt.Printf(\"\\nLatin-1 bytes from corrupt UTF-8: % x\\n\", latin1Bytes)\n\t\n\tdecoder := japanese.ShiftJIS.NewDecoder()\n\tdecoded, _, _ := transform.String(decoder, string(latin1Bytes))\n\tfmt.Printf(\"Shift-JIS decode result: %s\\n\", decoded)\n\tfmt.Printf(\"Escaped: %+q\\n\", decoded)\n\t\n\t// Now check: if the original filename WAS Chinese UTF-8, \n\t// what does its bytes look like as Shift-JIS?\n\tchinese := \"模型文件_初音ミク\"\n\tfmt.Printf(\"\\nOriginal Chinese: %s\\n\", chinese)\n\tfmt.Printf(\"UTF-8 bytes: % x\\n\", []byte(chinese))\n\t\n\t// Treat UTF-8 bytes as Shift-JIS\n\treinterpreted, _, _ := transform.String(decoder, chinese)\n\tfmt.Printf(\"Chinese UTF-8 bytes treated as Shift-JIS: %s\\n\", reinterpreted)\n\tfmt.Printf(\"Escaped: %+q\\n\", reinterpreted)\n}\nGOEOF\ngo run /tmp/encoding_check.go 2>&1)", "Bash(cd MikuMikuAR && go build ./... 2>&1 && go test -run \"TestParsePMXHeader|TestDecodeUTF16|TestParsePMXHeader_Trims\" 2>&1)", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1 | grep -E \"error|OK|✓|✗\" | head -5)", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1 | grep -E \"error|✓|✗|modules\")", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1 | tail -3 && echo \"OK\")", "Bash(cd MikuMikuAR/frontend/src && wc -l *.ts *.css 2>&1 | sort -rn)", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1 | grep -E \"index\\.(css|js)|✓\")", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1 | grep \"assets/index\\.\" | head -2)", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1 | tail -3)", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1 | tail -30)", "Bash(cd MikuMikuAR/frontend && npx tsc --noEmit 2>&1 && npx vite build 2>&1 | tail -3)", "Bash(cd MikuMikuAR && sed -i 's/PMXPath/FilePath/g; s/\"pmx_path\"/\"file_path\"/g; s/pmx_path/file_path/g' app.go 2>&1)", "task", "Bash(sed -n '82,100p' MikuMikuAR/frontend/src/library.ts | cat -A)", "Bash(cd MikuMikuAR && wails build 2>&1 | grep -E \"Done|Built\")", "Bash(cd MikuMikuAR && go build ./... 2>&1 && cd frontend && npx vite build 2>&1 | tail -3)", "Bash(cd MikuMikuAR/frontend && npx tsc --noEmit 2>&1 | head -20)", "Bash(cd MikuMikuAR/frontend/src && grep -n \"StartFileServer\" scene.ts 2>&1)", "Bash(grep -n \"setCurrentPort\\|currentPort\\|pendingVmdData\\|pendingVmdName\\|setPendingVmd\" \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/config.ts\")", "Bash(cd MikuMikuAR/frontend && npx vite build 2>&1 | tail -8)", "Bash(cd MikuMikuAR/frontend/src && grep -rn \"ScanModelDir.*setAllModels\\|setAllModels.*ScanModelDir\\|ScanModelDir.*SetLibraryRoot\" . --include=\"*.ts\" 2>&1)", "Bash(grep -n \"SetDisplayNamePriority\\|func.*SetLibraryRoot\\|func.*SetBlenderPath\" \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/app.go\")", "Bash(cd MikuMikuAR && ls *_test.go tests/ 2>&1)", "Bash(cd MikuMikuAR && go test -count=1 -v ./... 2>&1 | grep -E \"^(=== RUN|--- |ok |FAIL)\" | tail -30)", "Bash(grep -n \"func configDir\\|func extractedDir\\|func thumbnailDir\\|func ensureDir\" \"C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/app.go\")", "Bash(cd MikuMikuAR && git diff --stat 2>&1)", "Bash(cd MikuMikuAR && git log --oneline -3 2>&1)", "Bash(cd MikuMikuAR/frontend/src && grep -n \"btnClosePopup\\|btnCloseSettings\\|btnCloseExternal\\|btnCloseMotionPopup\" library.ts settings.ts scene-menu.ts 2>&1)", "Bash(cd /c/Users/zhujieling11/MikuMikuAR/MikuMikuAR && git status 2>&1 | head -20)", "Bash(cat /c/Users/zhujieling11/MikuMikuAR/MikuMikuAR/.gitignore 2>&1)", "Bash(cd /c/Users/zhujieling11/MikuMikuAR/MikuMikuAR && git remote -v 2>&1)", "Bash(cd /c/Users/zhujieling11/MikuMikuAR/MikuMikuAR && git status 2>&1)"]
+[sandbox]
+# Confine tool blast radius. File-writers (write_file/edit_file/multi_edit/move_file)
+# may only write under workspace_root (empty = current dir) and allow_write extras.
+# bash = "enforce" (default) jails each command in an OS sandbox (macOS now;
+# graceful fallback elsewhere); "off" disables it. network allows egress.
+# workspace_root = ""            # default: current working directory
+# allow_write = ["/tmp"]          # extra dirs writers may also modify
+bash    = "enforce"
+network = true
+
+[statusline]
+# A custom status line: a command whose first stdout line replaces the built-in
+# data row. It receives {"model","contextUsed","contextWindow","cwd"} as JSON on stdin.
+# command = "my-statusline.sh"
+
+# External MCP servers. type: "stdio" (default, a subprocess) | "http" | "sse".
+# ${VAR} / ${VAR:-default} are expanded from the environment in command/args/env/url/headers.
+# [[plugins]]
+# name    = "example"
+# command = "reasonix-plugin-example"
+# [[plugins]]                                  # a remote server over Streamable HTTP
+# name    = "stripe"
+# type    = "http"
+# url     = "https://mcp.stripe.com"
+# headers = { Authorization = "Bearer ${STRIPE_KEY}" }

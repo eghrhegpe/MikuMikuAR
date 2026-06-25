@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>MikuMikuAR</title>
+    <link rel="icon" href="data:,">
+    <link href="./src/app.css" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <canvas id="renderCanvas"></canvas>
+
+        <!-- Loading overlay -->
+        <div id="loading"><div class="spinner"></div><span id="loadingText">加载中</span></div>
+
+        <!-- Bottom Navigation Bar -->
+        <div id="bottomNav">
+            <button class="nav-tab" id="btnMainAction" title="模型库" data-hint="📦 模型库 — 浏览和加载 PMX 模型 · Ctrl+1" data-shortcut="1">
+                <iconify-icon icon="tabler:cube-3d-sphere"></iconify-icon><span class="nav-label">模型</span>
+                <span class="shortcut-badge">1</span>
+            </button>
+            <button class="nav-tab" id="btnMotionPopup" title="动作库" data-hint="打开动作库" data-shortcut="2">
+                <iconify-icon icon="lucide:music"></iconify-icon><span class="nav-label">动作</span>
+                <span class="shortcut-badge">2</span>
+            </button>
+            <button class="nav-tab" id="btnScene" title="场景" data-hint="场景设置 — 相机和灯光控制" data-shortcut="3">
+                <iconify-icon icon="lucide:monitor"></iconify-icon><span class="nav-label">场景</span>
+                <span class="shortcut-badge">3</span>
+            </button>
+            <button class="nav-tab" id="btnSettings" title="设置" data-hint="打开设置面板" data-shortcut="4">
+                <iconify-icon icon="lucide:settings"></iconify-icon><span class="nav-label">设置</span>
+                <span class="shortcut-badge">4</span>
+            </button>
+        </div>
+
+        <!-- Playback Controls -->
+        <div id="playbackBar">
+            <button class="playback-btn" id="btnPlayPause">⏸</button>
+            <div id="seekBar"><div id="seekProgress"></div></div>
+            <span class="time-display" id="timeDisplay">00:00.00 / 00:00.00</span>
+        </div>
+
+        <!-- Scene Panel (loaded models list) -->
+        <div id="scenePanel">
+            <div class="scene-header">
+                <span>场景</span><span id="sceneCount">0</span>
+                <div class="scene-actions">
+                    <button class="scene-btn" id="btnSaveScene">保存场景</button>
+                    <button class="scene-btn" id="btnLoadScene">加载场景</button>
+                </div>
+            </div>
+            <div id="sceneList"></div>
+        </div>
+
+        <!-- Current Model Info -->
+        <!-- Model List Popup -->
+        <div id="modelPopup">
+            <div class="popup-header" id="popupBreadcrumb">
+                <span class="crumb current">模型库</span>
+                <button class="manage-btn" id="btnManageExternal" title="外部库" data-hint="管理外部库"><iconify-icon icon="lucide:plug"></iconify-icon></button>
+                <button class="manage-btn" id="btnRescan" title="重新扫描" data-hint="重新扫描模型库"><iconify-icon icon="lucide:refresh-cw"></iconify-icon></button>
+                <button class="close-btn" id="btnClosePopup">✕</button>
+            </div>
+            <div id="popupSearch">
+                <input id="popupSearchInput" type="text" placeholder="搜索模型..." class="overlay-input">
+            </div>
+            <div id="popupList"></div>
+            <div id="popupEmpty">
+                <div style="font-size:28px;margin-bottom:6px;">📭</div>
+                <div>这个目录是空的</div>
+            </div>
+        </div>
+
+        <!-- Motion List Popup -->
+        <div id="motionPopup">
+            <div class="popup-header" id="motionPopupBreadcrumb">
+                <span class="crumb current">动作库</span>
+                <button class="close-btn" id="btnCloseMotionPopup">✕</button>
+            </div>
+            <div id="motionPopupSearch">
+                <input id="motionPopupSearchInput" type="text" placeholder="搜索动作..." class="overlay-input">
+            </div>
+            <div id="motionPopupList"></div>
+            <div id="motionPopupEmpty">
+                <div style="font-size:28px;margin-bottom:6px;">🎬</div>
+                <div>没有找到动作文件</div>
+            </div>
+        </div>
+
+        <!-- External Library Management Overlay -->
+        <div id="externalOverlay" class="overlay">
+            <div class="overlay-header">
+                <span>管理外部库</span>
+                <button class="overlay-close" id="btnCloseExternal">✕</button>
+            </div>
+            <div class="overlay-list" id="externalList"></div>
+            <div class="overlay-add" id="btnAddExternal">＋ 添加外部库</div>
+        </div>
+
+        <!-- Settings Overlay (MenuStack) -->
+        <div id="settingsOverlay" class="overlay"></div>
+
+        <!-- Scene Overlay (MenuStack) -->
+        <div id="sceneOverlay" class="overlay"></div>
+
+        <!-- Hidden elements for MenuStack cloning -->
+        <div style="display:none;">
+            <button class="close-btn" id="btnCloseSettings">✕</button>
+            <button class="close-btn" id="btnCloseScene">✕</button>
+        </div>
+
+        <div id="statusBar">点击 📦 打开模型库 · 鼠标拖拽旋转 · 滚轮缩放</div>
+
+        <!-- VMD Cached Notification -->
+        <div id="vmdNotify" style="display:none;position:absolute;bottom:80px;left:50%;transform:translateX(-50%);z-index:200;pointer-events:none;background:rgba(74,108,247,0.15);backdrop-filter:blur(8px);border:1px solid rgba(74,108,247,0.3);border-radius:10px;padding:8px 16px;font-size:12px;color:rgba(255,255,255,0.8);white-space:nowrap;transition:opacity 0.3s;">
+            💃 VMD 已缓存 — 加载任意模型后自动应用
+        </div>
+
+        <!-- Drop Overlay -->
+        <div id="dropOverlay">
+            <div class="drop-indicator">
+                <span class="drop-icon">📦</span>
+                <span class="drop-text">释放文件以导入到模型库</span>
+                <span class="drop-hint">支持 .zip · .pmx · .vmd</span>
+            </div>
+        </div>
+    </div>
+    <script src="./src/main.ts" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Build artifacts
+build/bin
+frontend/dist
+frontend/node_modules
+
+# Binaries
+*.exe
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp
+tmp/
