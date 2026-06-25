@@ -71,7 +71,9 @@ docs/
 │   ├── adr-005-pending-debt.md
 │   ├── adr-006-scan-and-encoding.md
 │   ├── adr-007-scene-menu-design.md
-│   └── adr-008-download-watch-spec.md
+│   ├── adr-008-download-watch-spec.md
+│   ├── adr-009-model-details-panel.md
+│   └── adr-010-competitor-ui-mapping.md
 └── research/             # 🧊 调研归档 — 禁止自由读取，按需索引
     ├── pmx-ecosystem.md
     ├── tech-stack-comparison.md
