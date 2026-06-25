@@ -176,8 +176,10 @@ const makeModelStack = (): MenuStack => {
           motionBindingTargetId = null;
           return;
         }
+        // Normal row click → REPLACE: remove current focused model, load new model
+        // The "+" add button is handled separately in menu.ts via row.onAddClick
         hidePopup();
-        onModelRowClick(row.model);
+        replaceModel(row.model);
         return;
       }
       if (row.target === "models:rescan") {
@@ -193,6 +195,26 @@ const makeModelStack = (): MenuStack => {
         const inst = modelRegistry.get(id);
         if (!inst) return;
         switch (type) {
+          case "fav": {
+            const libRef = inst.filePath ? computeLibraryRef(inst.filePath) : null;
+            if (libRef) {
+              const isFav = favorites.has(libRef);
+              ToggleFavorite(libRef).then(() => {
+                if (isFav) {
+                  favorites.delete(libRef);
+                } else {
+                  favorites.add(libRef);
+                }
+                setFavorites(new Set(favorites));
+                modelStack?.reRender();
+                setStatus(isFav ? "☆ 已取消收藏" : "★ 已收藏", true);
+              }).catch((err) => {
+                console.warn("ToggleFavorite failed:", err);
+                setStatus("✗ 收藏操作失败", false);
+              });
+            }
+            break;
+          }
           case "focus":
             setFocusedModelId(id);
             focusModel(id);
@@ -255,6 +277,7 @@ const makeModelStack = (): MenuStack => {
       }
       const hints: Record<string, string> = {
         "models:browse": "📁 浏览模型库 · 加载 PMX 模型",
+        "detail:fav": "★ 收藏/取消收藏此模型",
         "detail:focus": "🎯 相机对准此模型",
         "detail:remove": "🗑 从场景中删除此模型",
         "detail:motion:pause": "⏸ 暂停/继续当前动作",
@@ -271,24 +294,6 @@ const makeModelStack = (): MenuStack => {
       }
       const hint = hints[row.target || ""];
       if (hint) setStatus(hint, false);
-    },
-    onFavToggle: (row) => {
-      if (!row.favRef) return;
-      const ref = row.favRef;
-      const isFav = favorites.has(ref);
-      ToggleFavorite(ref).then(() => {
-        if (isFav) {
-          favorites.delete(ref);
-        } else {
-          favorites.add(ref);
-        }
-        setFavorites(new Set(favorites));
-        modelStack?.reRender();
-        setStatus(isFav ? "☆ 已取消收藏" : "★ 已收藏", true);
-      }).catch((err) => {
-        console.warn("ToggleFavorite failed:", err);
-        setStatus("✗ 收藏操作失败", false);
-      });
     },
   });
 };
@@ -350,6 +355,7 @@ export function showPopup(): void {
       target: `scene:${id}`,
       sublabel: inst.vmdName || undefined,
       editable: id === focusedModelId,
+      showDetailBtn: true,
     });
   }
   if (rootItems.length > 0) {
@@ -556,7 +562,6 @@ function modelToRow(m: LibraryModel): PopupRow {
       break;
   }
   const comment = cached?.comment || m.comment || "";
-  const libRef = m.file_path ? computeLibraryRef(m.file_path) : null;
   return {
     kind: "model",
     label,
@@ -566,7 +571,11 @@ function modelToRow(m: LibraryModel): PopupRow {
     model: m,
     catTag: m.category || undefined,
     editable: m.format === "pmx",
-    favRef: libRef,
+    // "+" add button: add additional model (keep existing)
+    onAddClick: () => {
+      hidePopup();
+      onModelRowClick(m);
+    },
   };
 }
 
@@ -591,6 +600,14 @@ function onModelRowClick(m: LibraryModel): void {
   else if (m.format === "vmd") loadVMDFromPath(m.file_path);
 }
 
+function replaceModel(m: LibraryModel): void {
+  // Remove current focused model first, then load new model into same slot
+  if (focusedModelId) {
+    removeModel(focusedModelId);
+  }
+  onModelRowClick(m);
+}
+
 function isSearchLayer(): boolean {
   return modelStack?.currentLevel?.label === "🔍 搜索结果";
 }
@@ -601,10 +618,13 @@ function isSearchLayer(): boolean {
 function buildModelDetailLevel(id: string): PopupLevel {
   const inst = modelRegistry.get(id);
   if (!inst) return { label: "未知模型", dir: "", items: [] };
+  const libRef = inst.filePath ? computeLibraryRef(inst.filePath) : null;
+  const isFav = libRef ? favorites.has(libRef) : false;
   return {
     label: inst.name,
     dir: "",
     items: [
+      { kind: "action", label: isFav ? "★ 取消收藏" : "☆ 收藏", icon: "star", target: `detail:fav:${id}`, sublabel: isFav ? "点击取消收藏" : "点击加入收藏" },
       { kind: "folder", label: "模型信息", icon: "info", target: `detail:info:${id}`, sublabel: "PMX 元数据" },
       { kind: "folder", label: "动作绑定", icon: "music", target: `detail:motion:${id}`, sublabel: inst.vmdName || "无" },
       { kind: "folder", label: "变换", icon: "move", target: `detail:transform:${id}`, sublabel: "位置/缩放/旋转" },
@@ -854,7 +874,7 @@ function handlePopupSearch(): void {
         }
         el.innerHTML = html;
         el.addEventListener("click", () => {
-          onModelRowClick(m);
+          replaceModel(m);
         });
         container.appendChild(el);
       }

@@ -2,7 +2,7 @@
 // Inspired by DanceXR's multi-panel drill-down: push creates a new card
 // (slightly offset, fade in), pop removes it and reveals the previous one.
 
-import { PopupLevel, PopupRow, showHint, hideHint, favorites } from "./config";
+import { PopupLevel, PopupRow, showHint, hideHint } from "./config";
 import { createIconifyIcon } from "./icons";
 
 export class MenuStack {
@@ -253,21 +253,39 @@ export class MenuStack {
         el.addEventListener("mouseenter", () => this.onHover?.(row, true));
         el.addEventListener("mouseleave", () => this.onHover?.(row, false));
 
-        // ★/☆ Favorites toggle button
-        if (row.favRef) {
-            const favBtn = document.createElement("span");
-            favBtn.className = "menu-fav";
-            favBtn.style.cssText = "cursor:pointer;margin-left:8px;display:inline-flex;align-items:center;user-select:none;";
-            const isFav = favorites.has(row.favRef);
-            const iconEl = document.createElement("iconify-icon");
-            iconEl.setAttribute("icon", isFav ? "tabler:star-filled" : "tabler:star");
-            iconEl.style.cssText = "width:16px;height:16px;color:" + (isFav ? "var(--accent,#ffc107)" : "var(--text-dim,#888)") + ";transition:color 0.15s;";
-            favBtn.appendChild(iconEl);
-            favBtn.addEventListener("click", (e) => {
+        // ★/☆ Favorites toggle button — moved to model detail page
+        // (removed from row to avoid blocking replace-click behavior)
+
+        // "+" Add button — for library model rows: add additional model (keep existing)
+        if (row.onAddClick) {
+            const addBtn = document.createElement("span");
+            addBtn.className = "menu-add-btn";
+            addBtn.textContent = "+";
+            addBtn.style.cssText = "cursor:pointer;margin-left:6px;display:inline-flex;align-items:center;justify-content:center;user-select:none;width:20px;height:20px;border-radius:4px;font-size:14px;font-weight:bold;color:var(--accent,#4a6cf7);background:var(--white-04);transition:background 0.15s;flex-shrink:0;";
+            addBtn.addEventListener("mouseenter", () => { addBtn.style.background = "var(--white-08)"; });
+            addBtn.addEventListener("mouseleave", () => { addBtn.style.background = "var(--white-04)"; });
+            addBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
-                this.onFavToggle?.(row);
+                row.onAddClick!();
             });
-            el.appendChild(favBtn);
+            el.appendChild(addBtn);
+        }
+
+        // "📄" Detail button — for loaded model rows: open model detail submenu
+        if (row.showDetailBtn) {
+            const detailBtn = document.createElement("span");
+            detailBtn.className = "menu-detail-btn";
+            detailBtn.textContent = "📄";
+            detailBtn.style.cssText = "cursor:pointer;margin-left:6px;display:inline-flex;align-items:center;justify-content:center;user-select:none;width:20px;height:20px;border-radius:4px;font-size:12px;background:var(--white-04);transition:background 0.15s;flex-shrink:0;";
+            detailBtn.addEventListener("mouseenter", () => { detailBtn.style.background = "var(--white-08)"; });
+            detailBtn.addEventListener("mouseleave", () => { detailBtn.style.background = "var(--white-04)"; });
+            detailBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                // Trigger folder enter on the parent row (navigate to detail)
+                const next = this.onFolderEnter?.(row, this);
+                if (next) this.push(next);
+            });
+            el.appendChild(detailBtn);
         }
 
         return el;

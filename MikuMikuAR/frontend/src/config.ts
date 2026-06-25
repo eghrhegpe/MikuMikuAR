@@ -52,6 +52,10 @@ export type PopupRow = {
     editable?: boolean;
     /** If set, render a ★/☆ toggle button. Value is the libraryRef to toggle. */
     favRef?: string;
+    /** If true, render a "📄" detail button on the right (for loaded model rows). */
+    showDetailBtn?: boolean;
+    /** Called when the "+" add-model button is clicked. */
+    onAddClick?: () => void;
 };
 
 export type PopupLevel = {
