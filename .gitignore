@@ -1,0 +1,8 @@
+# Model files — do NOT commit (copyrighted, large)
+text-model/
+
+# Reasonix internal state
+.reasonix/
+
+# Other projects in workspace
+MMDDownloader/
