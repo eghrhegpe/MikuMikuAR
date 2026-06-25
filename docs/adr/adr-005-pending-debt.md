@@ -43,7 +43,7 @@
 
 ### 当前状态
 
-等待方案选择，无时间表。
+✅ **方案 A 已选定** — `ImportLocalFile` 对库外文件 copy 到 `%LOCALAPPDATA%/MikuMikuAR/temp_serve/`，保留相对路径树。待实施。
 
 ---
 
