@@ -34,10 +34,6 @@ export function LoadSceneFile(arg1:string):Promise<string>;
 
 export function OpenInBlender(arg1:string):Promise<void>;
 
-export function ReadDirFiles(arg1:string):Promise<Record<string, Array<number>>>;
-
-export function ReadFileBytes(arg1:string):Promise<string>;
-
 export function RemoveExternalPath(arg1:string):Promise<void>;
 
 export function RenameExternalPath(arg1:string,arg2:string):Promise<void>;

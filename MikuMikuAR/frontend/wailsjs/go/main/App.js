@@ -66,14 +66,6 @@ export function OpenInBlender(arg1) {
   return window['go']['main']['App']['OpenInBlender'](arg1);
 }
 
-export function ReadDirFiles(arg1) {
-  return window['go']['main']['App']['ReadDirFiles'](arg1);
-}
-
-export function ReadFileBytes(arg1) {
-  return window['go']['main']['App']['ReadFileBytes'](arg1);
-}
-
 export function RemoveExternalPath(arg1) {
   return window['go']['main']['App']['RemoveExternalPath'](arg1);
 }

@@ -113,6 +113,13 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 - [x] 消除 20+ 处硬编码色值 → CSS 变量
 - [x] inline style 收归 — popupSearchInput / dlUrlInput / dlNameInput 改为 class
 
+**图标系统**
+- [x] Lucide → Iconify 迁移 — `@iconify/iconify` + `iconify-icon` 接管所有图标渲染
+- [x] 混合图标库 — Lucide 主库（通用）+ Tabler 补专用（`cube-3d-sphere`、`run` 等）
+- [x] `iconify-icon` web component 替换 `<i data-lucide>` — 无需 tree-shaking 配置
+- [x] 底栏图标差异化 — 模型（`tabler:cube-3d-sphere`）、动作（`lucide:music`）、场景（`lucide:monitor`）、设置（`lucide:settings`）
+- [x] `lucide` npm 包移除 — 节省 ~200KB bundle
+
 **代码质量**
 - [x] `openFileDialog` 提取 — `SelectPMXFile` / `SelectVMDMotion` 从 22 行各减至 5 行
 - [x] `decodeZipName` 自动编码检测 — Shift-JIS / GBK 双向解码评分择优
@@ -121,6 +128,12 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 - [x] 右侧场景面板移除 — 功能合并到模型弹窗「加载模型」上方（已加载模型作为按钮 + 分隔线）
 - [x] `divider` 行类型 — `PopupRow.kind: "divider"`，`menu.ts` 渲染为分隔线
 
+**场景菜单（独立底部导航）**
+- [x] 新增 `btnScene` 底部导航按钮 — 位于 动作 和 设置 之间
+- [x] 场景弹窗 `#sceneOverlay` — 整合相机模式切换 + 灯光控制
+- [x] 相机模式子菜单 — 轨道/自由飞行/镜头预设/演唱会（从模型弹窗移来）
+- [x] 灯光控制子菜单 — 环境光/方向光强度 + 方向光角度 XZ 滑块（从设置移来）
+
 **菜单架构**
 - [x] 面包屑改为返回箭头 — `← 当前层名`，点击返回上层
 - [x] 模型弹窗根菜单 — 场景(动态)/加载模型/相机模式/动作倍率/角色定制/重新扫描
@@ -128,9 +141,18 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 - [x] 重新扫描移至模型弹窗根菜单
 
 **弹窗管理**
-- [x] `closeAllOverlays()` — 统一关闭所有弹窗（modelPopup / external / settings / download / site）
+- [x] `closeAllOverlays()` — 统一关闭所有弹窗（通用化：查询 `.overlay.visible` 自动隐藏）
 - [x] 单例模式 — 打开任一弹窗自动关闭其他，避免重叠
 - [x] Esc 简化 — 一键关所有弹窗，不再逐个判断
+- [x] settings / scene 弹窗静态面包屑清理 — 与 modelPopup 统一，由 MenuStack 在底部渲染
+
+**状态栏提示系统**
+- [x] hover hint 系统 — 鼠标悬停 nav 按钮 / 菜单行时，状态栏显示操作说明
+- [x] `data-hint` 属性驱动 — 静态元素（HTML）+ 动态元素（MenuStack 行）统一走同一套机制
+- [x] 渐进式引导文字 — 首次无库显示提示、已配库显示操作指引、"暂无描述"/"暂无提示" 回退
+- [x] VMD 缓存通知浮层 — 无模型时加载 VMD 弹蓝色通知 `💃 VMD 已缓存 — 加载任意模型后自动应用`
+- [x] VMD 状态合并 — 模型加载同时应用缓存 VMD 时，状态栏合并显示 `✓ 模型名 + VMD名`
+- [x] 状态栏默认文字 — HTML 直接设为 `"点击 📦 打开模型库 · 鼠标拖拽旋转 · 滚轮缩放"`，不等 JS 初始化
 
 **代码质量**
 - [x] 前端模块拆分 — `config.ts` + `scene.ts` + `library.ts` + `main.ts` + `download.ts`
@@ -154,10 +176,10 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 - [x] 前端 `scene-menu.ts` 消除 `cloneNode` 重复 ID — 改为 `createElement`
 - [x] `fileservice.ts` 统一 URL 构造 — `resolveFileUrl` 收拢 `loadPMXFile`/`loadVMDFromPath` 散落的构造逻辑，消除"改一处漏一处"
 - [x] `rescanAndSync()` — 收拢 5 处 `ScanModelDir+setAllModels+SetLibraryRoot` 重复模式
-- [x] `PMXPath`→`FilePath` 重命名 — 消除"pmx_path 存 VMD 路径"的语义歧义（Go+TS 两端同步）
-- [x] 易读性清理 — `togglePopup` 简化、`renderPopup` 死代码删除、`ensureFileServer` 死参数删除
-- [x] `popupStack` 僵尸状态清除 — 导航已完全由 `MenuStack` 管理，旧状态从未被读取
-- [x] `triggerAutoSave` 灯光 slider 补漏 — slider 调整灯光后触发自动保存
+- [x] `reloadConfig()` — 收拢 2 处 `GetConfig+setLibraryRoot+setExternalPaths` 重复模式（`settings.ts`）
+- [x] `modelToRow` null safety — `m.file_path` / `m.zip_inner` 缺失时不再崩溃
+- [x] `closeAllOverlays()` 通用化 — `document.querySelectorAll(".overlay.visible")` 替代硬编码列表
+- [x] `initLibrary` 状态信息合并 — 无库显示引导、有库显示操作指引，删除与 HTML 默认重复的 setStatus
 
 **拖拽导入**
 - [x] `ImportZip` Go binding — 打开 zip 扫首个 .pmx → `ExtractZip`（约 20 行）

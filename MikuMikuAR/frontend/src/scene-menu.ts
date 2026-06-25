@@ -127,6 +127,3 @@ export async function showSceneMenu(): Promise<void> {
 
 // Wire up events
 dom.btnScene.addEventListener("click", showSceneMenu);
-dom.btnCloseScene.addEventListener("click", () => {
-    dom.sceneOverlay.classList.remove("visible");
-});

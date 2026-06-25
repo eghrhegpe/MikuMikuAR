@@ -90,64 +90,17 @@ func (a *App) SelectVMDMotion() (string, error) {
 }
 
 // ReadFileBytes reads a file from the given path and returns its bytes as base64.
-func (a *App) ReadFileBytes(path string) (string, error) {
-	info, statErr := os.Stat(path)
-	if statErr != nil {
-		runtime.LogErrorf(a.ctx, "ReadFileBytes stat error: %v", statErr)
-		return "", statErr
-	}
-	runtime.LogInfof(a.ctx, "ReadFileBytes: path=%s size=%d", path, info.Size())
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		runtime.LogErrorf(a.ctx, "ReadFileBytes read error: %v", err)
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(data), nil
-}
-
-// ReadDirFiles reads all files from a directory and returns them as a map.
-func (a *App) ReadDirFiles(dirPath string) (map[string][]byte, error) {
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
-		return nil, err
-	}
-	result := make(map[string][]byte)
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		fullPath := filepath.Join(dirPath, entry.Name())
-		data, err := os.ReadFile(fullPath)
-		if err != nil {
-			continue
-		}
-		result[entry.Name()] = data
-	}
-	return result, nil
-}
-
-// GetFileDir returns the parent directory of a file path
-func (a *App) GetFileDir(filePath string) string {
-	return filepath.Dir(filePath)
-}
-
-// FileExists checks if a file exists
-func (a *App) FileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
 
 // ======== Model Library Types ========
 
 // ModelEntry represents a model, motion, or zip entry found during library scan.
 type ModelEntry struct {
 	Dir       string `json:"dir"`        // Model directory (absolute); for zip entries, the zip's directory
-	FilePath   string `json:"file_path"`   // .pmx/.vmd absolute path; for zip entries, the zip path
+	PMXPath   string `json:"pmx_path"`   // .pmx/.vmd absolute path; for zip entries, the zip path
 	NameJp    string `json:"name_jp"`    // PMX header: local name
 	NameEn    string `json:"name_en"`    // PMX header: universal name; for VMD: basename
 	Comment   string `json:"comment"`    // PMX header: local comment (truncated)
-	HasThumb  bool   `json:"has_thumb"`  // Whether a thumbnail exists (always false for now)
+	HasThumb  bool   `json:"has_thumb"`  // Whether a thumbnail exists
 	Type      string `json:"type"`       // "actor" | "motion" | "stage" | "dressing" | "bundle" | "effect" | "scene" | "other"
 	Format    string `json:"format"`     // "pmx" | "vmd" | "zip"
 	Container string `json:"container"`  // "file" | "zip"
@@ -190,6 +143,8 @@ type Config struct {
 	ExternalPaths        []ExternalPath `json:"external_paths"`
 	BlenderPath          string         `json:"blender_path"`
 	DisplayNamePriority  string         `json:"display_name_priority"` // "name_jp" | "name_en" | "filename"
+	DownloadWatchDir     string         `json:"download_watch_dir"`     // 监听目录，空则不监听
+	DownloadAutoImport   bool           `json:"download_auto_import"`  // true 则跳过确认直接导入
 }
 
 // userConfigDir is a hook for testing — production code calls os.UserConfigDir.
@@ -261,7 +216,7 @@ func (a *App) ScanModelDir(root string, external []ExternalPath) ([]ModelEntry, 
 	seen := make(map[string]bool)
 	deduped := models[:0]
 	for _, m := range models {
-		key := m.FilePath + ":" + m.ZipInner
+		key := m.PMXPath + ":" + m.ZipInner
 		if seen[key] {
 			continue
 		}
@@ -725,7 +680,7 @@ func (a *App) GetLibraryIndex() ([]ModelEntry, error) {
 	// that still used "pmx_path" as the JSON key before the rename.
 	valid := models[:0]
 	for _, m := range models {
-		if m.FilePath != "" {
+		if m.PMXPath != "" {
 			valid = append(valid, m)
 		}
 	}
