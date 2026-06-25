@@ -41,6 +41,11 @@ import {
   modelRegistry,
   focusedModelId,
   setFocusedModelId,
+  isPlaying,
+  setIsPlaying,
+  autoLoop,
+  setAutoLoop,
+  mmdRuntime,
 } from "./config";
 import {
   loadPMXFile,
@@ -48,6 +53,15 @@ import {
   loadVMDMotion,
   focusModel,
   removeModel,
+  setModelVisibility,
+  setModelOpacity,
+  setModelWireframe,
+  setModelScaling,
+  setModelRotationY,
+  setModelPosition,
+  getModelPosition,
+  resetModelTransform,
+  updatePlaybackUI,
 } from "./scene";
 import { MenuStack } from "./menu";
 
@@ -58,6 +72,39 @@ const makeModelStack = (): MenuStack => {
     parentEl: dom.modelPopup,
     onClose: hidePopup,
     onFolderEnter: (row) => {
+      // Model detail submenu: scene:${id}
+      if (row.target && row.target.startsWith("scene:")) {
+        const id = row.target.replace("scene:", "");
+        const inst = modelRegistry.get(id);
+        if (!inst) return null;
+        return buildModelDetailLevel(id);
+      }
+      // Detail sub-submenus: detail:type:${id}
+      if (row.target && row.target.startsWith("detail:")) {
+        const parts = row.target.split(":");
+        const type = parts[1];
+        const id = parts.slice(2).join(":");
+        const inst = modelRegistry.get(id);
+        if (!inst) return null;
+        switch (type) {
+          case "info": return buildModelInfoLevel(id);
+          case "motion": return buildMotionBindingLevel(id);
+          case "transform": return buildTransformLevel(id);
+          case "visibility": return buildVisibilityLevel(id);
+          default: return null;
+        }
+      }
+      // Motion browsing for model detail: detail:motion:browse:${id}
+      if (row.target && row.target.startsWith("detail:motion:browse:")) {
+        const id = row.target.replace("detail:motion:browse:", "");
+        motionBindingTargetId = id;
+        // Open motion library for this specific model
+        const level = buildLevel(libraryRoot, "动作库", (m) => m.format === "vmd");
+        // Override label to show which model we're binding to
+        const inst = modelRegistry.get(id);
+        level.label = `绑定动作 → ${inst?.name || "模型"}`;
+        return level;
+      }
       if (row.target === "models:browse") {
         if (!libraryRoot) {
           return {
@@ -93,7 +140,8 @@ const makeModelStack = (): MenuStack => {
       if (
         row.target &&
         !row.target.startsWith("reserved:") &&
-        !row.target.startsWith("models:")
+        !row.target.startsWith("models:") &&
+        !row.target.startsWith("detail:")
       ) {
         return buildLevel(row.target, row.label, (m) => m.format === "pmx");
       }
@@ -101,6 +149,14 @@ const makeModelStack = (): MenuStack => {
     },
     onItemClick: (row: PopupRow) => {
       if (row.model) {
+        // If we're in motion-binding context, bind VMD to the target model
+        if (row.model.format === "vmd" && motionBindingTargetId) {
+          hidePopup();
+          // Fetch the VMD and bind to the target model
+          loadVMDFromPath(row.model.file_path, motionBindingTargetId);
+          motionBindingTargetId = null;
+          return;
+        }
         hidePopup();
         onModelRowClick(row.model);
         return;
@@ -109,12 +165,67 @@ const makeModelStack = (): MenuStack => {
         refreshLibrary();
         return;
       }
-      // Scene: focus on clicked model
-      if (row.target && row.target.startsWith("scene:")) {
-        const id = row.target.replace("scene:", "");
-        setFocusedModelId(id);
-        focusModel(id);
-        hidePopup();
+      // Detail actions
+      if (row.target && row.target.startsWith("detail:")) {
+        const parts = row.target.split(":");
+        const type = parts[1];
+        const id = parts.slice(2).join(":");
+        if (!id) return;
+        const inst = modelRegistry.get(id);
+        if (!inst) return;
+        switch (type) {
+          case "focus":
+            setFocusedModelId(id);
+            focusModel(id);
+            setStatus(`🎯 聚焦: ${inst.name}`, true);
+            break;
+          case "remove":
+            removeModel(id);
+            setStatus(`🗑 已移除: ${inst.name}`, true);
+            hidePopup();
+            break;
+          case "motion": {
+            const action = parts[2];
+            switch (action) {
+              case "pause":
+                if (mmdRuntime) {
+                  if (isPlaying) {
+                    mmdRuntime.pauseAnimation();
+                    setIsPlaying(false);
+                    setAutoLoop(false);
+                  } else {
+                    setAutoLoop(true);
+                    mmdRuntime.playAnimation().then(() => setIsPlaying(true));
+                  }
+                  updatePlaybackUI();
+                  modelStack?.reRender();
+                }
+                break;
+              case "reset":
+                if (inst.mmdModel && mmdRuntime) {
+                  inst.mmdModel.setRuntimeAnimation(null);
+                  inst.vmdData = null;
+                  inst.vmdName = "";
+                  inst.vmdPath = null;
+                  inst.animationDuration = 0;
+                  if (isPlaying) {
+                    mmdRuntime.pauseAnimation();
+                    setIsPlaying(false);
+                  }
+                  updatePlaybackUI();
+                  modelStack?.reRender();
+                  setStatus("🔄 动作已重置", true);
+                }
+                break;
+              case "loop":
+                setAutoLoop(!autoLoop);
+                modelStack?.reRender();
+                setStatus(`循环: ${autoLoop ? "开" : "关"}`, true);
+                break;
+            }
+            break;
+          }
+        }
         return;
       }
     },
@@ -125,7 +236,20 @@ const makeModelStack = (): MenuStack => {
       }
       const hints: Record<string, string> = {
         "models:browse": "📁 浏览模型库 · 加载 PMX 模型",
+        "detail:focus": "🎯 相机对准此模型",
+        "detail:remove": "🗑 从场景中删除此模型",
+        "detail:motion:pause": "⏸ 暂停/继续当前动作",
+        "detail:motion:reset": "🔄 移除 VMD，恢复 T-Pose",
+        "detail:motion:loop": "🔁 切换自动循环",
       };
+      // Dynamic hints for detail:* targets
+      if (row.target && row.target.startsWith("detail:")) {
+        const parts = row.target.split(":");
+        const key = `detail:${parts[1]}`;
+        const hint = hints[key];
+        if (hint) setStatus(hint, false);
+        return;
+      }
       const hint = hints[row.target || ""];
       if (hint) setStatus(hint, false);
     },
@@ -154,6 +278,9 @@ const makeMotionStack = (): MenuStack => {
 let modelStack: MenuStack | null = null;
 let motionStack: MenuStack | null = null;
 
+/** When browsing motion from a model detail, track which model to bind to. */
+let motionBindingTargetId: string | null = null;
+
 // ======== Popup Show / Hide ========
 export function togglePopup(): void {
   if (popupOpen) {
@@ -177,10 +304,10 @@ export function showPopup(): void {
   // Build root menu: scene models first, then divider, then features
   const rootItems: PopupRow[] = [];
 
-  // Add currently loaded models as quick-access buttons
+  // Add currently loaded models as quick-access buttons (navigate to detail)
   for (const [id, inst] of modelRegistry) {
     rootItems.push({
-      kind: "action",
+      kind: "folder",
       label: inst.name,
       icon: "🎭",
       target: `scene:${id}`,
@@ -419,6 +546,205 @@ function onModelRowClick(m: LibraryModel): void {
 
 function isSearchLayer(): boolean {
   return modelStack?.currentLevel?.label === "🔍 搜索结果";
+}
+
+// ======== Model Detail Submenu ========
+
+/** Build the model detail submenu for a specific model instance. */
+function buildModelDetailLevel(id: string): PopupLevel {
+  const inst = modelRegistry.get(id);
+  if (!inst) return { label: "未知模型", dir: "", items: [] };
+  setFocusedModelId(id);
+  focusModel(id);
+  return {
+    label: inst.name,
+    dir: "",
+    items: [
+      { kind: "folder", label: "模型信息", icon: "info", target: `detail:info:${id}`, sublabel: "PMX 元数据" },
+      { kind: "folder", label: "动作绑定", icon: "music", target: `detail:motion:${id}`, sublabel: inst.vmdName || "无" },
+      { kind: "folder", label: "变换", icon: "move", target: `detail:transform:${id}`, sublabel: "位置/缩放/旋转" },
+      { kind: "folder", label: "可见性", icon: "eye", target: `detail:visibility:${id}`, sublabel: inst.visible ? "显示" : "隐藏" },
+      { kind: "divider", label: "", icon: "", target: "" },
+      { kind: "action", label: "🎯 聚焦", icon: "target", target: `detail:focus:${id}`, sublabel: "相机对准此模型" },
+      { kind: "action", label: "🗑 移除", icon: "trash-2", target: `detail:remove:${id}`, sublabel: "从场景删除" },
+    ],
+  };
+}
+
+/** Build the motion binding submenu for a model. */
+function buildMotionBindingLevel(id: string): PopupLevel {
+  const inst = modelRegistry.get(id);
+  if (!inst) return { label: "动作绑定", dir: "", items: [] };
+  return {
+    label: "动作绑定",
+    dir: "",
+    items: [
+      { kind: "action", label: `当前: ${inst.vmdName || "无"}`, icon: "info", target: "", sublabel: undefined },
+      { kind: "divider", label: "", icon: "", target: "" },
+      { kind: "folder", label: "更换动作", icon: "music", target: `detail:motion:browse:${id}`, sublabel: "从动作库选择" },
+      { kind: "action", label: inst.mmdModel ? (inst.vmdData ? "暂停动作" : "—") : "—", icon: "pause-circle", target: `detail:motion:pause:${id}`, sublabel: inst.vmdData ? "暂停/继续" : "无动作" },
+      { kind: "action", label: "重置动作", icon: "rotate-ccw", target: `detail:motion:reset:${id}`, sublabel: "恢复 T-Pose" },
+      { kind: "divider", label: "", icon: "", target: "" },
+      { kind: "action", label: `循环: ${inst.vmdData ? (autoLoop ? "开" : "关") : "—"}`, icon: "repeat", target: `detail:motion:loop:${id}`, sublabel: inst.vmdData ? "切换自动循环" : "加载动作后可用" },
+    ],
+  };
+}
+
+/** Build the transform slider submenu for a model. */
+function buildTransformLevel(id: string): PopupLevel {
+  const inst = modelRegistry.get(id);
+  if (!inst) return { label: "变换", dir: "", items: [] };
+  const pos = getModelPosition(id);
+  return {
+    label: "变换",
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+      const fields: Array<{
+        label: string; key: string; min: number; max: number; step: number; get: () => number; set: (v: number) => void;
+      }> = [
+        { label: "位置 X", key: "px", min: -20, max: 20, step: 0.1,
+          get: () => getModelPosition(id)[0],
+          set: (v) => { const p = getModelPosition(id); setModelPosition(id, v, p[1], p[2]); } },
+        { label: "位置 Y", key: "py", min: -20, max: 20, step: 0.1,
+          get: () => getModelPosition(id)[1],
+          set: (v) => { const p = getModelPosition(id); setModelPosition(id, p[0], v, p[2]); } },
+        { label: "位置 Z", key: "pz", min: -20, max: 20, step: 0.1,
+          get: () => getModelPosition(id)[2],
+          set: (v) => { const p = getModelPosition(id); setModelPosition(id, p[0], p[1], v); } },
+        { label: "缩放", key: "scale", min: 0.01, max: 5, step: 0.05,
+          get: () => modelRegistry.get(id)?.scaling ?? 1,
+          set: (v) => setModelScaling(id, v) },
+        { label: "旋转 Y", key: "ry", min: -180, max: 180, step: 1,
+          get: () => ((modelRegistry.get(id)?.rotationY ?? 0) * 180 / Math.PI),
+          set: (v) => setModelRotationY(id, v * Math.PI / 180) },
+      ];
+      for (const f of fields) {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:10px;";
+        const label = document.createElement("label");
+        label.style.cssText = "font-size:11px;color:var(--text-dim);width:60px;flex-shrink:0;";
+        label.textContent = f.label;
+        const val = document.createElement("span");
+        val.style.cssText = "font-size:11px;color:var(--text-bright);width:40px;text-align:right;";
+        val.textContent = f.get().toFixed(f.step < 0.1 ? 2 : f.step >= 1 ? 0 : 1);
+        const slider = document.createElement("input");
+        slider.type = "range";
+        slider.min = String(f.min);
+        slider.max = String(f.max);
+        slider.step = String(f.step);
+        slider.value = String(f.get());
+        slider.style.cssText = "flex:1;accent-color:var(--accent);height:4px;";
+        slider.addEventListener("input", () => {
+          const v = parseFloat(slider.value);
+          val.textContent = f.step >= 1 ? String(Math.round(v)) : v.toFixed(f.step < 0.1 ? 2 : 1);
+          f.set(v);
+        });
+        row.appendChild(label);
+        row.appendChild(slider);
+        row.appendChild(val);
+        container.appendChild(row);
+      }
+      // Reset button
+      const resetBtn = document.createElement("div");
+      resetBtn.className = "menu-item";
+      resetBtn.style.cssText = "margin-top:4px;";
+      resetBtn.innerHTML = '<span class="menu-icon">🔄</span><span class="menu-label">重置变换</span>';
+      resetBtn.addEventListener("click", () => {
+        resetModelTransform(id);
+        // Re-render the level to reflect reset values
+        modelStack?.reRender();
+        setStatus("✓ 变换已重置", true);
+      });
+      container.appendChild(resetBtn);
+    },
+  };
+}
+
+/** Build the visibility submenu for a model. */
+function buildVisibilityLevel(id: string): PopupLevel {
+  const inst = modelRegistry.get(id);
+  if (!inst) return { label: "可见性", dir: "", items: [] };
+  return {
+    label: "可见性",
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+      const options = [
+        { label: "✅ 显示", active: inst.visible && inst.opacity >= 0.99, action: () => { setModelVisibility(id, true); setModelOpacity(id, 1); } },
+        { label: "👻 半透明", active: inst.visible && inst.opacity < 0.99 && inst.opacity > 0.1, action: () => { setModelVisibility(id, true); setModelOpacity(id, 0.5); } },
+        { label: "🚫 隐藏", active: !inst.visible, action: () => { setModelVisibility(id, false); } },
+      ];
+      for (const opt of options) {
+        const row = document.createElement("div");
+        row.className = "menu-item";
+        if (opt.active) row.style.background = "var(--accent-dark)";
+        row.innerHTML = `<span class="menu-label">${opt.label}</span>`;
+        row.addEventListener("click", () => {
+          opt.action();
+          modelStack?.reRender();
+          setStatus(opt.label, true);
+        });
+        container.appendChild(row);
+      }
+      // Divider
+      const divider = document.createElement("div");
+      divider.className = "menu-divider";
+      container.appendChild(divider);
+      // Wireframe toggle
+      const wfRow = document.createElement("div");
+      wfRow.className = "menu-item";
+      wfRow.innerHTML = `<span class="menu-label">🔲 线框模式 ${inst.wireframe ? "✅" : ""}</span>`;
+      wfRow.addEventListener("click", () => {
+        setModelWireframe(id, !inst.wireframe);
+        modelStack?.reRender();
+        setStatus(inst.wireframe ? "线框模式: 开" : "线框模式: 关", true);
+      });
+      container.appendChild(wfRow);
+    },
+  };
+}
+
+/** Build the model info submenu — read-only metadata from ModelInstance + PMX. */
+function buildModelInfoLevel(id: string): PopupLevel {
+  const inst = modelRegistry.get(id);
+  if (!inst) return { label: "模型信息", dir: "", items: [] };
+  return {
+    label: "模型信息",
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+      const meta = modelMetaCache.get(inst.filePath);
+      const fields: Array<{ label: string; value: string }> = [
+        { label: "名称", value: inst.name },
+        { label: "文件", value: inst.filePath.split("/").pop() || inst.filePath },
+        { label: "类型", value: inst.kind === "actor" ? "actor" : "stage" },
+        { label: "动作", value: inst.vmdName || "无" },
+        { label: "面数", value: inst.meshes.reduce((sum, m) => sum + (m.getTotalVertices() || 0), 0).toLocaleString() },
+        { label: "材质数", value: String(inst.meshes.length) },
+        { label: "骨骼数", value: inst.mmdModel ? "可用" : "N/A (舞台)" },
+        { label: "日文名", value: meta?.name_jp || "—" },
+        { label: "英文名", value: meta?.name_en || "—" },
+        { label: "备注", value: meta?.comment ? meta.comment.substring(0, 60) : "—" },
+      ];
+      for (const f of fields) {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;";
+        const lbl = document.createElement("span");
+        lbl.style.cssText = "color:var(--text-dim);";
+        lbl.textContent = f.label;
+        const val = document.createElement("span");
+        val.style.cssText = "color:var(--text-bright);text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;";
+        val.textContent = f.value;
+        row.appendChild(lbl);
+        row.appendChild(val);
+        container.appendChild(row);
+      }
+    },
+  };
 }
 
 function handlePopupSearch(): void {

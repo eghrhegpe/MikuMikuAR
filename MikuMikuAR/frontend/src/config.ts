@@ -21,6 +21,16 @@ export type ModelInstance = {
     vmdPath: string | null;
     animationDuration: number;
     kind: ModelKind;
+    /** Visibility state: true = visible, false = hidden */
+    visible: boolean;
+    /** Opacity 0..1, 1.0 = fully opaque */
+    opacity: number;
+    /** Wireframe rendering mode */
+    wireframe: boolean;
+    /** Uniform scale factor, 1.0 = original size */
+    scaling: number;
+    /** Y-axis rotation in radians */
+    rotationY: number;
 };
 
 export type LibraryModel = {

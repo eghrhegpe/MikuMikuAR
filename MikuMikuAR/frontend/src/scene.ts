@@ -202,6 +202,8 @@ export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<
                 id, name: displayName, filePath, port, modelDir,
                 meshes, vmdData: null, vmdName: "", vmdPath: null,
                 animationDuration: 0, kind: "stage",
+                visible: true, opacity: 1.0, wireframe: false,
+                scaling: 1.0, rotationY: 0,
             };
             modelRegistry.set(id, inst);
             setFocusedModelId(id);
@@ -225,6 +227,8 @@ export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<
             id, name: displayName, filePath, port, modelDir,
             meshes, mmdModel: wasmModel, vmdData: null, vmdName: "", vmdPath: null,
             animationDuration: 0, kind: "actor",
+            visible: true, opacity: 1.0, wireframe: false,
+            scaling: 1.0, rotationY: 0,
         };
         modelRegistry.set(id, inst);
         setFocusedModelId(id);
@@ -302,7 +306,7 @@ export async function loadVMDMotion(data: ArrayBuffer, name: string, targetModel
     }
 }
 
-export async function loadVMDFromPath(path: string): Promise<void> {
+export async function loadVMDFromPath(path: string, targetModelId?: string): Promise<void> {
     if (isLoadingVmd) return;
     setIsLoadingVmd(true);
     try {
@@ -312,9 +316,9 @@ export async function loadVMDFromPath(path: string): Promise<void> {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const vmdData = await resp.arrayBuffer();
 
-        if (mmdRuntime && focusedMmdModel()) {
-            await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ""));
-            const foc = focusedModel();
+        if (mmdRuntime && (targetModelId || focusedMmdModel())) {
+            await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ""), targetModelId);
+            const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
             if (foc) foc.vmdPath = path;
         }
         else {
@@ -432,7 +436,16 @@ export interface SceneFile {
         vmdPath: string | null;
         vmdLibraryRef?: string; // portable library identifier for VMD
         vmdName: string;
+        // Transform fields
         positionX: number;
+        positionY?: number;
+        positionZ?: number;
+        scaling?: number;
+        rotationY?: number;
+        // Visibility fields
+        visible?: boolean;
+        opacity?: number;
+        wireframe?: boolean;
     }>;
     camera: CameraState;
     lights: LightState;
@@ -448,6 +461,13 @@ export function serializeScene(): SceneFile {
         vmdLibraryRef: inst.vmdPath ? (computeLibraryRef(inst.vmdPath) || undefined) : undefined,
         vmdName: inst.vmdName,
         positionX: inst.meshes[0]?.position.x ?? 0,
+        positionY: inst.meshes[0]?.position.y ?? 0,
+        positionZ: inst.meshes[0]?.position.z ?? 0,
+        scaling: inst.scaling,
+        rotationY: inst.rotationY,
+        visible: inst.visible,
+        opacity: inst.opacity,
+        wireframe: inst.wireframe,
     }));
     return {
         version: 1,
@@ -469,7 +489,29 @@ export async function deserializeScene(data: SceneFile): Promise<void> {
             await loadPMXFile(resolvedPath, m.kind === "stage");
             const inst = focusedModel();
             if (inst && inst.meshes[0]) {
-                inst.meshes[0].position.x = m.positionX;
+                inst.meshes[0].position.x = m.positionX ?? 0;
+                inst.meshes[0].position.y = m.positionY ?? 0;
+                inst.meshes[0].position.z = m.positionZ ?? 0;
+                // Apply scaling and rotation (with defaults for legacy scenes)
+                if (m.scaling !== undefined) { inst.scaling = m.scaling; inst.meshes[0].scaling.setAll(m.scaling); }
+                if (m.rotationY !== undefined) { inst.rotationY = m.rotationY; inst.meshes[0].rotation.y = m.rotationY; }
+                // Apply visibility (with defaults)
+                inst.visible = m.visible ?? true;
+                inst.opacity = m.opacity ?? 1.0;
+                inst.wireframe = m.wireframe ?? false;
+                if (inst.visible === false) {
+                    for (const mesh of inst.meshes) mesh.setEnabled(false);
+                }
+                if (inst.opacity < 1.0 || inst.wireframe) {
+                    for (const mesh of inst.meshes) {
+                        if (mesh.material) {
+                            mesh.material.alpha = inst.opacity;
+                            if (mesh.material instanceof StandardMaterial) {
+                                mesh.material.wireframe = inst.wireframe;
+                            }
+                        }
+                    }
+                }
             }
             if (m.vmdPath) {
                 const resolvedVmdPath = (m.vmdLibraryRef ? resolveLibraryRef(m.vmdLibraryRef) : null) || m.vmdPath;
@@ -482,6 +524,111 @@ export async function deserializeScene(data: SceneFile): Promise<void> {
     // Restore camera + lights
     if (data.camera) setCameraState(data.camera);
     if (data.lights) setLightState(data.lights);
+}
+
+// ======== Model Instance Manipulation Helpers ========
+
+/** Apply the current visibility, opacity, and wireframe state of a ModelInstance to its meshes. */
+function syncModelVisibility(inst: ModelInstance): void {
+    for (const m of inst.meshes) {
+        m.setEnabled(inst.visible);
+        if (m.material) {
+            m.material.alpha = inst.opacity;
+            if (m.material instanceof StandardMaterial) {
+                m.material.wireframe = inst.wireframe;
+            }
+        }
+    }
+}
+
+/** Apply the current scaling and rotation state of a ModelInstance to its root mesh. */
+function syncModelTransform(inst: ModelInstance): void {
+    if (inst.meshes.length > 0) {
+        const root = inst.meshes[0];
+        root.scaling.setAll(inst.scaling);
+        root.rotation.y = inst.rotationY;
+    }
+}
+
+/** Set visibility of a model (true = visible, false = hidden). */
+export function setModelVisibility(id: string, visible: boolean): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    inst.visible = visible;
+    syncModelVisibility(inst);
+    triggerAutoSave();
+}
+
+/** Set opacity (0..1) of a model. */
+export function setModelOpacity(id: string, opacity: number): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    inst.opacity = Math.max(0, Math.min(1, opacity));
+    syncModelVisibility(inst);
+    triggerAutoSave();
+}
+
+/** Toggle wireframe rendering on a model. */
+export function setModelWireframe(id: string, wireframe: boolean): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    inst.wireframe = wireframe;
+    syncModelVisibility(inst);
+    triggerAutoSave();
+}
+
+/** Set uniform scale for a model (1.0 = original size). */
+export function setModelScaling(id: string, scaling: number): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    inst.scaling = Math.max(0.01, scaling);
+    syncModelTransform(inst);
+    triggerAutoSave();
+}
+
+/** Set Y-axis rotation for a model (radians). */
+export function setModelRotationY(id: string, rotationY: number): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    inst.rotationY = rotationY;
+    syncModelTransform(inst);
+    triggerAutoSave();
+}
+
+/** Set position (x, y, z) for a model. */
+export function setModelPosition(id: string, x: number, y: number, z: number): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    if (inst.meshes.length > 0) {
+        inst.meshes[0].position.set(x, y, z);
+    }
+    triggerAutoSave();
+}
+
+/** Get current position of a model as [x, y, z]. */
+export function getModelPosition(id: string): [number, number, number] {
+    const inst = modelRegistry.get(id);
+    if (!inst || inst.meshes.length === 0) return [0, 0, 0];
+    const p = inst.meshes[0].position;
+    return [p.x, p.y, p.z];
+}
+
+/** Reset all transform/visibility properties to defaults. */
+export function resetModelTransform(id: string): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    inst.visible = true;
+    inst.opacity = 1.0;
+    inst.wireframe = false;
+    inst.scaling = 1.0;
+    inst.rotationY = 0;
+    if (inst.meshes.length > 0) {
+        inst.meshes[0].position.set(0, 0, 0);
+    }
+    syncModelVisibility(inst);
+    syncModelTransform(inst);
+    arrangeModels();
+    triggerAutoSave();
 }
 
 // ======== Auto-save debounce ========

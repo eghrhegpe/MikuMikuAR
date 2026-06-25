@@ -1271,13 +1271,12 @@ func (a *App) StopFileServer(dirPath string) {
 
 // ======== Safe Serving (Privacy Isolation) ========
 
-// isolateDir copies the PMX file and its immediate sibling subdirectories
-// (textures/, tex/, sp/, toon/) to a temp directory. This prevents the HTTP
-// file server from indexing the entire parent directory when serving files
-// from outside the library root (e.g. Downloads).
+// isolateDir copies the PMX file and ALL its sibling files/subdirectories
+// to a temp directory. Uses a hash of the source path to prevent collisions.
 func isolateDir(filePath string) (string, error) {
 	srcDir := filepath.Dir(filePath)
-	dstDir := filepath.Join(os.TempDir(), "MikuMikuAR", "serve", filepath.Base(srcDir))
+	hash := sha256Hex(srcDir)[:12]
+	dstDir := filepath.Join(os.TempDir(), "MikuMikuAR", "serve", hash)
 
 	// Remove previous stale copy
 	os.RemoveAll(dstDir)
@@ -1288,14 +1287,19 @@ func isolateDir(filePath string) (string, error) {
 		return srcDir, err // fall back to original if copy fails
 	}
 
-	// Copy immediate subdirectories (textures/, tex/, sp/, toon/)
+	// Copy ALL sibling files and subdirectories (not just dirs — many models
+	// have textures like face.bmp sitting next to the .pmx file)
 	entries, err := os.ReadDir(srcDir)
 	if err != nil {
 		return dstDir, nil
 	}
 	for _, e := range entries {
+		src := filepath.Join(srcDir, e.Name())
+		dst := filepath.Join(dstDir, e.Name())
 		if e.IsDir() {
-			copyDir(filepath.Join(srcDir, e.Name()), filepath.Join(dstDir, e.Name()))
+			copyDir(src, dst)
+		} else if e.Name() != baseName {
+			copyFile(src, dst)
 		}
 	}
 	return dstDir, nil
@@ -1305,17 +1309,24 @@ func copyFile(src, dst string) error {
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 		return err
 	}
-	data, err := os.ReadFile(src)
+	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(dst, data, 0644)
+	defer in.Close()
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, in)
+	return err
 }
 
 func copyDir(src, dst string) error {
 	return filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil // skip inaccessible
+			return nil
 		}
 		rel, _ := filepath.Rel(src, path)
 		target := filepath.Join(dst, rel)
@@ -1330,20 +1341,43 @@ func copyDir(src, dst string) error {
 	})
 }
 
-// IsolateModelDir ensures the model file is served from a safe directory.
-// For files inside the library root, returns the original directory unchanged.
-// For external files, copies PMX + sibling subdirs to a temp directory.
-func (a *App) IsolateModelDir(filePath string) (string, error) {
-	cfg, _ := a.GetConfig()
-	srcDir := filepath.Dir(filePath)
+// isSafePath checks whether a file path is inside any of the trusted directories
+// (library root + external paths). Uses "/"-boundary-aware prefix matching to
+// prevent path traversal (e.g. C:/ModelsSecret not matching C:/Models).
+func (a *App) isSafePath(filePath string) bool {
+	slash := filepath.ToSlash(filePath)
 
-	// Files inside the library root are safe to serve from their original location
-	if cfg.LibraryRoot != "" {
-		if strings.HasPrefix(filepath.ToSlash(filePath), filepath.ToSlash(cfg.LibraryRoot)) {
-			return srcDir, nil
+	for _, root := range a.trustedRoots() {
+		rootSlash := strings.TrimRight(filepath.ToSlash(root), "/") + "/"
+		if strings.HasPrefix(slash, rootSlash) {
+			return true
 		}
 	}
+	return false
+}
 
+// trustedRoots returns all directory paths that are safe to serve from.
+func (a *App) trustedRoots() []string {
+	cfg, _ := a.GetConfig()
+	roots := make([]string, 0, 1+len(cfg.ExternalPaths))
+	if cfg.LibraryRoot != "" {
+		roots = append(roots, cfg.LibraryRoot)
+	}
+	for _, ep := range cfg.ExternalPaths {
+		if ep.Path != "" {
+			roots = append(roots, ep.Path)
+		}
+	}
+	return roots
+}
+
+// IsolateModelDir ensures the model file is served from a safe directory.
+// For files inside trusted roots, returns the original directory unchanged.
+// For external files, copies PMX + all siblings to a temp directory.
+func (a *App) IsolateModelDir(filePath string) (string, error) {
+	if a.isSafePath(filePath) {
+		return filepath.Dir(filePath), nil
+	}
 	return isolateDir(filePath)
 }
 
