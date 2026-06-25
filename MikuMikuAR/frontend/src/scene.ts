@@ -28,7 +28,7 @@ import "@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 
-import { SaveThumbnail, SaveSceneFile, LoadSceneFile, SaveLastScene, LoadLastScene, SelectSceneSaveFile, SelectSceneOpenFile } from "../wailsjs/go/main/App";
+import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../wailsjs/go/main/App";
 import { initCameraSystem, autoFrame, getCameraState, setCameraState } from "./camera";
 import type { CameraState } from "./camera";
 import {
@@ -239,7 +239,6 @@ export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<
         }
 
         focusModel(id);
-        dom.vmdNotify.style.display = "none";
         setStatus(appliedVmd ? `✓ ${displayName} + ${appliedVmd}` : `✓ ${displayName}`, true);
         arrangeModels();
         // Auto-capture thumbnail for future popup display
@@ -258,7 +257,6 @@ export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<
 export async function loadVMDMotion(data: ArrayBuffer, name: string, targetModelId?: string): Promise<void> {
     if (!mmdRuntime) {
         setPendingVmd({ data, name });
-        dom.vmdNotify.style.display = "block";
         setStatus("VMD 已缓存，等待模型加载", false);
         return;
     }
@@ -298,8 +296,6 @@ export async function loadVMDMotion(data: ArrayBuffer, name: string, targetModel
             setIsPlaying(true);
         }
         setStatus(`✓ VMD: ${name}`, true);
-        dom.vmdNotify.style.display = "none";
-        if (targetId === focusedModelId) renderScenePanel();
     } catch (err) {
         console.error("VMD load failed:", err);
         setStatus("✗ VMD 加载失败", false);
@@ -323,7 +319,6 @@ export async function loadVMDFromPath(path: string): Promise<void> {
         }
         else {
             setPendingVmd({ data: vmdData, name: vmdName.replace(/\.vmd$/i, "") });
-            dom.vmdNotify.style.display = "block";
             setStatus("VMD 已缓存，加载模型后自动应用", false);
         }
     } catch (err) {
@@ -369,7 +364,7 @@ export function removeFocusedModel(): void {
 export function focusModel(id: string): void {
     setFocusedModelId(id);
     const inst = modelRegistry.get(id);
-    if (!inst) { renderScenePanel(); return; }
+    if (!inst) { return; }
     // Auto-frame camera
     const min = new Vector3(Infinity, Infinity, Infinity);
     const max = new Vector3(-Infinity, -Infinity, -Infinity);
@@ -384,7 +379,6 @@ export function focusModel(id: string): void {
     const extent = Math.max(size.x, size.y, size.z);
     autoFrame(center, extent);
     updatePlaybackUI();
-    renderScenePanel();
 }
 
 export function arrangeModels(): void {
@@ -394,7 +388,6 @@ export function arrangeModels(): void {
         const offsetX = (i - (models.length - 1) / 2) * spacing;
         if (inst.meshes.length > 0) inst.meshes[0].position.x = offsetX;
     });
-    renderScenePanel();
     triggerAutoSave();
 }
 
@@ -413,36 +406,6 @@ export function updatePlaybackUI(): void {
     if (duration > 0) {
         const pct = (mmdRuntime.currentTime / duration) * 100;
         dom.seekProgress.style.width = `${Math.min(pct, 100)}%`;
-    }
-}
-
-export function renderScenePanel(): void {
-    if (modelRegistry.size === 0) {
-        dom.scenePanel.style.display = "none";
-        return;
-    }
-    dom.scenePanel.style.display = "flex";
-    dom.sceneCount.textContent = String(modelRegistry.size);
-    dom.sceneList.innerHTML = "";
-    for (const [id, inst] of modelRegistry) {
-        const row = document.createElement("div");
-        row.className = "scene-row" + (id === focusedModelId ? " focused" : "");
-        const icon = inst.kind === "stage" ? "🏛️" : "🎭";
-        row.innerHTML = `
-            <span class="sr-icon">${icon}</span>
-            <div class="sr-info">
-                <div class="sr-name">${escapeHtml(inst.name)}</div>
-                <div class="sr-vmd">${inst.vmdName ? `💃 ${escapeHtml(inst.vmdName)}` : inst.kind === "stage" ? "场景" : ""}</div>
-            </div>
-            <button class="sr-del">✕</button>
-        `;
-        row.addEventListener("click", (e) => {
-            if ((e.target as HTMLElement).classList.contains("sr-del")) return;
-            focusModel(id);
-        });
-        const delBtn = row.querySelector(".sr-del") as HTMLButtonElement;
-        delBtn.addEventListener("click", (e) => { e.stopPropagation(); removeModel(id); });
-        dom.sceneList.appendChild(row);
     }
 }
 
@@ -537,37 +500,6 @@ export function triggerAutoSave(): void {
 }
 
 // ======== Init Save/Load UI ========
-export function initSceneSaveLoad(): void {
-    // Save button
-    dom.btnSaveScene.addEventListener("click", async () => {
-        try {
-            const path = await SelectSceneSaveFile();
-            if (!path) return;
-            const json = JSON.stringify(serializeScene(), null, 2);
-            await SaveSceneFile(json, path);
-            setStatus("✓ 场景已保存", true);
-        } catch (err) {
-            setStatus("✗ 保存失败", false);
-            console.error("Save scene error:", err);
-        }
-    });
-
-    // Load button
-    dom.btnLoadScene.addEventListener("click", async () => {
-        try {
-            const path = await SelectSceneOpenFile();
-            if (!path) return;
-            const json = await LoadSceneFile(path);
-            await deserializeScene(JSON.parse(json));
-            setStatus("✓ 场景已加载", true);
-        } catch (err) {
-            setStatus("✗ 加载失败", false);
-            console.error("Load scene error:", err);
-        }
-    });
-
-}
-
 // ======== Auto-restore ========
 export async function tryRestoreLastScene(): Promise<void> {
     try {

@@ -31,7 +31,7 @@ func TestWriteConfig(t *testing.T) {
 	}
 
 	got := string(data)
-	want := `{"library_root":"/fake/root","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":""}`
+	want := `{"library_root":"/fake/root","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false}`
 	if got != want {
 		t.Errorf("config.json content = %q, want %q", got, want)
 	}
@@ -76,7 +76,7 @@ func TestWriteConfig_OverwriteExisting(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := string(data); got != `{"library_root":"/new","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":""}` {
+	if got := string(data); got != `{"library_root":"/new","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false}` {
 		t.Errorf("after overwrite = %q, want new config", got)
 	}
 }

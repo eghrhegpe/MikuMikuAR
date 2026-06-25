@@ -19,6 +19,8 @@ export namespace main {
 	    external_paths: ExternalPath[];
 	    blender_path: string;
 	    display_name_priority: string;
+	    download_watch_dir: string;
+	    download_auto_import: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -30,6 +32,8 @@ export namespace main {
 	        this.external_paths = this.convertValues(source["external_paths"], ExternalPath);
 	        this.blender_path = source["blender_path"];
 	        this.display_name_priority = source["display_name_priority"];
+	        this.download_watch_dir = source["download_watch_dir"];
+	        this.download_auto_import = source["download_auto_import"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

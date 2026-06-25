@@ -21,6 +21,8 @@ export class MenuStack {
     extraButtonFactory?: () => HTMLElement[];
     /** Called after each render (for thumbnail loading etc.). */
     onAfterRender?: (level: PopupLevel, stack: MenuStack) => void;
+    /** Called when the back/close button is clicked at root level. */
+    onClose?: () => void;
 
     /** How many pixels each successive layer is offset (for card-stack effect). */
     offsetX = 4;
@@ -34,6 +36,7 @@ export class MenuStack {
         onHover?: (row: PopupRow, entering: boolean) => void;
         extraButtonFactory?: () => HTMLElement[];
         onAfterRender?: (level: PopupLevel, stack: MenuStack) => void;
+        onClose?: () => void;
     }) {
         this.parentEl = opts.parentEl;
         this.layerClass = opts.layerClass || "popup-layer";
@@ -42,6 +45,7 @@ export class MenuStack {
         this.onHover = opts.onHover;
         this.extraButtonFactory = opts.extraButtonFactory;
         this.onAfterRender = opts.onAfterRender;
+        this.onClose = opts.onClose;
     }
 
     get currentLevel(): PopupLevel | undefined {
@@ -126,21 +130,25 @@ export class MenuStack {
             prev.style.display = "none";
         }
 
-        // Breadcrumb — show back arrow + current level name
+        // Breadcrumb — show back/close button + current level name
         const breadcrumb = document.createElement("div");
         breadcrumb.className = "popup-header";
+        const back = document.createElement("span");
+        back.className = "crumb back";
         if (this.levels.length > 1) {
-            const back = document.createElement("span");
-            back.className = "crumb back";
             back.textContent = "←";
             const stack = this;
             back.addEventListener("click", () => stack.pop());
-            breadcrumb.appendChild(back);
-            const sep = document.createElement("span");
-            sep.className = "sep";
-            sep.textContent = " ";
-            breadcrumb.appendChild(sep);
+        } else {
+            back.textContent = "✕";
+            const onClose = this.onClose;
+            back.addEventListener("click", () => onClose?.());
         }
+        breadcrumb.appendChild(back);
+        const sep = document.createElement("span");
+        sep.className = "sep";
+        sep.textContent = " ";
+        breadcrumb.appendChild(sep);
         const current = document.createElement("span");
         current.className = "crumb current";
         current.textContent = this.currentLevel?.label || "";

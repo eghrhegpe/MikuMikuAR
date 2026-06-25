@@ -10,11 +10,7 @@ export function ClearExtractCache():Promise<void>;
 
 export function ExtractZip(arg1:string,arg2:string):Promise<main.ExtractResult>;
 
-export function FileExists(arg1:string):Promise<boolean>;
-
 export function GetConfig():Promise<main.Config>;
-
-export function GetFileDir(arg1:string):Promise<string>;
 
 export function GetLibraryIndex():Promise<Array<main.ModelEntry>>;
 
@@ -27,6 +23,8 @@ export function GetThumbnail(arg1:string):Promise<string>;
 export function GetThumbnailBatch(arg1:Array<string>):Promise<Record<string, string>>;
 
 export function ImportZip(arg1:string):Promise<main.ExtractResult>;
+
+export function IsolateModelDir(arg1:string):Promise<string>;
 
 export function LoadLastScene():Promise<string>;
 

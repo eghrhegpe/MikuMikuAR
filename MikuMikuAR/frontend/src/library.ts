@@ -56,11 +56,7 @@ import { MenuStack } from "./menu";
 const makeModelStack = (): MenuStack => {
   return new MenuStack({
     parentEl: dom.modelPopup,
-    extraButtonFactory: () => {
-      const closeBtn = dom.btnClosePopup.cloneNode(true) as HTMLButtonElement;
-      closeBtn.addEventListener("click", hidePopup);
-      return [closeBtn];
-    },
+    onClose: hidePopup,
     onFolderEnter: (row) => {
       if (row.target === "models:browse") {
         if (!libraryRoot) {
@@ -139,13 +135,7 @@ const makeModelStack = (): MenuStack => {
 const makeMotionStack = (): MenuStack => {
   return new MenuStack({
     parentEl: dom.motionPopup,
-    extraButtonFactory: () => {
-      const closeBtn = document.createElement("button");
-      closeBtn.className = "close-btn";
-      closeBtn.textContent = "✕";
-      closeBtn.addEventListener("click", hideMotionPopup);
-      return [closeBtn];
-    },
+    onClose: hideMotionPopup,
     onFolderEnter: (row) => {
       if (row.target === "motion:browse") {
         return buildLevel(libraryRoot, "动作库", (m) => m.format === "vmd");
@@ -209,13 +199,6 @@ export function showPopup(): void {
       label: "加载模型",
       icon: "folder",
       target: "models:browse",
-    },
-    {
-      kind: "folder",
-      label: "动作倍率",
-      icon: "timer",
-      target: "reserved:speed",
-      sublabel: "即将推出",
     },
     {
       kind: "folder",

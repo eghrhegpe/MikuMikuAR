@@ -18,16 +18,8 @@ export function ExtractZip(arg1, arg2) {
   return window['go']['main']['App']['ExtractZip'](arg1, arg2);
 }
 
-export function FileExists(arg1) {
-  return window['go']['main']['App']['FileExists'](arg1);
-}
-
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
-}
-
-export function GetFileDir(arg1) {
-  return window['go']['main']['App']['GetFileDir'](arg1);
 }
 
 export function GetLibraryIndex() {
@@ -52,6 +44,10 @@ export function GetThumbnailBatch(arg1) {
 
 export function ImportZip(arg1) {
   return window['go']['main']['App']['ImportZip'](arg1);
+}
+
+export function IsolateModelDir(arg1) {
+  return window['go']['main']['App']['IsolateModelDir'](arg1);
 }
 
 export function LoadLastScene() {

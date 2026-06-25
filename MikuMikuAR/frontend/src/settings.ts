@@ -126,11 +126,7 @@ export async function showSettings(): Promise<void> {
     if (!settingsStack) {
         settingsStack = new MenuStack({
             parentEl: dom.settingsOverlay,
-            extraButtonFactory: () => {
-                const closeBtn = dom.btnCloseSettings.cloneNode(true) as HTMLButtonElement;
-                closeBtn.addEventListener("click", () => dom.settingsOverlay.classList.remove("visible"));
-                return [closeBtn];
-            },
+            onClose: () => dom.settingsOverlay.classList.remove("visible"),
             onItemClick: (row) => handleSettingsAction(row),
             onFolderEnter: (row) => {
                 switch (row.target) {

@@ -4,7 +4,7 @@
 import "./app.css";
 
 import { dom, setStatus, isPlaying, setIsPlaying, autoLoop, setAutoLoop, seekDragging, setSeekDragging, mmdRuntime, closeAllOverlays, showHint, hideHint, initHints } from "./config";
-import { initScene, engine, scene, focusedMmdModel, focusedModel, updatePlaybackUI, seekFromEvent, initSceneSaveLoad, tryRestoreLastScene } from "./scene";
+import { initScene, engine, scene, focusedMmdModel, focusedModel, updatePlaybackUI, seekFromEvent, tryRestoreLastScene } from "./scene";
 import { freeflyInput, getCameraMode } from "./camera";
 import { initLibrary, togglePopup, showMotionPopup } from "./library";
 import { showSettings } from "./settings";
@@ -160,7 +160,6 @@ async function init(): Promise<void> {
     try {
         setStatus("正在初始化...", false);
         await initScene();
-        initSceneSaveLoad();
         initDropHandler();
         console.log("MikuMikuAR initialized");
         initLibrary().catch(err => console.warn("Library init:", err));

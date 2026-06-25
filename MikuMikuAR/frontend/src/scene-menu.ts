@@ -6,7 +6,8 @@ import {
 } from "./config";
 import { MenuStack } from "./menu";
 import { switchCameraMode, getCameraMode } from "./camera";
-import { getLightState, setLightState, triggerAutoSave } from "./scene";
+import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene } from "./scene";
+import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile } from "../wailsjs/go/main/App";
 
 // ======== Scene Menu (MenuStack) ========
 
@@ -19,6 +20,8 @@ function buildSceneRoot(): PopupLevel {
         items: [
             { kind: "folder", label: "相机模式", icon: "camera", target: "scene:camera" },
             { kind: "folder", label: "灯光", icon: "sun", target: "scene:light" },
+            { kind: "action", label: "保存场景", icon: "save", target: "scene:save" },
+            { kind: "action", label: "加载场景", icon: "upload", target: "scene:load" },
         ],
     };
 }
@@ -93,6 +96,39 @@ function handleSceneAction(row: PopupRow): void {
             oneshot: "镜头预设", concert: "演唱会",
         };
         setStatus(`📷 ${labels[mode] || mode}`, true);
+        return;
+    }
+    // Save scene
+    if (row.target === "scene:save") {
+        (async () => {
+            try {
+                const path = await SelectSceneSaveFile();
+                if (!path) return;
+                const json = JSON.stringify(serializeScene(), null, 2);
+                await SaveSceneFile(json, path);
+                setStatus("✓ 场景已保存", true);
+            } catch (err) {
+                setStatus("✗ 保存失败", false);
+                console.error("Save scene error:", err);
+            }
+        })();
+        return;
+    }
+    // Load scene
+    if (row.target === "scene:load") {
+        (async () => {
+            try {
+                const path = await SelectSceneOpenFile();
+                if (!path) return;
+                const json = await LoadSceneFile(path);
+                await deserializeScene(JSON.parse(json));
+                setStatus("✓ 场景已加载", true);
+            } catch (err) {
+                setStatus("✗ 加载失败", false);
+                console.error("Load scene error:", err);
+            }
+        })();
+        return;
     }
 }
 
@@ -103,13 +139,7 @@ export async function showSceneMenu(): Promise<void> {
     if (!sceneStack) {
         sceneStack = new MenuStack({
             parentEl: dom.sceneOverlay,
-            extraButtonFactory: () => {
-                const closeBtn = document.createElement("button");
-                closeBtn.className = "close-btn";
-                closeBtn.textContent = "✕";
-                closeBtn.addEventListener("click", () => dom.sceneOverlay.classList.remove("visible"));
-                return [closeBtn];
-            },
+            onClose: () => dom.sceneOverlay.classList.remove("visible"),
             onItemClick: (row) => handleSceneAction(row),
             onFolderEnter: (row) => {
                 switch (row.target) {

@@ -4,7 +4,7 @@
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 
-Write-Host "=== 1/3 契约测试 ===" -ForegroundColor Cyan
+Write-Host "=== 1/4 契约测试 ===" -ForegroundColor Cyan
 Push-Location $root
 try {
     python3 tests/test_config_syntax.py
@@ -12,7 +12,15 @@ try {
     Write-Host "契约测试通过" -ForegroundColor Green
 } finally { Pop-Location }
 
-Write-Host "`n=== 2/3 Go 编译 ===" -ForegroundColor Cyan
+Write-Host "`n=== 2/4 Go 测试 ===" -ForegroundColor Cyan
+Push-Location $root
+try {
+    go test ./...
+    if ($LASTEXITCODE -ne 0) { throw "Go 测试失败" }
+    Write-Host "Go 测试通过" -ForegroundColor Green
+} finally { Pop-Location }
+
+Write-Host "`n=== 3/4 Go 编译 ===" -ForegroundColor Cyan
 Push-Location $root
 try {
     go build .
@@ -20,7 +28,7 @@ try {
     Write-Host "Go 编译通过" -ForegroundColor Green
 } finally { Pop-Location }
 
-Write-Host "`n=== 3/3 前端构建 ===" -ForegroundColor Cyan
+Write-Host "`n=== 4/4 前端构建 ===" -ForegroundColor Cyan
 Push-Location (Join-Path $root "frontend")
 try {
     npm run build

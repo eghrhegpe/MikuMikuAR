@@ -96,7 +96,7 @@ func (a *App) SelectVMDMotion() (string, error) {
 // ModelEntry represents a model, motion, or zip entry found during library scan.
 type ModelEntry struct {
 	Dir       string `json:"dir"`        // Model directory (absolute); for zip entries, the zip's directory
-	PMXPath   string `json:"pmx_path"`   // .pmx/.vmd absolute path; for zip entries, the zip path
+	PMXPath   string `json:"file_path"`   // .pmx/.vmd absolute path; for zip entries, the zip path
 	NameJp    string `json:"name_jp"`    // PMX header: local name
 	NameEn    string `json:"name_en"`    // PMX header: universal name; for VMD: basename
 	Comment   string `json:"comment"`    // PMX header: local comment (truncated)
@@ -328,7 +328,7 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 		case strings.HasSuffix(lowerName, ".pmx"):
 			m := ModelEntry{
 				Dir:       filepath.Dir(walkPath),
-				FilePath:   walkPath,
+				PMXPath:   walkPath,
 				Format:    "pmx",
 				Container: "file",
 				Category:  category,
@@ -351,7 +351,7 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 		case strings.HasSuffix(lowerName, ".vmd"):
 			m := ModelEntry{
 				Dir:       filepath.Dir(walkPath),
-				FilePath:   walkPath,
+				PMXPath:   walkPath,
 				Format:    "vmd",
 				Container: "file",
 				NameEn:    cleanModelName(strings.TrimSuffix(d.Name(), ".vmd")),
@@ -391,7 +391,7 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 				zipBase := strings.TrimSuffix(filepath.Base(walkPath), ".zip")
 				m := ModelEntry{
 					Dir:       filepath.ToSlash(filepath.Dir(walkPath)) + "/" + zipBase,
-					FilePath:   walkPath,
+					PMXPath:   walkPath,
 					Format:    innerFormat,
 					Container: "zip",
 					ZipInner:  entryName,
@@ -1254,7 +1254,9 @@ func (a *App) StartFileServer(dirPath string) (int, error) {
 	return port, nil
 }
 
-// StopFileServer shuts down the HTTP server for the given directory.
+// StopFileServer shuts down the HTTP file server for the given directory.
+// Maintained for future cleanup use (e.g., scene teardown, directory unmount).
+// Currently unused by the frontend — HTTP servers run until app exit.
 func (a *App) StopFileServer(dirPath string) {
 	a.httpSrvMu.Lock()
 	defer a.httpSrvMu.Unlock()
@@ -1267,7 +1269,85 @@ func (a *App) StopFileServer(dirPath string) {
 	}
 }
 
-// ======== Thumbnail Cache (Direction 3) ========
+// ======== Safe Serving (Privacy Isolation) ========
+
+// isolateDir copies the PMX file and its immediate sibling subdirectories
+// (textures/, tex/, sp/, toon/) to a temp directory. This prevents the HTTP
+// file server from indexing the entire parent directory when serving files
+// from outside the library root (e.g. Downloads).
+func isolateDir(filePath string) (string, error) {
+	srcDir := filepath.Dir(filePath)
+	dstDir := filepath.Join(os.TempDir(), "MikuMikuAR", "serve", filepath.Base(srcDir))
+
+	// Remove previous stale copy
+	os.RemoveAll(dstDir)
+
+	// Copy the PMX/VMD file itself
+	baseName := filepath.Base(filePath)
+	if err := copyFile(filePath, filepath.Join(dstDir, baseName)); err != nil {
+		return srcDir, err // fall back to original if copy fails
+	}
+
+	// Copy immediate subdirectories (textures/, tex/, sp/, toon/)
+	entries, err := os.ReadDir(srcDir)
+	if err != nil {
+		return dstDir, nil
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			copyDir(filepath.Join(srcDir, e.Name()), filepath.Join(dstDir, e.Name()))
+		}
+	}
+	return dstDir, nil
+}
+
+func copyFile(src, dst string) error {
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
+	}
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0644)
+}
+
+func copyDir(src, dst string) error {
+	return filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil // skip inaccessible
+		}
+		rel, _ := filepath.Rel(src, path)
+		target := filepath.Join(dst, rel)
+		if d.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+		return os.WriteFile(target, data, 0644)
+	})
+}
+
+// IsolateModelDir ensures the model file is served from a safe directory.
+// For files inside the library root, returns the original directory unchanged.
+// For external files, copies PMX + sibling subdirs to a temp directory.
+func (a *App) IsolateModelDir(filePath string) (string, error) {
+	cfg, _ := a.GetConfig()
+	srcDir := filepath.Dir(filePath)
+
+	// Files inside the library root are safe to serve from their original location
+	if cfg.LibraryRoot != "" {
+		if strings.HasPrefix(filepath.ToSlash(filePath), filepath.ToSlash(cfg.LibraryRoot)) {
+			return srcDir, nil
+		}
+	}
+
+	return isolateDir(filePath)
+}
+
+// ======== Thumbnail Cache ========
 
 func sha256Hex(s string) string {
 	h := sha256.Sum256([]byte(s))

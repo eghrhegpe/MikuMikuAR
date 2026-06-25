@@ -41,19 +41,8 @@
             <span class="time-display" id="timeDisplay">00:00.00 / 00:00.00</span>
         </div>
 
-        <!-- Scene Panel (loaded models list) -->
-        <div id="scenePanel">
-            <div class="scene-header">
-                <span>场景</span><span id="sceneCount">0</span>
-                <div class="scene-actions">
-                    <button class="scene-btn" id="btnSaveScene">保存场景</button>
-                    <button class="scene-btn" id="btnLoadScene">加载场景</button>
-                </div>
-            </div>
-            <div id="sceneList"></div>
-        </div>
-
         <!-- Current Model Info -->
+        <!-- Model List Popup -->
         <!-- Model List Popup -->
         <div id="modelPopup">
             <div class="popup-header" id="popupBreadcrumb">
@@ -111,11 +100,6 @@
         </div>
 
         <div id="statusBar">点击 📦 打开模型库 · 鼠标拖拽旋转 · 滚轮缩放</div>
-
-        <!-- VMD Cached Notification -->
-        <div id="vmdNotify" style="display:none;position:absolute;bottom:80px;left:50%;transform:translateX(-50%);z-index:200;pointer-events:none;background:rgba(74,108,247,0.15);backdrop-filter:blur(8px);border:1px solid rgba(74,108,247,0.3);border-radius:10px;padding:8px 16px;font-size:12px;color:rgba(255,255,255,0.8);white-space:nowrap;transition:opacity 0.3s;">
-            💃 VMD 已缓存 — 加载任意模型后自动应用
-        </div>
 
         <!-- Drop Overlay -->
         <div id="dropOverlay">
