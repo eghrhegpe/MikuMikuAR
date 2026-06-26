@@ -9,7 +9,7 @@ import { freeflyInput, getCameraMode } from "./camera";
 import { initLibrary, togglePopup, showMotionPopup } from "./library";
 import { showSettings } from "./settings";
 import { ImportZip } from "../wailsjs/go/main/App";
-import { OnFileDrop } from "../wailsjs/runtime/runtime";
+import { OnFileDrop, EventsOn } from "../wailsjs/runtime/runtime";
 import { loadPMXFile, loadVMDFromPath } from "./scene";
 import { refreshLibrary } from "./library";
 import "./scene-menu";
@@ -67,7 +67,7 @@ function triggerNavButton(num: number): void {
     }
 }
 const navButtonLabels: Record<number, string> = {
-    1: "📁 模型库", 2: "💃 动作库", 3: "🌐 下载", 4: "⚙ 设置",
+    1: "模型库", 2: "动作库", 3: "下载", 4: "设置",
 };
 
 // Keyboard shortcuts
@@ -241,4 +241,53 @@ async function handleDropFile(path: string): Promise<void> {
 
 engine.runRenderLoop(() => { scene.render(); });
 window.addEventListener("resize", () => { engine.resize(); });
+
+// ======== Download Watch Notification ========
+let importToastTimer: ReturnType<typeof setTimeout> | null = null;
+
+EventsOn("watch:newfile", (payload: {path: string, name: string, type: string}) => {
+    if (importToastTimer) {
+        clearTimeout(importToastTimer);
+    }
+    const toast = document.getElementById("importToast");
+    if (!toast) return;
+    const nameEl = toast.querySelector(".toast-file");
+    if (nameEl) nameEl.textContent = payload.name || payload.path;
+    toast.classList.add("visible");
+
+    // Wire up import button
+    const importBtn = toast.querySelector(".toast-import-btn") as HTMLButtonElement | null;
+    if (importBtn) {
+        importBtn.onclick = async () => {
+            importBtn.disabled = true;
+            importBtn.textContent = "导入中...";
+            try {
+                const { ImportLocalFile } = await import("../wailsjs/go/main/App");
+                await ImportLocalFile(payload.path);
+                setStatus("✓ 已导入: " + (payload.name || payload.path), true);
+                const { refreshLibrary } = await import("./library");
+                refreshLibrary().catch(console.warn);
+            } catch (err: any) {
+                setStatus("✗ 导入失败: " + (err.message || err), false);
+            }
+            toast.classList.remove("visible");
+            importBtn.disabled = false;
+            importBtn.textContent = "导入";
+        };
+    }
+
+    // Wire up ignore button
+    const ignoreBtn = toast.querySelector(".toast-ignore-btn") as HTMLButtonElement | null;
+    if (ignoreBtn) {
+        ignoreBtn.onclick = () => {
+            toast.classList.remove("visible");
+        };
+    }
+
+    // Auto-hide after 10 seconds
+    importToastTimer = setTimeout(() => {
+        toast.classList.remove("visible");
+    }, 10000);
+});
+
 init().catch(console.error);

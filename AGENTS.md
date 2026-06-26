@@ -102,6 +102,26 @@ docs/
 | **查项目路线图** | `docs/status.md` §「开发路线图」 |
 | **查调研细节** | 先问用户 → 再读 `docs/research/` 对应文件 |
 
+### 1.3 任务触发索引
+
+**按任务关键词自动查表，不需要全读文档，按需 grep + 读段落。**
+
+| 任务关键词 | 优先读 | 其次读 |
+|-----------|--------|--------|
+| MenuStack / 添加菜单项 / 弹窗导航 / `modelStack` | `docs/menu-architecture.md` | `frontend/src/menu.ts` |
+| 前端 UI / CSS / 样式修改 | `docs/menu-architecture.md`（CSS 类说明） | `frontend/src/app.css` |
+| 3D 场景 / 模型加载 / PMX / VMD / 播放 | `docs/architecture.md` §渲染环节 | `frontend/src/scene.ts` |
+| 模型库 / 扫描 / zip 解压 / 缩略图 | `docs/architecture.md` §模型库管理 | `frontend/src/library.ts` |
+| 文件 URL / HTTP 服务器 / 安全隔离 | `docs/architecture.md` §数据通道 | `frontend/src/fileservice.ts` |
+| 相机 / 灯光 / 渲染参数 / 后处理 | `docs/architecture.md` §渲染环节 | `frontend/src/camera.ts` |
+| 配置 / 外部库 / Blender / MMD | `docs/architecture.md` §生态聚合 | `frontend/src/settings.ts` |
+| 场景序列化 / 自动保存 / libraryRef | `docs/architecture.md` §场景序列化 | `frontend/src/scene.ts` |
+| 修复 / Bug / 崩溃 / 不显示 | `docs/troubleshooting.md` | `docs/fix-cycle.md` |
+| Go 后端 / Binding / 文件操作 | `docs/architecture.md` §Go 后端 | `MikuMikuAR/app.go` |
+| 任何新增函数 | `docs/reusables.md`（先查是否已存在） | — |
+
+> `reusables.md` 是写代码前必查的索引表，不是让你全读的。按函数名/场景 grep。 |
+
 > `docs/research/` 是历史调研归档，**默认不读**，除非用户明确说「查一下 research 里关于 X 的结论」。
 
 ---

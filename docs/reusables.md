@@ -4,27 +4,135 @@
 
 ---
 
-## Go（`MikuMikuAR/`）
+## Go Binding 完整函数表（`app.go`）
+
+> Wails 自动生成 `wailsjs/go/main/App.ts` 供前端调用。
+
+### 文件对话框
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `SelectPMXFile` | `() (string, error)` | 选择 PMX 文件 |
+| `SelectVMDMotion` | `() (string, error)` | 选择 VMD 文件 |
+| `SelectDir` | `() (string, error)` | 选择目录 |
+| `SelectExeFile` | `() (string, error)` | 选择可执行文件 |
+| `SelectSceneSaveFile` | `() (string, error)` | 场景保存对话框 |
+| `SelectSceneOpenFile` | `() (string, error)` | 场景打开对话框 |
+
+### 模型库管理
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `ScanModelDir` | `(root string, external []ExternalPath) ([]ModelEntry, error)` | 扫描主库+外部库，返回合并列表 |
+| `GetModelMeta` | `(pmxPath string) (ModelMeta, error)` | 解析单个 PMX Header |
+| `GetModelMetaBatch` | `(paths []string) (map[string]ModelMeta, error)` | 批量解析 PMX Header |
+| `GetLibraryIndex` | `() ([]ModelEntry, error)` | 读取缓存的 index.json |
+| `SetLibraryRoot` | `(root string) error` | 设置主库路径并触发重新扫描 |
+| `AddExternalPath` | `(path string) error` | 添加外部库并重新扫描 |
+| `RemoveExternalPath` | `(path string) error` | 移除外部库并重新扫描 |
+| `RenameExternalPath` | `(path, name string) error` | 重命名外部库显示名 |
+
+### 配置读写
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `GetConfig` | `() (*Config, error)` | 读取配置 |
+| `SetBlenderPath` | `(path string) error` | 保存 Blender 路径 |
+| `SetDisplayNamePriority` | `(priority string) error` | 保存显示名优先级 |
+| `SetDownloadWatchDir` | `(dir string) error` | 设置监听目录 |
+| `SetDownloadAutoImport` | `(auto bool) error` | 设置自动导入 |
+| `SetMMDPath` | `(path string) error` | 保存 MMD 路径 |
+| `AutoDetectMMD` | `() (string, error)` | 自动检测 MMD |
+
+### 收藏与标签
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `ToggleFavorite` | `(libraryRef string) error` | 切换收藏状态 |
+| `GetFavorites` | `() []string` | 获取收藏列表 |
+| `AddTag` | `(libraryRef, tag string) error` | 添加标签 |
+| `RemoveTag` | `(libraryRef, tag string) error` | 移除标签 |
+| `GetTagsByModel` | `(libraryRef string) []string` | 获取模型标签 |
+| `GetAllTags` | `() []string` | 获取所有标签 |
+| `GetModelsByTag` | `(tag string) []string` | 按标签查询模型 |
+
+### 渲染预设
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `SaveRenderPreset` | `(name, params string) error` | 保存渲染预设 |
+| `DeleteRenderPreset` | `(name string) error` | 删除渲染预设 |
+| `GetRenderPresets` | `() []RenderPreset` | 获取所有预设 |
+
+### Zip 处理
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `ExtractZip` | `(zipPath, innerPath string) (*ExtractResult, error)` | 解压 zip 并返回路径 |
+| `ImportZip` | `(zipPath string) (*ExtractResult, error)` | 导入 zip（找首个 PMX） |
+| `ImportLocalFile` | `(path string) (*ExtractResult, error)` | 导入本地文件（自动识别格式） |
+| `CleanOrphanCache` | `() (int, error)` | 清理孤儿缓存 |
+| `ClearExtractCache` | `() error` | 清除所有提取缓存 |
+
+### HTTP 文件服务
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `StartFileServer` | `(dirPath string) (int, error)` | 启动/复用 HTTP 服务器，返回端口 |
+| `StopFileServer` | `(dirPath string)` | 停止指定目录的 HTTP 服务器 |
+| `IsolateModelDir` | `(filePath string) (string, error)` | 安全隔离外部文件到 temp 目录 |
+
+### 缩略图
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `SaveThumbnail` | `(modelPath, base64PNG string) error` | 保存缩略图 |
+| `GetThumbnail` | `(modelPath string) (string, error)` | 读取缩略图（base64） |
+| `GetThumbnailBatch` | `(paths []string) (map[string]string, error)` | 批量读取缩略图 |
+
+### 目录监听
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `StartWatchDir` | `(dir string) error` | 开始监听目录（fsnotify） |
+| `StopWatchDir` | `() error` | 停止监听 |
+| `GetDownloadWatchStatus` | `() string` | 获取监听状态（目录或空字符串） |
+
+### Blender / MMD / 软件
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `OpenInBlender` | `(modelPath string) error` | 在 Blender 中打开模型 |
+| `OpenInMMD` | `(modelPath string) error` | 在 MMD 中打开模型 |
+| `ScanSoftwareDir` | `() ([]SoftwareEntry, error)` | 扫描软件目录 |
+| `LaunchSoftware` | `(path string) error` | 启动软件 |
+| `OpenSoftwareDir` | `() error` | 打开软件目录 |
+
+### 场景序列化
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `SaveSceneFile` | `(jsonStr, path string) error` | 保存场景到文件 |
+| `LoadSceneFile` | `(path string) (string, error)` | 读取场景文件 |
+| `SaveLastScene` | `(jsonStr string) error` | 自动保存上次场景 |
+| `LoadLastScene` | `() (string, error)` | 读取上次场景 |
+
+### Go 内部工具函数（app.go / pmx.go）
 
 | 函数 | 位置 | 签名 | 用途 |
 |------|------|------|------|
-| `ParsePMXHeader` | `pmx.go:20` | `(path string) (*PMXMeta, error)` | 读 PMX 签名/版本/编码/4段元数据；失败返空，非致命 |
-| `decodeUTF16LE` | `pmx.go:91` | `(b []byte) string` | UTF-16LE → string；含 surrogate pair 处理，零依赖 |
-| `decodeUTF16` | `pmx.go:104` | `(u16 []uint16) string` | decodeUTF16LE 的内部委托，也可独立用 |
-| `truncate` | `app.go:734` | `(s string, n int) string` | 截断到 n 个 rune + "…"，rune 安全 |
-| `corsMiddleware` | `app.go:744` | `(next http.Handler) http.Handler` | 注入 `Access-Control-Allow-Origin: *`，Wails WebView 必需 |
-| `basenameFallbackFS` | `app.go:770` | `(root string, logFn func(string, ...interface{})) http.Handler` | HTTP 404 → 按文件名忽略目录/大小写回退；包在 corsMiddleware 内 |
-| `ImportLocalFile` | `app.go:1020` | `(path string) (*ExtractResult, error)` | 本地 zip/pmx/vmd 导入模型库；zip 走 ExtractZip 链路 |
-| `StartWatchDir` | `app.go:1057` | `(dir string) error` | fsnotify 目录监听；自动去重，支持 `.zip/.pmx/.vmd` 后缀过滤 |
-| `StopWatchDir` | `app.go:1087` | `() error` | 停止目录监听；goroutine-safe |
-| `SaveSceneFile` | `app.go:592` | `(jsonStr, path string) error` | 场景 JSON 写入 .mmascene 文件 |
-| `LoadSceneFile` | `app.go:597` | `(path string) (string, error)` | 读取 .mmascene 文件内容 |
-| `SelectSceneSaveFile` | `app.go:604` | `() (string, error)` | 保存场景文件对话框 |
-| `SelectSceneOpenFile` | `app.go:620` | `() (string, error)` | 打开场景文件对话框 |
-| `SaveLastScene` | `app.go:637` | `(jsonStr string) error` | 自动保存场景到 last_scene.json（配置目录） |
-| `LoadLastScene` | `app.go:644` | `() (string, error)` | 读取 last_scene.json |
+| `ParsePMXHeader` | `pmx.go:20` | `(path string) (*PMXMeta, error)` | 读 PMX 签名/版本/编码/4段元数据 |
+| `parsePMXHeaderBytes` | `pmx.go:38` | `(buf []byte) *PMXMeta` | 从 bytes 解析 PMX Header（zip 内条目用） |
+| `decodeUTF16LE` | `pmx.go:95` | `(b []byte) string` | UTF-16LE → string，含 surrogate pair 处理 |
+| `decodeUTF16` | `pmx.go:108` | `(u16 []uint16) string` | `[]uint16` → string |
+| `truncate` | `app.go` | `(s string, n int) string` | 截断到 n 个 rune + "…" |
+| `corsMiddleware` | `app.go` | `(next http.Handler) http.Handler` | 注入 CORS 头 |
+| `basenameFallbackFS` | `app.go` | `(root string, logFn ...) http.Handler` | HTTP 404 → 按文件名回退 |
+| `ensureDir` | `app.go` | `(subDir string, useCache bool) (string, error)` | 确保目录存在 |
 
-## TypeScript（`MikuMikuAR/frontend/src/`）
+---
+
+## TypeScript（`frontend/src/`）
 
 | 函数 | 位置 | 签名 | 用途 |
 |------|------|------|------|

@@ -56,6 +56,10 @@ export type PopupRow = {
     showDetailBtn?: boolean;
     /** Called when the "+" add-model button is clicked. */
     onAddClick?: () => void;
+    /** Called when the "📄" detail button is clicked. If unset, defaults to
+     *  navigating into the folder (onFolderEnter). Set this to override —
+     *  e.g. to focus the model instead of opening its detail submenu. */
+    onDetailClick?: () => void;
 };
 
 export type PopupLevel = {
@@ -72,9 +76,13 @@ export let mmdRuntime: MmdWasmRuntime | null = null;
 export function setMmdRuntime(r: MmdWasmRuntime | null): void { mmdRuntime = r; }
 
 export let modelRegistry = new Map<string, ModelInstance>();
+// [doc:architecture] modelRegistry — 已加载模型的运行时注册表（key=实例ID）
+// ⚠️ 修改时同步: loadPMXFile(新增) / removeModel(删除) / arrangeModels(替换整个Map)
 export function setModelRegistry(m: Map<string, ModelInstance>): void { modelRegistry = m; }
 
 export let focusedModelId: string | null = null;
+// [doc:architecture] focusedModelId — 当前聚焦模型ID（用于键盘/相机/VMD绑定/详情面板）
+// ⚠️ 修改时同步: focusModel(切换) / loadPMXFile(新增后自动) / removeModel(删除后迁移)
 export function setFocusedModelId(id: string | null): void { focusedModelId = id; }
 
 export let currentPort = 0;
@@ -95,6 +103,8 @@ export function setIsLoadingVmd(v: boolean): void { isLoadingVmd = v; }
 export type PendingVmd = { data: ArrayBuffer; name: string };
 export let pendingVmd: PendingVmd | null = null;
 export function setPendingVmd(v: PendingVmd | null): void { pendingVmd = v; }
+
+// [doc:architecture] libraryRef — 可移植库标识符，用于场景序列化
 
 export let seekDragging = false;
 export function setSeekDragging(v: boolean): void { seekDragging = v; }

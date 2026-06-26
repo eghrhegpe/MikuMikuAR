@@ -1,5 +1,19 @@
 export namespace main {
 	
+	export class RenderPreset {
+	    name: string;
+	    params: Record<string, any>;
+	
+	    static createFrom(source: any = {}) {
+	        return new RenderPreset(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.params = source["params"];
+	    }
+	}
 	export class ExternalPath {
 	    path: string;
 	    name: string;
@@ -22,6 +36,9 @@ export namespace main {
 	    download_watch_dir: string;
 	    download_auto_import: boolean;
 	    favorites: string[];
+	    render_presets: RenderPreset[];
+	    mmd_path: string;
+	    tags: Record<string, Array<string>>;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -36,6 +53,9 @@ export namespace main {
 	        this.download_watch_dir = source["download_watch_dir"];
 	        this.download_auto_import = source["download_auto_import"];
 	        this.favorites = source["favorites"];
+	        this.render_presets = this.convertValues(source["render_presets"], RenderPreset);
+	        this.mmd_path = source["mmd_path"];
+	        this.tags = source["tags"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -121,6 +141,23 @@ export namespace main {
 	        this.name_jp = source["name_jp"];
 	        this.name_en = source["name_en"];
 	        this.comment = source["comment"];
+	    }
+	}
+	
+	export class SoftwareEntry {
+	    name: string;
+	    path: string;
+	    icon: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SoftwareEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.path = source["path"];
+	        this.icon = source["icon"];
 	    }
 	}
 

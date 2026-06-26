@@ -1,3 +1,6 @@
+// [doc:architecture] Camera — 相机模式管理系统
+// 规范文档: docs/architecture.md §渲染环节
+// 职责: 相机模式切换（orbit/freefly/oneshot/concert）、自动构图、自由飞行输入
 // Camera mode manager for MikuMikuAR
 // Handles Orbit, Freefly, Concert, and One-shot camera modes.
 
@@ -178,6 +181,14 @@ export function switchCameraMode(mode: CameraMode): void {
     // Start new mode's side-effects
     if (mode === "freefly") initFreeflyUpdate(scene);
     if (mode === "concert") startConcert(scene);
+
+    // Re-attach post-processing pipeline to the new camera
+    import("./scene").then(({ reattachPipeline, getRenderState }) => {
+        reattachPipeline();
+        // Apply current FOV from render state to the new camera
+        const rs = getRenderState();
+        if (rs.fov) (newCam as any).fov = rs.fov;
+    });
 }
 
 // ======== Auto Frame ========

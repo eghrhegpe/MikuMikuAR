@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -31,7 +32,7 @@ func TestWriteConfig(t *testing.T) {
 	}
 
 	got := string(data)
-	want := `{"library_root":"/fake/root","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false}`
+	want := `{"library_root":"/fake/root","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false,"favorites":null,"render_presets":null,"mmd_path":"","tags":null}`
 	if got != want {
 		t.Errorf("config.json content = %q, want %q", got, want)
 	}
@@ -76,7 +77,7 @@ func TestWriteConfig_OverwriteExisting(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := string(data); got != `{"library_root":"/new","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false}` {
+	if got := string(data); got != `{"library_root":"/new","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false,"favorites":null,"render_presets":null,"mmd_path":"","tags":null}` {
 		t.Errorf("after overwrite = %q, want new config", got)
 	}
 }
@@ -221,5 +222,269 @@ func TestDetectBlenderAt_AllMiss(t *testing.T) {
 	}, []string{"C:/nonexistent/blender.exe", "D:/missing/blender.exe"})
 	if got != "" {
 		t.Errorf("expected empty, got %q", got)
+	}
+}
+
+func TestDetectMMDAt_LookPathHit(t *testing.T) {
+	hit := "C:/mmd/mmd.exe"
+	got := detectMMDAt(func(name string) (string, error) {
+		if name == "mmd" {
+			return hit, nil
+		}
+		return "", errors.New("not found")
+	}, nil, nil)
+	if got != hit {
+		t.Errorf("detectMMDAt = %q, want %q", got, hit)
+	}
+}
+
+func TestDetectMMDAt_LookPathMiss_ThenCandidateHit(t *testing.T) {
+	tmp := t.TempDir()
+	mmdExe := filepath.Join(tmp, "mmd.exe")
+	if err := os.WriteFile(mmdExe, []byte{}, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	got := detectMMDAt(func(name string) (string, error) {
+		return "", errors.New("not found")
+	}, os.Stat, []string{mmdExe})
+	if got != mmdExe {
+		t.Errorf("detectMMDAt = %q, want %q", got, mmdExe)
+	}
+}
+
+func TestDetectMMDAt_AllMiss(t *testing.T) {
+	got := detectMMDAt(func(name string) (string, error) {
+		return "", errors.New("not found")
+	}, os.Stat, []string{"C:/nonexistent/mmd.exe", "D:/missing/mmd.exe"})
+	if got != "" {
+		t.Errorf("expected empty, got %q", got)
+	}
+}
+
+// ======== Software Management Tests ========
+
+func TestSoftwareDir(t *testing.T) {
+	tmp := t.TempDir()
+	orig := userConfigDir
+	userConfigDir = func() (string, error) { return tmp, nil }
+	defer func() { userConfigDir = orig }()
+
+	dir, err := softwareDir()
+	if err != nil {
+		t.Fatalf("softwareDir: %v", err)
+	}
+	want := filepath.Join(tmp, "MikuMikuAR", "software")
+	if dir != want {
+		t.Errorf("softwareDir = %q, want %q", dir, want)
+	}
+	// Verify directory was created
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		t.Errorf("software dir was not created")
+	}
+}
+
+func TestScanSoftwareDir_Empty(t *testing.T) {
+	tmp := t.TempDir()
+	orig := userConfigDir
+	userConfigDir = func() (string, error) { return tmp, nil }
+	defer func() { userConfigDir = orig }()
+
+	a := &App{}
+	entries, err := a.ScanSoftwareDir()
+	if err != nil {
+		t.Fatalf("ScanSoftwareDir: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("expected empty, got %d entries", len(entries))
+	}
+}
+
+func TestScanSoftwareDir_WithExes(t *testing.T) {
+	tmp := t.TempDir()
+	orig := userConfigDir
+	userConfigDir = func() (string, error) { return tmp, nil }
+	defer func() { userConfigDir = orig }()
+
+	// Create software dir with some .exe files
+	softDir := filepath.Join(tmp, "MikuMikuAR", "software")
+	if err := os.MkdirAll(softDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Create fake .exe files
+	for _, name := range []string{"test_app.exe", "another_tool.exe"} {
+		if err := os.WriteFile(filepath.Join(softDir, name), []byte("fake exe"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Create a non-exe file that should be ignored
+	if err := os.WriteFile(filepath.Join(softDir, "readme.txt"), []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	a := &App{}
+	entries, err := a.ScanSoftwareDir()
+	if err != nil {
+		t.Fatalf("ScanSoftwareDir: %v", err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d: %+v", len(entries), entries)
+	}
+	// Check entry details (order-independent)
+	entryMap := make(map[string]SoftwareEntry)
+	for _, e := range entries {
+		entryMap[e.Name] = e
+	}
+	if e, ok := entryMap["test_app"]; !ok {
+		t.Errorf("missing entry: test_app")
+	} else if !strings.HasSuffix(e.Path, ".exe") {
+		t.Errorf("test_app path doesn't end with .exe: %s", e.Path)
+	}
+	if e, ok := entryMap["another_tool"]; !ok {
+		t.Errorf("missing entry: another_tool")
+	} else if !strings.HasSuffix(e.Path, ".exe") {
+		t.Errorf("another_tool path doesn't end with .exe: %s", e.Path)
+	}
+}
+
+// ======== Download Watch Tests ========
+
+func TestCheckMagicNumber_Zip(t *testing.T) {
+	tmp := t.TempDir()
+	f := filepath.Join(tmp, "test.zip")
+	if err := os.WriteFile(f, []byte{0x50, 0x4B, 0x03, 0x04, 0x00, 0x00}, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if !checkMagicNumber(f) {
+		t.Error("checkMagicNumber should return true for ZIP signature")
+	}
+}
+
+func TestCheckMagicNumber_Rar(t *testing.T) {
+	tmp := t.TempDir()
+	f := filepath.Join(tmp, "test.rar")
+	if err := os.WriteFile(f, []byte{0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00}, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if !checkMagicNumber(f) {
+		t.Error("checkMagicNumber should return true for RAR signature")
+	}
+}
+
+func TestCheckMagicNumber_Invalid(t *testing.T) {
+	tmp := t.TempDir()
+	f := filepath.Join(tmp, "test.txt")
+	if err := os.WriteFile(f, []byte("not a zip file"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if checkMagicNumber(f) {
+		t.Error("checkMagicNumber should return false for plain text")
+	}
+}
+
+func TestCheckMagicNumber_Empty(t *testing.T) {
+	tmp := t.TempDir()
+	f := filepath.Join(tmp, "empty.zip")
+	if err := os.WriteFile(f, []byte{}, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if checkMagicNumber(f) {
+		t.Error("checkMagicNumber should return false for empty file")
+	}
+}
+
+func TestImportLocalFile_Unsupported(t *testing.T) {
+	a := &App{}
+	_, err := a.ImportLocalFile("test.txt")
+	if err == nil {
+		t.Error("ImportLocalFile should error for unsupported extension")
+	}
+}
+
+func TestImportLocalFile_PMX(t *testing.T) {
+	a := &App{}
+	result, err := a.ImportLocalFile("/path/to/model.pmx")
+	if err != nil {
+		t.Fatalf("ImportLocalFile(.pmx): %v", err)
+	}
+	if result.FilePath != "/path/to/model.pmx" {
+		t.Errorf("expected FilePath /path/to/model.pmx, got %q", result.FilePath)
+	}
+}
+
+func TestImportLocalFile_VMD(t *testing.T) {
+	a := &App{}
+	result, err := a.ImportLocalFile("/path/to/motion.vmd")
+	if err != nil {
+		t.Fatalf("ImportLocalFile(.vmd): %v", err)
+	}
+	if result.FilePath != "/path/to/motion.vmd" {
+		t.Errorf("expected FilePath /path/to/motion.vmd, got %q", result.FilePath)
+	}
+}
+
+func TestSetDownloadAutoImport_Persist(t *testing.T) {
+	tmp := t.TempDir()
+	orig := userConfigDir
+	userConfigDir = func() (string, error) { return tmp, nil }
+	defer func() { userConfigDir = orig }()
+
+	a := &App{}
+	if err := a.SetDownloadAutoImport(true); err != nil {
+		t.Fatalf("SetDownloadAutoImport: %v", err)
+	}
+	cfg, err := a.GetConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.DownloadAutoImport {
+		t.Error("DownloadAutoImport should be true after SetDownloadAutoImport(true)")
+	}
+	// Flip back
+	if err := a.SetDownloadAutoImport(false); err != nil {
+		t.Fatalf("SetDownloadAutoImport(false): %v", err)
+	}
+	cfg, _ = a.GetConfig()
+	if cfg.DownloadAutoImport {
+		t.Error("DownloadAutoImport should be false after SetDownloadAutoImport(false)")
+	}
+}
+
+func TestSetDownloadWatchDir_Persist(t *testing.T) {
+	tmp := t.TempDir()
+	orig := userConfigDir
+	userConfigDir = func() (string, error) { return tmp, nil }
+	defer func() { userConfigDir = orig }()
+
+	a := &App{}
+	watchDir := filepath.Join(tmp, "watch")
+	if err := os.MkdirAll(watchDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Set watch dir (will try to start watcher, which may fail in CI — that's ok,
+	// we just verify config persistence)
+	_ = a.SetDownloadWatchDir(watchDir)
+	cfg, err := a.GetConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.DownloadWatchDir != watchDir {
+		t.Errorf("DownloadWatchDir = %q, want %q", cfg.DownloadWatchDir, watchDir)
+	}
+
+	// Clear watch dir
+	_ = a.SetDownloadWatchDir("")
+	cfg, _ = a.GetConfig()
+	if cfg.DownloadWatchDir != "" {
+		t.Errorf("DownloadWatchDir should be empty after clear, got %q", cfg.DownloadWatchDir)
+	}
+}
+
+func TestGetDownloadWatchStatus_Default(t *testing.T) {
+	a := &App{}
+	status := a.GetDownloadWatchStatus()
+	if status != "" {
+		t.Errorf("default watch status should be empty, got %q", status)
 	}
 }

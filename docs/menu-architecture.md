@@ -59,6 +59,10 @@ type PopupRow = {
 ├── 📷 相机                → 子菜单：轨道/自由飞行/镜头预设/演唱会
 ├── ⏱ 动作倍率            → 预留（reserved:speed）
 ├── ✨ 角色定制            → 预留（reserved:customize）
+├── 📊 模型信息            → renderCustom 面板：顶点/材质/骨骼/文件数
+├── 😊 表情预览            → 子菜单：Facial morph 滑块列表  
+├── 📸 批量截图            → action：触发批量缩略图
+├── 📤 导出到 MMD          → action：调用 OpenInMMD binding
 └── 🔄 重新扫描            → action，触发 refreshLibrary
 ```
 
@@ -99,10 +103,37 @@ if (row.target === "models:physics") {
 ```
 动作                        ← 根菜单
 ├── 💃 加载动作            → 第二层：VMD 文件夹浏览（buildLevel + vmd 过滤）
-└── ⏱ 动作倍率            → 预留（reserved:motionSpeed）
+├── 🎵 加载音乐            → 文件选择：MP3/WAV/OGG/M4A/AAC
+│   └── ⏱ 音频偏移        → 滑块：-5s~+5s
+├── 🎵🎬 舞蹈套装          → 子菜单：VMD+音频捆绑文件夹浏览
+└── ⏱ 动作倍率            → 滑块：0.25x~2x
 ```
 
 **代码入口**：`showMotionPopup()` → `motionStack.reset(rootItems)`
+
+---
+
+### 🎬 场景弹窗
+
+```
+场景 ← 根菜单
+├── 📷 相机模式 → 子菜单：轨道/自由飞行/镜头预设/演唱会
+├── 💡 灯光 → 子菜单：环境光强度/方向光强度/方向光角度XZ
+├── 🎨 材质 → 子菜单：皮肤/头发/眼睛/衣服（各含滑块）
+│   └── 🖌 单独材质编辑 → renderCustom 面板，逐材质独立调参
+├── ✨ 后处理 → 子菜单：Bloom/轮廓线/色彩校正/景深/SSS/锐化/暗角/FXAA
+├── 🎬 舞台 → 子菜单：反射地面/色调映射/曝光/FOV/背景色/网格线
+├── 🎭 渲染预设 → action：展开预设列表（标准/卡通/写实/暖光/赛博朋克/etc）
+├── ⏱ 动画速度 → 滑块：0.1x~3x
+├── ⬇ 重力 → 滑块：衣物/头发物理摆动强度
+├── 🎥 加载相机VMD → 文件选择
+├── 📸 截图 → action：单帧截图 / 批量截图
+└── 🔲 显示 → 子菜单：线框/骨骼/地面 toggle
+```
+
+**代码入口**：`showSceneMenu()` → `sceneStack.reset(rootItems)`（`scene-menu.ts`）
+
+**特别注意**：场景弹窗从 2 项暴增到 10+ 项，根菜单过长时考虑把「渲染」相关归入一个 `🎨 渲染设置` 文件夹分类。
 
 ---
 
@@ -112,6 +143,8 @@ if (row.target === "models:physics") {
 设置                        ← 根菜单
 ├── 🎨 显示                → action: 日文名（name_jp）/ 英文名（name_en）/ 文件名（filename）
 ├── ⬇ 下载                → action: 监听目录 / 自动导入
+├── 🧰 软件管理            → 子菜单：扫描 software/ 目录，列出可执行程序
+├── 🌐 语言                → action：简体中文 / English
 ├── ⚙ 系统                → action: 清除提取缓存
 └── 🔌 外部库              → action，打开外部库管理面板
 ```

@@ -4,13 +4,23 @@ import {main} from '../models';
 
 export function AddExternalPath(arg1:string):Promise<void>;
 
+export function AddTag(arg1:string,arg2:string):Promise<void>;
+
+export function AutoDetectMMD():Promise<string>;
+
 export function CleanOrphanCache():Promise<number>;
 
 export function ClearExtractCache():Promise<void>;
 
+export function DeleteRenderPreset(arg1:string):Promise<void>;
+
 export function ExtractZip(arg1:string,arg2:string):Promise<main.ExtractResult>;
 
+export function GetAllTags():Promise<Array<string>>;
+
 export function GetConfig():Promise<main.Config>;
+
+export function GetDownloadWatchStatus():Promise<string>;
 
 export function GetFavorites():Promise<Array<string>>;
 
@@ -20,13 +30,23 @@ export function GetModelMeta(arg1:string):Promise<main.ModelMeta>;
 
 export function GetModelMetaBatch(arg1:Array<string>):Promise<Record<string, main.ModelMeta>>;
 
+export function GetModelsByTag(arg1:string):Promise<Array<string>>;
+
+export function GetRenderPresets():Promise<Array<main.RenderPreset>>;
+
+export function GetTagsByModel(arg1:string):Promise<Array<string>>;
+
 export function GetThumbnail(arg1:string):Promise<string>;
 
 export function GetThumbnailBatch(arg1:Array<string>):Promise<Record<string, string>>;
 
+export function ImportLocalFile(arg1:string):Promise<main.ExtractResult>;
+
 export function ImportZip(arg1:string):Promise<main.ExtractResult>;
 
 export function IsolateModelDir(arg1:string):Promise<string>;
+
+export function LaunchSoftware(arg1:string):Promise<void>;
 
 export function LoadLastScene():Promise<string>;
 
@@ -34,11 +54,19 @@ export function LoadSceneFile(arg1:string):Promise<string>;
 
 export function OpenInBlender(arg1:string):Promise<void>;
 
+export function OpenInMMD(arg1:string):Promise<void>;
+
+export function OpenSoftwareDir():Promise<void>;
+
 export function RemoveExternalPath(arg1:string):Promise<void>;
+
+export function RemoveTag(arg1:string,arg2:string):Promise<void>;
 
 export function RenameExternalPath(arg1:string,arg2:string):Promise<void>;
 
 export function SaveLastScene(arg1:string):Promise<void>;
+
+export function SaveRenderPreset(arg1:string,arg2:string):Promise<void>;
 
 export function SaveSceneFile(arg1:string,arg2:string):Promise<void>;
 
@@ -46,7 +74,11 @@ export function SaveThumbnail(arg1:string,arg2:string):Promise<void>;
 
 export function ScanModelDir(arg1:string,arg2:Array<main.ExternalPath>):Promise<Array<main.ModelEntry>>;
 
+export function ScanSoftwareDir():Promise<Array<main.SoftwareEntry>>;
+
 export function SelectDir():Promise<string>;
+
+export function SelectExeFile():Promise<string>;
 
 export function SelectPMXFile():Promise<string>;
 
@@ -60,10 +92,20 @@ export function SetBlenderPath(arg1:string):Promise<void>;
 
 export function SetDisplayNamePriority(arg1:string):Promise<void>;
 
+export function SetDownloadAutoImport(arg1:boolean):Promise<void>;
+
+export function SetDownloadWatchDir(arg1:string):Promise<void>;
+
 export function SetLibraryRoot(arg1:string):Promise<void>;
+
+export function SetMMDPath(arg1:string):Promise<void>;
 
 export function StartFileServer(arg1:string):Promise<number>;
 
+export function StartWatchDir(arg1:string):Promise<void>;
+
 export function StopFileServer(arg1:string):Promise<void>;
+
+export function StopWatchDir():Promise<void>;
 
 export function ToggleFavorite(arg1:string):Promise<void>;

@@ -1,3 +1,5 @@
+// [doc:menu-architecture] MenuStack — 通用菜单导航组件
+// 规范文档: docs/menu-architecture.md（MenuStack 用法 + 添加新功能流程）
 // Universal navigation stack — each level is a separate floating layer.
 // Inspired by DanceXR's multi-panel drill-down: push creates a new card
 // (slightly offset, fade in), pop removes it and reveals the previous one.
@@ -5,6 +7,7 @@
 import { PopupLevel, PopupRow, showHint, hideHint } from "./config";
 import { createIconifyIcon } from "./icons";
 
+// [doc:menu-architecture] MenuStack class — 每个实例对应一个独立的弹窗（modelStack/motionStack/sceneStack/settingsStack）
 export class MenuStack {
     private levels: PopupLevel[] = [];
     private layers: HTMLElement[] = [];
@@ -115,6 +118,21 @@ export class MenuStack {
         // Restore display state for correct stack: show only top layer
         for (let i = 0; i < this.layers.length; i++) {
             this.layers[i].style.display = i < this.layers.length - 1 ? "none" : "flex";
+        }
+    }
+
+    /** Get the stored level at the given index (0 = root). */
+    getLevel(index: number): PopupLevel | undefined {
+        return this.levels[index];
+    }
+
+    /** Number of stored levels. */
+    get levelCount(): number { return this.levels.length; }
+
+    /** Replace the stored level at the given index. Call reRender() after to refresh the UI. */
+    setLevel(index: number, level: PopupLevel): void {
+        if (index >= 0 && index < this.levels.length) {
+            this.levels[index] = level;
         }
     }
     // ======== Layer management ========
@@ -271,7 +289,9 @@ export class MenuStack {
             el.appendChild(addBtn);
         }
 
-        // "📄" Detail button — for loaded model rows: open model detail submenu
+        // "📄" Detail button — for loaded model rows: if onDetailClick is set,
+        // call it (e.g. focus the model); otherwise fall back to folder-enter
+        // (navigate to detail submenu).
         if (row.showDetailBtn) {
             const detailBtn = document.createElement("span");
             detailBtn.className = "menu-detail-btn";
@@ -281,9 +301,13 @@ export class MenuStack {
             detailBtn.addEventListener("mouseleave", () => { detailBtn.style.background = "var(--white-04)"; });
             detailBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
-                // Trigger folder enter on the parent row (navigate to detail)
-                const next = this.onFolderEnter?.(row, this);
-                if (next) this.push(next);
+                if (row.onDetailClick) {
+                    row.onDetailClick();
+                } else {
+                    // Fallback: navigate into the folder (detail submenu)
+                    const next = this.onFolderEnter?.(row, this);
+                    if (next) this.push(next);
+                }
             });
             el.appendChild(detailBtn);
         }

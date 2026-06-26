@@ -6,6 +6,14 @@ export function AddExternalPath(arg1) {
   return window['go']['main']['App']['AddExternalPath'](arg1);
 }
 
+export function AddTag(arg1, arg2) {
+  return window['go']['main']['App']['AddTag'](arg1, arg2);
+}
+
+export function AutoDetectMMD() {
+  return window['go']['main']['App']['AutoDetectMMD']();
+}
+
 export function CleanOrphanCache() {
   return window['go']['main']['App']['CleanOrphanCache']();
 }
@@ -14,12 +22,24 @@ export function ClearExtractCache() {
   return window['go']['main']['App']['ClearExtractCache']();
 }
 
+export function DeleteRenderPreset(arg1) {
+  return window['go']['main']['App']['DeleteRenderPreset'](arg1);
+}
+
 export function ExtractZip(arg1, arg2) {
   return window['go']['main']['App']['ExtractZip'](arg1, arg2);
 }
 
+export function GetAllTags() {
+  return window['go']['main']['App']['GetAllTags']();
+}
+
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
+}
+
+export function GetDownloadWatchStatus() {
+  return window['go']['main']['App']['GetDownloadWatchStatus']();
 }
 
 export function GetFavorites() {
@@ -38,6 +58,18 @@ export function GetModelMetaBatch(arg1) {
   return window['go']['main']['App']['GetModelMetaBatch'](arg1);
 }
 
+export function GetModelsByTag(arg1) {
+  return window['go']['main']['App']['GetModelsByTag'](arg1);
+}
+
+export function GetRenderPresets() {
+  return window['go']['main']['App']['GetRenderPresets']();
+}
+
+export function GetTagsByModel(arg1) {
+  return window['go']['main']['App']['GetTagsByModel'](arg1);
+}
+
 export function GetThumbnail(arg1) {
   return window['go']['main']['App']['GetThumbnail'](arg1);
 }
@@ -46,12 +78,20 @@ export function GetThumbnailBatch(arg1) {
   return window['go']['main']['App']['GetThumbnailBatch'](arg1);
 }
 
+export function ImportLocalFile(arg1) {
+  return window['go']['main']['App']['ImportLocalFile'](arg1);
+}
+
 export function ImportZip(arg1) {
   return window['go']['main']['App']['ImportZip'](arg1);
 }
 
 export function IsolateModelDir(arg1) {
   return window['go']['main']['App']['IsolateModelDir'](arg1);
+}
+
+export function LaunchSoftware(arg1) {
+  return window['go']['main']['App']['LaunchSoftware'](arg1);
 }
 
 export function LoadLastScene() {
@@ -66,8 +106,20 @@ export function OpenInBlender(arg1) {
   return window['go']['main']['App']['OpenInBlender'](arg1);
 }
 
+export function OpenInMMD(arg1) {
+  return window['go']['main']['App']['OpenInMMD'](arg1);
+}
+
+export function OpenSoftwareDir() {
+  return window['go']['main']['App']['OpenSoftwareDir']();
+}
+
 export function RemoveExternalPath(arg1) {
   return window['go']['main']['App']['RemoveExternalPath'](arg1);
+}
+
+export function RemoveTag(arg1, arg2) {
+  return window['go']['main']['App']['RemoveTag'](arg1, arg2);
 }
 
 export function RenameExternalPath(arg1, arg2) {
@@ -76,6 +128,10 @@ export function RenameExternalPath(arg1, arg2) {
 
 export function SaveLastScene(arg1) {
   return window['go']['main']['App']['SaveLastScene'](arg1);
+}
+
+export function SaveRenderPreset(arg1, arg2) {
+  return window['go']['main']['App']['SaveRenderPreset'](arg1, arg2);
 }
 
 export function SaveSceneFile(arg1, arg2) {
@@ -90,8 +146,16 @@ export function ScanModelDir(arg1, arg2) {
   return window['go']['main']['App']['ScanModelDir'](arg1, arg2);
 }
 
+export function ScanSoftwareDir() {
+  return window['go']['main']['App']['ScanSoftwareDir']();
+}
+
 export function SelectDir() {
   return window['go']['main']['App']['SelectDir']();
+}
+
+export function SelectExeFile() {
+  return window['go']['main']['App']['SelectExeFile']();
 }
 
 export function SelectPMXFile() {
@@ -118,16 +182,36 @@ export function SetDisplayNamePriority(arg1) {
   return window['go']['main']['App']['SetDisplayNamePriority'](arg1);
 }
 
+export function SetDownloadAutoImport(arg1) {
+  return window['go']['main']['App']['SetDownloadAutoImport'](arg1);
+}
+
+export function SetDownloadWatchDir(arg1) {
+  return window['go']['main']['App']['SetDownloadWatchDir'](arg1);
+}
+
 export function SetLibraryRoot(arg1) {
   return window['go']['main']['App']['SetLibraryRoot'](arg1);
+}
+
+export function SetMMDPath(arg1) {
+  return window['go']['main']['App']['SetMMDPath'](arg1);
 }
 
 export function StartFileServer(arg1) {
   return window['go']['main']['App']['StartFileServer'](arg1);
 }
 
+export function StartWatchDir(arg1) {
+  return window['go']['main']['App']['StartWatchDir'](arg1);
+}
+
 export function StopFileServer(arg1) {
   return window['go']['main']['App']['StopFileServer'](arg1);
+}
+
+export function StopWatchDir() {
+  return window['go']['main']['App']['StopWatchDir']();
 }
 
 export function ToggleFavorite(arg1) {

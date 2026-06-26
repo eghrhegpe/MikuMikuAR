@@ -1,4 +1,6 @@
-// Library popup, search, and motion popup.
+// [doc:architecture] Library — 模型库弹窗 + 搜索 + 动作库
+// 规范文档: docs/architecture.md §模型库管理
+// 职责: 模型库扫描 + MenuStack 导航 + 搜索 + PMX Header 按需解析 + zip 解压触发
 
 import {
   GetConfig,
@@ -13,6 +15,13 @@ import {
   GetModelMetaBatch,
   ToggleFavorite,
   GetFavorites,
+  AddTag,
+  RemoveTag,
+  GetAllTags,
+  GetTagsByModel,
+  GetModelsByTag,
+  OpenInMMD,
+  OpenInBlender,
 } from "../wailsjs/go/main/App";
 import {
   dom,
@@ -98,6 +107,7 @@ const makeModelStack = (): MenuStack => {
           case "motion": return buildMotionBindingLevel(id);
           case "transform": return buildTransformLevel(id);
           case "visibility": return buildVisibilityLevel(id);
+          case "tags": return buildModelTagsLevel(id);
           default: return null;
         }
       }
@@ -119,10 +129,19 @@ const makeModelStack = (): MenuStack => {
           return ref && favorites.has(ref);
         });
         return {
-          label: "★ 收藏",
+          label: "收藏",
           dir: "",
           items: favModels.map(m => modelToRow(m)),
         };
+      }
+      // Tags overview
+      if (row.target === "__tags__") {
+        return buildTagsOverviewLevel();
+      }
+      // Tag detail: __tag:tagName
+      if (row.target && row.target.startsWith("__tag:")) {
+        const tagName = row.target.replace("__tag:", "");
+        return buildTagDetailLevel(tagName);
       }
       if (row.target === "models:browse") {
         if (!libraryRoot) {
@@ -134,7 +153,7 @@ const makeModelStack = (): MenuStack => {
               container.style.cssText =
                 "padding:24px;text-align:center;color:var(--text-muted);font-size:13px;";
               container.innerHTML =
-                '<div style="font-size:28px;margin-bottom:6px;">📁</div><div>尚未设置模型库目录</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">请前往 ⚙ 设置 → 系统 中设置</div>';
+                '<div>尚未设置模型库目录</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">请前往 设置 → 系统 中设置</div>';
             },
           };
         }
@@ -160,7 +179,8 @@ const makeModelStack = (): MenuStack => {
         row.target &&
         !row.target.startsWith("reserved:") &&
         !row.target.startsWith("models:") &&
-        !row.target.startsWith("detail:")
+        !row.target.startsWith("detail:") &&
+        !row.target.startsWith("__")
       ) {
         return buildLevel(row.target, row.label, (m) => m.format === "pmx");
       }
@@ -206,8 +226,22 @@ const makeModelStack = (): MenuStack => {
                   favorites.add(libRef);
                 }
                 setFavorites(new Set(favorites));
-                modelStack?.reRender();
-                setStatus(isFav ? "☆ 已取消收藏" : "★ 已收藏", true);
+                // Refresh all levels so the star icon and favorites count update immediately
+                if (modelStack) {
+                  // Update root level's __favorites__ folder sublabel
+                  const root = modelStack.getLevel(0);
+                  if (root) {
+                    const favFolder = root.items.find(i => i.target === "__favorites__");
+                    if (favFolder) {
+                      favFolder.sublabel = favorites.size > 0 ? `${favorites.size} 个模型` : "暂无收藏";
+                    }
+                  }
+                  // Replace the detail level with fresh computed data
+                  const detailIdx = modelStack.levelCount - 1;
+                  modelStack.setLevel(detailIdx, buildModelDetailLevel(id));
+                  modelStack.reRender();
+                }
+                setStatus(isFav ? "✓ 已取消收藏" : "✓ 已收藏", true);
               }).catch((err) => {
                 console.warn("ToggleFavorite failed:", err);
                 setStatus("✗ 收藏操作失败", false);
@@ -218,11 +252,11 @@ const makeModelStack = (): MenuStack => {
           case "focus":
             setFocusedModelId(id);
             focusModel(id);
-            setStatus(`🎯 聚焦: ${inst.name}`, true);
+            setStatus(`✓ 已聚焦: ${inst.name}`, true);
             break;
           case "remove":
             removeModel(id);
-            setStatus(`🗑 已移除: ${inst.name}`, true);
+            setStatus(`✓ 已移除: ${inst.name}`, true);
             hidePopup();
             break;
           case "motion": {
@@ -255,7 +289,7 @@ const makeModelStack = (): MenuStack => {
                   }
                   updatePlaybackUI();
                   modelStack?.reRender();
-                  setStatus("🔄 动作已重置", true);
+                  setStatus("✓ 动作已重置", true);
                 }
                 break;
               case "loop":
@@ -266,6 +300,30 @@ const makeModelStack = (): MenuStack => {
             }
             break;
           }
+          case "export-mmd":
+            (async () => {
+              try {
+                const path = inst.filePath;
+                if (!path) { setStatus("✗ 模型无文件路径", false); return; }
+                await OpenInMMD(path);
+                setStatus("✓ 已启动: MMD", true);
+              } catch (err: any) {
+                setStatus("✗ " + (err.message || err), false);
+              }
+            })();
+            break;
+          case "blender":
+            (async () => {
+              try {
+                const path = inst.filePath;
+                if (!path) { setStatus("✗ 模型无文件路径", false); return; }
+                await OpenInBlender(path);
+                setStatus("✓ 已启动: Blender", true);
+              } catch (err: any) {
+                setStatus("✗ " + (err.message || err), false);
+              }
+            })();
+            break;
         }
         return;
       }
@@ -276,13 +334,15 @@ const makeModelStack = (): MenuStack => {
         return;
       }
       const hints: Record<string, string> = {
-        "models:browse": "📁 浏览模型库 · 加载 PMX 模型",
-        "detail:fav": "★ 收藏/取消收藏此模型",
-        "detail:focus": "🎯 相机对准此模型",
-        "detail:remove": "🗑 从场景中删除此模型",
-        "detail:motion:pause": "⏸ 暂停/继续当前动作",
-        "detail:motion:reset": "🔄 移除 VMD，恢复 T-Pose",
-        "detail:motion:loop": "🔁 切换自动循环",
+        "models:browse": "浏览和加载 PMX 模型",
+        "detail:fav": "收藏或取消收藏此模型",
+        "detail:focus": "相机对准此模型",
+        "detail:remove": "从场景中移除此模型",
+        "detail:export-mmd": "在 MikuMikuDance 中打开此模型",
+        "detail:blender": "在 Blender 中编辑此模型",
+        "detail:motion:pause": "暂停或继续当前动作",
+        "detail:motion:reset": "移除动作，恢复初始姿势",
+        "detail:motion:loop": "切换动作自动循环",
       };
       // Dynamic hints for detail:* targets
       if (row.target && row.target.startsWith("detail:")) {
@@ -351,11 +411,17 @@ export function showPopup(): void {
     rootItems.push({
       kind: "folder",
       label: inst.name,
-      icon: "🎭",
+      icon: "tabler:cube-3d-sphere",
       target: `scene:${id}`,
       sublabel: inst.vmdName || undefined,
       editable: id === focusedModelId,
       showDetailBtn: true,
+      // 📄 button focuses the model (highlights + camera frames) instead of entering detail submenu
+      onDetailClick: () => {
+        setFocusedModelId(id);
+        focusModel(id);
+        setStatus(`✓ 已聚焦: ${inst.name}`, true);
+      },
     });
   }
   if (rootItems.length > 0) {
@@ -366,10 +432,17 @@ export function showPopup(): void {
   rootItems.push(
     {
       kind: "folder",
-      label: "★ 收藏",
+      label: "收藏",
       icon: "star",
       target: "__favorites__",
       sublabel: favorites.size > 0 ? `${favorites.size} 个模型` : "暂无收藏",
+    },
+    {
+      kind: "folder",
+      label: "标签",
+      icon: "tag",
+      target: "__tags__",
+      sublabel: "管理模型标签",
     },
     {
       kind: "folder",
@@ -612,6 +685,98 @@ function isSearchLayer(): boolean {
   return modelStack?.currentLevel?.label === "🔍 搜索结果";
 }
 
+// ======== Tag System ========
+
+/** Build the tags overview level showing all tags + create option. */
+function buildTagsOverviewLevel(): PopupLevel {
+  return {
+    label: "标签",
+    dir: "",
+    items: [],
+    renderCustom: async (container) => {
+      container.style.padding = "12px 14px";
+      try {
+        const tags = await GetAllTags();
+        if (!tags || tags.length === 0) {
+          const empty = document.createElement("div");
+          empty.style.cssText = "padding:16px;text-align:center;color:var(--text-muted);font-size:13px;";
+          empty.innerHTML = '<div>暂无标签</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">在模型详情中添加标签</div>';
+          container.appendChild(empty);
+        } else {
+          for (const tag of tags) {
+            const row = document.createElement("div");
+            row.className = "menu-item";
+            row.innerHTML = `<span class="menu-icon"><iconify-icon icon="tag"></iconify-icon></span><span class="menu-label">${escapeHtml(tag)}</span><span class="menu-arrow">&gt;</span>`;
+            row.addEventListener("click", () => {
+              const level = buildTagDetailLevel(tag);
+              modelStack?.push(level);
+            });
+            container.appendChild(row);
+          }
+        }
+        // Divider + create button
+        const divider = document.createElement("div");
+        divider.className = "menu-divider";
+        container.appendChild(divider);
+        const addRow = document.createElement("div");
+        addRow.className = "menu-item";
+        addRow.innerHTML = '<span class="menu-icon">➕</span><span class="menu-label">新建标签</span>';
+        addRow.addEventListener("click", () => {
+          setStatus("请先进入模型详情页，在详情中为模型添加标签", false);
+          modelStack?.pop();
+        });
+        container.appendChild(addRow);
+      } catch (err) {
+        console.warn("buildTagsOverviewLevel:", err);
+        container.textContent = "加载标签失败";
+      }
+    },
+  };
+}
+
+/** Build a level showing all models tagged with a specific tag. */
+function buildTagDetailLevel(tagName: string): PopupLevel {
+  return {
+    label: `标签: ${tagName}`,
+    dir: "",
+    items: [],
+    renderCustom: async (container) => {
+      container.style.padding = "0";
+      try {
+        const modelRefs = await GetModelsByTag(tagName);
+        if (!modelRefs || modelRefs.length === 0) {
+          container.style.padding = "12px 14px";
+          container.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;">该标签下没有模型</div>';
+          return;
+        }
+        // Find matching models from allModels by resolving libraryRef
+        const matched = allModels.filter(m => {
+          const ref = computeLibraryRef(m.file_path);
+          return ref && modelRefs.includes(ref);
+        });
+        if (matched.length === 0) {
+          container.style.padding = "12px 14px";
+          container.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;">未找到匹配的模型（库可能已变更）</div>';
+          return;
+        }
+        for (const m of matched) {
+          const row = modelToRow(m);
+          const el = document.createElement("div");
+          el.className = "menu-item";
+          el.innerHTML = `<span class="menu-icon">📦</span><span class="menu-label">${escapeHtml(row.label)}</span>`;
+          el.addEventListener("click", () => {
+            onModelRowClick(m);
+          });
+          container.appendChild(el);
+        }
+      } catch (err) {
+        console.warn("buildTagDetailLevel:", err);
+        container.textContent = "加载失败";
+      }
+    },
+  };
+}
+
 // ======== Model Detail Submenu ========
 
 /** Build the model detail submenu for a specific model instance. */
@@ -624,14 +789,18 @@ function buildModelDetailLevel(id: string): PopupLevel {
     label: inst.name,
     dir: "",
     items: [
-      { kind: "action", label: isFav ? "★ 取消收藏" : "☆ 收藏", icon: "star", target: `detail:fav:${id}`, sublabel: isFav ? "点击取消收藏" : "点击加入收藏" },
-      { kind: "folder", label: "模型信息", icon: "info", target: `detail:info:${id}`, sublabel: "PMX 元数据" },
+      { kind: "action", label: isFav ? "取消收藏" : "收藏", icon: "star", target: `detail:fav:${id}`, sublabel: isFav ? "点击取消收藏" : "点击加入收藏" },
+      { kind: "folder", label: "模型信息", icon: "info", target: `detail:info:${id}`, sublabel: "模型名称与描述" },
       { kind: "folder", label: "动作绑定", icon: "music", target: `detail:motion:${id}`, sublabel: inst.vmdName || "无" },
       { kind: "folder", label: "变换", icon: "move", target: `detail:transform:${id}`, sublabel: "位置/缩放/旋转" },
       { kind: "folder", label: "可见性", icon: "eye", target: `detail:visibility:${id}`, sublabel: inst.visible ? "显示" : "隐藏" },
+      { kind: "folder", label: "标签", icon: "tag", target: `detail:tags:${id}`, sublabel: "管理标签" },
       { kind: "divider", label: "", icon: "", target: "" },
-      { kind: "action", label: "🎯 聚焦", icon: "target", target: `detail:focus:${id}`, sublabel: "相机对准此模型" },
-      { kind: "action", label: "🗑 移除", icon: "trash-2", target: `detail:remove:${id}`, sublabel: "从场景删除" },
+      { kind: "action", label: "聚焦", icon: "target", target: `detail:focus:${id}`, sublabel: "相机对准此模型" },
+      { kind: "action", label: "移除", icon: "trash-2", target: `detail:remove:${id}`, sublabel: "从场景删除" },
+      { kind: "divider", label: "", icon: "", target: "" },
+      { kind: "action", label: "导出到 MMD", icon: "external-link", target: `detail:export-mmd:${id}`, sublabel: "在 MikuMikuDance 中打开" },
+      { kind: "action", label: "在 Blender 中编辑", icon: "edit-3", target: `detail:blender:${id}`, sublabel: "用 Blender 编辑此模型" },
     ],
   };
 }
@@ -648,7 +817,7 @@ function buildMotionBindingLevel(id: string): PopupLevel {
       { kind: "divider", label: "", icon: "", target: "" },
       { kind: "folder", label: "更换动作", icon: "music", target: `detail:motion:browse:${id}`, sublabel: "从动作库选择" },
       { kind: "action", label: inst.mmdModel ? (inst.vmdData ? "暂停动作" : "—") : "—", icon: "pause-circle", target: `detail:motion:pause:${id}`, sublabel: inst.vmdData ? "暂停/继续" : "无动作" },
-      { kind: "action", label: "重置动作", icon: "rotate-ccw", target: `detail:motion:reset:${id}`, sublabel: "恢复 T-Pose" },
+      { kind: "action", label: "重置动作", icon: "rotate-ccw", target: `detail:motion:reset:${id}`, sublabel: "恢复初始姿势" },
       { kind: "divider", label: "", icon: "", target: "" },
       { kind: "action", label: `循环: ${inst.vmdData ? (autoLoop ? "开" : "关") : "—"}`, icon: "repeat", target: `detail:motion:loop:${id}`, sublabel: inst.vmdData ? "切换自动循环" : "加载动作后可用" },
     ],
@@ -715,7 +884,7 @@ function buildTransformLevel(id: string): PopupLevel {
       const resetBtn = document.createElement("div");
       resetBtn.className = "menu-item";
       resetBtn.style.cssText = "margin-top:4px;";
-      resetBtn.innerHTML = '<span class="menu-icon">🔄</span><span class="menu-label">重置变换</span>';
+      resetBtn.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置变换</span>';
       resetBtn.addEventListener("click", () => {
         resetModelTransform(id);
         // Re-render the level to reflect reset values
@@ -768,6 +937,102 @@ function buildVisibilityLevel(id: string): PopupLevel {
         setStatus(inst.wireframe ? "线框模式: 开" : "线框模式: 关", true);
       });
       container.appendChild(wfRow);
+    },
+  };
+}
+
+/** Build the model tags management level for a specific model. */
+function buildModelTagsLevel(id: string): PopupLevel {
+  const inst = modelRegistry.get(id);
+  if (!inst) return { label: "标签", dir: "", items: [] };
+  const libRef = inst.filePath ? computeLibraryRef(inst.filePath) : null;
+  return {
+    label: "标签管理",
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+      const tagContainer = document.createElement("div");
+      tagContainer.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;min-height:28px;";
+      container.appendChild(tagContainer);
+
+      function refreshTags(): void {
+        if (!libRef) {
+          tagContainer.innerHTML = '<span style="color:var(--text-muted);font-size:11px;">无法识别模型路径</span>';
+          return;
+        }
+        GetTagsByModel(libRef).then((tags) => {
+          tagContainer.innerHTML = "";
+          if (!tags || tags.length === 0) {
+            const empty = document.createElement("span");
+            empty.style.cssText = "color:var(--text-muted);font-size:11px;";
+            empty.textContent = "暂无标签";
+            tagContainer.appendChild(empty);
+            return;
+          }
+          for (const tag of tags) {
+            const chip = document.createElement("span");
+            chip.className = "menu-tag";
+            chip.style.cssText = "display:inline-flex;align-items:center;gap:4px;cursor:pointer;";
+            chip.innerHTML = `${escapeHtml(tag)} <span style="font-size:10px;opacity:0.6;">✕</span>`;
+            chip.title = "点击移除标签";
+            chip.addEventListener("click", () => {
+              RemoveTag(libRef, tag).then(() => {
+                refreshTags();
+                setStatus(`✓ 已移除标签: ${tag}`, true);
+              }).catch((err) => {
+                console.warn("RemoveTag failed:", err);
+                setStatus("✗ 移除标签失败", false);
+              });
+            });
+            tagContainer.appendChild(chip);
+          }
+        }).catch((err) => {
+          console.warn("GetTagsByModel failed:", err);
+          tagContainer.textContent = "加载标签失败";
+        });
+      }
+
+      refreshTags();
+
+      // Add tag input + button
+      const addRow = document.createElement("div");
+      addRow.style.cssText = "display:flex;gap:6px;";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = "输入标签名...";
+      input.style.cssText = "flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;";
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") addBtn.click();
+      });
+      const addBtn = document.createElement("button");
+      addBtn.textContent = "添加";
+      addBtn.style.cssText = "background:var(--accent);color:#fff;border:none;border-radius:4px;padding:6px 12px;font-size:12px;cursor:pointer;";
+      addBtn.addEventListener("click", () => {
+        const tagName = input.value.trim();
+        if (!tagName || !libRef) return;
+        if (tagName.includes(" ")) {
+          setStatus("标签名不能包含空格", false);
+          return;
+        }
+        AddTag(libRef, tagName).then(() => {
+          input.value = "";
+          refreshTags();
+          setStatus(`✓ 已添加标签: ${tagName}`, true);
+        }).catch((err) => {
+          console.warn("AddTag failed:", err);
+          setStatus("✗ 添加标签失败", false);
+        });
+      });
+      addRow.appendChild(input);
+      addRow.appendChild(addBtn);
+      container.appendChild(addRow);
+
+      // Hint text
+      const hint = document.createElement("div");
+      hint.style.cssText = "font-size:10px;color:var(--text-dark);margin-top:8px;";
+      hint.textContent = "点击标签上的 ✕ 可移除";
+      container.appendChild(hint);
     },
   };
 }

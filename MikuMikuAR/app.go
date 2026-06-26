@@ -26,8 +26,24 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 
+	stdruntime "runtime"
+	"github.com/fsnotify/fsnotify"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+// safeLogInfo calls runtime.LogInfof only if a.ctx is non-nil (safe for tests).
+func (a *App) safeLogInfo(format string, args ...interface{}) {
+	if a.ctx != nil {
+		runtime.LogInfof(a.ctx, format, args...)
+	}
+}
+
+// safeLogError calls runtime.LogErrorf only if a.ctx is non-nil (safe for tests).
+func (a *App) safeLogError(format string, args ...interface{}) {
+	if a.ctx != nil {
+		runtime.LogErrorf(a.ctx, format, args...)
+	}
+}
 
 // App struct
 type App struct {
@@ -35,6 +51,13 @@ type App struct {
 	httpServers  map[string]*httpServerInfo // keyed by dirPath
 	httpSrvMu    sync.Mutex
 	configMu     sync.Mutex                // guards GetConfig/writeConfig sequences
+
+	// 下载目录监听
+	watcher      *fsnotify.Watcher
+	watchDir     string                    // 当前监听的目录
+	watchMu      sync.Mutex
+	watchTimer   *time.Timer               // debounce 定时器
+	watchPending map[string]struct{}       // debounce 期间暂存的文件路径
 }
 
 type httpServerInfo struct {
@@ -59,6 +82,8 @@ func (a *App) shutdown(ctx context.Context) {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	// Restore download directory watching from saved config
+	a.restoreWatcher()
 }
 
 // openFileDialog is a shared helper for selecting files via OS dialog.
@@ -89,6 +114,14 @@ func (a *App) SelectVMDMotion() (string, error) {
 	})
 }
 
+// SelectExeFile opens a file dialog to select an executable file.
+func (a *App) SelectExeFile() (string, error) {
+	return a.openFileDialog("选择可执行文件", []runtime.FileFilter{
+		{DisplayName: "Executable (*.exe)", Pattern: "*.exe"},
+		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+	})
+}
+
 // ReadFileBytes reads a file from the given path and returns its bytes as base64.
 
 // ======== Model Library Types ========
@@ -107,6 +140,13 @@ type ModelEntry struct {
 	ZipInner  string `json:"zip_inner"`  // Relative path inside zip (only for container=zip)
 	Category  string `json:"category"`   // DanceXR top-level category dir name (empty if none)
 	Source    string `json:"source"`     // Source library name: empty for main lib, ExternalPath.Name for externals
+}
+
+// SoftwareEntry represents an executable found in the software/ directory.
+type SoftwareEntry struct {
+	Name string `json:"name"` // Display name (without extension)
+	Path string `json:"path"` // Full absolute path
+	Icon string `json:"icon"` // Reserved for future .exe icon extraction
 }
 
 // ModelMeta holds PMX header metadata for on-demand parsing.
@@ -146,6 +186,15 @@ type Config struct {
 	DownloadWatchDir     string         `json:"download_watch_dir"`     // 监听目录，空则不监听
 	DownloadAutoImport   bool           `json:"download_auto_import"`  // true 则跳过确认直接导入
 	Favorites            []string       `json:"favorites"`             // libraryRef 数组，收藏的模型
+	RenderPresets        []RenderPreset `json:"render_presets"`        // 用户保存的渲染预设
+	MMDPath              string         `json:"mmd_path"`              // MikuMikuDance 可执行文件路径，空则自动检测
+	Tags                 map[string][]string `json:"tags"`              // libraryRef → []tag 列表
+}
+
+// RenderPreset stores a user-defined rendering preset.
+type RenderPreset struct {
+	Name   string                 `json:"name"`
+	Params map[string]interface{} `json:"params"` // RenderState fields as flat key-value pairs
 }
 
 // userConfigDir is a hook for testing — production code calls os.UserConfigDir.
@@ -186,6 +235,11 @@ func extractedDir() (string, error) {
 // thumbnailDir returns the cache root for thumbnail images (%LOCALAPPDATA%/MikuMikuAR/thumbnails).
 func thumbnailDir() (string, error) {
 	return ensureDir("thumbnails", true)
+}
+
+// softwareDir returns the software directory (%APPDATA%/MikuMikuAR/software).
+func softwareDir() (string, error) {
+	return ensureDir("software", false)
 }
 
 // SelectDir opens a directory picker dialog.
@@ -531,6 +585,132 @@ func (a *App) GetFavorites() []string {
 	return cfg.Favorites
 }
 
+// ======== Tag System ========
+
+// AddTag adds a tag to a model identified by its libraryRef.
+func (a *App) AddTag(libraryRef, tag string) error {
+	return a.updateConfig(func(cfg *Config) {
+		if cfg.Tags == nil {
+			cfg.Tags = make(map[string][]string)
+		}
+		tags := cfg.Tags[libraryRef]
+		for _, t := range tags {
+			if t == tag {
+				return // already exists
+			}
+		}
+		cfg.Tags[libraryRef] = append(tags, tag)
+	}, false)
+}
+
+// RemoveTag removes a tag from a model.
+func (a *App) RemoveTag(libraryRef, tag string) error {
+	return a.updateConfig(func(cfg *Config) {
+		tags := cfg.Tags[libraryRef]
+		var kept []string
+		for _, t := range tags {
+			if t != tag {
+				kept = append(kept, t)
+			}
+		}
+		if len(kept) == 0 {
+			delete(cfg.Tags, libraryRef)
+		} else {
+			cfg.Tags[libraryRef] = kept
+		}
+	}, false)
+}
+
+// GetTagsByModel returns the tags for a specific model.
+func (a *App) GetTagsByModel(libraryRef string) []string {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil || cfg.Tags == nil {
+		return nil
+	}
+	return cfg.Tags[libraryRef]
+}
+
+// GetAllTags returns a deduplicated list of all tags across all models.
+func (a *App) GetAllTags() []string {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil || cfg.Tags == nil {
+		return nil
+	}
+	seen := make(map[string]bool)
+	var result []string
+	for _, tags := range cfg.Tags {
+		for _, t := range tags {
+			if !seen[t] {
+				seen[t] = true
+				result = append(result, t)
+			}
+		}
+	}
+	return result
+}
+
+// GetModelsByTag returns all libraryRefs that have a specific tag.
+func (a *App) GetModelsByTag(tag string) []string {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil || cfg.Tags == nil {
+		return nil
+	}
+	var result []string
+	for ref, tags := range cfg.Tags {
+		for _, t := range tags {
+			if t == tag {
+				result = append(result, ref)
+				break
+			}
+		}
+	}
+	return result
+}
+
+// ======== Render Presets ========
+
+// SaveRenderPreset saves or updates a named render preset.
+// params is a JSON string of the RenderState fields.
+func (a *App) SaveRenderPreset(name string, params string) error {
+	return a.updateConfig(func(cfg *Config) {
+		// Parse the params JSON into a generic map
+		var parsed map[string]interface{}
+		if err := json.Unmarshal([]byte(params), &parsed); err != nil {
+			parsed = make(map[string]interface{})
+		}
+		// Update or append
+		for i, p := range cfg.RenderPresets {
+			if p.Name == name {
+				cfg.RenderPresets[i].Params = parsed
+				return
+			}
+		}
+		cfg.RenderPresets = append(cfg.RenderPresets, RenderPreset{Name: name, Params: parsed})
+	}, false)
+}
+
+// DeleteRenderPreset removes a named render preset.
+func (a *App) DeleteRenderPreset(name string) error {
+	return a.updateConfig(func(cfg *Config) {
+		var kept []RenderPreset
+		for _, p := range cfg.RenderPresets {
+			if p.Name != name {
+				kept = append(kept, p)
+			}
+		}
+		cfg.RenderPresets = kept
+	}, false)
+}
+
+// GetRenderPresets returns all user-defined render presets.
+func (a *App) GetRenderPresets() []RenderPreset {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil {
+		return nil
+	}
+	return cfg.RenderPresets
+}
+
 // ======== Blender Integration ========
 
 // defaultBlenderCandidates lists common Windows install paths for Blender.
@@ -576,11 +756,153 @@ func (a *App) OpenInBlender(modelPath string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("启动 Blender 失败: %w", err)
+		return fmt.Errorf("启动 Blender 失败")
 	}
 
 	runtime.LogInfof(a.ctx, "Blender started for %s", modelPath)
 	return nil
+}
+
+// ======== MikuMikuDance Integration ========
+
+// defaultMMDCandidates lists common Windows install paths for MikuMikuDance.
+var defaultMMDCandidates = []string{
+	"C:/Program Files/MikuMikuDance/mmd.exe",
+	"C:/Program Files/MikuMikuDance/MikuMikuDance.exe",
+	"C:/Program Files (x86)/MikuMikuDance/mmd.exe",
+	"C:/Program Files (x86)/MikuMikuDance/MikuMikuDance.exe",
+}
+
+// detectMMD attempts to find MMD on the system.
+func detectMMD() string {
+	return detectMMDAt(exec.LookPath, os.Stat, defaultMMDCandidates)
+}
+
+// detectMMDAt is the testable pure version: tries lookPath then stats candidates.
+func detectMMDAt(lookPath func(name string) (string, error), stat func(name string) (os.FileInfo, error), candidates []string) string {
+	if p, err := lookPath("mmd"); err == nil {
+		return p
+	}
+	for _, c := range candidates {
+		if _, err := stat(c); err == nil {
+			return c
+		}
+	}
+	return ""
+}
+
+// SetMMDPath saves the MMD executable path to config.
+// If path is empty, automatically detects MMD from common install locations.
+func (a *App) SetMMDPath(path string) error {
+	return a.updateConfig(func(cfg *Config) { cfg.MMDPath = path }, false)
+}
+
+// AutoDetectMMD searches for MMD in common install paths and saves the result.
+// Returns the detected path, or an error if not found.
+func (a *App) AutoDetectMMD() (string, error) {
+	path := detectMMD()
+	if path == "" {
+		return "", fmt.Errorf("未找到 MikuMikuDance")
+	}
+	if err := a.SetMMDPath(path); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+// OpenInMMD launches MikuMikuDance and opens the specified model file.
+func (a *App) OpenInMMD(modelPath string) error {
+	cfg, _ := a.GetConfig()
+	mmdPath := cfg.MMDPath
+	if mmdPath == "" {
+		mmdPath = detectMMD()
+	}
+	if mmdPath == "" {
+		return fmt.Errorf("未找到 MikuMikuDance，请在设置中配置路径")
+	}
+
+	cmd := exec.Command(mmdPath, modelPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("启动 MMD 失败")
+	}
+
+	runtime.LogInfof(a.ctx, "MMD started for %s", modelPath)
+	return nil
+}
+
+// ======== Software Management ========
+
+// ScanSoftwareDir scans the software/ directory for .exe files and returns entries.
+func (a *App) ScanSoftwareDir() ([]SoftwareEntry, error) {
+	dir, err := softwareDir()
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []SoftwareEntry{}, nil
+		}
+		return nil, fmt.Errorf("读取软件目录失败")
+	}
+
+	var result []SoftwareEntry
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasSuffix(strings.ToLower(name), ".exe") {
+			continue
+		}
+		ext := filepath.Ext(name)
+		displayName := strings.TrimSuffix(name, ext)
+		result = append(result, SoftwareEntry{
+			Name: displayName,
+			Path: filepath.Join(dir, name),
+			Icon: "", // reserved for future icon extraction
+		})
+	}
+
+	return result, nil
+}
+
+// LaunchSoftware starts an executable by path.
+func (a *App) LaunchSoftware(path string) error {
+	cmd := exec.Command(path)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("启动软件失败")
+	}
+	runtime.LogInfof(a.ctx, "Launched software: %s", path)
+	return nil
+}
+
+// OpenSoftwareDir opens the software directory in the system file manager.
+func (a *App) OpenSoftwareDir() error {
+	dir, err := softwareDir()
+	if err != nil {
+		return err
+	}
+	// Ensure the directory exists
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("创建软件目录失败")
+	}
+	// Cross-platform: open file manager
+	var cmd *exec.Cmd
+	switch stdruntime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", dir)
+	case "darwin":
+		cmd = exec.Command("open", dir)
+	default:
+		cmd = exec.Command("xdg-open", dir)
+	}
+	return cmd.Start()
 }
 
 // SaveSceneFile writes a JSON scene file to the given path.
@@ -763,7 +1085,7 @@ func zipCacheName(zipPath string) string {
 func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 	cacheRoot, err := extractedDir()
 	if err != nil {
-		return nil, fmt.Errorf("extractedDir: %w", err)
+		return nil, fmt.Errorf("解压失败")
 	}
 
 	dest := filepath.Join(cacheRoot, zipCacheName(zipPath))
@@ -771,7 +1093,7 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 	// Stat source zip
 	srcInfo, err := os.Stat(zipPath)
 	if err != nil {
-		return nil, fmt.Errorf("source zip not accessible: %w", err)
+		return nil, fmt.Errorf("压缩包无法访问")
 	}
 	srcMtime := srcInfo.ModTime().Unix()
 	srcSize := srcInfo.Size()
@@ -792,18 +1114,18 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 	runtime.LogInfof(a.ctx, "ExtractZip: extracting %s → %s", zipPath, dest)
 	os.RemoveAll(dest)
 	if err := os.MkdirAll(dest, 0755); err != nil {
-		return nil, fmt.Errorf("mkdir cache: %w", err)
+		return nil, fmt.Errorf("创建缓存目录失败")
 	}
 
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return nil, fmt.Errorf("zip.OpenReader: %w", err)
+		return nil, fmt.Errorf("打开压缩包失败")
 	}
 	defer zr.Close()
 
 	destAbs, err := filepath.Abs(dest)
 	if err != nil {
-		return nil, fmt.Errorf("abs dest: %w", err)
+		return nil, fmt.Errorf("解析路径失败")
 	}
 	destPrefix := destAbs + string(filepath.Separator)
 
@@ -854,10 +1176,10 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 	m := manifest{Source: zipPath, Mtime: srcMtime, Size: srcSize, Version: extractCacheVersion}
 	mData, err := json.Marshal(m)
 	if err != nil {
-		return nil, fmt.Errorf("manifest marshal: %w", err)
+		return nil, fmt.Errorf("保存索引失败")
 	}
 	if err := os.WriteFile(manifestPath, mData, 0644); err != nil {
-		return nil, fmt.Errorf("manifest write: %w", err)
+		return nil, fmt.Errorf("写入索引失败")
 	}
 
 	resultPath := filepath.ToSlash(filepath.Join(dest, innerPath))
@@ -929,7 +1251,7 @@ func (a *App) ClearExtractCache() error {
 func (a *App) ImportZip(zipPath string) (*ExtractResult, error) {
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return nil, fmt.Errorf("open zip: %w", err)
+		return nil, fmt.Errorf("打开压缩包失败")
 	}
 	var firstPmx string
 	for _, zf := range zr.File {
@@ -941,7 +1263,7 @@ func (a *App) ImportZip(zipPath string) (*ExtractResult, error) {
 	}
 	zr.Close()
 	if firstPmx == "" {
-		return nil, fmt.Errorf("no .pmx found in zip")
+		return nil, fmt.Errorf("压缩包内未找到模型文件")
 	}
 	return a.ExtractZip(zipPath, firstPmx)
 }
@@ -1126,7 +1448,9 @@ func truncate(s string, n int) string {
 }
 
 // corsMiddleware adds CORS headers for Wails WebView cross-origin access.
-// Restricts to localhost/Wails origins only since the server binds to 127.0.0.1.
+// Sets Access-Control-Allow-Origin: * (unconditional) — desktop app has no
+// CSRF risk; the file server binds to 127.0.0.1 so only local processes can
+// reach it.
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -1401,6 +1725,8 @@ func (a *App) trustedRoots() []string {
 }
 
 // IsolateModelDir ensures the model file is served from a safe directory.
+// [doc:architecture] IsolateModelDir — 安全隔离：信任目录返回原目录，外部文件复制到 temp
+// 规范文档: docs/architecture.md §数据通道（HTTP 文件服务）
 // For files inside trusted roots, returns the original directory unchanged.
 // For external files, copies PMX + all siblings to a temp directory.
 func (a *App) IsolateModelDir(filePath string) (string, error) {
@@ -1456,4 +1782,261 @@ func (a *App) GetThumbnailBatch(paths []string) (map[string]string, error) {
 		}
 	}
 	return result, nil
+}
+
+// ======== Download Directory Watching (ADR-008) ========
+
+// watchExts lists the file extensions that trigger watch notifications.
+var watchExts = map[string]bool{
+	".zip": true,
+	".pmx": true,
+	".vmd": true,
+}
+
+// magicSigs contains the first bytes used to validate file types.
+var magicSigs = [][]byte{
+	{0x50, 0x4B, 0x03, 0x04}, // ZIP (PK\x03\x04)
+	{0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00}, // RAR (Rar!\x1A\x07\x00)
+}
+
+// checkMagicNumber reads the first bytes of a file and checks against known signatures.
+// Returns true if the file header matches a known archive format.
+func checkMagicNumber(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	header := make([]byte, 8)
+	n, err := f.Read(header)
+	if err != nil || n < 4 {
+		return false
+	}
+	for _, sig := range magicSigs {
+		if len(header) >= len(sig) {
+			match := true
+			for i, b := range sig {
+				if header[i] != b {
+					match = false
+					break
+				}
+			}
+			if match {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// ImportLocalFile imports a local file into the model library.
+// For .zip files, it finds the first .pmx inside and extracts via ImportZip.
+// For .pmx/.vmd files, it returns the path directly as an ExtractResult.
+func (a *App) ImportLocalFile(path string) (*ExtractResult, error) {
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".zip":
+		return a.ImportZip(path)
+	case ".pmx", ".vmd":
+		return &ExtractResult{FilePath: path, Dir: filepath.Dir(path)}, nil
+	default:
+		return nil, fmt.Errorf("不支持的文件格式: %s", ext)
+	}
+}
+
+// StartWatchDir starts fsnotify-based watching on the specified directory.
+// If already watching a directory, it stops the previous watcher first.
+// Only files with .zip/.pmx/.vmd extensions trigger notifications,
+// filtered through Magic Number detection to skip incomplete downloads.
+func (a *App) StartWatchDir(dir string) error {
+	a.watchMu.Lock()
+	defer a.watchMu.Unlock()
+
+	// Stop existing watcher
+	if a.watcher != nil {
+		a.watcher.Close()
+		a.watcher = nil
+		if a.watchTimer != nil {
+			a.watchTimer.Stop()
+			a.watchTimer = nil
+		}
+		a.watchPending = nil
+	}
+
+	// Verify directory exists
+	info, err := os.Stat(dir)
+	if err != nil {
+		return fmt.Errorf("监听目录不可访问")
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("路径不是目录: %s", dir)
+	}
+
+	// Create new watcher
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("创建文件监听器失败")
+	}
+	if err := w.Add(dir); err != nil {
+		w.Close()
+		return fmt.Errorf("添加监听目录失败")
+	}
+
+	a.watcher = w
+	a.watchDir = dir
+	a.watchPending = make(map[string]struct{})
+
+	// Start the watch loop goroutine
+	go a.watchLoop(w)
+
+	a.safeLogInfo("StartWatchDir: 开始监听 %s", dir)
+	return nil
+}
+
+// StopWatchDir stops the current directory watcher.
+func (a *App) StopWatchDir() error {
+	a.watchMu.Lock()
+	defer a.watchMu.Unlock()
+
+	if a.watcher == nil {
+		return nil // not watching
+	}
+
+	a.watcher.Close()
+	a.watcher = nil
+	a.watchDir = ""
+	if a.watchTimer != nil {
+		a.watchTimer.Stop()
+		a.watchTimer = nil
+	}
+	a.watchPending = nil
+
+	a.safeLogInfo("StopWatchDir: 已停止监听")
+	return nil
+}
+
+// SetDownloadWatchDir persists the download watch directory to config
+// and restarts the watcher (if dir is non-empty) or stops it (if dir is empty).
+func (a *App) SetDownloadWatchDir(dir string) error {
+	// Stop current watcher first
+	_ = a.StopWatchDir()
+
+	// Persist to config
+	err := a.updateConfig(func(cfg *Config) {
+		cfg.DownloadWatchDir = dir
+	}, false)
+	if err != nil {
+		return err
+	}
+
+	// Start if dir is non-empty
+	if dir != "" {
+		return a.StartWatchDir(dir)
+	}
+	return nil
+}
+
+// SetDownloadAutoImport persists the auto-import preference to config.
+func (a *App) SetDownloadAutoImport(auto bool) error {
+	return a.updateConfig(func(cfg *Config) {
+		cfg.DownloadAutoImport = auto
+	}, false)
+}
+
+// GetDownloadWatchStatus returns the current watch state (directory being watched or empty string).
+func (a *App) GetDownloadWatchStatus() string {
+	a.watchMu.Lock()
+	defer a.watchMu.Unlock()
+	return a.watchDir
+}
+
+// watchLoop processes fsnotify events with 800ms debounce.
+// It filters for Create/Write events on files with known extensions,
+// validates Magic Number, and emits watch:newfile events to the frontend.
+func (a *App) watchLoop(w *fsnotify.Watcher) {
+	for {
+		select {
+		case event, ok := <-w.Events:
+			if !ok {
+				return
+			}
+			// Only interested in Create and Write events
+			if event.Op&(fsnotify.Create|fsnotify.Write) == 0 {
+				continue
+			}
+			// Check extension
+			ext := strings.ToLower(filepath.Ext(event.Name))
+			if !watchExts[ext] {
+				continue
+			}
+			// Validate Magic Number (skip incomplete/corrupt files)
+			if !checkMagicNumber(event.Name) {
+				continue
+			}
+			// Store pending file
+			a.watchMu.Lock()
+			a.watchPending[event.Name] = struct{}{}
+			// Reset debounce timer
+			if a.watchTimer != nil {
+				a.watchTimer.Stop()
+			}
+			a.watchTimer = time.AfterFunc(800*time.Millisecond, func() {
+				a.flushPending()
+			})
+			a.watchMu.Unlock()
+
+		case err, ok := <-w.Errors:
+			if !ok {
+				return
+			}
+			a.safeLogError("watchLoop error: %v", err)
+		}
+	}
+}
+
+// flushPending processes all pending files accumulated during the debounce window.
+func (a *App) flushPending() {
+	a.watchMu.Lock()
+	pending := a.watchPending
+	a.watchPending = make(map[string]struct{})
+	if a.watchTimer != nil {
+		a.watchTimer.Stop()
+		a.watchTimer = nil
+	}
+	a.watchMu.Unlock()
+
+	for path := range pending {
+		a.notifyNewFile(path)
+	}
+}
+
+// notifyNewFile emits a watch:newfile event to the frontend with the detected file info.
+func (a *App) notifyNewFile(filePath string) {
+	name := filepath.Base(filePath)
+	ext := strings.ToLower(filepath.Ext(filePath))
+	fileType := "zip"
+	if ext == ".pmx" {
+		fileType = "model"
+	} else if ext == ".vmd" {
+		fileType = "motion"
+	}
+
+	payload := map[string]string{
+		"path": filePath,
+		"name": name,
+		"type": fileType,
+	}
+	runtime.EventsEmit(a.ctx, "watch:newfile", payload)
+}
+
+// restoreWatcher resumes directory watching from saved config on startup.
+// Called during app startup.
+func (a *App) restoreWatcher() {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil || cfg.DownloadWatchDir == "" {
+		return
+	}
+	if err := a.StartWatchDir(cfg.DownloadWatchDir); err != nil {
+		a.safeLogError("restoreWatcher: 恢复监听失败 %s: %v", cfg.DownloadWatchDir, err)
+	}
 }

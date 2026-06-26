@@ -1,8 +1,22 @@
+// [doc:architecture] Settings — 设置页 + 外部库管理
+// 规范文档: docs/architecture.md §模型库管理
+// 职责: 配置读写、外部库挂载、软件目录扫描、MenuStack 设置页
 // Settings page + external library management (MenuStack-based).
 
 import { SetDisplayNamePriority,
          SelectDir, AddExternalPath, RemoveExternalPath,
-         ClearExtractCache } from "../wailsjs/go/main/App";
+         RenameExternalPath,
+         ClearExtractCache,
+         ScanSoftwareDir, LaunchSoftware, OpenSoftwareDir,
+         AutoDetectMMD,
+         SetBlenderPath,
+         SetMMDPath,
+         SelectExeFile,
+         SetDownloadWatchDir,
+         SetDownloadAutoImport,
+         GetDownloadWatchStatus,
+         StartWatchDir,
+         StopWatchDir } from "../wailsjs/go/main/App";
 import {
     dom, closeAllOverlays, setStatus,
     libraryRoot, externalPaths,
@@ -29,8 +43,23 @@ export function renderExternalList(): void {
         row.innerHTML = `
             <span class="eo-name">${escapeHtml(ep.name)}</span>
             <span class="eo-path">${escapeHtml(ep.path)}</span>
+            <button class="overlay-rename" data-path="${escapeHtml(ep.path)}"><iconify-icon icon="edit-3"></iconify-icon></button>
             <button class="overlay-del" data-path="${escapeHtml(ep.path)}">✕</button>
         `;
+        const renameBtn = row.querySelector(".overlay-rename") as HTMLButtonElement;
+        renameBtn.addEventListener("click", () => {
+            const newName = prompt("输入新的显示名称：", ep.name);
+            if (newName && newName.trim() && newName.trim() !== ep.name) {
+                RenameExternalPath(ep.path, newName.trim()).then(async () => {
+                    await reloadConfig();
+                    renderExternalList();
+                    setStatus(`✓ 已重命名: ${newName.trim()}`, true);
+                }).catch((err) => {
+                    setStatus("✗ 重命名失败", false);
+                    console.error("RenameExternalPath error:", err);
+                });
+            }
+        });
         const delBtn = row.querySelector(".overlay-del") as HTMLButtonElement;
         delBtn.addEventListener("click", async () => {
             try {
@@ -60,6 +89,30 @@ async function addExternalPath(): Promise<void> {
     }
 }
 
+// ======== Software Management ========
+
+let cachedSoftwareEntries: import("../wailsjs/go/models").main.SoftwareEntry[] | null = null;
+
+async function scanSoftwareDir(): Promise<void> {
+    try {
+        cachedSoftwareEntries = await ScanSoftwareDir();
+    } catch (err) {
+        console.error("ScanSoftwareDir error:", err);
+        cachedSoftwareEntries = [];
+    }
+}
+
+function buildSettingsSoftwareLevel(): PopupLevel {
+    const items: PopupRow[] = (cachedSoftwareEntries || []).map(entry => ({
+        kind: "action" as const,
+        label: entry.name,
+        icon: "app-window",
+        target: "launch:" + entry.path,
+    }));
+    items.push({ kind: "action", label: "打开目录", icon: "folder-open", target: "set:opensoftwaredir" });
+    return { label: "软件管理", dir: "", items };
+}
+
 // ======== Settings (MenuStack) ========
 
 let settingsStack: MenuStack | null = null;
@@ -70,7 +123,9 @@ function buildSettingsRoot(): PopupLevel {
         dir: "",
         items: [
             { kind: "folder", label: "显示", icon: "palette", target: "settings:display" },
+            { kind: "folder", label: "下载", icon: "download", target: "settings:download" },
             { kind: "folder", label: "系统", icon: "settings", target: "settings:system" },
+            { kind: "folder", label: "软件管理", icon: "package", target: "settings:software" },
             { kind: "action", label: "外部库", icon: "plug", target: "set:external" },
         ],
     };
@@ -91,6 +146,10 @@ function buildSettingsSystemLevel(): PopupLevel {
         dir: "",
         items: [
             { kind: "action", label: "清除提取缓存", icon: "trash-2", target: "set:clearcache" },
+            { kind: "divider", label: "", icon: "", target: "" },
+            { kind: "action", label: "检测 MMD 路径", icon: "external-link", target: "set:detectmmd" },
+            { kind: "action", label: "设置 MMD 路径", icon: "folder", target: "set:mmdpath" },
+            { kind: "action", label: "设置 Blender 路径", icon: "edit-3", target: "set:blenderpath" },
         ],
     };
 }
@@ -111,12 +170,151 @@ function handleSettingsAction(row: PopupRow): void {
         case "set:clearcache":
             ClearExtractCache().then(() => setStatus("✓ 缓存已清除", true)).catch(console.warn);
             break;
+        case "set:detectmmd":
+            (async () => {
+                try {
+                    const path = await AutoDetectMMD();
+                    setStatus(`✓ MMD 已检测: ${path}`, true);
+                } catch (err: any) {
+                    setStatus("✗ 未找到 MMD，请在「软件管理」中手动添加", false);
+                }
+            })();
+            break;
+        case "set:blenderpath":
+            (async () => {
+                try {
+                    const path = await SelectExeFile();
+                    if (!path) return;
+                    await SetBlenderPath(path);
+                    setStatus(`✓ Blender 路径已设置`, true);
+                } catch (err: any) {
+                    setStatus("✗ 设置失败: " + (err.message || err), false);
+                }
+            })();
+            break;
+        case "set:mmdpath":
+            (async () => {
+                try {
+                    const path = await SelectExeFile();
+                    if (!path) return;
+                    await SetMMDPath(path);
+                    setStatus(`✓ MMD 路径已设置`, true);
+                } catch (err: any) {
+                    setStatus("✗ 设置失败: " + (err.message || err), false);
+                }
+            })();
+            break;
         case "set:external":
             closeAllOverlays();
             renderExternalList();
             dom.externalOverlay.classList.add("visible");
             break;
+        case "set:opensoftwaredir":
+            OpenSoftwareDir().catch(console.warn);
+            break;
+        default:
+            if (row.target && row.target.startsWith("launch:")) {
+                LaunchSoftware(row.target.slice(7)).catch(console.warn);
+            }
+            break;
     }
+}
+
+// ======== Download Settings ========
+
+function buildSettingsDownloadLevel(): PopupLevel {
+    return {
+        label: "下载",
+        dir: "",
+        items: [],
+        renderCustom: async (container) => {
+            container.style.padding = "12px 14px";
+
+            // Current status
+            const statusEl = document.createElement("div");
+            statusEl.style.cssText = "font-size:11px;color:var(--text-dim);margin-bottom:10px;";
+            container.appendChild(statusEl);
+
+            async function refreshStatus(): Promise<void> {
+                try {
+                    const dir = await GetDownloadWatchStatus();
+                    statusEl.textContent = dir ? `监听中: ${dir}` : "监听已停止";
+                } catch {
+                    statusEl.textContent = "监听已停止";
+                }
+            }
+            refreshStatus();
+
+            // Directory input row
+            const dirRow = document.createElement("div");
+            dirRow.style.cssText = "display:flex;gap:6px;margin-bottom:10px;";
+            const dirInput = document.createElement("input");
+            dirInput.type = "text";
+            dirInput.placeholder = "选择监听目录...";
+            dirInput.readOnly = true;
+            dirInput.style.cssText = "flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;";
+            const selectBtn = document.createElement("button");
+            selectBtn.textContent = "📁";
+            selectBtn.style.cssText = "background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 10px;cursor:pointer;font-size:14px;";
+            selectBtn.addEventListener("click", async () => {
+                try {
+                    const dir = await SelectDir();
+                    if (!dir) return;
+                    dirInput.value = dir;
+                    await SetDownloadWatchDir(dir);
+                    refreshStatus();
+                    setStatus(`✓ 监听目录已设置: ${dir}`, true);
+                } catch (err: any) {
+                    setStatus("✗ 设置监听目录失败", false);
+                }
+            });
+            dirRow.appendChild(dirInput);
+            dirRow.appendChild(selectBtn);
+            container.appendChild(dirRow);
+
+            // Get current watch dir to populate input
+            GetDownloadWatchStatus().then(dir => {
+                if (dir) dirInput.value = dir;
+            }).catch(() => {});
+
+            // Auto-import toggle
+            const autoRow = document.createElement("div");
+            autoRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:10px;justify-content:space-between;";
+            const autoLabel = document.createElement("span");
+            autoLabel.style.cssText = "font-size:11px;color:var(--text-dim);";
+            autoLabel.textContent = "自动导入（跳过确认）";
+            const autoToggle = document.createElement("input");
+            autoToggle.type = "checkbox";
+            autoToggle.style.cssText = "accent-color:var(--accent);cursor:pointer;";
+            autoToggle.addEventListener("change", async () => {
+                try {
+                    await SetDownloadAutoImport(autoToggle.checked);
+                    setStatus(autoToggle.checked ? "✓ 自动导入已开启" : "✓ 自动导入已关闭", true);
+                } catch {
+                    setStatus("✗ 设置失败", false);
+                }
+            });
+            autoRow.appendChild(autoLabel);
+            autoRow.appendChild(autoToggle);
+            container.appendChild(autoRow);
+
+            // Stop watch button
+            const stopBtn = document.createElement("button");
+            stopBtn.textContent = "停止监听";
+            stopBtn.style.cssText = "background:var(--danger,#e74c3c);color:#fff;border:none;border-radius:4px;padding:6px 12px;font-size:12px;cursor:pointer;";
+            stopBtn.addEventListener("click", async () => {
+                try {
+                    await StopWatchDir();
+                    dirInput.value = "";
+                    refreshStatus();
+                    setStatus("✓ 已停止监听", true);
+                } catch {
+                    setStatus("✗ 停止监听失败", false);
+                }
+            });
+            container.appendChild(stopBtn);
+        },
+    };
 }
 
 export async function showSettings(): Promise<void> {
@@ -131,7 +329,16 @@ export async function showSettings(): Promise<void> {
             onFolderEnter: (row) => {
                 switch (row.target) {
                     case "settings:display": return buildSettingsDisplayLevel();
+                    case "settings:download": return buildSettingsDownloadLevel();
                     case "settings:system": return buildSettingsSystemLevel();
+                    case "settings:software":
+                        if (!cachedSoftwareEntries) {
+                            // First time: scan then re-render to show results
+                            scanSoftwareDir().then(() => settingsStack?.reRender());
+                        } else {
+                            scanSoftwareDir().then(() => settingsStack?.reRender());
+                        }
+                        return buildSettingsSoftwareLevel();
                     default: return null;
                 }
             },

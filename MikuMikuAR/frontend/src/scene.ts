@@ -1,4 +1,6 @@
-// Scene, camera, model loading, and playback management.
+// [doc:architecture] Scene — 3D 场景核心模块
+// 规范文档: docs/architecture.md §渲染环节
+// 职责: Babylon.js 初始化 + PMX/VMD 加载 + 播放控制 + 场景序列化
 
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
@@ -10,6 +12,7 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
 import { ImportMeshAsync } from "@babylonjs/core/Loading/sceneLoader";
+import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
 import "@babylonjs/core/Physics/v2/physicsEngineComponent";
 
 import { RegisterMmdModelLoaders } from "babylon-mmd/esm/Loader/dynamic";
@@ -90,6 +93,125 @@ export function setLightState(s: Partial<LightState>): void {
 
 // Initialise camera system immediately (before render loop)
 initCameraSystem(scene, dom.canvas);
+
+// ======== Rendering Pipeline (Default) ========
+export const pipeline = new DefaultRenderingPipeline("default", true, scene, [scene.activeCamera!]);
+pipeline.samples = 1;            // MSAA off (performance)
+pipeline.fxaaEnabled = false;
+pipeline.bloomEnabled = false;
+pipeline.imageProcessingEnabled = true;
+
+// ======== Render State Management (Post-Processing + Stage) ========
+
+/** Tone-mapping mode values used by Babylon's ImageProcessingConfiguration. */
+export const ToneMappingMode = {
+    OFF: 0,
+    ACES: 1,
+    REINHARD: 2,
+    CINEON: 3,
+    NEUTRAL: 4,
+} as const;
+
+export interface RenderState {
+    // Post-processing
+    bloomEnabled: boolean;
+    bloomWeight: number;      // 0-1, default 0.3
+    bloomThreshold: number;   // 0-1, default 0.5
+    bloomKernel: number;      // 0-512, default 64
+    outlineEnabled: boolean;
+    outlineColor: [number, number, number];  // RGB 0-1
+    fxaaEnabled: boolean;
+    // Stage / imageProcessing
+    toneMapping: number;      // 0=OFF 1=ACES 2=Reinhard 3=Cineon 4=Neutral
+    exposure: number;         // 0-4, default 1
+    contrast: number;         // 0-4, default 1
+    fov: number;              // 0.1-3 rad, default 0.8
+    bgColor: [number, number, number];  // 0-1
+}
+
+// Module-level outline state (edges are set on meshes, not pipeline; tracked here for getRenderState)
+let _outlineEnabled = false;
+let _outlineColor: [number, number, number] = [0, 0, 0];
+
+export function getRenderState(): RenderState {
+    const cam = scene.activeCamera;
+    return {
+        bloomEnabled: pipeline.bloomEnabled,
+        bloomWeight: pipeline.bloomWeight ?? 0.3,
+        bloomThreshold: pipeline.bloomThreshold ?? 0.5,
+        bloomKernel: pipeline.bloomKernel ?? 64,
+        outlineEnabled: _outlineEnabled,
+        outlineColor: _outlineColor,
+        fxaaEnabled: pipeline.fxaaEnabled,
+        toneMapping: scene.imageProcessingConfiguration?.toneMappingType ?? 0,
+        exposure: scene.imageProcessingConfiguration?.exposure ?? 1,
+        contrast: scene.imageProcessingConfiguration?.contrast ?? 1,
+        fov: cam ? (cam as any).fov ?? 0.8 : 0.8,
+        bgColor: [scene.clearColor.r, scene.clearColor.g, scene.clearColor.b],
+    };
+}
+
+export function setRenderState(s: Partial<RenderState>): void {
+    // Post-processing
+    if (s.bloomEnabled !== undefined) pipeline.bloomEnabled = s.bloomEnabled;
+    if (s.bloomWeight !== undefined) pipeline.bloomWeight = s.bloomWeight;
+    if (s.bloomThreshold !== undefined) pipeline.bloomThreshold = s.bloomThreshold;
+    if (s.bloomKernel !== undefined) pipeline.bloomKernel = s.bloomKernel;
+    if (s.fxaaEnabled !== undefined) pipeline.fxaaEnabled = s.fxaaEnabled;
+
+    // Outline — toggle edges rendering on all loaded meshes
+    if (s.outlineEnabled !== undefined) {
+        _outlineEnabled = s.outlineEnabled;
+        for (const inst of modelRegistry.values()) {
+            for (const m of inst.meshes) {
+                if (s.outlineEnabled) {
+                    m.enableEdgesRendering();
+                } else {
+                    m.disableEdgesRendering();
+                }
+            }
+        }
+    }
+    // Apply outline color (separate from toggle so color can change independently)
+    if (s.outlineColor !== undefined) {
+        _outlineColor = s.outlineColor;
+        for (const inst of modelRegistry.values()) {
+            for (const m of inst.meshes) {
+                if (m.edgesRenderer) {
+                    m.edgesColor = new Color4(s.outlineColor[0], s.outlineColor[1], s.outlineColor[2], 1);
+                }
+            }
+        }
+    }
+
+    // Stage / imageProcessing
+    if (scene.imageProcessingConfiguration) {
+        if (s.toneMapping !== undefined) scene.imageProcessingConfiguration.toneMappingType = s.toneMapping;
+        if (s.exposure !== undefined) scene.imageProcessingConfiguration.exposure = s.exposure;
+        if (s.contrast !== undefined) scene.imageProcessingConfiguration.contrast = s.contrast;
+    }
+    if (s.fov !== undefined && scene.activeCamera) {
+        (scene.activeCamera as any).fov = s.fov;
+    }
+    if (s.bgColor !== undefined) {
+        scene.clearColor = new Color4(s.bgColor[0], s.bgColor[1], s.bgColor[2], 1.0);
+    }
+}
+
+/** Re-attach the rendering pipeline to the current active camera (call after camera switch). */
+export function reattachPipeline(): void {
+    if (scene.activeCamera) {
+        // Remove previously attached camera if still in pipeline
+        if (_pipelineCamera && _pipelineCamera !== scene.activeCamera) {
+            try { pipeline.removeCamera(_pipelineCamera); } catch (_) {}
+        }
+        pipeline.addCamera(scene.activeCamera);
+        _pipelineCamera = scene.activeCamera;
+    }
+}
+
+// Track last camera added to pipeline for cleanup on reattach
+let _pipelineCamera: import("@babylonjs/core/Cameras/camera").Camera | null = null;
 
 // ======== Convenience getters ========
 export function focusedMmdModel() { return focusedModelId ? modelRegistry.get(focusedModelId)?.mmdModel ?? null : null; }
@@ -449,6 +571,7 @@ export interface SceneFile {
     }>;
     camera: CameraState;
     lights: LightState;
+    render?: RenderState;  // optional — legacy scenes without this field are fine
 }
 
 export function serializeScene(): SceneFile {
@@ -474,6 +597,7 @@ export function serializeScene(): SceneFile {
         models,
         camera: getCameraState(),
         lights: getLightState(),
+        render: getRenderState(),
     };
 }
 
@@ -521,9 +645,10 @@ export async function deserializeScene(data: SceneFile): Promise<void> {
             console.warn(`Scene restore: skip ${m.name}:`, err);
         }
     }
-    // Restore camera + lights
+    // Restore camera + lights + render
     if (data.camera) setCameraState(data.camera);
     if (data.lights) setLightState(data.lights);
+    if (data.render) setRenderState(data.render);
 }
 
 // ======== Model Instance Manipulation Helpers ========
