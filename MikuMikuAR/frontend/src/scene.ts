@@ -1668,11 +1668,12 @@ function _applySky(state: EnvState): void {
 
     // Gradient mode — in-place material update if mesh exists
     if (state.skyMode === "gradient") {
-        if (_envSys.sky.skyMesh?.material instanceof GradientMaterial) {
-            const mat = _envSys.sky.skyMesh.material;
-            mat.topColor = new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]);
-            mat.bottomColor = new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]);
+        const existing = _envSys.sky.skyMesh?.material;
+        if (existing instanceof GradientMaterial) {
+            existing.topColor = new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]);
+            existing.bottomColor = new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]);
             scene.clearColor = new Color4(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2], 1);
+            existing.markAsDirty(Material.TextureDirtyFlag);
             return;
         }
     }
@@ -1682,6 +1683,7 @@ function _applySky(state: EnvState): void {
         if (_envSys.sky.skyMesh?.material instanceof SkyMaterial) {
             const mat = _envSys.sky.skyMesh.material as SkyMaterial;
             mat.luminance = state.skyBrightness;
+            mat.markAsDirty(Material.TextureDirtyFlag);
             return;
         }
     }
