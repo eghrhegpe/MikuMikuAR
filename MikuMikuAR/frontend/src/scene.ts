@@ -1673,52 +1673,36 @@ function _applySky(state: EnvState): void {
         return;
     }
 
-    // Gradient mode: keep mesh alive, replace material (avoids shader uniform upload issues)
-    if (state.skyMode === "gradient") {
-        // Guard: skip if colors are all black (likely a corrupt state)
-        const top = state.skyColorTop;
-        const bot = state.skyColorBot;
-        if (top[0] + top[1] + top[2] === 0 && bot[0] + bot[1] + bot[2] === 0) {
-            console.warn("[env] skip gradient update — both top and bottom are black");
-            return;
-        }
+    const mesh = _envSys.sky.skyMesh;
+    const top = state.skyColorTop;
+    const bot = state.skyColorBot;
 
-        if (_envSys.sky.skyMesh) {
-            // Create new material FIRST to get a fresh GL program ID,
-            // THEN dispose the old material (avoids program-ID reuse conflict)
-            const mat = new GradientMaterial("envSkyGradient", scene);
-            mat.topColor = new Color3(top[0], top[1], top[2]);
-            mat.bottomColor = new Color3(bot[0], bot[1], bot[2]);
-            mat.offset = 0.3;
-            if (_envSys.sky.skyMesh.material) {
-                _envSys.sky.skyMesh.material.dispose();
-            }
-            _envSys.sky.skyMesh.material = mat;
+    // Gradient mode — in-place property mutation (no dispose/recreate = no GL_INVALID_VALUE)
+    if (state.skyMode === "gradient") {
+        if (mesh?.material && (mesh.material as any).topColor !== undefined) {
+            // Duck-type check: existing material is GradientMaterial — mutate in place
+            const mat = mesh.material as any;
+            mat.topColor.r = top[0];
+            mat.topColor.g = top[1];
+            mat.topColor.b = top[2];
+            mat.bottomColor.r = bot[0];
+            mat.bottomColor.g = bot[1];
+            mat.bottomColor.b = bot[2];
             scene.clearColor = new Color4(bot[0], bot[1], bot[2], 1);
             return;
         }
-        // First-time: create full mesh + material
+        _disposeSky();
         _createGradientSky(state);
         return;
     }
 
-    // Procedural mode: keep mesh alive, replace material
+    // Procedural mode — in-place property mutation
     if (state.skyMode === "procedural") {
-        if (_envSys.sky.skyMesh) {
-            const skyMat = new SkyMaterial("envSkyMat", scene);
-            skyMat.backFaceCulling = false;
-            skyMat.luminance = state.skyBrightness;
-            skyMat.turbidity = 10;
-            skyMat.rayleigh = 2;
-            const ls = getLightState();
-            const sunDir = new Vector3(ls.dirX, 0.5, ls.dirZ).normalize();
-            skyMat.sunPosition = sunDir.scale(100);
-            if (_envSys.sky.skyMesh.material) {
-                _envSys.sky.skyMesh.material.dispose();
-            }
-            _envSys.sky.skyMesh.material = skyMat;
+        if (mesh?.material && (mesh.material as any).luminance !== undefined) {
+            (mesh.material as any).luminance = state.skyBrightness;
             return;
         }
+        _disposeSky();
         _createProceduralSky(state);
         return;
     }
