@@ -45,6 +45,7 @@ import {
     seekDragging, setSeekDragging,
     ModelInstance, setModelRegistry, escapeHtml,
     computeLibraryRef, resolveLibraryRef,
+    envState, EnvState,
 } from "./config";
 import { resolveFileUrl, normPath } from "./fileservice";
 import { loadVPDFromBuffer } from "./vpd-parser";
@@ -1364,6 +1365,11 @@ export function triggerAutoSave(): void {
             // Silent — auto-save is best-effort
         }
     }, 2000);
+}
+
+export function setEnvState(partial: Partial<EnvState>): void {
+    Object.assign(envState, partial);
+    triggerAutoSave();
 }
 
 // ======== Init Save/Load UI ========

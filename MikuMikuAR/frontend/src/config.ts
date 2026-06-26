@@ -75,6 +75,41 @@ export type PopupLevel = {
     renderCustom?: (container: HTMLElement) => void;
 };
 
+export interface EnvState {
+    skyMode: "color" | "gradient" | "texture" | "procedural";
+    skyColorTop: [number, number, number];
+    skyColorMid: [number, number, number];
+    skyColorBot: [number, number, number];
+    skyTexture: string;
+    skyRotationY: number;
+    skyBrightness: number;
+    envIntensity: number;
+
+    groundVisible: boolean;
+    groundMode: "solid" | "grid" | "checker";
+    groundColor: [number, number, number];
+    groundAlpha: number;
+
+    windEnabled: boolean;
+    windDirection: [number, number, number];
+    windSpeed: number;
+
+    particleEnabled: boolean;
+    particleType: "none" | "sakura" | "rain" | "snow" | "fireworks";
+
+    cloudsEnabled: boolean;
+    cloudCover: number;
+    cloudScale: number;
+
+    shadowEnabled: boolean;
+    shadowType: "hard" | "soft" | "pcf";
+    shadowCascades: number;
+
+    fogEnabled: boolean;
+    fogColor: [number, number, number];
+    fogDensity: number;
+}
+
 // ======== Shared Mutable State ========
 
 export let mmdRuntime: MmdWasmRuntime | null = null;
@@ -169,6 +204,43 @@ export function toggleExpandedFolder(path: string): void {
     else expandedFolders.add(path);
 }
 
+// ======== Environment State (Phase 8) ========
+
+export let envState: EnvState = {
+    skyMode: "color",
+    skyColorTop: [0.3, 0.5, 0.8],
+    skyColorMid: [0.8, 0.8, 0.9],
+    skyColorBot: [0.2, 0.2, 0.25],
+    skyTexture: "",
+    skyRotationY: 0,
+    skyBrightness: 1,
+    envIntensity: 1,
+
+    groundVisible: true,
+    groundMode: "solid",
+    groundColor: [0.15, 0.15, 0.18],
+    groundAlpha: 0.6,
+
+    windEnabled: false,
+    windDirection: [0, 0, 1],
+    windSpeed: 1,
+
+    particleEnabled: false,
+    particleType: "none",
+
+    cloudsEnabled: false,
+    cloudCover: 0.5,
+    cloudScale: 1,
+
+    shadowEnabled: false,
+    shadowType: "soft",
+    shadowCascades: 2,
+
+    fogEnabled: false,
+    fogColor: [0.5, 0.5, 0.6],
+    fogDensity: 0.01,
+};
+
 // ======== DOM Element Refs ========
 
 export const dom = {
@@ -210,6 +282,7 @@ export const dom = {
     btnScene: document.getElementById("btnScene") as HTMLButtonElement,
     sceneOverlay: document.getElementById("sceneOverlay") as HTMLElement,
     btnCloseScene: document.getElementById("btnCloseScene") as HTMLButtonElement,
+    overlayShield: document.getElementById("overlayShield") as HTMLElement,
 };
 
 // ======== Helpers ========
