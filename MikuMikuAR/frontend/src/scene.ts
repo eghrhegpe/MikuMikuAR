@@ -1679,18 +1679,15 @@ function _applySky(state: EnvState): void {
 
     // Gradient mode — in-place property mutation (no dispose/recreate = no GL_INVALID_VALUE)
     if (state.skyMode === "gradient") {
-        if (mesh?.material && (mesh.material as any).topColor !== undefined) {
-            // Duck-type check: existing material is GradientMaterial — mutate in place
+        if (mesh?.material?.getClassName() === "GradientMaterial") {
             const mat = mesh.material as any;
-            mat.topColor.r = top[0];
-            mat.topColor.g = top[1];
-            mat.topColor.b = top[2];
-            mat.bottomColor.r = bot[0];
-            mat.bottomColor.g = bot[1];
-            mat.bottomColor.b = bot[2];
+            mat.topColor = new Color3(top[0], top[1], top[2]);
+            mat.bottomColor = new Color3(bot[0], bot[1], bot[2]);
             scene.clearColor = new Color4(bot[0], bot[1], bot[2], 1);
+            mat.markAsDirty(Material.TextureDirtyFlag);
             return;
         }
+        // First-time or mode-switch path
         _disposeSky();
         _createGradientSky(state);
         return;
@@ -1698,7 +1695,7 @@ function _applySky(state: EnvState): void {
 
     // Procedural mode — in-place property mutation
     if (state.skyMode === "procedural") {
-        if (mesh?.material && (mesh.material as any).luminance !== undefined) {
+        if (mesh?.material?.getClassName() === "SkyMaterial") {
             (mesh.material as any).luminance = state.skyBrightness;
             return;
         }
