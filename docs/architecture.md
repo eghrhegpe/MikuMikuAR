@@ -116,6 +116,16 @@ type ModelEntry struct {
 - **导航**：文件夹行 → `navigateTo()` 推栈 → `renderPopup()` 刷新；面包屑 crumb 点击 → `popToLevel()` 按索引弹出
 - **数据源**：`buildLevel(dir)` 从 flat `allModels[]` 中提取直接子模型 + 子文件夹列表，纯前端过滤，无需重复调用 Go
 
+#### 5.x 体验增强功能
+
+| 功能 | 实现文件 | 说明 |
+|------|---------|------|
+| 批量截图 | `scene-menu.ts` + Go `SaveScreenshot` | 场景菜单 → 截图 → 截图当前 / 批量截图到目录，PNG 格式 |
+| 近期播放 | `library.ts` + Go `GetRecentModels`/`AddRecentModel` | 模型弹窗根菜单「最近打开」，最多 20 条，自动去重置顶 |
+| 收藏 | `library.ts` + Go `ToggleFavorite`/`GetFavorites` | 底层存储在标签系统（内置标签「收藏」），自动迁移旧数据 |
+| 表情预览 | `library.ts` + `scene.ts` | 模型详情 → 表情预览，滑块调节所有 morph 权重 0~1，关闭弹窗自动重置 |
+| 模型统计信息 | `library.ts` | 模型详情 → 模型信息，显示顶点/面/骨骼/表情数等 PMX 元数据 |
+
 ### 6. zip 容器
 
 #### 6.1 解压流程

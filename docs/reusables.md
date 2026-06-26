@@ -91,6 +91,19 @@
 | `GetThumbnail` | `(modelPath string) (string, error)` | 读取缩略图（base64） |
 | `GetThumbnailBatch` | `(paths []string) (map[string]string, error)` | 批量读取缩略图 |
 
+### 近期播放
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `GetRecentModels` | `() []string` | 获取最近打开的模型 libraryRef 列表（最新在前） |
+| `AddRecentModel` | `(libraryRef string) error` | 添加模型到近期播放列表（去重置顶，最多 20 条） |
+
+### 截图
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `SaveScreenshot` | `(dir, filename, base64PNG string) error` | 保存 PNG 截图到指定目录 |
+
 ### 目录监听
 
 | 函数 | 签名 | 用途 |
