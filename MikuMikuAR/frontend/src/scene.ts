@@ -39,7 +39,7 @@ import "@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 
-import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../wailsjs/go/main/App";
+import { SaveThumbnail, SaveLastScene, LoadLastScene, SetEnvState } from "../wailsjs/go/main/App";
 import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode, getCameraMode } from "./camera";
 import type { CameraState } from "./camera";
 import {
@@ -1464,6 +1464,20 @@ export function triggerAutoSave(): void {
     }, 2000);
 }
 
+// ======== Env state config persistence (debounced) ========
+let envSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+function triggerEnvSave(): void {
+    if (envSaveTimer) clearTimeout(envSaveTimer);
+    envSaveTimer = setTimeout(async () => {
+        try {
+            await SetEnvState(envState as any);
+        } catch (err) {
+            // Silent — best-effort config persistence
+        }
+    }, 1000);
+}
+
 export function setEnvState(partial: Partial<EnvState>): void {
     // Runtime guard: detect black sky color assignments
     if ((partial.skyColorTop && partial.skyColorTop[0] === 0 && partial.skyColorTop[1] === 0 && partial.skyColorTop[2] === 0) ||
@@ -1509,6 +1523,7 @@ export function setEnvState(partial: Partial<EnvState>): void {
     }
 
     triggerAutoSave();
+    triggerEnvSave();
 }
 
 // ======== Init Save/Load UI ========
@@ -1630,8 +1645,6 @@ function _createProceduralSky(state: EnvState): void {
     skyMat.sunPosition = sunDir.scale(100);
 
     skybox.material = skyMat;
-    // Force synchronous shader compilation so the first frame renders, not black
-    skyMat.isReady(skybox);
     _envSys.sky.skyMesh = skybox;
     scene.clearColor = new Color4(0, 0, 0, 1);
 }
@@ -1646,29 +1659,16 @@ function _applySky(state: EnvState): void {
 
     const mesh = _envSys.sky.skyMesh;
 
-    // Procedural mode — pre-compile via isReady, then swap
+    // Procedural mode — in-place property mutation (no dispose/recreate = no GL_INVALID_VALUE)
     if (state.skyMode === "procedural") {
-        if (!mesh) {
-            _disposeSky();
-            _createProceduralSky(state);
+        if (mesh?.material?.getClassName() === "SkyMaterial") {
+            const skyMat = mesh.material as any;
+            skyMat.luminance = state.skyBrightness;
             return;
         }
-        const skyMat = new SkyMaterial("envSkyMat", scene);
-        skyMat.backFaceCulling = false;
-        skyMat.luminance = state.skyBrightness;
-        skyMat.turbidity = 10;
-        skyMat.rayleigh = 2;
-        const ls = getLightState();
-        const sunDir = new Vector3(ls.dirX, 0.5, ls.dirZ).normalize();
-        skyMat.sunPosition = sunDir.scale(100);
-
-        skyMat.isReady(mesh);
-
-        if (mesh.material) {
-            mesh.material.dispose();
-        }
-        mesh.material = skyMat;
-        scene.clearColor = new Color4(0, 0, 0, 1);
+        // First-time: create from scratch
+        _disposeSky();
+        _createProceduralSky(state);
         return;
     }
 
