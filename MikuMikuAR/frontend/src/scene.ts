@@ -1607,7 +1607,6 @@ function _createGradientSky(state: EnvState): void {
     mat.offset = 0.3;
     skySphere.material = mat;
 
-    _gradientMat = mat;
     _envSys.sky.skyMesh = skySphere;
     scene.clearColor = new Color4(
         state.skyColorBot[0],
@@ -1655,60 +1654,22 @@ function _createProceduralSky(state: EnvState): void {
     skyMat.sunPosition = sunDir.scale(100);
 
     skybox.material = skyMat;
-    _proceduralMat = skyMat;
     _envSys.sky.skyMesh = skybox;
     scene.clearColor = new Color4(0, 0, 0, 1);
 }
 
-// Stored material references for in-place updates (avoids instanceof pitfalls)
-let _currentSkyMode: EnvState["skyMode"] | null = null;
-let _gradientMat: GradientMaterial | null = null;
-let _proceduralMat: SkyMaterial | null = null;
-
-function _updateGradientColors(state: EnvState): void {
-    if (_gradientMat) {
-        _gradientMat.topColor = new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]);
-        _gradientMat.bottomColor = new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]);
-        scene.clearColor = new Color4(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2], 1);
-    }
-}
-
-function _updateSkyBrightness(state: EnvState): void {
-    if (_proceduralMat) {
-        _proceduralMat.luminance = state.skyBrightness;
-    }
-}
-
 function _applySky(state: EnvState): void {
-    // Same mode → in-place update (no shader recompile)
-    if (state.skyMode === _currentSkyMode) {
-        if (state.skyMode === "color") {
-            scene.clearColor = new Color4(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2], 1);
-        }
-        if (state.skyMode === "gradient") { _updateGradientColors(state); }
-        if (state.skyMode === "procedural") { _updateSkyBrightness(state); }
-        if (state.skyMode === "texture" && state.skyTexture) {
-            _loadEnvTexture(state.skyTexture, state.skyRotationY, state.envIntensity);
-        }
+    // Color mode: just clearColor — always safe to in-place
+    if (state.skyMode === "color") {
+        _disposeSky();
+        scene.clearColor = new Color4(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2], 1);
         return;
     }
 
-    // Mode switch — full rebuild
+    // Gradient / procedural / texture: full rebuild needed (Babylon mat property setters are unreliable for live update)
     _disposeSky();
-    _gradientMat = null;
-    _proceduralMat = null;
-    _currentSkyMode = state.skyMode;
 
     switch (state.skyMode) {
-        case "color": {
-            scene.clearColor = new Color4(
-                state.skyColorTop[0],
-                state.skyColorTop[1],
-                state.skyColorTop[2],
-                1,
-            );
-            break;
-        }
         case "gradient": {
             _createGradientSky(state);
             break;
