@@ -489,35 +489,83 @@ function buildEnvLevel(): PopupLevel {
     };
 }
 
-const ENV_PRESETS: Record<string, Partial<EnvState>> = {
+interface EnvPresetConfig {
+    env: Partial<EnvState>;
+    lights?: Partial<import("./scene").LightState>;
+    render?: Partial<import("./scene").RenderState>;
+}
+
+const ENV_PRESETS: Record<string, EnvPresetConfig> = {
     "舞台-A 打光": {
-        skyMode: "gradient",
-        skyColorTop: [0.05, 0.05, 0.15],
-        skyColorBot: [0.1, 0.05, 0.15],
-        envIntensity: 0.5,
-        groundMode: "solid",
-        groundColor: [0.05, 0.05, 0.08],
-        particleEnabled: false,
+        env: {
+            skyMode: "gradient",
+            skyColorTop: [0.05, 0.05, 0.15],
+            skyColorBot: [0.1, 0.05, 0.15],
+            envIntensity: 0.5,
+            groundMode: "solid",
+            groundColor: [0.05, 0.05, 0.08],
+            particleEnabled: false,
+        },
+        lights: {
+            hemiIntensity: 0.4,
+            dirIntensity: 0.6,
+            dirColor: [1, 0.85, 0.7],
+            shadowEnabled: true,
+            shadowType: "soft",
+        },
+        render: {
+            vignetteEnabled: true,
+            vignetteDarkness: 0.3,
+            exposure: 1.2,
+        },
     },
     "户外晴天": {
-        skyMode: "procedural",
-        skyColorTop: [0.3, 0.6, 1],
-        skyColorBot: [0.6, 0.8, 1],
-        skyBrightness: 2,
-        envIntensity: 1.5,
-        groundMode: "grid",
-        groundColor: [0.3, 0.35, 0.3],
+        env: {
+            skyMode: "procedural",
+            skyColorTop: [0.3, 0.6, 1],
+            skyColorBot: [0.6, 0.8, 1],
+            skyBrightness: 2,
+            envIntensity: 1.5,
+            groundMode: "grid",
+            groundColor: [0.3, 0.35, 0.3],
+        },
+        lights: {
+            hemiIntensity: 1,
+            dirIntensity: 1.2,
+            dirColor: [1, 0.95, 0.85],
+            shadowEnabled: true,
+            shadowType: "pcf",
+        },
+        render: {
+            exposure: 1.4,
+            toneMapping: 1,
+        },
     },
     "演唱会蓝紫": {
-        skyMode: "gradient",
-        skyColorTop: [0.4, 0.1, 0.6],
-        skyColorMid: [0.2, 0.05, 0.4],
-        skyColorBot: [0.1, 0.02, 0.2],
-        envIntensity: 0.3,
-        groundMode: "solid",
-        groundColor: [0.05, 0.02, 0.1],
-        particleEnabled: true,
-        particleType: "fireworks",
+        env: {
+            skyMode: "gradient",
+            skyColorTop: [0.4, 0.1, 0.6],
+            skyColorMid: [0.2, 0.05, 0.4],
+            skyColorBot: [0.1, 0.02, 0.2],
+            envIntensity: 0.3,
+            groundMode: "solid",
+            groundColor: [0.05, 0.02, 0.1],
+            particleEnabled: true,
+            particleType: "fireworks",
+        },
+        lights: {
+            hemiIntensity: 0.3,
+            dirIntensity: 0.5,
+            dirColor: [0.6, 0.3, 0.8],
+            hemiColor: [0.3, 0.1, 0.5],
+            shadowEnabled: false,
+        },
+        render: {
+            vignetteEnabled: true,
+            vignetteDarkness: 0.5,
+            exposure: 0.9,
+            toneMapping: 3,
+        },
     },
 };
 
@@ -525,14 +573,16 @@ function buildPresetLevel(): PopupLevel {
     return {
         label: "系统预设",
         dir: "",
-        items: Object.entries(ENV_PRESETS).map(([name, params]) => ({
+        items: Object.entries(ENV_PRESETS).map(([name, preset]) => ({
             kind: "action" as const,
             label: name,
             icon: "bookmark",
             target: "",
             sublabel: "",
             onClick: () => {
-                setEnvState({ ...params });
+                setEnvState({ ...preset.env });
+                if (preset.lights) setLightState(preset.lights);
+                if (preset.render) setRenderState(preset.render);
             },
         })),
     };
