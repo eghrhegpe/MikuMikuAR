@@ -63,11 +63,11 @@ function triggerNavButton(num: number): void {
     switch (num) {
         case 1: togglePopup(); break;
         case 2: showMotionPopup(); break;
-        case 3: showSettings(); break;
+        case 4: showSettings(); break;
     }
 }
 const navButtonLabels: Record<number, string> = {
-    1: "模型库", 2: "动作库", 3: "下载", 4: "设置",
+    1: "模型库", 2: "动作库", 3: "环境", 4: "设置",
 };
 
 // Keyboard shortcuts
@@ -155,41 +155,61 @@ window.addEventListener("pointerup", async () => {
     }
 });
 
-// ======== Canvas click toggle overlays ========
-let _overlaysHidden = false;
-let _savedVisible: string[] = [];
-let _canvasPointerDown = { x: 0, y: 0 };
+// ======== Click renderer to toggle overlays ========
+// Use a window-level handler so it works regardless of z-index stacking.
+let _overlaysHiddenByClick = false;
+let _lastHidden: string[] = [];
+let _pointerDownPos = { x: 0, y: 0 };
 
-dom.canvas.addEventListener("pointerdown", (e) => {
-    _canvasPointerDown = { x: e.clientX, y: e.clientY };
-});
-dom.canvas.addEventListener("pointerup", (e) => {
-    const dx = e.clientX - _canvasPointerDown.x;
-    const dy = e.clientY - _canvasPointerDown.y;
-    if (Math.sqrt(dx * dx + dy * dy) > 5) return; // drag, not click
-    // Click — toggle all overlays
-    const overlays = [
-        dom.modelPopup, dom.motionPopup,
-        dom.settingsOverlay, dom.sceneOverlay,
-    ];
-    if (!_overlaysHidden) {
-        _savedVisible = overlays
-            .filter(el => el.classList.contains("visible"))
-            .map(el => el.id);
-        overlays.forEach(el => el.classList.remove("visible"));
-        _overlaysHidden = true;
+const _allOverlays: HTMLElement[] = [
+    dom.modelPopup, dom.motionPopup,
+    dom.settingsOverlay, dom.sceneOverlay,
+];
+
+function _isInsideOverlay(el: HTMLElement | null): boolean {
+    if (!el) return false;
+    return !!el.closest(".slide-item, .slide-back, .slide-header, .slide-title, .slide-detail-btn, .slide-add-btn, " +
+        "button, input, select, textarea, .close-btn, .overlay-close, " +
+        ".overlay-header, .overlay-list, .overlay-add, .overlay-row");
+}
+
+function _toggleOverlays(): void {
+    if (!_overlaysHiddenByClick) {
+        _lastHidden = _allOverlays.filter(el => el.classList.contains("visible")).map(el => el.id);
+        _allOverlays.forEach(el => el.classList.remove("visible"));
+        _overlaysHiddenByClick = true;
     } else {
-        overlays.forEach(el => {
-            if (_savedVisible.includes(el.id)) el.classList.add("visible");
+        const toShow = _lastHidden.filter(id =>
+            _allOverlays.some(el => el.id === id && !el.classList.contains("visible"))
+        );
+        _allOverlays.forEach(el => {
+            if (toShow.includes(el.id)) el.classList.add("visible");
         });
-        _savedVisible = [];
-        _overlaysHidden = false;
+        _lastHidden = [];
+        _overlaysHiddenByClick = false;
     }
+}
+
+window.addEventListener("pointerdown", (e) => {
+    _pointerDownPos = { x: e.clientX, y: e.clientY };
 });
 
-// Nav buttons reset canvas overlay state
-[dom.btnMainAction, dom.btnMotionPopup, dom.btnScene, dom.btnSettings].forEach(btn => {
-    btn.addEventListener("click", () => { _overlaysHidden = false; _savedVisible = []; });
+window.addEventListener("pointerup", (e) => {
+    const dx = e.clientX - _pointerDownPos.x;
+    const dy = e.clientY - _pointerDownPos.y;
+    if (Math.sqrt(dx * dx + dy * dy) > 5) return;
+
+    // Never toggle when clicking inside an overlay or on interactive content
+    if (_isInsideOverlay(e.target as HTMLElement)) return;
+    // Never toggle when clicking nav buttons
+    if ((e.target as HTMLElement).closest("#bottomNav, .nav-tab")) return;
+
+    _toggleOverlays();
+});
+
+// Nav buttons reset toggle state
+[dom.btnMainAction, dom.btnMotionPopup, dom.btnScene, dom.btnEnv, dom.btnSettings].forEach(btn => {
+    btn.addEventListener("click", () => { _overlaysHiddenByClick = false; _lastHidden = []; });
 });
 
 // ======== Init ========

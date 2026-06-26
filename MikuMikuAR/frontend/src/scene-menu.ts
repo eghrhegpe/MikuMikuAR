@@ -1323,5 +1323,40 @@ export async function showSceneMenu(): Promise<void> {
     sceneStack.reset(buildSceneRoot());
 }
 
+/** Open scene overlay and jump directly into environment level. */
+export async function showEnvMenu(): Promise<void> {
+    closeAllOverlays();
+    dom.sceneOverlay.classList.add("visible");
+
+    await loadUserPresets();
+
+    if (!sceneStack) {
+        sceneStack = new SlideMenu({
+            container: dom.sceneOverlay,
+            onClose: () => closeAllOverlays(),
+            onItemClick: (row) => handleSceneAction(row),
+            onFolderEnter: (row) => {
+                switch (row.target) {
+                    case "scene:presets": return buildPresetScenesLevel();
+                    case "scene:env": return buildEnvLevel();
+                    case "scene:env:sky": return buildSkyLevel();
+                    case "scene:env:ground": return buildGroundLevel();
+                    case "scene:env:particle": return buildParticleLevel();
+                    case "scene:env:wind": return buildWindLevel();
+                    case "scene:env:cloud": return buildCloudLevel();
+                    case "scene:env:post": return buildPostProcessLevel();
+                    case "scene:env:light": return buildLightLevel();
+                    case "scene:env:presets": return buildPresetLevel();
+                    default: return null;
+                }
+            },
+            onAfterRender: () => {},
+        });
+    }
+
+    sceneStack.reset(buildEnvLevel());
+}
+
 // Wire up events
 dom.btnScene.addEventListener("click", showSceneMenu);
+dom.btnEnv.addEventListener("click", showEnvMenu);

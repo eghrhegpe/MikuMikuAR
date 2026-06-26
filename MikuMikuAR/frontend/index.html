@@ -28,9 +28,13 @@
                 <iconify-icon icon="lucide:monitor"></iconify-icon><span class="nav-label">场景</span>
                 <span class="shortcut-badge">3</span>
             </button>
-            <button class="nav-tab" id="btnSettings" title="设置" data-hint="应用偏好设置 · Ctrl+4" data-shortcut="4">
-                <iconify-icon icon="lucide:settings"></iconify-icon><span class="nav-label">设置</span>
+            <button class="nav-tab" id="btnEnv" title="环境" data-hint="天空、照明、地面和粒子 · Ctrl+4" data-shortcut="4">
+                <iconify-icon icon="lucide:cloud-sun"></iconify-icon><span class="nav-label">环境</span>
                 <span class="shortcut-badge">4</span>
+            </button>
+            <button class="nav-tab" id="btnSettings" title="设置" data-hint="应用偏好设置 · Ctrl+5" data-shortcut="5">
+                <iconify-icon icon="lucide:settings"></iconify-icon><span class="nav-label">设置</span>
+                <span class="shortcut-badge">5</span>
             </button>
         </div>
 
@@ -88,10 +92,10 @@
         </div>
 
         <!-- Settings Overlay (MenuStack) -->
-        <div id="settingsOverlay" class="overlay"></div>
+        <div id="settingsOverlay"></div>
 
         <!-- Scene Overlay (MenuStack) -->
-        <div id="sceneOverlay" class="overlay"></div>
+        <div id="sceneOverlay"></div>
 
         <!-- Hidden elements for MenuStack cloning -->
         <div style="display:none;">

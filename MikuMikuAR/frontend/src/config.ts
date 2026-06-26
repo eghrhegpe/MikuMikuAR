@@ -280,9 +280,9 @@ export const dom = {
     btnSettings: document.getElementById("btnSettings") as HTMLButtonElement,
     btnCloseSettings: document.getElementById("btnCloseSettings") as HTMLButtonElement,
     btnScene: document.getElementById("btnScene") as HTMLButtonElement,
+    btnEnv: document.getElementById("btnEnv") as HTMLButtonElement,
     sceneOverlay: document.getElementById("sceneOverlay") as HTMLElement,
     btnCloseScene: document.getElementById("btnCloseScene") as HTMLButtonElement,
-    overlayShield: document.getElementById("overlayShield") as HTMLElement,
 };
 
 // ======== Helpers ========
@@ -400,5 +400,7 @@ export function closeAllOverlays(): void {
     document.querySelectorAll(".overlay.visible").forEach(el => el.classList.remove("visible"));
     dom.modelPopup.classList.remove("visible");
     dom.motionPopup.classList.remove("visible");
+    dom.settingsOverlay.classList.remove("visible");
+    dom.sceneOverlay.classList.remove("visible");
     setPopupOpen(false);
 }
