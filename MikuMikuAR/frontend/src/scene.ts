@@ -1684,14 +1684,15 @@ function _applySky(state: EnvState): void {
         }
 
         if (_envSys.sky.skyMesh) {
-            // Dispose only the old material, mesh stays alive
-            if (_envSys.sky.skyMesh.material) {
-                _envSys.sky.skyMesh.material.dispose();
-            }
+            // Create new material FIRST to get a fresh GL program ID,
+            // THEN dispose the old material (avoids program-ID reuse conflict)
             const mat = new GradientMaterial("envSkyGradient", scene);
             mat.topColor = new Color3(top[0], top[1], top[2]);
             mat.bottomColor = new Color3(bot[0], bot[1], bot[2]);
             mat.offset = 0.3;
+            if (_envSys.sky.skyMesh.material) {
+                _envSys.sky.skyMesh.material.dispose();
+            }
             _envSys.sky.skyMesh.material = mat;
             scene.clearColor = new Color4(bot[0], bot[1], bot[2], 1);
             return;
@@ -1704,9 +1705,6 @@ function _applySky(state: EnvState): void {
     // Procedural mode: keep mesh alive, replace material
     if (state.skyMode === "procedural") {
         if (_envSys.sky.skyMesh) {
-            if (_envSys.sky.skyMesh.material) {
-                _envSys.sky.skyMesh.material.dispose();
-            }
             const skyMat = new SkyMaterial("envSkyMat", scene);
             skyMat.backFaceCulling = false;
             skyMat.luminance = state.skyBrightness;
@@ -1715,6 +1713,9 @@ function _applySky(state: EnvState): void {
             const ls = getLightState();
             const sunDir = new Vector3(ls.dirX, 0.5, ls.dirZ).normalize();
             skyMat.sunPosition = sunDir.scale(100);
+            if (_envSys.sky.skyMesh.material) {
+                _envSys.sky.skyMesh.material.dispose();
+            }
             _envSys.sky.skyMesh.material = skyMat;
             return;
         }
