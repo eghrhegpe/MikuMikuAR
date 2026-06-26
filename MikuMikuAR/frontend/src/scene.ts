@@ -1607,6 +1607,7 @@ function _createGradientSky(state: EnvState): void {
     mat.offset = 0.3;
     skySphere.material = mat;
 
+    _gradientMat = mat;
     _envSys.sky.skyMesh = skySphere;
     scene.clearColor = new Color4(
         state.skyColorBot[0],
@@ -1648,33 +1649,55 @@ function _createProceduralSky(state: EnvState): void {
     skyMat.turbidity = 10;
     skyMat.rayleigh = 2;
 
-    // Sun position derived from the direction light, not skyColorTop
+    // Sun always above horizon; derive azimuth from direction light XY, keep Y positive
     const ls = getLightState();
-    skyMat.sunPosition = new Vector3(ls.dirX * 100, ls.dirY * 100, ls.dirZ * 100);
+    const sunDir = new Vector3(ls.dirX, 0.5, ls.dirZ).normalize();
+    skyMat.sunPosition = sunDir.scale(100);
 
     skybox.material = skyMat;
+    _proceduralMat = skyMat;
     _envSys.sky.skyMesh = skybox;
     scene.clearColor = new Color4(0, 0, 0, 1);
 }
 
-function _applySky(state: EnvState): void {
-    // In-place update when already in the same mode — avoids shader recompile churn
-    if (state.skyMode === "gradient" && _envSys.sky.skyMesh?.material instanceof GradientMaterial) {
-        const mat = _envSys.sky.skyMesh.material;
-        mat.topColor = new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]);
-        mat.bottomColor = new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]);
+// Stored material references for in-place updates (avoids instanceof pitfalls)
+let _currentSkyMode: EnvState["skyMode"] | null = null;
+let _gradientMat: GradientMaterial | null = null;
+let _proceduralMat: SkyMaterial | null = null;
+
+function _updateGradientColors(state: EnvState): void {
+    if (_gradientMat) {
+        _gradientMat.topColor = new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]);
+        _gradientMat.bottomColor = new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]);
         scene.clearColor = new Color4(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2], 1);
+    }
+}
+
+function _updateSkyBrightness(state: EnvState): void {
+    if (_proceduralMat) {
+        _proceduralMat.luminance = state.skyBrightness;
+    }
+}
+
+function _applySky(state: EnvState): void {
+    // Same mode → in-place update (no shader recompile)
+    if (state.skyMode === _currentSkyMode) {
+        if (state.skyMode === "color") {
+            scene.clearColor = new Color4(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2], 1);
+        }
+        if (state.skyMode === "gradient") { _updateGradientColors(state); }
+        if (state.skyMode === "procedural") { _updateSkyBrightness(state); }
+        if (state.skyMode === "texture" && state.skyTexture) {
+            _loadEnvTexture(state.skyTexture, state.skyRotationY, state.envIntensity);
+        }
         return;
     }
-    if (state.skyMode === "procedural" && _envSys.sky.skyMesh?.material instanceof SkyMaterial) {
-        const mat = _envSys.sky.skyMesh.material as SkyMaterial;
-        mat.luminance = state.skyBrightness;
-        const ls = getLightState();
-        mat.sunPosition = new Vector3(ls.dirX * 100, ls.dirY * 100, ls.dirZ * 100);
-        return;
-    }
-    // Mode switch or first-time setup — full rebuild
+
+    // Mode switch — full rebuild
     _disposeSky();
+    _gradientMat = null;
+    _proceduralMat = null;
+    _currentSkyMode = state.skyMode;
 
     switch (state.skyMode) {
         case "color": {
