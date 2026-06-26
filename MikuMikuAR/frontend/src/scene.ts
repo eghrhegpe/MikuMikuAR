@@ -1485,6 +1485,16 @@ export function setEnvState(partial: Partial<EnvState>): void {
         _createClouds(envState);
     }
 
+    if (partial.fogEnabled !== undefined || partial.fogColor !== undefined || partial.fogDensity !== undefined) {
+        if (envState.fogEnabled) {
+            scene.fogMode = Scene.FOGMODE_EXP2;
+            scene.fogColor = new Color3(envState.fogColor[0], envState.fogColor[1], envState.fogColor[2]);
+            scene.fogDensity = envState.fogDensity;
+        } else {
+            scene.fogMode = Scene.FOGMODE_NONE;
+        }
+    }
+
     triggerAutoSave();
 }
 
@@ -1638,11 +1648,9 @@ function _createProceduralSky(state: EnvState): void {
     skyMat.turbidity = 10;
     skyMat.rayleigh = 2;
 
-    skyMat.sunPosition = new Vector3(
-        state.skyColorTop[0] * 100,
-        state.skyColorTop[1] * 100,
-        state.skyColorTop[2] * 100,
-    );
+    // Sun position derived from the direction light, not skyColorTop
+    const ls = getLightState();
+    skyMat.sunPosition = new Vector3(ls.dirX * 100, ls.dirY * 100, ls.dirZ * 100);
 
     skybox.material = skyMat;
     _envSys.sky.skyMesh = skybox;
@@ -1899,6 +1907,9 @@ function _createClouds(state: EnvState): void {
     cloudPlane.scaling.z = state.cloudScale;
 
     _envSys.clouds.postProcess = cloudPlane;
+
+    // Ensure per-frame wind drift for clouds
+    _ensureEnvUpdateObserver();
 }
 
 function _disposeClouds(): void {
@@ -1908,4 +1919,19 @@ function _disposeClouds(): void {
         }
         _envSys.clouds.postProcess = null;
     }
+}
+
+let _envUpdateObserver: any = null;
+function _ensureEnvUpdateObserver(): void {
+    if (_envUpdateObserver) return;
+    _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
+        // Cloud wind drift
+        if (envState.cloudsEnabled && envState.windEnabled) {
+            const cloud = _envSys.clouds.postProcess;
+            if (cloud instanceof Mesh) {
+                cloud.position.x += envState.windDirection[0] * envState.windSpeed * 0.01;
+                cloud.position.z += envState.windDirection[2] * envState.windSpeed * 0.01;
+            }
+        }
+    });
 }

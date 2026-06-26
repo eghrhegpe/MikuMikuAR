@@ -621,7 +621,9 @@ function buildSkyLevel(): PopupLevel {
             }
             container.appendChild(modeRow);
 
-            if (s.skyMode === "color" || s.skyMode === "gradient" || s.skyMode === "procedural") {
+            if (s.skyMode === "color") {
+                addColorSliderRow(container, "天空色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
+            } else if (s.skyMode === "gradient" || s.skyMode === "procedural") {
                 addColorSliderRow(container, "天顶色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
                 addColorSliderRow(container, "地平色", s.skyColorBot, (v) => setEnvState({ skyColorBot: v }));
             }
