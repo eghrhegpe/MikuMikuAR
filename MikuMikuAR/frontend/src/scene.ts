@@ -1615,12 +1615,7 @@ function _createGradientSky(state: EnvState): void {
     skySphere.material = mat;
 
     _envSys.sky.skyMesh = skySphere;
-    scene.clearColor = new Color4(
-        state.skyColorBot[0],
-        state.skyColorBot[1],
-        state.skyColorBot[2],
-        1,
-    );
+    scene.clearColor = new Color4(0, 0, 0, 1);
 }
 
 function _loadEnvTexture(path: string, rotationY: number, intensity: number): void {
