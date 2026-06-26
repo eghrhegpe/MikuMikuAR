@@ -22,6 +22,7 @@ import { SkyMaterial } from "@babylonjs/materials/sky/skyMaterial";
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { GPUParticleSystem } from "@babylonjs/core/Particles/gpuParticleSystem";
+import "@babylonjs/core/Particles/webgl2ParticleSystem";
 
 import { RegisterMmdModelLoaders } from "babylon-mmd/esm/Loader/dynamic";
 import { RegisterDxBmpTextureLoader } from "babylon-mmd/esm/Loader/registerDxBmpTextureLoader";
@@ -1635,24 +1636,25 @@ function _createProceduralSky(state: EnvState): void {
 
     const skyMat = new SkyMaterial("envSkyMat", scene);
     skyMat.backFaceCulling = false;
-    skyMat.luminance = state.skyBrightness;
+    skyMat.luminance = 1;
     skyMat.turbidity = 10;
     skyMat.rayleigh = 2;
+    skyMat.useSunPosition = true;
+    skyMat.inclination = 0.3;
+    skyMat.azimuth = 0.2;
 
     // Sun always above horizon; derive azimuth from direction light XY, keep Y positive
     const ls = getLightState();
     const sunDir = new Vector3(ls.dirX, 0.5, ls.dirZ).normalize();
     skyMat.sunPosition = sunDir.scale(100);
 
+    skyMat.onError = (effect, errors) => {
+        console.warn("[env] SkyMaterial shader error:", errors);
+    };
+
     skybox.material = skyMat;
     _envSys.sky.skyMesh = skybox;
     scene.clearColor = new Color4(0, 0, 0, 1);
-
-    // Bypass rendering pipeline for skybox so SkyMaterial renders correctly
-    const pipeline = (scene.postProcessRenderPipelineManager as any)?.renderPipelines?.get("default");
-    if (pipeline) {
-        pipeline.excludedMeshes.push(skybox);
-    }
 }
 
 function _applySky(state: EnvState): void {
@@ -1703,7 +1705,7 @@ function _applyCheckerGround(ground: Mesh, state: EnvState): void {
             ctx.fillRect(x, y, tileSize, tileSize);
         }
     }
-    const tex = new Texture("data:image/png;base64," + canvas.toDataURL(), scene);
+    const tex = new Texture(canvas.toDataURL(), scene);
     const mat = new StandardMaterial("envGroundChecker", scene);
     mat.diffuseTexture = tex;
     mat.diffuseColor = new Color3(1, 1, 1);
@@ -1770,7 +1772,7 @@ function _getParticleTexture(): Texture {
     ctx.arc(16, 16, 14, 0, Math.PI * 2);
     ctx.fillStyle = "white";
     ctx.fill();
-    return new Texture("data:image/png;base64," + canvas.toDataURL(), scene);
+    return new Texture(canvas.toDataURL(), scene);
 }
 
 function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boolean): void {
@@ -1894,7 +1896,7 @@ function _createClouds(state: EnvState): void {
     }
     ctx.putImageData(imgData, 0, 0);
 
-    const tex = new Texture("data:image/png;base64," + canvas.toDataURL(), scene);
+    const tex = new Texture(canvas.toDataURL(), scene);
     const mat = new StandardMaterial("envCloudMat", scene);
     mat.diffuseTexture = tex;
     mat.useAlphaFromDiffuseTexture = true;
