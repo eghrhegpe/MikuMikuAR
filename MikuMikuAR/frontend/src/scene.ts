@@ -19,8 +19,6 @@ import { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
 import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
-import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
-import { ShaderStore } from "@babylonjs/core/Engines/shaderStore";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { GPUParticleSystem } from "@babylonjs/core/Particles/gpuParticleSystem";
 import "@babylonjs/core/Particles/webgl2ParticleSystem";
@@ -1510,7 +1508,7 @@ export function setEnvState(partial: Partial<EnvState>): void {
         }
     }
 
-    if (partial.cloudsEnabled !== undefined || partial.cloudCover !== undefined || partial.cloudScale !== undefined) {
+    if (partial.cloudsEnabled !== undefined || partial.cloudCover !== undefined || partial.cloudScale !== undefined || partial.cloudHeight !== undefined) {
         _createClouds(envState);
     }
 
@@ -1609,62 +1607,44 @@ function _disposeSky(): void {
     }
 }
 
-// ─── Custom procedural sky shader (respects skyColorTop / skyColorBot) ───
-const _procSkyVert = `
-precision highp float;
-attribute vec3 position;
-uniform mat4 worldViewProjection;
-uniform mat4 world;
-varying vec3 vPositionW;
-void main(void) {
-    vec4 wPos = world * vec4(position, 1.0);
-    vPositionW = wPos.xyz;
-    gl_Position = worldViewProjection * vec4(position, 1.0);
+function _buildGradientTexture(top: Color3, bot: Color3): Texture {
+    const canvas = document.createElement("canvas");
+    canvas.width = 2;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d")!;
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, `rgb(${top.r*255|0},${top.g*255|0},${top.b*255|0})`);
+    grad.addColorStop(0.45, `rgb(${top.r*255|0},${top.g*255|0},${top.b*255|0})`);
+    grad.addColorStop(0.55, `rgb(${bot.r*255|0},${bot.g*255|0},${bot.b*255|0})`);
+    grad.addColorStop(1, `rgb(${bot.r*255|0},${bot.g*255|0},${bot.b*255|0})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 2, 256);
+    const tex = new Texture("data:" + canvas.toDataURL("image/png"), scene, false);
+    tex.wrapU = Texture.CLAMP_ADDRESSMODE;
+    tex.wrapV = Texture.CLAMP_ADDRESSMODE;
+    tex.hasAlpha = false;
+    return tex;
 }
-`;
-const _procSkyFrag = `
-precision highp float;
-uniform vec3 topColor;
-uniform vec3 bottomColor;
-uniform float horizonHeight;
-uniform float blendWidth;
-varying vec3 vPositionW;
-void main(void) {
-    float h = (vPositionW.y / 500.0) * 0.5 + 0.5;
-    float t = smoothstep(0.0, 1.0, (h - horizonHeight) / blendWidth + 0.5);
-    gl_FragColor = vec4(mix(bottomColor, topColor, t), 1.0);
-}
-`;
-ShaderStore.ShadersStore["procSkyVertex"] = _procSkyVert;
-ShaderStore.ShadersStore["procSkyFragment"] = _procSkyFrag;
 
-function _createProcSkyBox(state: EnvState): void {
-    const skybox = MeshBuilder.CreateBox("envSkyBox", {
-        size: 1000,
+function _createProceduralSky(state: EnvState): void {
+    const sphere = MeshBuilder.CreateSphere("envSkySphere", {
+        diameter: 1000,
+        segments: 24,
         sideOrientation: Mesh.BACKSIDE,
     }, scene);
-    skybox.isPickable = false;
+    sphere.isPickable = false;
 
-    const mat = new ShaderMaterial("envProcSky", scene, {
-        vertex: "procSky",
-        fragment: "procSky",
-    }, {
-        attributes: ["position"],
-        uniforms: ["world", "worldViewProjection", "topColor", "bottomColor", "horizonHeight", "blendWidth"],
-    });
-    mat.setColor3("topColor", new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]));
-    mat.setColor3("bottomColor", new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]));
-    mat.setFloat("horizonHeight", 0);
-    mat.setFloat("blendWidth", 0.4);
+    const mat = new StandardMaterial("envSkyMat", scene);
+    mat.emissiveTexture = _buildGradientTexture(
+        new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
+        new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
+    );
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
 
-    mat.onError = (effect, errors) => {
-        console.warn("[env] procSky shader error:", errors);
-    };
-
-    skybox.material = mat;
-    _envSys.sky.skyMesh = skybox;
+    sphere.material = mat;
+    _envSys.sky.skyMesh = sphere;
     scene.clearColor = new Color4(0, 0, 0, 1);
-    mat.isReady(skybox);
 }
 
 function _loadEnvTexture(path: string, rotationY: number, intensity: number): void {
@@ -1686,10 +1666,6 @@ function _loadEnvTexture(path: string, rotationY: number, intensity: number): vo
     scene.clearColor = new Color4(0, 0, 0, 1);
 }
 
-function _createProceduralSky(state: EnvState): void {
-    _createProcSkyBox(state);
-}
-
 function _applySky(state: EnvState): void {
     // Color mode: always just clearColor (no mesh)
     if (state.skyMode === "color") {
@@ -1700,14 +1676,17 @@ function _applySky(state: EnvState): void {
 
     const mesh = _envSys.sky.skyMesh;
 
-    // Procedural mode — in-place uniform update
+    // Procedural mode — in-place texture rebuild
     if (state.skyMode === "procedural") {
-        if (mesh?.material?.getClassName() === "ShaderMaterial") {
-            const mat = mesh.material as any;
-            mat.setColor3("topColor", new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]));
-            mat.setColor3("bottomColor", new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]));
-            // Sky brightness mapped to horizon blend width (brighter = wider horizon fade)
-            mat.setFloat("blendWidth", 0.2 + state.skyBrightness * 0.3);
+        if (mesh?.material?.getClassName() === "StandardMaterial") {
+            const mat = mesh.material as StandardMaterial;
+            if (mat.emissiveTexture) {
+                mat.emissiveTexture.dispose();
+            }
+            mat.emissiveTexture = _buildGradientTexture(
+                new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
+                new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
+            );
             return;
         }
         // First-time: create from scratch
@@ -1913,7 +1892,7 @@ function _createClouds(state: EnvState): void {
         height: 200,
     }, scene);
     cloudPlane.isPickable = false;
-    cloudPlane.position = new Vector3(0, 30, 0);
+    cloudPlane.position = new Vector3(0, state.cloudHeight, 0);
     cloudPlane.rotation.x = Math.PI / 2;
 
     const canvas = document.createElement("canvas");
