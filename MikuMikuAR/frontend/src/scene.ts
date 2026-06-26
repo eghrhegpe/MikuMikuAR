@@ -1647,6 +1647,12 @@ function _createProceduralSky(state: EnvState): void {
     skybox.material = skyMat;
     _envSys.sky.skyMesh = skybox;
     scene.clearColor = new Color4(0, 0, 0, 1);
+
+    // Bypass rendering pipeline for skybox so SkyMaterial renders correctly
+    const pipeline = (scene.postProcessRenderPipelineManager as any)?.renderPipelines?.get("default");
+    if (pipeline) {
+        pipeline.excludedMeshes.push(skybox);
+    }
 }
 
 function _applySky(state: EnvState): void {
