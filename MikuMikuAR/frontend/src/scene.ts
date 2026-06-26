@@ -63,6 +63,18 @@ export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true
 export const scene = new Scene(engine);
 scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
 
+// Dev debug helper — exposes internals for Console inspection
+(window as any).__envDebug = {
+    get clearColor() { return scene.clearColor; },
+    get skyMesh() { return _envSys?.sky?.skyMesh; },
+    get mat() { return _envSys?.sky?.skyMesh?.material; },
+    get matType() { return _envSys?.sky?.skyMesh?.material?.getClassName(); },
+    get topColor() { return (_envSys?.sky?.skyMesh?.material as any)?.topColor; },
+    get bottomColor() { return (_envSys?.sky?.skyMesh?.material as any)?.bottomColor; },
+    get offset() { return (_envSys?.sky?.skyMesh?.material as any)?.offset; },
+    get envState() { return envState; },
+};
+
 // ======== Light State Management ========
 export interface LightState {
     hemiIntensity: number;
