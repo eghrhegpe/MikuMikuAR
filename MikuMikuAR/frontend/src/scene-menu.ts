@@ -478,12 +478,68 @@ function buildEnvLevel(): PopupLevel {
         dir: "",
         items: [
             { kind: "folder", label: "天空", icon: "sun", target: "scene:env:sky" },
+            { kind: "folder", label: "照明", icon: "lightbulb", target: "scene:env:light" },
             { kind: "folder", label: "地面", icon: "grid", target: "scene:env:ground" },
             { kind: "folder", label: "粒子", icon: "wind", target: "scene:env:particle" },
             { kind: "folder", label: "风", icon: "wind", target: "scene:env:wind" },
             { kind: "folder", label: "云", icon: "cloud", target: "scene:env:cloud" },
             { kind: "folder", label: "后期", icon: "camera", target: "scene:env:post" },
+            { kind: "divider" } as any,
+            { kind: "folder", label: "系统预设", icon: "bookmark", target: "scene:env:presets" },
         ],
+    };
+}
+
+const ENV_PRESETS: Record<string, Partial<EnvState>> = {
+    "舞台-A 打光": {
+        skyMode: "gradient",
+        skyColorTop: [0.05, 0.05, 0.15],
+        skyColorBot: [0.1, 0.05, 0.15],
+        envIntensity: 0.5,
+        groundMode: "solid",
+        groundColor: [0.05, 0.05, 0.08],
+        shadowEnabled: true,
+        shadowType: "soft",
+        particleEnabled: false,
+    },
+    "户外晴天": {
+        skyMode: "procedural",
+        skyColorTop: [0.3, 0.6, 1],
+        skyColorBot: [0.6, 0.8, 1],
+        skyBrightness: 2,
+        envIntensity: 1.5,
+        groundMode: "grid",
+        groundColor: [0.3, 0.35, 0.3],
+        shadowEnabled: true,
+        shadowType: "pcf",
+    },
+    "演唱会蓝紫": {
+        skyMode: "gradient",
+        skyColorTop: [0.4, 0.1, 0.6],
+        skyColorMid: [0.2, 0.05, 0.4],
+        skyColorBot: [0.1, 0.02, 0.2],
+        envIntensity: 0.3,
+        groundMode: "solid",
+        groundColor: [0.05, 0.02, 0.1],
+        particleEnabled: true,
+        particleType: "fireworks",
+    },
+};
+
+function buildPresetLevel(): PopupLevel {
+    return {
+        label: "系统预设",
+        dir: "",
+        items: Object.entries(ENV_PRESETS).map(([name, params]) => ({
+            kind: "action" as const,
+            label: name,
+            icon: "bookmark",
+            target: "",
+            sublabel: "",
+            onClick: () => {
+                setEnvState({ ...params });
+            },
+        })),
     };
 }
 
@@ -1244,6 +1300,8 @@ export async function showSceneMenu(): Promise<void> {
                     case "scene:env:wind": return buildWindLevel();
                     case "scene:env:cloud": return buildCloudLevel();
                     case "scene:env:post": return buildPostProcessLevel();
+                    case "scene:env:light": return buildLightLevel();
+                    case "scene:env:presets": return buildPresetLevel();
                     case "scene:camera": return buildCameraLevel();
                     case "scene:light": return buildLightLevel();
                     case "scene:render": return buildRenderLevel();

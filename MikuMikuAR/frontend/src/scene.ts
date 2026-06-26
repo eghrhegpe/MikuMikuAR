@@ -741,6 +741,7 @@ export interface SceneFile {
     camera: CameraState;
     lights: LightState;
     render?: RenderState;  // optional — legacy scenes without this field are fine
+    env?: EnvState;        // optional — legacy scenes without this field are fine
     cameraVmd?: {
         path: string;
         libraryRef?: string;
@@ -781,6 +782,7 @@ export function serializeScene(): SceneFile {
         camera: getCameraState(),
         lights: getLightState(),
         render: getRenderState(),
+        env: envState,
         cameraVmd: hasCameraVmd() ? {
             path: getCameraVmdPath(),
             libraryRef: getCameraVmdPath() ? (computeLibraryRef(getCameraVmdPath()) || undefined) : undefined,
@@ -846,6 +848,7 @@ export async function deserializeScene(data: SceneFile): Promise<void> {
     if (data.camera) setCameraState(data.camera);
     if (data.lights) setLightState(data.lights);
     if (data.render) setRenderState(data.render);
+    if (data.env) setEnvState(data.env);
 
     // Restore camera VMD
     if (data.cameraVmd && data.cameraVmd.path) {
