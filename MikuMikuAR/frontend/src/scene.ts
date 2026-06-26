@@ -1624,7 +1624,9 @@ function _createGradientSky(state: EnvState): void {
         state.skyColorBot[1],
         state.skyColorBot[2],
     );
-    mat.offset = 0.3;
+    mat.offset = 0;
+    mat.scale = 0.003;
+    mat.smoothness = 1;
     skySphere.material = mat;
 
     _envSys.sky.skyMesh = skySphere;
@@ -1696,7 +1698,9 @@ function _applySky(state: EnvState): void {
         mat.disableLighting = true;
         mat.topColor = new Color3(top[0], top[1], top[2]);
         mat.bottomColor = new Color3(bot[0], bot[1], bot[2]);
-        mat.offset = 0.3;
+        mat.offset = 0;
+        mat.scale = 0.003;
+        mat.smoothness = 1;
 
         // isReady() triggers synchronous shader compile (it calls _prepareEffect internally)
         mat.isReady(mesh);

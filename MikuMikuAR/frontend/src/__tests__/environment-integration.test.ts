@@ -72,6 +72,9 @@ describe("Sky — Gradient mode", () => {
         mat.disableLighting = true;
         mat.topColor = new Color3(0.3, 0.5, 0.8);
         mat.bottomColor = new Color3(0.2, 0.2, 0.25);
+        mat.offset = 0;
+        mat.scale = 0.003;
+        mat.smoothness = 1;
         sphere.material = mat;
 
         // Verify material is applied
@@ -79,6 +82,7 @@ describe("Sky — Gradient mode", () => {
         expect(mat.topColor.r).toBeCloseTo(0.3, 5);
         expect(mat.bottomColor.b).toBeCloseTo(0.25, 5);
         expect(mat.disableLighting).toBe(true);
+        expect(mat.scale).toBeCloseTo(0.003, 6);
 
         sphere.dispose();
         mat.dispose();
