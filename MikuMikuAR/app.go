@@ -114,6 +114,14 @@ func (a *App) SelectVMDMotion() (string, error) {
 	})
 }
 
+// SelectVPDPose opens a file dialog to select a VPD pose file
+func (a *App) SelectVPDPose() (string, error) {
+	return a.openFileDialog("选择 VPD 姿势文件", []runtime.FileFilter{
+		{DisplayName: "VPD Pose (*.vpd)", Pattern: "*.vpd"},
+		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+	})
+}
+
 // SelectAudioFile opens a file dialog to select an audio file
 func (a *App) SelectAudioFile() (string, error) {
 	return a.openFileDialog("选择音乐文件", []runtime.FileFilter{
@@ -210,7 +218,6 @@ type Config struct {
 	Tags                 map[string][]string   `json:"tags"`                  // libraryRef → []tag 列表
 	DanceSets            map[string]DanceSet   `json:"dance_sets"`            // 舞蹈套装，key = 套装 ID
 	RecentModels         []string              `json:"recent_models"`         // libraryRef 数组，最近打开的模型（最多20条）
-	Playlists            map[string][]string   `json:"playlists"`             // 播放列表，key = 名称，value = libraryRef 数组
 }
 
 // RenderPreset stores a user-defined rendering preset.
@@ -827,41 +834,77 @@ func (a *App) ImportDanceSet(vmdPath, audioPath, name string) (string, error) {
 	return id, nil
 }
 
-// ======== Playlists ========
+// ======== Scene Presets (numbered auto-saves) ========
 
-// GetPlaylists returns all named playlists as a map.
-func (a *App) GetPlaylists() map[string][]string {
-	cfg, err := a.GetConfig()
-	if err != nil || cfg == nil || cfg.Playlists == nil {
-		return make(map[string][]string)
+func scenePresetDir() (string, error) {
+	dir, err := configDir()
+	if err != nil {
+		return "", err
 	}
-	// Return a copy
-	result := make(map[string][]string, len(cfg.Playlists))
-	for name, items := range cfg.Playlists {
-		cp := make([]string, len(items))
-		copy(cp, items)
-		result[name] = cp
+	presetDir := filepath.Join(dir, "scenes")
+	if err := os.MkdirAll(presetDir, 0755); err != nil {
+		return "", err
 	}
-	return result
+	return presetDir, nil
 }
 
-// SavePlaylist saves/replaces a named playlist with the given items.
-func (a *App) SavePlaylist(name string, items []string) error {
-	return a.updateConfig(func(cfg *Config) {
-		if cfg.Playlists == nil {
-			cfg.Playlists = make(map[string][]string)
+// GetPresetScenesDir returns the absolute path of the scene presets directory.
+func (a *App) GetPresetScenesDir() (string, error) {
+	return scenePresetDir()
+}
+
+// GetPresetScenes lists numbered .mmascene files in the scene presets directory.
+func (a *App) GetPresetScenes() []string {
+	dir, err := scenePresetDir()
+	if err != nil {
+		return nil
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var scenes []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".mmascene") {
+			scenes = append(scenes, e.Name())
 		}
-		cp := make([]string, len(items))
-		copy(cp, items)
-		cfg.Playlists[name] = cp
-	}, false)
+	}
+	return scenes
 }
 
-// DeletePlaylist removes a named playlist.
-func (a *App) DeletePlaylist(name string) error {
-	return a.updateConfig(func(cfg *Config) {
-		delete(cfg.Playlists, name)
-	}, false)
+// SaveScenePreset saves a scene JSON as an auto-numbered .mmascene in the presets directory.
+// Returns the generated filename (e.g. "003.mmascene").
+func (a *App) SaveScenePreset(jsonStr string) (string, error) {
+	dir, err := scenePresetDir()
+	if err != nil {
+		return "", err
+	}
+	// Find the next available number
+	next := 1
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".mmascene") {
+			var n int
+			if _, err := fmt.Sscanf(e.Name(), "%d.mmascene", &n); err == nil && n >= next {
+				next = n + 1
+			}
+		}
+	}
+	filename := fmt.Sprintf("%03d.mmascene", next)
+	path := filepath.Join(dir, filename)
+	if err := os.WriteFile(path, []byte(jsonStr), 0644); err != nil {
+		return "", err
+	}
+	return filename, nil
+}
+
+// DeletePresetScene deletes a named preset scene file.
+func (a *App) DeletePresetScene(name string) error {
+	dir, err := scenePresetDir()
+	if err != nil {
+		return err
+	}
+	return os.Remove(filepath.Join(dir, name))
 }
 
 // ======== Render Presets ========
@@ -1172,6 +1215,58 @@ func (a *App) LoadLastScene() (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+// ======== Model Preset Bindings ========
+
+// SaveModelPreset writes a JSON model preset file to the given path.
+func (a *App) SaveModelPreset(jsonStr string, path string) error {
+	return os.WriteFile(path, []byte(jsonStr), 0644)
+}
+
+// LoadModelPreset reads a JSON model preset file from the given path.
+func (a *App) LoadModelPreset(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// SelectPresetSaveFile opens a save dialog for model preset files.
+func (a *App) SelectPresetSaveFile() (string, error) {
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "保存模型预设",
+		DefaultFilename: "preset.mcupreset.json",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "MikuMikuAR Model Preset (*.mcupreset.json)",
+				Pattern:     "*.mcupreset.json",
+			},
+			{
+				DisplayName: "All Files (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(path), nil
+}
+
+// SelectPresetOpenFile opens a file dialog to pick a model preset file.
+func (a *App) SelectPresetOpenFile() (string, error) {
+	return a.openFileDialog("加载模型预设", []runtime.FileFilter{
+		{
+			DisplayName: "MikuMikuAR Model Preset (*.mcupreset.json)",
+			Pattern:     "*.mcupreset.json",
+		},
+		{
+			DisplayName: "All Files (*.*)",
+			Pattern:     "*.*",
+		},
+	})
 }
 
 // writeConfig persists only the config JSON (no rescan). Use for settings changes

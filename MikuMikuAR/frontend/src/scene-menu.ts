@@ -7,37 +7,37 @@ import {
     dom, closeAllOverlays, setStatus, formatTime, escapeHtml,
     PopupRow, PopupLevel,
 } from "./config";
-import { MenuStack } from "./menu";
-import { switchCameraMode, getCameraMode, hasCameraVmd, getCameraVmdName, clearCameraVmd } from "./camera";
+import { SlideMenu } from "./menu";
+import {
+    switchCameraMode, getCameraMode, hasCameraVmd, getCameraVmdName, clearCameraVmd, getCurrentCamera,
+    getOrbitParams, setOrbitParams,
+    getFreeflyParams, setFreeflyParams,
+    getConcertParams, setConcertParams,
+    type CameraMode,
+} from "./camera";
 import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath } from "./scene";
 import type { RenderState } from "./scene";
-import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectAudioFile, SelectVMDMotion, SelectDir, SaveScreenshot } from "../wailsjs/go/main/App";
-import {
-    loadAudioFile, pauseAudio, resumeAudio, stopAudio, clearAudio,
-    setVolume, getVolume, setAudioOffset, getAudioOffset,
-    getCurrentTime, getDuration, isAudioPlaying, getAudioName,
-} from "./audio";
-import { focusModel, engine, scene, setModelWireframe, setModelVisibility, setModelOpacity, resetModelTransform, getMatCatGroups, getMatCatParams, setMatCatParams, resetMatCatParams, getMatDetailList, getMatParams, setMatParams, resetSingleMatParams, resetAllMatParams, setGravityStrength, getGravityStrength } from "./scene";
+import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectVMDMotion, SelectDir, SaveScreenshot,
+    GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene } from "../wailsjs/go/main/App";
+import { focusModel, engine, resetModelTransform, getMatCatGroups, getMatCatParams, setMatCatParams, resetMatCatParams, getMatDetailList, getMatParams, setMatParams, resetSingleMatParams, resetAllMatParams, setGravityStrength, getGravityStrength } from "./scene";
 import type { MaterialCategoryParams } from "./scene";
 import type { Material } from "@babylonjs/core/Materials/material";
 import { modelRegistry, focusedModelId, setFocusedModelId } from "./config";
-import { playPlaylistNext, playPlaylistPrev } from "./library";
 
-// ======== Scene Menu (MenuStack) ========
+// ======== Scene Menu (SlideMenu) ========
 
-let sceneStack: MenuStack | null = null;
+let sceneStack: SlideMenu | null = null;
 
 function buildSceneRoot(): PopupLevel {
     return {
         label: "场景",
         dir: "",
         items: [
-            { kind: "folder", label: "模型", icon: "box", target: "scene:models" },
+            { kind: "folder", label: "预设场景", icon: "bookmark", target: "scene:presets" },
             { kind: "folder", label: "相机模式", icon: "camera", target: "scene:camera" },
             { kind: "folder", label: "灯光", icon: "sun", target: "scene:light" },
             { kind: "folder", label: "渲染", icon: "sparkles", target: "scene:render" },
             { kind: "folder", label: "物理", icon: "toggle-left", target: "scene:physics" },
-            { kind: "folder", label: "音乐", icon: "music", target: "scene:music" },
             { kind: "folder", label: "截图", icon: "camera", target: "scene:screenshot" },
             { kind: "action", label: "保存场景", icon: "save", target: "scene:save" },
             { kind: "action", label: "加载场景", icon: "upload", target: "scene:load" },
@@ -45,85 +45,93 @@ function buildSceneRoot(): PopupLevel {
     };
 }
 
-function buildModelsLevel(): PopupLevel {
+let currentPresetIndex = -1;
+
+function buildPresetScenesLevel(): PopupLevel {
     return {
-        label: "模型",
+        label: "预设场景",
         dir: "",
         items: [],
-        renderCustom: (container) => {
+        renderCustom: async (container) => {
             container.style.padding = "12px 14px";
-
-            if (modelRegistry.size === 0) {
+            const scenes = await GetPresetScenes() || [];
+            if (scenes.length === 0) {
                 const empty = document.createElement("div");
                 empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:20px;";
-                empty.textContent = "场景中无模型";
+                empty.textContent = "暂无预设场景，保存场景时自动生成";
                 container.appendChild(empty);
                 return;
             }
 
-            // Playlist navigation row
+            // Navigation row
             const navRow = document.createElement("div");
             navRow.style.cssText = "display:flex;gap:6px;margin-bottom:10px;";
             const prevBtn = document.createElement("button");
             prevBtn.style.cssText = "flex:1;padding:6px;border:1px solid var(--white-08);border-radius:6px;background:transparent;color:var(--text-bright);cursor:pointer;font-size:11px;";
             prevBtn.innerHTML = '<iconify-icon icon="skip-back"></iconify-icon> 上一个';
-            prevBtn.addEventListener("click", async () => { await playPlaylistPrev(); });
+            prevBtn.addEventListener("click", async () => {
+                if (scenes.length === 0) return;
+                if (currentPresetIndex < 0) currentPresetIndex = 0;
+                currentPresetIndex = (currentPresetIndex - 1 + scenes.length) % scenes.length;
+                const name = scenes[currentPresetIndex];
+                const dir = await GetPresetScenesDir();
+                const json = await LoadSceneFile(dir + "/" + name);
+                await deserializeScene(JSON.parse(json));
+                setStatus(`✓ 预设场景: ${name} (${currentPresetIndex + 1}/${scenes.length})`, true);
+            });
             const nextBtn = document.createElement("button");
             nextBtn.style.cssText = "flex:1;padding:6px;border:1px solid var(--white-08);border-radius:6px;background:transparent;color:var(--text-bright);cursor:pointer;font-size:11px;";
             nextBtn.innerHTML = '下一个 <iconify-icon icon="skip-forward"></iconify-icon>';
-            nextBtn.addEventListener("click", async () => { await playPlaylistNext(); });
+            nextBtn.addEventListener("click", async () => {
+                if (scenes.length === 0) return;
+                if (currentPresetIndex < 0) currentPresetIndex = 0;
+                currentPresetIndex = (currentPresetIndex + 1) % scenes.length;
+                const name = scenes[currentPresetIndex];
+                const dir = await GetPresetScenesDir();
+                const json = await LoadSceneFile(dir + "/" + name);
+                await deserializeScene(JSON.parse(json));
+                setStatus(`✓ 预设场景: ${name} (${currentPresetIndex + 1}/${scenes.length})`, true);
+            });
             navRow.appendChild(prevBtn);
             navRow.appendChild(nextBtn);
             container.appendChild(navRow);
 
-            for (const [id, inst] of modelRegistry) {
-                const card = document.createElement("div");
-                card.style.cssText = "border:1px solid var(--white-08);border-radius:6px;padding:8px;margin-bottom:8px;";
-
-                const nameEl = document.createElement("div");
-                nameEl.style.cssText = "font-size:12px;color:var(--text-bright);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
-                nameEl.textContent = inst.name;
-                card.appendChild(nameEl);
-
-                addToggleRow(card, "可见", inst.visible ?? true, (v) => {
-                    setModelVisibility(id, v);
+            for (let i = 0; i < scenes.length; i++) {
+                const name = scenes[i];
+                const isActive = i === currentPresetIndex;
+                const row = document.createElement("div");
+                row.className = "menu-item";
+                row.innerHTML = `<span class="menu-icon"><iconify-icon icon="${isActive ? "play-circle" : "bookmark"}"></iconify-icon></span><span class="menu-label">${escapeHtml(name)}</span>`;
+                row.addEventListener("click", async () => {
+                    currentPresetIndex = i;
+                    const dir = await GetPresetScenesDir();
+                    const json = await LoadSceneFile(dir + "/" + name);
+                    await deserializeScene(JSON.parse(json));
+                    sceneStack?.reRender();
+                    setStatus(`✓ 已加载: ${name}`, true);
                 });
+                container.appendChild(row);
 
-                addToggleRow(card, "线框", inst.wireframe ?? false, (v) => {
-                    setModelWireframe(id, v);
+                // Delete button
+                const delBtn = document.createElement("span");
+                delBtn.style.cssText = "font-size:10px;color:var(--text-dim);cursor:pointer;margin-left:auto;padding:2px 4px;";
+                delBtn.textContent = "✕";
+                delBtn.title = "删除此预设场景";
+                delBtn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    if (!confirm(`确定删除「${name}」？`)) return;
+                    try {
+                        await DeletePresetScene(name);
+                        if (currentPresetIndex === i) currentPresetIndex = -1;
+                        else if (currentPresetIndex > i) currentPresetIndex--;
+                        sceneStack?.reRender();
+                        setStatus(`✓ 已删除: ${name}`, true);
+                    } catch (err) {
+                        setStatus("✗ 删除失败", false);
+                    }
                 });
-
-                addSliderRow(card, "透明度", inst.opacity ?? 1.0, 0, 1, 0.05, (v) => {
-                    setModelOpacity(id, v);
-                });
-
-                const matBtn = document.createElement("div");
-                matBtn.className = "menu-item";
-                matBtn.style.marginTop = "4px";
-                matBtn.innerHTML = '<span class="menu-icon"><iconify-icon icon="palette"></iconify-icon></span><span class="menu-label">材质</span><span class="menu-sublabel" style="font-size:10px;color:var(--text-dim);">漫反射 / 高光</span>';
-                matBtn.addEventListener("click", () => {
-                    sceneStack?.push(buildMaterialCategoryLevel(id, inst.name));
-                });
-                card.appendChild(matBtn);
-
-                container.appendChild(card);
+                row.appendChild(delBtn);
             }
-
-            const divider = document.createElement("div");
-            divider.className = "menu-divider";
-            container.appendChild(divider);
-
-            const resetRow = document.createElement("div");
-            resetRow.className = "menu-item";
-            resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置全部变换</span>';
-            resetRow.addEventListener("click", () => {
-                for (const [id] of modelRegistry) {
-                    resetModelTransform(id);
-                }
-                sceneStack?.reRender();
-                setStatus("✓ 所有模型变换已重置", true);
-            });
-            container.appendChild(resetRow);
         },
     };
 }
@@ -283,28 +291,95 @@ function buildCameraLevel(): PopupLevel {
     const currentMode = getCameraMode();
     const vmdLoaded = hasCameraVmd();
     const vmdName = getCameraVmdName();
-    const items: PopupRow[] = [
-        { kind: "action", label: "轨道", icon: currentMode === "orbit" ? "check" : "circle", target: "camera:orbit", sublabel: "默认轨道相机" },
-        { kind: "action", label: "自由飞行", icon: currentMode === "freefly" ? "check" : "circle", target: "camera:freefly", sublabel: "WASD 自由移动" },
-        { kind: "action", label: "镜头预设", icon: currentMode === "oneshot" ? "check" : "circle", target: "camera:oneshot", sublabel: "预设关键帧" },
-        { kind: "action", label: "演唱会", icon: currentMode === "concert" ? "check" : "circle", target: "camera:concert", sublabel: "自动切换视角" },
-    ];
-    if (vmdLoaded) {
-        items.push(
-            { kind: "divider" } as any,
-            { kind: "action", label: "VMD 相机", icon: currentMode === "vmd" ? "check" : "circle", target: "camera:vmd", sublabel: vmdName || "相机轨道" },
-            { kind: "action", label: "清除相机 VMD", icon: "trash-2", target: "camera:clear-vmd" },
-        );
-    }
-    items.push(
-        { kind: "divider" } as any,
-        { kind: "action", label: "加载相机 VMD", icon: "upload", target: "camera:load-vmd", sublabel: "从 .vmd 文件加载相机轨道" },
-    );
     return {
         label: "相机模式",
         dir: "",
-        items,
+        items: [
+            { kind: "action", label: "轨道", icon: currentMode === "orbit" ? "check" : "circle", target: "camera:orbit", sublabel: "默认轨道相机" },
+            { kind: "action", label: "自由飞行", icon: currentMode === "freefly" ? "check" : "circle", target: "camera:freefly", sublabel: "WASD 自由移动" },
+            { kind: "action", label: "演唱会", icon: currentMode === "concert" ? "check" : "circle", target: "camera:concert", sublabel: "环绕角色旋转" },
+            ...((vmdLoaded ? [
+                { kind: "divider" } as PopupRow,
+                { kind: "action" as const, label: "VMD 相机", icon: currentMode === "vmd" ? "check" : "circle", target: "camera:vmd", sublabel: vmdName || "相机轨道" } as PopupRow,
+                { kind: "action" as const, label: "清除相机 VMD", icon: "trash-2", target: "camera:clear-vmd" } as PopupRow,
+            ] : []) as PopupRow[]),
+            { kind: "divider" } as PopupRow,
+            { kind: "action" as const, label: "加载相机 VMD", icon: "upload", target: "camera:load-vmd", sublabel: "从 .vmd 文件加载相机轨道" } as PopupRow,
+            { kind: "divider" } as PopupRow,
+            { kind: "folder" as const, label: "轨道设置", icon: "settings", target: "camera:params:orbit" } as PopupRow,
+            { kind: "folder" as const, label: "自由飞行设置", icon: "settings", target: "camera:params:freefly" } as PopupRow,
+            { kind: "folder" as const, label: "演唱会设置", icon: "settings", target: "camera:params:concert" } as PopupRow,
+        ],
     };
+}
+
+/** Build a parameter editing submenu for the given camera mode. */
+function buildCameraParamsLevel(mode: CameraMode): PopupLevel {
+    return {
+        label: mode === "orbit" ? "轨道设置" :
+               mode === "freefly" ? "自由飞行设置" :
+               mode === "concert" ? "演唱会设置" : "相机设置",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+            if (mode === "orbit") renderOrbitParams(container);
+            else if (mode === "freefly") renderFreeflyParams(container);
+            else if (mode === "concert") renderConcertParams(container);
+        },
+    };
+}
+
+function renderOrbitParams(container: HTMLElement): void {
+    const p = getOrbitParams();
+    addSliderRow(container, "目标高度", p.targetHeight, 0, 30, 0.5, (v) => {
+        setOrbitParams({ targetHeight: v });
+        triggerAutoSave();
+    });
+    addSliderRow(container, "距离", p.distance, 2, 50, 0.5, (v) => {
+        setOrbitParams({ distance: v });
+        if (getCameraMode() === "orbit") {
+            const cam = getCurrentCamera() as any;
+            if (cam?.radius !== undefined) cam.radius = v;
+        }
+        triggerAutoSave();
+    });
+    addSliderRow(container, "俯仰角", p.beta, 0.1, Math.PI - 0.1, 0.05, (v) => {
+        setOrbitParams({ beta: v });
+        if (getCameraMode() === "orbit") {
+            const cam = getCurrentCamera() as any;
+            if (cam?.beta !== undefined) cam.beta = v;
+        }
+        triggerAutoSave();
+    });
+}
+
+function renderFreeflyParams(container: HTMLElement): void {
+    const p = getFreeflyParams();
+    addSliderRow(container, "移动速度", p.speed, 0.1, 5, 0.1, (v) => {
+        setFreeflyParams({ speed: v });
+        triggerAutoSave();
+    });
+    addSliderRow(container, "鼠标灵敏度", p.angularSensibility, 500, 5000, 100, (v) => {
+        setFreeflyParams({ angularSensibility: v });
+        triggerAutoSave();
+    });
+}
+
+function renderConcertParams(container: HTMLElement): void {
+    const p = getConcertParams();
+    addSliderRow(container, "轨道半径", p.radius, 2, 50, 0.5, (v) => {
+        setConcertParams({ radius: v });
+        triggerAutoSave();
+    });
+    addSliderRow(container, "目标高度", p.height, 0, 30, 0.5, (v) => {
+        setConcertParams({ height: v });
+        triggerAutoSave();
+    });
+    addSliderRow(container, "旋转速度", p.speed, 0, 5, 0.1, (v) => {
+        setConcertParams({ speed: v });
+        triggerAutoSave();
+    });
 }
 
 function buildLightLevel(): PopupLevel {
@@ -395,117 +470,6 @@ function addSliderRow(container: HTMLElement, label: string, value: number, min:
     row.appendChild(slider);
     row.appendChild(val);
     container.appendChild(row);
-}
-
-// ======== Music Menu Level ========
-
-function buildMusicLevel(): PopupLevel {
-    const name = getAudioName();
-    const playing = isAudioPlaying();
-    const vol = getVolume();
-    const offset = getAudioOffset();
-    const cur = getCurrentTime();
-    const dur = getDuration();
-
-    return {
-        label: "音乐",
-        dir: "",
-        items: [],
-        renderCustom: (container) => {
-            container.style.padding = "12px 14px";
-
-            // Current music name
-            const nameRow = document.createElement("div");
-            nameRow.style.cssText = "font-size:12px;color:var(--text-dim);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
-            nameRow.textContent = name ? `当前: ${name}` : "未加载音乐";
-            container.appendChild(nameRow);
-
-            // Progress display
-            if (dur > 0) {
-                const progRow = document.createElement("div");
-                progRow.style.cssText = "font-size:11px;color:var(--text-bright);margin-bottom:12px;text-align:right;";
-                progRow.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
-                container.appendChild(progRow);
-            } else {
-                const spacer = document.createElement("div");
-                spacer.style.cssText = "height:12px;";
-                container.appendChild(spacer);
-            }
-
-            // Load music button
-            const loadRow = document.createElement("div");
-            loadRow.className = "menu-item";
-            loadRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="folder-open"></iconify-icon></span><span class="menu-label">加载音乐</span>';
-            loadRow.addEventListener("click", async () => {
-                try {
-                    const path = await SelectAudioFile();
-                    if (!path) return;
-                    await loadAudioFile(path);
-                    setStatus(`✓ 音乐: ${getAudioName()}`, true);
-                    sceneStack?.reRender();
-                } catch (err) {
-                    console.warn("Load audio failed:", err);
-                    setStatus("✗ 音乐加载失败", false);
-                }
-            });
-            container.appendChild(loadRow);
-
-            // Play/Pause toggle
-            const playRow = document.createElement("div");
-            playRow.className = "menu-item";
-            playRow.innerHTML = `<span class="menu-icon">${playing ? "⏸" : "▶"}</span><span class="menu-label">${playing ? "暂停" : "播放"}</span>`;
-            playRow.addEventListener("click", () => {
-                if (playing) {
-                    pauseAudio();
-                } else {
-                    resumeAudio();
-                }
-                sceneStack?.reRender();
-            });
-            container.appendChild(playRow);
-
-            // Volume slider
-            addSliderRow(container, "音量", vol, 0, 1, 0.05, (v) => {
-                setVolume(v);
-            });
-
-            // Audio offset slider
-            addSliderRow(container, "音频偏移", offset, -5, 5, 0.1, (v) => {
-                setAudioOffset(v);
-            });
-
-            const offsetHint = document.createElement("div");
-            offsetHint.style.cssText = "font-size:10px;color:var(--text-dark);margin:-4px 0 10px 88px;";
-            offsetHint.textContent = "正=音频先播，负=音频后播";
-            container.appendChild(offsetHint);
-
-            // Divider
-            const divider = document.createElement("div");
-            divider.className = "menu-divider";
-            container.appendChild(divider);
-
-            // Stop button
-            const stopRow = document.createElement("div");
-            stopRow.className = "menu-item";
-            stopRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="square"></iconify-icon></span><span class="menu-label">停止</span>';
-            stopRow.addEventListener("click", () => {
-                stopAudio();
-                sceneStack?.reRender();
-            });
-            container.appendChild(stopRow);
-
-            // Clear button
-            const clearRow = document.createElement("div");
-            clearRow.className = "menu-item";
-            clearRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="trash-2"></iconify-icon></span><span class="menu-label">清除音乐</span>';
-            clearRow.addEventListener("click", () => {
-                clearAudio();
-                setStatus("✓ 音乐已清除", true);
-                sceneStack?.reRender();
-            });
-            container.appendChild(clearRow);
-        },
-    };
 }
 
 // ======== Render Menu Levels ========
@@ -755,6 +719,13 @@ async function loadUserPresets(): Promise<void> {
     }
 }
 
+function refreshCameraLevel(): void {
+    if (sceneStack) {
+        sceneStack.setLevel(sceneStack.levelCount - 1, buildCameraLevel());
+        sceneStack.reRender();
+    }
+}
+
 function handleSceneAction(row: PopupRow): void {
     // Camera VMD actions
     if (row.target === "camera:load-vmd") {
@@ -763,10 +734,7 @@ function handleSceneAction(row: PopupRow): void {
                 const path = await SelectVMDMotion();
                 if (!path) return;
                 await loadCameraVmdFromPath(path);
-                if (sceneStack) {
-                    sceneStack.setLevel(sceneStack.levelCount - 1, buildCameraLevel());
-                    sceneStack.reRender();
-                }
+                refreshCameraLevel();
             } catch (err) {
                 console.error("Load camera VMD failed:", err);
                 setStatus("✗ 相机 VMD 加载失败", false);
@@ -776,31 +744,22 @@ function handleSceneAction(row: PopupRow): void {
     }
     if (row.target === "camera:clear-vmd") {
         clearCameraVmd();
-        if (sceneStack) {
-            sceneStack.setLevel(sceneStack.levelCount - 1, buildCameraLevel());
-            sceneStack.reRender();
-        }
+        refreshCameraLevel();
         setStatus("✓ 已清除相机 VMD", true);
         return;
     }
     // Camera mode switching
-    if (row.target && row.target.startsWith("camera:")) {
-        const mode = row.target.replace("camera:", "") as "orbit" | "freefly" | "oneshot" | "concert" | "vmd";
+    if (row.target && row.target.startsWith("camera:") && !row.target.includes(":params:")) {
+        const mode = row.target.replace("camera:", "") as CameraMode;
         if (mode === "vmd" && !hasCameraVmd()) {
             setStatus("✗ 请先加载相机 VMD", false);
             return;
         }
         switchCameraMode(mode);
-        // reattachPipeline() is now handled inside switchCameraMode (camera.ts:182)
-        // Replace the camera level with fresh data so the checkmark icon updates
-        if (sceneStack) {
-            sceneStack.setLevel(sceneStack.levelCount - 1, buildCameraLevel());
-            sceneStack.reRender();
-        }
+        refreshCameraLevel();
         const labels: Record<string, string> = {
             orbit: "轨道", freefly: "自由飞行",
-            oneshot: "镜头预设", concert: "演唱会",
-            vmd: "VMD 相机",
+            concert: "演唱会", vmd: "VMD 相机",
         };
         setStatus(`✓ 相机: ${labels[mode] || mode}`, true);
         return;
@@ -873,6 +832,7 @@ function handleSceneAction(row: PopupRow): void {
                 if (!path) return;
                 const json = JSON.stringify(serializeScene(), null, 2);
                 await SaveSceneFile(json, path);
+                await SaveScenePreset(json);
                 setStatus("✓ 场景已保存", true);
             } catch (err) {
                 setStatus("✗ 保存失败", false);
@@ -951,19 +911,21 @@ export async function showSceneMenu(): Promise<void> {
     await loadUserPresets();
 
     if (!sceneStack) {
-        sceneStack = new MenuStack({
-            parentEl: dom.sceneOverlay,
+        sceneStack = new SlideMenu({
+            container: dom.sceneOverlay,
             onClose: () => dom.sceneOverlay.classList.remove("visible"),
             onItemClick: (row) => handleSceneAction(row),
             onFolderEnter: (row) => {
                 switch (row.target) {
-                    case "scene:models": return buildModelsLevel();
+                    case "scene:presets": return buildPresetScenesLevel();
                     case "scene:camera": return buildCameraLevel();
                     case "scene:light": return buildLightLevel();
                     case "scene:render": return buildRenderLevel();
                     case "scene:physics": return buildPhysicsLevel();
-                    case "scene:music": return buildMusicLevel();
                     case "scene:screenshot": return buildScreenshotLevel();
+                    case "camera:params:orbit": return buildCameraParamsLevel("orbit");
+                    case "camera:params:freefly": return buildCameraParamsLevel("freefly");
+                    case "camera:params:concert": return buildCameraParamsLevel("concert");
                     case "scene:render:postprocess": return buildPostProcessLevel();
                     case "scene:render:stage": return buildStageLevel();
                     case "scene:render:presets": return buildPresetsLevel();

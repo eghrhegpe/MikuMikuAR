@@ -23,7 +23,7 @@ import {
     displayNamePriority, setDisplayNamePriority, DisplayNamePriority,
     PopupRow, PopupLevel, escapeHtml,
 } from "./config";
-import { MenuStack } from "./menu";
+import { SlideMenu } from "./menu";
 import { showPopup, rescanAndSync, reloadConfig } from "./library";
 
 // ======== Helpers re-exported ========
@@ -109,13 +109,20 @@ function buildSettingsSoftwareLevel(): PopupLevel {
         icon: "app-window",
         target: "launch:" + entry.path,
     }));
-    items.push({ kind: "action", label: "打开目录", icon: "folder-open", target: "set:opensoftwaredir" });
+    items.push(
+        { kind: "divider", label: "", icon: "", target: "" },
+        { kind: "action", label: "自动检测 MMD", icon: "external-link", target: "set:detectmmd" },
+        { kind: "action", label: "设置 MMD 路径", icon: "folder", target: "set:mmdpath" },
+        { kind: "action", label: "设置 Blender 路径", icon: "edit-3", target: "set:blenderpath" },
+        { kind: "divider", label: "", icon: "", target: "" },
+        { kind: "action", label: "打开目录", icon: "folder-open", target: "set:opensoftwaredir" },
+    );
     return { label: "软件管理", dir: "", items };
 }
 
-// ======== Settings (MenuStack) ========
+// ======== Settings (SlideMenu) ========
 
-let settingsStack: MenuStack | null = null;
+let settingsStack: SlideMenu | null = null;
 
 function buildSettingsRoot(): PopupLevel {
     return {
@@ -139,18 +146,6 @@ function buildSettingsDisplayLevel(): PopupLevel {
     return { label: "显示", dir: "", items };
 }
 
-function buildSettingsPathsLevel(): PopupLevel {
-    return {
-        label: "路径",
-        dir: "",
-        items: [
-            { kind: "action", label: "自动检测 MMD", icon: "external-link", target: "set:detectmmd" },
-            { kind: "action", label: "设置 MMD 路径", icon: "folder", target: "set:mmdpath" },
-            { kind: "action", label: "设置 Blender 路径", icon: "edit-3", target: "set:blenderpath" },
-        ],
-    };
-}
-
 function buildSettingsClearCacheLevel(): PopupLevel {
     return {
         label: "清除缓存",
@@ -168,9 +163,6 @@ function buildSettingsSystemLevel(): PopupLevel {
         dir: "",
         items: [
             { kind: "folder", label: "外部库管理", icon: "plug", target: "settings:external" },
-            { kind: "action", label: "添加外部库", icon: "folder-plus", target: "set:addexternal" },
-            { kind: "divider", label: "", icon: "", target: "" },
-            { kind: "folder", label: "路径", icon: "folder", target: "settings:paths" },
             { kind: "folder", label: "清除缓存", icon: "trash-2", target: "settings:clearcache" },
         ],
     };
@@ -427,8 +419,8 @@ export async function showSettings(): Promise<void> {
     dom.settingsOverlay.classList.add("visible");
 
     if (!settingsStack) {
-        settingsStack = new MenuStack({
-            parentEl: dom.settingsOverlay,
+        settingsStack = new SlideMenu({
+            container: dom.settingsOverlay,
             onClose: () => dom.settingsOverlay.classList.remove("visible"),
             onItemClick: (row) => handleSettingsAction(row),
             onFolderEnter: (row) => {
@@ -437,7 +429,6 @@ export async function showSettings(): Promise<void> {
                     case "settings:download": return buildSettingsDownloadLevel();
                     case "settings:system": return buildSettingsSystemLevel();
                     case "settings:external": return buildSettingsExternalLevel();
-                    case "settings:paths": return buildSettingsPathsLevel();
                     case "settings:clearcache": return buildSettingsClearCacheLevel();
                     case "settings:software":
                         if (!cachedSoftwareEntries) {

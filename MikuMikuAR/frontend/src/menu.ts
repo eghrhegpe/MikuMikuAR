@@ -1,287 +1,244 @@
-// [doc:menu-architecture] MenuStack — 通用菜单导航组件
-// 规范文档: docs/menu-architecture.md（MenuStack 用法 + 添加新功能流程）
-// Universal navigation stack — each level is a separate floating layer.
-// Inspired by DanceXR's multi-panel drill-down: push creates a new card
-// (slightly offset, fade in), pop removes it and reveals the previous one.
-
 import { PopupLevel, PopupRow, showHint, hideHint } from "./config";
 import { createIconifyIcon } from "./icons";
 
-// [doc:menu-architecture] MenuStack class — 每个实例对应一个独立的弹窗（modelStack/motionStack/sceneStack/settingsStack）
-export class MenuStack {
+export class SlideMenu {
     private levels: PopupLevel[] = [];
-    private layers: HTMLElement[] = [];
-    private parentEl: HTMLElement;
-    private layerClass: string; // CSS class for each layer
+    private panels: [HTMLElement, HTMLElement];
+    private activeIdx: 0 | 1 = 0;
+    private transitioning = false;
+    private container: HTMLElement;
+    private viewport: HTMLElement;
 
-    /** Called when a non-folder row is clicked (model, action). */
-    onItemClick?: (row: PopupRow, stack: MenuStack) => void;
-    /** Called when a folder row is clicked. Return the next level or null to stay. */
-    onFolderEnter?: (row: PopupRow, stack: MenuStack) => PopupLevel | null;
-    /** Called when mouse enters/leaves any row (for help text in status bar). */
+    onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
+    onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
     onHover?: (row: PopupRow, entering: boolean) => void;
-    /** Factory for extra header buttons (called per layer to get fresh DOM). */
-    extraButtonFactory?: () => HTMLElement[];
-    /** Called after each render (for thumbnail loading etc.). */
-    onAfterRender?: (level: PopupLevel, stack: MenuStack) => void;
-    /** Called when the back/close button is clicked at root level. */
+    onAfterRender?: (level: PopupLevel, menu: SlideMenu) => void;
     onClose?: () => void;
-    /** Called when the ★/☆ fav button is clicked on a row. */
-    onFavToggle?: (row: PopupRow) => void;
-
-    /** How many pixels each successive layer is offset (for card-stack effect). */
-    offsetX = 4;
-    offsetY = 4;
+    extraButtonFactory?: () => HTMLElement[];
 
     constructor(opts: {
-        parentEl: HTMLElement;
-        layerClass?: string;
-        onItemClick?: (row: PopupRow, stack: MenuStack) => void;
-        onFolderEnter?: (row: PopupRow, stack: MenuStack) => PopupLevel | null;
+        container: HTMLElement;
+        onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
+        onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
         onHover?: (row: PopupRow, entering: boolean) => void;
-        extraButtonFactory?: () => HTMLElement[];
-        onAfterRender?: (level: PopupLevel, stack: MenuStack) => void;
+        onAfterRender?: (level: PopupLevel, menu: SlideMenu) => void;
         onClose?: () => void;
-        onFavToggle?: (row: PopupRow) => void;
+        extraButtonFactory?: () => HTMLElement[];
     }) {
-        this.parentEl = opts.parentEl;
-        this.layerClass = opts.layerClass || "popup-layer";
+        this.container = opts.container;
         this.onItemClick = opts.onItemClick;
         this.onFolderEnter = opts.onFolderEnter;
         this.onHover = opts.onHover;
-        this.extraButtonFactory = opts.extraButtonFactory;
         this.onAfterRender = opts.onAfterRender;
         this.onClose = opts.onClose;
-        this.onFavToggle = opts.onFavToggle;
+        this.extraButtonFactory = opts.extraButtonFactory;
+
+        this.container.innerHTML = "";
+        this.container.classList.add("slide-menu");
+
+        this.viewport = document.createElement("div");
+        this.viewport.className = "slide-viewport";
+
+        const p0 = document.createElement("div");
+        p0.className = "slide-panel";
+        const p1 = document.createElement("div");
+        p1.className = "slide-panel";
+
+        this.viewport.appendChild(p0);
+        this.viewport.appendChild(p1);
+        this.container.appendChild(this.viewport);
+        this.panels = [p0, p1];
     }
 
     get currentLevel(): PopupLevel | undefined {
         return this.levels[this.levels.length - 1];
     }
 
-    /** Reset — clear all layers, show root level. */
+    get levelCount(): number { return this.levels.length; }
+
     reset(level: PopupLevel): void {
         this.levels = [level];
-        this.clearLayers();
-        this.createLayer(level, 0, false);
+        this.activeIdx = 0;
+        this.buildPanel(this.panels[0], level);
+        this.panels[0].style.transform = "translateX(0)";
+        this.panels[0].style.display = "";
+        this.panels[1].style.display = "none";
         this.onAfterRender?.(level, this);
     }
 
-    /** Push — create a new floating layer, fade in. */
     push(level: PopupLevel): void {
+        if (this.transitioning) return;
+        this.transitioning = true;
         this.levels.push(level);
-        this.createLayer(level, this.layers.length, true);
+        this.animateSlide(true, level);
+    }
+
+    pop(): void {
+        if (this.transitioning || this.levels.length <= 1) return;
+        this.transitioning = true;
+        this.levels.pop();
+        this.animateSlide(false, this.levels[this.levels.length - 1]);
+    }
+
+    popTo(index: number): void {
+        if (index < 0 || index >= this.levels.length || this.transitioning) return;
+        const removeCount = this.levels.length - (index + 1);
+        this.levels = this.levels.slice(0, index + 1);
+        if (removeCount > 0) {
+            this.transitioning = true;
+            this.animateSlide(false, this.levels[this.levels.length - 1]);
+        }
+    }
+
+    reRender(): void {
+        const level = this.currentLevel;
+        if (!level) return;
+        this.buildPanel(this.panels[this.activeIdx], level);
         this.onAfterRender?.(level, this);
     }
 
-    /** Pop — remove top layer, reveal previous. */
-    pop(): void {
-        if (this.layers.length <= 1) return;
-        this.levels.pop();
-        const removed = this.layers.pop()!;
-        removed.classList.remove("popup-layer-enter");
-        removed.classList.add("popup-layer-leave");
-        setTimeout(() => { try { removed.remove(); } catch {} }, 250);
-        // Show previous layer
-        const prev = this.layers[this.layers.length - 1];
-        if (prev) {
-            prev.style.display = "";
-            prev.style.opacity = "1";
-            prev.style.pointerEvents = "auto";
-        }
-    }
-
-    /** Pop to a specific stack index with leave animation. */
-    popTo(index: number): void {
-        if (index < 0 || index >= this.levels.length) return;
-        const removeCount = this.layers.length - (index + 1);
-        for (let i = 0; i < removeCount; i++) {
-            const layer = this.layers.pop()!;
-            layer.classList.add("popup-layer-leave");
-            setTimeout(() => { try { layer.remove(); } catch {} }, 250);
-        }
-        this.levels = this.levels.slice(0, index + 1);
-        const target = this.layers[this.layers.length - 1];
-        if (target) {
-            target.style.display = "";
-            target.style.opacity = "1";
-            target.style.pointerEvents = "auto";
-        }
-    }
-
-    /** Re-render all levels from scratch (e.g. after priority change). */
-    reRender(): void {
-        this.clearLayers();
-        for (let i = 0; i < this.levels.length; i++) {
-            this.createLayer(this.levels[i], i, false);
-        }
-        // Restore display state for correct stack: show only top layer
-        for (let i = 0; i < this.layers.length; i++) {
-            this.layers[i].style.display = i < this.layers.length - 1 ? "none" : "flex";
-        }
-    }
-
-    /** Get the stored level at the given index (0 = root). */
     getLevel(index: number): PopupLevel | undefined {
         return this.levels[index];
     }
 
-    /** Number of stored levels. */
-    get levelCount(): number { return this.levels.length; }
-
-    /** Replace the stored level at the given index. Call reRender() after to refresh the UI. */
     setLevel(index: number, level: PopupLevel): void {
         if (index >= 0 && index < this.levels.length) {
             this.levels[index] = level;
         }
     }
-    // ======== Layer management ========
 
-    private clearLayers(): void {
-        for (const el of this.layers) el.remove();
-        this.layers = [];
+    private animateSlide(forward: boolean, nextLevel: PopupLevel): void {
+        const fromIdx = this.activeIdx;
+        const toIdx = fromIdx === 0 ? 1 : 0;
+        this.activeIdx = toIdx as 0 | 1;
+
+        const fromPanel = this.panels[fromIdx];
+        const toPanel = this.panels[toIdx];
+
+        fromPanel.style.transition = "none";
+        toPanel.style.transition = "none";
+        this.buildPanel(toPanel, nextLevel);
+        toPanel.style.display = "";
+        toPanel.style.transform = forward ? "translateX(100%)" : "translateX(-100%)";
+
+        void toPanel.offsetWidth;
+
+        fromPanel.style.transition = "transform 0.22s ease";
+        toPanel.style.transition = "transform 0.22s ease";
+        fromPanel.style.transform = forward ? "translateX(-100%)" : "translateX(100%)";
+        toPanel.style.transform = "translateX(0)";
+
+        setTimeout(() => {
+            fromPanel.style.transition = "";
+            toPanel.style.transition = "";
+            fromPanel.style.display = "none";
+            this.transitioning = false;
+            this.onAfterRender?.(nextLevel, this);
+        }, 250);
     }
 
-    private createLayer(level: PopupLevel, index: number, animate: boolean): void {
-        const el = document.createElement("div");
-        el.className = this.layerClass + (animate ? " popup-layer-enter" : "");
+    private buildPanel(panel: HTMLElement, level: PopupLevel): void {
+        panel.innerHTML = "";
 
-        // Hide previous layers so only the current one sizes the container
-        for (const prev of this.layers) {
-            prev.style.display = "none";
-        }
+        const header = document.createElement("div");
+        header.className = "slide-header";
 
-        // Breadcrumb — show back/close button + current level name
-        const breadcrumb = document.createElement("div");
-        breadcrumb.className = "popup-header";
-        const back = document.createElement("span");
-        back.className = "crumb back";
+        const backBtn = document.createElement("span");
+        backBtn.className = "slide-back";
         if (this.levels.length > 1) {
-            back.textContent = "←";
-            const stack = this;
-            back.addEventListener("click", () => stack.pop());
+            backBtn.textContent = "←";
+            backBtn.addEventListener("click", () => this.pop());
         } else {
-            back.textContent = "✕";
-            const onClose = this.onClose;
-            back.addEventListener("click", () => onClose?.());
+            backBtn.textContent = "✕";
+            backBtn.addEventListener("click", () => this.onClose?.());
         }
-        breadcrumb.appendChild(back);
-        const sep = document.createElement("span");
-        sep.className = "sep";
-        sep.textContent = " ";
-        breadcrumb.appendChild(sep);
-        const current = document.createElement("span");
-        current.className = "crumb current";
-        current.textContent = this.currentLevel?.label || "";
-        breadcrumb.appendChild(current);
+        header.appendChild(backBtn);
+
+        const title = document.createElement("span");
+        title.className = "slide-title";
+        title.textContent = level.label || "";
+        header.appendChild(title);
+
         for (const btn of this.extraButtonFactory?.() ?? []) {
-            breadcrumb.appendChild(btn);
+            header.appendChild(btn);
         }
-        // List first, then breadcrumb (header at bottom for touch accessibility)
+
+        panel.appendChild(header);
+
         const list = document.createElement("div");
-        this.buildListContent(list, level);
-        el.appendChild(list);
-        el.appendChild(breadcrumb);
-        this.parentEl.appendChild(el);
-        this.layers.push(el);
+        list.className = "slide-list";
 
-        // Dim previous layer
-        if (this.layers.length > 1) {
-            const prev = this.layers[this.layers.length - 2];
-            prev.style.display = "none";
-        }
-
-        // Remove enter animation class after it completes
-        if (animate) {
-            setTimeout(() => { el.classList.remove("popup-layer-enter"); }, 250);
-        }
-    }
-
-    private buildListContent(list: HTMLElement, level: PopupLevel): void {
-        list.className = "popup-layer-list";
         if (level.items.length === 0 && !level.renderCustom) {
-            const empty = document.createElement("div");
-            empty.style.cssText = "padding:24px;text-align:center;color:var(--text-muted);font-size:13px;";
-            empty.innerHTML = '<div style="font-size:28px;margin-bottom:6px;">📭</div><div>这个目录是空的</div>';
-            list.appendChild(empty);
+            list.innerHTML = '<div class="slide-empty">暂无内容</div>';
         } else if (level.renderCustom) {
             level.renderCustom(list);
         } else {
             for (const row of level.items) {
-                const rowEl = this.createRowElement(row);
-                list.appendChild(rowEl);
+                const el = this.createRow(row);
+                if (el) list.appendChild(el);
             }
         }
+
+        panel.appendChild(list);
     }
 
-    private createRowElement(row: PopupRow): HTMLElement {
-        // Divider — render as a horizontal line
+    private createRow(row: PopupRow): HTMLElement | null {
         if (row.kind === "divider") {
             const el = document.createElement("div");
-            el.className = "menu-divider";
+            el.className = "slide-divider";
             return el;
         }
 
         const el = document.createElement("div");
-        el.className = "menu-item";
+        el.className = "slide-item";
         const hint = row.sublabel || (row.model ? "暂无描述" : "暂无提示");
         el.setAttribute("data-hint", hint);
-        el.addEventListener("mouseenter", () => showHint(hint));
-        el.addEventListener("mouseleave", () => hideHint());
 
         const iconSpan = document.createElement("span");
-        iconSpan.className = "menu-icon";
+        iconSpan.className = "slide-icon";
         const iconEl = createIconifyIcon(row.icon);
-        if (iconEl) {
-            iconSpan.appendChild(iconEl);
-        } else {
-            iconSpan.textContent = row.icon; // fallback
-        }
+        if (iconEl) iconSpan.appendChild(iconEl);
+        else iconSpan.textContent = row.icon;
         el.appendChild(iconSpan);
 
         const labelSpan = document.createElement("span");
-        labelSpan.className = "menu-label";
+        labelSpan.className = "slide-label";
         labelSpan.textContent = row.label;
         el.appendChild(labelSpan);
 
         if (row.catTag) {
             const tagSpan = document.createElement("span");
-            tagSpan.className = "menu-tag";
+            tagSpan.className = "slide-tag";
             tagSpan.textContent = row.catTag;
             el.appendChild(tagSpan);
         }
 
         if (row.kind === "folder") {
             const arrow = document.createElement("span");
-            arrow.className = "menu-arrow";
+            arrow.className = "slide-arrow";
             arrow.textContent = ">";
             el.appendChild(arrow);
         }
 
-        if (row.kind === "folder") {
-            el.addEventListener("click", () => {
-                const next = this.onFolderEnter?.(row, this);
-                if (next) this.push(next);
+        if (row.showDetailBtn) {
+            const detailBtn = document.createElement("span");
+            detailBtn.className = "slide-detail-btn";
+            detailBtn.textContent = "📄";
+            detailBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (row.onDetailClick) row.onDetailClick();
+                else {
+                    const next = this.onFolderEnter?.(row, this);
+                    if (next) this.push(next);
+                }
             });
-        } else {
-            el.addEventListener("click", () => this.onItemClick?.(row, this));
+            el.appendChild(detailBtn);
         }
 
-        // Hover help text
-        el.addEventListener("mouseenter", () => this.onHover?.(row, true));
-        el.addEventListener("mouseleave", () => this.onHover?.(row, false));
-
-        // ★/☆ Favorites toggle button — moved to model detail page
-        // (removed from row to avoid blocking replace-click behavior)
-
-        // "+" Add button — for library model rows: add additional model (keep existing)
         if (row.onAddClick) {
             const addBtn = document.createElement("span");
-            addBtn.className = "menu-add-btn";
+            addBtn.className = "slide-add-btn";
             addBtn.textContent = "+";
-            addBtn.style.cssText = "cursor:pointer;margin-left:6px;display:inline-flex;align-items:center;justify-content:center;user-select:none;width:20px;height:20px;border-radius:4px;font-size:14px;font-weight:bold;color:var(--accent,#4a6cf7);background:var(--white-04);transition:background 0.15s;flex-shrink:0;";
-            addBtn.addEventListener("mouseenter", () => { addBtn.style.background = "var(--white-08)"; });
-            addBtn.addEventListener("mouseleave", () => { addBtn.style.background = "var(--white-04)"; });
             addBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
                 row.onAddClick!();
@@ -289,28 +246,24 @@ export class MenuStack {
             el.appendChild(addBtn);
         }
 
-        // "📄" Detail button — for loaded model rows: if onDetailClick is set,
-        // call it (e.g. focus the model); otherwise fall back to folder-enter
-        // (navigate to detail submenu).
-        if (row.showDetailBtn) {
-            const detailBtn = document.createElement("span");
-            detailBtn.className = "menu-detail-btn";
-            detailBtn.textContent = "📄";
-            detailBtn.style.cssText = "cursor:pointer;margin-left:6px;display:inline-flex;align-items:center;justify-content:center;user-select:none;width:20px;height:20px;border-radius:4px;font-size:12px;background:var(--white-04);transition:background 0.15s;flex-shrink:0;";
-            detailBtn.addEventListener("mouseenter", () => { detailBtn.style.background = "var(--white-08)"; });
-            detailBtn.addEventListener("mouseleave", () => { detailBtn.style.background = "var(--white-04)"; });
-            detailBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                if (row.onDetailClick) {
-                    row.onDetailClick();
-                } else {
-                    // Fallback: navigate into the folder (detail submenu)
-                    const next = this.onFolderEnter?.(row, this);
-                    if (next) this.push(next);
-                }
+        if (row.kind === "folder") {
+            el.addEventListener("click", (e) => {
+                if ((e.target as HTMLElement).closest(".slide-detail-btn, .slide-add-btn")) return;
+                const next = this.onFolderEnter?.(row, this);
+                if (next) this.push(next);
             });
-            el.appendChild(detailBtn);
+        } else {
+            el.addEventListener("click", () => this.onItemClick?.(row, this));
         }
+
+        el.addEventListener("mouseenter", () => {
+            showHint(hint);
+            this.onHover?.(row, true);
+        });
+        el.addEventListener("mouseleave", () => {
+            hideHint();
+            this.onHover?.(row, false);
+        });
 
         return el;
     }

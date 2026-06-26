@@ -231,7 +231,7 @@ html, body {
 }
 #modelPopup.visible { opacity: 1; transform: none; pointer-events: auto; }
 
-/* Old in-flow children are replaced by MenuStack layers — hide them from layout */
+/* Old in-flow children are hidden — SlideMenu injects its own */
 #modelPopup > #popupBreadcrumb,
 #modelPopup > #popupSearch,
 #modelPopup > #popupList,
@@ -444,7 +444,7 @@ html, body {
     padding: 4px 10px; border-radius: 8px;
 }
 .nav-tab iconify-icon { width: 20px; height: 20px; }
-.nav-tab .nav-label { font-size: 9px; color: var(--text-muted); }
+.nav-tab .nav-label { font-size: 9px; color: var(--white-50); }
 .nav-tab:hover { color: var(--white-85); background: var(--white-04); }
 .nav-tab.active { color: var(--accent); }
 .nav-tab.active .nav-label { color: var(--accent); }
@@ -468,87 +468,98 @@ html, body {
     display: block;
 }
 
-/* ===== MenuStack: 通用菜单组件 ===== */
-.menu-list {
-    padding: 4px 0;
-    overflow: hidden;
-}
-.menu-item {
-    display: flex; align-items: flex-start; gap: 10px;
-    padding: 10px 14px; cursor: pointer;
-    transition: background 0.15s; border-left: 2px solid transparent;
-}
-.menu-item:hover { background: var(--white-04); border-left-color: rgba(74,108,247,0.3); }
-.menu-item .menu-icon { width: 22px; text-align: center; font-size: 17px; flex-shrink: 0; }
-.menu-item .menu-icon-svg { width: 18px; height: 18px; display: block; margin: 0 auto; color: var(--text); }
-.menu-item .menu-label {
-    flex: 1; font-size: 13px; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.menu-item .menu-arrow { color: var(--text-dark); font-size: 12px; flex-shrink: 0; }
-.menu-item .menu-arrow { color: var(--text-dark); font-size: 12px; flex-shrink: 0; }
-.menu-item .menu-tag {
-    font-size: 9px; padding: 1px 6px; border-radius: 6px;
-    background: var(--accent-dim); color: var(--text-dim); flex-shrink: 0;
-}
-.menu-divider {
-    height: 1px; background: var(--divider); margin: 6px 14px;
-}
+/* ===== Slide Menu 滑动菜单 ===== */
 
-/* ===== 滑动动画 ===== */
-@keyframes slideOutLeft { to { transform: translateX(-100%); opacity: 0; } }
-@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes slideOutRight { to { transform: translateX(100%); opacity: 0; } }
-@keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-.menu-list.slide-left-out { animation: slideOutLeft 0.2s ease forwards; pointer-events: none; }
-.menu-list.slide-right-in { animation: slideInRight 0.2s ease forwards; }
-.menu-list.slide-right-out { animation: slideOutRight 0.2s ease forwards; pointer-events: none; }
-.menu-list.slide-left-in { animation: slideInLeft 0.2s ease forwards; }
-
-/* ===== 多层浮层 (MenuStack layers) ===== */
-.popup-layer {
-    position: relative;
+.slide-menu {
     display: flex; flex-direction: column;
-    background: var(--overlay-bg); backdrop-filter: var(--overlay-blur);
-    border-radius: var(--overlay-radius);
+    flex: 1; min-height: 0;
+}
+.slide-viewport {
+    position: relative; flex: 1; min-height: 0;
     overflow: hidden;
 }
-.popup-layer-enter {
-    animation: popupLayerEnter 0.2s ease forwards;
+.slide-panel {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    will-change: transform;
 }
-.popup-layer-leave {
-    animation: popupLayerLeave 0.2s ease forwards;
+.slide-header {
+    display: flex; align-items: center; gap: 4px;
+    padding: var(--overlay-header-py) var(--overlay-header-px);
+    font-size: 12px; color: var(--text-dim);
+    border-top: 1px solid var(--divider);
+    flex-shrink: 0; overflow-x: auto; white-space: nowrap;
 }
-@keyframes popupLayerEnter {
-    from { opacity: 0; transform: translate(8px, 4px); }
-    to { opacity: 1; transform: translate(0, 0); }
+.slide-back {
+    color: var(--accent); cursor: pointer; font-weight: 600; font-size: 14px;
+    padding: 0 2px;
 }
-@keyframes popupLayerLeave {
-    from { opacity: 1; }
-    to { opacity: 0; transform: scale(0.97); }
+.slide-back:hover { color: #fff; }
+.slide-title {
+    color: var(--text-bright); cursor: default; flex: 1;
 }
-.popup-layer-list {
+.slide-list {
     flex: 1; overflow-y: auto; padding: 4px 0;
 }
+.slide-empty {
+    text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px;
+}
+.slide-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; cursor: pointer;
+    transition: background 0.12s;
+    font-size: 13px; color: var(--text);
+    min-height: 44px;
+}
+.slide-item:hover { background: var(--white-04); }
+.slide-item:active { background: var(--white-08); }
+.slide-icon {
+    width: 18px; height: 18px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+}
+.slide-icon iconify-icon { width: 18px; height: 18px; display: block; }
+.slide-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slide-tag {
+    font-size: 10px; color: var(--text-dim);
+    background: var(--white-08); border-radius: 3px;
+    padding: 1px 5px; flex-shrink: 0;
+}
+.slide-arrow {
+    color: var(--text-dark); font-size: 12px; flex-shrink: 0;
+    margin-left: 4px;
+}
+.slide-divider {
+    height: 1px; background: var(--divider); margin: 4px 12px;
+}
+.slide-detail-btn, .slide-add-btn {
+    cursor: pointer; margin-left: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 4px;
+    font-size: 13px; background: var(--white-04);
+    transition: background 0.15s; flex-shrink: 0;
+    user-select: none;
+}
+.slide-detail-btn:hover, .slide-add-btn:hover { background: var(--white-12); }
 
 /* ===== 统一样式滚动条 ===== */
-.popup-layer-list::-webkit-scrollbar,
+.slide-list::-webkit-scrollbar,
 #popupList::-webkit-scrollbar,
 .overlay-list::-webkit-scrollbar {
     width: 4px;
 }
-.popup-layer-list::-webkit-scrollbar-track,
+.slide-list::-webkit-scrollbar-track,
 #popupList::-webkit-scrollbar-track,
 .overlay-list::-webkit-scrollbar-track {
     background: transparent;
 }
-.popup-layer-list::-webkit-scrollbar-thumb,
+.slide-list::-webkit-scrollbar-thumb,
 #popupList::-webkit-scrollbar-thumb,
 .overlay-list::-webkit-scrollbar-thumb {
     background: var(--white-12);
     border-radius: 2px;
 }
-.popup-layer-list::-webkit-scrollbar-thumb:hover,
+.slide-list::-webkit-scrollbar-thumb:hover,
 #popupList::-webkit-scrollbar-thumb:hover,
 .overlay-list::-webkit-scrollbar-thumb:hover {
     background: var(--white-40);

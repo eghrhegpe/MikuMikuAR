@@ -6,6 +6,10 @@ export function AddExternalPath(arg1) {
   return window['go']['main']['App']['AddExternalPath'](arg1);
 }
 
+export function AddRecentModel(arg1) {
+  return window['go']['main']['App']['AddRecentModel'](arg1);
+}
+
 export function AddTag(arg1, arg2) {
   return window['go']['main']['App']['AddTag'](arg1, arg2);
 }
@@ -24,6 +28,10 @@ export function ClearExtractCache() {
 
 export function DeleteDanceSet(arg1) {
   return window['go']['main']['App']['DeleteDanceSet'](arg1);
+}
+
+export function DeletePresetScene(arg1) {
+  return window['go']['main']['App']['DeletePresetScene'](arg1);
 }
 
 export function DeleteRenderPreset(arg1) {
@@ -70,6 +78,18 @@ export function GetModelsByTag(arg1) {
   return window['go']['main']['App']['GetModelsByTag'](arg1);
 }
 
+export function GetPresetScenes() {
+  return window['go']['main']['App']['GetPresetScenes']();
+}
+
+export function GetPresetScenesDir() {
+  return window['go']['main']['App']['GetPresetScenesDir']();
+}
+
+export function GetRecentModels() {
+  return window['go']['main']['App']['GetRecentModels']();
+}
+
 export function GetRenderPresets() {
   return window['go']['main']['App']['GetRenderPresets']();
 }
@@ -110,6 +130,10 @@ export function LoadLastScene() {
   return window['go']['main']['App']['LoadLastScene']();
 }
 
+export function LoadModelPreset(arg1) {
+  return window['go']['main']['App']['LoadModelPreset'](arg1);
+}
+
 export function LoadSceneFile(arg1) {
   return window['go']['main']['App']['LoadSceneFile'](arg1);
 }
@@ -146,12 +170,24 @@ export function SaveLastScene(arg1) {
   return window['go']['main']['App']['SaveLastScene'](arg1);
 }
 
+export function SaveModelPreset(arg1, arg2) {
+  return window['go']['main']['App']['SaveModelPreset'](arg1, arg2);
+}
+
 export function SaveRenderPreset(arg1, arg2) {
   return window['go']['main']['App']['SaveRenderPreset'](arg1, arg2);
 }
 
 export function SaveSceneFile(arg1, arg2) {
   return window['go']['main']['App']['SaveSceneFile'](arg1, arg2);
+}
+
+export function SaveScenePreset(arg1) {
+  return window['go']['main']['App']['SaveScenePreset'](arg1);
+}
+
+export function SaveScreenshot(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SaveScreenshot'](arg1, arg2, arg3);
 }
 
 export function SaveThumbnail(arg1, arg2) {
@@ -182,6 +218,14 @@ export function SelectPMXFile() {
   return window['go']['main']['App']['SelectPMXFile']();
 }
 
+export function SelectPresetOpenFile() {
+  return window['go']['main']['App']['SelectPresetOpenFile']();
+}
+
+export function SelectPresetSaveFile() {
+  return window['go']['main']['App']['SelectPresetSaveFile']();
+}
+
 export function SelectSceneOpenFile() {
   return window['go']['main']['App']['SelectSceneOpenFile']();
 }
@@ -192,6 +236,10 @@ export function SelectSceneSaveFile() {
 
 export function SelectVMDMotion() {
   return window['go']['main']['App']['SelectVMDMotion']();
+}
+
+export function SelectVPDPose() {
+  return window['go']['main']['App']['SelectVPDPose']();
 }
 
 export function SetBlenderPath(arg1) {

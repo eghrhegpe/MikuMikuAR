@@ -11,34 +11,67 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Animation } from "@babylonjs/core/Animations/animation";
 import { Scene } from "@babylonjs/core/scene";
 import { MmdCamera } from "babylon-mmd/esm/Runtime/mmdCamera";
-import { focusedModelId } from "./config";
+import { focusedModelId, modelRegistry } from "./config";
 
 // ======== Types ========
-export type CameraMode = "orbit" | "freefly" | "oneshot" | "concert" | "vmd";
+export type CameraMode = "orbit" | "freefly" | "concert" | "vmd";
 
-interface CameraPreset {
-    label: string;
-    position: Vector3;
-    target: Vector3;
-    duration: number; // seconds
+/** Orbit camera parameters. */
+export interface OrbitParams {
+    targetHeight: number;
+    distance: number;
+    beta: number;
 }
 
-const concertPresets: CameraPreset[] = [
-    { label: "正面", position: new Vector3(0, 1.5, 12), target: new Vector3(0, 8, 0), duration: 4 },
-    { label: "左侧", position: new Vector3(-10, 1.5, 2), target: new Vector3(0, 8, 0), duration: 3 },
-    { label: "右侧", position: new Vector3(10, 1.5, 2), target: new Vector3(0, 8, 0), duration: 3 },
-    { label: "俯视", position: new Vector3(0, 14, 2), target: new Vector3(0, 8, 0), duration: 2 },
-    { label: "仰视", position: new Vector3(0, 0.3, 6), target: new Vector3(0, 8, 0), duration: 2 },
-    { label: "特写", position: new Vector3(0, 8, 4), target: new Vector3(0, 8, 0), duration: 2 },
-];
+/** Freefly camera parameters. */
+export interface FreeflyParams {
+    speed: number;
+    angularSensibility: number;
+}
+
+/** Concert camera parameters — continuous orbit around target. */
+export interface ConcertParams {
+    radius: number;
+    height: number;
+    speed: number;
+}
+
+/** Per-mode parameter bundle, persisted with scene files. */
+export interface CameraPreset {
+    orbit: OrbitParams;
+    freefly: FreeflyParams;
+    concert: ConcertParams;
+}
+
+export function defaultCameraPreset(): CameraPreset {
+    return {
+        orbit: { targetHeight: 8, distance: 16, beta: Math.PI / 3 },
+        freefly: { speed: 0.5, angularSensibility: 2000 },
+        concert: { radius: 12, height: 8, speed: 0.3 },
+    };
+}
+
+// ======== Runtime Preset State ========
+let _currentPreset: CameraPreset = defaultCameraPreset();
+
+export function getCameraPreset(): CameraPreset { return _currentPreset; }
+export function setCameraPreset(p: CameraPreset): void { _currentPreset = p; }
+
+export function getOrbitParams(): OrbitParams { return _currentPreset.orbit; }
+export function getFreeflyParams(): FreeflyParams { return _currentPreset.freefly; }
+export function getConcertParams(): ConcertParams { return _currentPreset.concert; }
+
+export function setOrbitParams(p: Partial<OrbitParams>): void { Object.assign(_currentPreset.orbit, p); }
+export function setFreeflyParams(p: Partial<FreeflyParams>): void { Object.assign(_currentPreset.freefly, p); }
+export function setConcertParams(p: Partial<ConcertParams>): void { Object.assign(_currentPreset.concert, p); }
 
 // ======== Internal State ========
 let _scene: Scene | null = null;
 let _canvas: HTMLCanvasElement | null = null;
 let _cameraMode: CameraMode = "orbit";
 let _currentCamera: Camera | null = null;
-let _concertTimer: ReturnType<typeof setTimeout> | null = null;
-let _concertIndex = 0;
+let _concertUpdateFn: (() => void) | null = null;
+let _concertAngle = 0;
 
 // ======== Camera VMD ========
 let _mmdCamera: MmdCamera | null = null;
@@ -119,7 +152,8 @@ export const freeflyInput = {
 // ======== Camera Factory Functions ========
 
 function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCamera {
-    const cam = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3, 16, new Vector3(0, 8, 0), scene);
+    const p = _currentPreset.orbit;
+    const cam = new ArcRotateCamera("camera", -Math.PI / 2, p.beta, p.distance, new Vector3(0, p.targetHeight, 0), scene);
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
     cam.panningSensibility = 50;
@@ -128,11 +162,11 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
 }
 
 function createFreeflyCamera(scene: Scene, canvas: HTMLCanvasElement): UniversalCamera {
+    const p = _currentPreset.freefly;
     const cam = new UniversalCamera("freeflyCam", new Vector3(0, 8, 16), scene);
-    cam.speed = 0.5;
-    cam.angularSensibility = 2000;
+    cam.speed = p.speed;
+    cam.angularSensibility = p.angularSensibility;
     cam.attachControl(canvas, true);
-    // Clear default key bindings — we handle WASD manually in main.ts
     cam.keysUp = [];
     cam.keysDown = [];
     cam.keysLeft = [];
@@ -216,9 +250,6 @@ export function switchCameraMode(mode: CameraMode): void {
         case "concert":
             newCam = createConcertCamera(scene);
             break;
-        case "oneshot":
-            newCam = createOneshotCamera(scene, canvas);
-            break;
         case "vmd":
             newCam = createVmdCamera(scene);
             break;
@@ -242,6 +273,14 @@ export function switchCameraMode(mode: CameraMode): void {
     // Start new mode's side-effects
     if (mode === "freefly") initFreeflyUpdate(scene);
     if (mode === "concert") startConcert(scene);
+
+    // Auto-frame on focused model when switching to orbit
+    if (mode === "orbit" && focusedModelId) {
+        const inst = modelRegistry.get(focusedModelId);
+        if (inst) {
+            import("./scene").then(({ focusModel }) => focusModel(focusedModelId));
+        }
+    }
 
     // Re-attach post-processing pipeline to the new camera
     import("./scene").then(({ reattachPipeline, getRenderState }) => {
@@ -325,82 +364,55 @@ function stopFreefly(): void {
 // ======== Concert ========
 
 function startConcert(scene: Scene): void {
-    _concertIndex = 0;
-    scheduleNextConcert(scene);
-}
-
-function scheduleNextConcert(scene: Scene): void {
-    if (_concertTimer !== null) {
-        clearTimeout(_concertTimer);
-        _concertTimer = null;
+    _concertAngle = 0;
+    if (_concertUpdateFn) {
+        scene.onBeforeRenderObservable.removeCallback(_concertUpdateFn);
     }
-
-    const presets = concertPresets;
-    const idx = _concertIndex % presets.length;
-    const preset = presets[idx];
-    _concertIndex++;
-
-    animateCameraTo(preset, scene);
-    _concertTimer = setTimeout(() => scheduleNextConcert(scene), preset.duration * 1000);
+    _concertUpdateFn = () => {
+        const cam = _currentCamera;
+        if (!cam || !(cam instanceof ArcRotateCamera)) return;
+        const p = _currentPreset.concert;
+        const delta = scene.getAnimationRatio() * p.speed * 0.016;
+        _concertAngle += delta;
+        cam.alpha = -Math.PI / 2 + _concertAngle;
+        cam.radius = p.radius;
+        cam.beta = Math.PI / 3;
+        const focusedId = focusedModelId;
+        if (focusedId) {
+            const inst = modelRegistry.get(focusedId);
+            if (inst && inst.meshes.length > 0) {
+                const root = inst.rootMesh;
+                cam.setTarget(new Vector3(root.position.x, p.height, root.position.z));
+            } else {
+                cam.setTarget(new Vector3(0, p.height, 0));
+            }
+        } else {
+            cam.setTarget(new Vector3(0, p.height, 0));
+        }
+    };
+    scene.onBeforeRenderObservable.add(_concertUpdateFn);
 }
 
 function stopConcert(): void {
-    if (_concertTimer !== null) {
-        clearTimeout(_concertTimer);
-        _concertTimer = null;
+    if (_concertUpdateFn && _scene) {
+        _scene.onBeforeRenderObservable.removeCallback(_concertUpdateFn);
+        _concertUpdateFn = null;
     }
-}
-
-function animateCameraTo(preset: CameraPreset, scene: Scene): void {
-    const cam = _currentCamera;
-    if (!cam) return;
-
-    const frameRate = 60;
-    const animDuration = frameRate; // 1-second transition
-
-    const posAnim = new Animation(
-        "concertPos", "position", frameRate,
-        Animation.ANIMATIONTYPE_VECTOR3,
-        Animation.ANIMATIONLOOPMODE_CONSTANT,
-    );
-    posAnim.setKeys([
-        { frame: 0, value: cam.position.clone() },
-        { frame: animDuration, value: preset.position },
-    ]);
-
-    if (cam instanceof ArcRotateCamera) {
-        const targetAnim = new Animation(
-            "concertTarget", "target", frameRate,
-            Animation.ANIMATIONTYPE_VECTOR3,
-            Animation.ANIMATIONLOOPMODE_CONSTANT,
-        );
-        targetAnim.setKeys([
-            { frame: 0, value: cam.target.clone() },
-            { frame: animDuration, value: preset.target },
-        ]);
-        cam.animations = [posAnim, targetAnim];
-    } else {
-        cam.animations = [posAnim];
-    }
-
-    scene.beginAnimation(cam, 0, animDuration, false);
 }
 
 // ======== Camera State Serialization ========
 
 export interface CameraState {
-    mode: CameraMode;
+    preset: CameraPreset;
     alpha: number;
     beta: number;
     radius: number;
     targetX: number;
     targetY: number;
     targetZ: number;
-    /** Freefly/UniversalCamera position — only used when mode=freefly */
     positionX?: number;
     positionY?: number;
     positionZ?: number;
-    focusedModelId: string | null;
 }
 
 export function getCameraState(): CameraState {
@@ -410,7 +422,7 @@ export function getCameraState(): CameraState {
     const beta = isArc ? cam.beta : 0;
     const radius = isArc ? cam.radius : 16;
     return {
-        mode: _cameraMode,
+        preset: JSON.parse(JSON.stringify(_currentPreset)),
         alpha, beta, radius,
         targetX: (cam as any).target?.x ?? 0,
         targetY: (cam as any).target?.y ?? 8,
@@ -418,12 +430,16 @@ export function getCameraState(): CameraState {
         positionX: cam?.position.x,
         positionY: cam?.position.y,
         positionZ: cam?.position.z,
-        focusedModelId,
     };
 }
 
 export function setCameraState(s: CameraState): void {
-    if (s.mode) switchCameraMode(s.mode);
+    if (s.preset) {
+        _currentPreset = JSON.parse(JSON.stringify(s.preset));
+    }
+    // Backward compat: old scene files stored mode in s.mode directly
+    const mode = (s as any).preset?.mode || (s as any).mode;
+    if (mode) switchCameraMode(mode);
     const cam = _currentCamera;
     if (!cam) return;
     if (cam instanceof ArcRotateCamera) {

@@ -13,8 +13,6 @@ import {
   ClearExtractCache,
   GetThumbnailBatch,
   GetModelMetaBatch,
-  ToggleFavorite,
-  GetFavorites,
   GetRecentModels,
   AddRecentModel,
   AddTag,
@@ -26,13 +24,15 @@ import {
   OpenInBlender,
   SelectAudioFile,
   SelectVMDMotion,
+  SelectVPDPose,
   GetDanceSets,
   SaveDanceSet,
   DeleteDanceSet,
   ImportDanceSet,
-  GetPlaylists,
-  SavePlaylist,
-  DeletePlaylist,
+  SaveModelPreset,
+  LoadModelPreset,
+  SelectPresetSaveFile,
+  SelectPresetOpenFile,
 } from "../wailsjs/go/main/App";
 import {
   dom,
@@ -68,16 +68,16 @@ import {
   autoLoop,
   setAutoLoop,
   mmdRuntime,
-  favorites,
-  setFavorites,
   recentModels,
   setRecentModels,
   computeLibraryRef,
+  resolveLibraryRef,
 } from "./config";
 import {
   loadPMXFile,
   loadVMDFromPath,
   loadVMDMotion,
+  loadVPDPose,
   focusModel,
   removeModel,
   setModelVisibility,
@@ -93,15 +93,69 @@ import {
   setModelMorphWeight,
   getModelMorphWeight,
   resetModelMorphs,
+  stopVMD,
+  getMatState,
+  applyMatState,
+  getMatCatGroups,
+  getMatCatParams,
+  setMatCatParams,
+  resetMatCatParams,
+  getMatDetailList,
+  getMatParams,
+  setMatParams,
+  resetSingleMatParams,
+  resetAllMatParams,
+  triggerAutoSave,
+  loadCameraVmdFromPath,
 } from "./scene";
-import { MenuStack } from "./menu";
-import { loadAudioFile, setAudioOffset, playAudio, pauseAudio } from "./audio";
+import type { MaterialCategoryParams } from "./scene";
+import type { Material } from "@babylonjs/core/Materials/material";
+import { SlideMenu } from "./menu";
+import { createIconifyIcon } from "./icons";
+import { loadAudioFile, setAudioOffset, setVolume, playAudio, pauseAudio, getAudioPath, getAudioName, getVolume, getAudioOffset, isAudioPlaying } from "./audio";
 
-// ======== MenuStack instances ========
+/** Shape of a .mcupreset.json file — single-model state snapshot. */
+export interface ModelPresetFile {
+  version: 1;
+  model: {
+    filePath: string;
+    libraryRef?: string;
+    name: string;
+    kind: "actor" | "stage";
+  };
+  transform: {
+    positionX?: number;
+    positionY?: number;
+    positionZ?: number;
+    scaling?: number;
+    rotationY?: number;
+  };
+  visibility: {
+    visible?: boolean;
+    opacity?: number;
+    wireframe?: boolean;
+  };
+  vmd: {
+    path: string | null;
+    libraryRef?: string | undefined;
+    name: string;
+    playing?: boolean;
+  };
+  audio?: {
+    path: string;
+    name: string;
+    volume: number;
+    offset: number;
+  };
+  materialCategories?: Record<string, { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }>;
+  materialOverrides?: Record<number, { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }>;
+}
 
-const makeModelStack = (): MenuStack => {
-  return new MenuStack({
-    parentEl: dom.modelPopup,
+// ======== SlideMenu instances ========
+
+const makeModelStack = (): SlideMenu => {
+  return new SlideMenu({
+    container: dom.modelPopup,
     onClose: hidePopup,
     onFolderEnter: (row) => {
       // Model detail submenu: scene:${id}
@@ -122,36 +176,13 @@ const makeModelStack = (): MenuStack => {
         if (!inst) return null;
         switch (type) {
           case "info": return buildModelInfoLevel(id);
-          case "motion": return buildMotionBindingLevel(id);
           case "transform": return buildTransformLevel(id);
           case "visibility": return buildVisibilityLevel(id);
           case "tags": return buildModelTagsLevel(id);
           case "morph": return buildMorphPreviewLevel(id);
+          case "material": return buildMatCatLevel(id, inst.name);
           default: return null;
         }
-      }
-      // Motion browsing for model detail: detail:motion:browse:${id}
-      if (row.target && row.target.startsWith("detail:motion:browse:")) {
-        const id = row.target.replace("detail:motion:browse:", "");
-        motionBindingTargetId = id;
-        // Open motion library for this specific model
-        const level = buildLevel(libraryRoot, "动作库", (m) => m.format === "vmd");
-        // Override label to show which model we're binding to
-        const inst = modelRegistry.get(id);
-        level.label = `绑定动作 → ${inst?.name || "模型"}`;
-        return level;
-      }
-      // Favorites collection
-      if (row.target === "__favorites__") {
-        const favModels = allModels.filter(m => {
-          const ref = computeLibraryRef(m.file_path);
-          return ref && favorites.has(ref);
-        });
-        return {
-          label: "收藏",
-          dir: "",
-          items: favModels.map(m => modelToRow(m)),
-        };
       }
       // Recent models
       if (row.target === "__recent__") {
@@ -175,23 +206,10 @@ const makeModelStack = (): MenuStack => {
             : [{ kind: "action" as const, label: "暂无记录", icon: "clock", target: "", sublabel: "加载模型后会出现在这里" }],
         };
       }
-      // Dance sets overview
-      if (row.target === "__dance_sets__") {
-        return buildDanceSetsOverviewLevel();
-      }
       // Dance set detail: __dance_set:${id}
       if (row.target && row.target.startsWith("__dance_set:")) {
         const setId = row.target.replace("__dance_set:", "");
         return buildDanceSetDetailLevel(setId);
-      }
-      // Playlists overview
-      if (row.target === "__playlists__") {
-        return buildPlaylistsOverviewLevel();
-      }
-      // Add to playlist picker: __addtoplaylist:${id}
-      if (row.target && row.target.startsWith("__addtoplaylist:")) {
-        const modelId = row.target.replace("__addtoplaylist:", "");
-        return buildAddToPlaylistLevel(modelId);
       }
       // Tags overview
       if (row.target === "__tags__") {
@@ -274,40 +292,6 @@ const makeModelStack = (): MenuStack => {
         const inst = modelRegistry.get(id);
         if (!inst) return;
         switch (type) {
-          case "fav": {
-            const libRef = inst.filePath ? computeLibraryRef(inst.filePath) : null;
-            if (libRef) {
-              const isFav = favorites.has(libRef);
-              ToggleFavorite(libRef).then(() => {
-                if (isFav) {
-                  favorites.delete(libRef);
-                } else {
-                  favorites.add(libRef);
-                }
-                setFavorites(new Set(favorites));
-                // Refresh all levels so the star icon and favorites count update immediately
-                if (modelStack) {
-                  // Update root level's __favorites__ folder sublabel
-                  const root = modelStack.getLevel(0);
-                  if (root) {
-                    const favFolder = root.items.find(i => i.target === "__favorites__");
-                    if (favFolder) {
-                      favFolder.sublabel = favorites.size > 0 ? `${favorites.size} 个模型` : "暂无收藏";
-                    }
-                  }
-                  // Replace the detail level with fresh computed data
-                  const detailIdx = modelStack.levelCount - 1;
-                  modelStack.setLevel(detailIdx, buildModelDetailLevel(id));
-                  modelStack.reRender();
-                }
-                setStatus(isFav ? "✓ 已取消收藏" : "✓ 已收藏", true);
-              }).catch((err) => {
-                console.warn("ToggleFavorite failed:", err);
-                setStatus("✗ 收藏操作失败", false);
-              });
-            }
-            break;
-          }
           case "focus":
             setFocusedModelId(id);
             focusModel(id);
@@ -318,47 +302,6 @@ const makeModelStack = (): MenuStack => {
             setStatus(`✓ 已移除: ${inst.name}`, true);
             hidePopup();
             break;
-          case "motion": {
-            const action = parts[2];
-            switch (action) {
-              case "pause":
-                if (mmdRuntime) {
-                  if (isPlaying) {
-                    mmdRuntime.pauseAnimation();
-                    setIsPlaying(false);
-                    setAutoLoop(false);
-                  } else {
-                    setAutoLoop(true);
-                    mmdRuntime.playAnimation().then(() => setIsPlaying(true));
-                  }
-                  updatePlaybackUI();
-                  modelStack?.reRender();
-                }
-                break;
-              case "reset":
-                if (inst.mmdModel && mmdRuntime) {
-                  inst.mmdModel.setRuntimeAnimation(null);
-                  inst.vmdData = null;
-                  inst.vmdName = "";
-                  inst.vmdPath = null;
-                  inst.animationDuration = 0;
-                  if (isPlaying) {
-                    mmdRuntime.pauseAnimation();
-                    setIsPlaying(false);
-                  }
-                  updatePlaybackUI();
-                  modelStack?.reRender();
-                  setStatus("✓ 动作已重置", true);
-                }
-                break;
-              case "loop":
-                setAutoLoop(!autoLoop);
-                modelStack?.reRender();
-                setStatus(`循环: ${autoLoop ? "开" : "关"}`, true);
-                break;
-            }
-            break;
-          }
           case "export-mmd":
             (async () => {
               try {
@@ -383,6 +326,12 @@ const makeModelStack = (): MenuStack => {
               }
             })();
             break;
+          case "preset-save":
+            selectAndSavePreset(id);
+            break;
+          case "preset-load":
+            selectAndLoadPreset(id);
+            break;
         }
         return;
       }
@@ -394,14 +343,12 @@ const makeModelStack = (): MenuStack => {
       }
       const hints: Record<string, string> = {
         "models:browse": "浏览和加载 PMX 模型",
-        "detail:fav": "收藏或取消收藏此模型",
         "detail:focus": "相机对准此模型",
         "detail:remove": "从场景中移除此模型",
         "detail:export-mmd": "在 MikuMikuDance 中打开此模型",
         "detail:blender": "在 Blender 中编辑此模型",
-        "detail:motion:pause": "暂停或继续当前动作",
-        "detail:motion:reset": "移除动作，恢复初始姿势",
-        "detail:motion:loop": "切换动作自动循环",
+        "detail:preset-save": "将模型当前的变换/材质/VMD状态保存为预设文件",
+        "detail:preset-load": "从预设文件恢复模型的变换/材质/VMD状态",
       };
       // Dynamic hints for detail:* targets
       if (row.target && row.target.startsWith("detail:")) {
@@ -417,20 +364,202 @@ const makeModelStack = (): MenuStack => {
   });
 };
 
-const makeMotionStack = (): MenuStack => {
-  return new MenuStack({
-    parentEl: dom.motionPopup,
+/** Build a per-model row for the action (motion) popup. */
+function buildActionModelRow(id: string): PopupRow {
+  const inst = modelRegistry.get(id);
+  if (!inst) return { kind: "action", label: "?", icon: "help-circle", target: "" };
+  return {
+    kind: "folder",
+    label: inst.name,
+    icon: "tabler:cube-3d-sphere",
+    target: `action:binding:${id}`,
+    sublabel: inst.vmdName || undefined,
+    catTag: inst.kind === "actor" ? "角色" : "舞台",
+  };
+}
+
+/** Build the action binding submenu for a model (in motion popup). */
+function buildActionBindingLevel(id: string): PopupLevel {
+  const inst = modelRegistry.get(id);
+  if (!inst) return { label: "动作绑定", dir: "", items: [] };
+  return {
+    label: `动作 — ${inst.name}`,
+    dir: "",
+    items: [
+      { kind: "action", label: `当前: ${inst.vmdName || "无"}`, icon: "info", target: "", sublabel: undefined },
+      { kind: "divider", label: "", icon: "", target: "" },
+      { kind: "folder", label: "更换动作", icon: "music", target: `action:motion:browse:${id}`, sublabel: "从动作库选择" },
+      { kind: "action", label: "加载姿势 (VPD)", icon: "user", target: `action:motion:pose:${id}`, sublabel: "从 VPD 文件加载静态姿势" },
+      { kind: "action", label: inst.mmdModel ? (inst.vmdData ? "暂停动作" : "—") : "—", icon: "pause-circle", target: `action:motion:pause:${id}`, sublabel: inst.vmdData ? "暂停/继续" : "无动作" },
+      { kind: "action", label: "重置动作", icon: "rotate-ccw", target: `action:motion:reset:${id}`, sublabel: "恢复初始姿势" },
+      { kind: "divider", label: "", icon: "", target: "" },
+      { kind: "action", label: `循环: ${inst.vmdData ? (autoLoop ? "开" : "关") : "—"}`, icon: "repeat", target: `action:motion:loop:${id}`, sublabel: inst.vmdData ? "切换自动循环" : "加载动作后可用" },
+    ],
+  };
+}
+
+/** Build the music level for the action popup. */
+function buildActionMusicLevel(): PopupLevel {
+  const name = getAudioName();
+  const offset = getAudioOffset();
+  return {
+    label: "音乐",
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+      const nameRow = document.createElement("div");
+      nameRow.style.cssText = "font-size:12px;color:var(--text-dim);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+      nameRow.textContent = name ? `当前: ${name}` : "未加载音乐";
+      container.appendChild(nameRow);
+
+      const loadRow = document.createElement("div");
+      loadRow.className = "menu-item";
+      loadRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="folder-open"></iconify-icon></span><span class="menu-label">加载音乐</span>';
+      loadRow.addEventListener("click", async () => {
+        try {
+          const path = await SelectAudioFile();
+          if (!path) return;
+          await loadAudioFile(path);
+          setStatus(`✓ 音乐: ${getAudioName()}`, true);
+          motionStack?.reRender();
+        } catch (err) {
+          console.warn("Load audio failed:", err);
+          setStatus("✗ 音乐加载失败", false);
+        }
+      });
+      container.appendChild(loadRow);
+
+      // Audio offset slider (inline to avoid cross-module dependency)
+      const offsetRow = document.createElement("div");
+      offsetRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:10px;";
+      const offsetLbl = document.createElement("label");
+      offsetLbl.style.cssText = "font-size:11px;color:var(--text-dim);width:80px;flex-shrink:0;";
+      offsetLbl.textContent = "音频偏移";
+      const offsetVal = document.createElement("span");
+      offsetVal.style.cssText = "font-size:11px;color:var(--text-bright);width:36px;text-align:right;";
+      offsetVal.textContent = offset.toFixed(2);
+      const offsetSlider = document.createElement("input");
+      offsetSlider.type = "range";
+      offsetSlider.min = "-5";
+      offsetSlider.max = "5";
+      offsetSlider.step = "0.1";
+      offsetSlider.value = String(offset);
+      offsetSlider.style.cssText = "flex:1;accent-color:var(--accent);height:4px;";
+      offsetSlider.addEventListener("input", () => {
+        const v = parseFloat(offsetSlider.value);
+        offsetVal.textContent = v.toFixed(2);
+        setAudioOffset(v);
+      });
+      offsetRow.appendChild(offsetLbl);
+      offsetRow.appendChild(offsetSlider);
+      offsetRow.appendChild(offsetVal);
+      container.appendChild(offsetRow);
+      const offsetHint = document.createElement("div");
+      offsetHint.style.cssText = "font-size:10px;color:var(--text-dark);margin:-4px 0 10px 88px;";
+      offsetHint.textContent = "正=音频先播，负=音频后播";
+      container.appendChild(offsetHint);
+    },
+  };
+}
+
+const makeMotionStack = (): SlideMenu => {
+  return new SlideMenu({
+    container: dom.motionPopup,
     onClose: hideMotionPopup,
     onFolderEnter: (row) => {
-      if (row.target === "motion:browse") {
-        return buildLevel(libraryRoot, "动作库", (m) => m.format === "vmd");
+      if (row.target === "__dance_sets__") {
+        motionBindingTargetId = null;
+        return buildDanceSetsOverviewLevel();
+      }
+      if (row.target === "__music__") {
+        motionBindingTargetId = null;
+        return buildActionMusicLevel();
+      }
+      if (row.target && row.target.startsWith("action:binding:")) {
+        motionBindingTargetId = null;
+        const id = row.target.replace("action:binding:", "");
+        return buildActionBindingLevel(id);
+      }
+      if (row.target && row.target.startsWith("action:motion:browse:")) {
+        const id = row.target.replace("action:motion:browse:", "");
+        motionBindingTargetId = id;
+        const level = buildLevel(libraryRoot, "动作库", (m) => m.format === "vmd");
+        const inst = modelRegistry.get(id);
+        level.label = `绑定动作 → ${inst?.name || "模型"}`;
+        return level;
       }
       return null;
     },
     onItemClick: (row: PopupRow) => {
       if (row.model) {
+        if (row.model.format === "vmd" && motionBindingTargetId) {
+          hideMotionPopup();
+          loadVMDFromPath(row.model.file_path, motionBindingTargetId);
+          motionBindingTargetId = null;
+          return;
+        }
         hideMotionPopup();
-        loadVMDFromPath(row.model.file_path);
+        if (row.model.format === "vmd") loadVMDFromPath(row.model.file_path);
+        return;
+      }
+      if (row.target && row.target.startsWith("action:motion:")) {
+        const parts = row.target.split(":");
+        const action = parts[2];
+        const id = parts.slice(3).join(":");
+        if (!id) return;
+        const inst = modelRegistry.get(id);
+        if (!inst) return;
+        switch (action) {
+          case "pause":
+            if (mmdRuntime) {
+              if (isPlaying) {
+                mmdRuntime.pauseAnimation();
+                setIsPlaying(false);
+                setAutoLoop(false);
+              } else {
+                setAutoLoop(true);
+                mmdRuntime.playAnimation().then(() => setIsPlaying(true));
+              }
+              updatePlaybackUI();
+              motionStack?.reRender();
+            }
+            break;
+          case "reset":
+            if (inst.mmdModel && mmdRuntime) {
+              inst.mmdModel.setRuntimeAnimation(null);
+              inst.vmdData = null;
+              inst.vmdName = "";
+              inst.vmdPath = null;
+              inst.animationDuration = 0;
+              if (isPlaying) {
+                mmdRuntime.pauseAnimation();
+                setIsPlaying(false);
+              }
+              updatePlaybackUI();
+              motionStack?.reRender();
+              setStatus("✓ 动作已重置", true);
+            }
+            break;
+          case "pose":
+            (async () => {
+              try {
+                const path = await SelectVPDPose();
+                if (!path) { setStatus("✗ 未选择文件", false); return; }
+                await loadVPDPose(path, id);
+                motionStack?.reRender();
+              } catch (err: any) {
+                setStatus("✗ " + (err.message || err), false);
+              }
+            })();
+            break;
+          case "loop":
+            setAutoLoop(!autoLoop);
+            motionStack?.reRender();
+            setStatus(`循环: ${autoLoop ? "开" : "关"}`, true);
+            break;
+        }
+        return;
       }
     },
   });
@@ -450,13 +579,6 @@ export type DanceSet = {
 
 let danceSets: DanceSet[] = [];
 let currentDanceSetId: string | null = null;
-
-/** All named playlists, keyed by name. */
-let playlists: Record<string, string[]> = {};
-/** Currently active playlist name (for next/prev). */
-let activePlaylist: string | null = null;
-/** Index within the active playlist. */
-let activePlaylistIndex = -1;
 
 function computeDanceSetId(ds: DanceSet): string {
   return sha256Hex(ds.vmd_path + ":" + ds.audio_path).substring(0, 16);
@@ -493,8 +615,8 @@ async function loadDanceSetAudio(ds: DanceSet): Promise<void> {
   }
 }
 
-let modelStack: MenuStack | null = null;
-let motionStack: MenuStack | null = null;
+let modelStack: SlideMenu | null = null;
+let motionStack: SlideMenu | null = null;
 
 /** When browsing motion from a model detail, track which model to bind to. */
 let motionBindingTargetId: string | null = null;
@@ -568,31 +690,10 @@ export function showPopup(): void {
     },
     {
       kind: "folder",
-      label: "收藏",
-      icon: "star",
-      target: "__favorites__",
-      sublabel: favorites.size > 0 ? `${favorites.size} 个模型` : "暂无收藏",
-    },
-    {
-      kind: "folder",
       label: "标签",
       icon: "tag",
       target: "__tags__",
       sublabel: "管理模型标签",
-    },
-    {
-      kind: "folder",
-      label: "舞蹈套装",
-      icon: "music",
-      target: "__dance_sets__",
-      sublabel: danceSets.length > 0 ? `${danceSets.length} 个套装` : "暂无套装",
-    },
-    {
-      kind: "folder",
-      label: "播放列表",
-      icon: "list",
-      target: "__playlists__",
-      sublabel: Object.keys(playlists).length > 0 ? `${Object.keys(playlists).length} 个列表` : "暂无列表",
     },
   );
 
@@ -618,13 +719,17 @@ export function showMotionPopup(): void {
     motionStack = makeMotionStack();
   }
 
-  const rootItems: PopupRow[] = [
-    {
-      kind: "folder",
-      label: "加载动作",
-      icon: "folder",
-      target: "motion:browse",
-    },
+  const rootItems: PopupRow[] = [];
+
+  // Loaded models — each row → binding submenu
+  if (modelRegistry.size > 0) {
+    for (const [id, inst] of modelRegistry) {
+      rootItems.push(buildActionModelRow(id));
+    }
+  }
+
+  rootItems.push({ kind: "divider", label: "", icon: "", target: "" });
+  rootItems.push(
     {
       kind: "folder",
       label: "舞蹈套装",
@@ -632,7 +737,15 @@ export function showMotionPopup(): void {
       target: "__dance_sets__",
       sublabel: danceSets.length > 0 ? `${danceSets.length} 个套装` : "暂无套装",
     },
-  ];
+    {
+      kind: "folder",
+      label: "音乐",
+      icon: "music",
+      target: "__music__",
+      sublabel: getAudioName() || "未加载",
+    },
+  );
+
   motionStack.reset({ label: "动作", dir: "", items: rootItems });
 }
 
@@ -792,7 +905,11 @@ function onModelRowClick(m: LibraryModel): void {
   // Add to recent models (only for PMX, VMD doesn't make sense)
   if (m.format === "pmx") {
     const ref = computeLibraryRef(m.file_path);
-    if (ref) AddRecentModel(ref).catch(() => {});
+    if (ref) {
+      AddRecentModel(ref).catch(() => {});
+      // Sync local recentModels so root menu sublabel stays fresh
+      setRecentModels([ref, ...recentModels.filter(r => r !== ref)].slice(0, 20));
+    }
   }
   if (m.container === "zip") {
     hidePopup();
@@ -836,14 +953,30 @@ function buildTagsOverviewLevel(): PopupLevel {
     renderCustom: async (container) => {
       container.style.padding = "12px 14px";
       try {
+        // Built-in "收藏" tag
+        const favRefs = await GetModelsByTag("收藏");
+        const favRow = document.createElement("div");
+        favRow.className = "menu-item";
+        favRow.innerHTML = `<span class="menu-icon"><iconify-icon icon="star" style="color:var(--accent);"></iconify-icon></span><span class="menu-label">收藏</span><span class="menu-sublabel" style="color:var(--text-muted);font-size:11px;">${favRefs ? favRefs.length : 0} 个模型</span><span class="menu-arrow">&gt;</span>`;
+        favRow.addEventListener("click", () => {
+          const level = buildTagDetailLevel("收藏");
+          modelStack?.push(level);
+        });
+        container.appendChild(favRow);
+        const sep = document.createElement("div");
+        sep.className = "menu-divider";
+        container.appendChild(sep);
+
         const tags = await GetAllTags();
-        if (!tags || tags.length === 0) {
+        // Filter out "收藏" from regular tag list since we show it separately
+        const regularTags = tags ? tags.filter(t => t !== "收藏") : [];
+        if (regularTags.length === 0) {
           const empty = document.createElement("div");
-          empty.style.cssText = "padding:16px;text-align:center;color:var(--text-muted);font-size:13px;";
-          empty.innerHTML = '<div>暂无标签</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">在模型详情中添加标签</div>';
+          empty.style.cssText = "padding:8px 0;text-align:center;color:var(--text-muted);font-size:13px;";
+          empty.textContent = "暂无其他标签";
           container.appendChild(empty);
         } else {
-          for (const tag of tags) {
+          for (const tag of regularTags) {
             const row = document.createElement("div");
             row.className = "menu-item";
             row.innerHTML = `<span class="menu-icon"><iconify-icon icon="tag"></iconify-icon></span><span class="menu-label">${escapeHtml(tag)}</span><span class="menu-arrow">&gt;</span>`;
@@ -860,7 +993,7 @@ function buildTagsOverviewLevel(): PopupLevel {
         container.appendChild(divider);
         const addRow = document.createElement("div");
         addRow.className = "menu-item";
-        addRow.innerHTML = '<span class="menu-icon">➕</span><span class="menu-label">新建标签</span>';
+        addRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="plus"></iconify-icon></span><span class="menu-label">新建标签</span>';
         addRow.addEventListener("click", () => {
           setStatus("请先进入模型详情页，在详情中为模型添加标签", false);
           modelStack?.pop();
@@ -903,7 +1036,19 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
           const row = modelToRow(m);
           const el = document.createElement("div");
           el.className = "menu-item";
-          el.innerHTML = `<span class="menu-icon">📦</span><span class="menu-label">${escapeHtml(row.label)}</span>`;
+          const iconSpan = document.createElement("span");
+          iconSpan.className = "menu-icon";
+          const iconEl = createIconifyIcon(row.icon);
+          if (iconEl) {
+            iconSpan.appendChild(iconEl);
+          } else {
+            iconSpan.textContent = row.icon;
+          }
+          el.appendChild(iconSpan);
+          const labelSpan = document.createElement("span");
+          labelSpan.className = "menu-label";
+          labelSpan.textContent = row.label;
+          el.appendChild(labelSpan);
           el.addEventListener("click", () => {
             onModelRowClick(m);
           });
@@ -941,7 +1086,7 @@ function buildDanceSetsOverviewLevel(): PopupLevel {
             row.className = "menu-item";
             const vmdName = ds.vmd_path.split("/").pop() || ds.vmd_path;
             row.innerHTML = `
-              <span class="menu-icon">🎵</span>
+              <span class="menu-icon"><iconify-icon icon="music"></iconify-icon></span>
               <span class="menu-label">${escapeHtml(ds.name)}</span>
               <span class="menu-arrow">&gt;</span>
             `;
@@ -958,7 +1103,7 @@ function buildDanceSetsOverviewLevel(): PopupLevel {
         container.appendChild(divider);
         const addRow = document.createElement("div");
         addRow.className = "menu-item";
-        addRow.innerHTML = '<span class="menu-icon">➕</span><span class="menu-label">新建套装</span>';
+        addRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="plus"></iconify-icon></span><span class="menu-label">新建套装</span>';
         addRow.addEventListener("click", () => {
           createNewDanceSet();
         });
@@ -1016,7 +1161,7 @@ function buildDanceSetDetailLevel(setId: string): PopupLevel {
 
       const loadBtn = document.createElement("div");
       loadBtn.className = "menu-item";
-      loadBtn.innerHTML = '<span class="menu-icon">▶️</span><span class="menu-label">一键加载</span>';
+      loadBtn.innerHTML = '<span class="menu-icon"><iconify-icon icon="play"></iconify-icon></span><span class="menu-label">一键加载</span>';
       loadBtn.addEventListener("click", () => {
         loadDanceSet(ds);
       });
@@ -1024,7 +1169,7 @@ function buildDanceSetDetailLevel(setId: string): PopupLevel {
 
       const deleteBtn = document.createElement("div");
       deleteBtn.className = "menu-item";
-      deleteBtn.innerHTML = '<span class="menu-icon">🗑️</span><span class="menu-label" style="color:var(--danger,#ff6b6b);">删除套装</span>';
+      deleteBtn.innerHTML = '<span class="menu-icon"><iconify-icon icon="trash-2"></iconify-icon></span><span class="menu-label" style="color:var(--danger,#ff6b6b);">删除套装</span>';
       deleteBtn.addEventListener("click", () => {
         if (confirm(`确定要删除舞蹈套装「${ds.name}」吗？`)) {
           DeleteDanceSet(setId).then(() => {
@@ -1090,210 +1235,195 @@ async function createNewDanceSet(): Promise<void> {
   }
 }
 
-// ======== Playlists ========
-
-function buildPlaylistsOverviewLevel(): PopupLevel {
-  return {
-    label: "播放列表",
-    dir: "",
-    items: [],
-    renderCustom: (container) => {
-      container.style.padding = "12px 14px";
-      const createRow = document.createElement("div");
-      createRow.className = "menu-item";
-      createRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="plus"></iconify-icon></span><span class="menu-label">新建播放列表</span>';
-      createRow.addEventListener("click", async () => {
-        const name = prompt("请输入播放列表名称：");
-        if (!name || !name.trim()) return;
-        const trimmed = name.trim();
-        if (playlists[trimmed]) { setStatus(`✗ 播放列表「${trimmed}」已存在`, false); return; }
-        playlists[trimmed] = [];
-        try { await SavePlaylist(trimmed, []); modelStack?.reRender(); setStatus(`✓ 已创建: ${trimmed}`, true); }
-        catch (err) { console.warn("SavePlaylist:", err); setStatus("✗ 创建失败", false); }
-      });
-      container.appendChild(createRow);
-      const divider = document.createElement("div");
-      divider.className = "menu-divider";
-      container.appendChild(divider);
-      const names = Object.keys(playlists);
-      if (names.length === 0) {
-        const empty = document.createElement("div");
-        empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:16px;";
-        empty.textContent = "暂无播放列表";
-        container.appendChild(empty);
-        return;
-      }
-      for (const name of names) {
-        const items = playlists[name];
-        const row = document.createElement("div");
-        row.className = "menu-item";
-        const isActive = activePlaylist === name;
-        row.innerHTML = `<span class="menu-icon"><iconify-icon icon="${isActive ? "play-circle" : "list"}"></iconify-icon></span><span class="menu-label">${name}</span><span class="menu-sublabel" style="font-size:10px;color:var(--text-dim);">${items.length} 个模型${isActive ? " · 播放中" : ""}</span>`;
-        row.addEventListener("click", () => modelStack?.push(buildPlaylistDetailLevel(name)));
-        container.appendChild(row);
-      }
-    },
-  };
-}
-
-function buildPlaylistDetailLevel(name: string): PopupLevel {
-  const items = playlists[name] || [];
-  return {
-    label: name,
-    dir: "",
-    items: [],
-    renderCustom: (container) => {
-      container.style.padding = "12px 14px";
-      if (items.length > 0) {
-        const playRow = document.createElement("div");
-        playRow.className = "menu-item";
-        const isActive = activePlaylist === name;
-        playRow.innerHTML = `<span class="menu-icon"><iconify-icon icon="play-circle"></iconify-icon></span><span class="menu-label">${isActive ? `正在播放 (${activePlaylistIndex + 1}/${items.length})` : "开始播放"}</span>`;
-        playRow.addEventListener("click", async () => { await playPlaylistItem(name, 0); });
-        container.appendChild(playRow);
-        const divider = document.createElement("div");
-        divider.className = "menu-divider";
-        container.appendChild(divider);
-        for (let i = 0; i < items.length; i++) {
-          const ref = items[i];
-          const m = allModels.find(x => computeLibraryRef(x.file_path) === ref);
-          const itemRow = document.createElement("div");
-          itemRow.className = "menu-item";
-          const isCurrent = activePlaylist === name && activePlaylistIndex === i;
-          itemRow.innerHTML = `<span class="menu-icon"><iconify-icon icon="${isCurrent ? "play-circle" : "music"}"></iconify-icon></span><span class="menu-label">${m ? (m.name_jp || m.name_en || ref.split("/").pop() || ref) : ref.split("/").pop() || ref}</span>`;
-          itemRow.addEventListener("click", async () => { await playPlaylistItem(name, i); });
-          container.appendChild(itemRow);
-        }
-      } else {
-        const empty = document.createElement("div");
-        empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:16px;";
-        empty.textContent = "播放列表为空，请从模型详情添加";
-        container.appendChild(empty);
-      }
-      const div2 = document.createElement("div");
-      div2.className = "menu-divider";
-      container.appendChild(div2);
-      const deleteRow = document.createElement("div");
-      deleteRow.className = "menu-item";
-      deleteRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="trash-2"></iconify-icon></span><span class="menu-label">删除播放列表</span>';
-      deleteRow.addEventListener("click", async () => {
-        if (confirm(`确定要删除播放列表「${name}」吗？`)) {
-          delete playlists[name];
-          if (activePlaylist === name) { activePlaylist = null; activePlaylistIndex = -1; }
-          try { await DeletePlaylist(name); modelStack?.pop(); setStatus(`✓ 已删除: ${name}`, true); }
-          catch (err) { console.warn("DeletePlaylist:", err); setStatus("✗ 删除失败", false); }
-        }
-      });
-      container.appendChild(deleteRow);
-    },
-  };
-}
-
-async function playPlaylistItem(name: string, index: number): Promise<void> {
-  const items = playlists[name];
-  if (!items || index < 0 || index >= items.length) return;
-  const ref = items[index];
-  const m = allModels.find(x => computeLibraryRef(x.file_path) === ref);
-  if (!m) { setStatus("✗ 模型未找到", false); return; }
-  activePlaylist = name;
-  activePlaylistIndex = index;
-  hidePopup();
-  setStatus(`播放列表 ${name}: ${index + 1}/${items.length}`, true);
-  if (m.container === "zip") {
-    try { const r = await ExtractZip(m.file_path, m.zip_inner); await loadPMXFile(r.file_path); }
-    catch (err) { setStatus("✗ 加载失败", false); }
-  } else {
-    await loadPMXFile(m.file_path);
-  }
-}
-
-/**
- * Play the next item in the active playlist.
- * Returns true if there is a next item (successfully loaded), false otherwise.
- */
-export async function playPlaylistNext(): Promise<boolean> {
-    return playPlaylistStep(1);
-}
-
-/**
- * Play the previous item in the active playlist.
- * Returns true if there is a previous item, false otherwise.
- */
-export async function playPlaylistPrev(): Promise<boolean> {
-    return playPlaylistStep(-1);
-}
-
-async function playPlaylistStep(dir: number): Promise<boolean> {
-    if (!activePlaylist) { setStatus("无活跃播放列表", false); return false; }
-    const items = playlists[activePlaylist];
-    if (!items || items.length === 0) { setStatus("播放列表为空", false); return false; }
-    const newIndex = (activePlaylistIndex + dir + items.length) % items.length;
-    await playPlaylistItem(activePlaylist, newIndex);
-    return true;
-}
-
-/** Build a level to add the currently focused model to a playlist. */
-function buildAddToPlaylistLevel(id: string): PopupLevel {
-  const inst = modelRegistry.get(id);
-  if (!inst) return { label: "添加到播放列表", dir: "", items: [] };
-  const ref = computeLibraryRef(inst.filePath);
-  return {
-    label: "添加到播放列表",
-    dir: "",
-    items: [],
-    renderCustom: (container) => {
-      container.style.padding = "12px 14px";
-      const names = Object.keys(playlists);
-      if (names.length === 0) {
-        const empty = document.createElement("div");
-        empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:16px;";
-        empty.textContent = "暂无播放列表，请先创建";
-        container.appendChild(empty);
-        return;
-      }
-      for (const name of names) {
-        const row = document.createElement("div");
-        row.className = "menu-item";
-        const alreadyIn = ref ? playlists[name].includes(ref) : false;
-        row.innerHTML = `<span class="menu-icon"><iconify-icon icon="list"></iconify-icon></span><span class="menu-label">${name}</span><span class="menu-sublabel" style="font-size:10px;color:var(--text-dim);">${alreadyIn ? "已添加" : playlists[name].length + " 个模型"}</span>`;
-        row.addEventListener("click", async () => {
-          if (ref && !alreadyIn) {
-            playlists[name].push(ref);
-            try { await SavePlaylist(name, playlists[name]); setStatus(`✓ 已添加到「${name}」`, true); modelStack?.pop(); }
-            catch (err) { console.warn("SavePlaylist:", err); setStatus("✗ 添加失败", false); }
-          } else {
-            setStatus(alreadyIn ? "已在此播放列表中" : "✗ 无法识别", false);
-          }
-        });
-        container.appendChild(row);
-      }
-    },
-  };
-}
-
 // ======== Model Detail Submenu ========
 
 /** Build the model detail submenu for a specific model instance. */
+function addSliderRow(container: HTMLElement, label: string, value: number, min: number, max: number, step: number, onChange: (v: number) => void): void {
+  const row = document.createElement("div");
+  row.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:10px;";
+  const lbl = document.createElement("label");
+  lbl.style.cssText = "font-size:11px;color:var(--text-dim);width:80px;flex-shrink:0;";
+  lbl.textContent = label;
+  const val = document.createElement("span");
+  val.style.cssText = "font-size:11px;color:var(--text-bright);width:36px;text-align:right;";
+  val.textContent = step < 1 ? value.toFixed(2) : String(Math.round(value));
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.min = String(min);
+  slider.max = String(max);
+  slider.step = String(step);
+  slider.value = String(value);
+  slider.style.cssText = "flex:1;accent-color:var(--accent);height:4px;";
+  slider.addEventListener("input", () => {
+    const v = parseFloat(slider.value);
+    val.textContent = step < 1 ? v.toFixed(2) : String(Math.round(v));
+    onChange(v);
+  });
+  row.appendChild(lbl);
+  row.appendChild(slider);
+  row.appendChild(val);
+  container.appendChild(row);
+}
+
+function buildMatCatLevel(id: string, modelName: string): PopupLevel {
+  const label = "材质 — " + modelName;
+  return {
+    label,
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+      const groups = getMatCatGroups(id);
+      const detailList = getMatDetailList(id);
+      const detailMap = new Map(detailList.map(d => [d.name, d]));
+
+      const CATEGORY_ICONS: Record<string, string> = {
+        "皮肤": "droplet", "头发": "feather", "眼睛": "eye", "服装": "shirt",
+      };
+
+      for (const [cat, mats] of groups) {
+        const params = getMatCatParams(id, cat);
+        const catModified = mats.some(m => detailMap.get(m.name)?.modified);
+        const card = document.createElement("div");
+        card.style.cssText = "border:1px solid var(--white-08);border-radius:6px;padding:8px;margin-bottom:10px;";
+
+        const header = document.createElement("div");
+        header.style.cssText = "font-size:12px;color:var(--text-bright);margin-bottom:6px;display:flex;align-items:center;gap:4px;";
+        header.innerHTML = `<iconify-icon icon="${CATEGORY_ICONS[cat] || "box"}"></iconify-icon> ${cat} <span style="font-size:10px;color:var(--text-dim);">(${mats.length} 个材质)</span>`;
+        if (catModified) {
+          header.innerHTML += ' <span style="font-size:10px;color:var(--accent);margin-left:auto;">已修改</span>';
+        }
+        card.appendChild(header);
+
+        // Per-material list
+        for (const mat of mats) {
+          const detail = detailMap.get(mat.name);
+          const isModified = detail?.modified ?? false;
+          const matRow = document.createElement("div");
+          matRow.style.cssText = `display:flex;align-items:center;gap:6px;padding:4px 6px;margin:2px 0;border-radius:4px;cursor:pointer;font-size:11px;${isModified ? "color:var(--accent);background:var(--white-04);" : "color:var(--text-dim);"}`;
+          matRow.innerHTML = `<iconify-icon icon="${isModified ? "check-circle" : "circle"}"></iconify-icon><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(mat.name)}</span>`;
+          matRow.addEventListener("mouseenter", () => { matRow.style.background = "var(--white-08)"; });
+          matRow.addEventListener("mouseleave", () => { matRow.style.background = isModified ? "var(--white-04)" : ""; });
+          matRow.addEventListener("click", () => {
+            modelStack?.push(buildPerMatLevel(id, modelName, mat.name, mat.mat, detail?.index ?? 0));
+          });
+          card.appendChild(matRow);
+        }
+
+        // Category-level sliders
+        const sliderGroup = document.createElement("div");
+        sliderGroup.style.cssText = "margin-top:4px;padding-top:4px;border-top:1px solid var(--white-04);";
+        addSliderRow(sliderGroup, "漫反射倍率", params.diffuseMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { diffuseMul: v }));
+        addSliderRow(sliderGroup, "高光倍率", params.specularMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { specularMul: v }));
+        addSliderRow(sliderGroup, "高光指数", params.shininess, 0, 200, 1, (v) => setMatCatParams(id, cat, { shininess: v }));
+        addSliderRow(sliderGroup, "环境光倍率", params.ambientMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { ambientMul: v }));
+        card.appendChild(sliderGroup);
+
+        container.appendChild(card);
+      }
+
+      const divider = document.createElement("div");
+      divider.className = "menu-divider";
+      container.appendChild(divider);
+
+      // Reset per-material overrides
+      const hasOverrides = detailList.some(d => d.modified);
+      if (hasOverrides) {
+        const resetAllRow = document.createElement("div");
+        resetAllRow.className = "menu-item";
+        resetAllRow.style.color = "var(--warn)";
+        resetAllRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置所有单独调整</span>';
+        resetAllRow.addEventListener("click", () => {
+          resetAllMatParams(id);
+          modelStack?.reRender();
+          setStatus("✓ 所有单独材质调整已重置", true);
+        });
+        container.appendChild(resetAllRow);
+      }
+
+      const resetRow = document.createElement("div");
+      resetRow.className = "menu-item";
+      resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置全部材质参数</span>';
+      resetRow.addEventListener("click", () => {
+        resetMatCatParams(id);
+        resetAllMatParams(id);
+        modelStack?.reRender();
+        setStatus("✓ 全部材质参数已重置", true);
+      });
+      container.appendChild(resetRow);
+    },
+  };
+}
+
+function buildPerMatLevel(id: string, modelName: string, matName: string, mat: Material, matIndex: number): PopupLevel {
+  const shortName = matName.length > 24 ? matName.slice(0, 24) + "…" : matName;
+  return {
+    label: shortName,
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+
+      const nameEl = document.createElement("div");
+      nameEl.style.cssText = "font-size:11px;color:var(--text-dim);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+      nameEl.textContent = modelName + " > " + matName;
+      container.appendChild(nameEl);
+
+      const current = getMatParams(id, matIndex);
+      const params = current ?? { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 };
+      const isModified = current !== null;
+
+      addSliderRow(container, "漫反射倍率", params.diffuseMul, 0, 2, 0.05, (v) => {
+        setMatParams(id, matIndex, { diffuseMul: v });
+      });
+      addSliderRow(container, "高光倍率", params.specularMul, 0, 2, 0.05, (v) => {
+        setMatParams(id, matIndex, { specularMul: v });
+      });
+      addSliderRow(container, "高光指数", params.shininess, 0, 200, 1, (v) => {
+        setMatParams(id, matIndex, { shininess: v });
+      });
+      addSliderRow(container, "环境光倍率", params.ambientMul, 0, 2, 0.05, (v) => {
+        setMatParams(id, matIndex, { ambientMul: v });
+      });
+
+      const divider = document.createElement("div");
+      divider.className = "menu-divider";
+      container.appendChild(divider);
+
+      if (isModified) {
+        const resetRow = document.createElement("div");
+        resetRow.className = "menu-item";
+        resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置此材质</span>';
+        resetRow.addEventListener("click", () => {
+          resetSingleMatParams(id, matIndex);
+          modelStack?.reRender();
+          setStatus(`✓ 已重置: ${matName}`, true);
+        });
+        container.appendChild(resetRow);
+      }
+    },
+  };
+}
+
 function buildModelDetailLevel(id: string): PopupLevel {
   const inst = modelRegistry.get(id);
   if (!inst) return { label: "未知模型", dir: "", items: [] };
-  const libRef = inst.filePath ? computeLibraryRef(inst.filePath) : null;
-  const isFav = libRef ? favorites.has(libRef) : false;
   return {
     label: inst.name,
     dir: "",
     items: [
-      { kind: "action", label: isFav ? "取消收藏" : "收藏", icon: "star", target: `detail:fav:${id}`, sublabel: isFav ? "点击取消收藏" : "点击加入收藏" },
       { kind: "folder", label: "模型信息", icon: "info", target: `detail:info:${id}`, sublabel: "模型名称与描述" },
-      { kind: "folder", label: "动作绑定", icon: "music", target: `detail:motion:${id}`, sublabel: inst.vmdName || "无" },
       { kind: "folder", label: "变换", icon: "move", target: `detail:transform:${id}`, sublabel: "位置/缩放/旋转" },
       { kind: "folder", label: "可见性", icon: "eye", target: `detail:visibility:${id}`, sublabel: inst.visible ? "显示" : "隐藏" },
+      { kind: "folder", label: "材质列表", icon: "box", target: `detail:material:${id}`, sublabel: "材质参数调整" },
       { kind: "folder", label: "标签", icon: "tag", target: `detail:tags:${id}`, sublabel: "管理标签" },
       { kind: "folder", label: "表情预览", icon: "smile", target: `detail:morph:${id}`, sublabel: "预览模型表情" },
-      { kind: "folder", label: "添加到播放列表", icon: "list", target: `__addtoplaylist:${id}`, sublabel: "加入播放队列" },
       { kind: "divider", label: "", icon: "", target: "" },
       { kind: "action", label: "聚焦", icon: "target", target: `detail:focus:${id}`, sublabel: "相机对准此模型" },
       { kind: "action", label: "移除", icon: "trash-2", target: `detail:remove:${id}`, sublabel: "从场景删除" },
+      { kind: "divider", label: "", icon: "", target: "" },
+      { kind: "action", label: "保存预设", icon: "save", target: `detail:preset-save:${id}`, sublabel: "保存模型状态到预设文件" },
+      { kind: "action", label: "加载预设", icon: "folder-open", target: `detail:preset-load:${id}`, sublabel: "从预设文件恢复模型状态" },
       { kind: "divider", label: "", icon: "", target: "" },
       { kind: "action", label: "在 MMD 中打开", icon: "external-link", target: `detail:export-mmd:${id}`, sublabel: "用 MikuMikuDance 打开" },
       { kind: "action", label: "在 Blender 中编辑", icon: "edit-3", target: `detail:blender:${id}`, sublabel: "用 Blender 编辑此模型" },
@@ -1301,23 +1431,160 @@ function buildModelDetailLevel(id: string): PopupLevel {
   };
 }
 
-/** Build the motion binding submenu for a model. */
-function buildMotionBindingLevel(id: string): PopupLevel {
+// ======== Model Preset (save/load single-model state) ========
+
+/** Serialize a model instance's state into a preset JSON string. */
+export function serializeModelPreset(id: string): string {
   const inst = modelRegistry.get(id);
-  if (!inst) return { label: "动作绑定", dir: "", items: [] };
-  return {
-    label: "动作绑定",
-    dir: "",
-    items: [
-      { kind: "action", label: `当前: ${inst.vmdName || "无"}`, icon: "info", target: "", sublabel: undefined },
-      { kind: "divider", label: "", icon: "", target: "" },
-      { kind: "folder", label: "更换动作", icon: "music", target: `detail:motion:browse:${id}`, sublabel: "从动作库选择" },
-      { kind: "action", label: inst.mmdModel ? (inst.vmdData ? "暂停动作" : "—") : "—", icon: "pause-circle", target: `detail:motion:pause:${id}`, sublabel: inst.vmdData ? "暂停/继续" : "无动作" },
-      { kind: "action", label: "重置动作", icon: "rotate-ccw", target: `detail:motion:reset:${id}`, sublabel: "恢复初始姿势" },
-      { kind: "divider", label: "", icon: "", target: "" },
-      { kind: "action", label: `循环: ${inst.vmdData ? (autoLoop ? "开" : "关") : "—"}`, icon: "repeat", target: `detail:motion:loop:${id}`, sublabel: inst.vmdData ? "切换自动循环" : "加载动作后可用" },
-    ],
+  if (!inst) return "";
+  const matState = getMatState(id);
+  const rm = inst.rootMesh;
+  const preset: ModelPresetFile = {
+    version: 1,
+    model: {
+      filePath: inst.filePath,
+      libraryRef: computeLibraryRef(inst.filePath) || undefined,
+      name: inst.name,
+      kind: inst.kind,
+    },
+    transform: {
+      positionX: rm?.position.x ?? 0,
+      positionY: rm?.position.y ?? 0,
+      positionZ: rm?.position.z ?? 0,
+      scaling: inst.scaling,
+      rotationY: inst.rotationY,
+    },
+    visibility: {
+      visible: inst.visible,
+      opacity: inst.opacity,
+      wireframe: inst.wireframe,
+    },
+    vmd: {
+      path: inst.vmdPath,
+      libraryRef: inst.vmdPath ? (computeLibraryRef(inst.vmdPath) || undefined) : undefined,
+      name: inst.vmdName,
+      playing: inst.vmdPath ? isPlaying : undefined,
+    },
+    audio: getAudioPath() ? {
+      path: getAudioPath(),
+      name: getAudioName(),
+      volume: getVolume(),
+      offset: getAudioOffset(),
+    } : undefined,
+    materialCategories: matState?.categories,
+    materialOverrides: matState?.overrides,
   };
+  return JSON.stringify(preset, null, 2);
+}
+
+/** Apply a preset JSON to the specified model instance. */
+export async function applyModelPreset(id: string, jsonStr: string): Promise<void> {
+  let preset: ModelPresetFile;
+  try {
+    preset = JSON.parse(jsonStr);
+  } catch {
+    setStatus("✗ 预设文件格式错误", false);
+    return;
+  }
+  if (preset.version !== 1) {
+    setStatus("✗ 不支持的预设版本", false);
+    return;
+  }
+  const inst = modelRegistry.get(id);
+  if (!inst) {
+    setStatus("✗ 目标模型不存在", false);
+    return;
+  }
+
+  // Apply transform — rootMesh is the authoritative transform root for MMD models
+  if (preset.transform) {
+    const t = preset.transform;
+    setModelPosition(id, t.positionX ?? 0, t.positionY ?? 0, t.positionZ ?? 0);
+    if (t.scaling !== undefined) setModelScaling(id, t.scaling);
+    if (t.rotationY !== undefined) setModelRotationY(id, t.rotationY);
+  }
+
+  // Apply visibility
+  if (preset.visibility) {
+    const v = preset.visibility;
+    if (v.visible !== undefined) setModelVisibility(id, v.visible);
+    if (v.opacity !== undefined) setModelOpacity(id, v.opacity);
+    if (v.wireframe !== undefined) setModelWireframe(id, v.wireframe);
+  }
+
+  // Apply VMD — reuse stopVMD() for clean cleanup when no VMD in preset
+  if (preset.vmd && preset.vmd.path) {
+    try {
+      const resolvedVmdPath = preset.vmd.libraryRef
+        ? (resolveLibraryRef(preset.vmd.libraryRef) || preset.vmd.path)
+        : preset.vmd.path;
+      await loadVMDFromPath(resolvedVmdPath, id);
+      // Restore playback state so physics runs if it was playing when saved
+      if (preset.vmd.playing === true && mmdRuntime && !isPlaying) {
+        await mmdRuntime.playAnimation();
+        setIsPlaying(true);
+      } else if (preset.vmd.playing === false && mmdRuntime && isPlaying) {
+        mmdRuntime.pauseAnimation();
+        setIsPlaying(false);
+      }
+    } catch (err) {
+      console.warn("Preset VMD load failed:", err);
+    }
+  } else {
+    stopVMD(id);
+  }
+
+  // Apply material state
+  if (preset.materialCategories || preset.materialOverrides) {
+    applyMatState(id, {
+      categories: preset.materialCategories,
+      overrides: preset.materialOverrides,
+    });
+  }
+
+  // Apply audio
+  if (preset.audio && preset.audio.path) {
+    try {
+      await loadAudioFile(preset.audio.path);
+      setVolume(preset.audio.volume ?? 1);
+      setAudioOffset(preset.audio.offset ?? 0);
+    } catch (err) {
+      console.warn("Preset audio load failed:", err);
+    }
+  }
+
+  updatePlaybackUI();
+  triggerAutoSave();
+  setStatus(`✓ 已应用预设: ${preset.model.name}`, true);
+}
+
+/** Open save dialog → serialize model state → write preset file. */
+async function selectAndSavePreset(id: string): Promise<void> {
+  const path = await SelectPresetSaveFile();
+  if (!path) return;
+  const json = serializeModelPreset(id);
+  if (!json) {
+    setStatus("✗ 无法序列化模型状态", false);
+    return;
+  }
+  try {
+    await SaveModelPreset(json, path);
+    setStatus("✓ 预设已保存", true);
+  } catch (err: any) {
+    setStatus("✗ 保存失败: " + (err.message || err), false);
+  }
+}
+
+/** Open file dialog → read preset file → apply to model. */
+async function selectAndLoadPreset(id: string): Promise<void> {
+  const path = await SelectPresetOpenFile();
+  if (!path) return;
+  try {
+    const json = await LoadModelPreset(path);
+    await applyModelPreset(id, json);
+  } catch (err: any) {
+    setStatus("✗ 加载失败: " + (err.message || err), false);
+  }
 }
 
 /** Build the transform slider submenu for a model. */
@@ -1448,6 +1715,41 @@ function buildModelTagsLevel(id: string): PopupLevel {
     items: [],
     renderCustom: (container) => {
       container.style.padding = "12px 14px";
+
+      // 收藏 toggle
+      const favRow = document.createElement("div");
+      favRow.style.cssText = "display:flex;align-items:center;gap:8px;padding:6px 0;margin-bottom:8px;cursor:pointer;border-radius:4px;";
+      favRow.addEventListener("mouseenter", () => favRow.style.background = "var(--white-08)");
+      favRow.addEventListener("mouseleave", () => favRow.style.background = "transparent");
+      const refreshFav = async () => {
+        if (!libRef) return;
+        const tags = await GetTagsByModel(libRef);
+        const isFav = tags && tags.includes("收藏");
+        favRow.innerHTML = `<iconify-icon icon="star" style="font-size:16px;color:${isFav ? 'var(--accent)' : 'var(--text-muted)'};"></iconify-icon><span style="font-size:13px;color:var(--text);">${isFav ? '已收藏' : '未收藏'}</span><span style="font-size:11px;color:var(--text-muted);margin-left:auto;">点击切换</span>`;
+        favRow.onclick = async () => {
+          if (!libRef) return;
+          try {
+            if (isFav) {
+              await RemoveTag(libRef, "收藏");
+              setStatus("✓ 已取消收藏", true);
+            } else {
+              await AddTag(libRef, "收藏");
+              setStatus("✓ 已收藏", true);
+            }
+            refreshFav();
+          } catch (err) {
+            console.warn("Toggle favorite failed:", err);
+            setStatus("✗ 收藏操作失败", false);
+          }
+        };
+      };
+      refreshFav();
+      container.appendChild(favRow);
+
+      const sep = document.createElement("div");
+      sep.className = "menu-divider";
+      container.appendChild(sep);
+
       const tagContainer = document.createElement("div");
       tagContainer.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;min-height:28px;";
       container.appendChild(tagContainer);
@@ -1727,17 +2029,37 @@ function handlePopupSearch(): void {
         const row = modelToRow(m);
         const el = document.createElement("div");
         el.className = "menu-item";
-        let html = `<span class="menu-icon">${row.icon}</span><span class="menu-label">${escapeHtml(row.label)}</span>`;
-        if (row.catTag) {
-          html += `<span class="menu-tag">${escapeHtml(row.catTag)}</span>`;
+
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "menu-icon";
+        const iconEl = createIconifyIcon(row.icon);
+        if (iconEl) {
+          iconSpan.appendChild(iconEl);
+        } else {
+          iconSpan.textContent = row.icon;
         }
+        el.appendChild(iconSpan);
+
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "menu-label";
+        labelSpan.textContent = row.label;
+        el.appendChild(labelSpan);
+
+        if (row.catTag) {
+          const tagSpan = document.createElement("span");
+          tagSpan.className = "menu-tag";
+          tagSpan.textContent = row.catTag;
+          el.appendChild(tagSpan);
+        }
+
         const thumbB64 = thumbnailCache.get(m.file_path);
         if (thumbB64) {
-          html =
-            `<img class="row-thumb" src="data:image/png;base64,${thumbB64}">` +
-            html;
+          const img = document.createElement("img");
+          img.className = "row-thumb";
+          img.src = `data:image/png;base64,${thumbB64}`;
+          el.insertBefore(img, el.firstChild);
         }
-        el.innerHTML = html;
+
         el.addEventListener("click", () => {
           replaceModel(m);
         });
@@ -1774,15 +2096,6 @@ export async function initLibrary(): Promise<void> {
     if (cfg.display_name_priority) {
       setDisplayNamePriority(cfg.display_name_priority as DisplayNamePriority);
     }
-    // Load favorites
-    try {
-      const favs = await GetFavorites();
-      if (favs && favs.length > 0) {
-        setFavorites(new Set(favs));
-      }
-    } catch (err) {
-      console.warn("Load favorites:", err);
-    }
     // Load recent models
     try {
       const recents = await GetRecentModels();
@@ -1797,13 +2110,6 @@ export async function initLibrary(): Promise<void> {
       await loadDanceSets();
     } catch (err) {
       console.warn("Load dance sets:", err);
-    }
-    // Load playlists
-    try {
-      const pl = await GetPlaylists();
-      if (pl) playlists = pl;
-    } catch (err) {
-      console.warn("Load playlists:", err);
     }
     try {
       const cached = await GetLibraryIndex();

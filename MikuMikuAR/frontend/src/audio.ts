@@ -38,6 +38,8 @@ export async function loadAudioFile(filePath: string): Promise<void> {
     audioName = fileName;
     audioPath = filePath;
     audio.load();
+    // Auto-play so user gets immediate feedback
+    try { await audio.play(); } catch (_) { /* browser may block autoplay */ }
 }
 
 export function getAudioPath(): string {

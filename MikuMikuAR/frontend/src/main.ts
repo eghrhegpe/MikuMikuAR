@@ -155,6 +155,43 @@ window.addEventListener("pointerup", async () => {
     }
 });
 
+// ======== Canvas click toggle overlays ========
+let _overlaysHidden = false;
+let _savedVisible: string[] = [];
+let _canvasPointerDown = { x: 0, y: 0 };
+
+dom.canvas.addEventListener("pointerdown", (e) => {
+    _canvasPointerDown = { x: e.clientX, y: e.clientY };
+});
+dom.canvas.addEventListener("pointerup", (e) => {
+    const dx = e.clientX - _canvasPointerDown.x;
+    const dy = e.clientY - _canvasPointerDown.y;
+    if (Math.sqrt(dx * dx + dy * dy) > 5) return; // drag, not click
+    // Click — toggle all overlays
+    const overlays = [
+        dom.modelPopup, dom.motionPopup,
+        dom.settingsOverlay, dom.sceneOverlay,
+    ];
+    if (!_overlaysHidden) {
+        _savedVisible = overlays
+            .filter(el => el.classList.contains("visible"))
+            .map(el => el.id);
+        overlays.forEach(el => el.classList.remove("visible"));
+        _overlaysHidden = true;
+    } else {
+        overlays.forEach(el => {
+            if (_savedVisible.includes(el.id)) el.classList.add("visible");
+        });
+        _savedVisible = [];
+        _overlaysHidden = false;
+    }
+});
+
+// Nav buttons reset canvas overlay state
+[dom.btnMainAction, dom.btnMotionPopup, dom.btnScene, dom.btnSettings].forEach(btn => {
+    btn.addEventListener("click", () => { _overlaysHidden = false; _savedVisible = []; });
+});
+
 // ======== Init ========
 async function init(): Promise<void> {
     try {

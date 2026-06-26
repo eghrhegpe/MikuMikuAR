@@ -1,0 +1,147 @@
+---
+layout: release
+title: 内容库
+locale: zh-CN
+---
+
+## 内容库
+
+内容库是一个文件夹，DanceXR用来定位内容并存储用户创建的设置。
+
+
+## 定位内容库
+
+**Windows**: 在Windows上，您可以通过在系统菜单（左下角的齿轮图标）中的“内容库”部分点击“在资源管理器中显示”来定位内容库。
+
+**Android**: 2024.3更新后，内容文件夹位于您的存储中的/DanceXR/。如果您使用的是旧版本，则位于/Android/data/com.vrstormlab.dancexr/files/。
+
+**iPhone和iPad**: 您可以在文件应用中“我的iPhone”或“我的iPad”部分找到内容库。DanceXR在设备的根目录中创建了一个名为“DanceXR”的文件夹。
+
+**Oculus Quest**: 内容库在2024.3之后位于您的存储中的/DanceXR/，旧版本位于/Android/data/com.vrstormlab.dancexr/files/。与Android版本类似。
+
+
+## 文件夹结构
+
+DanceXR在内容库中的不同子文件夹中搜索各种类型的内容。
+
+* actors：角色模型
+* motion：动作和音频文件
+* stages：舞台的3D模型
+* accessory：可以附加到角色身体部位的3D模型。
+* props：可以用于舞台道具（如家具）的3D模型。
+* texture
+  * cookie：光掩模的纹理
+  * drawing：[身体彩绘功能](features/outfit)的保存图像
+  * ground：地面纹理 [地面设置](features/ground)
+  * mask：可应用于模型的[细节和法线贴图](features/custom_detail_map)
+  * particle：[粒子效果](features/weather_particles)的纹理
+  * sky：[全景天空贴图](features/skymap)，建议使用HDR格式
+* settings：所有保存的设置。这些文件不应由用户修改，但如果您愿意，可以复制并备份。
+* scenes：[保存的场景](features/save_scene)文件。
+* bundles：[保存的场景以及所有必要的资源](features/scene_bundle)包含在一个zip包中。
+* export：使用3D快照功能时，导出的模型文件可以在此找到。
+* presets：保存的预设文件。只要您使用相同版本的DanceXR，就可以与朋友分享这些文件。
+* videos：可用于[投射和动态纹理贴图](features/video_player)的视频。仅支持MP4格式。
+* chat：用于[AI聊天系统](features/ai_chat)的文件。
+  * characters：角色缩略图和模板。这些是自动生成的，但您可以进行修改。
+  * templates：提示模板，您可以进行修改并创建新的。
+  * history：保存的聊天记录
+  * persona：可应用于角色的个性描述
+  * voices/piper/：TTS系统的自定义语音模型
+
+## 支持的格式
+
+* 3D模型：PMX，XPS，FBX（预览版 — 自2025.9起，仅限模型），和OBJ（用于舞台道具）
+* 音频：OGG和MP3（仅限移动平台）
+* 视频：MP4
+* 动作：VMD，BVH
+* 纹理：PNG，JPG和HDR（用于天空贴图）
+
+## 分组和组织
+
+为了更轻松地管理数据文件，特别是对于那些需要多个文件一起工作的内容，我们支持使用zip包来组织您的文件。您也可以将所有必需的文件放在子文件夹中，它们应该可以正常工作。
+
+### 依赖文件
+
+3D模型通常包含多个文件。一个文件描述网格，多个外部文件用于纹理和材质。请确保在加载模型时，纹理与网格文件之间的相对关系保持在原始位置。
+
+对于PMX，网格文件是.pmx文件。对于XPS，网格文件可以是.xps、.mesh或.mesh.ascii。对于FBX（预览版，自2025.9起），网格文件是.fbx — DanceXR目前加载的是模型本身，而不是嵌入的动画或其他FBX功能。FBX和XPS模型都需要[骨骼映射](features/bone_mapper)才能让动作正常播放。
+
+建议将一个模型的所有文件放在一个zip包中，以获得更小的文件大小和更容易的管理。
+
+一些XPS模型具有[替代纹理](features/alternative_textures)。DanceXR可以搜索文件夹或zip包，找到与模型使用的纹理类似的纹理文件，并自动将其包含在菜单中供您选择。要让此功能正常工作，您需要确保替代纹理具有与主纹理相同的文件名。例如，如果基础贴图名为base.png，当DanceXR在不同的子文件夹中找到另一个base.png时，它会将其自动添加为替代纹理。如果您的模型在zip包中，DanceXR将在整个zip包中搜索替代纹理。如果您的模型在子文件夹中，它将从网格文件所在的任何子文件夹中搜索所有子文件夹。请记住这一点，因为如果您将替代纹理放置在网格文件文件夹之外，它们将无法被识别。
+
+![Example of actors folder](/images/content_actors.PNG)
+
+### 动作文件<a id="motion-files"></a>
+
+通常，动作数据包含一个音频文件、角色动作和摄影机动作。在DanceXR中，我们将一组音频、角色动作和摄影机动作称为“舞蹈套装”。
+
+为了让DanceXR检测到舞蹈套装，您只需要将所有这些文件放在一个子文件夹或zip包中。但请确保其中只有一个音频文件。
+
+对于只包含动作/音频对的简单内容，您可以在单个文件夹中拥有多个这样的对，但您需要确保音频和动作文件具有相同的名称，例如“dance.vmd”和“dance.ogg”。这样DanceXR就知道它们是一对，并为其创建一个舞蹈套装。
+
+您也可以在同一个文件夹中拥有多个不相关的动作或音频文件。它们将被识别为没有与其他文件关联的单个动作或音频文件。
+
+![Example of motion folder](/images/content_motion.PNG)
+
+
+## 收藏、最近和标签系统
+
+您可以将模型和动作标记为收藏并为它们添加标签。
+
+收藏的项目将出现在您的收藏列表中，您可以使用标签在筛选结果中缩小搜索范围。
+
+最近列表会记录您最近使用的项目，方便您快速访问。
+
+这些功能让您可以轻松找到需要的项目。对于模型，请在角色菜单的工具部分访问；对于动作，请在音频/动作菜单中访问。
+
+
+## 内容库工具
+
+在您对内容库文件进行更改后，当您启动DanceXR时，它应该会自动检测更改并重新扫描内容。
+
+但是，如果这种情况没有发生，或者您在运行时移动了文件，您可以使用系统菜单中的内容库工具手动刷新它。
+
+您还可以使用“更改库”选项将其指向不同的位置。
+
+
+## Google Drive集成
+
+DanceXR可以[从Google Drive下载文件](features/googledrive)。只要驱动器文件夹没有任何限制共享。只需输入您共享文件夹的URL，DanceXR就能够扫描该驱动器文件夹并下载本地不存在的文件。
+
+
+## 为Android和Oculus Quest准备内容
+
+Android系统有严格的文件访问规则。通常，应用程序无法访问存储中的文件夹。因此，默认情况下，Android和Quest版本的内容库位于应用程序存储空间内，需要使用PC将文件复制到其中。
+
+从2024.3版本开始，我们使用存储权限使文件管理变得更加容易。为此，您需要授予DanceXR访问您存储的权限，然后您就可以使用系统文件应用程序移动和复制文件。
+
+{% include video id="mFnXE7LBV-M" provider="youtube" %}
+
+对于旧版本或者如果您选择使用应用程序内部存储空间，内容库位于这里：/Android/data/com.vrstormlab.dancexr/files/。
+
+
+## 演示视频
+
+在PC上：
+{% include video id="-2LStDN7WB8" provider="youtube" %}
+{% include video id="BV1BH4y167jG" provider="bilibili" %}
+
+在Android上使用内容管理器
+{% include video id="VQjnL9oq-hY" provider="youtube" %}
+{% include video id="BV1Ne4y137Ci" provider="bilibili" %}
+
+在Quest上加载内容
+{% include video id="ZmDeuWwZtmI" provider="youtube" %}
+{% include video id="BV1Dh4y1i7jJ" provider="bilibili" %}
+
+---
+
+## 相关页面
+
+- [操作角色](actors) — 模型进入库后该做什么
+- [动作系统](motion) — 舞蹈套装和动作如何组织
+- [概念和术语表](concepts) — 预设、场景、场景包、舞蹈套装的定义
+- [Google Drive集成](features/googledrive)
+- [Android和Quest上的内容库](content_android_quest)

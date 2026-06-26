@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function AddExternalPath(arg1:string):Promise<void>;
 
+export function AddRecentModel(arg1:string):Promise<void>;
+
 export function AddTag(arg1:string,arg2:string):Promise<void>;
 
 export function AutoDetectMMD():Promise<string>;
@@ -13,6 +15,8 @@ export function CleanOrphanCache():Promise<number>;
 export function ClearExtractCache():Promise<void>;
 
 export function DeleteDanceSet(arg1:string):Promise<void>;
+
+export function DeletePresetScene(arg1:string):Promise<void>;
 
 export function DeleteRenderPreset(arg1:string):Promise<void>;
 
@@ -36,6 +40,12 @@ export function GetModelMetaBatch(arg1:Array<string>):Promise<Record<string, mai
 
 export function GetModelsByTag(arg1:string):Promise<Array<string>>;
 
+export function GetPresetScenes():Promise<Array<string>>;
+
+export function GetPresetScenesDir():Promise<string>;
+
+export function GetRecentModels():Promise<Array<string>>;
+
 export function GetRenderPresets():Promise<Array<main.RenderPreset>>;
 
 export function GetTagsByModel(arg1:string):Promise<Array<string>>;
@@ -56,6 +66,8 @@ export function LaunchSoftware(arg1:string):Promise<void>;
 
 export function LoadLastScene():Promise<string>;
 
+export function LoadModelPreset(arg1:string):Promise<string>;
+
 export function LoadSceneFile(arg1:string):Promise<string>;
 
 export function OpenInBlender(arg1:string):Promise<void>;
@@ -74,9 +86,15 @@ export function SaveDanceSet(arg1:string,arg2:main.DanceSet):Promise<void>;
 
 export function SaveLastScene(arg1:string):Promise<void>;
 
+export function SaveModelPreset(arg1:string,arg2:string):Promise<void>;
+
 export function SaveRenderPreset(arg1:string,arg2:string):Promise<void>;
 
 export function SaveSceneFile(arg1:string,arg2:string):Promise<void>;
+
+export function SaveScenePreset(arg1:string):Promise<string>;
+
+export function SaveScreenshot(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function SaveThumbnail(arg1:string,arg2:string):Promise<void>;
 
@@ -92,11 +110,17 @@ export function SelectExeFile():Promise<string>;
 
 export function SelectPMXFile():Promise<string>;
 
+export function SelectPresetOpenFile():Promise<string>;
+
+export function SelectPresetSaveFile():Promise<string>;
+
 export function SelectSceneOpenFile():Promise<string>;
 
 export function SelectSceneSaveFile():Promise<string>;
 
 export function SelectVMDMotion():Promise<string>;
+
+export function SelectVPDPose():Promise<string>;
 
 export function SetBlenderPath(arg1:string):Promise<void>;
 
@@ -119,11 +143,3 @@ export function StopFileServer(arg1:string):Promise<void>;
 export function StopWatchDir():Promise<void>;
 
 export function ToggleFavorite(arg1:string):Promise<void>;
-
-export function GetDanceSets():Promise<any[]>;
-
-export function SaveDanceSet(arg1:string,arg2:any):Promise<void>;
-
-export function DeleteDanceSet(arg1:string):Promise<void>;
-
-export function ImportDanceSet(arg1:string,arg2:string,arg3:string):Promise<string>;

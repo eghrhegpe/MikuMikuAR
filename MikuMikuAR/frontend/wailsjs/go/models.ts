@@ -64,6 +64,7 @@ export namespace main {
 	    mmd_path: string;
 	    tags: Record<string, Array<string>>;
 	    dance_sets: Record<string, DanceSet>;
+	    recent_models: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -82,6 +83,7 @@ export namespace main {
 	        this.mmd_path = source["mmd_path"];
 	        this.tags = source["tags"];
 	        this.dance_sets = this.convertValues(source["dance_sets"], DanceSet, true);
+	        this.recent_models = source["recent_models"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

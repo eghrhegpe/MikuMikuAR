@@ -9,6 +9,7 @@ import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { Material } from "@babylonjs/core/Materials/material";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
@@ -46,6 +47,7 @@ import {
     computeLibraryRef, resolveLibraryRef,
 } from "./config";
 import { resolveFileUrl, normPath } from "./fileservice";
+import { loadVPDFromBuffer } from "./vpd-parser";
 import { syncAudioPlayback, loadAudioFile, setVolume, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset, isAudioPlaying, resumeAudio, pauseAudio } from "./audio";
 
 // ======== Babylon.js ========
@@ -145,9 +147,9 @@ export function getRenderState(): RenderState {
         outlineEnabled: _outlineEnabled,
         outlineColor: _outlineColor,
         fxaaEnabled: pipeline.fxaaEnabled,
-        toneMapping: scene.imageProcessingConfiguration?.toneMappingType ?? 0,
-        exposure: scene.imageProcessingConfiguration?.exposure ?? 1,
-        contrast: scene.imageProcessingConfiguration?.contrast ?? 1,
+        toneMapping: pipeline.imageProcessing?.toneMappingType ?? 0,
+        exposure: pipeline.imageProcessing?.exposure ?? 1,
+        contrast: pipeline.imageProcessing?.contrast ?? 1,
         fov: cam ? (cam as any).fov ?? 0.8 : 0.8,
         bgColor: [scene.clearColor.r, scene.clearColor.g, scene.clearColor.b],
     };
@@ -187,10 +189,10 @@ export function setRenderState(s: Partial<RenderState>): void {
     }
 
     // Stage / imageProcessing
-    if (scene.imageProcessingConfiguration) {
-        if (s.toneMapping !== undefined) scene.imageProcessingConfiguration.toneMappingType = s.toneMapping;
-        if (s.exposure !== undefined) scene.imageProcessingConfiguration.exposure = s.exposure;
-        if (s.contrast !== undefined) scene.imageProcessingConfiguration.contrast = s.contrast;
+    if (pipeline.imageProcessing) {
+        if (s.toneMapping !== undefined) pipeline.imageProcessing.toneMappingType = s.toneMapping;
+        if (s.exposure !== undefined) pipeline.imageProcessing.exposure = s.exposure;
+        if (s.contrast !== undefined) pipeline.imageProcessing.contrast = s.contrast;
     }
     if (s.fov !== undefined && scene.activeCamera) {
         (scene.activeCamera as any).fov = s.fov;
@@ -339,9 +341,9 @@ export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<
             // Stage: pure static mesh, no MMD runtime, no physics
             const inst: ModelInstance = {
                 id, name: displayName, filePath, port, modelDir,
-                meshes, vmdData: null, vmdName: "", vmdPath: null,
+                meshes, rootMesh: meshes[0], vmdData: null, vmdName: "", vmdPath: null,
                 animationDuration: 0, kind: "stage",
-                visible: true, opacity: 1.0, wireframe: false,
+                visible: true, opacity: 1.0, wireframe: false, showBones: false, physicsEnabled: false,
                 scaling: 1.0, rotationY: 0,
             };
             modelRegistry.set(id, inst);
@@ -364,12 +366,17 @@ export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<
 
         const inst: ModelInstance = {
             id, name: displayName, filePath, port, modelDir,
-            meshes, mmdModel: wasmModel, vmdData: null, vmdName: "", vmdPath: null,
+            meshes, rootMesh, mmdModel: wasmModel, vmdData: null, vmdName: "", vmdPath: null,
             animationDuration: 0, kind: "actor",
-            visible: true, opacity: 1.0, wireframe: false,
+            visible: true, opacity: 1.0, wireframe: false, showBones: false, physicsEnabled: true,
             scaling: 1.0, rotationY: 0,
         };
         modelRegistry.set(id, inst);
+        // Remember initial rigid body states for physics toggle restoration
+        if (wasmModel) {
+            const states = wasmModel.rigidBodyStates;
+            if (states) _initialRigidBodyStates.set(id, new Uint8Array(states));
+        }
         setFocusedModelId(id);
 
         // Apply pending VMD if any
@@ -497,6 +504,33 @@ export async function loadCameraVmdFromPath(path: string): Promise<void> {
     }
 }
 
+export async function loadVPDPose(path: string, targetModelId?: string): Promise<void> {
+    if (isLoadingVmd) return;
+    setIsLoadingVmd(true);
+    try {
+        const { url } = await resolveFileUrl(path);
+        const poseName = normPath(path).split("/").pop() || "";
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const rawData = await resp.arrayBuffer();
+
+        const vmdBuffer = loadVPDFromBuffer(rawData);
+
+        await loadVMDMotion(vmdBuffer, "姿势: " + poseName.replace(/\.vpd$/i, ""), targetModelId);
+
+        const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
+        if (foc) {
+            foc.vmdPath = path;
+        }
+        setStatus(`✓ 姿势: ${poseName}`, true);
+    } catch (err) {
+        console.error("loadVPDPose:", err);
+        setStatus("✗ 姿势加载失败", false);
+    } finally {
+        setIsLoadingVmd(false);
+    }
+}
+
 // ======== Model Lifecycle ========
 export function removeModel(id: string): void {
     const inst = modelRegistry.get(id);
@@ -506,6 +540,7 @@ export function removeModel(id: string): void {
     modelRegistry.delete(id);
     _catState.delete(id);
     _matState.delete(id);
+    destroyBoneOverlay(id);
     if (focusedModelId === id) { setFocusedModelId(modelRegistry.size > 0 ? modelRegistry.keys().next().value : null); }
     if (focusedModelId) focusModel(focusedModelId);
     if (modelRegistry.size === 0) {
@@ -803,6 +838,167 @@ export function setModelWireframe(id: string, wireframe: boolean): void {
     triggerAutoSave();
 }
 
+/** Toggle bone skeleton overlay on a model. */
+export function setModelBoneVis(id: string, show: boolean): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    inst.showBones = show;
+    if (show) {
+        createBoneOverlay(id);
+    } else {
+        destroyBoneOverlay(id);
+    }
+    triggerAutoSave();
+}
+
+/** Enable or disable physics simulation for a model. */
+export function setModelPhysics(id: string, enabled: boolean): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    inst.physicsEnabled = enabled;
+    const mmdModel = inst.mmdModel;
+    if (mmdModel) {
+        const states = mmdModel.rigidBodyStates;
+        if (states) {
+            if (enabled) {
+                // Restore initial states remembered at load time
+                const init = (_initialRigidBodyStates.get(id) || new Uint8Array(0));
+                if (init.length === states.length) {
+                    states.set(init);
+                } else {
+                    states.fill(1);
+                }
+            } else {
+                states.fill(0);
+            }
+        }
+    }
+    triggerAutoSave();
+}
+
+const _initialRigidBodyStates = new Map<string, Uint8Array>();
+
+function createBoneOverlay(id: string): void {
+    const inst = modelRegistry.get(id);
+    if (!inst || !inst.mmdModel) return;
+    if (_boneOverlayMap.has(id)) return;
+
+    const bones = inst.mmdModel.runtimeBones;
+    if (!bones || bones.length === 0) return;
+
+    // Pre-compute physics bone set
+    const physicsBoneSet = new Set<number>();
+    for (let i = 0; i < bones.length; i++) {
+        if (bones[i].rigidBodyIndices.length > 0) {
+            physicsBoneSet.add(i);
+        }
+    }
+
+    const lines: Vector3[][] = [];
+    const colors: Color4[][] = [];
+    const tmp = new Vector3();
+
+    // Build bone hierarchy lines
+    for (let i = 0; i < bones.length; i++) {
+        const bone = bones[i];
+        if (!bone.parentBone) continue;
+        const parentPos = new Vector3();
+        bone.parentBone.getWorldTranslationToRef(parentPos);
+        bone.getWorldTranslationToRef(tmp);
+        lines.push([parentPos.clone(), tmp.clone()]);
+        // Physics bones get bright green; non-physics use transform-order hue
+        const isPhysics = physicsBoneSet.has(i);
+        let c: Color3;
+        if (isPhysics) {
+            c = new Color3(0.2, 1, 0.3); // bright green
+        } else {
+            const hue = (bone.transformOrder % 40) / 40;
+            c = Color3.FromHSV(hue * 360, 1, 0.8);
+        }
+        colors.push([new Color4(c.r, c.g, c.b, 1), new Color4(c.r, c.g, c.b, 1)]);
+    }
+
+    // Check if there are any connectable bones
+    if (lines.length === 0) {
+        console.warn("setModelBoneVis: no parent-child bone connections found");
+        return;
+    }
+
+    const overlay = MeshBuilder.CreateLineSystem("boneOverlay_" + id, {
+        lines,
+        colors,
+        updatable: true,
+        useVertexAlpha: true,
+    }, scene);
+    overlay.renderingGroupId = 2; // always on top
+
+    // Per-frame update: refresh world positions of every bone line
+    const updateFn = () => {
+        const m = modelRegistry.get(id);
+        if (!m || !m.mmdModel) return;
+        const b = m.mmdModel.runtimeBones;
+        if (!b) return;
+        const positions: number[] = [];
+        const colorData: number[] = [];
+        for (let i = 0; i < b.length; i++) {
+            const bone = b[i];
+            if (!bone.parentBone) continue;
+            const parentPos = new Vector3();
+            const childPos = new Vector3();
+            bone.parentBone.getWorldTranslationToRef(parentPos);
+            bone.getWorldTranslationToRef(childPos);
+            positions.push(parentPos.x, parentPos.y, parentPos.z);
+            positions.push(childPos.x, childPos.y, childPos.z);
+            const isPhysics = physicsBoneSet.has(i);
+            let c: Color3;
+            if (isPhysics) {
+                c = new Color3(0.2, 1, 0.3);
+            } else {
+                const hue = (bone.transformOrder % 40) / 40;
+                c = Color3.FromHSV(hue * 360, 1, 0.8);
+            }
+            colorData.push(c.r, c.g, c.b);
+            colorData.push(c.r, c.g, c.b);
+        }
+        const posArr = new Float32Array(positions);
+        const colArr = new Float32Array(colorData);
+        overlay.updateVerticesData("position", posArr, false, false);
+        overlay.updateVerticesData("color", colArr, false, false);
+    };
+
+    _boneOverlayMap.set(id, { overlay, update: updateFn });
+
+    // Register the before-render observer if not yet registered
+    ensureBoneUpdateObserver();
+}
+
+function destroyBoneOverlay(id: string): void {
+    const entry = _boneOverlayMap.get(id);
+    if (entry) {
+        entry.overlay.dispose();
+        _boneOverlayMap.delete(id);
+    }
+}
+
+let _boneUpdateObserver: any = null;
+function ensureBoneUpdateObserver(): void {
+    if (_boneUpdateObserver) return;
+    _boneUpdateObserver = scene.onBeforeRenderObservable.add(() => {
+        const toDelete: string[] = [];
+        for (const [id, entry] of _boneOverlayMap) {
+            const inst = modelRegistry.get(id);
+            if (!inst || !inst.showBones || !inst.mmdModel) {
+                // Clean up stale entries
+                entry.overlay.dispose();
+                toDelete.push(id);
+                continue;
+            }
+            entry.update();
+        }
+        for (const id of toDelete) _boneOverlayMap.delete(id);
+    });
+}
+
 /** Set uniform scale for a model (1.0 = original size). */
 export function setModelScaling(id: string, scaling: number): void {
     const inst = modelRegistry.get(id);
@@ -876,10 +1072,14 @@ interface _OrigMat {
 }
 
 const _origValues = new WeakMap<Material, _OrigMat>();
-const _catState = new Map<string, Map<string, MaterialCategoryParams>>();
-const _matState = new Map<string, Map<number, MaterialCategoryParams>>();
+/** @internal exported for testing */
+export const _catState = new Map<string, Map<string, MaterialCategoryParams>>();
+/** @internal exported for testing */
+export const _matState = new Map<string, Map<number, MaterialCategoryParams>>();
+const _boneOverlayMap = new Map<string, { overlay: Mesh; update: () => void }>();
 
-function _catOf(name: string): MaterialCategory {
+/** @internal exported for testing */
+export function _catOf(name: string): MaterialCategory {
     const l = name.toLowerCase();
     if (/skin|face|肌|顔|body|neck|首|cheek|頬|kihada/.test(l)) return "皮肤";
     if (/hair|髪|ahoge/.test(l)) return "头发";
@@ -898,7 +1098,8 @@ function _capture(mat: Material): void {
     });
 }
 
-function _applyAll(id: string): void {
+/** @internal exported for testing */
+export function _applyAll(id: string): void {
     const inst = modelRegistry.get(id);
     if (!inst) return;
     const state = _catState.get(id);
@@ -1058,6 +1259,77 @@ export function resetAllMatParams(id: string): void {
     _matState.delete(id);
     _applyAll(id);
     triggerAutoSave();
+}
+
+// ======== Model Preset Support ========
+
+/** Stop VMD animation on a model and clean up state.
+ *  Always use this instead of manual setRuntimeAnimation(null).
+ */
+export function stopVMD(id: string): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    if (inst.mmdModel && mmdRuntime) {
+        inst.mmdModel.setRuntimeAnimation(null);
+    }
+    inst.vmdData = null;
+    inst.vmdName = "";
+    inst.vmdPath = null;
+    inst.animationDuration = 0;
+    if (isPlaying) {
+        mmdRuntime?.pauseAnimation();
+        setIsPlaying(false);
+    }
+    updatePlaybackUI();
+    triggerAutoSave();
+}
+
+/** Get the full material state (categories + per-material overrides) for a model.
+ *  Returns null if no material adjustments have been made.
+ *  Used for preset serialization.
+ */
+export function getMatState(id: string): {
+    categories: Record<string, MaterialCategoryParams>;
+    overrides: Record<number, MaterialCategoryParams>;
+} | null {
+    const catState = _catState.get(id);
+    const matState = _matState.get(id);
+    if (!catState && !matState) return null;
+    const categories: Record<string, MaterialCategoryParams> = {};
+    if (catState) {
+        for (const [cat, params] of catState) {
+            categories[cat] = { ...params };
+        }
+    }
+    const overrides: Record<number, MaterialCategoryParams> = {};
+    if (matState) {
+        for (const [idx, params] of matState) {
+            overrides[idx] = { ...params };
+        }
+    }
+    return { categories, overrides };
+}
+
+/** Apply a previously saved material state to a model.
+ *  Used for preset deserialization.
+ *  ⚠ MaterialCategory is a string union ("皮肤"|"头发"|"眼睛"|"服装"),
+ *    so Object.entries() yields [string, T] — need `as MaterialCategory`.
+ */
+export function applyMatState(id: string, state: {
+    categories?: Record<string, MaterialCategoryParams>;
+    overrides?: Record<number, MaterialCategoryParams>;
+}): void {
+    if (state.categories) {
+        for (const [cat, params] of Object.entries(state.categories)) {
+            setMatCatParams(id, cat as MaterialCategory, params);
+        }
+    }
+    if (state.overrides) {
+        for (const [idxStr, params] of Object.entries(state.overrides)) {
+            const idx = parseInt(idxStr, 10);
+            setMatParams(id, idx, params);
+        }
+    }
 }
 
 // ======== Gravity Control ========
