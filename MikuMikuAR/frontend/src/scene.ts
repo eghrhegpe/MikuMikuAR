@@ -22,6 +22,7 @@ import { GradientMaterial } from "@babylonjs/materials/gradient/gradientMaterial
 import { SkyMaterial } from "@babylonjs/materials/sky/skyMaterial";
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
+import { GPUParticleSystem } from "@babylonjs/core/Particles/gpuParticleSystem";
 
 import { RegisterMmdModelLoaders } from "babylon-mmd/esm/Loader/dynamic";
 import { RegisterDxBmpTextureLoader } from "babylon-mmd/esm/Loader/registerDxBmpTextureLoader";
@@ -1440,6 +1441,14 @@ export function setEnvState(partial: Partial<EnvState>): void {
         _applyGround(envState);
     }
 
+    if (partial.particleType !== undefined || partial.particleEnabled !== undefined || partial.windEnabled !== undefined) {
+        if (envState.particleEnabled && envState.particleType !== "none") {
+            _createParticleEmitter(envState.particleType, envState.windEnabled);
+        } else {
+            _disposeParticles();
+        }
+    }
+
     triggerAutoSave();
 }
 
@@ -1705,4 +1714,108 @@ function _applyGround(state: EnvState): void {
     }
 
     _envSys.ground.mesh = ground;
+}
+
+// ======== Particle System (Phase 8) ========
+
+function _getParticleTexture(): Texture {
+    const canvas = document.createElement("canvas");
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext("2d")!;
+    ctx.beginPath();
+    ctx.arc(16, 16, 14, 0, Math.PI * 2);
+    ctx.fillStyle = "white";
+    ctx.fill();
+    return new Texture("data:image/png;base64," + canvas.toDataURL(), scene);
+}
+
+function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boolean): void {
+    _disposeParticles();
+
+    if (type === "none") return;
+
+    const particleTexture = _getParticleTexture();
+
+    const ps = new GPUParticleSystem("envParticles", { capacity: 5000 }, scene);
+
+    ps.particleTexture = particleTexture;
+    ps.emitter = new Vector3(0, 10, 0);
+    ps.minEmitPower = 1;
+    ps.maxEmitPower = 3;
+    ps.updateSpeed = 0.01;
+
+    switch (type) {
+        case "sakura":
+            ps.emitRate = 30;
+            ps.gravity = new Vector3(0, -0.5, 0);
+            ps.minLifeTime = 8;
+            ps.maxLifeTime = 15;
+            ps.direction1 = new Vector3(-0.5, 0, -0.5);
+            ps.direction2 = new Vector3(0.5, 0, 0.5);
+            ps.color1 = new Color4(1, 0.8, 0.8, 1);
+            ps.color2 = new Color4(1, 0.9, 0.9, 1);
+            ps.minSize = 0.1;
+            ps.maxSize = 0.3;
+            break;
+        case "rain":
+            ps.emitRate = 800;
+            ps.gravity = new Vector3(0, -20, 0);
+            ps.minLifeTime = 1;
+            ps.maxLifeTime = 2;
+            ps.direction1 = new Vector3(-0.1, -1, -0.1);
+            ps.direction2 = new Vector3(0.1, -1, 0.1);
+            ps.color1 = new Color4(0.7, 0.8, 1, 0.6);
+            ps.color2 = new Color4(0.8, 0.9, 1, 0.8);
+            ps.minSize = 0.01;
+            ps.maxSize = 0.03;
+            break;
+        case "snow":
+            ps.emitRate = 200;
+            ps.gravity = new Vector3(0, -2, 0);
+            ps.minLifeTime = 5;
+            ps.maxLifeTime = 10;
+            ps.direction1 = new Vector3(-0.3, -0.5, -0.3);
+            ps.direction2 = new Vector3(0.3, -0.5, 0.3);
+            ps.color1 = new Color4(1, 1, 1, 0.8);
+            ps.color2 = new Color4(1, 1, 1, 1);
+            ps.minSize = 0.05;
+            ps.maxSize = 0.15;
+            break;
+        case "fireworks":
+            ps.emitRate = 5;
+            ps.gravity = new Vector3(0, 0, 0);
+            ps.minLifeTime = 0.5;
+            ps.maxLifeTime = 2;
+            ps.direction1 = new Vector3(-2, 3, -2);
+            ps.direction2 = new Vector3(2, 5, 2);
+            ps.color1 = new Color4(1, 0.5, 0.2, 1);
+            ps.color2 = new Color4(1, 0.8, 0.5, 1);
+            ps.minSize = 0.1;
+            ps.maxSize = 0.3;
+            ps.createSphereEmitter(0.5);
+            break;
+    }
+
+    if (windEnabled) {
+        _applyWindToParticles(ps);
+    }
+
+    _envSys.particles.emitter = ps;
+}
+
+function _disposeParticles(): void {
+    if (_envSys.particles.emitter) {
+        _envSys.particles.emitter.dispose();
+        _envSys.particles.emitter = null;
+    }
+}
+
+// ======== Wind System (Phase 8) ========
+
+function _applyWindToParticles(ps: GPUParticleSystem): void {
+    const dir = envState.windDirection;
+    const speed = envState.windSpeed;
+    ps.direction1.addInPlace(new Vector3(dir[0] * speed * 0.1, dir[1] * speed * 0.1, dir[2] * speed * 0.1));
+    ps.direction2.addInPlace(new Vector3(dir[0] * speed * 0.1, dir[1] * speed * 0.1, dir[2] * speed * 0.1));
 }

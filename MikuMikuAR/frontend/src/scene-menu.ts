@@ -479,6 +479,8 @@ function buildEnvLevel(): PopupLevel {
         items: [
             { kind: "folder", label: "天空", icon: "sun", target: "scene:env:sky" },
             { kind: "folder", label: "地面", icon: "grid", target: "scene:env:ground" },
+            { kind: "folder", label: "粒子", icon: "wind", target: "scene:env:particle" },
+            { kind: "folder", label: "风", icon: "wind", target: "scene:env:wind" },
         ],
     };
 }
@@ -581,6 +583,76 @@ function buildGroundLevel(): PopupLevel {
             if (s.groundMode === "solid") {
                 addSliderRow(container, "透明度", s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }));
             }
+        },
+    };
+}
+
+function buildParticleLevel(): PopupLevel {
+    return {
+        label: "粒子",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+            const s = envState;
+
+            addToggleRow(container, "启用粒子", s.particleEnabled, (v) => setEnvState({ particleEnabled: v }));
+
+            const typeRow = document.createElement("div");
+            typeRow.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;";
+            const typeLabel = document.createElement("span");
+            typeLabel.style.cssText = "font-size:11px;color:var(--text-dim);width:60px;";
+            typeLabel.textContent = "类型";
+            typeRow.appendChild(typeLabel);
+            const types: Array<{ value: EnvState["particleType"]; label: string }> = [
+                { value: "none", label: "无" },
+                { value: "sakura", label: "🌸 樱花" },
+                { value: "rain", label: "🌧 雨" },
+                { value: "snow", label: "❄ 雪" },
+                { value: "fireworks", label: "🎆 烟花" },
+            ];
+            for (const t of types) {
+                const btn = document.createElement("button");
+                btn.textContent = t.label;
+                btn.style.cssText = `font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--white-08);background:${s.particleType === t.value ? "var(--accent)" : "transparent"};color:var(--text-bright);cursor:pointer;`;
+                btn.addEventListener("click", () => {
+                    setEnvState({ particleType: t.value });
+                    sceneStack?.reRender();
+                });
+                typeRow.appendChild(btn);
+            }
+            container.appendChild(typeRow);
+        },
+    };
+}
+
+function buildWindLevel(): PopupLevel {
+    return {
+        label: "风",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+            const s = envState;
+
+            addToggleRow(container, "启用风", s.windEnabled, (v) => setEnvState({ windEnabled: v }));
+
+            addSliderRow(container, "风向 X", s.windDirection[0], -1, 1, 0.05, (v) => {
+                const d: [number, number, number] = [...s.windDirection];
+                d[0] = v;
+                setEnvState({ windDirection: d });
+            });
+            addSliderRow(container, "风向 Y", s.windDirection[1], -1, 1, 0.05, (v) => {
+                const d: [number, number, number] = [...s.windDirection];
+                d[1] = v;
+                setEnvState({ windDirection: d });
+            });
+            addSliderRow(container, "风向 Z", s.windDirection[2], -1, 1, 0.05, (v) => {
+                const d: [number, number, number] = [...s.windDirection];
+                d[2] = v;
+                setEnvState({ windDirection: d });
+            });
+            addSliderRow(container, "风速", s.windSpeed, 0, 10, 0.1, (v) => setEnvState({ windSpeed: v }));
         },
     };
 }
@@ -1120,6 +1192,8 @@ export async function showSceneMenu(): Promise<void> {
                     case "scene:env": return buildEnvLevel();
                     case "scene:env:sky": return buildSkyLevel();
                     case "scene:env:ground": return buildGroundLevel();
+                    case "scene:env:particle": return buildParticleLevel();
+                    case "scene:env:wind": return buildWindLevel();
                     case "scene:camera": return buildCameraLevel();
                     case "scene:light": return buildLightLevel();
                     case "scene:render": return buildRenderLevel();
