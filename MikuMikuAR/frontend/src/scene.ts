@@ -195,11 +195,19 @@ export interface RenderState {
     contrast: number;         // 0-4, default 1
     fov: number;              // 0.1-3 rad, default 0.8
     bgColor: [number, number, number];  // 0-1
+    // Phase 8 — DOF + Vignette
+    dofEnabled: boolean;
+    dofAperture: number;
+    dofDarken: number;
+    vignetteEnabled: boolean;
+    vignetteDarkness: number;
 }
 
 // Module-level outline state (edges are set on meshes, not pipeline; tracked here for getRenderState)
 let _outlineEnabled = false;
 let _outlineColor: [number, number, number] = [0, 0, 0];
+
+
 
 export function getRenderState(): RenderState {
     const cam = scene.activeCamera;
@@ -216,6 +224,11 @@ export function getRenderState(): RenderState {
         contrast: pipeline.imageProcessing?.contrast ?? 1,
         fov: cam ? (cam as any).fov ?? 0.8 : 0.8,
         bgColor: [scene.clearColor.r, scene.clearColor.g, scene.clearColor.b],
+        dofEnabled: pipeline.depthOfFieldEnabled,
+        dofAperture: pipeline.depthOfField?.fStop ?? 0.5,
+        dofDarken: 0.5,
+        vignetteEnabled: pipeline.imageProcessing?.vignetteEnabled ?? false,
+        vignetteDarkness: pipeline.imageProcessing?.vignetteWeight ?? 0.5,
     };
 }
 
@@ -250,6 +263,22 @@ export function setRenderState(s: Partial<RenderState>): void {
                 }
             }
         }
+    }
+
+    // DOF — via pipeline.depthOfField
+    if (s.dofEnabled !== undefined) {
+        pipeline.depthOfFieldEnabled = s.dofEnabled;
+    }
+    if (s.dofAperture !== undefined && pipeline.depthOfField) {
+        pipeline.depthOfField.fStop = s.dofAperture;
+    }
+
+    // Vignette — via pipeline.imageProcessing
+    if (s.vignetteEnabled !== undefined && pipeline.imageProcessing) {
+        pipeline.imageProcessing.vignetteEnabled = s.vignetteEnabled;
+    }
+    if (s.vignetteDarkness !== undefined && pipeline.imageProcessing) {
+        pipeline.imageProcessing.vignetteWeight = s.vignetteDarkness;
     }
 
     // Stage / imageProcessing
@@ -1449,6 +1478,10 @@ export function setEnvState(partial: Partial<EnvState>): void {
         }
     }
 
+    if (partial.cloudsEnabled !== undefined || partial.cloudCover !== undefined || partial.cloudScale !== undefined) {
+        _createClouds(envState);
+    }
+
     triggerAutoSave();
 }
 
@@ -1818,4 +1851,58 @@ function _applyWindToParticles(ps: GPUParticleSystem): void {
     const speed = envState.windSpeed;
     ps.direction1.addInPlace(new Vector3(dir[0] * speed * 0.1, dir[1] * speed * 0.1, dir[2] * speed * 0.1));
     ps.direction2.addInPlace(new Vector3(dir[0] * speed * 0.1, dir[1] * speed * 0.1, dir[2] * speed * 0.1));
+}
+
+// ======== Clouds (Phase 8) ========
+
+function _createClouds(state: EnvState): void {
+    _disposeClouds();
+
+    if (!state.cloudsEnabled) return;
+
+    const cloudPlane = MeshBuilder.CreatePlane("envClouds", {
+        width: 200,
+        height: 200,
+    }, scene);
+    cloudPlane.isPickable = false;
+    cloudPlane.position = new Vector3(0, 30, 0);
+    cloudPlane.rotation.x = Math.PI / 2;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d")!;
+    const imgData = ctx.createImageData(256, 256);
+    for (let i = 0; i < imgData.data.length; i += 4) {
+        const x = (i / 4) % 256;
+        const y = Math.floor((i / 4) / 256);
+        const n = Math.random();
+        imgData.data[i] = 255;
+        imgData.data[i + 1] = 255;
+        imgData.data[i + 2] = 255;
+        imgData.data[i + 3] = n > state.cloudCover ? 0 : Math.floor(n * 255 * 0.5);
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+    const tex = new Texture("data:image/png;base64," + canvas.toDataURL(), scene);
+    const mat = new StandardMaterial("envCloudMat", scene);
+    mat.diffuseTexture = tex;
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.backFaceCulling = false;
+    mat.alpha = 0.5;
+
+    cloudPlane.material = mat;
+    cloudPlane.scaling.x = state.cloudScale;
+    cloudPlane.scaling.z = state.cloudScale;
+
+    _envSys.clouds.postProcess = cloudPlane;
+}
+
+function _disposeClouds(): void {
+    if (_envSys.clouds.postProcess) {
+        if (_envSys.clouds.postProcess instanceof Mesh) {
+            _envSys.clouds.postProcess.dispose();
+        }
+        _envSys.clouds.postProcess = null;
+    }
 }

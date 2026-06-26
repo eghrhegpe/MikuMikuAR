@@ -481,6 +481,8 @@ function buildEnvLevel(): PopupLevel {
             { kind: "folder", label: "地面", icon: "grid", target: "scene:env:ground" },
             { kind: "folder", label: "粒子", icon: "wind", target: "scene:env:particle" },
             { kind: "folder", label: "风", icon: "wind", target: "scene:env:wind" },
+            { kind: "folder", label: "云", icon: "cloud", target: "scene:env:cloud" },
+            { kind: "folder", label: "后期", icon: "camera", target: "scene:env:post" },
         ],
     };
 }
@@ -657,6 +659,23 @@ function buildWindLevel(): PopupLevel {
     };
 }
 
+function buildCloudLevel(): PopupLevel {
+    return {
+        label: "云",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+            const s = envState;
+
+            addToggleRow(container, "启用云", s.cloudsEnabled, (v) => setEnvState({ cloudsEnabled: v }));
+
+            addSliderRow(container, "云量", s.cloudCover, 0, 1, 0.05, (v) => setEnvState({ cloudCover: v }));
+            addSliderRow(container, "缩放", s.cloudScale, 0.5, 3, 0.1, (v) => setEnvState({ cloudScale: v }));
+        },
+    };
+}
+
 // ======== UI Helpers (render sliders/toggles) ========
 
 function addToggleRow(container: HTMLElement, label: string, value: boolean, onChange: (v: boolean) => void): void {
@@ -809,6 +828,35 @@ function buildPostProcessLevel(): PopupLevel {
             // Outline toggle (edge highlighting)
             addToggleRow(container, "边缘高亮", state.outlineEnabled, (v) => {
                 setRenderState({ outlineEnabled: v });
+                triggerAutoSave();
+            });
+
+            // Separator
+            const sep1 = document.createElement("div");
+            sep1.style.cssText = "height:1px;background:var(--white-08);margin:12px 0;";
+            container.appendChild(sep1);
+
+            // DOF section
+            addToggleRow(container, "景深 DOF", state.dofEnabled, (v) => {
+                setRenderState({ dofEnabled: v });
+                triggerAutoSave();
+            });
+            addSliderRow(container, "光圈", state.dofAperture, 0, 10, 0.1, (v) => {
+                setRenderState({ dofAperture: v });
+                triggerAutoSave();
+            });
+            addSliderRow(container, "暗化", state.dofDarken, 0, 1, 0.05, (v) => {
+                setRenderState({ dofDarken: v });
+                triggerAutoSave();
+            });
+
+            // Vignette section
+            addToggleRow(container, "暗角", state.vignetteEnabled, (v) => {
+                setRenderState({ vignetteEnabled: v });
+                triggerAutoSave();
+            });
+            addSliderRow(container, "暗角强度", state.vignetteDarkness, 0, 1, 0.05, (v) => {
+                setRenderState({ vignetteDarkness: v });
                 triggerAutoSave();
             });
         },
@@ -1194,6 +1242,8 @@ export async function showSceneMenu(): Promise<void> {
                     case "scene:env:ground": return buildGroundLevel();
                     case "scene:env:particle": return buildParticleLevel();
                     case "scene:env:wind": return buildWindLevel();
+                    case "scene:env:cloud": return buildCloudLevel();
+                    case "scene:env:post": return buildPostProcessLevel();
                     case "scene:camera": return buildCameraLevel();
                     case "scene:light": return buildLightLevel();
                     case "scene:render": return buildRenderLevel();
