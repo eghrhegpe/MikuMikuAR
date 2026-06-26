@@ -1697,7 +1697,8 @@ function _applySky(state: EnvState): void {
             mesh.material.dispose();
         }
         mesh.material = mat;
-        // Do NOT set scene.clearColor for gradient mode — it would override the sky sphere
+        // Neutral black background so the gradient sphere is clearly visible
+        scene.clearColor = new Color4(0, 0, 0, 1);
         return;
     }
 
@@ -1723,6 +1724,7 @@ function _applySky(state: EnvState): void {
             mesh.material.dispose();
         }
         mesh.material = skyMat;
+        scene.clearColor = new Color4(0, 0, 0, 1);
         return;
     }
 
