@@ -834,6 +834,8 @@ function addColorSliderRow(container: HTMLElement, label: string, color: [number
     header.textContent = label;
     row.appendChild(header);
     const channels = ["R", "G", "B"] as const;
+    // Mutable snapshot shared by all three channel handlers, avoiding stale closure
+    const current: [number, number, number] = [color[0], color[1], color[2]];
     for (let ci = 0; ci < 3; ci++) {
         const sub = document.createElement("div");
         sub.style.cssText = "display:flex;align-items:center;gap:6px;";
@@ -853,14 +855,8 @@ function addColorSliderRow(container: HTMLElement, label: string, color: [number
         slider.addEventListener("input", () => {
             const v = parseFloat(slider.value);
             val.textContent = v.toFixed(2);
-            // Read all three slider values from DOM to avoid stale closure on color
-            const inputs = row.querySelectorAll<HTMLInputElement>('input[type="range"]');
-            const newColor: [number, number, number] = [
-                parseFloat(inputs[0].value),
-                parseFloat(inputs[1].value),
-                parseFloat(inputs[2].value),
-            ];
-            onChange(newColor);
+            current[ci] = v;
+            onChange([current[0], current[1], current[2]]);
         });
         sub.appendChild(ch);
         sub.appendChild(slider);

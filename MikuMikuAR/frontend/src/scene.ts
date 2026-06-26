@@ -1658,6 +1658,22 @@ function _createProceduralSky(state: EnvState): void {
 }
 
 function _applySky(state: EnvState): void {
+    // In-place update when already in the same mode — avoids shader recompile churn
+    if (state.skyMode === "gradient" && _envSys.sky.skyMesh?.material instanceof GradientMaterial) {
+        const mat = _envSys.sky.skyMesh.material;
+        mat.topColor = new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]);
+        mat.bottomColor = new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]);
+        scene.clearColor = new Color4(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2], 1);
+        return;
+    }
+    if (state.skyMode === "procedural" && _envSys.sky.skyMesh?.material instanceof SkyMaterial) {
+        const mat = _envSys.sky.skyMesh.material as SkyMaterial;
+        mat.luminance = state.skyBrightness;
+        const ls = getLightState();
+        mat.sunPosition = new Vector3(ls.dirX * 100, ls.dirY * 100, ls.dirZ * 100);
+        return;
+    }
+    // Mode switch or first-time setup — full rebuild
     _disposeSky();
 
     switch (state.skyMode) {
