@@ -34,7 +34,6 @@ function buildSceneRoot(): PopupLevel {
         dir: "",
         items: [
             { kind: "folder", label: "预设场景", icon: "bookmark", target: "scene:presets" },
-            { kind: "folder", label: "环境", icon: "sun", target: "scene:env" },
             { kind: "folder", label: "相机模式", icon: "camera", target: "scene:camera" },
             { kind: "folder", label: "灯光", icon: "sun", target: "scene:light" },
             { kind: "folder", label: "渲染", icon: "sparkles", target: "scene:render" },
@@ -498,8 +497,6 @@ const ENV_PRESETS: Record<string, Partial<EnvState>> = {
         envIntensity: 0.5,
         groundMode: "solid",
         groundColor: [0.05, 0.05, 0.08],
-        shadowEnabled: true,
-        shadowType: "soft",
         particleEnabled: false,
     },
     "户外晴天": {
@@ -510,8 +507,6 @@ const ENV_PRESETS: Record<string, Partial<EnvState>> = {
         envIntensity: 1.5,
         groundMode: "grid",
         groundColor: [0.3, 0.35, 0.3],
-        shadowEnabled: true,
-        shadowType: "pcf",
     },
     "演唱会蓝紫": {
         skyMode: "gradient",

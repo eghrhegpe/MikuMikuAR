@@ -100,11 +100,7 @@ export interface EnvState {
     cloudsEnabled: boolean;
     cloudCover: number;
     cloudScale: number;
-
-    shadowEnabled: boolean;
-    shadowType: "hard" | "soft" | "pcf";
-    shadowCascades: number;
-
+    // Fog
     fogEnabled: boolean;
     fogColor: [number, number, number];
     fogDensity: number;
@@ -231,10 +227,6 @@ export let envState: EnvState = {
     cloudsEnabled: false,
     cloudCover: 0.5,
     cloudScale: 1,
-
-    shadowEnabled: false,
-    shadowType: "soft",
-    shadowCascades: 2,
 
     fogEnabled: false,
     fogColor: [0.5, 0.5, 0.6],
