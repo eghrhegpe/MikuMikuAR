@@ -1677,7 +1677,7 @@ function _applySky(state: EnvState): void {
     const top = state.skyColorTop;
     const bot = state.skyColorBot;
 
-    // Gradient mode — async pre-compile, deferred swap
+    // Gradient mode — pre-compile via isReady, then swap
     if (state.skyMode === "gradient") {
         if (!mesh) {
             _disposeSky();
@@ -1689,21 +1689,19 @@ function _applySky(state: EnvState): void {
         mat.bottomColor = new Color3(bot[0], bot[1], bot[2]);
         mat.offset = 0.3;
 
-        // Kick off async shader compilation; swap only when ready
-        mat.forceCompilationAsync(mesh).then(() => {
-            if (mesh.material && mesh.material !== mat) {
-                mesh.material.dispose();
-            }
-            mesh.material = mat;
-            scene.clearColor = new Color4(bot[0], bot[1], bot[2], 1);
-        }).catch((e) => {
-            console.warn("[env] gradient shader compilation failed:", e);
-            mat.dispose();
-        });
+        // isReady() triggers synchronous shader compile (it calls _prepareEffect internally)
+        mat.isReady(mesh);
+
+        // Swap — old program is no longer referenced, new program is valid
+        if (mesh.material) {
+            mesh.material.dispose();
+        }
+        mesh.material = mat;
+        // Do NOT set scene.clearColor for gradient mode — it would override the sky sphere
         return;
     }
 
-    // Procedural mode — async pre-compile, deferred swap
+    // Procedural mode — pre-compile via isReady, then swap
     if (state.skyMode === "procedural") {
         if (!mesh) {
             _disposeSky();
@@ -1719,15 +1717,12 @@ function _applySky(state: EnvState): void {
         const sunDir = new Vector3(ls.dirX, 0.5, ls.dirZ).normalize();
         skyMat.sunPosition = sunDir.scale(100);
 
-        skyMat.forceCompilationAsync(mesh).then(() => {
-            if (mesh.material && mesh.material !== skyMat) {
-                mesh.material.dispose();
-            }
-            mesh.material = skyMat;
-        }).catch((e) => {
-            console.warn("[env] procedural shader compilation failed:", e);
-            skyMat.dispose();
-        });
+        skyMat.isReady(mesh);
+
+        if (mesh.material) {
+            mesh.material.dispose();
+        }
+        mesh.material = skyMat;
         return;
     }
 
