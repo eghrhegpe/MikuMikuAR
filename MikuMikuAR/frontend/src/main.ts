@@ -348,3 +348,12 @@ EventsOn("watch:newfile", (payload: {path: string, name: string, type: string}) 
 });
 
 init().catch(console.error);
+
+// ======== E2E Capture Helper (exposed for Playwright tests) ========
+(window as any).__capture = async (): Promise<string> => {
+    const { scene, engine } = await import("./scene");
+    const { CreateScreenshotAsync } = await import("@babylonjs/core/Misc/screenshotTools");
+    // Force a render frame so Babylon writes to the backbuffer
+    scene.render();
+    return CreateScreenshotAsync(engine, scene.activeCamera!, 512);
+};

@@ -3,6 +3,13 @@ build/bin
 frontend/dist
 frontend/node_modules
 
+# E2E
+frontend/playwright-report/
+frontend/test-results/
+
+# Environment
+.env
+
 # Binaries
 *.exe
 *.test
