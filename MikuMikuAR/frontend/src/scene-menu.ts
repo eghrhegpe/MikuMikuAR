@@ -851,8 +851,13 @@ function addColorSliderRow(container: HTMLElement, label: string, color: [number
         slider.addEventListener("input", () => {
             const v = parseFloat(slider.value);
             val.textContent = v.toFixed(2);
-            const newColor: [number, number, number] = [...color];
-            newColor[ci] = v;
+            // Read all three slider values from DOM to avoid stale closure on color
+            const inputs = row.querySelectorAll<HTMLInputElement>('input[type="range"]');
+            const newColor: [number, number, number] = [
+                parseFloat(inputs[0].value),
+                parseFloat(inputs[1].value),
+                parseFloat(inputs[2].value),
+            ];
             onChange(newColor);
         });
         sub.appendChild(ch);
