@@ -18,9 +18,11 @@ import "@babylonjs/core/Physics/v2/physicsEngineComponent";
 import { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
 import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import { GradientMaterial } from "@babylonjs/materials/gradient/gradientMaterial";
 import { SkyMaterial } from "@babylonjs/materials/sky/skyMaterial";
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
+import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
+import { Effect } from "@babylonjs/core/Materials/effect";
+import { ShaderStore } from "@babylonjs/core/Engines/shaderStore";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { GPUParticleSystem } from "@babylonjs/core/Particles/gpuParticleSystem";
 
@@ -63,15 +65,51 @@ export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true
 export const scene = new Scene(engine);
 scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
 
+// ─── Custom 3-color gradient shader for sky ───
+const _grad3Vert = `
+precision highp float;
+attribute vec3 position;
+uniform mat4 worldViewProjection;
+uniform mat4 world;
+varying vec3 vPositionW;
+void main(void) {
+    vec4 wPos = world * vec4(position, 1.0);
+    vPositionW = wPos.xyz;
+    gl_Position = worldViewProjection * vec4(position, 1.0);
+}
+`;
+const _grad3Frag = `
+precision highp float;
+uniform vec3 topColor;
+uniform vec3 midColor;
+uniform vec3 bottomColor;
+uniform float offset;
+uniform float scale;
+varying vec3 vPositionW;
+void main(void) {
+    float h = vPositionW.y * scale + offset;
+    float t;
+    vec3 col;
+    if (h > 0.5) {
+        t = (h - 0.5) * 2.0;
+        col = mix(midColor, topColor, t);
+    } else {
+        t = h * 2.0;
+        col = mix(bottomColor, midColor, t);
+    }
+    gl_FragColor = vec4(col, 1.0);
+}
+`;
+ShaderStore.ShadersStore["grad3Vertex"] = _grad3Vert;
+ShaderStore.ShadersStore["grad3Fragment"] = _grad3Frag;
+
 // Dev debug helper — exposes internals for Console inspection
 (window as any).__envDebug = () => ({
     clearColor: `rgba(${scene.clearColor.r.toFixed(2)},${scene.clearColor.g.toFixed(2)},${scene.clearColor.b.toFixed(2)},${scene.clearColor.a})`,
     matType: _envSys?.sky?.skyMesh?.material?.getClassName() || "none",
-    topColor: ((m: any) => m?.topColor ? `(${m.topColor.r.toFixed(2)},${m.topColor.g.toFixed(2)},${m.topColor.b.toFixed(2)})` : "N/A")(_envSys?.sky?.skyMesh?.material),
-    bottomColor: ((m: any) => m?.bottomColor ? `(${m.bottomColor.r.toFixed(2)},${m.bottomColor.g.toFixed(2)},${m.bottomColor.b.toFixed(2)})` : "N/A")(_envSys?.sky?.skyMesh?.material),
-    offset: ((m: any) => m?.offset?.toFixed(2) ?? "N/A")(_envSys?.sky?.skyMesh?.material),
-    skyColorTop: `(${envState.skyColorTop.join(",")})`,
-    skyColorBot: `(${envState.skyColorBot.join(",")})`,
+    topColor: `(${envState.skyColorTop.join(",")})`,
+    midColor: `(${envState.skyColorMid.join(",")})`,
+    bottomColor: `(${envState.skyColorBot.join(",")})`,
     skyMode: envState.skyMode,
 });
 
@@ -1612,21 +1650,18 @@ function _createGradientSky(state: EnvState): void {
     skySphere.isPickable = false;
     skySphere.renderingGroupId = 0;
 
-    const mat = new GradientMaterial("envSkyGradient", scene);
-    mat.disableLighting = true;
-    mat.topColor = new Color3(
-        state.skyColorTop[0],
-        state.skyColorTop[1],
-        state.skyColorTop[2],
-    );
-    mat.bottomColor = new Color3(
-        state.skyColorBot[0],
-        state.skyColorBot[1],
-        state.skyColorBot[2],
-    );
-    mat.offset = 0;
-    mat.scale = 0.003;
-    mat.smoothness = 1;
+    const mat = new ShaderMaterial("envSkyGradient", scene, {
+        vertex: "grad3",
+        fragment: "grad3",
+    }, {
+        attributes: ["position", "normal", "uv"],
+        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "topColor", "midColor", "bottomColor", "offset", "scale"],
+    });
+    mat.setColor3("topColor", new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]));
+    mat.setColor3("midColor", new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]));
+    mat.setColor3("bottomColor", new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]));
+    mat.setFloat("offset", 0);
+    mat.setFloat("scale", 0.003);
     skySphere.material = mat;
 
     _envSys.sky.skyMesh = skySphere;
@@ -1694,13 +1729,18 @@ function _applySky(state: EnvState): void {
             _createGradientSky(state);
             return;
         }
-        const mat = new GradientMaterial("envSkyGradient", scene);
-        mat.disableLighting = true;
-        mat.topColor = new Color3(top[0], top[1], top[2]);
-        mat.bottomColor = new Color3(bot[0], bot[1], bot[2]);
-        mat.offset = 0;
-        mat.scale = 0.003;
-        mat.smoothness = 1;
+        const mat = new ShaderMaterial("envSkyGradient", scene, {
+            vertex: "grad3",
+            fragment: "grad3",
+        }, {
+            attributes: ["position", "normal", "uv"],
+            uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "topColor", "midColor", "bottomColor", "offset", "scale"],
+        });
+        mat.setColor3("topColor", new Color3(top[0], top[1], top[2]));
+        mat.setColor3("midColor", new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]));
+        mat.setColor3("bottomColor", new Color3(bot[0], bot[1], bot[2]));
+        mat.setFloat("offset", 0);
+        mat.setFloat("scale", 0.003);
 
         // isReady() triggers synchronous shader compile (it calls _prepareEffect internally)
         mat.isReady(mesh);

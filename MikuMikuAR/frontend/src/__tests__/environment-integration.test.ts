@@ -7,10 +7,9 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 
 // Babylon.js types for runtime checks
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
+import { ShaderStore } from "@babylonjs/core/Engines/shaderStore";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-
-// @babylonjs/materials
-import { GradientMaterial } from "@babylonjs/materials/gradient/gradientMaterial";
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 import { SkyMaterial } from "@babylonjs/materials/sky/skyMaterial";
 
@@ -20,6 +19,42 @@ let scene: Scene;
 beforeAll(() => {
     engine = new NullEngine();
     scene = new Scene(engine);
+
+    // Register custom 3-color sky gradient shaders (same as scene.ts)
+    ShaderStore.ShadersStore["grad3Vertex"] = `
+precision highp float;
+attribute vec3 position;
+uniform mat4 worldViewProjection;
+uniform mat4 world;
+varying vec3 vPositionW;
+void main(void) {
+    vec4 wPos = world * vec4(position, 1.0);
+    vPositionW = wPos.xyz;
+    gl_Position = worldViewProjection * vec4(position, 1.0);
+}
+`;
+    ShaderStore.ShadersStore["grad3Fragment"] = `
+precision highp float;
+uniform vec3 topColor;
+uniform vec3 midColor;
+uniform vec3 bottomColor;
+uniform float offset;
+uniform float scale;
+varying vec3 vPositionW;
+void main(void) {
+    float h = vPositionW.y * scale + offset;
+    float t;
+    vec3 col;
+    if (h > 0.5) {
+        t = (h - 0.5) * 2.0;
+        col = mix(midColor, topColor, t);
+    } else {
+        t = h * 2.0;
+        col = mix(bottomColor, midColor, t);
+    }
+    gl_FragColor = vec4(col, 1.0);
+}
+`;
 });
 
 afterAll(() => {
@@ -55,7 +90,7 @@ describe("Sky — Color mode", () => {
 
 // ─── Sky: Gradient Mode ───
 describe("Sky — Gradient mode", () => {
-    it("creates a sphere mesh with GradientMaterial", () => {
+    it("creates a sphere mesh with ShaderMaterial", () => {
         const sphere = MeshBuilder.CreateSphere("testGradientSky", {
             diameter: 1000,
             segments: 24,
@@ -68,21 +103,21 @@ describe("Sky — Gradient mode", () => {
         sphere.isPickable = false;
         expect(sphere.isPickable).toBe(false);
 
-        const mat = new GradientMaterial("testGradient", scene);
-        mat.disableLighting = true;
-        mat.topColor = new Color3(0.3, 0.5, 0.8);
-        mat.bottomColor = new Color3(0.2, 0.2, 0.25);
-        mat.offset = 0;
-        mat.scale = 0.003;
-        mat.smoothness = 1;
+        const mat = new ShaderMaterial("testGradient", scene, {
+            vertex: "grad3",
+            fragment: "grad3",
+        }, {
+            attributes: ["position", "normal", "uv"],
+            uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "topColor", "midColor", "bottomColor", "offset", "scale"],
+        });
+        mat.setColor3("topColor", new Color3(0.3, 0.5, 0.8));
+        mat.setColor3("midColor", new Color3(0.8, 0.8, 0.9));
+        mat.setColor3("bottomColor", new Color3(0.2, 0.2, 0.25));
         sphere.material = mat;
 
         // Verify material is applied
         expect(sphere.material).toBe(mat);
-        expect(mat.topColor.r).toBeCloseTo(0.3, 5);
-        expect(mat.bottomColor.b).toBeCloseTo(0.25, 5);
-        expect(mat.disableLighting).toBe(true);
-        expect(mat.scale).toBeCloseTo(0.003, 6);
+        expect(sphere.material?.getClassName()).toBe("ShaderMaterial");
 
         sphere.dispose();
         mat.dispose();
