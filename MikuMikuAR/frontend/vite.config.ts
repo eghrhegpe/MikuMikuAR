@@ -8,5 +8,5 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['babylon-mmd', '@babylonjs/core'],
   },
-  assetsInclude: ['**/*.wasm'],
+  assetsInclude: ['**/*.wasm', '**/*.fx'],
 });
