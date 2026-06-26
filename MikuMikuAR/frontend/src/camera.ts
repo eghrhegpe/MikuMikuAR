@@ -10,10 +10,11 @@ import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Animation } from "@babylonjs/core/Animations/animation";
 import { Scene } from "@babylonjs/core/scene";
+import { MmdCamera } from "babylon-mmd/esm/Runtime/mmdCamera";
 import { focusedModelId } from "./config";
 
 // ======== Types ========
-export type CameraMode = "orbit" | "freefly" | "oneshot" | "concert";
+export type CameraMode = "orbit" | "freefly" | "oneshot" | "concert" | "vmd";
 
 interface CameraPreset {
     label: string;
@@ -38,6 +39,63 @@ let _cameraMode: CameraMode = "orbit";
 let _currentCamera: Camera | null = null;
 let _concertTimer: ReturnType<typeof setTimeout> | null = null;
 let _concertIndex = 0;
+
+// ======== Camera VMD ========
+let _mmdCamera: MmdCamera | null = null;
+let _cameraVmdName = "";
+let _cameraVmdPath = "";
+let _cameraAnimationHandle: number | null = null;
+
+export function getCameraVmdName(): string { return _cameraVmdName; }
+export function getCameraVmdPath(): string { return _cameraVmdPath; }
+export function hasCameraVmd(): boolean { return _mmdCamera !== null && _cameraAnimationHandle !== null; }
+
+/** Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. */
+export function loadCameraVmd(mmdAnimation: any, vmdPath: string, vmdName: string): void {
+    if (!_scene) return;
+
+    if (_mmdCamera) {
+        _scene.removeCamera(_mmdCamera);
+        _mmdCamera = null;
+        _cameraAnimationHandle = null;
+    }
+
+    const mmdCam = new MmdCamera("mmdCam", new Vector3(0, 10, 0), _scene, false);
+    const handle = mmdCam.createRuntimeAnimation(mmdAnimation);
+    mmdCam.setRuntimeAnimation(handle);
+
+    _mmdCamera = mmdCam;
+    _cameraAnimationHandle = handle;
+    _cameraVmdName = vmdName;
+    _cameraVmdPath = vmdPath;
+}
+
+export function clearCameraVmd(): void {
+    if (_mmdCamera && _scene) {
+        if (_cameraMode === "vmd") {
+            switchCameraMode("orbit");
+        }
+        _scene.removeCamera(_mmdCamera);
+        _mmdCamera = null;
+        _cameraAnimationHandle = null;
+        _cameraVmdName = "";
+        _cameraVmdPath = "";
+    }
+}
+
+/** Animate the VMD camera to a given 30fps frame time. Called every tick by scene.ts. */
+export function animateCameraVmd(frameTime: number): void {
+    if (_mmdCamera && _cameraMode === "vmd") {
+        _mmdCamera.animate(frameTime);
+    }
+}
+
+function createVmdCamera(scene: Scene): MmdCamera {
+    if (_mmdCamera) return _mmdCamera;
+    const cam = new MmdCamera("mmdCam", new Vector3(0, 10, 0), scene, false);
+    _mmdCamera = cam;
+    return cam;
+}
 
 // Stored observer callback references so we can remove them later
 let _freeflyUpdateFn: (() => void) | null = null;
@@ -160,6 +218,9 @@ export function switchCameraMode(mode: CameraMode): void {
             break;
         case "oneshot":
             newCam = createOneshotCamera(scene, canvas);
+            break;
+        case "vmd":
+            newCam = createVmdCamera(scene);
             break;
         default:
             newCam = createOrbitCamera(scene, canvas);

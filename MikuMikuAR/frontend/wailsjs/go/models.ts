@@ -1,5 +1,29 @@
 export namespace main {
 	
+	export class DanceSet {
+	    name: string;
+	    vmd_path: string;
+	    audio_path: string;
+	    audio_offset: number;
+	    description: string;
+	    thumbnail: string;
+	    source: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DanceSet(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.vmd_path = source["vmd_path"];
+	        this.audio_path = source["audio_path"];
+	        this.audio_offset = source["audio_offset"];
+	        this.description = source["description"];
+	        this.thumbnail = source["thumbnail"];
+	        this.source = source["source"];
+	    }
+	}
 	export class RenderPreset {
 	    name: string;
 	    params: Record<string, any>;
@@ -39,6 +63,7 @@ export namespace main {
 	    render_presets: RenderPreset[];
 	    mmd_path: string;
 	    tags: Record<string, Array<string>>;
+	    dance_sets: Record<string, DanceSet>;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -56,6 +81,7 @@ export namespace main {
 	        this.render_presets = this.convertValues(source["render_presets"], RenderPreset);
 	        this.mmd_path = source["mmd_path"];
 	        this.tags = source["tags"];
+	        this.dance_sets = this.convertValues(source["dance_sets"], DanceSet, true);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -76,6 +102,7 @@ export namespace main {
 		    return a;
 		}
 	}
+	
 	
 	export class ExtractResult {
 	    file_path: string;

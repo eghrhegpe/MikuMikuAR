@@ -114,6 +114,14 @@ func (a *App) SelectVMDMotion() (string, error) {
 	})
 }
 
+// SelectAudioFile opens a file dialog to select an audio file
+func (a *App) SelectAudioFile() (string, error) {
+	return a.openFileDialog("选择音乐文件", []runtime.FileFilter{
+		{DisplayName: "Audio Files (*.mp3 *.wav *.ogg)", Pattern: "*.mp3;*.wav;*.ogg"},
+		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+	})
+}
+
 // SelectExeFile opens a file dialog to select an executable file.
 func (a *App) SelectExeFile() (string, error) {
 	return a.openFileDialog("选择可执行文件", []runtime.FileFilter{
@@ -177,18 +185,30 @@ type ExternalPath struct {
 	Name string `json:"name"` // Display name (default basename, user-renameable)
 }
 
+// DanceSet represents a dance set combining VMD motion, audio, and metadata.
+type DanceSet struct {
+	Name        string  `json:"name"`         // 套装名称
+	VmdPath     string  `json:"vmd_path"`     // VMD 文件路径
+	AudioPath   string  `json:"audio_path"`   // 音频文件路径
+	AudioOffset float64 `json:"audio_offset"` // 音频偏移（秒）
+	Description string  `json:"description"`  // 描述（可选）
+	Thumbnail   string  `json:"thumbnail"`    // 缩略图 base64（可选）
+	Source      string  `json:"source"`       // 来源库名
+}
+
 // Config holds persistent user settings.
 type Config struct {
-	LibraryRoot          string         `json:"library_root"`
-	ExternalPaths        []ExternalPath `json:"external_paths"`
-	BlenderPath          string         `json:"blender_path"`
-	DisplayNamePriority  string         `json:"display_name_priority"` // "name_jp" | "name_en" | "filename"
-	DownloadWatchDir     string         `json:"download_watch_dir"`     // 监听目录，空则不监听
-	DownloadAutoImport   bool           `json:"download_auto_import"`  // true 则跳过确认直接导入
-	Favorites            []string       `json:"favorites"`             // libraryRef 数组，收藏的模型
-	RenderPresets        []RenderPreset `json:"render_presets"`        // 用户保存的渲染预设
-	MMDPath              string         `json:"mmd_path"`              // MikuMikuDance 可执行文件路径，空则自动检测
-	Tags                 map[string][]string `json:"tags"`              // libraryRef → []tag 列表
+	LibraryRoot          string                `json:"library_root"`
+	ExternalPaths        []ExternalPath        `json:"external_paths"`
+	BlenderPath          string                `json:"blender_path"`
+	DisplayNamePriority  string                `json:"display_name_priority"` // "name_jp" | "name_en" | "filename"
+	DownloadWatchDir     string                `json:"download_watch_dir"`     // 监听目录，空则不监听
+	DownloadAutoImport   bool                  `json:"download_auto_import"`  // true 则跳过确认直接导入
+	Favorites            []string              `json:"favorites"`             // libraryRef 数组，收藏的模型
+	RenderPresets        []RenderPreset        `json:"render_presets"`        // 用户保存的渲染预设
+	MMDPath              string                `json:"mmd_path"`              // MikuMikuDance 可执行文件路径，空则自动检测
+	Tags                 map[string][]string   `json:"tags"`                  // libraryRef → []tag 列表
+	DanceSets            map[string]DanceSet   `json:"dance_sets"`            // 舞蹈套装，key = 套装 ID
 }
 
 // RenderPreset stores a user-defined rendering preset.
@@ -665,6 +685,66 @@ func (a *App) GetModelsByTag(tag string) []string {
 		}
 	}
 	return result
+}
+
+// ======== Dance Sets ========
+
+// GetDanceSets returns all dance sets.
+func (a *App) GetDanceSets() []DanceSet {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil || cfg.DanceSets == nil {
+		return nil
+	}
+	result := make([]DanceSet, 0, len(cfg.DanceSets))
+	for _, ds := range cfg.DanceSets {
+		result = append(result, ds)
+	}
+	return result
+}
+
+// SaveDanceSet saves or updates a dance set with the given id.
+func (a *App) SaveDanceSet(id string, ds DanceSet) error {
+	return a.updateConfig(func(cfg *Config) {
+		if cfg.DanceSets == nil {
+			cfg.DanceSets = make(map[string]DanceSet)
+		}
+		cfg.DanceSets[id] = ds
+	}, false)
+}
+
+// DeleteDanceSet deletes a dance set by id.
+func (a *App) DeleteDanceSet(id string) error {
+	return a.updateConfig(func(cfg *Config) {
+		if cfg.DanceSets != nil {
+			delete(cfg.DanceSets, id)
+		}
+	}, false)
+}
+
+// ImportDanceSet creates a dance set from a VMD file and audio file.
+// Returns the generated dance set id.
+func (a *App) ImportDanceSet(vmdPath, audioPath, name string) (string, error) {
+	if vmdPath == "" {
+		return "", fmt.Errorf("VMD 文件路径不能为空")
+	}
+	if name == "" {
+		name = strings.TrimSuffix(filepath.Base(vmdPath), filepath.Ext(vmdPath))
+	}
+	id := sha256Hex(vmdPath + ":" + audioPath)[:16]
+	ds := DanceSet{
+		Name:        name,
+		VmdPath:     vmdPath,
+		AudioPath:   audioPath,
+		AudioOffset: 0,
+		Description: "",
+		Thumbnail:   "",
+		Source:      "",
+	}
+	err := a.SaveDanceSet(id, ds)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
 }
 
 // ======== Render Presets ========

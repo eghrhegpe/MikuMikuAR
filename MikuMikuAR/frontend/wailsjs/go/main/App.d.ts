@@ -12,6 +12,8 @@ export function CleanOrphanCache():Promise<number>;
 
 export function ClearExtractCache():Promise<void>;
 
+export function DeleteDanceSet(arg1:string):Promise<void>;
+
 export function DeleteRenderPreset(arg1:string):Promise<void>;
 
 export function ExtractZip(arg1:string,arg2:string):Promise<main.ExtractResult>;
@@ -19,6 +21,8 @@ export function ExtractZip(arg1:string,arg2:string):Promise<main.ExtractResult>;
 export function GetAllTags():Promise<Array<string>>;
 
 export function GetConfig():Promise<main.Config>;
+
+export function GetDanceSets():Promise<Array<main.DanceSet>>;
 
 export function GetDownloadWatchStatus():Promise<string>;
 
@@ -39,6 +43,8 @@ export function GetTagsByModel(arg1:string):Promise<Array<string>>;
 export function GetThumbnail(arg1:string):Promise<string>;
 
 export function GetThumbnailBatch(arg1:Array<string>):Promise<Record<string, string>>;
+
+export function ImportDanceSet(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function ImportLocalFile(arg1:string):Promise<main.ExtractResult>;
 
@@ -64,6 +70,8 @@ export function RemoveTag(arg1:string,arg2:string):Promise<void>;
 
 export function RenameExternalPath(arg1:string,arg2:string):Promise<void>;
 
+export function SaveDanceSet(arg1:string,arg2:main.DanceSet):Promise<void>;
+
 export function SaveLastScene(arg1:string):Promise<void>;
 
 export function SaveRenderPreset(arg1:string,arg2:string):Promise<void>;
@@ -75,6 +83,8 @@ export function SaveThumbnail(arg1:string,arg2:string):Promise<void>;
 export function ScanModelDir(arg1:string,arg2:Array<main.ExternalPath>):Promise<Array<main.ModelEntry>>;
 
 export function ScanSoftwareDir():Promise<Array<main.SoftwareEntry>>;
+
+export function SelectAudioFile():Promise<string>;
 
 export function SelectDir():Promise<string>;
 
@@ -109,3 +119,11 @@ export function StopFileServer(arg1:string):Promise<void>;
 export function StopWatchDir():Promise<void>;
 
 export function ToggleFavorite(arg1:string):Promise<void>;
+
+export function GetDanceSets():Promise<any[]>;
+
+export function SaveDanceSet(arg1:string,arg2:any):Promise<void>;
+
+export function DeleteDanceSet(arg1:string):Promise<void>;
+
+export function ImportDanceSet(arg1:string,arg2:string,arg3:string):Promise<string>;

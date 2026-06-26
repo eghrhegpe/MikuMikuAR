@@ -4,14 +4,19 @@
 // Scene menu — consolidated camera + lighting controls (MenuStack-based).
 
 import {
-    dom, closeAllOverlays, setStatus,
+    dom, closeAllOverlays, setStatus, formatTime,
     PopupRow, PopupLevel,
 } from "./config";
 import { MenuStack } from "./menu";
-import { switchCameraMode, getCameraMode } from "./camera";
-import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState } from "./scene";
+import { switchCameraMode, getCameraMode, hasCameraVmd, getCameraVmdName, clearCameraVmd } from "./camera";
+import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath } from "./scene";
 import type { RenderState } from "./scene";
-import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets } from "../wailsjs/go/main/App";
+import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectAudioFile, SelectVMDMotion } from "../wailsjs/go/main/App";
+import {
+    loadAudioFile, pauseAudio, resumeAudio, stopAudio, clearAudio,
+    setVolume, getVolume, setAudioOffset, getAudioOffset,
+    getCurrentTime, getDuration, isAudioPlaying, getAudioName,
+} from "./audio";
 
 // ======== Scene Menu (MenuStack) ========
 
@@ -25,6 +30,7 @@ function buildSceneRoot(): PopupLevel {
             { kind: "folder", label: "相机模式", icon: "camera", target: "scene:camera" },
             { kind: "folder", label: "灯光", icon: "sun", target: "scene:light" },
             { kind: "folder", label: "渲染", icon: "sparkles", target: "scene:render" },
+            { kind: "folder", label: "音乐", icon: "music", target: "scene:music" },
             { kind: "action", label: "保存场景", icon: "save", target: "scene:save" },
             { kind: "action", label: "加载场景", icon: "upload", target: "scene:load" },
         ],
@@ -33,15 +39,29 @@ function buildSceneRoot(): PopupLevel {
 
 function buildCameraLevel(): PopupLevel {
     const currentMode = getCameraMode();
+    const vmdLoaded = hasCameraVmd();
+    const vmdName = getCameraVmdName();
+    const items: PopupRow[] = [
+        { kind: "action", label: "轨道", icon: currentMode === "orbit" ? "check" : "circle", target: "camera:orbit", sublabel: "默认轨道相机" },
+        { kind: "action", label: "自由飞行", icon: currentMode === "freefly" ? "check" : "circle", target: "camera:freefly", sublabel: "WASD 自由移动" },
+        { kind: "action", label: "镜头预设", icon: currentMode === "oneshot" ? "check" : "circle", target: "camera:oneshot", sublabel: "预设关键帧" },
+        { kind: "action", label: "演唱会", icon: currentMode === "concert" ? "check" : "circle", target: "camera:concert", sublabel: "自动切换视角" },
+    ];
+    if (vmdLoaded) {
+        items.push(
+            { kind: "divider" } as any,
+            { kind: "action", label: "VMD 相机", icon: currentMode === "vmd" ? "check" : "circle", target: "camera:vmd", sublabel: vmdName || "相机轨道" },
+            { kind: "action", label: "清除相机 VMD", icon: "trash-2", target: "camera:clear-vmd" },
+        );
+    }
+    items.push(
+        { kind: "divider" } as any,
+        { kind: "action", label: "加载相机 VMD", icon: "upload", target: "camera:load-vmd", sublabel: "从 .vmd 文件加载相机轨道" },
+    );
     return {
         label: "相机模式",
         dir: "",
-        items: [
-            { kind: "action", label: "轨道", icon: currentMode === "orbit" ? "check" : "circle", target: "camera:orbit", sublabel: "默认轨道相机" },
-            { kind: "action", label: "自由飞行", icon: currentMode === "freefly" ? "check" : "circle", target: "camera:freefly", sublabel: "WASD 自由移动" },
-            { kind: "action", label: "镜头预设", icon: currentMode === "oneshot" ? "check" : "circle", target: "camera:oneshot", sublabel: "预设关键帧" },
-            { kind: "action", label: "演唱会", icon: currentMode === "concert" ? "check" : "circle", target: "camera:concert", sublabel: "自动切换视角" },
-        ],
+        items,
     };
 }
 
@@ -133,6 +153,117 @@ function addSliderRow(container: HTMLElement, label: string, value: number, min:
     row.appendChild(slider);
     row.appendChild(val);
     container.appendChild(row);
+}
+
+// ======== Music Menu Level ========
+
+function buildMusicLevel(): PopupLevel {
+    const name = getAudioName();
+    const playing = isAudioPlaying();
+    const vol = getVolume();
+    const offset = getAudioOffset();
+    const cur = getCurrentTime();
+    const dur = getDuration();
+
+    return {
+        label: "音乐",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+
+            // Current music name
+            const nameRow = document.createElement("div");
+            nameRow.style.cssText = "font-size:12px;color:var(--text-dim);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+            nameRow.textContent = name ? `当前: ${name}` : "未加载音乐";
+            container.appendChild(nameRow);
+
+            // Progress display
+            if (dur > 0) {
+                const progRow = document.createElement("div");
+                progRow.style.cssText = "font-size:11px;color:var(--text-bright);margin-bottom:12px;text-align:right;";
+                progRow.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+                container.appendChild(progRow);
+            } else {
+                const spacer = document.createElement("div");
+                spacer.style.cssText = "height:12px;";
+                container.appendChild(spacer);
+            }
+
+            // Load music button
+            const loadRow = document.createElement("div");
+            loadRow.className = "menu-item";
+            loadRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="folder-open"></iconify-icon></span><span class="menu-label">加载音乐</span>';
+            loadRow.addEventListener("click", async () => {
+                try {
+                    const path = await SelectAudioFile();
+                    if (!path) return;
+                    await loadAudioFile(path);
+                    setStatus(`✓ 音乐: ${getAudioName()}`, true);
+                    sceneStack?.reRender();
+                } catch (err) {
+                    console.warn("Load audio failed:", err);
+                    setStatus("✗ 音乐加载失败", false);
+                }
+            });
+            container.appendChild(loadRow);
+
+            // Play/Pause toggle
+            const playRow = document.createElement("div");
+            playRow.className = "menu-item";
+            playRow.innerHTML = `<span class="menu-icon">${playing ? "⏸" : "▶"}</span><span class="menu-label">${playing ? "暂停" : "播放"}</span>`;
+            playRow.addEventListener("click", () => {
+                if (playing) {
+                    pauseAudio();
+                } else {
+                    resumeAudio();
+                }
+                sceneStack?.reRender();
+            });
+            container.appendChild(playRow);
+
+            // Volume slider
+            addSliderRow(container, "音量", vol, 0, 1, 0.05, (v) => {
+                setVolume(v);
+            });
+
+            // Audio offset slider
+            addSliderRow(container, "音频偏移", offset, -5, 5, 0.1, (v) => {
+                setAudioOffset(v);
+            });
+
+            const offsetHint = document.createElement("div");
+            offsetHint.style.cssText = "font-size:10px;color:var(--text-dark);margin:-4px 0 10px 88px;";
+            offsetHint.textContent = "正=音频先播，负=音频后播";
+            container.appendChild(offsetHint);
+
+            // Divider
+            const divider = document.createElement("div");
+            divider.className = "menu-divider";
+            container.appendChild(divider);
+
+            // Stop button
+            const stopRow = document.createElement("div");
+            stopRow.className = "menu-item";
+            stopRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="square"></iconify-icon></span><span class="menu-label">停止</span>';
+            stopRow.addEventListener("click", () => {
+                stopAudio();
+                sceneStack?.reRender();
+            });
+            container.appendChild(stopRow);
+
+            // Clear button
+            const clearRow = document.createElement("div");
+            clearRow.className = "menu-item";
+            clearRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="trash-2"></iconify-icon></span><span class="menu-label">清除音乐</span>';
+            clearRow.addEventListener("click", () => {
+                clearAudio();
+                setStatus("✓ 音乐已清除", true);
+                sceneStack?.reRender();
+            });
+            container.appendChild(clearRow);
+        },
+    };
 }
 
 // ======== Render Menu Levels ========
@@ -364,9 +495,40 @@ async function loadUserPresets(): Promise<void> {
 }
 
 function handleSceneAction(row: PopupRow): void {
+    // Camera VMD actions
+    if (row.target === "camera:load-vmd") {
+        (async () => {
+            try {
+                const path = await SelectVMDMotion();
+                if (!path) return;
+                await loadCameraVmdFromPath(path);
+                if (sceneStack) {
+                    sceneStack.setLevel(sceneStack.levelCount - 1, buildCameraLevel());
+                    sceneStack.reRender();
+                }
+            } catch (err) {
+                console.error("Load camera VMD failed:", err);
+                setStatus("✗ 相机 VMD 加载失败", false);
+            }
+        })();
+        return;
+    }
+    if (row.target === "camera:clear-vmd") {
+        clearCameraVmd();
+        if (sceneStack) {
+            sceneStack.setLevel(sceneStack.levelCount - 1, buildCameraLevel());
+            sceneStack.reRender();
+        }
+        setStatus("✓ 已清除相机 VMD", true);
+        return;
+    }
     // Camera mode switching
     if (row.target && row.target.startsWith("camera:")) {
-        const mode = row.target.replace("camera:", "") as "orbit" | "freefly" | "oneshot" | "concert";
+        const mode = row.target.replace("camera:", "") as "orbit" | "freefly" | "oneshot" | "concert" | "vmd";
+        if (mode === "vmd" && !hasCameraVmd()) {
+            setStatus("✗ 请先加载相机 VMD", false);
+            return;
+        }
         switchCameraMode(mode);
         // reattachPipeline() is now handled inside switchCameraMode (camera.ts:182)
         // Replace the camera level with fresh data so the checkmark icon updates
@@ -377,6 +539,7 @@ function handleSceneAction(row: PopupRow): void {
         const labels: Record<string, string> = {
             orbit: "轨道", freefly: "自由飞行",
             oneshot: "镜头预设", concert: "演唱会",
+            vmd: "VMD 相机",
         };
         setStatus(`✓ 相机: ${labels[mode] || mode}`, true);
         return;
@@ -476,6 +639,7 @@ export async function showSceneMenu(): Promise<void> {
                     case "scene:camera": return buildCameraLevel();
                     case "scene:light": return buildLightLevel();
                     case "scene:render": return buildRenderLevel();
+                    case "scene:music": return buildMusicLevel();
                     case "scene:render:postprocess": return buildPostProcessLevel();
                     case "scene:render:stage": return buildStageLevel();
                     case "scene:render:presets": return buildPresetsLevel();

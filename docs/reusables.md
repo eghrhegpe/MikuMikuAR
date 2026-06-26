@@ -14,6 +14,7 @@
 |------|------|------|
 | `SelectPMXFile` | `() (string, error)` | 选择 PMX 文件 |
 | `SelectVMDMotion` | `() (string, error)` | 选择 VMD 文件 |
+| `SelectAudioFile` | `() (string, error)` | 选择音频文件（MP3/WAV/OGG） |
 | `SelectDir` | `() (string, error)` | 选择目录 |
 | `SelectExeFile` | `() (string, error)` | 选择可执行文件 |
 | `SelectSceneSaveFile` | `() (string, error)` | 场景保存对话框 |
@@ -108,6 +109,15 @@
 | `LaunchSoftware` | `(path string) error` | 启动软件 |
 | `OpenSoftwareDir` | `() error` | 打开软件目录 |
 
+### 舞蹈套装
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `GetDanceSets` | `() ([]DanceSet, error)` | 获取所有舞蹈套装 |
+| `SaveDanceSet` | `(id string, ds DanceSet) error` | 保存/更新套装 |
+| `DeleteDanceSet` | `(id string) error` | 删除套装 |
+| `ImportDanceSet` | `(vmdPath, audioPath, name string) (string, error)` | 从 VMD+音频创建套装 |
+
 ### 场景序列化
 
 | 函数 | 签名 | 用途 |
@@ -164,6 +174,15 @@
 | `removeModel` | `scene.ts:347` | `(id: string) => void` | 销毁单个模型并释放资源 |
 | `focusModel` | `scene.ts:382` | `(id: string) => void` | 切换聚焦模型 + 相机对准 |
 | `arrangeModels` | `scene.ts:406` | `() => void` | 重新排列所有已加载模型的位置 |
+| `loadCameraVmdFromPath` | `scene.ts:481` | `(path: string) => Promise<void>` | 从 VMD 文件加载相机轨道 |
+| `hasCameraVmd` | `camera.ts:51` | `() => boolean` | 是否已加载相机 VMD |
+| `clearCameraVmd` | `camera.ts:73` | `() => void` | 清除相机 VMD 并切回轨道相机 |
+| `animateCameraVmd` | `camera.ts:87` | `(frameTime: number) => void` | 每帧更新 VMD 相机位置（30fps帧号） |
+| `loadAudioFile` | `audio.ts:33` | `(filePath: string) => Promise<void>` | 从本地路径加载音频 |
+| `syncAudioPlayback` | `audio.ts:116` | `(vmdTime, playing, dur) => void` | VMD 音频同步（每帧调用，偏差>0.1s校正） |
+| `setAudioOffset` | `audio.ts:74` | `(seconds: number) => void` | 设置音频偏移（正=先播，负=后播） |
+| `getAudioPath` | `audio.ts:43` | `() => string` | 获取当前音频文件路径 |
+| `clearAudio` | `audio.ts:63` | `() => void` | 清除当前音频 |
 | `renderExternalList` | `settings.ts:20` | `() => void` | 渲染外部模型列表（库外目录扫描结果） |
 | `closeAllOverlays` | `config.ts:248` | `() => void` | 统一关闭弹窗（modelPopup/motionPopup/external/settings） |
 | `computeLibraryRef` | `config.ts:257` | `(filePath: string) => string\|null` | 计算可移植库标识符，用于场景序列化避免路径依赖 |

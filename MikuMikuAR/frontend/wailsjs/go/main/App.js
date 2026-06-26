@@ -22,6 +22,10 @@ export function ClearExtractCache() {
   return window['go']['main']['App']['ClearExtractCache']();
 }
 
+export function DeleteDanceSet(arg1) {
+  return window['go']['main']['App']['DeleteDanceSet'](arg1);
+}
+
 export function DeleteRenderPreset(arg1) {
   return window['go']['main']['App']['DeleteRenderPreset'](arg1);
 }
@@ -36,6 +40,10 @@ export function GetAllTags() {
 
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
+}
+
+export function GetDanceSets() {
+  return window['go']['main']['App']['GetDanceSets']();
 }
 
 export function GetDownloadWatchStatus() {
@@ -76,6 +84,10 @@ export function GetThumbnail(arg1) {
 
 export function GetThumbnailBatch(arg1) {
   return window['go']['main']['App']['GetThumbnailBatch'](arg1);
+}
+
+export function ImportDanceSet(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ImportDanceSet'](arg1, arg2, arg3);
 }
 
 export function ImportLocalFile(arg1) {
@@ -126,6 +138,10 @@ export function RenameExternalPath(arg1, arg2) {
   return window['go']['main']['App']['RenameExternalPath'](arg1, arg2);
 }
 
+export function SaveDanceSet(arg1, arg2) {
+  return window['go']['main']['App']['SaveDanceSet'](arg1, arg2);
+}
+
 export function SaveLastScene(arg1) {
   return window['go']['main']['App']['SaveLastScene'](arg1);
 }
@@ -148,6 +164,10 @@ export function ScanModelDir(arg1, arg2) {
 
 export function ScanSoftwareDir() {
   return window['go']['main']['App']['ScanSoftwareDir']();
+}
+
+export function SelectAudioFile() {
+  return window['go']['main']['App']['SelectAudioFile']();
 }
 
 export function SelectDir() {

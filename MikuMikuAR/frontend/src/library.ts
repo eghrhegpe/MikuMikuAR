@@ -22,6 +22,11 @@ import {
   GetModelsByTag,
   OpenInMMD,
   OpenInBlender,
+  SelectAudioFile,
+  GetDanceSets,
+  SaveDanceSet,
+  DeleteDanceSet,
+  ImportDanceSet,
 } from "../wailsjs/go/main/App";
 import {
   dom,
@@ -78,6 +83,7 @@ import {
   updatePlaybackUI,
 } from "./scene";
 import { MenuStack } from "./menu";
+import { loadAudioFile, setAudioOffset, playAudio, pauseAudio } from "./audio";
 
 // ======== MenuStack instances ========
 
@@ -133,6 +139,15 @@ const makeModelStack = (): MenuStack => {
           dir: "",
           items: favModels.map(m => modelToRow(m)),
         };
+      }
+      // Dance sets overview
+      if (row.target === "__dance_sets__") {
+        return buildDanceSetsOverviewLevel();
+      }
+      // Dance set detail: __dance_set:${id}
+      if (row.target && row.target.startsWith("__dance_set:")) {
+        const setId = row.target.replace("__dance_set:", "");
+        return buildDanceSetDetailLevel(setId);
       }
       // Tags overview
       if (row.target === "__tags__") {
@@ -377,6 +392,56 @@ const makeMotionStack = (): MenuStack => {
   });
 };
 
+// ======== Dance Set Types & State ========
+
+export type DanceSet = {
+  name: string;
+  vmd_path: string;
+  audio_path: string;
+  audio_offset: number;
+  description: string;
+  thumbnail: string;
+  source: string;
+};
+
+let danceSets: DanceSet[] = [];
+let currentDanceSetId: string | null = null;
+
+function computeDanceSetId(ds: DanceSet): string {
+  return sha256Hex(ds.vmd_path + ":" + ds.audio_path).substring(0, 16);
+}
+
+function sha256Hex(s: string): string {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    const char = s.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16).padStart(16, "0") + Math.abs(hash * 7).toString(16).padStart(16, "0");
+}
+
+async function loadDanceSets(): Promise<void> {
+  try {
+    const sets = await GetDanceSets();
+    danceSets = sets || [];
+  } catch (err) {
+    console.warn("loadDanceSets:", err);
+    danceSets = [];
+  }
+}
+
+async function loadDanceSetAudio(ds: DanceSet): Promise<void> {
+  if (!ds.audio_path) return;
+  try {
+    await loadAudioFile(ds.audio_path);
+    setAudioOffset(ds.audio_offset || 0);
+  } catch (err) {
+    console.warn("loadDanceSetAudio failed:", err);
+    setStatus("✗ 音频加载失败", false);
+  }
+}
+
 let modelStack: MenuStack | null = null;
 let motionStack: MenuStack | null = null;
 
@@ -436,6 +501,13 @@ export function showPopup(): void {
       icon: "star",
       target: "__favorites__",
       sublabel: favorites.size > 0 ? `${favorites.size} 个模型` : "暂无收藏",
+    },
+    {
+      kind: "folder",
+      label: "舞蹈套装",
+      icon: "music",
+      target: "__dance_sets__",
+      sublabel: danceSets.length > 0 ? `${danceSets.length} 个套装` : "暂无套装",
     },
     {
       kind: "folder",
@@ -775,6 +847,179 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
       }
     },
   };
+}
+
+// ======== Dance Sets ========
+
+/** Build the dance sets overview level showing all dance sets + create option. */
+function buildDanceSetsOverviewLevel(): PopupLevel {
+  return {
+    label: "舞蹈套装",
+    dir: "",
+    items: [],
+    renderCustom: async (container) => {
+      container.style.padding = "12px 14px";
+      try {
+        await loadDanceSets();
+        if (!danceSets || danceSets.length === 0) {
+          const empty = document.createElement("div");
+          empty.style.cssText = "padding:16px;text-align:center;color:var(--text-muted);font-size:13px;";
+          empty.innerHTML = '<div>暂无舞蹈套装</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">点击下方按钮创建新套装</div>';
+          container.appendChild(empty);
+        } else {
+          for (const ds of danceSets) {
+            const setId = computeDanceSetId(ds);
+            const row = document.createElement("div");
+            row.className = "menu-item";
+            const vmdName = ds.vmd_path.split("/").pop() || ds.vmd_path;
+            row.innerHTML = `
+              <span class="menu-icon">🎵</span>
+              <span class="menu-label">${escapeHtml(ds.name)}</span>
+              <span class="menu-arrow">&gt;</span>
+            `;
+            row.setAttribute("data-hint", ds.description || vmdName);
+            row.addEventListener("click", () => {
+              const level = buildDanceSetDetailLevel(setId);
+              modelStack?.push(level);
+            });
+            container.appendChild(row);
+          }
+        }
+        const divider = document.createElement("div");
+        divider.className = "menu-divider";
+        container.appendChild(divider);
+        const addRow = document.createElement("div");
+        addRow.className = "menu-item";
+        addRow.innerHTML = '<span class="menu-icon">➕</span><span class="menu-label">新建套装</span>';
+        addRow.addEventListener("click", () => {
+          createNewDanceSet();
+        });
+        container.appendChild(addRow);
+      } catch (err) {
+        console.warn("buildDanceSetsOverviewLevel:", err);
+        container.textContent = "加载失败";
+      }
+    },
+  };
+}
+
+/** Build the dance set detail level for a specific dance set. */
+function buildDanceSetDetailLevel(setId: string): PopupLevel {
+  const ds = danceSets.find(d => computeDanceSetId(d) === setId);
+  if (!ds) return { label: "未知套装", dir: "", items: [] };
+
+  const vmdName = ds.vmd_path.split("/").pop() || ds.vmd_path;
+  const audioName = ds.audio_path ? ds.audio_path.split("/").pop() : "无";
+
+  return {
+    label: ds.name,
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+
+      const fields: Array<{ label: string; value: string }> = [
+        { label: "套装名称", value: ds.name },
+        { label: "VMD 文件", value: vmdName },
+        { label: "音频文件", value: audioName },
+        { label: "音频偏移", value: `${ds.audio_offset.toFixed(2)} 秒` },
+        { label: "描述", value: ds.description || "—" },
+      ];
+
+      for (const f of fields) {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;";
+        const lbl = document.createElement("span");
+        lbl.style.cssText = "color:var(--text-dim);";
+        lbl.textContent = f.label;
+        const val = document.createElement("span");
+        val.style.cssText = "color:var(--text-bright);text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;";
+        val.textContent = f.value;
+        val.title = f.value;
+        row.appendChild(lbl);
+        row.appendChild(val);
+        container.appendChild(row);
+      }
+
+      const divider1 = document.createElement("div");
+      divider1.className = "menu-divider";
+      divider1.style.marginTop = "8px";
+      container.appendChild(divider1);
+
+      const loadBtn = document.createElement("div");
+      loadBtn.className = "menu-item";
+      loadBtn.innerHTML = '<span class="menu-icon">▶️</span><span class="menu-label">一键加载</span>';
+      loadBtn.addEventListener("click", () => {
+        loadDanceSet(ds);
+      });
+      container.appendChild(loadBtn);
+
+      const deleteBtn = document.createElement("div");
+      deleteBtn.className = "menu-item";
+      deleteBtn.innerHTML = '<span class="menu-icon">🗑️</span><span class="menu-label" style="color:var(--danger,#ff6b6b);">删除套装</span>';
+      deleteBtn.addEventListener("click", () => {
+        if (confirm(`确定要删除舞蹈套装「${ds.name}」吗？`)) {
+          DeleteDanceSet(setId).then(() => {
+            setStatus("✓ 已删除舞蹈套装", true);
+            loadDanceSets().then(() => {
+              modelStack?.pop();
+              const rootIdx = modelStack?.levelCount ? modelStack.levelCount - 1 : 0;
+              if (modelStack && rootIdx >= 0) {
+                modelStack.setLevel(rootIdx, buildDanceSetsOverviewLevel());
+                modelStack.reRender();
+              }
+            });
+          }).catch((err) => {
+            console.warn("DeleteDanceSet failed:", err);
+            setStatus("✗ 删除失败", false);
+          });
+        }
+      });
+      container.appendChild(deleteBtn);
+    },
+  };
+}
+
+/** Load a dance set: apply VMD to focused model and play audio. */
+async function loadDanceSet(ds: DanceSet): Promise<void> {
+  if (!focusedModelId) {
+    setStatus("✗ 请先加载并聚焦一个模型", false);
+    return;
+  }
+  hidePopup();
+  await Promise.all([
+    loadVMDFromPath(ds.vmd_path, focusedModelId),
+    loadDanceSetAudio(ds),
+  ]);
+  setStatus(`✓ 已加载舞蹈套装: ${ds.name}`, true);
+}
+
+/** Create a new dance set from VMD + audio files. */
+async function createNewDanceSet(): Promise<void> {
+  try {
+    const vmdPath = await SelectVMDMotion();
+    if (!vmdPath) return;
+
+    const audioPath = await SelectAudioFile().catch(() => "");
+
+    const defaultName = vmdPath.split(/[\\/]/).pop()?.replace(/\.vmd$/i, "") || "";
+    const name = prompt("请输入舞蹈套装名称：", defaultName);
+    if (!name) return;
+
+    const setId = await ImportDanceSet(vmdPath, audioPath, name);
+    if (setId) {
+      setStatus("✓ 已创建舞蹈套装", true);
+      await loadDanceSets();
+      const rootIdx = modelStack?.levelCount ? modelStack.levelCount - 1 : 0;
+      if (modelStack && rootIdx >= 0) {
+        modelStack.setLevel(rootIdx, buildDanceSetsOverviewLevel());
+        modelStack.reRender();
+      }
+    }
+  } catch (err) {
+    console.warn("createNewDanceSet failed:", err);
+    setStatus("✗ 创建失败", false);
+  }
 }
 
 // ======== Model Detail Submenu ========
@@ -1182,6 +1427,12 @@ export async function initLibrary(): Promise<void> {
       }
     } catch (err) {
       console.warn("Load favorites:", err);
+    }
+    // Load dance sets
+    try {
+      await loadDanceSets();
+    } catch (err) {
+      console.warn("Load dance sets:", err);
     }
     try {
       const cached = await GetLibraryIndex();

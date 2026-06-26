@@ -32,7 +32,7 @@ import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 
 import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../wailsjs/go/main/App";
-import { initCameraSystem, autoFrame, getCameraState, setCameraState } from "./camera";
+import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode } from "./camera";
 import type { CameraState } from "./camera";
 import {
     dom, setStatus, formatTime, toBase64,
@@ -45,6 +45,7 @@ import {
     computeLibraryRef, resolveLibraryRef,
 } from "./config";
 import { resolveFileUrl, normPath } from "./fileservice";
+import { syncAudioPlayback, loadAudioFile, setVolume, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset, isAudioPlaying, resumeAudio, pauseAudio } from "./audio";
 
 // ======== Babylon.js ========
 export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true, stencil: true });
@@ -229,8 +230,20 @@ export async function initScene(): Promise<void> {
     setMmdRuntime(runtime);
 
     // Wire up playback UI observables
-    runtime.onAnimationTickObservable.add(() => { updatePlaybackUI(); });
-    runtime.onPlayAnimationObservable.add(() => { setIsPlaying(true); updatePlaybackUI(); });
+    runtime.onAnimationTickObservable.add(() => {
+        updatePlaybackUI();
+        const foc = focusedModel();
+        const dur = foc?.animationDuration ?? runtime.animationDuration;
+        syncAudioPlayback(runtime.currentTime, isPlaying, dur);
+        animateCameraVmd(runtime.currentTime * 30);
+    });
+    runtime.onPlayAnimationObservable.add(() => {
+        setIsPlaying(true);
+        updatePlaybackUI();
+        const foc = focusedModel();
+        const dur = foc?.animationDuration ?? runtime.animationDuration;
+        syncAudioPlayback(runtime.currentTime, true, dur);
+    });
     runtime.onPauseAnimationObservable.add(() => {
         // NOTE: babylon-mmd fires onPause when animation reaches the end (no
         // separate onFinish event), so the auto-loop logic lives here.
@@ -249,6 +262,9 @@ export async function initScene(): Promise<void> {
             });
         }
         updatePlaybackUI();
+        const foc = focusedModel();
+        const dur = foc?.animationDuration ?? runtime.animationDuration;
+        syncAudioPlayback(runtime.currentTime, false, dur);
     });
 
     const ground = CreateGround("ground", { width: 30, height: 30, subdivisions: 1 }, scene);
@@ -404,6 +420,13 @@ export async function loadVMDMotion(data: ArrayBuffer, name: string, targetModel
         // Create WASM animation from the loaded data
         const wasmAnimation = new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene);
 
+        // Extract camera track from VMD and apply to MmdCamera
+        try {
+            loadCameraVmd(mmdAnimation, "", name);
+        } catch (camErr) {
+            console.warn("Camera VMD load skipped:", camErr);
+        }
+
         // Bind to model
         if (!inst.mmdModel) {
             setStatus(`✗ 舞台模型不支持 VMD`, false);
@@ -452,6 +475,24 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
         setStatus("✗ VMD 加载失败", false);
     } finally {
         setIsLoadingVmd(false);
+    }
+}
+
+export async function loadCameraVmdFromPath(path: string): Promise<void> {
+    try {
+        const { url } = await resolveFileUrl(path);
+        const vmdName = normPath(path).split("/").pop() || "";
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const vmdData = await resp.arrayBuffer();
+
+        const vmdLoader = new VmdLoader(scene);
+        const mmdAnimation = await vmdLoader.loadFromBufferAsync(vmdName, vmdData);
+        loadCameraVmd(mmdAnimation, path, vmdName.replace(/\.vmd$/i, ""));
+        setStatus(`✓ 相机 VMD: ${vmdName}`, true);
+    } catch (err) {
+        console.error("loadCameraVmdFromPath:", err);
+        setStatus("✗ 相机 VMD 加载失败", false);
     }
 }
 
@@ -544,6 +585,7 @@ export function seekFromEvent(e: MouseEvent | PointerEvent): void {
     const targetTime = ratio * duration;
     mmdRuntime.seekAnimation(targetTime, true);
     updatePlaybackUI();
+    syncAudioPlayback(targetTime, isPlaying, duration);
 }
 
 // ======== Scene Serialization ========
@@ -572,6 +614,20 @@ export interface SceneFile {
     camera: CameraState;
     lights: LightState;
     render?: RenderState;  // optional — legacy scenes without this field are fine
+    cameraVmd?: {
+        path: string;
+        libraryRef?: string;
+        name: string;
+        active: boolean;  // whether camera is in vmd mode
+    };
+    audio?: {
+        path: string;
+        libraryRef?: string;
+        name: string;
+        volume: number;
+        offset: number;
+        playing: boolean;
+    };
 }
 
 export function serializeScene(): SceneFile {
@@ -598,6 +654,20 @@ export function serializeScene(): SceneFile {
         camera: getCameraState(),
         lights: getLightState(),
         render: getRenderState(),
+        cameraVmd: hasCameraVmd() ? {
+            path: getCameraVmdPath(),
+            libraryRef: getCameraVmdPath() ? (computeLibraryRef(getCameraVmdPath()) || undefined) : undefined,
+            name: getCameraVmdName(),
+            active: getCameraMode() === "vmd",
+        } : undefined,
+        audio: getAudioName() ? {
+            path: getAudioPath(),
+            libraryRef: getAudioPath() ? (computeLibraryRef(getAudioPath()) || undefined) : undefined,
+            name: getAudioName(),
+            volume: getVolume(),
+            offset: getAudioOffset(),
+            playing: isAudioPlaying(),
+        } : undefined,
     };
 }
 
@@ -649,6 +719,34 @@ export async function deserializeScene(data: SceneFile): Promise<void> {
     if (data.camera) setCameraState(data.camera);
     if (data.lights) setLightState(data.lights);
     if (data.render) setRenderState(data.render);
+
+    // Restore camera VMD
+    if (data.cameraVmd && data.cameraVmd.path) {
+        try {
+            const resolvedPath = (data.cameraVmd.libraryRef ? resolveLibraryRef(data.cameraVmd.libraryRef) : null) || data.cameraVmd.path;
+            await loadCameraVmdFromPath(resolvedPath);
+            if (data.cameraVmd.active) {
+                switchCameraMode("vmd");
+            }
+        } catch (err) {
+            console.warn("Scene restore: camera VMD failed:", err);
+        }
+    }
+
+    // Restore audio
+    if (data.audio && data.audio.path) {
+        try {
+            const resolvedPath = (data.audio.libraryRef ? resolveLibraryRef(data.audio.libraryRef) : null) || data.audio.path;
+            await loadAudioFile(resolvedPath);
+            setVolume(data.audio.volume ?? 1);
+            setAudioOffset(data.audio.offset ?? 0);
+            if (data.audio.playing) {
+                resumeAudio();
+            }
+        } catch (err) {
+            console.warn("Scene restore: audio failed:", err);
+        }
+    }
 }
 
 // ======== Model Instance Manipulation Helpers ========
