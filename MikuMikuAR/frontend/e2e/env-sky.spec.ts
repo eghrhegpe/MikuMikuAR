@@ -13,22 +13,22 @@ test.describe("Environment — Sky Panel (vitePage, DOM-only)", () => {
         await clickEnvSubLevel(page, "天空");
     });
 
-    test("纯色模式: 只显示一个「天空色」颜色行 (3 个滑块)", async ({ vitePage: page }) => {
+    test("纯色模式: 只显示天空色 (3 个滑块)", async ({ vitePage: page }) => {
         await clickSkyMode(page, "纯色");
         const sliders = page.locator('input[type="range"]');
-        await expect(sliders).toHaveCount(5);
+        await expect(sliders).toHaveCount(3);
     });
 
-    test("渐变模式: 显示天顶色 + 地平色两行 + 中间色 (10 个滑块)", async ({ vitePage: page }) => {
+    test("渐变模式: 天顶 + 地平 + 中间色 (9 个滑块)", async ({ vitePage: page }) => {
         await clickSkyMode(page, "渐变");
         const sliders = page.locator('input[type="range"]');
-        await expect(sliders).toHaveCount(10);
+        await expect(sliders).toHaveCount(9);
     });
 
-    test("程序化模式: 显示天顶色 + 地平色 (8 个滑块)", async ({ vitePage: page }) => {
+    test("程序化模式: 天顶 + 地平 + 亮度 (7 个滑块)", async ({ vitePage: page }) => {
         await clickSkyMode(page, "程序化");
         const sliders = page.locator('input[type="range"]');
-        await expect(sliders).toHaveCount(8);
+        await expect(sliders).toHaveCount(7);
     });
 
     test("贴图模式: 不显示颜色滑块，只留亮度+环境光强度", async ({ vitePage: page }) => {
