@@ -1613,10 +1613,11 @@ function _buildGradientTexture(top: Color3, bot: Color3): Texture {
     canvas.height = 256;
     const ctx = canvas.getContext("2d")!;
     const grad = ctx.createLinearGradient(0, 0, 0, 256);
-    grad.addColorStop(0, `rgb(${top.r*255|0},${top.g*255|0},${top.b*255|0})`);
-    grad.addColorStop(0.45, `rgb(${top.r*255|0},${top.g*255|0},${top.b*255|0})`);
-    grad.addColorStop(0.55, `rgb(${bot.r*255|0},${bot.g*255|0},${bot.b*255|0})`);
-    grad.addColorStop(1, `rgb(${bot.r*255|0},${bot.g*255|0},${bot.b*255|0})`);
+    // Canvas V=0 → sphere V=0 (bottom/ground), V=1 → sphere V=1 (top/sky)
+    grad.addColorStop(0, `rgb(${bot.r*255|0},${bot.g*255|0},${bot.b*255|0})`);
+    grad.addColorStop(0.45, `rgb(${bot.r*255|0},${bot.g*255|0},${bot.b*255|0})`);
+    grad.addColorStop(0.55, `rgb(${top.r*255|0},${top.g*255|0},${top.b*255|0})`);
+    grad.addColorStop(1, `rgb(${top.r*255|0},${top.g*255|0},${top.b*255|0})`);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 2, 256);
     const tex = new Texture("data:" + canvas.toDataURL("image/png"), scene, false);
