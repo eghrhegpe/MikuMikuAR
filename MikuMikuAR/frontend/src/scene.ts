@@ -1459,6 +1459,13 @@ export function triggerAutoSave(): void {
 }
 
 export function setEnvState(partial: Partial<EnvState>): void {
+    // Runtime guard: detect black sky color assignments
+    if ((partial.skyColorTop && partial.skyColorTop[0] === 0 && partial.skyColorTop[1] === 0 && partial.skyColorTop[2] === 0) ||
+        (partial.skyColorBot && partial.skyColorBot[0] === 0 && partial.skyColorBot[1] === 0 && partial.skyColorBot[2] === 0)) {
+        console.warn("[env] ⚠️ setEnvState with black sky color:", JSON.stringify(partial));
+        console.warn(new Error().stack);
+    }
+
     Object.assign(envState, partial);
 
     if (partial.skyMode !== undefined || partial.skyColorTop !== undefined ||
@@ -1668,17 +1675,25 @@ function _applySky(state: EnvState): void {
 
     // Gradient mode: keep mesh alive, replace material (avoids shader uniform upload issues)
     if (state.skyMode === "gradient") {
+        // Guard: skip if colors are all black (likely a corrupt state)
+        const top = state.skyColorTop;
+        const bot = state.skyColorBot;
+        if (top[0] + top[1] + top[2] === 0 && bot[0] + bot[1] + bot[2] === 0) {
+            console.warn("[env] skip gradient update — both top and bottom are black");
+            return;
+        }
+
         if (_envSys.sky.skyMesh) {
             // Dispose only the old material, mesh stays alive
             if (_envSys.sky.skyMesh.material) {
                 _envSys.sky.skyMesh.material.dispose();
             }
             const mat = new GradientMaterial("envSkyGradient", scene);
-            mat.topColor = new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]);
-            mat.bottomColor = new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]);
+            mat.topColor = new Color3(top[0], top[1], top[2]);
+            mat.bottomColor = new Color3(bot[0], bot[1], bot[2]);
             mat.offset = 0.3;
             _envSys.sky.skyMesh.material = mat;
-            scene.clearColor = new Color4(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2], 1);
+            scene.clearColor = new Color4(bot[0], bot[1], bot[2], 1);
             return;
         }
         // First-time: create full mesh + material
