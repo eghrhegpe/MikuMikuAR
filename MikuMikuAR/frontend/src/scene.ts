@@ -18,8 +18,9 @@ import "@babylonjs/core/Physics/v2/physicsEngineComponent";
 import { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
 import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import { SkyMaterial } from "@babylonjs/materials/sky/skyMaterial";
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
+import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
+import { ShaderStore } from "@babylonjs/core/Engines/shaderStore";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { GPUParticleSystem } from "@babylonjs/core/Particles/gpuParticleSystem";
 import "@babylonjs/core/Particles/webgl2ParticleSystem";
@@ -1608,6 +1609,64 @@ function _disposeSky(): void {
     }
 }
 
+// ─── Custom procedural sky shader (respects skyColorTop / skyColorBot) ───
+const _procSkyVert = `
+precision highp float;
+attribute vec3 position;
+uniform mat4 worldViewProjection;
+uniform mat4 world;
+varying vec3 vPositionW;
+void main(void) {
+    vec4 wPos = world * vec4(position, 1.0);
+    vPositionW = wPos.xyz;
+    gl_Position = worldViewProjection * vec4(position, 1.0);
+}
+`;
+const _procSkyFrag = `
+precision highp float;
+uniform vec3 topColor;
+uniform vec3 bottomColor;
+uniform float horizonHeight;
+uniform float blendWidth;
+varying vec3 vPositionW;
+void main(void) {
+    float h = (vPositionW.y / 500.0) * 0.5 + 0.5;
+    float t = smoothstep(0.0, 1.0, (h - horizonHeight) / blendWidth + 0.5);
+    gl_FragColor = vec4(mix(bottomColor, topColor, t), 1.0);
+}
+`;
+ShaderStore.ShadersStore["procSkyVertex"] = _procSkyVert;
+ShaderStore.ShadersStore["procSkyFragment"] = _procSkyFrag;
+
+function _createProcSkyBox(state: EnvState): void {
+    const skybox = MeshBuilder.CreateBox("envSkyBox", {
+        size: 1000,
+        sideOrientation: Mesh.BACKSIDE,
+    }, scene);
+    skybox.isPickable = false;
+
+    const mat = new ShaderMaterial("envProcSky", scene, {
+        vertex: "procSky",
+        fragment: "procSky",
+    }, {
+        attributes: ["position"],
+        uniforms: ["world", "worldViewProjection", "topColor", "bottomColor", "horizonHeight", "blendWidth"],
+    });
+    mat.setColor3("topColor", new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]));
+    mat.setColor3("bottomColor", new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]));
+    mat.setFloat("horizonHeight", 0);
+    mat.setFloat("blendWidth", 0.4);
+
+    mat.onError = (effect, errors) => {
+        console.warn("[env] procSky shader error:", errors);
+    };
+
+    skybox.material = mat;
+    _envSys.sky.skyMesh = skybox;
+    scene.clearColor = new Color4(0, 0, 0, 1);
+    mat.isReady(skybox);
+}
+
 function _loadEnvTexture(path: string, rotationY: number, intensity: number): void {
     const ext = path.split(".").pop()?.toLowerCase();
     let tex: BaseTexture;
@@ -1628,33 +1687,7 @@ function _loadEnvTexture(path: string, rotationY: number, intensity: number): vo
 }
 
 function _createProceduralSky(state: EnvState): void {
-    const skybox = MeshBuilder.CreateBox("envSkyBox", {
-        size: 1000,
-        sideOrientation: Mesh.BACKSIDE,
-    }, scene);
-    skybox.isPickable = false;
-
-    const skyMat = new SkyMaterial("envSkyMat", scene);
-    skyMat.backFaceCulling = false;
-    skyMat.luminance = 1;
-    skyMat.turbidity = 10;
-    skyMat.rayleigh = 2;
-    skyMat.useSunPosition = true;
-    skyMat.inclination = 0.3;
-    skyMat.azimuth = 0.2;
-
-    // Sun always above horizon; derive azimuth from direction light XY, keep Y positive
-    const ls = getLightState();
-    const sunDir = new Vector3(ls.dirX, 0.5, ls.dirZ).normalize();
-    skyMat.sunPosition = sunDir.scale(100);
-
-    skyMat.onError = (effect, errors) => {
-        console.warn("[env] SkyMaterial shader error:", errors);
-    };
-
-    skybox.material = skyMat;
-    _envSys.sky.skyMesh = skybox;
-    scene.clearColor = new Color4(0, 0, 0, 1);
+    _createProcSkyBox(state);
 }
 
 function _applySky(state: EnvState): void {
@@ -1667,11 +1700,14 @@ function _applySky(state: EnvState): void {
 
     const mesh = _envSys.sky.skyMesh;
 
-    // Procedural mode — in-place property mutation (no dispose/recreate = no GL_INVALID_VALUE)
+    // Procedural mode — in-place uniform update
     if (state.skyMode === "procedural") {
-        if (mesh?.material?.getClassName() === "SkyMaterial") {
-            const skyMat = mesh.material as any;
-            skyMat.luminance = state.skyBrightness;
+        if (mesh?.material?.getClassName() === "ShaderMaterial") {
+            const mat = mesh.material as any;
+            mat.setColor3("topColor", new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]));
+            mat.setColor3("bottomColor", new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]));
+            // Sky brightness mapped to horizon blend width (brighter = wider horizon fade)
+            mat.setFloat("blendWidth", 0.2 + state.skyBrightness * 0.3);
             return;
         }
         // First-time: create from scratch
