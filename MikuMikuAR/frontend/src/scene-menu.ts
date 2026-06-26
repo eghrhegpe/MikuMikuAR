@@ -5,7 +5,7 @@
 
 import {
     dom, closeAllOverlays, setStatus, formatTime, escapeHtml,
-    PopupRow, PopupLevel,
+    PopupRow, PopupLevel, envState, EnvState,
 } from "./config";
 import { SlideMenu } from "./menu";
 import {
@@ -15,7 +15,7 @@ import {
     getConcertParams, setConcertParams,
     type CameraMode,
 } from "./camera";
-import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath } from "./scene";
+import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath, setEnvState } from "./scene";
 import type { RenderState } from "./scene";
 import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectVMDMotion, SelectDir, SaveScreenshot,
     GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene } from "../wailsjs/go/main/App";
@@ -34,6 +34,7 @@ function buildSceneRoot(): PopupLevel {
         dir: "",
         items: [
             { kind: "folder", label: "预设场景", icon: "bookmark", target: "scene:presets" },
+            { kind: "folder", label: "环境", icon: "sun", target: "scene:env" },
             { kind: "folder", label: "相机模式", icon: "camera", target: "scene:camera" },
             { kind: "folder", label: "灯光", icon: "sun", target: "scene:light" },
             { kind: "folder", label: "渲染", icon: "sparkles", target: "scene:render" },
@@ -390,10 +391,11 @@ function buildLightLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             container.style.padding = "12px 14px";
-            const fields: Array<{ label: string; key: "hemiIntensity" | "dirIntensity" | "dirX" | "dirZ"; min: number; max: number; step: number }> = [
+            const fields: Array<{ label: string; key: "hemiIntensity" | "dirIntensity" | "dirX" | "dirY" | "dirZ"; min: number; max: number; step: number }> = [
                 { label: "环境光强度", key: "hemiIntensity", min: 0, max: 2, step: 0.05 },
                 { label: "方向光强度", key: "dirIntensity", min: 0, max: 2, step: 0.05 },
                 { label: "方向光角度 X", key: "dirX", min: -1, max: 1, step: 0.05 },
+                { label: "方向光角度 Y", key: "dirY", min: -1, max: 1, step: 0.05 },
                 { label: "方向光角度 Z", key: "dirZ", min: -1, max: 1, step: 0.05 },
             ];
             for (const f of fields) {
@@ -416,12 +418,168 @@ function buildLightLevel(): PopupLevel {
                     const v = parseFloat(slider.value);
                     val.textContent = v.toFixed(2);
                     setLightState({ [f.key]: v } as any);
-                    triggerAutoSave();
                 });
                 row.appendChild(label);
                 row.appendChild(slider);
                 row.appendChild(val);
                 container.appendChild(row);
+            }
+
+            // Separator
+            const sep = document.createElement("div");
+            sep.style.cssText = "height:1px;background:var(--white-08);margin:12px 0;";
+            container.appendChild(sep);
+
+            // Directional light color
+            addColorSliderRow(container, "方向光色", lightState.dirColor, (v) => setLightState({ dirColor: v }));
+
+            // Hemisphere light color
+            addColorSliderRow(container, "环境光色", lightState.hemiColor, (v) => setLightState({ hemiColor: v }));
+
+            // Ground color
+            addColorSliderRow(container, "地面光色", lightState.groundColor, (v) => setLightState({ groundColor: v }));
+
+            // Shadow controls
+            const sep2 = document.createElement("div");
+            sep2.style.cssText = "height:1px;background:var(--white-08);margin:12px 0;";
+            container.appendChild(sep2);
+
+            addToggleRow(container, "启用阴影", lightState.shadowEnabled, (v) => setLightState({ shadowEnabled: v }));
+
+            const typeRow = document.createElement("div");
+            typeRow.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;";
+            const typeLabel = document.createElement("span");
+            typeLabel.style.cssText = "font-size:11px;color:var(--text-dim);width:60px;";
+            typeLabel.textContent = "阴影类型";
+            typeRow.appendChild(typeLabel);
+            const types: Array<{ value: "hard" | "soft" | "pcf"; label: string }> = [
+                { value: "hard", label: "硬" },
+                { value: "soft", label: "软" },
+                { value: "pcf", label: "PCF" },
+            ];
+            for (const t of types) {
+                const btn = document.createElement("button");
+                btn.textContent = t.label;
+                btn.style.cssText = `font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--white-08);background:${lightState.shadowType === t.value ? "var(--accent)" : "transparent"};color:var(--text-bright);cursor:pointer;`;
+                btn.addEventListener("click", () => {
+                    setLightState({ shadowType: t.value });
+                    sceneStack?.reRender();
+                });
+                typeRow.appendChild(btn);
+            }
+            container.appendChild(typeRow);
+        },
+    };
+}
+
+function buildEnvLevel(): PopupLevel {
+    return {
+        label: "环境",
+        dir: "",
+        items: [
+            { kind: "folder", label: "天空", icon: "sun", target: "scene:env:sky" },
+            { kind: "folder", label: "地面", icon: "grid", target: "scene:env:ground" },
+        ],
+    };
+}
+
+function buildSkyLevel(): PopupLevel {
+    return {
+        label: "天空",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+            const s = envState;
+
+            const modeRow = document.createElement("div");
+            modeRow.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;";
+            const modeLabel = document.createElement("span");
+            modeLabel.style.cssText = "font-size:11px;color:var(--text-dim);width:60px;";
+            modeLabel.textContent = "模式";
+            modeRow.appendChild(modeLabel);
+            const modes: Array<{ value: EnvState["skyMode"]; label: string }> = [
+                { value: "color", label: "纯色" },
+                { value: "gradient", label: "渐变" },
+                { value: "texture", label: "贴图" },
+                { value: "procedural", label: "程序化" },
+            ];
+            for (const m of modes) {
+                const btn = document.createElement("button");
+                btn.textContent = m.label;
+                btn.style.cssText = `font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--white-08);background:${s.skyMode === m.value ? "var(--accent)" : "transparent"};color:var(--text-bright);cursor:pointer;`;
+                btn.addEventListener("click", () => {
+                    setEnvState({ skyMode: m.value });
+                    sceneStack?.reRender();
+                });
+                modeRow.appendChild(btn);
+            }
+            container.appendChild(modeRow);
+
+            if (s.skyMode === "color" || s.skyMode === "gradient" || s.skyMode === "procedural") {
+                addColorSliderRow(container, "天顶色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
+                addColorSliderRow(container, "地平色", s.skyColorBot, (v) => setEnvState({ skyColorBot: v }));
+            }
+            if (s.skyMode === "gradient") {
+                addColorSliderRow(container, "中间色", s.skyColorMid, (v) => setEnvState({ skyColorMid: v }));
+            }
+
+            if (s.skyMode === "texture") {
+                const texRow = document.createElement("div");
+                texRow.innerHTML = `<span class="menu-label">环境贴图</span><span class="menu-sublabel">${s.skyTexture || "未选择"}</span>`;
+                texRow.className = "menu-item";
+                texRow.addEventListener("click", () => {
+                    const path = prompt("输入环境贴图路径：");
+                    if (path) setEnvState({ skyTexture: path });
+                });
+                container.appendChild(texRow);
+
+                addSliderRow(container, "旋 Y", s.skyRotationY, 0, 360, 1, (v) => setEnvState({ skyRotationY: v }));
+            }
+
+            addSliderRow(container, "亮度", s.skyBrightness, 0.1, 5, 0.1, (v) => setEnvState({ skyBrightness: v }));
+            addSliderRow(container, "环境光强度", s.envIntensity, 0, 3, 0.05, (v) => setEnvState({ envIntensity: v }));
+        },
+    };
+}
+
+function buildGroundLevel(): PopupLevel {
+    return {
+        label: "地面",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+            const s = envState;
+
+            addToggleRow(container, "显示地面", s.groundVisible, (v) => setEnvState({ groundVisible: v }));
+
+            const modeRow = document.createElement("div");
+            modeRow.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;";
+            const modeLabel = document.createElement("span");
+            modeLabel.style.cssText = "font-size:11px;color:var(--text-dim);width:60px;";
+            modeLabel.textContent = "模式";
+            modeRow.appendChild(modeLabel);
+            const modes: Array<{ value: EnvState["groundMode"]; label: string }> = [
+                { value: "solid", label: "纯色" },
+                { value: "grid", label: "网格" },
+                { value: "checker", label: "棋盘格" },
+            ];
+            for (const m of modes) {
+                const btn = document.createElement("button");
+                btn.textContent = m.label;
+                btn.style.cssText = `font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--white-08);background:${s.groundMode === m.value ? "var(--accent)" : "transparent"};color:var(--text-bright);cursor:pointer;`;
+                btn.addEventListener("click", () => {
+                    setEnvState({ groundMode: m.value });
+                    sceneStack?.reRender();
+                });
+                modeRow.appendChild(btn);
+            }
+            container.appendChild(modeRow);
+
+            addColorSliderRow(container, "地面色", s.groundColor, (v) => setEnvState({ groundColor: v }));
+            if (s.groundMode === "solid") {
+                addSliderRow(container, "透明度", s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }));
             }
         },
     };
@@ -469,6 +627,45 @@ function addSliderRow(container: HTMLElement, label: string, value: number, min:
     row.appendChild(lbl);
     row.appendChild(slider);
     row.appendChild(val);
+    container.appendChild(row);
+}
+
+function addColorSliderRow(container: HTMLElement, label: string, color: [number, number, number], onChange: (v: [number, number, number]) => void): void {
+    const row = document.createElement("div");
+    row.style.cssText = "margin-bottom:8px;";
+    const header = document.createElement("div");
+    header.style.cssText = "font-size:11px;color:var(--text-dim);margin-bottom:2px;";
+    header.textContent = label;
+    row.appendChild(header);
+    const channels = ["R", "G", "B"] as const;
+    for (let ci = 0; ci < 3; ci++) {
+        const sub = document.createElement("div");
+        sub.style.cssText = "display:flex;align-items:center;gap:6px;";
+        const ch = document.createElement("span");
+        ch.style.cssText = "font-size:10px;color:var(--text-dim);width:12px;";
+        ch.textContent = channels[ci];
+        const slider = document.createElement("input");
+        slider.type = "range";
+        slider.min = "0";
+        slider.max = "1";
+        slider.step = "0.01";
+        slider.value = String(color[ci]);
+        slider.style.cssText = "flex:1;accent-color:var(--accent);height:3px;";
+        const val = document.createElement("span");
+        val.style.cssText = "font-size:10px;color:var(--text-bright);width:24px;text-align:right;";
+        val.textContent = color[ci].toFixed(2);
+        slider.addEventListener("input", () => {
+            const v = parseFloat(slider.value);
+            val.textContent = v.toFixed(2);
+            const newColor: [number, number, number] = [...color];
+            newColor[ci] = v;
+            onChange(newColor);
+        });
+        sub.appendChild(ch);
+        sub.appendChild(slider);
+        sub.appendChild(val);
+        row.appendChild(sub);
+    }
     container.appendChild(row);
 }
 
@@ -711,8 +908,10 @@ async function loadUserPresets(): Promise<void> {
     _presetsLoaded = true;
     try {
         const presets = await GetRenderPresets();
-        for (const p of presets) {
-            userPresets[p.name] = p.params as unknown as Partial<RenderState>;
+        if (presets) {
+            for (const p of presets) {
+                userPresets[p.name] = p.params as unknown as Partial<RenderState>;
+            }
         }
     } catch (err) {
         console.warn("loadUserPresets:", err);
@@ -913,11 +1112,14 @@ export async function showSceneMenu(): Promise<void> {
     if (!sceneStack) {
         sceneStack = new SlideMenu({
             container: dom.sceneOverlay,
-            onClose: () => dom.sceneOverlay.classList.remove("visible"),
+            onClose: () => closeAllOverlays(),
             onItemClick: (row) => handleSceneAction(row),
             onFolderEnter: (row) => {
                 switch (row.target) {
                     case "scene:presets": return buildPresetScenesLevel();
+                    case "scene:env": return buildEnvLevel();
+                    case "scene:env:sky": return buildSkyLevel();
+                    case "scene:env:ground": return buildGroundLevel();
                     case "scene:camera": return buildCameraLevel();
                     case "scene:light": return buildLightLevel();
                     case "scene:render": return buildRenderLevel();

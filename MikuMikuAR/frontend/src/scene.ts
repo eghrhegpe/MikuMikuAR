@@ -12,10 +12,16 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { Material } from "@babylonjs/core/Materials/material";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
 import { ImportMeshAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
 import "@babylonjs/core/Physics/v2/physicsEngineComponent";
+import { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
+import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
+import { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import { GradientMaterial } from "@babylonjs/materials/gradient/gradientMaterial";
+import { SkyMaterial } from "@babylonjs/materials/sky/skyMaterial";
+import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
+import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 
 import { RegisterMmdModelLoaders } from "babylon-mmd/esm/Loader/dynamic";
 import { RegisterDxBmpTextureLoader } from "babylon-mmd/esm/Loader/registerDxBmpTextureLoader";
@@ -63,6 +69,12 @@ export interface LightState {
     dirX: number;
     dirY: number;
     dirZ: number;
+    dirColor: [number, number, number];
+    hemiColor: [number, number, number];
+    groundColor: [number, number, number];
+    shadowEnabled: boolean;
+    shadowType: "hard" | "soft" | "pcf";
+    shadowCascades: number;
 }
 
 export const hemiLight = new HemisphericLight("hemi", new Vector3(0.5, 1, 0.5), scene);
@@ -74,6 +86,10 @@ export const dirLight = new DirectionalLight("dir", new Vector3(-0.5, -1, -0.5),
 dirLight.intensity = 0.4;
 dirLight.position = new Vector3(20, 40, 20);
 
+let _shadowEnabled = false;
+let _shadowType: LightState["shadowType"] = "soft";
+let _shadowCascades = 2;
+
 export function getLightState(): LightState {
     return {
         hemiIntensity: hemiLight.intensity,
@@ -81,6 +97,12 @@ export function getLightState(): LightState {
         dirX: dirLight.direction.x,
         dirY: dirLight.direction.y,
         dirZ: dirLight.direction.z,
+        dirColor: [dirLight.diffuse.r, dirLight.diffuse.g, dirLight.diffuse.b],
+        hemiColor: [hemiLight.diffuse.r, hemiLight.diffuse.g, hemiLight.diffuse.b],
+        groundColor: [hemiLight.groundColor.r, hemiLight.groundColor.g, hemiLight.groundColor.b],
+        shadowEnabled: _envSys.shadow.generator !== null,
+        shadowType: _shadowType,
+        shadowCascades: _shadowCascades,
     };
 }
 
@@ -94,6 +116,46 @@ export function setLightState(s: Partial<LightState>): void {
             s.dirZ ?? dirLight.direction.z,
         );
     }
+    if (s.dirColor !== undefined) {
+        dirLight.diffuse = new Color3(s.dirColor[0], s.dirColor[1], s.dirColor[2]);
+    }
+    if (s.hemiColor !== undefined) {
+        hemiLight.diffuse = new Color3(s.hemiColor[0], s.hemiColor[1], s.hemiColor[2]);
+    }
+    if (s.groundColor !== undefined) {
+        hemiLight.groundColor = new Color3(s.groundColor[0], s.groundColor[1], s.groundColor[2]);
+    }
+    if (s.shadowEnabled !== undefined) _shadowEnabled = s.shadowEnabled;
+    if (s.shadowType !== undefined) _shadowType = s.shadowType;
+    if (s.shadowCascades !== undefined) _shadowCascades = s.shadowCascades;
+    if (s.shadowEnabled !== undefined || s.shadowType !== undefined) {
+        _ensureShadow();
+    }
+    triggerAutoSave();
+}
+
+function _ensureShadow(): void {
+    if (_envSys.shadow.generator) {
+        _envSys.shadow.generator.dispose();
+        _envSys.shadow.generator = null;
+    }
+    if (!_shadowEnabled) return;
+
+    const gen = new ShadowGenerator(1024, dirLight);
+    gen.useBlurExponentialShadowMap = _shadowType !== "hard";
+    gen.useKernelBlur = _shadowType === "pcf";
+    gen.bias = 0.0001;
+
+    for (const [, inst] of modelRegistry) {
+        for (const m of inst.meshes) {
+            if (m instanceof Mesh) {
+                gen.addShadowCaster(m);
+                m.receiveShadows = true;
+            }
+        }
+    }
+
+    _envSys.shadow.generator = gen;
 }
 
 // Initialise camera system immediately (before render loop)
@@ -271,11 +333,7 @@ export async function initScene(): Promise<void> {
         syncAudioPlayback(runtime.currentTime, false, dur);
     });
 
-    const ground = CreateGround("ground", { width: 30, height: 30, subdivisions: 1 }, scene);
-    const groundMat = new StandardMaterial("groundMat", scene);
-    groundMat.diffuseColor = new Color3(0.15, 0.15, 0.18);
-    groundMat.alpha = 0.6; groundMat.backFaceCulling = false;
-    ground.material = groundMat; ground.position.y = -0.05;
+    _applyGround(envState);
 }
 
 // ======== Thumbnail Capture (Direction 3) ========
@@ -1369,6 +1427,19 @@ export function triggerAutoSave(): void {
 
 export function setEnvState(partial: Partial<EnvState>): void {
     Object.assign(envState, partial);
+
+    if (partial.skyMode !== undefined || partial.skyColorTop !== undefined ||
+        partial.skyColorMid !== undefined || partial.skyColorBot !== undefined ||
+        partial.skyTexture !== undefined || partial.skyRotationY !== undefined ||
+        partial.skyBrightness !== undefined || partial.envIntensity !== undefined) {
+        _applySky(envState);
+    }
+
+    if (partial.groundVisible !== undefined || partial.groundMode !== undefined ||
+        partial.groundColor !== undefined || partial.groundAlpha !== undefined) {
+        _applyGround(envState);
+    }
+
     triggerAutoSave();
 }
 
@@ -1416,4 +1487,222 @@ export async function tryRestoreLastScene(): Promise<void> {
     } catch (err) {
         // No saved scene or corrupt — silent
     }
+}
+
+// ======== Environment System (Phase 8) ========
+
+interface EnvSkyResources {
+    skyMesh: Mesh | null;
+    envTexture: BaseTexture | null;
+    gradientMesh: Mesh | null;
+}
+
+const _envSys: {
+    sky: EnvSkyResources;
+    ground: { mesh: Mesh | null };
+    particles: { emitter: any | null; update: (() => void) | null };
+    clouds: { postProcess: any | null };
+    shadow: { generator: any | null };
+    wind: { lastUpdate: number };
+} = {
+    sky: { skyMesh: null, envTexture: null, gradientMesh: null },
+    ground: { mesh: null },
+    particles: { emitter: null, update: null },
+    clouds: { postProcess: null },
+    shadow: { generator: null },
+    wind: { lastUpdate: 0 },
+};
+
+function _disposeSky(): void {
+    if (_envSys.sky.skyMesh) {
+        _envSys.sky.skyMesh.dispose();
+        _envSys.sky.skyMesh = null;
+    }
+    if (_envSys.sky.gradientMesh) {
+        _envSys.sky.gradientMesh.dispose();
+        _envSys.sky.gradientMesh = null;
+    }
+    if (_envSys.sky.envTexture) {
+        _envSys.sky.envTexture.dispose();
+        _envSys.sky.envTexture = null;
+        scene.environmentTexture = null;
+    }
+}
+
+function _createGradientSky(state: EnvState): void {
+    const skySphere = MeshBuilder.CreateSphere("envSkySphere", {
+        diameter: 1000,
+        segments: 24,
+        sideOrientation: Mesh.BACKSIDE,
+    }, scene);
+    skySphere.isPickable = false;
+    skySphere.renderingGroupId = 0;
+
+    const mat = new GradientMaterial("envSkyGradient", scene);
+    mat.topColor = new Color3(
+        state.skyColorTop[0],
+        state.skyColorTop[1],
+        state.skyColorTop[2],
+    );
+    mat.bottomColor = new Color3(
+        state.skyColorBot[0],
+        state.skyColorBot[1],
+        state.skyColorBot[2],
+    );
+    mat.offset = 0.3;
+    skySphere.material = mat;
+
+    _envSys.sky.skyMesh = skySphere;
+    scene.clearColor = new Color4(
+        state.skyColorBot[0],
+        state.skyColorBot[1],
+        state.skyColorBot[2],
+        1,
+    );
+}
+
+function _loadEnvTexture(path: string, rotationY: number, intensity: number): void {
+    const ext = path.split(".").pop()?.toLowerCase();
+    let tex: BaseTexture;
+    if (ext === "dds") {
+        tex = new CubeTexture(path, scene);
+    } else {
+        tex = new Texture(path, scene, false, true);
+    }
+    scene.environmentTexture = tex;
+    scene.environmentIntensity = intensity;
+
+    if (tex instanceof CubeTexture) {
+        tex.rotationY = rotationY;
+    }
+
+    _envSys.sky.envTexture = tex;
+    scene.clearColor = new Color4(0, 0, 0, 1);
+}
+
+function _createProceduralSky(state: EnvState): void {
+    const skybox = MeshBuilder.CreateBox("envSkyBox", {
+        size: 1000,
+        sideOrientation: Mesh.BACKSIDE,
+    }, scene);
+    skybox.isPickable = false;
+
+    const skyMat = new SkyMaterial("envSkyMat", scene);
+    skyMat.backFaceCulling = false;
+    skyMat.luminance = state.skyBrightness;
+    skyMat.turbidity = 10;
+    skyMat.rayleigh = 2;
+
+    skyMat.sunPosition = new Vector3(
+        state.skyColorTop[0] * 100,
+        state.skyColorTop[1] * 100,
+        state.skyColorTop[2] * 100,
+    );
+
+    skybox.material = skyMat;
+    _envSys.sky.skyMesh = skybox;
+    scene.clearColor = new Color4(0, 0, 0, 1);
+}
+
+function _applySky(state: EnvState): void {
+    _disposeSky();
+
+    switch (state.skyMode) {
+        case "color": {
+            scene.clearColor = new Color4(
+                state.skyColorTop[0],
+                state.skyColorTop[1],
+                state.skyColorTop[2],
+                1,
+            );
+            break;
+        }
+        case "gradient": {
+            _createGradientSky(state);
+            break;
+        }
+        case "texture": {
+            if (state.skyTexture) {
+                _loadEnvTexture(state.skyTexture, state.skyRotationY, state.envIntensity);
+            }
+            break;
+        }
+        case "procedural": {
+            _createProceduralSky(state);
+            break;
+        }
+    }
+}
+
+function _applyCheckerGround(ground: Mesh, state: EnvState): void {
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d")!;
+    const tileSize = 16;
+    for (let y = 0; y < 128; y += tileSize) {
+        for (let x = 0; x < 128; x += tileSize) {
+            const isWhite = ((x / tileSize) + (y / tileSize)) % 2 === 0;
+            const bright = isWhite ? 1 : 0.6;
+            const r = Math.round(state.groundColor[0] * bright * 255);
+            const g = Math.round(state.groundColor[1] * bright * 255);
+            const b = Math.round(state.groundColor[2] * bright * 255);
+            ctx.fillStyle = `rgb(${r},${g},${b})`;
+            ctx.fillRect(x, y, tileSize, tileSize);
+        }
+    }
+    const tex = new Texture("data:image/png;base64," + canvas.toDataURL(), scene);
+    const mat = new StandardMaterial("envGroundChecker", scene);
+    mat.diffuseTexture = tex;
+    mat.diffuseColor = new Color3(1, 1, 1);
+    mat.alpha = state.groundAlpha;
+    mat.backFaceCulling = false;
+    ground.material = mat;
+}
+
+function _applyGround(state: EnvState): void {
+    if (_envSys.ground.mesh) {
+        _envSys.ground.mesh.dispose();
+        _envSys.ground.mesh = null;
+    }
+    if (!state.groundVisible) return;
+
+    const ground = MeshBuilder.CreateGround("envGround", {
+        width: 60,
+        height: 60,
+        subdivisions: 2,
+    }, scene);
+    ground.isPickable = false;
+    ground.position.y = -0.05;
+
+    if (state.groundMode === "grid") {
+        const mat = new GridMaterial("envGroundMat", scene);
+        mat.gridRatio = 1;
+        mat.mainColor = new Color3(
+            state.groundColor[0],
+            state.groundColor[1],
+            state.groundColor[2],
+        );
+        mat.lineColor = new Color3(
+            state.groundColor[0] * 1.5,
+            state.groundColor[1] * 1.5,
+            state.groundColor[2] * 1.5,
+        );
+        mat.backFaceCulling = false;
+        ground.material = mat;
+    } else if (state.groundMode === "checker") {
+        _applyCheckerGround(ground, state);
+    } else {
+        const mat = new StandardMaterial("envGroundMat", scene);
+        mat.diffuseColor = new Color3(
+            state.groundColor[0],
+            state.groundColor[1],
+            state.groundColor[2],
+        );
+        mat.alpha = state.groundAlpha;
+        mat.backFaceCulling = false;
+        ground.material = mat;
+    }
+
+    _envSys.ground.mesh = ground;
 }
