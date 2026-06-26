@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "test:e2e": "cd MikuMikuAR/frontend && npm run test:e2e",
+    "test": "cd MikuMikuAR/frontend && npm test",
+    "build": "cd MikuMikuAR/frontend && npm run build",
+    "dev": "cd MikuMikuAR/frontend && npm run dev"
+  }
+}
