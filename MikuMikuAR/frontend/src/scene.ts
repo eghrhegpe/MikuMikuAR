@@ -1677,26 +1677,55 @@ function _applySky(state: EnvState): void {
     const top = state.skyColorTop;
     const bot = state.skyColorBot;
 
-    // Gradient mode — in-place property mutation (no dispose/recreate = no GL_INVALID_VALUE)
+    // Gradient mode — pre-compile new material then swap
     if (state.skyMode === "gradient") {
-        if (mesh?.material?.getClassName() === "GradientMaterial") {
-            const mat = mesh.material as any;
+        if (mesh) {
+            // 1. Create new material
+            const mat = new GradientMaterial("envSkyGradient", scene);
             mat.topColor = new Color3(top[0], top[1], top[2]);
             mat.bottomColor = new Color3(bot[0], bot[1], bot[2]);
+            mat.offset = 0.3;
+
+            // 2. Force synchronous shader compilation BEFORE touching old material
+            //    This ensures the new GL program is valid before the old one is destroyed
+            mat.isReady(mesh);
+
+            // 3. Now safe to dispose old material (old program goes away, new one already valid)
+            if (mesh.material) {
+                mesh.material.dispose();
+            }
+
+            // 4. Assign pre-compiled material
+            mesh.material = mat;
             scene.clearColor = new Color4(bot[0], bot[1], bot[2], 1);
-            mat.markAsDirty(Material.TextureDirtyFlag);
             return;
         }
-        // First-time or mode-switch path
+        // First-time: create full mesh + material
         _disposeSky();
         _createGradientSky(state);
         return;
     }
 
-    // Procedural mode — in-place property mutation
+    // Procedural mode — pre-compile new material then swap
     if (state.skyMode === "procedural") {
-        if (mesh?.material?.getClassName() === "SkyMaterial") {
-            (mesh.material as any).luminance = state.skyBrightness;
+        if (mesh) {
+            const skyMat = new SkyMaterial("envSkyMat", scene);
+            skyMat.backFaceCulling = false;
+            skyMat.luminance = state.skyBrightness;
+            skyMat.turbidity = 10;
+            skyMat.rayleigh = 2;
+            const ls = getLightState();
+            const sunDir = new Vector3(ls.dirX, 0.5, ls.dirZ).normalize();
+            skyMat.sunPosition = sunDir.scale(100);
+
+            // Force synchronous shader compilation
+            skyMat.isReady(mesh);
+
+            // Swap
+            if (mesh.material) {
+                mesh.material.dispose();
+            }
+            mesh.material = skyMat;
             return;
         }
         _disposeSky();
