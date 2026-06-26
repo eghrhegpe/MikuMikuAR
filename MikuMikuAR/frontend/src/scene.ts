@@ -64,16 +64,16 @@ export const scene = new Scene(engine);
 scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
 
 // Dev debug helper — exposes internals for Console inspection
-(window as any).__envDebug = {
-    get clearColor() { return scene.clearColor; },
-    get skyMesh() { return _envSys?.sky?.skyMesh; },
-    get mat() { return _envSys?.sky?.skyMesh?.material; },
-    get matType() { return _envSys?.sky?.skyMesh?.material?.getClassName(); },
-    get topColor() { return (_envSys?.sky?.skyMesh?.material as any)?.topColor; },
-    get bottomColor() { return (_envSys?.sky?.skyMesh?.material as any)?.bottomColor; },
-    get offset() { return (_envSys?.sky?.skyMesh?.material as any)?.offset; },
-    get envState() { return envState; },
-};
+(window as any).__envDebug = () => ({
+    clearColor: `rgba(${scene.clearColor.r.toFixed(2)},${scene.clearColor.g.toFixed(2)},${scene.clearColor.b.toFixed(2)},${scene.clearColor.a})`,
+    matType: _envSys?.sky?.skyMesh?.material?.getClassName() || "none",
+    topColor: ((m: any) => m?.topColor ? `(${m.topColor.r.toFixed(2)},${m.topColor.g.toFixed(2)},${m.topColor.b.toFixed(2)})` : "N/A")(_envSys?.sky?.skyMesh?.material),
+    bottomColor: ((m: any) => m?.bottomColor ? `(${m.bottomColor.r.toFixed(2)},${m.bottomColor.g.toFixed(2)},${m.bottomColor.b.toFixed(2)})` : "N/A")(_envSys?.sky?.skyMesh?.material),
+    offset: ((m: any) => m?.offset?.toFixed(2) ?? "N/A")(_envSys?.sky?.skyMesh?.material),
+    skyColorTop: `(${envState.skyColorTop.join(",")})`,
+    skyColorBot: `(${envState.skyColorBot.join(",")})`,
+    skyMode: envState.skyMode,
+});
 
 // ======== Light State Management ========
 export interface LightState {
@@ -1613,6 +1613,7 @@ function _createGradientSky(state: EnvState): void {
     skySphere.renderingGroupId = 0;
 
     const mat = new GradientMaterial("envSkyGradient", scene);
+    mat.disableLighting = true;
     mat.topColor = new Color3(
         state.skyColorTop[0],
         state.skyColorTop[1],
@@ -1692,6 +1693,7 @@ function _applySky(state: EnvState): void {
             return;
         }
         const mat = new GradientMaterial("envSkyGradient", scene);
+        mat.disableLighting = true;
         mat.topColor = new Color3(top[0], top[1], top[2]);
         mat.bottomColor = new Color3(bot[0], bot[1], bot[2]);
         mat.offset = 0.3;

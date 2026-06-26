@@ -69,6 +69,7 @@ describe("Sky — Gradient mode", () => {
         expect(sphere.isPickable).toBe(false);
 
         const mat = new GradientMaterial("testGradient", scene);
+        mat.disableLighting = true;
         mat.topColor = new Color3(0.3, 0.5, 0.8);
         mat.bottomColor = new Color3(0.2, 0.2, 0.25);
         sphere.material = mat;
@@ -77,6 +78,7 @@ describe("Sky — Gradient mode", () => {
         expect(sphere.material).toBe(mat);
         expect(mat.topColor.r).toBeCloseTo(0.3, 5);
         expect(mat.bottomColor.b).toBeCloseTo(0.25, 5);
+        expect(mat.disableLighting).toBe(true);
 
         sphere.dispose();
         mat.dispose();
