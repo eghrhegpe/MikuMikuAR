@@ -15,6 +15,8 @@ import {
   GetModelMetaBatch,
   ToggleFavorite,
   GetFavorites,
+  GetRecentModels,
+  AddRecentModel,
   AddTag,
   RemoveTag,
   GetAllTags,
@@ -23,10 +25,14 @@ import {
   OpenInMMD,
   OpenInBlender,
   SelectAudioFile,
+  SelectVMDMotion,
   GetDanceSets,
   SaveDanceSet,
   DeleteDanceSet,
   ImportDanceSet,
+  GetPlaylists,
+  SavePlaylist,
+  DeletePlaylist,
 } from "../wailsjs/go/main/App";
 import {
   dom,
@@ -64,6 +70,8 @@ import {
   mmdRuntime,
   favorites,
   setFavorites,
+  recentModels,
+  setRecentModels,
   computeLibraryRef,
 } from "./config";
 import {
@@ -81,6 +89,10 @@ import {
   getModelPosition,
   resetModelTransform,
   updatePlaybackUI,
+  getModelMorphs,
+  setModelMorphWeight,
+  getModelMorphWeight,
+  resetModelMorphs,
 } from "./scene";
 import { MenuStack } from "./menu";
 import { loadAudioFile, setAudioOffset, playAudio, pauseAudio } from "./audio";
@@ -114,6 +126,7 @@ const makeModelStack = (): MenuStack => {
           case "transform": return buildTransformLevel(id);
           case "visibility": return buildVisibilityLevel(id);
           case "tags": return buildModelTagsLevel(id);
+          case "morph": return buildMorphPreviewLevel(id);
           default: return null;
         }
       }
@@ -140,6 +153,28 @@ const makeModelStack = (): MenuStack => {
           items: favModels.map(m => modelToRow(m)),
         };
       }
+      // Recent models
+      if (row.target === "__recent__") {
+        const recentMap = new Map<string, number>();
+        recentModels.forEach((ref, i) => recentMap.set(ref, i));
+        const recentModelsList = allModels
+          .filter(m => {
+            const ref = computeLibraryRef(m.file_path);
+            return ref && recentMap.has(ref);
+          })
+          .sort((a, b) => {
+            const refA = computeLibraryRef(a.file_path);
+            const refB = computeLibraryRef(b.file_path);
+            return (recentMap.get(refA!) ?? 999) - (recentMap.get(refB!) ?? 999);
+          });
+        return {
+          label: "最近打开",
+          dir: "",
+          items: recentModelsList.length > 0
+            ? recentModelsList.map(m => modelToRow(m))
+            : [{ kind: "action" as const, label: "暂无记录", icon: "clock", target: "", sublabel: "加载模型后会出现在这里" }],
+        };
+      }
       // Dance sets overview
       if (row.target === "__dance_sets__") {
         return buildDanceSetsOverviewLevel();
@@ -148,6 +183,15 @@ const makeModelStack = (): MenuStack => {
       if (row.target && row.target.startsWith("__dance_set:")) {
         const setId = row.target.replace("__dance_set:", "");
         return buildDanceSetDetailLevel(setId);
+      }
+      // Playlists overview
+      if (row.target === "__playlists__") {
+        return buildPlaylistsOverviewLevel();
+      }
+      // Add to playlist picker: __addtoplaylist:${id}
+      if (row.target && row.target.startsWith("__addtoplaylist:")) {
+        const modelId = row.target.replace("__addtoplaylist:", "");
+        return buildAddToPlaylistLevel(modelId);
       }
       // Tags overview
       if (row.target === "__tags__") {
@@ -407,6 +451,13 @@ export type DanceSet = {
 let danceSets: DanceSet[] = [];
 let currentDanceSetId: string | null = null;
 
+/** All named playlists, keyed by name. */
+let playlists: Record<string, string[]> = {};
+/** Currently active playlist name (for next/prev). */
+let activePlaylist: string | null = null;
+/** Index within the active playlist. */
+let activePlaylistIndex = -1;
+
 function computeDanceSetId(ds: DanceSet): string {
   return sha256Hex(ds.vmd_path + ":" + ds.audio_path).substring(0, 16);
 }
@@ -493,21 +544,34 @@ export function showPopup(): void {
     rootItems.push({ kind: "divider", label: "", icon: "", target: "" });
   }
 
-  // Static menu items
+  // Static menu items — 常用操作优先，管理功能其次
   rootItems.push(
+    {
+      kind: "folder",
+      label: "加载模型",
+      icon: "folder",
+      target: "models:browse",
+    },
+    {
+      kind: "action",
+      label: "重新扫描",
+      icon: "refresh-cw",
+      target: "models:rescan",
+    },
+    { kind: "divider", label: "", icon: "", target: "" },
+    {
+      kind: "folder",
+      label: "最近打开",
+      icon: "clock",
+      target: "__recent__",
+      sublabel: recentModels.length > 0 ? `${recentModels.length} 个模型` : "暂无记录",
+    },
     {
       kind: "folder",
       label: "收藏",
       icon: "star",
       target: "__favorites__",
       sublabel: favorites.size > 0 ? `${favorites.size} 个模型` : "暂无收藏",
-    },
-    {
-      kind: "folder",
-      label: "舞蹈套装",
-      icon: "music",
-      target: "__dance_sets__",
-      sublabel: danceSets.length > 0 ? `${danceSets.length} 个套装` : "暂无套装",
     },
     {
       kind: "folder",
@@ -518,22 +582,17 @@ export function showPopup(): void {
     },
     {
       kind: "folder",
-      label: "加载模型",
-      icon: "folder",
-      target: "models:browse",
+      label: "舞蹈套装",
+      icon: "music",
+      target: "__dance_sets__",
+      sublabel: danceSets.length > 0 ? `${danceSets.length} 个套装` : "暂无套装",
     },
     {
       kind: "folder",
-      label: "角色定制",
-      icon: "sparkles",
-      target: "reserved:customize",
-      sublabel: "即将推出",
-    },
-    {
-      kind: "action",
-      label: "重新扫描",
-      icon: "refresh-cw",
-      target: "models:rescan",
+      label: "播放列表",
+      icon: "list",
+      target: "__playlists__",
+      sublabel: Object.keys(playlists).length > 0 ? `${Object.keys(playlists).length} 个列表` : "暂无列表",
     },
   );
 
@@ -542,6 +601,10 @@ export function showPopup(): void {
 
 export function hidePopup(): void {
   motionBindingTargetId = null;
+  // Reset morph preview when closing popup
+  if (focusedModelId) {
+    resetModelMorphs(focusedModelId);
+  }
   closeAllOverlays();
 }
 
@@ -564,10 +627,10 @@ export function showMotionPopup(): void {
     },
     {
       kind: "folder",
-      label: "动作倍率",
-      icon: "timer",
-      target: "reserved:motionSpeed",
-      sublabel: "即将推出",
+      label: "舞蹈套装",
+      icon: "music",
+      target: "__dance_sets__",
+      sublabel: danceSets.length > 0 ? `${danceSets.length} 个套装` : "暂无套装",
     },
   ];
   motionStack.reset({ label: "动作", dir: "", items: rootItems });
@@ -726,6 +789,11 @@ function modelToRow(m: LibraryModel): PopupRow {
 
 function onModelRowClick(m: LibraryModel): void {
   const isStage = m.type === "stage" || m.type === "scene";
+  // Add to recent models (only for PMX, VMD doesn't make sense)
+  if (m.format === "pmx") {
+    const ref = computeLibraryRef(m.file_path);
+    if (ref) AddRecentModel(ref).catch(() => {});
+  }
   if (m.container === "zip") {
     hidePopup();
     setStatus("正在解压 zip...", false);
@@ -1022,6 +1090,187 @@ async function createNewDanceSet(): Promise<void> {
   }
 }
 
+// ======== Playlists ========
+
+function buildPlaylistsOverviewLevel(): PopupLevel {
+  return {
+    label: "播放列表",
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+      const createRow = document.createElement("div");
+      createRow.className = "menu-item";
+      createRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="plus"></iconify-icon></span><span class="menu-label">新建播放列表</span>';
+      createRow.addEventListener("click", async () => {
+        const name = prompt("请输入播放列表名称：");
+        if (!name || !name.trim()) return;
+        const trimmed = name.trim();
+        if (playlists[trimmed]) { setStatus(`✗ 播放列表「${trimmed}」已存在`, false); return; }
+        playlists[trimmed] = [];
+        try { await SavePlaylist(trimmed, []); modelStack?.reRender(); setStatus(`✓ 已创建: ${trimmed}`, true); }
+        catch (err) { console.warn("SavePlaylist:", err); setStatus("✗ 创建失败", false); }
+      });
+      container.appendChild(createRow);
+      const divider = document.createElement("div");
+      divider.className = "menu-divider";
+      container.appendChild(divider);
+      const names = Object.keys(playlists);
+      if (names.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:16px;";
+        empty.textContent = "暂无播放列表";
+        container.appendChild(empty);
+        return;
+      }
+      for (const name of names) {
+        const items = playlists[name];
+        const row = document.createElement("div");
+        row.className = "menu-item";
+        const isActive = activePlaylist === name;
+        row.innerHTML = `<span class="menu-icon"><iconify-icon icon="${isActive ? "play-circle" : "list"}"></iconify-icon></span><span class="menu-label">${name}</span><span class="menu-sublabel" style="font-size:10px;color:var(--text-dim);">${items.length} 个模型${isActive ? " · 播放中" : ""}</span>`;
+        row.addEventListener("click", () => modelStack?.push(buildPlaylistDetailLevel(name)));
+        container.appendChild(row);
+      }
+    },
+  };
+}
+
+function buildPlaylistDetailLevel(name: string): PopupLevel {
+  const items = playlists[name] || [];
+  return {
+    label: name,
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+      if (items.length > 0) {
+        const playRow = document.createElement("div");
+        playRow.className = "menu-item";
+        const isActive = activePlaylist === name;
+        playRow.innerHTML = `<span class="menu-icon"><iconify-icon icon="play-circle"></iconify-icon></span><span class="menu-label">${isActive ? `正在播放 (${activePlaylistIndex + 1}/${items.length})` : "开始播放"}</span>`;
+        playRow.addEventListener("click", async () => { await playPlaylistItem(name, 0); });
+        container.appendChild(playRow);
+        const divider = document.createElement("div");
+        divider.className = "menu-divider";
+        container.appendChild(divider);
+        for (let i = 0; i < items.length; i++) {
+          const ref = items[i];
+          const m = allModels.find(x => computeLibraryRef(x.file_path) === ref);
+          const itemRow = document.createElement("div");
+          itemRow.className = "menu-item";
+          const isCurrent = activePlaylist === name && activePlaylistIndex === i;
+          itemRow.innerHTML = `<span class="menu-icon"><iconify-icon icon="${isCurrent ? "play-circle" : "music"}"></iconify-icon></span><span class="menu-label">${m ? (m.name_jp || m.name_en || ref.split("/").pop() || ref) : ref.split("/").pop() || ref}</span>`;
+          itemRow.addEventListener("click", async () => { await playPlaylistItem(name, i); });
+          container.appendChild(itemRow);
+        }
+      } else {
+        const empty = document.createElement("div");
+        empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:16px;";
+        empty.textContent = "播放列表为空，请从模型详情添加";
+        container.appendChild(empty);
+      }
+      const div2 = document.createElement("div");
+      div2.className = "menu-divider";
+      container.appendChild(div2);
+      const deleteRow = document.createElement("div");
+      deleteRow.className = "menu-item";
+      deleteRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="trash-2"></iconify-icon></span><span class="menu-label">删除播放列表</span>';
+      deleteRow.addEventListener("click", async () => {
+        if (confirm(`确定要删除播放列表「${name}」吗？`)) {
+          delete playlists[name];
+          if (activePlaylist === name) { activePlaylist = null; activePlaylistIndex = -1; }
+          try { await DeletePlaylist(name); modelStack?.pop(); setStatus(`✓ 已删除: ${name}`, true); }
+          catch (err) { console.warn("DeletePlaylist:", err); setStatus("✗ 删除失败", false); }
+        }
+      });
+      container.appendChild(deleteRow);
+    },
+  };
+}
+
+async function playPlaylistItem(name: string, index: number): Promise<void> {
+  const items = playlists[name];
+  if (!items || index < 0 || index >= items.length) return;
+  const ref = items[index];
+  const m = allModels.find(x => computeLibraryRef(x.file_path) === ref);
+  if (!m) { setStatus("✗ 模型未找到", false); return; }
+  activePlaylist = name;
+  activePlaylistIndex = index;
+  hidePopup();
+  setStatus(`播放列表 ${name}: ${index + 1}/${items.length}`, true);
+  if (m.container === "zip") {
+    try { const r = await ExtractZip(m.file_path, m.zip_inner); await loadPMXFile(r.file_path); }
+    catch (err) { setStatus("✗ 加载失败", false); }
+  } else {
+    await loadPMXFile(m.file_path);
+  }
+}
+
+/**
+ * Play the next item in the active playlist.
+ * Returns true if there is a next item (successfully loaded), false otherwise.
+ */
+export async function playPlaylistNext(): Promise<boolean> {
+    return playPlaylistStep(1);
+}
+
+/**
+ * Play the previous item in the active playlist.
+ * Returns true if there is a previous item, false otherwise.
+ */
+export async function playPlaylistPrev(): Promise<boolean> {
+    return playPlaylistStep(-1);
+}
+
+async function playPlaylistStep(dir: number): Promise<boolean> {
+    if (!activePlaylist) { setStatus("无活跃播放列表", false); return false; }
+    const items = playlists[activePlaylist];
+    if (!items || items.length === 0) { setStatus("播放列表为空", false); return false; }
+    const newIndex = (activePlaylistIndex + dir + items.length) % items.length;
+    await playPlaylistItem(activePlaylist, newIndex);
+    return true;
+}
+
+/** Build a level to add the currently focused model to a playlist. */
+function buildAddToPlaylistLevel(id: string): PopupLevel {
+  const inst = modelRegistry.get(id);
+  if (!inst) return { label: "添加到播放列表", dir: "", items: [] };
+  const ref = computeLibraryRef(inst.filePath);
+  return {
+    label: "添加到播放列表",
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "12px 14px";
+      const names = Object.keys(playlists);
+      if (names.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:16px;";
+        empty.textContent = "暂无播放列表，请先创建";
+        container.appendChild(empty);
+        return;
+      }
+      for (const name of names) {
+        const row = document.createElement("div");
+        row.className = "menu-item";
+        const alreadyIn = ref ? playlists[name].includes(ref) : false;
+        row.innerHTML = `<span class="menu-icon"><iconify-icon icon="list"></iconify-icon></span><span class="menu-label">${name}</span><span class="menu-sublabel" style="font-size:10px;color:var(--text-dim);">${alreadyIn ? "已添加" : playlists[name].length + " 个模型"}</span>`;
+        row.addEventListener("click", async () => {
+          if (ref && !alreadyIn) {
+            playlists[name].push(ref);
+            try { await SavePlaylist(name, playlists[name]); setStatus(`✓ 已添加到「${name}」`, true); modelStack?.pop(); }
+            catch (err) { console.warn("SavePlaylist:", err); setStatus("✗ 添加失败", false); }
+          } else {
+            setStatus(alreadyIn ? "已在此播放列表中" : "✗ 无法识别", false);
+          }
+        });
+        container.appendChild(row);
+      }
+    },
+  };
+}
+
 // ======== Model Detail Submenu ========
 
 /** Build the model detail submenu for a specific model instance. */
@@ -1040,11 +1289,13 @@ function buildModelDetailLevel(id: string): PopupLevel {
       { kind: "folder", label: "变换", icon: "move", target: `detail:transform:${id}`, sublabel: "位置/缩放/旋转" },
       { kind: "folder", label: "可见性", icon: "eye", target: `detail:visibility:${id}`, sublabel: inst.visible ? "显示" : "隐藏" },
       { kind: "folder", label: "标签", icon: "tag", target: `detail:tags:${id}`, sublabel: "管理标签" },
+      { kind: "folder", label: "表情预览", icon: "smile", target: `detail:morph:${id}`, sublabel: "预览模型表情" },
+      { kind: "folder", label: "添加到播放列表", icon: "list", target: `__addtoplaylist:${id}`, sublabel: "加入播放队列" },
       { kind: "divider", label: "", icon: "", target: "" },
       { kind: "action", label: "聚焦", icon: "target", target: `detail:focus:${id}`, sublabel: "相机对准此模型" },
       { kind: "action", label: "移除", icon: "trash-2", target: `detail:remove:${id}`, sublabel: "从场景删除" },
       { kind: "divider", label: "", icon: "", target: "" },
-      { kind: "action", label: "导出到 MMD", icon: "external-link", target: `detail:export-mmd:${id}`, sublabel: "在 MikuMikuDance 中打开" },
+      { kind: "action", label: "在 MMD 中打开", icon: "external-link", target: `detail:export-mmd:${id}`, sublabel: "用 MikuMikuDance 打开" },
       { kind: "action", label: "在 Blender 中编辑", icon: "edit-3", target: `detail:blender:${id}`, sublabel: "用 Blender 编辑此模型" },
     ],
   };
@@ -1293,17 +1544,33 @@ function buildModelInfoLevel(id: string): PopupLevel {
     renderCustom: (container) => {
       container.style.padding = "12px 14px";
       const meta = modelMetaCache.get(inst.filePath);
+
+      // Compute stats from live meshes
+      let vertCount = 0;
+      let faceCount = 0;
+      for (const m of inst.meshes) {
+        vertCount += m.getTotalVertices() || 0;
+        faceCount += m.getTotalIndices() || 0;
+      }
+      const faceCountDisplay = (faceCount / 3).toLocaleString();
+
+      // Bone and morph from babylon-mmd runtime
+      const boneCount = inst.mmdModel?.runtimeBones?.length ?? null;
+      const morphCount = inst.mmdModel?.morph?.morphs?.length ?? null;
+
       const fields: Array<{ label: string; value: string }> = [
         { label: "名称", value: inst.name },
         { label: "文件", value: inst.filePath.split("/").pop() || inst.filePath },
-        { label: "类型", value: inst.kind === "actor" ? "actor" : "stage" },
+        { label: "类型", value: inst.kind === "actor" ? "角色模型" : "舞台模型" },
         { label: "动作", value: inst.vmdName || "无" },
-        { label: "面数", value: inst.meshes.reduce((sum, m) => sum + (m.getTotalVertices() || 0), 0).toLocaleString() },
+        { label: "顶点数", value: vertCount.toLocaleString() },
+        { label: "面数", value: faceCountDisplay },
         { label: "材质数", value: String(inst.meshes.length) },
-        { label: "骨骼数", value: inst.mmdModel ? "可用" : "N/A (舞台)" },
+        { label: "骨骼数", value: boneCount !== null ? boneCount.toLocaleString() : "N/A" },
+        { label: "表情数", value: morphCount !== null ? morphCount.toLocaleString() : "N/A" },
         { label: "日文名", value: meta?.name_jp || "—" },
         { label: "英文名", value: meta?.name_en || "—" },
-        { label: "备注", value: meta?.comment ? meta.comment.substring(0, 60) : "—" },
+        { label: "备注", value: meta?.comment ? meta.comment.substring(0, 80) : "—" },
       ];
       for (const f of fields) {
         const row = document.createElement("div");
@@ -1318,6 +1585,94 @@ function buildModelInfoLevel(id: string): PopupLevel {
         row.appendChild(val);
         container.appendChild(row);
       }
+    },
+  };
+}
+
+/** Build the morph (expression) preview panel for a model. */
+function buildMorphPreviewLevel(id: string): PopupLevel {
+  const inst = modelRegistry.get(id);
+  const morphs = inst ? getModelMorphs(id) : [];
+  const typeLabels: Record<number, string> = {
+    0: "组", 1: "顶点", 2: "骨骼", 3: "UV", 8: "材质",
+  };
+  return {
+    label: "表情预览",
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.style.padding = "8px 6px";
+
+      // Top toolbar
+      const toolbar = document.createElement("div");
+      toolbar.style.cssText = "display:flex;gap:8px;padding:0 8px 10px;border-bottom:1px solid var(--border);margin-bottom:8px;";
+      const resetBtn = document.createElement("button");
+      resetBtn.textContent = "全部重置";
+      resetBtn.style.cssText = "flex:1;padding:6px 10px;font-size:11px;background:var(--overlay-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;";
+      resetBtn.addEventListener("click", () => {
+        resetModelMorphs(id);
+        // Re-render list
+        container.querySelectorAll(".morph-slider").forEach((el) => {
+          (el as HTMLInputElement).value = "0";
+          const valLabel = (el as HTMLElement).parentElement?.querySelector(".morph-val");
+          if (valLabel) valLabel.textContent = "0.00";
+        });
+        setStatus("✓ 已重置所有表情", true);
+      });
+      toolbar.appendChild(resetBtn);
+      container.appendChild(toolbar);
+
+      // Morph list with sliders
+      const list = document.createElement("div");
+      list.style.cssText = "max-height:340px;overflow-y:auto;";
+      for (const m of morphs) {
+        const row = document.createElement("div");
+        row.style.cssText = "padding:6px 8px;";
+
+        const header = document.createElement("div");
+        header.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:4px;";
+        const name = document.createElement("span");
+        name.style.cssText = "flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+        name.textContent = m.name;
+        name.title = m.name;
+        const typeTag = document.createElement("span");
+        typeTag.style.cssText = "font-size:10px;color:var(--text-dim);flex-shrink:0;";
+        typeTag.textContent = typeLabels[m.type] || `类型${m.type}`;
+        const valLabel = document.createElement("span");
+        valLabel.className = "morph-val";
+        valLabel.style.cssText = "font-size:11px;color:var(--text-dim);width:32px;text-align:right;flex-shrink:0;";
+        valLabel.textContent = "0.00";
+        header.appendChild(name);
+        header.appendChild(typeTag);
+        header.appendChild(valLabel);
+
+        const slider = document.createElement("input");
+        slider.type = "range";
+        slider.min = "0";
+        slider.max = "1";
+        slider.step = "0.01";
+        slider.value = "0";
+        slider.className = "morph-slider";
+        slider.style.cssText = "width:100%;accent-color:var(--accent);height:4px;";
+        slider.addEventListener("input", () => {
+          const v = parseFloat(slider.value);
+          setModelMorphWeight(id, m.name, v);
+          valLabel.textContent = v.toFixed(2);
+        });
+
+        row.appendChild(header);
+        row.appendChild(slider);
+        list.appendChild(row);
+      }
+
+      if (morphs.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "text-align:center;padding:24px;color:var(--text-muted);font-size:12px;";
+        empty.textContent = "此模型无表情数据";
+        list.appendChild(empty);
+      }
+
+      container.appendChild(list);
     },
   };
 }
@@ -1428,11 +1783,27 @@ export async function initLibrary(): Promise<void> {
     } catch (err) {
       console.warn("Load favorites:", err);
     }
+    // Load recent models
+    try {
+      const recents = await GetRecentModels();
+      if (recents && recents.length > 0) {
+        setRecentModels(recents);
+      }
+    } catch (err) {
+      console.warn("Load recent models:", err);
+    }
     // Load dance sets
     try {
       await loadDanceSets();
     } catch (err) {
       console.warn("Load dance sets:", err);
+    }
+    // Load playlists
+    try {
+      const pl = await GetPlaylists();
+      if (pl) playlists = pl;
+    } catch (err) {
+      console.warn("Load playlists:", err);
     }
     try {
       const cached = await GetLibraryIndex();

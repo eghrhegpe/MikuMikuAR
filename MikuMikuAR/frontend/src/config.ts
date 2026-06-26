@@ -136,6 +136,12 @@ export function setThumbnailCache(m: Map<string, string>): void { thumbnailCache
 export let favorites = new Set<string>();
 export function setFavorites(f: Set<string>): void { favorites = f; }
 
+// ======== Recent Models ========
+
+/** Recently opened model libraryRefs (newest first). */
+export let recentModels: string[] = [];
+export function setRecentModels(r: string[]): void { recentModels = r; }
+
 // ======== Display Name Priority ========
 
 export type DisplayNamePriority = "name_jp" | "name_en" | "filename";

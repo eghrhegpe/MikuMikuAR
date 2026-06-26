@@ -4,19 +4,24 @@
 // Scene menu — consolidated camera + lighting controls (MenuStack-based).
 
 import {
-    dom, closeAllOverlays, setStatus, formatTime,
+    dom, closeAllOverlays, setStatus, formatTime, escapeHtml,
     PopupRow, PopupLevel,
 } from "./config";
 import { MenuStack } from "./menu";
 import { switchCameraMode, getCameraMode, hasCameraVmd, getCameraVmdName, clearCameraVmd } from "./camera";
 import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath } from "./scene";
 import type { RenderState } from "./scene";
-import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectAudioFile, SelectVMDMotion } from "../wailsjs/go/main/App";
+import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectAudioFile, SelectVMDMotion, SelectDir, SaveScreenshot } from "../wailsjs/go/main/App";
 import {
     loadAudioFile, pauseAudio, resumeAudio, stopAudio, clearAudio,
     setVolume, getVolume, setAudioOffset, getAudioOffset,
     getCurrentTime, getDuration, isAudioPlaying, getAudioName,
 } from "./audio";
+import { focusModel, engine, scene, setModelWireframe, setModelVisibility, setModelOpacity, resetModelTransform, getMatCatGroups, getMatCatParams, setMatCatParams, resetMatCatParams, getMatDetailList, getMatParams, setMatParams, resetSingleMatParams, resetAllMatParams, setGravityStrength, getGravityStrength } from "./scene";
+import type { MaterialCategoryParams } from "./scene";
+import type { Material } from "@babylonjs/core/Materials/material";
+import { modelRegistry, focusedModelId, setFocusedModelId } from "./config";
+import { playPlaylistNext, playPlaylistPrev } from "./library";
 
 // ======== Scene Menu (MenuStack) ========
 
@@ -27,12 +32,249 @@ function buildSceneRoot(): PopupLevel {
         label: "场景",
         dir: "",
         items: [
+            { kind: "folder", label: "模型", icon: "box", target: "scene:models" },
             { kind: "folder", label: "相机模式", icon: "camera", target: "scene:camera" },
             { kind: "folder", label: "灯光", icon: "sun", target: "scene:light" },
             { kind: "folder", label: "渲染", icon: "sparkles", target: "scene:render" },
+            { kind: "folder", label: "物理", icon: "toggle-left", target: "scene:physics" },
             { kind: "folder", label: "音乐", icon: "music", target: "scene:music" },
+            { kind: "folder", label: "截图", icon: "camera", target: "scene:screenshot" },
             { kind: "action", label: "保存场景", icon: "save", target: "scene:save" },
             { kind: "action", label: "加载场景", icon: "upload", target: "scene:load" },
+        ],
+    };
+}
+
+function buildModelsLevel(): PopupLevel {
+    return {
+        label: "模型",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+
+            if (modelRegistry.size === 0) {
+                const empty = document.createElement("div");
+                empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:20px;";
+                empty.textContent = "场景中无模型";
+                container.appendChild(empty);
+                return;
+            }
+
+            // Playlist navigation row
+            const navRow = document.createElement("div");
+            navRow.style.cssText = "display:flex;gap:6px;margin-bottom:10px;";
+            const prevBtn = document.createElement("button");
+            prevBtn.style.cssText = "flex:1;padding:6px;border:1px solid var(--white-08);border-radius:6px;background:transparent;color:var(--text-bright);cursor:pointer;font-size:11px;";
+            prevBtn.innerHTML = '<iconify-icon icon="skip-back"></iconify-icon> 上一个';
+            prevBtn.addEventListener("click", async () => { await playPlaylistPrev(); });
+            const nextBtn = document.createElement("button");
+            nextBtn.style.cssText = "flex:1;padding:6px;border:1px solid var(--white-08);border-radius:6px;background:transparent;color:var(--text-bright);cursor:pointer;font-size:11px;";
+            nextBtn.innerHTML = '下一个 <iconify-icon icon="skip-forward"></iconify-icon>';
+            nextBtn.addEventListener("click", async () => { await playPlaylistNext(); });
+            navRow.appendChild(prevBtn);
+            navRow.appendChild(nextBtn);
+            container.appendChild(navRow);
+
+            for (const [id, inst] of modelRegistry) {
+                const card = document.createElement("div");
+                card.style.cssText = "border:1px solid var(--white-08);border-radius:6px;padding:8px;margin-bottom:8px;";
+
+                const nameEl = document.createElement("div");
+                nameEl.style.cssText = "font-size:12px;color:var(--text-bright);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+                nameEl.textContent = inst.name;
+                card.appendChild(nameEl);
+
+                addToggleRow(card, "可见", inst.visible ?? true, (v) => {
+                    setModelVisibility(id, v);
+                });
+
+                addToggleRow(card, "线框", inst.wireframe ?? false, (v) => {
+                    setModelWireframe(id, v);
+                });
+
+                addSliderRow(card, "透明度", inst.opacity ?? 1.0, 0, 1, 0.05, (v) => {
+                    setModelOpacity(id, v);
+                });
+
+                const matBtn = document.createElement("div");
+                matBtn.className = "menu-item";
+                matBtn.style.marginTop = "4px";
+                matBtn.innerHTML = '<span class="menu-icon"><iconify-icon icon="palette"></iconify-icon></span><span class="menu-label">材质</span><span class="menu-sublabel" style="font-size:10px;color:var(--text-dim);">漫反射 / 高光</span>';
+                matBtn.addEventListener("click", () => {
+                    sceneStack?.push(buildMaterialCategoryLevel(id, inst.name));
+                });
+                card.appendChild(matBtn);
+
+                container.appendChild(card);
+            }
+
+            const divider = document.createElement("div");
+            divider.className = "menu-divider";
+            container.appendChild(divider);
+
+            const resetRow = document.createElement("div");
+            resetRow.className = "menu-item";
+            resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置全部变换</span>';
+            resetRow.addEventListener("click", () => {
+                for (const [id] of modelRegistry) {
+                    resetModelTransform(id);
+                }
+                sceneStack?.reRender();
+                setStatus("✓ 所有模型变换已重置", true);
+            });
+            container.appendChild(resetRow);
+        },
+    };
+}
+
+function buildMaterialCategoryLevel(id: string, modelName: string): PopupLevel {
+    const label = "材质 — " + modelName;
+    return {
+        label,
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+            const groups = getMatCatGroups(id);
+            const detailList = getMatDetailList(id);
+            const detailMap = new Map(detailList.map(d => [d.name, d]));
+
+            const CATEGORY_ICONS: Record<string, string> = {
+                "皮肤": "droplet", "头发": "feather", "眼睛": "eye", "服装": "shirt",
+            };
+
+            for (const [cat, mats] of groups) {
+                const params = getMatCatParams(id, cat);
+                const catModified = mats.some(m => detailMap.get(m.name)?.modified);
+                const card = document.createElement("div");
+                card.style.cssText = "border:1px solid var(--white-08);border-radius:6px;padding:8px;margin-bottom:10px;";
+
+                const header = document.createElement("div");
+                header.style.cssText = "font-size:12px;color:var(--text-bright);margin-bottom:6px;display:flex;align-items:center;gap:4px;";
+                header.innerHTML = `<iconify-icon icon="${CATEGORY_ICONS[cat] || "box"}"></iconify-icon> ${cat} <span style="font-size:10px;color:var(--text-dim);">(${mats.length} 个材质)</span>`;
+                if (catModified) {
+                    header.innerHTML += ' <span style="font-size:10px;color:var(--accent);margin-left:auto;">已修改</span>';
+                }
+                card.appendChild(header);
+
+                // Per-material list
+                for (const mat of mats) {
+                    const detail = detailMap.get(mat.name);
+                    const isModified = detail?.modified ?? false;
+                    const matRow = document.createElement("div");
+                    matRow.style.cssText = `display:flex;align-items:center;gap:6px;padding:4px 6px;margin:2px 0;border-radius:4px;cursor:pointer;font-size:11px;${isModified ? "color:var(--accent);background:var(--white-04);" : "color:var(--text-dim);"}`;
+                    matRow.innerHTML = `<iconify-icon icon="${isModified ? "check-circle" : "circle"}"></iconify-icon><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(mat.name)}</span>`;
+                    matRow.addEventListener("mouseenter", () => { matRow.style.background = "var(--white-08)"; });
+                    matRow.addEventListener("mouseleave", () => { matRow.style.background = isModified ? "var(--white-04)" : ""; });
+                    matRow.addEventListener("click", () => {
+                        sceneStack?.push(buildPerMatLevel(id, modelName, mat.name, mat.mat, detail?.index ?? 0));
+                    });
+                    card.appendChild(matRow);
+                }
+
+                // Category-level sliders
+                const sliderGroup = document.createElement("div");
+                sliderGroup.style.cssText = "margin-top:4px;padding-top:4px;border-top:1px solid var(--white-04);";
+                addSliderRow(sliderGroup, "漫反射倍率", params.diffuseMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { diffuseMul: v }));
+                addSliderRow(sliderGroup, "高光倍率", params.specularMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { specularMul: v }));
+                addSliderRow(sliderGroup, "高光指数", params.shininess, 0, 200, 1, (v) => setMatCatParams(id, cat, { shininess: v }));
+                addSliderRow(sliderGroup, "环境光倍率", params.ambientMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { ambientMul: v }));
+                card.appendChild(sliderGroup);
+
+                container.appendChild(card);
+            }
+
+            const divider = document.createElement("div");
+            divider.className = "menu-divider";
+            container.appendChild(divider);
+
+            // Reset per-material overrides
+            const hasOverrides = detailList.some(d => d.modified);
+            if (hasOverrides) {
+                const resetAllRow = document.createElement("div");
+                resetAllRow.className = "menu-item";
+                resetAllRow.style.color = "var(--warn)";
+                resetAllRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置所有单独调整</span>';
+                resetAllRow.addEventListener("click", () => {
+                    resetAllMatParams(id);
+                    sceneStack?.reRender();
+                    setStatus("✓ 所有单独材质调整已重置", true);
+                });
+                container.appendChild(resetAllRow);
+            }
+
+            const resetRow = document.createElement("div");
+            resetRow.className = "menu-item";
+            resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置全部材质参数</span>';
+            resetRow.addEventListener("click", () => {
+                resetMatCatParams(id);
+                resetAllMatParams(id);
+                sceneStack?.reRender();
+                setStatus("✓ 全部材质参数已重置", true);
+            });
+            container.appendChild(resetRow);
+        },
+    };
+}
+
+function buildPerMatLevel(id: string, modelName: string, matName: string, mat: Material, matIndex: number): PopupLevel {
+    const shortName = matName.length > 24 ? matName.slice(0, 24) + "…" : matName;
+    return {
+        label: shortName,
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+
+            const nameEl = document.createElement("div");
+            nameEl.style.cssText = "font-size:11px;color:var(--text-dim);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+            nameEl.textContent = modelName + " > " + matName;
+            container.appendChild(nameEl);
+
+            const current = getMatParams(id, matIndex);
+            const params = current ?? { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 };
+            const isModified = current !== null;
+
+            addSliderRow(container, "漫反射倍率", params.diffuseMul, 0, 2, 0.05, (v) => {
+                setMatParams(id, matIndex, { diffuseMul: v });
+            });
+            addSliderRow(container, "高光倍率", params.specularMul, 0, 2, 0.05, (v) => {
+                setMatParams(id, matIndex, { specularMul: v });
+            });
+            addSliderRow(container, "高光指数", params.shininess, 0, 200, 1, (v) => {
+                setMatParams(id, matIndex, { shininess: v });
+            });
+            addSliderRow(container, "环境光倍率", params.ambientMul, 0, 2, 0.05, (v) => {
+                setMatParams(id, matIndex, { ambientMul: v });
+            });
+
+            const divider = document.createElement("div");
+            divider.className = "menu-divider";
+            container.appendChild(divider);
+
+            if (isModified) {
+                const resetRow = document.createElement("div");
+                resetRow.className = "menu-item";
+                resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置此材质</span>';
+                resetRow.addEventListener("click", () => {
+                    resetSingleMatParams(id, matIndex);
+                    sceneStack?.reRender();
+                    setStatus(`✓ 已重置: ${matName}`, true);
+                });
+                container.appendChild(resetRow);
+            }
+        },
+    };
+}
+
+function buildScreenshotLevel(): PopupLevel {
+    return {
+        label: "截图",
+        dir: "",
+        items: [
+            { kind: "action", label: "截图当前模型", icon: "camera", target: "screenshot:current", sublabel: "保存焦点模型截图" },
+            { kind: "action", label: "批量截图", icon: "images", target: "screenshot:batch", sublabel: "逐个模型截图到指定目录" },
         ],
     };
 }
@@ -277,6 +519,25 @@ function buildRenderLevel(): PopupLevel {
             { kind: "folder", label: "舞台", icon: "monitor", target: "scene:render:stage" },
             { kind: "folder", label: "渲染预设", icon: "palette", target: "scene:render:presets" },
         ],
+    };
+}
+
+function buildPhysicsLevel(): PopupLevel {
+    return {
+        label: "物理",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+            const gravity = getGravityStrength();
+            addSliderRow(container, "物理重力", gravity, 0, 2, 0.05, (v) => {
+                setGravityStrength(v);
+            });
+            const helper = document.createElement("div");
+            helper.style.cssText = "font-size:11px;color:var(--text-dim);text-align:center;margin-top:6px;";
+            helper.textContent = "0 = 无重力 · 1 = 默认 · 2 = 二倍重力";
+            container.appendChild(helper);
+        },
     };
 }
 
@@ -544,6 +805,66 @@ function handleSceneAction(row: PopupRow): void {
         setStatus(`✓ 相机: ${labels[mode] || mode}`, true);
         return;
     }
+    // Screenshot current focused model
+    if (row.target === "screenshot:current") {
+        (async () => {
+            const id = focusedModelId;
+            if (!id) { setStatus("✗ 无焦点模型", false); return; }
+            const inst = modelRegistry.get(id);
+            if (!inst) { setStatus("✗ 模型不存在", false); return; }
+            try {
+                const dir = await SelectDir();
+                if (!dir) return;
+                // Wait for render
+                await new Promise(r => requestAnimationFrame(r));
+                await new Promise(r => requestAnimationFrame(r));
+                const base64 = dom.canvas.toDataURL("image/png", 0.9).replace(/^data:image\/png;base64,/, "");
+                const ts = Date.now();
+                const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, "_")}_${ts}.png`;
+                await SaveScreenshot(dir, filename, base64);
+                setStatus(`✓ 截图已保存: ${filename}`, true);
+            } catch (err) {
+                setStatus("✗ 截图失败", false);
+                console.error("Screenshot error:", err);
+            }
+        })();
+        return;
+    }
+    // Batch screenshot all loaded models
+    if (row.target === "screenshot:batch") {
+        if (modelRegistry.size === 0) { setStatus("✗ 场景中无模型", false); return; }
+        (async () => {
+            const dir = await SelectDir();
+            if (!dir) return;
+            let saved = 0;
+            const prevFocused = focusedModelId;
+            try {
+                for (const [id, inst] of modelRegistry) {
+                    setFocusedModelId(id);
+                    focusModel(id);
+                    // Wait for camera to settle (3 frames)
+                    await new Promise(r => requestAnimationFrame(r));
+                    await new Promise(r => requestAnimationFrame(r));
+                    await new Promise(r => requestAnimationFrame(r));
+                    const base64 = dom.canvas.toDataURL("image/png", 0.9).replace(/^data:image\/png;base64,/, "");
+                    const ts = Date.now();
+                    const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, "_")}_${ts}.png`;
+                    await SaveScreenshot(dir, filename, base64);
+                    saved++;
+                    setStatus(`截图中… ${saved}/${modelRegistry.size}`, true);
+                }
+                if (prevFocused) {
+                    setFocusedModelId(prevFocused);
+                    focusModel(prevFocused);
+                }
+                setStatus(`✓ 批量截图完成: ${saved} 张`, true);
+            } catch (err) {
+                setStatus("✗ 批量截图失败", false);
+                console.error("Batch screenshot error:", err);
+            }
+        })();
+        return;
+    }
     // Save scene
     if (row.target === "scene:save") {
         (async () => {
@@ -636,10 +957,13 @@ export async function showSceneMenu(): Promise<void> {
             onItemClick: (row) => handleSceneAction(row),
             onFolderEnter: (row) => {
                 switch (row.target) {
+                    case "scene:models": return buildModelsLevel();
                     case "scene:camera": return buildCameraLevel();
                     case "scene:light": return buildLightLevel();
                     case "scene:render": return buildRenderLevel();
+                    case "scene:physics": return buildPhysicsLevel();
                     case "scene:music": return buildMusicLevel();
+                    case "scene:screenshot": return buildScreenshotLevel();
                     case "scene:render:postprocess": return buildPostProcessLevel();
                     case "scene:render:stage": return buildStageLevel();
                     case "scene:render:presets": return buildPresetsLevel();

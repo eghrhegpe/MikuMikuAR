@@ -126,7 +126,6 @@ function buildSettingsRoot(): PopupLevel {
             { kind: "folder", label: "下载", icon: "download", target: "settings:download" },
             { kind: "folder", label: "系统", icon: "settings", target: "settings:system" },
             { kind: "folder", label: "软件管理", icon: "package", target: "settings:software" },
-            { kind: "action", label: "外部库", icon: "plug", target: "set:external" },
         ],
     };
 }
@@ -140,16 +139,39 @@ function buildSettingsDisplayLevel(): PopupLevel {
     return { label: "显示", dir: "", items };
 }
 
+function buildSettingsPathsLevel(): PopupLevel {
+    return {
+        label: "路径",
+        dir: "",
+        items: [
+            { kind: "action", label: "自动检测 MMD", icon: "external-link", target: "set:detectmmd" },
+            { kind: "action", label: "设置 MMD 路径", icon: "folder", target: "set:mmdpath" },
+            { kind: "action", label: "设置 Blender 路径", icon: "edit-3", target: "set:blenderpath" },
+        ],
+    };
+}
+
+function buildSettingsClearCacheLevel(): PopupLevel {
+    return {
+        label: "清除缓存",
+        dir: "",
+        items: [
+            { kind: "action", label: "提取缓存", icon: "trash-2", target: "set:clearextractcache" },
+            { kind: "action", label: "缩略图缓存", icon: "image", target: "set:clearthumbnail", sublabel: "即将推出" },
+        ],
+    };
+}
+
 function buildSettingsSystemLevel(): PopupLevel {
     return {
         label: "系统",
         dir: "",
         items: [
-            { kind: "action", label: "清除提取缓存", icon: "trash-2", target: "set:clearcache" },
+            { kind: "folder", label: "外部库管理", icon: "plug", target: "settings:external" },
+            { kind: "action", label: "添加外部库", icon: "folder-plus", target: "set:addexternal" },
             { kind: "divider", label: "", icon: "", target: "" },
-            { kind: "action", label: "检测 MMD 路径", icon: "external-link", target: "set:detectmmd" },
-            { kind: "action", label: "设置 MMD 路径", icon: "folder", target: "set:mmdpath" },
-            { kind: "action", label: "设置 Blender 路径", icon: "edit-3", target: "set:blenderpath" },
+            { kind: "folder", label: "路径", icon: "folder", target: "settings:paths" },
+            { kind: "folder", label: "清除缓存", icon: "trash-2", target: "settings:clearcache" },
         ],
     };
 }
@@ -167,8 +189,22 @@ function handleSettingsAction(row: PopupRow): void {
             setDisplayNamePriority("filename");
             SetDisplayNamePriority("filename").catch(console.warn);
             break;
-        case "set:clearcache":
-            ClearExtractCache().then(() => setStatus("✓ 缓存已清除", true)).catch(console.warn);
+        case "set:clearextractcache":
+            ClearExtractCache().then(() => setStatus("✓ 提取缓存已清除", true)).catch(console.warn);
+            break;
+        case "set:addexternal":
+            (async () => {
+                try {
+                    const dir = await SelectDir();
+                    if (!dir) return;
+                    await AddExternalPath(dir);
+                    await reloadConfig();
+                    if (libraryRoot) await rescanAndSync();
+                    setStatus("✓ 外部库已添加", true);
+                } catch (err) {
+                    console.error("AddExternalPath error:", err);
+                }
+            })();
             break;
         case "set:detectmmd":
             (async () => {
@@ -204,11 +240,6 @@ function handleSettingsAction(row: PopupRow): void {
                 }
             })();
             break;
-        case "set:external":
-            closeAllOverlays();
-            renderExternalList();
-            dom.externalOverlay.classList.add("visible");
-            break;
         case "set:opensoftwaredir":
             OpenSoftwareDir().catch(console.warn);
             break;
@@ -221,6 +252,80 @@ function handleSettingsAction(row: PopupRow): void {
 }
 
 // ======== Download Settings ========
+
+function buildSettingsExternalLevel(): PopupLevel {
+    return {
+        label: "外部库管理",
+        dir: "",
+        items: [],
+        renderCustom: async (container) => {
+            container.style.padding = "12px 14px";
+
+            const listEl = document.createElement("div");
+            listEl.style.cssText = "display:flex;flex-direction:column;gap:6px;margin-bottom:12px;";
+            container.appendChild(listEl);
+
+            async function refreshList(): Promise<void> {
+                listEl.innerHTML = "";
+                if (externalPaths.length === 0) {
+                    listEl.innerHTML = '<div style="font-size:11px;color:var(--text-dim);">暂无外部库</div>';
+                    return;
+                }
+                for (const ep of externalPaths) {
+                    const row = document.createElement("div");
+                    row.style.cssText = "display:flex;align-items:center;gap:6px;background:var(--white-08);border-radius:4px;padding:6px 8px;";
+                    row.innerHTML = `
+                        <span style="flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(ep.name)}</span>
+                        <span style="flex:1;font-size:10px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(ep.path)}</span>
+                        <button class="ext-rename" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:2px 4px;">✎</button>
+                        <button class="ext-del" style="background:none;border:none;color:var(--danger,#e74c3c);cursor:pointer;font-size:12px;padding:2px 4px;">✕</button>
+                    `;
+                    row.querySelector(".ext-rename")!.addEventListener("click", () => {
+                        const newName = prompt("输入新的显示名称：", ep.name);
+                        if (newName && newName.trim() && newName.trim() !== ep.name) {
+                            RenameExternalPath(ep.path, newName.trim()).then(async () => {
+                                await reloadConfig();
+                                refreshList();
+                                setStatus(`✓ 已重命名`, true);
+                            }).catch(() => setStatus("✗ 重命名失败", false));
+                        }
+                    });
+                    row.querySelector(".ext-del")!.addEventListener("click", async () => {
+                        try {
+                            await RemoveExternalPath(ep.path);
+                            await reloadConfig();
+                            if (libraryRoot) await rescanAndSync();
+                            refreshList();
+                        } catch (err) {
+                            console.error("RemoveExternalPath error:", err);
+                        }
+                    });
+                    listEl.appendChild(row);
+                }
+            }
+
+            const addBtn = document.createElement("button");
+            addBtn.textContent = "＋ 添加外部库";
+            addBtn.style.cssText = "width:100%;background:var(--accent,#7c3aed);color:#fff;border:none;border-radius:4px;padding:8px 12px;font-size:12px;cursor:pointer;";
+            addBtn.addEventListener("click", async () => {
+                try {
+                    const dir = await SelectDir();
+                    if (!dir) return;
+                    await AddExternalPath(dir);
+                    await reloadConfig();
+                    if (libraryRoot) await rescanAndSync();
+                    refreshList();
+                    setStatus("✓ 外部库已添加", true);
+                } catch (err) {
+                    console.error("AddExternalPath error:", err);
+                }
+            });
+            container.appendChild(addBtn);
+
+            refreshList();
+        },
+    };
+}
 
 function buildSettingsDownloadLevel(): PopupLevel {
     return {
@@ -331,6 +436,9 @@ export async function showSettings(): Promise<void> {
                     case "settings:display": return buildSettingsDisplayLevel();
                     case "settings:download": return buildSettingsDownloadLevel();
                     case "settings:system": return buildSettingsSystemLevel();
+                    case "settings:external": return buildSettingsExternalLevel();
+                    case "settings:paths": return buildSettingsPathsLevel();
+                    case "settings:clearcache": return buildSettingsClearCacheLevel();
                     case "settings:software":
                         if (!cachedSoftwareEntries) {
                             // First time: scan then re-render to show results

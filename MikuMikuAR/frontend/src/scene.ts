@@ -9,6 +9,7 @@ import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Material } from "@babylonjs/core/Materials/material";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
 import { ImportMeshAsync } from "@babylonjs/core/Loading/sceneLoader";
@@ -32,7 +33,7 @@ import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 
 import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../wailsjs/go/main/App";
-import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode } from "./camera";
+import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode, getCameraMode } from "./camera";
 import type { CameraState } from "./camera";
 import {
     dom, setStatus, formatTime, toBase64,
@@ -503,6 +504,8 @@ export function removeModel(id: string): void {
     if (inst.mmdModel && mmdRuntime) { try { mmdRuntime.destroyMmdModel(inst.mmdModel); } catch (e) { console.warn("removeModel: destroyMmdModel failed", e); } }
     for (const m of inst.meshes) { if (m instanceof Mesh) m.dispose(); }
     modelRegistry.delete(id);
+    _catState.delete(id);
+    _matState.delete(id);
     if (focusedModelId === id) { setFocusedModelId(modelRegistry.size > 0 ? modelRegistry.keys().next().value : null); }
     if (focusedModelId) focusModel(focusedModelId);
     if (modelRegistry.size === 0) {
@@ -853,6 +856,229 @@ export function resetModelTransform(id: string): void {
     triggerAutoSave();
 }
 
+// ======== Material Category Adjustment ========
+
+export type MaterialCategoryParams = {
+    diffuseMul: number;   // 0..2 漫反射强度倍率
+    specularMul: number;  // 0..2 镜面反射强度倍率
+    shininess: number;    // 0..200 镜面反射指数
+    ambientMul: number;   // 0..2 环境光强度倍率
+};
+
+const CATEGORIES = ["皮肤", "头发", "眼睛", "服装"] as const;
+export type MaterialCategory = typeof CATEGORIES[number];
+
+interface _OrigMat {
+    diffuse: Color3;
+    specular: Color3;
+    specularPower: number;
+    ambient: Color3;
+}
+
+const _origValues = new WeakMap<Material, _OrigMat>();
+const _catState = new Map<string, Map<string, MaterialCategoryParams>>();
+const _matState = new Map<string, Map<number, MaterialCategoryParams>>();
+
+function _catOf(name: string): MaterialCategory {
+    const l = name.toLowerCase();
+    if (/skin|face|肌|顔|body|neck|首|cheek|頬|kihada/.test(l)) return "皮肤";
+    if (/hair|髪|ahoge/.test(l)) return "头发";
+    if (/eye|目|iris|瞳|白目|pupil/.test(l)) return "眼睛";
+    return "服装";
+}
+
+function _capture(mat: Material): void {
+    if (_origValues.has(mat)) return;
+    const sm = mat as StandardMaterial;
+    _origValues.set(mat, {
+        diffuse: sm.diffuseColor.clone(),
+        specular: sm.specularColor.clone(),
+        specularPower: sm.specularPower,
+        ambient: sm.ambientColor.clone(),
+    });
+}
+
+function _applyAll(id: string): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    const state = _catState.get(id);
+    if (!state) return;
+    const perMat = _matState.get(id);
+    for (let mi = 0; mi < inst.meshes.length; mi++) {
+        const mesh = inst.meshes[mi];
+        const m = mesh.material as StandardMaterial;
+        if (!m) continue;
+        _capture(m);
+        const o = _origValues.get(m)!;
+        // Category-level params
+        const p = state.get(_catOf(m.name));
+        if (!p) continue;
+        m.diffuseColor.set(o.diffuse.r * p.diffuseMul, o.diffuse.g * p.diffuseMul, o.diffuse.b * p.diffuseMul);
+        m.specularColor.set(o.specular.r * p.specularMul, o.specular.g * p.specularMul, o.specular.b * p.specularMul);
+        m.specularPower = p.shininess;
+        m.ambientColor.set(o.ambient.r * p.ambientMul, o.ambient.g * p.ambientMul, o.ambient.b * p.ambientMul);
+        // Per-material override
+        const mp = perMat?.get(mi);
+        if (mp) {
+            m.diffuseColor.set(o.diffuse.r * mp.diffuseMul, o.diffuse.g * mp.diffuseMul, o.diffuse.b * mp.diffuseMul);
+            m.specularColor.set(o.specular.r * mp.specularMul, o.specular.g * mp.specularMul, o.specular.b * mp.specularMul);
+            m.specularPower = mp.shininess;
+            m.ambientColor.set(o.ambient.r * mp.ambientMul, o.ambient.g * mp.ambientMul, o.ambient.b * mp.ambientMul);
+        }
+    }
+}
+
+function _ensureState(id: string): Map<string, MaterialCategoryParams> {
+    let m = _catState.get(id);
+    if (m) return m;
+    m = new Map();
+    for (const c of CATEGORIES) m.set(c, { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 });
+    _catState.set(id, m);
+    return m;
+}
+
+/** Get material groups categorized by body part for a model. */
+export function getMatCatGroups(id: string): Map<string, { name: string; mat: Material }[]> {
+    const groups = new Map<string, { name: string; mat: Material }[]>();
+    const inst = modelRegistry.get(id);
+    if (!inst) return groups;
+    for (const mesh of inst.meshes) {
+        const m = mesh.material;
+        if (!m || !(m instanceof StandardMaterial)) continue;
+        const cat = _catOf(m.name);
+        if (!groups.has(cat)) groups.set(cat, []);
+        groups.get(cat)!.push({ name: m.name, mat: m });
+    }
+    return groups;
+}
+
+/** Get current category params for a model. */
+export function getMatCatParams(id: string, cat: string): MaterialCategoryParams {
+    return { ..._ensureState(id).get(cat)! };
+}
+
+/** Set category params for a model and apply immediately. */
+export function setMatCatParams(id: string, cat: string, params: Partial<MaterialCategoryParams>): void {
+    Object.assign(_ensureState(id).get(cat)!, params);
+    _applyAll(id);
+    triggerAutoSave();
+}
+
+/** Reset all category params for a model to defaults. */
+export function resetMatCatParams(id: string): void {
+    _catState.delete(id);
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    for (const mesh of inst.meshes) {
+        const m = mesh.material as StandardMaterial;
+        if (!m) continue;
+        const o = _origValues.get(m);
+        if (o) {
+            m.diffuseColor.copyFrom(o.diffuse);
+            m.specularColor.copyFrom(o.specular);
+            m.specularPower = o.specularPower;
+            m.ambientColor.copyFrom(o.ambient);
+        }
+    }
+    triggerAutoSave();
+}
+
+// ======== Per-Material Parameter Override ========
+
+function _ensureMatState(id: string): Map<number, MaterialCategoryParams> {
+    let m = _matState.get(id);
+    if (m) return m;
+    m = new Map();
+    _matState.set(id, m);
+    return m;
+}
+
+/**
+ * Get detailed list of all materials for a model with their current effective params.
+ * Returns array of { name, index, params, modified } where `modified` means per-material override is set.
+ */
+export function getMatDetailList(id: string): { name: string; index: number; params: MaterialCategoryParams; modified: boolean }[] {
+    const result: { name: string; index: number; params: MaterialCategoryParams; modified: boolean }[] = [];
+    const inst = modelRegistry.get(id);
+    if (!inst) return result;
+    const perMat = _matState.get(id);
+    for (let mi = 0; mi < inst.meshes.length; mi++) {
+        const m = inst.meshes[mi].material as StandardMaterial;
+        if (!m) continue;
+        const mp = perMat?.get(mi);
+        const params: MaterialCategoryParams = mp
+            ? { ...mp }
+            : { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 };
+        result.push({ name: m.name, index: mi, params, modified: !!mp });
+    }
+    return result;
+}
+
+/** Get per-material override params, or null if no override is set. */
+export function getMatParams(id: string, matIndex: number): MaterialCategoryParams | null {
+    const entry = _matState.get(id)?.get(matIndex);
+    return entry ? { ...entry } : null;
+}
+
+/** Set per-material override params. Values are clamped. matIndex must be within meshes range. */
+export function setMatParams(id: string, matIndex: number, params: Partial<MaterialCategoryParams>): void {
+    const inst = modelRegistry.get(id);
+    if (!inst || matIndex < 0 || matIndex >= inst.meshes.length) {
+        console.warn(`setMatParams: invalid matIndex ${matIndex} for model "${id}" (${inst ? inst.meshes.length : 0} meshes)`);
+        return;
+    }
+    const state = _ensureMatState(id);
+    let entry = state.get(matIndex);
+    if (!entry) {
+        entry = { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 };
+        state.set(matIndex, entry);
+    }
+    if (params.diffuseMul !== undefined) entry.diffuseMul = Math.max(0, Math.min(2, params.diffuseMul));
+    if (params.specularMul !== undefined) entry.specularMul = Math.max(0, Math.min(2, params.specularMul));
+    if (params.shininess !== undefined) entry.shininess = Math.max(0, Math.min(200, Math.round(params.shininess)));
+    if (params.ambientMul !== undefined) entry.ambientMul = Math.max(0, Math.min(2, params.ambientMul));
+    _applyAll(id);
+    triggerAutoSave();
+}
+
+/** Reset per-material override for a single material index. Guards against invalid index. */
+export function resetSingleMatParams(id: string, matIndex: number): void {
+    const inst = modelRegistry.get(id);
+    if (!inst || matIndex < 0 || matIndex >= inst.meshes.length) {
+        console.warn(`resetSingleMatParams: invalid matIndex ${matIndex} for model "${id}"`);
+        return;
+    }
+    _matState.get(id)?.delete(matIndex);
+    _applyAll(id);
+    triggerAutoSave();
+}
+
+/** Reset all per-material overrides for a model (keeps category-level params). */
+export function resetAllMatParams(id: string): void {
+    _matState.delete(id);
+    _applyAll(id);
+    triggerAutoSave();
+}
+
+// ======== Gravity Control ========
+
+const DEFAULT_GRAVITY = -98;
+let _gravityStrength = 1.0; // 0..2 multiplier relative to default
+const _gravityVec = new Vector3(0, DEFAULT_GRAVITY, 0);
+
+/** Set gravity strength multiplier (0 = no gravity, 1 = default, 2 = double). */
+export function setGravityStrength(value: number): void {
+    _gravityStrength = Math.max(0, Math.min(2, value));
+    _gravityVec.y = DEFAULT_GRAVITY * _gravityStrength;
+    mmdRuntime?.physics?.setGravity(_gravityVec);
+    triggerAutoSave();
+}
+
+/** Get current gravity strength multiplier. */
+export function getGravityStrength(): number {
+    return _gravityStrength;
+}
+
 // ======== Auto-save debounce ========
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -869,6 +1095,36 @@ export function triggerAutoSave(): void {
 }
 
 // ======== Init Save/Load UI ========
+// ======== Morph / Expression Preview ========
+
+/** Get all morph names and types for a model. */
+export function getModelMorphs(id: string): Array<{ name: string; type: number }> {
+    const inst = modelRegistry.get(id);
+    if (!inst?.mmdModel?.morph?.morphs) return [];
+    return inst.mmdModel.morph.morphs.map(m => ({ name: m.name, type: m.type }));
+}
+
+/** Set a morph weight for a model (0..1). */
+export function setModelMorphWeight(id: string, morphName: string, weight: number): void {
+    const inst = modelRegistry.get(id);
+    if (!inst?.mmdModel?.morph) return;
+    inst.mmdModel.morph.setMorphWeight(morphName, weight);
+}
+
+/** Get a morph weight for a model. */
+export function getModelMorphWeight(id: string, morphName: string): number {
+    const inst = modelRegistry.get(id);
+    if (!inst?.mmdModel?.morph) return 0;
+    return inst.mmdModel.morph.getMorphWeight(morphName);
+}
+
+/** Reset all morph weights to 0. */
+export function resetModelMorphs(id: string): void {
+    const inst = modelRegistry.get(id);
+    if (!inst?.mmdModel?.morph) return;
+    inst.mmdModel.morph.resetMorphWeights();
+}
+
 // ======== Auto-restore ========
 export async function tryRestoreLastScene(): Promise<void> {
     try {

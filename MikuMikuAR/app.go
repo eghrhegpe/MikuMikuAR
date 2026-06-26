@@ -209,6 +209,8 @@ type Config struct {
 	MMDPath              string                `json:"mmd_path"`              // MikuMikuDance 可执行文件路径，空则自动检测
 	Tags                 map[string][]string   `json:"tags"`                  // libraryRef → []tag 列表
 	DanceSets            map[string]DanceSet   `json:"dance_sets"`            // 舞蹈套装，key = 套装 ID
+	RecentModels         []string              `json:"recent_models"`         // libraryRef 数组，最近打开的模型（最多20条）
+	Playlists            map[string][]string   `json:"playlists"`             // 播放列表，key = 名称，value = libraryRef 数组
 }
 
 // RenderPreset stores a user-defined rendering preset.
@@ -578,31 +580,109 @@ func (a *App) SetDisplayNamePriority(priority string) error {
 }
 
 // ToggleFavorite adds or removes a libraryRef from the favorites list.
+// Favorites are stored as the built-in tag "收藏" in the tag system.
 func (a *App) ToggleFavorite(libraryRef string) error {
 	return a.updateConfig(func(cfg *Config) {
+		// Migrate old Favorites to tags if needed
+		if len(cfg.Favorites) > 0 {
+			if cfg.Tags == nil {
+				cfg.Tags = make(map[string][]string)
+			}
+			for _, ref := range cfg.Favorites {
+				tags := cfg.Tags[ref]
+				hasFav := false
+				for _, t := range tags {
+					if t == "收藏" {
+						hasFav = true
+						break
+					}
+				}
+				if !hasFav {
+					cfg.Tags[ref] = append(tags, "收藏")
+				}
+			}
+			cfg.Favorites = nil
+		}
+		if cfg.Tags == nil {
+			cfg.Tags = make(map[string][]string)
+		}
+		tags := cfg.Tags[libraryRef]
 		found := false
-		filtered := make([]string, 0, len(cfg.Favorites))
-		for _, f := range cfg.Favorites {
-			if f == libraryRef {
+		filtered := make([]string, 0, len(tags))
+		for _, t := range tags {
+			if t == "收藏" {
 				found = true
 				continue
 			}
-			filtered = append(filtered, f)
+			filtered = append(filtered, t)
 		}
 		if !found {
-			filtered = append(filtered, libraryRef)
+			filtered = append(filtered, "收藏")
 		}
-		cfg.Favorites = filtered
-	}, false) // false = 不触发 rescan，轻写
+		cfg.Tags[libraryRef] = filtered
+	}, false)
 }
 
 // GetFavorites returns the current favorites list.
+// Reads from the built-in tag "收藏" in the tag system.
 func (a *App) GetFavorites() []string {
 	cfg, err := a.GetConfig()
 	if err != nil || cfg == nil {
 		return nil
 	}
-	return cfg.Favorites
+	// Migrate old Favorites on read
+	if len(cfg.Favorites) > 0 {
+		return cfg.Favorites
+	}
+	if cfg.Tags == nil {
+		return nil
+	}
+	var result []string
+	for ref, tags := range cfg.Tags {
+		for _, t := range tags {
+			if t == "收藏" {
+				result = append(result, ref)
+				break
+			}
+		}
+	}
+	return result
+}
+
+// ======== Recent Models ========
+
+const maxRecentModels = 20
+
+// GetRecentModels returns the recently opened model libraryRefs (newest first).
+func (a *App) GetRecentModels() []string {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil {
+		return nil
+	}
+	return cfg.RecentModels
+}
+
+// AddRecentModel pushes a libraryRef to the top of the recent models list.
+// If already present, it is moved to the top. List is capped at maxRecentModels.
+func (a *App) AddRecentModel(libraryRef string) error {
+	if libraryRef == "" {
+		return nil
+	}
+	return a.updateConfig(func(cfg *Config) {
+		// Remove if already present
+		filtered := make([]string, 0, len(cfg.RecentModels))
+		for _, r := range cfg.RecentModels {
+			if r != libraryRef {
+				filtered = append(filtered, r)
+			}
+		}
+		// Prepend
+		cfg.RecentModels = append([]string{libraryRef}, filtered...)
+		// Cap
+		if len(cfg.RecentModels) > maxRecentModels {
+			cfg.RecentModels = cfg.RecentModels[:maxRecentModels]
+		}
+	}, false)
 }
 
 // ======== Tag System ========
@@ -745,6 +825,43 @@ func (a *App) ImportDanceSet(vmdPath, audioPath, name string) (string, error) {
 		return "", err
 	}
 	return id, nil
+}
+
+// ======== Playlists ========
+
+// GetPlaylists returns all named playlists as a map.
+func (a *App) GetPlaylists() map[string][]string {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil || cfg.Playlists == nil {
+		return make(map[string][]string)
+	}
+	// Return a copy
+	result := make(map[string][]string, len(cfg.Playlists))
+	for name, items := range cfg.Playlists {
+		cp := make([]string, len(items))
+		copy(cp, items)
+		result[name] = cp
+	}
+	return result
+}
+
+// SavePlaylist saves/replaces a named playlist with the given items.
+func (a *App) SavePlaylist(name string, items []string) error {
+	return a.updateConfig(func(cfg *Config) {
+		if cfg.Playlists == nil {
+			cfg.Playlists = make(map[string][]string)
+		}
+		cp := make([]string, len(items))
+		copy(cp, items)
+		cfg.Playlists[name] = cp
+	}, false)
+}
+
+// DeletePlaylist removes a named playlist.
+func (a *App) DeletePlaylist(name string) error {
+	return a.updateConfig(func(cfg *Config) {
+		delete(cfg.Playlists, name)
+	}, false)
 }
 
 // ======== Render Presets ========
@@ -1837,6 +1954,17 @@ func (a *App) SaveThumbnail(modelPath string, base64PNG string) error {
 	}
 	runtime.LogInfof(a.ctx, "SaveThumbnail: %s → %s (%d bytes)", modelPath, thumbPath, len(data))
 	return os.WriteFile(thumbPath, data, 0644)
+}
+
+// SaveScreenshot saves a base64-encoded PNG screenshot to the specified directory.
+func (a *App) SaveScreenshot(dir string, filename string, base64PNG string) error {
+	data, err := base64.StdEncoding.DecodeString(base64PNG)
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, filename)
+	runtime.LogInfof(a.ctx, "SaveScreenshot: %s (%d bytes)", path, len(data))
+	return os.WriteFile(path, data, 0644)
 }
 
 // GetThumbnail returns a base64-encoded PNG thumbnail for the given model path.
