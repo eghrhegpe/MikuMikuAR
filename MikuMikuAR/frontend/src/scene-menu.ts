@@ -498,7 +498,7 @@ interface EnvPresetConfig {
 const ENV_PRESETS: Record<string, EnvPresetConfig> = {
     "舞台-A 打光": {
         env: {
-            skyMode: "gradient",
+            skyMode: "procedural",
             skyColorTop: [0.05, 0.05, 0.15],
             skyColorBot: [0.1, 0.05, 0.15],
             envIntensity: 0.5,
@@ -543,7 +543,7 @@ const ENV_PRESETS: Record<string, EnvPresetConfig> = {
     },
     "演唱会蓝紫": {
         env: {
-            skyMode: "gradient",
+            skyMode: "procedural",
             skyColorTop: [0.4, 0.1, 0.6],
             skyColorMid: [0.2, 0.05, 0.4],
             skyColorBot: [0.1, 0.02, 0.2],
@@ -605,7 +605,6 @@ function buildSkyLevel(): PopupLevel {
             modeRow.appendChild(modeLabel);
             const modes: Array<{ value: EnvState["skyMode"]; label: string }> = [
                 { value: "color", label: "纯色" },
-                { value: "gradient", label: "渐变" },
                 { value: "texture", label: "贴图" },
                 { value: "procedural", label: "程序化" },
             ];
@@ -623,12 +622,9 @@ function buildSkyLevel(): PopupLevel {
 
             if (s.skyMode === "color") {
                 addColorSliderRow(container, "天空色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
-            } else if (s.skyMode === "gradient" || s.skyMode === "procedural") {
+            } else if (s.skyMode === "procedural") {
                 addColorSliderRow(container, "天顶色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
                 addColorSliderRow(container, "地平色", s.skyColorBot, (v) => setEnvState({ skyColorBot: v }));
-            }
-            if (s.skyMode === "gradient") {
-                addColorSliderRow(container, "中间色", s.skyColorMid, (v) => setEnvState({ skyColorMid: v }));
             }
 
             if (s.skyMode === "texture") {

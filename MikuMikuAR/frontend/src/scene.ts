@@ -20,9 +20,6 @@ import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { SkyMaterial } from "@babylonjs/materials/sky/skyMaterial";
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
-import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
-import { Effect } from "@babylonjs/core/Materials/effect";
-import { ShaderStore } from "@babylonjs/core/Engines/shaderStore";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { GPUParticleSystem } from "@babylonjs/core/Particles/gpuParticleSystem";
 
@@ -65,51 +62,9 @@ export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true
 export const scene = new Scene(engine);
 scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
 
-// ─── Custom 3-color gradient shader for sky ───
-const _grad3Vert = `
-precision highp float;
-attribute vec3 position;
-uniform mat4 worldViewProjection;
-uniform mat4 world;
-varying vec3 vPositionW;
-void main(void) {
-    vec4 wPos = world * vec4(position, 1.0);
-    vPositionW = wPos.xyz;
-    gl_Position = worldViewProjection * vec4(position, 1.0);
-}
-`;
-const _grad3Frag = `
-precision highp float;
-uniform vec3 topColor;
-uniform vec3 midColor;
-uniform vec3 bottomColor;
-uniform float offset;
-uniform float scale;
-varying vec3 vPositionW;
-void main(void) {
-    float h = vPositionW.y * scale + offset;
-    float t;
-    vec3 col;
-    if (h > 0.5) {
-        t = (h - 0.5) * 2.0;
-        col = mix(midColor, topColor, t);
-    } else {
-        t = h * 2.0;
-        col = mix(bottomColor, midColor, t);
-    }
-    gl_FragColor = vec4(col, 1.0);
-}
-`;
-ShaderStore.ShadersStore["grad3Vertex"] = _grad3Vert;
-ShaderStore.ShadersStore["grad3Fragment"] = _grad3Frag;
-
 // Dev debug helper — exposes internals for Console inspection
 (window as any).__envDebug = () => ({
     clearColor: `rgba(${scene.clearColor.r.toFixed(2)},${scene.clearColor.g.toFixed(2)},${scene.clearColor.b.toFixed(2)},${scene.clearColor.a})`,
-    matType: _envSys?.sky?.skyMesh?.material?.getClassName() || "none",
-    topColor: `(${envState.skyColorTop.join(",")})`,
-    midColor: `(${envState.skyColorMid.join(",")})`,
-    bottomColor: `(${envState.skyColorBot.join(",")})`,
     skyMode: envState.skyMode,
 });
 
@@ -1606,7 +1561,6 @@ export async function tryRestoreLastScene(): Promise<void> {
 interface EnvSkyResources {
     skyMesh: Mesh | null;
     envTexture: BaseTexture | null;
-    gradientMesh: Mesh | null;
 }
 
 const _envSys: {
@@ -1617,7 +1571,7 @@ const _envSys: {
     shadow: { generator: any | null };
     wind: { lastUpdate: number };
 } = {
-    sky: { skyMesh: null, envTexture: null, gradientMesh: null },
+    sky: { skyMesh: null, envTexture: null },
     ground: { mesh: null },
     particles: { emitter: null, update: null },
     clouds: { postProcess: null },
@@ -1630,42 +1584,11 @@ function _disposeSky(): void {
         _envSys.sky.skyMesh.dispose();
         _envSys.sky.skyMesh = null;
     }
-    if (_envSys.sky.gradientMesh) {
-        _envSys.sky.gradientMesh.dispose();
-        _envSys.sky.gradientMesh = null;
-    }
     if (_envSys.sky.envTexture) {
         _envSys.sky.envTexture.dispose();
         _envSys.sky.envTexture = null;
         scene.environmentTexture = null;
     }
-}
-
-function _createGradientSky(state: EnvState): void {
-    const skySphere = MeshBuilder.CreateSphere("envSkySphere", {
-        diameter: 1000,
-        segments: 24,
-        sideOrientation: Mesh.BACKSIDE,
-    }, scene);
-    skySphere.isPickable = false;
-    skySphere.renderingGroupId = 0;
-
-    const mat = new ShaderMaterial("envSkyGradient", scene, {
-        vertex: "grad3",
-        fragment: "grad3",
-    }, {
-        attributes: ["position", "normal", "uv"],
-        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "topColor", "midColor", "bottomColor", "offset", "scale"],
-    });
-    mat.setColor3("topColor", new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]));
-    mat.setColor3("midColor", new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]));
-    mat.setColor3("bottomColor", new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]));
-    mat.setFloat("offset", 0);
-    mat.setFloat("scale", 0.003);
-    skySphere.material = mat;
-
-    _envSys.sky.skyMesh = skySphere;
-    scene.clearColor = new Color4(0, 0, 0, 1);
 }
 
 function _loadEnvTexture(path: string, rotationY: number, intensity: number): void {
@@ -1719,41 +1642,6 @@ function _applySky(state: EnvState): void {
     }
 
     const mesh = _envSys.sky.skyMesh;
-    const top = state.skyColorTop;
-    const bot = state.skyColorBot;
-
-    // Gradient mode — pre-compile via isReady, then swap
-    if (state.skyMode === "gradient") {
-        if (!mesh) {
-            _disposeSky();
-            _createGradientSky(state);
-            return;
-        }
-        const mat = new ShaderMaterial("envSkyGradient", scene, {
-            vertex: "grad3",
-            fragment: "grad3",
-        }, {
-            attributes: ["position", "normal", "uv"],
-            uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "topColor", "midColor", "bottomColor", "offset", "scale"],
-        });
-        mat.setColor3("topColor", new Color3(top[0], top[1], top[2]));
-        mat.setColor3("midColor", new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]));
-        mat.setColor3("bottomColor", new Color3(bot[0], bot[1], bot[2]));
-        mat.setFloat("offset", 0);
-        mat.setFloat("scale", 0.003);
-
-        // isReady() triggers synchronous shader compile (it calls _prepareEffect internally)
-        mat.isReady(mesh);
-
-        // Swap — old program is no longer referenced, new program is valid
-        if (mesh.material) {
-            mesh.material.dispose();
-        }
-        mesh.material = mat;
-        // Neutral black background so the gradient sphere is clearly visible
-        scene.clearColor = new Color4(0, 0, 0, 1);
-        return;
-    }
 
     // Procedural mode — pre-compile via isReady, then swap
     if (state.skyMode === "procedural") {

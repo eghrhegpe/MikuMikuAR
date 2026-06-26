@@ -76,7 +76,7 @@ export type PopupLevel = {
 };
 
 export interface EnvState {
-    skyMode: "color" | "gradient" | "texture" | "procedural";
+    skyMode: "color" | "texture" | "procedural";
     skyColorTop: [number, number, number];
     skyColorMid: [number, number, number];
     skyColorBot: [number, number, number];

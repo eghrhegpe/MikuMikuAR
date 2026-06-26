@@ -72,8 +72,8 @@ describe("EnvState defaults", () => {
 describe("setEnvState partial merge", () => {
     it("partial update preserves other fields", () => {
         const state = { ...defaultEnv };
-        const updated = Object.assign(state, { skyMode: "gradient" as const, skyBrightness: 1.5 });
-        expect(updated.skyMode).toBe("gradient");
+        const updated = Object.assign(state, { skyMode: "procedural" as const, skyBrightness: 1.5 });
+        expect(updated.skyMode).toBe("procedural");
         expect(updated.skyBrightness).toBe(1.5);
         expect(updated.groundVisible).toBe(true);
         expect(updated.envIntensity).toBe(1);
