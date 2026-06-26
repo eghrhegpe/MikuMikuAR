@@ -14,6 +14,7 @@
 |------|------|------|
 | `SelectPMXFile` | `() (string, error)` | 选择 PMX 文件 |
 | `SelectVMDMotion` | `() (string, error)` | 选择 VMD 文件 |
+| `SelectVPDPose` | `() (string, error)` | 选择 VPD 姿势文件 |
 | `SelectAudioFile` | `() (string, error)` | 选择音频文件（MP3/WAV/OGG） |
 | `SelectDir` | `() (string, error)` | 选择目录 |
 | `SelectExeFile` | `() (string, error)` | 选择可执行文件 |
