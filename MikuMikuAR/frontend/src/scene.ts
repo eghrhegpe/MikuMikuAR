@@ -1659,14 +1659,34 @@ function _createProceduralSky(state: EnvState): void {
 }
 
 function _applySky(state: EnvState): void {
-    // Color mode: just clearColor — always safe to in-place
+    // Color mode: always just clearColor (no mesh)
     if (state.skyMode === "color") {
         _disposeSky();
         scene.clearColor = new Color4(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2], 1);
         return;
     }
 
-    // Gradient / procedural / texture: full rebuild needed (Babylon mat property setters are unreliable for live update)
+    // Gradient mode — in-place material update if mesh exists
+    if (state.skyMode === "gradient") {
+        if (_envSys.sky.skyMesh?.material instanceof GradientMaterial) {
+            const mat = _envSys.sky.skyMesh.material;
+            mat.topColor = new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]);
+            mat.bottomColor = new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]);
+            scene.clearColor = new Color4(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2], 1);
+            return;
+        }
+    }
+
+    // Procedural mode — in-place material update if mesh exists
+    if (state.skyMode === "procedural") {
+        if (_envSys.sky.skyMesh?.material instanceof SkyMaterial) {
+            const mat = _envSys.sky.skyMesh.material as SkyMaterial;
+            mat.luminance = state.skyBrightness;
+            return;
+        }
+    }
+
+    // Full rebuild (mode switch or first-time setup)
     _disposeSky();
 
     switch (state.skyMode) {
