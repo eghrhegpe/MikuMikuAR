@@ -65,6 +65,7 @@ scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
 // Dev debug helper — exposes internals for Console inspection
 (window as any).__envDebug = () => ({
     clearColor: `rgba(${scene.clearColor.r.toFixed(2)},${scene.clearColor.g.toFixed(2)},${scene.clearColor.b.toFixed(2)},${scene.clearColor.a})`,
+    matType: _envSys?.sky?.skyMesh?.material?.getClassName() || "none",
     skyMode: envState.skyMode,
 });
 
@@ -1629,6 +1630,8 @@ function _createProceduralSky(state: EnvState): void {
     skyMat.sunPosition = sunDir.scale(100);
 
     skybox.material = skyMat;
+    // Force synchronous shader compilation so the first frame renders, not black
+    skyMat.isReady(skybox);
     _envSys.sky.skyMesh = skybox;
     scene.clearColor = new Color4(0, 0, 0, 1);
 }
