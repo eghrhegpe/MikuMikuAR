@@ -103,6 +103,9 @@ describe("Sky — Procedural mode", () => {
         expect(skyMat.luminance).toBe(2);
         expect(skyMat.turbidity).toBe(10);
 
+        // Sun position stays above horizon (Y > 0) regardless of input
+        expect(skyMat.sunPosition.y).toBeGreaterThan(0);
+
         box.dispose();
         skyMat.dispose();
     });
