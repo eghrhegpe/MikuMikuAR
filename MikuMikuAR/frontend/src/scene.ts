@@ -796,6 +796,8 @@ export function removeModel(id: string): void {
     }
     if (inst.mmdModel && mmdRuntime) { try { mmdRuntime.destroyMmdModel(inst.mmdModel); } catch (e) { console.warn("removeModel: destroyMmdModel failed", e); } }
     for (const m of inst.meshes) { if (m instanceof Mesh) m.dispose(); }
+    inst._origTextures = undefined;
+    inst.outfitFile = undefined;
     modelRegistry.delete(id);
     _catState.delete(id);
     _matState.delete(id);
@@ -2414,28 +2416,33 @@ function _disposeEnvUpdateObserver(): void {
 
 // ======== Outfit System ========
 
-/** Load outfits.json for a model and store in the instance. */
-/** Collect unique original texture basenames from a model's materials. */
-function _collectOrigTextureBasenames(inst: ModelInstance): string[] {
-    const names = new Set<string>();
+interface _SlotMapping {
+    matName: string;
+    slot: string;
+    basename: string;
+}
+
+function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
+    const result: _SlotMapping[] = [];
     for (const mesh of inst.meshes) {
         const sm = mesh.material as StandardMaterial;
         if (!sm) continue;
-        for (const tex of [
-            sm.diffuseTexture,
-            (sm as any).toonTexture as Texture | null,
-            (sm as any).sphereTexture as Texture | null,
-            sm.bumpTexture,
-            sm.emissiveTexture,
-        ]) {
+        const matName = sm.name;
+        for (const [slot, tex] of [
+            ["diffuse", sm.diffuseTexture],
+            ["toon", (sm as any).toonTexture],
+            ["spa", (sm as any).sphereTexture],
+            ["normal", sm.bumpTexture],
+            ["emissive", sm.emissiveTexture],
+        ] as const) {
             if (tex) {
-                const url = tex.name || tex.url || "";
+                const url = (tex as Texture).name || (tex as Texture).url || "";
                 const base = url.split("/").pop()?.split("?")[0] || "";
-                if (base) names.add(base);
+                if (base) result.push({ matName, slot, basename: base });
             }
         }
     }
-    return [...names];
+    return result;
 }
 
 export async function loadOutfits(id: string): Promise<OutfitFile | null> {
@@ -2455,36 +2462,33 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
 
     // 2. Auto-discovery: scan subdirectories for matching texture basenames
     try {
-        const origNames = _collectOrigTextureBasenames(inst);
-        if (origNames.length === 0) {
+        const mappings = _collectSlotMappings(inst);
+        if (mappings.length === 0) {
             inst.outfitFile = undefined;
             return null;
         }
-        const subdirs = await ListSubDirs(inst.filePath.substring(0, inst.filePath.lastIndexOf("/")));
+        const modelDir = inst.filePath.replace(/\\/g, "/").replace(/\/[^/]*$/, "");
+        const subdirs = await ListSubDirs(modelDir);
         if (!subdirs || subdirs.length === 0) {
             inst.outfitFile = undefined;
             return null;
         }
         const variants: OutfitVariant[] = [];
-        // Use Promise.all for concurrent HEAD checks
         const results = await Promise.all(subdirs.map(async (subdir): Promise<OutfitVariant | null> => {
-            const all: OutfitSlot = {};
+            const byMaterial: Record<string, OutfitSlot> = {};
             let hasAny = false;
-            await Promise.all(origNames.map(async (base) => {
-                const testUrl = `http://127.0.0.1:${inst.port}/${encodeURIComponent(subdir + "/" + base)}`;
+            await Promise.all(mappings.map(async (m) => {
+                const testUrl = `http://127.0.0.1:${inst.port}/${encodeURIComponent(subdir + "/" + m.basename)}`;
                 try {
                     const resp = await fetch(testUrl, { method: "HEAD" });
                     if (resp.ok) {
-                        // Map basename back to slot — probe each slot
-                        const slotKey = await _probeSlotForBasename(inst, base);
-                        if (slotKey) {
-                            (all as any)[slotKey] = subdir + "/" + base;
-                            hasAny = true;
-                        }
+                        if (!byMaterial[m.matName]) byMaterial[m.matName] = {};
+                        (byMaterial[m.matName] as any)[m.slot] = subdir + "/" + m.basename;
+                        hasAny = true;
                     }
-                } catch { /* file not found */ }
+                } catch { }
             }));
-            return hasAny ? { name: subdir, all } : null;
+            return hasAny ? { name: subdir, byMaterial } : null;
         }));
         for (const r of results) {
             if (r) variants.push(r);
@@ -2502,26 +2506,7 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
     }
 }
 
-/** Given a basename, find which texture slot it belongs to by comparing URLs. */
-function _probeSlotForBasename(inst: ModelInstance, basename: string): Promise<string | null> {
-    for (const mesh of inst.meshes) {
-        const sm = mesh.material as StandardMaterial;
-        if (!sm) continue;
-        for (const [slot, tex] of [
-            ["diffuse", sm.diffuseTexture],
-            ["toon", (sm as any).toonTexture],
-            ["spa", (sm as any).sphereTexture],
-            ["normal", sm.bumpTexture],
-            ["emissive", sm.emissiveTexture],
-        ] as const) {
-            if (tex) {
-                const url = (tex as Texture).name || (tex as Texture).url || "";
-                if (url.includes(basename)) return Promise.resolve(slot);
-            }
-        }
-    }
-    return Promise.resolve(null);
-}
+
 
 function _applySlot(sm: StandardMaterial, slot: string, newPath: string | null, origTex: Texture | null, port: number): void {
     const cur = (sm as any)[slot] as Texture | null;
