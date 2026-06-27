@@ -20,6 +20,7 @@ import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
+import { Observer } from "@babylonjs/core/Misc/observable";
 import { GPUParticleSystem } from "@babylonjs/core/Particles/gpuParticleSystem";
 import "@babylonjs/core/Particles/webgl2ParticleSystem";
 
@@ -1205,7 +1206,7 @@ function destroyBoneOverlay(id: string): void {
     }
 }
 
-let _boneUpdateObserver: any = null;
+let _boneUpdateObserver: Observer<Scene> | null = null;
 function ensureBoneUpdateObserver(): void {
     if (_boneUpdateObserver) return;
     _boneUpdateObserver = scene.onBeforeRenderObservable.add(() => {
@@ -1694,9 +1695,9 @@ interface EnvSkyResources {
 const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
-    particles: { emitter: any | null };
-    clouds: { postProcess: any | null; material: any | null; texture: any | null };
-    shadow: { generator: any | null };
+    particles: { emitter: GPUParticleSystem | null };
+    clouds: { postProcess: Mesh | null; material: StandardMaterial | null; texture: Texture | null };
+    shadow: { generator: ShadowGenerator | null };
 } = {
     sky: { skyMesh: null, envTexture: null },
     ground: { mesh: null },
@@ -1717,17 +1718,18 @@ function _disposeSky(): void {
     }
 }
 
-function _buildGradientTexture(top: Color3, bot: Color3): Texture {
+function _buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness: number): Texture {
     const canvas = document.createElement("canvas");
     canvas.width = 2;
     canvas.height = 256;
     const ctx = canvas.getContext("2d")!;
     const grad = ctx.createLinearGradient(0, 0, 0, 256);
-    // Canvas V=0 → sphere V=0 (bottom/ground), V=1 → sphere V=1 (top/sky)
-    grad.addColorStop(0, `rgb(${bot.r*255|0},${bot.g*255|0},${bot.b*255|0})`);
-    grad.addColorStop(0.45, `rgb(${bot.r*255|0},${bot.g*255|0},${bot.b*255|0})`);
-    grad.addColorStop(0.55, `rgb(${top.r*255|0},${top.g*255|0},${top.b*255|0})`);
-    grad.addColorStop(1, `rgb(${top.r*255|0},${top.g*255|0},${top.b*255|0})`);
+    const scale = (c: Color3) => `rgb(${c.r*brightness*255|0},${c.g*brightness*255|0},${c.b*brightness*255|0})`;
+    grad.addColorStop(0, scale(bot));
+    grad.addColorStop(0.35, scale(bot));
+    grad.addColorStop(0.5, scale(mid));
+    grad.addColorStop(0.65, scale(top));
+    grad.addColorStop(1, scale(top));
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 2, 256);
     const tex = new Texture("data:" + canvas.toDataURL("image/png"), scene, false);
@@ -1748,7 +1750,9 @@ function _createProceduralSky(state: EnvState): void {
     const mat = new StandardMaterial("envSkyMat", scene);
     mat.emissiveTexture = _buildGradientTexture(
         new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
+        new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
         new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
+        state.skyBrightness,
     );
     mat.disableLighting = true;
     mat.backFaceCulling = false;
@@ -1796,7 +1800,9 @@ function _applySky(state: EnvState): void {
             }
             mat.emissiveTexture = _buildGradientTexture(
                 new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
+                new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
                 new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
+                state.skyBrightness,
             );
             return;
         }
@@ -2070,7 +2076,7 @@ function _disposeClouds(): void {
     _disposeEnvUpdateObserver();
 }
 
-let _envUpdateObserver: any = null;
+let _envUpdateObserver: Observer<Scene> | null = null;
 function _ensureEnvUpdateObserver(): void {
     if (_envUpdateObserver) return;
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
