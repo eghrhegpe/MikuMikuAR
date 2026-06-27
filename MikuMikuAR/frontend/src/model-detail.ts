@@ -30,6 +30,7 @@ import {
   resetSingleMatParams,
   resetAllMatParams,
   setModelWireframe,
+  setModelBoneVis,
   setModelVisibility,
   setModelOpacity,
   removeModel,
@@ -61,6 +62,11 @@ import {
   SelectPresetOpenFile,
   SaveModelPreset,
   LoadModelPreset,
+  GetModelPresets,
+  SaveModelPresetToLib,
+  LoadModelPresetFromLib,
+  DeleteModelPreset,
+  RenameModelPreset,
 } from "../wailsjs/go/main/App";
 import type { main } from "../wailsjs/go/models";
 
@@ -159,9 +165,16 @@ export function buildModelDetailLevel(id: string): PopupLevel {
       const card3 = document.createElement("div");
       card3.className = "lcard";
       slideRow(card3, "lucide:save", "保存预设", false, () => {
+        savePresetToLibDialog(id);
+      });
+      slideRow(card3, "lucide:folder-open", "加载预设", true, () => {
+        const level = buildPresetListLevel(id);
+        stackRegistry.modelStack?.push(level);
+      });
+      slideRow(card3, "lucide:upload", "导出文件", false, () => {
         selectAndSavePreset(id);
       });
-      slideRow(card3, "lucide:folder-open", "加载预设", false, () => {
+      slideRow(card3, "lucide:download", "导入文件", false, () => {
         selectAndLoadPreset(id);
       });
       container.appendChild(card3);
@@ -375,6 +388,17 @@ export function buildVisibilityLevel(id: string): PopupLevel {
         wfRow.appendChild(wfLbl);
         wfRow.addEventListener("click", () => { setModelWireframe(id, !inst.wireframe); stackRegistry.modelStack?.reRender(); setStatus(inst.wireframe ? "线框模式: 关" : "线框模式: 开", true); });
         c.appendChild(wfRow);
+
+        const boneRow = document.createElement("div");
+        boneRow.className = "slide-item";
+        boneRow.setAttribute("data-hint", inst.showBones ? "骨骼叠加已开启" : "点击显示骨骼");
+        const boneIcon = createIconifyIcon(inst.showBones ? "lucide:check-square" : "lucide:square");
+        const boneS = document.createElement("span"); boneS.className = "slide-icon"; if (boneIcon) boneS.appendChild(boneIcon);
+        boneRow.appendChild(boneS);
+        const boneLbl = document.createElement("span"); boneLbl.className = "slide-label"; boneLbl.textContent = "骨骼显示";
+        boneRow.appendChild(boneLbl);
+        boneRow.addEventListener("click", () => { setModelBoneVis(id, !inst.showBones); stackRegistry.modelStack?.reRender(); setStatus(inst.showBones ? "骨骼显示: 关" : "骨骼显示: 开", true); });
+        c.appendChild(boneRow);
       });
     },
   };
@@ -813,8 +837,18 @@ export function buildMatListLevel(id: string, modelName: string): PopupLevel {
   };
 }
 
+export interface ModelPresetEntry {
+  name: string;
+  presetName: string;
+  modelName: string;
+  modelRef: string;
+  updatedAt: number;
+}
+
 export interface ModelPresetFile {
   version: 1;
+  presetName?: string;
+  autoApply?: boolean;
   model: {
     filePath: string;
     libraryRef?: string;
@@ -841,13 +875,15 @@ export interface ModelPresetFile {
   materialOverrides?: Record<number, { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }>;
 }
 
-export function serializeModelPreset(id: string): string {
+export function serializeModelPreset(id: string, presetName?: string): string {
   const inst = modelRegistry.get(id);
   if (!inst) return "";
   const matState = getMatState(id);
   const rm = inst.rootMesh;
   const preset: ModelPresetFile = {
     version: 1,
+    presetName: presetName,
+    autoApply: false,
     model: {
       filePath: inst.filePath,
       libraryRef: computeLibraryRef(inst.filePath) || undefined,
@@ -935,6 +971,53 @@ export async function selectAndSavePreset(id: string): Promise<void> {
   }
 }
 
+// ======== Auto-Apply & Undo Stack ========
+
+const _presetUndoStack = new Map<string, string>();
+
+function showUndoToast(message: string, undoFn: () => void): void {
+  const existing = document.getElementById("preset-undo-toast");
+  if (existing) existing.remove();
+  const toast = document.createElement("div");
+  toast.id = "preset-undo-toast";
+  toast.style.cssText = "position:fixed;bottom:48px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:8px 16px;display:flex;align-items:center;gap:12px;z-index:9999;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,0.3);";
+  const msg = document.createElement("span");
+  msg.textContent = message;
+  toast.appendChild(msg);
+  const undoBtn = document.createElement("button");
+  undoBtn.className = "mode-btn";
+  undoBtn.textContent = "撤销";
+  undoBtn.style.cssText = "font-size:12px;padding:2px 10px;cursor:pointer;";
+  undoBtn.addEventListener("click", () => { undoFn(); toast.remove(); });
+  toast.appendChild(undoBtn);
+  const closeBtn = document.createElement("span");
+  closeBtn.textContent = "✕";
+  closeBtn.style.cssText = "font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px;";
+  closeBtn.addEventListener("click", () => toast.remove());
+  toast.appendChild(closeBtn);
+  document.body.appendChild(toast);
+  setTimeout(() => { if (toast.parentNode) toast.remove(); }, 8000);
+}
+
+export async function tryAutoApplyPreset(id: string): Promise<void> {
+  const inst = modelRegistry.get(id);
+  if (!inst) return;
+  const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
+  const match = entries.find(e => e.modelRef && inst.filePath.includes(e.modelRef) && e.name);
+  if (!match) return;
+  const json = await LoadModelPresetFromLib(match.name);
+  const preset: ModelPresetFile = JSON.parse(json);
+  if (preset.autoApply === false) return;
+  // Save undo snapshot
+  _presetUndoStack.set(id, serializeModelPreset(id));
+  await applyModelPreset(id, json);
+  showUndoToast(`已自动应用预设「${preset.presetName || match.name}」`, () => {
+    const snap = _presetUndoStack.get(id);
+    if (snap) applyModelPreset(id, snap);
+    setStatus("✓ 已撤销预设应用", true);
+  });
+}
+
 export async function selectAndLoadPreset(id: string): Promise<void> {
   const path = await SelectPresetOpenFile();
   if (!path) return;
@@ -944,4 +1027,102 @@ export async function selectAndLoadPreset(id: string): Promise<void> {
   } catch (err: any) {
     setStatus("✗ 加载失败: " + (err.message || err), false);
   }
+}
+
+export async function applyPresetFromLib(
+  presetName: string,
+  targetModelId: string | null,
+): Promise<void> {
+  try {
+    const json = await LoadModelPresetFromLib(presetName);
+    const preset: ModelPresetFile = JSON.parse(json);
+    if (targetModelId) {
+      await applyModelPreset(targetModelId, json);
+    } else {
+      // No target model → load model from preset's filePath
+      const { loadPMXFile } = await import("./scene");
+      await loadPMXFile(preset.model.filePath);
+      // Find the freshly loaded model by filePath
+      for (const [mid, inst] of modelRegistry) {
+        if (inst.filePath === preset.model.filePath) {
+          await applyModelPreset(mid, json);
+          return;
+        }
+      }
+      setStatus("✗ 模型已加载但未在注册表中找到", false);
+    }
+  } catch (err: any) {
+    setStatus("✗ 应用预设失败: " + (err.message || err), false);
+  }
+}
+
+export async function savePresetToLibDialog(id: string): Promise<void> {
+  const name = prompt("输入预设名称：");
+  if (!name) return;
+  const trimmed = name.trim();
+  if (!trimmed) { setStatus("✗ 名称不能为空", false); return; }
+  const json = serializeModelPreset(id, trimmed);
+  if (!json) { setStatus("✗ 无法序列化模型状态", false); return; }
+  try {
+    await SaveModelPresetToLib(trimmed, json);
+    setStatus("✓ 预设已保存到库", true);
+  } catch (err: any) {
+    setStatus("✗ 保存失败: " + (err.message || err), false);
+  }
+}
+
+export function buildPresetListLevel(id: string | null): PopupLevel {
+  return {
+    label: "预设库",
+    dir: "",
+    items: [],
+    renderCustom: async (container) => {
+      container.classList.remove("render-card");
+      const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
+      if (entries.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:24px;";
+        empty.textContent = "暂无预设";
+        container.appendChild(empty);
+        return;
+      }
+      cardContainer(container, (c) => {
+        for (const e of entries) {
+          const row = document.createElement("div"); row.className = "slide-item";
+          const iconSpan = document.createElement("span"); iconSpan.className = "slide-icon";
+          const iconify = document.createElement("iconify-icon");
+          iconify.icon = "lucide:bookmark";
+          iconSpan.appendChild(iconify);
+          row.appendChild(iconSpan);
+          const labelSpan = document.createElement("span"); labelSpan.className = "slide-label";
+          labelSpan.textContent = e.presetName || e.name;
+          row.appendChild(labelSpan);
+          if (e.modelName) {
+            const sub = document.createElement("span");
+            sub.style.cssText = "font-size:11px;color:var(--text-dim);margin-right:auto;";
+            sub.textContent = e.modelName;
+            row.appendChild(sub);
+          }
+          const delBtn = document.createElement("span");
+          delBtn.textContent = "✕";
+          delBtn.title = "删除此预设";
+          delBtn.style.cssText = "font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 6px;";
+          delBtn.addEventListener("click", async (ev) => {
+            ev.stopPropagation();
+            if (!confirm(`确定删除「${e.presetName || e.name}」？`)) return;
+            try {
+              await DeleteModelPreset(e.name);
+              stackRegistry.modelStack?.reRender();
+              setStatus("✓ 预设已删除", true);
+            } catch { setStatus("✗ 删除失败", false); }
+          });
+          row.appendChild(delBtn);
+          row.addEventListener("click", () => {
+            applyPresetFromLib(e.name, id);
+          });
+          c.appendChild(row);
+        }
+      });
+    },
+  };
 }
