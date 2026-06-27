@@ -94,3 +94,19 @@ Ctrl+Delete 快速移除焦点模型（已在键盘快捷键中支持）。
 - **新增函数**：`buildModelDetailLevel`、`buildMotionBindingLevel`、`buildTransformLevel`、`buildVisibilityLevel`、`buildModelInfoLevel`
 - **状态管理**：`syncModelTransform(id)`、`syncModelVisibility(id)` 在 scene.ts 中实现
 - **序列化**：`serializeScene` / `deserializeScene` 扩展 transform/visibility 字段
+
+## 后续演进（补记）
+
+### 动作绑定间接化
+
+ADR-009 中规划的「🎬 动作绑定」独立入口最终未实现。实际路径改为：通过**模型预设**（`ModelPresetFile.vmd` 字段）间接绑定动作 — 预设加载时自动恢复 VMD 路径和播放状态。模型详情 card3 的「加载预设」替代了独立的动作绑定 UI。
+
+### Phase 1-5 完成状态
+
+| Phase | 功能 | 状态 |
+|-------|------|------|
+| Phase 1 | 模型详情子菜单 + 聚焦 + 移除 + 动作绑定 | ✅ |
+| Phase 2 | 变换滑块（位置/缩放/旋转） | ✅ |
+| Phase 3 | 可见性（半透明/隐藏/线框） | ✅ |
+| Phase 4 | 模型信息面板 | ✅ |
+| Phase 5 | SceneFile 序列化扩展 | ✅ |
