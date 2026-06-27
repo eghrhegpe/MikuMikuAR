@@ -350,6 +350,11 @@ async function startProcMotion(bpm?: number): Promise<void> {
     procVmdActive = true;
     try {
         await loadVMDMotion(buf, procState.mode === "autodance" ? "AutoDance" : "IdleMotion");
+        // Clear vmdData so hasUserVmd stays false for procedural VMD
+        const inst = focusedModel();
+        if (inst) {
+            inst.vmdData = null;
+        }
     } catch {
         procVmdActive = false;
     } finally {
@@ -357,9 +362,13 @@ async function startProcMotion(bpm?: number): Promise<void> {
     }
 }
 
-/** 停止程序化动作（用户加载真实 VMD 时调用）。 */
+/** 停止程序化动作并清理模型上的 procedural VMD。 */
 function stopProcMotion(): void {
     procVmdActive = false;
+    const inst = focusedModel();
+    if (inst && inst.mmdModel && mmdRuntime) {
+        inst.mmdModel.setRuntimeAnimation(null);
+    }
 }
 
 /** 每帧检查是否需要切换/重新生成 procedural VMD。 */
@@ -1598,7 +1607,7 @@ export function setEnvState(partial: Partial<EnvState>): void {
         _applyGround(envState);
     }
 
-    if (partial.particleType !== undefined || partial.particleEnabled !== undefined || partial.windEnabled !== undefined) {
+    if (partial.particleType !== undefined || partial.particleEnabled !== undefined || partial.windEnabled !== undefined || partial.windDirection !== undefined || partial.windSpeed !== undefined) {
         if (envState.particleEnabled && envState.particleType !== "none") {
             _createParticleEmitter(envState.particleType, envState.windEnabled);
         } else {
@@ -1680,14 +1689,14 @@ interface EnvSkyResources {
 const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
-    particles: { emitter: any | null; update: (() => void) | null };
+    particles: { emitter: any | null };
     clouds: { postProcess: any | null };
     shadow: { generator: any | null };
     wind: { lastUpdate: number };
 } = {
     sky: { skyMesh: null, envTexture: null },
     ground: { mesh: null },
-    particles: { emitter: null, update: null },
+    particles: { emitter: null },
     clouds: { postProcess: null },
     shadow: { generator: null },
     wind: { lastUpdate: 0 },
@@ -1943,9 +1952,9 @@ function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boo
             break;
         case "fireworks":
             ps.emitRate = 5;
-            ps.gravity = new Vector3(0, 0, 0);
-            ps.minLifeTime = 0.5;
-            ps.maxLifeTime = 2;
+            ps.gravity = new Vector3(0, -3, 0);
+            ps.minLifeTime = 1.5;
+            ps.maxLifeTime = 3.5;
             ps.direction1 = new Vector3(-2, 3, -2);
             ps.direction2 = new Vector3(2, 5, 2);
             ps.color1 = new Color4(1, 0.5, 0.2, 1);
@@ -1975,8 +1984,9 @@ function _disposeParticles(): void {
 function _applyWindToParticles(ps: GPUParticleSystem): void {
     const dir = envState.windDirection;
     const speed = envState.windSpeed;
-    ps.direction1.addInPlace(new Vector3(dir[0] * speed * 0.1, dir[1] * speed * 0.1, dir[2] * speed * 0.1));
-    ps.direction2.addInPlace(new Vector3(dir[0] * speed * 0.1, dir[1] * speed * 0.1, dir[2] * speed * 0.1));
+    const wind = new Vector3(dir[0] * speed * 0.1, dir[1] * speed * 0.1, dir[2] * speed * 0.1);
+    ps.direction1 = ps.direction1.add(wind);
+    ps.direction2 = ps.direction2.add(wind);
 }
 
 // ======== Clouds (Phase 8) ========
