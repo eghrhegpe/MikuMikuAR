@@ -254,8 +254,8 @@ const makeModelStack = (): SlideMenu => {
         "detail:remove": "从场景中移除此模型",
         "detail:export-mmd": "在 MikuMikuDance 中打开此模型",
         "detail:blender": "在 Blender 中编辑此模型",
-        "detail:preset-save": "将模型当前的变换/材质/VMD状态保存为预设文件",
-        "detail:preset-load": "从预设文件恢复模型的变换/材质/VMD状态",
+        "detail:preset-save": "将模型当前状态保存为库预设",
+        "detail:preset-load": "从库预设恢复模型的变换/材质/VMD状态",
       };
       if (row.target && row.target.startsWith("detail:")) {
         const parts = row.target.split(":");

@@ -18,6 +18,8 @@ export function ClearExtractCache():Promise<void>;
 
 export function DeleteDanceSet(arg1:string):Promise<void>;
 
+export function DeleteModelPreset(arg1:string):Promise<void>;
+
 export function DeletePresetScene(arg1:string):Promise<void>;
 
 export function DeleteRenderPreset(arg1:string):Promise<void>;
@@ -39,6 +41,8 @@ export function GetLibraryIndex():Promise<Array<main.ModelEntry>>;
 export function GetModelMeta(arg1:string):Promise<main.ModelMeta>;
 
 export function GetModelMetaBatch(arg1:Array<string>):Promise<Record<string, main.ModelMeta>>;
+
+export function GetModelPresets():Promise<Array<main.ModelPresetEntry>>;
 
 export function GetModelsByTag(arg1:string):Promise<Array<string>>;
 
@@ -70,6 +74,10 @@ export function LoadLastScene():Promise<string>;
 
 export function LoadModelPreset(arg1:string):Promise<string>;
 
+export function LoadModelPresetFromLib(arg1:string):Promise<string>;
+
+export function LoadOutfitFile(arg1:string):Promise<string>;
+
 export function LoadSceneFile(arg1:string):Promise<string>;
 
 export function OpenInBlender(arg1:string):Promise<void>;
@@ -88,11 +96,15 @@ export function RemoveTag(arg1:string,arg2:string):Promise<void>;
 
 export function RenameExternalPath(arg1:string,arg2:string):Promise<void>;
 
+export function RenameModelPreset(arg1:string,arg2:string):Promise<void>;
+
 export function SaveDanceSet(arg1:string,arg2:main.DanceSet):Promise<void>;
 
 export function SaveLastScene(arg1:string):Promise<void>;
 
 export function SaveModelPreset(arg1:string,arg2:string):Promise<void>;
+
+export function SaveModelPresetToLib(arg1:string,arg2:string):Promise<void>;
 
 export function SaveRenderPreset(arg1:string,arg2:string):Promise<void>;
 

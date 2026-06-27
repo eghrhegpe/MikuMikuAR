@@ -3,6 +3,7 @@
 import type { MmdWasmModel } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmModel";
 import { MmdWasmRuntime } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import type { Texture } from "@babylonjs/core/Materials/Textures/texture";
 
 // ======== Types ========
 
@@ -36,6 +37,34 @@ export type ModelInstance = {
     scaling: number;
     /** Y-axis rotation in radians */
     rotationY: number;
+    /** Loaded outfit configuration (null = no outfits.json found) */
+    outfitFile?: OutfitFile;
+    /** Currently active variant name (undefined = original textures) */
+    activeVariant?: string;
+    /** Original texture snapshot before first variant application */
+    _origTextures?: Map<number, { diffuse?: Texture | null; toon?: Texture | null; spa?: Texture | null; normal?: Texture | null; emissive?: Texture | null }>;
+};
+
+// ======== Outfit System Types ========
+
+export type OutfitSlot = {
+    diffuse?: string;
+    toon?: string;
+    spa?: string;
+    normal?: string;
+    emissive?: string;
+};
+
+export type OutfitVariant = {
+    name: string;
+    byCategory?: Record<string, OutfitSlot>;
+    byMaterial?: Record<string, OutfitSlot>;
+    all?: OutfitSlot;
+};
+
+export type OutfitFile = {
+    version: number;
+    variants: OutfitVariant[];
 };
 
 export type LibraryModel = {

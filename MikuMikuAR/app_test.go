@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -486,5 +487,328 @@ func TestGetDownloadWatchStatus_Default(t *testing.T) {
 	status := a.GetDownloadWatchStatus()
 	if status != "" {
 		t.Errorf("default watch status should be empty, got %q", status)
+	}
+}
+
+// ======== Model Preset Library ========
+
+func setupModelPresetTest(t *testing.T) (*App, string) {
+	tmp := t.TempDir()
+	orig := userConfigDir
+	userConfigDir = func() (string, error) { return tmp, nil }
+	t.Cleanup(func() { userConfigDir = orig })
+	presetDir := filepath.Join(tmp, "MikuMikuAR", "models")
+	return &App{}, presetDir
+}
+
+func writeTestPreset(t *testing.T, presetDir, name, presetName, modelName, modelRef string) {
+	t.Helper()
+	writeTestPresetWithAutoApply(t, presetDir, name, presetName, modelName, modelRef, false)
+}
+
+func writeTestPresetWithAutoApply(t *testing.T, presetDir, name, presetName, modelName, modelRef string, autoApply bool) {
+	t.Helper()
+	jsonStr := `{"version":1,"model":{"name":"` + modelName + `","libraryRef":"` + modelRef + `","filePath":"/dummy.pmx","kind":"actor"}`
+	if presetName != "" {
+		jsonStr += `,"presetName":"` + presetName + `"`
+	}
+	jsonStr += fmt.Sprintf(`,"autoApply":%t}`, autoApply)
+	path := filepath.Join(presetDir, name+".mcupreset.json")
+	if err := os.WriteFile(path, []byte(jsonStr), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestModelPresetDir_CreatesDir(t *testing.T) {
+	tmp := t.TempDir()
+	orig := userConfigDir
+	userConfigDir = func() (string, error) { return tmp, nil }
+	defer func() { userConfigDir = orig }()
+
+	got, err := modelPresetDir()
+	if err != nil {
+		t.Fatalf("modelPresetDir: %v", err)
+	}
+	want := filepath.Join(tmp, "MikuMikuAR", "models")
+	if got != want {
+		t.Errorf("modelPresetDir = %q, want %q", got, want)
+	}
+	if _, err := os.Stat(want); err != nil {
+		t.Errorf("models dir not created: %v", err)
+	}
+}
+
+func TestModelPresetDir_UserConfigDirError(t *testing.T) {
+	orig := userConfigDir
+	userConfigDir = func() (string, error) { return "", os.ErrPermission }
+	defer func() { userConfigDir = orig }()
+
+	_, err := modelPresetDir()
+	if err == nil {
+		t.Error("expected error when userConfigDir fails, got nil")
+	}
+}
+
+func TestGetModelPresets_Empty(t *testing.T) {
+	a, _ := setupModelPresetTest(t)
+	got := a.GetModelPresets()
+	if len(got) != 0 {
+		t.Errorf("expected empty list, got %d entries", len(got))
+	}
+}
+
+func TestGetModelPresets_WithEntries(t *testing.T) {
+	a, presetDir := setupModelPresetTest(t)
+	// Ensure dir exists
+	os.MkdirAll(presetDir, 0755)
+
+	writeTestPreset(t, presetDir, "off_preset", "默认关闭", "a.pmx", "a.pmx")
+	writeTestPresetWithAutoApply(t, presetDir, "on_preset", "开启", "b.pmx", "b.pmx", true)
+
+	got := a.GetModelPresets()
+	if len(got) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(got))
+	}
+
+	// Verify entries (order not guaranteed)
+	m := make(map[string]ModelPresetEntry)
+	for _, e := range got {
+		m[e.Name] = e
+	}
+
+	if e, ok := m["off_preset"]; !ok {
+		t.Error("missing off_preset entry")
+	} else {
+		if e.PresetName != "默认关闭" {
+			t.Errorf("off_preset PresetName = %q, want %q", e.PresetName, "默认关闭")
+		}
+		if e.AutoApply {
+			t.Error("off_preset AutoApply should be false")
+		}
+	}
+
+	if e, ok := m["on_preset"]; !ok {
+		t.Error("missing on_preset entry")
+	} else {
+		if e.PresetName != "开启" {
+			t.Errorf("on_preset PresetName = %q, want %q", e.PresetName, "开启")
+		}
+		if !e.AutoApply {
+			t.Error("on_preset AutoApply should be true")
+		}
+	}
+}
+
+func TestGetModelPresets_IgnoresNonPresetFiles(t *testing.T) {
+	a, presetDir := setupModelPresetTest(t)
+	os.MkdirAll(presetDir, 0755)
+
+	// Valid preset
+	writeTestPreset(t, presetDir, "valid", "Valid", "miku.pmx", "miku.pmx")
+	// Invalid files
+	os.WriteFile(filepath.Join(presetDir, "readme.txt"), []byte("hello"), 0644)
+	os.Mkdir(filepath.Join(presetDir, "subdir"), 0755)
+
+	got := a.GetModelPresets()
+	if len(got) != 1 {
+		t.Errorf("expected 1 entry, got %d", len(got))
+	}
+}
+
+func TestGetModelPresets_MalformedJSON(t *testing.T) {
+	a, presetDir := setupModelPresetTest(t)
+	os.MkdirAll(presetDir, 0755)
+
+	// Write valid preset
+	writeTestPreset(t, presetDir, "good", "Good", "a.pmx", "a.pmx")
+	// Write malformed JSON
+	os.WriteFile(filepath.Join(presetDir, "bad.mcupreset.json"), []byte("{invalid}"), 0644)
+
+	got := a.GetModelPresets()
+	if len(got) != 2 {
+		t.Fatalf("expected 2 entries (bad included with defaults), got %d", len(got))
+	}
+	for _, e := range got {
+		if e.Name == "bad" {
+			// Malformed should have empty PresetName/ModelName/ModelRef but still appear
+			if e.PresetName != "" || e.ModelName != "" || e.ModelRef != "" {
+				t.Errorf("bad entry should have empty fields, got PresetName=%q ModelName=%q ModelRef=%q",
+					e.PresetName, e.ModelName, e.ModelRef)
+			}
+		}
+	}
+}
+
+func TestLoadModelPresetFromLib(t *testing.T) {
+	a, presetDir := setupModelPresetTest(t)
+	os.MkdirAll(presetDir, 0755)
+	jsonStr := `{"version":1,"model":{"name":"miku.pmx","libraryRef":"models/miku.pmx","filePath":"/dummy.pmx","kind":"actor"},"presetName":"我的初音"}`
+	if err := a.SaveModelPresetToLib("miku_test", jsonStr); err != nil {
+		t.Fatalf("SaveModelPresetToLib: %v", err)
+	}
+
+	got, err := a.LoadModelPresetFromLib("miku_test")
+	if err != nil {
+		t.Fatalf("LoadModelPresetFromLib: %v", err)
+	}
+	if got != jsonStr {
+		t.Errorf("LoadModelPresetFromLib content mismatch:\ngot:  %s\nwant: %s", got, jsonStr)
+	}
+}
+
+func TestLoadModelPresetFromLib_NotFound(t *testing.T) {
+	a, _ := setupModelPresetTest(t)
+	_, err := a.LoadModelPresetFromLib("nonexistent")
+	if err == nil {
+		t.Error("expected error for non-existent preset, got nil")
+	}
+}
+
+func TestSaveModelPresetToLib(t *testing.T) {
+	a, presetDir := setupModelPresetTest(t)
+	jsonStr := `{"version":1,"model":{"name":"miku.pmx","libraryRef":"models/miku.pmx","filePath":"/dummy.pmx","kind":"actor"},"presetName":"我的初音"}`
+
+	if err := a.SaveModelPresetToLib("my_miku", jsonStr); err != nil {
+		t.Fatalf("SaveModelPresetToLib: %v", err)
+	}
+
+	// Verify file exists
+	path := filepath.Join(presetDir, "my_miku.mcupreset.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("file not created: %v", err)
+	}
+	if string(data) != jsonStr {
+		t.Errorf("file content mismatch:\ngot:  %s\nwant: %s", string(data), jsonStr)
+	}
+}
+
+func TestSaveModelPresetToLib_Overwrite(t *testing.T) {
+	a, presetDir := setupModelPresetTest(t)
+	os.MkdirAll(presetDir, 0755)
+
+	// Write initial
+	initial := `{"version":1,"model":{"name":"old","libraryRef":"old.pmx","filePath":"/old.pmx","kind":"actor"},"presetName":"Old"}`
+	if err := a.SaveModelPresetToLib("overwrite_test", initial); err != nil {
+		t.Fatalf("initial save: %v", err)
+	}
+
+	// Overwrite
+	updated := `{"version":1,"model":{"name":"new","libraryRef":"new.pmx","filePath":"/new.pmx","kind":"actor"},"presetName":"New"}`
+	if err := a.SaveModelPresetToLib("overwrite_test", updated); err != nil {
+		t.Fatalf("overwrite save: %v", err)
+	}
+
+	// Verify content is updated
+	data, _ := os.ReadFile(filepath.Join(presetDir, "overwrite_test.mcupreset.json"))
+	if string(data) != updated {
+		t.Errorf("overwrite failed: got %s, want %s", string(data), updated)
+	}
+}
+
+func TestDeleteModelPreset(t *testing.T) {
+	a, presetDir := setupModelPresetTest(t)
+	os.MkdirAll(presetDir, 0755)
+	writeTestPreset(t, presetDir, "delete_me", "ToDelete", "d.pmx", "d.pmx")
+
+	if err := a.DeleteModelPreset("delete_me"); err != nil {
+		t.Fatalf("DeleteModelPreset: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(presetDir, "delete_me.mcupreset.json")); !os.IsNotExist(err) {
+		t.Error("file still exists after delete")
+	}
+}
+
+func TestDeleteModelPreset_NotFound(t *testing.T) {
+	a, _ := setupModelPresetTest(t)
+	if err := a.DeleteModelPreset("nonexistent"); err == nil {
+		t.Error("expected error when deleting non-existent preset, got nil")
+	}
+}
+
+func TestRenameModelPreset(t *testing.T) {
+	a, presetDir := setupModelPresetTest(t)
+	os.MkdirAll(presetDir, 0755)
+	writeTestPreset(t, presetDir, "old_name", "Old", "miku.pmx", "miku.pmx")
+
+	if err := a.RenameModelPreset("old_name", "new_name"); err != nil {
+		t.Fatalf("RenameModelPreset: %v", err)
+	}
+
+	// Old file should not exist
+	if _, err := os.Stat(filepath.Join(presetDir, "old_name.mcupreset.json")); !os.IsNotExist(err) {
+		t.Error("old file still exists after rename")
+	}
+	// New file should exist
+	if _, err := os.Stat(filepath.Join(presetDir, "new_name.mcupreset.json")); err != nil {
+		t.Error("new file not found after rename")
+	}
+}
+
+func TestRenameModelPreset_NotFound(t *testing.T) {
+	a, _ := setupModelPresetTest(t)
+	if err := a.RenameModelPreset("nonexistent", "newname"); err == nil {
+		t.Error("expected error when renaming non-existent preset, got nil")
+	}
+}
+
+func TestValidPresetName_Empty(t *testing.T) {
+	if validPresetName("") {
+		t.Error("empty name should be invalid")
+	}
+}
+
+func TestValidPresetName_PathTraversal(t *testing.T) {
+	if validPresetName("../evil") {
+		t.Error("name with .. should be invalid")
+	}
+	if validPresetName("foo/bar") {
+		t.Error("name with / should be invalid")
+	}
+	if validPresetName("foo\\bar") {
+		t.Error("name with \\ should be invalid")
+	}
+}
+
+func TestValidPresetName_Valid(t *testing.T) {
+	if !validPresetName("miku_dance") {
+		t.Error("miku_dance should be valid")
+	}
+	if !validPresetName("初音未来") {
+		t.Error("Unicode should be valid")
+	}
+	if !validPresetName("a-b_c.d") {
+		t.Error("hyphen/dot/underscore should be valid")
+	}
+}
+
+func TestSaveModelPresetToLib_InvalidName(t *testing.T) {
+	a, _ := setupModelPresetTest(t)
+	if err := a.SaveModelPresetToLib("../escape", "{}"); err == nil {
+		t.Error("expected error for path traversal name")
+	}
+}
+
+func TestLoadModelPresetFromLib_InvalidName(t *testing.T) {
+	a, _ := setupModelPresetTest(t)
+	if _, err := a.LoadModelPresetFromLib("../escape"); err == nil {
+		t.Error("expected error for path traversal name")
+	}
+}
+
+func TestDeleteModelPreset_InvalidName(t *testing.T) {
+	a, _ := setupModelPresetTest(t)
+	if err := a.DeleteModelPreset("../escape"); err == nil {
+		t.Error("expected error for path traversal name")
+	}
+}
+
+func TestRenameModelPreset_InvalidName(t *testing.T) {
+	a, _ := setupModelPresetTest(t)
+	if err := a.RenameModelPreset("../a", "b"); err == nil {
+		t.Error("expected error for path traversal oldName")
+	}
+	if err := a.RenameModelPreset("a", "../b"); err == nil {
+		t.Error("expected error for path traversal newName")
 	}
 }

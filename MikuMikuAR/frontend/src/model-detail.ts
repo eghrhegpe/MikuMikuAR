@@ -843,6 +843,7 @@ export interface ModelPresetEntry {
   modelName: string;
   modelRef: string;
   updatedAt: number;
+  autoApply: boolean;
 }
 
 export interface ModelPresetFile {
@@ -1003,17 +1004,24 @@ export async function tryAutoApplyPreset(id: string): Promise<void> {
   const inst = modelRegistry.get(id);
   if (!inst) return;
   const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
-  const match = entries.find(e => e.modelRef && inst.filePath.includes(e.modelRef) && e.name);
+  const libraryRef = computeLibraryRef(inst.filePath);
+  const match = entries.find(e => {
+    if (!e.name) return false;
+    if (libraryRef && e.modelRef === libraryRef) return true;
+    if (e.modelRef && inst.filePath.replace(/\\/g, "/").endsWith(e.modelRef)) return true;
+    return false;
+  });
   if (!match) return;
   const json = await LoadModelPresetFromLib(match.name);
   const preset: ModelPresetFile = JSON.parse(json);
-  if (preset.autoApply === false) return;
+  if (preset.autoApply !== true) return;
   // Save undo snapshot
   _presetUndoStack.set(id, serializeModelPreset(id));
   await applyModelPreset(id, json);
-  showUndoToast(`已自动应用预设「${preset.presetName || match.name}」`, () => {
+  showUndoToast(`已自动应用预设「${preset.presetName || match.name}」`, async () => {
     const snap = _presetUndoStack.get(id);
-    if (snap) applyModelPreset(id, snap);
+    _presetUndoStack.delete(id);
+    if (snap) await applyModelPreset(id, snap);
     setStatus("✓ 已撤销预设应用", true);
   });
 }
@@ -1029,6 +1037,17 @@ export async function selectAndLoadPreset(id: string): Promise<void> {
   }
 }
 
+export async function togglePresetAutoApply(name: string): Promise<void> {
+  try {
+    const json = await LoadModelPresetFromLib(name);
+    const preset: ModelPresetFile = JSON.parse(json);
+    preset.autoApply = !preset.autoApply;
+    await SaveModelPresetToLib(name, JSON.stringify(preset, null, 2));
+  } catch (err: any) {
+    setStatus("✗ 切换自动应用失败: " + (err.message || err), false);
+  }
+}
+
 export async function applyPresetFromLib(
   presetName: string,
   targetModelId: string | null,
@@ -1039,17 +1058,29 @@ export async function applyPresetFromLib(
     if (targetModelId) {
       await applyModelPreset(targetModelId, json);
     } else {
-      // No target model → load model from preset's filePath
-      const { loadPMXFile } = await import("./scene");
-      await loadPMXFile(preset.model.filePath);
-      // Find the freshly loaded model by filePath
+      // No target model: try to find a loaded model that matches this preset
+      const targetRef = computeLibraryRef(preset.model.filePath);
+      let matchedId: string | null = null;
       for (const [mid, inst] of modelRegistry) {
-        if (inst.filePath === preset.model.filePath) {
-          await applyModelPreset(mid, json);
-          return;
-        }
+        if (inst.filePath === preset.model.filePath) { matchedId = mid; break; }
+        if (targetRef && computeLibraryRef(inst.filePath) === targetRef) { matchedId = mid; break; }
+        const baseName = preset.model.filePath.split("/").pop()?.split("\\").pop();
+        if (baseName && inst.filePath.replace(/\\/g, "/").endsWith(baseName)) { matchedId = mid; break; }
       }
-      setStatus("✗ 模型已加载但未在注册表中找到", false);
+      if (matchedId) {
+        await applyModelPreset(matchedId, json);
+      } else {
+        // No match → load model from preset's filePath
+        const { loadPMXFile } = await import("./scene");
+        await loadPMXFile(preset.model.filePath);
+        for (const [mid, inst] of modelRegistry) {
+          if (inst.filePath === preset.model.filePath) {
+            await applyModelPreset(mid, json);
+            return;
+          }
+        }
+        setStatus("✗ 模型已加载但未在注册表中找到", false);
+      }
     }
   } catch (err: any) {
     setStatus("✗ 应用预设失败: " + (err.message || err), false);
@@ -1099,10 +1130,27 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
           row.appendChild(labelSpan);
           if (e.modelName) {
             const sub = document.createElement("span");
-            sub.style.cssText = "font-size:11px;color:var(--text-dim);margin-right:auto;";
+            sub.style.cssText = "font-size:11px;color:var(--text-dim);margin-right:4px;";
             sub.textContent = e.modelName;
             row.appendChild(sub);
           }
+          // Auto-apply toggle
+          const toggleLabel = document.createElement("label");
+          toggleLabel.className = "toggle";
+          toggleLabel.title = e.autoApply ? "自动应用：开" : "自动应用：关";
+          const toggleInput = document.createElement("input");
+          toggleInput.type = "checkbox";
+          toggleInput.checked = e.autoApply;
+          toggleInput.addEventListener("change", async (ev) => {
+            ev.stopPropagation();
+            await togglePresetAutoApply(e.name);
+            stackRegistry.modelStack?.reRender();
+          });
+          const slider = document.createElement("span");
+          slider.className = "slider";
+          toggleLabel.appendChild(toggleInput);
+          toggleLabel.appendChild(slider);
+          row.appendChild(toggleLabel);
           const delBtn = document.createElement("span");
           delBtn.textContent = "✕";
           delBtn.title = "删除此预设";

@@ -279,6 +279,28 @@ export namespace main {
 	        this.comment = source["comment"];
 	    }
 	}
+	export class ModelPresetEntry {
+	    name: string;
+	    presetName: string;
+	    modelName: string;
+	    modelRef: string;
+	    updatedAt: number;
+	    autoApply: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ModelPresetEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.presetName = source["presetName"];
+	        this.modelName = source["modelName"];
+	        this.modelRef = source["modelRef"];
+	        this.updatedAt = source["updatedAt"];
+	        this.autoApply = source["autoApply"];
+	    }
+	}
 	
 	
 

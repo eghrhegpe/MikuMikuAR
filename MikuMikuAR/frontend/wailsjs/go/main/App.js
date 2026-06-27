@@ -34,6 +34,10 @@ export function DeleteDanceSet(arg1) {
   return window['go']['main']['App']['DeleteDanceSet'](arg1);
 }
 
+export function DeleteModelPreset(arg1) {
+  return window['go']['main']['App']['DeleteModelPreset'](arg1);
+}
+
 export function DeletePresetScene(arg1) {
   return window['go']['main']['App']['DeletePresetScene'](arg1);
 }
@@ -76,6 +80,10 @@ export function GetModelMeta(arg1) {
 
 export function GetModelMetaBatch(arg1) {
   return window['go']['main']['App']['GetModelMetaBatch'](arg1);
+}
+
+export function GetModelPresets() {
+  return window['go']['main']['App']['GetModelPresets']();
 }
 
 export function GetModelsByTag(arg1) {
@@ -138,6 +146,14 @@ export function LoadModelPreset(arg1) {
   return window['go']['main']['App']['LoadModelPreset'](arg1);
 }
 
+export function LoadModelPresetFromLib(arg1) {
+  return window['go']['main']['App']['LoadModelPresetFromLib'](arg1);
+}
+
+export function LoadOutfitFile(arg1) {
+  return window['go']['main']['App']['LoadOutfitFile'](arg1);
+}
+
 export function LoadSceneFile(arg1) {
   return window['go']['main']['App']['LoadSceneFile'](arg1);
 }
@@ -174,6 +190,10 @@ export function RenameExternalPath(arg1, arg2) {
   return window['go']['main']['App']['RenameExternalPath'](arg1, arg2);
 }
 
+export function RenameModelPreset(arg1, arg2) {
+  return window['go']['main']['App']['RenameModelPreset'](arg1, arg2);
+}
+
 export function SaveDanceSet(arg1, arg2) {
   return window['go']['main']['App']['SaveDanceSet'](arg1, arg2);
 }
@@ -184,6 +204,10 @@ export function SaveLastScene(arg1) {
 
 export function SaveModelPreset(arg1, arg2) {
   return window['go']['main']['App']['SaveModelPreset'](arg1, arg2);
+}
+
+export function SaveModelPresetToLib(arg1, arg2) {
+  return window['go']['main']['App']['SaveModelPresetToLib'](arg1, arg2);
 }
 
 export function SaveRenderPreset(arg1, arg2) {
