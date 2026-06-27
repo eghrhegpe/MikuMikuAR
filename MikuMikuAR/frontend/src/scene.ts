@@ -800,6 +800,7 @@ export function removeModel(id: string): void {
     _catState.delete(id);
     _matState.delete(id);
     _matEnabled.delete(id);
+    _physicsCatState.delete(id);
     destroyBoneOverlay(id);
     if (focusedModelId === id) { setFocusedModelId(modelRegistry.size > 0 ? modelRegistry.keys().next().value : null); }
     if (focusedModelId) focusModel(focusedModelId);
@@ -1146,10 +1147,72 @@ export function setModelPhysics(id: string, enabled: boolean): void {
             }
         }
     }
+    _physicsCatState.delete(id);
     triggerAutoSave();
 }
 
 const _initialRigidBodyStates = new Map<string, Uint8Array>();
+const _physicsCatState = new Map<string, Map<string, boolean>>();
+
+export type PhysicsCategory = "skirt" | "chest" | "hair" | "accessory";
+
+const PHYSICS_CAT_PATTERNS: [PhysicsCategory, RegExp][] = [
+    ["skirt", /スカート|skirt|フリル|frill|裾|hem/],
+    ["chest", /胸|chest|bust|バスト/],
+    ["hair", /髪|hair|ahoge|bangs|ponytail|前髪|後ろ髪/],
+    ["accessory", /リボン|ribbon|アクセサリ|accessory|飾り|collar|ネクタイ|tie|紐|string|襟/],
+];
+
+function _classifyBonePhysics(name: string): PhysicsCategory | null {
+    const l = name.toLowerCase();
+    for (const [cat, re] of PHYSICS_CAT_PATTERNS) {
+        if (re.test(l)) return cat;
+    }
+    return null;
+}
+
+function _buildRigidBodyCatMap(id: string): Map<number, PhysicsCategory> {
+    const inst = modelRegistry.get(id);
+    if (!inst || !inst.mmdModel) return new Map();
+    const bones = inst.mmdModel.runtimeBones;
+    const map = new Map<number, PhysicsCategory>();
+    for (let i = 0; i < bones.length; i++) {
+        const bone = bones[i];
+        if (bone.rigidBodyIndices.length === 0) continue;
+        const cat = _classifyBonePhysics(bone.name);
+        if (!cat) continue;
+        for (const rbi of bone.rigidBodyIndices) {
+            map.set(rbi, cat);
+        }
+    }
+    return map;
+}
+
+export function getPhysicsCategories(id: string): PhysicsCategory[] {
+    const map = _buildRigidBodyCatMap(id);
+    const set = new Set(map.values());
+    return [...set];
+}
+
+export function isPhysicsCategoryEnabled(id: string, cat: string): boolean {
+    return _physicsCatState.get(id)?.get(cat) ?? true;
+}
+
+export function setPhysicsCategory(id: string, cat: string, enabled: boolean): void {
+    const inst = modelRegistry.get(id);
+    if (!inst || !inst.mmdModel) return;
+    const states = inst.mmdModel.rigidBodyStates;
+    if (!states) return;
+    const catMap = _buildRigidBodyCatMap(id);
+    const init = _initialRigidBodyStates.get(id);
+    for (const [rbi, c] of catMap) {
+        if (c !== cat || rbi >= states.length) continue;
+        states[rbi] = enabled ? (init ? init[rbi] : 1) : 0;
+    }
+    if (!_physicsCatState.has(id)) _physicsCatState.set(id, new Map());
+    _physicsCatState.get(id)!.set(cat, enabled);
+    triggerAutoSave();
+}
 
 function _getBoneColor(bone: IMmdRuntimeBone, isPhysics: boolean): Color3 {
     if (bone.ikSolverIndex >= 0) return new Color3(0.53, 0.42, 1.0);       // IK: purple-blue

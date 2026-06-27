@@ -40,6 +40,9 @@ import {
   applyMatState,
   setMatEnabled,
   isMatEnabled,
+  getPhysicsCategories,
+  isPhysicsCategoryEnabled,
+  setPhysicsCategory,
   stopVMD,
   loadVMDFromPath,
   loadOutfits,
@@ -475,6 +478,32 @@ export function buildVisibilityLevel(id: string): PopupLevel {
         boneRow.addEventListener("click", () => { setModelBoneVis(id, !inst.showBones); stackRegistry.modelStack?.reRender(); setStatus(inst.showBones ? "骨骼显示: 关" : "骨骼显示: 开", true); });
         c.appendChild(boneRow);
       });
+
+      const physCategories = getPhysicsCategories(id);
+      const CAT_LABELS: Record<string, string> = { skirt: "裙子物理", chest: "胸部物理", hair: "头发物理", accessory: "配件物理" };
+      const CAT_ICONS: Record<string, string> = { skirt: "lucide:skirt", chest: "lucide:heart", hair: "lucide:feather", accessory: "lucide:gift" };
+      if (physCategories.length > 0) {
+        cardContainer(container, (c) => {
+          for (const cat of physCategories) {
+            const enabled = isPhysicsCategoryEnabled(id, cat);
+            const row = document.createElement("div");
+            row.className = "slide-item";
+            row.setAttribute("data-hint", enabled ? `已启用${CAT_LABELS[cat] || cat}` : `已禁用${CAT_LABELS[cat] || cat}`);
+            const iconEl = createIconifyIcon(enabled ? "lucide:check-square" : "lucide:square");
+            const s = document.createElement("span"); s.className = "slide-icon"; if (iconEl) s.appendChild(iconEl);
+            row.appendChild(s);
+            const lbl = document.createElement("span"); lbl.className = "slide-label"; lbl.textContent = CAT_LABELS[cat] || cat;
+            row.appendChild(lbl);
+            row.addEventListener("click", () => {
+              const newState = !isPhysicsCategoryEnabled(id, cat);
+              setPhysicsCategory(id, cat, newState);
+              stackRegistry.modelStack?.reRender();
+              setStatus(newState ? `✓ ${CAT_LABELS[cat] || cat} 已开启` : `✕ ${CAT_LABELS[cat] || cat} 已关闭`, true);
+            });
+            c.appendChild(row);
+          }
+        });
+      }
     },
   };
 }
