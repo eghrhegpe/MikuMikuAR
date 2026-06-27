@@ -119,8 +119,12 @@
 |------|------|------|
 | `OpenInBlender` | `(modelPath string) error` | 在 Blender 中打开模型 |
 | `OpenInMMD` | `(modelPath string) error` | 在 MMD 中打开模型 |
-| `ScanSoftwareDir` | `() ([]SoftwareEntry, error)` | 扫描软件目录 |
-| `LaunchSoftware` | `(path string) error` | 启动软件 |
+| `ScanSoftwareDir` | `() ([]SoftwareEntry, error)` | 扫描软件目录 + 合并自定义软件，自动识别 Kind |
+| `LaunchSoftware` | `(path string, args string) error` | 启动软件（args 为命令行参数，可为空） |
+| `OpenWithSoftware` | `(modelPath, softwarePath, args string) error` | 用指定软件打开模型（args 中 {model} 会被替换为模型路径） |
+| `AddCustomSoftware` | `(path, name, args string) error` | 添加自定义软件到 Config |
+| `RemoveCustomSoftware` | `(path string) error` | 从 Config 移除自定义软件 |
+| `UpdateCustomSoftware` | `(path, name, args string) error` | 更新自定义软件的名称和参数 |
 | `OpenSoftwareDir` | `() error` | 打开软件目录 |
 
 ### 舞蹈套装
@@ -210,6 +214,63 @@
 | `focusedMmdModel` | `scene.ts:55` | `() => MmdWasmModel\|null` | 获取当前聚焦模型的 MMD 运行时对象 |
 | `focusedModel` | `scene.ts:56` | `() => ModelInstance\|undefined` | 获取当前聚焦模型实例 |
 | `tryRestoreLastScene` | `scene.ts:585` | `() => Promise<void>` | 启动时自动恢复上次保存的场景 |
+
+---
+
+## 程序化动作子系统（新增）
+
+### VMD 写入器（`vmd-writer.ts`）
+
+| 函数/常量 | 签名 | 用途 |
+|-----------|------|------|
+| `BONE_FRAME_SIZE` | `111` | 骨骼关键帧字节数（15+4+12+16+64） |
+| `MORPH_FRAME_SIZE` | `23` | morph 关键帧字节数（15+4+4） |
+| `buildBoneFrame` | `(frame: BoneKeyFrame) => ArrayBuffer` | 构建单个 111B 骨骼帧 |
+| `buildMorphFrame` | `(frame: MorphKeyFrame) => ArrayBuffer` | 构建单个 23B morph 帧 |
+| `buildVmd` | `(bones, morphs?, modelName?) => ArrayBuffer` | 构建完整 VMD 二进制文件 |
+
+### 节拍检测器（`beat-detector.ts`）
+
+| 函数/类 | 签名 | 用途 |
+|---------|------|------|
+| `BeatDetector` | `class` | Web Audio API 节拍检测类 |
+| `BeatDetector.attach` | `(audioEl: HTMLAudioElement) => void` | 接入音频元素 |
+| `BeatDetector.update` | `() => void` | 每帧更新能量/BPM |
+| `BeatDetector.getBPM` | `() => number` | 当前估计 BPM |
+| `BeatDetector.isBeat` | `() => boolean` | 本帧是否触发 beat |
+| `BeatDetector.reset` | `() => void` | 重置状态 |
+| `BeatDetector.detectBeatsFromEnergies` | `static (energies[], threshold?, minInterval?) => number[]` | 纯逻辑节拍检测（供测试） |
+| `BeatDetector.bpmFromIntervals` | `static (intervalMs[]) => number` | 从间隔计算 BPM |
+
+### 程序化动作管理器（`procedural-motion.ts`）
+
+| 函数/类型 | 签名 | 用途 |
+|----------|------|------|
+| `ProcMotionMode` | `"off" \| "idle" \| "autodance"` | 程序化动作模式 |
+| `ProcMotionState` | `{ mode, intensity, speed, autoSwitch }` | 程序化动作完整状态 |
+| `DEFAULT_PROC_STATE` | `ProcMotionState` | 默认状态 |
+| `generateIdleVmd` | `(state, morphNames?) => ArrayBuffer` | 生成 Idle 呼吸 VMD |
+| `generateAutoDanceVmd` | `(state, bpm, morphNames?) => ArrayBuffer` | 生成 Auto Dance VMD |
+| `shouldAutoDance` | `(playing, mode) => boolean` | 判断是否应切 Auto Dance |
+| `shouldIdle` | `(playing, hasUserVmd, mode) => boolean` | 判断是否应切 Idle |
+
+### scene.ts 新增控制 API
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `setProcMotionMode` | `(mode: ProcMotionMode) => void` | 设置程序化动作模式 |
+| `setProcMotionIntensity` | `(v: number) => void` | 设置动作强度 0..1 |
+| `setProcMotionSpeed` | `(v: number) => void` | 设置速度 0.5..2 |
+| `setProcMotionAutoSwitch` | `(on: boolean) => void` | 设置自动切换 |
+| `getProcMotionState` | `() => ProcMotionState` | 获取当前状态 |
+| `regenerateProcMotion` | `() => void` | 强制重新生成 procedural VMD |
+
+### audio.ts 新增
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `attachBeatDetector` | `(detector: BeatDetector) => void` | 接入节拍检测器 |
+| `notifyBeatDetectorReset` | `() => void` | 通知重置（新曲目） |
 
 ---
 
