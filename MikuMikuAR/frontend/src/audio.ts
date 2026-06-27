@@ -2,6 +2,7 @@
 // 支持 MP3/WAV/OGG，与 VMD 动画同步，含音量、进度、音频偏移控制
 
 import { resolveFileUrl } from "./fileservice";
+import type { BeatDetector } from "./beat-detector";
 
 let audioElement: HTMLAudioElement | null = null;
 let audioName = "";
@@ -14,6 +15,15 @@ function ensureAudio(): HTMLAudioElement {
     if (!audioElement) {
         audioElement = new Audio();
         audioElement.volume = volume;
+    }
+    // Re-attach beat detector when audio element is (re)created
+    if (beatDetector && !beatDetectorAttached) {
+        try {
+            beatDetector.attach(audioElement);
+            beatDetectorAttached = true;
+        } catch (err) {
+            console.warn("ensureAudio beat detector attach:", err);
+        }
     }
     return audioElement;
 }
@@ -40,6 +50,7 @@ export async function loadAudioFile(filePath: string): Promise<void> {
     audio.load();
     // Auto-play so user gets immediate feedback
     try { await audio.play(); } catch (_) { /* browser may block autoplay */ }
+    notifyBeatDetectorReset();
 }
 
 export function getAudioPath(): string {
@@ -162,4 +173,27 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
     lastVmdTime = vmdTime;
     lastVmdPlaying = isPlaying;
     lastVmdDuration = vmdDuration;
+}
+
+// ======== Beat Detector Integration ========
+
+let beatDetector: BeatDetector | null = null;
+let beatDetectorAttached = false;
+
+/** 接入节拍检测器到当前音频元素（惰性，仅调用一次）。 */
+export function attachBeatDetector(detector: BeatDetector): void {
+    beatDetector = detector;
+    if (audioElement && !beatDetectorAttached) {
+        try {
+            detector.attach(audioElement);
+            beatDetectorAttached = true;
+        } catch (err) {
+            console.warn("attachBeatDetector:", err);
+        }
+    }
+}
+
+/** 音频加载后通知 beat detector 重置（新曲目 BPM 估计重新开始）。 */
+export function notifyBeatDetectorReset(): void {
+    if (beatDetector) beatDetector.reset();
 }
