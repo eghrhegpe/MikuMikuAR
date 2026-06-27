@@ -22,6 +22,7 @@ import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { Observer } from "@babylonjs/core/Misc/observable";
 import { GPUParticleSystem } from "@babylonjs/core/Particles/gpuParticleSystem";
+import { ParticleSystem } from "@babylonjs/core/Particles/particleSystem";
 import "@babylonjs/core/Particles/webgl2ParticleSystem";
 
 import { RegisterMmdModelLoaders } from "babylon-mmd/esm/Loader/dynamic";
@@ -1937,13 +1938,13 @@ interface EnvSkyResources {
 const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
-    particles: { emitter: GPUParticleSystem | null };
+    particles: { emitter: GPUParticleSystem | null; followObserver: Observer<Scene> | null };
     clouds: { postProcess: Mesh | null; postProcess2: Mesh | null; material: StandardMaterial | null; texture: Texture | null };
     shadow: { generator: ShadowGenerator | null };
 } = {
     sky: { skyMesh: null, envTexture: null },
     ground: { mesh: null },
-    particles: { emitter: null },
+    particles: { emitter: null, followObserver: null },
     clouds: { postProcess: null, postProcess2: null, material: null, texture: null },
     shadow: { generator: null },
 };
@@ -2475,31 +2476,53 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
             inst.outfitFile = undefined;
             return null;
         }
-        const variants: OutfitVariant[] = [];
+        // Deduplicate: same basename+subdir = same URL, check once per unique URL
+        interface _Probe { subdir: string; matName: string; slot: string; relPath: string; url: string; }
+        const seenUrl = new Set<string>();
+        const probes: _Probe[] = [];
+        for (const subdir of subdirs) {
+            for (const m of mappings) {
+                const relPath = subdir + "/" + m.basename;
+                const url = `http://127.0.0.1:${inst.port}/${_encodePath(relPath)}`;
+                if (seenUrl.has(url)) continue;
+                seenUrl.add(url);
+                probes.push({ subdir, matName: m.matName, slot: m.slot, relPath, url });
+            }
+        }
+        const headCache = new Map<string, boolean>();
         const results = await Promise.all(subdirs.map(async (subdir): Promise<OutfitVariant | null> => {
             const byMaterial: Record<string, OutfitSlot> = {};
             let hasAny = false;
-            await Promise.all(mappings.map(async (m) => {
-                const testUrl = `http://127.0.0.1:${inst.port}/${_encodePath(subdir + "/" + m.basename)}`;
-                try {
-                    const resp = await fetch(testUrl, { method: "HEAD" });
-                    if (resp.ok) {
-                        if (!byMaterial[m.matName]) byMaterial[m.matName] = {};
-                        (byMaterial[m.matName] as any)[m.slot] = subdir + "/" + m.basename;
-                        hasAny = true;
+            const subdirProbes = probes.filter(p => p.subdir === subdir);
+            await Promise.all(subdirProbes.map(async (p) => {
+                let ok: boolean;
+                if (headCache.has(p.url)) {
+                    ok = headCache.get(p.url)!;
+                } else {
+                    try {
+                        const resp = await fetch(p.url, { method: "HEAD" });
+                        ok = resp.ok;
+                    } catch {
+                        ok = false;
                     }
-                } catch { }
+                    headCache.set(p.url, ok);
+                }
+                if (!ok) return;
+                if (!byMaterial[p.matName]) byMaterial[p.matName] = {};
+                (byMaterial[p.matName] as any)[p.slot] = p.relPath;
+                hasAny = true;
             }));
             return hasAny ? { name: subdir, byMaterial } : null;
         }));
+        const variantList: OutfitVariant[] = [];
         for (const r of results) {
-            if (r) variants.push(r);
+            if (r) variantList.push(r);
         }
-        if (variants.length === 0) {
+        if (variantList.length === 0) {
             inst.outfitFile = undefined;
             return null;
         }
-        const outfit: OutfitFile = { version: 1, variants };
+        const outfit: OutfitFile = { version: 1, variants: variantList };
         inst.outfitFile = outfit;
         return outfit;
     } catch {
@@ -2514,19 +2537,33 @@ function _encodePath(path: string): string {
     return path.replace(/\\/g, "/").split("/").map(p => encodeURIComponent(p)).join("/");
 }
 
-function _applySlot(sm: StandardMaterial, slot: string, newPath: string | null, origTex: Texture | null, port: number): void {
+async function _applySlot(sm: StandardMaterial, slot: string, newPath: string | null, origTex: Texture | null, port: number): Promise<void> {
     const cur = (sm as any)[slot] as Texture | null;
-    if (cur && cur !== origTex) cur.dispose();
     if (newPath) {
         const url = `http://127.0.0.1:${port}/${_encodePath(newPath)}`;
-        (sm as any)[slot] = new Texture(url, scene);
-    } else if (origTex) {
-        (sm as any)[slot] = origTex;
+        const newTex = new Texture(url, scene);
+        // Preload: wait for texture to be ready before disposing old one
+        await new Promise<void>((resolve) => {
+            if (newTex.isReady()) { resolve(); return; }
+            const obs = newTex.onLoadObservable.add(() => {
+                newTex.onLoadObservable.remove(obs);
+                resolve();
+            });
+            // Timeout fallback: 5s
+            setTimeout(() => { newTex.onLoadObservable.remove(obs); resolve(); }, 5000);
+        });
+        if (cur && cur !== origTex) cur.dispose();
+        (sm as any)[slot] = newTex;
+    } else {
+        if (origTex) {
+            if (cur && cur !== origTex) cur.dispose();
+            (sm as any)[slot] = origTex;
+        }
     }
 }
 
 /** Apply an outfit variant to a model by replacing textures. */
-export function applyOutfitVariant(id: string, variantName: string): void {
+export async function applyOutfitVariant(id: string, variantName: string): Promise<void> {
     const inst = modelRegistry.get(id);
     if (!inst || !inst.outfitFile) return;
 
@@ -2550,6 +2587,7 @@ export function applyOutfitVariant(id: string, variantName: string): void {
         }
     }
 
+    const promises: Promise<void>[] = [];
     for (let mi = 0; mi < inst.meshes.length; mi++) {
         const mesh = inst.meshes[mi];
         const sm = mesh.material as StandardMaterial;
@@ -2566,14 +2604,16 @@ export function applyOutfitVariant(id: string, variantName: string): void {
             return v ?? null;
         };
 
-        _applySlot(sm, "diffuseTexture", getSlot("diffuse"), orig.diffuse, inst.port);
-        _applySlot(sm, "toonTexture", getSlot("toon"), orig.toon, inst.port);
-        _applySlot(sm, "sphereTexture", getSlot("spa"), orig.spa, inst.port);
-        _applySlot(sm, "bumpTexture", getSlot("normal"), orig.normal, inst.port);
-        _applySlot(sm, "emissiveTexture", getSlot("emissive"), orig.emissive, inst.port);
+        promises.push(_applySlot(sm, "diffuseTexture", getSlot("diffuse"), orig.diffuse, inst.port));
+        promises.push(_applySlot(sm, "toonTexture", getSlot("toon"), orig.toon, inst.port));
+        promises.push(_applySlot(sm, "sphereTexture", getSlot("spa"), orig.spa, inst.port));
+        promises.push(_applySlot(sm, "bumpTexture", getSlot("normal"), orig.normal, inst.port));
+        promises.push(_applySlot(sm, "emissiveTexture", getSlot("emissive"), orig.emissive, inst.port));
     }
 
+    await Promise.all(promises);
     inst.activeVariant = variantName;
+    setStatus(`✓ 已切换服装: ${variantName}`, true);
     triggerAutoSave();
 }
 
