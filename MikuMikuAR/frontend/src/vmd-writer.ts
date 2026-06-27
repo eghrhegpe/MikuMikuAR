@@ -26,13 +26,7 @@ const DEFAULT_MODEL_NAME = "Procedural"; // ≤20 bytes
  *  浏览器无内置 Shift-JIS 编码器，用 UTF-8 兜底（babylon-mmd 解码时同样回退）。 */
 function encodeBoneName(name: string): Uint8Array {
     const buf = new Uint8Array(15).fill(0x20);
-    let bytes: Uint8Array;
-    try {
-        // 尝试 Shift-JIS（需 text-encoding polyfill 或 ICU）
-        bytes = new TextEncoder().encode(name);
-    } catch {
-        bytes = new TextEncoder().encode(name);
-    }
+    const bytes = new TextEncoder().encode(name);
     for (let i = 0; i < Math.min(bytes.length, 15); i++) buf[i] = bytes[i];
     return buf;
 }
