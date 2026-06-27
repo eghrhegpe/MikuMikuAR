@@ -329,6 +329,7 @@ let procVmdActive = false;       // procedural VMD 是否正在播放
 let lastBeatBpm = 120;           // 上次用于生成 Auto Dance 的 BPM
 let procStarting = false;        // 防止并发 startProcMotion
 let procActiveKind: ProcMotionMode = "idle"; // 当前加载的是 idle 还是 autodance
+let procModelId: string | null = null;       // 持有 procedural VMD 的模型 ID，用于精准清理
 
 // ======== Convenience getters ========
 export function focusedMmdModel() { return focusedModelId ? modelRegistry.get(focusedModelId)?.mmdModel ?? null : null; }
@@ -352,6 +353,7 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     }
     procActiveKind = targetMode;
     procVmdActive = true;
+    procModelId = focusedModelId;
     try {
         await loadVMDMotion(buf, targetMode === "autodance" ? "AutoDance" : "IdleMotion");
         // Clear vmdData so hasUserVmd stays false for procedural VMD
@@ -361,6 +363,11 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         }
     } catch {
         procVmdActive = false;
+        // loadVMDMotion may have set inst.vmdData before failing — clear it
+        const inst = focusedModel();
+        if (inst) {
+            inst.vmdData = null;
+        }
     } finally {
         procStarting = false;
     }
@@ -369,9 +376,12 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
 /** 停止程序化动作并清理模型上的 procedural VMD。 */
 function stopProcMotion(): void {
     procVmdActive = false;
-    const inst = focusedModel();
-    if (inst && inst.mmdModel && mmdRuntime) {
-        inst.mmdModel.setRuntimeAnimation(null);
+    if (procModelId) {
+        const inst = modelRegistry.get(procModelId);
+        if (inst && inst.mmdModel && mmdRuntime) {
+            inst.mmdModel.setRuntimeAnimation(null);
+        }
+        procModelId = null;
     }
 }
 
@@ -733,6 +743,11 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
 export function removeModel(id: string): void {
     const inst = modelRegistry.get(id);
     if (!inst) return;
+    // If this model owns procedural VMD, clean up state
+    if (procModelId === id) {
+        procVmdActive = false;
+        procModelId = null;
+    }
     if (inst.mmdModel && mmdRuntime) { try { mmdRuntime.destroyMmdModel(inst.mmdModel); } catch (e) { console.warn("removeModel: destroyMmdModel failed", e); } }
     for (const m of inst.meshes) { if (m instanceof Mesh) m.dispose(); }
     modelRegistry.delete(id);
@@ -965,6 +980,7 @@ export async function deserializeScene(data: SceneFile): Promise<void> {
     // Restore procedural motion state
     if (data.procMotion) {
         procState = { ...DEFAULT_PROC_STATE, ...data.procMotion as Partial<ProcMotionState> };
+        regenerateProcMotion();
     }
 
     // Restore camera VMD
