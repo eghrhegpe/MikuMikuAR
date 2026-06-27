@@ -342,6 +342,24 @@
 | `attachBeatDetector` | `(detector: BeatDetector) => void` | 接入节拍检测器 |
 | `notifyBeatDetectorReset` | `() => void` | 通知重置（新曲目） |
 
+### scene.ts 物理分类控制（模型级）
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `getPhysicsCategories` | `(id: string) => PhysicsCategory[]` | 返回模型中存在的物理类别（skirt/chest/hair/accessory） |
+| `isPhysicsCategoryEnabled` | `(id, cat) => boolean` | 指定类别物理是否启用 |
+| `setPhysicsCategory` | `(id, cat, enabled) => void` | 开关指定类别的物理刚体，恢复/清除 `rigidBodyStates` |
+| `setModelPhysics` | `(id, enabled) => void` | 全局物理开关，清除 per-category 状态 |
+
+判定依据：遍历 `runtimeBones`，对每个有 `rigidBodyIndices` 的骨骼按名正则分类：
+
+| 类别 | 匹配模式 |
+|------|---------|
+| `skirt` | `/スカート\|skirt\|フリル\|frill\|裾\|hem/` |
+| `chest` | `/胸\|chest\|bust\|バスト/` |
+| `hair` | `/髪\|hair\|ahoge\|bangs\|ponytail\|前髪\|後ろ髪/` |
+| `accessory` | `/リボン\|ribbon\|アクセサリ\|accessory\|飾り\|collar\|ネクタイ\|tie\|紐\|string\|襟/` |
+
 ---
 
 ## 更新规则

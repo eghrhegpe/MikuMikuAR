@@ -11,6 +11,9 @@
 - **技术**：Babylon.js + babylon-mmd 插件
 - **流程**：`Scene` 搭建 → `ImportMeshAsync` HTTP 方式加载 PMX → `mmdRuntime.createMmdModel()` 创建带物理的模型
 - **物理**：WASM Bullet（`MmdWasmRuntime`），独立线程跑刚体/柔体
+  - **全局控制**：`setModelPhysics(id, enabled)` — 开关整模型物理
+  - **按类别控制**：`setPhysicsCategory(id, cat, enabled)` — 按骨骼名正则分类（skirt/chest/hair/accessory），选择性关闭裙子/头发等刚体
+  - **骨骼叠加**：`setModelBoneVis(id, show)` — 开关骨骼可视化（彩色线段 + 关节小球），物理骨/IK/付与等按类型分色
 - **文件服务器**：Go 端 `StartFileServer` 在随机端口启动 HTTP 服务，绕过 Wails base64 桥接
 
 ### 3. VMD 动作播放
