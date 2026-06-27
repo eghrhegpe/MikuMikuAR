@@ -9,10 +9,11 @@
 本次任务硬约束：
 - 只读 AGENTS.md §一「文档地图」列出的文件
 - 禁止 ls / glob / 目录枚举
-- 禁止启动子代理（task / explore / research）
+- 建议启动子代理（task / explore / research）
 - 禁止读取 docs/research/ 下的档案文件，除非任务明确涉及对应主题
 - 先输出修改计划 → 我确认 → 再 apply
 - 失败熔断：同一命令连续失败 2 次 → 停止并分析原因，禁止无脑重试
+- 项目有两层嵌套，实际位于 MikuMikuAR/
 ```
 
 ---
