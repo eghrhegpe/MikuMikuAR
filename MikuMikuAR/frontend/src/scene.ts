@@ -37,6 +37,8 @@ import { MmdStandardMaterialProxy } from "babylon-mmd/esm/Runtime/mmdStandardMat
 import { MmdRuntimeShared } from "babylon-mmd/esm/Runtime/mmdRuntimeShared";
 import "babylon-mmd/esm/Loader/mmdModelLoader.default";
 import "@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader";
+import "@babylonjs/core/Materials/Textures/Loaders/hdrTextureLoader";
+import "@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 
@@ -56,6 +58,7 @@ import {
 } from "./config";
 import { resolveFileUrl, normPath } from "./fileservice";
 import { loadVPDFromBuffer } from "./vpd-parser";
+import { deriveLighting, ENV_PRESETS } from "./env-lighting";
 import { syncAudioPlayback, loadAudioFile, setVolume, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset, isAudioPlaying, resumeAudio, pauseAudio } from "./audio";
 import {
     ProcMotionState, ProcMotionMode, DEFAULT_PROC_STATE,
@@ -1592,6 +1595,42 @@ export function triggerAutoSave(): void {
     }, 2000);
 }
 
+// ======== Environment Auto-Link (Env → Lighting) ========
+
+let envAutoLink = true;
+
+export function setEnvAutoLink(on: boolean): void {
+    envAutoLink = on;
+}
+
+export function getEnvAutoLink(): boolean {
+    return envAutoLink;
+}
+
+/** 应用环境预设：同时设天空 + 灯光 + 渲染。*/
+export function applyEnvPreset(name: string): boolean {
+    const preset = ENV_PRESETS[name];
+    if (!preset) return false;
+    setEnvState({
+        skyMode: "procedural",
+        skyColorTop: preset.skyColorTop,
+        skyColorBot: preset.skyColorBot,
+    });
+    setLightState({
+        dirColor: preset.dirDiffuse,
+        dirX: preset.dirDirection[0],
+        dirY: preset.dirDirection[1],
+        dirZ: preset.dirDirection[2],
+        dirIntensity: preset.dirIntensity,
+        hemiIntensity: preset.hemiIntensity,
+    });
+    setRenderState({
+        exposure: preset.exposure,
+        toneMapping: preset.toneMapping,
+    });
+    return true;
+}
+
 export function setEnvState(partial: Partial<EnvState>): void {
     // Runtime guard: detect black sky color assignments
     if ((partial.skyColorTop && partial.skyColorTop[0] === 0 && partial.skyColorTop[1] === 0 && partial.skyColorTop[2] === 0) ||
@@ -1607,6 +1646,19 @@ export function setEnvState(partial: Partial<EnvState>): void {
         partial.skyTexture !== undefined || partial.skyRotationY !== undefined ||
         partial.skyBrightness !== undefined || partial.envIntensity !== undefined) {
         _applySky(envState);
+        // Auto-link: derive lighting from sky color when in procedural mode
+        if (envAutoLink && envState.skyMode === "procedural" &&
+            (partial.skyColorTop !== undefined || partial.skyColorMid !== undefined || partial.skyColorBot !== undefined || partial.skyBrightness !== undefined)) {
+            const l = deriveLighting(envState.skyColorTop, 45);
+            setLightState({
+                dirColor: l.dirDiffuse,
+                dirX: l.dirDirection[0],
+                dirY: l.dirDirection[1],
+                dirZ: l.dirDirection[2],
+                dirIntensity: l.dirIntensity,
+                hemiIntensity: l.hemiIntensity,
+            });
+        }
     }
 
     if (partial.groundVisible !== undefined || partial.groundMode !== undefined ||
@@ -1696,13 +1748,13 @@ const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
     particles: { emitter: GPUParticleSystem | null };
-    clouds: { postProcess: Mesh | null; material: StandardMaterial | null; texture: Texture | null };
+    clouds: { postProcess: Mesh | null; postProcess2: Mesh | null; material: StandardMaterial | null; texture: Texture | null };
     shadow: { generator: ShadowGenerator | null };
 } = {
     sky: { skyMesh: null, envTexture: null },
     ground: { mesh: null },
     particles: { emitter: null },
-    clouds: { postProcess: null, material: null, texture: null },
+    clouds: { postProcess: null, postProcess2: null, material: null, texture: null },
     shadow: { generator: null },
 };
 
@@ -1764,21 +1816,33 @@ function _createProceduralSky(state: EnvState): void {
 
 function _loadEnvTexture(path: string, rotationY: number, intensity: number): void {
     const ext = path.split(".").pop()?.toLowerCase();
-    let tex: BaseTexture;
-    if (ext === "dds") {
-        tex = new CubeTexture(path, scene);
-    } else {
-        tex = new Texture(path, scene, false, true);
+    const supported = ["hdr", "dds", "exr"];
+    if (!supported.includes(ext ?? "")) {
+        console.warn(`[sky] unsupported format .${ext}, falling back to procedural`);
+        _disposeSky();
+        _createProceduralSky(envState);
+        return;
     }
-    scene.environmentTexture = tex;
+
+    const cubeTex = new CubeTexture(path, scene);
+    cubeTex.rotationY = rotationY;
+    scene.environmentTexture = cubeTex;
     scene.environmentIntensity = intensity;
-
-    if (tex instanceof CubeTexture) {
-        tex.rotationY = rotationY;
-    }
-
-    _envSys.sky.envTexture = tex;
     scene.clearColor = new Color4(0, 0, 0, 1);
+    _envSys.sky.envTexture = cubeTex;
+
+    const sphere = MeshBuilder.CreateSphere("envSkyDome", {
+        diameter: 1000, segments: 24, sideOrientation: Mesh.BACKSIDE,
+    }, scene);
+    sphere.isPickable = false;
+    const mat = new StandardMaterial("envSkyDomeMat", scene);
+    mat.reflectionTexture = cubeTex;
+    mat.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;
+    mat.diffuseColor = new Color3(0, 0, 0);
+    mat.specularColor = new Color3(0, 0, 0);
+    mat.disableLighting = true;
+    sphere.material = mat;
+    _envSys.sky.skyMesh = sphere;
 }
 
 function _applySky(state: EnvState): void {
@@ -1984,6 +2048,21 @@ function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boo
             break;
     }
 
+    const er = envState.particleEmitRate;
+    if (er !== 1) ps.emitRate = Math.max(0, Math.round(ps.emitRate * er));
+
+    const sz = envState.particleSize;
+    if (sz !== 1) {
+        ps.minSize *= sz;
+        ps.maxSize *= sz;
+    }
+
+    const sp = envState.particleSpeed;
+    if (sp !== 1) {
+        ps.minEmitPower *= sp;
+        ps.maxEmitPower *= sp;
+    }
+
     if (windEnabled) {
         _applyWindToParticles(ps);
     }
@@ -2008,6 +2087,47 @@ function _applyWindToParticles(ps: GPUParticleSystem): void {
     ps.direction2 = ps.direction2.add(wind);
 }
 
+// ======== 2D Perlin Noise ========
+function _perlin2(x: number, y: number): number {
+    const p: number[] = [];
+    for (let i = 0; i < 256; i++) p[i] = i;
+    for (let i = 255; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [p[i], p[j]] = [p[j], p[i]];
+    }
+    const perm = p.concat(p);
+    const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+    const lerp = (a: number, b: number, t: number) => a + t * (b - a);
+    const grad = (hash: number, dx: number, dy: number) => {
+        const h = hash & 3;
+        return (h & 1 ? -dx : dx) + (h & 2 ? -dy : dy);
+    };
+    const xi = Math.floor(x) & 255;
+    const yi = Math.floor(y) & 255;
+    const xf = x - Math.floor(x);
+    const yf = y - Math.floor(y);
+    const u = fade(xf);
+    const v = fade(yf);
+    const aa = perm[perm[xi] + yi];
+    const ab = perm[perm[xi] + yi + 1];
+    const ba = perm[perm[xi + 1] + yi];
+    const bb = perm[perm[xi + 1] + yi + 1];
+    return lerp(
+        lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u),
+        lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u),
+        v
+    ) * 0.5 + 0.5;
+}
+
+function _cloudNoise(x: number, y: number, cover: number): number {
+    const v1 = _perlin2(x * 0.02, y * 0.02);
+    const v2 = _perlin2(x * 0.04 + 10, y * 0.04 + 10) * 0.5;
+    const n = v1 + v2;
+    const threshold = cover * 0.8;
+    const t = (n - threshold) / (1.0 - threshold);
+    return Math.max(0, Math.min(1, t * t * (3 - 2 * t)));
+}
+
 // ======== Clouds (Phase 8) ========
 
 function _createClouds(state: EnvState): void {
@@ -2015,27 +2135,21 @@ function _createClouds(state: EnvState): void {
 
     if (!state.cloudsEnabled) return;
 
-    const cloudPlane = MeshBuilder.CreatePlane("envClouds", {
-        width: 200,
-        height: 200,
-    }, scene);
-    cloudPlane.isPickable = false;
-    cloudPlane.position = new Vector3(0, state.cloudHeight, 0);
-    cloudPlane.rotation.x = Math.PI / 2;
-
+    const SIZE = 512;
     const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 256;
+    canvas.width = SIZE;
+    canvas.height = SIZE;
     const ctx = canvas.getContext("2d")!;
-    const imgData = ctx.createImageData(256, 256);
+    const imgData = ctx.createImageData(SIZE, SIZE);
     for (let i = 0; i < imgData.data.length; i += 4) {
-        const x = (i / 4) % 256;
-        const y = Math.floor((i / 4) / 256);
-        const n = Math.random();
+        const x = (i / 4) % SIZE;
+        const y = Math.floor((i / 4) / SIZE);
+        const n = _cloudNoise(x, y, state.cloudCover);
+        const a = Math.floor(n * 255 * 0.6);
         imgData.data[i] = 255;
         imgData.data[i + 1] = 255;
         imgData.data[i + 2] = 255;
-        imgData.data[i + 3] = n > state.cloudCover ? 0 : Math.floor(n * 255 * 0.5);
+        imgData.data[i + 3] = a;
     }
     ctx.putImageData(imgData, 0, 0);
 
@@ -2046,15 +2160,25 @@ function _createClouds(state: EnvState): void {
     mat.backFaceCulling = false;
     mat.alpha = 0.5;
 
-    cloudPlane.material = mat;
-    cloudPlane.scaling.x = state.cloudScale;
-    cloudPlane.scaling.z = state.cloudScale;
+    function makePlane(name: string, yOffset: number, scaleMul: number, alphaMul: number): Mesh {
+        const plane = MeshBuilder.CreatePlane(name, { width: 200, height: 200 }, scene);
+        plane.isPickable = false;
+        plane.position = new Vector3(0, state.cloudHeight + yOffset, 0);
+        plane.rotation.x = Math.PI / 2;
+        plane.material = mat;
+        plane.scaling.x = state.cloudScale * scaleMul;
+        plane.scaling.z = state.cloudScale * scaleMul;
+        return plane;
+    }
 
-    _envSys.clouds.postProcess = cloudPlane;
+    const p1 = makePlane("envClouds", 0, 1.0, 1.0);
+    const p2 = makePlane("envCloudsBack", -15, 1.2, 0.85);
+
+    _envSys.clouds.postProcess = p1;
+    _envSys.clouds.postProcess2 = p2;
     _envSys.clouds.material = mat;
     _envSys.clouds.texture = tex;
 
-    // Ensure per-frame wind drift for clouds
     _ensureEnvUpdateObserver();
 }
 
@@ -2067,11 +2191,9 @@ function _disposeClouds(): void {
         _envSys.clouds.texture.dispose();
         _envSys.clouds.texture = null;
     }
-    if (_envSys.clouds.postProcess) {
-        if (_envSys.clouds.postProcess instanceof Mesh) {
-            _envSys.clouds.postProcess.dispose();
-        }
-        _envSys.clouds.postProcess = null;
+    for (const key of ["postProcess", "postProcess2"] as const) {
+        const m = _envSys.clouds[key];
+        if (m) { m.dispose(); _envSys.clouds[key] = null; }
     }
     _disposeEnvUpdateObserver();
 }
@@ -2081,12 +2203,16 @@ function _ensureEnvUpdateObserver(): void {
     if (_envUpdateObserver) return;
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
         const dt = scene.deltaTime / 16.667;
-        // Cloud wind drift (frame-rate independent)
         if (envState.cloudsEnabled && envState.windEnabled) {
-            const cloud = _envSys.clouds.postProcess;
-            if (cloud instanceof Mesh) {
-                cloud.position.x += envState.windDirection[0] * envState.windSpeed * 0.01 * dt;
-                cloud.position.z += envState.windDirection[2] * envState.windSpeed * 0.01 * dt;
+            const dx = envState.windDirection[0] * envState.windSpeed * 0.01 * dt;
+            const dz = envState.windDirection[2] * envState.windSpeed * 0.01 * dt;
+            for (const key of ["postProcess", "postProcess2"] as const) {
+                const m = _envSys.clouds[key];
+                if (m) {
+                    const speedMul = key === "postProcess2" ? 0.85 : 1.0;
+                    m.position.x += dx * speedMul;
+                    m.position.z += dz * speedMul;
+                }
             }
         }
     });
