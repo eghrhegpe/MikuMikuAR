@@ -205,6 +205,20 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
   - `beat-detector.test.ts`（10 tests）— 节拍检测逻辑（周期峰值/平坦/间隔约束/BPM 估计）
   - `procedural-motion.test.ts`（17 tests）— Idle/Auto Dance VMD 生成 + auto-switch 逻辑
 
+**UI 自定义系统**
+- [x] CSS 功能性 token 体系 — `--font-ui`/`--font-ui-sm`/`--font-title`/`--font-time` 等 7 个用途化变量，替代旧尺寸名变量（`--font-size-md` 等保留别名）
+- [x] UI 缩放 — `--ui-scale` 全局联动，设置页滑块 0.8~1.3
+- [x] 弹窗宽度 — `--popup-width` 缩放感知，用户可调 220~360px
+- [x] 主题色 — 6 预设色块 + 自定义 hex 输入，即时切换 accent 色系
+- [x] 字体切换 — 系统默认/思源黑体/微软雅黑三档
+- [x] DanceXR 风格 UI — 透明弹窗 + 不透明浮动卡片（`--card-bg`），每个菜单行独立圆角卡片
+- [x] 材质列表美化 — 颜色色块、材质序号、大分类折叠（>15 默认收起）、参数微调下拉面板
+- [x] 滑动动画开关 — 关闭后 MenuStack 过渡 0s，弹窗直接切换
+- [x] 背景模糊开关 — 开时 overlay 恢复毛玻璃效果
+- [x] Go 端 UIState 持久化 — `Scale`/`PopupWidth`/`Accent`/`FontFamily`/`Animations`/`BlurBg` 6 字段
+- [x] 设置页「界面」子菜单 — UI 缩放 + 高级设置（弹窗宽度/动画/模糊/主题色/字体/恢复默认）
+- [x] 硬编码 `font-size` 替换 — app.css 中 70+ 处 `Npx` 改为 `var(--font-*)`，随缩放联动
+
 **拖拽导入**
 - [x] `ImportZip` Go binding — 打开 zip 扫首个 .pmx → `ExtractZip`（约 20 行）
 - [x] `OnFileDrop` 监听 — Wails 原生 API，返回 OS 文件路径，不依赖浏览器 drag API
@@ -241,13 +255,13 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 - [ ] 单独材质编辑器（逐材质独立调参）
 - [x] VPD 姿势导入（VPD → VMD 帧转换，含编码自动检测 Shift-JIS/UTF-8）✅ 已完成
 - [ ] 模型加载预设
-- [ ] 软件管理（扫描 software/ 目录）
+- [x] 软件管理（扫描 software/ 目录 + 自定义软件 + 模型详情「用…打开」）
 - [x] 程序化动作（Auto Dance / Idle Motion）
 - [x] 音乐节拍检测（Web Audio API 能量峰值法）
 - [ ] 换装系统 / 纹理增强
 - [ ] LipSync / 音乐节拍检测
 - [ ] 天空 / 水体 / 道具 / 特效
-- [ ] 软件管理（扫描 software/ 目录）
+- [x] 软件管理（扫描 software/ 目录 + 自定义软件 + 模型详情「用…打开」）
 - [ ] 模型加载预设
 - [ ] ❌ 模之屋下载接管 — 放弃。WebView 方案风险过高，见 ADR-003
 - [ ] Android 端适配
@@ -340,6 +354,14 @@ Phase 10    Android 适配                     ← 远期
 | 19 | ~~旧 HTTP 服务 Close 不等待 — 改 Shutdown 带超时~~ | ✅ |
 | 20 | ~~httpSrvDir/Port 无锁保护 — 加 getter + mutex~~ | ✅ |
 | 21 | ~~前端空 catch 吞噬错误 — 加 console.warn + setStatus~~ | ✅ |
+| 22 | ~~OpenWithSoftware `{model}` 路径含空格被切碎 — 按段替换而非整体替换~~ | ✅ |
+| 23 | ~~软件管理列表首次访问闪白 — renderCustom 内 await scan~~ | ✅ |
+| 24 | ~~软件详情子菜单 `cachedSoftwareEntries` 可能过期 — renderCustom 总是先 fetch~~ | ✅ |
+| 25 | ~~shouldIdle 不处理 autodance 模式，音乐停止后不降级 Idle — 补充 `mode === "autodance"`~~ | ✅ |
+| 26 | ~~场景反序列化后程序化动作不启动 — deserializeScene 末尾调 regenerateProcMotion~~ | ✅ |
+| 27 | ~~regenerateProcMotion 首次选模式时因 procVmdActive=false 跳过 — 改为 `off` 才跳过~~ | ✅ |
+| 28 | ~~startProcMotion 未清除 inst.vmdName，动作弹窗显示残留 "IdleMotion" — 补 `vmdName = ""`~~ | ✅ |
+| 29 | ~~暂停/播放按钮和动作菜单「暂停」误动 autoLoop，与 Space 键不一致 — 移除 autoLoop 操作~~ | ✅ |
 
 ---
 
