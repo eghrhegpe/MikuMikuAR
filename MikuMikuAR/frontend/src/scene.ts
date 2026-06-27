@@ -30,6 +30,7 @@ import { GetMmdWasmInstance } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmIns
 import { MmdWasmInstanceTypeSPR } from "babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease";
 import { MmdWasmRuntime } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime";
 import type { MmdWasmModel } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmModel";
+import type { IMmdRuntimeBone } from "babylon-mmd/esm/Runtime/IMmdRuntimeBone";
 import { VmdLoader } from "babylon-mmd/esm/Loader/vmdLoader";
 import { MmdWasmAnimation } from "babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation";
 import "babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation";
@@ -42,7 +43,7 @@ import "@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 
-import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../wailsjs/go/main/App";
+import { SaveThumbnail, SaveLastScene, LoadLastScene, LoadOutfitFile } from "../wailsjs/go/main/App";
 import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode, getCameraMode } from "./camera";
 import type { CameraState } from "./camera";
 import {
@@ -55,6 +56,7 @@ import {
     ModelInstance, setModelRegistry, escapeHtml,
     computeLibraryRef, resolveLibraryRef,
     envState, EnvState,
+    OutfitFile, OutfitVariant, OutfitSlot,
 } from "./config";
 import { resolveFileUrl, normPath } from "./fileservice";
 import { loadVPDFromBuffer } from "./vpd-parser";
@@ -639,6 +641,8 @@ export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<
             const { tryAutoApplyPreset } = await import("./model-detail");
             tryAutoApplyPreset(id).catch((err: any) => console.warn("auto-apply preset:", err));
         } catch (err) { console.warn("auto-apply import:", err); }
+        // Pre-load outfit file for UI entry availability
+        loadOutfits(id).catch(() => {});
     } catch (err) {
         dom.loadingEl.style.display = "none";
         console.error("loadPMXFile:", err);
@@ -1147,6 +1151,17 @@ export function setModelPhysics(id: string, enabled: boolean): void {
 
 const _initialRigidBodyStates = new Map<string, Uint8Array>();
 
+function _getBoneColor(bone: IMmdRuntimeBone, isPhysics: boolean): Color3 {
+    if (bone.ikSolverIndex >= 0) return new Color3(0.53, 0.42, 1.0);       // IK: purple-blue
+    if (isPhysics) return new Color3(0.2, 1.0, 0.3);                       // physics: bright green
+    if (bone.transformAfterPhysics) return new Color3(0.2, 0.8, 1.0);      // after-physics: sky blue
+    const flag = bone.flag;
+    if (flag & 768) return new Color3(1.0, 0.84, 0.0);                     // append transform: gold
+    if (flag & 1024) return new Color3(1.0, 0.4, 0.7);                     // axis limit: hot pink
+    if ((flag & 2) === 0) return new Color3(0.5, 0.5, 0.5);                // non-rotatable: gray
+    return Color3.FromHSV(((bone.transformOrder % 40) / 40) * 360, 1, 0.8); // default: transform-order hue
+}
+
 function createBoneOverlay(id: string): void {
     const inst = modelRegistry.get(id);
     if (!inst || !inst.mmdModel) return;
@@ -1155,7 +1170,6 @@ function createBoneOverlay(id: string): void {
     const bones = inst.mmdModel.runtimeBones;
     if (!bones || bones.length === 0) return;
 
-    // Pre-compute physics bone set
     const physicsBoneSet = new Set<number>();
     for (let i = 0; i < bones.length; i++) {
         if (bones[i].rigidBodyIndices.length > 0) {
@@ -1167,21 +1181,12 @@ function createBoneOverlay(id: string): void {
     const colors: Color4[][] = [];
     const tmp = new Vector3();
     const joints: Mesh[] = [];
-    const jointData: { mesh: Mesh; boneIndex: number; isPhysics: boolean; color: Color3 }[] = [];
+    const jointData: { mesh: Mesh; boneIndex: number }[] = [];
 
-    // Build bone hierarchy lines + joint spheres
     for (let i = 0; i < bones.length; i++) {
         const bone = bones[i];
-        const isPhysics = physicsBoneSet.has(i);
-        let c: Color3;
-        if (isPhysics) {
-            c = new Color3(0.2, 1, 0.3);
-        } else {
-            const hue = (bone.transformOrder % 40) / 40;
-            c = Color3.FromHSV(hue * 360, 1, 0.8);
-        }
+        const c = _getBoneColor(bone, physicsBoneSet.has(i));
 
-        // Joint sphere at this bone's position
         const bonePos = new Vector3();
         bone.getWorldTranslationToRef(bonePos);
         const sphere = MeshBuilder.CreateSphere("joint_" + id + "_" + i, { diameter: 0.03 }, scene);
@@ -1192,9 +1197,8 @@ function createBoneOverlay(id: string): void {
         sphereMat.disableLighting = true;
         sphere.material = sphereMat;
         joints.push(sphere);
-        jointData.push({ mesh: sphere, boneIndex: i, isPhysics, color: c });
+        jointData.push({ mesh: sphere, boneIndex: i });
 
-        // Bone line to parent
         if (!bone.parentBone) continue;
         const parentPos = new Vector3();
         bone.parentBone.getWorldTranslationToRef(parentPos);
@@ -1202,7 +1206,6 @@ function createBoneOverlay(id: string): void {
         colors.push([new Color4(c.r, c.g, c.b, 1), new Color4(c.r, c.g, c.b, 1)]);
     }
 
-    // Check if there are any connectable bones
     if (lines.length === 0) {
         console.warn("setModelBoneVis: no parent-child bone connections found");
         return;
@@ -1216,7 +1219,6 @@ function createBoneOverlay(id: string): void {
     }, scene);
     overlay.renderingGroupId = 2;
 
-    // Per-frame update: refresh world positions of every bone line + joint spheres
     const updateFn = () => {
         const m = modelRegistry.get(id);
         if (!m || !m.mmdModel) return;
@@ -1233,14 +1235,7 @@ function createBoneOverlay(id: string): void {
             bone.getWorldTranslationToRef(childPos);
             positions.push(parentPos.x, parentPos.y, parentPos.z);
             positions.push(childPos.x, childPos.y, childPos.z);
-            const isPhysics = physicsBoneSet.has(i);
-            let c: Color3;
-            if (isPhysics) {
-                c = new Color3(0.2, 1, 0.3);
-            } else {
-                const hue = (bone.transformOrder % 40) / 40;
-                c = Color3.FromHSV(hue * 360, 1, 0.8);
-            }
+            const c = _getBoneColor(bone, physicsBoneSet.has(i));
             colorData.push(c.r, c.g, c.b);
             colorData.push(c.r, c.g, c.b);
         }
@@ -1249,7 +1244,6 @@ function createBoneOverlay(id: string): void {
         overlay.updateVerticesData("position", posArr, false, false);
         overlay.updateVerticesData("color", colArr, false, false);
 
-        // Update joint sphere positions
         const tmpPos = new Vector3();
         for (const jd of jointData) {
             const bone = b[jd.boneIndex];
@@ -2344,6 +2338,111 @@ function _disposeEnvUpdateObserver(): void {
         scene.onBeforeRenderObservable.remove(_envUpdateObserver);
         _envUpdateObserver = null;
     }
+}
+
+// ======== Outfit System ========
+
+/** Load outfits.json for a model and store in the instance. */
+export async function loadOutfits(id: string): Promise<OutfitFile | null> {
+    const inst = modelRegistry.get(id);
+    if (!inst || !inst.filePath) return null;
+    try {
+        const json = await LoadOutfitFile(inst.filePath);
+        if (!json) return null;
+        const outfit: OutfitFile = JSON.parse(json);
+        if (!outfit.version || !Array.isArray(outfit.variants)) return null;
+        inst.outfitFile = outfit;
+        return outfit;
+    } catch {
+        inst.outfitFile = undefined;
+        return null;
+    }
+}
+
+function _applySlot(sm: StandardMaterial, slot: string, newPath: string | null, origTex: Texture | null, port: number): void {
+    const cur = (sm as any)[slot] as Texture | null;
+    if (cur && cur !== origTex) cur.dispose();
+    if (newPath) {
+        const url = `http://127.0.0.1:${port}/${encodeURIComponent(newPath.replace(/\\/g, "/"))}`;
+        (sm as any)[slot] = new Texture(url, scene);
+    } else if (origTex) {
+        (sm as any)[slot] = origTex;
+    }
+}
+
+/** Apply an outfit variant to a model by replacing textures. */
+export function applyOutfitVariant(id: string, variantName: string): void {
+    const inst = modelRegistry.get(id);
+    if (!inst || !inst.outfitFile) return;
+
+    const variant = variantName === "默认"
+        ? undefined
+        : inst.outfitFile.variants.find(v => v.name === variantName);
+    if (!variant && variantName !== "默认") return;
+
+    if (!inst._origTextures) {
+        inst._origTextures = new Map();
+        for (let mi = 0; mi < inst.meshes.length; mi++) {
+            const sm = inst.meshes[mi].material as StandardMaterial;
+            if (!sm) continue;
+            inst._origTextures.set(mi, {
+                diffuse: sm.diffuseTexture as Texture | null,
+                toon: (sm as any).toonTexture as Texture | null,
+                spa: (sm as any).sphereTexture as Texture | null,
+                normal: sm.bumpTexture as Texture | null,
+                emissive: sm.emissiveTexture as Texture | null,
+            });
+        }
+    }
+
+    for (let mi = 0; mi < inst.meshes.length; mi++) {
+        const mesh = inst.meshes[mi];
+        const sm = mesh.material as StandardMaterial;
+        if (!sm) continue;
+        const orig = inst._origTextures.get(mi);
+        if (!orig) continue;
+        const cat = _catOf(sm.name);
+
+        const getSlot = (slotKey: string): string | null => {
+            const v = variant?.byMaterial?.[sm.name]?.[slotKey as keyof OutfitSlot]
+                  ?? variant?.byCategory?.[cat]?.[slotKey as keyof OutfitSlot]
+                  ?? variant?.all?.[slotKey as keyof OutfitSlot]
+                  ?? null;
+            return v ?? null;
+        };
+
+        _applySlot(sm, "diffuseTexture", getSlot("diffuse"), orig.diffuse, inst.port);
+        _applySlot(sm, "toonTexture", getSlot("toon"), orig.toon, inst.port);
+        _applySlot(sm, "sphereTexture", getSlot("spa"), orig.spa, inst.port);
+        _applySlot(sm, "bumpTexture", getSlot("normal"), orig.normal, inst.port);
+        _applySlot(sm, "emissiveTexture", getSlot("emissive"), orig.emissive, inst.port);
+    }
+
+    inst.activeVariant = variantName;
+    triggerAutoSave();
+}
+
+/** Reset all outfit textures back to originals. */
+export function resetOutfit(id: string): void {
+    const inst = modelRegistry.get(id);
+    if (!inst) return;
+    if (inst._origTextures) {
+        for (let mi = 0; mi < inst.meshes.length; mi++) {
+            const sm = inst.meshes[mi].material as StandardMaterial;
+            if (!sm) continue;
+            const orig = inst._origTextures.get(mi);
+            if (!orig) continue;
+            _applySlot(sm, "diffuseTexture", null, orig.diffuse, inst.port);
+            _applySlot(sm, "toonTexture", null, orig.toon, inst.port);
+            _applySlot(sm, "sphereTexture", null, orig.spa, inst.port);
+            _applySlot(sm, "bumpTexture", null, orig.normal, inst.port);
+            _applySlot(sm, "emissiveTexture", null, orig.emissive, inst.port);
+        }
+    }
+    inst.activeVariant = undefined;
+    inst.outfitFile = undefined;
+    inst._origTextures = undefined;
+    triggerAutoSave();
 }
 
 // ======== Procedural Motion Control API ========
