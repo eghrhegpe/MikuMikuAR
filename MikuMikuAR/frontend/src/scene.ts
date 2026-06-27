@@ -715,7 +715,7 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
         if (!skipAutoApply) {
             // Try auto-apply preset from library
             try {
-                const { tryAutoApplyPreset } = await import("./model-detail");
+                const { tryAutoApplyPreset } = await import("./model-preset");
                 tryAutoApplyPreset(id).catch((err: any) => console.warn("auto-apply preset:", err));
             } catch (err) { console.warn("auto-apply import:", err); }
         }
