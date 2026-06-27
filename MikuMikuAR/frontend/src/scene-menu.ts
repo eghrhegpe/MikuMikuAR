@@ -19,7 +19,7 @@ import {
 import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath, setEnvState } from "./scene";
 import type { RenderState } from "./scene";
 import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectVMDMotion, SelectDir, SaveScreenshot,
-    GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene } from "../wailsjs/go/main/App";
+    GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene, SelectEnvTextureFile } from "../wailsjs/go/main/App";
 import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion } from "./scene";
 import { modelRegistry, focusedModelId, setFocusedModelId } from "./config";
 import type { ProcMotionMode } from "./procedural-motion";
@@ -92,6 +92,20 @@ function buildProcMotionModeLevel(): PopupLevel {
 }
 
 let currentPresetIndex = -1;
+let _presetScenes: string[] = []; // cached for nav buttons, refreshed on re-render
+
+async function _loadPresetScene(name: string): Promise<boolean> {
+    try {
+        const dir = await GetPresetScenesDir();
+        const json = await LoadSceneFile(dir + "/" + name);
+        await deserializeScene(JSON.parse(json));
+        return true;
+    } catch (err) {
+        console.error("Load preset scene failed:", err);
+        setStatus("✗ 加载预设场景失败", false);
+        return false;
+    }
+}
 
 function buildPresetScenesLevel(): PopupLevel {
     return {
@@ -100,7 +114,8 @@ function buildPresetScenesLevel(): PopupLevel {
         items: [],
         renderCustom: async (container) => {
             container.style.padding = "12px 14px";
-            const scenes = await GetPresetScenes() || [];
+            _presetScenes = await GetPresetScenes() || [];
+            const scenes = _presetScenes;
             if (scenes.length === 0) {
                 const empty = document.createElement("div");
                 empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:20px;";
@@ -120,10 +135,9 @@ function buildPresetScenesLevel(): PopupLevel {
                 if (currentPresetIndex < 0) currentPresetIndex = 0;
                 currentPresetIndex = (currentPresetIndex - 1 + scenes.length) % scenes.length;
                 const name = scenes[currentPresetIndex];
-                const dir = await GetPresetScenesDir();
-                const json = await LoadSceneFile(dir + "/" + name);
-                await deserializeScene(JSON.parse(json));
-                setStatus(`✓ 预设场景: ${name} (${currentPresetIndex + 1}/${scenes.length})`, true);
+                if (await _loadPresetScene(name)) {
+                    setStatus(`✓ 预设场景: ${name} (${currentPresetIndex + 1}/${scenes.length})`, true);
+                }
             });
             const nextBtn = document.createElement("button");
             nextBtn.style.cssText = "flex:1;padding:6px;border:1px solid var(--white-08);border-radius:6px;background:transparent;color:var(--text-bright);cursor:pointer;font-size:11px;";
@@ -133,10 +147,9 @@ function buildPresetScenesLevel(): PopupLevel {
                 if (currentPresetIndex < 0) currentPresetIndex = 0;
                 currentPresetIndex = (currentPresetIndex + 1) % scenes.length;
                 const name = scenes[currentPresetIndex];
-                const dir = await GetPresetScenesDir();
-                const json = await LoadSceneFile(dir + "/" + name);
-                await deserializeScene(JSON.parse(json));
-                setStatus(`✓ 预设场景: ${name} (${currentPresetIndex + 1}/${scenes.length})`, true);
+                if (await _loadPresetScene(name)) {
+                    setStatus(`✓ 预设场景: ${name} (${currentPresetIndex + 1}/${scenes.length})`, true);
+                }
             });
             navRow.appendChild(prevBtn);
             navRow.appendChild(nextBtn);
@@ -150,11 +163,10 @@ function buildPresetScenesLevel(): PopupLevel {
                 row.innerHTML = `<span class="menu-icon"><iconify-icon icon="${isActive ? "play-circle" : "bookmark"}"></iconify-icon></span><span class="menu-label">${escapeHtml(name)}</span>`;
                 row.addEventListener("click", async () => {
                     currentPresetIndex = i;
-                    const dir = await GetPresetScenesDir();
-                    const json = await LoadSceneFile(dir + "/" + name);
-                    await deserializeScene(JSON.parse(json));
-                    sceneStack?.reRender();
-                    setStatus(`✓ 已加载: ${name}`, true);
+                    if (await _loadPresetScene(name)) {
+                        sceneStack?.reRender();
+                        setStatus(`✓ 已加载: ${name}`, true);
+                    }
                 });
                 container.appendChild(row);
 
@@ -511,11 +523,17 @@ function buildSkyLevel(): PopupLevel {
             }
 
             if (s.skyMode === "texture") {
+                const hint = document.createElement("div");
+                hint.style.cssText = "font-size:11px;color:var(--text-dim);margin-bottom:8px;padding:0 2px;";
+                hint.textContent = "支持 .hdr / .dds / .exr 格式的环境贴图";
+                container.appendChild(hint);
+
                 const texRow = document.createElement("div");
-                texRow.innerHTML = `<span class="menu-label">环境贴图</span><span class="menu-sublabel">${s.skyTexture || "未选择"}</span>`;
+                const fileName = s.skyTexture ? s.skyTexture.split(/[/\\]/).pop() : "未选择";
+                texRow.innerHTML = `<span class="menu-label">环境贴图</span><span class="menu-sublabel">${fileName}</span>`;
                 texRow.className = "menu-item";
-                texRow.addEventListener("click", () => {
-                    const path = prompt("输入环境贴图路径：");
+                texRow.addEventListener("click", async () => {
+                    const path = await SelectEnvTextureFile().catch(() => "");
                     if (path) setEnvState({ skyTexture: path });
                 });
                 container.appendChild(texRow);
@@ -592,10 +610,10 @@ function buildParticleLevel(): PopupLevel {
             typeRow.appendChild(typeLabel);
             const types: Array<{ value: EnvState["particleType"]; label: string }> = [
                 { value: "none", label: "无" },
-                { value: "sakura", label: "樱花" },
-                { value: "rain", label: "雨" },
-                { value: "snow", label: "雪" },
-                { value: "fireworks", label: "烟花" },
+                { value: "sakura", label: "🌸 樱花" },
+                { value: "rain", label: "🌧 雨" },
+                { value: "snow", label: "❄ 雪" },
+                { value: "fireworks", label: "🎆 烟花" },
             ];
             for (const t of types) {
                 const btn = document.createElement("button");
