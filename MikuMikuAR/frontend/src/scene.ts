@@ -634,6 +634,11 @@ export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<
         arrangeModels();
         // Auto-capture thumbnail for future popup display
         captureThumbnail(filePath).catch(() => {});
+        // Try auto-apply preset from library
+        try {
+            const { tryAutoApplyPreset } = await import("./model-detail");
+            tryAutoApplyPreset(id).catch((err: any) => console.warn("auto-apply preset:", err));
+        } catch (err) { console.warn("auto-apply import:", err); }
     } catch (err) {
         dom.loadingEl.style.display = "none";
         console.error("loadPMXFile:", err);
@@ -1161,24 +1166,39 @@ function createBoneOverlay(id: string): void {
     const lines: Vector3[][] = [];
     const colors: Color4[][] = [];
     const tmp = new Vector3();
+    const joints: Mesh[] = [];
+    const jointData: { mesh: Mesh; boneIndex: number; isPhysics: boolean; color: Color3 }[] = [];
 
-    // Build bone hierarchy lines
+    // Build bone hierarchy lines + joint spheres
     for (let i = 0; i < bones.length; i++) {
         const bone = bones[i];
-        if (!bone.parentBone) continue;
-        const parentPos = new Vector3();
-        bone.parentBone.getWorldTranslationToRef(parentPos);
-        bone.getWorldTranslationToRef(tmp);
-        lines.push([parentPos.clone(), tmp.clone()]);
-        // Physics bones get bright green; non-physics use transform-order hue
         const isPhysics = physicsBoneSet.has(i);
         let c: Color3;
         if (isPhysics) {
-            c = new Color3(0.2, 1, 0.3); // bright green
+            c = new Color3(0.2, 1, 0.3);
         } else {
             const hue = (bone.transformOrder % 40) / 40;
             c = Color3.FromHSV(hue * 360, 1, 0.8);
         }
+
+        // Joint sphere at this bone's position
+        const bonePos = new Vector3();
+        bone.getWorldTranslationToRef(bonePos);
+        const sphere = MeshBuilder.CreateSphere("joint_" + id + "_" + i, { diameter: 0.03 }, scene);
+        sphere.position = bonePos.clone();
+        sphere.renderingGroupId = 2;
+        const sphereMat = new StandardMaterial("jointMat_" + id + "_" + i, scene);
+        sphereMat.emissiveColor = c;
+        sphereMat.disableLighting = true;
+        sphere.material = sphereMat;
+        joints.push(sphere);
+        jointData.push({ mesh: sphere, boneIndex: i, isPhysics, color: c });
+
+        // Bone line to parent
+        if (!bone.parentBone) continue;
+        const parentPos = new Vector3();
+        bone.parentBone.getWorldTranslationToRef(parentPos);
+        lines.push([parentPos.clone(), bonePos.clone()]);
         colors.push([new Color4(c.r, c.g, c.b, 1), new Color4(c.r, c.g, c.b, 1)]);
     }
 
@@ -1194,9 +1214,9 @@ function createBoneOverlay(id: string): void {
         updatable: true,
         useVertexAlpha: true,
     }, scene);
-    overlay.renderingGroupId = 2; // always on top
+    overlay.renderingGroupId = 2;
 
-    // Per-frame update: refresh world positions of every bone line
+    // Per-frame update: refresh world positions of every bone line + joint spheres
     const updateFn = () => {
         const m = modelRegistry.get(id);
         if (!m || !m.mmdModel) return;
@@ -1228,9 +1248,18 @@ function createBoneOverlay(id: string): void {
         const colArr = new Float32Array(colorData);
         overlay.updateVerticesData("position", posArr, false, false);
         overlay.updateVerticesData("color", colArr, false, false);
+
+        // Update joint sphere positions
+        const tmpPos = new Vector3();
+        for (const jd of jointData) {
+            const bone = b[jd.boneIndex];
+            if (!bone) continue;
+            bone.getWorldTranslationToRef(tmpPos);
+            jd.mesh.position.copyFrom(tmpPos);
+        }
     };
 
-    _boneOverlayMap.set(id, { overlay, update: updateFn });
+    _boneOverlayMap.set(id, { overlay, update: updateFn, joints });
 
     // Register the before-render observer if not yet registered
     ensureBoneUpdateObserver();
@@ -1240,6 +1269,7 @@ function destroyBoneOverlay(id: string): void {
     const entry = _boneOverlayMap.get(id);
     if (entry) {
         entry.overlay.dispose();
+        for (const j of entry.joints) j.dispose();
         _boneOverlayMap.delete(id);
     }
 }
@@ -1252,8 +1282,8 @@ function ensureBoneUpdateObserver(): void {
         for (const [id, entry] of _boneOverlayMap) {
             const inst = modelRegistry.get(id);
             if (!inst || !inst.showBones || !inst.mmdModel) {
-                // Clean up stale entries
                 entry.overlay.dispose();
+                for (const j of entry.joints) j.dispose();
                 toDelete.push(id);
                 continue;
             }
@@ -1340,7 +1370,7 @@ const _origValues = new WeakMap<Material, _OrigMat>();
 export const _catState = new Map<string, Map<string, MaterialCategoryParams>>();
 /** @internal exported for testing */
 export const _matState = new Map<string, Map<number, MaterialCategoryParams>>();
-const _boneOverlayMap = new Map<string, { overlay: Mesh; update: () => void }>();
+const _boneOverlayMap = new Map<string, { overlay: Mesh; joints: Mesh[]; update: () => void }>();
 /** @internal exported for testing */
 export const _matEnabled = new Map<string, Map<number, boolean>>();
 
