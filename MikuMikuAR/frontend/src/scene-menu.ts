@@ -20,7 +20,7 @@ import { getLightState, setLightState, triggerAutoSave, serializeScene, deserial
 import type { RenderState } from "./scene";
 import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectVMDMotion, SelectDir, SaveScreenshot,
     GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene, SelectEnvTextureFile } from "../wailsjs/go/main/App";
-import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, applyEnvPreset, setEnvAutoLink, getEnvAutoLink } from "./scene";
+import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, applyEnvPreset, setEnvAutoLink, getEnvAutoLink, setEnvSunAngle, getEnvSunAngle, redoEnvAutoLink } from "./scene";
 import { modelRegistry, focusedModelId, setFocusedModelId } from "./config";
 import type { ProcMotionMode } from "./procedural-motion";
 import { ENV_PRESETS as ENV_LIGHTING_PRESETS } from "./env-lighting";
@@ -94,17 +94,15 @@ function buildProcMotionLevel(): PopupLevel {
             { kind: "action", label: "自动切换", icon: "repeat", target: "procmotion:autoswitch", sublabel: st.autoSwitch ? "开" : "关" },
         ],
         renderCustom: (container) => {
-            container.classList.remove("render-card");
-            cardWrap(container, (c) => {
-                addSliderRow(c, "动作强度", st.intensity, 0, 1, 0.05, (v) => {
-                    setProcMotionIntensity(v);
-                    regenerateProcMotion();
-                }, "lucide:activity");
-                addSliderRow(c, "速度", st.speed, 0.5, 2, 0.05, (v) => {
-                    setProcMotionSpeed(v);
-                    regenerateProcMotion();
-                }, "lucide:fast-forward");
-            });
+            container.style.padding = "8px 6px";
+            addSliderRow(container, "动作强度", st.intensity, 0, 1, 0.05, (v) => {
+                setProcMotionIntensity(v);
+                regenerateProcMotion();
+            }, "lucide:activity");
+            addSliderRow(container, "速度", st.speed, 0.5, 2, 0.05, (v) => {
+                setProcMotionSpeed(v);
+                regenerateProcMotion();
+            }, "lucide:fast-forward");
         },
     };
 }
@@ -410,6 +408,7 @@ function buildLightLevel(): PopupLevel {
 
 function buildEnvLightingLevel(): PopupLevel {
     const autoLink = getEnvAutoLink();
+    const sunAngle = getEnvSunAngle();
     return {
         label: "环境光照",
         dir: "",
@@ -453,6 +452,12 @@ function buildEnvLightingLevel(): PopupLevel {
                 presetRow.appendChild(btn);
             }
             container.appendChild(presetRow);
+
+            // Sun angle slider
+            addSliderRow(container, "太阳角度", sunAngle, -15, 90, 1, (v) => {
+                setEnvSunAngle(v);
+                redoEnvAutoLink();
+            }, "lucide:sun");
         },
     };
 }
@@ -580,9 +585,8 @@ function buildSkyLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.style.padding = "12px 14px";
             const s = envState;
-
+            container.style.padding = "12px 14px";
             const modeRow = document.createElement("div");
             modeRow.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;";
             const modeLabel = document.createElement("span");

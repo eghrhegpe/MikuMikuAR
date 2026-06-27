@@ -1632,6 +1632,7 @@ export function triggerAutoSave(): void {
 // ======== Environment Auto-Link (Env → Lighting) ========
 
 let envAutoLink = true;
+let envSunAngle = 45; // default sun elevation
 
 export function setEnvAutoLink(on: boolean): void {
     envAutoLink = on;
@@ -1641,12 +1642,35 @@ export function getEnvAutoLink(): boolean {
     return envAutoLink;
 }
 
+export function setEnvSunAngle(deg: number): void {
+    envSunAngle = Math.max(-15, Math.min(90, deg));
+}
+
+export function getEnvSunAngle(): number {
+    return envSunAngle;
+}
+
+/** 根据当前天空色 + 太阳角重新推导光照（滑块变化后调�?*/
+export function redoEnvAutoLink(): void {
+    if (!envAutoLink || envState.skyMode !== "procedural") return;
+    const l = deriveLighting(envState.skyColorTop, envSunAngle);
+    setLightState({
+        dirColor: l.dirDiffuse,
+        dirX: l.dirDirection[0],
+        dirY: l.dirDirection[1],
+        dirZ: l.dirDirection[2],
+        dirIntensity: l.dirIntensity,
+        hemiIntensity: l.hemiIntensity,
+    });
+}
+
 /** 应用环境预设：同时设天空 + 灯光 + 渲染。*/
 export function applyEnvPreset(name: string): boolean {
     const preset = ENV_PRESETS[name];
     if (!preset) return false;
     const wasLinked = envAutoLink;
     envAutoLink = false;
+    envSunAngle = preset.sunAngle;
     setEnvState({
         skyMode: "procedural",
         skyColorTop: preset.skyColorTop,
@@ -1686,7 +1710,7 @@ export function setEnvState(partial: Partial<EnvState>): void {
         // Auto-link: derive lighting from sky color when in procedural mode
         if (envAutoLink && envState.skyMode === "procedural" &&
             (partial.skyColorTop !== undefined || partial.skyColorMid !== undefined || partial.skyColorBot !== undefined || partial.skyBrightness !== undefined)) {
-            const l = deriveLighting(envState.skyColorTop, 45);
+            const l = deriveLighting(envState.skyColorTop, envSunAngle);
             setLightState({
                 dirColor: l.dirDiffuse,
                 dirX: l.dirDirection[0],
