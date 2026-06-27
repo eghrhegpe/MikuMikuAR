@@ -190,7 +190,8 @@ describe("Clouds V1", () => {
             height: 200,
         }, scene);
         cloudPlane.isPickable = false;
-        cloudPlane.position = new Vector3(0, 30, 0);
+        const cloudHeight = 100;
+        cloudPlane.position = new Vector3(0, cloudHeight, 0);
         cloudPlane.rotation.x = Math.PI / 2;
 
         const mat = new StandardMaterial("testCloudMat", scene);
@@ -200,7 +201,7 @@ describe("Clouds V1", () => {
         cloudPlane.material = mat;
 
         expect(cloudPlane).toBeDefined();
-        expect(cloudPlane.position.y).toBe(30);
+        expect(cloudPlane.position.y).toBe(cloudHeight);
         expect(mat.alpha).toBe(0.5);
         expect(mat.useAlphaFromDiffuseTexture).toBe(true);
 

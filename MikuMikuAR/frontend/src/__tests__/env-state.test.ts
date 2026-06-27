@@ -22,6 +22,7 @@ const defaultEnv: EnvState = {
     cloudsEnabled: false,
     cloudCover: 0.5,
     cloudScale: 1,
+    cloudHeight: 100,
     fogEnabled: false,
     fogColor: [0.5, 0.5, 0.6],
     fogDensity: 0.01,
@@ -35,7 +36,7 @@ describe("EnvState defaults", () => {
             "groundVisible", "groundMode", "groundColor", "groundAlpha",
             "windEnabled", "windDirection", "windSpeed",
             "particleEnabled", "particleType",
-            "cloudsEnabled", "cloudCover", "cloudScale",
+            "cloudsEnabled", "cloudCover", "cloudScale", "cloudHeight",
             "fogEnabled", "fogColor", "fogDensity",
         ];
         for (const k of keys) {
