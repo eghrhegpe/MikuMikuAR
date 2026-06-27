@@ -1611,6 +1611,8 @@ export function getEnvAutoLink(): boolean {
 export function applyEnvPreset(name: string): boolean {
     const preset = ENV_PRESETS[name];
     if (!preset) return false;
+    const wasLinked = envAutoLink;
+    envAutoLink = false;
     setEnvState({
         skyMode: "procedural",
         skyColorTop: preset.skyColorTop,
@@ -1628,6 +1630,7 @@ export function applyEnvPreset(name: string): boolean {
         exposure: preset.exposure,
         toneMapping: preset.toneMapping,
     });
+    envAutoLink = wasLinked;
     return true;
 }
 
