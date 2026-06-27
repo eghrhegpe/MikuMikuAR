@@ -6,6 +6,7 @@
 import {
     dom, closeAllOverlays, setStatus, escapeHtml,
     PopupRow, PopupLevel, envState, EnvState, cardContainer,
+    propRegistry,
 } from "./config";
 import { SlideMenu } from "./menu";
 import { createIconifyIcon } from "./icons";
@@ -17,11 +18,11 @@ import {
     getConcertParams, setConcertParams,
     type CameraMode,
 } from "./camera";
-import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath, setEnvState } from "./scene";
+import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath, setEnvState, loadProp, removeProp, setPropTransform, getPropList } from "./scene";
 import type { RenderState } from "./scene";
 import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectVMDMotion, SelectDir, SaveScreenshot,
-    GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene, SelectEnvTextureFile } from "../wailsjs/go/main/App";
-import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, applyEnvPreset, setEnvAutoLink, getEnvAutoLink, setEnvSunAngle, getEnvSunAngle, redoEnvAutoLink } from "./scene";
+    GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene, SelectEnvTextureFile, SelectPMXFile } from "../wailsjs/go/main/App";
+import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, applyEnvPreset, setEnvAutoLink, getEnvAutoLink, setEnvSunAngle, getEnvSunAngle, redoEnvAutoLink, getLipSyncState, setLipSyncEnabled, setLipSyncSensitivity, setLipSyncIntensity } from "./scene";
 import { modelRegistry, focusedModelId, setFocusedModelId } from "./config";
 import type { ProcMotionMode } from "./procedural-motion";
 import { ENV_PRESETS as ENV_LIGHTING_PRESETS } from "./env-lighting";
@@ -77,6 +78,7 @@ function buildSceneRoot(): PopupLevel {
 
 function buildProcMotionLevel(): PopupLevel {
     const st = getProcMotionState();
+    const lipSt = getLipSyncState();
     const modeLabel: Record<string, string> = {
         off: "关闭", idle: "待机呼吸", autodance: "自动舞蹈",
     };
@@ -86,6 +88,7 @@ function buildProcMotionLevel(): PopupLevel {
         items: [
             { kind: "folder", label: "模式", icon: "wind", target: "procmotion:mode", sublabel: modeLabel[st.mode] },
             { kind: "action", label: "自动切换", icon: "repeat", target: "procmotion:autoswitch", sublabel: st.autoSwitch ? "开" : "关" },
+            { kind: "folder", label: "LipSync", icon: "mic", target: "lipsync:menu", sublabel: lipSt.enabled ? "开" : "关" },
         ],
         renderCustom: (container) => {
             container.style.padding = "8px 6px";
@@ -117,6 +120,27 @@ function buildProcMotionModeLevel(): PopupLevel {
             icon: m.icon,
             target: `procmotion:set-mode:${m.mode}`,
         })),
+    };
+}
+
+function buildLipSyncLevel(): PopupLevel {
+    const st = getLipSyncState();
+    return {
+        label: "LipSync",
+        dir: "",
+        items: [
+            { kind: "action", label: "启用", icon: st.enabled ? "check" : "circle", target: "lipsync:toggle", sublabel: st.enabled ? "开" : "关" },
+        ],
+        renderCustom: (container) => {
+            container.style.padding = "8px 6px";
+            // 灵敏度：UI 上「越大越灵敏」= sensitivity 越小，故反转显示
+            addSliderRow(container, "灵敏度", 1 - st.sensitivity, 0, 1, 0.05, (v) => {
+                setLipSyncSensitivity(1 - v);
+            }, "lucide:volume-2");
+            addSliderRow(container, "强度", st.intensity, 0, 1, 0.05, (v) => {
+                setLipSyncIntensity(v);
+            }, "lucide:activity");
+        },
     };
 }
 
@@ -461,10 +485,11 @@ function buildEnvLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 slideRow(c, "lucide:sun", "环境光照", true, () => sceneStack?.push(buildEnvLightingLevel()));
                 slideRow(c, "lucide:sun", "天空", true, () => sceneStack?.push(buildSkyLevel()));
-                slideRow(c, "lucide:grid", "地面", true, () => sceneStack?.push(buildGroundLevel()));
+                slideRow(c, "lucide:waves", "水面", true, () => sceneStack?.push(buildWaterLevel()));
                 slideRow(c, "lucide:wind", "粒子", true, () => sceneStack?.push(buildParticleLevel()));
                 slideRow(c, "lucide:wind", "风", true, () => sceneStack?.push(buildWindLevel()));
                 slideRow(c, "lucide:cloud", "云", true, () => sceneStack?.push(buildCloudLevel()));
+                slideRow(c, "lucide:box", "道具", true, () => sceneStack?.push(buildPropLevel()));
             });
             cardContainer(container, (c) => {
                 slideRow(c, "lucide:bookmark", "系统预设", true, () => sceneStack?.push(buildPresetLevel()));
@@ -684,6 +709,119 @@ function buildGroundLevel(): PopupLevel {
             if (s.groundMode === "solid" || s.groundMode === "checker") {
                 addSliderRow(container, "透明度", s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), "lucide:eye");
             }
+        },
+    };
+}
+
+function buildPropLevel(): PopupLevel {
+    return {
+        label: "道具",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove("render-card");
+            container.style.padding = "0";
+
+            // Card 1: 添加
+            cardContainer(container, (c) => {
+                slideRow(c, "lucide:plus", "添加道具文件", false, () => {
+                    SelectPMXFile().then(path => {
+                        if (!path) return;
+                        loadProp(path).then(() => sceneStack?.reRender()).catch(() => {});
+                    });
+                });
+            });
+
+            // Card 2: 已加载道具列表
+            const props = getPropList();
+            if (props.length > 0) {
+                cardContainer(container, (c) => {
+                    for (const p of props) {
+                        const row = document.createElement("div");
+                        row.className = "slide-item";
+                        row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(p.name)}</span><span class="slide-arrow">&gt;</span>`;
+                        row.addEventListener("click", () => sceneStack?.push(buildPropDetailLevel(p.id)));
+                        const delBtn = document.createElement("span");
+                        delBtn.className = "slide-add-btn";
+                        delBtn.textContent = "×";
+                        delBtn.title = "删除道具";
+                        delBtn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            removeProp(p.id);
+                            sceneStack?.reRender();
+                        });
+                        row.appendChild(delBtn);
+                        c.appendChild(row);
+                    }
+                });
+            } else {
+                cardContainer(container, (c) => {
+                    const empty = document.createElement("div");
+                    empty.style.cssText = "font-size:11px;color:var(--text-dim);padding:8px 4px;text-align:center;";
+                    empty.textContent = "暂无道具，点击上方添加";
+                    c.appendChild(empty);
+                });
+            }
+        },
+    };
+}
+
+function buildPropDetailLevel(propId: string): PopupLevel {
+    return {
+        label: "道具变换",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+            const p = propRegistry.get(propId);
+            if (!p) {
+                const empty = document.createElement("div");
+                empty.style.cssText = "font-size:11px;color:var(--text-dim);padding:8px 4px;";
+                empty.textContent = "道具不存在（可能已被删除）";
+                container.appendChild(empty);
+                return;
+            }
+
+            const title = document.createElement("div");
+            title.style.cssText = "font-size:12px;color:var(--text);margin-bottom:12px;font-weight:600;";
+            title.textContent = p.name;
+            container.appendChild(title);
+
+            addSliderRow(container, "位置 X", p.position[0], -50, 50, 0.5, (v) => {
+                setPropTransform(propId, { position: [v, p.position[1], p.position[2]] });
+                p.position[0] = v;
+            }, "lucide:move-horizontal");
+            addSliderRow(container, "位置 Y", p.position[1], -50, 50, 0.5, (v) => {
+                setPropTransform(propId, { position: [p.position[0], v, p.position[2]] });
+                p.position[1] = v;
+            }, "lucide:move-vertical");
+            addSliderRow(container, "位置 Z", p.position[2], -50, 50, 0.5, (v) => {
+                setPropTransform(propId, { position: [p.position[0], p.position[1], v] });
+                p.position[2] = v;
+            }, "lucide:move");
+            addSliderRow(container, "旋转 Y", p.rotationY, -Math.PI, Math.PI, 0.1, (v) => {
+                setPropTransform(propId, { rotationY: v });
+                p.rotationY = v;
+            }, "lucide:rotate-cw");
+            addSliderRow(container, "缩放", p.scaling, 0.1, 10, 0.1, (v) => {
+                setPropTransform(propId, { scaling: v });
+                p.scaling = v;
+            }, "lucide:maximize");
+            addToggleRow(container, "可见", p.visible, (v) => {
+                setPropTransform(propId, { visible: v });
+                p.visible = v;
+            });
+
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "删除道具";
+            delBtn.className = "mode-btn";
+            delBtn.style.cssText = "width:100%;margin-top:14px;color:var(--danger,#f66);";
+            delBtn.addEventListener("click", () => {
+                removeProp(propId);
+                sceneStack?.pop();
+                sceneStack?.reRender();
+            });
+            container.appendChild(delBtn);
         },
     };
 }
@@ -1337,6 +1475,17 @@ function handleSceneAction(row: PopupRow): void {
     }
     if (row.target === "procmotion:mode") {
         sceneStack?.push(buildProcMotionModeLevel());
+        return;
+    }
+    // LipSync actions
+    if (row.target === "lipsync:menu") {
+        sceneStack?.push(buildLipSyncLevel());
+        return;
+    }
+    if (row.target === "lipsync:toggle") {
+        const cur = getLipSyncState();
+        setLipSyncEnabled(!cur.enabled);
+        sceneStack?.reRender();
         return;
     }
 }
