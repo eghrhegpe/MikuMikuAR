@@ -16,8 +16,6 @@ import {
   AddRecentModel,
   GetAllTags,
   GetModelsByTag,
-  OpenInMMD,
-  OpenInBlender,
 } from "../wailsjs/go/main/App";
 import {
   dom,
@@ -46,7 +44,6 @@ import {
   closeAllOverlays,
   modelRegistry,
   focusedModelId,
-  setFocusedModelId,
   recentModels,
   setRecentModels,
   computeLibraryRef,
@@ -57,21 +54,11 @@ import {
 import {
   loadPMXFile,
   loadVMDFromPath,
-  focusModel,
   removeModel,
   resetModelMorphs,
 } from "./scene";
 import {
   buildModelDetailLevel,
-  buildModelInfoLevel,
-  buildTransformLevel,
-  buildVisibilityLevel,
-  buildModelTagsLevel,
-  buildMorphPreviewLevel,
-  buildMatRootLevel,
-  buildOpenWithLevel,
-  selectAndSavePreset,
-  selectAndLoadPreset,
 } from "./model-detail";
 import { buildDanceSetDetailLevel, loadDanceSets } from "./motion-popup";
 import { SlideMenu } from "./menu";
@@ -92,23 +79,6 @@ const makeModelStack = (): SlideMenu => {
         const inst = modelRegistry.get(id);
         if (!inst) return null;
         return buildModelDetailLevel(id);
-      }
-      if (row.target && row.target.startsWith("detail:")) {
-        setMotionBindingTargetId(null);
-        const parts = row.target.split(":");
-        const type = parts[1];
-        const id = parts.slice(2).join(":");
-        const inst = modelRegistry.get(id);
-        if (!inst) return null;
-        switch (type) {
-          case "info": return buildModelInfoLevel(id);
-          case "transform": return buildTransformLevel(id);
-          case "visibility": return buildVisibilityLevel(id);
-          case "tags": return buildModelTagsLevel(id);
-          case "morph": return buildMorphPreviewLevel(id);
-          case "material": return buildMatRootLevel(id, inst.name);
-          default: return null;
-        }
       }
       if (row.target === "__recent__") {
         const recentMap = new Map<string, number>();
@@ -191,57 +161,6 @@ const makeModelStack = (): SlideMenu => {
         refreshLibrary();
         return;
       }
-      if (row.target && row.target.startsWith("detail:")) {
-        const parts = row.target.split(":");
-        const type = parts[1];
-        const id = parts.slice(2).join(":");
-        if (!id) return;
-        const inst = modelRegistry.get(id);
-        if (!inst) return;
-        switch (type) {
-          case "focus":
-            setFocusedModelId(id);
-            focusModel(id);
-            setStatus(`✓ 已聚焦: ${inst.name}`, true);
-            break;
-          case "remove":
-            removeModel(id);
-            setStatus(`✓ 已移除: ${inst.name}`, true);
-            hidePopup();
-            break;
-          case "export-mmd":
-            (async () => {
-              try {
-                const path = inst.filePath;
-                if (!path) { setStatus("✗ 模型无文件路径", false); return; }
-                await OpenInMMD(path);
-                setStatus("✓ 已启动: MMD", true);
-              } catch (err: any) {
-                setStatus("✗ " + (err.message || err), false);
-              }
-            })();
-            break;
-          case "blender":
-            (async () => {
-              try {
-                const path = inst.filePath;
-                if (!path) { setStatus("✗ 模型无文件路径", false); return; }
-                await OpenInBlender(path);
-                setStatus("✓ 已启动: Blender", true);
-              } catch (err: any) {
-                setStatus("✗ " + (err.message || err), false);
-              }
-            })();
-            break;
-          case "preset-save":
-            selectAndSavePreset(id);
-            break;
-          case "preset-load":
-            selectAndLoadPreset(id);
-            break;
-        }
-        return;
-      }
     },
     onHover: (row, entering) => {
       if (!entering) {
@@ -250,20 +169,7 @@ const makeModelStack = (): SlideMenu => {
       }
       const hints: Record<string, string> = {
         "models:browse": "浏览和加载 PMX 模型",
-        "detail:focus": "相机对准此模型",
-        "detail:remove": "从场景中移除此模型",
-        "detail:export-mmd": "在 MikuMikuDance 中打开此模型",
-        "detail:blender": "在 Blender 中编辑此模型",
-        "detail:preset-save": "将模型当前状态保存为库预设",
-        "detail:preset-load": "从库预设恢复模型的变换/材质/VMD状态",
       };
-      if (row.target && row.target.startsWith("detail:")) {
-        const parts = row.target.split(":");
-        const key = `detail:${parts[1]}`;
-        const hint = hints[key];
-        if (hint) setStatus(hint, false);
-        return;
-      }
       const hint = hints[row.target || ""];
       if (hint) setStatus(hint, false);
     },
