@@ -85,10 +85,12 @@ export class SlideMenu {
         this.activeIdx = 0;
         this.transitioning = false;
         this.panels[0].style.display = "";
+        this.panels[0].style.opacity = "1";
+        this.panels[0].style.transform = "";
         this.buildPanel(this.panels[0], level);
         this.panels[1].style.display = "none";
-        this.inner.style.transform = "translateX(0)";
-        this.inner.style.transition = "none";
+        this.panels[1].style.opacity = "";
+        this.panels[1].style.transform = "";
         this.updateHeader(level);
         this.setupFocus();
         this.onAfterRender?.(level, this);
@@ -135,48 +137,38 @@ export class SlideMenu {
     }
 
     private animateSlide(forward: boolean, nextLevel: PopupLevel): void {
-        const fromIdx = this.activeIdx;
-        const toIdx = fromIdx === 0 ? 1 : 0;
-        this.activeIdx = toIdx as 0 | 1;
+        const dur = getComputedStyle(document.documentElement).getPropertyValue("--ui-animations").trim() !== "0" ? "0.15s" : "0s";
+        const activePanel = this.panels[this.activeIdx];
+        const nextIdx = this.activeIdx === 0 ? 1 : 0;
+        this.activeIdx = nextIdx as 0 | 1;
         this.updateHeader(nextLevel);
 
-        const fromPanel = this.panels[fromIdx];
-        const toPanel = this.panels[toIdx];
+        const nextPanel = this.panels[nextIdx];
+        nextPanel.style.display = "";
+        nextPanel.style.opacity = "0";
+        nextPanel.style.transform = forward ? "translateX(40px)" : "translateX(-40px)";
+        this.buildPanel(nextPanel, nextLevel);
 
-        this.inner.style.transition = "none";
-        this.buildPanel(toPanel, nextLevel);
+        void nextPanel.offsetWidth;
 
-        // Both panels take up space in the flex row
-        toPanel.style.display = "";
-        fromPanel.style.display = "";
+        activePanel.style.transition = `opacity ${dur} ease, transform ${dur} ease`;
+        nextPanel.style.transition = `opacity ${dur} ease, transform ${dur} ease`;
 
-        // Set start position for inner
-        if (forward) {
-            // Push: inner is at 0 (showing fromPanel), move to -50% (showing toPanel)
-            this.inner.style.transform = "translateX(0)";
-        } else {
-            // Pop: inner is at -50% (showing fromPanel/toIdx), move to 0 (showing toPanel/fromIdx)
-            this.inner.style.transform = "translateX(-50%)";
-        }
-
-        void this.inner.offsetWidth;
-
-        this.inner.style.transition = "transform 0.22s ease";
-        if (forward) {
-            this.inner.style.transform = "translateX(-50%)";
-        } else {
-            this.inner.style.transform = "translateX(0)";
-        }
+        activePanel.style.opacity = "0";
+        activePanel.style.transform = forward ? "translateX(-40px)" : "translateX(40px)";
+        nextPanel.style.opacity = "1";
+        nextPanel.style.transform = "translateX(0)";
 
         setTimeout(() => {
-            this.inner.style.transition = "none";
-            // Hide inactive panel so only the active one takes up space
-            this.panels[fromIdx].style.display = "none";
-            this.inner.style.transform = "translateX(0)";
+            activePanel.style.display = "none";
+            activePanel.style.transition = "";
+            activePanel.style.transform = "";
+            nextPanel.style.transition = "";
+            nextPanel.style.transform = "";
             this.transitioning = false;
             this.setupFocus();
             this.onAfterRender?.(nextLevel, this);
-        }, 250);
+        }, dur === "0s" ? 10 : 180);
     }
 
     private get panelItems(): NodeListOf<HTMLElement> {
@@ -234,6 +226,7 @@ export class SlideMenu {
         if (level.items.length === 0 && !level.renderCustom) {
             list.innerHTML = '<div class="slide-empty">暂无内容</div>';
         } else if (level.renderCustom) {
+            list.classList.add("render-card");
             level.renderCustom(list);
         } else {
             for (const row of level.items) {
@@ -249,11 +242,11 @@ export class SlideMenu {
         this.headerEl.innerHTML = "";
         const backBtn = document.createElement("span");
         backBtn.className = "slide-back";
+        const backIcon = createIconifyIcon(this.levels.length > 1 ? "lucide:chevron-left" : "lucide:x");
+        if (backIcon) backBtn.appendChild(backIcon);
         if (this.levels.length > 1) {
-            backBtn.textContent = "←";
             backBtn.addEventListener("click", () => this.pop());
         } else {
-            backBtn.textContent = "✕";
             backBtn.addEventListener("click", () => this.onClose?.());
         }
         this.headerEl.appendChild(backBtn);
@@ -326,6 +319,11 @@ export class SlideMenu {
         }
 
         el.addEventListener("mouseenter", () => {
+            // Mouse takes priority: clear keyboard focus
+            if (this.focusIndex >= 0) {
+                this.clearFocus();
+                this.focusIndex = -1;
+            }
             showHint(hint);
             this.onHover?.(row, true);
         });

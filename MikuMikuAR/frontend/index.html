@@ -41,6 +41,7 @@
         <!-- Playback Controls -->
         <div id="playbackBar">
             <button class="playback-btn" id="btnPlayPause">⏸</button>
+            <button class="playback-btn" id="btnLoopToggle" title="循环播放"><iconify-icon icon="lucide:repeat"></iconify-icon></button>
             <div id="seekBar"><div id="seekProgress"></div></div>
             <span class="time-display" id="timeDisplay">00:00.00 / 00:00.00</span>
         </div>
@@ -48,7 +49,7 @@
         <!-- Current Model Info -->
         <!-- Model List Popup -->
         <!-- Model List Popup -->
-        <div id="modelPopup">
+        <div id="modelPopup" data-overlay>
             <div class="popup-header" id="popupBreadcrumb">
                 <span class="crumb current">模型库</span>
                 <button class="manage-btn" id="btnManageExternal" title="外部库" data-hint="管理外部库"><iconify-icon icon="lucide:plug"></iconify-icon></button>
@@ -66,7 +67,7 @@
         </div>
 
         <!-- Motion List Popup -->
-        <div id="motionPopup">
+        <div id="motionPopup" data-overlay>
             <div class="popup-header" id="motionPopupBreadcrumb">
                 <span class="crumb current">动作库</span>
                 <button class="close-btn" id="btnCloseMotionPopup">✕</button>
@@ -82,7 +83,7 @@
         </div>
 
         <!-- External Library Management Overlay -->
-        <div id="externalOverlay" class="overlay">
+        <div id="externalOverlay" class="overlay" data-overlay>
             <div class="overlay-header">
                 <span>管理外部库</span>
                 <button class="overlay-close" id="btnCloseExternal">✕</button>
@@ -92,10 +93,10 @@
         </div>
 
         <!-- Settings Overlay (MenuStack) -->
-        <div id="settingsOverlay"></div>
+        <div id="settingsOverlay" data-overlay></div>
 
         <!-- Scene Overlay (MenuStack) -->
-        <div id="sceneOverlay"></div>
+        <div id="sceneOverlay" data-overlay></div>
 
         <!-- Hidden elements for MenuStack cloning -->
         <div style="display:none;">

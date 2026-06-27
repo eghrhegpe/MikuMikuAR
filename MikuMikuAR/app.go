@@ -130,6 +130,14 @@ func (a *App) SelectAudioFile() (string, error) {
 	})
 }
 
+// SelectEnvTextureFile opens a file dialog to select an environment/skybox texture.
+func (a *App) SelectEnvTextureFile() (string, error) {
+	return a.openFileDialog("选择环境贴图", []runtime.FileFilter{
+		{DisplayName: "Environment Map (*.hdr *.dds *.exr)", Pattern: "*.hdr;*.dds;*.exr"},
+		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+	})
+}
+
 // SelectExeFile opens a file dialog to select an executable file.
 func (a *App) SelectExeFile() (string, error) {
 	return a.openFileDialog("选择可执行文件", []runtime.FileFilter{
@@ -158,11 +166,14 @@ type ModelEntry struct {
 	Source    string `json:"source"`     // Source library name: empty for main lib, ExternalPath.Name for externals
 }
 
-// SoftwareEntry represents an executable found in the software/ directory.
+// SoftwareEntry represents an executable found in the software/ directory or user-added.
 type SoftwareEntry struct {
-	Name string `json:"name"` // Display name (without extension)
-	Path string `json:"path"` // Full absolute path
-	Icon string `json:"icon"` // Reserved for future .exe icon extraction
+	Name    string `json:"name"`    // Display name (without extension)
+	Path    string `json:"path"`    // Full absolute path
+	Kind    string `json:"kind"`    // "blender" | "mmd" | "pmxeditor" | "other"
+	Args    string `json:"args"`    // Command-line template, supports {model} placeholder
+	Managed bool   `json:"managed"` // true=Config-persisted custom entry, false=scanned from software/
+	Icon    string `json:"icon"`    // Reserved for future .exe icon extraction
 }
 
 // ModelMeta holds PMX header metadata for on-demand parsing.
@@ -204,8 +215,19 @@ type DanceSet struct {
 	Source      string  `json:"source"`       // 来源库名
 }
 
+// UIState stores user-customizable UI preferences.
+type UIState struct {
+	Scale      float64 `json:"scale"`      // 0.8~1.3, default 1.0
+	PopupWidth int     `json:"popupWidth"` // 220~380, default 280
+	Accent     string  `json:"accent"`     // hex, default "#4a6cf7"
+	FontFamily string  `json:"fontFamily"` // "system"|"noto"|"yahei"
+	Animations bool    `json:"animations"` // enable menu slide animations
+	BlurBg     bool    `json:"blurBg"`     // enable background blur on overlays
+}
+
 // Config holds persistent user settings.
 type Config struct {
+	UIState              UIState               `json:"ui_state"`
 	LibraryRoot          string                `json:"library_root"`
 	ExternalPaths        []ExternalPath        `json:"external_paths"`
 	BlenderPath          string                `json:"blender_path"`
@@ -215,6 +237,7 @@ type Config struct {
 	Favorites            []string              `json:"favorites"`             // libraryRef 数组，收藏的模型
 	RenderPresets        []RenderPreset        `json:"render_presets"`        // 用户保存的渲染预设
 	MMDPath              string                `json:"mmd_path"`              // MikuMikuDance 可执行文件路径，空则自动检测
+	CustomSoftware       []SoftwareEntry       `json:"custom_software"`       // 用户手动添加的软件（Managed=true）
 	Tags                 map[string][]string   `json:"tags"`                  // libraryRef → []tag 列表
 	DanceSets            map[string]DanceSet   `json:"dance_sets"`            // 舞蹈套装，key = 套装 ID
 	RecentModels         []string              `json:"recent_models"`         // libraryRef 数组，最近打开的模型（最多20条）
@@ -612,6 +635,36 @@ func (a *App) SetBlenderPath(path string) error {
 // SetDisplayNamePriority persists the display name priority setting.
 func (a *App) SetDisplayNamePriority(priority string) error {
 	return a.updateConfig(func(cfg *Config) { cfg.DisplayNamePriority = priority }, false)
+}
+
+// SetUIScale persists the UI scale factor.
+func (a *App) SetUIScale(scale float64) error {
+	return a.updateConfig(func(cfg *Config) { cfg.UIState.Scale = scale }, false)
+}
+
+// SetUIPopupWidth persists the popup width.
+func (a *App) SetUIPopupWidth(width int) error {
+	return a.updateConfig(func(cfg *Config) { cfg.UIState.PopupWidth = width }, false)
+}
+
+// SetUIAccent persists the accent color hex.
+func (a *App) SetUIAccent(hex string) error {
+	return a.updateConfig(func(cfg *Config) { cfg.UIState.Accent = hex }, false)
+}
+
+// SetUIFontFamily persists the font family key ("system"|"noto"|"yahei").
+func (a *App) SetUIFontFamily(key string) error {
+	return a.updateConfig(func(cfg *Config) { cfg.UIState.FontFamily = key }, false)
+}
+
+// SetUIAnimations enables or disables menu slide animations.
+func (a *App) SetUIAnimations(on bool) error {
+	return a.updateConfig(func(cfg *Config) { cfg.UIState.Animations = on }, false)
+}
+
+// SetUIBlurBg enables or disables background blur on overlays.
+func (a *App) SetUIBlurBg(on bool) error {
+	return a.updateConfig(func(cfg *Config) { cfg.UIState.BlurBg = on }, false)
 }
 
 // SetEnvState persists the environment state (sky, ground, particles, fog, etc.).
@@ -1107,45 +1160,89 @@ func (a *App) OpenInMMD(modelPath string) error {
 
 // ======== Software Management ========
 
-// ScanSoftwareDir scans the software/ directory for .exe files and returns entries.
+// detectSoftwareKind infers the software type from filename.
+func detectSoftwareKind(name string) string {
+	lower := strings.ToLower(name)
+	if strings.Contains(lower, "blender") {
+		return "blender"
+	}
+	if strings.Contains(lower, "mmd") || strings.Contains(lower, "mikumikudance") {
+		return "mmd"
+	}
+	if strings.Contains(lower, "pmxeditor") || strings.Contains(lower, "pmx_editor") || strings.Contains(lower, "pmx-editor") {
+		return "pmxeditor"
+	}
+	return "other"
+}
+
+// ScanSoftwareDir scans the software/ directory for .exe files, merges with user-added
+// custom software from config, and returns the combined list (deduplicated by path).
 func (a *App) ScanSoftwareDir() ([]SoftwareEntry, error) {
 	dir, err := softwareDir()
 	if err != nil {
 		return nil, err
 	}
 
+	// Scan software/ directory
+	scanned := make(map[string]SoftwareEntry)
 	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return []SoftwareEntry{}, nil
+	if err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			name := entry.Name()
+			if !strings.HasSuffix(strings.ToLower(name), ".exe") {
+				continue
+			}
+			ext := filepath.Ext(name)
+			displayName := strings.TrimSuffix(name, ext)
+			fullPath := filepath.Join(dir, name)
+			kind := detectSoftwareKind(displayName)
+			scanned[fullPath] = SoftwareEntry{
+				Name:    displayName,
+				Path:    fullPath,
+				Kind:    kind,
+				Args:    "",
+				Managed: false,
+				Icon:    "",
+			}
 		}
-		return nil, fmt.Errorf("读取软件目录失败")
 	}
 
-	var result []SoftwareEntry
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
+	// Merge custom software from config (custom takes precedence)
+	cfg, _ := a.GetConfig()
+	if cfg != nil {
+		for _, sw := range cfg.CustomSoftware {
+			if existing, ok := scanned[sw.Path]; ok {
+				// Custom overrides scanned entry for all fields
+				sw.Managed = true
+				scanned[sw.Path] = sw
+				_ = existing
+			} else {
+				sw.Managed = true
+				scanned[sw.Path] = sw
+			}
 		}
-		name := entry.Name()
-		if !strings.HasSuffix(strings.ToLower(name), ".exe") {
-			continue
-		}
-		ext := filepath.Ext(name)
-		displayName := strings.TrimSuffix(name, ext)
-		result = append(result, SoftwareEntry{
-			Name: displayName,
-			Path: filepath.Join(dir, name),
-			Icon: "", // reserved for future icon extraction
-		})
 	}
 
+	result := make([]SoftwareEntry, 0, len(scanned))
+	for _, sw := range scanned {
+		result = append(result, sw)
+	}
 	return result, nil
 }
 
-// LaunchSoftware starts an executable by path.
-func (a *App) LaunchSoftware(path string) error {
-	cmd := exec.Command(path)
+// LaunchSoftware starts an executable by path with optional command-line arguments.
+// The args string is split into arguments and passed to the executable.
+func (a *App) LaunchSoftware(path string, args string) error {
+	var cmd *exec.Cmd
+	if args == "" {
+		cmd = exec.Command(path)
+	} else {
+		segments := strings.Fields(args)
+		cmd = exec.Command(path, segments...)
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
@@ -1153,6 +1250,80 @@ func (a *App) LaunchSoftware(path string) error {
 	}
 	runtime.LogInfof(a.ctx, "Launched software: %s", path)
 	return nil
+}
+
+// OpenWithSoftware opens a model file with the specified software, replacing {model}
+// in the args template with the model path.
+// Each {model} token is replaced individually so paths with spaces stay as a single argv.
+func (a *App) OpenWithSoftware(modelPath string, softwarePath string, args string) error {
+	var cmd *exec.Cmd
+	if args == "" {
+		cmd = exec.Command(softwarePath)
+	} else {
+		segments := strings.Fields(args)
+		for i, seg := range segments {
+			segments[i] = strings.ReplaceAll(seg, "{model}", modelPath)
+		}
+		cmd = exec.Command(softwarePath, segments...)
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("启动软件失败")
+	}
+	runtime.LogInfof(a.ctx, "Opened %s with %s", modelPath, softwarePath)
+	return nil
+}
+
+// AddCustomSoftware adds a user-defined software entry to the config.
+func (a *App) AddCustomSoftware(path string, name string, args string) error {
+	kind := detectSoftwareKind(name)
+	return a.updateConfig(func(cfg *Config) {
+		// Remove existing entry with same path
+		var kept []SoftwareEntry
+		for _, sw := range cfg.CustomSoftware {
+			if sw.Path != path {
+				kept = append(kept, sw)
+			}
+		}
+		kept = append(kept, SoftwareEntry{
+			Name:    name,
+			Path:    path,
+			Kind:    kind,
+			Args:    args,
+			Managed: true,
+			Icon:    "",
+		})
+		cfg.CustomSoftware = kept
+	}, false)
+}
+
+// RemoveCustomSoftware removes a user-defined software entry from the config by path.
+func (a *App) RemoveCustomSoftware(path string) error {
+	return a.updateConfig(func(cfg *Config) {
+		var kept []SoftwareEntry
+		for _, sw := range cfg.CustomSoftware {
+			if sw.Path != path {
+				kept = append(kept, sw)
+			}
+		}
+		cfg.CustomSoftware = kept
+	}, false)
+}
+
+// UpdateCustomSoftware updates name and args for an existing custom software entry.
+func (a *App) UpdateCustomSoftware(path string, name string, args string) error {
+	kind := detectSoftwareKind(name)
+	return a.updateConfig(func(cfg *Config) {
+		for i, sw := range cfg.CustomSoftware {
+			if sw.Path == path {
+				cfg.CustomSoftware[i].Name = name
+				cfg.CustomSoftware[i].Kind = kind
+				cfg.CustomSoftware[i].Args = args
+				return
+			}
+		}
+	}, false)
 }
 
 // OpenSoftwareDir opens the software directory in the system file manager.

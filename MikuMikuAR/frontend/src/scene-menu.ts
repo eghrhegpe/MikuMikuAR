@@ -5,10 +5,11 @@
 
 import {
     dom, closeAllOverlays, setStatus, escapeHtml,
-    PopupRow, PopupLevel, envState, EnvState,
+    PopupRow, PopupLevel, envState, EnvState, cardContainer,
 } from "./config";
 import { SlideMenu } from "./menu";
 import { createIconifyIcon } from "./icons";
+import { slideRow, addToggleRow, addSliderRow } from "./ui-helpers";
 import {
     switchCameraMode, getCameraMode, hasCameraVmd, getCameraVmdName, clearCameraVmd, getCurrentCamera,
     getOrbitParams, setOrbitParams,
@@ -28,6 +29,7 @@ import { ENV_PRESETS as ENV_LIGHTING_PRESETS } from "./env-lighting";
 // ======== Scene Menu (SlideMenu) ========
 
 let sceneStack: SlideMenu | null = null;
+export function getSceneStack(): SlideMenu | null { return sceneStack; }
 
 function buildSceneRoot(): PopupLevel {
     return {
@@ -38,7 +40,7 @@ function buildSceneRoot(): PopupLevel {
             container.classList.remove("render-card");
             container.style.padding = "0";
             // Card 1: 场景管理
-            cardWrap(container, (c) => {
+            cardContainer(container, (c) => {
                 slideRow(c, "lucide:bookmark", "预设场景", true, () => sceneStack?.push(buildPresetScenesLevel()));
                 slideRow(c, "lucide:save", "保存场景", false, () => {
                     SelectSceneSaveFile().then(path => {
@@ -55,30 +57,22 @@ function buildSceneRoot(): PopupLevel {
                 });
             });
             // Card 2: 渲染与相机
-            cardWrap(container, (c) => {
+            cardContainer(container, (c) => {
                 slideRow(c, "lucide:camera", "相机模式", true, () => sceneStack?.push(buildCameraLevel()));
                 slideRow(c, "lucide:sun", "灯光", true, () => sceneStack?.push(buildLightLevel()));
                 slideRow(c, "lucide:sparkles", "渲染", true, () => sceneStack?.push(buildRenderLevel()));
                 slideRow(c, "lucide:toggle-left", "物理", true, () => sceneStack?.push(buildPhysicsLevel()));
             });
             // Card 3: 程序化动作
-            cardWrap(container, (c) => {
+            cardContainer(container, (c) => {
                 slideRow(c, "lucide:wind", "程序化动作", true, () => sceneStack?.push(buildProcMotionLevel()));
             });
             // Card 4: 工具
-            cardWrap(container, (c) => {
+            cardContainer(container, (c) => {
                 slideRow(c, "lucide:camera", "截图", true, () => sceneStack?.push(buildScreenshotLevel()));
             });
         },
     };
-}
-
-function slideRow(c: HTMLElement, icon: string, label: string, hasArrow: boolean, onClick: () => void): void {
-    const row = document.createElement("div");
-    row.className = "slide-item";
-    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="${icon}"></iconify-icon></span><span class="slide-label">${label}</span>${hasArrow ? '<span class="slide-arrow">&gt;</span>' : ''}`;
-    row.addEventListener("click", onClick);
-    c.appendChild(row);
 }
 
 function buildProcMotionLevel(): PopupLevel {
@@ -335,13 +329,6 @@ function renderConcertParams(container: HTMLElement): void {
     }, "lucide:rotate-cw");
 }
 
-function cardWrap(container: HTMLElement, fn: (c: HTMLElement) => void): void {
-    const card = document.createElement("div");
-    card.className = "lcard";
-    fn(card);
-    container.appendChild(card);
-}
-
 function buildLightLevel(): PopupLevel {
     return {
         label: "灯光",
@@ -353,7 +340,7 @@ function buildLightLevel(): PopupLevel {
             container.style.padding = "6px 0";
 
             // Card 1: light sliders
-            cardWrap(container, (c) => {
+            cardContainer(container, (c) => {
                 const fields: Array<{ label: string; key: "hemiIntensity" | "dirIntensity" | "dirX" | "dirY" | "dirZ"; min: number; max: number; step: number; icon: string }> = [
                     { label: "环境光强度", key: "hemiIntensity", min: 0, max: 2, step: 0.05, icon: "lucide:sun" },
                     { label: "方向光强度", key: "dirIntensity", min: 0, max: 2, step: 0.05, icon: "lucide:sun" },
@@ -369,12 +356,12 @@ function buildLightLevel(): PopupLevel {
             });
 
             // Card 2-4: color pickers
-            cardWrap(container, (c) => addColorSliderRow(c, "方向光色", lightState.dirColor, (v) => setLightState({ dirColor: v })));
-            cardWrap(container, (c) => addColorSliderRow(c, "环境光色", lightState.hemiColor, (v) => setLightState({ hemiColor: v })));
-            cardWrap(container, (c) => addColorSliderRow(c, "地面光色", lightState.groundColor, (v) => setLightState({ groundColor: v })));
+            cardContainer(container, (c) => addColorSliderRow(c, "方向光色", lightState.dirColor, (v) => setLightState({ dirColor: v })));
+            cardContainer(container, (c) => addColorSliderRow(c, "环境光色", lightState.hemiColor, (v) => setLightState({ hemiColor: v })));
+            cardContainer(container, (c) => addColorSliderRow(c, "地面光色", lightState.groundColor, (v) => setLightState({ groundColor: v })));
 
             // Card 5: shadow controls
-            cardWrap(container, (c) => {
+            cardContainer(container, (c) => {
                 c.style.padding = "10px";
                 addToggleRow(c, "启用阴影", lightState.shadowEnabled, (v) => setLightState({ shadowEnabled: v }));
                 const typeRow = document.createElement("div");
@@ -778,98 +765,6 @@ function buildCloudLevel(): PopupLevel {
     };
 }
 
-// ======== UI Helpers (render sliders/toggles) ========
-
-function addToggleRow(container: HTMLElement, label: string, value: boolean, onChange: (v: boolean) => void): void {
-    const row = document.createElement("div");
-    row.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:10px;justify-content:space-between;";
-    const lbl = document.createElement("span");
-    lbl.style.cssText = "font-size:11px;color:var(--text-dim);";
-    lbl.textContent = label;
-    const toggleLabel = document.createElement("label");
-    toggleLabel.className = "toggle";
-    const toggle = document.createElement("input");
-    toggle.type = "checkbox";
-    toggle.checked = value;
-    toggle.addEventListener("change", () => onChange(toggle.checked));
-    const slider = document.createElement("span");
-    slider.className = "slider";
-    toggleLabel.appendChild(toggle);
-    toggleLabel.appendChild(slider);
-    row.appendChild(lbl);
-    row.appendChild(toggleLabel);
-    container.appendChild(row);
-}
-
-function addSliderRow(container: HTMLElement, label: string, value: number, min: number, max: number, step: number, onChange: (v: number) => void, icon?: string): void {
-    let currentValue = value;
-    const range = max - min;
-
-    const row = document.createElement("div");
-    row.className = "cs-row";
-
-    const top = document.createElement("div");
-    top.className = "cs-top";
-
-    if (icon) {
-        const iconBox = document.createElement("span");
-        iconBox.className = "cs-icon";
-        const iconEl = createIconifyIcon(icon);
-        if (iconEl) iconBox.appendChild(iconEl);
-        top.appendChild(iconBox);
-    }
-
-    const lbl = document.createElement("span");
-    lbl.className = "cs-label";
-    lbl.textContent = label;
-
-    const val = document.createElement("span");
-    val.className = "cs-value";
-    val.textContent = step < 1 ? currentValue.toFixed(2) : String(Math.round(currentValue));
-
-    top.appendChild(lbl);
-    top.appendChild(val);
-
-    const bar = document.createElement("div");
-    bar.className = "cs-bar";
-
-    const fill = document.createElement("div");
-    fill.className = "cs-fill";
-    const pct = ((currentValue - min) / range) * 100;
-    fill.style.width = Math.max(0, Math.min(100, pct)) + "%";
-
-    bar.appendChild(fill);
-
-    function updateDisplay(v: number): void {
-        currentValue = v;
-        val.textContent = step < 1 ? v.toFixed(2) : String(Math.round(v));
-        const newPct = ((v - min) / range) * 100;
-        fill.style.width = Math.max(0, Math.min(100, newPct)) + "%";
-    }
-
-    row.addEventListener("click", (e) => {
-        const rect = row.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-
-        let delta: number;
-        if (x < 0.25) delta = -0.5;
-        else if (x < 0.5) delta = -0.1;
-        else if (x < 0.75) delta = 0.1;
-        else delta = 0.5;
-
-        let newVal = currentValue + delta;
-        newVal = Math.round(newVal / step) * step;
-        newVal = Math.max(min, Math.min(max, newVal));
-
-        updateDisplay(newVal);
-        onChange(newVal);
-    });
-
-    row.appendChild(top);
-    row.appendChild(bar);
-    container.appendChild(row);
-}
-
 function addColorSliderRow(container: HTMLElement, label: string, color: [number, number, number], onChange: (v: [number, number, number]) => void): void {
     const block = document.createElement("div");
     block.className = "clr-block";
@@ -1127,23 +1022,60 @@ function getBuiltinPreset(name: string): Partial<RenderState> | undefined {
 }
 
 function buildPresetsLevel(): PopupLevel {
-    const items: PopupRow[] = [];
-    // Built-in presets
-    for (const [key] of Object.entries(builtinPresets)) {
-        items.push({ kind: "action", label: PRESET_LABELS[key] || key, icon: "palette", target: `scene:preset:${key}` });
-    }
-    items.push({ kind: "divider", label: "", icon: "", target: "" });
-    // Save current as preset
-    items.push({ kind: "action", label: "保存当前为预设", icon: "save", target: "scene:preset:save" });
-    // User presets (each with a delete button)
-    if (Object.keys(userPresets).length > 0) {
-        items.push({ kind: "divider", label: "", icon: "", target: "" });
-        for (const [name] of Object.entries(userPresets)) {
-            items.push({ kind: "action", label: name, icon: "palette", target: `scene:preset:user:${name}` });
-            items.push({ kind: "action", label: `${name}`, icon: "trash", target: `scene:preset:delete:${name}` });
-        }
-    }
-    return { label: "渲染预设", dir: "", items };
+    return {
+        label: "渲染预设",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove("render-card");
+            // Card 1: built-in presets
+            cardContainer(container, (c) => {
+                for (const [key] of Object.entries(builtinPresets)) {
+                    const row = document.createElement("div");
+                    row.className = "slide-item";
+                    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:palette"></iconify-icon></span><span class="slide-label">${PRESET_LABELS[key] || key}</span>`;
+                    row.addEventListener("click", () => {
+                        const preset = getBuiltinPreset(key);
+                        if (preset) setRenderState(preset);
+                        setStatus(`✓ 预设: ${PRESET_LABELS[key]}`, true);
+                    });
+                    c.appendChild(row);
+                }
+            });
+            // Save
+            const saveRow = document.createElement("div");
+            saveRow.className = "slide-item";
+            saveRow.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:save"></iconify-icon></span><span class="slide-label">保存当前为预设</span>';
+            saveRow.addEventListener("click", showPresetSaveDialog);
+            container.appendChild(saveRow);
+            // Card 2: user presets
+            if (Object.keys(userPresets).length > 0) {
+                cardContainer(container, (c) => {
+                    for (const [name] of Object.entries(userPresets)) {
+                        const row = document.createElement("div");
+                        row.className = "slide-item";
+                        row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:palette"></iconify-icon></span><span class="slide-label">${escapeHtml(name)}</span>`;
+                        row.addEventListener("click", () => {
+                            setRenderState(userPresets[name]);
+                            setStatus(`✓ 预设: ${name}`, true);
+                        });
+                        c.appendChild(row);
+                        const delRow = document.createElement("div");
+                        delRow.className = "slide-item";
+                        delRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:trash-2"></iconify-icon></span><span class="slide-label" style="color:var(--text-dim);">删除: ${escapeHtml(name)}</span>`;
+                        delRow.addEventListener("click", () => {
+                            DeleteRenderPreset(name).then(() => {
+                                delete userPresets[name];
+                                if (sceneStack) { sceneStack.setLevel(sceneStack.levelCount - 1, buildPresetsLevel()); sceneStack.reRender(); }
+                                setStatus(`✓ 预设已删除: ${name}`, true);
+                            }).catch(() => setStatus("✗ 删除失败", false));
+                        });
+                        c.appendChild(delRow);
+                    }
+                });
+            }
+        },
+    };
 }
 
 function getPresetName(name: string): string {
@@ -1478,5 +1410,5 @@ export async function showEnvMenu(): Promise<void> {
 }
 
 // Wire up events
-dom.btnScene.addEventListener("click", showSceneMenu);
-dom.btnEnv.addEventListener("click", showEnvMenu);
+dom.btnScene?.addEventListener("click", showSceneMenu);
+dom.btnEnv?.addEventListener("click", showEnvMenu);

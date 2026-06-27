@@ -174,7 +174,8 @@ export function shouldAutoDance(audioPlaying: boolean, mode: ProcMotionMode): bo
     return audioPlaying && (mode === "autodance" || mode === "off");
 }
 
-/** 判断是否应切换到 Idle（无音乐，未加载用户 VMD）。 */
+/** 判断是否应切换到 Idle（无音乐，未加载用户 VMD）。
+ *  当音乐停止时 allow autodance→idle 降级。 */
 export function shouldIdle(audioPlaying: boolean, hasUserVmd: boolean, mode: ProcMotionMode): boolean {
-    return !audioPlaying && !hasUserVmd && (mode === "idle" || mode === "off");
+    return !audioPlaying && !hasUserVmd && (mode === "idle" || mode === "off" || mode === "autodance");
 }

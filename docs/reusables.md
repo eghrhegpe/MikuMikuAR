@@ -217,6 +217,76 @@
 
 ---
 
+## UI CSS 模式
+
+### 滑动条（cs-row 点击条）
+
+由 `addSliderRow` 使用，替代原生 `<input type="range">`。点击条的四个区域（0-25%/25-50%/50-75%/75-100%）分别对应 -0.5/-0.1/+0.1/+0.5 的增量。
+
+| Class | 用途 |
+|-------|------|
+| `.cs-row` | 滑动条容器（可点击） |
+| `.cs-top` | 顶栏 = 图标 + 标签 + 数值 |
+| `.cs-icon` | 左侧图标容器 |
+| `.cs-label` | 参数名 |
+| `.cs-value` | 数值显示 |
+| `.cs-bar` | 进度条轨道 |
+| `.cs-fill` | 进度条填充（`width` 百分比） |
+
+### 材质列表卡片
+
+| Class | 用途 |
+|-------|------|
+| `.mat-card` | 材质分类卡片（皮肤/头发/眼睛/服装） |
+| `.mat-card-header` | 卡片标题行 |
+| `.mat-card-icon` | 分类图标 |
+| `.mat-card-title` | 分类名 |
+| `.mat-card-count` | 材质数量角标 |
+| `.mat-card-modified` | "已修改"标记 |
+| `.mat-row` | 材质行，`.modified`=已修改，`.excess`=折叠隐藏 |
+| `.mat-swatch` | 10px 漫反射颜色色块 |
+| `.mat-index` | `#01` 序号 |
+| `.mat-name` | 材质名称 |
+| `.mat-modified` | 修改指示图标 |
+| `.mat-expand-btn` | 展开/收起按钮（>15 材质时） |
+| `.mat-slider-toggle` | 参数微调下拉按钮 |
+| `.mat-slider-panel` | 参数微调内容面板 |
+
+### 标签系统
+
+| Class | 用途 |
+|-------|------|
+| `.tag-chip` | 标签 chip，`.active`=已添加 |
+| `.tag-del` | 删除按钮（✕） |
+| `.tag-input` | 标签名输入框 |
+| `.tag-container` | 标签列表容器 |
+| `.hint-text` | 提示文字 |
+
+### Morph/表情
+
+| Class | 用途 |
+|-------|------|
+| `.morph-list` | 表情 slider 列表 |
+| `.morph-row` | 单个表情行 |
+| `.morph-header` | 表情名 + 类型 + 数值行 |
+| `.morph-name` | 表情名称 |
+| `.morph-type` | 表情类型标签 |
+| `.morph-val` | 当前权重值 |
+| `.morph-empty` | 空状态 |
+
+### 按钮/行
+
+| Class | 用途 |
+|-------|------|
+| `.slide-item` | MenuStack 行，`.slide-focused`=激活态 |
+| `.slide-icon` / `.slide-label` | 行内图标/文字 |
+| `.menu-item` | 旧版行（逐步迁移到 slide-item） |
+| `.cs-row` | 滑动条（复用在场景菜单 & 模型弹窗） |
+
+> 注：`addSliderRow` 在 `library.ts` 和 `scene-menu.ts` 各有一份独立实现（均使用 cs-row 风格），改一处须同步另一处。
+
+---
+
 ## 程序化动作子系统（新增）
 
 ### VMD 写入器（`vmd-writer.ts`）

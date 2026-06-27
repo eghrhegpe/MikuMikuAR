@@ -21,19 +21,24 @@ initHints();
 
 // ======== Event Handlers ========
 
-// Play/Pause
+// Play/Pause — only toggles play state, does NOT touch autoLoop
 dom.btnPlayPause.addEventListener("click", async () => {
     if (!mmdRuntime) return;
     if (isPlaying) {
         mmdRuntime.pauseAnimation();
         setIsPlaying(false);
-        setAutoLoop(false);
     } else {
-        setAutoLoop(true);
         await mmdRuntime.playAnimation();
         setIsPlaying(true);
     }
     updatePlaybackUI();
+});
+
+// Loop toggle
+dom.btnLoopToggle.addEventListener("click", () => {
+    setAutoLoop(!autoLoop);
+    updatePlaybackUI();
+    setStatus(`循环: ${autoLoop ? "开" : "关"}`, true);
 });
 
 // ======== Ctrl shortcuts hint ========
@@ -235,11 +240,15 @@ async function init(): Promise<void> {
         setStatus("正在初始化...", false);
         await initScene();
         initDropHandler();
+        // Register nav button event listeners (ensured DOM ready)
+        dom.btnMotionPopup?.addEventListener("click", showMotionPopup);
         console.log("MikuMikuAR initialized");
         initLibrary().catch(err => console.warn("Library init:", err));
-        // Restore env state from config (last scene restore may override)
-        restoreEnvState().catch(err => console.warn("Env restore:", err));
-        // Auto-restore last scene after library + scene init
+        // Restore env state from config (authoritative — scene restore skips env)
+        await restoreEnvState();
+        // Apply persisted UI state
+        await restoreUIState();
+        // Auto-restore last scene after library + scene init (env already restored above)
         tryRestoreLastScene().catch(err => console.warn("Auto-restore:", err));
     } catch (err) {
         console.error("Init failed:", err);
@@ -252,6 +261,31 @@ async function restoreEnvState(): Promise<void> {
     if (cfg.env) {
         setEnvState(cfg.env as any);
     }
+}
+
+const FONT_RESTORE: Record<string, string> = {
+    system: "'Segoe UI', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK SC', system-ui, sans-serif",
+    noto: "'Source Han Sans SC', 'Noto Sans CJK SC', system-ui, sans-serif",
+    yahei: "'Microsoft YaHei', 'Microsoft YaHei UI', system-ui, sans-serif",
+};
+
+async function restoreUIState(): Promise<void> {
+    const cfg = await GetConfig();
+    if (!cfg.ui_state) return;
+    const s = cfg.ui_state as any;
+    const root = document.documentElement;
+    if (s.scale) root.style.setProperty("--ui-scale", String(s.scale));
+    if (s.popupWidth) root.style.setProperty("--popup-width", s.popupWidth + "px");
+    if (s.accent) {
+        root.style.setProperty("--accent", s.accent);
+        root.style.setProperty("--accent-dim", s.accent + "33");
+    }
+    if (s.fontFamily && FONT_RESTORE[s.fontFamily]) {
+        root.style.setProperty("--font", FONT_RESTORE[s.fontFamily]);
+    }
+    root.style.setProperty("--ui-animations", s.animations === false ? "0" : "1");
+    root.style.setProperty("--ui-blur", s.blurBg ? "1" : "0");
+    document.querySelectorAll<HTMLElement>(".overlay").forEach(el => el.classList.toggle("blur-bg", !!s.blurBg));
 }
 
 // ======== Drag & Drop Import ========

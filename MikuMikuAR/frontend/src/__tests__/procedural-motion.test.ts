@@ -123,6 +123,7 @@ describe("auto-switch logic", () => {
     it("shouldIdle: true when no audio, no VMD, mode allows", () => {
         expect(shouldIdle(false, false, "off")).toBe(true);
         expect(shouldIdle(false, false, "idle")).toBe(true);
+        expect(shouldIdle(false, false, "autodance")).toBe(true);
     });
     it("shouldIdle: false when VMD loaded", () => {
         expect(shouldIdle(false, true, "off")).toBe(false);

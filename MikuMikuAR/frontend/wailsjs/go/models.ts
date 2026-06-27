@@ -80,6 +80,28 @@ export namespace main {
 	        this.source = source["source"];
 	    }
 	}
+	export class SoftwareEntry {
+	    name: string;
+	    path: string;
+	    kind: string;
+	    args: string;
+	    managed: boolean;
+	    icon: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SoftwareEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.path = source["path"];
+	        this.kind = source["kind"];
+	        this.args = source["args"];
+	        this.managed = source["managed"];
+	        this.icon = source["icon"];
+	    }
+	}
 	export class RenderPreset {
 	    name: string;
 	    params: Record<string, any>;
@@ -108,7 +130,30 @@ export namespace main {
 	        this.name = source["name"];
 	    }
 	}
+	export class UIState {
+	    scale: number;
+	    popupWidth: number;
+	    accent: string;
+	    fontFamily: string;
+	    animations: boolean;
+	    blurBg: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new UIState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.scale = source["scale"];
+	        this.popupWidth = source["popupWidth"];
+	        this.accent = source["accent"];
+	        this.fontFamily = source["fontFamily"];
+	        this.animations = source["animations"];
+	        this.blurBg = source["blurBg"];
+	    }
+	}
 	export class Config {
+	    ui_state: UIState;
 	    library_root: string;
 	    external_paths: ExternalPath[];
 	    blender_path: string;
@@ -118,6 +163,7 @@ export namespace main {
 	    favorites: string[];
 	    render_presets: RenderPreset[];
 	    mmd_path: string;
+	    custom_software: SoftwareEntry[];
 	    tags: Record<string, Array<string>>;
 	    dance_sets: Record<string, DanceSet>;
 	    recent_models: string[];
@@ -129,6 +175,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ui_state = this.convertValues(source["ui_state"], UIState);
 	        this.library_root = source["library_root"];
 	        this.external_paths = this.convertValues(source["external_paths"], ExternalPath);
 	        this.blender_path = source["blender_path"];
@@ -138,6 +185,7 @@ export namespace main {
 	        this.favorites = source["favorites"];
 	        this.render_presets = this.convertValues(source["render_presets"], RenderPreset);
 	        this.mmd_path = source["mmd_path"];
+	        this.custom_software = this.convertValues(source["custom_software"], SoftwareEntry);
 	        this.tags = source["tags"];
 	        this.dance_sets = this.convertValues(source["dance_sets"], DanceSet, true);
 	        this.recent_models = source["recent_models"];
@@ -232,22 +280,7 @@ export namespace main {
 	    }
 	}
 	
-	export class SoftwareEntry {
-	    name: string;
-	    path: string;
-	    icon: string;
 	
-	    static createFrom(source: any = {}) {
-	        return new SoftwareEntry(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.name = source["name"];
-	        this.path = source["path"];
-	        this.icon = source["icon"];
-	    }
-	}
 
 }
 

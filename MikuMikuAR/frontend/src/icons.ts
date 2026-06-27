@@ -19,3 +19,13 @@ export function createIconifyIcon(name: string): HTMLElement | null {
         return null;
     }
 }
+
+/** Map software kind to an iconify icon name. */
+export function softwareKindIcon(kind: string): string {
+    switch (kind) {
+        case "blender": return "lucide:cube-3d";
+        case "mmd": return "lucide:music";
+        case "pmxeditor": return "lucide:file-code-2";
+        default: return "lucide:app-window";
+    }
+}

@@ -95,6 +95,9 @@ export interface EnvState {
 
     particleEnabled: boolean;
     particleType: "none" | "sakura" | "rain" | "snow" | "fireworks";
+    particleEmitRate: number;
+    particleSize: number;
+    particleSpeed: number;
 
     cloudsEnabled: boolean;
     cloudCover: number;
@@ -184,6 +187,10 @@ export function setCameraMode(m: CameraMode): void { cameraMode = m; }
 export let displayNamePriority: DisplayNamePriority = "filename";
 export function setDisplayNamePriority(p: DisplayNamePriority): void { displayNamePriority = p; }
 
+// Cross-popup motion binding target — set when browsing VMD from model detail
+export let motionBindingTargetId: string | null = null;
+export function setMotionBindingTargetId(v: string | null): void { motionBindingTargetId = v; }
+
 // ======== Model Metadata Cache (on-demand PMX header parsing) ========
 
 /** Cached PMX header metadata keyed by file_path. Populated on demand. */
@@ -223,6 +230,9 @@ export let envState: EnvState = {
 
     particleEnabled: false,
     particleType: "none",
+    particleEmitRate: 1,
+    particleSize: 1,
+    particleSpeed: 1,
 
     cloudsEnabled: false,
     cloudCover: 0.5,
@@ -259,6 +269,7 @@ export const dom = {
     motionPopupSearchInput: document.getElementById("motionPopupSearchInput") as HTMLInputElement,
     playbackBar: document.getElementById("playbackBar") as HTMLElement,
     btnPlayPause: document.getElementById("btnPlayPause") as HTMLButtonElement,
+    btnLoopToggle: document.getElementById("btnLoopToggle") as HTMLButtonElement,
     timeDisplay: document.getElementById("timeDisplay") as HTMLElement,
     seekBar: document.getElementById("seekBar") as HTMLElement,
     seekProgress: document.getElementById("seekProgress") as HTMLElement,
@@ -277,6 +288,15 @@ export const dom = {
     sceneOverlay: document.getElementById("sceneOverlay") as HTMLElement,
     btnCloseScene: document.getElementById("btnCloseScene") as HTMLButtonElement,
 };
+
+/** Card container helper: removes render-card bg, wraps content in an lcard. */
+export function cardContainer(container: HTMLElement, fn: (c: HTMLElement) => void): void {
+    container.classList.remove("render-card");
+    const card = document.createElement("div");
+    card.className = "lcard";
+    fn(card);
+    container.appendChild(card);
+}
 
 // ======== Helpers ========
 
@@ -343,6 +363,18 @@ export function escapeHtml(s: string): string {
 import { normPath } from "./fileservice";
 export { normPath };
 
+import type { SlideMenu } from "./menu";
+
+export const stackRegistry: {
+  modelStack: SlideMenu | null;
+  sceneStackGetter: (() => SlideMenu | null) | null;
+  buildLevel: ((dir: string, label: string, filter?: (m: LibraryModel) => boolean) => PopupLevel) | null;
+} = {
+  modelStack: null,
+  sceneStackGetter: null,
+  buildLevel: null,
+};
+
 /**
  * Compute a portable library identifier for a model/VMD file path.
  * Returns a string like "rel/path/model.pmx" (main lib) or "ExtName:rel/path/model.pmx" (external lib),
@@ -390,11 +422,7 @@ export function resolveLibraryRef(libraryRef: string): string | null {
 
 // Close all overlay-style popups. Call this before opening any new overlay.
 export function closeAllOverlays(): void {
-    document.querySelectorAll(".overlay.visible").forEach(el => el.classList.remove("visible"));
-    dom.modelPopup.classList.remove("visible");
-    dom.motionPopup.classList.remove("visible");
-    dom.settingsOverlay.classList.remove("visible");
-    dom.sceneOverlay.classList.remove("visible");
+    document.querySelectorAll<HTMLElement>("[data-overlay].visible").forEach(el => el.classList.remove("visible"));
     setPopupOpen(false);
     // Sync aria-expanded on nav buttons after closing
     document.querySelectorAll<HTMLElement>("[aria-controls]").forEach(btn => {

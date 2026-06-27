@@ -5,7 +5,7 @@ vi.hoisted(() => {
         "popupBreadcrumb", "popupList", "popupEmpty", "btnClosePopup",
         "btnManageExternal", "btnRescan", "motionPopup", "motionPopupBreadcrumb",
         "motionPopupList", "motionPopupEmpty", "btnCloseMotionPopup", "btnMotionPopup",
-        "motionPopupSearch", "motionPopupSearchInput", "playbackBar", "btnPlayPause",
+        "motionPopupSearch", "motionPopupSearchInput", "playbackBar", "btnPlayPause", "btnLoopToggle",
         "timeDisplay", "seekBar", "seekProgress", "loadingText", "externalOverlay",
         "externalList", "btnCloseExternal", "btnAddExternal", "popupSearch",
         "popupSearchInput", "settingsOverlay", "btnSettings", "btnCloseSettings",
@@ -375,6 +375,7 @@ beforeAll(() => {
     dom.statusBar = document.createElement("div") as HTMLDivElement;
     dom.playbackBar = document.createElement("div") as HTMLDivElement;
     dom.btnPlayPause = document.createElement("button") as HTMLButtonElement;
+    dom.btnLoopToggle = document.createElement("button") as HTMLButtonElement;
     dom.timeDisplay = document.createElement("span") as HTMLSpanElement;
     dom.seekProgress = document.createElement("div") as HTMLDivElement;
 });
