@@ -425,6 +425,79 @@ fileservice.ts
 | 鼠标拖拽 | 旋转视角（orbit 模式） |
 | 滚轮 | 缩放 |
 
----
+### 16. 换装系统（Outfit System）
 
-**当前进展**：第 1-6 环节全部完成，DanceXR 外部库挂载已实现。下一步：模之屋下载接管 + Blender 唤起。
+#### 16.1 概述
+
+换装系统允许用户为同一 PMX 模型切换不同纹理贴图（多纹理变体），支持两种模式：
+
+| 模式 | 说明 | 优先级 |
+|------|------|--------|
+| **显式配置** | `outfits.json` 精确指定变体/槽位/作用域 | 高（先检查） |
+| **自动发现** | 扫描模型目录子目录，自动匹配同名纹理文件 | 低（无 json 时回退） |
+
+#### 16.2 数据流
+
+```
+loadOutfits(id)
+  ├─ 1. LoadOutfitFile(pmxPath) → 读取 <modelDir>/outfits.json
+  │    └─ 解析成功 → 存入 inst.outfitFile → 返回
+  └─ 2. 自动发现（outfits.json 不存在时）
+       ├─ _collectOrigTextureBasenames(inst) — 从材质收集所有纹理 basename
+       ├─ ListSubDirs(modelDir) — Go binding 列一级子目录
+       └─ 对每子目录: HEAD 探测各槽位纹理 basename → 生成 OutfitVariant
+
+applyOutfitVariant(id, variantName)
+  ├─ 首次调用时备份 _origTextures（逐材质 × 5 槽位快照）
+  ├─ 查找 variant → 三层混合优先级: byMaterial > byCategory > all
+  ├─ _applySlot: dispose 旧非原始贴图 → 新 Texture / 恢复原始
+  └─ 更新 inst.activeVariant → triggerAutoSave()
+```
+
+#### 16.3 变体配置格式（`outfits.json`）
+
+参见 [outfits-spec.md](outfits-spec.md)。
+
+#### 16.4 三层混合优先级
+
+```
+每槽位最终值 = byMaterial[name] ?? byCategory[cat] ?? all ?? 原始贴图
+```
+
+- `byMaterial` — 按材质名精确匹配（大小写不敏感）
+- `byCategory` — 按部位分类（皮肤/头发/眼睛/服装，复用 `_catOf`）
+- `all` — 全局覆盖所有材质
+- 未指定的槽位保持原始贴图
+
+#### 16.5 关键文件
+
+| 文件 | 职责 |
+|------|------|
+| `app.go:LoadOutfitFile` | Go binding: 读 outfits.json |
+| `app.go:ListSubDirs` | Go binding: 列子目录（自动发现） |
+| `config.ts:OutfitFile/OutfitVariant/OutfitSlot` | 类型定义 |
+| `scene.ts:loadOutfits` | 加载 + 自动发现 |
+| `scene.ts:applyOutfitVariant` | 核心贴图替换（含 _origTextures 快照） |
+| `scene.ts:resetOutfit` | 回退原始贴图 |
+| `model-detail.ts:buildOutfitLevel` | UI 子菜单 |
+| `model-detail.ts:ModelPresetFile.outfitVariant` | 预设序列化 |
+| `scene.ts:SceneFile.model.outfitVariant` | 场景序列化 |
+
+#### 16.6 序列化集成
+
+| 载体 | 字段 | 说明 |
+|------|------|------|
+| `.mcupreset.json` | `outfitVariant` | 预设保存/加载时自动包含 |
+| `.mmascene` | `models[].outfitVariant` | 场景保存/恢复时自动包含 |
+
+#### 16.7 边界与限制
+
+| # | 场景 | 处理 |
+|---|------|------|
+| 1 | 变体内贴图路径不存在 | 404 → 静默保持原贴图 |
+| 2 | byMaterial 名大小写/空格不一致 | 当前精确匹配，未做归一化 |
+| 3 | 切换变体后 dispose 旧贴图 | `_applySlot` 严格 dispose 非 orig 贴图 |
+| 4 | zip 内模型无 outfits.json | 仅自动发现（需 zip 内包含子目录结构） |
+| 5 | 多模型共享同纹理 | 各自 inst._origTextures 独立备份 |
+
+---
