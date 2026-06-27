@@ -43,6 +43,7 @@ import {
   getPhysicsCategories,
   isPhysicsCategoryEnabled,
   setPhysicsCategory,
+  getPhysicsCatState,
   stopVMD,
   loadVMDFromPath,
   loadOutfits,
@@ -978,6 +979,7 @@ export interface ModelPresetFile {
   };
   materialCategories?: Record<string, { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }>;
   materialOverrides?: Record<number, { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }>;
+  physicsCategories?: Record<string, boolean>;
   outfitVariant?: string;
 }
 
@@ -1021,6 +1023,7 @@ export function serializeModelPreset(id: string, presetName?: string): string {
     } : undefined,
     materialCategories: matState?.categories,
     materialOverrides: matState?.overrides,
+    physicsCategories: getPhysicsCatState(id) ?? undefined,
     outfitVariant: inst.activeVariant,
   };
   return JSON.stringify(preset, null, 2);
@@ -1061,6 +1064,11 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
   if (preset.outfitVariant) {
     await loadOutfits(id);
     applyOutfitVariant(id, preset.outfitVariant);
+  }
+  if (preset.physicsCategories) {
+    for (const [cat, enabled] of Object.entries(preset.physicsCategories)) {
+      setPhysicsCategory(id, cat, enabled);
+    }
   }
   setStatus("✓ 预设已应用", true);
 }

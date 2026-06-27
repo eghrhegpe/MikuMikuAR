@@ -6,7 +6,7 @@ import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Vector2, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
@@ -19,6 +19,7 @@ import { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
 import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
+import { WaterMaterial } from "@babylonjs/materials/water/waterMaterial";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { Observer } from "@babylonjs/core/Misc/observable";
 import { GPUParticleSystem } from "@babylonjs/core/Particles/gpuParticleSystem";
@@ -1208,6 +1209,14 @@ export function getPhysicsCategories(id: string): PhysicsCategory[] {
     return [...set];
 }
 
+export function getPhysicsCatState(id: string): Record<string, boolean> | null {
+    const state = _physicsCatState.get(id);
+    if (!state || state.size === 0) return null;
+    const result: Record<string, boolean> = {};
+    for (const [cat, enabled] of state) result[cat] = enabled;
+    return result;
+}
+
 export function isPhysicsCategoryEnabled(id: string, cat: string): boolean {
     return _physicsCatState.get(id)?.get(cat) ?? true;
 }
@@ -1879,6 +1888,12 @@ export function setEnvState(partial: Partial<EnvState>): void {
         }
     }
 
+    if (partial.waterEnabled !== undefined || partial.waterLevel !== undefined ||
+        partial.waterColor !== undefined || partial.waterTransparency !== undefined ||
+        partial.waterWaveHeight !== undefined || partial.waterSize !== undefined) {
+        _createWater(envState);
+    }
+
     triggerAutoSave();
 }
 
@@ -1940,12 +1955,14 @@ const _envSys: {
     ground: { mesh: Mesh | null };
     particles: { emitter: GPUParticleSystem | null; followObserver: Observer<Scene> | null };
     clouds: { postProcess: Mesh | null; postProcess2: Mesh | null; material: StandardMaterial | null; texture: Texture | null };
+    water: { mesh: Mesh | null; material: WaterMaterial | null };
     shadow: { generator: ShadowGenerator | null };
 } = {
     sky: { skyMesh: null, envTexture: null },
     ground: { mesh: null },
     particles: { emitter: null, followObserver: null },
     clouds: { postProcess: null, postProcess2: null, material: null, texture: null },
+    water: { mesh: null, material: null },
     shadow: { generator: null },
 };
 
@@ -2149,21 +2166,178 @@ function _applyGround(state: EnvState): void {
     _envSys.ground.mesh = ground;
 }
 
+// ======== Water System ========
+
+let _waterBumpTexture: Texture | null = null;
+function _makeWaterBumpTexture(): Texture {
+    if (_waterBumpTexture) return _waterBumpTexture;
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "rgb(128,128,255)";
+    ctx.fillRect(0, 0, 128, 128);
+    const img = ctx.getImageData(0, 0, 128, 128);
+    for (let i = 0; i < img.data.length; i += 4) {
+        const n = (Math.random() - 0.5) * 50;
+        img.data[i] = Math.max(0, Math.min(255, 128 + n));
+        img.data[i + 1] = Math.max(0, Math.min(255, 128 + n));
+    }
+    ctx.putImageData(img, 0, 0);
+    _waterBumpTexture = new Texture(canvas.toDataURL(), scene);
+    return _waterBumpTexture;
+}
+
+function _createWater(state: EnvState): void {
+    _disposeWater();
+    if (!state.waterEnabled) return;
+
+    const size = Math.max(1, state.waterSize);
+    const waterMesh = MeshBuilder.CreateGround("envWater", {
+        width: size,
+        height: size,
+        subdivisions: 32,
+    }, scene);
+    waterMesh.isPickable = false;
+    waterMesh.position.y = state.waterLevel;
+
+    const water = new WaterMaterial("envWaterMat", scene, new Vector2(size, size));
+    water.bumpTexture = _makeWaterBumpTexture();
+    water.windForce = 4;
+    water.waveHeight = state.waterWaveHeight;
+    water.bumpHeight = 0.15;
+    water.waveLength = 0.08;
+    water.color = new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]);
+    water.colorBlendFactor = 0.3;
+    water.alpha = state.waterTransparency;
+    waterMesh.material = water;
+
+    // 反射场景内所有可见 mesh（首版静态；模型增删后重切水面菜单可刷新）
+    for (const m of scene.meshes) {
+        if (m !== waterMesh && m.isEnabled()) {
+            water.addToRenderList(m);
+        }
+    }
+
+    _envSys.water.mesh = waterMesh;
+    _envSys.water.material = water;
+}
+
+function _disposeWater(): void {
+    if (_envSys.water.mesh) {
+        _envSys.water.mesh.dispose();
+        _envSys.water.mesh = null;
+    }
+    if (_envSys.water.material) {
+        _envSys.water.material.dispose();
+        _envSys.water.material = null;
+    }
+}
+
 // ======== Particle System (Phase 8) ========
 
-let _particleTexture: Texture | null = null;
-function _getParticleTexture(): Texture {
-    if (_particleTexture) return _particleTexture;
+const _particleTextures = new Map<string, Texture>();
+
+function _makeParticleTexture(kind: string): Texture {
+    const cached = _particleTextures.get(kind);
+    if (cached) return cached;
     const canvas = document.createElement("canvas");
-    canvas.width = 32;
-    canvas.height = 32;
+    canvas.width = 64;
+    canvas.height = 64;
     const ctx = canvas.getContext("2d")!;
-    ctx.beginPath();
-    ctx.arc(16, 16, 14, 0, Math.PI * 2);
-    ctx.fillStyle = "white";
-    ctx.fill();
-    _particleTexture = new Texture(canvas.toDataURL(), scene);
-    return _particleTexture;
+    _drawParticleShape(ctx, kind);
+    const tex = new Texture(canvas.toDataURL(), scene, false, false);
+    tex.hasAlpha = true;
+    _particleTextures.set(kind, tex);
+    return tex;
+}
+
+function _drawParticleShape(ctx: CanvasRenderingContext2D, kind: string): void {
+    ctx.clearRect(0, 0, 64, 64);
+    const cx = 32, cy = 32;
+    switch (kind) {
+        case "sakura": {
+            ctx.fillStyle = "#ffb7c5";
+            for (let i = 0; i < 5; i++) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate((i * Math.PI * 2) / 5);
+                ctx.beginPath();
+                ctx.ellipse(0, -15, 7, 13, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            ctx.fillStyle = "#ffe080";
+            ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+            break;
+        }
+        case "rain": {
+            const grad = ctx.createLinearGradient(32, 6, 32, 58);
+            grad.addColorStop(0, "rgba(180,210,255,0)");
+            grad.addColorStop(0.5, "rgba(200,225,255,0.95)");
+            grad.addColorStop(1, "rgba(220,235,255,0)");
+            ctx.fillStyle = grad;
+            ctx.fillRect(30, 6, 4, 52);
+            break;
+        }
+        case "snow": {
+            ctx.strokeStyle = "rgba(255,255,255,0.95)";
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = "round";
+            for (let i = 0; i < 6; i++) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate((i * Math.PI) / 3);
+                ctx.beginPath();
+                ctx.moveTo(0, 0); ctx.lineTo(0, -24);
+                ctx.moveTo(0, -15); ctx.lineTo(-5, -21);
+                ctx.moveTo(0, -15); ctx.lineTo(5, -21);
+                ctx.stroke();
+                ctx.restore();
+            }
+            break;
+        }
+        case "fireworks": {
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30);
+            grad.addColorStop(0, "rgba(255,240,180,1)");
+            grad.addColorStop(0.3, "rgba(255,200,100,0.6)");
+            grad.addColorStop(1, "rgba(255,150,50,0)");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 64, 64);
+            ctx.strokeStyle = "rgba(255,255,220,0.9)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, 4); ctx.lineTo(cx, 60);
+            ctx.moveTo(4, cy); ctx.lineTo(60, cy);
+            ctx.stroke();
+            break;
+        }
+        case "fireflies": {
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28);
+            grad.addColorStop(0, "rgba(210,255,130,1)");
+            grad.addColorStop(0.4, "rgba(150,255,80,0.6)");
+            grad.addColorStop(1, "rgba(100,200,50,0)");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 64, 64);
+            break;
+        }
+        case "leaves": {
+            ctx.fillStyle = "#c9742a";
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(-0.3);
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 9, 21, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#8a4a18";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, -19); ctx.lineTo(0, 19);
+            ctx.stroke();
+            ctx.restore();
+            break;
+        }
+    }
 }
 
 function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boolean): void {
@@ -2171,77 +2345,110 @@ function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boo
 
     if (type === "none") return;
 
-    const particleTexture = _getParticleTexture();
-
     const ps = new GPUParticleSystem("envParticles", { capacity: 5000 }, scene);
-
-    ps.particleTexture = particleTexture;
-    ps.emitter = new Vector3(0, 10, 0);
-    ps.minEmitPower = 1;
-    ps.maxEmitPower = 3;
+    ps.particleTexture = _makeParticleTexture(type);
     ps.updateSpeed = 0.01;
+    ps.emitter = new Vector3(0, 10, 0);
 
     switch (type) {
-        case "sakura":
+        case "sakura": {
+            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
+            ps.emitRate = 40;
+            ps.gravity = new Vector3(0, -0.8, 0);
+            ps.minLifeTime = 8; ps.maxLifeTime = 15;
+            ps.minEmitPower = 0.5; ps.maxEmitPower = 1.5;
+            ps.minAngularSpeed = -1; ps.maxAngularSpeed = 1;
+            ps.minSize = 0.15; ps.maxSize = 0.35;
+            ps.createBoxEmitter(
+                new Vector3(-0.5, -0.2, -0.5), new Vector3(0.5, 0.2, 0.5),
+                new Vector3(-12, 8, -12), new Vector3(12, 12, 12),
+            );
+            ps.addColorGradient(0, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1));
+            ps.addColorGradient(0.8, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1));
+            ps.addColorGradient(1, new Color4(1, 0.72, 0.78, 0), new Color4(1, 0.8, 0.85, 0));
+            break;
+        }
+        case "rain": {
+            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
+            ps.emitRate = 1000;
+            ps.gravity = new Vector3(0, -25, 0);
+            ps.minLifeTime = 1; ps.maxLifeTime = 2;
+            ps.minEmitPower = 15; ps.maxEmitPower = 20;
+            ps.minSize = 0.1; ps.maxSize = 0.2;
+            ps.createBoxEmitter(
+                new Vector3(-0.1, -1, -0.1), new Vector3(0.1, -1, 0.1),
+                new Vector3(-15, 12, -15), new Vector3(15, 15, 15),
+            );
+            ps.addColorGradient(0, new Color4(0.7, 0.8, 1, 0.6), new Color4(0.8, 0.9, 1, 0.8));
+            ps.addColorGradient(1, new Color4(0.7, 0.8, 1, 0), new Color4(0.8, 0.9, 1, 0));
+            break;
+        }
+        case "snow": {
+            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
+            ps.emitRate = 250;
+            ps.gravity = new Vector3(0, -1.5, 0);
+            ps.minLifeTime = 6; ps.maxLifeTime = 12;
+            ps.minEmitPower = 0.3; ps.maxEmitPower = 0.8;
+            ps.minAngularSpeed = -0.5; ps.maxAngularSpeed = 0.5;
+            ps.minSize = 0.1; ps.maxSize = 0.25;
+            ps.createBoxEmitter(
+                new Vector3(-0.5, -0.3, -0.5), new Vector3(0.5, -0.3, 0.5),
+                new Vector3(-15, 10, -15), new Vector3(15, 14, 15),
+            );
+            ps.addColorGradient(0, new Color4(1, 1, 1, 0.9), new Color4(1, 1, 1, 1));
+            ps.addColorGradient(1, new Color4(1, 1, 1, 0), new Color4(1, 1, 1, 0));
+            break;
+        }
+        case "fireworks": {
+            ps.blendMode = ParticleSystem.BLENDMODE_ADD;
+            ps.emitRate = 80;
+            ps.gravity = new Vector3(0, -4, 0);
+            ps.minLifeTime = 1.2; ps.maxLifeTime = 2.2;
+            ps.minEmitPower = 6; ps.maxEmitPower = 10;
+            ps.minSize = 0.15; ps.maxSize = 0.35;
+            ps.createSphereEmitter(0.1);
+            ps.addColorGradient(0, new Color4(1, 1, 0.6, 1), new Color4(1, 0.9, 0.4, 1));
+            ps.addColorGradient(0.5, new Color4(1, 0.6, 0.2, 1), new Color4(1, 0.4, 0.1, 1));
+            ps.addColorGradient(1, new Color4(1, 0.3, 0.1, 0), new Color4(0.8, 0.2, 0, 0));
+            ps.addSizeGradient(0, 0.1, 0.2);
+            ps.addSizeGradient(0.3, 0.3, 0.4);
+            ps.addSizeGradient(1, 0.05, 0.1);
+            break;
+        }
+        case "fireflies": {
+            ps.blendMode = ParticleSystem.BLENDMODE_ADD;
+            ps.emitRate = 15;
+            ps.gravity = new Vector3(0, 0, 0);
+            ps.minLifeTime = 4; ps.maxLifeTime = 8;
+            ps.minEmitPower = 0.2; ps.maxEmitPower = 0.5;
+            ps.minSize = 0.1; ps.maxSize = 0.2;
+            ps.createSphereEmitter(8);
+            ps.addColorGradient(0, new Color4(0.6, 1, 0.3, 0), new Color4(0.8, 1, 0.4, 0));
+            ps.addColorGradient(0.3, new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1));
+            ps.addColorGradient(0.6, new Color4(0.6, 1, 0.3, 0.2), new Color4(0.8, 1, 0.4, 0.2));
+            ps.addColorGradient(1, new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1));
+            break;
+        }
+        case "leaves": {
+            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
             ps.emitRate = 30;
-            ps.gravity = new Vector3(0, -0.5, 0);
-            ps.minLifeTime = 8;
-            ps.maxLifeTime = 15;
-            ps.direction1 = new Vector3(-0.5, 0, -0.5);
-            ps.direction2 = new Vector3(0.5, 0, 0.5);
-            ps.color1 = new Color4(1, 0.8, 0.8, 1);
-            ps.color2 = new Color4(1, 0.9, 0.9, 1);
-            ps.minSize = 0.1;
-            ps.maxSize = 0.3;
-            ps.minAngularSpeed = -0.5;
-            ps.maxAngularSpeed = 0.5;
-            ps.createBoxEmitter(ps.direction1, ps.direction2, new Vector3(-10, 0, -10), new Vector3(10, 0, 10));
+            ps.gravity = new Vector3(0, -1, 0);
+            ps.minLifeTime = 8; ps.maxLifeTime = 14;
+            ps.minEmitPower = 0.5; ps.maxEmitPower = 1.5;
+            ps.minAngularSpeed = -2; ps.maxAngularSpeed = 2;
+            ps.minSize = 0.2; ps.maxSize = 0.4;
+            ps.createBoxEmitter(
+                new Vector3(-0.8, -0.3, -0.8), new Vector3(0.8, 0.3, 0.8),
+                new Vector3(-12, 8, -12), new Vector3(12, 12, 12),
+            );
+            ps.addColorGradient(0, new Color4(0.9, 0.5, 0.2, 1), new Color4(0.8, 0.6, 0.1, 1));
+            ps.addColorGradient(1, new Color4(0.9, 0.5, 0.2, 0), new Color4(0.8, 0.6, 0.1, 0));
             break;
-        case "rain":
-            ps.emitRate = 800;
-            ps.gravity = new Vector3(0, -20, 0);
-            ps.minLifeTime = 1;
-            ps.maxLifeTime = 2;
-            ps.direction1 = new Vector3(-0.1, -1, -0.1);
-            ps.direction2 = new Vector3(0.1, -1, 0.1);
-            ps.color1 = new Color4(0.7, 0.8, 1, 0.5);
-            ps.color2 = new Color4(0.8, 0.9, 1, 0.7);
-            ps.minSize = 0.08;
-            ps.maxSize = 0.2;
-            ps.createBoxEmitter(ps.direction1, ps.direction2, new Vector3(-15, 0, -15), new Vector3(15, 0, 15));
-            break;
-        case "snow":
-            ps.emitRate = 200;
-            ps.gravity = new Vector3(0, -2, 0);
-            ps.minLifeTime = 5;
-            ps.maxLifeTime = 10;
-            ps.direction1 = new Vector3(-0.3, -0.5, -0.3);
-            ps.direction2 = new Vector3(0.3, -0.5, 0.3);
-            ps.color1 = new Color4(1, 1, 1, 0.8);
-            ps.color2 = new Color4(1, 1, 1, 1);
-            ps.minSize = 0.08;
-            ps.maxSize = 0.2;
-            ps.minAngularSpeed = -0.3;
-            ps.maxAngularSpeed = 0.3;
-            ps.createBoxEmitter(ps.direction1, ps.direction2, new Vector3(-15, 0, -15), new Vector3(15, 0, 15));
-            break;
-        case "fireworks":
-            ps.emitRate = 5;
-            ps.gravity = new Vector3(0, -3, 0);
-            ps.minLifeTime = 1.5;
-            ps.maxLifeTime = 3.5;
-            ps.direction1 = new Vector3(-2, 3, -2);
-            ps.direction2 = new Vector3(2, 5, 2);
-            ps.color1 = new Color4(1, 0.5, 0.2, 1);
-            ps.color2 = new Color4(1, 0.8, 0.5, 1);
-            ps.minSize = 0.1;
-            ps.maxSize = 0.3;
-            ps.createSphereEmitter(0.5);
-            break;
+        }
     }
 
     const er = envState.particleEmitRate;
-    if (er !== 1) ps.emitRate = Math.max(0, Math.round(ps.emitRate * er));
+    if (er !== 1) ps.emitRate = Math.max(0, ps.emitRate * er);
 
     const sz = envState.particleSize;
     if (sz !== 1) {
@@ -2259,10 +2466,25 @@ function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boo
         _applyWindToParticles(ps);
     }
 
+    // emitter 跟随相机 XZ，保证粒子始终在视野内
+    _envSys.particles.followObserver = scene.onBeforeRenderObservable.add(() => {
+        const cam = scene.activeCamera;
+        if (!cam) return;
+        const e = ps.emitter as Vector3;
+        if (!e) return;
+        e.x = cam.position.x;
+        e.z = cam.position.z;
+        e.y = type === "fireflies" ? 2 : 11;
+    });
+
     _envSys.particles.emitter = ps;
 }
 
 function _disposeParticles(): void {
+    if (_envSys.particles.followObserver) {
+        scene.onBeforeRenderObservable.remove(_envSys.particles.followObserver);
+        _envSys.particles.followObserver = null;
+    }
     if (_envSys.particles.emitter) {
         _envSys.particles.emitter.dispose();
         _envSys.particles.emitter = null;
@@ -2562,7 +2784,57 @@ async function _applySlot(sm: StandardMaterial, slot: string, newPath: string | 
     }
 }
 
-/** Apply an outfit variant to a model by replacing textures. */
+function _getSlotFor(variant: OutfitVariant | undefined, smName: string, cat: string, slotKey: string): string | null {
+    if (!variant) return null;
+    const v = (variant.byMaterial?.[smName] as any)?.[slotKey]
+          ?? (variant.byCategory?.[cat] as any)?.[slotKey]
+          ?? (variant.all as any)?.[slotKey];
+    return v ?? null;
+}
+
+function _getParamsFor(variant: OutfitVariant | undefined, smName: string, cat: string): OutfitSlot["params"] | undefined {
+    if (!variant) return undefined;
+    return variant.byMaterial?.[smName]?.params
+        ?? variant.byCategory?.[cat]?.params
+        ?? variant.all?.params;
+}
+
+function _getTintFor(variant: OutfitVariant | undefined, smName: string, cat: string): [number, number, number] | undefined {
+    if (!variant) return undefined;
+    const t = (variant.byMaterial?.[smName] as any)?.tint
+          ?? (variant.byCategory?.[cat] as any)?.tint
+          ?? (variant.all as any)?.tint;
+    return t;
+}
+
+function _applyOutfitParams(sm: StandardMaterial, params: OutfitSlot["params"], orig: { diffuseR: number; diffuseG: number; diffuseB: number; specularR: number; specularG: number; specularB: number; specularPower: number; ambientR: number; ambientG: number; ambientB: number }): void {
+    if (!params) return;
+    if (params.diffuseMul !== undefined) sm.diffuseColor.set(orig.diffuseR * params.diffuseMul, orig.diffuseG * params.diffuseMul, orig.diffuseB * params.diffuseMul);
+    if (params.specularMul !== undefined) sm.specularColor.set(orig.specularR * params.specularMul, orig.specularG * params.specularMul, orig.specularB * params.specularMul);
+    if (params.shininess !== undefined) sm.specularPower = params.shininess;
+    if (params.ambientMul !== undefined) sm.ambientColor.set(orig.ambientR * params.ambientMul, orig.ambientG * params.ambientMul, orig.ambientB * params.ambientMul);
+}
+
+function _applyOutfitTint(sm: StandardMaterial, tint: [number, number, number]): void {
+    sm.diffuseColor.multiplyInPlace({ r: tint[0], g: tint[1], b: tint[2] } as any);
+}
+
+function _captureOrigParams(inst: any): void {
+    if (inst._origParams) return;
+    inst._origParams = new Map();
+    for (let mi = 0; mi < inst.meshes.length; mi++) {
+        const sm = inst.meshes[mi].material as StandardMaterial;
+        if (!sm) continue;
+        inst._origParams.set(mi, {
+            diffuseR: sm.diffuseColor.r, diffuseG: sm.diffuseColor.g, diffuseB: sm.diffuseColor.b,
+            specularR: sm.specularColor.r, specularG: sm.specularColor.g, specularB: sm.specularColor.b,
+            specularPower: sm.specularPower,
+            ambientR: sm.ambientColor.r, ambientG: sm.ambientColor.g, ambientB: sm.ambientColor.b,
+        });
+    }
+}
+
+/** Apply an outfit variant to a model by replacing textures, params, and tint. */
 export async function applyOutfitVariant(id: string, variantName: string): Promise<void> {
     const inst = modelRegistry.get(id);
     if (!inst || !inst.outfitFile) return;
@@ -2572,6 +2844,7 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
         : inst.outfitFile.variants.find(v => v.name === variantName);
     if (!variant && variantName !== "默认") return;
 
+    // Capture originals on first application
     if (!inst._origTextures) {
         inst._origTextures = new Map();
         for (let mi = 0; mi < inst.meshes.length; mi++) {
@@ -2586,29 +2859,31 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
             });
         }
     }
+    _captureOrigParams(inst);
 
     const promises: Promise<void>[] = [];
     for (let mi = 0; mi < inst.meshes.length; mi++) {
         const mesh = inst.meshes[mi];
         const sm = mesh.material as StandardMaterial;
         if (!sm) continue;
-        const orig = inst._origTextures.get(mi);
-        if (!orig) continue;
+        const origTex = inst._origTextures.get(mi);
+        if (!origTex) continue;
+        const origParams = inst._origParams.get(mi)!;
         const cat = _catOf(sm.name);
 
-        const getSlot = (slotKey: string): string | null => {
-            const v = variant?.byMaterial?.[sm.name]?.[slotKey as keyof OutfitSlot]
-                  ?? variant?.byCategory?.[cat]?.[slotKey as keyof OutfitSlot]
-                  ?? variant?.all?.[slotKey as keyof OutfitSlot]
-                  ?? null;
-            return v ?? null;
-        };
+        promises.push(_applySlot(sm, "diffuseTexture", _getSlotFor(variant, sm.name, cat, "diffuse"), origTex.diffuse, inst.port));
+        promises.push(_applySlot(sm, "toonTexture", _getSlotFor(variant, sm.name, cat, "toon"), origTex.toon, inst.port));
+        promises.push(_applySlot(sm, "sphereTexture", _getSlotFor(variant, sm.name, cat, "spa"), origTex.spa, inst.port));
+        promises.push(_applySlot(sm, "bumpTexture", _getSlotFor(variant, sm.name, cat, "normal"), origTex.normal, inst.port));
+        promises.push(_applySlot(sm, "emissiveTexture", _getSlotFor(variant, sm.name, cat, "emissive"), origTex.emissive, inst.port));
 
-        promises.push(_applySlot(sm, "diffuseTexture", getSlot("diffuse"), orig.diffuse, inst.port));
-        promises.push(_applySlot(sm, "toonTexture", getSlot("toon"), orig.toon, inst.port));
-        promises.push(_applySlot(sm, "sphereTexture", getSlot("spa"), orig.spa, inst.port));
-        promises.push(_applySlot(sm, "bumpTexture", getSlot("normal"), orig.normal, inst.port));
-        promises.push(_applySlot(sm, "emissiveTexture", getSlot("emissive"), orig.emissive, inst.port));
+        // Apply params from slot
+        const slotParams = _getParamsFor(variant, sm.name, cat);
+        if (slotParams) _applyOutfitParams(sm, slotParams, origParams);
+
+        // Apply tint
+        const tint = _getTintFor(variant, sm.name, cat);
+        if (tint) _applyOutfitTint(sm, tint);
     }
 
     await Promise.all(promises);
@@ -2617,7 +2892,7 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
     triggerAutoSave();
 }
 
-/** Reset all outfit textures back to originals. */
+/** Reset all outfit textures, params, and tint back to originals. */
 export function resetOutfit(id: string): void {
     const inst = modelRegistry.get(id);
     if (!inst) return;
@@ -2634,9 +2909,22 @@ export function resetOutfit(id: string): void {
             _applySlot(sm, "emissiveTexture", null, orig.emissive, inst.port);
         }
     }
+    if (inst._origParams) {
+        for (let mi = 0; mi < inst.meshes.length; mi++) {
+            const sm = inst.meshes[mi].material as StandardMaterial;
+            if (!sm) continue;
+            const p = inst._origParams.get(mi);
+            if (!p) continue;
+            sm.diffuseColor.set(p.diffuseR, p.diffuseG, p.diffuseB);
+            sm.specularColor.set(p.specularR, p.specularG, p.specularB);
+            sm.specularPower = p.specularPower;
+            sm.ambientColor.set(p.ambientR, p.ambientG, p.ambientB);
+        }
+    }
     inst.activeVariant = undefined;
     inst.outfitFile = undefined;
     inst._origTextures = undefined;
+    inst._origParams = undefined;
     triggerAutoSave();
 }
 
