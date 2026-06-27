@@ -978,6 +978,7 @@ export interface ModelPresetFile {
   };
   materialCategories?: Record<string, { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }>;
   materialOverrides?: Record<number, { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }>;
+  outfitVariant?: string;
 }
 
 export function serializeModelPreset(id: string, presetName?: string): string {
@@ -1020,6 +1021,7 @@ export function serializeModelPreset(id: string, presetName?: string): string {
     } : undefined,
     materialCategories: matState?.categories,
     materialOverrides: matState?.overrides,
+    outfitVariant: inst.activeVariant,
   };
   return JSON.stringify(preset, null, 2);
 }
@@ -1055,6 +1057,10 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
   }
   if (preset.materialCategories || preset.materialOverrides) {
     applyMatState(id, { categories: preset.materialCategories, overrides: preset.materialOverrides });
+  }
+  if (preset.outfitVariant) {
+    await loadOutfits(id);
+    applyOutfitVariant(id, preset.outfitVariant);
   }
   setStatus("✓ 预设已应用", true);
 }

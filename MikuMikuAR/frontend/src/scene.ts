@@ -910,6 +910,7 @@ export interface SceneFile {
         visible?: boolean;
         opacity?: number;
         wireframe?: boolean;
+        outfitVariant?: string;
     }>;
     camera: CameraState;
     lights: LightState;
@@ -950,6 +951,7 @@ export function serializeScene(): SceneFile {
         visible: inst.visible,
         opacity: inst.opacity,
         wireframe: inst.wireframe,
+        outfitVariant: inst.activeVariant,
     }));
     return {
         version: 1,
@@ -1015,6 +1017,13 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             if (m.vmdPath) {
                 const resolvedVmdPath = (m.vmdLibraryRef ? resolveLibraryRef(m.vmdLibraryRef) : null) || m.vmdPath;
                 await loadVMDFromPath(resolvedVmdPath);
+            }
+            if (m.outfitVariant) {
+                const freshInst = focusedModel();
+                if (freshInst) {
+                    await loadOutfits(freshInst.id);
+                    applyOutfitVariant(freshInst.id, m.outfitVariant);
+                }
             }
         } catch (err) {
             console.warn(`Scene restore: skip ${m.name}:`, err);
