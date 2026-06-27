@@ -68,7 +68,7 @@ import {
   buildVisibilityLevel,
   buildModelTagsLevel,
   buildMorphPreviewLevel,
-  buildMatCatLevel,
+  buildMatRootLevel,
   buildOpenWithLevel,
   selectAndSavePreset,
   selectAndLoadPreset,
@@ -106,7 +106,7 @@ const makeModelStack = (): SlideMenu => {
           case "visibility": return buildVisibilityLevel(id);
           case "tags": return buildModelTagsLevel(id);
           case "morph": return buildMorphPreviewLevel(id);
-          case "material": return buildMatCatLevel(id, inst.name);
+          case "material": return buildMatRootLevel(id, inst.name);
           default: return null;
         }
       }

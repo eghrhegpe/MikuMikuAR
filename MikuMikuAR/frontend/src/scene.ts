@@ -790,6 +790,7 @@ export function removeModel(id: string): void {
     modelRegistry.delete(id);
     _catState.delete(id);
     _matState.delete(id);
+    _matEnabled.delete(id);
     destroyBoneOverlay(id);
     if (focusedModelId === id) { setFocusedModelId(modelRegistry.size > 0 ? modelRegistry.keys().next().value : null); }
     if (focusedModelId) focusModel(focusedModelId);
@@ -1340,6 +1341,34 @@ export const _catState = new Map<string, Map<string, MaterialCategoryParams>>();
 /** @internal exported for testing */
 export const _matState = new Map<string, Map<number, MaterialCategoryParams>>();
 const _boneOverlayMap = new Map<string, { overlay: Mesh; update: () => void }>();
+/** @internal exported for testing */
+export const _matEnabled = new Map<string, Map<number, boolean>>();
+
+function _ensureMatEnabled(id: string): Map<number, boolean> {
+    let m = _matEnabled.get(id);
+    if (m) return m;
+    m = new Map();
+    _matEnabled.set(id, m);
+    return m;
+}
+
+export function isMatEnabled(id: string, matIndex: number): boolean {
+    return _matEnabled.get(id)?.get(matIndex) ?? true;
+}
+
+export function setMatEnabled(id: string, matIndex: number, enabled: boolean): void {
+    const inst = modelRegistry.get(id);
+    if (!inst || matIndex < 0 || matIndex >= inst.meshes.length) return;
+    const current = isMatEnabled(id, matIndex);
+    if (current === enabled) return;
+    inst.meshes[matIndex].setEnabled(enabled);
+    if (enabled) {
+        _matEnabled.get(id)?.delete(matIndex);
+    } else {
+        _ensureMatEnabled(id).set(matIndex, false);
+    }
+    triggerAutoSave();
+}
 
 /** @internal exported for testing */
 export function _catOf(name: string): MaterialCategory {

@@ -273,6 +273,7 @@ import {
     _catOf,
     _catState,
     _matState,
+    _matEnabled,
     _applyAll,
     getMatParams,
     setMatParams,
@@ -373,7 +374,7 @@ function cleanupModels(): void {
 describe("per-material parameter state management", () => {
     beforeEach(() => {
         _catState.clear();
-        _matState.clear();
+        _matState.clear(); _matEnabled.clear();
         regModel("model1", 3);
         regModel("model2", 2);
     });
@@ -448,7 +449,7 @@ describe("per-material parameter state management", () => {
     describe("resetSingleMatParams", () => {
         beforeEach(() => {
             _catState.clear();
-            _matState.clear();
+            _matState.clear(); _matEnabled.clear();
             regModel("model1", 3);
             regModel("model2", 2);
         });
@@ -495,7 +496,7 @@ describe("per-material parameter state management", () => {
     describe("model removal cleans up state", () => {
         beforeEach(() => {
             _catState.clear();
-            _matState.clear();
+            _matState.clear(); _matEnabled.clear();
             regModel("model_rm", 2);
         });
 
@@ -517,7 +518,7 @@ describe("per-material parameter state management", () => {
 describe("category-level parameter state", () => {
     beforeEach(() => {
         _catState.clear();
-        _matState.clear();
+        _matState.clear(); _matEnabled.clear();
         regModel("model_c", 2);
     });
 
@@ -546,7 +547,7 @@ describe("category-level parameter state", () => {
 describe("applyMatState MaterialCategory cast", () => {
     beforeEach(() => {
         _catState.clear();
-        _matState.clear();
+        _matState.clear(); _matEnabled.clear();
         regModel("model_as", 5);
     });
 
@@ -600,7 +601,7 @@ describe("_applyAll ordering: per-material overrides category on re-apply", () =
 
     beforeEach(() => {
         _catState.clear();
-        _matState.clear();
+        _matState.clear(); _matEnabled.clear();
         const old = modelRegistry.get(TEST_ID);
         if (old) modelRegistry.delete(TEST_ID);
     });

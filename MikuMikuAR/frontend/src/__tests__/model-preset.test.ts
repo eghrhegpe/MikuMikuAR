@@ -300,6 +300,7 @@ import {
     applyMatState,
     _catState,
     _matState,
+    _matEnabled,
 } from "../scene";
 import { modelRegistry, dom, setMmdRuntime, setIsPlaying } from "../config";
 
@@ -366,7 +367,7 @@ function createModel(id: string, meshCount = 1, overrides?: Partial<any>): strin
 function cleanup(): void {
     modelRegistry.clear();
     _catState.clear();
-    _matState.clear();
+    _matState.clear(); _matEnabled.clear();
     setMmdRuntime(null);
     setIsPlaying(false);
 }

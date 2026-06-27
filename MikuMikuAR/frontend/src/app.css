@@ -883,12 +883,6 @@ input[type="range"]::-moz-range-thumb:hover {
     border-radius: 8px;
     margin-left: auto;
 }
-.mat-card-modified {
-    font-size: var(--font-ui-xs);
-    color: var(--accent);
-    flex-shrink: 0;
-}
-
 /* Material row */
 .mat-row {
     display: flex;
@@ -906,7 +900,6 @@ input[type="range"]::-moz-range-thumb:hover {
     background: var(--white-08);
     color: var(--text-bright);
 }
-.mat-row.excess { display: none; }
 .mat-row.modified {
     color: var(--accent);
     background: var(--white-04);
@@ -922,6 +915,15 @@ input[type="range"]::-moz-range-thumb:hover {
     flex-shrink: 0;
     border: 1px solid rgba(255,255,255,0.12);
     display: inline-block;
+    cursor: pointer;
+    transition: background 0.15s, border 0.15s;
+}
+.mat-swatch-disabled {
+    border: 2px dashed var(--text-muted) !important;
+    background: transparent !important;
+}
+.mat-disabled {
+    opacity: 0.55;
 }
 .mat-index {
     font-size: var(--font-ui-xs);
@@ -945,31 +947,6 @@ input[type="range"]::-moz-range-thumb:hover {
     font-size: var(--font-time);
 }
 .mat-modified iconify-icon { width: 12px; height: 12px; font-size: var(--font-time); display: block; }
-
-/* Material list expand/collapse toggle */
-.mat-expand-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 6px;
-    margin: 4px 0 2px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: var(--font-ui-sm);
-    color: var(--text-muted);
-    background: var(--white-04);
-    border: 1px solid transparent;
-    transition: background 0.12s, color 0.12s;
-    user-select: none;
-}
-.mat-expand-btn:hover {
-    background: var(--white-08);
-    color: var(--text-bright);
-}
-.mat-expand-btn:active {
-    background: var(--white-12);
-}
 
 /* Slider dropdown toggle button */
 .mat-slider-toggle {
@@ -1006,6 +983,23 @@ input[type="range"]::-moz-range-thumb:hover {
     margin-top: 6px;
     padding: 6px 0 0;
     border-top: 1px solid var(--white-06);
+}
+
+/* Batch category slider context */
+.mat-cat-slider .cs-row {
+    background: var(--card-bg);
+}
+.mat-cat-slider .cs-row:hover {
+    background: var(--card-hover);
+}
+
+/* Per-material slider context */
+.mat-mat-slider .cs-row {
+    background: var(--white-04);
+    border: 1px solid var(--white-06);
+}
+.mat-mat-slider .cs-row:hover {
+    background: var(--card-hover);
 }
 
 /* ===== Morph slider row ===== */
