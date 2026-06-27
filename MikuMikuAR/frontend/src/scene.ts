@@ -56,6 +56,12 @@ import {
 import { resolveFileUrl, normPath } from "./fileservice";
 import { loadVPDFromBuffer } from "./vpd-parser";
 import { syncAudioPlayback, loadAudioFile, setVolume, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset, isAudioPlaying, resumeAudio, pauseAudio } from "./audio";
+import {
+    ProcMotionState, ProcMotionMode, DEFAULT_PROC_STATE,
+    generateIdleVmd, generateAutoDanceVmd, shouldAutoDance, shouldIdle,
+} from "./procedural-motion";
+import { BeatDetector } from "./beat-detector";
+import { attachBeatDetector, notifyBeatDetectorReset } from "./audio";
 
 // ======== Babylon.js ========
 export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true, stencil: true });
@@ -316,9 +322,75 @@ export function reattachPipeline(): void {
 // Track last camera added to pipeline for cleanup on reattach
 let _pipelineCamera: import("@babylonjs/core/Cameras/camera").Camera | null = null;
 
+// ======== Procedural Motion State ========
+let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
+let procBeatDetector: BeatDetector | null = null;
+let procVmdActive = false;       // procedural VMD 是否正在播放
+let lastBeatBpm = 120;           // 上次用于生成 Auto Dance 的 BPM
+
 // ======== Convenience getters ========
 export function focusedMmdModel() { return focusedModelId ? modelRegistry.get(focusedModelId)?.mmdModel ?? null : null; }
 export function focusedModel() { return focusedModelId ? modelRegistry.get(focusedModelId) : undefined; }
+
+/** 启动程序化动作：生成 procedural VMD 并加载。 */
+async function startProcMotion(bpm?: number): Promise<void> {
+    const model = focusedMmdModel();
+    if (!model) return;
+    const morphNames = model.morph?.morphs?.map(m => m.name) ?? [];
+    let buf: ArrayBuffer;
+    if (procState.mode === "autodance" && bpm) {
+        buf = generateAutoDanceVmd(procState, bpm, morphNames);
+        lastBeatBpm = bpm;
+    } else {
+        buf = generateIdleVmd(procState, morphNames);
+    }
+    procVmdActive = true;
+    await loadVMDMotion(buf, procState.mode === "autodance" ? "AutoDance" : "IdleMotion");
+}
+
+/** 停止程序化动作（用户加载真实 VMD 时调用）。 */
+function stopProcMotion(): void {
+    procVmdActive = false;
+}
+
+/** 每帧检查是否需要切换/重新生成 procedural VMD。 */
+async function updateProcMotion(): Promise<void> {
+    if (procState.mode === "off" && !procState.autoSwitch) {
+        if (procVmdActive) stopProcMotion();
+        return;
+    }
+
+    const audioOn = isAudioPlaying();
+    const hasUserVmd = focusedModel()?.vmdData != null;
+    const wantAutoDance = shouldAutoDance(audioOn, procState.mode) && procState.autoSwitch;
+    const wantIdle = shouldIdle(audioOn, hasUserVmd, procState.mode) && procState.autoSwitch;
+
+    // 用户加载了真实 VMD → 停止 procedural
+    if (hasUserVmd && procVmdActive) {
+        stopProcMotion();
+        return;
+    }
+
+    // 需要 Auto Dance
+    if (wantAutoDance && procBeatDetector) {
+        const bpm = procBeatDetector.getBPM();
+        if (!procVmdActive || procState.mode !== "autodance" || Math.abs(bpm - lastBeatBpm) > 10) {
+            procState = { ...procState, mode: "autodance" };
+            await startProcMotion(bpm);
+        }
+        procBeatDetector.update();
+        return;
+    }
+
+    // 需要 Idle
+    if (wantIdle) {
+        if (!procVmdActive || procState.mode !== "idle") {
+            procState = { ...procState, mode: "idle" };
+            await startProcMotion();
+        }
+        return;
+    }
+}
 
 // ======== Init Scene ========
 export async function initScene(): Promise<void> {
@@ -338,6 +410,7 @@ export async function initScene(): Promise<void> {
         const dur = foc?.animationDuration ?? runtime.animationDuration;
         syncAudioPlayback(runtime.currentTime, isPlaying, dur);
         animateCameraVmd(runtime.currentTime * 30);
+        updateProcMotion();
     });
     runtime.onPlayAnimationObservable.add(() => {
         setIsPlaying(true);
@@ -368,6 +441,10 @@ export async function initScene(): Promise<void> {
         const dur = foc?.animationDuration ?? runtime.animationDuration;
         syncAudioPlayback(runtime.currentTime, false, dur);
     });
+
+    // Initialize beat detector for Auto Dance
+    procBeatDetector = new BeatDetector();
+    attachBeatDetector(procBeatDetector);
 
     _applyGround(envState);
 }
@@ -500,6 +577,10 @@ export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<
 
 // ======== VMD Loading ========
 export async function loadVMDMotion(data: ArrayBuffer, name: string, targetModelId?: string): Promise<void> {
+    // If user loads a real VMD, stop procedural motion
+    if (procVmdActive && name !== "IdleMotion" && name !== "AutoDance") {
+        stopProcMotion();
+    }
     if (!mmdRuntime) {
         setPendingVmd({ data, name });
         setStatus("VMD 已缓存，等待模型加载", false);
@@ -762,6 +843,8 @@ export interface SceneFile {
         offset: number;
         playing: boolean;
     };
+    /** Procedural motion state (Idle/Auto Dance). */
+    procMotion?: ProcMotionState;
 }
 
 export function serializeScene(): SceneFile {
@@ -803,6 +886,7 @@ export function serializeScene(): SceneFile {
             offset: getAudioOffset(),
             playing: isAudioPlaying(),
         } : undefined,
+        procMotion: { ...procState },
     };
 }
 
@@ -855,6 +939,11 @@ export async function deserializeScene(data: SceneFile): Promise<void> {
     if (data.lights) setLightState(data.lights);
     if (data.render) setRenderState(data.render);
     if (data.env) setEnvState(data.env);
+
+    // Restore procedural motion state
+    if (data.procMotion) {
+        procState = { ...DEFAULT_PROC_STATE, ...data.procMotion as Partial<ProcMotionState> };
+    }
 
     // Restore camera VMD
     if (data.cameraVmd && data.cameraVmd.path) {
@@ -1951,4 +2040,35 @@ function _ensureEnvUpdateObserver(): void {
             }
         }
     });
+}
+
+// ======== Procedural Motion Control API ========
+
+export function setProcMotionMode(mode: ProcMotionMode): void {
+    procState = { ...procState, mode };
+    if (mode === "off") stopProcMotion();
+}
+
+export function setProcMotionIntensity(v: number): void {
+    procState = { ...procState, intensity: Math.max(0, Math.min(1, v)) };
+}
+
+export function setProcMotionSpeed(v: number): void {
+    procState = { ...procState, speed: Math.max(0.5, Math.min(2, v)) };
+}
+
+export function setProcMotionAutoSwitch(on: boolean): void {
+    procState = { ...procState, autoSwitch: on };
+}
+
+export function getProcMotionState(): ProcMotionState {
+    return { ...procState };
+}
+
+/** 强制立即重新生成 procedural VMD（参数变更后调用）。 */
+export function regenerateProcMotion(): void {
+    if (procVmdActive) {
+        const bpm = procBeatDetector?.getBPM() ?? 120;
+        startProcMotion(procState.mode === "autodance" ? bpm : undefined);
+    }
 }
