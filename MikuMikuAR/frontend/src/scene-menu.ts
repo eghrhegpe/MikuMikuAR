@@ -592,17 +592,17 @@ function buildParticleLevel(): PopupLevel {
             typeRow.appendChild(typeLabel);
             const types: Array<{ value: EnvState["particleType"]; label: string }> = [
                 { value: "none", label: "无" },
-                { value: "sakura", label: "🌸 樱花" },
-                { value: "rain", label: "🌧 雨" },
-                { value: "snow", label: "❄ 雪" },
-                { value: "fireworks", label: "🎆 烟花" },
+                { value: "sakura", label: "樱花" },
+                { value: "rain", label: "雨" },
+                { value: "snow", label: "雪" },
+                { value: "fireworks", label: "烟花" },
             ];
             for (const t of types) {
                 const btn = document.createElement("button");
                 btn.textContent = t.label;
                 btn.className = "mode-btn" + (s.particleType === t.value ? " active" : "");
                 btn.addEventListener("click", () => {
-                    setEnvState({ particleType: t.value });
+                    setEnvState({ particleType: t.value, particleEnabled: t.value !== "none" });
                     sceneStack?.reRender();
                 });
                 typeRow.appendChild(btn);
