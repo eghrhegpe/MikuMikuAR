@@ -56,6 +56,7 @@ import {
     pendingVmd, setPendingVmd,
     seekDragging, setSeekDragging,
     ModelInstance, setModelRegistry, escapeHtml,
+    PropInstance, propRegistry, setPropRegistry,
     computeLibraryRef, resolveLibraryRef,
     envState, EnvState,
     OutfitFile, OutfitVariant, OutfitSlot,
@@ -68,6 +69,7 @@ import {
     ProcMotionState, ProcMotionMode, DEFAULT_PROC_STATE,
     generateIdleVmd, generateAutoDanceVmd, shouldAutoDance, shouldIdle,
 } from "./procedural-motion";
+import { LipSyncState as LipSyncStateType, DEFAULT_LIPSYNC_STATE, findLipMorph, amplitudeToWeight } from "./lipsync";
 import { BeatDetector } from "./beat-detector";
 import { attachBeatDetector } from "./audio";
 
@@ -369,6 +371,67 @@ let procStarting = false;        // 防止并发 startProcMotion
 let procActiveKind: ProcMotionMode = "idle"; // 当前加载的是 idle 还是 autodance
 let procModelId: string | null = null;       // 持有 procedural VMD 的模型 ID，用于精准清理
 
+// ======== LipSync State ========
+let lipSyncState: LipSyncStateType = { ...DEFAULT_LIPSYNC_STATE };
+let lipSyncMorphName: string | null = null;  // 缓存焦点模型的口型 morph 名
+
+/** 人声频段 bin 范围（@ fftSize=256, 44100Hz：每 bin ~172Hz）。
+ *  10..50 ≈ 430Hz..2.2kHz，覆盖人声基频与谐波。 */
+const VOICE_BIN_START = 10;
+const VOICE_BIN_END = 50;
+
+export function setLipSyncEnabled(on: boolean): void {
+    lipSyncState.enabled = on;
+    if (!on) resetLipMorph();
+    triggerAutoSave();
+}
+
+export function setLipSyncSensitivity(v: number): void {
+    lipSyncState.sensitivity = Math.max(0, Math.min(1, v));
+    triggerAutoSave();
+}
+
+export function setLipSyncIntensity(v: number): void {
+    lipSyncState.intensity = Math.max(0, Math.min(1, v));
+    triggerAutoSave();
+}
+
+export function getLipSyncState(): LipSyncStateType {
+    return { ...lipSyncState };
+}
+
+/** 重置焦点模型的口型 morph 为 0（关闭 Lipsync 或静音时调用）。 */
+function resetLipMorph(): void {
+    if (lipSyncMorphName && focusedModelId) {
+        setModelMorphWeight(focusedModelId, lipSyncMorphName, 0);
+    }
+}
+
+/** 每帧更新 LipSync。由 runtime.onAnimationTickObservable 调用。
+ *  - 关闭 → 直接返回
+ *  - 无音频播放 → 重置 morph 为 0
+ *  - 焦点模型无口型 morph → 跳过
+ *  - 正常 → 读 BeatDetector 人声频段能量 → amplitudeToWeight → setModelMorphWeight */
+function updateLipSync(): void {
+    if (!lipSyncState.enabled) return;
+    if (!isAudioPlaying()) { resetLipMorph(); return; }
+    const modelId = focusedModelId;
+    if (!modelId) { lipSyncMorphName = null; return; }
+    const inst = modelRegistry.get(modelId);
+    if (!inst?.mmdModel?.morph) { lipSyncMorphName = null; return; }
+
+    // 焦点切换或模型加载后重新检测 morph 名
+    const morphs = inst.mmdModel.morph.morphs;
+    if (!lipSyncMorphName || !morphs.some(m => m.name === lipSyncMorphName)) {
+        lipSyncMorphName = findLipMorph(morphs.map(m => m.name));
+    }
+    if (!lipSyncMorphName) return;
+
+    const level = procBeatDetector ? procBeatDetector.getLevel(VOICE_BIN_START, VOICE_BIN_END) : 0;
+    const weight = amplitudeToWeight(level, lipSyncState.sensitivity, lipSyncState.intensity);
+    setModelMorphWeight(modelId, lipSyncMorphName, weight);
+}
+
 // ======== Convenience getters ========
 export function focusedMmdModel() { return focusedModelId ? modelRegistry.get(focusedModelId)?.mmdModel ?? null : null; }
 export function focusedModel() { return focusedModelId ? modelRegistry.get(focusedModelId) : undefined; }
@@ -483,6 +546,7 @@ export async function initScene(): Promise<void> {
         syncAudioPlayback(runtime.currentTime, isPlaying, dur);
         animateCameraVmd(runtime.currentTime * 30);
         updateProcMotion();
+        updateLipSync();
     });
     runtime.onPlayAnimationObservable.add(() => {
         setIsPlaying(true);
@@ -655,6 +719,84 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
         setIsLoadingModel(false);
         dom.loadingEl.style.display = "none";
     }
+}
+
+// ======== Prop Loading (independent of modelRegistry / VMD / physics) ========
+
+export async function loadProp(filePath: string): Promise<void> {
+    try {
+        const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
+        const fileName = normPath(filePath).split("/").pop() || "";
+        setStatus("加载道具...", false);
+        dom.loadingEl.style.display = "block";
+        dom.loadingText.textContent = "加载道具 0%";
+
+        const result = await ImportMeshAsync(url, scene, {
+            onProgress: (evt) => {
+                if (evt.lengthComputable) {
+                    const pct = Math.round((evt.loaded / evt.total) * 100);
+                    dom.loadingText.textContent = `加载道具 ${pct}%`;
+                }
+            },
+        });
+        dom.loadingEl.style.display = "none";
+
+        const meshes = result.meshes.filter(m => m instanceof Mesh) as Mesh[];
+        if (meshes.length === 0) {
+            setStatus("✗ 道具未加载到网格", false);
+            return;
+        }
+
+        const id = `prop_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const displayName = fileName.replace(/\.pmx$/i, "");
+        const inst: PropInstance = {
+            id, name: displayName, filePath, port, modelDir,
+            meshes, rootMesh: meshes[0],
+            position: [0, 0, 0], rotationY: 0, scaling: 1.0, visible: true,
+        };
+        propRegistry.set(id, inst);
+        setStatus(`✓ 道具: ${displayName}`, true);
+        triggerAutoSave();
+    } catch (err) {
+        dom.loadingEl.style.display = "none";
+        console.error("loadProp:", err);
+        setStatus("✗ 道具加载失败", false);
+    }
+}
+
+export function removeProp(id: string): void {
+    const inst = propRegistry.get(id);
+    if (!inst) return;
+    for (const m of inst.meshes) m.dispose();
+    propRegistry.delete(id);
+    setStatus(`✓ 已移除道具: ${inst.name}`, true);
+    triggerAutoSave();
+}
+
+export function setPropTransform(id: string, partial: Partial<Pick<PropInstance, "position" | "rotationY" | "scaling" | "visible">>): void {
+    const inst = propRegistry.get(id);
+    if (!inst) return;
+    if (partial.position !== undefined) {
+        inst.position = partial.position;
+        inst.rootMesh.position.set(partial.position[0], partial.position[1], partial.position[2]);
+    }
+    if (partial.rotationY !== undefined) {
+        inst.rotationY = partial.rotationY;
+        inst.rootMesh.rotation.y = partial.rotationY;
+    }
+    if (partial.scaling !== undefined) {
+        inst.scaling = partial.scaling;
+        inst.rootMesh.scaling.setAll(partial.scaling);
+    }
+    if (partial.visible !== undefined) {
+        inst.visible = partial.visible;
+        for (const m of inst.meshes) m.setEnabled(partial.visible);
+    }
+    triggerAutoSave();
+}
+
+export function getPropList(): PropInstance[] {
+    return Array.from(propRegistry.values());
 }
 
 // ======== VMD Loading ========
@@ -938,6 +1080,18 @@ export interface SceneFile {
     };
     /** Procedural motion state (Idle/Auto Dance). */
     procMotion?: ProcMotionState;
+    /** Scene props (independent of modelRegistry). */
+    props?: Array<{
+        filePath: string;
+        libraryRef?: string;
+        name: string;
+        positionX: number;
+        positionY: number;
+        positionZ: number;
+        rotationY: number;
+        scaling: number;
+        visible: boolean;
+    }>;
 }
 
 export function serializeScene(): SceneFile {
@@ -981,6 +1135,17 @@ export function serializeScene(): SceneFile {
             playing: isAudioPlaying(),
         } : undefined,
         procMotion: { ...procState },
+        props: Array.from(propRegistry.values()).map(p => ({
+            filePath: p.filePath,
+            libraryRef: computeLibraryRef(p.filePath) || undefined,
+            name: p.name,
+            positionX: p.position[0],
+            positionY: p.position[1],
+            positionZ: p.position[2],
+            rotationY: p.rotationY,
+            scaling: p.scaling,
+            visible: p.visible,
+        })),
     };
 }
 
@@ -988,6 +1153,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     // Clear current scene
     for (const id of Array.from(modelRegistry.keys())) {
         removeModel(id);
+    }
+    // Clear props
+    for (const id of Array.from(propRegistry.keys())) {
+        removeProp(id);
     }
     // Load each model — try libraryRef first, fall back to filePath
     for (const m of data.models) {
@@ -1192,6 +1361,7 @@ const _initialRigidBodyStates = new Map<string, Uint8Array>();
 const _physicsCatState = new Map<string, Map<string, boolean>>();
 
 export type PhysicsCategory = "skirt" | "chest" | "hair" | "accessory";
+export type LipSyncState = LipSyncStateType;
 
 const PHYSICS_CAT_PATTERNS: [PhysicsCategory, RegExp][] = [
     ["skirt", /スカート|skirt|フリル|frill|裾|hem/],
