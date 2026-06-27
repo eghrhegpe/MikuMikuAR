@@ -174,6 +174,7 @@
 | `LightState` | `scene.ts:117` | `hemiIntensity, dirIntensity, dirX/Y/Z` | 灯光参数，用于灯光面板和场景序列化 |
 | `CameraState` | `camera.ts:319` | `mode, alpha/beta/radius, targetX/Y/Z, positionX/Y/Z` | 相机状态，支持 ArcRotate + UniversalCamera |
 | `SceneFile` | `scene.ts:481` | `version, models[], camera, lights` | 场景 JSON 结构，含 libraryRef 可移植标识符 |
+| `LipSyncState` | `lipsync.ts` | `enabled, sensitivity, intensity` | LipSync 状态，序列化到 `SceneFile.lipSync` |
 
 ### 工具函数
 | `escapeHtml` | `config.ts:154` | `(s: string) => string` | HTML 特殊字符转义，零依赖 |
@@ -341,6 +342,31 @@
 |------|------|------|
 | `attachBeatDetector` | `(detector: BeatDetector) => void` | 接入节拍检测器 |
 | `notifyBeatDetectorReset` | `() => void` | 通知重置（新曲目） |
+
+### LipSync 子系统（`lipsync.ts`）
+
+| 函数/类型 | 签名 | 用途 |
+|----------|------|------|
+| `LipSyncState` | `{ enabled, sensitivity, intensity }` | LipSync 状态类型 |
+| `DEFAULT_LIPSYNC_STATE` | `LipSyncState` | 默认状态（disabled, sensitivity=0.2, intensity=0.8） |
+| `findLipMorph` | `(morphNames: string[]) => string \| null` | 在模型 morph 列表中查找口型 morph（优先级：あ→ア→A→a→口→mouth→open） |
+| `amplitudeToWeight` | `(amp, sensitivity, intensity) => number` | 振幅→morph 权重映射，低于阈值返回 0，否则线性映射到 0..intensity |
+
+### beat-detector.ts 新增
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `BeatDetector.getLevel` (static) | `(freqData: Uint8Array, startBin?, endBin?) => number` | 纯逻辑：频段平均能量 0..1 |
+| `BeatDetector.getLevel` (instance) | `(startBin?, endBin?) => number` | 当前帧频段能量，须在 update() 后调用 |
+
+### scene.ts LipSync 控制 API
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `setLipSyncEnabled` | `(on: boolean) => void` | 开关 LipSync，关闭时重置 morph |
+| `setLipSyncSensitivity` | `(v: number) => void` | 设置灵敏度阈值 0..1 |
+| `setLipSyncIntensity` | `(v: number) => void` | 设置最大张嘴幅度 0..1 |
+| `getLipSyncState` | `() => LipSyncState` | 获取当前状态副本 |
 
 ### scene.ts 物理分类控制（模型级）
 
