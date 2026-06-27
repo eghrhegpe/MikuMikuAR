@@ -1181,7 +1181,7 @@ export async function applyPresetFromLib(
       } else {
         // No match → load model from preset's filePath
         const { loadPMXFile } = await import("./scene");
-        await loadPMXFile(preset.model.filePath);
+        await loadPMXFile(preset.model.filePath, false, true);
         for (const [mid, inst] of modelRegistry) {
           if (inst.filePath === preset.model.filePath) {
             await applyModelPreset(mid, json);

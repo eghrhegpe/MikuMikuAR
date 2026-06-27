@@ -539,7 +539,7 @@ async function captureThumbnail(filePath: string): Promise<void> {
 
 // ======== PMX Loading ========
 
-export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<void> {
+export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoApply?: boolean): Promise<void> {
     if (isLoadingModel) return;
     setIsLoadingModel(true);
     try {
@@ -636,11 +636,13 @@ export async function loadPMXFile(filePath: string, asStage?: boolean): Promise<
         arrangeModels();
         // Auto-capture thumbnail for future popup display
         captureThumbnail(filePath).catch(() => {});
-        // Try auto-apply preset from library
-        try {
-            const { tryAutoApplyPreset } = await import("./model-detail");
-            tryAutoApplyPreset(id).catch((err: any) => console.warn("auto-apply preset:", err));
-        } catch (err) { console.warn("auto-apply import:", err); }
+        if (!skipAutoApply) {
+            // Try auto-apply preset from library
+            try {
+                const { tryAutoApplyPreset } = await import("./model-detail");
+                tryAutoApplyPreset(id).catch((err: any) => console.warn("auto-apply preset:", err));
+            } catch (err) { console.warn("auto-apply import:", err); }
+        }
         // Pre-load outfit file for UI entry availability
         loadOutfits(id).catch(() => {});
     } catch (err) {
@@ -989,7 +991,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     for (const m of data.models) {
         try {
             const resolvedPath = (m.libraryRef ? resolveLibraryRef(m.libraryRef) : null) || m.filePath;
-            await loadPMXFile(resolvedPath, m.kind === "stage");
+            await loadPMXFile(resolvedPath, m.kind === "stage", true);
             const inst = focusedModel();
             if (inst && inst.meshes[0]) {
                 inst.meshes[0].position.x = m.positionX ?? 0;
@@ -2478,7 +2480,7 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
             const byMaterial: Record<string, OutfitSlot> = {};
             let hasAny = false;
             await Promise.all(mappings.map(async (m) => {
-                const testUrl = `http://127.0.0.1:${inst.port}/${encodeURIComponent(subdir + "/" + m.basename)}`;
+                const testUrl = `http://127.0.0.1:${inst.port}/${_encodePath(subdir + "/" + m.basename)}`;
                 try {
                     const resp = await fetch(testUrl, { method: "HEAD" });
                     if (resp.ok) {
@@ -2508,11 +2510,15 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
 
 
 
+function _encodePath(path: string): string {
+    return path.replace(/\\/g, "/").split("/").map(p => encodeURIComponent(p)).join("/");
+}
+
 function _applySlot(sm: StandardMaterial, slot: string, newPath: string | null, origTex: Texture | null, port: number): void {
     const cur = (sm as any)[slot] as Texture | null;
     if (cur && cur !== origTex) cur.dispose();
     if (newPath) {
-        const url = `http://127.0.0.1:${port}/${encodeURIComponent(newPath.replace(/\\/g, "/"))}`;
+        const url = `http://127.0.0.1:${port}/${_encodePath(newPath)}`;
         (sm as any)[slot] = new Texture(url, scene);
     } else if (origTex) {
         (sm as any)[slot] = origTex;
