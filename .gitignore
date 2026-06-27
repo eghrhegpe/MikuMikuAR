@@ -7,3 +7,6 @@ text-model/
 # Other projects in workspace
 MMDDownloader/
 reasonix.toml
+
+# Environment variables
+.env
