@@ -327,6 +327,7 @@ let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
 let procBeatDetector: BeatDetector | null = null;
 let procVmdActive = false;       // procedural VMD 是否正在播放
 let lastBeatBpm = 120;           // 上次用于生成 Auto Dance 的 BPM
+let procStarting = false;        // 防止并发 startProcMotion
 
 // ======== Convenience getters ========
 export function focusedMmdModel() { return focusedModelId ? modelRegistry.get(focusedModelId)?.mmdModel ?? null : null; }
@@ -334,8 +335,10 @@ export function focusedModel() { return focusedModelId ? modelRegistry.get(focus
 
 /** 启动程序化动作：生成 procedural VMD 并加载。 */
 async function startProcMotion(bpm?: number): Promise<void> {
+    if (procStarting) return;
+    procStarting = true;
     const model = focusedMmdModel();
-    if (!model) return;
+    if (!model) { procStarting = false; return; }
     const morphNames = model.morph?.morphs?.map(m => m.name) ?? [];
     let buf: ArrayBuffer;
     if (procState.mode === "autodance" && bpm) {
@@ -345,7 +348,13 @@ async function startProcMotion(bpm?: number): Promise<void> {
         buf = generateIdleVmd(procState, morphNames);
     }
     procVmdActive = true;
-    await loadVMDMotion(buf, procState.mode === "autodance" ? "AutoDance" : "IdleMotion");
+    try {
+        await loadVMDMotion(buf, procState.mode === "autodance" ? "AutoDance" : "IdleMotion");
+    } catch {
+        procVmdActive = false;
+    } finally {
+        procStarting = false;
+    }
 }
 
 /** 停止程序化动作（用户加载真实 VMD 时调用）。 */
@@ -362,8 +371,8 @@ async function updateProcMotion(): Promise<void> {
 
     const audioOn = isAudioPlaying();
     const hasUserVmd = focusedModel()?.vmdData != null;
-    const wantAutoDance = shouldAutoDance(audioOn, procState.mode) && procState.autoSwitch;
-    const wantIdle = shouldIdle(audioOn, hasUserVmd, procState.mode) && procState.autoSwitch;
+    const wantAutoDance = shouldAutoDance(audioOn, procState.mode) && (procState.mode !== "off" || procState.autoSwitch);
+    const wantIdle = shouldIdle(audioOn, hasUserVmd, procState.mode) && (procState.mode !== "off" || procState.autoSwitch);
 
     // 用户加载了真实 VMD → 停止 procedural
     if (hasUserVmd && procVmdActive) {
