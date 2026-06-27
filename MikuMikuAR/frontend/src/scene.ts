@@ -1074,6 +1074,28 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             console.warn("Scene restore: audio failed:", err);
         }
     }
+
+    // Restore props
+    if (data.props && data.props.length > 0) {
+        for (const p of data.props) {
+            try {
+                const resolvedPath = (p.libraryRef ? resolveLibraryRef(p.libraryRef) : null) || p.filePath;
+                await loadProp(resolvedPath);
+                // Apply transform to the most recently added prop
+                const last = getPropList()[getPropList().length - 1];
+                if (last) {
+                    setPropTransform(last.id, {
+                        position: [p.positionX, p.positionY, p.positionZ],
+                        rotationY: p.rotationY,
+                        scaling: p.scaling,
+                        visible: p.visible,
+                    });
+                }
+            } catch (err) {
+                console.warn(`Scene restore: skip prop ${p.name}:`, err);
+            }
+        }
+    }
 }
 
 // ======== Model Instance Manipulation Helpers ========

@@ -43,6 +43,8 @@ export type ModelInstance = {
     activeVariant?: string;
     /** Original texture snapshot before first variant application */
     _origTextures?: Map<number, { diffuse?: Texture | null; toon?: Texture | null; spa?: Texture | null; normal?: Texture | null; emissive?: Texture | null }>;
+    /** Original material params before first variant application */
+    _origParams?: Map<number, { diffuseR: number; diffuseG: number; diffuseB: number; specularR: number; specularG: number; specularB: number; specularPower: number; ambientR: number; ambientG: number; ambientB: number }>;
 };
 
 // ======== Outfit System Types ========
@@ -53,6 +55,8 @@ export type OutfitSlot = {
     spa?: string;
     normal?: string;
     emissive?: string;
+    params?: { diffuseMul?: number; specularMul?: number; shininess?: number; ambientMul?: number };
+    tint?: [number, number, number];
 };
 
 export type OutfitVariant = {

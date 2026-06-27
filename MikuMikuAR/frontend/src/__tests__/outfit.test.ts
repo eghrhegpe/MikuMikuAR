@@ -175,9 +175,17 @@ vi.mock("@babylonjs/core/Materials/Textures/texture", () => ({
 // Setup minimal model registry
 import { modelRegistry, setLibraryRoot } from "../config";
 
+function makeColor(r: number, g: number, b: number) {
+  return { r, g, b, set: function(sr: number, sg: number, sb: number) { this.r = sr; this.g = sg; this.b = sb; }, multiplyInPlace: function(c: any) { this.r *= c.r; this.g *= c.g; this.b *= c.b; } };
+}
+
 function createMockMaterial(name: string, textures: Record<string, any>) {
   const mat: any = { name, isReady: true, clone: () => mat, dispose: () => {} };
   for (const [k, v] of Object.entries(textures)) mat[k] = v;
+  mat.diffuseColor = makeColor(1, 1, 1);
+  mat.specularColor = makeColor(1, 1, 1);
+  mat.specularPower = 50;
+  mat.ambientColor = makeColor(1, 1, 1);
   return mat;
 }
 
