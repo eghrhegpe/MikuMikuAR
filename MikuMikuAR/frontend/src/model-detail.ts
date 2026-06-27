@@ -127,10 +127,6 @@ export function buildModelDetailLevel(id: string): PopupLevel {
 
       const card1 = document.createElement("div");
       card1.className = "lcard";
-      slideRow(card1, "lucide:info", "模型信息", true, () => {
-        const level = buildModelInfoLevel(id);
-        stackRegistry.modelStack?.push(level);
-      });
       slideRow(card1, "lucide:move", "变换", true, () => {
         const level = buildTransformLevel(id);
         stackRegistry.modelStack?.push(level);
@@ -139,27 +135,24 @@ export function buildModelDetailLevel(id: string): PopupLevel {
         const level = buildVisibilityLevel(id);
         stackRegistry.modelStack?.push(level);
       });
-      slideRow(card1, "lucide:box", "材质调节", true, () => {
-        const level = buildMatRootLevel(id, inst.name);
-        stackRegistry.modelStack?.push(level);
-      });
-      slideRow(card1, "lucide:tag", "模型标签", true, () => {
-        const level = buildModelTagsLevel(id);
-        stackRegistry.modelStack?.push(level);
-      });
-      slideRow(card1, "lucide:smile", "表情预览", true, () => {
-        const level = buildMorphPreviewLevel(id);
-        stackRegistry.modelStack?.push(level);
+      slideRow(card1, "lucide:target", "聚焦", false, () => {
+        focusModel(id); stackRegistry.modelStack?.popTo(0);
       });
       container.appendChild(card1);
 
       const card2 = document.createElement("div");
       card2.className = "lcard";
-      slideRow(card2, "lucide:target", "聚焦", false, () => {
-        focusModel(id); stackRegistry.modelStack?.popTo(0);
+      slideRow(card2, "lucide:box", "材质调节", true, () => {
+        const level = buildMatRootLevel(id, inst.name);
+        stackRegistry.modelStack?.push(level);
       });
-      slideRow(card2, "lucide:trash-2", "移除", false, () => {
-        sceneStack?.popTo(0); removeModel(id);
+      slideRow(card2, "lucide:smile", "表情预览", true, () => {
+        const level = buildMorphPreviewLevel(id);
+        stackRegistry.modelStack?.push(level);
+      });
+      slideRow(card2, "lucide:shirt", "服装变体", true, () => {
+        const level = buildOutfitLevel(id);
+        stackRegistry.modelStack?.push(level);
       });
       container.appendChild(card2);
 
@@ -178,17 +171,24 @@ export function buildModelDetailLevel(id: string): PopupLevel {
       slideRow(card3, "lucide:download", "导入文件", false, () => {
         selectAndLoadPreset(id);
       });
-      slideRow(card3, "lucide:shirt", "服装变体", true, () => {
-        const level = buildOutfitLevel(id);
+      slideRow(card3, "lucide:tag", "模型标签", true, () => {
+        const level = buildModelTagsLevel(id);
         stackRegistry.modelStack?.push(level);
       });
       container.appendChild(card3);
 
       const card4 = document.createElement("div");
       card4.className = "lcard";
+      slideRow(card4, "lucide:info", "模型信息", true, () => {
+        const level = buildModelInfoLevel(id);
+        stackRegistry.modelStack?.push(level);
+      });
       slideRow(card4, "lucide:external-link", "用…打开", true, () => {
         const level = buildOpenWithLevel(id);
         stackRegistry.modelStack?.push(level);
+      });
+      slideRow(card4, "lucide:trash-2", "移除", false, () => {
+        sceneStack?.popTo(0); removeModel(id);
       });
       container.appendChild(card4);
     },
