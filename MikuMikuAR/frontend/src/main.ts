@@ -4,15 +4,16 @@
 import "./app.css";
 
 import { dom, setStatus, isPlaying, setIsPlaying, autoLoop, setAutoLoop, seekDragging, setSeekDragging, mmdRuntime, closeAllOverlays, showHint, hideHint, initHints } from "./config";
-import { initScene, engine, scene, focusedMmdModel, focusedModel, updatePlaybackUI, seekFromEvent, tryRestoreLastScene } from "./scene";
+import { GetConfig } from "../wailsjs/go/main/App";
+import { initScene, engine, scene, focusedMmdModel, focusedModel, updatePlaybackUI, seekFromEvent, tryRestoreLastScene, setEnvState } from "./scene";
 import { freeflyInput, getCameraMode } from "./camera";
 import { initLibrary, togglePopup, showMotionPopup } from "./library";
-import { showSettings } from "./settings";
 import { ImportZip } from "../wailsjs/go/main/App";
 import { OnFileDrop, EventsOn } from "../wailsjs/runtime/runtime";
 import { loadPMXFile, loadVMDFromPath } from "./scene";
 import { refreshLibrary } from "./library";
-import "./scene-menu";
+import { showSettings } from "./settings";
+import { showSceneMenu, showEnvMenu } from "./scene-menu";
 import "iconify-icon";
 
 // ======== Initialize hover hints for static [data-hint] elements ========
@@ -44,46 +45,62 @@ window.addEventListener("keyup", (e) => {
 });
 window.addEventListener("blur", () => document.body.classList.remove("shortcuts-visible"));
 
-// ======== Shared helpers for Ctrl+1/2/3/4 routing ========
-function isAnyPopupOpen(): boolean {
-    return dom.modelPopup.classList.contains("visible")
-        || dom.motionPopup.classList.contains("visible")
-        || dom.settingsOverlay.classList.contains("visible");
+// ======== Declarative nav shortcut routing: Ctrl+N → toggle nav button ========
+function syncNavAriaExpanded(): void {
+    document.querySelectorAll<HTMLElement>("[aria-controls]").forEach(btn => {
+        const targetId = btn.getAttribute("aria-controls");
+        const target = targetId ? document.getElementById(targetId) : null;
+        btn.setAttribute("aria-expanded", target?.classList.contains("visible") ? "true" : "false");
+    });
 }
-function clickPopupItem(index: number): void {
-    const layers = document.querySelectorAll<HTMLElement>(".popup-layer");
-    if (layers.length === 0) return;
-    const topLayer = layers[layers.length - 1];
-    const items = topLayer.querySelectorAll<HTMLElement>(".menu-item");
-    if (index >= 1 && index <= items.length) {
-        items[index - 1].click();
+function toggleOverlay(id: string, showFn: () => void): void {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.classList.contains("visible")) {
+        el.classList.remove("visible");
+    } else {
+        closeAllOverlays();
+        showFn();
     }
+    syncNavAriaExpanded();
 }
-function triggerNavButton(num: number): void {
-    switch (num) {
-        case 1: togglePopup(); break;
-        case 2: showMotionPopup(); break;
-        case 4: showSettings(); break;
-    }
-}
-const navButtonLabels: Record<number, string> = {
-    1: "模型库", 2: "动作库", 3: "环境", 4: "设置",
+const navActions: Record<number, () => void> = {
+    1: togglePopup,
+    2: () => toggleOverlay("motionPopup", showMotionPopup),
+    3: () => toggleOverlay("sceneOverlay", showSceneMenu),
+    4: () => toggleOverlay("sceneOverlay", showEnvMenu),
+    5: () => toggleOverlay("settingsOverlay", showSettings),
 };
+const navLabels: Record<number, string> = {};
+function buildNavMaps(): void {
+    document.querySelectorAll<HTMLElement>("[data-shortcut]").forEach(el => {
+        const key = el.dataset.shortcut || "";
+        const k = parseInt(key, 10);
+        if (k >= 1 && k <= 9) navLabels[k] = el.title || "";
+        // Sync badge text from data-shortcut
+        const badge = el.querySelector<HTMLElement>(".shortcut-badge");
+        if (badge) badge.textContent = key;
+        // Sync data-hint shortcut suffix from data-shortcut
+        const hint = el.getAttribute("data-hint");
+        if (hint) {
+            const clean = hint.replace(/\s*·\s*Ctrl\+\d+$/, "");
+            el.setAttribute("data-hint", `${clean} · Ctrl+${key}`);
+        }
+    });
+}
 
 // Keyboard shortcuts
 window.addEventListener("keydown", (e) => {
     const t = e.target as HTMLElement;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
 
-    // Ctrl+1/2/3/4: popup items → nav buttons
+    // Ctrl+1/2/3/4/5: toggle nav overlays
     if (e.ctrlKey && !e.repeat && /^Digit\d$/.test(e.code)) {
         e.preventDefault();
         const num = parseInt(e.code.slice(-1), 10);
-        if (isAnyPopupOpen()) {
-            clickPopupItem(num);
-        } else {
-            triggerNavButton(num);
-            setStatus(navButtonLabels[num] || "", false);
+        if (navActions[num]) {
+            navActions[num]();
+            setStatus(navLabels[num] || "", false);
         }
         return;
     }
@@ -155,34 +172,35 @@ window.addEventListener("pointerup", async () => {
     }
 });
 
-// ======== Click renderer to toggle overlays ========
-// Use a window-level handler so it works regardless of z-index stacking.
+// ======== Click canvas to toggle overlays ========
+// Only clicks on the 3D canvas trigger toggle — all other UI is ignored.
 let _overlaysHiddenByClick = false;
 let _lastHidden: string[] = [];
 let _pointerDownPos = { x: 0, y: 0 };
 
-const _allOverlays: HTMLElement[] = [
-    dom.modelPopup, dom.motionPopup,
-    dom.settingsOverlay, dom.sceneOverlay,
-];
-
-function _isInsideOverlay(el: HTMLElement | null): boolean {
-    if (!el) return false;
-    return !!el.closest(".slide-item, .slide-back, .slide-header, .slide-title, .slide-detail-btn, .slide-add-btn, " +
-        "button, input, select, textarea, .close-btn, .overlay-close, " +
-        ".overlay-header, .overlay-list, .overlay-add, .overlay-row");
+function _getAllOverlays(): HTMLElement[] {
+    const overlays: HTMLElement[] = [];
+    document.querySelectorAll<HTMLElement>("[aria-controls]").forEach(btn => {
+        const id = btn.getAttribute("aria-controls");
+        if (id) {
+            const el = document.getElementById(id);
+            if (el) overlays.push(el);
+        }
+    });
+    return overlays;
 }
 
 function _toggleOverlays(): void {
+    const all = _getAllOverlays();
     if (!_overlaysHiddenByClick) {
-        _lastHidden = _allOverlays.filter(el => el.classList.contains("visible")).map(el => el.id);
-        _allOverlays.forEach(el => el.classList.remove("visible"));
+        _lastHidden = all.filter(el => el.classList.contains("visible")).map(el => el.id);
+        all.forEach(el => el.classList.remove("visible"));
         _overlaysHiddenByClick = true;
     } else {
         const toShow = _lastHidden.filter(id =>
-            _allOverlays.some(el => el.id === id && !el.classList.contains("visible"))
+            all.some(el => el.id === id && !el.classList.contains("visible"))
         );
-        _allOverlays.forEach(el => {
+        all.forEach(el => {
             if (toShow.includes(el.id)) el.classList.add("visible");
         });
         _lastHidden = [];
@@ -199,32 +217,40 @@ window.addEventListener("pointerup", (e) => {
     const dy = e.clientY - _pointerDownPos.y;
     if (Math.sqrt(dx * dx + dy * dy) > 5) return;
 
-    // Never toggle when clicking inside an overlay or on interactive content
-    if (_isInsideOverlay(e.target as HTMLElement)) return;
-    // Never toggle when clicking nav buttons
-    if ((e.target as HTMLElement).closest("#bottomNav, .nav-tab")) return;
+    // Only toggle when clicking on the 3D canvas
+    if (!dom.canvas.contains(e.target as Node)) return;
 
     _toggleOverlays();
 });
 
-// Nav buttons reset toggle state
-[dom.btnMainAction, dom.btnMotionPopup, dom.btnScene, dom.btnEnv, dom.btnSettings].forEach(btn => {
+// Nav buttons reset toggle state (dynamic via data-shortcut)
+document.querySelectorAll<HTMLElement>("[data-shortcut]").forEach(btn => {
     btn.addEventListener("click", () => { _overlaysHiddenByClick = false; _lastHidden = []; });
 });
 
 // ======== Init ========
 async function init(): Promise<void> {
     try {
+        buildNavMaps();
         setStatus("正在初始化...", false);
         await initScene();
         initDropHandler();
         console.log("MikuMikuAR initialized");
         initLibrary().catch(err => console.warn("Library init:", err));
+        // Restore env state from config (last scene restore may override)
+        restoreEnvState().catch(err => console.warn("Env restore:", err));
         // Auto-restore last scene after library + scene init
         tryRestoreLastScene().catch(err => console.warn("Auto-restore:", err));
     } catch (err) {
         console.error("Init failed:", err);
         setStatus("✗ 初始化失败", false);
+    }
+}
+
+async function restoreEnvState(): Promise<void> {
+    const cfg = await GetConfig();
+    if (cfg.env) {
+        setEnvState(cfg.env as any);
     }
 }
 

@@ -653,13 +653,7 @@ export function showPopup(): void {
       target: `scene:${id}`,
       sublabel: inst.vmdName || undefined,
       editable: id === focusedModelId,
-      showDetailBtn: true,
-      // 📄 button focuses the model (highlights + camera frames) instead of entering detail submenu
-      onDetailClick: () => {
-        setFocusedModelId(id);
-        focusModel(id);
-        setStatus(`✓ 已聚焦: ${inst.name}`, true);
-      },
+
     });
   }
   if (rootItems.length > 0) {
@@ -1876,7 +1870,7 @@ function buildModelInfoLevel(id: string): PopupLevel {
       ];
       for (const f of fields) {
         const row = document.createElement("div");
-        row.style.cssText = "display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;";
+        row.style.cssText = "display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:15px;";
         const lbl = document.createElement("span");
         lbl.style.cssText = "color:var(--text-dim);";
         lbl.textContent = f.label;
@@ -2194,9 +2188,6 @@ dom.btnClosePopup.addEventListener("click", hidePopup);
 dom.btnRescan.addEventListener("click", refreshLibrary);
 dom.popupSearchInput.addEventListener("input", handlePopupSearchInput);
 dom.btnMainAction.addEventListener("click", togglePopup);
-dom.canvas.addEventListener("click", () => {
-  if (popupOpen) hidePopup();
-});
 
 // ======== Motion Popup Events ========
 dom.btnMotionPopup.addEventListener("click", showMotionPopup);

@@ -421,7 +421,7 @@ export async function showSettings(): Promise<void> {
     if (!settingsStack) {
         settingsStack = new SlideMenu({
             container: dom.settingsOverlay,
-            onClose: () => dom.settingsOverlay.classList.remove("visible"),
+            onClose: () => closeAllOverlays(),
             onItemClick: (row) => handleSettingsAction(row),
             onFolderEnter: (row) => {
                 switch (row.target) {
@@ -451,7 +451,7 @@ export async function showSettings(): Promise<void> {
 // Wire up events
 dom.btnSettings.addEventListener("click", showSettings);
 dom.btnCloseSettings.addEventListener("click", () => {
-    dom.settingsOverlay.classList.remove("visible");
+    closeAllOverlays();
 });
 dom.btnManageExternal.addEventListener("click", () => {
     closeAllOverlays();

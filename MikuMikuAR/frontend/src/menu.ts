@@ -8,6 +8,9 @@ export class SlideMenu {
     private transitioning = false;
     private container: HTMLElement;
     private viewport: HTMLElement;
+    private inner: HTMLElement;
+    private headerEl: HTMLElement;
+    private focusIndex = -1;
 
     onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
     onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
@@ -39,15 +42,36 @@ export class SlideMenu {
         this.viewport = document.createElement("div");
         this.viewport.className = "slide-viewport";
 
+        this.inner = document.createElement("div");
+        this.inner.className = "slide-inner";
+
         const p0 = document.createElement("div");
         p0.className = "slide-panel";
         const p1 = document.createElement("div");
         p1.className = "slide-panel";
 
-        this.viewport.appendChild(p0);
-        this.viewport.appendChild(p1);
+        this.inner.appendChild(p0);
+        this.inner.appendChild(p1);
+        this.viewport.appendChild(this.inner);
         this.container.appendChild(this.viewport);
+
+        this.headerEl = document.createElement("div");
+        this.headerEl.className = "slide-header";
+        this.container.appendChild(this.headerEl);
+
         this.panels = [p0, p1];
+
+        this.container.tabIndex = -1;
+        this.container.addEventListener("keydown", (e) => {
+            if (this.transitioning) return;
+            switch (e.key) {
+                case "ArrowDown": e.preventDefault(); this.focusNext(); break;
+                case "ArrowUp": e.preventDefault(); this.focusPrev(); break;
+                case "ArrowRight":
+                case "Enter": e.preventDefault(); this.activateFocused(); break;
+                case "ArrowLeft": e.preventDefault(); this.pop(); break;
+            }
+        });
     }
 
     get currentLevel(): PopupLevel | undefined {
@@ -59,10 +83,14 @@ export class SlideMenu {
     reset(level: PopupLevel): void {
         this.levels = [level];
         this.activeIdx = 0;
-        this.buildPanel(this.panels[0], level);
-        this.panels[0].style.transform = "translateX(0)";
+        this.transitioning = false;
         this.panels[0].style.display = "";
+        this.buildPanel(this.panels[0], level);
         this.panels[1].style.display = "none";
+        this.inner.style.transform = "translateX(0)";
+        this.inner.style.transition = "none";
+        this.updateHeader(level);
+        this.setupFocus();
         this.onAfterRender?.(level, this);
     }
 
@@ -82,18 +110,17 @@ export class SlideMenu {
 
     popTo(index: number): void {
         if (index < 0 || index >= this.levels.length || this.transitioning) return;
-        const removeCount = this.levels.length - (index + 1);
         this.levels = this.levels.slice(0, index + 1);
-        if (removeCount > 0) {
-            this.transitioning = true;
-            this.animateSlide(false, this.levels[this.levels.length - 1]);
-        }
+        this.transitioning = true;
+        this.animateSlide(false, this.levels[this.levels.length - 1]);
     }
 
     reRender(): void {
         const level = this.currentLevel;
         if (!level) return;
         this.buildPanel(this.panels[this.activeIdx], level);
+        this.updateHeader(level);
+        this.setupFocus();
         this.onAfterRender?.(level, this);
     }
 
@@ -111,59 +138,95 @@ export class SlideMenu {
         const fromIdx = this.activeIdx;
         const toIdx = fromIdx === 0 ? 1 : 0;
         this.activeIdx = toIdx as 0 | 1;
+        this.updateHeader(nextLevel);
 
         const fromPanel = this.panels[fromIdx];
         const toPanel = this.panels[toIdx];
 
-        fromPanel.style.transition = "none";
-        toPanel.style.transition = "none";
+        this.inner.style.transition = "none";
         this.buildPanel(toPanel, nextLevel);
+
+        // Both panels take up space in the flex row
         toPanel.style.display = "";
-        toPanel.style.transform = forward ? "translateX(100%)" : "translateX(-100%)";
+        fromPanel.style.display = "";
 
-        void toPanel.offsetWidth;
+        // Set start position for inner
+        if (forward) {
+            // Push: inner is at 0 (showing fromPanel), move to -50% (showing toPanel)
+            this.inner.style.transform = "translateX(0)";
+        } else {
+            // Pop: inner is at -50% (showing fromPanel/toIdx), move to 0 (showing toPanel/fromIdx)
+            this.inner.style.transform = "translateX(-50%)";
+        }
 
-        fromPanel.style.transition = "transform 0.22s ease";
-        toPanel.style.transition = "transform 0.22s ease";
-        fromPanel.style.transform = forward ? "translateX(-100%)" : "translateX(100%)";
-        toPanel.style.transform = "translateX(0)";
+        void this.inner.offsetWidth;
+
+        this.inner.style.transition = "transform 0.22s ease";
+        if (forward) {
+            this.inner.style.transform = "translateX(-50%)";
+        } else {
+            this.inner.style.transform = "translateX(0)";
+        }
 
         setTimeout(() => {
-            fromPanel.style.transition = "";
-            toPanel.style.transition = "";
-            fromPanel.style.display = "none";
+            this.inner.style.transition = "none";
+            // Hide inactive panel so only the active one takes up space
+            this.panels[fromIdx].style.display = "none";
+            this.inner.style.transform = "translateX(0)";
             this.transitioning = false;
+            this.setupFocus();
             this.onAfterRender?.(nextLevel, this);
         }, 250);
     }
 
+    private get panelItems(): NodeListOf<HTMLElement> {
+        return this.panels[this.activeIdx].querySelectorAll<HTMLElement>(".slide-item");
+    }
+
+    private clearFocus(): void {
+        this.panels[this.activeIdx].querySelectorAll(".slide-focused").forEach(el => el.classList.remove("slide-focused"));
+    }
+
+    private applyFocus(): void {
+        this.clearFocus();
+        const items = this.panelItems;
+        if (this.focusIndex < 0 || this.focusIndex >= items.length) return;
+        items[this.focusIndex].classList.add("slide-focused");
+        items[this.focusIndex].scrollIntoView({ block: "nearest" });
+    }
+
+    private setupFocus(): void {
+        this.focusIndex = -1;
+        this.clearFocus();
+        if (this.panelItems.length > 0) {
+            this.focusIndex = 0;
+            this.applyFocus();
+        }
+        this.container.focus({ preventScroll: true });
+    }
+
+    private focusPrev(): void {
+        const len = this.panelItems.length;
+        if (len === 0) return;
+        this.focusIndex = this.focusIndex <= 0 ? len - 1 : this.focusIndex - 1;
+        this.applyFocus();
+    }
+
+    private focusNext(): void {
+        const len = this.panelItems.length;
+        if (len === 0) return;
+        this.focusIndex = this.focusIndex >= len - 1 ? 0 : this.focusIndex + 1;
+        this.applyFocus();
+    }
+
+    private activateFocused(): void {
+        const items = this.panelItems;
+        if (this.focusIndex < 0 || this.focusIndex >= items.length) return;
+        items[this.focusIndex].click();
+    }
+
     private buildPanel(panel: HTMLElement, level: PopupLevel): void {
         panel.innerHTML = "";
-
-        const header = document.createElement("div");
-        header.className = "slide-header";
-
-        const backBtn = document.createElement("span");
-        backBtn.className = "slide-back";
-        if (this.levels.length > 1) {
-            backBtn.textContent = "←";
-            backBtn.addEventListener("click", () => this.pop());
-        } else {
-            backBtn.textContent = "✕";
-            backBtn.addEventListener("click", () => this.onClose?.());
-        }
-        header.appendChild(backBtn);
-
-        const title = document.createElement("span");
-        title.className = "slide-title";
-        title.textContent = level.label || "";
-        header.appendChild(title);
-
-        for (const btn of this.extraButtonFactory?.() ?? []) {
-            header.appendChild(btn);
-        }
-
-        panel.appendChild(header);
 
         const list = document.createElement("div");
         list.className = "slide-list";
@@ -180,6 +243,27 @@ export class SlideMenu {
         }
 
         panel.appendChild(list);
+    }
+
+    private updateHeader(level: PopupLevel): void {
+        this.headerEl.innerHTML = "";
+        const backBtn = document.createElement("span");
+        backBtn.className = "slide-back";
+        if (this.levels.length > 1) {
+            backBtn.textContent = "←";
+            backBtn.addEventListener("click", () => this.pop());
+        } else {
+            backBtn.textContent = "✕";
+            backBtn.addEventListener("click", () => this.onClose?.());
+        }
+        this.headerEl.appendChild(backBtn);
+        const title = document.createElement("span");
+        title.className = "slide-title";
+        title.textContent = level.label || "";
+        this.headerEl.appendChild(title);
+        for (const btn of this.extraButtonFactory?.() ?? []) {
+            this.headerEl.appendChild(btn);
+        }
     }
 
     private createRow(row: PopupRow): HTMLElement | null {
@@ -220,21 +304,6 @@ export class SlideMenu {
             el.appendChild(arrow);
         }
 
-        if (row.showDetailBtn) {
-            const detailBtn = document.createElement("span");
-            detailBtn.className = "slide-detail-btn";
-            detailBtn.textContent = "📄";
-            detailBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                if (row.onDetailClick) row.onDetailClick();
-                else {
-                    const next = this.onFolderEnter?.(row, this);
-                    if (next) this.push(next);
-                }
-            });
-            el.appendChild(detailBtn);
-        }
-
         if (row.onAddClick) {
             const addBtn = document.createElement("span");
             addBtn.className = "slide-add-btn";
@@ -248,7 +317,7 @@ export class SlideMenu {
 
         if (row.kind === "folder") {
             el.addEventListener("click", (e) => {
-                if ((e.target as HTMLElement).closest(".slide-detail-btn, .slide-add-btn")) return;
+                if ((e.target as HTMLElement).closest(".slide-add-btn")) return;
                 const next = this.onFolderEnter?.(row, this);
                 if (next) this.push(next);
             });

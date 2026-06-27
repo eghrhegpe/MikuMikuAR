@@ -58,7 +58,6 @@ export type PopupRow = {
     /** If set, render a ★/☆ toggle button. Value is the libraryRef to toggle. */
     favRef?: string;
     /** If true, render a "📄" detail button on the right (for loaded model rows). */
-    showDetailBtn?: boolean;
     /** Called when the "+" add-model button is clicked. */
     onAddClick?: () => void;
     /** Called when the "📄" detail button is clicked. If unset, defaults to
@@ -100,6 +99,7 @@ export interface EnvState {
     cloudsEnabled: boolean;
     cloudCover: number;
     cloudScale: number;
+    cloudHeight: number;
     // Fog
     fogEnabled: boolean;
     fogColor: [number, number, number];
@@ -227,6 +227,7 @@ export let envState: EnvState = {
     cloudsEnabled: false,
     cloudCover: 0.5,
     cloudScale: 1,
+    cloudHeight: 100,
 
     fogEnabled: false,
     fogColor: [0.5, 0.5, 0.6],
@@ -395,4 +396,10 @@ export function closeAllOverlays(): void {
     dom.settingsOverlay.classList.remove("visible");
     dom.sceneOverlay.classList.remove("visible");
     setPopupOpen(false);
+    // Sync aria-expanded on nav buttons after closing
+    document.querySelectorAll<HTMLElement>("[aria-controls]").forEach(btn => {
+        const targetId = btn.getAttribute("aria-controls");
+        const target = targetId ? document.getElementById(targetId) : null;
+        btn.setAttribute("aria-expanded", target?.classList.contains("visible") ? "true" : "false");
+    });
 }
