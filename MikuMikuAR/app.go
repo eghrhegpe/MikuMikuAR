@@ -218,6 +218,34 @@ type Config struct {
 	Tags                 map[string][]string   `json:"tags"`                  // libraryRef → []tag 列表
 	DanceSets            map[string]DanceSet   `json:"dance_sets"`            // 舞蹈套装，key = 套装 ID
 	RecentModels         []string              `json:"recent_models"`         // libraryRef 数组，最近打开的模型（最多20条）
+	Env                  *EnvState             `json:"env,omitempty"`         // 环境状态（天空/地面/粒子等），nil=使用前端默认
+}
+
+// EnvState stores the full environment configuration (sky, ground, particles, fog, etc.).
+type EnvState struct {
+	SkyMode        string     `json:"skyMode"`
+	SkyColorTop    [3]float64 `json:"skyColorTop"`
+	SkyColorMid    [3]float64 `json:"skyColorMid"`
+	SkyColorBot    [3]float64 `json:"skyColorBot"`
+	SkyTexture     string     `json:"skyTexture"`
+	SkyRotationY   float64    `json:"skyRotationY"`
+	SkyBrightness  float64    `json:"skyBrightness"`
+	EnvIntensity   float64    `json:"envIntensity"`
+	GroundVisible  bool       `json:"groundVisible"`
+	GroundMode     string     `json:"groundMode"`
+	GroundColor    [3]float64 `json:"groundColor"`
+	GroundAlpha    float64    `json:"groundAlpha"`
+	WindEnabled    bool       `json:"windEnabled"`
+	WindDirection  [3]float64 `json:"windDirection"`
+	WindSpeed      float64    `json:"windSpeed"`
+	ParticleEnabled bool      `json:"particleEnabled"`
+	ParticleType   string     `json:"particleType"`
+	CloudsEnabled  bool       `json:"cloudsEnabled"`
+	CloudCover     float64    `json:"cloudCover"`
+	CloudScale     float64    `json:"cloudScale"`
+	FogEnabled     bool       `json:"fogEnabled"`
+	FogColor       [3]float64 `json:"fogColor"`
+	FogDensity     float64    `json:"fogDensity"`
 }
 
 // RenderPreset stores a user-defined rendering preset.
@@ -584,6 +612,11 @@ func (a *App) SetBlenderPath(path string) error {
 // SetDisplayNamePriority persists the display name priority setting.
 func (a *App) SetDisplayNamePriority(priority string) error {
 	return a.updateConfig(func(cfg *Config) { cfg.DisplayNamePriority = priority }, false)
+}
+
+// SetEnvState persists the environment state (sky, ground, particles, fog, etc.).
+func (a *App) SetEnvState(env EnvState) error {
+	return a.updateConfig(func(cfg *Config) { cfg.Env = &env }, false)
 }
 
 // ToggleFavorite adds or removes a libraryRef from the favorites list.

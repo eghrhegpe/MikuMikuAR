@@ -1,5 +1,61 @@
 export namespace main {
 	
+	export class EnvState {
+	    skyMode: string;
+	    skyColorTop: number[];
+	    skyColorMid: number[];
+	    skyColorBot: number[];
+	    skyTexture: string;
+	    skyRotationY: number;
+	    skyBrightness: number;
+	    envIntensity: number;
+	    groundVisible: boolean;
+	    groundMode: string;
+	    groundColor: number[];
+	    groundAlpha: number;
+	    windEnabled: boolean;
+	    windDirection: number[];
+	    windSpeed: number;
+	    particleEnabled: boolean;
+	    particleType: string;
+	    cloudsEnabled: boolean;
+	    cloudCover: number;
+	    cloudScale: number;
+	    fogEnabled: boolean;
+	    fogColor: number[];
+	    fogDensity: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new EnvState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.skyMode = source["skyMode"];
+	        this.skyColorTop = source["skyColorTop"];
+	        this.skyColorMid = source["skyColorMid"];
+	        this.skyColorBot = source["skyColorBot"];
+	        this.skyTexture = source["skyTexture"];
+	        this.skyRotationY = source["skyRotationY"];
+	        this.skyBrightness = source["skyBrightness"];
+	        this.envIntensity = source["envIntensity"];
+	        this.groundVisible = source["groundVisible"];
+	        this.groundMode = source["groundMode"];
+	        this.groundColor = source["groundColor"];
+	        this.groundAlpha = source["groundAlpha"];
+	        this.windEnabled = source["windEnabled"];
+	        this.windDirection = source["windDirection"];
+	        this.windSpeed = source["windSpeed"];
+	        this.particleEnabled = source["particleEnabled"];
+	        this.particleType = source["particleType"];
+	        this.cloudsEnabled = source["cloudsEnabled"];
+	        this.cloudCover = source["cloudCover"];
+	        this.cloudScale = source["cloudScale"];
+	        this.fogEnabled = source["fogEnabled"];
+	        this.fogColor = source["fogColor"];
+	        this.fogDensity = source["fogDensity"];
+	    }
+	}
 	export class DanceSet {
 	    name: string;
 	    vmd_path: string;
@@ -65,6 +121,7 @@ export namespace main {
 	    tags: Record<string, Array<string>>;
 	    dance_sets: Record<string, DanceSet>;
 	    recent_models: string[];
+	    env?: EnvState;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -84,6 +141,7 @@ export namespace main {
 	        this.tags = source["tags"];
 	        this.dance_sets = this.convertValues(source["dance_sets"], DanceSet, true);
 	        this.recent_models = source["recent_models"];
+	        this.env = this.convertValues(source["env"], EnvState);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -104,6 +162,7 @@ export namespace main {
 		    return a;
 		}
 	}
+	
 	
 	
 	export class ExtractResult {

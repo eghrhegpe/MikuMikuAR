@@ -130,6 +130,8 @@ export function SetDownloadAutoImport(arg1:boolean):Promise<void>;
 
 export function SetDownloadWatchDir(arg1:string):Promise<void>;
 
+export function SetEnvState(arg1:main.EnvState):Promise<void>;
+
 export function SetLibraryRoot(arg1:string):Promise<void>;
 
 export function SetMMDPath(arg1:string):Promise<void>;

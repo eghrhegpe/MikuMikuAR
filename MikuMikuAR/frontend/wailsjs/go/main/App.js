@@ -258,6 +258,10 @@ export function SetDownloadWatchDir(arg1) {
   return window['go']['main']['App']['SetDownloadWatchDir'](arg1);
 }
 
+export function SetEnvState(arg1) {
+  return window['go']['main']['App']['SetEnvState'](arg1);
+}
+
 export function SetLibraryRoot(arg1) {
   return window['go']['main']['App']['SetLibraryRoot'](arg1);
 }
