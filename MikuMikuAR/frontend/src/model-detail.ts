@@ -56,6 +56,7 @@ import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "./audio";
 import { getSceneStack } from "./scene-menu";
 import { slideRow, addSliderRow } from "./ui-helpers";
 import { buildOutfitLevel } from "./outfit-ui";
+import { loadOutfits, applyOutfitVariant } from "./outfit";
 import {
   GetTagsByModel,
   AddTag,

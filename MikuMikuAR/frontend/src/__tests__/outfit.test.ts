@@ -224,13 +224,13 @@ describe("applyOutfitVariant", () => {
 
   it("should return early if no outfitFile", async () => {
     inst.outfitFile = undefined;
-    const { applyOutfitVariant } = await import("../scene");
+    const { applyOutfitVariant } = await import("../outfit");
     await applyOutfitVariant("m1", "泳装");
     expect(inst.activeVariant).toBeUndefined();
   });
 
   it("should capture _origTextures on first apply", async () => {
-    const { applyOutfitVariant } = await import("../scene");
+    const { applyOutfitVariant } = await import("../outfit");
     expect(inst._origTextures).toBeUndefined();
     await applyOutfitVariant("m1", "泳装");
     expect(inst._origTextures).toBeDefined();
@@ -241,20 +241,20 @@ describe("applyOutfitVariant", () => {
   });
 
   it("should set activeVariant after apply", async () => {
-    const { applyOutfitVariant } = await import("../scene");
+    const { applyOutfitVariant } = await import("../outfit");
     await applyOutfitVariant("m1", "校服");
     expect(inst.activeVariant).toBe("校服");
   });
 
   it("should apply byMaterial override over byCategory", async () => {
-    const { applyOutfitVariant } = await import("../scene");
+    const { applyOutfitVariant } = await import("../outfit");
     await applyOutfitVariant("m1", "校服");
     // "顔" material: byMaterial has "school.png" for diffuse → should win
     expect(inst.activeVariant).toBe("校服");
   });
 
   it("should restore originals on '默认'", async () => {
-    const { applyOutfitVariant } = await import("../scene");
+    const { applyOutfitVariant } = await import("../outfit");
     await applyOutfitVariant("m1", "泳装");
     expect(inst.activeVariant).toBe("泳装");
     await applyOutfitVariant("m1", "默认");
@@ -262,7 +262,7 @@ describe("applyOutfitVariant", () => {
   });
 
   it("should be a no-op for unknown variant", async () => {
-    const { applyOutfitVariant } = await import("../scene");
+    const { applyOutfitVariant } = await import("../outfit");
     inst.activeVariant = "泳装";
     await applyOutfitVariant("m1", "不存在");
     expect(inst.activeVariant).toBe("泳装");
@@ -292,7 +292,7 @@ describe("resetOutfit", () => {
   });
 
   it("should clear outfit state", async () => {
-    const { resetOutfit } = await import("../scene");
+    const { resetOutfit } = await import("../outfit");
     resetOutfit("m1");
     expect(inst.activeVariant).toBeUndefined();
     expect(inst.outfitFile).toBeUndefined();

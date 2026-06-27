@@ -11,7 +11,7 @@ import {
   loadOutfits,
   applyOutfitVariant,
   resetOutfit,
-} from "./scene";
+} from "./outfit";
 
 export function buildOutfitLevel(id: string): PopupLevel {
   return {
