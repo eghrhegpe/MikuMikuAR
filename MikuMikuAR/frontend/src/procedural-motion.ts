@@ -25,7 +25,6 @@ export const DEFAULT_PROC_STATE: ProcMotionState = {
 const BONE_CENTER = "センター";
 const BONE_UPPER = "上半身";
 const BONE_HEAD = "頭";
-const BONE_NECK = "首";
 const BONE_LARM = "左腕";
 const BONE_RARM = "右腕";
 
@@ -45,8 +44,6 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
     const bones: BoneKeyFrame[] = [];
     const morphs: MorphKeyFrame[] = [];
     const hasBlink = morphNames.includes(MORPH_BLINK);
-
-    const half = Math.round(loopFrames / 2);
 
     // 呼吸：上半身 X 轴旋转（前倾后仰），正弦曲线
     const breathAmp = 0.03 * intensity;
@@ -109,12 +106,18 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
     const morphs: MorphKeyFrame[] = [];
     const hasBlink = morphNames.includes(MORPH_BLINK);
 
+    // 预计算 sin 值，3 个骨骼循环复用
+    const sinVals: number[] = [];
+    for (let f = 0; f <= loopFrames; f += 3) {
+        sinVals[f] = Math.sin((f / beatFrames) * Math.PI);
+    }
+
     // 身体律动：センター Y 轴旋转，每拍交替方向
     const bodyAmp = 0.08 * intensity;
     for (let f = 0; f <= loopFrames; f += 3) {
-        const beat = f / beatFrames;
-        const rotY = Math.sin(beat * Math.PI) * bodyAmp;
-        const bob = Math.abs(Math.sin(beat * Math.PI)) * 0.02 * intensity; // 上下弹
+        const s = sinVals[f];
+        const rotY = s * bodyAmp;
+        const bob = Math.abs(s) * 0.02 * intensity; // 上下弹
         bones.push({
             name: BONE_CENTER, frame: f, position: [0, bob, 0],
             rotation: [0, rotY, 0, 1 - 0.5 * rotY * rotY],
@@ -125,8 +128,8 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
     // 头部摆动：頭 Z 轴，反相于身体
     const headAmp = 0.06 * intensity;
     for (let f = 0; f <= loopFrames; f += 3) {
-        const beat = f / beatFrames;
-        const rotZ = Math.sin(beat * Math.PI + Math.PI) * headAmp;
+        const s = sinVals[f];
+        const rotZ = -s * headAmp;
         bones.push({
             name: BONE_HEAD, frame: f, position: [0, 0, 0],
             rotation: [0, 0, rotZ, 1 - 0.5 * rotZ * rotZ],
@@ -137,9 +140,9 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
     // 手臂摆动：左右臂 Z 轴交替
     const armAmp = 0.15 * intensity;
     for (let f = 0; f <= loopFrames; f += 3) {
-        const beat = f / beatFrames;
-        const lRot = Math.sin(beat * Math.PI) * armAmp;
-        const rRot = Math.sin(beat * Math.PI + Math.PI) * armAmp;
+        const s = sinVals[f];
+        const lRot = s * armAmp;
+        const rRot = -s * armAmp;
         bones.push({
             name: BONE_LARM, frame: f, position: [0, 0, 0],
             rotation: [0, 0, lRot, 1 - 0.5 * lRot * lRot],
