@@ -328,28 +328,32 @@ let procBeatDetector: BeatDetector | null = null;
 let procVmdActive = false;       // procedural VMD 是否正在播放
 let lastBeatBpm = 120;           // 上次用于生成 Auto Dance 的 BPM
 let procStarting = false;        // 防止并发 startProcMotion
+let procActiveKind: ProcMotionMode = "idle"; // 当前加载的是 idle 还是 autodance
 
 // ======== Convenience getters ========
 export function focusedMmdModel() { return focusedModelId ? modelRegistry.get(focusedModelId)?.mmdModel ?? null : null; }
 export function focusedModel() { return focusedModelId ? modelRegistry.get(focusedModelId) : undefined; }
 
-/** 启动程序化动作：生成 procedural VMD 并加载。 */
-async function startProcMotion(bpm?: number): Promise<void> {
+/** 启动程序化动作：生成 procedural VMD 并加载。
+ *  @param targetMode 要加载的模式（覆盖 procState.mode）
+ *  @param bpm Auto Dance 用的 BPM */
+async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promise<void> {
     if (procStarting) return;
     procStarting = true;
     const model = focusedMmdModel();
     if (!model) { procStarting = false; return; }
     const morphNames = model.morph?.morphs?.map(m => m.name) ?? [];
     let buf: ArrayBuffer;
-    if (procState.mode === "autodance" && bpm) {
+    if (targetMode === "autodance" && bpm) {
         buf = generateAutoDanceVmd(procState, bpm, morphNames);
         lastBeatBpm = bpm;
     } else {
         buf = generateIdleVmd(procState, morphNames);
     }
+    procActiveKind = targetMode;
     procVmdActive = true;
     try {
-        await loadVMDMotion(buf, procState.mode === "autodance" ? "AutoDance" : "IdleMotion");
+        await loadVMDMotion(buf, targetMode === "autodance" ? "AutoDance" : "IdleMotion");
         // Clear vmdData so hasUserVmd stays false for procedural VMD
         const inst = focusedModel();
         if (inst) {
@@ -380,8 +384,10 @@ async function updateProcMotion(): Promise<void> {
 
     const audioOn = isAudioPlaying();
     const hasUserVmd = focusedModel()?.vmdData != null;
-    const wantAutoDance = shouldAutoDance(audioOn, procState.mode) && (procState.mode !== "off" || procState.autoSwitch);
-    const wantIdle = shouldIdle(audioOn, hasUserVmd, procState.mode) && (procState.mode !== "off" || procState.autoSwitch);
+    const mode = procState.mode;
+    const autoOk = mode !== "off" || procState.autoSwitch;
+    const wantAutoDance = shouldAutoDance(audioOn, mode) && autoOk;
+    const wantIdle = shouldIdle(audioOn, hasUserVmd, mode) && autoOk;
 
     // 用户加载了真实 VMD → 停止 procedural
     if (hasUserVmd && procVmdActive) {
@@ -392,19 +398,17 @@ async function updateProcMotion(): Promise<void> {
     // 需要 Auto Dance
     if (wantAutoDance && procBeatDetector) {
         const bpm = procBeatDetector.getBPM();
-        if (!procVmdActive || procState.mode !== "autodance" || Math.abs(bpm - lastBeatBpm) > 10) {
-            procState = { ...procState, mode: "autodance" };
-            await startProcMotion(bpm);
+        if (!procVmdActive || procActiveKind !== "autodance" || Math.abs(bpm - lastBeatBpm) > 10) {
+            await startProcMotion("autodance", bpm);
         }
         procBeatDetector.update();
         return;
     }
 
-    // 需要 Idle
+    // 需要 Idle — 当 autodance 正在播放但不再有音频时也会进入此分支
     if (wantIdle) {
-        if (!procVmdActive || procState.mode !== "idle") {
-            procState = { ...procState, mode: "idle" };
-            await startProcMotion();
+        if (!procVmdActive || procActiveKind !== "idle") {
+            await startProcMotion("idle");
         }
         return;
     }
@@ -1690,14 +1694,14 @@ const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
     particles: { emitter: any | null };
-    clouds: { postProcess: any | null };
+    clouds: { postProcess: any | null; material: any | null; texture: any | null };
     shadow: { generator: any | null };
     wind: { lastUpdate: number };
 } = {
     sky: { skyMesh: null, envTexture: null },
     ground: { mesh: null },
     particles: { emitter: null },
-    clouds: { postProcess: null },
+    clouds: { postProcess: null, material: null, texture: null },
     shadow: { generator: null },
     wind: { lastUpdate: 0 },
 };
@@ -1886,7 +1890,9 @@ function _applyGround(state: EnvState): void {
 
 // ======== Particle System (Phase 8) ========
 
+let _particleTexture: Texture | null = null;
 function _getParticleTexture(): Texture {
+    if (_particleTexture) return _particleTexture;
     const canvas = document.createElement("canvas");
     canvas.width = 32;
     canvas.height = 32;
@@ -1895,7 +1901,8 @@ function _getParticleTexture(): Texture {
     ctx.arc(16, 16, 14, 0, Math.PI * 2);
     ctx.fillStyle = "white";
     ctx.fill();
-    return new Texture(canvas.toDataURL(), scene);
+    _particleTexture = new Texture(canvas.toDataURL(), scene);
+    return _particleTexture;
 }
 
 function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boolean): void {
@@ -1925,6 +1932,9 @@ function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boo
             ps.color2 = new Color4(1, 0.9, 0.9, 1);
             ps.minSize = 0.1;
             ps.maxSize = 0.3;
+            ps.minAngularSpeed = -0.5;
+            ps.maxAngularSpeed = 0.5;
+            ps.createBoxEmitter(new Vector3(-10, 0, -10), new Vector3(10, 0, 10));
             break;
         case "rain":
             ps.emitRate = 800;
@@ -1933,10 +1943,11 @@ function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boo
             ps.maxLifeTime = 2;
             ps.direction1 = new Vector3(-0.1, -1, -0.1);
             ps.direction2 = new Vector3(0.1, -1, 0.1);
-            ps.color1 = new Color4(0.7, 0.8, 1, 0.6);
-            ps.color2 = new Color4(0.8, 0.9, 1, 0.8);
-            ps.minSize = 0.01;
-            ps.maxSize = 0.03;
+            ps.color1 = new Color4(0.7, 0.8, 1, 0.5);
+            ps.color2 = new Color4(0.8, 0.9, 1, 0.7);
+            ps.minSize = 0.08;
+            ps.maxSize = 0.2;
+            ps.createBoxEmitter(new Vector3(-15, 0, -15), new Vector3(15, 0, 15));
             break;
         case "snow":
             ps.emitRate = 200;
@@ -1947,8 +1958,11 @@ function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boo
             ps.direction2 = new Vector3(0.3, -0.5, 0.3);
             ps.color1 = new Color4(1, 1, 1, 0.8);
             ps.color2 = new Color4(1, 1, 1, 1);
-            ps.minSize = 0.05;
-            ps.maxSize = 0.15;
+            ps.minSize = 0.08;
+            ps.maxSize = 0.2;
+            ps.minAngularSpeed = -0.3;
+            ps.maxAngularSpeed = 0.3;
+            ps.createBoxEmitter(new Vector3(-15, 0, -15), new Vector3(15, 0, 15));
             break;
         case "fireworks":
             ps.emitRate = 5;
@@ -2032,12 +2046,22 @@ function _createClouds(state: EnvState): void {
     cloudPlane.scaling.z = state.cloudScale;
 
     _envSys.clouds.postProcess = cloudPlane;
+    _envSys.clouds.material = mat;
+    _envSys.clouds.texture = tex;
 
     // Ensure per-frame wind drift for clouds
     _ensureEnvUpdateObserver();
 }
 
 function _disposeClouds(): void {
+    if (_envSys.clouds.material) {
+        _envSys.clouds.material.dispose(false, true);
+        _envSys.clouds.material = null;
+    }
+    if (_envSys.clouds.texture) {
+        _envSys.clouds.texture.dispose();
+        _envSys.clouds.texture = null;
+    }
     if (_envSys.clouds.postProcess) {
         if (_envSys.clouds.postProcess instanceof Mesh) {
             _envSys.clouds.postProcess.dispose();
@@ -2087,7 +2111,8 @@ export function getProcMotionState(): ProcMotionState {
 /** 强制立即重新生成 procedural VMD（参数变更后调用）。 */
 export function regenerateProcMotion(): void {
     if (procVmdActive) {
+        const mode = procState.mode === "autodance" ? "autodance" as const : "idle" as const;
         const bpm = procBeatDetector?.getBPM() ?? 120;
-        startProcMotion(procState.mode === "autodance" ? bpm : undefined);
+        startProcMotion(mode, mode === "autodance" ? bpm : undefined);
     }
 }
