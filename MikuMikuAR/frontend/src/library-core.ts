@@ -156,20 +156,13 @@ const makeModelStack = (): SlideMenu => {
             },
           };
         }
-        const level = buildLevel(
+        return buildLevel(
           libraryRoot,
           "模型库",
           (m) => m.format === "pmx",
+          stackRegistry.modelStack!,
+          externalPaths.map(ep => ({ label: ep.name, path: ep.path })),
         );
-        for (const ep of externalPaths) {
-          level.items.unshift({
-            kind: "folder",
-            label: ep.name,
-            icon: "plug",
-            target: ep.path,
-          });
-        }
-        return level;
       }
       if (
         row.target &&
@@ -178,7 +171,7 @@ const makeModelStack = (): SlideMenu => {
         !row.target.startsWith("detail:") &&
         !row.target.startsWith("__")
       ) {
-        return buildLevel(row.target, row.label, (m) => m.format === "pmx");
+        return buildLevel(row.target, row.label, (m) => m.format === "pmx", stackRegistry.modelStack!);
       }
       return null;
     },
@@ -315,6 +308,8 @@ export function buildLevel(
   dir: string,
   label: string,
   filter?: (m: LibraryModel) => boolean,
+  targetStack?: SlideMenu,
+  extraFolders?: { label: string; path: string }[],
 ): PopupLevel {
   dir = normPath(dir);
   const isRoot = filter ? false : normPath(libraryRoot) === dir;
@@ -366,7 +361,71 @@ export function buildLevel(
     });
   }
 
-  return { label, dir, items };
+  // Prepend external paths as folder entries
+  if (extraFolders) {
+    for (const ef of extraFolders) {
+      items.unshift({ kind: "folder", label: ef.label, icon: "plug", target: ef.path });
+    }
+  }
+  return {
+    label, dir,
+    items: [],
+    renderCustom: (container) => {
+      container.classList.remove("render-card");
+      const card = document.createElement("div");
+      card.className = "lcard";
+      for (const item of items) {
+        if (item.kind === "divider") continue;
+        const el = document.createElement("div");
+        el.className = "slide-item";
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "slide-icon";
+        const iconEl = createIconifyIcon(item.icon);
+        if (iconEl) iconSpan.appendChild(iconEl);
+        el.appendChild(iconSpan);
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "slide-label";
+        labelSpan.textContent = item.label;
+        el.appendChild(labelSpan);
+        if (item.sublabel) {
+          const sub = document.createElement("span");
+          sub.className = "slide-sublabel";
+          sub.textContent = item.sublabel;
+          el.appendChild(sub);
+        }
+        if (item.catTag) {
+          const tag = document.createElement("span");
+          tag.className = "slide-tag";
+          tag.textContent = item.catTag;
+          el.appendChild(tag);
+        }
+        if (item.kind === "folder") {
+          const arrow = document.createElement("span");
+          arrow.className = "slide-arrow";
+          arrow.textContent = ">";
+          el.appendChild(arrow);
+        }
+        el.addEventListener("click", () => {
+          if (item.kind === "folder") {
+            const next = buildLevel(item.target, item.label, filter, targetStack);
+            const stack = targetStack || stackRegistry.modelStack;
+            stack?.push(next);
+          } else if (item.model) {
+            if (item.model.format === "vmd" && motionBindingTargetId) {
+              const id = motionBindingTargetId;
+              setMotionBindingTargetId(null);
+              closeAllOverlays();
+              loadVMDFromPath(item.model.file_path, id);
+            } else {
+              onModelRowClick(item.model);
+            }
+          }
+        });
+        card.appendChild(el);
+      }
+      container.appendChild(card);
+    },
+  };
 }
 
 // Register buildLevel for use by motion-popup.ts (avoids circular import)
@@ -469,51 +528,62 @@ function buildTagsOverviewLevel(): PopupLevel {
     dir: "",
     items: [],
     renderCustom: async (container) => {
-      container.style.padding = "12px 14px";
+      container.classList.remove("render-card");
       try {
         const favRefs = await GetModelsByTag("收藏");
-        const favRow = document.createElement("div");
-        favRow.className = "menu-item";
-        favRow.innerHTML = `<span class="menu-icon"><iconify-icon icon="star" style="color:var(--accent);"></iconify-icon></span><span class="menu-label">收藏</span><span class="menu-sublabel" style="color:var(--text-muted);font-size:11px;">${favRefs ? favRefs.length : 0} 个模型</span><span class="menu-arrow">&gt;</span>`;
-        favRow.addEventListener("click", () => {
-          const level = buildTagDetailLevel("收藏");
-          stackRegistry.modelStack?.push(level);
-        });
-        container.appendChild(favRow);
-        const sep = document.createElement("div");
-        sep.className = "menu-divider";
-        container.appendChild(sep);
-
         const tags = await GetAllTags();
         const regularTags = tags ? tags.filter(t => t !== "收藏") : [];
-        if (regularTags.length === 0) {
-          const empty = document.createElement("div");
-          empty.style.cssText = "padding:8px 0;text-align:center;color:var(--text-muted);font-size:13px;";
-          empty.textContent = "暂无其他标签";
-          container.appendChild(empty);
-        } else {
+
+        cardContainer(container, (c) => {
+          const favRow = document.createElement("div");
+          favRow.className = "slide-item";
+          const fi = document.createElement("span"); fi.className = "slide-icon";
+          const fe = createIconifyIcon("lucide:star");
+          if (fe) { fe.style.color = "var(--accent)"; fi.appendChild(fe); }
+          favRow.appendChild(fi);
+          const fl = document.createElement("span"); fl.className = "slide-label"; fl.textContent = "收藏";
+          favRow.appendChild(fl);
+          const fs = document.createElement("span"); fs.className = "slide-sublabel";
+          fs.textContent = `${favRefs ? favRefs.length : 0} 个模型`;
+          favRow.appendChild(fs);
+          const fa = document.createElement("span"); fa.className = "slide-arrow"; fa.textContent = ">";
+          favRow.appendChild(fa);
+          favRow.addEventListener("click", () => stackRegistry.modelStack?.push(buildTagDetailLevel("收藏")));
+          c.appendChild(favRow);
+
           for (const tag of regularTags) {
-            const row = document.createElement("div");
-            row.className = "menu-item";
-            row.innerHTML = `<span class="menu-icon"><iconify-icon icon="tag"></iconify-icon></span><span class="menu-label">${escapeHtml(tag)}</span><span class="menu-arrow">&gt;</span>`;
-            row.addEventListener("click", () => {
-              const level = buildTagDetailLevel(tag);
-              stackRegistry.modelStack?.push(level);
-            });
-            container.appendChild(row);
+            const row = document.createElement("div"); row.className = "slide-item";
+            const is = document.createElement("span"); is.className = "slide-icon";
+            const ie = createIconifyIcon("lucide:tag"); if (ie) is.appendChild(ie);
+            row.appendChild(is);
+            const ls = document.createElement("span"); ls.className = "slide-label"; ls.textContent = tag;
+            row.appendChild(ls);
+            const ar = document.createElement("span"); ar.className = "slide-arrow"; ar.textContent = ">";
+            row.appendChild(ar);
+            row.addEventListener("click", () => stackRegistry.modelStack?.push(buildTagDetailLevel(tag)));
+            c.appendChild(row);
           }
-        }
-        const divider = document.createElement("div");
-        divider.className = "menu-divider";
-        container.appendChild(divider);
-        const addRow = document.createElement("div");
-        addRow.className = "menu-item";
-        addRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="plus"></iconify-icon></span><span class="menu-label">新建标签</span>';
-        addRow.addEventListener("click", () => {
-          setStatus("请先进入模型详情页，在详情中为模型添加标签", false);
-          stackRegistry.modelStack?.pop();
+
+          if (regularTags.length === 0) {
+            const em = document.createElement("div"); em.className = "slide-empty";
+            em.textContent = "暂无其他标签";
+            c.appendChild(em);
+          }
         });
-        container.appendChild(addRow);
+
+        cardContainer(container, (c) => {
+          const row = document.createElement("div"); row.className = "slide-item";
+          const is = document.createElement("span"); is.className = "slide-icon";
+          const ie = createIconifyIcon("lucide:plus"); if (ie) is.appendChild(ie);
+          row.appendChild(is);
+          const ls = document.createElement("span"); ls.className = "slide-label"; ls.textContent = "新建标签";
+          row.appendChild(ls);
+          row.addEventListener("click", () => {
+            setStatus("请先进入模型详情页，在详情中为模型添加标签", false);
+            stackRegistry.modelStack?.pop();
+          });
+          c.appendChild(row);
+        });
       } catch (err) {
         console.warn("buildTagsOverviewLevel:", err);
         container.textContent = "加载标签失败";
@@ -528,12 +598,11 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
     dir: "",
     items: [],
     renderCustom: async (container) => {
-      container.style.padding = "0";
+      container.classList.remove("render-card");
       try {
         const modelRefs = await GetModelsByTag(tagName);
         if (!modelRefs || modelRefs.length === 0) {
-          container.style.padding = "12px 14px";
-          container.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;">该标签下没有模型</div>';
+          container.innerHTML = '<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">该标签下没有模型</div>';
           return;
         }
         const matched = allModels.filter(m => {
@@ -541,32 +610,22 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
           return ref && modelRefs.includes(ref);
         });
         if (matched.length === 0) {
-          container.style.padding = "12px 14px";
-          container.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;">未找到匹配的模型（库可能已变更）</div>';
+          container.innerHTML = '<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">未找到匹配的模型（库可能已变更）</div>';
           return;
         }
-        for (const m of matched) {
-          const row = modelToRow(m);
-          const el = document.createElement("div");
-          el.className = "menu-item";
-          const iconSpan = document.createElement("span");
-          iconSpan.className = "menu-icon";
-          const iconEl = createIconifyIcon(row.icon);
-          if (iconEl) {
-            iconSpan.appendChild(iconEl);
-          } else {
-            iconSpan.textContent = row.icon;
+        cardContainer(container, (c) => {
+          for (const m of matched) {
+            const row = modelToRow(m);
+            const el = document.createElement("div"); el.className = "slide-item";
+            const is = document.createElement("span"); is.className = "slide-icon";
+            const ie = createIconifyIcon(row.icon); if (ie) is.appendChild(ie); else is.textContent = row.icon;
+            el.appendChild(is);
+            const ls = document.createElement("span"); ls.className = "slide-label"; ls.textContent = row.label;
+            el.appendChild(ls);
+            el.addEventListener("click", () => onModelRowClick(m));
+            c.appendChild(el);
           }
-          el.appendChild(iconSpan);
-          const labelSpan = document.createElement("span");
-          labelSpan.className = "menu-label";
-          labelSpan.textContent = row.label;
-          el.appendChild(labelSpan);
-          el.addEventListener("click", () => {
-            onModelRowClick(m);
-          });
-          container.appendChild(el);
-        }
+        });
       } catch (err) {
         console.warn("buildTagDetailLevel:", err);
         container.textContent = "加载失败";
@@ -596,53 +655,107 @@ export function showPopup(): void {
     stackRegistry.modelStack = makeModelStack();
   }
 
-  const rootItems: PopupRow[] = [];
+  stackRegistry.modelStack.reset({
+    label: "模型",
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.classList.remove("render-card");
 
-  for (const [id, inst] of modelRegistry) {
-    rootItems.push({
-      kind: "folder",
-      label: inst.name,
-      icon: "tabler:cube-3d-sphere",
-      target: `scene:${id}`,
-      sublabel: inst.vmdName || undefined,
-      editable: id === focusedModelId,
-    });
-  }
-  if (rootItems.length > 0) {
-    rootItems.push({ kind: "divider", label: "", icon: "", target: "" });
-  }
+      // Card 1: loaded models
+      if (modelRegistry.size > 0) {
+        cardContainer(container, (c) => {
+          for (const [id, inst] of modelRegistry) {
+            slideRow(c, "tabler:cube-3d-sphere", inst.name, true, () => {
+              const level = buildModelDetailLevel(id);
+              stackRegistry.modelStack?.push(level);
+            });
+          }
+        });
+      }
 
-  rootItems.push(
-    {
-      kind: "folder",
-      label: "加载模型",
-      icon: "folder",
-      target: "models:browse",
-    },
-    {
-      kind: "action",
-      label: "重新扫描",
-      icon: "refresh-cw",
-      target: "models:rescan",
-    },
-    { kind: "divider", label: "", icon: "", target: "" },
-    {
-      kind: "folder",
-      label: "最近打开",
-      icon: "clock",
-      target: "__recent__",
-      sublabel: recentModels.length > 0 ? `${recentModels.length} 个模型` : "暂无记录",
-    },
-    {
-      kind: "folder",
-      label: "标签",
-      icon: "tag",
-      target: "__tags__",
-      sublabel: "管理模型标签",
-    },
-  );
+      // Card 2: browse & scan
+      cardContainer(container, (c) => {
+        slideRow(c, "lucide:folder", "加载模型", true, () => {
+          if (!libraryRoot) {
+            stackRegistry.modelStack?.push({
+              label: "模型库",
+              dir: "",
+              items: [],
+              renderCustom: (c2) => {
+                c2.style.cssText =
+                  "padding:24px;text-align:center;color:var(--text-muted);font-size:13px;";
+                c2.innerHTML =
+                  '<div>尚未设置模型库目录</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">请前往 设置 → 系统 中设置</div>';
+              },
+            });
+            return;
+          }
+          const level = buildLevel(libraryRoot, "模型库", (m) => m.format === "pmx", stackRegistry.modelStack!, externalPaths.map(ep => ({ label: ep.name, path: ep.path })));
+          stackRegistry.modelStack?.push(level);
+        });
+        slideRow(c, "lucide:refresh-cw", "重新扫描", false, () => {
+          refreshLibrary();
+        });
+      });
 
-  stackRegistry.modelStack.reset({ label: "模型", dir: "", items: rootItems });
+      // Card 3: recent & tags
+      cardContainer(container, (c) => {
+        slideRow(c, "lucide:clock", "最近打开", true, () => {
+          const recentMap = new Map<string, number>();
+          recentModels.forEach((ref, i) => recentMap.set(ref, i));
+          const recentModelsList = allModels
+            .filter(m => {
+              const ref = computeLibraryRef(m.file_path);
+              return ref && recentMap.has(ref);
+            })
+            .sort((a, b) => {
+              const refA = computeLibraryRef(a.file_path);
+              const refB = computeLibraryRef(b.file_path);
+              return (recentMap.get(refA!) ?? 999) - (recentMap.get(refB!) ?? 999);
+            });
+          stackRegistry.modelStack?.push({
+            label: "最近打开",
+            dir: "",
+            items: [],
+            renderCustom: (c2) => {
+              c2.classList.remove("render-card");
+              if (recentModelsList.length === 0) {
+                const empty = document.createElement("div");
+                empty.style.cssText = "padding:24px;text-align:center;color:var(--text-muted);font-size:13px;";
+                empty.innerHTML = '<div style="font-size:28px;margin-bottom:6px;">🕐</div><div>暂无记录</div><div style="font-size:11px;margin-top:4px;color:var(--text-dark);">加载模型后会出现在这里</div>';
+                c2.appendChild(empty);
+                return;
+              }
+              cardContainer(c2, (c3) => {
+                for (const m of recentModelsList) {
+                  const row = modelToRow(m);
+                  const el = document.createElement("div");
+                  el.className = "slide-item";
+                  el.setAttribute("data-hint", row.sublabel || "");
+                  const iconSpan = document.createElement("span");
+                  iconSpan.className = "slide-icon";
+                  const iconEl = createIconifyIcon(row.icon);
+                  if (iconEl) iconSpan.appendChild(iconEl);
+                  el.appendChild(iconSpan);
+                  const labelSpan = document.createElement("span");
+                  labelSpan.className = "slide-label";
+                  labelSpan.textContent = row.label;
+                  el.appendChild(labelSpan);
+                  el.addEventListener("click", () => onModelRowClick(m));
+                  c3.appendChild(el);
+                }
+              });
+            },
+          });
+        });
+        slideRow(c, "lucide:tag", "标签", true, () => {
+          const level = buildTagsOverviewLevel();
+          stackRegistry.modelStack?.push(level);
+        });
+      });
+    },
+  });
 }
 
 export function hidePopup(): void {
@@ -690,60 +803,39 @@ function handlePopupSearch(): void {
     dir: "",
     items: [],
     renderCustom: (container) => {
+      container.classList.remove("render-card");
       if (results.length === 0) {
         const empty = document.createElement("div");
-        empty.style.cssText =
-          "padding:24px;text-align:center;color:var(--text-muted);font-size:13px;";
-        empty.innerHTML =
-          '<div style="font-size:28px;margin-bottom:6px;">🔍</div><div>没有找到匹配的模型</div>';
+        empty.style.cssText = "padding:24px;text-align:center;color:var(--text-muted);font-size:13px;";
+        empty.innerHTML = '<div style="font-size:28px;margin-bottom:6px;">🔍</div><div>没有找到匹配的模型</div>';
         container.appendChild(empty);
         return;
       }
-      for (const m of results) {
-        const row = modelToRow(m);
-        const el = document.createElement("div");
-        el.className = "menu-item";
-
-        const iconSpan = document.createElement("span");
-        iconSpan.className = "menu-icon";
-        const iconEl = createIconifyIcon(row.icon);
-        if (iconEl) {
-          iconSpan.appendChild(iconEl);
-        } else {
-          iconSpan.textContent = row.icon;
+      cardContainer(container, (c) => {
+        for (const m of results) {
+          const row = modelToRow(m);
+          const el = document.createElement("div"); el.className = "slide-item";
+          const thumbB64 = thumbnailCache.get(m.file_path);
+          if (thumbB64) {
+            const img = document.createElement("img");
+            img.src = `data:image/png;base64,${thumbB64}`;
+            img.style.cssText = "width:28px;height:28px;border-radius:4px;object-fit:cover;flex-shrink:0;";
+            el.appendChild(img);
+          } else {
+            const is = document.createElement("span"); is.className = "slide-icon";
+            const ie = createIconifyIcon(row.icon); if (ie) is.appendChild(ie); else is.textContent = row.icon;
+            el.appendChild(is);
+          }
+          const ls = document.createElement("span"); ls.className = "slide-label"; ls.textContent = row.label;
+          el.appendChild(ls);
+          if (row.catTag) {
+            const tg = document.createElement("span"); tg.className = "slide-tag"; tg.textContent = row.catTag;
+            el.appendChild(tg);
+          }
+          el.addEventListener("click", () => replaceModel(m));
+          c.appendChild(el);
         }
-        el.appendChild(iconSpan);
-
-        const labelSpan = document.createElement("span");
-        labelSpan.className = "menu-label";
-        labelSpan.textContent = row.label;
-        el.appendChild(labelSpan);
-
-        if (row.catTag) {
-          const tagSpan = document.createElement("span");
-          tagSpan.className = "menu-tag";
-          tagSpan.textContent = row.catTag;
-          el.appendChild(tagSpan);
-        }
-
-        const thumbB64 = thumbnailCache.get(m.file_path);
-        if (thumbB64) {
-          const img = document.createElement("img");
-          img.className = "row-thumb";
-          img.src = `data:image/png;base64,${thumbB64}`;
-          el.insertBefore(img, el.firstChild);
-        }
-
-        el.addEventListener("click", () => {
-          replaceModel(m);
-        });
-        container.appendChild(el);
-      }
-      const resultLevel: PopupLevel = {
-        label: "搜索结果",
-        dir: "",
-        items: results.map((m) => modelToRow(m)),
-      };
+      });
       loadThumbnailsForLevel(resultLevel);
     },
   };

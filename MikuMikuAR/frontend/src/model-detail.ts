@@ -663,34 +663,40 @@ export function buildMatCatLevel(id: string, modelName: string): PopupLevel {
         container.appendChild(card);
       }
 
-      const divider = document.createElement("div");
-      divider.className = "menu-divider";
-      container.appendChild(divider);
-
+      cardContainer(container, (c) => {
       const hasOverrides = detailList.some(d => d.modified);
       if (hasOverrides) {
         const resetAllRow = document.createElement("div");
-        resetAllRow.className = "menu-item";
-        resetAllRow.style.color = "var(--warn)";
-        resetAllRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="menu-label">重置所有单独调整</span>';
+        resetAllRow.className = "slide-item";
+        const ri = document.createElement("span"); ri.className = "slide-icon";
+        const re = createIconifyIcon("lucide:rotate-ccw"); if (re) ri.appendChild(re);
+        resetAllRow.appendChild(ri);
+        const rl = document.createElement("span"); rl.className = "slide-label"; rl.textContent = "重置所有单独调整";
+        rl.style.color = "var(--warn)";
+        resetAllRow.appendChild(rl);
         resetAllRow.addEventListener("click", () => {
           resetAllMatParams(id);
           stackRegistry.modelStack?.reRender();
           setStatus("✓ 所有单独材质调整已重置", true);
         });
-        container.appendChild(resetAllRow);
+        c.appendChild(resetAllRow);
       }
 
       const resetRow = document.createElement("div");
-      resetRow.className = "menu-item";
-      resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="menu-label">重置全部材质参数</span>';
+      resetRow.className = "slide-item";
+      const ri2 = document.createElement("span"); ri2.className = "slide-icon";
+      const re2 = createIconifyIcon("lucide:rotate-ccw"); if (re2) ri2.appendChild(re2);
+      resetRow.appendChild(ri2);
+      const rl2 = document.createElement("span"); rl2.className = "slide-label"; rl2.textContent = "重置全部材质参数";
+      resetRow.appendChild(rl2);
       resetRow.addEventListener("click", () => {
         resetMatCatParams(id);
         resetAllMatParams(id);
         stackRegistry.modelStack?.reRender();
         setStatus("✓ 全部材质参数已重置", true);
       });
-      container.appendChild(resetRow);
+      c.appendChild(resetRow);
+      });
     },
   };
 }
@@ -728,20 +734,22 @@ export function buildPerMatLevel(id: string, modelName: string, matName: string,
         setMatParams(id, matIndex, { ambientMul: v });
       });
 
-      const divider = document.createElement("div");
-      divider.className = "menu-divider";
-      container.appendChild(divider);
-
       if (isModified) {
-        const resetRow = document.createElement("div");
-        resetRow.className = "menu-item";
-        resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="menu-label">重置此材质</span>';
-        resetRow.addEventListener("click", () => {
-          resetSingleMatParams(id, matIndex);
-          stackRegistry.modelStack?.reRender();
-          setStatus(`✓ 已重置: ${matName}`, true);
+        cardContainer(container, (c) => {
+          const resetRow = document.createElement("div");
+          resetRow.className = "slide-item";
+          const ri = document.createElement("span"); ri.className = "slide-icon";
+          const re = createIconifyIcon("lucide:rotate-ccw"); if (re) ri.appendChild(re);
+          resetRow.appendChild(ri);
+          const rl = document.createElement("span"); rl.className = "slide-label"; rl.textContent = "重置此材质";
+          resetRow.appendChild(rl);
+          resetRow.addEventListener("click", () => {
+            resetSingleMatParams(id, matIndex);
+            stackRegistry.modelStack?.reRender();
+            setStatus(`✓ 已重置: ${matName}`, true);
+          });
+          c.appendChild(resetRow);
         });
-        container.appendChild(resetRow);
       }
     },
   };

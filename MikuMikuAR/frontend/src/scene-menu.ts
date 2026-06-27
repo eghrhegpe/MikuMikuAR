@@ -142,83 +142,85 @@ function buildPresetScenesLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: async (container) => {
-            container.style.padding = "12px 14px";
+            container.classList.remove("render-card");
             _presetScenes = await GetPresetScenes() || [];
             const scenes = _presetScenes;
             if (scenes.length === 0) {
                 const empty = document.createElement("div");
-                empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:20px;";
+                empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:24px;";
                 empty.textContent = "暂无预设场景，保存场景时自动生成";
                 container.appendChild(empty);
                 return;
             }
 
-            // Navigation row
-            const navRow = document.createElement("div");
-            navRow.style.cssText = "display:flex;gap:6px;margin-bottom:10px;";
-            const prevBtn = document.createElement("button");
-            prevBtn.style.cssText = "flex:1;padding:6px;border:1px solid var(--white-08);border-radius:6px;background:transparent;color:var(--text-bright);cursor:pointer;font-size:11px;";
-            prevBtn.innerHTML = '<iconify-icon icon="lucide:skip-back"></iconify-icon> 上一个';
-            prevBtn.addEventListener("click", async () => {
-                if (scenes.length === 0) return;
-                if (currentPresetIndex < 0) currentPresetIndex = 0;
-                currentPresetIndex = (currentPresetIndex - 1 + scenes.length) % scenes.length;
-                const name = scenes[currentPresetIndex];
-                if (await _loadPresetScene(name)) {
-                    setStatus(`✓ 预设场景: ${name} (${currentPresetIndex + 1}/${scenes.length})`, true);
-                }
-            });
-            const nextBtn = document.createElement("button");
-            nextBtn.style.cssText = "flex:1;padding:6px;border:1px solid var(--white-08);border-radius:6px;background:transparent;color:var(--text-bright);cursor:pointer;font-size:11px;";
-            nextBtn.innerHTML = '下一个 <iconify-icon icon="lucide:skip-forward"></iconify-icon>';
-            nextBtn.addEventListener("click", async () => {
-                if (scenes.length === 0) return;
-                if (currentPresetIndex < 0) currentPresetIndex = 0;
-                currentPresetIndex = (currentPresetIndex + 1) % scenes.length;
-                const name = scenes[currentPresetIndex];
-                if (await _loadPresetScene(name)) {
-                    setStatus(`✓ 预设场景: ${name} (${currentPresetIndex + 1}/${scenes.length})`, true);
-                }
-            });
-            navRow.appendChild(prevBtn);
-            navRow.appendChild(nextBtn);
-            container.appendChild(navRow);
-
-            for (let i = 0; i < scenes.length; i++) {
-                const name = scenes[i];
-                const isActive = i === currentPresetIndex;
-                const row = document.createElement("div");
-                row.className = "menu-item";
-                row.innerHTML = `<span class="menu-icon"><iconify-icon icon="${isActive ? "play-circle" : "bookmark"}"></iconify-icon></span><span class="menu-label">${escapeHtml(name)}</span>`;
-                row.addEventListener("click", async () => {
-                    currentPresetIndex = i;
-                    if (await _loadPresetScene(name)) {
-                        sceneStack?.reRender();
-                        setStatus(`✓ 已加载: ${name}`, true);
+            cardContainer(container, (c) => {
+                const navRow = document.createElement("div");
+                navRow.style.cssText = "display:flex;gap:6px;padding:8px 14px;";
+                const prevBtn = document.createElement("button");
+                prevBtn.className = "mode-btn";
+                prevBtn.innerHTML = '<iconify-icon icon="lucide:skip-back"></iconify-icon> 上一个';
+                prevBtn.style.flex = "1";
+                prevBtn.addEventListener("click", async () => {
+                    if (scenes.length === 0) return;
+                    if (currentPresetIndex < 0) currentPresetIndex = 0;
+                    currentPresetIndex = (currentPresetIndex - 1 + scenes.length) % scenes.length;
+                    if (await _loadPresetScene(scenes[currentPresetIndex])) {
+                        setStatus(`✓ 预设场景: ${scenes[currentPresetIndex]} (${currentPresetIndex + 1}/${scenes.length})`, true);
                     }
                 });
-                container.appendChild(row);
-
-                // Delete button
-                const delBtn = document.createElement("span");
-                delBtn.style.cssText = "font-size:10px;color:var(--text-dim);cursor:pointer;margin-left:auto;padding:2px 4px;";
-                delBtn.textContent = "✕";
-                delBtn.title = "删除此预设场景";
-                delBtn.addEventListener("click", async (e) => {
-                    e.stopPropagation();
-                    if (!confirm(`确定删除「${name}」？`)) return;
-                    try {
-                        await DeletePresetScene(name);
-                        if (currentPresetIndex === i) currentPresetIndex = -1;
-                        else if (currentPresetIndex > i) currentPresetIndex--;
-                        sceneStack?.reRender();
-                        setStatus(`✓ 已删除: ${name}`, true);
-                    } catch (err) {
-                        setStatus("✗ 删除失败", false);
+                const nextBtn = document.createElement("button");
+                nextBtn.className = "mode-btn";
+                nextBtn.innerHTML = '下一个 <iconify-icon icon="lucide:skip-forward"></iconify-icon>';
+                nextBtn.style.flex = "1";
+                nextBtn.addEventListener("click", async () => {
+                    if (scenes.length === 0) return;
+                    if (currentPresetIndex < 0) currentPresetIndex = 0;
+                    currentPresetIndex = (currentPresetIndex + 1) % scenes.length;
+                    if (await _loadPresetScene(scenes[currentPresetIndex])) {
+                        setStatus(`✓ 预设场景: ${scenes[currentPresetIndex]} (${currentPresetIndex + 1}/${scenes.length})`, true);
                     }
                 });
-                row.appendChild(delBtn);
-            }
+                navRow.appendChild(prevBtn);
+                navRow.appendChild(nextBtn);
+                c.appendChild(navRow);
+            });
+
+            cardContainer(container, (c) => {
+                for (let i = 0; i < scenes.length; i++) {
+                    const name = scenes[i];
+                    const isActive = i === currentPresetIndex;
+                    const row = document.createElement("div"); row.className = "slide-item";
+                    const is = document.createElement("span"); is.className = "slide-icon";
+                    const ie = createIconifyIcon(isActive ? "lucide:play-circle" : "lucide:bookmark"); if (ie) is.appendChild(ie);
+                    row.appendChild(is);
+                    const ls = document.createElement("span"); ls.className = "slide-label"; ls.textContent = name;
+                    row.appendChild(ls);
+                    const delBtn = document.createElement("span");
+                    delBtn.textContent = "✕";
+                    delBtn.title = "删除此预设场景";
+                    delBtn.style.cssText = "font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 4px;";
+                    delBtn.addEventListener("click", async (e) => {
+                        e.stopPropagation();
+                        if (!confirm(`确定删除「${name}」？`)) return;
+                        try {
+                            await DeletePresetScene(name);
+                            if (currentPresetIndex === i) currentPresetIndex = -1;
+                            else if (currentPresetIndex > i) currentPresetIndex--;
+                            sceneStack?.reRender();
+                            setStatus(`✓ 已删除: ${name}`, true);
+                        } catch { setStatus("✗ 删除失败", false); }
+                    });
+                    row.appendChild(delBtn);
+                    row.addEventListener("click", async () => {
+                        currentPresetIndex = i;
+                        if (await _loadPresetScene(name)) {
+                            sceneStack?.reRender();
+                            setStatus(`✓ 已加载: ${name}`, true);
+                        }
+                    });
+                    c.appendChild(row);
+                }
+            });
         },
     };
 }
@@ -452,18 +454,22 @@ function buildEnvLightingLevel(): PopupLevel {
 function buildEnvLevel(): PopupLevel {
     return {
         label: "环境",
-
         dir: "",
-        items: [
-            { kind: "folder", label: "环境光照", icon: "sun", target: "scene:env:lighting" },
-            { kind: "folder", label: "天空", icon: "sun", target: "scene:env:sky" },
-            { kind: "folder", label: "地面", icon: "grid", target: "scene:env:ground" },
-            { kind: "folder", label: "粒子", icon: "wind", target: "scene:env:particle" },
-            { kind: "folder", label: "风", icon: "wind", target: "scene:env:wind" },
-            { kind: "folder", label: "云", icon: "cloud", target: "scene:env:cloud" },
-            { kind: "divider" } as any,
-            { kind: "folder", label: "系统预设", icon: "bookmark", target: "scene:env:presets" },
-        ],
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove("render-card");
+            cardContainer(container, (c) => {
+                slideRow(c, "lucide:sun", "环境光照", true, () => sceneStack?.push(buildEnvLightingLevel()));
+                slideRow(c, "lucide:sun", "天空", true, () => sceneStack?.push(buildSkyLevel()));
+                slideRow(c, "lucide:grid", "地面", true, () => sceneStack?.push(buildGroundLevel()));
+                slideRow(c, "lucide:wind", "粒子", true, () => sceneStack?.push(buildParticleLevel()));
+                slideRow(c, "lucide:wind", "风", true, () => sceneStack?.push(buildWindLevel()));
+                slideRow(c, "lucide:cloud", "云", true, () => sceneStack?.push(buildCloudLevel()));
+            });
+            cardContainer(container, (c) => {
+                slideRow(c, "lucide:bookmark", "系统预设", true, () => sceneStack?.push(buildPresetLevel()));
+            });
+        },
     };
 }
 
@@ -548,21 +554,24 @@ const ENV_PRESETS: Record<string, EnvPresetConfig> = {
 };
 
 function buildPresetLevel(): PopupLevel {
+    const entries = Object.entries(ENV_PRESETS);
     return {
         label: "系统预设",
         dir: "",
-        items: Object.entries(ENV_PRESETS).map(([name, preset]) => ({
-            kind: "action" as const,
-            label: name,
-            icon: "bookmark",
-            target: "",
-            sublabel: "",
-            onClick: () => {
-                setEnvState({ ...preset.env });
-                if (preset.lights) setLightState(preset.lights);
-                if (preset.render) setRenderState(preset.render);
-            },
-        })),
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove("render-card");
+            cardContainer(container, (c) => {
+                for (const [name, preset] of entries) {
+                    slideRow(c, "lucide:bookmark", name, false, () => {
+                        setEnvState({ ...preset.env });
+                        if (preset.lights) setLightState(preset.lights);
+                        if (preset.render) setRenderState(preset.render);
+                        sceneStack?.reRender();
+                    });
+                }
+            });
+        },
     };
 }
 
@@ -611,9 +620,15 @@ function buildSkyLevel(): PopupLevel {
                 container.appendChild(hint);
 
                 const texRow = document.createElement("div");
+                texRow.className = "slide-item";
                 const fileName = s.skyTexture ? s.skyTexture.split(/[/\\]/).pop() : "未选择";
-                texRow.innerHTML = `<span class="menu-label">环境贴图</span><span class="menu-sublabel">${fileName}</span>`;
-                texRow.className = "menu-item";
+                const ti = document.createElement("span"); ti.className = "slide-icon";
+                const te = createIconifyIcon("lucide:image"); if (te) ti.appendChild(te);
+                texRow.appendChild(ti);
+                const tl = document.createElement("span"); tl.className = "slide-label"; tl.textContent = "环境贴图";
+                texRow.appendChild(tl);
+                const ts = document.createElement("span"); ts.className = "slide-sublabel"; ts.textContent = fileName;
+                texRow.appendChild(ts);
                 texRow.addEventListener("click", async () => {
                     const path = await SelectEnvTextureFile().catch(() => "");
                     if (path) setEnvState({ skyTexture: path });

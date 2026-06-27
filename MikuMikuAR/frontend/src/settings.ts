@@ -26,6 +26,7 @@ import {
     PopupRow, PopupLevel, escapeHtml, cardContainer,
 } from "./config";
 import { SlideMenu } from "./menu";
+import { slideRow } from "./ui-helpers";
 import { showPopup, rescanAndSync, reloadConfig } from "./library";
 import { softwareKindIcon, createIconifyIcon } from "./icons";
 
@@ -37,46 +38,48 @@ export { refreshLibrary } from "./library";
 export function renderExternalList(): void {
     dom.externalList.innerHTML = "";
     if (externalPaths.length === 0) {
-        dom.externalList.innerHTML = '<div class="overlay-empty">暂无外部库，点击下方添加</div>';
+        dom.externalList.innerHTML = '<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">暂无外部库，点击下方添加</div>';
         return;
     }
+    const card = document.createElement("div");
+    card.className = "lcard";
     for (const ep of externalPaths) {
         const row = document.createElement("div");
-        row.className = "overlay-row";
-        row.innerHTML = `
-            <span class="eo-name">${escapeHtml(ep.name)}</span>
-            <span class="eo-path">${escapeHtml(ep.path)}</span>
-            <button class="overlay-rename" data-path="${escapeHtml(ep.path)}"><iconify-icon icon="lucide:edit-3"></iconify-icon></button>
-            <button class="overlay-del" data-path="${escapeHtml(ep.path)}">✕</button>
-        `;
-        const renameBtn = row.querySelector(".overlay-rename") as HTMLButtonElement;
+        row.className = "slide-item";
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "slide-label";
+        nameSpan.textContent = ep.name;
+        nameSpan.style.flex = "0 0 auto";
+        row.appendChild(nameSpan);
+        const pathSpan = document.createElement("span");
+        pathSpan.className = "slide-sublabel";
+        pathSpan.style.cssText = "flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 4px;";
+        pathSpan.textContent = ep.path;
+        row.appendChild(pathSpan);
+        const renameBtn = document.createElement("button");
+        renameBtn.style.cssText = "background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:2px 4px;";
+        renameBtn.innerHTML = '<iconify-icon icon="lucide:edit-3"></iconify-icon>';
         renameBtn.addEventListener("click", () => {
             const newName = prompt("输入新的显示名称：", ep.name);
             if (newName && newName.trim() && newName.trim() !== ep.name) {
                 RenameExternalPath(ep.path, newName.trim()).then(async () => {
-                    await reloadConfig();
-                    renderExternalList();
+                    await reloadConfig(); renderExternalList();
                     setStatus(`✓ 已重命名: ${newName.trim()}`, true);
-                }).catch((err) => {
-                    setStatus("✗ 重命名失败", false);
-                    console.error("RenameExternalPath error:", err);
-                });
+                }).catch((err) => { setStatus("✗ 重命名失败", false); console.error("RenameExternalPath error:", err); });
             }
         });
-        const delBtn = row.querySelector(".overlay-del") as HTMLButtonElement;
+        row.appendChild(renameBtn);
+        const delBtn = document.createElement("button");
+        delBtn.style.cssText = "background:none;border:none;color:var(--danger,#e74c3c);cursor:pointer;font-size:12px;padding:2px 4px;";
+        delBtn.textContent = "✕";
         delBtn.addEventListener("click", async () => {
-            try {
-                await RemoveExternalPath(ep.path);
-                await reloadConfig();
-                if (libraryRoot) await rescanAndSync();
-                renderExternalList();
-                showPopup();
-            } catch (err) {
-                console.error("RemoveExternalPath error:", err);
-            }
+            try { await RemoveExternalPath(ep.path); await reloadConfig(); if (libraryRoot) await rescanAndSync(); renderExternalList(); showPopup(); }
+            catch (err) { console.error("RemoveExternalPath error:", err); }
         });
-        dom.externalList.appendChild(row);
+        row.appendChild(delBtn);
+        card.appendChild(row);
     }
+    dom.externalList.appendChild(card);
 }
 
 async function addExternalPath(): Promise<void> {
@@ -106,57 +109,55 @@ async function scanSoftwareDir(): Promise<void> {
 }
 
 function buildSettingsSoftwareLevel(): PopupLevel {
-    // Standard action rows (add, detect, paths, open dir) as normal MenuStack items
-    const items: PopupRow[] = [
-        { kind: "action", label: "添加自定义软件", icon: "plus", target: "set:addcustomsoftware" },
-        { kind: "divider", label: "", icon: "", target: "" },
-        { kind: "action", label: "自动检测 MMD", icon: "search", target: "set:detectmmd" },
-        { kind: "action", label: "设置 MMD 路径", icon: "folder", target: "set:mmdpath" },
-        { kind: "action", label: "设置 Blender 路径", icon: "cube-3d", target: "set:blenderpath" },
-        { kind: "divider", label: "", icon: "", target: "" },
-        { kind: "action", label: "打开目录", icon: "folder-open", target: "set:opensoftwaredir" },
-    ];
-    // Software list rendered inline with dual-action: click to detail, ▶ to launch
     return {
         label: "软件管理",
         dir: "",
-        items,
+        items: [],
         renderCustom: async (container) => {
-            // Always fetch fresh data inside renderCustom to avoid stale flash
+            container.classList.remove("render-card");
+
             await scanSoftwareDir();
             const entries = cachedSoftwareEntries;
-            if (!entries || entries.length === 0) return;
-            // Insert before the first standard item
-            container.style.padding = "0";
-            const listEl = document.createElement("div");
-            listEl.style.cssText = "padding:4px 0;";
-            for (const entry of entries) {
-                const row = document.createElement("div");
-                row.className = "menu-item";
-                row.style.cssText = "display:flex;align-items:center;gap:6px;padding:6px 14px;cursor:pointer;border-radius:0;";
-                // Click on the body → go to detail
-                row.addEventListener("click", (e) => {
-                    if ((e.target as HTMLElement).closest(".sw-play-btn")) return;
-                    settingsStack?.push(buildSoftwareDetailLevel(entry.path));
+
+            if (entries && entries.length > 0) {
+                cardContainer(container, (c) => {
+                    for (const entry of entries) {
+                        const row = document.createElement("div");
+                        row.className = "slide-item";
+                        row.addEventListener("click", (e) => {
+                            if ((e.target as HTMLElement).closest(".sw-play-btn")) return;
+                            settingsStack?.push(buildSoftwareDetailLevel(entry.path));
+                        });
+                        row.innerHTML = `
+                            <span class="slide-icon"><iconify-icon icon="${softwareKindIcon(entry.kind)}"></iconify-icon></span>
+                            <span class="slide-label">${escapeHtml(entry.name)}</span>
+                            <span class="slide-sublabel" style="font-size:10px;color:var(--text-dim);white-space:nowrap;">${entry.kind}</span>
+                            <span class="slide-tag" style="font-size:9px;color:var(--text-muted);">${entry.managed ? "自定义" : "auto"}</span>
+                            <button class="sw-play-btn" style="background:none;border:none;color:var(--accent,#7c3aed);cursor:pointer;font-size:14px;padding:2px 4px;" title="直接启动">▶</button>
+                        `;
+                        row.querySelector(".sw-play-btn")!.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            LaunchSoftware(entry.path, entry.args || "").then(() => {
+                                setStatus(`✓ 已启动: ${entry.name}`, true);
+                            }).catch((err: any) => {
+                                setStatus("✗ " + (err.message || err), false);
+                            });
+                        });
+                        c.appendChild(row);
+                    }
                 });
-                row.innerHTML = `
-                    <iconify-icon icon="${softwareKindIcon(entry.kind)}" style="font-size:14px;flex-shrink:0;"></iconify-icon>
-                    <span style="flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(entry.name)}</span>
-                    <span style="font-size:10px;color:var(--text-dim);white-space:nowrap;">${entry.kind}</span>
-                    <span style="font-size:10px;color:var(--text-muted);margin-left:4px;">${entry.managed ? "自定义" : "auto"}</span>
-                    <button class="sw-play-btn" style="background:none;border:none;color:var(--accent,#7c3aed);cursor:pointer;font-size:14px;padding:2px 4px;" title="直接启动">▶</button>
-                `;
-                row.querySelector(".sw-play-btn")!.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    LaunchSoftware(entry.path, entry.args || "").then(() => {
-                        setStatus(`✓ 已启动: ${entry.name}`, true);
-                    }).catch((err: any) => {
-                        setStatus("✗ " + (err.message || err), false);
-                    });
-                });
-                listEl.appendChild(row);
             }
-            container.prepend(listEl);
+
+            cardContainer(container, (c) => {
+                slideRow(c, "lucide:plus", "添加自定义软件", false, () => handleSettingsAction({ target: "set:addcustomsoftware" } as any));
+                slideRow(c, "lucide:search", "自动检测 MMD", false, () => handleSettingsAction({ target: "set:detectmmd" } as any));
+                slideRow(c, "lucide:folder", "设置 MMD 路径", false, () => handleSettingsAction({ target: "set:mmdpath" } as any));
+                slideRow(c, "lucide:cube-3d", "设置 Blender 路径", false, () => handleSettingsAction({ target: "set:blenderpath" } as any));
+            });
+
+            cardContainer(container, (c) => {
+                slideRow(c, "lucide:folder-open", "打开目录", false, () => handleSettingsAction({ target: "set:opensoftwaredir" } as any));
+            });
         },
     };
 }
@@ -168,155 +169,137 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
         return { label: "未知软件", dir: "", items: [{ kind: "action", label: "软件未找到", icon: "alert-circle", target: "" }] };
     }
 
-    // For managed entries, show editable args input via renderCustom
     if (entry.managed) {
         return {
             label: entry.name,
             dir: "",
             items: [],
             renderCustom: async (container) => {
-                container.style.padding = "12px 14px";
+                container.classList.remove("render-card");
 
-                const field = (label: string, value: string, readonly: boolean): HTMLDivElement => {
-                    const row = document.createElement("div");
-                    row.style.cssText = "margin-bottom:10px;";
-                    const lbl = document.createElement("div");
-                    lbl.style.cssText = "font-size:10px;color:var(--text-dim);margin-bottom:2px;";
-                    lbl.textContent = label;
-                    row.appendChild(lbl);
+                cardContainer(container, (c) => {
+                    const fields: Array<{ label: string; value: string }> = [
+                        { label: "名称", value: entry.name },
+                        { label: "路径", value: entry.path },
+                        { label: "类型", value: entry.kind },
+                    ];
+                    for (const f of fields) {
+                        const row = document.createElement("div");
+                        row.className = "slide-item";
+                        row.style.cssText = "display:flex;justify-content:space-between;padding:6px 14px;min-height:auto;margin:0;";
+                        row.innerHTML = `<span class="slide-label" style="color:var(--text-dim);flex:none;">${f.label}</span><span class="slide-label" style="text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;font-size:11px;">${escapeHtml(f.value)}</span>`;
+                        c.appendChild(row);
+                    }
+                    const argRow = document.createElement("div");
+                    argRow.style.cssText = "padding:6px 14px;";
+                    const argLbl = document.createElement("div");
+                    argLbl.style.cssText = "font-size:10px;color:var(--text-dim);margin-bottom:2px;";
+                    argLbl.textContent = "启动参数 (支持 {model} 占位符)";
+                    argRow.appendChild(argLbl);
                     const val = document.createElement("div");
-                    val.style.cssText = `font-size:12px;color:var(--text);word-break:break-all;${readonly ? "" : "background:var(--white-08);border:1px solid var(--border);border-radius:4px;padding:4px 6px;"}`;
-                    if (readonly) {
-                        val.textContent = value;
-                    } else {
-                        const input = document.createElement("input");
-                        input.type = "text";
-                        input.value = value;
-                        input.style.cssText = "width:100%;background:transparent;border:none;color:var(--text);font-size:12px;outline:none;";
-                        val.appendChild(input);
-                        // Save on enter key
-                        input.addEventListener("keydown", (e) => {
-                            if (e.key === "Enter") {
-                                input.blur();
-                            }
-                        });
-                        input.addEventListener("blur", async () => {
-                            try {
-                                await UpdateCustomSoftware(entry.path, entry.name, input.value);
-                                entry.args = input.value;
-                                setStatus("✓ 参数已更新", true);
-                            } catch (err) {
-                                setStatus("✗ 更新失败", false);
-                            }
-                        });
-                    }
-                    row.appendChild(val);
-                    return row;
-                };
-
-                container.appendChild(field("名称", entry.name, true));
-                container.appendChild(field("路径", entry.path, true));
-                container.appendChild(field("类型", entry.kind, true));
-                container.appendChild(field("启动参数 (支持 {model} 占位符)", entry.args, false));
-
-                const divider = document.createElement("div");
-                divider.style.cssText = "height:1px;background:var(--border);margin:10px 0;";
-                container.appendChild(divider);
-
-                // Launch button
-                const launchBtn = document.createElement("button");
-                launchBtn.textContent = "▶ 启动";
-                launchBtn.style.cssText = "width:100%;background:var(--accent,#7c3aed);color:#fff;border:none;border-radius:4px;padding:8px 12px;font-size:12px;cursor:pointer;margin-bottom:6px;";
-                launchBtn.addEventListener("click", () => {
-                    LaunchSoftware(entry.path, entry.args).then(() => {
-                        setStatus(`✓ 已启动: ${entry.name}`, true);
-                    }).catch((err: any) => {
-                        setStatus("✗ " + (err.message || err), false);
+                    val.style.cssText = "background:var(--white-08);border:1px solid var(--border);border-radius:4px;padding:4px 6px;";
+                    const input = document.createElement("input");
+                    input.type = "text"; input.value = entry.args || "";
+                    input.style.cssText = "width:100%;background:transparent;border:none;color:var(--text);font-size:12px;outline:none;";
+                    input.addEventListener("blur", async () => {
+                        try { await UpdateCustomSoftware(entry.path, entry.name, input.value); entry.args = input.value; setStatus("✓ 参数已更新", true); }
+                        catch { setStatus("✗ 更新失败", false); }
                     });
+                    val.appendChild(input);
+                    argRow.appendChild(val);
+                    c.appendChild(argRow);
                 });
-                container.appendChild(launchBtn);
 
-                // Delete button (managed only)
-                const delBtn = document.createElement("button");
-                delBtn.textContent = "🗑 删除";
-                delBtn.style.cssText = "width:100%;background:var(--danger,#e74c3c);color:#fff;border:none;border-radius:4px;padding:8px 12px;font-size:12px;cursor:pointer;";
-                delBtn.addEventListener("click", async () => {
-                    try {
-                        await RemoveCustomSoftware(entry.path);
-                        cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(e => e.path !== entry.path);
-                        setStatus(`✓ 已删除: ${entry.name}`, true);
-                        settingsStack?.pop();
-                        settingsStack?.reRender();
-                    } catch (err) {
-                        setStatus("✗ 删除失败", false);
-                    }
+                cardContainer(container, (c) => {
+                    const launchRow = document.createElement("div");
+                    launchRow.className = "slide-item";
+                    const li = document.createElement("span"); li.className = "slide-icon";
+                    const le = createIconifyIcon("lucide:play"); if (le) li.appendChild(le);
+                    launchRow.appendChild(li);
+                    const ll = document.createElement("span"); ll.className = "slide-label"; ll.textContent = "启动";
+                    launchRow.appendChild(ll);
+                    launchRow.addEventListener("click", () => {
+                        LaunchSoftware(entry.path, entry.args).then(() => setStatus(`✓ 已启动: ${entry.name}`, true)).catch((err: any) => setStatus("✗ " + (err.message || err), false));
+                    });
+                    c.appendChild(launchRow);
+
+                    const delRow = document.createElement("div");
+                    delRow.className = "slide-item";
+                    const di = document.createElement("span"); di.className = "slide-icon";
+                    const de = createIconifyIcon("lucide:trash-2"); if (de) di.appendChild(de);
+                    delRow.appendChild(di);
+                    const dl = document.createElement("span"); dl.className = "slide-label"; dl.textContent = "删除"; dl.style.color = "var(--danger,#e74c3c)";
+                    delRow.appendChild(dl);
+                    delRow.addEventListener("click", async () => {
+                        try {
+                            await RemoveCustomSoftware(entry.path);
+                            cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(e => e.path !== entry.path);
+                            setStatus(`✓ 已删除: ${entry.name}`, true);
+                            settingsStack?.pop();
+                            settingsStack?.reRender();
+                        } catch { setStatus("✗ 删除失败", false); }
+                    });
+                    c.appendChild(delRow);
                 });
-                container.appendChild(delBtn);
             },
         };
     }
 
-    // Non-managed (scanned) entries: read-only summary + launch button
     return {
         label: entry.name,
         dir: "",
         items: [],
         renderCustom: async (container) => {
-            container.style.padding = "12px 14px";
+            container.classList.remove("render-card");
 
-            const field = (label: string, value: string): HTMLDivElement => {
-                const row = document.createElement("div");
-                row.style.cssText = "margin-bottom:10px;";
-                const lbl = document.createElement("div");
-                lbl.style.cssText = "font-size:10px;color:var(--text-dim);margin-bottom:2px;";
-                lbl.textContent = label;
-                row.appendChild(lbl);
-                const val = document.createElement("div");
-                val.style.cssText = "font-size:12px;color:var(--text);word-break:break-all;";
-                val.textContent = value;
-                row.appendChild(val);
-                return row;
-            };
-
-            container.appendChild(field("名称", entry.name));
-            container.appendChild(field("路径", entry.path));
-            container.appendChild(field("类型", entry.kind));
-
-            const divider = document.createElement("div");
-            divider.style.cssText = "height:1px;background:var(--border);margin:10px 0;";
-            container.appendChild(divider);
-
-            const launchBtn = document.createElement("button");
-            launchBtn.textContent = "▶ 启动";
-            launchBtn.style.cssText = "width:100%;background:var(--accent,#7c3aed);color:#fff;border:none;border-radius:4px;padding:8px 12px;font-size:12px;cursor:pointer;margin-bottom:6px;";
-            launchBtn.addEventListener("click", () => {
-                LaunchSoftware(entry.path, "").then(() => {
-                    setStatus(`✓ 已启动: ${entry.name}`, true);
-                }).catch((err: any) => {
-                    setStatus("✗ " + (err.message || err), false);
-                });
-            });
-            container.appendChild(launchBtn);
-
-            // Convert to custom
-            const convertBtn = document.createElement("button");
-            convertBtn.textContent = "＋ 转为自定义（以便编辑参数）";
-            convertBtn.style.cssText = "width:100%;background:var(--white-08);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:8px 12px;font-size:11px;cursor:pointer;";
-            convertBtn.addEventListener("click", async () => {
-                try {
-                    const args = prompt("输入启动参数模板（支持 {model} 占位符，留空则不带参数）：", "");
-                    if (args === null) return;
-                    await AddCustomSoftware(entry.path, entry.name, args);
-                    // Refresh local cache and re-render
-                    cachedSoftwareEntries = await ScanSoftwareDir();
-                    setStatus(`✓ 已转为自定义: ${entry.name}`, true);
-                    settingsStack?.pop();
-                    settingsStack?.reRender();
-                } catch (err: any) {
-                    setStatus("✗ " + (err.message || err), false);
+            cardContainer(container, (c) => {
+                const fields: Array<{ label: string; value: string }> = [
+                    { label: "名称", value: entry.name },
+                    { label: "路径", value: entry.path },
+                    { label: "类型", value: entry.kind },
+                ];
+                for (const f of fields) {
+                    const row = document.createElement("div");
+                    row.className = "slide-item";
+                    row.style.cssText = "display:flex;justify-content:space-between;padding:6px 14px;min-height:auto;margin:0;";
+                    row.innerHTML = `<span class="slide-label" style="color:var(--text-dim);flex:none;">${f.label}</span><span class="slide-label" style="text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;font-size:11px;">${escapeHtml(f.value)}</span>`;
+                    c.appendChild(row);
                 }
             });
-            container.appendChild(convertBtn);
+
+            cardContainer(container, (c) => {
+                const launchRow = document.createElement("div");
+                launchRow.className = "slide-item";
+                const li = document.createElement("span"); li.className = "slide-icon";
+                const le = createIconifyIcon("lucide:play"); if (le) li.appendChild(le);
+                launchRow.appendChild(li);
+                const ll = document.createElement("span"); ll.className = "slide-label"; ll.textContent = "启动";
+                launchRow.appendChild(ll);
+                launchRow.addEventListener("click", () => {
+                    LaunchSoftware(entry.path, "").then(() => setStatus(`✓ 已启动: ${entry.name}`, true)).catch((err: any) => setStatus("✗ " + (err.message || err), false));
+                });
+                c.appendChild(launchRow);
+
+                const convertRow = document.createElement("div");
+                convertRow.className = "slide-item";
+                const ci = document.createElement("span"); ci.className = "slide-icon";
+                const ce = createIconifyIcon("lucide:plus"); if (ce) ci.appendChild(ce);
+                convertRow.appendChild(ci);
+                const cl = document.createElement("span"); cl.className = "slide-label"; cl.textContent = "转为自定义（以便编辑参数）";
+                convertRow.appendChild(cl);
+                convertRow.addEventListener("click", async () => {
+                    try {
+                        const args = prompt("输入启动参数模板（支持 {model} 占位符，留空则不带参数）：", "");
+                        if (args === null) return;
+                        await AddCustomSoftware(entry.path, entry.name, args);
+                        cachedSoftwareEntries = await ScanSoftwareDir();
+                        setStatus(`✓ 已转为自定义: ${entry.name}`, true);
+                        settingsStack?.pop();
+                        settingsStack?.reRender();
+                    } catch (err: any) { setStatus("✗ " + (err.message || err), false); }
+                });
+                c.appendChild(convertRow);
+            });
         },
     };
 }
@@ -329,23 +312,40 @@ function buildSettingsRoot(): PopupLevel {
     return {
         label: "设置",
         dir: "",
-        items: [
-            { kind: "folder", label: "显示", icon: "palette", target: "settings:display" },
-            { kind: "folder", label: "界面", icon: "monitor", target: "settings:ui" },
-            { kind: "folder", label: "下载", icon: "download", target: "settings:download" },
-            { kind: "folder", label: "系统", icon: "settings", target: "settings:system" },
-            { kind: "folder", label: "软件管理", icon: "package", target: "settings:software" },
-        ],
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove("render-card");
+            cardContainer(container, (c) => {
+                slideRow(c, "lucide:palette", "显示", true, () => settingsStack?.push(buildSettingsDisplayLevel()));
+                slideRow(c, "lucide:monitor", "界面", true, () => settingsStack?.push(buildSettingsUILevel()));
+                slideRow(c, "lucide:download", "下载", true, () => settingsStack?.push(buildSettingsDownloadLevel()));
+                slideRow(c, "lucide:settings", "系统", true, () => settingsStack?.push(buildSettingsSystemLevel()));
+                slideRow(c, "lucide:package", "软件管理", true, () => settingsStack?.push(buildSettingsSoftwareLevel()));
+            });
+        },
     };
 }
 
 function buildSettingsDisplayLevel(): PopupLevel {
-    const items: PopupRow[] = [
-        { kind: "action", label: "日文名（name_jp）", icon: displayNamePriority === "name_jp" ? "check" : "circle", target: "set:name_jp" },
-        { kind: "action", label: "英文名（name_en）", icon: displayNamePriority === "name_en" ? "check" : "circle", target: "set:name_en" },
-        { kind: "action", label: "文件名（filename）", icon: displayNamePriority === "filename" ? "check" : "circle", target: "set:filename" },
-    ];
-    return { label: "显示", dir: "", items };
+    const current = displayNamePriority;
+    function pick(p: DisplayNamePriority): void {
+        setDisplayNamePriority(p);
+        SetDisplayNamePriority(p).catch(console.warn);
+        settingsStack?.reRender();
+    }
+    return {
+        label: "显示",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove("render-card");
+            cardContainer(container, (c) => {
+                slideRow(c, current === "name_jp" ? "lucide:check-circle" : "lucide:circle", "日文名（name_jp）", false, () => pick("name_jp"));
+                slideRow(c, current === "name_en" ? "lucide:check-circle" : "lucide:circle", "英文名（name_en）", false, () => pick("name_en"));
+                slideRow(c, current === "filename" ? "lucide:check-circle" : "lucide:circle", "文件名（filename）", false, () => pick("filename"));
+            });
+        },
+    };
 }
 
 function buildSettingsUILevel(): PopupLevel {
@@ -726,36 +726,36 @@ function buildSettingsExternalLevel(): PopupLevel {
         label: "外部库管理",
         dir: "",
         items: [],
-        renderCustom: async (container) => {
-            container.style.padding = "12px 14px";
+        renderCustom: (container) => {
+            container.classList.remove("render-card");
 
-            const listEl = document.createElement("div");
-            listEl.style.cssText = "display:flex;flex-direction:column;gap:6px;margin-bottom:12px;";
-            container.appendChild(listEl);
-
-            async function refreshList(): Promise<void> {
-                listEl.innerHTML = "";
+            cardContainer(container, (c) => {
                 if (externalPaths.length === 0) {
-                    listEl.innerHTML = '<div style="font-size:11px;color:var(--text-dim);">暂无外部库</div>';
+                    const empty = document.createElement("div");
+                    empty.style.cssText = "font-size:11px;color:var(--text-dim);padding:8px 0;text-align:center;";
+                    empty.textContent = "暂无外部库";
+                    c.appendChild(empty);
                     return;
                 }
                 for (const ep of externalPaths) {
                     const row = document.createElement("div");
-                    row.style.cssText = "display:flex;align-items:center;gap:6px;background:var(--white-08);border-radius:4px;padding:6px 8px;";
+                    row.className = "slide-item";
                     row.innerHTML = `
-                        <span style="flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(ep.name)}</span>
-                        <span style="flex:1;font-size:10px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(ep.path)}</span>
+                        <span class="slide-icon"><iconify-icon icon="lucide:plug"></iconify-icon></span>
+                        <span class="slide-label" style="flex:0 0 auto;margin-right:6px;">${escapeHtml(ep.name)}</span>
+                        <span class="slide-sublabel" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim);font-size:10px;">${escapeHtml(ep.path)}</span>
                         <button class="ext-rename" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:2px 4px;">✎</button>
                         <button class="ext-del" style="background:none;border:none;color:var(--danger,#e74c3c);cursor:pointer;font-size:12px;padding:2px 4px;">✕</button>
                     `;
-                    row.querySelector(".ext-rename")!.addEventListener("click", () => {
+                    row.querySelector(".ext-rename")!.addEventListener("click", async () => {
                         const newName = prompt("输入新的显示名称：", ep.name);
                         if (newName && newName.trim() && newName.trim() !== ep.name) {
-                            RenameExternalPath(ep.path, newName.trim()).then(async () => {
+                            try {
+                                await RenameExternalPath(ep.path, newName.trim());
                                 await reloadConfig();
-                                refreshList();
-                                setStatus(`✓ 已重命名`, true);
-                            }).catch(() => setStatus("✗ 重命名失败", false));
+                                settingsStack?.reRender();
+                                setStatus("✓ 已重命名", true);
+                            } catch { setStatus("✗ 重命名失败", false); }
                         }
                     });
                     row.querySelector(".ext-del")!.addEventListener("click", async () => {
@@ -763,34 +763,30 @@ function buildSettingsExternalLevel(): PopupLevel {
                             await RemoveExternalPath(ep.path);
                             await reloadConfig();
                             if (libraryRoot) await rescanAndSync();
-                            refreshList();
+                            settingsStack?.reRender();
                         } catch (err) {
                             console.error("RemoveExternalPath error:", err);
                         }
                     });
-                    listEl.appendChild(row);
-                }
-            }
-
-            const addBtn = document.createElement("button");
-            addBtn.textContent = "＋ 添加外部库";
-            addBtn.style.cssText = "width:100%;background:var(--accent,#7c3aed);color:#fff;border:none;border-radius:4px;padding:8px 12px;font-size:12px;cursor:pointer;";
-            addBtn.addEventListener("click", async () => {
-                try {
-                    const dir = await SelectDir();
-                    if (!dir) return;
-                    await AddExternalPath(dir);
-                    await reloadConfig();
-                    if (libraryRoot) await rescanAndSync();
-                    refreshList();
-                    setStatus("✓ 外部库已添加", true);
-                } catch (err) {
-                    console.error("AddExternalPath error:", err);
+                    c.appendChild(row);
                 }
             });
-            container.appendChild(addBtn);
 
-            refreshList();
+            cardContainer(container, (c) => {
+                slideRow(c, "lucide:plus", "添加外部库", false, async () => {
+                    try {
+                        const dir = await SelectDir();
+                        if (!dir) return;
+                        await AddExternalPath(dir);
+                        await reloadConfig();
+                        if (libraryRoot) await rescanAndSync();
+                        settingsStack?.reRender();
+                        setStatus("✓ 外部库已添加", true);
+                    } catch (err) {
+                        console.error("AddExternalPath error:", err);
+                    }
+                });
+            });
         },
     };
 }
@@ -801,91 +797,65 @@ function buildSettingsDownloadLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: async (container) => {
-            container.style.padding = "12px 14px";
+            container.classList.remove("render-card");
 
-            // Current status
-            const statusEl = document.createElement("div");
-            statusEl.style.cssText = "font-size:11px;color:var(--text-dim);margin-bottom:10px;";
-            container.appendChild(statusEl);
+            let dirInput: HTMLInputElement;
+            let refreshStatus: () => Promise<void>;
 
-            async function refreshStatus(): Promise<void> {
-                try {
-                    const dir = await GetDownloadWatchStatus();
-                    statusEl.textContent = dir ? `监听中: ${dir}` : "监听已停止";
-                } catch {
-                    statusEl.textContent = "监听已停止";
-                }
-            }
-            refreshStatus();
+            cardContainer(container, (c) => {
+                const statusEl = document.createElement("div");
+                statusEl.style.cssText = "font-size:11px;color:var(--text-dim);padding:4px 14px;";
+                c.appendChild(statusEl);
 
-            // Directory input row
-            const dirRow = document.createElement("div");
-            dirRow.style.cssText = "display:flex;gap:6px;margin-bottom:10px;";
-            const dirInput = document.createElement("input");
-            dirInput.type = "text";
-            dirInput.placeholder = "选择监听目录...";
-            dirInput.readOnly = true;
-            dirInput.style.cssText = "flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;";
-            const selectBtn = document.createElement("button");
-            selectBtn.textContent = "📁";
-            selectBtn.style.cssText = "background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 10px;cursor:pointer;font-size:14px;";
-            selectBtn.addEventListener("click", async () => {
-                try {
-                    const dir = await SelectDir();
-                    if (!dir) return;
-                    dirInput.value = dir;
-                    await SetDownloadWatchDir(dir);
-                    refreshStatus();
-                    setStatus(`✓ 监听目录已设置: ${dir}`, true);
-                } catch (err: any) {
-                    setStatus("✗ 设置监听目录失败", false);
-                }
+                refreshStatus = async () => {
+                    try { const dir = await GetDownloadWatchStatus(); statusEl.textContent = dir ? `监听中: ${dir}` : "监听已停止"; }
+                    catch { statusEl.textContent = "监听已停止"; }
+                };
+                refreshStatus();
+
+                const dirRow = document.createElement("div");
+                dirRow.style.cssText = "display:flex;gap:6px;padding:6px 14px;";
+                dirInput = document.createElement("input");
+                dirInput.type = "text"; dirInput.placeholder = "选择监听目录..."; dirInput.readOnly = true;
+                dirInput.style.cssText = "flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;";
+                const selectBtn = document.createElement("button");
+                selectBtn.textContent = "📁";
+                selectBtn.className = "mode-btn";
+                selectBtn.addEventListener("click", async () => {
+                    try {
+                        const dir = await SelectDir(); if (!dir) return;
+                        dirInput.value = dir; await SetDownloadWatchDir(dir); refreshStatus();
+                        setStatus(`✓ 监听目录已设置: ${dir}`, true);
+                    } catch { setStatus("✗ 设置监听目录失败", false); }
+                });
+                dirRow.appendChild(dirInput);
+                dirRow.appendChild(selectBtn);
+                c.appendChild(dirRow);
+
+                GetDownloadWatchStatus().then(dir => { if (dir) dirInput.value = dir; }).catch(() => {});
             });
-            dirRow.appendChild(dirInput);
-            dirRow.appendChild(selectBtn);
-            container.appendChild(dirRow);
 
-            // Get current watch dir to populate input
-            GetDownloadWatchStatus().then(dir => {
-                if (dir) dirInput.value = dir;
-            }).catch(() => {});
-
-            // Auto-import toggle
-            const autoRow = document.createElement("div");
-            autoRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:10px;justify-content:space-between;";
-            const autoLabel = document.createElement("span");
-            autoLabel.style.cssText = "font-size:11px;color:var(--text-dim);";
-            autoLabel.textContent = "自动导入（跳过确认）";
-            const autoToggle = document.createElement("input");
-            autoToggle.type = "checkbox";
-            autoToggle.style.cssText = "accent-color:var(--accent);cursor:pointer;";
-            autoToggle.addEventListener("change", async () => {
-                try {
-                    await SetDownloadAutoImport(autoToggle.checked);
-                    setStatus(autoToggle.checked ? "✓ 自动导入已开启" : "✓ 自动导入已关闭", true);
-                } catch {
-                    setStatus("✗ 设置失败", false);
-                }
+            cardContainer(container, (c) => {
+                addToggleRow(c, "自动导入（跳过确认）", "lucide:download", false, async (v) => {
+                    try { await SetDownloadAutoImport(v); setStatus(v ? "✓ 自动导入已开启" : "✓ 自动导入已关闭", true); }
+                    catch { setStatus("✗ 设置失败", false); }
+                });
             });
-            autoRow.appendChild(autoLabel);
-            autoRow.appendChild(autoToggle);
-            container.appendChild(autoRow);
 
-            // Stop watch button
-            const stopBtn = document.createElement("button");
-            stopBtn.textContent = "停止监听";
-            stopBtn.style.cssText = "background:var(--danger,#e74c3c);color:#fff;border:none;border-radius:4px;padding:6px 12px;font-size:12px;cursor:pointer;";
-            stopBtn.addEventListener("click", async () => {
-                try {
-                    await StopWatchDir();
-                    dirInput.value = "";
-                    refreshStatus();
-                    setStatus("✓ 已停止监听", true);
-                } catch {
-                    setStatus("✗ 停止监听失败", false);
-                }
+            cardContainer(container, (c) => {
+                const stopRow = document.createElement("div");
+                stopRow.className = "slide-item";
+                const si = document.createElement("span"); si.className = "slide-icon";
+                const se = createIconifyIcon("lucide:stop-circle"); if (se) si.appendChild(se);
+                stopRow.appendChild(si);
+                const sl = document.createElement("span"); sl.className = "slide-label"; sl.textContent = "停止监听"; sl.style.color = "var(--danger,#e74c3c)";
+                stopRow.appendChild(sl);
+                stopRow.addEventListener("click", async () => {
+                    try { await StopWatchDir(); dirInput.value = ""; refreshStatus(); setStatus("✓ 已停止监听", true); }
+                    catch { setStatus("✗ 停止监听失败", false); }
+                });
+                c.appendChild(stopRow);
             });
-            container.appendChild(stopBtn);
         },
     };
 }

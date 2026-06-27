@@ -84,12 +84,12 @@
 
         <!-- External Library Management Overlay -->
         <div id="externalOverlay" class="overlay" data-overlay>
-            <div class="overlay-header">
-                <span>管理外部库</span>
-                <button class="overlay-close" id="btnCloseExternal">✕</button>
+            <div class="slide-header">
+                <span class="slide-title">管理外部库</span>
+                <button class="overlay-close" id="btnCloseExternal" style="font-size:14px;color:var(--text-dim);background:none;border:none;cursor:pointer;">✕</button>
             </div>
-            <div class="overlay-list" id="externalList"></div>
-            <div class="overlay-add" id="btnAddExternal">＋ 添加外部库</div>
+            <div class="slide-list" id="externalList"></div>
+            <div style="padding:8px 14px;"><button id="btnAddExternal" style="width:100%;background:none;border:1px dashed var(--white-12);border-radius:8px;color:var(--text-dim);padding:10px;font-size:12px;cursor:pointer;">＋ 添加外部库</button></div>
         </div>
 
         <!-- Settings Overlay (MenuStack) -->

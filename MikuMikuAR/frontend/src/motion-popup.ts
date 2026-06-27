@@ -9,6 +9,7 @@ import {
   motionBindingTargetId, setMotionBindingTargetId,
   stackRegistry,
   closeAllOverlays,
+  cardContainer,
 } from "./config";
 import {
   loadVMDFromPath, loadVPDPose,
@@ -92,18 +93,39 @@ function buildActionBindingLevel(id: string): PopupLevel {
   const inst = modelRegistry.get(id);
   if (!inst) return { label: "动作绑定", dir: "", items: [] };
   return {
-    label: `动作 — ${inst.name}`,
+    label:`动作 — ${inst.name}`,
     dir: "",
-    items: [
-      { kind: "action", label: `当前: ${inst.vmdName || "无"}`, icon: "info", target: "", sublabel: undefined },
-      { kind: "divider", label: "", icon: "", target: "" },
-      { kind: "folder", label: "更换动作", icon: "music", target: `action:motion:browse:${id}`, sublabel: "从动作库选择" },
-      { kind: "action", label: "加载姿势 (VPD)", icon: "user", target: `action:motion:pose:${id}`, sublabel: "从 VPD 文件加载静态姿势" },
-      { kind: "action", label: inst.mmdModel ? (inst.vmdData ? "暂停动作" : "—") : "—", icon: "pause-circle", target: `action:motion:pause:${id}`, sublabel: inst.vmdData ? "暂停/继续" : "无动作" },
-      { kind: "action", label: "重置动作", icon: "rotate-ccw", target: `action:motion:reset:${id}`, sublabel: "恢复初始姿势" },
-      { kind: "divider", label: "", icon: "", target: "" },
-      { kind: "action", label: `循环: ${inst.vmdData ? (autoLoop ? "开" : "关") : "—"}`, icon: "repeat", target: `action:motion:loop:${id}`, sublabel: inst.vmdData ? "切换自动循环" : "加载动作后可用" },
-    ],
+    items: [],
+    renderCustom: (container) => {
+      container.classList.remove("render-card");
+      cardContainer(container, (c) => {
+        const row = document.createElement("div");
+        row.className = "slide-item";
+        row.innerHTML = `
+          <span class="slide-icon"><iconify-icon icon="lucide:music"></iconify-icon></span>
+          <span class="slide-label">更换动作</span>
+          <span class="slide-sublabel">${inst.vmdName || "无"}</span>
+          <span class="slide-arrow">&gt;</span>
+        `;
+        row.addEventListener("click", () => {
+          setMotionBindingTargetId(id);
+          const level = stackRegistry.buildLevel!(libraryRoot, "动作库", (m) => m.format === "vmd");
+          level.label = `绑定动作 → ${inst.name}`;
+          motionStack?.push(level);
+        });
+        c.appendChild(row);
+        slideRow(c, "lucide:user", "加载姿势 (VPD)", false, async () => {
+          try {
+            const path = await SelectVPDPose();
+            if (!path) { setStatus("✗ 未选择文件", false); return; }
+            await loadVPDPose(path, id);
+            motionStack?.reRender();
+          } catch (err: any) {
+            setStatus("✗ " + (err.message || err), false);
+          }
+        });
+      });
+    },
   };
 }
 
@@ -117,57 +139,40 @@ function buildActionMusicLevel(): PopupLevel {
     dir: "",
     items: [],
     renderCustom: (container) => {
-      container.style.padding = "12px 14px";
-      const nameRow = document.createElement("div");
-      nameRow.style.cssText = "font-size:12px;color:var(--text-dim);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
-      nameRow.textContent = name ? `当前: ${name}` : "未加载音乐";
-      container.appendChild(nameRow);
+      container.classList.remove("render-card");
+      cardContainer(container, (c) => {
+        const nameRow = document.createElement("div");
+        nameRow.className = "slide-item";
+        nameRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:music"></iconify-icon></span><span class="slide-label" style="color:var(--text-dim);">${name ? `当前: ${name}` : "未加载音乐"}</span>`;
+        c.appendChild(nameRow);
 
-      const loadRow = document.createElement("div");
-      loadRow.className = "menu-item";
-      loadRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="folder-open"></iconify-icon></span><span class="menu-label">加载音乐</span>';
-      loadRow.addEventListener("click", async () => {
-        try {
-          const path = await SelectAudioFile();
-          if (!path) return;
-          await loadAudioFile(path);
-          setStatus(`✓ 音乐: ${getAudioName()}`, true);
-          motionStack?.reRender();
-        } catch (err) {
-          console.warn("Load audio failed:", err);
-          setStatus("✗ 音乐加载失败", false);
-        }
+        const loadRow = document.createElement("div");
+        loadRow.className = "slide-item";
+        loadRow.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:folder-open"></iconify-icon></span><span class="slide-label">加载音乐</span>';
+        loadRow.addEventListener("click", async () => {
+          try {
+            const path = await SelectAudioFile();
+            if (!path) return;
+            await loadAudioFile(path);
+            setStatus(`✓ 音乐: ${getAudioName()}`, true);
+            motionStack?.reRender();
+          } catch (err) {
+            console.warn("Load audio failed:", err);
+            setStatus("✗ 音乐加载失败", false);
+          }
+        });
+        c.appendChild(loadRow);
       });
-      container.appendChild(loadRow);
 
-      const offsetRow = document.createElement("div");
-      offsetRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:10px;";
-      const offsetLbl = document.createElement("label");
-      offsetLbl.style.cssText = "font-size:11px;color:var(--text-dim);width:80px;flex-shrink:0;";
-      offsetLbl.textContent = "音频偏移";
-      const offsetVal = document.createElement("span");
-      offsetVal.style.cssText = "font-size:11px;color:var(--text-bright);width:36px;text-align:right;";
-      offsetVal.textContent = offset.toFixed(2);
-      const offsetSlider = document.createElement("input");
-      offsetSlider.type = "range";
-      offsetSlider.min = "-5";
-      offsetSlider.max = "5";
-      offsetSlider.step = "0.1";
-      offsetSlider.value = String(offset);
-      offsetSlider.style.cssText = "flex:1;accent-color:var(--accent);height:4px;";
-      offsetSlider.addEventListener("input", () => {
-        const v = parseFloat(offsetSlider.value);
-        offsetVal.textContent = v.toFixed(2);
-        setAudioOffset(v);
+      cardContainer(container, (c) => {
+        addSliderRow(c, "音频偏移", offset, -5, 5, 0.1, (v) => {
+          setAudioOffset(v);
+        }, "lucide:clock");
+        const hint = document.createElement("div");
+        hint.style.cssText = "font-size:10px;color:var(--text-dark);text-align:center;margin-top:4px;";
+        hint.textContent = "正=音频先播，负=音频后播";
+        c.appendChild(hint);
       });
-      offsetRow.appendChild(offsetLbl);
-      offsetRow.appendChild(offsetSlider);
-      offsetRow.appendChild(offsetVal);
-      container.appendChild(offsetRow);
-      const offsetHint = document.createElement("div");
-      offsetHint.style.cssText = "font-size:10px;color:var(--text-dark);margin:-4px 0 10px 88px;";
-      offsetHint.textContent = "正=音频先播，负=音频后播";
-      container.appendChild(offsetHint);
     },
   };
 }
@@ -288,33 +293,34 @@ export function showMotionPopup(): void {
     motionStack = makeMotionStack();
   }
 
-  const rootItems: PopupRow[] = [];
+  motionStack.reset({
+    label: "动作",
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.classList.remove("render-card");
 
-  if (modelRegistry.size > 0) {
-    for (const [id, inst] of modelRegistry) {
-      rootItems.push(buildActionModelRow(id));
-    }
-  }
+      if (modelRegistry.size > 0) {
+        cardContainer(container, (c) => {
+          for (const [id, inst] of modelRegistry) {
+            slideRow(c, "tabler:cube-3d-sphere", inst.name, true, () => {
+              motionStack?.push(buildActionBindingLevel(id));
+            });
+          }
+        });
+      }
 
-  rootItems.push({ kind: "divider", label: "", icon: "", target: "" });
-  rootItems.push(
-    {
-      kind: "folder",
-      label: "舞蹈套装",
-      icon: "music",
-      target: "__dance_sets__",
-      sublabel: danceSets.length > 0 ? `${danceSets.length} 个套装` : "暂无套装",
+      cardContainer(container, (c) => {
+        slideRow(c, "lucide:music", "舞蹈套装", true, () => {
+          const level = buildDanceSetsOverviewLevel();
+          motionStack?.push(level);
+        });
+        slideRow(c, "lucide:music", "音乐", true, () => {
+          motionStack?.push(buildActionMusicLevel());
+        });
+      });
     },
-    {
-      kind: "folder",
-      label: "音乐",
-      icon: "music",
-      target: "__music__",
-      sublabel: getAudioName() || "未加载",
-    },
-  );
-
-  motionStack.reset({ label: "动作", dir: "", items: rootItems });
+  });
 }
 
 export function hideMotionPopup(): void {
@@ -329,47 +335,48 @@ function buildDanceSetsOverviewLevel(): PopupLevel {
     dir: "",
     items: [],
     renderCustom: async (container) => {
-      container.style.padding = "12px 14px";
+      container.classList.remove("render-card");
       try {
         await loadDanceSets();
         if (!danceSets || danceSets.length === 0) {
           const empty = document.createElement("div");
-          empty.style.cssText = "padding:16px;text-align:center;color:var(--text-muted);font-size:13px;";
+          empty.style.cssText = "padding:24px;text-align:center;color:var(--text-muted);font-size:13px;";
           empty.innerHTML = '<div>暂无舞蹈套装</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">点击下方按钮创建新套装</div>';
           container.appendChild(empty);
         } else {
-          for (const ds of danceSets) {
-            const setId = computeDanceSetId(ds);
-            const row = document.createElement("div");
-            row.className = "menu-item";
-            const vmdName = ds.vmd_path.split("/").pop() || ds.vmd_path;
-            row.innerHTML = `
-              <span class="menu-icon"><iconify-icon icon="music"></iconify-icon></span>
-              <span class="menu-label">${escapeHtml(ds.name)}</span>
-              <span class="menu-arrow">&gt;</span>
-            `;
-            row.setAttribute("data-hint", ds.description || vmdName);
-            row.addEventListener("click", () => {
-              const level = buildDanceSetDetailLevel(setId);
-              stackRegistry.modelStack?.push(level);
-            });
-            container.appendChild(row);
-  }
-}
+          cardContainer(container, (c) => {
+            for (const ds of danceSets) {
+              const setId = computeDanceSetId(ds);
+              const row = document.createElement("div"); row.className = "slide-item";
+              const vmdName = ds.vmd_path.split("/").pop() || ds.vmd_path;
+              const is = document.createElement("span"); is.className = "slide-icon";
+              const ie = createIconifyIcon("lucide:music"); if (ie) is.appendChild(ie);
+              row.appendChild(is);
+              const ls = document.createElement("span"); ls.className = "slide-label"; ls.textContent = ds.name;
+              row.appendChild(ls);
+              const ar = document.createElement("span"); ar.className = "slide-arrow"; ar.textContent = ">";
+              row.appendChild(ar);
+              row.setAttribute("data-hint", ds.description || vmdName);
+              row.addEventListener("click", () => {
+                const level = buildDanceSetDetailLevel(setId);
+                if (stackRegistry.modelStack) stackRegistry.modelStack.push(level);
+                else motionStack?.push(level);
+              });
+              c.appendChild(row);
+            }
+          });
+        }
 
-// Close button listener (safe at module level — only element in motion popup)
-dom.btnCloseMotionPopup?.addEventListener("click", hideMotionPopup);
-
-        const divider = document.createElement("div");
-        divider.className = "menu-divider";
-        container.appendChild(divider);
-        const addRow = document.createElement("div");
-        addRow.className = "menu-item";
-        addRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="plus"></iconify-icon></span><span class="menu-label">新建套装</span>';
-        addRow.addEventListener("click", () => {
-          createNewDanceSet();
+        cardContainer(container, (c) => {
+          const row = document.createElement("div"); row.className = "slide-item";
+          const is = document.createElement("span"); is.className = "slide-icon";
+          const ie = createIconifyIcon("lucide:plus"); if (ie) is.appendChild(ie);
+          row.appendChild(is);
+          const ls = document.createElement("span"); ls.className = "slide-label"; ls.textContent = "新建套装";
+          row.appendChild(ls);
+          row.addEventListener("click", () => createNewDanceSet());
+          c.appendChild(row);
         });
-        container.appendChild(addRow);
       } catch (err) {
         console.warn("buildDanceSetsOverviewLevel:", err);
         container.textContent = "加载失败";
@@ -390,66 +397,55 @@ export function buildDanceSetDetailLevel(setId: string): PopupLevel {
     dir: "",
     items: [],
     renderCustom: (container) => {
-      container.style.padding = "12px 14px";
+      container.classList.remove("render-card");
 
-      const fields: Array<{ label: string; value: string }> = [
-        { label: "套装名称", value: ds.name },
-        { label: "VMD 文件", value: vmdName },
-        { label: "音频文件", value: audioName },
-        { label: "音频偏移", value: `${ds.audio_offset.toFixed(2)} 秒` },
-        { label: "描述", value: ds.description || "—" },
-      ];
-
-      for (const f of fields) {
-        const row = document.createElement("div");
-        row.style.cssText = "display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;";
-        const lbl = document.createElement("span");
-        lbl.style.cssText = "color:var(--text-dim);";
-        lbl.textContent = f.label;
-        const val = document.createElement("span");
-        val.style.cssText = "color:var(--text-bright);text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;";
-        val.textContent = f.value;
-        val.title = f.value;
-        row.appendChild(lbl);
-        row.appendChild(val);
-        container.appendChild(row);
-      }
-
-      const divider1 = document.createElement("div");
-      divider1.className = "menu-divider";
-      divider1.style.marginTop = "8px";
-      container.appendChild(divider1);
-
-      const loadBtn = document.createElement("div");
-      loadBtn.className = "menu-item";
-      loadBtn.innerHTML = '<span class="menu-icon"><iconify-icon icon="play"></iconify-icon></span><span class="menu-label">一键加载</span>';
-      loadBtn.addEventListener("click", () => {
-        loadDanceSet(ds);
-      });
-      container.appendChild(loadBtn);
-
-      const deleteBtn = document.createElement("div");
-      deleteBtn.className = "menu-item";
-      deleteBtn.innerHTML = '<span class="menu-icon"><iconify-icon icon="trash-2"></iconify-icon></span><span class="menu-label" style="color:var(--danger,#ff6b6b);">删除套装</span>';
-      deleteBtn.addEventListener("click", () => {
-        if (confirm(`确定要删除舞蹈套装「${ds.name}」吗？`)) {
-          DeleteDanceSet(setId).then(() => {
-            setStatus("✓ 已删除舞蹈套装", true);
-            loadDanceSets().then(() => {
-              stackRegistry.modelStack?.pop();
-              const rootIdx = stackRegistry.modelStack?.levelCount ? stackRegistry.modelStack.levelCount - 1 : 0;
-              if (stackRegistry.modelStack && rootIdx >= 0) {
-                stackRegistry.modelStack.setLevel(rootIdx, buildDanceSetsOverviewLevel());
-                stackRegistry.modelStack.reRender();
-              }
-            });
-          }).catch((err) => {
-            console.warn("DeleteDanceSet failed:", err);
-            setStatus("✗ 删除失败", false);
-          });
+      cardContainer(container, (c) => {
+        const fields: Array<{ label: string; value: string }> = [
+          { label: "套装名称", value: ds.name },
+          { label: "VMD 文件", value: vmdName },
+          { label: "音频文件", value: audioName },
+          { label: "音频偏移", value: `${ds.audio_offset.toFixed(2)} 秒` },
+          { label: "描述", value: ds.description || "—" },
+        ];
+        for (const f of fields) {
+          const row = document.createElement("div");
+          row.className = "slide-item";
+          row.style.cssText = "display:flex;justify-content:space-between;padding:6px 14px;min-height:auto;margin:0;";
+          row.innerHTML = `<span class="slide-label" style="color:var(--text-dim);flex:none;">${f.label}</span><span class="slide-label" style="text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(f.value)}</span>`;
+          c.appendChild(row);
         }
       });
-      container.appendChild(deleteBtn);
+
+      cardContainer(container, (c) => {
+        const loadBtn = document.createElement("div");
+        loadBtn.className = "slide-item";
+        loadBtn.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:play"></iconify-icon></span><span class="slide-label">一键加载</span>';
+        loadBtn.addEventListener("click", () => loadDanceSet(ds));
+        c.appendChild(loadBtn);
+
+        const deleteBtn = document.createElement("div");
+        deleteBtn.className = "slide-item";
+        deleteBtn.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:trash-2"></iconify-icon></span><span class="slide-label" style="color:var(--danger,#ff6b6b);">删除套装</span>';
+        deleteBtn.addEventListener("click", () => {
+          if (confirm(`确定要删除舞蹈套装「${ds.name}」吗？`)) {
+            DeleteDanceSet(setId).then(() => {
+              setStatus("✓ 已删除舞蹈套装", true);
+              loadDanceSets().then(() => {
+                stackRegistry.modelStack?.pop();
+                const rootIdx = stackRegistry.modelStack?.levelCount ? stackRegistry.modelStack.levelCount - 1 : 0;
+                if (stackRegistry.modelStack && rootIdx >= 0) {
+                  stackRegistry.modelStack.setLevel(rootIdx, buildDanceSetsOverviewLevel());
+                  stackRegistry.modelStack.reRender();
+                }
+              });
+            }).catch((err) => {
+              console.warn("DeleteDanceSet failed:", err);
+              setStatus("✗ 删除失败", false);
+            });
+          }
+        });
+        c.appendChild(deleteBtn);
+      });
     },
   };
 }
@@ -493,3 +489,5 @@ async function createNewDanceSet(): Promise<void> {
     setStatus("✗ 创建失败", false);
   }
 }
+
+dom.btnCloseMotionPopup?.addEventListener("click", hideMotionPopup);
