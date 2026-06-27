@@ -922,6 +922,15 @@ input[type="range"]::-moz-range-thumb:hover {
     flex-shrink: 0;
     border: 1px solid rgba(255,255,255,0.12);
     display: inline-block;
+    cursor: pointer;
+    transition: background 0.15s, border 0.15s;
+}
+.mat-swatch-disabled {
+    border: 2px dashed var(--text-muted) !important;
+    background: transparent !important;
+}
+.mat-disabled {
+    opacity: 0.55;
 }
 .mat-index {
     font-size: var(--font-ui-xs);
@@ -1006,6 +1015,23 @@ input[type="range"]::-moz-range-thumb:hover {
     margin-top: 6px;
     padding: 6px 0 0;
     border-top: 1px solid var(--white-06);
+}
+
+/* Batch category slider context */
+.mat-cat-slider .cs-row {
+    background: var(--card-bg);
+}
+.mat-cat-slider .cs-row:hover {
+    background: var(--card-hover);
+}
+
+/* Per-material slider context */
+.mat-mat-slider .cs-row {
+    background: var(--white-04);
+    border: 1px solid var(--white-06);
+}
+.mat-mat-slider .cs-row:hover {
+    background: var(--card-hover);
 }
 
 /* ===== Morph slider row ===== */

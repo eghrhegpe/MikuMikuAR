@@ -37,6 +37,8 @@ import {
   resetModelTransform,
   getMatState,
   applyMatState,
+  setMatEnabled,
+  isMatEnabled,
   stopVMD,
   loadVMDFromPath,
 } from "./scene";
@@ -130,8 +132,8 @@ export function buildModelDetailLevel(id: string): PopupLevel {
         const level = buildVisibilityLevel(id);
         stackRegistry.modelStack?.push(level);
       });
-      slideRow(card1, "lucide:box", "材质列表", true, () => {
-        const level = buildMatCatLevel(id, inst.name);
+      slideRow(card1, "lucide:box", "材质调节", true, () => {
+        const level = buildMatRootLevel(id, inst.name);
         stackRegistry.modelStack?.push(level);
       });
       slideRow(card1, "lucide:tag", "模型标签", true, () => {
@@ -556,10 +558,10 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
   };
 }
 
-// ======== Material Category Level ========
+// ======== Material Batch Level (按部位批量调) ========
 
-export function buildMatCatLevel(id: string, modelName: string): PopupLevel {
-  const label = "材质 — " + modelName;
+export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
+  const label = "按部位批量 — " + modelName;
   return {
     label,
     dir: "",
@@ -568,7 +570,14 @@ export function buildMatCatLevel(id: string, modelName: string): PopupLevel {
       container.style.padding = "12px 14px";
       const groups = getMatCatGroups(id);
       const detailList = getMatDetailList(id);
-      const detailMap = new Map(detailList.map(d => [d.name, d]));
+      const overrideCount = detailList.filter(d => d.modified).length;
+
+      if (overrideCount > 0) {
+        const hint = document.createElement("div");
+        hint.style.cssText = "font-size:11px;color:var(--warn);margin-bottom:10px;padding:4px 10px;background:var(--white-04);border-radius:6px;text-align:center;";
+        hint.textContent = `⚠ ${overrideCount} 个材质有单独覆盖（分类调整不影响已覆盖材质）`;
+        container.appendChild(hint);
+      }
 
       const CATEGORY_ICONS: Record<string, string> = {
         "皮肤": "droplet", "头发": "feather", "眼睛": "eye", "服装": "shirt",
@@ -576,7 +585,6 @@ export function buildMatCatLevel(id: string, modelName: string): PopupLevel {
 
       for (const [cat, mats] of groups) {
         const params = getMatCatParams(id, cat);
-        const catModified = mats.some(m => detailMap.get(m.name)?.modified);
         const card = document.createElement("div");
         card.className = "mat-card";
 
@@ -586,64 +594,15 @@ export function buildMatCatLevel(id: string, modelName: string): PopupLevel {
           <span class="mat-card-icon"><iconify-icon icon="${CATEGORY_ICONS[cat] || "box"}"></iconify-icon></span>
           <span class="mat-card-title">${cat}</span>
           <span class="mat-card-count">${mats.length}</span>
-          ${catModified ? '<span class="mat-card-modified">已修改</span>' : ''}
         `;
         card.appendChild(header);
-
-        const matListBody = document.createElement("div");
-        matListBody.className = "mat-list-body";
-        const COLLAPSE_THRESHOLD = 15;
-
-        for (let mi = 0; mi < mats.length; mi++) {
-          const mat = mats[mi];
-          const detail = detailMap.get(mat.name);
-          const isModified = detail?.modified ?? false;
-          const matIndex = (detail?.index ?? mi) + 1;
-
-          let swatchStyle = "background:#555";
-          try {
-            const sm = mat.mat as StandardMaterial;
-            if (sm.diffuseColor) {
-              swatchStyle = `background:rgb(${Math.round(sm.diffuseColor.r*255)},${Math.round(sm.diffuseColor.g*255)},${Math.round(sm.diffuseColor.b*255)})`;
-            }
-          } catch {}
-
-          const matRow = document.createElement("div");
-          matRow.className = `mat-row${isModified ? " modified" : ""}${mi >= COLLAPSE_THRESHOLD ? " excess" : ""}`;
-          matRow.innerHTML = `
-            <span class="mat-swatch" style="${swatchStyle}"></span>
-            <span class="mat-index">#${String(matIndex).padStart(2, "0")}</span>
-            <span class="mat-name" title="${escapeHtml(mat.name)}">${escapeHtml(mat.name)}</span>
-            ${isModified ? '<span class="mat-modified"><iconify-icon icon="check-circle"></iconify-icon></span>' : ''}
-          `;
-          matRow.addEventListener("click", () => {
-            stackRegistry.modelStack?.push(buildPerMatLevel(id, modelName, mat.name, mat.mat, detail?.index ?? mi));
-          });
-          matListBody.appendChild(matRow);
-        }
-        card.appendChild(matListBody);
-
-        if (mats.length > COLLAPSE_THRESHOLD) {
-          const remaining = mats.length - COLLAPSE_THRESHOLD;
-          const expandBtn = document.createElement("div");
-          expandBtn.className = "mat-expand-btn";
-          expandBtn.textContent = `┄ 还有 ${remaining} 个材质 ▾`;
-          let expanded = false;
-          expandBtn.addEventListener("click", () => {
-            expanded = !expanded;
-            const excessRows = matListBody.querySelectorAll(".mat-row.excess");
-            excessRows.forEach(el => (el as HTMLElement).style.display = expanded ? "flex" : "none");
-            expandBtn.textContent = expanded ? `┄ 收起 ▴` : `┄ 还有 ${remaining} 个材质 ▾`;
-          });
-          card.appendChild(expandBtn);
-        }
 
         const sliderToggle = document.createElement("div");
         sliderToggle.className = "mat-slider-toggle";
         sliderToggle.innerHTML = `<iconify-icon icon="lucide:sliders"></iconify-icon> 参数微调 <span class="arrow">▾</span>`;
 
         const sliderPanel = document.createElement("div");
-        sliderPanel.className = "mat-slider-panel";
+        sliderPanel.className = "mat-slider-panel mat-cat-slider";
         sliderPanel.style.display = "none";
 
         addSliderRow(sliderPanel, "漫反射倍率", params.diffuseMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { diffuseMul: v }));
@@ -659,44 +618,8 @@ export function buildMatCatLevel(id: string, modelName: string): PopupLevel {
 
         card.appendChild(sliderToggle);
         card.appendChild(sliderPanel);
-
         container.appendChild(card);
       }
-
-      cardContainer(container, (c) => {
-      const hasOverrides = detailList.some(d => d.modified);
-      if (hasOverrides) {
-        const resetAllRow = document.createElement("div");
-        resetAllRow.className = "slide-item";
-        const ri = document.createElement("span"); ri.className = "slide-icon";
-        const re = createIconifyIcon("lucide:rotate-ccw"); if (re) ri.appendChild(re);
-        resetAllRow.appendChild(ri);
-        const rl = document.createElement("span"); rl.className = "slide-label"; rl.textContent = "重置所有单独调整";
-        rl.style.color = "var(--warn)";
-        resetAllRow.appendChild(rl);
-        resetAllRow.addEventListener("click", () => {
-          resetAllMatParams(id);
-          stackRegistry.modelStack?.reRender();
-          setStatus("✓ 所有单独材质调整已重置", true);
-        });
-        c.appendChild(resetAllRow);
-      }
-
-      const resetRow = document.createElement("div");
-      resetRow.className = "slide-item";
-      const ri2 = document.createElement("span"); ri2.className = "slide-icon";
-      const re2 = createIconifyIcon("lucide:rotate-ccw"); if (re2) ri2.appendChild(re2);
-      resetRow.appendChild(ri2);
-      const rl2 = document.createElement("span"); rl2.className = "slide-label"; rl2.textContent = "重置全部材质参数";
-      resetRow.appendChild(rl2);
-      resetRow.addEventListener("click", () => {
-        resetMatCatParams(id);
-        resetAllMatParams(id);
-        stackRegistry.modelStack?.reRender();
-        setStatus("✓ 全部材质参数已重置", true);
-      });
-      c.appendChild(resetRow);
-      });
     },
   };
 }
@@ -717,22 +640,30 @@ export function buildPerMatLevel(id: string, modelName: string, matName: string,
       nameEl.textContent = modelName + " > " + matName;
       container.appendChild(nameEl);
 
+      const stackingHint = document.createElement("div");
+      stackingHint.style.cssText = "font-size:10px;color:var(--text-muted);margin-bottom:10px;padding:4px 8px;background:var(--accent-dim);border-radius:4px;";
+      stackingHint.textContent = "覆盖分类设置，分类调整仍生效于其他材质";
+      container.appendChild(stackingHint);
+
       const current = getMatParams(id, matIndex);
       const params = current ?? { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 };
       const isModified = current !== null;
 
-      addSliderRow(container, "漫反射倍率", params.diffuseMul, 0, 2, 0.05, (v) => {
+      const sliderWrap = document.createElement("div");
+      sliderWrap.className = "mat-mat-slider";
+      addSliderRow(sliderWrap, "漫反射倍率", params.diffuseMul, 0, 2, 0.05, (v) => {
         setMatParams(id, matIndex, { diffuseMul: v });
       });
-      addSliderRow(container, "高光倍率", params.specularMul, 0, 2, 0.05, (v) => {
+      addSliderRow(sliderWrap, "高光倍率", params.specularMul, 0, 2, 0.05, (v) => {
         setMatParams(id, matIndex, { specularMul: v });
       });
-      addSliderRow(container, "高光指数", params.shininess, 0, 200, 1, (v) => {
+      addSliderRow(sliderWrap, "高光指数", params.shininess, 0, 200, 1, (v) => {
         setMatParams(id, matIndex, { shininess: v });
       });
-      addSliderRow(container, "环境光倍率", params.ambientMul, 0, 2, 0.05, (v) => {
+      addSliderRow(sliderWrap, "环境光倍率", params.ambientMul, 0, 2, 0.05, (v) => {
         setMatParams(id, matIndex, { ambientMul: v });
       });
+      container.appendChild(sliderWrap);
 
       if (isModified) {
         cardContainer(container, (c) => {
@@ -751,6 +682,133 @@ export function buildPerMatLevel(id: string, modelName: string, matName: string,
           c.appendChild(resetRow);
         });
       }
+    },
+  };
+}
+
+// ======== Material Root Level (材质调节根菜单) ========
+
+export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
+  return {
+    label: "材质调节 — " + modelName,
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.classList.remove("render-card");
+      const detailList = getMatDetailList(id);
+      const hasOverrides = detailList.some(d => d.modified);
+
+      cardContainer(container, (c) => {
+        slideRow(c, "lucide:layers", "按部位批量调", true, () => {
+          stackRegistry.modelStack?.push(buildMatBatchLevel(id, modelName));
+        });
+        slideRow(c, "lucide:list", "逐材质调参", true, () => {
+          stackRegistry.modelStack?.push(buildMatListLevel(id, modelName));
+        });
+      });
+
+      cardContainer(container, (c) => {
+        if (hasOverrides) {
+          const resetRow = document.createElement("div");
+          resetRow.className = "slide-item";
+          const ri = document.createElement("span"); ri.className = "slide-icon";
+          const re = createIconifyIcon("lucide:rotate-ccw"); if (re) ri.appendChild(re);
+          resetRow.appendChild(ri);
+          const rl = document.createElement("span"); rl.className = "slide-label"; rl.textContent = "重置所有单独调整";
+          rl.style.color = "var(--warn)";
+          resetRow.appendChild(rl);
+          resetRow.addEventListener("click", () => {
+            resetAllMatParams(id);
+            stackRegistry.modelStack?.reRender();
+            setStatus("✓ 所有单独材质调整已重置", true);
+          });
+          c.appendChild(resetRow);
+        }
+
+        const resetAllRow = document.createElement("div");
+        resetAllRow.className = "slide-item";
+        const ri2 = document.createElement("span"); ri2.className = "slide-icon";
+        const re2 = createIconifyIcon("lucide:refresh-ccw"); if (re2) ri2.appendChild(re2);
+        resetAllRow.appendChild(ri2);
+        const rl2 = document.createElement("span"); rl2.className = "slide-label"; rl2.textContent = "重置全部材质参数";
+        resetAllRow.appendChild(rl2);
+        resetAllRow.addEventListener("click", () => {
+          resetMatCatParams(id);
+          resetAllMatParams(id);
+          stackRegistry.modelStack?.reRender();
+          setStatus("✓ 全部材质参数已重置", true);
+        });
+        c.appendChild(resetAllRow);
+      });
+    },
+  };
+}
+
+// ======== Material List Level (逐材质调参) ========
+
+export function buildMatListLevel(id: string, modelName: string): PopupLevel {
+  return {
+    label: "逐材质 — " + modelName,
+    dir: "",
+    items: [],
+    renderCustom: (container) => {
+      container.classList.remove("render-card");
+      const detailList = getMatDetailList(id);
+      const list = document.createElement("div");
+      list.className = "lcard";
+      list.style.padding = "6px 10px";
+
+      for (const detail of detailList) {
+        const inst = modelRegistry.get(id);
+        const mat = inst?.meshes[detail.index]?.material as StandardMaterial;
+        if (!mat) continue;
+
+        const matEnabled = isMatEnabled(id, detail.index);
+        let swatchStyle: string;
+        if (!matEnabled) {
+          swatchStyle = "background:transparent;border:2px dashed var(--text-muted);";
+        } else {
+          swatchStyle = "background:#555";
+          try {
+            if (mat.diffuseColor) {
+              swatchStyle = `background:rgb(${Math.round(mat.diffuseColor.r*255)},${Math.round(mat.diffuseColor.g*255)},${Math.round(mat.diffuseColor.b*255)})`;
+            }
+          } catch {}
+        }
+
+        const row = document.createElement("div");
+        row.className = `mat-row${detail.modified ? " modified" : ""}${!matEnabled ? " mat-disabled" : ""}`;
+        row.innerHTML = `
+          <span class="mat-swatch${!matEnabled ? " mat-swatch-disabled" : ""}" style="${swatchStyle}"></span>
+          <span class="mat-index">#${String(detail.index + 1).padStart(2, "0")}</span>
+          <span class="mat-name" title="${escapeHtml(detail.name)}">${escapeHtml(detail.name)}</span>
+          ${detail.modified ? '<span class="mat-modified"><iconify-icon icon="check-circle"></iconify-icon></span>' : ''}
+        `;
+        const swatch = row.querySelector(".mat-swatch") as HTMLElement;
+        swatch.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const newState = !isMatEnabled(id, detail.index);
+          setMatEnabled(id, detail.index, newState);
+          if (newState) {
+            let newStyle = "background:#555";
+            try { if ((mat as StandardMaterial).diffuseColor) { newStyle = `background:rgb(${Math.round((mat as StandardMaterial).diffuseColor.r*255)},${Math.round((mat as StandardMaterial).diffuseColor.g*255)},${Math.round((mat as StandardMaterial).diffuseColor.b*255)})`; } } catch {}
+            swatch.style.cssText = newStyle;
+            swatch.classList.remove("mat-swatch-disabled");
+            row.classList.remove("mat-disabled");
+          } else {
+            swatch.style.cssText = "background:transparent;border:2px dashed var(--text-muted);";
+            swatch.classList.add("mat-swatch-disabled");
+            row.classList.add("mat-disabled");
+          }
+          setStatus(newState ? `✓ 已显示: ${detail.name}` : `✕ 已隐藏: ${detail.name}`, true);
+        });
+        row.addEventListener("click", () => {
+          stackRegistry.modelStack?.push(buildPerMatLevel(id, modelName, detail.name, mat, detail.index));
+        });
+        list.appendChild(row);
+      }
+
+      container.appendChild(list);
     },
   };
 }
