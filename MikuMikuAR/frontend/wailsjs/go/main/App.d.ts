@@ -70,6 +70,8 @@ export function IsolateModelDir(arg1:string):Promise<string>;
 
 export function LaunchSoftware(arg1:string,arg2:string):Promise<void>;
 
+export function ListSubDirs(arg1:string):Promise<Array<string>>;
+
 export function LoadLastScene():Promise<string>;
 
 export function LoadModelPreset(arg1:string):Promise<string>;

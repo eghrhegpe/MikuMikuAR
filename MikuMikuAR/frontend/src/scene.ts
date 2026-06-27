@@ -43,7 +43,7 @@ import "@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 
-import { SaveThumbnail, SaveLastScene, LoadLastScene, LoadOutfitFile } from "../wailsjs/go/main/App";
+import { SaveThumbnail, SaveLastScene, LoadLastScene, LoadOutfitFile, ListSubDirs } from "../wailsjs/go/main/App";
 import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode, getCameraMode } from "./camera";
 import type { CameraState } from "./camera";
 import {
@@ -2406,20 +2406,112 @@ function _disposeEnvUpdateObserver(): void {
 // ======== Outfit System ========
 
 /** Load outfits.json for a model and store in the instance. */
+/** Collect unique original texture basenames from a model's materials. */
+function _collectOrigTextureBasenames(inst: ModelInstance): string[] {
+    const names = new Set<string>();
+    for (const mesh of inst.meshes) {
+        const sm = mesh.material as StandardMaterial;
+        if (!sm) continue;
+        for (const tex of [
+            sm.diffuseTexture,
+            (sm as any).toonTexture as Texture | null,
+            (sm as any).sphereTexture as Texture | null,
+            sm.bumpTexture,
+            sm.emissiveTexture,
+        ]) {
+            if (tex) {
+                const url = tex.name || tex.url || "";
+                const base = url.split("/").pop()?.split("?")[0] || "";
+                if (base) names.add(base);
+            }
+        }
+    }
+    return [...names];
+}
+
 export async function loadOutfits(id: string): Promise<OutfitFile | null> {
     const inst = modelRegistry.get(id);
     if (!inst || !inst.filePath) return null;
+    // 1. Try explicit outfits.json first
     try {
         const json = await LoadOutfitFile(inst.filePath);
-        if (!json) return null;
-        const outfit: OutfitFile = JSON.parse(json);
-        if (!outfit.version || !Array.isArray(outfit.variants)) return null;
+        if (json) {
+            const outfit: OutfitFile = JSON.parse(json);
+            if (outfit.version && Array.isArray(outfit.variants)) {
+                inst.outfitFile = outfit;
+                return outfit;
+            }
+        }
+    } catch { /* fall through to auto-discovery */ }
+
+    // 2. Auto-discovery: scan subdirectories for matching texture basenames
+    try {
+        const origNames = _collectOrigTextureBasenames(inst);
+        if (origNames.length === 0) {
+            inst.outfitFile = undefined;
+            return null;
+        }
+        const subdirs = await ListSubDirs(inst.filePath.substring(0, inst.filePath.lastIndexOf("/")));
+        if (!subdirs || subdirs.length === 0) {
+            inst.outfitFile = undefined;
+            return null;
+        }
+        const variants: OutfitVariant[] = [];
+        // Use Promise.all for concurrent HEAD checks
+        const results = await Promise.all(subdirs.map(async (subdir): Promise<OutfitVariant | null> => {
+            const all: OutfitSlot = {};
+            let hasAny = false;
+            await Promise.all(origNames.map(async (base) => {
+                const testUrl = `http://127.0.0.1:${inst.port}/${encodeURIComponent(subdir + "/" + base)}`;
+                try {
+                    const resp = await fetch(testUrl, { method: "HEAD" });
+                    if (resp.ok) {
+                        // Map basename back to slot — probe each slot
+                        const slotKey = await _probeSlotForBasename(inst, base);
+                        if (slotKey) {
+                            (all as any)[slotKey] = subdir + "/" + base;
+                            hasAny = true;
+                        }
+                    }
+                } catch { /* file not found */ }
+            }));
+            return hasAny ? { name: subdir, all } : null;
+        }));
+        for (const r of results) {
+            if (r) variants.push(r);
+        }
+        if (variants.length === 0) {
+            inst.outfitFile = undefined;
+            return null;
+        }
+        const outfit: OutfitFile = { version: 1, variants };
         inst.outfitFile = outfit;
         return outfit;
     } catch {
         inst.outfitFile = undefined;
         return null;
     }
+}
+
+/** Given a basename, find which texture slot it belongs to by comparing URLs. */
+function _probeSlotForBasename(inst: ModelInstance, basename: string): Promise<string | null> {
+    for (const mesh of inst.meshes) {
+        const sm = mesh.material as StandardMaterial;
+        if (!sm) continue;
+        for (const [slot, tex] of [
+            ["diffuse", sm.diffuseTexture],
+            ["toon", (sm as any).toonTexture],
+            ["spa", (sm as any).sphereTexture],
+            ["normal", sm.bumpTexture],
+            ["emissive", sm.emissiveTexture],
+        ] as const) {
+            if (tex) {
+                const url = (tex as Texture).name || (tex as Texture).url || "";
+                if (url.includes(basename)) return Promise.resolve(slot);
+            }
+        }
+    }
+    return Promise.resolve(null);
 }
 
 function _applySlot(sm: StandardMaterial, slot: string, newPath: string | null, origTex: Texture | null, port: number): void {

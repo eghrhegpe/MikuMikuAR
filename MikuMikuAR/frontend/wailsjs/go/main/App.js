@@ -138,6 +138,10 @@ export function LaunchSoftware(arg1, arg2) {
   return window['go']['main']['App']['LaunchSoftware'](arg1, arg2);
 }
 
+export function ListSubDirs(arg1) {
+  return window['go']['main']['App']['ListSubDirs'](arg1);
+}
+
 export function LoadLastScene() {
   return window['go']['main']['App']['LoadLastScene']();
 }

@@ -404,6 +404,21 @@ func (a *App) LoadOutfitFile(pmxPath string) (string, error) {
 	return string(data), nil
 }
 
+// ListSubDirs returns first-level subdirectory names under the given directory.
+func (a *App) ListSubDirs(dirPath string) ([]string, error) {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, err
+	}
+	var dirs []string
+	for _, e := range entries {
+		if e.IsDir() {
+			dirs = append(dirs, e.Name())
+		}
+	}
+	return dirs, nil
+}
+
 // scanSingleRoot scans a single root directory, producing ModelEntry with the given source.
 func (a *App) scanSingleRoot(root string, source string) []ModelEntry {
 	var models []ModelEntry
