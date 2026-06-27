@@ -136,9 +136,7 @@ const makeModelStack = (): SlideMenu => {
       }
       if (
         row.target &&
-        !row.target.startsWith("reserved:") &&
         !row.target.startsWith("models:") &&
-        !row.target.startsWith("detail:") &&
         !row.target.startsWith("__")
       ) {
         return buildLevel(row.target, row.label, (m) => m.format === "pmx", stackRegistry.modelStack!);
