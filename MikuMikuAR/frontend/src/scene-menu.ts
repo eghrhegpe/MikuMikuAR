@@ -33,18 +33,52 @@ function buildSceneRoot(): PopupLevel {
     return {
         label: "场景",
         dir: "",
-        items: [
-            { kind: "folder", label: "预设场景", icon: "bookmark", target: "scene:presets" },
-            { kind: "folder", label: "相机模式", icon: "camera", target: "scene:camera" },
-            { kind: "folder", label: "灯光", icon: "sun", target: "scene:light" },
-            { kind: "folder", label: "渲染", icon: "sparkles", target: "scene:render" },
-            { kind: "folder", label: "物理", icon: "toggle-left", target: "scene:physics" },
-            { kind: "folder", label: "程序化动作", icon: "wind", target: "scene:procmotion" },
-            { kind: "folder", label: "截图", icon: "camera", target: "scene:screenshot" },
-            { kind: "action", label: "保存场景", icon: "save", target: "scene:save" },
-            { kind: "action", label: "加载场景", icon: "upload", target: "scene:load" },
-        ],
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove("render-card");
+            container.style.padding = "0";
+            // Card 1: 场景管理
+            cardWrap(container, (c) => {
+                slideRow(c, "lucide:bookmark", "预设场景", true, () => sceneStack?.push(buildPresetScenesLevel()));
+                slideRow(c, "lucide:save", "保存场景", false, () => {
+                    SelectSceneSaveFile().then(path => {
+                        if (!path) return;
+                        const json = JSON.stringify(serializeScene(), null, 2);
+                        SaveSceneFile(json, path).then(() => SaveScenePreset(json)).then(() => setStatus("✓ 场景已保存", true)).catch(() => setStatus("✗ 保存失败", false));
+                    });
+                });
+                slideRow(c, "lucide:upload", "加载场景", false, () => {
+                    SelectSceneOpenFile().then(path => {
+                        if (!path) return;
+                        LoadSceneFile(path).then(json => deserializeScene(JSON.parse(json))).then(() => setStatus("✓ 场景已加载", true)).catch(() => setStatus("✗ 加载失败", false));
+                    });
+                });
+            });
+            // Card 2: 渲染与相机
+            cardWrap(container, (c) => {
+                slideRow(c, "lucide:camera", "相机模式", true, () => sceneStack?.push(buildCameraLevel()));
+                slideRow(c, "lucide:sun", "灯光", true, () => sceneStack?.push(buildLightLevel()));
+                slideRow(c, "lucide:sparkles", "渲染", true, () => sceneStack?.push(buildRenderLevel()));
+                slideRow(c, "lucide:toggle-left", "物理", true, () => sceneStack?.push(buildPhysicsLevel()));
+            });
+            // Card 3: 程序化动作
+            cardWrap(container, (c) => {
+                slideRow(c, "lucide:wind", "程序化动作", true, () => sceneStack?.push(buildProcMotionLevel()));
+            });
+            // Card 4: 工具
+            cardWrap(container, (c) => {
+                slideRow(c, "lucide:camera", "截图", true, () => sceneStack?.push(buildScreenshotLevel()));
+            });
+        },
     };
+}
+
+function slideRow(c: HTMLElement, icon: string, label: string, hasArrow: boolean, onClick: () => void): void {
+    const row = document.createElement("div");
+    row.className = "slide-item";
+    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="${icon}"></iconify-icon></span><span class="slide-label">${label}</span>${hasArrow ? '<span class="slide-arrow">&gt;</span>' : ''}`;
+    row.addEventListener("click", onClick);
+    c.appendChild(row);
 }
 
 function buildProcMotionLevel(): PopupLevel {
@@ -60,15 +94,17 @@ function buildProcMotionLevel(): PopupLevel {
             { kind: "action", label: "自动切换", icon: "repeat", target: "procmotion:autoswitch", sublabel: st.autoSwitch ? "开" : "关" },
         ],
         renderCustom: (container) => {
-            container.style.padding = "8px 6px";
-            addSliderRow(container, "动作强度", st.intensity, 0, 1, 0.05, (v) => {
-                setProcMotionIntensity(v);
-                regenerateProcMotion();
-            }, "lucide:activity");
-            addSliderRow(container, "速度", st.speed, 0.5, 2, 0.05, (v) => {
-                setProcMotionSpeed(v);
-                regenerateProcMotion();
-            }, "lucide:fast-forward");
+            container.classList.remove("render-card");
+            cardWrap(container, (c) => {
+                addSliderRow(c, "动作强度", st.intensity, 0, 1, 0.05, (v) => {
+                    setProcMotionIntensity(v);
+                    regenerateProcMotion();
+                }, "lucide:activity");
+                addSliderRow(c, "速度", st.speed, 0.5, 2, 0.05, (v) => {
+                    setProcMotionSpeed(v);
+                    regenerateProcMotion();
+                }, "lucide:fast-forward");
+            });
         },
     };
 }
@@ -301,70 +337,71 @@ function renderConcertParams(container: HTMLElement): void {
     }, "lucide:rotate-cw");
 }
 
+function cardWrap(container: HTMLElement, fn: (c: HTMLElement) => void): void {
+    const card = document.createElement("div");
+    card.className = "lcard";
+    fn(card);
+    container.appendChild(card);
+}
+
 function buildLightLevel(): PopupLevel {
     return {
         label: "灯光",
         dir: "",
         items: [],
         renderCustom: (container) => {
+            container.classList.remove("render-card");
             const lightState = getLightState();
-            container.style.padding = "12px 14px";
-            const fields: Array<{ label: string; key: "hemiIntensity" | "dirIntensity" | "dirX" | "dirY" | "dirZ"; min: number; max: number; step: number; icon: string }> = [
-                { label: "环境光强度", key: "hemiIntensity", min: 0, max: 2, step: 0.05, icon: "lucide:sun" },
-                { label: "方向光强度", key: "dirIntensity", min: 0, max: 2, step: 0.05, icon: "lucide:sun" },
-                { label: "方向光角度 X", key: "dirX", min: -1, max: 1, step: 0.05, icon: "lucide:move" },
-                { label: "方向光角度 Y", key: "dirY", min: -1, max: 1, step: 0.05, icon: "lucide:arrow-up-down" },
-                { label: "方向光角度 Z", key: "dirZ", min: -1, max: 1, step: 0.05, icon: "lucide:arrow-up-down" },
-            ];
-            for (const f of fields) {
-                addSliderRow(container, f.label, lightState[f.key], f.min, f.max, f.step, (v) => {
-                    setLightState({ [f.key]: v } as any);
-                }, f.icon);
-            }
+            container.style.padding = "6px 0";
 
-            // Separator
-            const sep = document.createElement("div");
-            sep.style.cssText = "height:1px;background:var(--white-08);margin:12px 0;";
-            container.appendChild(sep);
+            // Card 1: light sliders
+            cardWrap(container, (c) => {
+                const fields: Array<{ label: string; key: "hemiIntensity" | "dirIntensity" | "dirX" | "dirY" | "dirZ"; min: number; max: number; step: number; icon: string }> = [
+                    { label: "环境光强度", key: "hemiIntensity", min: 0, max: 2, step: 0.05, icon: "lucide:sun" },
+                    { label: "方向光强度", key: "dirIntensity", min: 0, max: 2, step: 0.05, icon: "lucide:sun" },
+                    { label: "方向光角度 X", key: "dirX", min: -1, max: 1, step: 0.05, icon: "lucide:move" },
+                    { label: "方向光角度 Y", key: "dirY", min: -1, max: 1, step: 0.05, icon: "lucide:arrow-up-down" },
+                    { label: "方向光角度 Z", key: "dirZ", min: -1, max: 1, step: 0.05, icon: "lucide:arrow-up-down" },
+                ];
+                for (const f of fields) {
+                    addSliderRow(c, f.label, lightState[f.key], f.min, f.max, f.step, (v) => {
+                        setLightState({ [f.key]: v } as any);
+                    }, f.icon);
+                }
+            });
 
-            // Directional light color
-            addColorSliderRow(container, "方向光色", lightState.dirColor, (v) => setLightState({ dirColor: v }));
+            // Card 2-4: color pickers
+            cardWrap(container, (c) => addColorSliderRow(c, "方向光色", lightState.dirColor, (v) => setLightState({ dirColor: v })));
+            cardWrap(container, (c) => addColorSliderRow(c, "环境光色", lightState.hemiColor, (v) => setLightState({ hemiColor: v })));
+            cardWrap(container, (c) => addColorSliderRow(c, "地面光色", lightState.groundColor, (v) => setLightState({ groundColor: v })));
 
-            // Hemisphere light color
-            addColorSliderRow(container, "环境光色", lightState.hemiColor, (v) => setLightState({ hemiColor: v }));
-
-            // Ground color
-            addColorSliderRow(container, "地面光色", lightState.groundColor, (v) => setLightState({ groundColor: v }));
-
-            // Shadow controls
-            const sep2 = document.createElement("div");
-            sep2.style.cssText = "height:1px;background:var(--white-08);margin:12px 0;";
-            container.appendChild(sep2);
-
-            addToggleRow(container, "启用阴影", lightState.shadowEnabled, (v) => setLightState({ shadowEnabled: v }));
-
-            const typeRow = document.createElement("div");
-            typeRow.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;";
-            const typeLabel = document.createElement("span");
-            typeLabel.style.cssText = "font-size:11px;color:var(--text-dim);width:60px;";
-            typeLabel.textContent = "阴影类型";
-            typeRow.appendChild(typeLabel);
-            const types: Array<{ value: "hard" | "soft" | "pcf"; label: string }> = [
-                { value: "hard", label: "硬" },
-                { value: "soft", label: "软" },
-                { value: "pcf", label: "柔和阴影" },
-            ];
-            for (const t of types) {
-                const btn = document.createElement("button");
-                btn.textContent = t.label;
-                btn.className = "mode-btn" + (lightState.shadowType === t.value ? " active" : "");
-                btn.addEventListener("click", () => {
-                    setLightState({ shadowType: t.value });
-                    sceneStack?.reRender();
-                });
-                typeRow.appendChild(btn);
-            }
-            container.appendChild(typeRow);
+            // Card 5: shadow controls
+            cardWrap(container, (c) => {
+                c.style.padding = "10px";
+                addToggleRow(c, "启用阴影", lightState.shadowEnabled, (v) => setLightState({ shadowEnabled: v }));
+                const typeRow = document.createElement("div");
+                typeRow.className = "type-row";
+                const typeLabel = document.createElement("span");
+                typeLabel.className = "type-label";
+                typeLabel.textContent = "阴影类型";
+                typeRow.appendChild(typeLabel);
+                const types: Array<{ value: "hard" | "soft" | "pcf"; label: string }> = [
+                    { value: "hard", label: "硬" },
+                    { value: "soft", label: "软" },
+                    { value: "pcf", label: "柔和阴影" },
+                ];
+                for (const t of types) {
+                    const btn = document.createElement("button");
+                    btn.textContent = t.label;
+                    btn.className = "mode-btn" + (lightState.shadowType === t.value ? " active" : "");
+                    btn.addEventListener("click", () => {
+                        setLightState({ shadowType: t.value });
+                        sceneStack?.reRender();
+                    });
+                    typeRow.appendChild(btn);
+                }
+                c.appendChild(typeRow);
+            });
         },
     };
 }
@@ -831,35 +868,33 @@ function addSliderRow(container: HTMLElement, label: string, value: number, min:
 
 function addColorSliderRow(container: HTMLElement, label: string, color: [number, number, number], onChange: (v: [number, number, number]) => void): void {
     const block = document.createElement("div");
-    block.style.cssText = "margin-bottom:10px;";
+    block.className = "clr-block";
 
     const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px;";
+    header.className = "clr-header";
 
     const title = document.createElement("span");
-    title.style.cssText = "font-size:14px;color:var(--text);";
+    title.className = "clr-title";
     title.textContent = label;
     header.appendChild(title);
 
     const swatch = document.createElement("span");
-    swatch.style.cssText = `display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid var(--white-08);background:rgb(${Math.round(color[0]*255)},${Math.round(color[1]*255)},${Math.round(color[2]*255)});flex-shrink:0;`;
+    swatch.className = "clr-swatch";
+    swatch.style.background = `rgb(${Math.round(color[0]*255)},${Math.round(color[1]*255)},${Math.round(color[2]*255)})`;
     header.appendChild(swatch);
 
     block.appendChild(header);
 
-    const channels = [
-        { label: "R", icon: "lucide:droplet" },
-        { label: "G", icon: "lucide:droplet" },
-        { label: "B", icon: "lucide:droplet" },
-    ];
+    const channelColors = ["#f66", "#6f6", "#66f"];
     const current: [number, number, number] = [color[0], color[1], color[2]];
 
     for (let ci = 0; ci < 3; ci++) {
         const sub = document.createElement("div");
-        sub.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:2px;";
+        sub.className = "clr-row";
         const ch = document.createElement("span");
-        ch.style.cssText = `font-size:11px;font-weight:600;width:14px;text-align:center;flex-shrink:0;color:${["#f66","#6f6","#66f"][ci]};`;
-        ch.textContent = channels[ci].label;
+        ch.className = "clr-channel";
+        ch.style.color = channelColors[ci];
+        ch.textContent = ["R", "G", "B"][ci];
         sub.appendChild(ch);
 
         const slider = document.createElement("input");
@@ -868,10 +903,9 @@ function addColorSliderRow(container: HTMLElement, label: string, color: [number
         slider.max = "1";
         slider.step = "0.01";
         slider.value = String(color[ci]);
-        slider.dataset.channel = channels[ci].label.toLowerCase();
-        slider.style.cssText = "flex:1;height:4px;";
+        slider.className = "clr-slider";
         const val = document.createElement("span");
-        val.style.cssText = "font-size:11px;color:var(--text-bright);width:28px;text-align:right;font-variant-numeric:tabular-nums;";
+        val.className = "clr-value";
         val.textContent = color[ci].toFixed(2);
         slider.addEventListener("input", () => {
             const v = parseFloat(slider.value);
@@ -953,11 +987,6 @@ function buildPostProcessLevel(): PopupLevel {
                 setRenderState({ outlineEnabled: v });
                 triggerAutoSave();
             });
-
-            // Separator
-            const sep1 = document.createElement("div");
-            sep1.style.cssText = "height:1px;background:var(--white-08);margin:12px 0;";
-            container.appendChild(sep1);
 
             // DOF section
             addToggleRow(container, "景深", state.dofEnabled, (v) => {

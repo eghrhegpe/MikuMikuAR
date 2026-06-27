@@ -148,7 +148,39 @@ export function setLightState(s: Partial<LightState>): void {
     if (s.shadowEnabled !== undefined || s.shadowType !== undefined) {
         _ensureShadow();
     }
+    _updateSunDisc();
     triggerAutoSave();
+}
+
+// ======== Sun Disc (Visual Directional Light Indicator) ========
+
+let _sunDisc: Mesh | null = null;
+const SUN_DISC_DISTANCE = 400;
+
+function _ensureSunDisc(): Mesh {
+    if (_sunDisc) return _sunDisc;
+    _sunDisc = MeshBuilder.CreateSphere("sunDisc", { diameter: 20, segments: 8 }, scene);
+    const mat = new StandardMaterial("sunDiscMat", scene);
+    mat.emissiveColor = new Color3(1, 0.9, 0.7);
+    mat.disableLighting = true;
+    _sunDisc.material = mat;
+    _sunDisc.isPickable = false;
+    return _sunDisc;
+}
+
+function _updateSunDisc(): void {
+    const disc = _ensureSunDisc();
+    const d = dirLight.direction;
+    if (d.y <= 0) { disc.setEnabled(false); return; }
+    disc.setEnabled(true);
+    disc.position = new Vector3(d.x * SUN_DISC_DISTANCE, d.y * SUN_DISC_DISTANCE, d.z * SUN_DISC_DISTANCE);
+    const b = Math.max(0.05, dirLight.intensity);
+    const mat = disc.material as StandardMaterial;
+    mat.emissiveColor = new Color3(b, b * 0.9, b * 0.7);
+}
+
+function _disposeSunDisc(): void {
+    if (_sunDisc) { _sunDisc.dispose(); _sunDisc = null; }
 }
 
 function _ensureShadow(): void {
@@ -483,6 +515,7 @@ export async function initScene(): Promise<void> {
     attachBeatDetector(procBeatDetector);
 
     _applyGround(envState);
+    _updateSunDisc();
 }
 
 // ======== Thumbnail Capture (Direction 3) ========
@@ -824,6 +857,7 @@ export function updatePlaybackUI(): void {
     const duration = foc?.animationDuration ?? mmdRuntime.animationDuration;
     dom.playbackBar.style.display = "flex";
     dom.btnPlayPause.textContent = isPlaying ? "⏸" : "▶";
+    dom.btnLoopToggle.style.opacity = autoLoop ? "1" : "0.35";
     dom.timeDisplay.textContent = `${formatTime(mmdRuntime.currentTime)} / ${formatTime(duration)}`;
     if (duration > 0) {
         const pct = (mmdRuntime.currentTime / duration) * 100;
@@ -1771,6 +1805,7 @@ function _disposeSky(): void {
         _envSys.sky.envTexture = null;
         scene.environmentTexture = null;
     }
+    _disposeSunDisc();
 }
 
 function _buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness: number): Texture {
@@ -2006,7 +2041,7 @@ function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boo
             ps.maxSize = 0.3;
             ps.minAngularSpeed = -0.5;
             ps.maxAngularSpeed = 0.5;
-            ps.createBoxEmitter(new Vector3(-10, 0, -10), new Vector3(10, 0, 10));
+            ps.createBoxEmitter(ps.direction1, ps.direction2, new Vector3(-10, 0, -10), new Vector3(10, 0, 10));
             break;
         case "rain":
             ps.emitRate = 800;
@@ -2019,7 +2054,7 @@ function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boo
             ps.color2 = new Color4(0.8, 0.9, 1, 0.7);
             ps.minSize = 0.08;
             ps.maxSize = 0.2;
-            ps.createBoxEmitter(new Vector3(-15, 0, -15), new Vector3(15, 0, 15));
+            ps.createBoxEmitter(ps.direction1, ps.direction2, new Vector3(-15, 0, -15), new Vector3(15, 0, 15));
             break;
         case "snow":
             ps.emitRate = 200;
@@ -2034,7 +2069,7 @@ function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boo
             ps.maxSize = 0.2;
             ps.minAngularSpeed = -0.3;
             ps.maxAngularSpeed = 0.3;
-            ps.createBoxEmitter(new Vector3(-15, 0, -15), new Vector3(15, 0, 15));
+            ps.createBoxEmitter(ps.direction1, ps.direction2, new Vector3(-15, 0, -15), new Vector3(15, 0, 15));
             break;
         case "fireworks":
             ps.emitRate = 5;
