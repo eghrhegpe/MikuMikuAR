@@ -39,7 +39,7 @@ import "@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 
-import { SaveThumbnail, SaveLastScene, LoadLastScene, SetEnvState } from "../wailsjs/go/main/App";
+import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../wailsjs/go/main/App";
 import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode, getCameraMode } from "./camera";
 import type { CameraState } from "./camera";
 import {
@@ -61,7 +61,7 @@ import {
     generateIdleVmd, generateAutoDanceVmd, shouldAutoDance, shouldIdle,
 } from "./procedural-motion";
 import { BeatDetector } from "./beat-detector";
-import { attachBeatDetector, notifyBeatDetectorReset } from "./audio";
+import { attachBeatDetector } from "./audio";
 
 // ======== Babylon.js ========
 export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true, stencil: true });
@@ -210,7 +210,6 @@ export interface RenderState {
     // Phase 8 — DOF + Vignette
     dofEnabled: boolean;
     dofAperture: number;
-    dofDarken: number;
     vignetteEnabled: boolean;
     vignetteDarkness: number;
 }
@@ -238,7 +237,6 @@ export function getRenderState(): RenderState {
         bgColor: [scene.clearColor.r, scene.clearColor.g, scene.clearColor.b],
         dofEnabled: pipeline.depthOfFieldEnabled,
         dofAperture: pipeline.depthOfField?.fStop ?? 0.5,
-        dofDarken: 0.5,
         vignetteEnabled: pipeline.imageProcessing?.vignetteEnabled ?? false,
         vignetteDarkness: pipeline.imageProcessing?.vignetteWeight ?? 0.5,
     };
@@ -356,17 +354,19 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     procModelId = focusedModelId;
     try {
         await loadVMDMotion(buf, targetMode === "autodance" ? "AutoDance" : "IdleMotion");
-        // Clear vmdData so hasUserVmd stays false for procedural VMD
+        // Clear vmdData/vmdName so hasUserVmd stays false, and action popup doesn't show stale name
         const inst = focusedModel();
         if (inst) {
             inst.vmdData = null;
+            inst.vmdName = "";
         }
     } catch {
         procVmdActive = false;
-        // loadVMDMotion may have set inst.vmdData before failing — clear it
+        // loadVMDMotion may have set inst.vmdData/vmdName before failing — clear them
         const inst = focusedModel();
         if (inst) {
             inst.vmdData = null;
+            inst.vmdName = "";
         }
     } finally {
         procStarting = false;
@@ -927,7 +927,7 @@ export function serializeScene(): SceneFile {
     };
 }
 
-export async function deserializeScene(data: SceneFile): Promise<void> {
+export async function deserializeScene(data: SceneFile, skipEnv = false): Promise<void> {
     // Clear current scene
     for (const id of Array.from(modelRegistry.keys())) {
         removeModel(id);
@@ -975,7 +975,7 @@ export async function deserializeScene(data: SceneFile): Promise<void> {
     if (data.camera) setCameraState(data.camera);
     if (data.lights) setLightState(data.lights);
     if (data.render) setRenderState(data.render);
-    if (data.env) setEnvState(data.env);
+    if (data.env && !skipEnv) setEnvState(data.env);
 
     // Restore procedural motion state
     if (data.procMotion) {
@@ -1591,20 +1591,6 @@ export function triggerAutoSave(): void {
     }, 2000);
 }
 
-// ======== Env state config persistence (debounced) ========
-let envSaveTimer: ReturnType<typeof setTimeout> | null = null;
-
-function triggerEnvSave(): void {
-    if (envSaveTimer) clearTimeout(envSaveTimer);
-    envSaveTimer = setTimeout(async () => {
-        try {
-            await SetEnvState(envState as any);
-        } catch (err) {
-            // Silent — best-effort config persistence
-        }
-    }, 1000);
-}
-
 export function setEnvState(partial: Partial<EnvState>): void {
     // Runtime guard: detect black sky color assignments
     if ((partial.skyColorTop && partial.skyColorTop[0] === 0 && partial.skyColorTop[1] === 0 && partial.skyColorTop[2] === 0) ||
@@ -1650,7 +1636,6 @@ export function setEnvState(partial: Partial<EnvState>): void {
     }
 
     triggerAutoSave();
-    triggerEnvSave();
 }
 
 // ======== Init Save/Load UI ========
@@ -1691,7 +1676,7 @@ export async function tryRestoreLastScene(): Promise<void> {
         if (!json) return;
         const data = JSON.parse(json);
         if (data && data.version === 1) {
-            await deserializeScene(data);
+            await deserializeScene(data, true);
             console.log("Auto-restored last scene");
         }
     } catch (err) {
@@ -1712,14 +1697,12 @@ const _envSys: {
     particles: { emitter: any | null };
     clouds: { postProcess: any | null; material: any | null; texture: any | null };
     shadow: { generator: any | null };
-    wind: { lastUpdate: number };
 } = {
     sky: { skyMesh: null, envTexture: null },
     ground: { mesh: null },
     particles: { emitter: null },
     clouds: { postProcess: null, material: null, texture: null },
     shadow: { generator: null },
-    wind: { lastUpdate: 0 },
 };
 
 function _disposeSky(): void {
@@ -2084,21 +2067,30 @@ function _disposeClouds(): void {
         }
         _envSys.clouds.postProcess = null;
     }
+    _disposeEnvUpdateObserver();
 }
 
 let _envUpdateObserver: any = null;
 function _ensureEnvUpdateObserver(): void {
     if (_envUpdateObserver) return;
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
-        // Cloud wind drift
+        const dt = scene.deltaTime / 16.667;
+        // Cloud wind drift (frame-rate independent)
         if (envState.cloudsEnabled && envState.windEnabled) {
             const cloud = _envSys.clouds.postProcess;
             if (cloud instanceof Mesh) {
-                cloud.position.x += envState.windDirection[0] * envState.windSpeed * 0.01;
-                cloud.position.z += envState.windDirection[2] * envState.windSpeed * 0.01;
+                cloud.position.x += envState.windDirection[0] * envState.windSpeed * 0.01 * dt;
+                cloud.position.z += envState.windDirection[2] * envState.windSpeed * 0.01 * dt;
             }
         }
     });
+}
+
+function _disposeEnvUpdateObserver(): void {
+    if (_envUpdateObserver) {
+        scene.onBeforeRenderObservable.remove(_envUpdateObserver);
+        _envUpdateObserver = null;
+    }
 }
 
 // ======== Procedural Motion Control API ========
@@ -2124,11 +2116,11 @@ export function getProcMotionState(): ProcMotionState {
     return { ...procState };
 }
 
-/** 强制立即重新生成 procedural VMD（参数变更后调用）。 */
+/** 强制立即重新生成 procedural VMD（参数变更后调用）。
+ *  mode=off 且未激活时静默返回。 */
 export function regenerateProcMotion(): void {
-    if (procVmdActive) {
-        const mode = procState.mode === "autodance" ? "autodance" as const : "idle" as const;
-        const bpm = procBeatDetector?.getBPM() ?? 120;
-        startProcMotion(mode, mode === "autodance" ? bpm : undefined);
-    }
+    if (!procVmdActive && procState.mode === "off") return;
+    const mode = procState.mode === "autodance" ? "autodance" as const : "idle" as const;
+    const bpm = procBeatDetector?.getBPM() ?? 120;
+    startProcMotion(mode, mode === "autodance" ? bpm : undefined);
 }

@@ -4,7 +4,7 @@
 // Scene menu — consolidated camera + lighting controls (MenuStack-based).
 
 import {
-    dom, closeAllOverlays, setStatus, formatTime, escapeHtml,
+    dom, closeAllOverlays, setStatus, escapeHtml,
     PopupRow, PopupLevel, envState, EnvState,
 } from "./config";
 import { SlideMenu } from "./menu";
@@ -892,10 +892,6 @@ function buildPostProcessLevel(): PopupLevel {
                 setRenderState({ dofAperture: v });
                 triggerAutoSave();
             }, "lucide:camera");
-            addSliderRow(container, "暗化", state.dofDarken, 0, 1, 0.05, (v) => {
-                setRenderState({ dofDarken: v });
-                triggerAutoSave();
-            }, "lucide:moon");
 
             // Vignette section
             addToggleRow(container, "暗角", state.vignetteEnabled, (v) => {
