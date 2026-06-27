@@ -20,9 +20,10 @@ import { getLightState, setLightState, triggerAutoSave, serializeScene, deserial
 import type { RenderState } from "./scene";
 import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectVMDMotion, SelectDir, SaveScreenshot,
     GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene, SelectEnvTextureFile } from "../wailsjs/go/main/App";
-import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion } from "./scene";
+import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, applyEnvPreset, setEnvAutoLink, getEnvAutoLink } from "./scene";
 import { modelRegistry, focusedModelId, setFocusedModelId } from "./config";
 import type { ProcMotionMode } from "./procedural-motion";
+import { ENV_PRESETS as ENV_LIGHTING_PRESETS } from "./env-lighting";
 
 // ======== Scene Menu (SlideMenu) ========
 
@@ -368,11 +369,64 @@ function buildLightLevel(): PopupLevel {
     };
 }
 
+// ======== Environment Lighting Panel (Unified) ========
+
+function buildEnvLightingLevel(): PopupLevel {
+    const autoLink = getEnvAutoLink();
+    return {
+        label: "环境光照",
+        dir: "",
+        items: [
+            { kind: "divider" as const, label: "", icon: "", target: "" } as PopupRow,
+        ],
+        renderCustom: (container) => {
+            container.style.padding = "8px 12px";
+
+            // Auto-link toggle
+            const linkRow = document.createElement("div");
+            linkRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:12px;justify-content:space-between;";
+            const linkLabel = document.createElement("span");
+            linkLabel.style.cssText = "font-size:12px;color:var(--text);";
+            linkLabel.textContent = "自动联动";
+            const linkToggle = document.createElement("label");
+            linkToggle.className = "toggle";
+            const linkCb = document.createElement("input");
+            linkCb.type = "checkbox";
+            linkCb.checked = autoLink;
+            linkCb.addEventListener("change", () => setEnvAutoLink(linkCb.checked));
+            linkToggle.appendChild(linkCb);
+            const linkSlider = document.createElement("span");
+            linkSlider.className = "slider";
+            linkToggle.appendChild(linkSlider);
+            linkRow.appendChild(linkLabel);
+            linkRow.appendChild(linkToggle);
+            container.appendChild(linkRow);
+
+            // Preset buttons
+            const presetRow = document.createElement("div");
+            presetRow.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px;";
+            for (const [key, p] of Object.entries(ENV_LIGHTING_PRESETS)) {
+                const btn = document.createElement("button");
+                btn.textContent = p.label;
+                btn.className = "mode-btn";
+                btn.addEventListener("click", () => {
+                    applyEnvPreset(key);
+                    sceneStack?.reRender();
+                });
+                presetRow.appendChild(btn);
+            }
+            container.appendChild(presetRow);
+        },
+    };
+}
+
 function buildEnvLevel(): PopupLevel {
     return {
         label: "环境",
+
         dir: "",
         items: [
+            { kind: "folder", label: "环境光照", icon: "sun", target: "scene:env:lighting" },
             { kind: "folder", label: "天空", icon: "sun", target: "scene:env:sky" },
             { kind: "folder", label: "地面", icon: "grid", target: "scene:env:ground" },
             { kind: "folder", label: "粒子", icon: "wind", target: "scene:env:particle" },
@@ -620,12 +674,16 @@ function buildParticleLevel(): PopupLevel {
                 btn.textContent = t.label;
                 btn.className = "mode-btn" + (s.particleType === t.value ? " active" : "");
                 btn.addEventListener("click", () => {
-                    setEnvState({ particleType: t.value, particleEnabled: t.value !== "none" });
+                    setEnvState({ particleType: t.value });
                     sceneStack?.reRender();
                 });
                 typeRow.appendChild(btn);
             }
             container.appendChild(typeRow);
+
+            addSliderRow(container, "密度", s.particleEmitRate, 0, 3, 0.1, (v) => setEnvState({ particleEmitRate: v }), "lucide:layers");
+            addSliderRow(container, "大小", s.particleSize, 0.1, 3, 0.1, (v) => setEnvState({ particleSize: v }), "lucide:maximize");
+            addSliderRow(container, "速度", s.particleSpeed, 0.1, 5, 0.1, (v) => setEnvState({ particleSpeed: v }), "lucide:gauge");
         },
     };
 }
@@ -1324,6 +1382,7 @@ export async function showSceneMenu(): Promise<void> {
                     case "scene:env:particle": return buildParticleLevel();
                     case "scene:env:wind": return buildWindLevel();
                     case "scene:env:cloud": return buildCloudLevel();
+                    case "scene:env:lighting": return buildEnvLightingLevel();
                     case "scene:env:post": return buildPostProcessLevel();
                     case "scene:env:light": return buildLightLevel();
                     case "scene:env:presets": return buildPresetLevel();
@@ -1371,6 +1430,7 @@ export async function showEnvMenu(): Promise<void> {
                     case "scene:env:particle": return buildParticleLevel();
                     case "scene:env:wind": return buildWindLevel();
                     case "scene:env:cloud": return buildCloudLevel();
+                    case "scene:env:lighting": return buildEnvLightingLevel();
                     case "scene:env:post": return buildPostProcessLevel();
                     case "scene:env:light": return buildLightLevel();
                     case "scene:env:presets": return buildPresetLevel();
