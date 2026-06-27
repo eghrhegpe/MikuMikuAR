@@ -45,7 +45,7 @@ import "@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 
-import { SaveThumbnail, SaveLastScene, LoadLastScene, LoadOutfitFile, ListSubDirs } from "../wailsjs/go/main/App";
+import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../wailsjs/go/main/App";
 import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode, getCameraMode } from "./camera";
 import type { CameraState } from "./camera";
 import {
@@ -72,6 +72,7 @@ import {
 import { LipSyncState as LipSyncStateType, DEFAULT_LIPSYNC_STATE, findLipMorph, amplitudeToWeight } from "./lipsync";
 import { BeatDetector } from "./beat-detector";
 import { attachBeatDetector } from "./audio";
+import { loadOutfits, applyOutfitVariant, resetOutfit } from "./outfit";
 
 // ======== Babylon.js ========
 export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true, stencil: true });
@@ -202,6 +203,14 @@ function _ensureShadow(): void {
     gen.bias = 0.0001;
 
     for (const [, inst] of modelRegistry) {
+        for (const m of inst.meshes) {
+            if (m instanceof Mesh) {
+                gen.addShadowCaster(m);
+                m.receiveShadows = true;
+            }
+        }
+    }
+    for (const [, inst] of propRegistry) {
         for (const m of inst.meshes) {
             if (m instanceof Mesh) {
                 gen.addShadowCaster(m);
@@ -514,7 +523,6 @@ async function updateProcMotion(): Promise<void> {
         if (!procVmdActive || procActiveKind !== "autodance" || Math.abs(bpm - lastBeatBpm) > 10) {
             await startProcMotion("autodance", bpm);
         }
-        procBeatDetector.update();
         return;
     }
 
@@ -540,6 +548,8 @@ export async function initScene(): Promise<void> {
 
     // Wire up playback UI observables
     runtime.onAnimationTickObservable.add(() => {
+        // 每帧统一刷新节拍检测器（供 LipSync + Auto Dance 共享）
+        if (isAudioPlaying() && procBeatDetector) procBeatDetector.update();
         updatePlaybackUI();
         const foc = focusedModel();
         const dur = foc?.animationDuration ?? runtime.animationDuration;
@@ -723,17 +733,16 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
 
 // ======== Prop Loading (independent of modelRegistry / VMD / physics) ========
 
-export async function loadProp(filePath: string): Promise<void> {
-    if (isLoadingProp) return;
+export async function loadProp(filePath: string): Promise<string | null> {
+    if (isLoadingProp) return null;
     setIsLoadingProp(true);
     dom.loadingEl.style.display = "block";
     dom.loadingText.textContent = "加载道具 0%";
     try {
-        if (isLoadingProp) return;  // re-check inside try so finally always fires
         for (const [, inst] of propRegistry) {
             if (inst.filePath === filePath) {
                 setStatus(`道具已存在: ${inst.name}`, false);
-                return;
+                return inst.id;
             }
         }
 
@@ -753,7 +762,7 @@ export async function loadProp(filePath: string): Promise<void> {
         const meshes = result.meshes.filter(m => m instanceof Mesh) as Mesh[];
         if (meshes.length === 0) {
             setStatus("✗ 道具未加载到网格", false);
-            return;
+            return null;
         }
 
         const id = `prop_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -764,11 +773,22 @@ export async function loadProp(filePath: string): Promise<void> {
             position: [0, 0, 0], rotationY: 0, scaling: 1.0, visible: true,
         };
         propRegistry.set(id, inst);
+
+        // Add to shadow generator if shadows are enabled
+        if (_envSys.shadow.generator) {
+            for (const m of inst.meshes) {
+                _envSys.shadow.generator.addShadowCaster(m);
+                m.receiveShadows = true;
+            }
+        }
+
         setStatus(`✓ 道具: ${displayName}`, true);
         triggerAutoSave();
+        return id;
     } catch (err) {
         console.error("loadProp:", err);
         setStatus("✗ 道具加载失败", false);
+        return null;
     } finally {
         setIsLoadingProp(false);
         dom.loadingEl.style.display = "none";
@@ -953,6 +973,10 @@ export function removeModel(id: string): void {
     if (procModelId === id) {
         procVmdActive = false;
         procModelId = null;
+    }
+    // If removing focused model, clear LipSync morph cache
+    if (focusedModelId === id) {
+        lipSyncMorphName = null;
     }
     if (inst.mmdModel && mmdRuntime) { try { mmdRuntime.destroyMmdModel(inst.mmdModel); } catch (e) { console.warn("removeModel: destroyMmdModel failed", e); } }
     for (const m of inst.meshes) { if (m instanceof Mesh) m.dispose(); }
@@ -1273,11 +1297,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         for (const p of data.props) {
             try {
                 const resolvedPath = (p.libraryRef ? resolveLibraryRef(p.libraryRef) : null) || p.filePath;
-                await loadProp(resolvedPath);
-                // Apply transform to the most recently added prop
-                const last = getPropList()[getPropList().length - 1];
-                if (last) {
-                    setPropTransform(last.id, {
+                const propId = await loadProp(resolvedPath);
+                if (propId) {
+                    setPropTransform(propId, {
                         position: [p.positionX, p.positionY, p.positionZ],
                         rotationY: p.rotationY,
                         scaling: p.scaling,
@@ -2855,9 +2877,10 @@ function _disposeEnvUpdateObserver(): void {
     }
 }
 
-// ======== Outfit System ========
-
-interface _SlotMapping {
+// ======== Outfit System (moved to outfit.ts) ========
+// loadOutfits, applyOutfitVariant, resetOutfit, etc.
+import { loadOutfits, applyOutfitVariant, resetOutfit } from "./outfit";
+// ========
     matName: string;
     slot: string;
     basename: string;
