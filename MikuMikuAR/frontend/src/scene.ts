@@ -1080,6 +1080,8 @@ export interface SceneFile {
     };
     /** Procedural motion state (Idle/Auto Dance). */
     procMotion?: ProcMotionState;
+    /** LipSync state (real-time amplitude-driven). */
+    lipSync?: LipSyncStateType;
     /** Scene props (independent of modelRegistry). */
     props?: Array<{
         filePath: string;
@@ -1135,6 +1137,7 @@ export function serializeScene(): SceneFile {
             playing: isAudioPlaying(),
         } : undefined,
         procMotion: { ...procState },
+        lipSync: { ...lipSyncState },
         props: Array.from(propRegistry.values()).map(p => ({
             filePath: p.filePath,
             libraryRef: computeLibraryRef(p.filePath) || undefined,
@@ -1214,6 +1217,13 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     if (data.procMotion) {
         procState = { ...DEFAULT_PROC_STATE, ...data.procMotion as Partial<ProcMotionState> };
         regenerateProcMotion();
+    }
+
+    // Restore LipSync state
+    if (data.lipSync) {
+        lipSyncState = { ...DEFAULT_LIPSYNC_STATE, ...data.lipSync as Partial<LipSyncStateType> };
+    } else {
+        lipSyncState = { ...DEFAULT_LIPSYNC_STATE };
     }
 
     // Restore camera VMD
