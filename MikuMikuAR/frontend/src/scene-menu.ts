@@ -566,7 +566,7 @@ function buildGroundLevel(): PopupLevel {
             container.appendChild(modeRow);
 
             addColorSliderRow(container, "地面色", s.groundColor, (v) => setEnvState({ groundColor: v }));
-            if (s.groundMode === "solid") {
+            if (s.groundMode === "solid" || s.groundMode === "checker") {
                 addSliderRow(container, "透明度", s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), "lucide:eye");
             }
         },
