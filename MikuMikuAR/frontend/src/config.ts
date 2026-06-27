@@ -47,6 +47,25 @@ export type ModelInstance = {
     _origParams?: Map<number, { diffuseR: number; diffuseG: number; diffuseB: number; specularR: number; specularG: number; specularB: number; specularPower: number; ambientR: number; ambientG: number; ambientB: number }>;
 };
 
+/** [doc:architecture] PropInstance — 场景道具实例（独立于模型库，不参与 VMD/物理/排列） */
+export type PropInstance = {
+    id: string;
+    name: string;
+    filePath: string;
+    port: number;
+    modelDir: string;
+    meshes: Mesh[];
+    rootMesh: Mesh;
+    /** World-space position [x, y, z] */
+    position: [number, number, number];
+    /** Y-axis rotation in radians */
+    rotationY: number;
+    /** Uniform scale factor, 1.0 = original size */
+    scaling: number;
+    /** Visibility state */
+    visible: boolean;
+};
+
 // ======== Outfit System Types ========
 
 export type OutfitSlot = {
@@ -152,6 +171,11 @@ export let modelRegistry = new Map<string, ModelInstance>();
 // ⚠️ 修改时同步: loadPMXFile(新增) / removeModel(删除) / arrangeModels(替换整个Map)
 export function setModelRegistry(m: Map<string, ModelInstance>): void { modelRegistry = m; }
 
+export let propRegistry = new Map<string, PropInstance>();
+// [doc:architecture] propRegistry — 场景道具注册表（独立于模型，不参与 VMD/物理/排列）
+// ⚠️ 修改时同步: loadProp(新增) / removeProp(删除) / deserializeScene(清空后重建)
+export function setPropRegistry(m: Map<string, PropInstance>): void { propRegistry = m; }
+
 export let focusedModelId: string | null = null;
 // [doc:architecture] focusedModelId — 当前聚焦模型ID（用于键盘/相机/VMD绑定/详情面板）
 // ⚠️ 修改时同步: focusModel(切换) / loadPMXFile(新增后自动) / removeModel(删除后迁移)
@@ -171,6 +195,9 @@ export function setIsLoadingModel(v: boolean): void { isLoadingModel = v; }
 
 export let isLoadingVmd = false;
 export function setIsLoadingVmd(v: boolean): void { isLoadingVmd = v; }
+
+export let isLoadingProp = false;
+export function setIsLoadingProp(v: boolean): void { isLoadingProp = v; }
 
 export type PendingVmd = { data: ArrayBuffer; name: string };
 export let pendingVmd: PendingVmd | null = null;

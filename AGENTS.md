@@ -342,3 +342,37 @@ MikuMikuAR/frontend/
 
 - AI 发现自己走过 20 轮还没收尾 → 主动提醒「是否拆小或开新窗口」
 - AI 发现自己需要反复读同一段代码来理解 → 建议提取到 `docs/reusables.md`
+
+---
+
+## 七、多 AI 并发约束（重要）
+
+### 7.1 文件级互斥
+
+| 文件 | 最多同时修改的 AI 数 | 原因 |
+|------|----------------------|------|
+| `frontend/src/config.ts` | **1** | 共享类型定义，合并冲突极高 |
+| `frontend/src/scene.ts` | **1** | 模块级副作用（import 即执行），diff 三向合并必碎 |
+| `frontend/src/model-detail.ts` | **1** | 同上 |
+| `app.go` | **1** | Wails binding 注册表，同名 binding 覆盖无提示 |
+| `frontend/wailsjs/go/` | **0**（不手动改） | Wails 自动生成，谁 build 谁覆盖 |
+| 其余 `*.ts` / `*.go` | 不限制 | 函数级新增，冲突概率低 |
+
+### 7.2 操作纪律
+
+1. **改前 `git pull && git log --oneline -5`** — 确认 HEAD 不是别人的半成品
+2. **不改已声明「本会话独占」的文件** — 如果另一个 AI 先占了 config.ts，你去改 scene 需要等它提交
+3. **新增类型优先放独立文件** — 避免 config.ts 成为瓶颈
+4. **提交前检查 tsc 基线** — 先 `git stash` → `npx tsc --noEmit` 确认基线错误数 → `git stash pop` 后确认未新增
+5. **`wails dev / build` 只在一个 AI 上跑** — 自动生成文件会覆盖其他人的 binding
+6. **测试文件名带系统前缀** — 如 `outfit.test.ts` ✓，`test-helpers.ts` ✗（冲突）
+
+### 7.3 冲突时的熔断
+
+```bash
+git stash                  # 暂存自己
+git pull --rebase          # 变基拉取
+git stash pop              # 解暂存
+# 如果 pop 失败（文件级冲突）：
+git checkout --theirs path # 接受对方版本，重新 apply 自己的改动
+```

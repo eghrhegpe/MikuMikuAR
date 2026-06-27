@@ -52,7 +52,7 @@ import {
     dom, setStatus, formatTime, toBase64,
     setMmdRuntime, mmdRuntime, modelRegistry, focusedModelId, setFocusedModelId,
     isPlaying, setIsPlaying, autoLoop, setAutoLoop,
-    isLoadingModel, setIsLoadingModel, isLoadingVmd, setIsLoadingVmd,
+    isLoadingModel, setIsLoadingModel, isLoadingVmd, setIsLoadingVmd, isLoadingProp, setIsLoadingProp,
     pendingVmd, setPendingVmd,
     seekDragging, setSeekDragging,
     ModelInstance, setModelRegistry, escapeHtml,
@@ -724,12 +724,22 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
 // ======== Prop Loading (independent of modelRegistry / VMD / physics) ========
 
 export async function loadProp(filePath: string): Promise<void> {
+    if (isLoadingProp) return;
+    setIsLoadingProp(true);
+    dom.loadingEl.style.display = "block";
+    dom.loadingText.textContent = "加载道具 0%";
     try {
+        if (isLoadingProp) return;  // re-check inside try so finally always fires
+        for (const [, inst] of propRegistry) {
+            if (inst.filePath === filePath) {
+                setStatus(`道具已存在: ${inst.name}`, false);
+                return;
+            }
+        }
+
         const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
         const fileName = normPath(filePath).split("/").pop() || "";
         setStatus("加载道具...", false);
-        dom.loadingEl.style.display = "block";
-        dom.loadingText.textContent = "加载道具 0%";
 
         const result = await ImportMeshAsync(url, scene, {
             onProgress: (evt) => {
@@ -739,7 +749,6 @@ export async function loadProp(filePath: string): Promise<void> {
                 }
             },
         });
-        dom.loadingEl.style.display = "none";
 
         const meshes = result.meshes.filter(m => m instanceof Mesh) as Mesh[];
         if (meshes.length === 0) {
@@ -758,16 +767,21 @@ export async function loadProp(filePath: string): Promise<void> {
         setStatus(`✓ 道具: ${displayName}`, true);
         triggerAutoSave();
     } catch (err) {
-        dom.loadingEl.style.display = "none";
         console.error("loadProp:", err);
         setStatus("✗ 道具加载失败", false);
+    } finally {
+        setIsLoadingProp(false);
+        dom.loadingEl.style.display = "none";
     }
 }
 
 export function removeProp(id: string): void {
     const inst = propRegistry.get(id);
     if (!inst) return;
-    for (const m of inst.meshes) m.dispose();
+    for (const m of inst.meshes) {
+        scene.removeMesh(m);  // detach from scene first to avoid parent-dispose warnings
+        m.dispose();
+    }
     propRegistry.delete(id);
     setStatus(`✓ 已移除道具: ${inst.name}`, true);
     triggerAutoSave();

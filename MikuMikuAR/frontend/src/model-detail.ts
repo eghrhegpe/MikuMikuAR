@@ -46,11 +46,7 @@ import {
   getPhysicsCatState,
   stopVMD,
   loadVMDFromPath,
-  loadOutfits,
-  applyOutfitVariant,
-  resetOutfit,
 } from "./scene";
-import type { OutfitFile, OutfitVariant } from "./config";
 import type { MaterialCategoryParams } from "./scene";
 import type { Material } from "@babylonjs/core/Materials/material";
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
@@ -59,6 +55,7 @@ import { isPlaying } from "./config";
 import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "./audio";
 import { getSceneStack } from "./scene-menu";
 import { slideRow, addSliderRow } from "./ui-helpers";
+import { buildOutfitLevel } from "./outfit-ui";
 import {
   GetTagsByModel,
   AddTag,
@@ -198,73 +195,6 @@ export function buildModelDetailLevel(id: string): PopupLevel {
         stackRegistry.modelStack?.push(level);
       });
       container.appendChild(card4);
-    },
-  };
-}
-
-// ======== Outfit Variants ========
-
-export function buildOutfitLevel(id: string): PopupLevel {
-  return {
-    label: "服装变体",
-    dir: "",
-    items: [],
-    renderCustom: async (container) => {
-      container.classList.remove("render-card");
-      const inst = modelRegistry.get(id);
-      if (!inst) { container.textContent = ""; return; }
-
-      // Ensure outfits.json is loaded
-      let outfit: OutfitFile | undefined | null = inst.outfitFile;
-      if (!outfit) {
-        outfit = await loadOutfits(id);
-      }
-
-      if (!outfit || !outfit.variants || outfit.variants.length === 0) {
-        const empty = document.createElement("div");
-        empty.style.cssText = "font-size:11px;color:var(--text-dim);text-align:center;padding:20px;line-height:1.6;";
-        empty.innerHTML = "此模型无 outfits.json 配置。<br>在模型所在目录创建 outfits.json 即可启用服装变体。";
-        container.appendChild(empty);
-        return;
-      }
-
-      const active = inst.activeVariant;
-
-      cardContainer(container, (c) => {
-        // "默认" always first
-        const defRow = document.createElement("div"); defRow.className = "slide-item";
-        const defIcon = document.createElement("span"); defIcon.className = "slide-icon";
-        defIcon.innerHTML = active === undefined || active === "默认"
-          ? '<iconify-icon icon="lucide:check-circle"></iconify-icon>'
-          : '<iconify-icon icon="lucide:circle"></iconify-icon>';
-        defRow.appendChild(defIcon);
-        const defLabel = document.createElement("span"); defLabel.className = "slide-label";
-        defLabel.textContent = "默认";
-        defRow.appendChild(defLabel);
-        defRow.addEventListener("click", () => applyOutfitVariant(id, "默认"));
-        c.appendChild(defRow);
-
-        for (const v of outfit.variants) {
-          const row = document.createElement("div"); row.className = "slide-item";
-          const icon = document.createElement("span"); icon.className = "slide-icon";
-          icon.innerHTML = active === v.name
-            ? '<iconify-icon icon="lucide:check-circle"></iconify-icon>'
-            : '<iconify-icon icon="lucide:circle"></iconify-icon>';
-          row.appendChild(icon);
-          const label = document.createElement("span"); label.className = "slide-label";
-          label.textContent = v.name;
-          row.appendChild(label);
-          row.addEventListener("click", () => applyOutfitVariant(id, v.name));
-          c.appendChild(row);
-        }
-
-        const resetBtn = document.createElement("button");
-        resetBtn.className = "btn btn-sm";
-        resetBtn.textContent = "重置全部";
-        resetBtn.style.cssText = "width:100%;margin-top:8px;";
-        resetBtn.addEventListener("click", () => { resetOutfit(id); loadOutfits(id); });
-        c.appendChild(resetBtn);
-      });
     },
   };
 }
