@@ -1,0 +1,177 @@
+// procedural-motion.ts — 程序化动作管理器（Idle + Auto Dance）
+// [doc:architecture] 程序化动作子系统
+// 生成 procedural VMD（骨骼+morph 关键帧），通过现有 loadVMDMotion 管道加载。
+// 无音乐 → Idle（呼吸+眨眼）；有音乐 → Auto Dance（节拍驱动律动）。
+
+import { buildVmd, type BoneKeyFrame, type MorphKeyFrame } from "./vmd-writer";
+
+export type ProcMotionMode = "off" | "idle" | "autodance";
+
+export interface ProcMotionState {
+    mode: ProcMotionMode;
+    intensity: number;   // 0..1，默认 0.5
+    speed: number;       // 0.5..2，默认 1.0
+    autoSwitch: boolean; // true=根据音乐自动切换 Idle/AutoDance
+}
+
+export const DEFAULT_PROC_STATE: ProcMotionState = {
+    mode: "off",
+    intensity: 0.5,
+    speed: 1.0,
+    autoSwitch: true,
+};
+
+// 标准 MMD 骨骼名
+const BONE_CENTER = "センター";
+const BONE_UPPER = "上半身";
+const BONE_HEAD = "頭";
+const BONE_NECK = "首";
+const BONE_LARM = "左腕";
+const BONE_RARM = "右腕";
+
+// 标准 MMD morph 名
+const MORPH_BLINK = "まばたき";
+
+const FPS = 30;
+
+/** Idle 动作 VMD 生成：呼吸 + 眨眼 + 轻微侧摆。
+ *  循环长度 = 4s / speed (120 帧 @ speed=1)。
+ *  @param state 强度/速度
+ *  @param morphNames 模型可用的 morph 名集合（用于检测是否有眨眼 morph）
+ *  @returns VMD ArrayBuffer */
+export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = []): ArrayBuffer {
+    const loopFrames = Math.round(120 / state.speed); // 4s @ 30fps
+    const intensity = state.intensity;
+    const bones: BoneKeyFrame[] = [];
+    const morphs: MorphKeyFrame[] = [];
+    const hasBlink = morphNames.includes(MORPH_BLINK);
+
+    const half = Math.round(loopFrames / 2);
+
+    // 呼吸：上半身 X 轴旋转（前倾后仰），正弦曲线
+    const breathAmp = 0.03 * intensity;
+    for (let f = 0; f <= loopFrames; f += 6) {
+        const phase = (f / loopFrames) * Math.PI * 2;
+        const rotX = Math.sin(phase) * breathAmp;
+        bones.push({
+            name: BONE_UPPER,
+            frame: f,
+            position: [0, 0, 0],
+            rotation: [rotX, 0, 0, 1 - 0.5 * rotX * rotX], // 近似归一化四元数
+        });
+    }
+    // 确保末帧 = 首帧（循环闭合）
+    bones.push({
+        name: BONE_UPPER, frame: loopFrames, position: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+    });
+
+    // 轻微侧摆：センター Z 轴旋转
+    const swayAmp = 0.015 * intensity;
+    for (let f = 0; f <= loopFrames; f += 6) {
+        const phase = (f / loopFrames) * Math.PI * 2;
+        const rotZ = Math.sin(phase * 0.5) * swayAmp;
+        bones.push({
+            name: BONE_CENTER, frame: f, position: [0, 0, 0],
+            rotation: [0, 0, rotZ, 1 - 0.5 * rotZ * rotZ],
+        });
+    }
+    bones.push({
+        name: BONE_CENTER, frame: loopFrames, position: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+    });
+
+    // 眨眼：每 ~2.5s 一次快速眨眼
+    if (hasBlink) {
+        const blinkInterval = Math.round(75 / state.speed); // ~2.5s
+        for (let t = 0; t < loopFrames; t += blinkInterval) {
+            morphs.push({ name: MORPH_BLINK, frame: t, weight: 0 });
+            morphs.push({ name: MORPH_BLINK, frame: t + 2, weight: 1 });  // 快速闭合
+            morphs.push({ name: MORPH_BLINK, frame: t + 5, weight: 0 }); // 慢慢睁开
+        }
+        morphs.push({ name: MORPH_BLINK, frame: loopFrames, weight: 0 });
+    }
+
+    return buildVmd(bones, morphs, "IdleMotion");
+}
+
+/** Auto Dance VMD 生成：节拍驱动身体律动 + 头部摆动 + 手臂摆动。
+ *  循环长度 = 2 beat 周期 @ bpm。
+ *  @param state 强度/速度
+ *  @param bpm 节拍 BPM
+ *  @param morphNames 可用 morph 名 */
+export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphNames: string[] = []): ArrayBuffer {
+    const clampedBpm = Math.max(60, Math.min(200, bpm));
+    const beatFrames = Math.round((60 / clampedBpm) * FPS / state.speed);
+    const loopFrames = beatFrames * 2; // 2 拍循环
+    const intensity = state.intensity;
+    const bones: BoneKeyFrame[] = [];
+    const morphs: MorphKeyFrame[] = [];
+    const hasBlink = morphNames.includes(MORPH_BLINK);
+
+    // 身体律动：センター Y 轴旋转，每拍交替方向
+    const bodyAmp = 0.08 * intensity;
+    for (let f = 0; f <= loopFrames; f += 3) {
+        const beat = f / beatFrames;
+        const rotY = Math.sin(beat * Math.PI) * bodyAmp;
+        const bob = Math.abs(Math.sin(beat * Math.PI)) * 0.02 * intensity; // 上下弹
+        bones.push({
+            name: BONE_CENTER, frame: f, position: [0, bob, 0],
+            rotation: [0, rotY, 0, 1 - 0.5 * rotY * rotY],
+        });
+    }
+    bones.push({ name: BONE_CENTER, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+
+    // 头部摆动：頭 Z 轴，反相于身体
+    const headAmp = 0.06 * intensity;
+    for (let f = 0; f <= loopFrames; f += 3) {
+        const beat = f / beatFrames;
+        const rotZ = Math.sin(beat * Math.PI + Math.PI) * headAmp;
+        bones.push({
+            name: BONE_HEAD, frame: f, position: [0, 0, 0],
+            rotation: [0, 0, rotZ, 1 - 0.5 * rotZ * rotZ],
+        });
+    }
+    bones.push({ name: BONE_HEAD, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+
+    // 手臂摆动：左右臂 Z 轴交替
+    const armAmp = 0.15 * intensity;
+    for (let f = 0; f <= loopFrames; f += 3) {
+        const beat = f / beatFrames;
+        const lRot = Math.sin(beat * Math.PI) * armAmp;
+        const rRot = Math.sin(beat * Math.PI + Math.PI) * armAmp;
+        bones.push({
+            name: BONE_LARM, frame: f, position: [0, 0, 0],
+            rotation: [0, 0, lRot, 1 - 0.5 * lRot * lRot],
+        });
+        bones.push({
+            name: BONE_RARM, frame: f, position: [0, 0, 0],
+            rotation: [0, 0, rRot, 1 - 0.5 * rRot * rRot],
+        });
+    }
+    bones.push({ name: BONE_LARM, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    bones.push({ name: BONE_RARM, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+
+    // 眨眼：每拍眨一次
+    if (hasBlink) {
+        for (let b = 0; b < 2; b++) {
+            const t = b * beatFrames;
+            morphs.push({ name: MORPH_BLINK, frame: t, weight: 0 });
+            morphs.push({ name: MORPH_BLINK, frame: t + 1, weight: 1 });
+            morphs.push({ name: MORPH_BLINK, frame: t + 4, weight: 0 });
+        }
+        morphs.push({ name: MORPH_BLINK, frame: loopFrames, weight: 0 });
+    }
+
+    return buildVmd(bones, morphs, "AutoDance");
+}
+
+/** 判断是否应切换到 Auto Dance（有音乐在播放）。 */
+export function shouldAutoDance(audioPlaying: boolean, mode: ProcMotionMode): boolean {
+    return audioPlaying && (mode === "autodance" || mode === "off");
+}
+
+/** 判断是否应切换到 Idle（无音乐，未加载用户 VMD）。 */
+export function shouldIdle(audioPlaying: boolean, hasUserVmd: boolean, mode: ProcMotionMode): boolean {
+    return !audioPlaying && !hasUserVmd && (mode === "idle" || mode === "off");
+}
