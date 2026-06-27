@@ -42,7 +42,11 @@ import {
   isMatEnabled,
   stopVMD,
   loadVMDFromPath,
+  loadOutfits,
+  applyOutfitVariant,
+  resetOutfit,
 } from "./scene";
+import type { OutfitFile, OutfitVariant } from "./config";
 import type { MaterialCategoryParams } from "./scene";
 import type { Material } from "@babylonjs/core/Materials/material";
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
@@ -177,6 +181,10 @@ export function buildModelDetailLevel(id: string): PopupLevel {
       slideRow(card3, "lucide:download", "导入文件", false, () => {
         selectAndLoadPreset(id);
       });
+      slideRow(card3, "lucide:shirt", "服装变体", true, () => {
+        const level = buildOutfitLevel(id);
+        stackRegistry.modelStack?.push(level);
+      });
       container.appendChild(card3);
 
       const card4 = document.createElement("div");
@@ -186,6 +194,73 @@ export function buildModelDetailLevel(id: string): PopupLevel {
         stackRegistry.modelStack?.push(level);
       });
       container.appendChild(card4);
+    },
+  };
+}
+
+// ======== Outfit Variants ========
+
+export function buildOutfitLevel(id: string): PopupLevel {
+  return {
+    label: "服装变体",
+    dir: "",
+    items: [],
+    renderCustom: async (container) => {
+      container.classList.remove("render-card");
+      const inst = modelRegistry.get(id);
+      if (!inst) { container.textContent = ""; return; }
+
+      // Ensure outfits.json is loaded
+      let outfit: OutfitFile | undefined | null = inst.outfitFile;
+      if (!outfit) {
+        outfit = await loadOutfits(id);
+      }
+
+      if (!outfit || !outfit.variants || outfit.variants.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "font-size:11px;color:var(--text-dim);text-align:center;padding:20px;line-height:1.6;";
+        empty.innerHTML = "此模型无 outfits.json 配置。<br>在模型所在目录创建 outfits.json 即可启用服装变体。";
+        container.appendChild(empty);
+        return;
+      }
+
+      const active = inst.activeVariant;
+
+      cardContainer(container, (c) => {
+        // "默认" always first
+        const defRow = document.createElement("div"); defRow.className = "slide-item";
+        const defIcon = document.createElement("span"); defIcon.className = "slide-icon";
+        defIcon.innerHTML = active === undefined || active === "默认"
+          ? '<iconify-icon icon="lucide:check-circle"></iconify-icon>'
+          : '<iconify-icon icon="lucide:circle"></iconify-icon>';
+        defRow.appendChild(defIcon);
+        const defLabel = document.createElement("span"); defLabel.className = "slide-label";
+        defLabel.textContent = "默认";
+        defRow.appendChild(defLabel);
+        defRow.addEventListener("click", () => applyOutfitVariant(id, "默认"));
+        c.appendChild(defRow);
+
+        for (const v of outfit.variants) {
+          const row = document.createElement("div"); row.className = "slide-item";
+          const icon = document.createElement("span"); icon.className = "slide-icon";
+          icon.innerHTML = active === v.name
+            ? '<iconify-icon icon="lucide:check-circle"></iconify-icon>'
+            : '<iconify-icon icon="lucide:circle"></iconify-icon>';
+          row.appendChild(icon);
+          const label = document.createElement("span"); label.className = "slide-label";
+          label.textContent = v.name;
+          row.appendChild(label);
+          row.addEventListener("click", () => applyOutfitVariant(id, v.name));
+          c.appendChild(row);
+        }
+
+        const resetBtn = document.createElement("button");
+        resetBtn.className = "btn btn-sm";
+        resetBtn.textContent = "重置全部";
+        resetBtn.style.cssText = "width:100%;margin-top:8px;";
+        resetBtn.addEventListener("click", () => { resetOutfit(id); loadOutfits(id); });
+        c.appendChild(resetBtn);
+      });
     },
   };
 }
@@ -884,7 +959,6 @@ export function serializeModelPreset(id: string, presetName?: string): string {
   const preset: ModelPresetFile = {
     version: 1,
     presetName: presetName,
-    autoApply: false,
     model: {
       filePath: inst.filePath,
       libraryRef: computeLibraryRef(inst.filePath) || undefined,
@@ -1092,8 +1166,20 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
   if (!name) return;
   const trimmed = name.trim();
   if (!trimmed) { setStatus("✗ 名称不能为空", false); return; }
-  const json = serializeModelPreset(id, trimmed);
+  let json = serializeModelPreset(id, trimmed);
   if (!json) { setStatus("✗ 无法序列化模型状态", false); return; }
+  // Preserve autoApply if re-saving an existing preset
+  try {
+    const existing = await LoadModelPresetFromLib(trimmed);
+    if (existing) {
+      const existingPreset: ModelPresetFile = JSON.parse(existing);
+      if (existingPreset.autoApply) {
+        const merged: ModelPresetFile = JSON.parse(json);
+        merged.autoApply = true;
+        json = JSON.stringify(merged, null, 2);
+      }
+    }
+  } catch { /* no existing preset — fine */ }
   try {
     await SaveModelPresetToLib(trimmed, json);
     setStatus("✓ 预设已保存到库", true);
@@ -1165,7 +1251,8 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
             } catch { setStatus("✗ 删除失败", false); }
           });
           row.appendChild(delBtn);
-          row.addEventListener("click", () => {
+          row.addEventListener("click", (ev) => {
+            if ((ev.target as HTMLElement).closest(".toggle")) return;
             applyPresetFromLib(e.name, id);
           });
           c.appendChild(row);
