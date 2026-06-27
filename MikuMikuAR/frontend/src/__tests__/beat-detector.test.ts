@@ -77,3 +77,32 @@ describe("BeatDetector instance", () => {
         expect(phase).toBeLessThanOrEqual(1);
     });
 });
+
+describe("BeatDetector.getLevel (static)", () => {
+    it("returns 0 for empty data", () => {
+        expect(BeatDetector.getLevel(new Uint8Array(0))).toBe(0);
+    });
+
+    it("computes average of full range (0..1 normalized)", () => {
+        const data = new Uint8Array([0, 128, 255]);
+        // (0+128+255)/3/255 ≈ 0.502
+        expect(BeatDetector.getLevel(data)).toBeCloseTo(0.502, 2);
+    });
+
+    it("respects bin range", () => {
+        const data = new Uint8Array([0, 0, 255, 255]);
+        expect(BeatDetector.getLevel(data, 2, 4)).toBeCloseTo(1, 2);
+        expect(BeatDetector.getLevel(data, 0, 2)).toBe(0);
+    });
+
+    it("clamps end to data length", () => {
+        const data = new Uint8Array([100, 200]);
+        expect(BeatDetector.getLevel(data, 0, 99)).toBeCloseTo((100 + 200) / 2 / 255, 2);
+    });
+
+    it("returns 0 when end <= start", () => {
+        const data = new Uint8Array([100, 200]);
+        expect(BeatDetector.getLevel(data, 2, 2)).toBe(0);
+        expect(BeatDetector.getLevel(data, 3, 1)).toBe(0);
+    });
+});

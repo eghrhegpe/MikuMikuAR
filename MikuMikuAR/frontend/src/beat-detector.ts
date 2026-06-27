@@ -95,6 +95,13 @@ export class BeatDetector {
         return Math.min(1, elapsed / Math.max(1, this.phaseInterval));
     }
 
+    /** 当前帧指定频段的平均能量 (0..1)。须在 update() 之后调用。
+     *  无 analyser 时返回 0。 */
+    getLevel(startBin = 0, endBin?: number): number {
+        if (!this.analyser) return 0;
+        return BeatDetector.getLevel(this.freqData, startBin, endBin);
+    }
+
     hasAudio(): boolean { return this.analyser !== null; }
 
     /** 纯逻辑：给定能量序列，返回 beat 触发帧索引。供测试用。 */
@@ -122,5 +129,19 @@ export class BeatDetector {
         if (intervalsMs.length === 0) return 120;
         const avg = intervalsMs.reduce((a, b) => a + b, 0) / intervalsMs.length;
         return avg > 0 ? Math.round(60000 / avg) : 120;
+    }
+
+    /** 纯逻辑：从频谱数据计算指定频段平均能量 (0..1)。
+     *  @param freqData Uint8Array 频谱数据（0..255，由 AnalyserNode.getByteFrequencyData 填充）
+     *  @param startBin 起始 bin（含），默认 0
+     *  @param endBin 结束 bin（不含），默认到数据末尾 */
+    static getLevel(freqData: Uint8Array, startBin = 0, endBin?: number): number {
+        if (freqData.length === 0) return 0;
+        const start = Math.max(0, startBin);
+        const end = Math.min(endBin ?? freqData.length, freqData.length);
+        if (end <= start) return 0;
+        let sum = 0;
+        for (let i = start; i < end; i++) sum += freqData[i];
+        return sum / (end - start) / 255;
     }
 }
