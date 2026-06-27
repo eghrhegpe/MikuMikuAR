@@ -20,10 +20,12 @@ import { getLightState, setLightState, triggerAutoSave, serializeScene, deserial
 import type { RenderState } from "./scene";
 import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectVMDMotion, SelectDir, SaveScreenshot,
     GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene } from "../wailsjs/go/main/App";
-import { focusModel, engine, resetModelTransform, getMatCatGroups, getMatCatParams, setMatCatParams, resetMatCatParams, getMatDetailList, getMatParams, setMatParams, resetSingleMatParams, resetAllMatParams, setGravityStrength, getGravityStrength } from "./scene";
+import { focusModel, engine, resetModelTransform, getMatCatGroups, getMatCatParams, setMatCatParams, resetMatCatParams, getMatDetailList, getMatParams, setMatParams, resetSingleMatParams, resetAllMatParams, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion } from "./scene";
 import type { MaterialCategoryParams } from "./scene";
 import type { Material } from "@babylonjs/core/Materials/material";
+import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { modelRegistry, focusedModelId, setFocusedModelId } from "./config";
+import type { ProcMotionMode } from "./procedural-motion";
 
 // ======== Scene Menu (SlideMenu) ========
 
@@ -39,10 +41,56 @@ function buildSceneRoot(): PopupLevel {
             { kind: "folder", label: "灯光", icon: "sun", target: "scene:light" },
             { kind: "folder", label: "渲染", icon: "sparkles", target: "scene:render" },
             { kind: "folder", label: "物理", icon: "toggle-left", target: "scene:physics" },
+            { kind: "folder", label: "程序化动作", icon: "wind", target: "scene:procmotion" },
             { kind: "folder", label: "截图", icon: "camera", target: "scene:screenshot" },
             { kind: "action", label: "保存场景", icon: "save", target: "scene:save" },
             { kind: "action", label: "加载场景", icon: "upload", target: "scene:load" },
         ],
+    };
+}
+
+function buildProcMotionLevel(): PopupLevel {
+    const st = getProcMotionState();
+    const modeLabel: Record<string, string> = {
+        off: "关闭", idle: "Idle 呼吸", autodance: "Auto Dance",
+    };
+    return {
+        label: "程序化动作",
+        dir: "",
+        items: [
+            { kind: "folder", label: "模式", icon: "wind", target: "procmotion:mode", sublabel: modeLabel[st.mode] },
+            { kind: "folder", label: "自动切换", icon: "repeat", target: "procmotion:autoswitch", sublabel: st.autoSwitch ? "开" : "关" },
+        ],
+        renderCustom: (container) => {
+            container.style.padding = "8px 6px";
+            addSliderRow(container, "动作强度", st.intensity, 0, 1, 0.05, (v) => {
+                setProcMotionIntensity(v);
+                regenerateProcMotion();
+            }, "lucide:activity");
+            addSliderRow(container, "速度", st.speed, 0.5, 2, 0.05, (v) => {
+                setProcMotionSpeed(v);
+                regenerateProcMotion();
+            }, "lucide:fast-forward");
+        },
+    };
+}
+
+function buildProcMotionModeLevel(): PopupLevel {
+    const st = getProcMotionState();
+    const modes: { mode: ProcMotionMode; label: string; icon: string }[] = [
+        { mode: "off", label: "关闭", icon: st.mode === "off" ? "check" : "circle" },
+        { mode: "idle", label: "Idle 呼吸", icon: st.mode === "idle" ? "check" : "circle" },
+        { mode: "autodance", label: "Auto Dance", icon: st.mode === "autodance" ? "check" : "circle" },
+    ];
+    return {
+        label: "程序化动作模式",
+        dir: "",
+        items: modes.map(m => ({
+            kind: "action" as const,
+            label: m.label,
+            icon: m.icon,
+            target: `procmotion:set-mode:${m.mode}`,
+        })),
     };
 }
 
@@ -69,7 +117,7 @@ function buildPresetScenesLevel(): PopupLevel {
             navRow.style.cssText = "display:flex;gap:6px;margin-bottom:10px;";
             const prevBtn = document.createElement("button");
             prevBtn.style.cssText = "flex:1;padding:6px;border:1px solid var(--white-08);border-radius:6px;background:transparent;color:var(--text-bright);cursor:pointer;font-size:11px;";
-            prevBtn.innerHTML = '<iconify-icon icon="skip-back"></iconify-icon> 上一个';
+            prevBtn.innerHTML = '<iconify-icon icon="lucide:skip-back"></iconify-icon> 上一个';
             prevBtn.addEventListener("click", async () => {
                 if (scenes.length === 0) return;
                 if (currentPresetIndex < 0) currentPresetIndex = 0;
@@ -82,7 +130,7 @@ function buildPresetScenesLevel(): PopupLevel {
             });
             const nextBtn = document.createElement("button");
             nextBtn.style.cssText = "flex:1;padding:6px;border:1px solid var(--white-08);border-radius:6px;background:transparent;color:var(--text-bright);cursor:pointer;font-size:11px;";
-            nextBtn.innerHTML = '下一个 <iconify-icon icon="skip-forward"></iconify-icon>';
+            nextBtn.innerHTML = '下一个 <iconify-icon icon="lucide:skip-forward"></iconify-icon>';
             nextBtn.addEventListener("click", async () => {
                 if (scenes.length === 0) return;
                 if (currentPresetIndex < 0) currentPresetIndex = 0;
@@ -157,39 +205,90 @@ function buildMaterialCategoryLevel(id: string, modelName: string): PopupLevel {
                 const params = getMatCatParams(id, cat);
                 const catModified = mats.some(m => detailMap.get(m.name)?.modified);
                 const card = document.createElement("div");
-                card.style.cssText = "border:1px solid var(--white-08);border-radius:6px;padding:8px;margin-bottom:10px;";
+                card.className = "mat-card";
 
                 const header = document.createElement("div");
-                header.style.cssText = "font-size:12px;color:var(--text-bright);margin-bottom:6px;display:flex;align-items:center;gap:4px;";
-                header.innerHTML = `<iconify-icon icon="${CATEGORY_ICONS[cat] || "box"}"></iconify-icon> ${cat} <span style="font-size:10px;color:var(--text-dim);">(${mats.length} 个材质)</span>`;
-                if (catModified) {
-                    header.innerHTML += ' <span style="font-size:10px;color:var(--accent);margin-left:auto;">已修改</span>';
-                }
+                header.className = "mat-card-header";
+                header.innerHTML = `
+                    <span class="mat-card-icon"><iconify-icon icon="${CATEGORY_ICONS[cat] || "box"}"></iconify-icon></span>
+                    <span class="mat-card-title">${cat}</span>
+                    <span class="mat-card-count">${mats.length}</span>
+                    ${catModified ? '<span class="mat-card-modified">已修改</span>' : ''}
+                `;
                 card.appendChild(header);
 
                 // Per-material list
-                for (const mat of mats) {
+                const matListBody = document.createElement("div");
+                matListBody.className = "mat-list-body";
+                const COLLAPSE_THRESHOLD = 15;
+
+                for (let mi = 0; mi < mats.length; mi++) {
+                    const mat = mats[mi];
                     const detail = detailMap.get(mat.name);
                     const isModified = detail?.modified ?? false;
+                    const matIndex = (detail?.index ?? mi) + 1;
+
+                    let swatchStyle = "background:#555";
+                    try {
+                        const sm = mat.mat as StandardMaterial;
+                        if (sm.diffuseColor) {
+                            swatchStyle = `background:rgb(${Math.round(sm.diffuseColor.r*255)},${Math.round(sm.diffuseColor.g*255)},${Math.round(sm.diffuseColor.b*255)})`;
+                        }
+                    } catch {}
+
                     const matRow = document.createElement("div");
-                    matRow.style.cssText = `display:flex;align-items:center;gap:6px;padding:4px 6px;margin:2px 0;border-radius:4px;cursor:pointer;font-size:11px;${isModified ? "color:var(--accent);background:var(--white-04);" : "color:var(--text-dim);"}`;
-                    matRow.innerHTML = `<iconify-icon icon="${isModified ? "check-circle" : "circle"}"></iconify-icon><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(mat.name)}</span>`;
-                    matRow.addEventListener("mouseenter", () => { matRow.style.background = "var(--white-08)"; });
-                    matRow.addEventListener("mouseleave", () => { matRow.style.background = isModified ? "var(--white-04)" : ""; });
+                    matRow.className = `mat-row${isModified ? " modified" : ""}${mi >= COLLAPSE_THRESHOLD ? " excess" : ""}`;
+                    matRow.innerHTML = `
+                        <span class="mat-swatch" style="${swatchStyle}"></span>
+                        <span class="mat-index">#${String(matIndex).padStart(2, "0")}</span>
+                        <span class="mat-name" title="${escapeHtml(mat.name)}">${escapeHtml(mat.name)}</span>
+                        ${isModified ? '<span class="mat-modified"><iconify-icon icon="check-circle"></iconify-icon></span>' : ''}
+                    `;
                     matRow.addEventListener("click", () => {
-                        sceneStack?.push(buildPerMatLevel(id, modelName, mat.name, mat.mat, detail?.index ?? 0));
+                        sceneStack?.push(buildPerMatLevel(id, modelName, mat.name, mat.mat, detail?.index ?? mi));
                     });
-                    card.appendChild(matRow);
+                    matListBody.appendChild(matRow);
+                }
+                card.appendChild(matListBody);
+
+                // Expand/collapse for large groups
+                if (mats.length > COLLAPSE_THRESHOLD) {
+                    const remaining = mats.length - COLLAPSE_THRESHOLD;
+                    const expandBtn = document.createElement("div");
+                    expandBtn.className = "mat-expand-btn";
+                    expandBtn.textContent = `┄ 还有 ${remaining} 个材质 ▾`;
+                    let expanded = false;
+                    expandBtn.addEventListener("click", () => {
+                        expanded = !expanded;
+                        const excessRows = matListBody.querySelectorAll(".mat-row.excess");
+                        excessRows.forEach(el => (el as HTMLElement).style.display = expanded ? "flex" : "none");
+                        expandBtn.textContent = expanded ? `┄ 收起 ▴` : `┄ 还有 ${remaining} 个材质 ▾`;
+                    });
+                    card.appendChild(expandBtn);
                 }
 
-                // Category-level sliders
-                const sliderGroup = document.createElement("div");
-                sliderGroup.style.cssText = "margin-top:4px;padding-top:4px;border-top:1px solid var(--white-04);";
-                addSliderRow(sliderGroup, "漫反射倍率", params.diffuseMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { diffuseMul: v }), "lucide:palette");
-                addSliderRow(sliderGroup, "高光倍率", params.specularMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { specularMul: v }), "lucide:sparkles");
-                addSliderRow(sliderGroup, "高光指数", params.shininess, 0, 200, 1, (v) => setMatCatParams(id, cat, { shininess: v }), "lucide:gauge");
-                addSliderRow(sliderGroup, "环境光倍率", params.ambientMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { ambientMul: v }), "lucide:sun");
-                card.appendChild(sliderGroup);
+                // Slider dropdown (collapsed by default)
+                const sliderToggle = document.createElement("div");
+                sliderToggle.className = "mat-slider-toggle";
+                sliderToggle.innerHTML = `<iconify-icon icon="lucide:sliders"></iconify-icon> 参数微调 <span class="arrow">▾</span>`;
+
+                const sliderPanel = document.createElement("div");
+                sliderPanel.className = "mat-slider-panel";
+                sliderPanel.style.display = "none";
+
+                addSliderRow(sliderPanel, "漫反射倍率", params.diffuseMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { diffuseMul: v }), "lucide:palette");
+                addSliderRow(sliderPanel, "高光倍率", params.specularMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { specularMul: v }), "lucide:sparkles");
+                addSliderRow(sliderPanel, "高光指数", params.shininess, 0, 200, 1, (v) => setMatCatParams(id, cat, { shininess: v }), "lucide:gauge");
+                addSliderRow(sliderPanel, "环境光倍率", params.ambientMul, 0, 2, 0.05, (v) => setMatCatParams(id, cat, { ambientMul: v }), "lucide:sun");
+
+                sliderToggle.addEventListener("click", () => {
+                    const isOpen = sliderPanel.style.display !== "none";
+                    sliderPanel.style.display = isOpen ? "none" : "block";
+                    sliderToggle.querySelector(".arrow")!.textContent = isOpen ? "▾" : "▴";
+                });
+
+                card.appendChild(sliderToggle);
+                card.appendChild(sliderPanel);
 
                 container.appendChild(card);
             }
@@ -204,7 +303,7 @@ function buildMaterialCategoryLevel(id: string, modelName: string): PopupLevel {
                 const resetAllRow = document.createElement("div");
                 resetAllRow.className = "menu-item";
                 resetAllRow.style.color = "var(--warn)";
-                resetAllRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置所有单独调整</span>';
+                resetAllRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="menu-label">重置所有单独调整</span>';
                 resetAllRow.addEventListener("click", () => {
                     resetAllMatParams(id);
                     sceneStack?.reRender();
@@ -215,7 +314,7 @@ function buildMaterialCategoryLevel(id: string, modelName: string): PopupLevel {
 
             const resetRow = document.createElement("div");
             resetRow.className = "menu-item";
-            resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置全部材质参数</span>';
+            resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="menu-label">重置全部材质参数</span>';
             resetRow.addEventListener("click", () => {
                 resetMatCatParams(id);
                 resetAllMatParams(id);
@@ -265,7 +364,7 @@ function buildPerMatLevel(id: string, modelName: string, matName: string, mat: M
             if (isModified) {
                 const resetRow = document.createElement("div");
                 resetRow.className = "menu-item";
-                resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="rotate-ccw"></iconify-icon></span><span class="menu-label">重置此材质</span>';
+                resetRow.innerHTML = '<span class="menu-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="menu-label">重置此材质</span>';
                 resetRow.addEventListener("click", () => {
                     resetSingleMatParams(id, matIndex);
                     sceneStack?.reRender();
@@ -1363,6 +1462,25 @@ function handleSceneAction(row: PopupRow): void {
         }
         return;
     }
+    // Procedural Motion actions
+    if (row.target && row.target.startsWith("procmotion:set-mode:")) {
+        const mode = row.target.replace("procmotion:set-mode:", "") as ProcMotionMode;
+        setProcMotionMode(mode);
+        regenerateProcMotion();
+        sceneStack?.pop();
+        sceneStack?.reRender();
+        return;
+    }
+    if (row.target === "procmotion:autoswitch") {
+        const cur = getProcMotionState();
+        setProcMotionAutoSwitch(!cur.autoSwitch);
+        sceneStack?.reRender();
+        return;
+    }
+    if (row.target === "procmotion:mode") {
+        sceneStack?.push(buildProcMotionModeLevel());
+        return;
+    }
 }
 
 export async function showSceneMenu(): Promise<void> {
@@ -1393,6 +1511,7 @@ export async function showSceneMenu(): Promise<void> {
                     case "scene:light": return buildLightLevel();
                     case "scene:render": return buildRenderLevel();
                     case "scene:physics": return buildPhysicsLevel();
+                    case "scene:procmotion": return buildProcMotionLevel();
                     case "scene:screenshot": return buildScreenshotLevel();
                     case "camera:params:orbit": return buildCameraParamsLevel("orbit");
                     case "camera:params:freefly": return buildCameraParamsLevel("freefly");
