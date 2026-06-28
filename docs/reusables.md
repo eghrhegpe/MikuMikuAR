@@ -166,6 +166,7 @@
 > - `menus/` — 所有弹窗 UI（menu, library, library-core, model-detail, model-material, model-preset, motion-popup, scene-menu, env-menu, outfit-ui, settings）
 > - `motion/` — 程序化动作 + 文件格式（procedural-motion, vmd-writer, vpd-parser, beat-detector, lipsync）
 > - `outfit/` — 换装 + 音频（outfit, audio）
+> - `physics/` — XPBD 布料模拟（xpbd-solver, xpbd-collider, xpbd-cloth, xpbd-renderer）
 
 | 函数 | 位置 | 签名 | 用途 |
 |------|------|------|------|
@@ -279,6 +280,72 @@
 | `resetMorphs` | `(id: string) => void` | 重置所有 morph 权重 |
 | `captureThumbnail` | `(filePath, canvas, saveFn) => Promise<void>` | 模型加载后自动截图用于缩略图缓存 |
 | `dispose` | `() => void` | 清理所有 observer（shutdown 用） |
+
+### ModelManager — XPBD 布料管理（scene/scene-model.ts）
+
+这些方法在 ModelManager 类中，用于 XPBD 布料系统的生命周期管理。
+
+| 方法/属性 | 签名 | 用途 |
+|-----------|------|------|
+| `clothInstances` | `Map<string, ClothInstance>` (readonly) | 所有布料实例（key = model ID） |
+| `getBoneWorldMatrix` | `(boneName: string) => Float32Array \| null` | 从聚焦模型的 runtimeBones 获取骨骼列主序世界矩阵 |
+| `addCloth` | `(modelId: string, cloth: ClothInstance, updateFn: (dt: number) => void) => void` | 注册布料实例 + 启动渲染观察者 |
+| `removeCloth` | `(modelId: string) => void` | 销毁布料实例 + 释放 solver/mesh 资源 |
+
+渲染观察者自动管理：首个布料创建时注册 `onBeforeRenderObservable`，最后一个移除时注销。`modelManager.remove(id)` 自动调用 `removeCloth`，`dispose()` 清理所有残留布料。
+
+### XPBD 布料模拟（physics/）
+
+#### 求解器（xpbd-solver.ts）
+
+| 类/函数 | 签名 | 用途 |
+|---------|------|------|
+| `XpbdSolver` | `class` | XPBD 核心物理引擎（纯 TS，不依赖 WASM） |
+| `XpbdSolver.addParticle` | `(pos, mass?, radius?) => number` | 添加粒子，返回索引 |
+| `XpbdSolver.addParticles` | `(positions[], masses[], radii[]) => number[]` | 批量添加粒子 |
+| `XpbdSolver.addDistanceConstraint` | `(i, j, compliance?, restLength?) => void` | 距离约束（两个粒子） |
+| `XpbdSolver.addBendConstraint` | `(i, j, k, compliance?, restLength?) => void` | 弯曲约束（skip-1 三粒子） |
+| `XpbdSolver.addVolumeConstraint` | `([i0,i1,i2,i3], compliance?, restVolume?) => void` | 四面体体积约束 |
+| `XpbdSolver.addGroundCollision` | `(groundY?) => void` | 启用地面碰撞 |
+| `XpbdSolver.step` | `(dt: number) => void` | 主步进（Verlet 积分 + 子步约束求解 + 速度更新） |
+| `XpbdSolver.setGravity` | `(x, y, z) => void` | 设置重力方向/强度 |
+| `XpbdSolver.reset` | `() => void` | 清空所有粒子和约束 |
+| `XpbdSolver.particles` | `XpbdParticle[]` | 粒子数组 |
+| `XpbdSolver.constraints` | `XpbdConstraint[]` | 约束数组 |
+
+#### 碰撞器（xpbd-collider.ts）
+
+| 类/函数 | 签名 | 用途 |
+|---------|------|------|
+| `SdfCollider` | `class` | SDF 胶囊碰撞器（点到线段最近点 + 半径） |
+| `SdfCollider.init` | `(specs: CapsuleSpec[]) => void` | 从规格初始化胶囊 |
+| `SdfCollider.updateMatrices` | `(matrices: Float32Array[]) => void` | 从骨骼世界矩阵更新胶囊位置 |
+| `SdfCollider.solve` | `(solver: XpbdSolver) => void` | 主碰撞求解（推送穿透粒子 + 摩擦衰减） |
+| `DEFAULT_BODY_CAPSULES` | `CapsuleSpec[]` | 预置 13 个身体胶囊（头/颈/胸/腰/臀/四肢） |
+
+#### 布料网格（xpbd-cloth.ts）
+
+| 函数/类型 | 签名 | 用途 |
+|-----------|------|------|
+| `ClothConfig` | `interface` | 布料配置（锚骨/拓扑/半径/长度/分段/柔度等 14 字段） |
+| `DEFAULT_CLOTH_CONFIG` | `ClothConfig` | 默认配置（skirt, innerRadius=0.15, length=0.6, 24×12 网格） |
+| `ClothInstance` | `interface` | 布料运行时对象（solver + 粒子网格 + mesh + 锚点 + updateFn） |
+| `createCloth` | `(scene, config?, collider?) => ClothInstance` | 创建布料实例（生成粒子网格 + 约束 + Babylon Mesh） |
+| `buildClothUpdateFn` | `(cloth, anchorFn, collider?) => () => void` | 构建每帧更新闭包（锚定骨骼跟随 + SDF 碰撞 + step + Mesh 更新） |
+| `disposeCloth` | `(cloth: ClothInstance) => void` | 销毁布料实例（释放 solver 资源 + mesh） |
+
+#### 调试渲染器（xpbd-renderer.ts）
+
+| 类/方法 | 签名 | 用途 |
+|---------|------|------|
+| `XpbdRenderer` | `class(scene, config?)` | 可视化调试（粒子小球/约束线/胶囊线框） |
+| `XpbdRenderer.showParticles` | `(visible: boolean) => void` | 开关粒子球显示 |
+| `XpbdRenderer.showConstraints` | `(visible: boolean) => void` | 开关约束线显示 |
+| `XpbdRenderer.showColliders` | `(visible: boolean) => void` | 开关胶囊碰撞体显示 |
+| `XpbdRenderer.updateParticles` | `(solver: XpbdSolver) => void` | 更新粒子位置 |
+| `XpbdRenderer.updateConstraints` | `(solver: XpbdSolver) => void` | 重建约束线条 |
+| `XpbdRenderer.updateColliders` | `(collider: SdfCollider) => void` | 重建胶囊线框 |
+| `XpbdRenderer.dispose` | `() => void` | 清理所有可视化对象 |
 
 ### 相机（scene/camera.ts）
 
