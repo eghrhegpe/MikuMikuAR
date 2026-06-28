@@ -10,3 +10,6 @@ reasonix.toml
 
 # Environment variables
 .env
+
+# OpenOmni runtime state (ephemeral sessions)
+.omo/
