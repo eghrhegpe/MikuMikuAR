@@ -146,10 +146,17 @@ export interface EnvState {
     windSpeed: number;
 
     particleEnabled: boolean;
-    particleType: "none" | "sakura" | "rain" | "snow" | "fireworks";
+    particleType: "none" | "sakura" | "rain" | "snow" | "fireworks" | "fireflies" | "leaves";
     particleEmitRate: number;
     particleSize: number;
     particleSpeed: number;
+
+    waterEnabled: boolean;
+    waterLevel: number;
+    waterColor: [number, number, number];
+    waterTransparency: number;
+    waterWaveHeight: number;
+    waterSize: number;
 
     cloudsEnabled: boolean;
     cloudCover: number;
@@ -293,6 +300,13 @@ export let envState: EnvState = {
     particleEmitRate: 1,
     particleSize: 1,
     particleSpeed: 1,
+
+    waterEnabled: false,
+    waterLevel: 0,
+    waterColor: [0.2, 0.4, 0.6],
+    waterTransparency: 0.8,
+    waterWaveHeight: 0.5,
+    waterSize: 50,
 
     cloudsEnabled: false,
     cloudCover: 0.5,

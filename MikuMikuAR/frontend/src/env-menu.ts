@@ -315,7 +315,7 @@ export function buildParticleLevel(): PopupLevel {
             typeLabel.textContent = "类型";
             typeRow.appendChild(typeLabel);
             const types: Array<{ value: EnvState["particleType"]; label: string }> = [
-                { value: "none", label: "无" }, { value: "sakura", label: "🌸 樱花" }, { value: "rain", label: "🌧 雨" }, { value: "snow", label: "❄ 雪" }, { value: "fireworks", label: "🎆 烟花" },
+                { value: "none", label: "无" }, { value: "sakura", label: "🌸 樱花" }, { value: "rain", label: "🌧 雨" }, { value: "snow", label: "❄ 雪" }, { value: "fireworks", label: "🎆 烟花" }, { value: "fireflies", label: "✨ 萤火虫" }, { value: "leaves", label: "🍂 落叶" },
             ];
             for (const t of types) {
                 const btn = document.createElement("button");
@@ -328,6 +328,24 @@ export function buildParticleLevel(): PopupLevel {
             addSliderRow(container, "密度", s.particleEmitRate, 0, 3, 0.1, (v) => setEnvState({ particleEmitRate: v }), "lucide:layers");
             addSliderRow(container, "大小", s.particleSize, 0.1, 3, 0.1, (v) => setEnvState({ particleSize: v }), "lucide:maximize");
             addSliderRow(container, "速度", s.particleSpeed, 0.1, 5, 0.1, (v) => setEnvState({ particleSpeed: v }), "lucide:gauge");
+        },
+    };
+}
+
+export function buildWaterLevel(): PopupLevel {
+    return {
+        label: "水面",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "12px 14px";
+            const s = envState;
+            addToggleRow(container, "启用水面", s.waterEnabled, (v) => setEnvState({ waterEnabled: v }));
+            addSliderRow(container, "高度", s.waterLevel, -10, 10, 0.1, (v) => setEnvState({ waterLevel: v }), "lucide:arrow-up");
+            addColorSliderRow(container, "水色", s.waterColor, (v) => setEnvState({ waterColor: v }));
+            addSliderRow(container, "透明度", s.waterTransparency, 0, 1, 0.05, (v) => setEnvState({ waterTransparency: v }), "lucide:eye");
+            addSliderRow(container, "波高", s.waterWaveHeight, 0, 3, 0.1, (v) => setEnvState({ waterWaveHeight: v }), "lucide:waves");
+            addSliderRow(container, "范围", s.waterSize, 10, 200, 5, (v) => setEnvState({ waterSize: v }), "lucide:maximize");
         },
     };
 }

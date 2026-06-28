@@ -2445,7 +2445,7 @@ function _createWater(state: EnvState): void {
     water.waveHeight = state.waterWaveHeight;
     water.bumpHeight = 0.15;
     water.waveLength = 0.08;
-    water.color = new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]);
+    water.waterColor = new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]);
     water.colorBlendFactor = 0.3;
     water.alpha = state.waterTransparency;
     waterMesh.material = water;

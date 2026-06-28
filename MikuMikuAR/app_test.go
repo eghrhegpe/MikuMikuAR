@@ -33,7 +33,7 @@ func TestWriteConfig(t *testing.T) {
 	}
 
 	got := string(data)
-		want := `{"ui_state":{"scale":0,"popupWidth":0,"accent":"","fontFamily":""},"library_root":"/fake/root","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false,"favorites":null,"render_presets":null,"mmd_path":"","custom_software":null,"tags":null,"dance_sets":null,"recent_models":null}`
+		want := `{"ui_state":{"scale":0,"popupWidth":0,"accent":"","fontFamily":"","animations":false,"blurBg":false},"library_root":"/fake/root","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false,"favorites":null,"render_presets":null,"mmd_path":"","custom_software":null,"tags":null,"dance_sets":null,"recent_models":null}`
 	if got != want {
 		t.Errorf("config.json content = %q, want %q", got, want)
 	}
@@ -78,7 +78,7 @@ func TestWriteConfig_OverwriteExisting(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := string(data); got != `{"ui_state":{"scale":0,"popupWidth":0,"accent":"","fontFamily":""},"library_root":"/new","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false,"favorites":null,"render_presets":null,"mmd_path":"","custom_software":null,"tags":null,"dance_sets":null,"recent_models":null}` {
+	if got := string(data); got != `{"ui_state":{"scale":0,"popupWidth":0,"accent":"","fontFamily":"","animations":false,"blurBg":false},"library_root":"/new","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false,"favorites":null,"render_presets":null,"mmd_path":"","custom_software":null,"tags":null,"dance_sets":null,"recent_models":null}` {
 		t.Errorf("after overwrite = %q, want new config", got)
 	}
 }
