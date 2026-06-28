@@ -164,8 +164,8 @@ func TestDecodeUTF16(t *testing.T) {
 		{[]uint16{0x3053, 0x3093, 0x306B, 0x3061, 0x306F}, "こんにちは"},
 		// Surrogate pair: U+1F600 (😀)
 		{[]uint16{0xD83D, 0xDE00}, "😀"},
-		// Lone high surrogate (should be passed through as replacement)
-		{[]uint16{0xD800}, string(rune(0xD800))},
+		// Lone high surrogate → U+FFFD per Unicode spec (stdlib utf16.Decode behavior)
+		{[]uint16{0xD800}, "\uFFFD"},
 	}
 
 	for _, tt := range tests {

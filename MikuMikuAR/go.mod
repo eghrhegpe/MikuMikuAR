@@ -1,10 +1,11 @@
 module mikumikuar
 
-go 1.23.0
+go 1.25.0
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/wailsapp/wails/v2 v2.12.0
+	golang.org/x/sync v0.11.0
 	golang.org/x/text v0.22.0
 )
 

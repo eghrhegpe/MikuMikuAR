@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"os"
 	"strings"
+	"unicode/utf16"
 )
 
 // PMXMeta holds the header metadata extracted from a .pmx file.
@@ -104,19 +105,8 @@ func decodeUTF16LE(b []byte) string {
 }
 
 // decodeUTF16 converts a []uint16 (as stored in UTF-16) to a Go string,
-// handling surrogate pairs via the standard library.
+// handling surrogate pairs via stdlib unicode/utf16.Decode.
+// Lone surrogates become U+FFFD (REPLACEMENT CHARACTER) per Unicode spec.
 func decodeUTF16(u16 []uint16) string {
-	// unicode/utf16.Decode handles surrogate pairs correctly
-	// but it's in the stdlib — no external dependency needed.
-	runes := make([]rune, 0, len(u16))
-	for i := 0; i < len(u16); i++ {
-		if u16[i] >= 0xD800 && u16[i] <= 0xDBFF && i+1 < len(u16) && u16[i+1] >= 0xDC00 && u16[i+1] <= 0xDFFF {
-			// High surrogate followed by low surrogate
-			runes = append(runes, rune(0x10000+(uint32(u16[i])-0xD800)*0x400+uint32(u16[i+1])-0xDC00))
-			i++
-		} else {
-			runes = append(runes, rune(u16[i]))
-		}
-	}
-	return string(runes)
+	return string(utf16.Decode(u16))
 }
