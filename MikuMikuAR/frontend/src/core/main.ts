@@ -7,11 +7,11 @@ import { dom, setStatus, isPlaying, setIsPlaying, autoLoop, setAutoLoop, seekDra
 import { GetConfig } from "../../wailsjs/go/main/App";
 import { initScene, engine, scene, focusedMmdModel, focusedModel, updatePlaybackUI, seekFromEvent, tryRestoreLastScene, setEnvState } from "../scene/scene";
 import { freeflyInput, getCameraMode } from "../scene/camera";
-import { initLibrary, showModelPopup, showMotionPopup } from "../library";
+import { initLibrary, showModelPopup, showMotionPopup } from "../menus/library";
 import { ImportZip } from "../../wailsjs/go/main/App";
 import { OnFileDrop, EventsOn } from "../../wailsjs/runtime/runtime";
 import { loadPMXFile, loadVMDFromPath } from "../scene/scene";
-import { refreshLibrary } from "../library";
+import { refreshLibrary } from "../menus/library";
 import "iconify-icon";
 
 // ======== Initialize hover hints for static [data-hint] elements ========
@@ -102,9 +102,9 @@ async function toggleOverlay(id: string, showFn: () => void): Promise<void> {
 const navActions: Record<number, () => void | Promise<void>> = {
     1: () => toggleOverlay("modelPopup", showModelPopup),
     2: () => toggleOverlay("motionPopup", showMotionPopup),
-    3: async () => { const m = await import("../scene-menu"); toggleOverlay("sceneOverlay", m.showSceneMenu); },
-    4: async () => { const m = await import("../scene-menu"); toggleOverlay("sceneOverlay", m.showEnvMenu); },
-    5: async () => { const m = await import("../settings"); toggleOverlay("settingsOverlay", m.showSettings); },
+    3: async () => { const m = await import("../menus/scene-menu"); toggleOverlay("sceneOverlay", m.showSceneMenu); },
+    4: async () => { const m = await import("../menus/scene-menu"); toggleOverlay("sceneOverlay", m.showEnvMenu); },
+    5: async () => { const m = await import("../menus/settings"); toggleOverlay("settingsOverlay", m.showSettings); },
 };
 const navLabels: Record<number, string> = {};
 function buildNavMaps(): void {
@@ -273,9 +273,9 @@ async function init(): Promise<void> {
         // Register nav button event listeners (ensured DOM ready)
         dom.btnMainAction?.addEventListener("click", () => toggleOverlay("modelPopup", showModelPopup));
         dom.btnMotionPopup?.addEventListener("click", showMotionPopup);
-        dom.btnScene?.addEventListener("click", async () => { const m = await import("../scene-menu"); toggleOverlay("sceneOverlay", m.showSceneMenu); });
-        dom.btnEnv?.addEventListener("click", async () => { const m = await import("../scene-menu"); toggleOverlay("sceneOverlay", m.showEnvMenu); });
-        dom.btnSettings?.addEventListener("click", async () => { const m = await import("../settings"); toggleOverlay("settingsOverlay", m.showSettings); });
+        dom.btnScene?.addEventListener("click", async () => { const m = await import("../menus/scene-menu"); toggleOverlay("sceneOverlay", m.showSceneMenu); });
+        dom.btnEnv?.addEventListener("click", async () => { const m = await import("../menus/scene-menu"); toggleOverlay("sceneOverlay", m.showEnvMenu); });
+        dom.btnSettings?.addEventListener("click", async () => { const m = await import("../menus/settings"); toggleOverlay("settingsOverlay", m.showSettings); });
         console.log("MikuMikuAR initialized");
         initLibrary().catch(err => console.warn("Library init:", err));
         // Restore env state from config (authoritative — scene restore skips env)
@@ -416,7 +416,7 @@ EventsOn("watch:newfile", (payload: {path: string, name: string, type: string}) 
                 const { ImportLocalFile } = await import("../../wailsjs/go/main/App");
                 await ImportLocalFile(payload.path);
                 setStatus("✓ 已导入: " + (payload.name || payload.path), true);
-                const { refreshLibrary } = await import("../library");
+                const { refreshLibrary } = await import("../menus/library");
                 refreshLibrary().catch(console.warn);
             } catch (err: any) {
                 setStatus("✗ 导入失败: " + (err.message || err), false);

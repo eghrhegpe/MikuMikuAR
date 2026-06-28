@@ -10,19 +10,19 @@ import {
   stackRegistry,
   closeAllOverlays,
   cardContainer,
-} from "./core/config";
+} from "../core/config";
 import {
   loadVMDFromPath, loadVPDPose,
   updatePlaybackUI,
-} from "./scene/scene";
+} from "../scene/scene";
 import { SlideMenu } from "./menu";
-import { slideRow, addSliderRow } from "./core/ui-helpers";
-import { createIconifyIcon } from "./core/icons";
-import { loadAudioFile, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset } from "./audio";
+import { slideRow, addSliderRow } from "../core/ui-helpers";
+import { createIconifyIcon } from "../core/icons";
+import { loadAudioFile, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset } from "../outfit/audio";
 import {
   SelectAudioFile, SelectVMDMotion, SelectVPDPose,
   GetDanceSets, SaveDanceSet, DeleteDanceSet, ImportDanceSet,
-} from "../wailsjs/go/main/App";
+} from "../../wailsjs/go/main/App";
 
 // ======== Dance Set Types & State ========
 

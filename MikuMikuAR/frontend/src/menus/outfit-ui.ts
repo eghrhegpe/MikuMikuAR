@@ -5,13 +5,13 @@ import {
   modelRegistry,
   cardContainer,
   PopupLevel,
-} from "./core/config";
-import type { OutfitFile } from "./core/config";
+} from "../core/config";
+import type { OutfitFile } from "../core/config";
 import {
   loadOutfits,
   applyOutfitVariant,
   resetOutfit,
-} from "./outfit";
+} from "../outfit/outfit";
 
 export function buildOutfitLevel(id: string): PopupLevel {
   return {

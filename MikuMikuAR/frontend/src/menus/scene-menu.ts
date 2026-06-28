@@ -6,24 +6,24 @@
 import {
     dom, closeAllOverlays, setStatus, escapeHtml,
     PopupRow, PopupLevel, cardContainer,
-} from "./core/config";
+} from "../core/config";
 import { SlideMenu } from "./menu";
-import { createIconifyIcon } from "./core/icons";
-import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider } from "./core/ui-helpers";
+import { createIconifyIcon } from "../core/icons";
+import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider } from "../core/ui-helpers";
 import {
     switchCameraMode, getCameraMode, hasCameraVmd, getCameraVmdName, clearCameraVmd, getCurrentCamera,
     getOrbitParams, setOrbitParams,
     getFreeflyParams, setFreeflyParams,
     getConcertParams, setConcertParams,
     type CameraMode,
-} from "./scene/camera";
-import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath } from "./scene/scene";
-import type { RenderState } from "./scene/scene";
+} from "../scene/camera";
+import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath } from "../scene/scene";
+import type { RenderState } from "../scene/scene";
 import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectVMDMotion, SelectDir, SaveScreenshot,
-    GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene } from "../wailsjs/go/main/App";
-import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, getLipSyncState, setLipSyncEnabled, setLipSyncSensitivity, setLipSyncIntensity } from "./scene/scene";
-import { modelRegistry, focusedModelId, setFocusedModelId } from "./core/config";
-import type { ProcMotionMode } from "./procedural-motion";
+    GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene } from "../../wailsjs/go/main/App";
+import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, getLipSyncState, setLipSyncEnabled, setLipSyncSensitivity, setLipSyncIntensity } from "../scene/scene";
+import { modelRegistry, focusedModelId, setFocusedModelId } from "../core/config";
+import type { ProcMotionMode } from "../motion/procedural-motion";
 import { buildEnvLevel, buildSkyLevel, buildGroundLevel, buildParticleLevel, buildWindLevel, buildCloudLevel, buildEnvLightingLevel, buildPresetLevel, setEnvMenuStack } from "./env-menu";
 
 // ======== Scene Menu (SlideMenu) ========

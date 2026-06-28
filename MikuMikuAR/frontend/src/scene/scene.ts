@@ -61,17 +61,17 @@ import {
     OutfitFile, OutfitVariant, OutfitSlot,
 } from "../core/config";
 import { resolveFileUrl, normPath } from "../core/fileservice";
-import { loadVPDFromBuffer } from "../vpd-parser";
+import { loadVPDFromBuffer } from "../motion/vpd-parser";
 import { deriveLighting, ENV_PRESETS } from "./env-lighting";
-import { syncAudioPlayback, loadAudioFile, setVolume, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset, isAudioPlaying, resumeAudio, pauseAudio } from "../audio";
+import { syncAudioPlayback, loadAudioFile, setVolume, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset, isAudioPlaying, resumeAudio, pauseAudio } from "../outfit/audio";
 import {
     ProcMotionState, ProcMotionMode, DEFAULT_PROC_STATE,
     generateIdleVmd, generateAutoDanceVmd, shouldAutoDance, shouldIdle,
-} from "../procedural-motion";
-import { LipSyncState as LipSyncStateType, DEFAULT_LIPSYNC_STATE, findLipMorph, amplitudeToWeight } from "../lipsync";
-import { BeatDetector } from "../beat-detector";
-import { attachBeatDetector, disposeAudio } from "../audio";
-import { loadOutfits, applyOutfitVariant, resetOutfit } from "../outfit";
+} from "../motion/procedural-motion";
+import { LipSyncState as LipSyncStateType, DEFAULT_LIPSYNC_STATE, findLipMorph, amplitudeToWeight } from "../motion/lipsync";
+import { BeatDetector } from "../motion/beat-detector";
+import { attachBeatDetector, disposeAudio } from "../outfit/audio";
+import { loadOutfits, applyOutfitVariant, resetOutfit } from "../outfit/outfit";
 import { _catState, _matState, _matEnabled } from "./scene-material";
 import { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from "./scene-vmd";
 import { updatePlaybackUI, seekFromEvent } from "./scene-playback";
@@ -738,7 +738,7 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
         if (!skipAutoApply) {
             // Try auto-apply preset from library
             try {
-                const { tryAutoApplyPreset } = await import("../model-preset");
+                const { tryAutoApplyPreset } = await import("../menus/model-preset");
                 tryAutoApplyPreset(id).catch((err: any) => console.warn("auto-apply preset:", err));
             } catch (err) { console.warn("auto-apply import:", err); }
         }

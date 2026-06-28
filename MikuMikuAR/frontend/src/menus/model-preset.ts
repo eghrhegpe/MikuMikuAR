@@ -9,7 +9,7 @@ import {
   stackRegistry,
   escapeHtml,
   isPlaying,
-} from "./core/config";
+} from "../core/config";
 import {
   setModelPosition,
   setModelScaling,
@@ -21,10 +21,10 @@ import {
   loadVMDFromPath,
   getMatState,
   applyMatState,
-} from "./scene/scene";
-import { createIconifyIcon } from "./core/icons";
-import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "./audio";
-import { loadOutfits, applyOutfitVariant } from "./outfit";
+} from "../scene/scene";
+import { createIconifyIcon } from "../core/icons";
+import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "../outfit/audio";
+import { loadOutfits, applyOutfitVariant } from "../outfit/outfit";
 import {
   SelectPresetSaveFile,
   SelectPresetOpenFile,
@@ -35,7 +35,7 @@ import {
   LoadModelPresetFromLib,
   DeleteModelPreset,
   RenameModelPreset,
-} from "../wailsjs/go/main/App";
+} from "../../wailsjs/go/main/App";
 
 export interface ModelPresetEntry {
   name: string;
@@ -262,7 +262,7 @@ export async function applyPresetFromLib(
       if (matchedId) {
         await applyModelPreset(matchedId, json);
       } else {
-        const { loadPMXFile } = await import("./scene/scene");
+        const { loadPMXFile } = await import("../scene/scene");
         await loadPMXFile(preset.model.filePath);
         for (const [mid, inst] of modelRegistry) {
           if (inst.filePath === preset.model.filePath) {

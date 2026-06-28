@@ -18,24 +18,24 @@ import { SetDisplayNamePriority,
          GetDownloadWatchStatus,
          StartWatchDir,
          StopWatchDir,
-         SetUIScale, SetUIPopupWidth, SetUIAccent, SetUIFontFamily, SetUIAnimations, SetUIBlurBg } from "../wailsjs/go/main/App";
+         SetUIScale, SetUIPopupWidth, SetUIAccent, SetUIFontFamily, SetUIAnimations, SetUIBlurBg } from "../../wailsjs/go/main/App";
 import {
     dom, closeAllOverlays, setStatus,
     libraryRoot, externalPaths,
     displayNamePriority, setDisplayNamePriority, DisplayNamePriority,
     PopupRow, PopupLevel, escapeHtml, cardContainer,
-} from "./core/config";
+} from "../core/config";
 import { SlideMenu } from "./menu";
-import { slideRow } from "./core/ui-helpers";
+import { slideRow } from "../core/ui-helpers";
 import { rescanAndSync, reloadConfig } from "./library";
-import { softwareKindIcon, createIconifyIcon } from "./core/icons";
+import { softwareKindIcon, createIconifyIcon } from "../core/icons";
 
 // ======== Helpers re-exported ========
 export { refreshLibrary } from "./library";
 
 // ======== Software Management ========
 
-let cachedSoftwareEntries: import("../wailsjs/go/models").main.SoftwareEntry[] | null = null;
+let cachedSoftwareEntries: import("../../wailsjs/go/models").main.SoftwareEntry[] | null = null;
 
 async function scanSoftwareDir(): Promise<void> {
     try {

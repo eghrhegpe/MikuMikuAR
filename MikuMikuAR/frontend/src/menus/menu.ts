@@ -1,5 +1,5 @@
-import { PopupLevel, PopupRow, showHint, hideHint } from "./core/config";
-import { createIconifyIcon } from "./core/icons";
+import { PopupLevel, PopupRow, showHint, hideHint } from "../core/config";
+import { createIconifyIcon } from "../core/icons";
 
 export class SlideMenu {
     private levels: PopupLevel[] = [];

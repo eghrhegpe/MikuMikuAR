@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildVmd, buildBoneFrame, buildMorphFrame, BONE_FRAME_SIZE, MORPH_FRAME_SIZE, type BoneKeyFrame } from "../vmd-writer";
+import { buildVmd, buildBoneFrame, buildMorphFrame, BONE_FRAME_SIZE, MORPH_FRAME_SIZE, type BoneKeyFrame } from "../motion/vmd-writer";
 
 describe("vmd-writer frame sizes", () => {
     it("bone frame is 111 bytes", () => {

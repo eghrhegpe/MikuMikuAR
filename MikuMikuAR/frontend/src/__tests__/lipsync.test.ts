@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_LIPSYNC_STATE, findLipMorph, amplitudeToWeight } from "../lipsync";
+import { DEFAULT_LIPSYNC_STATE, findLipMorph, amplitudeToWeight } from "../motion/lipsync";
 
 describe("findLipMorph", () => {
     it("prefers あ first", () => {

@@ -291,7 +291,7 @@ import {
     serializeModelPreset,
     applyModelPreset,
     ModelPresetFile,
-} from "../library";
+} from "../menus/library";
 import {
     stopVMD,
     getMatState,

@@ -1,8 +1,8 @@
 // audio.ts — 音乐播放系统
 // 支持 MP3/WAV/OGG，与 VMD 动画同步，含音量、进度、音频偏移控制
 
-import { resolveFileUrl } from "./core/fileservice";
-import type { BeatDetector } from "./beat-detector";
+import { resolveFileUrl } from "../core/fileservice";
+import type { BeatDetector } from "../motion/beat-detector";
 
 let audioElement: HTMLAudioElement | null = null;
 let audioName = "";

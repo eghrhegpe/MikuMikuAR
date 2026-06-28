@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BeatDetector } from "../beat-detector";
+import { BeatDetector } from "../motion/beat-detector";
 
 describe("BeatDetector.detectBeatsFromEnergies", () => {
     it("detects beats in periodic energy peaks", () => {

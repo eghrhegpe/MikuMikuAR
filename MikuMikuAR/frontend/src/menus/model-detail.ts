@@ -11,7 +11,7 @@ import {
   computeLibraryRef,
   dom,
   stackRegistry,
-} from "./core/config";
+} from "../core/config";
 import {
   getModelPosition,
   setModelPosition,
@@ -46,14 +46,14 @@ import {
   getPhysicsCatState,
   stopVMD,
   loadVMDFromPath,
-} from "./scene/scene";
+} from "../scene/scene";
 import { buildMatRootLevel } from "./model-material";
-import { createIconifyIcon, softwareKindIcon } from "./core/icons";
-import { isPlaying } from "./core/config";
-import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "./audio";
-import { slideRow, addSliderRow } from "./core/ui-helpers";
+import { createIconifyIcon, softwareKindIcon } from "../core/icons";
+import { isPlaying } from "../core/config";
+import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "../outfit/audio";
+import { slideRow, addSliderRow } from "../core/ui-helpers";
 import { buildOutfitLevel } from "./outfit-ui";
-import { loadOutfits, applyOutfitVariant } from "./outfit";
+import { loadOutfits, applyOutfitVariant } from "../outfit/outfit";
 import {
   savePresetToLibDialog,
   buildPresetListLevel,
@@ -67,8 +67,8 @@ import {
   GetAllTags,
   OpenWithSoftware,
   ScanSoftwareDir,
-} from "../wailsjs/go/main/App";
-import type { main } from "../wailsjs/go/models";
+} from "../../wailsjs/go/main/App";
+import type { main } from "../../wailsjs/go/models";
 
 // ======== Open With (software tools submenu) ========
 

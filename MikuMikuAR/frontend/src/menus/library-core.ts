@@ -16,7 +16,7 @@ import {
   AddRecentModel,
   GetAllTags,
   GetModelsByTag,
-} from "../wailsjs/go/main/App";
+} from "../../wailsjs/go/main/App";
 import {
   dom,
   setStatus,
@@ -47,21 +47,21 @@ import {
   motionBindingTargetId,
   setMotionBindingTargetId,
   cardContainer,
-} from "./core/config";
+} from "../core/config";
 import {
   loadPMXFile,
   loadVMDFromPath,
   removeModel,
   resetModelMorphs,
-} from "./scene/scene";
+} from "../scene/scene";
 import {
   buildModelDetailLevel,
 } from "./model-detail";
 import { buildDanceSetDetailLevel, loadDanceSets } from "./motion-popup";
 import { SlideMenu } from "./menu";
-import { createIconifyIcon } from "./core/icons";
-import { slideRow } from "./core/ui-helpers";
-import { stackRegistry } from "./core/config";
+import { createIconifyIcon } from "../core/icons";
+import { slideRow } from "../core/ui-helpers";
+import { stackRegistry } from "../core/config";
 
 // ======== Model Stack ========
 

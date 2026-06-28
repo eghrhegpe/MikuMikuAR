@@ -2,13 +2,13 @@
 
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { LoadOutfitFile, ListSubDirs } from "../wailsjs/go/main/App";
+import { LoadOutfitFile, ListSubDirs } from "../../wailsjs/go/main/App";
 import {
   modelRegistry,
   setStatus,
   OutfitFile, OutfitVariant, OutfitSlot, ModelInstance,
-} from "./core/config";
-import { scene, _catOf, triggerAutoSave } from "./scene/scene";
+} from "../core/config";
+import { scene, _catOf, triggerAutoSave } from "../scene/scene";
 
 interface _SlotMapping {
   matName: string;

@@ -10,7 +10,7 @@ import {
     setIsLoadingVmd, setPendingVmd, setIsPlaying, setStatus,
 } from "../core/config";
 import { resolveFileUrl, normPath } from "../core/fileservice";
-import { loadVPDFromBuffer } from "../vpd-parser";
+import { loadVPDFromBuffer } from "../motion/vpd-parser";
 import { loadCameraVmd } from "./camera";
 
 // Dynamic re-import of scene.ts to access its module-level state

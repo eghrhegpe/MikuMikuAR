@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateIdleVmd, generateAutoDanceVmd, shouldAutoDance, shouldIdle, DEFAULT_PROC_STATE, type ProcMotionState } from "../procedural-motion";
+import { generateIdleVmd, generateAutoDanceVmd, shouldAutoDance, shouldIdle, DEFAULT_PROC_STATE, type ProcMotionState } from "../motion/procedural-motion";
 
 const state: ProcMotionState = { ...DEFAULT_PROC_STATE, mode: "idle", intensity: 0.5, speed: 1.0 };
 

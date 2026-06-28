@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseVPDText, decodeVPDData, poseDataToVmdBuffer, loadVPDFromBuffer, buildVmdBoneFrame } from "../vpd-parser";
+import { parseVPDText, decodeVPDData, poseDataToVmdBuffer, loadVPDFromBuffer, buildVmdBoneFrame } from "../motion/vpd-parser";
 
 // ======== parseVPDText ========
 

@@ -9,7 +9,7 @@ import {
   PopupLevel,
   stackRegistry,
   escapeHtml,
-} from "./core/config";
+} from "../core/config";
 import {
   getMatCatGroups,
   getMatCatParams,
@@ -22,9 +22,9 @@ import {
   resetAllMatParams,
   isMatEnabled,
   setMatEnabled,
-} from "./scene/scene";
-import { createIconifyIcon } from "./core/icons";
-import { slideRow, addSliderRow } from "./core/ui-helpers";
+} from "../scene/scene";
+import { createIconifyIcon } from "../core/icons";
+import { slideRow, addSliderRow } from "../core/ui-helpers";
 
 export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
   const label = "按部位批量 — " + modelName;

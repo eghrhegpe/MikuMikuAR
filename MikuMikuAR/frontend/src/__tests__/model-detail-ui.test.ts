@@ -245,20 +245,20 @@ vi.mock("../scene-menu", () => ({
     getSceneStack: () => null,
 }));
 
-vi.mock("../outfit", () => ({
+vi.mock("../outfit/outfit", () => ({
     loadOutfits: async () => null,
     applyOutfitVariant: () => {},
     resetOutfit: () => {},
 }));
 
-vi.mock("../lipsync", () => ({
+vi.mock("../motion/lipsync", () => ({
     LipSyncState: {},
     DEFAULT_LIPSYNC_STATE: { mode: "off", intensity: 0.5, phonemeMap: {} },
     findLipMorph: () => null,
     amplitudeToWeight: () => 0,
 }));
 
-vi.mock("../procedural-motion", () => ({
+vi.mock("../motion/procedural-motion", () => ({
     ProcMotionState: {},
     ProcMotionMode: {},
     DEFAULT_PROC_STATE: { mode: "off", intensity: 0.5, speed: 1, autoSwitch: false },
@@ -268,7 +268,7 @@ vi.mock("../procedural-motion", () => ({
     shouldIdle: () => false,
 }));
 
-vi.mock("../beat-detector", () => ({
+vi.mock("../motion/beat-detector", () => ({
     BeatDetector: class MockBeatDetector {
         detectBeatsFromEnergies() { return []; }
         bpmFromIntervals() { return 120; }
@@ -319,7 +319,7 @@ import {
     buildVisibilityLevel,
     buildModelTagsLevel,
     buildMorphPreviewLevel,
-} from "../model-detail";
+} from "../menus/model-detail";
 import type { PopupLevel } from "../core/config";
 
 function fakeMesh(name = "mat0"): any {

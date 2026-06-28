@@ -5,7 +5,7 @@
 
 import { modelManager } from "./scene";
 import { dom, isPlaying, autoLoop, formatTime, mmdRuntime } from "../core/config";
-import { syncAudioPlayback } from "../audio";
+import { syncAudioPlayback } from "../outfit/audio";
 
 export function updatePlaybackUI(): void {
     const mmdModel = modelManager.focusedMmdModel();
