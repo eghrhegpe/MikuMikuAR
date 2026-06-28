@@ -56,9 +56,11 @@ docs/
 ├── AGENTS.md             # 🔑 AI 入口（本文件）— 文档宪法，必须先读
 ├── foundation.md         # 🏛️ 项目地基 — AI 不可自行修改
 ├── requirements.md       # 📋 需求 + 技术选型（P0-P4 优先级、选型理由）
-├── status.md             # 📊 项目现状 + 路线图 + Bug 记录 ← 每次会话起步必读
+├── status.md             # 📊 项目现状 + Bug 记录 + 快捷键 ← 每次会话起步必读
+├── roadmap.md            # 🗺️ 路线图 + DanceXR 对标 + 下一步规划
 ├── architecture.md       # 🏗️ 架构与技术方案（Wails 骨架、PMX/VMD/纹理/zip等）
-├── naming.md             # 📛 命名决策记录（项目名演变、历史名称对照）
+├── glossary.md           # 📖 术语表 + 历史命名（解释性词典，面向新读者）
+├── terminology.md        # 📝 代码级规范（图标/状态栏/Go 错误/命名约定，面向开发者）
 ├── menu-architecture.md  # 📐 菜单架构设计（MenuStack 用法 + 添加新功能流程）
 ├── fix-cycle.md          # 🧪 修复周期与验收契约（Bug 修复流程模板）
 ├── reusables.md          # 🔧 复用函数索引（AI 写代码前先查）
@@ -66,7 +68,8 @@ docs/
 ├── troubleshooting.md    # 🐛 故障排查（CORS、WASM 404、纹理不显示）
 ├── outfits-spec.md       # 👗 服装变体配置指南（换装系统用户文档）
 ├── adr/                  # 📜 决策记录（15条，adr-001 ~ adr-015）
-├── research/             # 🧊 调研归档 — 禁止自由读取，按需索引
+├── changelog/            # 📋 变更记录（分阶段总结）
+├── research/             # 🧊 调研归档 — AI 默认不读
     ├── pmx-ecosystem.md
     ├── tech-stack-comparison.md
     ├── dancexr-structure.md
@@ -80,7 +83,7 @@ docs/
 | 场景 | 读哪些文件 |
 |------|-----------|
 | **每次会话起步** | 本文件 |
-| **接新任务** | `docs/requirements.md`（需求全貌）→ `docs/status.md`（当前状态 + 阻塞点） |
+| **接新任务** | `docs/requirements.md`（需求全貌）→ `docs/status.md`（当前状态）→ `docs/roadmap.md`（路线图） |
 | **改 Go 逻辑** | `docs/architecture.md`（整体架构）→ `MikuMikuAR/app.go` |
 | **改前端渲染** | `docs/architecture.md`（PMX/VMD 环节）→ `frontend/src/scene/scene.ts` |
 | **换装 / 纹理变体** | `docs/architecture.md` §16 → `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
@@ -97,13 +100,14 @@ docs/
 | **动作库弹窗 / 音乐 / 舞蹈套装** | `frontend/src/menus/motion-popup.ts` |
 | **遇到加载问题** | `docs/troubleshooting.md` |
 | **查项目地基** | `docs/foundation.md` |
-| **查命名演变** | `docs/naming.md` |
+| **查命名演变 / 术语** | `docs/glossary.md` |
+| **查代码级规范** | `docs/terminology.md` |
 | **查已否决设计** | `docs/design-archive.md` |
 | **查修复流程模板** | `docs/fix-cycle.md` |
 | **查复用函数索引** | `docs/reusables.md` |
 | **查菜单架构 + 添加新功能** | `docs/menu-architecture.md` |
 | **查技术选型理由** | `docs/requirements.md` §「技术选型决策」 |
-| **查项目路线图** | `docs/status.md` §「开发路线图」 |
+| **查项目路线图** | `docs/roadmap.md` |
 | **查调研细节** | 先问用户 → 再读 `docs/research/` 对应文件 |
 | **调 oh-my-opencode 子代理** | 本文件 §「Oh My OpenAgent 子代理」→ `~/.config/opencode/oh-my-openagent.jsonc` |
 
@@ -181,6 +185,10 @@ cd MikuMikuAR/frontend && npx vite build 2>&1
 1. **立即回滚** → 撤销修改
 2. **诊断原因** → 读完整错误信息
 3. **修复后重试** → 小步修改，每次构建验证
+
+### 2.5 research/ 隔离规则
+
+> ⚠️ 除非用户明确提及 `research/` 下的文件路径，否则 AI 不主动读取 `docs/research/` 目录下的任何文档。违反即污染上下文。
 
 ---
 
