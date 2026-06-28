@@ -133,7 +133,9 @@ export interface EnvState {
     skyColorBot: [number, number, number];
     skyTexture: string;
     skyRotationY: number;
+    skyRotationSpeed: number;  // 天空旋转动画速度 0~5 度/秒
     skyBrightness: number;
+    starsEnabled: boolean;     // 夜晚星空
     envIntensity: number;
 
     groundVisible: boolean;
@@ -283,7 +285,9 @@ export let envState: EnvState = {
     skyColorBot: [0.2, 0.2, 0.25],
     skyTexture: "",
     skyRotationY: 0,
+    skyRotationSpeed: 0,     // 0=关, 1=慢速, 5=快速
     skyBrightness: 1,
+    starsEnabled: false,
     envIntensity: 1,
 
     groundVisible: true,

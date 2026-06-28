@@ -6,7 +6,7 @@ import { SlideMenu } from "./menu";
 import { createIconifyIcon } from "../core/icons";
 import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider } from "../core/ui-helpers";
 import { setEnvState, loadProp, removeProp, setPropTransform, getPropList, getEnvAutoLink, setEnvAutoLink, getEnvSunAngle, setEnvSunAngle, redoEnvAutoLink, applyEnvPreset, setLightState, setRenderState } from "../scene/scene";
-import { ENV_PRESETS as ENV_LIGHTING_PRESETS } from "../scene/env-lighting";
+import { ENV_PRESETS as ENV_LIGHTING_PRESETS, WATER_PRESETS } from "../scene/env-lighting";
 import { SelectEnvTextureFile, SelectPMXFile } from "../../wailsjs/go/main/App";
 
 // ======== Environment Level ========
@@ -126,9 +126,10 @@ export function buildSkyLevel(): PopupLevel {
             ], s.skyMode, (v) => { setEnvState({ skyMode: v }); sceneStack?.reRender(); }, "lucide:sun");
 
             if (s.skyMode === "color") addColorSliderRow(container, "天空色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
-            else if (s.skyMode === "procedural") {
+            else             if (s.skyMode === "procedural") {
                 addColorSliderRow(container, "天顶色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
                 addColorSliderRow(container, "地平色", s.skyColorBot, (v) => setEnvState({ skyColorBot: v }));
+                addToggleRow(container, "星空 ✨", s.starsEnabled ?? false, (v) => setEnvState({ starsEnabled: v }));
             }
 
             if (s.skyMode === "texture") {
@@ -155,6 +156,7 @@ export function buildSkyLevel(): PopupLevel {
                 addSliderRow(container, "环境光强度", s.envIntensity, 0, 3, 0.05, (v) => setEnvState({ envIntensity: v }), "lucide:sun");
             }
             if (s.skyMode === "procedural") addSliderRow(container, "亮度", s.skyBrightness, 0.1, 5, 0.1, (v) => setEnvState({ skyBrightness: v }), "lucide:brightness");
+            addSliderRow(container, "天空旋转速度", s.skyRotationSpeed ?? 0, 0, 5, 0.1, (v) => setEnvState({ skyRotationSpeed: v }), "lucide:rotate-cw");
         },
     };
 }
@@ -282,6 +284,28 @@ export function buildWaterLevel(): PopupLevel {
             container.style.padding = "12px 14px";
             const s = envState;
             addToggleRow(container, "启用水面", s.waterEnabled, (v) => setEnvState({ waterEnabled: v }));
+
+            // Water presets
+            const waterPresetRow = document.createElement("div");
+            waterPresetRow.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;";
+            for (const [key, wp] of Object.entries(WATER_PRESETS)) {
+                const btn = document.createElement("button");
+                btn.textContent = wp.label;
+                btn.className = "mode-btn";
+                btn.style.cssText = "font-size:11px;padding:3px 8px;";
+                btn.addEventListener("click", () => {
+                    setEnvState({
+                        waterColor: wp.waterColor,
+                        waterTransparency: wp.waterTransparency,
+                        waterWaveHeight: wp.waterWaveHeight,
+                        waterAnimSpeed: wp.waterAnimSpeed,
+                    });
+                    sceneStack?.reRender();
+                });
+                waterPresetRow.appendChild(btn);
+            }
+            container.appendChild(waterPresetRow);
+
             addSliderRow(container, "高度", s.waterLevel, -10, 10, 0.1, (v) => setEnvState({ waterLevel: v }), "lucide:arrow-up");
             addColorSliderRow(container, "水色", s.waterColor, (v) => setEnvState({ waterColor: v }));
             addSliderRow(container, "透明度", s.waterTransparency, 0, 1, 0.05, (v) => setEnvState({ waterTransparency: v }), "lucide:eye");

@@ -150,3 +150,51 @@ export function importEnvPreset(json: string): (EnvPreset & DerivedLighting) | n
         return null;
     }
 }
+
+// ======== Water Presets ========
+
+export interface WaterPreset {
+    label: string;
+    waterColor: [number, number, number];
+    waterTransparency: number;
+    waterWaveHeight: number;
+    waterAnimSpeed: number;
+}
+
+export const WATER_PRESETS: Record<string, WaterPreset> = {
+    calm: {
+        label: "平静",
+        waterColor: [0.15, 0.4, 0.6],
+        waterTransparency: 0.8,
+        waterWaveHeight: 0.15,
+        waterAnimSpeed: 0.2,
+    },
+    ripple: {
+        label: "涟漪",
+        waterColor: [0.2, 0.42, 0.62],
+        waterTransparency: 0.72,
+        waterWaveHeight: 0.6,
+        waterAnimSpeed: 1.0,
+    },
+    ocean: {
+        label: "海浪",
+        waterColor: [0.08, 0.25, 0.5],
+        waterTransparency: 0.6,
+        waterWaveHeight: 1.8,
+        waterAnimSpeed: 2.5,
+    },
+    storm: {
+        label: "风暴",
+        waterColor: [0.04, 0.14, 0.35],
+        waterTransparency: 0.45,
+        waterWaveHeight: 3.0,
+        waterAnimSpeed: 5.0,
+    },
+    tropical: {
+        label: "热带",
+        waterColor: [0.1, 0.55, 0.7],
+        waterTransparency: 0.7,
+        waterWaveHeight: 0.8,
+        waterAnimSpeed: 1.2,
+    },
+};

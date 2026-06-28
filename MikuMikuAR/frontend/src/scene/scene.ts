@@ -1526,7 +1526,7 @@ function _disposeSky(): void {
     _disposeSunDisc();
 }
 
-function _buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness: number, sunAngle: number = 45): Texture {
+function _buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness: number, sunAngle: number = 45, starsEnabled: boolean = false): Texture {
     const W = 256, H = 256;
     const canvas = document.createElement("canvas");
     canvas.width = W;
@@ -1545,7 +1545,6 @@ function _buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness
     ctx.fillRect(0, 0, W, H);
 
     // Sun glow — radial gradient at sun position on the dome
-    // Canvas y maps to sphere V: top=zenith(V=1), bottom=nadir(V=0), horizon at y=128
     const sunY = 128 - sunAngle * (256 / 180);
     const sunX = W / 2;
 
@@ -1560,6 +1559,31 @@ function _buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness
         glow.addColorStop(1, "rgba(0,0,0,0)");
         ctx.fillStyle = glow;
         ctx.fillRect(sunX - glowRadius, sunY - glowRadius, glowRadius * 2, glowRadius * 2);
+    }
+
+    // Stars — visible when sky is dark (sunAngle < 10) and enabled
+    if (starsEnabled) {
+        const starAlpha = sunAngle > 10 ? 0 : sunAngle < -5 ? 1 : (10 - sunAngle) / 15;
+        if (starAlpha > 0.01) {
+            // Deterministic seeded star positions (300 stars)
+            const starSeed = 12345;
+            const hash = (i: number) => { let h = (i * 2654435761 + starSeed) | 0; h ^= h >>> 13; return (h & 0x7fffffff) / 0x7fffffff; };
+            const starCount = Math.round(200 + starAlpha * 100);
+            for (let i = 0; i < starCount; i++) {
+                const sx = hash(i * 3) * W;
+                const sy = hash(i * 3 + 1) * H * 0.55; // top 55% only (sky dome)
+                const sr = 0.5 + hash(i * 3 + 2) * 2.0;
+                const sa = starAlpha * (0.3 + hash(i + 1000) * 0.7);
+                const twinkle = 0.7 + hash(i + 2000) * 0.3;
+                const r = 220 + hash(i + 3000) * 35 | 0;
+                const g = 210 + hash(i + 4000) * 45 | 0;
+                const b = 200 + hash(i + 5000) * 55 | 0;
+                ctx.fillStyle = `rgba(${r},${g},${b},${(sa * twinkle).toFixed(2)})`;
+                ctx.beginPath();
+                ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
     }
 
     const tex = new Texture("data:" + canvas.toDataURL("image/png"), scene, false);
@@ -1584,6 +1608,7 @@ function _createProceduralSky(state: EnvState): void {
         new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
         state.skyBrightness,
         envSunAngle,
+        state.starsEnabled,
     );
     mat.disableLighting = true;
     mat.backFaceCulling = false;
@@ -1647,6 +1672,7 @@ function _applySky(state: EnvState): void {
                 new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
                 state.skyBrightness,
                 envSunAngle,
+                state.starsEnabled,
             );
             return;
         }
@@ -2230,6 +2256,7 @@ function _ensureEnvUpdateObserver(): void {
     if (_envUpdateObserver) return;
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
         const dt = scene.deltaTime / 16.667;
+        // Cloud drift (wind driven)
         if (envState.cloudsEnabled && envState.windEnabled) {
             const dx = envState.windDirection[0] * envState.windSpeed * 0.01 * dt;
             const dz = envState.windDirection[2] * envState.windSpeed * 0.01 * dt;
@@ -2241,6 +2268,19 @@ function _ensureEnvUpdateObserver(): void {
                     m.position.z += dz * speedMul;
                 }
             }
+        }
+        // Sky rotation animation
+        if (envState.skyRotationSpeed > 0.001 && _envSys.sky.skyMesh) {
+            _envSys.sky.skyMesh.rotation.y += envState.skyRotationSpeed * 0.01 * dt;
+        }
+        // Water wave direction follows wind (horizontal XZ plane)
+        if (envState.waterEnabled && _envSys.water.material) {
+            const wd = new Vector2(envState.windDirection[0], envState.windDirection[2]);
+            const len = wd.length();
+            if (len > 0.001) {
+                wd.normalize();
+            }
+            _envSys.water.material.windDirection = wd;
         }
         // Underwater post-processing: camera below water surface
         if (envState.waterEnabled && scene.activeCamera) {
