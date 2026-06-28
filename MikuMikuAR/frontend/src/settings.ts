@@ -33,68 +33,6 @@ import { softwareKindIcon, createIconifyIcon } from "./icons";
 // ======== Helpers re-exported ========
 export { refreshLibrary } from "./library";
 
-// ======== External Library Management ========
-
-export function renderExternalList(): void {
-    dom.externalList.innerHTML = "";
-    if (externalPaths.length === 0) {
-        dom.externalList.innerHTML = '<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">暂无外部库，点击下方添加</div>';
-        return;
-    }
-    const card = document.createElement("div");
-    card.className = "lcard";
-    for (const ep of externalPaths) {
-        const row = document.createElement("div");
-        row.className = "slide-item";
-        const nameSpan = document.createElement("span");
-        nameSpan.className = "slide-label";
-        nameSpan.textContent = ep.name;
-        nameSpan.style.flex = "0 0 auto";
-        row.appendChild(nameSpan);
-        const pathSpan = document.createElement("span");
-        pathSpan.className = "slide-sublabel";
-        pathSpan.style.cssText = "flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 4px;";
-        pathSpan.textContent = ep.path;
-        row.appendChild(pathSpan);
-        const renameBtn = document.createElement("button");
-        renameBtn.style.cssText = "background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:2px 4px;";
-        renameBtn.innerHTML = '<iconify-icon icon="lucide:edit-3"></iconify-icon>';
-        renameBtn.addEventListener("click", () => {
-            const newName = prompt("输入新的显示名称：", ep.name);
-            if (newName && newName.trim() && newName.trim() !== ep.name) {
-                RenameExternalPath(ep.path, newName.trim()).then(async () => {
-                    await reloadConfig(); renderExternalList();
-                    setStatus(`✓ 已重命名: ${newName.trim()}`, true);
-                }).catch((err) => { setStatus("✗ 重命名失败", false); console.error("RenameExternalPath error:", err); });
-            }
-        });
-        row.appendChild(renameBtn);
-        const delBtn = document.createElement("button");
-        delBtn.style.cssText = "background:none;border:none;color:var(--danger,#e74c3c);cursor:pointer;font-size:12px;padding:2px 4px;";
-        delBtn.textContent = "✕";
-        delBtn.addEventListener("click", async () => {
-            try { await RemoveExternalPath(ep.path); await reloadConfig(); if (libraryRoot) await rescanAndSync(); renderExternalList(); showPopup(); }
-            catch (err) { console.error("RemoveExternalPath error:", err); }
-        });
-        row.appendChild(delBtn);
-        card.appendChild(row);
-    }
-    dom.externalList.appendChild(card);
-}
-
-async function addExternalPath(): Promise<void> {
-    try {
-        const dir = await SelectDir();
-        if (!dir) return;
-        await AddExternalPath(dir);
-        await reloadConfig();
-        if (libraryRoot) await rescanAndSync();
-        renderExternalList();
-    } catch (err) {
-        console.error("AddExternalPath error:", err);
-    }
-}
-
 // ======== Software Management ========
 
 let cachedSoftwareEntries: import("../wailsjs/go/models").main.SoftwareEntry[] | null = null;
@@ -894,17 +832,7 @@ export async function showSettings(): Promise<void> {
     settingsStack.reset(buildSettingsRoot());
 }
 
-// Wire up events
-dom.btnSettings.addEventListener("click", showSettings);
+// Wire up close button (open button wired dynamically from main.ts)
 dom.btnCloseSettings.addEventListener("click", () => {
     closeAllOverlays();
 });
-dom.btnManageExternal.addEventListener("click", () => {
-    closeAllOverlays();
-    renderExternalList();
-    dom.externalOverlay.classList.add("visible");
-});
-dom.btnCloseExternal.addEventListener("click", () => {
-    dom.externalOverlay.classList.remove("visible");
-});
-dom.btnAddExternal.addEventListener("click", addExternalPath);

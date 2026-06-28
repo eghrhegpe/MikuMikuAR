@@ -28,7 +28,6 @@ import {
   externalPaths,
   setPopupOpen,
   popupOpen,
-  setSearchMode,
   LibraryModel,
   PopupRow,
   PopupLevel,
@@ -420,10 +419,6 @@ function replaceModel(m: LibraryModel): void {
   onModelRowClick(m);
 }
 
-function isSearchLayer(): boolean {
-  return stackRegistry.modelStack?.currentLevel?.label === "🔍 搜索结果";
-}
-
 // ======== Tag System ========
 
 function buildTagsOverviewLevel(): PopupLevel {
@@ -551,8 +546,6 @@ export function togglePopup(): void {
 export function showPopup(): void {
   closeAllOverlays();
   setPopupOpen(true);
-  dom.popupSearchInput.value = "";
-  setSearchMode(false);
   dom.modelPopup.classList.add("visible");
 
   if (!stackRegistry.modelStack) {
@@ -670,83 +663,6 @@ export function hidePopup(): void {
   closeAllOverlays();
 }
 
-// ======== Search ========
-
-function handlePopupSearch(): void {
-  const q = dom.popupSearchInput.value.trim().toLowerCase();
-  if (!q) {
-    setSearchMode(false);
-    if (isSearchLayer()) {
-      stackRegistry.modelStack?.pop();
-    }
-    return;
-  }
-  setSearchMode(true);
-  if (isSearchLayer()) {
-    stackRegistry.modelStack?.pop();
-  }
-  const results = allModels.filter((m) => {
-    const cached = modelMetaCache.get(m.file_path);
-    const nameJp = cached?.name_jp || m.name_jp || "";
-    const nameEn = cached?.name_en || m.name_en || "";
-    const comment = cached?.comment || m.comment || "";
-    return (
-      nameJp.toLowerCase().includes(q) ||
-      nameEn.toLowerCase().includes(q) ||
-      comment.toLowerCase().includes(q) ||
-      m.file_path.toLowerCase().includes(q)
-    );
-  });
-
-  ensureModelMeta(
-    results.filter((m) => m.format === "pmx").map((m) => m.file_path),
-  );
-
-  const resultLevel: PopupLevel = {
-    label: "🔍 搜索结果",
-    dir: "",
-    items: [],
-    renderCustom: (container) => {
-      container.classList.remove("render-card");
-      if (results.length === 0) {
-        const empty = document.createElement("div");
-        empty.style.cssText = "padding:24px;text-align:center;color:var(--text-muted);font-size:13px;";
-        empty.innerHTML = '<div style="font-size:28px;margin-bottom:6px;">🔍</div><div>没有找到匹配的模型</div>';
-        container.appendChild(empty);
-        return;
-      }
-      cardContainer(container, (c) => {
-        for (const m of results) {
-          const row = modelToRow(m);
-          const el = document.createElement("div"); el.className = "slide-item";
-          const thumbB64 = thumbnailCache.get(m.file_path);
-          if (thumbB64) {
-            const img = document.createElement("img");
-            img.src = `data:image/png;base64,${thumbB64}`;
-            img.style.cssText = "width:28px;height:28px;border-radius:4px;object-fit:cover;flex-shrink:0;";
-            el.appendChild(img);
-          } else {
-            const is = document.createElement("span"); is.className = "slide-icon";
-            const ie = createIconifyIcon(row.icon); if (ie) is.appendChild(ie); else is.textContent = row.icon;
-            el.appendChild(is);
-          }
-          const ls = document.createElement("span"); ls.className = "slide-label"; ls.textContent = row.label;
-          el.appendChild(ls);
-          if (row.catTag) {
-            const tg = document.createElement("span"); tg.className = "slide-tag"; tg.textContent = row.catTag;
-            el.appendChild(tg);
-          }
-          el.addEventListener("click", () => replaceModel(m));
-          c.appendChild(el);
-        }
-      });
-      loadThumbnailsForLevel(resultLevel);
-    },
-  };
-
-  stackRegistry.modelStack?.push(resultLevel);
-}
-
 // ======== Library loading ========
 
 export async function initLibrary(): Promise<void> {
@@ -846,12 +762,5 @@ export async function refreshLibrary(): Promise<void> {
   }
 }
 
-export function handlePopupSearchInput(): void {
-  handlePopupSearch();
-}
-
 // Wire up event listeners
-dom.btnClosePopup?.addEventListener("click", hidePopup);
-dom.btnRescan?.addEventListener("click", refreshLibrary);
-dom.popupSearchInput?.addEventListener("input", handlePopupSearchInput);
 dom.btnMainAction?.addEventListener("click", togglePopup);

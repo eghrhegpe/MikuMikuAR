@@ -227,9 +227,6 @@ export function setExternalPaths(e: { path: string; name: string }[]): void { ex
 export let popupOpen = false;
 export function setPopupOpen(v: boolean): void { popupOpen = v; }
 
-export let searchMode = false;
-export function setSearchMode(v: boolean): void { searchMode = v; }
-
 // ======== Thumbnail Cache ========
 
 /** In-memory cache of base64-encoded thumbnails keyed by model path. */
@@ -326,21 +323,9 @@ export const dom = {
     loadingEl: document.getElementById("loading") as HTMLElement,
     btnMainAction: document.getElementById("btnMainAction") as HTMLButtonElement,
     modelPopup: document.getElementById("modelPopup") as HTMLElement,
-    popupBreadcrumb: document.getElementById("popupBreadcrumb") as HTMLElement,
-    popupList: document.getElementById("popupList") as HTMLElement,
-    popupEmpty: document.getElementById("popupEmpty") as HTMLElement,
-    btnClosePopup: document.getElementById("btnClosePopup") as HTMLButtonElement,
-    btnManageExternal: document.getElementById("btnManageExternal") as HTMLButtonElement,
-    btnRescan: document.getElementById("btnRescan") as HTMLButtonElement,
     // Motion popup
     motionPopup: document.getElementById("motionPopup") as HTMLElement,
-    motionPopupBreadcrumb: document.getElementById("motionPopupBreadcrumb") as HTMLElement,
-    motionPopupList: document.getElementById("motionPopupList") as HTMLElement,
-    motionPopupEmpty: document.getElementById("motionPopupEmpty") as HTMLElement,
-    btnCloseMotionPopup: document.getElementById("btnCloseMotionPopup") as HTMLButtonElement,
     btnMotionPopup: document.getElementById("btnMotionPopup") as HTMLButtonElement,
-    motionPopupSearch: document.getElementById("motionPopupSearch") as HTMLElement,
-    motionPopupSearchInput: document.getElementById("motionPopupSearchInput") as HTMLInputElement,
     playbackBar: document.getElementById("playbackBar") as HTMLElement,
     btnPlayPause: document.getElementById("btnPlayPause") as HTMLButtonElement,
     btnLoopToggle: document.getElementById("btnLoopToggle") as HTMLButtonElement,
@@ -348,12 +333,6 @@ export const dom = {
     seekBar: document.getElementById("seekBar") as HTMLElement,
     seekProgress: document.getElementById("seekProgress") as HTMLElement,
     loadingText: document.getElementById("loadingText") as HTMLElement,
-    externalOverlay: document.getElementById("externalOverlay") as HTMLElement,
-    externalList: document.getElementById("externalList") as HTMLElement,
-    btnCloseExternal: document.getElementById("btnCloseExternal") as HTMLButtonElement,
-    btnAddExternal: document.getElementById("btnAddExternal") as HTMLButtonElement,
-    popupSearch: document.getElementById("popupSearch") as HTMLElement,
-    popupSearchInput: document.getElementById("popupSearchInput") as HTMLInputElement,
     settingsOverlay: document.getElementById("settingsOverlay") as HTMLElement,
     btnSettings: document.getElementById("btnSettings") as HTMLButtonElement,
     btnCloseSettings: document.getElementById("btnCloseSettings") as HTMLButtonElement,

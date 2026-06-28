@@ -9,7 +9,7 @@ import {
 } from "./config";
 import { SlideMenu } from "./menu";
 import { createIconifyIcon } from "./icons";
-import { slideRow, addToggleRow, addSliderRow } from "./ui-helpers";
+import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider } from "./ui-helpers";
 import {
     switchCameraMode, getCameraMode, hasCameraVmd, getCameraVmdName, clearCameraVmd, getCurrentCamera,
     getOrbitParams, setOrbitParams,
@@ -24,7 +24,7 @@ import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile,
 import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, getLipSyncState, setLipSyncEnabled, setLipSyncSensitivity, setLipSyncIntensity } from "./scene";
 import { modelRegistry, focusedModelId, setFocusedModelId } from "./config";
 import type { ProcMotionMode } from "./procedural-motion";
-import { buildEnvLevel, buildSkyLevel, buildGroundLevel, buildParticleLevel, buildWindLevel, buildCloudLevel, buildEnvLightingLevel, buildPresetLevel, addColorSliderRow, setEnvMenuStack } from "./env-menu";
+import { buildEnvLevel, buildSkyLevel, buildGroundLevel, buildParticleLevel, buildWindLevel, buildCloudLevel, buildEnvLightingLevel, buildPresetLevel, setEnvMenuStack } from "./env-menu";
 
 // ======== Scene Menu (SlideMenu) ========
 
@@ -389,28 +389,11 @@ function buildLightLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 c.style.padding = "10px";
                 addToggleRow(c, "启用阴影", lightState.shadowEnabled, (v) => setLightState({ shadowEnabled: v }));
-                const typeRow = document.createElement("div");
-                typeRow.className = "type-row";
-                const typeLabel = document.createElement("span");
-                typeLabel.className = "type-label";
-                typeLabel.textContent = "阴影类型";
-                typeRow.appendChild(typeLabel);
-                const types: Array<{ value: "hard" | "soft" | "pcf"; label: string }> = [
+                addModeSlider(c, "阴影类型", [
                     { value: "hard", label: "硬" },
                     { value: "soft", label: "软" },
                     { value: "pcf", label: "柔和阴影" },
-                ];
-                for (const t of types) {
-                    const btn = document.createElement("button");
-                    btn.textContent = t.label;
-                    btn.className = "mode-btn" + (lightState.shadowType === t.value ? " active" : "");
-                    btn.addEventListener("click", () => {
-                        setLightState({ shadowType: t.value });
-                        sceneStack?.reRender();
-                    });
-                    typeRow.appendChild(btn);
-                }
-                c.appendChild(typeRow);
+                ], lightState.shadowType, (v) => { setLightState({ shadowType: v }); sceneStack?.reRender(); }, "lucide:shadow");
             });
         },
     };
@@ -519,26 +502,13 @@ function buildStageLevel(): PopupLevel {
             container.style.padding = "12px 14px";
 
             // Tone-mapping selector
-            const tmLabel = document.createElement("div");
-            tmLabel.style.cssText = "font-size:11px;color:var(--text-dim);margin-bottom:6px;";
-            tmLabel.textContent = "色调映射";
-            container.appendChild(tmLabel);
-
-            const tmNames = ["关闭", "ACES", "Reinhard", "Cineon", "Neutral"];
-            const tmRow = document.createElement("div");
-            tmRow.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px;";
-            for (let i = 0; i < tmNames.length; i++) {
-                const btn = document.createElement("button");
-                btn.textContent = tmNames[i];
-                btn.className = "mode-btn" + (state.toneMapping === i ? " active" : "");
-                btn.addEventListener("click", () => {
-                    setRenderState({ toneMapping: i });
-                    triggerAutoSave();
-                    sceneStack?.reRender();
-                });
-                tmRow.appendChild(btn);
-            }
-            container.appendChild(tmRow);
+            addModeSlider(container, "色调映射", [
+                { value: 0, label: "关闭" },
+                { value: 1, label: "ACES" },
+                { value: 2, label: "Reinhard" },
+                { value: 3, label: "Cineon" },
+                { value: 4, label: "Neutral" },
+            ], state.toneMapping, (v) => { setRenderState({ toneMapping: v }); triggerAutoSave(); sceneStack?.reRender(); }, "lucide:palette");
 
             // Exposure
             addSliderRow(container, "曝光", state.exposure, 0, 4, 0.05, (v) => {

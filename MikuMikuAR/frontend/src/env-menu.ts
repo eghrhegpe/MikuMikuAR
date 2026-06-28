@@ -4,7 +4,7 @@
 import { envState, EnvState, PopupLevel, PopupRow, escapeHtml, cardContainer, propRegistry } from "./config";
 import { SlideMenu } from "./menu";
 import { createIconifyIcon } from "./icons";
-import { slideRow, addToggleRow, addSliderRow } from "./ui-helpers";
+import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider } from "./ui-helpers";
 import { setEnvState, loadProp, removeProp, setPropTransform, getPropList, getEnvAutoLink, setEnvAutoLink, getEnvSunAngle, setEnvSunAngle, redoEnvAutoLink, applyEnvPreset, setLightState, setRenderState } from "./scene";
 import { ENV_PRESETS as ENV_LIGHTING_PRESETS } from "./env-lighting";
 import { SelectEnvTextureFile, SelectPMXFile } from "../wailsjs/go/main/App";
@@ -26,24 +26,7 @@ export function buildEnvLightingLevel(): PopupLevel {
         ],
         renderCustom: (container) => {
             container.style.padding = "8px 12px";
-            const linkRow = document.createElement("div");
-            linkRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:12px;justify-content:space-between;";
-            const linkLabel = document.createElement("span");
-            linkLabel.style.cssText = "font-size:12px;color:var(--text);";
-            linkLabel.textContent = "自动联动";
-            const linkToggle = document.createElement("label");
-            linkToggle.className = "toggle";
-            const linkCb = document.createElement("input");
-            linkCb.type = "checkbox";
-            linkCb.checked = autoLink;
-            linkCb.addEventListener("change", () => setEnvAutoLink(linkCb.checked));
-            linkToggle.appendChild(linkCb);
-            const linkSlider = document.createElement("span");
-            linkSlider.className = "slider";
-            linkToggle.appendChild(linkSlider);
-            linkRow.appendChild(linkLabel);
-            linkRow.appendChild(linkToggle);
-            container.appendChild(linkRow);
+            addToggleRow(container, "自动联动", autoLink, (v) => setEnvAutoLink(v));
 
             const presetRow = document.createElement("div");
             presetRow.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px;";
@@ -138,23 +121,9 @@ export function buildSkyLevel(): PopupLevel {
         renderCustom: (container) => {
             const s = envState;
             container.style.padding = "12px 14px";
-            const modeRow = document.createElement("div");
-            modeRow.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;";
-            const modeLabel = document.createElement("span");
-            modeLabel.style.cssText = "font-size:11px;color:var(--text-dim);width:60px;";
-            modeLabel.textContent = "模式";
-            modeRow.appendChild(modeLabel);
-            const modes: Array<{ value: EnvState["skyMode"]; label: string }> = [
+            addModeSlider(container, "天空模式", [
                 { value: "color", label: "纯色" }, { value: "texture", label: "贴图" }, { value: "procedural", label: "程序化" },
-            ];
-            for (const m of modes) {
-                const btn = document.createElement("button");
-                btn.textContent = m.label;
-                btn.className = "mode-btn" + (s.skyMode === m.value ? " active" : "");
-                btn.addEventListener("click", () => { setEnvState({ skyMode: m.value }); sceneStack?.reRender(); });
-                modeRow.appendChild(btn);
-            }
-            container.appendChild(modeRow);
+            ], s.skyMode, (v) => { setEnvState({ skyMode: v }); sceneStack?.reRender(); }, "lucide:sun");
 
             if (s.skyMode === "color") addColorSliderRow(container, "天空色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
             else if (s.skyMode === "procedural") {
@@ -199,23 +168,9 @@ export function buildGroundLevel(): PopupLevel {
             container.style.padding = "12px 14px";
             const s = envState;
             addToggleRow(container, "显示地面", s.groundVisible, (v) => setEnvState({ groundVisible: v }));
-            const modeRow = document.createElement("div");
-            modeRow.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;";
-            const modeLabel = document.createElement("span");
-            modeLabel.style.cssText = "font-size:11px;color:var(--text-dim);width:60px;";
-            modeLabel.textContent = "模式";
-            modeRow.appendChild(modeLabel);
-            const modes: Array<{ value: EnvState["groundMode"]; label: string }> = [
+            addModeSlider(container, "地面模式", [
                 { value: "solid", label: "纯色" }, { value: "grid", label: "网格" }, { value: "checker", label: "棋盘格" },
-            ];
-            for (const m of modes) {
-                const btn = document.createElement("button");
-                btn.textContent = m.label;
-                btn.className = "mode-btn" + (s.groundMode === m.value ? " active" : "");
-                btn.addEventListener("click", () => { setEnvState({ groundMode: m.value }); sceneStack?.reRender(); });
-                modeRow.appendChild(btn);
-            }
-            container.appendChild(modeRow);
+            ], s.groundMode, (v) => { setEnvState({ groundMode: v }); sceneStack?.reRender(); }, "lucide:square");
             addColorSliderRow(container, "地面色", s.groundColor, (v) => setEnvState({ groundColor: v }));
             if (s.groundMode === "solid" || s.groundMode === "checker") addSliderRow(container, "透明度", s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), "lucide:eye");
         },
@@ -308,23 +263,9 @@ export function buildParticleLevel(): PopupLevel {
             container.style.padding = "12px 14px";
             const s = envState;
             addToggleRow(container, "启用粒子", s.particleEnabled, (v) => setEnvState({ particleEnabled: v }));
-            const typeRow = document.createElement("div");
-            typeRow.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;";
-            const typeLabel = document.createElement("span");
-            typeLabel.style.cssText = "font-size:11px;color:var(--text-dim);width:60px;";
-            typeLabel.textContent = "类型";
-            typeRow.appendChild(typeLabel);
-            const types: Array<{ value: EnvState["particleType"]; label: string }> = [
+            addModeSlider(container, "粒子类型", [
                 { value: "none", label: "无" }, { value: "sakura", label: "🌸 樱花" }, { value: "rain", label: "🌧 雨" }, { value: "snow", label: "❄ 雪" }, { value: "fireworks", label: "🎆 烟花" }, { value: "fireflies", label: "✨ 萤火虫" }, { value: "leaves", label: "🍂 落叶" },
-            ];
-            for (const t of types) {
-                const btn = document.createElement("button");
-                btn.textContent = t.label;
-                btn.className = "mode-btn" + (s.particleType === t.value ? " active" : "");
-                btn.addEventListener("click", () => { setEnvState({ particleType: t.value }); sceneStack?.reRender(); });
-                typeRow.appendChild(btn);
-            }
-            container.appendChild(typeRow);
+            ], s.particleType, (v) => { setEnvState({ particleType: v }); sceneStack?.reRender(); }, "lucide:sparkles");
             addSliderRow(container, "密度", s.particleEmitRate, 0, 3, 0.1, (v) => setEnvState({ particleEmitRate: v }), "lucide:layers");
             addSliderRow(container, "大小", s.particleSize, 0.1, 3, 0.1, (v) => setEnvState({ particleSize: v }), "lucide:maximize");
             addSliderRow(container, "速度", s.particleSpeed, 0.1, 5, 0.1, (v) => setEnvState({ particleSpeed: v }), "lucide:gauge");
@@ -381,49 +322,4 @@ export function buildCloudLevel(): PopupLevel {
             addSliderRow(container, "缩放", s.cloudScale, 0.5, 3, 0.1, (v) => setEnvState({ cloudScale: v }), "lucide:maximize");
         },
     };
-}
-
-export function addColorSliderRow(container: HTMLElement, label: string, color: [number, number, number], onChange: (v: [number, number, number]) => void): void {
-    const block = document.createElement("div");
-    block.className = "clr-block";
-    const header = document.createElement("div");
-    header.className = "clr-header";
-    const title = document.createElement("span");
-    title.className = "clr-title";
-    title.textContent = label;
-    header.appendChild(title);
-    const swatch = document.createElement("span");
-    swatch.className = "clr-swatch";
-    swatch.style.background = `rgb(${Math.round(color[0]*255)},${Math.round(color[1]*255)},${Math.round(color[2]*255)})`;
-    header.appendChild(swatch);
-    block.appendChild(header);
-    const channelColors = ["#f66", "#6f6", "#66f"];
-    const current: [number, number, number] = [color[0], color[1], color[2]];
-    for (let ci = 0; ci < 3; ci++) {
-        const sub = document.createElement("div");
-        sub.className = "clr-row";
-        const ch = document.createElement("span");
-        ch.className = "clr-channel";
-        ch.style.color = channelColors[ci];
-        ch.textContent = ["R", "G", "B"][ci];
-        sub.appendChild(ch);
-        const slider = document.createElement("input");
-        slider.type = "range";
-        slider.min = "0"; slider.max = "1"; slider.step = "0.01";
-        slider.value = String(color[ci]);
-        slider.className = "clr-slider";
-        const val = document.createElement("span");
-        val.className = "clr-value";
-        val.textContent = color[ci].toFixed(2);
-        slider.addEventListener("input", () => {
-            const v = parseFloat(slider.value);
-            val.textContent = v.toFixed(2);
-            current[ci] = v;
-            swatch.style.background = `rgb(${Math.round(current[0]*255)},${Math.round(current[1]*255)},${Math.round(current[2]*255)})`;
-            onChange([current[0], current[1], current[2]]);
-        });
-        sub.appendChild(slider); sub.appendChild(val);
-        block.appendChild(sub);
-    }
-    container.appendChild(block);
 }
