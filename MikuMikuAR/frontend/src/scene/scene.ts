@@ -2289,7 +2289,7 @@ function _ensureEnvUpdateObserver(): void {
             if (underwater !== _underwaterActive) {
                 _underwaterActive = underwater;
                 pipeline.chromaticAberrationEnabled = underwater;
-                pipeline.chromaticAberration = underwater ? 20 : 0;
+                pipeline.chromaticAberration.aberrationAmount = underwater ? 20 : 0;
                 if (underwater && !_underwaterSavedFog) {
                     _underwaterSavedFog = {
                         mode: scene.fogMode,

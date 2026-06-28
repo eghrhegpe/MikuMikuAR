@@ -8,8 +8,10 @@ const defaultEnv: EnvState = {
     skyColorBot: [0.2, 0.2, 0.25],
     skyTexture: "",
     skyRotationY: 0,
+    skyRotationSpeed: 0,
     skyBrightness: 1,
     envIntensity: 1,
+    starsEnabled: false,
     groundVisible: true,
     groundMode: "solid",
     groundColor: [0.15, 0.15, 0.18],
@@ -28,6 +30,7 @@ const defaultEnv: EnvState = {
     waterTransparency: 0.8,
     waterWaveHeight: 0.5,
     waterSize: 50,
+    waterAnimSpeed: 1,
     cloudsEnabled: false,
     cloudCover: 0.5,
     cloudScale: 1,
@@ -41,11 +44,11 @@ describe("EnvState defaults", () => {
     it("has all required fields", () => {
         const keys: (keyof EnvState)[] = [
             "skyMode", "skyColorTop", "skyColorMid", "skyColorBot",
-            "skyTexture", "skyRotationY", "skyBrightness", "envIntensity",
+            "skyTexture", "skyRotationY", "skyRotationSpeed", "skyBrightness", "starsEnabled", "envIntensity",
             "groundVisible", "groundMode", "groundColor", "groundAlpha",
             "windEnabled", "windDirection", "windSpeed",
             "particleEnabled", "particleType",
-            "waterEnabled", "waterLevel", "waterColor", "waterTransparency", "waterWaveHeight", "waterSize",
+            "waterEnabled", "waterLevel", "waterColor", "waterTransparency", "waterWaveHeight", "waterSize", "waterAnimSpeed",
             "cloudsEnabled", "cloudCover", "cloudScale", "cloudHeight",
             "fogEnabled", "fogColor", "fogDensity",
         ];
