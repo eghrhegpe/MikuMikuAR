@@ -188,11 +188,10 @@ func (a *App) ScanSoftwareDir() ([]SoftwareEntry, error) {
 	cfg, _ := a.GetConfig()
 	if cfg != nil {
 		for _, sw := range cfg.CustomSoftware {
-			if existing, ok := scanned[sw.Path]; ok {
+			if _, ok := scanned[sw.Path]; ok {
 				// Custom overrides scanned entry for all fields
 				sw.Managed = true
 				scanned[sw.Path] = sw
-				_ = existing
 			} else {
 				sw.Managed = true
 				scanned[sw.Path] = sw

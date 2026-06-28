@@ -56,8 +56,29 @@ func NewApp() *App {
 	}
 }
 
-// shutdown cleans up resources when the app exits.
+// shutdown cleans up resources when the app exits:
+// stops the directory watcher and gracefully shuts down all HTTP file servers.
 func (a *App) shutdown(ctx context.Context) {
+	// Stop download directory watcher
+	a.watchMu.Lock()
+	if a.watcher != nil {
+		a.watcher.Close()
+		a.watcher = nil
+	}
+	if a.watchTimer != nil {
+		a.watchTimer.Stop()
+		a.watchTimer = nil
+	}
+	a.watchPending = nil
+	a.watchMu.Unlock()
+
+	// Gracefully shut down all HTTP file servers
+	a.httpSrvMu.Lock()
+	for dir, info := range a.httpServers {
+		_ = info.server.Shutdown(ctx)
+		delete(a.httpServers, dir)
+	}
+	a.httpSrvMu.Unlock()
 }
 
 // startup is called when the app starts. The context is saved
@@ -135,7 +156,7 @@ func (a *App) SelectExeFile() (string, error) {
 // ModelEntry represents a model, motion, or zip entry found during library scan.
 type ModelEntry struct {
 	Dir       string `json:"dir"`       // Model directory (absolute); for zip entries, the zip's directory
-	PMXPath   string `json:"file_path"` // .pmx/.vmd absolute path; for zip entries, the zip path
+	PMXPath   string `json:"file_path"` // file absolute path (.pmx or .vmd; also called PMXPath for historical reasons); for zip entries, the zip path
 	NameJp    string `json:"name_jp"`   // PMX header: local name
 	NameEn    string `json:"name_en"`   // PMX header: universal name; for VMD: basename
 	Comment   string `json:"comment"`   // PMX header: local comment (truncated)

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"golang.org/x/sync/errgroup"
 )
 
 // SelectDir opens a directory picker dialog.
@@ -25,18 +26,53 @@ func (a *App) SelectDir() (string, error) {
 // Main root entries have Source=""; external entries get Source = ep.Name.
 // root may be "" (external-only scan); external may be nil (main-only scan).
 func (a *App) ScanModelDir(root string, external []ExternalPath) ([]ModelEntry, error) {
-	var models []ModelEntry
-
+	// Collect all roots to scan
+	type scanRoot struct {
+		path   string
+		source string
+	}
+	var roots []scanRoot
 	if root != "" {
-		models = append(models, a.scanSingleRoot(root, "")...)
+		roots = append(roots, scanRoot{root, ""})
 	}
 	for _, ep := range external {
-		sub := a.scanSingleRoot(ep.Path, ep.Name)
-		models = append(models, sub...)
+		roots = append(roots, scanRoot{ep.Path, ep.Name})
 	}
 
-	// Deduplicate by FilePath+ZipInner
-	seen := make(map[string]bool)
+	// Parallel scan using errgroup — each root's I/O is independent
+	g, ctx := errgroup.WithContext(a.ctx)
+	g.SetLimit(4) // cap concurrent directory scans
+
+	results := make([][]ModelEntry, len(roots))
+	for i, r := range roots {
+		i, r := i, r
+		g.Go(func() error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
+			results[i] = a.scanSingleRoot(r.path, r.source)
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Merge all results
+	var total int
+	for _, r := range results {
+		total += len(r)
+	}
+	models := make([]ModelEntry, 0, total)
+	for _, r := range results {
+		models = append(models, r...)
+	}
+
+	// Deduplicate by PMXPath+ZipInner
+	seen := make(map[string]bool, total)
 	deduped := models[:0]
 	for _, m := range models {
 		key := m.PMXPath + ":" + m.ZipInner
@@ -51,10 +87,14 @@ func (a *App) ScanModelDir(root string, external []ExternalPath) ([]ModelEntry, 
 }
 
 // GetModelMeta parses the PMX header for a single PMX file and returns its metadata.
-// Returns empty meta on error (non-fatal).
+// Returns empty meta on error (non-fatal), logs real errors.
 func (a *App) GetModelMeta(pmxPath string) (ModelMeta, error) {
 	meta, err := ParsePMXHeader(pmxPath)
-	if err != nil || meta == nil {
+	if err != nil {
+		a.safeLogError("GetModelMeta: ParsePMXHeader(%s) error: %v", pmxPath, err)
+		return ModelMeta{}, nil
+	}
+	if meta == nil {
 		return ModelMeta{}, nil
 	}
 	m := ModelMeta{}
@@ -267,6 +307,7 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 
 // GetConfig reads the persisted config from disk.
 // Returns an empty Config (no error) if file doesn't exist.
+// Real I/O errors (permission, filesystem) are logged via safeLogError.
 func (a *App) GetConfig() (*Config, error) {
 	dir, err := configDir()
 	if err != nil {
@@ -274,10 +315,14 @@ func (a *App) GetConfig() (*Config, error) {
 	}
 	data, err := os.ReadFile(filepath.Join(dir, "config.json"))
 	if err != nil {
+		if !os.IsNotExist(err) {
+			a.safeLogError("GetConfig: read error %v", err)
+		}
 		return &Config{}, nil
 	}
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
+		a.safeLogError("GetConfig: json unmarshal error %v", err)
 		return &Config{}, nil
 	}
 	return &cfg, nil

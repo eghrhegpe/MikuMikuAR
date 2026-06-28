@@ -12,7 +12,8 @@ import (
 
 // isolateDir copies the PMX file and ALL its sibling files/subdirectories
 // to a temp directory. Uses a hash of the source path to prevent collisions.
-func isolateDir(filePath string) (string, error) {
+// logFn is optional; when non-nil, failures during sibling copy are logged.
+func isolateDir(filePath string, logFn func(string, ...interface{})) (string, error) {
 	srcDir := filepath.Dir(filePath)
 	hash := sha256Hex(srcDir)[:12]
 	dstDir := filepath.Join(os.TempDir(), "MikuMikuAR", "serve", hash)
@@ -23,6 +24,9 @@ func isolateDir(filePath string) (string, error) {
 	// Copy the PMX/VMD file itself
 	baseName := filepath.Base(filePath)
 	if err := copyFile(filePath, filepath.Join(dstDir, baseName)); err != nil {
+		if logFn != nil {
+			logFn("isolateDir: copyFile(%s) failed: %v, falling back to original dir", filePath, err)
+		}
 		return srcDir, err // fall back to original if copy fails
 	}
 
@@ -36,9 +40,11 @@ func isolateDir(filePath string) (string, error) {
 		src := filepath.Join(srcDir, e.Name())
 		dst := filepath.Join(dstDir, e.Name())
 		if e.IsDir() {
-			copyDir(src, dst)
+			copyDir(src, dst, logFn)
 		} else if e.Name() != baseName {
-			copyFile(src, dst)
+			if err := copyFile(src, dst); err != nil && logFn != nil {
+				logFn("isolateDir: copyFile sibling %s failed: %v", src, err)
+			}
 		}
 	}
 	return dstDir, nil
@@ -62,9 +68,12 @@ func copyFile(src, dst string) error {
 	return err
 }
 
-func copyDir(src, dst string) error {
+func copyDir(src, dst string, logFn func(string, ...interface{})) error {
 	return filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
+			if logFn != nil {
+				logFn("copyDir: walk error at %s: %v", path, err)
+			}
 			return nil
 		}
 		rel, _ := filepath.Rel(src, path)
@@ -74,9 +83,18 @@ func copyDir(src, dst string) error {
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {
+			if logFn != nil {
+				logFn("copyDir: read error %s: %v", path, err)
+			}
 			return nil
 		}
-		return os.WriteFile(target, data, 0644)
+		if err := os.WriteFile(target, data, 0644); err != nil {
+			if logFn != nil {
+				logFn("copyDir: write error %s -> %s: %v", path, target, err)
+			}
+			return nil
+		}
+		return nil
 	})
 }
 
@@ -119,5 +137,5 @@ func (a *App) IsolateModelDir(filePath string) (string, error) {
 	if a.isSafePath(filePath) {
 		return filepath.Dir(filePath), nil
 	}
-	return isolateDir(filePath)
+	return isolateDir(filePath, a.safeLogError)
 }
