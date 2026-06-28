@@ -138,6 +138,18 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
   - `scripts/release.ps1`: 新增，`go build -ldflags="-s -w"` 缩小二进制 ~12MB→9.7MB
   - `library.go`: `ScanModelDir` 用 `errgroup` 并行扫描所有根目录，上限 4 并发
 - [x] 前端主 chunk 从 2062 KiB 降至 153 KiB（92%↓），babylon vendor 独立缓存
+- [x] 前端模块拆分（2026-06-28，累计从 scene.ts 提取 541 + 130 + 35 + 261 ≈ 967 行）:
+  - `scene-material.ts`: 材质系统（261 行，`_catOf`/`_applyAll`/`setMatParams`）
+  - `scene-vmd.ts`: VMD 加载（130 行，`loadVMDMotion`/`loadVMDFromPath`/`loadCameraVmdFromPath`/`loadVPDPose`）
+  - `scene-playback.ts`: 播放 UI（35 行，`updatePlaybackUI`/`seekFromEvent`）
+  - `scene-model.ts`: ModelManager（541 行，模型注册表/生命周期/属性/物理分类/morph/bone overlay/缩略图）
+  - `ui-helpers.ts`: DOM 构建函数提取（`slideRow`/`addToggleRow`/`addSliderRow` 等）
+- [x] 文件夹归类（2026-06-28，35 个源文件 → 5 子目录）:
+  - `core/`: config, main, fileservice, ui-helpers, icons
+  - `scene/`: scene, scene-model, scene-material, scene-vmd, scene-playback, camera, env-lighting
+  - `menus/`: menu, library, library-core, model-detail, model-material, model-preset, motion-popup, scene-menu, env-menu, outfit-ui, settings
+  - `motion/`: procedural-motion, vmd-writer, vpd-parser, beat-detector, lipsync
+  - `outfit/`: outfit, audio
 
 **场景面板**
 - [x] 右侧场景面板移除 — 功能合并到模型弹窗「加载模型」上方（已加载模型作为按钮 + 分隔线）
