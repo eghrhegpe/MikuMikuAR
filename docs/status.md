@@ -273,6 +273,39 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 - [x] 弹窗模型行 ✏️ 按钮 — PMX 格式模型显示编辑按钮，点击唤起 Blender
 - [x] 配置写入分离 — `writeConfig` 轻写 vs `writeConfigAndRescan` 全量扫描
 
+**XPBD 布料模拟（Phase 9，2026-06-28）**
+- [x] `xpbd-solver.ts` — XPBD 核心引擎（Verlet 积分 + 子步约束求解 + 距离/弯曲/体积约束）
+- [x] `xpbd-collider.ts` — SDF 胶囊碰撞器（头/颈/胸/腰/臀/四肢 13 胶囊，支持骨骼跟随）
+- [x] `xpbd-cloth.ts` — 程序化裙摆网格生成 + 骨骼锚定 + 每帧 Mesh 更新
+- [x] `xpbd-renderer.ts` — 调试可视化（粒子小球/约束线条/胶囊线框）
+- [x] `scene-model.ts` 集成 — `getBoneWorldMatrix` / `addCloth` / `removeCloth` / 渲染观察者按需注册
+- [x] 测试套件 — `xpbd-solver.test.ts` + `xpbd-cloth.test.ts`（20 tests，全部通过）
+
+**多相机模式 UI 完善（Phase 9，2026-06-28）**
+- [x] Freefly 参数实时生效（切换后滑条立即反映当前值，不再需要重新切换模式）
+- [x] One-shot 模式接入菜单（场景菜单 → 相机 → 镜头预设 → 单拍模式）
+- [x] Concert 暂停/恢复 toggle（场景菜单 → 相机 → 演唱会模式 → 暂停/恢复按钮）
+
+**环境系统扩展（三期，2026-06-28，对标 DanceXR）**
+
+第一期：
+- [x] 太阳光晕（径向渐变，跟随 `sunAngle`，清晨/黄昏自动偏橙红）
+- [x] 时间流动画（`startTimeOfDay()` / `stopTimeOfDay()`，太阳角度自动循环）
+- [x] 水体反射列表动态刷新（模型加载/卸载时自动调用 `_refreshWaterRenderList()`）
+
+第二期：
+- [x] 天空预设 4→7（新增 dawn/dusk/midnight）
+- [x] `.env` 格式导入/导出（`exportEnvPreset()` / `importEnvPreset()`）
+- [x] 水体动画速度滑块控制（`waterAnimSpeed` 参数）
+- [x] 水下后处理（相机 y < waterLevel 时自动切换 pipeline）
+- [x] Perlin FBM 噪声凹凸纹理（水面法线贴图程序化生成）
+
+第三期：
+- [x] 程序化星空（Canvas 2D 生成星点纹理，1080 采样保证分布均匀）
+- [x] 天空旋转动画（`skyRotationSpeed` 控制，Y 轴无限旋转）
+- [x] 波浪-风向联动（UI 改风向，水面 `windDirection` 实时响应）
+- [x] 5 种水面预设（calm/ripple/ocean/storm/tropical）
+
 > 路线图和长期规划已移入 [`roadmap.md`](roadmap.md)。
 
 ---
