@@ -59,16 +59,41 @@
 | 15 | 四条路 | [vol-3-consolidation/15-四条路.md](vol-3-consolidation/15-四条路.md) |
 | 16 | 体验打磨 | [vol-3-consolidation/16-体验打磨.md](vol-3-consolidation/16-体验打磨.md) |
 | 17 | 尘与风 | [vol-3-consolidation/17-尘与风.md](vol-3-consolidation/17-尘与风.md) |
-| 19 | 三层 | [初稿-第19章-三层.md](初稿-第19章-三层.md)（初稿） |
+| 18 | 三层解剖 | [vol-3-consolidation/18-三层解剖.md](vol-3-consolidation/18-三层解剖.md) |
+| 19 | 西西弗斯之夜 | [vol-3-consolidation/19-西西弗斯之夜.md](vol-3-consolidation/19-西西弗斯之夜.md) |
 
-### 📕 第四卷：新大陆（The New World）
+### 📙 第四卷：新大陆（The New World）
+
 联邦终于穿上了统一的制服。但穿上制服的人，开始问一个问题：我们要去哪里？
 竞速和竞品破晓给出外部压力，工坊与节拍给出内部探索，光和色的和解给出技术突破，审美的裂缝给出反思，数据的纹路给出制度沉淀。
 
+**第一幕：审美的裂缝**
+
 | 章 | 标题 | 文件 |
 |----|------|------|
+| 1 | 审美的裂缝 | [vol-4-The New World/01-审美的裂缝.md](vol-4-The New World/01-审美的裂缝.md) |
+| 2 | 错位的五键 | [vol-4-The New World/02-错位的五键.md](vol-4-The New World/02-错位的五键.md) |
+| 3 | 重构风暴 | [vol-4-The New World/03-重构风暴.md](vol-4-The New World/03-重构风暴.md) |
+| 4 | 循环深渊 | [vol-4-The New World/04-循环深渊.md](vol-4-The New World/04-循环深渊.md) |
+| 5 | 最后一公里 | [vol-4-The New World/05-最后一公里.md](vol-4-The New World/05-最后一公里.md) |
 
----
+**第二幕：系统的矫正**
+
+| 章 | 标题 | 文件 |
+|----|------|------|
+| 6 | 替身 | [vol-4-The New World/06-替身.md](vol-4-The New World/06-替身.md) |
+| 7 | 三层闭包 | [vol-4-The New World/07-三层闭包.md](vol-4-The New World/07-三层闭包.md) |
+| 8 | 天光之悟 | [vol-4-The New World/08-天光之悟.md](vol-4-The New World/08-天光之悟.md) |
+| 9 | 工坊与节拍 | [vol-4-The New World/09-工坊与节拍.md](vol-4-The New World/09-工坊与节拍.md) |
+
+**第三幕：文明的定型**
+
+| 章 | 标题 | 文件 |
+|----|------|------|
+| 10 | 数据的纹路 | [vol-4-The New World/10-数据的纹路.md](vol-4-The New World/10-数据的纹路.md) |
+| 11 | 残党扫荡 | [vol-4-The New World/11-残党扫荡.md](vol-4-The New World/11-残党扫荡.md) |
+| 12 | 瘦身日 | [vol-4-The New World/12-瘦身日.md](vol-4-The New World/12-瘦身日.md) |
+| 13 | 纹理织工 | [vol-4-The New World/13-纹理织工.md](vol-4-The New World/13-纹理织工.md) |
 
 ## 骨架
 
