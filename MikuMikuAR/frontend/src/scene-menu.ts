@@ -991,6 +991,5 @@ export async function showEnvMenu(): Promise<void> {
     sceneStack.reset(buildEnvLevel());
 }
 
-// Wire up events
-dom.btnScene?.addEventListener("click", showSceneMenu);
-dom.btnEnv?.addEventListener("click", showEnvMenu);
+// Wire up events — handlers are registered in main.ts (dynamic import + toggleOverlay) to avoid double-handler race.
+// Do NOT re-register here; see main.ts:243-244.
