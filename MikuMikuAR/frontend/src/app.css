@@ -638,6 +638,16 @@ html, body {
     user-select: none;
 }
 .slide-add-btn:hover { background: var(--white-12); }
+.slide-del-btn {
+    cursor: pointer; margin-left: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 4px;
+    font-size: var(--font-ui); background: var(--white-04);
+    color: var(--danger, #f66);
+    transition: background 0.15s; flex-shrink: 0;
+    user-select: none;
+}
+.slide-del-btn:hover { background: var(--white-12); }
 
 /* ===== 统一样式滚动条 ===== */
 .slide-list::-webkit-scrollbar,
