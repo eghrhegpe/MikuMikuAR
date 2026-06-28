@@ -26,8 +26,43 @@ import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, 
 import { modelRegistry, focusedModelId, setFocusedModelId, envState } from "../core/config";
 import { setEnvState } from "../scene/scene";
 import type { ProcMotionMode } from "../motion/procedural-motion";
-import { buildEnvLevel, buildSkyLevel, buildGroundLevel, buildParticleLevel, buildWindLevel, buildCloudLevel, buildEnvLightingLevel, buildPresetLevel, setEnvMenuStack } from "./env-menu";
+import { buildEnvLevel, buildSkyLevel, buildGroundLevel, buildParticleLevel, buildWindLevel, buildCloudLevel, buildEnvLightingLevel, buildPresetLevel } from "./env-menu";
 import { toggleCloth, recreateCloth } from "../physics/cloth-manager";
+
+/**
+ * 统一的 sceneStack onFolderEnter 路由器
+ * 无论 showSceneMenu 还是 showEnvMenu 创建栈，都使用此函数
+ */
+function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
+    switch (row.target) {
+        case "scene:presets": return buildPresetScenesLevel();
+        case "scene:env": return buildEnvLevel();
+        case "scene:env:sky": return buildSkyLevel();
+        case "scene:env:ground": return buildGroundLevel();
+        case "scene:env:particle": return buildParticleLevel();
+        case "scene:env:wind": return buildWindLevel();
+        case "scene:env:cloud": return buildCloudLevel();
+        case "scene:env:lighting": return buildEnvLightingLevel();
+        case "scene:env:post": return buildPostProcessLevel();
+        case "scene:env:light": return buildLightLevel();
+        case "scene:env:presets": return buildPresetLevel();
+        case "scene:camera": return buildCameraLevel();
+        case "scene:light": return buildLightLevel();
+        case "scene:render": return buildRenderLevel();
+        case "scene:physics": return buildPhysicsLevel();
+        case "scene:physics:cloth": return buildClothParamsLevel();
+        case "scene:procmotion": return buildProcMotionLevel();
+        case "procmotion:mode": return buildProcMotionModeLevel();
+        case "scene:screenshot": return buildScreenshotLevel();
+        case "camera:params:orbit": return buildCameraParamsLevel("orbit");
+        case "camera:params:freefly": return buildCameraParamsLevel("freefly");
+        case "camera:params:concert": return buildCameraParamsLevel("concert");
+        case "scene:render:postprocess": return buildPostProcessLevel();
+        case "scene:render:stage": return buildStageLevel();
+        case "scene:render:presets": return buildPresetsLevel();
+        default: return null;
+    }
+}
 
 // ======== Scene Menu (SlideMenu) ========
 
@@ -1040,89 +1075,24 @@ function handleSceneAction(row: PopupRow): void {
 }
 
 export async function showSceneMenu(): Promise<void> {
-    closeAllOverlays();
-    dom.sceneOverlay.classList.add("visible");
+    // 不再自管理生命周期，由 toggleOverlay 统一管理
+    dom.sceneOverlay.innerHTML = "";
+    dom.sceneOverlay.classList.remove("overlay-model", "overlay-motion", "overlay-settings");
+    dom.sceneOverlay.dataset.popupType = "scene";
 
     // Load user presets from backend
     await loadUserPresets();
 
-    if (!sceneStack) {
-        sceneStack = new SlideMenu({
-            container: dom.sceneOverlay,
-            onClose: () => closeAllOverlays(),
-            onItemClick: (row) => handleSceneAction(row),
-            onFolderEnter: (row) => {
-                switch (row.target) {
-                    case "scene:presets": return buildPresetScenesLevel();
-                    case "scene:env": return buildEnvLevel();
-                    case "scene:env:sky": return buildSkyLevel();
-                    case "scene:env:ground": return buildGroundLevel();
-                    case "scene:env:particle": return buildParticleLevel();
-                    case "scene:env:wind": return buildWindLevel();
-                    case "scene:env:cloud": return buildCloudLevel();
-                    case "scene:env:lighting": return buildEnvLightingLevel();
-                    case "scene:env:post": return buildPostProcessLevel();
-                    case "scene:env:light": return buildLightLevel();
-                    case "scene:env:presets": return buildPresetLevel();
-                    case "scene:camera": return buildCameraLevel();
-                    case "scene:light": return buildLightLevel();
-                    case "scene:render": return buildRenderLevel();
-                    case "scene:physics": return buildPhysicsLevel();
-                    case "scene:physics:cloth": return buildClothParamsLevel();
-                    case "scene:procmotion": return buildProcMotionLevel();
-                    case "procmotion:mode": return buildProcMotionModeLevel();
-                    case "scene:screenshot": return buildScreenshotLevel();
-                    case "camera:params:orbit": return buildCameraParamsLevel("orbit");
-                    case "camera:params:freefly": return buildCameraParamsLevel("freefly");
-                    case "camera:params:concert": return buildCameraParamsLevel("concert");
-                    case "scene:render:postprocess": return buildPostProcessLevel();
-                    case "scene:render:stage": return buildStageLevel();
-                    case "scene:render:presets": return buildPresetsLevel();
-                    default: return null;
-                }
-            },
-            onAfterRender: () => {},
-        });
-        setEnvMenuStack(sceneStack);
-    }
+    // 每次都重建 SlideMenu，避免 innerHTML 清空后旧实例持有已销毁的 DOM 引用
+    sceneStack = new SlideMenu({
+        container: dom.sceneOverlay,
+        onClose: () => closeAllOverlays(),
+        onItemClick: (row) => handleSceneAction(row),
+        onFolderEnter: sceneOnFolderEnter,
+        onAfterRender: () => {},
+    });
 
     sceneStack.reset(buildSceneRoot());
-}
-
-/** Open scene overlay and jump directly into environment level. */
-export async function showEnvMenu(): Promise<void> {
-    closeAllOverlays();
-    dom.sceneOverlay.classList.add("visible");
-
-    await loadUserPresets();
-
-    if (!sceneStack) {
-        sceneStack = new SlideMenu({
-            container: dom.sceneOverlay,
-            onClose: () => closeAllOverlays(),
-            onItemClick: (row) => handleSceneAction(row),
-            onFolderEnter: (row) => {
-                switch (row.target) {
-                    case "scene:presets": return buildPresetScenesLevel();
-                    case "scene:env": return buildEnvLevel();
-                    case "scene:env:sky": return buildSkyLevel();
-                    case "scene:env:ground": return buildGroundLevel();
-                    case "scene:env:particle": return buildParticleLevel();
-                    case "scene:env:wind": return buildWindLevel();
-                    case "scene:env:cloud": return buildCloudLevel();
-                    case "scene:env:lighting": return buildEnvLightingLevel();
-                    case "scene:env:post": return buildPostProcessLevel();
-                    case "scene:env:light": return buildLightLevel();
-                    case "scene:env:presets": return buildPresetLevel();
-                    default: return null;
-                }
-            },
-            onAfterRender: () => {},
-        });
-        setEnvMenuStack(sceneStack);
-    }
-
-    sceneStack.reset(buildEnvLevel());
 }
 
 // Wire up events — handlers are registered in main.ts (dynamic import + toggleOverlay) to avoid double-handler race.

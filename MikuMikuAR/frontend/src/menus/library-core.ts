@@ -67,7 +67,7 @@ import { stackRegistry } from "../core/config";
 
 const makeModelStack = (): SlideMenu => {
   return new SlideMenu({
-    container: dom.modelPopup,
+    container: dom.sceneOverlay,
     onClose: closeAllOverlays,
     onFolderEnter: (row) => {
       if (row.target && row.target.startsWith("scene:")) {
@@ -535,12 +535,15 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
 
 /** Show function for toggleOverlay — builds the model menu stack. */
 export function showModelPopup(): void {
-  closeAllOverlays();
-  dom.modelPopup.classList.add("visible");
+  // 不再自管理生命周期，由 toggleOverlay 统一管理
+  // 清空旧内容，避免与其他弹窗 DOM 混在一起
+  dom.sceneOverlay.innerHTML = "";
+  dom.sceneOverlay.classList.remove("overlay-motion", "overlay-settings");
+  dom.sceneOverlay.classList.add("overlay-model"); // 宽度 280px
+  dom.sceneOverlay.dataset.popupType = "model";
 
-  if (!stackRegistry.modelStack) {
-    stackRegistry.modelStack = makeModelStack();
-  }
+  // 强制重建 MenuStack，避免 innerHTML 清空后旧 stack 持有已分离的 DOM 引用
+  stackRegistry.modelStack = makeModelStack();
 
   stackRegistry.modelStack.reset({
     label: "模型",
@@ -740,7 +743,7 @@ export async function refreshLibrary(): Promise<void> {
     CleanOrphanCache().catch((err) =>
       console.warn("CleanOrphanCache (background):", err),
     );
-    if (dom.modelPopup.classList.contains("visible")) showModelPopup();
+    if (dom.sceneOverlay.classList.contains("visible") && dom.sceneOverlay.dataset.popupType === "model") showModelPopup();
   } catch (err) {
     setStatus("✗ 扫描失败", false);
   }

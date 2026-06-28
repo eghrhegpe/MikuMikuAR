@@ -94,6 +94,17 @@
 | 11 | 残党扫荡 | [vol-4-The New World/11-残党扫荡.md](vol-4-The New World/11-残党扫荡.md) |
 | 12 | 瘦身日 | [vol-4-The New World/12-瘦身日.md](vol-4-The New World/12-瘦身日.md) |
 | 13 | 纹理织工 | [vol-4-The New World/13-纹理织工.md](vol-4-The New World/13-纹理织工.md) |
+| 14 | 打包之战 | [vol-4-The New World/14-打包之战.md](vol-4-The New World/14-打包之战.md) |
+
+### 📔 第五卷：物理之光（The Light of Physics）
+
+环境系统臻于完善，XPBD 布料模拟接入主场景，多相机模式 UI 打磨。联邦的技术树点亮了最后几片暗区。
+
+| 章 | 标题 | 文件 |
+|----|------|------|
+| 1 | 天穹之华 | [vol-5-the-light-of-physics/01-天穹之华.md](vol-5-the-light-of-physics/01-天穹之华.md) |
+| 2 | 布料之魂 | [vol-5-the-light-of-physics/02-布料之魂.md](vol-5-the-light-of-physics/02-布料之魂.md) |
+| 3 | 多相机之眼 | [vol-5-the-light-of-physics/03-多相机之眼.md](vol-5-the-light-of-physics/03-多相机之眼.md) |
 
 ## 骨架
 

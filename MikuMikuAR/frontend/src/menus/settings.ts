@@ -799,35 +799,38 @@ function buildSettingsDownloadLevel(): PopupLevel {
 }
 
 export async function showSettings(): Promise<void> {
-    closeAllOverlays();
-    dom.settingsOverlay.classList.add("visible");
+    // 不再自管理生命周期，由 toggleOverlay 统一管理
+    // 清空旧内容，避免与其他弹窗 DOM 混在一起
+    dom.sceneOverlay.innerHTML = "";
+    dom.sceneOverlay.classList.remove("overlay-model", "overlay-motion");
+    dom.sceneOverlay.classList.add("overlay-settings"); // 宽度 340px
+    dom.sceneOverlay.dataset.popupType = "settings";
 
-    if (!settingsStack) {
-        settingsStack = new SlideMenu({
-            container: dom.settingsOverlay,
-            onClose: () => closeAllOverlays(),
-            onItemClick: (row) => handleSettingsAction(row),
-            onFolderEnter: (row) => {
-                switch (row.target) {
-                    case "settings:display": return buildSettingsDisplayLevel();
-                    case "settings:ui": return buildSettingsUILevel();
-                    case "settings:download": return buildSettingsDownloadLevel();
-                    case "settings:system": return buildSettingsSystemLevel();
-                    case "settings:external": return buildSettingsExternalLevel();
-                    case "settings:clearcache": return buildSettingsClearCacheLevel();
-                    case "settings:software":
-                        return buildSettingsSoftwareLevel();
-                    default:
-                        if (row.target && row.target.startsWith("settings:software-detail:")) {
-                            const path = row.target.slice("settings:software-detail:".length);
-                            return buildSoftwareDetailLevel(path);
-                        }
-                        return null;
-                }
-            },
-            onAfterRender: () => {},
-        });
-    }
+    // 每次都重建 SlideMenu，避免 innerHTML 清空后旧实例持有已销毁的 DOM 引用
+    settingsStack = new SlideMenu({
+        container: dom.sceneOverlay,
+        onClose: () => closeAllOverlays(),
+        onItemClick: (row) => handleSettingsAction(row),
+        onFolderEnter: (row) => {
+            switch (row.target) {
+                case "settings:display": return buildSettingsDisplayLevel();
+                case "settings:ui": return buildSettingsUILevel();
+                case "settings:download": return buildSettingsDownloadLevel();
+                case "settings:system": return buildSettingsSystemLevel();
+                case "settings:external": return buildSettingsExternalLevel();
+                case "settings:clearcache": return buildSettingsClearCacheLevel();
+                case "settings:software":
+                    return buildSettingsSoftwareLevel();
+                default:
+                    if (row.target && row.target.startsWith("settings:software-detail:")) {
+                        const path = row.target.slice("settings:software-detail:".length);
+                        return buildSoftwareDetailLevel(path);
+                    }
+                    return null;
+            }
+        },
+        onAfterRender: () => {},
+    });
 
     settingsStack.reset(buildSettingsRoot());
 }

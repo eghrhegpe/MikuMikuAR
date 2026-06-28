@@ -1,7 +1,7 @@
 // [doc:architecture] Env Menu — 环境弹窗（天空/地面/粒子/风/云/道具/预设）
 // 从 scene-menu.ts 抽离
 
-import { envState, EnvState, PopupLevel, PopupRow, escapeHtml, cardContainer, propRegistry } from "../core/config";
+import { envState, EnvState, PopupLevel, PopupRow, escapeHtml, cardContainer, propRegistry, dom, closeAllOverlays } from "../core/config";
 import { SlideMenu } from "./menu";
 import { createIconifyIcon } from "../core/icons";
 import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider } from "../core/ui-helpers";
@@ -11,9 +11,8 @@ import { SelectEnvTextureFile, SelectPMXFile } from "../../wailsjs/go/main/App";
 
 // ======== Environment Level ========
 
-let sceneStack: SlideMenu | null = null;
-
-export function setEnvMenuStack(s: SlideMenu | null): void { sceneStack = s; }
+let envStack: SlideMenu | null = null;
+export function getEnvStack(): SlideMenu | null { return envStack; }
 
 export function buildEnvLightingLevel(): PopupLevel {
     const autoLink = getEnvAutoLink();
@@ -34,7 +33,7 @@ export function buildEnvLightingLevel(): PopupLevel {
                 const btn = document.createElement("button");
                 btn.textContent = p.label;
                 btn.className = "mode-btn";
-                btn.addEventListener("click", () => { applyEnvPreset(key); sceneStack?.reRender(); });
+                btn.addEventListener("click", () => { applyEnvPreset(key); envStack?.reRender(); });
                 presetRow.appendChild(btn);
             }
             container.appendChild(presetRow);
@@ -52,16 +51,16 @@ export function buildEnvLevel(): PopupLevel {
         renderCustom: (container) => {
             container.classList.remove("render-card");
             cardContainer(container, (c) => {
-                slideRow(c, "lucide:sun", "环境光照", true, () => sceneStack?.push(buildEnvLightingLevel()));
-                slideRow(c, "lucide:sun", "天空", true, () => sceneStack?.push(buildSkyLevel()));
-                slideRow(c, "lucide:waves", "水面", true, () => sceneStack?.push(buildWaterLevel()));
-                slideRow(c, "lucide:wind", "粒子", true, () => sceneStack?.push(buildParticleLevel()));
-                slideRow(c, "lucide:wind", "风", true, () => sceneStack?.push(buildWindLevel()));
-                slideRow(c, "lucide:cloud", "云", true, () => sceneStack?.push(buildCloudLevel()));
-                slideRow(c, "lucide:box", "道具", true, () => sceneStack?.push(buildPropLevel()));
+                slideRow(c, "lucide:sun", "环境光照", true, () => envStack?.push(buildEnvLightingLevel()));
+                slideRow(c, "lucide:sun", "天空", true, () => envStack?.push(buildSkyLevel()));
+                slideRow(c, "lucide:waves", "水面", true, () => envStack?.push(buildWaterLevel()));
+                slideRow(c, "lucide:wind", "粒子", true, () => envStack?.push(buildParticleLevel()));
+                slideRow(c, "lucide:wind", "风", true, () => envStack?.push(buildWindLevel()));
+                slideRow(c, "lucide:cloud", "云", true, () => envStack?.push(buildCloudLevel()));
+                slideRow(c, "lucide:box", "道具", true, () => envStack?.push(buildPropLevel()));
             });
             cardContainer(container, (c) => {
-                slideRow(c, "lucide:bookmark", "系统预设", true, () => sceneStack?.push(buildPresetLevel()));
+                slideRow(c, "lucide:bookmark", "系统预设", true, () => envStack?.push(buildPresetLevel()));
             });
         },
     };
@@ -105,7 +104,7 @@ export function buildPresetLevel(): PopupLevel {
                         setEnvState({ ...preset.env });
                         if (preset.lights) setLightState(preset.lights);
                         if (preset.render) setRenderState(preset.render);
-                        sceneStack?.reRender();
+                        envStack?.reRender();
                     });
                 }
             });
@@ -123,7 +122,7 @@ export function buildSkyLevel(): PopupLevel {
             container.style.padding = "12px 14px";
             addModeSlider(container, "天空模式", [
                 { value: "color", label: "纯色" }, { value: "texture", label: "贴图" }, { value: "procedural", label: "程序化" },
-            ], s.skyMode, (v) => { setEnvState({ skyMode: v }); sceneStack?.reRender(); }, "lucide:sun");
+            ], s.skyMode, (v) => { setEnvState({ skyMode: v }); envStack?.reRender(); }, "lucide:sun");
 
             if (s.skyMode === "color") addColorSliderRow(container, "天空色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
             else             if (s.skyMode === "procedural") {
@@ -172,7 +171,7 @@ export function buildGroundLevel(): PopupLevel {
             addToggleRow(container, "显示地面", s.groundVisible, (v) => setEnvState({ groundVisible: v }));
             addModeSlider(container, "地面模式", [
                 { value: "solid", label: "纯色" }, { value: "grid", label: "网格" }, { value: "checker", label: "棋盘格" },
-            ], s.groundMode, (v) => { setEnvState({ groundMode: v }); sceneStack?.reRender(); }, "lucide:square");
+            ], s.groundMode, (v) => { setEnvState({ groundMode: v }); envStack?.reRender(); }, "lucide:square");
             addColorSliderRow(container, "地面色", s.groundColor, (v) => setEnvState({ groundColor: v }));
             if (s.groundMode === "solid" || s.groundMode === "checker") addSliderRow(container, "透明度", s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), "lucide:eye");
         },
@@ -189,7 +188,7 @@ export function buildPropLevel(): PopupLevel {
             container.style.padding = "0";
             cardContainer(container, (c) => {
                 slideRow(c, "lucide:plus", "添加道具文件", false, () => {
-                    SelectPMXFile().then(path => { if (path) loadProp(path).then(() => sceneStack?.reRender()).catch(() => {}); });
+                    SelectPMXFile().then(path => { if (path) loadProp(path).then(() => envStack?.reRender()).catch(() => {}); });
                 });
             });
             const props = getPropList();
@@ -199,12 +198,12 @@ export function buildPropLevel(): PopupLevel {
                         const row = document.createElement("div");
                         row.className = "slide-item";
                         row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(p.name)}</span><span class="slide-arrow">&gt;</span>`;
-                        row.addEventListener("click", () => sceneStack?.push(buildPropDetailLevel(p.id)));
+                        row.addEventListener("click", () => envStack?.push(buildPropDetailLevel(p.id)));
                         const delBtn = document.createElement("span");
                         delBtn.className = "slide-del-btn";
                         delBtn.textContent = "×";
                         delBtn.title = "删除道具";
-                        delBtn.addEventListener("click", (e) => { e.stopPropagation(); removeProp(p.id); sceneStack?.reRender(); });
+                        delBtn.addEventListener("click", (e) => { e.stopPropagation(); removeProp(p.id); envStack?.reRender(); });
                         row.appendChild(delBtn);
                         c.appendChild(row);
                     }
@@ -250,7 +249,7 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
             delBtn.textContent = "删除道具";
             delBtn.className = "mode-btn";
             delBtn.style.cssText = "width:100%;margin-top:14px;color:var(--danger,#f66);";
-            delBtn.addEventListener("click", () => { removeProp(propId); sceneStack?.pop(); sceneStack?.reRender(); });
+            delBtn.addEventListener("click", () => { removeProp(propId); envStack?.pop(); envStack?.reRender(); });
             container.appendChild(delBtn);
         },
     };
@@ -267,7 +266,7 @@ export function buildParticleLevel(): PopupLevel {
             addToggleRow(container, "启用粒子", s.particleEnabled, (v) => setEnvState({ particleEnabled: v }));
             addModeSlider(container, "粒子类型", [
                 { value: "none", label: "无" }, { value: "sakura", label: "🌸 樱花" }, { value: "rain", label: "🌧 雨" }, { value: "snow", label: "❄ 雪" }, { value: "fireworks", label: "🎆 烟花" }, { value: "fireflies", label: "✨ 萤火虫" }, { value: "leaves", label: "🍂 落叶" },
-            ], s.particleType, (v) => { setEnvState({ particleType: v }); sceneStack?.reRender(); }, "lucide:sparkles");
+            ], s.particleType, (v) => { setEnvState({ particleType: v }); envStack?.reRender(); }, "lucide:sparkles");
             addSliderRow(container, "密度", s.particleEmitRate, 0, 3, 0.1, (v) => setEnvState({ particleEmitRate: v }), "lucide:layers");
             addSliderRow(container, "大小", s.particleSize, 0.1, 3, 0.1, (v) => setEnvState({ particleSize: v }), "lucide:maximize");
             addSliderRow(container, "速度", s.particleSpeed, 0.1, 5, 0.1, (v) => setEnvState({ particleSpeed: v }), "lucide:gauge");
@@ -300,7 +299,7 @@ export function buildWaterLevel(): PopupLevel {
                         waterWaveHeight: wp.waterWaveHeight,
                         waterAnimSpeed: wp.waterAnimSpeed,
                     });
-                    sceneStack?.reRender();
+                    envStack?.reRender();
                 });
                 waterPresetRow.appendChild(btn);
             }
@@ -347,4 +346,40 @@ export function buildCloudLevel(): PopupLevel {
             addSliderRow(container, "缩放", s.cloudScale, 0.5, 3, 0.1, (v) => setEnvState({ cloudScale: v }), "lucide:maximize");
         },
     };
+}
+
+// ======== Env Stack onFolderEnter ========
+
+function envOnFolderEnter(row: PopupRow): PopupLevel | null {
+    switch (row.target) {
+        case "env:lighting": return buildEnvLightingLevel();
+        case "env:sky": return buildSkyLevel();
+        case "env:ground": return buildGroundLevel();
+        case "env:water": return buildWaterLevel();
+        case "env:particle": return buildParticleLevel();
+        case "env:wind": return buildWindLevel();
+        case "env:cloud": return buildCloudLevel();
+        case "env:prop": return buildPropLevel();
+        case "env:presets": return buildPresetLevel();
+        default: return null;
+    }
+}
+
+// ======== Show Env Menu ========
+
+export function showEnvMenu(): void {
+    dom.sceneOverlay.innerHTML = "";
+    dom.sceneOverlay.classList.remove("overlay-model", "overlay-motion", "overlay-settings", "overlay-scene");
+    dom.sceneOverlay.dataset.popupType = "env";
+
+    // 每次都重建 SlideMenu，避免 innerHTML 清空后旧实例持有已销毁的 DOM 引用
+    envStack = new SlideMenu({
+        container: dom.sceneOverlay,
+        onClose: () => closeAllOverlays(),
+        onItemClick: () => {},
+        onFolderEnter: envOnFolderEnter,
+        onAfterRender: () => {},
+    });
+
+    envStack.reset(buildEnvLevel());
 }

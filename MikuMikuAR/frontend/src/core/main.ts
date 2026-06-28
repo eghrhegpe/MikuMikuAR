@@ -3,7 +3,7 @@
 
 import "../app.css";
 
-import { dom, setStatus, isPlaying, setIsPlaying, autoLoop, setAutoLoop, seekDragging, setSeekDragging, mmdRuntime, closeAllOverlays, showHint, hideHint, initHints, setOnCloseAllOverlays, UIState, EnvState } from "./config";
+import { dom, setStatus, isPlaying, setIsPlaying, autoLoop, setAutoLoop, seekDragging, setSeekDragging, mmdRuntime, closeAllOverlays, showHint, hideHint, initHints, setOnCloseAllOverlays, setPopupOpen, UIState, EnvState } from "./config";
 import { GetConfig, ImportZip, ImportLocalFile } from "../../wailsjs/go/main/App";
 import { OnFileDrop, EventsOn } from "../../wailsjs/runtime/runtime";
 import { initScene, engine, scene, focusedMmdModel, focusedModel, updatePlaybackUI, seekFromEvent, tryRestoreLastScene, setEnvState, loadPMXFile, loadVMDFromPath } from "../scene/scene";
@@ -47,10 +47,12 @@ window.addEventListener("blur", () => document.body.classList.remove("shortcuts-
 
 // ======== Declarative nav shortcut routing: Ctrl+N → toggle nav button ========
 function syncNavAriaExpanded(): void {
+    const overlay = document.getElementById("sceneOverlay");
+    const activeType = overlay?.classList.contains("visible") ? overlay?.dataset.popupType : null;
+
     document.querySelectorAll<HTMLElement>("[aria-controls]").forEach(btn => {
-        const targetId = btn.getAttribute("aria-controls");
-        const target = targetId ? document.getElementById(targetId) : null;
-        btn.setAttribute("aria-expanded", target?.classList.contains("visible") ? "true" : "false");
+        const btnType = btn.dataset.popupType;
+        btn.setAttribute("aria-expanded", btnType === activeType ? "true" : "false");
     });
 }
 // Track which show function last opened each overlay, so toggling the same button
@@ -81,7 +83,10 @@ async function toggleOverlay(id: string, showFn: () => void): Promise<void> {
         if (last === showFn) {
             // Same button clicked again → toggle close
             el.classList.remove("visible");
-            closeAllOverlays(); // 修复：确保关闭时清理所有状态
+            // 只清理当前弹窗，不调用 closeAllOverlays()（避免递归/冗余）
+            setPopupOpen(false);
+            syncNavAriaExpanded();
+            _lastOverlayFn.delete(id);
         } else {
             // Different button targeting the same overlay → cross-fade switch
             // Phase 1: fade out current content
@@ -97,16 +102,20 @@ async function toggleOverlay(id: string, showFn: () => void): Promise<void> {
     } else {
         closeAllOverlays();
         showFn();
+        el.classList.remove("overlay-fade-out"); // 防御：确保残留动画类不影响显示
+        el.classList.add("visible");
     }
-    _lastOverlayFn.set(id, showFn);
+    if (el.classList.contains("visible")) {
+        _lastOverlayFn.set(id, showFn);
+    }
     syncNavAriaExpanded();
 }
 const navActions: Record<number, () => void | Promise<void>> = {
-    1: () => toggleOverlay("modelPopup", showModelPopup),
-    2: () => toggleOverlay("motionPopup", showMotionPopup),
+    1: () => toggleOverlay("sceneOverlay", showModelPopup),
+    2: () => toggleOverlay("sceneOverlay", showMotionPopup),
     3: async () => { const m = await import("../menus/scene-menu"); toggleOverlay("sceneOverlay", m.showSceneMenu); },
-    4: async () => { const m = await import("../menus/scene-menu"); toggleOverlay("sceneOverlay", m.showEnvMenu); },
-    5: async () => { const m = await import("../menus/settings"); toggleOverlay("settingsOverlay", m.showSettings); },
+    4: async () => { const m = await import("../menus/env-menu"); toggleOverlay("sceneOverlay", m.showEnvMenu); },
+    5: async () => { const m = await import("../menus/settings"); toggleOverlay("sceneOverlay", m.showSettings); },
 };
 const navLabels: Record<number, string> = {};
 function buildNavMaps(): void {
@@ -209,17 +218,18 @@ window.addEventListener("pointerup", async () => {
     }
 });
 
-// ======== Click canvas to toggle overlays ========
-// Only clicks on the 3D canvas trigger toggle — all other UI is ignored.
-let _overlaysHiddenByClick = false;
-let _lastHidden: string[] = [];
+// ======== Click canvas to close overlays ========
+// Only clicks on the 3D canvas trigger close — all other UI is ignored.
+// (Restoring overlays on canvas click is disabled to avoid state desync.)
 let _pointerDownPos = { x: 0, y: 0 };
 
 function _getAllOverlays(): HTMLElement[] {
+    const seen = new Set<string>();
     const overlays: HTMLElement[] = [];
     document.querySelectorAll<HTMLElement>("[aria-controls]").forEach(btn => {
         const id = btn.getAttribute("aria-controls");
-        if (id) {
+        if (id && !seen.has(id)) {
+            seen.add(id);
             const el = document.getElementById(id);
             if (el) overlays.push(el);
         }
@@ -229,20 +239,15 @@ function _getAllOverlays(): HTMLElement[] {
 
 function _toggleOverlays(): void {
     const all = _getAllOverlays();
-    if (!_overlaysHiddenByClick) {
-        _lastHidden = all.filter(el => el.classList.contains("visible")).map(el => el.id);
+    const anyVisible = all.some(el => el.classList.contains("visible"));
+
+    if (anyVisible) {
+        // Canvas click only closes overlays (restore on canvas click is disabled)
         all.forEach(el => el.classList.remove("visible"));
-        _overlaysHiddenByClick = true;
-    } else {
-        const toShow = _lastHidden.filter(id =>
-            all.some(el => el.id === id && !el.classList.contains("visible"))
-        );
-        all.forEach(el => {
-            if (toShow.includes(el.id)) el.classList.add("visible");
-        });
-        _lastHidden = [];
-        _overlaysHiddenByClick = false;
+        setPopupOpen(false);
     }
+    // No restore branch — use nav buttons to re-open overlays
+    syncNavAriaExpanded();
 }
 
 window.addEventListener("pointerdown", (e) => {
@@ -260,18 +265,14 @@ window.addEventListener("pointerup", (e) => {
     _toggleOverlays();
 });
 
-// Nav buttons reset toggle state (dynamic via data-shortcut)
-document.querySelectorAll<HTMLElement>("[data-shortcut]").forEach(btn => {
-    btn.addEventListener("click", () => { _overlaysHiddenByClick = false; _lastHidden = []; });
-});
+// Nav buttons — event listeners are registered in init() via dom.btnXxx
+// (No need to reset _overlaysHiddenByClick / _lastHidden — those variables are deleted.)
 
-// Register closeAllOverlays callback to reset canvas-click toggle state.
-// Without this, _overlaysHiddenByClick could remain true after ESC or
-// other paths close overlays, causing _toggleOverlays() to incorrectly
-// try to restore previously-hidden overlays on next canvas click.
+// Register closeAllOverlays callback to reset toggleOverlay state.
+// This ensures _lastOverlayFn is cleared when overlays are closed via
+// ESC key or other non-button paths.
 setOnCloseAllOverlays(() => {
-    _overlaysHiddenByClick = false;
-    _lastHidden = [];
+    _lastOverlayFn.clear();
 });
 
 // ======== Init ========
@@ -282,11 +283,11 @@ async function init(): Promise<void> {
         await initScene();
         initDropHandler();
         // Register nav button event listeners (ensured DOM ready)
-        dom.btnMainAction?.addEventListener("click", () => toggleOverlay("modelPopup", showModelPopup));
-        dom.btnMotionPopup?.addEventListener("click", showMotionPopup);
+        dom.btnMainAction?.addEventListener("click", () => toggleOverlay("sceneOverlay", showModelPopup));
+        dom.btnMotionPopup?.addEventListener("click", () => toggleOverlay("sceneOverlay", showMotionPopup));
         dom.btnScene?.addEventListener("click", async () => { const m = await import("../menus/scene-menu"); toggleOverlay("sceneOverlay", m.showSceneMenu); });
-        dom.btnEnv?.addEventListener("click", async () => { const m = await import("../menus/scene-menu"); toggleOverlay("sceneOverlay", m.showEnvMenu); });
-        dom.btnSettings?.addEventListener("click", async () => { const m = await import("../menus/settings"); toggleOverlay("settingsOverlay", m.showSettings); });
+        dom.btnEnv?.addEventListener("click", async () => { const m = await import("../menus/env-menu"); toggleOverlay("sceneOverlay", m.showEnvMenu); });
+        dom.btnSettings?.addEventListener("click", async () => { const m = await import("../menus/settings"); toggleOverlay("sceneOverlay", m.showSettings); });
         console.log("MikuMikuAR initialized");
         initLibrary().catch(err => console.warn("Library init:", err));
         // Restore env state from config (authoritative — scene restore skips env)

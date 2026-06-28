@@ -262,20 +262,6 @@ html, body {
 }
 .nav-btn:hover { color: rgba(255,255,255,0.85); transform: scale(1.1); }
 
-/* ===== 模型列表弹窗 ===== */
-#modelPopup {
-    position: absolute; bottom: var(--overlay-bottom); left: var(--overlay-left);
-    z-index: 110; pointer-events: auto;
-    width: var(--popup-width); max-height: 80vh;
-    background: rgba(0,0,0,0.15);
-    border-radius: var(--overlay-radius);
-    display: flex; flex-direction: column;
-    opacity: 0; transform: scale(0.85);
-    transition: opacity calc(0.2s * var(--ui-animations)) ease, transform calc(0.2s * var(--ui-animations)) ease;
-    pointer-events: none; overflow: hidden;
-}
-#modelPopup.visible { opacity: 1; transform: none; pointer-events: auto; }
-
 /* ===== 状态栏 + 加载 ===== */
 #statusBar {
     position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
@@ -341,9 +327,8 @@ html, body {
 }
 
 /* ===== 弹窗容器 — 宽度覆盖 ===== */
-#settingsOverlay { width: 260px; }
-#sceneOverlay { width: 260px; }
-#settingsOverlay, #sceneOverlay {
+/* ===== 统一弹窗容器：sceneOverlay ===== */
+#sceneOverlay {
     position: absolute; bottom: var(--overlay-bottom); left: var(--overlay-left);
     z-index: 130; pointer-events: auto;
     width: var(--popup-width); max-height: 80vh;
@@ -354,19 +339,12 @@ html, body {
     transition: opacity calc(0.2s * var(--ui-animations)) ease, transform calc(0.2s * var(--ui-animations)) ease;
     pointer-events: none; overflow: hidden;
 }
-#settingsOverlay.visible, #sceneOverlay.visible { opacity: 1; transform: none; pointer-events: auto; }
-#motionPopup {
-    position: absolute; bottom: var(--overlay-bottom); left: var(--overlay-left);
-    z-index: 110; pointer-events: auto;
-    width: var(--popup-width); max-height: 80vh;
-    background: rgba(0,0,0,0.15);
-    border-radius: var(--overlay-radius);
-    display: flex; flex-direction: column;
-    opacity: 0; transform: scale(0.85);
-    transition: opacity calc(0.2s * var(--ui-animations)) ease, transform calc(0.2s * var(--ui-animations)) ease;
-    pointer-events: none; overflow: hidden;
-}
-#motionPopup.visible { opacity: 1; transform: none; pointer-events: auto; }
+#sceneOverlay.visible { opacity: 1; transform: none; pointer-events: auto; }
+
+/* ===== 弹窗宽度 Modifier 类 ===== */
+.overlay-model   { width: 280px; }
+.overlay-motion  { width: 320px; }
+.overlay-settings { width: 340px; }
 
 /* ===== 外部库 — 行内路径 ===== */
 .overlay-row .eo-name { color: var(--text); font-weight: 500; min-width: 60px; }

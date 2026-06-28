@@ -183,8 +183,8 @@ let motionStack: SlideMenu | null = null;
 
 function makeMotionStack(): SlideMenu {
   return new SlideMenu({
-    container: dom.motionPopup,
-    onClose: hideMotionPopup,
+    container: dom.sceneOverlay,
+    onClose: closeAllOverlays,
     onFolderEnter: (row) => {
       if (row.target === "__dance_sets__") {
         setMotionBindingTargetId(null);
@@ -286,12 +286,15 @@ function makeMotionStack(): SlideMenu {
 // ======== Popup Show / Hide ========
 
 export function showMotionPopup(): void {
-  closeAllOverlays();
-  dom.motionPopup.classList.add("visible");
+  // 不再自管理生命周期，由 toggleOverlay 统一管理
+  // 清空旧内容，避免与其他弹窗 DOM 混在一起
+  dom.sceneOverlay.innerHTML = "";
+  dom.sceneOverlay.classList.remove("overlay-model", "overlay-settings");
+  dom.sceneOverlay.classList.add("overlay-motion"); // 宽度 320px
+  dom.sceneOverlay.dataset.popupType = "motion";
 
-  if (!motionStack) {
-    motionStack = makeMotionStack();
-  }
+  // 强制重建 MenuStack，避免 innerHTML 清空后旧 stack 持有已分离的 DOM 引用
+  motionStack = makeMotionStack();
 
   motionStack.reset({
     label: "动作",
@@ -324,7 +327,7 @@ export function showMotionPopup(): void {
 }
 
 export function hideMotionPopup(): void {
-  dom.motionPopup.classList.remove("visible");
+    closeAllOverlays();
 }
 
 // ======== Dance Sets ========
