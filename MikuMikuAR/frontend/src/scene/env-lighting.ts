@@ -88,4 +88,65 @@ export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
         toneMapping: 1,
         ...deriveLighting([0.4, 0.4, 0.45], 45),
     },
+    dawn: {
+        label: "黎明",
+        skyColorTop: [0.85, 0.55, 0.35],
+        skyColorBot: [0.2, 0.15, 0.35],
+        sunAngle: 5,
+        exposure: 0.65,
+        toneMapping: 2,
+        ...deriveLighting([0.85, 0.55, 0.35], 5),
+    },
+    dusk: {
+        label: "黄昏",
+        skyColorTop: [0.35, 0.2, 0.5],
+        skyColorBot: [0.6, 0.3, 0.15],
+        sunAngle: 8,
+        exposure: 0.55,
+        toneMapping: 2,
+        ...deriveLighting([0.35, 0.2, 0.5], 8),
+    },
+    midnight: {
+        label: "午夜",
+        skyColorTop: [0.03, 0.03, 0.08],
+        skyColorBot: [0.01, 0.01, 0.04],
+        sunAngle: -15,
+        exposure: 0.3,
+        toneMapping: 4,
+        ...deriveLighting([0.03, 0.03, 0.08], -15),
+    },
 };
+
+/** 将当前 EnvPreset 序列化为 JSON 字符串（.env 格式）。 */
+export function exportEnvPreset(p: EnvPreset): string {
+    return JSON.stringify({
+        version: 1,
+        label: p.label,
+        skyColorTop: p.skyColorTop,
+        skyColorBot: p.skyColorBot,
+        sunAngle: p.sunAngle,
+        exposure: p.exposure,
+        toneMapping: p.toneMapping,
+    }, null, 2);
+}
+
+/** 从 .env JSON 字符串反序列化 EnvPreset，失败返回 null。 */
+export function importEnvPreset(json: string): (EnvPreset & DerivedLighting) | null {
+    try {
+        const raw = JSON.parse(json);
+        if (!raw.label || !raw.skyColorTop || !raw.skyColorBot || typeof raw.sunAngle !== "number") {
+            return null;
+        }
+        return {
+            label: raw.label,
+            skyColorTop: raw.skyColorTop,
+            skyColorBot: raw.skyColorBot,
+            sunAngle: raw.sunAngle,
+            exposure: raw.exposure ?? 1.0,
+            toneMapping: raw.toneMapping ?? 1,
+            ...deriveLighting(raw.skyColorTop, raw.sunAngle),
+        };
+    } catch {
+        return null;
+    }
+}

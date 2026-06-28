@@ -695,6 +695,7 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
             modelManager.focus(id);
             setStatus(`✓ ${displayName} (场景)`, true);
             modelManager.arrange();
+            _refreshWaterRenderList();
             return;
         }
 
@@ -735,6 +736,7 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
         modelManager.focus(id);
         setStatus(appliedVmd ? `✓ ${displayName} + ${appliedVmd}` : `✓ ${displayName}`, true);
         modelManager.arrange();
+        _refreshWaterRenderList();
         // Auto-capture thumbnail for future popup display
         captureThumbnail(filePath).catch(() => {});
         if (!skipAutoApply) {
@@ -875,6 +877,7 @@ export function removeModel(id: string): void {
 
     // Delegate registry management + focus + bone overlay + mesh disposal to ModelManager
     modelManager.remove(id);
+    _refreshWaterRenderList();
 
     // Concert mode has no model to track after removal — fall back to orbit
     if (focusedModelId === null && getCameraMode() === "concert") {
@@ -1290,6 +1293,52 @@ export function getEnvSunAngle(): number {
     return envSunAngle;
 }
 
+// ======== Time-of-Day Animation ========
+
+let _timeOfDayActive = false;
+let _timeOfDaySpeed = 3; // 度/秒（模拟时间）
+let _lastSkySunAngle = 90; // 上一帧天空纹理对应的 sunAngle
+
+function _timeOfDayTick(): void {
+    if (!_timeOfDayActive) return;
+    const dt = scene.getAnimationRatio() * (1 / 60);
+    envSunAngle += _timeOfDaySpeed * dt;
+    if (envSunAngle > 90) { envSunAngle = -15; }
+    if (envSunAngle < -15) { envSunAngle = 90; }
+
+    _updateSunDisc();
+    redoEnvAutoLink();
+
+    // 天空纹理每 0.4° 重建一次（避免每帧创建 Canvas）
+    if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
+        _lastSkySunAngle = envSunAngle;
+        if (envState.skyMode === "procedural") {
+            _applySky(envState);
+        }
+    }
+}
+
+export function startTimeOfDay(speed?: number): void {
+    if (speed !== undefined) _timeOfDaySpeed = speed;
+    if (_timeOfDayActive) return;
+    _timeOfDayActive = true;
+    _lastSkySunAngle = envSunAngle;
+    scene.onBeforeRenderObservable.add(_timeOfDayTick);
+}
+
+export function stopTimeOfDay(): void {
+    _timeOfDayActive = false;
+    scene.onBeforeRenderObservable.removeCallback(_timeOfDayTick);
+}
+
+export function isTimeOfDayActive(): boolean {
+    return _timeOfDayActive;
+}
+
+export function getTimeOfDaySpeed(): number {
+    return _timeOfDaySpeed;
+}
+
 /** 根据当前天空色 + 太阳角重新推导光照（滑块变化后调�?*/
 export function redoEnvAutoLink(): void {
     if (!envAutoLink || envState.skyMode !== "procedural") return;
@@ -1395,6 +1444,11 @@ export function setEnvState(partial: Partial<EnvState>): void {
         _createWater(envState);
     }
 
+    // Update water animation speed without full recreation
+    if (partial.waterAnimSpeed !== undefined && _envSys.water.material) {
+        (_envSys.water.material as WaterMaterial).windForce = partial.waterAnimSpeed * 4;
+    }
+
     triggerAutoSave();
 }
 
@@ -1472,12 +1526,15 @@ function _disposeSky(): void {
     _disposeSunDisc();
 }
 
-function _buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness: number): Texture {
+function _buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness: number, sunAngle: number = 45): Texture {
+    const W = 256, H = 256;
     const canvas = document.createElement("canvas");
-    canvas.width = 2;
-    canvas.height = 256;
+    canvas.width = W;
+    canvas.height = H;
     const ctx = canvas.getContext("2d")!;
-    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+
+    // Vertical gradient (top→bot → zenith→ground)
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
     const scale = (c: Color3) => `rgb(${c.r*brightness*255|0},${c.g*brightness*255|0},${c.b*brightness*255|0})`;
     grad.addColorStop(0, scale(bot));
     grad.addColorStop(0.35, scale(bot));
@@ -1485,7 +1542,26 @@ function _buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness
     grad.addColorStop(0.65, scale(top));
     grad.addColorStop(1, scale(top));
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 2, 256);
+    ctx.fillRect(0, 0, W, H);
+
+    // Sun glow — radial gradient at sun position on the dome
+    // Canvas y maps to sphere V: top=zenith(V=1), bottom=nadir(V=0), horizon at y=128
+    const sunY = 128 - sunAngle * (256 / 180);
+    const sunX = W / 2;
+
+    if (sunAngle > -5) {
+        const glowRadius = sunAngle > 60 ? 50 : sunAngle > 20 ? 65 : 80;
+        const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, glowRadius);
+        glow.addColorStop(0, "rgba(255,255,240,0.95)");
+        glow.addColorStop(0.08, "rgba(255,255,220,0.85)");
+        glow.addColorStop(0.2, "rgba(255,245,200,0.5)");
+        glow.addColorStop(0.4, "rgba(255,235,170,0.18)");
+        glow.addColorStop(0.7, "rgba(255,220,140,0.04)");
+        glow.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(sunX - glowRadius, sunY - glowRadius, glowRadius * 2, glowRadius * 2);
+    }
+
     const tex = new Texture("data:" + canvas.toDataURL("image/png"), scene, false);
     tex.wrapU = Texture.CLAMP_ADDRESSMODE;
     tex.wrapV = Texture.CLAMP_ADDRESSMODE;
@@ -1507,6 +1583,7 @@ function _createProceduralSky(state: EnvState): void {
         new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
         new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
         state.skyBrightness,
+        envSunAngle,
     );
     mat.disableLighting = true;
     mat.backFaceCulling = false;
@@ -1569,6 +1646,7 @@ function _applySky(state: EnvState): void {
                 new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
                 new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
                 state.skyBrightness,
+                envSunAngle,
             );
             return;
         }
@@ -1661,20 +1739,55 @@ function _applyGround(state: EnvState): void {
 
 // ======== Water System ========
 
+// 2D Perlin noise — compact implementation for water bump texture
+function _perlinHash(x: number, y: number): number {
+    let h = (x * 374761393 + y * 668265263) | 0;
+    h = (h ^ (h >>> 13)) * 1274126177;
+    h = (h ^ (h >>> 16)) | 0;
+    return (h & 0x7fffffff) / 0x7fffffff; // [0, 1]
+}
+function _perlin2D(x: number, y: number): number {
+    const xi = x | 0, yi = y | 0;
+    const xf = x - xi, yf = y - yi;
+    const u = xf * xf * (3 - 2 * xf);
+    const v = yf * yf * (3 - 2 * yf);
+    const n00 = _perlinHash(xi, yi);
+    const n10 = _perlinHash(xi + 1, yi);
+    const n01 = _perlinHash(xi, yi + 1);
+    const n11 = _perlinHash(xi + 1, yi + 1);
+    return (1 - u) * (1 - v) * n00 + u * (1 - v) * n10 + (1 - u) * v * n01 + u * v * n11;
+}
+/** Fractional Brownian Motion: multi-octave Perlin noise for rich water detail. */
+function _fbmNoise(x: number, y: number, octaves: number = 5): number {
+    let v = 0, amp = 1, freq = 1, total = 0;
+    for (let i = 0; i < octaves; i++) {
+        v += amp * _perlin2D(x * freq, y * freq);
+        total += amp;
+        amp *= 0.5;
+        freq *= 2.17;
+    }
+    return (v / total) * 0.5 + 0.5; // normalize to [0, 1]
+}
+
 let _waterBumpTexture: Texture | null = null;
 function _makeWaterBumpTexture(): Texture {
     if (_waterBumpTexture) return _waterBumpTexture;
+    const S = 256;
     const canvas = document.createElement("canvas");
-    canvas.width = 128;
-    canvas.height = 128;
+    canvas.width = S;
+    canvas.height = S;
     const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "rgb(128,128,255)";
-    ctx.fillRect(0, 0, 128, 128);
-    const img = ctx.getImageData(0, 0, 128, 128);
-    for (let i = 0; i < img.data.length; i += 4) {
-        const n = (Math.random() - 0.5) * 50;
-        img.data[i] = Math.max(0, Math.min(255, 128 + n));
-        img.data[i + 1] = Math.max(0, Math.min(255, 128 + n));
+    const img = ctx.createImageData(S, S);
+    const freq = 6.0; // base feature size
+    for (let y = 0; y < S; y++) {
+        for (let x = 0; x < S; x++) {
+            const i = (y * S + x) * 4;
+            const n = _fbmNoise(x / freq, y / freq, 5);
+            img.data[i] = 128 + (n - 0.5) * 128;      // R normal perturb
+            img.data[i + 1] = 128 + (n - 0.5) * 128;  // G normal perturb
+            img.data[i + 2] = 255;                      // B neutral
+            img.data[i + 3] = 255;                      // A opaque
+        }
     }
     ctx.putImageData(img, 0, 0);
     _waterBumpTexture = new Texture(canvas.toDataURL(), scene);
@@ -1696,7 +1809,7 @@ function _createWater(state: EnvState): void {
 
     const water = new WaterMaterial("envWaterMat", scene, new Vector2(size, size));
     water.bumpTexture = _makeWaterBumpTexture();
-    water.windForce = 4;
+    water.windForce = (state.waterAnimSpeed ?? 1) * 4;
     water.waveHeight = state.waterWaveHeight;
     water.bumpHeight = 0.15;
     water.waveLength = 0.08;
@@ -1725,6 +1838,11 @@ function _disposeWater(): void {
         _envSys.water.material.dispose();
         _envSys.water.material = null;
     }
+}
+
+function _refreshWaterRenderList(): void {
+    if (!envState.waterEnabled || !_envSys.water.mesh) return;
+    _createWater(envState);
 }
 
 // ======== Particle System (Phase 8) ========
@@ -2106,6 +2224,8 @@ function _disposeClouds(): void {
 }
 
 let _envUpdateObserver: Observer<Scene> | null = null;
+let _underwaterActive = false;
+let _underwaterSavedFog: { mode: number; color: Color3; density: number } | null = null;
 function _ensureEnvUpdateObserver(): void {
     if (_envUpdateObserver) return;
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
@@ -2119,6 +2239,31 @@ function _ensureEnvUpdateObserver(): void {
                     const speedMul = key === "postProcess2" ? 0.85 : 1.0;
                     m.position.x += dx * speedMul;
                     m.position.z += dz * speedMul;
+                }
+            }
+        }
+        // Underwater post-processing: camera below water surface
+        if (envState.waterEnabled && scene.activeCamera) {
+            const camY = scene.activeCamera.globalPosition.y;
+            const underwater = camY < envState.waterLevel;
+            if (underwater !== _underwaterActive) {
+                _underwaterActive = underwater;
+                pipeline.chromaticAberrationEnabled = underwater;
+                pipeline.chromaticAberration = underwater ? 20 : 0;
+                if (underwater && !_underwaterSavedFog) {
+                    _underwaterSavedFog = {
+                        mode: scene.fogMode,
+                        color: scene.fogColor.clone(),
+                        density: scene.fogDensity,
+                    };
+                    scene.fogMode = Scene.FOGMODE_EXP2;
+                    scene.fogColor = new Color3(0.08, 0.2, 0.45);
+                    scene.fogDensity = 0.015;
+                } else if (!underwater && _underwaterSavedFog) {
+                    scene.fogMode = _underwaterSavedFog.mode;
+                    scene.fogColor = _underwaterSavedFog.color;
+                    scene.fogDensity = _underwaterSavedFog.density;
+                    _underwaterSavedFog = null;
                 }
             }
         }

@@ -14,7 +14,7 @@ import { MmdCamera } from "babylon-mmd/esm/Runtime/mmdCamera";
 import { focusedModelId, modelRegistry } from "../core/config";
 
 // ======== Types ========
-export type CameraMode = "orbit" | "freefly" | "concert" | "vmd";
+export type CameraMode = "orbit" | "freefly" | "concert" | "oneshot" | "vmd";
 
 /** Orbit camera parameters. */
 export interface OrbitParams {
@@ -72,6 +72,10 @@ let _cameraMode: CameraMode = "orbit";
 let _currentCamera: Camera | null = null;
 let _concertUpdateFn: (() => void) | null = null;
 let _concertAngle = 0;
+let _concertPaused = false;
+
+export function getConcertPaused(): boolean { return _concertPaused; }
+export function setConcertPaused(paused: boolean): void { _concertPaused = paused; }
 
 // ======== Camera VMD ========
 let _mmdCamera: MmdCamera | null = null;
@@ -250,6 +254,9 @@ export function switchCameraMode(mode: CameraMode): void {
         case "concert":
             newCam = createConcertCamera(scene);
             break;
+        case "oneshot":
+            newCam = createOneshotCamera(scene, canvas);
+            break;
         case "vmd":
             newCam = createVmdCamera(scene);
             break;
@@ -372,8 +379,10 @@ function startConcert(scene: Scene): void {
         const cam = _currentCamera;
         if (!cam || !(cam instanceof ArcRotateCamera)) return;
         const p = _currentPreset.concert;
-        const delta = scene.getAnimationRatio() * p.speed * 0.016;
-        _concertAngle += delta;
+        if (!_concertPaused) {
+            const delta = scene.getAnimationRatio() * p.speed * 0.016;
+            _concertAngle += delta;
+        }
         cam.alpha = -Math.PI / 2 + _concertAngle;
         cam.radius = p.radius;
         cam.beta = Math.PI / 3;

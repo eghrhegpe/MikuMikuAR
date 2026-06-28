@@ -18,6 +18,8 @@ import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { MmdWasmModel } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmModel";
 
 import { ModelInstance, setFocusedModelId, focusedModelId as configFocusedId, type PhysicsCategory } from "../core/config";
+import type { ClothInstance } from "../physics/xpbd-cloth";
+import { disposeCloth } from "../physics/xpbd-cloth";
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
@@ -97,6 +99,63 @@ export class ModelManager {
         private autoFrame: (center: Vector3, extent: number) => void,
     ) {}
 
+    // ======== XPBD Cloth Management ========
+
+    /** XPBD 布料实例（key = model ID） */
+    readonly clothInstances = new Map<string, ClothInstance>();
+    private _clothUpdateObserver: Observer<Scene> | null = null;
+
+    /**
+     * 获取当前聚焦模型的指定骨骼世界矩阵（列主序 Float32Array[16]）。
+     * 用于 XPBD 布料锚点跟随。
+     */
+    getBoneWorldMatrix(boneName: string): Float32Array | null {
+        const mmd = this.focusedMmdModel();
+        if (!mmd) return null;
+        const bone = mmd.runtimeBones.find(b => b.name === boneName);
+        if (!bone) return null;
+        return bone.worldMatrix; // already Float32Array[16], column-major
+    }
+
+    /** 为指定模型添加布料实例并关联每帧回调。 */
+    addCloth(modelId: string, cloth: ClothInstance, updateFn: (dt: number) => void): void {
+        cloth.updateFn = updateFn;
+        this.clothInstances.set(modelId, cloth);
+        this.ensureClothUpdateObserver();
+    }
+
+    /** 移除并销毁指定模型的布料实例。 */
+    removeCloth(modelId: string): void {
+        const cloth = this.clothInstances.get(modelId);
+        if (cloth) {
+            try { disposeCloth(cloth); } catch (e) { console.warn("removeCloth: disposeCloth failed", e); }
+            this.clothInstances.delete(modelId);
+        }
+        if (this.clothInstances.size === 0) {
+            this._disposeClothObserver();
+        }
+    }
+
+    private ensureClothUpdateObserver(): void {
+        if (this._clothUpdateObserver) return;
+        this._clothUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
+            const dt = this.scene.deltaTime / 1000; // ms → s
+            for (const [id, cloth] of this.clothInstances) {
+                if (!cloth.enabled || !cloth.updateFn) continue;
+                // 如果模型已被移除，跳过
+                if (!this.modelRegistry.has(id)) continue;
+                try { cloth.updateFn(dt); } catch (e) { console.warn("cloth updateFn error:", e); }
+            }
+        });
+    }
+
+    private _disposeClothObserver(): void {
+        if (this._clothUpdateObserver) {
+            this.scene.onBeforeRenderObservable.remove(this._clothUpdateObserver);
+            this._clothUpdateObserver = null;
+        }
+    }
+
     // ======== Registry ========
 
     /** Get a model by ID. Returns undefined if not found. */
@@ -150,6 +209,9 @@ export class ModelManager {
     remove(id: string): void {
         const inst = this.modelRegistry.get(id);
         if (!inst) return;
+
+        // Clean up cloth before disposing meshes
+        this.removeCloth(id);
 
         if (inst.mmdModel) {
             // mmdRuntime.destroyMmdModel is called externally (scene.ts loadPMXFile)
@@ -508,6 +570,11 @@ export class ModelManager {
         if (this._boneUpdateObserver) {
             this.scene.onBeforeRenderObservable.remove(this._boneUpdateObserver);
             this._boneUpdateObserver = null;
+        }
+        this._disposeClothObserver();
+        // Dispose all remaining cloth instances
+        for (const id of Array.from(this.clothInstances.keys())) {
+            this.removeCloth(id);
         }
     }
 

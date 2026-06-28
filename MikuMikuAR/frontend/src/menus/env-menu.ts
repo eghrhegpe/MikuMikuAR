@@ -286,6 +286,7 @@ export function buildWaterLevel(): PopupLevel {
             addColorSliderRow(container, "水色", s.waterColor, (v) => setEnvState({ waterColor: v }));
             addSliderRow(container, "透明度", s.waterTransparency, 0, 1, 0.05, (v) => setEnvState({ waterTransparency: v }), "lucide:eye");
             addSliderRow(container, "波高", s.waterWaveHeight, 0, 3, 0.1, (v) => setEnvState({ waterWaveHeight: v }), "lucide:waves");
+            addSliderRow(container, "动画速度", s.waterAnimSpeed ?? 1, 0.1, 5, 0.1, (v) => setEnvState({ waterAnimSpeed: v }), "lucide:fast-forward");
             addSliderRow(container, "范围", s.waterSize, 10, 200, 5, (v) => setEnvState({ waterSize: v }), "lucide:maximize");
         },
     };

@@ -157,6 +157,7 @@ export interface EnvState {
     waterTransparency: number;
     waterWaveHeight: number;
     waterSize: number;
+    waterAnimSpeed: number;   // 水体动画速度倍率 0.1~5
 
     cloudsEnabled: boolean;
     cloudCover: number;
@@ -306,6 +307,7 @@ export let envState: EnvState = {
     waterTransparency: 0.8,
     waterWaveHeight: 0.5,
     waterSize: 50,
+    waterAnimSpeed: 1,
 
     cloudsEnabled: false,
     cloudCover: 0.5,

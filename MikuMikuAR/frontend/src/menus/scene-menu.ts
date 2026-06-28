@@ -15,6 +15,7 @@ import {
     getOrbitParams, setOrbitParams,
     getFreeflyParams, setFreeflyParams,
     getConcertParams, setConcertParams,
+    getConcertPaused, setConcertPaused,
     type CameraMode,
 } from "../scene/camera";
 import { getLightState, setLightState, triggerAutoSave, serializeScene, deserializeScene, getRenderState, setRenderState, loadCameraVmdFromPath } from "../scene/scene";
@@ -270,6 +271,7 @@ function buildCameraLevel(): PopupLevel {
             { kind: "action", label: "轨道", icon: currentMode === "orbit" ? "check" : "circle", target: "camera:orbit", sublabel: "默认轨道相机" },
             { kind: "action", label: "自由飞行", icon: currentMode === "freefly" ? "check" : "circle", target: "camera:freefly", sublabel: "WASD 自由移动" },
             { kind: "action", label: "演唱会", icon: currentMode === "concert" ? "check" : "circle", target: "camera:concert", sublabel: "环绕角色旋转" },
+            { kind: "action", label: "单拍", icon: currentMode === "oneshot" ? "check" : "circle", target: "camera:oneshot", sublabel: "自动构图拍摄" },
             ...((vmdLoaded ? [
                 { kind: "divider" } as PopupRow,
                 { kind: "action" as const, label: "VMD 相机", icon: currentMode === "vmd" ? "check" : "circle", target: "camera:vmd", sublabel: vmdName || "相机轨道" } as PopupRow,
@@ -278,6 +280,9 @@ function buildCameraLevel(): PopupLevel {
             { kind: "divider" } as PopupRow,
             { kind: "action" as const, label: "加载相机 VMD", icon: "upload", target: "camera:load-vmd", sublabel: "从 .vmd 文件加载相机轨道" } as PopupRow,
             { kind: "divider" } as PopupRow,
+            ...((currentMode === "concert" ? [
+                { kind: "action" as const, label: getConcertPaused() ? "▶ 恢复旋转" : "⏸ 暂停旋转", icon: getConcertPaused() ? "play" : "pause", target: "camera:concert:toggle" } as PopupRow,
+            ] : []) as PopupRow[]),
             { kind: "folder" as const, label: "轨道设置", icon: "settings", target: "camera:params:orbit" } as PopupRow,
             { kind: "folder" as const, label: "自由飞行设置", icon: "settings", target: "camera:params:freefly" } as PopupRow,
             { kind: "folder" as const, label: "演唱会设置", icon: "settings", target: "camera:params:concert" } as PopupRow,
@@ -330,10 +335,18 @@ function renderFreeflyParams(container: HTMLElement): void {
     const p = getFreeflyParams();
     addSliderRow(container, "移动速度", p.speed, 0.1, 5, 0.1, (v) => {
         setFreeflyParams({ speed: v });
+        if (getCameraMode() === "freefly") {
+            const cam = getCurrentCamera() as any;
+            if (cam?.speed !== undefined) cam.speed = v;
+        }
         triggerAutoSave();
     }, "lucide:move");
     addSliderRow(container, "鼠标灵敏度", p.angularSensibility, 500, 5000, 100, (v) => {
         setFreeflyParams({ angularSensibility: v });
+        if (getCameraMode() === "freefly") {
+            const cam = getCurrentCamera() as any;
+            if (cam?.angularSensibility !== undefined) cam.angularSensibility = v;
+        }
         triggerAutoSave();
     }, "lucide:mouse-pointer");
 }
@@ -352,6 +365,10 @@ function renderConcertParams(container: HTMLElement): void {
         setConcertParams({ speed: v });
         triggerAutoSave();
     }, "lucide:rotate-cw");
+    addToggleRow(container, getConcertPaused() ? "已暂停" : "旋转中", !getConcertPaused(), (enabled) => {
+        setConcertPaused(!enabled);
+        triggerAutoSave();
+    });
 }
 
 function buildLightLevel(): PopupLevel {
@@ -721,8 +738,15 @@ function handleSceneAction(row: PopupRow): void {
         setStatus("✓ 已清除相机 VMD", true);
         return;
     }
+    if (row.target === "camera:concert:toggle") {
+        const current = getConcertPaused();
+        setConcertPaused(!current);
+        refreshCameraLevel();
+        setStatus(current ? "▶ 演唱会旋转已恢复" : "⏸ 演唱会旋转已暂停", true);
+        return;
+    }
     // Camera mode switching
-    if (row.target && row.target.startsWith("camera:") && !row.target.includes(":params:")) {
+    if (row.target && row.target.startsWith("camera:") && !row.target.includes(":params:") && !row.target.includes(":concert:")) {
         const mode = row.target.replace("camera:", "") as CameraMode;
         if (mode === "vmd" && !hasCameraVmd()) {
             setStatus("✗ 请先加载相机 VMD", false);
@@ -732,7 +756,7 @@ function handleSceneAction(row: PopupRow): void {
         refreshCameraLevel();
         const labels: Record<string, string> = {
             orbit: "轨道", freefly: "自由飞行",
-            concert: "演唱会", vmd: "VMD 相机",
+            concert: "演唱会", oneshot: "单拍", vmd: "VMD 相机",
         };
         setStatus(`✓ 相机: ${labels[mode] || mode}`, true);
         return;
