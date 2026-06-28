@@ -22,15 +22,21 @@ import { getLightState, setLightState, triggerAutoSave, serializeScene, deserial
 import type { RenderState } from "../scene/scene";
 import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectVMDMotion, SelectDir, SaveScreenshot,
     GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene } from "../../wailsjs/go/main/App";
-import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, getLipSyncState, setLipSyncEnabled, setLipSyncSensitivity, setLipSyncIntensity } from "../scene/scene";
+import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, getLipSyncState, setLipSyncEnabled, setLipSyncSensitivity, setLipSyncIntensity, scene, modelManager } from "../scene/scene";
 import { modelRegistry, focusedModelId, setFocusedModelId } from "../core/config";
 import type { ProcMotionMode } from "../motion/procedural-motion";
 import { buildEnvLevel, buildSkyLevel, buildGroundLevel, buildParticleLevel, buildWindLevel, buildCloudLevel, buildEnvLightingLevel, buildPresetLevel, setEnvMenuStack } from "./env-menu";
+import { createCloth, buildClothUpdateFn, disposeCloth, type ClothInstance, DEFAULT_CLOTH_CONFIG } from "../physics/xpbd-cloth";
+import { SdfCollider, DEFAULT_BODY_CAPSULES } from "../physics/xpbd-collider";
 
 // ======== Scene Menu (SlideMenu) ========
 
 let sceneStack: SlideMenu | null = null;
 export function getSceneStack(): SlideMenu | null { return sceneStack; }
+
+// XPBD Cloth simulation state
+let clothEnabled = false;
+let clothConfig: Partial<typeof DEFAULT_CLOTH_CONFIG> = {};
 
 function buildSceneRoot(): PopupLevel {
     return {
@@ -437,15 +443,137 @@ function buildPhysicsLevel(): PopupLevel {
     return {
         label: "物理",
         dir: "",
-        items: [],
+        items: [
+            { kind: "folder", label: "布料参数", icon: "lucide:scarf", target: "scene:physics:cloth", sublabel: clothEnabled ? "已启用" : "未启用" },
+        ],
         renderCustom: (container) => {
             container.style.padding = "12px 14px";
+
+            // Cloth simulation toggle
+            addToggleRow(container, "布料模拟", clothEnabled, (v) => {
+                clothEnabled = v;
+                if (v) {
+                    _createClothForFocusedModel();
+                } else {
+                    _destroyClothForFocusedModel();
+                }
+                sceneStack?.reRender();
+            }, "lucide:scarf");
+
+            // Gravity slider
             const gravity = getGravityStrength();
             addSliderRow(container, "物理重力", gravity, 0, 2, 0.05, (v) => {
                 setGravityStrength(v);
             }, "lucide:arrow-down");
         },
     };
+}
+
+function buildClothParamsLevel(): PopupLevel {
+    const cfg = { ...DEFAULT_CLOTH_CONFIG, ...clothConfig };
+    return {
+        label: "布料参数",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            container.style.padding = "8px 6px";
+
+            addSliderRow(container, "裙长", cfg.length, 0.2, 1.5, 0.05, (v) => {
+                clothConfig.length = v;
+                _recreateCloth();
+            }, "lucide:ruler");
+
+            addSliderRow(container, "裙摆角度", cfg.slope, 0, 45, 1, (v) => {
+                clothConfig.slope = v;
+                _recreateCloth();
+            }, "lucide:triangle");
+
+            addSliderRow(container, "腰部半径", cfg.innerRadius, 0.05, 0.4, 0.01, (v) => {
+                clothConfig.innerRadius = v;
+                _recreateCloth();
+            }, "lucide:circle");
+
+            addSliderRow(container, "布料柔度", cfg.compliance, 0, 0.01, 0.0005, (v) => {
+                clothConfig.compliance = v;
+                _recreateCloth();
+            }, "lucide:wind");
+
+            addSliderRow(container, "弯曲柔度", cfg.bendCompliance, 0, 0.05, 0.001, (v) => {
+                clothConfig.bendCompliance = v;
+                _recreateCloth();
+            }, "lucide:curl");
+
+            addSliderRow(container, "阻尼", cfg.damping, 0.8, 0.999, 0.001, (v) => {
+                clothConfig.damping = v;
+                _recreateCloth();
+            }, "lucide:droplet");
+
+            addSliderRow(container, "重力倍率", cfg.gravityScale, 0.1, 3, 0.1, (v) => {
+                clothConfig.gravityScale = v;
+                _recreateCloth();
+            }, "lucide:arrow-down");
+
+            addSliderRow(container, "水平分段", cfg.segmentsH, 12, 36, 2, (v) => {
+                clothConfig.segmentsH = v;
+                _recreateCloth();
+            }, "lucide:grid");
+
+            addSliderRow(container, "垂直分段", cfg.segmentsV, 6, 20, 1, (v) => {
+                clothConfig.segmentsV = v;
+                _recreateCloth();
+            }, "lucide:columns");
+        },
+    };
+}
+
+/** Recreate cloth with current config (destroy + create). */
+function _recreateCloth(): void {
+    if (!clothEnabled) return;
+    _destroyClothForFocusedModel();
+    _createClothForFocusedModel();
+}
+
+function _createClothForFocusedModel(): void {
+    const id = focusedModelId;
+    if (!id || !modelManager) {
+        setStatus("⚠ 请先加载模型", false);
+        return;
+    }
+
+    const mmd = modelManager.focusedMmdModel();
+    if (!mmd) {
+        setStatus("⚠ 当前模型无 MMD 数据", false);
+        return;
+    }
+
+    // Build SDF collider
+    const collider = new SdfCollider();
+    collider.init(DEFAULT_BODY_CAPSULES);
+
+    // Build anchor matrix function
+    const anchorMatrixFn = (boneName: string): Float32Array | null => {
+        return modelManager.getBoneWorldMatrix(boneName);
+    };
+
+    // Merge config with defaults
+    const cfg = { ...DEFAULT_CLOTH_CONFIG, ...clothConfig };
+
+    // Create cloth
+    const cloth = createCloth(scene, cfg, collider);
+
+    // Build update function
+    const updateFn = buildClothUpdateFn(cloth, anchorMatrixFn, collider);
+
+    // Register with model manager
+    modelManager.addCloth(id, cloth, updateFn);
+
+    setStatus("✓ 布料模拟已启用", true);
+}
+
+function _destroyClothForFocusedModel(): void {
+    const id = focusedModelId;
+    if (!id || !modelManager) return;
+    modelManager.removeCloth(id);
 }
 
 function buildPostProcessLevel(): PopupLevel {
@@ -959,6 +1087,7 @@ export async function showSceneMenu(): Promise<void> {
                     case "scene:light": return buildLightLevel();
                     case "scene:render": return buildRenderLevel();
                     case "scene:physics": return buildPhysicsLevel();
+                    case "scene:physics:cloth": return buildClothParamsLevel();
                     case "scene:procmotion": return buildProcMotionLevel();
                     case "procmotion:mode": return buildProcMotionModeLevel();
                     case "scene:screenshot": return buildScreenshotLevel();

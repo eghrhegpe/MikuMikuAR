@@ -77,6 +77,10 @@ import { _catState, _matState, _matEnabled } from "./scene-material";
 import { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from "./scene-vmd";
 import { updatePlaybackUI, seekFromEvent } from "./scene-playback";
 
+// XPBD 布料模拟
+import { createCloth, buildClothUpdateFn, disposeCloth, type ClothInstance, type ClothConfig } from "../physics/xpbd-cloth";
+import { SdfCollider, DEFAULT_BODY_CAPSULES } from "../physics/xpbd-collider";
+
 // Re-export material system (extracted to scene-material.ts for file size)
 export { _catState, _matState, _matEnabled, _catOf, _applyAll, isMatEnabled, setMatEnabled, getMatCatGroups, getMatCatParams, setMatCatParams, resetMatCatParams, getMatDetailList, getMatParams, setMatParams, resetSingleMatParams, resetAllMatParams, getMatState, applyMatState } from "./scene-material";
 export type { MaterialCategoryParams, MaterialCategory } from "./scene-material";
