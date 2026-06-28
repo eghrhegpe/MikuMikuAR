@@ -43,7 +43,7 @@ offset 0x09: globals[N] → flags[0] = encoding (0=UTF-16LE, 1=UTF-8)
   3. 说明（本地）      4. 说明（通用）
 ```
 
-- UTF-16LE 手写解码（BMP 平面够用，含 surrogate pair 处理），UTF-8 直接 `string()`
+- UTF-16LE 解码用 `unicode/utf16.Decode` 标准库（替代旧手写实现），UTF-8 直接 `string()`
 - 失败返回空 `PMXMeta{}`，不阻断扫描
 
 #### 5.2 库目录扫描（`app.go:ScanModelDir`）

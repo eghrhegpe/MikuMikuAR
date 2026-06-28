@@ -31,6 +31,7 @@ import { RegisterDxBmpTextureLoader } from "babylon-mmd/esm/Loader/registerDxBmp
 import { GetMmdWasmInstance } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance";
 import { MmdWasmInstanceTypeSPR } from "babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease";
 import { MmdWasmRuntime } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime";
+import { MmdWasmPhysics } from "babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysics";
 import type { MmdWasmModel } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmModel";
 import { VmdLoader } from "babylon-mmd/esm/Loader/vmdLoader";
 import { MmdWasmAnimation } from "babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation";
@@ -552,7 +553,8 @@ export async function initScene(): Promise<void> {
     RegisterDxBmpTextureLoader();
     MmdRuntimeShared.MaterialProxyConstructor = MmdStandardMaterialProxy;
     const wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
-    const runtime = new MmdWasmRuntime(wasmInstance, scene);
+    const mmdWasmPhysics = new MmdWasmPhysics(scene);
+    const runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
     runtime.loggingEnabled = true;
     runtime.register(scene);
     setMmdRuntime(runtime);

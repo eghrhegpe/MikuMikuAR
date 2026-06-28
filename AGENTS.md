@@ -82,19 +82,19 @@ docs/
 | **每次会话起步** | 本文件 |
 | **接新任务** | `docs/requirements.md`（需求全貌）→ `docs/status.md`（当前状态 + 阻塞点） |
 | **改 Go 逻辑** | `docs/architecture.md`（整体架构）→ `MikuMikuAR/app.go` |
-| **改前端渲染** | `docs/architecture.md`（PMX/VMD 环节）→ `MikuMikuAR/frontend/src/scene.ts` |
-| **换装 / 纹理变体** | `docs/architecture.md` §16 → `frontend/src/outfit.ts` + `frontend/src/outfit-ui.ts` |
-| **音频 / VMD 同步** | `frontend/src/audio.ts` |
-| **场景菜单 / 相机 / 灯光 / 渲染** | `docs/architecture.md` §渲染环节 → `frontend/src/scene-menu.ts` + `frontend/src/camera.ts` |
-| **环境 / 天空 / 粒子** | `frontend/src/env-menu.ts` + `frontend/src/env-lighting.ts` |
-| **模型详情 / 材质调节 / 表情** | `frontend/src/model-detail.ts` + `frontend/src/model-material.ts` |
-| **文件 URL / HTTP 服务器 / 安全隔离** | `docs/architecture.md` §数据通道 | `frontend/src/fileservice.ts` |
-| **程序化动作 / 节拍检测** | `frontend/src/procedural-motion.ts` + `frontend/src/beat-detector.ts` |
-| **模型库 / 扫描 / zip 解压 / 缩略图** | `docs/architecture.md` §模型库管理 | `frontend/src/library-core.ts` + `frontend/src/library.ts` |
-| **VPD 姿势导入** | `frontend/src/vpd-parser.ts` |
-| **LipSync** | `frontend/src/lipsync.ts` |
-| **模型预设** | `frontend/src/model-preset.ts` + `docs/architecture.md` §场景序列化 |
-| **动作库弹窗 / 音乐 / 舞蹈套装** | `frontend/src/motion-popup.ts` |
+| **改前端渲染** | `docs/architecture.md`（PMX/VMD 环节）→ `frontend/src/scene/scene.ts` |
+| **换装 / 纹理变体** | `docs/architecture.md` §16 → `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
+| **音频 / VMD 同步** | `frontend/src/outfit/audio.ts` |
+| **场景菜单 / 相机 / 灯光 / 渲染** | `docs/architecture.md` §渲染环节 → `frontend/src/menus/scene-menu.ts` + `frontend/src/scene/camera.ts` |
+| **环境 / 天空 / 粒子** | `frontend/src/menus/env-menu.ts` + `frontend/src/scene/env-lighting.ts` |
+| **模型详情 / 材质调节 / 表情** | `frontend/src/menus/model-detail.ts` + `frontend/src/menus/model-material.ts` |
+| **文件 URL / HTTP 服务器 / 安全隔离** | `docs/architecture.md` §数据通道 | `frontend/src/core/fileservice.ts` |
+| **程序化动作 / 节拍检测** | `frontend/src/motion/procedural-motion.ts` + `frontend/src/motion/beat-detector.ts` |
+| **模型库 / 扫描 / zip 解压 / 缩略图** | `docs/architecture.md` §模型库管理 | `frontend/src/menus/library-core.ts` + `frontend/src/menus/library.ts` |
+| **VPD 姿势导入** | `frontend/src/motion/vpd-parser.ts` |
+| **LipSync** | `frontend/src/motion/lipsync.ts` |
+| **模型预设** | `frontend/src/menus/model-preset.ts` + `docs/architecture.md` §场景序列化 |
+| **动作库弹窗 / 音乐 / 舞蹈套装** | `frontend/src/menus/motion-popup.ts` |
 | **遇到加载问题** | `docs/troubleshooting.md` |
 | **查项目地基** | `docs/foundation.md` |
 | **查命名演变** | `docs/naming.md` |
@@ -105,6 +105,7 @@ docs/
 | **查技术选型理由** | `docs/requirements.md` §「技术选型决策」 |
 | **查项目路线图** | `docs/status.md` §「开发路线图」 |
 | **查调研细节** | 先问用户 → 再读 `docs/research/` 对应文件 |
+| **调 oh-my-opencode 子代理** | 本文件 §「Oh My OpenAgent 子代理」→ `~/.config/opencode/oh-my-openagent.jsonc` |
 
 ### 1.3 任务触发索引
 
@@ -112,26 +113,26 @@ docs/
 
 | 任务关键词 | 优先读 | 其次读 |
 |-----------|--------|--------|
-| MenuStack / 添加菜单项 / 弹窗导航 / `modelStack` | `docs/menu-architecture.md` | `frontend/src/menu.ts` |
+| MenuStack / 添加菜单项 / 弹窗导航 / `modelStack` | `docs/menu-architecture.md` | `frontend/src/menus/menu.ts` |
 | 前端 UI / CSS / 样式修改 | `docs/menu-architecture.md`（CSS 类说明） | `frontend/src/app.css` |
-| 3D 场景 / 模型加载 / PMX / VMD / 播放 | `docs/architecture.md` §渲染环节 | `frontend/src/scene.ts` |
-| 模型库 / 扫描 / zip 解压 / 缩略图 | `docs/architecture.md` §模型库管理 | `frontend/src/library-core.ts` + `frontend/src/library.ts` |
-| 文件 URL / HTTP 服务器 / 安全隔离 | `docs/architecture.md` §数据通道 | `frontend/src/fileservice.ts` |
-| 相机 / 灯光 / 渲染参数 / 后处理 | `docs/architecture.md` §渲染环节 | `frontend/src/scene-menu.ts` + `frontend/src/camera.ts` |
-| 环境 / 天空 / 粒子 / 地面 | `docs/architecture.md` §环境系统 | `frontend/src/env-menu.ts` + `frontend/src/env-lighting.ts` |
-| 材质调节 / 按部位 / 逐材质调参 | `docs/architecture.md` §材质系统 | `frontend/src/scene.ts`（`_catOf`/`_applyAll`/`setMatParams`）+ `frontend/src/model-material.ts` |
-| 模型详情 / 模型信息 / 可见性 / 变换 | `frontend/src/model-detail.ts`（`build*Level`） | `frontend/src/scene.ts`（`focusedModelId` → 已加载模型行点击进入） |
-| 配置 / 外部库 / Blender / MMD | `docs/architecture.md` §生态聚合 | `frontend/src/settings.ts` |
-| 场景序列化 / 自动保存 / libraryRef | `docs/architecture.md` §场景序列化 | `frontend/src/scene.ts` |
+| 3D 场景 / 模型加载 / PMX / VMD / 播放 | `docs/architecture.md` §渲染环节 | `frontend/src/scene/scene.ts` |
+| 模型库 / 扫描 / zip 解压 / 缩略图 | `docs/architecture.md` §模型库管理 | `frontend/src/menus/library-core.ts` + `frontend/src/menus/library.ts` |
+| 文件 URL / HTTP 服务器 / 安全隔离 | `docs/architecture.md` §数据通道 | `frontend/src/core/fileservice.ts` |
+| 相机 / 灯光 / 渲染参数 / 后处理 | `docs/architecture.md` §渲染环节 | `frontend/src/menus/scene-menu.ts` + `frontend/src/scene/camera.ts` |
+| 环境 / 天空 / 粒子 / 地面 | `docs/architecture.md` §环境系统 | `frontend/src/menus/env-menu.ts` + `frontend/src/scene/env-lighting.ts` |
+| 材质调节 / 按部位 / 逐材质调参 | `docs/architecture.md` §材质系统 | `frontend/src/scene/scene-material.ts`（`_catOf`/`_applyAll`/`setMatParams`）+ `frontend/src/menus/model-material.ts` |
+| 模型详情 / 模型信息 / 可见性 / 变换 | `frontend/src/menus/model-detail.ts`（`build*Level`） | `frontend/src/scene/scene-model.ts`（ModelManager）+ `frontend/src/scene/scene.ts`（`focusedModelId`） |
+| 配置 / 外部库 / Blender / MMD | `docs/architecture.md` §生态聚合 | `frontend/src/menus/settings.ts` |
+| 场景序列化 / 自动保存 / libraryRef | `docs/architecture.md` §场景序列化 | `frontend/src/scene/scene.ts` |
 | 修复 / Bug / 崩溃 / 不显示 | `docs/troubleshooting.md` | `docs/fix-cycle.md` |
 | Go 后端 / Binding / 文件操作 | `docs/architecture.md` §Go 后端 | `MikuMikuAR/app.go` |
-| 换装 / 纹理变体 / outfits.json | `docs/architecture.md` §16 | `frontend/src/outfit.ts` + `frontend/src/outfit-ui.ts` |
-| 音频 / 音乐 / VMD 同步 | `frontend/src/audio.ts` | `frontend/src/scene.ts`（`syncAudioPlayback`） |
-| 程序化动作 / Idle / Auto Dance | `frontend/src/procedural-motion.ts` | `frontend/src/beat-detector.ts` |
-| VPD 姿势导入 | `frontend/src/vpd-parser.ts` | `docs/architecture.md` §VMD 环节 |
-| LipSync / 口型同步 | `frontend/src/lipsync.ts` | — |
-| 舞蹈套装 / 动作库弹窗 | `frontend/src/motion-popup.ts` | `frontend/src/library-core.ts` |
-| 模型预设 / 自动应用 | `frontend/src/model-preset.ts` | `frontend/src/model-detail.ts`（`buildPresetListLevel`） |
+| 换装 / 纹理变体 / outfits.json | `docs/architecture.md` §16 | `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
+| 音频 / 音乐 / VMD 同步 | `frontend/src/outfit/audio.ts` | `frontend/src/scene/scene.ts`（`syncAudioPlayback`） |
+| 程序化动作 / Idle / Auto Dance | `frontend/src/motion/procedural-motion.ts` | `frontend/src/motion/beat-detector.ts` |
+| VPD 姿势导入 | `frontend/src/motion/vpd-parser.ts` | `docs/architecture.md` §VMD 环节 |
+| LipSync / 口型同步 | `frontend/src/motion/lipsync.ts` | — |
+| 舞蹈套装 / 动作库弹窗 | `frontend/src/menus/motion-popup.ts` | `frontend/src/menus/library-core.ts` |
+| 模型预设 / 自动应用 | `frontend/src/menus/model-preset.ts` | `frontend/src/menus/model-detail.ts`（`buildPresetListLevel`） |
 | 任何新增函数 | `docs/reusables.md`（先查是否已存在） | — |
 
 > `reusables.md` 是写代码前必查的索引表，不是让你全读的。按函数名/场景 grep。 |
@@ -269,68 +270,76 @@ MikuMikuAR/frontend/
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `init()` | `main.ts` | 应用启动入口 |
-| keyboard shortcuts | `main.ts` | Ctrl+1/2/3/4, Space, Escape, ←/→, WASD |
-| seek bar events | `main.ts` | pointerdown/move/up |
-| `closeAllOverlays()` | `config.ts` | 关闭所有弹窗 |
+| `init()` | `core/main.ts` | 应用启动入口 |
+| keyboard shortcuts | `core/main.ts` | Ctrl+1/2/3/4, Space, Escape, ←/→, WASD |
+| seek bar events | `core/main.ts` | pointerdown/move/up |
+| `closeAllOverlays()` | `core/config.ts` | 关闭所有弹窗 |
 
 #### 3D 场景 & 模型
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `engine`, `scene`, `camera` | `scene.ts` | Babylon.js 核心对象 |
-| `initScene()` | `scene.ts` | 注册 MMD loader、创建 runtime、地面 |
-| `loadPMXFile()` | `scene.ts` | HTTP 加载 PMX + `createMmdModel` |
-| `loadVMDMotion()` | `scene.ts` | ArrayBuffer → VMD → `createRuntimeAnimation` |
-| `loadVMDFromPath()` | `scene.ts` | 路径→HTTP fetch→`loadVMDMotion` |
-| `removeModel()` | `scene.ts` | 销毁 MMD 模型 + 清理 mesh |
-| `focusModel()` | `scene.ts` | 相机自动 framing |
-| `arrangeModels()` | `scene.ts` | 多模型横向排列 |
-| `updatePlaybackUI()` | `scene.ts` | 进度条 + 时间显示 |
-| `seekFromEvent()` | `scene.ts` | 点击/拖拽定位 |
+| `engine`, `scene`, `camera` | `scene/scene.ts` | Babylon.js 核心对象 |
+| `initScene()` | `scene/scene.ts` | 注册 MMD loader、创建 runtime、地面 |
+| `loadPMXFile()` | `scene/scene.ts` | HTTP 加载 PMX + `createMmdModel` |
+| `loadVMDMotion()` | `scene/scene-vmd.ts` | ArrayBuffer → VMD → `createRuntimeAnimation` |
+| `loadVMDFromPath()` | `scene/scene-vmd.ts` | 路径→HTTP fetch→`loadVMDMotion` |
+| `loadCameraVmdFromPath()` | `scene/scene-vmd.ts` | VMD 文件→相机轨道 |
+| `loadVPDPose()` | `scene/scene-vmd.ts` | VPD 姿势→VMD 帧→绑定 |
+| `removeModel()` | `scene/scene.ts`（委托 modelManager） | 销毁 MMD 模型 + 清理 mesh |
+| `focusModel()` | `scene/scene.ts`（委托 modelManager） | 相机自动 framing |
+| `arrangeModels()` | `scene/scene.ts`（委托 modelManager） | 多模型横向排列 |
+| `updatePlaybackUI()` | `scene/scene-playback.ts` | 进度条 + 时间显示 |
+| `seekFromEvent()` | `scene/scene-playback.ts` | 点击/拖拽定位 |
+| `ModelManager` | `scene/scene-model.ts` | 模型注册表 + 生命周期 + 属性管理 |
+| `focusedMmdModel()` | `scene/scene-model.ts`（->modelManager） | 当前聚焦模型的 WASM 对象 |
+| `focusedModel()` | `scene/scene-model.ts`（->modelManager） | 当前聚焦模型实例 |
+| `_catOf()`, `_applyAll()`, `setMatParams()` | `scene/scene-material.ts` | 材质分类/批量应用/按类设参 |
 
 #### 模型库 & 弹窗
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `togglePopup()`, `showPopup()`, `hidePopup()` | `library.ts` | 模型库弹窗开关 |
-| `showMotionPopup()`, `hideMotionPopup()` | `library.ts` | 动作库弹窗开关 |
-| `initLibrary()` | `library.ts` | 启动时加载配置 + 扫描模型库 |
-| `refreshLibrary()` | `library.ts` | 重新扫描 + 刷新弹窗 |
-| `loadThumbnailsForLevel()` | `library.ts` | 批量加载缩略图 |
-| `ensureModelMeta()` | `library.ts` | 按需解析 PMX header |
-| `buildLevel()`, `modelToRow()`, `onModelRowClick()` | `library-core.ts` | 文件浏览层级构建 |
-| `handlePopupSearchInput()` | `library.ts` | 搜索输入处理 |
-| `showSettings()` | `settings.ts` | 设置页（MenuStack） |
-| `buildSettings*Level()`, `handleSettingsAction()` | `settings.ts` | 设置页各层级构建与选项处理 |
-| `renderExternalList()` | `settings.ts` | 外部库管理列表 |
-| `MenuStack` | `menu.ts` | 通用菜单导航组件 |
+| `togglePopup()`, `showPopup()`, `hidePopup()` | `menus/library.ts` | 模型库弹窗开关 |
+| `showMotionPopup()`, `hideMotionPopup()` | `menus/library.ts` | 动作库弹窗开关 |
+| `initLibrary()` | `menus/library.ts` | 启动时加载配置 + 扫描模型库 |
+| `refreshLibrary()` | `menus/library.ts` | 重新扫描 + 刷新弹窗 |
+| `loadThumbnailsForLevel()` | `menus/library.ts` | 批量加载缩略图 |
+| `ensureModelMeta()` | `menus/library.ts` | 按需解析 PMX header |
+| `buildLevel()`, `modelToRow()`, `onModelRowClick()` | `menus/library-core.ts` | 文件浏览层级构建 |
+| `handlePopupSearchInput()` | `menus/library.ts` | 搜索输入处理 |
+| `showSettings()` | `menus/settings.ts` | 设置页（MenuStack） |
+| `buildSettings*Level()`, `handleSettingsAction()` | `menus/settings.ts` | 设置页各层级构建与选项处理 |
+| `renderExternalList()` | `menus/settings.ts` | 外部库管理列表 |
+| `MenuStack` | `menus/menu.ts` | 通用菜单导航组件 |
 
 #### 相机
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `switchCameraMode()` | `camera.ts` | 切换相机模式 |
-| `getCameraMode()` | `camera.ts` | 当前模式 |
-| `freeflyInput` | `camera.ts` | WASD 自由飞行输入状态 |
+| `switchCameraMode()` | `scene/camera.ts` | 切换相机模式 |
+| `getCameraMode()` | `scene/camera.ts` | 当前模式 |
+| `freeflyInput` | `scene/camera.ts` | WASD 自由飞行输入状态 |
+| `hasCameraVmd()`, `clearCameraVmd()`, `animateCameraVmd()` | `scene/camera.ts` | 相机 VMD 轨道 |
 
 #### 共享状态 & 工具
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `mmdRuntime`, `modelRegistry` | `config.ts` | 全局可变状态 |
-| `libraryRoot`, `allModels`, `popupStack` | `config.ts` | 模型库/弹窗状态 |
-| `thumbnailCache`, `modelMetaCache` | `config.ts` | 内存缓存 |
-| `displayNamePriority`, `cameraMode` | `config.ts` | 用户偏好 |
-| `dom` | `config.ts` | 所有 DOM 元素引用 |
-| `setStatus()`, `showHint()`, `hideHint()` | `config.ts` | 底部状态栏 |
-| `formatTime()`, `toBase64()`, `escapeHtml()`, `normPath()` | `config.ts` | 纯工具函数 |
+| `mmdRuntime`, `modelRegistry` | `core/config.ts` | 全局可变状态 |
+| `libraryRoot`, `allModels`, `popupStack` | `core/config.ts` | 模型库/弹窗状态 |
+| `thumbnailCache`, `modelMetaCache` | `core/config.ts` | 内存缓存 |
+| `displayNamePriority`, `cameraMode` | `core/config.ts` | 用户偏好 |
+| `dom` | `core/config.ts` | 所有 DOM 元素引用 |
+| `setStatus()`, `showHint()`, `hideHint()` | `core/config.ts` | 底部状态栏 |
+| `formatTime()`, `toBase64()`, `escapeHtml()` | `core/config.ts` | 纯工具函数 |
+| `normPath()` | `core/fileservice.ts` | 路径标准化（原在 config.ts） |
 
 #### 图标
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `getLucideIconMap()` | `icons.ts` | Lucide SVG 图标名称→JSX 映射（已废弃，迁移至 Iconify） |
+| `getLucideIconMap()` | `core/icons.ts` | Lucide SVG 图标名称→JSX 映射（已废弃，迁移至 Iconify） |
 
 ---
 
@@ -340,9 +349,9 @@ MikuMikuAR/frontend/
 
 | 文件 | 最多同时修改的 AI 数 | 原因 |
 |------|----------------------|------|
-| `frontend/src/config.ts` | **1** | 共享类型定义，合并冲突极高 |
-| `frontend/src/scene.ts` | **1** | 模块级副作用（import 即执行），diff 三向合并必碎 |
-| `frontend/src/model-detail.ts` | **1** | 同上 |
+| `frontend/src/core/config.ts` | **1** | 共享类型定义，合并冲突极高 |
+| `frontend/src/scene/scene.ts` | **1** | 模块级副作用（import 即执行），diff 三向合并必碎 |
+| `frontend/src/menus/model-detail.ts` | **1** | 同上 |
 | `app.go` | **1** | Wails binding 注册表，同名 binding 覆盖无提示 |
 | `frontend/wailsjs/go/` | **0**（不手动改） | Wails 自动生成，谁 build 谁覆盖 |
 | 其余 `*.ts` / `*.go` | 不限制 | 函数级新增，冲突概率低 |
@@ -416,3 +425,49 @@ git checkout --theirs path # 接受对方版本，重新 apply 自己的改动
 
 - AI 发现自己走过 20 轮还没收尾 → 主动提醒「是否拆小或开新窗口」
 - AI 发现自己需要反复读同一段代码来理解 → 建议提取到 `docs/reusables.md`
+
+## 八、Oh My OpenAgent 子代理
+
+> 本项目通过 `oh-my-opencode` 插件安装了多 agent 系统。主代理 Sisyphus 负责调度子代理。
+
+### 8.1 子代理速查
+
+| 子代理 | 角色 | 调用方式 |
+|--------|------|----------|
+| **Oracle** 🧠 | 高难度推理（审架构、复杂调试） | `task(subagent_type="oracle", ...)` |
+| **Hephaestus** 🔧 | 自主探索+端到端实现 | `task(subagent_type="hephaestus", ...)` |
+| **Hephaestus deep** | 同上，深度研究型 | `task(category="deep", ...)` |
+| **Explore** 🔎 | 代码库搜索 | `task(subagent_type="explore", ...)` 或直接用 `grep`（免费） |
+| **Librarian** 📚 | 查外部文档/开源代码 | `task(subagent_type="librarian", ...)` |
+| **Prometheus** 📋 | 战略规划（Tab 切 Plan 模式触发） | 自动触发 |
+| **Metis** 🔍 | 需求预分析 | `task(subagent_type="metis", ...)` |
+| **Momus** 🧐 | 方案评审 | `task(subagent_type="momus", ...)` |
+
+### 8.2 使用提示
+
+Sisyphus 可能习惯自己干活而不是调度子代理。复杂任务时加以下用语提醒：
+
+```
+用 Oracle 先审一下架构
+开 explore 搜一下现有模式
+让 Hephaestus 自己探索代码再实现
+用 Metis 分析一下这个需求有没有歧义
+用 Momus 评审一下方案
+```
+
+> **注意**：轻量搜索直接用 `grep`/`glob` 工具，免费且更快，不需要调子代理。
+
+### 8.3 当前模型配置
+
+> 详见 `~/.config/opencode/oh-my-openagent.jsonc`
+
+| Agent | 模型 | 级别 |
+|-------|------|------|
+| Sisyphus | deepseek-v4-flash | 便宜，只做调度 |
+| Oracle | deepseek-v4-pro | 唯一 Pro，硬推理 |
+| Hephaestus | deepseek-v4-flash-pro | 写代码主力 |
+| Metis / Momus | deepseek-v4-flash-pro | 分析/评审 |
+| Explore / Librarian / Looker / Atlas / Junior | deepseek-v4-flash | 搜索/轻活 |
+| Prometheus | 全局默认 flash | 偶尔触发 |
+
+> Oracle 是唯一吃 Pro 预算的。Sisyphus 天然支持调度 Oracle——硬活丢给它。

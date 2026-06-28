@@ -161,6 +161,7 @@ if (row.target === "models:physics") {
 ```
 设置                        ← 根菜单
 ├── 🎨 显示                → action: 日文名（name_jp）/ 英文名（name_en）/ 文件名（filename）
+├── 🎨 界面                → 子菜单：UI 缩放 / 高级设置（弹窗宽度/动画开关/背景模糊/主题色/字体/恢复默认）
 ├── ⬇ 下载                → action: 监听目录 / 自动导入
 ├── 🧰 软件管理            → 子菜单：扫描 software/ 目录，列出可执行程序
 ├── 🌐 语言                → action：简体中文 / English
@@ -170,7 +171,24 @@ if (row.target === "models:physics") {
 
 **代码入口**：`showSettings()` → `settingsStack.reset(rootLevel)`
 
-**特点**：所有叶子菜单项用 `kind: "action"`，通过 `handleSettingsAction()` 分发。
+**特点**：
+- 所有叶子菜单项用 `kind: "action"`，通过 `handleSettingsAction()` 分发。
+- 「界面」子菜单使用 `renderCustom` 渲染滑块（UI 缩放 0.8~1.3）、主题色预设（6 色块 + 自定义 hex）、字体切换（系统/思源黑体/微软雅黑）、toggle 开关（动画/模糊）。
+
+### 🌍 环境弹窗
+
+```
+环境 ← 根菜单
+├── ☀️ 环境光              → 子菜单：太阳角度 XZ + 环境光强度 + 半球光强度 + 天空颜色
+├── 🌫 雾                  → 子菜单：雾模式/颜色/密度/起始/结束
+├── 🌄 天空盒              → 子菜单：天空盒模式/颜色/贴图
+├── 🌊 地面                → 子菜单：地面可见性/透明度/网格/反射
+├── 💨 风                  → 子菜单：风向/风速/强度
+├── ☁️ 云                  → 子菜单：云量/速度/高度
+└── ✨ 粒子                → 子菜单：粒子类型/数量/速度/大小/颜色
+```
+
+**代码入口**：`showEnvMenu()` → `envStack.reset(rootItems)`（`env-menu.ts`）
 
 ---
 

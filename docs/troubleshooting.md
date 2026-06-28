@@ -15,7 +15,7 @@
 
 ### 涉及文件
 - `MikuMikuAR/app.go` — `StartFileServer`（HTTP 文件服务器）
-- `MikuMikuAR/frontend/src/main.ts` — `loadPMXFile`（HTTP URL 加载）
+- `MikuMikuAR/frontend/src/core/main.ts` — `loadPMXFile`（HTTP URL 加载）
 
 ---
 
@@ -79,7 +79,7 @@ Vite 预打包 babylon-mmd 时，`new URL('index_bg.wasm', import.meta.url)` 指
 
 ### 涉及文件
 - `MikuMikuAR/app.go` — `StartFileServer`（含日志）
-- `MikuMikuAR/frontend/src/main.ts` — `init()` 中加载器注册
+- `MikuMikuAR/frontend/src/core/main.ts` — `init()` 中加载器注册
 
 ---
 
@@ -127,7 +127,7 @@ console.log(BABYLON.ShaderStore.ShadersStore["textureAlphaCheckerVertexShader"])
 
 ### 涉及文件
 - `MikuMikuAR/frontend/vite.config.ts` — `optimizeDeps.exclude`
-- `MikuMikuAR/frontend/src/main.ts` — 删除 workaround，保留静态 import
+- `MikuMikuAR/frontend/src/core/main.ts` — 删除 workaround，保留静态 import
 
 ---
 
@@ -137,6 +137,6 @@ console.log(BABYLON.ShaderStore.ShadersStore["textureAlphaCheckerVertexShader"])
 ✅ 已修复。链路：`VmdLoader.loadFromBufferAsync()` → `MmdWasmAnimation` → `createRuntimeAnimation()` → `setRuntimeAnimation()` → `seekAnimation()` → `playAnimation()`。
 
 ### 涉及文件
-- `MikuMikuAR/frontend/src/main.ts` — `loadVMDMotion` 函数
+- `MikuMikuAR/frontend/src/core/main.ts` — `loadVMDMotion` 函数
 
 

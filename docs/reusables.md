@@ -149,10 +149,8 @@
 
 | 函数 | 位置 | 签名 | 用途 |
 |------|------|------|------|
-| `ParsePMXHeader` | `pmx.go:20` | `(path string) (*PMXMeta, error)` | 读 PMX 签名/版本/编码/4段元数据 |
+| `ParsePMXHeader` | `pmx.go:20` | `(path string) (*PMXMeta, error)` | 读 PMX 签名/版本/编码/4段元数据；编码解码用 unicode/utf16 标准库 |
 | `parsePMXHeaderBytes` | `pmx.go:38` | `(buf []byte) *PMXMeta` | 从 bytes 解析 PMX Header（zip 内条目用） |
-| `decodeUTF16LE` | `pmx.go:95` | `(b []byte) string` | UTF-16LE → string，含 surrogate pair 处理 |
-| `decodeUTF16` | `pmx.go:108` | `(u16 []uint16) string` | `[]uint16` → string |
 | `truncate` | `app.go` | `(s string, n int) string` | 截断到 n 个 rune + "…" |
 | `corsMiddleware` | `app.go` | `(next http.Handler) http.Handler` | 注入 CORS 头 |
 | `basenameFallbackFS` | `app.go` | `(root string, logFn ...) http.Handler` | HTTP 404 → 按文件名回退 |
@@ -160,7 +158,14 @@
 
 ---
 
-## TypeScript（`frontend/src/`）
+## TypeScript（`frontend/src/{core,scene,menus,motion,outfit}/`）
+
+> **文件夹结构（2026-06-28 重构后）**：
+> - `core/` — 入口、共享状态、工具函数（config, main, fileservice, ui-helpers, icons）
+> - `scene/` — 3D 场景核心 + 子模块（scene, scene-model, scene-material, scene-vmd, scene-playback, camera, env-lighting）
+> - `menus/` — 所有弹窗 UI（menu, library, library-core, model-detail, model-material, model-preset, motion-popup, scene-menu, env-menu, outfit-ui, settings）
+> - `motion/` — 程序化动作 + 文件格式（procedural-motion, vmd-writer, vpd-parser, beat-detector, lipsync）
+> - `outfit/` — 换装 + 音频（outfit, audio）
 
 | 函数 | 位置 | 签名 | 用途 |
 |------|------|------|------|
@@ -169,52 +174,141 @@
 
 | 类型 | 位置 | 字段 | 说明 |
 |------|------|------|------|
-| `ModelInstance` | `config.ts:9` | `id, name, filePath, meshes, kind, mmdModel?` | 运行时模型实例，kind="actor"\|"stage", mmdModel 可选 |
-| `ModelKind` | `config.ts:7` | `"actor" \| "stage"` | 模型类型，stage 跳过物理和 VMD 绑定 |
-| `LightState` | `scene.ts:117` | `hemiIntensity, dirIntensity, dirX/Y/Z` | 灯光参数，用于灯光面板和场景序列化 |
-| `CameraState` | `camera.ts:319` | `mode, alpha/beta/radius, targetX/Y/Z, positionX/Y/Z` | 相机状态，支持 ArcRotate + UniversalCamera |
-| `SceneFile` | `scene.ts:481` | `version, models[], camera, lights` | 场景 JSON 结构，含 libraryRef 可移植标识符 |
-| `LipSyncState` | `lipsync.ts` | `enabled, sensitivity, intensity` | LipSync 状态，序列化到 `SceneFile.lipSync` |
+| `ModelInstance` | `core/config.ts:9` | `id, name, filePath, meshes, kind, mmdModel?` | 运行时模型实例，kind="actor"\|"stage", mmdModel 可选 |
+| `ModelKind` | `core/config.ts:7` | `"actor" \| "stage"` | 模型类型，stage 跳过物理和 VMD 绑定 |
+| `LightState` | `scene/scene.ts:117` | `hemiIntensity, dirIntensity, dirX/Y/Z` | 灯光参数，用于灯光面板和场景序列化 |
+| `CameraState` | `scene/camera.ts:319` | `mode, alpha/beta/radius, targetX/Y/Z, positionX/Y/Z` | 相机状态，支持 ArcRotate + UniversalCamera |
+| `SceneFile` | `scene/scene.ts:481` | `version, models[], camera, lights` | 场景 JSON 结构，含 libraryRef 可移植标识符 |
+| `LipSyncState` | `motion/lipsync.ts` | `enabled, sensitivity, intensity` | LipSync 状态，序列化到 `SceneFile.lipSync` |
+| `PhysicsCategory` | `core/config.ts` | `"skirt" \| "chest" \| "hair" \| "accessory"` | 物理分类，按骨骼名正则匹配 |
+| `ProcMotionState` | `motion/procedural-motion.ts` | `{ mode, intensity, speed, autoSwitch }` | 程序化动作完整状态 |
 
 ### 工具函数
-| `escapeHtml` | `config.ts:154` | `(s: string) => string` | HTML 特殊字符转义，零依赖 |
-| `normPath` | `fileservice.ts:24` | `(p: string) => string` | 标准化路径：反斜杠→正斜杠；原在 config.ts，已迁入 fileservice |
-| `resolveFileUrl` | `fileservice.ts:11` | `(filePath: string) => Promise<{url,port,dir}>` | 统一 URL 构造：normPath → StartFileServer → HTTP URL |
-| `setStatus` | `config.ts:190` | `(text: string, ok: boolean) => void` | 更新状态栏文字 + 样式 |
-| `formatTime` | `config.ts:224` | `(seconds: number) => string` | 秒数 → `MM:SS` 格式 |
-| `toBase64` | `config.ts:231` | `(s: string) => string` | 字符串→base64（btoa 包装，统一 UTF-8 处理） |
-| `loadPMXFile` | `scene.ts:162` | `(filePath: string, asStage?: boolean) => Promise<void>` | HTTP 加载 PMX + MMD 运行时绑定 |
-| `loadVMDMotion` | `scene.ts:266` | `(data: ArrayBuffer, name: string) => Promise<void>` | ArrayBuffer → VMD 解析 → 绑定 → 播放 |
-| `loadVMDFromPath` | `scene.ts:314` | `(path: string) => Promise<void>` | `resolveFileUrl` → fetch → loadVMDMotion |
-| `initLibrary` | `library.ts:407` | `() => Promise<void>` | 启动时加载配置 + 库索引 + 后台刷新 |
-| `rescanAndSync` | `library.ts:453` | `(dir?: string) => Promise<LibraryModel[]>` | 重新扫描 + 同步状态；收拢 5 处重复 |
-| `refreshLibrary` | `library.ts:460` | `() => Promise<void>` | rescanAndSync + 清缓存 + 状态提示 + 刷新弹窗 |
-| `togglePopup` | `library.ts:123` | `() => void` | 打开/关闭模型库弹窗（已简化，删伪分支）|
-| `removeModel` | `scene.ts:347` | `(id: string) => void` | 销毁单个模型并释放资源 |
-| `focusModel` | `scene.ts:382` | `(id: string) => void` | 切换聚焦模型 + 相机对准 |
-| `arrangeModels` | `scene.ts:406` | `() => void` | 重新排列所有已加载模型的位置 |
-| `loadCameraVmdFromPath` | `scene.ts:481` | `(path: string) => Promise<void>` | 从 VMD 文件加载相机轨道 |
-| `hasCameraVmd` | `camera.ts:51` | `() => boolean` | 是否已加载相机 VMD |
-| `clearCameraVmd` | `camera.ts:73` | `() => void` | 清除相机 VMD 并切回轨道相机 |
-| `animateCameraVmd` | `camera.ts:87` | `(frameTime: number) => void` | 每帧更新 VMD 相机位置（30fps帧号） |
-| `loadAudioFile` | `audio.ts:33` | `(filePath: string) => Promise<void>` | 从本地路径加载音频 |
-| `syncAudioPlayback` | `audio.ts:116` | `(vmdTime, playing, dur) => void` | VMD 音频同步（每帧调用，偏差>0.1s校正） |
-| `setAudioOffset` | `audio.ts:74` | `(seconds: number) => void` | 设置音频偏移（正=先播，负=后播） |
-| `getAudioPath` | `audio.ts:43` | `() => string` | 获取当前音频文件路径 |
-| `clearAudio` | `audio.ts:63` | `() => void` | 清除当前音频 |
-| `renderExternalList` | `settings.ts:20` | `() => void` | 渲染外部模型列表（库外目录扫描结果） |
-| `closeAllOverlays` | `config.ts:248` | `() => void` | 统一关闭弹窗（modelPopup/motionPopup/external/settings） |
-| `computeLibraryRef` | `config.ts:257` | `(filePath: string) => string\|null` | 计算可移植库标识符，用于场景序列化避免路径依赖 |
-| `resolveLibraryRef` | `config.ts:280` | `(libraryRef: string) => string\|null` | 将库标识符解析为当前配置下的绝对路径 |
-| `getLightState` | `scene.ts:117` | `() => LightState` | 获取当前灯光参数（hemi+dir 强度/方向） |
-| `setLightState` | `scene.ts:126` | `(s: Partial<LightState>) => void` | 设置灯光参数，实时生效 |
-| `serializeScene` | `scene.ts:497` | `() => SceneFile` | 序列化完整场景（模型/VMD/相机/灯光/队形） |
-| `deserializeScene` | `scene.ts:516` | `(data: SceneFile) => Promise<void>` | 反序列化场景，按 libraryRef 优先解析路径 |
-| `getCameraState` | `camera.ts:330` | `() => CameraState` | 导出相机状态（球坐标+position，支持所有模式） |
-| `setCameraState` | `camera.ts:345` | `(s: CameraState) => void` | 恢复相机状态，ArcRotateCamera/UniversalCamera 双分支 |
-| `focusedMmdModel` | `scene.ts:55` | `() => MmdWasmModel\|null` | 获取当前聚焦模型的 MMD 运行时对象 |
-| `focusedModel` | `scene.ts:56` | `() => ModelInstance\|undefined` | 获取当前聚焦模型实例 |
-| `tryRestoreLastScene` | `scene.ts:585` | `() => Promise<void>` | 启动时自动恢复上次保存的场景 |
+| `escapeHtml` | `core/config.ts:154` | `(s: string) => string` | HTML 特殊字符转义，零依赖 |
+| `normPath` | `core/fileservice.ts:24` | `(p: string) => string` | 标准化路径：反斜杠→正斜杠；原在 config.ts，已迁入 fileservice |
+| `resolveFileUrl` | `core/fileservice.ts:11` | `(filePath: string) => Promise<{url,port,dir}>` | 统一 URL 构造：normPath → StartFileServer → HTTP URL |
+| `setStatus` | `core/config.ts:190` | `(text: string, ok: boolean) => void` | 更新状态栏文字 + 样式 |
+| `formatTime` | `core/config.ts:224` | `(seconds: number) => string` | 秒数 → `MM:SS` 格式 |
+| `toBase64` | `core/config.ts:231` | `(s: string) => string` | 字符串→base64（btoa 包装，统一 UTF-8 处理） |
+| `closeAllOverlays` | `core/config.ts:248` | `() => void` | 统一关闭弹窗（modelPopup/motionPopup/external/settings） |
+| `computeLibraryRef` | `core/config.ts:257` | `(filePath: string) => string\|null` | 计算可移植库标识符，用于场景序列化避免路径依赖 |
+| `resolveLibraryRef` | `core/config.ts:280` | `(libraryRef: string) => string\|null` | 将库标识符解析为当前配置下的绝对路径 |
+
+### 场景编排（scene/）
+
+所有函数从 `scene/scene.ts` 导出（re-export），部分实现在子模块中。
+
+| 函数 | 位置 | 签名 | 用途 |
+|------|------|------|------|
+| `loadPMXFile` | `scene/scene.ts` | `(filePath: string, asStage?: boolean) => Promise<void>` | HTTP 加载 PMX + MMD 运行时绑定 |
+| `removeModel` | `scene/scene.ts`（委托 scene-model） | `(id: string) => void` | 销毁单个模型并释放资源 |
+| `focusModel` | `scene/scene.ts`（委托 scene-model） | `(id: string) => void` | 切换聚焦模型 + 相机对准 |
+| `arrangeModels` | `scene/scene.ts`（委托 scene-model） | `() => void` | 重新排列所有已加载模型的位置 |
+| `getLightState` | `scene/scene.ts` | `() => LightState` | 获取当前灯光参数（hemi+dir 强度/方向） |
+| `setLightState` | `scene/scene.ts` | `(s: Partial<LightState>) => void` | 设置灯光参数，实时生效 |
+| `serializeScene` | `scene/scene.ts` | `() => SceneFile` | 序列化完整场景（模型/VMD/相机/灯光/队形） |
+| `deserializeScene` | `scene/scene.ts` | `(data: SceneFile) => Promise<void>` | 反序列化场景，按 libraryRef 优先解析路径 |
+| `tryRestoreLastScene` | `scene/scene.ts` | `() => Promise<void>` | 启动时自动恢复上次保存的场景 |
+| `focusedMmdModel` | `scene/scene.ts`（委托 modelManager） | `() => MmdWasmModel\|null` | 获取当前聚焦模型的 MMD 运行时对象 |
+| `focusedModel` | `scene/scene.ts`（委托 modelManager） | `() => ModelInstance\|undefined` | 获取当前聚焦模型实例 |
+
+### VMD 加载（scene/scene-vmd.ts）
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `loadVMDMotion` | `(data: ArrayBuffer, name: string, targetModelId?: string) => Promise<void>` | ArrayBuffer → VMD 解析 → 绑定 → 播放 |
+| `loadVMDFromPath` | `(path: string) => Promise<void>` | `resolveFileUrl` → fetch → loadVMDMotion |
+| `loadCameraVmdFromPath` | `(path: string) => Promise<void>` | 从 VMD 文件加载相机轨道 |
+| `loadVPDPose` | `(path: string) => Promise<void>` | VPD 姿势文件 → VMD 帧 → 绑定到当前模型 |
+
+### 播放 UI（scene/scene-playback.ts）
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `updatePlaybackUI` | `() => void` | 更新进度条 + 时间显示 + 暂停按钮状态 |
+| `seekFromEvent` | `(e: MouseEvent \| PointerEvent) => void` | 点击/拖拽进度条定位 |
+
+### 材质系统（scene/scene-material.ts）
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `_catOf` | `(matName: string) => string` | 按材质名分类：skin/hair/eye/clothing/other |
+| `_applyAll` | `(matData: MaterialOverride[], inst: ModelInstance, params: MatParams) => void` | 批量应用材质参数至所有匹配材质 |
+| `setMatParams` | `(inst: ModelInstance, category: string, params: MatParams) => void` | 按分类设置材质参数（diffuse/specular/ambient/shininess） |
+| `getMatState` | `(inst: ModelInstance, cat: string) => MatParams \| null` | 获取当前分类的材质参数快照 |
+| `applyMatState` | `(inst: ModelInstance, cat: string, params: MatParams) => void` | 恢复某个分类的材质参数 |
+
+### 模型管理器（scene/scene-model.ts）
+
+`ModelManager` 类封装模型注册表 + 生命周期 + 属性管理，`scene.ts` 中通过 `export let modelManager: ModelManager` 提供全局单例。
+
+**构造**：`new ModelManager(scene, onChange, autoFrame)` — onChange=triggerAutoSave, autoFrame=相机 framing
+
+| 方法 | 签名 | 用途 |
+|------|------|------|
+| `get` | `(id: string) => ModelInstance\|undefined` | 按 ID 获取模型实例 |
+| `getAll` | `() => ModelInstance[]` | 获取所有已加载模型 |
+| `size` | `number`（getter） | 当前模型总数 |
+| `register` | `(inst: ModelInstance) => void` | 注册新模型到 registry |
+| `storeRigidBodyState` | `(id: string, states: Uint8Array) => void` | 保存刚体初始状态（物理 toggle 恢复用） |
+| `focused` | `() => ModelInstance\|undefined` | 当前聚焦模型实例 |
+| `focusedMmdModel` | `() => MmdWasmModel\|null` | 当前聚焦模型的 WASM 运行时对象 |
+| `findByFilePath` | `(filePath: string) => ModelInstance\|undefined` | 按路径查找已加载模型 |
+| `remove` | `(id: string) => void` | 删除模型 + 清理所有关联状态 |
+| `removeFocused` | `() => void` | 删除当前聚焦模型 |
+| `focus` | `(id: string) => void` | 聚焦模型 + 相机 framing + onChange |
+| `arrange` | `() => void` | 横向排列所有模型（间距 3） |
+| `setVisibility` | `(id: string, visible: boolean) => void` | 显示/隐藏 |
+| `setOpacity` | `(id: string, opacity: number) => void` | 透明度 0..1 |
+| `setWireframe` | `(id: string, wireframe: boolean) => void` | 线框模式 |
+| `setBoneVis` | `(id: string, show: boolean) => void` | 骨骼可视化（彩色线段+关节球） |
+| `setPhysics` | `(id: string, enabled: boolean) => void` | 物理开关，恢复/清除 rigidBodyStates |
+| `setScaling` | `(id: string, scaling: number) => void` | 缩放 0.01..∞ |
+| `setRotationY` | `(id: string, rotationY: number) => void` | Y 轴旋转 |
+| `setPosition` | `(id: string, x: number, y: number, z: number) => void` | 设置位置 |
+| `getPosition` | `(id: string) => [number, number, number]` | 获取位置 |
+| `resetTransform` | `(id: string) => void` | 重置所有变换（可见/不透明/无线框/缩放1/归零） |
+| `stopVMD` | `(id: string) => void` | 清除模型 VMD 数据 |
+| `getPhysicsCategories` | `(id: string) => PhysicsCategory[]` | 返回模型中存在的物理类别 |
+| `getPhysicsCatState` | `(id: string) => Record<string, boolean>\|null` | 获取模型 per-category 物理状态 |
+| `isPhysicsCategoryEnabled` | `(id: string, cat: string) => boolean` | 指定类别物理是否启用 |
+| `setPhysicsCategory` | `(id: string, cat: string, enabled: boolean) => void` | 开关指定类别物理 |
+| `getMorphs` | `(id: string) => { name, type }[]` | 获取模型 morph 列表 |
+| `setMorphWeight` | `(id: string, morphName: string, weight: number) => void` | 设置 morph 权重 |
+| `getMorphWeight` | `(id: string, morphName: string) => number` | 获取 morph 权重 |
+| `resetMorphs` | `(id: string) => void` | 重置所有 morph 权重 |
+| `captureThumbnail` | `(filePath, canvas, saveFn) => Promise<void>` | 模型加载后自动截图用于缩略图缓存 |
+| `dispose` | `() => void` | 清理所有 observer（shutdown 用） |
+
+### 相机（scene/camera.ts）
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `hasCameraVmd` | `() => boolean` | 是否已加载相机 VMD |
+| `clearCameraVmd` | `() => void` | 清除相机 VMD 并切回轨道相机 |
+| `animateCameraVmd` | `(frameTime: number) => void` | 每帧更新 VMD 相机位置（30fps帧号） |
+| `getCameraState` | `() => CameraState` | 导出相机状态（球坐标+position，支持所有模式） |
+| `setCameraState` | `(s: CameraState) => void` | 恢复相机状态，ArcRotateCamera/UniversalCamera 双分支 |
+
+### 模型库 UI（menus/）
+
+| 函数 | 位置 | 签名 | 用途 |
+|------|------|------|------|
+| `initLibrary` | `menus/library.ts` | `() => Promise<void>` | 启动时加载配置 + 库索引 + 后台刷新 |
+| `rescanAndSync` | `menus/library.ts` | `(dir?: string) => Promise<LibraryModel[]>` | 重新扫描 + 同步状态；收拢 5 处重复 |
+| `refreshLibrary` | `menus/library.ts` | `() => Promise<void>` | rescanAndSync + 清缓存 + 状态提示 + 刷新弹窗 |
+| `togglePopup` | `menus/library.ts` | `() => void` | 打开/关闭模型库弹窗（已简化，删伪分支）|
+| `renderExternalList` | `menus/settings.ts` | `() => void` | 渲染外部模型列表（库外目录扫描结果） |
+
+### 音频（outfit/audio.ts）
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `loadAudioFile` | `(filePath: string) => Promise<void>` | 从本地路径加载音频 |
+| `syncAudioPlayback` | `(vmdTime, playing, dur) => void` | VMD 音频同步（每帧调用，偏差>0.1s校正） |
+| `setAudioOffset` | `(seconds: number) => void` | 设置音频偏移（正=先播，负=后播） |
+| `getAudioPath` | `() => string` | 获取当前音频文件路径 |
+| `clearAudio` | `() => void` | 清除当前音频 |
 
 ---
 
@@ -284,7 +378,7 @@
 | `.menu-item` | 旧版行（逐步迁移到 slide-item） |
 | `.cs-row` | 滑动条（复用在场景菜单 & 模型弹窗） |
 
-> 注：`addSliderRow` 在 `library.ts` 和 `scene-menu.ts` 各有一份独立实现（均使用 cs-row 风格），改一处须同步另一处。
+> 注：`addSliderRow` 在 `menus/library.ts` 和 `menus/scene-menu.ts` 各有一份独立实现（均使用 cs-row 风格），改一处须同步另一处。
 
 ---
 
@@ -325,7 +419,7 @@
 | `shouldAutoDance` | `(playing, mode) => boolean` | 判断是否应切 Auto Dance |
 | `shouldIdle` | `(playing, hasUserVmd, mode) => boolean` | 判断是否应切 Idle |
 
-### scene.ts 新增控制 API
+### scene.ts（re-export from scene/scene.ts）— 程序化动作控制
 
 | 函数 | 签名 | 用途 |
 |------|------|------|
@@ -336,14 +430,14 @@
 | `getProcMotionState` | `() => ProcMotionState` | 获取当前状态 |
 | `regenerateProcMotion` | `() => void` | 强制重新生成 procedural VMD |
 
-### audio.ts 新增
+### outfit/audio.ts
 
 | 函数 | 签名 | 用途 |
 |------|------|------|
 | `attachBeatDetector` | `(detector: BeatDetector) => void` | 接入节拍检测器 |
 | `notifyBeatDetectorReset` | `() => void` | 通知重置（新曲目） |
 
-### LipSync 子系统（`lipsync.ts`）
+### LipSync 子系统（`motion/lipsync.ts`）
 
 | 函数/类型 | 签名 | 用途 |
 |----------|------|------|
@@ -352,14 +446,14 @@
 | `findLipMorph` | `(morphNames: string[]) => string \| null` | 在模型 morph 列表中查找口型 morph（优先级：あ→ア→A→a→口→mouth→open） |
 | `amplitudeToWeight` | `(amp, sensitivity, intensity) => number` | 振幅→morph 权重映射，低于阈值返回 0，否则线性映射到 0..intensity |
 
-### beat-detector.ts 新增
+### beat-detector.ts（`motion/beat-detector.ts`）
 
 | 函数 | 签名 | 用途 |
 |------|------|------|
 | `BeatDetector.getLevel` (static) | `(freqData: Uint8Array, startBin?, endBin?) => number` | 纯逻辑：频段平均能量 0..1 |
 | `BeatDetector.getLevel` (instance) | `(startBin?, endBin?) => number` | 当前帧频段能量，须在 update() 后调用 |
 
-### scene.ts LipSync 控制 API
+### scene/scene.ts — LipSync 控制 API
 
 | 函数 | 签名 | 用途 |
 |------|------|------|
@@ -368,16 +462,18 @@
 | `setLipSyncIntensity` | `(v: number) => void` | 设置最大张嘴幅度 0..1 |
 | `getLipSyncState` | `() => LipSyncState` | 获取当前状态副本 |
 
-### scene.ts 物理分类控制（模型级）
+### ModelManager — 物理分类控制（scene/scene-model.ts）
 
-| 函数 | 签名 | 用途 |
+这些函数已从 scene.ts 移至 ModelManager 类，通过 `modelManager.*` 调用。
+
+| 方法 | 签名 | 用途 |
 |------|------|------|
 | `getPhysicsCategories` | `(id: string) => PhysicsCategory[]` | 返回模型中存在的物理类别（skirt/chest/hair/accessory） |
 | `isPhysicsCategoryEnabled` | `(id, cat) => boolean` | 指定类别物理是否启用 |
 | `setPhysicsCategory` | `(id, cat, enabled) => void` | 开关指定类别的物理刚体，恢复/清除 `rigidBodyStates` |
-| `setModelPhysics` | `(id, enabled) => void` | 全局物理开关，清除 per-category 状态 |
+| `setPhysics` | `(id, enabled) => void` | 全局物理开关，清除 per-category 状态 |
 
-判定依据：遍历 `runtimeBones`，对每个有 `rigidBodyIndices` 的骨骼按名正则分类：
+判定依据：`scene-model.ts` 中遍历 `runtimeBones`，对每个有 `rigidBodyIndices` 的骨骼按名正则分类：
 
 | 类别 | 匹配模式 |
 |------|---------|

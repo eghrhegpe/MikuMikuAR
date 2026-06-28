@@ -1,0 +1,168 @@
+# 西绪福斯的滚石：重构之夜
+
+## 一、预设的种子
+
+六月末的夜晚，窗外是上海潮湿的空气，屏幕上是四百行还没改完的 TypeScript。
+
+西绪福斯面对着一个问题：模型加载预设。听起来像个小功能——保存模型的位置、材质参数、VMD 动作，下次加载时一键恢复。但细节比想象中多得多。
+
+> "预设存哪里？文件还是库？"
+> "自动应用，还是手动？"
+> "跨模型复用，匹配规则是什么？"
+
+他翻开 `docs/requirements.md`，里面写着 P2 优先级。`docs/reusables.md` 里躺着 `serializeModelPreset` 和 `applyModelPreset` 两个函数签名。Go 端有 4 个 binding：Save、Load、SelectSave、SelectOpen——都是对单一文件的。
+
+这不对。用户要的不是「保存一个文件」，是「管理一堆预设」。
+
+## 二、五个设计决策
+
+西绪福斯写了 ADR-014。五个决策，像五根柱子撑起整个设计：
+
+1. **预设库，不是预设文件**——`GetModelPresets` / `Save/Load/Delete/Rename`，五个 binding，一个 `ModelPresetEntry` 结构体，root 是 `~/.config/MikuMikuAR/presets/`
+2. **自动应用 + 手动应用**——toggle 开关，每个预设可以设 autoApply，模型加载时自动匹配
+3. **智能匹配**——精确路径优先，`libraryRef` 其次，basename 兜底
+4. **双模式**——库管理 + 文件导入导出，松耦合
+5. **autoApply 默认关**——改动无侵入
+
+设计走完，用户回了两个字：「确认」。
+
+## 三、Go 端的固执
+
+Go 端的实现出乎意料地顺利。`modelPresetDir()` 定位配置目录，`ModelPresetEntry` 塞进 JSON，五个 binding 写上去——没有花哨的抽象，只有标准库的 `os.ReadFile` 和 `json.Unmarshal`。
+
+直到加校验。
+
+`validPresetName`——一个看起来平平无奇的函数。它挡住的不是合法输入，是 `../` 路径穿越。用户在 OS 对话框里看不到文件名，但攻击者可以看到 `../../etc/passwd`。
+
+```go
+if name == "" || strings.Contains(name, "..") || 
+   strings.ContainsAny(name, "/\\") {
+    return false
+}
+```
+
+西绪福斯加了 8 个测试用例。全部通过。
+
+## 四、前端的迷宫
+
+前端的复杂度是另一个量级。
+
+`model-detail.ts` 53KB，一张卡片里有 14 个 slideRow，堆了四层 lcard。`scene.ts` 125KB，import 时执行 `new Engine(dom.canvas, ...)` —— 模块级副作用，任何静态 import 都会触发 Babylon.js 引擎初始化。
+
+预设库的 UI 要加在 card3 里：保存预设、加载预设、导出文件、导入文件、服装变体。五个 slideRow，全挤在一张卡片里。
+
+问题来了：toggle 切换 autoApply 时，`change` 事件的 `stopPropagation` 挡不住 `click` 事件冒泡。点击 toggle 会同时触发行点击 → 应用预设。用户在毫秒间就看到了不该看到的行为。
+
+修复方案：在行点击处理器里检查 `closest('.toggle')`，发现是 toggle 就跳过。
+
+```typescript
+if ((e.target as HTMLElement).closest('.toggle')) return;
+```
+
+七行代码，排查了两小时。
+
+## 五、自动应用的优雅与脆弱
+
+`tryAutoApplyPreset` 的设计看似简单：模型加载时，遍历所有预设，找到匹配的、autoApply 为 true 的，自动应用。
+
+但「匹配」的定义一开始用了 `includes()`——"miku" 可以匹配 "mikumiku.pmx"。这是 bug。
+
+修复：用 `computeLibraryRef` 精确匹配，再加 `endsWith` 兜底。
+
+Undo 机制也出了问题：快照存在 `_presetUndoStack` 里，但应用后没清理。内存泄漏。修复：
+
+```typescript
+undoCallback = async () => {
+    await applyModelPreset(snapshot, id);
+    _presetUndoStack.delete(id); // 关键一行
+};
+```
+
+八秒超时自动消失的 toast，undo 栈，三路匹配——一个看起来不起眼的「小功能」，长出了完整的生态系统。
+
+## 六、换装的战场
+
+outfit 系统是这轮的第二个大坑。
+
+设计决策 D4：三层覆盖——`byMaterial` > `byCategory` > `all`。五通道贴图替换：diffuse、toon、spa、normal、emissive。
+
+实现本身不复杂。真正的问题是测试。
+
+Babylon.js 有巨大的模块依赖树。`scene.ts` 的 import 会触发 `new Engine`、`new Scene`、`new HemisphericLight`——全部在模块级执行。而 `HemisphericLight` 的构造函数会调用 `scene.addLight`，`addLight` 需要遍历 `scene.meshes`，`scene.meshes` 必须是可迭代的……
+
+Vitest 的 `vi.mock` 能把整个 Babylon 模块链 Mock 掉，但你得 Mock 对路径：`@babylonjs/core/Lights/hemisphericLight` 不是 `@babylonjs/core/Lights/hemisphericLight.pure`。差一个后缀名，Mock 不生效，真实的 Babylon 构造函数跑起来，然后炸在 `this.getScene(...).addCamera is not a function`。
+
+西绪福斯在 Mock 的迷宫里转了一个小时。最终解是抄 `model-preset.test.ts` 的 Mock 模式——`HemisphericLight`、`DirectionalLight`、`ArcRotateCamera`、`DefaultRenderingPipeline`、`MmdCamera`，五个 Mock，一个不能少。
+
+「这就是为什么人们不爱给 3D 应用写测试。」他在提交信息里写道。
+
+## 七、文件的手术刀
+
+当 `scene.ts` 长到 125KB，`model-detail.ts` 长到 53KB，`scene-menu.ts` 长到 70KB 时，重构就不是选择，是必然。
+
+西绪福斯开发了「三步脚本法」：
+
+1. 创建新文件，写入完整代码
+2. 用 PowerShell 按行号删除旧文件中的对应内容
+3. 修复 import 路径
+
+痛点：`edit` 工具在大文件上会超时、会损坏内容。一次 `scene.ts` 的 edit 失败了，文件变成零字节，git restore 才救回来。
+
+三步脚本法从此确立。
+
+`scene.ts` → `outfit.ts`：290 行
+`model-detail.ts` → `model-preset.ts`：362 行
+`model-detail.ts` → `model-material.ts`：254 行
+`scene-menu.ts` → `env-menu.ts`：553 行
+
+合计抽离 1459 行，零个 bug。
+
+## 八、Go 端的千层饼
+
+后端 `app.go` 80KB，2600 行，60 个 binding 函数。
+
+西绪福斯列了一张拆分的表：library.go、tags.go、dancesets.go、scene_preset.go、render_preset.go、integration.go、model_preset.go、zipextract.go、httpserver.go、thumbnail.go、watch.go——11 个新文件。
+
+PowerShell 大法：
+
+```powershell
+$sections = @(
+  @(323, 768, "library.go"),
+  @(806, 887, "tags.go"),
+  ...
+)
+foreach ($s in $sections) {
+  $content = $lines[$s[0]..$s[1]]
+  Set-Content $file -Value ("package main" + $content)
+}
+```
+
+但 Go 的每个文件都需要自己的 `import` 块。提取后的文件缺少 imports，编译器直接报 48 个错误。
+
+`goimports -w` 是救星——它自动添加和删除 imports，一行命令修复所有文件。
+
+但 Windows 上 golang.org/x/tools/cmd/goimports 需要预装。
+
+先 `go install` 它，然后执行。`go build ./...`——静默。成功。
+
+## 九、夜幕中的检查
+
+"app.go 删了 2400 行，有没有把关键的错误处理或者鉴权逻辑误删？"
+
+西绪福斯检查了：App struct 的五个字段都在，NewApp/startup/shutdown 都在，六个文件对话框都在，ensureDir/configDir/thumbnailDir 都在。delete 了 2400 行，丢失的功能：零。
+
+"前端 library.ts 加了这么多，有没有把 modelRegistry 逻辑包进去？"
+
+`library.ts` 只有 13 行。纯 re-export 入口。`modelRegistry` 在 `config.ts` 定义，`scene.ts` 操作，`library.ts` 根本不沾边。
+
+## 十、西绪福斯的滚石
+
+这轮结束时，仓库的前端 26 个文件、后端 17 个文件。没有一个超过 600 行的。没有一碰就坏的大石块。
+
+但滚石不会停。
+
+`scene.ts` 110KB 还在——它装载了 Babylon.js 引擎的模块级初始化，import 即执行，拆不动。`scene-menu.ts` 46KB 还在——纯 UI 层，量大但无害。`settings.ts` 44KB 还在——没排上重构日程。
+
+西绪福斯把石头推上了山顶。明天它还会滚下来。但至少今晚，石块小了些。
+
+"Done." 他在终端敲完最后一个字，屏幕熄灭。窗外，上海的夜还很长。
