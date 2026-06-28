@@ -81,6 +81,7 @@ async function toggleOverlay(id: string, showFn: () => void): Promise<void> {
         if (last === showFn) {
             // Same button clicked again → toggle close
             el.classList.remove("visible");
+            closeAllOverlays(); // 修复：确保关闭时清理所有状态
         } else {
             // Different button targeting the same overlay → cross-fade switch
             // Phase 1: fade out current content
