@@ -2,13 +2,11 @@
 vi.hoisted(() => {
     const ids = [
         "renderCanvas", "statusBar", "loading", "btnMainAction", "modelPopup",
-        "popupBreadcrumb", "popupList", "popupEmpty", "btnClosePopup",
-        "btnManageExternal", "btnRescan", "motionPopup", "motionPopupBreadcrumb",
-        "motionPopupList", "motionPopupEmpty", "btnCloseMotionPopup", "btnMotionPopup",
-        "motionPopupSearch", "motionPopupSearchInput", "playbackBar", "btnPlayPause", "btnLoopToggle",
-        "timeDisplay", "seekBar", "seekProgress", "loadingText", "externalOverlay",
-        "externalList", "btnCloseExternal", "btnAddExternal", "popupSearch",
-        "popupSearchInput", "settingsOverlay", "btnSettings", "btnCloseSettings",
+        "motionPopup",
+        "btnMotionPopup",
+        "playbackBar", "btnPlayPause", "btnLoopToggle",
+        "timeDisplay", "seekBar", "seekProgress", "loadingText",
+        "settingsOverlay", "btnSettings", "btnCloseSettings",
         "btnScene", "sceneOverlay", "btnCloseScene",
     ];
     for (const id of ids) {

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Texture } from "@babylonjs/core/Materials/Textures/texture";
 
 vi.hoisted(() => {
-  const ids = ["renderCanvas", "statusBar", "loading", "loadingText", "btnMainAction", "modelPopup", "popupBreadcrumb", "popupList", "popupEmpty", "btnClosePopup"];
+  const ids = ["renderCanvas", "statusBar", "loading", "loadingText", "btnMainAction", "modelPopup"];
   for (const id of ids) {
     const el = document.createElement("div");
     el.id = id;
