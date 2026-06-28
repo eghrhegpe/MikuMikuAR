@@ -17,7 +17,7 @@ import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { MmdWasmModel } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmModel";
 
-import { ModelInstance, setFocusedModelId, focusedModelId as configFocusedId, type PhysicsCategory } from "./config";
+import { ModelInstance, setFocusedModelId, focusedModelId as configFocusedId, type PhysicsCategory } from "../core/config";
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)

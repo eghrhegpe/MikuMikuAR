@@ -418,7 +418,7 @@ export function escapeHtml(s: string): string {
 import { normPath } from "./fileservice";
 export { normPath };
 
-import type { SlideMenu } from "./menu";
+import type { SlideMenu } from "../menu";
 
 export const stackRegistry: {
   modelStack: SlideMenu | null;

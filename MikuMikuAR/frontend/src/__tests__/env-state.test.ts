@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { EnvState } from "../config";
+import type { EnvState } from "../core/config";
 
 const defaultEnv: EnvState = {
     skyMode: "color",

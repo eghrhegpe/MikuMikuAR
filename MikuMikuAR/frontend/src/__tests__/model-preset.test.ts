@@ -299,8 +299,8 @@ import {
     _catState,
     _matState,
     _matEnabled,
-} from "../scene";
-import { modelRegistry, dom, setMmdRuntime, setIsPlaying } from "../config";
+} from "../scene/scene";
+import { modelRegistry, dom, setMmdRuntime, setIsPlaying } from "../core/config";
 
 // ======== Test setup ========
 

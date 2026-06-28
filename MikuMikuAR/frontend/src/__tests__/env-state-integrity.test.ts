@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { envState } from "../config";
+import { envState } from "../core/config";
 
 /**
  * Tests envState color field integrity.

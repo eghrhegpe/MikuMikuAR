@@ -5,8 +5,8 @@ import {
   modelRegistry,
   cardContainer,
   PopupLevel,
-} from "./config";
-import type { OutfitFile } from "./config";
+} from "./core/config";
+import type { OutfitFile } from "./core/config";
 import {
   loadOutfits,
   applyOutfitVariant,

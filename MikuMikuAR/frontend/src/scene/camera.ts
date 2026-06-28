@@ -11,7 +11,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Animation } from "@babylonjs/core/Animations/animation";
 import { Scene } from "@babylonjs/core/scene";
 import { MmdCamera } from "babylon-mmd/esm/Runtime/mmdCamera";
-import { focusedModelId, modelRegistry } from "./config";
+import { focusedModelId, modelRegistry } from "../core/config";
 
 // ======== Types ========
 export type CameraMode = "orbit" | "freefly" | "concert" | "vmd";

@@ -26,8 +26,6 @@ import {
   allModels,
   setExternalPaths,
   externalPaths,
-  setPopupOpen,
-  popupOpen,
   LibraryModel,
   PopupRow,
   PopupLevel,
@@ -49,28 +47,28 @@ import {
   motionBindingTargetId,
   setMotionBindingTargetId,
   cardContainer,
-} from "./config";
+} from "./core/config";
 import {
   loadPMXFile,
   loadVMDFromPath,
   removeModel,
   resetModelMorphs,
-} from "./scene";
+} from "./scene/scene";
 import {
   buildModelDetailLevel,
 } from "./model-detail";
 import { buildDanceSetDetailLevel, loadDanceSets } from "./motion-popup";
 import { SlideMenu } from "./menu";
-import { createIconifyIcon } from "./icons";
-import { slideRow } from "./ui-helpers";
-import { stackRegistry } from "./config";
+import { createIconifyIcon } from "./core/icons";
+import { slideRow } from "./core/ui-helpers";
+import { stackRegistry } from "./core/config";
 
 // ======== Model Stack ========
 
 const makeModelStack = (): SlideMenu => {
   return new SlideMenu({
     container: dom.modelPopup,
-    onClose: hidePopup,
+    onClose: closeAllOverlays,
     onFolderEnter: (row) => {
       if (row.target && row.target.startsWith("scene:")) {
         setMotionBindingTargetId(null);
@@ -145,12 +143,12 @@ const makeModelStack = (): SlideMenu => {
     onItemClick: (row: PopupRow) => {
       if (row.model) {
         if (row.model.format === "vmd" && motionBindingTargetId) {
-          hidePopup();
+          closeAllOverlays();
           loadVMDFromPath(row.model.file_path, motionBindingTargetId);
           setMotionBindingTargetId(null);
           return;
         }
-        hidePopup();
+        closeAllOverlays();
         replaceModel(row.model);
         return;
       }
@@ -378,7 +376,7 @@ function modelToRow(m: LibraryModel): PopupRow {
     catTag: m.category || undefined,
     editable: m.format === "pmx",
     onAddClick: () => {
-      hidePopup();
+      closeAllOverlays();
       onModelRowClick(m);
     },
   };
@@ -394,7 +392,7 @@ function onModelRowClick(m: LibraryModel): void {
     }
   }
   if (m.container === "zip") {
-    hidePopup();
+    closeAllOverlays();
     setStatus("正在解压 zip...", false);
     ExtractZip(m.file_path, m.zip_inner)
       .then((result) => {
@@ -407,7 +405,7 @@ function onModelRowClick(m: LibraryModel): void {
       });
     return;
   }
-  hidePopup();
+  closeAllOverlays();
   if (m.format === "pmx") loadPMXFile(m.file_path, isStage);
   else if (m.format === "vmd") loadVMDFromPath(m.file_path);
 }
@@ -535,17 +533,9 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
 
 // ======== Popup Show / Hide ========
 
-export function togglePopup(): void {
-  if (popupOpen) {
-    hidePopup();
-    return;
-  }
-  showPopup();
-}
-
-export function showPopup(): void {
+/** Show function for toggleOverlay — builds the model menu stack. */
+export function showModelPopup(): void {
   closeAllOverlays();
-  setPopupOpen(true);
   dom.modelPopup.classList.add("visible");
 
   if (!stackRegistry.modelStack) {
@@ -655,13 +645,7 @@ export function showPopup(): void {
   });
 }
 
-export function hidePopup(): void {
-  setMotionBindingTargetId(null);
-  if (focusedModelId) {
-    resetModelMorphs(focusedModelId);
-  }
-  closeAllOverlays();
-}
+
 
 // ======== Library loading ========
 
@@ -724,7 +708,7 @@ async function selectAndSetLibraryRoot(): Promise<void> {
     setStatus("扫描模型库...", false);
     const models = await rescanAndSync();
     setStatus(`✓ ${models.length} 个条目`, true);
-    showPopup();
+    showModelPopup();
   } catch (err) {
     console.error("Error setting library root:", err);
     setStatus("✗ 目录选择失败", false);
@@ -756,11 +740,9 @@ export async function refreshLibrary(): Promise<void> {
     CleanOrphanCache().catch((err) =>
       console.warn("CleanOrphanCache (background):", err),
     );
-    if (popupOpen) showPopup();
+    if (dom.modelPopup.classList.contains("visible")) showModelPopup();
   } catch (err) {
     setStatus("✗ 扫描失败", false);
   }
 }
 
-// Wire up event listeners
-dom.btnMainAction?.addEventListener("click", togglePopup);

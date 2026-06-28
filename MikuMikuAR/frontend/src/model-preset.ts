@@ -9,7 +9,7 @@ import {
   stackRegistry,
   escapeHtml,
   isPlaying,
-} from "./config";
+} from "./core/config";
 import {
   setModelPosition,
   setModelScaling,
@@ -21,8 +21,8 @@ import {
   loadVMDFromPath,
   getMatState,
   applyMatState,
-} from "./scene";
-import { createIconifyIcon } from "./icons";
+} from "./scene/scene";
+import { createIconifyIcon } from "./core/icons";
 import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "./audio";
 import { loadOutfits, applyOutfitVariant } from "./outfit";
 import {
@@ -262,7 +262,7 @@ export async function applyPresetFromLib(
       if (matchedId) {
         await applyModelPreset(matchedId, json);
       } else {
-        const { loadPMXFile } = await import("./scene");
+        const { loadPMXFile } = await import("./scene/scene");
         await loadPMXFile(preset.model.filePath);
         for (const [mid, inst] of modelRegistry) {
           if (inst.filePath === preset.model.filePath) {

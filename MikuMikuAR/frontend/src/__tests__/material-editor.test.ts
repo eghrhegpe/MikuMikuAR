@@ -284,8 +284,8 @@ import {
     getMatDetailList,
     getMatState,
     applyMatState,
-} from "../scene";
-import { modelRegistry } from "../config";
+} from "../scene/scene";
+import { modelRegistry } from "../core/config";
 
 // ======== _catOf material classification ========
 

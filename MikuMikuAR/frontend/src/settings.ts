@@ -24,11 +24,11 @@ import {
     libraryRoot, externalPaths,
     displayNamePriority, setDisplayNamePriority, DisplayNamePriority,
     PopupRow, PopupLevel, escapeHtml, cardContainer,
-} from "./config";
+} from "./core/config";
 import { SlideMenu } from "./menu";
-import { slideRow } from "./ui-helpers";
-import { showPopup, rescanAndSync, reloadConfig } from "./library";
-import { softwareKindIcon, createIconifyIcon } from "./icons";
+import { slideRow } from "./core/ui-helpers";
+import { rescanAndSync, reloadConfig } from "./library";
+import { softwareKindIcon, createIconifyIcon } from "./core/icons";
 
 // ======== Helpers re-exported ========
 export { refreshLibrary } from "./library";

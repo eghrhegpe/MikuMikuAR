@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { formatTime, escapeHtml } from "../config";
-import { normPath } from "../fileservice";
+import { formatTime, escapeHtml } from "../core/config";
+import { normPath } from "../core/fileservice";
 
 describe("config pure functions", () => {
     describe("formatTime", () => {

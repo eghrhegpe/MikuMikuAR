@@ -44,7 +44,7 @@ import "@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 
-import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../wailsjs/go/main/App";
+import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../../wailsjs/go/main/App";
 import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode, getCameraMode } from "./camera";
 import type { CameraState } from "./camera";
 import {
@@ -59,20 +59,22 @@ import {
     computeLibraryRef, resolveLibraryRef,
     envState, EnvState,
     OutfitFile, OutfitVariant, OutfitSlot,
-} from "./config";
-import { resolveFileUrl, normPath } from "./fileservice";
-import { loadVPDFromBuffer } from "./vpd-parser";
+} from "../core/config";
+import { resolveFileUrl, normPath } from "../core/fileservice";
+import { loadVPDFromBuffer } from "../vpd-parser";
 import { deriveLighting, ENV_PRESETS } from "./env-lighting";
-import { syncAudioPlayback, loadAudioFile, setVolume, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset, isAudioPlaying, resumeAudio, pauseAudio } from "./audio";
+import { syncAudioPlayback, loadAudioFile, setVolume, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset, isAudioPlaying, resumeAudio, pauseAudio } from "../audio";
 import {
     ProcMotionState, ProcMotionMode, DEFAULT_PROC_STATE,
     generateIdleVmd, generateAutoDanceVmd, shouldAutoDance, shouldIdle,
-} from "./procedural-motion";
-import { LipSyncState as LipSyncStateType, DEFAULT_LIPSYNC_STATE, findLipMorph, amplitudeToWeight } from "./lipsync";
-import { BeatDetector } from "./beat-detector";
-import { attachBeatDetector, disposeAudio } from "./audio";
-import { loadOutfits, applyOutfitVariant, resetOutfit } from "./outfit";
+} from "../procedural-motion";
+import { LipSyncState as LipSyncStateType, DEFAULT_LIPSYNC_STATE, findLipMorph, amplitudeToWeight } from "../lipsync";
+import { BeatDetector } from "../beat-detector";
+import { attachBeatDetector, disposeAudio } from "../audio";
+import { loadOutfits, applyOutfitVariant, resetOutfit } from "../outfit";
 import { _catState, _matState, _matEnabled } from "./scene-material";
+import { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from "./scene-vmd";
+import { updatePlaybackUI, seekFromEvent } from "./scene-playback";
 
 // Re-export material system (extracted to scene-material.ts for file size)
 export { _catState, _matState, _matEnabled, _catOf, _applyAll, isMatEnabled, setMatEnabled, getMatCatGroups, getMatCatParams, setMatCatParams, resetMatCatParams, getMatDetailList, getMatParams, setMatParams, resetSingleMatParams, resetAllMatParams, getMatState, applyMatState } from "./scene-material";
@@ -382,7 +384,8 @@ let _pipelineCamera: import("@babylonjs/core/Cameras/camera").Camera | null = nu
 // ======== Procedural Motion State ========
 let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
 let procBeatDetector: BeatDetector | null = null;
-let procVmdActive = false;       // procedural VMD 是否正在播放
+/** @internal Exported for use by scene-vmd.ts */
+export let procVmdActive = false;       // procedural VMD 是否正在播放
 let lastBeatBpm = 120;           // 上次用于生成 Auto Dance 的 BPM
 let procStarting = false;        // 防止并发 startProcMotion
 let procActiveKind: ProcMotionMode = "idle"; // 当前加载的是 idle 还是 autodance
@@ -493,8 +496,8 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     }
 }
 
-/** 停止程序化动作并清理模型上的 procedural VMD。 */
-function stopProcMotion(): void {
+/** @internal Exported for use by scene-vmd.ts */
+export function stopProcMotion(): void {
     procVmdActive = false;
     if (procModelId) {
         const inst = modelRegistry.get(procModelId);
@@ -735,7 +738,7 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
         if (!skipAutoApply) {
             // Try auto-apply preset from library
             try {
-                const { tryAutoApplyPreset } = await import("./model-preset");
+                const { tryAutoApplyPreset } = await import("../model-preset");
                 tryAutoApplyPreset(id).catch((err: any) => console.warn("auto-apply preset:", err));
             } catch (err) { console.warn("auto-apply import:", err); }
         }
@@ -853,138 +856,6 @@ export function getPropList(): PropInstance[] {
     return Array.from(propRegistry.values());
 }
 
-// ======== VMD Loading ========
-export async function loadVMDMotion(data: ArrayBuffer, name: string, targetModelId?: string): Promise<void> {
-    // If user loads a real VMD, stop procedural motion
-    if (procVmdActive && name !== "IdleMotion" && name !== "AutoDance") {
-        stopProcMotion();
-    }
-    if (!mmdRuntime) {
-        setPendingVmd({ data, name });
-        setStatus("VMD 已缓存，等待模型加载", false);
-        return;
-    }
-    const targetId = targetModelId || focusedModelId;
-    if (!targetId) {
-        setStatus("✗ 没有目标模型", false);
-        return;
-    }
-    const inst = modelRegistry.get(targetId);
-    if (!inst) {
-        setStatus("✗ 目标模型不存在", false);
-        return;
-    }
-    try {
-        // Load VMD from buffer using VmdLoader
-        const vmdLoader = new VmdLoader(scene);
-        const mmdAnimation = await vmdLoader.loadFromBufferAsync(name, data);
-
-        // Create WASM animation from the loaded data
-        const wasmAnimation = new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene);
-
-        // Extract camera track from VMD and apply to MmdCamera
-        try {
-            loadCameraVmd(mmdAnimation, "", name);
-        } catch (camErr) {
-            console.warn("Camera VMD load skipped:", camErr);
-        }
-
-        // Bind to model
-        if (!inst.mmdModel) {
-            setStatus(`✗ 舞台模型不支持 VMD`, false);
-            return;
-        }
-        const handle = inst.mmdModel.createRuntimeAnimation(wasmAnimation);
-        inst.mmdModel.setRuntimeAnimation(handle);
-
-        inst.vmdData = data;
-        inst.vmdName = name;
-        // Convert from 30fps frames to seconds
-        inst.animationDuration = mmdAnimation.endFrame / 30;
-
-        if (!isPlaying && autoLoop) {
-            await mmdRuntime.playAnimation();
-            setIsPlaying(true);
-        }
-        setStatus(`✓ VMD: ${name}`, true);
-    } catch (err) {
-        console.error("VMD load failed:", err);
-        setStatus("✗ VMD 加载失败", false);
-    }
-}
-
-export async function loadVMDFromPath(path: string, targetModelId?: string): Promise<void> {
-    if (isLoadingVmd) return;
-    setIsLoadingVmd(true);
-    try {
-        const { url } = await resolveFileUrl(path);
-        const vmdName = normPath(path).split("/").pop() || "";
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const vmdData = await resp.arrayBuffer();
-
-        if (mmdRuntime && (targetModelId || focusedMmdModel())) {
-            await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ""), targetModelId);
-            const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
-            if (foc) foc.vmdPath = path;
-        }
-        else {
-            setPendingVmd({ data: vmdData, name: vmdName.replace(/\.vmd$/i, "") });
-            setStatus("VMD 已缓存，加载模型后自动应用", false);
-        }
-    } catch (err) {
-        console.error("loadVMDFromPath:", err);
-        setStatus("✗ VMD 加载失败", false);
-    } finally {
-        setIsLoadingVmd(false);
-    }
-}
-
-export async function loadCameraVmdFromPath(path: string): Promise<void> {
-    try {
-        const { url } = await resolveFileUrl(path);
-        const vmdName = normPath(path).split("/").pop() || "";
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const vmdData = await resp.arrayBuffer();
-
-        const vmdLoader = new VmdLoader(scene);
-        const mmdAnimation = await vmdLoader.loadFromBufferAsync(vmdName, vmdData);
-        loadCameraVmd(mmdAnimation, path, vmdName.replace(/\.vmd$/i, ""));
-        setStatus(`✓ 相机 VMD: ${vmdName}`, true);
-    } catch (err) {
-        console.error("loadCameraVmdFromPath:", err);
-        setStatus("✗ 相机 VMD 加载失败", false);
-    }
-}
-
-export async function loadVPDPose(path: string, targetModelId?: string): Promise<void> {
-    if (isLoadingVmd) return;
-    setIsLoadingVmd(true);
-    try {
-        const { url } = await resolveFileUrl(path);
-        const poseName = normPath(path).split("/").pop() || "";
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const rawData = await resp.arrayBuffer();
-
-        const vmdBuffer = loadVPDFromBuffer(rawData);
-
-        await loadVMDMotion(vmdBuffer, "姿势: " + poseName.replace(/\.vpd$/i, ""), targetModelId);
-
-        const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
-        if (foc) {
-            foc.vmdPath = path;
-        }
-        setStatus(`✓ 姿势: ${poseName}`, true);
-    } catch (err) {
-        console.error("loadVPDPose:", err);
-        setStatus("✗ 姿势加载失败", false);
-    } finally {
-        setIsLoadingVmd(false);
-    }
-}
-
 // ======== Model Lifecycle ========
 export function removeModel(id: string): void {
     // Scene-specific cleanup before modelManager removes the model
@@ -1031,37 +902,6 @@ export function focusModel(id: string): void {
 
 export function arrangeModels(): void {
     modelManager.arrange();
-}
-
-// ======== Playback UI ========
-export function updatePlaybackUI(): void {
-    const mmdModel = focusedMmdModel();
-    if (!mmdRuntime || !mmdModel) {
-        dom.playbackBar.style.display = "none";
-        return;
-    }
-    const foc = focusedModel();
-    const duration = foc?.animationDuration ?? mmdRuntime.animationDuration;
-    dom.playbackBar.style.display = "flex";
-    dom.btnPlayPause.textContent = isPlaying ? "⏸" : "▶";
-    dom.btnLoopToggle.style.opacity = autoLoop ? "1" : "0.35";
-    dom.timeDisplay.textContent = `${formatTime(mmdRuntime.currentTime)} / ${formatTime(duration)}`;
-    if (duration > 0) {
-        const pct = (mmdRuntime.currentTime / duration) * 100;
-        dom.seekProgress.style.width = `${Math.min(pct, 100)}%`;
-    }
-}
-
-export function seekFromEvent(e: MouseEvent | PointerEvent): void {
-    const foc = focusedModel();
-    const duration = foc?.animationDuration ?? mmdRuntime!.animationDuration;
-    if (!mmdRuntime || !focusedMmdModel() || duration <= 0) return;
-    const rect = dom.seekBar.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const targetTime = ratio * duration;
-    mmdRuntime.seekAnimation(targetTime, true);
-    updatePlaybackUI();
-    syncAudioPlayback(targetTime, isPlaying, duration);
 }
 
 // ======== Scene Serialization ========
@@ -2321,3 +2161,7 @@ export function regenerateProcMotion(): void {
     const bpm = procBeatDetector?.getBPM() ?? 120;
     startProcMotion(mode, mode === "autodance" ? bpm : undefined);
 }
+
+// Re-exports from extracted sub-modules (zero-change for consumers)
+export { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from "./scene-vmd";
+export { updatePlaybackUI, seekFromEvent } from "./scene-playback";

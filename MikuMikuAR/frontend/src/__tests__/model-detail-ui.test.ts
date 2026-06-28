@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
     modelRegistry, dom, setMmdRuntime,
-} from "../config";
+} from "../core/config";
 
 vi.mock("@babylonjs/core/Engines/engine", () => ({
     Engine: class MockEngine {
@@ -320,7 +320,7 @@ import {
     buildModelTagsLevel,
     buildMorphPreviewLevel,
 } from "../model-detail";
-import type { PopupLevel } from "../config";
+import type { PopupLevel } from "../core/config";
 
 function fakeMesh(name = "mat0"): any {
     return {

@@ -11,7 +11,7 @@ import {
   computeLibraryRef,
   dom,
   stackRegistry,
-} from "./config";
+} from "./core/config";
 import {
   getModelPosition,
   setModelPosition,
@@ -46,12 +46,12 @@ import {
   getPhysicsCatState,
   stopVMD,
   loadVMDFromPath,
-} from "./scene";
+} from "./scene/scene";
 import { buildMatRootLevel } from "./model-material";
-import { createIconifyIcon, softwareKindIcon } from "./icons";
-import { isPlaying } from "./config";
+import { createIconifyIcon, softwareKindIcon } from "./core/icons";
+import { isPlaying } from "./core/config";
 import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "./audio";
-import { slideRow, addSliderRow } from "./ui-helpers";
+import { slideRow, addSliderRow } from "./core/ui-helpers";
 import { buildOutfitLevel } from "./outfit-ui";
 import { loadOutfits, applyOutfitVariant } from "./outfit";
 import {

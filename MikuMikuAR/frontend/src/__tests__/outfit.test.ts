@@ -173,7 +173,7 @@ vi.mock("@babylonjs/core/Materials/Textures/texture", () => ({
 }));
 
 // Setup minimal model registry
-import { modelRegistry, setLibraryRoot } from "../config";
+import { modelRegistry, setLibraryRoot } from "../core/config";
 
 function makeColor(r: number, g: number, b: number) {
   return { r, g, b, set: function(sr: number, sg: number, sb: number) { this.r = sr; this.g = sg; this.b = sb; }, multiplyInPlace: function(c: any) { this.r *= c.r; this.g *= c.g; this.b *= c.b; } };

@@ -5,7 +5,7 @@ import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Material } from "@babylonjs/core/Materials/material";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 
-import { modelRegistry } from "./config";
+import { modelRegistry } from "../core/config";
 import { triggerAutoSave } from "./scene";
 
 export type MaterialCategoryParams = {

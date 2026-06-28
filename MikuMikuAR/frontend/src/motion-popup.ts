@@ -10,14 +10,14 @@ import {
   stackRegistry,
   closeAllOverlays,
   cardContainer,
-} from "./config";
+} from "./core/config";
 import {
   loadVMDFromPath, loadVPDPose,
   updatePlaybackUI,
-} from "./scene";
+} from "./scene/scene";
 import { SlideMenu } from "./menu";
-import { slideRow, addSliderRow } from "./ui-helpers";
-import { createIconifyIcon } from "./icons";
+import { slideRow, addSliderRow } from "./core/ui-helpers";
+import { createIconifyIcon } from "./core/icons";
 import { loadAudioFile, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset } from "./audio";
 import {
   SelectAudioFile, SelectVMDMotion, SelectVPDPose,

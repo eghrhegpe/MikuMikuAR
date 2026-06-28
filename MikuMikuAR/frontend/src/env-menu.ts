@@ -1,12 +1,12 @@
 // [doc:architecture] Env Menu — 环境弹窗（天空/地面/粒子/风/云/道具/预设）
 // 从 scene-menu.ts 抽离
 
-import { envState, EnvState, PopupLevel, PopupRow, escapeHtml, cardContainer, propRegistry } from "./config";
+import { envState, EnvState, PopupLevel, PopupRow, escapeHtml, cardContainer, propRegistry } from "./core/config";
 import { SlideMenu } from "./menu";
-import { createIconifyIcon } from "./icons";
-import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider } from "./ui-helpers";
-import { setEnvState, loadProp, removeProp, setPropTransform, getPropList, getEnvAutoLink, setEnvAutoLink, getEnvSunAngle, setEnvSunAngle, redoEnvAutoLink, applyEnvPreset, setLightState, setRenderState } from "./scene";
-import { ENV_PRESETS as ENV_LIGHTING_PRESETS } from "./env-lighting";
+import { createIconifyIcon } from "./core/icons";
+import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider } from "./core/ui-helpers";
+import { setEnvState, loadProp, removeProp, setPropTransform, getPropList, getEnvAutoLink, setEnvAutoLink, getEnvSunAngle, setEnvSunAngle, redoEnvAutoLink, applyEnvPreset, setLightState, setRenderState } from "./scene/scene";
+import { ENV_PRESETS as ENV_LIGHTING_PRESETS } from "./scene/env-lighting";
 import { SelectEnvTextureFile, SelectPMXFile } from "../wailsjs/go/main/App";
 
 // ======== Environment Level ========
@@ -69,8 +69,8 @@ export function buildEnvLevel(): PopupLevel {
 
 interface EnvPresetConfig {
     env: Partial<EnvState>;
-    lights?: Partial<import("./scene").LightState>;
-    render?: Partial<import("./scene").RenderState>;
+    lights?: Partial<import("./scene/scene").LightState>;
+    render?: Partial<import("./scene/scene").RenderState>;
 }
 
 const ENV_PRESETS: Record<string, EnvPresetConfig> = {
