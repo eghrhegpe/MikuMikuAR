@@ -13,7 +13,8 @@
 - 禁止读取 docs/research/ 下的档案文件，除非任务明确涉及对应主题
 - 先输出修改计划 → 我确认 → 再 apply
 - 失败熔断：同一命令连续失败 2 次 → 停止并分析原因，禁止无脑重试
-- 项目有两层嵌套，实际位于 MikuMikuAR/
+- 仓库根 = 本文件所在目录；代码子目录 = `MikuMikuAR/`；文档目录 = `docs/`；不是嵌套仓库
+- git 操作在仓库根执行；go build / npm / vitest 进 `MikuMikuAR/` 对应子目录执行
 ```
 
 ---
@@ -63,19 +64,9 @@ docs/
 ├── reusables.md          # 🔧 复用函数索引（AI 写代码前先查）
 ├── design-archive.md     # 🗑️ UI 设计归档（已否决的设计方案，供参考）
 ├── troubleshooting.md    # 🐛 故障排查（CORS、WASM 404、纹理不显示）
-├── adr/                  # 📜 决策记录（轻量 ADR，关键决定存档）
-│   ├── adr-001-project-infrastructure.md
-│   ├── adr-002-writeconfig-split.md
-│   ├── adr-003-download-strategy.md
-│   ├── adr-003-download-watch.md
-│   ├── adr-004-css-unification.md
-│   ├── adr-005-pending-debt.md
-│   ├── adr-006-scan-and-encoding.md
-│   ├── adr-007-scene-menu-design.md
-│   ├── adr-008-download-watch-spec.md
-│   ├── adr-009-model-details-panel.md
-│   └── adr-010-competitor-ui-mapping.md
-└── research/             # 🧊 调研归档 — 禁止自由读取，按需索引
+├── outfits-spec.md       # 👗 服装变体配置指南（换装系统用户文档）
+├── adr/                  # 📜 决策记录（15条，adr-001 ~ adr-015）
+├── research/             # 🧊 调研归档 — 禁止自由读取，按需索引
     ├── pmx-ecosystem.md
     ├── tech-stack-comparison.md
     ├── dancexr-structure.md
@@ -92,6 +83,18 @@ docs/
 | **接新任务** | `docs/requirements.md`（需求全貌）→ `docs/status.md`（当前状态 + 阻塞点） |
 | **改 Go 逻辑** | `docs/architecture.md`（整体架构）→ `MikuMikuAR/app.go` |
 | **改前端渲染** | `docs/architecture.md`（PMX/VMD 环节）→ `MikuMikuAR/frontend/src/scene.ts` |
+| **换装 / 纹理变体** | `docs/architecture.md` §16 → `frontend/src/outfit.ts` + `frontend/src/outfit-ui.ts` |
+| **音频 / VMD 同步** | `frontend/src/audio.ts` |
+| **场景菜单 / 相机 / 灯光 / 渲染** | `docs/architecture.md` §渲染环节 → `frontend/src/scene-menu.ts` + `frontend/src/camera.ts` |
+| **环境 / 天空 / 粒子** | `frontend/src/env-menu.ts` + `frontend/src/env-lighting.ts` |
+| **模型详情 / 材质调节 / 表情** | `frontend/src/model-detail.ts` + `frontend/src/model-material.ts` |
+| **文件 URL / HTTP 服务器 / 安全隔离** | `docs/architecture.md` §数据通道 | `frontend/src/fileservice.ts` |
+| **程序化动作 / 节拍检测** | `frontend/src/procedural-motion.ts` + `frontend/src/beat-detector.ts` |
+| **模型库 / 扫描 / zip 解压 / 缩略图** | `docs/architecture.md` §模型库管理 | `frontend/src/library-core.ts` + `frontend/src/library.ts` |
+| **VPD 姿势导入** | `frontend/src/vpd-parser.ts` |
+| **LipSync** | `frontend/src/lipsync.ts` |
+| **模型预设** | `frontend/src/model-preset.ts` + `docs/architecture.md` §场景序列化 |
+| **动作库弹窗 / 音乐 / 舞蹈套装** | `frontend/src/motion-popup.ts` |
 | **遇到加载问题** | `docs/troubleshooting.md` |
 | **查项目地基** | `docs/foundation.md` |
 | **查命名演变** | `docs/naming.md` |
@@ -112,13 +115,23 @@ docs/
 | MenuStack / 添加菜单项 / 弹窗导航 / `modelStack` | `docs/menu-architecture.md` | `frontend/src/menu.ts` |
 | 前端 UI / CSS / 样式修改 | `docs/menu-architecture.md`（CSS 类说明） | `frontend/src/app.css` |
 | 3D 场景 / 模型加载 / PMX / VMD / 播放 | `docs/architecture.md` §渲染环节 | `frontend/src/scene.ts` |
-| 模型库 / 扫描 / zip 解压 / 缩略图 | `docs/architecture.md` §模型库管理 | `frontend/src/library.ts` |
+| 模型库 / 扫描 / zip 解压 / 缩略图 | `docs/architecture.md` §模型库管理 | `frontend/src/library-core.ts` + `frontend/src/library.ts` |
 | 文件 URL / HTTP 服务器 / 安全隔离 | `docs/architecture.md` §数据通道 | `frontend/src/fileservice.ts` |
-| 相机 / 灯光 / 渲染参数 / 后处理 | `docs/architecture.md` §渲染环节 | `frontend/src/camera.ts` |
+| 相机 / 灯光 / 渲染参数 / 后处理 | `docs/architecture.md` §渲染环节 | `frontend/src/scene-menu.ts` + `frontend/src/camera.ts` |
+| 环境 / 天空 / 粒子 / 地面 | `docs/architecture.md` §环境系统 | `frontend/src/env-menu.ts` + `frontend/src/env-lighting.ts` |
+| 材质调节 / 按部位 / 逐材质调参 | `docs/architecture.md` §材质系统 | `frontend/src/scene.ts`（`_catOf`/`_applyAll`/`setMatParams`）+ `frontend/src/model-material.ts` |
+| 模型详情 / 模型信息 / 可见性 / 变换 | `frontend/src/model-detail.ts`（`build*Level`） | `frontend/src/library-core.ts`（入口） |
 | 配置 / 外部库 / Blender / MMD | `docs/architecture.md` §生态聚合 | `frontend/src/settings.ts` |
 | 场景序列化 / 自动保存 / libraryRef | `docs/architecture.md` §场景序列化 | `frontend/src/scene.ts` |
 | 修复 / Bug / 崩溃 / 不显示 | `docs/troubleshooting.md` | `docs/fix-cycle.md` |
 | Go 后端 / Binding / 文件操作 | `docs/architecture.md` §Go 后端 | `MikuMikuAR/app.go` |
+| 换装 / 纹理变体 / outfits.json | `docs/architecture.md` §16 | `frontend/src/outfit.ts` + `frontend/src/outfit-ui.ts` |
+| 音频 / 音乐 / VMD 同步 | `frontend/src/audio.ts` | `frontend/src/scene.ts`（`syncAudioPlayback`） |
+| 程序化动作 / Idle / Auto Dance | `frontend/src/procedural-motion.ts` | `frontend/src/beat-detector.ts` |
+| VPD 姿势导入 | `frontend/src/vpd-parser.ts` | `docs/architecture.md` §VMD 环节 |
+| LipSync / 口型同步 | `frontend/src/lipsync.ts` | — |
+| 舞蹈套装 / 动作库弹窗 | `frontend/src/motion-popup.ts` | `frontend/src/library-core.ts` |
+| 模型预设 / 自动应用 | `frontend/src/model-preset.ts` | `frontend/src/model-detail.ts`（`buildPresetListLevel`） |
 | 任何新增函数 | `docs/reusables.md`（先查是否已存在） | — |
 
 > `reusables.md` 是写代码前必查的索引表，不是让你全读的。按函数名/场景 grep。 |
@@ -172,43 +185,66 @@ cd MikuMikuAR/frontend && npx vite build 2>&1
 
 ## 三、项目速查
 
-### 3.1 Go 端
+### 3.1 仓库结构总览
 
 ```
-MikuMikuAR/
-├── app.go         # Wails Binding 入口（文件IO、对话框、HTTP文件服务器）
-├── main.go        # Wails 应用入口
-├── go.mod         # Go 依赖
-├── wails.json     # Wails 配置
-├── tests/
-│   └── test_config_syntax.py   # 契约测试
-├── scripts/
-│   └── build.ps1               # 构建验证脚本
-└── docs/
-    └── AGENTS.md               # 工作组 AI 指南（旧版，见 MikuMikuAR/docs/AGENTS.md）
+仓库根（本文件所在目录）
+├── AGENTS.md          # 🔑 AI 入口（本文件）
+├── docs/              # 📖 项目文档（需求/架构/状态/ADR 等）
+├── .github/           # GitHub Issue 模板
+├── .env.example       # 环境变量示例
+└── MikuMikuAR/        # 📦 代码子目录（Go + 前端）
+    ├── app.go         # Wails Binding 入口（文件IO、对话框、HTTP文件服务器）
+    ├── main.go        # Wails 应用入口
+    ├── go.mod         # Go 依赖
+    ├── wails.json     # Wails 配置
+    ├── tests/
+    │   └── test_config_syntax.py   # 契约测试
+    └── scripts/
+        └── build.ps1               # 构建验证脚本
 ```
 
-### 3.2 前端
+### 3.2 Go 端（MikuMikuAR/ 下）
+
+### 3.3 前端
 
 ```
 MikuMikuAR/frontend/
 ├── src/
-│   ├── main.ts           # 入口 — 事件绑定 + 快捷键 + 初始化
-│   ├── config.ts         # 共享状态 + DOM 引用 + 类型定义 + 工具函数
+│   ├── main.ts           # ★ 入口 — 事件绑定 + 快捷键 + 初始化
+│   ├── config.ts         # ★ 共享状态 + DOM 引用 + 类型定义 + 工具函数
 │   ├── scene.ts          # ★ 3D 场景 + PMX/VMD 加载 + 物理引擎 + 播放控制
-│   ├── library.ts        # 模型库弹窗 + 文件浏览 + 搜索 + 动作库弹窗
-│   ├── settings.ts       # 设置页 + 外部库管理
-│   ├── menu.ts           # MenuStack 通用菜单导航组件
+│   ├── audio.ts          # 音乐播放 + VMD 同步 + 节拍检测挂载
 │   ├── camera.ts         # 相机模式管理（轨道/自由飞行/镜头预设/演唱会）
-│   ├── icons.ts          # Lucide 图标注册表
-│   └── app.css           # 全局样式
+│   ├── fileservice.ts    # 统一文件 URL 解析层（resolveFileUrl）
+│   ├── menu.ts           # MenuStack 通用菜单导航组件
+│   ├── library.ts        # 模型库弹窗入口（MenuStack 初始化）
+│   ├── library-core.ts   # 模型库核心（扫描/搜索/构建层级/标签）
+│   ├── model-detail.ts   # 模型详情子菜单（信息/变换/可见性/标签/表情/材质）
+│   ├── model-material.ts # 逐材质调参子菜单
+│   ├── model-preset.ts   # 模型预设保存/加载
+│   ├── outfit.ts         # 换装系统（loadOutfits/applyOutfitVariant/resetOutfit）
+│   ├── outfit-ui.ts      # 服装变体子菜单 UI
+│   ├── scene-menu.ts     # 场景弹窗（相机/灯光/渲染/音乐/程序化动作）
+│   ├── motion-popup.ts   # 动作库弹窗（VMD/姿势/舞蹈套装）
+│   ├── settings.ts       # 设置页 + 外部库管理
+│   ├── env-menu.ts       # 环境弹窗（天空/地面/粒子/风/云）
+│   ├── env-lighting.ts   # 环境光照推导
+│   ├── icons.ts          # Iconify 图标注册表
+│   ├── ui-helpers.ts     # DOM 构建函数（slideRow/addToggleRow/addSliderRow）
+│   ├── vpd-parser.ts     # VPD 姿势导入 → VMD 帧转换
+│   ├── vmd-writer.ts     # VMD 二进制写入（程序化动作用）
+│   ├── procedural-motion.ts  # 程序化动作（Idle Motion / Auto Dance）
+│   ├── beat-detector.ts  # 音乐节拍检测
+│   ├── lipsync.ts        # 口型同步
+│   └── app.css           # 全局样式（CSS 变量体系）
 ├── index.html
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts       # Vite 配置（optimizeDeps.exclude babylon-mmd）
 ```
 
-### 3.3 技术栈速览
+### 3.4 技术栈速览
 
 | 层级 | 选型 |
 |------|------|
