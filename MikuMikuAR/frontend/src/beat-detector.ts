@@ -9,7 +9,9 @@ const MIN_BEAT_INTERVAL_MS = 250;
 const BPM_WINDOW = 8; // 最近 8 次 beat 间隔求均值
 
 export class BeatDetector {
+    private ctx: AudioContext | null = null;
     private analyser: AnalyserNode | null = null;
+    private source: MediaElementAudioSourceNode | null = null;
     private freqData: Uint8Array = new Uint8Array(0);
     private energyHistory: number[] = [];
     private energySum = 0;        // running sum for avg
@@ -23,17 +25,32 @@ export class BeatDetector {
      *  注意：createMediaElementSource 后音频路由经 AudioContext，
      *  须 resume() 否则浏览器自动播放策略下静音。 */
     attach(audioElement: HTMLAudioElement): void {
+        if (this.ctx) return; // already attached
         const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
         if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        if (ctx.state === "suspended") ctx.resume().catch(() => {});
-        const source = ctx.createMediaElementSource(audioElement);
-        this.analyser = ctx.createAnalyser();
+        this.ctx = new AudioCtx();
+        if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
+        this.source = this.ctx.createMediaElementSource(audioElement);
+        this.analyser = this.ctx.createAnalyser();
         this.analyser.fftSize = 256;
         this.analyser.smoothingTimeConstant = 0.3;
         this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
-        source.connect(this.analyser);
-        this.analyser.connect(ctx.destination);
+        this.source.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+    }
+
+    /** 释放所有 AudioContext 资源。 */
+    dispose(): void {
+        if (this.analyser) { this.analyser.disconnect(); this.analyser = null; }
+        if (this.source) { this.source.disconnect(); this.source = null; }
+        if (this.ctx) { this.ctx.close(); this.ctx = null; }
+        this.freqData = new Uint8Array(0);
+        this.energyHistory = [];
+        this.energySum = 0;
+        this.beatTimes = [];
+        this.lastBeatTime = 0;
+        this.currentBpm = 120;
+        this.phaseInterval = 500;
     }
 
     /** 每帧调用。更新能量历史、检测 beat、估计 BPM。 */

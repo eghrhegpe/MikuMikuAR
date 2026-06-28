@@ -16,8 +16,15 @@ interface _SlotMapping {
   basename: string;
 }
 
+function _isSharedTexture(basename: string): boolean {
+  const lower = basename.toLowerCase();
+  if (lower.startsWith("shared_toon_texture_")) return true;
+  return false;
+}
+
 function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
   const result: _SlotMapping[] = [];
+  const seen = new Set<string>();
   for (const mesh of inst.meshes) {
     const sm = mesh.material as StandardMaterial;
     if (!sm) continue;
@@ -29,11 +36,15 @@ function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
       ["normal", sm.bumpTexture],
       ["emissive", sm.emissiveTexture],
     ] as const) {
-      if (tex) {
-        const url = (tex as Texture).name || (tex as Texture).url || "";
-        const base = url.split("/").pop()?.split("?")[0] || "";
-        if (base) result.push({ matName, slot, basename: base });
-      }
+      if (!tex) continue;
+      const url = (tex as Texture).name || (tex as Texture).url || "";
+      const base = url.split("/").pop()?.split("?")[0] || "";
+      if (!base) continue;
+      if (_isSharedTexture(base)) continue;
+      const key = matName + "|" + slot + "|" + base;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push({ matName, slot, basename: base });
     }
   }
   return result;

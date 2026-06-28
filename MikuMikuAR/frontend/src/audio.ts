@@ -81,6 +81,23 @@ export function clearAudio(): void {
     audioPath = "";
 }
 
+/** 释放音频系统所有资源（AudioContext / AnalyserNode）。 */
+export function disposeAudio(): void {
+    if (audioElement) {
+        audioElement.pause();
+        audioElement.src = "";
+        audioElement = null;
+    }
+    audioName = "";
+    audioPath = "";
+    audioOffset = 0;
+    if (beatDetector) {
+        beatDetector.dispose();
+        beatDetector = null;
+        beatDetectorAttached = false;
+    }
+}
+
 export function setVolume(v: number): void {
     volume = Math.max(0, Math.min(1, v));
     if (audioElement) {

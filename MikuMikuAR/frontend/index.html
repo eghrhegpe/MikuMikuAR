@@ -50,46 +50,10 @@
         <!-- Model List Popup -->
         <!-- Model List Popup -->
         <div id="modelPopup" data-overlay>
-            <div class="popup-header" id="popupBreadcrumb">
-                <span class="crumb current">模型库</span>
-                <button class="manage-btn" id="btnManageExternal" title="外部库" data-hint="管理外部库"><iconify-icon icon="lucide:plug"></iconify-icon></button>
-                <button class="manage-btn" id="btnRescan" title="重新扫描" data-hint="重新扫描模型库"><iconify-icon icon="lucide:refresh-cw"></iconify-icon></button>
-                <button class="close-btn" id="btnClosePopup">✕</button>
-            </div>
-            <div id="popupSearch">
-                <input id="popupSearchInput" type="text" placeholder="搜索模型..." class="overlay-input">
-            </div>
-            <div id="popupList"></div>
-            <div id="popupEmpty">
-                <div style="font-size:28px;margin-bottom:6px;">📭</div>
-                <div>此目录为空</div>
-            </div>
         </div>
 
         <!-- Motion List Popup -->
         <div id="motionPopup" data-overlay>
-            <div class="popup-header" id="motionPopupBreadcrumb">
-                <span class="crumb current">动作库</span>
-                <button class="close-btn" id="btnCloseMotionPopup">✕</button>
-            </div>
-            <div id="motionPopupSearch">
-                <input id="motionPopupSearchInput" type="text" placeholder="搜索动作..." class="overlay-input">
-            </div>
-            <div id="motionPopupList"></div>
-            <div id="motionPopupEmpty">
-                <div style="font-size:28px;margin-bottom:6px;">🎬</div>
-                <div>未找到动作文件</div>
-            </div>
-        </div>
-
-        <!-- External Library Management Overlay -->
-        <div id="externalOverlay" class="overlay" data-overlay>
-            <div class="slide-header">
-                <span class="slide-title">管理外部库</span>
-                <button class="overlay-close" id="btnCloseExternal" style="font-size:14px;color:var(--text-dim);background:none;border:none;cursor:pointer;">✕</button>
-            </div>
-            <div class="slide-list" id="externalList"></div>
-            <div style="padding:8px 14px;"><button id="btnAddExternal" style="width:100%;background:none;border:1px dashed var(--white-12);border-radius:8px;color:var(--text-dim);padding:10px;font-size:12px;cursor:pointer;">＋ 添加外部库</button></div>
         </div>
 
         <!-- Settings Overlay (MenuStack) -->
