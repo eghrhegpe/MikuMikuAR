@@ -123,6 +123,21 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 **代码质量**
 - [x] `openFileDialog` 提取 — `SelectPMXFile` / `SelectVMDMotion` 从 22 行各减至 5 行
 - [x] `decodeZipName` 自动编码检测 — Shift-JIS / GBK 双向解码评分择优
+- [x] Go 后端代码审查（2026-06-28）— 7 项修复:
+  - `integration.go`: 删除 `_ = existing` 死代码（P3）
+  - `httpserver.go`: `copyDir`/`isolateDir` 加 `logFn` 参数，`IsolateModelDir` 传 `safeLogError` 记录拷贝失败（P3）
+  - `library.go`: `GetConfig`/`GetModelMeta` 区分 `os.IsNotExist` 与真实错误，后者写日志（P2）
+  - `pmx.go`: 删除自定义 `decodeUTF16`，改用 `unicode/utf16.Decode`（P4）
+  - `app.go`: `shutdown()` 停止 watcher + 优雅关闭所有 HTTP 文件服务器，修复 goroutine 泄漏（P2）
+  - `app.go`: `PMXPath` 字段加注释澄清也存储 VMD 路径（P3）
+- [x] 构建优化（2026-06-28）— 6 项:
+  - `frontend/package.json`: 加 `sideEffects: false` 标记，允许 Rollup 更大范围 tree-shaking
+  - `frontend/vite.config.ts`: `manualChunks` 分离 `babylon-mmd` + `@babylonjs/core` → `babylon-vendor.js`（2473 KiB，独立缓存）
+  - `frontend/vite.config.ts`: `rollup-plugin-visualizer` 可插拔集成，`$env:ANALYZE='true'` 生成 `dist/stats.html`
+  - `frontend/src/main.ts`: 动态导入 `settings.ts`（22 KiB）、`scene-menu.ts`（31 KiB），首次点击对应按钮才加载
+  - `scripts/release.ps1`: 新增，`go build -ldflags="-s -w"` 缩小二进制 ~12MB→9.7MB
+  - `library.go`: `ScanModelDir` 用 `errgroup` 并行扫描所有根目录，上限 4 并发
+- [x] 前端主 chunk 从 2062 KiB 降至 153 KiB（92%↓），babylon vendor 独立缓存
 
 **场景面板**
 - [x] 右侧场景面板移除 — 功能合并到模型弹窗「加载模型」上方（已加载模型作为按钮 + 分隔线）
