@@ -343,6 +343,7 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 | 27 | ~~regenerateProcMotion 首次选模式时因 procVmdActive=false 跳过 — 改为 `off` 才跳过~~ | ✅ |
 | 28 | ~~startProcMotion 未清除 inst.vmdName，动作弹窗显示残留 "IdleMotion" — 补 `vmdName = ""`~~ | ✅ |
 | 29 | ~~暂停/播放按钮和动作菜单「暂停」误动 autoLoop，与 Space 键不一致 — 移除 autoLoop 操作~~ | ✅ |
+| 30 | 五弹窗 toggle 行为异常（关闭后打不开、aria-expanded 正常但 DOM 不显示）— 根因：`innerHTML = ""` 后复用旧 `SlideMenu` 实例导致 DOM 引用悬空；修复：五个 `showXxx()` 改为每次 `new SlideMenu()`；同步修复 `overlay-fade-out` 残留、`closeAllOverlays()` 选择器、`syncNavAriaExpanded()` 位置、`_toggleOverlays()` Canvas 点击只关闭不恢复 | ✅ |
 
 > 核心价值定位、DanceXR 对标进度和下一步规划见 [`roadmap.md`](roadmap.md)。
 
