@@ -206,6 +206,11 @@ cd MikuMikuAR/frontend && npx vite build 2>&1
 
 ### 3.2 Go 端（MikuMikuAR/ 下）
 
+Go 端核心文件：
+- `app.go` — Wails Binding 入口（文件IO/HTTP服务器/扫描/标签/预设/换装）
+- `pmx.go` — PMX Header 二进制解析
+- `main.go` — Wails 应用入口
+
 ### 3.3 前端
 
 ```
@@ -256,7 +261,7 @@ MikuMikuAR/frontend/
 
 ---
 
-### 3.4 函数映射表（AI 找代码用）
+### 3.5 函数映射表（AI 找代码用）
 
 改前端功能时先查此表定位文件，避免在错误的文件中搜索。
 
@@ -283,7 +288,6 @@ MikuMikuAR/frontend/
 | `arrangeModels()` | `scene.ts` | 多模型横向排列 |
 | `updatePlaybackUI()` | `scene.ts` | 进度条 + 时间显示 |
 | `seekFromEvent()` | `scene.ts` | 点击/拖拽定位 |
-| `renderScenePanel()` | `scene.ts` | 右侧场景面板列表 |
 
 #### 模型库 & 弹窗
 
@@ -295,7 +299,7 @@ MikuMikuAR/frontend/
 | `refreshLibrary()` | `library.ts` | 重新扫描 + 刷新弹窗 |
 | `loadThumbnailsForLevel()` | `library.ts` | 批量加载缩略图 |
 | `ensureModelMeta()` | `library.ts` | 按需解析 PMX header |
-| `buildLevel()`, `modelToRow()`, `onModelRowClick()` | `library.ts` | 文件浏览层级构建 |
+| `buildLevel()`, `modelToRow()`, `onModelRowClick()` | `library-core.ts` | 文件浏览层级构建 |
 | `handlePopupSearchInput()` | `library.ts` | 搜索输入处理 |
 | `showSettings()` | `settings.ts` | 设置页（MenuStack） |
 | `buildSettings*Level()`, `handleSettingsAction()` | `settings.ts` | 设置页各层级构建与选项处理 |
@@ -326,7 +330,7 @@ MikuMikuAR/frontend/
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `getLucideIconMap()` | `icons.ts` | Lucide SVG 图标名称→JSX 映射 |
+| `getLucideIconMap()` | `icons.ts` | Lucide SVG 图标名称→JSX 映射（已废弃，迁移至 Iconify） |
 
 ---
 
