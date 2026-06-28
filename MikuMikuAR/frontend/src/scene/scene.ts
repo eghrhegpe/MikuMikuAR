@@ -1446,7 +1446,9 @@ export function setEnvState(partial: Partial<EnvState>): void {
 
     // Update water animation speed without full recreation
     if (partial.waterAnimSpeed !== undefined && _envSys.water.material) {
-        (_envSys.water.material as WaterMaterial).windForce = partial.waterAnimSpeed * 4;
+        const wm = _envSys.water.material as WaterMaterial;
+        wm.windForce = partial.waterAnimSpeed * 4;
+        wm.waveSpeed = partial.waterAnimSpeed * 1.0;
     }
 
     triggerAutoSave();
@@ -1839,9 +1841,12 @@ function _createWater(state: EnvState): void {
     water.waveHeight = state.waterWaveHeight;
     water.bumpHeight = 0.15;
     water.waveLength = 0.08;
+    water.waveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
     water.waterColor = new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]);
     water.colorBlendFactor = 0.3;
     water.alpha = state.waterTransparency;
+    // Initialize wind direction (XZ plane → WaterMaterial Vector2)
+    water.windDirection = new Vector2(state.windDirection[0], state.windDirection[2]);
     waterMesh.material = water;
 
     // 反射场景内所有可见 mesh（首版静态；模型增删后重切水面菜单可刷新）
@@ -2272,6 +2277,12 @@ function _ensureEnvUpdateObserver(): void {
         // Sky rotation animation
         if (envState.skyRotationSpeed > 0.001 && _envSys.sky.skyMesh) {
             _envSys.sky.skyMesh.rotation.y += envState.skyRotationSpeed * 0.01 * dt;
+            // Keep rotation.y in [-2π, 2π] to avoid floating-point drift
+            if (_envSys.sky.skyMesh.rotation.y > Math.PI * 2) {
+                _envSys.sky.skyMesh.rotation.y -= Math.PI * 2;
+            } else if (_envSys.sky.skyMesh.rotation.y < -Math.PI * 2) {
+                _envSys.sky.skyMesh.rotation.y += Math.PI * 2;
+            }
         }
         // Water wave direction follows wind (horizontal XZ plane)
         if (envState.waterEnabled && _envSys.water.material) {
@@ -2289,7 +2300,9 @@ function _ensureEnvUpdateObserver(): void {
             if (underwater !== _underwaterActive) {
                 _underwaterActive = underwater;
                 pipeline.chromaticAberrationEnabled = underwater;
-                pipeline.chromaticAberration.aberrationAmount = underwater ? 20 : 0;
+                if (pipeline.chromaticAberration) {
+                    pipeline.chromaticAberration.aberrationAmount = underwater ? 20 : 0;
+                }
                 if (underwater && !_underwaterSavedFog) {
                     _underwaterSavedFog = {
                         mode: scene.fogMode,
