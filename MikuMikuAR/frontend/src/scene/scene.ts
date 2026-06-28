@@ -86,6 +86,7 @@ export { _catState, _matState, _matEnabled, _catOf, _applyAll, isMatEnabled, set
 export type { MaterialCategoryParams, MaterialCategory } from "./scene-material";
 
 import { ModelManager } from "./scene-model";
+import { initEnvironmentSystem, disposeEnvironmentSystem, apply } from "./scene-env";
 
 // ======== Babylon.js ========
 export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true, stencil: true });
@@ -622,6 +623,9 @@ export async function initScene(): Promise<void> {
 
     _applyGround(envState);
     _updateSunDisc();
+
+    // Initialize environment system (Phase 1: refactoring scene.ts)
+    initEnvironmentSystem(scene, pipeline);
 }
 
 // ======== Thumbnail Capture (Direction 3) ========
@@ -1454,6 +1458,10 @@ export function setEnvState(partial: Partial<EnvState>): void {
         wm.windForce = partial.waterAnimSpeed * 4;
         wm.waveSpeed = partial.waterAnimSpeed * 1.0;
     }
+
+    // Phase 1: Call environment system apply (stub for now, will be implemented in Phase 2)
+    // TODO Phase 2: Remove individual _applySky/_applyGround calls and rely on apply()
+    apply(envState);
 
     triggerAutoSave();
 }
