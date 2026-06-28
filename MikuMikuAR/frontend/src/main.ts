@@ -56,15 +56,47 @@ function syncNavAriaExpanded(): void {
         btn.setAttribute("aria-expanded", target?.classList.contains("visible") ? "true" : "false");
     });
 }
-function toggleOverlay(id: string, showFn: () => void): void {
+// Track which show function last opened each overlay, so toggling the same button
+// closes the overlay while clicking a different button (sharing the same overlay)
+// switches content with a cross-fade animation instead of wrongly closing it.
+const _lastOverlayFn = new Map<string, () => void>();
+
+/** Wait for the CSS transition on `el` to complete (with a safety timeout). */
+function waitForTransition(el: HTMLElement): Promise<void> {
+    return new Promise(resolve => {
+        const dur = parseFloat(getComputedStyle(el).transitionDuration) * 1000 || 0;
+        if (dur <= 0) { resolve(); return; }
+        const done = () => { el.removeEventListener("transitionend", done); resolve(); };
+        el.addEventListener("transitionend", done);
+        setTimeout(resolve, dur + 50);
+    });
+}
+
+async function toggleOverlay(id: string, showFn: () => void): Promise<void> {
     const el = document.getElementById(id);
     if (!el) return;
+    const last = _lastOverlayFn.get(id);
     if (el.classList.contains("visible")) {
-        el.classList.remove("visible");
+        if (last === showFn) {
+            // Same button clicked again → toggle close
+            el.classList.remove("visible");
+        } else {
+            // Different button targeting the same overlay → cross-fade switch
+            // Phase 1: fade out current content
+            el.classList.add("overlay-fade-out");
+            await waitForTransition(el);
+            // Phase 2: swap content (closeAllOverlays + showFn), then fade in
+            el.classList.remove("overlay-fade-out", "visible");
+            closeAllOverlays();
+            showFn();
+            el.classList.add("visible");
+            // Phase 3: fade-in plays automatically via CSS transition on .visible
+        }
     } else {
         closeAllOverlays();
         showFn();
     }
+    _lastOverlayFn.set(id, showFn);
     syncNavAriaExpanded();
 }
 const navActions: Record<number, () => void | Promise<void>> = {

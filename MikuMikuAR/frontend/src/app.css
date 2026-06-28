@@ -128,6 +128,13 @@ html, body {
     border: var(--overlay-border);
 }
 .overlay.visible { display: flex; flex-direction: column; }
+/* Cross-fade: when switching between two views sharing the same overlay (e.g. Scene ↔ Environment),
+   this class triggers a fade-out before the content swap, followed by a fade-in via .visible. */
+.overlay-fade-out {
+    opacity: 0 !important;
+    transform: scale(0.85) !important;
+    pointer-events: none !important;
+}
 
 /* ===== 弹窗 header ===== */
 .overlay-header {
