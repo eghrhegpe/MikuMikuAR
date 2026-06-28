@@ -1,0 +1,84 @@
+// [doc:architecture] Cloth Manager — 布料模拟控制器
+// 从 scene-menu.ts 提取，职责: 布料创建/销毁/重建
+// UI 层通过 toggleCloth / recreateCloth 调用，不再寄生菜单文件
+
+import { SdfCollider, DEFAULT_BODY_CAPSULES } from "./xpbd-collider";
+import { createCloth, buildClothUpdateFn } from "./xpbd-cloth";
+import { scene, modelManager } from "../scene/scene";
+import { focusedModelId, envState, setStatus, modelRegistry } from "../core/config";
+
+/** 为当前聚焦模型创建布料 */
+function _createClothForFocusedModel(): void {
+    const id = focusedModelId;
+    if (!id || !modelManager) {
+        setStatus("⚠ 请先加载模型", false);
+        return;
+    }
+
+    const mmd = modelManager.focusedMmdModel();
+    if (!mmd) {
+        setStatus("⚠ 当前模型无 MMD 数据", false);
+        return;
+    }
+
+    // Build SDF collider
+    const collider = new SdfCollider();
+    collider.init(DEFAULT_BODY_CAPSULES);
+
+    // Scale collider to match model size
+    const model = modelRegistry.get(id);
+    if (model && model.rootMesh) {
+        const boundingInfo = model.rootMesh.getBoundingInfo();
+        if (boundingInfo) {
+            const modelHeight = boundingInfo.boundingBox.maximumWorld.y
+                - boundingInfo.boundingBox.minimumWorld.y;
+            const defaultHeight = 2.0;
+            const scaleFactor = modelHeight / defaultHeight;
+            collider.scaleAll(Math.max(0.5, Math.min(2.0, scaleFactor)));
+        }
+    }
+
+    // Build anchor matrix function
+    const anchorMatrixFn = (boneName: string): Float32Array | null => {
+        return modelManager.getBoneWorldMatrix(boneName);
+    };
+
+    // Use config from envState
+    const cfg = envState.clothConfig;
+
+    // Create cloth
+    const cloth = createCloth(scene, cfg, collider);
+
+    // Build update function
+    const updateFn = buildClothUpdateFn(cloth, anchorMatrixFn, collider);
+
+    // Register with model manager
+    modelManager.addCloth(id, cloth, updateFn);
+
+    setStatus("✓ 布料模拟已启用", true);
+}
+
+/** 销毁当前聚焦模型的布料 */
+function _destroyClothForFocusedModel(): void {
+    const id = focusedModelId;
+    if (!id || !modelManager) return;
+    modelManager.removeCloth(id);
+}
+
+// ======== 公开 API ========
+
+/** 切换布料模拟开关 */
+export function toggleCloth(enabled: boolean): void {
+    if (enabled) {
+        _createClothForFocusedModel();
+    } else {
+        _destroyClothForFocusedModel();
+    }
+}
+
+/** 用当前配置重建布料（参数变更后调用） */
+export function recreateCloth(): void {
+    if (!envState.clothEnabled) return;
+    _destroyClothForFocusedModel();
+    _createClothForFocusedModel();
+}

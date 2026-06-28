@@ -38,6 +38,22 @@ const defaultEnv: EnvState = {
     fogEnabled: false,
     fogColor: [0.5, 0.5, 0.6],
     fogDensity: 0.01,
+    clothEnabled: false,
+    clothConfig: {
+        anchorBone: "腰",
+        topology: "skirt",
+        innerRadius: 0.15,
+        length: 0.6,
+        slope: 15,
+        segmentsH: 24,
+        segmentsV: 12,
+        particleRadius: 0.03,
+        compliance: 0.001,
+        totalMass: 0.5,
+        damping: 0.96,
+        gravityScale: 1.0,
+        bendCompliance: 0.005,
+    },
 };
 
 describe("EnvState defaults", () => {
@@ -51,6 +67,7 @@ describe("EnvState defaults", () => {
             "waterEnabled", "waterLevel", "waterColor", "waterTransparency", "waterWaveHeight", "waterSize", "waterAnimSpeed",
             "cloudsEnabled", "cloudCover", "cloudScale", "cloudHeight",
             "fogEnabled", "fogColor", "fogDensity",
+            "clothEnabled", "clothConfig",
         ];
         for (const k of keys) {
             expect(k in defaultEnv).toBe(true);

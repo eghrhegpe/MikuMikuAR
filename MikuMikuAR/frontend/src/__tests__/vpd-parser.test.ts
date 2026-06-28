@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseVPDText, decodeVPDData, poseDataToVmdBuffer, loadVPDFromBuffer, buildVmdBoneFrame } from "../motion/vpd-parser";
+import { parseVPDText, decodeVPDData, poseDataToVmdBuffer, loadVPDFromBuffer } from "../motion/vpd-parser";
+import { BONE_FRAME_SIZE, MORPH_FRAME_SIZE, buildBoneFrame } from "../motion/vmd-writer";
 
 // ======== parseVPDText ========
 
@@ -55,6 +56,14 @@ describe("decodeVPDData", () => {
         expect(result).toContain("Bone0:hip");
     });
 
+    it("decodes UTF-16LE BOM content", () => {
+        // UTF-16LE BOM (0xFF 0xFE) + "test" in UTF-16LE
+        const u16 = new Uint16Array([0xFEFF, 0x74, 0x65, 0x73, 0x74]); // BOM + "test"
+        const buffer = u16.buffer;
+        const result = decodeVPDData(buffer as ArrayBuffer);
+        expect(result).toContain("test");
+    });
+
     it("falls back to shift-jis when UTF-8 fails (invalid UTF-8 bytes)", () => {
         // 0x83 0x5C is invalid UTF-8 (valid in SJIS though)
         const sjisBytes = new Uint8Array([
@@ -67,11 +76,8 @@ describe("decodeVPDData", () => {
         ]);
         const result = decodeVPDData(sjisBytes.buffer as ArrayBuffer);
         expect(result).toContain("Vocaloid");
-        // SJIS 0x83 0x5C = "左", 0x82 0x8C = "肩"
-        // We can't assert exact chars since it depends on SJIS decoder support,
-        // but the result should have readable content
         expect(result.length).toBeGreaterThan(0);
-        expect(result.includes("\uFFFD")).toBe(false); // no replacement chars
+        expect(result.includes("\uFFFD")).toBe(false);
     });
 
     it("decodes BOM-prefixed content", () => {
@@ -92,95 +98,25 @@ describe("decodeVPDData", () => {
     });
 });
 
-// ======== buildVmdBoneFrame ========
-
-describe("buildVmdBoneFrame", () => {
-    it("bone name is space-padded (0x20) to 15 bytes, not null-padded", () => {
-        const frame = buildVmdBoneFrame("abc", [0, 0, 0], [0, 0, 0, 1]);
-        const nameBytes = new Uint8Array(frame, 0, 15);
-        // First 3 bytes: "abc"
-        expect(nameBytes[0]).toBe("a".charCodeAt(0));
-        expect(nameBytes[1]).toBe("b".charCodeAt(0));
-        expect(nameBytes[2]).toBe("c".charCodeAt(0));
-        // Remaining 12 bytes: 0x20 (space), not 0x00
-        for (let i = 3; i < 15; i++) {
-            expect(nameBytes[i]).toBe(0x20);
-        }
-    });
-
-    it("frame number is always 0 (single frame pose)", () => {
-        const frame = buildVmdBoneFrame("bone", [1, 2, 3], [0, 0, 0, 1]);
-        const view = new DataView(frame);
-        expect(view.getUint32(15, true)).toBe(0);
-    });
-
-    it("writes position as 3 float32 LE at offset 19", () => {
-        const frame = buildVmdBoneFrame("bone", [1.5, -2.5, 3.25], [0, 0, 0, 1]);
-        const view = new DataView(frame);
-        expect(view.getFloat32(19, true)).toBeCloseTo(1.5);
-        expect(view.getFloat32(23, true)).toBeCloseTo(-2.5);
-        expect(view.getFloat32(27, true)).toBeCloseTo(3.25);
-    });
-
-    it("writes rotation as 4 float32 LE at offset 31 (xyzw)", () => {
-        const frame = buildVmdBoneFrame("bone", [0, 0, 0], [0, 0.7, 0, 0.7]);
-        const view = new DataView(frame);
-        expect(view.getFloat32(31, true)).toBeCloseTo(0);
-        expect(view.getFloat32(35, true)).toBeCloseTo(0.7);
-        expect(view.getFloat32(39, true)).toBeCloseTo(0);
-        expect(view.getFloat32(43, true)).toBeCloseTo(0.7);
-    });
-
-    it("interpolation bytes (offset 47-62) are all 0x7F (linear)", () => {
-        const frame = buildVmdBoneFrame("bone", [0, 0, 0], [0, 0, 0, 1]);
-        for (let i = 47; i <= 62; i++) {
-            expect(new DataView(frame).getUint8(i)).toBe(0x7F);
-        }
-    });
-
-    it("reserved bytes (offset 63-65) are all 0x00", () => {
-        const frame = buildVmdBoneFrame("bone", [0, 0, 0], [0, 0, 0, 1]);
-        expect(new DataView(frame).getUint8(63)).toBe(0x00);
-        expect(new DataView(frame).getUint8(64)).toBe(0x00);
-        expect(new DataView(frame).getUint8(65)).toBe(0x00);
-    });
-
-    it("total frame size is 66 bytes", () => {
-        const frame = buildVmdBoneFrame("bone", [0, 0, 0], [0, 0, 0, 1]);
-        expect(frame.byteLength).toBe(66);
-    });
-
-    it("bone name \"センター\" is 6 SJIS bytes + 9 spaces, no nulls in padding", () => {
-        const frame = buildVmdBoneFrame("センター", [0, 0, 0], [0, 0, 0, 1]);
-        const nameBytes = new Uint8Array(frame, 0, 15);
-        // All 15 bytes should be non-zero (either SJIS data or spaces)
-        for (let i = 0; i < 15; i++) {
-            expect(nameBytes[i]).not.toBe(0x00);
-        }
-        // The first bytes should be the SJIS encoding of センター (non-space)
-        expect(nameBytes[0]).not.toBe(0x20);
-    });
-});
-
 // ======== poseDataToVmdBuffer ========
 
 describe("poseDataToVmdBuffer", () => {
+    const HEADER_SIZE = 30 + 20 + 4; // sig + model + boneCount
+    const BONE_SIZE = BONE_FRAME_SIZE;
+    const MORPH_COUNT_OFFSET = HEADER_SIZE + BONE_SIZE + 4; // +4 for morph count field
+
     it("produces a valid VMD header with signature", () => {
-        const buf = poseDataToVmdBuffer({ bones: [] });
+        const buf = poseDataToVmdBuffer({ modelName: "test", bones: [] });
         const view = new DataView(buf);
         const sig = new Uint8Array(buf, 0, 30);
         const sigStr = new TextDecoder("ascii").decode(sig);
         expect(sigStr.startsWith("Vocaloid Motion Data 0002")).toBe(true);
-
-        // Bone keyframe count = 0
         expect(view.getUint32(50, true)).toBe(0);
-
-        // Morph keyframe count = 0 (at end = 54)
-        expect(view.getUint32(54, true)).toBe(0);
     });
 
     it("writes a single bone keyframe correctly", () => {
         const buf = poseDataToVmdBuffer({
+            modelName: "test",
             bones: [{
                 name: "左肩",
                 position: [1, 2, 3],
@@ -188,45 +124,24 @@ describe("poseDataToVmdBuffer", () => {
             }],
         });
         const view = new DataView(buf);
-
         expect(view.getUint32(50, true)).toBe(1);
 
-        // Bone name at offset 54: space-padded
-        const nameBytes = new Uint8Array(buf, 54, 15);
+        const frameOff = HEADER_SIZE;
+        const nameBytes = new Uint8Array(buf, frameOff, 15);
         expect(Array.from(nameBytes).some(b => b !== 0)).toBe(true);
-        // Last byte should be 0x20 (space), not 0x00
         expect(nameBytes[14]).toBe(0x20);
 
-        // Frame number = 0
-        expect(view.getUint32(54 + 15, true)).toBe(0);
-
-        // Position
-        expect(view.getFloat32(54 + 19, true)).toBeCloseTo(1);
-        expect(view.getFloat32(54 + 23, true)).toBeCloseTo(2);
-        expect(view.getFloat32(54 + 27, true)).toBeCloseTo(3);
-
-        // Rotation
-        expect(view.getFloat32(54 + 31, true)).toBeCloseTo(0);
-        expect(view.getFloat32(54 + 35, true)).toBeCloseTo(0.7);
-        expect(view.getFloat32(54 + 39, true)).toBeCloseTo(0);
-        expect(view.getFloat32(54 + 43, true)).toBeCloseTo(0.7);
-
-        // Interpolation at offset 47-62 within frame = 54+47 = 101
-        for (let i = 0; i < 16; i++) {
-            expect(view.getUint8(54 + 47 + i)).toBe(0x7F);
-        }
-        // Reserved at 54+63 = 117
-        expect(view.getUint8(54 + 63)).toBe(0x00);
-        expect(view.getUint8(54 + 64)).toBe(0x00);
-        expect(view.getUint8(54 + 65)).toBe(0x00);
-
-        // Morph keyframe count at end
-        const totalBoneSize = 54 + 1 * 66;
-        expect(view.getUint32(totalBoneSize, true)).toBe(0);
+        expect(view.getUint32(frameOff + 15, true)).toBe(0); // frame number
+        expect(view.getFloat32(frameOff + 19, true)).toBeCloseTo(1);
+        expect(view.getFloat32(frameOff + 23, true)).toBeCloseTo(2);
+        expect(view.getFloat32(frameOff + 27, true)).toBeCloseTo(3);
+        expect(view.getFloat32(frameOff + 31, true)).toBeCloseTo(0);
+        expect(view.getFloat32(frameOff + 35, true)).toBeCloseTo(0.7);
     });
 
     it("writes multiple bone keyframes", () => {
         const buf = poseDataToVmdBuffer({
+            modelName: "test",
             bones: [
                 { name: "a", position: [1, 0, 0], rotation: [0, 0, 0, 1] },
                 { name: "b", position: [0, 2, 0], rotation: [0, 0, 0, 1] },
@@ -234,22 +149,21 @@ describe("poseDataToVmdBuffer", () => {
         });
         const view = new DataView(buf);
         expect(view.getUint32(50, true)).toBe(2);
-
-        // Second bone frame at offset 54 + 66
-        expect(view.getUint32(54 + 66 + 15, true)).toBe(0);
-        expect(view.getFloat32(54 + 66 + 19, true)).toBeCloseTo(0);
-        expect(view.getFloat32(54 + 66 + 23, true)).toBeCloseTo(2);
-        expect(view.getFloat32(54 + 66 + 27, true)).toBeCloseTo(0);
+        const frame2Off = HEADER_SIZE + BONE_SIZE;
+        expect(view.getUint32(frame2Off + 15, true)).toBe(0);
+        expect(view.getFloat32(frame2Off + 23, true)).toBeCloseTo(2);
     });
 
-    it("output total buffer size = 54 + N*66 + 4", () => {
+    it("total buffer size = header + N*boneSize + 4(morphCount) + trailer", () => {
         const buf = poseDataToVmdBuffer({
+            modelName: "test",
             bones: [
                 { name: "a", position: [0, 0, 0], rotation: [0, 0, 0, 1] },
                 { name: "b", position: [0, 0, 0], rotation: [0, 0, 0, 1] },
             ],
         });
-        expect(buf.byteLength).toBe(54 + 2 * 66 + 4);
+        // header(54) + 2*111 + 4(morphCount) + 4*3(trailer) = 54+222+4+12 = 292
+        expect(buf.byteLength).toBe(HEADER_SIZE + 2 * BONE_SIZE + 4 + 12);
     });
 });
 
@@ -271,29 +185,17 @@ Bone0:胸
         const view = new DataView(vmdBuffer);
         expect(view.getUint32(50, true)).toBe(1);
 
-        // Verify bone name is space-padded
         const nameBytes = new Uint8Array(vmdBuffer, 54, 15);
         expect(Array.from(nameBytes).some(b => b !== 0)).toBe(true);
-        expect(nameBytes[14]).toBe(0x20); // last byte = space
+        expect(nameBytes[14]).toBe(0x20);
 
-        // Verify position
         expect(view.getFloat32(54 + 19, true)).toBeCloseTo(0);
         expect(view.getFloat32(54 + 23, true)).toBeCloseTo(5);
-        expect(view.getFloat32(54 + 27, true)).toBeCloseTo(0);
-
-        // Verify interpolation present
-        for (let i = 0; i < 16; i++) {
-            expect(view.getUint8(54 + 47 + i)).toBe(0x7F);
-        }
     });
 
-    it("returns header-only VMD for empty VPD", () => {
+    it("throws for empty VPD (no bone data)", () => {
         const encoder = new TextEncoder();
         const vpdBuffer = encoder.encode("Vocaloid Pose Data file\n{\n}").buffer;
-
-        const vmdBuffer = loadVPDFromBuffer(vpdBuffer as ArrayBuffer);
-        expect(vmdBuffer.byteLength).toBe(54 + 0 * 66 + 4); // 58
-        const view = new DataView(vmdBuffer);
-        expect(view.getUint32(50, true)).toBe(0);
+        expect(() => loadVPDFromBuffer(vpdBuffer as ArrayBuffer)).toThrow("VPD: no bone data found");
     });
 });

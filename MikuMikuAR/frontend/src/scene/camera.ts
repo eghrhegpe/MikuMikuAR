@@ -12,6 +12,7 @@ import { Animation } from "@babylonjs/core/Animations/animation";
 import { Scene } from "@babylonjs/core/scene";
 import { MmdCamera } from "babylon-mmd/esm/Runtime/mmdCamera";
 import { focusedModelId, modelRegistry } from "../core/config";
+import { focusModel, reattachPipeline, getRenderState } from "./scene";
 
 // ======== Types ========
 export type CameraMode = "orbit" | "freefly" | "concert" | "oneshot" | "vmd";
@@ -61,8 +62,22 @@ export function getOrbitParams(): OrbitParams { return _currentPreset.orbit; }
 export function getFreeflyParams(): FreeflyParams { return _currentPreset.freefly; }
 export function getConcertParams(): ConcertParams { return _currentPreset.concert; }
 
-export function setOrbitParams(p: Partial<OrbitParams>): void { Object.assign(_currentPreset.orbit, p); }
-export function setFreeflyParams(p: Partial<FreeflyParams>): void { Object.assign(_currentPreset.freefly, p); }
+export function setOrbitParams(p: Partial<OrbitParams>): void {
+    Object.assign(_currentPreset.orbit, p);
+    // Sync to live camera if orbit mode is active
+    if (_cameraMode === "orbit" && _currentCamera instanceof ArcRotateCamera) {
+        if (p.distance !== undefined) _currentCamera.radius = p.distance;
+        if (p.beta !== undefined) _currentCamera.beta = p.beta;
+        if (p.targetHeight !== undefined) _currentCamera.target.y = p.targetHeight;
+    }
+}
+export function setFreeflyParams(p: Partial<FreeflyParams>): void {
+    Object.assign(_currentPreset.freefly, p);
+    if (_cameraMode === "freefly" && _currentCamera instanceof UniversalCamera) {
+        if (p.speed !== undefined) (_currentCamera as UniversalCamera).speed = p.speed;
+        if (p.angularSensibility !== undefined) (_currentCamera as UniversalCamera).angularSensibility = p.angularSensibility;
+    }
+}
 export function setConcertParams(p: Partial<ConcertParams>): void { Object.assign(_currentPreset.concert, p); }
 
 // ======== Internal State ========
@@ -285,17 +300,15 @@ export function switchCameraMode(mode: CameraMode): void {
     if (mode === "orbit" && focusedModelId) {
         const inst = modelRegistry.get(focusedModelId);
         if (inst) {
-            import("./scene").then(({ focusModel }) => focusModel(focusedModelId));
+            focusModel(focusedModelId);
         }
     }
 
     // Re-attach post-processing pipeline to the new camera
-    import("./scene").then(({ reattachPipeline, getRenderState }) => {
-        reattachPipeline();
-        // Apply current FOV from render state to the new camera
-        const rs = getRenderState();
-        if (rs.fov) (newCam as any).fov = rs.fov;
-    });
+    reattachPipeline();
+    // Apply current FOV from render state to the new camera
+    const rs = getRenderState();
+    if (rs.fov) (newCam as any).fov = rs.fov;
 }
 
 // ======== Auto Frame ========

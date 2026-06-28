@@ -6,17 +6,63 @@ import { createIconifyIcon } from "./icons";
 export function slideRow(container: HTMLElement, icon: string, label: string, hasArrow: boolean, onClick: () => void): void {
   const row = document.createElement("div");
   row.className = "slide-item";
-  row.innerHTML = `<span class="slide-icon"><iconify-icon icon="${icon}"></iconify-icon></span><span class="slide-label">${label}</span>${hasArrow ? '<span class="slide-arrow">&gt;</span>' : ''}`;
+
+  const iconSpan = document.createElement("span");
+  iconSpan.className = "slide-icon";
+  const iconEl = createIconifyIcon(icon);
+  if (iconEl) {
+    iconSpan.appendChild(iconEl);
+  } else {
+    const fb = document.createElement("span");
+    fb.className = "cs-icon-fallback";
+    fb.textContent = label.charAt(0) || "?";
+    iconSpan.appendChild(fb);
+  }
+  row.appendChild(iconSpan);
+
+  const labelSpan = document.createElement("span");
+  labelSpan.className = "slide-label";
+  labelSpan.textContent = label;
+  row.appendChild(labelSpan);
+
+  if (hasArrow) {
+    const arrowSpan = document.createElement("span");
+    arrowSpan.className = "slide-arrow";
+    arrowSpan.textContent = ">";
+    row.appendChild(arrowSpan);
+  }
+
   row.addEventListener("click", onClick);
   container.appendChild(row);
 }
 
-export function addToggleRow(container: HTMLElement, label: string, value: boolean, onChange: (v: boolean) => void): void {
+export function addToggleRow(container: HTMLElement, label: string, value: boolean, onChange: (v: boolean) => void, icon?: string): void {
   const row = document.createElement("div");
-  row.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:10px;justify-content:space-between;";
+  row.className = "toggle-row";
+
+  const left = document.createElement("div");
+  left.className = "toggle-left";
+
+  if (icon) {
+    const iconBox = document.createElement("span");
+    iconBox.className = "cs-icon";
+    const iconEl = createIconifyIcon(icon);
+    if (iconEl) {
+      iconBox.appendChild(iconEl);
+    } else {
+      const fb = document.createElement("span");
+      fb.className = "cs-icon-fallback";
+      fb.textContent = label.charAt(0) || "?";
+      iconBox.appendChild(fb);
+    }
+    left.appendChild(iconBox);
+  }
+
   const lbl = document.createElement("span");
-  lbl.style.cssText = "font-size:11px;color:var(--text-dim);";
+  lbl.className = "toggle-label";
   lbl.textContent = label;
+  left.appendChild(lbl);
+
   const toggleLabel = document.createElement("label");
   toggleLabel.className = "toggle";
   const toggle = document.createElement("input");
@@ -27,7 +73,7 @@ export function addToggleRow(container: HTMLElement, label: string, value: boole
   slider.className = "slider";
   toggleLabel.appendChild(toggle);
   toggleLabel.appendChild(slider);
-  row.appendChild(lbl);
+  row.appendChild(left);
   row.appendChild(toggleLabel);
   container.appendChild(row);
 }
@@ -46,7 +92,14 @@ export function addSliderRow(container: HTMLElement, label: string, value: numbe
     const iconBox = document.createElement("span");
     iconBox.className = "cs-icon";
     const iconEl = createIconifyIcon(icon);
-    if (iconEl) iconBox.appendChild(iconEl);
+    if (iconEl) {
+      iconBox.appendChild(iconEl);
+    } else {
+      const fb = document.createElement("span");
+      fb.className = "cs-icon-fallback";
+      fb.textContent = label.charAt(0) || "?";
+      iconBox.appendChild(fb);
+    }
     top.appendChild(iconBox);
   }
 
@@ -89,7 +142,11 @@ export function addSliderRow(container: HTMLElement, label: string, value: numbe
     else delta = 0.5;
 
     let newVal = currentValue + delta;
-    newVal = Math.round(newVal / step) * step;
+    // Integer-scale arithmetic to avoid floating-point drift (e.g. 0.1 + 0.2)
+    if (step !== 0 && Number.isFinite(step)) {
+        const precision = 1 / step;
+        newVal = Math.round(newVal * precision) / precision;
+    }
     newVal = Math.max(min, Math.min(max, newVal));
 
     updateDisplay(newVal);
@@ -201,7 +258,14 @@ export function addModeSlider<T extends string | number>(
     const iconBox = document.createElement("span");
     iconBox.className = "cs-icon";
     const iconEl = createIconifyIcon(icon);
-    if (iconEl) iconBox.appendChild(iconEl);
+    if (iconEl) {
+      iconBox.appendChild(iconEl);
+    } else {
+      const fb = document.createElement("span");
+      fb.className = "cs-icon-fallback";
+      fb.textContent = label.charAt(0) || "?";
+      iconBox.appendChild(fb);
+    }
     top.appendChild(iconBox);
   }
 

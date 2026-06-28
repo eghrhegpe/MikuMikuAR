@@ -15,15 +15,8 @@ import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { ImportMeshAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
 import "@babylonjs/core/Physics/v2/physicsEngineComponent";
-import { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
-import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
-import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
-import { WaterMaterial } from "@babylonjs/materials/water/waterMaterial";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { Observer } from "@babylonjs/core/Misc/observable";
-import { GPUParticleSystem } from "@babylonjs/core/Particles/gpuParticleSystem";
-import { ParticleSystem } from "@babylonjs/core/Particles/particleSystem";
 import "@babylonjs/core/Particles/webgl2ParticleSystem";
 
 import { RegisterMmdModelLoaders } from "babylon-mmd/esm/Loader/dynamic";
@@ -44,6 +37,7 @@ import "@babylonjs/core/Materials/Textures/Loaders/hdrTextureLoader";
 import "@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
+import { initEnvFacade, applyEnvState, applySky, _envSys, refreshWaterRenderList, updateWaterAnimSpeed } from "./scene-env";
 
 import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../../wailsjs/go/main/App";
 import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode, getCameraMode } from "./camera";
@@ -60,6 +54,7 @@ import {
     computeLibraryRef, resolveLibraryRef,
     envState, EnvState,
     OutfitFile, OutfitVariant, OutfitSlot,
+    triggerAutoSave, setTriggerAutoSave,
 } from "../core/config";
 import { resolveFileUrl, normPath } from "../core/fileservice";
 import { loadVPDFromBuffer } from "../motion/vpd-parser";
@@ -76,6 +71,7 @@ import { loadOutfits, applyOutfitVariant, resetOutfit } from "../outfit/outfit";
 import { _catState, _matState, _matEnabled } from "./scene-material";
 import { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from "./scene-vmd";
 import { updatePlaybackUI, seekFromEvent } from "./scene-playback";
+import { tryAutoApplyPreset } from "../menus/model-preset";
 
 // XPBD 布料模拟
 import { createCloth, buildClothUpdateFn, disposeCloth, type ClothInstance, type ClothConfig } from "../physics/xpbd-cloth";
@@ -86,7 +82,6 @@ export { _catState, _matState, _matEnabled, _catOf, _applyAll, isMatEnabled, set
 export type { MaterialCategoryParams, MaterialCategory } from "./scene-material";
 
 import { ModelManager } from "./scene-model";
-import { initEnvironmentSystem, disposeEnvironmentSystem, apply } from "./scene-env";
 
 // ======== Babylon.js ========
 export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true, stencil: true });
@@ -461,7 +456,6 @@ function updateLipSync(): void {
 // ======== Convenience getters ========
 export function focusedMmdModel() { return modelManager.focusedMmdModel(); }
 export function focusedModel() { return modelManager.focused(); }
-
 /** 启动程序化动作：生成 procedural VMD 并加载。
  *  @param targetMode 要加载的模式（覆盖 procState.mode）
  *  @param bpm Auto Dance 用的 BPM */
@@ -621,11 +615,11 @@ export async function initScene(): Promise<void> {
     // Sync config's modelRegistry to ModelManager's internal registry
     setModelRegistry(modelManager.modelRegistry);
 
-    _applyGround(envState);
+    // Initialize environment system (Phase 8 Facade)
+    initEnvFacade(scene, pipeline);
+    applyEnvState(envState);
     _updateSunDisc();
-
-    // Initialize environment system (Phase 1: refactoring scene.ts)
-    initEnvironmentSystem(scene, pipeline);
+    setTriggerAutoSave(triggerAutoSaveImpl);
 }
 
 // ======== Thumbnail Capture (Direction 3) ========
@@ -703,7 +697,7 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
             modelManager.focus(id);
             setStatus(`✓ ${displayName} (场景)`, true);
             modelManager.arrange();
-            _refreshWaterRenderList();
+            refreshWaterRenderList();
             return;
         }
 
@@ -744,15 +738,11 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
         modelManager.focus(id);
         setStatus(appliedVmd ? `✓ ${displayName} + ${appliedVmd}` : `✓ ${displayName}`, true);
         modelManager.arrange();
-        _refreshWaterRenderList();
+        refreshWaterRenderList();
         // Auto-capture thumbnail for future popup display
         captureThumbnail(filePath).catch(() => {});
         if (!skipAutoApply) {
-            // Try auto-apply preset from library
-            try {
-                const { tryAutoApplyPreset } = await import("../menus/model-preset");
-                tryAutoApplyPreset(id).catch((err: any) => console.warn("auto-apply preset:", err));
-            } catch (err) { console.warn("auto-apply import:", err); }
+            tryAutoApplyPreset(id).catch((err: any) => console.warn("auto-apply preset:", err));
         }
         // Pre-load outfit file for UI entry availability
         loadOutfits(id).catch(() => {});
@@ -885,7 +875,7 @@ export function removeModel(id: string): void {
 
     // Delegate registry management + focus + bone overlay + mesh disposal to ModelManager
     modelManager.remove(id);
-    _refreshWaterRenderList();
+    refreshWaterRenderList();
 
     // Concert mode has no model to track after removal — fall back to orbit
     if (focusedModelId === null && getCameraMode() === "concert") {
@@ -1268,7 +1258,7 @@ export function getGravityStrength(): number {
 // ======== Auto-save debounce ========
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
-export function triggerAutoSave(): void {
+function triggerAutoSaveImpl(): void {
     if (autoSaveTimer) clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(async () => {
         try {
@@ -1321,7 +1311,7 @@ function _timeOfDayTick(): void {
     if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
         _lastSkySunAngle = envSunAngle;
         if (envState.skyMode === "procedural") {
-            _applySky(envState);
+            applySky(envState);
         }
     }
 }
@@ -1399,69 +1389,27 @@ export function setEnvState(partial: Partial<EnvState>): void {
 
     Object.assign(envState, partial);
 
-    if (partial.skyMode !== undefined || partial.skyColorTop !== undefined ||
-        partial.skyColorMid !== undefined || partial.skyColorBot !== undefined ||
-        partial.skyTexture !== undefined || partial.skyRotationY !== undefined ||
-        partial.skyBrightness !== undefined || partial.envIntensity !== undefined) {
-        _applySky(envState);
-        // Auto-link: derive lighting from sky color when in procedural mode
-        if (envAutoLink && envState.skyMode === "procedural" &&
-            (partial.skyColorTop !== undefined || partial.skyColorMid !== undefined || partial.skyColorBot !== undefined || partial.skyBrightness !== undefined)) {
-            const l = deriveLighting(envState.skyColorTop, envSunAngle);
-            setLightState({
-                dirColor: l.dirDiffuse,
-                dirX: l.dirDirection[0],
-                dirY: l.dirDirection[1],
-                dirZ: l.dirDirection[2],
-                dirIntensity: l.dirIntensity,
-                hemiIntensity: l.hemiIntensity,
-            });
-        }
-    }
+    // All environment changes go through the Facade
+    applyEnvState(envState);
 
-    if (partial.groundVisible !== undefined || partial.groundMode !== undefined ||
-        partial.groundColor !== undefined || partial.groundAlpha !== undefined) {
-        _applyGround(envState);
-    }
-
-    if (partial.particleType !== undefined || partial.particleEnabled !== undefined || partial.windEnabled !== undefined || partial.windDirection !== undefined || partial.windSpeed !== undefined) {
-        if (envState.particleEnabled && envState.particleType !== "none") {
-            _createParticleEmitter(envState.particleType, envState.windEnabled);
-        } else {
-            _disposeParticles();
-        }
-    }
-
-    if (partial.cloudsEnabled !== undefined || partial.cloudCover !== undefined || partial.cloudScale !== undefined || partial.cloudHeight !== undefined) {
-        _createClouds(envState);
-    }
-
-    if (partial.fogEnabled !== undefined || partial.fogColor !== undefined || partial.fogDensity !== undefined) {
-        if (envState.fogEnabled) {
-            scene.fogMode = Scene.FOGMODE_EXP2;
-            scene.fogColor = new Color3(envState.fogColor[0], envState.fogColor[1], envState.fogColor[2]);
-            scene.fogDensity = envState.fogDensity;
-        } else {
-            scene.fogMode = Scene.FOGMODE_NONE;
-        }
-    }
-
-    if (partial.waterEnabled !== undefined || partial.waterLevel !== undefined ||
-        partial.waterColor !== undefined || partial.waterTransparency !== undefined ||
-        partial.waterWaveHeight !== undefined || partial.waterSize !== undefined) {
-        _createWater(envState);
+    // Auto-link: derive lighting from sky color when in procedural mode
+    if (envAutoLink && envState.skyMode === "procedural" &&
+        (partial.skyColorTop !== undefined || partial.skyColorMid !== undefined || partial.skyColorBot !== undefined || partial.skyBrightness !== undefined)) {
+        const l = deriveLighting(envState.skyColorTop, envSunAngle);
+        setLightState({
+            dirColor: l.dirDiffuse,
+            dirX: l.dirDirection[0],
+            dirY: l.dirDirection[1],
+            dirZ: l.dirDirection[2],
+            dirIntensity: l.dirIntensity,
+            hemiIntensity: l.hemiIntensity,
+        });
     }
 
     // Update water animation speed without full recreation
-    if (partial.waterAnimSpeed !== undefined && _envSys.water.material) {
-        const wm = _envSys.water.material as WaterMaterial;
-        wm.windForce = partial.waterAnimSpeed * 4;
-        wm.waveSpeed = partial.waterAnimSpeed * 1.0;
+    if (partial.waterAnimSpeed !== undefined) {
+        updateWaterAnimSpeed(partial.waterAnimSpeed);
     }
-
-    // Phase 1: Call environment system apply (stub for now, will be implemented in Phase 2)
-    // TODO Phase 2: Remove individual _applySky/_applyGround calls and rely on apply()
-    apply(envState);
 
     triggerAutoSave();
 }
@@ -1504,844 +1452,6 @@ export async function tryRestoreLastScene(): Promise<void> {
     }
 }
 
-// ======== Environment System (Phase 8) ========
-
-interface EnvSkyResources {
-    skyMesh: Mesh | null;
-    envTexture: BaseTexture | null;
-}
-
-const _envSys: {
-    sky: EnvSkyResources;
-    ground: { mesh: Mesh | null };
-    particles: { emitter: GPUParticleSystem | null; followObserver: Observer<Scene> | null };
-    clouds: { postProcess: Mesh | null; postProcess2: Mesh | null; material: StandardMaterial | null; texture: Texture | null };
-    water: { mesh: Mesh | null; material: WaterMaterial | null };
-    shadow: { generator: ShadowGenerator | null };
-} = {
-    sky: { skyMesh: null, envTexture: null },
-    ground: { mesh: null },
-    particles: { emitter: null, followObserver: null },
-    clouds: { postProcess: null, postProcess2: null, material: null, texture: null },
-    water: { mesh: null, material: null },
-    shadow: { generator: null },
-};
-
-function _disposeSky(): void {
-    if (_envSys.sky.skyMesh) {
-        _envSys.sky.skyMesh.dispose();
-        _envSys.sky.skyMesh = null;
-    }
-    if (_envSys.sky.envTexture) {
-        _envSys.sky.envTexture.dispose();
-        _envSys.sky.envTexture = null;
-        scene.environmentTexture = null;
-    }
-    _disposeSunDisc();
-}
-
-function _buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness: number, sunAngle: number = 45, starsEnabled: boolean = false): Texture {
-    const W = 256, H = 256;
-    const canvas = document.createElement("canvas");
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext("2d")!;
-
-    // Vertical gradient (top→bot → zenith→ground)
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    const scale = (c: Color3) => `rgb(${c.r*brightness*255|0},${c.g*brightness*255|0},${c.b*brightness*255|0})`;
-    grad.addColorStop(0, scale(bot));
-    grad.addColorStop(0.35, scale(bot));
-    grad.addColorStop(0.5, scale(mid));
-    grad.addColorStop(0.65, scale(top));
-    grad.addColorStop(1, scale(top));
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
-
-    // Sun glow — radial gradient at sun position on the dome
-    const sunY = 128 - sunAngle * (256 / 180);
-    const sunX = W / 2;
-
-    if (sunAngle > -5) {
-        const glowRadius = sunAngle > 60 ? 50 : sunAngle > 20 ? 65 : 80;
-        const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, glowRadius);
-        glow.addColorStop(0, "rgba(255,255,240,0.95)");
-        glow.addColorStop(0.08, "rgba(255,255,220,0.85)");
-        glow.addColorStop(0.2, "rgba(255,245,200,0.5)");
-        glow.addColorStop(0.4, "rgba(255,235,170,0.18)");
-        glow.addColorStop(0.7, "rgba(255,220,140,0.04)");
-        glow.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = glow;
-        ctx.fillRect(sunX - glowRadius, sunY - glowRadius, glowRadius * 2, glowRadius * 2);
-    }
-
-    // Stars — visible when sky is dark (sunAngle < 10) and enabled
-    if (starsEnabled) {
-        const starAlpha = sunAngle > 10 ? 0 : sunAngle < -5 ? 1 : (10 - sunAngle) / 15;
-        if (starAlpha > 0.01) {
-            // Deterministic seeded star positions (300 stars)
-            const starSeed = 12345;
-            const hash = (i: number) => { let h = (i * 2654435761 + starSeed) | 0; h ^= h >>> 13; return (h & 0x7fffffff) / 0x7fffffff; };
-            const starCount = Math.round(200 + starAlpha * 100);
-            for (let i = 0; i < starCount; i++) {
-                const sx = hash(i * 3) * W;
-                const sy = hash(i * 3 + 1) * H * 0.55; // top 55% only (sky dome)
-                const sr = 0.5 + hash(i * 3 + 2) * 2.0;
-                const sa = starAlpha * (0.3 + hash(i + 1000) * 0.7);
-                const twinkle = 0.7 + hash(i + 2000) * 0.3;
-                const r = 220 + hash(i + 3000) * 35 | 0;
-                const g = 210 + hash(i + 4000) * 45 | 0;
-                const b = 200 + hash(i + 5000) * 55 | 0;
-                ctx.fillStyle = `rgba(${r},${g},${b},${(sa * twinkle).toFixed(2)})`;
-                ctx.beginPath();
-                ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-    }
-
-    const tex = new Texture("data:" + canvas.toDataURL("image/png"), scene, false);
-    tex.wrapU = Texture.CLAMP_ADDRESSMODE;
-    tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-    tex.hasAlpha = false;
-    return tex;
-}
-
-function _createProceduralSky(state: EnvState): void {
-    const sphere = MeshBuilder.CreateSphere("envSkySphere", {
-        diameter: 1000,
-        segments: 24,
-        sideOrientation: Mesh.BACKSIDE,
-    }, scene);
-    sphere.isPickable = false;
-
-    const mat = new StandardMaterial("envSkyMat", scene);
-    mat.emissiveTexture = _buildGradientTexture(
-        new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
-        new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
-        new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
-        state.skyBrightness,
-        envSunAngle,
-        state.starsEnabled,
-    );
-    mat.disableLighting = true;
-    mat.backFaceCulling = false;
-
-    sphere.material = mat;
-    _envSys.sky.skyMesh = sphere;
-    scene.clearColor = new Color4(0, 0, 0, 1);
-}
-
-function _loadEnvTexture(path: string, rotationY: number, intensity: number): void {
-    const ext = path.split(".").pop()?.toLowerCase();
-    const supported = ["hdr", "dds", "exr"];
-    if (!supported.includes(ext ?? "")) {
-        console.warn(`[sky] unsupported format .${ext}, falling back to procedural`);
-        _disposeSky();
-        _createProceduralSky(envState);
-        return;
-    }
-
-    const cubeTex = new CubeTexture(path, scene);
-    cubeTex.rotationY = rotationY;
-    scene.environmentTexture = cubeTex;
-    scene.environmentIntensity = intensity;
-    scene.clearColor = new Color4(0, 0, 0, 1);
-    _envSys.sky.envTexture = cubeTex;
-
-    const sphere = MeshBuilder.CreateSphere("envSkyDome", {
-        diameter: 1000, segments: 24, sideOrientation: Mesh.BACKSIDE,
-    }, scene);
-    sphere.isPickable = false;
-    const mat = new StandardMaterial("envSkyDomeMat", scene);
-    mat.reflectionTexture = cubeTex;
-    mat.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;
-    mat.diffuseColor = new Color3(0, 0, 0);
-    mat.specularColor = new Color3(0, 0, 0);
-    mat.disableLighting = true;
-    sphere.material = mat;
-    _envSys.sky.skyMesh = sphere;
-}
-
-function _applySky(state: EnvState): void {
-    // Color mode: always just clearColor (no mesh)
-    if (state.skyMode === "color") {
-        _disposeSky();
-        scene.clearColor = new Color4(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2], 1);
-        return;
-    }
-
-    const mesh = _envSys.sky.skyMesh;
-
-    // Procedural mode — in-place texture rebuild
-    if (state.skyMode === "procedural") {
-        if (mesh?.material?.getClassName() === "StandardMaterial") {
-            const mat = mesh.material as StandardMaterial;
-            if (mat.emissiveTexture) {
-                mat.emissiveTexture.dispose();
-            }
-            mat.emissiveTexture = _buildGradientTexture(
-                new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
-                new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
-                new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
-                state.skyBrightness,
-                envSunAngle,
-                state.starsEnabled,
-            );
-            return;
-        }
-        // First-time: create from scratch
-        _disposeSky();
-        _createProceduralSky(state);
-        return;
-    }
-
-    // Texture: full rebuild
-    _disposeSky();
-
-    if (state.skyTexture) {
-        _loadEnvTexture(state.skyTexture, state.skyRotationY, state.envIntensity);
-    }
-}
-
-function _applyCheckerGround(ground: Mesh, state: EnvState): void {
-    const canvas = document.createElement("canvas");
-    canvas.width = 128;
-    canvas.height = 128;
-    const ctx = canvas.getContext("2d")!;
-    const tileSize = 16;
-    for (let y = 0; y < 128; y += tileSize) {
-        for (let x = 0; x < 128; x += tileSize) {
-            const isWhite = ((x / tileSize) + (y / tileSize)) % 2 === 0;
-            const bright = isWhite ? 1 : 0.6;
-            const r = Math.round(state.groundColor[0] * bright * 255);
-            const g = Math.round(state.groundColor[1] * bright * 255);
-            const b = Math.round(state.groundColor[2] * bright * 255);
-            ctx.fillStyle = `rgb(${r},${g},${b})`;
-            ctx.fillRect(x, y, tileSize, tileSize);
-        }
-    }
-    const tex = new Texture(canvas.toDataURL(), scene);
-    const mat = new StandardMaterial("envGroundChecker", scene);
-    mat.diffuseTexture = tex;
-    mat.diffuseColor = new Color3(1, 1, 1);
-    mat.alpha = state.groundAlpha;
-    mat.backFaceCulling = false;
-    ground.material = mat;
-}
-
-function _applyGround(state: EnvState): void {
-    if (_envSys.ground.mesh) {
-        _envSys.ground.mesh.dispose();
-        _envSys.ground.mesh = null;
-    }
-    if (!state.groundVisible) return;
-
-    const ground = MeshBuilder.CreateGround("envGround", {
-        width: 60,
-        height: 60,
-        subdivisions: 2,
-    }, scene);
-    ground.isPickable = false;
-    ground.position.y = -0.05;
-
-    if (state.groundMode === "grid") {
-        const mat = new GridMaterial("envGroundMat", scene);
-        mat.gridRatio = 1;
-        mat.mainColor = new Color3(
-            state.groundColor[0],
-            state.groundColor[1],
-            state.groundColor[2],
-        );
-        mat.lineColor = new Color3(
-            state.groundColor[0] * 1.5,
-            state.groundColor[1] * 1.5,
-            state.groundColor[2] * 1.5,
-        );
-        mat.backFaceCulling = false;
-        ground.material = mat;
-    } else if (state.groundMode === "checker") {
-        _applyCheckerGround(ground, state);
-    } else {
-        const mat = new StandardMaterial("envGroundMat", scene);
-        mat.diffuseColor = new Color3(
-            state.groundColor[0],
-            state.groundColor[1],
-            state.groundColor[2],
-        );
-        mat.alpha = state.groundAlpha;
-        mat.backFaceCulling = false;
-        ground.material = mat;
-    }
-
-    _envSys.ground.mesh = ground;
-}
-
-// ======== Water System ========
-
-// 2D Perlin noise — compact implementation for water bump texture
-function _perlinHash(x: number, y: number): number {
-    let h = (x * 374761393 + y * 668265263) | 0;
-    h = (h ^ (h >>> 13)) * 1274126177;
-    h = (h ^ (h >>> 16)) | 0;
-    return (h & 0x7fffffff) / 0x7fffffff; // [0, 1]
-}
-function _perlin2D(x: number, y: number): number {
-    const xi = x | 0, yi = y | 0;
-    const xf = x - xi, yf = y - yi;
-    const u = xf * xf * (3 - 2 * xf);
-    const v = yf * yf * (3 - 2 * yf);
-    const n00 = _perlinHash(xi, yi);
-    const n10 = _perlinHash(xi + 1, yi);
-    const n01 = _perlinHash(xi, yi + 1);
-    const n11 = _perlinHash(xi + 1, yi + 1);
-    return (1 - u) * (1 - v) * n00 + u * (1 - v) * n10 + (1 - u) * v * n01 + u * v * n11;
-}
-/** Fractional Brownian Motion: multi-octave Perlin noise for rich water detail. */
-function _fbmNoise(x: number, y: number, octaves: number = 5): number {
-    let v = 0, amp = 1, freq = 1, total = 0;
-    for (let i = 0; i < octaves; i++) {
-        v += amp * _perlin2D(x * freq, y * freq);
-        total += amp;
-        amp *= 0.5;
-        freq *= 2.17;
-    }
-    return (v / total) * 0.5 + 0.5; // normalize to [0, 1]
-}
-
-let _waterBumpTexture: Texture | null = null;
-function _makeWaterBumpTexture(): Texture {
-    if (_waterBumpTexture) return _waterBumpTexture;
-    const S = 256;
-    const canvas = document.createElement("canvas");
-    canvas.width = S;
-    canvas.height = S;
-    const ctx = canvas.getContext("2d")!;
-    const img = ctx.createImageData(S, S);
-    const freq = 6.0; // base feature size
-    for (let y = 0; y < S; y++) {
-        for (let x = 0; x < S; x++) {
-            const i = (y * S + x) * 4;
-            const n = _fbmNoise(x / freq, y / freq, 5);
-            img.data[i] = 128 + (n - 0.5) * 128;      // R normal perturb
-            img.data[i + 1] = 128 + (n - 0.5) * 128;  // G normal perturb
-            img.data[i + 2] = 255;                      // B neutral
-            img.data[i + 3] = 255;                      // A opaque
-        }
-    }
-    ctx.putImageData(img, 0, 0);
-    _waterBumpTexture = new Texture(canvas.toDataURL(), scene);
-    return _waterBumpTexture;
-}
-
-function _createWater(state: EnvState): void {
-    _disposeWater();
-    if (!state.waterEnabled) return;
-
-    const size = Math.max(1, state.waterSize);
-    const waterMesh = MeshBuilder.CreateGround("envWater", {
-        width: size,
-        height: size,
-        subdivisions: 32,
-    }, scene);
-    waterMesh.isPickable = false;
-    waterMesh.position.y = state.waterLevel;
-
-    const water = new WaterMaterial("envWaterMat", scene, new Vector2(size, size));
-    water.bumpTexture = _makeWaterBumpTexture();
-    water.windForce = (state.waterAnimSpeed ?? 1) * 4;
-    water.waveHeight = state.waterWaveHeight;
-    water.bumpHeight = 0.15;
-    water.waveLength = 0.08;
-    water.waveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
-    water.waterColor = new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]);
-    water.colorBlendFactor = 0.3;
-    water.alpha = state.waterTransparency;
-    // Initialize wind direction (XZ plane → WaterMaterial Vector2)
-    water.windDirection = new Vector2(state.windDirection[0], state.windDirection[2]);
-    waterMesh.material = water;
-
-    // 反射场景内所有可见 mesh（首版静态；模型增删后重切水面菜单可刷新）
-    for (const m of scene.meshes) {
-        if (m !== waterMesh && m.isEnabled()) {
-            water.addToRenderList(m);
-        }
-    }
-
-    _envSys.water.mesh = waterMesh;
-    _envSys.water.material = water;
-}
-
-function _disposeWater(): void {
-    if (_envSys.water.mesh) {
-        _envSys.water.mesh.dispose();
-        _envSys.water.mesh = null;
-    }
-    if (_envSys.water.material) {
-        _envSys.water.material.dispose();
-        _envSys.water.material = null;
-    }
-}
-
-function _refreshWaterRenderList(): void {
-    if (!envState.waterEnabled || !_envSys.water.mesh) return;
-    _createWater(envState);
-}
-
-// ======== Particle System (Phase 8) ========
-
-const _particleTextures = new Map<string, Texture>();
-
-function _makeParticleTexture(kind: string): Texture {
-    const cached = _particleTextures.get(kind);
-    if (cached) return cached;
-    const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext("2d")!;
-    _drawParticleShape(ctx, kind);
-    const tex = new Texture(canvas.toDataURL(), scene, false, false);
-    tex.hasAlpha = true;
-    _particleTextures.set(kind, tex);
-    return tex;
-}
-
-function _drawParticleShape(ctx: CanvasRenderingContext2D, kind: string): void {
-    ctx.clearRect(0, 0, 64, 64);
-    const cx = 32, cy = 32;
-    switch (kind) {
-        case "sakura": {
-            ctx.fillStyle = "#ffb7c5";
-            for (let i = 0; i < 5; i++) {
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate((i * Math.PI * 2) / 5);
-                ctx.beginPath();
-                ctx.ellipse(0, -15, 7, 13, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-            ctx.fillStyle = "#ffe080";
-            ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
-            break;
-        }
-        case "rain": {
-            const grad = ctx.createLinearGradient(32, 6, 32, 58);
-            grad.addColorStop(0, "rgba(180,210,255,0)");
-            grad.addColorStop(0.5, "rgba(200,225,255,0.95)");
-            grad.addColorStop(1, "rgba(220,235,255,0)");
-            ctx.fillStyle = grad;
-            ctx.fillRect(30, 6, 4, 52);
-            break;
-        }
-        case "snow": {
-            ctx.strokeStyle = "rgba(255,255,255,0.95)";
-            ctx.lineWidth = 2.5;
-            ctx.lineCap = "round";
-            for (let i = 0; i < 6; i++) {
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate((i * Math.PI) / 3);
-                ctx.beginPath();
-                ctx.moveTo(0, 0); ctx.lineTo(0, -24);
-                ctx.moveTo(0, -15); ctx.lineTo(-5, -21);
-                ctx.moveTo(0, -15); ctx.lineTo(5, -21);
-                ctx.stroke();
-                ctx.restore();
-            }
-            break;
-        }
-        case "fireworks": {
-            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30);
-            grad.addColorStop(0, "rgba(255,240,180,1)");
-            grad.addColorStop(0.3, "rgba(255,200,100,0.6)");
-            grad.addColorStop(1, "rgba(255,150,50,0)");
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 64, 64);
-            ctx.strokeStyle = "rgba(255,255,220,0.9)";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(cx, 4); ctx.lineTo(cx, 60);
-            ctx.moveTo(4, cy); ctx.lineTo(60, cy);
-            ctx.stroke();
-            break;
-        }
-        case "fireflies": {
-            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28);
-            grad.addColorStop(0, "rgba(210,255,130,1)");
-            grad.addColorStop(0.4, "rgba(150,255,80,0.6)");
-            grad.addColorStop(1, "rgba(100,200,50,0)");
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 64, 64);
-            break;
-        }
-        case "leaves": {
-            ctx.fillStyle = "#c9742a";
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(-0.3);
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 9, 21, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = "#8a4a18";
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(0, -19); ctx.lineTo(0, 19);
-            ctx.stroke();
-            ctx.restore();
-            break;
-        }
-    }
-}
-
-function _createParticleEmitter(type: EnvState["particleType"], windEnabled: boolean): void {
-    _disposeParticles();
-
-    if (type === "none") return;
-
-    const ps = new GPUParticleSystem("envParticles", { capacity: 5000 }, scene);
-    ps.particleTexture = _makeParticleTexture(type);
-    ps.updateSpeed = 0.01;
-    ps.emitter = new Vector3(0, 10, 0);
-
-    switch (type) {
-        case "sakura": {
-            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
-            ps.emitRate = 40;
-            ps.gravity = new Vector3(0, -0.8, 0);
-            ps.minLifeTime = 8; ps.maxLifeTime = 15;
-            ps.minEmitPower = 0.5; ps.maxEmitPower = 1.5;
-            ps.minAngularSpeed = -1; ps.maxAngularSpeed = 1;
-            ps.minSize = 0.15; ps.maxSize = 0.35;
-            ps.createBoxEmitter(
-                new Vector3(-0.5, -0.2, -0.5), new Vector3(0.5, 0.2, 0.5),
-                new Vector3(-12, 8, -12), new Vector3(12, 12, 12),
-            );
-            ps.addColorGradient(0, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1));
-            ps.addColorGradient(0.8, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1));
-            ps.addColorGradient(1, new Color4(1, 0.72, 0.78, 0), new Color4(1, 0.8, 0.85, 0));
-            break;
-        }
-        case "rain": {
-            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
-            ps.emitRate = 1000;
-            ps.gravity = new Vector3(0, -25, 0);
-            ps.minLifeTime = 1; ps.maxLifeTime = 2;
-            ps.minEmitPower = 15; ps.maxEmitPower = 20;
-            ps.minSize = 0.1; ps.maxSize = 0.2;
-            ps.createBoxEmitter(
-                new Vector3(-0.1, -1, -0.1), new Vector3(0.1, -1, 0.1),
-                new Vector3(-15, 12, -15), new Vector3(15, 15, 15),
-            );
-            ps.addColorGradient(0, new Color4(0.7, 0.8, 1, 0.6), new Color4(0.8, 0.9, 1, 0.8));
-            ps.addColorGradient(1, new Color4(0.7, 0.8, 1, 0), new Color4(0.8, 0.9, 1, 0));
-            break;
-        }
-        case "snow": {
-            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
-            ps.emitRate = 250;
-            ps.gravity = new Vector3(0, -1.5, 0);
-            ps.minLifeTime = 6; ps.maxLifeTime = 12;
-            ps.minEmitPower = 0.3; ps.maxEmitPower = 0.8;
-            ps.minAngularSpeed = -0.5; ps.maxAngularSpeed = 0.5;
-            ps.minSize = 0.1; ps.maxSize = 0.25;
-            ps.createBoxEmitter(
-                new Vector3(-0.5, -0.3, -0.5), new Vector3(0.5, -0.3, 0.5),
-                new Vector3(-15, 10, -15), new Vector3(15, 14, 15),
-            );
-            ps.addColorGradient(0, new Color4(1, 1, 1, 0.9), new Color4(1, 1, 1, 1));
-            ps.addColorGradient(1, new Color4(1, 1, 1, 0), new Color4(1, 1, 1, 0));
-            break;
-        }
-        case "fireworks": {
-            ps.blendMode = ParticleSystem.BLENDMODE_ADD;
-            ps.emitRate = 80;
-            ps.gravity = new Vector3(0, -4, 0);
-            ps.minLifeTime = 1.2; ps.maxLifeTime = 2.2;
-            ps.minEmitPower = 6; ps.maxEmitPower = 10;
-            ps.minSize = 0.15; ps.maxSize = 0.35;
-            ps.createSphereEmitter(0.1);
-            ps.addColorGradient(0, new Color4(1, 1, 0.6, 1), new Color4(1, 0.9, 0.4, 1));
-            ps.addColorGradient(0.5, new Color4(1, 0.6, 0.2, 1), new Color4(1, 0.4, 0.1, 1));
-            ps.addColorGradient(1, new Color4(1, 0.3, 0.1, 0), new Color4(0.8, 0.2, 0, 0));
-            ps.addSizeGradient(0, 0.1, 0.2);
-            ps.addSizeGradient(0.3, 0.3, 0.4);
-            ps.addSizeGradient(1, 0.05, 0.1);
-            break;
-        }
-        case "fireflies": {
-            ps.blendMode = ParticleSystem.BLENDMODE_ADD;
-            ps.emitRate = 15;
-            ps.gravity = new Vector3(0, 0, 0);
-            ps.minLifeTime = 4; ps.maxLifeTime = 8;
-            ps.minEmitPower = 0.2; ps.maxEmitPower = 0.5;
-            ps.minSize = 0.1; ps.maxSize = 0.2;
-            ps.createSphereEmitter(8);
-            ps.addColorGradient(0, new Color4(0.6, 1, 0.3, 0), new Color4(0.8, 1, 0.4, 0));
-            ps.addColorGradient(0.3, new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1));
-            ps.addColorGradient(0.6, new Color4(0.6, 1, 0.3, 0.2), new Color4(0.8, 1, 0.4, 0.2));
-            ps.addColorGradient(1, new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1));
-            break;
-        }
-        case "leaves": {
-            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
-            ps.emitRate = 30;
-            ps.gravity = new Vector3(0, -1, 0);
-            ps.minLifeTime = 8; ps.maxLifeTime = 14;
-            ps.minEmitPower = 0.5; ps.maxEmitPower = 1.5;
-            ps.minAngularSpeed = -2; ps.maxAngularSpeed = 2;
-            ps.minSize = 0.2; ps.maxSize = 0.4;
-            ps.createBoxEmitter(
-                new Vector3(-0.8, -0.3, -0.8), new Vector3(0.8, 0.3, 0.8),
-                new Vector3(-12, 8, -12), new Vector3(12, 12, 12),
-            );
-            ps.addColorGradient(0, new Color4(0.9, 0.5, 0.2, 1), new Color4(0.8, 0.6, 0.1, 1));
-            ps.addColorGradient(1, new Color4(0.9, 0.5, 0.2, 0), new Color4(0.8, 0.6, 0.1, 0));
-            break;
-        }
-    }
-
-    const er = envState.particleEmitRate;
-    if (er !== 1) ps.emitRate = Math.max(0, ps.emitRate * er);
-
-    const sz = envState.particleSize;
-    if (sz !== 1) {
-        ps.minSize *= sz;
-        ps.maxSize *= sz;
-    }
-
-    const sp = envState.particleSpeed;
-    if (sp !== 1) {
-        ps.minEmitPower *= sp;
-        ps.maxEmitPower *= sp;
-    }
-
-    if (windEnabled) {
-        _applyWindToParticles(ps);
-    }
-
-    // emitter 跟随相机 XZ，保证粒子始终在视野内
-    _envSys.particles.followObserver = scene.onBeforeRenderObservable.add(() => {
-        const cam = scene.activeCamera;
-        if (!cam) return;
-        const e = ps.emitter as Vector3;
-        if (!e) return;
-        e.x = cam.position.x;
-        e.z = cam.position.z;
-        e.y = type === "fireflies" ? 2 : 11;
-    });
-
-    _envSys.particles.emitter = ps;
-}
-
-function _disposeParticles(): void {
-    if (_envSys.particles.followObserver) {
-        scene.onBeforeRenderObservable.remove(_envSys.particles.followObserver);
-        _envSys.particles.followObserver = null;
-    }
-    if (_envSys.particles.emitter) {
-        _envSys.particles.emitter.dispose();
-        _envSys.particles.emitter = null;
-    }
-}
-
-// ======== Wind System (Phase 8) ========
-
-function _applyWindToParticles(ps: GPUParticleSystem): void {
-    const dir = envState.windDirection;
-    const speed = envState.windSpeed;
-    const wind = new Vector3(dir[0] * speed * 0.1, dir[1] * speed * 0.1, dir[2] * speed * 0.1);
-    ps.direction1 = ps.direction1.add(wind);
-    ps.direction2 = ps.direction2.add(wind);
-}
-
-// ======== 2D Perlin Noise ========
-function _perlin2(x: number, y: number): number {
-    const p: number[] = [];
-    for (let i = 0; i < 256; i++) p[i] = i;
-    for (let i = 255; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [p[i], p[j]] = [p[j], p[i]];
-    }
-    const perm = p.concat(p);
-    const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
-    const lerp = (a: number, b: number, t: number) => a + t * (b - a);
-    const grad = (hash: number, dx: number, dy: number) => {
-        const h = hash & 3;
-        return (h & 1 ? -dx : dx) + (h & 2 ? -dy : dy);
-    };
-    const xi = Math.floor(x) & 255;
-    const yi = Math.floor(y) & 255;
-    const xf = x - Math.floor(x);
-    const yf = y - Math.floor(y);
-    const u = fade(xf);
-    const v = fade(yf);
-    const aa = perm[perm[xi] + yi];
-    const ab = perm[perm[xi] + yi + 1];
-    const ba = perm[perm[xi + 1] + yi];
-    const bb = perm[perm[xi + 1] + yi + 1];
-    return lerp(
-        lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u),
-        lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u),
-        v
-    ) * 0.5 + 0.5;
-}
-
-function _cloudNoise(x: number, y: number, cover: number): number {
-    const v1 = _perlin2(x * 0.02, y * 0.02);
-    const v2 = _perlin2(x * 0.04 + 10, y * 0.04 + 10) * 0.5;
-    const n = v1 + v2;
-    const threshold = cover * 0.8;
-    const t = (n - threshold) / (1.0 - threshold);
-    return Math.max(0, Math.min(1, t * t * (3 - 2 * t)));
-}
-
-// ======== Clouds (Phase 8) ========
-
-function _createClouds(state: EnvState): void {
-    _disposeClouds();
-
-    if (!state.cloudsEnabled) return;
-
-    const SIZE = 512;
-    const canvas = document.createElement("canvas");
-    canvas.width = SIZE;
-    canvas.height = SIZE;
-    const ctx = canvas.getContext("2d")!;
-    const imgData = ctx.createImageData(SIZE, SIZE);
-    for (let i = 0; i < imgData.data.length; i += 4) {
-        const x = (i / 4) % SIZE;
-        const y = Math.floor((i / 4) / SIZE);
-        const n = _cloudNoise(x, y, state.cloudCover);
-        const a = Math.floor(n * 255 * 0.6);
-        imgData.data[i] = 255;
-        imgData.data[i + 1] = 255;
-        imgData.data[i + 2] = 255;
-        imgData.data[i + 3] = a;
-    }
-    ctx.putImageData(imgData, 0, 0);
-
-    const tex = new Texture(canvas.toDataURL(), scene);
-    const mat = new StandardMaterial("envCloudMat", scene);
-    mat.diffuseTexture = tex;
-    mat.useAlphaFromDiffuseTexture = true;
-    mat.backFaceCulling = false;
-    mat.alpha = 0.5;
-
-    function makePlane(name: string, yOffset: number, scaleMul: number, alphaMul: number): Mesh {
-        const plane = MeshBuilder.CreatePlane(name, { width: 200, height: 200 }, scene);
-        plane.isPickable = false;
-        plane.position = new Vector3(0, state.cloudHeight + yOffset, 0);
-        plane.rotation.x = Math.PI / 2;
-        plane.material = mat;
-        plane.scaling.x = state.cloudScale * scaleMul;
-        plane.scaling.z = state.cloudScale * scaleMul;
-        return plane;
-    }
-
-    const p1 = makePlane("envClouds", 0, 1.0, 1.0);
-    const p2 = makePlane("envCloudsBack", -15, 1.2, 0.85);
-
-    _envSys.clouds.postProcess = p1;
-    _envSys.clouds.postProcess2 = p2;
-    _envSys.clouds.material = mat;
-    _envSys.clouds.texture = tex;
-
-    _ensureEnvUpdateObserver();
-}
-
-function _disposeClouds(): void {
-    if (_envSys.clouds.material) {
-        _envSys.clouds.material.dispose(false, true);
-        _envSys.clouds.material = null;
-    }
-    if (_envSys.clouds.texture) {
-        _envSys.clouds.texture.dispose();
-        _envSys.clouds.texture = null;
-    }
-    for (const key of ["postProcess", "postProcess2"] as const) {
-        const m = _envSys.clouds[key];
-        if (m) { m.dispose(); _envSys.clouds[key] = null; }
-    }
-    _disposeEnvUpdateObserver();
-}
-
-let _envUpdateObserver: Observer<Scene> | null = null;
-let _underwaterActive = false;
-let _underwaterSavedFog: { mode: number; color: Color3; density: number } | null = null;
-function _ensureEnvUpdateObserver(): void {
-    if (_envUpdateObserver) return;
-    _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
-        const dt = scene.deltaTime / 16.667;
-        // Cloud drift (wind driven)
-        if (envState.cloudsEnabled && envState.windEnabled) {
-            const dx = envState.windDirection[0] * envState.windSpeed * 0.01 * dt;
-            const dz = envState.windDirection[2] * envState.windSpeed * 0.01 * dt;
-            for (const key of ["postProcess", "postProcess2"] as const) {
-                const m = _envSys.clouds[key];
-                if (m) {
-                    const speedMul = key === "postProcess2" ? 0.85 : 1.0;
-                    m.position.x += dx * speedMul;
-                    m.position.z += dz * speedMul;
-                }
-            }
-        }
-        // Sky rotation animation
-        if (envState.skyRotationSpeed > 0.001 && _envSys.sky.skyMesh) {
-            _envSys.sky.skyMesh.rotation.y += envState.skyRotationSpeed * 0.01 * dt;
-            // Keep rotation.y in [-2π, 2π] to avoid floating-point drift
-            if (_envSys.sky.skyMesh.rotation.y > Math.PI * 2) {
-                _envSys.sky.skyMesh.rotation.y -= Math.PI * 2;
-            } else if (_envSys.sky.skyMesh.rotation.y < -Math.PI * 2) {
-                _envSys.sky.skyMesh.rotation.y += Math.PI * 2;
-            }
-        }
-        // Water wave direction follows wind (horizontal XZ plane)
-        if (envState.waterEnabled && _envSys.water.material) {
-            const wd = new Vector2(envState.windDirection[0], envState.windDirection[2]);
-            const len = wd.length();
-            if (len > 0.001) {
-                wd.normalize();
-            }
-            _envSys.water.material.windDirection = wd;
-        }
-        // Underwater post-processing: camera below water surface
-        if (envState.waterEnabled && scene.activeCamera) {
-            const camY = scene.activeCamera.globalPosition.y;
-            const underwater = camY < envState.waterLevel;
-            if (underwater !== _underwaterActive) {
-                _underwaterActive = underwater;
-                pipeline.chromaticAberrationEnabled = underwater;
-                if (pipeline.chromaticAberration) {
-                    pipeline.chromaticAberration.aberrationAmount = underwater ? 20 : 0;
-                }
-                if (underwater && !_underwaterSavedFog) {
-                    _underwaterSavedFog = {
-                        mode: scene.fogMode,
-                        color: scene.fogColor.clone(),
-                        density: scene.fogDensity,
-                    };
-                    scene.fogMode = Scene.FOGMODE_EXP2;
-                    scene.fogColor = new Color3(0.08, 0.2, 0.45);
-                    scene.fogDensity = 0.015;
-                } else if (!underwater && _underwaterSavedFog) {
-                    scene.fogMode = _underwaterSavedFog.mode;
-                    scene.fogColor = _underwaterSavedFog.color;
-                    scene.fogDensity = _underwaterSavedFog.density;
-                    _underwaterSavedFog = null;
-                }
-            }
-        }
-    });
-}
-
-function _disposeEnvUpdateObserver(): void {
-    if (_envUpdateObserver) {
-        scene.onBeforeRenderObservable.remove(_envUpdateObserver);
-        _envUpdateObserver = null;
-    }
-}
-
 // ======== Procedural Motion Control API ========
 
 export function setProcMotionMode(mode: ProcMotionMode): void {
@@ -2356,7 +1466,9 @@ export function setProcMotionIntensity(v: number): void {
 export function setProcMotionSpeed(v: number): void {
     procState = { ...procState, speed: Math.max(0.5, Math.min(2, v)) };
 }
-
+export function getScene(): Scene {
+    return scene;
+}
 export function setProcMotionAutoSwitch(on: boolean): void {
     procState = { ...procState, autoSwitch: on };
 }
@@ -2377,3 +1489,4 @@ export function regenerateProcMotion(): void {
 // Re-exports from extracted sub-modules (zero-change for consumers)
 export { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from "./scene-vmd";
 export { updatePlaybackUI, seekFromEvent } from "./scene-playback";
+export { triggerAutoSave } from "../core/config";

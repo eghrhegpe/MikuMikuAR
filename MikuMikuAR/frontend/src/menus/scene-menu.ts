@@ -27,8 +27,7 @@ import { modelRegistry, focusedModelId, setFocusedModelId, envState } from "../c
 import { setEnvState } from "../scene/scene";
 import type { ProcMotionMode } from "../motion/procedural-motion";
 import { buildEnvLevel, buildSkyLevel, buildGroundLevel, buildParticleLevel, buildWindLevel, buildCloudLevel, buildEnvLightingLevel, buildPresetLevel, setEnvMenuStack } from "./env-menu";
-import { createCloth, buildClothUpdateFn, disposeCloth, type ClothInstance, DEFAULT_CLOTH_CONFIG } from "../physics/xpbd-cloth";
-import { SdfCollider, DEFAULT_BODY_CAPSULES } from "../physics/xpbd-collider";
+import { toggleCloth, recreateCloth } from "../physics/cloth-manager";
 
 // ======== Scene Menu (SlideMenu) ========
 
@@ -170,6 +169,7 @@ function buildPresetScenesLevel(): PopupLevel {
         items: [],
         renderCustom: async (container) => {
             container.classList.remove("render-card");
+            currentPresetIndex = -1;
             _presetScenes = await GetPresetScenes() || [];
             const scenes = _presetScenes;
             if (scenes.length === 0) {
@@ -185,8 +185,10 @@ function buildPresetScenesLevel(): PopupLevel {
                 navRow.style.cssText = "display:flex;gap:6px;padding:8px 14px;";
                 const prevBtn = document.createElement("button");
                 prevBtn.className = "mode-btn";
-                prevBtn.innerHTML = '<iconify-icon icon="lucide:skip-back"></iconify-icon> 上一个';
                 prevBtn.style.flex = "1";
+                const prevIcon = createIconifyIcon("lucide:skip-back");
+                if (prevIcon) prevBtn.appendChild(prevIcon);
+                prevBtn.appendChild(document.createTextNode(" 上一个"));
                 prevBtn.addEventListener("click", async () => {
                     if (scenes.length === 0) return;
                     if (currentPresetIndex < 0) currentPresetIndex = 0;
@@ -197,8 +199,10 @@ function buildPresetScenesLevel(): PopupLevel {
                 });
                 const nextBtn = document.createElement("button");
                 nextBtn.className = "mode-btn";
-                nextBtn.innerHTML = '下一个 <iconify-icon icon="lucide:skip-forward"></iconify-icon>';
                 nextBtn.style.flex = "1";
+                nextBtn.appendChild(document.createTextNode("下一个 "));
+                const nextIcon = createIconifyIcon("lucide:skip-forward");
+                if (nextIcon) nextBtn.appendChild(nextIcon);
                 nextBtn.addEventListener("click", async () => {
                     if (scenes.length === 0) return;
                     if (currentPresetIndex < 0) currentPresetIndex = 0;
@@ -318,18 +322,10 @@ function renderOrbitParams(container: HTMLElement): void {
     }, "lucide:maximize");
     addSliderRow(container, "距离", p.distance, 2, 50, 0.5, (v) => {
         setOrbitParams({ distance: v });
-        if (getCameraMode() === "orbit") {
-            const cam = getCurrentCamera() as any;
-            if (cam?.radius !== undefined) cam.radius = v;
-        }
         triggerAutoSave();
     }, "lucide:zoom-in");
     addSliderRow(container, "俯仰角", p.beta, 0.1, Math.PI - 0.1, 0.05, (v) => {
         setOrbitParams({ beta: v });
-        if (getCameraMode() === "orbit") {
-            const cam = getCurrentCamera() as any;
-            if (cam?.beta !== undefined) cam.beta = v;
-        }
         triggerAutoSave();
     }, "lucide:arrow-up-down");
 }
@@ -338,18 +334,10 @@ function renderFreeflyParams(container: HTMLElement): void {
     const p = getFreeflyParams();
     addSliderRow(container, "移动速度", p.speed, 0.1, 5, 0.1, (v) => {
         setFreeflyParams({ speed: v });
-        if (getCameraMode() === "freefly") {
-            const cam = getCurrentCamera() as any;
-            if (cam?.speed !== undefined) cam.speed = v;
-        }
         triggerAutoSave();
     }, "lucide:move");
     addSliderRow(container, "鼠标灵敏度", p.angularSensibility, 500, 5000, 100, (v) => {
         setFreeflyParams({ angularSensibility: v });
-        if (getCameraMode() === "freefly") {
-            const cam = getCurrentCamera() as any;
-            if (cam?.angularSensibility !== undefined) cam.angularSensibility = v;
-        }
         triggerAutoSave();
     }, "lucide:mouse-pointer");
 }
@@ -386,18 +374,21 @@ function buildLightLevel(): PopupLevel {
 
             // Card 1: light sliders
             cardContainer(container, (c) => {
-                const fields: Array<{ label: string; key: "hemiIntensity" | "dirIntensity" | "dirX" | "dirY" | "dirZ"; min: number; max: number; step: number; icon: string }> = [
-                    { label: "环境光强度", key: "hemiIntensity", min: 0, max: 2, step: 0.05, icon: "lucide:sun" },
-                    { label: "方向光强度", key: "dirIntensity", min: 0, max: 2, step: 0.05, icon: "lucide:sun" },
-                    { label: "方向光角度 X", key: "dirX", min: -1, max: 1, step: 0.05, icon: "lucide:move" },
-                    { label: "方向光角度 Y", key: "dirY", min: -1, max: 1, step: 0.05, icon: "lucide:arrow-up-down" },
-                    { label: "方向光角度 Z", key: "dirZ", min: -1, max: 1, step: 0.05, icon: "lucide:arrow-up-down" },
-                ];
-                for (const f of fields) {
-                    addSliderRow(c, f.label, lightState[f.key], f.min, f.max, f.step, (v) => {
-                        setLightState({ [f.key]: v } as any);
-                    }, f.icon);
-                }
+                addSliderRow(c, "环境光强度", lightState.hemiIntensity, 0, 2, 0.05, (v) => {
+                    setLightState({ hemiIntensity: v });
+                }, "lucide:sun");
+                addSliderRow(c, "方向光强度", lightState.dirIntensity, 0, 2, 0.05, (v) => {
+                    setLightState({ dirIntensity: v });
+                }, "lucide:sun");
+                addSliderRow(c, "方向光角度 X", lightState.dirX, -1, 1, 0.05, (v) => {
+                    setLightState({ dirX: v });
+                }, "lucide:move");
+                addSliderRow(c, "方向光角度 Y", lightState.dirY, -1, 1, 0.05, (v) => {
+                    setLightState({ dirY: v });
+                }, "lucide:arrow-up-down");
+                addSliderRow(c, "方向光角度 Z", lightState.dirZ, -1, 1, 0.05, (v) => {
+                    setLightState({ dirZ: v });
+                }, "lucide:arrow-up-down");
             });
 
             // Card 2-4: color pickers
@@ -450,9 +441,9 @@ function buildPhysicsLevel(): PopupLevel {
             addToggleRow(container, "布料模拟", envState.clothEnabled, (v) => {
                 setEnvState({ clothEnabled: v });
                 if (v) {
-                    _createClothForFocusedModel();
+                    toggleCloth(true);
                 } else {
-                    _destroyClothForFocusedModel();
+                    toggleCloth(false);
                 }
                 sceneStack?.reRender();
             }, "lucide:scarf");
@@ -478,112 +469,50 @@ function buildClothParamsLevel(): PopupLevel {
 
             addSliderRow(container, "裙长", cfg.length, 0.2, 1.5, 0.05, (v) => {
                 setEnvState({ clothConfig: { ...cfg, length: v } });
-                _recreateCloth();
+                recreateCloth();
             }, "lucide:ruler");
 
             addSliderRow(container, "裙摆角度", cfg.slope, 0, 45, 1, (v) => {
                 setEnvState({ clothConfig: { ...cfg, slope: v } });
-                _recreateCloth();
+                recreateCloth();
             }, "lucide:triangle");
 
             addSliderRow(container, "腰部半径", cfg.innerRadius, 0.05, 0.4, 0.01, (v) => {
                 setEnvState({ clothConfig: { ...cfg, innerRadius: v } });
-                _recreateCloth();
+                recreateCloth();
             }, "lucide:circle");
 
             addSliderRow(container, "布料柔度", cfg.compliance, 0, 0.01, 0.005, (v) => {
                 setEnvState({ clothConfig: { ...cfg, compliance: v } });
-                _recreateCloth();
+                recreateCloth();
             }, "lucide:wind");
 
             addSliderRow(container, "弯曲柔度", cfg.bendCompliance, 0, 0.05, 0.01, (v) => {
                 setEnvState({ clothConfig: { ...cfg, bendCompliance: v } });
-                _recreateCloth();
+                recreateCloth();
             }, "lucide:curl");
 
             addSliderRow(container, "阻尼", cfg.damping, 0.8, 0.999, 0.01, (v) => {
                 setEnvState({ clothConfig: { ...cfg, damping: v } });
-                _recreateCloth();
+                recreateCloth();
             }, "lucide:droplet");
 
             addSliderRow(container, "重力倍率", cfg.gravityScale, 0.1, 3, 0.1, (v) => {
                 setEnvState({ clothConfig: { ...cfg, gravityScale: v } });
-                _recreateCloth();
+                recreateCloth();
             }, "lucide:arrow-down");
 
             addSliderRow(container, "水平分段", cfg.segmentsH, 12, 36, 2, (v) => {
                 setEnvState({ clothConfig: { ...cfg, segmentsH: v } });
-                _recreateCloth();
+                recreateCloth();
             }, "lucide:grid");
 
             addSliderRow(container, "垂直分段", cfg.segmentsV, 6, 20, 1, (v) => {
                 setEnvState({ clothConfig: { ...cfg, segmentsV: v } });
-                _recreateCloth();
+                recreateCloth();
             }, "lucide:columns");
         },
     };
-}
-
-/** Recreate cloth with current config (destroy + create). */
-function _recreateCloth(): void {
-    if (!envState.clothEnabled) return;
-    _destroyClothForFocusedModel();
-    _createClothForFocusedModel();
-}
-
-function _createClothForFocusedModel(): void {
-    const id = focusedModelId;
-    if (!id || !modelManager) {
-        setStatus("⚠ 请先加载模型", false);
-        return;
-    }
-
-    const mmd = modelManager.focusedMmdModel();
-    if (!mmd) {
-        setStatus("⚠ 当前模型无 MMD 数据", false);
-        return;
-    }
-
-    // Build SDF collider
-    const collider = new SdfCollider();
-    collider.init(DEFAULT_BODY_CAPSULES);
-
-    // Scale collider to match model size
-    const model = modelRegistry.get(id);
-    if (model && model.rootMesh) {
-        const boundingInfo = model.rootMesh.getBoundingInfo();
-        if (boundingInfo) {
-            const modelHeight = boundingInfo.boundingBox.maximumWorld.y - boundingInfo.boundingBox.minimumWorld.y;
-            const defaultHeight = 2.0; // Default MMD model height
-            const scaleFactor = modelHeight / defaultHeight;
-            collider.scaleAll(Math.max(0.5, Math.min(2.0, scaleFactor))); // Clamp to [0.5, 2.0]
-        }
-    }
-
-    // Build anchor matrix function
-    const anchorMatrixFn = (boneName: string): Float32Array | null => {
-        return modelManager.getBoneWorldMatrix(boneName);
-    };
-
-    // Use config from envState
-    const cfg = envState.clothConfig;
-
-    // Create cloth
-    const cloth = createCloth(scene, cfg, collider);
-
-    // Build update function
-    const updateFn = buildClothUpdateFn(cloth, anchorMatrixFn, collider);
-
-    // Register with model manager
-    modelManager.addCloth(id, cloth, updateFn);
-
-    setStatus("✓ 布料模拟已启用", true);
-}
-
-function _destroyClothForFocusedModel(): void {
-    const id = focusedModelId;
-    if (!id || !modelManager) return;
-    modelManager.removeCloth(id);
 }
 
 function buildPostProcessLevel(): PopupLevel {
@@ -600,17 +529,18 @@ function buildPostProcessLevel(): PopupLevel {
                 setRenderState({ bloomEnabled: v });
                 triggerAutoSave();
             });
-            const bloomFields = [
-                { label: "泛光强度", key: "bloomWeight" as const, min: 0, max: 1, step: 0.05, icon: "lucide:sun" },
-                { label: "泛光阈值", key: "bloomThreshold" as const, min: 0, max: 1, step: 0.05, icon: "lucide:sliders" },
-                { label: "泛光核大小", key: "bloomKernel" as const, min: 0, max: 512, step: 1, icon: "lucide:circle" },
-            ];
-            for (const f of bloomFields) {
-                addSliderRow(container, f.label, state[f.key], f.min, f.max, f.step, (v) => {
-                    setRenderState({ [f.key]: v });
-                    triggerAutoSave();
-                }, (f as any).icon);
-            }
+            addSliderRow(container, "泛光强度", state.bloomWeight, 0, 1, 0.05, (v) => {
+                setRenderState({ bloomWeight: v });
+                triggerAutoSave();
+            }, "lucide:sun");
+            addSliderRow(container, "泛光阈值", state.bloomThreshold, 0, 1, 0.05, (v) => {
+                setRenderState({ bloomThreshold: v });
+                triggerAutoSave();
+            }, "lucide:sliders");
+            addSliderRow(container, "泛光核大小", state.bloomKernel, 0, 512, 1, (v) => {
+                setRenderState({ bloomKernel: v });
+                triggerAutoSave();
+            }, "lucide:circle");
 
             // FXAA toggle
             addToggleRow(container, "抗锯齿 (FXAA)", state.fxaaEnabled, (v) => {
@@ -757,7 +687,17 @@ function buildPresetsLevel(): PopupLevel {
                 for (const [key] of Object.entries(builtinPresets)) {
                     const row = document.createElement("div");
                     row.className = "slide-item";
-                    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:palette"></iconify-icon></span><span class="slide-label">${PRESET_LABELS[key] || key}</span>`;
+                    {
+                        const iconSpan = document.createElement("span");
+                        iconSpan.className = "slide-icon";
+                        const iconEl = createIconifyIcon("lucide:palette");
+                        if (iconEl) iconSpan.appendChild(iconEl);
+                        row.appendChild(iconSpan);
+                        const labelSpan = document.createElement("span");
+                        labelSpan.className = "slide-label";
+                        labelSpan.textContent = PRESET_LABELS[key] || key;
+                        row.appendChild(labelSpan);
+                    }
                     row.addEventListener("click", () => {
                         const preset = getBuiltinPreset(key);
                         if (preset) setRenderState(preset);
@@ -769,7 +709,17 @@ function buildPresetsLevel(): PopupLevel {
             // Save
             const saveRow = document.createElement("div");
             saveRow.className = "slide-item";
-            saveRow.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:save"></iconify-icon></span><span class="slide-label">保存当前为预设</span>';
+            {
+                const iconSpan = document.createElement("span");
+                iconSpan.className = "slide-icon";
+                const iconEl = createIconifyIcon("lucide:save");
+                if (iconEl) iconSpan.appendChild(iconEl);
+                saveRow.appendChild(iconSpan);
+                const labelSpan = document.createElement("span");
+                labelSpan.className = "slide-label";
+                labelSpan.textContent = "保存当前为预设";
+                saveRow.appendChild(labelSpan);
+            }
             saveRow.addEventListener("click", showPresetSaveDialog);
             container.appendChild(saveRow);
             // Card 2: user presets
@@ -778,7 +728,17 @@ function buildPresetsLevel(): PopupLevel {
                     for (const [name] of Object.entries(userPresets)) {
                         const row = document.createElement("div");
                         row.className = "slide-item";
-                        row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:palette"></iconify-icon></span><span class="slide-label">${escapeHtml(name)}</span>`;
+                        {
+                            const iconSpan = document.createElement("span");
+                            iconSpan.className = "slide-icon";
+                            const iconEl = createIconifyIcon("lucide:palette");
+                            if (iconEl) iconSpan.appendChild(iconEl);
+                            row.appendChild(iconSpan);
+                            const labelSpan = document.createElement("span");
+                            labelSpan.className = "slide-label";
+                            labelSpan.textContent = name;
+                            row.appendChild(labelSpan);
+                        }
                         row.addEventListener("click", () => {
                             setRenderState(userPresets[name]);
                             setStatus(`✓ 预设: ${name}`, true);
@@ -786,7 +746,18 @@ function buildPresetsLevel(): PopupLevel {
                         c.appendChild(row);
                         const delRow = document.createElement("div");
                         delRow.className = "slide-item";
-                        delRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:trash-2"></iconify-icon></span><span class="slide-label" style="color:var(--text-dim);">删除: ${escapeHtml(name)}</span>`;
+                        {
+                            const iconSpan = document.createElement("span");
+                            iconSpan.className = "slide-icon";
+                            const iconEl = createIconifyIcon("lucide:trash-2");
+                            if (iconEl) iconSpan.appendChild(iconEl);
+                            delRow.appendChild(iconSpan);
+                            const labelSpan = document.createElement("span");
+                            labelSpan.className = "slide-label";
+                            labelSpan.style.color = "var(--text-dim)";
+                            labelSpan.textContent = `删除: ${name}`;
+                            delRow.appendChild(labelSpan);
+                        }
                         delRow.addEventListener("click", () => {
                             DeleteRenderPreset(name).then(() => {
                                 delete userPresets[name];

@@ -6,7 +6,7 @@ import { Material } from "@babylonjs/core/Materials/material";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 
 import { modelRegistry } from "../core/config";
-import { triggerAutoSave } from "./scene";
+import { triggerAutoSave } from "../core/config";
 
 export type MaterialCategoryParams = {
     diffuseMul: number;

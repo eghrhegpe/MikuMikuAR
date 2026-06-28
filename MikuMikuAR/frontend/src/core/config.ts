@@ -128,6 +128,15 @@ export type PopupLevel = {
     renderCustom?: (container: HTMLElement) => void;
 };
 
+export interface UIState {
+    scale?: number;
+    popupWidth?: number;
+    accent?: string;
+    fontFamily?: string;
+    animations?: boolean;
+    blurBg?: boolean;
+}
+
 export interface EnvState {
     skyMode: "color" | "texture" | "procedural";
     skyColorTop: [number, number, number];
@@ -492,8 +501,9 @@ export function resolveLibraryRef(libraryRef: string): string | null {
 }
 
 // Close all overlay-style popups. Call this before opening any new overlay.
+// Uses .overlay.visible selector — all popup elements share the "overlay" CSS class.
 export function closeAllOverlays(): void {
-    document.querySelectorAll<HTMLElement>("[data-overlay].visible").forEach(el => el.classList.remove("visible"));
+    document.querySelectorAll<HTMLElement>(".overlay.visible").forEach(el => el.classList.remove("visible"));
     setPopupOpen(false);
     // Sync aria-expanded on nav buttons after closing
     document.querySelectorAll<HTMLElement>("[aria-controls]").forEach(btn => {
@@ -501,4 +511,24 @@ export function closeAllOverlays(): void {
         const target = targetId ? document.getElementById(targetId) : null;
         btn.setAttribute("aria-expanded", target?.classList.contains("visible") ? "true" : "false");
     });
+    // Notify registered callback (used by main.ts to reset _overlaysHiddenByClick)
+    _onCloseAllOverlays?.();
+}
+
+// Callback hook: called at the end of closeAllOverlays().
+// Allows main.ts to reset overlay toggle state without circular dependency.
+let _onCloseAllOverlays: (() => void) | null = null;
+export function setOnCloseAllOverlays(fn: (() => void) | null): void {
+    _onCloseAllOverlays = fn;
+}
+
+// ======== Auto-save trigger (injected by scene.ts) ========
+let _triggerAutoSaveImpl: (() => void) | null = null;
+
+export function setTriggerAutoSave(fn: () => void): void {
+    _triggerAutoSaveImpl = fn;
+}
+
+export function triggerAutoSave(): void {
+    if (_triggerAutoSaveImpl) _triggerAutoSaveImpl();
 }

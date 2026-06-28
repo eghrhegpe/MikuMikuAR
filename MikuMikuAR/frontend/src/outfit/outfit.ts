@@ -8,7 +8,8 @@ import {
   setStatus,
   OutfitFile, OutfitVariant, OutfitSlot, ModelInstance,
 } from "../core/config";
-import { scene, _catOf, triggerAutoSave } from "../scene/scene";
+import { scene, _catOf } from "../scene/scene";
+import { triggerAutoSave } from "../core/config";
 
 interface _SlotMapping {
   matName: string;

@@ -1,78 +1,123 @@
-// scene-env.ts — Environment System (Phase 8)
-// Extracted from scene.ts to reduce complexity
-// Manages: sky, ground, water, particles, clouds, wind, time-of-day
+// scene-env.ts — Environment Facade (Phase 8)
+// Delegates all environment calls to scene-env-impl.ts
+// External modules should ONLY import from this file.
+import * as impl from "./scene-env-impl";
+import { EnvState, envState } from "../core/config";
 
-import { Mesh, Scene, Color3, Color4, Vector2, Vector3, Texture, BaseTexture, StandardMaterial, GridMaterial, WaterMaterial, GPUParticleSystem, Observer, ParticleSystem, ShadowGenerator, CubeTexture } from "@babylonjs/core";
-import { MeshBuilder } from "@babylonjs/core";
+// Re-export _envSys for backward compatibility (used by scene.ts)
+export { _envSys } from "./scene-env-impl";
+import { Scene } from "@babylonjs/core/scene";
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
-import { EnvState } from "../core/config";
 
-// ======== Module-level references (injected by scene.ts) ========
+// ======== Init (called once by scene.ts) ========
 
-let _scene: Scene | null = null;
-let _pipeline: DefaultRenderingPipeline | null = null;
-
-export function initEnvironmentSystem(scene: Scene, pipeline: DefaultRenderingPipeline): void {
-    _scene = scene;
-    _pipeline = pipeline;
-    console.log("[scene-env] Environment system initialized");
+export function initEnvFacade(scene: Scene, pipeline: DefaultRenderingPipeline): void {
+    impl.initEnvImpl(scene, pipeline);
 }
 
-function getScene(): Scene {
-    if (!_scene) throw new Error("[scene-env] Scene not initialized. Call initEnvironmentSystem() first.");
-    return _scene;
+// ======== Sky ========
+
+export function applySky(state?: EnvState): void {
+    impl.applySky(state ?? envState);
 }
 
-function getPipeline(): DefaultRenderingPipeline {
-    if (!_pipeline) throw new Error("[scene-env] Pipeline not initialized. Call initEnvironmentSystem() first.");
-    return _pipeline;
+// ======== Ground ========
+
+export function applyGround(state?: EnvState): void {
+    impl.applyGround(state ?? envState);
 }
 
-// ======== Environment State ========
+// ======== Water ========
 
-export let envSunAngle = 45; // default sun angle
-export let envTimeOfDayRunning = false;
-export let envTimeOfDayHandle: number | null = null;
-
-// ======== Environment Resources ========
-
-export interface EnvSkyResources {
-    skyMesh: Mesh | null;
-    envTexture: BaseTexture | null;
+export function createWater(state?: EnvState): void {
+    impl.createWater(state ?? envState);
 }
 
-export const _envSys: {
-    sky: EnvSkyResources;
-    ground: { mesh: Mesh | null };
-    particles: { emitter: GPUParticleSystem | null; followObserver: Observer<Scene> | null };
-    clouds: { postProcess: Mesh | null; postProcess2: Mesh | null; material: StandardMaterial | null; texture: Texture | null };
-    water: { mesh: Mesh | null; material: WaterMaterial | null };
-    shadow: { generator: ShadowGenerator | null };
-} = {
-    sky: { skyMesh: null, envTexture: null },
-    ground: { mesh: null },
-    particles: { emitter: null, followObserver: null },
-    clouds: { postProcess: null, postProcess2: null, material: null, texture: null },
-    water: { mesh: null, material: null },
-    shadow: { generator: null },
-};
-
-// ======== Apply Interface (Phase 1: Stub) ========
-
-/** Apply environment state. Phase 1: stub that logs, Phase 2+: actual implementation. */
-export function apply(state: EnvState): void {
-    console.log("[scene-env] apply() called (Phase 1 stub)", state);
-    // TODO Phase 2: Move environment implementation from scene.ts to here
-    // - _applySky(state)
-    // - _applyGround(state)
-    // - _createWater(state)
-    // - _createParticleEmitter(state)
-    // - _createClouds(state)
+export function disposeWater(): void {
+    impl.disposeWater();
 }
 
-/** Dispose environment resources. Call on cleanup. */
-export function disposeEnvironmentSystem(): void {
-    // TODO Phase 2: Dispose all environment resources
-    console.log("[scene-env] dispose() called (Phase 1 stub)");
+export function refreshWaterRenderList(): void {
+    impl.refreshWaterRenderList();
 }
 
+export function updateWaterAnimSpeed(speed: number): void {
+    impl.updateWaterAnimSpeed(speed);
+}
+
+// ======== Particles ========
+
+export function createParticleEmitter(state?: EnvState): void {
+    const s = state ?? envState;
+    impl.createParticleEmitter(s.particleType, s.windEnabled);
+}
+
+export function disposeParticles(): void {
+    impl.disposeParticles();
+}
+
+export function applyWindToParticles(wind: { x: number; y: number; z: number }): void {
+    // wind is applied inside createParticleEmitter via envState.windEnabled
+}
+
+// ======== Clouds ========
+
+export function createClouds(state?: EnvState): void {
+    impl.createClouds(state ?? envState);
+}
+
+export function disposeClouds(): void {
+    impl.disposeClouds();
+}
+
+// ======== Time-of-Day ========
+
+export function startTimeOfDay(): void {
+    impl.startTimeOfDay();
+}
+
+export function stopTimeOfDay(): void {
+    impl.stopTimeOfDay();
+}
+
+export function isTimeOfDayActive(): boolean {
+    return impl.isTimeOfDayActive();
+}
+
+export function getTimeOfDaySpeed(): number {
+    return impl.getTimeOfDaySpeed();
+}
+
+export function setTimeOfDaySpeed(s: number): void {
+    impl.setTimeOfDaySpeed(s);
+}
+
+// ======== Full apply (called by setEnvState in scene.ts) ========
+
+export function applyEnvState(state: EnvState): void {
+    impl.applySky(state);
+    impl.applyGround(state);
+    impl.applyFog(state);
+
+    // Water
+    if (state.waterEnabled) {
+        impl.createWater(state);
+    } else {
+        impl.disposeWater();
+    }
+
+    // Particles
+    if (state.particleEnabled && state.particleType && state.particleType !== "none") {
+        // createParticleEmitter expects (particleType, windEnabled)
+        impl.createParticleEmitter(state.particleType, state.windEnabled);
+    } else {
+        impl.disposeParticles();
+    }
+
+    // Clouds
+    if (state.cloudsEnabled) {
+        impl.createClouds(state);
+    } else {
+        impl.disposeClouds();
+    }
+}

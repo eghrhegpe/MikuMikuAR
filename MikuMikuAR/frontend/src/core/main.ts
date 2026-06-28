@@ -3,15 +3,12 @@
 
 import "../app.css";
 
-import { dom, setStatus, isPlaying, setIsPlaying, autoLoop, setAutoLoop, seekDragging, setSeekDragging, mmdRuntime, closeAllOverlays, showHint, hideHint, initHints } from "./config";
-import { GetConfig } from "../../wailsjs/go/main/App";
-import { initScene, engine, scene, focusedMmdModel, focusedModel, updatePlaybackUI, seekFromEvent, tryRestoreLastScene, setEnvState } from "../scene/scene";
-import { freeflyInput, getCameraMode } from "../scene/camera";
-import { initLibrary, showModelPopup, showMotionPopup } from "../menus/library";
-import { ImportZip } from "../../wailsjs/go/main/App";
+import { dom, setStatus, isPlaying, setIsPlaying, autoLoop, setAutoLoop, seekDragging, setSeekDragging, mmdRuntime, closeAllOverlays, showHint, hideHint, initHints, setOnCloseAllOverlays, UIState, EnvState } from "./config";
+import { GetConfig, ImportZip, ImportLocalFile } from "../../wailsjs/go/main/App";
 import { OnFileDrop, EventsOn } from "../../wailsjs/runtime/runtime";
-import { loadPMXFile, loadVMDFromPath } from "../scene/scene";
-import { refreshLibrary } from "../menus/library";
+import { initScene, engine, scene, focusedMmdModel, focusedModel, updatePlaybackUI, seekFromEvent, tryRestoreLastScene, setEnvState, loadPMXFile, loadVMDFromPath } from "../scene/scene";
+import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from "../menus/library";
+import { freeflyInput, getCameraMode } from "../scene/camera";
 import "iconify-icon";
 
 // ======== Initialize hover hints for static [data-hint] elements ========
@@ -62,12 +59,16 @@ function syncNavAriaExpanded(): void {
 const _lastOverlayFn = new Map<string, () => void>();
 
 /** Wait for the CSS transition on `el` to complete (with a safety timeout). */
-function waitForTransition(el: HTMLElement): Promise<void> {
+function waitForTransition(el: HTMLElement, propertyName?: string): Promise<void> {
     return new Promise(resolve => {
         const dur = parseFloat(getComputedStyle(el).transitionDuration) * 1000 || 0;
         if (dur <= 0) { resolve(); return; }
-        const done = () => { el.removeEventListener("transitionend", done); resolve(); };
-        el.addEventListener("transitionend", done);
+        const done = (e: TransitionEvent) => {
+            if (propertyName && e.propertyName !== propertyName) return;
+            el.removeEventListener("transitionend", done as any);
+            resolve();
+        };
+        el.addEventListener("transitionend", done as any);
         setTimeout(resolve, dur + 50);
     });
 }
@@ -84,7 +85,7 @@ async function toggleOverlay(id: string, showFn: () => void): Promise<void> {
             // Different button targeting the same overlay → cross-fade switch
             // Phase 1: fade out current content
             el.classList.add("overlay-fade-out");
-            await waitForTransition(el);
+            await waitForTransition(el, "opacity");
             // Phase 2: swap content (closeAllOverlays + showFn), then fade in
             el.classList.remove("overlay-fade-out", "visible");
             closeAllOverlays();
@@ -263,6 +264,15 @@ document.querySelectorAll<HTMLElement>("[data-shortcut]").forEach(btn => {
     btn.addEventListener("click", () => { _overlaysHiddenByClick = false; _lastHidden = []; });
 });
 
+// Register closeAllOverlays callback to reset canvas-click toggle state.
+// Without this, _overlaysHiddenByClick could remain true after ESC or
+// other paths close overlays, causing _toggleOverlays() to incorrectly
+// try to restore previously-hidden overlays on next canvas click.
+setOnCloseAllOverlays(() => {
+    _overlaysHiddenByClick = false;
+    _lastHidden = [];
+});
+
 // ======== Init ========
 async function init(): Promise<void> {
     try {
@@ -293,7 +303,7 @@ async function init(): Promise<void> {
 async function restoreEnvState(): Promise<void> {
     const cfg = await GetConfig();
     if (cfg.env) {
-        setEnvState(cfg.env as any);
+        setEnvState(cfg.env as Partial<EnvState>);
     }
 }
 
@@ -305,8 +315,8 @@ const FONT_RESTORE: Record<string, string> = {
 
 async function restoreUIState(): Promise<void> {
     const cfg = await GetConfig();
-    if (!cfg.ui_state) return;
-    const s = cfg.ui_state as any;
+    const s = cfg.ui_state as UIState | undefined;
+    if (!s) return;
     const root = document.documentElement;
     if (s.scale) root.style.setProperty("--ui-scale", String(s.scale));
     if (s.popupWidth) root.style.setProperty("--popup-width", s.popupWidth + "px");
@@ -413,10 +423,8 @@ EventsOn("watch:newfile", (payload: {path: string, name: string, type: string}) 
             importBtn.disabled = true;
             importBtn.textContent = "导入中...";
             try {
-                const { ImportLocalFile } = await import("../../wailsjs/go/main/App");
                 await ImportLocalFile(payload.path);
                 setStatus("✓ 已导入: " + (payload.name || payload.path), true);
-                const { refreshLibrary } = await import("../menus/library");
                 refreshLibrary().catch(console.warn);
             } catch (err: any) {
                 setStatus("✗ 导入失败: " + (err.message || err), false);
@@ -443,11 +451,12 @@ EventsOn("watch:newfile", (payload: {path: string, name: string, type: string}) 
 
 init().catch(console.error);
 
-// ======== E2E Capture Helper (exposed for Playwright tests) ========
-(window as any).__capture = async (): Promise<string> => {
-    const { scene, engine } = await import("../scene/scene");
-    const { CreateScreenshotAsync } = await import("@babylonjs/core/Misc/screenshotTools");
-    // Force a render frame so Babylon writes to the backbuffer
-    scene.render();
-    return CreateScreenshotAsync(engine, scene.activeCamera!, 512);
-};
+// ======== E2E Capture Helper (exposed for Playwright tests, DEV only) ========
+if (import.meta.env.DEV) {
+    (window as any).__capture = async (): Promise<string> => {
+        const { CreateScreenshotAsync } = await import("@babylonjs/core/Misc/screenshotTools");
+        // Force a render frame so Babylon writes to the backbuffer
+        scene.render();
+        return CreateScreenshotAsync(engine, scene.activeCamera!, 512);
+    };
+}

@@ -28,8 +28,8 @@ const BONE_HEAD = "頭";
 const BONE_LARM = "左腕";
 const BONE_RARM = "右腕";
 
-// 标准 MMD morph 名
-const MORPH_BLINK = "まばたき";
+// 标准 MMD morph 名候选（按优先级，第一个匹配即生效）
+const MORPH_BLINK_CANDIDATES = ["まばたき", "blink", "Blink", "眨眼", "wink"];
 
 const FPS = 30;
 
@@ -43,18 +43,19 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
     const intensity = state.intensity;
     const bones: BoneKeyFrame[] = [];
     const morphs: MorphKeyFrame[] = [];
-    const hasBlink = morphNames.includes(MORPH_BLINK);
+    const blinkMorph = MORPH_BLINK_CANDIDATES.find(c => morphNames.includes(c));
 
     // 呼吸：上半身 X 轴旋转（前倾后仰），正弦曲线
     const breathAmp = 0.03 * intensity;
     for (let f = 0; f <= loopFrames; f += 6) {
         const phase = (f / loopFrames) * Math.PI * 2;
-        const rotX = Math.sin(phase) * breathAmp;
+        const rx = Math.sin(phase) * breathAmp;
+        const w = Math.sqrt(Math.max(0, 1 - rx * rx)); // 精确归一化
         bones.push({
             name: BONE_UPPER,
             frame: f,
             position: [0, 0, 0],
-            rotation: [rotX, 0, 0, 1 - 0.5 * rotX * rotX], // 近似归一化四元数
+            rotation: [rx, 0, 0, w],
         });
     }
     // 确保末帧 = 首帧（循环闭合）
@@ -67,10 +68,11 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
     const swayAmp = 0.015 * intensity;
     for (let f = 0; f <= loopFrames; f += 6) {
         const phase = (f / loopFrames) * Math.PI * 2;
-        const rotZ = Math.sin(phase * 0.5) * swayAmp;
+        const rz = Math.sin(phase * 0.5) * swayAmp;
+        const w = Math.sqrt(Math.max(0, 1 - rz * rz));
         bones.push({
             name: BONE_CENTER, frame: f, position: [0, 0, 0],
-            rotation: [0, 0, rotZ, 1 - 0.5 * rotZ * rotZ],
+            rotation: [0, 0, rz, w],
         });
     }
     bones.push({
@@ -79,14 +81,14 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
     });
 
     // 眨眼：每 ~2.5s 一次快速眨眼
-    if (hasBlink) {
+    if (blinkMorph) {
         const blinkInterval = Math.round(75 / state.speed); // ~2.5s
         for (let t = 0; t < loopFrames; t += blinkInterval) {
-            morphs.push({ name: MORPH_BLINK, frame: t, weight: 0 });
-            morphs.push({ name: MORPH_BLINK, frame: t + 2, weight: 1 });  // 快速闭合
-            morphs.push({ name: MORPH_BLINK, frame: t + 5, weight: 0 }); // 慢慢睁开
+            morphs.push({ name: blinkMorph, frame: t, weight: 0 });
+            morphs.push({ name: blinkMorph, frame: t + 2, weight: 1 });  // 快速闭合
+            morphs.push({ name: blinkMorph, frame: t + 5, weight: 0 }); // 慢慢睁开
         }
-        morphs.push({ name: MORPH_BLINK, frame: loopFrames, weight: 0 });
+        morphs.push({ name: blinkMorph, frame: loopFrames, weight: 0 });
     }
 
     return buildVmd(bones, morphs, "IdleMotion");
@@ -104,7 +106,7 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
     const intensity = state.intensity;
     const bones: BoneKeyFrame[] = [];
     const morphs: MorphKeyFrame[] = [];
-    const hasBlink = morphNames.includes(MORPH_BLINK);
+    const blinkMorph = MORPH_BLINK_CANDIDATES.find(c => morphNames.includes(c));
 
     // 预计算 sin 值，3 个骨骼循环复用
     const sinVals: number[] = [];
@@ -116,11 +118,12 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
     const bodyAmp = 0.08 * intensity;
     for (let f = 0; f <= loopFrames; f += 3) {
         const s = sinVals[f];
-        const rotY = s * bodyAmp;
-        const bob = Math.abs(s) * 0.02 * intensity; // 上下弹
+        const ry = s * bodyAmp;
+        const w = Math.sqrt(Math.max(0, 1 - ry * ry));
+        const bob = Math.abs(s) * 0.02 * intensity;
         bones.push({
             name: BONE_CENTER, frame: f, position: [0, bob, 0],
-            rotation: [0, rotY, 0, 1 - 0.5 * rotY * rotY],
+            rotation: [0, ry, 0, w],
         });
     }
     bones.push({ name: BONE_CENTER, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
@@ -129,10 +132,11 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
     const headAmp = 0.06 * intensity;
     for (let f = 0; f <= loopFrames; f += 3) {
         const s = sinVals[f];
-        const rotZ = -s * headAmp;
+        const rz = -s * headAmp;
+        const w = Math.sqrt(Math.max(0, 1 - rz * rz));
         bones.push({
             name: BONE_HEAD, frame: f, position: [0, 0, 0],
-            rotation: [0, 0, rotZ, 1 - 0.5 * rotZ * rotZ],
+            rotation: [0, 0, rz, w],
         });
     }
     bones.push({ name: BONE_HEAD, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
@@ -141,29 +145,31 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
     const armAmp = 0.15 * intensity;
     for (let f = 0; f <= loopFrames; f += 3) {
         const s = sinVals[f];
-        const lRot = s * armAmp;
-        const rRot = -s * armAmp;
+        const lz = s * armAmp;
+        const rz = -s * armAmp;
+        const wl = Math.sqrt(Math.max(0, 1 - lz * lz));
+        const wr = Math.sqrt(Math.max(0, 1 - rz * rz));
         bones.push({
             name: BONE_LARM, frame: f, position: [0, 0, 0],
-            rotation: [0, 0, lRot, 1 - 0.5 * lRot * lRot],
+            rotation: [0, 0, lz, wl],
         });
         bones.push({
             name: BONE_RARM, frame: f, position: [0, 0, 0],
-            rotation: [0, 0, rRot, 1 - 0.5 * rRot * rRot],
+            rotation: [0, 0, rz, wr],
         });
     }
     bones.push({ name: BONE_LARM, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
     bones.push({ name: BONE_RARM, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
 
     // 眨眼：每拍眨一次
-    if (hasBlink) {
+    if (blinkMorph) {
         for (let b = 0; b < 2; b++) {
             const t = b * beatFrames;
-            morphs.push({ name: MORPH_BLINK, frame: t, weight: 0 });
-            morphs.push({ name: MORPH_BLINK, frame: t + 1, weight: 1 });
-            morphs.push({ name: MORPH_BLINK, frame: t + 4, weight: 0 });
+            morphs.push({ name: blinkMorph, frame: t, weight: 0 });
+            morphs.push({ name: blinkMorph, frame: t + 1, weight: 1 });
+            morphs.push({ name: blinkMorph, frame: t + 4, weight: 0 });
         }
-        morphs.push({ name: MORPH_BLINK, frame: loopFrames, weight: 0 });
+        morphs.push({ name: blinkMorph, frame: loopFrames, weight: 0 });
     }
 
     return buildVmd(bones, morphs, "AutoDance");

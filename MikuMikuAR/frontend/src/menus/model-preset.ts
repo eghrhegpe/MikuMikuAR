@@ -21,6 +21,7 @@ import {
   loadVMDFromPath,
   getMatState,
   applyMatState,
+  loadPMXFile,
 } from "../scene/scene";
 import { createIconifyIcon } from "../core/icons";
 import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "../outfit/audio";
@@ -262,7 +263,6 @@ export async function applyPresetFromLib(
       if (matchedId) {
         await applyModelPreset(matchedId, json);
       } else {
-        const { loadPMXFile } = await import("../scene/scene");
         await loadPMXFile(preset.model.filePath);
         for (const [mid, inst] of modelRegistry) {
           if (inst.filePath === preset.model.filePath) {
