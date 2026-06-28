@@ -12,8 +12,6 @@ import { ImportZip } from "../wailsjs/go/main/App";
 import { OnFileDrop, EventsOn } from "../wailsjs/runtime/runtime";
 import { loadPMXFile, loadVMDFromPath } from "./scene";
 import { refreshLibrary } from "./library";
-import { showSettings } from "./settings";
-import { showSceneMenu, showEnvMenu } from "./scene-menu";
 import "iconify-icon";
 
 // ======== Initialize hover hints for static [data-hint] elements ========
@@ -69,12 +67,12 @@ function toggleOverlay(id: string, showFn: () => void): void {
     }
     syncNavAriaExpanded();
 }
-const navActions: Record<number, () => void> = {
+const navActions: Record<number, () => void | Promise<void>> = {
     1: togglePopup,
     2: () => toggleOverlay("motionPopup", showMotionPopup),
-    3: () => toggleOverlay("sceneOverlay", showSceneMenu),
-    4: () => toggleOverlay("sceneOverlay", showEnvMenu),
-    5: () => toggleOverlay("settingsOverlay", showSettings),
+    3: async () => { const m = await import("./scene-menu"); toggleOverlay("sceneOverlay", m.showSceneMenu); },
+    4: async () => { const m = await import("./scene-menu"); toggleOverlay("sceneOverlay", m.showEnvMenu); },
+    5: async () => { const m = await import("./settings"); toggleOverlay("settingsOverlay", m.showSettings); },
 };
 const navLabels: Record<number, string> = {};
 function buildNavMaps(): void {
@@ -95,7 +93,7 @@ function buildNavMaps(): void {
 }
 
 // Keyboard shortcuts
-window.addEventListener("keydown", (e) => {
+window.addEventListener("keydown", async (e) => {
     const t = e.target as HTMLElement;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
 
@@ -104,7 +102,7 @@ window.addEventListener("keydown", (e) => {
         e.preventDefault();
         const num = parseInt(e.code.slice(-1), 10);
         if (navActions[num]) {
-            navActions[num]();
+            await navActions[num]();
             setStatus(navLabels[num] || "", false);
         }
         return;
@@ -242,6 +240,9 @@ async function init(): Promise<void> {
         initDropHandler();
         // Register nav button event listeners (ensured DOM ready)
         dom.btnMotionPopup?.addEventListener("click", showMotionPopup);
+        dom.btnScene?.addEventListener("click", async () => { const m = await import("./scene-menu"); toggleOverlay("sceneOverlay", m.showSceneMenu); });
+        dom.btnEnv?.addEventListener("click", async () => { const m = await import("./scene-menu"); toggleOverlay("sceneOverlay", m.showEnvMenu); });
+        dom.btnSettings?.addEventListener("click", async () => { const m = await import("./settings"); toggleOverlay("settingsOverlay", m.showSettings); });
         console.log("MikuMikuAR initialized");
         initLibrary().catch(err => console.warn("Library init:", err));
         // Restore env state from config (authoritative — scene restore skips env)

@@ -51,7 +51,6 @@ import { buildMatRootLevel } from "./model-material";
 import { createIconifyIcon, softwareKindIcon } from "./icons";
 import { isPlaying } from "./config";
 import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "./audio";
-import { getSceneStack } from "./scene-menu";
 import { slideRow, addSliderRow } from "./ui-helpers";
 import { buildOutfitLevel } from "./outfit-ui";
 import { loadOutfits, applyOutfitVariant } from "./outfit";
@@ -117,7 +116,6 @@ export function buildOpenWithLevel(id: string): PopupLevel {
 export function buildModelDetailLevel(id: string): PopupLevel {
   const inst = modelRegistry.get(id);
   if (!inst) return { label: "未知模型", dir: "", items: [] };
-  const sceneStack = getSceneStack();
   return {
     label: inst.name,
     dir: "",
@@ -187,8 +185,9 @@ export function buildModelDetailLevel(id: string): PopupLevel {
         const level = buildOpenWithLevel(id);
         stackRegistry.modelStack?.push(level);
       });
-      slideRow(card4, "lucide:trash-2", "移除", false, () => {
-        sceneStack?.popTo(0); removeModel(id);
+      slideRow(card4, "lucide:trash-2", "移除", false, async () => {
+        const { getSceneStack } = await import("./scene-menu");
+        getSceneStack()?.popTo(0); removeModel(id);
       });
       container.appendChild(card4);
     },

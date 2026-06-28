@@ -489,5 +489,3 @@ async function createNewDanceSet(): Promise<void> {
     setStatus("✗ 创建失败", false);
   }
 }
-
-dom.btnCloseMotionPopup?.addEventListener("click", hideMotionPopup);
