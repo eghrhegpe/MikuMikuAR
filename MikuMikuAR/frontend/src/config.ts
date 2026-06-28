@@ -243,6 +243,8 @@ export function setRecentModels(r: string[]): void { recentModels = r; }
 
 export type DisplayNamePriority = "name_jp" | "name_en" | "filename";
 
+export type PhysicsCategory = "skirt" | "chest" | "hair" | "accessory";
+
 export type CameraMode = "orbit" | "freefly" | "oneshot" | "concert";
 
 export let cameraMode: CameraMode = "orbit";

@@ -32,7 +32,6 @@ import { GetMmdWasmInstance } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmIns
 import { MmdWasmInstanceTypeSPR } from "babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease";
 import { MmdWasmRuntime } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime";
 import type { MmdWasmModel } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmModel";
-import type { IMmdRuntimeBone } from "babylon-mmd/esm/Runtime/IMmdRuntimeBone";
 import { VmdLoader } from "babylon-mmd/esm/Loader/vmdLoader";
 import { MmdWasmAnimation } from "babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation";
 import "babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation";
@@ -79,10 +78,14 @@ import { _catState, _matState, _matEnabled } from "./scene-material";
 export { _catState, _matState, _matEnabled, _catOf, _applyAll, isMatEnabled, setMatEnabled, getMatCatGroups, getMatCatParams, setMatCatParams, resetMatCatParams, getMatDetailList, getMatParams, setMatParams, resetSingleMatParams, resetAllMatParams, getMatState, applyMatState } from "./scene-material";
 export type { MaterialCategoryParams, MaterialCategory } from "./scene-material";
 
+import { ModelManager } from "./scene-model";
+
 // ======== Babylon.js ========
 export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true, stencil: true });
 export const scene = new Scene(engine);
 scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
+
+export let modelManager: ModelManager;
 
 // Dev debug helper — exposes internals for Console inspection
 (window as any).__envDebug = () => ({
@@ -447,8 +450,8 @@ function updateLipSync(): void {
 }
 
 // ======== Convenience getters ========
-export function focusedMmdModel() { return focusedModelId ? modelRegistry.get(focusedModelId)?.mmdModel ?? null : null; }
-export function focusedModel() { return focusedModelId ? modelRegistry.get(focusedModelId) : undefined; }
+export function focusedMmdModel() { return modelManager.focusedMmdModel(); }
+export function focusedModel() { return modelManager.focused(); }
 
 /** 启动程序化动作：生成 procedural VMD 并加载。
  *  @param targetMode 要加载的模式（覆盖 procState.mode）
@@ -597,6 +600,17 @@ export async function initScene(): Promise<void> {
     procBeatDetector = new BeatDetector();
     attachBeatDetector(procBeatDetector);
 
+    // Initialize ModelManager — wraps modelRegistry + per-model state
+    modelManager = new ModelManager(scene, triggerAutoSave, autoFrame);
+    modelManager.onRemoveModel = (id) => {
+        const inst = modelRegistry.get(id);
+        if (inst?.mmdModel && mmdRuntime) {
+            try { mmdRuntime.destroyMmdModel(inst.mmdModel); } catch (e) { console.warn("removeModel: destroyMmdModel failed", e); }
+        }
+    };
+    // Sync config's modelRegistry to ModelManager's internal registry
+    setModelRegistry(modelManager.modelRegistry);
+
     _applyGround(envState);
     _updateSunDisc();
 }
@@ -671,10 +685,11 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
                 scaling: 1.0, rotationY: 0,
             };
             modelRegistry.set(id, inst);
+            modelManager.register(inst);
             setFocusedModelId(id);
-            focusModel(id);
+            modelManager.focus(id);
             setStatus(`✓ ${displayName} (场景)`, true);
-            arrangeModels();
+            modelManager.arrange();
             return;
         }
 
@@ -696,10 +711,10 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
             scaling: 1.0, rotationY: 0,
         };
         modelRegistry.set(id, inst);
-        // Remember initial rigid body states for physics toggle restoration
+        modelManager.register(inst);
         if (wasmModel) {
             const states = wasmModel.rigidBodyStates;
-            if (states) _initialRigidBodyStates.set(id, new Uint8Array(states));
+            if (states) modelManager.storeRigidBodyState(id, states);
         }
         setFocusedModelId(id);
 
@@ -712,9 +727,9 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
             await loadVMDMotion(vmdData, appliedVmd, id);
         }
 
-        focusModel(id);
+        modelManager.focus(id);
         setStatus(appliedVmd ? `✓ ${displayName} + ${appliedVmd}` : `✓ ${displayName}`, true);
-        arrangeModels();
+        modelManager.arrange();
         // Auto-capture thumbnail for future popup display
         captureThumbnail(filePath).catch(() => {});
         if (!skipAutoApply) {
@@ -972,29 +987,22 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
 
 // ======== Model Lifecycle ========
 export function removeModel(id: string): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) return;
-    // If this model owns procedural VMD, clean up state
+    // Scene-specific cleanup before modelManager removes the model
     if (procModelId === id) {
         procVmdActive = false;
         procModelId = null;
     }
-    // If removing focused model, clear LipSync morph cache
     if (focusedModelId === id) {
         lipSyncMorphName = null;
     }
-    if (inst.mmdModel && mmdRuntime) { try { mmdRuntime.destroyMmdModel(inst.mmdModel); } catch (e) { console.warn("removeModel: destroyMmdModel failed", e); } }
-    for (const m of inst.meshes) { if (m instanceof Mesh) m.dispose(); }
-    inst._origTextures = undefined;
-    inst.outfitFile = undefined;
-    modelRegistry.delete(id);
+    // Clean material state maps (owned by scene-material.ts)
     _catState.delete(id);
     _matState.delete(id);
     _matEnabled.delete(id);
-    _physicsCatState.delete(id);
-    destroyBoneOverlay(id);
-    if (focusedModelId === id) { setFocusedModelId(modelRegistry.size > 0 ? modelRegistry.keys().next().value : null); }
-    if (focusedModelId) focusModel(focusedModelId);
+
+    // Delegate registry management + focus + bone overlay + mesh disposal to ModelManager
+    modelManager.remove(id);
+
     // Concert mode has no model to track after removal — fall back to orbit
     if (focusedModelId === null && getCameraMode() === "concert") {
         switchCameraMode("orbit");
@@ -1008,49 +1016,21 @@ export function removeModel(id: string): void {
         dom.playbackBar.style.display = "none";
         disposeAudio();
     }
-    arrangeModels();
 }
 
 export function removeFocusedModel(): void {
     if (!focusedModelId) return;
     removeModel(focusedModelId);
     setPendingVmd(null);
-    if (modelRegistry.size === 0) {
-        setIsPlaying(false);
-        setAutoLoop(true);
-        setSeekDragging(false);
-        dom.playbackBar.style.display = "none";
-    }
 }
 
 export function focusModel(id: string): void {
-    setFocusedModelId(id);
-    const inst = modelRegistry.get(id);
-    if (!inst) { return; }
-    // Auto-frame camera
-    const min = new Vector3(Infinity, Infinity, Infinity);
-    const max = new Vector3(-Infinity, -Infinity, -Infinity);
-    for (const m of inst.meshes) {
-        m.computeWorldMatrix(true);
-        const bb = m.getBoundingInfo().boundingBox;
-        min.minimizeInPlace(bb.minimumWorld);
-        max.maximizeInPlace(bb.maximumWorld);
-    }
-    const center = min.add(max).scale(0.5);
-    const size = max.subtract(min);
-    const extent = Math.max(size.x, size.y, size.z);
-    autoFrame(center, extent);
+    modelManager.focus(id);
     updatePlaybackUI();
 }
 
 export function arrangeModels(): void {
-    const models = Array.from(modelRegistry.values());
-    const spacing = 3;
-    models.forEach((inst, i) => {
-        const offsetX = (i - (models.length - 1) / 2) * spacing;
-        if (inst.meshes.length > 0) inst.meshes[0].position.x = offsetX;
-    });
-    triggerAutoSave();
+    modelManager.arrange();
 }
 
 // ======== Playback UI ========
@@ -1325,356 +1305,74 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
 
 // ======== Model Instance Manipulation Helpers ========
 
-/** Apply the current visibility, opacity, and wireframe state of a ModelInstance to its meshes. */
-function syncModelVisibility(inst: ModelInstance): void {
-    for (const m of inst.meshes) {
-        m.setEnabled(inst.visible);
-        if (m.material) {
-            m.material.alpha = inst.opacity;
-            if (m.material instanceof StandardMaterial) {
-                m.material.wireframe = inst.wireframe;
-            }
-        }
-    }
-}
-
-/** Apply the current scaling and rotation state of a ModelInstance to its root mesh. */
-function syncModelTransform(inst: ModelInstance): void {
-    if (inst.meshes.length > 0) {
-        const root = inst.meshes[0];
-        root.scaling.setAll(inst.scaling);
-        root.rotation.y = inst.rotationY;
-    }
-}
-
 /** Set visibility of a model (true = visible, false = hidden). */
 export function setModelVisibility(id: string, visible: boolean): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) return;
-    inst.visible = visible;
-    syncModelVisibility(inst);
-    triggerAutoSave();
+    modelManager.setVisibility(id, visible);
 }
 
 /** Set opacity (0..1) of a model. */
 export function setModelOpacity(id: string, opacity: number): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) return;
-    inst.opacity = Math.max(0, Math.min(1, opacity));
-    syncModelVisibility(inst);
-    triggerAutoSave();
+    modelManager.setOpacity(id, opacity);
 }
 
 /** Toggle wireframe rendering on a model. */
 export function setModelWireframe(id: string, wireframe: boolean): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) return;
-    inst.wireframe = wireframe;
-    syncModelVisibility(inst);
-    triggerAutoSave();
+    modelManager.setWireframe(id, wireframe);
 }
 
 /** Toggle bone skeleton overlay on a model. */
 export function setModelBoneVis(id: string, show: boolean): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) return;
-    inst.showBones = show;
-    if (show) {
-        createBoneOverlay(id);
-    } else {
-        destroyBoneOverlay(id);
-    }
-    triggerAutoSave();
+    modelManager.setBoneVis(id, show);
 }
 
 /** Enable or disable physics simulation for a model. */
 export function setModelPhysics(id: string, enabled: boolean): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) return;
-    inst.physicsEnabled = enabled;
-    const mmdModel = inst.mmdModel;
-    if (mmdModel) {
-        const states = mmdModel.rigidBodyStates;
-        if (states) {
-            if (enabled) {
-                // Restore initial states remembered at load time
-                const init = (_initialRigidBodyStates.get(id) || new Uint8Array(0));
-                if (init.length === states.length) {
-                    states.set(init);
-                } else {
-                    states.fill(1);
-                }
-            } else {
-                states.fill(0);
-            }
-        }
-    }
-    _physicsCatState.delete(id);
-    triggerAutoSave();
+    modelManager.setPhysics(id, enabled);
 }
-
-const _initialRigidBodyStates = new Map<string, Uint8Array>();
-const _physicsCatState = new Map<string, Map<string, boolean>>();
 
 export type PhysicsCategory = "skirt" | "chest" | "hair" | "accessory";
 export type LipSyncState = LipSyncStateType;
 
-const PHYSICS_CAT_PATTERNS: [PhysicsCategory, RegExp][] = [
-    ["skirt", /スカート|skirt|フリル|frill|裾|hem/],
-    ["chest", /胸|chest|bust|バスト/],
-    ["hair", /髪|hair|ahoge|bangs|ponytail|前髪|後ろ髪/],
-    ["accessory", /リボン|ribbon|アクセサリ|accessory|飾り|collar|ネクタイ|tie|紐|string|襟/],
-];
-
-function _classifyBonePhysics(name: string): PhysicsCategory | null {
-    const l = name.toLowerCase();
-    for (const [cat, re] of PHYSICS_CAT_PATTERNS) {
-        if (re.test(l)) return cat;
-    }
-    return null;
-}
-
-function _buildRigidBodyCatMap(id: string): Map<number, PhysicsCategory> {
-    const inst = modelRegistry.get(id);
-    if (!inst || !inst.mmdModel) return new Map();
-    const bones = inst.mmdModel.runtimeBones;
-    const map = new Map<number, PhysicsCategory>();
-    for (let i = 0; i < bones.length; i++) {
-        const bone = bones[i];
-        if (bone.rigidBodyIndices.length === 0) continue;
-        const cat = _classifyBonePhysics(bone.name);
-        if (!cat) continue;
-        for (const rbi of bone.rigidBodyIndices) {
-            map.set(rbi, cat);
-        }
-    }
-    return map;
-}
-
 export function getPhysicsCategories(id: string): PhysicsCategory[] {
-    const map = _buildRigidBodyCatMap(id);
-    const set = new Set(map.values());
-    return [...set];
+    return modelManager.getPhysicsCategories(id);
 }
 
 export function getPhysicsCatState(id: string): Record<string, boolean> | null {
-    const state = _physicsCatState.get(id);
-    if (!state || state.size === 0) return null;
-    const result: Record<string, boolean> = {};
-    for (const [cat, enabled] of state) result[cat] = enabled;
-    return result;
+    return modelManager.getPhysicsCatState(id);
 }
 
 export function isPhysicsCategoryEnabled(id: string, cat: string): boolean {
-    return _physicsCatState.get(id)?.get(cat) ?? true;
+    return modelManager.isPhysicsCategoryEnabled(id, cat);
 }
 
 export function setPhysicsCategory(id: string, cat: string, enabled: boolean): void {
-    const inst = modelRegistry.get(id);
-    if (!inst || !inst.mmdModel) return;
-    const states = inst.mmdModel.rigidBodyStates;
-    if (!states) return;
-    const catMap = _buildRigidBodyCatMap(id);
-    const init = _initialRigidBodyStates.get(id);
-    for (const [rbi, c] of catMap) {
-        if (c !== cat || rbi >= states.length) continue;
-        states[rbi] = enabled ? (init ? init[rbi] : 1) : 0;
-    }
-    if (!_physicsCatState.has(id)) _physicsCatState.set(id, new Map());
-    _physicsCatState.get(id)!.set(cat, enabled);
-    triggerAutoSave();
-}
-
-function _getBoneColor(bone: IMmdRuntimeBone, isPhysics: boolean): Color3 {
-    if (bone.ikSolverIndex >= 0) return new Color3(0.53, 0.42, 1.0);       // IK: purple-blue
-    if (isPhysics) return new Color3(0.2, 1.0, 0.3);                       // physics: bright green
-    if (bone.transformAfterPhysics) return new Color3(0.2, 0.8, 1.0);      // after-physics: sky blue
-    const flag = bone.flag;
-    if (flag & 768) return new Color3(1.0, 0.84, 0.0);                     // append transform: gold
-    if (flag & 1024) return new Color3(1.0, 0.4, 0.7);                     // axis limit: hot pink
-    if ((flag & 2) === 0) return new Color3(0.5, 0.5, 0.5);                // non-rotatable: gray
-    return Color3.FromHSV(((bone.transformOrder % 40) / 40) * 360, 1, 0.8); // default: transform-order hue
-}
-
-function createBoneOverlay(id: string): void {
-    const inst = modelRegistry.get(id);
-    if (!inst || !inst.mmdModel) return;
-    if (_boneOverlayMap.has(id)) return;
-
-    const bones = inst.mmdModel.runtimeBones;
-    if (!bones || bones.length === 0) return;
-
-    const physicsBoneSet = new Set<number>();
-    for (let i = 0; i < bones.length; i++) {
-        if (bones[i].rigidBodyIndices.length > 0) {
-            physicsBoneSet.add(i);
-        }
-    }
-
-    const lines: Vector3[][] = [];
-    const colors: Color4[][] = [];
-    const tmp = new Vector3();
-    const joints: Mesh[] = [];
-    const jointData: { mesh: Mesh; boneIndex: number }[] = [];
-
-    for (let i = 0; i < bones.length; i++) {
-        const bone = bones[i];
-        const c = _getBoneColor(bone, physicsBoneSet.has(i));
-
-        const bonePos = new Vector3();
-        bone.getWorldTranslationToRef(bonePos);
-        const sphere = MeshBuilder.CreateSphere("joint_" + id + "_" + i, { diameter: 0.03 }, scene);
-        sphere.position = bonePos.clone();
-        sphere.renderingGroupId = 2;
-        const sphereMat = new StandardMaterial("jointMat_" + id + "_" + i, scene);
-        sphereMat.emissiveColor = c;
-        sphereMat.disableLighting = true;
-        sphere.material = sphereMat;
-        joints.push(sphere);
-        jointData.push({ mesh: sphere, boneIndex: i });
-
-        if (!bone.parentBone) continue;
-        const parentPos = new Vector3();
-        bone.parentBone.getWorldTranslationToRef(parentPos);
-        lines.push([parentPos.clone(), bonePos.clone()]);
-        colors.push([new Color4(c.r, c.g, c.b, 1), new Color4(c.r, c.g, c.b, 1)]);
-    }
-
-    if (lines.length === 0) {
-        console.warn("setModelBoneVis: no parent-child bone connections found");
-        return;
-    }
-
-    const overlay = MeshBuilder.CreateLineSystem("boneOverlay_" + id, {
-        lines,
-        colors,
-        updatable: true,
-        useVertexAlpha: true,
-    }, scene);
-    overlay.renderingGroupId = 2;
-
-    const updateFn = () => {
-        const m = modelRegistry.get(id);
-        if (!m || !m.mmdModel) return;
-        const b = m.mmdModel.runtimeBones;
-        if (!b) return;
-        const positions: number[] = [];
-        const colorData: number[] = [];
-        for (let i = 0; i < b.length; i++) {
-            const bone = b[i];
-            if (!bone.parentBone) continue;
-            const parentPos = new Vector3();
-            const childPos = new Vector3();
-            bone.parentBone.getWorldTranslationToRef(parentPos);
-            bone.getWorldTranslationToRef(childPos);
-            positions.push(parentPos.x, parentPos.y, parentPos.z);
-            positions.push(childPos.x, childPos.y, childPos.z);
-            const c = _getBoneColor(bone, physicsBoneSet.has(i));
-            colorData.push(c.r, c.g, c.b);
-            colorData.push(c.r, c.g, c.b);
-        }
-        const posArr = new Float32Array(positions);
-        const colArr = new Float32Array(colorData);
-        overlay.updateVerticesData("position", posArr, false, false);
-        overlay.updateVerticesData("color", colArr, false, false);
-
-        const tmpPos = new Vector3();
-        for (const jd of jointData) {
-            const bone = b[jd.boneIndex];
-            if (!bone) continue;
-            bone.getWorldTranslationToRef(tmpPos);
-            jd.mesh.position.copyFrom(tmpPos);
-        }
-    };
-
-    _boneOverlayMap.set(id, { overlay, update: updateFn, joints });
-
-    // Register the before-render observer if not yet registered
-    ensureBoneUpdateObserver();
-}
-
-function destroyBoneOverlay(id: string): void {
-    const entry = _boneOverlayMap.get(id);
-    if (entry) {
-        entry.overlay.dispose();
-        for (const j of entry.joints) j.dispose();
-        _boneOverlayMap.delete(id);
-    }
-}
-
-let _boneUpdateObserver: Observer<Scene> | null = null;
-function ensureBoneUpdateObserver(): void {
-    if (_boneUpdateObserver) return;
-    _boneUpdateObserver = scene.onBeforeRenderObservable.add(() => {
-        const toDelete: string[] = [];
-        for (const [id, entry] of _boneOverlayMap) {
-            const inst = modelRegistry.get(id);
-            if (!inst || !inst.showBones || !inst.mmdModel) {
-                entry.overlay.dispose();
-                for (const j of entry.joints) j.dispose();
-                toDelete.push(id);
-                continue;
-            }
-            entry.update();
-        }
-        for (const id of toDelete) _boneOverlayMap.delete(id);
-    });
+    modelManager.setPhysicsCategory(id, cat, enabled);
 }
 
 /** Set uniform scale for a model (1.0 = original size). */
 export function setModelScaling(id: string, scaling: number): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) return;
-    inst.scaling = Math.max(0.01, scaling);
-    syncModelTransform(inst);
-    triggerAutoSave();
+    modelManager.setScaling(id, scaling);
 }
 
 /** Set Y-axis rotation for a model (radians). */
 export function setModelRotationY(id: string, rotationY: number): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) return;
-    inst.rotationY = rotationY;
-    syncModelTransform(inst);
-    triggerAutoSave();
+    modelManager.setRotationY(id, rotationY);
 }
 
 /** Set position (x, y, z) for a model. */
 export function setModelPosition(id: string, x: number, y: number, z: number): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) return;
-    if (inst.meshes.length > 0) {
-        inst.meshes[0].position.set(x, y, z);
-    }
-    triggerAutoSave();
+    modelManager.setPosition(id, x, y, z);
 }
 
 /** Get current position of a model as [x, y, z]. */
 export function getModelPosition(id: string): [number, number, number] {
-    const inst = modelRegistry.get(id);
-    if (!inst || inst.meshes.length === 0) return [0, 0, 0];
-    const p = inst.meshes[0].position;
-    return [p.x, p.y, p.z];
+    return modelManager.getPosition(id);
 }
 
 /** Reset all transform/visibility properties to defaults. */
 export function resetModelTransform(id: string): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) return;
-    inst.visible = true;
-    inst.opacity = 1.0;
-    inst.wireframe = false;
-    inst.scaling = 1.0;
-    inst.rotationY = 0;
-    if (inst.meshes.length > 0) {
-        inst.meshes[0].position.set(0, 0, 0);
-    }
-    syncModelVisibility(inst);
-    syncModelTransform(inst);
-    triggerAutoSave();
+    modelManager.resetTransform(id);
 }
-
-const _boneOverlayMap = new Map<string, { overlay: Mesh; joints: Mesh[]; update: () => void }>();
 
 // ======== Model Preset Support ========
 
@@ -1687,16 +1385,12 @@ export function stopVMD(id: string): void {
     if (inst.mmdModel && mmdRuntime) {
         inst.mmdModel.setRuntimeAnimation(null);
     }
-    inst.vmdData = null;
-    inst.vmdName = "";
-    inst.vmdPath = null;
-    inst.animationDuration = 0;
+    modelManager.stopVMD(id);
     if (isPlaying) {
         mmdRuntime?.pauseAnimation();
         setIsPlaying(false);
     }
     updatePlaybackUI();
-    triggerAutoSave();
 }
 
 // ======== Gravity Control ========
@@ -1867,30 +1561,22 @@ export function setEnvState(partial: Partial<EnvState>): void {
 
 /** Get all morph names and types for a model. */
 export function getModelMorphs(id: string): Array<{ name: string; type: number }> {
-    const inst = modelRegistry.get(id);
-    if (!inst?.mmdModel?.morph?.morphs) return [];
-    return inst.mmdModel.morph.morphs.map(m => ({ name: m.name, type: m.type }));
+    return modelManager.getMorphs(id);
 }
 
 /** Set a morph weight for a model (0..1). */
 export function setModelMorphWeight(id: string, morphName: string, weight: number): void {
-    const inst = modelRegistry.get(id);
-    if (!inst?.mmdModel?.morph) return;
-    inst.mmdModel.morph.setMorphWeight(morphName, weight);
+    modelManager.setMorphWeight(id, morphName, weight);
 }
 
 /** Get a morph weight for a model. */
 export function getModelMorphWeight(id: string, morphName: string): number {
-    const inst = modelRegistry.get(id);
-    if (!inst?.mmdModel?.morph) return 0;
-    return inst.mmdModel.morph.getMorphWeight(morphName);
+    return modelManager.getMorphWeight(id, morphName);
 }
 
 /** Reset all morph weights to 0. */
 export function resetModelMorphs(id: string): void {
-    const inst = modelRegistry.get(id);
-    if (!inst?.mmdModel?.morph) return;
-    inst.mmdModel.morph.resetMorphWeights();
+    modelManager.resetMorphs(id);
 }
 
 // ======== Auto-restore ========
