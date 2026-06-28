@@ -4,6 +4,8 @@ import type { MmdWasmModel } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmMode
 import { MmdWasmRuntime } from "babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import type { ClothConfig } from "../physics/xpbd-cloth";
+import { DEFAULT_CLOTH_CONFIG } from "../physics/xpbd-cloth";
 
 // ======== Types ========
 
@@ -169,6 +171,10 @@ export interface EnvState {
     fogEnabled: boolean;
     fogColor: [number, number, number];
     fogDensity: number;
+
+    // ======== XPBD 布料模拟 ========
+    clothEnabled: boolean;
+    clothConfig: ClothConfig;
 }
 
 // ======== Shared Mutable State ========
@@ -321,6 +327,10 @@ export let envState: EnvState = {
     fogEnabled: false,
     fogColor: [0.5, 0.5, 0.6],
     fogDensity: 0.01,
+
+    // ======== XPBD 布料模拟 ========
+    clothEnabled: false,
+    clothConfig: { ...DEFAULT_CLOTH_CONFIG },
 };
 
 // ======== DOM Element Refs ========

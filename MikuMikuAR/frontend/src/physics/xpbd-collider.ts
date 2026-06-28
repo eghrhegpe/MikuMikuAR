@@ -248,4 +248,55 @@ export class SdfCollider {
   clear(): void {
     this.capsules = [];
   }
+
+  /**
+   * 根据骨骼世界矩阵动态更新胶囊规格（半径和半高）
+   *
+   * 对于每段骨骼（如 上半身→腰），根据骨骼距离动态调整胶囊半高。
+   * 半径保持默认值（可根据模型大小缩放）。
+   *
+   * @param getBoneMatrix 根据骨骼名返回世界矩阵的函数
+   * @param boneParentMap 骨骼名 → 父骨骼名的映射（用于计算骨骼长度）
+   */
+  updateCapsuleSizes(
+    getBoneMatrix: (boneName: string) => Float32Array | null,
+    boneParentMap?: Record<string, string>,
+  ): void {
+    for (const capsule of this.capsules) {
+      const boneName = capsule.name;
+      const parentName = boneParentMap?.[boneName];
+
+      if (parentName) {
+        // 有父骨骼：根据骨骼距离计算半高
+        const boneMat = getBoneMatrix(boneName);
+        const parentMat = getBoneMatrix(parentName);
+
+        if (boneMat && parentMat) {
+          const dx = boneMat[12] - parentMat[12];
+          const dy = boneMat[13] - parentMat[13];
+          const dz = boneMat[14] - parentMat[14];
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+          // 半高 = 骨骼距离的一半
+          capsule.halfHeight = dist * 0.5;
+
+          // 半径 = 骨骼距离的 0.2 倍（可调整）
+          capsule.radius = dist * 0.2;
+        }
+      }
+
+      // 如果没有父骨骼，保持默认半径和半高
+    }
+  }
+
+  /**
+   * 缩放所有胶囊的尺寸（用于适配不同大小的模型）
+   * @param scaleFactor 缩放因子（1.0 = 原始大小）
+   */
+  scaleAll(scaleFactor: number): void {
+    for (const capsule of this.capsules) {
+      capsule.radius *= scaleFactor;
+      capsule.halfHeight *= scaleFactor;
+    }
+  }
 }
