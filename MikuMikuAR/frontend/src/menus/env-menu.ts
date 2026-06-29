@@ -368,7 +368,7 @@ function envOnFolderEnter(row: PopupRow): PopupLevel | null {
 
 export function showEnvMenu(): void {
     dom.sceneOverlay.innerHTML = "";
-    dom.sceneOverlay.classList.remove("overlay-model", "overlay-motion", "overlay-settings", "overlay-scene");
+    dom.sceneOverlay.classList.remove("sceneOverlay-model", "sceneOverlay-motion", "sceneOverlay-settings");
     dom.sceneOverlay.dataset.popupType = "env";
 
     // 每次都重建 SlideMenu，避免 innerHTML 清空后旧实例持有已销毁的 DOM 引用

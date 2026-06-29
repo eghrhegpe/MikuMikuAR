@@ -802,8 +802,8 @@ export async function showSettings(): Promise<void> {
     // 不再自管理生命周期，由 toggleOverlay 统一管理
     // 清空旧内容，避免与其他弹窗 DOM 混在一起
     dom.sceneOverlay.innerHTML = "";
-    dom.sceneOverlay.classList.remove("overlay-model", "overlay-motion");
-    dom.sceneOverlay.classList.add("overlay-settings"); // 宽度 340px
+    dom.sceneOverlay.classList.remove("sceneOverlay-model", "sceneOverlay-motion");
+    dom.sceneOverlay.classList.add("sceneOverlay-settings"); // 宽度 340px
     dom.sceneOverlay.dataset.popupType = "settings";
 
     // 每次都重建 SlideMenu，避免 innerHTML 清空后旧实例持有已销毁的 DOM 引用
@@ -834,8 +834,3 @@ export async function showSettings(): Promise<void> {
 
     settingsMenu.reset(buildSettingsRoot());
 }
-
-// Wire up close button (open button wired dynamically from main.ts)
-dom.btnCloseSettings.addEventListener("click", () => {
-    closeAllOverlays();
-});

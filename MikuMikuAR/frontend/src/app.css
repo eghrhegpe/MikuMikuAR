@@ -213,9 +213,9 @@ html, body {
 #sceneOverlay.visible { opacity: 1; transform: none; pointer-events: auto; }
 
 /* ===== 弹窗宽度 Modifier 类 ===== */
-.overlay-model   { width: 280px; }
-.overlay-motion  { width: 320px; }
-.overlay-settings { width: 340px; }
+.sceneOverlay-model   { width: 280px; }
+.sceneOverlay-motion  { width: 320px; }
+.sceneOverlay-settings { width: 340px; }
 
 /* ===== 外部库 — 行内路径 ===== */
 

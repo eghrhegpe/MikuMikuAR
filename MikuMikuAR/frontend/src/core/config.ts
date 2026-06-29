@@ -349,9 +349,6 @@ export const dom = {
     statusBar: document.getElementById("statusBar") as HTMLElement,
     loadingEl: document.getElementById("loading") as HTMLElement,
     btnMainAction: document.getElementById("btnMainAction") as HTMLButtonElement,
-    modelPopup: document.getElementById("modelPopup") as HTMLElement,
-    // Motion popup
-    motionPopup: document.getElementById("motionPopup") as HTMLElement,
     btnMotionPopup: document.getElementById("btnMotionPopup") as HTMLButtonElement,
     playbackBar: document.getElementById("playbackBar") as HTMLElement,
     btnPlayPause: document.getElementById("btnPlayPause") as HTMLButtonElement,
@@ -360,13 +357,10 @@ export const dom = {
     seekBar: document.getElementById("seekBar") as HTMLElement,
     seekProgress: document.getElementById("seekProgress") as HTMLElement,
     loadingText: document.getElementById("loadingText") as HTMLElement,
-    settingsOverlay: document.getElementById("settingsOverlay") as HTMLElement,
     btnSettings: document.getElementById("btnSettings") as HTMLButtonElement,
-    btnCloseSettings: document.getElementById("btnCloseSettings") as HTMLButtonElement,
     btnScene: document.getElementById("btnScene") as HTMLButtonElement,
     btnEnv: document.getElementById("btnEnv") as HTMLButtonElement,
     sceneOverlay: document.getElementById("sceneOverlay") as HTMLElement,
-    btnCloseScene: document.getElementById("btnCloseScene") as HTMLButtonElement,
 };
 
 /** Card container helper: removes render-card bg, wraps content in an lcard. */

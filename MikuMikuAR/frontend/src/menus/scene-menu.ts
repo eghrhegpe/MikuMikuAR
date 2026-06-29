@@ -1077,7 +1077,7 @@ function handleSceneAction(row: PopupRow): void {
 export async function showSceneMenu(): Promise<void> {
     // 不再自管理生命周期，由 toggleOverlay 统一管理
     dom.sceneOverlay.innerHTML = "";
-    dom.sceneOverlay.classList.remove("overlay-model", "overlay-motion", "overlay-settings");
+    dom.sceneOverlay.classList.remove("sceneOverlay-model", "sceneOverlay-motion", "sceneOverlay-settings");
     dom.sceneOverlay.dataset.popupType = "scene";
 
     // Load user presets from backend

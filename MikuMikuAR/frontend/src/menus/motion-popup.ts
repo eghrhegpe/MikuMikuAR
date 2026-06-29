@@ -289,8 +289,8 @@ export function showMotionPopup(): void {
   // 不再自管理生命周期，由 toggleOverlay 统一管理
   // 清空旧内容，避免与其他弹窗 DOM 混在一起
   dom.sceneOverlay.innerHTML = "";
-  dom.sceneOverlay.classList.remove("overlay-model", "overlay-settings");
-  dom.sceneOverlay.classList.add("overlay-motion"); // 宽度 320px
+  dom.sceneOverlay.classList.remove("sceneOverlay-model", "sceneOverlay-settings");
+  dom.sceneOverlay.classList.add("sceneOverlay-motion"); // 宽度 320px
   dom.sceneOverlay.dataset.popupType = "motion";
 
   // 强制重建 MenuStack，避免 innerHTML 清空后旧 stack 持有已分离的 DOM 引用

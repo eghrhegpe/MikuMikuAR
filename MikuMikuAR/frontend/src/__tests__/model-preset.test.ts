@@ -1,13 +1,12 @@
 // Set up minimal DOM so config.ts's `dom` object gets valid element references
 vi.hoisted(() => {
     const ids = [
-        "renderCanvas", "statusBar", "loading", "btnMainAction", "modelPopup",
-        "motionPopup",
+        "renderCanvas", "statusBar", "loading", "btnMainAction",
         "btnMotionPopup",
         "playbackBar", "btnPlayPause", "btnLoopToggle",
         "timeDisplay", "seekBar", "seekProgress", "loadingText",
-        "settingsOverlay", "btnSettings", "btnCloseSettings",
-        "btnScene", "sceneOverlay", "btnCloseScene",
+        "btnSettings",
+        "btnScene", "sceneOverlay",
     ];
     for (const id of ids) {
         const el = document.createElement("div");
