@@ -13,3 +13,7 @@ reasonix.toml
 
 # OpenOmni runtime state (ephemeral sessions)
 .omo/
+
+# CodeBuddy / WorkBuddy — other-software memories and local config
+.codebuddy/
+.workbuddy/
