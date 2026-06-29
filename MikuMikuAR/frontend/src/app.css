@@ -350,11 +350,15 @@ html, body {
 .slide-back {
     color: var(--text-bright); cursor: pointer; padding: 6px 10px;
     display: flex; align-items: center;
-    border-radius: 6px;
+    border-radius: 8px;
     transition: background 0.12s;
-    /* 与 header 融为一体，不自带卡片背景 */
+    background: var(--card-bg);
+    border: 1px solid var(--white-08);
+    min-width: 32px;
+    justify-content: center;
 }
-.slide-back:hover { color: #fff; background: var(--card-hover); }
+.slide-back:hover { color: #fff; background: var(--card-hover); border-color: var(--white-16); }
+.slide-back:active { background: var(--card-active); }
 .slide-back iconify-icon { width: 20px; height: 20px; font-size: 20px; display: block; }
 .slide-title {
     color: var(--text-bright); cursor: default; flex: 1;

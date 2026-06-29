@@ -128,15 +128,16 @@ function buildProcMotionLevel(): PopupLevel {
             { kind: "folder", label: "LipSync", icon: "mic", target: "lipsync:menu", sublabel: lipSt.enabled ? "开" : "关" },
         ],
         renderCustom: (container) => {
-            container.style.padding = "8px 6px";
-            addSliderRow(container, "动作强度", st.intensity, 0, 1, 0.05, (v) => {
-                setProcMotionIntensity(v);
-                regenerateProcMotion();
-            }, "lucide:activity");
-            addSliderRow(container, "速度", st.speed, 0.5, 2, 0.05, (v) => {
-                setProcMotionSpeed(v);
-                regenerateProcMotion();
-            }, "lucide:fast-forward");
+            cardContainer(container, (c) => {
+                addSliderRow(c, "动作强度", st.intensity, 0, 1, 0.05, (v) => {
+                    setProcMotionIntensity(v);
+                    regenerateProcMotion();
+                }, "lucide:activity");
+                addSliderRow(c, "速度", st.speed, 0.5, 2, 0.05, (v) => {
+                    setProcMotionSpeed(v);
+                    regenerateProcMotion();
+                }, "lucide:fast-forward");
+            });
         },
     };
 }
@@ -169,14 +170,14 @@ function buildLipSyncLevel(): PopupLevel {
             { kind: "action", label: "启用", icon: st.enabled ? "check" : "circle", target: "lipsync:toggle", sublabel: st.enabled ? "开" : "关" },
         ],
         renderCustom: (container) => {
-            container.style.padding = "8px 6px";
-            // 灵敏度：UI 上「越大越灵敏」= sensitivity 越小，故反转显示
-            addSliderRow(container, "灵敏度", 1 - st.sensitivity, 0, 1, 0.05, (v) => {
-                setLipSyncSensitivity(1 - v);
-            }, "lucide:volume-2");
-            addSliderRow(container, "强度", st.intensity, 0, 1, 0.05, (v) => {
-                setLipSyncIntensity(v);
-            }, "lucide:activity");
+            cardContainer(container, (c) => {
+                addSliderRow(c, "灵敏度", 1 - st.sensitivity, 0, 1, 0.05, (v) => {
+                    setLipSyncSensitivity(1 - v);
+                }, "lucide:volume-2");
+                addSliderRow(c, "强度", st.intensity, 0, 1, 0.05, (v) => {
+                    setLipSyncIntensity(v);
+                }, "lucide:activity");
+            });
         },
     };
 }
@@ -341,10 +342,11 @@ function buildCameraParamsLevel(mode: CameraMode): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.style.padding = "12px 14px";
-            if (mode === "orbit") renderOrbitParams(container);
-            else if (mode === "freefly") renderFreeflyParams(container);
-            else if (mode === "concert") renderConcertParams(container);
+            cardContainer(container, (c) => {
+                if (mode === "orbit") renderOrbitParams(c);
+                else if (mode === "freefly") renderFreeflyParams(c);
+                else if (mode === "concert") renderConcertParams(c);
+            });
         },
     };
 }
@@ -470,24 +472,21 @@ function buildPhysicsLevel(): PopupLevel {
             { kind: "folder", label: "布料参数", icon: "lucide:scarf", target: "scene:physics:cloth", sublabel: envState.clothEnabled ? "已启用" : "未启用" },
         ],
         renderCustom: (container) => {
-            container.style.padding = "12px 14px";
-
-            // Cloth simulation toggle
-            addToggleRow(container, "布料模拟", envState.clothEnabled, (v) => {
-                setEnvState({ clothEnabled: v });
-                if (v) {
-                    toggleCloth(true);
-                } else {
-                    toggleCloth(false);
-                }
-                sceneMenu?.reRender();
-            }, "lucide:scarf");
-
-            // Gravity slider
-            const gravity = getGravityStrength();
-            addSliderRow(container, "物理重力", gravity, 0, 2, 0.05, (v) => {
-                setGravityStrength(v);
-            }, "lucide:arrow-down");
+            cardContainer(container, (c) => {
+                addToggleRow(c, "布料模拟", envState.clothEnabled, (v) => {
+                    setEnvState({ clothEnabled: v });
+                    if (v) {
+                        toggleCloth(true);
+                    } else {
+                        toggleCloth(false);
+                    }
+                    sceneMenu?.reRender();
+                }, "lucide:scarf");
+                const gravity = getGravityStrength();
+                addSliderRow(c, "物理重力", gravity, 0, 2, 0.05, (v) => {
+                    setGravityStrength(v);
+                }, "lucide:arrow-down");
+            });
         },
     };
 }
@@ -498,54 +497,45 @@ function buildClothParamsLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.style.padding = "8px 6px";
-
-            const cfg = envState.clothConfig;
-
-            addSliderRow(container, "裙长", cfg.length, 0.2, 1.5, 0.05, (v) => {
-                setEnvState({ clothConfig: { ...cfg, length: v } });
-                recreateCloth();
-            }, "lucide:ruler");
-
-            addSliderRow(container, "裙摆角度", cfg.slope, 0, 45, 1, (v) => {
-                setEnvState({ clothConfig: { ...cfg, slope: v } });
-                recreateCloth();
-            }, "lucide:triangle");
-
-            addSliderRow(container, "腰部半径", cfg.innerRadius, 0.05, 0.4, 0.01, (v) => {
-                setEnvState({ clothConfig: { ...cfg, innerRadius: v } });
-                recreateCloth();
-            }, "lucide:circle");
-
-            addSliderRow(container, "布料柔度", cfg.compliance, 0, 0.01, 0.005, (v) => {
-                setEnvState({ clothConfig: { ...cfg, compliance: v } });
-                recreateCloth();
-            }, "lucide:wind");
-
-            addSliderRow(container, "弯曲柔度", cfg.bendCompliance, 0, 0.05, 0.01, (v) => {
-                setEnvState({ clothConfig: { ...cfg, bendCompliance: v } });
-                recreateCloth();
-            }, "lucide:curl");
-
-            addSliderRow(container, "阻尼", cfg.damping, 0.8, 0.999, 0.01, (v) => {
-                setEnvState({ clothConfig: { ...cfg, damping: v } });
-                recreateCloth();
-            }, "lucide:droplet");
-
-            addSliderRow(container, "重力倍率", cfg.gravityScale, 0.1, 3, 0.1, (v) => {
-                setEnvState({ clothConfig: { ...cfg, gravityScale: v } });
-                recreateCloth();
-            }, "lucide:arrow-down");
-
-            addSliderRow(container, "水平分段", cfg.segmentsH, 12, 36, 2, (v) => {
-                setEnvState({ clothConfig: { ...cfg, segmentsH: v } });
-                recreateCloth();
-            }, "lucide:grid");
-
-            addSliderRow(container, "垂直分段", cfg.segmentsV, 6, 20, 1, (v) => {
-                setEnvState({ clothConfig: { ...cfg, segmentsV: v } });
-                recreateCloth();
-            }, "lucide:columns");
+            cardContainer(container, (c) => {
+                const cfg = envState.clothConfig;
+                addSliderRow(c, "裙长", cfg.length, 0.2, 1.5, 0.05, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, length: v } });
+                    recreateCloth();
+                }, "lucide:ruler");
+                addSliderRow(c, "裙摆角度", cfg.slope, 0, 45, 1, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, slope: v } });
+                    recreateCloth();
+                }, "lucide:triangle");
+                addSliderRow(c, "腰部半径", cfg.innerRadius, 0.05, 0.4, 0.01, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, innerRadius: v } });
+                    recreateCloth();
+                }, "lucide:circle");
+                addSliderRow(c, "布料柔度", cfg.compliance, 0, 0.01, 0.005, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, compliance: v } });
+ recreateCloth();
+                }, "lucide:wind");
+                addSliderRow(c, "弯曲柔度", cfg.bendCompliance, 0, 0.05, 0.01, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, bendCompliance: v } });
+                    recreateCloth();
+                }, "lucide:curl");
+                addSliderRow(c, "阻尼", cfg.damping, 0.8, 0.999, 0.01, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, damping: v } });
+ recreateCloth();
+                }, "lucide:droplet");
+                addSliderRow(c, "重力倍率", cfg.gravityScale, 0.1, 3, 0.1, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, gravityScale: v } });
+                    recreateCloth();
+                }, "lucide:arrow-down");
+                addSliderRow(c, "水平分段", cfg.segmentsH, 12, 36, 2, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, segmentsH: v } });
+ recreateCloth();
+                }, "lucide:grid");
+                addSliderRow(c, "垂直分段", cfg.segmentsV, 6, 20, 1, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, segmentsV: v } });
+                    recreateCloth();
+                }, "lucide:columns");
+            });
         },
     };
 }
@@ -557,57 +547,48 @@ function buildPostProcessLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             const state = getRenderState();
-            container.style.padding = "12px 14px";
-
-            // Bloom section
-            addToggleRow(container, "泛光", state.bloomEnabled, (v) => {
-                setRenderState({ bloomEnabled: v });
-                triggerAutoSave();
+            cardContainer(container, (c) => {
+                addToggleRow(c, "泛光", state.bloomEnabled, (v) => {
+                    setRenderState({ bloomEnabled: v });
+                    triggerAutoSave();
+                });
+                addSliderRow(c, "泛光强度", state.bloomWeight, 0, 1, 0.05, (v) => {
+                    setRenderState({ bloomWeight: v });
+                    triggerAutoSave();
+                }, "lucide:sun");
+                addSliderRow(c, "泛光阈值", state.bloomThreshold, 0, 1, 0.05, (v) => {
+                    setRenderState({ bloomThreshold: v });
+                    triggerAutoSave();
+                }, "lucide:sliders");
+                addSliderRow(c, "泛光核大小", state.bloomKernel, 0, 512, 1, (v) => {
+                    setRenderState({ bloomKernel: v });
+                    triggerAutoSave();
+                }, "lucide:circle");
+                addToggleRow(c, "抗锯齿 (FXAA)", state.fxaaEnabled, (v) => {
+                    setRenderState({ fxaaEnabled: v });
+                    triggerAutoSave();
+                });
+                addToggleRow(c, "边缘高亮", state.outlineEnabled, (v) => {
+                    setRenderState({ outlineEnabled: v });
+                    triggerAutoSave();
+                });
+                addToggleRow(c, "景深", state.dofEnabled, (v) => {
+                    setRenderState({ dofEnabled: v });
+                    triggerAutoSave();
+                });
+                addSliderRow(c, "光圈", state.dofAperture, 0, 10, 0.1, (v) => {
+                    setRenderState({ dofAperture: v });
+                    triggerAutoSave();
+                }, "lucide:camera");
+                addToggleRow(c, "暗角", state.vignetteEnabled, (v) => {
+                    setRenderState({ vignetteEnabled: v });
+                    triggerAutoSave();
+                });
+                addSliderRow(c, "暗角强度", state.vignetteDarkness, 0, 1, 0.05, (v) => {
+                    setRenderState({ vignetteDarkness: v });
+                    triggerAutoSave();
+                }, "lucide:circle-dot");
             });
-            addSliderRow(container, "泛光强度", state.bloomWeight, 0, 1, 0.05, (v) => {
-                setRenderState({ bloomWeight: v });
-                triggerAutoSave();
-            }, "lucide:sun");
-            addSliderRow(container, "泛光阈值", state.bloomThreshold, 0, 1, 0.05, (v) => {
-                setRenderState({ bloomThreshold: v });
-                triggerAutoSave();
-            }, "lucide:sliders");
-            addSliderRow(container, "泛光核大小", state.bloomKernel, 0, 512, 1, (v) => {
-                setRenderState({ bloomKernel: v });
-                triggerAutoSave();
-            }, "lucide:circle");
-
-            // FXAA toggle
-            addToggleRow(container, "抗锯齿 (FXAA)", state.fxaaEnabled, (v) => {
-                setRenderState({ fxaaEnabled: v });
-                triggerAutoSave();
-            });
-
-            // Outline toggle (edge highlighting)
-            addToggleRow(container, "边缘高亮", state.outlineEnabled, (v) => {
-                setRenderState({ outlineEnabled: v });
-                triggerAutoSave();
-            });
-
-            // DOF section
-            addToggleRow(container, "景深", state.dofEnabled, (v) => {
-                setRenderState({ dofEnabled: v });
-                triggerAutoSave();
-            });
-            addSliderRow(container, "光圈", state.dofAperture, 0, 10, 0.1, (v) => {
-                setRenderState({ dofAperture: v });
-                triggerAutoSave();
-            }, "lucide:camera");
-
-            // Vignette section
-            addToggleRow(container, "暗角", state.vignetteEnabled, (v) => {
-                setRenderState({ vignetteEnabled: v });
-                triggerAutoSave();
-            });
-            addSliderRow(container, "暗角强度", state.vignetteDarkness, 0, 1, 0.05, (v) => {
-                setRenderState({ vignetteDarkness: v });
-                triggerAutoSave();
-            }, "lucide:circle-dot");
         },
     };
 }
@@ -619,50 +600,44 @@ function buildStageLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             const state = getRenderState();
-            container.style.padding = "12px 14px";
-
-            // Tone-mapping selector
-            addModeSlider(container, "色调映射", [
-                { value: 0, label: "关闭" },
-                { value: 1, label: "ACES" },
-                { value: 2, label: "Reinhard" },
-                { value: 3, label: "Cineon" },
-                { value: 4, label: "Neutral" },
-            ], state.toneMapping, (v) => { setRenderState({ toneMapping: v }); triggerAutoSave(); sceneMenu?.reRender(); }, "lucide:palette");
-
-            // Exposure
-            addSliderRow(container, "曝光", state.exposure, 0, 4, 0.05, (v) => {
-                setRenderState({ exposure: v });
-                triggerAutoSave();
-            }, "lucide:lightbulb");
-            // Contrast
-            addSliderRow(container, "对比度", state.contrast, 0, 4, 0.05, (v) => {
-                setRenderState({ contrast: v });
-                triggerAutoSave();
-            }, "lucide:contrast");
-            // FOV
-            addSliderRow(container, "视场角 (FOV)", state.fov, 0.1, 3, 0.05, (v) => {
-                setRenderState({ fov: v });
-                triggerAutoSave();
-            }, "lucide:maximize-2");
-            // Background color
-            const bgLabel = document.createElement("div");
-            bgLabel.style.cssText = "font-size:11px;color:var(--text-dim);margin:8px 0 4px;";
-            bgLabel.textContent = "背景色 RGB";
-            container.appendChild(bgLabel);
-            const bgFields: Array<{ label: string; key: 0 | 1 | 2; icon: string }> = [
-                { label: "R", key: 0, icon: "lucide:droplet" },
-                { label: "G", key: 1, icon: "lucide:droplet" },
-                { label: "B", key: 2, icon: "lucide:droplet" },
-            ];
-            for (const f of bgFields) {
-                addSliderRow(container, f.label, state.bgColor[f.key], 0, 1, 0.01, (v) => {
-                    const bg = [...getRenderState().bgColor] as [number, number, number];
-                    bg[f.key] = v;
-                    setRenderState({ bgColor: bg });
+            cardContainer(container, (c) => {
+                addModeSlider(c, "色调映射", [
+                    { value: 0, label: "关闭" },
+                    { value: 1, label: "ACES" },
+                    { value: 2, label: "Reinhard" },
+                    { value: 3, label: "Cineon" },
+                    { value: 4, label: "Neutral" },
+                ], state.toneMapping, (v) => { setRenderState({ toneMapping: v }); triggerAutoSave(); sceneMenu?.reRender(); }, "lucide:palette");
+                addSliderRow(c, "曝光", state.exposure, 0, 4, 0.05, (v) => {
+                    setRenderState({ exposure: v });
                     triggerAutoSave();
-                }, f.icon);
-            }
+                }, "lucide:lightbulb");
+                addSliderRow(c, "对比度", state.contrast, 0, 4, 0.05, (v) => {
+                    setRenderState({ contrast: v });
+                    triggerAutoSave();
+                }, "lucide:contrast");
+                addSliderRow(c, "视场角 (FOV)", state.fov, 0.1, 3, 0.05, (v) => {
+                    setRenderState({ fov: v });
+                    triggerAutoSave();
+                }, "lucide:maximize-2");
+                const bgLabel = document.createElement("div");
+                bgLabel.style.cssText = "font-size:11px;color:var(--text-dim);padding:6px 14px 0;";
+                bgLabel.textContent = "背景色 RGB";
+                c.appendChild(bgLabel);
+                const bgFields: Array<{ label: string; key: 0 | 1 | 2; icon: string }> = [
+                    { label: "R", key: 0, icon: "lucide:droplet" },
+                    { label: "G", key: 1, icon: "lucide:droplet" },
+                    { label: "B", key: 2, icon: "lucide:droplet" },
+                ];
+                for (const f of bgFields) {
+                    addSliderRow(c, f.label, state.bgColor[f.key], 0, 1, 0.01, (v) => {
+                        const bg = [...getRenderState().bgColor] as [number, number, number];
+                        bg[f.key] = v;
+                        setRenderState({ bgColor: bg });
+                        triggerAutoSave();
+                    }, f.icon);
+                }
+            });
         },
     };
 }

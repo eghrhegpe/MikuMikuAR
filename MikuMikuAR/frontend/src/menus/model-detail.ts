@@ -244,7 +244,7 @@ export function buildTransformLevel(id: string): PopupLevel {
     dir: "",
     items: [],
     renderCustom: (container) => {
-      container.style.padding = "12px 14px";
+      cardContainer(container, (c) => {
       const fields: Array<{
         label: string; key: string; min: number; max: number; step: number; get: () => number; set: (v: number) => void;
       }> = [
@@ -329,7 +329,7 @@ export function buildTransformLevel(id: string): PopupLevel {
 
         row.appendChild(top);
         row.appendChild(bar);
-        container.appendChild(row);
+        c.appendChild(row);
       }
       const resetBtn = document.createElement("div");
       resetBtn.className = "slide-item";
@@ -348,7 +348,8 @@ export function buildTransformLevel(id: string): PopupLevel {
         stackRegistry.modelStack?.reRender();
         setStatus("✓ 变换已重置", true);
       });
-      container.appendChild(resetBtn);
+      c.appendChild(resetBtn);
+      });
     },
   };
 }
