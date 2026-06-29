@@ -1,6 +1,9 @@
 # Model files — do NOT commit (copyrighted, large)
 text-model/
 
+# Dependencies
+node_modules/
+
 # Reasonix internal state
 .reasonix/
 
