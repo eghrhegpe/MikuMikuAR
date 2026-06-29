@@ -1,5 +1,41 @@
 export namespace main {
 	
+	export class ClothConfig {
+	    anchorBone: string;
+	    topology: string;
+	    innerRadius: number;
+	    length: number;
+	    slope: number;
+	    segmentsH: number;
+	    segmentsV: number;
+	    particleRadius: number;
+	    compliance: number;
+	    totalMass: number;
+	    damping: number;
+	    gravityScale: number;
+	    bendCompliance: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ClothConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.anchorBone = source["anchorBone"];
+	        this.topology = source["topology"];
+	        this.innerRadius = source["innerRadius"];
+	        this.length = source["length"];
+	        this.slope = source["slope"];
+	        this.segmentsH = source["segmentsH"];
+	        this.segmentsV = source["segmentsV"];
+	        this.particleRadius = source["particleRadius"];
+	        this.compliance = source["compliance"];
+	        this.totalMass = source["totalMass"];
+	        this.damping = source["damping"];
+	        this.gravityScale = source["gravityScale"];
+	        this.bendCompliance = source["bendCompliance"];
+	    }
+	}
 	export class EnvState {
 	    skyMode: string;
 	    skyColorTop: number[];
@@ -7,7 +43,9 @@ export namespace main {
 	    skyColorBot: number[];
 	    skyTexture: string;
 	    skyRotationY: number;
+	    skyRotationSpeed: number;
 	    skyBrightness: number;
+	    starsEnabled: boolean;
 	    envIntensity: number;
 	    groundVisible: boolean;
 	    groundMode: string;
@@ -18,12 +56,25 @@ export namespace main {
 	    windSpeed: number;
 	    particleEnabled: boolean;
 	    particleType: string;
+	    particleEmitRate: number;
+	    particleSize: number;
+	    particleSpeed: number;
+	    waterEnabled: boolean;
+	    waterLevel: number;
+	    waterColor: number[];
+	    waterTransparency: number;
+	    waterWaveHeight: number;
+	    waterSize: number;
+	    waterAnimSpeed: number;
 	    cloudsEnabled: boolean;
 	    cloudCover: number;
 	    cloudScale: number;
+	    cloudHeight: number;
 	    fogEnabled: boolean;
 	    fogColor: number[];
 	    fogDensity: number;
+	    clothEnabled: boolean;
+	    clothConfig: ClothConfig;
 	
 	    static createFrom(source: any = {}) {
 	        return new EnvState(source);
@@ -37,7 +88,9 @@ export namespace main {
 	        this.skyColorBot = source["skyColorBot"];
 	        this.skyTexture = source["skyTexture"];
 	        this.skyRotationY = source["skyRotationY"];
+	        this.skyRotationSpeed = source["skyRotationSpeed"];
 	        this.skyBrightness = source["skyBrightness"];
+	        this.starsEnabled = source["starsEnabled"];
 	        this.envIntensity = source["envIntensity"];
 	        this.groundVisible = source["groundVisible"];
 	        this.groundMode = source["groundMode"];
@@ -48,13 +101,44 @@ export namespace main {
 	        this.windSpeed = source["windSpeed"];
 	        this.particleEnabled = source["particleEnabled"];
 	        this.particleType = source["particleType"];
+	        this.particleEmitRate = source["particleEmitRate"];
+	        this.particleSize = source["particleSize"];
+	        this.particleSpeed = source["particleSpeed"];
+	        this.waterEnabled = source["waterEnabled"];
+	        this.waterLevel = source["waterLevel"];
+	        this.waterColor = source["waterColor"];
+	        this.waterTransparency = source["waterTransparency"];
+	        this.waterWaveHeight = source["waterWaveHeight"];
+	        this.waterSize = source["waterSize"];
+	        this.waterAnimSpeed = source["waterAnimSpeed"];
 	        this.cloudsEnabled = source["cloudsEnabled"];
 	        this.cloudCover = source["cloudCover"];
 	        this.cloudScale = source["cloudScale"];
+	        this.cloudHeight = source["cloudHeight"];
 	        this.fogEnabled = source["fogEnabled"];
 	        this.fogColor = source["fogColor"];
 	        this.fogDensity = source["fogDensity"];
+	        this.clothEnabled = source["clothEnabled"];
+	        this.clothConfig = this.convertValues(source["clothConfig"], ClothConfig);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class DanceSet {
 	    name: string;

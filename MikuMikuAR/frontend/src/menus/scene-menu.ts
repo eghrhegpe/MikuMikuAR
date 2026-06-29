@@ -9,7 +9,7 @@ import {
 } from "../core/config";
 import { SlideMenu } from "./menu";
 import { createIconifyIcon } from "../core/icons";
-import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider } from "../core/ui-helpers";
+import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider, addCollapsible } from "../core/ui-helpers";
 import {
     switchCameraMode, getCameraMode, hasCameraVmd, getCameraVmdName, clearCameraVmd, getCurrentCamera,
     getOrbitParams, setOrbitParams,
@@ -210,7 +210,7 @@ function buildPresetScenesLevel(): PopupLevel {
             const scenes = _presetScenes;
             if (scenes.length === 0) {
                 const empty = document.createElement("div");
-                empty.style.cssText = "font-size:12px;color:var(--text-dim);text-align:center;padding:24px;";
+                empty.style.cssText = "font-size:12px;color:#fff;text-align:center;padding:24px;";
                 empty.textContent = "暂无预设场景，保存场景时自动生成";
                 container.appendChild(empty);
                 return;
@@ -218,9 +218,10 @@ function buildPresetScenesLevel(): PopupLevel {
 
             cardContainer(container, (c) => {
                 const navRow = document.createElement("div");
-                navRow.style.cssText = "display:flex;gap:6px;padding:8px 14px;";
+                navRow.className = "preset-group";
+                navRow.style.padding = "8px 14px 10px";
                 const prevBtn = document.createElement("button");
-                prevBtn.className = "mode-btn";
+                prevBtn.className = "preset-chip";
                 prevBtn.style.flex = "1";
                 const prevIcon = createIconifyIcon("lucide:skip-back");
                 if (prevIcon) prevBtn.appendChild(prevIcon);
@@ -234,7 +235,7 @@ function buildPresetScenesLevel(): PopupLevel {
                     }
                 });
                 const nextBtn = document.createElement("button");
-                nextBtn.className = "mode-btn";
+                nextBtn.className = "preset-chip";
                 nextBtn.style.flex = "1";
                 nextBtn.appendChild(document.createTextNode("下一个 "));
                 const nextIcon = createIconifyIcon("lucide:skip-forward");
@@ -303,33 +304,202 @@ function buildScreenshotLevel(): PopupLevel {
     };
 }
 
+let cameraExpandedMode: CameraMode | null = null;
+
 function buildCameraLevel(): PopupLevel {
     const currentMode = getCameraMode();
+    if (cameraExpandedMode !== null && cameraExpandedMode !== currentMode) {
+        cameraExpandedMode = currentMode;
+    }
     const vmdLoaded = hasCameraVmd();
     const vmdName = getCameraVmdName();
+
     return {
         label: "相机模式",
         dir: "",
-        items: [
-            { kind: "action", label: "轨道", icon: currentMode === "orbit" ? "check" : "circle", target: "camera:orbit", sublabel: "默认轨道相机" },
-            { kind: "action", label: "自由飞行", icon: currentMode === "freefly" ? "check" : "circle", target: "camera:freefly", sublabel: "WASD 自由移动" },
-            { kind: "action", label: "演唱会", icon: currentMode === "concert" ? "check" : "circle", target: "camera:concert", sublabel: "环绕角色旋转" },
-            { kind: "action", label: "单拍", icon: currentMode === "oneshot" ? "check" : "circle", target: "camera:oneshot", sublabel: "自动构图拍摄" },
-            ...((vmdLoaded ? [
-                { kind: "divider" } as PopupRow,
-                { kind: "action" as const, label: "VMD 相机", icon: currentMode === "vmd" ? "check" : "circle", target: "camera:vmd", sublabel: vmdName || "相机轨道" } as PopupRow,
-                { kind: "action" as const, label: "清除相机 VMD", icon: "trash-2", target: "camera:clear-vmd" } as PopupRow,
-            ] : []) as PopupRow[]),
-            { kind: "divider" } as PopupRow,
-            { kind: "action" as const, label: "加载相机 VMD", icon: "upload", target: "camera:load-vmd", sublabel: "从 .vmd 文件加载相机轨道" } as PopupRow,
-            { kind: "divider" } as PopupRow,
-            ...((currentMode === "concert" ? [
-                { kind: "action" as const, label: getConcertPaused() ? "▶ 恢复旋转" : "⏸ 暂停旋转", icon: getConcertPaused() ? "play" : "pause", target: "camera:concert:toggle" } as PopupRow,
-            ] : []) as PopupRow[]),
-            { kind: "folder" as const, label: "轨道设置", icon: "settings", target: "camera:params:orbit" } as PopupRow,
-            { kind: "folder" as const, label: "自由飞行设置", icon: "settings", target: "camera:params:freefly" } as PopupRow,
-            { kind: "folder" as const, label: "演唱会设置", icon: "settings", target: "camera:params:concert" } as PopupRow,
-        ],
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                const modes = [
+                    { key: "orbit" as const, label: "轨道", icon: "lucide:target", desc: "默认轨道相机" },
+                    { key: "freefly" as const, label: "自由飞行", icon: "lucide:move", desc: "WASD 自由移动" },
+                    { key: "concert" as const, label: "演唱会", icon: "lucide:rotate-cw", desc: "环绕角色旋转" },
+                    { key: "oneshot" as const, label: "单拍", icon: "lucide:camera", desc: "自动构图拍摄" },
+                ];
+
+                const paramsContainer = document.createElement("div");
+                paramsContainer.className = "cs-params";
+
+                function renderParams(mode: CameraMode, target: HTMLElement) {
+                    target.innerHTML = "";
+                    if (mode === "orbit") renderOrbitParams(target);
+                    else if (mode === "freefly") renderFreeflyParams(target);
+                    else if (mode === "concert") renderConcertParams(target);
+                }
+
+                for (const m of modes) {
+                    const isActive = m.key === currentMode;
+                    const row = document.createElement("div");
+                    row.className = "cs-row";
+                    if (isActive) {
+                        row.style.borderLeft = "2px solid var(--accent)";
+                        row.style.paddingLeft = "12px";
+                    }
+
+                    const top = document.createElement("div");
+                    top.className = "cs-top";
+
+                    const iconBox = document.createElement("span");
+                    iconBox.className = "cs-icon";
+                    const iconEl = createIconifyIcon(m.icon);
+                    if (iconEl) iconBox.appendChild(iconEl);
+                    top.appendChild(iconBox);
+
+                    const label = document.createElement("span");
+                    label.className = "cs-label";
+                    label.textContent = m.label;
+                    top.appendChild(label);
+
+                    const value = document.createElement("span");
+                    value.className = "cs-value";
+                    if (isActive) {
+                        value.textContent = "当前";
+                        value.style.color = "var(--accent)";
+                    } else {
+                        value.textContent = "▶";
+                        value.style.color = "var(--text-dim)";
+                    }
+                    top.appendChild(value);
+
+                    row.appendChild(top);
+
+                    const desc = document.createElement("div");
+                    desc.style.cssText = "font-size:11px;color:#fff;padding-left:30px;margin-top:2px;";
+                    desc.textContent = m.desc;
+                    row.appendChild(desc);
+
+                    row.addEventListener("click", () => {
+                        if (m.key === currentMode) {
+                            cameraExpandedMode = cameraExpandedMode === currentMode ? null : currentMode;
+                            sceneMenu?.reRender();
+                            return;
+                        }
+                        switchCameraMode(m.key);
+                        cameraExpandedMode = m.key === "oneshot" ? null : m.key;
+                        if (m.key !== "oneshot") triggerAutoSave();
+                        sceneMenu?.reRender();
+                    });
+
+                    c.appendChild(row);
+                }
+
+                if (vmdLoaded) {
+                    const isActive = currentMode === "vmd";
+                    const row = document.createElement("div");
+                    row.className = "cs-row";
+                    if (isActive) {
+                        row.style.borderLeft = "2px solid var(--accent)";
+                        row.style.paddingLeft = "12px";
+                    }
+
+                    const top = document.createElement("div");
+                    top.className = "cs-top";
+
+                    const iconBox = document.createElement("span");
+                    iconBox.className = "cs-icon";
+                    const iconEl = createIconifyIcon("lucide:video");
+                    if (iconEl) iconBox.appendChild(iconEl);
+                    top.appendChild(iconBox);
+
+                    const label = document.createElement("span");
+                    label.className = "cs-label";
+                    label.textContent = "VMD 相机";
+                    top.appendChild(label);
+
+                    const value = document.createElement("span");
+                    value.className = "cs-value";
+                    if (isActive) {
+                        value.textContent = "当前";
+                        value.style.color = "var(--accent)";
+                    } else {
+                        value.textContent = "▶";
+                        value.style.color = "var(--text-dim)";
+                    }
+                    top.appendChild(value);
+
+                    row.appendChild(top);
+
+                    const desc = document.createElement("div");
+                    desc.style.cssText = "font-size:11px;color:#fff;padding-left:30px;margin-top:2px;";
+                    desc.textContent = vmdName || "相机轨道";
+                    row.appendChild(desc);
+
+                    row.addEventListener("click", () => {
+                        if (isActive) return;
+                        switchCameraMode("vmd");
+                        cameraExpandedMode = null;
+                        triggerAutoSave();
+                        sceneMenu?.reRender();
+                    });
+
+                    c.appendChild(row);
+                }
+
+                const modeToExpand = cameraExpandedMode ?? currentMode;
+                if (modeToExpand !== "oneshot" && modeToExpand !== "vmd") {
+                    renderParams(modeToExpand, paramsContainer);
+                    c.appendChild(paramsContainer);
+                }
+
+                if (vmdLoaded) {
+                    const clearRow = document.createElement("div");
+                    clearRow.className = "slide-item";
+                    clearRow.style.marginTop = "6px";
+                    const clearIcon = document.createElement("span");
+                    clearIcon.className = "slide-icon";
+                    const clearIconEl = createIconifyIcon("lucide:trash-2");
+                    if (clearIconEl) clearIcon.appendChild(clearIconEl);
+                    clearRow.appendChild(clearIcon);
+                    const clearLabel = document.createElement("span");
+                    clearLabel.className = "slide-label";
+                    clearLabel.textContent = "清除相机 VMD";
+                    clearRow.appendChild(clearLabel);
+                    clearRow.addEventListener("click", () => {
+                        clearCameraVmd();
+                        refreshCameraLevel();
+                        setStatus("✓ 已清除相机 VMD", true);
+                    });
+                    c.appendChild(clearRow);
+                }
+
+                const loadRow = document.createElement("div");
+                loadRow.className = "slide-item";
+                if (!vmdLoaded) loadRow.style.marginTop = "6px";
+                const loadIcon = document.createElement("span");
+                loadIcon.className = "slide-icon";
+                const loadIconEl = createIconifyIcon("lucide:upload");
+                if (loadIconEl) loadIcon.appendChild(loadIconEl);
+                loadRow.appendChild(loadIcon);
+                const loadLabel = document.createElement("span");
+                loadLabel.className = "slide-label";
+                loadLabel.textContent = "加载相机 VMD";
+                loadRow.appendChild(loadLabel);
+                loadRow.addEventListener("click", () => {
+                    (async () => {
+                        try {
+                            const path = await SelectVMDMotion();
+                            if (!path) return;
+                            await loadCameraVmdFromPath(path);
+                            refreshCameraLevel();
+                        } catch (err) {
+                            console.error("Load camera VMD failed:", err);
+                            setStatus("✗ 相机 VMD 加载失败", false);
+                        }
+                    })();
+                });
+                c.appendChild(loadRow);
+            });
+        },
     };
 }
 
@@ -405,43 +575,55 @@ function buildLightLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.classList.remove("render-card");
             const lightState = getLightState();
-            container.style.padding = "6px 0";
-
-            // Card 1: light sliders
             cardContainer(container, (c) => {
-                addSliderRow(c, "环境光强度", lightState.hemiIntensity, 0, 2, 0.05, (v) => {
-                    setLightState({ hemiIntensity: v });
-                }, "lucide:sun");
-                addSliderRow(c, "方向光强度", lightState.dirIntensity, 0, 2, 0.05, (v) => {
-                    setLightState({ dirIntensity: v });
-                }, "lucide:sun");
-                addSliderRow(c, "方向光角度 X", lightState.dirX, -1, 1, 0.05, (v) => {
-                    setLightState({ dirX: v });
-                }, "lucide:move");
-                addSliderRow(c, "方向光角度 Y", lightState.dirY, -1, 1, 0.05, (v) => {
-                    setLightState({ dirY: v });
-                }, "lucide:arrow-up-down");
-                addSliderRow(c, "方向光角度 Z", lightState.dirZ, -1, 1, 0.05, (v) => {
-                    setLightState({ dirZ: v });
-                }, "lucide:arrow-up-down");
-            });
+                addCollapsible(c, {
+                    title: "方向光",
+                    icon: "lucide:sun",
+                    defaultOpen: true,
+                    renderContent: (inner) => {
+                        addSliderRow(inner, "强度", lightState.dirIntensity, 0, 2, 0.05, (v) => {
+                            setLightState({ dirIntensity: v });
+                        }, "lucide:sun");
+                        addSliderRow(inner, "角度 X", lightState.dirX, -1, 1, 0.05, (v) => {
+                            setLightState({ dirX: v });
+                        }, "lucide:move");
+                        addSliderRow(inner, "角度 Y", lightState.dirY, -1, 1, 0.05, (v) => {
+                            setLightState({ dirY: v });
+                        }, "lucide:arrow-up-down");
+                        addSliderRow(inner, "角度 Z", lightState.dirZ, -1, 1, 0.05, (v) => {
+                            setLightState({ dirZ: v });
+                        }, "lucide:arrow-up-down");
+                        addColorSliderRow(inner, "颜色", lightState.dirColor, (v) => setLightState({ dirColor: v }));
+                    },
+                });
 
-            // Card 2-4: color pickers
-            cardContainer(container, (c) => addColorSliderRow(c, "方向光色", lightState.dirColor, (v) => setLightState({ dirColor: v })));
-            cardContainer(container, (c) => addColorSliderRow(c, "环境光色", lightState.hemiColor, (v) => setLightState({ hemiColor: v })));
-            cardContainer(container, (c) => addColorSliderRow(c, "地面光色", lightState.groundColor, (v) => setLightState({ groundColor: v })));
+                addCollapsible(c, {
+                    title: "环境光",
+                    icon: "lucide:cloud-sun",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addSliderRow(inner, "强度", lightState.hemiIntensity, 0, 2, 0.05, (v) => {
+                            setLightState({ hemiIntensity: v });
+                        }, "lucide:sun");
+                        addColorSliderRow(inner, "天空色", lightState.hemiColor, (v) => setLightState({ hemiColor: v }));
+                        addColorSliderRow(inner, "地面色", lightState.groundColor, (v) => setLightState({ groundColor: v }));
+                    },
+                });
 
-            // Card 5: shadow controls
-            cardContainer(container, (c) => {
-                c.style.padding = "10px";
-                addToggleRow(c, "启用阴影", lightState.shadowEnabled, (v) => setLightState({ shadowEnabled: v }));
-                addModeSlider(c, "阴影类型", [
-                    { value: "hard", label: "硬" },
-                    { value: "soft", label: "软" },
-                    { value: "pcf", label: "柔和阴影" },
-                ], lightState.shadowType, (v) => { setLightState({ shadowType: v }); sceneMenu?.reRender(); }, "lucide:shadow");
+                addCollapsible(c, {
+                    title: "阴影",
+                    icon: "lucide:shadow",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addToggleRow(inner, "启用阴影", lightState.shadowEnabled, (v) => setLightState({ shadowEnabled: v }));
+                        addModeSlider(inner, "阴影类型", [
+                            { value: "hard", label: "硬" },
+                            { value: "soft", label: "软" },
+                            { value: "pcf", label: "柔和阴影" },
+                        ], lightState.shadowType, (v) => { setLightState({ shadowType: v }); sceneMenu?.reRender(); }, "lucide:shadow");
+                    },
+                });
             });
         },
     };
@@ -548,46 +730,85 @@ function buildPostProcessLevel(): PopupLevel {
         renderCustom: (container) => {
             const state = getRenderState();
             cardContainer(container, (c) => {
-                addToggleRow(c, "泛光", state.bloomEnabled, (v) => {
-                    setRenderState({ bloomEnabled: v });
-                    triggerAutoSave();
+                addCollapsible(c, {
+                    title: "泛光",
+                    icon: "lucide:sun",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addToggleRow(inner, "启用", state.bloomEnabled, (v) => {
+                            setRenderState({ bloomEnabled: v });
+                            triggerAutoSave();
+                        });
+                        addSliderRow(inner, "强度", state.bloomWeight, 0, 1, 0.05, (v) => {
+                            setRenderState({ bloomWeight: v });
+                            triggerAutoSave();
+                        }, "lucide:sun");
+                        addSliderRow(inner, "阈值", state.bloomThreshold, 0, 1, 0.05, (v) => {
+                            setRenderState({ bloomThreshold: v });
+                            triggerAutoSave();
+                        }, "lucide:sliders");
+                        addSliderRow(inner, "核大小", state.bloomKernel, 0, 512, 1, (v) => {
+                            setRenderState({ bloomKernel: v });
+                            triggerAutoSave();
+                        }, "lucide:circle");
+                    },
                 });
-                addSliderRow(c, "泛光强度", state.bloomWeight, 0, 1, 0.05, (v) => {
-                    setRenderState({ bloomWeight: v });
-                    triggerAutoSave();
-                }, "lucide:sun");
-                addSliderRow(c, "泛光阈值", state.bloomThreshold, 0, 1, 0.05, (v) => {
-                    setRenderState({ bloomThreshold: v });
-                    triggerAutoSave();
-                }, "lucide:sliders");
-                addSliderRow(c, "泛光核大小", state.bloomKernel, 0, 512, 1, (v) => {
-                    setRenderState({ bloomKernel: v });
-                    triggerAutoSave();
-                }, "lucide:circle");
-                addToggleRow(c, "抗锯齿 (FXAA)", state.fxaaEnabled, (v) => {
-                    setRenderState({ fxaaEnabled: v });
-                    triggerAutoSave();
+
+                addCollapsible(c, {
+                    title: "抗锯齿",
+                    icon: "lucide:scan-line",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addToggleRow(inner, "FXAA", state.fxaaEnabled, (v) => {
+                            setRenderState({ fxaaEnabled: v });
+                            triggerAutoSave();
+                        });
+                    },
                 });
-                addToggleRow(c, "边缘高亮", state.outlineEnabled, (v) => {
-                    setRenderState({ outlineEnabled: v });
-                    triggerAutoSave();
+
+                addCollapsible(c, {
+                    title: "边缘高亮",
+                    icon: "lucide:outline",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addToggleRow(inner, "启用", state.outlineEnabled, (v) => {
+                            setRenderState({ outlineEnabled: v });
+                            triggerAutoSave();
+                        });
+                    },
                 });
-                addToggleRow(c, "景深", state.dofEnabled, (v) => {
-                    setRenderState({ dofEnabled: v });
-                    triggerAutoSave();
+
+                addCollapsible(c, {
+                    title: "景深",
+                    icon: "lucide:camera",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addToggleRow(inner, "启用", state.dofEnabled, (v) => {
+                            setRenderState({ dofEnabled: v });
+                            triggerAutoSave();
+                        });
+                        addSliderRow(inner, "光圈", state.dofAperture, 0, 10, 0.1, (v) => {
+                            setRenderState({ dofAperture: v });
+                            triggerAutoSave();
+                        }, "lucide:camera");
+                    },
                 });
-                addSliderRow(c, "光圈", state.dofAperture, 0, 10, 0.1, (v) => {
-                    setRenderState({ dofAperture: v });
-                    triggerAutoSave();
-                }, "lucide:camera");
-                addToggleRow(c, "暗角", state.vignetteEnabled, (v) => {
-                    setRenderState({ vignetteEnabled: v });
-                    triggerAutoSave();
+
+                addCollapsible(c, {
+                    title: "暗角",
+                    icon: "lucide:circle-dot",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addToggleRow(inner, "启用", state.vignetteEnabled, (v) => {
+                            setRenderState({ vignetteEnabled: v });
+                            triggerAutoSave();
+                        });
+                        addSliderRow(inner, "强度", state.vignetteDarkness, 0, 1, 0.05, (v) => {
+                            setRenderState({ vignetteDarkness: v });
+                            triggerAutoSave();
+                        }, "lucide:circle-dot");
+                    },
                 });
-                addSliderRow(c, "暗角强度", state.vignetteDarkness, 0, 1, 0.05, (v) => {
-                    setRenderState({ vignetteDarkness: v });
-                    triggerAutoSave();
-                }, "lucide:circle-dot");
             });
         },
     };
@@ -601,42 +822,61 @@ function buildStageLevel(): PopupLevel {
         renderCustom: (container) => {
             const state = getRenderState();
             cardContainer(container, (c) => {
-                addModeSlider(c, "色调映射", [
-                    { value: 0, label: "关闭" },
-                    { value: 1, label: "ACES" },
-                    { value: 2, label: "Reinhard" },
-                    { value: 3, label: "Cineon" },
-                    { value: 4, label: "Neutral" },
-                ], state.toneMapping, (v) => { setRenderState({ toneMapping: v }); triggerAutoSave(); sceneMenu?.reRender(); }, "lucide:palette");
-                addSliderRow(c, "曝光", state.exposure, 0, 4, 0.05, (v) => {
-                    setRenderState({ exposure: v });
-                    triggerAutoSave();
-                }, "lucide:lightbulb");
-                addSliderRow(c, "对比度", state.contrast, 0, 4, 0.05, (v) => {
-                    setRenderState({ contrast: v });
-                    triggerAutoSave();
-                }, "lucide:contrast");
-                addSliderRow(c, "视场角 (FOV)", state.fov, 0.1, 3, 0.05, (v) => {
-                    setRenderState({ fov: v });
-                    triggerAutoSave();
-                }, "lucide:maximize-2");
-                const bgLabel = document.createElement("div");
-                bgLabel.style.cssText = "font-size:11px;color:var(--text-dim);padding:6px 14px 0;";
-                bgLabel.textContent = "背景色 RGB";
-                c.appendChild(bgLabel);
-                const bgFields: Array<{ label: string; key: 0 | 1 | 2; icon: string }> = [
-                    { label: "R", key: 0, icon: "lucide:droplet" },
-                    { label: "G", key: 1, icon: "lucide:droplet" },
-                    { label: "B", key: 2, icon: "lucide:droplet" },
-                ];
-                for (const f of bgFields) {
-                    addSliderRow(c, f.label, state.bgColor[f.key], 0, 1, 0.01, (v) => {
-                        const bg = [...getRenderState().bgColor] as [number, number, number];
-                        bg[f.key] = v;
-                        setRenderState({ bgColor: bg });
-                        triggerAutoSave();
-                    }, f.icon);
-                }
+                addCollapsible(c, {
+                    title: "色调映射",
+                    icon: "lucide:palette",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addModeSlider(inner, "模式", [
+                            { value: 0, label: "关闭" },
+                            { value: 1, label: "ACES" },
+                            { value: 2, label: "Reinhard" },
+                            { value: 3, label: "Cineon" },
+                            { value: 4, label: "Neutral" },
+                        ], state.toneMapping, (v) => { setRenderState({ toneMapping: v }); triggerAutoSave(); sceneMenu?.reRender(); }, "lucide:palette");
+                        addSliderRow(inner, "曝光", state.exposure, 0, 4, 0.05, (v) => {
+                            setRenderState({ exposure: v });
+                            triggerAutoSave();
+                        }, "lucide:lightbulb");
+                        addSliderRow(inner, "对比度", state.contrast, 0, 4, 0.05, (v) => {
+                            setRenderState({ contrast: v });
+                            triggerAutoSave();
+                        }, "lucide:contrast");
+                    },
+                });
+
+                addCollapsible(c, {
+                    title: "视场角",
+                    icon: "lucide:maximize-2",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addSliderRow(inner, "FOV", state.fov, 0.1, 3, 0.05, (v) => {
+                            setRenderState({ fov: v });
+                            triggerAutoSave();
+                        }, "lucide:maximize-2");
+                    },
+                });
+
+                addCollapsible(c, {
+                    title: "背景色",
+                    icon: "lucide:droplet",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        const bgFields: Array<{ label: string; key: 0 | 1 | 2; icon: string }> = [
+                            { label: "R", key: 0, icon: "lucide:droplet" },
+                            { label: "G", key: 1, icon: "lucide:droplet" },
+                            { label: "B", key: 2, icon: "lucide:droplet" },
+                        ];
+                        for (const f of bgFields) {
+                            addSliderRow(inner, f.label, state.bgColor[f.key], 0, 1, 0.01, (v) => {
+                                const bg = [...getRenderState().bgColor] as [number, number, number];
+                                bg[f.key] = v;
+                                setRenderState({ bgColor: bg });
+                                triggerAutoSave();
+                            }, f.icon);
+                        }
+                    },
+                });
             });
         },
     };
@@ -873,6 +1113,7 @@ function handleSceneAction(row: PopupRow): void {
         }
         switchCameraMode(mode);
         refreshCameraLevel();
+        if (mode !== "oneshot") triggerAutoSave();
         const labels: Record<string, string> = {
             orbit: "轨道", freefly: "自由飞行",
             concert: "演唱会", oneshot: "单拍", vmd: "VMD 相机",

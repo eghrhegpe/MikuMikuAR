@@ -87,7 +87,7 @@ export class ModelManager {
 
     private _initialRigidBodyStates = new Map<string, Uint8Array>();
     private _physicsCatState = new Map<string, Map<string, boolean>>();
-    private _boneOverlayMap = new Map<string, { overlay: Mesh; joints: Mesh[]; update: () => void }>();
+    private _boneOverlayMap = new Map<string, { lineSystem: Mesh; overlay: Mesh; joints: Mesh[]; update: () => void }>();
     private _boneUpdateObserver: Observer<Scene> | null = null;
 
     /** Cleanup callback invoked by removeModel for external per-model state. */
@@ -308,14 +308,36 @@ export class ModelManager {
         this.onChange();
     }
 
-    setBoneVis(id: string, show: boolean): void {
+    setBoneLinesVis(id: string, show: boolean): void {
         const inst = this.modelRegistry.get(id);
         if (!inst) return;
-        inst.showBones = show;
-        if (show) {
+        inst.showBoneLines = show;
+        const hasAny = show || inst.showBoneJoints;
+        const hadOverlay = this._boneOverlayMap.has(id);
+        if (hasAny && !hadOverlay) {
             this.createBoneOverlay(id);
-        } else {
+        } else if (!hasAny && hadOverlay) {
             this.destroyBoneOverlay(id);
+        } else if (hadOverlay) {
+            const entry = this._boneOverlayMap.get(id)!;
+            entry.lineSystem.setEnabled(show);
+        }
+        this.onChange();
+    }
+
+    setBoneJointsVis(id: string, show: boolean): void {
+        const inst = this.modelRegistry.get(id);
+        if (!inst) return;
+        inst.showBoneJoints = show;
+        const hasAny = show || inst.showBoneLines;
+        const hadOverlay = this._boneOverlayMap.has(id);
+        if (hasAny && !hadOverlay) {
+            this.createBoneOverlay(id);
+        } else if (!hasAny && hadOverlay) {
+            this.destroyBoneOverlay(id);
+        } else if (hadOverlay) {
+            const entry = this._boneOverlayMap.get(id)!;
+            entry.overlay.setEnabled(show);
         }
         this.onChange();
     }
@@ -513,9 +535,11 @@ export class ModelManager {
         const lineSystem = MeshBuilder.CreateLineSystem("bone_overlay_lines", { lines }, this.scene);
         lineSystem.color = new Color3(1, 1, 1);
         lineSystem.isPickable = false;
+        lineSystem.setEnabled(inst.showBoneLines);
 
         // Update function: reposition joints each frame
         const updateFn = () => {
+            if (!inst.showBoneJoints) return;
             for (const jd of jointData) {
                 const bone = bones[jd.boneIndex];
                 if (!bone) { jd.mesh.setEnabled(false); continue; }
@@ -529,18 +553,20 @@ export class ModelManager {
         if (overlay) {
             overlay.position.set(0, 0, 0);
             overlay.isPickable = false;
+            overlay.setEnabled(inst.showBoneJoints);
         } else {
             // fallback: keep individual spheres visible
-            for (const j of joints) j.isVisible = true;
+            for (const j of joints) j.isVisible = inst.showBoneJoints;
         }
 
-        this._boneOverlayMap.set(id, { overlay: overlay || joints[0], joints, update: updateFn });
+        this._boneOverlayMap.set(id, { lineSystem, overlay: overlay || joints[0], joints, update: updateFn });
         this.ensureBoneUpdateObserver();
     }
 
     private destroyBoneOverlay(id: string): void {
         const entry = this._boneOverlayMap.get(id);
         if (entry) {
+            entry.lineSystem.dispose();
             entry.overlay.dispose();
             for (const j of entry.joints) j.dispose();
             this._boneOverlayMap.delete(id);
@@ -553,7 +579,8 @@ export class ModelManager {
             const toDelete: string[] = [];
             for (const [id, entry] of this._boneOverlayMap) {
                 const inst = this.modelRegistry.get(id);
-                if (!inst || !inst.showBones || !inst.mmdModel) {
+                if (!inst || (!inst.showBoneLines && !inst.showBoneJoints) || !inst.mmdModel) {
+                    entry.lineSystem.dispose();
                     entry.overlay.dispose();
                     for (const j of entry.joints) j.dispose();
                     toDelete.push(id);

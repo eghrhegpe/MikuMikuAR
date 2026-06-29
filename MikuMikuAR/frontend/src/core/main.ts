@@ -311,7 +311,7 @@ async function init(): Promise<void> {
 async function restoreEnvState(): Promise<void> {
     const cfg = await GetConfig();
     if (cfg.env) {
-        setEnvState(cfg.env as Partial<EnvState>);
+        setEnvState(cfg.env as unknown as Partial<EnvState>);
     }
 }
 
@@ -410,6 +410,19 @@ async function handleDropFile(path: string): Promise<void> {
 
 engine.runRenderLoop(() => { scene.render(); });
 window.addEventListener("resize", () => { engine.resize(); });
+
+// ======== FPS + Clock ========
+let _fpsClockId: ReturnType<typeof setInterval> | null = null;
+function startFpsClock(): void {
+    if (_fpsClockId) return;
+    _fpsClockId = setInterval(() => {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, "0");
+        const m = String(now.getMinutes()).padStart(2, "0");
+        dom.fpsClock.textContent = `${Math.round(engine.getFps())} FPS | ${h}:${m}`;
+    }, 500);
+}
+startFpsClock();
 
 // ======== Download Watch Notification ========
 let importToastTimer: ReturnType<typeof setTimeout> | null = null;

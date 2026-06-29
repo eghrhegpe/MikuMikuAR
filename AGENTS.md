@@ -65,6 +65,7 @@ docs/
 ├── glossary.md           # 📖 术语表 + 历史命名（解释性词典，面向新读者）
 ├── terminology.md        # 📝 代码级规范（图标/状态栏/Go 错误/命名约定，面向开发者）
 ├── menu-architecture.md  # 📐 菜单架构设计（MenuStack 用法 + 添加新功能流程）
+├── design.md             # 🎨 UI 设计规范（lcard/cs-row/preset-chip/折叠/分区体系）
 ├── fix-cycle.md          # 🧪 修复周期与验收契约（Bug 修复流程模板）
 ├── reusables.md          # 🔧 复用函数索引（AI 写代码前先查）
 ├── design-archive.md     # 🗑️ UI 设计归档（已否决的设计方案，供参考）
@@ -121,7 +122,8 @@ docs/
 | 任务关键词 | 优先读 | 其次读 |
 |-----------|--------|--------|
 | MenuStack / 添加菜单项 / 弹窗导航 / `modelStack` | `docs/menu-architecture.md` | `frontend/src/menus/menu.ts` |
-| 前端 UI / CSS / 样式修改 | `docs/menu-architecture.md`（CSS 类说明） | `frontend/src/app.css` |
+| 前端 UI / CSS / 样式修改 / 新增组件 | `docs/design.md`（组件规范） | `frontend/src/app.css` |
+| 界面统一 / lcard / cs-row / preset-chip / 折叠 | `docs/design.md` | `frontend/src/menus/env-menu.ts` 等 |
 | 3D 场景 / 模型加载 / PMX / VMD / 播放 | `docs/architecture.md` §渲染环节 | `frontend/src/scene/scene.ts` |
 | 模型库 / 扫描 / zip 解压 / 缩略图 | `docs/architecture.md` §模型库管理 | `frontend/src/menus/library-core.ts` + `frontend/src/menus/library.ts` |
 | 文件 URL / HTTP 服务器 / 安全隔离 | `docs/architecture.md` §数据通道 | `frontend/src/core/fileservice.ts` |

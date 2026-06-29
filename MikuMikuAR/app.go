@@ -249,29 +249,68 @@ type Config struct {
 
 // EnvState stores the full environment configuration (sky, ground, particles, fog, etc.).
 type EnvState struct {
-	SkyMode         string     `json:"skyMode"`
-	SkyColorTop     [3]float64 `json:"skyColorTop"`
-	SkyColorMid     [3]float64 `json:"skyColorMid"`
-	SkyColorBot     [3]float64 `json:"skyColorBot"`
-	SkyTexture      string     `json:"skyTexture"`
-	SkyRotationY    float64    `json:"skyRotationY"`
-	SkyBrightness   float64    `json:"skyBrightness"`
-	EnvIntensity    float64    `json:"envIntensity"`
-	GroundVisible   bool       `json:"groundVisible"`
-	GroundMode      string     `json:"groundMode"`
-	GroundColor     [3]float64 `json:"groundColor"`
-	GroundAlpha     float64    `json:"groundAlpha"`
-	WindEnabled     bool       `json:"windEnabled"`
-	WindDirection   [3]float64 `json:"windDirection"`
-	WindSpeed       float64    `json:"windSpeed"`
-	ParticleEnabled bool       `json:"particleEnabled"`
-	ParticleType    string     `json:"particleType"`
-	CloudsEnabled   bool       `json:"cloudsEnabled"`
-	CloudCover      float64    `json:"cloudCover"`
-	CloudScale      float64    `json:"cloudScale"`
-	FogEnabled      bool       `json:"fogEnabled"`
-	FogColor        [3]float64 `json:"fogColor"`
-	FogDensity      float64    `json:"fogDensity"`
+	SkyMode          string     `json:"skyMode"`
+	SkyColorTop      [3]float64 `json:"skyColorTop"`
+	SkyColorMid      [3]float64 `json:"skyColorMid"`
+	SkyColorBot      [3]float64 `json:"skyColorBot"`
+	SkyTexture       string     `json:"skyTexture"`
+	SkyRotationY     float64    `json:"skyRotationY"`
+	SkyRotationSpeed float64    `json:"skyRotationSpeed"`
+	SkyBrightness    float64    `json:"skyBrightness"`
+	StarsEnabled     bool       `json:"starsEnabled"`
+	EnvIntensity     float64    `json:"envIntensity"`
+
+	GroundVisible bool       `json:"groundVisible"`
+	GroundMode    string     `json:"groundMode"`
+	GroundColor   [3]float64 `json:"groundColor"`
+	GroundAlpha   float64    `json:"groundAlpha"`
+
+	WindEnabled   bool       `json:"windEnabled"`
+	WindDirection [3]float64 `json:"windDirection"`
+	WindSpeed     float64    `json:"windSpeed"`
+
+	ParticleEnabled   bool    `json:"particleEnabled"`
+	ParticleType      string  `json:"particleType"`
+	ParticleEmitRate  float64 `json:"particleEmitRate"`
+	ParticleSize      float64 `json:"particleSize"`
+	ParticleSpeed     float64 `json:"particleSpeed"`
+
+	WaterEnabled      bool       `json:"waterEnabled"`
+	WaterLevel        float64    `json:"waterLevel"`
+	WaterColor        [3]float64 `json:"waterColor"`
+	WaterTransparency float64    `json:"waterTransparency"`
+	WaterWaveHeight   float64    `json:"waterWaveHeight"`
+	WaterSize         float64    `json:"waterSize"`
+	WaterAnimSpeed    float64    `json:"waterAnimSpeed"`
+
+	CloudsEnabled bool    `json:"cloudsEnabled"`
+	CloudCover    float64 `json:"cloudCover"`
+	CloudScale    float64 `json:"cloudScale"`
+	CloudHeight   float64 `json:"cloudHeight"`
+
+	FogEnabled bool       `json:"fogEnabled"`
+	FogColor   [3]float64 `json:"fogColor"`
+	FogDensity float64    `json:"fogDensity"`
+
+	ClothEnabled bool        `json:"clothEnabled"`
+	ClothConfig  ClothConfig `json:"clothConfig"`
+}
+
+// ClothConfig stores XPBD cloth simulation parameters.
+type ClothConfig struct {
+	AnchorBone     string  `json:"anchorBone"`
+	Topology       string  `json:"topology"`
+	InnerRadius    float64 `json:"innerRadius"`
+	Length         float64 `json:"length"`
+	Slope          float64 `json:"slope"`
+	SegmentsH      int     `json:"segmentsH"`
+	SegmentsV      int     `json:"segmentsV"`
+	ParticleRadius float64 `json:"particleRadius"`
+	Compliance     float64 `json:"compliance"`
+	TotalMass      float64 `json:"totalMass"`
+	Damping        float64 `json:"damping"`
+	GravityScale   float64 `json:"gravityScale"`
+	BendCompliance float64 `json:"bendCompliance"`
 }
 
 // RenderPreset stores a user-defined rendering preset.

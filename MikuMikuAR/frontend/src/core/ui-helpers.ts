@@ -144,35 +144,73 @@ export function addSliderRow(container: HTMLElement, label: string, value: numbe
   const pct = ((currentValue - min) / range) * 100;
   fill.style.width = Math.max(0, Math.min(100, pct)) + "%";
 
+  const thumb = document.createElement("div");
+  thumb.className = "cs-thumb";
+  thumb.style.left = Math.max(0, Math.min(100, pct)) + "%";
+
   bar.appendChild(fill);
+  bar.appendChild(thumb);
+
+  function snapToStep(v: number): number {
+    if (!step || !Number.isFinite(step)) return v;
+    const precision = 1 / step;
+    return Math.round(v * precision) / precision;
+  }
 
   function updateDisplay(v: number): void {
     currentValue = v;
     val.textContent = step < 1 ? v.toFixed(2) : String(Math.round(v));
     const newPct = ((v - min) / range) * 100;
-    fill.style.width = Math.max(0, Math.min(100, newPct)) + "%";
+    const clamped = Math.max(0, Math.min(100, newPct));
+    fill.style.width = clamped + "%";
+    thumb.style.left = clamped + "%";
   }
 
-  row.addEventListener("click", (e) => {
-    const rect = row.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-
-    let delta: number;
-    if (x < 0.25) delta = -0.5;
-    else if (x < 0.5) delta = -0.1;
-    else if (x < 0.75) delta = 0.1;
-    else delta = 0.5;
-
-    let newVal = currentValue + delta;
-    // Integer-scale arithmetic to avoid floating-point drift (e.g. 0.1 + 0.2)
-    if (step !== 0 && Number.isFinite(step)) {
-        const precision = 1 / step;
-        newVal = Math.round(newVal * precision) / precision;
+  function setValueFromClientX(clientX: number, rect: DOMRect): void {
+    const x = (clientX - rect.left) / rect.width;
+    const raw = min + Math.max(0, Math.min(1, x)) * range;
+    const snapped = snapToStep(raw);
+    const clamped = Math.max(min, Math.min(max, snapped));
+    if (clamped !== currentValue) {
+      updateDisplay(clamped);
+      onChange(clamped);
     }
-    newVal = Math.max(min, Math.min(max, newVal));
+  }
 
-    updateDisplay(newVal);
-    onChange(newVal);
+  let dragging = false;
+  let rafId = 0;
+  let pendingX = 0;
+  let dragRect: DOMRect | null = null;
+
+  function onDragMove(e: MouseEvent): void {
+    if (!dragging) return;
+    e.preventDefault();
+    pendingX = e.clientX;
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = 0;
+      if (dragRect) setValueFromClientX(pendingX, dragRect);
+    });
+  }
+
+  function onDragEnd(): void {
+    dragging = false;
+    dragRect = null;
+    document.removeEventListener("mousemove", onDragMove);
+    document.removeEventListener("mouseup", onDragEnd);
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+  }
+
+  bar.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    dragRect = bar.getBoundingClientRect();
+    dragging = true;
+    setValueFromClientX(e.clientX, dragRect);
+    document.addEventListener("mousemove", onDragMove);
+    document.addEventListener("mouseup", onDragEnd);
   });
 
   row.appendChild(top);
@@ -310,32 +348,147 @@ export function addModeSlider<T extends string | number>(
   const pct = total > 1 ? (currentIndex / (total - 1)) * 100 : 100;
   fill.style.width = Math.max(0, Math.min(100, pct)) + "%";
 
+  const thumb = document.createElement("div");
+  thumb.className = "cs-thumb";
+  thumb.style.left = Math.max(0, Math.min(100, pct)) + "%";
+
   bar.appendChild(fill);
+  bar.appendChild(thumb);
 
   function updateDisplay(idx: number): void {
     currentIndex = idx;
     val.textContent = options[idx].label;
     const newPct = total > 1 ? (idx / (total - 1)) * 100 : 100;
-    fill.style.width = Math.max(0, Math.min(100, newPct)) + "%";
+    const clamped = Math.max(0, Math.min(100, newPct));
+    fill.style.width = clamped + "%";
+    thumb.style.left = clamped + "%";
   }
 
-  row.addEventListener("click", (e) => {
-    const rect = row.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-
-    let newIdx: number;
-    if (x < 0.25) newIdx = 0;
-    else if (x < 0.5) newIdx = Math.max(0, currentIndex - 1);
-    else if (x < 0.75) newIdx = Math.min(total - 1, currentIndex + 1);
-    else newIdx = total - 1;
-
+  function setIndexFromClientX(clientX: number, rect: DOMRect): void {
+    const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const newIdx = total > 1 ? Math.round(x * (total - 1)) : 0;
     if (newIdx !== currentIndex) {
       updateDisplay(newIdx);
       onChange(options[newIdx].value);
     }
+  }
+
+  let dragging = false;
+  let rafId = 0;
+  let pendingX = 0;
+  let dragRect: DOMRect | null = null;
+
+  function onDragMove(e: MouseEvent): void {
+    if (!dragging) return;
+    e.preventDefault();
+    pendingX = e.clientX;
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = 0;
+      if (dragRect) setIndexFromClientX(pendingX, dragRect);
+    });
+  }
+
+  function onDragEnd(): void {
+    dragging = false;
+    dragRect = null;
+    document.removeEventListener("mousemove", onDragMove);
+    document.removeEventListener("mouseup", onDragEnd);
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+  }
+
+  bar.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    dragRect = bar.getBoundingClientRect();
+    dragging = true;
+    setIndexFromClientX(e.clientX, dragRect);
+    document.addEventListener("mousemove", onDragMove);
+    document.addEventListener("mouseup", onDragEnd);
   });
 
   row.appendChild(top);
   row.appendChild(bar);
   container.appendChild(row);
+}
+
+/**
+ * 通用折叠面板组件
+ * @param container 父容器
+ * @param config.title 标题
+ * @param config.icon Iconify 图标名（可选）
+ * @param config.defaultOpen 默认是否展开（默认 false）
+ * @param config.renderContent 内容渲染回调
+ */
+export function addCollapsible(
+    container: HTMLElement,
+    config: {
+        title: string;
+        icon?: string;
+        variant?: "default" | "mat";
+        defaultOpen?: boolean;
+        renderContent: (container: HTMLElement) => void;
+    }
+): void {
+    const variant = config.variant ?? "default";
+    const wrapper = document.createElement("div");
+    wrapper.className = "collapsible-wrapper";
+
+    // Header
+    const header = document.createElement("div");
+    header.className = "collapsible-header" + (variant === "mat" ? " collapsible-mat" : "");
+
+    if (config.icon) {
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "collapsible-icon";
+        const iconEl = createIconifyIcon(config.icon);
+        if (iconEl) iconSpan.appendChild(iconEl);
+        header.appendChild(iconSpan);
+    }
+
+    const label = document.createElement("span");
+    label.className = "collapsible-label";
+    label.textContent = config.title;
+    header.appendChild(label);
+
+    const arrow = document.createElement("span");
+    arrow.className = "collapsible-arrow" + (variant === "mat" ? " arrow" : "");
+    arrow.textContent = "▾";
+    header.appendChild(arrow);
+
+    // Panel
+    const panel = document.createElement("div");
+    panel.className = "collapsible-panel" + (variant === "mat" ? " mat-slider-panel mat-cat-slider" : "");
+    const inner = document.createElement("div");
+    inner.className = "collapsible-inner";
+    config.renderContent(inner);
+    panel.appendChild(inner);
+
+    // State
+    let isOpen = config.defaultOpen ?? false;
+
+    function applyState(open: boolean) {
+        panel.classList.toggle("open", open);
+        header.classList.toggle("open", open);
+        arrow.style.transform = open ? "rotate(180deg)" : "rotate(0deg)";
+        panel.style.maxHeight = open ? panel.scrollHeight + "px" : "0";
+    }
+
+    header.addEventListener("click", () => {
+        isOpen = !isOpen;
+        applyState(isOpen);
+    });
+
+    wrapper.appendChild(header);
+    wrapper.appendChild(panel);
+    container.appendChild(wrapper);
+
+    // Init
+    if (isOpen) {
+        requestAnimationFrame(() => applyState(true));
+    } else {
+        panel.style.maxHeight = "0";
+    }
 }

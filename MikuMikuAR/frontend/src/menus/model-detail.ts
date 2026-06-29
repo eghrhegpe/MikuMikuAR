@@ -30,11 +30,11 @@ import {
   resetSingleMatParams,
   resetAllMatParams,
   setModelWireframe,
-  setModelBoneVis,
+  setModelBoneLinesVis,
+  setModelBoneJointsVis,
   setModelVisibility,
   setModelOpacity,
   removeModel,
-  focusModel,
   resetModelTransform,
   getMatState,
   applyMatState,
@@ -51,14 +51,12 @@ import { buildMatRootLevel } from "./model-material";
 import { createIconifyIcon, softwareKindIcon } from "../core/icons";
 import { isPlaying } from "../core/config";
 import { getAudioPath, getAudioName, getVolume, getAudioOffset } from "../outfit/audio";
-import { slideRow, addSliderRow } from "../core/ui-helpers";
+import { slideRow, addSliderRow, addModeSlider, addToggleRow, addCollapsible } from "../core/ui-helpers";
 import { buildOutfitLevel } from "./outfit-ui";
 import { loadOutfits, applyOutfitVariant } from "../outfit/outfit";
 import {
   savePresetToLibDialog,
   buildPresetListLevel,
-  selectAndSavePreset,
-  selectAndLoadPreset,
 } from "./model-preset";
 import {
   GetTagsByModel,
@@ -121,75 +119,84 @@ export function buildModelDetailLevel(id: string): PopupLevel {
     dir: "",
     items: [],
     renderCustom: (container) => {
-      container.classList.remove("render-card");
+      cardContainer(container, (c) => {
+        // 核心组：始终可见，默认展开
+        slideRow(c, "lucide:move", "变换", true, () => {
+          const level = buildTransformLevel(id);
+          stackRegistry.modelStack?.push(level);
+        });
+        slideRow(c, "lucide:eye", "可见性", true, () => {
+          const level = buildVisibilityLevel(id);
+          stackRegistry.modelStack?.push(level);
+        });
 
-      const card1 = document.createElement("div");
-      card1.className = "lcard";
-      slideRow(card1, "lucide:move", "变换", true, () => {
-        const level = buildTransformLevel(id);
-        stackRegistry.modelStack?.push(level);
-      });
-      slideRow(card1, "lucide:eye", "可见性", true, () => {
-        const level = buildVisibilityLevel(id);
-        stackRegistry.modelStack?.push(level);
-      });
-      slideRow(card1, "lucide:target", "聚焦", false, () => {
-        focusModel(id); stackRegistry.modelStack?.popTo(0);
-      });
-      container.appendChild(card1);
+        // 外观与预设折叠组
+        addCollapsible(c, {
+          title: "外观与预设",
+          icon: "lucide:palette",
+          defaultOpen: false,
+          renderContent: (inner) => {
+            slideRow(inner, "lucide:box", "材质调节", true, () => {
+              const level = buildMatRootLevel(id, inst.name);
+              stackRegistry.modelStack?.push(level);
+            });
+            slideRow(inner, "lucide:smile", "表情预览", true, () => {
+              const level = buildMorphPreviewLevel(id);
+              stackRegistry.modelStack?.push(level);
+            });
+            slideRow(inner, "lucide:shirt", "服装变体", true, () => {
+              const level = buildOutfitLevel(id);
+              stackRegistry.modelStack?.push(level);
+            });
+            slideRow(inner, "lucide:save", "保存预设", false, () => {
+              savePresetToLibDialog(id);
+            });
+            slideRow(inner, "lucide:folder-open", "加载预设", true, () => {
+              const level = buildPresetListLevel(id);
+              stackRegistry.modelStack?.push(level);
+            });
+          },
+        });
 
-      const card2 = document.createElement("div");
-      card2.className = "lcard";
-      slideRow(card2, "lucide:box", "材质调节", true, () => {
-        const level = buildMatRootLevel(id, inst.name);
-        stackRegistry.modelStack?.push(level);
+        // 信息与工具折叠组
+        addCollapsible(c, {
+          title: "信息与工具",
+          icon: "lucide:info",
+          defaultOpen: false,
+          renderContent: (inner) => {
+            slideRow(inner, "lucide:info", "模型信息", true, () => {
+              const level = buildModelInfoLevel(id);
+              stackRegistry.modelStack?.push(level);
+            });
+            slideRow(inner, "lucide:external-link", "用…打开", true, () => {
+              const level = buildOpenWithLevel(id);
+              stackRegistry.modelStack?.push(level);
+            });
+          },
+        });
       });
-      slideRow(card2, "lucide:smile", "表情预览", true, () => {
-        const level = buildMorphPreviewLevel(id);
-        stackRegistry.modelStack?.push(level);
-      });
-      slideRow(card2, "lucide:shirt", "服装变体", true, () => {
-        const level = buildOutfitLevel(id);
-        stackRegistry.modelStack?.push(level);
-      });
-      container.appendChild(card2);
 
-      const card3 = document.createElement("div");
-      card3.className = "lcard";
-      slideRow(card3, "lucide:save", "保存预设", false, () => {
-        savePresetToLibDialog(id);
+      // 危险操作：移除（独立在底部）
+      cardContainer(container, (c) => {
+        const removeBtn = document.createElement("div");
+        removeBtn.className = "slide-item";
+        const removeIcon = document.createElement("span");
+        removeIcon.className = "slide-icon";
+        const removeIconEl = createIconifyIcon("lucide:trash-2");
+        if (removeIconEl) removeIcon.appendChild(removeIconEl);
+        const removeLabel = document.createElement("span");
+        removeLabel.className = "slide-label";
+        removeLabel.textContent = "移除模型";
+        removeLabel.style.color = "var(--danger)";
+        removeBtn.appendChild(removeIcon);
+        removeBtn.appendChild(removeLabel);
+        removeBtn.addEventListener("click", async () => {
+          const { getSceneMenu } = await import("./scene-menu");
+          getSceneMenu()?.popTo(0);
+          removeModel(id);
+        });
+        c.appendChild(removeBtn);
       });
-      slideRow(card3, "lucide:folder-open", "加载预设", true, () => {
-        const level = buildPresetListLevel(id);
-        stackRegistry.modelStack?.push(level);
-      });
-      slideRow(card3, "lucide:upload", "导出文件", false, () => {
-        selectAndSavePreset(id);
-      });
-      slideRow(card3, "lucide:download", "导入文件", false, () => {
-        selectAndLoadPreset(id);
-      });
-      slideRow(card3, "lucide:tag", "模型标签", true, () => {
-        const level = buildModelTagsLevel(id);
-        stackRegistry.modelStack?.push(level);
-      });
-      container.appendChild(card3);
-
-      const card4 = document.createElement("div");
-      card4.className = "lcard";
-      slideRow(card4, "lucide:info", "模型信息", true, () => {
-        const level = buildModelInfoLevel(id);
-        stackRegistry.modelStack?.push(level);
-      });
-      slideRow(card4, "lucide:external-link", "用…打开", true, () => {
-        const level = buildOpenWithLevel(id);
-        stackRegistry.modelStack?.push(level);
-      });
-      slideRow(card4, "lucide:trash-2", "移除", false, async () => {
-        const { getSceneMenu } = await import("./scene-menu");
-        getSceneMenu()?.popTo(0); removeModel(id);
-      });
-      container.appendChild(card4);
     },
   };
 }
@@ -364,70 +371,54 @@ export function buildVisibilityLevel(id: string): PopupLevel {
     dir: "",
     items: [],
     renderCustom: (container) => {
-      container.classList.remove("render-card");
-      const opts = [
-        { label: "显示", icon: "lucide:eye", hint: "完全可见", active: inst.visible && inst.opacity >= 0.99, action: () => { setModelVisibility(id, true); setModelOpacity(id, 1); } },
-        { label: "半透明", icon: "lucide:eye-off", hint: "半透明 50%", active: inst.visible && inst.opacity < 0.99 && inst.opacity > 0.1, action: () => { setModelVisibility(id, true); setModelOpacity(id, 0.5); } },
-        { label: "隐藏", icon: "lucide:eye-off", hint: "完全隐藏", active: !inst.visible, action: () => { setModelVisibility(id, false); } },
-      ];
-      cardContainer(container, (c) => {
-        for (const opt of opts) {
-          const row = document.createElement("div");
-          row.className = "slide-item" + (opt.active ? " slide-focused" : "");
-          row.setAttribute("data-hint", opt.hint);
-          const iconEl = createIconifyIcon(opt.active ? "lucide:check" : opt.icon);
-          const s = document.createElement("span"); s.className = "slide-icon"; if (iconEl) s.appendChild(iconEl);
-          row.appendChild(s);
-          const lbl = document.createElement("span"); lbl.className = "slide-label"; lbl.textContent = opt.label;
-          row.appendChild(lbl);
-          row.addEventListener("click", () => { opt.action(); stackRegistry.modelStack?.reRender(); setStatus(opt.hint, true); });
-          c.appendChild(row);
-        }
-        const wfRow = document.createElement("div");
-        wfRow.className = "slide-item";
-        wfRow.setAttribute("data-hint", inst.wireframe ? "线框模式已开启" : "点击开启线框模式");
-        const wfIcon = createIconifyIcon(inst.wireframe ? "lucide:check-square" : "lucide:square");
-        const wfS = document.createElement("span"); wfS.className = "slide-icon"; if (wfIcon) wfS.appendChild(wfIcon);
-        wfRow.appendChild(wfS);
-        const wfLbl = document.createElement("span"); wfLbl.className = "slide-label"; wfLbl.textContent = "线框模式";
-        wfRow.appendChild(wfLbl);
-        wfRow.addEventListener("click", () => { setModelWireframe(id, !inst.wireframe); stackRegistry.modelStack?.reRender(); setStatus(inst.wireframe ? "线框模式: 关" : "线框模式: 开", true); });
-        c.appendChild(wfRow);
+      let mode: "visible" | "semi" | "hidden";
+      if (inst.visible && inst.opacity >= 0.99) mode = "visible";
+      else if (inst.visible && inst.opacity < 0.99) mode = "semi";
+      else mode = "hidden";
 
-        const boneRow = document.createElement("div");
-        boneRow.className = "slide-item";
-        boneRow.setAttribute("data-hint", inst.showBones ? "骨骼叠加已开启" : "点击显示骨骼");
-        const boneIcon = createIconifyIcon(inst.showBones ? "lucide:check-square" : "lucide:square");
-        const boneS = document.createElement("span"); boneS.className = "slide-icon"; if (boneIcon) boneS.appendChild(boneIcon);
-        boneRow.appendChild(boneS);
-        const boneLbl = document.createElement("span"); boneLbl.className = "slide-label"; boneLbl.textContent = "骨骼显示";
-        boneRow.appendChild(boneLbl);
-        boneRow.addEventListener("click", () => { setModelBoneVis(id, !inst.showBones); stackRegistry.modelStack?.reRender(); setStatus(inst.showBones ? "骨骼显示: 关" : "骨骼显示: 开", true); });
-        c.appendChild(boneRow);
+      cardContainer(container, (c) => {
+        addModeSlider(c, "可见性", [
+          { value: "visible", label: "显示" },
+          { value: "semi", label: "半透明" },
+          { value: "hidden", label: "隐藏" },
+        ], mode, (v) => {
+          if (v === "visible") { setModelVisibility(id, true); setModelOpacity(id, 1); }
+          else if (v === "semi") { setModelVisibility(id, true); setModelOpacity(id, 0.5); }
+          else { setModelVisibility(id, false); }
+          stackRegistry.modelStack?.reRender();
+          setStatus(v === "visible" ? "完全可见" : v === "semi" ? "半透明 50%" : "完全隐藏", true);
+        }, "lucide:eye");
+      });
+
+      cardContainer(container, (c) => {
+        addToggleRow(c, "材质线框", inst.wireframe, (v) => {
+          setModelWireframe(id, v);
+          stackRegistry.modelStack?.reRender();
+          setStatus(v ? "材质线框: 开" : "材质线框: 关", true);
+        }, "lucide:square");
+        addToggleRow(c, "骨骼线", inst.showBoneLines, (v) => {
+          setModelBoneLinesVis(id, v);
+          stackRegistry.modelStack?.reRender();
+          setStatus(v ? "骨骼线: 开" : "骨骼线: 关", true);
+        }, "lucide:git-branch");
+        addToggleRow(c, "骨骼关节球", inst.showBoneJoints, (v) => {
+          setModelBoneJointsVis(id, v);
+          stackRegistry.modelStack?.reRender();
+          setStatus(v ? "骨骼关节球: 开" : "骨骼关节球: 关", true);
+        }, "lucide:circle-dot");
       });
 
       const physCategories = getPhysicsCategories(id);
       const CAT_LABELS: Record<string, string> = { skirt: "裙子物理", chest: "胸部物理", hair: "头发物理", accessory: "配件物理" };
-      const CAT_ICONS: Record<string, string> = { skirt: "lucide:skirt", chest: "lucide:heart", hair: "lucide:feather", accessory: "lucide:gift" };
       if (physCategories.length > 0) {
         cardContainer(container, (c) => {
           for (const cat of physCategories) {
             const enabled = isPhysicsCategoryEnabled(id, cat);
-            const row = document.createElement("div");
-            row.className = "slide-item";
-            row.setAttribute("data-hint", enabled ? `已启用${CAT_LABELS[cat] || cat}` : `已禁用${CAT_LABELS[cat] || cat}`);
-            const iconEl = createIconifyIcon(enabled ? "lucide:check-square" : "lucide:square");
-            const s = document.createElement("span"); s.className = "slide-icon"; if (iconEl) s.appendChild(iconEl);
-            row.appendChild(s);
-            const lbl = document.createElement("span"); lbl.className = "slide-label"; lbl.textContent = CAT_LABELS[cat] || cat;
-            row.appendChild(lbl);
-            row.addEventListener("click", () => {
-              const newState = !isPhysicsCategoryEnabled(id, cat);
-              setPhysicsCategory(id, cat, newState);
+            addToggleRow(c, CAT_LABELS[cat] || cat, enabled, (v) => {
+              setPhysicsCategory(id, cat, v);
               stackRegistry.modelStack?.reRender();
-              setStatus(newState ? `✓ ${CAT_LABELS[cat] || cat} 已开启` : `✕ ${CAT_LABELS[cat] || cat} 已关闭`, true);
-            });
-            c.appendChild(row);
+              setStatus(v ? `✓ ${CAT_LABELS[cat] || cat} 已开启` : `✕ ${CAT_LABELS[cat] || cat} 已关闭`, true);
+            }, "lucide:settings");
           }
         });
       }

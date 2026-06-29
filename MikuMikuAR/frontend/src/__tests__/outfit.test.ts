@@ -206,7 +206,7 @@ describe("applyOutfitVariant", () => {
       id: "m1", name: "test", filePath: "/models/test.pmx", port: 12345,
       meshes: [createMockMesh(sm)], rootMesh: createMockMesh(sm),
       scaling: 1, rotationY: 0, visible: true, opacity: 1, wireframe: false,
-      showBones: false, physicsEnabled: false, kind: "actor",
+      showBoneLines: false, showBoneJoints: false, physicsEnabled: false, kind: "actor",
       vmdData: null, vmdName: "", vmdPath: null, animationDuration: 0,
       modelDir: "/models",
       outfitFile: {
@@ -281,7 +281,7 @@ describe("resetOutfit", () => {
       id: "m1", name: "test", filePath: "/models/test.pmx", port: 12345,
       meshes: [createMockMesh(sm)], rootMesh: createMockMesh(sm),
       scaling: 1, rotationY: 0, visible: true, opacity: 1, wireframe: false,
-      showBones: false, physicsEnabled: false, kind: "actor",
+      showBoneLines: false, showBoneJoints: false, physicsEnabled: false, kind: "actor",
       vmdData: null, vmdName: "", vmdPath: null, animationDuration: 0,
       modelDir: "/models",
       outfitFile: null,

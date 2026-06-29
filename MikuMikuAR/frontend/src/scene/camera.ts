@@ -39,6 +39,7 @@ export interface ConcertParams {
 
 /** Per-mode parameter bundle, persisted with scene files. */
 export interface CameraPreset {
+    mode?: CameraMode;
     orbit: OrbitParams;
     freefly: FreeflyParams;
     concert: ConcertParams;
@@ -46,6 +47,7 @@ export interface CameraPreset {
 
 export function defaultCameraPreset(): CameraPreset {
     return {
+        mode: "orbit",
         orbit: { targetHeight: 8, distance: 16, beta: Math.PI / 3 },
         freefly: { speed: 0.5, angularSensibility: 2000 },
         concert: { radius: 12, height: 8, speed: 0.3 },
@@ -291,6 +293,8 @@ export function switchCameraMode(mode: CameraMode): void {
     scene.activeCamera = newCam;
     _currentCamera = newCam;
     _cameraMode = mode;
+    // Persist camera mode for scene auto-save (skip oneshot — it's a transient action)
+    if (mode !== "oneshot") _currentPreset.mode = mode;
 
     // Start new mode's side-effects
     if (mode === "freefly") initFreeflyUpdate(scene);
@@ -460,7 +464,7 @@ export function setCameraState(s: CameraState): void {
         _currentPreset = JSON.parse(JSON.stringify(s.preset));
     }
     // Backward compat: old scene files stored mode in s.mode directly
-    const mode = (s as any).preset?.mode || (s as any).mode;
+    const mode = s.preset?.mode || (s as any).mode;
     if (mode) switchCameraMode(mode);
     const cam = _currentCamera;
     if (!cam) return;

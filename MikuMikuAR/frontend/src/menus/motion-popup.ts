@@ -14,6 +14,7 @@ import {
 import {
   loadVMDFromPath, loadVPDPose,
   updatePlaybackUI,
+  focusModel,
 } from "../scene/scene";
 import { SlideMenu } from "./menu";
 import { slideRow, addSliderRow } from "../core/ui-helpers";
@@ -124,6 +125,16 @@ function buildActionBindingLevel(id: string): PopupLevel {
           }
         });
       });
+
+      // 聚焦按钮（高频操作）
+      const focusBtn = document.createElement("button");
+      focusBtn.className = "preset-chip";
+      focusBtn.style.margin = "8px 14px 4px";
+      focusBtn.innerHTML = "🎯 聚焦到模型";
+      focusBtn.addEventListener("click", () => {
+        focusModel(id);
+      });
+      container.appendChild(focusBtn);
     },
   };
 }
