@@ -105,6 +105,7 @@
 | 1 | 天穹之华 | [vol-5-the-light-of-physics/01-天穹之华.md](vol-5-the-light-of-physics/01-天穹之华.md) |
 | 2 | 布料之魂 | [vol-5-the-light-of-physics/02-布料之魂.md](vol-5-the-light-of-physics/02-布料之魂.md) |
 | 3 | 多相机之眼 | [vol-5-the-light-of-physics/03-多相机之眼.md](vol-5-the-light-of-physics/03-多相机之眼.md) |
+| 4 | 悬空之影 | [vol-5-the-light-of-physics/04-悬空之影.md](vol-5-the-light-of-physics/04-悬空之影.md) |
 
 ## 骨架
 
