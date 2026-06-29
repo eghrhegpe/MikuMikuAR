@@ -30,7 +30,7 @@ import { buildEnvLevel, buildSkyLevel, buildGroundLevel, buildParticleLevel, bui
 import { toggleCloth, recreateCloth } from "../physics/cloth-manager";
 
 /**
- * 统一的 sceneStack onFolderEnter 路由器
+ * 统一的 sceneMenu onFolderEnter 路由器
  * 无论 showSceneMenu 还是 showEnvMenu 创建栈，都使用此函数
  */
 function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
@@ -66,8 +66,8 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
 
 // ======== Scene Menu (SlideMenu) ========
 
-let sceneStack: SlideMenu | null = null;
-export function getSceneStack(): SlideMenu | null { return sceneStack; }
+let sceneMenu: SlideMenu | null = null;
+export function getSceneMenu(): SlideMenu | null { return sceneMenu; }
 
 function buildSceneRoot(): PopupLevel {
     return {
@@ -79,7 +79,7 @@ function buildSceneRoot(): PopupLevel {
             container.style.padding = "0";
             // Card 1: 场景管理
             cardContainer(container, (c) => {
-                slideRow(c, "lucide:bookmark", "预设场景", true, () => sceneStack?.push(buildPresetScenesLevel()));
+                slideRow(c, "lucide:bookmark", "预设场景", true, () => sceneMenu?.push(buildPresetScenesLevel()));
                 slideRow(c, "lucide:save", "保存场景", false, () => {
                     SelectSceneSaveFile().then(path => {
                         if (!path) return;
@@ -96,18 +96,18 @@ function buildSceneRoot(): PopupLevel {
             });
             // Card 2: 渲染与相机
             cardContainer(container, (c) => {
-                slideRow(c, "lucide:camera", "相机模式", true, () => sceneStack?.push(buildCameraLevel()));
-                slideRow(c, "lucide:sun", "灯光", true, () => sceneStack?.push(buildLightLevel()));
-                slideRow(c, "lucide:sparkles", "渲染", true, () => sceneStack?.push(buildRenderLevel()));
-                slideRow(c, "lucide:toggle-left", "物理", true, () => sceneStack?.push(buildPhysicsLevel()));
+                slideRow(c, "lucide:camera", "相机模式", true, () => sceneMenu?.push(buildCameraLevel()));
+                slideRow(c, "lucide:sun", "灯光", true, () => sceneMenu?.push(buildLightLevel()));
+                slideRow(c, "lucide:sparkles", "渲染", true, () => sceneMenu?.push(buildRenderLevel()));
+                slideRow(c, "lucide:toggle-left", "物理", true, () => sceneMenu?.push(buildPhysicsLevel()));
             });
             // Card 3: 程序化动作
             cardContainer(container, (c) => {
-                slideRow(c, "lucide:wind", "程序化动作", true, () => sceneStack?.push(buildProcMotionLevel()));
+                slideRow(c, "lucide:wind", "程序化动作", true, () => sceneMenu?.push(buildProcMotionLevel()));
             });
             // Card 4: 工具
             cardContainer(container, (c) => {
-                slideRow(c, "lucide:camera", "截图", true, () => sceneStack?.push(buildScreenshotLevel()));
+                slideRow(c, "lucide:camera", "截图", true, () => sceneMenu?.push(buildScreenshotLevel()));
             });
         },
     };
@@ -272,7 +272,7 @@ function buildPresetScenesLevel(): PopupLevel {
                             await DeletePresetScene(name);
                             if (currentPresetIndex === i) currentPresetIndex = -1;
                             else if (currentPresetIndex > i) currentPresetIndex--;
-                            sceneStack?.reRender();
+                            sceneMenu?.reRender();
                             setStatus(`✓ 已删除: ${name}`, true);
                         } catch { setStatus("✗ 删除失败", false); }
                     });
@@ -280,7 +280,7 @@ function buildPresetScenesLevel(): PopupLevel {
                     row.addEventListener("click", async () => {
                         currentPresetIndex = i;
                         if (await _loadPresetScene(name)) {
-                            sceneStack?.reRender();
+                            sceneMenu?.reRender();
                             setStatus(`✓ 已加载: ${name}`, true);
                         }
                     });
@@ -439,7 +439,7 @@ function buildLightLevel(): PopupLevel {
                     { value: "hard", label: "硬" },
                     { value: "soft", label: "软" },
                     { value: "pcf", label: "柔和阴影" },
-                ], lightState.shadowType, (v) => { setLightState({ shadowType: v }); sceneStack?.reRender(); }, "lucide:shadow");
+                ], lightState.shadowType, (v) => { setLightState({ shadowType: v }); sceneMenu?.reRender(); }, "lucide:shadow");
             });
         },
     };
@@ -480,7 +480,7 @@ function buildPhysicsLevel(): PopupLevel {
                 } else {
                     toggleCloth(false);
                 }
-                sceneStack?.reRender();
+                sceneMenu?.reRender();
             }, "lucide:scarf");
 
             // Gravity slider
@@ -628,7 +628,7 @@ function buildStageLevel(): PopupLevel {
                 { value: 2, label: "Reinhard" },
                 { value: 3, label: "Cineon" },
                 { value: 4, label: "Neutral" },
-            ], state.toneMapping, (v) => { setRenderState({ toneMapping: v }); triggerAutoSave(); sceneStack?.reRender(); }, "lucide:palette");
+            ], state.toneMapping, (v) => { setRenderState({ toneMapping: v }); triggerAutoSave(); sceneMenu?.reRender(); }, "lucide:palette");
 
             // Exposure
             addSliderRow(container, "曝光", state.exposure, 0, 4, 0.05, (v) => {
@@ -796,7 +796,7 @@ function buildPresetsLevel(): PopupLevel {
                         delRow.addEventListener("click", () => {
                             DeleteRenderPreset(name).then(() => {
                                 delete userPresets[name];
-                                if (sceneStack) { sceneStack.setLevel(sceneStack.levelCount - 1, buildPresetsLevel()); sceneStack.reRender(); }
+                                if (sceneMenu) { sceneMenu.setLevel(sceneMenu.levelCount - 1, buildPresetsLevel()); sceneMenu.reRender(); }
                                 setStatus(`✓ 预设已删除: ${name}`, true);
                             }).catch(() => setStatus("✗ 删除失败", false));
                         });
@@ -822,9 +822,9 @@ function showPresetSaveDialog(): void {
     SaveRenderPreset(trimmed, JSON.stringify(state)).then(() => {
         userPresets[trimmed] = state;
         setStatus(`✓ 预设已保存: ${trimmed}`, true);
-        if (sceneStack) {
-            sceneStack.setLevel(sceneStack.levelCount - 1, buildPresetsLevel());
-            sceneStack.reRender();
+        if (sceneMenu) {
+            sceneMenu.setLevel(sceneMenu.levelCount - 1, buildPresetsLevel());
+            sceneMenu.reRender();
         }
     }).catch((err: any) => {
         console.warn("SaveRenderPreset failed:", err);
@@ -854,9 +854,9 @@ async function loadUserPresets(): Promise<void> {
 }
 
 function refreshCameraLevel(): void {
-    if (sceneStack) {
-        sceneStack.setLevel(sceneStack.levelCount - 1, buildCameraLevel());
-        sceneStack.reRender();
+    if (sceneMenu) {
+        sceneMenu.setLevel(sceneMenu.levelCount - 1, buildCameraLevel());
+        sceneMenu.reRender();
     }
 }
 
@@ -1014,9 +1014,9 @@ function handleSceneAction(row: PopupRow): void {
                 try {
                     await DeleteRenderPreset(name);
                     delete userPresets[name];
-                    if (sceneStack) {
-                        sceneStack.setLevel(sceneStack.levelCount - 1, buildPresetsLevel());
-                        sceneStack.reRender();
+                    if (sceneMenu) {
+                        sceneMenu.setLevel(sceneMenu.levelCount - 1, buildPresetsLevel());
+                        sceneMenu.reRender();
                     }
                     setStatus(`✓ 预设已删除: ${name}`, true);
                 } catch (err) {
@@ -1047,29 +1047,29 @@ function handleSceneAction(row: PopupRow): void {
         const mode = row.target.replace("procmotion:set-mode:", "") as ProcMotionMode;
         setProcMotionMode(mode);
         regenerateProcMotion();
-        sceneStack?.pop();
-        sceneStack?.reRender();
+        sceneMenu?.pop();
+        sceneMenu?.reRender();
         return;
     }
     if (row.target === "procmotion:autoswitch") {
         const cur = getProcMotionState();
         setProcMotionAutoSwitch(!cur.autoSwitch);
-        sceneStack?.reRender();
+        sceneMenu?.reRender();
         return;
     }
     if (row.target === "procmotion:mode") {
-        sceneStack?.push(buildProcMotionModeLevel());
+        sceneMenu?.push(buildProcMotionModeLevel());
         return;
     }
     // LipSync actions
     if (row.target === "lipsync:menu") {
-        sceneStack?.push(buildLipSyncLevel());
+        sceneMenu?.push(buildLipSyncLevel());
         return;
     }
     if (row.target === "lipsync:toggle") {
         const cur = getLipSyncState();
         setLipSyncEnabled(!cur.enabled);
-        sceneStack?.reRender();
+        sceneMenu?.reRender();
         return;
     }
 }
@@ -1084,7 +1084,7 @@ export async function showSceneMenu(): Promise<void> {
     await loadUserPresets();
 
     // 每次都重建 SlideMenu，避免 innerHTML 清空后旧实例持有已销毁的 DOM 引用
-    sceneStack = new SlideMenu({
+    sceneMenu = new SlideMenu({
         container: dom.sceneOverlay,
         onClose: () => closeAllOverlays(),
         onItemClick: (row) => handleSceneAction(row),
@@ -1092,7 +1092,7 @@ export async function showSceneMenu(): Promise<void> {
         onAfterRender: () => {},
     });
 
-    sceneStack.reset(buildSceneRoot());
+    sceneMenu.reset(buildSceneRoot());
 }
 
 // Wire up events — handlers are registered in main.ts (dynamic import + toggleOverlay) to avoid double-handler race.

@@ -65,7 +65,7 @@ import { stackRegistry } from "../core/config";
 
 // ======== Model Stack ========
 
-const makeModelStack = (): SlideMenu => {
+const makeModelMenu = (): SlideMenu => {
   return new SlideMenu({
     container: dom.sceneOverlay,
     onClose: closeAllOverlays,
@@ -543,7 +543,7 @@ export function showModelPopup(): void {
   dom.sceneOverlay.dataset.popupType = "model";
 
   // 强制重建 MenuStack，避免 innerHTML 清空后旧 stack 持有已分离的 DOM 引用
-  stackRegistry.modelStack = makeModelStack();
+  stackRegistry.modelStack = makeModelMenu();
 
   stackRegistry.modelStack.reset({
     label: "模型",

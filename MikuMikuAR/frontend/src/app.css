@@ -440,40 +440,48 @@ html, body {
 /* ===== Slide Menu 滑动菜单 ===== */
 
 .slide-menu {
-    display: flex; flex-direction: column;
-    flex: 1; min-height: 0;
-}
-.slide-viewport {
-    display: flex; flex-direction: column;
-    flex: 1; min-height: 0;
-    overflow: hidden;
-}
-.slide-inner {
-    display: flex; flex-direction: row;
+    display: flex;
+    flex-direction: column;
     flex: 1;
-    width: 200%;
-    will-change: transform;
     min-height: 0;
 }
+
+.slide-viewport {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;          /* 防止内容溢出 viewport */
+}
+
 .slide-panel {
-    width: 50%; flex-shrink: 0;
-    display: flex; flex-direction: column;
+    display: flex;
+    flex-direction: column;
+    flex: 1;                   /* 填满 viewport */
     min-height: 0;
-    overflow: hidden;
+    overflow: hidden;          /* 防止 panel 自身溢出 */
+    will-change: opacity, transform;
 }
+
 .slide-header {
-    display: flex; align-items: center; gap: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     padding: var(--overlay-header-py) var(--overlay-header-px);
-    font-size: var(--font-title-lg); color: var(--text-dim);
-    flex-shrink: 0; overflow-x: auto; white-space: nowrap;
+    font-size: var(--font-title-lg);
+    color: var(--text-dim);
+    flex-shrink: 0;
+    overflow-x: auto;
+    white-space: nowrap;
 }
+
+/* .slide-inner 已删除 */
 .slide-back {
     color: var(--text-bright); cursor: pointer; padding: 6px 10px;
     display: flex; align-items: center;
     border-radius: 6px;
     transition: background 0.12s;
-    /* exception: header 中无卡片包裹，自带 card-bg */
-    background: var(--card-bg);
+    /* 与 header 融为一体，不自带卡片背景 */
 }
 .slide-back:hover { color: #fff; background: var(--card-hover); }
 .slide-back iconify-icon { width: 20px; height: 20px; font-size: 20px; display: block; }
@@ -483,10 +491,10 @@ html, body {
 }
 .slide-list {
     flex: 1; overflow-y: auto;
+    min-height: 0;
 }
-/* renderCustom 内容区域卡片容器 */
+/* renderCustom 内容区域：背景由调用方自行决定，避免与 .lcard 等双重叠加 */
 .slide-list.render-card {
-    background: var(--card-bg);
     flex: 1;
 }
 .slide-list.render-card .cs-row {

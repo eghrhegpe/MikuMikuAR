@@ -1,22 +1,22 @@
 # MikuMikuAR — 菜单架构设计
 
-> 所有弹窗统一使用 `MenuStack` 导航栈模式（`menu.ts`）。
+> 所有弹窗统一使用 `SlideMenu` 导航栈模式（`menu.ts`）。
 > 添加新功能 = 在对应的根菜单加一行，然后实现 `onItemClick` 或 `onFolderEnter`。
 
 ---
 
 ## 核心机制
 
-`MenuStack` 类管理一个导航栈（`levels: PopupLevel[]`），每个层级是一个独立浮层（`.popup-layer`），浮层之间用淡入淡出 + 偏移实现卡片堆叠效果。
+`SlideMenu` 类管理一个导航栈（`levels: PopupLevel[]`），每个层级是一个独立面板（`.slide-panel`），层级之间用淡入淡出 + 上下偏移实现切换效果。
 
 ### 关键 API
 
 ```
-MenuStack.reset(level)       — 清空全部层，显示根层（无动画）
-MenuStack.push(level)        — 推入新层（动画进入）
-MenuStack.pop()              — 退回上一层（动画离开）
-MenuStack.popTo(index)       — 退回到指定层级
-MenuStack.reRender()         — 全部重建（名称优先级切换等）
+SlideMenu.reset(level)       — 清空全部层，显示根层（无动画）
+SlideMenu.push(level)        — 推入新层（动画进入）
+SlideMenu.pop()              — 退回上一层（动画离开）
+SlideMenu.popTo(index)       — 退回到指定层级
+SlideMenu.reRender()         — 全部重建（名称优先级切换等）
 ```
 
 ### PopupLevel 结构
@@ -30,12 +30,17 @@ type PopupLevel = {
 };
 
 type PopupRow = {
-    kind: "folder" | "model" | "action";
+    kind: "folder" | "model" | "action" | "divider";
     label: string;
     icon: string;
     target: string;      // 用于识别行类型
     sublabel?: string;   // 灰色小字
     model?: LibraryModel;
+    catTag?: string;     // 分类标签（如「脸部」「身体」）
+    editable?: boolean;  // 是否可编辑标签名
+    favRef?: string;     // 收藏/取消收藏关联的 libraryRef
+    onAddClick?: () => void;     // 右侧「+」按钮点击
+    onDetailClick?: () => void;  // 右侧「详情」按钮点击
 };
 ```
 
@@ -46,6 +51,7 @@ type PopupRow = {
 | `folder` | > | 调用 `onFolderEnter` → 返回下一级 `PopupLevel` → `push()` | 导航到子菜单或文件浏览器 |
 | `action` | 无 | 调用 `onItemClick` | 设置项、切换、操作 |
 | `model` | 无 | 调用 `onItemClick` | 加载模型/动作文件 |
+| `divider` | 无 | 不可点击 | 视觉分组分隔线 |
 
 ---
 
@@ -106,7 +112,7 @@ const rootItems: PopupRow[] = [
     // ... 保留其他项
 ];
 
-// makeModelStack() 的 onFolderEnter 中
+// makeModelMenu() 的 onFolderEnter 中
 if (row.target === "models:physics") {
     return { label: "物理设置", dir: "", items: [
         { kind: "action", label: "重力", icon: "⬇", target: "set:gravity" },
@@ -128,7 +134,7 @@ if (row.target === "models:physics") {
 └── ⏱ 动作倍率            → 滑块：0.25x~2x
 ```
 
-**代码入口**：`showMotionPopup()` → `motionStack.reset(rootItems)`
+**代码入口**：`showMotionPopup()` → `motionMenu.reset(rootItems)`
 
 ---
 
@@ -150,7 +156,7 @@ if (row.target === "models:physics") {
 
 > 材质调节已移至模型详情 → 材质调节（模型级）。场景菜单不再包含材质参数。
 
-**代码入口**：`showSceneMenu()` → `sceneStack.reset(rootItems)`（`scene-menu.ts`）
+**代码入口**：`showSceneMenu()` → `sceneMenu.reset(rootItems)`（`scene-menu.ts`）
 
 **特别注意**：场景弹窗从 2 项暴增到 10+ 项，根菜单过长时考虑把「渲染」相关归入一个 `🎨 渲染设置` 文件夹分类。
 
@@ -169,7 +175,7 @@ if (row.target === "models:physics") {
 └── 🔌 外部库              → action，打开外部库管理面板
 ```
 
-**代码入口**：`showSettings()` → `settingsStack.reset(rootLevel)`
+**代码入口**：`showSettings()` → `settingsMenu.reset(rootLevel)`
 
 **特点**：
 - 所有叶子菜单项用 `kind: "action"`，通过 `handleSettingsAction()` 分发。
@@ -188,7 +194,7 @@ if (row.target === "models:physics") {
 └── ✨ 粒子                → 子菜单：粒子类型/数量/速度/大小/颜色
 ```
 
-**代码入口**：`showEnvMenu()` → `envStack.reset(rootItems)`（`env-menu.ts`）
+**代码入口**：`showEnvMenu()` → `envMenu.reset(rootItems)`（`env-menu.ts`）
 
 ---
 
@@ -200,7 +206,7 @@ if (row.target === "models:physics") {
 └── 直链下载               → 自定义渲染（renderCustom: URL 输入表单）
 ```
 
-**代码入口**：`initDownloadManager()` → `downloadStack.reset(rootLevel)`
+**代码入口**：`initDownloadManager()` → `downloadMenu.reset(rootLevel)`
 
 ---
 
@@ -208,7 +214,7 @@ if (row.target === "models:physics") {
 
 1. 打开 `library.ts`（或对应弹窗的文件）
 2. 在 `showXxx()` 的 `rootItems` 数组中加一行 `PopupRow`
-3. 如果是 **导航到子菜单**（`folder`）：在 `makeXxxStack()` 的 `onFolderEnter` 中处理新 `target`
+3. 如果是 **导航到子菜单**（`folder`）：在 `makeXxxMenu()` 的 `onFolderEnter` 中处理新 `target`
 4. 如果是 **直接操作**（`action`）：在 `onItemClick` 中处理，或加专用回调函数
 5. 重建确认无 TypeScript 错误
 

@@ -64,7 +64,7 @@ function buildSettingsSoftwareLevel(): PopupLevel {
                         row.className = "slide-item";
                         row.addEventListener("click", (e) => {
                             if ((e.target as HTMLElement).closest(".sw-play-btn")) return;
-                            settingsStack?.push(buildSoftwareDetailLevel(entry.path));
+                            settingsMenu?.push(buildSoftwareDetailLevel(entry.path));
                         });
                         row.innerHTML = `
                             <span class="slide-icon"><iconify-icon icon="${softwareKindIcon(entry.kind)}"></iconify-icon></span>
@@ -173,8 +173,8 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
                             await RemoveCustomSoftware(entry.path);
                             cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(e => e.path !== entry.path);
                             setStatus(`✓ 已删除: ${entry.name}`, true);
-                            settingsStack?.pop();
-                            settingsStack?.reRender();
+                            settingsMenu?.pop();
+                            settingsMenu?.reRender();
                         } catch { setStatus("✗ 删除失败", false); }
                     });
                     c.appendChild(delRow);
@@ -232,8 +232,8 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
                         await AddCustomSoftware(entry.path, entry.name, args);
                         cachedSoftwareEntries = await ScanSoftwareDir();
                         setStatus(`✓ 已转为自定义: ${entry.name}`, true);
-                        settingsStack?.pop();
-                        settingsStack?.reRender();
+                        settingsMenu?.pop();
+                        settingsMenu?.reRender();
                     } catch (err: any) { setStatus("✗ " + (err.message || err), false); }
                 });
                 c.appendChild(convertRow);
@@ -244,7 +244,7 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
 
 // ======== Settings (SlideMenu) ========
 
-let settingsStack: SlideMenu | null = null;
+let settingsMenu: SlideMenu | null = null;
 
 function buildSettingsRoot(): PopupLevel {
     return {
@@ -254,11 +254,11 @@ function buildSettingsRoot(): PopupLevel {
         renderCustom: (container) => {
             container.classList.remove("render-card");
             cardContainer(container, (c) => {
-                slideRow(c, "lucide:palette", "显示", true, () => settingsStack?.push(buildSettingsDisplayLevel()));
-                slideRow(c, "lucide:monitor", "界面", true, () => settingsStack?.push(buildSettingsUILevel()));
-                slideRow(c, "lucide:download", "下载", true, () => settingsStack?.push(buildSettingsDownloadLevel()));
-                slideRow(c, "lucide:settings", "系统", true, () => settingsStack?.push(buildSettingsSystemLevel()));
-                slideRow(c, "lucide:package", "软件管理", true, () => settingsStack?.push(buildSettingsSoftwareLevel()));
+                slideRow(c, "lucide:palette", "显示", true, () => settingsMenu?.push(buildSettingsDisplayLevel()));
+                slideRow(c, "lucide:monitor", "界面", true, () => settingsMenu?.push(buildSettingsUILevel()));
+                slideRow(c, "lucide:download", "下载", true, () => settingsMenu?.push(buildSettingsDownloadLevel()));
+                slideRow(c, "lucide:settings", "系统", true, () => settingsMenu?.push(buildSettingsSystemLevel()));
+                slideRow(c, "lucide:package", "软件管理", true, () => settingsMenu?.push(buildSettingsSoftwareLevel()));
             });
         },
     };
@@ -269,7 +269,7 @@ function buildSettingsDisplayLevel(): PopupLevel {
     function pick(p: DisplayNamePriority): void {
         setDisplayNamePriority(p);
         SetDisplayNamePriority(p).catch(console.warn);
-        settingsStack?.reRender();
+        settingsMenu?.reRender();
     }
     return {
         label: "显示",
@@ -302,7 +302,7 @@ function buildSettingsUILevel(): PopupLevel {
                 const advRow = document.createElement("div");
                 advRow.className = "slide-item";
                 advRow.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:settings"></iconify-icon></span><span class="slide-label">高级设置</span><span class="slide-arrow">&gt;</span>';
-                advRow.addEventListener("click", () => settingsStack?.push(buildSettingsUIAdvancedLevel()));
+                advRow.addEventListener("click", () => settingsMenu?.push(buildSettingsUIAdvancedLevel()));
                 c.appendChild(advRow);
             });
         },
@@ -338,12 +338,12 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
             const themeRow = document.createElement("div");
             themeRow.className = "slide-item";
             themeRow.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:palette"></iconify-icon></span><span class="slide-label">主题色</span><span class="slide-arrow">&gt;</span>';
-            themeRow.addEventListener("click", () => settingsStack?.push(buildSettingsThemeLevel()));
+            themeRow.addEventListener("click", () => settingsMenu?.push(buildSettingsThemeLevel()));
             c.appendChild(themeRow);
             const fontRow = document.createElement("div");
             fontRow.className = "slide-item";
             fontRow.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:type"></iconify-icon></span><span class="slide-label">字体</span><span class="slide-arrow">&gt;</span>';
-            fontRow.addEventListener("click", () => settingsStack?.push(buildSettingsFontLevel()));
+            fontRow.addEventListener("click", () => settingsMenu?.push(buildSettingsFontLevel()));
             c.appendChild(fontRow);
             const resetRow = document.createElement("div");
             resetRow.className = "slide-item";
@@ -362,7 +362,7 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
                 SetUIPopupWidth(280).catch(() => {});
                 SetUIAccent("#4a6cf7").catch(() => {});
                 SetUIFontFamily("system").catch(() => {});
-                settingsStack?.reRender();
+                settingsMenu?.reRender();
                 setStatus("✓ UI 设置已恢复默认", true);
             });
             c.appendChild(resetRow);
@@ -509,7 +509,7 @@ function setTheme(hex: string): void {
     root.style.setProperty("--accent", hex);
     root.style.setProperty("--accent-dim", hex + "33");
     SetUIAccent(hex).catch(() => {});
-    settingsStack?.reRender();
+    settingsMenu?.reRender();
     setStatus(`✓ 主题色已设为 ${hex}`, true);
 }
 
@@ -536,7 +536,7 @@ function buildSettingsFontLevel(): PopupLevel {
                     row.addEventListener("click", () => {
                         document.documentElement.style.setProperty("--font", f.css);
                     SetUIFontFamily(key).catch(() => {});
-                    settingsStack?.reRender();
+                    settingsMenu?.reRender();
                     setStatus(`✓ 字体已设为 ${f.label}`, true);
                 });
                 c.appendChild(row);
@@ -646,7 +646,7 @@ function handleSettingsAction(row: PopupRow): void {
                     await AddCustomSoftware(path, name, args);
                     await scanSoftwareDir();
                     setStatus(`✓ 已添加: ${name}`, true);
-                    settingsStack?.reRender();
+                    settingsMenu?.reRender();
                 } catch (err: any) {
                     setStatus("✗ 添加失败: " + (err.message || err), false);
                 }
@@ -691,7 +691,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                             try {
                                 await RenameExternalPath(ep.path, newName.trim());
                                 await reloadConfig();
-                                settingsStack?.reRender();
+                                settingsMenu?.reRender();
                                 setStatus("✓ 已重命名", true);
                             } catch { setStatus("✗ 重命名失败", false); }
                         }
@@ -701,7 +701,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                             await RemoveExternalPath(ep.path);
                             await reloadConfig();
                             if (libraryRoot) await rescanAndSync();
-                            settingsStack?.reRender();
+                            settingsMenu?.reRender();
                         } catch (err) {
                             console.error("RemoveExternalPath error:", err);
                         }
@@ -718,7 +718,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                         await AddExternalPath(dir);
                         await reloadConfig();
                         if (libraryRoot) await rescanAndSync();
-                        settingsStack?.reRender();
+                        settingsMenu?.reRender();
                         setStatus("✓ 外部库已添加", true);
                     } catch (err) {
                         console.error("AddExternalPath error:", err);
@@ -807,7 +807,7 @@ export async function showSettings(): Promise<void> {
     dom.sceneOverlay.dataset.popupType = "settings";
 
     // 每次都重建 SlideMenu，避免 innerHTML 清空后旧实例持有已销毁的 DOM 引用
-    settingsStack = new SlideMenu({
+    settingsMenu = new SlideMenu({
         container: dom.sceneOverlay,
         onClose: () => closeAllOverlays(),
         onItemClick: (row) => handleSettingsAction(row),
@@ -832,7 +832,7 @@ export async function showSettings(): Promise<void> {
         onAfterRender: () => {},
     });
 
-    settingsStack.reset(buildSettingsRoot());
+    settingsMenu.reset(buildSettingsRoot());
 }
 
 // Wire up close button (open button wired dynamically from main.ts)

@@ -111,7 +111,7 @@ function buildActionBindingLevel(id: string): PopupLevel {
           setMotionBindingTargetId(id);
           const level = stackRegistry.buildLevel!(libraryRoot, "动作库", (m) => m.format === "vmd");
           level.label = `绑定动作 → ${inst.name}`;
-          motionStack?.push(level);
+          motionMenu?.push(level);
         });
         c.appendChild(row);
         slideRow(c, "lucide:user", "加载姿势 (VPD)", false, async () => {
@@ -119,7 +119,7 @@ function buildActionBindingLevel(id: string): PopupLevel {
             const path = await SelectVPDPose();
             if (!path) { setStatus("✗ 未选择文件", false); return; }
             await loadVPDPose(path, id);
-            motionStack?.reRender();
+            motionMenu?.reRender();
           } catch (err: any) {
             setStatus("✗ " + (err.message || err), false);
           }
@@ -155,7 +155,7 @@ function buildActionMusicLevel(): PopupLevel {
             if (!path) return;
             await loadAudioFile(path);
             setStatus(`✓ 音乐: ${getAudioName()}`, true);
-            motionStack?.reRender();
+            motionMenu?.reRender();
           } catch (err) {
             console.warn("Load audio failed:", err);
             setStatus("✗ 音乐加载失败", false);
@@ -179,9 +179,9 @@ function buildActionMusicLevel(): PopupLevel {
 
 // ======== Motion Stack ========
 
-let motionStack: SlideMenu | null = null;
+let motionMenu: SlideMenu | null = null;
 
-function makeMotionStack(): SlideMenu {
+function makeMotionMenu(): SlideMenu {
   return new SlideMenu({
     container: dom.sceneOverlay,
     onClose: closeAllOverlays,
@@ -240,7 +240,7 @@ function makeMotionStack(): SlideMenu {
                 mmdRuntime.playAnimation().then(() => setIsPlaying(true));
               }
               updatePlaybackUI();
-              motionStack?.reRender();
+              motionMenu?.reRender();
             }
             break;
           case "reset":
@@ -255,7 +255,7 @@ function makeMotionStack(): SlideMenu {
                 setIsPlaying(false);
               }
               updatePlaybackUI();
-              motionStack?.reRender();
+              motionMenu?.reRender();
               setStatus("✓ 动作已重置", true);
             }
             break;
@@ -265,7 +265,7 @@ function makeMotionStack(): SlideMenu {
                 const path = await SelectVPDPose();
                 if (!path) { setStatus("✗ 未选择文件", false); return; }
                 await loadVPDPose(path, id);
-                motionStack?.reRender();
+                motionMenu?.reRender();
               } catch (err: any) {
                 setStatus("✗ " + (err.message || err), false);
               }
@@ -273,7 +273,7 @@ function makeMotionStack(): SlideMenu {
             break;
           case "loop":
             setAutoLoop(!autoLoop);
-            motionStack?.reRender();
+            motionMenu?.reRender();
             setStatus(`循环: ${autoLoop ? "开" : "关"}`, true);
             break;
         }
@@ -294,9 +294,9 @@ export function showMotionPopup(): void {
   dom.sceneOverlay.dataset.popupType = "motion";
 
   // 强制重建 MenuStack，避免 innerHTML 清空后旧 stack 持有已分离的 DOM 引用
-  motionStack = makeMotionStack();
+  motionMenu = makeMotionMenu();
 
-  motionStack.reset({
+  motionMenu.reset({
     label: "动作",
     dir: "",
     items: [],
@@ -307,7 +307,7 @@ export function showMotionPopup(): void {
         cardContainer(container, (c) => {
           for (const [id, inst] of modelRegistry) {
             slideRow(c, "tabler:cube-3d-sphere", inst.name, true, () => {
-              motionStack?.push(buildActionBindingLevel(id));
+              motionMenu?.push(buildActionBindingLevel(id));
             });
           }
         });
@@ -316,10 +316,10 @@ export function showMotionPopup(): void {
       cardContainer(container, (c) => {
         slideRow(c, "lucide:music", "舞蹈套装", true, () => {
           const level = buildDanceSetsOverviewLevel();
-          motionStack?.push(level);
+          motionMenu?.push(level);
         });
         slideRow(c, "lucide:music", "音乐", true, () => {
-          motionStack?.push(buildActionMusicLevel());
+          motionMenu?.push(buildActionMusicLevel());
         });
       });
     },
@@ -363,7 +363,7 @@ function buildDanceSetsOverviewLevel(): PopupLevel {
               row.addEventListener("click", () => {
                 const level = buildDanceSetDetailLevel(setId);
                 if (stackRegistry.modelStack) stackRegistry.modelStack.push(level);
-                else motionStack?.push(level);
+                else motionMenu?.push(level);
               });
               c.appendChild(row);
             }

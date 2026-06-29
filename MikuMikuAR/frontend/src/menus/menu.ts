@@ -3,14 +3,12 @@ import { createIconifyIcon } from "../core/icons";
 
 export class SlideMenu {
     private levels: PopupLevel[] = [];
-    private panels: [HTMLElement, HTMLElement];
-    private activeIdx: 0 | 1 = 0;
-    private transitioning = false;
     private container: HTMLElement;
     private viewport: HTMLElement;
-    private inner: HTMLElement;
+    private panel: HTMLElement;
     private headerEl: HTMLElement;
     private focusIndex = -1;
+    private transitioning = false;
 
     onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
     onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
@@ -42,25 +40,22 @@ export class SlideMenu {
         this.viewport = document.createElement("div");
         this.viewport.className = "slide-viewport";
 
-        this.inner = document.createElement("div");
-        this.inner.className = "slide-inner";
+        this.panel = document.createElement("div");
+        this.panel.className = "slide-panel";
+        // 内联样式由 CSS 控制，只设置必要的过渡
+        this.panel.style.transition = "opacity 0.15s ease, transform 0.15s ease";
+        this.panel.style.opacity = "1";
+        this.panel.style.transform = "translateY(0)";
+        this.panel.style.display = "flex";
 
-        const p0 = document.createElement("div");
-        p0.className = "slide-panel";
-        const p1 = document.createElement("div");
-        p1.className = "slide-panel";
-
-        this.inner.appendChild(p0);
-        this.inner.appendChild(p1);
-        this.viewport.appendChild(this.inner);
+        this.viewport.appendChild(this.panel);
         this.container.appendChild(this.viewport);
 
         this.headerEl = document.createElement("div");
         this.headerEl.className = "slide-header";
         this.container.appendChild(this.headerEl);
 
-        this.panels = [p0, p1];
-
+        // 键盘导航
         this.container.tabIndex = -1;
         this.container.addEventListener("keydown", (e) => {
             if (this.transitioning) return;
@@ -74,23 +69,23 @@ export class SlideMenu {
         });
     }
 
+    // ======== 公共 API ========
+
     get currentLevel(): PopupLevel | undefined {
         return this.levels[this.levels.length - 1];
     }
 
-    get levelCount(): number { return this.levels.length; }
+    get levelCount(): number {
+        return this.levels.length;
+    }
 
     reset(level: PopupLevel): void {
         this.levels = [level];
-        this.activeIdx = 0;
         this.transitioning = false;
-        this.panels[0].style.display = "";
-        this.panels[0].style.opacity = "1";
-        this.panels[0].style.transform = "";
-        this.buildPanel(this.panels[0], level);
-        this.panels[1].style.display = "none";
-        this.panels[1].style.opacity = "";
-        this.panels[1].style.transform = "";
+        this.panel.style.transition = "none";
+        this.panel.style.opacity = "1";
+        this.panel.style.transform = "translateY(0)";
+        this.buildPanel(level);
         this.updateHeader(level);
         this.setupFocus();
         this.onAfterRender?.(level, this);
@@ -100,27 +95,122 @@ export class SlideMenu {
         if (this.transitioning) return;
         this.transitioning = true;
         this.levels.push(level);
-        this.animateSlide(true, level);
+
+        // 旧内容淡出（上移）
+        this.panel.style.transition = "opacity 0.12s ease, transform 0.12s ease";
+        this.panel.style.opacity = "0";
+        this.panel.style.transform = "translateY(-8px)";
+
+        const onFadeOut = () => {
+            this.panel.removeEventListener("transitionend", onFadeOut);
+            this.buildPanel(level);
+            this.updateHeader(level);
+            // 新内容从下方淡入
+            this.panel.style.transition = "none";
+            this.panel.style.opacity = "0";
+            this.panel.style.transform = "translateY(8px)";
+            void this.panel.offsetHeight;
+            this.panel.style.transition = "opacity 0.15s ease, transform 0.15s ease";
+            this.panel.style.opacity = "1";
+            this.panel.style.transform = "translateY(0)";
+
+            const onFadeIn = () => {
+                this.panel.removeEventListener("transitionend", onFadeIn);
+                this.transitioning = false;
+                this.setupFocus();
+                this.onAfterRender?.(level, this);
+            };
+            this.panel.addEventListener("transitionend", onFadeIn);
+            setTimeout(() => {
+                if (this.transitioning) {
+                    this.panel.style.opacity = "1";
+                    this.panel.style.transform = "translateY(0)";
+                    this.transitioning = false;
+                    this.setupFocus();
+                    this.onAfterRender?.(level, this);
+                }
+            }, 200);
+        };
+
+        this.panel.addEventListener("transitionend", onFadeOut);
+        setTimeout(() => {
+            if (this.transitioning) {
+                this.panel.style.opacity = "0";
+                this.panel.style.transform = "translateY(-8px)";
+                onFadeOut();
+            }
+        }, 150);
     }
 
     pop(): void {
         if (this.transitioning || this.levels.length <= 1) return;
         this.transitioning = true;
         this.levels.pop();
-        this.animateSlide(false, this.levels[this.levels.length - 1]);
+        const prevLevel = this.levels[this.levels.length - 1];
+
+        this.panel.style.transition = "opacity 0.12s ease, transform 0.12s ease";
+        this.panel.style.opacity = "0";
+        this.panel.style.transform = "translateY(8px)";
+
+        const onFadeOut = () => {
+            this.panel.removeEventListener("transitionend", onFadeOut);
+            this.buildPanel(prevLevel);
+            this.updateHeader(prevLevel);
+            this.panel.style.transition = "none";
+            this.panel.style.opacity = "0";
+            this.panel.style.transform = "translateY(-8px)";
+            void this.panel.offsetHeight;
+            this.panel.style.transition = "opacity 0.15s ease, transform 0.15s ease";
+            this.panel.style.opacity = "1";
+            this.panel.style.transform = "translateY(0)";
+
+            const onFadeIn = () => {
+                this.panel.removeEventListener("transitionend", onFadeIn);
+                this.transitioning = false;
+                this.setupFocus();
+                this.onAfterRender?.(prevLevel, this);
+            };
+            this.panel.addEventListener("transitionend", onFadeIn);
+            setTimeout(() => {
+                if (this.transitioning) {
+                    this.panel.style.opacity = "1";
+                    this.panel.style.transform = "translateY(0)";
+                    this.transitioning = false;
+                    this.setupFocus();
+                    this.onAfterRender?.(prevLevel, this);
+                }
+            }, 200);
+        };
+
+        this.panel.addEventListener("transitionend", onFadeOut);
+        setTimeout(() => {
+            if (this.transitioning) {
+                this.panel.style.opacity = "0";
+                this.panel.style.transform = "translateY(8px)";
+                onFadeOut();
+            }
+        }, 150);
     }
 
     popTo(index: number): void {
         if (index < 0 || index >= this.levels.length || this.transitioning) return;
+        if (index === this.levels.length - 1) return;
         this.levels = this.levels.slice(0, index + 1);
-        this.transitioning = true;
-        this.animateSlide(false, this.levels[this.levels.length - 1]);
+        const level = this.currentLevel!;
+        this.transitioning = false;
+        this.panel.style.transition = "none";
+        this.panel.style.opacity = "1";
+        this.panel.style.transform = "translateY(0)";
+        this.buildPanel(level);
+        this.updateHeader(level);
+        this.setupFocus();
+        this.onAfterRender?.(level, this);
     }
 
     reRender(): void {
         const level = this.currentLevel;
         if (!level) return;
-        this.buildPanel(this.panels[this.activeIdx], level);
+        this.buildPanel(level);
         this.updateHeader(level);
         this.setupFocus();
         this.onAfterRender?.(level, this);
@@ -136,47 +226,16 @@ export class SlideMenu {
         }
     }
 
-    private animateSlide(forward: boolean, nextLevel: PopupLevel): void {
-        const dur = getComputedStyle(document.documentElement).getPropertyValue("--ui-animations").trim() !== "0" ? "0.15s" : "0s";
-        const activePanel = this.panels[this.activeIdx];
-        const nextIdx = this.activeIdx === 0 ? 1 : 0;
-        this.activeIdx = nextIdx as 0 | 1;
-        this.updateHeader(nextLevel);
-
-        const nextPanel = this.panels[nextIdx];
-        nextPanel.style.display = "";
-        nextPanel.style.opacity = "0";
-        nextPanel.style.transform = forward ? "translateX(40px)" : "translateX(-40px)";
-        this.buildPanel(nextPanel, nextLevel);
-
-        void nextPanel.offsetWidth;
-
-        activePanel.style.transition = `opacity ${dur} ease, transform ${dur} ease`;
-        nextPanel.style.transition = `opacity ${dur} ease, transform ${dur} ease`;
-
-        activePanel.style.opacity = "0";
-        activePanel.style.transform = forward ? "translateX(-40px)" : "translateX(40px)";
-        nextPanel.style.opacity = "1";
-        nextPanel.style.transform = "translateX(0)";
-
-        setTimeout(() => {
-            activePanel.style.display = "none";
-            activePanel.style.transition = "";
-            activePanel.style.transform = "";
-            nextPanel.style.transition = "";
-            nextPanel.style.transform = "";
-            this.transitioning = false;
-            this.setupFocus();
-            this.onAfterRender?.(nextLevel, this);
-        }, dur === "0s" ? 10 : 180);
-    }
+    // ======== 内部方法 ========
 
     private get panelItems(): NodeListOf<HTMLElement> {
-        return this.panels[this.activeIdx].querySelectorAll<HTMLElement>(".slide-item");
+        return this.panel.querySelectorAll<HTMLElement>(".slide-item");
     }
 
     private clearFocus(): void {
-        this.panels[this.activeIdx].querySelectorAll(".slide-focused").forEach(el => el.classList.remove("slide-focused"));
+        this.panel.querySelectorAll(".slide-focused").forEach((el) =>
+            el.classList.remove("slide-focused")
+        );
     }
 
     private applyFocus(): void {
@@ -217,16 +276,16 @@ export class SlideMenu {
         items[this.focusIndex].click();
     }
 
-    private buildPanel(panel: HTMLElement, level: PopupLevel): void {
-        panel.innerHTML = "";
-
+    private buildPanel(level: PopupLevel): void {
+        this.panel.innerHTML = "";
         const list = document.createElement("div");
         list.className = "slide-list";
+        // flex / overflow-y / min-height 由 CSS 统一控制
 
         if (level.items.length === 0 && !level.renderCustom) {
             list.innerHTML = '<div class="slide-empty">暂无内容</div>';
         } else if (level.renderCustom) {
-            list.classList.add("render-card");
+            // 默认不添加 render-card；需要卡片背景/特殊边距的调用方自行添加
             level.renderCustom(list);
         } else {
             for (const row of level.items) {
@@ -234,15 +293,16 @@ export class SlideMenu {
                 if (el) list.appendChild(el);
             }
         }
-
-        panel.appendChild(list);
+        this.panel.appendChild(list);
     }
 
     private updateHeader(level: PopupLevel): void {
         this.headerEl.innerHTML = "";
         const backBtn = document.createElement("span");
         backBtn.className = "slide-back";
-        const backIcon = createIconifyIcon(this.levels.length > 1 ? "lucide:chevron-left" : "lucide:x");
+        const backIcon = createIconifyIcon(
+            this.levels.length > 1 ? "lucide:chevron-left" : "lucide:x"
+        );
         if (backIcon) backBtn.appendChild(backIcon);
         if (this.levels.length > 1) {
             backBtn.addEventListener("click", () => this.pop());
@@ -250,10 +310,12 @@ export class SlideMenu {
             backBtn.addEventListener("click", () => this.onClose?.());
         }
         this.headerEl.appendChild(backBtn);
+
         const title = document.createElement("span");
         title.className = "slide-title";
         title.textContent = level.label || "";
         this.headerEl.appendChild(title);
+
         for (const btn of this.extraButtonFactory?.() ?? []) {
             this.headerEl.appendChild(btn);
         }
@@ -319,7 +381,6 @@ export class SlideMenu {
         }
 
         el.addEventListener("mouseenter", () => {
-            // Mouse takes priority: clear keyboard focus
             if (this.focusIndex >= 0) {
                 this.clearFocus();
                 this.focusIndex = -1;
