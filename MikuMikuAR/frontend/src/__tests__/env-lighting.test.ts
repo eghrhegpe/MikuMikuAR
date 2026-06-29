@@ -37,8 +37,8 @@ describe("deriveLighting", () => {
 });
 
 describe("ENV_PRESETS", () => {
-    it("has all 4 presets", () => {
-        expect(Object.keys(ENV_PRESETS)).toEqual(["noon", "sunset", "night", "overcast"]);
+    it("has all 7 presets", () => {
+        expect(Object.keys(ENV_PRESETS)).toEqual(["noon", "sunset", "night", "overcast", "dawn", "dusk", "midnight"]);
     });
 
     it("each preset has all required fields", () => {
