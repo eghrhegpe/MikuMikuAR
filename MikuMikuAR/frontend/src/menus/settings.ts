@@ -52,8 +52,6 @@ function buildSettingsSoftwareLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: async (container) => {
-            container.classList.remove("render-card");
-
             await scanSoftwareDir();
             const entries = cachedSoftwareEntries;
 
@@ -113,9 +111,7 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
             dir: "",
             items: [],
             renderCustom: async (container) => {
-                container.classList.remove("render-card");
-
-                cardContainer(container, (c) => {
+                    cardContainer(container, (c) => {
                     const fields: Array<{ label: string; value: string }> = [
                         { label: "名称", value: entry.name },
                         { label: "路径", value: entry.path },
@@ -188,8 +184,6 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
         dir: "",
         items: [],
         renderCustom: async (container) => {
-            container.classList.remove("render-card");
-
             cardContainer(container, (c) => {
                 const fields: Array<{ label: string; value: string }> = [
                     { label: "名称", value: entry.name },
@@ -252,7 +246,6 @@ function buildSettingsRoot(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.classList.remove("render-card");
             cardContainer(container, (c) => {
                 slideRow(c, "lucide:palette", "显示", true, () => settingsMenu?.push(buildSettingsDisplayLevel()));
                 slideRow(c, "lucide:monitor", "界面", true, () => settingsMenu?.push(buildSettingsUILevel()));
@@ -276,7 +269,6 @@ function buildSettingsDisplayLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.classList.remove("render-card");
             cardContainer(container, (c) => {
                 slideRow(c, current === "name_jp" ? "lucide:check-circle" : "lucide:circle", "日文名（name_jp）", false, () => pick("name_jp"));
                 slideRow(c, current === "name_en" ? "lucide:check-circle" : "lucide:circle", "英文名（name_en）", false, () => pick("name_en"));
@@ -292,7 +284,6 @@ function buildSettingsUILevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.classList.remove("render-card");
             cardContainer(container, (c) => {
                 addCsRow(c, "UI 缩放", "lucide:maximize", 0.8, 1.3, 0.05, 1,
                     (v) => {
@@ -315,7 +306,6 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.classList.remove("render-card");
             cardContainer(container, (c) => {
                 addCsRow(c, "弹窗宽度", "lucide:sidebar", 220, 360, 10, 280,
                     (v) => {
@@ -442,7 +432,6 @@ function buildSettingsThemeLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.classList.remove("render-card");
             const currentAccent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#4a6cf7";
             cardContainer(container, (c) => {
                 for (const p of THEME_PRESETS) {
@@ -525,7 +514,6 @@ function buildSettingsFontLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.classList.remove("render-card");
             const currentCss = getComputedStyle(document.documentElement).getPropertyValue("--font").trim();
             cardContainer(container, (c) => {
                 for (const [key, f] of Object.entries(FONT_MAP)) {
@@ -665,8 +653,6 @@ function buildSettingsExternalLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: (container) => {
-            container.classList.remove("render-card");
-
             cardContainer(container, (c) => {
                 if (externalPaths.length === 0) {
                     const empty = document.createElement("div");
@@ -735,8 +721,6 @@ function buildSettingsDownloadLevel(): PopupLevel {
         dir: "",
         items: [],
         renderCustom: async (container) => {
-            container.classList.remove("render-card");
-
             let dirInput: HTMLInputElement;
             let refreshStatus: () => Promise<void>;
 

@@ -272,37 +272,35 @@ export function buildLevel(
     label, dir,
     items: [],
     renderCustom: (container) => {
-      container.classList.remove("render-card");
-      const card = document.createElement("div");
-      card.className = "lcard";
-      for (const item of items) {
-        if (item.kind === "divider") continue;
-        slideRow(
-          card,
-          item.icon,
-          item.label,
-          item.kind === "folder",
-          () => {
-            if (item.kind === "folder") {
-              const next = buildLevel(item.target, item.label, filter, targetStack);
-              const stack = targetStack || stackRegistry.modelStack;
-              stack?.push(next);
-            } else if (item.model) {
-              if (item.model.format === "vmd" && motionBindingTargetId) {
-                const id = motionBindingTargetId;
-                setMotionBindingTargetId(null);
-                closeAllOverlays();
-                loadVMDFromPath(item.model.file_path, id);
-              } else {
-                onModelRowClick(item.model);
+      cardContainer(container, (card) => {
+        for (const item of items) {
+          if (item.kind === "divider") continue;
+          slideRow(
+            card,
+            item.icon,
+            item.label,
+            item.kind === "folder",
+            () => {
+              if (item.kind === "folder") {
+                const next = buildLevel(item.target, item.label, filter, targetStack);
+                const stack = targetStack || stackRegistry.modelStack;
+                stack?.push(next);
+              } else if (item.model) {
+                if (item.model.format === "vmd" && motionBindingTargetId) {
+                  const id = motionBindingTargetId;
+                  setMotionBindingTargetId(null);
+                  closeAllOverlays();
+                  loadVMDFromPath(item.model.file_path, id);
+                } else {
+                  onModelRowClick(item.model);
+                }
               }
-            }
-          },
-          item.sublabel,
-          item.catTag,
-        );
-      }
-      container.appendChild(card);
+            },
+            item.sublabel,
+            item.catTag,
+          );
+        }
+      });
     },
   };
 }

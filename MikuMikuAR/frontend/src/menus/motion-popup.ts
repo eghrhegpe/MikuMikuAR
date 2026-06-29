@@ -97,7 +97,6 @@ function buildActionBindingLevel(id: string): PopupLevel {
     dir: "",
     items: [],
     renderCustom: (container) => {
-      container.classList.remove("render-card");
       cardContainer(container, (c) => {
         const row = document.createElement("div");
         row.className = "slide-item";
@@ -139,7 +138,6 @@ function buildActionMusicLevel(): PopupLevel {
     dir: "",
     items: [],
     renderCustom: (container) => {
-      container.classList.remove("render-card");
       cardContainer(container, (c) => {
         const nameRow = document.createElement("div");
         nameRow.className = "slide-item";
@@ -301,8 +299,6 @@ export function showMotionPopup(): void {
     dir: "",
     items: [],
     renderCustom: (container) => {
-      container.classList.remove("render-card");
-
       if (modelRegistry.size > 0) {
         cardContainer(container, (c) => {
           for (const [id, inst] of modelRegistry) {
@@ -338,14 +334,15 @@ function buildDanceSetsOverviewLevel(): PopupLevel {
     dir: "",
     items: [],
     renderCustom: async (container) => {
-      container.classList.remove("render-card");
       try {
         await loadDanceSets();
         if (!danceSets || danceSets.length === 0) {
-          const empty = document.createElement("div");
-          empty.style.cssText = "padding:24px;text-align:center;color:var(--text-muted);font-size:13px;";
-          empty.innerHTML = '<div>暂无舞蹈套装</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">点击下方按钮创建新套装</div>';
-          container.appendChild(empty);
+          cardContainer(container, (c) => {
+            const empty = document.createElement("div");
+            empty.style.cssText = "padding:24px;text-align:center;color:var(--text-muted);font-size:13px;";
+            empty.innerHTML = '<div>暂无舞蹈套装</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">点击下方按钮创建新套装</div>';
+            c.appendChild(empty);
+          });
         } else {
           cardContainer(container, (c) => {
             for (const ds of danceSets) {
@@ -400,8 +397,6 @@ export function buildDanceSetDetailLevel(setId: string): PopupLevel {
     dir: "",
     items: [],
     renderCustom: (container) => {
-      container.classList.remove("render-card");
-
       cardContainer(container, (c) => {
         const fields: Array<{ label: string; value: string }> = [
           { label: "套装名称", value: ds.name },
