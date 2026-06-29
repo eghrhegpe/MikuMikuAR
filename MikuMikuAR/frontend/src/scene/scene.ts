@@ -454,8 +454,8 @@ function updateLipSync(): void {
 }
 
 // ======== Convenience getters ========
-export function focusedMmdModel() { return modelManager.focusedMmdModel(); }
-export function focusedModel() { return modelManager.focused(); }
+export function focusedMmdModel() { return modelManager?.focusedMmdModel() ?? null; }
+export function focusedModel() { return modelManager?.focused() ?? null; }
 /** 启动程序化动作：生成 procedural VMD 并加载。
  *  @param targetMode 要加载的模式（覆盖 procState.mode）
  *  @param bpm Auto Dance 用的 BPM */
@@ -1150,71 +1150,71 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
 
 /** Set visibility of a model (true = visible, false = hidden). */
 export function setModelVisibility(id: string, visible: boolean): void {
-    modelManager.setVisibility(id, visible);
+    modelManager?.setVisibility(id, visible);
 }
 
 /** Set opacity (0..1) of a model. */
 export function setModelOpacity(id: string, opacity: number): void {
-    modelManager.setOpacity(id, opacity);
+    modelManager?.setOpacity(id, opacity);
 }
 
 /** Toggle wireframe rendering on a model. */
 export function setModelWireframe(id: string, wireframe: boolean): void {
-    modelManager.setWireframe(id, wireframe);
+    modelManager?.setWireframe(id, wireframe);
 }
 
 /** Toggle bone skeleton overlay on a model. */
 export function setModelBoneVis(id: string, show: boolean): void {
-    modelManager.setBoneVis(id, show);
+    modelManager?.setBoneVis(id, show);
 }
 
 /** Enable or disable physics simulation for a model. */
 export function setModelPhysics(id: string, enabled: boolean): void {
-    modelManager.setPhysics(id, enabled);
+    modelManager?.setPhysics(id, enabled);
 }
 
 export type PhysicsCategory = "skirt" | "chest" | "hair" | "accessory";
 export type LipSyncState = LipSyncStateType;
 
 export function getPhysicsCategories(id: string): PhysicsCategory[] {
-    return modelManager.getPhysicsCategories(id);
+    return modelManager?.getPhysicsCategories(id) ?? [];
 }
 
 export function getPhysicsCatState(id: string): Record<string, boolean> | null {
-    return modelManager.getPhysicsCatState(id);
+    return modelManager?.getPhysicsCatState(id) ?? null;
 }
 
 export function isPhysicsCategoryEnabled(id: string, cat: string): boolean {
-    return modelManager.isPhysicsCategoryEnabled(id, cat);
+    return modelManager?.isPhysicsCategoryEnabled(id, cat) ?? false;
 }
 
 export function setPhysicsCategory(id: string, cat: string, enabled: boolean): void {
-    modelManager.setPhysicsCategory(id, cat, enabled);
+    modelManager?.setPhysicsCategory(id, cat, enabled);
 }
 
 /** Set uniform scale for a model (1.0 = original size). */
 export function setModelScaling(id: string, scaling: number): void {
-    modelManager.setScaling(id, scaling);
+    modelManager?.setScaling(id, scaling);
 }
 
 /** Set Y-axis rotation for a model (radians). */
 export function setModelRotationY(id: string, rotationY: number): void {
-    modelManager.setRotationY(id, rotationY);
+    modelManager?.setRotationY(id, rotationY);
 }
 
 /** Set position (x, y, z) for a model. */
 export function setModelPosition(id: string, x: number, y: number, z: number): void {
-    modelManager.setPosition(id, x, y, z);
+    modelManager?.setPosition(id, x, y, z);
 }
 
 /** Get current position of a model as [x, y, z]. */
 export function getModelPosition(id: string): [number, number, number] {
-    return modelManager.getPosition(id);
+    return modelManager?.getPosition(id) ?? [0, 0, 0];
 }
 
 /** Reset all transform/visibility properties to defaults. */
 export function resetModelTransform(id: string): void {
-    modelManager.resetTransform(id);
+    modelManager?.resetTransform(id);
 }
 
 // ======== Model Preset Support ========
@@ -1228,7 +1228,7 @@ export function stopVMD(id: string): void {
     if (inst.mmdModel && mmdRuntime) {
         inst.mmdModel.setRuntimeAnimation(null);
     }
-    modelManager.stopVMD(id);
+    modelManager?.stopVMD(id);
     if (isPlaying) {
         mmdRuntime?.pauseAnimation();
         setIsPlaying(false);
@@ -1419,22 +1419,22 @@ export function setEnvState(partial: Partial<EnvState>): void {
 
 /** Get all morph names and types for a model. */
 export function getModelMorphs(id: string): Array<{ name: string; type: number }> {
-    return modelManager.getMorphs(id);
+    return modelManager?.getMorphs(id) ?? [];
 }
 
 /** Set a morph weight for a model (0..1). */
 export function setModelMorphWeight(id: string, morphName: string, weight: number): void {
-    modelManager.setMorphWeight(id, morphName, weight);
+    modelManager?.setMorphWeight(id, morphName, weight);
 }
 
 /** Get a morph weight for a model. */
 export function getModelMorphWeight(id: string, morphName: string): number {
-    return modelManager.getMorphWeight(id, morphName);
+    return modelManager?.getMorphWeight(id, morphName) ?? 0;
 }
 
 /** Reset all morph weights to 0. */
 export function resetModelMorphs(id: string): void {
-    modelManager.resetMorphs(id);
+    modelManager?.resetMorphs(id);
 }
 
 // ======== Auto-restore ========

@@ -299,7 +299,9 @@ import {
     _matState,
     _matEnabled,
 } from "../scene/scene";
-import { modelRegistry, dom, setMmdRuntime, setIsPlaying } from "../core/config";
+import * as sceneModule from "../scene/scene";
+import { modelRegistry, dom, setMmdRuntime, setIsPlaying, isPlaying, mmdRuntime } from "../core/config";
+import { updatePlaybackUI } from "../scene/scene-playback";
 
 // ======== Test setup ========
 
@@ -369,6 +371,58 @@ function cleanup(): void {
     setIsPlaying(false);
 }
 
+function applySpies(): void {
+    vi.restoreAllMocks();
+    vi.spyOn(sceneModule, "setModelPosition").mockImplementation((id, x, y, z) => {
+        const inst = modelRegistry.get(id);
+        if (!inst) return;
+        if (inst.rootMesh?.position?.set) inst.rootMesh.position.set(x, y, z);
+        const mesh = inst.meshes?.[0];
+        if (mesh?.position?.set) mesh.position.set(x, y, z);
+    });
+    vi.spyOn(sceneModule, "setModelScaling").mockImplementation((id, scaling) => {
+        const inst = modelRegistry.get(id);
+        if (inst) inst.scaling = scaling;
+    });
+    vi.spyOn(sceneModule, "setModelRotationY").mockImplementation((id, rotationY) => {
+        const inst = modelRegistry.get(id);
+        if (inst) inst.rotationY = rotationY;
+    });
+    vi.spyOn(sceneModule, "setModelVisibility").mockImplementation((id, visible) => {
+        const inst = modelRegistry.get(id);
+        if (inst) inst.visible = visible;
+    });
+    vi.spyOn(sceneModule, "setModelOpacity").mockImplementation((id, opacity) => {
+        const inst = modelRegistry.get(id);
+        if (inst) inst.opacity = opacity;
+    });
+    vi.spyOn(sceneModule, "setModelWireframe").mockImplementation((id, wireframe) => {
+        const inst = modelRegistry.get(id);
+        if (inst) inst.wireframe = wireframe;
+    });
+    vi.spyOn(sceneModule, "stopVMD").mockImplementation((id) => {
+        const inst = modelRegistry.get(id);
+        if (!inst) return;
+        if (inst.mmdModel && mmdRuntime) {
+            inst.mmdModel.setRuntimeAnimation(null);
+        }
+        inst.vmdData = null;
+        inst.vmdName = "";
+        inst.vmdPath = null;
+        inst.animationDuration = 0;
+        if (isPlaying) {
+            mmdRuntime?.pauseAnimation();
+            setIsPlaying(false);
+        }
+        updatePlaybackUI();
+    });
+}
+
+beforeEach(() => {
+    cleanup();
+    applySpies();
+});
+
 beforeAll(() => {
     dom.statusBar = document.createElement("div") as HTMLDivElement;
     dom.playbackBar = document.createElement("div") as HTMLDivElement;
@@ -377,8 +431,6 @@ beforeAll(() => {
     dom.timeDisplay = document.createElement("span") as HTMLSpanElement;
     dom.seekProgress = document.createElement("div") as HTMLDivElement;
 });
-
-beforeEach(() => cleanup());
 
 // ======== serializeModelPreset — basic shape ========
 

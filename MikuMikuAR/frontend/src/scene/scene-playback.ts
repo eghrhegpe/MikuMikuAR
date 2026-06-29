@@ -8,8 +8,12 @@ import { dom, isPlaying, autoLoop, formatTime, mmdRuntime } from "../core/config
 import { syncAudioPlayback } from "../outfit/audio";
 
 export function updatePlaybackUI(): void {
+    if (!mmdRuntime || !modelManager) {
+        dom.playbackBar.style.display = "none";
+        return;
+    }
     const mmdModel = modelManager.focusedMmdModel();
-    if (!mmdRuntime || !mmdModel) {
+    if (!mmdModel) {
         dom.playbackBar.style.display = "none";
         return;
     }
@@ -26,9 +30,10 @@ export function updatePlaybackUI(): void {
 }
 
 export function seekFromEvent(e: MouseEvent | PointerEvent): void {
+    if (!mmdRuntime || !modelManager) return;
     const foc = modelManager.focused();
-    const duration = foc?.animationDuration ?? mmdRuntime!.animationDuration;
-    if (!mmdRuntime || !modelManager.focusedMmdModel() || duration <= 0) return;
+    const duration = foc?.animationDuration ?? mmdRuntime.animationDuration;
+    if (!modelManager.focusedMmdModel() || duration <= 0) return;
     const rect = dom.seekBar.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const targetTime = ratio * duration;
