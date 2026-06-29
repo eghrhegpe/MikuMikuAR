@@ -218,10 +218,11 @@ window.addEventListener("pointerup", async () => {
     }
 });
 
-// ======== Click canvas to close overlays ========
-// Only clicks on the 3D canvas trigger close — all other UI is ignored.
-// (Restoring overlays on canvas click is disabled to avoid state desync.)
+// ======== Click canvas to toggle overlays ========
+// Only clicks on the 3D canvas trigger toggle — all other UI is ignored.
+// Records the last visible overlay so a second canvas click can restore it.
 let _pointerDownPos = { x: 0, y: 0 };
+let _lastHiddenOverlay: { id: string; showFn: () => void } | null = null;
 
 function _getAllOverlays(): HTMLElement[] {
     const seen = new Set<string>();
@@ -239,14 +240,19 @@ function _getAllOverlays(): HTMLElement[] {
 
 function _toggleOverlays(): void {
     const all = _getAllOverlays();
-    const anyVisible = all.some(el => el.classList.contains("visible"));
+    const visible = all.find(el => el.classList.contains("visible"));
 
-    if (anyVisible) {
-        // Canvas click only closes overlays (restore on canvas click is disabled)
+    if (visible) {
+        // Canvas click hides the visible overlay and remembers it for restore
+        const showFn = _lastOverlayFn.get(visible.id);
+        if (showFn) _lastHiddenOverlay = { id: visible.id, showFn };
         all.forEach(el => el.classList.remove("visible"));
         setPopupOpen(false);
+    } else if (_lastHiddenOverlay) {
+        // Second canvas click restores the previously hidden overlay
+        toggleOverlay(_lastHiddenOverlay.id, _lastHiddenOverlay.showFn);
+        _lastHiddenOverlay = null;
     }
-    // No restore branch — use nav buttons to re-open overlays
     syncNavAriaExpanded();
 }
 
