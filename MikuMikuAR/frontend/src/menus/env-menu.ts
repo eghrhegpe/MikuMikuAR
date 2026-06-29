@@ -4,7 +4,7 @@
 import { envState, EnvState, PopupLevel, PopupRow, escapeHtml, cardContainer, propRegistry, dom, closeAllOverlays } from "../core/config";
 import { SlideMenu } from "./menu";
 import { createIconifyIcon } from "../core/icons";
-import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider } from "../core/ui-helpers";
+import { slideRow, addToggleRow, addSliderRow, addColorSliderRow, addModeSlider, addCollapsible } from "../core/ui-helpers";
 import { setEnvState, loadProp, removeProp, setPropTransform, getPropList, getEnvAutoLink, setEnvAutoLink, getEnvSunAngle, setEnvSunAngle, redoEnvAutoLink, applyEnvPreset, setLightState, setRenderState } from "../scene/scene";
 import { ENV_PRESETS as ENV_LIGHTING_PRESETS, WATER_PRESETS } from "../scene/env-lighting";
 import { SelectEnvTextureFile, SelectPMXFile } from "../../wailsjs/go/main/App";
@@ -25,18 +25,104 @@ export function buildEnvLightingLevel(): PopupLevel {
         ],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                addToggleRow(c, "自动联动", autoLink, (v) => setEnvAutoLink(v));
+                addToggleRow(c, "灯光同步天空色", autoLink, (v) => setEnvAutoLink(v));
                 const presetRow = document.createElement("div");
-                presetRow.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;padding:0 14px 10px;";
+                presetRow.className = "preset-group";
                 for (const [key, p] of Object.entries(ENV_LIGHTING_PRESETS)) {
                     const btn = document.createElement("button");
                     btn.textContent = p.label;
-                    btn.className = "mode-btn mode-btn-sm";
+                    btn.className = "preset-chip";
                     btn.addEventListener("click", () => { applyEnvPreset(key); envMenu?.reRender(); });
                     presetRow.appendChild(btn);
                 }
                 c.appendChild(presetRow);
                 addSliderRow(c, "太阳角度", sunAngle, -15, 90, 1, (v) => { setEnvSunAngle(v); redoEnvAutoLink(); }, "lucide:sun");
+            });
+        },
+    };
+}
+
+export function buildEnvUnifiedLevel(): PopupLevel {
+    const autoLink = getEnvAutoLink();
+    const sunAngle = getEnvSunAngle();
+    const s = envState;
+
+    return {
+        label: "环境调色板",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                // 天空模式
+                addModeSlider(c, "天空模式", [
+                    { value: "procedural", label: "程序化" },
+                    { value: "color", label: "纯色" },
+                    { value: "texture", label: "贴图" },
+                ], s.skyMode, (v) => { setEnvState({ skyMode: v }); envMenu?.reRender(); }, "lucide:layers");
+
+                // 快速预设
+                const presetRow = document.createElement("div");
+                presetRow.className = "preset-group";
+                presetRow.style.paddingBottom = "6px";
+                for (const [key, p] of Object.entries(ENV_LIGHTING_PRESETS)) {
+                    const btn = document.createElement("button");
+                    btn.textContent = p.label;
+                    btn.className = "preset-chip";
+                    btn.addEventListener("click", () => { applyEnvPreset(key); envMenu?.reRender(); });
+                    presetRow.appendChild(btn);
+                }
+                c.appendChild(presetRow);
+
+                // ☀️ 光照控制
+                const sec1 = document.createElement("div");
+                sec1.className = "section-title";
+                sec1.textContent = "☀️ 光照控制";
+                c.appendChild(sec1);
+                addSliderRow(c, "天空亮度", s.skyBrightness, 0.1, 5, 0.1, (v) => setEnvState({ skyBrightness: v }), "lucide:brightness");
+                addSliderRow(c, "环境光强度", s.envIntensity, 0, 3, 0.05, (v) => setEnvState({ envIntensity: v }), "lucide:sun");
+
+                // 🎨 天空外观
+                const sec2 = document.createElement("div");
+                sec2.className = "section-title";
+                sec2.textContent = "🎨 天空外观";
+                c.appendChild(sec2);
+                if (s.skyMode === "procedural") {
+                    addColorSliderRow(c, "天顶色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
+                    addColorSliderRow(c, "地平色", s.skyColorBot, (v) => setEnvState({ skyColorBot: v }));
+                } else if (s.skyMode === "color") {
+                    addColorSliderRow(c, "天空色", s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
+                } else if (s.skyMode === "texture") {
+                    const texRow = document.createElement("div");
+                    texRow.className = "slide-item";
+                    const fileName = s.skyTexture ? s.skyTexture.split(/[/\\]/).pop() : "未选择";
+                    texRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:image"></iconify-icon></span><span class="slide-label">环境贴图</span><span class="slide-sublabel">${escapeHtml(fileName)}</span>`;
+                    texRow.addEventListener("click", async () => {
+                        const path = await SelectEnvTextureFile().catch(() => "");
+                        if (path) setEnvState({ skyTexture: path });
+                    });
+                    c.appendChild(texRow);
+                }
+
+                // ⚙️ 高级天空设置（折叠）
+                addCollapsible(c, {
+                    title: "高级天空设置",
+                    icon: "lucide:settings",
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addToggleRow(inner, "灯光同步天空色", autoLink, (v) => setEnvAutoLink(v));
+                        if (s.skyMode === "procedural") {
+                            addToggleRow(inner, "星空 ✨", s.starsEnabled ?? false, (v) => setEnvState({ starsEnabled: v }));
+                        }
+                        addSliderRow(inner, "天空旋转速度", s.skyRotationSpeed ?? 0, 0, 5, 0.1, (v) => setEnvState({ skyRotationSpeed: v }), "lucide:rotate-cw");
+                        addSliderRow(inner, "太阳角度", sunAngle, -15, 90, 1, (v) => {
+                            setEnvSunAngle(v);
+                            redoEnvAutoLink();
+                        }, "lucide:sun");
+                        if (s.skyMode === "texture") {
+                            addSliderRow(inner, "旋转 Y", s.skyRotationY, 0, 360, 1, (v) => setEnvState({ skyRotationY: v }), "lucide:refresh-cw");
+                        }
+                    },
+                });
             });
         },
     };
@@ -50,8 +136,7 @@ export function buildEnvLevel(): PopupLevel {
         renderCustom: (container) => {
             container.classList.remove("render-card");
             cardContainer(container, (c) => {
-                slideRow(c, "lucide:sun", "环境光照", true, () => envMenu?.push(buildEnvLightingLevel()));
-                slideRow(c, "lucide:sun", "天空", true, () => envMenu?.push(buildSkyLevel()));
+                slideRow(c, "lucide:palette", "环境调色板", true, () => envMenu?.push(buildEnvUnifiedLevel()));
                 slideRow(c, "lucide:waves", "水面", true, () => envMenu?.push(buildWaterLevel()));
                 slideRow(c, "lucide:wind", "粒子", true, () => envMenu?.push(buildParticleLevel()));
                 slideRow(c, "lucide:wind", "风", true, () => envMenu?.push(buildWindLevel()));
@@ -287,11 +372,11 @@ export function buildWaterLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addToggleRow(c, "启用水面", s.waterEnabled, (v) => setEnvState({ waterEnabled: v }));
                 const waterPresetRow = document.createElement("div");
-                waterPresetRow.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;padding:0 14px 10px;";
+                waterPresetRow.className = "preset-group";
                 for (const [key, wp] of Object.entries(WATER_PRESETS)) {
                     const btn = document.createElement("button");
                     btn.textContent = wp.label;
-                    btn.className = "mode-btn mode-btn-sm";
+                    btn.className = "preset-chip";
                     btn.addEventListener("click", () => {
                         setEnvState({
                             waterColor: wp.waterColor,
@@ -322,11 +407,14 @@ export function buildWindLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             const s = envState;
+            const dirAngle = Math.atan2(s.windDirection[0], s.windDirection[2]) * 180 / Math.PI;
+            const dirAngleNorm = (dirAngle + 360) % 360;
             cardContainer(container, (c) => {
                 addToggleRow(c, "启用风", s.windEnabled, (v) => setEnvState({ windEnabled: v }));
-                addSliderRow(c, "风向 X", s.windDirection[0], -1, 1, 0.05, (v) => { const d: [number, number, number] = [...s.windDirection]; d[0] = v; setEnvState({ windDirection: d }); }, "lucide:compass");
-                addSliderRow(c, "风向 Y", s.windDirection[1], -1, 1, 0.05, (v) => { const d: [number, number, number] = [...s.windDirection]; d[1] = v; setEnvState({ windDirection: d }); }, "lucide:compass");
-                addSliderRow(c, "风向 Z", s.windDirection[2], -1, 1, 0.05, (v) => { const d: [number, number, number] = [...s.windDirection]; d[2] = v; setEnvState({ windDirection: d }); }, "lucide:compass");
+                addSliderRow(c, "风向角度", dirAngleNorm, 0, 360, 1, (v) => {
+                    const rad = v * Math.PI / 180;
+                    setEnvState({ windDirection: [Math.sin(rad), s.windDirection[1], Math.cos(rad)] });
+                }, "lucide:compass");
                 addSliderRow(c, "风速", s.windSpeed, 0, 10, 0.1, (v) => setEnvState({ windSpeed: v }), "lucide:gauge");
             });
         },
@@ -342,9 +430,10 @@ export function buildCloudLevel(): PopupLevel {
             const s = envState;
             cardContainer(container, (c) => {
                 addToggleRow(c, "启用云", s.cloudsEnabled, (v) => setEnvState({ cloudsEnabled: v }));
-                addSliderRow(c, "云量", s.cloudCover, 0, 1, 0.05, (v) => setEnvState({ cloudCover: v }), "lucide:cloud");
-                addSliderRow(c, "高度", s.cloudHeight, 10, 200, 5, (v) => setEnvState({ cloudHeight: v }), "lucide:arrow-up");
-                addSliderRow(c, "缩放", s.cloudScale, 0.5, 3, 0.1, (v) => setEnvState({ cloudScale: v }), "lucide:maximize");
+                addSliderRow(c, "高度", s.cloudHeight, 50, 800, 5, (v) => setEnvState({ cloudHeight: v }), "lucide:arrow-up");
+                addSliderRow(c, "缩放", s.cloudScale, 0.1, 1, 0.05, (v) => setEnvState({ cloudScale: v }), "lucide:maximize");
+                addSliderRow(c, "厚度", s.cloudThickness ?? 15, 10, 50, 1, (v) => setEnvState({ cloudThickness: v }), "lucide:move-vertical");
+                addSliderRow(c, "可见距离", s.cloudVisibility ?? 2000, 500, 8000, 100, (v) => setEnvState({ cloudVisibility: v }), "lucide:eye");
             });
         },
     };
@@ -354,6 +443,7 @@ export function buildCloudLevel(): PopupLevel {
 
 function envOnFolderEnter(row: PopupRow): PopupLevel | null {
     switch (row.target) {
+        case "env:unified": return buildEnvUnifiedLevel();
         case "env:lighting": return buildEnvLightingLevel();
         case "env:sky": return buildSkyLevel();
         case "env:ground": return buildGroundLevel();

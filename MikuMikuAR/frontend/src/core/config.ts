@@ -31,8 +31,10 @@ export type ModelInstance = {
     opacity: number;
     /** Wireframe rendering mode */
     wireframe: boolean;
-    /** Bone skeleton overlay visibility */
-    showBones: boolean;
+    /** Bone line overlay visibility */
+    showBoneLines: boolean;
+    /** Bone joint sphere overlay visibility */
+    showBoneJoints: boolean;
     /** Physics simulation enabled for this model */
     physicsEnabled: boolean;
     /** Uniform scale factor, 1.0 = original size */
@@ -176,6 +178,8 @@ export interface EnvState {
     cloudCover: number;
     cloudScale: number;
     cloudHeight: number;
+    cloudThickness: number;
+    cloudVisibility: number;
     // Fog
     fogEnabled: boolean;
     fogColor: [number, number, number];
@@ -310,9 +314,9 @@ export let envState: EnvState = {
     groundColor: [0.15, 0.15, 0.18],
     groundAlpha: 0.6,
 
-    windEnabled: false,
+    windEnabled: true,
     windDirection: [0, 0, 1],
-    windSpeed: 1,
+    windSpeed: 5,
 
     particleEnabled: false,
     particleType: "none",
@@ -330,8 +334,10 @@ export let envState: EnvState = {
 
     cloudsEnabled: false,
     cloudCover: 0.5,
-    cloudScale: 1,
-    cloudHeight: 100,
+    cloudScale: 0.55,
+    cloudHeight: 325,
+    cloudThickness: 15,
+    cloudVisibility: 3000,
 
     fogEnabled: false,
     fogColor: [0.5, 0.5, 0.6],
@@ -347,6 +353,8 @@ export let envState: EnvState = {
 export const dom = {
     canvas: document.getElementById("renderCanvas") as HTMLCanvasElement,
     statusBar: document.getElementById("statusBar") as HTMLElement,
+    statusText: document.getElementById("statusText") as HTMLElement,
+    fpsClock: document.getElementById("fpsClock") as HTMLElement,
     loadingEl: document.getElementById("loading") as HTMLElement,
     btnMainAction: document.getElementById("btnMainAction") as HTMLButtonElement,
     btnMotionPopup: document.getElementById("btnMotionPopup") as HTMLButtonElement,
@@ -380,26 +388,26 @@ let savedStatusColor = "";
 
 export function setStatus(text: string, ok: boolean): void {
     if (hintActive) return; // don't overwrite hover hints
-    dom.statusBar.textContent = text;
-    dom.statusBar.style.color = ok ? "rgba(111,207,151,0.7)" : "rgba(255,255,255,0.4)";
+    dom.statusText.textContent = text;
+    dom.statusText.style.color = ok ? "rgba(111,207,151,0.7)" : "rgba(255,255,255,0.4)";
 }
 
 /** Show a hover hint in the status bar, saving the current text for later restore. */
 export function showHint(text: string): void {
     if (!hintActive) {
-        savedStatusText = dom.statusBar.textContent || "";
-        savedStatusColor = dom.statusBar.style.color || "";
+        savedStatusText = dom.statusText.textContent || "";
+        savedStatusColor = dom.statusText.style.color || "";
     }
     hintActive = true;
-    dom.statusBar.textContent = text;
-    dom.statusBar.style.color = "rgba(255,255,255,0.4)";
+    dom.statusText.textContent = text;
+    dom.statusText.style.color = "rgba(255,255,255,0.4)";
 }
 
 /** Restore the status bar text that was showing before the hint. */
 export function hideHint(): void {
     hintActive = false;
-    dom.statusBar.textContent = savedStatusText;
-    dom.statusBar.style.color = savedStatusColor;
+    dom.statusText.textContent = savedStatusText;
+    dom.statusText.style.color = savedStatusColor;
 }
 
 /** Wire up mouseenter/mouseleave for all [data-hint] elements (static HTML). */

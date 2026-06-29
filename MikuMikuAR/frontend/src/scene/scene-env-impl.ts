@@ -2,7 +2,7 @@
 // All functions use module-level _scene / _pipeline injected by scene.ts
 // Import this file via scene-env.ts (Facade), never import directly.
 
-import { Scene, Color3, Color4, Vector2, Vector3, Texture, BaseTexture, StandardMaterial, GPUParticleSystem, Observer, ParticleSystem, ShadowGenerator, CubeTexture, DefaultRenderingPipeline, Mesh, MeshBuilder } from "@babylonjs/core";
+import { Scene, Color3, Color4, Vector2, Vector3, Texture, BaseTexture, StandardMaterial, GPUParticleSystem, Observer, ParticleSystem, ShadowGenerator, CubeTexture, DefaultRenderingPipeline, Mesh, MeshBuilder, Effect, ShaderMaterial, PostProcess } from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 import { WaterMaterial } from "@babylonjs/materials/water/waterMaterial";
 import { EnvState, envState } from "../core/config";
@@ -59,6 +59,12 @@ export const _envSys: {
     shadow: { generator: null },
 };
 
+// === 补丁2：缓存上次风向，避免重复设置 ===
+let _lastWindDir = new Vector2(0, 0);
+
+// === LOD 水面：记录所有 LOD 子网格，用于同步缩放和位置 ===
+let _waterLODs: Mesh[] = [];
+
 // ======== Sky ========
 export function disposeSky(): void {
     const scene = getScene();
@@ -80,17 +86,7 @@ function disposeSunDisc(): void {
     if (old) old.dispose();
 }
 
-function _cacheKey(top: Color3, mid: Color3, bot: Color3, brightness: number, sunAngle: number, starsEnabled: boolean): string {
-    return `${[top.r,top.g,top.b,mid.r,mid.g,mid.b,bot.r,bot.g,bot.b].map(v=>v.toFixed(3)).join(',')}|${brightness.toFixed(2)}|${sunAngle.toFixed(1)}|${starsEnabled}`;
-}
-
-const _gradientCache = new Map<string, Texture>();
-
 function buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness: number, sunAngle: number = 45, starsEnabled: boolean = false): Texture {
-    const key = _cacheKey(top, mid, bot, brightness, sunAngle, starsEnabled);
-    const cached = _gradientCache.get(key);
-    if (cached) return cached;
-
     const scene = getScene();
     const W = 256, H = 256;
     const canvas = document.createElement("canvas");
@@ -151,7 +147,6 @@ function buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness:
     tex.wrapU = Texture.CLAMP_ADDRESSMODE;
     tex.wrapV = Texture.CLAMP_ADDRESSMODE;
     tex.hasAlpha = false;
-    _gradientCache.set(key, tex);
     return tex;
 }
 
@@ -360,7 +355,7 @@ let _waterBumpTexture: Texture | null = null;
 function makeWaterBumpTexture(): Texture {
     const scene = getScene();
     if (_waterBumpTexture) return _waterBumpTexture;
-    const S = 256;
+    const S = 128;   // === 补丁3：分辨率降为 128，肉眼几乎无差别 ===
     const canvas = document.createElement("canvas");
     canvas.width = S;
     canvas.height = S;
@@ -386,8 +381,12 @@ export function createWater(state: EnvState): void {
     // 如果水面已经存在，直接更新参数，不重建
     if (_envSys.water.mesh && _envSys.water.material) {
         const m = _envSys.water.material;
-        const pos = _envSys.water.mesh.position;
-        pos.y = state.waterLevel;
+        const wm = _envSys.water.mesh;
+        wm.position.y = state.waterLevel;
+        // 同步所有 LOD 子网格的位置
+        for (const lod of _waterLODs) {
+            lod.position.y = state.waterLevel;
+        }
         m.windForce = (state.waterAnimSpeed ?? 1) * 4;
         m.waveHeight = state.waterWaveHeight;
         m.waveLength = 0.08;
@@ -396,12 +395,16 @@ export function createWater(state: EnvState): void {
         m.colorBlendFactor = 0.3;
         m.alpha = state.waterTransparency;
         m.windDirection = new Vector2(state.windDirection[0], state.windDirection[2]);
-        const wm = _envSys.water.mesh;
         const newSize = Math.max(1, state.waterSize);
-        if (wm.scaling.x !== newSize / 60) {
-            // scaling ground: base width is 60
-            wm.scaling.x = newSize / 60;
-            wm.scaling.z = newSize / 60;
+        const scale = newSize / 60;
+        if (wm.scaling.x !== scale) {
+            wm.scaling.x = scale;
+            wm.scaling.z = scale;
+            // 同步所有 LOD 子网格的缩放
+            for (const lod of _waterLODs) {
+                lod.scaling.x = scale;
+                lod.scaling.z = scale;
+            }
         }
         return;
     }
@@ -411,16 +414,39 @@ export function createWater(state: EnvState): void {
     disposeWater();
     if (!state.waterEnabled) return;
 
+    _waterLODs = [];
     const size = Math.max(1, state.waterSize);
-    const waterMesh = MeshBuilder.CreateGround("envWater", {
-        width: size,
-        height: size,
-        subdivisions: 32,
+
+    // --- 3 级 LOD 水面网格 ---
+    const meshHigh = MeshBuilder.CreateGround("envWater", {
+        width: size, height: size, subdivisions: 48,
     }, scene);
-    waterMesh.isPickable = false;
-    waterMesh.position.y = state.waterLevel;
+    meshHigh.isPickable = false;
+    meshHigh.position.y = state.waterLevel;
+
+    const meshMid = MeshBuilder.CreateGround("envWater_LOD1", {
+        width: size, height: size, subdivisions: 16,
+    }, scene);
+    meshMid.isPickable = false;
+    meshMid.position.y = state.waterLevel;
+    meshMid.setEnabled(false);
+
+    const meshLow = MeshBuilder.CreateGround("envWater_LOD2", {
+        width: size, height: size, subdivisions: 6,
+    }, scene);
+    meshLow.isPickable = false;
+    meshLow.position.y = state.waterLevel;
+    meshLow.setEnabled(false);
+
+    meshHigh.addLODLevel(30, meshMid);
+    meshHigh.addLODLevel(80, meshLow);
+    _waterLODs = [meshMid, meshLow];
+
+    const waterMesh = meshHigh;
 
     const water = new WaterMaterial("envWaterMat", scene, new Vector2(size, size));
+    // === 补丁1：强制降低渲染目标分辨率 ===
+    water.renderTargetSize = new Vector2(256, 256);
     water.bumpTexture = makeWaterBumpTexture();
     water.windForce = (state.waterAnimSpeed ?? 1) * 4;
     water.waveHeight = state.waterWaveHeight;
@@ -445,12 +471,19 @@ export function createWater(state: EnvState): void {
 
 export function disposeWater(): void {
     if (_envSys.water.mesh) {
-        _envSys.water.mesh.dispose();
+        // dispose(true) 会递归清理 LOD 子网格
+        _envSys.water.mesh.dispose(true);
         _envSys.water.mesh = null;
     }
+    _waterLODs = [];
     if (_envSys.water.material) {
         _envSys.water.material.dispose();
         _envSys.water.material = null;
+    }
+    // === 补丁3补充：释放缓存的 bump 纹理 ===
+    if (_waterBumpTexture) {
+        _waterBumpTexture.dispose();
+        _waterBumpTexture = null;
     }
 }
 
@@ -461,6 +494,7 @@ export function refreshWaterRenderList(): void {
 }
 
 // ======== Particle System ========
+let _currentParticleType: EnvState["particleType"] = "none";
 const _particleTextures = new Map<string, Texture>();
 
 function makeParticleTexture(kind: string): Texture {
@@ -567,12 +601,15 @@ function drawParticleShape(ctx: CanvasRenderingContext2D, kind: string): void {
 }
 
 export function createParticleEmitter(type: EnvState["particleType"], windEnabled: boolean): void {
-    // 如果粒子系统已经存在，跳过重建
-    if (_envSys.particles.emitter) return;
+    if (_envSys.particles.emitter && _currentParticleType === type) return;
+
+    if (_envSys.particles.emitter) {
+        disposeParticles();
+    }
+    _currentParticleType = type;
+    if (type === "none") return;
 
     const scene = getScene();
-    disposeParticles();
-    if (type === "none") return;
 
     const ps = new GPUParticleSystem("envParticles", { capacity: 5000 }, scene);
     ps.particleTexture = makeParticleTexture(type);
@@ -718,6 +755,7 @@ export function disposeParticles(): void {
         _envSys.particles.emitter.dispose();
         _envSys.particles.emitter = null;
     }
+    _currentParticleType = "none";
 }
 
 // ======== Wind System ========
@@ -776,70 +814,340 @@ function cloudNoise(x: number, y: number, cover: number): number {
     return Math.max(0, Math.min(1, t * t * (3 - 2 * t)));
 }
 
+// ======== Volumetric Cloud (ShaderMaterial-on-Sphere) ========
+let _volCloudMesh: Mesh | null = null;
+let _volCloudMat: ShaderMaterial | null = null;
+let _volCloudObs: Observer<Scene> | null = null;
+
+const VERT_SRC = `
+precision highp float;
+attribute vec3 position;
+uniform mat4 world;
+uniform mat4 worldViewProjection;
+varying vec3 vWorldPos;
+void main(){
+    vec4 worldPos = world * vec4(position, 1.0);
+    vWorldPos = worldPos.xyz;
+    gl_Position = worldViewProjection * vec4(position, 1.0);
+}`;
+
+const FRAG_SRC = `
+precision highp float;
+varying vec3 vWorldPos;
+uniform vec3 cameraPosition;
+uniform float time;
+uniform float cloudDensity;
+uniform vec3 windDirection;
+uniform float cloudBaseY;
+uniform float cloudTopY;
+uniform float cloudScale;
+uniform float cloudVisibility;
+uniform float brightness;
+uniform vec3 sceneLightDir;
+uniform vec3 sceneLightColor;
+
+float hash(vec3 p) {
+    p = fract(p * 0.3183099 + 0.1);
+    p *= 17.0;
+    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+float noise3D(vec3 p) {
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(mix(hash(i), hash(i+vec3(1,0,0)), f.x),
+            mix(hash(i+vec3(0,1,0)), hash(i+vec3(1,1,0)), f.x), f.y),
+        mix(mix(hash(i+vec3(0,0,1)), hash(i+vec3(1,0,1)), f.x),
+            mix(hash(i+vec3(0,1,1)), hash(i+vec3(1,1,1)), f.x), f.y),
+        f.z
+    );
+}
+
+float fbm(vec3 p) {
+    float v = 0.0, a = 0.5, f = 1.0;
+    for (int i = 0; i < 4; i++) {
+        v += a * noise3D(p * f);
+        a *= 0.5; f *= 2.0;
+    }
+    return v;
+}
+
+float getDensity(vec3 pos, float dScale, vec3 wind, float distFactor) {
+    float h = pos.y;
+    if (h < cloudBaseY || h > cloudTopY) return 0.0;
+    float hf = smoothstep(cloudBaseY, cloudBaseY + 15.0, h) * (1.0 - smoothstep(cloudTopY - 15.0, cloudTopY, h));
+
+    vec3 p = pos + wind * time * 0.3;
+    float n = fbm(p * 0.04 * cloudScale) * 0.6 + fbm(p * 0.08 * cloudScale + 50.0) * 0.4;
+
+    // 细节噪声层 — 在远处补充高频细节
+    float detail = fbm(p * 0.24 * cloudScale + 100.0) * 0.15;
+    n += detail;
+
+    // 柔和密度映射 — 云量阈值直接映射，cloudCover=0 几乎无云，=1 满云
+    float threshold = 1.0 - dScale * 0.65;
+    threshold = clamp(threshold, 0.15, 0.95);
+    float t = (n - threshold) / (1.0 - threshold);
+    n = clamp(t * t, 0.0, 1.0);
+
+    // 整体密度缩放
+    n *= 1.5 * hf * distFactor;
+    return max(0.0, n);
+}
+
+float phase(float ct) {
+    float g = 0.8;
+    float gg = g * g;
+    return (1.0 - gg) / (4.0 * 3.14159 * pow(1.0 + gg - 2.0 * g * ct, 1.5));
+}
+
+void main(){
+    vec3 ro = cameraPosition;
+    vec3 rd = normalize(vWorldPos - cameraPosition);
+
+    int steps = 96;
+    // 自适应步数：近处精细（96步），远处减少到1/3
+    float distToCloud = abs(cloudBaseY - cameraPosition.y);
+    float stepMultiplier = clamp(distToCloud / 400.0, 0.33, 1.0);
+    steps = int(float(steps) * stepMultiplier);
+    if (steps < 16) steps = 16;
+
+    float maxDist = cloudVisibility;
+    float stepSize = maxDist / float(steps);
+    vec3 stepVec = rd * stepSize;
+    vec3 rp = ro;
+
+    // Dither 抖动
+    float seed = dot(gl_FragCoord.xy, vec2(12.9898, 78.233));
+    float dither = fract(sin(seed) * 43758.5453) * stepSize;
+    rp += rd * dither;
+
+    float opticalDepth = 0.0;
+    float T = 1.0;
+    vec3 scatter = vec3(0.0);
+    float dist = 0.0;
+    vec3 wind = windDirection;
+    vec3 lightDir = normalize(sceneLightDir);
+
+    for (int i = 0; i < 200; i++) {
+        if (i >= steps) break;
+        if (dist > maxDist) break;
+
+        // 双步长：近处精细，远处粗略
+        float distRatio = clamp(dist / (maxDist * 0.3), 0.0, 1.0);
+        float dynamicStep = mix(stepSize * 0.5, stepSize * 1.5, distRatio * distRatio);
+        dynamicStep = clamp(dynamicStep, 2.0, 20.0);
+
+        rp += rd * dynamicStep;
+        dist += dynamicStep;
+
+        // 距离衰减因子：远处密度降低
+        float distFactor = 1.0 - smoothstep(0.0, maxDist, dist * 0.8);
+
+        float d = getDensity(rp, cloudDensity, wind, distFactor);
+        if (d > 0.005) {
+            // 累积光学深度（Beer-Lambert）
+            opticalDepth += d * dynamicStep * 0.12;
+            T = exp(-opticalDepth);
+
+            // ---- 光照方向透射采样 ----
+            float lightSteps = 4.0;
+            float lightStepSize = 4.0;
+            float lightDensitySum = 0.0;
+            for (int j = 0; j < 8; j++) {
+                if (float(j) >= lightSteps) break;
+                vec3 lightPos = rp + lightDir * lightStepSize * float(j);
+                float ld = getDensity(lightPos, cloudDensity * 0.6, wind, distFactor);
+                lightDensitySum += ld * lightStepSize;
+            }
+            float transmittance = exp(-lightDensitySum * 0.15);
+
+            float ct = dot(rd, -lightDir);
+            float ph = phase(ct);
+
+            vec3 sc = sceneLightColor * transmittance * ph * 0.5 * brightness;
+
+            // 散射光贡献
+            float sigma_s = d * 0.08;
+            scatter += sc * T * (1.0 - exp(-sigma_s * dynamicStep));
+        }
+        // 如果光学深度足够大，提前终止
+        if (opticalDepth > 5.0) break;
+    }
+
+    float hg = clamp((rd.y + 0.4) / 0.9, 0.0, 1.0);
+    vec3 sky = mix(vec3(0.5, 0.65, 0.85), vec3(0.25, 0.45, 0.75), hg);
+    vec3 color = sky * T + scatter;
+
+    // 如果云密度高，增加白色（smoothstep 控制：T>0.7 稀薄处不混白，T<0.2 厚实处全白）
+    color = mix(color, vec3(1.0, 0.98, 0.95), smoothstep(0.7, 0.2, T));
+
+    // ========== 边缘辉光 (Silver Lining) ==========
+    float edgeIntensity = T * (1.0 - T) * 4.0;
+    edgeIntensity = clamp(edgeIntensity, 0.0, 1.0);
+    float backScatter = max(0.0, -dot(rd, normalize(sceneLightDir)));
+    float angleFactor = pow(backScatter, 1.5) * 1.5;
+    vec3 glowColor = mix(vec3(1.0, 0.85, 0.6), vec3(1.0, 0.95, 0.8), edgeIntensity);
+    color += glowColor * edgeIntensity * angleFactor * 0.6;
+
+    gl_FragColor = vec4(color, clamp(1.0 - T, 0.0, 0.95));
+
+    // 丢弃低密度片段，球体本身不可见
+    if (gl_FragColor.a < 0.05 || T > 0.95) discard;
+}`;
+
 export function createClouds(state: EnvState): void {
     const scene = getScene();
-    // 如果云已经存在且状态没变，跳过纹理再生（噪声生成很慢）
-    if (_envSys.clouds.material && _envSys.clouds.texture && _envSys.clouds.postProcess) {
-        // 只更新位置/缩放，不重新生成纹理
-        _envSys.clouds.postProcess.position.y = state.cloudHeight;
-        _envSys.clouds.postProcess2.position.y = state.cloudHeight - 15;
-        const s = state.cloudScale;
-        _envSys.clouds.postProcess.scaling.x = s; _envSys.clouds.postProcess.scaling.z = s;
-        _envSys.clouds.postProcess2.scaling.x = s * 1.2; _envSys.clouds.postProcess2.scaling.z = s * 1.2;
+
+    if (_volCloudMesh) {
+        // 更新参数
+        const halfThick = (state.cloudThickness ?? 40) / 2;
+        _volCloudMat?.setFloat("cloudDensity", state.cloudCover * 1.2);
+        const windSpeed = state.windEnabled ? state.windSpeed : 0;
+        _volCloudMat?.setVector3("windDirection", new Vector3(
+            state.windDirection[0] * windSpeed * 2.0,
+            0,
+            state.windDirection[2] * windSpeed * 2.0
+        ));
+        _volCloudMat?.setFloat("cloudBaseY", state.cloudHeight - halfThick);
+        _volCloudMat?.setFloat("cloudTopY", state.cloudHeight + halfThick);
+        _volCloudMat?.setFloat("cloudScale", state.cloudScale);
+        _volCloudMat?.setFloat("cloudVisibility", state.cloudVisibility ?? 2000);
+        // brightness/sceneLightDir/sceneLightColor 由每帧观察者统一更新
+        return;
+        _volCloudMat?.setFloat("cloudTopY", state.cloudHeight + halfThick);
         return;
     }
 
     disposeClouds();
     if (!state.cloudsEnabled) return;
 
-    const SIZE = 512;
-    const canvas = document.createElement("canvas");
-    canvas.width = SIZE;
-    canvas.height = SIZE;
-    const ctx = canvas.getContext("2d")!;
-    const imgData = ctx.createImageData(SIZE, SIZE);
-    for (let i = 0; i < imgData.data.length; i += 4) {
-        const x = (i / 4) % SIZE;
-        const y = Math.floor((i / 4) / SIZE);
-        const n = cloudNoise(x, y, state.cloudCover);
-        const a = Math.floor(n * 255 * 0.6);
-        imgData.data[i] = 255;
-        imgData.data[i + 1] = 255;
-        imgData.data[i + 2] = 255;
-        imgData.data[i + 3] = a;
-    }
-    ctx.putImageData(imgData, 0, 0);
+    // ========== 调试标志：在云层位置画一个红色半透明环 ==========
+    const debugRing = MeshBuilder.CreateTorus("cloudDebugRing", { diameter: 100, thickness: 2, tessellation: 32 }, scene);
+    debugRing.position.y = state.cloudHeight;
+    debugRing.isPickable = false;
+    const ringMat = new StandardMaterial("cloudDebugRingMat", scene);
+    ringMat.diffuseColor = new Color3(1, 0, 0);
+    ringMat.alpha = 0.4;
+    ringMat.backFaceCulling = false;
+    debugRing.material = ringMat;
+    console.log("[VolCloud] DEBUG: red ring at Y=", state.cloudHeight);
 
-    const tex = new Texture(canvas.toDataURL(), scene);
-    const mat = new StandardMaterial("envCloudMat", scene);
-    mat.diffuseTexture = tex;
-    mat.useAlphaFromDiffuseTexture = true;
+    // 每隔 50 单位画一个小标记
+    const markers: Mesh[] = [];
+    for (let y = state.cloudHeight - 30; y <= state.cloudHeight + 30; y += 15) {
+        const marker = MeshBuilder.CreateBox("cloudMarkY" + y, { size: 3 }, scene);
+        marker.position.y = y;
+        marker.position.x = 10;
+        marker.isPickable = false;
+        const mMat = new StandardMaterial("cloudMarkMat" + y, scene);
+        mMat.diffuseColor = y === state.cloudHeight ? new Color3(0, 1, 0) : new Color3(1, 1, 0);
+        mMat.alpha = 0.6;
+        marker.material = mMat;
+        markers.push(marker);
+    }
+    // ========== 调试标志结束 ==========
+
+    // 球体不设置 infiniteDistance，让它跟随摄像机位置
+    const mesh = MeshBuilder.CreateSphere("volCloud", { diameter: 400, segments: 24, sideOrientation: Mesh.DOUBLESIDE }, scene);
+    mesh.isPickable = false;
+    mesh.position.y = 0;
+
+    // 每帧跟随摄像机
+    const followObs = scene.onBeforeRenderObservable.add(() => {
+        const cam = scene.activeCamera;
+        if (cam) {
+            mesh.position.x = cam.position.x;
+            mesh.position.z = cam.position.z;
+        }
+    });
+
+    const mat = new ShaderMaterial("volCloudMat", scene, {
+        vertexSource: VERT_SRC,
+        fragmentSource: FRAG_SRC,
+    }, {
+        attributes: ["position"],
+        uniforms: ["world", "worldViewProjection", "cameraPosition", "time", "cloudDensity", "windDirection", "cloudBaseY", "cloudTopY", "cloudScale", "cloudVisibility", "brightness", "sceneLightDir", "sceneLightColor"],
+        needAlphaBlending: true,
+    });
+
     mat.backFaceCulling = false;
-    mat.alpha = 0.5;
+    mat.disableDepthWrite = true;
+    mat.alpha = 1.0;
+    // 强制使用 Alpha 混合模式，让着色器输出的 alpha 正确混合背景
+    mat.transparencyMode = 2; // BABYLON.ETransparencyMode.ALPHA_BLEND
 
-    function makePlane(name: string, yOffset: number, scaleMul: number, alphaMul: number): Mesh {
-        const plane = MeshBuilder.CreatePlane(name, { width: 200, height: 200 }, scene);
-        plane.isPickable = false;
-        plane.position = new Vector3(0, state.cloudHeight + yOffset, 0);
-        plane.rotation.x = Math.PI / 2;
-        plane.material = mat;
-        plane.scaling.x = state.cloudScale * scaleMul;
-        plane.scaling.z = state.cloudScale * scaleMul;
-        return plane;
-    }
+    const halfThick = (state.cloudThickness ?? 40) / 2;
+    mat.setFloat("cloudDensity", state.cloudCover * 1.2);
+    mat.setFloat("cloudBaseY", state.cloudHeight - halfThick);
+    mat.setFloat("cloudTopY", state.cloudHeight + halfThick);
+    mat.setFloat("cloudScale", state.cloudScale);
+    mat.setFloat("cloudVisibility", state.cloudVisibility ?? 2000);
+    mat.setVector3("sceneLightDir", new Vector3(-0.4, -1, -0.3));
+    mat.setColor3("sceneLightColor", new Color3(1, 0.98, 0.92));
+    mat.setFloat("brightness", 1.0);
+    mat.setVector3("windDirection", new Vector3(
+        state.windDirection[0] * (state.windEnabled ? state.windSpeed : 0) * 2.0,
+        0,
+        state.windDirection[2] * (state.windEnabled ? state.windSpeed : 0) * 2.0
+    ));
 
-    const p1 = makePlane("envClouds", 0, 1.0, 1.0);
-    const p2 = makePlane("envCloudsBack", -15, 1.2, 0.85);
+    const startTime = performance.now();
+    const obs = scene.onBeforeRenderObservable.add(() => {
+        mat.setFloat("time", (performance.now() - startTime) / 1000);
+        mat.setVector3("cameraPosition", scene.activeCamera?.position ?? Vector3.Zero());
+        // 从场景方向光同步：方向、颜色、亮度
+        const dl = scene.getLightByName("dir") as any;
+        if (dl) {
+            mat.setVector3("sceneLightDir", dl.direction);
+            mat.setColor3("sceneLightColor", dl.diffuse);
+            const lightIntensity = dl.intensity * 2.0;
+            const brightness = Math.max(0.1, Math.min(1.5, lightIntensity));
+            mat.setFloat("brightness", brightness);
+        } else {
+            mat.setVector3("sceneLightDir", new Vector3(-0.4, -1, -0.3));
+            mat.setColor3("sceneLightColor", new Color3(1, 0.98, 0.92));
+            mat.setFloat("brightness", 1.0);
+        }
+    });
+    mesh.metadata = { obs, followObs };
 
-    _envSys.clouds.postProcess = p1;
-    _envSys.clouds.postProcess2 = p2;
-    _envSys.clouds.material = mat;
-    _envSys.clouds.texture = tex;
+    mesh.material = mat;
+    _volCloudMesh = mesh;
+    _volCloudMat = mat;
+    _volCloudObs = obs;
 
+    // 重新注册环境更新 observer（被 disposeClouds 移除了）
     ensureEnvUpdateObserver();
+
+    scene.executeWhenReady(() => {
+        const ready = mat.isReady(mesh);
+        console.log("[VolCloud] ShaderMaterial isReady:", ready);
+        if (!ready) console.warn("[VolCloud] Shader not ready");
+    });
 }
 
 export function disposeClouds(): void {
+    // 清理跟随 observer
+    if (_volCloudMesh && _volCloudMesh.metadata?.followObs) {
+        getScene().onBeforeRenderObservable.remove(_volCloudMesh.metadata.followObs);
+    }
+    // 清理体积云
+    if (_volCloudObs) {
+        getScene().onBeforeRenderObservable.remove(_volCloudObs);
+        _volCloudObs = null;
+    }
+    if (_volCloudMat) {
+        _volCloudMat.dispose();
+        _volCloudMat = null;
+    }
+    if (_volCloudMesh) {
+        _volCloudMesh.dispose();
+        _volCloudMesh = null;
+    }
+    // 清理旧平面云残留
     if (_envSys.clouds.material) {
         _envSys.clouds.material.dispose(false, true);
         _envSys.clouds.material = null;
@@ -866,16 +1174,24 @@ export function ensureEnvUpdateObserver(): void {
     if (_envUpdateObserver) return;
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
         const dt = scene.deltaTime / 16.667;
-        // Cloud drift (wind driven)
-        if (envState.cloudsEnabled && envState.windEnabled) {
-            const dx = envState.windDirection[0] * envState.windSpeed * 0.01 * dt;
-            const dz = envState.windDirection[2] * envState.windSpeed * 0.01 * dt;
+        // Cloud drift + camera follow
+        if (envState.cloudsEnabled && _envSys.clouds.postProcess) {
+            const cam = scene.activeCamera;
+            const dx = envState.windEnabled ? envState.windDirection[0] * envState.windSpeed * 0.005 * dt : 0;
+            const dz = envState.windEnabled ? envState.windDirection[2] * envState.windSpeed * 0.005 * dt : 0;
             for (const key of ["postProcess", "postProcess2"] as const) {
                 const m = _envSys.clouds[key];
                 if (m) {
-                    const speedMul = key === "postProcess2" ? 0.85 : 1.0;
-                    m.position.x += dx * speedMul;
-                    m.position.z += dz * speedMul;
+                    const speedMul = key === "postProcess2" ? 0.7 : 1.0;
+                    if (cam) {
+                        m.position.x = cam.position.x;
+                        m.position.z = cam.position.z;
+                    }
+                    const mat = m.material as StandardMaterial | null;
+                    if (mat?.diffuseTexture) {
+                        (mat.diffuseTexture as Texture).uOffset += dx * speedMul;
+                        (mat.diffuseTexture as Texture).vOffset += dz * speedMul;
+                    }
                 }
             }
         }
@@ -895,7 +1211,11 @@ export function ensureEnvUpdateObserver(): void {
             if (len > 0.001) {
                 wd.normalize();
             }
-            _envSys.water.material.windDirection = wd;
+            // === 补丁2：仅当风向变化时才赋值 ===
+            if (!_lastWindDir.equals(wd)) {
+                _lastWindDir.copyFrom(wd);
+                _envSys.water.material.windDirection = wd;
+            }
         }
         // Underwater post-processing
         if (envState.waterEnabled && scene.activeCamera) {

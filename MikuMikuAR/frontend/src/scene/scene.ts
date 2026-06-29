@@ -39,7 +39,7 @@ import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
 import { initEnvFacade, applyEnvState, applySky, _envSys, refreshWaterRenderList, updateWaterAnimSpeed } from "./scene-env";
 
-import { SaveThumbnail, SaveLastScene, LoadLastScene } from "../../wailsjs/go/main/App";
+import { SaveThumbnail, SaveLastScene, LoadLastScene, SetEnvState } from "../../wailsjs/go/main/App";
 import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode, getCameraMode } from "./camera";
 import type { CameraState } from "./camera";
 import {
@@ -365,6 +365,8 @@ export function setRenderState(s: Partial<RenderState>): void {
     if (s.bgColor !== undefined) {
         scene.clearColor = new Color4(s.bgColor[0], s.bgColor[1], s.bgColor[2], 1.0);
     }
+
+    triggerAutoSave();
 }
 
 /** Re-attach the rendering pipeline to the current active camera (call after camera switch). */
@@ -528,8 +530,8 @@ async function updateProcMotion(): Promise<void> {
         return;
     }
 
-    // 需要 Auto Dance
-    if (wantAutoDance && procBeatDetector) {
+    // 需要 Auto Dance — 但不能覆盖用户已加载的 VMD
+    if (wantAutoDance && !hasUserVmd && procBeatDetector) {
         const bpm = procBeatDetector.getBPM();
         if (!procVmdActive || procActiveKind !== "autodance" || Math.abs(bpm - lastBeatBpm) > 10) {
             await startProcMotion("autodance", bpm);
@@ -538,7 +540,7 @@ async function updateProcMotion(): Promise<void> {
     }
 
     // 需要 Idle — 当 autodance 正在播放但不再有音频时也会进入此分支
-    if (wantIdle) {
+    if (wantIdle && !hasUserVmd) {
         if (!procVmdActive || procActiveKind !== "idle") {
             await startProcMotion("idle");
         }
@@ -688,7 +690,7 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
                 id, name: displayName, filePath, port, modelDir,
                 meshes, rootMesh: meshes[0], vmdData: null, vmdName: "", vmdPath: null,
                 animationDuration: 0, kind: "stage",
-                visible: true, opacity: 1.0, wireframe: false, showBones: false, physicsEnabled: false,
+                visible: true, opacity: 1.0, wireframe: false, showBoneLines: false, showBoneJoints: false, physicsEnabled: false,
                 scaling: 1.0, rotationY: 0,
             };
             modelRegistry.set(id, inst);
@@ -715,7 +717,7 @@ export async function loadPMXFile(filePath: string, asStage?: boolean, skipAutoA
             id, name: displayName, filePath, port, modelDir,
             meshes, rootMesh, mmdModel: wasmModel, vmdData: null, vmdName: "", vmdPath: null,
             animationDuration: 0, kind: "actor",
-            visible: true, opacity: 1.0, wireframe: false, showBones: false, physicsEnabled: true,
+            visible: true, opacity: 1.0, wireframe: false, showBoneLines: false, showBoneJoints: false, physicsEnabled: true,
             scaling: 1.0, rotationY: 0,
         };
         modelRegistry.set(id, inst);
@@ -929,6 +931,9 @@ export interface SceneFile {
         visible?: boolean;
         opacity?: number;
         wireframe?: boolean;
+        showBoneLines?: boolean;
+        showBoneJoints?: boolean;
+        physicsEnabled?: boolean;
         outfitVariant?: string;
     }>;
     camera: CameraState;
@@ -984,6 +989,9 @@ export function serializeScene(): SceneFile {
         visible: inst.visible,
         opacity: inst.opacity,
         wireframe: inst.wireframe,
+        showBoneLines: inst.showBoneLines,
+        showBoneJoints: inst.showBoneJoints,
+        physicsEnabled: inst.physicsEnabled,
         outfitVariant: inst.activeVariant,
     }));
     return {
@@ -1049,6 +1057,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 inst.visible = m.visible ?? true;
                 inst.opacity = m.opacity ?? 1.0;
                 inst.wireframe = m.wireframe ?? false;
+                if (m.showBoneLines !== undefined) { inst.showBoneLines = m.showBoneLines; setModelBoneLinesVis(inst.id, m.showBoneLines); }
+                if (m.showBoneJoints !== undefined) { inst.showBoneJoints = m.showBoneJoints; setModelBoneJointsVis(inst.id, m.showBoneJoints); }
+                if (m.physicsEnabled !== undefined) { inst.physicsEnabled = m.physicsEnabled; setModelPhysics(inst.id, m.physicsEnabled); }
                 if (inst.visible === false) {
                     for (const mesh of inst.meshes) mesh.setEnabled(false);
                 }
@@ -1163,9 +1174,14 @@ export function setModelWireframe(id: string, wireframe: boolean): void {
     modelManager?.setWireframe(id, wireframe);
 }
 
-/** Toggle bone skeleton overlay on a model. */
-export function setModelBoneVis(id: string, show: boolean): void {
-    modelManager?.setBoneVis(id, show);
+/** Toggle bone line overlay on a model. */
+export function setModelBoneLinesVis(id: string, show: boolean): void {
+    modelManager?.setBoneLinesVis(id, show);
+}
+
+/** Toggle bone joint sphere overlay on a model. */
+export function setModelBoneJointsVis(id: string, show: boolean): void {
+    modelManager?.setBoneJointsVis(id, show);
 }
 
 /** Enable or disable physics simulation for a model. */
@@ -1274,6 +1290,7 @@ function triggerAutoSaveImpl(): void {
 
 let envAutoLink = true;
 let envSunAngle = 45; // default sun elevation
+let _envPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function setEnvAutoLink(on: boolean): void {
     envAutoLink = on;
@@ -1358,10 +1375,19 @@ export function applyEnvPreset(name: string): boolean {
     const wasLinked = envAutoLink;
     envAutoLink = false;
     envSunAngle = preset.sunAngle;
+
+    const mid: [number, number, number] = [
+        (preset.skyColorTop[0] + preset.skyColorBot[0]) / 2,
+        (preset.skyColorTop[1] + preset.skyColorBot[1]) / 2,
+        (preset.skyColorTop[2] + preset.skyColorBot[2]) / 2,
+    ];
+
     setEnvState({
         skyMode: "procedural",
         skyColorTop: preset.skyColorTop,
+        skyColorMid: mid,
         skyColorBot: preset.skyColorBot,
+        skyBrightness: 1.0,
     });
     setLightState({
         dirColor: preset.dirDiffuse,
@@ -1381,8 +1407,11 @@ export function applyEnvPreset(name: string): boolean {
 
 export function setEnvState(partial: Partial<EnvState>): void {
     // Runtime guard: detect black sky color assignments
-    if ((partial.skyColorTop && partial.skyColorTop[0] === 0 && partial.skyColorTop[1] === 0 && partial.skyColorTop[2] === 0) ||
-        (partial.skyColorBot && partial.skyColorBot[0] === 0 && partial.skyColorBot[1] === 0 && partial.skyColorBot[2] === 0)) {
+    // 初始 restore 时 skyColorTop 为 [0,0,0] 是正常行为，不报 warning
+    const isFullRestore = Object.keys(partial).length > 5 && partial.skyColorTop?.[0] === 0;
+    if (!isFullRestore &&
+        ((partial.skyColorTop && partial.skyColorTop[0] === 0 && partial.skyColorTop[1] === 0 && partial.skyColorTop[2] === 0) ||
+        (partial.skyColorBot && partial.skyColorBot[0] === 0 && partial.skyColorBot[1] === 0 && partial.skyColorBot[2] === 0))) {
         console.warn("[env] ⚠️ setEnvState with black sky color:", JSON.stringify(partial));
         console.warn(new Error().stack);
     }
@@ -1410,6 +1439,12 @@ export function setEnvState(partial: Partial<EnvState>): void {
     if (partial.waterAnimSpeed !== undefined) {
         updateWaterAnimSpeed(partial.waterAnimSpeed);
     }
+
+    // Persist env state to config.json (debounced)
+    if (_envPersistTimer) clearTimeout(_envPersistTimer);
+    _envPersistTimer = setTimeout(() => {
+        SetEnvState(envState as any).catch(() => {});
+    }, 500);
 
     triggerAutoSave();
 }

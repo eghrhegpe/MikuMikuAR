@@ -35,6 +35,8 @@ const defaultEnv: EnvState = {
     cloudCover: 0.5,
     cloudScale: 1,
     cloudHeight: 100,
+    cloudThickness: 40,
+    cloudVisibility: 2000,
     fogEnabled: false,
     fogColor: [0.5, 0.5, 0.6],
     fogDensity: 0.01,
@@ -65,7 +67,7 @@ describe("EnvState defaults", () => {
             "windEnabled", "windDirection", "windSpeed",
             "particleEnabled", "particleType",
             "waterEnabled", "waterLevel", "waterColor", "waterTransparency", "waterWaveHeight", "waterSize", "waterAnimSpeed",
-            "cloudsEnabled", "cloudCover", "cloudScale", "cloudHeight",
+            "cloudsEnabled", "cloudCover", "cloudScale", "cloudHeight", "cloudThickness", "cloudVisibility",
             "fogEnabled", "fogColor", "fogDensity",
             "clothEnabled", "clothConfig",
         ];
