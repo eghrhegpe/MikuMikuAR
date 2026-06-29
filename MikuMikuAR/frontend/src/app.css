@@ -110,141 +110,12 @@ html, body {
 
 /* ===== 通用弹窗容器 ===== */
 
-/* ===== 通用弹窗容器 ===== */
-.overlay {
-    display: none;
-    position: absolute; bottom: var(--overlay-bottom); left: var(--overlay-left);
-    z-index: 130; pointer-events: auto;
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: var(--overlay-radius);
-    flex-direction: column; overflow: hidden;
-    max-height: 80vh;
-}
-/* blur mode: overlay background + blur when enabled */
-.overlay.blur-bg {
-    background: var(--overlay-bg);
-    backdrop-filter: var(--overlay-blur);
-    -webkit-backdrop-filter: var(--overlay-blur);
-    border: var(--overlay-border);
-}
-.overlay.visible { display: flex; flex-direction: column; }
-/* Cross-fade: when switching between two views sharing the same overlay (e.g. Scene ↔ Environment),
-   this class triggers a fade-out before the content swap, followed by a fade-in via .visible. */
+/* Legacy cross-fade animation class; still used by #sceneOverlay view switching. */
 .overlay-fade-out {
     opacity: 0 !important;
     transform: scale(0.85) !important;
     pointer-events: none !important;
 }
-
-/* ===== 弹窗 header ===== */
-.overlay-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: var(--overlay-header-py) var(--overlay-header-px);
-    font-size: var(--font-ui); color: var(--text);
-    border-bottom: 1px solid var(--divider);
-}
-.overlay-close {
-    background: none; border: none; color: var(--text-muted);
-    font-size: 16px; cursor: pointer;
-}
-.overlay-close:hover { color: #fff; }
-
-/* ===== 弹窗列表区域 ===== */
-.overlay-list {
-    flex: 1; overflow-y: auto; padding: 4px 0;
-}
-
-/* ===== 行 ===== */
-.overlay-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px var(--overlay-header-px); cursor: pointer;
-    font-size: var(--font-time); transition: background 0.1s;
-}
-.overlay-row:hover { background: rgba(255,255,255,0.04); }
-
-/* ===== 弹窗 body（内容区域） ===== */
-.overlay-body {
-    padding: 12px var(--overlay-header-px);
-    display: flex; flex-direction: column; gap: 8px;
-}
-
-/* ===== 标签 / 选项行 ===== */
-.overlay-label { font-size: var(--font-ui-sm); color: var(--text-dim); margin-bottom: 6px; }
-.overlay-option {
-    display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer;
-}
-.overlay-option input[type="radio"],
-.overlay-option input[type="checkbox"] { accent-color: var(--accent); }
-.overlay-opt-label { font-size: var(--font-time); color: var(--text-bright); }
-
-/* ===== 提示文字 ===== */
-.overlay-hint { font-size: var(--font-ui-sm); color: var(--text-dark); line-height: 1.4; }
-.overlay-name-hint { font-size: var(--font-ui-sm); color: var(--text-muted); margin-top: 2px; }
-
-/* ===== 按钮 ===== */
-.overlay-primary-btn {
-    width: 100%; padding: 9px 0; margin-top: 4px;
-    background: var(--accent); color: #fff; border: none; border-radius: 8px;
-    font-size: var(--font-title); cursor: pointer; transition: background 0.15s;
-}
-.overlay-primary-btn:hover { background: var(--accent-hover); }
-.overlay-primary-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* ===== 底栏添加按钮 ===== */
-.overlay-add {
-    display: flex; align-items: center; gap: 6px;
-    padding: 10px var(--overlay-header-px);
-    border-top: 1px solid var(--divider);
-    cursor: pointer; font-size: var(--font-ui); color: var(--accent);
-    transition: background 0.1s;
-}
-.overlay-add:hover { background: rgba(255,255,255,0.04); }
-
-/* ===== 分隔线 ===== */
-.overlay-divider {
-    height: 1px; background: var(--divider); margin: 10px 0;
-}
-
-/* ===== 输入行（标签 + 输入框 + 按钮） ===== */
-.overlay-input-row {
-    display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
-}
-
-/* ===== 空状态 ===== */
-.overlay-empty {
-    padding: 24px; text-align: center; color: var(--text-muted); font-size: var(--font-time);
-}
-
-/* ===== 表单输入 ===== */
-.overlay-input {
-    flex: 1; background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 6px; padding: 6px 8px; font-size: var(--font-ui-sm);
-    color: var(--text); outline: none;
-}
-.overlay-input:focus { border-color: var(--accent); }
-.overlay-input-lg {
-    flex: 1; background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 6px; padding: 8px 10px; font-size: var(--font-ui);
-    color: var(--text); outline: none; box-sizing: border-box;
-}
-.overlay-input-lg:focus { border-color: var(--accent); }
-
-/* ===== 次要按钮 ===== */
-.overlay-secondary-btn {
-    background: rgba(255,255,255,0.08); border: none; border-radius: 6px;
-    padding: 6px 10px; font-size: var(--font-ui-sm); color: rgba(255,255,255,0.7);
-    cursor: pointer; transition: background 0.15s; white-space: nowrap;
-}
-.overlay-secondary-btn:hover { background: rgba(255,255,255,0.14); }
-
-/* ===== 删除按钮 ===== */
-.overlay-del {
-    background: none; border: none; color: var(--danger);
-    font-size: var(--font-title); cursor: pointer; flex-shrink: 0; padding: 2px 4px;
-}
-.overlay-del:hover { color: var(--danger-hover); }
 
 /* ===== 场景面板（右侧加载的模型列表） ===== */
 /* ===== 底部导航 ===== */
@@ -347,8 +218,6 @@ html, body {
 .overlay-settings { width: 340px; }
 
 /* ===== 外部库 — 行内路径 ===== */
-.overlay-row .eo-name { color: var(--text); font-weight: 500; min-width: 60px; }
-.overlay-row .eo-path { color: var(--text-dark); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ===== Phase 0: 通用组件系统 ===== */
 
@@ -368,6 +237,8 @@ html, body {
 .btn-danger { background: transparent; color: var(--danger); }
 .btn-danger:hover { background: rgba(255,68,68,0.1); color: var(--danger-hover); }
 .btn-sm { font-size: var(--font-ui-sm); padding: 4px 10px; border-radius: var(--btn-radius); height: var(--btn-height-sm); }
+.btn-icon { width: var(--btn-height); padding: 0; }
+.btn-sm.btn-icon { width: var(--btn-height-sm); }
 
 /* 开关 (toggle) */
 .toggle {
@@ -505,29 +376,11 @@ html, body {
     text-align: center; padding: 24px; color: var(--text-muted); font-size: var(--font-ui);
     background: var(--card-bg);
 }
-.menu-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 14px; cursor: pointer;
-    transition: background 0.12s;
-    font-size: 15px; color: var(--text);
-    line-height: 1.4;
-    min-height: 40px;
-    border-radius: 6px;
-    margin-bottom: 2px;
-}
-.menu-item:hover { background: var(--card-hover); }
-.menu-item:active { background: var(--card-active); }
-.menu-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
-.menu-icon iconify-icon { width: 18px; height: 18px; font-size: 18px; display: block; }
-.menu-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.menu-sublabel { font-size: var(--font-ui-sm); color: var(--text-muted); margin-left: auto; white-space: nowrap; }
-.menu-arrow { color: var(--text-dark); font-size: var(--font-title); margin-left: 4px; }
-.menu-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 3px 14px; }
 .slide-item {
     display: flex; align-items: center; gap: 10px;
     padding: 8px 14px; cursor: pointer;
     transition: background 0.12s;
-    font-size: 17px; color: var(--text);
+    font-size: var(--font-ui); color: var(--text);
     line-height: 1.4;
     min-height: 44px;
     border-radius: 6px;
@@ -543,6 +396,7 @@ html, body {
 }
 .slide-icon iconify-icon { width: 20px; height: 20px; font-size: 20px; display: block; }
 .slide-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slide-sublabel { font-size: var(--font-ui-sm); color: var(--text-dim); margin-left: auto; white-space: nowrap; }
 .slide-tag {
     font-size: var(--font-ui-xs); color: var(--text-dim);
     background: var(--white-08); border-radius: 3px;
@@ -577,25 +431,17 @@ html, body {
 .slide-del-btn:hover { background: var(--white-12); }
 
 /* ===== 统一样式滚动条 ===== */
-.slide-list::-webkit-scrollbar,
-#popupList::-webkit-scrollbar,
-.overlay-list::-webkit-scrollbar {
+.slide-list::-webkit-scrollbar {
     width: 6px;
 }
-.slide-list::-webkit-scrollbar-track,
-#popupList::-webkit-scrollbar-track,
-.overlay-list::-webkit-scrollbar-track {
+.slide-list::-webkit-scrollbar-track {
     background: transparent;
 }
-.slide-list::-webkit-scrollbar-thumb,
-#popupList::-webkit-scrollbar-thumb,
-.overlay-list::-webkit-scrollbar-thumb {
+.slide-list::-webkit-scrollbar-thumb {
     background: var(--white-16);
     border-radius: 3px;
 }
-.slide-list::-webkit-scrollbar-thumb:hover,
-#popupList::-webkit-scrollbar-thumb:hover,
-.overlay-list::-webkit-scrollbar-thumb:hover {
+.slide-list::-webkit-scrollbar-thumb:hover {
     background: var(--white-40);
 }
 
@@ -668,7 +514,7 @@ html, body {
 
 /* Mode selection buttons (shadow type, sky mode, etc.) */
 .mode-btn {
-    font-size: clamp(14px, 1.2vw, 20px);
+    font-size: var(--font-ui);
     padding: 0.3em 0.7em;
     line-height: 1.3;
     border-radius: 4px;
@@ -678,6 +524,7 @@ html, body {
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
 }
+.mode-btn-sm { font-size: var(--font-ui-sm); padding: 3px 8px; }
 .mode-btn:hover {
     background: var(--white-08);
     border-color: var(--white-16);

@@ -242,7 +242,7 @@ vi.mock("babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex", () => ({}))
 vi.mock("babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment", () => ({}));
 
 vi.mock("../scene-menu", () => ({
-    getSceneStack: () => null,
+    getSceneMenu: () => null,
 }));
 
 vi.mock("../outfit/outfit", () => ({

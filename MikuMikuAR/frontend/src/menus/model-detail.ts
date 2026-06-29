@@ -186,8 +186,8 @@ export function buildModelDetailLevel(id: string): PopupLevel {
         stackRegistry.modelStack?.push(level);
       });
       slideRow(card4, "lucide:trash-2", "移除", false, async () => {
-        const { getSceneStack } = await import("./scene-menu");
-        getSceneStack()?.popTo(0); removeModel(id);
+        const { getSceneMenu } = await import("./scene-menu");
+        getSceneMenu()?.popTo(0); removeModel(id);
       });
       container.appendChild(card4);
     },

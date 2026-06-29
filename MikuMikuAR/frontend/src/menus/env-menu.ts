@@ -247,8 +247,8 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
             addToggleRow(container, "可见", p.visible, (v) => { setPropTransform(propId, { visible: v }); p.visible = v; });
             const delBtn = document.createElement("button");
             delBtn.textContent = "删除道具";
-            delBtn.className = "mode-btn";
-            delBtn.style.cssText = "width:100%;margin-top:14px;color:var(--danger,#f66);";
+            delBtn.className = "btn btn-sm btn-danger";
+            delBtn.style.cssText = "width:100%;margin-top:14px;";
             delBtn.addEventListener("click", () => { removeProp(propId); envMenu?.pop(); envMenu?.reRender(); });
             container.appendChild(delBtn);
         },
@@ -290,8 +290,7 @@ export function buildWaterLevel(): PopupLevel {
             for (const [key, wp] of Object.entries(WATER_PRESETS)) {
                 const btn = document.createElement("button");
                 btn.textContent = wp.label;
-                btn.className = "mode-btn";
-                btn.style.cssText = "font-size:11px;padding:3px 8px;";
+                btn.className = "mode-btn mode-btn-sm";
                 btn.addEventListener("click", () => {
                     setEnvState({
                         waterColor: wp.waterColor,

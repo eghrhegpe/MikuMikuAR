@@ -63,17 +63,17 @@ function buildSettingsSoftwareLevel(): PopupLevel {
                         const row = document.createElement("div");
                         row.className = "slide-item";
                         row.addEventListener("click", (e) => {
-                            if ((e.target as HTMLElement).closest(".sw-play-btn")) return;
+                            if ((e.target as HTMLElement).closest(".btn")) return;
                             settingsMenu?.push(buildSoftwareDetailLevel(entry.path));
                         });
                         row.innerHTML = `
                             <span class="slide-icon"><iconify-icon icon="${softwareKindIcon(entry.kind)}"></iconify-icon></span>
                             <span class="slide-label">${escapeHtml(entry.name)}</span>
-                            <span class="slide-sublabel" style="font-size:10px;color:var(--text-dim);white-space:nowrap;">${entry.kind}</span>
-                            <span class="slide-tag" style="font-size:9px;color:var(--text-muted);">${entry.managed ? "自定义" : "auto"}</span>
-                            <button class="sw-play-btn" style="background:none;border:none;color:var(--accent,#7c3aed);cursor:pointer;font-size:14px;padding:2px 4px;" title="直接启动">▶</button>
+                            <span class="slide-sublabel">${entry.kind}</span>
+                            <span class="slide-tag">${entry.managed ? "自定义" : "auto"}</span>
+                            <button class="btn btn-ghost btn-sm btn-icon" title="直接启动">▶</button>
                         `;
-                        row.querySelector(".sw-play-btn")!.addEventListener("click", (e) => {
+                        row.querySelector(".btn")!.addEventListener("click", (e) => {
                             e.stopPropagation();
                             LaunchSoftware(entry.path, entry.args || "").then(() => {
                                 setStatus(`✓ 已启动: ${entry.name}`, true);

@@ -277,52 +277,30 @@ export function buildLevel(
       card.className = "lcard";
       for (const item of items) {
         if (item.kind === "divider") continue;
-        const el = document.createElement("div");
-        el.className = "slide-item";
-        const iconSpan = document.createElement("span");
-        iconSpan.className = "slide-icon";
-        const iconEl = createIconifyIcon(item.icon);
-        if (iconEl) iconSpan.appendChild(iconEl);
-        el.appendChild(iconSpan);
-        const labelSpan = document.createElement("span");
-        labelSpan.className = "slide-label";
-        labelSpan.textContent = item.label;
-        el.appendChild(labelSpan);
-        if (item.sublabel) {
-          const sub = document.createElement("span");
-          sub.className = "slide-sublabel";
-          sub.textContent = item.sublabel;
-          el.appendChild(sub);
-        }
-        if (item.catTag) {
-          const tag = document.createElement("span");
-          tag.className = "slide-tag";
-          tag.textContent = item.catTag;
-          el.appendChild(tag);
-        }
-        if (item.kind === "folder") {
-          const arrow = document.createElement("span");
-          arrow.className = "slide-arrow";
-          arrow.textContent = ">";
-          el.appendChild(arrow);
-        }
-        el.addEventListener("click", () => {
-          if (item.kind === "folder") {
-            const next = buildLevel(item.target, item.label, filter, targetStack);
-            const stack = targetStack || stackRegistry.modelStack;
-            stack?.push(next);
-          } else if (item.model) {
-            if (item.model.format === "vmd" && motionBindingTargetId) {
-              const id = motionBindingTargetId;
-              setMotionBindingTargetId(null);
-              closeAllOverlays();
-              loadVMDFromPath(item.model.file_path, id);
-            } else {
-              onModelRowClick(item.model);
+        slideRow(
+          card,
+          item.icon,
+          item.label,
+          item.kind === "folder",
+          () => {
+            if (item.kind === "folder") {
+              const next = buildLevel(item.target, item.label, filter, targetStack);
+              const stack = targetStack || stackRegistry.modelStack;
+              stack?.push(next);
+            } else if (item.model) {
+              if (item.model.format === "vmd" && motionBindingTargetId) {
+                const id = motionBindingTargetId;
+                setMotionBindingTargetId(null);
+                closeAllOverlays();
+                loadVMDFromPath(item.model.file_path, id);
+              } else {
+                onModelRowClick(item.model);
+              }
             }
-          }
-        });
-        card.appendChild(el);
+          },
+          item.sublabel,
+          item.catTag,
+        );
       }
       container.appendChild(card);
     },

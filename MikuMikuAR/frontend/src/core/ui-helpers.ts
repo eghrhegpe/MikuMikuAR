@@ -3,7 +3,15 @@
 
 import { createIconifyIcon } from "./icons";
 
-export function slideRow(container: HTMLElement, icon: string, label: string, hasArrow: boolean, onClick: () => void): void {
+export function slideRow(
+  container: HTMLElement,
+  icon: string,
+  label: string,
+  hasArrow: boolean,
+  onClick: () => void,
+  sublabel?: string,
+  tag?: string,
+): void {
   const row = document.createElement("div");
   row.className = "slide-item";
 
@@ -24,6 +32,20 @@ export function slideRow(container: HTMLElement, icon: string, label: string, ha
   labelSpan.className = "slide-label";
   labelSpan.textContent = label;
   row.appendChild(labelSpan);
+
+  if (sublabel) {
+    const sub = document.createElement("span");
+    sub.className = "slide-sublabel";
+    sub.textContent = sublabel;
+    row.appendChild(sub);
+  }
+
+  if (tag) {
+    const tagSpan = document.createElement("span");
+    tagSpan.className = "slide-tag";
+    tagSpan.textContent = tag;
+    row.appendChild(tagSpan);
+  }
 
   if (hasArrow) {
     const arrowSpan = document.createElement("span");
