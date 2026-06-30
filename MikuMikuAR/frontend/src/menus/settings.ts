@@ -653,7 +653,17 @@ function addToggleRow(
     row.className = 'slide-item';
     row.style.cssText =
         'display:flex;align-items:center;gap:10px;padding:8px 14px;min-height:44px;cursor:pointer;';
-    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${icon}"></iconify-icon></span><span class="slide-label">${label}</span>`;
+    const iconBox = document.createElement('span');
+    iconBox.className = 'slide-icon';
+    const iconEl = createIconifyIcon('lucide:' + icon);
+    if (iconEl) {
+        iconBox.appendChild(iconEl);
+    }
+    row.appendChild(iconBox);
+    const labelEl = document.createElement('span');
+    labelEl.className = 'slide-label';
+    labelEl.textContent = label;
+    row.appendChild(labelEl);
     const toggle = document.createElement('label');
     toggle.className = 'toggle';
     const input = document.createElement('input');

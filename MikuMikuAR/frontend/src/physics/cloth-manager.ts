@@ -51,6 +51,20 @@ function _createClothForFocusedModel(): void {
         return modelManager.getBoneWorldMatrix(boneName);
     };
 
+    // Build bone parent map for dynamic capsule sizing
+    const boneParentMap: Record<string, string> = {};
+    const mmdForBones = modelManager.focusedMmdModel();
+    if (mmdForBones) {
+        for (const bone of mmdForBones.runtimeBones) {
+            if (bone.parentBone) {
+                boneParentMap[bone.name] = bone.parentBone.name;
+            }
+        }
+    }
+
+    // Dynamically size capsules based on actual bone distances
+    collider.updateCapsuleSizes(anchorMatrixFn, boneParentMap);
+
     // Use config from envState
     const cfg = envState.clothConfig;
 
@@ -87,11 +101,14 @@ export function toggleCloth(enabled: boolean): void {
     envState.clothEnabled = enabled;
 }
 
-/** 用当前配置重建布料（参数变更后调用） */
-export function recreateCloth(): void {
+/** 用当前配置重建布料（参数变更后调用）
+ * @returns true 表示重建成功，false 表示布料未启用
+ */
+export function recreateCloth(): boolean {
     if (!envState.clothEnabled) {
-        return;
+        return false;
     }
     _destroyClothForFocusedModel();
     _createClothForFocusedModel();
+    return true;
 }

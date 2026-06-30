@@ -89,6 +89,12 @@ export interface ClothInstance {
     mesh: Mesh | null;
     /** 网格三角形索引（缓存用于每帧 ComputeNormals） */
     meshIndices: Int32Array;
+    /** 顶点位置缓存（每帧复用，避免 GC） */
+    _positionCache?: Float32Array;
+    /** 法线缓存（每帧复用，避免 GC） */
+    _normalCache?: Float32Array;
+    /** UV 缓存（创建后不变，仅作记录） */
+    _uvCache?: Float32Array;
     /** 是否启用模拟 */
     enabled: boolean;
     /** 锚定骨骼未找到时是否已警告过（只打印一次） */
@@ -199,7 +205,7 @@ export function createCloth(
     solver.addGroundCollision(-5);
 
     // ---- Mesh 创建 ----
-    const { mesh, indices: meshIndices } = _createClothMesh(
+    const { mesh, indices: meshIndices, uvCache, positionCache, normalCache } = _createClothMesh(
         scene,
         cfg,
         particleGrid,
@@ -217,6 +223,9 @@ export function createCloth(
         ringCount,
         mesh,
         meshIndices,
+        _positionCache: positionCache,
+        _normalCache: normalCache,
+        _uvCache: uvCache,
         enabled: true,
         _anchorMissingWarned: false,
     };
@@ -337,7 +346,7 @@ function _createClothMesh(
     solver: XpbdSolver,
     ringSize: number,
     ringCount: number
-): { mesh: Mesh | null; indices: Int32Array } {
+): { mesh: Mesh | null; indices: Int32Array; uvCache: Float32Array; positionCache: Float32Array; normalCache: Float32Array } {
     // 收集顶点位置（从粒子读取初始 position）
     const positions: number[] = [];
     // UV: 按柱面展开，u = col/ringSize, v = row/(ringCount-1)
@@ -371,12 +380,9 @@ function _createClothMesh(
     }
 
     // 用 ComputeNormals 计算初始法线
+    const posArr = new Float32Array(positions);
     const normals = new Float32Array(positions.length);
-    VertexData.ComputeNormals(
-        new Float32Array(positions),
-        new Int32Array(indexArray),
-        normals
-    );
+    VertexData.ComputeNormals(posArr, new Int32Array(indexArray), normals);
 
     // 创建 Mesh
     const mesh = new Mesh('xpbd_cloth', scene);
@@ -396,11 +402,12 @@ function _createClothMesh(
     mat.specularColor = new Color3(0.1, 0.1, 0.1);
     mesh.material = mat;
 
-    return { mesh, indices: new Int32Array(indexArray) };
+    return { mesh, indices: new Int32Array(indexArray), uvCache: new Float32Array(uvs), positionCache: posArr, normalCache: normals };
 }
 
 /**
  * 每帧更新 Mesh 顶点位置 + 用 ComputeNormals 重算法线
+ * 复用 Float32Array 缓存，避免每帧分配内存导致 GC 压力
  */
 function _updateClothMesh(cloth: ClothInstance): void {
     if (!cloth.mesh) {
@@ -409,9 +416,16 @@ function _updateClothMesh(cloth: ClothInstance): void {
 
     const { solver, particleGrid, meshIndices } = cloth;
     const count = particleGrid.length;
+    const floatCount = count * 3;
+
+    // 复用或分配位置缓存
+    let positions = cloth._positionCache;
+    if (!positions || positions.length !== floatCount) {
+        positions = new Float32Array(floatCount);
+        cloth._positionCache = positions;
+    }
 
     // 更新位置
-    const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
         const pIdx = particleGrid[i];
         const p = solver.particles[pIdx];
@@ -421,8 +435,14 @@ function _updateClothMesh(cloth: ClothInstance): void {
         positions[off + 2] = p.p[2];
     }
 
+    // 复用或分配法线缓存
+    let normals = cloth._normalCache;
+    if (!normals || normals.length !== floatCount) {
+        normals = new Float32Array(floatCount);
+        cloth._normalCache = normals;
+    }
+
     // 根据当前顶点位置 + 三角形索引，用 Babylon 工具重算法线
-    const normals = new Float32Array(count * 3);
     VertexData.ComputeNormals(positions, meshIndices, normals);
 
     cloth.mesh.updateVerticesData(VertexBuffer.PositionKind, positions, false, true);

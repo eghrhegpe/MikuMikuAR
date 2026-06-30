@@ -61,14 +61,41 @@ export function initLoader(
 
 // ======== Thumbnail Capture ========
 
+const THUMBNAIL_TIMEOUT_MS = 5000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+    return new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(fallback), timeoutMs);
+        promise.then(
+            (result) => {
+                clearTimeout(timer);
+                resolve(result);
+            },
+            () => {
+                clearTimeout(timer);
+                resolve(fallback);
+            }
+        );
+    });
+}
+
 /** Captures a screenshot after model load for thumbnail cache. */
 export async function captureThumbnail(filePath: string): Promise<void> {
     try {
-        // Wait two frames for the scene to fully render (materials, outfits, etc.).
-        // Note: on low-end GPUs this may still capture prematurely;
-        // a robust alternative is scene.whenReadyAsync() or a single render-loop callback.
-        await new Promise((r) => requestAnimationFrame(r));
-        await new Promise((r) => requestAnimationFrame(r));
+        if (!_scene) {
+            return;
+        }
+
+        let ready = false;
+        await withTimeout(
+            _scene.whenReadyAsync().then(() => { ready = true; }),
+            THUMBNAIL_TIMEOUT_MS,
+            undefined
+        );
+
+        if (!ready) {
+            await new Promise((r) => requestAnimationFrame(r));
+        }
 
         const base64 = dom.canvas.toDataURL('image/png', 0.8);
         const raw = base64.replace(/^data:image\/png;base64,/, '');
@@ -84,14 +111,14 @@ export async function loadPMXFile(
     filePath: string,
     asStage?: boolean,
     skipAutoApply?: boolean
-): Promise<void> {
+): Promise<string | null> {
     if (!_scene || !_mmdRuntime) {
-        return;
+        return null;
     }
     // Single-thread loading lock. Future: replace with a task queue for parallel loading.
     if (isLoadingModel) {
         setStatus('模型正在加载中，请稍候...', false);
-        return;
+        return null;
     }
     setIsLoadingModel(true);
     let loadedMeshes: Mesh[] = [];
@@ -104,7 +131,7 @@ export async function loadPMXFile(
             setFocusedModelId(existing.id);
             _modelManager?.focus(existing.id);
             setStatus(`✓ 已切换至: ${existing.name}`, true);
-            return;
+            return existing.id;
         }
 
         const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
@@ -130,7 +157,7 @@ export async function loadPMXFile(
         const meshes = loadedMeshes;
         if (meshes.length === 0) {
             setStatus('✗ 未加载到网格', false);
-            return;
+            return null;
         }
 
         const id = `model_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -177,7 +204,7 @@ export async function loadPMXFile(
             try {
                 document.dispatchEvent(new CustomEvent('mmku:modelLoaded'));
             } catch {}
-            return;
+            return id;
         }
 
         // Actor: create MMD model from the loaded mesh via the runtime
@@ -263,6 +290,8 @@ export async function loadPMXFile(
         try {
             document.dispatchEvent(new CustomEvent('mmku:modelLoaded'));
         } catch {}
+
+        return registeredId;
     } catch (err) {
         // 🔴 2: If model was registered, use remove() for clean disposal (handles meshes + cloth)
         // 🟡 3: Destroy leaked MMD runtime model before mesh disposal
@@ -288,6 +317,7 @@ export async function loadPMXFile(
         dom.loadingEl.style.display = 'none';
         console.error('loadPMXFile:', err);
         setStatus('✗ 模型加载失败', false);
+        return null;
     } finally {
         setIsLoadingModel(false);
         dom.loadingEl.style.display = 'none';

@@ -630,8 +630,14 @@ function buildDanceSetsOverviewLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: async (container) => {
+            const loading = document.createElement('div');
+            loading.style.cssText =
+                'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
+            loading.textContent = '加载中…';
+            container.appendChild(loading);
             try {
                 await loadDanceSets();
+                container.innerHTML = '';
                 if (!danceSets || danceSets.length === 0) {
                     cardContainer(container, (c) => {
                         const empty = document.createElement('div');

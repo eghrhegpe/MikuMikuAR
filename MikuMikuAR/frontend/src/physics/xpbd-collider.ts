@@ -99,26 +99,25 @@ export class SdfCollider {
     updateMatrices(matrices: (Float32Array | null)[]): void {
         for (let i = 0; i < this.capsules.length && i < matrices.length; i++) {
             const m = matrices[i];
-            if (!m) continue; // 骨骼未找到，跳过该胶囊（位置保留上一帧）
+            if (!m) continue;
             const c = this.capsules[i];
-            // 列主序: m[12]=tx, m[13]=ty, m[14]=tz
             c.center[0] = m[12];
             c.center[1] = m[13];
             c.center[2] = m[14];
-            // Y 轴方向（列主序 col1）
             c.direction[0] = m[4];
             c.direction[1] = m[5];
             c.direction[2] = m[6];
-            // 归一化方向
-            const len = Math.sqrt(
+            const lenSq =
                 c.direction[0] * c.direction[0] +
-                    c.direction[1] * c.direction[1] +
-                    c.direction[2] * c.direction[2]
-            );
-            if (len > 1e-10) {
-                c.direction[0] /= len;
-                c.direction[1] /= len;
-                c.direction[2] /= len;
+                c.direction[1] * c.direction[1] +
+                c.direction[2] * c.direction[2];
+            if (lenSq < 0.998001 || lenSq > 1.002001) {
+                const len = Math.sqrt(lenSq);
+                if (len > 1e-10) {
+                    c.direction[0] /= len;
+                    c.direction[1] /= len;
+                    c.direction[2] /= len;
+                }
             }
         }
     }

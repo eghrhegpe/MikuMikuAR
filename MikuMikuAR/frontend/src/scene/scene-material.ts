@@ -356,10 +356,12 @@ export const resetAllMatParams = resetPerMaterialParams;
 export function getMatState(id: string): {
     categories: Record<string, MaterialCategoryParams>;
     overrides: Record<number, MaterialCategoryParams>;
+    enabled: Record<number, boolean>;
 } | null {
     const catState = _catState.get(id);
     const matState = _matState.get(id);
-    if (!catState && !matState) {
+    const enabledState = _matEnabled.get(id);
+    if (!catState && !matState && !enabledState) {
         return null;
     }
     const categories: Record<string, MaterialCategoryParams> = {};
@@ -374,7 +376,13 @@ export function getMatState(id: string): {
             overrides[idx] = { ...params };
         }
     }
-    return { categories, overrides };
+    const enabled: Record<number, boolean> = {};
+    if (enabledState) {
+        for (const [idx, val] of enabledState) {
+            enabled[idx] = val;
+        }
+    }
+    return { categories, overrides, enabled };
 }
 
 export function applyMatState(
@@ -382,6 +390,7 @@ export function applyMatState(
     state: {
         categories?: Record<string, MaterialCategoryParams>;
         overrides?: Record<number, MaterialCategoryParams>;
+        enabled?: Record<number, boolean>;
     }
 ): void {
     if (state.categories) {
@@ -393,6 +402,12 @@ export function applyMatState(
         for (const [idxStr, params] of Object.entries(state.overrides)) {
             const idx = parseInt(idxStr, 10);
             setMatParams(id, idx, params);
+        }
+    }
+    if (state.enabled) {
+        for (const [idxStr, val] of Object.entries(state.enabled)) {
+            const idx = parseInt(idxStr, 10);
+            setMatEnabled(id, idx, val);
         }
     }
 }

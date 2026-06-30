@@ -98,6 +98,7 @@ export interface ModelPresetFile {
         number,
         { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }
     >;
+    materialEnabled?: Record<number, boolean>;
 }
 
 export function serializeModelPreset(id: string, presetName?: string): string {
@@ -145,6 +146,7 @@ export function serializeModelPreset(id: string, presetName?: string): string {
             : undefined,
         materialCategories: matState?.categories ?? {},
         materialOverrides: matState?.overrides ?? {},
+        materialEnabled: matState?.enabled ?? {},
     };
     return JSON.stringify(preset, null, 2);
 }
@@ -198,10 +200,11 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
             stopVMD(id);
         }
     }
-    if (preset.materialCategories || preset.materialOverrides) {
+    if (preset.materialCategories || preset.materialOverrides || preset.materialEnabled) {
         applyMatState(id, {
             categories: preset.materialCategories,
             overrides: preset.materialOverrides,
+            enabled: preset.materialEnabled,
         });
     }
     if (preset.audio && preset.audio.path) {
@@ -367,14 +370,12 @@ export async function applyPresetFromLib(
             if (matchedId) {
                 await applyModelPreset(matchedId, json);
             } else {
-                await loadPMXFile(preset.model.filePath);
-                for (const [mid, inst] of modelRegistry) {
-                    if (inst.filePath === preset.model.filePath) {
-                        await applyModelPreset(mid, json);
-                        return;
-                    }
+                const newModelId = await loadPMXFile(preset.model.filePath);
+                if (newModelId) {
+                    await applyModelPreset(newModelId, json);
+                } else {
+                    setStatus('✗ 模型加载失败，无法应用预设', false);
                 }
-                setStatus('✗ 模型已加载但未在注册表中找到', false);
             }
         }
     } catch (err: any) {

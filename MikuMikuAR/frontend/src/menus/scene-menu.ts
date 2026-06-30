@@ -380,8 +380,13 @@ function buildPresetScenesLevel(): PopupLevel {
         items: [],
         renderCustom: async (container) => {
             container.classList.remove('render-card');
+            const loading = document.createElement('div');
+            loading.style.cssText = 'font-size:12px;color:#fff;text-align:center;padding:24px;';
+            loading.textContent = '加载中…';
+            container.appendChild(loading);
             currentPresetIndex = -1;
             _presetScenes = (await GetPresetScenes()) || [];
+            container.innerHTML = '';
             const scenes = _presetScenes;
             if (scenes.length === 0) {
                 const empty = document.createElement('div');

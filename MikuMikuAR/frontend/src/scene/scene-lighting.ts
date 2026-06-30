@@ -155,12 +155,6 @@ export function setLightState(s: Partial<LightState>): void {
         _shadowCascades = s.shadowCascades;
     }
 
-    // 夜间或极低光强时自动禁用阴影（避免无用 GPU 开销）
-    // 仅当用户未显式设置 shadowEnabled 时才自动关闭，避免覆盖用户意图
-    if (s.dirIntensity !== undefined && s.dirIntensity < 0.1 && s.shadowEnabled === undefined) {
-        _shadowEnabled = false;
-    }
-
     let needRebuildShadow = false;
     if (s.shadowResolution !== undefined && s.shadowResolution !== _shadowResolution) {
         _shadowResolution = s.shadowResolution;
@@ -299,7 +293,8 @@ function _ensureShadow(): void {
     const gen = new ShadowGenerator(_shadowResolution, dirLight);
     gen.useBlurExponentialShadowMap = _shadowType !== 'hard';
     gen.useKernelBlur = _shadowType === 'pcf';
-    gen.bias = _shadowBias; // 改为变量
+    gen.bias = _shadowBias;
+    gen.intensity = Math.min(1, Math.max(0, dirLight.intensity / 0.4));
 
     for (const [, inst] of _modelRegistry) {
         for (const m of inst.meshes) {

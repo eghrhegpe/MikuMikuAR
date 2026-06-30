@@ -77,9 +77,12 @@ export function getEnvSunAngle(): number {
 
 // ======== Time-of-Day ========
 
+const _AUTO_LINK_THRESHOLD_DEG = 0.5;
+
 let _timeOfDayActive = false;
 let _timeOfDaySpeed = 3;
 let _lastSkySunAngle = 90;
+let _lastAutoLinkSunAngle = 90;
 let _unregisterTimeOfDay: (() => void) | null = null; // 回调注销函数
 
 function _timeOfDayTick(): void {
@@ -96,7 +99,11 @@ function _timeOfDayTick(): void {
     }
 
     _updateSunDisc();
-    redoEnvAutoLink();
+
+    if (Math.abs(envSunAngle - _lastAutoLinkSunAngle) >= _AUTO_LINK_THRESHOLD_DEG) {
+        _lastAutoLinkSunAngle = envSunAngle;
+        redoEnvAutoLink();
+    }
 
     if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
         _lastSkySunAngle = envSunAngle;
@@ -115,6 +122,7 @@ export function startTimeOfDay(speed?: number): void {
     }
     _timeOfDayActive = true;
     _lastSkySunAngle = envSunAngle;
+    _lastAutoLinkSunAngle = envSunAngle;
     // 使用 impl 的统一 observer 注册表，避免多个独立的 scene observer
     impl.ensureEnvUpdateObserver(); // 确保 impl 的 observer 已初始化
     _unregisterTimeOfDay = impl.registerSceneTickCallback(_timeOfDayTick);
