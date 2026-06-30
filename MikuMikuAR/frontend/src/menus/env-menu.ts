@@ -383,6 +383,8 @@ export function buildWaterLevel(): PopupLevel {
                             waterTransparency: wp.waterTransparency,
                             waterWaveHeight: wp.waterWaveHeight,
                             waterAnimSpeed: wp.waterAnimSpeed,
+                            foamThreshold: wp.foamThreshold,
+                            foamIntensity: wp.foamIntensity,
                         });
                         envMenu?.reRender();
                     });
@@ -393,8 +395,19 @@ export function buildWaterLevel(): PopupLevel {
                 addColorSliderRow(c, "水色", s.waterColor, (v) => setEnvState({ waterColor: v }));
                 addSliderRow(c, "透明度", s.waterTransparency, 0, 1, 0.05, (v) => setEnvState({ waterTransparency: v }), "lucide:eye");
                 addSliderRow(c, "波高", s.waterWaveHeight, 0, 3, 0.1, (v) => setEnvState({ waterWaveHeight: v }), "lucide:waves");
+                addSliderRow(c, "泡沫阈值", s.foamThreshold, 0, 1, 0.01, (v) => setEnvState({ foamThreshold: v }));
+                addSliderRow(c, "泡沫强度", s.foamIntensity, 0, 1, 0.05, (v) => setEnvState({ foamIntensity: v }), "lucide:sparkles");
                 addSliderRow(c, "动画速度", s.waterAnimSpeed ?? 1, 0.1, 5, 0.1, (v) => setEnvState({ waterAnimSpeed: v }), "lucide:fast-forward");
                 addSliderRow(c, "范围", s.waterSize, 10, 200, 5, (v) => setEnvState({ waterSize: v }), "lucide:maximize");
+                addCollapsible(c, {
+                    title: "水下效果",
+                    icon: "lucide:waves",
+                    renderContent: (cc) => {
+                        addColorSliderRow(cc, "水下雾色", s.underwaterFogColor, (v) => setEnvState({ underwaterFogColor: v }));
+                        addSliderRow(cc, "雾密度", s.underwaterFogDensity, 0, 0.1, 0.001, (v) => setEnvState({ underwaterFogDensity: v }));
+                        addSliderRow(cc, "色差强度", s.underwaterChromaticAmount, 0, 100, 1, (v) => setEnvState({ underwaterChromaticAmount: v }));
+                    },
+                });
             });
         },
     };

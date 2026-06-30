@@ -159,6 +159,8 @@ export interface WaterPreset {
     waterTransparency: number;
     waterWaveHeight: number;
     waterAnimSpeed: number;
+    foamThreshold: number;
+    foamIntensity: number;
 }
 
 export const WATER_PRESETS: Record<string, WaterPreset> = {
@@ -168,6 +170,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterTransparency: 0.8,
         waterWaveHeight: 0.15,
         waterAnimSpeed: 0.2,
+        foamThreshold: 0.35,
+        foamIntensity: 0.15,
     },
     ripple: {
         label: "涟漪",
@@ -175,6 +179,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterTransparency: 0.72,
         waterWaveHeight: 0.6,
         waterAnimSpeed: 1.0,
+        foamThreshold: 0.2,
+        foamIntensity: 0.4,
     },
     ocean: {
         label: "海浪",
@@ -182,6 +188,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterTransparency: 0.6,
         waterWaveHeight: 1.8,
         waterAnimSpeed: 2.5,
+        foamThreshold: 0.08,
+        foamIntensity: 0.7,
     },
     storm: {
         label: "风暴",
@@ -189,6 +197,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterTransparency: 0.45,
         waterWaveHeight: 3.0,
         waterAnimSpeed: 5.0,
+        foamThreshold: 0.04,
+        foamIntensity: 0.9,
     },
     tropical: {
         label: "热带",
@@ -196,5 +206,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterTransparency: 0.7,
         waterWaveHeight: 0.8,
         waterAnimSpeed: 1.2,
+        foamThreshold: 0.2,
+        foamIntensity: 0.35,
     },
 };

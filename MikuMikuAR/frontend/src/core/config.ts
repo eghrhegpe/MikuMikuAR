@@ -174,6 +174,15 @@ export interface EnvState {
     waterSize: number;
     waterAnimSpeed: number;   // 水体动画速度倍率 0.1~5
 
+    // ======== 水面泡沫 ========
+    foamThreshold: number;
+    foamIntensity: number;
+
+    // ======== 水下效果 ========
+    underwaterFogColor: [number, number, number];
+    underwaterFogDensity: number;
+    underwaterChromaticAmount: number;
+
     cloudsEnabled: boolean;
     cloudCover: number;
     cloudScale: number;
@@ -331,6 +340,15 @@ export let envState: EnvState = {
     waterWaveHeight: 0.5,
     waterSize: 50,
     waterAnimSpeed: 1,
+
+    // ======== 水面泡沫 ========
+    foamThreshold: 0.1,
+    foamIntensity: 0.5,
+
+    // ======== 水下效果 ========
+    underwaterFogColor: [0.08, 0.2, 0.45],
+    underwaterFogDensity: 0.015,
+    underwaterChromaticAmount: 20,
 
     cloudsEnabled: false,
     cloudCover: 0.5,

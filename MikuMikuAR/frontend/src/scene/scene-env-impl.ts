@@ -2,7 +2,8 @@
 // All functions use module-level _scene / _pipeline injected by scene.ts
 // Import this file via scene-env.ts (Facade), never import directly.
 
-import { Scene, Color3, Color4, Vector2, Vector3, Texture, BaseTexture, StandardMaterial, GPUParticleSystem, Observer, ParticleSystem, ShadowGenerator, CubeTexture, DefaultRenderingPipeline, Mesh, MeshBuilder, Effect, ShaderMaterial, PostProcess, DirectionalLight } from "@babylonjs/core";
+import { Scene, Color3, Color4, Vector2, Vector3, Texture, BaseTexture, StandardMaterial, GPUParticleSystem, Observer, ParticleSystem, ShadowGenerator, CubeTexture, Constants, DefaultRenderingPipeline, Mesh, MeshBuilder, Effect, ShaderMaterial, PostProcess, DirectionalLight } from "@babylonjs/core";
+import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 import { EnvState, envState } from "../core/config";
 
 // ======== Sun angle state (moved from scene.ts) ========
@@ -103,6 +104,44 @@ export function clearRipples(): void {
     _rippleDirty = true;
 }
 
+// ======== 焦散系统（静态纹理 + UV 滚动）========
+let _causticTexture: Texture | null = null;
+const CAUSTIC_TEX_SIZE = 128;
+
+function ensureCausticTexture(scene: Scene): Texture {
+    if (_causticTexture) return _causticTexture;
+    const S = CAUSTIC_TEX_SIZE;
+    const canvas = document.createElement("canvas");
+    canvas.width = S;
+    canvas.height = S;
+    const ctx = canvas.getContext("2d")!;
+    const imgData = ctx.createImageData(S, S);
+    const data = imgData.data;
+    for (let y = 0; y < S; y++) {
+        for (let x = 0; x < S; x++) {
+            const u = x / S, v = y / S;
+            // 3-octave sinusoidal noise — light concentration pattern
+            let n = 0, total = 0, amp = 1, freq = 4;
+            for (let o = 0; o < 3; o++) {
+                n += amp * (Math.sin(u * freq * Math.PI) * Math.cos(v * freq * Math.PI));
+                total += amp;
+                amp *= 0.5;
+                freq *= 2;
+            }
+            n = n / total * 0.5 + 0.5;
+            const i = (y * S + x) * 4;
+            const val = Math.floor(128 + (n - 0.5) * 128);
+            data[i] = val; data[i + 1] = val; data[i + 2] = val; data[i + 3] = 255;
+        }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    const tex = new Texture(canvas.toDataURL(), scene, false, false);
+    tex.wrapU = Constants.TEXTURE_WRAP_ADDRESSMODE;
+    tex.wrapV = Constants.TEXTURE_WRAP_ADDRESSMODE;
+    _causticTexture = tex;
+    return tex;
+}
+
 // ======== Custom Water Shader — Gerstner Waves + Foam ========
 const WATER_VERT_SRC = `
 precision highp float;
@@ -177,6 +216,7 @@ uniform vec3 cameraPosition;
 uniform vec3 waterColor;
 uniform float waterTransparency;
 uniform float waterLevel;
+uniform float time;
 uniform float envIntensity;
 uniform vec3 foamColor;
 uniform float foamThreshold;
@@ -186,6 +226,11 @@ uniform float fogDensity;
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 uniform float ambientIntensity;
+
+uniform sampler2D uCausticTex;
+uniform float uCausticIntensity;
+uniform float uCausticSpeed;
+uniform float uCausticScale;
 
 uniform vec4 uRipplePosRad[8];
 uniform vec4 uRippleStrSpdLife[8];
@@ -251,6 +296,12 @@ void main() {
     normal = normalize(normal + rippleN);
     float rippleGlint = max(0.0, rippleSum * 0.25);
     color += vec3(rippleGlint);
+
+    // Caustics — UV-scrolling noise texture
+    vec2 causticUV = vWorldPos.xz * uCausticScale + vec2(time * uCausticSpeed * 0.10, time * uCausticSpeed * 0.15);
+    float caustic = texture2D(uCausticTex, causticUV).r;
+    vec3 causticCol = mix(vec3(1.0, 0.9, 0.6), vec3(1.0, 1.0, 0.8), caustic);
+    color += causticCol * caustic * uCausticIntensity;
 
     // Exponential fog
     float depth = length(vWorldPos - cameraPosition);
@@ -343,8 +394,8 @@ function buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness:
     }
 
     const tex = new Texture("data:" + canvas.toDataURL("image/png"), scene, false);
-    tex.wrapU = Texture.CLAMP_ADDRESSMODE;
-    tex.wrapV = Texture.CLAMP_ADDRESSMODE;
+    tex.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+    tex.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
     tex.hasAlpha = false;
     return tex;
 }
@@ -524,6 +575,9 @@ export function applyGround(state: EnvState): void {
 // ======== Water System ========
 
 export function createWater(state: EnvState): void {
+    // 确保水下检测 observer 已注册（不再依赖云层）
+    ensureEnvUpdateObserver();
+
     // early-return: update existing water params, don't rebuild
     if (_envSys.water.mesh && _envSys.water.material) {
         const mat = _envSys.water.material as ShaderMaterial;
@@ -537,6 +591,8 @@ export function createWater(state: EnvState): void {
         mat.setColor3("waterColor", new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]));
         mat.setFloat("waterTransparency", state.waterTransparency);
         mat.setFloat("waterLevel", state.waterLevel);
+        mat.setFloat("foamThreshold", state.foamThreshold);
+        mat.setFloat("foamIntensity", state.foamIntensity);
         const newSize = Math.max(1, state.waterSize);
         const scale = newSize / 60;
         if (wm.scaling.x !== scale) {
@@ -584,10 +640,11 @@ export function createWater(state: EnvState): void {
             "cameraPosition", "waterColor", "waterTransparency", "waterLevel",
             "envIntensity", "foamColor", "foamThreshold", "foamIntensity",
             "fogColor", "fogDensity", "lightDir", "lightColor", "ambientIntensity",
-            "uRipplePosRad[8]", "uRippleStrSpdLife[8]", "uRippleCount",
+            "uRipplePosRad", "uRippleStrSpdLife", "uRippleCount",
+            "uCausticIntensity", "uCausticSpeed", "uCausticScale",
         ],
         uniformBuffers: [],
-        samplers: hasEnv ? ["envTexture"] : [],
+        samplers: ["uCausticTex"].concat(hasEnv ? ["envTexture"] : []),
         defines: hasEnv ? ["ENV_TEXTURE"] : [],
         needAlphaBlending: true,
     });
@@ -605,8 +662,8 @@ export function createWater(state: EnvState): void {
 
     // Foam
     mat.setColor3("foamColor", new Color3(1, 1, 1));
-    mat.setFloat("foamThreshold", 0.1);
-    mat.setFloat("foamIntensity", 0.5);
+    mat.setFloat("foamThreshold", state.foamThreshold);
+    mat.setFloat("foamIntensity", state.foamIntensity);
 
     // Lighting
     const dirLight = scene.getLightByName("dir") as DirectionalLight | null;
@@ -620,9 +677,16 @@ export function createWater(state: EnvState): void {
     mat.setFloat("ambientIntensity", 0.3);
 
     // Ripple uniforms (initialised empty)
-    mat.setArray("uRipplePosRad", new Float32Array(MAX_RIPPLES * 4));
-    mat.setArray("uRippleStrSpdLife", new Float32Array(MAX_RIPPLES * 4));
+    mat.setArray4("uRipplePosRad", new Array(MAX_RIPPLES * 4).fill(0));
+    mat.setArray4("uRippleStrSpdLife", new Array(MAX_RIPPLES * 4).fill(0));
     mat.setInt("uRippleCount", 0);
+
+    // Caustics
+    const causticTex = ensureCausticTexture(scene);
+    mat.setTexture("uCausticTex", causticTex);
+    mat.setFloat("uCausticIntensity", 0.15);
+    mat.setFloat("uCausticSpeed", 0.5);
+    mat.setFloat("uCausticScale", 0.04);
 
     // Fog
     mat.setColor3("fogColor", scene.fogColor);
@@ -672,8 +736,8 @@ export function createWater(state: EnvState): void {
             }
             if (_rippleDirty) {
                 _rippleDirty = false;
-                const posRad = new Float32Array(MAX_RIPPLES * 4);
-                const strSpdLife = new Float32Array(MAX_RIPPLES * 4);
+                const posRad: number[] = new Array(MAX_RIPPLES * 4).fill(0);
+                const strSpdLife: number[] = new Array(MAX_RIPPLES * 4).fill(0);
                 const count = Math.min(_ripples.length, MAX_RIPPLES);
                 for (let i = 0; i < count; i++) {
                     const r = _ripples[i];
@@ -687,8 +751,8 @@ export function createWater(state: EnvState): void {
                     strSpdLife[i * 4 + 2] = r.life;
                     strSpdLife[i * 4 + 3] = 0;
                 }
-                m.setArray("uRipplePosRad", posRad);
-                m.setArray("uRippleStrSpdLife", strSpdLife);
+                m.setArray4("uRipplePosRad", posRad);
+                m.setArray4("uRippleStrSpdLife", strSpdLife);
                 m.setInt("uRippleCount", count);
             }
         });
@@ -709,6 +773,11 @@ export function disposeWater(): void {
         getScene().onBeforeRenderObservable.remove(_waterUpdateObserver);
         _waterUpdateObserver = null;
     }
+    // 重置水下过渡状态，避免关水再开后 stale state 导致动画倒放
+    _underwaterActive = false;
+    _underwaterSavedFog = null;
+    _underwaterTransitionProgress = 0;
+    _underwaterTarget = false;
 }
 
 export function refreshWaterRenderList(): void {
@@ -1382,13 +1451,17 @@ export function disposeClouds(): void {
         const m = _envSys.clouds[key];
         if (m) { m.dispose(); _envSys.clouds[key] = null; }
     }
-    disposeEnvUpdateObserver();
+    // 注意：不再调用 disposeEnvUpdateObserver()，
+    // 环境 observer 应在整个环境系统销毁时再清理，
+    // 否则关云层会影响天空旋转、水下检测等其他功能。
 }
 
 // ======== Env Update Observer (wind, sky rotation, underwater) ========
 let _envUpdateObserver: Observer<Scene> | null = null;
 let _underwaterActive = false;
 let _underwaterSavedFog: { mode: number; color: Color3; density: number } | null = null;
+let _underwaterTransitionProgress = 0;
+let _underwaterTarget = false;
 
 export function ensureEnvUpdateObserver(): void {
     const scene = getScene();
@@ -1427,31 +1500,55 @@ export function ensureEnvUpdateObserver(): void {
             }
         }
         // Water wave direction is embedded in Gerstner wave shader — no per-frame wind update needed
-        // Underwater post-processing
+        // Underwater post-processing (smooth transition)
         if (envState.waterEnabled && scene.activeCamera) {
             const camY = scene.activeCamera.globalPosition.y;
-            const underwater = camY < envState.waterLevel;
-            if (underwater !== _underwaterActive) {
-                _underwaterActive = underwater;
-                pipeline.chromaticAberrationEnabled = underwater;
-                if (pipeline.chromaticAberration) {
-                    pipeline.chromaticAberration.aberrationAmount = underwater ? 20 : 0;
-                }
-                if (underwater && !_underwaterSavedFog) {
-                    _underwaterSavedFog = {
-                        mode: scene.fogMode,
-                        color: scene.fogColor.clone(),
-                        density: scene.fogDensity,
-                    };
-                    scene.fogMode = Scene.FOGMODE_EXP2;
-                    scene.fogColor = new Color3(0.08, 0.2, 0.45);
-                    scene.fogDensity = 0.015;
-                } else if (!underwater && _underwaterSavedFog) {
+            _underwaterTarget = camY < envState.waterLevel;
+
+            // Save / restore fog on state change
+            if (_underwaterTarget && !_underwaterActive) {
+                _underwaterActive = true;
+                _underwaterSavedFog = {
+                    mode: scene.fogMode,
+                    color: scene.fogColor.clone(),
+                    density: scene.fogDensity,
+                };
+            } else if (!_underwaterTarget && _underwaterActive && _underwaterTransitionProgress < 0.001) {
+                _underwaterActive = false;
+                if (_underwaterSavedFog) {
                     scene.fogMode = _underwaterSavedFog.mode;
                     scene.fogColor = _underwaterSavedFog.color;
                     scene.fogDensity = _underwaterSavedFog.density;
                     _underwaterSavedFog = null;
                 }
+            }
+
+            // Lerp transition progress
+            const dt = scene.deltaTime / 1000;
+            const speed = 0.5;
+            if (_underwaterTarget && _underwaterTransitionProgress < 1) {
+                _underwaterTransitionProgress = Math.min(1, _underwaterTransitionProgress + dt / speed);
+            } else if (!_underwaterTarget && _underwaterTransitionProgress > 0) {
+                _underwaterTransitionProgress = Math.max(0, _underwaterTransitionProgress - dt / speed);
+            }
+
+            if (_underwaterTransitionProgress > 0) {
+                const t = _underwaterTransitionProgress;
+                // Chromatic aberration — always lerps 0 → amount on entry
+                pipeline.chromaticAberrationEnabled = true;
+                if (pipeline.chromaticAberration) {
+                    pipeline.chromaticAberration.aberrationAmount = envState.underwaterChromaticAmount * t;
+                }
+                // Fog: color set once, density always lerps 0 → target
+                scene.fogMode = Scene.FOGMODE_EXP2;
+                scene.fogColor = new Color3(
+                    envState.underwaterFogColor[0],
+                    envState.underwaterFogColor[1],
+                    envState.underwaterFogColor[2],
+                );
+                scene.fogDensity = envState.underwaterFogDensity * t;
+            } else if (!_underwaterActive) {
+                pipeline.chromaticAberrationEnabled = false;
             }
         }
     });
@@ -1465,6 +1562,8 @@ export function disposeEnvUpdateObserver(): void {
     }
     _underwaterActive = false;
     _underwaterSavedFog = null;
+    _underwaterTransitionProgress = 0;
+    _underwaterTarget = false;
 }
 
 // ======== Time-of-Day ========

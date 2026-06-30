@@ -17,6 +17,7 @@ import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPi
 import "@babylonjs/core/Physics/v2/physicsEngineComponent";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { Observer } from "@babylonjs/core/Misc/observable";
+import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
 import "@babylonjs/core/Particles/webgl2ParticleSystem";
 
 import { RegisterMmdModelLoaders } from "babylon-mmd/esm/Loader/dynamic";
@@ -37,7 +38,7 @@ import "@babylonjs/core/Materials/Textures/Loaders/hdrTextureLoader";
 import "@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex";
 import "babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment";
-import { initEnvFacade, applyEnvState, applySky, _envSys, refreshWaterRenderList, updateWaterAnimSpeed } from "./scene-env";
+import { initEnvFacade, applyEnvState, applySky, _envSys, refreshWaterRenderList, updateWaterAnimSpeed, addRipple } from "./scene-env";
 
 import { SaveThumbnail, SaveLastScene, LoadLastScene, SetEnvState } from "../../wailsjs/go/main/App";
 import { initCameraSystem, autoFrame, getCameraState, setCameraState, animateCameraVmd, loadCameraVmd, clearCameraVmd, hasCameraVmd, getCameraVmdName, getCameraVmdPath, switchCameraMode, getCameraMode } from "./camera";
@@ -621,6 +622,27 @@ export async function initScene(): Promise<void> {
     initEnvFacade(scene, pipeline);
     applyEnvState(envState);
     _updateSunDisc();
+
+    // Click on water surface → generate ripple
+    scene.onPointerObservable.add((info) => {
+        if (info.type !== PointerEventTypes.POINTERDOWN) return;
+        if (!envState.waterEnabled) return;
+        // Skip if user clicked on a pickable mesh (model, ground, etc.)
+        if (info.pickInfo?.hit) return;
+        const ray = info.pickInfo?.ray;
+        if (!ray || ray.direction.y >= 0) return;
+        const waterY = envState.waterLevel;
+        const camY = scene.activeCamera?.globalPosition.y;
+        if (camY === undefined || camY <= waterY) return;
+        const t = (waterY - ray.origin.y) / ray.direction.y;
+        if (t <= 0) return;
+        const hit = ray.origin.add(ray.direction.scale(t));
+        // Bounds check against water size
+        const half = envState.waterSize / 2;
+        if (Math.abs(hit.x) > half || Math.abs(hit.z) > half) return;
+        addRipple(hit, 3, 0.4, 1.5, 2);
+    }, PointerEventTypes.POINTERDOWN);
+
     setTriggerAutoSave(triggerAutoSaveImpl);
 }
 
