@@ -8,6 +8,7 @@ import { EnvState, envState } from "../core/config";
 export { _envSys } from "./scene-env-impl";
 import { Scene } from "@babylonjs/core/scene";
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 // ======== Init (called once by scene.ts) ========
 
@@ -43,6 +44,16 @@ export function refreshWaterRenderList(): void {
 
 export function updateWaterAnimSpeed(speed: number): void {
     impl.updateWaterAnimSpeed(speed);
+}
+
+// ======== Interaction Ripples ========
+
+export function addRipple(pos: Vector3, radius?: number, strength?: number, speed?: number, maxLife?: number): void {
+    impl.addRipple(pos, radius, strength, speed, maxLife);
+}
+
+export function clearRipples(): void {
+    impl.clearRipples();
 }
 
 // ======== Particles ========

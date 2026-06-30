@@ -970,6 +970,7 @@ export interface SceneFile {
         scaling: number;
         visible: boolean;
     }>;
+    gravityStrength?: number;  // physics gravity multiplier, 0-2, default 1.0
 }
 
 export function serializeScene(): SceneFile {
@@ -1028,6 +1029,7 @@ export function serializeScene(): SceneFile {
             scaling: p.scaling,
             visible: p.visible,
         })),
+        gravityStrength: _gravityStrength,
     };
 }
 
@@ -1094,6 +1096,8 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     if (data.lights) setLightState(data.lights);
     if (data.render) setRenderState(data.render);
     if (data.env && !skipEnv) setEnvState(data.env);
+    // Restore gravity strength
+    if (data.gravityStrength !== undefined) setGravityStrength(data.gravityStrength);
 
     // Restore procedural motion state
     if (data.procMotion) {

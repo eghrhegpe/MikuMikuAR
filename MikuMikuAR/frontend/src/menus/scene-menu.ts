@@ -22,12 +22,10 @@ import { getLightState, setLightState, triggerAutoSave, serializeScene, deserial
 import type { RenderState } from "../scene/scene";
 import { SelectSceneSaveFile, SelectSceneOpenFile, SaveSceneFile, LoadSceneFile, SaveRenderPreset, DeleteRenderPreset, GetRenderPresets, SelectVMDMotion, SelectDir, SaveScreenshot,
     GetPresetScenes, GetPresetScenesDir, SaveScenePreset, DeletePresetScene } from "../../wailsjs/go/main/App";
-import { focusModel, setGravityStrength, getGravityStrength, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, getLipSyncState, setLipSyncEnabled, setLipSyncSensitivity, setLipSyncIntensity, scene, modelManager } from "../scene/scene";
-import { modelRegistry, focusedModelId, setFocusedModelId, envState } from "../core/config";
-import { setEnvState } from "../scene/scene";
+import { focusModel, setProcMotionMode, setProcMotionIntensity, setProcMotionSpeed, setProcMotionAutoSwitch, getProcMotionState, regenerateProcMotion, getLipSyncState, setLipSyncEnabled, setLipSyncSensitivity, setLipSyncIntensity, scene, modelManager } from "../scene/scene";
+import { modelRegistry, focusedModelId, setFocusedModelId } from "../core/config";
 import type { ProcMotionMode } from "../motion/procedural-motion";
 import { buildEnvLevel, buildSkyLevel, buildGroundLevel, buildParticleLevel, buildWindLevel, buildCloudLevel, buildEnvLightingLevel, buildPresetLevel } from "./env-menu";
-import { toggleCloth, recreateCloth } from "../physics/cloth-manager";
 
 /**
  * 统一的 sceneMenu onFolderEnter 路由器
@@ -49,8 +47,6 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
         case "scene:camera": return buildCameraLevel();
         case "scene:light": return buildLightLevel();
         case "scene:render": return buildRenderLevel();
-        case "scene:physics": return buildPhysicsLevel();
-        case "scene:physics:cloth": return buildClothParamsLevel();
         case "scene:procmotion": return buildProcMotionLevel();
         case "procmotion:mode": return buildProcMotionModeLevel();
         case "scene:screenshot": return buildScreenshotLevel();
@@ -99,7 +95,6 @@ function buildSceneRoot(): PopupLevel {
                 slideRow(c, "lucide:camera", "相机模式", true, () => sceneMenu?.push(buildCameraLevel()));
                 slideRow(c, "lucide:sun", "灯光", true, () => sceneMenu?.push(buildLightLevel()));
                 slideRow(c, "lucide:sparkles", "渲染", true, () => sceneMenu?.push(buildRenderLevel()));
-                slideRow(c, "lucide:toggle-left", "物理", true, () => sceneMenu?.push(buildPhysicsLevel()));
             });
             // Card 3: 程序化动作
             cardContainer(container, (c) => {
@@ -643,82 +638,6 @@ function buildRenderLevel(): PopupLevel {
             { kind: "folder", label: "舞台", icon: "monitor", target: "scene:render:stage" },
             { kind: "folder", label: "渲染预设", icon: "palette", target: "scene:render:presets" },
         ],
-    };
-}
-
-function buildPhysicsLevel(): PopupLevel {
-    return {
-        label: "物理",
-        dir: "",
-        items: [
-            { kind: "folder", label: "布料参数", icon: "lucide:scarf", target: "scene:physics:cloth", sublabel: envState.clothEnabled ? "已启用" : "未启用" },
-        ],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                addToggleRow(c, "布料模拟", envState.clothEnabled, (v) => {
-                    setEnvState({ clothEnabled: v });
-                    if (v) {
-                        toggleCloth(true);
-                    } else {
-                        toggleCloth(false);
-                    }
-                    sceneMenu?.reRender();
-                }, "lucide:scarf");
-                const gravity = getGravityStrength();
-                addSliderRow(c, "物理重力", gravity, 0, 2, 0.05, (v) => {
-                    setGravityStrength(v);
-                }, "lucide:arrow-down");
-            });
-        },
-    };
-}
-
-function buildClothParamsLevel(): PopupLevel {
-    return {
-        label: "布料参数",
-        dir: "",
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const cfg = envState.clothConfig;
-                addSliderRow(c, "裙长", cfg.length, 0.2, 1.5, 0.05, (v) => {
-                    setEnvState({ clothConfig: { ...cfg, length: v } });
-                    recreateCloth();
-                }, "lucide:ruler");
-                addSliderRow(c, "裙摆角度", cfg.slope, 0, 45, 1, (v) => {
-                    setEnvState({ clothConfig: { ...cfg, slope: v } });
-                    recreateCloth();
-                }, "lucide:triangle");
-                addSliderRow(c, "腰部半径", cfg.innerRadius, 0.05, 0.4, 0.01, (v) => {
-                    setEnvState({ clothConfig: { ...cfg, innerRadius: v } });
-                    recreateCloth();
-                }, "lucide:circle");
-                addSliderRow(c, "布料柔度", cfg.compliance, 0, 0.01, 0.005, (v) => {
-                    setEnvState({ clothConfig: { ...cfg, compliance: v } });
- recreateCloth();
-                }, "lucide:wind");
-                addSliderRow(c, "弯曲柔度", cfg.bendCompliance, 0, 0.05, 0.01, (v) => {
-                    setEnvState({ clothConfig: { ...cfg, bendCompliance: v } });
-                    recreateCloth();
-                }, "lucide:curl");
-                addSliderRow(c, "阻尼", cfg.damping, 0.8, 0.999, 0.01, (v) => {
-                    setEnvState({ clothConfig: { ...cfg, damping: v } });
- recreateCloth();
-                }, "lucide:droplet");
-                addSliderRow(c, "重力倍率", cfg.gravityScale, 0.1, 3, 0.1, (v) => {
-                    setEnvState({ clothConfig: { ...cfg, gravityScale: v } });
-                    recreateCloth();
-                }, "lucide:arrow-down");
-                addSliderRow(c, "水平分段", cfg.segmentsH, 12, 36, 2, (v) => {
-                    setEnvState({ clothConfig: { ...cfg, segmentsH: v } });
- recreateCloth();
-                }, "lucide:grid");
-                addSliderRow(c, "垂直分段", cfg.segmentsV, 6, 20, 1, (v) => {
-                    setEnvState({ clothConfig: { ...cfg, segmentsV: v } });
-                    recreateCloth();
-                }, "lucide:columns");
-            });
-        },
     };
 }
 

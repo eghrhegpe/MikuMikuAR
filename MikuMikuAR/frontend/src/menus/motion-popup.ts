@@ -10,20 +10,25 @@ import {
   stackRegistry,
   closeAllOverlays,
   cardContainer,
+  envState,
 } from "../core/config";
 import {
   loadVMDFromPath, loadVPDPose,
   updatePlaybackUI,
   focusModel,
+  setGravityStrength, getGravityStrength,
+  setEnvState,
+  getPhysicsCategories, isPhysicsCategoryEnabled, setPhysicsCategory,
 } from "../scene/scene";
 import { SlideMenu } from "./menu";
-import { slideRow, addSliderRow } from "../core/ui-helpers";
+import { slideRow, addSliderRow, addToggleRow } from "../core/ui-helpers";
 import { createIconifyIcon } from "../core/icons";
 import { loadAudioFile, setAudioOffset, getAudioPath, getAudioName, getVolume, getAudioOffset } from "../outfit/audio";
 import {
   SelectAudioFile, SelectVMDMotion, SelectVPDPose,
   GetDanceSets, SaveDanceSet, DeleteDanceSet, ImportDanceSet,
 } from "../../wailsjs/go/main/App";
+import { toggleCloth, recreateCloth } from "../physics/cloth-manager";
 
 // ======== Dance Set Types & State ========
 
@@ -126,6 +131,28 @@ function buildActionBindingLevel(id: string): PopupLevel {
         });
       });
 
+      // Per-model physics categories
+      if (inst.kind === "actor") {
+        const physCategories = getPhysicsCategories(id);
+        if (physCategories.length > 0) {
+          const physLabel = document.createElement("div");
+          physLabel.style.cssText = "font-size:11px;color:#fff;padding:6px 14px 2px;opacity:0.6;";
+          physLabel.textContent = "物理分类";
+          container.appendChild(physLabel);
+          cardContainer(container, (c) => {
+            const CAT_LABELS: Record<string, string> = { skirt: "裙子物理", chest: "胸部物理", hair: "头发物理", accessory: "配件物理" };
+            for (const cat of physCategories) {
+              const enabled = isPhysicsCategoryEnabled(id, cat);
+              addToggleRow(c, CAT_LABELS[cat] || cat, enabled, (v) => {
+                setPhysicsCategory(id, cat, v);
+                motionMenu?.reRender();
+                setStatus(v ? `✓ ${CAT_LABELS[cat] || cat} 已开启` : `✕ ${CAT_LABELS[cat] || cat} 已关闭`, true);
+              }, "lucide:settings");
+            }
+          });
+        }
+      }
+
       // 聚焦按钮（高频操作）
       const focusBtn = document.createElement("button");
       focusBtn.className = "preset-chip";
@@ -184,6 +211,57 @@ function buildActionMusicLevel(): PopupLevel {
       });
     },
   };
+}
+
+// ======== Cloth Params Level ========
+
+function buildClothParamsLevel(): PopupLevel {
+    return {
+        label: "布料参数",
+        dir: "",
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                const cfg = envState.clothConfig;
+                addSliderRow(c, "裙长", cfg.length, 0.2, 1.5, 0.05, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, length: v } });
+                    recreateCloth();
+                }, "lucide:ruler");
+                addSliderRow(c, "裙摆角度", cfg.slope, 0, 45, 1, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, slope: v } });
+                    recreateCloth();
+                }, "lucide:triangle");
+                addSliderRow(c, "腰部半径", cfg.innerRadius, 0.05, 0.4, 0.01, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, innerRadius: v } });
+                    recreateCloth();
+                }, "lucide:circle");
+                addSliderRow(c, "布料柔度", cfg.compliance, 0, 0.01, 0.005, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, compliance: v } });
+                    recreateCloth();
+                }, "lucide:wind");
+                addSliderRow(c, "弯曲柔度", cfg.bendCompliance, 0, 0.05, 0.01, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, bendCompliance: v } });
+                    recreateCloth();
+                }, "lucide:curl");
+                addSliderRow(c, "阻尼", cfg.damping, 0.8, 0.999, 0.01, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, damping: v } });
+                    recreateCloth();
+                }, "lucide:droplet");
+                addSliderRow(c, "重力倍率", cfg.gravityScale, 0.1, 3, 0.1, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, gravityScale: v } });
+                    recreateCloth();
+                }, "lucide:arrow-down");
+                addSliderRow(c, "水平分段", cfg.segmentsH, 12, 36, 2, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, segmentsH: v } });
+                    recreateCloth();
+                }, "lucide:grid");
+                addSliderRow(c, "垂直分段", cfg.segmentsV, 6, 20, 1, (v) => {
+                    setEnvState({ clothConfig: { ...cfg, segmentsV: v } });
+                    recreateCloth();
+                }, "lucide:columns");
+            });
+        },
+    };
 }
 
 // ======== Motion Stack ========
@@ -327,6 +405,23 @@ export function showMotionPopup(): void {
         });
         slideRow(c, "lucide:music", "音乐", true, () => {
           motionMenu?.push(buildActionMusicLevel());
+        });
+      });
+
+      // Physics card
+      cardContainer(container, (c) => {
+        const gravity = getGravityStrength();
+        addSliderRow(c, "物理重力", gravity, 0, 2, 0.05, (v) => {
+          setGravityStrength(v);
+        }, "lucide:arrow-down");
+        addToggleRow(c, "布料模拟", envState.clothEnabled, (v) => {
+          setEnvState({ clothEnabled: v });
+          if (v) toggleCloth(true);
+          else toggleCloth(false);
+          motionMenu?.reRender();
+        }, "lucide:scarf");
+        slideRow(c, "lucide:settings", "布料参数", true, () => {
+          motionMenu?.push(buildClothParamsLevel());
         });
       });
     },

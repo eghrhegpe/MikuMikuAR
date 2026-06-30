@@ -2,9 +2,7 @@
 // All functions use module-level _scene / _pipeline injected by scene.ts
 // Import this file via scene-env.ts (Facade), never import directly.
 
-import { Scene, Color3, Color4, Vector2, Vector3, Texture, BaseTexture, StandardMaterial, GPUParticleSystem, Observer, ParticleSystem, ShadowGenerator, CubeTexture, DefaultRenderingPipeline, Mesh, MeshBuilder, Effect, ShaderMaterial, PostProcess } from "@babylonjs/core";
-import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
-import { WaterMaterial } from "@babylonjs/materials/water/waterMaterial";
+import { Scene, Color3, Color4, Vector2, Vector3, Texture, BaseTexture, StandardMaterial, GPUParticleSystem, Observer, ParticleSystem, ShadowGenerator, CubeTexture, DefaultRenderingPipeline, Mesh, MeshBuilder, Effect, ShaderMaterial, PostProcess, DirectionalLight } from "@babylonjs/core";
 import { EnvState, envState } from "../core/config";
 
 // ======== Sun angle state (moved from scene.ts) ========
@@ -48,7 +46,7 @@ export const _envSys: {
     ground: { mesh: Mesh | null };
     particles: { emitter: GPUParticleSystem | null; followObserver: Observer<Scene> | null };
     clouds: { postProcess: Mesh | null; postProcess2: Mesh | null; material: StandardMaterial | null; texture: Texture | null };
-    water: { mesh: Mesh | null; material: WaterMaterial | null };
+    water: { mesh: Mesh | null; material: ShaderMaterial | null };
     shadow: { generator: ShadowGenerator | null };
 } = {
     sky: { skyMesh: null, envTexture: null },
@@ -59,11 +57,212 @@ export const _envSys: {
     shadow: { generator: null },
 };
 
-// === 补丁2：缓存上次风向，避免重复设置 ===
-let _lastWindDir = new Vector2(0, 0);
-
 // === LOD 水面：记录所有 LOD 子网格，用于同步缩放和位置 ===
 let _waterLODs: Mesh[] = [];
+
+// === 每帧更新水面的 observer ===
+let _waterUpdateObserver: Observer<Scene> | null = null;
+
+// ======== 涟漪系统（Interaction Ripples）========
+const MAX_RIPPLES = 8;
+interface RippleSource {
+    position: Vector3;
+    radius: number;
+    strength: number;
+    speed: number;
+    life: number;      // 剩余秒数
+    maxLife: number;
+}
+let _ripples: RippleSource[] = [];
+let _rippleDirty = true;
+
+export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, maxLife = 3): void {
+    let idx = -1;
+    let oldestLife = Infinity;
+    for (let i = 0; i < _ripples.length; i++) {
+        if (_ripples[i].life <= 0) { idx = i; break; }
+        if (_ripples[i].life < oldestLife) { oldestLife = _ripples[i].life; idx = i; }
+    }
+    if (idx === -1 && _ripples.length < MAX_RIPPLES) {
+        idx = _ripples.length;
+        _ripples.push({ position: new Vector3(0, 0, 0), radius: 0, strength: 0, speed: 0, life: 0, maxLife: 0 });
+    }
+    if (idx === -1) return;
+    const r = _ripples[idx];
+    r.position.copyFrom(pos);
+    r.radius = Math.max(0.1, radius);
+    r.strength = Math.max(0, Math.min(1, strength));
+    r.speed = Math.max(0.1, speed);
+    r.life = maxLife > 0 ? maxLife : 9999;
+    r.maxLife = maxLife;
+    _rippleDirty = true;
+}
+
+export function clearRipples(): void {
+    _ripples = [];
+    _rippleDirty = true;
+}
+
+// ======== Custom Water Shader — Gerstner Waves + Foam ========
+const WATER_VERT_SRC = `
+precision highp float;
+attribute vec3 position;
+attribute vec2 uv;
+attribute vec3 normal;
+uniform mat4 world;
+uniform mat4 viewProjection;
+uniform float time;
+uniform float waveHeight;
+uniform float waveSpeed;
+
+varying vec2 vUV;
+varying vec3 vWorldPos;
+varying vec3 vNormal;
+varying float vHeight;
+
+void main() {
+    vUV = uv;
+    vec3 worldPos = (world * vec4(position, 1.0)).xyz;
+    vec3 p = worldPos;
+    vec3 n = vec3(0.0, 1.0, 0.0);
+
+    // 4 Gerstner waves with hardcoded directions
+    { // Wave 1
+        vec2 dir = normalize(vec2(0.8, 0.6));
+        float f = 0.15, a = 0.3 * waveHeight;
+        float th = f * dot(dir, p.xz) + 0.7 * time * waveSpeed;
+        float c = cos(th), s = sin(th);
+        p.x += a * dir.x * c; p.z += a * dir.y * c; p.y += a * s;
+        n.x -= dir.x * f * a * c; n.z -= dir.y * f * a * c;
+    }
+    { // Wave 2
+        vec2 dir = normalize(vec2(-0.3, 0.9));
+        float f = 0.2, a = 0.25 * waveHeight;
+        float th = f * dot(dir, p.xz) + 0.9 * time * waveSpeed;
+        float c = cos(th), s = sin(th);
+        p.x += a * dir.x * c; p.z += a * dir.y * c; p.y += a * s;
+        n.x -= dir.x * f * a * c; n.z -= dir.y * f * a * c;
+    }
+    { // Wave 3
+        vec2 dir = normalize(vec2(-0.7, -0.5));
+        float f = 0.25, a = 0.2 * waveHeight;
+        float th = f * dot(dir, p.xz) + 0.5 * time * waveSpeed;
+        float c = cos(th), s = sin(th);
+        p.x += a * dir.x * c; p.z += a * dir.y * c; p.y += a * s;
+        n.x -= dir.x * f * a * c; n.z -= dir.y * f * a * c;
+    }
+    { // Wave 4
+        vec2 dir = normalize(vec2(0.5, -0.8));
+        float f = 0.3, a = 0.15 * waveHeight;
+        float th = f * dot(dir, p.xz) + 1.2 * time * waveSpeed;
+        float c = cos(th), s = sin(th);
+        p.x += a * dir.x * c; p.z += a * dir.y * c; p.y += a * s;
+        n.x -= dir.x * f * a * c; n.z -= dir.y * f * a * c;
+    }
+
+    vWorldPos = p;
+    vNormal = normalize(n);
+    vHeight = p.y;
+    gl_Position = viewProjection * vec4(p, 1.0);
+}`;
+
+const WATER_FRAG_SRC = `
+precision highp float;
+varying vec2 vUV;
+varying vec3 vWorldPos;
+varying vec3 vNormal;
+varying float vHeight;
+
+uniform vec3 cameraPosition;
+uniform vec3 waterColor;
+uniform float waterTransparency;
+uniform float waterLevel;
+uniform float envIntensity;
+uniform vec3 foamColor;
+uniform float foamThreshold;
+uniform float foamIntensity;
+uniform vec3 fogColor;
+uniform float fogDensity;
+uniform vec3 lightDir;
+uniform vec3 lightColor;
+uniform float ambientIntensity;
+
+uniform vec4 uRipplePosRad[8];
+uniform vec4 uRippleStrSpdLife[8];
+uniform int uRippleCount;
+
+float calcRipple(vec3 worldPos, vec3 center, float radius, float strength, float speed, float life) {
+    vec2 delta = worldPos.xz - center.xz;
+    float dist = length(delta);
+    if (dist > radius || life <= 0.0) return 0.0;
+    float phase = life * speed;
+    float ripple = sin(dist * 3.0 - phase) * exp(-dist / (radius * 0.5));
+    ripple *= strength * (1.0 - dist / radius);
+    float lifeFactor = min(1.0, life / 1.0);
+    ripple *= lifeFactor;
+    return max(0.0, ripple);
+}
+
+#ifdef ENV_TEXTURE
+uniform samplerCube envTexture;
+#endif
+
+void main() {
+    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+    vec3 normal = normalize(vNormal);
+    vec3 reflectDir = reflect(-viewDir, normal);
+
+    // Reflection from environment cube map
+    vec3 reflection = vec3(0.0);
+    #ifdef ENV_TEXTURE
+    reflection = textureCube(envTexture, reflectDir).rgb * envIntensity;
+    #endif
+
+    // Fresnel (Schlick)
+    float fresnel = 0.02 + 0.98 * pow(1.0 - max(dot(viewDir, normal), 0.0), 3.0);
+
+    // Base water color
+    vec3 base = waterColor;
+    vec3 color = mix(base, reflection, fresnel);
+
+    // Simple diffuse lighting
+    float diff = max(dot(normal, normalize(lightDir)), 0.0);
+    color += diff * lightColor * 0.15;
+    color += ambientIntensity * waterColor * 0.15;
+
+    // Foam at wave crests
+    float foamH = vHeight - waterLevel;
+    float foam = smoothstep(foamThreshold, foamThreshold + 0.15, foamH);
+    foam = clamp(foam, 0.0, 1.0);
+    color = mix(color, foamColor, foam * foamIntensity);
+
+    // Interaction ripples: stack all active ripple sources
+    float rippleSum = 0.0;
+    for (int i = 0; i < 8; i++) {
+        if (i >= uRippleCount) break;
+        vec4 pr = uRipplePosRad[i];
+        vec4 ssl = uRippleStrSpdLife[i];
+        if (pr.w <= 0.0 || ssl.z <= 0.0) continue;
+        float r = calcRipple(vWorldPos, pr.xyz, pr.w, ssl.x, ssl.y, ssl.z);
+        rippleSum += r;
+    }
+    // Perturb normal for ripple lighting, and add a brightness glint
+    vec3 rippleN = vec3(rippleSum * 0.15, 0.0, rippleSum * 0.15);
+    normal = normalize(normal + rippleN);
+    float rippleGlint = max(0.0, rippleSum * 0.25);
+    color += vec3(rippleGlint);
+
+    // Exponential fog
+    float depth = length(vWorldPos - cameraPosition);
+    float fog = 1.0 - exp(-fogDensity * depth);
+    color = mix(color, fogColor, fog);
+
+    // Alpha
+    float alpha = mix(waterTransparency, 1.0, fresnel * 0.5 + foam * 0.2);
+    alpha = clamp(alpha, 0.0, 1.0);
+
+    gl_FragColor = vec4(color, alpha);
+}`;
 
 // ======== Sky ========
 export function disposeSky(): void {
@@ -323,94 +522,33 @@ export function applyGround(state: EnvState): void {
 }
 
 // ======== Water System ========
-function perlinHash(x: number, y: number): number {
-    let h = (x * 374761393 + y * 668265263) | 0;
-    h = (h ^ (h >>> 13)) * 1274126177;
-    h = (h ^ (h >>> 16)) | 0;
-    return (h & 0x7fffffff) / 0x7fffffff;
-}
-function perlin2D(x: number, y: number): number {
-    const xi = x | 0, yi = y | 0;
-    const xf = x - xi, yf = y - yi;
-    const u = xf * xf * (3 - 2 * xf);
-    const v = yf * yf * (3 - 2 * yf);
-    const n00 = perlinHash(xi, yi);
-    const n10 = perlinHash(xi + 1, yi);
-    const n01 = perlinHash(xi, yi + 1);
-    const n11 = perlinHash(xi + 1, yi + 1);
-    return (1 - u) * (1 - v) * n00 + u * (1 - v) * n10 + (1 - u) * v * n01 + u * v * n11;
-}
-function fbmNoise(x: number, y: number, octaves: number = 5): number {
-    let v = 0, amp = 1, freq = 1, total = 0;
-    for (let i = 0; i < octaves; i++) {
-        v += amp * perlin2D(x * freq, y * freq);
-        total += amp;
-        amp *= 0.5;
-        freq *= 2.17;
-    }
-    return (v / total) * 0.5 + 0.5;
-}
-
-let _waterBumpTexture: Texture | null = null;
-function makeWaterBumpTexture(): Texture {
-    const scene = getScene();
-    if (_waterBumpTexture) return _waterBumpTexture;
-    const S = 128;   // === 补丁3：分辨率降为 128，肉眼几乎无差别 ===
-    const canvas = document.createElement("canvas");
-    canvas.width = S;
-    canvas.height = S;
-    const ctx = canvas.getContext("2d")!;
-    const img = ctx.createImageData(S, S);
-    const freq = 6.0;
-    for (let y = 0; y < S; y++) {
-        for (let x = 0; x < S; x++) {
-            const i = (y * S + x) * 4;
-            const n = fbmNoise(x / freq, y / freq, 5);
-            img.data[i] = 128 + (n - 0.5) * 128;
-            img.data[i + 1] = 128 + (n - 0.5) * 128;
-            img.data[i + 2] = 255;
-            img.data[i + 3] = 255;
-        }
-    }
-    ctx.putImageData(img, 0, 0);
-    _waterBumpTexture = new Texture(canvas.toDataURL(), scene);
-    return _waterBumpTexture;
-}
 
 export function createWater(state: EnvState): void {
-    // 如果水面已经存在，直接更新参数，不重建
+    // early-return: update existing water params, don't rebuild
     if (_envSys.water.mesh && _envSys.water.material) {
-        const m = _envSys.water.material;
+        const mat = _envSys.water.material as ShaderMaterial;
         const wm = _envSys.water.mesh;
         wm.position.y = state.waterLevel;
-        // 同步所有 LOD 子网格的位置
         for (const lod of _waterLODs) {
             lod.position.y = state.waterLevel;
         }
-        m.windForce = (state.waterAnimSpeed ?? 1) * 4;
-        m.waveHeight = state.waterWaveHeight;
-        m.waveLength = 0.08;
-        m.waveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
-        m.waterColor = new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]);
-        m.colorBlendFactor = 0.3;
-        m.alpha = state.waterTransparency;
-        m.windDirection = new Vector2(state.windDirection[0], state.windDirection[2]);
+        mat.setFloat("waveHeight", state.waterWaveHeight);
+        mat.setFloat("waveSpeed", (state.waterAnimSpeed ?? 1) * 1.0);
+        mat.setColor3("waterColor", new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]));
+        mat.setFloat("waterTransparency", state.waterTransparency);
+        mat.setFloat("waterLevel", state.waterLevel);
         const newSize = Math.max(1, state.waterSize);
         const scale = newSize / 60;
         if (wm.scaling.x !== scale) {
-            wm.scaling.x = scale;
-            wm.scaling.z = scale;
-            // 同步所有 LOD 子网格的缩放
+            wm.scaling.x = scale; wm.scaling.z = scale;
             for (const lod of _waterLODs) {
-                lod.scaling.x = scale;
-                lod.scaling.z = scale;
+                lod.scaling.x = scale; lod.scaling.z = scale;
             }
         }
         return;
     }
 
     const scene = getScene();
-    const pipeline = getPipeline();
     disposeWater();
     if (!state.waterEnabled) return;
 
@@ -418,60 +556,147 @@ export function createWater(state: EnvState): void {
     const size = Math.max(1, state.waterSize);
 
     // --- 3 级 LOD 水面网格 ---
-    const meshHigh = MeshBuilder.CreateGround("envWater", {
-        width: size, height: size, subdivisions: 48,
-    }, scene);
+    const meshHigh = MeshBuilder.CreateGround("envWater", { width: size, height: size, subdivisions: 48 }, scene);
     meshHigh.isPickable = false;
     meshHigh.position.y = state.waterLevel;
 
-    const meshMid = MeshBuilder.CreateGround("envWater_LOD1", {
-        width: size, height: size, subdivisions: 16,
-    }, scene);
+    const meshMid = MeshBuilder.CreateGround("envWater_LOD1", { width: size, height: size, subdivisions: 16 }, scene);
     meshMid.isPickable = false;
     meshMid.position.y = state.waterLevel;
-    meshMid.setEnabled(false);
 
-    const meshLow = MeshBuilder.CreateGround("envWater_LOD2", {
-        width: size, height: size, subdivisions: 6,
-    }, scene);
+    const meshLow = MeshBuilder.CreateGround("envWater_LOD2", { width: size, height: size, subdivisions: 6 }, scene);
     meshLow.isPickable = false;
     meshLow.position.y = state.waterLevel;
-    meshLow.setEnabled(false);
 
     meshHigh.addLODLevel(30, meshMid);
     meshHigh.addLODLevel(80, meshLow);
     _waterLODs = [meshMid, meshLow];
 
-    const waterMesh = meshHigh;
+    // --- 自定义 ShaderMaterial：Gerstner 波 + 泡沫 + 菲涅尔 ---
+    const hasEnv = !!scene.environmentTexture;
+    const mat = new ShaderMaterial("customWaterMat", scene, {
+        vertexSource: WATER_VERT_SRC,
+        fragmentSource: WATER_FRAG_SRC,
+    }, {
+        attributes: ["position", "uv", "normal"],
+        uniforms: [
+            "world", "viewProjection", "time", "waveHeight", "waveSpeed",
+            "cameraPosition", "waterColor", "waterTransparency", "waterLevel",
+            "envIntensity", "foamColor", "foamThreshold", "foamIntensity",
+            "fogColor", "fogDensity", "lightDir", "lightColor", "ambientIntensity",
+            "uRipplePosRad[8]", "uRippleStrSpdLife[8]", "uRippleCount",
+        ],
+        uniformBuffers: [],
+        samplers: hasEnv ? ["envTexture"] : [],
+        defines: hasEnv ? ["ENV_TEXTURE"] : [],
+        needAlphaBlending: true,
+    });
 
-    const water = new WaterMaterial("envWaterMat", scene, new Vector2(size, size));
-    // === 补丁1：强制降低渲染目标分辨率 ===
-    water.renderTargetSize = new Vector2(256, 256);
-    water.bumpTexture = makeWaterBumpTexture();
-    water.windForce = (state.waterAnimSpeed ?? 1) * 4;
-    water.waveHeight = state.waterWaveHeight;
-    water.bumpHeight = 0.15;
-    water.waveLength = 0.08;
-    water.waveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
-    water.waterColor = new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]);
-    water.colorBlendFactor = 0.3;
-    water.alpha = state.waterTransparency;
-    water.windDirection = new Vector2(state.windDirection[0], state.windDirection[2]);
-    waterMesh.material = water;
+    mat.setFloat("waveHeight", state.waterWaveHeight);
+    mat.setFloat("waveSpeed", (state.waterAnimSpeed ?? 1) * 1.0);
+    mat.setColor3("waterColor", new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]));
+    mat.setFloat("waterTransparency", state.waterTransparency);
+    mat.setFloat("waterLevel", state.waterLevel);
+    mat.setFloat("envIntensity", hasEnv ? (scene.environmentIntensity ?? 0.8) : 0);
 
-    for (const m of scene.meshes) {
-        if (m !== waterMesh && m.isEnabled()) {
-            water.addToRenderList(m);
-        }
+    if (hasEnv && scene.environmentTexture) {
+        mat.setTexture("envTexture", scene.environmentTexture);
     }
 
-    _envSys.water.mesh = waterMesh;
-    _envSys.water.material = water;
+    // Foam
+    mat.setColor3("foamColor", new Color3(1, 1, 1));
+    mat.setFloat("foamThreshold", 0.1);
+    mat.setFloat("foamIntensity", 0.5);
+
+    // Lighting
+    const dirLight = scene.getLightByName("dir") as DirectionalLight | null;
+    if (dirLight) {
+        mat.setVector3("lightDir", dirLight.direction);
+        mat.setColor3("lightColor", dirLight.diffuse);
+    } else {
+        mat.setVector3("lightDir", new Vector3(-0.5, -1, -0.5));
+        mat.setColor3("lightColor", new Color3(1, 1, 1));
+    }
+    mat.setFloat("ambientIntensity", 0.3);
+
+    // Ripple uniforms (initialised empty)
+    mat.setArray("uRipplePosRad", new Float32Array(MAX_RIPPLES * 4));
+    mat.setArray("uRippleStrSpdLife", new Float32Array(MAX_RIPPLES * 4));
+    mat.setInt("uRippleCount", 0);
+
+    // Fog
+    mat.setColor3("fogColor", scene.fogColor);
+    mat.setFloat("fogDensity", scene.fogDensity);
+
+    // Assign to all LOD meshes
+    meshHigh.material = mat;
+    meshMid.material = mat;
+    meshLow.material = mat;
+
+    _envSys.water.mesh = meshHigh;
+    _envSys.water.material = mat;
+
+    // Per-frame observer: time, camera position, fog/light sync, ripples
+    if (!_waterUpdateObserver) {
+        _waterUpdateObserver = scene.onBeforeRenderObservable.add(() => {
+            if (!_envSys.water.material) return;
+            const m = _envSys.water.material as ShaderMaterial;
+            const now = performance.now() / 1000;
+            m.setFloat("time", now);
+            const cam = scene.activeCamera;
+            if (cam) m.setVector3("cameraPosition", cam.position);
+            // Sync fog & light changes
+            m.setColor3("fogColor", scene.fogColor);
+            m.setFloat("fogDensity", scene.fogDensity);
+            const dl = scene.getLightByName("dir") as DirectionalLight | null;
+            if (dl) {
+                m.setVector3("lightDir", dl.direction);
+                m.setColor3("lightColor", dl.diffuse);
+            }
+
+            // --- Ripple lifecycle ---
+            const dt = scene.deltaTime / 1000;
+            if (dt > 0) {
+                let anyAlive = false;
+                for (const r of _ripples) {
+                    if (r.life > 0) {
+                        r.life -= dt;
+                        if (r.life < 0) r.life = 0;
+                        if (r.life > 0) anyAlive = true;
+                    }
+                }
+                if (!anyAlive && _ripples.length > 0) {
+                    _ripples = [];
+                    _rippleDirty = true;
+                }
+            }
+            if (_rippleDirty) {
+                _rippleDirty = false;
+                const posRad = new Float32Array(MAX_RIPPLES * 4);
+                const strSpdLife = new Float32Array(MAX_RIPPLES * 4);
+                const count = Math.min(_ripples.length, MAX_RIPPLES);
+                for (let i = 0; i < count; i++) {
+                    const r = _ripples[i];
+                    if (r.life <= 0) continue;
+                    posRad[i * 4 + 0] = r.position.x;
+                    posRad[i * 4 + 1] = r.position.y;
+                    posRad[i * 4 + 2] = r.position.z;
+                    posRad[i * 4 + 3] = r.radius;
+                    strSpdLife[i * 4 + 0] = r.strength;
+                    strSpdLife[i * 4 + 1] = r.speed;
+                    strSpdLife[i * 4 + 2] = r.life;
+                    strSpdLife[i * 4 + 3] = 0;
+                }
+                m.setArray("uRipplePosRad", posRad);
+                m.setArray("uRippleStrSpdLife", strSpdLife);
+                m.setInt("uRippleCount", count);
+            }
+        });
+    }
 }
 
 export function disposeWater(): void {
     if (_envSys.water.mesh) {
-        // dispose(true) 会递归清理 LOD 子网格
         _envSys.water.mesh.dispose(true);
         _envSys.water.mesh = null;
     }
@@ -480,17 +705,14 @@ export function disposeWater(): void {
         _envSys.water.material.dispose();
         _envSys.water.material = null;
     }
-    // === 补丁3补充：释放缓存的 bump 纹理 ===
-    if (_waterBumpTexture) {
-        _waterBumpTexture.dispose();
-        _waterBumpTexture = null;
+    if (_waterUpdateObserver) {
+        getScene().onBeforeRenderObservable.remove(_waterUpdateObserver);
+        _waterUpdateObserver = null;
     }
 }
 
 export function refreshWaterRenderList(): void {
-    const state = envState;
-    if (!state.waterEnabled || !_envSys.water.mesh) return;
-    createWater(state);
+    // ShaderMaterial does not use RTT render list — no-op
 }
 
 // ======== Particle System ========
@@ -1204,19 +1426,7 @@ export function ensureEnvUpdateObserver(): void {
                 _envSys.sky.skyMesh.rotation.y += Math.PI * 2;
             }
         }
-        // Water wave direction follows wind (horizontal XZ plane)
-        if (envState.waterEnabled && _envSys.water.material) {
-            const wd = new Vector2(envState.windDirection[0], envState.windDirection[2]);
-            const len = wd.length();
-            if (len > 0.001) {
-                wd.normalize();
-            }
-            // === 补丁2：仅当风向变化时才赋值 ===
-            if (!_lastWindDir.equals(wd)) {
-                _lastWindDir.copyFrom(wd);
-                _envSys.water.material.windDirection = wd;
-            }
-        }
+        // Water wave direction is embedded in Gerstner wave shader — no per-frame wind update needed
         // Underwater post-processing
         if (envState.waterEnabled && scene.activeCamera) {
             const camY = scene.activeCamera.globalPosition.y;
@@ -1310,7 +1520,6 @@ export function applyFog(state: EnvState): void {
 export function updateWaterAnimSpeed(speed: number): void {
     const mat = _envSys.water.material;
     if (mat) {
-        mat.windForce = speed * 4;
-        mat.waveSpeed = speed * 1.0;
+        mat.setFloat("waveSpeed", speed * 1.0);
     }
 }

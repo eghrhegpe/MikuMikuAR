@@ -106,6 +106,8 @@
 | 2 | 布料之魂 | [vol-5-the-light-of-physics/02-布料之魂.md](vol-5-the-light-of-physics/02-布料之魂.md) |
 | 3 | 多相机之眼 | [vol-5-the-light-of-physics/03-多相机之眼.md](vol-5-the-light-of-physics/03-多相机之眼.md) |
 | 4 | 悬空之影 | [vol-5-the-light-of-physics/04-悬空之影.md](vol-5-the-light-of-physics/04-悬空之影.md) |
+| 5 | 光影之协奏 | [vol-5-the-light-of-physics/05-光影之协奏.md](vol-5-the-light-of-physics/05-光影之协奏.md) |
+| 6 | 第六日のコード | [vol-5-the-light-of-physics/06-第六日のコード.md](vol-5-the-light-of-physics/06-第六日のコード.md) |
 
 ## 骨架
 
