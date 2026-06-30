@@ -304,36 +304,17 @@ void main() {
 export function createWater(state: EnvState): void {
     ensureEnvUpdateObserver();
 
-    if (_envSys.water.mesh && _envSys.water.material) {
-        const mat = _envSys.water.material as ShaderMaterial;
-        const wm = _envSys.water.mesh;
-        // 位置通过父子关系自动继承，只需设置主网格
-        wm.position.y = state.waterLevel;
-        mat.setFloat('waveHeight', state.waterWaveHeight);
-        mat.setFloat('waveSpeed', (state.waterAnimSpeed ?? 1) * 1.0);
-        mat.setColor3(
-            'waterColor',
-            new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2])
-        );
-        mat.setFloat('waterTransparency', state.waterTransparency);
-        mat.setFloat('waterLevel', state.waterLevel);
-        mat.setFloat('foamThreshold', state.foamThreshold);
-        mat.setFloat('foamIntensity', state.foamIntensity);
-        // 缩放通过父子关系自动继承，只需设置主网格
-        const newSize = Math.max(1, state.waterSize);
-        const scale = newSize / WATER_BASE_SIZE; // 使用常量而非硬编码60
-        if (wm.scaling.x !== scale) {
-            wm.scaling.x = scale;
-            wm.scaling.z = scale;
-        }
+    // Always start clean — disposeWater handles all cleanup, including LOD meshes,
+    // material, caustic texture, ripples, and the render observer.
+    // This ensures consistent state even on rapid preset switches or force-recreate scenarios
+    // (e.g. environment texture changed, requiring shader recompilation).
+    disposeWater();
+
+    if (!state.waterEnabled) {
         return;
     }
 
     const scene = getScene();
-    disposeWater();
-    if (!state.waterEnabled) {
-        return;
-    }
 
     _waterLODs = [];
     // 使用基准尺寸创建网格，通过缩放调整最终大小（避免尺寸叠加错误）
@@ -555,13 +536,10 @@ export function createWater(state: EnvState): void {
 
 export function disposeWater(): void {
     if (_envSys.water.mesh) {
-        _envSys.water.mesh.dispose(true);
+        _envSys.water.mesh.dispose(true); // true = recursive, disposes LOD children too
         _envSys.water.mesh = null;
     }
-    // 销毁所有LOD子网格，防止内存泄漏
-    for (const lod of _waterLODs) {
-        lod.dispose();
-    }
+    // mesh.dispose(true) 已递归销毁所有子 LOD 网格，仅需清空引用
     _waterLODs = [];
     clearRipples(); // 清理残留涟漪，避免 dispose 后再次 createWater 时显示旧数据
     if (_envSys.water.material) {

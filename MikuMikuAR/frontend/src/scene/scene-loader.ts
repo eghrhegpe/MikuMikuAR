@@ -24,10 +24,10 @@ import {
     setPendingVmd,
     ModelInstance,
     triggerAutoSave,
-    modelRegistry,
 } from '../core/config';
 import { resolveFileUrl, normPath } from '../core/fileservice';
 import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
+import type { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
 import { loadVMDMotion } from './scene-vmd';
 
 // ======== Loader Dependencies ========
@@ -89,19 +89,21 @@ export async function loadPMXFile(
     }
     // Single-thread loading lock. Future: replace with a task queue for parallel loading.
     if (isLoadingModel) {
+        setStatus('模型正在加载中，请稍候...', false);
         return;
     }
     setIsLoadingModel(true);
     let loadedMeshes: Mesh[] = [];
+    let wasmModel: MmdWasmModel | null = null;
+    let registeredId: string | null = null;
     try {
-        // Check if already loaded — switch focus
-        for (const [id, inst] of modelRegistry) {
-            if (inst.filePath === filePath) {
-                setFocusedModelId(id);
-                _modelManager.focus(id);
-                setStatus(`✓ 已切换至: ${inst.name}`, true);
-                return;
-            }
+        // Check if already loaded — switch focus via ModelManager
+        const existing = _modelManager?.findByFilePath(filePath);
+        if (existing) {
+            setFocusedModelId(existing.id);
+            _modelManager?.focus(existing.id);
+            setStatus(`✓ 已切换至: ${existing.name}`, true);
+            return;
         }
 
         const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
@@ -159,6 +161,7 @@ export async function loadPMXFile(
             };
             // Register via ModelManager only — it owns the registry
             _modelManager.register(inst);
+            registeredId = id;
             setFocusedModelId(id);
             _modelManager.focus(id);
             setStatus(`✓ ${displayName} (场景)`, true);
@@ -174,7 +177,7 @@ export async function loadPMXFile(
 
         // Actor: create MMD model from the loaded mesh via the runtime
         const rootMesh = meshes[0];
-        const wasmModel = _mmdRuntime.createMmdModel(rootMesh, {
+        wasmModel = _mmdRuntime.createMmdModel(rootMesh, {
             materialProxyConstructor: MmdStandardMaterialProxy,
         });
 
@@ -202,7 +205,9 @@ export async function loadPMXFile(
             rotationY: 0,
         };
         // Register via ModelManager only — it owns the registry
+        // Must register BEFORE VMD load because loadVMDMotion queries modelRegistry
         _modelManager.register(inst);
+        registeredId = id;
         if (wasmModel) {
             const states = wasmModel.rigidBodyStates;
             if (states) {
@@ -211,13 +216,19 @@ export async function loadPMXFile(
         }
         setFocusedModelId(id);
 
-        // Apply pending VMD if any
+        // Apply pending VMD if any — failure is isolated, won't roll back model
         let appliedVmd = '';
         if (pendingVmd && _mmdRuntime) {
             const vmdData = pendingVmd.data;
             appliedVmd = pendingVmd.name;
             setPendingVmd(null);
-            await loadVMDMotion(vmdData, appliedVmd, id);
+            try {
+                await loadVMDMotion(vmdData, appliedVmd, id);
+            } catch (vmdErr) {
+                console.warn('VMD 加载失败，模型已保留:', vmdErr);
+                appliedVmd = '';
+                setStatus(`⚠ VMD 加载失败，模型已加载: ${displayName}`, false);
+            }
         }
 
         _modelManager.focus(id);
@@ -244,12 +255,27 @@ export async function loadPMXFile(
             document.dispatchEvent(new CustomEvent('mmku:modelLoaded'));
         } catch {}
     } catch (err) {
-        // Clean up partially created meshes to avoid scene leaks
-        loadedMeshes.forEach((m) => {
+        // 🔴 2: If model was registered, use remove() for clean disposal (handles meshes + cloth)
+        // 🟡 3: Destroy leaked MMD runtime model before mesh disposal
+        if (wasmModel && _mmdRuntime) {
             try {
-                m.dispose();
-            } catch {}
-        });
+                _mmdRuntime.destroyMmdModel(wasmModel);
+            } catch (destroyErr) {
+                console.warn('destroyMmdModel in cleanup:', destroyErr);
+            }
+        }
+        if (registeredId && _modelManager) {
+            try {
+                _modelManager.remove(registeredId);
+            } catch (removeErr) {
+                console.warn('Cleanup after load failure:', removeErr);
+            }
+        } else {
+            // Not yet registered — dispose meshes directly
+            loadedMeshes.forEach((m) => {
+                try { m.dispose(); } catch {}
+            });
+        }
         dom.loadingEl.style.display = 'none';
         console.error('loadPMXFile:', err);
         setStatus('✗ 模型加载失败', false);

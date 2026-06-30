@@ -150,7 +150,8 @@ export function setLightState(s: Partial<LightState>): void {
     }
 
     // 夜间或极低光强时自动禁用阴影（避免无用 GPU 开销）
-    if (s.dirIntensity !== undefined && s.dirIntensity < 0.1) {
+    // 仅当用户未显式设置 shadowEnabled 时才自动关闭，避免覆盖用户意图
+    if (s.dirIntensity !== undefined && s.dirIntensity < 0.1 && s.shadowEnabled === undefined) {
         _shadowEnabled = false;
     }
 
@@ -161,6 +162,12 @@ export function setLightState(s: Partial<LightState>): void {
     }
     if (s.shadowBias !== undefined) {
         _shadowBias = s.shadowBias;
+        // 如果阴影生成器已存在，直接更新 bias（避免重建）
+        if (_envSysShadow?.generator) {
+            _envSysShadow.generator.bias = _shadowBias;
+        } else {
+            needRebuildShadow = true; // 还未创建，重建时会应用
+        }
     }
     if (s.shadowEnabled !== undefined || s.shadowType !== undefined || needRebuildShadow) {
         _ensureShadow();
@@ -187,8 +194,12 @@ export function transitionLighting(
         const lerp = (a: number, b: number) => a + (b - a) * t;
 
         const interpState: Partial<LightState> = {};
+        // 需要重建阴影生成器的参数 — 动画进行中跳过，仅结束时一次性应用
+        const rebuildShadowKeys = new Set<string>(['shadowResolution', 'shadowType', 'shadowEnabled']);
         // 仅对 target 中存在的字段插值
         for (const key of Object.keys(target) as (keyof LightState)[]) {
+            // 跳过会触发每帧重建阴影生成器的参数，在动画结束时统一处理
+            if (rebuildShadowKeys.has(key) && t < 1) continue;
             const a = source[key];
             const b = target[key];
             if (typeof a === 'number' && typeof b === 'number') {
@@ -198,6 +209,14 @@ export function transitionLighting(
             } else {
                 // 布尔等类型，在动画结束时才切换
                 (interpState as any)[key] = t >= 1 ? b : a;
+            }
+        }
+        // 动画结束时一次性应用被跳过的阴影重建参数
+        if (t >= 1) {
+            for (const key of Object.keys(target) as (keyof LightState)[]) {
+                if (rebuildShadowKeys.has(key)) {
+                    (interpState as any)[key] = target[key];
+                }
             }
         }
         setLightState(interpState);

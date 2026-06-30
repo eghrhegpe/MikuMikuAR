@@ -154,7 +154,7 @@ import {
     createProcBeatDetector,
     getProcBeatDetector,
 } from './scene-proc-motion';
-import { updateLipSync } from './scene-lipsync';
+import { updateLipSync, initLipSync } from './scene-lipsync';
 import { triggerAutoSaveImpl } from './scene-serialize';
 
 // ======== Babylon.js ========
@@ -226,6 +226,9 @@ export async function initScene(): Promise<void> {
     };
     setModelRegistry(modelManager.modelRegistry);
     setTriggerAutoSave(triggerAutoSaveImpl);
+
+    // 4.5 注入 ModelManager 到依赖模块
+    initLipSync(modelManager);
 
     // 5. Loader（必须在 modelManager + setTriggerAutoSave 之后）
     initLoader(
