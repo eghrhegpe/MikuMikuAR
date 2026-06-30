@@ -675,13 +675,17 @@ function addToggleRow(
     container.appendChild(row);
 }
 
-function setTheme(hex: string): void {
+async function setTheme(hex: string): Promise<void> {
     const root = document.documentElement;
     root.style.setProperty('--accent', hex);
     root.style.setProperty('--accent-dim', hex + '33');
-    SetUIAccent(hex).catch(() => {});
+    try {
+        await SetUIAccent(hex);
+        setStatus(`✓ 主题色已设为 ${hex}`, true);
+    } catch {
+        setStatus('✗ 主题色保存失败', false);
+    }
     settingsMenu.reRender();
-    setStatus(`✓ 主题色已设为 ${hex}`, true);
 }
 
 const FONT_MAP: Record<string, { label: string; css: string }> = {
@@ -1111,7 +1115,7 @@ export async function showSettings(): Promise<void> {
     dom.sceneOverlay.classList.add('sceneOverlay-settings'); // 宽度 340px
     dom.sceneOverlay.dataset.popupType = 'settings';
 
-    // 每次都重建 SlideMenu，避免 innerHTML 清空后旧实例持有已销毁的 DOM 引用
+    settingsMenu?.dispose();
     settingsMenu = new SlideMenu({
         container: dom.sceneOverlay,
         onClose: () => closeAllOverlays(),

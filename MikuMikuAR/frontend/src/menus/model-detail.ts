@@ -214,7 +214,7 @@ export function buildModelDetailLevel(id: string): PopupLevel {
                 removeBtn.appendChild(removeLabel);
                 removeBtn.addEventListener('click', async () => {
                     const { getSceneMenu } = await import('./scene-menu');
-                    getSceneMenu().popTo(0);
+                    getSceneMenu()?.popTo(0);
                     removeModel(id);
                 });
                 c.appendChild(removeBtn);
@@ -243,7 +243,7 @@ export function buildModelInfoLevel(id: string): PopupLevel {
                 vertCount += m.getTotalVertices() || 0;
                 faceCount += m.getTotalIndices() || 0;
             }
-            const boneCount = inst.mmdModel.runtimeBones.length ?? null;
+            const boneCount = inst.mmdModel?.runtimeBones?.length ?? null;
             const morphCount = inst.mmdModel.morph.morphs.length ?? null;
             const fields: Array<{ label: string; value: string }> = [
                 { label: '名称', value: inst.name },
@@ -305,11 +305,8 @@ export function buildTransformLevel(id: string): PopupLevel {
                         min: -20,
                         max: 20,
                         step: 0.1,
-                        get: () => getModelPosition(id)[0],
-                        set: (v) => {
-                            const p = getModelPosition(id);
-                            setModelPosition(id, v, p[1], p[2]);
-                        },
+                        get: () => pos[0],
+                        set: (v) => { pos[0] = v; setModelPosition(id, v, pos[1], pos[2]); },
                     },
                     {
                         label: '位置 Y',
@@ -317,11 +314,8 @@ export function buildTransformLevel(id: string): PopupLevel {
                         min: -20,
                         max: 20,
                         step: 0.1,
-                        get: () => getModelPosition(id)[1],
-                        set: (v) => {
-                            const p = getModelPosition(id);
-                            setModelPosition(id, p[0], v, p[2]);
-                        },
+                        get: () => pos[1],
+                        set: (v) => { pos[1] = v; setModelPosition(id, pos[0], v, pos[2]); },
                     },
                     {
                         label: '位置 Z',
@@ -329,11 +323,8 @@ export function buildTransformLevel(id: string): PopupLevel {
                         min: -20,
                         max: 20,
                         step: 0.1,
-                        get: () => getModelPosition(id)[2],
-                        set: (v) => {
-                            const p = getModelPosition(id);
-                            setModelPosition(id, p[0], p[1], v);
-                        },
+                        get: () => pos[2],
+                        set: (v) => { pos[2] = v; setModelPosition(id, pos[0], pos[1], v); },
                     },
                     {
                         label: '缩放',

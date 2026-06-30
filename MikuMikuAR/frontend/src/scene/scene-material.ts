@@ -50,16 +50,16 @@ export function _catOf(name: string): MaterialCategory {
     return '服装';
 }
 
-function _capture(mat: Material): void {
-    if (_origValues.has(mat)) {
+/** @internal exported for testing + pre-capture in scene-loader */
+export function _capture(mat: Material): void {
+    if (_origValues.has(mat) || !(mat instanceof StandardMaterial)) {
         return;
     }
-    const sm = mat as StandardMaterial;
     _origValues.set(mat, {
-        diffuse: sm.diffuseColor.clone(),
-        specular: sm.specularColor.clone(),
-        specularPower: sm.specularPower,
-        ambient: sm.ambientColor.clone(),
+        diffuse: mat.diffuseColor.clone(),
+        specular: mat.specularColor.clone(),
+        specularPower: mat.specularPower,
+        ambient: mat.ambientColor.clone(),
     });
 }
 
@@ -76,8 +76,8 @@ export function _applyAll(id: string): void {
     const perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < inst.meshes.length; mi++) {
         const mesh = inst.meshes[mi];
-        const m = mesh.material as StandardMaterial;
-        if (!m) {
+        const m = mesh.material;
+        if (!m || !(m instanceof StandardMaterial)) {
             continue;
         }
         _capture(m);
@@ -220,13 +220,14 @@ export function setMatCatParams(
 
 export function resetMatCatParams(id: string): void {
     _catState.delete(id);
+    _matState.delete(id); // 同时清理逐材质覆盖，避免残留状态在下次 _applyAll 中复现
     const inst = modelRegistry.get(id);
     if (!inst) {
         return;
     }
     for (const mesh of inst.meshes) {
-        const m = mesh.material as StandardMaterial;
-        if (!m) {
+        const m = mesh.material;
+        if (!m || !(m instanceof StandardMaterial)) {
             continue;
         }
         const o = _origValues.get(m);
@@ -265,8 +266,8 @@ export function getMatDetailList(
     }
     const perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < inst.meshes.length; mi++) {
-        const m = inst.meshes[mi].material as StandardMaterial;
-        if (!m) {
+        const m = inst.meshes[mi].material;
+        if (!m || !(m instanceof StandardMaterial)) {
             continue;
         }
         const mp = perMat.get(mi);

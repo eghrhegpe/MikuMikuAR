@@ -146,6 +146,7 @@ export function loadCameraVmd(mmdAnimation: any, vmdPath: string, vmdName: strin
 
     if (_mmdCamera) {
         _scene.removeCamera(_mmdCamera);
+        _mmdCamera.dispose(); // 释放 GPU 资源（渲染目标、贴图等）
         _mmdCamera = null;
         _cameraAnimationHandle = null;
     }
@@ -162,10 +163,11 @@ export function loadCameraVmd(mmdAnimation: any, vmdPath: string, vmdName: strin
 
 export function clearCameraVmd(): void {
     if (_mmdCamera && _scene) {
-        if (_cameraMode === 'vmd') {
+        if (_cameraMode === 'vmd' && _scene) {
             switchCameraMode('orbit');
         }
         _scene.removeCamera(_mmdCamera);
+        _mmdCamera.dispose(); // 释放 GPU 资源，避免反复加载/清除相机 VMD 时内存泄漏
         _mmdCamera = null;
         _cameraAnimationHandle = null;
         _cameraVmdName = '';

@@ -196,10 +196,12 @@ async function loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
 }
 
 async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
-    const uncached = pmxPaths.filter((p) => !modelMetaCache.has(p));
+    const uncached = pmxPaths.filter((p) => !modelMetaCache.has(p) && !_pendingMeta.has(p));
     if (uncached.length === 0) {
         return;
     }
+    // 标记为飞行中，防止并发重复请求
+    for (const p of uncached) _pendingMeta.add(p);
     try {
         const batch = await GetModelMetaBatch(uncached);
         if (batch) {
@@ -211,8 +213,11 @@ async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
         }
     } catch (err) {
         console.warn('ensureModelMeta:', err);
+    } finally {
+        for (const p of uncached) _pendingMeta.delete(p);
     }
 }
+const _pendingMeta = new Set<string>();
 
 // ======== Build list from scan data ========
 
@@ -373,7 +378,13 @@ function modelToRow(m: LibraryModel): PopupRow {
     };
 }
 
+let _isExtracting = false;
+
 function onModelRowClick(m: LibraryModel): void {
+    if (_isExtracting) {
+        setStatus('正在解压中，请稍候...', false);
+        return;
+    }
     const isStage = m.type === 'stage' || m.type === 'scene';
     if (m.format === 'pmx') {
         const ref = computeLibraryRef(m.file_path);
@@ -385,6 +396,7 @@ function onModelRowClick(m: LibraryModel): void {
     if (m.container === 'zip') {
         closeAllOverlays();
         setStatus('正在解压 zip...', false);
+        _isExtracting = true;
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
                 setStatus(result.cached ? '✓ 命中缓存' : '✓ 解压完成', true);
@@ -396,7 +408,8 @@ function onModelRowClick(m: LibraryModel): void {
             })
             .catch((err) => {
                 setStatus('✗ 解压失败: ' + (err as Error).message, false);
-            });
+            })
+            .finally(() => { _isExtracting = false; });
         return;
     }
     closeAllOverlays();
@@ -407,6 +420,7 @@ function onModelRowClick(m: LibraryModel): void {
     }
 }
 
+/** 移除当前聚焦模型后加载新模型。无聚焦模型时直接添加（非严格"替换"语义）。 */
 function replaceModel(m: LibraryModel): void {
     if (focusedModelId) {
         removeModel(focusedModelId);
@@ -580,7 +594,8 @@ export function showModelPopup(): void {
     dom.sceneOverlay.classList.add('sceneOverlay-model'); // 宽度 280px
     dom.sceneOverlay.dataset.popupType = 'model';
 
-    // 强制重建 MenuStack，避免 innerHTML 清空后旧 stack 持有已分离的 DOM 引用
+    // 释放旧 stack（清除 keydown/transitionend/setTimeout），再重建
+    stackRegistry.modelStack?.dispose();
     stackRegistry.modelStack = makeModelMenu();
 
     stackRegistry.modelStack.reset({
@@ -810,7 +825,10 @@ export async function refreshLibrary(): Promise<void> {
 // ======== Refresh on external model load (drag-drop) ========
 
 document.addEventListener('mmku:modelLoaded', () => {
-    // Always refresh the stack so the loaded-models list is up-to-date.
+    // 仅弹窗可见时刷新，避免干扰其他弹窗或后台操作
+    if (!dom.sceneOverlay.classList.contains('visible') || dom.sceneOverlay.dataset.popupType !== 'model') {
+        return;
+    }
     // If the popup is visible, this resets the view to top-level (intentional).
     // If not visible, the stack is pre-built and will show fresh content when opened.
     showModelPopup();

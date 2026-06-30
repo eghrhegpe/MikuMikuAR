@@ -12,6 +12,8 @@ export class BeatDetector {
     private ctx: AudioContext | null = null;
     private analyser: AnalyserNode | null = null;
     private source: MediaElementAudioSourceNode | null = null;
+    /** GainNode：连接 analyser → gain → destination，使音量独立于 audioElement.volume */
+    private gain: GainNode | null = null;
     private freqData: Uint8Array = new Uint8Array(0);
     private energyHistory: number[] = [];
     private energySum = 0; // running sum for avg
@@ -21,18 +23,23 @@ export class BeatDetector {
     private phaseStartTime = 0;
     private phaseInterval = 500; // ms per beat
 
-    /** 接入音频元素。惰性创建 AudioContext。
+    /** 接入音频元素。惰性创建 AudioContext + GainNode。
      *  注意：createMediaElementSource 后音频路由经 AudioContext，
      *  须 resume() 否则浏览器自动播放策略下静音。 */
     attach(audioElement: HTMLAudioElement): void {
         if (this.ctx) {
             return;
-        } // already attached
+        }
         const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
         if (!AudioCtx) {
             return;
         }
-        this.ctx = new AudioCtx();
+        try {
+            this.ctx = new AudioCtx();
+        } catch (err) {
+            console.warn('BeatDetector: AudioContext creation failed:', err);
+            return;
+        }
         if (this.ctx.state === 'suspended') {
             this.ctx.resume().catch(() => {});
         }
@@ -41,12 +48,27 @@ export class BeatDetector {
         this.analyser.fftSize = 256;
         this.analyser.smoothingTimeConstant = 0.3;
         this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+        // GainNode：使音量控制独立于 audioElement.volume（被 createMediaElementSource 旁路）
+        this.gain = this.ctx.createGain();
+        this.gain.gain.value = 1;
         this.source.connect(this.analyser);
-        this.analyser.connect(this.ctx.destination);
+        this.analyser.connect(this.gain);
+        this.gain.connect(this.ctx.destination);
+    }
+
+    /** 设置输出音量 (0~1)。通过 GainNode 控制，独立于 audioElement.volume。 */
+    setVolume(value: number): void {
+        if (this.gain) {
+            this.gain.gain.value = Math.max(0, Math.min(1, value));
+        }
     }
 
     /** 释放所有 AudioContext 资源。 */
     dispose(): void {
+        if (this.gain) {
+            this.gain.disconnect();
+            this.gain = null;
+        }
         if (this.analyser) {
             this.analyser.disconnect();
             this.analyser = null;
@@ -66,6 +88,7 @@ export class BeatDetector {
         this.lastBeatTime = 0;
         this.currentBpm = 120;
         this.phaseInterval = 500;
+        this.phaseStartTime = 0;
     }
 
     /** 每帧调用。更新能量历史、检测 beat、估计 BPM。 */
@@ -73,7 +96,7 @@ export class BeatDetector {
         if (!this.analyser) {
             return;
         }
-        this.analyser.getByteFrequencyData(this.freqData as any);
+        this.analyser.getByteFrequencyData(this.freqData);
 
         let sum = 0;
         const bins = Math.min(BASS_BIN_COUNT, this.freqData.length);
@@ -138,8 +161,7 @@ export class BeatDetector {
         return Math.min(1, elapsed / Math.max(1, this.phaseInterval));
     }
 
-    /** 当前帧指定频段的平均能量 (0..1)。须在 update() 之后调用。
-     *  无 analyser 时返回 0。 */
+    /** 当前帧指定频段的平均能量 (0..1)。须在 update() 之后调用。 */
     getLevel(startBin = 0, endBin?: number): number {
         if (!this.analyser) {
             return 0;
@@ -184,10 +206,7 @@ export class BeatDetector {
         return avg > 0 ? Math.round(60000 / avg) : 120;
     }
 
-    /** 纯逻辑：从频谱数据计算指定频段平均能量 (0..1)。
-     *  @param freqData Uint8Array 频谱数据（0..255，由 AnalyserNode.getByteFrequencyData 填充）
-     *  @param startBin 起始 bin（含），默认 0
-     *  @param endBin 结束 bin（不含），默认到数据末尾 */
+    /** 纯逻辑：从频谱数据计算指定频段平均能量 (0..1)。 */
     static getLevel(freqData: Uint8Array, startBin = 0, endBin?: number): number {
         if (freqData.length === 0) {
             return 0;

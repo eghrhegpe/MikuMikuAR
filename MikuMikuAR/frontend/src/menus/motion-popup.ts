@@ -460,7 +460,10 @@ function makeMotionMenu(): SlideMenu {
             if (row.model) {
                 if (row.model.format === 'vmd' && motionBindingTargetId) {
                     hideMotionPopup();
-                    loadVMDFromPath(row.model.file_path, motionBindingTargetId);
+                    loadVMDFromPath(row.model.file_path, motionBindingTargetId).catch((err) => {
+                        setStatus('✗ 动作加载失败', false);
+                        console.warn('motion-popup loadVMDFromPath:', err);
+                    });
                     setMotionBindingTargetId(null);
                     return;
                 }
@@ -549,7 +552,7 @@ export function showMotionPopup(): void {
     dom.sceneOverlay.classList.add('sceneOverlay-motion'); // 宽度 320px
     dom.sceneOverlay.dataset.popupType = 'motion';
 
-    // 强制重建 MenuStack，避免 innerHTML 清空后旧 stack 持有已分离的 DOM 引用
+    motionMenu?.dispose();
     motionMenu = makeMotionMenu();
 
     motionMenu.reset({
@@ -660,7 +663,7 @@ function buildDanceSetsOverviewLevel(): PopupLevel {
                             ar.className = 'slide-arrow';
                             ar.textContent = '>';
                             row.appendChild(ar);
-                            row.setAttribute('data-hint', ds.description || vmdName);
+                            row.dataset.hint = ds.description || vmdName;
                             row.addEventListener('click', () => {
                                 const level = buildDanceSetDetailLevel(setId);
                                 if (stackRegistry.modelStack) {
@@ -749,17 +752,8 @@ export function buildDanceSetDetailLevel(setId: string): PopupLevel {
                             .then(() => {
                                 setStatus('✓ 已删除舞蹈套装', true);
                                 loadDanceSets().then(() => {
-                                    stackRegistry.modelStack.pop();
-                                    const rootIdx = stackRegistry.modelStack.levelCount
-                                        ? stackRegistry.modelStack.levelCount - 1
-                                        : 0;
-                                    if (stackRegistry.modelStack && rootIdx >= 0) {
-                                        stackRegistry.modelStack.setLevel(
-                                            rootIdx,
-                                            buildDanceSetsOverviewLevel()
-                                        );
-                                        stackRegistry.modelStack.reRender();
-                                    }
+                                    stackRegistry.modelStack.pop(); // 回到概览层
+                                    stackRegistry.modelStack.reRender();
                                 });
                             })
                             .catch((err) => {
@@ -807,11 +801,7 @@ async function createNewDanceSet(): Promise<void> {
         if (setId) {
             setStatus('✓ 已创建舞蹈套装', true);
             await loadDanceSets();
-            const rootIdx = stackRegistry.modelStack.levelCount
-                ? stackRegistry.modelStack.levelCount - 1
-                : 0;
-            if (stackRegistry.modelStack && rootIdx >= 0) {
-                stackRegistry.modelStack.setLevel(rootIdx, buildDanceSetsOverviewLevel());
+            if (stackRegistry.modelStack) {
                 stackRegistry.modelStack.reRender();
             }
         }

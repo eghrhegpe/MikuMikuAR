@@ -13,8 +13,12 @@
 import { XpbdSolver } from './xpbd-solver';
 import type { SdfCollider } from './xpbd-collider';
 
-// Babylon.js 类型引用（运行时 any，编译期 import type）
-// import type { Scene, Mesh, VertexData } from "@babylonjs/core";
+import { Scene } from '@babylonjs/core/scene';
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
+import { VertexBuffer } from '@babylonjs/core/Buffers/buffer';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 
 // ============================================================
 // 类型
@@ -82,7 +86,7 @@ export interface ClothInstance {
     /** 总层数 = segmentsV */
     ringCount: number;
     /** Babylon.js Mesh（程序化生成的独立网格） */
-    mesh: any;
+    mesh: Mesh | null;
     /** 网格三角形索引（缓存用于每帧 ComputeNormals） */
     meshIndices: Int32Array;
     /** 是否启用模拟 */
@@ -109,7 +113,7 @@ export interface ClothInstance {
  * @returns ClothInstance
  */
 export function createCloth(
-    scene: any,
+    scene: Scene,
     config: Partial<ClothConfig> = {},
     collider?: SdfCollider | null
 ): ClothInstance {
@@ -228,15 +232,16 @@ export function createCloth(
  * 构建布料更新闭包（在 scene.registerBeforeRender 中调用）
  *
  * @param cloth 布料实例
- * @param anchorMatrixFn 获取锚定骨骼世界矩阵的函数 (BoneName → Float32Array[16] 列主序)
+ * @param anchorMatrixFn 获取骨骼世界矩阵的函数 (boneName → Float32Array[16] 列主序)
+ *   同时用于锚定骨骼和碰撞胶囊的骨骼位置更新。
  * @param collider SDF 碰撞器（null 则跳过）
- * @returns beforeRender 回调函数
+ * @returns beforeRender 回调函数 (deltaTime: number)
  */
 export function buildClothUpdateFn(
     cloth: ClothInstance,
     anchorMatrixFn: (boneName: string) => Float32Array | null,
     collider?: SdfCollider | null
-): () => void {
+): (dt: number) => void {
     // 锚定粒子在局部空间的初始位置缓存（相对于 anchor bone）
     const anchorLocalPositions: [number, number, number][] = [];
     for (const idx of cloth.anchorIndices) {
@@ -244,7 +249,7 @@ export function buildClothUpdateFn(
         anchorLocalPositions.push([p.p[0], p.p[1], p.p[2]]);
     }
 
-    return () => {
+    return (dt: number) => {
         if (!cloth.enabled) {
             return;
         }
@@ -255,8 +260,6 @@ export function buildClothUpdateFn(
         const mat = anchorMatrixFn(cloth.config.anchorBone);
         if (mat) {
             cloth._anchorMissingWarned = false;
-            // 列主序: mat[12]=tx, mat[13]=ty, mat[14]=tz
-            // mat[0..2]=col0 (X axis), mat[4..6]=col1 (Y axis), mat[8..10]=col2 (Z axis)
             const tx = mat[12],
                 ty = mat[13],
                 tz = mat[14];
@@ -265,18 +268,18 @@ export function buildClothUpdateFn(
                 const idx = cloth.anchorIndices[i];
                 const [lx, ly, lz] = anchorLocalPositions[i];
 
-                // worldPos = mat * localPos
                 const wx = mat[0] * lx + mat[4] * ly + mat[8] * lz + tx;
                 const wy = mat[1] * lx + mat[5] * ly + mat[9] * lz + ty;
                 const wz = mat[2] * lx + mat[6] * ly + mat[10] * lz + tz;
 
                 const p = solver.particles[idx];
-                p.prevP[0] = p.p[0] = wx;
-                p.prevP[1] = p.p[1] = wy;
-                p.prevP[2] = p.p[2] = wz;
+                // 设置锚点到骨骼世界位置，保留 prevP 让求解器通过距离约束自然传递运动
+                // （覆盖 prevP 会导致骨骼快速移动时布料撕裂）
+                p.p[0] = wx;
+                p.p[1] = wy;
+                p.p[2] = wz;
             }
         } else if (!cloth._anchorMissingWarned) {
-            // 回退：骨骼未找到时锚定粒子保持当前位置（不更新，防止撕裂悬空）
             console.warn(
                 `[xpbd-cloth] anchor bone "${cloth.config.anchorBone}" not found. ` +
                     'Anchor particles will hold their last position.'
@@ -284,13 +287,31 @@ export function buildClothUpdateFn(
             cloth._anchorMissingWarned = true;
         }
 
-        // 2. SDF 身体碰撞（在 step 之前做一次，step 内也会做地面碰撞）
+        // 2. 更新碰撞胶囊位置（从骨骼矩阵）
         if (collider) {
+            const matrices: (Float32Array | null)[] = [];
+            let missingBones = 0;
+            for (const cap of collider.capsules) {
+                const boneMat = anchorMatrixFn(cap.boneName);
+                if (!boneMat) {
+                    missingBones++;
+                    matrices.push(null); // 标记跳过，避免使用单位矩阵导致胶囊留在原点误碰撞
+                } else {
+                    matrices.push(boneMat);
+                }
+            }
+            if (missingBones > 0 && !cloth._anchorMissingWarned) {
+                console.warn(
+                    `[xpbd-cloth] ${missingBones} collision capsule bone(s) not found, ` +
+                    'affected capsules will skip collision this frame.'
+                );
+            }
+            collider.updateMatrices(matrices);
             collider.solve(solver);
         }
 
-        // 3. XPBD 步进
-        solver.step(1 / 60);
+        // 3. XPBD 步进（使用实际帧时间）
+        solver.step(dt);
 
         // 4. 更新 Mesh 顶点
         _updateClothMesh(cloth);
@@ -310,19 +331,13 @@ export function buildClothUpdateFn(
  *   (row+1,col), (row+1,col+1), (row,col+1)  下三角
  */
 function _createClothMesh(
-    scene: any,
+    scene: Scene,
     cfg: ClothConfig,
     particleGrid: number[],
     solver: XpbdSolver,
     ringSize: number,
     ringCount: number
-): { mesh: any; indices: Int32Array } {
-    const BABYLON = (globalThis as any).BABYLON;
-    if (!BABYLON) {
-        console.warn('[xpbd-cloth] BABYLON not found on globalThis, mesh creation skipped');
-        return { mesh: null, indices: new Int32Array(0) };
-    }
-
+): { mesh: Mesh | null; indices: Int32Array } {
     // 收集顶点位置（从粒子读取初始 position）
     const positions: number[] = [];
     // UV: 按柱面展开，u = col/ringSize, v = row/(ringCount-1)
@@ -357,16 +372,16 @@ function _createClothMesh(
 
     // 用 ComputeNormals 计算初始法线
     const normals = new Float32Array(positions.length);
-    BABYLON.VertexData.ComputeNormals(
+    VertexData.ComputeNormals(
         new Float32Array(positions),
         new Int32Array(indexArray),
         normals
     );
 
     // 创建 Mesh
-    const mesh = new BABYLON.Mesh('xpbd_cloth', scene);
+    const mesh = new Mesh('xpbd_cloth', scene);
 
-    const vertexData = new BABYLON.VertexData();
+    const vertexData = new VertexData();
     vertexData.positions = positions;
     vertexData.indices = indexArray;
     vertexData.normals = Array.from(normals);
@@ -374,11 +389,11 @@ function _createClothMesh(
     vertexData.applyToMesh(mesh);
 
     // 材质
-    const mat = new BABYLON.StandardMaterial('xpbd_cloth_mat', scene);
-    mat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.8);
+    const mat = new StandardMaterial('xpbd_cloth_mat', scene);
+    mat.diffuseColor = new Color3(0.2, 0.3, 0.8);
     mat.alpha = 0.85;
     mat.backFaceCulling = false;
-    mat.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+    mat.specularColor = new Color3(0.1, 0.1, 0.1);
     mesh.material = mat;
 
     return { mesh, indices: new Int32Array(indexArray) };
@@ -388,8 +403,7 @@ function _createClothMesh(
  * 每帧更新 Mesh 顶点位置 + 用 ComputeNormals 重算法线
  */
 function _updateClothMesh(cloth: ClothInstance): void {
-    const BABYLON = (globalThis as any).BABYLON;
-    if (!BABYLON || !cloth.mesh) {
+    if (!cloth.mesh) {
         return;
     }
 
@@ -409,10 +423,10 @@ function _updateClothMesh(cloth: ClothInstance): void {
 
     // 根据当前顶点位置 + 三角形索引，用 Babylon 工具重算法线
     const normals = new Float32Array(count * 3);
-    BABYLON.VertexData.ComputeNormals(positions, meshIndices, normals);
+    VertexData.ComputeNormals(positions, meshIndices, normals);
 
-    cloth.mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, positions, false, true);
-    cloth.mesh.updateVerticesData(BABYLON.VertexBuffer.NormalKind, normals, false, true);
+    cloth.mesh.updateVerticesData(VertexBuffer.PositionKind, positions, false, true);
+    cloth.mesh.updateVerticesData(VertexBuffer.NormalKind, normals, false, true);
 }
 
 // ============================================================

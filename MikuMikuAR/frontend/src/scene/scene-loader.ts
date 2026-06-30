@@ -29,6 +29,7 @@ import { resolveFileUrl, normPath } from '../core/fileservice';
 import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import type { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
 import { loadVMDMotion } from './scene-vmd';
+import { _capture } from './scene-material';
 
 // ======== Loader Dependencies ========
 
@@ -162,6 +163,10 @@ export async function loadPMXFile(
             // Register via ModelManager only — it owns the registry
             _modelManager.register(inst);
             registeredId = id;
+            // Pre-capture material original values for reset functionality
+            for (const mesh of meshes) {
+                if (mesh.material) _capture(mesh.material);
+            }
             setFocusedModelId(id);
             _modelManager.focus(id);
             setStatus(`✓ ${displayName} (场景)`, true);
@@ -208,6 +213,10 @@ export async function loadPMXFile(
         // Must register BEFORE VMD load because loadVMDMotion queries modelRegistry
         _modelManager.register(inst);
         registeredId = id;
+        // Pre-capture material original values for reset functionality
+        for (const mesh of meshes) {
+            if (mesh.material) _capture(mesh.material);
+        }
         if (wasmModel) {
             const states = wasmModel.rigidBodyStates;
             if (states) {

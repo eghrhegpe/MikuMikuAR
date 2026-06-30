@@ -160,8 +160,9 @@ export type PopupLevel = {
     label: string;
     dir: string;
     items: PopupRow[];
-    /** Optional custom render function — overrides items when set. */
-    renderCustom?: (container: HTMLElement) => void;
+    /** Optional custom render function — overrides items when set.
+     *  May be async; SlideMenu will await completion before onAfterRender. */
+    renderCustom?: (container: HTMLElement) => void | Promise<void>;
 };
 
 export interface UIState {

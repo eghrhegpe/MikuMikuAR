@@ -35,7 +35,7 @@ export interface LightState {
 let _scene: import('@babylonjs/core/scene').Scene | null = null;
 let _modelRegistry: Map<string, ModelInstance> | null = null;
 let _propRegistry: Map<string, PropInstance> | null = null;
-let _envSysShadow: { generator: any } | null = null;
+let _envSysShadow: { generator: ShadowGenerator | null } | null = null;
 let _triggerAutoSave: (() => void) | null = null;
 
 export let hemiLight: HemisphericLight;
@@ -48,13 +48,19 @@ let _shadowResolution = 1024;
 let _shadowBias = 0.0001;
 let _sunDisc: Mesh | null = null;
 
+/** 预设动画期间临时抑制 setLightState 内的自动保存，由 applyEnvPreset 控制 */
+let _skipLightAutoSave = false;
+export function setSkipLightAutoSave(skip: boolean): void {
+    _skipLightAutoSave = skip;
+}
+
 const SUN_DISC_DISTANCE = 400;
 
 export function initLighting(
     scene: import('@babylonjs/core/scene').Scene,
     modelRegistry: Map<string, ModelInstance>,
     propRegistry: Map<string, PropInstance>,
-    envSysShadow: { generator: any },
+    envSysShadow: { generator: ShadowGenerator | null },
     triggerAutoSave: () => void
 ): void {
     _scene = scene;
@@ -173,7 +179,7 @@ export function setLightState(s: Partial<LightState>): void {
         _ensureShadow();
     }
     _updateSunDisc();
-    _triggerAutoSave();
+    if (!_skipLightAutoSave) _triggerAutoSave();
 }
 
 /** 平滑过渡当前灯光到目标灯光参数，默认 2 秒 */

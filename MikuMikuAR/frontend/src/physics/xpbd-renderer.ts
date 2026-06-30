@@ -3,34 +3,33 @@
  *
  * 在 Babylon.js 场景中渲染调试几何：
  * - 粒子小球体
- * - 约束彩色线段
- * - 胶囊碰撞体线框
+ * - 约束彩色线段（复用 LinesMesh，每帧更新顶点）
+ * - 胶囊碰撞体线框（四元数对齐方向）
  * - 布料/软体变形 mesh
  *
  * 职能纯粹：接收 Babylon Scene + XPBD 数据 → 更新可视化对象。
  * 不参与物理计算。
  */
 
+import { Scene } from '@babylonjs/core/scene';
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import type { XpbdSolver } from './xpbd-solver';
 import type { SdfCollider } from './xpbd-collider';
-
-// Babylon.js 类型引用（运行时可用）
-// 使用 import type 避免循环依赖
 
 // ============================================================
 // 接口
 // ============================================================
 
 export interface XpbdRendererConfig {
-    /** 粒子球体颜色（RGBA） */
     particleColor: [number, number, number, number];
-    /** 约束线颜色（RGBA） */
     constraintColor: [number, number, number, number];
-    /** 胶囊碰撞体颜色（RGBA） */
     colliderColor: [number, number, number, number];
-    /** 粒子球半径 */
     particleSphereRadius: number;
-    /** 约束线粗细 */
     constraintLineRadius: number;
 }
 
@@ -46,41 +45,34 @@ const DEFAULT_CONFIG: XpbdRendererConfig = {
 // 可视化对象管理器
 // ============================================================
 
-/**
- * XpbdRenderer
- *
- * 用法:
- *   const renderer = new XpbdRenderer(scene);
- *   renderer.showParticles(true);
- *   // 每帧:
- *   renderer.updateParticles(solver);
- *   renderer.updateConstraints(solver);
- *   renderer.updateColliders(collider);
- */
 export class XpbdRenderer {
-    // 将 Scene 存为 any 以兼容 Babylon.js 的多种版本
-    private scene: any;
+    private scene: Scene;
 
     // 粒子可视化
-    private particleMeshes: any[] = [];
+    private particleMeshes: Mesh[] = [];
     private particleVisible = false;
 
-    // 约束可视化
-    private constraintLines: any[] = [];
+    // 约束可视化（复用单条 LinesMesh，每帧 updateVerticesData）
+    private constraintLines: Mesh | null = null;
     private constraintVisible = false;
 
     // 胶囊可视化
-    private colliderMeshes: any[] = [];
+    private colliderMeshes: Mesh[] = [];
     private colliderVisible = false;
 
     // 材质缓存
-    private particleMat: any = null;
-    private constraintMat: any = null;
-    private colliderMat: any = null;
+    private particleMat: StandardMaterial | null = null;
+    private constraintMat: StandardMaterial | null = null;
+    private colliderMat: StandardMaterial | null = null;
+
+    // 缓存 Vector3 / Quaternion 避免每帧分配
+    private _tmpVec = new Vector3();
+    private _tmpQuat = new Quaternion();
+    private _yAxis = new Vector3(0, 1, 0);
 
     config: XpbdRendererConfig;
 
-    constructor(scene: any, config?: Partial<XpbdRendererConfig>) {
+    constructor(scene: Scene, config?: Partial<XpbdRendererConfig>) {
         this.scene = scene;
         this.config = { ...DEFAULT_CONFIG, ...config };
         this._initMaterials();
@@ -89,55 +81,41 @@ export class XpbdRenderer {
     // ---- 材质初始化 ----
 
     private _initMaterials(): void {
-        const BABYLON = (globalThis as any).BABYLON;
-        if (!BABYLON) {
-            return;
-        }
+        const [pr, pg, pb, pa] = this.config.particleColor;
+        this.particleMat = new StandardMaterial('xpbd_particle', this.scene);
+        this.particleMat.diffuseColor = new Color3(pr, pg, pb);
+        this.particleMat.alpha = pa;
+        this.particleMat.emissiveColor = new Color3(pr * 0.5, pg * 0.5, pb * 0.5);
+        this.particleMat.backFaceCulling = false;
 
-        if (BABYLON.StandardMaterial) {
-            const [pr, pg, pb, pa] = this.config.particleColor;
-            this.particleMat = new BABYLON.StandardMaterial('xpbd_particle');
-            this.particleMat.diffuseColor = new BABYLON.Color3(pr, pg, pb);
-            this.particleMat.alpha = pa;
-            this.particleMat.emissiveColor = new BABYLON.Color3(pr * 0.5, pg * 0.5, pb * 0.5);
-            this.particleMat.backFaceCulling = false;
+        const [cr, cg, cb, ca] = this.config.constraintColor;
+        this.constraintMat = new StandardMaterial('xpbd_constraint', this.scene);
+        this.constraintMat.diffuseColor = new Color3(cr, cg, cb);
+        this.constraintMat.alpha = ca;
+        this.constraintMat.emissiveColor = new Color3(cr, cg, cb);
+        this.constraintMat.backFaceCulling = false;
 
-            const [cr, cg, cb, ca] = this.config.constraintColor;
-            this.constraintMat = new BABYLON.StandardMaterial('xpbd_constraint');
-            this.constraintMat.diffuseColor = new BABYLON.Color3(cr, cg, cb);
-            this.constraintMat.alpha = ca;
-            this.constraintMat.emissiveColor = new BABYLON.Color3(cr, cg, cb);
-            this.constraintMat.backFaceCulling = false;
-
-            const [sr, sg, sb, sa] = this.config.colliderColor;
-            this.colliderMat = new BABYLON.StandardMaterial('xpbd_collider');
-            this.colliderMat.diffuseColor = new BABYLON.Color3(sr, sg, sb);
-            this.colliderMat.alpha = sa;
-            this.colliderMat.wireframe = true;
-            this.colliderMat.backFaceCulling = false;
-        }
+        const [sr, sg, sb, sa] = this.config.colliderColor;
+        this.colliderMat = new StandardMaterial('xpbd_collider', this.scene);
+        this.colliderMat.diffuseColor = new Color3(sr, sg, sb);
+        this.colliderMat.alpha = sa;
+        this.colliderMat.wireframe = true;
+        this.colliderMat.backFaceCulling = false;
     }
 
     // ---- 粒子可视化 ----
 
-    /**
-     * 创建/更新粒子球体
-     * 在求解器重置后需要重新调用（粒子数量变化时）
-     */
     updateParticles(solver: XpbdSolver): void {
-        const BABYLON = (globalThis as any).BABYLON;
-        if (!BABYLON?.MeshBuilder) {
-            return;
-        }
-
         // 确保有足够的 mesh
         while (this.particleMeshes.length < solver.particles.length) {
-            const sphere = BABYLON.MeshBuilder.CreateSphere(
+            const sphere = MeshBuilder.CreateSphere(
                 `xpbd_particle_${this.particleMeshes.length}`,
                 { diameter: this.config.particleSphereRadius * 2, segments: 8 },
                 this.scene
             );
-            sphere.material = this.particleMat;
+            if (this.particleMat) {
+                sphere.material = this.particleMat;
+            }
             sphere.isVisible = this.particleVisible;
             this.particleMeshes.push(sphere);
         }
@@ -145,7 +123,7 @@ export class XpbdRenderer {
         // 清理多余的
         while (this.particleMeshes.length > solver.particles.length) {
             const m = this.particleMeshes.pop();
-            m?.dispose?.();
+            m?.dispose();
         }
 
         // 更新位置
@@ -170,154 +148,120 @@ export class XpbdRenderer {
     // ---- 约束可视化 ----
 
     /**
-     * 渲染线条约束（距离约束 + 弯曲约束）
-     * 每帧调用，使用 LinesMesh 更新
+     * 渲染线条约束。首帧创建 with updatable:true 的 LinesMesh，
+     * 后续帧仅通过 updateVerticesData 更新顶点，避免 GC。
      */
     updateConstraints(solver: XpbdSolver): void {
-        const BABYLON = (globalThis as any).BABYLON;
-        if (!BABYLON) {
-            return;
-        }
-
-        // 清除旧线
-        this._clearConstraintLines();
-
         if (!this.constraintVisible) {
+            if (this.constraintLines) {
+                this.constraintLines.dispose();
+                this.constraintLines = null;
+            }
             return;
         }
 
         const positions: number[] = [];
-
         for (const c of solver.constraints) {
-            if (c.type === 'volume') {
-                continue;
-            } // 四面体不画线
-
+            if (c.type === 'volume') continue;
             const i = c.indices[0];
             const k = c.indices[c.indices.length - 1];
             const pi = solver.particles[i];
             const pk = solver.particles[k];
-            if (!pi || !pk) {
-                continue;
-            }
-
+            if (!pi || !pk) continue;
             positions.push(pi.p[0], pi.p[1], pi.p[2]);
             positions.push(pk.p[0], pk.p[1], pk.p[2]);
         }
 
         if (positions.length === 0) {
+            if (this.constraintLines) {
+                this.constraintLines.dispose();
+                this.constraintLines = null;
+            }
             return;
         }
 
-        const lines = BABYLON.MeshBuilder.CreateLines(
-            'xpbd_constraints',
-            { points: positions, updatable: true },
-            this.scene
-        );
-        lines.color = new BABYLON.Color3(
-            this.config.constraintColor[0],
-            this.config.constraintColor[1],
-            this.config.constraintColor[2]
-        );
-        lines.alpha = this.config.constraintColor[3];
-        this.constraintLines.push(lines);
+        const pointCount = positions.length / 3;
+        if (!this.constraintLines || this.constraintLines.getTotalVertices() !== pointCount) {
+            if (this.constraintLines) {
+                this.constraintLines.dispose();
+            }
+            // 转换为 Vector3[] 以满足类型约束
+            const pts: Vector3[] = [];
+            for (let i = 0; i < positions.length; i += 3) {
+                pts.push(new Vector3(positions[i], positions[i + 1], positions[i + 2]));
+            }
+            this.constraintLines = MeshBuilder.CreateLines(
+                'xpbd_constraints',
+                { points: pts, updatable: true },
+                this.scene
+            ) as any;
+            (this.constraintLines as any).color = new Color3(
+                this.config.constraintColor[0],
+                this.config.constraintColor[1],
+                this.config.constraintColor[2]
+            );
+        } else {
+            // 复用：仅更新顶点缓冲区
+            (this.constraintLines as any).updateVerticesData('position', new Float32Array(positions), false, true);
+        }
     }
 
     showConstraints(visible: boolean): void {
         this.constraintVisible = visible;
     }
 
-    private _clearConstraintLines(): void {
-        for (const line of this.constraintLines) {
-            line?.dispose?.();
-        }
-        this.constraintLines = [];
-    }
-
     // ---- 胶囊碰撞体可视化 ----
 
     /**
-     * 创建/更新胶囊碰撞体的线框可视化
+     * 创建胶囊碰撞体线框。圆柱体用 Quaternion 对齐 direction。
+     * 每帧销毁重建（调试用，非性能敏感路径）。
      */
     updateColliders(collider: SdfCollider): void {
-        const BABYLON = (globalThis as any).BABYLON;
-        if (!BABYLON) {
-            return;
-        }
-
-        // 清除旧的
         for (const m of this.colliderMeshes) {
-            m?.dispose?.();
+            m.dispose();
         }
         this.colliderMeshes = [];
 
-        if (!this.colliderVisible) {
-            return;
-        }
+        if (!this.colliderVisible) return;
 
         for (const cap of collider.capsules) {
-            if (!cap.enabled) {
-                continue;
-            }
+            if (!cap.enabled) continue;
 
-            const sphere = BABYLON.MeshBuilder.CreateSphere(
+            const sphere1 = MeshBuilder.CreateSphere(
                 `xpbd_collider_${cap.name}`,
-                {
-                    diameter: cap.radius * 2,
-                    segments: 16,
-                },
+                { diameter: cap.radius * 2, segments: 16 },
                 this.scene
             );
-            const cylinder = BABYLON.MeshBuilder.CreateCylinder(
+            const cylinder = MeshBuilder.CreateCylinder(
                 `xpbd_collider_cyl_${cap.name}`,
-                {
-                    height: cap.halfHeight * 2,
-                    diameter: cap.radius * 2,
-                    tessellation: 16,
-                },
+                { height: cap.halfHeight * 2, diameter: cap.radius * 2, tessellation: 16 },
                 this.scene
             );
-
-            sphere.material = this.colliderMat;
-            cylinder.material = this.colliderMat;
-            sphere.isVisible = this.colliderVisible;
-            cylinder.isVisible = this.colliderVisible;
-
-            // 定位：cylinder 中心在 capsule center，沿 direction 方向
-            cylinder.position.x = cap.center[0];
-            cylinder.position.y = cap.center[1];
-            cylinder.position.z = cap.center[2];
-
-            // 旋转 cylinder 对齐 direction
-            // 默认 cylinder 沿 Y 轴，需要旋转到 cap.direction
-            const dy = cap.direction[1];
-            const crossX = -cap.direction[2];
-            const crossZ = cap.direction[0];
-            const angle = Math.acos(Math.min(1, Math.max(-1, dy)));
-            const crossLen = Math.sqrt(crossX * crossX + crossZ * crossZ);
-            if (crossLen > 1e-6) {
-                cylinder.rotation.x = (crossX / crossLen) * angle;
-                cylinder.rotation.z = (crossZ / crossLen) * angle;
-            }
-
-            // 两端球体
-            const hh = cap.halfHeight;
-            sphere.position.x = cap.center[0] + cap.direction[0] * hh;
-            sphere.position.y = cap.center[1] + cap.direction[1] * hh;
-            sphere.position.z = cap.center[2] + cap.direction[2] * hh;
-
-            const sphere2 = BABYLON.MeshBuilder.CreateSphere(
+            const sphere2 = MeshBuilder.CreateSphere(
                 `xpbd_collider_${cap.name}_bot`,
                 { diameter: cap.radius * 2, segments: 16 },
                 this.scene
             );
-            sphere2.material = this.colliderMat;
-            sphere2.isVisible = this.colliderVisible;
-            sphere2.position.x = cap.center[0] - cap.direction[0] * hh;
-            sphere2.position.y = cap.center[1] - cap.direction[1] * hh;
-            sphere2.position.z = cap.center[2] - cap.direction[2] * hh;
 
-            this.colliderMeshes.push(sphere, cylinder, sphere2);
+            if (this.colliderMat) {
+                sphere1.material = this.colliderMat;
+                cylinder.material = this.colliderMat;
+                sphere2.material = this.colliderMat;
+            }
+
+            // 两端球体位置
+            const hh = cap.halfHeight;
+            const dir = this._tmpVec.set(cap.direction[0], cap.direction[1], cap.direction[2]);
+            sphere1.position.set(cap.center[0] + dir.x * hh, cap.center[1] + dir.y * hh, cap.center[2] + dir.z * hh);
+            cylinder.position.set(cap.center[0], cap.center[1], cap.center[2]);
+            sphere2.position.set(cap.center[0] - dir.x * hh, cap.center[1] - dir.y * hh, cap.center[2] - dir.z * hh);
+
+            // 使用四元数对齐圆柱体到 direction（默认沿 Y 轴）
+            Quaternion.RotationYawPitchRollToRef(0, 0, 0, this._tmpQuat);
+            Quaternion.FromUnitVectorsToRef(this._yAxis, dir, this._tmpQuat);
+            cylinder.rotationQuaternion = this._tmpQuat.clone();
+
+            this.colliderMeshes.push(sphere1, cylinder, sphere2);
         }
     }
 
@@ -331,17 +275,18 @@ export class XpbdRenderer {
     // ---- 清理 ----
 
     dispose(): void {
-        this._clearConstraintLines();
+        this.constraintLines?.dispose();
+        this.constraintLines = null;
         for (const m of this.particleMeshes) {
-            m?.dispose?.();
+            m.dispose();
         }
         for (const m of this.colliderMeshes) {
-            m?.dispose?.();
+            m.dispose();
         }
         this.particleMeshes = [];
         this.colliderMeshes = [];
-        this.particleMat?.dispose?.();
-        this.constraintMat?.dispose?.();
-        this.colliderMat?.dispose?.();
+        this.particleMat?.dispose();
+        this.constraintMat?.dispose();
+        this.colliderMat?.dispose();
     }
 }

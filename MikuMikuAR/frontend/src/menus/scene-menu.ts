@@ -529,10 +529,8 @@ function buildScreenshotLevel(): PopupLevel {
 let cameraExpandedMode: CameraMode | null = null;
 
 function buildCameraLevel(): PopupLevel {
+    cameraExpandedMode = null; // 每次重建重置展开状态，避免快捷键切换后状态不同步
     const currentMode = getCameraMode();
-    if (cameraExpandedMode !== null && cameraExpandedMode !== currentMode) {
-        cameraExpandedMode = currentMode;
-    }
     const vmdLoaded = hasCameraVmd();
     const vmdName = getCameraVmdName();
 
@@ -1827,7 +1825,8 @@ function handleSceneAction(row: PopupRow): void {
 }
 
 export async function showSceneMenu(): Promise<void> {
-    // 不再自管理生命周期，由 toggleOverlay 统一管理
+    // 释放旧 SlideMenu（清除其未决定时器，防止泄漏）
+    sceneMenu?.dispose();
     dom.sceneOverlay.innerHTML = '';
     dom.sceneOverlay.classList.remove(
         'sceneOverlay-model',

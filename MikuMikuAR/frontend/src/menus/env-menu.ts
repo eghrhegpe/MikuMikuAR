@@ -1094,7 +1094,8 @@ export function showEnvMenu(): void {
     );
     dom.sceneOverlay.dataset.popupType = 'env';
 
-    // 每次都重建 SlideMenu，避免 innerHTML 清空后旧实例持有已销毁的 DOM 引用
+    // 释放旧实例（清除 keydown/setTimeout），避免累积泄漏
+    envMenu?.dispose();
     envMenu = new SlideMenu({
         container: dom.sceneOverlay,
         onClose: () => closeAllOverlays(),

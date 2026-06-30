@@ -71,30 +71,31 @@
 
 | 章 | 标题 | 文件 |
 |----|------|------|
-| 1 | 审美的裂缝 | [vol-4-The New World/01-审美的裂缝.md](vol-4-The New World/01-审美的裂缝.md) |
-| 2 | 错位的五键 | [vol-4-The New World/02-错位的五键.md](vol-4-The New World/02-错位的五键.md) |
-| 3 | 重构风暴 | [vol-4-The New World/03-重构风暴.md](vol-4-The New World/03-重构风暴.md) |
-| 4 | 循环深渊 | [vol-4-The New World/04-循环深渊.md](vol-4-The New World/04-循环深渊.md) |
-| 5 | 最后一公里 | [vol-4-The New World/05-最后一公里.md](vol-4-The New World/05-最后一公里.md) |
+| 1 | 审美的裂缝 | [vol-4-the-new-world/01-审美的裂缝.md](vol-4-the-new-world/01-审美的裂缝.md) |
+| 2 | 错位的五键 | [vol-4-the-new-world/02-错位的五键.md](vol-4-the-new-world/02-错位的五键.md) |
+| 3 | 重构风暴 | [vol-4-the-new-world/03-重构风暴.md](vol-4-the-new-world/03-重构风暴.md) |
+| 4 | 循环深渊 | [vol-4-the-new-world/04-循环深渊.md](vol-4-the-new-world/04-循环深渊.md) |
+| 5 | 最后一公里 | [vol-4-the-new-world/05-最后一公里.md](vol-4-the-new-world/05-最后一公里.md) |
 
 **第二幕：系统的矫正**
 
 | 章 | 标题 | 文件 |
 |----|------|------|
-| 6 | 替身 | [vol-4-The New World/06-替身.md](vol-4-The New World/06-替身.md) |
-| 7 | 三层闭包 | [vol-4-The New World/07-三层闭包.md](vol-4-The New World/07-三层闭包.md) |
-| 8 | 天光之悟 | [vol-4-The New World/08-天光之悟.md](vol-4-The New World/08-天光之悟.md) |
-| 9 | 工坊与节拍 | [vol-4-The New World/09-工坊与节拍.md](vol-4-The New World/09-工坊与节拍.md) |
+| 6 | 替身 | [vol-4-the-new-world/06-替身.md](vol-4-the-new-world/06-替身.md) |
+| 7 | 三层闭包 | [vol-4-the-new-world/07-三层闭包.md](vol-4-the-new-world/07-三层闭包.md) |
+| 8 | 天光之悟 | [vol-4-the-new-world/08-天光之悟.md](vol-4-the-new-world/08-天光之悟.md) |
+| 9 | 工坊与节拍 | [vol-4-the-new-world/09-工坊与节拍.md](vol-4-the-new-world/09-工坊与节拍.md) |
 
 **第三幕：文明的定型**
 
 | 章 | 标题 | 文件 |
 |----|------|------|
-| 10 | 数据的纹路 | [vol-4-The New World/10-数据的纹路.md](vol-4-The New World/10-数据的纹路.md) |
-| 11 | 残党扫荡 | [vol-4-The New World/11-残党扫荡.md](vol-4-The New World/11-残党扫荡.md) |
-| 12 | 瘦身日 | [vol-4-The New World/12-瘦身日.md](vol-4-The New World/12-瘦身日.md) |
-| 13 | 纹理织工 | [vol-4-The New World/13-纹理织工.md](vol-4-The New World/13-纹理织工.md) |
-| 14 | 打包之战 | [vol-4-The New World/14-打包之战.md](vol-4-The New World/14-打包之战.md) |
+| 10 | 数据的纹路 | [vol-4-the-new-world/10-数据的纹路.md](vol-4-the-new-world/10-数据的纹路.md) |
+| 11 | 残党扫荡 | [vol-4-the-new-world/11-残党扫荡.md](vol-4-the-new-world/11-残党扫荡.md) |
+| 12 | 瘦身日 | [vol-4-the-new-world/12-瘦身日.md](vol-4-the-new-world/12-瘦身日.md) |
+| 13 | 纹理织工 | [vol-4-the-new-world/13-纹理织工.md](vol-4-the-new-world/13-纹理织工.md) |
+| 14 | 拖拽之手 | [vol-4-the-new-world/14-拖拽之手.md](vol-4-the-new-world/14-拖拽之手.md) |
+| 15 | 打包之战 | [vol-4-the-new-world/15-打包之战.md](vol-4-the-new-world/15-打包之战.md) |
 
 ### 📔 第五卷：物理之光（The Light of Physics）
 
@@ -111,7 +112,17 @@
 | 7 | 八城之盟 | [vol-5-the-light-of-physics/07-八城之盟.md](vol-5-the-light-of-physics/07-八城之盟.md) |
 | 8 | 三刀之后 | [vol-5-the-light-of-physics/08-三刀之后.md](vol-5-the-light-of-physics/08-三刀之后.md) |
 | 9 | 第九城 | [vol-5-the-light-of-physics/09-第九城.md](vol-5-the-light-of-physics/09-第九城.md) |
-| 番外 | 云层协议 | [vol-5-the-light-of-physics/10-云层协议.md](vol-5-the-light-of-physics/10-云层协议.md) |
+
+> **番外**：[云层协议](vol-5-the-light-of-physics/番外-云层协议.md)（独立于主线章节，体积云渲染方案的三次生死抉择）
+
+### 📕 第六卷：联邦体检——向内的征途（The Federal Checkup）
+
+在前五卷开疆拓土之后，联邦启动系统性审计：模块合规、性能体检、物理引擎校准、代码质量治理。这是一卷关于「秩序回归」的故事——不是创造新世界，而是让已有世界值得信赖。
+
+| 章 | 标题 | 文件 |
+|----|------|------|
+| 1 | 八城审计 | [vol-6-federal-checkup/01-八城审计.md](vol-6-federal-checkup/01-八城审计.md) |
+| 2 | 物理之躯 | [vol-6-federal-checkup/02-物理之躯.md](vol-6-federal-checkup/02-物理之躯.md) |
 
 ### 📓 Sisyphus Stories
 

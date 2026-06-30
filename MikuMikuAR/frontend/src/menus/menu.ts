@@ -9,6 +9,12 @@ export class SlideMenu {
     private headerEl: HTMLElement;
     private focusIndex = -1;
     private transitioning = false;
+    /** 跟踪未决的 setTimeout，确保 cancelAnims 能全部清除 */
+    private _pendingTimeouts: ReturnType<typeof setTimeout>[] = [];
+    /** 缓存的额外按钮，避免每次 updateHeader 重建、旧监听器泄漏 */
+    private _cachedExtraBtns: HTMLElement[] | null = null;
+    /** keydown 监听器引用，供 dispose 清理 */
+    private _keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
     onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
     onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
@@ -57,30 +63,16 @@ export class SlideMenu {
 
         // 键盘导航
         this.container.tabIndex = -1;
-        this.container.addEventListener('keydown', (e) => {
-            if (this.transitioning) {
-                return;
-            }
+        this._keydownHandler = (e) => {
+            if (this.transitioning) return;
             switch (e.key) {
-                case 'ArrowDown':
-                    e.preventDefault();
-                    this.focusNext();
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    this.focusPrev();
-                    break;
-                case 'ArrowRight':
-                case 'Enter':
-                    e.preventDefault();
-                    this.activateFocused();
-                    break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    this.pop();
-                    break;
+                case 'ArrowDown': e.preventDefault(); this.focusNext(); break;
+                case 'ArrowUp': e.preventDefault(); this.focusPrev(); break;
+                case 'ArrowRight': case 'Enter': e.preventDefault(); this.activateFocused(); break;
+                case 'ArrowLeft': e.preventDefault(); this.pop(); break;
             }
-        });
+        };
+        this.container.addEventListener('keydown', this._keydownHandler);
     }
 
     // ======== 公共 API ========
@@ -94,15 +86,16 @@ export class SlideMenu {
     }
 
     reset(level: PopupLevel): void {
+        this._cancelAnim();
         this.levels = [level];
-        this.transitioning = false;
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateY(0)';
-        this.buildPanel(level);
-        this.updateHeader(level);
-        this.setupFocus();
-        this.onAfterRender?.(level, this);
+        this.buildPanel(level).then(() => {
+            this.updateHeader(level);
+            this.setupFocus();
+            this.onAfterRender?.(level, this);
+        });
     }
 
     push(level: PopupLevel): void {
@@ -112,14 +105,14 @@ export class SlideMenu {
         this.transitioning = true;
         this.levels.push(level);
 
-        // 旧内容淡出（上移）
+        // 旧内容淡出
         this.panel.style.transition = 'opacity 0.12s ease, transform 0.12s ease';
         this.panel.style.opacity = '0';
         this.panel.style.transform = 'translateY(-8px)';
 
-        const onFadeOut = () => {
+        const onFadeOut = async () => {
             this.panel.removeEventListener('transitionend', onFadeOut);
-            this.buildPanel(level);
+            await this.buildPanel(level);
             this.updateHeader(level);
             // 新内容从下方淡入
             this.panel.style.transition = 'none';
@@ -132,12 +125,13 @@ export class SlideMenu {
 
             const onFadeIn = () => {
                 this.panel.removeEventListener('transitionend', onFadeIn);
+                this._cancelTimeout();
                 this.transitioning = false;
                 this.setupFocus();
                 this.onAfterRender?.(level, this);
             };
             this.panel.addEventListener('transitionend', onFadeIn);
-            setTimeout(() => {
+            this._pushTimeout(setTimeout(() => {
                 if (this.transitioning) {
                     this.panel.style.opacity = '1';
                     this.panel.style.transform = 'translateY(0)';
@@ -145,17 +139,17 @@ export class SlideMenu {
                     this.setupFocus();
                     this.onAfterRender?.(level, this);
                 }
-            }, 200);
+            }, 200));
         };
 
         this.panel.addEventListener('transitionend', onFadeOut);
-        setTimeout(() => {
+        this._pushTimeout(setTimeout(() => {
             if (this.transitioning) {
                 this.panel.style.opacity = '0';
                 this.panel.style.transform = 'translateY(-8px)';
                 onFadeOut();
             }
-        }, 150);
+        }, 150));
     }
 
     pop(): void {
@@ -170,9 +164,9 @@ export class SlideMenu {
         this.panel.style.opacity = '0';
         this.panel.style.transform = 'translateY(8px)';
 
-        const onFadeOut = () => {
+        const onFadeOut = async () => {
             this.panel.removeEventListener('transitionend', onFadeOut);
-            this.buildPanel(prevLevel);
+            await this.buildPanel(prevLevel);
             this.updateHeader(prevLevel);
             this.panel.style.transition = 'none';
             this.panel.style.opacity = '0';
@@ -184,12 +178,13 @@ export class SlideMenu {
 
             const onFadeIn = () => {
                 this.panel.removeEventListener('transitionend', onFadeIn);
+                this._cancelTimeout();
                 this.transitioning = false;
                 this.setupFocus();
                 this.onAfterRender?.(prevLevel, this);
             };
             this.panel.addEventListener('transitionend', onFadeIn);
-            setTimeout(() => {
+            this._pushTimeout(setTimeout(() => {
                 if (this.transitioning) {
                     this.panel.style.opacity = '1';
                     this.panel.style.transform = 'translateY(0)';
@@ -197,47 +192,45 @@ export class SlideMenu {
                     this.setupFocus();
                     this.onAfterRender?.(prevLevel, this);
                 }
-            }, 200);
+            }, 200));
         };
 
         this.panel.addEventListener('transitionend', onFadeOut);
-        setTimeout(() => {
+        this._pushTimeout(setTimeout(() => {
             if (this.transitioning) {
                 this.panel.style.opacity = '0';
                 this.panel.style.transform = 'translateY(8px)';
                 onFadeOut();
             }
-        }, 150);
+        }, 150));
     }
 
     popTo(index: number): void {
-        if (index < 0 || index >= this.levels.length || this.transitioning) {
-            return;
-        }
-        if (index === this.levels.length - 1) {
-            return;
-        }
+        if (index < 0 || index >= this.levels.length || this.transitioning) return;
+        if (index === this.levels.length - 1) return;
+        this._cancelAnim();
         this.levels = this.levels.slice(0, index + 1);
         const level = this.currentLevel!;
-        this.transitioning = false;
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateY(0)';
-        this.buildPanel(level);
-        this.updateHeader(level);
-        this.setupFocus();
-        this.onAfterRender?.(level, this);
+        this.buildPanel(level).then(() => {
+            this.updateHeader(level);
+            this.setupFocus();
+            this.onAfterRender?.(level, this);
+        });
     }
 
     reRender(): void {
+        if (this.transitioning) return;
         const level = this.currentLevel;
-        if (!level) {
-            return;
-        }
-        this.buildPanel(level);
-        this.updateHeader(level);
-        this.setupFocus();
-        this.onAfterRender?.(level, this);
+        if (!level) return;
+        this._cachedExtraBtns = null;
+        this.buildPanel(level).then(() => {
+            this.updateHeader(level);
+            this.setupFocus();
+            this.onAfterRender?.(level, this);
+        });
     }
 
     getLevel(index: number): PopupLevel | undefined {
@@ -247,7 +240,31 @@ export class SlideMenu {
     setLevel(index: number, level: PopupLevel): void {
         if (index >= 0 && index < this.levels.length) {
             this.levels[index] = level;
+            // 如果替换的是当前显示层级，自动重绘
+            if (index === this.levels.length - 1) {
+                this.reRender();
+            }
         }
+    }
+
+    /** 强制结束当前动画，清除所有未决定时器，重置过渡状态 */
+    private _cancelAnim(): void {
+        this.transitioning = false;
+        this._cancelTimeout();
+        this.panel.style.transition = 'none';
+        this.panel.style.opacity = '1';
+        this.panel.style.transform = 'translateY(0)';
+    }
+
+    /** 记录一个由动画生命周期管理的 setTimeout */
+    private _pushTimeout(id: ReturnType<typeof setTimeout>): void {
+        this._pendingTimeouts.push(id);
+    }
+
+    /** 清除所有未决的动画后备 setTimeout */
+    private _cancelTimeout(): void {
+        for (const id of this._pendingTimeouts) clearTimeout(id);
+        this._pendingTimeouts = [];
     }
 
     // ======== 内部方法 ========
@@ -308,26 +325,33 @@ export class SlideMenu {
         items[this.focusIndex].click();
     }
 
-    private buildPanel(level: PopupLevel): void {
+    private async buildPanel(level: PopupLevel): Promise<void> {
         this.panel.innerHTML = '';
         const list = document.createElement('div');
         list.className = 'slide-list';
-        // flex / overflow-y / min-height 由 CSS 统一控制
 
         if (level.items.length === 0 && !level.renderCustom) {
             list.innerHTML = '<div class="slide-empty">暂无内容</div>';
         } else if (level.renderCustom) {
-            // 默认不添加 render-card；需要卡片背景/特殊边距的调用方自行添加
-            level.renderCustom(list);
+            await level.renderCustom(list);
         } else {
             for (const row of level.items) {
                 const el = this.createRow(row);
-                if (el) {
-                    list.appendChild(el);
-                }
+                if (el) list.appendChild(el);
             }
         }
         this.panel.appendChild(list);
+    }
+
+    /** 释放所有资源（清除动画定时器、键盘监听、状态），调用后实例不可再用。 */
+    dispose(): void {
+        this._cancelAnim();
+        if (this._keydownHandler) {
+            this.container.removeEventListener('keydown', this._keydownHandler);
+            this._keydownHandler = null;
+        }
+        this.levels = [];
+        this._cachedExtraBtns = null;
     }
 
     private updateHeader(level: PopupLevel): void {
@@ -352,7 +376,11 @@ export class SlideMenu {
         title.textContent = level.label || '';
         this.headerEl.appendChild(title);
 
-        for (const btn of this.extraButtonFactory?.() ?? []) {
+        // 复用额外按钮，避免每次重建创建新 DOM + 旧监听器泄漏
+        if (!this._cachedExtraBtns) {
+            this._cachedExtraBtns = this.extraButtonFactory?.() ?? [];
+        }
+        for (const btn of this._cachedExtraBtns) {
             this.headerEl.appendChild(btn);
         }
     }

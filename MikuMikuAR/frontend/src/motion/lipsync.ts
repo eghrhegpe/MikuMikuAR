@@ -50,8 +50,9 @@ export function amplitudeToWeight(
     }
     const range = 1 - sensitivity;
     if (range <= 0) {
-        return intensity;
-    } // sensitivity=1 边界：amp>=1 时给满
+        // sensitivity=1 边界：仅振幅满时张嘴，避免口型常开
+        return amplitude >= 1.0 ? intensity : 0;
+    }
     const t = Math.max(0, Math.min(1, (amplitude - sensitivity) / range));
     return t * intensity;
 }

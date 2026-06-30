@@ -125,6 +125,20 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
             }
         }
         const headCache = new Map<string, boolean>();
+        // 并发限制：避免对大量子目录同时发起数百个 HEAD 请求
+        const HEAD_CONCURRENCY = 6;
+        const semaphore = { count: 0 };
+        const withLimit = async <T>(fn: () => Promise<T>): Promise<T> => {
+            while (semaphore.count >= HEAD_CONCURRENCY) {
+                await new Promise((r) => setTimeout(r, 10));
+            }
+            semaphore.count++;
+            try {
+                return await fn();
+            } finally {
+                semaphore.count--;
+            }
+        };
         const results = await Promise.all(
             subdirs.map(async (subdir): Promise<OutfitVariant | null> => {
                 const byMaterial: Record<string, OutfitSlot> = {};
@@ -136,12 +150,14 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
                         if (headCache.has(p.url)) {
                             ok = headCache.get(p.url)!;
                         } else {
-                            try {
-                                const resp = await fetch(p.url, { method: 'HEAD' });
-                                ok = resp.ok;
-                            } catch {
-                                ok = false;
-                            }
+                            ok = await withLimit(async () => {
+                                try {
+                                    const resp = await fetch(p.url, { method: 'HEAD' });
+                                    return resp.ok;
+                                } catch {
+                                    return false;
+                                }
+                            });
                             headCache.set(p.url, ok);
                         }
                         if (!ok) {
@@ -182,24 +198,32 @@ async function _applySlot(
     if (newPath) {
         const url = `http://127.0.0.1:${port}/${_encodePath(newPath)}`;
         const newTex = new Texture(url, scene);
+        let loaded = false;
         await new Promise<void>((resolve) => {
             if (newTex.isReady()) {
+                loaded = true;
                 resolve();
                 return;
             }
             const obs = newTex.onLoadObservable.add(() => {
                 newTex.onLoadObservable.remove(obs);
+                loaded = true;
                 resolve();
             });
             setTimeout(() => {
                 newTex.onLoadObservable.remove(obs);
-                resolve();
+                resolve(); // 超时：loaded 保持 false
             }, 5000);
         });
-        if (cur && cur !== origTex) {
-            cur.dispose();
+        // 仅加载成功时才替换纹理；超时则 dispose 并保留原纹理
+        if (loaded) {
+            if (cur && cur !== origTex) {
+                cur.dispose();
+            }
+            (sm as any)[slot] = newTex;
+        } else {
+            newTex.dispose();
         }
-        (sm as any)[slot] = newTex;
     } else {
         if (origTex) {
             if (cur && cur !== origTex) {

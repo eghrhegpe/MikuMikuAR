@@ -157,6 +157,7 @@ export function buildPerMatLevel(
 }
 
 export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
+    _selectedMat = null; // 每次重建根面板时重置选中状态
     return {
         label: '材质调节 — ' + modelName,
         dir: '',
@@ -190,7 +191,7 @@ export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
                                     continue;
                                 }
                                 const isSelected =
-                                    _selectedMat.cat === cat && _selectedMat.index === idx;
+                                    _selectedMat?.cat === cat && _selectedMat?.index === idx;
                                 const row = document.createElement('div');
                                 row.className = `slide-item${isSelected ? ' slide-focused' : ''}`;
                                 row.style.cssText = 'padding-left: 28px;';
@@ -221,65 +222,21 @@ export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
                         shininess: 50,
                         ambientMul: 1,
                     };
-                    const matName = detailList.find((d) => d.index === index).name || '未知材质';
+                    const matName = detailList.find((d) => d.index === index)?.name || '未知材质';
 
                     const title = document.createElement('div');
                     title.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px;';
                     title.textContent = `参数微调 — ${cat} › ${matName}`;
                     c.appendChild(title);
 
-                    addSliderRow(
-                        c,
-                        '漫反射倍率',
-                        params.diffuseMul,
-                        0,
-                        2,
-                        0.05,
-                        (v) => {
-                            setMatParams(id, index, { diffuseMul: v });
-                            stackRegistry.modelStack.reRender();
-                        },
-                        'lucide:droplet'
-                    );
-                    addSliderRow(
-                        c,
-                        '高光倍率',
-                        params.specularMul,
-                        0,
-                        2,
-                        0.05,
-                        (v) => {
-                            setMatParams(id, index, { specularMul: v });
-                            stackRegistry.modelStack.reRender();
-                        },
-                        'lucide:sparkle'
-                    );
-                    addSliderRow(
-                        c,
-                        '高光指数',
-                        params.shininess,
-                        0,
-                        200,
-                        1,
-                        (v) => {
-                            setMatParams(id, index, { shininess: v });
-                            stackRegistry.modelStack.reRender();
-                        },
-                        'lucide:zap'
-                    );
-                    addSliderRow(
-                        c,
-                        '环境光倍率',
-                        params.ambientMul,
-                        0,
-                        2,
-                        0.05,
-                        (v) => {
-                            setMatParams(id, index, { ambientMul: v });
-                            stackRegistry.modelStack.reRender();
-                        },
-                        'lucide:sun'
-                    );
+                    addSliderRow(c, '漫反射倍率', params.diffuseMul, 0, 2, 0.05,
+                        (v) => { setMatParams(id, index, { diffuseMul: v }); }, 'lucide:droplet');
+                    addSliderRow(c, '高光倍率', params.specularMul, 0, 2, 0.05,
+                        (v) => { setMatParams(id, index, { specularMul: v }); }, 'lucide:sparkle');
+                    addSliderRow(c, '高光指数', params.shininess, 0, 200, 1,
+                        (v) => { setMatParams(id, index, { shininess: v }); }, 'lucide:zap');
+                    addSliderRow(c, '环境光倍率', params.ambientMul, 0, 2, 0.05,
+                        (v) => { setMatParams(id, index, { ambientMul: v }); }, 'lucide:sun');
 
                     const resetRow = document.createElement('div');
                     resetRow.className = 'slide-item';

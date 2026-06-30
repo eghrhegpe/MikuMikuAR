@@ -139,9 +139,18 @@ docs/
 | 音频 / 音乐 / VMD 同步 | `frontend/src/outfit/audio.ts` | `frontend/src/scene/scene.ts`（`syncAudioPlayback`） |
 | 程序化动作 / Idle / Auto Dance | `frontend/src/motion/procedural-motion.ts` | `frontend/src/motion/beat-detector.ts` |
 | VPD 姿势导入 | `frontend/src/motion/vpd-parser.ts` | `docs/architecture.md` §VMD 环节 |
-| LipSync / 口型同步 | `frontend/src/motion/lipsync.ts` | — |
+| LipSync / 口型同步 | `frontend/src/motion/lipsync.ts` | `frontend/src/scene/scene-lipsync.ts` |
 | 舞蹈套装 / 动作库弹窗 | `frontend/src/menus/motion-popup.ts` | `frontend/src/menus/library-core.ts` |
 | 模型预设 / 自动应用 | `frontend/src/menus/model-preset.ts` | `frontend/src/menus/model-detail.ts`（`buildPresetListLevel`） |
+| XPBD / 布料 / 物理模拟 / 软体 | `frontend/src/physics/xpbd-solver.ts` | `frontend/src/physics/xpbd-cloth.ts` + `cloth-manager.ts` |
+| SDF / 碰撞胶囊 / 身体碰撞 | `frontend/src/physics/xpbd-collider.ts` | `frontend/src/physics/cloth-manager.ts` |
+| VMD 生成 / 程序化动作 VMD | `frontend/src/motion/vmd-writer.ts` | `frontend/src/motion/procedural-motion.ts` |
+| VPD 姿势导入 / 文本解析 | `frontend/src/motion/vpd-parser.ts` | `frontend/src/motion/vmd-writer.ts` |
+| 环境预设 / envAutoLink / 时间流转 | `frontend/src/scene/scene-env-bridge.ts` | `frontend/src/scene/env-lighting.ts` |
+| 灯光过渡 / shadowBias / 阴影重建 | `frontend/src/scene/scene-lighting.ts` | `frontend/src/scene/scene-env-bridge.ts` |
+| SlideMenu / 菜单动画 / dispose | `frontend/src/menus/menu.ts` | `docs/menu-architecture.md` |
+| 节拍检测 / BPM / BeatDetector | `frontend/src/motion/beat-detector.ts` | `frontend/src/outfit/audio.ts` |
+| 音频 / 音量 / GainNode | `frontend/src/outfit/audio.ts` | `frontend/src/motion/beat-detector.ts` |
 | 任何新增函数 | `docs/reusables.md`（先查是否已存在） | — |
 
 > `reusables.md` 是写代码前必查的索引表，不是让你全读的。按函数名/场景 grep。 |
@@ -230,38 +239,70 @@ Go 端核心文件：
 ```
 MikuMikuAR/frontend/
 ├── src/
-│   ├── main.ts           # ★ 入口 — 事件绑定 + 快捷键 + 初始化
-│   ├── config.ts         # ★ 共享状态 + DOM 引用 + 类型定义 + 工具函数
-│   ├── scene.ts          # ★ 3D 场景 + PMX/VMD 加载 + 物理引擎 + 播放控制
-│   ├── audio.ts          # 音乐播放 + VMD 同步 + 节拍检测挂载
-│   ├── camera.ts         # 相机模式管理（轨道/自由飞行/镜头预设/演唱会）
-│   ├── fileservice.ts    # 统一文件 URL 解析层（resolveFileUrl）
-│   ├── menu.ts           # MenuStack 通用菜单导航组件
-│   ├── library.ts        # 模型库弹窗入口（MenuStack 初始化）
-│   ├── library-core.ts   # 模型库核心（扫描/搜索/构建层级/标签）
-│   ├── model-detail.ts   # 模型详情子菜单（信息/变换/可见性/标签/表情/材质）
-│   ├── model-material.ts # 逐材质调参子菜单
-│   ├── model-preset.ts   # 模型预设保存/加载
-│   ├── outfit.ts         # 换装系统（loadOutfits/applyOutfitVariant/resetOutfit）
-│   ├── outfit-ui.ts      # 服装变体子菜单 UI
-│   ├── scene-menu.ts     # 场景弹窗（相机/灯光/渲染/音乐/程序化动作）
-│   ├── motion-popup.ts   # 动作库弹窗（VMD/姿势/舞蹈套装）
-│   ├── settings.ts       # 设置页 + 外部库管理
-│   ├── env-menu.ts       # 环境弹窗（天空/地面/粒子/风/云）
-│   ├── env-lighting.ts   # 环境光照推导
-│   ├── icons.ts          # Iconify 图标注册表
-│   ├── ui-helpers.ts     # DOM 构建函数（slideRow/addToggleRow/addSliderRow）
-│   ├── vpd-parser.ts     # VPD 姿势导入 → VMD 帧转换
-│   ├── vmd-writer.ts     # VMD 二进制写入（程序化动作用）
-│   ├── procedural-motion.ts  # 程序化动作（Idle Motion / Auto Dance）
-│   ├── beat-detector.ts  # 音乐节拍检测
-│   ├── lipsync.ts        # 口型同步
-│   └── app.css           # 全局样式（CSS 变量体系）
+│   ├── core/
+│   │   ├── main.ts           # ★ 入口 — 事件绑定 + 快捷键 + 初始化
+│   │   ├── config.ts         # ★ 共享状态 + DOM 引用 + 类型定义 + 工具函数
+│   │   ├── fileservice.ts    # 统一文件 URL 解析层（resolveFileUrl）
+│   │   ├── icons.ts          # Iconify 图标注册表
+│   │   └── ui-helpers.ts     # DOM 构建函数（slideRow/addToggleRow/addSliderRow）
+│   ├── scene/
+│   │   ├── scene.ts          # ★ 3D 场景编排入口
+│   │   ├── camera.ts         # 相机模式管理
+│   │   ├── scene-model.ts    # ModelManager（模型注册表 + 生命周期）
+│   │   ├── scene-material.ts # 材质系统（分类/逐材质/序列化）
+│   │   ├── scene-loader.ts   # PMX 加载 + 缩略图
+│   │   ├── scene-vmd.ts      # VMD 加载/播放入口
+│   │   ├── scene-playback.ts # 播放控制（进度条/seek）
+│   │   ├── scene-proc-motion.ts # 程序化动作桥接
+│   │   ├── scene-lipsync.ts  # LipSync 桥接
+│   │   ├── scene-model-ops.ts # 模型操作（变换/可见性/VMD清空）
+│   │   ├── scene-props.ts    # 道具系统
+│   │   ├── scene-serialize.ts # 场景序列化
+│   │   ├── scene-performance.ts # 性能降级
+│   │   ├── scene-renderer.ts # 渲染管线（Bloom/DOF/色调映射/边缘）
+│   │   ├── scene-lighting.ts # 灯光 + 阴影生成器 + 太阳盘
+│   │   ├── scene-env.ts      # 环境系统门面
+│   │   ├── scene-env-impl.ts # 环境实现（天空/地面/雾/云/水/粒子/风）
+│   │   ├── scene-env-bridge.ts # 环境→灯光联动 + 预设 + 时间流转
+│   │   ├── scene-env-water.ts # 水面系统（Gerstner波浪+焦散+水下）
+│   │   ├── scene-env-clouds.ts # 体积云
+│   │   ├── scene-env-particles.ts # 粒子（雨/雪/樱花/落叶/萤火虫/烟花）
+│   │   └── env-lighting.ts   # 光照推导（天空色→方向光参数）
+│   ├── menus/
+│   │   ├── menu.ts           # SlideMenu 通用菜单导航（动画 + 键盘）
+│   │   ├── library.ts        # 模型库入口 barrel
+│   │   ├── library-core.ts   # 模型库核心（扫描/搜索/层级/标签）
+│   │   ├── model-detail.ts   # 模型详情（信息/变换/可见性/标签/表情）
+│   │   ├── model-material.ts # 逐材质 + 分类调参
+│   │   ├── model-preset.ts   # 模型预设保存/加载/库管理/自动应用
+│   │   ├── scene-menu.ts     # 场景菜单（相机/灯光/渲染/程序化动作）
+│   │   ├── env-menu.ts       # 环境菜单（天空/地面/粒子/风/云/道具）
+│   │   ├── motion-popup.ts   # 动作弹窗（VMD/姿势/舞蹈套装/布料参数）
+│   │   ├── settings.ts       # 设置页（UI/主题/字体/软件/外部库）
+│   │   └── outfit-ui.ts      # 服装变体子菜单
+│   ├── motion/
+│   │   ├── procedural-motion.ts # 程序化动作（Idle/AutoDance VMD生成）
+│   │   ├── vmd-writer.ts     # VMD 二进制写入（Shift-JIS骨骼名）
+│   │   ├── vpd-parser.ts     # VPD 姿势解析→VMD转换
+│   │   ├── beat-detector.ts  # 音乐节拍检测（Web Audio API）
+│   │   └── lipsync.ts        # 口型同步（振幅→morph权重）
+│   ├── outfit/
+│   │   ├── outfit.ts         # 换装核心（load/apply/reset + 自动发现）
+│   │   └── audio.ts          # 音频播放 + VMD同步 + 节拍检测挂载
+│   ├── physics/
+│   │   ├── xpbd-solver.ts    # XPBD 核心求解器（Verlet+约束+地面碰撞）
+│   │   ├── xpbd-cloth.ts     # 布料生成 + 网格更新 + 每帧回调
+│   │   ├── xpbd-collider.ts  # SDF 胶囊碰撞体
+│   │   ├── xpbd-renderer.ts  # 调试可视化（粒子/约束/胶囊线框）
+│   │   └── cloth-manager.ts  # 布料管理器（创建/销毁/重建/碰撞缩放）
+│   └── app.css               # 全局样式（CSS 变量体系）
 ├── index.html
 ├── package.json
 ├── tsconfig.json
-└── vite.config.ts       # Vite 配置（optimizeDeps.exclude babylon-mmd）
+└── vite.config.ts            # Vite 配置
 ```
+
+> 📁 目录重组记录：2026-06 将 scene/ 拆分为子模块，新增 scene-env-*/scene-lighting/scene-renderer 等。physics/ 为独立目录（XPBD 引擎），motion/ 为动作相关独立目录。
 
 ### 3.4 技术栈速览
 
@@ -352,7 +393,54 @@ MikuMikuAR/frontend/
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `getLucideIconMap()` | `core/icons.ts` | Lucide SVG 图标名称→JSX 映射（已废弃，迁移至 Iconify） |
+| `createIconifyIcon()` | `core/icons.ts` | Iconify 图标元素创建（替代旧 Lucide SVG） |
+
+#### XPBD 物理引擎
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `XpbdSolver` | `physics/xpbd-solver.ts` | XPBD 求解器（Verlet 积分 + 约束求解 + 地面碰撞）|
+| `createCloth()` | `physics/xpbd-cloth.ts` | 创建布料实例（粒子网格 + 约束 + Mesh）|
+| `buildClothUpdateFn()` | `physics/xpbd-cloth.ts` | 构建布料每帧更新闭包（锚定+碰撞+step+Mesh更新）|
+| `SdfCollider` | `physics/xpbd-collider.ts` | SDF 胶囊碰撞器（13个身体胶囊 + 粒子碰撞求解）|
+| `DEFAULT_BODY_CAPSULES` | `physics/xpbd-collider.ts` | 默认身体胶囊规格 |
+| `XpbdRenderer` | `physics/xpbd-renderer.ts` | 调试可视化（粒子球/约束线/胶囊线框）|
+| `toggleCloth()` / `recreateCloth()` | `physics/cloth-manager.ts` | 布料开关/重建（UI入口）|
+| `disposeCloth()` | `physics/xpbd-cloth.ts` | 销毁布料实例 |
+
+#### 程序化动作 & VMD
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `generateIdleVmd()` | `motion/procedural-motion.ts` | 生成 Idle 动作 VMD（呼吸+眨眼）|
+| `generateAutoDanceVmd()` | `motion/procedural-motion.ts` | 生成 AutoDance VMD（节拍驱动律动）|
+| `buildVmd()` | `motion/vmd-writer.ts` | VMD 二进制构建（含 Shift-JIS 编码表）|
+| `loadVPDFromBuffer()` | `motion/vpd-parser.ts` | VPD 文本解析→VMD 二进制 |
+| `BeatDetector` | `motion/beat-detector.ts` | 节拍检测器（attach/dispose/setVolume/getLevel/getBPM）|
+| `amplitudeToWeight()` / `findLipMorph()` | `motion/lipsync.ts` | 振幅→morph权重映射 + morph名查找 |
+
+#### 环境系统
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `initLighting()` / `setLightState()` / `transitionLighting()` | `scene/scene-lighting.ts` | 灯光初始化/设置/平滑过渡 |
+| `setSkipLightAutoSave()` | `scene/scene-lighting.ts` | 预设动画期间抑制灯光自动保存 |
+| `initEnvFacade()` / `applyEnvState()` | `scene/scene-env.ts` | 环境门面入口 |
+| `setEnvState()` / `redoEnvAutoLink()` | `scene/scene-env-bridge.ts` | 环境状态设置 + 光照联动 |
+| `applyEnvPreset()` | `scene/scene-env-bridge.ts` | 环境预设切换（带取消机制）|
+| `deriveLighting()` / `ENV_PRESETS` | `scene/env-lighting.ts` | 天空色→光照参数推导 + 预设表 |
+| `createWater()` / `disposeWater()` | `scene/scene-env-water.ts` | 水面创建/销毁 |
+| `createParticleEmitter()` / `updateParticleWind()` | `scene/scene-env-particles.ts` | 粒子系统 |
+| `createClouds()` / `disposeClouds()` | `scene/scene-env-clouds.ts` | 体积云 |
+
+#### 材质系统
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `_catOf()` / `_applyAll()` / `setMatParams()` | `scene/scene-material.ts` | 材质分类/批量应用/逐材质设参 |
+| `_capture()` | `scene/scene-material.ts` | 材质原始值捕获（模型加载时预调用）|
+| `getMatCatGroups()` / `getMatDetailList()` | `scene/scene-material.ts` | 材质分组/详情查询 |
+| `resetMatCatParams()` / `disposeModelMaterialState()` | `scene/scene-material.ts` | 重置分类参数 + 清理模型材质状态 |
 
 ---
 
@@ -390,7 +478,39 @@ git checkout --theirs path # 接受对方版本，重新 apply 自己的改动
 
 ---
 
-## 五、沟通风格
+## 五、审计记录
+
+> 🔍 2026-06-30 完成前端全模块深度审计与修复（第二轮）。覆盖 scene/、physics/、motion/、outfit/、menus/ 共 25+ 文件，修复 80+ 项问题。
+
+### 关键修复亮点
+
+| 模块 | 关键修复 |
+|------|---------|
+| `xpbd-solver.ts` | 子步内 Verlet 积分重构（外力移入子步循环）、地面碰撞增加弹性系数 |
+| `xpbd-cloth.ts` | 锚点粒子 prevP 不覆盖（防撕裂）、碰撞胶囊矩阵每帧更新、移除 globalThis.BABYLON |
+| `xpbd-collider.ts` | 摩擦改为 prevP 实现、多胶囊防重复摩擦、updateCapsuleSizes 骨骼名修复 |
+| `scene-lighting.ts` | transitionLighting 跳帧保护 + shadowBias 实时生效 + 夜间逻辑条件修正 + setSkipLightAutoSave |
+| `scene-env-bridge.ts` | 打断循环依赖（→ impl 直导）、预设动画省保存（skipAutoSave）、isFullRestore 移除、动画取消机制 |
+| `scene-lipsync.ts` | modelRegistry 注入 ModelManager、聚焦变化自动重置 morph 名 |
+| `scene-vmd.ts` | 旧动画句柄释放 + wasmAnimation 泄漏修复 + VmdLoader 清理 |
+| `scene-material.ts` | instanceof StandardMaterial 守卫 + resetMatCatParams 同步清理 _matState |
+| `scene-loader.ts` | 模型预捕获材质原始值 + 注册顺序修正 + 加载锁提示 + modelRegistry→_modelManager |
+| `vmd-writer.ts` | trailer 补第四字段(ik count) + Shift-JIS 编码表 + 帧排序 + 字符边界截断 |
+| `beat-detector.ts` | GainNode 音量控制 + AudioContext try-catch + dispose 清理 phaseStartTime |
+| `menu.ts` | _cancelAnim 动画取消 + _pendingTimeouts 跟踪 + dispose() + keydown 清理 + async renderCustom |
+| `outfit-ui.ts` | loadOutfits try-catch + applyOutfitVariant await + 重置刷新 + 图标改用 createIconifyIcon |
+
+### 审计时发现的高频模式（写新代码注意）
+
+1. **SlideMenu 生命周期**：每次 `new SlideMenu()` 前必须 `oldMenu?.dispose()`，否则 keydown 监听器累积
+2. **modelRegistry 来源**：优先用 `modelManager.modelRegistry`（非 `config.ts` 的裸 export），或注入 ModelManager
+3. **异步操作缺 try-catch**：`loadVMDFromPath`、`applyOutfitVariant` 等均需 catch + setStatus
+4. **`innerHTML` 拼接未转义**：优先用 DOM 方法（`textContent`/`createElement`）或 `escapeHtml`
+5. **XPBD 物理**：碰撞胶囊必须每帧 `updateMatrices`，摩擦须改 `prevP`（非 `p.v`），子步须含外力积分
+
+---
+
+## 六、沟通风格
 
 - 简洁：能用 1 句话不说 2 句
 - 精确：给行号、文件路径、函数名
@@ -400,7 +520,7 @@ git checkout --theirs path # 接受对方版本，重新 apply 自己的改动
 
 ---
 
-## 六、环境提示
+## 七、环境提示
 
 - **Shell**：优先用 `bash`
 - **路径分隔符**：统一正斜杠 `/`
@@ -409,7 +529,7 @@ git checkout --theirs path # 接受对方版本，重新 apply 自己的改动
 
 ---
 
-## 七、会话边界
+## 八、会话边界
 
 ### 什么时候开新窗口
 
@@ -439,7 +559,7 @@ git checkout --theirs path # 接受对方版本，重新 apply 自己的改动
 - AI 发现自己走过 20 轮还没收尾 → 主动提醒「是否拆小或开新窗口」
 - AI 发现自己需要反复读同一段代码来理解 → 建议提取到 `docs/reusables.md`
 
-## 八、Oh My OpenAgent 子代理
+## 九、Oh My OpenAgent 子代理
 
 > 本项目通过 `oh-my-opencode` 插件安装了多 agent 系统。主代理 Sisyphus 负责调度子代理。
 

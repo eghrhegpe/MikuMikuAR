@@ -188,7 +188,12 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
     if (preset.vmd) {
         if (preset.vmd.path) {
             stopVMD(id);
-            await loadVMDFromPath(preset.vmd.path, id);
+            try {
+                await loadVMDFromPath(preset.vmd.path, id);
+            } catch (vmdErr) {
+                setStatus('⚠ VMD 加载失败，其余预设已应用', false);
+                console.warn('applyModelPreset: vmd load failed', vmdErr);
+            }
         } else {
             stopVMD(id);
         }
@@ -272,7 +277,9 @@ export async function tryAutoApplyPreset(id: string): Promise<void> {
     if (!inst) {
         return;
     }
+    setStatus('正在加载预设库...', false);
     const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
+    if (entries.length === 0) return;
     const libraryRef = computeLibraryRef(inst.filePath);
     const match = entries.find((e) => {
         if (!e.name) {
@@ -296,7 +303,7 @@ export async function tryAutoApplyPreset(id: string): Promise<void> {
     }
     _presetUndoStack.set(id, serializeModelPreset(id));
     await applyModelPreset(id, json);
-    showUndoToast(`已自动应用预设「${preset.presetName || match.name}」`, async () => {
+    showUndoToast(`已自动应用预设「${escapeHtml(preset.presetName || match.name)}」`, async () => {
         const snap = _presetUndoStack.get(id);
         _presetUndoStack.delete(id);
         if (snap) {
@@ -418,7 +425,9 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
         items: [],
         renderCustom: async (container) => {
             container.classList.remove('render-card');
-            const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
+            setStatus('正在加载预设库...', false);
+    const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
+    if (entries.length === 0) return;
             if (entries.length === 0) {
                 const empty = document.createElement('div');
                 empty.style.cssText =

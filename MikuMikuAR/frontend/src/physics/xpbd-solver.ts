@@ -75,6 +75,9 @@ export class XpbdSolver {
     /** 地面碰撞启用标志 */
     groundCollisionEnabled = false;
 
+    /** 地面弹性系数（0=完全非弹性, 1=完全弹性），default 0.1 */
+    restitution = 0.1;
+
     /** 粒子计数器（用于调试/统计） */
     private _particleCount = 0;
 
@@ -93,7 +96,8 @@ export class XpbdSolver {
      * @returns 粒子索引
      */
     addParticle(pos: [number, number, number] = [0, 0, 0], mass = 0.01, radius = 0.05): number {
-        const invMass = mass > 0 ? 1.0 / mass : 0;
+        // mass <= 0 或 Infinity → invMass = 0（固定粒子）；NaN → 也视为固定
+        const invMass = isFinite(mass) && mass > 0 ? 1.0 / mass : 0;
         const particle: XpbdParticle = {
             p: new Float32Array(pos),
             prevP: new Float32Array(pos),
@@ -126,23 +130,17 @@ export class XpbdSolver {
     /**
      * 软删除粒子——将 invMass 置 0，物理忽略但保持网格占位。
      *
-     * 不使用 splice 的原因：外部持有 particleGrid 索引（如布料网格），
-     * splice 会导致所有后续索引失效，破坏整个网格拓扑。
-     *
-     * @deprecated 如需彻底移除粒子，建议在初始化时确定拓扑，运行时用此方法。
+     * 粒子设为固定后，所有涉及该粒子的约束被移除（无需再求解）。
+     * 不使用 splice 的原因：外部持有 particleGrid 索引，splice 会导致索引失效。
      */
     removeParticle(idx: number): void {
         if (idx < 0 || idx >= this.particles.length) {
             return;
         }
         const p = this.particles[idx];
-        if (p.invMass === 0) {
-            return;
-        } // 已经是固定/已删除
+        if (p.invMass === 0) return;
         p.invMass = 0;
-        // 清除关联约束
         this.constraints = this.constraints.filter((c) => !c.indices.includes(idx));
-        // 注意：约束索引无需修正，因为粒子数组没有 splice
     }
 
     /** 清空所有粒子和约束 */
@@ -250,7 +248,11 @@ export class XpbdSolver {
     // ---- 核心求解器 ----
 
     /**
-     * 主步进函数，每帧调用一次
+     * 主步进函数，每帧调用一次。
+     *
+     * 标准 XPBD 流程：每个子步内完成 Verlet 积分 → 约束求解 → 地面碰撞，
+     * 确保外力和约束在同一时间尺度（subDt）上交互，子步数增加可提升精度。
+     *
      * @param dt 时间步长（秒），如 1/60
      */
     step(dt: number): void {
@@ -262,71 +264,62 @@ export class XpbdSolver {
         const subDt = dt / this.substeps;
         const alphaTilde = 1.0 / (subDt * subDt); // compliance → α̃ 转换因子
 
-        // ---- 第 1 步：Verlet 积分 ----
-        for (let i = 0; i < this.particles.length; i++) {
-            const p = this.particles[i];
-            if (p.invMass === 0) {
-                continue;
-            } // 固定粒子
-
-            const px = p.p[0],
-                py = p.p[1],
-                pz = p.p[2];
-            const prevX = p.prevP[0],
-                prevY = p.prevP[1],
-                prevZ = p.prevP[2];
-
-            // v = (p - prevP) * damping / dt
-            let vx = (px - prevX) * this.damping * invDt;
-            let vy = (py - prevY) * this.damping * invDt;
-            let vz = (pz - prevZ) * this.damping * invDt;
-
-            // 应用重力: v += gravity * dt
-            vx += this.gravity[0] * dt;
-            vy += this.gravity[1] * dt;
-            vz += this.gravity[2] * dt;
-
-            // 保存旧位置
-            p.prevP[0] = px;
-            p.prevP[1] = py;
-            p.prevP[2] = pz;
-
-            // p += v * dt
-            p.p[0] = px + vx * dt;
-            p.p[1] = py + vy * dt;
-            p.p[2] = pz + vz * dt;
-        }
-
-        // ---- 第 2 步：子步约束求解 ----
+        // 每个子步：Verlet 积分 + 约束求解 + 地面碰撞
         for (let s = 0; s < this.substeps; s++) {
+            // ---- 子步内 Verlet 积分 ----
+            for (let i = 0; i < this.particles.length; i++) {
+                const p = this.particles[i];
+                if (p.invMass === 0) continue;
+
+                const px = p.p[0], py = p.p[1], pz = p.p[2];
+                const prevX = p.prevP[0], prevY = p.prevP[1], prevZ = p.prevP[2];
+
+                // 速度（带阻尼）: v = (p - prevP) * damping / subDt
+                let vx = (px - prevX) * this.damping / subDt;
+                let vy = (py - prevY) * this.damping / subDt;
+                let vz = (pz - prevZ) * this.damping / subDt;
+
+                // 重力: v += gravity * subDt
+                vx += this.gravity[0] * subDt;
+                vy += this.gravity[1] * subDt;
+                vz += this.gravity[2] * subDt;
+
+                // 保存旧位置
+                p.prevP[0] = px; p.prevP[1] = py; p.prevP[2] = pz;
+
+                // p += v * subDt
+                p.p[0] = px + vx * subDt;
+                p.p[1] = py + vy * subDt;
+                p.p[2] = pz + vz * subDt;
+            }
+
+            // ---- 约束求解 ----
             for (const c of this.constraints) {
                 this._solveConstraint(c, alphaTilde);
             }
 
-            // 地面碰撞（每个子步都检查）
+            // ---- 地面碰撞 ----
             if (this.groundCollisionEnabled) {
                 for (let i = 0; i < this.particles.length; i++) {
                     const p = this.particles[i];
-                    if (p.invMass === 0) {
-                        continue;
-                    }
+                    if (p.invMass === 0) continue;
                     const ground = this.groundY + p.radius;
                     if (p.p[1] < ground) {
+                        // 垂直速度 = (p - prevP) / subDt，反弹部分速度
+                        const vy = (p.p[1] - p.prevP[1]) / subDt;
                         p.p[1] = ground;
-                        // 简单的速度反射：置零垂直分量
-                        p.prevP[1] = p.p[1];
+                        // prevP: 产生反弹速度（restitution）的反向分量
+                        p.prevP[1] = p.p[1] + vy * this.restitution * subDt;
                     }
                 }
             }
         }
 
-        // ---- 第 3 步：更新最终速度 ----
+        // ---- 最终速度更新 ----
         for (let i = 0; i < this.particles.length; i++) {
             const p = this.particles[i];
             if (p.invMass === 0) {
-                p.v[0] = 0;
-                p.v[1] = 0;
-                p.v[2] = 0;
+                p.v[0] = 0; p.v[1] = 0; p.v[2] = 0;
                 continue;
             }
             p.v[0] = (p.p[0] - p.prevP[0]) * invDt;

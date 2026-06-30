@@ -32,6 +32,10 @@ const BONE_RARM = '右腕';
 const MORPH_BLINK_CANDIDATES = ['まばたき', 'blink', 'Blink', '眨眼', 'wink'];
 
 const FPS = 30;
+const MAX_FRAMES = 600; // 硬上限 20s，防止极端 speed/bpm 组合导致内存爆炸
+
+/** 钳位旋转分量的安全辅助（四元数 w 计算前） */
+const _clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
 
 /** Idle 动作 VMD 生成：呼吸 + 眨眼 + 轻微侧摆。
  *  循环长度 = 4s / speed (120 帧 @ speed=1)。
@@ -39,7 +43,8 @@ const FPS = 30;
  *  @param morphNames 模型可用的 morph 名集合（用于检测是否有眨眼 morph）
  *  @returns VMD ArrayBuffer */
 export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = []): ArrayBuffer {
-    const loopFrames = Math.round(120 / state.speed); // 4s @ 30fps
+    const safeSpeed = Math.max(0.1, Math.min(10, state.speed));
+    const loopFrames = Math.min(MAX_FRAMES, Math.round(120 / safeSpeed)); // 4s @ 30fps
     const intensity = state.intensity;
     const bones: BoneKeyFrame[] = [];
     const morphs: MorphKeyFrame[] = [];
@@ -49,8 +54,8 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
     const breathAmp = 0.03 * intensity;
     for (let f = 0; f <= loopFrames; f += 6) {
         const phase = (f / loopFrames) * Math.PI * 2;
-        const rx = Math.sin(phase) * breathAmp;
-        const w = Math.sqrt(Math.max(0, 1 - rx * rx)); // 精确归一化
+        const rx = _clamp1(Math.sin(phase) * breathAmp);
+        const w = Math.sqrt(Math.max(0, 1 - rx * rx));
         bones.push({
             name: BONE_UPPER,
             frame: f,
@@ -58,7 +63,6 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
             rotation: [rx, 0, 0, w],
         });
     }
-    // 确保末帧 = 首帧（循环闭合）
     bones.push({
         name: BONE_UPPER,
         frame: loopFrames,
@@ -70,7 +74,7 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
     const swayAmp = 0.015 * intensity;
     for (let f = 0; f <= loopFrames; f += 6) {
         const phase = (f / loopFrames) * Math.PI * 2;
-        const rz = Math.sin(phase * 0.5) * swayAmp;
+        const rz = _clamp1(Math.sin(phase * 0.5) * swayAmp);
         const w = Math.sqrt(Math.max(0, 1 - rz * rz));
         bones.push({
             name: BONE_CENTER,
@@ -86,13 +90,13 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
         rotation: [0, 0, 0, 1],
     });
 
-    // 眨眼：每 ~2.5s 一次快速眨眼
+    // 眨眼：每 ~2.5s 一次，裁剪不超出循环长度
     if (blinkMorph) {
-        const blinkInterval = Math.round(75 / state.speed); // ~2.5s
-        for (let t = 0; t < loopFrames; t += blinkInterval) {
+        const blinkInterval = Math.round(75 / safeSpeed);
+        for (let t = 0; t + 5 <= loopFrames; t += blinkInterval) {
             morphs.push({ name: blinkMorph, frame: t, weight: 0 });
-            morphs.push({ name: blinkMorph, frame: t + 2, weight: 1 }); // 快速闭合
-            morphs.push({ name: blinkMorph, frame: t + 5, weight: 0 }); // 慢慢睁开
+            morphs.push({ name: blinkMorph, frame: t + 2, weight: 1 });
+            morphs.push({ name: blinkMorph, frame: t + 5, weight: 0 });
         }
         morphs.push({ name: blinkMorph, frame: loopFrames, weight: 0 });
     }
@@ -110,9 +114,10 @@ export function generateAutoDanceVmd(
     bpm: number,
     morphNames: string[] = []
 ): ArrayBuffer {
+    const safeSpeed = Math.max(0.1, Math.min(10, state.speed));
     const clampedBpm = Math.max(60, Math.min(200, bpm));
-    const beatFrames = Math.round(((60 / clampedBpm) * FPS) / state.speed);
-    const loopFrames = beatFrames * 2; // 2 拍循环
+    const beatFrames = Math.min(MAX_FRAMES, Math.round(((60 / clampedBpm) * FPS) / safeSpeed));
+    const loopFrames = beatFrames * 2; // 2 拍循环，上限 1200
     const intensity = state.intensity;
     const bones: BoneKeyFrame[] = [];
     const morphs: MorphKeyFrame[] = [];
@@ -128,7 +133,7 @@ export function generateAutoDanceVmd(
     const bodyAmp = 0.08 * intensity;
     for (let f = 0; f <= loopFrames; f += 3) {
         const s = sinVals[f];
-        const ry = s * bodyAmp;
+        const ry = _clamp1(s * bodyAmp);
         const w = Math.sqrt(Math.max(0, 1 - ry * ry));
         const bob = Math.abs(s) * 0.02 * intensity;
         bones.push({
@@ -149,7 +154,7 @@ export function generateAutoDanceVmd(
     const headAmp = 0.06 * intensity;
     for (let f = 0; f <= loopFrames; f += 3) {
         const s = sinVals[f];
-        const rz = -s * headAmp;
+        const rz = _clamp1(-s * headAmp);
         const w = Math.sqrt(Math.max(0, 1 - rz * rz));
         bones.push({
             name: BONE_HEAD,
@@ -164,8 +169,8 @@ export function generateAutoDanceVmd(
     const armAmp = 0.15 * intensity;
     for (let f = 0; f <= loopFrames; f += 3) {
         const s = sinVals[f];
-        const lz = s * armAmp;
-        const rz = -s * armAmp;
+        const lz = _clamp1(s * armAmp);
+        const rz = _clamp1(-s * armAmp);
         const wl = Math.sqrt(Math.max(0, 1 - lz * lz));
         const wr = Math.sqrt(Math.max(0, 1 - rz * rz));
         bones.push({
@@ -184,13 +189,13 @@ export function generateAutoDanceVmd(
     bones.push({ name: BONE_LARM, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
     bones.push({ name: BONE_RARM, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
 
-    // 眨眼：每拍眨一次
+    // 眨眼：每拍一次，裁剪不超出循环长度
     if (blinkMorph) {
         for (let b = 0; b < 2; b++) {
             const t = b * beatFrames;
-            morphs.push({ name: blinkMorph, frame: t, weight: 0 });
-            morphs.push({ name: blinkMorph, frame: t + 1, weight: 1 });
-            morphs.push({ name: blinkMorph, frame: t + 4, weight: 0 });
+            if (t <= loopFrames) morphs.push({ name: blinkMorph, frame: t, weight: 0 });
+            if (t + 1 <= loopFrames) morphs.push({ name: blinkMorph, frame: t + 1, weight: 1 });
+            if (t + 4 <= loopFrames) morphs.push({ name: blinkMorph, frame: t + 4, weight: 0 });
         }
         morphs.push({ name: blinkMorph, frame: loopFrames, weight: 0 });
     }
@@ -200,7 +205,7 @@ export function generateAutoDanceVmd(
 
 /** 判断是否应切换到 Auto Dance（有音乐在播放）。 */
 export function shouldAutoDance(audioPlaying: boolean, mode: ProcMotionMode): boolean {
-    return audioPlaying && (mode === 'autodance' || mode === 'off');
+    return audioPlaying && mode === 'autodance';
 }
 
 /** 判断是否应切换到 Idle（无音乐，未加载用户 VMD）。

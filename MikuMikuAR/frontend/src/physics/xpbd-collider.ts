@@ -17,6 +17,8 @@ import type { XpbdSolver } from './xpbd-solver';
 export interface SdfCapsule {
     /** 胶囊名称（如 "chest"） */
     name: string;
+    /** 关联的骨骼名（用于每帧从骨骼矩阵更新位置） */
+    boneName: string;
     /** 半径 */
     radius: number;
     /** 半高（中心到端点的距离），总高度 = radius*2 + halfHeight*2 */
@@ -71,12 +73,16 @@ export class SdfCollider {
     /** 碰撞摩擦系数（0~1），模拟表面摩擦力 */
     friction = 0.1;
 
+    /** 每帧已摩擦过的粒子索引集合（防止多胶囊重复摩擦导致过度阻尼） */
+    private _frictionApplied = new Set<number>();
+
     /**
      * 从规格初始化胶囊（运行时位置先放原点，由 updateMatrices 填充）
      */
     init(specs: CapsuleSpec[]): void {
         this.capsules = specs.map((s) => ({
             name: s.name,
+            boneName: s.boneName,
             radius: s.radius,
             halfHeight: s.halfHeight,
             center: new Float32Array([0, 0, 0]),
@@ -87,11 +93,13 @@ export class SdfCollider {
 
     /**
      * 批量更新胶囊位置
-     * @param matrices 16 元素 Float32Array 的数组（列主序 world matrix），与 capsules 一一对应
+     * @param matrices 16 元素 Float32Array 或 null 的数组（列主序 world matrix）
+     *   null 表示该胶囊的骨骼未找到，跳过更新保留上次位置
      */
-    updateMatrices(matrices: Float32Array[]): void {
+    updateMatrices(matrices: (Float32Array | null)[]): void {
         for (let i = 0; i < this.capsules.length && i < matrices.length; i++) {
             const m = matrices[i];
+            if (!m) continue; // 骨骼未找到，跳过该胶囊（位置保留上一帧）
             const c = this.capsules[i];
             // 列主序: m[12]=tx, m[13]=ty, m[14]=tz
             c.center[0] = m[12];
@@ -120,6 +128,7 @@ export class SdfCollider {
      * @param solver XPBD 求解器实例
      */
     solve(solver: XpbdSolver): void {
+        this._frictionApplied.clear();
         for (const capsule of this.capsules) {
             if (!capsule.enabled) {
                 continue;
@@ -212,18 +221,23 @@ export class SdfCollider {
             p.p[1] += ny * penetration * this.stiffness;
             p.p[2] += nz * penetration * this.stiffness;
 
-            // 摩擦：减速切线分量
-            if (this.friction > 0) {
-                // 速度在法线方向的分量
-                const vn = p.v[0] * nx + p.v[1] * ny + p.v[2] * nz;
-                // 切线方向速度
-                const vtx = p.v[0] - vn * nx;
-                const vty = p.v[1] - vn * ny;
-                const vtz = p.v[2] - vn * nz;
-                // 摩擦衰减
-                p.v[0] -= vtx * this.friction;
-                p.v[1] -= vty * this.friction;
-                p.v[2] -= vtz * this.friction;
+            // 摩擦：基于 prevP 衰减切线速度（solver.step 末尾会覆写 p.v，直接改 v 无效）
+            if (this.friction > 0 && !this._frictionApplied.has(i)) {
+                this._frictionApplied.add(i);
+                // 隐含速度 v = p - prevP
+                const vx = p.p[0] - p.prevP[0];
+                const vy = p.p[1] - p.prevP[1];
+                const vz = p.p[2] - p.prevP[2];
+                // 法线分量
+                const vn = vx * nx + vy * ny + vz * nz;
+                // 仅衰减切线分量，保留法线反弹
+                const tvx = vx - vn * nx;
+                const tvy = vy - vn * ny;
+                const tvz = vz - vn * nz;
+                // 写回 prevP: prevP = p - (vn*n + tv*(1-friction))
+                p.prevP[0] = p.p[0] - (vn * nx + tvx * (1 - this.friction));
+                p.prevP[1] = p.p[1] - (vn * ny + tvy * (1 - this.friction));
+                p.prevP[2] = p.p[2] - (vn * nz + tvz * (1 - this.friction));
             }
         }
     }
@@ -271,8 +285,8 @@ export class SdfCollider {
         boneParentMap?: Record<string, string>
     ): void {
         for (const capsule of this.capsules) {
-            const boneName = capsule.name;
-            const parentName = boneParentMap[boneName];
+            const boneName = capsule.boneName;
+            const parentName = boneParentMap?.[boneName];
 
             if (parentName) {
                 // 有父骨骼：根据骨骼距离计算半高

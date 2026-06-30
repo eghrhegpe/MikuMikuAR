@@ -8,16 +8,31 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '../core/config';
 import { deriveLighting, ENV_PRESETS } from './env-lighting';
-import {
-    applyEnvState as applyEnvStateFacade,
-    applySky,
-    updateWaterAnimSpeed,
-    registerSceneTickCallback,
-    ensureEnvUpdateObserver,
-} from './scene-env';
+// 直接从 impl 导入，避免与 scene-env.ts 的循环依赖
+import * as impl from './scene-env-impl';
 import { scene, setRenderState } from './scene';
-import { setLightState, getLightState, _updateSunDisc } from './scene-lighting';
+import { setLightState, getLightState, _updateSunDisc, setSkipLightAutoSave } from './scene-lighting';
 import type { LightState } from './scene-lighting';
+
+/** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
+function _applyEnvStateFacade(state: EnvState): void {
+    try { impl.applySky(state); } catch (e) { console.warn('[env] sky fail:', e); }
+    try { impl.applyGround(state); } catch (e) { console.warn('[env] ground fail:', e); }
+    try { impl.applyFog(state); } catch (e) { console.warn('[env] fog fail:', e); }
+    try {
+        if (state.waterEnabled) { impl.createWater(state); } else { impl.disposeWater(); }
+    } catch (e) { console.warn('[env] water fail:', e); }
+    try {
+        if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
+            impl.createParticleEmitter(state.particleType, state.windEnabled);
+        } else {
+            impl.disposeParticles();
+        }
+    } catch (e) { console.warn('[env] particle fail:', e); }
+    try {
+        if (state.cloudsEnabled) { impl.createClouds(state); } else { impl.disposeClouds(); }
+    } catch (e) { console.warn('[env] cloud fail:', e); }
+}
 
 // ======== Gravity ========
 
@@ -28,7 +43,9 @@ const _gravityVec = new Vector3(0, DEFAULT_GRAVITY, 0);
 export function setGravityStrength(value: number): void {
     _gravityStrength = Math.max(0, Math.min(2, value));
     _gravityVec.y = DEFAULT_GRAVITY * _gravityStrength;
-    mmdRuntime.physics.setGravity(_gravityVec);
+    if (mmdRuntime?.physics) {
+        mmdRuntime.physics.setGravity(_gravityVec);
+    }
     triggerAutoSave();
 }
 
@@ -84,7 +101,7 @@ function _timeOfDayTick(): void {
     if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
         _lastSkySunAngle = envSunAngle;
         if (envState.skyMode === 'procedural') {
-            applySky(envState);
+            impl.applySky(envState);
         }
     }
 }
@@ -99,8 +116,8 @@ export function startTimeOfDay(speed?: number): void {
     _timeOfDayActive = true;
     _lastSkySunAngle = envSunAngle;
     // 使用 impl 的统一 observer 注册表，避免多个独立的 scene observer
-    ensureEnvUpdateObserver(); // 确保 impl 的 observer 已初始化
-    _unregisterTimeOfDay = registerSceneTickCallback(_timeOfDayTick);
+    impl.ensureEnvUpdateObserver(); // 确保 impl 的 observer 已初始化
+    _unregisterTimeOfDay = impl.registerSceneTickCallback(_timeOfDayTick);
 }
 
 export function stopTimeOfDay(): void {
@@ -140,11 +157,15 @@ export function redoEnvAutoLink(): void {
 
 // ======== Environment Presets ========
 
+let _presetAnimId = 0; // 动画 ID，每次新预设递增，用于取消旧动画
+
 export function applyEnvPreset(name: string): boolean {
     const preset = ENV_PRESETS[name];
     if (!preset) {
         return false;
     }
+    _presetAnimId++; // 取消所有正在进行的预设动画
+    const myId = _presetAnimId;
     const wasLinked = envAutoLink;
     envAutoLink = false;
     envSunAngle = preset.sunAngle;
@@ -178,7 +199,12 @@ export function applyEnvPreset(name: string): boolean {
     const duration = 2000;
     const startTime = performance.now();
 
+    // 动画期间抑制自动保存，避免每帧触发 I/O
+    setSkipLightAutoSave(true);
+
     const animLoop = () => {
+        // 取消检测：新预设已启动，当前动画失效
+        if (_presetAnimId !== myId) return;
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / duration, 1.0);
         const lerp = (a: number, b: number) => a + (b - a) * t;
@@ -200,6 +226,7 @@ export function applyEnvPreset(name: string): boolean {
             lerp(startSkyMid[2], mid[2]),
         ];
 
+        // 动画中跳过自动保存，仅更新状态和场景
         setEnvState({
             skyMode: 'procedural',
             skyColorTop: skyTop,
@@ -208,7 +235,7 @@ export function applyEnvPreset(name: string): boolean {
             skyBrightness: 1.0,
             sunAngle: preset.sunAngle,
             azimuth: preset.azimuth ?? -45,
-        });
+        }, true); // skipAutoSave
 
         // 插值并应用光照参数
         const interpLight: Partial<LightState> = {};
@@ -221,11 +248,15 @@ export function applyEnvPreset(name: string): boolean {
                 (interpLight as any)[key] = a.map((v, i) => lerp(v, b[i])) as any;
             }
         }
-        setLightState(interpLight);
+        setLightState(interpLight); // setSkipLightAutoSave 已抑制其内部保存
 
         if (t >= 1) {
+            setSkipLightAutoSave(false);
             setRenderState({ exposure: preset.exposure, toneMapping: preset.toneMapping });
             envAutoLink = wasLinked;
+            // 动画完成，执行一次性后端保存和本地保存
+            SetEnvState(envState as any).catch(() => {});
+            triggerAutoSave();
         } else {
             requestAnimationFrame(animLoop);
         }
@@ -237,25 +268,9 @@ export function applyEnvPreset(name: string): boolean {
 // ======== setEnvState (central entry point) ========
 
 export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): void {
-    const isFullRestore = Object.keys(partial).length > 5 && partial.skyColorTop[0] === 0;
-    if (
-        !isFullRestore &&
-        ((partial.skyColorTop &&
-            partial.skyColorTop[0] === 0 &&
-            partial.skyColorTop[1] === 0 &&
-            partial.skyColorTop[2] === 0) ||
-            (partial.skyColorBot &&
-                partial.skyColorBot[0] === 0 &&
-                partial.skyColorBot[1] === 0 &&
-                partial.skyColorBot[2] === 0))
-    ) {
-        console.warn('[env] ⚠️ setEnvState with black sky color:', JSON.stringify(partial));
-        console.warn(new Error().stack);
-    }
-
     Object.assign(envState, partial);
 
-    applyEnvStateFacade(envState);
+    _applyEnvStateFacade(envState);
 
     if (
         envAutoLink &&
@@ -277,7 +292,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     }
 
     if (partial.waterAnimSpeed !== undefined) {
-        updateWaterAnimSpeed(partial.waterAnimSpeed);
+        impl.updateWaterAnimSpeed(partial.waterAnimSpeed);
     }
 
     if (_envPersistTimer) {

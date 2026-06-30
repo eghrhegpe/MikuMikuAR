@@ -54,55 +54,43 @@ export function parseVPDText(text: string): VPDPoseData {
     let modelName = '';
     let i = 0;
 
+    // 匹配骨骼名行：格式 "BoneN:名稱" 或纯名称，且后缀两行是数字
+    // 排除已知元数据关键字，防止误匹配
+    const _nonBonePrefix = /^(?:Vocaloid|model|\/\/|;|\{|\}|Bone\d+\s|\s*$)/;
+    // 仅含数字的行（位置/旋转数据行）
+    const _numericLine = /^[-\d.eE\s]+$/;
+
     while (i < lines.length) {
         const line = lines[i];
 
         // 跳过元数据行
-        if (line.startsWith('Vocaloid Pose Data')) {
-            i++;
-            continue;
-        }
-        if (line.startsWith('//') || line.startsWith(';')) {
-            i++;
-            continue;
-        }
-        if (line.startsWith('{') || line.startsWith('}')) {
-            i++;
-            continue;
-        }
-
-        // model 行
-        if (line.startsWith('model')) {
-            const m = line.match(/model\s+"([^"]+)"/);
-            if (m) {
-                modelName = m[1];
+        if (_nonBonePrefix.test(line)) {
+            if (line.startsWith('model')) {
+                const m = line.match(/model\s+"([^"]+)"/);
+                if (m) modelName = m[1];
             }
             i++;
             continue;
         }
 
-        // 骨骼名行：格式 "BoneN:名称" 或 "名称"
-        // 下一行是位置，再下一行是旋转
+        // 骨骼名匹配：需要后两行都是纯数字行且解析成功
         const nameMatch = line.match(/^(?:Bone\d+:)?(.+)$/);
-        if (nameMatch) {
+        if (nameMatch && i + 2 < lines.length) {
             const name = nameMatch[1].trim();
-            // 读取位置行（下一行）
-            if (i + 1 < lines.length) {
-                const posParts = lines[i + 1].trim().split(/\s+/).map(Number);
-                if (posParts.length >= 3) {
-                    // 读取旋转行（再下一行）
-                    if (i + 2 < lines.length) {
-                        const rotParts = lines[i + 2].trim().split(/\s+/).map(Number);
-                        if (rotParts.length >= 4) {
-                            bones.push({
-                                name,
-                                position: [posParts[0], posParts[1], posParts[2]],
-                                rotation: [rotParts[0], rotParts[1], rotParts[2], rotParts[3]],
-                            });
-                            i += 3;
-                            continue;
-                        }
-                    }
+            // 下一行必须是数字行（位置），再下一行必须是数字行（旋转）
+            if (_numericLine.test(lines[i + 1]) && _numericLine.test(lines[i + 2])) {
+                const posParts = lines[i + 1].split(/\s+/).map(Number);
+                const rotParts = lines[i + 2].split(/\s+/).map(Number);
+                if (posParts.length >= 3 && rotParts.length >= 4 &&
+                    posParts.every((v: number) => isFinite(v)) &&
+                    rotParts.every((v: number) => isFinite(v))) {
+                    bones.push({
+                        name,
+                        position: [posParts[0], posParts[1], posParts[2]],
+                        rotation: [rotParts[0], rotParts[1], rotParts[2], rotParts[3]],
+                    });
+                    i += 3;
+                    continue;
                 }
             }
         }

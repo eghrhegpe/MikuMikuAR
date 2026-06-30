@@ -101,6 +101,7 @@ import {
     updateParticleParams,
     getCurrentParticleType,
 } from './scene-env-particles';
+import { _disposeSunDisc } from './scene-lighting';
 import { updateUnderwaterTransition, resetUnderwaterState } from './scene-env-water';
 
 export {
@@ -147,11 +148,7 @@ export function disposeSky(): void {
 }
 
 function disposeSunDisc(): void {
-    const scene = getScene();
-    const old = scene.getMeshByName('envSunDisc');
-    if (old) {
-        old.dispose();
-    }
+    _disposeSunDisc();
 }
 
 function buildGradientTexture(
@@ -382,14 +379,25 @@ export function applyGround(state: EnvState): void {
     if (_envSys.ground.mesh && state.groundVisible) {
         const mat = _envSys.ground.mesh.material;
         if (mat) {
-            if (mat instanceof StandardMaterial) {
+            if (mat instanceof GridMaterial) {
+                mat.mainColor = new Color3(
+                    state.groundColor[0],
+                    state.groundColor[1],
+                    state.groundColor[2]
+                );
+                mat.lineColor = new Color3(
+                    state.groundColor[0] * 1.5,
+                    state.groundColor[1] * 1.5,
+                    state.groundColor[2] * 1.5
+                );
+            } else if (mat instanceof StandardMaterial) {
                 mat.diffuseColor = new Color3(
                     state.groundColor[0],
                     state.groundColor[1],
                     state.groundColor[2]
                 );
+                mat.alpha = state.groundAlpha;
             }
-            mat.alpha = state.groundAlpha;
         }
         return;
     }
@@ -457,16 +465,16 @@ export function ensureEnvUpdateObserver(): void {
         return;
     }
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
-        // dt 以 60fps 为基准归一化；非 60fps 设备上动画速率会等比例缩放
-        const dt = scene.deltaTime / 16.667;
+        // dt 以秒为单位，确保不同帧率下动画速度一致
+        const dt = scene.deltaTime / 1000;
         // Cloud drift + camera follow
         if (envState.cloudsEnabled && _envSys.clouds.postProcess) {
             const cam = scene.activeCamera;
             const dx = envState.windEnabled
-                ? envState.windDirection[0] * envState.windSpeed * 0.005 * dt
+                ? envState.windDirection[0] * envState.windSpeed * 0.3 * dt
                 : 0;
             const dz = envState.windEnabled
-                ? envState.windDirection[2] * envState.windSpeed * 0.005 * dt
+                ? envState.windDirection[2] * envState.windSpeed * 0.3 * dt
                 : 0;
             for (const key of ['postProcess', 'postProcess2'] as const) {
                 const m = _envSys.clouds[key];
@@ -505,7 +513,7 @@ export function ensureEnvUpdateObserver(): void {
 
         // Sky rotation animation
         if (envState.skyRotationSpeed > 0.001 && _envSys.sky.skyMesh) {
-            _envSys.sky.skyMesh.rotation.y += envState.skyRotationSpeed * 0.01 * dt;
+            _envSys.sky.skyMesh.rotation.y += envState.skyRotationSpeed * 0.6 * dt;
             if (_envSys.sky.skyMesh.rotation.y > Math.PI * 2) {
                 _envSys.sky.skyMesh.rotation.y -= Math.PI * 2;
             } else if (_envSys.sky.skyMesh.rotation.y < -Math.PI * 2) {

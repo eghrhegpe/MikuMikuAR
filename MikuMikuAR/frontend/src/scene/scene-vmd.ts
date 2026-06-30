@@ -59,6 +59,7 @@ export async function loadVMDMotion(
         // Load VMD from buffer using VmdLoader
         const vmdLoader = new VmdLoader(scene);
         const mmdAnimation = await vmdLoader.loadFromBufferAsync(name, data);
+        (vmdLoader as any).dispose?.(); // 释放解析器内部资源（API 可选）
 
         // Create WASM animation from the loaded data
         const wasmAnimation = new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene);
@@ -72,9 +73,13 @@ export async function loadVMDMotion(
 
         // Bind to model
         if (!inst.mmdModel) {
+            // wasmAnimation 已创建但模型是 Stage，无法绑定 — 清理避免泄漏
+            try { wasmAnimation.dispose?.(); } catch {}
             setStatus('✗ 舞台模型不支持 VMD', false);
             return;
         }
+        // 释放旧动画句柄，防止切换 VMD 时 WASM 内存泄漏
+        inst.mmdModel.setRuntimeAnimation(null);
         const handle = inst.mmdModel.createRuntimeAnimation(wasmAnimation);
         inst.mmdModel.setRuntimeAnimation(handle);
 
@@ -141,6 +146,7 @@ export async function loadCameraVmdFromPath(path: string): Promise<void> {
 
         const vmdLoader = new VmdLoader(scene);
         const mmdAnimation = await vmdLoader.loadFromBufferAsync(vmdName, vmdData);
+        (vmdLoader as any).dispose?.();
         loadCameraVmd(mmdAnimation, path, vmdName.replace(/\.vmd$/i, ''));
         setStatus(`✓ 相机 VMD: ${vmdName}`, true);
         triggerAutoSave();

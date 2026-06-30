@@ -11,6 +11,8 @@ let audioPath = '';
 let audioOffset = 0;
 let volume = 1;
 let isSeeking = false;
+/** 加载事务 ID，每次 loadAudioFile 递增，防止异步操作交错破坏状态 */
+let _loadId = 0;
 
 function ensureAudio(): HTMLAudioElement {
     if (!audioElement) {
@@ -42,19 +44,23 @@ export async function playAudio(url: string, name: string): Promise<void> {
 }
 
 export async function loadAudioFile(filePath: string): Promise<void> {
+    const myLoadId = ++_loadId; // 事务 ID，防止竞态
     const { url } = await resolveFileUrl(filePath);
+    // 如果在解析 URL 期间又触发了新的加载，放弃本次
+    if (myLoadId !== _loadId) return;
     const fileName = filePath.split(/[\\/]/).pop() || '';
     const audio = ensureAudio();
     audio.src = url;
     audioName = fileName;
     audioPath = filePath;
     audio.load();
-    // Auto-play so user gets immediate feedback
     try {
         await audio.play();
     } catch (_) {
         /* browser may block autoplay */
     }
+    // 再次检查：play 期间可能被新加载覆盖
+    if (myLoadId !== _loadId) return;
     notifyBeatDetectorReset();
     triggerAutoSave();
 }
@@ -118,6 +124,10 @@ export function setVolume(v: number): void {
     if (audioElement) {
         audioElement.volume = volume;
     }
+    // 若 beatDetector 已接管音频路由，通过 GainNode 控制实际输出音量
+    if (beatDetector) {
+        beatDetector.setVolume(volume);
+    }
 }
 
 export function getVolume(): number {
@@ -154,9 +164,12 @@ export function seekAudio(seconds: number): void {
     if (!isNaN(clamped)) {
         isSeeking = true;
         audioElement.currentTime = clamped;
-        setTimeout(() => {
+        // 使用 seeked 事件精确重置，避免固定超时的不可靠性
+        const onSeeked = () => {
             isSeeking = false;
-        }, 50);
+            audioElement?.removeEventListener('seeked', onSeeked);
+        };
+        audioElement.addEventListener('seeked', onSeeked);
     }
 }
 
@@ -172,7 +185,6 @@ export function getAudioName(): string {
 }
 
 let lastVmdTime = 0;
-let lastVmdPlaying = false;
 let lastVmdDuration = 0;
 const SYNC_THRESHOLD = 0.1;
 
@@ -215,7 +227,6 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
     }
 
     lastVmdTime = vmdTime;
-    lastVmdPlaying = isPlaying;
     lastVmdDuration = vmdDuration;
 }
 

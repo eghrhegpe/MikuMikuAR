@@ -5,13 +5,19 @@
 import { SdfCollider, DEFAULT_BODY_CAPSULES } from './xpbd-collider';
 import { createCloth, buildClothUpdateFn } from './xpbd-cloth';
 import { scene, modelManager } from '../scene/scene';
-import { focusedModelId, envState, setStatus, modelRegistry } from '../core/config';
+import { focusedModelId, envState, setStatus } from '../core/config';
 
 /** 为当前聚焦模型创建布料 */
 function _createClothForFocusedModel(): void {
     const id = focusedModelId;
     if (!id || !modelManager) {
         setStatus('⚠ 请先加载模型', false);
+        return;
+    }
+
+    // 防止重复创建（UI 多次点击）
+    if (modelManager.clothInstances.has(id)) {
+        setStatus('⚠ 布料已存在', false);
         return;
     }
 
@@ -26,15 +32,17 @@ function _createClothForFocusedModel(): void {
     collider.init(DEFAULT_BODY_CAPSULES);
 
     // Scale collider to match model size
-    const model = modelRegistry.get(id);
+    const model = modelManager.modelRegistry.get(id);
     if (model && model.rootMesh) {
         const boundingInfo = model.rootMesh.getBoundingInfo();
         if (boundingInfo) {
             const modelHeight =
                 boundingInfo.boundingBox.maximumWorld.y - boundingInfo.boundingBox.minimumWorld.y;
-            const defaultHeight = 2.0;
-            const scaleFactor = modelHeight / defaultHeight;
-            collider.scaleAll(Math.max(0.5, Math.min(2.0, scaleFactor)));
+            if (modelHeight > 0.001) {
+                const defaultHeight = 2.0;
+                const scaleFactor = modelHeight / defaultHeight;
+                collider.scaleAll(Math.max(0.5, Math.min(2.0, scaleFactor)));
+            }
         }
     }
 
@@ -76,6 +84,7 @@ export function toggleCloth(enabled: boolean): void {
     } else {
         _destroyClothForFocusedModel();
     }
+    envState.clothEnabled = enabled;
 }
 
 /** 用当前配置重建布料（参数变更后调用） */
