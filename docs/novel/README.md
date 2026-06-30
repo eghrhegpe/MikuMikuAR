@@ -108,6 +108,7 @@
 | 4 | 悬空之影 | [vol-5-the-light-of-physics/04-悬空之影.md](vol-5-the-light-of-physics/04-悬空之影.md) |
 | 5 | 光影之协奏 | [vol-5-the-light-of-physics/05-光影之协奏.md](vol-5-the-light-of-physics/05-光影之协奏.md) |
 | 6 | 第六日のコード | [vol-5-the-light-of-physics/06-第六日のコード.md](vol-5-the-light-of-physics/06-第六日のコード.md) |
+| 7 | 八城之盟 | [vol-5-the-light-of-physics/07-八城之盟.md](vol-5-the-light-of-physics/07-八城之盟.md) |
 
 ## 骨架
 

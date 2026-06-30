@@ -6,6 +6,13 @@ import { EnvState, envState } from "../core/config";
 
 // Re-export _envSys for backward compatibility (used by scene.ts)
 export { _envSys } from "./scene-env-impl";
+// Re-export callback registry for bridge module (time-of-day)
+export { registerSceneTickCallback } from "./scene-env-impl";
+// Re-export observer init for bridge module
+export { ensureEnvUpdateObserver } from "./scene-env-impl";
+
+// Time-of-Day 使用 bridge.ts 的实现（统一的 scene observer）
+import { startTimeOfDay as bridgeStartTimeOfDay, stopTimeOfDay as bridgeStopTimeOfDay, isTimeOfDayActive as bridgeIsTimeOfDayActive, getTimeOfDaySpeed as bridgeGetTimeOfDaySpeed, setTimeOfDaySpeed as bridgeSetTimeOfDaySpeed } from "./scene-env-bridge";
 import { Scene } from "@babylonjs/core/scene";
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
@@ -81,26 +88,26 @@ export function disposeClouds(): void {
     impl.disposeClouds();
 }
 
-// ======== Time-of-Day ========
+// ======== Time-of-Day (delegated to bridge for unified scene observer) ========
 
 export function startTimeOfDay(): void {
-    impl.startTimeOfDay();
+    bridgeStartTimeOfDay();
 }
 
 export function stopTimeOfDay(): void {
-    impl.stopTimeOfDay();
+    bridgeStopTimeOfDay();
 }
 
 export function isTimeOfDayActive(): boolean {
-    return impl.isTimeOfDayActive();
+    return bridgeIsTimeOfDayActive();
 }
 
 export function getTimeOfDaySpeed(): number {
-    return impl.getTimeOfDaySpeed();
+    return bridgeGetTimeOfDaySpeed();
 }
 
 export function setTimeOfDaySpeed(s: number): void {
-    impl.setTimeOfDaySpeed(s);
+    bridgeSetTimeOfDaySpeed(s);
 }
 
 // ======== Full apply (called by setEnvState in scene.ts) ========
