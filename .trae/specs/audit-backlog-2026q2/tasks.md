@@ -4,7 +4,7 @@
 
 ## 第一阶段：🔴 高风险修复（3 项）
 
-### [ ] Task 1: settings.ts XSS 安全加固（用户输入路径优先）
+### [x] Task 1: settings.ts XSS 安全加固（用户输入路径优先）
 - **Priority**: high
 - **Depends On**: None
 - **Description**: 
@@ -19,7 +19,7 @@
   - `human-judgement` TR-1.3: 设置页各子菜单功能正常，样式无明显变化
 - **Notes**: 不追求 100% 消除 innerHTML，先堵住用户输入攻击面
 
-### [ ] Task 2: loadPMXFile 返回模型 ID，改造预设加载路径
+### [x] Task 2: loadPMXFile 返回模型 ID，改造预设加载路径
 - **Priority**: high
 - **Depends On**: None
 - **Description**:
@@ -34,7 +34,7 @@
   - `human-judgement` TR-2.3: 从模型库应用预设功能正常，拖拽加载、模型库点击等均正常
 - **Notes**: 改动影响面大，务必先全量 grep 确认调用点
 
-### [ ] Task 3: 材质启用状态序列化（materialEnabled）
+### [x] Task 3: 材质启用状态序列化（materialEnabled）
 - **Priority**: high
 - **Depends On**: None
 - **Description**:
@@ -53,7 +53,7 @@
 
 ## 第二阶段：🟡 快赢项 + 验证项（改动小，收益大）
 
-### [ ] Task 4: 异步加载占位 UI（motion-popup + scene-menu）
+### [x] Task 4: 异步加载占位 UI（motion-popup + scene-menu）
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
@@ -66,7 +66,7 @@
   - `human-judgement` TR-4.2: 慢速下可见加载提示，无空白闪烁
 - **Notes**: 改动小，用户感知强，优先做
 
-### [ ] Task 5: beforeunload 状态持久化验证 + 补全
+### [x] Task 5: beforeunload 状态持久化验证 + 补全
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
@@ -83,7 +83,7 @@
 
 ## 第三阶段：🟡 性能优化（5 项）
 
-### [ ] Task 6: 缩略图捕获时机优化（whenReadyAsync）
+### [x] Task 6: 缩略图捕获时机优化（whenReadyAsync）
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
@@ -96,7 +96,7 @@
   - `human-judgement` TR-6.2: 缩略图无黑屏/缺纹理现象
 - **Notes**: 低端 GPU 需超时兜底
 
-### [ ] Task 7: 布料网格更新 Float32Array 缓存复用
+### [x] Task 7: 布料网格更新 Float32Array 缓存复用
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
@@ -110,7 +110,7 @@
   - `human-judgement` TR-7.3: 布料渲染正常
 - **Notes**: 注意粒子数变化时的缓存重建
 
-### [ ] Task 8: 碰撞器优化 + updateCapsuleSizes 接入 cloth-manager
+### [x] Task 8: 碰撞器优化 + updateCapsuleSizes 接入 cloth-manager
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
@@ -123,7 +123,7 @@
   - `human-judgement` TR-8.3: 布料碰撞检测正常，模型缩放后碰撞体正确跟随
 - **Notes**: 两项合并，同属 xpbd 模块
 
-### [ ] Task 9: 时间流转阈值优化
+### [x] Task 9: 时间流转阈值优化
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
@@ -153,7 +153,7 @@
 
 ## 第四阶段：🟡 状态一致性 + UX（4 项）
 
-### [ ] Task 11: cloth-manager recreateCloth 明确返回语义
+### [x] Task 11: cloth-manager recreateCloth 明确返回语义
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
@@ -193,7 +193,7 @@
   - `human-judgement` TR-13.2: 应用预设后变换面板值与预设一致
 - **Notes**: 需防循环更新
 
-### [ ] Task 14: 阴影渐隐（先验证 ShadowGenerator intensity）
+### [x] Task 14: 阴影渐隐（先验证 ShadowGenerator intensity）
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
