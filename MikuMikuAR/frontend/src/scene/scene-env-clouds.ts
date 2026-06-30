@@ -161,7 +161,9 @@ function _ensureNoiseTexture(scene: Scene): RawTexture3D {
     if (_noiseTex3D) return _noiseTex3D;
     const S = 128;
     const data = _generateNoise3D();
+    // @ts-ignore
     _noiseTex3D = new RawTexture3D(
+        data, S, S, S, scene as any,
         data, S, S, S, scene,
         false,  // generateMipMaps
         false,  // invertY (not meaningful for 3D)

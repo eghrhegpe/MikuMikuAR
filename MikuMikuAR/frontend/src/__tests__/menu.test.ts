@@ -113,8 +113,8 @@ describe('SlideMenu — 渲染', () => {
             label: '测试',
             dir: '',
             items: [
-                { label: '项目1', value: 'v1' },
-                { label: '项目2', value: 'v2' },
+                { kind: 'action' as const, label: '项目1', icon: 'i', target: 'v1' },
+                { kind: 'action' as const, label: '项目2', icon: 'i', target: 'v2' },
             ],
         };
         menu.reset(level);
@@ -144,12 +144,12 @@ describe('SlideMenu — 渲染', () => {
         const level: PopupLevel = {
             label: 'R',
             dir: '',
-            items: [{ label: 'A', value: 'a' }],
+            items: [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }],
         };
         menu.reset(level);
         expect(container.querySelectorAll('.slide-item').length).toBe(1);
 
-        level.items.push({ label: 'B', value: 'b' });
+        level.items.push({ kind: 'action' as const, label: 'B', icon: 'i', target: 'b' });
         menu.reRender();
         expect(container.querySelectorAll('.slide-item').length).toBe(2);
     });
@@ -172,29 +172,35 @@ describe('SlideMenu — 键盘导航', () => {
     });
 
     it('focusNext 在正序/循环', () => {
-        menu.reset({
+        menu!.reset({
             label: 'F',
             dir: '',
-            items: [{ label: 'X', value: 'x' }, { label: 'Y', value: 'y' }],
+            items: [
+                { kind: 'action' as const, label: 'X', icon: 'i', target: 'x' },
+                { kind: 'action' as const, label: 'Y', icon: 'i', target: 'y' },
+            ],
         });
         // setupFocus() 将 focusIndex 设为 0
         expect((menu as any).focusIndex).toBe(0);
 
-        menu.focusNext();
+        (menu as any).focusNext();
         expect((menu as any).focusIndex).toBe(1);
 
-        menu.focusNext(); // 循环到 0
+        (menu as any).focusNext(); // 循环到 0
         expect((menu as any).focusIndex).toBe(0);
     });
 
     it('focusPrev 反向循环', () => {
-        menu.reset({
+        menu!.reset({
             label: 'F',
             dir: '',
-            items: [{ label: 'X', value: 'x' }, { label: 'Y', value: 'y' }],
+            items: [
+                { kind: 'action' as const, label: 'X', icon: 'i', target: 'x' },
+                { kind: 'action' as const, label: 'Y', icon: 'i', target: 'y' },
+            ],
         });
 
-        menu.focusPrev(); // 循环到最后一个
+        (menu as any).focusPrev(); // 循环到最后一个
         expect((menu as any).focusIndex).toBe(1);
     });
 });
