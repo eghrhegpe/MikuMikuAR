@@ -348,7 +348,12 @@ export function disposeParticles(): void {
     _particleTextures.clear();
     _initialDir1 = null;
     _initialDir2 = null;
-    _currentParticleType = 'none';
+    // 不重置 _currentParticleType，以便 particleEnabled 自动恢复时知道上次类型
+}
+
+/** 获取当前粒子类型（用于 particleEnabled 自动启停） */
+export function getCurrentParticleType(): EnvState['particleType'] {
+    return _currentParticleType;
 }
 
 // ======== Wind System ========

@@ -102,7 +102,7 @@ export class SlideMenu {
         this.buildPanel(level);
         this.updateHeader(level);
         this.setupFocus();
-        this.onAfterRender(level, this);
+        this.onAfterRender?.(level, this);
     }
 
     push(level: PopupLevel): void {
@@ -134,7 +134,7 @@ export class SlideMenu {
                 this.panel.removeEventListener('transitionend', onFadeIn);
                 this.transitioning = false;
                 this.setupFocus();
-                this.onAfterRender(level, this);
+                this.onAfterRender?.(level, this);
             };
             this.panel.addEventListener('transitionend', onFadeIn);
             setTimeout(() => {
@@ -143,7 +143,7 @@ export class SlideMenu {
                     this.panel.style.transform = 'translateY(0)';
                     this.transitioning = false;
                     this.setupFocus();
-                    this.onAfterRender(level, this);
+                    this.onAfterRender?.(level, this);
                 }
             }, 200);
         };
@@ -186,7 +186,7 @@ export class SlideMenu {
                 this.panel.removeEventListener('transitionend', onFadeIn);
                 this.transitioning = false;
                 this.setupFocus();
-                this.onAfterRender(prevLevel, this);
+                this.onAfterRender?.(prevLevel, this);
             };
             this.panel.addEventListener('transitionend', onFadeIn);
             setTimeout(() => {
@@ -195,7 +195,7 @@ export class SlideMenu {
                     this.panel.style.transform = 'translateY(0)';
                     this.transitioning = false;
                     this.setupFocus();
-                    this.onAfterRender(prevLevel, this);
+                    this.onAfterRender?.(prevLevel, this);
                 }
             }, 200);
         };
@@ -226,7 +226,7 @@ export class SlideMenu {
         this.buildPanel(level);
         this.updateHeader(level);
         this.setupFocus();
-        this.onAfterRender(level, this);
+        this.onAfterRender?.(level, this);
     }
 
     reRender(): void {
@@ -237,7 +237,7 @@ export class SlideMenu {
         this.buildPanel(level);
         this.updateHeader(level);
         this.setupFocus();
-        this.onAfterRender(level, this);
+        this.onAfterRender?.(level, this);
     }
 
     getLevel(index: number): PopupLevel | undefined {

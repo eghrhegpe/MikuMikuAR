@@ -98,6 +98,7 @@ import {
     disposeParticles,
     applyWindToParticles,
     updateParticleWind,
+    getCurrentParticleType,
 } from './scene-env-particles';
 import { updateUnderwaterTransition, resetUnderwaterState } from './scene-env-water';
 
@@ -446,6 +447,7 @@ export function applyGround(state: EnvState): void {
 
 // ======== Env Update Observer (wind, sky rotation, underwater) ========
 let _envUpdateObserver: Observer<Scene> | null = null;
+let _prevParticleEnabled = true; // 用于检测 particleEnabled 变化
 
 export function ensureEnvUpdateObserver(): void {
     const scene = getScene();
@@ -487,6 +489,16 @@ export function ensureEnvUpdateObserver(): void {
         }
         // 动态更新粒子风力（响应运行时参数变化）
         updateParticleWind();
+
+        // 自动启停粒子系统（检测 particleEnabled 状态变化）
+        if (_prevParticleEnabled !== envState.particleEnabled) {
+            _prevParticleEnabled = envState.particleEnabled;
+            if (!envState.particleEnabled && _envSys.particles.system) {
+                disposeParticles();
+            } else if (envState.particleEnabled && !_envSys.particles.system && getCurrentParticleType() !== 'none') {
+                createParticleEmitter(getCurrentParticleType(), envState.windEnabled);
+            }
+        }
 
         // Sky rotation animation
         if (envState.skyRotationSpeed > 0.001 && _envSys.sky.skyMesh) {
