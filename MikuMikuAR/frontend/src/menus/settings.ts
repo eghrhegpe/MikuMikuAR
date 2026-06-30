@@ -453,7 +453,7 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
                 addToggleRow(
                     c,
                     '背景模糊',
-                    'lucide:glass',
+                    'lucide:monitor',
                     getComputedStyle(document.documentElement)
                         .getPropertyValue('--ui-blur')
                         .trim() !== '0',

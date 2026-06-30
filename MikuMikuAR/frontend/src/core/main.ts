@@ -44,6 +44,7 @@ import {
 } from '../scene/scene-performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { freeflyInput, getCameraMode } from '../scene/camera';
+import './iconify-registry';
 import 'iconify-icon';
 
 // ======== Initialize hover hints for static [data-hint] elements ========

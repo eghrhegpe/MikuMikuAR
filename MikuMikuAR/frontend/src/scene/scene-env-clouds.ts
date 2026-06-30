@@ -11,6 +11,7 @@ import {
     Engine,
     DirectionalLight,
     RawTexture3D,
+    Effect,
 } from '@babylonjs/core';
 import { EnvState, envState } from '../core/config';
 import { _envSys, getScene, getPipeline, ensureEnvUpdateObserver } from './scene-env-impl';
@@ -161,14 +162,13 @@ function _ensureNoiseTexture(scene: Scene): RawTexture3D {
     if (_noiseTex3D) return _noiseTex3D;
     const S = 128;
     const data = _generateNoise3D();
-    // @ts-ignore
     _noiseTex3D = new RawTexture3D(
-        data, S, S, S, scene as any,
-        data, S, S, S, scene,
+        data, S, S, S,
+        Engine.TEXTUREFORMAT_R, // format (must be 5th param in v9.x)
+        scene,
         false,  // generateMipMaps
         false,  // invertY (not meaningful for 3D)
         Texture.TRILINEAR_SAMPLINGMODE,
-        Engine.TEXTUREFORMAT_R, // single-channel float
     );
     _noiseTex3D.wrapU = Texture.WRAP_ADDRESSMODE;
     _noiseTex3D.wrapV = Texture.WRAP_ADDRESSMODE;
@@ -185,14 +185,12 @@ let _debugCloudRing: Mesh | null = null;
 let _debugCloudMarkers: Mesh[] = [];
 
 const VERT_SRC = `
-#version 300 es
 precision highp float;
-in vec3 position;
+attribute vec3 position;
 uniform mat4 world;
 uniform mat4 worldViewProjection;
-uniform float sphereRadius;
-out vec3 vWorldPos;
-out float vDistFromCenter;
+varying vec3 vWorldPos;
+varying float vDistFromCenter;
 void main(){
     vec4 worldPos = world * vec4(position, 1.0);
     vWorldPos = worldPos.xyz;
@@ -203,7 +201,7 @@ void main(){
 const FRAG_SRC = `
 precision highp float;
 varying vec3 vWorldPos;
-varying float vDistFromCenter;  // XZ distance from sphere center
+varying float vDistFromCenter;
 uniform vec3 cameraPosition;
 uniform float time;
 uniform float cloudDensity;
@@ -215,18 +213,17 @@ uniform float cloudVisibility;
 uniform float brightness;
 uniform vec3 sceneLightDir;
 uniform vec3 sceneLightColor;
-uniform float sphereRadius;  // 400.0 — for horizon fade
+uniform float sphereRadius;
 
-// ======== Constants ========
 #define CLOUD_LIGHT_ATTEN 0.15
 #define CLOUD_PHASE_G 0.8
 #define CLOUD_SCATTER_INTENSITY 0.5
 #define CLOUD_SIGMA_S_SCALE 0.08
 #define CLOUD_MAX_OPTICAL_DEPTH 5.0
 #define CLOUD_DENSITY_THRESHOLD 0.005
-#define CLOUD_LIGHT_STEPS 2  // Reduced from 4 for performance
-#define CLOUD_MAX_STEPS 96   // Reduced from 200 for performance
-#define CLOUD_FBM_OCTAVES 3  // Reduced from 4 for performance
+#define CLOUD_LIGHT_STEPS 2
+#define CLOUD_MAX_STEPS 96
+#define CLOUD_FBM_OCTAVES 3
 #define CLOUD_THRESHOLD_FACTOR 0.65
 
 float hash(vec3 p) {
@@ -234,20 +231,26 @@ float hash(vec3 p) {
     p *= 17.0;
     return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
 }
-
 float noise3D(vec3 p) {
     vec3 i = floor(p);
     vec3 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(mix(hash(i), hash(i+vec3(1,0,0)), f.x),
-            mix(hash(i+vec3(0,1,0)), hash(i+vec3(1,1,0)), f.x), f.y),
-        mix(mix(hash(i+vec3(0,0,1)), hash(i+vec3(1,0,1)), f.x),
-            mix(hash(i+vec3(0,1,1)), hash(i+vec3(1,1,1)), f.x), f.y),
-        f.z
-    );
+    float h000 = hash(i);
+    float h100 = hash(i + vec3(1.0, 0.0, 0.0));
+    float h010 = hash(i + vec3(0.0, 1.0, 0.0));
+    float h110 = hash(i + vec3(1.0, 1.0, 0.0));
+    float h001 = hash(i + vec3(0.0, 0.0, 1.0));
+    float h101 = hash(i + vec3(1.0, 0.0, 1.0));
+    float h011 = hash(i + vec3(0.0, 1.0, 1.0));
+    float h111 = hash(i + vec3(1.0, 1.0, 1.0));
+    float x00 = mix(h000, h100, f.x);
+    float x10 = mix(h010, h110, f.x);
+    float x01 = mix(h001, h101, f.x);
+    float x11 = mix(h011, h111, f.x);
+    float xy0 = mix(x00, x10, f.y);
+    float xy1 = mix(x01, x11, f.y);
+    return mix(xy0, xy1, f.z);
 }
-
 float fbm(vec3 p) {
     float v = 0.0, a = 0.5, f = 1.0;
     for (int i = 0; i < CLOUD_FBM_OCTAVES; i++) {
@@ -256,76 +259,58 @@ float fbm(vec3 p) {
     }
     return v;
 }
-
 float getDensity(vec3 pos, float dScale, vec3 wind, float distFactor) {
     float h = pos.y;
     if (h < cloudBaseY || h > cloudTopY) return 0.0;
     float hf = smoothstep(cloudBaseY, cloudBaseY + 15.0, h) * (1.0 - smoothstep(cloudTopY - 15.0, cloudTopY, h));
-
     vec3 p = pos + wind * time * 0.3;
     float n = fbm(p * 0.04 * cloudScale) * 0.6 + fbm(p * 0.08 * cloudScale + 50.0) * 0.4;
-
     float detail = fbm(p * 0.24 * cloudScale + 100.0) * 0.15;
     n += detail;
-
-    float threshold = 1.0 - dScale * CLOUD_THRESHOLD_FACTOR;
+    float threshold = 0.5 - dScale * 0.15;  // fbm max ~0.875, keep threshold below that
     threshold = clamp(threshold, 0.15, 0.95);
     float t = (n - threshold) / (1.0 - threshold);
     n = clamp(t * t, 0.0, 1.0);
-
     n *= 1.5 * hf * distFactor;
     return max(0.0, n);
 }
-
 float phase(float ct) {
     float g = CLOUD_PHASE_G;
     float gg = g * g;
     return (1.0 - gg) / (4.0 * 3.14159 * pow(1.0 + gg - 2.0 * g * ct, 1.5));
 }
-
 void main(){
     vec3 ro = cameraPosition;
     vec3 rd = normalize(vWorldPos - cameraPosition);
-
-    int steps = 64;  // Reduced from 96 for performance
+    int steps = 64;
     float distToCloud = abs(cloudBaseY - cameraPosition.y);
     float stepMultiplier = clamp(distToCloud / 400.0, 0.33, 1.0);
     steps = int(float(steps) * stepMultiplier);
-    if (steps < 12) steps = 12;  // Reduced from 16
-
+    if (steps < 12) steps = 12;
     float maxDist = cloudVisibility;
     float stepSize = maxDist / float(steps);
-    vec3 stepVec = rd * stepSize;
     vec3 rp = ro;
-
     float seed = dot(gl_FragCoord.xy, vec2(12.9898, 78.233));
     float dither = fract(sin(seed) * 43758.5453) * stepSize;
     rp += rd * dither;
-
     float opticalDepth = 0.0;
     float T = 1.0;
     vec3 scatter = vec3(0.0);
     float dist = 0.0;
     vec3 wind = windDirection;
-    vec3 lightDir = normalize(sceneLightDir);
-
+    vec3 lightDir = normalize(-sceneLightDir);
     for (int i = 0; i < CLOUD_MAX_STEPS; i++) {
         if (i >= steps) break;
         if (dist > maxDist) break;
-
         float distRatio = clamp(dist / (maxDist * 0.3), 0.0, 1.0);
         float dynamicStep = mix(stepSize * 0.5, stepSize * 1.5, distRatio * distRatio);
-        dynamicStep = clamp(dynamicStep, 1.5, 15.0);  // Reduced from 2.0~20.0
-
+        dynamicStep = clamp(dynamicStep, 1.5, 15.0);
         rp += rd * dynamicStep;
         dist += dynamicStep;
-
         float distFactor = 1.0 - smoothstep(0.0, maxDist, dist * 0.8);
-
         float d = getDensity(rp, cloudDensity, wind, distFactor);
         if (d > CLOUD_DENSITY_THRESHOLD) {
             opticalDepth += d * dynamicStep * 0.12;
-
             float lightSteps = float(CLOUD_LIGHT_STEPS);
             float lightStepSize = 4.0;
             float lightDensitySum = 0.0;
@@ -336,37 +321,27 @@ void main(){
                 lightDensitySum += ld * lightStepSize;
             }
             float transmittance = exp(-lightDensitySum * CLOUD_LIGHT_ATTEN);
-
             float ct = dot(rd, -lightDir);
             float ph = phase(ct);
-
             vec3 sc = sceneLightColor * transmittance * ph * CLOUD_SCATTER_INTENSITY * brightness;
-
             float sigma_s = d * CLOUD_SIGMA_S_SCALE;
             scatter += sc * T * (1.0 - exp(-sigma_s * dynamicStep));
         }
         if (opticalDepth > CLOUD_MAX_OPTICAL_DEPTH) break;
     }
-
     float hg = clamp((rd.y + 0.4) / 0.9, 0.0, 1.0);
     vec3 sky = mix(vec3(0.5, 0.65, 0.85), vec3(0.25, 0.45, 0.75), hg);
     vec3 color = sky * T + scatter;
-
-    // Horizon fade — smooth alpha near sphere edge
     float horizonFade = 1.0 - smoothstep(sphereRadius * 0.85, sphereRadius, vDistFromCenter);
     color *= horizonFade;
-
     color = mix(color, vec3(1.0, 0.98, 0.95), smoothstep(0.7, 0.2, T));
-
     float edgeIntensity = T * (1.0 - T) * 4.0;
     edgeIntensity = clamp(edgeIntensity, 0.0, 1.0);
     float backScatter = max(0.0, -dot(rd, normalize(sceneLightDir)));
     float angleFactor = pow(backScatter, 1.5) * 1.5;
     vec3 glowColor = mix(vec3(1.0, 0.85, 0.6), vec3(1.0, 0.95, 0.8), edgeIntensity);
     color += glowColor * edgeIntensity * angleFactor * 0.6;
-
     gl_FragColor = vec4(color, clamp(1.0 - T, 0.0, 0.95) * horizonFade);
-
     if (gl_FragColor.a < 0.05 || T > 0.95) discard;
 }`;
 
@@ -495,10 +470,7 @@ export function createClouds(state: EnvState): void {
     const mat = new ShaderMaterial(
         'volCloudMat',
         scene,
-        {
-            vertexSource: VERT_SRC,
-            fragmentSource: FRAG_SRC,
-        },
+        { vertexSource: VERT_SRC, fragmentSource: FRAG_SRC },
         {
             attributes: ['position'],
             uniforms: [
@@ -515,6 +487,7 @@ export function createClouds(state: EnvState): void {
                 'brightness',
                 'sceneLightDir',
                 'sceneLightColor',
+                'sphereRadius',
             ],
             needAlphaBlending: true,
         }
@@ -543,23 +516,6 @@ export function createClouds(state: EnvState): void {
             state.windDirection[2] * (state.windEnabled ? state.windSpeed : 0) * 2.0
         )
     );
-
-    // Error handling: check shader compilation
-    const shaderReady = mat.isReady(mesh);
-    if (!shaderReady) {
-        console.error('[VolCloud] Shader compilation failed, creating fallback cloud plane');
-        // Dispose the failed shader material
-        mat.dispose();
-        _volCloudMat = null;
-        // Create fallback: simple semi-transparent plane
-        const fallbackMat = new StandardMaterial('volCloudFallbackMat', scene);
-        fallbackMat.diffuseColor = new Color3(0.8, 0.8, 0.9);
-        fallbackMat.alpha = 0.3;
-        fallbackMat.backFaceCulling = false;
-        mesh.material = fallbackMat;
-        _volCloudMat = null as any; // Mark as fallback
-        console.warn('[VolCloud] Using fallback cloud visualization');
-    }
 
     const startTime = performance.now();
     const obs = scene.onBeforeRenderObservable.add(() => {
@@ -604,11 +560,11 @@ export function disposeClouds(): void {
     const scene = getScene();
 
     // Remove observers first (before disposing mesh/material)
-    if (_volCloudMesh.metadata?.obs) {
+    if (_volCloudMesh?.metadata?.obs) {
         scene.onBeforeRenderObservable.remove(_volCloudMesh.metadata.obs);
         _volCloudMesh.metadata.obs = null;
     }
-    if (_volCloudMesh.metadata?.followObs) {
+    if (_volCloudMesh?.metadata?.followObs) {
         scene.onBeforeRenderObservable.remove(_volCloudMesh.metadata.followObs);
         _volCloudMesh.metadata.followObs = null;
     }

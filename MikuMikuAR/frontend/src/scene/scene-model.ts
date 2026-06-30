@@ -525,12 +525,12 @@ export class ModelManager {
     }
 
     isPhysicsCategoryEnabled(id: string, cat: string): boolean {
-        return this._physicsCatState.get(id).get(cat) ?? true;
+        return this._physicsCatState.get(id)?.get(cat) ?? true;
     }
 
     setPhysicsCategory(id: string, cat: string, enabled: boolean): void {
         const inst = this.modelRegistry.get(id);
-        if (!inst.mmdModel) {
+        if (!inst || !inst.mmdModel) {
             return;
         }
         const states = inst.mmdModel.rigidBodyStates;
@@ -545,10 +545,12 @@ export class ModelManager {
             }
             states[rbi] = enabled ? (init ? init[rbi] : 1) : 0;
         }
-        if (!this._physicsCatState.has(id)) {
-            this._physicsCatState.set(id, new Map());
+        let physMap = this._physicsCatState.get(id);
+        if (!physMap) {
+            physMap = new Map();
+            this._physicsCatState.set(id, physMap);
         }
-        this._physicsCatState.get(id)!.set(cat, enabled);
+        physMap.set(cat, enabled);
         this.onChange();
     }
 

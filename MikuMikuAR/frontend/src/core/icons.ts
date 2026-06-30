@@ -24,7 +24,7 @@ export function createIconifyIcon(name: string): HTMLElement | null {
 export function softwareKindIcon(kind: string): string {
     switch (kind) {
         case 'blender':
-            return 'lucide:cube-3d';
+            return 'lucide:box';
         case 'mmd':
             return 'lucide:music';
         case 'pmxeditor':

@@ -1137,7 +1137,7 @@ function buildPostProcessLevel(): PopupLevel {
 
                 addCollapsible(c, {
                     title: '边缘高亮',
-                    icon: 'lucide:outline',
+                    icon: 'lucide:square',
                     defaultOpen: false,
                     renderContent: (inner) => {
                         addToggleRow(inner, '启用', state.outlineEnabled, (v) => {

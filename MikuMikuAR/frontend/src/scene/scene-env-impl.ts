@@ -98,6 +98,7 @@ import {
     disposeParticles,
     applyWindToParticles,
     updateParticleWind,
+    updateParticleParams,
     getCurrentParticleType,
 } from './scene-env-particles';
 import { updateUnderwaterTransition, resetUnderwaterState } from './scene-env-water';
@@ -489,6 +490,8 @@ export function ensureEnvUpdateObserver(): void {
         }
         // 动态更新粒子风力（响应运行时参数变化）
         updateParticleWind();
+        // 动态更新粒子参数（密度/大小/速度滑条）
+        updateParticleParams();
 
         // 自动启停粒子系统（检测 particleEnabled 状态变化）
         if (_prevParticleEnabled !== envState.particleEnabled) {

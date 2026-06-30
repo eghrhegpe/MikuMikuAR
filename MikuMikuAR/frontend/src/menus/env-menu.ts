@@ -152,7 +152,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     5,
                     0.1,
                     (v) => setEnvState({ skyBrightness: v }),
-                    'lucide:brightness'
+                    'lucide:sun'
                 );
                 addSliderRow(
                     c,
@@ -532,7 +532,7 @@ export function buildSkyLevel(): PopupLevel {
                         5,
                         0.1,
                         (v) => setEnvState({ skyBrightness: v }),
-                        'lucide:brightness'
+                        'lucide:sun'
                     );
                 }
                 addSliderRow(

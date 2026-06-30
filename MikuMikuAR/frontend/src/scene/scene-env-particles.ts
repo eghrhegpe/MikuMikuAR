@@ -18,6 +18,13 @@ const _particleTextures = new Map<string, Texture>();
 let _initialDir1: Vector3 | null = null;
 let _initialDir2: Vector3 | null = null;
 
+// 保存基础参数值（未乘 multiplier 前的值），供运行时滑条更新使用
+let _baseEmitRate = 0;
+let _baseMinSize = 0;
+let _baseMaxSize = 0;
+let _baseMinEmitPower = 0;
+let _baseMaxEmitPower = 0;
+
 // 粒子发射器高度偏移常量（相对于相机位置）
 const PARTICLE_HEIGHT_DEFAULT = 11;   // 大多数效果（樱花/雨/雪/烟花/落叶）
 const PARTICLE_HEIGHT_FIREFLY = 2;   // 萤火虫（贴近地面）
@@ -290,6 +297,13 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
         }
     }
 
+    // 保存基础参数值（供运行时滑条更新使用）
+    _baseEmitRate = ps.emitRate;
+    _baseMinSize = ps.minSize;
+    _baseMaxSize = ps.maxSize;
+    _baseMinEmitPower = ps.minEmitPower;
+    _baseMaxEmitPower = ps.maxEmitPower;
+
     // 保存初始发射方向，风力始终基于初始值计算，避免叠加
     _initialDir1 = ps.direction1.clone();
     _initialDir2 = ps.direction2.clone();
@@ -329,6 +343,7 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     });
 
     _envSys.particles.system = ps;
+    ps.start();
 }
 
 export function disposeParticles(): void {
@@ -348,6 +363,11 @@ export function disposeParticles(): void {
     _particleTextures.clear();
     _initialDir1 = null;
     _initialDir2 = null;
+    _baseEmitRate = 0;
+    _baseMinSize = 0;
+    _baseMaxSize = 0;
+    _baseMinEmitPower = 0;
+    _baseMaxEmitPower = 0;
     // 不重置 _currentParticleType，以便 particleEnabled 自动恢复时知道上次类型
 }
 
@@ -374,4 +394,17 @@ export function updateParticleWind(): void {
     if (_envSys.particles.system) {
         applyWindToParticles(_envSys.particles.system);
     }
+}
+
+/** 运行时更新粒子参数（密度/大小/速度），响应滑条变化 */
+export function updateParticleParams(): void {
+    const ps = _envSys.particles.system;
+    if (!ps) {
+        return;
+    }
+    ps.emitRate = Math.max(0, _baseEmitRate * envState.particleEmitRate);
+    ps.minSize = _baseMinSize * envState.particleSize;
+    ps.maxSize = _baseMaxSize * envState.particleSize;
+    ps.minEmitPower = _baseMinEmitPower * envState.particleSpeed;
+    ps.maxEmitPower = _baseMaxEmitPower * envState.particleSpeed;
 }

@@ -137,7 +137,7 @@ function _ensureState(id: string): Map<string, MaterialCategoryParams> {
 }
 
 export function isMatEnabled(id: string, matIndex: number): boolean {
-    return _matEnabled.get(id).get(matIndex) ?? true;
+    return _matEnabled.get(id)?.get(matIndex) ?? true;
 }
 
 export function setMatEnabled(id: string, matIndex: number, enabled: boolean): void {

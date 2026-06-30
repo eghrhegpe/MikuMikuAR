@@ -265,7 +265,7 @@ export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
                             setMatParams(id, index, { shininess: v });
                             stackRegistry.modelStack.reRender();
                         },
-                        'lucide:bolt'
+                        'lucide:zap'
                     );
                     addSliderRow(
                         c,

@@ -349,14 +349,14 @@ function modelToRow(m: LibraryModel): PopupRow {
             label = filename;
             break;
         case 'name_en':
-            label = cached.name_en || m.name_en || cached.name_jp || m.name_jp || filename;
+            label = cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
             break;
         case 'name_jp':
         default:
-            label = cached.name_jp || m.name_jp || cached.name_en || m.name_en || filename;
+            label = cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
             break;
     }
-    const comment = cached.comment || m.comment || '';
+    const comment = cached?.comment || m.comment || '';
     return {
         kind: 'model',
         label,

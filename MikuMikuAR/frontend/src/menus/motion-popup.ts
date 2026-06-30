@@ -605,7 +605,7 @@ export function showMotionPopup(): void {
                         }
                         motionMenu.reRender();
                     },
-                    'lucide:scarf'
+                    'lucide:shirt'
                 );
                 slideRow(c, 'lucide:settings', '布料参数', true, () => {
                     motionMenu.push(buildClothParamsLevel());
