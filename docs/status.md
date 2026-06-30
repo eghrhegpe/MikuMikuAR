@@ -344,6 +344,8 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 | 28 | ~~startProcMotion 未清除 inst.vmdName，动作弹窗显示残留 "IdleMotion" — 补 `vmdName = ""`~~ | ✅ |
 | 29 | ~~暂停/播放按钮和动作菜单「暂停」误动 autoLoop，与 Space 键不一致 — 移除 autoLoop 操作~~ | ✅ |
 | 30 | 五弹窗 toggle 行为异常（关闭后打不开、aria-expanded 正常但 DOM 不显示）— 根因：`innerHTML = ""` 后复用旧 `SlideMenu` 实例导致 DOM 引用悬空；修复：五个 `showXxx()` 改为每次 `new SlideMenu()`；同步修复 `overlay-fade-out` 残留、`closeAllOverlays()` 选择器、`syncNavAriaExpanded()` 位置、`_toggleOverlays()` Canvas 点击只关闭不恢复 | ✅ |
+| 31 | 加载模型/动作后场景不自动保存 — 根因：`loadPMXFile()`/`loadVMDMotion()`/`loadCameraVmdFromPath()` 成功后未调用 `triggerAutoSave()`；修复：三处成功路径末尾加 `triggerAutoSave()` | ✅ |
+| 32 | 拖拽加载模型后模型弹窗内"已加载模型"列表不刷新 — 根因：`loadPMXFile()` 成功后未通知 UI 层刷新弹窗；修复：`loadPMXFile()` 成功后 dispatch `mmku:modelLoaded` 自定义事件，`library-core.ts` 监听该事件并在弹窗打开时调用 `showModelPopup()` 刷新 | ✅ |
 
 > 核心价值定位、DanceXR 对标进度和下一步规划见 [`roadmap.md`](roadmap.md)。
 
@@ -431,3 +433,133 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 - `clickPopupItem(N)` → 已删除。MenuStack 架构下弹窗内 Ctrl+N 不匹配（`renderCustom` 无 `.menu-item`、折叠子项编号漂移）
 - `triggerNavButton()` / `navButtonLabels` → 已删除，替换为 `navActions` + `navLabels` 声明式映射
 - `isAnyPopupOpen()` → 已删除，Ctrl+N 不再分"弹窗内/外"两个语义
+
+---
+
+## 自动保存覆盖面审查与修复（2026-06-30）
+
+### 背景
+用户操作后关闭应用，重新加载场景时发现最新操作未保存。根因：`triggerAutoSave()` 调用覆盖面有缺口。
+
+### 审查结果
+
+| 操作 | 是否已覆盖 | 说明 |
+|------|------------|------|
+| 模型变换（位置/缩放/旋转/可见性） | ✅ | 通过 `ModelManager` setter → `onChange` → `triggerAutoSave` |
+| 材质参数调整 | ✅ | `setMatCatParams`/`setMatParams` 显式调用 |
+| 灯光/渲染/环境状态 | ✅ | `setEnvState` 内部调用 |
+| 布料参数 | ✅ | 通过 `setEnvState({ clothConfig })` 覆盖 |
+| 加载 VMD | ✅ | `scene-vmd.ts` `loadVMDMotion`/`loadCameraVmdFromPath` 已加 |
+| 加载 VPD 姿势 | ✅ | 转为 VMD buffer 后走 `loadVMDMotion` 路径 |
+| 服装切换（`applyOutfitVariant`） | ✅ | `outfit.ts` 已有 `triggerAutoSave()` |
+| 服装重置（`resetOutfit`） | ✅ | `outfit.ts` 已有 `triggerAutoSave()` |
+| 道具加载/删除/变换 | ✅ | `scene-props.ts` 已有 `triggerAutoSave()` |
+| **加载音频（`loadAudioFile`）** | **❌ 已修复** | `audio.ts` 加 `triggerAutoSave()` |
+| **清除音频（`clearAudio`）** | **❌ 已修复** | `audio.ts` 加 `triggerAutoSave()` |
+| **预设应用（`applyModelPreset`）** | **❌ 已修复** | 补 `await loadVMDFromPath` + audio 恢复逻辑 |
+
+### 修复文件
+- `frontend/src/outfit/audio.ts`：`loadAudioFile` 和 `clearAudio` 加 `triggerAutoSave()`
+- `frontend/src/menus/model-preset.ts`：
+  - `applyModelPreset` 补 `await loadVMDFromPath`
+  - 补 audio 恢复逻辑（`loadAudioFile` + `setVolume` + `setAudioOffset`）
+  - `serializeModelPreset` 已序列化 audio，`applyModelPreset` 现在对称恢复
+
+### 构建验证
+`vite build` ✅（139 modules，无新增错误）
+
+---
+
+## beforeunload 立即保存 + 弹窗刷新修复（2026-06-30）
+
+### Bug A：关闭应用后 last-scene.json 未写入（模型/动作/音乐不自动恢复）
+
+**根因**：`triggerAutoSave` 有 2 秒 debounce。用户在 2 秒内关闭应用 → 保存未执行。`beforeunload` 和 `visibilitychange` 事件均未监听。
+
+**修复**（`scene-serialize.ts`）：
+1. 提取 `saveSceneImmediate()` —— 无 debounce，直接执行 `serializeScene()` + `SaveLastScene()`
+2. `triggerAutoSaveImpl()` 内部改为调用 `saveSceneImmediate()`（保持 debounce）
+3. 新增 `visibilitychange` 监听（`visibilityState === "hidden"` 时立即保存）——覆盖 Alt+F4、点击关闭按钮、窗口失焦等场景
+4. 新增 `beforeunload` 监听（兜底）
+
+### Bug B：加载模型后弹窗内不显示「已加载模型」卡片
+
+**根因**：
+1. `showModelPopup()` 的 `renderCustom` 回调中若 `modelRegistry` 迭代抛异常，卡片静默消失
+2. `mmku:modelLoaded` 事件监听只在弹窗可见时刷新
+
+**修复**（`library-core.ts`）：
+1. `renderCustom` 中 `modelRegistry` 迭代包 `try/catch`，异常时显示「加载模型列表失败」提示而非静默消失
+2. `mmku:modelLoaded` 事件改为始终调用 `showModelPopup()` 刷新 stack（弹窗不可见时预建 stack，下次打开即是最新内容）
+
+### 构建验证
+前端 `vite build` 通过 ✅（139 modules，output JS hash 更新）
+
+---
+
+## Bug 35：弹窗内「已加载模型」卡片不显示（modelRegistry 引用脱节）
+
+**根因**：`scene-loader.ts` 将 `modelRegistry` 缓存为局部变量 `_modelRegistry`（仅初始化时赋值一次）。
+`scene.ts` 随后调用 `setModelRegistry(modelManager.modelRegistry)` 将 `config.ts` 的 `modelRegistry` 重新赋值为 `ModelManager` 内部 Map。
+此后：
+- `scene-loader.ts` 的 `_modelRegistry` 仍指向旧 Map（写旧）
+- `library-core.ts` 通过 ES module live binding 拿到的是新 Map（读新，永远为空）
+- 结果：`loadPMXFile` 写入旧 Map，`showModelPopup` 读取新 Map → `modelRegistry.size = 0`
+
+**修复**（两文件）：
+1. **`scene-loader.ts`**：删除局部缓存 `_modelRegistry`，改为直接 `import { modelRegistry }`（live binding，始终最新）；同步删除 `initLoader` 的 `modelRegistry` 参数
+2. **`scene.ts`**：重排 `initScene()` 初始化顺序，确保 `modelManager = new ModelManager(...)` 和 `setModelRegistry()` 在 `initLoader()` 之前执行（避免传 undefined）
+
+**影响范围**：所有依赖 `modelRegistry` 读取模型列表的 UI（模型详情按钮、弹窗模型卡片等）
+
+### 构建验证
+`tsc --noEmit` ✅，`vite build` ✅（139 modules）
+
+---
+
+## 2026-06-30 Session 2 — `env-lighting.ts` 审查修复
+
+### Bug 36：方向光颜色推导公式将色彩洗白
+
+**根因**：`deriveLighting` 中 `dirDiffuse = skyColor * 0.3 + 0.7`，正午天空色 `[0.53,0.71,0.91]` 推导后变为 `[0.86,0.91,0.77]`，严重偏白，丢失时间氛围。
+**修复**（`env-lighting.ts`）：
+- 新公式：取 `skyColor` 最亮通道，按比例缩放使最亮通道 ≈ 0.95，保留色彩比例
+- 正午 `dirDiffuse` 现为 `[0.55,0.74,0.95]`（饱和蓝天），夕阳为 `[0.95,0.48,0.21]`（温暖橙红）
+
+---
+
+### Bug 37：夜间 `sunAngle <= 0` 导致光线从地下照射
+
+**根因**：`night`/`midnight` 预设 `sunAngle = -15`，`deriveLighting` 计算 `sin(theta)` 为负，方向光从下往上照（逻辑错误）。
+**修复**（`env-lighting.ts`）：
+- `sunAngle <= 0` 时 `dirIntensity = 0`，`hemiIntensity = 0.3`
+- 方向光方向设为平射（`y=0`），因强度为 0 无视觉效果
+
+---
+
+### Bug 38：固定方位角 -45° 对黄昏/黎明不真实
+
+**根因**：所有预设方向光均来自固定西北方向（-45°），但夕阳应在西方、黎明在东方。
+**修复**（`env-lighting.ts`）：
+- `EnvPreset` 新增可选 `azimuth?: number` 字段
+- `deriveLighting` 新增 `azimuthDeg` 参数（默认 -45）
+- 预设 azimuth 值：noon -45，sunset/duk 90（西方），dawn -90（东方），overcast -45，night/midnight 0（无关）
+- `EnvState` 新增 `sunAngle` 和 `azimuth` 字段（随场景序列化）
+- `scene-env-bridge.ts`：`applyEnvPreset` 写入 `envState.sunAngle`/`azimuth`；`redoEnvAutoLink`/`setEnvState` 传 `envState.azimuth` 给 `deriveLighting`
+- `scene-serialize.ts`：场景恢复时通过 `setEnvSunAngle(data.env.sunAngle)` 还原运行时太阳角
+
+---
+
+### Bug 39：水体预设混入光照模块，职责混杂
+
+**根因**：`WaterPreset`/`WATER_PRESETS` 定义在 `env-lighting.ts`（光照模块），与光照推导无直接关联。
+**修复**：
+- 迁移到 `scene-env-water.ts`（水体系统模块）
+- `env-menu.ts` import 路径更新为 `../scene/scene-env-water`
+
+---
+
+### 构建验证
+
+`tsc --noEmit` ✅，`vite build` ✅（139 modules，`index-33rN_ktV.js` 543.56 kB）
+

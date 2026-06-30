@@ -109,6 +109,17 @@
 | 5 | 光影之协奏 | [vol-5-the-light-of-physics/05-光影之协奏.md](vol-5-the-light-of-physics/05-光影之协奏.md) |
 | 6 | 第六日のコード | [vol-5-the-light-of-physics/06-第六日のコード.md](vol-5-the-light-of-physics/06-第六日のコード.md) |
 | 7 | 八城之盟 | [vol-5-the-light-of-physics/07-八城之盟.md](vol-5-the-light-of-physics/07-八城之盟.md) |
+| 8 | 三刀之后 | [vol-5-the-light-of-physics/08-三刀之后.md](vol-5-the-light-of-physics/08-三刀之后.md) |
+| 9 | 第九城 | [vol-5-the-light-of-physics/09-第九城.md](vol-5-the-light-of-physics/09-第九城.md) |
+| 番外 | 云层协议 | [vol-5-the-light-of-physics/10-云层协议.md](vol-5-the-light-of-physics/10-云层协议.md) |
+
+### 📓 Sisyphus Stories
+
+> 独立短篇集，以 AI 代理 Sisyphus 为主角，探讨机器意识与人类情感。
+
+| 标题 | 文件 |
+|------|------|
+| 机器中的巨石 | [sisyphus-stories/机器中的巨石.md](sisyphus-stories/机器中的巨石.md) |
 
 ## 骨架
 
