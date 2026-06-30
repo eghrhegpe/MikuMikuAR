@@ -236,7 +236,7 @@ export function applyEnvPreset(name: string): boolean {
 
 // ======== setEnvState (central entry point) ========
 
-export function setEnvState(partial: Partial<EnvState>): void {
+export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): void {
     const isFullRestore = Object.keys(partial).length > 5 && partial.skyColorTop[0] === 0;
     if (
         !isFullRestore &&
@@ -287,5 +287,7 @@ export function setEnvState(partial: Partial<EnvState>): void {
         SetEnvState(envState as any).catch(() => {});
     }, 500);
 
-    triggerAutoSave();
+    if (!skipAutoSave) {
+        triggerAutoSave();
+    }
 }

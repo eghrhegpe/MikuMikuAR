@@ -197,6 +197,9 @@ export interface EnvState {
     particleSize: number;
     particleSpeed: number;
 
+    // 场景地面高度（世界 Y 坐标），用于粒子系统等的高度参考
+    groundLevel: number;
+
     waterEnabled: boolean;
     waterLevel: number;
     waterColor: [number, number, number];
@@ -423,6 +426,8 @@ export const envState: EnvState = {
     particleEmitRate: 1,
     particleSize: 1,
     particleSpeed: 1,
+
+    groundLevel: 0,
 
     waterEnabled: false,
     waterLevel: 0,

@@ -125,29 +125,35 @@ export function setTimeOfDaySpeed(s: number): void {
 // ======== Full apply (called by setEnvState in scene.ts) ========
 
 export function applyEnvState(state: EnvState): void {
-    impl.applySky(state);
-    impl.applyGround(state);
-    impl.applyFog(state);
+    try { impl.applySky(state); } catch (e) { console.warn('[env] sky fail:', e); }
+    try { impl.applyGround(state); } catch (e) { console.warn('[env] ground fail:', e); }
+    try { impl.applyFog(state); } catch (e) { console.warn('[env] fog fail:', e); }
 
     // Water
-    if (state.waterEnabled) {
-        impl.createWater(state);
-    } else {
-        impl.disposeWater();
-    }
+    try {
+        if (state.waterEnabled) {
+            impl.createWater(state);
+        } else {
+            impl.disposeWater();
+        }
+    } catch (e) { console.warn('[env] water fail:', e); }
 
     // Particles
-    if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
-        // createParticleEmitter expects (particleType, windEnabled)
-        impl.createParticleEmitter(state.particleType, state.windEnabled);
-    } else {
-        impl.disposeParticles();
-    }
+    try {
+        if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
+            // createParticleEmitter expects (particleType, windEnabled)
+            impl.createParticleEmitter(state.particleType, state.windEnabled);
+        } else {
+            impl.disposeParticles();
+        }
+    } catch (e) { console.warn('[env] particle fail:', e); }
 
     // Clouds
-    if (state.cloudsEnabled) {
-        impl.createClouds(state);
-    } else {
-        impl.disposeClouds();
-    }
+    try {
+        if (state.cloudsEnabled) {
+            impl.createClouds(state);
+        } else {
+            impl.disposeClouds();
+        }
+    } catch (e) { console.warn('[env] cloud fail:', e); }
 }

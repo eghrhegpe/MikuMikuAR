@@ -8,7 +8,7 @@ import {
     ParticleSystem,
 } from '@babylonjs/core';
 import { EnvState, envState } from '../core/config';
-import { _envSys, getScene, getPipeline } from './scene-env-impl';
+import { _envSys, getScene } from './scene-env-impl';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';
@@ -25,9 +25,15 @@ let _baseMaxSize = 0;
 let _baseMinEmitPower = 0;
 let _baseMaxEmitPower = 0;
 
-// 粒子发射器高度偏移常量（相对于相机位置）
-const PARTICLE_HEIGHT_DEFAULT = 11;   // 大多数效果（樱花/雨/雪/烟花/落叶）
-const PARTICLE_HEIGHT_FIREFLY = 2;   // 萤火虫（贴近地面）
+// ---------- 全景天气 vs 局部效果参数 ----------
+// 全景天气（雨/雪/樱花/落叶）：粒子出生在世界地面以上固定高度，XZ 大幅覆盖
+const WEATHER_HEIGHT_ABOVE_GROUND = 25;   // 发射器在 groundLevel 以上 25 单位
+const WEATHER_BOX_Y_RANGE = 5;            // box emitter 垂直带宽度（出生 Y 偏移范围）
+const WEATHER_BOX_XZ_HALF = 40;           // XZ 半宽（80×80 覆盖区）
+
+// 局部效果：相对于 groundLevel 的偏移
+const FIREFLY_HEIGHT_OFFSET = 1.5;
+const FIREWORK_HEIGHT_OFFSET = 8;
 
 function makeParticleTexture(kind: string): Texture {
     const scene = getScene();
@@ -169,7 +175,11 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     const ps = new GPUParticleSystem('envParticles', { capacity: 10000 }, scene);
     ps.particleTexture = makeParticleTexture(type);
     ps.updateSpeed = 0.01;
-    ps.emitter = new Vector3(0, 10, 0);
+    // 初始 emitter 占位（实际位置在 followObserver 中设置）
+    ps.emitter = new Vector3(0, 0, 0);
+
+    // 判断当前类型是全景天气还是局部效果
+    const isWeather = ['sakura', 'rain', 'snow', 'leaves'].includes(type);
 
     switch (type) {
         case 'sakura': {
@@ -184,12 +194,15 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
             ps.maxAngularSpeed = 1;
             ps.minSize = 0.15;
             ps.maxSize = 0.35;
-            ps.createBoxEmitter(
-                new Vector3(-0.5, -0.2, -0.5),
-                new Vector3(0.5, 0.2, 0.5),
-                new Vector3(-12, 8, -12),
-                new Vector3(12, 12, 12)
-            );
+            if (isWeather) {
+                // 全景天气：XZ 大幅覆盖，出生 Y 在 emitter 附近窄带
+                ps.createBoxEmitter(
+                    new Vector3(-0.5, -0.2, -0.5),
+                    new Vector3(0.5, 0.2, 0.5),
+                    new Vector3(-WEATHER_BOX_XZ_HALF, 0, -WEATHER_BOX_XZ_HALF),
+                    new Vector3(WEATHER_BOX_XZ_HALF, WEATHER_BOX_Y_RANGE, WEATHER_BOX_XZ_HALF)
+                );
+            }
             ps.addColorGradient(0, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1));
             ps.addColorGradient(0.8, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1));
             ps.addColorGradient(1, new Color4(1, 0.72, 0.78, 0), new Color4(1, 0.8, 0.85, 0));
@@ -205,12 +218,14 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
             ps.maxEmitPower = 20;
             ps.minSize = 0.1;
             ps.maxSize = 0.2;
-            ps.createBoxEmitter(
-                new Vector3(-0.1, -1, -0.1),
-                new Vector3(0.1, -1, 0.1),
-                new Vector3(-15, 12, -15),
-                new Vector3(15, 15, 15)
-            );
+            if (isWeather) {
+                ps.createBoxEmitter(
+                    new Vector3(-0.1, -1, -0.1),
+                    new Vector3(0.1, -1, 0.1),
+                    new Vector3(-WEATHER_BOX_XZ_HALF, 0, -WEATHER_BOX_XZ_HALF),
+                    new Vector3(WEATHER_BOX_XZ_HALF, WEATHER_BOX_Y_RANGE, WEATHER_BOX_XZ_HALF)
+                );
+            }
             ps.addColorGradient(0, new Color4(0.7, 0.8, 1, 0.6), new Color4(0.8, 0.9, 1, 0.8));
             ps.addColorGradient(1, new Color4(0.7, 0.8, 1, 0), new Color4(0.8, 0.9, 1, 0));
             break;
@@ -227,12 +242,14 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
             ps.maxAngularSpeed = 0.5;
             ps.minSize = 0.1;
             ps.maxSize = 0.25;
-            ps.createBoxEmitter(
-                new Vector3(-0.5, -0.3, -0.5),
-                new Vector3(0.5, -0.3, 0.5),
-                new Vector3(-15, 10, -15),
-                new Vector3(15, 14, 15)
-            );
+            if (isWeather) {
+                ps.createBoxEmitter(
+                    new Vector3(-0.5, -0.3, -0.5),
+                    new Vector3(0.5, -0.3, 0.5),
+                    new Vector3(-WEATHER_BOX_XZ_HALF, 0, -WEATHER_BOX_XZ_HALF),
+                    new Vector3(WEATHER_BOX_XZ_HALF, WEATHER_BOX_Y_RANGE, WEATHER_BOX_XZ_HALF)
+                );
+            }
             ps.addColorGradient(0, new Color4(1, 1, 1, 0.9), new Color4(1, 1, 1, 1));
             ps.addColorGradient(1, new Color4(1, 1, 1, 0), new Color4(1, 1, 1, 0));
             break;
@@ -285,12 +302,14 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
             ps.maxAngularSpeed = 2;
             ps.minSize = 0.2;
             ps.maxSize = 0.4;
-            ps.createBoxEmitter(
-                new Vector3(-0.8, -0.3, -0.8),
-                new Vector3(0.8, 0.3, 0.8),
-                new Vector3(-12, 8, -12),
-                new Vector3(12, 12, 12)
-            );
+            if (isWeather) {
+                ps.createBoxEmitter(
+                    new Vector3(-0.8, -0.3, -0.8),
+                    new Vector3(0.8, 0.3, 0.8),
+                    new Vector3(-WEATHER_BOX_XZ_HALF, 0, -WEATHER_BOX_XZ_HALF),
+                    new Vector3(WEATHER_BOX_XZ_HALF, WEATHER_BOX_Y_RANGE, WEATHER_BOX_XZ_HALF)
+                );
+            }
             ps.addColorGradient(0, new Color4(0.9, 0.5, 0.2, 1), new Color4(0.8, 0.6, 0.1, 1));
             ps.addColorGradient(1, new Color4(0.9, 0.5, 0.2, 0), new Color4(0.8, 0.6, 0.1, 0));
             break;
@@ -308,6 +327,7 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     _initialDir1 = ps.direction1.clone();
     _initialDir2 = ps.direction2.clone();
 
+    // 应用 multiplier
     const er = envState.particleEmitRate;
     if (er !== 1) {
         ps.emitRate = Math.max(0, ps.emitRate * er);
@@ -329,16 +349,33 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
         applyWindToParticles(ps);
     }
 
+    // 每帧更新 emitter 位置（基于 groundLevel 和类型定位策略）
     _envSys.particles.followObserver = scene.onBeforeRenderObservable.add(() => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
         }
         const e = ps.emitter;
-        if (e instanceof Vector3) {
+        if (!(e instanceof Vector3)) {
+            return;
+        }
+
+        const groundY = envState.groundLevel ?? 0;
+
+        if (isWeather) {
+            // 全景天气：XZ 跟随相机，Y 固定在世界空间地面以上
             e.x = cam.position.x;
             e.z = cam.position.z;
-            e.y = type === 'fireflies' ? PARTICLE_HEIGHT_FIREFLY : PARTICLE_HEIGHT_DEFAULT;
+            e.y = groundY + WEATHER_HEIGHT_ABOVE_GROUND;
+        } else {
+            // 局部效果：XZ 跟随相机，Y 相对于地面偏移
+            e.x = cam.position.x;
+            e.z = cam.position.z;
+            if (type === 'fireflies') {
+                e.y = groundY + FIREFLY_HEIGHT_OFFSET;
+            } else if (type === 'fireworks') {
+                e.y = groundY + FIREWORK_HEIGHT_OFFSET;
+            }
         }
     });
 

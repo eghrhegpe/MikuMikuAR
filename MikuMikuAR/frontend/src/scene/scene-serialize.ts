@@ -279,7 +279,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         setRenderState(data.render);
     }
     if (data.env && !skipEnv) {
-        setEnvState(data.env);
+        setEnvState(data.env, true);
     }
     if (data.env.sunAngle !== undefined) {
         setEnvSunAngle(data.env.sunAngle);
