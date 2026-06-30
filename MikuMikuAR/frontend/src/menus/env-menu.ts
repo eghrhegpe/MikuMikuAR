@@ -991,6 +991,26 @@ export function buildCloudLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
+                    '云量',
+                    s.cloudCover,
+                    0,
+                    1,
+                    0.01,
+                    (v) => setEnvState({ cloudCover: v }),
+                    'lucide:cloud'
+                );
+                addSliderRow(
+                    c,
+                    '云隙',
+                    s.cloudGap ?? 0.5,
+                    0,
+                    1,
+                    0.01,
+                    (v) => setEnvState({ cloudGap: v }),
+                    'lucide:columns'
+                );
+                addSliderRow(
+                    c,
                     '高度',
                     s.cloudHeight,
                     50,

@@ -22,7 +22,7 @@ import { loadVPDFromBuffer } from '../motion/vpd-parser';
 import { loadCameraVmd } from './camera';
 
 // Dynamic re-import of scene.ts to access its module-level state
-// (scene, focusedMmdModel, focusedModel, procVmdActive, stopProcMotion)
+// (scene, focusedMmdModel, focusedModel, isProcVmdActive, stopProcMotion)
 // without creating a static circular dependency.
 function getScene() {
     return import('./scene') as Promise<typeof import('./scene')>;
@@ -34,10 +34,10 @@ export async function loadVMDMotion(
     name: string,
     targetModelId?: string
 ): Promise<void> {
-    const { scene, focusedMmdModel, procVmdActive, stopProcMotion, focusedModel } =
+    const { scene, focusedMmdModel, isProcVmdActive, stopProcMotion, focusedModel } =
         await getScene();
     // If user loads a real VMD, stop procedural motion
-    if (procVmdActive && name !== 'IdleMotion' && name !== 'AutoDance') {
+    if (isProcVmdActive() && name !== 'IdleMotion' && name !== 'AutoDance') {
         stopProcMotion();
     }
     if (!mmdRuntime) {

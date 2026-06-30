@@ -11,7 +11,6 @@ import {
     Engine,
     DirectionalLight,
     RawTexture3D,
-    Effect,
 } from '@babylonjs/core';
 import { EnvState, envState } from '../core/config';
 import { _envSys, getScene, getPipeline, ensureEnvUpdateObserver } from './scene-env-impl';
@@ -19,16 +18,10 @@ import { _envSys, getScene, getPipeline, ensureEnvUpdateObserver } from './scene
 // ======== Cloud System Constants ========
 /** Density scale factor applied to cloudCover (1.2 = 20% boost) */
 const CLOUD_DENSITY_SCALE = 1.2;
-/** Threshold blend factor for density calculation (0.65 = 65% coverage threshold) */
-const CLOUD_THRESHOLD_FACTOR = 0.65;
 /** Light attenuation factor for volumetric scattering */
 const CLOUD_LIGHT_ATTEN = 0.15;
-/** Phase function asymmetry parameter (0.8 = strong forward scattering) */
-const CLOUD_PHASE_G = 0.8;
 /** Scattering intensity multiplier */
 const CLOUD_SCATTER_INTENSITY = 0.5;
-/** Sigma_s (scattering coefficient) scale factor */
-const CLOUD_SIGMA_S_SCALE = 0.08;
 /** Maximum optical depth before early termination (5.0 = thick cloud) */
 const CLOUD_MAX_OPTICAL_DEPTH = 5.0;
 /** Minimum density threshold for volumetric sampling */
@@ -38,120 +31,32 @@ const CLOUD_DEBUG_Y_RANGE = 30;
 /** Debug visualization Y-step */
 const CLOUD_DEBUG_Y_STEP = 15;
 
-// ======== Clouds (Phase 8) ========
-const _perlinPerm: number[] = (() => {
-    const p: number[] = [];
-    for (let i = 0; i < 256; i++) {
-        p[i] = i;
-    }
-    for (let i = 255; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [p[i], p[j]] = [p[j], p[i]];
-    }
-    return p.concat(p);
-})();
-
-function _perlinFade(t: number): number {
-    return t * t * t * (t * (t * 6 - 15) + 10);
-}
-function _perlinLerp(a: number, b: number, t: number): number {
-    return a + t * (b - a);
-}
-function _perlinGrad(hash: number, dx: number, dy: number): number {
-    const h = hash & 3;
-    return (h & 1 ? -dx : dx) + (h & 2 ? -dy : dy);
-}
-
-function perlin2(x: number, y: number): number {
-    const perm = _perlinPerm;
-    const xi = Math.floor(x) & 255;
-    const yi = Math.floor(y) & 255;
-    const xf = x - Math.floor(x);
-    const yf = y - Math.floor(y);
-    const u = _perlinFade(xf);
-    const v = _perlinFade(yf);
-    const aa = perm[perm[xi] + yi];
-    const ab = perm[perm[xi] + yi + 1];
-    const ba = perm[perm[xi + 1] + yi];
-    const bb = perm[perm[xi + 1] + yi + 1];
-    return (
-        _perlinLerp(
-            _perlinLerp(_perlinGrad(aa, xf, yf), _perlinGrad(ba, xf - 1, yf), u),
-            _perlinLerp(_perlinGrad(ab, xf, yf - 1), _perlinGrad(bb, xf - 1, yf - 1), u),
-            v
-        ) *
-            0.5 +
-        0.5
-    );
-}
-
-function cloudNoise(x: number, y: number, cover: number): number {
-    const v1 = perlin2(x * 0.02, y * 0.02);
-    const v2 = perlin2(x * 0.04 + 10, y * 0.04 + 10) * 0.5;
-    const n = v1 + v2;
-    const threshold = cover * 0.8;
-    const t = (n - threshold) / (1.0 - threshold);
-    return Math.max(0, Math.min(1, t * t * (3 - 2 * t)));
-}
-
-// ======== 3D Noise Texture (128³) ========
+// ======== 3D Noise Texture (256³) ========
 let _noiseTex3D: RawTexture3D | null = null;
 
-/** GPU-style hash (matches GLSL hash() exactly) */
+/** Integer hash (Wang variant, no periodic patterns) */
 function _hash3D(ix: number, iy: number, iz: number): number {
-    const p = [
-        (ix * 0.3183099 + 0.1) - Math.floor(ix * 0.3183099 + 0.1),
-        (iy * 0.3183099 + 0.1) - Math.floor(iy * 0.3183099 + 0.1),
-        (iz * 0.3183099 + 0.1) - Math.floor(iz * 0.3183099 + 0.1),
-    ];
-    p[0] *= 17; p[1] *= 17; p[2] *= 17;
-    const v = p[0] * p[1] * p[2] * (p[0] + p[1] + p[2]);
-    return v - Math.floor(v); // fract
+    let n = ((ix * 1664525) + (iy * 1013904223) + (iz * 3141592653)) >>> 0;
+    n = (n ^ (n >>> 16)) >>> 0;
+    n = Math.imul(n, 0x85ebca6b) >>> 0;
+    n = (n ^ (n >>> 13)) >>> 0;
+    n = Math.imul(n, 0xc2b2ae35) >>> 0;
+    n = (n ^ (n >>> 16)) >>> 0;
+    return (n & 0xff) / 255.0;
 }
 
-/** CPU-side value noise (matches GLSL noise3D() exactly) */
-function _noise3D_cpu(px: number, py: number, pz: number): number {
-    const ix = Math.floor(px), iy = Math.floor(py), iz = Math.floor(pz);
-    let fx = px - ix, fy = py - iy, fz = pz - iz;
-    // smoothstep: f*f*(3-2*f)
-    const u = fx * fx * (3 - 2 * fx);
-    const v = fy * fy * (3 - 2 * fy);
-    const w = fz * fz * (3 - 2 * fz);
-    const perm = _perlinPerm;
-    const h = (x: number, y: number, z: number) => _hash3D(x & 255, y & 255, z & 255);
-    const mix1 = (a: number, b: number, t: number) => a + t * (b - a);
-    const n00 = mix1(h(ix, iy, iz),     h(ix + 1, iy, iz),     u);
-    const n01 = mix1(h(ix, iy + 1, iz), h(ix + 1, iy + 1, iz), u);
-    const n10 = mix1(h(ix, iy, iz + 1), h(ix + 1, iy, iz + 1), u);
-    const n11 = mix1(h(ix, iy + 1, iz + 1), h(ix + 1, iy + 1, iz + 1), u);
-    return mix1(mix1(n00, n01, v), mix1(n10, n11, v), w);
-}
-
-/** CPU-side FBM (matches GLSL fbm() exactly, 3 octaves) */
-function _fbm_cpu(px: number, py: number, pz: number): number {
-    let v = 0, a = 0.5, f = 1;
-    for (let i = 0; i < 3; i++) {
-        v += a * _noise3D_cpu(px * f, py * f, pz * f);
-        a *= 0.5; f *= 2;
-    }
-    return v;
-}
-
-/** Generate 128³ texture storing fbm(p * 0.04) in range [0,1].
- *  Shader samples this instead of computing hash/noise3D/fbm in real-time. */
-function _generateNoise3D(): Float32Array {
-    const S = 128;
-    const data = new Float32Array(S * S * S);
-    const scale = 0.04; // matches shader: fbm(p * 0.04 * cloudScale)
+/** Generate 256³ value-noise texture.
+ *  Each texel stores a hash value [0,1] quantized to 0-255.
+ *  Shader samples with trilinear filtering → smooth value noise.
+ *  Texture wraps every 256 world units. */
+function _generateNoise3D(): Uint8Array {
+    const S = 256;
+    const data = new Uint8Array(S * S * S);
     for (let z = 0; z < S; z++) {
         for (let y = 0; y < S; y++) {
             for (let x = 0; x < S; x++) {
-                // p in [0, ~5.1] for S=128, scale=0.04 → good noise frequency
-                const px = x / S * 4.0, py = y / S * 4.0, pz = z / S * 4.0;
-                let n = _fbm_cpu(px * scale * 100, py * scale * 100, pz * scale * 100);
-                // Remap from approx [-1,1] to [0,1] for texture storage
-                n = Math.max(0, Math.min(1, n * 0.5 + 0.5));
-                data[z * S * S + y * S + x] = n;
+                const v = _hash3D(x, y, z);
+                data[z * S * S + y * S + x] = Math.min(255, Math.max(0, Math.floor(v * 255)));
             }
         }
     }
@@ -159,23 +64,50 @@ function _generateNoise3D(): Float32Array {
 }
 
 function _ensureNoiseTexture(scene: Scene): RawTexture3D {
-    if (_noiseTex3D) return _noiseTex3D;
-    const S = 128;
+    // Cache: only generate once, reuse across create/dispose cycles
+    if (_noiseTex3D) {
+        return _noiseTex3D;
+    }
+    const S = 256;
     const data = _generateNoise3D();
     _noiseTex3D = new RawTexture3D(
         data, S, S, S,
-        Engine.TEXTUREFORMAT_R, // format (must be 5th param in v9.x)
+        Engine.TEXTUREFORMAT_R,
         scene,
-        false,  // generateMipMaps
-        false,  // invertY (not meaningful for 3D)
+        false,
+        false,
         Texture.TRILINEAR_SAMPLINGMODE,
     );
     _noiseTex3D.wrapU = Texture.WRAP_ADDRESSMODE;
     _noiseTex3D.wrapV = Texture.WRAP_ADDRESSMODE;
     _noiseTex3D.wrapR = Texture.WRAP_ADDRESSMODE;
-    console.log('[VolCloud] 3D noise texture created (128³)');
+    console.log('[VolCloud] 3D noise texture created (256³)');
     return _noiseTex3D;
 }
+
+// ======== Wind velocity helper ========
+
+/**
+ * 将 windDirection（方向向量）归一化后乘以 windSpeed，得到实际风速度向量。
+ * 方向由 windDirection 决定，大小只由 windSpeed 控制。
+ */
+function _computeWindVelocity(state: EnvState): [number, number, number] {
+    if (!state.windEnabled || !state.windSpeed) {
+        return [0, 0, 0];
+    }
+    const dx = state.windDirection[0];
+    const dz = state.windDirection[2];
+    const dirLen = Math.sqrt(dx * dx + dz * dz) || 1;
+    const speed = state.windSpeed * 2.0;
+    return [dx / dirLen * speed, 0, dz / dirLen * speed];
+}
+
+// ======== Shader constants, injected from TS ========
+
+const SHADER_CLOUD_LIGHT_ATTEN = CLOUD_LIGHT_ATTEN.toFixed(2);
+const SHADER_SCATTER_INTENSITY = CLOUD_SCATTER_INTENSITY.toFixed(2);
+const SHADER_MAX_OPTICAL_DEPTH = CLOUD_MAX_OPTICAL_DEPTH.toFixed(1);
+const SHADER_DENSITY_THRESHOLD = CLOUD_DENSITY_THRESHOLD.toFixed(3);
 
 // ======== Volumetric Cloud (ShaderMaterial-on-Sphere) ========
 let _volCloudMesh: Mesh | null = null;
@@ -184,13 +116,65 @@ let _volCloudObs: Observer<Scene> | null = null;
 let _debugCloudRing: Mesh | null = null;
 let _debugCloudMarkers: Mesh[] = [];
 
+/** 清理所有调试可视化对象。 */
+function _clearDebugVisuals(): void {
+    const scene = getScene();
+    if (_debugCloudRing) {
+        _debugCloudRing.dispose();
+        _debugCloudRing = null;
+    }
+    for (const m of _debugCloudMarkers) {
+        m.dispose();
+    }
+    _debugCloudMarkers = [];
+}
+
+/** 创建调试可视化对象（红色环 + 色标）。 */
+function _createDebugVisuals(state: EnvState, scene: Scene): void {
+    _clearDebugVisuals();
+    if (!state.debugClouds) {
+        return;
+    }
+    _debugCloudRing = MeshBuilder.CreateTorus(
+        'cloudDebugRing',
+        { diameter: 100, thickness: 2, tessellation: 32 },
+        scene
+    );
+    _debugCloudRing.position.y = state.cloudHeight;
+    _debugCloudRing.isPickable = false;
+    const ringMat = new StandardMaterial('cloudDebugRingMat', scene);
+    ringMat.diffuseColor = new Color3(1, 0, 0);
+    ringMat.alpha = 0.4;
+    ringMat.backFaceCulling = false;
+    _debugCloudRing.material = ringMat;
+    console.log('[VolCloud] DEBUG: red ring at Y=', state.cloudHeight);
+
+    for (
+        let y = state.cloudHeight - CLOUD_DEBUG_Y_RANGE;
+        y <= state.cloudHeight + CLOUD_DEBUG_Y_RANGE;
+        y += CLOUD_DEBUG_Y_STEP
+    ) {
+        const marker = MeshBuilder.CreateBox('cloudMarkY' + y, { size: 3 }, scene);
+        marker.position.y = y;
+        marker.position.x = 10;
+        marker.isPickable = false;
+        const mMat = new StandardMaterial('cloudMarkMat' + y, scene);
+        mMat.diffuseColor = y === state.cloudHeight ? new Color3(0, 1, 0) : new Color3(1, 1, 0);
+        mMat.alpha = 0.6;
+        marker.material = mMat;
+        _debugCloudMarkers.push(marker);
+    }
+}
+
+// Shader strings registered via Effect.ShadersStore
 const VERT_SRC = `
+#version 300 es
 precision highp float;
-attribute vec3 position;
+in vec3 position;
 uniform mat4 world;
 uniform mat4 worldViewProjection;
-varying vec3 vWorldPos;
-varying float vDistFromCenter;
+out vec3 vWorldPos;
+out float vDistFromCenter;
 void main(){
     vec4 worldPos = world * vec4(position, 1.0);
     vWorldPos = worldPos.xyz;
@@ -199,9 +183,11 @@ void main(){
 }`;
 
 const FRAG_SRC = `
+#version 300 es
 precision highp float;
-varying vec3 vWorldPos;
-varying float vDistFromCenter;
+precision highp sampler3D;
+in vec3 vWorldPos;
+in float vDistFromCenter;
 uniform vec3 cameraPosition;
 uniform float time;
 uniform float cloudDensity;
@@ -210,46 +196,34 @@ uniform float cloudBaseY;
 uniform float cloudTopY;
 uniform float cloudScale;
 uniform float cloudVisibility;
+uniform float cloudGap;
 uniform float brightness;
 uniform vec3 sceneLightDir;
 uniform vec3 sceneLightColor;
-uniform float sphereRadius;
+uniform sampler3D noiseTex;
+out vec4 fragColor;
 
-#define CLOUD_LIGHT_ATTEN 0.15
+// ===== Volumetric raymarch constants (from TS) =====
+#define CLOUD_LIGHT_ATTEN ${SHADER_CLOUD_LIGHT_ATTEN}
 #define CLOUD_PHASE_G 0.8
-#define CLOUD_SCATTER_INTENSITY 0.5
-#define CLOUD_SIGMA_S_SCALE 0.08
-#define CLOUD_MAX_OPTICAL_DEPTH 5.0
-#define CLOUD_DENSITY_THRESHOLD 0.005
+#define CLOUD_SCATTER_INTENSITY ${SHADER_SCATTER_INTENSITY}
+#define CLOUD_MAX_OPTICAL_DEPTH ${SHADER_MAX_OPTICAL_DEPTH}
+#define CLOUD_DENSITY_THRESHOLD ${SHADER_DENSITY_THRESHOLD}
 #define CLOUD_LIGHT_STEPS 2
-#define CLOUD_MAX_STEPS 96
+#define CLOUD_MAX_STEPS 200
+#define CLOUD_FIXED_STEP 8.0
 #define CLOUD_FBM_OCTAVES 3
-#define CLOUD_THRESHOLD_FACTOR 0.65
+#define NOISE_PERIOD 256.0
 
-float hash(vec3 p) {
-    p = fract(p * 0.3183099 + 0.1);
-    p *= 17.0;
-    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+// Pseudo-random hash (per-fragment jitter)
+float hash13(vec3 p) {
+    float h = dot(p, vec3(127.1, 311.7, 74.7));
+    return fract(sin(h) * 43758.5453);
 }
+
 float noise3D(vec3 p) {
-    vec3 i = floor(p);
-    vec3 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    float h000 = hash(i);
-    float h100 = hash(i + vec3(1.0, 0.0, 0.0));
-    float h010 = hash(i + vec3(0.0, 1.0, 0.0));
-    float h110 = hash(i + vec3(1.0, 1.0, 0.0));
-    float h001 = hash(i + vec3(0.0, 0.0, 1.0));
-    float h101 = hash(i + vec3(1.0, 0.0, 1.0));
-    float h011 = hash(i + vec3(0.0, 1.0, 1.0));
-    float h111 = hash(i + vec3(1.0, 1.0, 1.0));
-    float x00 = mix(h000, h100, f.x);
-    float x10 = mix(h010, h110, f.x);
-    float x01 = mix(h001, h101, f.x);
-    float x11 = mix(h011, h111, f.x);
-    float xy0 = mix(x00, x10, f.y);
-    float xy1 = mix(x01, x11, f.y);
-    return mix(xy0, xy1, f.z);
+    vec3 uvw = fract(p / NOISE_PERIOD);
+    return texture(noiseTex, uvw).r;
 }
 float fbm(vec3 p) {
     float v = 0.0, a = 0.5, f = 1.0;
@@ -259,212 +233,120 @@ float fbm(vec3 p) {
     }
     return v;
 }
-float getDensity(vec3 pos, float dScale, vec3 wind, float distFactor) {
+float getDensity(vec3 pos, float dScale, vec3 wind) {
     float h = pos.y;
-    if (h < cloudBaseY || h > cloudTopY) return 0.0;
-    float hf = smoothstep(cloudBaseY, cloudBaseY + 15.0, h) * (1.0 - smoothstep(cloudTopY - 15.0, cloudTopY, h));
-    vec3 p = pos + wind * time * 0.3;
-    float n = fbm(p * 0.04 * cloudScale) * 0.6 + fbm(p * 0.08 * cloudScale + 50.0) * 0.4;
-    float detail = fbm(p * 0.24 * cloudScale + 100.0) * 0.15;
-    n += detail;
-    float threshold = 0.5 - dScale * 0.15;  // fbm max ~0.875, keep threshold below that
-    threshold = clamp(threshold, 0.15, 0.95);
-    float t = (n - threshold) / (1.0 - threshold);
-    n = clamp(t * t, 0.0, 1.0);
-    n *= 1.5 * hf * distFactor;
-    return max(0.0, n);
-}
-float phase(float ct) {
-    float g = CLOUD_PHASE_G;
-    float gg = g * g;
-    return (1.0 - gg) / (4.0 * 3.14159 * pow(1.0 + gg - 2.0 * g * ct, 1.5));
+    float thickness = cloudTopY - cloudBaseY;
+    float fadeZone = max(thickness * 0.3, 4.0);
+    float hf = smoothstep(cloudBaseY, cloudBaseY + fadeZone, h) *
+               (1.0 - smoothstep(cloudTopY - fadeZone, cloudTopY, h));
+    vec3 p = pos + wind * time;
+    float n1 = fbm(p * 0.005 * cloudScale);
+    float n2 = fbm(p * 0.015 * cloudScale + 33.0);
+    float n3 = fbm(p * 0.05 * cloudScale + 66.0);
+    float n = n1 * 0.65 + n2 * 0.25 + n3 * 0.08;
+    // Contrast stretch: cloudGap > 0 pushes n toward 0 and 1,
+    // increasing gaps without changing spatial frequency (cloud size unchanged).
+    float contrast = 1.0 + cloudGap * 3.0;
+    n = pow(n, contrast);
+    // Intuitive threshold: cloudCover=0 → few wisps, cloudCover=1 → dense clouds.
+    float threshold = 1.0 - dScale;
+    threshold = clamp(threshold, 0.05, 0.85);
+    float density = smoothstep(threshold, threshold + 0.35, n);
+    density = pow(density, 0.9);
+    density *= hf;
+    density = clamp(density, 0.0, 1.0);
+    return density;
 }
 void main(){
     vec3 ro = cameraPosition;
     vec3 rd = normalize(vWorldPos - cameraPosition);
-    int steps = 64;
-    float distToCloud = abs(cloudBaseY - cameraPosition.y);
-    float stepMultiplier = clamp(distToCloud / 400.0, 0.33, 1.0);
-    steps = int(float(steps) * stepMultiplier);
-    if (steps < 12) steps = 12;
-    float maxDist = cloudVisibility;
-    float stepSize = maxDist / float(steps);
-    vec3 rp = ro;
-    float seed = dot(gl_FragCoord.xy, vec2(12.9898, 78.233));
-    float dither = fract(sin(seed) * 43758.5453) * stepSize;
-    rp += rd * dither;
-    float opticalDepth = 0.0;
+    float maxT = cloudVisibility;
+    float dt = CLOUD_FIXED_STEP;
     float T = 1.0;
-    vec3 scatter = vec3(0.0);
-    float dist = 0.0;
-    vec3 wind = windDirection;
-    vec3 lightDir = normalize(-sceneLightDir);
+    vec3 L = vec3(0.0);
+    vec3 cloudCol = vec3(0.78, 0.82, 0.92);
+    vec3 Ldir = normalize(-sceneLightDir);
+
+    // Screen-space jitter with fixed seed (no temporal flicker).
+    float jitter = hash13(vec3(gl_FragCoord.xy, 1.0));
+    float startT = jitter * dt;
+
     for (int i = 0; i < CLOUD_MAX_STEPS; i++) {
-        if (i >= steps) break;
-        if (dist > maxDist) break;
-        float distRatio = clamp(dist / (maxDist * 0.3), 0.0, 1.0);
-        float dynamicStep = mix(stepSize * 0.5, stepSize * 1.5, distRatio * distRatio);
-        dynamicStep = clamp(dynamicStep, 1.5, 15.0);
-        rp += rd * dynamicStep;
-        dist += dynamicStep;
-        float distFactor = 1.0 - smoothstep(0.0, maxDist, dist * 0.8);
-        float d = getDensity(rp, cloudDensity, wind, distFactor);
+        float t = startT + dt * float(i);
+        if (t > maxT) break;
+        vec3 p = ro + rd * t;
+        float d = getDensity(p, cloudDensity, windDirection);
         if (d > CLOUD_DENSITY_THRESHOLD) {
-            opticalDepth += d * dynamicStep * 0.12;
-            float lightSteps = float(CLOUD_LIGHT_STEPS);
-            float lightStepSize = 4.0;
-            float lightDensitySum = 0.0;
-            for (int j = 0; j < 8; j++) {
-                if (float(j) >= lightSteps) break;
-                vec3 lightPos = rp + lightDir * lightStepSize * float(j);
-                float ld = getDensity(lightPos, cloudDensity * 0.6, wind, distFactor);
-                lightDensitySum += ld * lightStepSize;
-            }
-            float transmittance = exp(-lightDensitySum * CLOUD_LIGHT_ATTEN);
-            float ct = dot(rd, -lightDir);
-            float ph = phase(ct);
-            vec3 sc = sceneLightColor * transmittance * ph * CLOUD_SCATTER_INTENSITY * brightness;
-            float sigma_s = d * CLOUD_SIGMA_S_SCALE;
-            scatter += sc * T * (1.0 - exp(-sigma_s * dynamicStep));
+            float ct = max(dot(Ldir, rd), 0.0);
+            float g = CLOUD_PHASE_G;
+            float phase = (1.0 - g*g) / (4.0 * 3.14159 * pow(1.0 + g*g - 2.0*g*ct, 1.5));
+            float od = d * dt;
+            vec3 S = cloudCol * sceneLightColor * brightness * d * phase * dt * CLOUD_SCATTER_INTENSITY;
+            L += T * S;
+            T *= max(0.0, 1.0 - od * CLOUD_LIGHT_ATTEN);
+            if (T < 0.02) break;
         }
-        if (opticalDepth > CLOUD_MAX_OPTICAL_DEPTH) break;
     }
-    float hg = clamp((rd.y + 0.4) / 0.9, 0.0, 1.0);
-    vec3 sky = mix(vec3(0.5, 0.65, 0.85), vec3(0.25, 0.45, 0.75), hg);
-    vec3 color = sky * T + scatter;
-    float horizonFade = 1.0 - smoothstep(sphereRadius * 0.85, sphereRadius, vDistFromCenter);
-    color *= horizonFade;
-    color = mix(color, vec3(1.0, 0.98, 0.95), smoothstep(0.7, 0.2, T));
-    float edgeIntensity = T * (1.0 - T) * 4.0;
-    edgeIntensity = clamp(edgeIntensity, 0.0, 1.0);
-    float backScatter = max(0.0, -dot(rd, normalize(sceneLightDir)));
-    float angleFactor = pow(backScatter, 1.5) * 1.5;
-    vec3 glowColor = mix(vec3(1.0, 0.85, 0.6), vec3(1.0, 0.95, 0.8), edgeIntensity);
-    color += glowColor * edgeIntensity * angleFactor * 0.6;
-    gl_FragColor = vec4(color, clamp(1.0 - T, 0.0, 0.95) * horizonFade);
-    if (gl_FragColor.a < 0.05 || T > 0.95) discard;
+    vec3 ambient = cloudCol * 0.25 * (1.0 - T);
+    vec3 color = L + ambient;
+    float alpha = 1.0 - T;
+    if (alpha < 0.008) discard;
+    fragColor = vec4(color, alpha);
 }`;
 
 export function createClouds(state: EnvState): void {
+    // Issue #7: 先清理旧的调试对象，确保 toggle off 时自动移除
+    _clearDebugVisuals();
+
     if (!state.cloudsEnabled) {
         disposeClouds();
         return;
     }
     const scene = getScene();
+    // 球体直径 = min(20000, camera.maxZ * 1.8)，确保顶点不被远平面裁剪
+    const cam = scene.activeCamera;
+    const farZ = cam?.maxZ ?? 10000;
+    const SPHERE_DIAMETER = Math.min(20000, farZ * 1.8);
 
+    // Compute wind velocity once
+    const windVel = _computeWindVelocity(state);
+
+    // Update existing material uniforms without rebuilding mesh
     if (_volCloudMesh && _volCloudMat) {
         const halfThick = (state.cloudThickness ?? 40) / 2;
         _volCloudMat.setFloat('cloudDensity', state.cloudCover * CLOUD_DENSITY_SCALE);
-        const windSpeed = state.windEnabled ? state.windSpeed : 0;
-        _volCloudMat.setVector3(
-            'windDirection',
-            new Vector3(
-                state.windDirection[0] * windSpeed * 2.0,
-                0,
-                state.windDirection[2] * windSpeed * 2.0
-            )
-        );
+        _volCloudMat.setVector3('windDirection', new Vector3(windVel[0], windVel[1], windVel[2]));
         _volCloudMat.setFloat('cloudBaseY', state.cloudHeight - halfThick);
         _volCloudMat.setFloat('cloudTopY', state.cloudHeight + halfThick);
         _volCloudMat.setFloat('cloudScale', state.cloudScale);
         _volCloudMat.setFloat('cloudVisibility', state.cloudVisibility ?? 2000);
+        _volCloudMat.setFloat('cloudGap', state.cloudGap ?? 0.5);
 
-        // Sync debug visualization positions if enabled
-        if (state.debugClouds) {
-            // Dispose old debug objects
-            if (_debugCloudRing) {
-                _debugCloudRing.dispose();
-                _debugCloudRing = null;
-            }
-            for (const m of _debugCloudMarkers) {
-                m.dispose();
-            }
-            _debugCloudMarkers = [];
-
-            // Recreate at new height
-            _debugCloudRing = MeshBuilder.CreateTorus(
-                'cloudDebugRing',
-                { diameter: 100, thickness: 2, tessellation: 32 },
-                scene
-            );
-            _debugCloudRing.position.y = state.cloudHeight;
-            _debugCloudRing.isPickable = false;
-            const ringMat = new StandardMaterial('cloudDebugRingMat', scene);
-            ringMat.diffuseColor = new Color3(1, 0, 0);
-            ringMat.alpha = 0.4;
-            ringMat.backFaceCulling = false;
-            _debugCloudRing.material = ringMat;
-
-            for (
-                let y = state.cloudHeight - CLOUD_DEBUG_Y_RANGE;
-                y <= state.cloudHeight + CLOUD_DEBUG_Y_RANGE;
-                y += CLOUD_DEBUG_Y_STEP
-            ) {
-                const marker = MeshBuilder.CreateBox('cloudMarkY' + y, { size: 3 }, scene);
-                marker.position.y = y;
-                marker.position.x = 10;
-                marker.isPickable = false;
-                const mMat = new StandardMaterial('cloudMarkMat' + y, scene);
-                mMat.diffuseColor =
-                    y === state.cloudHeight ? new Color3(0, 1, 0) : new Color3(1, 1, 0);
-                mMat.alpha = 0.6;
-                marker.material = mMat;
-                _debugCloudMarkers.push(marker);
-            }
-        }
+        // Sync debug visualization
+        _createDebugVisuals(state, scene);
         return;
     }
 
     disposeClouds();
 
-    // Debug visualization (red ring + yellow/green markers)
-    if (state.debugClouds) {
-        _debugCloudRing = MeshBuilder.CreateTorus(
-            'cloudDebugRing',
-            { diameter: 100, thickness: 2, tessellation: 32 },
-            scene
-        );
-        _debugCloudRing.position.y = state.cloudHeight;
-        _debugCloudRing.isPickable = false;
-        const ringMat = new StandardMaterial('cloudDebugRingMat', scene);
-        ringMat.diffuseColor = new Color3(1, 0, 0);
-        ringMat.alpha = 0.4;
-        ringMat.backFaceCulling = false;
-        _debugCloudRing.material = ringMat;
-        console.log('[VolCloud] DEBUG: red ring at Y=', state.cloudHeight);
-
-        _debugCloudMarkers = [];
-        for (
-            let y = state.cloudHeight - CLOUD_DEBUG_Y_RANGE;
-            y <= state.cloudHeight + CLOUD_DEBUG_Y_RANGE;
-            y += CLOUD_DEBUG_Y_STEP
-        ) {
-            const marker = MeshBuilder.CreateBox('cloudMarkY' + y, { size: 3 }, scene);
-            marker.position.y = y;
-            marker.position.x = 10;
-            marker.isPickable = false;
-            const mMat = new StandardMaterial('cloudMarkMat' + y, scene);
-            mMat.diffuseColor = y === state.cloudHeight ? new Color3(0, 1, 0) : new Color3(1, 1, 0);
-            mMat.alpha = 0.6;
-            marker.material = mMat;
-            _debugCloudMarkers.push(marker);
-        }
-    }
+    // Debug visualization
+    _createDebugVisuals(state, scene);
 
     const mesh = MeshBuilder.CreateSphere(
         'volCloud',
-        { diameter: 400, segments: 24, sideOrientation: Mesh.DOUBLESIDE },
+        { diameter: SPHERE_DIAMETER, segments: 24, sideOrientation: Mesh.BACKSIDE },
         scene
     );
+    // 强制在透明队列最后渲染（避免被天空盒覆盖）
+    mesh.renderingGroupId = 1;
     mesh.isPickable = false;
     mesh.position.y = 0;
 
     const followObs = scene.onBeforeRenderObservable.add(() => {
         const cam = scene.activeCamera;
-        if (cam) {
-            mesh.position.x = cam.position.x;
-            mesh.position.z = cam.position.z;
-        }
+        if (!cam) return;
+        mesh.position.x = cam.position.x;
+        mesh.position.z = cam.position.z;
     });
 
     const mat = new ShaderMaterial(
@@ -484,11 +366,12 @@ export function createClouds(state: EnvState): void {
                 'cloudTopY',
                 'cloudScale',
                 'cloudVisibility',
+                'cloudGap',
                 'brightness',
                 'sceneLightDir',
                 'sceneLightColor',
-                'sphereRadius',
             ],
+            samplers: ['noiseTex'],
             needAlphaBlending: true,
         }
     );
@@ -497,7 +380,9 @@ export function createClouds(state: EnvState): void {
     mat.disableDepthWrite = true;
     mat.alpha = 1.0;
     mat.transparencyMode = 2;
-    mat.setFloat('sphereRadius', 200.0); // Half of diameter (400/2)
+    // Bind 3D noise texture (must be after mat is created)
+    const noiseTex = _ensureNoiseTexture(scene);
+    mat.setTexture('noiseTex', noiseTex);
 
     const halfThick = (state.cloudThickness ?? 40) / 2;
     mat.setFloat('cloudDensity', state.cloudCover * CLOUD_DENSITY_SCALE);
@@ -505,22 +390,18 @@ export function createClouds(state: EnvState): void {
     mat.setFloat('cloudTopY', state.cloudHeight + halfThick);
     mat.setFloat('cloudScale', state.cloudScale);
     mat.setFloat('cloudVisibility', state.cloudVisibility ?? 2000);
-    mat.setVector3('sceneLightDir', new Vector3(-0.4, -1, -0.3));
+    mat.setFloat('cloudGap', state.cloudGap ?? 0.5);
+    mat.setVector3('sceneLightDir', new Vector3(-0.4, -1.0, -0.3));
     mat.setColor3('sceneLightColor', new Color3(1, 0.98, 0.92));
     mat.setFloat('brightness', 1.0);
-    mat.setVector3(
-        'windDirection',
-        new Vector3(
-            state.windDirection[0] * (state.windEnabled ? state.windSpeed : 0) * 2.0,
-            0,
-            state.windDirection[2] * (state.windEnabled ? state.windSpeed : 0) * 2.0
-        )
-    );
+    mat.setVector3('windDirection', new Vector3(windVel[0], windVel[1], windVel[2]));
 
     const startTime = performance.now();
     const obs = scene.onBeforeRenderObservable.add(() => {
+        const cam = scene.activeCamera;
+        if (!cam) return;
         mat.setFloat('time', (performance.now() - startTime) / 1000);
-        mat.setVector3('cameraPosition', scene.activeCamera.position ?? Vector3.Zero());
+        mat.setVector3('cameraPosition', cam.position);
         const dl = scene.getLightByName('dir') as DirectionalLight;
         if (dl) {
             mat.setVector3('sceneLightDir', dl.direction);
@@ -529,7 +410,7 @@ export function createClouds(state: EnvState): void {
             const brightness = Math.max(0.1, Math.min(1.5, lightIntensity));
             mat.setFloat('brightness', brightness);
         } else {
-            mat.setVector3('sceneLightDir', new Vector3(-0.4, -1, -0.3));
+            mat.setVector3('sceneLightDir', new Vector3(-0.4, -1.0, -0.3));
             mat.setColor3('sceneLightColor', new Color3(1, 0.98, 0.92));
             mat.setFloat('brightness', 1.0);
         }
@@ -548,14 +429,7 @@ export function createClouds(state: EnvState): void {
 
 export function disposeClouds(): void {
     // Clean up debug visualization objects
-    if (_debugCloudRing) {
-        _debugCloudRing.dispose();
-        _debugCloudRing = null;
-    }
-    for (const m of _debugCloudMarkers) {
-        m.dispose();
-    }
-    _debugCloudMarkers = [];
+    _clearDebugVisuals();
 
     const scene = getScene();
 
@@ -598,5 +472,11 @@ export function disposeClouds(): void {
             m.dispose();
             _envSys.clouds[key] = null;
         }
+    }
+
+    // Issue #6: 释放 3D 噪声纹理，避免禁用云时显存泄漏
+    if (_noiseTex3D) {
+        _noiseTex3D.dispose();
+        _noiseTex3D = null;
     }
 }

@@ -17,6 +17,7 @@ export type MaterialCategoryParams = {
 
 const CATEGORIES = ['皮肤', '头发', '眼睛', '服装'] as const;
 export type MaterialCategory = (typeof CATEGORIES)[number];
+const CATEGORY_SET = new Set<string>(CATEGORIES);
 
 interface _OrigMat {
     diffuse: Color3;
@@ -151,7 +152,7 @@ export function setMatEnabled(id: string, matIndex: number, enabled: boolean): v
     }
     inst.meshes[matIndex].setEnabled(enabled);
     if (enabled) {
-        _matEnabled.get(id).delete(matIndex);
+        _matEnabled.get(id)?.delete(matIndex);
     } else {
         let m = _matEnabled.get(id);
         if (!m) {
@@ -184,6 +185,10 @@ export function getMatCatGroups(id: string): Map<string, { name: string; mat: Ma
 }
 
 export function getMatCatParams(id: string, cat: string): MaterialCategoryParams {
+    if (!CATEGORY_SET.has(cat)) {
+        console.warn(`[material] getMatCatParams: unknown category "${cat}"`);
+        return { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 };
+    }
     return { ..._ensureState(id).get(cat)! };
 }
 
@@ -192,7 +197,23 @@ export function setMatCatParams(
     cat: string,
     params: Partial<MaterialCategoryParams>
 ): void {
-    Object.assign(_ensureState(id).get(cat)!, params);
+    if (!CATEGORY_SET.has(cat)) {
+        console.warn(`[material] setMatCatParams: unknown category "${cat}"`);
+        return;
+    }
+    const target = _ensureState(id).get(cat)!;
+    if (params.diffuseMul !== undefined) {
+        target.diffuseMul = Math.max(0, Math.min(2, params.diffuseMul));
+    }
+    if (params.specularMul !== undefined) {
+        target.specularMul = Math.max(0, Math.min(2, params.specularMul));
+    }
+    if (params.shininess !== undefined) {
+        target.shininess = Math.max(0, Math.min(200, Math.round(params.shininess)));
+    }
+    if (params.ambientMul !== undefined) {
+        target.ambientMul = Math.max(0, Math.min(2, params.ambientMul));
+    }
     _applyAll(id);
     triggerAutoSave();
 }
@@ -312,11 +333,24 @@ export function resetSingleMatParams(id: string, matIndex: number): void {
     triggerAutoSave();
 }
 
-export function resetAllMatParams(id: string): void {
+/** 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。
+ *  供模型移除时统一调用，替代外部直接操作内部 Map。 */
+export function disposeModelMaterialState(id: string): void {
+    _catState.delete(id);
+    _matState.delete(id);
+    _matEnabled.delete(id);
+}
+
+/** 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。
+ *  如需完整恢复材质到原始状态请先调用 resetMatCatParams。 */
+export function resetPerMaterialParams(id: string): void {
     _matState.delete(id);
     _applyAll(id);
     triggerAutoSave();
 }
+
+/** @deprecated 使用 resetPerMaterialParams */
+export const resetAllMatParams = resetPerMaterialParams;
 
 export function getMatState(id: string): {
     categories: Record<string, MaterialCategoryParams>;

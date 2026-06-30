@@ -83,6 +83,10 @@ export type PropInstance = {
     modelDir: string;
     meshes: Mesh[];
     rootMesh: Mesh;
+    /** Optional parent TransformNode that holds all meshes as children.
+     *  When set, transforms (position/rotation/scaling) apply to the container
+     *  instead of rootMesh, ensuring multi-mesh props move as a unit. */
+    container?: import('@babylonjs/core/Meshes/transformNode').TransformNode;
     /** World-space position [x, y, z] */
     position: [number, number, number];
     /** Y-axis rotation in radians */
@@ -225,6 +229,8 @@ export interface EnvState {
     cloudHeight: number;
     cloudThickness: number;
     cloudVisibility: number;
+    /** Cloud gap contrast: 0 = default spacing, 1 = larger gaps (stretches noise distribution) */
+    cloudGap: number;
     // Fog
     fogEnabled: boolean;
     fogColor: [number, number, number];
@@ -453,6 +459,7 @@ export const envState: EnvState = {
     cloudHeight: 325,
     cloudThickness: 15,
     cloudVisibility: 3000,
+    cloudGap: 0.5,
 
     fogEnabled: false,
     fogColor: [0.5, 0.5, 0.6],
@@ -613,11 +620,54 @@ export function computeLibraryRef(filePath: string): string | null {
 }
 
 /**
+ * Normalize a path string to remove "." and ".." segments (browser-safe, no Node path module).
+ * Does NOT resolve symlinks or case differences — only lexical normalization.
+ */
+function normalizePath(input: string): string {
+    // Replace backslashes with forward slashes
+    let p = input.replace(/\\/g, '/');
+    // Collapse multiple slashes
+    p = p.replace(/\/+/g, '/');
+    // Split into segments
+    const parts = p.split('/').filter((s) => s !== '' && s !== '.');
+    const result: string[] = [];
+    for (const part of parts) {
+        if (part === '..') {
+            // Pop the last segment, but never go above root
+            if (result.length > 0 && result[result.length - 1] !== '..') {
+                result.pop();
+            }
+        } else {
+            result.push(part);
+        }
+    }
+    return (p.startsWith('/') ? '/' : '') + result.join('/');
+}
+
+/**
+ * Verify that a resolved path is within an allowed root directory.
+ * Returns false if path escapes the root via ".." segments.
+ */
+function isPathWithinRoot(resolved: string, rootPath: string): boolean {
+    const norm = normalizePath(resolved);
+    const root = normalizePath(rootPath);
+    // Must start with root + separator, or be exactly equal to root
+    return norm === root || norm.startsWith(root + '/');
+}
+
+/**
  * Resolve a library identifier back to an absolute file path.
- * Returns the resolved path if the corresponding library is configured, or null if not.
+ * Returns the resolved path if the corresponding library is configured AND
+ * the resolved path stays within the allowed library root (no directory traversal).
+ * Returns null if the library is not configured or the path would escape bounds.
  */
 export function resolveLibraryRef(libraryRef: string): string | null {
     if (!libraryRef) {
+        return null;
+    }
+    // Prevent refs that start with "/" or contain ".." before resolution
+    if (libraryRef.startsWith('/') || libraryRef.includes('..')) {
+        console.warn(`[resolveLibraryRef] suspicious libraryRef rejected: "${libraryRef}"`);
         return null;
     }
     // External ref: "SourceName:rel/path/file.pmx"
@@ -625,15 +675,30 @@ export function resolveLibraryRef(libraryRef: string): string | null {
     if (colonIdx > 0) {
         const source = libraryRef.substring(0, colonIdx);
         const relPath = libraryRef.substring(colonIdx + 1);
+        // Extra check: relPath must not start with "/" or contain ".."
+        if (relPath.startsWith('/') || relPath.includes('..')) {
+            console.warn(`[resolveLibraryRef] suspicious external relPath rejected: "${relPath}"`);
+            return null;
+        }
         const ext = externalPaths.find((e) => e.name === source);
         if (ext) {
-            return normPath(ext.path) + '/' + relPath;
+            const resolved = normPath(ext.path) + '/' + relPath;
+            if (!isPathWithinRoot(resolved, ext.path)) {
+                console.warn(`[resolveLibraryRef] path traversal blocked: "${resolved}"`);
+                return null;
+            }
+            return resolved;
         }
         return null;
     }
     // Main library ref: "rel/path/file.pmx"
     if (libraryRoot) {
-        return normPath(libraryRoot) + '/' + libraryRef;
+        const resolved = normPath(libraryRoot) + '/' + libraryRef;
+        if (!isPathWithinRoot(resolved, libraryRoot)) {
+            console.warn(`[resolveLibraryRef] path traversal blocked: "${resolved}"`);
+            return null;
+        }
+        return resolved;
     }
     return null;
 }

@@ -50,6 +50,18 @@ let _pipelineCamera: Camera | null = null;
 let _modelRegistry: Map<string, import('../core/config').ModelInstance> | null = null;
 let _triggerAutoSave: (() => void) | null = null;
 
+// ======== 数值钳制工具 ========
+
+function clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value));
+}
+
+function clampColorChannel(v: number): number {
+    return clamp(v, 0, 1);
+}
+
+// ======== 初始化与释放 ========
+
 export function initRenderer(
     scene: import('@babylonjs/core/scene').Scene,
     modelRegistry: Map<string, import('../core/config').ModelInstance>,
@@ -65,6 +77,27 @@ export function initRenderer(
     pipeline.bloomEnabled = false;
     pipeline.imageProcessingEnabled = true;
 }
+
+/** 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 */
+export function isRendererReady(): boolean {
+    return pipeline !== undefined && _scene !== null && _modelRegistry !== null;
+}
+
+/** 释放渲染管线及相关资源。在场景销毁时调用。 */
+export function disposeRenderer(): void {
+    if (pipeline) {
+        pipeline.dispose();
+        (pipeline as any) = undefined;
+    }
+    _scene = null;
+    _modelRegistry = null;
+    _triggerAutoSave = null;
+    _pipelineCamera = null;
+    _outlineEnabled = false;
+    _outlineColor = [0, 0, 0];
+}
+
+// ======== 状态读取 ========
 
 export function getRenderState(): RenderState {
     if (!_scene || !pipeline) {
@@ -85,7 +118,7 @@ export function getRenderState(): RenderState {
         fov: cam ? ((cam as any).fov ?? 0.8) : 0.8,
         bgColor: [_scene.clearColor.r, _scene.clearColor.g, _scene.clearColor.b],
         dofEnabled: pipeline.depthOfFieldEnabled,
-        dofAperture: pipeline.depthOfField.fStop ?? 0.5,
+        dofAperture: pipeline.depthOfField?.fStop ?? 0.5,
         vignetteEnabled: pipeline.imageProcessing.vignetteEnabled ?? false,
         vignetteDarkness: pipeline.imageProcessing.vignetteWeight ?? 0.5,
     };
@@ -112,51 +145,70 @@ function _defaultRenderState(): RenderState {
     };
 }
 
-export function setRenderState(s: Partial<RenderState>): void {
-    if (!pipeline || !_scene || !_modelRegistry || !_triggerAutoSave) {
+// ======== 内部状态应用（无自动保存） ========
+
+/**
+ * 内部版 setRenderState，不触发自动保存。
+ * 供 transitionRenderState 在中间帧调用，避免每帧触发保存 I/O。
+ */
+function _applyRenderState(s: Partial<RenderState>): void {
+    if (!pipeline || !_scene || !_modelRegistry) {
+        console.warn('[renderer] _applyRenderState: pipeline/scene 未初始化，状态更新被忽略');
         return;
     }
+
+    // 数值钳制
+    const w = s.bloomWeight !== undefined ? clamp(s.bloomWeight, 0, 1) : undefined;
+    const th = s.bloomThreshold !== undefined ? clamp(s.bloomThreshold, 0, 1) : undefined;
+    const k = s.bloomKernel !== undefined ? clamp(s.bloomKernel, 0, 512) : undefined;
+    const e = s.exposure !== undefined ? clamp(s.exposure, 0, 4) : undefined;
+    const c = s.contrast !== undefined ? clamp(s.contrast, 0, 4) : undefined;
+    const f = s.fov !== undefined ? clamp(s.fov, 0.1, 3) : undefined;
+    const da = s.dofAperture !== undefined ? clamp(s.dofAperture, 0.1, 32) : undefined;
+    const vd = s.vignetteDarkness !== undefined ? clamp(s.vignetteDarkness, 0, 1) : undefined;
 
     // Post-processing
     if (s.bloomEnabled !== undefined) {
         pipeline.bloomEnabled = s.bloomEnabled;
     }
-    if (s.bloomWeight !== undefined) {
-        pipeline.bloomWeight = s.bloomWeight;
+    if (w !== undefined) {
+        pipeline.bloomWeight = w;
     }
-    if (s.bloomThreshold !== undefined) {
-        pipeline.bloomThreshold = s.bloomThreshold;
+    if (th !== undefined) {
+        pipeline.bloomThreshold = th;
     }
-    if (s.bloomKernel !== undefined) {
-        pipeline.bloomKernel = s.bloomKernel;
+    if (k !== undefined) {
+        pipeline.bloomKernel = k;
     }
     if (s.fxaaEnabled !== undefined) {
         pipeline.fxaaEnabled = s.fxaaEnabled;
     }
 
-    // Outline — toggle edges rendering on all loaded meshes
-    if (s.outlineEnabled !== undefined) {
-        _outlineEnabled = s.outlineEnabled;
-        for (const inst of _modelRegistry.values()) {
-            for (const m of inst.meshes) {
-                if (s.outlineEnabled) {
-                    m.enableEdgesRendering();
-                } else {
-                    m.disableEdgesRendering();
-                }
-            }
-        }
+    // Outline — 仅在状态/颜色实际变化时遍历模型
+    const outlineChanged = s.outlineEnabled !== undefined;
+    const outlineColorChanged = s.outlineColor !== undefined;
+
+    if (outlineChanged) {
+        _outlineEnabled = s.outlineEnabled!;
     }
-    // Apply outline color (separate from toggle so color can change independently)
-    if (s.outlineColor !== undefined) {
+    if (outlineColorChanged) {
         _outlineColor = s.outlineColor;
+    }
+    if (outlineChanged || outlineColorChanged) {
         for (const inst of _modelRegistry.values()) {
             for (const m of inst.meshes) {
-                if (m.edgesRenderer) {
+                if (outlineChanged) {
+                    if (_outlineEnabled) {
+                        m.enableEdgesRendering();
+                    } else {
+                        m.disableEdgesRendering();
+                    }
+                }
+                if (m.edgesRenderer && outlineColorChanged) {
                     m.edgesColor = new Color4(
-                        s.outlineColor[0],
-                        s.outlineColor[1],
-                        s.outlineColor[2],
+                        clampColorChannel(_outlineColor[0]),
+                        clampColorChannel(_outlineColor[1]),
+                        clampColorChannel(_outlineColor[2]),
                         1
                     );
                 }
@@ -164,20 +216,20 @@ export function setRenderState(s: Partial<RenderState>): void {
         }
     }
 
-    // DOF — via pipeline.depthOfField
+    // DOF — 可选链保护
     if (s.dofEnabled !== undefined) {
         pipeline.depthOfFieldEnabled = s.dofEnabled;
     }
-    if (s.dofAperture !== undefined && pipeline.depthOfField) {
-        pipeline.depthOfField.fStop = s.dofAperture;
+    if (da !== undefined && pipeline.depthOfField) {
+        pipeline.depthOfField.fStop = da;
     }
 
-    // Vignette — via pipeline.imageProcessing
+    // Vignette
     if (s.vignetteEnabled !== undefined && pipeline.imageProcessing) {
         pipeline.imageProcessing.vignetteEnabled = s.vignetteEnabled;
     }
-    if (s.vignetteDarkness !== undefined && pipeline.imageProcessing) {
-        pipeline.imageProcessing.vignetteWeight = s.vignetteDarkness;
+    if (vd !== undefined && pipeline.imageProcessing) {
+        pipeline.imageProcessing.vignetteWeight = vd;
     }
 
     // Stage / imageProcessing
@@ -185,26 +237,45 @@ export function setRenderState(s: Partial<RenderState>): void {
         if (s.toneMapping !== undefined) {
             pipeline.imageProcessing.toneMappingType = s.toneMapping;
         }
-        if (s.exposure !== undefined) {
-            pipeline.imageProcessing.exposure = s.exposure;
+        if (e !== undefined) {
+            pipeline.imageProcessing.exposure = e;
         }
-        if (s.contrast !== undefined) {
-            pipeline.imageProcessing.contrast = s.contrast;
+        if (c !== undefined) {
+            pipeline.imageProcessing.contrast = c;
         }
     }
-    if (s.fov !== undefined && _scene.activeCamera) {
-        (_scene.activeCamera as any).fov = s.fov;
+    if (f !== undefined && _scene.activeCamera) {
+        (_scene.activeCamera as any).fov = f;
     }
     if (s.bgColor !== undefined) {
-        _scene.clearColor = new Color4(s.bgColor[0], s.bgColor[1], s.bgColor[2], 1.0);
+        _scene.clearColor = new Color4(
+            clampColorChannel(s.bgColor[0]),
+            clampColorChannel(s.bgColor[1]),
+            clampColorChannel(s.bgColor[2]),
+            1.0
+        );
     }
+}
+
+// ======== 对外状态设置（含自动保存） ========
+
+export function setRenderState(s: Partial<RenderState>): void {
+    if (!pipeline || !_scene || !_modelRegistry || !_triggerAutoSave) {
+        console.warn('[renderer] setRenderState: pipeline/scene 未初始化，状态更新被忽略');
+        return;
+    }
+
+    _applyRenderState(s);
 
     _triggerAutoSave();
 }
 
+// ======== 平滑过渡 ========
+
 /**
  * 平滑过渡渲染状态到目标值，默认 2 秒。
- * 数值/颜色字段做 lerp 插值；布尔/枚举字段在动画结束时切换。
+ * 数值/颜色字段做 lerp 插值；布尔字段按阈值提前启用；枚举字段在动画结束时切换。
+ * 中间帧不触发自动保存，仅最终帧保存一次。
  */
 export function transitionRenderState(
     target: Partial<RenderState>,
@@ -231,7 +302,7 @@ export function transitionRenderState(
     ];
     // 颜色字段列表（逐通道 lerp）
     const colorKeys: (keyof RenderState)[] = ['outlineColor', 'bgColor'];
-    // 布尔字段列表（动画结束时切换）
+    // 布尔字段列表（按阈值提前启用/禁用以减少视觉跳跃）
     const boolKeys: (keyof RenderState)[] = [
         'bloomEnabled',
         'outlineEnabled',
@@ -239,10 +310,42 @@ export function transitionRenderState(
         'dofEnabled',
         'vignetteEnabled',
     ];
-    // 枚举字段（瞬间切换）
+    // 枚举字段（动画结束时切换）
     const enumKeys: (keyof RenderState)[] = ['toneMapping'];
 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    /**
+     * 判断布尔字段是否应在当前插值进度 t 时切换。
+     * 对于启用（false→true）：当关联数值字段超过阈值时提前启用，减少跳跃感。
+     * 对于禁用（true→false）：在动画结束时切换。
+     */
+    function shouldActivateBool(key: keyof RenderState, t: number): boolean {
+        const targetVal = target[key] as boolean | undefined;
+        if (targetVal === undefined) return source[key] as boolean;
+
+        if (targetVal) {
+            // 从 false → true：当关联数值超过半程时提前启用
+            if (key === 'bloomEnabled') {
+                const b = target.bloomWeight !== undefined ? target.bloomWeight : source.bloomWeight;
+                return t >= 0.3 || (b > 0 && source.bloomWeight > 0);
+            }
+            if (key === 'dofEnabled') {
+                return t >= 0.3;
+            }
+            if (key === 'vignetteEnabled') {
+                return t >= 0.3;
+            }
+            // outline / fxaa 无关联数值，延迟到 80%
+            if (key === 'outlineEnabled' || key === 'fxaaEnabled') {
+                return t >= 0.8;
+            }
+            return t >= 1;
+        } else {
+            // 从 true → false：动画结束时再禁用
+            return t >= 1 ? false : source[key] as boolean;
+        }
+    }
 
     const animLoop = () => {
         const elapsed = performance.now() - startTime;
@@ -265,26 +368,34 @@ export function transitionRenderState(
                 (interp as any)[key] = a.map((v, i) => lerp(v, b[i], t));
             }
         }
-        // 布尔/枚举字段：t >= 1 时切换到目标值，否则保持当前值
-        const allSwitchKeys = [...boolKeys, ...enumKeys];
-        for (const key of allSwitchKeys) {
+        // 布尔字段：按阈值提前切换
+        for (const key of boolKeys) {
+            if (target[key] !== undefined) {
+                (interp as any)[key] = shouldActivateBool(key, t);
+            }
+        }
+        // 枚举字段：t >= 1 时切换到目标值，否则保持当前值
+        for (const key of enumKeys) {
             if (target[key] !== undefined) {
                 (interp as any)[key] = t >= 1 ? target[key] : source[key];
             }
         }
 
-        setRenderState(interp);
-
+        // 中间帧调用 _applyRenderState（不触发自动保存），最终帧用 setRenderState（触发一次保存）
         if (t >= 1) {
+            setRenderState(interp);
             if (onComplete) {
                 onComplete();
             }
         } else {
+            _applyRenderState(interp);
             requestAnimationFrame(animLoop);
         }
     };
     requestAnimationFrame(animLoop);
 }
+
+// ======== 相机重挂接 ========
 
 /** Re-attach the rendering pipeline to the current active camera (call after camera switch). */
 export function reattachPipeline(): void {
@@ -292,16 +403,21 @@ export function reattachPipeline(): void {
         return;
     }
     if (_scene.activeCamera) {
-        // Remove previously attached camera if still in pipeline
-        if (_pipelineCamera && _pipelineCamera !== _scene.activeCamera) {
-            try {
-                pipeline.removeCamera(_pipelineCamera);
-            } catch (_) {}
+        // 先清除 pipeline 中所有已注册的相机，再添加当前相机
+        const existingCameras = pipeline.cameras;
+        if (existingCameras) {
+            for (const cam of existingCameras) {
+                try {
+                    pipeline.removeCamera(cam);
+                } catch (_) {}
+            }
         }
         pipeline.addCamera(_scene.activeCamera);
         _pipelineCamera = _scene.activeCamera;
     }
 }
+
+// ======== 边缘高亮重建 ========
 
 /** 当模型注册表更新时，重新应用边缘高亮状态。 */
 export function rebuildOutlineState(): void {
@@ -314,9 +430,9 @@ export function rebuildOutlineState(): void {
                 m.enableEdgesRendering();
                 if (m.edgesRenderer) {
                     m.edgesColor = new Color4(
-                        _outlineColor[0],
-                        _outlineColor[1],
-                        _outlineColor[2],
+                        clampColorChannel(_outlineColor[0]),
+                        clampColorChannel(_outlineColor[1]),
+                        clampColorChannel(_outlineColor[2]),
                         1
                     );
                 }

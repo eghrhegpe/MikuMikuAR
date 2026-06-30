@@ -38,6 +38,7 @@ let _modelManager: import('./scene-model').ModelManager | null = null;
 let _refreshWaterRenderList: (() => void) | null = null;
 let _tryAutoApplyPreset: ((id: string) => Promise<void>) | null = null;
 let _loadOutfits: ((id: string) => Promise<void>) | null = null;
+let _rebuildOutlineState: (() => void) | null = null;
 
 export function initLoader(
     scene: import('@babylonjs/core/scene').Scene,
@@ -45,7 +46,8 @@ export function initLoader(
     modelManager: import('./scene-model').ModelManager,
     refreshWaterRenderList: () => void,
     tryAutoApplyPreset: (id: string) => Promise<void>,
-    loadOutfits: (id: string) => Promise<void>
+    loadOutfits: (id: string) => Promise<void>,
+    rebuildOutlineState?: () => void
 ): void {
     _scene = scene;
     _mmdRuntime = mmdRuntime;
@@ -53,6 +55,7 @@ export function initLoader(
     _refreshWaterRenderList = refreshWaterRenderList;
     _tryAutoApplyPreset = tryAutoApplyPreset;
     _loadOutfits = loadOutfits;
+    _rebuildOutlineState = rebuildOutlineState ?? null;
 }
 
 // ======== Thumbnail Capture ========
@@ -161,6 +164,7 @@ export async function loadPMXFile(
             setStatus(`✓ ${displayName} (场景)`, true);
             _modelManager.arrange();
             _refreshWaterRenderList();
+            _rebuildOutlineState?.();
             triggerAutoSave();
             try {
                 document.dispatchEvent(new CustomEvent('mmku:modelLoaded'));
@@ -228,6 +232,9 @@ export async function loadPMXFile(
         }
         // Pre-load outfit file for UI entry availability
         _loadOutfits(id).catch(() => {});
+
+        // Re-apply outline state so new model gets edge rendering if enabled
+        _rebuildOutlineState?.();
 
         // Notify auto-save that scene state has changed
         triggerAutoSave();

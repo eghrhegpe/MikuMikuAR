@@ -488,7 +488,9 @@ export class ModelManager {
     }
 
     /** Stop VMD animation on a model and clean up associated state. */
-    stopVMD(id: string): void {
+    /** 清空模型的 VMD 数据（vmdData/vmdName/vmdPath/animationDuration）。
+     *  注意：此方法不暂停动画或修改播放状态——暂停由上层 `stopVMD` 编排。 */
+    clearVmdData(id: string): void {
         const inst = this.modelRegistry.get(id);
         if (!inst) {
             return;
@@ -532,6 +534,10 @@ export class ModelManager {
         const inst = this.modelRegistry.get(id);
         if (!inst || !inst.mmdModel) {
             return;
+        }
+        // 若启用子类别但总开关未开，自动开启总开关防止 UI 状态不一致
+        if (enabled && !inst.physicsEnabled) {
+            this.setPhysics(id, true);
         }
         const states = inst.mmdModel.rigidBodyStates;
         if (!states) {
@@ -586,6 +592,7 @@ export class ModelManager {
             return;
         }
         inst.mmdModel.morph.resetMorphWeights();
+        this.onChange();
     }
 
     // ======== Skeletal Bone Overlay ========

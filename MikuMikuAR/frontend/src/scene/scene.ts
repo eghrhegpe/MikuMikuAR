@@ -150,7 +150,7 @@ import { ModelManager } from './scene-model';
 import {
     updateProcMotion,
     stopProcMotion,
-    procVmdActive,
+    isProcVmdActive,
     createProcBeatDetector,
     getProcBeatDetector,
 } from './scene-proc-motion';
@@ -163,6 +163,9 @@ export const scene = new Scene(engine);
 scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
 
 export let modelManager: ModelManager;
+
+/** 播放观察者 dispose 函数，场景销毁时调用以清理 observable。 */
+let _disposePlaybackObservables: (() => void) | null = null;
 
 // Dev debug helper — exposes internals for Console inspection
 (window as any).__envDebug = () => ({
@@ -231,10 +234,12 @@ export async function initScene(): Promise<void> {
         modelManager,
         refreshWaterRenderList,
         tryAutoApplyPreset,
-        (id: string) => loadOutfits(id).then(() => {})
+        (id: string) => loadOutfits(id).then(() => {}),
+        rebuildOutlineState
     );
-    initPlaybackObservables(
+    _disposePlaybackObservables = initPlaybackObservables(
         runtime,
+        modelManager,
         updatePlaybackUI,
         updateProcMotion,
         updateLipSync,

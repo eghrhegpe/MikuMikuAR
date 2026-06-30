@@ -17,7 +17,7 @@ import {
     setPendingVmd,
     mmdRuntime,
 } from '../core/config';
-import { _catState, _matState, _matEnabled } from './scene-material';
+import { _catState, _matState, _matEnabled, disposeModelMaterialState } from './scene-material';
 import { refreshWaterRenderList } from './scene-env';
 import { getCameraMode, switchCameraMode } from './camera';
 import { updatePlaybackUI } from './scene-playback';
@@ -29,9 +29,7 @@ export type PhysicsCategory = 'skirt' | 'chest' | 'hair' | 'accessory';
 // ======== Model Lifecycle ========
 
 export function removeModel(id: string): void {
-    _catState.delete(id);
-    _matState.delete(id);
-    _matEnabled.delete(id);
+    disposeModelMaterialState(id);
     modelManager?.remove(id);
     refreshWaterRenderList();
 
@@ -142,7 +140,7 @@ export function stopVMD(id: string): void {
     if (inst.mmdModel && mmdRuntime) {
         inst.mmdModel.setRuntimeAnimation(null);
     }
-    modelManager?.stopVMD(id);
+    modelManager?.clearVmdData(id);
     if (isPlaying) {
         mmdRuntime.pauseAnimation();
         setIsPlaying(false);
