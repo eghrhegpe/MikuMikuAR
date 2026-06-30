@@ -4,20 +4,25 @@
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
 import {
-    ProcMotionState, ProcMotionMode, DEFAULT_PROC_STATE,
-    generateIdleVmd, generateAutoDanceVmd, shouldAutoDance, shouldIdle,
-} from "../motion/procedural-motion";
-import { BeatDetector } from "../motion/beat-detector";
-import { mmdRuntime, triggerAutoSave, focusedModelId } from "../core/config";
-import { isAudioPlaying } from "../outfit/audio";
-import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion } from "./scene";
+    ProcMotionState,
+    ProcMotionMode,
+    DEFAULT_PROC_STATE,
+    generateIdleVmd,
+    generateAutoDanceVmd,
+    shouldAutoDance,
+    shouldIdle,
+} from '../motion/procedural-motion';
+import { BeatDetector } from '../motion/beat-detector';
+import { mmdRuntime, triggerAutoSave, focusedModelId } from '../core/config';
+import { isAudioPlaying } from '../outfit/audio';
+import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion } from './scene';
 
 let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
 let procBeatDetector: BeatDetector | null = null;
 export let procVmdActive = false;
 let lastBeatBpm = 120;
 let procStarting = false;
-let procActiveKind: ProcMotionMode = "idle";
+let procActiveKind: ProcMotionMode = 'idle';
 let procModelId: string | null = null;
 
 export function getProcBeatDetector(): BeatDetector | null {
@@ -30,13 +35,18 @@ export function createProcBeatDetector(): BeatDetector {
 }
 
 async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promise<void> {
-    if (procStarting) return;
+    if (procStarting) {
+        return;
+    }
     procStarting = true;
     const model = focusedMmdModel();
-    if (!model) { procStarting = false; return; }
-    const morphNames = model.morph?.morphs?.map((m: any) => m.name) ?? [];
+    if (!model) {
+        procStarting = false;
+        return;
+    }
+    const morphNames = model.morph.morphs.map((m: any) => m.name) ?? [];
     let buf: ArrayBuffer;
-    if (targetMode === "autodance" && bpm) {
+    if (targetMode === 'autodance' && bpm) {
         buf = generateAutoDanceVmd(procState, bpm, morphNames);
         lastBeatBpm = bpm;
     } else {
@@ -46,18 +56,18 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     procVmdActive = true;
     procModelId = focusedModelId ?? null;
     try {
-        await loadVMDMotion(buf, targetMode === "autodance" ? "AutoDance" : "IdleMotion");
+        await loadVMDMotion(buf, targetMode === 'autodance' ? 'AutoDance' : 'IdleMotion');
         const inst = focusedModel();
         if (inst) {
             inst.vmdData = null;
-            inst.vmdName = "";
+            inst.vmdName = '';
         }
     } catch {
         procVmdActive = false;
         const inst = focusedModel();
         if (inst) {
             inst.vmdData = null;
-            inst.vmdName = "";
+            inst.vmdName = '';
         }
     } finally {
         procStarting = false;
@@ -67,7 +77,7 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
 export function stopProcMotion(): void {
     procVmdActive = false;
     if (procModelId) {
-        const inst = modelManager?.get(procModelId);
+        const inst = modelManager.get(procModelId);
         if (inst && inst.mmdModel && mmdRuntime) {
             inst.mmdModel.setRuntimeAnimation(null);
         }
@@ -83,15 +93,17 @@ export function onModelRemoved(id: string): void {
 }
 
 export async function updateProcMotion(): Promise<void> {
-    if (procState.mode === "off" && !procState.autoSwitch) {
-        if (procVmdActive) stopProcMotion();
+    if (procState.mode === 'off' && !procState.autoSwitch) {
+        if (procVmdActive) {
+            stopProcMotion();
+        }
         return;
     }
 
     const audioOn = isAudioPlaying();
-    const hasUserVmd = focusedModel()?.vmdData != null;
+    const hasUserVmd = focusedModel().vmdData != null;
     const mode = procState.mode;
-    const autoOk = mode !== "off" || procState.autoSwitch;
+    const autoOk = mode !== 'off' || procState.autoSwitch;
     const wantAutoDance = shouldAutoDance(audioOn, mode) && autoOk;
     const wantIdle = shouldIdle(audioOn, hasUserVmd, mode) && autoOk;
 
@@ -102,15 +114,15 @@ export async function updateProcMotion(): Promise<void> {
 
     if (wantAutoDance && !hasUserVmd && procBeatDetector) {
         const bpm = procBeatDetector.getBPM();
-        if (!procVmdActive || procActiveKind !== "autodance" || Math.abs(bpm - lastBeatBpm) > 10) {
-            await startProcMotion("autodance", bpm);
+        if (!procVmdActive || procActiveKind !== 'autodance' || Math.abs(bpm - lastBeatBpm) > 10) {
+            await startProcMotion('autodance', bpm);
         }
         return;
     }
 
     if (wantIdle && !hasUserVmd) {
-        if (!procVmdActive || procActiveKind !== "idle") {
-            await startProcMotion("idle");
+        if (!procVmdActive || procActiveKind !== 'idle') {
+            await startProcMotion('idle');
         }
         return;
     }
@@ -118,7 +130,9 @@ export async function updateProcMotion(): Promise<void> {
 
 export function setProcMotionMode(mode: ProcMotionMode): void {
     procState = { ...procState, mode };
-    if (mode === "off") stopProcMotion();
+    if (mode === 'off') {
+        stopProcMotion();
+    }
     triggerAutoSave();
 }
 
@@ -146,8 +160,10 @@ export function setProcMotionState(s: ProcMotionState): void {
 }
 
 export function regenerateProcMotion(): void {
-    if (!procVmdActive && procState.mode === "off") return;
-    const mode = procState.mode === "autodance" ? "autodance" as const : "idle" as const;
-    const bpm = procBeatDetector?.getBPM() ?? 120;
-    startProcMotion(mode, mode === "autodance" ? bpm : undefined);
+    if (!procVmdActive && procState.mode === 'off') {
+        return;
+    }
+    const mode = procState.mode === 'autodance' ? ('autodance' as const) : ('idle' as const);
+    const bpm = procBeatDetector.getBPM() ?? 120;
+    startProcMotion(mode, mode === 'autodance' ? bpm : undefined);
 }

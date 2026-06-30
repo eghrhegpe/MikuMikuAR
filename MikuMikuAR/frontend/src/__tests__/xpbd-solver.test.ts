@@ -1,11 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { XpbdSolver } from "../physics/xpbd-solver";
+import { describe, it, expect } from 'vitest';
+import { XpbdSolver } from '../physics/xpbd-solver';
 
 // ============================================================
 // M2: XPBD 粒子链自由落体测试
 // ============================================================
 
-describe("XpbdSolver particle chain free-fall", () => {
+describe('XpbdSolver particle chain free-fall', () => {
     /**
      * 构建一条垂直粒子链（2 个粒子）
      * 顶部粒子固定（invMass=0），底部粒子自由
@@ -13,12 +13,12 @@ describe("XpbdSolver particle chain free-fall", () => {
      */
     function makeVerticalChain(solver: XpbdSolver, len = 1.0) {
         const i0 = solver.addParticle([0, 2, 0], Infinity); // 固定天花板
-        const i1 = solver.addParticle([0, 1, 0], 0.01);     // 自由落体
+        const i1 = solver.addParticle([0, 1, 0], 0.01); // 自由落体
         solver.addDistanceConstraint(i0, i1, 0, len);
         return { fixed: i0, lower: i1 };
     }
 
-    it("free particle falls under gravity", () => {
+    it('free particle falls under gravity', () => {
         const solver = new XpbdSolver({ substeps: 8, damping: 1.0 });
         const idx = solver.addParticle([0, 5, 0], 1.0);
         const p = solver.particles[idx];
@@ -37,7 +37,7 @@ describe("XpbdSolver particle chain free-fall", () => {
         expect(p.p[1]).toBeGreaterThan(4.8); // 应该掉了但不多
     });
 
-    it("fixed particle does not move", () => {
+    it('fixed particle does not move', () => {
         const solver = new XpbdSolver({ substeps: 8, damping: 1.0 });
         const idx = solver.addParticle([0, 2, 0], Infinity); // mass=Infinity → invMass=0
         const p = solver.particles[idx];
@@ -49,7 +49,7 @@ describe("XpbdSolver particle chain free-fall", () => {
         expect(p.p[1]).toBeCloseTo(2.0, 5);
     });
 
-    it("distance constraint keeps chain at rest length", () => {
+    it('distance constraint keeps chain at rest length', () => {
         const solver = new XpbdSolver({ substeps: 8, damping: 0.98 });
         const { fixed, lower } = makeVerticalChain(solver, 0.5);
 
@@ -70,7 +70,7 @@ describe("XpbdSolver particle chain free-fall", () => {
         expect(dist).toBeCloseTo(0.5, 1);
     });
 
-    it("multi-particle chain hangs correctly", () => {
+    it('multi-particle chain hangs correctly', () => {
         const solver = new XpbdSolver({ substeps: 8, damping: 0.98 });
         const N = 5;
         const linkLen = 0.3;
@@ -101,7 +101,7 @@ describe("XpbdSolver particle chain free-fall", () => {
         expect(totalLen).toBeCloseTo((N - 1) * linkLen, 1);
     });
 
-    it("ground collision prevents falling through", () => {
+    it('ground collision prevents falling through', () => {
         const solver = new XpbdSolver({ substeps: 8, damping: 0.98, groundY: 0 });
         solver.addGroundCollision();
 
@@ -120,18 +120,18 @@ describe("XpbdSolver particle chain free-fall", () => {
     });
 });
 
-describe("XpbdSolver constraint sanity", () => {
-    it("bend constraint preserves angle between three particles", () => {
+describe('XpbdSolver constraint sanity', () => {
+    it('bend constraint preserves angle between three particles', () => {
         const solver = new XpbdSolver({ substeps: 8, damping: 0.98 });
 
         // 三个粒子形成 L 形，弯曲约束保持端点距离
-        const i0 = solver.addParticle([0, 2, 0], Infinity);  // 固定
-        const i1 = solver.addParticle([0, 1, 0], 0.01);       // 中间
-        const i2 = solver.addParticle([0.5, 1, 0], 0.01);     // 端点
+        const i0 = solver.addParticle([0, 2, 0], Infinity); // 固定
+        const i1 = solver.addParticle([0, 1, 0], 0.01); // 中间
+        const i2 = solver.addParticle([0.5, 1, 0], 0.01); // 端点
 
         solver.addDistanceConstraint(i0, i1, 0, 1.0);
         solver.addDistanceConstraint(i1, i2, 0, 0.5);
-        solver.addBendConstraint(i0, i1, i2, 0);  // 保持 i0-i2 距离
+        solver.addBendConstraint(i0, i1, i2, 0); // 保持 i0-i2 距离
 
         const restDist = Math.sqrt(1.0 * 1.0 + 0.5 * 0.5); // √1.25 ≈ 1.118
 
@@ -150,7 +150,7 @@ describe("XpbdSolver constraint sanity", () => {
         expect(dist).toBeCloseTo(restDist, 1);
     });
 
-    it("volume constraint keeps tetrahedron stable", () => {
+    it('volume constraint keeps tetrahedron stable', () => {
         const solver = new XpbdSolver({ substeps: 8, damping: 0.98 });
 
         // 正四面体 4 个顶点
@@ -162,11 +162,11 @@ describe("XpbdSolver constraint sanity", () => {
             [
                 [0, size, 0],
                 [size * sqrt2_3, -size / 3, 0],
-                [-size * sqrt2_3 / 2, -size / 3, size * sqrt6_3 / 2],
-                [-size * sqrt2_3 / 2, -size / 3, -size * sqrt6_3 / 2],
+                [(-size * sqrt2_3) / 2, -size / 3, (size * sqrt6_3) / 2],
+                [(-size * sqrt2_3) / 2, -size / 3, (-size * sqrt6_3) / 2],
             ],
             [0.01, 0.01, 0.01, 0.01],
-            [0.03, 0.03, 0.03, 0.03],
+            [0.03, 0.03, 0.03, 0.03]
         );
 
         // 添加体积约束（保持四面体体积）
@@ -193,12 +193,8 @@ describe("XpbdSolver constraint sanity", () => {
         const p2 = solver.particles[i2].p;
         const p3 = solver.particles[i3].p;
 
-        const d01 = Math.sqrt(
-            (p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2 + (p0[2] - p1[2]) ** 2,
-        );
-        const d02 = Math.sqrt(
-            (p0[0] - p2[0]) ** 2 + (p0[1] - p2[1]) ** 2 + (p0[2] - p2[2]) ** 2,
-        );
+        const d01 = Math.sqrt((p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2 + (p0[2] - p1[2]) ** 2);
+        const d02 = Math.sqrt((p0[0] - p2[0]) ** 2 + (p0[1] - p2[1]) ** 2 + (p0[2] - p2[2]) ** 2);
         expect(d01).toBeGreaterThan(0.01);
         expect(d02).toBeGreaterThan(0.01);
 
@@ -208,7 +204,7 @@ describe("XpbdSolver constraint sanity", () => {
         }
     });
 
-    it("reset clears all particles and constraints", () => {
+    it('reset clears all particles and constraints', () => {
         const solver = new XpbdSolver();
         solver.addParticle();
         solver.addParticle();
@@ -224,13 +220,13 @@ describe("XpbdSolver constraint sanity", () => {
     });
 });
 
-describe("XpbdSolver edge cases", () => {
-    it("empty solver step does not crash", () => {
+describe('XpbdSolver edge cases', () => {
+    it('empty solver step does not crash', () => {
         const solver = new XpbdSolver();
         expect(() => solver.step(1 / 60)).not.toThrow();
     });
 
-    it("damping=0 particles stop immediately", () => {
+    it('damping=0 particles stop immediately', () => {
         const solver = new XpbdSolver({ damping: 0, substeps: 8 });
         const idx = solver.addParticle([0, 5, 0], 1.0);
         const p = solver.particles[idx];
@@ -245,7 +241,7 @@ describe("XpbdSolver edge cases", () => {
         expect(Math.abs(p.v[1])).toBeLessThan(10);
     });
 
-    it("high compliance creates soft spring", () => {
+    it('high compliance creates soft spring', () => {
         const solver = new XpbdSolver({ substeps: 8, damping: 0.98 });
 
         // 固定粒子 + 自由粒子，高柔度距离约束

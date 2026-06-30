@@ -6,9 +6,10 @@ export interface EnvPreset {
     label: string;
     skyColorTop: [number, number, number];
     skyColorBot: [number, number, number];
-    sunAngle: number;        // -15~90
+    sunAngle: number; // -15~90
+    azimuth?: number; // 太阳方位角（度），默认 -45（西北）
     exposure: number;
-    toneMapping: number;     // 0=OFF 1=ACES 2=Reinhard 3=Cineon 4=Neutral
+    toneMapping: number; // 0=OFF 1=ACES 2=Reinhard 3=Cineon 4=Neutral
 }
 
 export interface DerivedLighting {
@@ -24,27 +25,39 @@ export function calcLuminance(rgb: [number, number, number]): number {
     return 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2];
 }
 
-/** 从天空色和太阳角度推算光照参数。 */
+/** 从天空色和太阳角度推算光照参数。
+ *  @param azimuthDeg 太阳方位角（度），默认 -45（西北）。
+ *                       sunset/dawn/dusk 等预设会传入更准确的值。
+ */
 export function deriveLighting(
     skyColor: [number, number, number],
     sunAngle: number,
+    azimuthDeg: number = -45
 ): DerivedLighting {
     const L = calcLuminance(skyColor);
-    const dirIntensity = Math.max(L * 1.2, 0.15);
-    const hemiIntensity = Math.min(1, 1.0 - dirIntensity * 0.5);
 
+    // Night / below-horizon: disable directional light (logic fix)
+    const isBelowHorizon = sunAngle <= 0;
+    const dirIntensity = isBelowHorizon ? 0 : Math.max(L * 1.2, 0.15);
+    const hemiIntensity = isBelowHorizon ? 0.3 : Math.min(1, 1.0 - dirIntensity * 0.5);
+
+    // dirDiffuse: preserve sky hue, scale so brightest channel ≈ 0.9-1.0
+    // (old formula: sky*0.3+0.7 → washed out to white)
+    const maxCh = Math.max(skyColor[0], skyColor[1], skyColor[2]);
+    const scale = maxCh > 0.01 ? Math.min(2.0, 0.95 / maxCh) : 1.0;
     const dirDiffuse: [number, number, number] = [
-        Math.max(skyColor[0] * 0.3 + 0.7, 0.2),
-        Math.max(skyColor[1] * 0.3 + 0.7, 0.2),
-        Math.max(skyColor[2] * 0.3 + 0.5, 0.2),
+        Math.min(skyColor[0] * scale, 1.0),
+        Math.min(skyColor[1] * scale, 1.0),
+        Math.min(skyColor[2] * scale, 1.0),
     ];
 
     const theta = sunAngle * TO_RAD;
-    const azimuth = -45 * TO_RAD;
+    // Night: use flat direction (y=0) — intensity is 0 so direction is irrelevant
+    const az = isBelowHorizon ? 0 : azimuthDeg * TO_RAD;
     const dirDirection: [number, number, number] = [
-        Math.cos(azimuth) * Math.cos(theta),
+        Math.cos(az) * Math.cos(theta),
         Math.sin(theta),
-        Math.sin(azimuth) * Math.cos(theta),
+        Math.sin(az) * Math.cos(theta),
     ];
 
     return { dirDiffuse, dirDirection, dirIntensity, hemiIntensity };
@@ -53,160 +66,119 @@ export function deriveLighting(
 /** 预设数据表。*/
 export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
     noon: {
-        label: "正午",
+        label: '正午',
         skyColorTop: [0.53, 0.71, 0.91],
         skyColorBot: [0.3, 0.5, 0.8],
         sunAngle: 75,
+        azimuth: -45,
         exposure: 1.0,
         toneMapping: 1,
-        ...deriveLighting([0.53, 0.71, 0.91], 75),
+        ...deriveLighting([0.53, 0.71, 0.91], 75, -45),
     },
     sunset: {
-        label: "夕阳",
+        label: '夕阳',
         skyColorTop: [0.9, 0.45, 0.2],
         skyColorBot: [0.6, 0.2, 0.1],
         sunAngle: 15,
+        azimuth: 90, // 太阳在西方
         exposure: 0.7,
         toneMapping: 2,
-        ...deriveLighting([0.9, 0.45, 0.2], 15),
+        ...deriveLighting([0.9, 0.45, 0.2], 15, 90),
     },
     night: {
-        label: "夜景",
+        label: '夜景',
         skyColorTop: [0.05, 0.05, 0.15],
         skyColorBot: [0.02, 0.02, 0.08],
-        sunAngle: -15,
+        sunAngle: -6, // 民用暮光下限
+        azimuth: 0,
         exposure: 0.4,
         toneMapping: 4,
-        ...deriveLighting([0.05, 0.05, 0.15], -15),
+        ...deriveLighting([0.05, 0.05, 0.15], -6, 0),
     },
     overcast: {
-        label: "阴天",
+        label: '阴天',
         skyColorTop: [0.4, 0.4, 0.45],
         skyColorBot: [0.25, 0.25, 0.3],
         sunAngle: 45,
+        azimuth: -45,
         exposure: 0.8,
         toneMapping: 1,
-        ...deriveLighting([0.4, 0.4, 0.45], 45),
+        ...deriveLighting([0.4, 0.4, 0.45], 45, -45),
     },
     dawn: {
-        label: "黎明",
+        label: '黎明',
         skyColorTop: [0.85, 0.55, 0.35],
         skyColorBot: [0.2, 0.15, 0.35],
         sunAngle: 5,
+        azimuth: -90, // 太阳在东方
         exposure: 0.65,
         toneMapping: 2,
-        ...deriveLighting([0.85, 0.55, 0.35], 5),
+        ...deriveLighting([0.85, 0.55, 0.35], 5, -90),
     },
     dusk: {
-        label: "黄昏",
+        label: '黄昏',
         skyColorTop: [0.35, 0.2, 0.5],
         skyColorBot: [0.6, 0.3, 0.15],
-        sunAngle: 8,
+        sunAngle: 3, // 太阳刚落山，暮光
+        azimuth: 90, // 太阳在西方
         exposure: 0.55,
         toneMapping: 2,
-        ...deriveLighting([0.35, 0.2, 0.5], 8),
+        ...deriveLighting([0.35, 0.2, 0.5], 3, 90),
     },
     midnight: {
-        label: "午夜",
+        label: '午夜',
         skyColorTop: [0.03, 0.03, 0.08],
         skyColorBot: [0.01, 0.01, 0.04],
         sunAngle: -15,
+        azimuth: 0,
         exposure: 0.3,
         toneMapping: 4,
-        ...deriveLighting([0.03, 0.03, 0.08], -15),
+        ...deriveLighting([0.03, 0.03, 0.08], -15, 0),
     },
 };
 
 /** 将当前 EnvPreset 序列化为 JSON 字符串（.env 格式）。 */
 export function exportEnvPreset(p: EnvPreset): string {
-    return JSON.stringify({
-        version: 1,
-        label: p.label,
-        skyColorTop: p.skyColorTop,
-        skyColorBot: p.skyColorBot,
-        sunAngle: p.sunAngle,
-        exposure: p.exposure,
-        toneMapping: p.toneMapping,
-    }, null, 2);
+    return JSON.stringify(
+        {
+            version: 1,
+            label: p.label,
+            skyColorTop: p.skyColorTop,
+            skyColorBot: p.skyColorBot,
+            sunAngle: p.sunAngle,
+            azimuth: p.azimuth ?? -45,
+            exposure: p.exposure,
+            toneMapping: p.toneMapping,
+        },
+        null,
+        2
+    );
 }
 
 /** 从 .env JSON 字符串反序列化 EnvPreset，失败返回 null。 */
 export function importEnvPreset(json: string): (EnvPreset & DerivedLighting) | null {
     try {
         const raw = JSON.parse(json);
-        if (!raw.label || !raw.skyColorTop || !raw.skyColorBot || typeof raw.sunAngle !== "number") {
+        if (
+            !raw.label ||
+            !raw.skyColorTop ||
+            !raw.skyColorBot ||
+            typeof raw.sunAngle !== 'number'
+        ) {
             return null;
         }
+        const azimuth = typeof raw.azimuth === 'number' ? raw.azimuth : -45;
         return {
             label: raw.label,
             skyColorTop: raw.skyColorTop,
             skyColorBot: raw.skyColorBot,
             sunAngle: raw.sunAngle,
+            azimuth,
             exposure: raw.exposure ?? 1.0,
             toneMapping: raw.toneMapping ?? 1,
-            ...deriveLighting(raw.skyColorTop, raw.sunAngle),
+            ...deriveLighting(raw.skyColorTop, raw.sunAngle, azimuth),
         };
     } catch {
         return null;
     }
 }
-
-// ======== Water Presets ========
-
-export interface WaterPreset {
-    label: string;
-    waterColor: [number, number, number];
-    waterTransparency: number;
-    waterWaveHeight: number;
-    waterAnimSpeed: number;
-    foamThreshold: number;
-    foamIntensity: number;
-}
-
-export const WATER_PRESETS: Record<string, WaterPreset> = {
-    calm: {
-        label: "平静",
-        waterColor: [0.15, 0.4, 0.6],
-        waterTransparency: 0.8,
-        waterWaveHeight: 0.15,
-        waterAnimSpeed: 0.2,
-        foamThreshold: 0.35,
-        foamIntensity: 0.15,
-    },
-    ripple: {
-        label: "涟漪",
-        waterColor: [0.2, 0.42, 0.62],
-        waterTransparency: 0.72,
-        waterWaveHeight: 0.6,
-        waterAnimSpeed: 1.0,
-        foamThreshold: 0.2,
-        foamIntensity: 0.4,
-    },
-    ocean: {
-        label: "海浪",
-        waterColor: [0.08, 0.25, 0.5],
-        waterTransparency: 0.6,
-        waterWaveHeight: 1.8,
-        waterAnimSpeed: 2.5,
-        foamThreshold: 0.08,
-        foamIntensity: 0.7,
-    },
-    storm: {
-        label: "风暴",
-        waterColor: [0.04, 0.14, 0.35],
-        waterTransparency: 0.45,
-        waterWaveHeight: 3.0,
-        waterAnimSpeed: 5.0,
-        foamThreshold: 0.04,
-        foamIntensity: 0.9,
-    },
-    tropical: {
-        label: "热带",
-        waterColor: [0.1, 0.55, 0.7],
-        waterTransparency: 0.7,
-        waterWaveHeight: 0.8,
-        waterAnimSpeed: 1.2,
-        foamThreshold: 0.2,
-        foamIntensity: 0.35,
-    },
-};

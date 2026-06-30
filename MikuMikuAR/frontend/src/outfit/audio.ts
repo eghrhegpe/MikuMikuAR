@@ -1,12 +1,13 @@
 // audio.ts — 音乐播放系统
 // 支持 MP3/WAV/OGG，与 VMD 动画同步，含音量、进度、音频偏移控制
 
-import { resolveFileUrl } from "../core/fileservice";
-import type { BeatDetector } from "../motion/beat-detector";
+import { resolveFileUrl } from '../core/fileservice';
+import { triggerAutoSave } from '../core/config';
+import type { BeatDetector } from '../motion/beat-detector';
 
 let audioElement: HTMLAudioElement | null = null;
-let audioName = "";
-let audioPath = "";
+let audioName = '';
+let audioPath = '';
 let audioOffset = 0;
 let volume = 1;
 let isSeeking = false;
@@ -22,7 +23,7 @@ function ensureAudio(): HTMLAudioElement {
             beatDetector.attach(audioElement);
             beatDetectorAttached = true;
         } catch (err) {
-            console.warn("ensureAudio beat detector attach:", err);
+            console.warn('ensureAudio beat detector attach:', err);
         }
     }
     return audioElement;
@@ -32,25 +33,30 @@ export async function playAudio(url: string, name: string): Promise<void> {
     const audio = ensureAudio();
     audio.src = url;
     audioName = name;
-    audioPath = "";
+    audioPath = '';
     try {
         await audio.play();
     } catch (err) {
-        console.warn("playAudio:", err);
+        console.warn('playAudio:', err);
     }
 }
 
 export async function loadAudioFile(filePath: string): Promise<void> {
     const { url } = await resolveFileUrl(filePath);
-    const fileName = filePath.split(/[\\/]/).pop() || "";
+    const fileName = filePath.split(/[\\/]/).pop() || '';
     const audio = ensureAudio();
     audio.src = url;
     audioName = fileName;
     audioPath = filePath;
     audio.load();
     // Auto-play so user gets immediate feedback
-    try { await audio.play(); } catch (_) { /* browser may block autoplay */ }
+    try {
+        await audio.play();
+    } catch (_) {
+        /* browser may block autoplay */
+    }
     notifyBeatDetectorReset();
+    triggerAutoSave();
 }
 
 export function getAudioPath(): string {
@@ -58,38 +64,47 @@ export function getAudioPath(): string {
 }
 
 export function pauseAudio(): void {
-    if (!audioElement) return;
+    if (!audioElement) {
+        return;
+    }
     audioElement.pause();
 }
 
 export function resumeAudio(): void {
-    if (!audioElement) return;
-    audioElement.play().catch((err) => console.warn("resumeAudio:", err));
+    if (!audioElement) {
+        return;
+    }
+    audioElement.play().catch((err) => console.warn('resumeAudio:', err));
 }
 
 export function stopAudio(): void {
-    if (!audioElement) return;
+    if (!audioElement) {
+        return;
+    }
     audioElement.pause();
     audioElement.currentTime = 0;
 }
 
 export function clearAudio(): void {
-    if (!audioElement) return;
+    if (!audioElement) {
+        return;
+    }
     audioElement.pause();
-    audioElement.src = "";
-    audioName = "";
-    audioPath = "";
+    audioElement.src = '';
+    audioName = '';
+    audioPath = '';
+    triggerAutoSave();
 }
 
 /** 释放音频系统所有资源（AudioContext / AnalyserNode）。 */
 export function disposeAudio(): void {
     if (audioElement) {
         audioElement.pause();
-        audioElement.src = "";
+        audioElement.src = '';
         audioElement = null;
     }
-    audioName = "";
-    audioPath = "";
+    audioName = '';
+    audioPath = '';
     audioOffset = 0;
     if (beatDetector) {
         beatDetector.dispose();
@@ -118,27 +133,37 @@ export function getAudioOffset(): number {
 }
 
 export function getCurrentTime(): number {
-    if (!audioElement) return 0;
+    if (!audioElement) {
+        return 0;
+    }
     return audioElement.currentTime;
 }
 
 export function getDuration(): number {
-    if (!audioElement || isNaN(audioElement.duration)) return 0;
+    if (!audioElement || isNaN(audioElement.duration)) {
+        return 0;
+    }
     return audioElement.duration;
 }
 
 export function seekAudio(seconds: number): void {
-    if (!audioElement) return;
+    if (!audioElement) {
+        return;
+    }
     const clamped = Math.max(0, Math.min(getDuration(), seconds));
     if (!isNaN(clamped)) {
         isSeeking = true;
         audioElement.currentTime = clamped;
-        setTimeout(() => { isSeeking = false; }, 50);
+        setTimeout(() => {
+            isSeeking = false;
+        }, 50);
     }
 }
 
 export function isAudioPlaying(): boolean {
-    if (!audioElement) return false;
+    if (!audioElement) {
+        return false;
+    }
     return !audioElement.paused && !audioElement.ended;
 }
 
@@ -152,7 +177,9 @@ let lastVmdDuration = 0;
 const SYNC_THRESHOLD = 0.1;
 
 export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDuration: number): void {
-    if (!audioElement || !audioName) return;
+    if (!audioElement || !audioName) {
+        return;
+    }
 
     const audioTargetTime = vmdTime + audioOffset;
     const audioDur = getDuration();
@@ -205,12 +232,14 @@ export function attachBeatDetector(detector: BeatDetector): void {
             detector.attach(audioElement);
             beatDetectorAttached = true;
         } catch (err) {
-            console.warn("attachBeatDetector:", err);
+            console.warn('attachBeatDetector:', err);
         }
     }
 }
 
 /** 音频加载后通知 beat detector 重置（新曲目 BPM 估计重新开始）。 */
 export function notifyBeatDetectorReset(): void {
-    if (beatDetector) beatDetector.reset();
+    if (beatDetector) {
+        beatDetector.reset();
+    }
 }

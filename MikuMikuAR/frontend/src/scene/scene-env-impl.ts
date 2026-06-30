@@ -2,9 +2,31 @@
 // All functions use module-level _scene / _pipeline injected by scene.ts
 // Import this file via scene-env.ts (Facade), never import directly.
 
-import { Scene, Color3, Color4, Vector2, Vector3, Texture, BaseTexture, StandardMaterial, GPUParticleSystem, Observer, ParticleSystem, ShadowGenerator, CubeTexture, Constants, DefaultRenderingPipeline, Mesh, MeshBuilder, Effect, ShaderMaterial, PostProcess, DirectionalLight } from "@babylonjs/core";
-import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
-import { EnvState, envState } from "../core/config";
+import {
+    Scene,
+    Color3,
+    Color4,
+    Vector2,
+    Vector3,
+    Texture,
+    BaseTexture,
+    StandardMaterial,
+    GPUParticleSystem,
+    Observer,
+    ParticleSystem,
+    ShadowGenerator,
+    CubeTexture,
+    Constants,
+    DefaultRenderingPipeline,
+    Mesh,
+    MeshBuilder,
+    Effect,
+    ShaderMaterial,
+    PostProcess,
+    DirectionalLight,
+} from '@babylonjs/core';
+import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
+import { EnvState, envState } from '../core/config';
 
 // ======== Sun angle state (moved from scene.ts) ========
 let _envSunAngle = 45; // default sun elevation
@@ -39,12 +61,16 @@ export function initEnvImpl(scene: Scene, pipeline: DefaultRenderingPipeline): v
 }
 
 export function getScene(): Scene {
-    if (!_scene) throw new Error("[scene-env-impl] Scene not initialized");
+    if (!_scene) {
+        throw new Error('[scene-env-impl] Scene not initialized');
+    }
     return _scene;
 }
 
 export function getPipeline(): DefaultRenderingPipeline {
-    if (!_pipeline) throw new Error("[scene-env-impl] Pipeline not initialized");
+    if (!_pipeline) {
+        throw new Error('[scene-env-impl] Pipeline not initialized');
+    }
     return _pipeline;
 }
 
@@ -54,16 +80,36 @@ interface EnvSkyResources {
     envTexture: BaseTexture | null;
 }
 
-export { createWater, disposeWater, refreshWaterRenderList, addRipple, clearRipples, updateWaterAnimSpeed, _underwaterActive, _underwaterSavedFog, _underwaterTransitionProgress, _underwaterTarget } from "./scene-env-water";
-export { createClouds, disposeClouds } from "./scene-env-clouds";
-export { createParticleEmitter, disposeParticles, applyWindToParticles } from "./scene-env-particles";
-import { updateUnderwaterTransition, resetUnderwaterState } from "./scene-env-water";
+export {
+    createWater,
+    disposeWater,
+    refreshWaterRenderList,
+    addRipple,
+    clearRipples,
+    updateWaterAnimSpeed,
+    _underwaterActive,
+    _underwaterSavedFog,
+    _underwaterTransitionProgress,
+    _underwaterTarget,
+} from './scene-env-water';
+export { createClouds, disposeClouds } from './scene-env-clouds';
+export {
+    createParticleEmitter,
+    disposeParticles,
+    applyWindToParticles,
+} from './scene-env-particles';
+import { updateUnderwaterTransition, resetUnderwaterState } from './scene-env-water';
 
 export const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
     particles: { emitter: GPUParticleSystem | null; followObserver: Observer<Scene> | null };
-    clouds: { postProcess: Mesh | null; postProcess2: Mesh | null; material: StandardMaterial | null; texture: Texture | null };
+    clouds: {
+        postProcess: Mesh | null;
+        postProcess2: Mesh | null;
+        material: StandardMaterial | null;
+        texture: Texture | null;
+    };
     water: { mesh: Mesh | null; material: ShaderMaterial | null };
     shadow: { generator: ShadowGenerator | null };
 } = {
@@ -74,7 +120,6 @@ export const _envSys: {
     water: { mesh: null, material: null },
     shadow: { generator: null },
 };
-
 
 // ======== Sky ========
 export function disposeSky(): void {
@@ -93,20 +138,31 @@ export function disposeSky(): void {
 
 function disposeSunDisc(): void {
     const scene = getScene();
-    const old = scene.getMeshByName("envSunDisc");
-    if (old) old.dispose();
+    const old = scene.getMeshByName('envSunDisc');
+    if (old) {
+        old.dispose();
+    }
 }
 
-function buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness: number, sunAngle: number = 45, starsEnabled: boolean = false): Texture {
+function buildGradientTexture(
+    top: Color3,
+    mid: Color3,
+    bot: Color3,
+    brightness: number,
+    sunAngle: number = 45,
+    starsEnabled: boolean = false
+): Texture {
     const scene = getScene();
-    const W = 256, H = 256;
-    const canvas = document.createElement("canvas");
+    const W = 256,
+        H = 256;
+    const canvas = document.createElement('canvas');
     canvas.width = W;
     canvas.height = H;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext('2d')!;
 
     const grad = ctx.createLinearGradient(0, 0, 0, H);
-    const scale = (c: Color3) => `rgb(${c.r*brightness*255|0},${c.g*brightness*255|0},${c.b*brightness*255|0})`;
+    const scale = (c: Color3) =>
+        `rgb(${(c.r * brightness * 255) | 0},${(c.g * brightness * 255) | 0},${(c.b * brightness * 255) | 0})`;
     grad.addColorStop(0, scale(bot));
     grad.addColorStop(0.35, scale(bot));
     grad.addColorStop(0.5, scale(mid));
@@ -121,12 +177,12 @@ function buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness:
     if (sunAngle > -5) {
         const glowRadius = sunAngle > 60 ? 50 : sunAngle > 20 ? 65 : 80;
         const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, glowRadius);
-        glow.addColorStop(0, "rgba(255,255,240,0.95)");
-        glow.addColorStop(0.08, "rgba(255,255,220,0.85)");
-        glow.addColorStop(0.2, "rgba(255,245,200,0.5)");
-        glow.addColorStop(0.4, "rgba(255,235,170,0.18)");
-        glow.addColorStop(0.7, "rgba(255,220,140,0.04)");
-        glow.addColorStop(1, "rgba(0,0,0,0)");
+        glow.addColorStop(0, 'rgba(255,255,240,0.95)');
+        glow.addColorStop(0.08, 'rgba(255,255,220,0.85)');
+        glow.addColorStop(0.2, 'rgba(255,245,200,0.5)');
+        glow.addColorStop(0.4, 'rgba(255,235,170,0.18)');
+        glow.addColorStop(0.7, 'rgba(255,220,140,0.04)');
+        glow.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = glow;
         ctx.fillRect(sunX - glowRadius, sunY - glowRadius, glowRadius * 2, glowRadius * 2);
     }
@@ -135,7 +191,11 @@ function buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness:
         const starAlpha = sunAngle > 10 ? 0 : sunAngle < -5 ? 1 : (10 - sunAngle) / 15;
         if (starAlpha > 0.01) {
             const starSeed = 12345;
-            const hash = (i: number) => { let h = (i * 2654435761 + starSeed) | 0; h ^= h >>> 13; return (h & 0x7fffffff) / 0x7fffffff; };
+            const hash = (i: number) => {
+                let h = (i * 2654435761 + starSeed) | 0;
+                h ^= h >>> 13;
+                return (h & 0x7fffffff) / 0x7fffffff;
+            };
             const starCount = Math.round(200 + starAlpha * 100);
             for (let i = 0; i < starCount; i++) {
                 const sx = hash(i * 3) * W;
@@ -143,9 +203,9 @@ function buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness:
                 const sr = 0.5 + hash(i * 3 + 2) * 2.0;
                 const sa = starAlpha * (0.3 + hash(i + 1000) * 0.7);
                 const twinkle = 0.7 + hash(i + 2000) * 0.3;
-                const r = 220 + hash(i + 3000) * 35 | 0;
-                const g = 210 + hash(i + 4000) * 45 | 0;
-                const b = 200 + hash(i + 5000) * 55 | 0;
+                const r = (220 + hash(i + 3000) * 35) | 0;
+                const g = (210 + hash(i + 4000) * 45) | 0;
+                const b = (200 + hash(i + 5000) * 55) | 0;
                 ctx.fillStyle = `rgba(${r},${g},${b},${(sa * twinkle).toFixed(2)})`;
                 ctx.beginPath();
                 ctx.arc(sx, sy, sr, 0, Math.PI * 2);
@@ -154,7 +214,7 @@ function buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness:
         }
     }
 
-    const tex = new Texture("data:" + canvas.toDataURL("image/png"), scene, false);
+    const tex = new Texture('data:' + canvas.toDataURL('image/png'), scene, false);
     tex.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
     tex.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
     tex.hasAlpha = false;
@@ -163,21 +223,25 @@ function buildGradientTexture(top: Color3, mid: Color3, bot: Color3, brightness:
 
 function createProceduralSky(state: EnvState): void {
     const scene = getScene();
-    const sphere = MeshBuilder.CreateSphere("envSkySphere", {
-        diameter: 1000,
-        segments: 24,
-        sideOrientation: Mesh.BACKSIDE,
-    }, scene);
+    const sphere = MeshBuilder.CreateSphere(
+        'envSkySphere',
+        {
+            diameter: 1000,
+            segments: 24,
+            sideOrientation: Mesh.BACKSIDE,
+        },
+        scene
+    );
     sphere.isPickable = false;
 
-    const mat = new StandardMaterial("envSkyMat", scene);
+    const mat = new StandardMaterial('envSkyMat', scene);
     mat.emissiveTexture = buildGradientTexture(
         new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
         new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
         new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
         state.skyBrightness,
         getEnvSunAngle(),
-        state.starsEnabled,
+        state.starsEnabled
     );
     mat.disableLighting = true;
     mat.backFaceCulling = false;
@@ -189,9 +253,9 @@ function createProceduralSky(state: EnvState): void {
 
 function loadEnvTexture(path: string, rotationY: number, intensity: number): void {
     const scene = getScene();
-    const ext = path.split(".").pop()?.toLowerCase();
-    const supported = ["hdr", "dds", "exr"];
-    if (!supported.includes(ext ?? "")) {
+    const ext = path.split('.').pop().toLowerCase();
+    const supported = ['hdr', 'dds', 'exr'];
+    if (!supported.includes(ext ?? '')) {
         console.warn(`[sky] unsupported format .${ext}, falling back to procedural`);
         disposeSky();
         createProceduralSky(envState);
@@ -205,11 +269,17 @@ function loadEnvTexture(path: string, rotationY: number, intensity: number): voi
     scene.clearColor = new Color4(0, 0, 0, 1);
     _envSys.sky.envTexture = cubeTex;
 
-    const sphere = MeshBuilder.CreateSphere("envSkyDome", {
-        diameter: 1000, segments: 24, sideOrientation: Mesh.BACKSIDE,
-    }, scene);
+    const sphere = MeshBuilder.CreateSphere(
+        'envSkyDome',
+        {
+            diameter: 1000,
+            segments: 24,
+            sideOrientation: Mesh.BACKSIDE,
+        },
+        scene
+    );
     sphere.isPickable = false;
-    const mat = new StandardMaterial("envSkyDomeMat", scene);
+    const mat = new StandardMaterial('envSkyDomeMat', scene);
     mat.reflectionTexture = cubeTex;
     mat.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;
     mat.diffuseColor = new Color3(0, 0, 0);
@@ -221,16 +291,21 @@ function loadEnvTexture(path: string, rotationY: number, intensity: number): voi
 
 export function applySky(state: EnvState): void {
     const scene = getScene();
-    if (state.skyMode === "color") {
+    if (state.skyMode === 'color') {
         disposeSky();
-        scene.clearColor = new Color4(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2], 1);
+        scene.clearColor = new Color4(
+            state.skyColorTop[0],
+            state.skyColorTop[1],
+            state.skyColorTop[2],
+            1
+        );
         return;
     }
 
     const mesh = _envSys.sky.skyMesh;
 
-    if (state.skyMode === "procedural") {
-        if (mesh?.material?.getClassName() === "StandardMaterial") {
+    if (state.skyMode === 'procedural') {
+        if (mesh.material.getClassName() === 'StandardMaterial') {
             const mat = mesh.material as StandardMaterial;
             if (mat.emissiveTexture) {
                 mat.emissiveTexture.dispose();
@@ -241,7 +316,7 @@ export function applySky(state: EnvState): void {
                 new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
                 state.skyBrightness,
                 getEnvSunAngle(),
-                state.starsEnabled,
+                state.starsEnabled
             );
             return;
         }
@@ -259,14 +334,14 @@ export function applySky(state: EnvState): void {
 // ======== Ground ========
 function applyCheckerGround(ground: Mesh, state: EnvState): void {
     const scene = getScene();
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext('2d')!;
     const tileSize = 16;
     for (let y = 0; y < 128; y += tileSize) {
         for (let x = 0; x < 128; x += tileSize) {
-            const isWhite = ((x / tileSize) + (y / tileSize)) % 2 === 0;
+            const isWhite = (x / tileSize + y / tileSize) % 2 === 0;
             const bright = isWhite ? 1 : 0.6;
             const r = Math.round(state.groundColor[0] * bright * 255);
             const g = Math.round(state.groundColor[1] * bright * 255);
@@ -276,7 +351,7 @@ function applyCheckerGround(ground: Mesh, state: EnvState): void {
         }
     }
     const tex = new Texture(canvas.toDataURL(), scene);
-    const mat = new StandardMaterial("envGroundChecker", scene);
+    const mat = new StandardMaterial('envGroundChecker', scene);
     mat.diffuseTexture = tex;
     mat.diffuseColor = new Color3(1, 1, 1);
     mat.alpha = state.groundAlpha;
@@ -292,7 +367,11 @@ export function applyGround(state: EnvState): void {
         const mat = _envSys.ground.mesh.material;
         if (mat) {
             if (mat instanceof StandardMaterial) {
-                mat.diffuseColor = new Color3(state.groundColor[0], state.groundColor[1], state.groundColor[2]);
+                mat.diffuseColor = new Color3(
+                    state.groundColor[0],
+                    state.groundColor[1],
+                    state.groundColor[2]
+                );
             }
             mat.alpha = state.groundAlpha;
         }
@@ -303,28 +382,46 @@ export function applyGround(state: EnvState): void {
         _envSys.ground.mesh.dispose();
         _envSys.ground.mesh = null;
     }
-    if (!state.groundVisible) return;
+    if (!state.groundVisible) {
+        return;
+    }
 
-    const ground = MeshBuilder.CreateGround("envGround", {
-        width: 60,
-        height: 60,
-        subdivisions: 2,
-    }, scene);
+    const ground = MeshBuilder.CreateGround(
+        'envGround',
+        {
+            width: 60,
+            height: 60,
+            subdivisions: 2,
+        },
+        scene
+    );
     ground.isPickable = false;
     ground.position.y = -0.05;
 
-    if (state.groundMode === "grid") {
-        const mat = new GridMaterial("envGroundMat", scene);
+    if (state.groundMode === 'grid') {
+        const mat = new GridMaterial('envGroundMat', scene);
         mat.gridRatio = 1;
-        mat.mainColor = new Color3(state.groundColor[0], state.groundColor[1], state.groundColor[2]);
-        mat.lineColor = new Color3(state.groundColor[0] * 1.5, state.groundColor[1] * 1.5, state.groundColor[2] * 1.5);
+        mat.mainColor = new Color3(
+            state.groundColor[0],
+            state.groundColor[1],
+            state.groundColor[2]
+        );
+        mat.lineColor = new Color3(
+            state.groundColor[0] * 1.5,
+            state.groundColor[1] * 1.5,
+            state.groundColor[2] * 1.5
+        );
         mat.backFaceCulling = false;
         ground.material = mat;
-    } else if (state.groundMode === "checker") {
+    } else if (state.groundMode === 'checker') {
         applyCheckerGround(ground, state);
     } else {
-        const mat = new StandardMaterial("envGroundMat", scene);
-        mat.diffuseColor = new Color3(state.groundColor[0], state.groundColor[1], state.groundColor[2]);
+        const mat = new StandardMaterial('envGroundMat', scene);
+        mat.diffuseColor = new Color3(
+            state.groundColor[0],
+            state.groundColor[1],
+            state.groundColor[2]
+        );
         mat.alpha = state.groundAlpha;
         mat.backFaceCulling = false;
         ground.material = mat;
@@ -333,32 +430,36 @@ export function applyGround(state: EnvState): void {
     _envSys.ground.mesh = ground;
 }
 
-
-
 // ======== Env Update Observer (wind, sky rotation, underwater) ========
 let _envUpdateObserver: Observer<Scene> | null = null;
 
 export function ensureEnvUpdateObserver(): void {
     const scene = getScene();
     const pipeline = getPipeline();
-    if (_envUpdateObserver) return;
+    if (_envUpdateObserver) {
+        return;
+    }
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
         const dt = scene.deltaTime / 16.667;
         // Cloud drift + camera follow
         if (envState.cloudsEnabled && _envSys.clouds.postProcess) {
             const cam = scene.activeCamera;
-            const dx = envState.windEnabled ? envState.windDirection[0] * envState.windSpeed * 0.005 * dt : 0;
-            const dz = envState.windEnabled ? envState.windDirection[2] * envState.windSpeed * 0.005 * dt : 0;
-            for (const key of ["postProcess", "postProcess2"] as const) {
+            const dx = envState.windEnabled
+                ? envState.windDirection[0] * envState.windSpeed * 0.005 * dt
+                : 0;
+            const dz = envState.windEnabled
+                ? envState.windDirection[2] * envState.windSpeed * 0.005 * dt
+                : 0;
+            for (const key of ['postProcess', 'postProcess2'] as const) {
                 const m = _envSys.clouds[key];
                 if (m) {
-                    const speedMul = key === "postProcess2" ? 0.7 : 1.0;
+                    const speedMul = key === 'postProcess2' ? 0.7 : 1.0;
                     if (cam) {
                         m.position.x = cam.position.x;
                         m.position.z = cam.position.z;
                     }
                     const mat = m.material as StandardMaterial | null;
-                    if (mat?.diffuseTexture) {
+                    if (mat.diffuseTexture) {
                         (mat.diffuseTexture as Texture).uOffset += dx * speedMul;
                         (mat.diffuseTexture as Texture).vOffset += dz * speedMul;
                     }
@@ -378,7 +479,9 @@ export function ensureEnvUpdateObserver(): void {
         // Underwater post-processing (delegated to water module)
         updateUnderwaterTransition(scene, pipeline);
         // Call all registered scene tick callbacks (e.g., time-of-day from bridge module)
-        for (const cb of _sceneTickCallbacks) cb();
+        for (const cb of _sceneTickCallbacks) {
+            cb();
+        }
     });
 }
 
@@ -403,4 +506,3 @@ export function applyFog(state: EnvState): void {
         scene.fogMode = Scene.FOGMODE_NONE;
     }
 }
-

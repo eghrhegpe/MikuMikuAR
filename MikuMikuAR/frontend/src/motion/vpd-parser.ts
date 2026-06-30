@@ -4,7 +4,7 @@
 // 本模块解析 VPD 并转换为 VMD 二进制，供 loadVMDMotion 加载。
 // VMD 生成委托给 vmd-writer.ts（标准 111/23 字节帧格式）。
 
-import { buildVmd, type BoneKeyFrame } from "./vmd-writer";
+import { buildVmd, type BoneKeyFrame } from './vmd-writer';
 
 // VPD 解析结果
 export interface VPDBoneData {
@@ -26,43 +26,57 @@ export interface VPDPoseData {
 export function decodeVPDData(buffer: ArrayBuffer): string {
     const u8 = new Uint8Array(buffer);
     // UTF-8 BOM (0xEF 0xBB 0xBF)
-    if (u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF) {
-        return new TextDecoder("utf-8").decode(buffer.slice(3));
+    if (u8[0] === 0xef && u8[1] === 0xbb && u8[2] === 0xbf) {
+        return new TextDecoder('utf-8').decode(buffer.slice(3));
     }
     // UTF-16LE BOM (0xFF 0xFE)
-    if (u8[0] === 0xFF && u8[1] === 0xFE) {
-        return new TextDecoder("utf-16le").decode(buffer);
+    if (u8[0] === 0xff && u8[1] === 0xfe) {
+        return new TextDecoder('utf-16le').decode(buffer);
     }
     // 无 BOM → 尝试 UTF-8；若含无效 UTF-8 序列则回退 Shift-JIS
     try {
-        const text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+        const text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
         return text;
     } catch {
         // Shift-JIS 兜底（部分 MMD 模型导出 VPD 使用 Shift-JIS）
-        return new TextDecoder("shift-jis").decode(buffer);
+        return new TextDecoder('shift-jis').decode(buffer);
     }
 }
 
 /** 解析 VPD 文本为结构化数据。
  *  VPD 格式：骨骼名独立一行，下一行为位置 (x y z)，再下一行为旋转 (x y z w)。*/
 export function parseVPDText(text: string): VPDPoseData {
-    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    const lines = text
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
     const bones: VPDBoneData[] = [];
-    let modelName = "";
+    let modelName = '';
     let i = 0;
 
     while (i < lines.length) {
         const line = lines[i];
 
         // 跳过元数据行
-        if (line.startsWith("Vocaloid Pose Data")) { i++; continue; }
-        if (line.startsWith("//") || line.startsWith(";")) { i++; continue; }
-        if (line.startsWith("{") || line.startsWith("}")) { i++; continue; }
+        if (line.startsWith('Vocaloid Pose Data')) {
+            i++;
+            continue;
+        }
+        if (line.startsWith('//') || line.startsWith(';')) {
+            i++;
+            continue;
+        }
+        if (line.startsWith('{') || line.startsWith('}')) {
+            i++;
+            continue;
+        }
 
         // model 行
-        if (line.startsWith("model")) {
+        if (line.startsWith('model')) {
             const m = line.match(/model\s+"([^"]+)"/);
-            if (m) modelName = m[1];
+            if (m) {
+                modelName = m[1];
+            }
             i++;
             continue;
         }
@@ -104,13 +118,13 @@ export function parseVPDText(text: string): VPDPoseData {
  *  @param pose VPD 解析结果
  *  @returns 标准 VMD ArrayBuffer */
 export function poseDataToVmdBuffer(pose: VPDPoseData): ArrayBuffer {
-    const boneFrames: BoneKeyFrame[] = pose.bones.map(b => ({
+    const boneFrames: BoneKeyFrame[] = pose.bones.map((b) => ({
         name: b.name,
         frame: 0, // VPD 是静止姿势，所有帧在帧 0
         position: b.position,
         rotation: b.rotation,
     }));
-    return buildVmd(boneFrames, [], pose.modelName || "VPDPose");
+    return buildVmd(boneFrames, [], pose.modelName || 'VPDPose');
 }
 
 /** 从 ArrayBuffer（VPD 文件内容）解析并生成 VMD。
@@ -120,7 +134,7 @@ export function loadVPDFromBuffer(buffer: ArrayBuffer): ArrayBuffer {
     const text = decodeVPDData(buffer);
     const pose = parseVPDText(text);
     if (pose.bones.length === 0) {
-        throw new Error("VPD: no bone data found");
+        throw new Error('VPD: no bone data found');
     }
     return poseDataToVmdBuffer(pose);
 }

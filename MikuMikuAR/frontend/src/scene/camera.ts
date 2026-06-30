@@ -4,18 +4,18 @@
 // Camera mode manager for MikuMikuAR
 // Handles Orbit, Freefly, Concert, and One-shot camera modes.
 
-import { Camera } from "@babylonjs/core/Cameras/camera";
-import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Animation } from "@babylonjs/core/Animations/animation";
-import { Scene } from "@babylonjs/core/scene";
-import { MmdCamera } from "babylon-mmd/esm/Runtime/mmdCamera";
-import { focusedModelId, modelRegistry } from "../core/config";
-import { focusModel, reattachPipeline, getRenderState } from "./scene";
+import { Camera } from '@babylonjs/core/Cameras/camera';
+import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
+import { UniversalCamera } from '@babylonjs/core/Cameras/universalCamera';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Animation } from '@babylonjs/core/Animations/animation';
+import { Scene } from '@babylonjs/core/scene';
+import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
+import { focusedModelId, modelRegistry } from '../core/config';
+import { focusModel, reattachPipeline, getRenderState } from './scene';
 
 // ======== Types ========
-export type CameraMode = "orbit" | "freefly" | "concert" | "oneshot" | "vmd";
+export type CameraMode = 'orbit' | 'freefly' | 'concert' | 'oneshot' | 'vmd';
 
 /** Orbit camera parameters. */
 export interface OrbitParams {
@@ -47,7 +47,7 @@ export interface CameraPreset {
 
 export function defaultCameraPreset(): CameraPreset {
     return {
-        mode: "orbit",
+        mode: 'orbit',
         orbit: { targetHeight: 8, distance: 16, beta: Math.PI / 3 },
         freefly: { speed: 0.5, angularSensibility: 2000 },
         concert: { radius: 12, height: 8, speed: 0.3 },
@@ -57,56 +57,92 @@ export function defaultCameraPreset(): CameraPreset {
 // ======== Runtime Preset State ========
 let _currentPreset: CameraPreset = defaultCameraPreset();
 
-export function getCameraPreset(): CameraPreset { return _currentPreset; }
-export function setCameraPreset(p: CameraPreset): void { _currentPreset = p; }
+export function getCameraPreset(): CameraPreset {
+    return _currentPreset;
+}
+export function setCameraPreset(p: CameraPreset): void {
+    _currentPreset = p;
+}
 
-export function getOrbitParams(): OrbitParams { return _currentPreset.orbit; }
-export function getFreeflyParams(): FreeflyParams { return _currentPreset.freefly; }
-export function getConcertParams(): ConcertParams { return _currentPreset.concert; }
+export function getOrbitParams(): OrbitParams {
+    return _currentPreset.orbit;
+}
+export function getFreeflyParams(): FreeflyParams {
+    return _currentPreset.freefly;
+}
+export function getConcertParams(): ConcertParams {
+    return _currentPreset.concert;
+}
 
 export function setOrbitParams(p: Partial<OrbitParams>): void {
     Object.assign(_currentPreset.orbit, p);
     // Sync to live camera if orbit mode is active
-    if (_cameraMode === "orbit" && _currentCamera instanceof ArcRotateCamera) {
-        if (p.distance !== undefined) _currentCamera.radius = p.distance;
-        if (p.beta !== undefined) _currentCamera.beta = p.beta;
-        if (p.targetHeight !== undefined) _currentCamera.target.y = p.targetHeight;
+    if (_cameraMode === 'orbit' && _currentCamera instanceof ArcRotateCamera) {
+        if (p.distance !== undefined) {
+            _currentCamera.radius = p.distance;
+        }
+        if (p.beta !== undefined) {
+            _currentCamera.beta = p.beta;
+        }
+        if (p.targetHeight !== undefined) {
+            _currentCamera.target.y = p.targetHeight;
+        }
     }
 }
 export function setFreeflyParams(p: Partial<FreeflyParams>): void {
     Object.assign(_currentPreset.freefly, p);
-    if (_cameraMode === "freefly" && _currentCamera instanceof UniversalCamera) {
-        if (p.speed !== undefined) (_currentCamera as UniversalCamera).speed = p.speed;
-        if (p.angularSensibility !== undefined) (_currentCamera as UniversalCamera).angularSensibility = p.angularSensibility;
+    if (_cameraMode === 'freefly' && _currentCamera instanceof UniversalCamera) {
+        if (p.speed !== undefined) {
+            (_currentCamera as UniversalCamera).speed = p.speed;
+        }
+        if (p.angularSensibility !== undefined) {
+            (_currentCamera as UniversalCamera).angularSensibility = p.angularSensibility;
+        }
     }
 }
-export function setConcertParams(p: Partial<ConcertParams>): void { Object.assign(_currentPreset.concert, p); }
+export function setConcertParams(p: Partial<ConcertParams>): void {
+    Object.assign(_currentPreset.concert, p);
+}
 
 // ======== Internal State ========
 let _scene: Scene | null = null;
 let _canvas: HTMLCanvasElement | null = null;
-let _cameraMode: CameraMode = "orbit";
+let _cameraMode: CameraMode = 'orbit';
 let _currentCamera: Camera | null = null;
 let _concertUpdateFn: (() => void) | null = null;
 let _concertAngle = 0;
 let _concertPaused = false;
+// Cached target vector for concert mode (avoids per-frame Vector3 allocation)
+const _concertTarget = new Vector3(0, 8, 0);
 
-export function getConcertPaused(): boolean { return _concertPaused; }
-export function setConcertPaused(paused: boolean): void { _concertPaused = paused; }
+export function getConcertPaused(): boolean {
+    return _concertPaused;
+}
+export function setConcertPaused(paused: boolean): void {
+    _concertPaused = paused;
+}
 
 // ======== Camera VMD ========
 let _mmdCamera: MmdCamera | null = null;
-let _cameraVmdName = "";
-let _cameraVmdPath = "";
+let _cameraVmdName = '';
+let _cameraVmdPath = '';
 let _cameraAnimationHandle: number | null = null;
 
-export function getCameraVmdName(): string { return _cameraVmdName; }
-export function getCameraVmdPath(): string { return _cameraVmdPath; }
-export function hasCameraVmd(): boolean { return _mmdCamera !== null && _cameraAnimationHandle !== null; }
+export function getCameraVmdName(): string {
+    return _cameraVmdName;
+}
+export function getCameraVmdPath(): string {
+    return _cameraVmdPath;
+}
+export function hasCameraVmd(): boolean {
+    return _mmdCamera !== null && _cameraAnimationHandle !== null;
+}
 
 /** Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. */
 export function loadCameraVmd(mmdAnimation: any, vmdPath: string, vmdName: string): void {
-    if (!_scene) return;
+    if (!_scene) {
+        return;
+    }
 
     if (_mmdCamera) {
         _scene.removeCamera(_mmdCamera);
@@ -114,7 +150,7 @@ export function loadCameraVmd(mmdAnimation: any, vmdPath: string, vmdName: strin
         _cameraAnimationHandle = null;
     }
 
-    const mmdCam = new MmdCamera("mmdCam", new Vector3(0, 10, 0), _scene, false);
+    const mmdCam = new MmdCamera('mmdCam', new Vector3(0, 10, 0), _scene, false);
     const handle = mmdCam.createRuntimeAnimation(mmdAnimation);
     mmdCam.setRuntimeAnimation(handle);
 
@@ -126,38 +162,44 @@ export function loadCameraVmd(mmdAnimation: any, vmdPath: string, vmdName: strin
 
 export function clearCameraVmd(): void {
     if (_mmdCamera && _scene) {
-        if (_cameraMode === "vmd") {
-            switchCameraMode("orbit");
+        if (_cameraMode === 'vmd') {
+            switchCameraMode('orbit');
         }
         _scene.removeCamera(_mmdCamera);
         _mmdCamera = null;
         _cameraAnimationHandle = null;
-        _cameraVmdName = "";
-        _cameraVmdPath = "";
+        _cameraVmdName = '';
+        _cameraVmdPath = '';
     }
 }
 
 /** Animate the VMD camera to a given 30fps frame time. Called every tick by scene.ts. */
 export function animateCameraVmd(frameTime: number): void {
-    if (_mmdCamera && _cameraMode === "vmd") {
+    if (_mmdCamera && _cameraMode === 'vmd') {
         _mmdCamera.animate(frameTime);
     }
 }
 
 function createVmdCamera(scene: Scene): MmdCamera {
-    if (_mmdCamera) return _mmdCamera;
-    const cam = new MmdCamera("mmdCam", new Vector3(0, 10, 0), scene, false);
+    if (_mmdCamera) {
+        return _mmdCamera;
+    }
+    const cam = new MmdCamera('mmdCam', new Vector3(0, 10, 0), scene, false);
     _mmdCamera = cam;
     return cam;
 }
 
 // Stored observer callback references so we can remove them later
 let _freeflyUpdateFn: (() => void) | null = null;
-let _concertStartFn: (() => void) | null = null;
+const _concertStartFn: (() => void) | null = null;
 
 // ======== Public Getters ========
-export function getCurrentCamera(): Camera | null { return _currentCamera; }
-export function getCameraMode(): CameraMode { return _cameraMode; }
+export function getCurrentCamera(): Camera | null {
+    return _currentCamera;
+}
+export function getCameraMode(): CameraMode {
+    return _cameraMode;
+}
 
 // ======== Freefly Input State ========
 // Set by main.ts keyboard handlers, consumed by the freefly render observer.
@@ -174,7 +216,14 @@ export const freeflyInput = {
 
 function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCamera {
     const p = _currentPreset.orbit;
-    const cam = new ArcRotateCamera("camera", -Math.PI / 2, p.beta, p.distance, new Vector3(0, p.targetHeight, 0), scene);
+    const cam = new ArcRotateCamera(
+        'camera',
+        -Math.PI / 2,
+        p.beta,
+        p.distance,
+        new Vector3(0, p.targetHeight, 0),
+        scene
+    );
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
     cam.panningSensibility = 50;
@@ -184,7 +233,7 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
 
 function createFreeflyCamera(scene: Scene, canvas: HTMLCanvasElement): UniversalCamera {
     const p = _currentPreset.freefly;
-    const cam = new UniversalCamera("freeflyCam", new Vector3(0, 8, 16), scene);
+    const cam = new UniversalCamera('freeflyCam', new Vector3(0, 8, 16), scene);
     cam.speed = p.speed;
     cam.angularSensibility = p.angularSensibility;
     cam.attachControl(canvas, true);
@@ -196,7 +245,14 @@ function createFreeflyCamera(scene: Scene, canvas: HTMLCanvasElement): Universal
 }
 
 function createConcertCamera(scene: Scene): ArcRotateCamera {
-    const cam = new ArcRotateCamera("concertCam", -Math.PI / 2, Math.PI / 3, 16, new Vector3(0, 8, 0), scene);
+    const cam = new ArcRotateCamera(
+        'concertCam',
+        -Math.PI / 2,
+        Math.PI / 3,
+        16,
+        new Vector3(0, 8, 0),
+        scene
+    );
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
     cam.panningSensibility = 50;
@@ -206,7 +262,14 @@ function createConcertCamera(scene: Scene): ArcRotateCamera {
 
 function createOneshotCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCamera {
     // Placeholder — same as orbit for now; animation data applied later
-    const cam = new ArcRotateCamera("oneshotCam", -Math.PI / 2, Math.PI / 3, 16, new Vector3(0, 8, 0), scene);
+    const cam = new ArcRotateCamera(
+        'oneshotCam',
+        -Math.PI / 2,
+        Math.PI / 3,
+        16,
+        new Vector3(0, 8, 0),
+        scene
+    );
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
     cam.panningSensibility = 50;
@@ -222,7 +285,7 @@ export function initCameraSystem(scene: Scene, canvas: HTMLCanvasElement): Camer
     _canvas = canvas;
     const cam = createOrbitCamera(scene, canvas);
     _currentCamera = cam;
-    _cameraMode = "orbit";
+    _cameraMode = 'orbit';
     scene.activeCamera = cam;
     return cam;
 }
@@ -231,15 +294,23 @@ export function initCameraSystem(scene: Scene, canvas: HTMLCanvasElement): Camer
 
 /** Switch to a different camera mode, preserving position as much as possible. */
 export function switchCameraMode(mode: CameraMode): void {
-    if (mode === _cameraMode && _currentCamera) return;
-    if (!_scene || !_canvas) return;
+    if (mode === _cameraMode && _currentCamera) {
+        return;
+    }
+    if (!_scene || !_canvas) {
+        return;
+    }
 
     const scene = _scene;
     const canvas = _canvas;
 
     // Stop current mode's side-effects
-    if (_cameraMode === "freefly") stopFreefly();
-    if (_cameraMode === "concert") stopConcert();
+    if (_cameraMode === 'freefly') {
+        stopFreefly();
+    }
+    if (_cameraMode === 'concert') {
+        stopConcert();
+    }
 
     // Save old camera state
     const oldCam = _currentCamera;
@@ -262,19 +333,28 @@ export function switchCameraMode(mode: CameraMode): void {
     // Create new camera
     let newCam: Camera;
     switch (mode) {
-        case "orbit":
+        case 'orbit':
             newCam = createOrbitCamera(scene, canvas);
             break;
-        case "freefly":
+        case 'freefly':
             newCam = createFreeflyCamera(scene, canvas);
             break;
-        case "concert":
+        case 'concert':
             newCam = createConcertCamera(scene);
             break;
-        case "oneshot":
+        case 'oneshot':
             newCam = createOneshotCamera(scene, canvas);
             break;
-        case "vmd":
+        case 'vmd':
+            // Pre-check: refuse switch if no camera VMD is loaded
+            if (_cameraAnimationHandle === null) {
+                console.warn(
+                    '[camera] Cannot switch to VMD mode: no camera VMD loaded, falling back to orbit'
+                );
+                mode = 'orbit';
+                newCam = createOrbitCamera(scene, canvas);
+                break;
+            }
             newCam = createVmdCamera(scene);
             break;
         default:
@@ -294,14 +374,20 @@ export function switchCameraMode(mode: CameraMode): void {
     _currentCamera = newCam;
     _cameraMode = mode;
     // Persist camera mode for scene auto-save (skip oneshot — it's a transient action)
-    if (mode !== "oneshot") _currentPreset.mode = mode;
+    if (mode !== 'oneshot') {
+        _currentPreset.mode = mode;
+    }
 
     // Start new mode's side-effects
-    if (mode === "freefly") initFreeflyUpdate(scene);
-    if (mode === "concert") startConcert(scene);
+    if (mode === 'freefly') {
+        initFreeflyUpdate(scene);
+    }
+    if (mode === 'concert') {
+        startConcert(scene);
+    }
 
     // Auto-frame on focused model when switching to orbit
-    if (mode === "orbit" && focusedModelId) {
+    if (mode === 'orbit' && focusedModelId) {
         const inst = modelRegistry.get(focusedModelId);
         if (inst) {
             focusModel(focusedModelId);
@@ -312,7 +398,9 @@ export function switchCameraMode(mode: CameraMode): void {
     reattachPipeline();
     // Apply current FOV from render state to the new camera
     const rs = getRenderState();
-    if (rs.fov) (newCam as any).fov = rs.fov;
+    if (rs.fov) {
+        (newCam as any).fov = rs.fov;
+    }
 }
 
 // ======== Auto Frame ========
@@ -320,7 +408,9 @@ export function switchCameraMode(mode: CameraMode): void {
 /** Auto-frame the camera to centre on a bounding box. */
 export function autoFrame(center: Vector3, extent: number): void {
     const cam = _currentCamera;
-    if (!cam) return;
+    if (!cam) {
+        return;
+    }
 
     if (cam instanceof ArcRotateCamera) {
         cam.setTarget(center);
@@ -343,21 +433,28 @@ function initFreeflyUpdate(scene: Scene): void {
 
     _freeflyUpdateFn = () => {
         const cam = _currentCamera;
-        if (!cam || !(cam instanceof UniversalCamera)) return;
+        if (!cam || !(cam instanceof UniversalCamera)) {
+            return;
+        }
         const speed = 0.3 * scene.getAnimationRatio();
 
         // Read input state set by main.ts keydown/keyup
+        // Use explicit temp variable for readability (getDirection returns a new Vector3 each call)
         if (freeflyInput.forward) {
-            cam.position.addInPlace(cam.getDirection(new Vector3(0, 0, 1)).scaleInPlace(speed));
+            const dir = cam.getDirection(new Vector3(0, 0, 1)).scaleInPlace(speed);
+            cam.position.addInPlace(dir);
         }
         if (freeflyInput.backward) {
-            cam.position.addInPlace(cam.getDirection(new Vector3(0, 0, -1)).scaleInPlace(speed));
+            const dir = cam.getDirection(new Vector3(0, 0, -1)).scaleInPlace(speed);
+            cam.position.addInPlace(dir);
         }
         if (freeflyInput.left) {
-            cam.position.addInPlace(cam.getDirection(new Vector3(-1, 0, 0)).scaleInPlace(speed));
+            const dir = cam.getDirection(new Vector3(-1, 0, 0)).scaleInPlace(speed);
+            cam.position.addInPlace(dir);
         }
         if (freeflyInput.right) {
-            cam.position.addInPlace(cam.getDirection(new Vector3(1, 0, 0)).scaleInPlace(speed));
+            const dir = cam.getDirection(new Vector3(1, 0, 0)).scaleInPlace(speed);
+            cam.position.addInPlace(dir);
         }
         if (freeflyInput.up) {
             cam.position.y += speed;
@@ -394,7 +491,9 @@ function startConcert(scene: Scene): void {
     }
     _concertUpdateFn = () => {
         const cam = _currentCamera;
-        if (!cam || !(cam instanceof ArcRotateCamera)) return;
+        if (!cam || !(cam instanceof ArcRotateCamera)) {
+            return;
+        }
         const p = _currentPreset.concert;
         if (!_concertPaused) {
             const delta = scene.getAnimationRatio() * p.speed * 0.016;
@@ -408,13 +507,14 @@ function startConcert(scene: Scene): void {
             const inst = modelRegistry.get(focusedId);
             if (inst && inst.meshes.length > 0) {
                 const root = inst.rootMesh;
-                cam.setTarget(new Vector3(root.position.x, p.height, root.position.z));
+                _concertTarget.set(root.position.x, p.height, root.position.z);
             } else {
-                cam.setTarget(new Vector3(0, p.height, 0));
+                _concertTarget.set(0, p.height, 0);
             }
         } else {
-            cam.setTarget(new Vector3(0, p.height, 0));
+            _concertTarget.set(0, p.height, 0);
         }
+        cam.setTarget(_concertTarget);
     };
     scene.onBeforeRenderObservable.add(_concertUpdateFn);
 }
@@ -429,6 +529,7 @@ function stopConcert(): void {
 // ======== Camera State Serialization ========
 
 export interface CameraState {
+    mode: CameraMode;
     preset: CameraPreset;
     alpha: number;
     beta: number;
@@ -448,26 +549,34 @@ export function getCameraState(): CameraState {
     const beta = isArc ? cam.beta : 0;
     const radius = isArc ? cam.radius : 16;
     return {
+        mode: _cameraMode,
         preset: JSON.parse(JSON.stringify(_currentPreset)),
-        alpha, beta, radius,
+        alpha,
+        beta,
+        radius,
         targetX: (cam as any).target?.x ?? 0,
         targetY: (cam as any).target?.y ?? 8,
         targetZ: (cam as any).target?.z ?? 0,
-        positionX: cam?.position.x,
-        positionY: cam?.position.y,
-        positionZ: cam?.position.z,
+        positionX: cam.position.x,
+        positionY: cam.position.y,
+        positionZ: cam.position.z,
     };
 }
 
 export function setCameraState(s: CameraState): void {
+    // Switch to the saved mode first (creates the right camera type),
+    // then restore the preset over the live state.
+    const mode = s.mode || s.preset.mode;
+    if (mode) {
+        switchCameraMode(mode);
+    }
     if (s.preset) {
         _currentPreset = JSON.parse(JSON.stringify(s.preset));
     }
-    // Backward compat: old scene files stored mode in s.mode directly
-    const mode = s.preset?.mode || (s as any).mode;
-    if (mode) switchCameraMode(mode);
     const cam = _currentCamera;
-    if (!cam) return;
+    if (!cam) {
+        return;
+    }
     if (cam instanceof ArcRotateCamera) {
         cam.alpha = s.alpha ?? cam.alpha;
         cam.beta = s.beta ?? cam.beta;

@@ -3,33 +3,33 @@
 // 生成 procedural VMD（骨骼+morph 关键帧），通过现有 loadVMDMotion 管道加载。
 // 无音乐 → Idle（呼吸+眨眼）；有音乐 → Auto Dance（节拍驱动律动）。
 
-import { buildVmd, type BoneKeyFrame, type MorphKeyFrame } from "./vmd-writer";
+import { buildVmd, type BoneKeyFrame, type MorphKeyFrame } from './vmd-writer';
 
-export type ProcMotionMode = "off" | "idle" | "autodance";
+export type ProcMotionMode = 'off' | 'idle' | 'autodance';
 
 export interface ProcMotionState {
     mode: ProcMotionMode;
-    intensity: number;   // 0..1，默认 0.5
-    speed: number;       // 0.5..2，默认 1.0
+    intensity: number; // 0..1，默认 0.5
+    speed: number; // 0.5..2，默认 1.0
     autoSwitch: boolean; // true=根据音乐自动切换 Idle/AutoDance
 }
 
 export const DEFAULT_PROC_STATE: ProcMotionState = {
-    mode: "off",
+    mode: 'off',
     intensity: 0.5,
     speed: 1.0,
     autoSwitch: true,
 };
 
 // 标准 MMD 骨骼名
-const BONE_CENTER = "センター";
-const BONE_UPPER = "上半身";
-const BONE_HEAD = "頭";
-const BONE_LARM = "左腕";
-const BONE_RARM = "右腕";
+const BONE_CENTER = 'センター';
+const BONE_UPPER = '上半身';
+const BONE_HEAD = '頭';
+const BONE_LARM = '左腕';
+const BONE_RARM = '右腕';
 
 // 标准 MMD morph 名候选（按优先级，第一个匹配即生效）
-const MORPH_BLINK_CANDIDATES = ["まばたき", "blink", "Blink", "眨眼", "wink"];
+const MORPH_BLINK_CANDIDATES = ['まばたき', 'blink', 'Blink', '眨眼', 'wink'];
 
 const FPS = 30;
 
@@ -43,7 +43,7 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
     const intensity = state.intensity;
     const bones: BoneKeyFrame[] = [];
     const morphs: MorphKeyFrame[] = [];
-    const blinkMorph = MORPH_BLINK_CANDIDATES.find(c => morphNames.includes(c));
+    const blinkMorph = MORPH_BLINK_CANDIDATES.find((c) => morphNames.includes(c));
 
     // 呼吸：上半身 X 轴旋转（前倾后仰），正弦曲线
     const breathAmp = 0.03 * intensity;
@@ -60,7 +60,9 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
     }
     // 确保末帧 = 首帧（循环闭合）
     bones.push({
-        name: BONE_UPPER, frame: loopFrames, position: [0, 0, 0],
+        name: BONE_UPPER,
+        frame: loopFrames,
+        position: [0, 0, 0],
         rotation: [0, 0, 0, 1],
     });
 
@@ -71,12 +73,16 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
         const rz = Math.sin(phase * 0.5) * swayAmp;
         const w = Math.sqrt(Math.max(0, 1 - rz * rz));
         bones.push({
-            name: BONE_CENTER, frame: f, position: [0, 0, 0],
+            name: BONE_CENTER,
+            frame: f,
+            position: [0, 0, 0],
             rotation: [0, 0, rz, w],
         });
     }
     bones.push({
-        name: BONE_CENTER, frame: loopFrames, position: [0, 0, 0],
+        name: BONE_CENTER,
+        frame: loopFrames,
+        position: [0, 0, 0],
         rotation: [0, 0, 0, 1],
     });
 
@@ -85,13 +91,13 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
         const blinkInterval = Math.round(75 / state.speed); // ~2.5s
         for (let t = 0; t < loopFrames; t += blinkInterval) {
             morphs.push({ name: blinkMorph, frame: t, weight: 0 });
-            morphs.push({ name: blinkMorph, frame: t + 2, weight: 1 });  // 快速闭合
+            morphs.push({ name: blinkMorph, frame: t + 2, weight: 1 }); // 快速闭合
             morphs.push({ name: blinkMorph, frame: t + 5, weight: 0 }); // 慢慢睁开
         }
         morphs.push({ name: blinkMorph, frame: loopFrames, weight: 0 });
     }
 
-    return buildVmd(bones, morphs, "IdleMotion");
+    return buildVmd(bones, morphs, 'IdleMotion');
 }
 
 /** Auto Dance VMD 生成：节拍驱动身体律动 + 头部摆动 + 手臂摆动。
@@ -99,14 +105,18 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
  *  @param state 强度/速度
  *  @param bpm 节拍 BPM
  *  @param morphNames 可用 morph 名 */
-export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphNames: string[] = []): ArrayBuffer {
+export function generateAutoDanceVmd(
+    state: ProcMotionState,
+    bpm: number,
+    morphNames: string[] = []
+): ArrayBuffer {
     const clampedBpm = Math.max(60, Math.min(200, bpm));
-    const beatFrames = Math.round((60 / clampedBpm) * FPS / state.speed);
+    const beatFrames = Math.round(((60 / clampedBpm) * FPS) / state.speed);
     const loopFrames = beatFrames * 2; // 2 拍循环
     const intensity = state.intensity;
     const bones: BoneKeyFrame[] = [];
     const morphs: MorphKeyFrame[] = [];
-    const blinkMorph = MORPH_BLINK_CANDIDATES.find(c => morphNames.includes(c));
+    const blinkMorph = MORPH_BLINK_CANDIDATES.find((c) => morphNames.includes(c));
 
     // 预计算 sin 值，3 个骨骼循环复用
     const sinVals: number[] = [];
@@ -122,11 +132,18 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
         const w = Math.sqrt(Math.max(0, 1 - ry * ry));
         const bob = Math.abs(s) * 0.02 * intensity;
         bones.push({
-            name: BONE_CENTER, frame: f, position: [0, bob, 0],
+            name: BONE_CENTER,
+            frame: f,
+            position: [0, bob, 0],
             rotation: [0, ry, 0, w],
         });
     }
-    bones.push({ name: BONE_CENTER, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    bones.push({
+        name: BONE_CENTER,
+        frame: loopFrames,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+    });
 
     // 头部摆动：頭 Z 轴，反相于身体
     const headAmp = 0.06 * intensity;
@@ -135,7 +152,9 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
         const rz = -s * headAmp;
         const w = Math.sqrt(Math.max(0, 1 - rz * rz));
         bones.push({
-            name: BONE_HEAD, frame: f, position: [0, 0, 0],
+            name: BONE_HEAD,
+            frame: f,
+            position: [0, 0, 0],
             rotation: [0, 0, rz, w],
         });
     }
@@ -150,11 +169,15 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
         const wl = Math.sqrt(Math.max(0, 1 - lz * lz));
         const wr = Math.sqrt(Math.max(0, 1 - rz * rz));
         bones.push({
-            name: BONE_LARM, frame: f, position: [0, 0, 0],
+            name: BONE_LARM,
+            frame: f,
+            position: [0, 0, 0],
             rotation: [0, 0, lz, wl],
         });
         bones.push({
-            name: BONE_RARM, frame: f, position: [0, 0, 0],
+            name: BONE_RARM,
+            frame: f,
+            position: [0, 0, 0],
             rotation: [0, 0, rz, wr],
         });
     }
@@ -172,16 +195,22 @@ export function generateAutoDanceVmd(state: ProcMotionState, bpm: number, morphN
         morphs.push({ name: blinkMorph, frame: loopFrames, weight: 0 });
     }
 
-    return buildVmd(bones, morphs, "AutoDance");
+    return buildVmd(bones, morphs, 'AutoDance');
 }
 
 /** 判断是否应切换到 Auto Dance（有音乐在播放）。 */
 export function shouldAutoDance(audioPlaying: boolean, mode: ProcMotionMode): boolean {
-    return audioPlaying && (mode === "autodance" || mode === "off");
+    return audioPlaying && (mode === 'autodance' || mode === 'off');
 }
 
 /** 判断是否应切换到 Idle（无音乐，未加载用户 VMD）。
  *  当音乐停止时 allow autodance→idle 降级。 */
-export function shouldIdle(audioPlaying: boolean, hasUserVmd: boolean, mode: ProcMotionMode): boolean {
-    return !audioPlaying && !hasUserVmd && (mode === "idle" || mode === "off" || mode === "autodance");
+export function shouldIdle(
+    audioPlaying: boolean,
+    hasUserVmd: boolean,
+    mode: ProcMotionMode
+): boolean {
+    return (
+        !audioPlaying && !hasUserVmd && (mode === 'idle' || mode === 'off' || mode === 'autodance')
+    );
 }

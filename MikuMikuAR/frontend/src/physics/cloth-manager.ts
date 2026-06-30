@@ -2,22 +2,22 @@
 // 从 scene-menu.ts 提取，职责: 布料创建/销毁/重建
 // UI 层通过 toggleCloth / recreateCloth 调用，不再寄生菜单文件
 
-import { SdfCollider, DEFAULT_BODY_CAPSULES } from "./xpbd-collider";
-import { createCloth, buildClothUpdateFn } from "./xpbd-cloth";
-import { scene, modelManager } from "../scene/scene";
-import { focusedModelId, envState, setStatus, modelRegistry } from "../core/config";
+import { SdfCollider, DEFAULT_BODY_CAPSULES } from './xpbd-collider';
+import { createCloth, buildClothUpdateFn } from './xpbd-cloth';
+import { scene, modelManager } from '../scene/scene';
+import { focusedModelId, envState, setStatus, modelRegistry } from '../core/config';
 
 /** 为当前聚焦模型创建布料 */
 function _createClothForFocusedModel(): void {
     const id = focusedModelId;
     if (!id || !modelManager) {
-        setStatus("⚠ 请先加载模型", false);
+        setStatus('⚠ 请先加载模型', false);
         return;
     }
 
     const mmd = modelManager.focusedMmdModel();
     if (!mmd) {
-        setStatus("⚠ 当前模型无 MMD 数据", false);
+        setStatus('⚠ 当前模型无 MMD 数据', false);
         return;
     }
 
@@ -30,8 +30,8 @@ function _createClothForFocusedModel(): void {
     if (model && model.rootMesh) {
         const boundingInfo = model.rootMesh.getBoundingInfo();
         if (boundingInfo) {
-            const modelHeight = boundingInfo.boundingBox.maximumWorld.y
-                - boundingInfo.boundingBox.minimumWorld.y;
+            const modelHeight =
+                boundingInfo.boundingBox.maximumWorld.y - boundingInfo.boundingBox.minimumWorld.y;
             const defaultHeight = 2.0;
             const scaleFactor = modelHeight / defaultHeight;
             collider.scaleAll(Math.max(0.5, Math.min(2.0, scaleFactor)));
@@ -55,13 +55,15 @@ function _createClothForFocusedModel(): void {
     // Register with model manager
     modelManager.addCloth(id, cloth, updateFn);
 
-    setStatus("✓ 布料模拟已启用", true);
+    setStatus('✓ 布料模拟已启用', true);
 }
 
 /** 销毁当前聚焦模型的布料 */
 function _destroyClothForFocusedModel(): void {
     const id = focusedModelId;
-    if (!id || !modelManager) return;
+    if (!id || !modelManager) {
+        return;
+    }
     modelManager.removeCloth(id);
 }
 
@@ -78,7 +80,9 @@ export function toggleCloth(enabled: boolean): void {
 
 /** 用当前配置重建布料（参数变更后调用） */
 export function recreateCloth(): void {
-    if (!envState.clothEnabled) return;
+    if (!envState.clothEnabled) {
+        return;
+    }
     _destroyClothForFocusedModel();
     _createClothForFocusedModel();
 }

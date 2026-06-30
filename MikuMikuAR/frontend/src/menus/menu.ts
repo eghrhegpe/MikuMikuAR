@@ -1,5 +1,5 @@
-import { PopupLevel, PopupRow, showHint, hideHint } from "../core/config";
-import { createIconifyIcon } from "../core/icons";
+import { PopupLevel, PopupRow, showHint, hideHint } from '../core/config';
+import { createIconifyIcon } from '../core/icons';
 
 export class SlideMenu {
     private levels: PopupLevel[] = [];
@@ -34,37 +34,51 @@ export class SlideMenu {
         this.onClose = opts.onClose;
         this.extraButtonFactory = opts.extraButtonFactory;
 
-        this.container.innerHTML = "";
-        this.container.classList.add("slide-menu");
+        this.container.innerHTML = '';
+        this.container.classList.add('slide-menu');
 
-        this.viewport = document.createElement("div");
-        this.viewport.className = "slide-viewport";
+        this.viewport = document.createElement('div');
+        this.viewport.className = 'slide-viewport';
 
-        this.panel = document.createElement("div");
-        this.panel.className = "slide-panel";
+        this.panel = document.createElement('div');
+        this.panel.className = 'slide-panel';
         // 内联样式由 CSS 控制，只设置必要的过渡
-        this.panel.style.transition = "opacity 0.15s ease, transform 0.15s ease";
-        this.panel.style.opacity = "1";
-        this.panel.style.transform = "translateY(0)";
-        this.panel.style.display = "flex";
+        this.panel.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+        this.panel.style.opacity = '1';
+        this.panel.style.transform = 'translateY(0)';
+        this.panel.style.display = 'flex';
 
         this.viewport.appendChild(this.panel);
         this.container.appendChild(this.viewport);
 
-        this.headerEl = document.createElement("div");
-        this.headerEl.className = "slide-header";
+        this.headerEl = document.createElement('div');
+        this.headerEl.className = 'slide-header';
         this.container.appendChild(this.headerEl);
 
         // 键盘导航
         this.container.tabIndex = -1;
-        this.container.addEventListener("keydown", (e) => {
-            if (this.transitioning) return;
+        this.container.addEventListener('keydown', (e) => {
+            if (this.transitioning) {
+return;
+}
             switch (e.key) {
-                case "ArrowDown": e.preventDefault(); this.focusNext(); break;
-                case "ArrowUp": e.preventDefault(); this.focusPrev(); break;
-                case "ArrowRight":
-                case "Enter": e.preventDefault(); this.activateFocused(); break;
-                case "ArrowLeft": e.preventDefault(); this.pop(); break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    this.focusNext();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    this.focusPrev();
+                    break;
+                case 'ArrowRight':
+                case 'Enter':
+                    e.preventDefault();
+                    this.activateFocused();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    this.pop();
+                    break;
             }
         });
     }
@@ -82,138 +96,148 @@ export class SlideMenu {
     reset(level: PopupLevel): void {
         this.levels = [level];
         this.transitioning = false;
-        this.panel.style.transition = "none";
-        this.panel.style.opacity = "1";
-        this.panel.style.transform = "translateY(0)";
+        this.panel.style.transition = 'none';
+        this.panel.style.opacity = '1';
+        this.panel.style.transform = 'translateY(0)';
         this.buildPanel(level);
         this.updateHeader(level);
         this.setupFocus();
-        this.onAfterRender?.(level, this);
+        this.onAfterRender(level, this);
     }
 
     push(level: PopupLevel): void {
-        if (this.transitioning) return;
+        if (this.transitioning) {
+return;
+}
         this.transitioning = true;
         this.levels.push(level);
 
         // 旧内容淡出（上移）
-        this.panel.style.transition = "opacity 0.12s ease, transform 0.12s ease";
-        this.panel.style.opacity = "0";
-        this.panel.style.transform = "translateY(-8px)";
+        this.panel.style.transition = 'opacity 0.12s ease, transform 0.12s ease';
+        this.panel.style.opacity = '0';
+        this.panel.style.transform = 'translateY(-8px)';
 
         const onFadeOut = () => {
-            this.panel.removeEventListener("transitionend", onFadeOut);
+            this.panel.removeEventListener('transitionend', onFadeOut);
             this.buildPanel(level);
             this.updateHeader(level);
             // 新内容从下方淡入
-            this.panel.style.transition = "none";
-            this.panel.style.opacity = "0";
-            this.panel.style.transform = "translateY(8px)";
+            this.panel.style.transition = 'none';
+            this.panel.style.opacity = '0';
+            this.panel.style.transform = 'translateY(8px)';
             void this.panel.offsetHeight;
-            this.panel.style.transition = "opacity 0.15s ease, transform 0.15s ease";
-            this.panel.style.opacity = "1";
-            this.panel.style.transform = "translateY(0)";
+            this.panel.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+            this.panel.style.opacity = '1';
+            this.panel.style.transform = 'translateY(0)';
 
             const onFadeIn = () => {
-                this.panel.removeEventListener("transitionend", onFadeIn);
+                this.panel.removeEventListener('transitionend', onFadeIn);
                 this.transitioning = false;
                 this.setupFocus();
-                this.onAfterRender?.(level, this);
+                this.onAfterRender(level, this);
             };
-            this.panel.addEventListener("transitionend", onFadeIn);
+            this.panel.addEventListener('transitionend', onFadeIn);
             setTimeout(() => {
                 if (this.transitioning) {
-                    this.panel.style.opacity = "1";
-                    this.panel.style.transform = "translateY(0)";
+                    this.panel.style.opacity = '1';
+                    this.panel.style.transform = 'translateY(0)';
                     this.transitioning = false;
                     this.setupFocus();
-                    this.onAfterRender?.(level, this);
+                    this.onAfterRender(level, this);
                 }
             }, 200);
         };
 
-        this.panel.addEventListener("transitionend", onFadeOut);
+        this.panel.addEventListener('transitionend', onFadeOut);
         setTimeout(() => {
             if (this.transitioning) {
-                this.panel.style.opacity = "0";
-                this.panel.style.transform = "translateY(-8px)";
+                this.panel.style.opacity = '0';
+                this.panel.style.transform = 'translateY(-8px)';
                 onFadeOut();
             }
         }, 150);
     }
 
     pop(): void {
-        if (this.transitioning || this.levels.length <= 1) return;
+        if (this.transitioning || this.levels.length <= 1) {
+return;
+}
         this.transitioning = true;
         this.levels.pop();
         const prevLevel = this.levels[this.levels.length - 1];
 
-        this.panel.style.transition = "opacity 0.12s ease, transform 0.12s ease";
-        this.panel.style.opacity = "0";
-        this.panel.style.transform = "translateY(8px)";
+        this.panel.style.transition = 'opacity 0.12s ease, transform 0.12s ease';
+        this.panel.style.opacity = '0';
+        this.panel.style.transform = 'translateY(8px)';
 
         const onFadeOut = () => {
-            this.panel.removeEventListener("transitionend", onFadeOut);
+            this.panel.removeEventListener('transitionend', onFadeOut);
             this.buildPanel(prevLevel);
             this.updateHeader(prevLevel);
-            this.panel.style.transition = "none";
-            this.panel.style.opacity = "0";
-            this.panel.style.transform = "translateY(-8px)";
+            this.panel.style.transition = 'none';
+            this.panel.style.opacity = '0';
+            this.panel.style.transform = 'translateY(-8px)';
             void this.panel.offsetHeight;
-            this.panel.style.transition = "opacity 0.15s ease, transform 0.15s ease";
-            this.panel.style.opacity = "1";
-            this.panel.style.transform = "translateY(0)";
+            this.panel.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+            this.panel.style.opacity = '1';
+            this.panel.style.transform = 'translateY(0)';
 
             const onFadeIn = () => {
-                this.panel.removeEventListener("transitionend", onFadeIn);
+                this.panel.removeEventListener('transitionend', onFadeIn);
                 this.transitioning = false;
                 this.setupFocus();
-                this.onAfterRender?.(prevLevel, this);
+                this.onAfterRender(prevLevel, this);
             };
-            this.panel.addEventListener("transitionend", onFadeIn);
+            this.panel.addEventListener('transitionend', onFadeIn);
             setTimeout(() => {
                 if (this.transitioning) {
-                    this.panel.style.opacity = "1";
-                    this.panel.style.transform = "translateY(0)";
+                    this.panel.style.opacity = '1';
+                    this.panel.style.transform = 'translateY(0)';
                     this.transitioning = false;
                     this.setupFocus();
-                    this.onAfterRender?.(prevLevel, this);
+                    this.onAfterRender(prevLevel, this);
                 }
             }, 200);
         };
 
-        this.panel.addEventListener("transitionend", onFadeOut);
+        this.panel.addEventListener('transitionend', onFadeOut);
         setTimeout(() => {
             if (this.transitioning) {
-                this.panel.style.opacity = "0";
-                this.panel.style.transform = "translateY(8px)";
+                this.panel.style.opacity = '0';
+                this.panel.style.transform = 'translateY(8px)';
                 onFadeOut();
             }
         }, 150);
     }
 
     popTo(index: number): void {
-        if (index < 0 || index >= this.levels.length || this.transitioning) return;
-        if (index === this.levels.length - 1) return;
+        if (index < 0 || index >= this.levels.length || this.transitioning) {
+return;
+}
+        if (index === this.levels.length - 1) {
+return;
+}
         this.levels = this.levels.slice(0, index + 1);
         const level = this.currentLevel!;
         this.transitioning = false;
-        this.panel.style.transition = "none";
-        this.panel.style.opacity = "1";
-        this.panel.style.transform = "translateY(0)";
+        this.panel.style.transition = 'none';
+        this.panel.style.opacity = '1';
+        this.panel.style.transform = 'translateY(0)';
         this.buildPanel(level);
         this.updateHeader(level);
         this.setupFocus();
-        this.onAfterRender?.(level, this);
+        this.onAfterRender(level, this);
     }
 
     reRender(): void {
         const level = this.currentLevel;
-        if (!level) return;
+        if (!level) {
+return;
+}
         this.buildPanel(level);
         this.updateHeader(level);
         this.setupFocus();
-        this.onAfterRender?.(level, this);
+        this.onAfterRender(level, this);
     }
 
     getLevel(index: number): PopupLevel | undefined {
@@ -229,21 +253,23 @@ export class SlideMenu {
     // ======== 内部方法 ========
 
     private get panelItems(): NodeListOf<HTMLElement> {
-        return this.panel.querySelectorAll<HTMLElement>(".slide-item");
+        return this.panel.querySelectorAll<HTMLElement>('.slide-item');
     }
 
     private clearFocus(): void {
-        this.panel.querySelectorAll(".slide-focused").forEach((el) =>
-            el.classList.remove("slide-focused")
-        );
+        this.panel
+            .querySelectorAll('.slide-focused')
+            .forEach((el) => el.classList.remove('slide-focused'));
     }
 
     private applyFocus(): void {
         this.clearFocus();
         const items = this.panelItems;
-        if (this.focusIndex < 0 || this.focusIndex >= items.length) return;
-        items[this.focusIndex].classList.add("slide-focused");
-        items[this.focusIndex].scrollIntoView({ block: "nearest" });
+        if (this.focusIndex < 0 || this.focusIndex >= items.length) {
+return;
+}
+        items[this.focusIndex].classList.add('slide-focused');
+        items[this.focusIndex].scrollIntoView({ block: 'nearest' });
     }
 
     private setupFocus(): void {
@@ -258,28 +284,34 @@ export class SlideMenu {
 
     private focusPrev(): void {
         const len = this.panelItems.length;
-        if (len === 0) return;
+        if (len === 0) {
+return;
+}
         this.focusIndex = this.focusIndex <= 0 ? len - 1 : this.focusIndex - 1;
         this.applyFocus();
     }
 
     private focusNext(): void {
         const len = this.panelItems.length;
-        if (len === 0) return;
+        if (len === 0) {
+return;
+}
         this.focusIndex = this.focusIndex >= len - 1 ? 0 : this.focusIndex + 1;
         this.applyFocus();
     }
 
     private activateFocused(): void {
         const items = this.panelItems;
-        if (this.focusIndex < 0 || this.focusIndex >= items.length) return;
+        if (this.focusIndex < 0 || this.focusIndex >= items.length) {
+return;
+}
         items[this.focusIndex].click();
     }
 
     private buildPanel(level: PopupLevel): void {
-        this.panel.innerHTML = "";
-        const list = document.createElement("div");
-        list.className = "slide-list";
+        this.panel.innerHTML = '';
+        const list = document.createElement('div');
+        list.className = 'slide-list';
         // flex / overflow-y / min-height 由 CSS 统一控制
 
         if (level.items.length === 0 && !level.renderCustom) {
@@ -290,107 +322,118 @@ export class SlideMenu {
         } else {
             for (const row of level.items) {
                 const el = this.createRow(row);
-                if (el) list.appendChild(el);
+                if (el) {
+list.appendChild(el);
+}
             }
         }
         this.panel.appendChild(list);
     }
 
     private updateHeader(level: PopupLevel): void {
-        this.headerEl.innerHTML = "";
-        const backBtn = document.createElement("span");
-        backBtn.className = "slide-back";
+        this.headerEl.innerHTML = '';
+        const backBtn = document.createElement('span');
+        backBtn.className = 'slide-back';
         const backIcon = createIconifyIcon(
-            this.levels.length > 1 ? "lucide:chevron-left" : "lucide:x"
+            this.levels.length > 1 ? 'lucide:chevron-left' : 'lucide:x',
         );
-        if (backIcon) backBtn.appendChild(backIcon);
+        if (backIcon) {
+backBtn.appendChild(backIcon);
+}
         if (this.levels.length > 1) {
-            backBtn.addEventListener("click", () => this.pop());
+            backBtn.addEventListener('click', () => this.pop());
         } else {
-            backBtn.addEventListener("click", () => this.onClose?.());
+            backBtn.addEventListener('click', () => this.onClose());
         }
         this.headerEl.appendChild(backBtn);
 
-        const title = document.createElement("span");
-        title.className = "slide-title";
-        title.textContent = level.label || "";
+        const title = document.createElement('span');
+        title.className = 'slide-title';
+        title.textContent = level.label || '';
         this.headerEl.appendChild(title);
 
-        for (const btn of this.extraButtonFactory?.() ?? []) {
+        for (const btn of this.extraButtonFactory() ?? []) {
             this.headerEl.appendChild(btn);
         }
     }
 
     private createRow(row: PopupRow): HTMLElement | null {
-        if (row.kind === "divider") {
-            const el = document.createElement("div");
-            el.className = "slide-divider";
+        if (row.kind === 'divider') {
+            const el = document.createElement('div');
+            el.className = 'slide-divider';
             return el;
         }
 
-        const el = document.createElement("div");
-        el.className = "slide-item";
-        const hint = row.sublabel || (row.model ? "暂无描述" : "暂无提示");
-        el.setAttribute("data-hint", hint);
+        const el = document.createElement('div');
+        el.className = 'slide-item';
+        const hint = row.sublabel || (row.model ? '暂无描述' : '暂无提示');
+        el.setAttribute('data-hint', hint);
 
-        const iconSpan = document.createElement("span");
-        iconSpan.className = "slide-icon";
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'slide-icon';
         const iconEl = createIconifyIcon(row.icon);
-        if (iconEl) iconSpan.appendChild(iconEl);
-        else iconSpan.textContent = row.icon;
+        if (iconEl) {
+            iconSpan.appendChild(iconEl);
+        } else {
+            iconSpan.textContent = row.icon;
+        }
         el.appendChild(iconSpan);
 
-        const labelSpan = document.createElement("span");
-        labelSpan.className = "slide-label";
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'slide-label';
         labelSpan.textContent = row.label;
         el.appendChild(labelSpan);
 
         if (row.catTag) {
-            const tagSpan = document.createElement("span");
-            tagSpan.className = "slide-tag";
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'slide-tag';
             tagSpan.textContent = row.catTag;
             el.appendChild(tagSpan);
         }
 
-        if (row.kind === "folder") {
-            const arrow = document.createElement("span");
-            arrow.className = "slide-arrow";
-            arrow.textContent = ">";
+        if (row.kind === 'folder') {
+            const arrow = document.createElement('span');
+            arrow.className = 'slide-arrow';
+            arrow.textContent = '>';
             el.appendChild(arrow);
         }
 
         if (row.onAddClick) {
-            const addBtn = document.createElement("span");
-            addBtn.className = "slide-add-btn";
-            addBtn.textContent = "+";
-            addBtn.addEventListener("click", (e) => {
+            const addBtn = document.createElement('span');
+            addBtn.className = 'slide-add-btn';
+            addBtn.textContent = '+';
+            addBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 row.onAddClick!();
             });
             el.appendChild(addBtn);
         }
 
-        if (row.kind === "folder") {
-            el.addEventListener("click", (e) => {
-                if ((e.target as HTMLElement).closest(".slide-add-btn")) return;
-                const next = this.onFolderEnter?.(row, this);
-                if (next) this.push(next);
+        if (row.kind === 'folder') {
+            el.addEventListener('click', (e) => {
+                if ((e.target as HTMLElement).closest('.slide-add-btn')) {
+return;
+}
+                const next = this.onFolderEnter(row, this);
+                if (next) {
+this.push(next);
+}
             });
         } else {
-            el.addEventListener("click", () => this.onItemClick?.(row, this));
+            el.addEventListener('click', () => this.onItemClick(row, this));
         }
 
-        el.addEventListener("mouseenter", () => {
+        el.addEventListener('mouseenter', () => {
             if (this.focusIndex >= 0) {
                 this.clearFocus();
                 this.focusIndex = -1;
             }
             showHint(hint);
-            this.onHover?.(row, true);
+            this.onHover(row, true);
         });
-        el.addEventListener("mouseleave", () => {
+        el.addEventListener('mouseleave', () => {
             hideHint();
-            this.onHover?.(row, false);
+            this.onHover(row, false);
         });
 
         return el;

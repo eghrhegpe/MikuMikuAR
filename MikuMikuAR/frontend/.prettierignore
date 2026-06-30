@@ -1,0 +1,8 @@
+node_modules
+dist
+dist-ssr
+wailsjs
+public/lib
+*.min.js
+package-lock.json
+*.lock

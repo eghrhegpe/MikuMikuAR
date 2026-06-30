@@ -2,7 +2,7 @@
 // [doc:architecture] 程序化动作子系统 — 节拍检测
 // 能量峰值法：低频能量 > 1.3× 滑动均值 且 距上次 beat > 250ms → 触发
 
-const BASS_BIN_COUNT = 10;   // 前 10 个频段 (~0-430Hz @ 44100/256 fft)
+const BASS_BIN_COUNT = 10; // 前 10 个频段 (~0-430Hz @ 44100/256 fft)
 const ENERGY_HISTORY_SIZE = 43; // ~1s @ 43fps update
 const BEAT_THRESHOLD = 1.3;
 const MIN_BEAT_INTERVAL_MS = 250;
@@ -14,7 +14,7 @@ export class BeatDetector {
     private source: MediaElementAudioSourceNode | null = null;
     private freqData: Uint8Array = new Uint8Array(0);
     private energyHistory: number[] = [];
-    private energySum = 0;        // running sum for avg
+    private energySum = 0; // running sum for avg
     private lastBeatTime = 0;
     private beatTimes: number[] = []; // 最近 beat 时间戳 (ms)
     private currentBpm = 120;
@@ -25,11 +25,17 @@ export class BeatDetector {
      *  注意：createMediaElementSource 后音频路由经 AudioContext，
      *  须 resume() 否则浏览器自动播放策略下静音。 */
     attach(audioElement: HTMLAudioElement): void {
-        if (this.ctx) return; // already attached
+        if (this.ctx) {
+            return;
+        } // already attached
         const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-        if (!AudioCtx) return;
+        if (!AudioCtx) {
+            return;
+        }
         this.ctx = new AudioCtx();
-        if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+        }
         this.source = this.ctx.createMediaElementSource(audioElement);
         this.analyser = this.ctx.createAnalyser();
         this.analyser.fftSize = 256;
@@ -41,9 +47,18 @@ export class BeatDetector {
 
     /** 释放所有 AudioContext 资源。 */
     dispose(): void {
-        if (this.analyser) { this.analyser.disconnect(); this.analyser = null; }
-        if (this.source) { this.source.disconnect(); this.source = null; }
-        if (this.ctx) { this.ctx.close(); this.ctx = null; }
+        if (this.analyser) {
+            this.analyser.disconnect();
+            this.analyser = null;
+        }
+        if (this.source) {
+            this.source.disconnect();
+            this.source = null;
+        }
+        if (this.ctx) {
+            this.ctx.close();
+            this.ctx = null;
+        }
         this.freqData = new Uint8Array(0);
         this.energyHistory = [];
         this.energySum = 0;
@@ -55,12 +70,16 @@ export class BeatDetector {
 
     /** 每帧调用。更新能量历史、检测 beat、估计 BPM。 */
     update(): void {
-        if (!this.analyser) return;
+        if (!this.analyser) {
+            return;
+        }
         this.analyser.getByteFrequencyData(this.freqData as any);
 
         let sum = 0;
         const bins = Math.min(BASS_BIN_COUNT, this.freqData.length);
-        for (let i = 0; i < bins; i++) sum += this.freqData[i];
+        for (let i = 0; i < bins; i++) {
+            sum += this.freqData[i];
+        }
         const energy = bins > 0 ? sum / bins : 0;
 
         // 滑动窗口：维护 running sum 避免全量 reduce
@@ -73,11 +92,16 @@ export class BeatDetector {
         const avg = this.energySum / this.energyHistory.length;
 
         const now = performance.now();
-        if (energy > avg * BEAT_THRESHOLD && energy > 30
-            && now - this.lastBeatTime > MIN_BEAT_INTERVAL_MS) {
+        if (
+            energy > avg * BEAT_THRESHOLD &&
+            energy > 30 &&
+            now - this.lastBeatTime > MIN_BEAT_INTERVAL_MS
+        ) {
             this.lastBeatTime = now;
             this.beatTimes.push(now);
-            if (this.beatTimes.length > BPM_WINDOW + 1) this.beatTimes.shift();
+            if (this.beatTimes.length > BPM_WINDOW + 1) {
+                this.beatTimes.shift();
+            }
             this.phaseStartTime = now;
             if (this.beatTimes.length >= 2) {
                 const intervals: number[] = [];
@@ -104,7 +128,9 @@ export class BeatDetector {
         this.phaseStartTime = performance.now();
     }
 
-    getBPM(): number { return this.currentBpm; }
+    getBPM(): number {
+        return this.currentBpm;
+    }
 
     /** 当前 beat 周期内的相位 0..1。 */
     getBeatPhase(): number {
@@ -115,14 +141,22 @@ export class BeatDetector {
     /** 当前帧指定频段的平均能量 (0..1)。须在 update() 之后调用。
      *  无 analyser 时返回 0。 */
     getLevel(startBin = 0, endBin?: number): number {
-        if (!this.analyser) return 0;
+        if (!this.analyser) {
+            return 0;
+        }
         return BeatDetector.getLevel(this.freqData, startBin, endBin);
     }
 
-    hasAudio(): boolean { return this.analyser !== null; }
+    hasAudio(): boolean {
+        return this.analyser !== null;
+    }
 
     /** 纯逻辑：给定能量序列，返回 beat 触发帧索引。供测试用。 */
-    static detectBeatsFromEnergies(energies: number[], threshold = BEAT_THRESHOLD, minInterval = 6): number[] {
+    static detectBeatsFromEnergies(
+        energies: number[],
+        threshold = BEAT_THRESHOLD,
+        minInterval = 6
+    ): number[] {
         const beats: number[] = [];
         const history: number[] = [];
         let sum = 0;
@@ -143,7 +177,9 @@ export class BeatDetector {
 
     /** 纯逻辑：从 beat 时间戳数组计算 BPM。 */
     static bpmFromIntervals(intervalsMs: number[]): number {
-        if (intervalsMs.length === 0) return 120;
+        if (intervalsMs.length === 0) {
+            return 120;
+        }
         const avg = intervalsMs.reduce((a, b) => a + b, 0) / intervalsMs.length;
         return avg > 0 ? Math.round(60000 / avg) : 120;
     }
@@ -153,12 +189,18 @@ export class BeatDetector {
      *  @param startBin 起始 bin（含），默认 0
      *  @param endBin 结束 bin（不含），默认到数据末尾 */
     static getLevel(freqData: Uint8Array, startBin = 0, endBin?: number): number {
-        if (freqData.length === 0) return 0;
+        if (freqData.length === 0) {
+            return 0;
+        }
         const start = Math.max(0, startBin);
         const end = Math.min(endBin ?? freqData.length, freqData.length);
-        if (end <= start) return 0;
+        if (end <= start) {
+            return 0;
+        }
         let sum = 0;
-        for (let i = start; i < end; i++) sum += freqData[i];
+        for (let i = start; i < end; i++) {
+            sum += freqData[i];
+        }
         return sum / (end - start) / 255;
     }
 }

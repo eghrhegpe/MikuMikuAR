@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
-import { Scene } from "@babylonjs/core/scene";
-import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
+import { Scene } from '@babylonjs/core/scene';
+import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 
 // Babylon.js types for runtime checks
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
-import { SkyMaterial } from "@babylonjs/materials/sky/skyMaterial";
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
+import { SkyMaterial } from '@babylonjs/materials/sky/skyMaterial';
 
 let engine: NullEngine;
 let scene: Scene;
@@ -25,8 +25,8 @@ afterAll(() => {
 });
 
 // ─── Sky: Color Mode ───
-describe("Sky — Color mode", () => {
-    it("sets clearColor from skyColorTop", () => {
+describe('Sky — Color mode', () => {
+    it('sets clearColor from skyColorTop', () => {
         scene.clearColor = new Color4(0, 0, 0, 1);
         scene.clearColor = new Color4(0.3, 0.5, 0.8, 1);
         expect(scene.clearColor.r).toBeCloseTo(0.3, 5);
@@ -35,14 +35,14 @@ describe("Sky — Color mode", () => {
         expect(scene.clearColor.a).toBe(1);
     });
 
-    it("accepts pure white (1,1,1)", () => {
+    it('accepts pure white (1,1,1)', () => {
         scene.clearColor = new Color4(1, 1, 1, 1);
         expect(scene.clearColor.r).toBe(1);
         expect(scene.clearColor.g).toBe(1);
         expect(scene.clearColor.b).toBe(1);
     });
 
-    it("accepts pure black (0,0,0)", () => {
+    it('accepts pure black (0,0,0)', () => {
         scene.clearColor = new Color4(0, 0, 0, 1);
         expect(scene.clearColor.r).toBe(0);
         expect(scene.clearColor.g).toBe(0);
@@ -51,15 +51,19 @@ describe("Sky — Color mode", () => {
 });
 
 // ─── Sky: Procedural Mode ───
-describe("Sky — Procedural mode", () => {
-    it("creates a box with SkyMaterial", () => {
-        const box = MeshBuilder.CreateBox("testProceduralSky", {
-            size: 1000,
-            sideOrientation: Mesh.BACKSIDE,
-        }, scene);
+describe('Sky — Procedural mode', () => {
+    it('creates a box with SkyMaterial', () => {
+        const box = MeshBuilder.CreateBox(
+            'testProceduralSky',
+            {
+                size: 1000,
+                sideOrientation: Mesh.BACKSIDE,
+            },
+            scene
+        );
         box.isPickable = false;
 
-        const skyMat = new SkyMaterial("testSkyMat", scene);
+        const skyMat = new SkyMaterial('testSkyMat', scene);
         skyMat.luminance = 2;
         skyMat.turbidity = 10;
         skyMat.rayleigh = 2;
@@ -79,8 +83,8 @@ describe("Sky — Procedural mode", () => {
 });
 
 // ─── Environment Texture ───
-describe("Sky — Environment texture", () => {
-    it("sets environmentIntensity on scene", () => {
+describe('Sky — Environment texture', () => {
+    it('sets environmentIntensity on scene', () => {
         scene.environmentIntensity = 1.5;
         expect(scene.environmentIntensity).toBe(1.5);
 
@@ -90,17 +94,21 @@ describe("Sky — Environment texture", () => {
 });
 
 // ─── Ground ───
-describe("Ground", () => {
-    it("creates a ground mesh with StandardMaterial (solid mode)", () => {
-        const ground = MeshBuilder.CreateGround("testGround", {
-            width: 60,
-            height: 60,
-            subdivisions: 2,
-        }, scene);
+describe('Ground', () => {
+    it('creates a ground mesh with StandardMaterial (solid mode)', () => {
+        const ground = MeshBuilder.CreateGround(
+            'testGround',
+            {
+                width: 60,
+                height: 60,
+                subdivisions: 2,
+            },
+            scene
+        );
         ground.isPickable = false;
         ground.position.y = -0.05;
 
-        const mat = new StandardMaterial("testGroundMat", scene);
+        const mat = new StandardMaterial('testGroundMat', scene);
         mat.diffuseColor = new Color3(0.15, 0.15, 0.18);
         mat.alpha = 0.6;
         ground.material = mat;
@@ -114,13 +122,17 @@ describe("Ground", () => {
         mat.dispose();
     });
 
-    it("creates a ground with GridMaterial (grid mode)", () => {
-        const ground = MeshBuilder.CreateGround("testGrid", {
-            width: 60,
-            height: 60,
-        }, scene);
+    it('creates a ground with GridMaterial (grid mode)', () => {
+        const ground = MeshBuilder.CreateGround(
+            'testGrid',
+            {
+                width: 60,
+                height: 60,
+            },
+            scene
+        );
 
-        const mat = new GridMaterial("testGridMat", scene);
+        const mat = new GridMaterial('testGridMat', scene);
         mat.gridRatio = 1;
         mat.mainColor = new Color3(0.3, 0.35, 0.3);
         mat.lineColor = new Color3(0.45, 0.525, 0.45);
@@ -136,8 +148,8 @@ describe("Ground", () => {
 });
 
 // ─── Fog ───
-describe("Fog", () => {
-    it("sets FOGMODE_EXP2 with fogColor and fogDensity", () => {
+describe('Fog', () => {
+    it('sets FOGMODE_EXP2 with fogColor and fogDensity', () => {
         scene.fogMode = Scene.FOGMODE_EXP2;
         scene.fogColor = new Color3(0.5, 0.5, 0.6);
         scene.fogDensity = 0.01;
@@ -147,24 +159,24 @@ describe("Fog", () => {
         expect(scene.fogDensity).toBeCloseTo(0.01, 5);
     });
 
-    it("disables fog with FOGMODE_NONE", () => {
+    it('disables fog with FOGMODE_NONE', () => {
         scene.fogMode = Scene.FOGMODE_NONE;
         expect(scene.fogMode).toBe(Scene.FOGMODE_NONE);
     });
 });
 
 // ─── Light State ───
-describe("Light state properties", () => {
-    it("DirectionalLight accepts color and intensity properties", async () => {
-        const { HemisphericLight } = await import("@babylonjs/core/Lights/hemisphericLight");
-        const { DirectionalLight } = await import("@babylonjs/core/Lights/directionalLight");
-        const { ShadowGenerator } = await import("@babylonjs/core/Lights/Shadows/shadowGenerator");
+describe('Light state properties', () => {
+    it('DirectionalLight accepts color and intensity properties', async () => {
+        const { HemisphericLight } = await import('@babylonjs/core/Lights/hemisphericLight');
+        const { DirectionalLight } = await import('@babylonjs/core/Lights/directionalLight');
+        const { ShadowGenerator } = await import('@babylonjs/core/Lights/Shadows/shadowGenerator');
 
-        const hemi = new HemisphericLight("testHemi", new Vector3(0.5, 1, 0.5), scene);
+        const hemi = new HemisphericLight('testHemi', new Vector3(0.5, 1, 0.5), scene);
         hemi.intensity = 0.8;
         hemi.diffuse = new Color3(1, 1, 1);
 
-        const dir = new DirectionalLight("testDir", new Vector3(-0.5, -1, -0.5), scene);
+        const dir = new DirectionalLight('testDir', new Vector3(-0.5, -1, -0.5), scene);
         dir.intensity = 0.4;
         dir.diffuse = new Color3(1, 0.85, 0.7);
 
@@ -183,18 +195,22 @@ describe("Light state properties", () => {
 });
 
 // ─── Clouds V1 ───
-describe("Clouds V1", () => {
-    it("creates a plane mesh with alpha texture", () => {
-        const cloudPlane = MeshBuilder.CreatePlane("testClouds", {
-            width: 200,
-            height: 200,
-        }, scene);
+describe('Clouds V1', () => {
+    it('creates a plane mesh with alpha texture', () => {
+        const cloudPlane = MeshBuilder.CreatePlane(
+            'testClouds',
+            {
+                width: 200,
+                height: 200,
+            },
+            scene
+        );
         cloudPlane.isPickable = false;
         const cloudHeight = 100;
         cloudPlane.position = new Vector3(0, cloudHeight, 0);
         cloudPlane.rotation.x = Math.PI / 2;
 
-        const mat = new StandardMaterial("testCloudMat", scene);
+        const mat = new StandardMaterial('testCloudMat', scene);
         mat.useAlphaFromDiffuseTexture = true;
         mat.backFaceCulling = false;
         mat.alpha = 0.5;
@@ -209,8 +225,8 @@ describe("Clouds V1", () => {
         mat.dispose();
     });
 
-    it("wind moves cloud plane position", () => {
-        const cloud = MeshBuilder.CreatePlane("windTest", { width: 200, height: 200 }, scene);
+    it('wind moves cloud plane position', () => {
+        const cloud = MeshBuilder.CreatePlane('windTest', { width: 200, height: 200 }, scene);
         const startX = cloud.position.x;
         const startZ = cloud.position.z;
 
@@ -226,22 +242,22 @@ describe("Clouds V1", () => {
 });
 
 // ─── RenderState: DOF & Vignette ───
-describe("RenderState — DOF & Vignette", () => {
-    it("imageProcessing has vignette properties", () => {
+describe('RenderState — DOF & Vignette', () => {
+    it('imageProcessing has vignette properties', () => {
         // DefaultRenderingPipeline.imageProcessing has vignetteEnabled/vignetteWeight
         // Can't test without creating pipeline, but verify the property chain exists
-        expect(typeof Color3).toBe("function"); // Sanity: babylon is loaded
+        expect(typeof Color3).toBe('function'); // Sanity: babylon is loaded
     });
 });
 
 // ─── EnvPreset config type ───
-describe("EnvPreset data integrity", () => {
-    it("all presets have required env fields", () => {
+describe('EnvPreset data integrity', () => {
+    it('all presets have required env fields', () => {
         // Import the actual presets from the plan
         const presets = [
-            { name: "舞台-A 打光", skyMode: "gradient" as const },
-            { name: "户外晴天", skyMode: "procedural" as const },
-            { name: "演唱会蓝紫", skyMode: "gradient" as const },
+            { name: '舞台-A 打光', skyMode: 'gradient' as const },
+            { name: '户外晴天', skyMode: 'procedural' as const },
+            { name: '演唱会蓝紫', skyMode: 'gradient' as const },
         ];
         for (const p of presets) {
             expect(p.skyMode).toBeDefined();

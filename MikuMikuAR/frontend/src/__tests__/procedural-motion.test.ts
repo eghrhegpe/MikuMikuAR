@@ -1,28 +1,35 @@
-import { describe, it, expect } from "vitest";
-import { generateIdleVmd, generateAutoDanceVmd, shouldAutoDance, shouldIdle, DEFAULT_PROC_STATE, type ProcMotionState } from "../motion/procedural-motion";
+import { describe, it, expect } from 'vitest';
+import {
+    generateIdleVmd,
+    generateAutoDanceVmd,
+    shouldAutoDance,
+    shouldIdle,
+    DEFAULT_PROC_STATE,
+    type ProcMotionState,
+} from '../motion/procedural-motion';
 
-const state: ProcMotionState = { ...DEFAULT_PROC_STATE, mode: "idle", intensity: 0.5, speed: 1.0 };
+const state: ProcMotionState = { ...DEFAULT_PROC_STATE, mode: 'idle', intensity: 0.5, speed: 1.0 };
 
-describe("generateIdleVmd", () => {
-    const buf = generateIdleVmd(state, ["まばたき"]);
+describe('generateIdleVmd', () => {
+    const buf = generateIdleVmd(state, ['まばたき']);
 
-    it("produces non-empty VMD", () => {
+    it('produces non-empty VMD', () => {
         expect(buf.byteLength).toBeGreaterThan(200);
     });
 
-    it("has valid VMD signature", () => {
+    it('has valid VMD signature', () => {
         const sig = new TextDecoder().decode(new Uint8Array(buf, 0, 25));
-        expect(sig).toBe("Vocaloid Motion Data 0002");
+        expect(sig).toBe('Vocaloid Motion Data 0002');
     });
 
-    it("includes blink morph frames when まばたき available", () => {
+    it('includes blink morph frames when まばたき available', () => {
         const view = new DataView(buf);
         const boneCount = view.getUint32(50, true);
         const morphCountOff = 54 + boneCount * 111;
         expect(view.getUint32(morphCountOff, true)).toBeGreaterThan(0);
     });
 
-    it("omits blink morph frames when no まばたき", () => {
+    it('omits blink morph frames when no まばたき', () => {
         const buf2 = generateIdleVmd(state, []);
         const view = new DataView(buf2);
         const boneCount = view.getUint32(50, true);
@@ -30,7 +37,7 @@ describe("generateIdleVmd", () => {
         expect(view.getUint32(morphCountOff, true)).toBe(0);
     });
 
-    it("loop closes (first and last bone frame match)", () => {
+    it('loop closes (first and last bone frame match)', () => {
         const buf2 = generateIdleVmd(state, []);
         const view = new DataView(buf2);
         // First bone frame rotation at offset 54+15+4+12 = 85
@@ -52,7 +59,7 @@ describe("generateIdleVmd", () => {
         expect(lastRot[3]).toBeCloseTo(1, 2); // w ≈ 1
     });
 
-    it("intensity=0 produces minimal rotation", () => {
+    it('intensity=0 produces minimal rotation', () => {
         const zeroState = { ...state, intensity: 0 };
         const buf2 = generateIdleVmd(zeroState, []);
         const view = new DataView(buf2);
@@ -64,32 +71,32 @@ describe("generateIdleVmd", () => {
     });
 });
 
-describe("generateAutoDanceVmd", () => {
-    const buf = generateAutoDanceVmd(state, 120, ["まばたき"]);
+describe('generateAutoDanceVmd', () => {
+    const buf = generateAutoDanceVmd(state, 120, ['まばたき']);
 
-    it("produces non-empty VMD", () => {
+    it('produces non-empty VMD', () => {
         expect(buf.byteLength).toBeGreaterThan(200);
     });
 
-    it("has valid VMD signature", () => {
+    it('has valid VMD signature', () => {
         const sig = new TextDecoder().decode(new Uint8Array(buf, 0, 25));
-        expect(sig).toBe("Vocaloid Motion Data 0002");
+        expect(sig).toBe('Vocaloid Motion Data 0002');
     });
 
-    it("higher BPM produces shorter loop", () => {
+    it('higher BPM produces shorter loop', () => {
         const slow = generateAutoDanceVmd(state, 60, []);
         const fast = generateAutoDanceVmd(state, 180, []);
         // Faster BPM = fewer frames per loop = smaller file
         expect(fast.byteLength).toBeLessThan(slow.byteLength);
     });
 
-    it("clamps BPM below 60", () => {
+    it('clamps BPM below 60', () => {
         const low = generateAutoDanceVmd(state, 30, []);
         const at60 = generateAutoDanceVmd(state, 60, []);
         expect(low.byteLength).toBe(at60.byteLength);
     });
 
-    it("includes arm bone frames", () => {
+    it('includes arm bone frames', () => {
         // Check that 左腕/右腕 names appear by scanning bone names
         const u8 = new Uint8Array(buf);
         const view = new DataView(buf);
@@ -98,13 +105,15 @@ describe("generateAutoDanceVmd", () => {
         for (let i = 0; i < boneCount; i++) {
             const off = 54 + i * 111;
             const nameBytes = u8.slice(off, off + 15);
-            const name = new TextDecoder().decode(nameBytes).replace(/\s+$/, "");
-            if (name === "左腕") foundLeftArm = true;
+            const name = new TextDecoder().decode(nameBytes).replace(/\s+$/, '');
+            if (name === '左腕') {
+                foundLeftArm = true;
+            }
         }
         expect(foundLeftArm).toBe(true);
     });
 
-    it("includes blink morph at 120 BPM", () => {
+    it('includes blink morph at 120 BPM', () => {
         const view = new DataView(buf);
         const boneCount = view.getUint32(50, true);
         const morphCountOff = 54 + boneCount * 111;
@@ -112,23 +121,23 @@ describe("generateAutoDanceVmd", () => {
     });
 });
 
-describe("auto-switch logic", () => {
-    it("shouldAutoDance: true when audio playing and mode allows", () => {
-        expect(shouldAutoDance(true, "off")).toBe(true);
-        expect(shouldAutoDance(true, "autodance")).toBe(true);
+describe('auto-switch logic', () => {
+    it('shouldAutoDance: true when audio playing and mode allows', () => {
+        expect(shouldAutoDance(true, 'off')).toBe(true);
+        expect(shouldAutoDance(true, 'autodance')).toBe(true);
     });
-    it("shouldAutoDance: false when no audio", () => {
-        expect(shouldAutoDance(false, "off")).toBe(false);
+    it('shouldAutoDance: false when no audio', () => {
+        expect(shouldAutoDance(false, 'off')).toBe(false);
     });
-    it("shouldIdle: true when no audio, no VMD, mode allows", () => {
-        expect(shouldIdle(false, false, "off")).toBe(true);
-        expect(shouldIdle(false, false, "idle")).toBe(true);
-        expect(shouldIdle(false, false, "autodance")).toBe(true);
+    it('shouldIdle: true when no audio, no VMD, mode allows', () => {
+        expect(shouldIdle(false, false, 'off')).toBe(true);
+        expect(shouldIdle(false, false, 'idle')).toBe(true);
+        expect(shouldIdle(false, false, 'autodance')).toBe(true);
     });
-    it("shouldIdle: false when VMD loaded", () => {
-        expect(shouldIdle(false, true, "off")).toBe(false);
+    it('shouldIdle: false when VMD loaded', () => {
+        expect(shouldIdle(false, true, 'off')).toBe(false);
     });
-    it("shouldIdle: false when audio playing", () => {
-        expect(shouldIdle(true, false, "off")).toBe(false);
+    it('shouldIdle: false when audio playing', () => {
+        expect(shouldIdle(true, false, 'off')).toBe(false);
     });
 });

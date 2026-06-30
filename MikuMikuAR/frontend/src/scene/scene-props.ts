@@ -3,24 +3,30 @@
 // 职责: 道具加载、移除、变换、列表查询（独立于 modelRegistry / VMD / 物理）
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { ImportMeshAsync } from "@babylonjs/core/Loading/sceneLoader";
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 
 import {
-    propRegistry, setPropRegistry,
-    isLoadingProp, setIsLoadingProp,
-    setStatus, triggerAutoSave,
-    dom, PropInstance,
-} from "../core/config";
-import { resolveFileUrl, normPath } from "../core/fileservice";
-import { scene } from "./scene";
-import { _envSys } from "./scene-env";
+    propRegistry,
+    setPropRegistry,
+    isLoadingProp,
+    setIsLoadingProp,
+    setStatus,
+    triggerAutoSave,
+    dom,
+    PropInstance,
+} from '../core/config';
+import { resolveFileUrl, normPath } from '../core/fileservice';
+import { scene } from './scene';
+import { _envSys } from './scene-env';
 
 export async function loadProp(filePath: string): Promise<string | null> {
-    if (isLoadingProp) return null;
+    if (isLoadingProp) {
+        return null;
+    }
     setIsLoadingProp(true);
-    dom.loadingEl.style.display = "block";
-    dom.loadingText.textContent = "加载道具 0%";
+    dom.loadingEl.style.display = 'block';
+    dom.loadingText.textContent = '加载道具 0%';
     try {
         for (const [, inst] of propRegistry) {
             if (inst.filePath === filePath) {
@@ -30,8 +36,8 @@ export async function loadProp(filePath: string): Promise<string | null> {
         }
 
         const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
-        const fileName = normPath(filePath).split("/").pop() || "";
-        setStatus("加载道具...", false);
+        const fileName = normPath(filePath).split('/').pop() || '';
+        setStatus('加载道具...', false);
 
         const result = await ImportMeshAsync(url, scene, {
             onProgress: (evt) => {
@@ -42,18 +48,26 @@ export async function loadProp(filePath: string): Promise<string | null> {
             },
         });
 
-        const meshes = result.meshes.filter(m => m instanceof Mesh) as Mesh[];
+        const meshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
         if (meshes.length === 0) {
-            setStatus("✗ 道具未加载到网格", false);
+            setStatus('✗ 道具未加载到网格', false);
             return null;
         }
 
         const id = `prop_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const displayName = fileName.replace(/\.pmx$/i, "");
+        const displayName = fileName.replace(/\.pmx$/i, '');
         const inst: PropInstance = {
-            id, name: displayName, filePath, port, modelDir,
-            meshes, rootMesh: meshes[0],
-            position: [0, 0, 0], rotationY: 0, scaling: 1.0, visible: true,
+            id,
+            name: displayName,
+            filePath,
+            port,
+            modelDir,
+            meshes,
+            rootMesh: meshes[0],
+            position: [0, 0, 0],
+            rotationY: 0,
+            scaling: 1.0,
+            visible: true,
         };
         propRegistry.set(id, inst);
 
@@ -68,18 +82,20 @@ export async function loadProp(filePath: string): Promise<string | null> {
         triggerAutoSave();
         return id;
     } catch (err) {
-        console.error("loadProp:", err);
-        setStatus("✗ 道具加载失败", false);
+        console.error('loadProp:', err);
+        setStatus('✗ 道具加载失败', false);
         return null;
     } finally {
         setIsLoadingProp(false);
-        dom.loadingEl.style.display = "none";
+        dom.loadingEl.style.display = 'none';
     }
 }
 
 export function removeProp(id: string): void {
     const inst = propRegistry.get(id);
-    if (!inst) return;
+    if (!inst) {
+        return;
+    }
     for (const m of inst.meshes) {
         scene.removeMesh(m);
         m.dispose();
@@ -89,9 +105,14 @@ export function removeProp(id: string): void {
     triggerAutoSave();
 }
 
-export function setPropTransform(id: string, partial: Partial<Pick<PropInstance, "position" | "rotationY" | "scaling" | "visible">>): void {
+export function setPropTransform(
+    id: string,
+    partial: Partial<Pick<PropInstance, 'position' | 'rotationY' | 'scaling' | 'visible'>>
+): void {
     const inst = propRegistry.get(id);
-    if (!inst) return;
+    if (!inst) {
+        return;
+    }
     if (partial.position !== undefined) {
         inst.position = partial.position;
         inst.rootMesh.position.set(partial.position[0], partial.position[1], partial.position[2]);
@@ -106,7 +127,9 @@ export function setPropTransform(id: string, partial: Partial<Pick<PropInstance,
     }
     if (partial.visible !== undefined) {
         inst.visible = partial.visible;
-        for (const m of inst.meshes) m.setEnabled(partial.visible);
+        for (const m of inst.meshes) {
+            m.setEnabled(partial.visible);
+        }
     }
     triggerAutoSave();
 }
