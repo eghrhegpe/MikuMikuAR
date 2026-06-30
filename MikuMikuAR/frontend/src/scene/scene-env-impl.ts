@@ -93,17 +93,25 @@ export {
     _underwaterTarget,
 } from './scene-env-water';
 export { createClouds, disposeClouds } from './scene-env-clouds';
+import {
+    createParticleEmitter,
+    disposeParticles,
+    applyWindToParticles,
+    updateParticleWind,
+} from './scene-env-particles';
+import { updateUnderwaterTransition, resetUnderwaterState } from './scene-env-water';
+
 export {
     createParticleEmitter,
     disposeParticles,
     applyWindToParticles,
-} from './scene-env-particles';
-import { updateUnderwaterTransition, resetUnderwaterState } from './scene-env-water';
+    updateParticleWind,
+};
 
 export const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
-    particles: { emitter: GPUParticleSystem | null; followObserver: Observer<Scene> | null };
+    particles: { system: GPUParticleSystem | null; followObserver: Observer<Scene> | null };
     clouds: {
         postProcess: Mesh | null;
         postProcess2: Mesh | null;
@@ -115,7 +123,7 @@ export const _envSys: {
 } = {
     sky: { skyMesh: null, envTexture: null },
     ground: { mesh: null },
-    particles: { emitter: null, followObserver: null },
+    particles: { system: null, followObserver: null },
     clouds: { postProcess: null, postProcess2: null, material: null, texture: null },
     water: { mesh: null, material: null },
     shadow: { generator: null },
@@ -305,7 +313,13 @@ export function applySky(state: EnvState): void {
     const mesh = _envSys.sky.skyMesh;
 
     if (state.skyMode === 'procedural') {
-        if (mesh.material.getClassName() === 'StandardMaterial') {
+        // Guard: mesh or material may be null after dispose/recreate
+        if (!mesh || !mesh.material) {
+            disposeSky();
+            createProceduralSky(state);
+            return;
+        }
+        if (mesh.material && mesh.material.getClassName() === 'StandardMaterial') {
             const mat = mesh.material as StandardMaterial;
             if (mat.emissiveTexture) {
                 mat.emissiveTexture.dispose();
@@ -440,6 +454,7 @@ export function ensureEnvUpdateObserver(): void {
         return;
     }
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
+        // dt 以 60fps 为基准归一化；非 60fps 设备上动画速率会等比例缩放
         const dt = scene.deltaTime / 16.667;
         // Cloud drift + camera follow
         if (envState.cloudsEnabled && _envSys.clouds.postProcess) {
@@ -460,12 +475,19 @@ export function ensureEnvUpdateObserver(): void {
                     }
                     const mat = m.material as StandardMaterial | null;
                     if (mat.diffuseTexture) {
-                        (mat.diffuseTexture as Texture).uOffset += dx * speedMul;
-                        (mat.diffuseTexture as Texture).vOffset += dz * speedMul;
+                        const tex = mat.diffuseTexture as Texture;
+                        // 对偏移取模 1.0，防止长时间运行后浮点精度退化
+                        tex.uOffset = (tex.uOffset + dx * speedMul) % 1;
+                        if (tex.uOffset < 0) tex.uOffset += 1;
+                        tex.vOffset = (tex.vOffset + dz * speedMul) % 1;
+                        if (tex.vOffset < 0) tex.vOffset += 1;
                     }
                 }
             }
         }
+        // 动态更新粒子风力（响应运行时参数变化）
+        updateParticleWind();
+
         // Sky rotation animation
         if (envState.skyRotationSpeed > 0.001 && _envSys.sky.skyMesh) {
             _envSys.sky.skyMesh.rotation.y += envState.skyRotationSpeed * 0.01 * dt;

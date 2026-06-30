@@ -14,6 +14,14 @@ import { _envSys, getScene, getPipeline } from './scene-env-impl';
 let _currentParticleType: EnvState['particleType'] = 'none';
 const _particleTextures = new Map<string, Texture>();
 
+// 保存粒子系统创建时的初始发射方向，风力基于此计算，避免叠加
+let _initialDir1: Vector3 | null = null;
+let _initialDir2: Vector3 | null = null;
+
+// 粒子发射器高度偏移常量（相对于相机位置）
+const PARTICLE_HEIGHT_DEFAULT = 11;   // 大多数效果（樱花/雨/雪/烟花/落叶）
+const PARTICLE_HEIGHT_FIREFLY = 2;   // 萤火虫（贴近地面）
+
 function makeParticleTexture(kind: string): Texture {
     const scene = getScene();
     const cached = _particleTextures.get(kind);
@@ -125,15 +133,21 @@ function drawParticleShape(ctx: CanvasRenderingContext2D, kind: string): void {
             ctx.restore();
             break;
         }
+        default: {
+            console.warn('[drawParticleShape] unknown particle kind: ' + kind);
+            ctx.fillStyle = '#ff00ff';
+            ctx.fillRect(0, 0, 64, 64);
+            break;
+        }
     }
 }
 
 export function createParticleEmitter(type: EnvState['particleType'], windEnabled: boolean): void {
-    if (_envSys.particles.emitter && _currentParticleType === type) {
+    if (_envSys.particles.system && _currentParticleType === type) {
         return;
     }
 
-    if (_envSys.particles.emitter) {
+    if (_envSys.particles.system) {
         disposeParticles();
     }
     _currentParticleType = type;
@@ -143,7 +157,9 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
 
     const scene = getScene();
 
-    const ps = new GPUParticleSystem('envParticles', { capacity: 5000 }, scene);
+    // capacity >= max(emitRate) * max(maxLifeTime) * 2.5
+    // 雨上限：1000 * 2 * 2.5 = 5000；particleEmitRate 放大时需要同步扩大
+    const ps = new GPUParticleSystem('envParticles', { capacity: 10000 }, scene);
     ps.particleTexture = makeParticleTexture(type);
     ps.updateSpeed = 0.01;
     ps.emitter = new Vector3(0, 10, 0);
@@ -274,6 +290,10 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
         }
     }
 
+    // 保存初始发射方向，风力始终基于初始值计算，避免叠加
+    _initialDir1 = ps.direction1.clone();
+    _initialDir2 = ps.direction2.clone();
+
     const er = envState.particleEmitRate;
     if (er !== 1) {
         ps.emitRate = Math.max(0, ps.emitRate * er);
@@ -300,16 +320,15 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
         if (!cam) {
             return;
         }
-        const e = ps.emitter as Vector3;
-        if (!e) {
-            return;
+        const e = ps.emitter;
+        if (e instanceof Vector3) {
+            e.x = cam.position.x;
+            e.z = cam.position.z;
+            e.y = type === 'fireflies' ? PARTICLE_HEIGHT_FIREFLY : PARTICLE_HEIGHT_DEFAULT;
         }
-        e.x = cam.position.x;
-        e.z = cam.position.z;
-        e.y = type === 'fireflies' ? 2 : 11;
     });
 
-    _envSys.particles.emitter = ps;
+    _envSys.particles.system = ps;
 }
 
 export function disposeParticles(): void {
@@ -318,18 +337,36 @@ export function disposeParticles(): void {
         scene.onBeforeRenderObservable.remove(_envSys.particles.followObserver);
         _envSys.particles.followObserver = null;
     }
-    if (_envSys.particles.emitter) {
-        _envSys.particles.emitter.dispose();
-        _envSys.particles.emitter = null;
+    if (_envSys.particles.system) {
+        _envSys.particles.system.dispose();
+        _envSys.particles.system = null;
     }
+    // 释放粒子纹理缓存（防止 GPU 资源泄漏）
+    for (const tex of _particleTextures.values()) {
+        tex.dispose();
+    }
+    _particleTextures.clear();
+    _initialDir1 = null;
+    _initialDir2 = null;
     _currentParticleType = 'none';
 }
 
 // ======== Wind System ========
+// 基于初始方向计算风力，可安全多次调用（每帧调用也不会叠加）
 export function applyWindToParticles(ps: GPUParticleSystem): void {
+    if (!_initialDir1 || !_initialDir2) {
+        return;
+    }
     const dir = envState.windDirection;
     const speed = envState.windSpeed;
     const wind = new Vector3(dir[0] * speed * 0.1, dir[1] * speed * 0.1, dir[2] * speed * 0.1);
-    ps.direction1 = ps.direction1.add(wind);
-    ps.direction2 = ps.direction2.add(wind);
+    ps.direction1 = _initialDir1.clone().add(wind);
+    ps.direction2 = _initialDir2.clone().add(wind);
+}
+
+// 运行时动态更新风力（由 ensureEnvUpdateObserver 每帧调用）
+export function updateParticleWind(): void {
+    if (_envSys.particles.system) {
+        applyWindToParticles(_envSys.particles.system);
+    }
 }
