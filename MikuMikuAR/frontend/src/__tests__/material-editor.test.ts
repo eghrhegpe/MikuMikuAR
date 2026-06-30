@@ -529,7 +529,7 @@ function mockMat(name: string) {
 
 function regModel(id: string, meshCount: number, names?: string[]): void {
     const meshes = Array.from({ length: meshCount }, (_, i) => ({
-        material: mockMat(names[i] ?? `mat${i}`),
+        material: mockMat((names && names[i]) ?? `mat${i}`),
     }));
     // @ts-expect-error duck-typed mock meshes
     modelRegistry.set(id, { meshes });

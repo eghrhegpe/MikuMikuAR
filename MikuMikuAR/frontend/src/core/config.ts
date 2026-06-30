@@ -501,7 +501,7 @@ let savedStatusText = '';
 let savedStatusColor = '';
 
 export function setStatus(text: string, ok: boolean): void {
-    if (hintActive) {
+    if (hintActive || !dom.statusText) {
         return;
     } // don't overwrite hover hints
     dom.statusText.textContent = text;
@@ -510,6 +510,7 @@ export function setStatus(text: string, ok: boolean): void {
 
 /** Show a hover hint in the status bar, saving the current text for later restore. */
 export function showHint(text: string): void {
+    if (!dom.statusText) return;
     if (!hintActive) {
         savedStatusText = dom.statusText.textContent || '';
         savedStatusColor = dom.statusText.style.color || '';
@@ -522,6 +523,7 @@ export function showHint(text: string): void {
 /** Restore the status bar text that was showing before the hint. */
 export function hideHint(): void {
     hintActive = false;
+    if (!dom.statusText) return;
     dom.statusText.textContent = savedStatusText;
     dom.statusText.style.color = savedStatusColor;
 }

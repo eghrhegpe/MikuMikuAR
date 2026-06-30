@@ -52,11 +52,12 @@ export function deriveLighting(
     ];
 
     const theta = sunAngle * TO_RAD;
-    // Night: use flat direction (y=0) — intensity is 0 so direction is irrelevant
+    // Night: flat direction (y=0) — intensity is 0 so direction is irrelevant
     const az = isBelowHorizon ? 0 : azimuthDeg * TO_RAD;
+    const dirY = isBelowHorizon ? 0 : Math.sin(theta);
     const dirDirection: [number, number, number] = [
         Math.cos(az) * Math.cos(theta),
-        Math.sin(theta),
+        dirY,
         Math.sin(az) * Math.cos(theta),
     ];
 

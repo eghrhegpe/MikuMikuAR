@@ -59,8 +59,8 @@ export class SlideMenu {
         this.container.tabIndex = -1;
         this.container.addEventListener('keydown', (e) => {
             if (this.transitioning) {
-return;
-}
+                return;
+            }
             switch (e.key) {
                 case 'ArrowDown':
                     e.preventDefault();
@@ -107,8 +107,8 @@ return;
 
     push(level: PopupLevel): void {
         if (this.transitioning) {
-return;
-}
+            return;
+        }
         this.transitioning = true;
         this.levels.push(level);
 
@@ -160,8 +160,8 @@ return;
 
     pop(): void {
         if (this.transitioning || this.levels.length <= 1) {
-return;
-}
+            return;
+        }
         this.transitioning = true;
         this.levels.pop();
         const prevLevel = this.levels[this.levels.length - 1];
@@ -212,11 +212,11 @@ return;
 
     popTo(index: number): void {
         if (index < 0 || index >= this.levels.length || this.transitioning) {
-return;
-}
+            return;
+        }
         if (index === this.levels.length - 1) {
-return;
-}
+            return;
+        }
         this.levels = this.levels.slice(0, index + 1);
         const level = this.currentLevel!;
         this.transitioning = false;
@@ -232,8 +232,8 @@ return;
     reRender(): void {
         const level = this.currentLevel;
         if (!level) {
-return;
-}
+            return;
+        }
         this.buildPanel(level);
         this.updateHeader(level);
         this.setupFocus();
@@ -266,8 +266,8 @@ return;
         this.clearFocus();
         const items = this.panelItems;
         if (this.focusIndex < 0 || this.focusIndex >= items.length) {
-return;
-}
+            return;
+        }
         items[this.focusIndex].classList.add('slide-focused');
         items[this.focusIndex].scrollIntoView({ block: 'nearest' });
     }
@@ -285,8 +285,8 @@ return;
     private focusPrev(): void {
         const len = this.panelItems.length;
         if (len === 0) {
-return;
-}
+            return;
+        }
         this.focusIndex = this.focusIndex <= 0 ? len - 1 : this.focusIndex - 1;
         this.applyFocus();
     }
@@ -294,8 +294,8 @@ return;
     private focusNext(): void {
         const len = this.panelItems.length;
         if (len === 0) {
-return;
-}
+            return;
+        }
         this.focusIndex = this.focusIndex >= len - 1 ? 0 : this.focusIndex + 1;
         this.applyFocus();
     }
@@ -303,8 +303,8 @@ return;
     private activateFocused(): void {
         const items = this.panelItems;
         if (this.focusIndex < 0 || this.focusIndex >= items.length) {
-return;
-}
+            return;
+        }
         items[this.focusIndex].click();
     }
 
@@ -323,8 +323,8 @@ return;
             for (const row of level.items) {
                 const el = this.createRow(row);
                 if (el) {
-list.appendChild(el);
-}
+                    list.appendChild(el);
+                }
             }
         }
         this.panel.appendChild(list);
@@ -335,11 +335,11 @@ list.appendChild(el);
         const backBtn = document.createElement('span');
         backBtn.className = 'slide-back';
         const backIcon = createIconifyIcon(
-            this.levels.length > 1 ? 'lucide:chevron-left' : 'lucide:x',
+            this.levels.length > 1 ? 'lucide:chevron-left' : 'lucide:x'
         );
         if (backIcon) {
-backBtn.appendChild(backIcon);
-}
+            backBtn.appendChild(backIcon);
+        }
         if (this.levels.length > 1) {
             backBtn.addEventListener('click', () => this.pop());
         } else {
@@ -412,12 +412,12 @@ backBtn.appendChild(backIcon);
         if (row.kind === 'folder') {
             el.addEventListener('click', (e) => {
                 if ((e.target as HTMLElement).closest('.slide-add-btn')) {
-return;
-}
+                    return;
+                }
                 const next = this.onFolderEnter(row, this);
                 if (next) {
-this.push(next);
-}
+                    this.push(next);
+                }
             });
         } else {
             el.addEventListener('click', () => this.onItemClick(row, this));

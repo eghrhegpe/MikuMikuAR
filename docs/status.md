@@ -465,6 +465,12 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
   - 补 audio 恢复逻辑（`loadAudioFile` + `setVolume` + `setAudioOffset`）
   - `serializeModelPreset` 已序列化 audio，`applyModelPreset` 现在对称恢复
 
+**工具链**
+- [x] ESLint 8 + @typescript-eslint 6 — TypeScript 静态检查，规则：`no-unused-vars`(warn)、`no-explicit-any`(warn)
+- [x] Prettier 3 — 统一格式化（单引号、4 空格、LF 换行、`trailingComma: "es5"`）
+- [x] eslint-config-prettier + eslint-plugin-prettier — ESLint 与 Prettier 规则无冲突
+- [x] npm scripts：`lint` / `lint:fix` / `format` / `format:check`
+
 ### 构建验证
 `vite build` ✅（139 modules，无新增错误）
 

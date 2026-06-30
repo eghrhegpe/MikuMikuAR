@@ -220,8 +220,8 @@ function _getSlotFor(
         return null;
     }
     const v =
-        (variant.byMaterial[smName] as any)?.[slotKey] ??
-        (variant.byCategory[cat] as any)?.[slotKey] ??
+        ((variant.byMaterial as any)?.[smName] as any)?.[slotKey] ??
+        ((variant.byCategory as any)?.[cat] as any)?.[slotKey] ??
         (variant.all as any)?.[slotKey];
     return v ?? null;
 }
@@ -235,7 +235,9 @@ function _getParamsFor(
         return undefined;
     }
     return (
-        variant.byMaterial[smName].params ?? variant.byCategory[cat].params ?? variant.all.params
+        variant.byMaterial?.[smName]?.params ??
+        variant.byCategory?.[cat]?.params ??
+        variant.all?.params
     );
 }
 
@@ -248,8 +250,8 @@ function _getTintFor(
         return undefined;
     }
     const t =
-        (variant.byMaterial[smName] as any)?.tint ??
-        (variant.byCategory[cat] as any)?.tint ??
+        variant.byMaterial?.[smName]?.tint ??
+        variant.byCategory?.[cat]?.tint ??
         (variant.all as any)?.tint;
     return t;
 }

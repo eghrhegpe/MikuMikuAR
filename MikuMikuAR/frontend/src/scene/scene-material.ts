@@ -72,7 +72,7 @@ export function _applyAll(id: string): void {
     if (!state) {
         return;
     }
-    const perMat = _matState.get(id);
+    const perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < inst.meshes.length; mi++) {
         const mesh = inst.meshes[mi];
         const m = mesh.material as StandardMaterial;
@@ -242,7 +242,7 @@ export function getMatDetailList(
     if (!inst) {
         return result;
     }
-    const perMat = _matState.get(id);
+    const perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < inst.meshes.length; mi++) {
         const m = inst.meshes[mi].material as StandardMaterial;
         if (!m) {
@@ -258,7 +258,9 @@ export function getMatDetailList(
 }
 
 export function getMatParams(id: string, matIndex: number): MaterialCategoryParams | null {
-    const entry = _matState.get(id).get(matIndex);
+    const modelState = _matState.get(id);
+    if (!modelState) return null;
+    const entry = modelState.get(matIndex);
     return entry ? { ...entry } : null;
 }
 
@@ -302,7 +304,10 @@ export function resetSingleMatParams(id: string, matIndex: number): void {
         console.warn(`resetSingleMatParams: invalid matIndex ${matIndex} for model "${id}"`);
         return;
     }
-    _matState.get(id).delete(matIndex);
+    const modelState = _matState.get(id);
+    if (modelState) {
+        modelState.delete(matIndex);
+    }
     _applyAll(id);
     triggerAutoSave();
 }

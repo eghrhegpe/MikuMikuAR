@@ -27,6 +27,24 @@
 - **basename 回退**：`basenameFallbackFS` 解决 PMX 内路径与实际路径不匹配的问题 — 文件名不区分大小写、忽略目录层级查找
 - **注册加载器**：前端注册 BMP/TGA 等 babylon-mmd 原生不内置的格式加载器
 
+### 4.5 前端工具链
+
+#### ESLint + Prettier
+- **ESLint 8** + `@typescript-eslint/parser` + `@typescript-eslint/eslint-plugin`（规则详情见 `.eslintrc.cjs`）
+- **Prettier 3** 统一格式化：单引号、4 空格缩进、LF 换行、`trailingComma: "es5"`
+- **集成方式**：`eslint-config-prettier` 关闭与 Prettier 冲突的 ESLint 规则；`eslint-plugin-prettier` 将 Prettier 作为 ESLint 规则运行
+- **npm scripts**：
+  ```
+  npm run lint         # ESLint 检查
+  npm run lint:fix     # 自动修复
+  npm run format       # Prettier 格式化全部文件
+  npm run format:check # CI 中检查格式
+  ```
+
+#### 测试
+- **Vitest 4**（单元/集成测试）：`npm run test` / `npm run test:watch`
+- **Playwright 1.61**（E2E 测试）：`npm run test:e2e` / `npm run test:e2e:headed`
+
 ### 5. 模型库管理
 
 #### 5.1 PMX Header 解析（`pmx.go`）

@@ -107,6 +107,7 @@ export function serializeModelPreset(id: string, presetName?: string): string {
     }
     const matState = getMatState(id);
     const rm = inst.rootMesh;
+    const pos = rm?.position ?? { x: 0, y: 0, z: 0 };
     const preset: ModelPresetFile = {
         version: 1,
         presetName: presetName,
@@ -117,9 +118,9 @@ export function serializeModelPreset(id: string, presetName?: string): string {
             kind: inst.kind,
         },
         transform: {
-            positionX: rm.position.x ?? 0,
-            positionY: rm.position.y ?? 0,
-            positionZ: rm.position.z ?? 0,
+            positionX: pos.x,
+            positionY: pos.y,
+            positionZ: pos.z,
             scaling: inst.scaling,
             rotationY: inst.rotationY,
         },
@@ -142,8 +143,8 @@ export function serializeModelPreset(id: string, presetName?: string): string {
                   offset: getAudioOffset(),
               }
             : undefined,
-        materialCategories: matState.categories,
-        materialOverrides: matState.overrides,
+        materialCategories: matState?.categories ?? {},
+        materialOverrides: matState?.overrides ?? {},
     };
     return JSON.stringify(preset, null, 2);
 }

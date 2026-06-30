@@ -53,7 +53,9 @@ initHints();
 
 // Play/Pause — only toggles play state, does NOT touch autoLoop
 dom.btnPlayPause.addEventListener('click', async () => {
-    if (!mmdRuntime) {return;}
+    if (!mmdRuntime) {
+        return;
+    }
     if (isPlaying) {
         mmdRuntime.pauseAnimation();
         setIsPlaying(false);
@@ -73,10 +75,14 @@ dom.btnLoopToggle.addEventListener('click', () => {
 
 // ======== Ctrl shortcuts hint ========
 window.addEventListener('keydown', (e) => {
-    if (e.key === 'Control' && !e.repeat) {document.body.classList.add("shortcuts-visible");}
+    if (e.key === 'Control' && !e.repeat) {
+        document.body.classList.add('shortcuts-visible');
+    }
 });
 window.addEventListener('keyup', (e) => {
-    if (e.key === 'Control') {document.body.classList.remove("shortcuts-visible");}
+    if (e.key === 'Control') {
+        document.body.classList.remove('shortcuts-visible');
+    }
 });
 window.addEventListener('blur', () => document.body.classList.remove('shortcuts-visible'));
 
@@ -85,7 +91,7 @@ function syncNavAriaExpanded(): void {
     const overlay = document.getElementById('sceneOverlay');
     const activeType = overlay.classList.contains('visible') ? overlay.dataset.popupType : null;
 
-    document.querySelectorAll<HTMLElement>('[aria-controls]').forEach(btn => {
+    document.querySelectorAll<HTMLElement>('[aria-controls]').forEach((btn) => {
         const btnType = btn.dataset.popupType;
         btn.setAttribute('aria-expanded', btnType === activeType ? 'true' : 'false');
     });
@@ -100,10 +106,13 @@ function waitForTransition(el: HTMLElement, propertyName?: string): Promise<void
     return new Promise((resolve) => {
         const dur = parseFloat(getComputedStyle(el).transitionDuration) * 1000 || 0;
         if (dur <= 0) {
- resolve(); return; 
-}
+            resolve();
+            return;
+        }
         const done = (e: TransitionEvent) => {
-            if (propertyName && e.propertyName !== propertyName) {return;}
+            if (propertyName && e.propertyName !== propertyName) {
+                return;
+            }
             el.removeEventListener('transitionend', done as any);
             resolve();
         };
@@ -114,7 +123,9 @@ function waitForTransition(el: HTMLElement, propertyName?: string): Promise<void
 
 async function toggleOverlay(id: string, showFn: () => void): Promise<void> {
     const el = document.getElementById(id);
-    if (!el) {return;}
+    if (!el) {
+        return;
+    }
     const last = _lastOverlayFn.get(id);
     if (el.classList.contains('visible')) {
         if (last === showFn) {
@@ -151,24 +162,31 @@ const navActions: Record<number, () => void | Promise<void>> = {
     1: () => toggleOverlay('sceneOverlay', showModelPopup),
     2: () => toggleOverlay('sceneOverlay', showMotionPopup),
     3: async () => {
- const m = await import('../menus/scene-menu'); toggleOverlay('sceneOverlay', m.showSceneMenu); 
-},
+        const m = await import('../menus/scene-menu');
+        toggleOverlay('sceneOverlay', m.showSceneMenu);
+    },
     4: async () => {
- const m = await import('../menus/env-menu'); toggleOverlay('sceneOverlay', m.showEnvMenu); 
-},
+        const m = await import('../menus/env-menu');
+        toggleOverlay('sceneOverlay', m.showEnvMenu);
+    },
     5: async () => {
- const m = await import('../menus/settings'); toggleOverlay('sceneOverlay', m.showSettings); 
-},
+        const m = await import('../menus/settings');
+        toggleOverlay('sceneOverlay', m.showSettings);
+    },
 };
 const navLabels: Record<number, string> = {};
 function buildNavMaps(): void {
-    document.querySelectorAll<HTMLElement>('[data-shortcut]').forEach(el => {
+    document.querySelectorAll<HTMLElement>('[data-shortcut]').forEach((el) => {
         const key = el.dataset.shortcut || '';
         const k = parseInt(key, 10);
-        if (k >= 1 && k <= 9) {navLabels[k] = el.title || "";}
+        if (k >= 1 && k <= 9) {
+            navLabels[k] = el.title || '';
+        }
         // Sync badge text from data-shortcut
         const badge = el.querySelector<HTMLElement>('.shortcut-badge');
-        if (badge) {badge.textContent = key;}
+        if (badge) {
+            badge.textContent = key;
+        }
         // Sync data-hint shortcut suffix from data-shortcut
         const hint = el.getAttribute('data-hint');
         if (hint) {
@@ -181,7 +199,9 @@ function buildNavMaps(): void {
 // Keyboard shortcuts
 window.addEventListener('keydown', async (e) => {
     const t = e.target as HTMLElement;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {return;}
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+        return;
+    }
 
     // Ctrl+1/2/3/4/5: toggle nav overlays
     if (e.ctrlKey && !e.repeat && /^Digit\d$/.test(e.code)) {
@@ -225,14 +245,18 @@ window.addEventListener('keydown', async (e) => {
     } else if (e.code === 'ArrowLeft' && mmdRuntime) {
         const foc = focusedModel();
         const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
-        if (dur <= 0) {return;}
+        if (dur <= 0) {
+            return;
+        }
         e.preventDefault();
         mmdRuntime.seekAnimation(Math.max(0, mmdRuntime.currentTime - 5), true);
         updatePlaybackUI();
     } else if (e.code === 'ArrowRight' && mmdRuntime) {
         const foc = focusedModel();
         const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
-        if (dur <= 0) {return;}
+        if (dur <= 0) {
+            return;
+        }
         e.preventDefault();
         mmdRuntime.seekAnimation(Math.min(dur, mmdRuntime.currentTime + 5), true);
         updatePlaybackUI();
@@ -241,9 +265,13 @@ window.addEventListener('keydown', async (e) => {
 
 // Freefly WASD release
 window.addEventListener('keyup', (e) => {
-    if (getCameraMode() !== 'freefly') {return;}
+    if (getCameraMode() !== 'freefly') {
+        return;
+    }
     const t = e.target as HTMLElement;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {return;}
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+        return;
+    }
     if (e.code === 'KeyW') {
         freeflyInput.forward = false;
         e.preventDefault();
@@ -271,16 +299,21 @@ dom.seekBar.addEventListener('pointerdown', (e) => {
     setSeekDragging(true);
     seekWasPlaying = isPlaying;
     if (isPlaying && mmdRuntime) {
- mmdRuntime.pauseAnimation(); setIsPlaying(false); 
-}
+        mmdRuntime.pauseAnimation();
+        setIsPlaying(false);
+    }
     seekFromEvent(e);
     dom.seekBar.setPointerCapture(e.pointerId);
 });
 window.addEventListener('pointermove', (e) => {
-    if (seekDragging) {seekFromEvent(e);}
+    if (seekDragging) {
+        seekFromEvent(e);
+    }
 });
 window.addEventListener('pointerup', async () => {
-    if (!seekDragging) {return;}
+    if (!seekDragging) {
+        return;
+    }
     setSeekDragging(false);
     if (seekWasPlaying && mmdRuntime && focusedMmdModel()) {
         await mmdRuntime.playAnimation();
@@ -298,12 +331,14 @@ let _lastHiddenOverlay: { id: string; showFn: () => void } | null = null;
 function _getAllOverlays(): HTMLElement[] {
     const seen = new Set<string>();
     const overlays: HTMLElement[] = [];
-    document.querySelectorAll<HTMLElement>('[aria-controls]').forEach(btn => {
+    document.querySelectorAll<HTMLElement>('[aria-controls]').forEach((btn) => {
         const id = btn.getAttribute('aria-controls');
         if (id && !seen.has(id)) {
             seen.add(id);
             const el = document.getElementById(id);
-            if (el) {overlays.push(el);}
+            if (el) {
+                overlays.push(el);
+            }
         }
     });
     return overlays;
@@ -316,7 +351,9 @@ function _toggleOverlays(): void {
     if (visible) {
         // Canvas click hides the visible overlay and remembers it for restore
         const showFn = _lastOverlayFn.get(visible.id);
-        if (showFn) {_lastHiddenOverlay = { id: visible.id, showFn };}
+        if (showFn) {
+            _lastHiddenOverlay = { id: visible.id, showFn };
+        }
         all.forEach((el) => el.classList.remove('visible'));
         setPopupOpen(false);
     } else if (_lastHiddenOverlay) {
@@ -334,10 +371,14 @@ window.addEventListener('pointerdown', (e) => {
 window.addEventListener('pointerup', (e) => {
     const dx = e.clientX - _pointerDownPos.x;
     const dy = e.clientY - _pointerDownPos.y;
-    if (Math.sqrt(dx * dx + dy * dy) > 5) {return;}
+    if (Math.sqrt(dx * dx + dy * dy) > 5) {
+        return;
+    }
 
     // Only toggle when clicking on the 3D canvas
-    if (!dom.canvas.contains(e.target as Node)) {return;}
+    if (!dom.canvas.contains(e.target as Node)) {
+        return;
+    }
 
     _toggleOverlays();
 });
@@ -360,17 +401,24 @@ async function init(): Promise<void> {
         await initScene();
         initDropHandler();
         // Register nav button event listeners (ensured DOM ready)
-        dom.btnMainAction.addEventListener('click', () => toggleOverlay('sceneOverlay', showModelPopup));
-        dom.btnMotionPopup.addEventListener('click', () => toggleOverlay('sceneOverlay', showMotionPopup));
+        dom.btnMainAction.addEventListener('click', () =>
+            toggleOverlay('sceneOverlay', showModelPopup)
+        );
+        dom.btnMotionPopup.addEventListener('click', () =>
+            toggleOverlay('sceneOverlay', showMotionPopup)
+        );
         dom.btnScene.addEventListener('click', async () => {
- const m = await import('../menus/scene-menu'); toggleOverlay('sceneOverlay', m.showSceneMenu); 
-});
+            const m = await import('../menus/scene-menu');
+            toggleOverlay('sceneOverlay', m.showSceneMenu);
+        });
         dom.btnEnv.addEventListener('click', async () => {
- const m = await import('../menus/env-menu'); toggleOverlay('sceneOverlay', m.showEnvMenu); 
-});
+            const m = await import('../menus/env-menu');
+            toggleOverlay('sceneOverlay', m.showEnvMenu);
+        });
         dom.btnSettings.addEventListener('click', async () => {
- const m = await import('../menus/settings'); toggleOverlay('sceneOverlay', m.showSettings); 
-});
+            const m = await import('../menus/settings');
+            toggleOverlay('sceneOverlay', m.showSettings);
+        });
         console.log('MikuMikuAR initialized');
         initLibrary().catch((err) => console.warn('Library init:', err));
         // Restore env state from config (authoritative — scene restore skips env)
@@ -401,10 +449,16 @@ const FONT_RESTORE: Record<string, string> = {
 async function restoreUIState(): Promise<void> {
     const cfg = await GetConfig();
     const s = cfg.ui_state as UIState | undefined;
-    if (!s) {return;}
+    if (!s) {
+        return;
+    }
     const root = document.documentElement;
-    if (s.scale) {root.style.setProperty("--ui-scale", String(s.scale));}
-    if (s.popupWidth) {root.style.setProperty("--popup-width", s.popupWidth + "px");}
+    if (s.scale) {
+        root.style.setProperty('--ui-scale', String(s.scale));
+    }
+    if (s.popupWidth) {
+        root.style.setProperty('--popup-width', s.popupWidth + 'px');
+    }
     if (s.accent) {
         root.style.setProperty('--accent', s.accent);
         root.style.setProperty('--accent-dim', s.accent + '33');
@@ -417,7 +471,9 @@ async function restoreUIState(): Promise<void> {
     document
         .querySelectorAll<HTMLElement>('.overlay')
         .forEach((el) => el.classList.toggle('blur-bg', !!s.blurBg));
-    if (s.performanceMode) {setPerformanceMode(s.performanceMode);}
+    if (s.performanceMode) {
+        setPerformanceMode(s.performanceMode);
+    }
 }
 
 // ======== Drag & Drop Import ========
@@ -491,16 +547,19 @@ async function handleDropFile(path: string): Promise<void> {
 }
 
 engine.runRenderLoop(() => {
- scene.render(); updatePerformance(); 
+    scene.render();
+    updatePerformance();
 });
 window.addEventListener('resize', () => {
- engine.resize(); 
+    engine.resize();
 });
 
 // ======== FPS + Clock ========
 let _fpsClockId: ReturnType<typeof setInterval> | null = null;
 function startFpsClock(): void {
-    if (_fpsClockId) {return;}
+    if (_fpsClockId) {
+        return;
+    }
     _fpsClockId = setInterval(() => {
         const now = new Date();
         const h = String(now.getHours()).padStart(2, '0');
@@ -513,14 +572,18 @@ startFpsClock();
 // ======== Download Watch Notification ========
 let importToastTimer: ReturnType<typeof setTimeout> | null = null;
 
-EventsOn('watch:newfile', (payload: {path: string, name: string, type: string}) => {
+EventsOn('watch:newfile', (payload: { path: string; name: string; type: string }) => {
     if (importToastTimer) {
         clearTimeout(importToastTimer);
     }
     const toast = document.getElementById('importToast');
-    if (!toast) {return;}
+    if (!toast) {
+        return;
+    }
     const nameEl = toast.querySelector('.toast-file');
-    if (nameEl) {nameEl.textContent = payload.name || payload.path;}
+    if (nameEl) {
+        nameEl.textContent = payload.name || payload.path;
+    }
     toast.classList.add('visible');
 
     // Wire up import button

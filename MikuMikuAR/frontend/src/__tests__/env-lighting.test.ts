@@ -18,14 +18,18 @@ describe('deriveLighting', () => {
         const l = deriveLighting([0.53, 0.71, 0.91], 75);
         expect(l.dirIntensity).toBeGreaterThan(0.8);
         expect(l.hemiIntensity).toBeLessThan(0.6);
-        expect(l.dirDiffuse[0]).toBeGreaterThan(0.8);
+        // 新算法保留色相：最亮通道 ≈ 0.95，各通道比例与 skyColor 一致
+        expect(Math.max(...l.dirDiffuse)).toBeCloseTo(0.95, 1);
+        const ratio = l.dirDiffuse[0] / l.dirDiffuse[2];
+        expect(ratio).toBeCloseTo(0.53 / 0.91, 1);
     });
 
-    it('night: dim cool light, below-horizon direction', () => {
+    it('night: dirIntensity=0 when sunAngle <= 0', () => {
         const l = deriveLighting([0.05, 0.05, 0.15], -15);
-        expect(l.dirIntensity).toBeCloseTo(0.15, 2);
-        expect(l.hemiIntensity).toBeGreaterThan(0.8);
-        expect(l.dirDirection[1]).toBeLessThan(0);
+        expect(l.dirIntensity).toBe(0);
+        expect(l.hemiIntensity).toBeCloseTo(0.3, 1);
+        // 夜间方向无意义，但函数仍返回平面方向（y=0）
+        expect(l.dirDirection[1]).toBe(0);
     });
 
     it('sunset: warm light, low angle', () => {
@@ -54,8 +58,9 @@ describe('ENV_PRESETS', () => {
             expect(p.label).toBeTruthy();
             expect(p.dirDiffuse).toHaveLength(3);
             expect(p.dirDirection).toHaveLength(3);
-            expect(p.dirIntensity).toBeGreaterThan(0);
-            expect(p.hemiIntensity).toBeGreaterThan(0);
+            // night/midnight 的 dirIntensity 可以为 0（太阳在地平线下）
+            expect(p.dirIntensity).toBeGreaterThanOrEqual(0);
+            expect(p.hemiIntensity).toBeGreaterThanOrEqual(0);
         }
     });
 });

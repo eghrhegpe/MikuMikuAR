@@ -83,7 +83,9 @@ function buildSettingsSoftwareLevel(): PopupLevel {
                         const row = document.createElement('div');
                         row.className = 'slide-item';
                         row.addEventListener('click', (e) => {
-                            if ((e.target as HTMLElement).closest('.btn')) {return;}
+                            if ((e.target as HTMLElement).closest('.btn')) {
+                                return;
+                            }
                             settingsMenu.push(buildSoftwareDetailLevel(entry.path));
                         });
                         row.innerHTML = `
@@ -95,11 +97,13 @@ function buildSettingsSoftwareLevel(): PopupLevel {
                         `;
                         row.querySelector('.btn')!.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            LaunchSoftware(entry.path, entry.args || '').then(() => {
-                                setStatus(`✓ 已启动: ${entry.name}`, true);
-                            }).catch((err: any) => {
-                                setStatus('✗ ' + (err.message || err), false);
-                            });
+                            LaunchSoftware(entry.path, entry.args || '')
+                                .then(() => {
+                                    setStatus(`✓ 已启动: ${entry.name}`, true);
+                                })
+                                .catch((err: any) => {
+                                    setStatus('✗ ' + (err.message || err), false);
+                                });
                         });
                         c.appendChild(row);
                     }
@@ -107,14 +111,24 @@ function buildSettingsSoftwareLevel(): PopupLevel {
             }
 
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plus', '添加自定义软件', false, () => handleSettingsAction({ target: 'set:addcustomsoftware' } as any));
-                slideRow(c, 'lucide:search', '自动检测 MMD', false, () => handleSettingsAction({ target: 'set:detectmmd' } as any));
-                slideRow(c, 'lucide:folder', '设置 MMD 路径', false, () => handleSettingsAction({ target: 'set:mmdpath' } as any));
-                slideRow(c, 'lucide:cube-3d', '设置 Blender 路径', false, () => handleSettingsAction({ target: 'set:blenderpath' } as any));
+                slideRow(c, 'lucide:plus', '添加自定义软件', false, () =>
+                    handleSettingsAction({ target: 'set:addcustomsoftware' } as any)
+                );
+                slideRow(c, 'lucide:search', '自动检测 MMD', false, () =>
+                    handleSettingsAction({ target: 'set:detectmmd' } as any)
+                );
+                slideRow(c, 'lucide:folder', '设置 MMD 路径', false, () =>
+                    handleSettingsAction({ target: 'set:mmdpath' } as any)
+                );
+                slideRow(c, 'lucide:cube-3d', '设置 Blender 路径', false, () =>
+                    handleSettingsAction({ target: 'set:blenderpath' } as any)
+                );
             });
 
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:folder-open', '打开目录', false, () => handleSettingsAction({ target: 'set:opensoftwaredir' } as any));
+                slideRow(c, 'lucide:folder-open', '打开目录', false, () =>
+                    handleSettingsAction({ target: 'set:opensoftwaredir' } as any)
+                );
             });
         },
     };
@@ -162,7 +176,8 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
                     val.style.cssText =
                         'background:var(--white-08);border:1px solid var(--border);border-radius:4px;padding:4px 6px;';
                     const input = document.createElement('input');
-                    input.type = 'text'; input.value = entry.args || '';
+                    input.type = 'text';
+                    input.value = entry.args || '';
                     input.style.cssText =
                         'width:100%;background:transparent;border:none;color:var(--text);font-size:12px;outline:none;';
                     input.addEventListener('blur', async () => {
@@ -182,10 +197,16 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
                 cardContainer(container, (c) => {
                     const launchRow = document.createElement('div');
                     launchRow.className = 'slide-item';
-                    const li = document.createElement('span'); li.className = 'slide-icon';
-                    const le = createIconifyIcon('lucide:play'); if (le) {li.appendChild(le);}
+                    const li = document.createElement('span');
+                    li.className = 'slide-icon';
+                    const le = createIconifyIcon('lucide:play');
+                    if (le) {
+                        li.appendChild(le);
+                    }
                     launchRow.appendChild(li);
-                    const ll = document.createElement('span'); ll.className = 'slide-label'; ll.textContent = '启动';
+                    const ll = document.createElement('span');
+                    ll.className = 'slide-label';
+                    ll.textContent = '启动';
                     launchRow.appendChild(ll);
                     launchRow.addEventListener('click', () => {
                         LaunchSoftware(entry.path, entry.args)
@@ -196,10 +217,17 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
 
                     const delRow = document.createElement('div');
                     delRow.className = 'slide-item';
-                    const di = document.createElement('span'); di.className = 'slide-icon';
-                    const de = createIconifyIcon('lucide:trash-2'); if (de) {di.appendChild(de);}
+                    const di = document.createElement('span');
+                    di.className = 'slide-icon';
+                    const de = createIconifyIcon('lucide:trash-2');
+                    if (de) {
+                        di.appendChild(de);
+                    }
                     delRow.appendChild(di);
-                    const dl = document.createElement('span'); dl.className = 'slide-label'; dl.textContent = '删除'; dl.style.color = 'var(--danger,#e74c3c)';
+                    const dl = document.createElement('span');
+                    dl.className = 'slide-label';
+                    dl.textContent = '删除';
+                    dl.style.color = 'var(--danger,#e74c3c)';
                     delRow.appendChild(dl);
                     delRow.addEventListener('click', async () => {
                         try {
@@ -211,8 +239,8 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
                             settingsMenu.pop();
                             settingsMenu.reRender();
                         } catch {
- setStatus('✗ 删除失败', false); 
-}
+                            setStatus('✗ 删除失败', false);
+                        }
                     });
                     c.appendChild(delRow);
                 });
@@ -244,35 +272,54 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
             cardContainer(container, (c) => {
                 const launchRow = document.createElement('div');
                 launchRow.className = 'slide-item';
-                const li = document.createElement('span'); li.className = 'slide-icon';
-                const le = createIconifyIcon('lucide:play'); if (le) {li.appendChild(le);}
+                const li = document.createElement('span');
+                li.className = 'slide-icon';
+                const le = createIconifyIcon('lucide:play');
+                if (le) {
+                    li.appendChild(le);
+                }
                 launchRow.appendChild(li);
-                const ll = document.createElement('span'); ll.className = 'slide-label'; ll.textContent = '启动';
+                const ll = document.createElement('span');
+                ll.className = 'slide-label';
+                ll.textContent = '启动';
                 launchRow.appendChild(ll);
                 launchRow.addEventListener('click', () => {
-                    LaunchSoftware(entry.path, '').then(() => setStatus(`✓ 已启动: ${entry.name}`, true)).catch((err: any) => setStatus('✗ ' + (err.message || err), false));
+                    LaunchSoftware(entry.path, '')
+                        .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
+                        .catch((err: any) => setStatus('✗ ' + (err.message || err), false));
                 });
                 c.appendChild(launchRow);
 
                 const convertRow = document.createElement('div');
                 convertRow.className = 'slide-item';
-                const ci = document.createElement('span'); ci.className = 'slide-icon';
-                const ce = createIconifyIcon('lucide:plus'); if (ce) {ci.appendChild(ce);}
+                const ci = document.createElement('span');
+                ci.className = 'slide-icon';
+                const ce = createIconifyIcon('lucide:plus');
+                if (ce) {
+                    ci.appendChild(ce);
+                }
                 convertRow.appendChild(ci);
-                const cl = document.createElement('span'); cl.className = 'slide-label'; cl.textContent = '转为自定义（以便编辑参数）';
+                const cl = document.createElement('span');
+                cl.className = 'slide-label';
+                cl.textContent = '转为自定义（以便编辑参数）';
                 convertRow.appendChild(cl);
                 convertRow.addEventListener('click', async () => {
                     try {
-                        const args = prompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
-                        if (args === null) {return;}
+                        const args = prompt(
+                            '输入启动参数模板（支持 {model} 占位符，留空则不带参数）：',
+                            ''
+                        );
+                        if (args === null) {
+                            return;
+                        }
                         await AddCustomSoftware(entry.path, entry.name, args);
                         cachedSoftwareEntries = await ScanSoftwareDir();
                         setStatus(`✓ 已转为自定义: ${entry.name}`, true);
                         settingsMenu.pop();
                         settingsMenu.reRender();
                     } catch (err: any) {
- setStatus('✗ ' + (err.message || err), false); 
-}
+                        setStatus('✗ ' + (err.message || err), false);
+                    }
                 });
                 c.appendChild(convertRow);
             });
@@ -291,12 +338,24 @@ function buildSettingsRoot(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:palette', '显示', true, () => settingsMenu.push(buildSettingsDisplayLevel()));
-                slideRow(c, 'lucide:monitor', '界面', true, () => settingsMenu.push(buildSettingsUILevel()));
-                slideRow(c, 'lucide:download', '下载', true, () => settingsMenu.push(buildSettingsDownloadLevel()));
-                slideRow(c, 'lucide:zap', '性能', true, () => settingsMenu.push(buildSettingsPerformanceLevel()));
-                slideRow(c, 'lucide:settings', '系统', true, () => settingsMenu.push(buildSettingsSystemLevel()));
-                slideRow(c, 'lucide:package', '软件管理', true, () => settingsMenu.push(buildSettingsSoftwareLevel()));
+                slideRow(c, 'lucide:palette', '显示', true, () =>
+                    settingsMenu.push(buildSettingsDisplayLevel())
+                );
+                slideRow(c, 'lucide:monitor', '界面', true, () =>
+                    settingsMenu.push(buildSettingsUILevel())
+                );
+                slideRow(c, 'lucide:download', '下载', true, () =>
+                    settingsMenu.push(buildSettingsDownloadLevel())
+                );
+                slideRow(c, 'lucide:zap', '性能', true, () =>
+                    settingsMenu.push(buildSettingsPerformanceLevel())
+                );
+                slideRow(c, 'lucide:settings', '系统', true, () =>
+                    settingsMenu.push(buildSettingsSystemLevel())
+                );
+                slideRow(c, 'lucide:package', '软件管理', true, () =>
+                    settingsMenu.push(buildSettingsSoftwareLevel())
+                );
             });
         },
     };
@@ -348,16 +407,17 @@ function buildSettingsUILevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                addCsRow(c, 'UI 缩放', 'lucide:maximize', 0.8, 1.3, 0.05, 1,
-                    (v) => {
-                        document.documentElement.style.setProperty('--ui-scale', String(v));
-                        SetUIScale(v).catch(() => {});
-                    });
+                addCsRow(c, 'UI 缩放', 'lucide:maximize', 0.8, 1.3, 0.05, 1, (v) => {
+                    document.documentElement.style.setProperty('--ui-scale', String(v));
+                    SetUIScale(v).catch(() => {});
+                });
                 const advRow = document.createElement('div');
                 advRow.className = 'slide-item';
                 advRow.innerHTML =
                     '<span class="slide-icon"><iconify-icon icon="lucide:settings"></iconify-icon></span><span class="slide-label">高级设置</span><span class="slide-arrow">&gt;</span>';
-                advRow.addEventListener('click', () => settingsMenu.push(buildSettingsUIAdvancedLevel()));
+                advRow.addEventListener('click', () =>
+                    settingsMenu.push(buildSettingsUIAdvancedLevel())
+                );
                 c.appendChild(advRow);
             });
         },
@@ -371,10 +431,9 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                addCsRow(c, '弹窗宽度', 'lucide:sidebar', 220, 360, 10, 280,
-                    (v) => {
-                        document.documentElement.style.setProperty('--popup-width', v + 'px');
-                        SetUIPopupWidth(v).catch(() => {});
+                addCsRow(c, '弹窗宽度', 'lucide:sidebar', 220, 360, 10, 280, (v) => {
+                    document.documentElement.style.setProperty('--popup-width', v + 'px');
+                    SetUIPopupWidth(v).catch(() => {});
                 });
                 addToggleRow(
                     c,
@@ -474,7 +533,9 @@ function addCsRow(
     const iconBox = document.createElement('span');
     iconBox.className = 'cs-icon';
     const iconEl = createIconifyIcon(icon);
-    if (iconEl) {iconBox.appendChild(iconEl);}
+    if (iconEl) {
+        iconBox.appendChild(iconEl);
+    }
     top.appendChild(iconBox);
     const lbl = document.createElement('span');
     lbl.className = 'cs-label';
@@ -504,10 +565,15 @@ function addCsRow(
         const rect = row.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width;
         let delta: number;
-        if (x < 0.25) {delta = -(range * 0.15);}
-        else if (x < 0.5) {delta = -(range * 0.05);}
-        else if (x < 0.75) {delta = range * 0.05;}
-        else {delta = range * 0.15;}
+        if (x < 0.25) {
+            delta = -(range * 0.15);
+        } else if (x < 0.5) {
+            delta = -(range * 0.05);
+        } else if (x < 0.75) {
+            delta = range * 0.05;
+        } else {
+            delta = range * 0.15;
+        }
         let newVal = Math.round((currentValue + delta) / step) * step;
         newVal = Math.max(min, Math.min(max, newVal));
         updateDisplay(newVal);
@@ -563,8 +629,11 @@ function buildSettingsThemeLevel(): PopupLevel {
                 applyBtn.textContent = '应用';
                 applyBtn.addEventListener('click', () => {
                     const hex = input.value.trim();
-                    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {setTheme(hex);}
-                    else {setStatus("✗ 无效的 hex 颜色", false);}
+                    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+                        setTheme(hex);
+                    } else {
+                        setStatus('✗ 无效的 hex 颜色', false);
+                    }
                 });
                 c.appendChild(input);
                 c.appendChild(applyBtn);
@@ -596,7 +665,9 @@ function addToggleRow(
     toggle.appendChild(slider);
     row.appendChild(toggle);
     row.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).closest('.toggle')) {return;}
+        if ((e.target as HTMLElement).closest('.toggle')) {
+            return;
+        }
         input.checked = !input.checked;
         onChange(input.checked);
     });
@@ -706,10 +777,14 @@ function handleSettingsAction(row: PopupRow): void {
             (async () => {
                 try {
                     const dir = await SelectDir();
-                    if (!dir) {return;}
+                    if (!dir) {
+                        return;
+                    }
                     await AddExternalPath(dir);
                     await reloadConfig();
-                    if (libraryRoot) {await rescanAndSync();}
+                    if (libraryRoot) {
+                        await rescanAndSync();
+                    }
                     setStatus('✓ 外部库已添加', true);
                 } catch (err) {
                     console.error('AddExternalPath error:', err);
@@ -730,7 +805,9 @@ function handleSettingsAction(row: PopupRow): void {
             (async () => {
                 try {
                     const path = await SelectExeFile();
-                    if (!path) {return;}
+                    if (!path) {
+                        return;
+                    }
                     await SetBlenderPath(path);
                     setStatus('✓ Blender 路径已设置', true);
                 } catch (err: any) {
@@ -742,7 +819,9 @@ function handleSettingsAction(row: PopupRow): void {
             (async () => {
                 try {
                     const path = await SelectExeFile();
-                    if (!path) {return;}
+                    if (!path) {
+                        return;
+                    }
                     await SetMMDPath(path);
                     setStatus('✓ MMD 路径已设置', true);
                 } catch (err: any) {
@@ -757,14 +836,21 @@ function handleSettingsAction(row: PopupRow): void {
             (async () => {
                 try {
                     const path = await SelectExeFile();
-                    if (!path) {return;}
+                    if (!path) {
+                        return;
+                    }
                     const name =
                         path
                             .split(/[/\\]/)
                             .pop()
                             ?.replace(/\.exe$/i, '') || '未知';
-                    const args = prompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
-                    if (args === null) {return;} // user cancelled
+                    const args = prompt(
+                        '输入启动参数模板（支持 {model} 占位符，留空则不带参数）：',
+                        ''
+                    );
+                    if (args === null) {
+                        return;
+                    } // user cancelled
                     await AddCustomSoftware(path, name, args);
                     await scanSoftwareDir();
                     setStatus(`✓ 已添加: ${name}`, true);
@@ -815,15 +901,17 @@ function buildSettingsExternalLevel(): PopupLevel {
                                 settingsMenu.reRender();
                                 setStatus('✓ 已重命名', true);
                             } catch {
- setStatus('✗ 重命名失败', false); 
-}
+                                setStatus('✗ 重命名失败', false);
+                            }
                         }
                     });
                     row.querySelector('.ext-del')!.addEventListener('click', async () => {
                         try {
                             await RemoveExternalPath(ep.path);
                             await reloadConfig();
-                            if (libraryRoot) {await rescanAndSync();}
+                            if (libraryRoot) {
+                                await rescanAndSync();
+                            }
                             settingsMenu.reRender();
                         } catch (err) {
                             console.error('RemoveExternalPath error:', err);
@@ -837,10 +925,14 @@ function buildSettingsExternalLevel(): PopupLevel {
                 slideRow(c, 'lucide:plus', '添加外部库', false, async () => {
                     try {
                         const dir = await SelectDir();
-                        if (!dir) {return;}
+                        if (!dir) {
+                            return;
+                        }
                         await AddExternalPath(dir);
                         await reloadConfig();
-                        if (libraryRoot) {await rescanAndSync();}
+                        if (libraryRoot) {
+                            await rescanAndSync();
+                        }
                         settingsMenu.reRender();
                         setStatus('✓ 外部库已添加', true);
                     } catch (err) {
@@ -879,7 +971,9 @@ function buildSettingsDownloadLevel(): PopupLevel {
                 const dirRow = document.createElement('div');
                 dirRow.style.cssText = 'display:flex;gap:6px;padding:6px 14px;';
                 dirInput = document.createElement('input');
-                dirInput.type = 'text'; dirInput.placeholder = '选择监听目录...'; dirInput.readOnly = true;
+                dirInput.type = 'text';
+                dirInput.placeholder = '选择监听目录...';
+                dirInput.readOnly = true;
                 dirInput.style.cssText =
                     'flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;';
                 const selectBtn = document.createElement('button');
@@ -888,14 +982,16 @@ function buildSettingsDownloadLevel(): PopupLevel {
                 selectBtn.addEventListener('click', async () => {
                     try {
                         const dir = await SelectDir();
-                        if (!dir) return;
+                        if (!dir) {
+                            return;
+                        }
                         dirInput.value = dir;
                         await SetDownloadWatchDir(dir);
                         refreshStatus();
                         setStatus(`✓ 监听目录已设置: ${dir}`, true);
                     } catch {
- setStatus('✗ 设置监听目录失败', false); 
-}
+                        setStatus('✗ 设置监听目录失败', false);
+                    }
                 });
                 dirRow.appendChild(dirInput);
                 dirRow.appendChild(selectBtn);
@@ -903,7 +999,9 @@ function buildSettingsDownloadLevel(): PopupLevel {
 
                 GetDownloadWatchStatus()
                     .then((dir) => {
-                        if (dir) dirInput.value = dir;
+                        if (dir) {
+                            dirInput.value = dir;
+                        }
                     })
                     .catch(() => {});
             });
@@ -922,10 +1020,17 @@ function buildSettingsDownloadLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 const stopRow = document.createElement('div');
                 stopRow.className = 'slide-item';
-                const si = document.createElement('span'); si.className = 'slide-icon';
-                const se = createIconifyIcon('lucide:stop-circle'); if (se) {si.appendChild(se);}
+                const si = document.createElement('span');
+                si.className = 'slide-icon';
+                const se = createIconifyIcon('lucide:stop-circle');
+                if (se) {
+                    si.appendChild(se);
+                }
                 stopRow.appendChild(si);
-                const sl = document.createElement('span'); sl.className = 'slide-label'; sl.textContent = '停止监听'; sl.style.color = 'var(--danger,#e74c3c)';
+                const sl = document.createElement('span');
+                sl.className = 'slide-label';
+                sl.textContent = '停止监听';
+                sl.style.color = 'var(--danger,#e74c3c)';
                 stopRow.appendChild(sl);
                 stopRow.addEventListener('click', async () => {
                     try {
@@ -979,8 +1084,12 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                         const root = document.documentElement;
                         const style = getComputedStyle(root);
                         const uiState: any = {};
-                        if (style.getPropertyValue('--ui-scale').trim()) {uiState.scale = parseFloat(style.getPropertyValue("--ui-scale"));}
-                        if (style.getPropertyValue('--popup-width').trim()) {uiState.popupWidth = parseInt(style.getPropertyValue("--popup-width"));}
+                        if (style.getPropertyValue('--ui-scale').trim()) {
+                            uiState.scale = parseFloat(style.getPropertyValue('--ui-scale'));
+                        }
+                        if (style.getPropertyValue('--popup-width').trim()) {
+                            uiState.popupWidth = parseInt(style.getPropertyValue('--popup-width'));
+                        }
                         uiState.performanceMode = m.key;
                         // Save via Go backend (use SetUIScale as trigger, or create new method)
                         // For now, just update UI
@@ -1009,12 +1118,18 @@ export async function showSettings(): Promise<void> {
         onItemClick: (row) => handleSettingsAction(row),
         onFolderEnter: (row) => {
             switch (row.target) {
-                case 'settings:display': return buildSettingsDisplayLevel();
-                case 'settings:ui': return buildSettingsUILevel();
-                case 'settings:download': return buildSettingsDownloadLevel();
-                case 'settings:system': return buildSettingsSystemLevel();
-                case 'settings:external': return buildSettingsExternalLevel();
-                case 'settings:clearcache': return buildSettingsClearCacheLevel();
+                case 'settings:display':
+                    return buildSettingsDisplayLevel();
+                case 'settings:ui':
+                    return buildSettingsUILevel();
+                case 'settings:download':
+                    return buildSettingsDownloadLevel();
+                case 'settings:system':
+                    return buildSettingsSystemLevel();
+                case 'settings:external':
+                    return buildSettingsExternalLevel();
+                case 'settings:clearcache':
+                    return buildSettingsClearCacheLevel();
                 case 'settings:software':
                     return buildSettingsSoftwareLevel();
                 default:

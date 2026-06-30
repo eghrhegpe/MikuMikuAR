@@ -401,12 +401,12 @@ export function buildTransformLevel(id: string): PopupLevel {
 
                     bar.appendChild(fill);
 
-                    function updateDisplay(v: number): void {
+                    const updateDisplay = (v: number): void => {
                         currentValue = v;
                         val.textContent = fmt(v);
                         const newPct = ((v - f.min) / range) * 100;
                         fill.style.width = Math.max(0, Math.min(100, newPct)) + '%';
-                    }
+                    };
 
                     row.addEventListener('click', (e) => {
                         const rect = row.getBoundingClientRect();
