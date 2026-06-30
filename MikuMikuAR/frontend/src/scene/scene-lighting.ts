@@ -99,7 +99,15 @@ function _defaultLightState(): LightState {
 
 export function getLightState(): LightState {
     if (!hemiLight || !dirLight || !_envSysShadow) {
-        return _defaultLightState();
+        const base = _defaultLightState();
+        return {
+            ...base,
+            shadowEnabled: _shadowEnabled,
+            shadowType: _shadowType,
+            shadowCascades: _shadowCascades,
+            shadowResolution: _shadowResolution,
+            shadowBias: _shadowBias,
+        };
     }
     return {
         hemiIntensity: hemiLight.intensity,
@@ -294,7 +302,6 @@ function _ensureShadow(): void {
     gen.useBlurExponentialShadowMap = _shadowType !== 'hard';
     gen.useKernelBlur = _shadowType === 'pcf';
     gen.bias = _shadowBias;
-    gen.intensity = Math.min(1, Math.max(0, dirLight.intensity / 0.4));
 
     for (const [, inst] of _modelRegistry) {
         for (const m of inst.meshes) {
