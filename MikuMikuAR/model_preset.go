@@ -239,7 +239,7 @@ func (a *App) GetLibraryIndex() ([]ModelEntry, error) {
 		}
 	}
 	if len(valid) != len(models) {
-		runtime.LogInfof(a.ctx, "GetLibraryIndex: filtered %d stale entries (empty file_path)", len(models)-len(valid))
+		a.safeLogInfo("GetLibraryIndex: filtered %d stale entries (empty file_path)", len(models)-len(valid))
 	}
 	return valid, nil
 }

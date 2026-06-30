@@ -6,8 +6,6 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // ======== Thumbnail Cache ========
@@ -29,7 +27,7 @@ func (a *App) SaveThumbnail(modelPath string, base64PNG string) error {
 	if err != nil {
 		return err
 	}
-	runtime.LogInfof(a.ctx, "SaveThumbnail: %s → %s (%d bytes)", modelPath, thumbPath, len(data))
+	a.safeLogInfo("SaveThumbnail: %s → %s (%d bytes)", modelPath, thumbPath, len(data))
 	return os.WriteFile(thumbPath, data, 0644)
 }
 
@@ -40,7 +38,7 @@ func (a *App) SaveScreenshot(dir string, filename string, base64PNG string) erro
 		return err
 	}
 	path := filepath.Join(dir, filename)
-	runtime.LogInfof(a.ctx, "SaveScreenshot: %s (%d bytes)", path, len(data))
+	a.safeLogInfo("SaveScreenshot: %s (%d bytes)", path, len(data))
 	return os.WriteFile(path, data, 0644)
 }
 

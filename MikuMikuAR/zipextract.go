@@ -17,7 +17,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -87,13 +86,13 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 		if json.Unmarshal(data, &m) == nil && m.Source == zipPath && m.Mtime == srcMtime && m.Size == srcSize && m.Version == extractCacheVersion {
 			cachedPMX := filepath.ToSlash(filepath.Join(dest, innerPath))
 			destSlash := filepath.ToSlash(dest)
-			runtime.LogInfof(a.ctx, "ExtractZip: cache hit %s → %s", zipPath, cachedPMX)
+			a.safeLogInfo("ExtractZip: cache hit %s → %s", zipPath, cachedPMX)
 			return &ExtractResult{FilePath: cachedPMX, Dir: destSlash, Cached: true}, nil
 		}
 	}
 
 	// Cache miss — re-extract
-	runtime.LogInfof(a.ctx, "ExtractZip: extracting %s → %s", zipPath, dest)
+	a.safeLogInfo("ExtractZip: extracting %s → %s", zipPath, dest)
 	os.RemoveAll(dest)
 	if err := os.MkdirAll(dest, 0755); err != nil {
 		return nil, fmt.Errorf("创建缓存目录失败")
@@ -122,7 +121,7 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 			continue
 		}
 		if !strings.HasPrefix(targetAbs, destPrefix) {
-			runtime.LogInfof(a.ctx, "ExtractZip: zip slip blocked: %s", entryName)
+			a.safeLogInfo("ExtractZip: zip slip blocked: %s", entryName)
 			continue
 		}
 
@@ -148,7 +147,7 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 		}
 
 		if _, err := io.Copy(outFile, rc); err != nil {
-			runtime.LogErrorf(a.ctx, "ExtractZip: copy error for %s: %v", entryName, err)
+			a.safeLogError("ExtractZip: copy error for %s: %v", entryName, err)
 		}
 		outFile.Close()
 		rc.Close()
@@ -166,7 +165,7 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 
 	resultPath := filepath.ToSlash(filepath.Join(dest, innerPath))
 	destSlash := filepath.ToSlash(dest)
-	runtime.LogInfof(a.ctx, "ExtractZip: done → %s", resultPath)
+	a.safeLogInfo("ExtractZip: done → %s", resultPath)
 	return &ExtractResult{FilePath: resultPath, Dir: destSlash, Cached: false}, nil
 }
 
@@ -199,10 +198,10 @@ func (a *App) CleanOrphanCache() (int, error) {
 		if _, err := os.Stat(m.Source); os.IsNotExist(err) {
 			os.RemoveAll(filepath.Join(cacheRoot, entry.Name()))
 			cleaned++
-			runtime.LogInfof(a.ctx, "CleanOrphanCache: removed %s (source %s gone)", entry.Name(), m.Source)
+			a.safeLogInfo("CleanOrphanCache: removed %s (source %s gone)", entry.Name(), m.Source)
 		}
 	}
-	runtime.LogInfof(a.ctx, "CleanOrphanCache: cleaned %d directories", cleaned)
+	a.safeLogInfo("CleanOrphanCache: cleaned %d directories", cleaned)
 	return cleaned, nil
 }
 
@@ -224,7 +223,7 @@ func (a *App) ClearExtractCache() error {
 			removed++
 		}
 	}
-	runtime.LogInfof(a.ctx, "ClearExtractCache: removed %d directories", removed)
+	a.safeLogInfo("ClearExtractCache: removed %d directories", removed)
 	return nil
 }
 
@@ -556,7 +555,7 @@ func (a *App) StartFileServer(dirPath string) (int, error) {
 
 	// Reuse existing server for this directory
 	if info, ok := a.httpServers[dirPath]; ok {
-		runtime.LogInfof(a.ctx, "StartFileServer: reuse port %d for %s", info.port, dirPath)
+		a.safeLogInfo("StartFileServer: reuse port %d for %s", info.port, dirPath)
 		return info.port, nil
 	}
 
@@ -566,16 +565,16 @@ func (a *App) StartFileServer(dirPath string) (int, error) {
 	}
 
 	port := listener.Addr().(*net.TCPAddr).Port
-	runtime.LogInfof(a.ctx, "StartFileServer: dir=%s port=%d", dirPath, port)
+	a.safeLogInfo("StartFileServer: dir=%s port=%d", dirPath, port)
 
 	handler := corsMiddleware(basenameFallbackFS(dirPath, func(format string, args ...interface{}) {
-		runtime.LogInfof(a.ctx, format, args...)
+		a.safeLogInfo(format, args...)
 	}))
 
 	srv := &http.Server{Handler: handler}
 	go func() {
 		if err := srv.Serve(listener); err != nil && err != http.ErrServerClosed {
-			runtime.LogErrorf(a.ctx, "StartFileServer: Serve error: %v", err)
+			a.safeLogError("StartFileServer: Serve error: %v", err)
 		}
 	}()
 
@@ -600,6 +599,6 @@ func (a *App) StopFileServer(dirPath string) {
 		info.server.Shutdown(shutdownCtx)
 		cancel()
 		delete(a.httpServers, dirPath)
-		runtime.LogInfof(a.ctx, "StopFileServer: stopped port %d for %s", info.port, dirPath)
+		a.safeLogInfo("StopFileServer: stopped port %d for %s", info.port, dirPath)
 	}
 }

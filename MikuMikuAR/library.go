@@ -156,7 +156,7 @@ func (a *App) scanSingleRoot(root string, source string) []ModelEntry {
 
 	topEntries, err := os.ReadDir(root)
 	if err != nil {
-		runtime.LogWarningf(a.ctx, "scanSingleRoot: skipping %s: %v", root, err)
+		a.safeLogWarning("scanSingleRoot: skipping %s: %v", root, err)
 		return nil
 	}
 

@@ -136,7 +136,7 @@
   - `human-judgement` TR-9.2: 时间流转时光照过渡流畅，无卡顿感
 - **Notes**: 阈值建议 0.5°，平衡性能与流畅度
 
-### [ ] Task 10: 库列表构建 rAF 分片渲染
+### [x] Task 10: 库列表构建 rAF 分片渲染
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
@@ -166,7 +166,7 @@
   - `human-judgement` TR-11.2: 布料关闭时调用重建操作有明确反馈
 - **Notes**: 调用方先检查状态也可，返回值更清晰
 
-### [ ] Task 12: refreshLibrary 导航深度恢复
+### [x] Task 12: refreshLibrary 导航深度恢复
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
@@ -179,7 +179,7 @@
   - `human-judgement` TR-12.2: 原目录不存在时正确回退，不崩溃
 - **Notes**: UX 改进，原设计是强制回顶层。如不需要可跳过
 
-### [ ] Task 13: 变换面板滑条实时刷新
+### [x] Task 13: 变换面板滑条实时刷新
 - **Priority**: medium
 - **Depends On**: None
 - **Description**:
@@ -225,7 +225,7 @@
   - `programmatic` TR-15.2: ESLint `no-unused-vars` 告警减少
 - **Notes**: 使用 ESLint 辅助检查
 
-### [ ] Task 16: motionMenu 空引用防护
+### [x] Task 16: motionMenu 空引用防护
 - **Priority**: low
 - **Depends On**: None
 - **Description**:
@@ -285,7 +285,7 @@
   - `human-judgement` TR-20.2: 菜单动画速度与之前一致
 - **Notes**: 便于主题系统统一调节
 
-### [ ] Task 21: outfit-ui 变体切换 loading 反馈
+### [x] Task 21: outfit-ui 变体切换 loading 反馈
 - **Priority**: low
 - **Depends On**: None
 - **Description**:
@@ -309,7 +309,7 @@
   - `programmatic` TR-22.1: 无匹配 morph 时有 debug 日志
 - **Notes**: 用 `console.debug`，不干扰正常输出
 
-### [ ] Task 23: model-detail null safety 边缘场景补全
+### [x] Task 23: model-detail null safety 边缘场景补全
 - **Priority**: low
 - **Depends On**: None
 - **Description**:

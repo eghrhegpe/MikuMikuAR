@@ -13,6 +13,7 @@ import {
     stackRegistry,
 } from '../core/config';
 import {
+    scene,
     getModelPosition,
     setModelPosition,
     setModelScaling,
@@ -283,7 +284,7 @@ export function buildTransformLevel(id: string): PopupLevel {
     if (!inst) {
         return { label: '变换', dir: '', items: [] };
     }
-    const pos = getModelPosition(id);
+    let updatingFromSlider = false;
     return {
         label: '变换',
         dir: '',
@@ -305,8 +306,14 @@ export function buildTransformLevel(id: string): PopupLevel {
                         min: -20,
                         max: 20,
                         step: 0.1,
-                        get: () => pos[0],
-                        set: (v) => { pos[0] = v; setModelPosition(id, v, pos[1], pos[2]); },
+                        get: () => {
+                            const p = getModelPosition(id);
+                            return p[0];
+                        },
+                        set: (v) => {
+                            const p = getModelPosition(id);
+                            setModelPosition(id, v, p[1], p[2]);
+                        },
                     },
                     {
                         label: '位置 Y',
@@ -314,8 +321,14 @@ export function buildTransformLevel(id: string): PopupLevel {
                         min: -20,
                         max: 20,
                         step: 0.1,
-                        get: () => pos[1],
-                        set: (v) => { pos[1] = v; setModelPosition(id, pos[0], v, pos[2]); },
+                        get: () => {
+                            const p = getModelPosition(id);
+                            return p[1];
+                        },
+                        set: (v) => {
+                            const p = getModelPosition(id);
+                            setModelPosition(id, p[0], v, p[2]);
+                        },
                     },
                     {
                         label: '位置 Z',
@@ -323,8 +336,14 @@ export function buildTransformLevel(id: string): PopupLevel {
                         min: -20,
                         max: 20,
                         step: 0.1,
-                        get: () => pos[2],
-                        set: (v) => { pos[2] = v; setModelPosition(id, pos[0], pos[1], v); },
+                        get: () => {
+                            const p = getModelPosition(id);
+                            return p[2];
+                        },
+                        set: (v) => {
+                            const p = getModelPosition(id);
+                            setModelPosition(id, p[0], p[1], v);
+                        },
                     },
                     {
                         label: '缩放',
@@ -332,7 +351,7 @@ export function buildTransformLevel(id: string): PopupLevel {
                         min: 0.01,
                         max: 5,
                         step: 0.05,
-                        get: () => modelRegistry.get(id).scaling ?? 1,
+                        get: () => modelRegistry.get(id)?.scaling ?? 1,
                         set: (v) => setModelScaling(id, v),
                     },
                     {
@@ -341,7 +360,7 @@ export function buildTransformLevel(id: string): PopupLevel {
                         min: -180,
                         max: 180,
                         step: 1,
-                        get: () => ((modelRegistry.get(id).rotationY ?? 0) * 180) / Math.PI,
+                        get: () => ((modelRegistry.get(id)?.rotationY ?? 0) * 180) / Math.PI,
                         set: (v) => setModelRotationY(id, (v * Math.PI) / 180),
                     },
                 ];
@@ -352,8 +371,12 @@ export function buildTransformLevel(id: string): PopupLevel {
                     scale: 'lucide:maximize',
                     ry: 'lucide:rotate-cw',
                 };
-                for (const f of fields) {
+                const updateDisplayFns: Array<(v: number) => void> = [];
+                const lastValues: number[] = [];
+                for (let i = 0; i < fields.length; i++) {
+                    const f = fields[i];
                     let currentValue = f.get();
+                    lastValues.push(currentValue);
                     const range = f.max - f.min;
                     const row = document.createElement('div');
                     row.className = 'cs-row';
@@ -398,6 +421,17 @@ export function buildTransformLevel(id: string): PopupLevel {
                         const newPct = ((v - f.min) / range) * 100;
                         fill.style.width = Math.max(0, Math.min(100, newPct)) + '%';
                     };
+                    updateDisplayFns.push(updateDisplay);
+
+                    row.addEventListener('pointerdown', () => {
+                        updatingFromSlider = true;
+                    });
+                    row.addEventListener('pointerup', () => {
+                        updatingFromSlider = false;
+                    });
+                    row.addEventListener('pointercancel', () => {
+                        updatingFromSlider = false;
+                    });
 
                     row.addEventListener('click', (e) => {
                         const rect = row.getBoundingClientRect();
@@ -415,14 +449,42 @@ export function buildTransformLevel(id: string): PopupLevel {
                         let newVal = currentValue + delta;
                         newVal = Math.round(newVal / f.step) * f.step;
                         newVal = Math.max(f.min, Math.min(f.max, newVal));
+                        updatingFromSlider = true;
                         updateDisplay(newVal);
                         f.set(newVal);
+                        lastValues[i] = newVal;
+                        setTimeout(() => {
+                            updatingFromSlider = false;
+                        }, 0);
                     });
 
                     row.appendChild(top);
                     row.appendChild(bar);
                     c.appendChild(row);
                 }
+
+                const observer = scene.onBeforeRenderObservable.add(() => {
+                    if (!document.body.contains(container)) {
+                        scene.onBeforeRenderObservable.remove(observer);
+                        return;
+                    }
+                    if (updatingFromSlider) {
+                        return;
+                    }
+                    const modelInst = modelRegistry.get(id);
+                    if (!modelInst) {
+                        return;
+                    }
+                    for (let i = 0; i < fields.length; i++) {
+                        const f = fields[i];
+                        const newVal = f.get();
+                        if (Math.abs(newVal - lastValues[i]) > f.step / 2) {
+                            lastValues[i] = newVal;
+                            updateDisplayFns[i](newVal);
+                        }
+                    }
+                });
+
                 const resetBtn = document.createElement('div');
                 resetBtn.className = 'slide-item';
                 resetBtn.setAttribute('data-hint', '重置所有变换参数');
@@ -439,7 +501,6 @@ export function buildTransformLevel(id: string): PopupLevel {
                 resetBtn.appendChild(resetLabel);
                 resetBtn.addEventListener('click', () => {
                     resetModelTransform(id);
-                    stackRegistry.modelStack.reRender();
                     setStatus('✓ 变换已重置', true);
                 });
                 c.appendChild(resetBtn);

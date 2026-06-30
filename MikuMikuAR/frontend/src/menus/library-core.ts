@@ -221,6 +221,100 @@ const _pendingMeta = new Set<string>();
 
 // ======== Build list from scan data ========
 
+const RAF_BATCH_THRESHOLD = 50;
+const RAF_BATCH_SIZE = 20;
+
+function renderItemsWithRAF(
+    card: HTMLElement,
+    items: PopupRow[],
+    filter: ((m: LibraryModel) => boolean) | undefined,
+    targetStack: SlideMenu | undefined
+): void {
+    if (items.length <= RAF_BATCH_THRESHOLD) {
+        for (const item of items) {
+            if (item.kind === 'divider') {
+                continue;
+            }
+            slideRow(
+                card,
+                item.icon,
+                item.label,
+                item.kind === 'folder',
+                () => {
+                    if (item.kind === 'folder') {
+                        const next = buildLevel(
+                            item.target,
+                            item.label,
+                            filter,
+                            targetStack
+                        );
+                        const stack = targetStack || stackRegistry.modelStack;
+                        stack.push(next);
+                    } else if (item.model) {
+                        if (item.model.format === 'vmd' && motionBindingTargetId) {
+                            const id = motionBindingTargetId;
+                            setMotionBindingTargetId(null);
+                            closeAllOverlays();
+                            loadVMDFromPath(item.model.file_path, id);
+                        } else {
+                            onModelRowClick(item.model);
+                        }
+                    }
+                },
+                item.sublabel,
+                item.catTag
+            );
+        }
+        return;
+    }
+
+    let index = 0;
+
+    function renderBatch(): void {
+        const end = Math.min(index + RAF_BATCH_SIZE, items.length);
+        for (; index < end; index++) {
+            const item = items[index];
+            if (item.kind === 'divider') {
+                continue;
+            }
+            slideRow(
+                card,
+                item.icon,
+                item.label,
+                item.kind === 'folder',
+                () => {
+                    if (item.kind === 'folder') {
+                        const next = buildLevel(
+                            item.target,
+                            item.label,
+                            filter,
+                            targetStack
+                        );
+                        const stack = targetStack || stackRegistry.modelStack;
+                        stack.push(next);
+                    } else if (item.model) {
+                        if (item.model.format === 'vmd' && motionBindingTargetId) {
+                            const id = motionBindingTargetId;
+                            setMotionBindingTargetId(null);
+                            closeAllOverlays();
+                            loadVMDFromPath(item.model.file_path, id);
+                        } else {
+                            onModelRowClick(item.model);
+                        }
+                    }
+                },
+                item.sublabel,
+                item.catTag
+            );
+        }
+        if (index < items.length) {
+            requestAnimationFrame(renderBatch);
+        }
+    }
+
+    renderBatch();
+}
+
 export function buildLevel(
     dir: string,
     label: string,
@@ -293,40 +387,7 @@ export function buildLevel(
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (card) => {
-                for (const item of items) {
-                    if (item.kind === 'divider') {
-                        continue;
-                    }
-                    slideRow(
-                        card,
-                        item.icon,
-                        item.label,
-                        item.kind === 'folder',
-                        () => {
-                            if (item.kind === 'folder') {
-                                const next = buildLevel(
-                                    item.target,
-                                    item.label,
-                                    filter,
-                                    targetStack
-                                );
-                                const stack = targetStack || stackRegistry.modelStack;
-                                stack.push(next);
-                            } else if (item.model) {
-                                if (item.model.format === 'vmd' && motionBindingTargetId) {
-                                    const id = motionBindingTargetId;
-                                    setMotionBindingTargetId(null);
-                                    closeAllOverlays();
-                                    loadVMDFromPath(item.model.file_path, id);
-                                } else {
-                                    onModelRowClick(item.model);
-                                }
-                            }
-                        },
-                        item.sublabel,
-                        item.catTag
-                    );
-                }
+                renderItemsWithRAF(card, items, filter, targetStack);
             });
         },
     };
@@ -804,7 +865,69 @@ export async function reloadConfig(): Promise<void> {
     }
 }
 
+function getCurrentBrowsePath(): string[] {
+    const stack = stackRegistry.modelStack;
+    if (!stack || stack.levelCount === 0) {
+        return [];
+    }
+    const dirs: string[] = [];
+    for (let i = 0; i < stack.levelCount; i++) {
+        const level = stack.getLevel(i);
+        if (level && level.dir && level.dir !== '') {
+            dirs.push(level.dir);
+        }
+    }
+    return dirs;
+}
+
+function hasSubdir(parentDir: string, childName: string, filter?: (m: LibraryModel) => boolean): boolean {
+    const parent = normPath(parentDir);
+    for (const m of allModels) {
+        if (filter && !filter(m)) {
+            continue;
+        }
+        const mdir = normPath(m.dir);
+        if (!mdir.startsWith(parent + '/')) {
+            continue;
+        }
+        const rel = mdir.substring(parent.length + 1);
+        const parts = rel.split('/').filter(Boolean);
+        if (parts.length > 0 && parts[0] === childName) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function restoreBrowsePath(pathDirs: string[]): void {
+    const stack = stackRegistry.modelStack;
+    if (!stack || pathDirs.length <= 1 || !libraryRoot) {
+        return;
+    }
+    const rootDir = normPath(libraryRoot);
+    if (pathDirs[0] !== rootDir) {
+        return;
+    }
+    const filter = (m: LibraryModel) => m.format === 'pmx';
+    let currentDir = rootDir;
+    for (let i = 1; i < pathDirs.length; i++) {
+        const targetDir = normPath(pathDirs[i]);
+        if (!targetDir.startsWith(currentDir + '/')) {
+            break;
+        }
+        const childName = targetDir.substring(currentDir.length + 1).split('/')[0];
+        if (!childName || !hasSubdir(currentDir, childName, filter)) {
+            break;
+        }
+        const nextDir = currentDir + '/' + childName;
+        const nextLevel = buildLevel(nextDir, childName, filter, stack);
+        stack.push(nextLevel);
+        currentDir = nextDir;
+    }
+}
+
 export async function refreshLibrary(): Promise<void> {
+    const prevPath = getCurrentBrowsePath();
     setStatus('扫描中...', false);
     try {
         await ClearExtractCache();
@@ -816,6 +939,18 @@ export async function refreshLibrary(): Promise<void> {
             dom.sceneOverlay.dataset.popupType === 'model'
         ) {
             showModelPopup();
+            if (prevPath.length > 0 && libraryRoot) {
+                const rootDir = normPath(libraryRoot);
+                const rootLevel = buildLevel(
+                    rootDir,
+                    '模型库',
+                    (m) => m.format === 'pmx',
+                    stackRegistry.modelStack!,
+                    externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+                );
+                stackRegistry.modelStack!.push(rootLevel);
+                restoreBrowsePath(prevPath);
+            }
         }
     } catch (err) {
         setStatus('✗ 扫描失败', false);

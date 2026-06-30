@@ -59,7 +59,7 @@ func (a *App) OpenInBlender(modelPath string) error {
 		return fmt.Errorf("启动 Blender 失败")
 	}
 
-	runtime.LogInfof(a.ctx, "Blender started for %s", modelPath)
+	a.safeLogInfo("Blender started for %s", modelPath)
 	return nil
 }
 
@@ -128,7 +128,7 @@ func (a *App) OpenInMMD(modelPath string) error {
 		return fmt.Errorf("启动 MMD 失败")
 	}
 
-	runtime.LogInfof(a.ctx, "MMD started for %s", modelPath)
+	a.safeLogInfo("MMD started for %s", modelPath)
 	return nil
 }
 
@@ -221,7 +221,7 @@ func (a *App) LaunchSoftware(path string, args string) error {
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("启动软件失败")
 	}
-	runtime.LogInfof(a.ctx, "Launched software: %s", path)
+	a.safeLogInfo("Launched software: %s", path)
 	return nil
 }
 
@@ -244,7 +244,7 @@ func (a *App) OpenWithSoftware(modelPath string, softwarePath string, args strin
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("启动软件失败")
 	}
-	runtime.LogInfof(a.ctx, "Opened %s with %s", modelPath, softwarePath)
+	a.safeLogInfo("Opened %s with %s", modelPath, softwarePath)
 	return nil
 }
 

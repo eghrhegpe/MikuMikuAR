@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -17,6 +18,13 @@ import (
 func (a *App) safeLogInfo(format string, args ...interface{}) {
 	if a.ctx != nil {
 		runtime.LogInfof(a.ctx, format, args...)
+	}
+}
+
+// safeLogWarning calls runtime.LogWarningf only if a.ctx is non-nil (safe for tests).
+func (a *App) safeLogWarning(format string, args ...interface{}) {
+	if a.ctx != nil {
+		runtime.LogWarningf(a.ctx, format, args...)
 	}
 }
 
@@ -79,6 +87,65 @@ func (a *App) shutdown(ctx context.Context) {
 		delete(a.httpServers, dir)
 	}
 	a.httpSrvMu.Unlock()
+}
+
+// shutdownWithTimeout shuts down all resources with a total timeout.
+// HTTP servers are shut down concurrently. Returns the first error encountered.
+func (a *App) shutdownWithTimeout(ctx context.Context, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Stop watcher (synchronous, fast)
+	a.watchMu.Lock()
+	if a.watcher != nil {
+		a.watcher.Close()
+		a.watcher = nil
+	}
+	if a.watchTimer != nil {
+		a.watchTimer.Stop()
+		a.watchTimer = nil
+	}
+	a.watchPending = nil
+	a.watchMu.Unlock()
+
+	// Shut down HTTP servers concurrently
+	a.httpSrvMu.Lock()
+	servers := make([]*http.Server, 0, len(a.httpServers))
+	for _, info := range a.httpServers {
+		servers = append(servers, info.server)
+	}
+	// Clear map early; actual shutdown happens concurrently
+	a.httpServers = make(map[string]*httpServerInfo)
+	a.httpSrvMu.Unlock()
+
+	if len(servers) == 0 {
+		return nil
+	}
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(servers))
+
+	for _, srv := range servers {
+		wg.Add(1)
+		go func(s *http.Server) {
+			defer wg.Done()
+			if err := s.Shutdown(ctx); err != nil {
+				errCh <- fmt.Errorf("http server shutdown: %w", err)
+			}
+		}(srv)
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	var firstErr error
+	for err := range errCh {
+		if firstErr == nil {
+			firstErr = err
+		}
+	}
+
+	return firstErr
 }
 
 // startup is called when the app starts. The context is saved
