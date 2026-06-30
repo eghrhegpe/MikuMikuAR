@@ -123,6 +123,7 @@
 |----|------|------|
 | 1 | 八城审计 | [vol-6-federal-checkup/01-八城审计.md](vol-6-federal-checkup/01-八城审计.md) |
 | 2 | 物理之躯 | [vol-6-federal-checkup/02-物理之躯.md](vol-6-federal-checkup/02-物理之躯.md) |
+| 3 | 议会与织工 | [vol-6-federal-checkup/03-议会与织工.md](vol-6-federal-checkup/03-议会与织工.md) |
 
 ### 📓 Sisyphus Stories
 

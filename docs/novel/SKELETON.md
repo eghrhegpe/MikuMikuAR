@@ -186,6 +186,7 @@
 |---|------|---------|---------|
 | 1 | 八城审计 | 前端核心模块八轮连续审计（renderer/props/proc-motion/playback/performance/clouds/model/material），55+ 项修复 | 八座城门逐一打开，问题无处藏身 |
 | 2 | 物理之躯 | 第二波审计（lighting/lipsync/loader/material/vmd/camera/env 全家桶）+ XPBD 子步积分重构 | 物理引擎的核心校准 |
+| 3 | 议会与织工 | 第三波审计（menus/SlideMenu 生命周期/motion/vmd-writer/outfit 异步刷新 + AGENTS.md 宪法更新） | 菜单、动作、换装——联邦最后几个暗角的全面体检 |
 | …… | 待续 | 更多城邦的体检正在路上 | 向内的征途没有终点 |
 
 **卷终语**：（连载中）
