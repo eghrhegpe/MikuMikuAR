@@ -96,66 +96,61 @@ function cloudNoise(x: number, y: number, cover: number): number {
 // ======== 3D Noise Texture (128³) ========
 let _noiseTex3D: RawTexture3D | null = null;
 
-/** Generate a 128x128x128 3D Perlin noise texture for GPU sampling.
- *  Reuses _perlinPerm for deterministic noise.
- *  Output range: [-1, 1], stored as float32. */
-function _generateNoise3D(): Float32Array {
-    const SIZE = 128;
-    const data = new Float32Array(SIZE * SIZE * SIZE);
+/** GPU-style hash (matches GLSL hash() exactly) */
+function _hash3D(ix: number, iy: number, iz: number): number {
+    const p = [
+        (ix * 0.3183099 + 0.1) - Math.floor(ix * 0.3183099 + 0.1),
+        (iy * 0.3183099 + 0.1) - Math.floor(iy * 0.3183099 + 0.1),
+        (iz * 0.3183099 + 0.1) - Math.floor(iz * 0.3183099 + 0.1),
+    ];
+    p[0] *= 17; p[1] *= 17; p[2] *= 17;
+    const v = p[0] * p[1] * p[2] * (p[0] + p[1] + p[2]);
+    return v - Math.floor(v); // fract
+}
+
+/** CPU-side value noise (matches GLSL noise3D() exactly) */
+function _noise3D_cpu(px: number, py: number, pz: number): number {
+    const ix = Math.floor(px), iy = Math.floor(py), iz = Math.floor(pz);
+    let fx = px - ix, fy = py - iy, fz = pz - iz;
+    // smoothstep: f*f*(3-2*f)
+    const u = fx * fx * (3 - 2 * fx);
+    const v = fy * fy * (3 - 2 * fy);
+    const w = fz * fz * (3 - 2 * fz);
     const perm = _perlinPerm;
+    const h = (x: number, y: number, z: number) => _hash3D(x & 255, y & 255, z & 255);
+    const mix1 = (a: number, b: number, t: number) => a + t * (b - a);
+    const n00 = mix1(h(ix, iy, iz),     h(ix + 1, iy, iz),     u);
+    const n01 = mix1(h(ix, iy + 1, iz), h(ix + 1, iy + 1, iz), u);
+    const n10 = mix1(h(ix, iy, iz + 1), h(ix + 1, iy, iz + 1), u);
+    const n11 = mix1(h(ix, iy + 1, iz + 1), h(ix + 1, iy + 1, iz + 1), u);
+    return mix1(mix1(n00, n01, v), mix1(n10, n11, v), w);
+}
 
-    // 3D Perlin gradient table
-    function _grad3(hash: number, dx: number, dy: number, dz: number): number {
-        const h = hash & 15;
-        const u = h < 8 ? dx : dy;
-        const v = h < 4 ? dy : h === 12 || h === 14 ? dx : dz;
-        return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+/** CPU-side FBM (matches GLSL fbm() exactly, 3 octaves) */
+function _fbm_cpu(px: number, py: number, pz: number): number {
+    let v = 0, a = 0.5, f = 1;
+    for (let i = 0; i < 3; i++) {
+        v += a * _noise3D_cpu(px * f, py * f, pz * f);
+        a *= 0.5; f *= 2;
     }
+    return v;
+}
 
-    for (let z = 0; z < SIZE; z++) {
-        for (let y = 0; y < SIZE; y++) {
-            for (let x = 0; x < SIZE; x++) {
-                const xi = x & 255;
-                const yi = y & 255;
-                const zi = z & 255;
-                const xf = x / SIZE; // Normalize to [0,1] for fade
-                const yf = y / SIZE;
-                const zf = z / SIZE;
-                const u = _perlinFade(xf * SIZE - Math.floor(xf * SIZE));
-                const v = _perlinFade(yf * SIZE - Math.floor(yf * SIZE));
-                const w = _perlinFade(zf * SIZE - Math.floor(zf * SIZE));
-
-                const aa = perm[perm[perm[xi] + yi] + zi];
-                const ab = perm[perm[perm[xi] + yi + 1] + zi];
-                const ba = perm[perm[perm[xi + 1] + yi] + zi];
-                const bb = perm[perm[perm[xi + 1] + yi + 1] + zi];
-                const aa1 = perm[perm[perm[xi] + yi] + zi + 1];
-                const ab1 = perm[perm[perm[xi] + yi + 1] + zi + 1];
-                const ba1 = perm[perm[perm[xi + 1] + yi] + zi + 1];
-                const bb1 = perm[perm[perm[xi + 1] + yi + 1] + zi + 1];
-
-                const n0 = _perlinLerp(_grad3(aa, xf, yf, zf), _grad3(ba, xf - 1, yf, zf), u);
-                const n1 = _perlinLerp(
-                    _grad3(ab, xf, yf - 1, zf),
-                    _grad3(bb, xf - 1, yf - 1, zf),
-                    u
-                );
-                const n2 = _perlinLerp(
-                    _grad3(aa1, xf, yf, zf - 1),
-                    _grad3(ba1, xf - 1, yf, zf - 1),
-                    u
-                );
-                const n3 = _perlinLerp(
-                    _grad3(ab1, xf, yf - 1, zf - 1),
-                    _grad3(bb1, xf - 1, yf - 1, zf - 1),
-                    u
-                );
-
-                const n01 = _perlinLerp(n0, n1, v);
-                const n23 = _perlinLerp(n2, n3, v);
-                const noise = _perlinLerp(n01, n23, w);
-
-                data[z * SIZE * SIZE + y * SIZE + x] = noise; // Range [-1, 1]
+/** Generate 128³ texture storing fbm(p * 0.04) in range [0,1].
+ *  Shader samples this instead of computing hash/noise3D/fbm in real-time. */
+function _generateNoise3D(): Float32Array {
+    const S = 128;
+    const data = new Float32Array(S * S * S);
+    const scale = 0.04; // matches shader: fbm(p * 0.04 * cloudScale)
+    for (let z = 0; z < S; z++) {
+        for (let y = 0; y < S; y++) {
+            for (let x = 0; x < S; x++) {
+                // p in [0, ~5.1] for S=128, scale=0.04 → good noise frequency
+                const px = x / S * 4.0, py = y / S * 4.0, pz = z / S * 4.0;
+                let n = _fbm_cpu(px * scale * 100, py * scale * 100, pz * scale * 100);
+                // Remap from approx [-1,1] to [0,1] for texture storage
+                n = Math.max(0, Math.min(1, n * 0.5 + 0.5));
+                data[z * S * S + y * S + x] = n;
             }
         }
     }
@@ -163,15 +158,19 @@ function _generateNoise3D(): Float32Array {
 }
 
 function _ensureNoiseTexture(scene: Scene): RawTexture3D {
-    if (_noiseTex3D) {
-        return _noiseTex3D;
-    }
-    const SIZE = 128;
+    if (_noiseTex3D) return _noiseTex3D;
+    const S = 128;
     const data = _generateNoise3D();
-    _noiseTex3D = new RawTexture3D(data, SIZE, SIZE, SIZE, Engine.TEXTUREFORMAT_RGBA, scene);
-    _noiseTex3D.wrapU = 1; // CLAMP? NO - wrap for tiling
-    _noiseTex3D.wrapV = 1;
-    _noiseTex3D.wrapR = 1;
+    _noiseTex3D = new RawTexture3D(
+        data, S, S, S, scene,
+        false,  // generateMipMaps
+        false,  // invertY (not meaningful for 3D)
+        Texture.TRILINEAR_SAMPLINGMODE,
+        Engine.TEXTUREFORMAT_R, // single-channel float
+    );
+    _noiseTex3D.wrapU = Texture.WRAP_ADDRESSMODE;
+    _noiseTex3D.wrapV = Texture.WRAP_ADDRESSMODE;
+    _noiseTex3D.wrapR = Texture.WRAP_ADDRESSMODE;
     console.log('[VolCloud] 3D noise texture created (128³)');
     return _noiseTex3D;
 }
@@ -184,13 +183,14 @@ let _debugCloudRing: Mesh | null = null;
 let _debugCloudMarkers: Mesh[] = [];
 
 const VERT_SRC = `
+#version 300 es
 precision highp float;
-attribute vec3 position;
+in vec3 position;
 uniform mat4 world;
 uniform mat4 worldViewProjection;
-uniform float sphereRadius;  // For horizon fade calculation
-varying vec3 vWorldPos;
-varying float vDistFromCenter;  // XZ distance from sphere center
+uniform float sphereRadius;
+out vec3 vWorldPos;
+out float vDistFromCenter;
 void main(){
     vec4 worldPos = world * vec4(position, 1.0);
     vWorldPos = worldPos.xyz;

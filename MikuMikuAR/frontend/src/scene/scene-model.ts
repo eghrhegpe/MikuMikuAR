@@ -272,7 +272,7 @@ export class ModelManager {
         this.destroyBoneOverlay(id);
 
         // External cleanup (material state, proc motion state, etc.)
-        this.onRemoveModel(id);
+        this.onRemoveModel?.(id);
 
         // Update focus
         if (configFocusedId === id) {
@@ -295,11 +295,12 @@ export class ModelManager {
 
     /** Focus a model by ID: set focus + auto-frame camera. */
     focus(id: string): void {
-        setFocusedModelId(id);
         const inst = this.modelRegistry.get(id);
         if (!inst) {
+            setFocusedModelId(null);
             return;
         }
+        setFocusedModelId(id);
 
         // Auto-frame camera: compute bounding box from all meshes
         const min = new Vector3(Infinity, Infinity, Infinity);

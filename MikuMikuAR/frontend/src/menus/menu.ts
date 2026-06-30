@@ -352,7 +352,7 @@ export class SlideMenu {
         title.textContent = level.label || '';
         this.headerEl.appendChild(title);
 
-        for (const btn of this.extraButtonFactory() ?? []) {
+        for (const btn of this.extraButtonFactory?.() ?? []) {
             this.headerEl.appendChild(btn);
         }
     }
