@@ -38,8 +38,8 @@ describe('vmd-writer buildVmd structure', () => {
     ];
     const buf = buildVmd(boneFrames, morphFrames);
 
-    it('total size = 54 + 3*111 + 4 + 2*23 + 12', () => {
-        expect(buf.byteLength).toBe(54 + 3 * 111 + 4 + 2 * 23 + 12);
+    it('total size = 54 + 3*111 + 4 + 2*23 + 16', () => {
+        expect(buf.byteLength).toBe(54 + 3 * 111 + 4 + 2 * 23 + 16);
     });
 
     it('starts with VMD signature', () => {
@@ -74,13 +74,14 @@ describe('vmd-writer buildVmd structure', () => {
         expect(view.getUint32(trailerOff, true)).toBe(0); // camera
         expect(view.getUint32(trailerOff + 4, true)).toBe(0); // light
         expect(view.getUint32(trailerOff + 8, true)).toBe(0); // shadow
+        expect(view.getUint32(trailerOff + 12, true)).toBe(0); // ik
     });
 
     it('empty frames produces valid minimal VMD', () => {
         const empty = buildVmd([], []);
         const view = new DataView(empty);
         expect(view.getUint32(50, true)).toBe(0); // 0 bones
-        expect(empty.byteLength).toBe(54 + 4 + 12); // header + morphCount + trailer
+        expect(empty.byteLength).toBe(54 + 4 + 16); // header + morphCount + trailer(4 fields)
     });
 });
 

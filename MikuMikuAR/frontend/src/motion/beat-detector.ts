@@ -14,7 +14,7 @@ export class BeatDetector {
     private source: MediaElementAudioSourceNode | null = null;
     /** GainNode：连接 analyser → gain → destination，使音量独立于 audioElement.volume */
     private gain: GainNode | null = null;
-    private freqData: Uint8Array = new Uint8Array(0);
+    private freqData: Uint8Array<ArrayBuffer> = new Uint8Array(0);
     private energyHistory: number[] = [];
     private energySum = 0; // running sum for avg
     private lastBeatTime = 0;

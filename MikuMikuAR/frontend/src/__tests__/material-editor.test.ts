@@ -269,18 +269,26 @@ vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({
             r: 1,
             g: 1,
             b: 1,
-            set() {},
+            set(r: number, g: number, b: number) {
+                this.r = r;
+                this.g = g;
+                this.b = b;
+            },
             clone() {
-                return { ...this };
+                return { r: this.r, g: this.g, b: this.b, set: this.set, clone: this.clone };
             },
         };
         specularColor = {
             r: 0.8,
             g: 0.8,
             b: 0.8,
-            set() {},
+            set(r: number, g: number, b: number) {
+                this.r = r;
+                this.g = g;
+                this.b = b;
+            },
             clone() {
-                return { ...this };
+                return { r: this.r, g: this.g, b: this.b, set: this.set, clone: this.clone };
             },
         };
         specularPower = 50;
@@ -288,9 +296,13 @@ vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({
             r: 0.3,
             g: 0.3,
             b: 0.3,
-            set() {},
+            set(r: number, g: number, b: number) {
+                this.r = r;
+                this.g = g;
+                this.b = b;
+            },
             clone() {
-                return { ...this };
+                return { r: this.r, g: this.g, b: this.b, set: this.set, clone: this.clone };
             },
         };
         alpha = 1;
@@ -417,6 +429,7 @@ vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () => ({}))
 vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => ({}));
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import {
     _catOf,
     _catState,
@@ -528,9 +541,10 @@ function mockMat(name: string) {
 }
 
 function regModel(id: string, meshCount: number, names?: string[]): void {
-    const meshes = Array.from({ length: meshCount }, (_, i) => ({
-        material: mockMat((names && names[i]) ?? `mat${i}`),
-    }));
+    const meshes = Array.from({ length: meshCount }, (_, i) => {
+        const mat = new StandardMaterial((names && names[i]) ?? `mat${i}`);
+        return { material: mat };
+    });
     // @ts-expect-error duck-typed mock meshes
     modelRegistry.set(id, { meshes });
 }
@@ -775,49 +789,11 @@ describe('applyMatState MaterialCategory cast', () => {
 // ======== _applyAll ordering tests with duck-typed materials ========
 
 function makeMockMat(origR = 1, origG = 1, origB = 1) {
-    return {
-        name: 'skin',
-        diffuseColor: {
-            r: origR,
-            g: origG,
-            b: origB,
-            set(r: number, g: number, b: number) {
-                this.r = r;
-                this.g = g;
-                this.b = b;
-            },
-            clone() {
-                return { ...this, r: this.r, g: this.g, b: this.b };
-            },
-        },
-        specularColor: {
-            r: 0.8,
-            g: 0.8,
-            b: 0.8,
-            set(r: number, g: number, b: number) {
-                this.r = r;
-                this.g = g;
-                this.b = b;
-            },
-            clone() {
-                return { ...this, r: this.r, g: this.g, b: this.b };
-            },
-        },
-        specularPower: 50,
-        ambientColor: {
-            r: 0.3,
-            g: 0.3,
-            b: 0.3,
-            set(r: number, g: number, b: number) {
-                this.r = r;
-                this.g = g;
-                this.b = b;
-            },
-            clone() {
-                return { ...this, r: this.r, g: this.g, b: this.b };
-            },
-        },
-    };
+    const mat = new StandardMaterial('skin');
+    mat.diffuseColor.r = origR;
+    mat.diffuseColor.g = origG;
+    mat.diffuseColor.b = origB;
+    return mat;
 }
 
 describe('_applyAll ordering: per-material overrides category on re-apply', () => {

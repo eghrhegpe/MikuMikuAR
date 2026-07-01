@@ -97,17 +97,25 @@ describe('generateAutoDanceVmd', () => {
     });
 
     it('includes arm bone frames', () => {
-        // Check that 左腕/右腕 names appear by scanning bone names
+        // 骨骼名是 Shift-JIS 编码，用编码后的字节序列匹配
+        // 左腕 = 左(0x8DB6) + 腕(0x9862) → [0x8D, 0xB6, 0x98, 0x62]
         const u8 = new Uint8Array(buf);
         const view = new DataView(buf);
         const boneCount = view.getUint32(50, true);
         let foundLeftArm = false;
+        const leftArmBytes = [0x8D, 0xB6, 0x98, 0x62]; // 左腕 Shift-JIS
         for (let i = 0; i < boneCount; i++) {
             const off = 54 + i * 111;
-            const nameBytes = u8.slice(off, off + 15);
-            const name = new TextDecoder().decode(nameBytes).replace(/\s+$/, '');
-            if (name === '左腕') {
+            let match = true;
+            for (let j = 0; j < leftArmBytes.length; j++) {
+                if (u8[off + j] !== leftArmBytes[j]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
                 foundLeftArm = true;
+                break;
             }
         }
         expect(foundLeftArm).toBe(true);

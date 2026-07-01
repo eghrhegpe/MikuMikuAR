@@ -122,7 +122,8 @@ describe('SlideMenu — 渲染', () => {
         expect(items.length).toBe(2);
     });
 
-    it('renderCustom 回调创建自定义 DOM', () => {
+    it('renderCustom 回调创建自定义 DOM', async () => {
+        let rendered = false;
         const level: PopupLevel = {
             label: '自定义',
             dir: '',
@@ -134,7 +135,12 @@ describe('SlideMenu — 渲染', () => {
                 c.appendChild(div);
             },
         };
+        (menu as any).onAfterRender = () => { rendered = true; };
         menu.reset(level);
+        // 等待 buildPanel 的 async 回调 + onAfterRender
+        while (!rendered) {
+            await new Promise((r) => setTimeout(r, 5));
+        }
         const custom = container.querySelectorAll('.custom-content');
         expect(custom.length).toBe(1);
         expect(custom[0]?.textContent).toBe('Hello');
@@ -171,7 +177,19 @@ describe('SlideMenu — 键盘导航', () => {
         });
     });
 
-    it('focusNext 在正序/循环', () => {
+    async function waitForRender(m: SlideMenu): Promise<void> {
+        return new Promise((resolve) => {
+            const orig = (m as any).onAfterRender;
+            (m as any).onAfterRender = () => {
+                (m as any).onAfterRender = orig;
+                orig?.();
+                resolve();
+            };
+        });
+    }
+
+    it('focusNext 在正序/循环', async () => {
+        const p = waitForRender(menu);
         menu!.reset({
             label: 'F',
             dir: '',
@@ -180,6 +198,7 @@ describe('SlideMenu — 键盘导航', () => {
                 { kind: 'action' as const, label: 'Y', icon: 'i', target: 'y' },
             ],
         });
+        await p;
         // setupFocus() 将 focusIndex 设为 0
         expect((menu as any).focusIndex).toBe(0);
 
@@ -190,7 +209,8 @@ describe('SlideMenu — 键盘导航', () => {
         expect((menu as any).focusIndex).toBe(0);
     });
 
-    it('focusPrev 反向循环', () => {
+    it('focusPrev 反向循环', async () => {
+        const p = waitForRender(menu);
         menu!.reset({
             label: 'F',
             dir: '',
@@ -199,6 +219,7 @@ describe('SlideMenu — 键盘导航', () => {
                 { kind: 'action' as const, label: 'Y', icon: 'i', target: 'y' },
             ],
         });
+        await p;
 
         (menu as any).focusPrev(); // 循环到最后一个
         expect((menu as any).focusIndex).toBe(1);

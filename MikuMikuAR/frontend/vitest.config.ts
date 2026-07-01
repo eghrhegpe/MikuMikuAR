@@ -5,5 +5,16 @@ export default defineConfig({
         environment: "happy-dom",
         globals: true,
         exclude: ["e2e/**", "node_modules/**"],
+        coverage: {
+            provider: "v8",
+            reporter: ["text", "html"],
+            include: ["src/**/*.ts"],
+            exclude: [
+                "src/**/*.test.ts",
+                "src/__tests__/**",
+                "src/**/index.ts",
+                "src/wailsjs/**",
+            ],
+        },
     },
 });

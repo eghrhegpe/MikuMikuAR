@@ -209,9 +209,14 @@ export function generateAutoDanceVmd(
     return buildVmd(bones, morphs, 'AutoDance');
 }
 
-/** 判断是否应切换到 Auto Dance（有音乐在播放）。 */
+/** 判断是否应切换到 Auto Dance（有音乐在播放）。
+ *  'off' = 自动模式：有音乐→AutoDance，无音乐→Idle
+ *  'autodance' = 强制 AutoDance（即使无音乐也保持）
+ *  'idle' = 强制 Idle */
 export function shouldAutoDance(audioPlaying: boolean, mode: ProcMotionMode): boolean {
-    return audioPlaying && mode === 'autodance';
+    if (mode === 'idle') return false;
+    if (mode === 'autodance') return true;
+    return audioPlaying; // 'off' = auto mode
 }
 
 /** 判断是否应切换到 Idle（无音乐，未加载用户 VMD）。

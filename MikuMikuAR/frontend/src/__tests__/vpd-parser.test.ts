@@ -208,8 +208,8 @@ describe('poseDataToVmdBuffer', () => {
                 { name: 'b', position: [0, 0, 0], rotation: [0, 0, 0, 1] },
             ],
         });
-        // header(54) + 2*111 + 4(morphCount) + 4*3(trailer) = 54+222+4+12 = 292
-        expect(buf.byteLength).toBe(HEADER_SIZE + 2 * BONE_SIZE + 4 + 12);
+        // header(54) + 2*111 + 4(morphCount) + 4*4(trailer) = 54+222+4+16 = 296
+        expect(buf.byteLength).toBe(HEADER_SIZE + 2 * BONE_SIZE + 4 + 16);
     });
 });
 
