@@ -124,6 +124,31 @@
 | 1 | 八城审计 | [vol-6-federal-checkup/01-八城审计.md](vol-6-federal-checkup/01-八城审计.md) |
 | 2 | 物理之躯 | [vol-6-federal-checkup/02-物理之躯.md](vol-6-federal-checkup/02-物理之躯.md) |
 | 3 | 议会与织工 | [vol-6-federal-checkup/03-议会与织工.md](vol-6-federal-checkup/03-议会与织工.md) |
+| 4 | 代码的镜厅 | [vol-6-federal-checkup/04-代码的镜厅.md](vol-6-federal-checkup/04-代码的镜厅.md) |
+| 5 | 审计报告 | [vol-6-federal-checkup/05-审计报告.md](vol-6-federal-checkup/05-审计报告.md) |
+| 6 | XSS 攻坚战 | [vol-6-federal-checkup/06-XSS攻坚战.md](vol-6-federal-checkup/06-XSS攻坚战.md) |
+| 7 | 路径的陷阱 | [vol-6-federal-checkup/07-路径的陷阱.md](vol-6-federal-checkup/07-路径的陷阱.md) |
+| 8 | 消失的头发 | [vol-6-federal-checkup/08-消失的头发.md](vol-6-federal-checkup/08-消失的头发.md) |
+| 9 | 空白的一秒 | [vol-6-federal-checkup/09-空白的一秒.md](vol-6-federal-checkup/09-空白的一秒.md) |
+| 10 | 给模型拍证件照 | [vol-6-federal-checkup/10-给模型拍证件照.md](vol-6-federal-checkup/10-给模型拍证件照.md) |
+| 11 | 织布机的垃圾 | [vol-6-federal-checkup/11-织布机的垃圾.md](vol-6-federal-checkup/11-织布机的垃圾.md) |
+| 12 | 快递员与会变形的护盾 | [vol-6-federal-checkup/12-快递员与会变形的护盾.md](vol-6-federal-checkup/12-快递员与会变形的护盾.md) |
+| 13 | 调光器的最小档位 | [vol-6-federal-checkup/13-调光器的最小档位.md](vol-6-federal-checkup/13-调光器的最小档位.md) |
+| 14 | 夕阳的影子 | [vol-6-federal-checkup/14-夕阳的影子.md](vol-6-federal-checkup/14-夕阳的影子.md) |
+| 15 | 沉默的函数 | [vol-6-federal-checkup/15-沉默的函数.md](vol-6-federal-checkup/15-沉默的函数.md) |
+| 16 | 不存在的 bug | [vol-6-federal-checkup/16-不存在的bug.md](vol-6-federal-checkup/16-不存在的bug.md) |
+| 17 | 图书馆的摆书人 | [vol-6-federal-checkup/17-图书馆的摆书人.md](vol-6-federal-checkup/17-图书馆的摆书人.md) |
+| 18 | 电梯的楼层记忆 | [vol-6-federal-checkup/18-电梯的楼层记忆.md](vol-6-federal-checkup/18-电梯的楼层记忆.md) |
+| 19 | 调参数的手感 | [vol-6-federal-checkup/19-调参数的手感.md](vol-6-federal-checkup/19-调参数的手感.md) |
+| 20 | 没装子弹的枪 | [vol-6-federal-checkup/20-没装子弹的枪.md](vol-6-federal-checkup/20-没装子弹的枪.md) |
+| 21 | 忘记的设置 | [vol-6-federal-checkup/21-忘记的设置.md](vol-6-federal-checkup/21-忘记的设置.md) |
+| 22 | 被偷走的焦点 | [vol-6-federal-checkup/22-被偷走的焦点.md](vol-6-federal-checkup/22-被偷走的焦点.md) |
+| 23 | 三十颗绿石子 | [vol-6-federal-checkup/23-三十颗绿石子.md](vol-6-federal-checkup/23-三十颗绿石子.md) |
+| 24 | 审计报告的最后一页 | [vol-6-federal-checkup/24-审计报告的最后一页.md](vol-6-federal-checkup/24-审计报告的最后一页.md) |
+
+> **番外**：[地下管道的检修](vol-6-federal-checkup/番外-地下管道的检修.md)（Go 端系统性审计——panic recovery、日志统一、错误处理标准化）
+>
+> **番外二**：[建材仓库的大扫除](vol-6-federal-checkup/番外二-建材仓库的大扫除.md)（依赖审计与升级——TypeScript 5、ESLint 9 flat config、Vite 6、0 漏洞）
 
 ### 📓 Sisyphus Stories
 
