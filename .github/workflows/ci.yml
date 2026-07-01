@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-frontend:
+    name: Frontend — Test & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MikuMikuAR/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: MikuMikuAR/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Run unit tests
+        run: npx vitest run --coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: MikuMikuAR/frontend/coverage/
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build
+        run: npx vite build
+
+  test-backend:
+    name: Backend — Go Test & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MikuMikuAR
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Go mod download
+        run: go mod download
+
+      - name: Run Go tests
+        run: go test ./... -v -count=1
+
+      - name: Go build
+        run: go build ./...
+
+  config-syntax:
+    name: Config — Syntax Contract Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run config syntax test
+        run: python MikuMikuAR/tests/test_config_syntax.py
