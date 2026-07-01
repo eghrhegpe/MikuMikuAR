@@ -1,2 +1,33 @@
-# Auto detect text files and perform LF normalization
+# Auto-detect text files and normalize to LF in the repo
 * text=auto
+
+# Source code — LF in repo, Windows users get CRLF on checkout
+*.ts      text
+*.tsx     text
+*.js      text
+*.jsx     text
+*.json    text
+*.css     text
+*.html    text
+*.md      text
+*.go      text
+*.cjs     text
+*.mjs     text
+
+# Shell scripts — must stay LF
+*.sh      text eol=lf
+
+# Batch files — must stay CRLF
+*.bat     text eol=crlf
+*.ps1     text eol=crlf
+
+# Binaries — mark as binary
+*.png     binary
+*.jpg     binary
+*.ico     binary
+*.exe     binary
+*.pmx     binary
+*.zip     binary
+*.7z      binary
+*.woff2   binary
+*.ttf     binary
