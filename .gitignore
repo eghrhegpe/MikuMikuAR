@@ -20,3 +20,9 @@ reasonix.toml
 # CodeBuddy / WorkBuddy — other-software memories and local config
 .codebuddy/
 .workbuddy/
+
+# Test coverage output
+coverage/
+
+# CI workflow (requires workflow-scoped token to push)
+.github/workflows/
