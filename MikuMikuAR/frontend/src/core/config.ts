@@ -417,7 +417,7 @@ export const envState: EnvState = {
     skyRotationSpeed: 0, // 0=关, 1=慢速, 5=快速
     skyBrightness: 1,
     starsEnabled: false,
-    envIntensity: 1,
+    envIntensity: 2,
 
     groundVisible: true,
     groundMode: 'solid',

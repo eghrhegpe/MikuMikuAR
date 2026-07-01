@@ -31,6 +31,7 @@ import {
     getEnvSunAngle,
     setEnvSunAngle,
     applyEnvPreset,
+    setRenderState,
     transitionRenderState,
 } from '../scene/scene';
 import {
@@ -139,22 +140,27 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     renderContent: (inner) => {
                         addSliderRow(
                             inner,
-                            '天空亮度',
-                            s.skyBrightness,
-                            0.1,
-                            5,
-                            0.1,
-                            (v) => setEnvState({ skyBrightness: v }),
+                            '太阳强度',
+                            getLightState().dirIntensity,
+                            0,
+                            1,
+                            0.05,
+                            (v) => {
+                                setLightingState({ dirIntensity: v });
+                                setRenderState({ exposure: Math.max(0.3, Math.min(2.0, v + 0.6)) });
+                            },
                             'lucide:sun'
                         );
                         addSliderRow(
                             inner,
-                            '环境亮度',
-                            s.envIntensity,
+                            '天空照明',
+                            s.envIntensity / 3,
                             0,
-                            3,
+                            1,
                             0.05,
-                            (v) => setEnvState({ envIntensity: v }),
+                            (v) => {
+                                setEnvState({ envIntensity: v * 3 });
+                            },
                             'lucide:sun'
                         );
                     },
@@ -528,12 +534,12 @@ export function buildSkyLevel(): PopupLevel {
                     );
                     addSliderRow(
                         c,
-                        '环境亮度',
-                        s.envIntensity,
+                        '天空照明',
+                        s.envIntensity / 3,
                         0,
-                        3,
+                        1,
                         0.05,
-                        (v) => setEnvState({ envIntensity: v }),
+                        (v) => setEnvState({ envIntensity: v * 3 }),
                         'lucide:sun'
                     );
                 }

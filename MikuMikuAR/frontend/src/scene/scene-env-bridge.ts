@@ -8,14 +8,21 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '../core/config';
-import { ENV_PRESETS } from './env-lighting';
-// 直接从 impl 导入，避免与 scene-env.ts 的循环依赖
+import { deriveLighting, ENV_PRESETS } from './env-lighting';
 import * as impl from './scene-env-impl';
 import {
+    setLightState,
+    getLightState,
+    setSkipLightAutoSave,
     hemiLight,
     _updateSunDisc,
 } from './scene-lighting';
+import type { LightState } from './scene-lighting';
 import { scene, setRenderState } from './scene';
+
+function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
+    obj[key] = value;
+}
 
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState): void {
@@ -62,8 +69,8 @@ function _applyEnvStateFacade(state: EnvState): void {
         console.warn('[env] cloud fail:', e);
     }
 
-    // 半球光自动跟随环境 — envIntensity 控制强度，天空色控制色调
-    hemiLight.intensity = state.envIntensity;
+    // 半球光 — 固定强度，颜色随天空色（MMD 材质对其不敏感，设为稳定值）
+    hemiLight.intensity = 0.5;
     const skyMid = state.skyColorMid ?? [
         (state.skyColorTop[0] + state.skyColorBot[0]) / 2,
         (state.skyColorTop[1] + state.skyColorBot[1]) / 2,
@@ -74,6 +81,14 @@ function _applyEnvStateFacade(state: EnvState): void {
         state.groundColor[0] * 0.5,
         state.groundColor[1] * 0.5,
         state.groundColor[2] * 0.5,
+    );
+    // 场景环境色 — 直接影响 MMD 材质的 ambient 项，envIntensity 控制渗透力度
+    // 0→0, 默认2→0.3, 3→0.45，最大不超过 0.5 以免冲淡方向光
+    const ambientStrength = Math.min(state.envIntensity * 0.15, 0.5);
+    scene.ambientColor = new Color3(
+        skyMid[0] * ambientStrength,
+        skyMid[1] * ambientStrength,
+        skyMid[2] * ambientStrength,
     );
 }
 
@@ -212,12 +227,29 @@ export function applyEnvPreset(name: string): boolean {
               (startSkyTop[2] + startSkyBot[2]) / 2,
           ];
 
+    // 捕获当前灯光状态用于插值
+    const startLight = getLightState();
+    const targetLight: Partial<LightState> = {
+        // 方向光是太阳光，颜色固定为白色（不随天空色偏蓝）
+        dirColor: [1, 0.95, 0.9],
+        dirX: preset.dirDirection[0],
+        dirY: preset.dirDirection[1],
+        dirZ: preset.dirDirection[2],
+        dirIntensity: preset.dirIntensity,
+        hemiIntensity: preset.hemiIntensity,
+    };
+
     const duration = 2000;
     const startTime = performance.now();
+
+    // 动画期间抑制自动保存；先释放旧动画的锁（若有）
+    setSkipLightAutoSave(false);
+    setSkipLightAutoSave(true);
 
     const animLoop = () => {
         // 取消检测：新预设已启动，当前动画失效
         if (_presetAnimId !== myId) {
+            setSkipLightAutoSave(false);
             return;
         }
         const elapsed = performance.now() - startTime;
@@ -241,7 +273,6 @@ export function applyEnvPreset(name: string): boolean {
             lerp(startSkyMid[2], mid[2]),
         ];
 
-        // 仅更新环境状态，不动灯光（方向光是舞台灯，由用户独立控制）
         setEnvState(
             {
                 skyMode: 'procedural',
@@ -251,12 +282,26 @@ export function applyEnvPreset(name: string): boolean {
                 skyBrightness: 1.0,
                 sunAngle: preset.sunAngle,
                 azimuth: preset.azimuth ?? -45,
-                envIntensity: 1.0,
+                envIntensity: 2,
             },
             true
         ); // skipAutoSave
 
+        // 插值方向光（太阳）参数
+        const interpLight: Partial<LightState> = {};
+        for (const key of Object.keys(targetLight) as (keyof LightState)[]) {
+            const a = startLight[key];
+            const b = targetLight[key];
+            if (typeof a === 'number' && typeof b === 'number') {
+                setKey(interpLight, key, lerp(a, b) as LightState[typeof key]);
+            } else if (Array.isArray(a) && Array.isArray(b)) {
+                setKey(interpLight, key, a.map((v, i) => lerp(v, b[i])) as LightState[typeof key]);
+            }
+        }
+        setLightState(interpLight);
+
         if (t >= 1) {
+            setSkipLightAutoSave(false);
             setRenderState({ exposure: preset.exposure, toneMapping: preset.toneMapping });
             SetEnvState(envState as unknown as import('../../wailsjs/go/models').main.EnvState).catch(() => {});
             triggerAutoSave();

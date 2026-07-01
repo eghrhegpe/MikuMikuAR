@@ -23,6 +23,7 @@ import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRu
 import type { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
 import { loadVMDMotion } from './scene-vmd';
 import { _capture } from './scene-material';
+import { rebuildShadowCasters } from './scene-lighting';
 
 // ======== Loader Dependencies ========
 
@@ -272,6 +273,7 @@ export async function loadPMXFile(
         setStatus(appliedVmd ? `✓ ${displayName} + ${appliedVmd}` : `✓ ${displayName}`, true);
         _modelManager.arrange();
         _refreshWaterRenderList();
+        rebuildShadowCasters();
 
         // Auto-capture thumbnail for future popup display
         captureThumbnail(filePath).catch(() => {});

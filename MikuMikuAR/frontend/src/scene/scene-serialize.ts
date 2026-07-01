@@ -41,6 +41,8 @@ import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
 import {
     getLightState,
     setLightState,
+    getStageLightState,
+    setStageLightState,
     getRenderState,
     setRenderState,
     removeModel,
@@ -51,6 +53,7 @@ import {
     setModelPhysics,
     loadVMDFromPath,
     LightState,
+    StageLightState,
     RenderState,
 } from './scene';
 import { removeProp, loadProp, setPropTransform } from './scene-props';
@@ -144,6 +147,7 @@ export interface SceneFile {
         visible: boolean;
     }>;
     gravityStrength?: number;
+    stageLight?: StageLightState;
 }
 
 // ======== Serialization ========
@@ -245,6 +249,7 @@ export function serializeScene(): SceneFile {
             };
         }),
         gravityStrength: getGravityStrength(),
+        stageLight: getStageLightState(),
     };
 }
 
@@ -401,6 +406,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     }
     if (data.gravityStrength !== undefined) {
         setGravityStrength(data.gravityStrength);
+    }
+    if (data.stageLight) {
+        setStageLightState(data.stageLight);
     }
 
     // --- Procedural Motion ---

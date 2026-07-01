@@ -42,6 +42,8 @@ import {
     setAudioOffset,
     getAudioName,
     getAudioOffset,
+    setVolume,
+    getVolume,
 } from '../outfit/audio';
 import {
     SelectAudioFile,
@@ -52,6 +54,20 @@ import {
     ImportDanceSet,
 } from '../../wailsjs/go/main/App';
 import { toggleCloth, recreateCloth } from '../physics/cloth-manager';
+import { buildCameraLevel, buildProcMotionLevel, buildProcMotionModeLevel, buildLipSyncLevel } from './scene-menu';
+import {
+    setProcMotionMode,
+    setProcMotionIntensity,
+    setProcMotionSpeed,
+    setProcMotionAutoSwitch,
+    getProcMotionState,
+    regenerateProcMotion,
+    getLipSyncState,
+    setLipSyncEnabled,
+    setLipSyncSensitivity,
+    setLipSyncIntensity,
+} from '../scene/scene';
+import type { ProcMotionMode } from '../motion/procedural-motion';
 
 // ======== Dance Set Types & State ========
 
@@ -210,15 +226,45 @@ function buildActionBindingLevel(id: string): PopupLevel {
                 }
             }
 
-            // 聚焦按钮（高频操作）
+            // 聚焦按钮 + 清除 VMD（高频操作）
             cardContainer(container, (c) => {
+                const group = document.createElement('div');
+                group.className = 'preset-group';
+                group.style.padding = '0';
+
                 const focusBtn = document.createElement('button');
                 focusBtn.className = 'preset-chip';
                 focusBtn.innerHTML = '🎯 聚焦到模型';
                 focusBtn.addEventListener('click', () => {
                     focusModel(id);
                 });
-                c.appendChild(focusBtn);
+                group.appendChild(focusBtn);
+
+                const inst = modelRegistry.get(id);
+                const clearBtn = document.createElement('button');
+                clearBtn.className = 'preset-chip';
+                clearBtn.textContent = '🗑 清除 VMD';
+                clearBtn.addEventListener('click', async () => {
+                    if (inst && inst.mmdModel && mmdRuntime) {
+                        inst.mmdModel.setRuntimeAnimation(null);
+                        inst.vmdData = null;
+                        inst.vmdName = '';
+                        inst.vmdPath = null;
+                        inst.animationDuration = 0;
+                        if (isPlaying) {
+                            mmdRuntime.pauseAnimation();
+                            setIsPlaying(false);
+                        }
+                        updatePlaybackUI();
+                        if (motionMenu) {
+                            motionMenu.reRender();
+                        }
+                        setStatus('✓ 动作已清除', true);
+                    }
+                });
+                group.appendChild(clearBtn);
+
+                c.appendChild(group);
             });
         },
     };
@@ -227,7 +273,6 @@ function buildActionBindingLevel(id: string): PopupLevel {
 // ======== Music Level ========
 
 function buildActionMusicLevel(): PopupLevel {
-    const name = getAudioName();
     const offset = getAudioOffset();
     return {
         label: '音乐',
@@ -235,16 +280,7 @@ function buildActionMusicLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                const nameRow = document.createElement('div');
-                nameRow.className = 'slide-item';
-                nameRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:music"></iconify-icon></span><span class="slide-label" style="color:var(--text-dim);">${name ? `当前: ${name}` : '未加载音乐'}</span>`;
-                c.appendChild(nameRow);
-
-                const loadRow = document.createElement('div');
-                loadRow.className = 'slide-item';
-                loadRow.innerHTML =
-                    '<span class="slide-icon"><iconify-icon icon="lucide:folder-open"></iconify-icon></span><span class="slide-label">加载音乐</span>';
-                loadRow.addEventListener('click', async () => {
+                slideRow(c, 'lucide:music', '加载音乐', true, async () => {
                     try {
                         const path = await SelectAudioFile();
                         if (!path) {
@@ -257,11 +293,22 @@ function buildActionMusicLevel(): PopupLevel {
                         console.warn('Load audio failed:', err);
                         setStatus('✗ 音乐加载失败', false);
                     }
-                });
-                c.appendChild(loadRow);
+                }, getAudioName() || undefined);
             });
 
             cardContainer(container, (c) => {
+                addSliderRow(
+                    c,
+                    '音量',
+                    getVolume(),
+                    0,
+                    1,
+                    0.05,
+                    (v) => {
+                        setVolume(v);
+                    },
+                    'lucide:volume-2'
+                );
                 addSliderRow(
                     c,
                     '音频偏移',
@@ -453,13 +500,15 @@ function makeMotionMenu(): SlideMenu {
         container: dom.sceneOverlay,
         onClose: closeAllOverlays,
         onFolderEnter: (row) => {
-            if (row.target === '__dance_sets__') {
-                setMotionBindingTargetId(null);
-                return buildDanceSetsOverviewLevel();
-            }
             if (row.target === '__music__') {
                 setMotionBindingTargetId(null);
                 return buildActionMusicLevel();
+            }
+            if (row.target === 'procmotion:mode') {
+                return buildProcMotionModeLevel();
+            }
+            if (row.target === 'lipsync:menu') {
+                return buildLipSyncLevel();
             }
             if (row.target && row.target.startsWith('action:binding:')) {
                 setMotionBindingTargetId(null);
@@ -495,6 +544,23 @@ function makeMotionMenu(): SlideMenu {
                 if (row.model.format === 'vmd') {
                     loadVMDFromPath(row.model.file_path);
                 }
+                return;
+            }
+            if (row.target && row.target.startsWith('procmotion:set-mode:')) {
+                const mode = row.target.replace('procmotion:set-mode:', '') as ProcMotionMode;
+                setProcMotionMode(mode);
+                regenerateProcMotion();
+                return;
+            }
+            if (row.target === 'procmotion:autoswitch') {
+                setProcMotionAutoSwitch(!getProcMotionState().autoSwitch);
+                motionMenu.reRender();
+                return;
+            }
+            if (row.target === 'lipsync:toggle') {
+                const lipSt = getLipSyncState();
+                setLipSyncEnabled(!lipSt.enabled);
+                motionMenu.reRender();
                 return;
             }
             if (row.target && row.target.startsWith('action:motion:')) {
@@ -597,16 +663,16 @@ export function showMotionPopup(): void {
             }
 
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:music', '舞蹈套装', true, () => {
-                    const level = buildDanceSetsOverviewLevel();
-                    if (motionMenu) {
-                        motionMenu.push(level);
-                    }
-                });
                 slideRow(c, 'lucide:music', '音乐', true, () => {
                     if (motionMenu) {
                         motionMenu.push(buildActionMusicLevel());
                     }
+                });
+                slideRow(c, 'lucide:camera', '相机模式', true, () => {
+                    motionMenu.push(buildCameraLevel());
+                });
+                slideRow(c, 'lucide:wind', '程序化动作', true, () => {
+                    motionMenu.push(buildProcMotionLevel());
                 });
             });
 

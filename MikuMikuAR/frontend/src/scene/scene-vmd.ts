@@ -20,6 +20,7 @@ import {
 import { resolveFileUrl, normPath } from '../core/fileservice';
 import { loadVPDFromBuffer } from '../motion/vpd-parser';
 import { loadCameraVmd } from './camera';
+import { loadAudioFile } from '../outfit/audio';
 
 // Dynamic re-import of scene.ts to access its module-level state
 // (scene, focusedMmdModel, focusedModel, isProcVmdActive, stopProcMotion)
@@ -129,11 +130,38 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
             setPendingVmd({ data: vmdData, name: vmdName.replace(/\.vmd$/i, '') });
             setStatus('VMD 已缓存，加载模型后自动应用', false);
         }
+
+        // 尝试加载同目录下的同名音频文件
+        await _tryLoadCompanionAudio(path, url);
     } catch (err) {
         console.error('loadVMDFromPath:', err);
         setStatus('✗ VMD 加载失败', false);
     } finally {
         setIsLoadingVmd(false);
+    }
+}
+
+/** 尝试加载 VMD 同目录下的同名音频文件（.mp3/.wav/.ogg/.flac）。 */
+async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<void> {
+    const baseUrl = vmdUrl.substring(0, vmdUrl.lastIndexOf('/') + 1);
+    const basePath = vmdPath.replace(/\.vmd$/i, '');
+    const exts = ['.mp3', '.wav', '.ogg', '.flac', '.wma'];
+    for (const ext of exts) {
+        const audioPath = basePath + ext;
+        const audioName = audioPath.split('/').pop() || '';
+        try {
+            const resp = await fetch(baseUrl + encodeURIComponent(audioName), { method: 'HEAD' });
+            if (resp.ok) {
+                await loadAudioFile(audioPath);
+                setStatus(`✓ VMD + 音频: ${audioName}`, true);
+                // 确保播放栏可见
+                const { updatePlaybackUI } = await import('./scene-playback');
+                updatePlaybackUI();
+                return;
+            }
+        } catch {
+            // 文件不存在，尝试下一个扩展名
+        }
     }
 }
 

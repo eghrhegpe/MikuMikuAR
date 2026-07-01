@@ -37,17 +37,17 @@ import {
     type CameraMode,
 } from '../scene/camera';
 import {
-    getLightState,
-    setLightState,
     triggerAutoSave,
     serializeScene,
     deserializeScene,
     getRenderState,
     setRenderState,
     transitionRenderState,
+    getStageLightState,
+    setStageLightState,
     loadCameraVmdFromPath,
 } from '../scene/scene';
-import type { RenderState } from '../scene/scene';
+import type { RenderState, StageLightState } from '../scene/scene';
 import {
     SelectSceneSaveFile,
     SelectSceneOpenFile,
@@ -114,14 +114,10 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
             return buildEnvLightingLevel();
         case 'scene:env:post':
             return buildPostProcessLevel();
-        case 'scene:env:light':
-            return buildLightLevel();
         case 'scene:env:presets':
             return buildPresetLevel();
         case 'scene:camera':
             return buildCameraLevel();
-        case 'scene:light':
-            return buildLightLevel();
         case 'scene:render':
             return buildRenderLevel();
         case 'scene:procmotion':
@@ -168,23 +164,16 @@ function buildSceneRoot(): PopupLevel {
                     sceneMenu.push(buildPresetScenesLevel())
                 );
             });
-            // Card 2: 渲染与相机
+            // Card 2: 渲染与灯光
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:camera', '相机模式', true, () =>
-                    sceneMenu.push(buildCameraLevel())
-                );
-                slideRow(c, 'lucide:sun', '灯光', true, () => sceneMenu.push(buildLightLevel()));
                 slideRow(c, 'lucide:sparkles', '渲染', true, () =>
                     sceneMenu.push(buildRenderLevel())
                 );
-            });
-            // Card 3: 程序化动作
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:wind', '程序化动作', true, () =>
-                    sceneMenu.push(buildProcMotionLevel())
+                slideRow(c, 'lucide:lightbulb', '舞台灯光', true, () =>
+                    sceneMenu.push(buildStageLightLevel())
                 );
             });
-            // Card 4: 工具
+            // Card 3: 工具
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:camera', '截图', true, () =>
                     sceneMenu.push(buildScreenshotLevel())
@@ -194,7 +183,7 @@ function buildSceneRoot(): PopupLevel {
     };
 }
 
-function buildProcMotionLevel(): PopupLevel {
+export function buildProcMotionLevel(): PopupLevel {
     const st = getProcMotionState();
     const lipSt = getLipSyncState();
     const modeLabel: Record<string, string> = {
@@ -261,7 +250,7 @@ function buildProcMotionLevel(): PopupLevel {
     };
 }
 
-function buildProcMotionModeLevel(): PopupLevel {
+export function buildProcMotionModeLevel(): PopupLevel {
     const st = getProcMotionState();
     const modes: { mode: ProcMotionMode; label: string; icon: string }[] = [
         { mode: 'off', label: '关闭', icon: st.mode === 'off' ? 'check' : 'circle' },
@@ -284,7 +273,7 @@ function buildProcMotionModeLevel(): PopupLevel {
     };
 }
 
-function buildLipSyncLevel(): PopupLevel {
+export function buildLipSyncLevel(): PopupLevel {
     const st = getLipSyncState();
     return {
         label: 'LipSync',
@@ -519,7 +508,7 @@ function buildScreenshotLevel(): PopupLevel {
 
 let cameraExpandedMode: CameraMode | null = null;
 
-function buildCameraLevel(): PopupLevel {
+export function buildCameraLevel(): PopupLevel {
     return {
         label: '相机模式',
         dir: '',
@@ -781,73 +770,57 @@ function renderConcertParams(container: HTMLElement): void {
     );
 }
 
-function buildLightLevel(): PopupLevel {
+// ======== Stage Light ========
+
+function buildStageLightLevel(): PopupLevel {
     return {
-        label: '灯光',
+        label: '舞台灯光',
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const lightState = getLightState();
+            const state = getStageLightState();
             cardContainer(container, (c) => {
-                addCollapsible(c, {
-                    title: '方向光',
-                    icon: 'lucide:sun',
-                    defaultOpen: true,
-                    renderContent: (inner) => {
-                        addSliderRow(
-                            inner,
-                            '强度',
-                            lightState.dirIntensity,
-                            0,
-                            2,
-                            0.05,
-                            (v) => {
-                                setLightState({ dirIntensity: v });
-                            },
-                            'lucide:sun'
-                        );
-                        addSliderRow(
-                            inner,
-                            '角度 X',
-                            lightState.dirX,
-                            -1,
-                            1,
-                            0.05,
-                            (v) => {
-                                setLightState({ dirX: v });
-                            },
-                            'lucide:move'
-                        );
-                        addSliderRow(
-                            inner,
-                            '角度 Y',
-                            lightState.dirY,
-                            -1,
-                            1,
-                            0.05,
-                            (v) => {
-                                setLightState({ dirY: v });
-                            },
-                            'lucide:arrow-up-down'
-                        );
-                        addSliderRow(
-                            inner,
-                            '角度 Z',
-                            lightState.dirZ,
-                            -1,
-                            1,
-                            0.05,
-                            (v) => {
-                                setLightState({ dirZ: v });
-                            },
-                            'lucide:arrow-up-down'
-                        );
-                        addColorSliderRow(inner, '颜色', lightState.dirColor, (v) =>
-                            setLightState({ dirColor: v })
-                        );
-                    },
-                });
-
+                addToggleRow(c, '启用', state.enabled, (v) => {
+                    setStageLightState({ enabled: v });
+                    sceneMenu.reRender();
+                }, 'lucide:power');
+                addSliderRow(
+                    c, '强度', state.intensity, 0, 2, 0.05,
+                    () => {}, 'lucide:sun',
+                    (v) => setStageLightState({ intensity: v })
+                );
+                addColorSliderRow(c, '颜色', state.color, (v) =>
+                    setStageLightState({ color: v })
+                );
+                // 锥角范围增大到 2.0（≈115°），默认 ≈45°（0.8 rad）
+                addSliderRow(
+                    c, '锥角', state.angle, 0.1, 2.0, 0.05,
+                    () => {}, 'lucide:circle',
+                    (v) => setStageLightState({ angle: v })
+                );
+                addSliderRow(
+                    c, '衰减', state.exponent, 0, 4, 0.1,
+                    () => {}, 'lucide:arrow-down',
+                    (v) => setStageLightState({ exponent: v })
+                );
+            });
+            // 轨道控制（第三张卡片）
+            cardContainer(container, (c) => {
+                addSliderRow(
+                    c, '水平角度', state.orbitAzimuth, -180, 180, 1,
+                    () => {}, 'lucide:refresh-cw',
+                    (v) => setStageLightState({ orbitAzimuth: v })
+                );
+                addSliderRow(
+                    c, '仰角', state.orbitElevation, -90, 90, 1,
+                    () => {}, 'lucide:arrow-up-down',
+                    (v) => setStageLightState({ orbitElevation: v })
+                );
+                addSliderRow(
+                    c, '距离', state.orbitDistance, 15, 50, 0.5,
+                    () => {}, 'lucide:move',
+                    (v) => setStageLightState({ orbitDistance: v })
+                );
             });
         },
     };

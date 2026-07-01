@@ -178,6 +178,11 @@ export async function initScene(): Promise<void> {
     applyEnvState(envState);
     _updateSunDisc();
 
+    // 无 VMD 时也能驱动程序化动作和口型同步
+    scene.onBeforeRenderObservable.add(() => {
+        updateProcMotion().catch(() => {});
+    });
+
     // 点击水面 → 生成涟漪
     scene.onPointerObservable.add((info) => {
         if (info.type !== PointerEventTypes.POINTERDOWN) {
@@ -290,5 +295,5 @@ export {
     LoadLastScene,
     SetEnvState,
 } from '../../wailsjs/go/main/App';
-export type { LightState } from './scene-lighting';
+export type { LightState, StageLightState } from './scene-lighting';
 export type { RenderState } from './scene-renderer';

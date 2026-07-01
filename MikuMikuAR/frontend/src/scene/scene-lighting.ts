@@ -4,6 +4,7 @@
 
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
+import { SpotLight } from '@babylonjs/core/Lights/spotLight';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
@@ -34,6 +35,43 @@ export interface LightState {
     shadowBias: number; // 新增
 }
 
+export interface StageLightState {
+    enabled: boolean;
+    intensity: number;
+    color: [number, number, number];
+    angle: number;      // 锥角（弧度），默认 ~30° = π/6
+    exponent: number;   // 衰减指数
+    posX: number;
+    posY: number;
+    posZ: number;
+    targetX: number;
+    targetY: number;
+    targetZ: number;
+    // 轨道控制参数（从 posX/Y/Z 实时推导，写回时反算）
+    orbitAzimuth: number;   // -180~180 度，水平绕 Y 轴
+    orbitElevation: number; // -90~90 度，垂直仰角
+    orbitDistance: number;  // 距原点距离
+}
+
+function _defaultStageLightState(): StageLightState {
+    return {
+        enabled: false,
+        intensity: 0.8,
+        color: [1, 1, 1],
+        angle: 0.8,  // ≈46°，兼顾覆盖和聚光感
+        exponent: 2,
+        posX: 0,
+        posY: 15,
+        posZ: -10,
+        targetX: 0,
+        targetY: 0,
+        targetZ: 0,
+        orbitAzimuth: 180,
+        orbitElevation: 56,
+        orbitDistance: 18,
+    };
+}
+
 // ======== Lights (module-level state) ========
 
 let _scene: import('@babylonjs/core/scene').Scene | null = null;
@@ -44,6 +82,9 @@ let _triggerAutoSave: (() => void) | null = null;
 
 export let hemiLight: HemisphericLight;
 export let dirLight: DirectionalLight;
+export let stageLight: SpotLight;
+
+let _stageLightState: StageLightState = _defaultStageLightState();
 
 let _shadowEnabled = false;
 let _shadowType: LightState['shadowType'] = 'soft';
@@ -59,6 +100,9 @@ export function setSkipLightAutoSave(skip: boolean): void {
 }
 
 const SUN_DISC_DISTANCE = 400;
+
+/** 太阳圆盘可见的最小方向光强度。低于此值时隐藏。 */
+const SUN_DISC_MIN_INTENSITY = 0.01;
 
 export function initLighting(
     scene: import('@babylonjs/core/scene').Scene,
@@ -81,6 +125,21 @@ export function initLighting(
     dirLight = new DirectionalLight('dir', new Vector3(0, -1, 0), scene);
     dirLight.intensity = 0.4;
     dirLight.position = new Vector3(0, 40, 0);
+
+    const def = _defaultStageLightState();
+    stageLight = new SpotLight(
+        'stage',
+        new Vector3(def.posX, def.posY, def.posZ),
+        new Vector3(0, -1, 0).normalize(), // 临时方向，马上 setDirectionToTarget 修正
+        def.angle,
+        def.exponent,
+        scene
+    );
+    stageLight.intensity = 0; // 默认关闭
+    stageLight.diffuse = new Color3(def.color[0], def.color[1], def.color[2]);
+    stageLight.specular = new Color3(0.3, 0.3, 0.3);
+    // 对准角色中心
+    stageLight.setDirectionToTarget(new Vector3(def.targetX, def.targetY, def.targetZ));
 }
 
 function _defaultLightState(): LightState {
@@ -142,11 +201,13 @@ export function setLightState(s: Partial<LightState>): void {
         dirLight.intensity = s.dirIntensity;
     }
     if (s.dirX !== undefined || s.dirY !== undefined || s.dirZ !== undefined) {
-        dirLight.direction = new Vector3(
+        const dir = new Vector3(
             -(s.dirX ?? -dirLight.direction.x),
             -(s.dirY ?? -dirLight.direction.y),
             -(s.dirZ ?? -dirLight.direction.z)
         );
+        dir.normalize();
+        dirLight.direction = dir;
     }
     if (s.dirColor !== undefined) {
         dirLight.diffuse = new Color3(s.dirColor[0], s.dirColor[1], s.dirColor[2]);
@@ -257,7 +318,7 @@ function _ensureSunDisc(): Mesh {
     if (!_scene || _sunDisc) {
         return _sunDisc!;
     }
-    _sunDisc = MeshBuilder.CreateSphere('sunDisc', { diameter: 20, segments: 8 }, _scene);
+    _sunDisc = MeshBuilder.CreateSphere('sunDisc', { diameter: 30, segments: 16 }, _scene);
     const mat = new StandardMaterial('sunDiscMat', _scene);
     mat.emissiveColor = new Color3(1, 0.9, 0.7);
     mat.disableLighting = true;
@@ -266,26 +327,25 @@ function _ensureSunDisc(): Mesh {
     return _sunDisc;
 }
 
-/** 更新太阳圆盘位置和颜色（根据方向光方向和强度）。@internal scene-env-bridge.ts 使用。 */
+/** 更新方向光参考圆盘位置和颜色。圆盘始终在光线来源方向（视线反方向）。
+ *  仅作为调光参照，不参与光照计算。 */
 export function _updateSunDisc(): void {
-    if (!dirLight) {
-        return;
-    }
+    if (!dirLight) return;
     const disc = _ensureSunDisc();
     const d = dirLight.direction;
-    if (d.y >= 0) {
-        disc.setEnabled(false);
-        return;
+    const aboveHorizon = d.y < 0;
+    const hasIntensity = dirLight.intensity > SUN_DISC_MIN_INTENSITY;
+    disc.setEnabled(aboveHorizon && hasIntensity);
+    if (aboveHorizon && hasIntensity) {
+        disc.position = new Vector3(
+            -d.x * SUN_DISC_DISTANCE,
+            -d.y * SUN_DISC_DISTANCE,
+            -d.z * SUN_DISC_DISTANCE
+        );
+        const b = Math.max(0.05, dirLight.intensity);
+        const mat = disc.material as StandardMaterial;
+        mat.emissiveColor = new Color3(b, b * 0.9, b * 0.7);
     }
-    disc.setEnabled(true);
-    disc.position = new Vector3(
-        -d.x * SUN_DISC_DISTANCE,
-        -d.y * SUN_DISC_DISTANCE,
-        -d.z * SUN_DISC_DISTANCE
-    );
-    const b = Math.max(0.05, dirLight.intensity);
-    const mat = disc.material as StandardMaterial;
-    mat.emissiveColor = new Color3(b, b * 0.9, b * 0.7);
 }
 
 export function _disposeSunDisc(): void {
@@ -338,4 +398,72 @@ function _ensureShadow(): void {
 /** 当模型/道具注册表更新时，重新生成阴影投射者列表。 */
 export function rebuildShadowCasters(): void {
     _ensureShadow();
+}
+
+// ======== Stage Light ========
+
+export function getStageLightState(): StageLightState {
+    if (!stageLight) return _defaultStageLightState();
+    return {
+        ..._stageLightState,
+        intensity: stageLight.intensity,
+        color: [stageLight.diffuse.r, stageLight.diffuse.g, stageLight.diffuse.b],
+        angle: stageLight.angle,
+        exponent: stageLight.exponent,
+        posX: stageLight.position.x,
+        posY: stageLight.position.y,
+        posZ: stageLight.position.z,
+        // 从位置推导轨道参数
+        orbitAzimuth: Math.round(Math.atan2(stageLight.position.x, stageLight.position.z) * 180 / Math.PI),
+        orbitElevation: Math.round(Math.asin(stageLight.position.y / Math.max(0.1, stageLight.position.length())) * 180 / Math.PI),
+        orbitDistance: Math.round(stageLight.position.length()),
+    };
+}
+
+export function setStageLightState(s: Partial<StageLightState>): void {
+    if (!stageLight || !_triggerAutoSave) return;
+    Object.assign(_stageLightState, s);
+
+    if (s.enabled !== undefined) {
+        stageLight.intensity = s.enabled ? _stageLightState.intensity : 0;
+    }
+    if (s.intensity !== undefined && _stageLightState.enabled) {
+        stageLight.intensity = s.intensity;
+    }
+    if (s.color !== undefined) {
+        stageLight.diffuse = new Color3(s.color[0], s.color[1], s.color[2]);
+    }
+    if (s.angle !== undefined) {
+        stageLight.angle = s.angle;
+    }
+    if (s.exponent !== undefined) {
+        stageLight.exponent = s.exponent;
+    }
+    if (s.orbitAzimuth !== undefined || s.orbitElevation !== undefined || s.orbitDistance !== undefined) {
+        const az = (s.orbitAzimuth ?? _stageLightState.orbitAzimuth) * Math.PI / 180;
+        const el = (s.orbitElevation ?? _stageLightState.orbitElevation) * Math.PI / 180;
+        const dist = s.orbitDistance ?? _stageLightState.orbitDistance;
+        stageLight.position = new Vector3(
+            dist * Math.cos(el) * Math.sin(az),
+            dist * Math.sin(el),
+            dist * Math.cos(el) * Math.cos(az)
+        );
+        // 移动后重新对准目标
+        stageLight.setDirectionToTarget(new Vector3(0, 0, 0));
+    }
+    if (s.posX !== undefined || s.posY !== undefined || s.posZ !== undefined) {
+        stageLight.position = new Vector3(
+            s.posX ?? stageLight.position.x,
+            s.posY ?? stageLight.position.y,
+            s.posZ ?? stageLight.position.z
+        );
+    }
+    if (s.targetX !== undefined || s.targetY !== undefined || s.targetZ !== undefined) {
+        stageLight.setDirectionToTarget(new Vector3(
+            s.targetX ?? _stageLightState.targetX,
+            s.targetY ?? _stageLightState.targetY,
+            s.targetZ ?? _stageLightState.targetZ
+        ));
+    }
+    _triggerAutoSave();
 }

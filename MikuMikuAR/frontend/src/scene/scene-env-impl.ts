@@ -22,17 +22,6 @@ import {
 import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
 import { EnvState, envState } from '../core/config';
 
-// ======== Sun angle state (moved from scene.ts) ========
-let _envSunAngle = 45; // default sun elevation
-
-export function getEnvSunAngle(): number {
-    return _envSunAngle;
-}
-
-export function setEnvSunAngle(deg: number): void {
-    _envSunAngle = Math.max(-15, Math.min(90, deg));
-}
-
 // ======== Scene Tick Callback Registry (统一 scene observer) ========
 /** 统一管理所有 scene.onBeforeRenderObservable 回调。
  *  避免多个模块各自添加 observer，导致重复 tick 或竞态。 */
@@ -167,22 +156,6 @@ function buildGradientTexture(
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    const sunY = 128 - sunAngle * (256 / 180);
-    const sunX = W / 2;
-
-    if (sunAngle > -5) {
-        const glowRadius = sunAngle > 60 ? 50 : sunAngle > 20 ? 65 : 80;
-        const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, glowRadius);
-        glow.addColorStop(0, 'rgba(255,255,240,0.95)');
-        glow.addColorStop(0.08, 'rgba(255,255,220,0.85)');
-        glow.addColorStop(0.2, 'rgba(255,245,200,0.5)');
-        glow.addColorStop(0.4, 'rgba(255,235,170,0.18)');
-        glow.addColorStop(0.7, 'rgba(255,220,140,0.04)');
-        glow.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = glow;
-        ctx.fillRect(sunX - glowRadius, sunY - glowRadius, glowRadius * 2, glowRadius * 2);
-    }
-
     if (starsEnabled) {
         const starAlpha = sunAngle > 10 ? 0 : sunAngle < -5 ? 1 : (10 - sunAngle) / 15;
         if (starAlpha > 0.01) {
@@ -236,7 +209,7 @@ function createProceduralSky(state: EnvState): void {
         new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
         new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
         state.skyBrightness,
-        getEnvSunAngle(),
+        state.sunAngle,
         state.starsEnabled
     );
     mat.disableLighting = true;
@@ -317,7 +290,7 @@ export function applySky(state: EnvState): void {
                 new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
                 new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
                 state.skyBrightness,
-                getEnvSunAngle(),
+                state.sunAngle,
                 state.starsEnabled
             );
             return;
