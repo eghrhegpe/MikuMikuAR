@@ -93,8 +93,8 @@ export function updateLipSync(): void {
     }
 
     const morphs = inst.mmdModel.morph.morphs;
-    if (!lipSyncMorphName || !morphs.some((m: any) => m.name === lipSyncMorphName)) {
-        lipSyncMorphName = findLipMorph(morphs.map((m: any) => m.name));
+    if (!lipSyncMorphName || !morphs.some((m) => m.name === lipSyncMorphName)) {
+        lipSyncMorphName = findLipMorph(morphs.map((m) => m.name));
     }
     if (!lipSyncMorphName) {
         return;

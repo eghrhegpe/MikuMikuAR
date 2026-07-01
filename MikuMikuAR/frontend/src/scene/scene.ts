@@ -33,95 +33,26 @@ import {
     refreshWaterRenderList,
     addRipple,
 } from './scene-env';
-import {
-    SaveThumbnail,
-    SaveLastScene,
-    LoadLastScene,
-    SetEnvState,
-} from '../../wailsjs/go/main/App';
-import {
-    initCameraSystem,
-    autoFrame,
-    getCameraState,
-    setCameraState,
-    animateCameraVmd,
-    loadCameraVmd,
-    clearCameraVmd,
-    hasCameraVmd,
-    getCameraVmdName,
-    getCameraVmdPath,
-    switchCameraMode,
-    getCameraMode,
-} from './camera';
-import type { CameraState } from './camera';
+import { initCameraSystem, autoFrame } from './camera';
 import {
     dom,
-    setStatus,
-    formatTime,
     setMmdRuntime,
     mmdRuntime,
     modelRegistry,
-    focusedModelId,
-    setFocusedModelId,
-    isPlaying,
-    setIsPlaying,
-    autoLoop,
-    isLoadingModel,
-    setIsLoadingModel,
-    isLoadingVmd,
-    setIsLoadingVmd,
-    setAutoLoop,
-    seekDragging,
-    setSeekDragging,
-    ModelInstance,
     setModelRegistry,
-    PropInstance,
     propRegistry,
     envState,
-    EnvState,
     triggerAutoSave,
     setTriggerAutoSave,
-    pendingVmd,
-    setPendingVmd,
 } from '../core/config';
-import { resolveFileUrl, normPath } from '../core/fileservice';
-import {
-    syncAudioPlayback,
-    attachBeatDetector,
-    disposeAudio,
-    isAudioPlaying,
-} from '../outfit/audio';
-import { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
+import { attachBeatDetector } from '../outfit/audio';
+import { loadOutfits } from '../outfit/outfit';
 import { _catState, _matState, _matEnabled } from './scene-material';
-import { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from './scene-vmd';
-import { updatePlaybackUI, seekFromEvent, initPlaybackObservables } from './scene-playback';
+import { updatePlaybackUI, initPlaybackObservables } from './scene-playback';
 import { tryAutoApplyPreset } from '../menus/model-preset';
-import {
-    initLighting,
-    getLightState,
-    setLightState,
-    _updateSunDisc,
-    rebuildShadowCasters,
-    type LightState,
-} from './scene-lighting';
-import {
-    initRenderer,
-    getRenderState,
-    setRenderState,
-    reattachPipeline,
-    rebuildOutlineState,
-    pipeline,
-    type RenderState,
-} from './scene-renderer';
-import { loadPMXFile as loadPMX, captureThumbnail, initLoader } from './scene-loader';
-import {
-    createCloth,
-    buildClothUpdateFn,
-    disposeCloth,
-    type ClothInstance,
-    type ClothConfig,
-} from '../physics/xpbd-cloth';
-import { SdfCollider, DEFAULT_BODY_CAPSULES } from '../physics/xpbd-collider';
+import { initLighting, _updateSunDisc } from './scene-lighting';
+import { initRenderer, rebuildOutlineState, pipeline } from './scene-renderer';
+import { initLoader } from './scene-loader';
 
 // Re-export material system (extracted to scene-material.ts for file size)
 export {
@@ -147,13 +78,7 @@ export {
 export type { MaterialCategoryParams, MaterialCategory } from './scene-material';
 
 import { ModelManager } from './scene-model';
-import {
-    updateProcMotion,
-    stopProcMotion,
-    isProcVmdActive,
-    createProcBeatDetector,
-    getProcBeatDetector,
-} from './scene-proc-motion';
+import { updateProcMotion, createProcBeatDetector, getProcBeatDetector } from './scene-proc-motion';
 import { updateLipSync, initLipSync } from './scene-lipsync';
 import { triggerAutoSaveImpl } from './scene-serialize';
 
@@ -168,7 +93,7 @@ export let modelManager: ModelManager;
 let _disposePlaybackObservables: (() => void) | null = null;
 
 // Dev debug helper — exposes internals for Console inspection
-(window as any).__envDebug = () => ({
+window.__envDebug = () => ({
     clearColor: `rgba(${scene.clearColor.r.toFixed(2)},${scene.clearColor.g.toFixed(2)},${scene.clearColor.b.toFixed(2)},${scene.clearColor.a})`,
     matType: _envSys.sky.skyMesh.material.getClassName() || 'none',
     skyMode: envState.skyMode,
@@ -296,7 +221,35 @@ export function getScene(): Scene {
 // Re-exports from extracted sub-modules (zero-change for consumers)
 export { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from './scene-vmd';
 export { updatePlaybackUI, seekFromEvent, initPlaybackObservables } from './scene-playback';
-export { triggerAutoSave } from '../core/config';
+export {
+    dom,
+    setStatus,
+    formatTime,
+    setMmdRuntime,
+    mmdRuntime,
+    modelRegistry,
+    focusedModelId,
+    setFocusedModelId,
+    isPlaying,
+    setIsPlaying,
+    autoLoop,
+    isLoadingModel,
+    setIsLoadingModel,
+    isLoadingVmd,
+    setIsLoadingVmd,
+    setAutoLoop,
+    seekDragging,
+    setSeekDragging,
+    setModelRegistry,
+    propRegistry,
+    envState,
+    triggerAutoSave,
+    setTriggerAutoSave,
+    pendingVmd,
+    setPendingVmd,
+} from '../core/config';
+export type { EnvState, ModelInstance, PropInstance } from '../core/config';
+export { resolveFileUrl, normPath } from '../core/fileservice';
 export * from './scene-proc-motion';
 export * from './scene-lipsync';
 export * from './scene-props';
@@ -306,5 +259,36 @@ export * from './scene-lighting';
 export * from './scene-renderer';
 export * from './scene-model-ops';
 export { loadPMXFile, captureThumbnail, initLoader } from './scene-loader';
+export {
+    initCameraSystem,
+    autoFrame,
+    getCameraState,
+    setCameraState,
+    animateCameraVmd,
+    loadCameraVmd,
+    clearCameraVmd,
+    hasCameraVmd,
+    getCameraVmdName,
+    getCameraVmdPath,
+    switchCameraMode,
+    getCameraMode,
+} from './camera';
+export type { CameraState } from './camera';
+export {
+    syncAudioPlayback,
+    attachBeatDetector,
+    disposeAudio,
+    isAudioPlaying,
+} from '../outfit/audio';
+export { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
+export { createCloth, buildClothUpdateFn, disposeCloth } from '../physics/xpbd-cloth';
+export type { ClothInstance, ClothConfig } from '../physics/xpbd-cloth';
+export { SdfCollider, DEFAULT_BODY_CAPSULES } from '../physics/xpbd-collider';
+export {
+    SaveThumbnail,
+    SaveLastScene,
+    LoadLastScene,
+    SetEnvState,
+} from '../../wailsjs/go/main/App';
 export type { LightState } from './scene-lighting';
 export type { RenderState } from './scene-renderer';

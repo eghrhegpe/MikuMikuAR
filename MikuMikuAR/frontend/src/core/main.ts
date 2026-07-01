@@ -14,8 +14,6 @@ import {
     setSeekDragging,
     mmdRuntime,
     closeAllOverlays,
-    showHint,
-    hideHint,
     initHints,
     setOnCloseAllOverlays,
     setPopupOpen,
@@ -41,7 +39,6 @@ import {
 import {
     updatePerformance,
     setPerformanceMode,
-    getPerformanceMode,
 } from '../scene/scene-performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { freeflyInput, getCameraMode } from '../scene/camera';
@@ -115,10 +112,10 @@ function waitForTransition(el: HTMLElement, propertyName?: string): Promise<void
             if (propertyName && e.propertyName !== propertyName) {
                 return;
             }
-            el.removeEventListener('transitionend', done as any);
+            el.removeEventListener('transitionend', done);
             resolve();
         };
-        el.addEventListener('transitionend', done as any);
+        el.addEventListener('transitionend', done);
         setTimeout(resolve, dur + 50);
     });
 }
@@ -421,7 +418,7 @@ async function init(): Promise<void> {
             const m = await import('../menus/settings');
             toggleOverlay('sceneOverlay', m.showSettings);
         });
-        console.log('MikuMikuAR initialized');
+        console.info('MikuMikuAR initialized');
         initLibrary().catch((err) => console.warn('Library init:', err));
         // Restore env state from config (authoritative — scene restore skips env)
         await restoreEnvState();
@@ -598,8 +595,8 @@ EventsOn('watch:newfile', (payload: { path: string; name: string; type: string }
                 await ImportLocalFile(payload.path);
                 setStatus('✓ 已导入: ' + (payload.name || payload.path), true);
                 refreshLibrary().catch(console.warn);
-            } catch (err: any) {
-                setStatus('✗ 导入失败: ' + (err.message || err), false);
+            } catch (err: unknown) {
+                setStatus('✗ 导入失败: ' + formatError(err), false);
             }
             toast.classList.remove('visible');
             importBtn.disabled = false;
@@ -625,7 +622,7 @@ init().catch(console.error);
 
 // ======== E2E Capture Helper (exposed for Playwright tests, DEV only) ========
 if (import.meta.env.DEV) {
-    (window as any).__capture = async (): Promise<string> => {
+    window.__capture = async (): Promise<string> => {
         const { CreateScreenshotAsync } = await import('@babylonjs/core/Misc/screenshotTools');
         // Force a render frame so Babylon writes to the backbuffer
         scene.render();

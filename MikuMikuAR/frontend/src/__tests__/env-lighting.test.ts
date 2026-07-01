@@ -54,7 +54,7 @@ describe('ENV_PRESETS', () => {
     });
 
     it('each preset has all required fields', () => {
-        for (const [key, p] of Object.entries(ENV_PRESETS)) {
+        for (const [_key, p] of Object.entries(ENV_PRESETS)) {
             expect(p.label).toBeTruthy();
             expect(p.dirDiffuse).toHaveLength(3);
             expect(p.dirDirection).toHaveLength(3);

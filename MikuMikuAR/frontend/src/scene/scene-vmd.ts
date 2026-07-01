@@ -34,7 +34,7 @@ export async function loadVMDMotion(
     name: string,
     targetModelId?: string
 ): Promise<void> {
-    const { scene, focusedMmdModel, isProcVmdActive, stopProcMotion, focusedModel } =
+    const { scene, focusedMmdModel: _focusedMmdModel, isProcVmdActive, stopProcMotion, focusedModel: _focusedModel } =
         await getScene();
     // If user loads a real VMD, stop procedural motion
     if (isProcVmdActive() && name !== 'IdleMotion' && name !== 'AutoDance') {
@@ -59,7 +59,7 @@ export async function loadVMDMotion(
         // Load VMD from buffer using VmdLoader
         const vmdLoader = new VmdLoader(scene);
         const mmdAnimation = await vmdLoader.loadFromBufferAsync(name, data);
-        (vmdLoader as any).dispose?.(); // 释放解析器内部资源（API 可选）
+        (vmdLoader as unknown as { dispose?: () => void }).dispose?.(); // 释放解析器内部资源（API 可选）
 
         // Create WASM animation from the loaded data
         const wasmAnimation = new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene);
@@ -76,7 +76,9 @@ export async function loadVMDMotion(
             // wasmAnimation 已创建但模型是 Stage，无法绑定 — 清理避免泄漏
             try {
                 wasmAnimation.dispose?.();
-            } catch {}
+            } catch {
+                // Intentionally empty — 舞台模型动画句柄清理失败不影响后续流程
+            }
             setStatus('✗ 舞台模型不支持 VMD', false);
             return;
         }
@@ -148,7 +150,7 @@ export async function loadCameraVmdFromPath(path: string): Promise<void> {
 
         const vmdLoader = new VmdLoader(scene);
         const mmdAnimation = await vmdLoader.loadFromBufferAsync(vmdName, vmdData);
-        (vmdLoader as any).dispose?.();
+        (vmdLoader as unknown as { dispose?: () => void }).dispose?.();
         loadCameraVmd(mmdAnimation, path, vmdName.replace(/\.vmd$/i, ''));
         setStatus(`✓ 相机 VMD: ${vmdName}`, true);
         triggerAutoSave();

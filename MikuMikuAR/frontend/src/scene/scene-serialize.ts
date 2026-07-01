@@ -450,9 +450,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     // In Wails desktop environments, AudioContext.resume() works without
                     // user gesture. But to be safe in any environment, check state first.
                     try {
-                        const ctx = (window as any).AudioContext
-                            ? new (window as any).AudioContext()
-                            : null;
+                        const ctx = window.AudioContext ? new window.AudioContext() : null;
                         if (ctx && ctx.state === 'suspended') {
                             console.warn(
                                 '场景恢复: 音频上下文已暂停，跳过自动播放（需用户交互后手动播放）'
@@ -553,7 +551,7 @@ export async function saveSceneImmediate(): Promise<void> {
         } catch {
             // ignore
         }
-    } catch (err) {
+    } catch (_err) {
         // Silent — auto-save is best-effort
     }
 }
@@ -591,8 +589,8 @@ const SUPPORTED_VERSIONS = [1];
  * Each migration function transforms the data in-place.
  * Add new migration steps here when the SceneFile format changes.
  */
-function migrateScene(data: Record<string, any>): Record<string, any> {
-    let version: number = data.version ?? 0;
+function migrateScene(data: Record<string, unknown>): Record<string, unknown> {
+    let version: number = (data.version as number) ?? 0;
 
     // v0 → v1: no-op (v1 is the initial version)
     if (version < 1) {
@@ -624,7 +622,7 @@ export async function tryRestoreLastScene(): Promise<void> {
             const backup = localStorage.getItem(LOCAL_SAVE_KEY);
             if (backup) {
                 json = backup;
-                console.log('从本地存储备份恢复场景');
+                console.info('从本地存储备份恢复场景');
                 // Don't remove the backup here — saveSceneImmediate will do it
                 // after the next successful save.
             }
@@ -645,13 +643,14 @@ export async function tryRestoreLastScene(): Promise<void> {
 
         // Run version migration before checking version
         const data = migrateScene(raw);
+        const version = data.version as number;
 
-        if (SUPPORTED_VERSIONS.includes(data.version)) {
-            await deserializeScene(data as SceneFile, true);
-            console.log(`从 v${data.version} 场景文件恢复成功`);
+        if (SUPPORTED_VERSIONS.includes(version)) {
+            await deserializeScene(data as unknown as SceneFile, true);
+            console.info(`从 v${version} 场景文件恢复成功`);
         } else {
             console.warn(
-                `场景文件版本 v${data.version} 不受支持（支持: ${SUPPORTED_VERSIONS.join(', ')}）`
+                `场景文件版本 v${version} 不受支持（支持: ${SUPPORTED_VERSIONS.join(', ')}）`
             );
         }
     } catch (err) {

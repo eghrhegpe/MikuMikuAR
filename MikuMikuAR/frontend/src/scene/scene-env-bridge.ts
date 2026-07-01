@@ -19,6 +19,10 @@ import {
 } from './scene-lighting';
 import type { LightState } from './scene-lighting';
 
+function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
+    obj[key] = value;
+}
+
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState): void {
     try {
@@ -287,9 +291,9 @@ export function applyEnvPreset(name: string): boolean {
             const a = startLight[key];
             const b = targetLight[key];
             if (typeof a === 'number' && typeof b === 'number') {
-                (interpLight as any)[key] = lerp(a, b);
+                setKey(interpLight, key, lerp(a, b) as LightState[typeof key]);
             } else if (Array.isArray(a) && Array.isArray(b)) {
-                (interpLight as any)[key] = a.map((v, i) => lerp(v, b[i])) as any;
+                setKey(interpLight, key, a.map((v, i) => lerp(v, b[i])) as LightState[typeof key]);
             }
         }
         setLightState(interpLight); // setSkipLightAutoSave 已抑制其内部保存
@@ -299,7 +303,7 @@ export function applyEnvPreset(name: string): boolean {
             setRenderState({ exposure: preset.exposure, toneMapping: preset.toneMapping });
             envAutoLink = wasLinked;
             // 动画完成，执行一次性后端保存和本地保存
-            SetEnvState(envState as any).catch(() => {});
+            SetEnvState(envState as unknown as import('../../wailsjs/go/models').main.EnvState).catch(() => {});
             triggerAutoSave();
         } else {
             requestAnimationFrame(animLoop);
@@ -343,7 +347,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         clearTimeout(_envPersistTimer);
     }
     _envPersistTimer = setTimeout(() => {
-        SetEnvState(envState as any).catch(() => {});
+        SetEnvState(envState as unknown as import('../../wailsjs/go/models').main.EnvState).catch(() => {});
     }, 500);
 
     if (!skipAutoSave) {

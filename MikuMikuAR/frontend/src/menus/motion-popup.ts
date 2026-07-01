@@ -5,7 +5,6 @@ import {
     dom,
     setStatus,
     libraryRoot,
-    allModels,
     PopupLevel,
     PopupRow,
     escapeHtml,
@@ -41,9 +40,7 @@ import { createIconifyIcon } from '../core/icons';
 import {
     loadAudioFile,
     setAudioOffset,
-    getAudioPath,
     getAudioName,
-    getVolume,
     getAudioOffset,
 } from '../outfit/audio';
 import {
@@ -51,7 +48,6 @@ import {
     SelectVMDMotion,
     SelectVPDPose,
     GetDanceSets,
-    SaveDanceSet,
     DeleteDanceSet,
     ImportDanceSet,
 } from '../../wailsjs/go/main/App';
@@ -116,7 +112,7 @@ async function loadDanceSetAudio(ds: DanceSet): Promise<void> {
 
 // ======== Build action model row and binding ========
 
-function buildActionModelRow(id: string): PopupRow {
+function _buildActionModelRow(id: string): PopupRow {
     const inst = modelRegistry.get(id);
     if (!inst) {
         return { kind: 'action', label: '?', icon: 'help-circle', target: '' };
@@ -172,8 +168,8 @@ function buildActionBindingLevel(id: string): PopupLevel {
                         }
                         await loadVPDPose(path, id);
                         motionMenu.reRender();
-                    } catch (err: any) {
-                        setStatus('✗ ' + (err.message || err), false);
+                    } catch (err: unknown) {
+                        setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
                     }
                 });
             });
@@ -531,8 +527,8 @@ function makeMotionMenu(): SlideMenu {
                                 }
                                 await loadVPDPose(path, id);
                                 motionMenu.reRender();
-                            } catch (err: any) {
-                                setStatus('✗ ' + (err.message || err), false);
+                            } catch (err: unknown) {
+                                setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
                             }
                         })();
                         break;

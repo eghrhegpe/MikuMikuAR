@@ -23,7 +23,6 @@ import {
     SetDownloadWatchDir,
     SetDownloadAutoImport,
     GetDownloadWatchStatus,
-    StartWatchDir,
     StopWatchDir,
     SetUIScale,
     SetUIPopupWidth,
@@ -45,6 +44,7 @@ import {
     PopupLevel,
     escapeHtml,
     cardContainer,
+    UIState,
 } from '../core/config';
 import { SlideMenu } from './menu';
 import { slideRow } from '../core/ui-helpers';
@@ -101,8 +101,8 @@ function buildSettingsSoftwareLevel(): PopupLevel {
                                 .then(() => {
                                     setStatus(`✓ 已启动: ${entry.name}`, true);
                                 })
-                                .catch((err: any) => {
-                                    setStatus('✗ ' + (err.message || err), false);
+                                .catch((err: unknown) => {
+                                    setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
                                 });
                         });
                         c.appendChild(row);
@@ -112,22 +112,22 @@ function buildSettingsSoftwareLevel(): PopupLevel {
 
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:plus', '添加自定义软件', false, () =>
-                    handleSettingsAction({ target: 'set:addcustomsoftware' } as any)
+                    handleSettingsAction({ kind: 'action', label: '添加自定义软件', icon: 'lucide:plus', target: 'set:addcustomsoftware' })
                 );
                 slideRow(c, 'lucide:search', '自动检测 MMD', false, () =>
-                    handleSettingsAction({ target: 'set:detectmmd' } as any)
+                    handleSettingsAction({ kind: 'action', label: '自动检测 MMD', icon: 'lucide:search', target: 'set:detectmmd' })
                 );
                 slideRow(c, 'lucide:folder', '设置 MMD 路径', false, () =>
-                    handleSettingsAction({ target: 'set:mmdpath' } as any)
+                    handleSettingsAction({ kind: 'action', label: '设置 MMD 路径', icon: 'lucide:folder', target: 'set:mmdpath' })
                 );
                 slideRow(c, 'lucide:cube-3d', '设置 Blender 路径', false, () =>
-                    handleSettingsAction({ target: 'set:blenderpath' } as any)
+                    handleSettingsAction({ kind: 'action', label: '设置 Blender 路径', icon: 'lucide:cube-3d', target: 'set:blenderpath' })
                 );
             });
 
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:folder-open', '打开目录', false, () =>
-                    handleSettingsAction({ target: 'set:opensoftwaredir' } as any)
+                    handleSettingsAction({ kind: 'action', label: '打开目录', icon: 'lucide:folder-open', target: 'set:opensoftwaredir' })
                 );
             });
         },
@@ -211,7 +211,7 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
                     launchRow.addEventListener('click', () => {
                         LaunchSoftware(entry.path, entry.args)
                             .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
-                            .catch((err: any) => setStatus('✗ ' + (err.message || err), false));
+                            .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
                     });
                     c.appendChild(launchRow);
 
@@ -286,7 +286,7 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
                 launchRow.addEventListener('click', () => {
                     LaunchSoftware(entry.path, '')
                         .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
-                        .catch((err: any) => setStatus('✗ ' + (err.message || err), false));
+                        .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
                 });
                 c.appendChild(launchRow);
 
@@ -317,8 +317,8 @@ function buildSoftwareDetailLevel(path: string): PopupLevel {
                         setStatus(`✓ 已转为自定义: ${entry.name}`, true);
                         settingsMenu.pop();
                         settingsMenu.reRender();
-                    } catch (err: any) {
-                        setStatus('✗ ' + (err.message || err), false);
+                    } catch (err: unknown) {
+                        setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
                     }
                 });
                 c.appendChild(convertRow);
@@ -810,7 +810,7 @@ function handleSettingsAction(row: PopupRow): void {
                 try {
                     const path = await AutoDetectMMD();
                     setStatus(`✓ MMD 已检测: ${path}`, true);
-                } catch (err: any) {
+                } catch (_err: unknown) {
                     setStatus('✗ 未找到 MMD，请在「软件管理」中手动添加', false);
                 }
             })();
@@ -824,8 +824,8 @@ function handleSettingsAction(row: PopupRow): void {
                     }
                     await SetBlenderPath(path);
                     setStatus('✓ Blender 路径已设置', true);
-                } catch (err: any) {
-                    setStatus('✗ 设置失败: ' + (err.message || err), false);
+                } catch (err: unknown) {
+                    setStatus('✗ 设置失败: ' + (err instanceof Error ? err.message : String(err)), false);
                 }
             })();
             break;
@@ -838,8 +838,8 @@ function handleSettingsAction(row: PopupRow): void {
                     }
                     await SetMMDPath(path);
                     setStatus('✓ MMD 路径已设置', true);
-                } catch (err: any) {
-                    setStatus('✗ 设置失败: ' + (err.message || err), false);
+                } catch (err: unknown) {
+                    setStatus('✗ 设置失败: ' + (err instanceof Error ? err.message : String(err)), false);
                 }
             })();
             break;
@@ -869,8 +869,8 @@ function handleSettingsAction(row: PopupRow): void {
                     await scanSoftwareDir();
                     setStatus(`✓ 已添加: ${name}`, true);
                     settingsMenu.reRender();
-                } catch (err: any) {
-                    setStatus('✗ 添加失败: ' + (err.message || err), false);
+                } catch (err: unknown) {
+                    setStatus('✗ 添加失败: ' + (err instanceof Error ? err.message : String(err)), false);
                 }
             })();
             break;
@@ -1097,7 +1097,7 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                         // Persist to UIState
                         const root = document.documentElement;
                         const style = getComputedStyle(root);
-                        const uiState: any = {};
+                        const uiState: Partial<UIState> = {};
                         if (style.getPropertyValue('--ui-scale').trim()) {
                             uiState.scale = parseFloat(style.getPropertyValue('--ui-scale'));
                         }

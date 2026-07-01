@@ -8,9 +8,9 @@ import { Camera } from '@babylonjs/core/Cameras/camera';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { UniversalCamera } from '@babylonjs/core/Cameras/universalCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { Animation } from '@babylonjs/core/Animations/animation';
 import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
+import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
 import { focusedModelId, modelRegistry } from '../core/config';
 import { focusModel, reattachPipeline, getRenderState } from './scene';
 
@@ -139,7 +139,7 @@ export function hasCameraVmd(): boolean {
 }
 
 /** Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. */
-export function loadCameraVmd(mmdAnimation: any, vmdPath: string, vmdName: string): void {
+export function loadCameraVmd(mmdAnimation: MmdAnimation, vmdPath: string, vmdName: string): void {
     if (!_scene) {
         return;
     }
@@ -401,7 +401,7 @@ export function switchCameraMode(mode: CameraMode): void {
     // Apply current FOV from render state to the new camera
     const rs = getRenderState();
     if (rs.fov) {
-        (newCam as any).fov = rs.fov;
+        newCam.fov = rs.fov;
     }
 }
 
@@ -550,18 +550,19 @@ export function getCameraState(): CameraState {
     const alpha = isArc ? cam.alpha : 0;
     const beta = isArc ? cam.beta : 0;
     const radius = isArc ? cam.radius : 16;
+    const target = isArc ? cam.target : null;
     return {
         mode: _cameraMode,
         preset: JSON.parse(JSON.stringify(_currentPreset)),
         alpha,
         beta,
         radius,
-        targetX: (cam as any).target?.x ?? 0,
-        targetY: (cam as any).target?.y ?? 8,
-        targetZ: (cam as any).target?.z ?? 0,
-        positionX: cam.position.x,
-        positionY: cam.position.y,
-        positionZ: cam.position.z,
+        targetX: target?.x ?? 0,
+        targetY: target?.y ?? 8,
+        targetZ: target?.z ?? 0,
+        positionX: cam!.position.x,
+        positionY: cam!.position.y,
+        positionZ: cam!.position.z,
     };
 }
 

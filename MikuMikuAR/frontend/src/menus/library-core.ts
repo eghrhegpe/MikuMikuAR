@@ -179,7 +179,7 @@ const makeModelMenu = (): SlideMenu => {
 
 // ======== Thumbnail batch loading ========
 
-async function loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
+async function _loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
     const pmxPaths = level.items
         .filter((r) => r.kind === 'model' && r.model)
         .map((r) => r.model!.file_path);
@@ -194,7 +194,7 @@ async function loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
     }
 }
 
-async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
+async function _ensureModelMeta(pmxPaths: string[]): Promise<void> {
     const uncached = pmxPaths.filter((p) => !modelMetaCache.has(p) && !_pendingMeta.has(p));
     if (uncached.length === 0) {
         return;
@@ -807,7 +807,7 @@ export async function initLibrary(): Promise<void> {
         }
         try {
             const cached = await GetLibraryIndex();
-            const validCached = cached ? cached.filter((m: any) => m.file_path) : [];
+            const validCached = cached ? cached.filter((m) => m.file_path) : [];
             if (validCached.length > 0) {
                 setAllModels(validCached);
             }
@@ -827,7 +827,7 @@ export async function initLibrary(): Promise<void> {
     }
 }
 
-async function selectAndSetLibraryRoot(): Promise<void> {
+async function _selectAndSetLibraryRoot(): Promise<void> {
     try {
         const dir = await SelectDir();
         if (!dir) {
@@ -951,7 +951,7 @@ export async function refreshLibrary(): Promise<void> {
                 restoreBrowsePath(prevPath);
             }
         }
-    } catch (err) {
+    } catch (_err) {
         setStatus('✗ 扫描失败', false);
     }
 }

@@ -34,8 +34,6 @@ import {
     setEnvSunAngle,
     redoEnvAutoLink,
     applyEnvPreset,
-    setLightState,
-    setRenderState,
     transitionRenderState,
 } from '../scene/scene';
 import {
@@ -854,7 +852,7 @@ export function buildWaterLevel(): PopupLevel {
                 );
                 const waterPresetRow = document.createElement('div');
                 waterPresetRow.className = 'preset-group';
-                for (const [key, wp] of Object.entries(WATER_PRESETS)) {
+                for (const [_key, wp] of Object.entries(WATER_PRESETS)) {
                     const btn = document.createElement('button');
                     btn.textContent = wp.label;
                     btn.className = 'preset-chip';

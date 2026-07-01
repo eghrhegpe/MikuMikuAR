@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { modelRegistry, dom, setMmdRuntime } from '../core/config';
+import { modelRegistry } from '../core/config';
 
 vi.mock('@babylonjs/core/Engines/engine', () => {
     const m = require('./mocks/babylon-classes.ts');
@@ -304,7 +304,7 @@ function cleanup(): void {
     modelRegistry.clear();
 }
 
-function getLevelLabel(level: PopupLevel): string {
+function _getLevelLabel(level: PopupLevel): string {
     return level.label;
 }
 

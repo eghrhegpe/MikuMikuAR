@@ -2,6 +2,7 @@
 
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { LoadOutfitFile, ListSubDirs } from '../../wailsjs/go/main/App';
 import {
     modelRegistry,
@@ -13,6 +14,15 @@ import {
 } from '../core/config';
 import { scene, _catOf } from '../scene/scene';
 import { triggerAutoSave } from '../core/config';
+
+interface MmdStandardMaterial extends StandardMaterial {
+    toonTexture: Texture | null;
+    sphereTexture: Texture | null;
+}
+
+type TextureSlotKey = 'diffuseTexture' | 'toonTexture' | 'sphereTexture' | 'bumpTexture' | 'emissiveTexture';
+
+type OutfitTextureSlot = 'diffuse' | 'toon' | 'spa' | 'normal' | 'emissive';
 
 interface _SlotMapping {
     matName: string;
@@ -37,10 +47,11 @@ function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
             continue;
         }
         const matName = sm.name;
+        const mmdSm = sm as MmdStandardMaterial;
         for (const [slot, tex] of [
             ['diffuse', sm.diffuseTexture],
-            ['toon', (sm as any).toonTexture],
-            ['spa', (sm as any).sphereTexture],
+            ['toon', mmdSm.toonTexture],
+            ['spa', mmdSm.sphereTexture],
             ['normal', sm.bumpTexture],
             ['emissive', sm.emissiveTexture],
         ] as const) {
@@ -166,7 +177,7 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
                         if (!byMaterial[p.matName]) {
                             byMaterial[p.matName] = {};
                         }
-                        (byMaterial[p.matName] as any)[p.slot] = p.relPath;
+                        (byMaterial[p.matName] as Record<string, string>)[p.slot] = p.relPath;
                         hasAny = true;
                     })
                 );
@@ -189,12 +200,13 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
 
 async function _applySlot(
     sm: StandardMaterial,
-    slot: string,
+    slot: TextureSlotKey,
     newPath: string | null,
     origTex: Texture | null,
     port: number
 ): Promise<void> {
-    const cur = (sm as any)[slot] as Texture | null;
+    const mmdSm = sm as MmdStandardMaterial & Record<TextureSlotKey, Texture | null>;
+    const cur = mmdSm[slot];
     if (newPath) {
         const url = `http://127.0.0.1:${port}/${_encodePath(newPath)}`;
         const newTex = new Texture(url, scene);
@@ -220,7 +232,7 @@ async function _applySlot(
             if (cur && cur !== origTex) {
                 cur.dispose();
             }
-            (sm as any)[slot] = newTex;
+            mmdSm[slot] = newTex;
         } else {
             newTex.dispose();
         }
@@ -229,7 +241,7 @@ async function _applySlot(
             if (cur && cur !== origTex) {
                 cur.dispose();
             }
-            (sm as any)[slot] = origTex;
+            mmdSm[slot] = origTex;
         }
     }
 }
@@ -238,15 +250,15 @@ function _getSlotFor(
     variant: OutfitVariant | undefined,
     smName: string,
     cat: string,
-    slotKey: string
+    slotKey: OutfitTextureSlot
 ): string | null {
     if (!variant) {
         return null;
     }
     const v =
-        ((variant.byMaterial as any)?.[smName] as any)?.[slotKey] ??
-        ((variant.byCategory as any)?.[cat] as any)?.[slotKey] ??
-        (variant.all as any)?.[slotKey];
+        variant.byMaterial?.[smName]?.[slotKey] ??
+        variant.byCategory?.[cat]?.[slotKey] ??
+        variant.all?.[slotKey];
     return v ?? null;
 }
 
@@ -276,7 +288,7 @@ function _getTintFor(
     const t =
         variant.byMaterial?.[smName]?.tint ??
         variant.byCategory?.[cat]?.tint ??
-        (variant.all as any)?.tint;
+        variant.all?.tint;
     return t;
 }
 
@@ -326,10 +338,10 @@ function _applyOutfitParams(
 }
 
 function _applyOutfitTint(sm: StandardMaterial, tint: [number, number, number]): void {
-    sm.diffuseColor.multiplyInPlace({ r: tint[0], g: tint[1], b: tint[2] } as any);
+    sm.diffuseColor.multiplyInPlace(new Color3(tint[0], tint[1], tint[2]));
 }
 
-function _captureOrigParams(inst: any): void {
+function _captureOrigParams(inst: ModelInstance): void {
     if (inst._origParams) {
         return;
     }
@@ -374,10 +386,11 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
             if (!sm) {
                 continue;
             }
+            const mmdSm = sm as MmdStandardMaterial;
             inst._origTextures.set(mi, {
                 diffuse: sm.diffuseTexture as Texture | null,
-                toon: (sm as any).toonTexture as Texture | null,
-                spa: (sm as any).sphereTexture as Texture | null,
+                toon: mmdSm.toonTexture,
+                spa: mmdSm.sphereTexture,
                 normal: sm.bumpTexture as Texture | null,
                 emissive: sm.emissiveTexture as Texture | null,
             });

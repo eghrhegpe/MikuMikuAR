@@ -5,7 +5,7 @@ import {
     poseDataToVmdBuffer,
     loadVPDFromBuffer,
 } from '../motion/vpd-parser';
-import { BONE_FRAME_SIZE, MORPH_FRAME_SIZE, buildBoneFrame } from '../motion/vmd-writer';
+import { BONE_FRAME_SIZE } from '../motion/vmd-writer';
 
 // ======== parseVPDText ========
 
@@ -147,7 +147,7 @@ describe('decodeVPDData', () => {
 describe('poseDataToVmdBuffer', () => {
     const HEADER_SIZE = 30 + 20 + 4; // sig + model + boneCount
     const BONE_SIZE = BONE_FRAME_SIZE;
-    const MORPH_COUNT_OFFSET = HEADER_SIZE + BONE_SIZE + 4; // +4 for morph count field
+    const _MORPH_COUNT_OFFSET = HEADER_SIZE + BONE_SIZE + 4; // +4 for morph count field
 
     it('produces a valid VMD header with signature', () => {
         const buf = poseDataToVmdBuffer({ modelName: 'test', bones: [] });

@@ -260,7 +260,7 @@ describe('M4: Cloth Topology (xpbd-cloth)', () => {
 
     // ---- 低分辨率 (12, 6) 端到端 ----
     it('low-res (12,6) end-to-end stability', () => {
-        const { solver, anchorIndices, ringSize, ringCount } = makeClothTopo(
+        const { solver, anchorIndices, ringSize: _ringSize, ringCount: _ringCount } = makeClothTopo(
             12,
             6,
             0.15,
@@ -301,7 +301,7 @@ describe('M4: Cloth Topology (xpbd-cloth)', () => {
 
     // ---- 边界：最简布料 (4, 3) ----
     it('minimal (4,3) cloth topology correctness', () => {
-        const { solver, ringSize, ringCount } = makeClothTopo(4, 3, 0.15, 0.6, 0, 0.001, 0.005);
+        const { solver, ringSize: _ringSize, ringCount: _ringCount } = makeClothTopo(4, 3, 0.15, 0.6, 0, 0.001, 0.005);
         expect(solver.particles.length).toBe(12); // 4 * 3
         // 距离: 3*4 + 2*4 = 20
         expect(solver.constraints.filter((c) => c.type === 'distance').length).toBe(20);

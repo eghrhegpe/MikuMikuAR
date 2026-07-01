@@ -21,15 +21,6 @@ import {
     getModelMorphs,
     setModelMorphWeight,
     resetModelMorphs,
-    getMatCatGroups,
-    getMatCatParams,
-    setMatCatParams,
-    resetMatCatParams,
-    getMatDetailList,
-    getMatParams,
-    setMatParams,
-    resetSingleMatParams,
-    resetAllMatParams,
     setModelWireframe,
     setModelBoneLinesVis,
     setModelBoneJointsVis,
@@ -37,30 +28,19 @@ import {
     setModelOpacity,
     removeModel,
     resetModelTransform,
-    getMatState,
-    applyMatState,
-    setMatEnabled,
-    isMatEnabled,
     getPhysicsCategories,
     isPhysicsCategoryEnabled,
     setPhysicsCategory,
-    getPhysicsCatState,
-    stopVMD,
-    loadVMDFromPath,
 } from '../scene/scene';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
-import { isPlaying } from '../core/config';
-import { getAudioPath, getAudioName, getVolume, getAudioOffset } from '../outfit/audio';
 import {
     slideRow,
-    addSliderRow,
     addModeSlider,
     addToggleRow,
     addCollapsible,
 } from '../core/ui-helpers';
 import { buildOutfitLevel } from './outfit-ui';
-import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
 import {
     GetTagsByModel,
@@ -108,8 +88,8 @@ export function buildOpenWithLevel(id: string): PopupLevel {
                         try {
                             await OpenWithSoftware(inst.filePath, sw.path, sw.args || '');
                             setStatus(`✓ 已启动: ${sw.name}`, true);
-                        } catch (err: any) {
-                            setStatus('✗ ' + (err.message || err), false);
+                        } catch (err: unknown) {
+                            setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
                         }
                     });
                     c.appendChild(row);
@@ -669,7 +649,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                 setStatus('✓ 已收藏', true);
                             }
                             refreshFav();
-                        } catch (err) {
+                        } catch (_err) {
                             setStatus('✗ 收藏操作失败', false);
                         }
                     };

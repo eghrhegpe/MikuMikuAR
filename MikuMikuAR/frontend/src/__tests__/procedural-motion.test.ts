@@ -41,7 +41,7 @@ describe('generateIdleVmd', () => {
         const buf2 = generateIdleVmd(state, []);
         const view = new DataView(buf2);
         // First bone frame rotation at offset 54+15+4+12 = 85
-        const firstRot = [
+        const _firstRot = [
             view.getFloat32(85, true),
             view.getFloat32(89, true),
             view.getFloat32(93, true),

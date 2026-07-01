@@ -167,7 +167,7 @@ vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () => ({}))
 
 vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => ({}));
 
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, vi, beforeAll } from 'vitest';
 import { serializeModelPreset, applyModelPreset, ModelPresetFile } from '../menus/library';
 import {
     stopVMD,
@@ -224,7 +224,7 @@ function fakeMesh(name = 'mesh0'): any {
             },
         },
         scaling: {
-            setAll(v: number) {
+            setAll(_v: number) {
                 /* noop */
             },
         },

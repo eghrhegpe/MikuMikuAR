@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 
 vi.hoisted(() => {
     const ids = ['renderCanvas', 'statusBar', 'loading', 'loadingText', 'btnMainAction'];

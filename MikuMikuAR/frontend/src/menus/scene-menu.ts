@@ -7,7 +7,6 @@ import {
     dom,
     closeAllOverlays,
     setStatus,
-    escapeHtml,
     PopupRow,
     PopupLevel,
     cardContainer,
@@ -28,7 +27,6 @@ import {
     hasCameraVmd,
     getCameraVmdName,
     clearCameraVmd,
-    getCurrentCamera,
     getOrbitParams,
     setOrbitParams,
     getFreeflyParams,
@@ -79,8 +77,6 @@ import {
     setLipSyncEnabled,
     setLipSyncSensitivity,
     setLipSyncIntensity,
-    scene,
-    modelManager,
 } from '../scene/scene';
 import { modelRegistry, focusedModelId, setFocusedModelId } from '../core/config';
 import type { ProcMotionMode } from '../motion/procedural-motion';
@@ -1545,7 +1541,7 @@ function showPresetSaveDialog(): void {
                 sceneMenu.reRender();
             }
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
             console.warn('SaveRenderPreset failed:', err);
             setStatus('✗ 保存预设失败', false);
         });

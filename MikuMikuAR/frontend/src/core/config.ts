@@ -563,7 +563,7 @@ export function formatTime(seconds: number): string {
 }
 
 export function formatError(err: unknown, maxLen = 120): string {
-    if (err == null) {
+    if (err === null || err === undefined) {
         return 'unknown error';
     }
     if (err instanceof Error) {

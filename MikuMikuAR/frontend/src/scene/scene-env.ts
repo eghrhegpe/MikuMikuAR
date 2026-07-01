@@ -86,7 +86,7 @@ export function disposeParticles(): void {
     impl.disposeParticles();
 }
 
-export function applyWindToParticles(wind: { x: number; y: number; z: number }): void {
+export function applyWindToParticles(_wind: { x: number; y: number; z: number }): void {
     // wind is applied inside createParticleEmitter via envState.windEnabled
 }
 

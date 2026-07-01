@@ -121,7 +121,7 @@ export interface ClothInstance {
 export function createCloth(
     scene: Scene,
     config: Partial<ClothConfig> = {},
-    collider?: SdfCollider | null
+    _collider?: SdfCollider | null
 ): ClothInstance {
     const cfg = { ...DEFAULT_CLOTH_CONFIG, ...config };
     const solver = new XpbdSolver({

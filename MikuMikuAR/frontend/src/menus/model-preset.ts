@@ -23,8 +23,6 @@ import {
     applyMatState,
     loadPMXFile,
 } from '../scene/scene';
-import { createIconifyIcon } from '../core/icons';
-import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
 import {
     SelectPresetSaveFile,
     SelectPresetOpenFile,
@@ -34,7 +32,6 @@ import {
     SaveModelPresetToLib,
     LoadModelPresetFromLib,
     DeleteModelPreset,
-    RenameModelPreset,
 } from '../../wailsjs/go/main/App';
 import {
     loadAudioFile,
@@ -234,8 +231,8 @@ export async function selectAndSavePreset(id: string): Promise<void> {
     try {
         await SaveModelPreset(json, path);
         setStatus('✓ 预设已保存', true);
-    } catch (err: any) {
-        setStatus('✗ 保存失败: ' + (err.message || err), false);
+    } catch (err: unknown) {
+        setStatus('✗ 保存失败: ' + (err instanceof Error ? err.message : String(err)), false);
     }
 }
 
@@ -326,8 +323,8 @@ export async function selectAndLoadPreset(id: string): Promise<void> {
     try {
         const json = await LoadModelPreset(path);
         await applyModelPreset(id, json);
-    } catch (err: any) {
-        setStatus('✗ 加载失败: ' + (err.message || err), false);
+    } catch (err: unknown) {
+        setStatus('✗ 加载失败: ' + (err instanceof Error ? err.message : String(err)), false);
     }
 }
 
@@ -337,8 +334,8 @@ export async function togglePresetAutoApply(name: string): Promise<void> {
         const preset: ModelPresetFile = JSON.parse(json);
         preset.autoApply = !preset.autoApply;
         await SaveModelPresetToLib(name, JSON.stringify(preset, null, 2));
-    } catch (err: any) {
-        setStatus('✗ 切换自动应用失败: ' + (err.message || err), false);
+    } catch (err: unknown) {
+        setStatus('✗ 切换自动应用失败: ' + (err instanceof Error ? err.message : String(err)), false);
     }
 }
 
@@ -380,8 +377,8 @@ export async function applyPresetFromLib(
                 }
             }
         }
-    } catch (err: any) {
-        setStatus('✗ 应用预设失败: ' + (err.message || err), false);
+    } catch (err: unknown) {
+        setStatus('✗ 应用预设失败: ' + (err instanceof Error ? err.message : String(err)), false);
     }
 }
 
@@ -416,8 +413,8 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
     try {
         await SaveModelPresetToLib(trimmed, json);
         setStatus('✓ 预设已保存到库', true);
-    } catch (err: any) {
-        setStatus('✗ 保存失败: ' + (err.message || err), false);
+    } catch (err: unknown) {
+        setStatus('✗ 保存失败: ' + (err instanceof Error ? err.message : String(err)), false);
     }
 }
 

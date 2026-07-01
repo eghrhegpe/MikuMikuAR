@@ -172,7 +172,7 @@ function applyDegrade(level: DegradeLevel, force = false): void {
         _snapshot = null;
         _currentLevel = 0;
         _lastRecoveryTime = now;
-        console.log('[Performance] Restored to full quality');
+        console.info('[Performance] Restored to full quality');
         return;
     }
 
@@ -206,7 +206,7 @@ function applyDegrade(level: DegradeLevel, force = false): void {
         // 实际发生了恢复
         _lastRecoveryTime = now;
     }
-    console.log(`[Performance] Level ${level}: ${LEVEL_CONFIGS[level].label}`);
+    console.info(`[Performance] Level ${level}: ${LEVEL_CONFIGS[level].label}`);
 }
 
 // ======== Thresholds with Hysteresis ========
@@ -305,7 +305,7 @@ export function setPerformanceMode(mode: PerformanceMode): void {
     } else if (mode === 'performance') {
         applyDegrade(2, true);
     }
-    console.log(`[Performance] Mode set to: ${mode}`);
+    console.info(`[Performance] Mode set to: ${mode}`);
 }
 
 export function getPerformanceMode(): PerformanceMode {

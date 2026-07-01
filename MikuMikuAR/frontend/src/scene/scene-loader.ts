@@ -10,16 +10,8 @@ import {
     dom,
     setStatus,
     setFocusedModelId,
-    isPlaying,
-    setIsPlaying,
-    autoLoop,
     isLoadingModel,
     setIsLoadingModel,
-    isLoadingVmd,
-    setIsLoadingVmd,
-    setAutoLoop,
-    seekDragging,
-    setSeekDragging,
     pendingVmd,
     setPendingVmd,
     ModelInstance,
@@ -208,7 +200,9 @@ export async function loadPMXFile(
             triggerAutoSave();
             try {
                 document.dispatchEvent(new CustomEvent('mmku:modelLoaded'));
-            } catch {}
+            } catch {
+                // Intentionally empty — 自定义事件派发失败不影响模型加载主流程
+            }
             return id;
         }
 
@@ -282,7 +276,7 @@ export async function loadPMXFile(
         // Auto-capture thumbnail for future popup display
         captureThumbnail(filePath).catch(() => {});
         if (!skipAutoApply) {
-            _tryAutoApplyPreset(id).catch((err: any) => console.warn('auto-apply preset:', err));
+            _tryAutoApplyPreset(id).catch((err: unknown) => console.warn('auto-apply preset:', err));
         }
         // Pre-load outfit file for UI entry availability
         _loadOutfits(id).catch(() => {});
@@ -296,7 +290,9 @@ export async function loadPMXFile(
         // Dispatch event so UI layers (e.g. model popup) can refresh
         try {
             document.dispatchEvent(new CustomEvent('mmku:modelLoaded'));
-        } catch {}
+        } catch {
+            // Intentionally empty — 自定义事件派发失败不影响模型加载主流程
+        }
 
         return registeredId;
     } catch (err) {
@@ -320,7 +316,9 @@ export async function loadPMXFile(
             loadedMeshes.forEach((m) => {
                 try {
                     m.dispose();
-                } catch {}
+                } catch {
+                    // Intentionally empty — 清理阶段单个 mesh dispose 失败不影响整体回滚
+                }
             });
         }
         dom.loadingEl.style.display = 'none';

@@ -1,10 +1,8 @@
 import {
-    Scene,
     Color4,
     Vector3,
     Texture,
     GPUParticleSystem,
-    Observer,
     ParticleSystem,
 } from '@babylonjs/core';
 import { EnvState, envState } from '../core/config';

@@ -43,7 +43,7 @@ export interface RenderState {
 // ======== Renderer State (module-level) ========
 
 let _scene: import('@babylonjs/core/scene').Scene | null = null;
-export let pipeline: DefaultRenderingPipeline;
+export let pipeline: DefaultRenderingPipeline | undefined;
 let _outlineEnabled = false;
 let _outlineColor: [number, number, number] = [0, 0, 0];
 let _pipelineCamera: Camera | null = null;
@@ -58,6 +58,10 @@ function clamp(value: number, min: number, max: number): number {
 
 function clampColorChannel(v: number): number {
     return clamp(v, 0, 1);
+}
+
+function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
+    obj[key] = value;
 }
 
 // ======== 初始化与释放 ========
@@ -87,7 +91,7 @@ export function isRendererReady(): boolean {
 export function disposeRenderer(): void {
     if (pipeline) {
         pipeline.dispose();
-        (pipeline as any) = undefined;
+        pipeline = undefined;
     }
     _scene = null;
     _modelRegistry = null;
@@ -115,7 +119,7 @@ export function getRenderState(): RenderState {
         toneMapping: pipeline.imageProcessing.toneMappingType ?? 0,
         exposure: pipeline.imageProcessing.exposure ?? 1,
         contrast: pipeline.imageProcessing.contrast ?? 1,
-        fov: cam ? ((cam as any).fov ?? 0.8) : 0.8,
+        fov: cam ? (cam.fov ?? 0.8) : 0.8,
         bgColor: [_scene.clearColor.r, _scene.clearColor.g, _scene.clearColor.b],
         dofEnabled: pipeline.depthOfFieldEnabled,
         dofAperture: pipeline.depthOfField?.fStop ?? 0.5,
@@ -245,7 +249,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
         }
     }
     if (f !== undefined && _scene.activeCamera) {
-        (_scene.activeCamera as any).fov = f;
+        _scene.activeCamera.fov = f;
     }
     if (s.bgColor !== undefined) {
         _scene.clearColor = new Color4(
@@ -360,7 +364,7 @@ export function transitionRenderState(
             if (target[key] !== undefined) {
                 const a = source[key] as number;
                 const b = target[key] as number;
-                (interp as any)[key] = lerp(a, b, t);
+                setKey(interp, key, lerp(a, b, t) as RenderState[typeof key]);
             }
         }
         // 颜色字段插值（逐通道）
@@ -368,19 +372,19 @@ export function transitionRenderState(
             if (target[key] !== undefined) {
                 const a = source[key] as number[];
                 const b = target[key] as number[];
-                (interp as any)[key] = a.map((v, i) => lerp(v, b[i], t));
+                setKey(interp, key, a.map((v, i) => lerp(v, b[i], t)) as RenderState[typeof key]);
             }
         }
         // 布尔字段：按阈值提前切换
         for (const key of boolKeys) {
             if (target[key] !== undefined) {
-                (interp as any)[key] = shouldActivateBool(key, t);
+                setKey(interp, key, shouldActivateBool(key, t) as RenderState[typeof key]);
             }
         }
         // 枚举字段：t >= 1 时切换到目标值，否则保持当前值
         for (const key of enumKeys) {
             if (target[key] !== undefined) {
-                (interp as any)[key] = t >= 1 ? target[key] : source[key];
+                setKey(interp, key, (t >= 1 ? target[key] : source[key]) as RenderState[typeof key]);
             }
         }
 
@@ -412,7 +416,9 @@ export function reattachPipeline(): void {
             for (const cam of existingCameras) {
                 try {
                     pipeline.removeCamera(cam);
-                } catch (_) {}
+                } catch {
+                    // Intentionally empty — 移除已有相机失败，继续添加新相机即可
+                }
             }
         }
         pipeline.addCamera(_scene.activeCamera);

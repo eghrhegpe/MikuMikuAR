@@ -12,8 +12,8 @@ import {
     DirectionalLight,
     RawTexture3D,
 } from '@babylonjs/core';
-import { EnvState, envState } from '../core/config';
-import { _envSys, getScene, getPipeline, ensureEnvUpdateObserver } from './scene-env-impl';
+import { EnvState } from '../core/config';
+import { _envSys, getScene, ensureEnvUpdateObserver } from './scene-env-impl';
 
 // ======== Cloud System Constants ========
 /** Density scale factor applied to cloudCover (1.2 = 20% boost) */
@@ -84,7 +84,7 @@ function _ensureNoiseTexture(scene: Scene): RawTexture3D {
     _noiseTex3D.wrapU = Texture.WRAP_ADDRESSMODE;
     _noiseTex3D.wrapV = Texture.WRAP_ADDRESSMODE;
     _noiseTex3D.wrapR = Texture.WRAP_ADDRESSMODE;
-    console.log('[VolCloud] 3D noise texture created (256³)');
+    console.info('[VolCloud] 3D noise texture created (256³)');
     return _noiseTex3D;
 }
 
@@ -121,7 +121,7 @@ let _debugCloudMarkers: Mesh[] = [];
 
 /** 清理所有调试可视化对象。 */
 function _clearDebugVisuals(): void {
-    const scene = getScene();
+    const _scene = getScene();
     if (_debugCloudRing) {
         _debugCloudRing.dispose();
         _debugCloudRing = null;
@@ -150,7 +150,6 @@ function _createDebugVisuals(state: EnvState, scene: Scene): void {
     ringMat.alpha = 0.4;
     ringMat.backFaceCulling = false;
     _debugCloudRing.material = ringMat;
-    console.log('[VolCloud] DEBUG: red ring at Y=', state.cloudHeight);
 
     for (
         let y = state.cloudHeight - CLOUD_DEBUG_Y_RANGE;
@@ -431,7 +430,7 @@ export function createClouds(state: EnvState): void {
 
     ensureEnvUpdateObserver();
 
-    console.log('[VolCloud] Cloud system created successfully');
+    console.info('[VolCloud] Cloud system created successfully');
 }
 
 export function disposeClouds(): void {

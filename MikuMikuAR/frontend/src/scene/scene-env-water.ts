@@ -12,7 +12,7 @@ import {
     DefaultRenderingPipeline,
 } from '@babylonjs/core';
 import { EnvState, envState } from '../core/config';
-import { _envSys, getScene, getPipeline, ensureEnvUpdateObserver } from './scene-env-impl';
+import { _envSys, getScene, ensureEnvUpdateObserver } from './scene-env-impl';
 
 // ======== 常量定义 ========
 const WATER_BASE_SIZE = 60; // 水面基准尺寸（世界单位），通过缩放调整最终大小

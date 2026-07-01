@@ -60,11 +60,11 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         procStarting = false;
         return;
     }
-    const morphNames = modelAtStart.morph.morphs.map((m: any) => m.name) ?? [];
+    const morphNames = modelAtStart.morph.morphs.map((m) => m.name) ?? [];
     let buf: ArrayBuffer;
 
     // Issue #2: bpm 无效时降级为 idle，保持状态一致
-    const bpmValid = bpm != null && bpm > 0 && Number.isFinite(bpm);
+    const bpmValid = bpm !== null && bpm !== undefined && bpm > 0 && Number.isFinite(bpm);
     if (targetMode === 'autodance' && bpmValid) {
         buf = generateAutoDanceVmd(procState, bpm!, morphNames);
         lastBeatBpm = bpm!;
@@ -133,7 +133,7 @@ export async function updateProcMotion(): Promise<void> {
     // Issue #1: focusedModel() 可能为 null/undefined
     const model = focusedModel();
     const audioOn = isAudioPlaying();
-    const hasUserVmd = model?.vmdData != null;
+    const hasUserVmd = model?.vmdData !== null && model?.vmdData !== undefined;
     const mode = procState.mode;
     const autoOk = mode !== 'off' || procState.autoSwitch;
     const wantAutoDance = shouldAutoDance(audioOn, mode) && autoOk;

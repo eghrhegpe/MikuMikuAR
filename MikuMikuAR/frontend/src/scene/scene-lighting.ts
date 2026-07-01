@@ -12,6 +12,10 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
 import type { ModelInstance, PropInstance } from '../core/config';
 
+function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
+    obj[key] = value;
+}
+
 // ======== Light State ========
 
 export interface LightState {
@@ -219,19 +223,19 @@ export function transitionLighting(
             const a = source[key];
             const b = target[key];
             if (typeof a === 'number' && typeof b === 'number') {
-                (interpState as any)[key] = lerp(a, b);
+                setKey(interpState, key, lerp(a, b) as LightState[typeof key]);
             } else if (Array.isArray(a) && Array.isArray(b)) {
-                (interpState as any)[key] = a.map((v, i) => lerp(v, b[i])) as any;
+                setKey(interpState, key, a.map((v, i) => lerp(v, b[i])) as LightState[typeof key]);
             } else {
                 // 布尔等类型，在动画结束时才切换
-                (interpState as any)[key] = t >= 1 ? b : a;
+                setKey(interpState, key, (t >= 1 ? b : a) as LightState[typeof key]);
             }
         }
         // 动画结束时一次性应用被跳过的阴影重建参数
         if (t >= 1) {
             for (const key of Object.keys(target) as (keyof LightState)[]) {
                 if (rebuildShadowKeys.has(key)) {
-                    (interpState as any)[key] = target[key];
+                    setKey(interpState, key, target[key] as LightState[typeof key]);
                 }
             }
         }

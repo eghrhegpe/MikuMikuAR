@@ -6,7 +6,6 @@ import {
     Scene,
     Color3,
     Color4,
-    Vector3,
     Texture,
     BaseTexture,
     StandardMaterial,
@@ -18,9 +17,7 @@ import {
     DefaultRenderingPipeline,
     Mesh,
     MeshBuilder,
-    Effect,
     ShaderMaterial,
-    PostProcess,
 } from '@babylonjs/core';
 import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
 import { EnvState, envState } from '../core/config';

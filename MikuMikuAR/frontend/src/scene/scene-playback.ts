@@ -9,7 +9,6 @@ import {
     isPlaying,
     setIsPlaying,
     autoLoop,
-    setSeekDragging,
     seekDragging,
     formatTime,
     mmdRuntime,
@@ -123,13 +122,19 @@ export function initPlaybackObservables(
     return () => {
         try {
             runtime.onAnimationTickObservable.removeCallback(tickHandler);
-        } catch (_) {}
+        } catch {
+            // Intentionally empty — 清理观察者时失败不产生副作用
+        }
         try {
             runtime.onPlayAnimationObservable.removeCallback(playHandler);
-        } catch (_) {}
+        } catch {
+            // Intentionally empty — 清理观察者时失败不产生副作用
+        }
         try {
             runtime.onPauseAnimationObservable.removeCallback(pauseHandler);
-        } catch (_) {}
+        } catch {
+            // Intentionally empty — 清理观察者时失败不产生副作用
+        }
     };
 }
 

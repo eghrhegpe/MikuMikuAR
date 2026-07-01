@@ -9,7 +9,6 @@ import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 
 import {
     propRegistry,
-    setPropRegistry,
     isLoadingProp,
     setIsLoadingProp,
     setStatus,
@@ -71,7 +70,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
             dom.loadingEl.style.display = 'block';
             updateLoadingText('加载道具 0%');
 
-            console.debug('[props] loadProp:', filePath);
+            console.info('[props] loadProp:', filePath);
 
             // 检查是否已加载
             for (const [, inst] of propRegistry) {
@@ -136,7 +135,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
 
             setStatus(`✓ 道具: ${displayName}`, true);
             triggerAutoSave();
-            console.debug('[props] load complete:', id, displayName);
+            console.info('[props] load complete:', id, displayName);
             return id;
         } catch (err) {
             console.error('[props] loadProp:', err);
@@ -144,7 +143,9 @@ export async function loadProp(filePath: string): Promise<string | null> {
             loadedMeshes.forEach((m) => {
                 try {
                     m.dispose();
-                } catch {}
+                } catch {
+                    // Intentionally empty — 回滚阶段单个 mesh dispose 失败不影响整体清理
+                }
             });
             setStatus('✗ 道具加载失败', false);
             return null;
@@ -165,14 +166,16 @@ export function removeProp(id: string): void {
         return;
     }
 
-    console.debug('[props] removeProp:', inst.name);
+    console.info('[props] removeProp:', inst.name);
 
     // 从阴影生成器中移除（防止悬空引用）
     if (_envSys.shadow.generator) {
         for (const m of inst.meshes) {
             try {
                 _envSys.shadow.generator.removeShadowCaster(m);
-            } catch (_) {}
+            } catch {
+                // Intentionally empty — 移除阴影投射器失败不影响道具销毁主流程
+            }
         }
     }
 

@@ -191,7 +191,7 @@ describe('XpbdSolver constraint sanity', () => {
         const p0 = solver.particles[i0].p;
         const p1 = solver.particles[i1].p;
         const p2 = solver.particles[i2].p;
-        const p3 = solver.particles[i3].p;
+        const _p3 = solver.particles[i3].p;
 
         const d01 = Math.sqrt((p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2 + (p0[2] - p1[2]) ** 2);
         const d02 = Math.sqrt((p0[0] - p2[0]) ** 2 + (p0[1] - p2[1]) ** 2 + (p0[2] - p2[2]) ** 2);

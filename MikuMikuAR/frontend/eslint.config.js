@@ -45,6 +45,7 @@ export default [
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
         },
       ],
       '@typescript-eslint/explicit-function-return-type': 'off',
@@ -64,9 +65,9 @@ export default [
       '@typescript-eslint/prefer-optional-chain': 'off',
       '@typescript-eslint/prefer-nullish-coalescing': 'off',
       '@typescript-eslint/no-unnecessary-condition': 'off',
-      'no-console': 'warn',
+      'no-console': ['warn', { allow: ['error', 'warn', 'info'] }],
       'no-debugger': 'warn',
-      'no-empty': 'warn',
+      'no-empty': ['warn', { allowEmptyCatch: true }],
       'no-unused-vars': 'off',
       'prefer-const': 'warn',
       'no-var': 'error',
@@ -129,6 +130,7 @@ export default [
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
         },
       ],
     },

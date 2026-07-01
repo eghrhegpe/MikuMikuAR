@@ -50,7 +50,7 @@ export function generateIdleVmd(state: ProcMotionState, morphNames: string[] = [
     const morphs: MorphKeyFrame[] = [];
     const blinkMorph = MORPH_BLINK_CANDIDATES.find((c) => morphNames.includes(c));
     if (!blinkMorph) {
-        console.debug('proc-motion: no blink morph found');
+        console.info('proc-motion: no blink morph found');
     }
 
     // 呼吸：上半身 X 轴旋转（前倾后仰），正弦曲线
@@ -126,7 +126,7 @@ export function generateAutoDanceVmd(
     const morphs: MorphKeyFrame[] = [];
     const blinkMorph = MORPH_BLINK_CANDIDATES.find((c) => morphNames.includes(c));
     if (!blinkMorph) {
-        console.debug('proc-motion: no blink morph found');
+        console.info('proc-motion: no blink morph found');
     }
 
     // 预计算 sin 值，3 个骨骼循环复用

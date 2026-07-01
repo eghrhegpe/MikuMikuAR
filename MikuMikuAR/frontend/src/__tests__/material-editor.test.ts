@@ -157,7 +157,6 @@ import {
     getMatCatParams,
     setMatCatParams,
     getMatDetailList,
-    getMatState,
     applyMatState,
 } from '../scene/scene';
 import { modelRegistry } from '../core/config';
@@ -220,7 +219,7 @@ describe('_catOf material classification', () => {
 
 // ======== Per-Material State Management ========
 
-function mockMat(name: string) {
+function _mockMat(name: string) {
     return {
         name,
         diffuseColor: {

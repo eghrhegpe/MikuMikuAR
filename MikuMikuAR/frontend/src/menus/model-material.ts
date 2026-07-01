@@ -24,7 +24,7 @@ import {
     setMatEnabled,
 } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSliderRow, addCollapsible } from '../core/ui-helpers';
+import { addSliderRow, addCollapsible } from '../core/ui-helpers';
 
 let _selectedMat: { cat: string; index: number } | null = null;
 
@@ -343,7 +343,9 @@ export function buildMatListLevel(id: string, modelName: string): PopupLevel {
                             if (mat.diffuseColor) {
                                 swatchStyle = `background:rgb(${Math.round(mat.diffuseColor.r * 255)},${Math.round(mat.diffuseColor.g * 255)},${Math.round(mat.diffuseColor.b * 255)})`;
                             }
-                        } catch {}
+                        } catch {
+                            // Intentionally empty — 材质颜色读取失败时使用默认灰底，不影响功能
+                        }
                     }
 
                     const row = document.createElement('div');
@@ -365,7 +367,9 @@ export function buildMatListLevel(id: string, modelName: string): PopupLevel {
                                 if ((mat as StandardMaterial).diffuseColor) {
                                     newStyle = `background:rgb(${Math.round((mat as StandardMaterial).diffuseColor.r * 255)},${Math.round((mat as StandardMaterial).diffuseColor.g * 255)},${Math.round((mat as StandardMaterial).diffuseColor.b * 255)})`;
                                 }
-                            } catch {}
+                            } catch {
+                                // Intentionally empty — 材质颜色读取失败时使用默认灰底，不影响功能
+                            }
                             swatch.style.cssText = newStyle;
                             swatch.classList.remove('mat-swatch-disabled');
                             row.classList.remove('mat-disabled');

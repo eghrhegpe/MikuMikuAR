@@ -13,6 +13,7 @@
 
 import { Scene } from '@babylonjs/core/scene';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { LinesMesh } from '@babylonjs/core/Meshes/linesMesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
@@ -53,7 +54,7 @@ export class XpbdRenderer {
     private particleVisible = false;
 
     // 约束可视化（复用单条 LinesMesh，每帧 updateVerticesData）
-    private constraintLines: Mesh | null = null;
+    private constraintLines: LinesMesh | null = null;
     private constraintVisible = false;
 
     // 胶囊可视化
@@ -198,15 +199,15 @@ export class XpbdRenderer {
                 'xpbd_constraints',
                 { points: pts, updatable: true },
                 this.scene
-            ) as any;
-            (this.constraintLines as any).color = new Color3(
+            ) as LinesMesh;
+            this.constraintLines.color = new Color3(
                 this.config.constraintColor[0],
                 this.config.constraintColor[1],
                 this.config.constraintColor[2]
             );
         } else {
             // 复用：仅更新顶点缓冲区
-            (this.constraintLines as any).updateVerticesData(
+            this.constraintLines.updateVerticesData(
                 'position',
                 new Float32Array(positions),
                 false,
