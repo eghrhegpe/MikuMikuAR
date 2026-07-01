@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"embed"
+	"time"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -27,7 +29,9 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 30, G: 30, B: 40, A: 1},
 		OnStartup:        app.startup,
-		OnShutdown:       app.shutdown,
+		OnShutdown: func(ctx context.Context) {
+			_ = app.shutdownWithTimeout(ctx, 5*time.Second)
+		},
 		Bind: []interface{}{
 			app,
 		},

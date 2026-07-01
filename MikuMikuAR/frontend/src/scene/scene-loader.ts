@@ -24,6 +24,7 @@ import {
     setPendingVmd,
     ModelInstance,
     triggerAutoSave,
+    formatError,
 } from '../core/config';
 import { resolveFileUrl, normPath } from '../core/fileservice';
 import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
@@ -316,7 +317,7 @@ export async function loadPMXFile(
         }
         dom.loadingEl.style.display = 'none';
         console.error('loadPMXFile:', err);
-        setStatus('✗ 模型加载失败', false);
+        setStatus('✗ 模型加载失败: ' + formatError(err), false);
         return null;
     } finally {
         setIsLoadingModel(false);

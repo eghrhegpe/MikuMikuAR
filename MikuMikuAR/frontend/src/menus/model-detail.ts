@@ -240,12 +240,12 @@ export function buildModelInfoLevel(id: string): PopupLevel {
             const meta = modelMetaCache.get(inst.filePath);
             let vertCount = 0,
                 faceCount = 0;
-            for (const m of inst.meshes) {
+            for (const m of inst.meshes ?? []) {
                 vertCount += m.getTotalVertices() || 0;
                 faceCount += m.getTotalIndices() || 0;
             }
             const boneCount = inst.mmdModel?.runtimeBones?.length ?? null;
-            const morphCount = inst.mmdModel.morph.morphs.length ?? null;
+            const morphCount = inst.mmdModel?.morph?.morphs?.length ?? null;
             const fields: Array<{ label: string; value: string }> = [
                 { label: '名称', value: inst.name },
                 { label: '文件', value: inst.filePath.split('/').pop() || inst.filePath },
@@ -253,7 +253,7 @@ export function buildModelInfoLevel(id: string): PopupLevel {
                 { label: '动作', value: inst.vmdName || '无' },
                 { label: '顶点数', value: vertCount.toLocaleString() },
                 { label: '面数', value: (faceCount / 3).toLocaleString() },
-                { label: '材质数', value: String(inst.meshes.length) },
+                { label: '材质数', value: String(inst.meshes?.length ?? 0) },
                 { label: '骨骼数', value: boneCount !== null ? boneCount.toLocaleString() : 'N/A' },
                 {
                     label: '表情数',
@@ -782,7 +782,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
 
 export function buildMorphPreviewLevel(id: string): PopupLevel {
     const inst = modelRegistry.get(id);
-    const morphs = inst ? getModelMorphs(id) : [];
+    const morphs = inst ? (getModelMorphs(id) ?? []) : [];
     const typeLabels: Record<number, string> = {
         0: '组',
         1: '顶点',

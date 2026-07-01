@@ -134,6 +134,12 @@ func (a *App) trustedRoots() []string {
 // For files inside trusted roots, returns the original directory unchanged.
 // For external files, copies PMX + all siblings to a temp directory.
 func (a *App) IsolateModelDir(filePath string) (string, error) {
+	return safeCall(func() (string, error) {
+		return a.isolateModelDirUnsafe(filePath)
+	})
+}
+
+func (a *App) isolateModelDirUnsafe(filePath string) (string, error) {
 	if a.isSafePath(filePath) {
 		return filepath.Dir(filePath), nil
 	}

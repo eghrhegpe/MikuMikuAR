@@ -64,7 +64,11 @@ export function buildOutfitLevel(id: string): PopupLevel {
                     defRow.addEventListener('click', async () => {
                         if (_loading) return;
                         _loading = true;
-                        try { await applyOutfitVariant(id, '默认'); } catch (e) {
+                        setStatus('⏳ 切换变体中…', true);
+                        try {
+                            await applyOutfitVariant(id, '默认');
+                            setStatus('✓ 变体已切换', true);
+                        } catch (e) {
                             setStatus('✗ 切换变体失败', false);
                         }
                         _loading = false;
@@ -84,14 +88,18 @@ export function buildOutfitLevel(id: string): PopupLevel {
                         label.textContent = v.name;
                         row.appendChild(label);
                         row.addEventListener('click', async () => {
-                            if (_loading) return;
-                            _loading = true;
-                            try { await applyOutfitVariant(id, v.name); } catch (e) {
-                                setStatus('✗ 切换变体失败', false);
-                            }
-                            _loading = false;
-                            await _render();
-                        });
+                        if (_loading) return;
+                        _loading = true;
+                        setStatus('⏳ 切换变体中…', true);
+                        try {
+                            await applyOutfitVariant(id, v.name);
+                            setStatus('✓ 变体已切换', true);
+                        } catch (e) {
+                            setStatus('✗ 切换变体失败', false);
+                        }
+                        _loading = false;
+                        await _render();
+                    });
                         c.appendChild(row);
                     }
 
@@ -102,10 +110,12 @@ export function buildOutfitLevel(id: string): PopupLevel {
                     resetBtn.addEventListener('click', async () => {
                         if (_loading) return;
                         _loading = true;
+                        setStatus('⏳ 重置服装中…', true);
                         try {
                             const newOutfit = await loadOutfits(id);
                             if (newOutfit) inst.outfitFile = newOutfit;
                             resetOutfit(id);
+                            setStatus('✓ 服装已重置', true);
                         } catch (e) {
                             setStatus('✗ 重置服装失败', false);
                         }

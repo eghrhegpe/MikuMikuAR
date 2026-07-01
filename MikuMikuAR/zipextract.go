@@ -64,9 +64,16 @@ func zipCacheName(zipPath string) string {
 // Zip slip protection: validates that every extracted entry stays within the
 // destination directory.
 func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
+	return safeCall(func() (*ExtractResult, error) {
+		return a.extractZipUnsafe(zipPath, innerPath)
+	})
+}
+
+func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error) {
+	const op = "ExtractZip"
 	cacheRoot, err := extractedDir()
 	if err != nil {
-		return nil, fmt.Errorf("解压失败")
+		return nil, wrapError(op, fmt.Errorf("解压失败: %w", err))
 	}
 
 	dest := filepath.Join(cacheRoot, zipCacheName(zipPath))
@@ -74,7 +81,7 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 	// Stat source zip
 	srcInfo, err := os.Stat(zipPath)
 	if err != nil {
-		return nil, fmt.Errorf("压缩包无法访问")
+		return nil, wrapError(op, fmt.Errorf("压缩包无法访问: %w", err))
 	}
 	srcMtime := srcInfo.ModTime().Unix()
 	srcSize := srcInfo.Size()
@@ -95,18 +102,18 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 	a.safeLogInfo("ExtractZip: extracting %s → %s", zipPath, dest)
 	os.RemoveAll(dest)
 	if err := os.MkdirAll(dest, 0755); err != nil {
-		return nil, fmt.Errorf("创建缓存目录失败")
+		return nil, wrapError(op, fmt.Errorf("创建缓存目录失败: %w", err))
 	}
 
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return nil, fmt.Errorf("打开压缩包失败")
+		return nil, wrapError(op, fmt.Errorf("打开压缩包失败: %w", err))
 	}
 	defer zr.Close()
 
 	destAbs, err := filepath.Abs(dest)
 	if err != nil {
-		return nil, fmt.Errorf("解析路径失败")
+		return nil, wrapError(op, fmt.Errorf("解析路径失败: %w", err))
 	}
 	destPrefix := destAbs + string(filepath.Separator)
 
@@ -157,10 +164,10 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 	m := manifest{Source: zipPath, Mtime: srcMtime, Size: srcSize, Version: extractCacheVersion}
 	mData, err := json.Marshal(m)
 	if err != nil {
-		return nil, fmt.Errorf("保存索引失败")
+		return nil, wrapError(op, fmt.Errorf("保存索引失败: %w", err))
 	}
 	if err := os.WriteFile(manifestPath, mData, 0644); err != nil {
-		return nil, fmt.Errorf("写入索引失败")
+		return nil, wrapError(op, fmt.Errorf("写入索引失败: %w", err))
 	}
 
 	resultPath := filepath.ToSlash(filepath.Join(dest, innerPath))
@@ -230,9 +237,16 @@ func (a *App) ClearExtractCache() error {
 // ImportZip opens a zip file, finds the first .pmx entry, and extracts via ExtractZip.
 // Returns *ExtractResult as a convenience for the frontend import flow.
 func (a *App) ImportZip(zipPath string) (*ExtractResult, error) {
+	return safeCall(func() (*ExtractResult, error) {
+		return a.importZipUnsafe(zipPath)
+	})
+}
+
+func (a *App) importZipUnsafe(zipPath string) (*ExtractResult, error) {
+	const op = "ImportZip"
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return nil, fmt.Errorf("打开压缩包失败")
+		return nil, wrapError(op, fmt.Errorf("打开压缩包失败: %w", err))
 	}
 	var firstPmx string
 	for _, zf := range zr.File {
@@ -244,7 +258,7 @@ func (a *App) ImportZip(zipPath string) (*ExtractResult, error) {
 	}
 	zr.Close()
 	if firstPmx == "" {
-		return nil, fmt.Errorf("压缩包内未找到模型文件")
+		return nil, wrapError(op, fmt.Errorf("压缩包内未找到模型文件"))
 	}
 	return a.ExtractZip(zipPath, firstPmx)
 }

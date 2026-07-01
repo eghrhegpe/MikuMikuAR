@@ -91,7 +91,7 @@ function buildSettingsSoftwareLevel(): PopupLevel {
                         row.innerHTML = `
                             <span class="slide-icon"><iconify-icon icon="${softwareKindIcon(entry.kind)}"></iconify-icon></span>
                             <span class="slide-label">${escapeHtml(entry.name)}</span>
-                            <span class="slide-sublabel">${entry.kind}</span>
+                            <span class="slide-sublabel">${escapeHtml(entry.kind)}</span>
                             <span class="slide-tag">${entry.managed ? '自定义' : 'auto'}</span>
                             <button class="btn btn-ghost btn-sm btn-icon" title="直接启动">▶</button>
                         `;

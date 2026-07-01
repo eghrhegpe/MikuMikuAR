@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"fmt"
 	"os"
 	"strings"
 	"unicode/utf16"
@@ -19,9 +20,16 @@ type PMXMeta struct {
 // the four text segments (local/universal name and comment).
 // Returns empty meta (no error) on parse failure so scanning is non-fatal.
 func ParsePMXHeader(path string) (*PMXMeta, error) {
+	return safeCall(func() (*PMXMeta, error) {
+		return parsePMXHeaderUnsafe(path)
+	})
+}
+
+func parsePMXHeaderUnsafe(path string) (*PMXMeta, error) {
+	const op = "ParsePMXHeader"
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, wrapError(op, fmt.Errorf("open file: %w", err))
 	}
 	defer f.Close()
 
@@ -29,7 +37,7 @@ func ParsePMXHeader(path string) (*PMXMeta, error) {
 	buf := make([]byte, 2048)
 	n, err := f.Read(buf)
 	if err != nil {
-		return nil, err
+		return nil, wrapError(op, fmt.Errorf("read header: %w", err))
 	}
 	return parsePMXHeaderBytes(buf[:n]), nil
 }

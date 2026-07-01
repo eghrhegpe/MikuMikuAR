@@ -6,14 +6,12 @@ import {
     Scene,
     Color3,
     Color4,
-    Vector2,
     Vector3,
     Texture,
     BaseTexture,
     StandardMaterial,
     GPUParticleSystem,
     Observer,
-    ParticleSystem,
     ShadowGenerator,
     CubeTexture,
     Constants,
@@ -23,7 +21,6 @@ import {
     Effect,
     ShaderMaterial,
     PostProcess,
-    DirectionalLight,
 } from '@babylonjs/core';
 import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
 import { EnvState, envState } from '../core/config';

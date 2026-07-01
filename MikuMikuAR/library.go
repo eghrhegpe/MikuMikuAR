@@ -26,6 +26,12 @@ func (a *App) SelectDir() (string, error) {
 // Main root entries have Source=""; external entries get Source = ep.Name.
 // root may be "" (external-only scan); external may be nil (main-only scan).
 func (a *App) ScanModelDir(root string, external []ExternalPath) ([]ModelEntry, error) {
+	return safeCall(func() ([]ModelEntry, error) {
+		return a.scanModelDirUnsafe(root, external)
+	})
+}
+
+func (a *App) scanModelDirUnsafe(root string, external []ExternalPath) ([]ModelEntry, error) {
 	// Collect all roots to scan
 	type scanRoot struct {
 		path   string

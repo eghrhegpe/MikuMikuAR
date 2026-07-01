@@ -498,7 +498,7 @@ function startConcert(scene: Scene): void {
         }
         const p = _currentPreset.concert;
         if (!_concertPaused) {
-            const delta = scene.getAnimationRatio() * p.speed * 0.016;
+            const delta = scene.getAnimationRatio() * p.speed * (scene.deltaTime / 1000);
             _concertAngle += delta;
         }
         cam.alpha = -Math.PI / 2 + _concertAngle;

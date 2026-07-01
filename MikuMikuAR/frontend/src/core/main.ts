@@ -21,6 +21,7 @@ import {
     setPopupOpen,
     UIState,
     EnvState,
+    formatError,
 } from './config';
 import { GetConfig, ImportZip, ImportLocalFile } from '../../wailsjs/go/main/App';
 import { OnFileDrop, EventsOn } from '../../wailsjs/runtime/runtime';
@@ -525,7 +526,7 @@ async function handleDropFile(path: string): Promise<void> {
             setStatus('✓ 压缩包已导入', true);
             await refreshLibrary().catch((err) => console.warn('refresh after drop:', err));
         } catch (err) {
-            setStatus('✗ 导入失败: ' + err, false);
+            setStatus('✗ 导入失败: ' + formatError(err), false);
             console.error('ImportZip failed:', err);
         }
     } else if (lower.endsWith('.pmx')) {
@@ -533,7 +534,7 @@ async function handleDropFile(path: string): Promise<void> {
         try {
             await loadPMXFile(path);
         } catch (err) {
-            setStatus('✗ 模型加载失败', false);
+            setStatus('✗ 模型加载失败: ' + formatError(err), false);
             console.error('loadPMXFile failed:', err);
         }
     } else if (lower.endsWith('.vmd')) {
@@ -541,7 +542,7 @@ async function handleDropFile(path: string): Promise<void> {
         try {
             await loadVMDFromPath(path);
         } catch (err) {
-            setStatus('✗ VMD 加载失败', false);
+            setStatus('✗ VMD 加载失败: ' + formatError(err), false);
             console.error('loadVMDFromPath failed:', err);
         }
     }

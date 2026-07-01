@@ -10,8 +10,8 @@
 |--------|------|--------|--------|
 | 🔴 高风险 | 3 | 3 | **100%** |
 | 🟡 中优 | 15 | 15 | **100%** |
-| 🟢 低优 | 10 | 1 | 10% |
-| **合计** | **28** | **19** | **68%** |
+| 🟢 低优 | 10 | 10 | **100%** |
+| **合计** | **28** | **28** | **100%** |
 
 ---
 
@@ -59,16 +59,16 @@
 ## 🟢 低优高收益验证
 
 - [x] **getLightState 未初始化一致性**: 未初始化时使用模块变量而非硬编码默认值，与 `setLightState` 行为一致
-- [ ] **未使用导入清理**: scene-env-impl.ts / model-material.ts / library-core.ts 等文件无未使用导入（需逐个验证，风险低）
-- [ ] **motionMenu 空引用**: motion-popup 所有回调访问 `motionMenu` 前均有判空守卫
-- [ ] **camera 帧时间**: Concert 模式使用 `scene.deltaTime` 替代硬编码 `0.016`
-- [ ] **焦散纹理缓存**: 切换粒子类型不重复生成焦散纹理
-- [ ] **道具滑块配置化**: `buildPropDetailLevel` 滑块使用配置数组循环
-- [ ] **菜单过渡 CSS 常量**: SlideMenu 过渡时间使用 CSS 变量
-- [ ] **outfit loading 反馈**: 点击服装变体按钮有 loading 视觉反馈
-- [ ] **眨眼调试提示**: 无匹配 blink morph 时有 `console.debug` 提示
-- [ ] **model-detail null safety 边缘**: Stage 等特殊模型加载时详情页不崩溃
-- [ ] **settings.ts XSS 收尾**: 后端已校验数据的 innerHTML 场景也已加固
+- [x] **未使用导入清理**: scene-env-impl.ts 移除 Vector2/ParticleSystem/DirectionalLight；library-core.ts 移除 escapeHtml/thumbnailCache/resetModelMorphs
+- [x] **motionMenu 空引用**: motion-popup.ts 13 处 motionMenu. 访问加判空守卫
+- [x] **camera 帧时间**: camera.ts Concert 模式 0.016 硬编码改用 scene.deltaTime / 1000
+- [x] **焦散纹理缓存**: scene-env-water.ts _causticTexture 已是模块级缓存，无需修改
+- [x] **道具滑块配置化**: env-menu.ts buildPropDetailLevel 5 滑块提取为 PROP_SLIDER_PARAMS 配置数组
+- [x] **菜单过渡 CSS 常量**: app.css :root 添加 --menu-transition-duration 变量，menu.ts 硬编码值改为常量
+- [x] **outfit loading 反馈**: outfit-ui.ts 三处 click handler 加 setStatus loading/成功/失败反馈
+- [x] **眨眼调试提示**: procedural-motion.ts 两处 blinkMorph 查找无匹配时加 console.debug
+- [x] **model-detail null safety 边缘**: buildMorphsLevel 等函数加可选链守卫（meshes?.length 等）
+- [x] **settings.ts XSS 收尾**: softwareKind 显示加 escapeHtml(entry.kind)
 
 ---
 

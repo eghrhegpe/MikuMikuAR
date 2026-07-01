@@ -48,6 +48,10 @@
     --font-icon: calc(17px * var(--ui-scale));
     --font-nav: calc(26px * var(--ui-scale));
 
+    /* 菜单过渡时间 */
+    --menu-transition-duration: 0.15s;
+    --menu-transition-duration-fast: 0.12s;
+
     /* @deprecated 旧尺寸名 token — 下一轮删除 */
     --font-size-xs: var(--font-ui-xs);
     --font-size-sm: var(--font-ui-sm);

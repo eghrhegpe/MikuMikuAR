@@ -1,6 +1,10 @@
 import { PopupLevel, PopupRow, showHint, hideHint } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 
+/** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
+const TRANSITION_DURATION = '0.15s';
+const TRANSITION_DURATION_FAST = '0.12s';
+
 export class SlideMenu {
     private levels: PopupLevel[] = [];
     private container: HTMLElement;
@@ -49,7 +53,7 @@ export class SlideMenu {
         this.panel = document.createElement('div');
         this.panel.className = 'slide-panel';
         // 内联样式由 CSS 控制，只设置必要的过渡
-        this.panel.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+        this.panel.style.transition = `opacity ${TRANSITION_DURATION} ease, transform ${TRANSITION_DURATION} ease`;
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateY(0)';
         this.panel.style.display = 'flex';
@@ -106,7 +110,7 @@ export class SlideMenu {
         this.levels.push(level);
 
         // 旧内容淡出
-        this.panel.style.transition = 'opacity 0.12s ease, transform 0.12s ease';
+        this.panel.style.transition = `opacity ${TRANSITION_DURATION_FAST} ease, transform ${TRANSITION_DURATION_FAST} ease`;
         this.panel.style.opacity = '0';
         this.panel.style.transform = 'translateY(-8px)';
 
@@ -119,7 +123,7 @@ export class SlideMenu {
             this.panel.style.opacity = '0';
             this.panel.style.transform = 'translateY(8px)';
             void this.panel.offsetHeight;
-            this.panel.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+            this.panel.style.transition = `opacity ${TRANSITION_DURATION} ease, transform ${TRANSITION_DURATION} ease`;
             this.panel.style.opacity = '1';
             this.panel.style.transform = 'translateY(0)';
 
@@ -160,7 +164,7 @@ export class SlideMenu {
         this.levels.pop();
         const prevLevel = this.levels[this.levels.length - 1];
 
-        this.panel.style.transition = 'opacity 0.12s ease, transform 0.12s ease';
+        this.panel.style.transition = `opacity ${TRANSITION_DURATION_FAST} ease, transform ${TRANSITION_DURATION_FAST} ease`;
         this.panel.style.opacity = '0';
         this.panel.style.transform = 'translateY(8px)';
 
@@ -172,7 +176,7 @@ export class SlideMenu {
             this.panel.style.opacity = '0';
             this.panel.style.transform = 'translateY(-8px)';
             void this.panel.offsetHeight;
-            this.panel.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+            this.panel.style.transition = `opacity ${TRANSITION_DURATION} ease, transform ${TRANSITION_DURATION} ease`;
             this.panel.style.opacity = '1';
             this.panel.style.transform = 'translateY(0)';
 

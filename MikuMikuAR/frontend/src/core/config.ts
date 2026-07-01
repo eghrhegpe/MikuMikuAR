@@ -558,6 +558,23 @@ export function formatTime(seconds: number): string {
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
 }
 
+export function formatError(err: unknown, maxLen = 120): string {
+    if (err == null) return 'unknown error';
+    if (err instanceof Error) {
+        const msg = err.message;
+        return msg.length > maxLen ? msg.slice(0, maxLen - 3) + '...' : msg;
+    }
+    if (typeof err === 'string') {
+        return err.length > maxLen ? err.slice(0, maxLen - 3) + '...' : err;
+    }
+    try {
+        const s = String(err);
+        return s.length > maxLen ? s.slice(0, maxLen - 3) + '...' : s;
+    } catch {
+        return 'unknown error';
+    }
+}
+
 export function toBase64(s: string): string {
     const bytes = new TextEncoder().encode(s);
     let binary = '';

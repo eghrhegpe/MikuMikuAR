@@ -29,9 +29,7 @@ import {
     LibraryModel,
     PopupRow,
     PopupLevel,
-    escapeHtml,
     normPath,
-    thumbnailCache,
     setThumbnailCache,
     displayNamePriority,
     setDisplayNamePriority,
@@ -47,8 +45,9 @@ import {
     motionBindingTargetId,
     setMotionBindingTargetId,
     cardContainer,
+    formatError,
 } from '../core/config';
-import { loadPMXFile, loadVMDFromPath, removeModel, resetModelMorphs } from '../scene/scene';
+import { loadPMXFile, loadVMDFromPath, removeModel } from '../scene/scene';
 import { buildModelDetailLevel } from './model-detail';
 import { buildDanceSetDetailLevel, loadDanceSets } from './motion-popup';
 import { SlideMenu } from './menu';
@@ -468,7 +467,7 @@ function onModelRowClick(m: LibraryModel): void {
                 }
             })
             .catch((err) => {
-                setStatus('✗ 解压失败: ' + (err as Error).message, false);
+                setStatus('✗ 解压失败: ' + formatError(err), false);
             })
             .finally(() => { _isExtracting = false; });
         return;
@@ -828,7 +827,7 @@ export async function initLibrary(): Promise<void> {
         setStatus('📦 点击这里浏览模型 · 💃 点击这里加载动作 · 拖拽旋转 · 滚轮缩放', false);
     } catch (err) {
         console.warn('initLibrary:', err);
-        setStatus('✗ 模型库加载失败', false);
+        setStatus('✗ 模型库加载失败: ' + formatError(err), false);
     }
 }
 
@@ -845,7 +844,7 @@ async function selectAndSetLibraryRoot(): Promise<void> {
         showModelPopup();
     } catch (err) {
         console.error('Error setting library root:', err);
-        setStatus('✗ 目录选择失败', false);
+        setStatus('✗ 目录扫描失败: ' + formatError(err), false);
     }
 }
 

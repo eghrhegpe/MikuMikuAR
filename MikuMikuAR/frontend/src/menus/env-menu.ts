@@ -652,6 +652,78 @@ export function buildPropLevel(): PopupLevel {
 }
 
 export function buildPropDetailLevel(propId: string): PopupLevel {
+    /** 道具滑块配置数组 */
+    const PROP_SLIDER_PARAMS: {
+        label: string;
+        getValue: (p: import('../core/config').PropInstance) => number;
+        min: number;
+        max: number;
+        step: number;
+        icon: string;
+        setValue: (p: import('../core/config').PropInstance, v: number) => void;
+    }[] = [
+        {
+            label: '位置 X',
+            getValue: (p) => p.position[0],
+            min: -50,
+            max: 50,
+            step: 0.5,
+            icon: 'lucide:move-horizontal',
+            setValue: (p, v) => {
+                p.position[0] = v;
+                setPropTransform(propId, { position: [v, p.position[1], p.position[2]] });
+            },
+        },
+        {
+            label: '位置 Y',
+            getValue: (p) => p.position[1],
+            min: -50,
+            max: 50,
+            step: 0.5,
+            icon: 'lucide:move-vertical',
+            setValue: (p, v) => {
+                p.position[1] = v;
+                setPropTransform(propId, { position: [p.position[0], v, p.position[2]] });
+            },
+        },
+        {
+            label: '位置 Z',
+            getValue: (p) => p.position[2],
+            min: -50,
+            max: 50,
+            step: 0.5,
+            icon: 'lucide:move',
+            setValue: (p, v) => {
+                p.position[2] = v;
+                setPropTransform(propId, { position: [p.position[0], p.position[1], v] });
+            },
+        },
+        {
+            label: '旋转 Y',
+            getValue: (p) => p.rotationY,
+            min: -Math.PI,
+            max: Math.PI,
+            step: 0.1,
+            icon: 'lucide:rotate-cw',
+            setValue: (p, v) => {
+                p.rotationY = v;
+                setPropTransform(propId, { rotationY: v });
+            },
+        },
+        {
+            label: '缩放',
+            getValue: (p) => p.scaling,
+            min: 0.1,
+            max: 10,
+            step: 0.1,
+            icon: 'lucide:maximize',
+            setValue: (p, v) => {
+                p.scaling = v;
+                setPropTransform(propId, { scaling: v });
+            },
+        },
+    ];
+
     return {
         label: '道具变换',
         dir: '',
@@ -671,71 +743,20 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                     'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                 title.textContent = p.name;
                 c.appendChild(title);
-                addSliderRow(
-                    c,
-                    '位置 X',
-                    p.position[0],
-                    -50,
-                    50,
-                    0.5,
-                    (v) => {
-                        setPropTransform(propId, { position: [v, p.position[1], p.position[2]] });
-                        p.position[0] = v;
-                    },
-                    'lucide:move-horizontal'
-                );
-                addSliderRow(
-                    c,
-                    '位置 Y',
-                    p.position[1],
-                    -50,
-                    50,
-                    0.5,
-                    (v) => {
-                        setPropTransform(propId, { position: [p.position[0], v, p.position[2]] });
-                        p.position[1] = v;
-                    },
-                    'lucide:move-vertical'
-                );
-                addSliderRow(
-                    c,
-                    '位置 Z',
-                    p.position[2],
-                    -50,
-                    50,
-                    0.5,
-                    (v) => {
-                        setPropTransform(propId, { position: [p.position[0], p.position[1], v] });
-                        p.position[2] = v;
-                    },
-                    'lucide:move'
-                );
-                addSliderRow(
-                    c,
-                    '旋转 Y',
-                    p.rotationY,
-                    -Math.PI,
-                    Math.PI,
-                    0.1,
-                    (v) => {
-                        setPropTransform(propId, { rotationY: v });
-                        p.rotationY = v;
-                    },
-                    'lucide:rotate-cw'
-                );
-                addSliderRow(
-                    c,
-                    '缩放',
-                    p.scaling,
-                    0.1,
-                    10,
-                    0.1,
-                    (v) => {
-                        setPropTransform(propId, { scaling: v });
-                        p.scaling = v;
-                    },
-                    'lucide:maximize'
-                );
+                PROP_SLIDER_PARAMS.forEach((param) => {
+                    addSliderRow(
+                        c,
+                        param.label,
+                        param.getValue(p),
+                        param.min,
+                        param.max,
+                        param.step,
+                        (v) => {
+                            param.setValue(p, v);
+                        },
+                        param.icon
+                    );
+                });
                 addToggleRow(c, '可见', p.visible, (v) => {
                     setPropTransform(propId, { visible: v });
                     p.visible = v;
