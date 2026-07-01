@@ -1,7 +1,6 @@
 // [doc:architecture] Procedural Motion — 程序化动作系统
 // 规范文档: docs/architecture.md §程序化动作
 // 职责: Idle / Auto Dance 状态管理、VMD 生成调度、节拍联动
-// 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
 import {
     ProcMotionState,
@@ -76,19 +75,9 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         buf = generateIdleVmd(procState, morphNames, boneNames);
         procActiveKind = targetMode === 'autodance' ? 'idle' : targetMode;
     }
-    // 调试导出：浏览器下载生成的 VMD 文件
-    try {
-        const blob = new Blob([buf]);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `proc-motion-${targetMode}.vmd`;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-    } catch {}
+
+    // 【已移除 debug 下载代码】
+
     _procVmdActive = true;
     procModelId = modelIdAtStart;
     try {
