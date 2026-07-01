@@ -47,7 +47,7 @@ import {
     UIState,
 } from '../core/config';
 import { SlideMenu } from './menu';
-import { slideRow } from '../core/ui-helpers';
+import { slideRow, addToggleRow } from '../core/ui-helpers';
 import { setPerformanceMode, getPerformanceMode } from '../scene/scene-performance';
 import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
@@ -344,8 +344,17 @@ function buildSettingsRoot(): PopupLevel {
                 slideRow(c, 'lucide:monitor', '界面', true, () =>
                     settingsMenu.push(buildSettingsUILevel())
                 );
-                slideRow(c, 'lucide:download', '下载', true, () =>
-                    settingsMenu.push(buildSettingsDownloadLevel())
+                slideRow(c, 'lucide:download', '自动导入', true, () =>
+                    settingsMenu.push(buildSettingsDownloadLevel()),
+                    undefined, undefined,
+                    { value: false, onChange: async (v) => {
+                        try {
+                            await SetDownloadAutoImport(v);
+                            setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
+                        } catch {
+                            setStatus('✗ 设置失败', false);
+                        }
+                    }}
                 );
                 slideRow(c, 'lucide:zap', '性能', true, () =>
                     settingsMenu.push(buildSettingsPerformanceLevel())
@@ -438,7 +447,6 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
                 addToggleRow(
                     c,
                     '滑动动画',
-                    'lucide:move',
                     getComputedStyle(document.documentElement)
                         .getPropertyValue('--ui-animations')
                         .trim() !== '0',
@@ -448,12 +456,12 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
                             v ? '1' : '0'
                         );
                         SetUIAnimations(v).catch(() => {});
-                    }
+                    },
+                    'lucide:move'
                 );
                 addToggleRow(
                     c,
                     '背景模糊',
-                    'lucide:monitor',
                     getComputedStyle(document.documentElement)
                         .getPropertyValue('--ui-blur')
                         .trim() !== '0',
@@ -463,7 +471,8 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
                             .querySelectorAll<HTMLElement>('.overlay')
                             .forEach((el) => el.classList.toggle('blur-bg', v));
                         SetUIBlurBg(v).catch(() => {});
-                    }
+                    },
+                    'lucide:monitor'
                 );
                 const themeRow = document.createElement('div');
                 themeRow.className = 'slide-item';
@@ -640,49 +649,6 @@ function buildSettingsThemeLevel(): PopupLevel {
             });
         },
     };
-}
-
-function addToggleRow(
-    container: HTMLElement,
-    label: string,
-    icon: string,
-    value: boolean,
-    onChange: (v: boolean) => void
-): void {
-    const row = document.createElement('div');
-    row.className = 'slide-item';
-    row.style.cssText =
-        'display:flex;align-items:center;gap:10px;padding:8px 14px;min-height:44px;cursor:pointer;';
-    const iconBox = document.createElement('span');
-    iconBox.className = 'slide-icon';
-    const iconEl = createIconifyIcon('lucide:' + icon);
-    if (iconEl) {
-        iconBox.appendChild(iconEl);
-    }
-    row.appendChild(iconBox);
-    const labelEl = document.createElement('span');
-    labelEl.className = 'slide-label';
-    labelEl.textContent = label;
-    row.appendChild(labelEl);
-    const toggle = document.createElement('label');
-    toggle.className = 'toggle';
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.checked = value;
-    const slider = document.createElement('span');
-    slider.className = 'slider';
-    toggle.appendChild(input);
-    toggle.appendChild(slider);
-    row.appendChild(toggle);
-    row.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).closest('.toggle')) {
-            return;
-        }
-        input.checked = !input.checked;
-        onChange(input.checked);
-    });
-    input.addEventListener('change', () => onChange(input.checked));
-    container.appendChild(row);
 }
 
 async function setTheme(hex: string): Promise<void> {
@@ -958,6 +924,8 @@ function buildSettingsExternalLevel(): PopupLevel {
     };
 }
 
+// ======== Download Settings ========
+
 function buildSettingsDownloadLevel(): PopupLevel {
     return {
         label: '下载',
@@ -969,7 +937,7 @@ function buildSettingsDownloadLevel(): PopupLevel {
 
             cardContainer(container, (c) => {
                 const statusEl = document.createElement('div');
-                statusEl.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px;';
+                statusEl.style.cssText = 'font-size:11px;color:var(--text);padding:4px 14px;';
                 c.appendChild(statusEl);
 
                 refreshStatus = async () => {
@@ -1018,17 +986,6 @@ function buildSettingsDownloadLevel(): PopupLevel {
                         }
                     })
                     .catch(() => {});
-            });
-
-            cardContainer(container, (c) => {
-                addToggleRow(c, '自动导入（跳过确认）', 'lucide:download', false, async (v) => {
-                    try {
-                        await SetDownloadAutoImport(v);
-                        setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
-                    } catch {
-                        setStatus('✗ 设置失败', false);
-                    }
-                });
             });
 
             cardContainer(container, (c) => {
@@ -1134,10 +1091,10 @@ export async function showSettings(): Promise<void> {
             switch (row.target) {
                 case 'settings:display':
                     return buildSettingsDisplayLevel();
-                case 'settings:ui':
-                    return buildSettingsUILevel();
                 case 'settings:download':
                     return buildSettingsDownloadLevel();
+                case 'settings:ui':
+                    return buildSettingsUILevel();
                 case 'settings:system':
                     return buildSettingsSystemLevel();
                 case 'settings:external':

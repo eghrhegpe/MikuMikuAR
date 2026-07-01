@@ -78,18 +78,18 @@ export function initLighting(
     hemiLight.diffuse = new Color3(1, 1, 1);
     hemiLight.groundColor = new Color3(0.3, 0.3, 0.4);
 
-    dirLight = new DirectionalLight('dir', new Vector3(-0.5, -1, -0.5), scene);
+    dirLight = new DirectionalLight('dir', new Vector3(0, -1, 0), scene);
     dirLight.intensity = 0.4;
-    dirLight.position = new Vector3(20, 40, 20);
+    dirLight.position = new Vector3(0, 40, 0);
 }
 
 function _defaultLightState(): LightState {
     return {
         hemiIntensity: 0.8,
         dirIntensity: 0.4,
-        dirX: -0.5,
-        dirY: -1,
-        dirZ: -0.5,
+        dirX: 0,
+        dirY: 1,
+        dirZ: 0,
         dirColor: [1, 1, 1],
         hemiColor: [1, 1, 1],
         groundColor: [0.3, 0.3, 0.4],
@@ -116,9 +116,9 @@ export function getLightState(): LightState {
     return {
         hemiIntensity: hemiLight.intensity,
         dirIntensity: dirLight.intensity,
-        dirX: dirLight.direction.x,
-        dirY: dirLight.direction.y,
-        dirZ: dirLight.direction.z,
+        dirX: -dirLight.direction.x,
+        dirY: -dirLight.direction.y,
+        dirZ: -dirLight.direction.z,
         dirColor: [dirLight.diffuse.r, dirLight.diffuse.g, dirLight.diffuse.b],
         hemiColor: [hemiLight.diffuse.r, hemiLight.diffuse.g, hemiLight.diffuse.b],
         groundColor: [hemiLight.groundColor.r, hemiLight.groundColor.g, hemiLight.groundColor.b],
@@ -143,9 +143,9 @@ export function setLightState(s: Partial<LightState>): void {
     }
     if (s.dirX !== undefined || s.dirY !== undefined || s.dirZ !== undefined) {
         dirLight.direction = new Vector3(
-            s.dirX ?? dirLight.direction.x,
-            s.dirY ?? dirLight.direction.y,
-            s.dirZ ?? dirLight.direction.z
+            -(s.dirX ?? -dirLight.direction.x),
+            -(s.dirY ?? -dirLight.direction.y),
+            -(s.dirZ ?? -dirLight.direction.z)
         );
     }
     if (s.dirColor !== undefined) {
@@ -273,15 +273,15 @@ export function _updateSunDisc(): void {
     }
     const disc = _ensureSunDisc();
     const d = dirLight.direction;
-    if (d.y <= 0) {
+    if (d.y >= 0) {
         disc.setEnabled(false);
         return;
     }
     disc.setEnabled(true);
     disc.position = new Vector3(
-        d.x * SUN_DISC_DISTANCE,
-        d.y * SUN_DISC_DISTANCE,
-        d.z * SUN_DISC_DISTANCE
+        -d.x * SUN_DISC_DISTANCE,
+        -d.y * SUN_DISC_DISTANCE,
+        -d.z * SUN_DISC_DISTANCE
     );
     const b = Math.max(0.05, dirLight.intensity);
     const mat = disc.material as StandardMaterial;

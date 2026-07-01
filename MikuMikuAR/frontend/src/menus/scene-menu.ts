@@ -25,7 +25,6 @@ import {
     switchCameraMode,
     getCameraMode,
     hasCameraVmd,
-    getCameraVmdName,
     clearCameraVmd,
     getOrbitParams,
     setOrbitParams,
@@ -168,29 +167,6 @@ function buildSceneRoot(): PopupLevel {
                 slideRow(c, 'lucide:bookmark', '预设场景', true, () =>
                     sceneMenu.push(buildPresetScenesLevel())
                 );
-                slideRow(c, 'lucide:save', '保存场景', false, () => {
-                    SelectSceneSaveFile().then((path) => {
-                        if (!path) {
-                            return;
-                        }
-                        const json = JSON.stringify(serializeScene(), null, 2);
-                        SaveSceneFile(json, path)
-                            .then(() => SaveScenePreset(json))
-                            .then(() => setStatus('✓ 场景已保存', true))
-                            .catch(() => setStatus('✗ 保存失败', false));
-                    });
-                });
-                slideRow(c, 'lucide:upload', '加载场景', false, () => {
-                    SelectSceneOpenFile().then((path) => {
-                        if (!path) {
-                            return;
-                        }
-                        LoadSceneFile(path)
-                            .then((json) => deserializeScene(JSON.parse(json)))
-                            .then(() => setStatus('✓ 场景已加载', true))
-                            .catch(() => setStatus('✗ 加载失败', false));
-                    });
-                });
             });
             // Card 2: 渲染与相机
             cardContainer(container, (c) => {
@@ -445,9 +421,7 @@ function buildPresetScenesLevel(): PopupLevel {
                 navRow.appendChild(prevBtn);
                 navRow.appendChild(nextBtn);
                 c.appendChild(navRow);
-            });
 
-            cardContainer(container, (c) => {
                 for (let i = 0; i < scenes.length; i++) {
                     const name = scenes[i];
                     const isActive = i === currentPresetIndex;
@@ -499,6 +473,22 @@ function buildPresetScenesLevel(): PopupLevel {
                     });
                     c.appendChild(row);
                 }
+
+                slideRow(c, 'lucide:save', '保存场景', false, () => {
+                    SelectSceneSaveFile().then((path) => {
+                        if (!path) {
+                            return;
+                        }
+                        const json = JSON.stringify(serializeScene(), null, 2);
+                        SaveSceneFile(json, path)
+                            .then(() => SaveScenePreset(json))
+                            .then(() => {
+                                setStatus('✓ 场景已保存', true);
+                                sceneMenu.reRender();
+                            })
+                            .catch(() => setStatus('✗ 保存失败', false));
+                    });
+                });
             });
         },
     };
@@ -530,183 +520,55 @@ function buildScreenshotLevel(): PopupLevel {
 let cameraExpandedMode: CameraMode | null = null;
 
 function buildCameraLevel(): PopupLevel {
-    cameraExpandedMode = null; // 每次重建重置展开状态，避免快捷键切换后状态不同步
-    const currentMode = getCameraMode();
-    const vmdLoaded = hasCameraVmd();
-    const vmdName = getCameraVmdName();
-
     return {
         label: '相机模式',
         dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const modes = [
-                    {
-                        key: 'orbit' as const,
-                        label: '轨道',
-                        icon: 'lucide:target',
-                        desc: '默认轨道相机',
-                    },
-                    {
-                        key: 'freefly' as const,
-                        label: '自由飞行',
-                        icon: 'lucide:move',
-                        desc: 'WASD 自由移动',
-                    },
-                    {
-                        key: 'concert' as const,
-                        label: '演唱会',
-                        icon: 'lucide:rotate-cw',
-                        desc: '环绕角色旋转',
-                    },
-                    {
-                        key: 'oneshot' as const,
-                        label: '单拍',
-                        icon: 'lucide:camera',
-                        desc: '自动构图拍摄',
-                    },
-                ];
+            // 实时读取状态，不依赖闭包快照
+            const currentMode = getCameraMode();
+            const vmdLoaded = hasCameraVmd();
 
+            cardContainer(container, (c) => {
+                const modeOptions: Array<{ value: string; label: string }> = [
+                    { value: 'orbit', label: '轨道' },
+                    { value: 'freefly', label: '自由飞行' },
+                    { value: 'concert', label: '演唱会' },
+                    { value: 'oneshot', label: '单拍' },
+                ];
+                if (vmdLoaded) {
+                    modeOptions.push({ value: 'vmd', label: 'VMD 相机' });
+                }
+
+                addModeSlider(
+                    c,
+                    '相机模式',
+                    modeOptions.map((o) => ({ value: o.value, label: o.label })),
+                    currentMode,
+                    (v) => {
+                        if (v === currentMode) {
+                            cameraExpandedMode = cameraExpandedMode ? null : currentMode;
+                        } else {
+                            switchCameraMode(v as CameraMode);
+                            cameraExpandedMode = v === 'oneshot' ? null : v as CameraMode;
+                        }
+                        sceneMenu.reRender();
+                    },
+                    'lucide:camera'
+                );
+
+                // 当前模式参数面板
                 const paramsContainer = document.createElement('div');
                 paramsContainer.className = 'cs-params';
-
-                function renderParams(mode: CameraMode, target: HTMLElement) {
-                    target.innerHTML = '';
-                    if (mode === 'orbit') {
-                        renderOrbitParams(target);
-                    } else if (mode === 'freefly') {
-                        renderFreeflyParams(target);
-                    } else if (mode === 'concert') {
-                        renderConcertParams(target);
-                    }
-                }
-
-                for (const m of modes) {
-                    const isActive = m.key === currentMode;
-                    const row = document.createElement('div');
-                    row.className = 'cs-row';
-                    if (isActive) {
-                        row.style.borderLeft = '2px solid var(--accent)';
-                        row.style.paddingLeft = '12px';
-                    }
-
-                    const top = document.createElement('div');
-                    top.className = 'cs-top';
-
-                    const iconBox = document.createElement('span');
-                    iconBox.className = 'cs-icon';
-                    const iconEl = createIconifyIcon(m.icon);
-                    if (iconEl) {
-                        iconBox.appendChild(iconEl);
-                    }
-                    top.appendChild(iconBox);
-
-                    const label = document.createElement('span');
-                    label.className = 'cs-label';
-                    label.textContent = m.label;
-                    top.appendChild(label);
-
-                    const value = document.createElement('span');
-                    value.className = 'cs-value';
-                    if (isActive) {
-                        value.textContent = '当前';
-                        value.style.color = 'var(--accent)';
-                    } else {
-                        value.textContent = '▶';
-                        value.style.color = 'var(--text-dim)';
-                    }
-                    top.appendChild(value);
-
-                    row.appendChild(top);
-
-                    const desc = document.createElement('div');
-                    desc.style.cssText =
-                        'font-size:11px;color:#fff;padding-left:30px;margin-top:2px;';
-                    desc.textContent = m.desc;
-                    row.appendChild(desc);
-
-                    row.addEventListener('click', () => {
-                        if (m.key === currentMode) {
-                            cameraExpandedMode =
-                                cameraExpandedMode === currentMode ? null : currentMode;
-                            sceneMenu.reRender();
-                            return;
-                        }
-                        switchCameraMode(m.key);
-                        cameraExpandedMode = m.key === 'oneshot' ? null : m.key;
-                        if (m.key !== 'oneshot') {
-                            triggerAutoSave();
-                        }
-                        sceneMenu.reRender();
-                    });
-
-                    c.appendChild(row);
-                }
-
-                if (vmdLoaded) {
-                    const isActive = currentMode === 'vmd';
-                    const row = document.createElement('div');
-                    row.className = 'cs-row';
-                    if (isActive) {
-                        row.style.borderLeft = '2px solid var(--accent)';
-                        row.style.paddingLeft = '12px';
-                    }
-
-                    const top = document.createElement('div');
-                    top.className = 'cs-top';
-
-                    const iconBox = document.createElement('span');
-                    iconBox.className = 'cs-icon';
-                    const iconEl = createIconifyIcon('lucide:video');
-                    if (iconEl) {
-                        iconBox.appendChild(iconEl);
-                    }
-                    top.appendChild(iconBox);
-
-                    const label = document.createElement('span');
-                    label.className = 'cs-label';
-                    label.textContent = 'VMD 相机';
-                    top.appendChild(label);
-
-                    const value = document.createElement('span');
-                    value.className = 'cs-value';
-                    if (isActive) {
-                        value.textContent = '当前';
-                        value.style.color = 'var(--accent)';
-                    } else {
-                        value.textContent = '▶';
-                        value.style.color = 'var(--text-dim)';
-                    }
-                    top.appendChild(value);
-
-                    row.appendChild(top);
-
-                    const desc = document.createElement('div');
-                    desc.style.cssText =
-                        'font-size:11px;color:#fff;padding-left:30px;margin-top:2px;';
-                    desc.textContent = vmdName || '相机轨道';
-                    row.appendChild(desc);
-
-                    row.addEventListener('click', () => {
-                        if (isActive) {
-                            return;
-                        }
-                        switchCameraMode('vmd');
-                        cameraExpandedMode = null;
-                        triggerAutoSave();
-                        sceneMenu.reRender();
-                    });
-
-                    c.appendChild(row);
-                }
-
                 const modeToExpand = cameraExpandedMode ?? currentMode;
                 if (modeToExpand !== 'oneshot' && modeToExpand !== 'vmd') {
-                    renderParams(modeToExpand, paramsContainer);
+                    if (modeToExpand === 'orbit') renderOrbitParams(paramsContainer);
+                    else if (modeToExpand === 'freefly') renderFreeflyParams(paramsContainer);
+                    else if (modeToExpand === 'concert') renderConcertParams(paramsContainer);
                     c.appendChild(paramsContainer);
                 }
 
+                // VMD 相关按钮
                 if (vmdLoaded) {
                     const clearRow = document.createElement('div');
                     clearRow.className = 'slide-item';
@@ -986,57 +848,6 @@ function buildLightLevel(): PopupLevel {
                     },
                 });
 
-                addCollapsible(c, {
-                    title: '环境光',
-                    icon: 'lucide:cloud-sun',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        addSliderRow(
-                            inner,
-                            '强度',
-                            lightState.hemiIntensity,
-                            0,
-                            2,
-                            0.05,
-                            (v) => {
-                                setLightState({ hemiIntensity: v });
-                            },
-                            'lucide:sun'
-                        );
-                        addColorSliderRow(inner, '天空色', lightState.hemiColor, (v) =>
-                            setLightState({ hemiColor: v })
-                        );
-                        addColorSliderRow(inner, '地面色', lightState.groundColor, (v) =>
-                            setLightState({ groundColor: v })
-                        );
-                    },
-                });
-
-                addCollapsible(c, {
-                    title: '阴影',
-                    icon: 'lucide:shadow',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        addToggleRow(inner, '启用阴影', lightState.shadowEnabled, (v) =>
-                            setLightState({ shadowEnabled: v })
-                        );
-                        addModeSlider(
-                            inner,
-                            '阴影类型',
-                            [
-                                { value: 'hard', label: '硬' },
-                                { value: 'soft', label: '软' },
-                                { value: 'pcf', label: '柔和阴影' },
-                            ],
-                            lightState.shadowType,
-                            (v) => {
-                                setLightState({ shadowType: v });
-                                sceneMenu.reRender();
-                            },
-                            'lucide:shadow'
-                        );
-                    },
-                });
             });
         },
     };
@@ -1071,15 +882,19 @@ function buildPostProcessLevel(): PopupLevel {
         renderCustom: (container) => {
             const state = getRenderState();
             cardContainer(container, (c) => {
+                // 泛光（含多滑块，折叠收纳）
                 addCollapsible(c, {
                     title: '泛光',
                     icon: 'lucide:sun',
                     defaultOpen: false,
-                    renderContent: (inner) => {
-                        addToggleRow(inner, '启用', state.bloomEnabled, (v) => {
+                    headerToggle: {
+                        value: state.bloomEnabled,
+                        onChange: (v) => {
                             setRenderState({ bloomEnabled: v });
                             triggerAutoSave();
-                        });
+                        },
+                    },
+                    renderContent: (inner) => {
                         addSliderRow(
                             inner,
                             '强度',
@@ -1087,11 +902,12 @@ function buildPostProcessLevel(): PopupLevel {
                             0,
                             1,
                             0.05,
+                            () => {},
+                            'lucide:sun',
                             (v) => {
                                 setRenderState({ bloomWeight: v });
                                 triggerAutoSave();
-                            },
-                            'lucide:sun'
+                            }
                         );
                         addSliderRow(
                             inner,
@@ -1100,11 +916,12 @@ function buildPostProcessLevel(): PopupLevel {
                             0,
                             1,
                             0.05,
+                            () => {},
+                            'lucide:sliders',
                             (v) => {
                                 setRenderState({ bloomThreshold: v });
                                 triggerAutoSave();
-                            },
-                            'lucide:sliders'
+                            }
                         );
                         addSliderRow(
                             inner,
@@ -1113,88 +930,71 @@ function buildPostProcessLevel(): PopupLevel {
                             0,
                             512,
                             1,
+                            () => {},
+                            'lucide:circle',
                             (v) => {
                                 setRenderState({ bloomKernel: v });
                                 triggerAutoSave();
-                            },
-                            'lucide:circle'
+                            }
                         );
                     },
                 });
 
-                addCollapsible(c, {
-                    title: '抗锯齿',
-                    icon: 'lucide:scan-line',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        addToggleRow(inner, 'FXAA', state.fxaaEnabled, (v) => {
-                            setRenderState({ fxaaEnabled: v });
-                            triggerAutoSave();
-                        });
-                    },
-                });
+                // 边缘高亮（纯 toggle）
+                addToggleRow(c, '边缘高亮', state.outlineEnabled, (v) => {
+                    setRenderState({ outlineEnabled: v });
+                    triggerAutoSave();
+                }, 'lucide:square');
 
-                addCollapsible(c, {
-                    title: '边缘高亮',
-                    icon: 'lucide:square',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        addToggleRow(inner, '启用', state.outlineEnabled, (v) => {
-                            setRenderState({ outlineEnabled: v });
-                            triggerAutoSave();
-                        });
+                // 抗锯齿（关闭/FXAA/4x/8x）
+                addModeSlider(
+                    c,
+                    '抗锯齿',
+                    [
+                        { value: 'off', label: '关闭' },
+                        { value: 'fxaa', label: 'FXAA' },
+                        { value: '4x', label: '4x' },
+                        { value: '8x', label: '8x' },
+                    ],
+                    state.fxaaEnabled ? 'fxaa' : 'off',
+                    (v) => {
+                        setRenderState({ fxaaEnabled: v === 'fxaa' || v === '4x' || v === '8x' });
+                        triggerAutoSave();
                     },
-                });
+                    'lucide:scan-line'
+                );
 
-                addCollapsible(c, {
-                    title: '景深',
-                    icon: 'lucide:camera',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        addToggleRow(inner, '启用', state.dofEnabled, (v) => {
-                            setRenderState({ dofEnabled: v });
-                            triggerAutoSave();
-                        });
-                        addSliderRow(
-                            inner,
-                            '光圈',
-                            state.dofAperture,
-                            0,
-                            10,
-                            0.1,
-                            (v) => {
-                                setRenderState({ dofAperture: v });
-                                triggerAutoSave();
-                            },
-                            'lucide:camera'
-                        );
-                    },
-                });
+                // 景深（光圈=0 即关闭）
+                addSliderRow(
+                    c,
+                    '景深',
+                    state.dofAperture,
+                    0,
+                    10,
+                    0.1,
+                    () => {},
+                    'lucide:camera',
+                    (v) => {
+                        setRenderState({ dofEnabled: v > 0, dofAperture: v });
+                        triggerAutoSave();
+                    }
+                );
 
-                addCollapsible(c, {
-                    title: '暗角',
-                    icon: 'lucide:circle-dot',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        addToggleRow(inner, '启用', state.vignetteEnabled, (v) => {
-                            setRenderState({ vignetteEnabled: v });
-                            triggerAutoSave();
-                        });
-                        addSliderRow(
-                            inner,
-                            '强度',
-                            state.vignetteDarkness,
-                            0,
-                            1,
-                            0.05,
-                            (v) => {
-                                setRenderState({ vignetteDarkness: v });
-                                triggerAutoSave();
-                            },
-                            'lucide:circle-dot'
-                        );
-                    },
-                });
+                // 暗角（强度=0 即关闭）
+                addSliderRow(
+                    c,
+                    '暗角',
+                    state.vignetteDarkness,
+                    0,
+                    1,
+                    0.05,
+                    () => {},
+                    'lucide:circle-dot',
+                    (v) => {
+                        setRenderState({ vignetteEnabled: v > 0, vignetteDarkness: v });
+                        triggerAutoSave();
+                    }
+                );
             });
         },
     };
@@ -1238,11 +1038,12 @@ function buildStageLevel(): PopupLevel {
                             0,
                             4,
                             0.05,
+                            () => {},
+                            'lucide:lightbulb',
                             (v) => {
                                 setRenderState({ exposure: v });
                                 triggerAutoSave();
-                            },
-                            'lucide:lightbulb'
+                            }
                         );
                         addSliderRow(
                             inner,
@@ -1251,11 +1052,12 @@ function buildStageLevel(): PopupLevel {
                             0,
                             4,
                             0.05,
+                            () => {},
+                            'lucide:contrast',
                             (v) => {
                                 setRenderState({ contrast: v });
                                 triggerAutoSave();
-                            },
-                            'lucide:contrast'
+                            }
                         );
                     },
                 });
@@ -1272,11 +1074,12 @@ function buildStageLevel(): PopupLevel {
                             0.1,
                             3,
                             0.05,
+                            () => {},
+                            'lucide:maximize-2',
                             (v) => {
                                 setRenderState({ fov: v });
                                 triggerAutoSave();
-                            },
-                            'lucide:maximize-2'
+                            }
                         );
                     },
                 });
@@ -1572,7 +1375,6 @@ async function loadUserPresets(): Promise<void> {
 
 function refreshCameraLevel(): void {
     if (sceneMenu) {
-        sceneMenu.setLevel(sceneMenu.levelCount - 1, buildCameraLevel());
         sceneMenu.reRender();
     }
 }

@@ -124,14 +124,21 @@ export function createCloth(
     _collider?: SdfCollider | null
 ): ClothInstance {
     const cfg = { ...DEFAULT_CLOTH_CONFIG, ...config };
+    // 防御: 当 deserializeScene 用旧场景覆盖 clothConfig 后,
+    // config.anchorBone 可能为 undefined 或空字符串,
+    // spread 会覆盖掉 DEFAULT_CLOTH_CONFIG 中的 '腰' 导致锚定失效。
+    if (!cfg.anchorBone) {
+        cfg.anchorBone = DEFAULT_CLOTH_CONFIG.anchorBone;
+    }
     const solver = new XpbdSolver({
         substeps: 4,
         damping: cfg.damping,
     });
     solver.setGravity(0, -9.8 * cfg.gravityScale, 0);
 
-    const ringSize = cfg.segmentsH;
-    const ringCount = cfg.segmentsV;
+    // 防御: segmentsH/segmentsV 为 0 或无效时会导致 particleGrid 为空
+    const ringSize = Math.max(cfg.segmentsH || DEFAULT_CLOTH_CONFIG.segmentsH, 8);
+    const ringCount = Math.max(cfg.segmentsV || DEFAULT_CLOTH_CONFIG.segmentsV, 4);
 
     // ---- 粒子放置 ----
     const particleGrid: number[] = []; // ringCount × ringSize

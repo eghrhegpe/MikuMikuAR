@@ -38,7 +38,7 @@
 
     /* 字体 — 功能性 token（按用途命名） */
     /* 使用契约：--font-ui=主体, --font-ui-sm=辅助, --font-title=标题, --font-time=时间数字 */
-    --font: 'Segoe UI', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK SC', system-ui, sans-serif;
+    --font: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', 'Yu Gothic', 'Meiryo', system-ui, sans-serif;
     --font-ui: calc(13px * var(--ui-scale));
     --font-ui-sm: calc(11px * var(--ui-scale));
     --font-ui-xs: calc(10px * var(--ui-scale));
@@ -104,13 +104,13 @@
     /* ===== 组件级变量 ===== */
 
     /* Slide Item（列表行） */
-    --slide-item-gap: 10px;
-    --slide-item-pad-y: 8px;
+    --slide-item-gap: 8px;
+    --slide-item-pad-y: 6px;
     --slide-item-pad-x: 14px;
-    --slide-item-min-height: 44px;
+    --slide-item-min-height: 38px;
     --slide-item-radius: 6px;
     --slide-item-margin-bottom: 2px;
-    --slide-icon-size: 20px;
+    --slide-icon-size: 21px;
 
     /* CS Row（控制行） */
     --cs-row-pad-y: 8px;
@@ -143,12 +143,12 @@
     --preset-chip-icon-size: 14px;
 
     /* Collapsible（折叠面板） */
-    --collapsible-header-pad-y: 8px;
+    --collapsible-header-pad-y: 6px;
     --collapsible-header-pad-x: 14px;
-    --collapsible-header-min-height: 44px;
-    --collapsible-header-gap: 10px;
+    --collapsible-header-min-height: 38px;
+    --collapsible-header-gap: 8px;
     --collapsible-header-radius: 6px;
-    --collapsible-icon-size: 20px;
+    --collapsible-icon-size: 21px;
     --collapsible-arrow-size: 12px;
     --collapsible-panel-transition: max-height 0.3s ease, opacity 0.25s ease;
     --collapsible-inner-pad: 2px 0 4px;
@@ -163,7 +163,7 @@
 
     /* Toggle Row（开关行） */
     --toggle-row-gap: 8px;
-    --toggle-row-margin-bottom: 10px;
+    --toggle-row-margin-bottom: 2px;
 
     /* Mode Button（模式按钮） */
     --mode-btn-pad-y: 0.3em;
@@ -507,6 +507,21 @@ body {
     transform: translateX(16px);
 }
 
+/* Header toggle — 嵌入 collapsible-header 的紧凑 toggle */
+.toggle.header-toggle {
+    width: 30px;
+    height: 16px;
+    flex-shrink: 0;
+    margin: 0 4px;
+}
+.toggle.header-toggle .slider::before {
+    width: 12px;
+    height: 12px;
+}
+.toggle.header-toggle input:checked + .slider::before {
+    transform: translateX(14px);
+}
+
 /* Icon fallback (shown when Iconify icon fails to load) */
 .cs-icon-fallback {
     display: inline-flex;
@@ -527,8 +542,10 @@ body {
     display: flex;
     align-items: center;
     gap: var(--toggle-row-gap);
+    padding: 0 14px;
     margin-bottom: var(--toggle-row-margin-bottom);
     justify-content: space-between;
+    cursor: pointer;
 }
 .toggle-left {
     display: flex;
@@ -536,7 +553,7 @@ body {
     gap: 8px;
 }
 .toggle-label {
-    font-size: 11px;
+    font-size: var(--cs-label-font-size);
     color: var(--text);
 }
 
@@ -723,7 +740,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-muted);
+    color: var(--text);
 }
 .slide-icon iconify-icon {
     width: var(--slide-icon-size);
@@ -736,23 +753,24 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 16px;
 }
 .slide-sublabel {
     font-size: var(--font-ui-sm);
-    color: var(--text-dim);
+    color: var(--text);
     margin-left: auto;
     white-space: nowrap;
 }
 .slide-tag {
     font-size: var(--font-ui-xs);
-    color: var(--text-dim);
+    color: var(--text);
     background: var(--white-08);
     border-radius: 3px;
     padding: 1px 5px;
     flex-shrink: 0;
 }
 .slide-arrow {
-    color: var(--text-dark);
+    color: var(--text);
     font-size: var(--font-time);
     flex-shrink: 0;
     margin-left: 4px;
@@ -936,7 +954,7 @@ body {
     border-radius: var(--mode-btn-radius);
     border: 1px solid var(--white-08);
     background: transparent;
-    color: var(--text-bright);
+    color: var(--text);
     cursor: pointer;
     transition:
         background 0.15s,
@@ -1069,6 +1087,7 @@ input[type='range']::-moz-range-thumb:hover {
     letter-spacing: var(--section-title-letter-spacing);
 }
 
+
 /* ===== Collapsible 通用折叠组件 ===== */
 .collapsible-wrapper {
     margin-bottom: 2px;
@@ -1094,7 +1113,7 @@ input[type='range']::-moz-range-thumb:hover {
     width: var(--collapsible-icon-size);
     height: var(--collapsible-icon-size);
     flex-shrink: 0;
-    color: var(--text-muted);
+    color: var(--text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1110,9 +1129,14 @@ input[type='range']::-moz-range-thumb:hover {
     font-size: var(--cs-label-font-size);
     color: var(--text);
 }
+/* 折叠头 + toggle-row 字体放大，与 cs-row 的 15px 区分 */
+.collapsible-header .collapsible-label,
+.toggle-label {
+    font-size: 16px;
+}
 .collapsible-arrow {
     font-size: var(--collapsible-arrow-size);
-    color: var(--text-dim);
+    color: var(--text);
     transition: transform 0.25s ease;
     flex-shrink: 0;
 }
@@ -1210,7 +1234,7 @@ input[type='range']::-moz-range-thumb:hover {
     width: var(--slide-icon-size);
     height: var(--slide-icon-size);
     flex-shrink: 0;
-    color: var(--text-muted);
+    color: var(--text);
 }
 .cs-icon iconify-icon {
     width: var(--slide-icon-size);

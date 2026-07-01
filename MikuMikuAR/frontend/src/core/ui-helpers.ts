@@ -10,51 +10,122 @@ export function slideRow(
     hasArrow: boolean,
     onClick: () => void,
     sublabel?: string,
-    tag?: string
+    tag?: string,
+    headerToggle?: {
+        value: boolean;
+        onChange: (v: boolean) => void;
+    }
 ): void {
     const row = document.createElement('div');
-    row.className = 'slide-item';
 
-    const iconSpan = document.createElement('span');
-    iconSpan.className = 'slide-icon';
-    const iconEl = createIconifyIcon(icon);
-    if (iconEl) {
-        iconSpan.appendChild(iconEl);
+    if (headerToggle) {
+        // 使用 addCollapsible 的 header 样式：图标 + label + toggle + 箭头
+        row.className = 'collapsible-header';
+
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'collapsible-icon';
+        const iconEl = createIconifyIcon(icon);
+        if (iconEl) {
+            iconSpan.appendChild(iconEl);
+        } else {
+            const fb = document.createElement('span');
+            fb.className = 'cs-icon-fallback';
+            fb.textContent = label.charAt(0) || '?';
+            iconSpan.appendChild(fb);
+        }
+        row.appendChild(iconSpan);
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'collapsible-label';
+        labelSpan.textContent = label;
+        row.appendChild(labelSpan);
+
+        if (sublabel) {
+            const sub = document.createElement('span');
+            sub.className = 'slide-sublabel';
+            sub.textContent = sublabel;
+            row.appendChild(sub);
+        }
+
+        if (tag) {
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'slide-tag';
+            tagSpan.textContent = tag;
+            row.appendChild(tagSpan);
+        }
+
+        // Toggle
+        const toggle = document.createElement('label');
+        toggle.className = 'toggle header-toggle';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = headerToggle.value;
+        const slider = document.createElement('span');
+        slider.className = 'slider';
+        toggle.appendChild(input);
+        toggle.appendChild(slider);
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            input.checked = !input.checked;
+            headerToggle.onChange(input.checked);
+        });
+        row.appendChild(toggle);
+
+        // Arrow
+        if (hasArrow) {
+            const arrowSpan = document.createElement('span');
+            arrowSpan.className = 'collapsible-arrow';
+            arrowSpan.textContent = '▾';
+            row.appendChild(arrowSpan);
+        }
+
+        row.addEventListener('click', onClick);
     } else {
-        const fb = document.createElement('span');
-        fb.className = 'cs-icon-fallback';
-        fb.textContent = label.charAt(0) || '?';
-        iconSpan.appendChild(fb);
+        // 原始 slide-item 样式（无 toggle）
+        row.className = 'slide-item';
+
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'slide-icon';
+        const iconEl = createIconifyIcon(icon);
+        if (iconEl) {
+            iconSpan.appendChild(iconEl);
+        } else {
+            const fb = document.createElement('span');
+            fb.className = 'cs-icon-fallback';
+            fb.textContent = label.charAt(0) || '?';
+            iconSpan.appendChild(fb);
+        }
+        row.appendChild(iconSpan);
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'slide-label';
+        labelSpan.textContent = label;
+        row.appendChild(labelSpan);
+
+        if (sublabel) {
+            const sub = document.createElement('span');
+            sub.className = 'slide-sublabel';
+            sub.textContent = sublabel;
+            row.appendChild(sub);
+        }
+
+        if (tag) {
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'slide-tag';
+            tagSpan.textContent = tag;
+            row.appendChild(tagSpan);
+        }
+
+        if (hasArrow) {
+            const arrowSpan = document.createElement('span');
+            arrowSpan.className = 'slide-arrow';
+            arrowSpan.textContent = '>';
+            row.appendChild(arrowSpan);
+        }
+
+        row.addEventListener('click', onClick);
     }
-    row.appendChild(iconSpan);
 
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'slide-label';
-    labelSpan.textContent = label;
-    row.appendChild(labelSpan);
-
-    if (sublabel) {
-        const sub = document.createElement('span');
-        sub.className = 'slide-sublabel';
-        sub.textContent = sublabel;
-        row.appendChild(sub);
-    }
-
-    if (tag) {
-        const tagSpan = document.createElement('span');
-        tagSpan.className = 'slide-tag';
-        tagSpan.textContent = tag;
-        row.appendChild(tagSpan);
-    }
-
-    if (hasArrow) {
-        const arrowSpan = document.createElement('span');
-        arrowSpan.className = 'slide-arrow';
-        arrowSpan.textContent = '>';
-        row.appendChild(arrowSpan);
-    }
-
-    row.addEventListener('click', onClick);
     container.appendChild(row);
 }
 
@@ -103,6 +174,14 @@ export function addToggleRow(
     toggleLabel.appendChild(slider);
     row.appendChild(left);
     row.appendChild(toggleLabel);
+
+    // 整行点击（除 toggle 开关外）也可切换
+    row.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.toggle')) return;
+        toggle.checked = !toggle.checked;
+        onChange(toggle.checked);
+    });
+
     container.appendChild(row);
 }
 
@@ -114,7 +193,8 @@ export function addSliderRow(
     max: number,
     step: number,
     onChange: (v: number) => void,
-    icon?: string
+    icon?: string,
+    onDragEndCb?: (v: number) => void
 ): void {
     let currentValue = value;
     const range = max - min;
@@ -225,7 +305,10 @@ export function addSliderRow(
             cancelAnimationFrame(rafId);
             rafId = 0;
         }
+        _cbOnDragEnd?.(currentValue);
     }
+
+    const _cbOnDragEnd = onDragEndCb;
 
     bar.addEventListener('mousedown', (e) => {
         e.preventDefault();
@@ -323,7 +406,8 @@ export function addModeSlider<T extends string | number>(
     options: Array<{ value: T; label: string }>,
     currentValue: T,
     onChange: (v: T) => void,
-    icon?: string
+    icon?: string,
+    onDragEndCb?: (v: T) => void
 ): void {
     const total = options.length;
     if (total === 0) {
@@ -400,48 +484,60 @@ export function addModeSlider<T extends string | number>(
         }
     }
 
-    let dragging = false;
-    let rafId = 0;
-    let pendingX = 0;
-    let dragRect: DOMRect | null = null;
+    let didDrag = false;
+    let topDragRect: DOMRect | null = null;
 
-    function onDragMove(e: MouseEvent): void {
-        if (!dragging) {
-            return;
+    function onTopDragMove(e: MouseEvent): void {
+        if (!didDrag) {
+            didDrag = true;
         }
         e.preventDefault();
-        pendingX = e.clientX;
-        if (rafId) {
-            return;
+        if (topDragRect) {
+            setIndexFromClientX(e.clientX, topDragRect);
         }
-        rafId = requestAnimationFrame(() => {
-            rafId = 0;
-            if (dragRect) {
-                setIndexFromClientX(pendingX, dragRect);
+    }
+
+    function onTopDragEnd(e: MouseEvent): void {
+        document.removeEventListener('mousemove', onTopDragMove);
+        document.removeEventListener('mouseup', onTopDragEnd);
+
+        if (!didDrag) {
+            // 点击：区分 1/4 大步 vs 1/2 小步
+            const rect = top.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width;
+            const quarter = Math.max(1, Math.floor(total / 4));
+            let step: number;
+            if (x < 0.25) {
+                step = -quarter;       // 左 1/4：后退 quarter 步
+            } else if (x < 0.5) {
+                step = -1;             // 左半内：后退 1 步
+            } else if (x < 0.75) {
+                step = 1;              // 右半内：前进 1 步
+            } else {
+                step = quarter;        // 右 1/4：前进 quarter 步
             }
-        });
-    }
-
-    function onDragEnd(): void {
-        dragging = false;
-        dragRect = null;
-        document.removeEventListener('mousemove', onDragMove);
-        document.removeEventListener('mouseup', onDragEnd);
-        if (rafId) {
-            cancelAnimationFrame(rafId);
-            rafId = 0;
+            const nextIdx = (currentIndex + step + total) % total;
+            updateDisplay(nextIdx);
+            onChange(options[nextIdx].value);
+            onDragEndCb?.(options[nextIdx].value);
+        } else {
+            // 拖拽结束：提交最终值
+            onDragEndCb?.(options[currentIndex].value);
         }
+        topDragRect = null;
+        didDrag = false;
     }
 
-    bar.addEventListener('mousedown', (e) => {
+    // cs-top 处理所有交互（拖拽 + 点击）
+    top.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        dragRect = bar.getBoundingClientRect();
-        dragging = true;
-        setIndexFromClientX(e.clientX, dragRect);
-        document.addEventListener('mousemove', onDragMove);
-        document.addEventListener('mouseup', onDragEnd);
+        topDragRect = top.getBoundingClientRect();
+        didDrag = false;
+        document.addEventListener('mousemove', onTopDragMove);
+        document.addEventListener('mouseup', onTopDragEnd);
     });
 
+    // cs-bar 纯装饰，无事件
     row.appendChild(top);
     row.appendChild(bar);
     container.appendChild(row);
@@ -462,6 +558,10 @@ export function addCollapsible(
         icon?: string;
         variant?: 'default' | 'mat';
         defaultOpen?: boolean;
+        headerToggle?: {
+            value: boolean;
+            onChange: (v: boolean) => void;
+        };
         renderContent: (container: HTMLElement) => void;
     }
 ): void {
@@ -487,6 +587,25 @@ export function addCollapsible(
     label.className = 'collapsible-label';
     label.textContent = config.title;
     header.appendChild(label);
+
+    // Header toggle (between label and arrow)
+    if (config.headerToggle) {
+        const toggle = document.createElement('label');
+        toggle.className = 'toggle header-toggle';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = config.headerToggle.value;
+        const slider = document.createElement('span');
+        slider.className = 'slider';
+        toggle.appendChild(input);
+        toggle.appendChild(slider);
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            input.checked = !input.checked;
+            config.headerToggle!.onChange(input.checked);
+        });
+        header.appendChild(toggle);
+    }
 
     const arrow = document.createElement('span');
     arrow.className = 'collapsible-arrow' + (variant === 'mat' ? ' arrow' : '');

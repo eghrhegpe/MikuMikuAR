@@ -64,8 +64,18 @@ export function deriveLighting(
     return { dirDiffuse, dirDirection, dirIntensity, hemiIntensity };
 }
 
-/** 预设数据表。*/
+/** 预设数据表。按时间线排列：黎明 → 正午 → 夕阳 → 黄昏 → 夜景 → 阴天 */
 export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
+    dawn: {
+        label: '黎明',
+        skyColorTop: [0.85, 0.55, 0.35],
+        skyColorBot: [0.2, 0.15, 0.35],
+        sunAngle: 5,
+        azimuth: -90, // 太阳在东方
+        exposure: 0.65,
+        toneMapping: 2,
+        ...deriveLighting([0.85, 0.55, 0.35], 5, -90),
+    },
     noon: {
         label: '正午',
         skyColorTop: [0.53, 0.71, 0.91],
@@ -86,6 +96,16 @@ export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
         toneMapping: 2,
         ...deriveLighting([0.9, 0.45, 0.2], 15, 90),
     },
+    dusk: {
+        label: '黄昏',
+        skyColorTop: [0.35, 0.2, 0.5],
+        skyColorBot: [0.6, 0.3, 0.15],
+        sunAngle: 3, // 太阳刚落山，暮光
+        azimuth: 90, // 太阳在西方
+        exposure: 0.55,
+        toneMapping: 2,
+        ...deriveLighting([0.35, 0.2, 0.5], 3, 90),
+    },
     night: {
         label: '夜景',
         skyColorTop: [0.05, 0.05, 0.15],
@@ -105,36 +125,6 @@ export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
         exposure: 0.8,
         toneMapping: 1,
         ...deriveLighting([0.4, 0.4, 0.45], 45, -45),
-    },
-    dawn: {
-        label: '黎明',
-        skyColorTop: [0.85, 0.55, 0.35],
-        skyColorBot: [0.2, 0.15, 0.35],
-        sunAngle: 5,
-        azimuth: -90, // 太阳在东方
-        exposure: 0.65,
-        toneMapping: 2,
-        ...deriveLighting([0.85, 0.55, 0.35], 5, -90),
-    },
-    dusk: {
-        label: '黄昏',
-        skyColorTop: [0.35, 0.2, 0.5],
-        skyColorBot: [0.6, 0.3, 0.15],
-        sunAngle: 3, // 太阳刚落山，暮光
-        azimuth: 90, // 太阳在西方
-        exposure: 0.55,
-        toneMapping: 2,
-        ...deriveLighting([0.35, 0.2, 0.5], 3, 90),
-    },
-    midnight: {
-        label: '午夜',
-        skyColorTop: [0.03, 0.03, 0.08],
-        skyColorBot: [0.01, 0.01, 0.04],
-        sunAngle: -15,
-        azimuth: 0,
-        exposure: 0.3,
-        toneMapping: 4,
-        ...deriveLighting([0.03, 0.03, 0.08], -15, 0),
     },
 };
 

@@ -5,23 +5,17 @@
 
 import { SetEnvState } from '../../wailsjs/go/main/App';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '../core/config';
-import { deriveLighting, ENV_PRESETS } from './env-lighting';
+import { ENV_PRESETS } from './env-lighting';
 // 直接从 impl 导入，避免与 scene-env.ts 的循环依赖
 import * as impl from './scene-env-impl';
-import { scene, setRenderState } from './scene';
 import {
-    setLightState,
-    getLightState,
+    hemiLight,
     _updateSunDisc,
-    setSkipLightAutoSave,
 } from './scene-lighting';
-import type { LightState } from './scene-lighting';
-
-function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
-    obj[key] = value;
-}
+import { scene, setRenderState } from './scene';
 
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState): void {
@@ -67,6 +61,20 @@ function _applyEnvStateFacade(state: EnvState): void {
     } catch (e) {
         console.warn('[env] cloud fail:', e);
     }
+
+    // 半球光自动跟随环境 — envIntensity 控制强度，天空色控制色调
+    hemiLight.intensity = state.envIntensity;
+    const skyMid = state.skyColorMid ?? [
+        (state.skyColorTop[0] + state.skyColorBot[0]) / 2,
+        (state.skyColorTop[1] + state.skyColorBot[1]) / 2,
+        (state.skyColorTop[2] + state.skyColorBot[2]) / 2,
+    ];
+    hemiLight.diffuse = new Color3(skyMid[0], skyMid[1], skyMid[2]);
+    hemiLight.groundColor = new Color3(
+        state.groundColor[0] * 0.5,
+        state.groundColor[1] * 0.5,
+        state.groundColor[2] * 0.5,
+    );
 }
 
 // ======== Gravity ========
@@ -88,19 +96,10 @@ export function getGravityStrength(): number {
     return _gravityStrength;
 }
 
-// ======== Environment Auto-Link ========
+// ======== Environment Sun Angle ========
 
-let envAutoLink = true;
 let envSunAngle = 45;
 let _envPersistTimer: ReturnType<typeof setTimeout> | null = null;
-
-export function setEnvAutoLink(on: boolean): void {
-    envAutoLink = on;
-}
-
-export function getEnvAutoLink(): boolean {
-    return envAutoLink;
-}
 
 export function setEnvSunAngle(deg: number): void {
     envSunAngle = Math.max(-15, Math.min(90, deg));
@@ -137,7 +136,9 @@ function _timeOfDayTick(): void {
 
     if (Math.abs(envSunAngle - _lastAutoLinkSunAngle) >= _AUTO_LINK_THRESHOLD_DEG) {
         _lastAutoLinkSunAngle = envSunAngle;
-        redoEnvAutoLink();
+        // 更新 envState.sunAngle 使天空和半球光跟随
+        envState.sunAngle = envSunAngle;
+        _applyEnvStateFacade(envState);
     }
 
     if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
@@ -181,23 +182,6 @@ export function setTimeOfDaySpeed(s: number): void {
     _timeOfDaySpeed = s;
 }
 
-// ======== Env Auto-Link Derivation ========
-
-export function redoEnvAutoLink(): void {
-    if (!envAutoLink || envState.skyMode !== 'procedural') {
-        return;
-    }
-    const l = deriveLighting(envState.skyColorTop, envSunAngle, envState.azimuth ?? -45);
-    setLightState({
-        dirColor: l.dirDiffuse,
-        dirX: l.dirDirection[0],
-        dirY: l.dirDirection[1],
-        dirZ: l.dirDirection[2],
-        dirIntensity: l.dirIntensity,
-        hemiIntensity: l.hemiIntensity,
-    });
-}
-
 // ======== Environment Presets ========
 
 let _presetAnimId = 0; // 动画 ID，每次新预设递增，用于取消旧动画
@@ -209,8 +193,6 @@ export function applyEnvPreset(name: string): boolean {
     }
     _presetAnimId++; // 取消所有正在进行的预设动画
     const myId = _presetAnimId;
-    const wasLinked = envAutoLink;
-    envAutoLink = false;
     envSunAngle = preset.sunAngle;
 
     const mid: [number, number, number] = [
@@ -229,21 +211,9 @@ export function applyEnvPreset(name: string): boolean {
               (startSkyTop[1] + startSkyBot[1]) / 2,
               (startSkyTop[2] + startSkyBot[2]) / 2,
           ];
-    const startLight = getLightState();
-    const targetLight: Partial<LightState> = {
-        dirColor: preset.dirDiffuse,
-        dirX: preset.dirDirection[0],
-        dirY: preset.dirDirection[1],
-        dirZ: preset.dirDirection[2],
-        dirIntensity: preset.dirIntensity,
-        hemiIntensity: preset.hemiIntensity,
-    };
 
     const duration = 2000;
     const startTime = performance.now();
-
-    // 动画期间抑制自动保存，避免每帧触发 I/O
-    setSkipLightAutoSave(true);
 
     const animLoop = () => {
         // 取消检测：新预设已启动，当前动画失效
@@ -271,7 +241,7 @@ export function applyEnvPreset(name: string): boolean {
             lerp(startSkyMid[2], mid[2]),
         ];
 
-        // 动画中跳过自动保存，仅更新状态和场景
+        // 仅更新环境状态，不动灯光（方向光是舞台灯，由用户独立控制）
         setEnvState(
             {
                 skyMode: 'procedural',
@@ -281,28 +251,13 @@ export function applyEnvPreset(name: string): boolean {
                 skyBrightness: 1.0,
                 sunAngle: preset.sunAngle,
                 azimuth: preset.azimuth ?? -45,
+                envIntensity: 1.0,
             },
             true
         ); // skipAutoSave
 
-        // 插值并应用光照参数
-        const interpLight: Partial<LightState> = {};
-        for (const key of Object.keys(targetLight) as (keyof LightState)[]) {
-            const a = startLight[key];
-            const b = targetLight[key];
-            if (typeof a === 'number' && typeof b === 'number') {
-                setKey(interpLight, key, lerp(a, b) as LightState[typeof key]);
-            } else if (Array.isArray(a) && Array.isArray(b)) {
-                setKey(interpLight, key, a.map((v, i) => lerp(v, b[i])) as LightState[typeof key]);
-            }
-        }
-        setLightState(interpLight); // setSkipLightAutoSave 已抑制其内部保存
-
         if (t >= 1) {
-            setSkipLightAutoSave(false);
             setRenderState({ exposure: preset.exposure, toneMapping: preset.toneMapping });
-            envAutoLink = wasLinked;
-            // 动画完成，执行一次性后端保存和本地保存
             SetEnvState(envState as unknown as import('../../wailsjs/go/models').main.EnvState).catch(() => {});
             triggerAutoSave();
         } else {
@@ -319,25 +274,6 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     Object.assign(envState, partial);
 
     _applyEnvStateFacade(envState);
-
-    if (
-        envAutoLink &&
-        envState.skyMode === 'procedural' &&
-        (partial.skyColorTop !== undefined ||
-            partial.skyColorMid !== undefined ||
-            partial.skyColorBot !== undefined ||
-            partial.skyBrightness !== undefined)
-    ) {
-        const l = deriveLighting(envState.skyColorTop, envSunAngle, envState.azimuth ?? -45);
-        setLightState({
-            dirColor: l.dirDiffuse,
-            dirX: l.dirDirection[0],
-            dirY: l.dirDirection[1],
-            dirZ: l.dirDirection[2],
-            dirIntensity: l.dirIntensity,
-            hemiIntensity: l.hemiIntensity,
-        });
-    }
 
     if (partial.waterAnimSpeed !== undefined) {
         impl.updateWaterAnimSpeed(partial.waterAnimSpeed);

@@ -583,9 +583,10 @@ export function buildVisibilityLevel(id: string): PopupLevel {
                 hair: '头发物理',
                 accessory: '配件物理',
             };
-            if (physCategories.length > 0) {
+            const filteredCats = physCategories.filter((c) => c !== 'chest');
+            if (filteredCats.length > 0) {
                 cardContainer(container, (c) => {
-                    for (const cat of physCategories) {
+                    for (const cat of filteredCats) {
                         const enabled = isPhysicsCategoryEnabled(id, cat);
                         addToggleRow(
                             c,

@@ -35,7 +35,7 @@ import {
     setPhysicsCategory,
 } from '../scene/scene';
 import { SlideMenu } from './menu';
-import { slideRow, addSliderRow, addToggleRow } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addToggleRow, addCollapsible } from '../core/ui-helpers';
 import { createIconifyIcon } from '../core/icons';
 import {
     loadAudioFile,
@@ -178,11 +178,6 @@ function buildActionBindingLevel(id: string): PopupLevel {
             if (inst.kind === 'actor') {
                 const physCategories = getPhysicsCategories(id);
                 if (physCategories.length > 0) {
-                    const physLabel = document.createElement('div');
-                    physLabel.style.cssText =
-                        'font-size:11px;color:#fff;padding:6px 14px 2px;opacity:0.6;';
-                    physLabel.textContent = '物理分类';
-                    container.appendChild(physLabel);
                     cardContainer(container, (c) => {
                         const CAT_LABELS: Record<string, string> = {
                             skirt: '裙子物理',
@@ -216,14 +211,15 @@ function buildActionBindingLevel(id: string): PopupLevel {
             }
 
             // 聚焦按钮（高频操作）
-            const focusBtn = document.createElement('button');
-            focusBtn.className = 'preset-chip';
-            focusBtn.style.margin = '8px 14px 4px';
-            focusBtn.innerHTML = '🎯 聚焦到模型';
-            focusBtn.addEventListener('click', () => {
-                focusModel(id);
+            cardContainer(container, (c) => {
+                const focusBtn = document.createElement('button');
+                focusBtn.className = 'preset-chip';
+                focusBtn.innerHTML = '🎯 聚焦到模型';
+                focusBtn.addEventListener('click', () => {
+                    focusModel(id);
+                });
+                c.appendChild(focusBtn);
             });
-            container.appendChild(focusBtn);
         },
     };
 }
@@ -288,6 +284,7 @@ function buildActionMusicLevel(): PopupLevel {
     };
 }
 
+
 // ======== Cloth Params Level ========
 
 function buildClothParamsLevel(): PopupLevel {
@@ -298,123 +295,150 @@ function buildClothParamsLevel(): PopupLevel {
         renderCustom: (container) => {
             cardContainer(container, (c) => {
                 const cfg = envState.clothConfig;
-                addSliderRow(
-                    c,
-                    '裙长',
-                    cfg.length,
-                    0.2,
-                    1.5,
-                    0.05,
-                    (v) => {
-                        setEnvState({ clothConfig: { ...cfg, length: v } });
-                        recreateCloth();
+
+                // 形状
+                addCollapsible(c, {
+                    title: '形状',
+                    icon: 'lucide:shirt',
+                    defaultOpen: false,
+                    renderContent: (cc) => {
+                        addSliderRow(
+                            cc,
+                            '裙长',
+                            cfg.length,
+                            0.2,
+                            1.5,
+                            0.05,
+                            (v) => {
+                                setEnvState({ clothConfig: { ...cfg, length: v } });
+                                recreateCloth();
+                            },
+                            'lucide:ruler'
+                        );
+                        addSliderRow(
+                            cc,
+                            '裙摆角度',
+                            cfg.slope,
+                            0,
+                            45,
+                            1,
+                            (v) => {
+                                setEnvState({ clothConfig: { ...cfg, slope: v } });
+                                recreateCloth();
+                            },
+                            'lucide:triangle'
+                        );
+                        addSliderRow(
+                            cc,
+                            '腰部半径',
+                            cfg.innerRadius,
+                            0.05,
+                            0.4,
+                            0.01,
+                            (v) => {
+                                setEnvState({ clothConfig: { ...cfg, innerRadius: v } });
+                                recreateCloth();
+                            },
+                            'lucide:circle'
+                        );
                     },
-                    'lucide:ruler'
-                );
-                addSliderRow(
-                    c,
-                    '裙摆角度',
-                    cfg.slope,
-                    0,
-                    45,
-                    1,
-                    (v) => {
-                        setEnvState({ clothConfig: { ...cfg, slope: v } });
-                        recreateCloth();
+                });
+
+                // 物理
+                addCollapsible(c, {
+                    title: '物理',
+                    icon: 'lucide:wind',
+                    defaultOpen: false,
+                    renderContent: (cc) => {
+                        addSliderRow(
+                            cc,
+                            '布料柔度',
+                            cfg.compliance,
+                            0,
+                            0.01,
+                            0.005,
+                            (v) => {
+                                setEnvState({ clothConfig: { ...cfg, compliance: v } });
+                                recreateCloth();
+                            },
+                            'lucide:wind'
+                        );
+                        addSliderRow(
+                            cc,
+                            '弯曲柔度',
+                            cfg.bendCompliance,
+                            0,
+                            0.05,
+                            0.01,
+                            (v) => {
+                                setEnvState({ clothConfig: { ...cfg, bendCompliance: v } });
+                                recreateCloth();
+                            },
+                            'lucide:curl'
+                        );
+                        addSliderRow(
+                            cc,
+                            '阻尼',
+                            cfg.damping,
+                            0.8,
+                            0.999,
+                            0.01,
+                            (v) => {
+                                setEnvState({ clothConfig: { ...cfg, damping: v } });
+                                recreateCloth();
+                            },
+                            'lucide:droplet'
+                        );
+                        addSliderRow(
+                            cc,
+                            '重力倍率',
+                            cfg.gravityScale,
+                            0.1,
+                            3,
+                            0.1,
+                            (v) => {
+                                setEnvState({ clothConfig: { ...cfg, gravityScale: v } });
+                                recreateCloth();
+                            },
+                            'lucide:arrow-down'
+                        );
                     },
-                    'lucide:triangle'
-                );
-                addSliderRow(
-                    c,
-                    '腰部半径',
-                    cfg.innerRadius,
-                    0.05,
-                    0.4,
-                    0.01,
-                    (v) => {
-                        setEnvState({ clothConfig: { ...cfg, innerRadius: v } });
-                        recreateCloth();
+                });
+
+                // 细分
+                addCollapsible(c, {
+                    title: '细分',
+                    icon: 'lucide:grid',
+                    defaultOpen: false,
+                    renderContent: (cc) => {
+                        addSliderRow(
+                            cc,
+                            '水平分段',
+                            cfg.segmentsH,
+                            12,
+                            36,
+                            2,
+                            (v) => {
+                                setEnvState({ clothConfig: { ...cfg, segmentsH: v } });
+                                recreateCloth();
+                            },
+                            'lucide:grid'
+                        );
+                        addSliderRow(
+                            cc,
+                            '垂直分段',
+                            cfg.segmentsV,
+                            6,
+                            24,
+                            2,
+                            (v) => {
+                                setEnvState({ clothConfig: { ...cfg, segmentsV: v } });
+                                recreateCloth();
+                            },
+                            'lucide:grid'
+                        );
                     },
-                    'lucide:circle'
-                );
-                addSliderRow(
-                    c,
-                    '布料柔度',
-                    cfg.compliance,
-                    0,
-                    0.01,
-                    0.005,
-                    (v) => {
-                        setEnvState({ clothConfig: { ...cfg, compliance: v } });
-                        recreateCloth();
-                    },
-                    'lucide:wind'
-                );
-                addSliderRow(
-                    c,
-                    '弯曲柔度',
-                    cfg.bendCompliance,
-                    0,
-                    0.05,
-                    0.01,
-                    (v) => {
-                        setEnvState({ clothConfig: { ...cfg, bendCompliance: v } });
-                        recreateCloth();
-                    },
-                    'lucide:curl'
-                );
-                addSliderRow(
-                    c,
-                    '阻尼',
-                    cfg.damping,
-                    0.8,
-                    0.999,
-                    0.01,
-                    (v) => {
-                        setEnvState({ clothConfig: { ...cfg, damping: v } });
-                        recreateCloth();
-                    },
-                    'lucide:droplet'
-                );
-                addSliderRow(
-                    c,
-                    '重力倍率',
-                    cfg.gravityScale,
-                    0.1,
-                    3,
-                    0.1,
-                    (v) => {
-                        setEnvState({ clothConfig: { ...cfg, gravityScale: v } });
-                        recreateCloth();
-                    },
-                    'lucide:arrow-down'
-                );
-                addSliderRow(
-                    c,
-                    '水平分段',
-                    cfg.segmentsH,
-                    12,
-                    36,
-                    2,
-                    (v) => {
-                        setEnvState({ clothConfig: { ...cfg, segmentsH: v } });
-                        recreateCloth();
-                    },
-                    'lucide:grid'
-                );
-                addSliderRow(
-                    c,
-                    '垂直分段',
-                    cfg.segmentsV,
-                    6,
-                    20,
-                    1,
-                    (v) => {
-                        setEnvState({ clothConfig: { ...cfg, segmentsV: v } });
-                        recreateCloth();
-                    },
-                    'lucide:columns'
-                );
+                });
             });
         },
     };
@@ -601,11 +625,11 @@ export function showMotionPopup(): void {
                     },
                     'lucide:arrow-down'
                 );
-                addToggleRow(
-                    c,
-                    '布料模拟',
-                    envState.clothEnabled,
-                    (v) => {
+                slideRow(c, 'lucide:shirt', '布料模拟', true, () => {
+                    motionMenu.push(buildClothParamsLevel());
+                }, undefined, undefined, {
+                    value: envState.clothEnabled,
+                    onChange: (v) => {
                         setEnvState({ clothEnabled: v });
                         if (v) {
                             toggleCloth(true);
@@ -614,10 +638,6 @@ export function showMotionPopup(): void {
                         }
                         motionMenu.reRender();
                     },
-                    'lucide:shirt'
-                );
-                slideRow(c, 'lucide:settings', '布料参数', true, () => {
-                    motionMenu.push(buildClothParamsLevel());
                 });
             });
         },
