@@ -24,5 +24,4 @@ reasonix.toml
 # Test coverage output
 coverage/
 
-# CI workflow (requires workflow-scoped token to push)
-.github/workflows/
+
