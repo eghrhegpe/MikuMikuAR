@@ -199,9 +199,15 @@ export function generateAutoDanceVmd(
     if (blinkMorph) {
         for (let b = 0; b < 2; b++) {
             const t = b * beatFrames;
-            if (t <= loopFrames) morphs.push({ name: blinkMorph, frame: t, weight: 0 });
-            if (t + 1 <= loopFrames) morphs.push({ name: blinkMorph, frame: t + 1, weight: 1 });
-            if (t + 4 <= loopFrames) morphs.push({ name: blinkMorph, frame: t + 4, weight: 0 });
+            if (t <= loopFrames) {
+                morphs.push({ name: blinkMorph, frame: t, weight: 0 });
+            }
+            if (t + 1 <= loopFrames) {
+                morphs.push({ name: blinkMorph, frame: t + 1, weight: 1 });
+            }
+            if (t + 4 <= loopFrames) {
+                morphs.push({ name: blinkMorph, frame: t + 4, weight: 0 });
+            }
         }
         morphs.push({ name: blinkMorph, frame: loopFrames, weight: 0 });
     }
@@ -214,8 +220,12 @@ export function generateAutoDanceVmd(
  *  'autodance' = 强制 AutoDance（即使无音乐也保持）
  *  'idle' = 强制 Idle */
 export function shouldAutoDance(audioPlaying: boolean, mode: ProcMotionMode): boolean {
-    if (mode === 'idle') return false;
-    if (mode === 'autodance') return true;
+    if (mode === 'idle') {
+        return false;
+    }
+    if (mode === 'autodance') {
+        return true;
+    }
     return audioPlaying; // 'off' = auto mode
 }
 

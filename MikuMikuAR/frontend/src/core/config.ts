@@ -523,7 +523,9 @@ export function setStatus(text: string, ok: boolean): void {
 
 /** Show a hover hint in the status bar, saving the current text for later restore. */
 export function showHint(text: string): void {
-    if (!dom.statusText) return;
+    if (!dom.statusText) {
+        return;
+    }
     if (!hintActive) {
         savedStatusText = dom.statusText.textContent || '';
         savedStatusColor = dom.statusText.style.color || '';
@@ -536,7 +538,9 @@ export function showHint(text: string): void {
 /** Restore the status bar text that was showing before the hint. */
 export function hideHint(): void {
     hintActive = false;
-    if (!dom.statusText) return;
+    if (!dom.statusText) {
+        return;
+    }
     dom.statusText.textContent = savedStatusText;
     dom.statusText.style.color = savedStatusColor;
 }
@@ -559,7 +563,9 @@ export function formatTime(seconds: number): string {
 }
 
 export function formatError(err: unknown, maxLen = 120): string {
-    if (err == null) return 'unknown error';
+    if (err == null) {
+        return 'unknown error';
+    }
     if (err instanceof Error) {
         const msg = err.message;
         return msg.length > maxLen ? msg.slice(0, maxLen - 3) + '...' : msg;

@@ -99,7 +99,9 @@ export class SdfCollider {
     updateMatrices(matrices: (Float32Array | null)[]): void {
         for (let i = 0; i < this.capsules.length && i < matrices.length; i++) {
             const m = matrices[i];
-            if (!m) continue;
+            if (!m) {
+                continue;
+            }
             const c = this.capsules[i];
             c.center[0] = m[12];
             c.center[1] = m[13];

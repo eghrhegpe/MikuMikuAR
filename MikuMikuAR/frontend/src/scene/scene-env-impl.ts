@@ -101,12 +101,7 @@ import {
 import { _disposeSunDisc } from './scene-lighting';
 import { updateUnderwaterTransition, resetUnderwaterState } from './scene-env-water';
 
-export {
-    createParticleEmitter,
-    disposeParticles,
-    applyWindToParticles,
-    updateParticleWind,
-};
+export { createParticleEmitter, disposeParticles, applyWindToParticles, updateParticleWind };
 
 export const _envSys: {
     sky: EnvSkyResources;
@@ -486,9 +481,13 @@ export function ensureEnvUpdateObserver(): void {
                         const tex = mat.diffuseTexture as Texture;
                         // 对偏移取模 1.0，防止长时间运行后浮点精度退化
                         tex.uOffset = (tex.uOffset + dx * speedMul) % 1;
-                        if (tex.uOffset < 0) tex.uOffset += 1;
+                        if (tex.uOffset < 0) {
+                            tex.uOffset += 1;
+                        }
                         tex.vOffset = (tex.vOffset + dz * speedMul) % 1;
-                        if (tex.vOffset < 0) tex.vOffset += 1;
+                        if (tex.vOffset < 0) {
+                            tex.vOffset += 1;
+                        }
                     }
                 }
             }
@@ -503,7 +502,11 @@ export function ensureEnvUpdateObserver(): void {
             _prevParticleEnabled = envState.particleEnabled;
             if (!envState.particleEnabled && _envSys.particles.system) {
                 disposeParticles();
-            } else if (envState.particleEnabled && !_envSys.particles.system && getCurrentParticleType() !== 'none') {
+            } else if (
+                envState.particleEnabled &&
+                !_envSys.particles.system &&
+                getCurrentParticleType() !== 'none'
+            ) {
                 createParticleEmitter(getCurrentParticleType(), envState.windEnabled);
             }
         }

@@ -31,7 +31,10 @@ let _propLoadQueue: Promise<void> = Promise.resolve();
  */
 function enqueueLoad<T>(loader: () => Promise<T>): Promise<T> {
     const result = _propLoadQueue.then(loader, loader);
-    _propLoadQueue = result.then(() => {}, () => {});
+    _propLoadQueue = result.then(
+        () => {},
+        () => {}
+    );
     return result;
 }
 

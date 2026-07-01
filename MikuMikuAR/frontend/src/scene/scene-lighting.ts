@@ -181,7 +181,9 @@ export function setLightState(s: Partial<LightState>): void {
         _ensureShadow();
     }
     _updateSunDisc();
-    if (!_skipLightAutoSave) _triggerAutoSave();
+    if (!_skipLightAutoSave) {
+        _triggerAutoSave();
+    }
 }
 
 /** 平滑过渡当前灯光到目标灯光参数，默认 2 秒 */
@@ -203,11 +205,17 @@ export function transitionLighting(
 
         const interpState: Partial<LightState> = {};
         // 需要重建阴影生成器的参数 — 动画进行中跳过，仅结束时一次性应用
-        const rebuildShadowKeys = new Set<string>(['shadowResolution', 'shadowType', 'shadowEnabled']);
+        const rebuildShadowKeys = new Set<string>([
+            'shadowResolution',
+            'shadowType',
+            'shadowEnabled',
+        ]);
         // 仅对 target 中存在的字段插值
         for (const key of Object.keys(target) as (keyof LightState)[]) {
             // 跳过会触发每帧重建阴影生成器的参数，在动画结束时统一处理
-            if (rebuildShadowKeys.has(key) && t < 1) continue;
+            if (rebuildShadowKeys.has(key) && t < 1) {
+                continue;
+            }
             const a = source[key];
             const b = target[key];
             if (typeof a === 'number' && typeof b === 'number') {

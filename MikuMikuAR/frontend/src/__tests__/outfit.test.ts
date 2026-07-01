@@ -10,242 +10,55 @@ vi.hoisted(() => {
     }
 });
 
-vi.mock('@babylonjs/core/Engines/engine', () => ({
-    Engine: class MockEngine {
-        _features = { trackUbosInFrame: false, doNotHandleContextLost: true };
-        _renderLoops: Array<() => void> = [];
-        _renderPassIdCounter = 0;
-        _renderPassIds: number[] = [];
-        runRenderLoop(cb: () => void) {
-            this._renderLoops.push(cb);
-        }
-        stopRenderLoop() {
-            this._renderLoops = [];
-        }
-        getRenderWidth() {
-            return 800;
-        }
-        getRenderHeight() {
-            return 600;
-        }
-        resize() {}
-        clear() {}
-        getClassName() {
-            return 'Engine';
-        }
-        setHardwareScalingLevel() {}
-        getHardwareScalingLevel() {
-            return 1;
-        }
-        createRenderPassId() {
-            const id = this._renderPassIdCounter++;
-            this._renderPassIds.push(id);
-            return id;
-        }
-        releaseRenderPassId(id: number) {
-            const i = this._renderPassIds.indexOf(id);
-            if (i >= 0) {
-                this._renderPassIds.splice(i, 1);
-            }
-        }
-    },
-}));
+vi.mock('@babylonjs/core/Engines/engine', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { Engine: m.MockEngine };
+});
 
-class MockScene {
-    _uniqueIdCounter = 0;
-    clearColor = { r: 0, g: 0, b: 0, a: 1 };
-    _engine: any;
-    lights: any[] = [];
-    meshes: any[] = [];
-    actionManager = null;
-    metadata = null;
-    _transformMatrix = {};
-    constructor(engine: any) {
-        this._engine = engine;
-    }
-    getEngine() {
-        return this._engine;
-    }
-    getScene() {
-        return this;
-    }
-    getClassName() {
-        return 'Scene';
-    }
-    getUniqueId() {
-        return this._uniqueIdCounter++;
-    }
-    addLight(l: any) {
-        this.lights.push(l);
-    }
-    removeLight(l: any) {
-        const i = this.lights.indexOf(l);
-        if (i >= 0) {
-            this.lights.splice(i, 1);
-        }
-    }
-    sortLightsByPriority() {}
-    createDefaultCameraOrLight() {}
-    _notifyIdleControllers() {}
-    getBoundingBoxRenderer() {
-        return { isEnabled: false };
-    }
-    attachControl() {}
-    detachControl() {}
-    _blockEntityCollection = false;
-    onDisposeObservable = {
-        add: vi.fn(),
-        remove: vi.fn(),
-        notifyObservers: vi.fn(),
-        hasObservers: false,
-    };
-    metadataObj: any = null;
-    getTransformMatrix() {
-        return this._transformMatrix;
-    }
-    updateTransformMatrix() {}
-    getProjectionMatrix() {
-        return { clone: () => ({}) };
-    }
-    markAllMaterialsAsDirty() {}
-}
+vi.mock('@babylonjs/core/scene', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { Scene: m.MockScene };
+});
 
-vi.mock('@babylonjs/core/scene', () => ({ Scene: MockScene }));
+vi.mock('@babylonjs/core/Lights/hemisphericLight', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { HemisphericLight: m.MockHemisphericLight };
+});
 
-vi.mock('@babylonjs/core/Lights/hemisphericLight', () => ({
-    HemisphericLight: class MockHemisphericLight {
-        intensity = 0.8;
-        diffuse: any = null;
-        specular: any = null;
-        groundColor: any = null;
-        _scene: any;
-        constructor(_name: string, _direction: any, scene: any) {
-            this._scene = scene;
-            if (scene?.addLight) {
-                scene.addLight(this);
-            }
-        }
-        dispose() {
-            if (this._scene?.removeLight) {
-                this._scene.removeLight(this);
-            }
-        }
-    },
-}));
+vi.mock('@babylonjs/core/Lights/directionalLight', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { DirectionalLight: m.MockDirectionalLight };
+});
 
-vi.mock('@babylonjs/core/Lights/directionalLight', () => ({
-    DirectionalLight: class MockDirectionalLight {
-        intensity = 0.5;
-        diffuse: any = null;
-        specular: any = null;
-        _scene: any;
-        constructor(_name: string, _direction: any, scene: any) {
-            this._scene = scene;
-            if (scene?.addLight) {
-                scene.addLight(this);
-            }
-        }
-        dispose() {
-            if (this._scene?.removeLight) {
-                this._scene.removeLight(this);
-            }
-        }
-    },
-}));
+vi.mock('@babylonjs/core/Lights/light', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { Light: m.MockLight };
+});
 
-vi.mock('@babylonjs/core/Lights/light', () => ({
-    Light: class MockLight {
-        intensity = 1;
-        _scene: any;
-        _parentNode: any = null;
-        constructor(_name: string, scene: any) {
-            this._scene = scene;
-        }
-    },
-}));
+vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { ArcRotateCamera: m.MockArcRotateCamera };
+});
 
-vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => ({
-    ArcRotateCamera: class MockArcRotateCamera {
-        _scene: any;
-        _cameraRotation = { x: 0, y: 0 };
-        inputs = { addGamepad: () => {} };
-        inertia = 0;
-        angularSensibilityX = 0;
-        angularSensibilityY = 0;
-        pinchPrecision = 0;
-        panningSensibility = 0;
-        _panningMouseButton = 0;
-        fov = 0.8;
-        position = { x: 0, y: 0, z: 0 };
-        constructor(...args: any[]) {}
-        getClassName() {
-            return 'ArcRotateCamera';
-        }
-        attachControl() {}
-        detachControl() {}
-        dispose() {}
-    },
-}));
+vi.mock('@babylonjs/core/Cameras/camera', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { Camera: m.MockCamera };
+});
 
-vi.mock('@babylonjs/core/Cameras/camera', () => ({
-    Camera: class MockCamera {
-        _scene: any;
-        fov = 0.8;
-        position = { x: 0, y: 0, z: 0 };
-        constructor(...args: any[]) {}
-        getClassName() {
-            return 'Camera';
-        }
-        attachControl() {}
-        detachControl() {}
-        dispose() {}
-    },
-}));
+vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { DefaultRenderingPipeline: m.MockDefaultRenderingPipeline };
+});
 
-vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () => ({
-    DefaultRenderingPipeline: class MockPipeline {
-        constructor() {}
-        setRenderCamera() {}
-        dispose() {}
-    },
-}));
+vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => {
+    const m = require('./mocks/babylon-mmd-mocks.ts');
+    return { MmdCamera: m.MockMmdCamera };
+});
 
-vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => ({
-    MmdCamera: class MockMmdCamera {
-        constructor() {}
-    },
-}));
-
-vi.mock('@babylonjs/core/Materials/Textures/texture', () => ({
-    Texture: class MockTexture {
-        _url: string;
-        _scene: any;
-        name = '';
-        url = '';
-        _texture = null;
-        onLoadObservable = { add: vi.fn(), remove: vi.fn() };
-        constructor(url: string, scene: any) {
-            this._url = url;
-            this._scene = scene;
-            this.name = url;
-            this.url = url;
-        }
-        isReady() {
-            return true;
-        }
-        dispose() {}
-        getClassName() {
-            return 'Texture';
-        }
-        clone() {
-            return this;
-        }
-        set onError(_: any) {}
-        get onError() {
-            return undefined;
-        }
-    },
-}));
+vi.mock('@babylonjs/core/Materials/Textures/texture', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { Texture: m.MockTexture };
+});
 
 // Setup minimal model registry
 import { modelRegistry, setLibraryRoot } from '../core/config';

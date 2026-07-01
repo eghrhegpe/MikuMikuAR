@@ -11,27 +11,58 @@ import { deriveLighting, ENV_PRESETS } from './env-lighting';
 // 直接从 impl 导入，避免与 scene-env.ts 的循环依赖
 import * as impl from './scene-env-impl';
 import { scene, setRenderState } from './scene';
-import { setLightState, getLightState, _updateSunDisc, setSkipLightAutoSave } from './scene-lighting';
+import {
+    setLightState,
+    getLightState,
+    _updateSunDisc,
+    setSkipLightAutoSave,
+} from './scene-lighting';
 import type { LightState } from './scene-lighting';
 
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState): void {
-    try { impl.applySky(state); } catch (e) { console.warn('[env] sky fail:', e); }
-    try { impl.applyGround(state); } catch (e) { console.warn('[env] ground fail:', e); }
-    try { impl.applyFog(state); } catch (e) { console.warn('[env] fog fail:', e); }
     try {
-        if (state.waterEnabled) { impl.createWater(state); } else { impl.disposeWater(); }
-    } catch (e) { console.warn('[env] water fail:', e); }
+        impl.applySky(state);
+    } catch (e) {
+        console.warn('[env] sky fail:', e);
+    }
+    try {
+        impl.applyGround(state);
+    } catch (e) {
+        console.warn('[env] ground fail:', e);
+    }
+    try {
+        impl.applyFog(state);
+    } catch (e) {
+        console.warn('[env] fog fail:', e);
+    }
+    try {
+        if (state.waterEnabled) {
+            impl.createWater(state);
+        } else {
+            impl.disposeWater();
+        }
+    } catch (e) {
+        console.warn('[env] water fail:', e);
+    }
     try {
         if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
             impl.createParticleEmitter(state.particleType, state.windEnabled);
         } else {
             impl.disposeParticles();
         }
-    } catch (e) { console.warn('[env] particle fail:', e); }
+    } catch (e) {
+        console.warn('[env] particle fail:', e);
+    }
     try {
-        if (state.cloudsEnabled) { impl.createClouds(state); } else { impl.disposeClouds(); }
-    } catch (e) { console.warn('[env] cloud fail:', e); }
+        if (state.cloudsEnabled) {
+            impl.createClouds(state);
+        } else {
+            impl.disposeClouds();
+        }
+    } catch (e) {
+        console.warn('[env] cloud fail:', e);
+    }
 }
 
 // ======== Gravity ========
@@ -212,7 +243,9 @@ export function applyEnvPreset(name: string): boolean {
 
     const animLoop = () => {
         // 取消检测：新预设已启动，当前动画失效
-        if (_presetAnimId !== myId) return;
+        if (_presetAnimId !== myId) {
+            return;
+        }
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / duration, 1.0);
         const lerp = (a: number, b: number) => a + (b - a) * t;
@@ -235,15 +268,18 @@ export function applyEnvPreset(name: string): boolean {
         ];
 
         // 动画中跳过自动保存，仅更新状态和场景
-        setEnvState({
-            skyMode: 'procedural',
-            skyColorTop: skyTop,
-            skyColorMid: skyMid,
-            skyColorBot: skyBot,
-            skyBrightness: 1.0,
-            sunAngle: preset.sunAngle,
-            azimuth: preset.azimuth ?? -45,
-        }, true); // skipAutoSave
+        setEnvState(
+            {
+                skyMode: 'procedural',
+                skyColorTop: skyTop,
+                skyColorMid: skyMid,
+                skyColorBot: skyBot,
+                skyBrightness: 1.0,
+                sunAngle: preset.sunAngle,
+                azimuth: preset.azimuth ?? -45,
+            },
+            true
+        ); // skipAutoSave
 
         // 插值并应用光照参数
         const interpLight: Partial<LightState> = {};

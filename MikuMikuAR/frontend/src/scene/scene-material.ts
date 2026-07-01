@@ -281,7 +281,9 @@ export function getMatDetailList(
 
 export function getMatParams(id: string, matIndex: number): MaterialCategoryParams | null {
     const modelState = _matState.get(id);
-    if (!modelState) return null;
+    if (!modelState) {
+        return null;
+    }
     const entry = modelState.get(matIndex);
     return entry ? { ...entry } : null;
 }

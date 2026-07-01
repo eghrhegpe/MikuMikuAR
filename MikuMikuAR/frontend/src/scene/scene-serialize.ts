@@ -75,7 +75,9 @@ import type { LipSyncState as LipSyncStateType } from '../motion/lipsync';
 function resolvePathFromRef(filePath: string, libraryRef?: string): string | null {
     if (libraryRef) {
         const resolved = resolveLibraryRef(libraryRef);
-        if (resolved) return resolved;
+        if (resolved) {
+            return resolved;
+        }
     }
     return filePath || null;
 }
@@ -351,7 +353,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     // --- Phase 2: Apply VMD animations and outfit variants by recorded ID ---
     for (let i = 0; i < data.models.length; i++) {
         const id = modelIds[i];
-        if (!id) continue; // Model failed to load
+        if (!id) {
+            continue;
+        } // Model failed to load
 
         const m = data.models[i];
         if (m.vmdPath) {
@@ -422,10 +426,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     // --- Camera VMD ---
     if (data.cameraVmd && data.cameraVmd.path) {
         try {
-            const resolvedPath = resolvePathFromRef(
-                data.cameraVmd.path,
-                data.cameraVmd.libraryRef,
-            );
+            const resolvedPath = resolvePathFromRef(data.cameraVmd.path, data.cameraVmd.libraryRef);
             if (resolvedPath) {
                 await loadCameraVmdFromPath(resolvedPath);
                 if (data.cameraVmd.active) {
@@ -454,7 +455,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                             : null;
                         if (ctx && ctx.state === 'suspended') {
                             console.warn(
-                                '场景恢复: 音频上下文已暂停，跳过自动播放（需用户交互后手动播放）',
+                                '场景恢复: 音频上下文已暂停，跳过自动播放（需用户交互后手动播放）'
                             );
                         } else {
                             resumeAudio();
@@ -475,7 +476,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         for (const p of data.props) {
             try {
                 const resolvedPath = resolvePathFromRef(p.filePath, p.libraryRef);
-                if (!resolvedPath) continue;
+                if (!resolvedPath) {
+                    continue;
+                }
                 const propId = await loadProp(resolvedPath);
                 if (propId) {
                     if (p.uuid) {
@@ -505,7 +508,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             document.dispatchEvent(
                 new CustomEvent('scene-restore-errors', {
                     detail: { errors, total: data.models.length },
-                }),
+                })
             );
         }
     }
@@ -636,7 +639,9 @@ export async function tryRestoreLastScene(): Promise<void> {
 
     try {
         const raw = JSON.parse(json);
-        if (!raw) return;
+        if (!raw) {
+            return;
+        }
 
         // Run version migration before checking version
         const data = migrateScene(raw);
@@ -646,7 +651,7 @@ export async function tryRestoreLastScene(): Promise<void> {
             console.log(`从 v${data.version} 场景文件恢复成功`);
         } else {
             console.warn(
-                `场景文件版本 v${data.version} 不受支持（支持: ${SUPPORTED_VERSIONS.join(', ')}）`,
+                `场景文件版本 v${data.version} 不受支持（支持: ${SUPPORTED_VERSIONS.join(', ')}）`
             );
         }
     } catch (err) {

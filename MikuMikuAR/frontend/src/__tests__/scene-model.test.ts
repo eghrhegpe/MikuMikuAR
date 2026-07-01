@@ -41,7 +41,7 @@ describe('ModelManager — registry', () => {
         mgr = new ModelManager(
             {} as any, // scene mock
             vi.fn(),
-            vi.fn(),
+            vi.fn()
         );
     });
 
@@ -56,7 +56,12 @@ describe('ModelManager — registry', () => {
         expect(mgr.get('a')?.id).toBe('a');
         expect(mgr.get('b')?.id).toBe('b');
         expect(mgr.get('nope')).toBeUndefined();
-        expect(mgr.getAll().map((m) => m.id).sort()).toEqual(['a', 'b']);
+        expect(
+            mgr
+                .getAll()
+                .map((m) => m.id)
+                .sort()
+        ).toEqual(['a', 'b']);
     });
 
     it('remove deletes model and cleans up internal maps', () => {

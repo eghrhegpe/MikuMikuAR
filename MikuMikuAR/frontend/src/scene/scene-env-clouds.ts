@@ -36,7 +36,7 @@ let _noiseTex3D: RawTexture3D | null = null;
 
 /** Integer hash (Wang variant, no periodic patterns) */
 function _hash3D(ix: number, iy: number, iz: number): number {
-    let n = ((ix * 1664525) + (iy * 1013904223) + (iz * 3141592653)) >>> 0;
+    let n = (ix * 1664525 + iy * 1013904223 + iz * 3141592653) >>> 0;
     n = (n ^ (n >>> 16)) >>> 0;
     n = Math.imul(n, 0x85ebca6b) >>> 0;
     n = (n ^ (n >>> 13)) >>> 0;
@@ -71,12 +71,15 @@ function _ensureNoiseTexture(scene: Scene): RawTexture3D {
     const S = 256;
     const data = _generateNoise3D();
     _noiseTex3D = new RawTexture3D(
-        data, S, S, S,
+        data,
+        S,
+        S,
+        S,
         Engine.TEXTUREFORMAT_R,
         scene,
         false,
         false,
-        Texture.TRILINEAR_SAMPLINGMODE,
+        Texture.TRILINEAR_SAMPLINGMODE
     );
     _noiseTex3D.wrapU = Texture.WRAP_ADDRESSMODE;
     _noiseTex3D.wrapV = Texture.WRAP_ADDRESSMODE;
@@ -99,7 +102,7 @@ function _computeWindVelocity(state: EnvState): [number, number, number] {
     const dz = state.windDirection[2];
     const dirLen = Math.sqrt(dx * dx + dz * dz) || 1;
     const speed = state.windSpeed * 2.0;
-    return [dx / dirLen * speed, 0, dz / dirLen * speed];
+    return [(dx / dirLen) * speed, 0, (dz / dirLen) * speed];
 }
 
 // ======== Shader constants, injected from TS ========
@@ -344,7 +347,9 @@ export function createClouds(state: EnvState): void {
 
     const followObs = scene.onBeforeRenderObservable.add(() => {
         const cam = scene.activeCamera;
-        if (!cam) return;
+        if (!cam) {
+            return;
+        }
         mesh.position.x = cam.position.x;
         mesh.position.z = cam.position.z;
     });
@@ -399,7 +404,9 @@ export function createClouds(state: EnvState): void {
     const startTime = performance.now();
     const obs = scene.onBeforeRenderObservable.add(() => {
         const cam = scene.activeCamera;
-        if (!cam) return;
+        if (!cam) {
+            return;
+        }
         mat.setFloat('time', (performance.now() - startTime) / 1000);
         mat.setVector3('cameraPosition', cam.position);
         const dl = scene.getLightByName('dir') as DirectionalLight;

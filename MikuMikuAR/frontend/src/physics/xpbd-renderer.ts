@@ -162,12 +162,16 @@ export class XpbdRenderer {
 
         const positions: number[] = [];
         for (const c of solver.constraints) {
-            if (c.type === 'volume') continue;
+            if (c.type === 'volume') {
+                continue;
+            }
             const i = c.indices[0];
             const k = c.indices[c.indices.length - 1];
             const pi = solver.particles[i];
             const pk = solver.particles[k];
-            if (!pi || !pk) continue;
+            if (!pi || !pk) {
+                continue;
+            }
             positions.push(pi.p[0], pi.p[1], pi.p[2]);
             positions.push(pk.p[0], pk.p[1], pk.p[2]);
         }
@@ -202,7 +206,12 @@ export class XpbdRenderer {
             );
         } else {
             // 复用：仅更新顶点缓冲区
-            (this.constraintLines as any).updateVerticesData('position', new Float32Array(positions), false, true);
+            (this.constraintLines as any).updateVerticesData(
+                'position',
+                new Float32Array(positions),
+                false,
+                true
+            );
         }
     }
 
@@ -222,10 +231,14 @@ export class XpbdRenderer {
         }
         this.colliderMeshes = [];
 
-        if (!this.colliderVisible) return;
+        if (!this.colliderVisible) {
+            return;
+        }
 
         for (const cap of collider.capsules) {
-            if (!cap.enabled) continue;
+            if (!cap.enabled) {
+                continue;
+            }
 
             const sphere1 = MeshBuilder.CreateSphere(
                 `xpbd_collider_${cap.name}`,
@@ -252,9 +265,17 @@ export class XpbdRenderer {
             // 两端球体位置
             const hh = cap.halfHeight;
             const dir = this._tmpVec.set(cap.direction[0], cap.direction[1], cap.direction[2]);
-            sphere1.position.set(cap.center[0] + dir.x * hh, cap.center[1] + dir.y * hh, cap.center[2] + dir.z * hh);
+            sphere1.position.set(
+                cap.center[0] + dir.x * hh,
+                cap.center[1] + dir.y * hh,
+                cap.center[2] + dir.z * hh
+            );
             cylinder.position.set(cap.center[0], cap.center[1], cap.center[2]);
-            sphere2.position.set(cap.center[0] - dir.x * hh, cap.center[1] - dir.y * hh, cap.center[2] - dir.z * hh);
+            sphere2.position.set(
+                cap.center[0] - dir.x * hh,
+                cap.center[1] - dir.y * hh,
+                cap.center[2] - dir.z * hh
+            );
 
             // 使用四元数对齐圆柱体到 direction（默认沿 Y 轴）
             Quaternion.RotationYawPitchRollToRef(0, 0, 0, this._tmpQuat);

@@ -173,7 +173,9 @@ const iconMap: Record<string, unknown> = {
     'zoom-in': zoomIn,
 };
 
-const Iconify = (window as unknown as { Iconify: { addIcon: (name: string, data: unknown) => void } }).Iconify;
+const Iconify = (
+    window as unknown as { Iconify: { addIcon: (name: string, data: unknown) => void } }
+).Iconify;
 if (Iconify && typeof Iconify.addIcon === 'function') {
     for (const [name, data] of Object.entries(iconMap)) {
         Iconify.addIcon(`lucide:${name}`, data);

@@ -67,7 +67,9 @@ export function parseVPDText(text: string): VPDPoseData {
         if (_nonBonePrefix.test(line)) {
             if (line.startsWith('model')) {
                 const m = line.match(/model\s+"([^"]+)"/);
-                if (m) modelName = m[1];
+                if (m) {
+                    modelName = m[1];
+                }
             }
             i++;
             continue;
@@ -81,9 +83,12 @@ export function parseVPDText(text: string): VPDPoseData {
             if (_numericLine.test(lines[i + 1]) && _numericLine.test(lines[i + 2])) {
                 const posParts = lines[i + 1].split(/\s+/).map(Number);
                 const rotParts = lines[i + 2].split(/\s+/).map(Number);
-                if (posParts.length >= 3 && rotParts.length >= 4 &&
+                if (
+                    posParts.length >= 3 &&
+                    rotParts.length >= 4 &&
                     posParts.every((v: number) => isFinite(v)) &&
-                    rotParts.every((v: number) => isFinite(v))) {
+                    rotParts.every((v: number) => isFinite(v))
+                ) {
                     bones.push({
                         name,
                         position: [posParts[0], posParts[1], posParts[2]],

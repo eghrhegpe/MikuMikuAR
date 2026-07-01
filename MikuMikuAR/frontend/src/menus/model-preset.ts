@@ -282,7 +282,9 @@ export async function tryAutoApplyPreset(id: string): Promise<void> {
     }
     setStatus('正在加载预设库...', false);
     const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
-    if (entries.length === 0) return;
+    if (entries.length === 0) {
+        return;
+    }
     const libraryRef = computeLibraryRef(inst.filePath);
     const match = entries.find((e) => {
         if (!e.name) {
@@ -427,8 +429,10 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
         renderCustom: async (container) => {
             container.classList.remove('render-card');
             setStatus('正在加载预设库...', false);
-    const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
-    if (entries.length === 0) return;
+            const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
+            if (entries.length === 0) {
+                return;
+            }
             if (entries.length === 0) {
                 const empty = document.createElement('div');
                 empty.style.cssText =

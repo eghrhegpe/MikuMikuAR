@@ -27,9 +27,9 @@ let _baseMaxEmitPower = 0;
 
 // ---------- 全景天气 vs 局部效果参数 ----------
 // 全景天气（雨/雪/樱花/落叶）：粒子出生在世界地面以上固定高度，XZ 大幅覆盖
-const WEATHER_HEIGHT_ABOVE_GROUND = 25;   // 发射器在 groundLevel 以上 25 单位
-const WEATHER_BOX_Y_RANGE = 5;            // box emitter 垂直带宽度（出生 Y 偏移范围）
-const WEATHER_BOX_XZ_HALF = 40;           // XZ 半宽（80×80 覆盖区）
+const WEATHER_HEIGHT_ABOVE_GROUND = 25; // 发射器在 groundLevel 以上 25 单位
+const WEATHER_BOX_Y_RANGE = 5; // box emitter 垂直带宽度（出生 Y 偏移范围）
+const WEATHER_BOX_XZ_HALF = 40; // XZ 半宽（80×80 覆盖区）
 
 // 局部效果：相对于 groundLevel 的偏移
 const FIREFLY_HEIGHT_OFFSET = 1.5;

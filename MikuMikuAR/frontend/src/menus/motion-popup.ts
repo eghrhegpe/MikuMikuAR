@@ -158,7 +158,9 @@ function buildActionBindingLevel(id: string): PopupLevel {
                         (m) => m.format === 'vmd'
                     );
                     level.label = `绑定动作 → ${inst.name}`;
-                    if (motionMenu) motionMenu.push(level);
+                    if (motionMenu) {
+                        motionMenu.push(level);
+                    }
                 });
                 c.appendChild(row);
                 slideRow(c, 'lucide:user', '加载姿势 (VPD)', false, async () => {
@@ -200,7 +202,9 @@ function buildActionBindingLevel(id: string): PopupLevel {
                                 enabled,
                                 (v) => {
                                     setPhysicsCategory(id, cat, v);
-                                    if (motionMenu) motionMenu.reRender();
+                                    if (motionMenu) {
+                                        motionMenu.reRender();
+                                    }
                                     setStatus(
                                         v
                                             ? `✓ ${CAT_LABELS[cat] || cat} 已开启`
@@ -511,7 +515,9 @@ function makeMotionMenu(): SlideMenu {
                                 setIsPlaying(false);
                             }
                             updatePlaybackUI();
-                            if (motionMenu) motionMenu.reRender();
+                            if (motionMenu) {
+                                motionMenu.reRender();
+                            }
                             setStatus('✓ 动作已重置', true);
                         }
                         break;
@@ -573,10 +579,14 @@ export function showMotionPopup(): void {
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:music', '舞蹈套装', true, () => {
                     const level = buildDanceSetsOverviewLevel();
-                    if (motionMenu) motionMenu.push(level);
+                    if (motionMenu) {
+                        motionMenu.push(level);
+                    }
                 });
                 slideRow(c, 'lucide:music', '音乐', true, () => {
-                    if (motionMenu) motionMenu.push(buildActionMusicLevel());
+                    if (motionMenu) {
+                        motionMenu.push(buildActionMusicLevel());
+                    }
                 });
             });
 

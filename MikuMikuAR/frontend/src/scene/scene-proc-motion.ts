@@ -76,7 +76,10 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     _procVmdActive = true;
     procModelId = modelIdAtStart;
     try {
-        await loadVMDMotion(buf, targetMode === 'autodance' && bpmValid ? 'AutoDance' : 'IdleMotion');
+        await loadVMDMotion(
+            buf,
+            targetMode === 'autodance' && bpmValid ? 'AutoDance' : 'IdleMotion'
+        );
 
         // Issue #3: 验证焦点模型是否在异步期间被切换
         const currentId = focusedModelId ?? null;

@@ -205,14 +205,13 @@ export function createCloth(
     solver.addGroundCollision(-5);
 
     // ---- Mesh 创建 ----
-    const { mesh, indices: meshIndices, uvCache, positionCache, normalCache } = _createClothMesh(
-        scene,
-        cfg,
-        particleGrid,
-        solver,
-        ringSize,
-        ringCount
-    );
+    const {
+        mesh,
+        indices: meshIndices,
+        uvCache,
+        positionCache,
+        normalCache,
+    } = _createClothMesh(scene, cfg, particleGrid, solver, ringSize, ringCount);
 
     const instance: ClothInstance = {
         config: cfg,
@@ -312,7 +311,7 @@ export function buildClothUpdateFn(
             if (missingBones > 0 && !cloth._anchorMissingWarned) {
                 console.warn(
                     `[xpbd-cloth] ${missingBones} collision capsule bone(s) not found, ` +
-                    'affected capsules will skip collision this frame.'
+                        'affected capsules will skip collision this frame.'
                 );
             }
             collider.updateMatrices(matrices);
@@ -346,7 +345,13 @@ function _createClothMesh(
     solver: XpbdSolver,
     ringSize: number,
     ringCount: number
-): { mesh: Mesh | null; indices: Int32Array; uvCache: Float32Array; positionCache: Float32Array; normalCache: Float32Array } {
+): {
+    mesh: Mesh | null;
+    indices: Int32Array;
+    uvCache: Float32Array;
+    positionCache: Float32Array;
+    normalCache: Float32Array;
+} {
     // 收集顶点位置（从粒子读取初始 position）
     const positions: number[] = [];
     // UV: 按柱面展开，u = col/ringSize, v = row/(ringCount-1)
@@ -402,7 +407,13 @@ function _createClothMesh(
     mat.specularColor = new Color3(0.1, 0.1, 0.1);
     mesh.material = mat;
 
-    return { mesh, indices: new Int32Array(indexArray), uvCache: new Float32Array(uvs), positionCache: posArr, normalCache: normals };
+    return {
+        mesh,
+        indices: new Int32Array(indexArray),
+        uvCache: new Float32Array(uvs),
+        positionCache: posArr,
+        normalCache: normals,
+    };
 }
 
 /**

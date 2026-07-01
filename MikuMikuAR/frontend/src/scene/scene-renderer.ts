@@ -322,12 +322,15 @@ export function transitionRenderState(
      */
     function shouldActivateBool(key: keyof RenderState, t: number): boolean {
         const targetVal = target[key] as boolean | undefined;
-        if (targetVal === undefined) return source[key] as boolean;
+        if (targetVal === undefined) {
+            return source[key] as boolean;
+        }
 
         if (targetVal) {
             // 从 false → true：当关联数值超过半程时提前启用
             if (key === 'bloomEnabled') {
-                const b = target.bloomWeight !== undefined ? target.bloomWeight : source.bloomWeight;
+                const b =
+                    target.bloomWeight !== undefined ? target.bloomWeight : source.bloomWeight;
                 return t >= 0.3 || (b > 0 && source.bloomWeight > 0);
             }
             if (key === 'dofEnabled') {
@@ -343,7 +346,7 @@ export function transitionRenderState(
             return t >= 1;
         } else {
             // 从 true → false：动画结束时再禁用
-            return t >= 1 ? false : source[key] as boolean;
+            return t >= 1 ? false : (source[key] as boolean);
         }
     }
 

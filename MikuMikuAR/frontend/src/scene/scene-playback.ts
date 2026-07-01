@@ -99,7 +99,8 @@ export function initPlaybackObservables(
                     _loopPending = false;
                     return;
                 }
-                runtime.playAnimation()
+                runtime
+                    .playAnimation()
                     .then(() => {
                         _loopPending = false;
                         setIsPlaying(true);

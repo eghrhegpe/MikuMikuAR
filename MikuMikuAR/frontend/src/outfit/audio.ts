@@ -47,7 +47,9 @@ export async function loadAudioFile(filePath: string): Promise<void> {
     const myLoadId = ++_loadId; // 事务 ID，防止竞态
     const { url } = await resolveFileUrl(filePath);
     // 如果在解析 URL 期间又触发了新的加载，放弃本次
-    if (myLoadId !== _loadId) return;
+    if (myLoadId !== _loadId) {
+        return;
+    }
     const fileName = filePath.split(/[\\/]/).pop() || '';
     const audio = ensureAudio();
     audio.src = url;
@@ -60,7 +62,9 @@ export async function loadAudioFile(filePath: string): Promise<void> {
         /* browser may block autoplay */
     }
     // 再次检查：play 期间可能被新加载覆盖
-    if (myLoadId !== _loadId) return;
+    if (myLoadId !== _loadId) {
+        return;
+    }
     notifyBeatDetectorReset();
     triggerAutoSave();
 }

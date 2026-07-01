@@ -68,12 +68,27 @@ export class SlideMenu {
         // 键盘导航
         this.container.tabIndex = -1;
         this._keydownHandler = (e) => {
-            if (this.transitioning) return;
+            if (this.transitioning) {
+                return;
+            }
             switch (e.key) {
-                case 'ArrowDown': e.preventDefault(); this.focusNext(); break;
-                case 'ArrowUp': e.preventDefault(); this.focusPrev(); break;
-                case 'ArrowRight': case 'Enter': e.preventDefault(); this.activateFocused(); break;
-                case 'ArrowLeft': e.preventDefault(); this.pop(); break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    this.focusNext();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    this.focusPrev();
+                    break;
+                case 'ArrowRight':
+                case 'Enter':
+                    e.preventDefault();
+                    this.activateFocused();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    this.pop();
+                    break;
             }
         };
         this.container.addEventListener('keydown', this._keydownHandler);
@@ -135,25 +150,29 @@ export class SlideMenu {
                 this.onAfterRender?.(level, this);
             };
             this.panel.addEventListener('transitionend', onFadeIn);
-            this._pushTimeout(setTimeout(() => {
-                if (this.transitioning) {
-                    this.panel.style.opacity = '1';
-                    this.panel.style.transform = 'translateY(0)';
-                    this.transitioning = false;
-                    this.setupFocus();
-                    this.onAfterRender?.(level, this);
-                }
-            }, 200));
+            this._pushTimeout(
+                setTimeout(() => {
+                    if (this.transitioning) {
+                        this.panel.style.opacity = '1';
+                        this.panel.style.transform = 'translateY(0)';
+                        this.transitioning = false;
+                        this.setupFocus();
+                        this.onAfterRender?.(level, this);
+                    }
+                }, 200)
+            );
         };
 
         this.panel.addEventListener('transitionend', onFadeOut);
-        this._pushTimeout(setTimeout(() => {
-            if (this.transitioning) {
-                this.panel.style.opacity = '0';
-                this.panel.style.transform = 'translateY(-8px)';
-                onFadeOut();
-            }
-        }, 150));
+        this._pushTimeout(
+            setTimeout(() => {
+                if (this.transitioning) {
+                    this.panel.style.opacity = '0';
+                    this.panel.style.transform = 'translateY(-8px)';
+                    onFadeOut();
+                }
+            }, 150)
+        );
     }
 
     pop(): void {
@@ -188,30 +207,38 @@ export class SlideMenu {
                 this.onAfterRender?.(prevLevel, this);
             };
             this.panel.addEventListener('transitionend', onFadeIn);
-            this._pushTimeout(setTimeout(() => {
-                if (this.transitioning) {
-                    this.panel.style.opacity = '1';
-                    this.panel.style.transform = 'translateY(0)';
-                    this.transitioning = false;
-                    this.setupFocus();
-                    this.onAfterRender?.(prevLevel, this);
-                }
-            }, 200));
+            this._pushTimeout(
+                setTimeout(() => {
+                    if (this.transitioning) {
+                        this.panel.style.opacity = '1';
+                        this.panel.style.transform = 'translateY(0)';
+                        this.transitioning = false;
+                        this.setupFocus();
+                        this.onAfterRender?.(prevLevel, this);
+                    }
+                }, 200)
+            );
         };
 
         this.panel.addEventListener('transitionend', onFadeOut);
-        this._pushTimeout(setTimeout(() => {
-            if (this.transitioning) {
-                this.panel.style.opacity = '0';
-                this.panel.style.transform = 'translateY(8px)';
-                onFadeOut();
-            }
-        }, 150));
+        this._pushTimeout(
+            setTimeout(() => {
+                if (this.transitioning) {
+                    this.panel.style.opacity = '0';
+                    this.panel.style.transform = 'translateY(8px)';
+                    onFadeOut();
+                }
+            }, 150)
+        );
     }
 
     popTo(index: number): void {
-        if (index < 0 || index >= this.levels.length || this.transitioning) return;
-        if (index === this.levels.length - 1) return;
+        if (index < 0 || index >= this.levels.length || this.transitioning) {
+            return;
+        }
+        if (index === this.levels.length - 1) {
+            return;
+        }
         this._cancelAnim();
         this.levels = this.levels.slice(0, index + 1);
         const level = this.currentLevel!;
@@ -226,9 +253,13 @@ export class SlideMenu {
     }
 
     reRender(): void {
-        if (this.transitioning) return;
+        if (this.transitioning) {
+            return;
+        }
         const level = this.currentLevel;
-        if (!level) return;
+        if (!level) {
+            return;
+        }
         this._cachedExtraBtns = null;
         this.buildPanel(level).then(() => {
             this.updateHeader(level);
@@ -267,7 +298,9 @@ export class SlideMenu {
 
     /** 清除所有未决的动画后备 setTimeout */
     private _cancelTimeout(): void {
-        for (const id of this._pendingTimeouts) clearTimeout(id);
+        for (const id of this._pendingTimeouts) {
+            clearTimeout(id);
+        }
         this._pendingTimeouts = [];
     }
 
@@ -341,7 +374,9 @@ export class SlideMenu {
         } else {
             for (const row of level.items) {
                 const el = this.createRow(row);
-                if (el) list.appendChild(el);
+                if (el) {
+                    list.appendChild(el);
+                }
             }
         }
         this.panel.appendChild(list);

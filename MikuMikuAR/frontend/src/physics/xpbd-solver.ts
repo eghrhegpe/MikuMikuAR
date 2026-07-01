@@ -138,7 +138,9 @@ export class XpbdSolver {
             return;
         }
         const p = this.particles[idx];
-        if (p.invMass === 0) return;
+        if (p.invMass === 0) {
+            return;
+        }
         p.invMass = 0;
         this.constraints = this.constraints.filter((c) => !c.indices.includes(idx));
     }
@@ -269,15 +271,21 @@ export class XpbdSolver {
             // ---- 子步内 Verlet 积分 ----
             for (let i = 0; i < this.particles.length; i++) {
                 const p = this.particles[i];
-                if (p.invMass === 0) continue;
+                if (p.invMass === 0) {
+                    continue;
+                }
 
-                const px = p.p[0], py = p.p[1], pz = p.p[2];
-                const prevX = p.prevP[0], prevY = p.prevP[1], prevZ = p.prevP[2];
+                const px = p.p[0],
+                    py = p.p[1],
+                    pz = p.p[2];
+                const prevX = p.prevP[0],
+                    prevY = p.prevP[1],
+                    prevZ = p.prevP[2];
 
                 // 速度（带阻尼）: v = (p - prevP) * damping / subDt
-                let vx = (px - prevX) * this.damping / subDt;
-                let vy = (py - prevY) * this.damping / subDt;
-                let vz = (pz - prevZ) * this.damping / subDt;
+                let vx = ((px - prevX) * this.damping) / subDt;
+                let vy = ((py - prevY) * this.damping) / subDt;
+                let vz = ((pz - prevZ) * this.damping) / subDt;
 
                 // 重力: v += gravity * subDt
                 vx += this.gravity[0] * subDt;
@@ -285,7 +293,9 @@ export class XpbdSolver {
                 vz += this.gravity[2] * subDt;
 
                 // 保存旧位置
-                p.prevP[0] = px; p.prevP[1] = py; p.prevP[2] = pz;
+                p.prevP[0] = px;
+                p.prevP[1] = py;
+                p.prevP[2] = pz;
 
                 // p += v * subDt
                 p.p[0] = px + vx * subDt;
@@ -302,7 +312,9 @@ export class XpbdSolver {
             if (this.groundCollisionEnabled) {
                 for (let i = 0; i < this.particles.length; i++) {
                     const p = this.particles[i];
-                    if (p.invMass === 0) continue;
+                    if (p.invMass === 0) {
+                        continue;
+                    }
                     const ground = this.groundY + p.radius;
                     if (p.p[1] < ground) {
                         // 垂直速度 = (p - prevP) / subDt，反弹部分速度
@@ -319,7 +331,9 @@ export class XpbdSolver {
         for (let i = 0; i < this.particles.length; i++) {
             const p = this.particles[i];
             if (p.invMass === 0) {
-                p.v[0] = 0; p.v[1] = 0; p.v[2] = 0;
+                p.v[0] = 0;
+                p.v[1] = 0;
+                p.v[2] = 0;
                 continue;
             }
             p.v[0] = (p.p[0] - p.prevP[0]) * invDt;

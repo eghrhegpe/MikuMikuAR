@@ -25,7 +25,9 @@ export function buildOutfitLevel(id: string): PopupLevel {
                 if (!outfit) {
                     try {
                         outfit = await loadOutfits(id);
-                        if (outfit) inst.outfitFile = outfit;
+                        if (outfit) {
+                            inst.outfitFile = outfit;
+                        }
                     } catch (err) {
                         console.warn('buildOutfitLevel: loadOutfits failed', err);
                         container.textContent = '⚠ 加载服装配置失败';
@@ -36,7 +38,8 @@ export function buildOutfitLevel(id: string): PopupLevel {
                     const empty = document.createElement('div');
                     empty.style.cssText =
                         'font-size:11px;color:var(--text-dim);text-align:center;padding:20px;line-height:1.6;';
-                    empty.textContent = '此模型无 outfits.json 配置。在模型所在目录创建 outfits.json 即可启用服装变体。';
+                    empty.textContent =
+                        '此模型无 outfits.json 配置。在模型所在目录创建 outfits.json 即可启用服装变体。';
                     container.appendChild(empty);
                     return;
                 }
@@ -62,7 +65,9 @@ export function buildOutfitLevel(id: string): PopupLevel {
                     defLabel.textContent = '默认';
                     defRow.appendChild(defLabel);
                     defRow.addEventListener('click', async () => {
-                        if (_loading) return;
+                        if (_loading) {
+                            return;
+                        }
                         _loading = true;
                         setStatus('⏳ 切换变体中…', true);
                         try {
@@ -88,18 +93,20 @@ export function buildOutfitLevel(id: string): PopupLevel {
                         label.textContent = v.name;
                         row.appendChild(label);
                         row.addEventListener('click', async () => {
-                        if (_loading) return;
-                        _loading = true;
-                        setStatus('⏳ 切换变体中…', true);
-                        try {
-                            await applyOutfitVariant(id, v.name);
-                            setStatus('✓ 变体已切换', true);
-                        } catch (e) {
-                            setStatus('✗ 切换变体失败', false);
-                        }
-                        _loading = false;
-                        await _render();
-                    });
+                            if (_loading) {
+                                return;
+                            }
+                            _loading = true;
+                            setStatus('⏳ 切换变体中…', true);
+                            try {
+                                await applyOutfitVariant(id, v.name);
+                                setStatus('✓ 变体已切换', true);
+                            } catch (e) {
+                                setStatus('✗ 切换变体失败', false);
+                            }
+                            _loading = false;
+                            await _render();
+                        });
                         c.appendChild(row);
                     }
 
@@ -108,12 +115,16 @@ export function buildOutfitLevel(id: string): PopupLevel {
                     resetBtn.textContent = '重置全部';
                     resetBtn.style.cssText = 'width:100%;margin-top:8px;';
                     resetBtn.addEventListener('click', async () => {
-                        if (_loading) return;
+                        if (_loading) {
+                            return;
+                        }
                         _loading = true;
                         setStatus('⏳ 重置服装中…', true);
                         try {
                             const newOutfit = await loadOutfits(id);
-                            if (newOutfit) inst.outfitFile = newOutfit;
+                            if (newOutfit) {
+                                inst.outfitFile = newOutfit;
+                            }
                             resetOutfit(id);
                             setStatus('✓ 服装已重置', true);
                         } catch (e) {

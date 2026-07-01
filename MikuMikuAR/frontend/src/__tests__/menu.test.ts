@@ -135,7 +135,9 @@ describe('SlideMenu — 渲染', () => {
                 c.appendChild(div);
             },
         };
-        (menu as any).onAfterRender = () => { rendered = true; };
+        (menu as any).onAfterRender = () => {
+            rendered = true;
+        };
         menu.reset(level);
         // 等待 buildPanel 的 async 回调 + onAfterRender
         while (!rendered) {

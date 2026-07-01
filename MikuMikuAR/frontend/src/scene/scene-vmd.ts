@@ -74,7 +74,9 @@ export async function loadVMDMotion(
         // Bind to model
         if (!inst.mmdModel) {
             // wasmAnimation 已创建但模型是 Stage，无法绑定 — 清理避免泄漏
-            try { wasmAnimation.dispose?.(); } catch {}
+            try {
+                wasmAnimation.dispose?.();
+            } catch {}
             setStatus('✗ 舞台模型不支持 VMD', false);
             return;
         }

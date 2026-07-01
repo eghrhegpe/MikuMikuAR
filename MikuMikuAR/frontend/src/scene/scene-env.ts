@@ -125,9 +125,21 @@ export function setTimeOfDaySpeed(s: number): void {
 // ======== Full apply (called by setEnvState in scene.ts) ========
 
 export function applyEnvState(state: EnvState): void {
-    try { impl.applySky(state); } catch (e) { console.warn('[env] sky fail:', e); }
-    try { impl.applyGround(state); } catch (e) { console.warn('[env] ground fail:', e); }
-    try { impl.applyFog(state); } catch (e) { console.warn('[env] fog fail:', e); }
+    try {
+        impl.applySky(state);
+    } catch (e) {
+        console.warn('[env] sky fail:', e);
+    }
+    try {
+        impl.applyGround(state);
+    } catch (e) {
+        console.warn('[env] ground fail:', e);
+    }
+    try {
+        impl.applyFog(state);
+    } catch (e) {
+        console.warn('[env] fog fail:', e);
+    }
 
     // Water
     try {
@@ -136,7 +148,9 @@ export function applyEnvState(state: EnvState): void {
         } else {
             impl.disposeWater();
         }
-    } catch (e) { console.warn('[env] water fail:', e); }
+    } catch (e) {
+        console.warn('[env] water fail:', e);
+    }
 
     // Particles
     try {
@@ -146,7 +160,9 @@ export function applyEnvState(state: EnvState): void {
         } else {
             impl.disposeParticles();
         }
-    } catch (e) { console.warn('[env] particle fail:', e); }
+    } catch (e) {
+        console.warn('[env] particle fail:', e);
+    }
 
     // Clouds
     try {
@@ -155,5 +171,7 @@ export function applyEnvState(state: EnvState): void {
         } else {
             impl.disposeClouds();
         }
-    } catch (e) { console.warn('[env] cloud fail:', e); }
+    } catch (e) {
+        console.warn('[env] cloud fail:', e);
+    }
 }

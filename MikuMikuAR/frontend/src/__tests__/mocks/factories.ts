@@ -2,24 +2,53 @@
 // 用于快速创建常见的 mock 对象（mesh、material、model 等）
 // 所有工厂函数返回的对象结构与 Babylon.js 对应类兼容
 
-import { MockStandardMaterial, MockMesh, MockEngine, MockScene, MockColor3 } from './babylon-classes';
+import {
+    MockStandardMaterial,
+    MockMesh,
+    MockEngine,
+    MockScene,
+    MockColor3,
+} from './babylon-classes';
 
 /** 创建一个 mock StandardMaterial 实例（可通过 instanceof 守卫） */
-export function createMockMaterial(name = 'mat0', opts?: Partial<{
-    diffuseR: number; diffuseG: number; diffuseB: number;
-    specularR: number; specularG: number; specularB: number;
-    specularPower: number;
-    alpha: number;
-}>): any {
+export function createMockMaterial(
+    name = 'mat0',
+    opts?: Partial<{
+        diffuseR: number;
+        diffuseG: number;
+        diffuseB: number;
+        specularR: number;
+        specularG: number;
+        specularB: number;
+        specularPower: number;
+        alpha: number;
+    }>
+): any {
     const mat = new MockStandardMaterial(name);
-    if (opts?.diffuseR !== undefined) mat.diffuseColor.r = opts.diffuseR;
-    if (opts?.diffuseG !== undefined) mat.diffuseColor.g = opts.diffuseG;
-    if (opts?.diffuseB !== undefined) mat.diffuseColor.b = opts.diffuseB;
-    if (opts?.specularR !== undefined) mat.specularColor.r = opts.specularR;
-    if (opts?.specularG !== undefined) mat.specularColor.g = opts.specularG;
-    if (opts?.specularB !== undefined) mat.specularColor.b = opts.specularB;
-    if (opts?.specularPower !== undefined) mat.specularPower = opts.specularPower;
-    if (opts?.alpha !== undefined) mat.alpha = opts.alpha;
+    if (opts?.diffuseR !== undefined) {
+        mat.diffuseColor.r = opts.diffuseR;
+    }
+    if (opts?.diffuseG !== undefined) {
+        mat.diffuseColor.g = opts.diffuseG;
+    }
+    if (opts?.diffuseB !== undefined) {
+        mat.diffuseColor.b = opts.diffuseB;
+    }
+    if (opts?.specularR !== undefined) {
+        mat.specularColor.r = opts.specularR;
+    }
+    if (opts?.specularG !== undefined) {
+        mat.specularColor.g = opts.specularG;
+    }
+    if (opts?.specularB !== undefined) {
+        mat.specularColor.b = opts.specularB;
+    }
+    if (opts?.specularPower !== undefined) {
+        mat.specularPower = opts.specularPower;
+    }
+    if (opts?.alpha !== undefined) {
+        mat.alpha = opts.alpha;
+    }
     return mat;
 }
 
@@ -58,10 +87,20 @@ export function createMockColor3(r = 0, g = 0, b = 0): any {
 /** 向 DOM 注入测试必需的元素（供 config.ts 的 dom 引用） */
 export function setupMockDom(extraIds: string[] = []): void {
     const ids = [
-        'renderCanvas', 'statusBar', 'loading', 'loadingText',
-        'btnMainAction', 'btnMotionPopup', 'playbackBar',
-        'btnPlayPause', 'btnLoopToggle', 'timeDisplay',
-        'seekBar', 'seekProgress', 'btnSettings', 'btnScene',
+        'renderCanvas',
+        'statusBar',
+        'loading',
+        'loadingText',
+        'btnMainAction',
+        'btnMotionPopup',
+        'playbackBar',
+        'btnPlayPause',
+        'btnLoopToggle',
+        'timeDisplay',
+        'seekBar',
+        'seekProgress',
+        'btnSettings',
+        'btnScene',
         'sceneOverlay',
         ...extraIds,
     ];

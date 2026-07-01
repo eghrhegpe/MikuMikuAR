@@ -200,7 +200,9 @@ async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
         return;
     }
     // 标记为飞行中，防止并发重复请求
-    for (const p of uncached) _pendingMeta.add(p);
+    for (const p of uncached) {
+        _pendingMeta.add(p);
+    }
     try {
         const batch = await GetModelMetaBatch(uncached);
         if (batch) {
@@ -213,7 +215,9 @@ async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
     } catch (err) {
         console.warn('ensureModelMeta:', err);
     } finally {
-        for (const p of uncached) _pendingMeta.delete(p);
+        for (const p of uncached) {
+            _pendingMeta.delete(p);
+        }
     }
 }
 const _pendingMeta = new Set<string>();
@@ -241,12 +245,7 @@ function renderItemsWithRAF(
                 item.kind === 'folder',
                 () => {
                     if (item.kind === 'folder') {
-                        const next = buildLevel(
-                            item.target,
-                            item.label,
-                            filter,
-                            targetStack
-                        );
+                        const next = buildLevel(item.target, item.label, filter, targetStack);
                         const stack = targetStack || stackRegistry.modelStack;
                         stack.push(next);
                     } else if (item.model) {
@@ -283,12 +282,7 @@ function renderItemsWithRAF(
                 item.kind === 'folder',
                 () => {
                     if (item.kind === 'folder') {
-                        const next = buildLevel(
-                            item.target,
-                            item.label,
-                            filter,
-                            targetStack
-                        );
+                        const next = buildLevel(item.target, item.label, filter, targetStack);
                         const stack = targetStack || stackRegistry.modelStack;
                         stack.push(next);
                     } else if (item.model) {
@@ -469,7 +463,9 @@ function onModelRowClick(m: LibraryModel): void {
             .catch((err) => {
                 setStatus('✗ 解压失败: ' + formatError(err), false);
             })
-            .finally(() => { _isExtracting = false; });
+            .finally(() => {
+                _isExtracting = false;
+            });
         return;
     }
     closeAllOverlays();
@@ -879,7 +875,11 @@ function getCurrentBrowsePath(): string[] {
     return dirs;
 }
 
-function hasSubdir(parentDir: string, childName: string, filter?: (m: LibraryModel) => boolean): boolean {
+function hasSubdir(
+    parentDir: string,
+    childName: string,
+    filter?: (m: LibraryModel) => boolean
+): boolean {
     const parent = normPath(parentDir);
     for (const m of allModels) {
         if (filter && !filter(m)) {
@@ -960,7 +960,10 @@ export async function refreshLibrary(): Promise<void> {
 
 document.addEventListener('mmku:modelLoaded', () => {
     // 仅弹窗可见时刷新，避免干扰其他弹窗或后台操作
-    if (!dom.sceneOverlay.classList.contains('visible') || dom.sceneOverlay.dataset.popupType !== 'model') {
+    if (
+        !dom.sceneOverlay.classList.contains('visible') ||
+        dom.sceneOverlay.dataset.popupType !== 'model'
+    ) {
         return;
     }
     // If the popup is visible, this resets the view to top-level (intentional).

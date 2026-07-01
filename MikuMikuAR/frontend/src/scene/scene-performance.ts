@@ -47,16 +47,52 @@ interface LevelConfig {
 }
 
 const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
-    0: { shadowResolution: 2048, shadowEnabled: true, bloomEnabled: true, dofEnabled: true, vignetteEnabled: true, fxaaEnabled: true, outlineEnabled: true, label: '正常' },
-    1: { shadowResolution: 512, shadowEnabled: true, bloomEnabled: false, dofEnabled: true, vignetteEnabled: true, fxaaEnabled: true, outlineEnabled: true, label: '轻度降级' },
-    2: { shadowResolution: 512, shadowEnabled: false, bloomEnabled: false, dofEnabled: false, vignetteEnabled: false, fxaaEnabled: false, outlineEnabled: true, label: '中度降级' },
-    3: { shadowResolution: 512, shadowEnabled: false, bloomEnabled: false, dofEnabled: false, vignetteEnabled: false, fxaaEnabled: false, outlineEnabled: false, label: '重度降级' },
+    0: {
+        shadowResolution: 2048,
+        shadowEnabled: true,
+        bloomEnabled: true,
+        dofEnabled: true,
+        vignetteEnabled: true,
+        fxaaEnabled: true,
+        outlineEnabled: true,
+        label: '正常',
+    },
+    1: {
+        shadowResolution: 512,
+        shadowEnabled: true,
+        bloomEnabled: false,
+        dofEnabled: true,
+        vignetteEnabled: true,
+        fxaaEnabled: true,
+        outlineEnabled: true,
+        label: '轻度降级',
+    },
+    2: {
+        shadowResolution: 512,
+        shadowEnabled: false,
+        bloomEnabled: false,
+        dofEnabled: false,
+        vignetteEnabled: false,
+        fxaaEnabled: false,
+        outlineEnabled: true,
+        label: '中度降级',
+    },
+    3: {
+        shadowResolution: 512,
+        shadowEnabled: false,
+        bloomEnabled: false,
+        dofEnabled: false,
+        vignetteEnabled: false,
+        fxaaEnabled: false,
+        outlineEnabled: false,
+        label: '重度降级',
+    },
 };
 
 /** 比较两个级别配置，返回从 prev 切换到 next 所需的变化集合。 */
 function levelDiff(
     prev: LevelConfig,
-    next: LevelConfig,
+    next: LevelConfig
 ): { light: Partial<LightState>; render: Partial<RenderState> } {
     const light: Partial<LightState> = {};
     const render: Partial<RenderState> = {};
@@ -85,7 +121,10 @@ function levelDiff(
 }
 
 /** 检查变化集合是否非空。 */
-function hasChanges(changes: { light: Partial<LightState>; render: Partial<RenderState> }): boolean {
+function hasChanges(changes: {
+    light: Partial<LightState>;
+    render: Partial<RenderState>;
+}): boolean {
     return Object.keys(changes.light).length > 0 || Object.keys(changes.render).length > 0;
 }
 
@@ -175,16 +214,16 @@ function applyDegrade(level: DegradeLevel, force = false): void {
 // 降级阈值（帧率低于此值则降级）
 const DEGRADE_THRESHOLDS: Record<DegradeLevel, number> = {
     0: Infinity, // 不降级
-    1: 25,       // FPS < 25 → level 1
-    2: 18,       // FPS < 18 → level 2
-    3: 12,       // FPS < 12 → level 3
+    1: 25, // FPS < 25 → level 1
+    2: 18, // FPS < 18 → level 2
+    3: 12, // FPS < 12 → level 3
 };
 // 恢复阈值（帧率高于此值才允许恢复）
 const RECOVERY_THRESHOLDS: Record<DegradeLevel, number> = {
     0: Infinity,
-    1: 32,       // FPS > 32 才从 level 1 恢复
-    2: 26,       // FPS > 26 才从 level 2 恢复
-    3: 20,       // FPS > 20 才从 level 3 恢复
+    1: 32, // FPS > 32 才从 level 1 恢复
+    2: 26, // FPS > 26 才从 level 2 恢复
+    3: 20, // FPS > 20 才从 level 3 恢复
 };
 
 // ======== Public API ========
@@ -237,7 +276,10 @@ export function updatePerformance(): void {
         targetLevel = _currentLevel;
         if (_currentLevel < 3 && avgFps < DEGRADE_THRESHOLDS[(_currentLevel + 1) as DegradeLevel]) {
             targetLevel = (_currentLevel + 1) as DegradeLevel;
-        } else if (_currentLevel > 0 && avgFps > RECOVERY_THRESHOLDS[_currentLevel as DegradeLevel]) {
+        } else if (
+            _currentLevel > 0 &&
+            avgFps > RECOVERY_THRESHOLDS[_currentLevel as DegradeLevel]
+        ) {
             targetLevel = (_currentLevel - 1) as DegradeLevel;
         }
     }

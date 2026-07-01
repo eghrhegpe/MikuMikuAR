@@ -89,7 +89,9 @@ export async function captureThumbnail(filePath: string): Promise<void> {
 
         let ready = false;
         await withTimeout(
-            _scene.whenReadyAsync().then(() => { ready = true; }),
+            _scene.whenReadyAsync().then(() => {
+                ready = true;
+            }),
             THUMBNAIL_TIMEOUT_MS,
             undefined
         );
@@ -193,7 +195,9 @@ export async function loadPMXFile(
             registeredId = id;
             // Pre-capture material original values for reset functionality
             for (const mesh of meshes) {
-                if (mesh.material) _capture(mesh.material);
+                if (mesh.material) {
+                    _capture(mesh.material);
+                }
             }
             setFocusedModelId(id);
             _modelManager.focus(id);
@@ -243,7 +247,9 @@ export async function loadPMXFile(
         registeredId = id;
         // Pre-capture material original values for reset functionality
         for (const mesh of meshes) {
-            if (mesh.material) _capture(mesh.material);
+            if (mesh.material) {
+                _capture(mesh.material);
+            }
         }
         if (wasmModel) {
             const states = wasmModel.rigidBodyStates;
@@ -312,7 +318,9 @@ export async function loadPMXFile(
         } else {
             // Not yet registered — dispose meshes directly
             loadedMeshes.forEach((m) => {
-                try { m.dispose(); } catch {}
+                try {
+                    m.dispose();
+                } catch {}
             });
         }
         dom.loadingEl.style.display = 'none';

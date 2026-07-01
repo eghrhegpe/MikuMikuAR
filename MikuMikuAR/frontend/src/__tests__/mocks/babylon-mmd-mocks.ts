@@ -9,17 +9,23 @@ export class MockMmdCamera {
     target = { x: 0, y: 0, z: 0 };
     animate() {}
     constructor() {}
-    getClassName() { return 'MmdCamera'; }
+    getClassName() {
+        return 'MmdCamera';
+    }
 }
 
 export class MockMmdStandardMaterialProxy {
     constructor() {}
-    getClassName() { return 'MmdStandardMaterialProxy'; }
+    getClassName() {
+        return 'MmdStandardMaterialProxy';
+    }
 }
 
 export class MockMmdRuntimeShared {
     constructor() {}
-    getClassName() { return 'MmdRuntimeShared'; }
+    getClassName() {
+        return 'MmdRuntimeShared';
+    }
 }
 
 export class MockMmdWasmRuntime {
@@ -28,19 +34,25 @@ export class MockMmdWasmRuntime {
     setMeshOpacity() {}
     setMeshWireframe() {}
     constructor() {}
-    getClassName() { return 'MmdWasmRuntime'; }
+    getClassName() {
+        return 'MmdWasmRuntime';
+    }
 }
 
 export class MockMmdWasmAnimation {
     runtimeAnimations: any[] = [];
     constructor() {}
-    getClassName() { return 'MmdWasmAnimation'; }
+    getClassName() {
+        return 'MmdWasmAnimation';
+    }
 }
 
 export class MockVmdLoader {
     static LoadAsync() {}
     constructor() {}
-    getClassName() { return 'VmdLoader'; }
+    getClassName() {
+        return 'VmdLoader';
+    }
 }
 
 export const MockRegisterMmdModelLoaders = () => {};

@@ -10,7 +10,11 @@ vi.mock('@babylonjs/core/Lights/directionalLight', () => ({
 }));
 vi.mock('@babylonjs/core/Maths/math.vector', () => ({
     Vector3: class {
-        constructor(public x: number, public y: number, public z: number) {}
+        constructor(
+            public x: number,
+            public y: number,
+            public z: number
+        ) {}
         static Down = new (this as any)(0, -1, 0);
     },
 }));
