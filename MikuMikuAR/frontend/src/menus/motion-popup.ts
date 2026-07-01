@@ -39,6 +39,7 @@ import { slideRow, addSliderRow, addToggleRow, addCollapsible } from '../core/ui
 import { createIconifyIcon } from '../core/icons';
 import {
     loadAudioFile,
+    clearAudio,
     setAudioOffset,
     getAudioName,
     getAudioOffset,
@@ -294,6 +295,14 @@ function buildActionMusicLevel(): PopupLevel {
                         setStatus('✗ 音乐加载失败', false);
                     }
                 }, getAudioName() || undefined);
+                // 有音乐加载时显示"移除音乐"按钮
+                if (getAudioName()) {
+                    slideRow(c, 'lucide:trash-2', '移除音乐', false, () => {
+                        clearAudio();
+                        setStatus('✓ 音乐已移除', true);
+                        motionMenu.reRender();
+                    });
+                }
             });
 
             cardContainer(container, (c) => {

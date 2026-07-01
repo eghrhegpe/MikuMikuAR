@@ -68,8 +68,8 @@ export async function loadVMDMotion(
         // Extract camera track from VMD and apply to MmdCamera
         try {
             loadCameraVmd(mmdAnimation, '', name);
-        } catch (camErr) {
-            console.warn('Camera VMD load skipped:', camErr);
+        } catch {
+            // 程序化动作的 VMD 不含相机轨道，此处跳过是正常行为
         }
 
         // Bind to model

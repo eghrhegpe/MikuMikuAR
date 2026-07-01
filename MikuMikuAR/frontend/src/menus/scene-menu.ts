@@ -186,38 +186,35 @@ function buildSceneRoot(): PopupLevel {
 export function buildProcMotionLevel(): PopupLevel {
     const st = getProcMotionState();
     const lipSt = getLipSyncState();
-    const modeLabel: Record<string, string> = {
-        off: '关闭',
-        idle: '待机呼吸',
-        autodance: '自动舞蹈',
-    };
     return {
         label: '程序化动作',
         dir: '',
-        items: [
-            {
-                kind: 'folder',
-                label: '模式',
-                icon: 'wind',
-                target: 'procmotion:mode',
-                sublabel: modeLabel[st.mode],
-            },
-            {
-                kind: 'action',
-                label: '自动切换',
-                icon: 'repeat',
-                target: 'procmotion:autoswitch',
-                sublabel: st.autoSwitch ? '开' : '关',
-            },
-            {
-                kind: 'folder',
-                label: 'LipSync',
-                icon: 'mic',
-                target: 'lipsync:menu',
-                sublabel: lipSt.enabled ? '开' : '关',
-            },
-        ],
+        items: [],
         renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                addModeSlider(
+                    c,
+                    '程序化动作',
+                    [
+                        { value: 'off' as const, label: '关闭' },
+                        { value: 'idle' as const, label: '待机呼吸' },
+                        { value: 'autodance' as const, label: '自动舞蹈' },
+                    ],
+                    st.mode,
+                    (v) => {
+                        setProcMotionMode(v);
+                        regenerateProcMotion();
+                    },
+                    'lucide:wind'
+                );
+                addToggleRow(c, '自动切换', st.autoSwitch, (v) => {
+                    setProcMotionAutoSwitch(v);
+                }, 'lucide:repeat');
+                addToggleRow(c, 'LipSync', lipSt.enabled, (v) => {
+                    setLipSyncEnabled(v);
+                    sceneMenu.reRender();
+                }, 'lucide:mic');
+            });
             cardContainer(container, (c) => {
                 addSliderRow(
                     c,

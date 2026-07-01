@@ -17,6 +17,7 @@ let _loadId = 0;
 function ensureAudio(): HTMLAudioElement {
     if (!audioElement) {
         audioElement = new Audio();
+        audioElement.crossOrigin = 'anonymous';
         audioElement.volume = volume;
     }
     // Re-attach beat detector when audio element is (re)created

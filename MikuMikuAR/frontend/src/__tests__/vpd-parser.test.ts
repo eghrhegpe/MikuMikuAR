@@ -175,7 +175,7 @@ describe('poseDataToVmdBuffer', () => {
         const frameOff = HEADER_SIZE;
         const nameBytes = new Uint8Array(buf, frameOff, 15);
         expect(Array.from(nameBytes).some((b) => b !== 0)).toBe(true);
-        expect(nameBytes[14]).toBe(0x20);
+        expect(nameBytes[14]).toBe(0x00);
 
         expect(view.getUint32(frameOff + 15, true)).toBe(0); // frame number
         expect(view.getFloat32(frameOff + 19, true)).toBeCloseTo(1);
@@ -233,7 +233,7 @@ Bone0:胸
 
         const nameBytes = new Uint8Array(vmdBuffer, 54, 15);
         expect(Array.from(nameBytes).some((b) => b !== 0)).toBe(true);
-        expect(nameBytes[14]).toBe(0x20);
+        expect(nameBytes[14]).toBe(0x00);
 
         expect(view.getFloat32(54 + 19, true)).toBeCloseTo(0);
         expect(view.getFloat32(54 + 23, true)).toBeCloseTo(5);

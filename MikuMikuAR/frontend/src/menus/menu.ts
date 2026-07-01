@@ -369,14 +369,17 @@ export class SlideMenu {
 
         if (level.items.length === 0 && !level.renderCustom) {
             list.innerHTML = '<div class="slide-empty">暂无内容</div>';
-        } else if (level.renderCustom) {
-            await level.renderCustom(list);
         } else {
+            // 始终渲染 items 导航行
             for (const row of level.items) {
                 const el = this.createRow(row);
                 if (el) {
                     list.appendChild(el);
                 }
+            }
+            // 如有 renderCustom，追加自定义内容
+            if (level.renderCustom) {
+                await level.renderCustom(list);
             }
         }
         this.panel.appendChild(list);

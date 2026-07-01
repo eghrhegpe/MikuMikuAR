@@ -61,18 +61,34 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         return;
     }
     const morphNames = modelAtStart.morph.morphs.map((m) => m.name) ?? [];
+    const boneNames = modelAtStart.runtimeBones.map((b) => b.name);
+    console.log(`[proc-motion] bones: [${boneNames.slice(0, 10).join(', ')}${boneNames.length > 10 ? '...' : ''}]`);
+    console.log(`[proc-motion] morphs: [${morphNames.slice(0, 5).join(', ')}${morphNames.length > 5 ? '...' : ''}]`);
     let buf: ArrayBuffer;
 
     // Issue #2: bpm 无效时降级为 idle，保持状态一致
     const bpmValid = bpm !== null && bpm !== undefined && bpm > 0 && Number.isFinite(bpm);
     if (targetMode === 'autodance' && bpmValid) {
-        buf = generateAutoDanceVmd(procState, bpm!, morphNames);
+        buf = generateAutoDanceVmd(procState, bpm!, morphNames, boneNames);
         lastBeatBpm = bpm!;
         procActiveKind = 'autodance';
     } else {
-        buf = generateIdleVmd(procState, morphNames);
+        buf = generateIdleVmd(procState, morphNames, boneNames);
         procActiveKind = targetMode === 'autodance' ? 'idle' : targetMode;
     }
+    // 调试导出：浏览器下载生成的 VMD 文件
+    try {
+        const blob = new Blob([buf]);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `proc-motion-${targetMode}.vmd`;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch {}
     _procVmdActive = true;
     procModelId = modelIdAtStart;
     try {
@@ -83,6 +99,11 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
 
         // Issue #3: 验证焦点模型是否在异步期间被切换
         const currentId = focusedModelId ?? null;
+        // Issue #4: 验证异步期间用户是否加载了真实 VMD（竞态时序保护）
+        // 对比 vmdData 与当前生成的 buf：若不同且非空，说明用户加载了其他 VMD
+        const curInst = modelManager.get(modelIdAtStart);
+        const vmdDataAfter = curInst?.vmdData;
+        const userVmdDuringAsync = vmdDataAfter !== buf && vmdDataAfter !== null && vmdDataAfter !== undefined;
         if (currentId !== modelIdAtStart) {
             console.warn('[proc-motion] 异步期间模型焦点已切换，丢弃本次程序化动作结果');
             // 卸载刚加载的程序化动画
@@ -90,6 +111,12 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
             if (inst && inst.mmdModel && mmdRuntime) {
                 inst.mmdModel.setRuntimeAnimation(null);
             }
+            _procVmdActive = false;
+            procModelId = null;
+            procActiveKind = 'idle';
+        } else if (userVmdDuringAsync) {
+            // 异步期间用户加载了真实 VMD，不覆盖 vmdData
+            console.log('[proc-motion] 异步期间用户加载了 VMD，跳过本次程序化动作');
             _procVmdActive = false;
             procModelId = null;
             procActiveKind = 'idle';

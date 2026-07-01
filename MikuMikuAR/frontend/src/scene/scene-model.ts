@@ -253,10 +253,13 @@ export class ModelManager {
         // Clean up cloth before disposing meshes
         this.removeCloth(id);
 
-        if (inst.mmdModel) {
-            // mmdRuntime.destroyMmdModel is called externally (scene.ts loadPMXFile)
-            // because ModelManager doesn't own mmdRuntime
-        }
+        // ⚠️ onRemoveModel（mmdRuntime.destroyMmdModel）必须在网格释放之前调用！
+        // destroyMmdModel 需要 skeleton 尚存才能从运行时中解除 observable 链接，
+        // 否则下一帧渲染循环中 mmdWasmModel.skeleton 为 null 会抛 TypeError。
+        // onRemoveModel 也必须在 modelRegistry.delete 之前调用，
+        // 因为外部回调需要通过 modelRegistry.get(id) 获取模型实例。
+        this.onRemoveModel?.(id);
+
         for (const m of inst.meshes) {
             if (m instanceof Mesh) {
                 m.dispose();
@@ -270,9 +273,6 @@ export class ModelManager {
         this._physicsCatState.delete(id);
         this._boneOverlayMap.delete(id);
         this.destroyBoneOverlay(id);
-
-        // External cleanup (material state, proc motion state, etc.)
-        this.onRemoveModel?.(id);
 
         // Update focus
         if (configFocusedId === id) {

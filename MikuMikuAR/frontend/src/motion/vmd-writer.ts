@@ -187,9 +187,9 @@ function _codeToSjis(cp: number): number[] {
     return Array.from(utf8);
 }
 
-/** Shift-JIS 编码字符串到 15 字节（空格 0x20 填充）。 */
+/** Shift-JIS 编码字符串到 15 字节（空字节 0x00 填充，与 MMD / babylon-mmd 解析器匹配）。 */
 function encodeBoneName(name: string): Uint8Array {
-    const buf = new Uint8Array(15).fill(0x20);
+    const buf = new Uint8Array(15).fill(0x00);
     let pos = 0;
     for (let i = 0; i < name.length && pos < 15; i++) {
         const bytes = _codeToSjis(name.codePointAt(i)!);

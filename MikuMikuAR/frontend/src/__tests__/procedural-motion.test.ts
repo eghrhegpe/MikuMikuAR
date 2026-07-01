@@ -10,8 +10,13 @@ import {
 
 const state: ProcMotionState = { ...DEFAULT_PROC_STATE, mode: 'idle', intensity: 0.5, speed: 1.0 };
 
+/** 标准 MMD 骨骼名，确保 _matchBone 能找到匹配 */
+const BONES_STANDARD = ['センター', '上半身', '頭', '左腕', '右腕'];
+const BONES_CENTER_UPPER = ['センター', '上半身'];
+const BONES_ALL = ['センター', '上半身', '頭', '左腕', '右腕'];
+
 describe('generateIdleVmd', () => {
-    const buf = generateIdleVmd(state, ['まばたき']);
+    const buf = generateIdleVmd(state, ['まばたき'], BONES_CENTER_UPPER);
 
     it('produces non-empty VMD', () => {
         expect(buf.byteLength).toBeGreaterThan(200);
@@ -30,7 +35,7 @@ describe('generateIdleVmd', () => {
     });
 
     it('omits blink morph frames when no まばたき', () => {
-        const buf2 = generateIdleVmd(state, []);
+        const buf2 = generateIdleVmd(state, [], BONES_CENTER_UPPER);
         const view = new DataView(buf2);
         const boneCount = view.getUint32(50, true);
         const morphCountOff = 54 + boneCount * 111;
@@ -38,7 +43,7 @@ describe('generateIdleVmd', () => {
     });
 
     it('loop closes (first and last bone frame match)', () => {
-        const buf2 = generateIdleVmd(state, []);
+        const buf2 = generateIdleVmd(state, [], BONES_CENTER_UPPER);
         const view = new DataView(buf2);
         // First bone frame rotation at offset 54+15+4+12 = 85
         const _firstRot = [
@@ -61,7 +66,7 @@ describe('generateIdleVmd', () => {
 
     it('intensity=0 produces minimal rotation', () => {
         const zeroState = { ...state, intensity: 0 };
-        const buf2 = generateIdleVmd(zeroState, []);
+        const buf2 = generateIdleVmd(zeroState, [], BONES_CENTER_UPPER);
         const view = new DataView(buf2);
         // Upper body bone rotation X at first frame
         const off = 54 + 15 + 4; // skip name+frame, position starts
@@ -72,7 +77,7 @@ describe('generateIdleVmd', () => {
 });
 
 describe('generateAutoDanceVmd', () => {
-    const buf = generateAutoDanceVmd(state, 120, ['まばたき']);
+    const buf = generateAutoDanceVmd(state, 120, ['まばたき'], BONES_ALL);
 
     it('produces non-empty VMD', () => {
         expect(buf.byteLength).toBeGreaterThan(200);
@@ -84,15 +89,15 @@ describe('generateAutoDanceVmd', () => {
     });
 
     it('higher BPM produces shorter loop', () => {
-        const slow = generateAutoDanceVmd(state, 60, []);
-        const fast = generateAutoDanceVmd(state, 180, []);
+        const slow = generateAutoDanceVmd(state, 60, [], BONES_ALL);
+        const fast = generateAutoDanceVmd(state, 180, [], BONES_ALL);
         // Faster BPM = fewer frames per loop = smaller file
         expect(fast.byteLength).toBeLessThan(slow.byteLength);
     });
 
     it('clamps BPM below 60', () => {
-        const low = generateAutoDanceVmd(state, 30, []);
-        const at60 = generateAutoDanceVmd(state, 60, []);
+        const low = generateAutoDanceVmd(state, 30, [], BONES_ALL);
+        const at60 = generateAutoDanceVmd(state, 60, [], BONES_ALL);
         expect(low.byteLength).toBe(at60.byteLength);
     });
 

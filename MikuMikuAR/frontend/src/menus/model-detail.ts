@@ -169,6 +169,10 @@ export function buildModelDetailLevel(id: string): PopupLevel {
                             const level = buildModelInfoLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
+                        slideRow(inner, 'lucide:git-branch', '骨骼层级', true, () => {
+                            const level = buildBoneHierarchyLevel(id);
+                            stackRegistry.modelStack.push(level);
+                        });
                         slideRow(inner, 'lucide:external-link', '用…打开', true, () => {
                             const level = buildOpenWithLevel(id);
                             stackRegistry.modelStack.push(level);
@@ -217,7 +221,7 @@ export function buildModelInfoLevel(id: string): PopupLevel {
         items: [],
         renderCustom: (container) => {
             container.classList.remove('render-card');
-            const meta = modelMetaCache.get(inst.filePath);
+            const meta = modelMetaCache.get(inst.filePath) ?? null;
             let vertCount = 0,
                 faceCount = 0;
             for (const m of inst.meshes ?? []) {
@@ -239,9 +243,9 @@ export function buildModelInfoLevel(id: string): PopupLevel {
                     label: '表情数',
                     value: morphCount !== null ? morphCount.toLocaleString() : 'N/A',
                 },
-                { label: '日文名', value: meta.name_jp || '—' },
-                { label: '英文名', value: meta.name_en || '—' },
-                { label: '备注', value: meta.comment ? meta.comment.substring(0, 80) : '—' },
+                { label: '日文名', value: meta?.name_jp || '—' },
+                { label: '英文名', value: meta?.name_en || '—' },
+                { label: '备注', value: meta?.comment ? meta.comment.substring(0, 80) : '—' },
             ];
             cardContainer(container, (c) => {
                 for (const f of fields) {
@@ -845,6 +849,135 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
                 }
 
                 c.appendChild(list);
+            });
+        },
+    };
+}
+
+// ======== Bone Hierarchy ========
+
+export function buildBoneHierarchyLevel(id: string): PopupLevel {
+    const inst = modelRegistry.get(id);
+    if (!inst?.mmdModel) {
+        return { label: '骨骼层级', dir: '', items: [] };
+    }
+    const bones = inst.mmdModel.runtimeBones;
+    if (!bones || bones.length === 0) {
+        return { label: '骨骼层级', dir: '', items: [] };
+    }
+
+    // Build parent→children map
+    const childrenMap = new Map<number, number[]>();
+    const rootIndices: number[] = [];
+    const physicsSet = new Set<number>();
+    for (let i = 0; i < bones.length; i++) {
+        const bone = bones[i];
+        if (bone.rigidBodyIndices.length > 0) {
+            physicsSet.add(i);
+        }
+        const parentBone = bone.parentBone;
+        if (parentBone) {
+            const parentIdx = bones.indexOf(parentBone);
+            if (parentIdx >= 0) {
+                const list = childrenMap.get(parentIdx) ?? [];
+                list.push(i);
+                childrenMap.set(parentIdx, list);
+                continue;
+            }
+        }
+        rootIndices.push(i);
+    }
+
+    return {
+        label: '骨骼层级',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove('render-card');
+            cardContainer(container, (c) => {
+                const header = document.createElement('div');
+                header.style.cssText =
+                    'font-size:var(--font-ui-sm);color:var(--text-bright);padding:4px 14px 8px;';
+                header.textContent = `共 ${bones.length} 个骨骼`;
+                c.appendChild(header);
+
+                function renderBoneTree(
+                    parent: HTMLElement,
+                    idx: number,
+                    depth: number
+                ): void {
+                    const bone = bones[idx];
+                    const row = document.createElement('div');
+                    row.style.cssText = `display:flex;align-items:center;padding:2px 14px 2px ${14 + depth * 16}px;font-size:var(--font-ui);color:var(--text);gap:6px;`;
+
+                    // Collapse/expand for non-leaf
+                    const hasChildren = (childrenMap.get(idx)?.length ?? 0) > 0;
+                    let expanded = depth < 2; // auto-expand top 2 levels
+                    if (hasChildren) {
+                        const toggle = document.createElement('span');
+                        toggle.textContent = expanded ? '▾' : '▸';
+                        toggle.style.cssText =
+                            'cursor:pointer;flex:none;width:14px;text-align:center;color:var(--text-dim);font-size:var(--font-ui-sm);';
+                        row.appendChild(toggle);
+
+                        // Name label (click expands/collapses)
+                        const label = document.createElement('span');
+                        label.textContent = bone.name;
+                        label.style.cssText = 'cursor:pointer;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                        row.appendChild(label);
+
+                        const childContainer = document.createElement('div');
+                        let childrenRendered = false;
+
+                        toggle.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            expanded = !expanded;
+                            toggle.textContent = expanded ? '▾' : '▸';
+                            childContainer.style.display = expanded ? '' : 'none';
+                            if (expanded && !childrenRendered) {
+                                childrenRendered = true;
+                                const childIndices = childrenMap.get(idx) ?? [];
+                                for (const ci of childIndices) {
+                                    renderBoneTree(childContainer, ci, depth + 1);
+                                }
+                            }
+                        });
+                        label.addEventListener('click', () => toggle.click());
+
+                        parent.appendChild(row);
+                        childContainer.style.display = expanded ? '' : 'none';
+                        parent.appendChild(childContainer);
+
+                        if (expanded) {
+                            childrenRendered = true;
+                            const childIndices = childrenMap.get(idx) ?? [];
+                            for (const ci of childIndices) {
+                                renderBoneTree(childContainer, ci, depth + 1);
+                            }
+                        }
+                    } else {
+                        // Leaf node
+                        row.innerHTML = `<span style="flex:none;width:14px;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);">${escapeHtml(bone.name)}</span>`;
+                        parent.appendChild(row);
+                    }
+
+                    // Physics badge
+                    if (physicsSet.has(idx)) {
+                        const badge = document.createElement('span');
+                        const iconEl = createIconifyIcon('lucide:zap');
+                        if (iconEl) {
+                            badge.appendChild(iconEl);
+                        }
+                        badge.title = '有物理刚体';
+                        badge.style.cssText =
+                            'font-size:11px;flex:none;color:var(--accent);display:inline-flex;';
+                        row.appendChild(badge);
+                    }
+                }
+
+                for (const ri of rootIndices) {
+                    renderBoneTree(c, ri, 0);
+                }
             });
         },
     };
