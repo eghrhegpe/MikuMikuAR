@@ -1,14 +1,23 @@
 # 编码奇谭：MikuMikuAR 联邦演义
 
-> 在一个 PMX 模型散落于各城邦的世界里，一个桌面壳不发明任何东西，只让所有城邦共享同一个模型库。它没有自己的核心能力，它的价值全靠"搬得对、拼得稳"。
+> 在一个 PMX 模型散落于各城邦的世界里，一个桌面壳不发明任何东西，只让所有城邦共享同一个模型库。
 
 ---
 
-## 目录
+## 第零卷 · 地基
 
-### 📘 第一卷：创世纪（The Genesis）
+地下的管道、仓库里的建材、检验质量的试金石。主线故事不从这里开始，但所有主线都站在它上面。
 
-从无到有，解决生存问题。联邦成立了，但它还只是一个在玻璃柜里颤抖的胚胎。
+| 章 | 标题 | 文件 |
+|----|------|------|
+| 0 | 序言 | [vol-0-foundation/00-序言.md](vol-0-foundation/00-序言.md) |
+| 1 | 地下管道的检修 | [vol-0-foundation/01-地下管道的检修.md](vol-0-foundation/01-地下管道的检修.md) |
+| 2 | 建材仓库的大扫除 | [vol-0-foundation/02-建材仓库的大扫除.md](vol-0-foundation/02-建材仓库的大扫除.md) |
+| 3 | 试金石试验室 | [vol-0-foundation/03-试金石试验室.md](vol-0-foundation/03-试金石试验室.md) |
+
+## 第一卷 · 创世纪
+
+从无到有，解决生存问题。
 
 | 章 | 标题 | 文件 |
 |----|------|------|
@@ -17,11 +26,11 @@
 | 3 | 天穹之图 | [vol-1-genesis/03-天穹之图.md](vol-1-genesis/03-天穹之图.md) |
 | 4 | 弹窗之战 | [vol-1-genesis/04-弹窗之战.md](vol-1-genesis/04-弹窗之战.md) |
 | 5 | 议院改革 | [vol-1-genesis/05-议院改革.md](vol-1-genesis/05-议院改革.md) |
-| 尾章 | 减法 | [vol-1-genesis/尾章-减法.md](vol-1-genesis/尾章-减法.md) |
+| 尾 | 减法 | [vol-1-genesis/尾章-减法.md](vol-1-genesis/尾章-减法.md) |
 
-### 📗 第二卷：大扩张（The Expansion）
+## 第二卷 · 大扩张
 
-功能爆炸，复杂度失控，收编与反抗。联邦的疆域扩张到了极限，但内部的管道开始堵塞。
+功能爆炸，复杂度失控。
 
 | 章 | 标题 | 文件 |
 |----|------|------|
@@ -32,42 +41,47 @@
 | 5 | 读图 | [vol-2-expansion/05-读图.md](vol-2-expansion/05-读图.md) |
 | 6 | 图标战争 | [vol-2-expansion/06-图标战争.md](vol-2-expansion/06-图标战争.md) |
 | 7 | 调目 | [vol-2-expansion/07-调目.md](vol-2-expansion/07-调目.md) |
-| 8 | 所见即所得 | [vol-2-expansion/08-所见即所得.md](vol-2-expansion/08-所见即所得.md) |
-| 9 | 审计之光 | [vol-2-expansion/09-审计之光.md](vol-2-expansion/09-审计之光.md) |
-| 10 | 组装与检查 | [vol-2-expansion/10-组装与检查.md](vol-2-expansion/10-组装与检查.md) |
+| 8 | 调目·校验 | [vol-2-expansion/08-调目-校验.md](vol-2-expansion/08-调目-校验.md) |
+| 9 | 所见即所得 | [vol-2-expansion/09-所见即所得.md](vol-2-expansion/09-所见即所得.md) |
+| 10 | 审计之光 | [vol-2-expansion/10-审计之光.md](vol-2-expansion/10-审计之光.md) |
+| 11 | 组装与检查 | [vol-2-expansion/11-组装与检查.md](vol-2-expansion/11-组装与检查.md) |
 
-### 📕 第三卷：铁腕整顿（The Consolidation）
+## 第三卷 · 铁腕整顿
 
-重构、删减、文档化、环境系统、UI 大修、发布。联邦终于学会了如何在庞大与脆弱之间行走。
+重构、删减、文档化、环境系统、UI 大修。
+
+### 上卷
 
 | 章 | 标题 | 文件 |
 |----|------|------|
-| 1 | 重构日 | [vol-3-consolidation/01-重构日.md](vol-3-consolidation/01-重构日.md) |
-| 2 | 目录的守望者 | [vol-3-consolidation/02-目录的守望者.md](vol-3-consolidation/02-目录的守望者.md) |
-| 3 | 删与留 | [vol-3-consolidation/03-删与留.md](vol-3-consolidation/03-删与留.md) |
-| 4 | 伪影与真镜 | [vol-3-consolidation/04-伪影与真镜.md](vol-3-consolidation/04-伪影与真镜.md) |
-| 5 | 调色台 | [vol-3-consolidation/05-调色台.md](vol-3-consolidation/05-调色台.md) |
-| 6 | 三审 | [vol-3-consolidation/06-三审.md](vol-3-consolidation/06-三审.md) |
-| 7 | 双影 | [vol-3-consolidation/07-双影.md](vol-3-consolidation/07-双影.md) |
-| 8 | 滑动的议会 | [vol-3-consolidation/08-滑动的议会.md](vol-3-consolidation/08-滑动的议会.md) |
-| 9 | 天穹之境 | [vol-3-consolidation/09-天穹之境.md](vol-3-consolidation/09-天穹之境.md) |
-| 10 | 透明之墙 | [vol-3-consolidation/10-透明之墙.md](vol-3-consolidation/10-透明之墙.md) |
-| 11 | 放大的议会 | [vol-3-consolidation/11-放大的议会.md](vol-3-consolidation/11-放大的议会.md) |
-| 12 | 隐形的面板（上） | [vol-3-consolidation/12-隐形的面板-上.md](vol-3-consolidation/12-隐形的面板-上.md) |
-| 13 | 隐形的面板（中） | [vol-3-consolidation/13-隐形的面板-中.md](vol-3-consolidation/13-隐形的面板-中.md) |
-| 14 | 隐形的面板（下） | [vol-3-consolidation/14-隐形的面板-下.md](vol-3-consolidation/14-隐形的面板-下.md) |
-| 15 | 四条路 | [vol-3-consolidation/15-四条路.md](vol-3-consolidation/15-四条路.md) |
-| 16 | 体验打磨 | [vol-3-consolidation/16-体验打磨.md](vol-3-consolidation/16-体验打磨.md) |
-| 17 | 尘与风 | [vol-3-consolidation/17-尘与风.md](vol-3-consolidation/17-尘与风.md) |
-| 18 | 三层解剖 | [vol-3-consolidation/18-三层解剖.md](vol-3-consolidation/18-三层解剖.md) |
-| 19 | 西西弗斯之夜 | [vol-3-consolidation/19-西西弗斯之夜.md](vol-3-consolidation/19-西西弗斯之夜.md) |
+| 1 | 重构日 | [vol-3-upper/01-重构日.md](vol-3-upper/01-重构日.md) |
+| 2 | 目录的守望者 | [vol-3-upper/02-目录的守望者.md](vol-3-upper/02-目录的守望者.md) |
+| 3 | 删与留 | [vol-3-upper/03-删与留.md](vol-3-upper/03-删与留.md) |
+| 4 | 伪影与真镜 | [vol-3-upper/04-伪影与真镜.md](vol-3-upper/04-伪影与真镜.md) |
+| 5 | 调色台 | [vol-3-upper/05-调色台.md](vol-3-upper/05-调色台.md) |
+| 6 | 三审 | [vol-3-upper/06-三审.md](vol-3-upper/06-三审.md) |
+| 7 | 双影 | [vol-3-upper/07-双影.md](vol-3-upper/07-双影.md) |
+| 8 | 滑动的议会 | [vol-3-upper/08-滑动的议会.md](vol-3-upper/08-滑动的议会.md) |
+| 9 | 天穹之境 | [vol-3-upper/09-天穹之境.md](vol-3-upper/09-天穹之境.md) |
+| 10 | 透明之墙 | [vol-3-upper/10-透明之墙.md](vol-3-upper/10-透明之墙.md) |
 
-### 📙 第四卷：新大陆（The New World）
+### 下卷
 
-联邦终于穿上了统一的制服。但穿上制服的人，开始问一个问题：我们要去哪里？
-竞速和竞品破晓给出外部压力，工坊与节拍给出内部探索，光和色的和解给出技术突破，审美的裂缝给出反思，数据的纹路给出制度沉淀。
+| 章 | 标题 | 文件 |
+|----|------|------|
+| 1 | 放大的议会 | [vol-3-lower/01-放大的议会.md](vol-3-lower/01-放大的议会.md) |
+| 2 | 隐形的面板·上 | [vol-3-lower/02-隐形的面板-上.md](vol-3-lower/02-隐形的面板-上.md) |
+| 3 | 隐形的面板·中 | [vol-3-lower/03-隐形的面板-中.md](vol-3-lower/03-隐形的面板-中.md) |
+| 4 | 隐形的面板·下 | [vol-3-lower/04-隐形的面板-下.md](vol-3-lower/04-隐形的面板-下.md) |
+| 5 | 四条路 | [vol-3-lower/05-四条路.md](vol-3-lower/05-四条路.md) |
+| 6 | 看不见的缝隙 | [vol-3-lower/06-看不见的缝隙.md](vol-3-lower/06-看不见的缝隙.md) |
+| 7 | 尘与风 | [vol-3-lower/07-尘与风.md](vol-3-lower/07-尘与风.md) |
+| 8 | 三层解剖 | [vol-3-lower/08-三层解剖.md](vol-3-lower/08-三层解剖.md) |
+| 9 | 西西弗斯之夜 | [vol-3-lower/09-西西弗斯之夜.md](vol-3-lower/09-西西弗斯之夜.md) |
 
-**第一幕：审美的裂缝**
+## 第四卷 · 新大陆
+
+从功能堆砌到产品自觉。
 
 | 章 | 标题 | 文件 |
 |----|------|------|
@@ -76,20 +90,10 @@
 | 3 | 重构风暴 | [vol-4-the-new-world/03-重构风暴.md](vol-4-the-new-world/03-重构风暴.md) |
 | 4 | 循环深渊 | [vol-4-the-new-world/04-循环深渊.md](vol-4-the-new-world/04-循环深渊.md) |
 | 5 | 最后一公里 | [vol-4-the-new-world/05-最后一公里.md](vol-4-the-new-world/05-最后一公里.md) |
-
-**第二幕：系统的矫正**
-
-| 章 | 标题 | 文件 |
-|----|------|------|
 | 6 | 替身 | [vol-4-the-new-world/06-替身.md](vol-4-the-new-world/06-替身.md) |
 | 7 | 三层闭包 | [vol-4-the-new-world/07-三层闭包.md](vol-4-the-new-world/07-三层闭包.md) |
 | 8 | 天光之悟 | [vol-4-the-new-world/08-天光之悟.md](vol-4-the-new-world/08-天光之悟.md) |
 | 9 | 工坊与节拍 | [vol-4-the-new-world/09-工坊与节拍.md](vol-4-the-new-world/09-工坊与节拍.md) |
-
-**第三幕：文明的定型**
-
-| 章 | 标题 | 文件 |
-|----|------|------|
 | 10 | 数据的纹路 | [vol-4-the-new-world/10-数据的纹路.md](vol-4-the-new-world/10-数据的纹路.md) |
 | 11 | 残党扫荡 | [vol-4-the-new-world/11-残党扫荡.md](vol-4-the-new-world/11-残党扫荡.md) |
 | 12 | 瘦身日 | [vol-4-the-new-world/12-瘦身日.md](vol-4-the-new-world/12-瘦身日.md) |
@@ -97,9 +101,9 @@
 | 14 | 拖拽之手 | [vol-4-the-new-world/14-拖拽之手.md](vol-4-the-new-world/14-拖拽之手.md) |
 | 15 | 打包之战 | [vol-4-the-new-world/15-打包之战.md](vol-4-the-new-world/15-打包之战.md) |
 
-### 📔 第五卷：物理之光（The Light of Physics）
+## 第五卷 · 物理之光
 
-环境系统臻于完善，XPBD 布料模拟接入主场景，多相机模式 UI 打磨。联邦的技术树点亮了最后几片暗区。
+环境系统臻于完善，XPBD 布料模拟接入主场景。
 
 | 章 | 标题 | 文件 |
 |----|------|------|
@@ -108,16 +112,16 @@
 | 3 | 多相机之眼 | [vol-5-the-light-of-physics/03-多相机之眼.md](vol-5-the-light-of-physics/03-多相机之眼.md) |
 | 4 | 悬空之影 | [vol-5-the-light-of-physics/04-悬空之影.md](vol-5-the-light-of-physics/04-悬空之影.md) |
 | 5 | 光影之协奏 | [vol-5-the-light-of-physics/05-光影之协奏.md](vol-5-the-light-of-physics/05-光影之协奏.md) |
-| 6 | 第六日のコード | [vol-5-the-light-of-physics/06-第六日のコード.md](vol-5-the-light-of-physics/06-第六日のコード.md) |
+| 6 | 空白的弹窗 | [vol-5-the-light-of-physics/06-空白的弹窗.md](vol-5-the-light-of-physics/06-空白的弹窗.md) |
 | 7 | 八城之盟 | [vol-5-the-light-of-physics/07-八城之盟.md](vol-5-the-light-of-physics/07-八城之盟.md) |
 | 8 | 三刀之后 | [vol-5-the-light-of-physics/08-三刀之后.md](vol-5-the-light-of-physics/08-三刀之后.md) |
 | 9 | 第九城 | [vol-5-the-light-of-physics/09-第九城.md](vol-5-the-light-of-physics/09-第九城.md) |
 
-> **番外**：[云层协议](vol-5-the-light-of-physics/番外-云层协议.md)（独立于主线章节，体积云渲染方案的三次生死抉择）
+> **番外**：[云层协议](vol-5-the-light-of-physics/番外-云层协议.md)
 
-### 📕 第六卷：联邦体检——向内的征途（The Federal Checkup）
+## 第六卷 · 联邦体检
 
-在前五卷开疆拓土之后，联邦启动系统性审计：模块合规、性能体检、物理引擎校准、代码质量治理。这是一卷关于「秩序回归」的故事——不是创造新世界，而是让已有世界值得信赖。
+系统性审计：模块合规、性能体检、物理校准、代码质量治理。
 
 | 章 | 标题 | 文件 |
 |----|------|------|
@@ -134,30 +138,30 @@
 | 11 | 织布机的垃圾 | [vol-6-federal-checkup/11-织布机的垃圾.md](vol-6-federal-checkup/11-织布机的垃圾.md) |
 | 12 | 快递员与会变形的护盾 | [vol-6-federal-checkup/12-快递员与会变形的护盾.md](vol-6-federal-checkup/12-快递员与会变形的护盾.md) |
 | 13 | 调光器的最小档位 | [vol-6-federal-checkup/13-调光器的最小档位.md](vol-6-federal-checkup/13-调光器的最小档位.md) |
-| 14 | 夕阳的影子 | [vol-6-federal-checkup/14-夕阳的影子.md](vol-6-federal-checkup/14-夕阳的影子.md) |
-| 15 | 沉默的函数 | [vol-6-federal-checkup/15-沉默的函数.md](vol-6-federal-checkup/15-沉默的函数.md) |
-| 16 | 不存在的 bug | [vol-6-federal-checkup/16-不存在的bug.md](vol-6-federal-checkup/16-不存在的bug.md) |
-| 17 | 图书馆的摆书人 | [vol-6-federal-checkup/17-图书馆的摆书人.md](vol-6-federal-checkup/17-图书馆的摆书人.md) |
-| 18 | 电梯的楼层记忆 | [vol-6-federal-checkup/18-电梯的楼层记忆.md](vol-6-federal-checkup/18-电梯的楼层记忆.md) |
-| 19 | 调参数的手感 | [vol-6-federal-checkup/19-调参数的手感.md](vol-6-federal-checkup/19-调参数的手感.md) |
-| 20 | 没装子弹的枪 | [vol-6-federal-checkup/20-没装子弹的枪.md](vol-6-federal-checkup/20-没装子弹的枪.md) |
-| 21 | 忘记的设置 | [vol-6-federal-checkup/21-忘记的设置.md](vol-6-federal-checkup/21-忘记的设置.md) |
-| 22 | 被偷走的焦点 | [vol-6-federal-checkup/22-被偷走的焦点.md](vol-6-federal-checkup/22-被偷走的焦点.md) |
-| 23 | 三十颗绿石子 | [vol-6-federal-checkup/23-三十颗绿石子.md](vol-6-federal-checkup/23-三十颗绿石子.md) |
-| 24 | 审计报告的最后一页 | [vol-6-federal-checkup/24-审计报告的最后一页.md](vol-6-federal-checkup/24-审计报告的最后一页.md) |
+| 14 | 中段清算 | [vol-6-federal-checkup/14-中段清算.md](vol-6-federal-checkup/14-中段清算.md) |
+| 15 | 夕阳的影子 | [vol-6-federal-checkup/15-夕阳的影子.md](vol-6-federal-checkup/15-夕阳的影子.md) |
+| 16 | 沉默的函数 | [vol-6-federal-checkup/16-沉默的函数.md](vol-6-federal-checkup/16-沉默的函数.md) |
+| 17 | 不存在的 bug | [vol-6-federal-checkup/17-不存在的bug.md](vol-6-federal-checkup/17-不存在的bug.md) |
+| 18 | 图书馆的摆书人 | [vol-6-federal-checkup/18-图书馆的摆书人.md](vol-6-federal-checkup/18-图书馆的摆书人.md) |
+| 19 | 电梯的楼层记忆 | [vol-6-federal-checkup/19-电梯的楼层记忆.md](vol-6-federal-checkup/19-电梯的楼层记忆.md) |
+| 20 | 调参数的手感 | [vol-6-federal-checkup/20-调参数的手感.md](vol-6-federal-checkup/20-调参数的手感.md) |
+| 21 | 没装子弹的枪 | [vol-6-federal-checkup/21-没装子弹的枪.md](vol-6-federal-checkup/21-没装子弹的枪.md) |
+| 22 | 忘记的设置 | [vol-6-federal-checkup/22-忘记的设置.md](vol-6-federal-checkup/22-忘记的设置.md) |
+| 23 | 被偷走的焦点 | [vol-6-federal-checkup/23-被偷走的焦点.md](vol-6-federal-checkup/23-被偷走的焦点.md) |
+| 24 | 三十颗绿石子 | [vol-6-federal-checkup/24-三十颗绿石子.md](vol-6-federal-checkup/24-三十颗绿石子.md) |
+| 25 | 审计报告的最后一页 | [vol-6-federal-checkup/25-审计报告的最后一页.md](vol-6-federal-checkup/25-审计报告的最后一页.md) |
 
-> **番外**：[地下管道的检修](vol-6-federal-checkup/番外-地下管道的检修.md)（Go 端系统性审计——panic recovery、日志统一、错误处理标准化）
->
-> **番外二**：[建材仓库的大扫除](vol-6-federal-checkup/番外二-建材仓库的大扫除.md)（依赖审计与升级——TypeScript 5、ESLint 9 flat config、Vite 6、0 漏洞）
+---
 
-### 📓 Sisyphus Stories
+## 附录
 
-> 独立短篇集，以 AI 代理 Sisyphus 为主角，探讨机器意识与人类情感。
+| 类别 | 标题 | 文件 |
+|------|------|------|
+| 独立短篇 | 机器中的巨石 | [sisyphus-stories/机器中的巨石.md](sisyphus-stories/机器中的巨石.md) |
+| 代码附录 | 隐形的面板·代码块 | [appendix/隐形的面板-代码块.md](appendix/隐形的面板-代码块.md) |
 
-| 标题 | 文件 |
-|------|------|
-| 机器中的巨石 | [sisyphus-stories/机器中的巨石.md](sisyphus-stories/机器中的巨石.md) |
+---
 
-## 骨架
+## 续写
 
-续写前必读：[SKELETON.md](SKELETON.md)
+AI 续写前必读：[SKELETON.md](SKELETON.md)
