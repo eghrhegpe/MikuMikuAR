@@ -80,9 +80,8 @@ function _propagateChildrenWasm(
     }
 }
 
-// ── 眼球追踪平滑状态 ──
-let _prevEyeYaw = 0;
-let _prevEyePitch = 0;
+// ── 眼球追踪平滑状态（按眼骨名独立存储，避免左右眼互相污染） ──
+const _prevEyeState: Record<string, { yaw: number; pitch: number }> = {};
 const EYE_SMOOTH = 0.35; // 指数平滑系数（0=完全平滑，1=无平滑）
 
 // ── 眼部跟随（眼球追踪，每帧执行） ──
@@ -94,8 +93,7 @@ function _teardownGazeTracking(): void {
         scene.onBeforeRenderObservable.remove(_headTrackingObserver);
         _headTrackingObserver = null;
     }
-    _prevEyeYaw = 0;
-    _prevEyePitch = 0;
+    for (const k in _prevEyeState) delete _prevEyeState[k];
 }
 
 /** 注册眼部跟随 + 头部跟随（独立 observer，实时骨骼叠加）。 */
@@ -112,6 +110,7 @@ function _setupGazeTracking(): void {
     const eyeRuntimes: IMmdRuntimeBone[] = mmdModel.runtimeBones.filter(
         b => ['右目','左目','Eye_R','Eye_L','eye_r','eye_l','RightEye','LeftEye'].includes(b.name)
     );
+    console.log(`[gaze:collect] eyeRuntimes=${eyeRuntimes.length} names=[${eyeRuntimes.map(b => b.name).join(',')}]`);
 
     const needHead = procState.headTrackingEnabled && headRuntime;
     const needEye = procState.eyeTrackingEnabled && eyeRuntimes.length > 0;
@@ -152,52 +151,67 @@ function _setupGazeTracking(): void {
                 _propagateChildrenWasm(headRuntime, oldHeadMat, newHeadMat);
             }
 
-            // 步骤2：眼球跟随
+            // [对比诊断] 仅头部跟随时的眼骨状态（每 60 帧打印一次）
+            if (needHead && !needEye && eyeRuntimes.length > 0) {
+                if ((globalThis as any).__gazeCmpFrame === undefined) (globalThis as any).__gazeCmpFrame = 0;
+                const cf = (globalThis as any).__gazeCmpFrame = ((globalThis as any).__gazeCmpFrame + 1) % 60;
+                if (cf === 0) {
+                    const headBuf = (headRuntime as any).worldMatrix as Float32Array;
+                    const headYaw = Math.atan2(-headBuf[8], headBuf[0]) * 180 / Math.PI;
+                    console.log(`[gaze:cmp-head-only] headYaw=${headYaw.toFixed(1)}°`);
+                    for (const eyeRb of eyeRuntimes) {
+                        const eb = (eyeRb as any).worldMatrix as Float32Array;
+                        const eyeYaw = Math.atan2(-eb[8], eb[0]) * 180 / Math.PI;
+                        const eyePitch = Math.asin(Math.max(-1, Math.min(1, eb[9]))) * 180 / Math.PI;
+                        console.log(`[gaze:cmp-head-only] ${eyeRb.name} eyeYaw=${eyeYaw.toFixed(1)}° eyePitch=${eyePitch.toFixed(1)}° eyeT=[${eb[12].toFixed(2)},${eb[13].toFixed(2)},${eb[14].toFixed(2)}]`);
+                    }
+                }
+            }
+
+            // 步骤2：眼球跟随（Slerp 朝向目标：左右眼共用同一 targetWorldQ）
+            // 关键修复：放弃 offset 叠加（眼骨本地坐标系 ≠ 头部本地坐标系导致符号反），
+            // 改用 Slerp 朝向目标世界旋转。左右眼共用 targetWorldQ（从头部位置算），
+            // 各自从当前朝向 Slerp 过去，保证平行注视 + 视觉对称。
             if (needEye) {
-                for (const eyeRb of eyeRuntimes) {
-                    const eyeBuf = (eyeRb as any).worldMatrix as Float32Array;
-                    const eyeMat = _m().copyFrom(Matrix.FromArray(eyeBuf));
-                    const eyePos = eyeMat.getTranslation();
-                    const toCam = cam.position.subtractToRef(eyePos, _v3());
-                    if (toCam.lengthSquared() < 0.0001) continue;
-                    toCam.normalize();
+                const refBone = headRuntime ?? eyeRuntimes[0];
+                const refBuf = (refBone as any).worldMatrix as Float32Array;
+                const refMat = _m().copyFrom(Matrix.FromArray(refBuf));
+                const refPos = refMat.getTranslation();
 
-                    const curWorldQ = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
-                    const curForward = _v3().set(0, 0, 1).rotateByQuaternionToRef(curWorldQ, _v3());
+                // 统一目标朝向（从头部位置朝向相机）
+                const lookDir = refPos.subtractToRef(cam.position, _v3());
+                if (lookDir.lengthSquared() >= 0.0001) {
+                    lookDir.normalize();
+                    const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
 
-                    const dot = Vector3.Dot(curForward, toCam);
-                    const crossY = curForward.x * toCam.z - curForward.z * toCam.x;
-                    let deltaYaw = Math.atan2(crossY, dot);
-                    const horizDist = Math.sqrt(toCam.x * toCam.x + toCam.z * toCam.z);
-                    let deltaPitch = Math.atan2(toCam.y, horizDist);
-                    deltaPitch = Math.max(-25 * Math.PI / 180, Math.min(25 * Math.PI / 180, deltaPitch));
+                    for (const eyeRb of eyeRuntimes) {
+                        const eyeBuf = (eyeRb as any).worldMatrix as Float32Array;
+                        const eyeMat = _m().copyFrom(Matrix.FromArray(eyeBuf));
+                        const eyePos = eyeMat.getTranslation();
+                        const curEyeQ = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
 
-                    _prevEyeYaw += (deltaYaw - _prevEyeYaw) * EYE_SMOOTH;
-                    _prevEyePitch += (deltaPitch - _prevEyePitch) * EYE_SMOOTH;
+                        // Slerp 朝向目标（与头部跟随同款逻辑，平滑系数一致）
+                        const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, targetWorldQ, EYE_SMOOTH));
 
-                    const yawQ = Quaternion.RotationAxis(Vector3.UpReadOnly, _prevEyeYaw * 0.7);
-                    const pitchQ = Quaternion.RotationAxis(Vector3.RightReadOnly, _prevEyePitch * 0.5);
-                    const offsetQ = _q();
-                    yawQ.multiplyToRef(pitchQ, offsetQ);
-                    const newWorldQ = _q();
-                    offsetQ.multiplyToRef(curWorldQ, newWorldQ);
+                        const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), newEyeQ, eyePos));
+                        _writeMatToBuffer(eyeBuf, newEyeMat);
 
-                    // 写回眼骨 worldMatrix（保留原平移）
-                    const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), newWorldQ, eyePos));
-                    _writeMatToBuffer(eyeBuf, newEyeMat);
-
-                    // [诊断] 眼球旋转写入验证
-                    if ((globalThis as any).__gazeEyeFrame === undefined) (globalThis as any).__gazeEyeFrame = 0;
-                    const ef = (globalThis as any).__gazeEyeFrame = ((globalThis as any).__gazeEyeFrame + 1) % 30;
-                    if (ef === 0) {
-                        const eb = eyeBuf;
-                        const eyeYawFb = Math.atan2(-eb[8], eb[0]) * 180 / Math.PI;
-                        const curYaw = Math.atan2(-eyeMat.asArray()[8], eyeMat.asArray()[0]) * 180 / Math.PI;
-                        console.log(`[gaze:eye] ${eyeRb.name} deltaYaw=${(deltaYaw*180/Math.PI).toFixed(1)}° prevYaw=${(_prevEyeYaw*180/Math.PI).toFixed(1)}° curYaw=${curYaw.toFixed(1)}° fbYaw=${eyeYawFb.toFixed(1)}° toCam=[${toCam.x.toFixed(2)},${toCam.y.toFixed(2)},${toCam.z.toFixed(2)}]`);
+                        // 眼骨一般无子骨骼，但保持一致
+                        _propagateChildrenWasm(eyeRb, eyeMat, newEyeMat);
                     }
 
-                    // 眼骨一般无子骨骼，但保持一致
-                    _propagateChildrenWasm(eyeRb, eyeMat, newEyeMat);
+                    // [诊断] 每 60 帧打印一次
+                    if ((globalThis as any).__gazeEyeFrame === undefined) (globalThis as any).__gazeEyeFrame = 0;
+                    const ef = (globalThis as any).__gazeEyeFrame = ((globalThis as any).__gazeEyeFrame + 1) % 60;
+                    if (ef === 0) {
+                        const tYaw = Math.atan2(-lookDir.x, -lookDir.z) * 180 / Math.PI;
+                        for (const eyeRb of eyeRuntimes) {
+                            const eb = (eyeRb as any).worldMatrix as Float32Array;
+                            const fbYaw = Math.atan2(-eb[8], eb[0]) * 180 / Math.PI;
+                            const fbPitch = Math.asin(Math.max(-1, Math.min(1, eb[9]))) * 180 / Math.PI;
+                            console.log(`[gaze:cmp-eye-only] ${eyeRb.name} targetYaw=${tYaw.toFixed(1)}° fbYaw=${fbYaw.toFixed(1)}° fbPitch=${fbPitch.toFixed(1)}° eyeT=[${eb[12].toFixed(2)},${eb[13].toFixed(2)},${eb[14].toFixed(2)}]`);
+                        }
+                    }
                 }
             }
         } else {
@@ -236,52 +250,37 @@ function _setupGazeTracking(): void {
                 updateBoneChain(headRuntime);
             }
 
-            // 步骤2：眼球跟随
+            // 步骤2：眼球跟随（Slerp 朝向目标：与 WASM 模式一致）
             if (needEye) {
-                for (const eyeRb of eyeRuntimes) {
-                    const eyePos = _v3();
-                    eyeRb.getWorldTranslationToRef(eyePos);
-                    const toCam = cam.position.subtractToRef(eyePos, _v3());
-                    if (toCam.lengthSquared() < 0.0001) continue;
-                    toCam.normalize();
+                const refBone = headRuntime ?? eyeRuntimes[0];
+                const refPos = _v3();
+                refBone.getWorldTranslationToRef(refPos);
 
-                    const eyeMat = _m().copyFrom(Matrix.FromArray(eyeRb.worldMatrix));
-                    const curWorldQ = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
-                    const curForward = _v3().set(0, 0, 1).rotateByQuaternionToRef(curWorldQ, _v3());
+                const lookDir = refPos.subtractToRef(cam.position, _v3());
+                if (lookDir.lengthSquared() >= 0.0001) {
+                    lookDir.normalize();
+                    const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
 
-                    const dot = Vector3.Dot(curForward, toCam);
-                    const crossY = curForward.x * toCam.z - curForward.z * toCam.x;
-                    let deltaYaw = Math.atan2(crossY, dot);
-                    const horizDist = Math.sqrt(toCam.x * toCam.x + toCam.z * toCam.z);
-                    let deltaPitch = Math.atan2(toCam.y, horizDist);
-                    deltaPitch = Math.max(-25 * Math.PI / 180, Math.min(25 * Math.PI / 180, deltaPitch));
+                    for (const eyeRb of eyeRuntimes) {
+                        const eyeMat = _m().copyFrom(Matrix.FromArray(eyeRb.worldMatrix));
+                        const curWorldQ = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
+                        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, targetWorldQ, EYE_SMOOTH));
 
-                    _prevEyeYaw += (deltaYaw - _prevEyeYaw) * EYE_SMOOTH;
-                    _prevEyePitch += (deltaPitch - _prevEyePitch) * EYE_SMOOTH;
-                    deltaYaw = _prevEyeYaw;
-                    deltaPitch = _prevEyePitch;
+                        const parentBone = eyeRb.parentBone;
+                        let parentWorldInv = _m();
+                        if (parentBone) {
+                            const parentMat = _m().copyFrom(Matrix.FromArray(parentBone.worldMatrix));
+                            parentMat.invertToRef(parentWorldInv);
+                        } else {
+                            Matrix.IdentityToRef(parentWorldInv);
+                        }
+                        const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
+                        const localQ = _q();
+                        parentInvQ.multiplyToRef(newWorldQ, localQ);
+                        eyeRb.linkedBone.rotationQuaternion = localQ;
 
-                    const yawQ = Quaternion.RotationAxis(Vector3.UpReadOnly, deltaYaw * 0.7);
-                    const pitchQ = Quaternion.RotationAxis(Vector3.RightReadOnly, deltaPitch * 0.5);
-                    const offsetQ = _q();
-                    yawQ.multiplyToRef(pitchQ, offsetQ);
-                    const newWorldQ = _q();
-                    offsetQ.multiplyToRef(curWorldQ, newWorldQ);
-
-                    const parentBone = eyeRb.parentBone;
-                    let parentWorldInv = _m();
-                    if (parentBone) {
-                        const parentMat = _m().copyFrom(Matrix.FromArray(parentBone.worldMatrix));
-                        parentMat.invertToRef(parentWorldInv);
-                    } else {
-                        Matrix.IdentityToRef(parentWorldInv);
+                        (eyeRb as any).updateWorldMatrix?.(false, false);
                     }
-                    const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
-                    const localQ = _q();
-                    parentInvQ.multiplyToRef(newWorldQ, localQ);
-                    eyeRb.linkedBone.rotationQuaternion = localQ;
-
-                    (eyeRb as any).updateWorldMatrix?.(false, false);
                 }
             }
         }

@@ -145,9 +145,9 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
   - `scene-model.ts`: ModelManager（541 行，模型注册表/生命周期/属性/物理分类/morph/bone overlay/缩略图）
   - `ui-helpers.ts`: DOM 构建函数提取（`slideRow`/`addToggleRow`/`addSliderRow` 等）
 - [x] 文件夹归类（2026-06-28，35 个源文件 → 5 子目录）:
-  - `core/`: config, main, fileservice, ui-helpers, icons
-  - `scene/`: scene, scene-model, scene-material, scene-vmd, scene-playback, camera, env-lighting
-  - `menus/`: menu, library, library-core, model-detail, model-material, model-preset, motion-popup, scene-menu, env-menu, outfit-ui, settings
+  - `core/`: config, main, fileservice, ui-helpers, icons, iconify-registry
+  - `scene/`: scene, scene-model, scene-material, scene-vmd, scene-playback, camera, env-lighting, scene-model-ops, scene-performance
+  - `menus/`: menu, library, library-core, model-detail, model-material, model-preset, motion-popup, scene-menu, env-menu, outfit-ui, settings, settings-software
   - `motion/`: procedural-motion, vmd-writer, vpd-parser, beat-detector, lipsync
   - `outfit/`: outfit, audio
 
@@ -223,7 +223,7 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 - [x] `modelToRow` null safety — `m.file_path` / `m.zip_inner` 缺失时不再崩溃
 - [x] `closeAllOverlays()` 通用化 — `document.querySelectorAll(".overlay.visible")` 替代硬编码列表
 - [x] `initLibrary` 状态信息合并 — 无库显示引导、有库显示操作指引，删除与 HTML 默认重复的 setStatus
-- [x] 前端 Vitest 测试套件（10 文件 160 tests，全量覆盖真 import 而非本地 mock）:
+- [x] 前端 Vitest 测试套件（20 文件，全量覆盖真 import 而非本地 mock）:
   - `vpd-parser.test.ts`（21 tests）— 真·import vpd-parser，TDD 产物，锁 VMD 帧格式/编码检测/pose 解析
   - `material-editor.test.ts`（39 tests）— 真·import scene.ts（`_catOf`/`_applyAll`/`setMatParams` 等），含 `_applyAll` 叠加顺序 regression 5 tests，Babylon.js 全 mock 环境
   - `model-preset.test.ts`（20 tests）— 真·import library.ts + scene.ts（`serializeModelPreset`/`applyModelPreset`/`stopVMD`/`getMatState`/`applyMatState`）
@@ -231,6 +231,19 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
   - `vmd-writer.test.ts`（10 tests）— VMD 二进制格式正确性（帧大小/签名/插值/偏移）
   - `beat-detector.test.ts`（10 tests）— 节拍检测逻辑（周期峰值/平坦/间隔约束/BPM 估计）
   - `procedural-motion.test.ts`（17 tests）— Idle/Auto Dance VMD 生成 + auto-switch 逻辑
+  - `model-detail-ui.test.ts` — 模型详情 UI 测试
+  - `lipsync.test.ts` — 口型同步测试
+  - `env-lighting.test.ts` — 光照推导测试
+  - `env-state.test.ts` — 环境状态测试
+  - `fileservice.test.ts` — 文件 URL 解析测试
+  - `environment-integration.test.ts` — 环境集成测试
+  - `env-state-integrity.test.ts` — 环境状态完整性测试
+  - `outfit.test.ts` — 换装系统测试
+  - `xpbd-solver.test.ts` — XPBD 求解器测试
+  - `xpbd-cloth.test.ts` — 布料模拟测试
+  - `scene-model.test.ts` — 模型管理器测试
+  - `scene-lighting-smoke.test.ts` — 灯光冒烟测试
+  - `menu.test.ts` — 菜单系统测试
 
 **UI 自定义系统**
 - [x] CSS 功能性 token 体系 — `--font-ui`/`--font-ui-sm`/`--font-title`/`--font-time` 等 7 个用途化变量，替代旧尺寸名变量（`--font-size-md` 等保留别名）
@@ -603,4 +616,41 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 ### 构建验证
 
 `tsc --noEmit` ✅，`vite build` ✅（139 modules，`index-33rN_ktV.js` 543.56 kB）
+
+---
+
+## 2026-07-02~03 近期修复
+
+### 模块拆分与独立
+
+- `settings-software.ts` 从 `settings.ts` 拆分独立 — MMD/Blender/自定义软件管理子菜单（`detectMMD`/`setBlenderPath`/`setMMDPath`/`addCustomSoftware`/`scanSoftwareDir`/`buildSettingsSoftwareLevel`/`buildSoftwareDetailLevel`）
+- `scene-model-ops.ts` — 模型操作独立模块（`removeModel`/`focusModel`/`arrangeModels`/变换/可见性/物理/VMD/morph/VPD）
+- `scene-performance.ts` — 性能降级模块（FPS 监控 + 自动降级，支持 auto/quality/balanced/performance 四模式）
+- `iconify-registry.ts` — Iconify 本地图标注册表（自动生成，图标常量定义）
+
+### 修复记录
+
+| 提交 | 内容 |
+|------|------|
+| `feat: 小说 vol-8 材质纹章 + 场景/菜单/配置修复` | 材质纹章系统 + 多项场景/菜单/配置修复 |
+| `fix(scene-material): 材质修复` | 材质系统修复 |
+| `fix: 布料物理/场景加载/模型/VMD 修复` | 布料/场景/模型/VMD 多项修复 + 架构/状态/排障文档更新 |
+| `fix: 测试同步 + 菜单/样式/物理/场景修复 + settings-software 独立` | settings-software 拆分独立 + 多项修复 |
+| `fix: motion/VMD/场景集成修复 + 首屏加载/光照/性能优化` | 首屏加载 + 光照 + 性能优化 |
+| `fix: 程序化动作集成修复` | 程序化动作集成修复 |
+| `fix: VMD/程序化动作/菜单/模型修复 + VMD 调试工具` | VMD/程序化动作/菜单/模型修复 |
+| `fix: 环境/光照/序列化/场景模块修复` | 环境/光照/序列化/场景模块修复 |
+| `fix: CSS/UI/布料/光照/环境修复` | CSS/UI/布料/光照/环境修复 |
+
+### 测试覆盖更新
+
+Go 端测试文件从 3 文件扩展到 8 文件：
+- `app_test.go`（12 cases）— configDir/writeConfig/detectBlender
+- `fs_test.go`（8 cases）— basenameFallbackFS
+- `pmx_test.go`（7 cases）— PMX header 解析
+- `safecall_test.go` — safe call 封装测试
+- `safecall_integration_test.go` — 安全调用集成测试
+- `shutdown_test.go` — 优雅关闭测试
+- `errors_test.go` — 错误处理测试
+- `decodezip_test.go` — zip 名称解码测试
 
