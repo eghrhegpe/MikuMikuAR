@@ -9,12 +9,14 @@ export interface LipSyncState {
     enabled: boolean;
     sensitivity: number; // 0..1，振幅阈值（低于此值视为静音，越大越不敏感）
     intensity: number; // 0..1，最大张嘴幅度
+    multiMorphEnabled: boolean; // true=驱动多口型 morph（P0 开关）
 }
 
 export const DEFAULT_LIPSYNC_STATE: LipSyncState = {
     enabled: false,
     sensitivity: 0.2,
     intensity: 0.8,
+    multiMorphEnabled: false,
 };
 
 /** 标准 MMD 口型 morph 候选名（按优先级降序）。

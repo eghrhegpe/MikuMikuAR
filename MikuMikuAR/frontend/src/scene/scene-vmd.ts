@@ -19,7 +19,6 @@ import {
     addRecentMotion,
 } from '../core/config';
 import { resolveFileUrl, normPath } from '../core/fileservice';
-import { loadVPDFromBuffer } from '../motion/vpd-parser';
 import { loadCameraVmd } from './camera';
 import { loadAudioFile } from '../outfit/audio';
 
@@ -194,7 +193,7 @@ export async function loadCameraVmdFromPath(path: string): Promise<void> {
 }
 
 export async function loadVPDPose(path: string, targetModelId?: string): Promise<void> {
-    const { focusedModel } = await getScene();
+    const { focusedModel, stopProcMotion, isProcVmdActive } = await getScene();
     if (isLoadingVmd) {
         return;
     }
@@ -208,13 +207,26 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
         }
         const rawData = await resp.arrayBuffer();
 
-        const vmdBuffer = loadVPDFromBuffer(rawData);
+        // 停掉程序化动作（VPD 姿势不被动画干扰）
+        if (isProcVmdActive()) {
+            stopProcMotion();
+        }
 
-        await loadVMDMotion(vmdBuffer, '姿势: ' + poseName.replace(/\.vpd$/i, ''), targetModelId);
+        // 解析 VPD 并作为静态姿势应用（不生成 VMD 动画）
+        const { decodeVPDData, parseVPDText } = await import('../motion/vpd-parser');
+        const { applyVPDPose } = await import('./scene-model-ops');
+        const text = decodeVPDData(rawData);
+        const pose = parseVPDText(text);
+        const id = targetModelId || focusedModelId;
+        if (!id) {
+            setStatus('请先加载模型', true);
+            return;
+        }
+        applyVPDPose(id, pose.bones, pose.morphs);
 
         const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
         if (foc) {
-            foc.vmdPath = path;
+            foc.vmdPath = path; // 记录姿势文件路径
         }
         setStatus(`✓ 姿势: ${poseName}`, true);
     } catch (err) {

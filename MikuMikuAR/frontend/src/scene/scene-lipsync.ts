@@ -55,6 +55,11 @@ export function setLipSyncIntensity(v: number): void {
     triggerAutoSave();
 }
 
+export function setLipSyncMultiMorphEnabled(v: boolean): void {
+    lipSyncState.multiMorphEnabled = v;
+    triggerAutoSave();
+}
+
 export function getLipSyncState(): LipSyncStateType {
     return { ...lipSyncState };
 }
@@ -132,6 +137,20 @@ export function updateLipSync(): void {
 
     const openWeight = amplitudeToWeight(_smoothLow, lipSyncState.sensitivity, lipSyncState.intensity);
     setModelMorphWeight(modelId, lipSyncMorphName, openWeight);
+
+    // 多 Morph LipSync：驱动多个口型 morph
+    if (lipSyncState.multiMorphEnabled && lipSyncMorphSet) {
+        // close：与 open 反比（嘴开时 close=0，嘴闭时 close=1）
+        if (lipSyncMorphSet.close) {
+            const closeWeight = amplitudeToWeight(1 - _smoothLow, lipSyncState.sensitivity, lipSyncState.intensity);
+            setModelMorphWeight(modelId, lipSyncMorphSet.close, closeWeight);
+        }
+        // pucker：由高频能量驱动（模拟「う」口型）
+        if (lipSyncMorphSet.pucker) {
+            const puckerWeight = amplitudeToWeight(_smoothHigh * 0.8, lipSyncState.sensitivity, lipSyncState.intensity);
+            setModelMorphWeight(modelId, lipSyncMorphSet.pucker, puckerWeight);
+        }
+    }
 
     // 高频能量大时轻微微笑（模拟说话表情）
     if (lipSyncMorphSet?.smile) {

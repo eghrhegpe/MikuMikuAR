@@ -159,3 +159,59 @@ export function getModelMorphWeight(id: string, morphName: string): number {
 export function resetModelMorphs(id: string): void {
     modelManager?.resetMorphs(id);
 }
+
+// ======== VPD Pose ========
+
+import type { VPDBoneData, VPDMorphData } from '../motion/vpd-parser';
+import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
+
+/**
+ * 应用 VPD 姿势到模型（静态姿势，停掉 VMD 播放）。
+ * 停掉动画后直接写 linkedBone.position / rotationQuaternion，
+ * WASM runtime 无动画输入时不覆盖。
+ *
+ * @param id       模型 ID
+ * @param bones    VPD 解析出的骨骼数据（position + rotation quaternion）
+ * @param morphs   VPD 解析出的表情数据（name + weight）
+ */
+export function applyVPDPose(
+    id: string,
+    bones: VPDBoneData[],
+    morphs: VPDMorphData[],
+): void {
+    const inst = modelRegistry.get(id);
+    if (!inst || !inst.mmdModel) {
+        console.warn('[applyVPDPose] 模型未找到:', id);
+        return;
+    }
+
+    // 1. 停掉 VMD 播放（程序化动作 + 用户 VMD）
+    stopVMD(id);
+
+    // 2. 构建骨骼名 → runtimeBone 索引映射
+    const runtimeBones = inst.mmdModel.runtimeBones;
+    const boneNameToIdx = new Map<string, number>();
+    for (let i = 0; i < runtimeBones.length; i++) {
+        boneNameToIdx.set(runtimeBones[i].name, i);
+    }
+
+    // 3. 应用骨骼变换（写 linkedBone.position / rotationQuaternion）
+    for (const b of bones) {
+        const idx = boneNameToIdx.get(b.name);
+        if (idx === undefined) continue;
+        const linked = runtimeBones[idx].linkedBone;
+        // position: VPD 是局部坐标（米），直接写入
+        linked.position = new Vector3(b.position[0], b.position[1], b.position[2]);
+        // rotation: VPD 是四元数 [x, y, z, w]
+        linked.rotationQuaternion = new Quaternion(
+            b.rotation[0], b.rotation[1], b.rotation[2], b.rotation[3],
+        );
+    }
+
+    // 4. 应用表情权重
+    for (const m of morphs) {
+        setModelMorphWeight(id, m.name, m.weight);
+    }
+
+    console.log(`[applyVPDPose] 已应用 ${bones.length} 骨骼 + ${morphs.length} 表情到模型 ${id}`);
+}

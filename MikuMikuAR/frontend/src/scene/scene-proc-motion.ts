@@ -5,6 +5,7 @@
 import {
     ProcMotionState,
     ProcMotionMode,
+    ProcMotionBoneCategory,
     DEFAULT_PROC_STATE,
     generateIdleVmd,
     generateAutoDanceVmd,
@@ -25,123 +26,149 @@ let procStarting = false;
 let procActiveKind: ProcMotionMode = 'idle';
 let procModelId: string | null = null;
 
-// ── 视线追踪（WorldMatrix 方案，VMD 播放期间有效） ──
-let _gazeObserver: any = null;
+// ── 对象池（避免每帧 new Vector3/Matrix/Quaternion，消除 GC 压力） ──
+const _v3Pool = [new Vector3(), new Vector3(), new Vector3(), new Vector3(), new Vector3(), new Vector3()];
+const _mPool = [new Matrix(), new Matrix(), new Matrix(), new Matrix()];
+const _qPool = [new Quaternion(), new Quaternion(), new Quaternion(), new Quaternion()];
+let _v3Idx = 0, _mIdx = 0, _qIdx = 0;
+function _v3(): Vector3 { return _v3Pool[_v3Idx++ % _v3Pool.length]; }
+function _m(): Matrix { return _mPool[_mIdx++ % _mPool.length]; }
+function _q(): Quaternion { return _qPool[_qIdx++ % _qPool.length]; }
 
-/** 递归收集所有子骨。 */
-function _collectDescendants(
-    bone: import('babylon-mmd/esm/Runtime/IMmdRuntimeBone').IMmdRuntimeBone,
-): import('babylon-mmd/esm/Runtime/IMmdRuntimeBone').IMmdRuntimeBone[] {
-    const result: import('babylon-mmd/esm/Runtime/IMmdRuntimeBone').IMmdRuntimeBone[] = [];
-    for (const child of bone.childBones) {
-        result.push(child);
-        result.push(..._collectDescendants(child));
+// ── 眼球追踪平滑状态 ──
+let _prevEyeYaw = 0;
+let _prevEyePitch = 0;
+const EYE_SMOOTH = 0.35; // 指数平滑系数（0=完全平滑，1=无平滑）
+
+// ── 眼部跟随（眼球追踪，每帧执行） ──
+let _eyeTrackingObserver: any = null;
+let _headTrackingObserver: any = null;
+
+/** 注销眼部跟随 + 头部跟随。 */
+function _teardownGazeTracking(): void {
+    if (_eyeTrackingObserver) {
+        scene.onBeforeRenderObservable.remove(_eyeTrackingObserver);
+        _eyeTrackingObserver = null;
     }
-    return result;
+    if (_headTrackingObserver) {
+        scene.onBeforeRenderObservable.remove(_headTrackingObserver);
+        _headTrackingObserver = null;
+    }
+    _prevEyeYaw = 0;
+    _prevEyePitch = 0;
 }
 
-/** 注册视线追踪。改写 WASM worldMatrix 确保 VMD 播放期间可见。 */
+/** 注册眼部跟随 + 头部跟随（独立 observer，实时骨骼叠加）。 */
 function _setupGazeTracking(): void {
-    if (_gazeObserver) return;
+    _teardownGazeTracking();
     const inst = procModelId ? modelManager.get(procModelId) : null;
     const mmdModel = inst?.mmdModel;
     if (!mmdModel) return;
 
-    const rootBone = mmdModel.runtimeBones.find(
-        b => b.name === '首' || b.name === 'neck' || b.name === 'Neck'
-    ) ?? mmdModel.runtimeBones.find(
-        b => b.name === '頭' || b.name === 'head' || b.name === 'Head'
-    );
-    if (!rootBone) {
-        console.warn('[proc-motion] 未找到首/头骨，视线追踪跳过');
-        return;
-    }
-
+    // 查找头骨和眼球骨骼
     const headBone = mmdModel.runtimeBones.find(
         b => b.name === '頭' || b.name === 'head' || b.name === 'Head'
-    ) ?? rootBone;
-    const descendants = _collectDescendants(rootBone);
-    // 只取左右目，不取両目（避免双重驱动）
-    let eyeBones = mmdModel.runtimeBones.filter(
+    );
+    const eyeBones = mmdModel.runtimeBones.filter(
         b => b.name === '右目' || b.name === '左目'
+            || b.name === 'Eye_R' || b.name === 'Eye_L'
+            || b.name === 'eye_r' || b.name === 'eye_l'
+            || b.name === 'RightEye' || b.name === 'LeftEye'
     );
     if (eyeBones.length === 0) {
-        // 若没有左右目，则退回到両目
-        eyeBones = mmdModel.runtimeBones.filter(b => b.name === '両目');
+        eyeBones.push(...mmdModel.runtimeBones.filter(
+            b => b.name === '両目' || b.name === 'BothEyes' || b.name === 'eyes'
+        ));
     }
 
-    console.log(`[proc-motion] 视线追踪(worldMat): 根=${rootBone.name} descendants=${descendants.length} 眼=[${eyeBones.map(b=>b.name).join(',')}]`);
+    // ── 眼部跟随 observer（insertFirst=false 确保在本帧 MMD update 之后执行）──
+    if (procState.eyeTrackingEnabled && eyeBones.length > 0) {
+        _eyeTrackingObserver = scene.onBeforeRenderObservable.add(() => {
+            if (!_procVmdActive) return;
+            const cam = scene.activeCamera;
+            if (!cam) return;
 
-    _gazeObserver = scene.onBeforeRenderObservable.add(() => {
-        if (!_procVmdActive) return;
-        const cam = scene.activeCamera;
-        if (!cam) return;
-        const camPos = cam.position;
+            for (const eyeBone of eyeBones) {
+                const eyePos = _v3().copyFrom(Vector3.ZeroReadOnly);
+                eyeBone.getWorldTranslationToRef(eyePos);
 
-        // ---- 1. 根骨旋转 + descendants 传播 ----
-        const oldRootWorld = Matrix.FromArray(rootBone.worldMatrix);
-        const headPos = new Vector3();
-        headBone.getWorldTranslationToRef(headPos);
+                const eyeMat = _m().copyFrom(Matrix.FromArray(eyeBone.worldMatrix));
+                const curWorldQuat = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
+                const curForward = _v3().set(0, 0, 1).rotateByQuaternionToRef(curWorldQuat, _v3());
 
-        const lookDir = headPos.subtract(camPos).normalize();
-        const targetWorldQuat = Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly);
-        const currentRootQuat = Quaternion.FromRotationMatrix(oldRootWorld.getRotationMatrix());
-        const blended = Quaternion.Slerp(currentRootQuat, targetWorldQuat, 0.5);
+                const toCam = _v3().set(cam.position.x - eyePos.x, cam.position.y - eyePos.y, cam.position.z - eyePos.z);
+                if (toCam.lengthSquared() < 0.0001) continue;
+                toCam.normalize();
 
-        const rootPos = new Vector3(oldRootWorld.m[12], oldRootWorld.m[13], oldRootWorld.m[14]);
-        const newRootWorld = new Matrix();
-        blended.toRotationMatrix(newRootWorld);
-        newRootWorld.setTranslation(rootPos);
-        newRootWorld.copyToArray(rootBone.worldMatrix, 0);
+                const dot = Vector3.Dot(curForward, toCam);
+                const crossY = curForward.x * toCam.z - curForward.z * toCam.x;
+                let deltaYaw = Math.atan2(crossY, dot);
+                const horizDist = Math.sqrt(toCam.x * toCam.x + toCam.z * toCam.z);
+                let deltaPitch = Math.atan2(toCam.y, horizDist);
+                const maxPitch = 25 * Math.PI / 180;
+                deltaPitch = Math.max(-maxPitch, Math.min(maxPitch, deltaPitch));
 
-        // 传播到所有 descendant（含眉眼头发）
-        const invOldRoot = oldRootWorld.clone().invert();
-        for (const child of descendants) {
-            const oldChildMat = Matrix.FromArray(child.worldMatrix);
-            const childLocal = invOldRoot.multiply(oldChildMat);
-            const newChildMat = newRootWorld.multiply(childLocal);
-            newChildMat.copyToArray(child.worldMatrix, 0);
-        }
+                _prevEyeYaw += (deltaYaw - _prevEyeYaw) * EYE_SMOOTH;
+                _prevEyePitch += (deltaPitch - _prevEyePitch) * EYE_SMOOTH;
+                deltaYaw = _prevEyeYaw;
+                deltaPitch = _prevEyePitch;
 
-        // ---- 2. 眼球水平旋转（增量旋转，绕世界 Y 轴） ----
-        for (const eyeBone of eyeBones) {
-            const eyePos = new Vector3();
-            eyeBone.getWorldTranslationToRef(eyePos);
-            const eyeMat = Matrix.FromArray(eyeBone.worldMatrix);
-            const curWorldQuat = Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix());
+                const yawQuat = _q().copyFrom(Quaternion.RotationAxis(Vector3.UpReadOnly, deltaYaw * 0.7));
+                const pitchQuat = _q().copyFrom(Quaternion.RotationAxis(Vector3.RightReadOnly, deltaPitch * 0.5));
+                const eyeDelta = _q();
+                yawQuat.multiplyToRef(pitchQuat, eyeDelta);
+                const newWorldQuat = _q();
+                eyeDelta.multiplyToRef(curWorldQuat, newWorldQuat);
 
-            // 当前 forward（世界空间）
-            const curForward = new Vector3(0, 0, 1);
-            curForward.rotateByQuaternionToRef(curWorldQuat, curForward);
-
-            // 目标方向（水平分量）
-            const toCam = new Vector3(camPos.x - eyePos.x, 0, camPos.z - eyePos.z);
-            if (toCam.lengthSquared() < 0.0001) continue;
-            toCam.normalize();
-
-            // 计算绕 Y 轴的角度差：方向反了把 deltaYaw 取负
-            const dot = Vector3.Dot(curForward, toCam);
-            const crossY = curForward.x * toCam.z - curForward.z * toCam.x;
-            const deltaYaw = Math.atan2(crossY, dot);
-
-            // 增量旋转 + 写回
-            const deltaQuat = Quaternion.RotationAxis(Vector3.UpReadOnly, deltaYaw * 0.7);
-            const newWorldQuat = deltaQuat.multiply(curWorldQuat);
-
-            const eyePosVec = new Vector3(eyeMat.m[12], eyeMat.m[13], eyeMat.m[14]);
-            const eyeNewMat = new Matrix();
-            newWorldQuat.toRotationMatrix(eyeNewMat);
-            eyeNewMat.setTranslation(eyePosVec);
-            eyeNewMat.copyToArray(eyeBone.worldMatrix, 0);
-        }
-    });
-}
-
-function _teardownGazeTracking(): void {
-    if (_gazeObserver) {
-        scene.onBeforeRenderObservable.remove(_gazeObserver);
-        _gazeObserver = null;
+                const eyeNewMat = _m();
+                newWorldQuat.toRotationMatrix(eyeNewMat);
+                eyeNewMat.setTranslation(eyePos);
+                eyeNewMat.copyToArray(eyeBone.worldMatrix, 0);
+            }
+        }, undefined, false);
     }
+
+    // ── 头部跟随 observer（insertFirst=false 确保在 MMD update 之后执行）──
+    if (procState.headTrackingEnabled && headBone) {
+        _headTrackingObserver = scene.onBeforeRenderObservable.add(() => {
+            if (!_procVmdActive) return;
+            const cam = scene.activeCamera;
+            if (!cam) return;
+            const camPos = cam.position;
+
+            const headPos = _v3();
+            headBone.getWorldTranslationToRef(headPos);
+
+            // 保存头骨旧世界矩阵（用于计算增量，传播给子骨骼）
+            const oldHeadMat = _m().copyFrom(Matrix.FromArray(headBone.worldMatrix));
+
+            const lookDir = headPos.subtractToRef(camPos, _v3()).normalize();
+            const targetWorldQuat = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
+
+            const curWorldQuat = _q().copyFrom(Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix()));
+            const blended = _q().copyFrom(Quaternion.Slerp(curWorldQuat, targetWorldQuat, 0.3));
+
+            blended.toRotationMatrix(oldHeadMat);
+            oldHeadMat.setTranslation(headPos);
+            oldHeadMat.copyToArray(headBone.worldMatrix, 0);
+
+            // 将头部变换增量传播给眼骨（眼部跟随关闭时，眼骨需随头骨转动）
+            if (!procState.eyeTrackingEnabled || eyeBones.length === 0) {
+                const newHeadMat = Matrix.FromArray(headBone.worldMatrix);
+                const invOldHead = _m();
+                oldHeadMat.invertToRef(invOldHead);
+                // headDelta = newHeadMat × invOldHead
+                const headDelta = newHeadMat.multiply(invOldHead);
+                for (const eyeBone of eyeBones) {
+                    const eyeMat = _m().copyFrom(Matrix.FromArray(eyeBone.worldMatrix));
+                    const newEyeMat = headDelta.multiply(eyeMat);
+                    newEyeMat.copyToArray(eyeBone.worldMatrix, 0);
+                }
+            }
+        }, undefined, false);
+    }
+
+    console.log(`[proc-motion] 视线追踪: 眼=${procState.eyeTrackingEnabled} 头=${procState.headTrackingEnabled} 眼骨=[${eyeBones.map(b=>b.name).join(',')}]`);
 }
 
 /** 只读访问器，外部不可直接修改程序化动作激活状态。 */
@@ -331,6 +358,65 @@ export function getProcMotionState(): ProcMotionState {
  *  外部直接调用此函数时，请确保调用者在合适时机手动触发保存。 */
 export function setProcMotionState(s: ProcMotionState): void {
     procState = { ...s };
+}
+
+// ======== 新增开关 Getter/Setter（P0/P1） ========
+
+/** 设置单个微动效果的开关 */
+export function setProcMotionBoneToggle(cat: ProcMotionBoneCategory, v: boolean): void {
+    const bt = { ...procState.boneToggles };
+    bt[cat] = v;
+    procState = { ...procState, boneToggles: bt };
+    triggerAutoSave();
+}
+
+/** 批量设置微动效果开关 */
+export function setProcMotionBoneToggles(bt: Partial<Record<ProcMotionBoneCategory, boolean>>): void {
+    procState = { ...procState, boneToggles: { ...procState.boneToggles, ...bt } };
+    triggerAutoSave();
+}
+
+export function setProcMotionVpdApplyEnabled(v: boolean): void {
+    procState = { ...procState, vpdApplyEnabled: v };
+    triggerAutoSave();
+}
+
+export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']): void {
+    procState = { ...procState, interpOverride: v };
+    triggerAutoSave();
+}
+
+/** 设置 BPM 量化开关（通过 BeatDetector 实例） */
+export function setBpmQuantizeEnabled(v: boolean): void {
+    if (procBeatDetector) {
+        procBeatDetector.setBpmQuantizeEnabled(v);
+    }
+}
+
+export function getBpmQuantizeEnabled(): boolean {
+    return procBeatDetector?.getBpmQuantizeEnabled() ?? true;
+}
+
+/** 设置眼部跟随开关（实时效果，不重新生成 VMD）。 */
+export function setProcMotionEyeTrackingEnabled(v: boolean): void {
+    procState = { ...procState, eyeTrackingEnabled: v };
+    triggerAutoSave();
+    // 重新启动视线追踪（会先 teardown）
+    if (_procVmdActive) {
+        _teardownGazeTracking();
+        _setupGazeTracking();
+    }
+}
+
+/** 设置头部跟随开关（实时效果，不重新生成 VMD）。 */
+export function setProcMotionHeadTrackingEnabled(v: boolean): void {
+    procState = { ...procState, headTrackingEnabled: v };
+    triggerAutoSave();
+    // 重新启动视线追踪（会先 teardown）
+    if (_procVmdActive) {
+        _teardownGazeTracking();
+        _setupGazeTracking();
+    }
 }
 
 export function regenerateProcMotion(): void {

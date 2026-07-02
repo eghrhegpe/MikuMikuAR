@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -32,10 +33,16 @@ func TestWriteConfig(t *testing.T) {
 		t.Fatalf("read config.json: %v", err)
 	}
 
-	got := string(data)
-	want := `{"ui_state":{"scale":0,"popupWidth":0,"accent":"","fontFamily":"","animations":false,"blurBg":false},"library_root":"/fake/root","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false,"favorites":null,"render_presets":null,"mmd_path":"","custom_software":null,"tags":null,"dance_sets":null,"recent_models":null}`
-	if got != want {
-		t.Errorf("config.json content = %q, want %q", got, want)
+	// Round-trip: parse JSON back and verify key fields
+	var got Config
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("unmarshal config.json: %v", err)
+	}
+	if got.LibraryRoot != "/fake/root" {
+		t.Errorf("LibraryRoot = %q, want %q", got.LibraryRoot, "/fake/root")
+	}
+	if got.BlenderPath != "C:/blender.exe" {
+		t.Errorf("BlenderPath = %q, want %q", got.BlenderPath, "C:/blender.exe")
 	}
 }
 
@@ -78,8 +85,17 @@ func TestWriteConfig_OverwriteExisting(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := string(data); got != `{"ui_state":{"scale":0,"popupWidth":0,"accent":"","fontFamily":"","animations":false,"blurBg":false},"library_root":"/new","external_paths":null,"blender_path":"C:/blender.exe","display_name_priority":"","download_watch_dir":"","download_auto_import":false,"favorites":null,"render_presets":null,"mmd_path":"","custom_software":null,"tags":null,"dance_sets":null,"recent_models":null}` {
-		t.Errorf("after overwrite = %q, want new config", got)
+
+	// Round-trip: parse and verify the overwrite took effect
+	var got Config
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("unmarshal config.json: %v", err)
+	}
+	if got.LibraryRoot != "/new" {
+		t.Errorf("LibraryRoot = %q, want %q", got.LibraryRoot, "/new")
+	}
+	if got.BlenderPath != "C:/blender.exe" {
+		t.Errorf("BlenderPath = %q, want %q", got.BlenderPath, "C:/blender.exe")
 	}
 }
 

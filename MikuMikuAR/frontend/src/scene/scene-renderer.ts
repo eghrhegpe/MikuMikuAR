@@ -27,6 +27,7 @@ export interface RenderState {
     outlineEnabled: boolean;
     outlineColor: [number, number, number]; // RGB 0-1
     fxaaEnabled: boolean;
+    msaaSamples: number; // MSAA 采样数（1=关闭，2/4/8=开启）
     // Stage / imageProcessing
     toneMapping: number; // 0=OFF 1=ACES 2=Reinhard 3=Cineon 4=Neutral
     exposure: number; // 0-4, default 1
@@ -121,6 +122,7 @@ export function getRenderState(): RenderState {
         outlineEnabled: _outlineEnabled,
         outlineColor: _outlineColor,
         fxaaEnabled: pipeline.fxaaEnabled,
+        msaaSamples: pipeline.samples ?? 1,
         toneMapping: pipeline.imageProcessing.toneMappingType ?? 0,
         exposure: pipeline.imageProcessing.exposure ?? 1,
         contrast: pipeline.imageProcessing.contrast ?? 1,
@@ -146,6 +148,7 @@ function _defaultRenderState(): RenderState {
         outlineEnabled: false,
         outlineColor: [0, 0, 0],
         fxaaEnabled: false,
+        msaaSamples: 1,
         toneMapping: 0,
         exposure: 1,
         contrast: 1,
@@ -201,6 +204,9 @@ function _applyRenderState(s: Partial<RenderState>): void {
     }
     if (s.fxaaEnabled !== undefined) {
         pipeline.fxaaEnabled = s.fxaaEnabled;
+    }
+    if (s.msaaSamples !== undefined) {
+        pipeline.samples = clamp(s.msaaSamples, 1, 8);
     }
 
     // Outline — 仅在状态/颜色实际变化时遍历模型

@@ -76,7 +76,13 @@ import {
     setLipSyncEnabled,
     setLipSyncSensitivity,
     setLipSyncIntensity,
+    setProcMotionInterpOverride,
+    setLipSyncMultiMorphEnabled,
+    setBpmQuantizeEnabled,
+    getBpmQuantizeEnabled,
 } from '../scene/scene';
+import { setProcMotionBoneToggle, setProcMotionEyeTrackingEnabled, setProcMotionHeadTrackingEnabled } from '../scene/scene-proc-motion';
+import { getProcMotionBoneCategories } from '../motion/procedural-motion';
 import { modelRegistry, focusedModelId, setFocusedModelId } from '../core/config';
 import type { ProcMotionMode } from '../motion/procedural-motion';
 import {
@@ -164,17 +170,23 @@ function buildSceneRoot(): PopupLevel {
                     sceneMenu.push(buildPresetScenesLevel())
                 );
             });
-            // Card 2: 渲染与灯光
+            // Card 2: 渲染
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:sparkles', '渲染', true, () =>
-                    sceneMenu.push(buildRenderLevel())
+                slideRow(c, 'lucide:sparkles', '后处理', true, () =>
+                    sceneMenu.push(buildPostProcessLevel())
                 );
+                slideRow(c, 'lucide:monitor', '舞台', true, () =>
+                    sceneMenu.push(buildStageLevel())
+                );
+                slideRow(c, 'lucide:palette', '渲染预设', true, () =>
+                    sceneMenu.push(buildPresetsLevel())
+                );
+            });
+            // Card 3: 灯光与工具
+            cardContainer(container, (c) => {
                 slideRow(c, 'lucide:lightbulb', '舞台灯光', true, () =>
                     sceneMenu.push(buildStageLightLevel())
                 );
-            });
-            // Card 3: 工具
-            cardContainer(container, (c) => {
                 slideRow(c, 'lucide:camera', '截图', true, () =>
                     sceneMenu.push(buildScreenshotLevel())
                 );
@@ -241,6 +253,85 @@ export function buildProcMotionLevel(): PopupLevel {
                         regenerateProcMotion();
                     },
                     'lucide:fast-forward'
+                );
+            });
+
+            // ======== 微动效果开关 ========
+            cardContainer(container, (c) => {
+                const cats = getProcMotionBoneCategories();
+                for (const cat of cats) {
+                    const labels: Record<string, string> = {
+                        center:   '重心弹跳',
+                        upper:    '上半身呼吸',
+                        upper2:   '上半身2扭转',
+                        waist:    '腰部扭胯',
+                        head:     '头部点头',
+                        arm:      '手臂摆动',
+                        groove:   'Groove微晃',
+                        shoulder: '肩部耸肩',
+                        allParent:'全親微晃',
+                        wrist:    '手腕节拍',
+                        footIk:   '足IK踏步',
+                        blink:    '眨眼',
+                        emotion:  '表情情绪轮',
+                    };
+                    const icons: Record<string, string> = {
+                        center:   'lucide:move',
+                        upper:    'lucide:activity',
+                        upper2:   'lucide:rotate-ccw',
+                        waist:    'lucide:uturn-arrow',
+                        head:     'lucide:box-select',
+                        arm:      'lucide:arm-flex',
+                        groove:   'lucide:waves',
+                        shoulder: 'lucide:arrow-up-down',
+                        allParent:'lucide:dot',
+                        wrist:    'lucide:hand',
+                        footIk:   'lucide:footprints',
+                        blink:    'lucide:eye',
+                        emotion:  'lucide:smile',
+                    };
+                    addToggleRow(
+                        c,
+                        labels[cat] ?? cat,
+                        st.boneToggles[cat],
+                        (v) => {
+                            setProcMotionBoneToggle(cat, v);
+                            regenerateProcMotion();
+                        },
+                        icons[cat] ?? 'lucide:circle'
+                    );
+                }
+            });
+
+            // ======== 实时效果（每帧执行，不生成 VMD） ========
+            cardContainer(container, (c) => {
+                addToggleRow(c, '眼部跟随', st.eyeTrackingEnabled, (v) => {
+                    setProcMotionEyeTrackingEnabled(v);
+                    sceneMenu.reRender();
+                }, 'lucide:eye');
+                addToggleRow(c, '头部跟随', st.headTrackingEnabled, (v) => {
+                    setProcMotionHeadTrackingEnabled(v);
+                    sceneMenu.reRender();
+                }, 'lucide:mouse-pointer-2');
+            });
+
+            // 插值曲线选择器
+            cardContainer(container, (c) => {
+                addModeSlider(
+                    c,
+                    '插值曲线',
+                    [
+                        { value: 'auto' as const, label: '自动' },
+                        { value: 'sharp' as const, label: '锐利' },
+                        { value: 'ease-in-out' as const, label: '缓入缓出' },
+                        { value: 'ease-out' as const, label: '缓出' },
+                    ],
+                    st.interpOverride,
+                    (v) => {
+                        setProcMotionInterpOverride(v);
+                        regenerateProcMotion();
+                    },
+                    'lucide:sliders'
                 );
             });
         },
@@ -814,7 +905,7 @@ function buildStageLightLevel(): PopupLevel {
                     (v) => setStageLightState({ orbitElevation: v })
                 );
                 addSliderRow(
-                    c, '距离', state.orbitDistance, 15, 50, 0.5,
+                    c, '距离', state.orbitDistance, 5, 50, 0.5,
                     () => {}, 'lucide:move',
                     (v) => setStageLightState({ orbitDistance: v })
                 );
@@ -897,9 +988,9 @@ function buildPostProcessLevel(): PopupLevel {
                             inner,
                             '核大小',
                             state.bloomKernel,
-                            0,
-                            512,
-                            1,
+                            16,
+                            256,
+                            2,
                             () => {},
                             'lucide:circle',
                             (v) => {
@@ -916,19 +1007,33 @@ function buildPostProcessLevel(): PopupLevel {
                     triggerAutoSave();
                 }, 'lucide:square');
 
-                // 抗锯齿（关闭/FXAA/4x/8x）
+                // 抗锯齿（关闭/FXAA/2x/4x/8x）
                 addModeSlider(
                     c,
                     '抗锯齿',
                     [
                         { value: 'off', label: '关闭' },
                         { value: 'fxaa', label: 'FXAA' },
+                        { value: '2x', label: '2x' },
                         { value: '4x', label: '4x' },
                         { value: '8x', label: '8x' },
                     ],
-                    state.fxaaEnabled ? 'fxaa' : 'off',
+                    state.msaaSamples > 1 ? `${state.msaaSamples}x` : state.fxaaEnabled ? 'fxaa' : 'off',
                     (v) => {
-                        setRenderState({ fxaaEnabled: v === 'fxaa' || v === '4x' || v === '8x' });
+                        // 根据选项设置 FXAA 和 MSAA
+                        const updates: Partial<import('../scene/scene-renderer').RenderState> = {};
+                        if (v === 'off') {
+                            updates.fxaaEnabled = false;
+                            updates.msaaSamples = 1;
+                        } else if (v === 'fxaa') {
+                            updates.fxaaEnabled = true;
+                            updates.msaaSamples = 1;
+                        } else {
+                            // 2x/4x/8x
+                            updates.fxaaEnabled = false;
+                            updates.msaaSamples = parseInt(v);
+                        }
+                        setRenderState(updates);
                         triggerAutoSave();
                     },
                     'lucide:scan-line'
@@ -972,8 +1077,8 @@ function buildPostProcessLevel(): PopupLevel {
                     '色差',
                     state.chromaticAberrationAmount,
                     0,
-                    20,
-                    0.5,
+                    8,
+                    0.2,
                     () => {},
                     'lucide:rainbow',
                     (v) => {
@@ -991,8 +1096,8 @@ function buildPostProcessLevel(): PopupLevel {
                     '颗粒',
                     state.grainIntensity,
                     0,
-                    100,
-                    5,
+                    50,
+                    2,
                     () => {},
                     'lucide:grid-3x3',
                     (v) => {
@@ -1076,8 +1181,8 @@ function buildStageLevel(): PopupLevel {
                             inner,
                             'FOV',
                             state.fov,
-                            0.1,
-                            3,
+                            0.3,
+                            2,
                             0.05,
                             () => {},
                             'lucide:maximize-2',
@@ -1130,70 +1235,80 @@ function buildStageLevel(): PopupLevel {
 /** Built-in render presets. */
 const builtinPresets: Record<string, Partial<RenderState>> = {
     standard: {
-        bloomEnabled: false,
+        bloomEnabled: true,
         bloomWeight: 0.3,
-        bloomThreshold: 0.5,
+        bloomThreshold: 0.6,
         bloomKernel: 64,
-        fxaaEnabled: false,
+        fxaaEnabled: true,
         outlineEnabled: false,
-        toneMapping: 0,
+        toneMapping: 1,
         exposure: 1,
-        contrast: 1,
+        contrast: 1.1,
         fov: 0.8,
         bgColor: [0.12, 0.12, 0.16],
     },
     cartoon: {
         bloomEnabled: true,
-        bloomWeight: 0.6,
+        bloomWeight: 0.5,
         bloomThreshold: 0.3,
         bloomKernel: 128,
         fxaaEnabled: true,
         outlineEnabled: true,
         outlineColor: [0, 0, 0],
         toneMapping: 2,
-        exposure: 1.2,
-        contrast: 1.3,
+        exposure: 1.1,
+        contrast: 1.4,
         fov: 0.8,
-        bgColor: [0.15, 0.15, 0.2],
+        bgColor: [0.18, 0.18, 0.22],
     },
     realistic: {
-        bloomEnabled: false,
-        bloomWeight: 0.3,
-        bloomThreshold: 0.5,
+        bloomEnabled: true,
+        bloomWeight: 0.25,
+        bloomThreshold: 0.7,
         bloomKernel: 64,
         fxaaEnabled: true,
         outlineEnabled: false,
         toneMapping: 1,
-        exposure: 1,
-        contrast: 1,
+        exposure: 1.1,
+        contrast: 1.2,
         fov: 0.7,
+        vignetteEnabled: true,
+        vignetteDarkness: 0.4,
+        dofEnabled: true,
+        dofAperture: 1.5,
         bgColor: [0.08, 0.08, 0.12],
     },
     warm: {
         bloomEnabled: true,
-        bloomWeight: 0.4,
+        bloomWeight: 0.45,
         bloomThreshold: 0.4,
-        bloomKernel: 64,
-        fxaaEnabled: false,
+        bloomKernel: 96,
+        fxaaEnabled: true,
         outlineEnabled: false,
         toneMapping: 2,
-        exposure: 1.1,
-        contrast: 0.9,
+        exposure: 1.2,
+        contrast: 1.1,
         fov: 0.8,
-        bgColor: [0.18, 0.14, 0.1],
+        bgColor: [0.2, 0.15, 0.1],
     },
     cyberpunk: {
         bloomEnabled: true,
-        bloomWeight: 0.8,
+        bloomWeight: 0.7,
         bloomThreshold: 0.2,
-        bloomKernel: 256,
+        bloomKernel: 192,
         fxaaEnabled: true,
         outlineEnabled: true,
         outlineColor: [1, 0, 1],
         toneMapping: 4,
-        exposure: 1.3,
-        contrast: 1.5,
-        fov: 0.9,
+        exposure: 1.4,
+        contrast: 1.6,
+        fov: 0.85,
+        vignetteEnabled: true,
+        vignetteDarkness: 0.6,
+        chromaticAberrationEnabled: true,
+        chromaticAberrationAmount: 2,
+        grainEnabled: true,
+        grainIntensity: 15,
         bgColor: [0.02, 0.02, 0.06],
     },
 };
@@ -1218,34 +1333,24 @@ function buildPresetsLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             container.classList.remove('render-card');
-            // Card 1: built-in presets
-            cardContainer(container, (c) => {
-                for (const [key] of Object.entries(builtinPresets)) {
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    {
-                        const iconSpan = document.createElement('span');
-                        iconSpan.className = 'slide-icon';
-                        const iconEl = createIconifyIcon('lucide:palette');
-                        if (iconEl) {
-                            iconSpan.appendChild(iconEl);
-                        }
-                        row.appendChild(iconSpan);
-                        const labelSpan = document.createElement('span');
-                        labelSpan.className = 'slide-label';
-                        labelSpan.textContent = PRESET_LABELS[key] || key;
-                        row.appendChild(labelSpan);
+            // Built-in presets — 横排芯片
+            const chipGroup = document.createElement('div');
+            chipGroup.className = 'preset-group';
+            chipGroup.style.paddingBottom = '6px';
+            for (const [key] of Object.entries(builtinPresets)) {
+                const btn = document.createElement('button');
+                btn.className = 'preset-chip';
+                btn.textContent = PRESET_LABELS[key] || key;
+                btn.addEventListener('click', () => {
+                    const preset = getBuiltinPreset(key);
+                    if (preset) {
+                        transitionRenderState(preset, 2000);
                     }
-                    row.addEventListener('click', () => {
-                        const preset = getBuiltinPreset(key);
-                        if (preset) {
-                            transitionRenderState(preset, 2000);
-                        }
-                        setStatus(`✓ 预设: ${PRESET_LABELS[key]}`, true);
-                    });
-                    c.appendChild(row);
-                }
-            });
+                    setStatus(`✓ 预设: ${PRESET_LABELS[key]}`, true);
+                });
+                chipGroup.appendChild(btn);
+            }
+            container.appendChild(chipGroup);
             // Save
             const saveRow = document.createElement('div');
             saveRow.className = 'slide-item';
@@ -1264,64 +1369,22 @@ function buildPresetsLevel(): PopupLevel {
             }
             saveRow.addEventListener('click', showPresetSaveDialog);
             container.appendChild(saveRow);
-            // Card 2: user presets
+            // User presets
             if (Object.keys(userPresets).length > 0) {
-                cardContainer(container, (c) => {
-                    for (const [name] of Object.entries(userPresets)) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        {
-                            const iconSpan = document.createElement('span');
-                            iconSpan.className = 'slide-icon';
-                            const iconEl = createIconifyIcon('lucide:palette');
-                            if (iconEl) {
-                                iconSpan.appendChild(iconEl);
-                            }
-                            row.appendChild(iconSpan);
-                            const labelSpan = document.createElement('span');
-                            labelSpan.className = 'slide-label';
-                            labelSpan.textContent = name;
-                            row.appendChild(labelSpan);
-                        }
-                        row.addEventListener('click', () => {
-                            setRenderState(userPresets[name]);
-                            setStatus(`✓ 预设: ${name}`, true);
-                        });
-                        c.appendChild(row);
-                        const delRow = document.createElement('div');
-                        delRow.className = 'slide-item';
-                        {
-                            const iconSpan = document.createElement('span');
-                            iconSpan.className = 'slide-icon';
-                            const iconEl = createIconifyIcon('lucide:trash-2');
-                            if (iconEl) {
-                                iconSpan.appendChild(iconEl);
-                            }
-                            delRow.appendChild(iconSpan);
-                            const labelSpan = document.createElement('span');
-                            labelSpan.className = 'slide-label';
-                            labelSpan.style.color = 'var(--text-dim)';
-                            labelSpan.textContent = `删除: ${name}`;
-                            delRow.appendChild(labelSpan);
-                        }
-                        delRow.addEventListener('click', () => {
-                            DeleteRenderPreset(name)
-                                .then(() => {
-                                    delete userPresets[name];
-                                    if (sceneMenu) {
-                                        sceneMenu.setLevel(
-                                            sceneMenu.levelCount - 1,
-                                            buildPresetsLevel()
-                                        );
-                                        sceneMenu.reRender();
-                                    }
-                                    setStatus(`✓ 预设已删除: ${name}`, true);
-                                })
-                                .catch(() => setStatus('✗ 删除失败', false));
-                        });
-                        c.appendChild(delRow);
-                    }
-                });
+                const userChipGroup = document.createElement('div');
+                userChipGroup.className = 'preset-group';
+                userChipGroup.style.paddingBottom = '6px';
+                for (const [name] of Object.entries(userPresets)) {
+                    const btn = document.createElement('button');
+                    btn.className = 'preset-chip';
+                    btn.textContent = name;
+                    btn.addEventListener('click', () => {
+                        setRenderState(userPresets[name]);
+                        setStatus(`✓ 预设: ${name}`, true);
+                    });
+                    userChipGroup.appendChild(btn);
+                }
+                container.appendChild(userChipGroup);
             }
         },
     };

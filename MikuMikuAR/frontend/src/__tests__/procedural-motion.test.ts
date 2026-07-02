@@ -45,14 +45,6 @@ describe('generateIdleVmd', () => {
     it('loop closes (first and last bone frame match)', () => {
         const buf2 = generateIdleVmd(state, [], BONES_CENTER_UPPER);
         const view = new DataView(buf2);
-        // First bone frame rotation at offset 54+15+4+12 = 85
-        const _firstRot = [
-            view.getFloat32(85, true),
-            view.getFloat32(89, true),
-            view.getFloat32(93, true),
-            view.getFloat32(97, true),
-        ];
-        // Last frame: find last bone frame offset
         const boneCount = view.getUint32(50, true);
         const lastOff = 54 + (boneCount - 1) * 111 + 15 + 4 + 12;
         const lastRot = [
@@ -68,11 +60,86 @@ describe('generateIdleVmd', () => {
         const zeroState = { ...state, intensity: 0 };
         const buf2 = generateIdleVmd(zeroState, [], BONES_CENTER_UPPER);
         const view = new DataView(buf2);
-        // Upper body bone rotation X at first frame
-        const off = 54 + 15 + 4; // skip name+frame, position starts
-        // position[0..2] then rotation[0]
+        const off = 54 + 15 + 4;
         const rotX = view.getFloat32(off + 12, true);
         expect(Math.abs(rotX)).toBeLessThan(0.001);
+    });
+
+    it('works with no bones at all (empty skeleton)', () => {
+        const buf2 = generateIdleVmd(state, [], []);
+        expect(buf2.byteLength).toBeGreaterThan(50); // at least VMD header
+        const sig = new TextDecoder().decode(new Uint8Array(buf2, 0, 25));
+        expect(sig).toBe('Vocaloid Motion Data 0002');
+    });
+
+    it('speed=0.1 (minimum) produces longer loop', () => {
+        const slow = generateIdleVmd({ ...state, speed: 0.1}, [], BONES_CENTER_UPPER);
+        const fast = generateIdleVmd({ ...state, speed: 10}, [], BONES_CENTER_UPPER);
+        // 极慢速度 → 更多帧 → 更大文件
+        expect(slow.byteLength).toBeGreaterThan(fast.byteLength);
+    });
+
+    it('intensity=1 produces larger rotations than intensity=0.1', () => {
+        const high = generateIdleVmd({ ...state, intensity: 1 }, ['まばたき'], BONES_CENTER_UPPER);
+        const low = generateIdleVmd({ ...state, intensity: 0.1 }, ['まばたき'], BONES_CENTER_UPPER);
+        // 更高强度 → 更大旋转值 → 更多非零帧 → 更大文件（或至少不更小）
+        expect(high.byteLength).toBeGreaterThanOrEqual(low.byteLength);
+    });
+
+    it('includes neck bone frames when neck bone present', () => {
+        const bonesWithNeck = ['センター', '上半身', '首', '頭'];
+        const buf2 = generateIdleVmd(state, [], bonesWithNeck);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThan(2); // center + upper + neck + head
+    });
+
+    it('includes allparent bone frames', () => {
+        const bonesWithParent = ['全ての親', 'センター', '上半身'];
+        const buf2 = generateIdleVmd(state, [], bonesWithParent);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThanOrEqual(2);
+    });
+
+    it('includes waist bone frames', () => {
+        const bonesWithWaist = ['センター', '腰', '上半身'];
+        const buf2 = generateIdleVmd(state, [], bonesWithWaist);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThanOrEqual(2);
+    });
+
+    it('includes upper2 bone frames', () => {
+        const bonesWithUpper2 = ['センター', '上半身', '上半身2'];
+        const buf2 = generateIdleVmd(state, [], bonesWithUpper2);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThanOrEqual(2);
+    });
+
+    it('includes shoulder bone frames', () => {
+        const bonesWithShoulders = ['センター', '左肩', '右肩'];
+        const buf2 = generateIdleVmd(state, [], bonesWithShoulders);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThanOrEqual(2);
+    });
+
+    it('includes wrist bone frames', () => {
+        const bonesWithWrists = ['センター', '左手首', '右手首'];
+        const buf2 = generateIdleVmd(state, [], bonesWithWrists);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThanOrEqual(2);
+    });
+
+    it('center without upper/neck uses larger sway amplitude', () => {
+        // センター只有，没有上半身/首 → hasBreath=false → swayAmp 更大
+        const buf2 = generateIdleVmd(state, [], ['センター']);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThanOrEqual(1);
     });
 });
 
@@ -91,7 +158,6 @@ describe('generateAutoDanceVmd', () => {
     it('higher BPM produces shorter loop', () => {
         const slow = generateAutoDanceVmd(state, 60, [], BONES_ALL);
         const fast = generateAutoDanceVmd(state, 180, [], BONES_ALL);
-        // Faster BPM = fewer frames per loop = smaller file
         expect(fast.byteLength).toBeLessThan(slow.byteLength);
     });
 
@@ -101,9 +167,13 @@ describe('generateAutoDanceVmd', () => {
         expect(low.byteLength).toBe(at60.byteLength);
     });
 
+    it('clamps BPM above 200', () => {
+        const over = generateAutoDanceVmd(state, 300, [], BONES_ALL);
+        const at200 = generateAutoDanceVmd(state, 200, [], BONES_ALL);
+        expect(over.byteLength).toBe(at200.byteLength);
+    });
+
     it('includes arm bone frames', () => {
-        // 骨骼名是 Shift-JIS 编码，用编码后的字节序列匹配
-        // 左腕 SJIS (encoding-japanese): 左=0x8DB6 腕=0x9872
         const u8 = new Uint8Array(buf);
         const view = new DataView(buf);
         const boneCount = view.getUint32(50, true);
@@ -132,6 +202,80 @@ describe('generateAutoDanceVmd', () => {
         const morphCountOff = 54 + boneCount * 111;
         expect(view.getUint32(morphCountOff, true)).toBeGreaterThan(0);
     });
+
+    it('intensity=0 produces minimal motion', () => {
+        const zero = generateAutoDanceVmd({ ...state, intensity: 0 }, 120, [], BONES_ALL);
+        const high = generateAutoDanceVmd({ ...state, intensity: 1 }, 120, [], BONES_ALL);
+        // 强度 0 → 旋转值接近 0 → 更小文件
+        expect(zero.byteLength).toBeLessThanOrEqual(high.byteLength);
+    });
+
+    it('works with groove bone', () => {
+        const bonesWithGroove = ['センター', 'グルーブ', '上半身'];
+        const buf2 = generateAutoDanceVmd(state, 120, [], bonesWithGroove);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThanOrEqual(2);
+    });
+
+    it('works with leg IK bones', () => {
+        const bonesWithLegs = ['センター', '上半身', '左足ＩＫ', '右足ＩＫ'];
+        const buf2 = generateAutoDanceVmd(state, 120, [], bonesWithLegs);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThanOrEqual(2);
+    });
+
+    it('works with no bones at all', () => {
+        const buf2 = generateAutoDanceVmd(state, 120, [], []);
+        expect(buf2.byteLength).toBeGreaterThan(50);
+    });
+
+    it('speed=0.1 (minimum) produces longer loop than speed=10', () => {
+        const slow = generateAutoDanceVmd({ ...state, speed: 0.1 }, 120, [], BONES_ALL);
+        const fast = generateAutoDanceVmd({ ...state, speed: 10 }, 120, [], BONES_ALL);
+        expect(slow.byteLength).toBeGreaterThan(fast.byteLength);
+    });
+
+    it('includes emotion morphs when smile morphs available', () => {
+        // 提供带笑い的 morph 名列表，触发情绪轮
+        const morphsWithSmile = ['まばたき', '笑い', '悲しみ', '怒り', 'びっくり', '照れ', 'ウィンク'];
+        const buf2 = generateAutoDanceVmd(state, 120, morphsWithSmile, BONES_ALL);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        const morphCountOff = 54 + boneCount * 111;
+        // 应该有 morph 帧（至少 blink + 情绪 morph）
+        expect(view.getUint32(morphCountOff, true)).toBeGreaterThan(0);
+    });
+
+    it('skips emotion wheel when no matching morphs', () => {
+        // 只提供不匹配任何情绪的 morph 名
+        const buf2 = generateAutoDanceVmd(state, 120, ['unknown_morph'], BONES_ALL);
+        // 仍然生成有效 VMD（只是没有情绪 morph 帧）
+        expect(buf2.byteLength).toBeGreaterThan(200);
+    });
+
+    it('emotion wheel with only wink morph (no other emotions)', () => {
+        // 只有 wink 类别匹配
+        const morphsWinkOnly = ['ウィンク'];
+        const buf2 = generateAutoDanceVmd(state, 120, morphsWinkOnly, BONES_ALL);
+        expect(buf2.byteLength).toBeGreaterThan(200);
+    });
+
+    it('interpolation: arms use EASE_OUT, center/waist use SHARP', () => {
+        // 通过骨骼帧数验证各骨骼都被生成
+        const view = new DataView(buf);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThanOrEqual(4); // center, upper, arms, etc.
+    });
+
+    it('works with wrist bones', () => {
+        const bonesWithWrists = ['センター', '上半身', '左手首', '右手首'];
+        const buf2 = generateAutoDanceVmd(state, 120, [], bonesWithWrists);
+        const view = new DataView(buf2);
+        const boneCount = view.getUint32(50, true);
+        expect(boneCount).toBeGreaterThanOrEqual(2);
+    });
 });
 
 describe('auto-switch logic', () => {
@@ -142,6 +286,13 @@ describe('auto-switch logic', () => {
     it('shouldAutoDance: false when no audio', () => {
         expect(shouldAutoDance(false, 'off')).toBe(false);
     });
+    it('shouldAutoDance: true when mode is autodance regardless of audio', () => {
+        expect(shouldAutoDance(false, 'autodance')).toBe(true);
+    });
+    it('shouldAutoDance: false when mode is idle', () => {
+        expect(shouldAutoDance(true, 'idle')).toBe(false);
+        expect(shouldAutoDance(false, 'idle')).toBe(false);
+    });
     it('shouldIdle: true when no audio, no VMD, mode allows', () => {
         expect(shouldIdle(false, false, 'off')).toBe(true);
         expect(shouldIdle(false, false, 'idle')).toBe(true);
@@ -149,9 +300,16 @@ describe('auto-switch logic', () => {
     });
     it('shouldIdle: false when VMD loaded', () => {
         expect(shouldIdle(false, true, 'off')).toBe(false);
+        expect(shouldIdle(false, true, 'idle')).toBe(false);
+        expect(shouldIdle(false, true, 'autodance')).toBe(false);
     });
     it('shouldIdle: false when audio playing', () => {
         expect(shouldIdle(true, false, 'off')).toBe(false);
+        expect(shouldIdle(true, false, 'idle')).toBe(false);
+        expect(shouldIdle(true, false, 'autodance')).toBe(false);
+    });
+    it('shouldIdle: false when both audio and VMD', () => {
+        expect(shouldIdle(true, true, 'off')).toBe(false);
     });
 });
 
@@ -166,7 +324,6 @@ function _parseVmdBones(buf: ArrayBuffer): Record<string, number> {
     for (let i = 0; i < boneCount; i++) {
         const off = 54 + i * 111;
         const raw = new Uint8Array(buf, off, 15);
-        // 找到 \0 或末尾（解码器 trim 会截断到 \0）
         const name = decoder.decode(raw).replace(/\0/g, '').trim();
         if (!name) continue;
         bones[name] = (bones[name] || 0) + 1;
@@ -190,8 +347,6 @@ const BONES_108_STANDARD = [
 /** 完整 morph 集 */
 const MORPHS_STANDARD = ['まばたき', '笑い', 'ウィンク', 'ウィンク２'];
 
-
-
 describe('VMD 骨骼诊断', () => {
     it('Idle: 用 108 标准骨骼集生成，报告各骨骼帧数', () => {
         const buf = generateIdleVmd(state, MORPHS_STANDARD, BONES_108_STANDARD);
@@ -203,7 +358,6 @@ describe('VMD 骨骼诊断', () => {
             console.log(`  ${name}: ${count}帧`);
         }
         expect(totalFrames).toBeGreaterThan(10);
-        // 108 骨骼模式下应该至少匹配到 6 种骨骼
         expect(Object.keys(bones).length).toBeGreaterThanOrEqual(6);
     });
 

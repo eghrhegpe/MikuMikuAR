@@ -30,6 +30,10 @@ export function ClearExtractCache() {
   return window['go']['main']['App']['ClearExtractCache']();
 }
 
+export function ClearThumbnailCache() {
+  return window['go']['main']['App']['ClearThumbnailCache']();
+}
+
 export function DeleteDanceSet(arg1) {
   return window['go']['main']['App']['DeleteDanceSet'](arg1);
 }

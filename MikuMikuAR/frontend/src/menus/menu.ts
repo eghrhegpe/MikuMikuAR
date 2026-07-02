@@ -362,7 +362,10 @@ export class SlideMenu {
         items[this.focusIndex].click();
     }
 
+    private _buildSeq = 0;
+
     private async buildPanel(level: PopupLevel): Promise<void> {
+        const seq = ++this._buildSeq;
         this.panel.innerHTML = '';
         const list = document.createElement('div');
         list.className = 'slide-list';
@@ -382,7 +385,10 @@ export class SlideMenu {
                 await level.renderCustom(list);
             }
         }
-        this.panel.appendChild(list);
+        // 只有最新的 build 才 appendChild，防止并发导致重复
+        if (seq === this._buildSeq) {
+            this.panel.appendChild(list);
+        }
     }
 
     /** 释放所有资源（清除动画定时器、键盘监听、状态），调用后实例不可再用。 */

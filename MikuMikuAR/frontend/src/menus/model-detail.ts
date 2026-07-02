@@ -31,6 +31,10 @@ import {
     getPhysicsCategories,
     isPhysicsCategoryEnabled,
     setPhysicsCategory,
+    getProcMotionState,
+    setProcMotionMode,
+    setProcMotionAutoSwitch,
+    regenerateProcMotion,
 } from '../scene/scene';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
@@ -121,21 +125,11 @@ export function buildModelDetailLevel(id: string): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                // 核心组：始终可见，默认展开
-                slideRow(c, 'lucide:move', '变换', true, () => {
-                    const level = buildTransformLevel(id);
-                    stackRegistry.modelStack.push(level);
-                });
-                slideRow(c, 'lucide:eye', '可见性', true, () => {
-                    const level = buildVisibilityLevel(id);
-                    stackRegistry.modelStack.push(level);
-                });
-
-                // 外观与预设折叠组
+                // 外观折叠组
                 addCollapsible(c, {
-                    title: '外观与预设',
+                    title: '外观',
                     icon: 'lucide:palette',
-                    defaultOpen: false,
+                    defaultOpen: true,
                     renderContent: (inner) => {
                         slideRow(inner, 'lucide:box', '材质调节', true, () => {
                             const level = buildMatRootLevel(id, inst.name);
@@ -149,19 +143,12 @@ export function buildModelDetailLevel(id: string): PopupLevel {
                             const level = buildOutfitLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
-                        slideRow(inner, 'lucide:save', '保存预设', false, () => {
-                            savePresetToLibDialog(id);
-                        });
-                        slideRow(inner, 'lucide:folder-open', '加载预设', true, () => {
-                            const level = buildPresetListLevel(id);
-                            stackRegistry.modelStack.push(level);
-                        });
                     },
                 });
 
-                // 信息与工具折叠组
+                // 信息折叠组
                 addCollapsible(c, {
-                    title: '信息与工具',
+                    title: '信息',
                     icon: 'lucide:info',
                     defaultOpen: false,
                     renderContent: (inner) => {
@@ -171,6 +158,59 @@ export function buildModelDetailLevel(id: string): PopupLevel {
                         });
                         slideRow(inner, 'lucide:git-branch', '骨骼层级', true, () => {
                             const level = buildBoneHierarchyLevel(id);
+                            stackRegistry.modelStack.push(level);
+                        });
+                    },
+                });
+
+                // 可见性（直接显示）
+                let visMode: 'visible' | 'semi' | 'hidden';
+                if (inst.visible && inst.opacity >= 0.99) {
+                    visMode = 'visible';
+                } else if (inst.visible && inst.opacity < 0.99) {
+                    visMode = 'semi';
+                } else {
+                    visMode = 'hidden';
+                }
+                addModeSlider(
+                    c,
+                    '可见性',
+                    [
+                        { value: 'visible', label: '显示' },
+                        { value: 'semi', label: '半透明' },
+                        { value: 'hidden', label: '隐藏' },
+                    ],
+                    visMode,
+                    (v) => {
+                        if (v === 'visible') {
+                            setModelVisibility(id, true);
+                            setModelOpacity(id, 1);
+                        } else if (v === 'semi') {
+                            setModelVisibility(id, true);
+                            setModelOpacity(id, 0.5);
+                        } else {
+                            setModelVisibility(id, false);
+                        }
+                        stackRegistry.modelStack.reRender();
+                        setStatus(
+                            v === 'visible' ? '完全可见' : v === 'semi' ? '半透明 50%' : '完全隐藏',
+                            true
+                        );
+                    },
+                    'lucide:eye'
+                );
+
+                // 工具折叠组
+                addCollapsible(c, {
+                    title: '工具',
+                    icon: 'lucide:wrench',
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        slideRow(inner, 'lucide:save', '保存预设', false, () => {
+                            savePresetToLibDialog(id);
+                        });
+                        slideRow(inner, 'lucide:folder-open', '加载预设', true, () => {
+                            const level = buildPresetListLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
                         slideRow(inner, 'lucide:external-link', '用…打开', true, () => {
@@ -489,128 +529,6 @@ export function buildTransformLevel(id: string): PopupLevel {
                 });
                 c.appendChild(resetBtn);
             });
-        },
-    };
-}
-
-// ======== Visibility ========
-
-export function buildVisibilityLevel(id: string): PopupLevel {
-    const inst = modelRegistry.get(id);
-    if (!inst) {
-        return { label: '可见性', dir: '', items: [] };
-    }
-    return {
-        label: '可见性',
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            let mode: 'visible' | 'semi' | 'hidden';
-            if (inst.visible && inst.opacity >= 0.99) {
-                mode = 'visible';
-            } else if (inst.visible && inst.opacity < 0.99) {
-                mode = 'semi';
-            } else {
-                mode = 'hidden';
-            }
-
-            cardContainer(container, (c) => {
-                addModeSlider(
-                    c,
-                    '可见性',
-                    [
-                        { value: 'visible', label: '显示' },
-                        { value: 'semi', label: '半透明' },
-                        { value: 'hidden', label: '隐藏' },
-                    ],
-                    mode,
-                    (v) => {
-                        if (v === 'visible') {
-                            setModelVisibility(id, true);
-                            setModelOpacity(id, 1);
-                        } else if (v === 'semi') {
-                            setModelVisibility(id, true);
-                            setModelOpacity(id, 0.5);
-                        } else {
-                            setModelVisibility(id, false);
-                        }
-                        stackRegistry.modelStack.reRender();
-                        setStatus(
-                            v === 'visible' ? '完全可见' : v === 'semi' ? '半透明 50%' : '完全隐藏',
-                            true
-                        );
-                    },
-                    'lucide:eye'
-                );
-            });
-
-            cardContainer(container, (c) => {
-                addToggleRow(
-                    c,
-                    '材质线框',
-                    inst.wireframe,
-                    (v) => {
-                        setModelWireframe(id, v);
-                        stackRegistry.modelStack.reRender();
-                        setStatus(v ? '材质线框: 开' : '材质线框: 关', true);
-                    },
-                    'lucide:square'
-                );
-                addToggleRow(
-                    c,
-                    '骨骼线',
-                    inst.showBoneLines,
-                    (v) => {
-                        setModelBoneLinesVis(id, v);
-                        stackRegistry.modelStack.reRender();
-                        setStatus(v ? '骨骼线: 开' : '骨骼线: 关', true);
-                    },
-                    'lucide:git-branch'
-                );
-                addToggleRow(
-                    c,
-                    '骨骼关节球',
-                    inst.showBoneJoints,
-                    (v) => {
-                        setModelBoneJointsVis(id, v);
-                        stackRegistry.modelStack.reRender();
-                        setStatus(v ? '骨骼关节球: 开' : '骨骼关节球: 关', true);
-                    },
-                    'lucide:circle-dot'
-                );
-            });
-
-            const physCategories = getPhysicsCategories(id);
-            const CAT_LABELS: Record<string, string> = {
-                skirt: '裙子物理',
-                chest: '胸部物理',
-                hair: '头发物理',
-                accessory: '配件物理',
-            };
-            const filteredCats = physCategories.filter((c) => c !== 'chest');
-            if (filteredCats.length > 0) {
-                cardContainer(container, (c) => {
-                    for (const cat of filteredCats) {
-                        const enabled = isPhysicsCategoryEnabled(id, cat);
-                        addToggleRow(
-                            c,
-                            CAT_LABELS[cat] || cat,
-                            enabled,
-                            (v) => {
-                                setPhysicsCategory(id, cat, v);
-                                stackRegistry.modelStack.reRender();
-                                setStatus(
-                                    v
-                                        ? `✓ ${CAT_LABELS[cat] || cat} 已开启`
-                                        : `✕ ${CAT_LABELS[cat] || cat} 已关闭`,
-                                    true
-                                );
-                            },
-                            'lucide:settings'
-                        );
-                    }
-                });
-            }
         },
     };
 }

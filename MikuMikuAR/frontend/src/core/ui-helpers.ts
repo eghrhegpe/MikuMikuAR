@@ -160,6 +160,7 @@ export function addToggleRow(
     const lbl = document.createElement('span');
     lbl.className = 'toggle-label';
     lbl.textContent = label;
+    lbl.id = `toggle-${Math.random().toString(36).slice(2, 11)}`;
     left.appendChild(lbl);
 
     const toggleLabel = document.createElement('label');
@@ -167,7 +168,14 @@ export function addToggleRow(
     const toggle = document.createElement('input');
     toggle.type = 'checkbox';
     toggle.checked = value;
-    toggle.addEventListener('change', () => onChange(toggle.checked));
+    toggle.setAttribute('role', 'switch');
+    toggle.setAttribute('aria-label', label);
+    toggle.setAttribute('aria-checked', String(value));
+    toggle.setAttribute('aria-labelledby', lbl.id);
+    toggle.addEventListener('change', () => {
+        toggle.setAttribute('aria-checked', String(toggle.checked));
+        onChange(toggle.checked);
+    });
     const slider = document.createElement('span');
     slider.className = 'slider';
     toggleLabel.appendChild(toggle);
@@ -179,6 +187,7 @@ export function addToggleRow(
     row.addEventListener('click', (e) => {
         if ((e.target as HTMLElement).closest('.toggle')) return;
         toggle.checked = !toggle.checked;
+        toggle.setAttribute('aria-checked', String(toggle.checked));
         onChange(toggle.checked);
     });
 
@@ -233,6 +242,12 @@ export function addSliderRow(
 
     const bar = document.createElement('div');
     bar.className = 'cs-bar';
+    bar.tabIndex = 0;
+    bar.setAttribute('role', 'slider');
+    bar.setAttribute('aria-label', label);
+    bar.setAttribute('aria-valuenow', String(currentValue));
+    bar.setAttribute('aria-valuemin', String(min));
+    bar.setAttribute('aria-valuemax', String(max));
 
     const fill = document.createElement('div');
     fill.className = 'cs-fill';
@@ -261,6 +276,7 @@ export function addSliderRow(
         const clamped = Math.max(0, Math.min(100, newPct));
         fill.style.width = clamped + '%';
         thumb.style.left = clamped + '%';
+        bar.setAttribute('aria-valuenow', String(v));
     }
 
     function setValueFromClientX(clientX: number, rect: DOMRect): void {
@@ -274,49 +290,84 @@ export function addSliderRow(
         }
     }
 
-    let dragging = false;
-    let rafId = 0;
-    let pendingX = 0;
-    let dragRect: DOMRect | null = null;
+    function handleKeyDown(e: KeyboardEvent): void {
+        const shiftMult = e.shiftKey ? 10 : 1;
+        let delta = step * shiftMult;
+        if (step >= 1) {
+            delta = e.shiftKey ? 10 : 1;
+        }
 
-    function onDragMove(e: MouseEvent): void {
-        if (!dragging) {
-            return;
+        switch (e.key) {
+            case 'ArrowLeft':
+            case 'ArrowDown':
+                e.preventDefault();
+                const lower = Math.max(min, snapToStep(currentValue - delta));
+                if (lower !== currentValue) {
+                    updateDisplay(lower);
+                    onChange(lower);
+                    onDragEndCb?.(lower);
+                }
+                break;
+            case 'ArrowRight':
+            case 'ArrowUp':
+                e.preventDefault();
+                const upper = Math.min(max, snapToStep(currentValue + delta));
+                if (upper !== currentValue) {
+                    updateDisplay(upper);
+                    onChange(upper);
+                    onDragEndCb?.(upper);
+                }
+                break;
+            case 'Home':
+                e.preventDefault();
+                if (min !== currentValue) {
+                    updateDisplay(min);
+                    onChange(min);
+                    onDragEndCb?.(min);
+                }
+                break;
+            case 'End':
+                e.preventDefault();
+                if (max !== currentValue) {
+                    updateDisplay(max);
+                    onChange(max);
+                    onDragEndCb?.(max);
+                }
+                break;
         }
-        e.preventDefault();
-        pendingX = e.clientX;
-        if (rafId) {
-            return;
-        }
-        rafId = requestAnimationFrame(() => {
-            rafId = 0;
-            if (dragRect) {
-                setValueFromClientX(pendingX, dragRect);
-            }
-        });
     }
 
-    function onDragEnd(): void {
-        dragging = false;
-        dragRect = null;
-        document.removeEventListener('mousemove', onDragMove);
-        document.removeEventListener('mouseup', onDragEnd);
-        if (rafId) {
-            cancelAnimationFrame(rafId);
-            rafId = 0;
-        }
-        _cbOnDragEnd?.(currentValue);
-    }
-
-    const _cbOnDragEnd = onDragEndCb;
-
-    bar.addEventListener('mousedown', (e) => {
+    bar.addEventListener('click', (e) => {
         e.preventDefault();
-        dragRect = bar.getBoundingClientRect();
-        dragging = true;
-        setValueFromClientX(e.clientX, dragRect);
-        document.addEventListener('mousemove', onDragMove);
-        document.addEventListener('mouseup', onDragEnd);
+        e.stopPropagation();
+        bar.focus();
+        const rect = bar.getBoundingClientRect();
+        setValueFromClientX(e.clientX, rect);
+        onDragEndCb?.(currentValue);
+    });
+
+    bar.addEventListener('keydown', handleKeyDown);
+
+    row.addEventListener('click', (e) => {
+        const rect = row.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        let delta: number;
+        if (x < 0.25) {
+            delta = -(range * 0.15);
+        } else if (x < 0.5) {
+            delta = -(range * 0.05);
+        } else if (x < 0.75) {
+            delta = range * 0.05;
+        } else {
+            delta = range * 0.15;
+        }
+        let newVal = snapToStep(currentValue + delta);
+        newVal = Math.max(min, Math.min(max, newVal));
+        if (newVal !== currentValue) {
+            updateDisplay(newVal);
+            onChange(newVal);
+            onDragEndCb?.(newVal);
+        }
     });
 
     row.appendChild(top);
@@ -360,6 +411,7 @@ export function addColorSliderRow(
     const title = document.createElement('span');
     title.className = 'clr-title';
     title.textContent = label;
+    title.id = `color-${Math.random().toString(36).slice(2, 11)}`;
     header.appendChild(title);
     const swatch = document.createElement('span');
     swatch.className = 'clr-swatch';
@@ -375,25 +427,90 @@ export function addColorSliderRow(
         ch.className = 'clr-channel';
         ch.style.color = channelColors[ci];
         ch.textContent = ['R', 'G', 'B'][ci];
+        ch.id = `${title.id}-ch${ci}`;
         sub.appendChild(ch);
-        const slider = document.createElement('input');
-        slider.type = 'range';
-        slider.min = '0';
-        slider.max = '1';
-        slider.step = '0.01';
-        slider.value = String(color[ci]);
-        slider.className = 'clr-slider';
+
         const val = document.createElement('span');
         val.className = 'clr-value';
         val.textContent = color[ci].toFixed(2);
-        slider.addEventListener('input', () => {
-            const v = parseFloat(slider.value);
-            val.textContent = v.toFixed(2);
+
+        const bar = document.createElement('div');
+        bar.className = 'cs-bar';
+        bar.tabIndex = 0;
+        bar.setAttribute('role', 'slider');
+        bar.setAttribute('aria-label', `${label} ${['Red', 'Green', 'Blue'][ci]} channel`);
+        bar.setAttribute('aria-valuenow', String(color[ci]));
+        bar.setAttribute('aria-valuemin', '0');
+        bar.setAttribute('aria-valuemax', '1');
+        bar.setAttribute('aria-labelledby', ch.id);
+
+        const fill = document.createElement('div');
+        fill.className = 'cs-fill';
+        fill.style.background = channelColors[ci];
+        fill.style.width = (color[ci] * 100) + '%';
+
+        const thumb = document.createElement('div');
+        thumb.className = 'cs-thumb';
+        thumb.style.left = (color[ci] * 100) + '%';
+
+        bar.appendChild(fill);
+        bar.appendChild(thumb);
+
+        function updateDisplay(v: number): void {
             current[ci] = v;
+            val.textContent = v.toFixed(2);
+            fill.style.width = (v * 100) + '%';
+            thumb.style.left = (v * 100) + '%';
+            bar.setAttribute('aria-valuenow', String(v));
             swatch.style.background = `rgb(${Math.round(current[0] * 255)},${Math.round(current[1] * 255)},${Math.round(current[2] * 255)})`;
             onChange([current[0], current[1], current[2]]);
+        }
+
+        function setValueFromClientX(clientX: number, rect: DOMRect): void {
+            const x = (clientX - rect.left) / rect.width;
+            const raw = Math.max(0, Math.min(1, x));
+            const snapped = Math.round(raw * 100) / 100;
+            if (snapped !== current[ci]) {
+                updateDisplay(snapped);
+            }
+        }
+
+        function handleKeyDown(e: KeyboardEvent): void {
+            const delta = e.shiftKey ? 0.1 : 0.01;
+            switch (e.key) {
+                case 'ArrowLeft':
+                case 'ArrowDown':
+                    e.preventDefault();
+                    const lower = Math.max(0, Math.round((current[ci] - delta) * 100) / 100);
+                    if (lower !== current[ci]) updateDisplay(lower);
+                    break;
+                case 'ArrowRight':
+                case 'ArrowUp':
+                    e.preventDefault();
+                    const upper = Math.min(1, Math.round((current[ci] + delta) * 100) / 100);
+                    if (upper !== current[ci]) updateDisplay(upper);
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    if (0 !== current[ci]) updateDisplay(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    if (1 !== current[ci]) updateDisplay(1);
+                    break;
+            }
+        }
+
+        bar.addEventListener('click', (e) => {
+            e.preventDefault();
+            bar.focus();
+            const rect = bar.getBoundingClientRect();
+            setValueFromClientX(e.clientX, rect);
         });
-        sub.appendChild(slider);
+
+        bar.addEventListener('keydown', handleKeyDown);
+
+        sub.appendChild(bar);
         sub.appendChild(val);
         block.appendChild(sub);
     }
@@ -424,6 +541,12 @@ export function addModeSlider<T extends string | number>(
 
     const top = document.createElement('div');
     top.className = 'cs-top';
+    top.tabIndex = 0;
+    top.setAttribute('role', 'listbox');
+    top.setAttribute('aria-label', label);
+    top.setAttribute('aria-valuenow', String(currentIndex));
+    top.setAttribute('aria-valuemin', '0');
+    top.setAttribute('aria-valuemax', String(total - 1));
 
     if (icon) {
         const iconBox = document.createElement('span');
@@ -473,6 +596,7 @@ export function addModeSlider<T extends string | number>(
         const clamped = Math.max(0, Math.min(100, newPct));
         fill.style.width = clamped + '%';
         thumb.style.left = clamped + '%';
+        top.setAttribute('aria-valuenow', String(idx));
     }
 
     function setIndexFromClientX(clientX: number, rect: DOMRect): void {
@@ -481,6 +605,48 @@ export function addModeSlider<T extends string | number>(
         if (newIdx !== currentIndex) {
             updateDisplay(newIdx);
             onChange(options[newIdx].value);
+        }
+    }
+
+    function handleKeyDown(e: KeyboardEvent): void {
+        const shiftMult = e.shiftKey ? Math.max(1, Math.floor(total / 4)) : 1;
+        switch (e.key) {
+            case 'ArrowLeft':
+            case 'ArrowDown':
+                e.preventDefault();
+                const lower = Math.max(0, currentIndex - shiftMult);
+                if (lower !== currentIndex) {
+                    updateDisplay(lower);
+                    onChange(options[lower].value);
+                    onDragEndCb?.(options[lower].value);
+                }
+                break;
+            case 'ArrowRight':
+            case 'ArrowUp':
+                e.preventDefault();
+                const upper = Math.min(total - 1, currentIndex + shiftMult);
+                if (upper !== currentIndex) {
+                    updateDisplay(upper);
+                    onChange(options[upper].value);
+                    onDragEndCb?.(options[upper].value);
+                }
+                break;
+            case 'Home':
+                e.preventDefault();
+                if (0 !== currentIndex) {
+                    updateDisplay(0);
+                    onChange(options[0].value);
+                    onDragEndCb?.(options[0].value);
+                }
+                break;
+            case 'End':
+                e.preventDefault();
+                if (total - 1 !== currentIndex) {
+                    updateDisplay(total - 1);
+                    onChange(options[total - 1].value);
+                    onDragEndCb?.(options[total - 1].value);
+                }
+                break;
         }
     }
 
@@ -531,11 +697,14 @@ export function addModeSlider<T extends string | number>(
     // cs-top 处理所有交互（拖拽 + 点击）
     top.addEventListener('mousedown', (e) => {
         e.preventDefault();
+        top.focus();
         topDragRect = top.getBoundingClientRect();
         didDrag = false;
         document.addEventListener('mousemove', onTopDragMove);
         document.addEventListener('mouseup', onTopDragEnd);
     });
+
+    top.addEventListener('keydown', handleKeyDown);
 
     // cs-bar 纯装饰，无事件
     row.appendChild(top);

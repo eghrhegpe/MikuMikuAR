@@ -234,6 +234,28 @@ func (a *App) ClearExtractCache() error {
 	return nil
 }
 
+// ClearThumbnailCache removes ALL thumbnail cache files, forcing
+// re-generation on the next model load.
+func (a *App) ClearThumbnailCache() error {
+	cacheRoot, err := thumbnailDir()
+	if err != nil {
+		return err
+	}
+	entries, err := os.ReadDir(cacheRoot)
+	if err != nil {
+		return err
+	}
+	removed := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			os.Remove(filepath.Join(cacheRoot, entry.Name()))
+			removed++
+		}
+	}
+	a.safeLogInfo("ClearThumbnailCache: removed %d files", removed)
+	return nil
+}
+
 // ImportZip opens a zip file, finds the first .pmx entry, and extracts via ExtractZip.
 // Returns *ExtractResult as a convenience for the frontend import flow.
 func (a *App) ImportZip(zipPath string) (*ExtractResult, error) {

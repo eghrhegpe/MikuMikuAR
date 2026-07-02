@@ -34,6 +34,7 @@ export class BeatDetector {
     private currentBpm = 120;
     private phaseStartTime = 0;
     private phaseInterval = 500; // ms per beat
+    private bpmQuantizeEnabled = true; // P1 开关：BPM 量化（默认开）
 
     /** 接入音频元素。惰性创建 AudioContext + GainNode。
      *  注意：createMediaElementSource 后音频路由经 AudioContext，
@@ -147,8 +148,9 @@ export class BeatDetector {
                 }
                 const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
                 if (avgInterval > 0) {
-                    this.currentBpm = quantizeBpm(Math.round(60000 / avgInterval));
-                    this.phaseInterval = 60000 / this.currentBpm; // 量化后的精确间隔
+                    const rawBpm = Math.round(60000 / avgInterval);
+                    this.currentBpm = this.bpmQuantizeEnabled ? quantizeBpm(rawBpm) : rawBpm;
+                    this.phaseInterval = 60000 / this.currentBpm;
                 }
             }
         }
@@ -167,6 +169,14 @@ export class BeatDetector {
 
     getBPM(): number {
         return this.currentBpm;
+    }
+
+    /** 获取/设置 BPM 量化开关（默认 true）。关闭后使用原始 BPM 值。 */
+    getBpmQuantizeEnabled(): boolean {
+        return this.bpmQuantizeEnabled;
+    }
+    setBpmQuantizeEnabled(v: boolean): void {
+        this.bpmQuantizeEnabled = v;
     }
 
     /** 当前 beat 周期内的相位 0..1。 */

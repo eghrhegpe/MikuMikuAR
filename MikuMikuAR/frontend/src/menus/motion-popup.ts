@@ -21,8 +21,6 @@ import {
     closeAllOverlays,
     cardContainer,
     envState,
-    librarySortMode,
-    setLibrarySortMode,
     addRecentMotion,
     getRecentMotions,
 } from '../core/config';
@@ -37,10 +35,15 @@ import {
     getPhysicsCategories,
     isPhysicsCategoryEnabled,
     setPhysicsCategory,
+    setModelWireframe,
+    setModelBoneLinesVis,
+    setModelBoneJointsVis,
+    modelManager,
 } from '../scene/scene';
 import { SlideMenu } from './menu';
 import { slideRow, addSliderRow, addToggleRow, addCollapsible } from '../core/ui-helpers';
 import { createIconifyIcon } from '../core/icons';
+import type { ClothConfig } from '../physics/xpbd-cloth';
 import {
     loadAudioFile,
     clearAudio,
@@ -58,7 +61,18 @@ import {
     DeleteDanceSet,
     ImportDanceSet,
 } from '../../wailsjs/go/main/App';
-import { toggleCloth, recreateCloth } from '../physics/cloth-manager';
+import {
+    toggleCloth,
+    recreateCloth,
+    getCollider,
+    getColliderSpecs,
+    setCapsuleRadius,
+    setCapsuleHalfHeight,
+    setColliderStiffness,
+    setColliderFriction,
+    setCapsuleEnabled,
+    setAllCapsulesEnabled,
+} from '../physics/cloth-manager';
 import { buildCameraLevel, buildProcMotionLevel, buildProcMotionModeLevel, buildLipSyncLevel } from './scene-menu';
 import {
     setProcMotionMode,
@@ -347,6 +361,45 @@ function buildActionMusicLevel(): PopupLevel {
 
 // ======== Cloth Params Level ========
 
+/** 布料预设 */
+const CLOTH_PRESETS: Record<string, Partial<ClothConfig>> = {
+    silk: {
+        compliance: 0.0005,
+        bendCompliance: 0.001,
+        damping: 0.98,
+        gravityScale: 0.8,
+        totalMass: 0.3,
+    },
+    cotton: {
+        compliance: 0.001,
+        bendCompliance: 0.005,
+        damping: 0.96,
+        gravityScale: 1.0,
+        totalMass: 0.5,
+    },
+    leather: {
+        compliance: 0.003,
+        bendCompliance: 0.015,
+        damping: 0.92,
+        gravityScale: 1.3,
+        totalMass: 0.8,
+    },
+    stiff: {
+        compliance: 0.008,
+        bendCompliance: 0.04,
+        damping: 0.88,
+        gravityScale: 1.5,
+        totalMass: 1.0,
+    },
+};
+
+const CLOTH_PRESET_LABELS: Record<string, string> = {
+    silk: '丝绸',
+    cotton: '棉布',
+    leather: '皮革',
+    stiff: '硬质',
+};
+
 function buildClothParamsLevel(): PopupLevel {
     return {
         label: '布料参数',
@@ -364,6 +417,26 @@ function buildClothParamsLevel(): PopupLevel {
                         recreateCloth();
                     }, 100);
                 };
+
+                // 预设芯片
+                const chipGroup = document.createElement('div');
+                chipGroup.className = 'preset-group';
+                chipGroup.style.paddingBottom = '6px';
+                for (const [key] of Object.entries(CLOTH_PRESETS)) {
+                    const btn = document.createElement('button');
+                    btn.className = 'preset-chip';
+                    btn.textContent = CLOTH_PRESET_LABELS[key] || key;
+                    btn.addEventListener('click', () => {
+                        const preset = CLOTH_PRESETS[key];
+                        if (preset) {
+                            setEnvState({ clothConfig: { ...cfg, ...preset } });
+                            recreateCloth();
+                            motionMenu?.reRender();
+                        }
+                    });
+                    chipGroup.appendChild(btn);
+                }
+                c.appendChild(chipGroup);
 
                 // 形状
                 addCollapsible(c, {
@@ -505,6 +578,160 @@ function buildClothParamsLevel(): PopupLevel {
                                 debouncedRecreate();
                             },
                             'lucide:grid'
+                        );
+                    },
+                });
+
+                // 碰撞体
+                addCollapsible(c, {
+                    title: '碰撞体',
+                    icon: 'lucide:shield',
+                    defaultOpen: false,
+                    renderContent: (cc) => {
+                        const specs = getColliderSpecs();
+                        if (specs.length === 0) {
+                            const hint = document.createElement('div');
+                            hint.style.cssText = 'padding:12px;color:var(--text-muted);font-size:12px;';
+                            hint.textContent = '请先启用布料模拟';
+                            cc.appendChild(hint);
+                            return;
+                        }
+
+                        // 全局刚度和摩擦
+                        const collider = getCollider();
+                        if (collider) {
+                            addSliderRow(
+                                cc,
+                                '碰撞刚度',
+                                collider.stiffness,
+                                0,
+                                1,
+                                0.05,
+                                (v) => setColliderStiffness(v),
+                                'lucide:zap'
+                            );
+                            addSliderRow(
+                                cc,
+                                '摩擦系数',
+                                collider.friction,
+                                0,
+                                1,
+                                0.05,
+                                (v) => setColliderFriction(v),
+                                'lucide:hand'
+                            );
+                        }
+
+                        // 主要碰撞体分组
+                        const groups = [
+                            { label: '躯干', items: ['chest', 'waist', 'hip'] },
+                            { label: '腿部', items: ['upperLegL', 'upperLegR', 'lowerLegL', 'lowerLegR'] },
+                            { label: '手臂', items: ['upperArmL', 'upperArmR', 'lowerArmL', 'lowerArmR'] },
+                        ];
+
+                        const CAPSULE_LABELS: Record<string, string> = {
+                            head: '头部',
+                            neck: '颈部',
+                            chest: '胸部',
+                            waist: '腰部',
+                            hip: '臀部',
+                            upperArmL: '左上臂',
+                            upperArmR: '右上臂',
+                            lowerArmL: '左前臂',
+                            lowerArmR: '右前臂',
+                            upperLegL: '左大腿',
+                            upperLegR: '右大腿',
+                            lowerLegL: '左小腿',
+                            lowerLegR: '右小腿',
+                        };
+
+                        for (const group of groups) {
+                            addCollapsible(cc, {
+                                title: group.label,
+                                icon: 'lucide:box',
+                                defaultOpen: false,
+                                renderContent: (gc) => {
+                                    for (const name of group.items) {
+                                        const spec = specs.find((s) => s.name === name);
+                                        if (!spec) continue;
+
+                                        const label = CAPSULE_LABELS[name] || name;
+                                        addSliderRow(
+                                            gc,
+                                            `${label} 半径`,
+                                            spec.radius,
+                                            0.02,
+                                            0.3,
+                                            0.01,
+                                            (v) => setCapsuleRadius(name, v),
+                                            'lucide:circle'
+                                        );
+                                        addSliderRow(
+                                            gc,
+                                            `${label} 半高`,
+                                            spec.halfHeight,
+                                            0.02,
+                                            0.3,
+                                            0.01,
+                                            (v) => setCapsuleHalfHeight(name, v),
+                                            'lucide:move-vertical'
+                                        );
+                                    }
+                                },
+                            });
+                        }
+                    },
+                });
+
+                // 调试可视化
+                addCollapsible(c, {
+                    title: '调试',
+                    icon: 'lucide:bug',
+                    defaultOpen: false,
+                    renderContent: (cc) => {
+                        const id = focusedModelId;
+                        if (!id || !modelManager) {
+                            const hint = document.createElement('div');
+                            hint.style.cssText = 'padding:12px;color:var(--text-muted);font-size:12px;';
+                            hint.textContent = '请先加载模型';
+                            cc.appendChild(hint);
+                            return;
+                        }
+                        const inst = modelManager.get(id);
+                        if (!inst) return;
+
+                        addToggleRow(
+                            cc,
+                            '材质线框',
+                            inst.wireframe,
+                            (v) => {
+                                setModelWireframe(id, v);
+                                motionMenu?.reRender();
+                                setStatus(v ? '材质线框: 开' : '材质线框: 关', true);
+                            },
+                            'lucide:square'
+                        );
+                        addToggleRow(
+                            cc,
+                            '骨骼线',
+                            inst.showBoneLines,
+                            (v) => {
+                                setModelBoneLinesVis(id, v);
+                                motionMenu?.reRender();
+                                setStatus(v ? '骨骼线: 开' : '骨骼线: 关', true);
+                            },
+                            'lucide:git-branch'
+                        );
+                        addToggleRow(
+                            cc,
+                            '骨骼关节球',
+                            inst.showBoneJoints,
+                            (v) => {
+                                setModelBoneJointsVis(id, v);
+                                motionMenu?.reRender();
+                                setStatus(v ? '骨骼关节球: 开' : '骨骼关节球: 关', true);
+                            },
+                            'lucide:circle-dot'
                         );
                     },
                 });
@@ -737,20 +964,6 @@ export function showMotionPopup(): void {
                 slideRow(c, 'lucide:wind', '程序化动作', true, () => {
                     motionMenu.push(buildProcMotionLevel());
                 });
-            });
-
-            // 排序切换
-            cardContainer(container, (c) => {
-                slideRow(
-                    c,
-                    'lucide:arrow-up-down',
-                    librarySortMode === 'name' ? '排序：名称' : '排序：默认',
-                    true,
-                    () => {
-                        setLibrarySortMode(librarySortMode === 'name' ? 'default' : 'name');
-                        motionMenu.reRender();
-                    }
-                );
             });
 
             // Physics card

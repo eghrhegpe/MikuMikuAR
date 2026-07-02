@@ -10,16 +10,7 @@ import {
     RemoveExternalPath,
     RenameExternalPath,
     ClearExtractCache,
-    ScanSoftwareDir,
-    LaunchSoftware,
-    OpenSoftwareDir,
-    AddCustomSoftware,
-    RemoveCustomSoftware,
-    UpdateCustomSoftware,
-    AutoDetectMMD,
-    SetBlenderPath,
-    SetMMDPath,
-    SelectExeFile,
+    ClearThumbnailCache,
     SetDownloadWatchDir,
     SetDownloadAutoImport,
     GetDownloadWatchStatus,
@@ -46,6 +37,8 @@ import {
     escapeHtml,
     cardContainer,
     UIState,
+    librarySortMode,
+    setLibrarySortMode,
 } from '../core/config';
 import { SlideMenu } from './menu';
 import { slideRow, addToggleRow } from '../core/ui-helpers';
@@ -56,277 +49,8 @@ import { softwareKindIcon, createIconifyIcon } from '../core/icons';
 // ======== Helpers re-exported ========
 export { refreshLibrary } from './library';
 
-// ======== Software Management ========
-
-let cachedSoftwareEntries: import('../../wailsjs/go/models').main.SoftwareEntry[] | null = null;
-
-async function scanSoftwareDir(): Promise<void> {
-    try {
-        cachedSoftwareEntries = await ScanSoftwareDir();
-    } catch (err) {
-        console.error('ScanSoftwareDir error:', err);
-        cachedSoftwareEntries = [];
-    }
-}
-
-function buildSettingsSoftwareLevel(): PopupLevel {
-    return {
-        label: '软件管理',
-        dir: '',
-        items: [],
-        renderCustom: async (container) => {
-            await scanSoftwareDir();
-            const entries = cachedSoftwareEntries;
-
-            if (entries && entries.length > 0) {
-                cardContainer(container, (c) => {
-                    for (const entry of entries) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        row.addEventListener('click', (e) => {
-                            if ((e.target as HTMLElement).closest('.btn')) {
-                                return;
-                            }
-                            settingsMenu.push(buildSoftwareDetailLevel(entry.path));
-                        });
-                        row.innerHTML = `
-                            <span class="slide-icon"><iconify-icon icon="${softwareKindIcon(entry.kind)}"></iconify-icon></span>
-                            <span class="slide-label">${escapeHtml(entry.name)}</span>
-                            <span class="slide-sublabel">${escapeHtml(entry.kind)}</span>
-                            <span class="slide-tag">${entry.managed ? '自定义' : 'auto'}</span>
-                            <button class="btn btn-ghost btn-sm btn-icon" title="直接启动">▶</button>
-                        `;
-                        row.querySelector('.btn')!.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            LaunchSoftware(entry.path, entry.args || '')
-                                .then(() => {
-                                    setStatus(`✓ 已启动: ${entry.name}`, true);
-                                })
-                                .catch((err: unknown) => {
-                                    setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
-                                });
-                        });
-                        c.appendChild(row);
-                    }
-                });
-            }
-
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plus', '添加自定义软件', false, () =>
-                    handleSettingsAction({ kind: 'action', label: '添加自定义软件', icon: 'lucide:plus', target: 'set:addcustomsoftware' })
-                );
-                slideRow(c, 'lucide:search', '自动检测 MMD', false, () =>
-                    handleSettingsAction({ kind: 'action', label: '自动检测 MMD', icon: 'lucide:search', target: 'set:detectmmd' })
-                );
-                slideRow(c, 'lucide:folder', '设置 MMD 路径', false, () =>
-                    handleSettingsAction({ kind: 'action', label: '设置 MMD 路径', icon: 'lucide:folder', target: 'set:mmdpath' })
-                );
-                slideRow(c, 'lucide:cube-3d', '设置 Blender 路径', false, () =>
-                    handleSettingsAction({ kind: 'action', label: '设置 Blender 路径', icon: 'lucide:cube-3d', target: 'set:blenderpath' })
-                );
-            });
-
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:folder-open', '打开目录', false, () =>
-                    handleSettingsAction({ kind: 'action', label: '打开目录', icon: 'lucide:folder-open', target: 'set:opensoftwaredir' })
-                );
-            });
-        },
-    };
-}
-
-function buildSoftwareDetailLevel(path: string): PopupLevel {
-    const entries = cachedSoftwareEntries || [];
-    const entry = entries.find((e) => e.path === path);
-    if (!entry) {
-        return {
-            label: '未知软件',
-            dir: '',
-            items: [{ kind: 'action', label: '软件未找到', icon: 'alert-circle', target: '' }],
-        };
-    }
-
-    if (entry.managed) {
-        return {
-            label: entry.name,
-            dir: '',
-            items: [],
-            renderCustom: async (container) => {
-                cardContainer(container, (c) => {
-                    const fields: Array<{ label: string; value: string }> = [
-                        { label: '名称', value: entry.name },
-                        { label: '路径', value: entry.path },
-                        { label: '类型', value: entry.kind },
-                    ];
-                    for (const f of fields) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        row.style.cssText =
-                            'display:flex;justify-content:space-between;padding:6px 14px;min-height:auto;margin:0;';
-                        row.innerHTML = `<span class="slide-label" style="color:var(--text-dim);flex:none;">${f.label}</span><span class="slide-label" style="text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;font-size:11px;">${escapeHtml(f.value)}</span>`;
-                        c.appendChild(row);
-                    }
-                    const argRow = document.createElement('div');
-                    argRow.style.cssText = 'padding:6px 14px;';
-                    const argLbl = document.createElement('div');
-                    argLbl.style.cssText =
-                        'font-size:10px;color:var(--text-dim);margin-bottom:2px;';
-                    argLbl.textContent = '启动参数 (支持 {model} 占位符)';
-                    argRow.appendChild(argLbl);
-                    const val = document.createElement('div');
-                    val.style.cssText =
-                        'background:var(--white-08);border:1px solid var(--border);border-radius:4px;padding:4px 6px;';
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.value = entry.args || '';
-                    input.style.cssText =
-                        'width:100%;background:transparent;border:none;color:var(--text);font-size:12px;outline:none;';
-                    input.addEventListener('blur', async () => {
-                        try {
-                            await UpdateCustomSoftware(entry.path, entry.name, input.value);
-                            entry.args = input.value;
-                            setStatus('✓ 参数已更新', true);
-                        } catch {
-                            setStatus('✗ 更新失败', false);
-                        }
-                    });
-                    val.appendChild(input);
-                    argRow.appendChild(val);
-                    c.appendChild(argRow);
-                });
-
-                cardContainer(container, (c) => {
-                    const launchRow = document.createElement('div');
-                    launchRow.className = 'slide-item';
-                    const li = document.createElement('span');
-                    li.className = 'slide-icon';
-                    const le = createIconifyIcon('lucide:play');
-                    if (le) {
-                        li.appendChild(le);
-                    }
-                    launchRow.appendChild(li);
-                    const ll = document.createElement('span');
-                    ll.className = 'slide-label';
-                    ll.textContent = '启动';
-                    launchRow.appendChild(ll);
-                    launchRow.addEventListener('click', () => {
-                        LaunchSoftware(entry.path, entry.args)
-                            .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
-                            .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
-                    });
-                    c.appendChild(launchRow);
-
-                    const delRow = document.createElement('div');
-                    delRow.className = 'slide-item';
-                    const di = document.createElement('span');
-                    di.className = 'slide-icon';
-                    const de = createIconifyIcon('lucide:trash-2');
-                    if (de) {
-                        di.appendChild(de);
-                    }
-                    delRow.appendChild(di);
-                    const dl = document.createElement('span');
-                    dl.className = 'slide-label';
-                    dl.textContent = '删除';
-                    dl.style.color = 'var(--danger,#e74c3c)';
-                    delRow.appendChild(dl);
-                    delRow.addEventListener('click', async () => {
-                        try {
-                            await RemoveCustomSoftware(entry.path);
-                            cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
-                                (e) => e.path !== entry.path
-                            );
-                            setStatus(`✓ 已删除: ${entry.name}`, true);
-                            settingsMenu.pop();
-                            settingsMenu.reRender();
-                        } catch {
-                            setStatus('✗ 删除失败', false);
-                        }
-                    });
-                    c.appendChild(delRow);
-                });
-            },
-        };
-    }
-
-    return {
-        label: entry.name,
-        dir: '',
-        items: [],
-        renderCustom: async (container) => {
-            cardContainer(container, (c) => {
-                const fields: Array<{ label: string; value: string }> = [
-                    { label: '名称', value: entry.name },
-                    { label: '路径', value: entry.path },
-                    { label: '类型', value: entry.kind },
-                ];
-                for (const f of fields) {
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    row.style.cssText =
-                        'display:flex;justify-content:space-between;padding:6px 14px;min-height:auto;margin:0;';
-                    row.innerHTML = `<span class="slide-label" style="color:var(--text-dim);flex:none;">${f.label}</span><span class="slide-label" style="text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;font-size:11px;">${escapeHtml(f.value)}</span>`;
-                    c.appendChild(row);
-                }
-            });
-
-            cardContainer(container, (c) => {
-                const launchRow = document.createElement('div');
-                launchRow.className = 'slide-item';
-                const li = document.createElement('span');
-                li.className = 'slide-icon';
-                const le = createIconifyIcon('lucide:play');
-                if (le) {
-                    li.appendChild(le);
-                }
-                launchRow.appendChild(li);
-                const ll = document.createElement('span');
-                ll.className = 'slide-label';
-                ll.textContent = '启动';
-                launchRow.appendChild(ll);
-                launchRow.addEventListener('click', () => {
-                    LaunchSoftware(entry.path, '')
-                        .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
-                        .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
-                });
-                c.appendChild(launchRow);
-
-                const convertRow = document.createElement('div');
-                convertRow.className = 'slide-item';
-                const ci = document.createElement('span');
-                ci.className = 'slide-icon';
-                const ce = createIconifyIcon('lucide:plus');
-                if (ce) {
-                    ci.appendChild(ce);
-                }
-                convertRow.appendChild(ci);
-                const cl = document.createElement('span');
-                cl.className = 'slide-label';
-                cl.textContent = '转为自定义（以便编辑参数）';
-                convertRow.appendChild(cl);
-                convertRow.addEventListener('click', async () => {
-                    try {
-                        const args = prompt(
-                            '输入启动参数模板（支持 {model} 占位符，留空则不带参数）：',
-                            ''
-                        );
-                        if (args === null) {
-                            return;
-                        }
-                        await AddCustomSoftware(entry.path, entry.name, args);
-                        cachedSoftwareEntries = await ScanSoftwareDir();
-                        setStatus(`✓ 已转为自定义: ${entry.name}`, true);
-                        settingsMenu.pop();
-                        settingsMenu.reRender();
-                    } catch (err: unknown) {
-                        setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
-                    }
-                });
-                c.appendChild(convertRow);
-            });
-        },
-    };
-}
+// ======== Software Management (external) ========
+import { buildSettingsSoftwareLevel, buildSoftwareDetailLevel } from './settings-software';
 
 // ======== Settings (SlideMenu) ========
 
@@ -406,6 +130,18 @@ function buildSettingsDisplayLevel(): PopupLevel {
                     () => pick('filename')
                 );
             });
+            cardContainer(container, (c) => {
+                slideRow(
+                    c,
+                    'lucide:arrow-up-down',
+                    librarySortMode === 'name' ? '动作排序：名称' : '动作排序：默认',
+                    true,
+                    () => {
+                        setLibrarySortMode(librarySortMode === 'name' ? 'default' : 'name');
+                        settingsMenu.reRender();
+                    }
+                );
+            });
         },
     };
 }
@@ -421,30 +157,78 @@ function buildSettingsUILevel(): PopupLevel {
                     document.documentElement.style.setProperty('--ui-scale', String(v));
                     SetUIScale(v).catch(() => {});
                 });
-                const advRow = document.createElement('div');
-                advRow.className = 'slide-item';
-                advRow.innerHTML =
-                    '<span class="slide-icon"><iconify-icon icon="lucide:settings"></iconify-icon></span><span class="slide-label">高级设置</span><span class="slide-arrow">&gt;</span>';
-                advRow.addEventListener('click', () =>
-                    settingsMenu.push(buildSettingsUIAdvancedLevel())
-                );
-                c.appendChild(advRow);
-            });
-        },
-    };
-}
-
-function buildSettingsUIAdvancedLevel(): PopupLevel {
-    return {
-        label: '高级设置',
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
                 addCsRow(c, '弹窗宽度', 'lucide:sidebar', 220, 360, 10, 280, (v) => {
                     document.documentElement.style.setProperty('--popup-width', v + 'px');
                     SetUIPopupWidth(v).catch(() => {});
                 });
+            });
+
+            const currentAccent =
+                getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
+                '#4a6cf7';
+            cardContainer(container, (c) => {
+                const title = document.createElement('div');
+                title.className = 'section-title';
+                title.textContent = '主题色';
+                c.appendChild(title);
+                for (const p of THEME_PRESETS) {
+                    const isActive = currentAccent.toLowerCase() === p.color.toLowerCase();
+                    const row = document.createElement('div');
+                    row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
+                    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check-circle' : 'circle'}"></iconify-icon></span><span class="slide-label">${p.label}</span>`;
+                    const swatch = document.createElement('span');
+                    swatch.style.cssText = `width:16px;height:16px;border-radius:50%;background:${p.color};border:2px solid var(--white-12);flex-shrink:0;margin-left:auto;`;
+                    row.appendChild(swatch);
+                    row.addEventListener('click', () => setTheme(p.color));
+                    c.appendChild(row);
+                }
+            });
+            cardContainer(container, (c) => {
+                c.style.cssText = 'display:flex;gap:6px;padding:8px 14px;align-items:center;';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = '#RRGGBB';
+                input.className = 'tag-input';
+                input.value = currentAccent;
+                const applyBtn = document.createElement('button');
+                applyBtn.className = 'btn btn-sm btn-primary';
+                applyBtn.textContent = '应用';
+                applyBtn.addEventListener('click', () => {
+                    const hex = input.value.trim();
+                    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+                        setTheme(hex);
+                    } else {
+                        setStatus('✗ 无效的 hex 颜色', false);
+                    }
+                });
+                c.appendChild(input);
+                c.appendChild(applyBtn);
+            });
+
+            const currentCss = getComputedStyle(document.documentElement)
+                .getPropertyValue('--font')
+                .trim();
+            cardContainer(container, (c) => {
+                const title = document.createElement('div');
+                title.className = 'section-title';
+                title.textContent = '字体';
+                c.appendChild(title);
+                for (const [key, f] of Object.entries(FONT_MAP)) {
+                    const isActive = currentCss === f.css;
+                    const row = document.createElement('div');
+                    row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
+                    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check' : 'circle'}"></iconify-icon></span><span class="slide-label">${f.label}</span>`;
+                    row.addEventListener('click', () => {
+                        document.documentElement.style.setProperty('--font', f.css);
+                        SetUIFontFamily(key).catch(() => {});
+                        settingsMenu?.reRender();
+                        setStatus(`✓ 字体已设为 ${f.label}`, true);
+                    });
+                    c.appendChild(row);
+                }
+            });
+
+            cardContainer(container, (c) => {
                 addToggleRow(
                     c,
                     '滑动动画',
@@ -475,22 +259,9 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
                     },
                     'lucide:monitor'
                 );
-                const themeRow = document.createElement('div');
-                themeRow.className = 'slide-item';
-                themeRow.innerHTML =
-                    '<span class="slide-icon"><iconify-icon icon="lucide:palette"></iconify-icon></span><span class="slide-label">主题色</span><span class="slide-arrow">&gt;</span>';
-                themeRow.addEventListener('click', () =>
-                    settingsMenu?.push(buildSettingsThemeLevel())
-                );
-                c.appendChild(themeRow);
-                const fontRow = document.createElement('div');
-                fontRow.className = 'slide-item';
-                fontRow.innerHTML =
-                    '<span class="slide-icon"><iconify-icon icon="lucide:type"></iconify-icon></span><span class="slide-label">字体</span><span class="slide-arrow">&gt;</span>';
-                fontRow.addEventListener('click', () =>
-                    settingsMenu?.push(buildSettingsFontLevel())
-                );
-                c.appendChild(fontRow);
+            });
+
+            cardContainer(container, (c) => {
                 const resetRow = document.createElement('div');
                 resetRow.className = 'slide-item';
                 resetRow.innerHTML =
@@ -500,6 +271,7 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
                     root.style.setProperty('--ui-scale', '1');
                     root.style.setProperty('--popup-width', '280px');
                     root.style.setProperty('--accent', '#4a6cf7');
+                    root.style.setProperty('--accent-rgb', '74, 108, 247');
                     root.style.setProperty('--accent-dim', 'rgba(74,108,247,0.2)');
                     root.style.setProperty(
                         '--font',
@@ -514,8 +286,14 @@ function buildSettingsUIAdvancedLevel(): PopupLevel {
                     SetUIPopupWidth(280).catch(() => {});
                     SetUIAccent('#4a6cf7').catch(() => {});
                     SetUIFontFamily('system').catch(() => {});
+                    SetUIAnimations(true).catch(() => {});
+                    SetUIBlurBg(false).catch(() => {});
+                    setDisplayNamePriority('filename');
+                    SetDisplayNamePriority('filename').catch(() => {});
+                    setPerformanceMode('auto');
+                    SetPerformanceMode('auto').catch(() => {});
                     settingsMenu?.reRender();
-                    setStatus('✓ UI 设置已恢复默认', true);
+                    setStatus('✓ 设置已恢复默认', true);
                 });
                 c.appendChild(resetRow);
             });
@@ -604,58 +382,50 @@ const THEME_PRESETS: Array<{ label: string; color: string }> = [
     { label: '极简灰', color: '#888888' },
 ];
 
-function buildSettingsThemeLevel(): PopupLevel {
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return { r: 74, g: 108, b: 247 };
     return {
-        label: '主题色',
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            const currentAccent =
-                getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
-                '#4a6cf7';
-            cardContainer(container, (c) => {
-                for (const p of THEME_PRESETS) {
-                    const isActive = currentAccent.toLowerCase() === p.color.toLowerCase();
-                    const row = document.createElement('div');
-                    row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check-circle' : 'circle'}"></iconify-icon></span><span class="slide-label">${p.label}</span>`;
-                    const swatch = document.createElement('span');
-                    swatch.style.cssText = `width:16px;height:16px;border-radius:50%;background:${p.color};border:2px solid var(--white-12);flex-shrink:0;margin-left:auto;`;
-                    row.appendChild(swatch);
-                    row.addEventListener('click', () => setTheme(p.color));
-                    c.appendChild(row);
-                }
-            });
-            // Custom hex — separate card
-            cardContainer(container, (c) => {
-                c.style.cssText = 'display:flex;gap:6px;padding:8px 14px;align-items:center;';
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.placeholder = '#RRGGBB';
-                input.className = 'tag-input';
-                input.value = currentAccent;
-                const applyBtn = document.createElement('button');
-                applyBtn.className = 'btn btn-sm btn-primary';
-                applyBtn.textContent = '应用';
-                applyBtn.addEventListener('click', () => {
-                    const hex = input.value.trim();
-                    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
-                        setTheme(hex);
-                    } else {
-                        setStatus('✗ 无效的 hex 颜色', false);
-                    }
-                });
-                c.appendChild(input);
-                c.appendChild(applyBtn);
-            });
-        },
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+    };
+}
+
+function rgbToString(rgb: { r: number; g: number; b: number }): string {
+    return `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+}
+
+function generateTextColors(hex: string): { bright: string; dim: string; muted: string } {
+    const rgb = hexToRgb(hex);
+    const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+
+    const mix = (target: number) => {
+        const factor = target / 255;
+        const r = Math.round(rgb.r * factor + 255 * (1 - factor));
+        const g = Math.round(rgb.g * factor + 255 * (1 - factor));
+        const b = Math.round(rgb.b * factor + 255 * (1 - factor));
+        return `rgb(${r}, ${g}, ${b})`;
+    };
+
+    return {
+        bright: mix(brightness > 128 ? 0.15 : 0.1),
+        dim: mix(brightness > 128 ? 0.3 : 0.2),
+        muted: mix(brightness > 128 ? 0.45 : 0.35),
     };
 }
 
 async function setTheme(hex: string): Promise<void> {
     const root = document.documentElement;
+    const textColors = generateTextColors(hex);
+
     root.style.setProperty('--accent', hex);
+    root.style.setProperty('--accent-rgb', rgbToString(hexToRgb(hex)));
     root.style.setProperty('--accent-dim', hex + '33');
+    root.style.setProperty('--text-bright', textColors.bright);
+    root.style.setProperty('--text-dim', textColors.dim);
+    root.style.setProperty('--text-muted', textColors.muted);
+
     try {
         await SetUIAccent(hex);
         setStatus(`✓ 主题色已设为 ${hex}`, true);
@@ -680,34 +450,6 @@ const FONT_MAP: Record<string, { label: string; css: string }> = {
     },
 };
 
-function buildSettingsFontLevel(): PopupLevel {
-    return {
-        label: '字体',
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            const currentCss = getComputedStyle(document.documentElement)
-                .getPropertyValue('--font')
-                .trim();
-            cardContainer(container, (c) => {
-                for (const [key, f] of Object.entries(FONT_MAP)) {
-                    const isActive = currentCss === f.css;
-                    const row = document.createElement('div');
-                    row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check' : 'circle'}"></iconify-icon></span><span class="slide-label">${f.label}</span>`;
-                    row.addEventListener('click', () => {
-                        document.documentElement.style.setProperty('--font', f.css);
-                        SetUIFontFamily(key).catch(() => {});
-                        settingsMenu?.reRender();
-                        setStatus(`✓ 字体已设为 ${f.label}`, true);
-                    });
-                    c.appendChild(row);
-                }
-            });
-        },
-    };
-}
-
 function buildSettingsClearCacheLevel(): PopupLevel {
     return {
         label: '清除缓存',
@@ -719,7 +461,6 @@ function buildSettingsClearCacheLevel(): PopupLevel {
                 label: '缩略图缓存',
                 icon: 'image',
                 target: 'set:clearthumbnail',
-                sublabel: '即将推出',
             },
         ],
     };
@@ -754,6 +495,13 @@ function handleSettingsAction(row: PopupRow): void {
                 .then(() => setStatus('✓ 提取缓存已清除', true))
                 .catch(console.warn);
             break;
+        case 'set:clearthumbnail':
+            if (confirm('确定要清除所有缩略图缓存吗？下次加载模型时将重新生成。')) {
+                ClearThumbnailCache()
+                    .then(() => setStatus('✓ 缩略图缓存已清除', true))
+                    .catch(console.warn);
+            }
+            break;
         case 'set:addexternal':
             (async () => {
                 try {
@@ -769,75 +517,6 @@ function handleSettingsAction(row: PopupRow): void {
                     setStatus('✓ 外部库已添加', true);
                 } catch (err) {
                     console.error('AddExternalPath error:', err);
-                }
-            })();
-            break;
-        case 'set:detectmmd':
-            (async () => {
-                try {
-                    const path = await AutoDetectMMD();
-                    setStatus(`✓ MMD 已检测: ${path}`, true);
-                } catch (_err: unknown) {
-                    setStatus('✗ 未找到 MMD，请在「软件管理」中手动添加', false);
-                }
-            })();
-            break;
-        case 'set:blenderpath':
-            (async () => {
-                try {
-                    const path = await SelectExeFile();
-                    if (!path) {
-                        return;
-                    }
-                    await SetBlenderPath(path);
-                    setStatus('✓ Blender 路径已设置', true);
-                } catch (err: unknown) {
-                    setStatus('✗ 设置失败: ' + (err instanceof Error ? err.message : String(err)), false);
-                }
-            })();
-            break;
-        case 'set:mmdpath':
-            (async () => {
-                try {
-                    const path = await SelectExeFile();
-                    if (!path) {
-                        return;
-                    }
-                    await SetMMDPath(path);
-                    setStatus('✓ MMD 路径已设置', true);
-                } catch (err: unknown) {
-                    setStatus('✗ 设置失败: ' + (err instanceof Error ? err.message : String(err)), false);
-                }
-            })();
-            break;
-        case 'set:opensoftwaredir':
-            OpenSoftwareDir().catch(console.warn);
-            break;
-        case 'set:addcustomsoftware':
-            (async () => {
-                try {
-                    const path = await SelectExeFile();
-                    if (!path) {
-                        return;
-                    }
-                    const name =
-                        path
-                            .split(/[/\\]/)
-                            .pop()
-                            ?.replace(/\.exe$/i, '') || '未知';
-                    const args = prompt(
-                        '输入启动参数模板（支持 {model} 占位符，留空则不带参数）：',
-                        ''
-                    );
-                    if (args === null) {
-                        return;
-                    } // user cancelled
-                    await AddCustomSoftware(path, name, args);
-                    await scanSoftwareDir();
-                    setStatus(`✓ 已添加: ${name}`, true);
-                    settingsMenu.reRender();
-                } catch (err: unknown) {
-                    setStatus('✗ 添加失败: ' + (err instanceof Error ? err.message : String(err)), false);
                 }
             })();
             break;
@@ -1064,17 +743,21 @@ function buildSettingsPerformanceLevel(): PopupLevel {
 }
 
 export async function showSettings(): Promise<void> {
-    // 不再自管理生命周期，由 toggleOverlay 统一管理
-    // 清空旧内容，避免与其他弹窗 DOM 混在一起
     dom.sceneOverlay.innerHTML = '';
     dom.sceneOverlay.classList.remove('sceneOverlay-model', 'sceneOverlay-motion');
-    dom.sceneOverlay.classList.add('sceneOverlay-settings'); // 宽度 340px
+    dom.sceneOverlay.classList.add('sceneOverlay-settings');
     dom.sceneOverlay.dataset.popupType = 'settings';
 
     settingsMenu?.dispose();
     settingsMenu = new SlideMenu({
         container: dom.sceneOverlay,
-        onClose: () => closeAllOverlays(),
+        onClose: () => {
+            (window as any).__getSettingsMenuPush = null;
+            (window as any).__getSettingsMenuPop = null;
+            (window as any).__getSettingsMenuReRender = null;
+            (window as any).__handleSettingsAction = null;
+            closeAllOverlays();
+        },
         onItemClick: (row) => handleSettingsAction(row),
         onFolderEnter: (row) => {
             switch (row.target) {
@@ -1102,6 +785,11 @@ export async function showSettings(): Promise<void> {
         },
         onAfterRender: () => {},
     });
+
+    (window as any).__getSettingsMenuPush = () => settingsMenu?.push.bind(settingsMenu);
+    (window as any).__getSettingsMenuPop = () => settingsMenu?.pop.bind(settingsMenu);
+    (window as any).__getSettingsMenuReRender = () => settingsMenu?.reRender.bind(settingsMenu);
+    (window as any).__handleSettingsAction = handleSettingsAction;
 
     settingsMenu.reset(buildSettingsRoot());
 }

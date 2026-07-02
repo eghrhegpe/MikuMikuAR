@@ -221,7 +221,6 @@ import {
     buildModelDetailLevel,
     buildModelInfoLevel,
     buildTransformLevel,
-    buildVisibilityLevel,
     buildModelTagsLevel,
     buildMorphPreviewLevel,
 } from '../menus/model-detail';
@@ -418,22 +417,6 @@ describe('buildTransformLevel', () => {
 });
 
 // ======== buildVisibilityLevel ========
-
-describe('buildVisibilityLevel', () => {
-    it('returns valid PopupLevel', () => {
-        createModel('m1');
-        const level = buildVisibilityLevel('m1');
-        expect(level.label).toBe('可见性');
-        expect(hasRenderCustom(level)).toBe(true);
-    });
-
-    it('renderCustom does not throw', () => {
-        createModel('m1');
-        const level = buildVisibilityLevel('m1');
-        const container = document.createElement('div');
-        expect(() => level.renderCustom!(container)).not.toThrow();
-    });
-});
 
 // ======== buildModelTagsLevel ========
 

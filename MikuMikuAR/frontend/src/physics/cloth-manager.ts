@@ -3,9 +3,13 @@
 // UI 层通过 toggleCloth / recreateCloth 调用，不再寄生菜单文件
 
 import { SdfCollider, DEFAULT_BODY_CAPSULES } from './xpbd-collider';
+import type { CapsuleSpec } from './xpbd-collider';
 import { createCloth, buildClothUpdateFn } from './xpbd-cloth';
 import { scene, modelManager } from '../scene/scene';
 import { focusedModelId, envState, setStatus } from '../core/config';
+
+/** 当前布料的碰撞体引用 */
+let _currentCollider: SdfCollider | null = null;
 
 /** 为当前聚焦模型创建布料 */
 function _createClothForFocusedModel(): void {
@@ -30,6 +34,7 @@ function _createClothForFocusedModel(): void {
     // Build SDF collider
     const collider = new SdfCollider();
     collider.init(DEFAULT_BODY_CAPSULES);
+    _currentCollider = collider;
 
     // Scale collider to match model size
     const model = modelManager.modelRegistry.get(id);
@@ -111,4 +116,64 @@ export function recreateCloth(): boolean {
     _destroyClothForFocusedModel();
     _createClothForFocusedModel();
     return true;
+}
+
+// ======== 碰撞体参数 API ========
+
+/** 获取当前碰撞体（无布料时返回 null） */
+export function getCollider(): SdfCollider | null {
+    return _currentCollider;
+}
+
+/** 获取碰撞体规格列表 */
+export function getColliderSpecs(): CapsuleSpec[] {
+    if (!_currentCollider) return [];
+    return _currentCollider.capsules.map((c) => ({
+        name: c.name,
+        boneName: c.boneName,
+        radius: c.radius,
+        halfHeight: c.halfHeight,
+    }));
+}
+
+/** 设置单个碰撞体的半径 */
+export function setCapsuleRadius(name: string, radius: number): void {
+    if (!_currentCollider) return;
+    const c = _currentCollider.capsules.find((c) => c.name === name);
+    if (c) {
+        c.radius = radius;
+    }
+}
+
+/** 设置单个碰撞体的半高 */
+export function setCapsuleHalfHeight(name: string, halfHeight: number): void {
+    if (!_currentCollider) return;
+    const c = _currentCollider.capsules.find((c) => c.name === name);
+    if (c) {
+        c.halfHeight = halfHeight;
+    }
+}
+
+/** 设置碰撞体刚度 */
+export function setColliderStiffness(stiffness: number): void {
+    if (!_currentCollider) return;
+    _currentCollider.stiffness = stiffness;
+}
+
+/** 设置碰撞体摩擦系数 */
+export function setColliderFriction(friction: number): void {
+    if (!_currentCollider) return;
+    _currentCollider.friction = friction;
+}
+
+/** 开关单个碰撞体 */
+export function setCapsuleEnabled(name: string, enabled: boolean): void {
+    if (!_currentCollider) return;
+    _currentCollider.setEnabledByName(name, enabled);
+}
+
+/** 全部开关碰撞体 */
+export function setAllCapsulesEnabled(enabled: boolean): void {
+    if (!_currentCollider) return;
+    _currentCollider.setAllEnabled(enabled);
 }

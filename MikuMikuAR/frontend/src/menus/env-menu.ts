@@ -1121,7 +1121,7 @@ export function buildWaterLevel(): PopupLevel {
                         addSliderRow(cc, '雾密度', s.underwaterFogDensity, 0, 0.1, 0.001, (v) =>
                             setEnvState({ underwaterFogDensity: v })
                         );
-                        addSliderRow(cc, '色差强度', s.underwaterChromaticAmount, 0, 100, 1, (v) =>
+                        addSliderRow(cc, '色差强度', s.underwaterChromaticAmount, 0, 20, 0.5, (v) =>
                             setEnvState({ underwaterChromaticAmount: v })
                         );
                     },

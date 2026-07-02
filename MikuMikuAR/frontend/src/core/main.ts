@@ -45,6 +45,12 @@ import { freeflyInput, getCameraMode } from '../scene/camera';
 import './iconify-registry';
 import 'iconify-icon';
 
+function hexToRgb(hex: string): string {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return '74, 108, 247';
+    return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+}
+
 // ======== Initialize hover hints for static [data-hint] elements ========
 initHints();
 
@@ -460,6 +466,7 @@ async function restoreUIState(): Promise<void> {
     }
     if (s.accent) {
         root.style.setProperty('--accent', s.accent);
+        root.style.setProperty('--accent-rgb', hexToRgb(s.accent));
         root.style.setProperty('--accent-dim', s.accent + '33');
     }
     if (s.fontFamily && FONT_RESTORE[s.fontFamily]) {

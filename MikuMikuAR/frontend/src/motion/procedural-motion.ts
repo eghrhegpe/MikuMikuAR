@@ -15,18 +15,72 @@ import {
 
 export type ProcMotionMode = 'off' | 'idle' | 'autodance';
 
+/** 程序化动作微动效果类别（用于 boneToggles 开关） */
+export const PROC_MOTION_BONE_CATEGORIES = [
+    'center',        // センター（重心弹跳/摇摆）
+    'upper',         // 上半身（呼吸/前倾）
+    'upper2',        // 上半身2（扭转）
+    'waist',         // 腰（扭胯）
+    'head',          // 頭（点头）
+    'arm',           // 手臂（外展+前后甩动）
+    'groove',        // グルーブ
+    'shoulder',      // 肩部（耸肩）
+    'allParent',     // 全ての親（微晃）
+    'wrist',         // 手腕（节拍下压）
+    'footIk',        // 足IK（踏步）
+    'blink',         // 眨眼（待机模式）
+    'emotion',       // 表情情绪轮（AutoDance 模式）
+] as const;
+export type ProcMotionBoneCategory = (typeof PROC_MOTION_BONE_CATEGORIES)[number];
+
+/** 获取所有微动类别（供 UI 遍历） */
+export function getProcMotionBoneCategories(): ProcMotionBoneCategory[] {
+    return [...PROC_MOTION_BONE_CATEGORIES];
+}
+
 export interface ProcMotionState {
     mode: ProcMotionMode;
     intensity: number; // 0..1，默认 0.5
     speed: number; // 0.5..2，默认 1.0
     autoSwitch: boolean; // true=根据音乐自动切换 Idle/AutoDance
+    /** 各微动效果的开关（key=骨骼类别，value=是否启用） */
+    boneToggles: Record<ProcMotionBoneCategory, boolean>;
+    bpmQuantizeEnabled: boolean; // true=BPM 量化开（P1 开关）
+    vpdApplyEnabled: boolean; // true=将 VPD 表情混入程序化 VMD（P1 开关）
+    interpOverride: 'auto' | 'sharp' | 'ease-in-out' | 'ease-out'; // 插值曲线覆盖（P1 开关）
+    multiMorphEnabled: boolean; // true=多 Morph LipSync（P0 开关）
+    eyeTrackingEnabled: boolean; // true=眼部跟随（视线追踪，实时效果）
+    headTrackingEnabled: boolean; // true=头部跟随（实时效果）
 }
+
+const _defaultBoneToggles: Record<ProcMotionBoneCategory, boolean> = {
+    center: true,
+    upper: true,
+    upper2: true,
+    waist: true,
+    head: true,
+    arm: true,
+    groove: true,
+    shoulder: true,
+    allParent: true,
+    wrist: true,
+    footIk: true,
+    blink: true,
+    emotion: true,
+};
 
 export const DEFAULT_PROC_STATE: ProcMotionState = {
     mode: 'off',
     intensity: 0.5,
     speed: 1.0,
     autoSwitch: true,
+    boneToggles: { ..._defaultBoneToggles },
+    bpmQuantizeEnabled: true,
+    vpdApplyEnabled: false,
+    interpOverride: 'auto',
+    multiMorphEnabled: false,
+    eyeTrackingEnabled: true,  // 默认开启（视线追踪）
+    headTrackingEnabled: false, // 默认关闭（头部跟随较影响动画）
 };
 
 // ============ 骨骼候选名 ============
@@ -104,7 +158,7 @@ export function generateIdleVmd(
     const morphs: MorphKeyFrame[] = [];
 
     // ---------- 眨眼（伪随机间隔 2~8s，自然频率） ----------
-    const blinkMorph = MORPH_BLINK_CANDIDATES.find((c) => morphNames.includes(c));
+    const blinkMorph = state.boneToggles.blink ? MORPH_BLINK_CANDIDATES.find((c) => morphNames.includes(c)) : null;
     if (blinkMorph) {
         const blinkA = Math.round(60 / safeSpeed);
         const blinkB = Math.round(240 / safeSpeed);
@@ -135,7 +189,7 @@ export function generateIdleVmd(
 
     // ---------- 上半身呼吸 ----------
     const breathAmp = 0.03 * intensity;
-    if (upperBone || neckBone) {
+    if ((upperBone || neckBone) && state.boneToggles.upper) {
         for (let f = 0; f <= loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             const rx = _clamp1(Math.sin(phase) * breathAmp);
@@ -154,7 +208,7 @@ export function generateIdleVmd(
     }
 
     // ---------- 上半身2 ----------
-    if (upper2Bone) {
+    if (upper2Bone && state.boneToggles.upper2) {
         const amp2 = 0.015 * intensity;
         for (let f = 0; f <= loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
@@ -166,7 +220,7 @@ export function generateIdleVmd(
     }
 
     // ---------- 腰 ----------
-    if (waistBone) {
+    if (waistBone && state.boneToggles.waist) {
         const waistAmp = 0.02 * intensity;
         for (let f = 0; f <= loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
@@ -178,7 +232,7 @@ export function generateIdleVmd(
     }
 
     // ---------- 全ての親 ----------
-    if (allParentBone) {
+    if (allParentBone && state.boneToggles.allParent) {
         const parentAmp = 0.005 * intensity;
         for (let f = 0; f <= loopFrames; f += 6) {
             const t = (f / loopFrames) * Math.PI * 2;
@@ -191,7 +245,7 @@ export function generateIdleVmd(
     }
 
     // ---------- センター ----------
-    if (centerBone) {
+    if (centerBone && state.boneToggles.center) {
         const hasBreath = !!(upperBone || neckBone);
         const swayAmp = (hasBreath ? 0.04 : 0.1) * intensity;
         const microAmp = 0.03 * intensity;
@@ -361,7 +415,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 1. センター（大幅侧摆 + 旋转 + 弹跳） ----------
-    if (centerBone) {
+    if (centerBone && state.boneToggles.center) {
         const bodyAmp = 0.20 * intensity;      // Y轴扭动
         const sideAmp = 0.12 * intensity;      // Z轴侧摆（新增）
         const bobAmp = 0.06 * intensity;       // 弹跳
@@ -383,7 +437,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 2. 上半身（前倾后仰） ----------
-    if (upperBone) {
+    if (upperBone && state.boneToggles.upper) {
         const upperAmp = 0.15 * intensity;
         for (let f = 0; f <= loopFrames; f += 3) {
             const s = sinVals[f + Math.round(beatFrames / 2)] || 0;
@@ -395,7 +449,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 3. 上半身2（扭转） ----------
-    if (upper2Bone) {
+    if (upper2Bone && state.boneToggles.upper2) {
         const amp2 = 0.06 * intensity;
         for (let f = 0; f <= loopFrames; f += 3) {
             const s = sinVals[f];
@@ -407,7 +461,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 4. 腰（扭胯） ----------
-    if (waistBone) {
+    if (waistBone && state.boneToggles.waist) {
         const waistAmp = 0.20 * intensity;
         for (let f = 0; f <= loopFrames; f += 3) {
             const s = sinVals[f + Math.round(beatFrames / 4)] || 0;
@@ -419,7 +473,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 5. 頭 ----------
-    if (headBone) {
+    if (headBone && state.boneToggles.head) {
         const headAmp = 0.12 * intensity;
         for (let f = 0; f <= loopFrames; f += 3) {
             const s = sinVals[f];
@@ -431,7 +485,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 6. 手臂（大幅外展 + 前后甩动） ----------
-    if (larmBone || rarmBone) {
+    if ((larmBone || rarmBone) && state.boneToggles.arm) {
         const armAmpZ = 0.55 * intensity;      // 外展幅度（Z轴）
         const armAmpX = 0.30 * intensity;      // 前后甩动（X轴）
         for (let f = 0; f <= loopFrames; f += 3) {
@@ -455,7 +509,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 7. グルーブ ----------
-    if (grooveBone) {
+    if (grooveBone && state.boneToggles.groove) {
         const grooveAmp = 0.15 * intensity;
         for (let f = 0; f <= loopFrames; f += 3) {
             const s = sinVals[f];
@@ -468,7 +522,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 8. 肩部（耸肩） ----------
-    if (shoulderLBone || shoulderRBone) {
+    if ((shoulderLBone || shoulderRBone) && state.boneToggles.shoulder) {
         const shoulderUpAmp = 0.10 * intensity;
         const shoulderRotAmp = 0.15 * intensity;
         for (let f = 0; f <= loopFrames; f += 3) {
@@ -488,7 +542,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 9. 全ての親 ----------
-    if (allParentBone) {
+    if (allParentBone && state.boneToggles.allParent) {
         const parentAmp = 0.02 * intensity;
         for (let f = 0; f <= loopFrames; f += 6) {
             const t = (f / loopFrames) * Math.PI * 2;
@@ -501,7 +555,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 10. 手腕（节拍下压 + 侧摆） ----------
-    if (wristLBone || wristRBone) {
+    if ((wristLBone || wristRBone) && state.boneToggles.wrist) {
         const wristAmpX = 0.35 * intensity;
         const wristAmpZ = 0.15 * intensity;
         for (let f = 0; f <= loopFrames; f += 3) {
@@ -523,7 +577,7 @@ export function generateAutoDanceVmd(
     }
 
     // ---------- 11. 足IK（基础踏步） ----------
-    if (legIkLBone || legIkRBone) {
+    if (state.boneToggles.footIk && (legIkLBone || legIkRBone)) {
         const stepAmp = 0.08 * intensity;  // Z轴前后位移
         const liftAmp = 0.03 * intensity;  // Y轴抬脚（只抬不沉，防穿地）
         for (let f = 0; f <= loopFrames; f += 3) {
@@ -545,6 +599,9 @@ export function generateAutoDanceVmd(
 
       // ========== 🎭 表情情绪轮（动态扫描可用 morph） ==========
     // 不再硬编码少数模型专有名字，而是按语义自动分类可用 morph
+    if (!state.boneToggles.emotion) {
+        // 表情情绪轮已关闭，跳过
+    } else {
 
     // 忽略纯口型/音素/眨眼 morph，专注表情 morph
     const BLACKLIST_PATTERNS = [
@@ -670,8 +727,19 @@ export function generateAutoDanceVmd(
     } else {
         console.warn('[procedural-motion] 未找到任何表情 morph，跳过情绪轮');
     }
-    // 按骨骼类型分配插值曲线
+    } // ← 表情情绪轮 else 块结束
+    // 按骨骼类型分配插值曲线（受 interpOverride 控制）
+    const _override = state.interpOverride;
+    let _overrideInterp: typeof INTERP_SHARP | null = null;
+    if (_override === 'sharp') _overrideInterp = INTERP_SHARP;
+    else if (_override === 'ease-in-out') _overrideInterp = INTERP_EASE_IN_OUT;
+    else if (_override === 'ease-out') _overrideInterp = INTERP_EASE_OUT;
+
     for (const b of bones) {
+        if (_overrideInterp) {
+            b.interp = _overrideInterp;
+            continue;
+        }
         const n = b.name;
         // 手臂摆动 → EASE_OUT（快速启动慢停）
         if (n === larmBone || n === rarmBone) {

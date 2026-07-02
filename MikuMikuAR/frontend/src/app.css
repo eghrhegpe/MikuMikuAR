@@ -14,13 +14,13 @@
 
     /* 颜色 */
     --accent: #4a6cf7;
+    --accent-rgb: 74, 108, 247;
     --accent-hover: #3a5ce7;
     --accent-dim: rgba(74, 108, 247, 0.2);
-    --text: #fff;
-    --text-bright: #bbb;
-    --text-dim: #888;
-    --text-muted: #555;
-    --text-dark: #666;
+    --text: #e8edf5;
+    --text-bright: #c8d0e0;
+    --text-dim: #a0aac0;
+    --text-muted: #7882a0;
     --danger: #844;
     --danger-hover: #f44;
 
@@ -88,7 +88,7 @@
     --white-50: rgba(255, 255, 255, 0.5);
     --white-55: rgba(255, 255, 255, 0.55);
     --white-60: rgba(255, 255, 255, 0.6);
-    --white-65: rgba(74, 108, 247, 0.65);
+    --white-65: rgba(255, 255, 255, 0.65);
     --white-70: rgba(255, 255, 255, 0.7);
     --white-80: rgba(255, 255, 255, 0.8);
     --white-85: rgba(255, 255, 255, 0.85);
@@ -180,6 +180,12 @@
 
     /* Slide Header（弹窗头部） */
     --slide-header-gap: 6px;
+}
+
+/* ===== Global Selection Highlight ===== */
+::selection {
+    background: var(--accent-dim);
+    color: var(--text);
 }
 
 /* ===== Reset ===== */
@@ -826,11 +832,11 @@ body {
     background: transparent;
 }
 .slide-list::-webkit-scrollbar-thumb {
-    background: var(--white-16);
+    background: var(--accent-dim);
     border-radius: 3px;
 }
 .slide-list::-webkit-scrollbar-thumb:hover {
-    background: var(--white-40);
+    background: var(--accent);
 }
 
 /* ===== Drop Overlay ===== */
@@ -978,50 +984,6 @@ body {
 .mode-btn.active:hover {
     background: var(--accent);
     filter: brightness(1.15);
-}
-
-/* ===== Range Slider (dark theme) ===== */
-input[type='range'] {
-    -webkit-appearance: none;
-    appearance: none;
-    background: transparent;
-    cursor: pointer;
-}
-input[type='range']::-webkit-slider-track {
-    height: 4px;
-    background: var(--white-12);
-    border-radius: 2px;
-}
-input[type='range']::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: 2px solid var(--white-40);
-    margin-top: -5px;
-    cursor: pointer;
-    transition: transform 0.1s;
-}
-input[type='range']::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-}
-input[type='range']::-moz-range-track {
-    height: 4px;
-    background: var(--white-12);
-    border-radius: 2px;
-    border: none;
-}
-input[type='range']::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: 2px solid var(--white-40);
-    cursor: pointer;
-}
-input[type='range']::-moz-range-thumb:hover {
-    transform: scale(1.2);
 }
 
 /* ===== Compact Slider (zone-click bar) ===== */
@@ -1259,32 +1221,97 @@ input[type='range']::-moz-range-thumb:hover {
     overflow: visible;
     position: relative;
     cursor: pointer;
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.cs-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent);
+    border-radius: var(--cs-bar-radius) var(--cs-bar-radius) 0 0;
+    pointer-events: none;
+}
+.cs-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 4px,
+        rgba(255, 255, 255, 0.04) 4px,
+        rgba(255, 255, 255, 0.04) 5px
+    );
+    border-radius: var(--cs-bar-radius);
+    pointer-events: none;
+}
+.cs-bar:focus-visible {
+    outline: none;
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.3),
+        0 0 0 2px var(--accent),
+        0 0 12px rgba(var(--accent-rgb), 0.4);
 }
 .cs-fill {
     height: 100%;
-    background: var(--accent);
+    background: linear-gradient(
+        90deg,
+        rgba(var(--accent-rgb), 0.8),
+        var(--accent)
+    );
     border-radius: var(--cs-bar-radius);
     transition: width 0.06s linear;
     pointer-events: none;
+    position: relative;
+    overflow: hidden;
+}
+.cs-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), transparent);
+    border-radius: var(--cs-bar-radius) var(--cs-bar-radius) 0 0;
+}
+.cs-fill::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+    );
+    animation: csShimmer 2s infinite;
+}
+@keyframes csShimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }
 .cs-thumb {
     position: absolute;
-    top: 50%;
-    width: var(--cs-thumb-size);
-    height: var(--cs-thumb-size);
-    background: #fff;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow:
-        0 1px 4px rgba(0, 0, 0, 0.4),
-        0 0 0 2px var(--accent);
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    transform: translateX(-50%);
     pointer-events: none;
-    transition:
-        left 0.06s linear,
-        transform 0.1s;
-}
-.cs-bar:active .cs-thumb {
-    transform: translate(-50%, -50%) scale(1.15);
+    transition: left 0.06s linear;
 }
 
 /* ===== Material Card (材质分类卡片) ===== */
@@ -1593,10 +1620,6 @@ input[type='range']::-moz-range-thumb:hover {
     text-align: center;
     flex-shrink: 0;
 }
-.clr-slider {
-    flex: 1;
-    height: 4px;
-}
 .clr-value {
     font-size: var(--font-ui-sm);
     color: var(--text-bright);
@@ -1631,31 +1654,10 @@ input[type='range']::-moz-range-thumb:hover {
     width: 60px;
 }
 
-/* Lighting panel inner card */
 .lcard {
     background: var(--lcard-bg);
     border: var(--lcard-border);
     border-radius: var(--lcard-radius);
     padding: var(--lcard-pad-y) var(--lcard-pad-x);
     margin-bottom: var(--lcard-margin-bottom);
-}
-
-/* Color channel track gradients */
-input[type='range'][data-channel='r']::-webkit-slider-track {
-    background: linear-gradient(to right, #000, #f00);
-}
-input[type='range'][data-channel='g']::-webkit-slider-track {
-    background: linear-gradient(to right, #000, #0f0);
-}
-input[type='range'][data-channel='b']::-webkit-slider-track {
-    background: linear-gradient(to right, #000, #00f);
-}
-input[type='range'][data-channel='r']::-moz-range-track {
-    background: linear-gradient(to right, #000, #f00);
-}
-input[type='range'][data-channel='g']::-moz-range-track {
-    background: linear-gradient(to right, #000, #0f0);
-}
-input[type='range'][data-channel='b']::-moz-range-track {
-    background: linear-gradient(to right, #000, #00f);
 }

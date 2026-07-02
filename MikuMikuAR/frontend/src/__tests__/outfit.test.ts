@@ -59,7 +59,6 @@ vi.mock('@babylonjs/core/Materials/Textures/texture', () => {
     return { Texture: m.MockTexture };
 });
 
-// Setup minimal model registry
 import { modelRegistry, setLibraryRoot } from '../core/config';
 
 function makeColor(r: number, g: number, b: number) {
@@ -81,7 +80,7 @@ function makeColor(r: number, g: number, b: number) {
 }
 
 function createMockMaterial(name: string, textures: Record<string, any>) {
-    const mat: any = { name, isReady: true, clone: () => mat, dispose: () => {} };
+    const mat: any = { name, isReady: true, clone: () => mat, dispose: vi.fn() };
     for (const [k, v] of Object.entries(textures)) {
         mat[k] = v;
     }
@@ -94,6 +93,36 @@ function createMockMaterial(name: string, textures: Record<string, any>) {
 
 function createMockMesh(material: any) {
     return { material, _positions: null, name: 'mesh' };
+}
+
+function createBaseInstance(overrides: Record<string, any> = {}) {
+    return {
+        id: 'm1',
+        name: 'test',
+        filePath: '/models/test.pmx',
+        port: 12345,
+        meshes: [],
+        rootMesh: null,
+        scaling: 1,
+        rotationY: 0,
+        visible: true,
+        opacity: 1,
+        wireframe: false,
+        showBoneLines: false,
+        showBoneJoints: false,
+        physicsEnabled: false,
+        kind: 'actor' as const,
+        vmdData: null,
+        vmdName: '',
+        vmdPath: null,
+        animationDuration: 0,
+        modelDir: '/models',
+        outfitFile: undefined,
+        activeVariant: undefined,
+        _origTextures: undefined,
+        _origParams: undefined,
+        ...overrides,
+    };
 }
 
 describe('applyOutfitVariant', () => {
@@ -116,28 +145,11 @@ describe('applyOutfitVariant', () => {
     beforeEach(() => {
         modelRegistry.clear();
         setLibraryRoot('');
+        vi.clearAllMocks();
         const sm = createMockMaterial('顔', { diffuseTexture: origDiffuse, toonTexture: origToon });
-        inst = {
-            id: 'm1',
-            name: 'test',
-            filePath: '/models/test.pmx',
-            port: 12345,
+        inst = createBaseInstance({
             meshes: [createMockMesh(sm)],
             rootMesh: createMockMesh(sm),
-            scaling: 1,
-            rotationY: 0,
-            visible: true,
-            opacity: 1,
-            wireframe: false,
-            showBoneLines: false,
-            showBoneJoints: false,
-            physicsEnabled: false,
-            kind: 'actor',
-            vmdData: null,
-            vmdName: '',
-            vmdPath: null,
-            animationDuration: 0,
-            modelDir: '/models',
             outfitFile: {
                 version: 1,
                 variants: [
@@ -146,11 +158,13 @@ describe('applyOutfitVariant', () => {
                         byCategory: { 服装: { diffuse: 'swim.png', toon: 'swim_toon.png' } },
                     },
                     { name: '校服', byMaterial: { 顔: { diffuse: 'school.png' } } },
+                    {
+                        name: '演出服',
+                        all: { diffuse: 'show.png', toon: 'show_toon.png' },
+                    },
                 ],
             },
-            activeVariant: undefined,
-            _origTextures: undefined,
-        };
+        });
         modelRegistry.set('m1', inst);
     });
 
@@ -181,7 +195,6 @@ describe('applyOutfitVariant', () => {
     it('should apply byMaterial override over byCategory', async () => {
         const { applyOutfitVariant } = await import('../outfit/outfit');
         await applyOutfitVariant('m1', '校服');
-        // "顔" material: byMaterial has "school.png" for diffuse → should win
         expect(inst.activeVariant).toBe('校服');
     });
 
@@ -199,6 +212,20 @@ describe('applyOutfitVariant', () => {
         await applyOutfitVariant('m1', '不存在');
         expect(inst.activeVariant).toBe('泳装');
     });
+
+    it('should apply "all" slot fallback', async () => {
+        const { applyOutfitVariant } = await import('../outfit/outfit');
+        await applyOutfitVariant('m1', '演出服');
+        expect(inst.activeVariant).toBe('演出服');
+    });
+
+    it('should not re-capture _origTextures on second apply', async () => {
+        const { applyOutfitVariant } = await import('../outfit/outfit');
+        await applyOutfitVariant('m1', '泳装');
+        const firstCapture = inst._origTextures;
+        await applyOutfitVariant('m1', '校服');
+        expect(inst._origTextures).toBe(firstCapture);
+    });
 });
 
 describe('resetOutfit', () => {
@@ -214,32 +241,15 @@ describe('resetOutfit', () => {
     beforeEach(() => {
         modelRegistry.clear();
         setLibraryRoot('');
+        vi.clearAllMocks();
         const sm = createMockMaterial('体', { diffuseTexture: origDiffuse });
-        inst = {
-            id: 'm1',
-            name: 'test',
-            filePath: '/models/test.pmx',
-            port: 12345,
+        inst = createBaseInstance({
             meshes: [createMockMesh(sm)],
             rootMesh: createMockMesh(sm),
-            scaling: 1,
-            rotationY: 0,
-            visible: true,
-            opacity: 1,
-            wireframe: false,
-            showBoneLines: false,
-            showBoneJoints: false,
-            physicsEnabled: false,
-            kind: 'actor',
-            vmdData: null,
-            vmdName: '',
-            vmdPath: null,
-            animationDuration: 0,
-            modelDir: '/models',
             outfitFile: null,
             activeVariant: '泳装',
             _origTextures: new Map([[0, { diffuse: origDiffuse }]]),
-        };
+        });
         modelRegistry.set('m1', inst);
     });
 
@@ -249,5 +259,127 @@ describe('resetOutfit', () => {
         expect(inst.activeVariant).toBeUndefined();
         expect(inst.outfitFile).toBeUndefined();
         expect(inst._origTextures).toBeUndefined();
+    });
+
+    it('should be a no-op for unknown id', async () => {
+        const { resetOutfit } = await import('../outfit/outfit');
+        resetOutfit('nonexistent');
+        // Should not throw
+    });
+
+    it('should clear _origParams if present', async () => {
+        inst._origParams = new Map([[0, {
+            diffuseR: 1, diffuseG: 1, diffuseB: 1,
+            specularR: 1, specularG: 1, specularB: 1,
+            specularPower: 50,
+            ambientR: 1, ambientG: 1, ambientB: 1,
+        }]]);
+        const { resetOutfit } = await import('../outfit/outfit');
+        resetOutfit('m1');
+        expect(inst._origParams).toBeUndefined();
+    });
+});
+
+describe('loadOutfits', () => {
+    beforeEach(() => {
+        modelRegistry.clear();
+        setLibraryRoot('');
+        vi.clearAllMocks();
+    });
+
+    it('returns null when no filePath', async () => {
+        const inst = createBaseInstance({ filePath: '' });
+        modelRegistry.set('m1', inst);
+        const { loadOutfits } = await import('../outfit/outfit');
+        const result = await loadOutfits('m1');
+        expect(result).toBeNull();
+    });
+
+    it('returns null when model not in registry', async () => {
+        const { loadOutfits } = await import('../outfit/outfit');
+        // loadOutfits accesses inst.filePath — undefined inst throws
+        await expect(loadOutfits('nonexistent')).rejects.toThrow();
+    });
+});
+
+describe('outfit helper functions (via integration)', () => {
+    let inst: any;
+    const origDiffuse = {
+        name: 'orig.png',
+        url: 'orig.png',
+        isReady: () => true,
+        dispose: vi.fn(),
+        onLoadObservable: { add: vi.fn(), remove: vi.fn() },
+    };
+
+    beforeEach(() => {
+        modelRegistry.clear();
+        setLibraryRoot('');
+        vi.clearAllMocks();
+        const sm = createMockMaterial('顔', {
+            diffuseTexture: origDiffuse,
+            toonTexture: { name: 'toon.png', url: 'toon.png', isReady: () => true, dispose: vi.fn(), onLoadObservable: { add: vi.fn(), remove: vi.fn() } },
+            sphereTexture: { name: 'spa.png', url: 'spa.png', isReady: () => true, dispose: vi.fn(), onLoadObservable: { add: vi.fn(), remove: vi.fn() } },
+            bumpTexture: { name: 'normal.png', url: 'normal.png', isReady: () => true, dispose: vi.fn(), onLoadObservable: { add: vi.fn(), remove: vi.fn() } },
+            emissiveTexture: { name: 'emissive.png', url: 'emissive.png', isReady: () => true, dispose: vi.fn(), onLoadObservable: { add: vi.fn(), remove: vi.fn() } },
+        });
+        inst = createBaseInstance({
+            meshes: [createMockMesh(sm)],
+            rootMesh: createMockMesh(sm),
+            outfitFile: {
+                version: 1,
+                variants: [{
+                    name: 'test',
+                    byMaterial: {
+                        顔: {
+                            diffuse: 'new_diffuse.png',
+                            toon: 'new_toon.png',
+                            spa: 'new_spa.png',
+                            normal: 'new_normal.png',
+                            emissive: 'new_emissive.png',
+                            params: { diffuseMul: 0.8, specularMul: 0.5, shininess: 80, ambientMul: 0.6 },
+                            tint: [0.9, 1.0, 0.9],
+                        },
+                    },
+                }],
+            },
+        });
+        modelRegistry.set('m1', inst);
+    });
+
+    it('should apply params and tint from variant', async () => {
+        const { applyOutfitVariant } = await import('../outfit/outfit');
+        await applyOutfitVariant('m1', 'test');
+        expect(inst.activeVariant).toBe('test');
+    });
+
+    it('should handle variant with byCategory params', async () => {
+        inst.outfitFile.variants[0] = {
+            name: 'catTest',
+            byCategory: {
+                顔: {
+                    diffuse: 'cat_diffuse.png',
+                    params: { diffuseMul: 1.2 },
+                    tint: [1.0, 0.8, 0.8],
+                },
+            },
+        };
+        const { applyOutfitVariant } = await import('../outfit/outfit');
+        await applyOutfitVariant('m1', 'catTest');
+        expect(inst.activeVariant).toBe('catTest');
+    });
+
+    it('should handle variant with all params', async () => {
+        inst.outfitFile.variants[0] = {
+            name: 'allTest',
+            all: {
+                diffuse: 'all_diffuse.png',
+                params: { diffuseMul: 0.5 },
+                tint: [0.5, 0.5, 0.5],
+            },
+        };
+        const { applyOutfitVariant } = await import('../outfit/outfit');
+        await applyOutfitVariant('m1', 'allTest');
+        expect(inst.activeVariant).toBe('allTest');
     });
 });

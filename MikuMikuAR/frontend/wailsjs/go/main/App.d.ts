@@ -16,6 +16,8 @@ export function CleanOrphanCache():Promise<number>;
 
 export function ClearExtractCache():Promise<void>;
 
+export function ClearThumbnailCache():Promise<void>;
+
 export function DeleteDanceSet(arg1:string):Promise<void>;
 
 export function DeleteEnvPreset(arg1:string):Promise<void>;
