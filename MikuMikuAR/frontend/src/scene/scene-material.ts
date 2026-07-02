@@ -35,10 +35,28 @@ export const _matState = new Map<string, Map<number, MaterialCategoryParams>>();
 /** @internal exported for testing */
 export const _matEnabled = new Map<string, Map<number, boolean>>();
 
+/**
+ * 材质分类规则（按优先级排序）
+ * 每条规则：[关键词数组, 分类名]
+ * 匹配逻辑：材质名包含任意关键词即命中
+ */
+const CATEGORY_RULES: [string[], MaterialCategory][] = [
+    // 服装（最高优先级，确保裙-腰带、裙-蝶结等不会被身体/配件干扰）
+    [['裙', '衣', '服', 'cloth', 'dress', 'skirt', 'sleeve', 'collar', 'belt', '袴', '袖', '襟', '帯', '外套', '胖次', '带'], '服装'],
+    // 配件（帽子/鞋子/装饰）
+    [['帽', '鞋', '飾', 'accessory', 'acc', 'ring', 'earring', 'necklace', 'bracelet', '蝶结', '结', '星星', '领带', '扣'], '配件'],
+    // 眼睛
+    [['眼', '目', 'eye', 'iris', '瞳', '白目', 'pupil', 'eyebrow', '眉', 'eyelash', '睫毛', '泪', '表情'], '眼睛'],
+    // 头发
+    [['发', '髪', '頭', 'hair', 'ahoge', '前髪', '後髪', 'まとめ髪', 'ponytail', 'braid', '刘海', '呆毛', '辫子', '侧发', '后发', '后脑'], '头发'],
+    // 皮肤（嘴巴/牙齿/身体）
+    [['皮', '肌', '肤', 'skin', 'face', 'body', 'neck', '顔', '首', 'cheek', '頬', 'kihada', '嘴', '唇', '齿', '牙', '舌', '口', 'lip', 'tooth', 'teeth', 'tongue', '体', '臂', '指', '甲', '手', '足', '腿', '脚', '背', '胸', '腹', '腰'], '皮肤'],
+    // 道具（武器）
+    [['武', '刀', '剑', '枪', '矛', '弓', '矢', 'weapon', 'gun', 'sword', 'shield', 'rod', 'staff', 'blade', 'axe', 'bow', 'arrow'], '道具'],
+];
+
 /** @internal exported for testing */
 export function _catOf(name: string): MaterialCategory {
-    const l = name.toLowerCase();
-
     // 优先使用用户自定义映射
     const customMap = uiState.materialCategoryMap;
     if (customMap) {
@@ -53,41 +71,12 @@ export function _catOf(name: string): MaterialCategory {
         }
     }
 
-    // 皮肤：skin, face, body, neck, 肌, 顔, 首, cheek, 頬
-    if (/skin|face|body|neck|肌|顔|首|cheek|頬|kihada|faced|bodys|bodysuit/.test(l)) {
-        return '皮肤';
+    // 按优先级匹配，命中即返回（包含匹配）
+    for (const [keywords, cat] of CATEGORY_RULES) {
+        if (keywords.some((k) => name.includes(k))) {
+            return cat;
+        }
     }
-
-    // 头发：hair, 髪, ahoge, 前髪, 後髪, まとめ髪
-    if (/hair|髪|ahoge|前髪|後髪|まとめ髪|ponytail|twin|braid|pony|tail/.test(l)) {
-        return '头发';
-    }
-
-    // 眼睛：eye, 目, iris, 瞳, 白目, pupil, eyebrow, 眉
-    if (/eye|目|iris|瞳|白目|pupil|eyebrow|眉|eyelash|睫毛/.test(l)) {
-        return '眼睛';
-    }
-
-    // 嘴巴/牙齿：mouth, lip, tooth, teeth, 口, 唇, 歯, 舌
-    if (/mouth|lip|tooth|teeth|tongue|口|唇|歯|舌|tang|tooths/.test(l)) {
-        return '皮肤';
-    }
-
-    // 服装：cloth, dress, skirt, sleeve, collar, belt, 袴, 袖, 襟, 帯
-    if (/cloth|dress|skirt|sleeve|collar|belt|袴|袖|襟|帯|スカート|ワンピース/.test(l)) {
-        return '服装';
-    }
-
-    // 配件：accessory, acc, ring, earring, necklace, ring, accessory, 飾り, アクセサリー
-    if (/accessory|acc[^e]|ring|earring|necklace|bracelet|飾り|アクセサリー|band|clip/.test(l)) {
-        return '配件';
-    }
-
-    // 武器/道具：weapon, gun, sword, shield, rod, staff, 武器, 刀, 剣, 槍, 矛
-    if (/weapon|gun|sword|shield|rod|staff|blade|axe|bow|arrow|武器|刀|剣|槍|矛|弓|矢/.test(l)) {
-        return '道具';
-    }
-
     return '服装';
 }
 
