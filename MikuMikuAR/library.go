@@ -431,6 +431,11 @@ func (a *App) SetUIBlurBg(on bool) error {
 	return a.updateConfig(func(cfg *Config) { cfg.UIState.BlurBg = on }, false)
 }
 
+// SetPerformanceMode persists the performance mode setting.
+func (a *App) SetPerformanceMode(mode string) error {
+	return a.updateConfig(func(cfg *Config) { cfg.UIState.PerformanceMode = mode }, false)
+}
+
 // SetEnvState persists the environment state (sky, ground, particles, fog, etc.).
 func (a *App) SetEnvState(env EnvState) error {
 	return a.updateConfig(func(cfg *Config) { cfg.Env = &env }, false)

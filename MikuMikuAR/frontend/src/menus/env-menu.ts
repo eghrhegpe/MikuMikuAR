@@ -31,6 +31,7 @@ import {
     getEnvSunAngle,
     setEnvSunAngle,
     applyEnvPreset,
+    applyEnvPresetObject,
     setRenderState,
     transitionRenderState,
 } from '../scene/scene';
@@ -39,9 +40,141 @@ import {
     setLightState as setLightingState,
     transitionLighting,
 } from '../scene/scene-lighting';
-import { ENV_PRESETS as ENV_LIGHTING_PRESETS } from '../scene/env-lighting';
+import {
+    ENV_PRESETS as ENV_LIGHTING_PRESETS,
+    exportEnvPreset,
+    importEnvPreset,
+    type EnvPreset,
+} from '../scene/env-lighting';
 import { WATER_PRESETS, applyWaterPresetToCurrent } from '../scene/scene-env-water';
-import { SelectEnvTextureFile, SelectPMXFile } from '../../wailsjs/go/main/App';
+import {
+    SelectEnvTextureFile,
+    SelectPMXFile,
+    SaveEnvPreset,
+    LoadEnvPreset,
+    ListEnvPresets,
+    DeleteEnvPreset,
+} from '../../wailsjs/go/main/App';
+import { setStatus } from '../core/config';
+
+// ======== User-Saved Env Presets ========
+
+/** 构造当前环境状态的 EnvPreset 快照（用于保存为自定义预设）。 */
+function snapshotCurrentEnvPreset(label: string): EnvPreset {
+    return {
+        label,
+        skyColorTop: [...envState.skyColorTop] as [number, number, number],
+        skyColorBot: [...envState.skyColorBot] as [number, number, number],
+        sunAngle: getEnvSunAngle(),
+        azimuth: envState.azimuth ?? -45,
+        exposure: getLightState().dirIntensity > 0 ? 1.0 : 0.5,
+        toneMapping: 1,
+    };
+}
+
+/** 渲染「我的预设」分组：列表 + 应用 + 删除 + 保存当前。 */
+function renderUserEnvPresets(container: HTMLElement): void {
+    const wrapper = document.createElement('div');
+    wrapper.style.paddingTop = '4px';
+
+    const title = document.createElement('div');
+    title.className = 'section-title';
+    title.textContent = '我的预设';
+    wrapper.appendChild(title);
+
+    const listHost = document.createElement('div');
+    listHost.style.paddingBottom = '6px';
+    wrapper.appendChild(listHost);
+
+    const renderList = async () => {
+        listHost.innerHTML = '';
+        let entries: { name: string; label: string; createdAt: number }[] = [];
+        try {
+            entries = await ListEnvPresets();
+        } catch (err) {
+            console.warn('[env-menu] ListEnvPresets failed:', err);
+        }
+        if (entries.length === 0) {
+            const empty = document.createElement('div');
+            empty.textContent = '（暂无自定义预设）';
+            empty.style.cssText = 'opacity:0.5;font-size:11px;padding:4px 0;';
+            listHost.appendChild(empty);
+            return;
+        }
+        // 按创建时间倒序
+        entries.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+        for (const e of entries) {
+            const row = document.createElement('div');
+            row.className = 'cs-row';
+            const labelEl = document.createElement('button');
+            labelEl.className = 'preset-chip';
+            labelEl.textContent = e.label || e.name;
+            labelEl.style.flex = '1';
+            labelEl.addEventListener('click', async () => {
+                try {
+                    const json = await LoadEnvPreset(e.name);
+                    const preset = importEnvPreset(json);
+                    if (!preset) {
+                        setStatus('✗ 预设文件格式错误', false);
+                        return;
+                    }
+                    applyEnvPresetObject(preset);
+                    setStatus(`✓ 已应用预设：${preset.label}`, true);
+                } catch (err) {
+                    console.error('[env-menu] LoadEnvPreset failed:', err);
+                    setStatus('✗ 加载预设失败', false);
+                }
+            });
+            row.appendChild(labelEl);
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'preset-chip';
+            delBtn.style.cssText = 'flex:0 0 auto;padding:0 8px;color:var(--text-dim);';
+            delBtn.textContent = '✕';
+            delBtn.title = '删除预设';
+            delBtn.addEventListener('click', async () => {
+                try {
+                    await DeleteEnvPreset(e.name);
+                    setStatus(`✓ 已删除预设：${e.label}`, true);
+                    renderList();
+                } catch (err) {
+                    console.error('[env-menu] DeleteEnvPreset failed:', err);
+                    setStatus('✗ 删除预设失败', false);
+                }
+            });
+            row.appendChild(delBtn);
+
+            listHost.appendChild(row);
+        }
+    };
+
+    // 「保存当前」按钮
+    const saveRow = document.createElement('div');
+    saveRow.className = 'cs-row';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'preset-chip';
+    saveBtn.style.flex = '1';
+    saveBtn.textContent = '＋ 保存当前为预设';
+    saveBtn.addEventListener('click', async () => {
+        const name = window.prompt('请输入预设名称（用作文件名，仅限字母数字/_/-/中文）');
+        if (!name) return;
+        try {
+            const preset = snapshotCurrentEnvPreset(name);
+            const json = exportEnvPreset(preset);
+            await SaveEnvPreset(name, json);
+            setStatus(`✓ 已保存预设：${name}`, true);
+            renderList();
+        } catch (err) {
+            console.error('[env-menu] SaveEnvPreset failed:', err);
+            setStatus('✗ 保存预设失败', false);
+        }
+    });
+    saveRow.appendChild(saveBtn);
+    wrapper.appendChild(saveRow);
+
+    container.appendChild(wrapper);
+    renderList();
+}
 
 // ======== Environment Level ========
 
@@ -71,6 +204,7 @@ export function buildEnvLightingLevel(): PopupLevel {
                     presetRow.appendChild(btn);
                 }
                 c.appendChild(presetRow);
+                renderUserEnvPresets(c);
                 addSliderRow(
                     c,
                     '太阳角度',
@@ -131,6 +265,9 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     presetRow.appendChild(btn);
                 }
                 c.appendChild(presetRow);
+
+                // 我的预设（用户保存的 .env 文件）
+                renderUserEnvPresets(c);
 
                 // ☀️ 光照控制
                 addCollapsible(c, {

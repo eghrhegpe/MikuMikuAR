@@ -46,6 +46,7 @@ import {
     setMotionBindingTargetId,
     cardContainer,
     formatError,
+    librarySortMode,
 } from '../core/config';
 import { loadPMXFile, loadVMDFromPath, removeModel } from '../scene/scene';
 import { buildModelDetailLevel } from './model-detail';
@@ -374,6 +375,15 @@ export function buildLevel(
             items.unshift({ kind: 'folder', label: ef.label, icon: 'plug', target: ef.path });
         }
     }
+
+    // 排序：'name' 模式按 label 拼音排序；'default' 保持扫描顺序
+    if (librarySortMode === 'name') {
+        items.sort((a, b) => {
+            // 文件夹和模型行混合排序，按 label 比较
+            return a.label.localeCompare(b.label, 'zh');
+        });
+    }
+
     return {
         label,
         dir,

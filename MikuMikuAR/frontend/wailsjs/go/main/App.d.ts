@@ -18,6 +18,8 @@ export function ClearExtractCache():Promise<void>;
 
 export function DeleteDanceSet(arg1:string):Promise<void>;
 
+export function DeleteEnvPreset(arg1:string):Promise<void>;
+
 export function DeleteModelPreset(arg1:string):Promise<void>;
 
 export function DeletePresetScene(arg1:string):Promise<void>;
@@ -70,7 +72,11 @@ export function IsolateModelDir(arg1:string):Promise<string>;
 
 export function LaunchSoftware(arg1:string,arg2:string):Promise<void>;
 
+export function ListEnvPresets():Promise<Array<main.EnvPresetEntry>>;
+
 export function ListSubDirs(arg1:string):Promise<Array<string>>;
+
+export function LoadEnvPreset(arg1:string):Promise<string>;
 
 export function LoadLastScene():Promise<string>;
 
@@ -101,6 +107,8 @@ export function RenameExternalPath(arg1:string,arg2:string):Promise<void>;
 export function RenameModelPreset(arg1:string,arg2:string):Promise<void>;
 
 export function SaveDanceSet(arg1:string,arg2:main.DanceSet):Promise<void>;
+
+export function SaveEnvPreset(arg1:string,arg2:string):Promise<void>;
 
 export function SaveLastScene(arg1:string):Promise<void>;
 
@@ -157,6 +165,8 @@ export function SetEnvState(arg1:main.EnvState):Promise<void>;
 export function SetLibraryRoot(arg1:string):Promise<void>;
 
 export function SetMMDPath(arg1:string):Promise<void>;
+
+export function SetPerformanceMode(arg1:string):Promise<void>;
 
 export function SetUIAccent(arg1:string):Promise<void>;
 

@@ -21,6 +21,10 @@ import {
     closeAllOverlays,
     cardContainer,
     envState,
+    librarySortMode,
+    setLibrarySortMode,
+    addRecentMotion,
+    getRecentMotions,
 } from '../core/config';
 import {
     loadVMDFromPath,
@@ -351,6 +355,15 @@ function buildClothParamsLevel(): PopupLevel {
         renderCustom: (container) => {
             cardContainer(container, (c) => {
                 const cfg = envState.clothConfig;
+                // 防抖重建：滑块拖动期间不重建，松手后 100ms 触发一次
+                let _recreateTimer: ReturnType<typeof setTimeout> | null = null;
+                const debouncedRecreate = () => {
+                    if (_recreateTimer) clearTimeout(_recreateTimer);
+                    _recreateTimer = setTimeout(() => {
+                        _recreateTimer = null;
+                        recreateCloth();
+                    }, 100);
+                };
 
                 // 形状
                 addCollapsible(c, {
@@ -367,7 +380,7 @@ function buildClothParamsLevel(): PopupLevel {
                             0.05,
                             (v) => {
                                 setEnvState({ clothConfig: { ...cfg, length: v } });
-                                recreateCloth();
+                                debouncedRecreate();
                             },
                             'lucide:ruler'
                         );
@@ -380,7 +393,7 @@ function buildClothParamsLevel(): PopupLevel {
                             1,
                             (v) => {
                                 setEnvState({ clothConfig: { ...cfg, slope: v } });
-                                recreateCloth();
+                                debouncedRecreate();
                             },
                             'lucide:triangle'
                         );
@@ -393,7 +406,7 @@ function buildClothParamsLevel(): PopupLevel {
                             0.01,
                             (v) => {
                                 setEnvState({ clothConfig: { ...cfg, innerRadius: v } });
-                                recreateCloth();
+                                debouncedRecreate();
                             },
                             'lucide:circle'
                         );
@@ -415,7 +428,7 @@ function buildClothParamsLevel(): PopupLevel {
                             0.005,
                             (v) => {
                                 setEnvState({ clothConfig: { ...cfg, compliance: v } });
-                                recreateCloth();
+                                debouncedRecreate();
                             },
                             'lucide:wind'
                         );
@@ -428,7 +441,7 @@ function buildClothParamsLevel(): PopupLevel {
                             0.01,
                             (v) => {
                                 setEnvState({ clothConfig: { ...cfg, bendCompliance: v } });
-                                recreateCloth();
+                                debouncedRecreate();
                             },
                             'lucide:curl'
                         );
@@ -441,7 +454,7 @@ function buildClothParamsLevel(): PopupLevel {
                             0.01,
                             (v) => {
                                 setEnvState({ clothConfig: { ...cfg, damping: v } });
-                                recreateCloth();
+                                debouncedRecreate();
                             },
                             'lucide:droplet'
                         );
@@ -454,7 +467,7 @@ function buildClothParamsLevel(): PopupLevel {
                             0.1,
                             (v) => {
                                 setEnvState({ clothConfig: { ...cfg, gravityScale: v } });
-                                recreateCloth();
+                                debouncedRecreate();
                             },
                             'lucide:arrow-down'
                         );
@@ -476,7 +489,7 @@ function buildClothParamsLevel(): PopupLevel {
                             2,
                             (v) => {
                                 setEnvState({ clothConfig: { ...cfg, segmentsH: v } });
-                                recreateCloth();
+                                debouncedRecreate();
                             },
                             'lucide:grid'
                         );
@@ -489,7 +502,7 @@ function buildClothParamsLevel(): PopupLevel {
                             2,
                             (v) => {
                                 setEnvState({ clothConfig: { ...cfg, segmentsV: v } });
-                                recreateCloth();
+                                debouncedRecreate();
                             },
                             'lucide:grid'
                         );
@@ -645,6 +658,37 @@ function makeMotionMenu(): SlideMenu {
 
 // ======== Popup Show / Hide ========
 
+/** 最近使用动作列表层级 */
+function buildRecentMotionsLevel(): PopupLevel {
+    const recent = getRecentMotions();
+    return {
+        label: '最近使用',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                if (recent.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'slide-item';
+                    empty.style.opacity = '0.5';
+                    empty.textContent = '暂无最近使用动作';
+                    c.appendChild(empty);
+                    return;
+                }
+                for (const r of recent) {
+                    slideRow(c, 'lucide:music', r.name, false, () => {
+                        hideMotionPopup();
+                        loadVMDFromPath(r.path).catch((err) => {
+                            setStatus('✗ 动作加载失败', false);
+                            console.warn('recent motion load:', err);
+                        });
+                    });
+                }
+            });
+        },
+    };
+}
+
 export function showMotionPopup(): void {
     // 不再自管理生命周期，由 toggleOverlay 统一管理
     // 清空旧内容，避免与其他弹窗 DOM 混在一起
@@ -671,6 +715,16 @@ export function showMotionPopup(): void {
                 });
             }
 
+            // 最近使用动作
+            const recent = getRecentMotions();
+            if (recent.length > 0) {
+                cardContainer(container, (c) => {
+                    slideRow(c, 'lucide:clock', '最近使用', true, () => {
+                        motionMenu.push(buildRecentMotionsLevel());
+                    });
+                });
+            }
+
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:music', '音乐', true, () => {
                     if (motionMenu) {
@@ -683,6 +737,20 @@ export function showMotionPopup(): void {
                 slideRow(c, 'lucide:wind', '程序化动作', true, () => {
                     motionMenu.push(buildProcMotionLevel());
                 });
+            });
+
+            // 排序切换
+            cardContainer(container, (c) => {
+                slideRow(
+                    c,
+                    'lucide:arrow-up-down',
+                    librarySortMode === 'name' ? '排序：名称' : '排序：默认',
+                    true,
+                    () => {
+                        setLibrarySortMode(librarySortMode === 'name' ? 'default' : 'name');
+                        motionMenu.reRender();
+                    }
+                );
             });
 
             // Physics card

@@ -16,6 +16,7 @@ import {
     setIsPlaying,
     setStatus,
     triggerAutoSave,
+    addRecentMotion,
 } from '../core/config';
 import { resolveFileUrl, normPath } from '../core/fileservice';
 import { loadVPDFromBuffer } from '../motion/vpd-parser';
@@ -119,6 +120,7 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
             throw new Error(`HTTP ${resp.status}`);
         }
         const vmdData = await resp.arrayBuffer();
+        const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
 
         if (mmdRuntime && (targetModelId || focusedMmdModel())) {
             await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ''), targetModelId);
@@ -130,6 +132,9 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
             setPendingVmd({ data: vmdData, name: vmdName.replace(/\.vmd$/i, '') });
             setStatus('VMD 已缓存，加载模型后自动应用', false);
         }
+
+        // 记录最近使用动作
+        addRecentMotion(path, vmdDisplayName);
 
         // 尝试加载同目录下的同名音频文件
         await _tryLoadCompanionAudio(path, url);

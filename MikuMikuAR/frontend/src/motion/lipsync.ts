@@ -34,6 +34,36 @@ export function findLipMorph(morphNames: string[]): string | null {
     return null;
 }
 
+// ========== 多 Morph LipSync 扩展 ==========
+
+/** 多口型 morph 候选（按音素分类） */
+const MOUTH_MORPHS: Record<string, string[]> = {
+    open:   ['あ', 'ア', 'A', 'a', '口', 'mouth', 'open'],
+    close:  ['い', 'イ', 'I', 'i', 'close'],
+    pucker: ['う', 'ウ', 'U', 'u', 'pucker'],
+    smile:  ['え', 'エ', 'E', 'e', 'smile', 'にこり', '笑い'],
+};
+
+export interface LipSyncMorphSet {
+    open: string | null;
+    close: string | null;
+    pucker: string | null;
+    smile: string | null;
+}
+
+/** 查找模型中所有可用的口型相关 morph。
+ *  @param morphNames 模型可用 morph 名列表
+ *  @returns 各音素对应的 morph 名（无匹配为 null） */
+export function findAllLipMorphs(morphNames: string[]): LipSyncMorphSet {
+    const set = new Set(morphNames);
+    return {
+        open:   MOUTH_MORPHS.open.find((n) => set.has(n)) ?? null,
+        close:  MOUTH_MORPHS.close.find((n) => set.has(n)) ?? null,
+        pucker: MOUTH_MORPHS.pucker.find((n) => set.has(n)) ?? null,
+        smile:  MOUTH_MORPHS.smile.find((n) => set.has(n)) ?? null,
+    };
+}
+
 /** 振幅 → morph 权重映射。
  *  低于 sensitivity 阈值 → 0；否则线性映射到 0..intensity。
  *  @param amplitude 0..1 音频能量（可 >1，会被钳制）

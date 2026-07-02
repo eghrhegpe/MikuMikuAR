@@ -48,6 +48,35 @@ Bone1:右肩
         const result = parseVPDText(text);
         expect(result.bones).toHaveLength(0);
     });
+
+    it('parses morph data (MorphN:name + weight)', () => {
+        const text = `Vocaloid Pose Data file
+{
+Bone0:左肩
+    -0.051100 0.000000 0.000000
+    0.000000 0.069756 0.000000 0.997564
+Morph0:あ
+    0.800000
+Morph1:笑い
+    0.500000
+}`;
+        const result = parseVPDText(text);
+        expect(result.bones).toHaveLength(1);
+        expect(result.morphs).toHaveLength(2);
+        expect(result.morphs[0]).toEqual({ name: 'あ', weight: 0.8 });
+        expect(result.morphs[1]).toEqual({ name: '笑い', weight: 0.5 });
+    });
+
+    it('returns empty morphs array when no morph data', () => {
+        const text = `Vocaloid Pose Data file
+{
+Bone0:左肩
+    -0.051100 0.000000 0.000000
+    0.000000 0.069756 0.000000 0.997564
+}`;
+        const result = parseVPDText(text);
+        expect(result.morphs).toHaveLength(0);
+    });
 });
 
 // ======== decodeVPDData (encoding detection) ========
@@ -150,7 +179,7 @@ describe('poseDataToVmdBuffer', () => {
     const _MORPH_COUNT_OFFSET = HEADER_SIZE + BONE_SIZE + 4; // +4 for morph count field
 
     it('produces a valid VMD header with signature', () => {
-        const buf = poseDataToVmdBuffer({ modelName: 'test', bones: [] });
+        const buf = poseDataToVmdBuffer({ modelName: 'test', bones: [], morphs: [] });
         const view = new DataView(buf);
         const sig = new Uint8Array(buf, 0, 30);
         const sigStr = new TextDecoder('ascii').decode(sig);
@@ -168,6 +197,7 @@ describe('poseDataToVmdBuffer', () => {
                     rotation: [0, 0.7, 0, 0.7],
                 },
             ],
+            morphs: [],
         });
         const view = new DataView(buf);
         expect(view.getUint32(50, true)).toBe(1);
@@ -192,6 +222,7 @@ describe('poseDataToVmdBuffer', () => {
                 { name: 'a', position: [1, 0, 0], rotation: [0, 0, 0, 1] },
                 { name: 'b', position: [0, 2, 0], rotation: [0, 0, 0, 1] },
             ],
+            morphs: [],
         });
         const view = new DataView(buf);
         expect(view.getUint32(50, true)).toBe(2);
@@ -207,6 +238,7 @@ describe('poseDataToVmdBuffer', () => {
                 { name: 'a', position: [0, 0, 0], rotation: [0, 0, 0, 1] },
                 { name: 'b', position: [0, 0, 0], rotation: [0, 0, 0, 1] },
             ],
+            morphs: [],
         });
         // header(54) + 2*111 + 4(morphCount) + 4*4(trailer) = 54+222+4+16 = 296
         expect(buf.byteLength).toBe(HEADER_SIZE + 2 * BONE_SIZE + 4 + 16);

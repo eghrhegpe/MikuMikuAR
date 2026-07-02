@@ -34,6 +34,10 @@ export function DeleteDanceSet(arg1) {
   return window['go']['main']['App']['DeleteDanceSet'](arg1);
 }
 
+export function DeleteEnvPreset(arg1) {
+  return window['go']['main']['App']['DeleteEnvPreset'](arg1);
+}
+
 export function DeleteModelPreset(arg1) {
   return window['go']['main']['App']['DeleteModelPreset'](arg1);
 }
@@ -138,8 +142,16 @@ export function LaunchSoftware(arg1, arg2) {
   return window['go']['main']['App']['LaunchSoftware'](arg1, arg2);
 }
 
+export function ListEnvPresets() {
+  return window['go']['main']['App']['ListEnvPresets']();
+}
+
 export function ListSubDirs(arg1) {
   return window['go']['main']['App']['ListSubDirs'](arg1);
+}
+
+export function LoadEnvPreset(arg1) {
+  return window['go']['main']['App']['LoadEnvPreset'](arg1);
 }
 
 export function LoadLastScene() {
@@ -200,6 +212,10 @@ export function RenameModelPreset(arg1, arg2) {
 
 export function SaveDanceSet(arg1, arg2) {
   return window['go']['main']['App']['SaveDanceSet'](arg1, arg2);
+}
+
+export function SaveEnvPreset(arg1, arg2) {
+  return window['go']['main']['App']['SaveEnvPreset'](arg1, arg2);
 }
 
 export function SaveLastScene(arg1) {
@@ -312,6 +328,10 @@ export function SetLibraryRoot(arg1) {
 
 export function SetMMDPath(arg1) {
   return window['go']['main']['App']['SetMMDPath'](arg1);
+}
+
+export function SetPerformanceMode(arg1) {
+  return window['go']['main']['App']['SetPerformanceMode'](arg1);
 }
 
 export function SetUIAccent(arg1) {

@@ -358,6 +358,139 @@ func (a *App) SelectSceneSaveFile() (string, error) {
 	return filepath.ToSlash(path), nil
 }
 
+// ======== Env Presets (user-saved .env files) ========
+
+// envPresetsDir returns the directory for user-saved environment presets.
+func envPresetsDir() (string, error) {
+	return ensureDir("env-presets", false)
+}
+
+// sanitizePresetName allows only alphanumerics, dash, underscore, and CJK chars.
+// Returns the cleaned name, or empty string if invalid.
+func sanitizePresetName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ""
+	}
+	// Forbid path separators and dangerous chars
+	if strings.ContainsAny(name, `/\:*?"<>|`) {
+		return ""
+	}
+	return name
+}
+
+// EnvPresetEntry is a catalog item returned by ListEnvPresets.
+type EnvPresetEntry struct {
+	Name      string `json:"name"`
+	Label     string `json:"label"`
+	CreatedAt int64  `json:"createdAt"`
+}
+
+// SaveEnvPreset writes a .env JSON file under env-presets/<name>.env.
+// The name is sanitized; the JSON content is the caller's responsibility.
+func (a *App) SaveEnvPreset(name string, jsonStr string) error {
+	return safeCallVoid(func() error {
+		clean := sanitizePresetName(name)
+		if clean == "" {
+			return fmt.Errorf("invalid preset name: %q", name)
+		}
+		dir, err := envPresetsDir()
+		if err != nil {
+			return err
+		}
+		path := filepath.Join(dir, clean+".env")
+		return os.WriteFile(path, []byte(jsonStr), 0644)
+	})
+}
+
+// LoadEnvPreset reads a .env JSON file by name.
+func (a *App) LoadEnvPreset(name string) (string, error) {
+	return safeCall(func() (string, error) {
+		clean := sanitizePresetName(name)
+		if clean == "" {
+			return "", fmt.Errorf("invalid preset name: %q", name)
+		}
+		dir, err := envPresetsDir()
+		if err != nil {
+			return "", err
+		}
+		data, err := os.ReadFile(filepath.Join(dir, clean+".env"))
+		if err != nil {
+			return "", err
+		}
+		return string(data), nil
+	})
+}
+
+// ListEnvPresets returns all user-saved env presets in the presets directory.
+func (a *App) ListEnvPresets() ([]EnvPresetEntry, error) {
+	return safeCall(func() ([]EnvPresetEntry, error) {
+		dir, err := envPresetsDir()
+		if err != nil {
+			return nil, err
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return []EnvPresetEntry{}, nil
+			}
+			return nil, err
+		}
+		result := make([]EnvPresetEntry, 0, len(entries))
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".env") {
+				continue
+			}
+			info, err := e.Info()
+			if err != nil {
+				continue
+			}
+			nm := strings.TrimSuffix(e.Name(), ".env")
+			// Read file to extract label (best-effort, ignore errors)
+			label := nm
+			if data, err := os.ReadFile(filepath.Join(dir, e.Name())); err == nil {
+				// Naive label extraction: look for "label":"xxx"
+				s := string(data)
+				if idx := strings.Index(s, `"label"`); idx >= 0 {
+					rest := s[idx+len(`"label"`):]
+					rest = strings.TrimLeft(rest, " \t:")
+					if strings.HasPrefix(rest, `"`) {
+						rest = rest[1:]
+						if end := strings.Index(rest, `"`); end >= 0 {
+							label = rest[:end]
+						}
+					}
+				}
+			}
+			result = append(result, EnvPresetEntry{
+				Name:      nm,
+				Label:     label,
+				CreatedAt: info.ModTime().Unix(),
+			})
+		}
+		return result, nil
+	})
+}
+
+// DeleteEnvPreset removes a .env file by name.
+func (a *App) DeleteEnvPreset(name string) error {
+	return safeCallVoid(func() error {
+		clean := sanitizePresetName(name)
+		if clean == "" {
+			return fmt.Errorf("invalid preset name: %q", name)
+		}
+		dir, err := envPresetsDir()
+		if err != nil {
+			return err
+		}
+		path := filepath.Join(dir, clean+".env")
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		return nil
+	})
+}
+
 // SelectSceneOpenFile opens a file dialog to pick a scene file.
 func (a *App) SelectSceneOpenFile() (string, error) {
 	return a.openFileDialog("加载场景", []runtime.FileFilter{

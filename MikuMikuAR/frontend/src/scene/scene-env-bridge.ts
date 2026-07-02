@@ -206,6 +206,23 @@ export function applyEnvPreset(name: string): boolean {
     if (!preset) {
         return false;
     }
+    return applyEnvPresetObject(preset);
+}
+
+/** 应用任意 EnvPreset 对象（支持用户自定义预设）。 */
+export function applyEnvPresetObject(preset: {
+    label: string;
+    skyColorTop: [number, number, number];
+    skyColorBot: [number, number, number];
+    sunAngle: number;
+    azimuth?: number;
+    exposure: number;
+    toneMapping: number;
+    dirDiffuse?: [number, number, number];
+    dirDirection?: [number, number, number];
+    dirIntensity?: number;
+    hemiIntensity?: number;
+}): boolean {
     _presetAnimId++; // 取消所有正在进行的预设动画
     const myId = _presetAnimId;
     envSunAngle = preset.sunAngle;
@@ -229,14 +246,26 @@ export function applyEnvPreset(name: string): boolean {
 
     // 捕获当前灯光状态用于插值
     const startLight = getLightState();
+    // 若 preset 缺少 DerivedLighting 字段（如自定义预设未经过 importEnvPreset），
+    // 现场推导一次。
+    const derived = preset.dirDirection
+        ? preset
+        : (() => {
+              const d = deriveLighting(
+                  preset.skyColorTop,
+                  preset.sunAngle,
+                  preset.azimuth ?? -45
+              );
+              return { ...preset, ...d };
+          })();
     const targetLight: Partial<LightState> = {
         // 方向光是太阳光，颜色固定为白色（不随天空色偏蓝）
         dirColor: [1, 0.95, 0.9],
-        dirX: preset.dirDirection[0],
-        dirY: preset.dirDirection[1],
-        dirZ: preset.dirDirection[2],
-        dirIntensity: preset.dirIntensity,
-        hemiIntensity: preset.hemiIntensity,
+        dirX: derived.dirDirection[0],
+        dirY: derived.dirDirection[1],
+        dirZ: derived.dirDirection[2],
+        dirIntensity: derived.dirIntensity,
+        hemiIntensity: derived.hemiIntensity,
     };
 
     const duration = 2000;

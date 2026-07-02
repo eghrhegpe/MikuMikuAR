@@ -126,6 +126,47 @@ export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
         toneMapping: 1,
         ...deriveLighting([0.4, 0.4, 0.45], 45, -45),
     },
+    // 场景化预设
+    storm: {
+        label: '暴风雨',
+        skyColorTop: [0.15, 0.15, 0.2],
+        skyColorBot: [0.08, 0.08, 0.1],
+        sunAngle: 10,
+        azimuth: -45,
+        exposure: 0.4,
+        toneMapping: 2,
+        ...deriveLighting([0.15, 0.15, 0.2], 10, -45),
+    },
+    neon: {
+        label: '霓虹夜',
+        skyColorTop: [0.05, 0.02, 0.1],
+        skyColorBot: [0.1, 0.02, 0.15],
+        sunAngle: -5,
+        azimuth: 0,
+        exposure: 0.8,
+        toneMapping: 1,
+        ...deriveLighting([0.05, 0.02, 0.1], -5, 0),
+    },
+    sakura: {
+        label: '樱花季',
+        skyColorTop: [0.95, 0.85, 0.9],
+        skyColorBot: [0.7, 0.6, 0.75],
+        sunAngle: 45,
+        azimuth: -30,
+        exposure: 0.9,
+        toneMapping: 2,
+        ...deriveLighting([0.95, 0.85, 0.9], 45, -30),
+    },
+    concert: {
+        label: '演唱会',
+        skyColorTop: [0.02, 0.01, 0.05],
+        skyColorBot: [0.05, 0.02, 0.08],
+        sunAngle: 0,
+        azimuth: 0,
+        exposure: 0.6,
+        toneMapping: 1,
+        ...deriveLighting([0.02, 0.01, 0.05], 0, 0),
+    },
 };
 
 /** 将当前 EnvPreset 序列化为 JSON 字符串（.env 格式）。 */

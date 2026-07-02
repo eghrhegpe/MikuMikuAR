@@ -3,7 +3,15 @@
 // 生成 procedural VMD（骨骼+morph 关键帧），通过现有 loadVMDMotion 管道加载。
 // 无音乐 → Idle（呼吸+眨眼）；有音乐 → Auto Dance（节拍驱动律动）。
 
-import { buildVmd, canEncodeName, type BoneKeyFrame, type MorphKeyFrame } from './vmd-writer';
+import {
+    buildVmd,
+    canEncodeName,
+    type BoneKeyFrame,
+    type MorphKeyFrame,
+    INTERP_EASE_IN_OUT,
+    INTERP_EASE_OUT,
+    INTERP_SHARP,
+} from './vmd-writer';
 
 export type ProcMotionMode = 'off' | 'idle' | 'autodance';
 
@@ -287,6 +295,10 @@ export function generateIdleVmd(
         if (wristRBone) bones.push({ name: wristRBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
     }
 
+    // Idle 全部用 EASE_IN_OUT（柔和呼吸感）
+    for (const b of bones) {
+        b.interp = INTERP_EASE_IN_OUT;
+    }
     return buildVmd(bones, morphs, 'IdleMotion');
 }
 
@@ -336,6 +348,8 @@ export function generateAutoDanceVmd(
     const allParentBone = _matchBone(boneNames, BONE_ALLPARENT_CANDIDATES);
     const wristLBone = _matchBone(boneNames, BONE_WRIST_L_CANDIDATES);
     const wristRBone = _matchBone(boneNames, BONE_WRIST_R_CANDIDATES);
+    const legIkLBone = _matchBone(boneNames, BONE_LEG_IK_L_CANDIDATES);
+    const legIkRBone = _matchBone(boneNames, BONE_LEG_IK_R_CANDIDATES);
 
     // 预计算 sin/cos
     const sinVals: number[] = [];
@@ -507,6 +521,28 @@ export function generateAutoDanceVmd(
         if (wristLBone) bones.push({ name: wristLBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
         if (wristRBone) bones.push({ name: wristRBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
     }
+
+    // ---------- 11. 足IK（基础踏步） ----------
+    if (legIkLBone || legIkRBone) {
+        const stepAmp = 0.08 * intensity;  // Z轴前后位移
+        const liftAmp = 0.03 * intensity;  // Y轴抬脚（只抬不沉，防穿地）
+        for (let f = 0; f <= loopFrames; f += 3) {
+            const s = sinVals[f];
+            if (legIkLBone) {
+                const lz = _clamp1(s * stepAmp);
+                const ly = Math.max(0, s) * liftAmp; // 只抬不沉
+                bones.push({ name: legIkLBone, frame: f, position: [0, ly, lz], rotation: [0, 0, 0, 1] });
+            }
+            if (legIkRBone) {
+                const rz = _clamp1(-s * stepAmp);
+                const ry = Math.max(0, -s) * liftAmp; // 反相
+                bones.push({ name: legIkRBone, frame: f, position: [0, ry, rz], rotation: [0, 0, 0, 1] });
+            }
+        }
+        if (legIkLBone) bones.push({ name: legIkLBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (legIkRBone) bones.push({ name: legIkRBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    }
+
       // ========== 🎭 表情情绪轮（动态扫描可用 morph） ==========
     // 不再硬编码少数模型专有名字，而是按语义自动分类可用 morph
 
@@ -633,6 +669,22 @@ export function generateAutoDanceVmd(
         }
     } else {
         console.warn('[procedural-motion] 未找到任何表情 morph，跳过情绪轮');
+    }
+    // 按骨骼类型分配插值曲线
+    for (const b of bones) {
+        const n = b.name;
+        // 手臂摆动 → EASE_OUT（快速启动慢停）
+        if (n === larmBone || n === rarmBone) {
+            b.interp = INTERP_EASE_OUT;
+        }
+        // 中心弹跳 / 腰扭转 / 足IK踏步 → SHARP（锐利节拍感）
+        else if (n === centerBone || n === waistBone || n === legIkLBone || n === legIkRBone) {
+            b.interp = INTERP_SHARP;
+        }
+        // 其余（肩/手腕/头/上半身/上半身2/全親/グルーブ）→ EASE_IN_OUT
+        else {
+            b.interp = INTERP_EASE_IN_OUT;
+        }
     }
     return buildVmd(bones, morphs, 'AutoDance');
 }

@@ -11,6 +11,7 @@ export interface BoneKeyFrame {
     frame: number; // 帧号 (30fps)
     position: [number, number, number];
     rotation: [number, number, number, number]; // 四元数 (x,y,z,w)
+    interp?: InterpCurve; // 插值曲线，默认 LINEAR
 }
 
 export interface MorphKeyFrame {
@@ -18,6 +19,17 @@ export interface MorphKeyFrame {
     frame: number;
     weight: number; // 0..1
 }
+
+// VMD 插值曲线预设（64 字节 = 16 组 × 4 字节 [x1,y1,x2,y2]，值域 0-127）
+export interface InterpCurve {
+    x1: number; y1: number;
+    x2: number; y2: number;
+}
+export const INTERP_LINEAR: InterpCurve = { x1: 20, y1: 20, x2: 107, y2: 107 };
+export const INTERP_EASE_IN_OUT: InterpCurve = { x1: 20, y1: 40, x2: 80, y2: 107 };
+export const INTERP_EASE_OUT: InterpCurve = { x1: 20, y1: 80, x2: 107, y2: 107 };
+export const INTERP_EASE_IN: InterpCurve = { x1: 20, y1: 20, x2: 40, y2: 107 };
+export const INTERP_SHARP: InterpCurve = { x1: 30, y1: 10, x2: 90, y2: 107 };
 
 export const BONE_FRAME_SIZE = 111;
 export const MORPH_FRAME_SIZE = 23;
@@ -87,12 +99,13 @@ export function buildBoneFrame(frame: BoneKeyFrame): ArrayBuffer {
     off += 4;
     view.setFloat32(off, frame.rotation[3], true);
     off += 4;
-    // 64 bytes 插值：线性默认 (x1=20,y1=20,x2=107,y2=107) 每 4 字节重复 16 次
+    // 64 bytes 插值：16 组 × 4 字节 [x1,y1,x2,y2]，默认 LINEAR
+    const interp = frame.interp ?? INTERP_LINEAR;
     for (let i = 0; i < 16; i++) {
-        view.setUint8(off++, 20);
-        view.setUint8(off++, 20);
-        view.setUint8(off++, 107);
-        view.setUint8(off++, 107);
+        view.setUint8(off++, interp.x1);
+        view.setUint8(off++, interp.y1);
+        view.setUint8(off++, interp.x2);
+        view.setUint8(off++, interp.y2);
     }
     return buf;
 }

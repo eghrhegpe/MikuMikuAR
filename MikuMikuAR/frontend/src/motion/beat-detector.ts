@@ -8,6 +8,18 @@ const BEAT_THRESHOLD = 1.3;
 const MIN_BEAT_INTERVAL_MS = 250;
 const BPM_WINDOW = 8; // 最近 8 次 beat 间隔求均值
 
+// BPM 量化：偏差 ±5 BPM 内吸附到常见值，大偏差保留原始值
+const COMMON_BPMS = [80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180];
+const QUANTIZE_THRESHOLD = 5;
+function quantizeBpm(raw: number): number {
+    for (const bpm of COMMON_BPMS) {
+        if (Math.abs(raw - bpm) <= QUANTIZE_THRESHOLD) {
+            return bpm;
+        }
+    }
+    return raw;
+}
+
 export class BeatDetector {
     private ctx: AudioContext | null = null;
     private analyser: AnalyserNode | null = null;
@@ -135,8 +147,8 @@ export class BeatDetector {
                 }
                 const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
                 if (avgInterval > 0) {
-                    this.currentBpm = Math.round(60000 / avgInterval);
-                    this.phaseInterval = avgInterval;
+                    this.currentBpm = quantizeBpm(Math.round(60000 / avgInterval));
+                    this.phaseInterval = 60000 / this.currentBpm; // 量化后的精确间隔
                 }
             }
         }

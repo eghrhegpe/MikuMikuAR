@@ -43,6 +43,8 @@ interface LevelConfig {
     vignetteEnabled: boolean;
     fxaaEnabled: boolean;
     outlineEnabled: boolean;
+    chromaticAberrationEnabled: boolean;
+    grainEnabled: boolean;
     label: string;
 }
 
@@ -55,6 +57,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         vignetteEnabled: true,
         fxaaEnabled: true,
         outlineEnabled: true,
+        chromaticAberrationEnabled: true,
+        grainEnabled: true,
         label: '正常',
     },
     1: {
@@ -65,6 +69,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         vignetteEnabled: true,
         fxaaEnabled: true,
         outlineEnabled: true,
+        chromaticAberrationEnabled: false,
+        grainEnabled: false,
         label: '轻度降级',
     },
     2: {
@@ -75,6 +81,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         vignetteEnabled: false,
         fxaaEnabled: false,
         outlineEnabled: true,
+        chromaticAberrationEnabled: false,
+        grainEnabled: false,
         label: '中度降级',
     },
     3: {
@@ -85,6 +93,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         vignetteEnabled: false,
         fxaaEnabled: false,
         outlineEnabled: false,
+        chromaticAberrationEnabled: false,
+        grainEnabled: false,
         label: '重度降级',
     },
 };
@@ -116,6 +126,12 @@ function levelDiff(
     }
     if (prev.outlineEnabled !== next.outlineEnabled) {
         render.outlineEnabled = next.outlineEnabled;
+    }
+    if (prev.chromaticAberrationEnabled !== next.chromaticAberrationEnabled) {
+        render.chromaticAberrationEnabled = next.chromaticAberrationEnabled;
+    }
+    if (prev.grainEnabled !== next.grainEnabled) {
+        render.grainEnabled = next.grainEnabled;
     }
     return { light, render };
 }

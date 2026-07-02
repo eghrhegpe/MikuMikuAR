@@ -371,6 +371,32 @@ export function setDisplayNamePriority(p: DisplayNamePriority): void {
     displayNamePriority = p;
 }
 
+// 动作/模型库排序模式
+export type LibrarySortMode = 'default' | 'name';
+export let librarySortMode: LibrarySortMode = 'default';
+export function setLibrarySortMode(m: LibrarySortMode): void {
+    librarySortMode = m;
+}
+
+// 最近使用动作列表（内存，不持久化）
+export interface RecentMotion {
+    path: string;
+    name: string;
+    timestamp: number;
+}
+const MAX_RECENT_MOTIONS = 10;
+let recentMotions: RecentMotion[] = [];
+export function addRecentMotion(path: string, name: string): void {
+    recentMotions = recentMotions.filter((r) => r.path !== path);
+    recentMotions.unshift({ path, name, timestamp: Date.now() });
+    if (recentMotions.length > MAX_RECENT_MOTIONS) {
+        recentMotions.length = MAX_RECENT_MOTIONS;
+    }
+}
+export function getRecentMotions(): RecentMotion[] {
+    return recentMotions;
+}
+
 // Cross-popup motion binding target — set when browsing VMD from model detail
 export let motionBindingTargetId: string | null = null;
 export function setMotionBindingTargetId(v: string | null): void {

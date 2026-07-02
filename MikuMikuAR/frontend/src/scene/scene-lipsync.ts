@@ -7,6 +7,7 @@ import {
     LipSyncState as LipSyncStateType,
     DEFAULT_LIPSYNC_STATE,
     findLipMorph,
+    findAllLipMorphs,
     amplitudeToWeight,
 } from '../motion/lipsync';
 import { focusedModelId, triggerAutoSave } from '../core/config';
@@ -22,10 +23,18 @@ export function initLipSync(mm: import('./scene-model').ModelManager): void {
 
 let lipSyncState: LipSyncStateType = { ...DEFAULT_LIPSYNC_STATE };
 let lipSyncMorphName: string | null = null;
+let lipSyncMorphSet: { open: string | null; close: string | null; pucker: string | null; smile: string | null } | null = null;
 let lastFocusedId: string | null = null;
+
+// 平滑滤波器状态（低通滤波，减少 morph 权重抖动）
+let _smoothLow = 0;
+let _smoothHigh = 0;
 
 const VOICE_BIN_START = 10;
 const VOICE_BIN_END = 50;
+// 高频频段（用于 smile morph 驱动）
+const HIGH_BIN_START = 25;
+const HIGH_BIN_END = 50;
 
 export function setLipSyncEnabled(on: boolean): void {
     lipSyncState.enabled = on;
@@ -56,11 +65,16 @@ export function setLipSyncState(s: LipSyncStateType): void {
 
 export function resetLipSyncOnFocusChange(): void {
     lipSyncMorphName = null;
+    lipSyncMorphSet = null;
 }
 
 function resetLipMorph(): void {
     if (lipSyncMorphName && focusedModelId) {
         setModelMorphWeight(focusedModelId, lipSyncMorphName, 0);
+    }
+    // 重置 smile morph
+    if (lipSyncMorphSet?.smile && focusedModelId) {
+        setModelMorphWeight(focusedModelId, lipSyncMorphSet.smile, 0);
     }
 }
 
@@ -70,38 +84,58 @@ export function updateLipSync(): void {
     }
     if (!isAudioPlaying()) {
         resetLipMorph();
+        _smoothLow = 0;
+        _smoothHigh = 0;
         return;
     }
     const modelId = focusedModelId;
     // 聚焦变化时自动重置 morph 名，消除对外部 resetLipSyncOnFocusChange 的依赖
     if (modelId !== lastFocusedId) {
         lipSyncMorphName = null;
+        lipSyncMorphSet = null;
         lastFocusedId = modelId;
     }
     if (!modelId) {
         lipSyncMorphName = null;
+        lipSyncMorphSet = null;
         return;
     }
     const inst = _modelManager?.modelRegistry.get(modelId);
     if (!inst) {
         lipSyncMorphName = null;
+        lipSyncMorphSet = null;
         return;
     }
     if (!inst.mmdModel.morph) {
         lipSyncMorphName = null;
+        lipSyncMorphSet = null;
         return;
     }
 
     const morphs = inst.mmdModel.morph.morphs;
+    const morphNames = morphs.map((m) => m.name);
     if (!lipSyncMorphName || !morphs.some((m) => m.name === lipSyncMorphName)) {
-        lipSyncMorphName = findLipMorph(morphs.map((m) => m.name));
+        lipSyncMorphName = findLipMorph(morphNames);
+        lipSyncMorphSet = findAllLipMorphs(morphNames);
     }
     if (!lipSyncMorphName) {
         return;
     }
 
     const beatDetector = getProcBeatDetector();
-    const level = beatDetector ? beatDetector.getLevel(VOICE_BIN_START, VOICE_BIN_END) : 0;
-    const weight = amplitudeToWeight(level, lipSyncState.sensitivity, lipSyncState.intensity);
-    setModelMorphWeight(modelId, lipSyncMorphName, weight);
+    const lowLevel = beatDetector ? beatDetector.getLevel(VOICE_BIN_START, VOICE_BIN_END) : 0;
+    const highLevel = beatDetector ? beatDetector.getLevel(HIGH_BIN_START, HIGH_BIN_END) : 0;
+
+    // 低通滤波（平滑抖动，系数 0.7 旧值 + 0.3 新值）
+    _smoothLow = _smoothLow * 0.7 + lowLevel * 0.3;
+    _smoothHigh = _smoothHigh * 0.7 + highLevel * 0.3;
+
+    const openWeight = amplitudeToWeight(_smoothLow, lipSyncState.sensitivity, lipSyncState.intensity);
+    setModelMorphWeight(modelId, lipSyncMorphName, openWeight);
+
+    // 高频能量大时轻微微笑（模拟说话表情）
+    if (lipSyncMorphSet?.smile) {
+        const smileWeight = Math.max(0, openWeight * 0.3 - 0.1);
+        setModelMorphWeight(modelId, lipSyncMorphSet.smile, smileWeight);
+    }
 }

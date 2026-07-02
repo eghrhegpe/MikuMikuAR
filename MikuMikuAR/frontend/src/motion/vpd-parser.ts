@@ -4,7 +4,7 @@
 // 本模块解析 VPD 并转换为 VMD 二进制，供 loadVMDMotion 加载。
 // VMD 生成委托给 vmd-writer.ts（标准 111/23 字节帧格式）。
 
-import { buildVmd, type BoneKeyFrame } from './vmd-writer';
+import { buildVmd, type BoneKeyFrame, type MorphKeyFrame } from './vmd-writer';
 
 // VPD 解析结果
 export interface VPDBoneData {
@@ -13,12 +13,24 @@ export interface VPDBoneData {
     rotation: [number, number, number, number]; // 四元数
 }
 
+export interface VPDMorphData {
+    name: string;
+    weight: number;
+}
+
 export interface VPDPoseData {
     modelName: string;
     bones: VPDBoneData[];
+    morphs: VPDMorphData[];
 }
 
 // ========== VPD 文本解析 ==========
+
+/** Clean a potential VPD numeric line: remove // comments, ; terminators, and commas.
+ *  Returns the cleaned string with space-separated numbers, ready for splitting. */
+function _cleanNumericLine(line: string): string {
+    return line.replace(/\/\/.*$/, '').replace(/[;,]/g, ' ').trim();
+}
 
 /** 解码 VPD 文本（支持 UTF-8 / Shift-JIS 兜底）。
  *  @param buffer 文件原始字节
@@ -51,6 +63,7 @@ export function parseVPDText(text: string): VPDPoseData {
         .map((l) => l.trim())
         .filter((l) => l.length > 0);
     const bones: VPDBoneData[] = [];
+    const morphs: VPDMorphData[] = [];
     let modelName = '';
     let i = 0;
 
@@ -59,6 +72,8 @@ export function parseVPDText(text: string): VPDPoseData {
     const _nonBonePrefix = /^(?:Vocaloid|model|\/\/|;|\{|\}|Bone\d+\s|\s*$)/;
     // 仅含数字的行（位置/旋转数据行）
     const _numericLine = /^[-\d.eE\s]+$/;
+    // Morph 行格式：MorphN:名称
+    const _morphLine = /^Morph\d+(?::|\{)(.+)$/;
 
     while (i < lines.length) {
         const line = lines[i];
@@ -75,14 +90,29 @@ export function parseVPDText(text: string): VPDPoseData {
             continue;
         }
 
+        // Morph 解析：MorphN:名称 下一行是单个浮点数 weight
+        const morphMatch = line.match(_morphLine);
+        if (morphMatch && i + 1 < lines.length) {
+            const mName = morphMatch[1].trim();
+            const wLine = lines[i + 1].trim();
+            const w = Number(wLine);
+            if (isFinite(w)) {
+                morphs.push({ name: mName, weight: w });
+                i += 2;
+                continue;
+            }
+        }
+
         // 骨骼名匹配：需要后两行都是纯数字行且解析成功
-        const nameMatch = line.match(/^(?:Bone\d+:)?(.+)$/);
+        const nameMatch = line.match(/^(?:Bone\d+(?::|\{))?(.+)$/);
         if (nameMatch && i + 2 < lines.length) {
             const name = nameMatch[1].trim();
-            // 下一行必须是数字行（位置），再下一行必须是数字行（旋转）
-            if (_numericLine.test(lines[i + 1]) && _numericLine.test(lines[i + 2])) {
-                const posParts = lines[i + 1].split(/\s+/).map(Number);
-                const rotParts = lines[i + 2].split(/\s+/).map(Number);
+            // 清理数字行（移除 // 注释、; 终止符、逗号），兼容两种 VPD 格式
+            const posClean = _cleanNumericLine(lines[i + 1]);
+            const rotClean = _cleanNumericLine(lines[i + 2]);
+            if (_numericLine.test(posClean) && _numericLine.test(rotClean)) {
+                const posParts = posClean.split(/\s+/).map(Number);
+                const rotParts = rotClean.split(/\s+/).map(Number);
                 if (
                     posParts.length >= 3 &&
                     rotParts.length >= 4 &&
@@ -101,7 +131,7 @@ export function parseVPDText(text: string): VPDPoseData {
         }
         i++;
     }
-    return { modelName, bones };
+    return { modelName, bones, morphs };
 }
 
 // ========== VMD 生成（委托 vmd-writer.ts）==========
@@ -117,7 +147,12 @@ export function poseDataToVmdBuffer(pose: VPDPoseData): ArrayBuffer {
         position: b.position,
         rotation: b.rotation,
     }));
-    return buildVmd(boneFrames, [], pose.modelName || 'VPDPose');
+    const morphFrames: MorphKeyFrame[] = (pose.morphs || []).map((m) => ({
+        name: m.name,
+        frame: 0,
+        weight: m.weight,
+    }));
+    return buildVmd(boneFrames, morphFrames, pose.modelName || 'VPDPose');
 }
 
 /** 从 ArrayBuffer（VPD 文件内容）解析并生成 VMD。

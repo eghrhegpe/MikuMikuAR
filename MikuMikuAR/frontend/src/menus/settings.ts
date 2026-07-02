@@ -30,6 +30,7 @@ import {
     SetUIFontFamily,
     SetUIAnimations,
     SetUIBlurBg,
+    SetPerformanceMode,
 } from '../../wailsjs/go/main/App';
 import {
     dom,
@@ -1051,19 +1052,7 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                     `;
                     row.addEventListener('click', () => {
                         setPerformanceMode(m.key);
-                        // Persist to UIState
-                        const root = document.documentElement;
-                        const style = getComputedStyle(root);
-                        const uiState: Partial<UIState> = {};
-                        if (style.getPropertyValue('--ui-scale').trim()) {
-                            uiState.scale = parseFloat(style.getPropertyValue('--ui-scale'));
-                        }
-                        if (style.getPropertyValue('--popup-width').trim()) {
-                            uiState.popupWidth = parseInt(style.getPropertyValue('--popup-width'));
-                        }
-                        uiState.performanceMode = m.key;
-                        // Save via Go backend (use SetUIScale as trigger, or create new method)
-                        // For now, just update UI
+                        SetPerformanceMode(m.key).catch(() => {});
                         settingsMenu.reRender();
                         setStatus(`✓ 性能模式: ${m.label}`, true);
                     });

@@ -38,6 +38,11 @@ export interface RenderState {
     dofAperture: number;
     vignetteEnabled: boolean;
     vignetteDarkness: number;
+    // Phase 9 — 色差 + 颗粒
+    chromaticAberrationEnabled: boolean;
+    chromaticAberrationAmount: number; // 0-20, default 0
+    grainEnabled: boolean;
+    grainIntensity: number; // 0-100, default 0
 }
 
 // ======== Renderer State (module-level) ========
@@ -125,6 +130,10 @@ export function getRenderState(): RenderState {
         dofAperture: pipeline.depthOfField?.fStop ?? 0.5,
         vignetteEnabled: pipeline.imageProcessing.vignetteEnabled ?? false,
         vignetteDarkness: pipeline.imageProcessing.vignetteWeight ?? 0.5,
+        chromaticAberrationEnabled: pipeline.chromaticAberrationEnabled ?? false,
+        chromaticAberrationAmount: pipeline.chromaticAberration?.aberrationAmount ?? 0,
+        grainEnabled: pipeline.grainEnabled ?? false,
+        grainIntensity: pipeline.grain?.intensity ?? 0,
     };
 }
 
@@ -146,6 +155,10 @@ function _defaultRenderState(): RenderState {
         dofAperture: 0.5,
         vignetteEnabled: false,
         vignetteDarkness: 0.5,
+        chromaticAberrationEnabled: false,
+        chromaticAberrationAmount: 0,
+        grainEnabled: false,
+        grainIntensity: 0,
     };
 }
 
@@ -170,6 +183,8 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const f = s.fov !== undefined ? clamp(s.fov, 0.1, 3) : undefined;
     const da = s.dofAperture !== undefined ? clamp(s.dofAperture, 0.1, 32) : undefined;
     const vd = s.vignetteDarkness !== undefined ? clamp(s.vignetteDarkness, 0, 1) : undefined;
+    const ca = s.chromaticAberrationAmount !== undefined ? clamp(s.chromaticAberrationAmount, 0, 20) : undefined;
+    const gi = s.grainIntensity !== undefined ? clamp(s.grainIntensity, 0, 100) : undefined;
 
     // Post-processing
     if (s.bloomEnabled !== undefined) {
@@ -234,6 +249,22 @@ function _applyRenderState(s: Partial<RenderState>): void {
     }
     if (vd !== undefined && pipeline.imageProcessing) {
         pipeline.imageProcessing.vignetteWeight = vd;
+    }
+
+    // Chromatic Aberration
+    if (s.chromaticAberrationEnabled !== undefined) {
+        pipeline.chromaticAberrationEnabled = s.chromaticAberrationEnabled;
+    }
+    if (ca !== undefined && pipeline.chromaticAberration) {
+        pipeline.chromaticAberration.aberrationAmount = ca;
+    }
+
+    // Grain
+    if (s.grainEnabled !== undefined) {
+        pipeline.grainEnabled = s.grainEnabled;
+    }
+    if (gi !== undefined && pipeline.grain) {
+        pipeline.grain.intensity = gi;
     }
 
     // Stage / imageProcessing
@@ -303,6 +334,8 @@ export function transitionRenderState(
         'fov',
         'dofAperture',
         'vignetteDarkness',
+        'chromaticAberrationAmount',
+        'grainIntensity',
     ];
     // 颜色字段列表（逐通道 lerp）
     const colorKeys: (keyof RenderState)[] = ['outlineColor', 'bgColor'];
@@ -313,6 +346,8 @@ export function transitionRenderState(
         'fxaaEnabled',
         'dofEnabled',
         'vignetteEnabled',
+        'chromaticAberrationEnabled',
+        'grainEnabled',
     ];
     // 枚举字段（动画结束时切换）
     const enumKeys: (keyof RenderState)[] = ['toneMapping'];
@@ -341,6 +376,9 @@ export function transitionRenderState(
                 return t >= 0.3;
             }
             if (key === 'vignetteEnabled') {
+                return t >= 0.3;
+            }
+            if (key === 'chromaticAberrationEnabled' || key === 'grainEnabled') {
                 return t >= 0.3;
             }
             // outline / fxaa 无关联数值，延迟到 80%

@@ -287,12 +287,13 @@ type DanceSet struct {
 
 // UIState stores user-customizable UI preferences.
 type UIState struct {
-	Scale      float64 `json:"scale"`      // 0.8~1.3, default 1.0
-	PopupWidth int     `json:"popupWidth"` // 220~380, default 280
-	Accent     string  `json:"accent"`     // hex, default "#4a6cf7"
-	FontFamily string  `json:"fontFamily"` // "system"|"noto"|"yahei"
-	Animations bool    `json:"animations"` // enable menu slide animations
-	BlurBg     bool    `json:"blurBg"`     // enable background blur on overlays
+	Scale          float64 `json:"scale"`          // 0.8~1.3, default 1.0
+	PopupWidth     int     `json:"popupWidth"`     // 220~380, default 280
+	Accent         string  `json:"accent"`         // hex, default "#4a6cf7"
+	FontFamily     string  `json:"fontFamily"`     // "system"|"noto"|"yahei"
+	Animations     bool    `json:"animations"`     // enable menu slide animations
+	BlurBg         bool    `json:"blurBg"`         // enable background blur on overlays
+	PerformanceMode string `json:"performanceMode"` // "auto"|"quality"|"balanced"|"performance"
 }
 
 // Config holds persistent user settings.

@@ -965,6 +965,41 @@ function buildPostProcessLevel(): PopupLevel {
                         triggerAutoSave();
                     }
                 );
+
+                // 色差（量=0 即关闭）
+                addSliderRow(
+                    c,
+                    '色差',
+                    state.chromaticAberrationAmount,
+                    0,
+                    20,
+                    0.5,
+                    () => {},
+                    'lucide:rainbow',
+                    (v) => {
+                        setRenderState({
+                            chromaticAberrationEnabled: v > 0,
+                            chromaticAberrationAmount: v,
+                        });
+                        triggerAutoSave();
+                    }
+                );
+
+                // 颗粒（强度=0 即关闭）
+                addSliderRow(
+                    c,
+                    '颗粒',
+                    state.grainIntensity,
+                    0,
+                    100,
+                    5,
+                    () => {},
+                    'lucide:grid-3x3',
+                    (v) => {
+                        setRenderState({ grainEnabled: v > 0, grainIntensity: v });
+                        triggerAutoSave();
+                    }
+                );
             });
         },
     };

@@ -221,6 +221,7 @@ export namespace main {
 	    fontFamily: string;
 	    animations: boolean;
 	    blurBg: boolean;
+	    performanceMode: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new UIState(source);
@@ -234,6 +235,7 @@ export namespace main {
 	        this.fontFamily = source["fontFamily"];
 	        this.animations = source["animations"];
 	        this.blurBg = source["blurBg"];
+	        this.performanceMode = source["performanceMode"];
 	    }
 	}
 	export class Config {
@@ -295,6 +297,22 @@ export namespace main {
 		}
 	}
 	
+	export class EnvPresetEntry {
+	    name: string;
+	    label: string;
+	    createdAt: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new EnvPresetEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.label = source["label"];
+	        this.createdAt = source["createdAt"];
+	    }
+	}
 	
 	
 	export class ExtractResult {
