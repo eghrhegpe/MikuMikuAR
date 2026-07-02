@@ -155,6 +155,10 @@ let sceneMenu: SlideMenu | null = null;
 export function getSceneMenu(): SlideMenu | null {
     return sceneMenu;
 }
+/** 安全 reRender：菜单可能正在 async 重建中（showSceneMenu 的 await 期间），此时 sceneMenu 为 null。 */
+function reRenderSceneMenu(): void {
+    sceneMenu?.reRender();
+}
 
 function buildSceneRoot(): PopupLevel {
     return {
@@ -224,7 +228,7 @@ export function buildProcMotionLevel(): PopupLevel {
                 }, 'lucide:repeat');
                 addToggleRow(c, 'LipSync', lipSt.enabled, (v) => {
                     setLipSyncEnabled(v);
-                    sceneMenu.reRender();
+                    reRenderSceneMenu();
                 }, 'lucide:mic');
             });
             cardContainer(container, (c) => {
@@ -307,11 +311,11 @@ export function buildProcMotionLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addToggleRow(c, '眼部跟随', st.eyeTrackingEnabled, (v) => {
                     setProcMotionEyeTrackingEnabled(v);
-                    sceneMenu.reRender();
+                    reRenderSceneMenu();
                 }, 'lucide:eye');
                 addToggleRow(c, '头部跟随', st.headTrackingEnabled, (v) => {
                     setProcMotionHeadTrackingEnabled(v);
-                    sceneMenu.reRender();
+                    reRenderSceneMenu();
                 }, 'lucide:mouse-pointer-2');
             });
 
@@ -534,7 +538,7 @@ function buildPresetScenesLevel(): PopupLevel {
                             } else if (currentPresetIndex > i) {
                                 currentPresetIndex--;
                             }
-                            sceneMenu.reRender();
+                            reRenderSceneMenu();
                             setStatus(`✓ 已删除: ${name}`, true);
                         } catch {
                             setStatus('✗ 删除失败', false);
@@ -544,7 +548,7 @@ function buildPresetScenesLevel(): PopupLevel {
                     row.addEventListener('click', async () => {
                         currentPresetIndex = i;
                         if (await _loadPresetScene(name)) {
-                            sceneMenu.reRender();
+                            reRenderSceneMenu();
                             setStatus(`✓ 已加载: ${name}`, true);
                         }
                     });
@@ -561,7 +565,7 @@ function buildPresetScenesLevel(): PopupLevel {
                             .then(() => SaveScenePreset(json))
                             .then(() => {
                                 setStatus('✓ 场景已保存', true);
-                                sceneMenu.reRender();
+                                reRenderSceneMenu();
                             })
                             .catch(() => setStatus('✗ 保存失败', false));
                     });
@@ -629,7 +633,7 @@ export function buildCameraLevel(): PopupLevel {
                             switchCameraMode(v as CameraMode);
                             cameraExpandedMode = v === 'oneshot' ? null : v as CameraMode;
                         }
-                        sceneMenu.reRender();
+                        reRenderSceneMenu();
                     },
                     'lucide:camera'
                 );
@@ -870,7 +874,7 @@ function buildStageLightLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addToggleRow(c, '启用', state.enabled, (v) => {
                     setStageLightState({ enabled: v });
-                    sceneMenu.reRender();
+                    reRenderSceneMenu();
                 }, 'lucide:power');
                 addSliderRow(
                     c, '强度', state.intensity, 0, 2, 0.05,
@@ -1137,7 +1141,7 @@ function buildStageLevel(): PopupLevel {
                             (v) => {
                                 setRenderState({ toneMapping: v });
                                 triggerAutoSave();
-                                sceneMenu.reRender();
+                                reRenderSceneMenu();
                             },
                             'lucide:palette'
                         );
@@ -1409,7 +1413,7 @@ function showPresetSaveDialog(): void {
             setStatus(`✓ 预设已保存: ${trimmed}`, true);
             if (sceneMenu) {
                 sceneMenu.setLevel(sceneMenu.levelCount - 1, buildPresetsLevel());
-                sceneMenu.reRender();
+                reRenderSceneMenu();
             }
         })
         .catch((err: unknown) => {
@@ -1443,7 +1447,7 @@ async function loadUserPresets(): Promise<void> {
 
 function refreshCameraLevel(): void {
     if (sceneMenu) {
-        sceneMenu.reRender();
+        reRenderSceneMenu();
     }
 }
 
@@ -1637,7 +1641,7 @@ function handleSceneAction(row: PopupRow): void {
                     delete userPresets[name];
                     if (sceneMenu) {
                         sceneMenu.setLevel(sceneMenu.levelCount - 1, buildPresetsLevel());
-                        sceneMenu.reRender();
+                        reRenderSceneMenu();
                     }
                     setStatus(`✓ 预设已删除: ${name}`, true);
                 } catch (err) {
@@ -1669,13 +1673,13 @@ function handleSceneAction(row: PopupRow): void {
         setProcMotionMode(mode);
         regenerateProcMotion();
         sceneMenu.pop();
-        sceneMenu.reRender();
+        reRenderSceneMenu();
         return;
     }
     if (row.target === 'procmotion:autoswitch') {
         const cur = getProcMotionState();
         setProcMotionAutoSwitch(!cur.autoSwitch);
-        sceneMenu.reRender();
+        reRenderSceneMenu();
         return;
     }
     if (row.target === 'procmotion:mode') {
@@ -1690,7 +1694,7 @@ function handleSceneAction(row: PopupRow): void {
     if (row.target === 'lipsync:toggle') {
         const cur = getLipSyncState();
         setLipSyncEnabled(!cur.enabled);
-        sceneMenu.reRender();
+        reRenderSceneMenu();
         return;
     }
 }

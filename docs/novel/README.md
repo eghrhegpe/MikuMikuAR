@@ -150,6 +150,16 @@
 | 23 | 被偷走的焦点 | [vol-6-federal-checkup/23-被偷走的焦点.md](vol-6-federal-checkup/23-被偷走的焦点.md) |
 | 24 | 三十颗绿石子 | [vol-6-federal-checkup/24-三十颗绿石子.md](vol-6-federal-checkup/24-三十颗绿石子.md) |
 | 25 | 审计报告的最后一页 | [vol-6-federal-checkup/25-审计报告的最后一页.md](vol-6-federal-checkup/25-审计报告的最后一页.md) |
+| 26 | 设置页的五幕（补章） | [vol-6-federal-checkup/26-设置页的五幕.md](vol-6-federal-checkup/26-设置页的五幕.md) |
+| 27 | 替身的最后一刀（补章二） | [vol-6-federal-checkup/27-替身的最后一刀.md](vol-6-federal-checkup/27-替身的最后一刀.md) |
+
+## 第七卷 · 城邦的边界
+
+深入依赖库内部机制，与城邦的脾气博弈。
+
+| 章 | 标题 | 文件 |
+|----|------|------|
+| 1 | 印章与账本 | [vol-7-the-frontiers/01-印章与账本.md](vol-7-the-frontiers/01-印章与账本.md) |
 
 ---
 

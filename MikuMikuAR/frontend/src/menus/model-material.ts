@@ -192,14 +192,44 @@ export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
                                 }
                                 const isSelected =
                                     _selectedMat?.cat === cat && _selectedMat?.index === idx;
+                                const matEnabled = isMatEnabled(id, idx);
+                                const mat = matInfo.mat as StandardMaterial;
+
+                                // 色块样式
+                                let swatchStyle: string;
+                                if (!matEnabled) {
+                                    swatchStyle = 'background:transparent;border:2px dashed var(--text-muted);';
+                                } else {
+                                    swatchStyle = 'background:#555';
+                                    try {
+                                        if (mat.diffuseColor) {
+                                            swatchStyle = `background:rgb(${Math.round(mat.diffuseColor.r * 255)},${Math.round(mat.diffuseColor.g * 255)},${Math.round(mat.diffuseColor.b * 255)})`;
+                                        }
+                                    } catch { /* ignore */ }
+                                }
+
                                 const row = document.createElement('div');
-                                row.className = `slide-item${isSelected ? ' slide-focused' : ''}`;
+                                row.className = `slide-item${isSelected ? ' slide-focused' : ''}${!matEnabled ? ' mat-disabled' : ''}`;
                                 row.style.cssText = 'padding-left: 28px;';
                                 row.innerHTML = `
-                  <span class="slide-icon"><iconify-icon icon="lucide:circle"></iconify-icon></span>
+                  <span class="mat-swatch${!matEnabled ? ' mat-swatch-disabled' : ''}" style="${swatchStyle}"></span>
                   <span class="slide-label">#${String(idx + 1).padStart(2, '0')} ${escapeHtml(matInfo.mat.name)}</span>
                   ${detail.modified ? '<span class="slide-sublabel" style="color:var(--accent);">已修改</span>' : ''}
                 `;
+
+                                // 色块点击切换开关
+                                const swatch = row.querySelector('.mat-swatch') as HTMLElement;
+                                swatch.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const newState = !isMatEnabled(id, idx);
+                                    setMatEnabled(id, idx, newState);
+                                    stackRegistry.modelStack.reRender();
+                                    setStatus(
+                                        newState ? `✓ 已显示: ${matInfo.mat.name}` : `✕ 已隐藏: ${matInfo.mat.name}`,
+                                        true
+                                    );
+                                });
+
                                 row.addEventListener('click', () => {
                                     _selectedMat = { cat, index: idx };
                                     stackRegistry.modelStack.reRender();

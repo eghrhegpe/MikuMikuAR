@@ -5,7 +5,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 
-import { modelRegistry } from '../core/config';
+import { modelRegistry, uiState } from '../core/config';
 import { triggerAutoSave } from '../core/config';
 
 export type MaterialCategoryParams = {
@@ -15,7 +15,7 @@ export type MaterialCategoryParams = {
     ambientMul: number;
 };
 
-const CATEGORIES = ['皮肤', '头发', '眼睛', '服装'] as const;
+const CATEGORIES = ['皮肤', '头发', '眼睛', '服装', '配件', '道具'] as const;
 export type MaterialCategory = (typeof CATEGORIES)[number];
 const CATEGORY_SET = new Set<string>(CATEGORIES);
 
@@ -38,15 +38,56 @@ export const _matEnabled = new Map<string, Map<number, boolean>>();
 /** @internal exported for testing */
 export function _catOf(name: string): MaterialCategory {
     const l = name.toLowerCase();
-    if (/skin|face|肌|顔|body|neck|首|cheek|頬|kihada/.test(l)) {
+
+    // 优先使用用户自定义映射
+    const customMap = uiState.materialCategoryMap;
+    if (customMap) {
+        for (const [pattern, category] of Object.entries(customMap)) {
+            try {
+                if (new RegExp(pattern, 'i').test(name)) {
+                    return category as MaterialCategory;
+                }
+            } catch {
+                // 无效正则，跳过
+            }
+        }
+    }
+
+    // 皮肤：skin, face, body, neck, 肌, 顔, 首, cheek, 頬
+    if (/skin|face|body|neck|肌|顔|首|cheek|頬|kihada|faced|bodys|bodysuit/.test(l)) {
         return '皮肤';
     }
-    if (/hair|髪|ahoge/.test(l)) {
+
+    // 头发：hair, 髪, ahoge, 前髪, 後髪, まとめ髪
+    if (/hair|髪|ahoge|前髪|後髪|まとめ髪|ponytail|twin|braid|pony|tail/.test(l)) {
         return '头发';
     }
-    if (/eye|目|iris|瞳|白目|pupil/.test(l)) {
+
+    // 眼睛：eye, 目, iris, 瞳, 白目, pupil, eyebrow, 眉
+    if (/eye|目|iris|瞳|白目|pupil|eyebrow|眉|eyelash|睫毛/.test(l)) {
         return '眼睛';
     }
+
+    // 嘴巴/牙齿：mouth, lip, tooth, teeth, 口, 唇, 歯, 舌
+    if (/mouth|lip|tooth|teeth|tongue|口|唇|歯|舌|tang|tooths/.test(l)) {
+        return '皮肤';
+    }
+
+    // 服装：cloth, dress, skirt, sleeve, collar, belt, 袴, 袖, 襟, 帯
+    if (/cloth|dress|skirt|sleeve|collar|belt|袴|袖|襟|帯|スカート|ワンピース/.test(l)) {
+        return '服装';
+    }
+
+    // 配件：accessory, acc, ring, earring, necklace, ring, accessory, 飾り, アクセサリー
+    if (/accessory|acc[^e]|ring|earring|necklace|bracelet|飾り|アクセサリー|band|clip/.test(l)) {
+        return '配件';
+    }
+
+    // 武器/道具：weapon, gun, sword, shield, rod, staff, 武器, 刀, 剣, 槍, 矛
+    if (/weapon|gun|sword|shield|rod|staff|blade|axe|bow|arrow|武器|刀|剣|槍|矛|弓|矢/.test(l)) {
+        return '道具';
+    }
+
     return '服装';
 }
 

@@ -15,13 +15,13 @@ import { Observer } from '@babylonjs/core/Misc/observable';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import type { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
 
 import {
     ModelInstance,
     setFocusedModelId,
     focusedModelId as configFocusedId,
     type PhysicsCategory,
+    type RuntimeModel,
 } from '../core/config';
 import type { ClothInstance } from '../physics/xpbd-cloth';
 import { disposeCloth } from '../physics/xpbd-cloth';
@@ -46,7 +46,7 @@ function _classifyBonePhysics(name: string): PhysicsCategory | null {
     return null;
 }
 
-function _buildRigidBodyCatMap(mmdModel: MmdWasmModel): Map<number, PhysicsCategory> {
+function _buildRigidBodyCatMap(mmdModel: RuntimeModel): Map<number, PhysicsCategory> {
     const bones = mmdModel.runtimeBones;
     const map = new Map<number, PhysicsCategory>();
     for (let i = 0; i < bones.length; i++) {
@@ -226,8 +226,8 @@ export class ModelManager {
         return configFocusedId ? this.modelRegistry.get(configFocusedId) : undefined;
     }
 
-    /** Get the currently focused MmdWasmModel, or null. */
-    focusedMmdModel(): MmdWasmModel | null {
+    /** Get the currently focused runtime model (RuntimeModel), or null. */
+    focusedMmdModel(): RuntimeModel | null {
         return configFocusedId ? (this.modelRegistry.get(configFocusedId).mmdModel ?? null) : null;
     }
 
@@ -622,11 +622,18 @@ export class ModelManager {
         const tmp = new Vector3();
         const joints: Mesh[] = [];
         const jointData: { mesh: Mesh; boneIndex: number }[] = [];
+        const lineData: { childIndex: number; parentIndex: number }[] = [];
 
         for (let i = 0; i < bones.length; i++) {
             const bone = bones[i];
             const parent = bone.parentBone;
             if (!parent) {
+                continue;
+            }
+
+            // 找到父骨骼的索引
+            const parentIndex = bones.indexOf(parent);
+            if (parentIndex === -1) {
                 continue;
             }
 
@@ -647,6 +654,7 @@ export class ModelManager {
             const parentPos = new Vector3();
             parent.getWorldTranslationToRef(parentPos);
             lines.push([parentPos.clone(), pos.clone()]);
+            lineData.push({ childIndex: i, parentIndex });
         }
 
         // Create overlay: line system + sphere meshes
@@ -659,8 +667,36 @@ export class ModelManager {
         lineSystem.isPickable = false;
         lineSystem.setEnabled(inst.showBoneLines);
 
-        // Update function: reposition joints each frame
+        // Update function: reposition joints and lines each frame
         const updateFn = () => {
+            // 更新骨骼线
+            if (inst.showBoneLines && lineSystem.isEnabled()) {
+                const positions = lineSystem.getVerticesData('position');
+                if (positions) {
+                    for (let i = 0; i < lineData.length; i++) {
+                        const ld = lineData[i];
+                        const childBone = bones[ld.childIndex];
+                        const parentBone = bones[ld.parentIndex];
+
+                        if (childBone && parentBone) {
+                            // 父骨骼位置 (line 开头)
+                            parentBone.getWorldTranslationToRef(tmp);
+                            positions[i * 6] = tmp.x;
+                            positions[i * 6 + 1] = tmp.y;
+                            positions[i * 6 + 2] = tmp.z;
+
+                            // 子骨骼位置 (line 结尾)
+                            childBone.getWorldTranslationToRef(tmp);
+                            positions[i * 6 + 3] = tmp.x;
+                            positions[i * 6 + 4] = tmp.y;
+                            positions[i * 6 + 5] = tmp.z;
+                        }
+                    }
+                    lineSystem.updateVerticesData('position', positions);
+                }
+            }
+
+            // 更新关节球
             if (!inst.showBoneJoints) {
                 return;
             }

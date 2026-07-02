@@ -72,6 +72,10 @@ import {
     setColliderFriction,
     setCapsuleEnabled,
     setAllCapsulesEnabled,
+    setDebugParticles,
+    setDebugConstraints,
+    setDebugColliders,
+    getDebugState,
 } from '../physics/cloth-manager';
 import { buildCameraLevel, buildProcMotionLevel, buildProcMotionModeLevel, buildLipSyncLevel } from './scene-menu';
 import {
@@ -732,6 +736,42 @@ function buildClothParamsLevel(): PopupLevel {
                                 setStatus(v ? '骨骼关节球: 开' : '骨骼关节球: 关', true);
                             },
                             'lucide:circle-dot'
+                        );
+
+                        // 布料调试可视化
+                        const debugState = getDebugState();
+                        addToggleRow(
+                            cc,
+                            '粒子球',
+                            debugState.particles,
+                            (v) => {
+                                setDebugParticles(v);
+                                motionMenu?.reRender();
+                                setStatus(v ? '粒子球: 开' : '粒子球: 关', true);
+                            },
+                            'lucide:circle'
+                        );
+                        addToggleRow(
+                            cc,
+                            '约束线',
+                            debugState.constraints,
+                            (v) => {
+                                setDebugConstraints(v);
+                                motionMenu?.reRender();
+                                setStatus(v ? '约束线: 开' : '约束线: 关', true);
+                            },
+                            'lucide:minus'
+                        );
+                        addToggleRow(
+                            cc,
+                            '碰撞体线框',
+                            debugState.colliders,
+                            (v) => {
+                                setDebugColliders(v);
+                                motionMenu?.reRender();
+                                setStatus(v ? '碰撞体线框: 开' : '碰撞体线框: 关', true);
+                            },
+                            'lucide:box'
                         );
                     },
                 });

@@ -19,6 +19,10 @@ import { MmdWasmPhysics } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWas
 import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation';
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
 import { MmdRuntimeShared } from 'babylon-mmd/esm/Runtime/mmdRuntimeShared';
+// JS 版 runtime（无 WASM 双缓冲，worldMatrix 覆写可生效）
+import { MmdRuntime } from 'babylon-mmd/esm/Runtime/mmdRuntime';
+import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
+import 'babylon-mmd/esm/Runtime/Animation/mmdRuntimeModelAnimation';
 import 'babylon-mmd/esm/Loader/mmdModelLoader.default';
 import '@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader';
 import '@babylonjs/core/Materials/Textures/Loaders/hdrTextureLoader';
@@ -119,9 +123,19 @@ export async function initScene(): Promise<void> {
     RegisterMmdModelLoaders();
     RegisterDxBmpTextureLoader();
     MmdRuntimeShared.MaterialProxyConstructor = MmdStandardMaterialProxy;
-    const wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
-    const mmdWasmPhysics = new MmdWasmPhysics(scene);
-    const runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
+    const useJsRuntime = import.meta.env.VITE_MMD_RUNTIME === 'js';
+    let runtime: IMmdRuntime;
+    if (useJsRuntime) {
+        // JS 版：无 WASM 双缓冲，worldMatrix 覆写可生效（用于视线追踪）
+        // 注意：physics=null 意味着无布料物理，但骨骼动画和眼骨追踪正常
+        runtime = new MmdRuntime(scene, null);
+        console.log('[scene] 使用 JS 版 MmdRuntime（无物理）— 视线追踪 worldMatrix 覆写将生效');
+    } else {
+        const wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
+        const mmdWasmPhysics = new MmdWasmPhysics(scene);
+        runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
+        console.log('[scene] 使用 WASM 版 MmdWasmRuntime（含物理）');
+    }
     runtime.loggingEnabled = true;
     runtime.register(scene);
     setMmdRuntime(runtime);

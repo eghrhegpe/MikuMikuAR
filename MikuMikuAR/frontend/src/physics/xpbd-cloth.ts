@@ -24,6 +24,14 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 // 类型
 // ============================================================
 
+/** 调试更新回调类型 */
+let _debugUpdateFn: ((solver: XpbdSolver, collider: SdfCollider | null) => void) | null = null;
+
+/** 设置调试更新回调（由 cloth-manager 调用） */
+export function setDebugUpdateFn(fn: ((solver: XpbdSolver, collider: SdfCollider | null) => void) | null): void {
+    _debugUpdateFn = fn;
+}
+
 /** 布料拓扑类型 */
 export type ClothTopology = 'skirt' | 'tube' | 'cape' | 'rope';
 
@@ -330,6 +338,11 @@ export function buildClothUpdateFn(
 
         // 4. 更新 Mesh 顶点
         _updateClothMesh(cloth);
+
+        // 5. 更新调试可视化（如果启用）
+        if (_debugUpdateFn) {
+            _debugUpdateFn(solver, collider);
+        }
     };
 }
 

@@ -4,12 +4,21 @@
 
 import { SdfCollider, DEFAULT_BODY_CAPSULES } from './xpbd-collider';
 import type { CapsuleSpec } from './xpbd-collider';
-import { createCloth, buildClothUpdateFn } from './xpbd-cloth';
+import { createCloth, buildClothUpdateFn, setDebugUpdateFn } from './xpbd-cloth';
+import { XpbdRenderer } from './xpbd-renderer';
 import { scene, modelManager } from '../scene/scene';
 import { focusedModelId, envState, setStatus } from '../core/config';
 
 /** 当前布料的碰撞体引用 */
 let _currentCollider: SdfCollider | null = null;
+
+/** 调试可视化渲染器 */
+let _renderer: XpbdRenderer | null = null;
+
+/** 调试可视化状态 */
+let _debugParticles = false;
+let _debugConstraints = false;
+let _debugColliders = false;
 
 /** 为当前聚焦模型创建布料 */
 function _createClothForFocusedModel(): void {
@@ -81,6 +90,11 @@ function _createClothForFocusedModel(): void {
 
     // Register with model manager
     modelManager.addCloth(id, cloth, updateFn);
+
+    // 设置调试更新回调（如果调试可视化已启用）
+    if (_debugParticles || _debugConstraints || _debugColliders) {
+        setDebugUpdateFn((solver, coll) => updateDebugVisualization(solver, coll));
+    }
 
     setStatus('✓ 布料模拟已启用', true);
 }
@@ -176,4 +190,83 @@ export function setCapsuleEnabled(name: string, enabled: boolean): void {
 export function setAllCapsulesEnabled(enabled: boolean): void {
     if (!_currentCollider) return;
     _currentCollider.setAllEnabled(enabled);
+}
+
+// ======== 调试可视化 API ========
+
+/** 获取或创建调试渲染器 */
+function _getRenderer(): XpbdRenderer {
+    if (!_renderer && scene) {
+        _renderer = new XpbdRenderer(scene);
+    }
+    return _renderer!;
+}
+
+/** 开关粒子可视化 */
+export function setDebugParticles(enabled: boolean): void {
+    _debugParticles = enabled;
+    const r = _getRenderer();
+    if (r) r.showParticles(enabled);
+    _syncDebugUpdateFn();
+}
+
+/** 开关约束可视化 */
+export function setDebugConstraints(enabled: boolean): void {
+    _debugConstraints = enabled;
+    const r = _getRenderer();
+    if (r) r.showConstraints(enabled);
+    _syncDebugUpdateFn();
+}
+
+/** 开关碰撞体可视化 */
+export function setDebugColliders(enabled: boolean): void {
+    _debugColliders = enabled;
+    const r = _getRenderer();
+    if (r) r.showColliders(enabled);
+    _syncDebugUpdateFn();
+}
+
+/** 同步调试更新回调 */
+function _syncDebugUpdateFn(): void {
+    if (_debugParticles || _debugConstraints || _debugColliders) {
+        setDebugUpdateFn((solver, coll) => updateDebugVisualization(solver, coll));
+    } else {
+        setDebugUpdateFn(null);
+    }
+}
+
+/** 获取调试状态 */
+export function getDebugState(): { particles: boolean; constraints: boolean; colliders: boolean } {
+    return {
+        particles: _debugParticles,
+        constraints: _debugConstraints,
+        colliders: _debugColliders,
+    };
+}
+
+/** 更新调试可视化（每帧调用） */
+export function updateDebugVisualization(solver: import('./xpbd-solver').XpbdSolver, collider: SdfCollider | null): void {
+    const r = _getRenderer();
+    if (!r) return;
+
+    if (_debugParticles) {
+        r.updateParticles(solver);
+    }
+    if (_debugConstraints) {
+        r.updateConstraints(solver);
+    }
+    if (_debugColliders && collider) {
+        r.updateColliders(collider);
+    }
+}
+
+/** 销毁调试渲染器 */
+export function disposeDebugRenderer(): void {
+    if (_renderer) {
+        _renderer.dispose();
+        _renderer = null;
+    }
+    _debugParticles = false;
+    _debugConstraints = false;
+    _debugColliders = false;
 }

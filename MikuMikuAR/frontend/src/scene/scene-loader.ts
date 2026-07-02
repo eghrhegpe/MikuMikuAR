@@ -17,10 +17,12 @@ import {
     ModelInstance,
     triggerAutoSave,
     formatError,
+    type RuntimeModel,
 } from '../core/config';
 import { resolveFileUrl, normPath } from '../core/fileservice';
-import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
-import type { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
+import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
+import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
+import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
 import { loadVMDMotion } from './scene-vmd';
 import { _capture } from './scene-material';
 import { rebuildShadowCasters } from './scene-lighting';
@@ -28,7 +30,7 @@ import { rebuildShadowCasters } from './scene-lighting';
 // ======== Loader Dependencies ========
 
 let _scene: import('@babylonjs/core/scene').Scene | null = null;
-let _mmdRuntime: MmdWasmRuntime | null = null;
+let _mmdRuntime: IMmdRuntime | null = null;
 let _modelManager: import('./scene-model').ModelManager | null = null;
 let _refreshWaterRenderList: (() => void) | null = null;
 let _tryAutoApplyPreset: ((id: string) => Promise<void>) | null = null;
@@ -37,7 +39,7 @@ let _rebuildOutlineState: (() => void) | null = null;
 
 export function initLoader(
     scene: import('@babylonjs/core/scene').Scene,
-    mmdRuntime: MmdWasmRuntime,
+    mmdRuntime: IMmdRuntime,
     modelManager: import('./scene-model').ModelManager,
     refreshWaterRenderList: () => void,
     tryAutoApplyPreset: (id: string) => Promise<void>,
@@ -118,7 +120,7 @@ export async function loadPMXFile(
     }
     setIsLoadingModel(true);
     let loadedMeshes: Mesh[] = [];
-    let wasmModel: MmdWasmModel | null = null;
+    let wasmModel: IMmdModel | null = null;
     let registeredId: string | null = null;
     try {
         // Check if already loaded — switch focus via ModelManager
@@ -221,7 +223,7 @@ export async function loadPMXFile(
             modelDir,
             meshes,
             rootMesh,
-            mmdModel: wasmModel,
+            mmdModel: wasmModel as RuntimeModel,
             vmdData: null,
             vmdName: '',
             vmdPath: null,
@@ -246,7 +248,7 @@ export async function loadPMXFile(
                 _capture(mesh.material);
             }
         }
-        if (wasmModel) {
+        if (wasmModel instanceof MmdWasmModel) {
             const states = wasmModel.rigidBodyStates;
             if (states) {
                 _modelManager.storeRigidBodyState(id, states);

@@ -4,6 +4,7 @@
 
 import { VmdLoader } from 'babylon-mmd/esm/Loader/vmdLoader';
 import { MmdWasmAnimation } from 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation';
+import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import {
     mmdRuntime,
     modelRegistry,
@@ -62,8 +63,14 @@ export async function loadVMDMotion(
         const mmdAnimation = await vmdLoader.loadFromBufferAsync(name, data);
         (vmdLoader as unknown as { dispose?: () => void }).dispose?.(); // 释放解析器内部资源（API 可选）
 
-        // Create WASM animation from the loaded data
-        const wasmAnimation = new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene);
+        // Create runtime animation from the loaded data
+        // WASM 版需 MmdWasmAnimation 包装；JS 版直接用 mmdAnimation（实现 IMmdBindableModelAnimation）
+        let runtimeAnimation: import('babylon-mmd/esm/Runtime/Animation/IMmdBindableAnimation').IMmdBindableModelAnimation;
+        if (mmdRuntime instanceof MmdWasmRuntime) {
+            runtimeAnimation = new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene);
+        } else {
+            runtimeAnimation = mmdAnimation;
+        }
 
         // Extract camera track from VMD and apply to MmdCamera
         try {
@@ -74,18 +81,20 @@ export async function loadVMDMotion(
 
         // Bind to model
         if (!inst.mmdModel) {
-            // wasmAnimation 已创建但模型是 Stage，无法绑定 — 清理避免泄漏
-            try {
-                wasmAnimation.dispose?.();
-            } catch {
-                // Intentionally empty — 舞台模型动画句柄清理失败不影响后续流程
+            // 动画已创建但模型是 Stage，无法绑定 — 清理避免泄漏（仅 WASM 版有资源需释放）
+            if (runtimeAnimation instanceof MmdWasmAnimation) {
+                try {
+                    runtimeAnimation.dispose?.();
+                } catch {
+                    // Intentionally empty — 舞台模型动画句柄清理失败不影响后续流程
+                }
             }
             setStatus('✗ 舞台模型不支持 VMD', false);
             return;
         }
         // 释放旧动画句柄，防止切换 VMD 时 WASM 内存泄漏
         inst.mmdModel.setRuntimeAnimation(null);
-        const handle = inst.mmdModel.createRuntimeAnimation(wasmAnimation);
+        const handle = inst.mmdModel.createRuntimeAnimation(runtimeAnimation);
         inst.mmdModel.setRuntimeAnimation(handle);
 
         inst.vmdData = data;

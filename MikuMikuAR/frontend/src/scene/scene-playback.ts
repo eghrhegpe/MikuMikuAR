@@ -15,14 +15,14 @@ import {
 } from '../core/config';
 import { syncAudioPlayback, isAudioPlaying } from '../outfit/audio';
 import { animateCameraVmd } from './camera';
-import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
+import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { ModelManager } from './scene-model';
 import type { BeatDetector } from '../motion/beat-detector';
 
 // ======== 辅助函数 ========
 
 /** 获取当前聚焦模型的动画时长，优先使用模型自身时长，降级到 runtime 默认值。 */
-function _getDuration(runtime: MmdWasmRuntime, manager: ModelManager): number {
+function _getDuration(runtime: IMmdRuntime, manager: ModelManager): number {
     const foc = manager.focused();
     return foc?.animationDuration ?? runtime.animationDuration;
 }
@@ -37,7 +37,7 @@ export interface PlaybackObservablesDispose {
 }
 
 export function initPlaybackObservables(
-    runtime: MmdWasmRuntime,
+    runtime: IMmdRuntime,
     manager: ModelManager,
     updatePlaybackUI: () => void,
     updateProcMotion: () => Promise<void>,

@@ -37,6 +37,8 @@ import {
     escapeHtml,
     cardContainer,
     UIState,
+    uiState,
+    setUIState,
     librarySortMode,
     setLibrarySortMode,
 } from '../core/config';
@@ -141,6 +143,68 @@ function buildSettingsDisplayLevel(): PopupLevel {
                         settingsMenu.reRender();
                     }
                 );
+            });
+            // 材质分类映射
+            cardContainer(container, (c) => {
+                const title = document.createElement('div');
+                title.className = 'section-title';
+                title.textContent = '材质分类映射（正则 → 分类）';
+                c.appendChild(title);
+
+                const map = uiState.materialCategoryMap || {};
+                const entries = Object.entries(map);
+
+                for (const [pattern, category] of entries) {
+                    const row = document.createElement('div');
+                    row.className = 'slide-item';
+                    row.innerHTML = `
+                        <span class="slide-icon"><iconify-icon icon="lucide:tag"></iconify-icon></span>
+                        <span class="slide-label" style="font-family:monospace;font-size:11px;">${escapeHtml(pattern)}</span>
+                        <span class="slide-sublabel" style="color:var(--accent);">${escapeHtml(category)}</span>
+                        <button class="btn btn-ghost btn-sm btn-icon" title="删除">✕</button>
+                    `;
+                    row.querySelector('.btn')!.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        delete uiState.materialCategoryMap![pattern];
+                        if (Object.keys(uiState.materialCategoryMap!).length === 0) {
+                            delete uiState.materialCategoryMap;
+                        }
+                        SetUIState(uiState).catch(console.warn);
+                        settingsMenu.reRender();
+                    });
+                    c.appendChild(row);
+                }
+
+                // 添加新映射
+                const addRow = document.createElement('div');
+                addRow.className = 'slide-item';
+                addRow.innerHTML = `
+                    <span class="slide-icon"><iconify-icon icon="lucide:plus"></iconify-icon></span>
+                    <span class="slide-label">添加材质映射</span>
+                `;
+                addRow.addEventListener('click', async () => {
+                    const pattern = prompt('输入正则匹配模式（如 skirt|スカート）：');
+                    if (!pattern) return;
+                    try {
+                        new RegExp(pattern);
+                    } catch {
+                        setStatus('✗ 无效的正则表达式', false);
+                        return;
+                    }
+                    const category = prompt('输入目标分类（皮肤/头发/眼睛/服装/配件/道具）：');
+                    if (!category) return;
+                    if (!['皮肤', '头发', '眼睛', '服装', '配件', '道具'].includes(category)) {
+                        setStatus('✗ 无效的分类名', false);
+                        return;
+                    }
+                    if (!uiState.materialCategoryMap) {
+                        uiState.materialCategoryMap = {};
+                    }
+                    uiState.materialCategoryMap[pattern] = category;
+                    SetUIState(uiState).catch(console.warn);
+                    settingsMenu.reRender();
+                });
+                c.appendChild(addRow);
             });
         },
     };

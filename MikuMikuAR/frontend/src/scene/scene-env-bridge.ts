@@ -8,6 +8,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '../core/config';
+import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { deriveLighting, ENV_PRESETS } from './env-lighting';
 import * as impl from './scene-env-impl';
 import {
@@ -101,7 +102,8 @@ const _gravityVec = new Vector3(0, DEFAULT_GRAVITY, 0);
 export function setGravityStrength(value: number): void {
     _gravityStrength = Math.max(0, Math.min(2, value));
     _gravityVec.y = DEFAULT_GRAVITY * _gravityStrength;
-    if (mmdRuntime?.physics) {
+    // physics 是 WASM 版专属 API，JS 版无物理，instanceof 守卫后访问
+    if (mmdRuntime instanceof MmdWasmRuntime && mmdRuntime.physics) {
         mmdRuntime.physics.setGravity(_gravityVec);
     }
     triggerAutoSave();

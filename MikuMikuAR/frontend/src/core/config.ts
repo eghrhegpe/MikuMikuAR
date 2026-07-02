@@ -1,7 +1,7 @@
 // Shared types, state, DOM refs, and helper functions for MikuMikuAR.
 
-import type { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
-import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
+import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
+import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { ClothConfig } from '../physics/xpbd-cloth';
@@ -11,6 +11,16 @@ import { DEFAULT_CLOTH_CONFIG } from '../physics/xpbd-cloth';
 
 export type ModelKind = 'actor' | 'stage';
 
+/**
+ * IMmdModel 接口不含 setRuntimeAnimation / createRuntimeAnimation
+ * （这两个方法在 MmdModel 和 MmdWasmModel 具体类上）。
+ * 此扩展类型补上运行时动画相关方法，供 ModelInstance.mmdModel 使用。
+ */
+export type RuntimeModel = IMmdModel & {
+    setRuntimeAnimation(animation: unknown): void;
+    createRuntimeAnimation(animation: unknown): unknown;
+};
+
 export type ModelInstance = {
     id: string;
     name: string;
@@ -19,7 +29,7 @@ export type ModelInstance = {
     modelDir: string;
     meshes: Mesh[];
     rootMesh: Mesh;
-    mmdModel?: MmdWasmModel;
+    mmdModel?: RuntimeModel;
     vmdData: ArrayBuffer | null;
     vmdName: string;
     vmdPath: string | null;
@@ -173,6 +183,8 @@ export interface UIState {
     animations?: boolean;
     blurBg?: boolean;
     performanceMode?: 'auto' | 'quality' | 'balanced' | 'performance';
+    /** 材质名→分类映射，key 为正则模式，value 为分类名 */
+    materialCategoryMap?: Record<string, string>;
 }
 
 export interface EnvState {
@@ -248,8 +260,8 @@ export interface EnvState {
 
 // ======== Shared Mutable State ========
 
-export let mmdRuntime: MmdWasmRuntime | null = null;
-export function setMmdRuntime(r: MmdWasmRuntime | null): void {
+export let mmdRuntime: IMmdRuntime | null = null;
+export function setMmdRuntime(r: IMmdRuntime | null): void {
     mmdRuntime = r;
 }
 
@@ -429,6 +441,14 @@ export function toggleExpandedFolder(path: string): void {
     } else {
         expandedFolders.add(path);
     }
+}
+
+// ======== UI State ========
+
+export const uiState: UIState = {};
+
+export function setUIState(state: UIState): void {
+    Object.assign(uiState, state);
 }
 
 // ======== Environment State (Phase 8) ========
