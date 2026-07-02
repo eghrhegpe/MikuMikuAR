@@ -20,6 +20,7 @@ reasonix.toml
 # CodeBuddy / WorkBuddy — other-software memories and local config
 .codebuddy/
 .workbuddy/
+.mimocode/
 
 # Test coverage output
 coverage/
