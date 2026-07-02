@@ -83,7 +83,7 @@ import {
 } from '../scene/scene';
 import { setProcMotionBoneToggle, setProcMotionEyeTrackingEnabled, setProcMotionHeadTrackingEnabled } from '../scene/scene-proc-motion';
 import { getProcMotionBoneCategories } from '../motion/procedural-motion';
-import { modelRegistry, focusedModelId, setFocusedModelId } from '../core/config';
+import { modelRegistry, focusedModelId, setFocusedModelId, getMmdRuntimeType, setMmdRuntimeType } from '../core/config';
 import type { ProcMotionMode } from '../motion/procedural-motion';
 import {
     buildEnvLevel,
@@ -317,6 +317,35 @@ export function buildProcMotionLevel(): PopupLevel {
                     setProcMotionHeadTrackingEnabled(v);
                     reRenderSceneMenu();
                 }, 'lucide:mouse-pointer-2');
+            });
+
+            // ======== MMD 运行时切换（WASM 物理 / JS 调试） ========
+            // 切换需重建 MMD 子系统，通过 reload 实现
+            cardContainer(container, (c) => {
+                addModeSlider(
+                    c,
+                    '运行时',
+                    [
+                        { value: 'wasm' as const, label: 'WASM 物理' },
+                        { value: 'js' as const, label: 'JS 调试' },
+                    ],
+                    getMmdRuntimeType(),
+                    (v) => {
+                        if (v === getMmdRuntimeType()) return;
+                        const ok = confirm(
+                            v === 'js'
+                                ? '切换到 JS 调试模式将丢失当前场景并重新加载（无物理）。继续？'
+                                : '切换到 WASM 物理模式将丢失当前场景并重新加载。继续？'
+                        );
+                        if (!ok) {
+                            reRenderSceneMenu();
+                            return;
+                        }
+                        setMmdRuntimeType(v);
+                        location.reload();
+                    },
+                    'lucide:cpu'
+                );
             });
 
             // 插值曲线选择器

@@ -48,6 +48,7 @@ import {
     envState,
     triggerAutoSave,
     setTriggerAutoSave,
+    getMmdRuntimeType,
 } from '../core/config';
 import { attachBeatDetector } from '../outfit/audio';
 import { loadOutfits } from '../outfit/outfit';
@@ -123,13 +124,13 @@ export async function initScene(): Promise<void> {
     RegisterMmdModelLoaders();
     RegisterDxBmpTextureLoader();
     MmdRuntimeShared.MaterialProxyConstructor = MmdStandardMaterialProxy;
-    const useJsRuntime = import.meta.env.VITE_MMD_RUNTIME === 'js';
+    // 运行时切换：默认 WASM（含物理），可在程序化动作菜单切换到 JS 版（调试专用，无物理）
+    // JS 版保留作为 gaze 行为对比排查与 WASM 兼容性回退，勿删除
+    const useJsRuntime = getMmdRuntimeType() === 'js';
     let runtime: IMmdRuntime;
     if (useJsRuntime) {
-        // JS 版：无 WASM 双缓冲，worldMatrix 覆写可生效（用于视线追踪）
-        // 注意：physics=null 意味着无布料物理，但骨骼动画和眼骨追踪正常
         runtime = new MmdRuntime(scene, null);
-        console.log('[scene] 使用 JS 版 MmdRuntime（无物理）— 视线追踪 worldMatrix 覆写将生效');
+        console.warn('[scene] JS 版 MmdRuntime（调试专用，无物理）— 生产请用 WASM');
     } else {
         const wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
         const mmdWasmPhysics = new MmdWasmPhysics(scene);

@@ -265,6 +265,27 @@ export function setMmdRuntime(r: IMmdRuntime | null): void {
     mmdRuntime = r;
 }
 
+// ======== MMD Runtime Type Switch (WASM 物理 / JS 调试) ========
+// localStorage 持久化，env 仅作首次默认值
+// 切换需要重建 MMD 子系统，故采用 reload 实现
+export type MmdRuntimeType = 'wasm' | 'js';
+const MMD_RUNTIME_TYPE_KEY = 'mmdRuntimeType';
+
+export function getMmdRuntimeType(): MmdRuntimeType {
+    try {
+        const v = localStorage.getItem(MMD_RUNTIME_TYPE_KEY);
+        if (v === 'js' || v === 'wasm') return v;
+    } catch { /* localStorage 不可用时回落 env */ }
+    // 首次默认：WASM（含物理），VITE_MMD_RUNTIME=js 可改首次默认
+    return import.meta.env.VITE_MMD_RUNTIME === 'js' ? 'js' : 'wasm';
+}
+
+export function setMmdRuntimeType(v: MmdRuntimeType): void {
+    try {
+        localStorage.setItem(MMD_RUNTIME_TYPE_KEY, v);
+    } catch { /* 忽略 localStorage 写入失败 */ }
+}
+
 export let modelRegistry = new Map<string, ModelInstance>();
 // [doc:architecture] modelRegistry — 已加载模型的运行时注册表（key=实例ID）
 // ⚠️ 修改时同步: loadPMXFile(新增) / removeModel(删除) / arrangeModels(替换整个Map)
