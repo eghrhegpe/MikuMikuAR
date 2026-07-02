@@ -169,7 +169,7 @@ function buildSettingsDisplayLevel(): PopupLevel {
                         if (Object.keys(uiState.materialCategoryMap!).length === 0) {
                             delete uiState.materialCategoryMap;
                         }
-                        SetUIState(uiState).catch(console.warn);
+                        setUIState({ materialCategoryMap: uiState.materialCategoryMap });
                         settingsMenu.reRender();
                     });
                     c.appendChild(row);
@@ -201,7 +201,7 @@ function buildSettingsDisplayLevel(): PopupLevel {
                         uiState.materialCategoryMap = {};
                     }
                     uiState.materialCategoryMap[pattern] = category;
-                    SetUIState(uiState).catch(console.warn);
+                    setUIState({ materialCategoryMap: uiState.materialCategoryMap });
                     settingsMenu.reRender();
                 });
                 c.appendChild(addRow);
