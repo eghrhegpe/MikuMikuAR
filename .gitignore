@@ -24,4 +24,7 @@ reasonix.toml
 # Test coverage output
 coverage/
 
+# Binary / executable artifacts
+*.exe
+
 

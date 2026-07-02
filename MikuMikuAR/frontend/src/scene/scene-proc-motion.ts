@@ -1,6 +1,6 @@
 // [doc:architecture] Procedural Motion — 程序化动作系统
 // 规范文档: docs/architecture.md §程序化动作
-// 职责: Idle / Auto Dance 状态管理、VMD 生成调度、节拍联动
+// 职责: Idle / Auto Dance 状态管理、VMD 生成调度、节拍联动、视线追踪实时叠加
 
 import {
     ProcMotionState,
@@ -14,7 +14,8 @@ import {
 import { BeatDetector } from '../motion/beat-detector';
 import { mmdRuntime, triggerAutoSave, focusedModelId } from '../core/config';
 import { isAudioPlaying } from '../outfit/audio';
-import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion } from './scene';
+import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from './scene';
+import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 
 let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
 let procBeatDetector: BeatDetector | null = null;
@@ -23,6 +24,111 @@ let lastBeatBpm = 120;
 let procStarting = false;
 let procActiveKind: ProcMotionMode = 'idle';
 let procModelId: string | null = null;
+
+// ── 视线追踪 ──
+let _gazeObserver: any = null;
+
+/** 注册视线追踪的每帧回调（在 VMD 更新后覆盖头骨旋转）。 */
+function _setupGazeTracking(): void {
+    if (_gazeObserver) return; // 已注册
+    const inst = procModelId ? modelManager.get(procModelId) : null;
+    const mmdModel = inst?.mmdModel;
+    if (!mmdModel) return;
+
+    // 找头骨
+    const headBone = mmdModel.runtimeBones.find(
+        b => b.name === '頭' || b.name === 'head' || b.name === 'Head'
+    );
+    if (!headBone) {
+        console.warn('[proc-motion] 未找到头骨，视线追踪跳过');
+        return;
+    }
+    // 找父骨（首/neck）用于局部空间转换
+    const neckBone = mmdModel.runtimeBones.find(
+        b => b.name === '首' || b.name === 'neck' || b.name === 'Neck'
+    );
+    const parentBone = neckBone ?? headBone;
+
+    // 眼骨（MMD 标准命名：右目/左目/両目）
+    const eyeBones = mmdModel.runtimeBones.filter(
+        b => b.name === '右目' || b.name === '左目' || b.name === '両目'
+    );
+    // 目戻骨（右目戻/左目戻）— 它们的 parent 就是对应目骨，跳过
+
+    console.log(`[proc-motion] 视线追踪: 头=${headBone.name} 父=${parentBone.name} 眼=[${eyeBones.map(b=>b.name).join(',')}]`);
+
+    _gazeObserver = scene.onBeforeRenderObservable.add(() => {
+        if (!_procVmdActive) return;
+
+        const cam = scene.activeCamera;
+        if (!cam) return;
+
+        // --- 头部追踪：直接改写 WASM 内部 worldMatrix Float32Array ---
+        // headBone.worldMatrix 是 WASM runtime 缓冲区的视图，写它就影响渲染
+        const headPos = new Vector3();
+        headBone.getWorldTranslationToRef(headPos);
+        const camPos = cam.position;
+
+        // 1. 读取当前 VMD 驱动的世界矩阵
+        const currentWorldMat = Matrix.FromArray(headBone.worldMatrix);
+        const pos = new Vector3(currentWorldMat.m[12], currentWorldMat.m[13], currentWorldMat.m[14]);
+
+        // 2. 目标世界旋转：头→相机的朝向
+        const lookDir = camPos.subtract(headPos).normalize();
+        const targetWorldQuat = Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly);
+
+        // 3. 当前世界旋转
+        const currentWorldQuat = Quaternion.FromRotationMatrix(
+            currentWorldMat.getRotationMatrix()
+        );
+
+        // 4. Slerp 混合（世界空间）
+        const blendFactor = 0.5;
+        const blended = Quaternion.Slerp(currentWorldQuat, targetWorldQuat, blendFactor);
+
+        // 5. 写回 WASM 缓冲区：保持位置不变，只改旋转
+        const rotMat = new Matrix();
+        blended.toRotationMatrix(rotMat);
+        rotMat.setTranslation(pos);
+        rotMat.copyToArray(headBone.worldMatrix, 0);
+
+        // --- 眼球追踪 ---
+        if (eyeBones.length > 0) {
+            for (const eyeBone of eyeBones) {
+                const eyePos = new Vector3();
+                eyeBone.getWorldTranslationToRef(eyePos);
+                const eDx = camPos.x - eyePos.x;
+                const eDz = camPos.z - eyePos.z;
+                const eyeYaw = Math.atan2(eDx, eDz);
+
+                // 读当前眼骨世界矩阵
+                const eyeWorldMat = Matrix.FromArray(eyeBone.worldMatrix);
+                const eyePosVec = new Vector3(eyeWorldMat.m[12], eyeWorldMat.m[13], eyeWorldMat.m[14]);
+                const curEyeWorldQuat = Quaternion.FromRotationMatrix(
+                    eyeWorldMat.getRotationMatrix()
+                );
+
+                // 目标：只看水平方向
+                const eyeLookDir = new Vector3(eDx, 0, eDz).normalize();
+                const eyeTargetQuat = Quaternion.FromLookDirectionRH(eyeLookDir, Vector3.UpReadOnly);
+
+                const blendedEye = Quaternion.Slerp(curEyeWorldQuat, eyeTargetQuat, 0.6);
+
+                const eyeRotMat = new Matrix();
+                blendedEye.toRotationMatrix(eyeRotMat);
+                eyeRotMat.setTranslation(eyePosVec);
+                eyeRotMat.copyToArray(eyeBone.worldMatrix, 0);
+            }
+        }
+    });
+}
+
+function _teardownGazeTracking(): void {
+    if (_gazeObserver) {
+        scene.onBeforeRenderObservable.remove(_gazeObserver);
+        _gazeObserver = null;
+    }
+}
 
 /** 只读访问器，外部不可直接修改程序化动作激活状态。 */
 export function isProcVmdActive(): boolean {
@@ -111,6 +217,8 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
             procActiveKind = 'idle';
         } else {
             _clearVmdData(focusedModel());
+            // 启动视线追踪（实时骨骼叠加，不依赖 VMD 帧）
+            _setupGazeTracking();
         }
     } catch {
         _procVmdActive = false;
@@ -122,6 +230,7 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
 
 export function stopProcMotion(): void {
     _procVmdActive = false;
+    _teardownGazeTracking();
     if (procModelId) {
         const inst = modelManager.get(procModelId);
         if (inst && inst.mmdModel && mmdRuntime) {
@@ -134,6 +243,7 @@ export function stopProcMotion(): void {
 export function onModelRemoved(id: string): void {
     if (procModelId === id) {
         _procVmdActive = false;
+        _teardownGazeTracking();
         procModelId = null;
     }
 }

@@ -103,12 +103,12 @@ describe('generateAutoDanceVmd', () => {
 
     it('includes arm bone frames', () => {
         // 骨骼名是 Shift-JIS 编码，用编码后的字节序列匹配
-        // 左腕 = 左(0x8DB6) + 腕(0x9862) → [0x8D, 0xB6, 0x98, 0x62]
+        // 左腕 SJIS (encoding-japanese): 左=0x8DB6 腕=0x9872
         const u8 = new Uint8Array(buf);
         const view = new DataView(buf);
         const boneCount = view.getUint32(50, true);
         let foundLeftArm = false;
-        const leftArmBytes = [0x8d, 0xb6, 0x98, 0x62]; // 左腕 Shift-JIS
+        const leftArmBytes = [0x8d, 0xb6, 0x98, 0x72]; // 左腕 Shift-JIS
         for (let i = 0; i < boneCount; i++) {
             const off = 54 + i * 111;
             let match = true;
@@ -152,5 +152,71 @@ describe('auto-switch logic', () => {
     });
     it('shouldIdle: false when audio playing', () => {
         expect(shouldIdle(true, false, 'off')).toBe(false);
+    });
+});
+
+// ======== VMD 骨骼诊断辅助 ========
+
+/** 解析 VMD buffer，返回各骨骼名→帧数的映射。 */
+function _parseVmdBones(buf: ArrayBuffer): Record<string, number> {
+    const view = new DataView(buf);
+    const boneCount = view.getUint32(50, true);
+    const decoder = new TextDecoder('shift-jis');
+    const bones: Record<string, number> = {};
+    for (let i = 0; i < boneCount; i++) {
+        const off = 54 + i * 111;
+        const raw = new Uint8Array(buf, off, 15);
+        // 找到 \0 或末尾（解码器 trim 会截断到 \0）
+        const name = decoder.decode(raw).replace(/\0/g, '').trim();
+        if (!name) continue;
+        bones[name] = (bones[name] || 0) + 1;
+    }
+    return bones;
+}
+
+/** 完整标准 MMD 骨骼集（108 骨骼典型子集，覆盖程序化动作的所有候选） */
+const BONES_108_STANDARD = [
+    '全ての親', 'センター', 'グルーブ', '腰',
+    '上半身', '上半身2', '首', '頭',
+    '左肩', '右肩', '左腕', '右腕',
+    '左ひじ', '右ひじ', '左手首', '右手首',
+    '左足', '右足', '左ひざ', '右ひざ',
+    '左足首', '右足首', '左つま先', '右つま先',
+    '左足ＩＫ', '右足ＩＫ', '左つま先ＩＫ', '右つま先ＩＫ',
+    '左目', '右目', '両目',
+    '左胸', '右胸',
+];
+
+/** 完整 morph 集 */
+const MORPHS_STANDARD = ['まばたき', '笑い', 'ウィンク', 'ウィンク２'];
+
+
+
+describe('VMD 骨骼诊断', () => {
+    it('Idle: 用 108 标准骨骼集生成，报告各骨骼帧数', () => {
+        const buf = generateIdleVmd(state, MORPHS_STANDARD, BONES_108_STANDARD);
+        const bones = _parseVmdBones(buf);
+        const totalFrames = Object.values(bones).reduce((a, b) => a + b, 0);
+        console.log(`[VMD诊断 - Idle] 总骨骼帧数: ${totalFrames}`);
+        console.log(`[VMD诊断 - Idle] 骨骼明细:`);
+        for (const [name, count] of Object.entries(bones).sort((a, b) => b[1] - a[1])) {
+            console.log(`  ${name}: ${count}帧`);
+        }
+        expect(totalFrames).toBeGreaterThan(10);
+        // 108 骨骼模式下应该至少匹配到 6 种骨骼
+        expect(Object.keys(bones).length).toBeGreaterThanOrEqual(6);
+    });
+
+    it('AutoDance: 用 108 标准骨骼集生成，报告各骨骼帧数', () => {
+        const buf = generateAutoDanceVmd(state, 120, MORPHS_STANDARD, BONES_108_STANDARD);
+        const bones = _parseVmdBones(buf);
+        const totalFrames = Object.values(bones).reduce((a, b) => a + b, 0);
+        console.log(`[VMD诊断 - AutoDance] 总骨骼帧数: ${totalFrames}`);
+        console.log(`[VMD诊断 - AutoDance] 骨骼明细:`);
+        for (const [name, count] of Object.entries(bones).sort((a, b) => b[1] - a[1])) {
+            console.log(`  ${name}: ${count}帧`);
+        }
+        expect(totalFrames).toBeGreaterThan(10);
+        expect(Object.keys(bones).length).toBeGreaterThanOrEqual(6);
     });
 });
