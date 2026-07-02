@@ -405,6 +405,83 @@ MikuMikuAR/
         └── app.css             # 全局样式（CSS 变量体系）
 ```
 
+### 10.1 视线追踪子系统（`scene-proc-motion.ts`）
+
+[doc:architecture] 视线追踪 — 骨骼变换覆写机制
+
+实现头部跟随相机、眼球跟随相机的程序化动作。核心挑战是在 VMD 动画播放期间，安全地覆写特定骨骼的旋转向量，且不破坏骨骼层级传播。
+
+#### 运行时切换
+
+通过环境变量 `VITE_MMD_RUNTIME` 切换 MmdRuntime 实现：
+
+| 值 | 运行时 | 物理 | 视线追踪 |
+|----|--------|------|---------|
+| 未设或非 `js` | `MmdWasmRuntime` | WASM Bullet | 不可用（双缓冲覆盖写入） |
+| `js` | `MmdRuntime` | 无 | 可用 |
+
+原因：WASM 版 `worldTransformMatrices` 采用双缓冲，`mmdRuntime.update()` 后任意写入都会在下一帧被还原。JS 版无此机制，写入可生效。切换点在 `scene.ts:initScene`。
+
+#### 变换覆写机制
+
+直接写 `runtimeBone.worldMatrix` 无效——它是 `worldTransformMatrices` 的切片视图，但渲染管线读的是 `_computeTransformMatrices` 输出的 `targetMatrix`，且该函数在 `mmdRuntime.update()` 末尾的 `_markAsDirty` 时已经执行完毕，之后不会再跑。
+
+正确做法是修改 `linkedBone.rotationQuaternion`（局部旋转），然后手动触发骨骼链重算：
+
+```typescript
+// 1. 计算目标世界旋转（头部朝向相机）
+const lookDir = headPos.subtract(cam.position).normalize();
+const targetWorldQ = Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly);
+const blended = Quaternion.Slerp(oldHeadRotQ, targetWorldQ, 0.3);
+
+// 2. 世界旋转 → 局部旋转（左乘父骨骼世界逆）
+//    公式：worldRot = parentWorldRot × localRot → localRot = parentWorldRot⁻¹ × worldRot
+const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
+const localQ = parentInvQ.multiply(blended);  // 注意乘法顺序：父逆左乘
+
+// 3. 写入 linkedBone（不是 worldMatrix）
+headRuntime.linkedBone.rotationQuaternion = localQ;
+
+// 4. 手动重算骨骼链（父骨骼影响子骨骼位置和旋转）
+const updateBoneChain = (rb: IMmdRuntimeBone) => {
+    (rb as any).updateWorldMatrix?.(false, false);
+    for (const child of rb.childBones) updateBoneChain(child);
+};
+updateBoneChain(headRuntime);
+
+// 5. 触发 skeleton 重算，把新 worldMatrix 刷到渲染矩阵
+(mmdModel.mesh.metadata as any).skeleton?._markAsDirty?.();
+```
+
+#### 执行时序
+
+```
+onBeforeRenderObservable
+  ├─ mmdRuntime.update()          // VMD 求解，写 worldTransformMatrices
+  │   └─ skeleton._markAsDirty()  // 触发 _computeTransformMatrices（读旧值）
+  └─ gaze observer（本子系统）    // 改 linkedBone → updateWorldMatrix → _markAsDirty
+      └─ skeleton._markAsDirty()  // 再次触发 _computeTransformMatrices（读新值）
+```
+
+gaze observer 必须在 `mmdRuntime.update()` 之后注册，确保覆盖 VMD 写入的 `linkedBone.rotationQuaternion`。
+
+#### 关键陷阱
+
+| 陷阱 | 现象 | 原因 |
+|------|------|------|
+| 直接写 `worldMatrix` | 子骨骼位置留在原地 | 绕过骨骼层级，子骨骼 worldMatrix 不会基于新父骨骼值重算 |
+| 四元数乘法顺序反 | 头部朝固定错误方向 | `blended × parentInv` ≠ `parentInv × blended`，后者才正确 |
+| `lookDir` 方向反 | 头部背对相机 | `FromLookDirectionRH` 的 forward 是相机朝向，取 `headPos - camPos` 让物体朝相机看 |
+| WASM 版写入 | 写入后被还原 | 双缓冲机制，`mmdRuntime.update()` 用后缓冲覆盖前缓冲 |
+
+#### 涉及文件
+
+| 文件 | 角色 |
+|------|------|
+| `scene/scene.ts` | 运行时切换（`VITE_MMD_RUNTIME`） |
+| `scene/scene-proc-motion.ts` | gaze observer 实现 |
+| `core/config.ts` | `RuntimeModel` 扩展类型（`IMmdModel` + `setRuntimeAnimation`/`createRuntimeAnimation`） |
+
 ### 11. 模块依赖关系
 
 ```

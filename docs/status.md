@@ -422,6 +422,41 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 - `batch` 截图后 `focusModel(prevFocused)` 恢复焦点 ✓
 - `modelRegistry` 在 async 操作期间没被篡改 ✓
 
+## 视线追踪修复记录（2026-07-02）
+
+### 问题现象
+头部跟随开启后，头骨转动正常，但眼骨和头发骨骼（无头骨权重者）停留在原地，只有旋转没有位置变化。表情贴图也出现在错误位置转圈。
+
+### 根因链
+| # | 错误假设 | 实际情况 | 修复 |
+|---|---------|---------|------|
+| 1 | `worldMatrix` 是渲染数据源 | 渲染读 `worldTransformMatrices` 经 `_computeTransformMatrices` 输出的 `targetMatrix`，`worldMatrix` 只是其切片视图 | 改为写 `linkedBone.rotationQuaternion` |
+| 2 | 直接写 `worldMatrix` 能传播给子骨骼 | 绕过骨骼层级，子骨骼 worldMatrix 不会基于新父骨骼值重算 | 手动调 `updateWorldMatrix` 重算骨骼链 |
+| 3 | WASM 版 worldMatrix 写入生效 | WASM 双缓冲，`mmdRuntime.update()` 用后缓冲覆盖前缓冲 | 切到 JS 版（`VITE_MMD_RUNTIME=js`） |
+| 4 | 四元数 `blended × parentInv` 正确 | 应为 `parentInv × blended`（父逆左乘） | 修正乘法顺序 |
+| 5 | `lookDir = camPos - headPos`（朝向相机） | `FromLookDirectionRH` 的 forward 是相机朝向，取反才让物体朝相机看 | 改为 `headPos - camPos` |
+
+### 关键诊断方法
+在 onAfterRenderObservable 中读回 `worldMatrix`，与 onBeforeRender 写入值对比：
+- 值一致 → 写入生效，问题在别处
+- 值被还原 → WASM 双缓冲覆盖（本案例）
+
+### 涉及文件
+| 文件 | 改动 |
+|------|------|
+| `scene/scene.ts` | 新增 `VITE_MMD_RUNTIME` 环境变量切换 WASM/JS 运行时 |
+| `scene/scene-proc-motion.ts` | gaze observer 重写：linkedBone + updateWorldMatrix + _markAsDirty |
+| `core/config.ts` | 新增 `RuntimeModel` 扩展类型 |
+| `scene/scene-model.ts` | `focusedMmdModel()` 等签名 `MmdWasmModel` → `RuntimeModel` |
+| `scene/scene-loader.ts` | `mmdModel` 赋值加 `as RuntimeModel` |
+| `scene/scene-vmd.ts` | 动画创建分支加 `instanceof MmdWasmRuntime` 守卫 |
+| `scene/scene-env-bridge.ts` | `mmdRuntime.physics` 访问加 instanceof 守卫 |
+| `frontend/.env` | 新增 `VITE_MMD_RUNTIME=js` |
+
+### 已知限制
+- JS 版无 WASM Bullet 物理，布料/头发摆动失效
+- 如需恢复物理，需另寻方案（生成 VMD 或用 babylon-mmd 的 transform chain API）
+
 ### 相机面板审查（无 bug）
 - 模式切换 + `refreshCameraLevel` 下标 `levelCount-1` 在栈顶操作时正确 ✓
 - VMD 相机条件渲染 `hasCameraVmd()` 逻辑正确 ✓
