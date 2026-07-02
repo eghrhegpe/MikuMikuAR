@@ -151,6 +151,8 @@ docs/
 | SlideMenu / 菜单动画 / dispose | `frontend/src/menus/menu.ts` | `docs/menu-architecture.md` |
 | 节拍检测 / BPM / BeatDetector | `frontend/src/motion/beat-detector.ts` | `frontend/src/outfit/audio.ts` |
 | 音频 / 音量 / GainNode | `frontend/src/outfit/audio.ts` | `frontend/src/motion/beat-detector.ts` |
+| 性能降级 / FPS / 渲染质量 | `frontend/src/scene/scene-performance.ts` | — |
+| 软件管理 / MMD / Blender / 自定义软件 | `frontend/src/menus/settings-software.ts` | `frontend/src/menus/settings.ts` |
 | 任何新增函数 | `docs/reusables.md`（先查是否已存在） | — |
 
 > `reusables.md` 是写代码前必查的索引表，不是让你全读的。按函数名/场景 grep。 |
@@ -243,7 +245,8 @@ MikuMikuAR/frontend/
 │   │   ├── main.ts           # ★ 入口 — 事件绑定 + 快捷键 + 初始化
 │   │   ├── config.ts         # ★ 共享状态 + DOM 引用 + 类型定义 + 工具函数
 │   │   ├── fileservice.ts    # 统一文件 URL 解析层（resolveFileUrl）
-│   │   ├── icons.ts          # Iconify 图标注册表
+│   │   ├── icons.ts          # Iconify 图标创建函数（createIconifyIcon）
+│   │   ├── iconify-registry.ts # Iconify 本地图标注册表（自动生成，图标常量定义）
 │   │   └── ui-helpers.ts     # DOM 构建函数（slideRow/addToggleRow/addSliderRow）
 │   ├── scene/
 │   │   ├── scene.ts          # ★ 3D 场景编排入口
@@ -278,7 +281,8 @@ MikuMikuAR/frontend/
 │   │   ├── scene-menu.ts     # 场景菜单（相机/灯光/渲染/程序化动作）
 │   │   ├── env-menu.ts       # 环境菜单（天空/地面/粒子/风/云/道具）
 │   │   ├── motion-popup.ts   # 动作弹窗（VMD/姿势/舞蹈套装/布料参数）
-│   │   ├── settings.ts       # 设置页（UI/主题/字体/软件/外部库）
+│   │   ├── settings.ts       # 设置页（UI/主题/字体/外部库）
+│   │   ├── settings-software.ts # 设置-软件管理子菜单（MMD/Blender/自定义软件）
 │   │   └── outfit-ui.ts      # 服装变体子菜单
 │   ├── motion/
 │   │   ├── procedural-motion.ts # 程序化动作（Idle/AutoDance VMD生成）
@@ -348,6 +352,13 @@ MikuMikuAR/frontend/
 | `ModelManager` | `scene/scene-model.ts` | 模型注册表 + 生命周期 + 属性管理 |
 | `focusedMmdModel()` | `scene/scene-model.ts`（->modelManager） | 当前聚焦模型的 WASM 对象 |
 | `focusedModel()` | `scene/scene-model.ts`（->modelManager） | 当前聚焦模型实例 |
+| `removeModel()` / `focusModel()` / `arrangeModels()` | `scene/scene-model-ops.ts` | 模型生命周期操作（委托 modelManager） |
+| `setModelVisibility()` / `setModelOpacity()` | `scene/scene-model-ops.ts` | 可见性/透明度 |
+| `setModelWireframe()` / `setModelBoneLinesVis()` | `scene/scene-model-ops.ts` | 线框/骨骼调试 |
+| `setModelPhysics()` / `setPhysicsCategory()` | `scene/scene-model-ops.ts` | 物理开关/按分类控制 |
+| `setModelScaling()` / `setModelRotationY()` / `setModelPosition()` | `scene/scene-model-ops.ts` | 变换操作 |
+| `stopVMD()` / `applyVPDPose()` | `scene/scene-model-ops.ts` | VMD 停止/VPD 姿势应用 |
+| `setModelMorphWeight()` / `resetModelMorphs()` | `scene/scene-model-ops.ts` | 表情权重/重置 |
 | `_catOf()`, `_applyAll()`, `setMatParams()` | `scene/scene-material.ts` | 材质分类/批量应用/按类设参 |
 
 #### 模型库 & 弹窗
@@ -365,6 +376,9 @@ MikuMikuAR/frontend/
 | `showSettings()` | `menus/settings.ts` | 设置页（MenuStack） |
 | `buildSettings*Level()`, `handleSettingsAction()` | `menus/settings.ts` | 设置页各层级构建与选项处理 |
 | `renderExternalList()` | `menus/settings.ts` | 外部库管理列表 |
+| `buildSettingsSoftwareLevel()` | `menus/settings-software.ts` | 软件管理子菜单（MMD/Blender/自定义） |
+| `detectMMD()` / `setBlenderPath()` / `setMMDPath()` | `menus/settings-software.ts` | 路径设置 API |
+| `scanSoftwareDir()` | `menus/settings-software.ts` | 软件目录扫描 |
 | `MenuStack` | `menus/menu.ts` | 通用菜单导航组件 |
 
 #### 相机
