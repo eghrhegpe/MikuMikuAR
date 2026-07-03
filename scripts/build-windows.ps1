@@ -49,7 +49,7 @@ if ($Production) {
 }
 
 Write-Output "[build-windows] 编译 Go (tags=$buildTags, ldflags=$ldflags)..."
-& wails3 build -platform windows/amd64 -ldflags $ldflags
+& wails3 build -ldflags $ldflags
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # 重命名产物
