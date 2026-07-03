@@ -70,7 +70,6 @@ jobs:
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
       - name: Build
         run: .\scripts\build-windows.ps1 -Production
-        shell: powershell
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
@@ -115,6 +114,11 @@ jobs:
             libgirepository1.0-dev
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          npx vite build
       - name: Build
         run: |
           mkdir -p bin
@@ -134,7 +138,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        shell: powershell
+        shell: pwsh
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
