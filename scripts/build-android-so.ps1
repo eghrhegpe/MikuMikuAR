@@ -1,4 +1,4 @@
-# Android .so 编译脚本 (Windows PowerShell)
+﻿# Android .so 编译脚本 (Windows PowerShell)
 # 用法: .\scripts\build-android-so.ps1 -Arch arm64|amd64 -Production $false
 param(
     [ValidateSet("arm64", "amd64", "x86_64")]
