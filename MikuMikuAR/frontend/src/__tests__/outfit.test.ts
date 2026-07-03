@@ -268,12 +268,23 @@ describe('resetOutfit', () => {
     });
 
     it('should clear _origParams if present', async () => {
-        inst._origParams = new Map([[0, {
-            diffuseR: 1, diffuseG: 1, diffuseB: 1,
-            specularR: 1, specularG: 1, specularB: 1,
-            specularPower: 50,
-            ambientR: 1, ambientG: 1, ambientB: 1,
-        }]]);
+        inst._origParams = new Map([
+            [
+                0,
+                {
+                    diffuseR: 1,
+                    diffuseG: 1,
+                    diffuseB: 1,
+                    specularR: 1,
+                    specularG: 1,
+                    specularB: 1,
+                    specularPower: 50,
+                    ambientR: 1,
+                    ambientG: 1,
+                    ambientB: 1,
+                },
+            ],
+        ]);
         const { resetOutfit } = await import('../outfit/outfit');
         resetOutfit('m1');
         expect(inst._origParams).toBeUndefined();
@@ -318,10 +329,34 @@ describe('outfit helper functions (via integration)', () => {
         vi.clearAllMocks();
         const sm = createMockMaterial('顔', {
             diffuseTexture: origDiffuse,
-            toonTexture: { name: 'toon.png', url: 'toon.png', isReady: () => true, dispose: vi.fn(), onLoadObservable: { add: vi.fn(), remove: vi.fn() } },
-            sphereTexture: { name: 'spa.png', url: 'spa.png', isReady: () => true, dispose: vi.fn(), onLoadObservable: { add: vi.fn(), remove: vi.fn() } },
-            bumpTexture: { name: 'normal.png', url: 'normal.png', isReady: () => true, dispose: vi.fn(), onLoadObservable: { add: vi.fn(), remove: vi.fn() } },
-            emissiveTexture: { name: 'emissive.png', url: 'emissive.png', isReady: () => true, dispose: vi.fn(), onLoadObservable: { add: vi.fn(), remove: vi.fn() } },
+            toonTexture: {
+                name: 'toon.png',
+                url: 'toon.png',
+                isReady: () => true,
+                dispose: vi.fn(),
+                onLoadObservable: { add: vi.fn(), remove: vi.fn() },
+            },
+            sphereTexture: {
+                name: 'spa.png',
+                url: 'spa.png',
+                isReady: () => true,
+                dispose: vi.fn(),
+                onLoadObservable: { add: vi.fn(), remove: vi.fn() },
+            },
+            bumpTexture: {
+                name: 'normal.png',
+                url: 'normal.png',
+                isReady: () => true,
+                dispose: vi.fn(),
+                onLoadObservable: { add: vi.fn(), remove: vi.fn() },
+            },
+            emissiveTexture: {
+                name: 'emissive.png',
+                url: 'emissive.png',
+                isReady: () => true,
+                dispose: vi.fn(),
+                onLoadObservable: { add: vi.fn(), remove: vi.fn() },
+            },
         });
         inst = createBaseInstance({
             meshes: [createMockMesh(sm)],
