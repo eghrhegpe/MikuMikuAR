@@ -22,7 +22,7 @@ import {
     SetUIAnimations,
     SetUIBlurBg,
     SetPerformanceMode,
-} from '../../wailsjs/go/main/App';
+} from '../core/wails-bindings';
 import {
     dom,
     closeAllOverlays,

@@ -5,7 +5,7 @@
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
-import { SaveThumbnail } from '../../wailsjs/go/main/App';
+import { SaveThumbnail } from '../core/wails-bindings';
 import {
     dom,
     setStatus,

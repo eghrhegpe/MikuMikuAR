@@ -21,8 +21,7 @@ import {
     EnvState,
     formatError,
 } from './config';
-import { GetConfig, ImportZip, ImportLocalFile } from '../../wailsjs/go/main/App';
-import { OnFileDrop, EventsOn } from '../../wailsjs/runtime/runtime';
+import { GetConfig, ImportZip, ImportLocalFile, OnFileDrop, EventsOn } from './wails-bindings';
 import {
     initScene,
     engine,

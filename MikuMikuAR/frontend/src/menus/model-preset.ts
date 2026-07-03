@@ -32,7 +32,7 @@ import {
     SaveModelPresetToLib,
     LoadModelPresetFromLib,
     DeleteModelPreset,
-} from '../../wailsjs/go/main/App';
+} from '../core/wails-bindings';
 import {
     loadAudioFile,
     clearAudio,

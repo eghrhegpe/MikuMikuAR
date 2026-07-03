@@ -138,17 +138,26 @@ function _setupGazeTracking(): void {
                 const headPos = oldHeadMat.getTranslation();
                 const oldHeadRotQ = _q().copyFrom(Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix()));
 
-                // lookDir = 头部位置 - 相机位置（FromLookDirectionRH 的 forward 语义是相机朝向）
-                const lookDir = headPos.subtractToRef(cam.position, _v3()).normalize();
-                const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
-                const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, targetWorldQ, 0.3));
+                // lookDir = 头部→相机方向（模型面朝方向，与最初稳定版本一致）
+                // FromLookDirectionRH 的 forward 语义是"相机朝向" = cam→head = -lookDir
+                // 但之前用 lookDir = headPos - cam.pos 配合 FromLookDirectionRH 工作正常，
+                // 说明 RH 内部处理了方向，保持与稳定版本一致即可
+                const lookDir = headPos.subtractToRef(cam.position, _v3());
+                const lookLen = Math.sqrt(lookDir.x * lookDir.x + lookDir.y * lookDir.y + lookDir.z * lookDir.z);
+                if (lookLen > 0.0001) {
+                    lookDir.scaleInPlace(1 / lookLen);
+                    // 用 FromLookDirectionRH 算目标朝向（yaw/pitch 自动解耦的稳定实现）
+                    const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
 
-                // 新 worldMatrix = Compose(scale=One, rotation=blended, translation=headPos)
-                const newHeadMat = _m().copyFrom(Matrix.Compose(Vector3.One(), blended, headPos));
-                _writeMatToBuffer(headBuf, newHeadMat);
+                    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, targetWorldQ, 0.5));
 
-                // 递归传播子骨骼（眼骨/眉毛等跟随头部）
-                _propagateChildrenWasm(headRuntime, oldHeadMat, newHeadMat);
+                    // 新 worldMatrix = Compose(scale=One, rotation=blended, translation=headPos)
+                    const newHeadMat = _m().copyFrom(Matrix.Compose(Vector3.One(), blended, headPos));
+                    _writeMatToBuffer(headBuf, newHeadMat);
+
+                    // 递归传播子骨骼（眼骨/眉毛等跟随头部）
+                    _propagateChildrenWasm(headRuntime, oldHeadMat, newHeadMat);
+                }
             }
 
             // [对比诊断] 仅头部跟随时的眼骨状态（每 60 帧打印一次）
@@ -169,17 +178,21 @@ function _setupGazeTracking(): void {
             }
 
             // 步骤2：眼球跟随（Slerp 朝向目标：左右眼共用同一 targetWorldQ）
-            // 关键修复：放弃 offset 叠加（眼骨本地坐标系 ≠ 头部本地坐标系导致符号反），
-            // 改用 Slerp 朝向目标世界旋转。左右眼共用 targetWorldQ（从头部位置算），
-            // 各自从当前朝向 Slerp 过去，保证平行注视 + 视觉对称。
+            // 用双眼中心点算 lookDir，左右眼共用同一目标朝向，各自从当前朝向 Slerp 过去。
+            // 保证平行注视 + 视觉对称，避免会聚角过大。
             if (needEye) {
-                const refBone = headRuntime ?? eyeRuntimes[0];
-                const refBuf = (refBone as any).worldMatrix as Float32Array;
-                const refMat = _m().copyFrom(Matrix.FromArray(refBuf));
-                const refPos = refMat.getTranslation();
+                // 双眼中心点（左/右目世界位置的中点）
+                const eyeCenter = _v3();
+                for (const eyeRb of eyeRuntimes) {
+                    const eb = (eyeRb as any).worldMatrix as Float32Array;
+                    eyeCenter.x += eb[12];
+                    eyeCenter.y += eb[13];
+                    eyeCenter.z += eb[14];
+                }
+                eyeCenter.scaleInPlace(1 / eyeRuntimes.length);
 
-                // 统一目标朝向（从头部位置朝向相机）
-                const lookDir = refPos.subtractToRef(cam.position, _v3());
+                // 统一目标朝向（从双眼中心朝向相机）
+                const lookDir = eyeCenter.subtractToRef(cam.position, _v3());
                 if (lookDir.lengthSquared() >= 0.0001) {
                     lookDir.normalize();
                     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
@@ -224,9 +237,10 @@ function _setupGazeTracking(): void {
                 headRuntime.getWorldTranslationToRef(headPos);
                 const oldHeadMat = _m().copyFrom(Matrix.FromArray(headRuntime.worldMatrix));
                 const oldHeadRotQ = _q().copyFrom(Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix()));
+                // lookDir = 头部→相机（与 WASM 模式一致）
                 const lookDir = headPos.subtractToRef(cam.position, _v3()).normalize();
                 const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
-                const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, targetWorldQ, 0.3));
+                const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, targetWorldQ, 0.5));
 
                 const parentBone = headRuntime.parentBone;
                 let parentWorldInv = _m();
@@ -250,13 +264,18 @@ function _setupGazeTracking(): void {
                 updateBoneChain(headRuntime);
             }
 
-            // 步骤2：眼球跟随（Slerp 朝向目标：与 WASM 模式一致）
+            // 步骤2：眼球跟随（Slerp 朝向目标：与 WASM 模式一致，双眼中心点算 lookDir）
             if (needEye) {
-                const refBone = headRuntime ?? eyeRuntimes[0];
-                const refPos = _v3();
-                refBone.getWorldTranslationToRef(refPos);
+                const eyeCenter = _v3();
+                for (const eyeRb of eyeRuntimes) {
+                    const eb = (eyeRb as any).worldMatrix as Float32Array;
+                    eyeCenter.x += eb[12];
+                    eyeCenter.y += eb[13];
+                    eyeCenter.z += eb[14];
+                }
+                eyeCenter.scaleInPlace(1 / eyeRuntimes.length);
 
-                const lookDir = refPos.subtractToRef(cam.position, _v3());
+                const lookDir = eyeCenter.subtractToRef(cam.position, _v3());
                 if (lookDir.lengthSquared() >= 0.0001) {
                     lookDir.normalize();
                     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));

@@ -60,7 +60,7 @@ import {
     GetDanceSets,
     DeleteDanceSet,
     ImportDanceSet,
-} from '../../wailsjs/go/main/App';
+} from '../core/wails-bindings';
 import {
     toggleCloth,
     recreateCloth,

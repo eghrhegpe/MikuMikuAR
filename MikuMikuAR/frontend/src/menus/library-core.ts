@@ -16,7 +16,7 @@ import {
     AddRecentModel,
     GetAllTags,
     GetModelsByTag,
-} from '../../wailsjs/go/main/App';
+} from '../core/wails-bindings';
 import {
     dom,
     setStatus,

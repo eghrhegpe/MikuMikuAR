@@ -309,6 +309,6 @@ export {
     SaveLastScene,
     LoadLastScene,
     SetEnvState,
-} from '../../wailsjs/go/main/App';
+} from '../core/wails-bindings';
 export type { LightState, StageLightState } from './scene-lighting';
 export type { RenderState } from './scene-renderer';

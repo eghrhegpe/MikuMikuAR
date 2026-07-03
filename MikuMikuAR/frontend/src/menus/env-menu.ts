@@ -54,7 +54,7 @@ import {
     LoadEnvPreset,
     ListEnvPresets,
     DeleteEnvPreset,
-} from '../../wailsjs/go/main/App';
+} from '../core/wails-bindings';
 import { setStatus } from '../core/config';
 
 // ======== User-Saved Env Presets ========

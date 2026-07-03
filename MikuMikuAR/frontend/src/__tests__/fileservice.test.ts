@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { normPath } from '../core/fileservice';
 
-// Mock ../../wailsjs/go/main/App BEFORE importing fileservice
+// Mock ../core/wails-bindings BEFORE importing fileservice
 // Wails 生成的 JS 在测试环境不存在，必须 mock
-vi.mock('../../wailsjs/go/main/App', () => ({
+vi.mock('../core/wails-bindings', () => ({
     StartFileServer: vi.fn(),
     IsolateModelDir: vi.fn(),
 }));
 
 import { resolveFileUrl } from '../core/fileservice';
-import { StartFileServer, IsolateModelDir } from '../../wailsjs/go/main/App';
+import { StartFileServer, IsolateModelDir } from '../core/wails-bindings';
 
 describe('normPath', () => {
     it('反斜杠统一为正斜杠', () => {

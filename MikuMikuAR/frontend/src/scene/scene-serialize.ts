@@ -3,7 +3,7 @@
 // 职责: SceneFile 定义、serialize/deserialize、auto-save debounce、last-scene restore
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
-import { SaveLastScene, LoadLastScene } from '../../wailsjs/go/main/App';
+import { SaveLastScene, LoadLastScene } from '../core/wails-bindings';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 
 import {

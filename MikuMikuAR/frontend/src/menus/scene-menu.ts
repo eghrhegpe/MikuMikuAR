@@ -63,7 +63,7 @@ import {
     GetPresetScenesDir,
     SaveScenePreset,
     DeletePresetScene,
-} from '../../wailsjs/go/main/App';
+} from '../core/wails-bindings';
 import {
     focusModel,
     setProcMotionMode,

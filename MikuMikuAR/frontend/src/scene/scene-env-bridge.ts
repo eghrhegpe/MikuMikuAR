@@ -3,7 +3,7 @@
 // 职责: envAutoLink、太阳角、时间流转、环境预设、setEnvState、重力控制
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
-import { SetEnvState } from '../../wailsjs/go/main/App';
+import { SetEnvState } from '../core/wails-bindings';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 
@@ -334,7 +334,7 @@ export function applyEnvPresetObject(preset: {
         if (t >= 1) {
             setSkipLightAutoSave(false);
             setRenderState({ exposure: preset.exposure, toneMapping: preset.toneMapping });
-            SetEnvState(envState as unknown as import('../../wailsjs/go/models').main.EnvState).catch(() => {});
+            SetEnvState(envState as unknown as import('../core/wails-bindings').main.EnvState).catch(() => {});
             triggerAutoSave();
         } else {
             requestAnimationFrame(animLoop);
@@ -359,7 +359,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         clearTimeout(_envPersistTimer);
     }
     _envPersistTimer = setTimeout(() => {
-        SetEnvState(envState as unknown as import('../../wailsjs/go/models').main.EnvState).catch(() => {});
+        SetEnvState(envState as unknown as import('../core/wails-bindings').main.EnvState).catch(() => {});
     }, 500);
 
     if (!skipAutoSave) {

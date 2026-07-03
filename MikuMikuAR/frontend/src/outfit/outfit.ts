@@ -3,7 +3,7 @@
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { LoadOutfitFile, ListSubDirs } from '../../wailsjs/go/main/App';
+import { LoadOutfitFile, ListSubDirs } from '../core/wails-bindings';
 import {
     modelRegistry,
     setStatus,

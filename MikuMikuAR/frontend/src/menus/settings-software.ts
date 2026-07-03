@@ -9,7 +9,7 @@ import {
     SetBlenderPath,
     SetMMDPath,
     SelectExeFile,
-} from '../../wailsjs/go/main/App';
+} from '../core/wails-bindings';
 import { setStatus, cardContainer, escapeHtml, PopupLevel } from '../core/config';
 import { slideRow } from '../core/ui-helpers';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
@@ -67,7 +67,7 @@ export async function addCustomSoftware(): Promise<boolean> {
     }
 }
 
-let cachedSoftwareEntries: import('../../wailsjs/go/models').main.SoftwareEntry[] | null = null;
+let cachedSoftwareEntries: import('../core/wails-bindings').main.SoftwareEntry[] | null = null;
 
 export async function scanSoftwareDir(): Promise<void> {
     try {

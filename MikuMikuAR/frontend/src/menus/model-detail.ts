@@ -53,8 +53,8 @@ import {
     GetAllTags,
     OpenWithSoftware,
     ScanSoftwareDir,
-} from '../../wailsjs/go/main/App';
-import type { main } from '../../wailsjs/go/models';
+} from '../core/wails-bindings';
+import type { main } from '../core/wails-bindings';
 
 // ======== Open With (software tools submenu) ========
 

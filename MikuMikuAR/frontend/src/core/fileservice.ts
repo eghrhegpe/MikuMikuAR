@@ -2,7 +2,7 @@
 // 所有需要通过 HTTP 加载模型/动作文件的函数都使用此模块。
 // 集中一处 URL 构造逻辑，避免重复实现导致"改一处漏一处"。
 
-import { StartFileServer, IsolateModelDir } from '../../wailsjs/go/main/App';
+import { StartFileServer, IsolateModelDir } from './wails-bindings';
 
 /**
  * 从文件路径解析出 HTTP URL 及对应服务器信息。
