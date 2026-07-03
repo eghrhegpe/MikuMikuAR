@@ -1,4 +1,4 @@
-export * from '../../bindings/mikumikuar/app';
+export * from '../../bindings/mikumikuar/internal/app/app';
 export { Events } from '@wailsio/runtime';
 export type {
     ClothConfig,
@@ -14,4 +14,4 @@ export type {
     RenderPreset,
     SoftwareEntry,
     UIState
-} from '../../bindings/mikumikuar/models';
+} from '../../bindings/mikumikuar/internal/app/models';

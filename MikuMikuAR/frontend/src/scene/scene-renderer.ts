@@ -21,9 +21,9 @@ export const ToneMappingMode = {
 export interface RenderState {
     // Post-processing
     bloomEnabled: boolean;
-    bloomWeight: number; // 0-1, default 0.3
+    bloomWeight: number; // 0-1, default 0
     bloomThreshold: number; // 0-1, default 0.5
-    bloomKernel: number; // 0-512, default 64
+    bloomKernel: number; // 16-256, default 64
     outlineEnabled: boolean;
     outlineColor: [number, number, number]; // RGB 0-1
     fxaaEnabled: boolean;
@@ -36,14 +36,14 @@ export interface RenderState {
     bgColor: [number, number, number]; // 0-1
     // Phase 8 — DOF + Vignette
     dofEnabled: boolean;
-    dofAperture: number;
+    dofAperture: number; // 0-1, default 0（内部映射到 fStop 0.5~10）
     vignetteEnabled: boolean;
-    vignetteDarkness: number;
+    vignetteDarkness: number; // 0-1, default 0
     // Phase 9 — 色差 + 颗粒
     chromaticAberrationEnabled: boolean;
-    chromaticAberrationAmount: number; // 0-20, default 0
+    chromaticAberrationAmount: number; // 0-1, default 0（内部映射到 0~8）
     grainEnabled: boolean;
-    grainIntensity: number; // 0-100, default 0
+    grainIntensity: number; // 0-1, default 0（内部映射到 0~50）
 }
 
 // ======== Renderer State (module-level) ========
@@ -116,7 +116,7 @@ export function getRenderState(): RenderState {
     const cam = _scene.activeCamera;
     return {
         bloomEnabled: pipeline.bloomEnabled,
-        bloomWeight: pipeline.bloomWeight ?? 0.3,
+        bloomWeight: pipeline.bloomWeight ?? 0,
         bloomThreshold: pipeline.bloomThreshold ?? 0.5,
         bloomKernel: pipeline.bloomKernel ?? 64,
         outlineEnabled: _outlineEnabled,
@@ -129,20 +129,21 @@ export function getRenderState(): RenderState {
         fov: cam ? (cam.fov ?? 0.8) : 0.8,
         bgColor: [_scene.clearColor.r, _scene.clearColor.g, _scene.clearColor.b],
         dofEnabled: pipeline.depthOfFieldEnabled,
-        dofAperture: pipeline.depthOfField?.fStop ?? 0.5,
+        // fStop 0.5~10 → 归一化 0~1（0=最大虚化 fStop=0.5, 1=无虚化 fStop=10）
+        dofAperture: pipeline.depthOfField ? clamp((pipeline.depthOfField.fStop - 0.5) / 9.5, 0, 1) : 0,
         vignetteEnabled: pipeline.imageProcessing.vignetteEnabled ?? false,
-        vignetteDarkness: pipeline.imageProcessing.vignetteWeight ?? 0.5,
+        vignetteDarkness: pipeline.imageProcessing.vignetteWeight ?? 0,
         chromaticAberrationEnabled: pipeline.chromaticAberrationEnabled ?? false,
-        chromaticAberrationAmount: pipeline.chromaticAberration?.aberrationAmount ?? 0,
+        chromaticAberrationAmount: pipeline.chromaticAberration ? clamp(pipeline.chromaticAberration.aberrationAmount / 8, 0, 1) : 0,
         grainEnabled: pipeline.grainEnabled ?? false,
-        grainIntensity: pipeline.grain?.intensity ?? 0,
+        grainIntensity: pipeline.grain ? clamp(pipeline.grain.intensity / 50, 0, 1) : 0,
     };
 }
 
 function _defaultRenderState(): RenderState {
     return {
         bloomEnabled: false,
-        bloomWeight: 0.3,
+        bloomWeight: 0,
         bloomThreshold: 0.5,
         bloomKernel: 64,
         outlineEnabled: false,
@@ -155,9 +156,9 @@ function _defaultRenderState(): RenderState {
         fov: 0.8,
         bgColor: [0.12, 0.12, 0.16],
         dofEnabled: false,
-        dofAperture: 0.5,
+        dofAperture: 0,
         vignetteEnabled: false,
-        vignetteDarkness: 0.5,
+        vignetteDarkness: 0,
         chromaticAberrationEnabled: false,
         chromaticAberrationAmount: 0,
         grainEnabled: false,
@@ -177,17 +178,17 @@ function _applyRenderState(s: Partial<RenderState>): void {
         return;
     }
 
-    // 数值钳制
+    // 数值钳制（全部 0-1 归一化范围）
     const w = s.bloomWeight !== undefined ? clamp(s.bloomWeight, 0, 1) : undefined;
     const th = s.bloomThreshold !== undefined ? clamp(s.bloomThreshold, 0, 1) : undefined;
-    const k = s.bloomKernel !== undefined ? clamp(s.bloomKernel, 0, 512) : undefined;
+    const k = s.bloomKernel !== undefined ? clamp(s.bloomKernel, 16, 256) : undefined;
     const e = s.exposure !== undefined ? clamp(s.exposure, 0, 4) : undefined;
     const c = s.contrast !== undefined ? clamp(s.contrast, 0, 4) : undefined;
     const f = s.fov !== undefined ? clamp(s.fov, 0.1, 3) : undefined;
-    const da = s.dofAperture !== undefined ? clamp(s.dofAperture, 0.1, 32) : undefined;
+    const da = s.dofAperture !== undefined ? clamp(s.dofAperture, 0, 1) : undefined;
     const vd = s.vignetteDarkness !== undefined ? clamp(s.vignetteDarkness, 0, 1) : undefined;
-    const ca = s.chromaticAberrationAmount !== undefined ? clamp(s.chromaticAberrationAmount, 0, 20) : undefined;
-    const gi = s.grainIntensity !== undefined ? clamp(s.grainIntensity, 0, 100) : undefined;
+    const ca = s.chromaticAberrationAmount !== undefined ? clamp(s.chromaticAberrationAmount, 0, 1) : undefined;
+    const gi = s.grainIntensity !== undefined ? clamp(s.grainIntensity, 0, 1) : undefined;
 
     // Post-processing
     if (s.bloomEnabled !== undefined) {
@@ -241,12 +242,12 @@ function _applyRenderState(s: Partial<RenderState>): void {
         }
     }
 
-    // DOF — 可选链保护
+    // DOF — 可选链保护（0-1 → fStop 0.5~10）
     if (s.dofEnabled !== undefined) {
         pipeline.depthOfFieldEnabled = s.dofEnabled;
     }
     if (da !== undefined && pipeline.depthOfField) {
-        pipeline.depthOfField.fStop = da;
+        pipeline.depthOfField.fStop = 0.5 + da * 9.5;
     }
 
     // Vignette
@@ -257,20 +258,20 @@ function _applyRenderState(s: Partial<RenderState>): void {
         pipeline.imageProcessing.vignetteWeight = vd;
     }
 
-    // Chromatic Aberration
+    // Chromatic Aberration（0-1 → 0~8）
     if (s.chromaticAberrationEnabled !== undefined) {
         pipeline.chromaticAberrationEnabled = s.chromaticAberrationEnabled;
     }
     if (ca !== undefined && pipeline.chromaticAberration) {
-        pipeline.chromaticAberration.aberrationAmount = ca;
+        pipeline.chromaticAberration.aberrationAmount = ca * 8;
     }
 
-    // Grain
+    // Grain（0-1 → 0~50）
     if (s.grainEnabled !== undefined) {
         pipeline.grainEnabled = s.grainEnabled;
     }
     if (gi !== undefined && pipeline.grain) {
-        pipeline.grain.intensity = gi;
+        pipeline.grain.intensity = gi * 50;
     }
 
     // Stage / imageProcessing

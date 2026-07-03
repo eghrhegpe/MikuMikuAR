@@ -1072,14 +1072,14 @@ function buildPostProcessLevel(): PopupLevel {
                     'lucide:scan-line'
                 );
 
-                // 景深（光圈=0 即关闭）
+                // 景深（0=无虚化, 1=最大虚化，内部映射到 fStop）
                 addSliderRow(
                     c,
                     '景深',
                     state.dofAperture,
                     0,
-                    10,
-                    0.1,
+                    1,
+                    0.05,
                     () => {},
                     'lucide:camera',
                     (v) => {
@@ -1104,14 +1104,14 @@ function buildPostProcessLevel(): PopupLevel {
                     }
                 );
 
-                // 色差（量=0 即关闭）
+                // 色差（0=无色差, 1=最大色差）
                 addSliderRow(
                     c,
                     '色差',
                     state.chromaticAberrationAmount,
                     0,
-                    8,
-                    0.2,
+                    1,
+                    0.05,
                     () => {},
                     'lucide:rainbow',
                     (v) => {
@@ -1123,14 +1123,14 @@ function buildPostProcessLevel(): PopupLevel {
                     }
                 );
 
-                // 颗粒（强度=0 即关闭）
+                // 颗粒（0=无颗粒, 1=最大颗粒）
                 addSliderRow(
                     c,
                     '颗粒',
                     state.grainIntensity,
                     0,
-                    50,
-                    2,
+                    1,
+                    0.05,
                     () => {},
                     'lucide:grid-3x3',
                     (v) => {
@@ -1308,7 +1308,7 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         vignetteEnabled: true,
         vignetteDarkness: 0.4,
         dofEnabled: true,
-        dofAperture: 1.5,
+        dofAperture: 0.15, // 内部映射到 fStop ≈ 1.9
         bgColor: [0.08, 0.08, 0.12],
     },
     warm: {
@@ -1339,9 +1339,9 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         vignetteEnabled: true,
         vignetteDarkness: 0.6,
         chromaticAberrationEnabled: true,
-        chromaticAberrationAmount: 2,
+        chromaticAberrationAmount: 0.25, // 内部映射到 2
         grainEnabled: true,
-        grainIntensity: 15,
+        grainIntensity: 0.3, // 内部映射到 15
         bgColor: [0.02, 0.02, 0.06],
     },
 };

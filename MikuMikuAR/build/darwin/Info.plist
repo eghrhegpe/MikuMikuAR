@@ -42,7 +42,7 @@
 			</dict>
 		</array>
 		<key>CFBundleExecutable</key>
-		<string>MikuMikuAR</string>
+		<string/>
 		<key>CFBundleGetInfoString</key>
 		<string>MikuMikuAR — PMX Player</string>
 		<key>CFBundleIconFile</key>
