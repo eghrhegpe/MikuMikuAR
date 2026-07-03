@@ -136,7 +136,6 @@ jobs:
     needs: prepare
     runs-on: windows-latest
     timeout-minutes: 30
-    if: false
     defaults:
       run:
         shell: pwsh
@@ -182,18 +181,28 @@ jobs:
           npm ci
           npx vite build
 
-      - name: Decode keystore
-        if: github.event.inputs.skip_sign != 'true'
+      - name: Decode keystore (if available)
         run: |
           $dir = "${{ github.workspace }}\build\android\keystore"
           New-Item -ItemType Directory -Path $dir -Force | Out-Null
           $file = "$dir\release.keystore"
           $b64 = '${{ secrets.ANDROID_KEYSTORE_BASE64 }}'
-          if ([string]::IsNullOrWhiteSpace($b64)) { Write-Error "ANDROID_KEYSTORE_BASE64 empty"; exit 1 }
+          if ([string]::IsNullOrWhiteSpace($b64)) {
+            Write-Output "ANDROID_KEYSTORE_BASE64 not set — skipping signed build"
+            return
+          }
           [System.Convert]::FromBase64String($b64) | Set-Content $file -Encoding Byte -NoNewline
+          Write-Output "Keystore decoded"
 
-      - name: Build Android (Release)
-        if: github.event.inputs.skip_sign != 'true'
+      - name: Check keystore exists
+        id: check_ks
+        run: |
+          $ks = "${{ github.workspace }}\build\android\keystore\release.keystore"
+          if (Test-Path $ks) { echo "has_keystore=true" >> $env:GITHUB_OUTPUT }
+          else { echo "has_keystore=false" >> $env:GITHUB_OUTPUT }
+
+      - name: Build Android (Release, signed)
+        if: steps.check_ks.outputs.has_keystore == 'true' && github.event.inputs.skip_sign != 'true'
         env:
           ANDROID_KEYSTORE_FILE: ${{ github.workspace }}\build\android\keystore\release.keystore
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -203,7 +212,7 @@ jobs:
           powershell -ExecutionPolicy Bypass -File scripts\build-android.ps1 -Arch arm64 -Production
 
       - name: Build Android (Debug, no sign)
-        if: github.event.inputs.skip_sign == 'true'
+        if: steps.check_ks.outputs.has_keystore != 'true' || github.event.inputs.skip_sign == 'true'
         run: |
           powershell -ExecutionPolicy Bypass -File scripts\build-android.ps1 -Arch arm64
 
@@ -217,7 +226,7 @@ jobs:
   # ── 合并发布 ───────────────────────────────────────────
   release:
     name: GitHub Release
-    needs: [prepare, build-windows, build-linux]
+    needs: [prepare, build-windows, build-linux, build-android]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
