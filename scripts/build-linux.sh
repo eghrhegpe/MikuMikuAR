@@ -51,7 +51,7 @@ if [ "$PRODUCTION" = true ]; then
 fi
 
 echo "[build-linux] 编译 Go (tags=$BUILD_TAGS, ldflags=$LDFLAGS)..."
-wails3 build -platform linux/amd64 -ldflags "$LDFLAGS"
+wails3 build -ldflags "$LDFLAGS"
 
 # 重命名产物
 DIST_DIR="$REPO_ROOT/dist"

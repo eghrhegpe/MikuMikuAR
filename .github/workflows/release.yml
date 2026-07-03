@@ -49,7 +49,7 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        shell: powershell
+        shell: pwsh
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
