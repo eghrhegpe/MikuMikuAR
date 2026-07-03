@@ -76,6 +76,18 @@ export default [
       'brace-style': ['warn', '1tbs'],
       quotes: ['warn', 'single', { avoidEscape: true }],
       semi: ['warn', 'always'],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/wailsjs/go/**', '**/wailsjs/runtime/**'],
+              message:
+                "Import from '../core/wails-bindings' instead of directly from wailsjs/.",
+            },
+          ],
+        },
+      ],
       indent: 'off',
       'linebreak-style': ['warn', 'unix'],
       'prettier/prettier': [
@@ -94,6 +106,12 @@ export default [
           quoteProps: 'consistent',
         },
       ],
+    },
+  },
+  {
+    files: ['src/core/wails-bindings.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
   {

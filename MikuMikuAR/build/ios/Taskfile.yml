@@ -1,0 +1,17 @@
+version: '3'
+
+includes:
+  common: ../Taskfile.yml
+
+tasks:
+  build:
+    summary: Builds the application for iOS
+    deps:
+      - task: common:build:frontend
+    cmds:
+      - echo "iOS build requires Xcode on macOS"
+
+  package:
+    summary: Packages the application
+    cmds:
+      - task: build

@@ -1,0 +1,17 @@
+version: '3'
+
+includes:
+  common: ../Taskfile.yml
+
+tasks:
+  build:
+    summary: Builds the application for Android
+    deps:
+      - task: common:build:frontend
+    cmds:
+      - echo "Android build requires Android SDK"
+
+  package:
+    summary: Packages the application
+    cmds:
+      - task: build

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // SaveModelPreset writes a JSON model preset file to the given path.
@@ -26,20 +26,18 @@ func (a *App) LoadModelPreset(path string) (string, error) {
 
 // SelectPresetSaveFile opens a save dialog for model preset files.
 func (a *App) SelectPresetSaveFile() (string, error) {
-	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-		Title:           "保存模型预设",
-		DefaultFilename: "preset.mcupreset.json",
-		Filters: []runtime.FileFilter{
-			{
-				DisplayName: "MikuMikuAR Model Preset (*.mcupreset.json)",
-				Pattern:     "*.mcupreset.json",
-			},
-			{
-				DisplayName: "All Files (*.*)",
-				Pattern:     "*.*",
-			},
+	if a.wailsApp == nil {
+		return "", fmt.Errorf("application not initialized")
+	}
+	dialog := a.wailsApp.Dialog.SaveFileWithOptions(&application.SaveFileDialogOptions{
+		Title:    "保存模型预设",
+		Filename: "preset.mcupreset.json",
+		Filters: []application.FileFilter{
+			{DisplayName: "MikuMikuAR Model Preset (*.mcupreset.json)", Pattern: "*.mcupreset.json"},
+			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 		},
 	})
+	path, err := dialog.PromptForSingleSelection()
 	if err != nil {
 		return "", err
 	}
@@ -48,7 +46,7 @@ func (a *App) SelectPresetSaveFile() (string, error) {
 
 // SelectPresetOpenFile opens a file dialog to pick a model preset file.
 func (a *App) SelectPresetOpenFile() (string, error) {
-	return a.openFileDialog("加载模型预设", []runtime.FileFilter{
+	return a.openFileDialog("加载模型预设", []application.FileFilter{
 		{
 			DisplayName: "MikuMikuAR Model Preset (*.mcupreset.json)",
 			Pattern:     "*.mcupreset.json",

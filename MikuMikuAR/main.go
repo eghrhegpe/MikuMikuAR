@@ -1,43 +1,43 @@
 package main
 
 import (
-	"context"
 	"embed"
-	"time"
+	"log"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
 	app := NewApp()
 
-	// Create application with options
-	err := wails.Run(&options.App{
-		Title:     "MikuMikuAR — PMX 播放器",
-		Width:     1280,
-		Height:    800,
-		MinWidth:  800,
-		MinHeight: 600,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
+	wailsApp := application.New(application.Options{
+		Name:        "MikuMikuAR",
+		Description: "PMX Player with physics simulation",
+		Services: []application.Service{
+			application.NewService(app),
 		},
-		BackgroundColour: &options.RGBA{R: 30, G: 30, B: 40, A: 1},
-		OnStartup:        app.startup,
-		OnShutdown: func(ctx context.Context) {
-			_ = app.shutdownWithTimeout(ctx, 5*time.Second)
-		},
-		Bind: []interface{}{
-			app,
+		Assets: application.AssetOptions{
+			Handler: application.AssetFileServerFS(assets),
 		},
 	})
 
+	wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title:         "MikuMikuAR — PMX 播放器",
+		Width:         1280,
+		Height:        800,
+		MinWidth:      800,
+		MinHeight:     600,
+		BackgroundColour: application.NewRGBA(30, 30, 40, 255),
+		URL:           "/",
+	})
+
+	app.wailsApp = wailsApp
+
+	err := wailsApp.Run()
 	if err != nil {
-		println("Error:", err.Error())
+		log.Fatal(err)
 	}
 }

@@ -334,7 +334,7 @@ export function applyEnvPresetObject(preset: {
         if (t >= 1) {
             setSkipLightAutoSave(false);
             setRenderState({ exposure: preset.exposure, toneMapping: preset.toneMapping });
-            SetEnvState(envState as unknown as import('../core/wails-bindings').main.EnvState).catch(() => {});
+            SetEnvState(envState as unknown as import('../core/wails-bindings').EnvState).catch(() => {});
             triggerAutoSave();
         } else {
             requestAnimationFrame(animLoop);
@@ -359,7 +359,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         clearTimeout(_envPersistTimer);
     }
     _envPersistTimer = setTimeout(() => {
-        SetEnvState(envState as unknown as import('../core/wails-bindings').main.EnvState).catch(() => {});
+        SetEnvState(envState as unknown as import('../core/wails-bindings').EnvState).catch(() => {});
     }, 500);
 
     if (!skipAutoSave) {

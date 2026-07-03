@@ -7,7 +7,7 @@
       "ESNext",
       "DOM"
     ],
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "strict": false,
     "sourceMap": true,
     "resolveJsonModule": true,
@@ -20,6 +20,7 @@
     "skipLibCheck": true
   },
   "include": [
-    "src"
+    "src",
+    "bindings"
   ]
 }

@@ -67,7 +67,7 @@ export async function addCustomSoftware(): Promise<boolean> {
     }
 }
 
-let cachedSoftwareEntries: import('../core/wails-bindings').main.SoftwareEntry[] | null = null;
+let cachedSoftwareEntries: import('../core/wails-bindings').SoftwareEntry[] | null = null;
 
 export async function scanSoftwareDir(): Promise<void> {
     try {

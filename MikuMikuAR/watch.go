@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // ======== Download Directory Watching (ADR-008) ========
@@ -253,7 +252,9 @@ func (a *App) notifyNewFile(filePath string) {
 		"name": name,
 		"type": fileType,
 	}
-	runtime.EventsEmit(a.ctx, "watch:newfile", payload)
+	if a.wailsApp != nil {
+		a.wailsApp.Event.Emit("watch:newfile", payload)
+	}
 }
 
 // restoreWatcher resumes directory watching from saved config on startup.

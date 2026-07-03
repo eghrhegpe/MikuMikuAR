@@ -54,7 +54,7 @@ import {
     OpenWithSoftware,
     ScanSoftwareDir,
 } from '../core/wails-bindings';
-import type { main } from '../core/wails-bindings';
+import type { SoftwareEntry } from '../core/wails-bindings';
 
 // ======== Open With (software tools submenu) ========
 
@@ -65,7 +65,7 @@ export function buildOpenWithLevel(id: string): PopupLevel {
         items: [],
         renderCustom: async (container) => {
             container.classList.remove('render-card');
-            let entries: main.SoftwareEntry[];
+            let entries: SoftwareEntry[];
             try {
                 entries = await ScanSoftwareDir();
             } catch {

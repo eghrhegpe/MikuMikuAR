@@ -1,15 +1,15 @@
 {
 	"fixed": {
-		"file_version": "{{.Info.ProductVersion}}"
+		"file_version": "1.0.0"
 	},
 	"info": {
 		"0000": {
-			"ProductVersion": "{{.Info.ProductVersion}}",
-			"CompanyName": "{{.Info.CompanyName}}",
-			"FileDescription": "{{.Info.ProductName}}",
-			"LegalCopyright": "{{.Info.Copyright}}",
-			"ProductName": "{{.Info.ProductName}}",
-			"Comments": "{{.Info.Comments}}"
+			"ProductVersion": "1.0.0",
+			"CompanyName": "MikuMikuAR",
+			"FileDescription": "PMX Player with physics simulation",
+			"LegalCopyright": "(c) 2025, MikuMikuAR",
+			"ProductName": "MikuMikuAR",
+			"Comments": "MikuMikuAR — PMX Player"
 		}
 	}
 }

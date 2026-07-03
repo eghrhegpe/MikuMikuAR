@@ -1,7 +1,17 @@
-// 统一 Wails binding 入口，隔离框架依赖
-// Go 端新增 binding 自动可见，零维护
-// 未来可在此层加 mock/日志/重试适配器
-
-export * from '../../wailsjs/go/main/App';
-export { OnFileDrop, EventsOn, EventsEmit, BrowserOpenURL } from '../../wailsjs/runtime/runtime';
-export type { main } from '../../wailsjs/go/models';
+export * from '../../bindings/mikumikuar/app';
+export { Events } from '@wailsio/runtime';
+export type {
+    ClothConfig,
+    Config,
+    DanceSet,
+    EnvPresetEntry,
+    EnvState,
+    ExternalPath,
+    ExtractResult,
+    ModelEntry,
+    ModelMeta,
+    ModelPresetEntry,
+    RenderPreset,
+    SoftwareEntry,
+    UIState
+} from '../../bindings/mikumikuar/models';

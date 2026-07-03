@@ -21,7 +21,7 @@ import {
     EnvState,
     formatError,
 } from './config';
-import { GetConfig, ImportZip, ImportLocalFile, OnFileDrop, EventsOn } from './wails-bindings';
+import { GetConfig, ImportZip, ImportLocalFile, Events } from './wails-bindings';
 import {
     initScene,
     engine,
@@ -484,18 +484,6 @@ async function restoreUIState(): Promise<void> {
 // ======== Drag & Drop Import ========
 
 function initDropHandler(): void {
-    // Wails native file drop — receives OS-level file paths
-    OnFileDrop(
-        async (_x: number, _y: number, paths: string[]) => {
-            hideDropOverlay();
-            for (const path of paths) {
-                await handleDropFile(path);
-            }
-        },
-        false // false = full-window drop target, no specific element needed
-    );
-
-    // Visual feedback: show overlay when files are dragged over the window
     let dragCounter = 0;
     window.addEventListener('dragenter', (e) => {
         e.preventDefault();
@@ -513,7 +501,20 @@ function initDropHandler(): void {
         }
     });
     window.addEventListener('dragover', (e) => e.preventDefault());
-    window.addEventListener('drop', hideDropOverlay);
+    window.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        hideDropOverlay();
+        // Wails v2 used to provide file.path on dropped files
+        // Wails v3 may need different handling - check documentation
+        // For now, log the files to see what's available
+        if (e.dataTransfer?.files) {
+            for (const file of Array.from(e.dataTransfer.files)) {
+                // @ts-ignore - Wails v2 provided path property, may need v3-specific handling
+                const path = file.path || file.name;
+                await handleDropFile(path);
+            }
+        }
+    });
 }
 
 function hideDropOverlay(): void {
@@ -577,7 +578,8 @@ startFpsClock();
 // ======== Download Watch Notification ========
 let importToastTimer: ReturnType<typeof setTimeout> | null = null;
 
-EventsOn('watch:newfile', (payload: { path: string; name: string; type: string }) => {
+Events.On('watch:newfile', (ev) => {
+    const payload = ev.data as { path: string; name: string; type: string };
     if (importToastTimer) {
         clearTimeout(importToastTimer);
     }

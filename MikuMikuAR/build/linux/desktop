@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=MikuMikuAR
+Comment=PMX Player with physics simulation
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/MikuMikuAR %u
+Terminal=false
+Type=Application
+Icon=MikuMikuAR
+Categories=Utility;
+StartupWMClass=MikuMikuAR
+
+ 

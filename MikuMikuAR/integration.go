@@ -8,7 +8,7 @@ import (
 	stdruntime "runtime"
 	"strings"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // ======== Blender Integration ========
@@ -338,20 +338,18 @@ func (a *App) LoadSceneFile(path string) (string, error) {
 
 // SelectSceneSaveFile opens a save dialog for scene files.
 func (a *App) SelectSceneSaveFile() (string, error) {
-	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-		Title:           "保存场景",
-		DefaultFilename: "scene.mmascene",
-		Filters: []runtime.FileFilter{
-			{
-				DisplayName: "MikuMikuAR Scene (*.mmascene)",
-				Pattern:     "*.mmascene",
-			},
-			{
-				DisplayName: "All Files (*.*)",
-				Pattern:     "*.*",
-			},
+	if a.wailsApp == nil {
+		return "", fmt.Errorf("application not initialized")
+	}
+	dialog := a.wailsApp.Dialog.SaveFileWithOptions(&application.SaveFileDialogOptions{
+		Title:    "保存场景",
+		Filename: "scene.mmascene",
+		Filters: []application.FileFilter{
+			{DisplayName: "MikuMikuAR Scene (*.mmascene)", Pattern: "*.mmascene"},
+			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 		},
 	})
+	path, err := dialog.PromptForSingleSelection()
 	if err != nil {
 		return "", err
 	}
@@ -493,7 +491,7 @@ func (a *App) DeleteEnvPreset(name string) error {
 
 // SelectSceneOpenFile opens a file dialog to pick a scene file.
 func (a *App) SelectSceneOpenFile() (string, error) {
-	return a.openFileDialog("加载场景", []runtime.FileFilter{
+	return a.openFileDialog("加载场景", []application.FileFilter{
 		{
 			DisplayName: "MikuMikuAR Scene (*.mmascene)",
 			Pattern:     "*.mmascene",

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -11,33 +12,33 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-// safeLogInfo calls runtime.LogInfof only if a.ctx is non-nil (safe for tests).
+// safeLogInfo logs info message if wailsApp is available.
 func (a *App) safeLogInfo(format string, args ...interface{}) {
-	if a.ctx != nil {
-		runtime.LogInfof(a.ctx, format, args...)
+	if a.wailsApp != nil {
+		slog.Info(fmt.Sprintf(format, args...))
 	}
 }
 
-// safeLogWarning calls runtime.LogWarningf only if a.ctx is non-nil (safe for tests).
+// safeLogWarning logs warning message if wailsApp is available.
 func (a *App) safeLogWarning(format string, args ...interface{}) {
-	if a.ctx != nil {
-		runtime.LogWarningf(a.ctx, format, args...)
+	if a.wailsApp != nil {
+		slog.Warn(fmt.Sprintf(format, args...))
 	}
 }
 
-// safeLogError calls runtime.LogErrorf only if a.ctx is non-nil (safe for tests).
+// safeLogError logs error message if wailsApp is available.
 func (a *App) safeLogError(format string, args ...interface{}) {
-	if a.ctx != nil {
-		runtime.LogErrorf(a.ctx, format, args...)
+	if a.wailsApp != nil {
+		slog.Error(fmt.Sprintf(format, args...))
 	}
 }
 
 // App struct
 type App struct {
-	ctx         context.Context
+	wailsApp    *application.App
 	httpServers map[string]*httpServerInfo // keyed by dirPath
 	httpSrvMu   sync.Mutex
 	configMu    sync.Mutex // guards GetConfig/writeConfig sequences
@@ -64,38 +65,15 @@ func NewApp() *App {
 	}
 }
 
-// shutdown cleans up resources when the app exits:
-// stops the directory watcher and gracefully shuts down all HTTP file servers.
-func (a *App) shutdown(ctx context.Context) {
-	// Stop download directory watcher
-	a.watchMu.Lock()
-	if a.watcher != nil {
-		a.watcher.Close()
-		a.watcher = nil
-	}
-	if a.watchTimer != nil {
-		a.watchTimer.Stop()
-		a.watchTimer = nil
-	}
-	a.watchPending = nil
-	a.watchMu.Unlock()
-
-	// Gracefully shut down all HTTP file servers
-	a.httpSrvMu.Lock()
-	for dir, info := range a.httpServers {
-		_ = info.server.Shutdown(ctx)
-		delete(a.httpServers, dir)
-	}
-	a.httpSrvMu.Unlock()
+// ServiceStartup implements application.ServiceStartup interface.
+func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
+	// Restore download directory watching from saved config
+	a.restoreWatcher()
+	return nil
 }
 
-// shutdownWithTimeout shuts down all resources with a total timeout.
-// HTTP servers are shut down concurrently. Returns the first error encountered.
-func (a *App) shutdownWithTimeout(ctx context.Context, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	// Stop watcher (synchronous, fast)
+// ServiceShutdown implements application.ServiceShutdown interface.
+func (a *App) ServiceShutdown() error {
 	a.watchMu.Lock()
 	if a.watcher != nil {
 		a.watcher.Close()
@@ -108,19 +86,20 @@ func (a *App) shutdownWithTimeout(ctx context.Context, timeout time.Duration) er
 	a.watchPending = nil
 	a.watchMu.Unlock()
 
-	// Shut down HTTP servers concurrently
 	a.httpSrvMu.Lock()
 	servers := make([]*http.Server, 0, len(a.httpServers))
 	for _, info := range a.httpServers {
 		servers = append(servers, info.server)
 	}
-	// Clear map early; actual shutdown happens concurrently
 	a.httpServers = make(map[string]*httpServerInfo)
 	a.httpSrvMu.Unlock()
 
 	if len(servers) == 0 {
 		return nil
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(servers))
@@ -148,20 +127,18 @@ func (a *App) shutdownWithTimeout(ctx context.Context, timeout time.Duration) er
 	return firstErr
 }
 
-// startup is called when the app starts. The context is saved
-// so we can call the runtime methods
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-	// Restore download directory watching from saved config
-	a.restoreWatcher()
-}
-
 // openFileDialog is a shared helper for selecting files via OS dialog.
-func (a *App) openFileDialog(title string, filters []runtime.FileFilter) (string, error) {
-	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title:   title,
-		Filters: filters,
-	})
+func (a *App) openFileDialog(title string, filters []application.FileFilter) (string, error) {
+	if a.wailsApp == nil {
+		return "", fmt.Errorf("application not initialized")
+	}
+	dialog := a.wailsApp.Dialog.OpenFile()
+	dialog.SetTitle(title)
+	dialog.CanChooseFiles(true)
+	for _, f := range filters {
+		dialog.AddFilter(f.DisplayName, f.Pattern)
+	}
+	path, err := dialog.PromptForSingleSelection()
 	if err != nil {
 		return "", err
 	}
@@ -170,7 +147,7 @@ func (a *App) openFileDialog(title string, filters []runtime.FileFilter) (string
 
 // SelectPMXFile opens a file dialog to select a PMX file
 func (a *App) SelectPMXFile() (string, error) {
-	return a.openFileDialog("选择 PMX 模型文件", []runtime.FileFilter{
+	return a.openFileDialog("选择 PMX 模型文件", []application.FileFilter{
 		{DisplayName: "PMX Model (*.pmx)", Pattern: "*.pmx"},
 		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 	})
@@ -178,7 +155,7 @@ func (a *App) SelectPMXFile() (string, error) {
 
 // SelectVMDMotion opens a file dialog to select a VMD motion file
 func (a *App) SelectVMDMotion() (string, error) {
-	return a.openFileDialog("选择 VMD 动作文件", []runtime.FileFilter{
+	return a.openFileDialog("选择 VMD 动作文件", []application.FileFilter{
 		{DisplayName: "VMD Motion (*.vmd)", Pattern: "*.vmd"},
 		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 	})
@@ -186,7 +163,7 @@ func (a *App) SelectVMDMotion() (string, error) {
 
 // SelectVPDPose opens a file dialog to select a VPD pose file
 func (a *App) SelectVPDPose() (string, error) {
-	return a.openFileDialog("选择 VPD 姿势文件", []runtime.FileFilter{
+	return a.openFileDialog("选择 VPD 姿势文件", []application.FileFilter{
 		{DisplayName: "VPD Pose (*.vpd)", Pattern: "*.vpd"},
 		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 	})
@@ -194,7 +171,7 @@ func (a *App) SelectVPDPose() (string, error) {
 
 // SelectAudioFile opens a file dialog to select an audio file
 func (a *App) SelectAudioFile() (string, error) {
-	return a.openFileDialog("选择音乐文件", []runtime.FileFilter{
+	return a.openFileDialog("选择音乐文件", []application.FileFilter{
 		{DisplayName: "Audio Files (*.mp3 *.wav *.ogg)", Pattern: "*.mp3;*.wav;*.ogg"},
 		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 	})
@@ -202,7 +179,7 @@ func (a *App) SelectAudioFile() (string, error) {
 
 // SelectEnvTextureFile opens a file dialog to select an environment/skybox texture.
 func (a *App) SelectEnvTextureFile() (string, error) {
-	return a.openFileDialog("选择环境贴图", []runtime.FileFilter{
+	return a.openFileDialog("选择环境贴图", []application.FileFilter{
 		{DisplayName: "Environment Map (*.hdr *.dds *.exr)", Pattern: "*.hdr;*.dds;*.exr"},
 		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 	})
@@ -210,7 +187,7 @@ func (a *App) SelectEnvTextureFile() (string, error) {
 
 // SelectExeFile opens a file dialog to select an executable file.
 func (a *App) SelectExeFile() (string, error) {
-	return a.openFileDialog("选择可执行文件", []runtime.FileFilter{
+	return a.openFileDialog("选择可执行文件", []application.FileFilter{
 		{DisplayName: "Executable (*.exe)", Pattern: "*.exe"},
 		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 	})

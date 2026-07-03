@@ -2,20 +2,26 @@ package main
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/sync/errgroup"
 )
 
 // SelectDir opens a directory picker dialog.
 func (a *App) SelectDir() (string, error) {
-	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "选择模型库根目录",
-	})
+	if a.wailsApp == nil {
+		return "", fmt.Errorf("application not initialized")
+	}
+	dialog := a.wailsApp.Dialog.OpenFile()
+	dialog.SetTitle("选择模型库根目录")
+	dialog.CanChooseDirectories(true)
+	dialog.CanChooseFiles(false)
+	path, err := dialog.PromptForSingleSelection()
 	if err != nil {
 		return "", err
 	}
@@ -46,7 +52,7 @@ func (a *App) scanModelDirUnsafe(root string, external []ExternalPath) ([]ModelE
 	}
 
 	// Parallel scan using errgroup — each root's I/O is independent
-	g, ctx := errgroup.WithContext(a.ctx)
+	g, ctx := errgroup.WithContext(context.Background())
 	g.SetLimit(4) // cap concurrent directory scans
 
 	results := make([][]ModelEntry, len(roots))
