@@ -8,7 +8,7 @@ param(
 
 # 解析项目目录（脚本位于仓库根目录的 scripts/ 下）
 $scriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectDir = Resolve-Path "$scriptsDir\..\MikuMikuAR" | Select-Object -ExpandProperty Path
+$projectDir = Resolve-Path "$scriptsDir\.." | Select-Object -ExpandProperty Path
 
 # SDK / NDK 自动定位
 $sdkDir = [Environment]::GetEnvironmentVariable("ANDROID_HOME", "User")

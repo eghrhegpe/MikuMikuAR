@@ -3,7 +3,7 @@ plugins {
 }
 
 // 从 package.json 读取版本号（单一源）
-def pkgJson = new groovy.json.JsonSlurper().parseText(file('../../../../package.json').text)
+def pkgJson = new groovy.json.JsonSlurper().parseText(file('../../../package.json').text)
 def pkgVersion = pkgJson.version as String
 // versionCode: 将 "1.2.3" 转为 10203（每位补零到2位，预留3位给 patch）
 def versionParts = pkgVersion.split('\\.')
