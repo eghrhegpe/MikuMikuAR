@@ -1,0 +1,53 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:dev": "vite build",
+    "check": "tsc --noEmit",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint src --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,json,md}\"",
+    "audit": "npm audit --audit-level=high",
+    "outdated": "npm outdated"
+  },
+  "devDependencies": {
+    "@iconify/icons-lucide": "^1.2.135",
+    "@playwright/test": "^1.61.1",
+    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/parser": "^8.62.1",
+    "@vitest/coverage-v8": "^4.1.9",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-prettier": "^5.5.6",
+    "globals": "^17.7.0",
+    "happy-dom": "^20.10.6",
+    "playwright": "^1.61.1",
+    "prettier": "^3.9.4",
+    "rollup-plugin-visualizer": "^5.13.1",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.3",
+    "vitest": "^4.1.9"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^9.14.0",
+    "@babylonjs/materials": "^9.14.0",
+    "@iconify/iconify": "^3.1.1",
+    "@wailsio/runtime": "^3.0.0-alpha.95",
+    "babylon-mmd": "^1.2.0",
+    "encoding-japanese": "^2.2.0",
+    "iconify-icon": "^3.0.2"
+  }
+}

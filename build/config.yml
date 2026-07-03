@@ -1,0 +1,52 @@
+version: '3'
+
+info:
+  companyName: "MikuMikuAR"
+  productName: "MikuMikuAR"
+  productIdentifier: "com.mikumikuar.app"
+  description: "PMX Player with physics simulation"
+  copyright: "(c) 2025, MikuMikuAR"
+  comments: "MikuMikuAR — PMX Player"
+  version: "1.0.0"
+
+dev_mode:
+  root_path: .
+  log_level: warn
+  debounce: 1000
+  ignore:
+    dir:
+      - .git
+      - node_modules
+      - frontend/node_modules
+      - bin
+    file:
+      - .DS_Store
+      - .gitignore
+      - .gitkeep
+      - "*_test.go"
+    watched_extension:
+      - "*.go"
+      - "*.js"
+      - "*.ts"
+    git_ignore: true
+  executes:
+    - cmd: wails3 build DEV=true
+      type: blocking
+    - cmd: wails3 task common:dev:frontend
+      type: background
+    - cmd: wails3 task run
+      type: primary
+
+fileAssociations:
+  - ext: pmx
+    name: PMX Model
+    description: PMX Model File
+    role: Viewer
+  - ext: vmd
+    name: VMD Motion
+    description: VMD Motion File
+    role: Viewer
+  - ext: mmascene
+    name: MikuMikuAR Scene
+    description: MikuMikuAR Scene File
+    role: Editor

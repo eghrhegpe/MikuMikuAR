@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MikuMikuAR
+GenericName=3D Model Viewer
+Comment=PMX model player with real-time physics simulation
+Exec=/usr/local/bin/MikuMikuAR %u
+Icon=mikuMikuAR
+Terminal=false
+Categories=Utility;Graphics;3DGraphics;
+StartupWMClass=MikuMikuAR
+MimeType=application/x-pmx;application/x-vmd;application/x-mmascene;
+Keywords=pmx;mmd;mikumikudance;3d;model;animation;

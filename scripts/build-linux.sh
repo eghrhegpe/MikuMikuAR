@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PROJECT_DIR="$REPO_ROOT/MikuMikuAR"
+PROJECT_DIR="$REPO_ROOT"
 
 PRODUCTION=false
 CLEAN=false
@@ -57,7 +57,7 @@ wails3 build -ldflags "$LDFLAGS"
 DIST_DIR="$REPO_ROOT/dist"
 mkdir -p "$DIST_DIR"
 
-SRC_BIN="$PROJECT_DIR/bin/MikuMikuAR"
+SRC_BIN="$PROJECT_DIR/bin"
 DST_BIN="$DIST_DIR/mikumikuar-$VERSION-linux-amd64"
 
 if [ -f "$SRC_BIN" ]; then

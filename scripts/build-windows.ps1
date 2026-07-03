@@ -7,7 +7,7 @@ param(
 
 $scriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path "$scriptsDir\.." | Select-Object -ExpandProperty Path
-$projectDir = "$repoRoot\MikuMikuAR"
+$projectDir = "$repoRoot\"
 
 # 读取版本号
 $pkgJson = Get-Content "$repoRoot\package.json" -Raw | ConvertFrom-Json
@@ -56,9 +56,9 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $distDir = "$repoRoot\dist"
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$exeName = "MikuMikuAR.exe"
+$exeName = ".exe"
 $srcExe = "$projectDir\bin\$exeName"
-$dstExe = "$distDir\MikuMikuAR-$version-windows-amd64.exe"
+$dstExe = "$distDir\-$version-windows-amd64.exe"
 
 if (Test-Path $srcExe) {
     Copy-Item $srcExe $dstExe -Force

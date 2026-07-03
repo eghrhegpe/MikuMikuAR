@@ -1,0 +1,90 @@
+// lipsync.ts — 实时振幅驱动 LipSync
+// [doc:architecture] LipSync 子系统 — 振幅→口型 morph
+//
+// 每帧从 BeatDetector.getLevel 取人声频段能量 → amplitudeToWeight 映射 →
+// setModelMorphWeight 直写焦点模型的「あ」morph。
+// 与 procedural motion 不冲突：前者只控「まばたき」(VMD 帧)，本模块只控「あ」(实时直写)。
+
+export interface LipSyncState {
+    enabled: boolean;
+    sensitivity: number; // 0..1，振幅阈值（低于此值视为静音，越大越不敏感）
+    intensity: number; // 0..1，最大张嘴幅度
+    multiMorphEnabled: boolean; // true=驱动多口型 morph（P0 开关）
+}
+
+export const DEFAULT_LIPSYNC_STATE: LipSyncState = {
+    enabled: false,
+    sensitivity: 0.2,
+    intensity: 0.8,
+    multiMorphEnabled: false,
+};
+
+/** 标准 MMD 口型 morph 候选名（按优先级降序）。
+ *  绝大多数 MMD 模型使用「あ」；少数使用片假名「ア」或拉丁字母。 */
+const LIP_MORPH_CANDIDATES = ['あ', 'ア', 'A', 'a', '口', 'mouth', 'open'];
+
+/** 在模型 morph 列表中查找口型 morph，返回首个匹配名。
+ *  @param morphNames 模型可用 morph 名集合
+ *  @returns 匹配的 morph 名；无匹配返回 null */
+export function findLipMorph(morphNames: string[]): string | null {
+    const set = new Set(morphNames);
+    for (const name of LIP_MORPH_CANDIDATES) {
+        if (set.has(name)) {
+            return name;
+        }
+    }
+    return null;
+}
+
+// ========== 多 Morph LipSync 扩展 ==========
+
+/** 多口型 morph 候选（按音素分类） */
+const MOUTH_MORPHS: Record<string, string[]> = {
+    open:   ['あ', 'ア', 'A', 'a', '口', 'mouth', 'open'],
+    close:  ['い', 'イ', 'I', 'i', 'close'],
+    pucker: ['う', 'ウ', 'U', 'u', 'pucker'],
+    smile:  ['え', 'エ', 'E', 'e', 'smile', 'にこり', '笑い'],
+};
+
+export interface LipSyncMorphSet {
+    open: string | null;
+    close: string | null;
+    pucker: string | null;
+    smile: string | null;
+}
+
+/** 查找模型中所有可用的口型相关 morph。
+ *  @param morphNames 模型可用 morph 名列表
+ *  @returns 各音素对应的 morph 名（无匹配为 null） */
+export function findAllLipMorphs(morphNames: string[]): LipSyncMorphSet {
+    const set = new Set(morphNames);
+    return {
+        open:   MOUTH_MORPHS.open.find((n) => set.has(n)) ?? null,
+        close:  MOUTH_MORPHS.close.find((n) => set.has(n)) ?? null,
+        pucker: MOUTH_MORPHS.pucker.find((n) => set.has(n)) ?? null,
+        smile:  MOUTH_MORPHS.smile.find((n) => set.has(n)) ?? null,
+    };
+}
+
+/** 振幅 → morph 权重映射。
+ *  低于 sensitivity 阈值 → 0；否则线性映射到 0..intensity。
+ *  @param amplitude 0..1 音频能量（可 >1，会被钳制）
+ *  @param sensitivity 0..1 阈值（< 阈值视为静音）
+ *  @param intensity 0..1 最大张嘴幅度
+ *  @returns 0..intensity 的 morph 权重 */
+export function amplitudeToWeight(
+    amplitude: number,
+    sensitivity: number,
+    intensity: number
+): number {
+    if (amplitude < sensitivity) {
+        return 0;
+    }
+    const range = 1 - sensitivity;
+    if (range <= 0) {
+        // sensitivity=1 边界：仅振幅满时张嘴，避免口型常开
+        return amplitude >= 1.0 ? intensity : 0;
+    }
+    const t = Math.max(0, Math.min(1, (amplitude - sensitivity) / range));
+    return t * intensity;
+}

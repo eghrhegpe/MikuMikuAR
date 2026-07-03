@@ -1,0 +1,48 @@
+name: "mikumikuar"
+arch: "${GOARCH:-amd64}"
+platform: "linux"
+version: "1.0.0"
+section: "multimedia"
+priority: "optional"
+maintainer: "${GIT_COMMITTER_NAME:-MikuMikuAR} <${GIT_COMMITTER_EMAIL:-dev@mikumikuar.local}>"
+description: |
+  MikuMikuAR — PMX model player with real-time physics simulation.
+  Supports PMX models, VMD animations, and MMD ecosystems.
+vendor: "MikuMikuAR"
+homepage: "https://github.com/nicegram/MikuMikuAR"
+license: "MIT"
+release: "1"
+
+# Only package the Linux binary, not the entire bin/ directory.
+# This prevents accidentally bundling .exe files from cross-compilation.
+contents:
+  - src: "./bin/MikuMikuAR"
+    dst: "/usr/local/bin/MikuMikuAR"
+    file_info:
+      mode: 0755
+  - src: "./build/appicon.png"
+    dst: "/usr/share/icons/hicolor/128x128/apps/mikuMikuAR.png"
+  - src: "./build/linux/desktop"
+    dst: "/usr/share/applications/mikumikuar.desktop"
+  - src: "./build/linux/mime/mikumikuar.xml"
+    dst: "/usr/share/mime/packages/mikumikuar.xml"
+
+# GTK4 + WebKitGTK 6.0 (Ubuntu 24.04+ / Debian 13+)
+depends:
+  - libgtk-4-1
+  - libwebkitgtk-6.0-4
+
+# Distribution-specific overrides
+overrides:
+  rpm:
+    depends:
+      - gtk4
+      - webkitgtk6.0
+  archlinux:
+    depends:
+      - gtk4
+      - webkitgtk-6.0
+
+scripts:
+  postinstall: "./build/linux/nfpm/scripts/postinstall.sh"
+  postremove: "./build/linux/nfpm/scripts/postremove.sh"
