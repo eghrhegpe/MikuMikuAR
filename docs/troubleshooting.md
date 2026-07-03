@@ -14,8 +14,8 @@
 现已改用 Go HTTP 文件服务器 + `ImportMeshAsync(url)`，不走桥接传递二进制，该问题不再出现。
 
 ### 涉及文件
-- `MikuMikuAR/app.go` — `StartFileServer`（HTTP 文件服务器）
-- `MikuMikuAR/frontend/src/core/main.ts` — `loadPMXFile`（HTTP URL 加载）
+- `app.go` — `StartFileServer`（HTTP 文件服务器）
+- `frontend/src/core/main.ts` — `loadPMXFile`（HTTP URL 加载）
 
 ---
 
@@ -34,7 +34,7 @@ from origin 'http://wails.localhost:34115' has been blocked by CORS policy
 `app.go:StartFileServer` 中的 `corsMiddleware` 给所有响应加 `Access-Control-Allow-Origin: *`。
 
 ### 涉及文件
-- `MikuMikuAR/app.go` — `corsMiddleware` 函数
+- `app.go` — `corsMiddleware` 函数
 
 ---
 
@@ -53,7 +53,7 @@ Vite 预打包 babylon-mmd 时，`new URL('index_bg.wasm', import.meta.url)` 指
 `vite.config.ts` 添加 `optimizeDeps.exclude: ['babylon-mmd']`，让 Vite 跳过预打包，保持原始 import.meta.url 指向源文件位置。
 
 ### 涉及文件
-- `MikuMikuAR/frontend/vite.config.ts`
+- `frontend/vite.config.ts`
 
 ---
 
@@ -78,8 +78,8 @@ Vite 预打包 babylon-mmd 时，`new URL('index_bg.wasm', import.meta.url)` 指
 `wails dev` 控制台搜索 `FS: GET /` 开头的日志，看贴图文件是否被请求及结果状态码。
 
 ### 涉及文件
-- `MikuMikuAR/app.go` — `StartFileServer`（含日志）
-- `MikuMikuAR/frontend/src/core/main.ts` — `init()` 中加载器注册
+- `app.go` — `StartFileServer`（含日志）
+- `frontend/src/core/main.ts` — `init()` 中加载器注册
 
 ---
 
@@ -131,8 +131,8 @@ scene.onAfterRenderObservable.add(() => {
 改 `linkedBone.rotationQuaternion`（局部旋转），手动触发 `updateWorldMatrix` 重算骨骼链，最后 `_markAsDirty` 刷新渲染矩阵。详见 `docs/architecture.md` §10.1。
 
 ### 涉及文件
-- `MikuMikuAR/frontend/src/scene/scene-proc-motion.ts` — gaze observer 实现
-- `MikuMikuAR/frontend/src/scene/scene.ts` — 运行时切换（`VITE_MMD_RUNTIME=js`）
+- `frontend/src/scene/scene-proc-motion.ts` — gaze observer 实现
+- `frontend/src/scene/scene.ts` — 运行时切换（`VITE_MMD_RUNTIME=js`）
 
 ---
 
@@ -179,8 +179,8 @@ console.log(BABYLON.ShaderStore.ShadersStore["textureAlphaCheckerVertexShader"])
 有值即单实例确认。不应再出现 `.fx` 404。
 
 ### 涉及文件
-- `MikuMikuAR/frontend/vite.config.ts` — `optimizeDeps.exclude`
-- `MikuMikuAR/frontend/src/core/main.ts` — 删除 workaround，保留静态 import
+- `frontend/vite.config.ts` — `optimizeDeps.exclude`
+- `frontend/src/core/main.ts` — 删除 workaround，保留静态 import
 
 ---
 
@@ -190,7 +190,7 @@ console.log(BABYLON.ShaderStore.ShadersStore["textureAlphaCheckerVertexShader"])
 ✅ 已修复。链路：`VmdLoader.loadFromBufferAsync()` → `MmdWasmAnimation` → `createRuntimeAnimation()` → `setRuntimeAnimation()` → `seekAnimation()` → `playAnimation()`。
 
 ### 涉及文件
-- `MikuMikuAR/frontend/src/core/main.ts` — `loadVMDMotion` 函数
+- `frontend/src/core/main.ts` — `loadVMDMotion` 函数
 
 ---
 
@@ -220,8 +220,8 @@ console.log(BABYLON.ShaderStore.ShadersStore["textureAlphaCheckerVertexShader"])
 **修复**：`scene-menu.ts:661` — 改为先调用 `SaveRenderPreset` 持久化，成功后再写内存 `userPresets`，无需回滚。
 
 ### 涉及文件
-- `MikuMikuAR/frontend/src/scene/camera.ts` — `switchCameraMode`（#1 #2）
-- `MikuMikuAR/frontend/src/scene/scene.ts` — `getRenderState`/`reattachPipeline`（#3 #4）
-- `MikuMikuAR/frontend/src/menus/scene-menu.ts` — `showPresetSaveDialog`（#5）
+- `frontend/src/scene/camera.ts` — `switchCameraMode`（#1 #2）
+- `frontend/src/scene/scene.ts` — `getRenderState`/`reattachPipeline`（#3 #4）
+- `frontend/src/menus/scene-menu.ts` — `showPresetSaveDialog`（#5）
 
 

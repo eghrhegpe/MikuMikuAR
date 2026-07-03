@@ -16,13 +16,13 @@
 
 | 功能 | 修改 | 说明 |
 |------|------|------|
-| 模型统计信息 | [scene.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene.ts) | 模型加载时统计顶点/面/骨骼数，显示在详情面板 |
-| 批量截图 | [app.go](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/app.go) + [settings.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/settings.ts) | Go 端截屏写入文件，前端「截图」菜单支持批量按模型截图到指定目录 |
-| 最近打开 | [library.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/library.ts) + [config.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/config.ts) | 记录最近 20 个打开模型，根菜单「最近打开」子菜单；空 ref 守卫 + 本地同步避免 UI 不刷新 |
-| 收藏 | [app.go](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/app.go) | 收藏合并到标签系统，自动迁移旧收藏 |
-| 表情预览 | [scene.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene.ts) | 模型详情面板显示面部 morph 滑块，即时触发变形 |
-| 标签管理 | [library.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/library.ts) | 标签增/删/查完整，按标签过滤模型列表 |
-| 音频偏移 | [audio.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/audio.ts) + [scene-menu.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene-menu.ts) | 音频同步偏移滑块 (±5000ms) |
+| 模型统计信息 | [scene.ts](file:///C:/Users/zhujieling11/frontend/src/scene.ts) | 模型加载时统计顶点/面/骨骼数，显示在详情面板 |
+| 批量截图 | [app.go](file:///C:/Users/zhujieling11/app.go) + [settings.ts](file:///C:/Users/zhujieling11/frontend/src/settings.ts) | Go 端截屏写入文件，前端「截图」菜单支持批量按模型截图到指定目录 |
+| 最近打开 | [library.ts](file:///C:/Users/zhujieling11/frontend/src/library.ts) + [config.ts](file:///C:/Users/zhujieling11/frontend/src/config.ts) | 记录最近 20 个打开模型，根菜单「最近打开」子菜单；空 ref 守卫 + 本地同步避免 UI 不刷新 |
+| 收藏 | [app.go](file:///C:/Users/zhujieling11/app.go) | 收藏合并到标签系统，自动迁移旧收藏 |
+| 表情预览 | [scene.ts](file:///C:/Users/zhujieling11/frontend/src/scene.ts) | 模型详情面板显示面部 morph 滑块，即时触发变形 |
+| 标签管理 | [library.ts](file:///C:/Users/zhujieling11/frontend/src/library.ts) | 标签增/删/查完整，按标签过滤模型列表 |
+| 音频偏移 | [audio.ts](file:///C:/Users/zhujieling11/frontend/src/audio.ts) + [scene-menu.ts](file:///C:/Users/zhujieling11/frontend/src/scene-menu.ts) | 音频同步偏移滑块 (±5000ms) |
 
 ---
 
@@ -34,8 +34,8 @@
 
 | 文件 | 修改 |
 |------|------|
-| [scene.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene.ts) | `_catState` + `setMatCatParams`/`getMatCatParams`/`resetMatCatParams` |
-| [scene-menu.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene-menu.ts) | 材质面板 UI，按类别分组 + 滑块 |
+| [scene.ts](file:///C:/Users/zhujieling11/frontend/src/scene.ts) | `_catState` + `setMatCatParams`/`getMatCatParams`/`resetMatCatParams` |
+| [scene-menu.ts](file:///C:/Users/zhujieling11/frontend/src/scene-menu.ts) | 材质面板 UI，按类别分组 + 滑块 |
 
 分类关键词覆盖中/英/日（skin/顔/肌/face/eye/目/iris/hair/髪 等）。
 
@@ -52,8 +52,8 @@
 | 幂等性 | 1 | 同参数两次写入结果一致 |
 
 **实现**:
-- [scene.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene.ts) — `_matState` 覆盖层 + `_applyAll` "category → per-material" 双阶段应用
-- [scene-menu.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene-menu.ts) — 类别卡片内嵌入材质行（已修改高亮），点击进入逐材质编辑页
+- [scene.ts](file:///C:/Users/zhujieling11/frontend/src/scene.ts) — `_matState` 覆盖层 + `_applyAll` "category → per-material" 双阶段应用
+- [scene-menu.ts](file:///C:/Users/zhujieling11/frontend/src/scene-menu.ts) — 类别卡片内嵌入材质行（已修改高亮），点击进入逐材质编辑页
 
 **安全**: `setMatParams`/`resetSingleMatParams` 加 `matIndex` 越界 guard（`console.warn` + return）。
 
@@ -61,23 +61,23 @@
 
 | 文件 | 修改 |
 |------|------|
-| [scene.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene.ts) | `setModelWireframe` → `syncModelVisibility` 中写入 `material.wireframe` |
-| [scene-menu.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene-menu.ts) | 模型卡片「线框」toggle |
+| [scene.ts](file:///C:/Users/zhujieling11/frontend/src/scene.ts) | `setModelWireframe` → `syncModelVisibility` 中写入 `material.wireframe` |
+| [scene-menu.ts](file:///C:/Users/zhujieling11/frontend/src/scene-menu.ts) | 模型卡片「线框」toggle |
 
 ### 6d. 重力控制
 
 | 文件 | 修改 |
 |------|------|
-| [scene.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene.ts) | `setGravityStrength`/`getGravityStrength` → `mmdRuntime.physics.setGravity()` |
-| [scene-menu.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene-menu.ts) | 场景菜单「物理」重力滑块 (0-2x) |
+| [scene.ts](file:///C:/Users/zhujieling11/frontend/src/scene.ts) | `setGravityStrength`/`getGravityStrength` → `mmdRuntime.physics.setGravity()` |
+| [scene-menu.ts](file:///C:/Users/zhujieling11/frontend/src/scene-menu.ts) | 场景菜单「物理」重力滑块 (0-2x) |
 
 ### 6e. 骨骼显示
 
 | 文件 | 修改 |
 |------|------|
-| [config.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/config.ts) | `ModelInstance.showBones` |
-| [scene.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene.ts) | `setModelBoneVis` + `createBoneOverlay`/`destroyBoneOverlay` |
-| [scene-menu.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene-menu.ts) | 模型卡片「骨骼显示」toggle |
+| [config.ts](file:///C:/Users/zhujieling11/frontend/src/config.ts) | `ModelInstance.showBones` |
+| [scene.ts](file:///C:/Users/zhujieling11/frontend/src/scene.ts) | `setModelBoneVis` + `createBoneOverlay`/`destroyBoneOverlay` |
+| [scene-menu.ts](file:///C:/Users/zhujieling11/frontend/src/scene-menu.ts) | 模型卡片「骨骼显示」toggle |
 
 **渲染**: `CreateLineSystem` 绘制父子骨骼线段，按 `transformOrder` 取色相着色。
 **物理分组**: 有物理绑定的骨骼标记为亮绿色（`bone.rigidBodyIndices.length > 0`），无物理骨骼按深度着色。
@@ -87,9 +87,9 @@
 
 | 文件 | 修改 |
 |------|------|
-| [config.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/config.ts) | `ModelInstance.physicsEnabled` |
-| [scene.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene.ts) | `setModelPhysics` + `_initialRigidBodyStates` 快照 |
-| [scene-menu.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene-menu.ts) | 模型卡片「物理」toggle |
+| [config.ts](file:///C:/Users/zhujieling11/frontend/src/config.ts) | `ModelInstance.physicsEnabled` |
+| [scene.ts](file:///C:/Users/zhujieling11/frontend/src/scene.ts) | `setModelPhysics` + `_initialRigidBodyStates` 快照 |
+| [scene-menu.ts](file:///C:/Users/zhujieling11/frontend/src/scene-menu.ts) | 模型卡片「物理」toggle |
 
 **机制**: `rigidBodyStates.fill(0/1)` + 模型加载时 `new Uint8Array(states)` 快照初始状态。
 
@@ -101,7 +101,7 @@
 
 | 文件 | 修改 |
 |------|------|
-| [app.go](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/app.go) | `GetPlaylists`/`SavePlaylist`/`DeletePlaylist` + `Playlist` 类型 + `RemoveModelFromPlaylist` |
+| [app.go](file:///C:/Users/zhujieling11/app.go) | `GetPlaylists`/`SavePlaylist`/`DeletePlaylist` + `Playlist` 类型 + `RemoveModelFromPlaylist` |
 
 `Playlists map[string][]string` 持久化在 config.json，支持创建/删除/命名/增删模型。
 
@@ -109,10 +109,10 @@
 
 | 文件 | 修改 |
 |------|------|
-| [library.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/library.ts) | 播放列表弹窗 UI + 导航（prev/next）+ 播放列表详情 |
-| [scene-menu.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene-menu.ts) | 场景菜单集成播表控制 |
-| [scene.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/scene.ts) | `prevPlaylistItem`/`nextPlaylistItem` 导入 |
-| [config.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/config.ts) | 播放列表配置项 |
+| [library.ts](file:///C:/Users/zhujieling11/frontend/src/library.ts) | 播放列表弹窗 UI + 导航（prev/next）+ 播放列表详情 |
+| [scene-menu.ts](file:///C:/Users/zhujieling11/frontend/src/scene-menu.ts) | 场景菜单集成播表控制 |
+| [scene.ts](file:///C:/Users/zhujieling11/frontend/src/scene.ts) | `prevPlaylistItem`/`nextPlaylistItem` 导入 |
+| [config.ts](file:///C:/Users/zhujieling11/frontend/src/config.ts) | 播放列表配置项 |
 
 ---
 
@@ -122,8 +122,8 @@
 
 | 文件 | 说明 |
 |------|------|
-| [vitest.config.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/vitest.config.ts) | vitest + happy-dom 配置 |
-| [material-editor.test.ts](file:///C:/Users/zhujieling11/MikuMikuAR/MikuMikuAR/frontend/src/__tests__/material-editor.test.ts) | 39 个测试，覆盖分类/状态/叠加顺序/Babylon property |
+| [vitest.config.ts](file:///C:/Users/zhujieling11/frontend/vitest.config.ts) | vitest + happy-dom 配置 |
+| [material-editor.test.ts](file:///C:/Users/zhujieling11/frontend/src/__tests__/material-editor.test.ts) | 39 个测试，覆盖分类/状态/叠加顺序/Babylon property |
 
 ---
 

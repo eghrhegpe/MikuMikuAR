@@ -19,12 +19,12 @@
 
 | 文件 | 责任 | 创建/修改 |
 |------|------|----------|
-| `MikuMikuAR/frontend/src/lipsync.ts` | Lipsync 状态类型 + 纯函数（`amplitudeToWeight`、`findLipMorph`、`DEFAULT_LIPSYNC_STATE`） | 创建 |
-| `MikuMikuAR/frontend/src/__tests__/lipsync.test.ts` | 纯函数单元测试 | 创建 |
-| `MikuMikuAR/frontend/src/beat-detector.ts` | 新增 `static getLevel(freqData, start, end)` + 实例 `getLevel(start, end)` | 修改 |
-| `MikuMikuAR/frontend/src/__tests__/beat-detector.test.ts` | 新增 `getLevel` 静态方法测试 | 修改 |
-| `MikuMikuAR/frontend/src/scene.ts` | Lipsync 状态、tick 集成、setters/getters、`SceneFile.lipSync` 序列化 | 修改 |
-| `MikuMikuAR/frontend/src/scene-menu.ts` | `buildLipSyncLevel()` 子菜单 + action 路由 | 修改 |
+| `frontend/src/lipsync.ts` | Lipsync 状态类型 + 纯函数（`amplitudeToWeight`、`findLipMorph`、`DEFAULT_LIPSYNC_STATE`） | 创建 |
+| `frontend/src/__tests__/lipsync.test.ts` | 纯函数单元测试 | 创建 |
+| `frontend/src/beat-detector.ts` | 新增 `static getLevel(freqData, start, end)` + 实例 `getLevel(start, end)` | 修改 |
+| `frontend/src/__tests__/beat-detector.test.ts` | 新增 `getLevel` 静态方法测试 | 修改 |
+| `frontend/src/scene.ts` | Lipsync 状态、tick 集成、setters/getters、`SceneFile.lipSync` 序列化 | 修改 |
+| `frontend/src/scene-menu.ts` | `buildLipSyncLevel()` 子菜单 + action 路由 | 修改 |
 | `docs/reusables.md` | 索引新增函数 | 修改 |
 | `docs/status.md` | 标记 LipSync 已完成 | 修改 |
 
@@ -33,8 +33,8 @@
 ## Task 1: BeatDetector.getLevel — 暴露频段能量
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/beat-detector.ts`
-- Test: `MikuMikuAR/frontend/src/__tests__/beat-detector.test.ts`
+- Modify: `frontend/src/beat-detector.ts`
+- Test: `frontend/src/__tests__/beat-detector.test.ts`
 
 `BeatDetector` 内部已有 `freqData: Uint8Array`（由 `update()` 每帧刷新），但目前只暴露 BPM/beat 相位。LipSync 需要读取频段能量（人声频段 ~430Hz..2.2kHz）。新增静态纯函数 + 实例方法，沿用现有 `detectBeatsFromEnergies` 的「静态纯逻辑 + 实例包装」模式。
 
@@ -75,7 +75,7 @@ describe("BeatDetector.getLevel (static)", () => {
 
 - [ ] **Step 2: 运行测试确认失败**
 
-Run: `cd MikuMikuAR/frontend && npx vitest run src/__tests__/beat-detector.test.ts 2>&1`
+Run: `cd frontend && npx vitest run src/__tests__/beat-detector.test.ts 2>&1`
 Expected: FAIL — `BeatDetector.getLevel is not a function`
 
 - [ ] **Step 3: 实现静态 + 实例方法**
@@ -111,13 +111,13 @@ Expected: FAIL — `BeatDetector.getLevel is not a function`
 
 - [ ] **Step 4: 运行测试确认通过**
 
-Run: `cd MikuMikuAR/frontend && npx vitest run src/__tests__/beat-detector.test.ts 2>&1`
+Run: `cd frontend && npx vitest run src/__tests__/beat-detector.test.ts 2>&1`
 Expected: PASS — 全部用例（含原有 10 + 新增 5 = 15）
 
 - [ ] **Step 5: 提交**
 
 ```bash
-cd MikuMikuAR && git add frontend/src/beat-detector.ts frontend/src/__tests__/beat-detector.test.ts && git commit -m "feat(beat): expose getLevel() for frequency-band energy
+cd . && git add frontend/src/beat-detector.ts frontend/src/__tests__/beat-detector.test.ts && git commit -m "feat(beat): expose getLevel() for frequency-band energy
 
 新增 BeatDetector.getLevel(freqData, start, end) 静态纯函数 + 实例包装，
 供 LipSync 读取人声频段能量。沿用 detectBeatsFromEnergies 的静态+实例模式。"
@@ -128,14 +128,14 @@ cd MikuMikuAR && git add frontend/src/beat-detector.ts frontend/src/__tests__/be
 ## Task 2: lipsync.ts — 状态 + 纯函数
 
 **Files:**
-- Create: `MikuMikuAR/frontend/src/lipsync.ts`
-- Test: `MikuMikuAR/frontend/src/__tests__/lipsync.test.ts`
+- Create: `frontend/src/lipsync.ts`
+- Test: `frontend/src/__tests__/lipsync.test.ts`
 
 封装 LipSync 状态类型、`findLipMorph`（morph 名检测）、`amplitudeToWeight`（振幅→权重映射）。两个纯函数均独立可测，不依赖 Babylon.js 或 Web Audio。
 
 - [ ] **Step 1: 写失败测试**
 
-创建 `MikuMikuAR/frontend/src/__tests__/lipsync.test.ts`：
+创建 `frontend/src/__tests__/lipsync.test.ts`：
 
 ```typescript
 import { describe, it, expect } from "vitest";
@@ -216,12 +216,12 @@ describe("DEFAULT_LIPSYNC_STATE", () => {
 
 - [ ] **Step 2: 运行测试确认失败**
 
-Run: `cd MikuMikuAR/frontend && npx vitest run src/__tests__/lipsync.test.ts 2>&1`
+Run: `cd frontend && npx vitest run src/__tests__/lipsync.test.ts 2>&1`
 Expected: FAIL — `Failed to resolve import "../lipsync"`
 
 - [ ] **Step 3: 创建 lipsync.ts**
 
-创建 `MikuMikuAR/frontend/src/lipsync.ts`：
+创建 `frontend/src/lipsync.ts`：
 
 ```typescript
 // lipsync.ts — 实时振幅驱动 LipSync
@@ -275,13 +275,13 @@ export function amplitudeToWeight(amplitude: number, sensitivity: number, intens
 
 - [ ] **Step 4: 运行测试确认通过**
 
-Run: `cd MikuMikuAR/frontend && npx vitest run src/__tests__/lipsync.test.ts 2>&1`
+Run: `cd frontend && npx vitest run src/__tests__/lipsync.test.ts 2>&1`
 Expected: PASS — 全部 15 用例
 
 - [ ] **Step 5: 提交**
 
 ```bash
-cd MikuMikuAR && git add frontend/src/lipsync.ts frontend/src/__tests__/lipsync.test.ts && git commit -m "feat(lipsync): add pure state + amplitude→weight mapping module
+cd . && git add frontend/src/lipsync.ts frontend/src/__tests__/lipsync.test.ts && git commit -m "feat(lipsync): add pure state + amplitude→weight mapping module
 
 新增 lipsync.ts：LipSyncState 类型、DEFAULT_LIPSYNC_STATE、findLipMorph、
 amplitudeToWeight。纯函数无 Babylon.js / Web Audio 依赖，15 单元测试覆盖。"
@@ -292,7 +292,7 @@ amplitudeToWeight。纯函数无 Babylon.js / Web Audio 依赖，15 单元测试
 ## Task 3: scene.ts — LipSync 运行时集成
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/scene.ts`
+- Modify: `frontend/src/scene.ts`
 
 在 `scene.ts` 中新增 `lipSyncState` 模块状态、`updateLipSync()` 每帧更新器、4 个 setter/getter，并挂到 `onAnimationTickObservable`。
 
@@ -402,18 +402,18 @@ export type LipSyncState = LipSyncStateType;
 
 - [ ] **Step 5: 构建验证**
 
-Run: `cd MikuMikuAR/frontend && npx vite build 2>&1`
+Run: `cd frontend && npx vite build 2>&1`
 Expected: 构建成功，无 TS 错误。
 
 - [ ] **Step 6: 跑全量测试确认无回归**
 
-Run: `cd MikuMikuAR/frontend && npx vitest run 2>&1`
+Run: `cd frontend && npx vitest run 2>&1`
 Expected: 全部测试 PASS（原有 160 + 新增 20 = 180）。
 
 - [ ] **Step 7: 提交**
 
 ```bash
-cd MikuMikuAR && git add frontend/src/scene.ts && git commit -m "feat(lipsync): integrate real-time amplitude-driven lip sync into scene tick
+cd . && git add frontend/src/scene.ts && git commit -m "feat(lipsync): integrate real-time amplitude-driven lip sync into scene tick
 
 scene.ts 新增 lipSyncState、updateLipSync()、3 个 setter + 1 个 getter，
 挂到 onAnimationTickObservable。每帧读 BeatDetector 人声频段能量 →
@@ -426,7 +426,7 @@ amplitudeToWeight → setModelMorphWeight 直写焦点模型「あ」morph。
 ## Task 4: scene.ts — SceneFile 序列化
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/scene.ts`
+- Modify: `frontend/src/scene.ts`
 
 把 `lipSyncState` 加入 `SceneFile` 持久化，与 `procMotion` 同模式（默认值合并 + 反序列化恢复）。
 
@@ -471,18 +471,18 @@ amplitudeToWeight → setModelMorphWeight 直写焦点模型「あ」morph。
 
 - [ ] **Step 4: 构建验证**
 
-Run: `cd MikuMikuAR/frontend && npx vite build 2>&1`
+Run: `cd frontend && npx vite build 2>&1`
 Expected: 构建成功。
 
 - [ ] **Step 5: 跑全量测试**
 
-Run: `cd MikuMikuAR/frontend && npx vitest run 2>&1`
+Run: `cd frontend && npx vitest run 2>&1`
 Expected: 全部 PASS。
 
 - [ ] **Step 6: 提交**
 
 ```bash
-cd MikuMikuAR && git add frontend/src/scene.ts && git commit -m "feat(lipsync): persist LipSync state in SceneFile
+cd . && git add frontend/src/scene.ts && git commit -m "feat(lipsync): persist LipSync state in SceneFile
 
 SceneFile 新增 lipSync 字段，serialize/deserialize 同 procMotion 模式：
 默认值合并 + 反序列化恢复。无 lipSync 字段的旧场景默认 disabled。"
@@ -493,7 +493,7 @@ SceneFile 新增 lipSync 字段，serialize/deserialize 同 procMotion 模式：
 ## Task 5: scene-menu.ts — UI 入口
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/scene-menu.ts`
+- Modify: `frontend/src/scene-menu.ts`
 
 在「程序化动作」子菜单新增「LipSync」folder 入口，点击进入 `buildLipSyncLevel()` 子级：启用 toggle + 灵敏度滑块 + 强度滑块。
 
@@ -586,13 +586,13 @@ function buildLipSyncLevel(): PopupLevel {
 
 - [ ] **Step 5: 构建验证**
 
-Run: `cd MikuMikuAR/frontend && npx vite build 2>&1`
+Run: `cd frontend && npx vite build 2>&1`
 Expected: 构建成功。
 
 - [ ] **Step 6: 提交**
 
 ```bash
-cd MikuMikuAR && git add frontend/src/scene-menu.ts && git commit -m "feat(lipsync): add LipSync submenu under procedural motion
+cd . && git add frontend/src/scene-menu.ts && git commit -m "feat(lipsync): add LipSync submenu under procedural motion
 
 场景菜单「程序化动作」子菜单新增「LipSync」入口，子级含启用 toggle +
 灵敏度滑块（UI 反转：越大越灵敏）+ 强度滑块。沿用 SlideMenu folder/action 模式。"
@@ -676,7 +676,7 @@ cd MikuMikuAR && git add frontend/src/scene-menu.ts && git commit -m "feat(lipsy
 - [ ] **Step 5: 提交**
 
 ```bash
-cd MikuMikuAR && git add docs/reusables.md docs/status.md && git commit -m "docs(lipsync): index new functions and mark feature complete
+cd . && git add docs/reusables.md docs/status.md && git commit -m "docs(lipsync): index new functions and mark feature complete
 
 reusables.md 新增 LipSync 子系统 + BeatDetector.getLevel + scene.ts 控制 API；
 status.md 标记 LipSync 已完成（实时振幅驱动「あ」morph）。"

@@ -84,7 +84,7 @@ MikuMikuAR 是一个跨平台 MMD PMX 模型查看器 / 聚合启动器。基于
 
 ### 本地开发
 ```bash
-cd MikuMikuAR
+cd .
 wails dev
 ```
 

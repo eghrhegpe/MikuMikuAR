@@ -14,17 +14,17 @@
 
 | File | What changes |
 |------|-------------|
-| `MikuMikuAR/frontend/src/camera.ts` | 重写参数系统：每模式参数接口+默认值+getter/setter；增加轨道自动聚焦；增加预设序列化 |
-| `MikuMikuAR/frontend/src/scene-menu.ts` | 场景菜单恢复「相机模式」入口；新增参数面板（滑块组合） |
-| `MikuMikuAR/frontend/src/libraray.ts` | 动作弹窗的相机文件夹删除（回归场景菜单） |
-| `MikuMikuAR/app.go` | 新增 4 个 binding: SaveCameraPreset/LoadCameraPreset/SelectCameraPresetSaveFile/SelectCameraPresetOpenFile |
+| `frontend/src/camera.ts` | 重写参数系统：每模式参数接口+默认值+getter/setter；增加轨道自动聚焦；增加预设序列化 |
+| `frontend/src/scene-menu.ts` | 场景菜单恢复「相机模式」入口；新增参数面板（滑块组合） |
+| `frontend/src/libraray.ts` | 动作弹窗的相机文件夹删除（回归场景菜单） |
+| `app.go` | 新增 4 个 binding: SaveCameraPreset/LoadCameraPreset/SelectCameraPresetSaveFile/SelectCameraPresetOpenFile |
 
 ---
 
 ### Task 1: Orbit auto-focus on mode switch
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/camera.ts`
+- Modify: `frontend/src/camera.ts`
 
 - [ ] **Step 1: Ensure modelRegistry import exists**
 
@@ -51,7 +51,7 @@ In `switchCameraMode()` (line 244 area), after `startConcert(scene)` and before 
 - [ ] **Step 3: Build verify**
 
 ```bash
-cd MikuMikuAR/frontend && npx tsc && npx vite build 2>&1 | findstr /R "✓ error"
+cd frontend && npx tsc && npx vite build 2>&1 | findstr /R "✓ error"
 ```
 Expected: build succeeds
 
@@ -60,7 +60,7 @@ Expected: build succeeds
 ### Task 2: Define per-mode parameter interfaces + defaults
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/camera.ts`
+- Modify: `frontend/src/camera.ts`
 
 - [ ] **Step 1: Add parameter interfaces**
 
@@ -163,7 +163,7 @@ export function setSharedParams(p: Partial<CameraPreset["shared"]>): void { Obje
 - [ ] **Step 4: Build verify**
 
 ```bash
-cd MikuMikuAR/frontend && npx tsc && npx vite build 2>&1 | findstr /R "✓ error"
+cd frontend && npx tsc && npx vite build 2>&1 | findstr /R "✓ error"
 ```
 
 ---
@@ -171,7 +171,7 @@ cd MikuMikuAR/frontend && npx tsc && npx vite build 2>&1 | findstr /R "✓ error
 ### Task 3: Apply preset params to camera factories + concert rewrite
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/camera.ts`
+- Modify: `frontend/src/camera.ts`
 
 - [ ] **Step 1: Update `createOrbitCamera` to use preset params**
 
@@ -288,7 +288,7 @@ In `switchCameraMode`, when creating each camera type, the factory already reads
 ### Task 4: Add camera preset Go bindings
 
 **Files:**
-- Modify: `MikuMikuAR/app.go`
+- Modify: `app.go`
 
 - [ ] **Step 1: Add 4 bindings**
 
@@ -340,13 +340,13 @@ func (a *App) SelectCameraPresetOpenFile() (string, error) {
 - [ ] **Step 2: Regenerate Wails bindings**
 
 ```bash
-cd MikuMikuAR && wails generate module
+cd . && wails generate module
 ```
 
 - [ ] **Step 3: Verify Go build**
 
 ```bash
-cd MikuMikuAR && go build ./...
+cd . && go build ./...
 ```
 
 ---
@@ -354,8 +354,8 @@ cd MikuMikuAR && go build ./...
 ### Task 5: Camera preset UI — scene menu
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/scene-menu.ts`
-- Modify: `MikuMikuAR/frontend/src/libraray.ts` (remove camera folder from motion popup)
+- Modify: `frontend/src/scene-menu.ts`
+- Modify: `frontend/src/libraray.ts` (remove camera folder from motion popup)
 
 - [ ] **Step 1: Restore camera mode entry in scene root menu**
 
@@ -520,7 +520,7 @@ Remove camera imports from `library.ts`.
 ### Task 6: Per-mode parameter panels (renderCustom)
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/scene-menu.ts`
+- Modify: `frontend/src/scene-menu.ts`
 
 - [ ] **Step 1: Add `buildCameraParamsLevel` function**
 
@@ -681,8 +681,8 @@ function renderOneshotParams(container: HTMLElement): void {
 ### Task 7: Camera preset save/load + serialization
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/scene-menu.ts`
-- Modify: `MikuMikuAR/frontend/src/camera.ts`
+- Modify: `frontend/src/scene-menu.ts`
+- Modify: `frontend/src/camera.ts`
 
 - [ ] **Step 1: Add serialization helpers in camera.ts**
 
@@ -805,14 +805,14 @@ No changes needed — `getCameraState`/`setCameraState` already in the save/load
 - [ ] **Step 1: Full build**
 
 ```bash
-cd MikuMikuAR/frontend && npx tsc && npx vite build 2>&1 | findstr /R "✓ error"
-cd MikuMikuAR && go build ./...
+cd frontend && npx tsc && npx vite build 2>&1 | findstr /R "✓ error"
+cd . && go build ./...
 ```
 
 - [ ] **Step 2: Run vitest**
 
 ```bash
-cd MikuMikuAR/frontend && npx vitest run 2>&1 | findstr "Tests"
+cd frontend && npx vitest run 2>&1 | findstr "Tests"
 ```
 Expected: 93+ tests pass
 
