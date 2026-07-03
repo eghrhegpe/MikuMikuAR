@@ -353,8 +353,8 @@ describe('buildModelDetailLevel', () => {
         // Cards rendered in buildModelDetailLevel (labels may change with UI)
         expect(labels.length).toBeGreaterThan(5);
         expect(labels.some((l) => l && l.includes('模型信息'))).toBe(true);
-        expect(labels.some((l) => l && l.includes('变换'))).toBe(true);
-        expect(labels.some((l) => l && l.includes('可见性'))).toBe(true);
+        expect(labels.some((l) => l && l.includes('材质调节'))).toBe(true);
+        expect(labels.some((l) => l && l.includes('服装变体'))).toBe(true);
     });
 });
 

@@ -71,9 +71,10 @@ export function _catOf(name: string): MaterialCategory {
         }
     }
 
-    // 按优先级匹配，命中即返回（包含匹配）
+    // 按优先级匹配，命中即返回（包含匹配，不区分大小写）
+    const lowerName = name.toLowerCase();
     for (const [keywords, cat] of CATEGORY_RULES) {
-        if (keywords.some((k) => name.includes(k))) {
+        if (keywords.some((k) => lowerName.includes(k))) {
             return cat;
         }
     }
