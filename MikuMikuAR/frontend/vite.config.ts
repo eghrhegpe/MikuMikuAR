@@ -7,6 +7,9 @@ const BABYLON_EXTERNAL = [
   '@babylonjs/materials',
 ];
 
+// Vitest 需要解析 Babylon 模块来做 vi.mock，不应 externalize
+const isVitest = typeof process !== 'undefined' && process.env?.VITEST;
+
 export default defineConfig(({ command }) => {
   const isProduction = command === 'build';
 
@@ -41,7 +44,9 @@ export default defineConfig(({ command }) => {
       sourcemap: false,
       rollupOptions: {
         // 外部化 Babylon 相关包（不打包进 bundle）
+        // 注意：vitest 下必须 internalize，否则 vi.mock 无法解析模块
         external: (id) => {
+          if (isVitest) return false;
           if (BABYLON_EXTERNAL.some(pkg => id === pkg || id.startsWith(pkg + '/'))) {
             return true;
           }
@@ -56,6 +61,7 @@ export default defineConfig(({ command }) => {
           name: isProduction ? 'app' : undefined,
           // 映射外部包到全局变量（仅 IIFE/UMD 格式生效）
           globals: (id) => {
+            if (isVitest) return undefined;
             if (id === '@babylonjs/core' || id.startsWith('@babylonjs/core/')) return 'BABYLON';
             if (id === '@babylonjs/materials' || id.startsWith('@babylonjs/materials/')) return 'BABYLON';
             return null;

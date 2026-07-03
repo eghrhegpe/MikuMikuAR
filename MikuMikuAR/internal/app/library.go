@@ -15,7 +15,14 @@ import (
 )
 
 // SelectDir opens a directory picker dialog.
+// On Android, native directory picker is not available in Wails 3 alpha;
+// returns the default storage path as a starting point.
 func (a *App) SelectDir() (string, error) {
+	if isAndroid {
+		// Android: return the default MikuMikuAR directory on external storage.
+		// The user can set a custom path via SetLibraryRoot directly.
+		return "/sdcard/MikuMikuAR", nil
+	}
 	if a.wailsApp == nil {
 		return "", fmt.Errorf("application not initialized")
 	}

@@ -45,6 +45,9 @@ func detectBlenderAt(lookPath func(name string) (string, error), candidates []st
 
 // OpenInBlender launches Blender and opens the specified model file.
 func (a *App) OpenInBlender(modelPath string) error {
+	if isAndroid {
+		return fmt.Errorf("Blender 不可在 Android 上启动")
+	}
 	cfg, _ := a.GetConfig()
 	blenderPath := cfg.BlenderPath
 	if blenderPath == "" {
@@ -114,6 +117,9 @@ func (a *App) AutoDetectMMD() (string, error) {
 
 // OpenInMMD launches MikuMikuDance and opens the specified model file.
 func (a *App) OpenInMMD(modelPath string) error {
+	if isAndroid {
+		return fmt.Errorf("MikuMikuDance 不可在 Android 上启动")
+	}
 	cfg, _ := a.GetConfig()
 	mmdPath := cfg.MMDPath
 	if mmdPath == "" {
@@ -153,10 +159,28 @@ func detectSoftwareKind(name string) string {
 
 // ScanSoftwareDir scans the software/ directory for .exe files, merges with user-added
 // custom software from config, and returns the combined list (deduplicated by path).
+// On Android, only returns config-persisted entries (no .exe scanning).
 func (a *App) ScanSoftwareDir() ([]SoftwareEntry, error) {
 	dir, err := softwareDir()
 	if err != nil {
 		return nil, err
+	}
+
+	// Android: skip .exe directory scan, only return config entries
+	if isAndroid {
+		scanned := make(map[string]SoftwareEntry)
+		cfg, _ := a.GetConfig()
+		if cfg != nil {
+			for _, sw := range cfg.CustomSoftware {
+				sw.Managed = true
+				scanned[sw.Path] = sw
+			}
+		}
+		result := make([]SoftwareEntry, 0, len(scanned))
+		for _, sw := range scanned {
+			result = append(result, sw)
+		}
+		return result, nil
 	}
 
 	// Scan software/ directory
@@ -211,6 +235,9 @@ func (a *App) ScanSoftwareDir() ([]SoftwareEntry, error) {
 // LaunchSoftware starts an executable by path with optional command-line arguments.
 // The args string is split into arguments and passed to the executable.
 func (a *App) LaunchSoftware(path string, args string) error {
+	if isAndroid {
+		return fmt.Errorf("Android 不支持直接启动外部可执行文件")
+	}
 	var cmd *exec.Cmd
 	if args == "" {
 		cmd = exec.Command(path)
@@ -231,6 +258,9 @@ func (a *App) LaunchSoftware(path string, args string) error {
 // in the args template with the model path.
 // Each {model} token is replaced individually so paths with spaces stay as a single argv.
 func (a *App) OpenWithSoftware(modelPath string, softwarePath string, args string) error {
+	if isAndroid {
+		return fmt.Errorf("Android 不支持直接启动外部可执行文件")
+	}
 	var cmd *exec.Cmd
 	if args == "" {
 		cmd = exec.Command(softwarePath)
@@ -318,6 +348,9 @@ func (a *App) OpenSoftwareDir() error {
 		cmd = exec.Command("explorer", dir)
 	case "darwin":
 		cmd = exec.Command("open", dir)
+	case "android":
+		// Android: no standard file manager opener; return the path for UI display.
+		return fmt.Errorf("软件目录: %s", dir)
 	default:
 		cmd = exec.Command("xdg-open", dir)
 	}

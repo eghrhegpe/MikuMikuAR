@@ -9,26 +9,30 @@ ROOT = Path(__file__).resolve().parent.parent  # tests/ → mmdhub/
 
 
 def check_wails():
+    """Wails v3 uses Taskfile.yml instead of wails.json; check that exists."""
     errors = []
     fp = ROOT / "wails.json"
-    if not fp.exists():
-        errors.append("MISSING: wails.json")
+    if fp.exists():
+        # Legacy v2 config — validate contents
+        try:
+            data = json.loads(fp.read_text("utf-8"))
+        except json.JSONDecodeError as e:
+            errors.append(f"SYNTAX: wails.json 解析失败: {e}")
+            return errors
+        if not data.get("name"):
+            errors.append("'name' must be non-empty")
+        if not data.get("outputfilename"):
+            errors.append("'outputfilename' must be non-empty")
+        if not data.get("frontend:install"):
+            errors.append("'frontend:install' must be non-empty")
+        if not data.get("frontend:build"):
+            errors.append("'frontend:build' must be non-empty")
         return errors
 
-    try:
-        data = json.loads(fp.read_text("utf-8"))
-    except json.JSONDecodeError as e:
-        errors.append(f"SYNTAX: wails.json 解析失败: {e}")
-        return errors
-
-    if not data.get("name"):
-        errors.append("'name' must be non-empty")
-    if not data.get("outputfilename"):
-        errors.append("'outputfilename' must be non-empty")
-    if not data.get("frontend:install"):
-        errors.append("'frontend:install' must be non-empty")
-    if not data.get("frontend:build"):
-        errors.append("'frontend:build' must be non-empty")
+    # Wails v3: require Taskfile.yml instead
+    tfp = ROOT / "Taskfile.yml"
+    if not tfp.exists():
+        errors.append("MISSING: wails.json and Taskfile.yml — neither found")
     return errors
 
 

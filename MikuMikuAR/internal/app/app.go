@@ -8,12 +8,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	stdruntime "runtime"
 	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
+
+// isAndroid returns true when running on Android (GOOS=android).
+var isAndroid = stdruntime.GOOS == "android"
 
 // safeLogInfo logs info message if wailsApp is available.
 func (a *App) safeLogInfo(format string, args ...interface{}) {
@@ -157,7 +161,12 @@ func (a *App) shutdownWithTimeout(ctx context.Context, timeout time.Duration) er
 }
 
 // openFileDialog is a shared helper for selecting files via OS dialog.
+// On Android, native file dialogs are not available through Wails alpha;
+// returns a clear error so the frontend can offer an alternative flow.
 func (a *App) openFileDialog(title string, filters []application.FileFilter) (string, error) {
+	if isAndroid {
+		return "", fmt.Errorf("文件选择器在 Android 上暂不可用，请通过文件管理器手动打开文件")
+	}
 	if a.wailsApp == nil {
 		return "", fmt.Errorf("application not initialized")
 	}

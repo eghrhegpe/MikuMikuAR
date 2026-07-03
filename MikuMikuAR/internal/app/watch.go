@@ -74,7 +74,11 @@ func (a *App) ImportLocalFile(path string) (*ExtractResult, error) {
 // If already watching a directory, it stops the previous watcher first.
 // Only files with .zip/.pmx/.vmd extensions trigger notifications,
 // filtered through Magic Number detection to skip incomplete downloads.
+// On Android, file system watching is not supported — returns an error.
 func (a *App) StartWatchDir(dir string) error {
+	if isAndroid {
+		return fmt.Errorf("Android 不支持文件系统监听，请手动导入文件")
+	}
 	a.watchMu.Lock()
 	defer a.watchMu.Unlock()
 
