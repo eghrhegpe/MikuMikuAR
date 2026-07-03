@@ -16,8 +16,8 @@
 - 禁止读取 docs/research/ 下的档案文件，除非任务明确涉及对应主题
 - 先输出修改计划 → 我确认 → 再 apply
 - 失败熔断：同一命令连续失败 2 次 → 停止并分析原因，禁止无脑重试
-- 仓库根 = 本文件所在目录；代码子目录 = `MikuMikuAR/`；文档目录 = `docs/`；不是嵌套仓库
-- git 操作在仓库根执行；go build / npm / vitest 进 `MikuMikuAR/` 对应子目录执行
+- 仓库根 = 本文件所在目录；Go 代码在根目录；前端代码在 `frontend/`；文档目录 = `docs/`
+- git 操作在仓库根执行；go build 在仓库根执行；npm / vitest 进 `frontend/` 执行
 ```
 
 ---
