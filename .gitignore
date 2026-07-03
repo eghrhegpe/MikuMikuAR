@@ -1,3 +1,12 @@
+# Build artifacts
+build/bin
+frontend/dist
+frontend/node_modules
+
+# E2E
+frontend/playwright-report/
+frontend/test-results/
+
 # Model files — do NOT commit (copyrighted, large)
 text-model/
 
@@ -27,6 +36,39 @@ coverage/
 
 # Binary / executable artifacts
 *.exe
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp
+tmp/
+
+# Wails3 build temp
+.bindings-tmp-*
+.task/
+frontend/wailsjs/
+bin/
+
+# Android build artifacts
+build/android/.gradle/
+build/android/build/
+build/android/gen/
+build/android/local.properties
+build/android/app/build/
+build/android/app/.gradle/
+build/android/*.jar
+build/android/*.apk
 
 # Android signing keystore (secrets — never commit)
 *.keystore
@@ -34,5 +76,3 @@ coverage/
 
 # Trae IDE
 .trae/
-
-/MikuMikuAR
