@@ -40,16 +40,14 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Set-Location $projectDir
 
 # Go 编译
-$ldflags = "-X main.AppVersion=$version"
 if ($Production) {
-    $ldflags += " -s -w"
     $buildTags = "production"
 } else {
     $buildTags = "debug"
 }
 
-Write-Output "[build-windows] 编译 Go (tags=$buildTags, ldflags=$ldflags)..."
-& wails3 build -ldflags $ldflags
+Write-Output "[build-windows] 编译 Go (tags=$buildTags)..."
+& wails3 build -tags $buildTags
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # 重命名产物
