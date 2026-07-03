@@ -9,7 +9,7 @@ param(
 
 $scriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path "$scriptsDir\.." | Select-Object -ExpandProperty Path
-$projectDir = "$repoRoot\MikuMikuAR"
+$projectDir = "$repoRoot\"
 $androidDir = "$projectDir\build\android"
 $apkDir = "$androidDir\app\build\outputs\apk"
 
@@ -91,7 +91,7 @@ New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
 if (Test-Path $apkPath) {
     $archLabel = if ($Arch -eq "all") { "multi" } else { $Arch }
-    $distApk = "$distDir\MikuMikuAR-$version-android-$archLabel.apk"
+    $distApk = "$distDir\-$version-android-$archLabel.apk"
     Copy-Item $apkPath $distApk -Force
     $size = (Get-Item $distApk).Length / 1MB
     Write-Output ""

@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: MikuMikuAR/frontend
+        working-directory: frontend
 
     steps:
       - uses: actions/checkout@v5
@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
-          cache-dependency-path: MikuMikuAR/frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -42,7 +42,7 @@ jobs:
         if: always()
         with:
           name: frontend-coverage
-          path: MikuMikuAR/frontend/coverage/
+          path: frontend/coverage/
 
       - name: Lint
         run: npm run lint
@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: frontend-dist
-          path: MikuMikuAR/frontend/dist/
+          path: frontend/dist/
 
   test-backend:
     name: Backend — Go Test & Build
@@ -63,7 +63,7 @@ jobs:
     needs: test-frontend
     defaults:
       run:
-        working-directory: MikuMikuAR
+        working-directory: .
 
     steps:
       - uses: actions/checkout@v5
@@ -72,7 +72,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: frontend-dist
-          path: MikuMikuAR/frontend/dist/
+          path: frontend/dist/
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -117,4 +117,4 @@ jobs:
           python-version: '3.11'
 
       - name: Run config syntax test
-        run: python MikuMikuAR/tests/test_config_syntax.py
+        run: python tests/test_config_syntax.py
