@@ -219,7 +219,7 @@ tasks:
   frontend:dev:npm:
     dir: frontend
     cmds:
-      - npm run dev -- --port {{.VITE_PORT}} --strictPort
+      - npx vite --port {{.VITE_PORT}} --strictPort
 
   frontend:dev:yarn:
     dir: frontend

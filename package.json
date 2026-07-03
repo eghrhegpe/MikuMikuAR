@@ -6,7 +6,7 @@
     "test:e2e": "cd frontend && npm run test:e2e",
     "test": "cd frontend && npm test",
     "build": "cd frontend && npm run build",
-    "dev": "cd frontend && npm run dev",
+    "dev": "cd frontend && npx vite --port 9245 --strictPort",
     "build:win": "powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1",
     "build:linux": "bash scripts/build-linux.sh",
     "build:android": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Arch arm64",
