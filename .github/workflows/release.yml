@@ -37,7 +37,7 @@ jobs:
         run: |
           VER=$(node -e "console.log(require('./package.json').version)")
           echo "version=$VER" >> $GITHUB_OUTPUT
-          WAILS_VER=$(grep 'wails/v3' MikuMikuAR/go.mod | head -1 | sed 's/.*v//;s/ .*//')
+          WAILS_VER=$(grep 'wails/v3' MikuMikuAR/go.mod | head -1 | sed 's/.* //;s/ *$//')
           echo "wails_ver=$WAILS_VER" >> $GITHUB_OUTPUT
           echo "Version: $VER  Wails: $WAILS_VER"
 
