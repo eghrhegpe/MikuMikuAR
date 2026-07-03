@@ -347,14 +347,18 @@ describe('buildModelDetailLevel', () => {
         const container = document.createElement('div');
         level.renderCustom!(container);
 
-        const labels = Array.from(container.querySelectorAll('.slide-label')).map(
+        const slideLabels = Array.from(container.querySelectorAll('.slide-label')).map(
             (el) => el.textContent
         );
+        const csLabels = Array.from(container.querySelectorAll('.cs-label')).map(
+            (el) => el.textContent
+        );
+        const allLabels = [...slideLabels, ...csLabels];
         // Cards rendered in buildModelDetailLevel (labels may change with UI)
-        expect(labels.length).toBeGreaterThan(5);
-        expect(labels.some((l) => l && l.includes('模型信息'))).toBe(true);
-        expect(labels.some((l) => l && l.includes('材质调节'))).toBe(true);
-        expect(labels.some((l) => l && l.includes('服装变体'))).toBe(true);
+        expect(allLabels.length).toBeGreaterThan(5);
+        expect(allLabels.some((l) => l && l.includes('模型信息'))).toBe(true);
+        expect(allLabels.some((l) => l && l.includes('可见性'))).toBe(true);
+        expect(allLabels.some((l) => l && l.includes('材质调节'))).toBe(true);
     });
 });
 

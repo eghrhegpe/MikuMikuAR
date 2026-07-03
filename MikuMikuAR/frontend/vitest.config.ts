@@ -5,6 +5,7 @@ export default defineConfig({
         environment: "happy-dom",
         globals: true,
         exclude: ["e2e/**", "node_modules/**"],
+        setupFiles: ["./src/__tests__/setup-wails.ts"],
         coverage: {
             provider: "v8",
             reporter: ["text", "html"],
