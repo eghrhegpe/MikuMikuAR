@@ -318,7 +318,7 @@ export class MockColor4 {
     }
 }
 
-// ===== Math: Vector3 / Matrix =====
+// ===== Math: Vector3 / Matrix / Quaternion =====
 export class MockVector3 {
     x: number;
     y: number;
@@ -357,6 +357,37 @@ export class MockVector3 {
     }
     static Zero() {
         return new MockVector3(0, 0, 0);
+    }
+    static Right() {
+        return new MockVector3(1, 0, 0);
+    }
+    static Up() {
+        return new MockVector3(0, 1, 0);
+    }
+    static Forward() {
+        return new MockVector3(0, 0, 1);
+    }
+}
+
+export class MockQuaternion {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+    constructor(x = 0, y = 0, z = 0, w = 1) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+    }
+    clone() {
+        return new MockQuaternion(this.x, this.y, this.z, this.w);
+    }
+    static Identity() {
+        return new MockQuaternion(0, 0, 0, 1);
+    }
+    static RotationYawPitchRoll() {
+        return new MockQuaternion(0, 0, 0, 1);
     }
 }
 

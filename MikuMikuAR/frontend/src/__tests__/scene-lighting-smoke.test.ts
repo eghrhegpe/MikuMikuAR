@@ -16,6 +16,18 @@ vi.mock('@babylonjs/core/Maths/math.vector', () => ({
             public z: number
         ) {}
         static Down = new (this as any)(0, -1, 0);
+        static Right() { return new (this as any)(1, 0, 0); }
+        static Up() { return new (this as any)(0, 1, 0); }
+        static Forward() { return new (this as any)(0, 0, 1); }
+    },
+    Quaternion: class {
+        constructor(
+            public x: number,
+            public y: number,
+            public z: number,
+            public w: number = 1
+        ) {}
+        static Identity() { return new (this as any)(0, 0, 0, 1); }
     },
 }));
 vi.mock('@babylonjs/core/Maths/math.color', () => ({

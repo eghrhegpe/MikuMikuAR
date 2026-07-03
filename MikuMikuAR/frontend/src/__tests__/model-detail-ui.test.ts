@@ -40,7 +40,7 @@ vi.mock('@babylonjs/core/Maths/math.color', () => {
 
 vi.mock('@babylonjs/core/Maths/math.vector', () => {
     const m = require('./mocks/babylon-classes.ts');
-    return { Vector3: m.MockVector3, Matrix: m.MockMatrix, TmpVectors: { Vector3: [] } };
+    return { Vector3: m.MockVector3, Matrix: m.MockMatrix, Quaternion: m.MockQuaternion, TmpVectors: { Vector3: [] } };
 });
 
 vi.mock('@babylonjs/core/Materials/standardMaterial', () => {
