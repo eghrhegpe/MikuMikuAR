@@ -28,6 +28,11 @@ coverage/
 # Binary / executable artifacts
 *.exe
 
+# Android signing keystore (secrets — never commit)
+*.keystore
+*.jks
+
 # Trae IDE
 .trae/
 
+/MikuMikuAR
