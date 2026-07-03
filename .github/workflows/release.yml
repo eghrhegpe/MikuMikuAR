@@ -37,7 +37,7 @@ jobs:
         run: |
           VER=$(node -e "console.log(require('./package.json').version)")
           echo "version=$VER" >> $GITHUB_OUTPUT
-          WAILS_VER=$(grep 'wails/v3' MikuMikuAR/go.mod | head -1 | sed 's/.* //;s/ *$//')
+          WAILS_VER=$(grep 'wails/v3' go.mod | head -1 | sed 's/.* //;s/ *$//')
           echo "wails_ver=$WAILS_VER" >> $GITHUB_OUTPUT
           echo "Version: $VER  Wails: $WAILS_VER"
 
@@ -60,12 +60,12 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/go/pkg/mod
-          key: go-${{ runner.os }}-${{ hashFiles('MikuMikuAR/go.sum') }}
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: MikuMikuAR/frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
       - name: Build
@@ -94,12 +94,12 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/go/pkg/mod
-          key: go-${{ runner.os }}-${{ hashFiles('MikuMikuAR/go.sum') }}
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: MikuMikuAR/frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
       - name: Install Linux dependencies
         run: |
           sudo apt-get update -qq
@@ -117,14 +117,13 @@ jobs:
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
       - name: Build
         run: |
-          cd MikuMikuAR
           mkdir -p bin
           go build -tags production -ldflags="-X main.AppVersion=${{ needs.prepare.outputs.version }} -s -w" -o bin/mikumikuar
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
           name: linux-amd64
-          path: MikuMikuAR/bin/mikumikuar
+          path: bin/mikumikuar
           if-no-files-found: error
 
   # ── Android 构建 ───────────────────────────────────────
@@ -146,12 +145,12 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/go/pkg/mod
-          key: go-${{ runner.os }}-${{ hashFiles('MikuMikuAR/go.sum') }}
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: MikuMikuAR/frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
@@ -170,18 +169,18 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('MikuMikuAR/build/android/gradle/wrapper/gradle-wrapper.properties') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('build/android/gradle/wrapper/gradle-wrapper.properties') }}
 
       - name: Build Frontend
         run: |
-          cd MikuMikuAR/frontend
+          cd frontend
           npm ci
           npx vite build
 
       - name: Decode keystore
         if: github.event.inputs.skip_sign != 'true'
         run: |
-          $dir = "${{ github.workspace }}\MikuMikuAR\build\android\keystore"
+          $dir = "${{ github.workspace }}\build\android\keystore"
           New-Item -ItemType Directory -Path $dir -Force | Out-Null
           $file = "$dir\release.keystore"
           $b64 = '${{ secrets.ANDROID_KEYSTORE_BASE64 }}'
@@ -191,19 +190,17 @@ jobs:
       - name: Build Android (Release)
         if: github.event.inputs.skip_sign != 'true'
         env:
-          ANDROID_KEYSTORE_FILE: ${{ github.workspace }}\MikuMikuAR\build\android\keystore\release.keystore
+          ANDROID_KEYSTORE_FILE: ${{ github.workspace }}\build\android\keystore\release.keystore
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          cd MikuMikuAR
-          powershell -ExecutionPolicy Bypass -File ..\scripts\build-android.ps1 -Arch arm64 -Production
+          powershell -ExecutionPolicy Bypass -File scripts\build-android.ps1 -Arch arm64 -Production
 
       - name: Build Android (Debug, no sign)
         if: github.event.inputs.skip_sign == 'true'
         run: |
-          cd MikuMikuAR
-          powershell -ExecutionPolicy Bypass -File ..\scripts\build-android.ps1 -Arch arm64
+          powershell -ExecutionPolicy Bypass -File scripts\build-android.ps1 -Arch arm64
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5
