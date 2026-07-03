@@ -88,7 +88,7 @@ docs/
 |------|-----------|
 | **每次会话起步** | 本文件 |
 | **接新任务** | `docs/requirements.md`（需求全貌）→ `docs/status.md`（当前状态）→ `docs/roadmap.md`（路线图） |
-| **改 Go 逻辑** | `docs/architecture.md`（整体架构）→ `MikuMikuAR/app.go` |
+| **改 Go 逻辑** | `docs/architecture.md`（整体架构）→ `app.go` |
 | **改前端渲染** | `docs/architecture.md`（PMX/VMD 环节）→ `frontend/src/scene/scene.ts` |
 | **换装 / 纹理变体** | `docs/architecture.md` §16 → `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
 | **音频 / VMD 同步** | `frontend/src/outfit/audio.ts` |
@@ -134,7 +134,7 @@ docs/
 | 配置 / 外部库 / Blender / MMD | `docs/architecture.md` §生态聚合 | `frontend/src/menus/settings.ts` |
 | 场景序列化 / 自动保存 / libraryRef | `docs/architecture.md` §场景序列化 | `frontend/src/scene/scene.ts` |
 | 修复 / Bug / 崩溃 / 不显示 | `docs/troubleshooting.md` | `docs/fix-cycle.md` |
-| Go 后端 / Binding / 文件操作 | `docs/architecture.md` §Go 后端 | `MikuMikuAR/app.go` |
+| Go 后端 / Binding / 文件操作 | `docs/architecture.md` §Go 后端 | `app.go` |
 | 换装 / 纹理变体 / outfits.json | `docs/architecture.md` §16 | `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
 | 音频 / 音乐 / VMD 同步 | `frontend/src/outfit/audio.ts` | `frontend/src/scene/scene.ts`（`syncAudioPlayback`） |
 | 程序化动作 / Idle / Auto Dance | `frontend/src/motion/procedural-motion.ts` | `frontend/src/motion/beat-detector.ts` |
@@ -188,10 +188,10 @@ git log --oneline -5
 
 ```bash
 # Go 改了
-cd MikuMikuAR && go build ./... 2>&1
+cd <repo-root> && go build ./... 2>&1
 
 # 前端改了
-cd MikuMikuAR/frontend && npx vite build 2>&1
+cd frontend && npx vite build 2>&1
 ```
 
 不攒多个修改。一个改一个 build。
@@ -215,23 +215,23 @@ cd MikuMikuAR/frontend && npx vite build 2>&1
 ```
 仓库根（本文件所在目录）
 ├── AGENTS.md          # 🔑 AI 入口（本文件）
+├── app.go             # Wails Binding 入口（Go 后端）
+├── main.go            # Wails 应用入口
+├── go.mod             # Go 依赖
+├── Taskfile.yml       # Wails v3 任务配置
+├── frontend/         # 前端源码（Vite + TypeScript + Babylon.js）
+├── build/            # Wails 构建配置
+├── internal/         # Go 内部包
+├── tests/            # 测试脚本
+├── scripts/          # 构建脚本
 ├── docs/              # 📖 项目文档（需求/架构/状态/ADR 等）
-├── .github/           # GitHub Issue 模板
-├── .env.example       # 环境变量示例
-└── MikuMikuAR/        # 📦 代码子目录（Go + 前端）
-    ├── app.go         # Wails Binding 入口（文件IO、对话框、HTTP文件服务器）
-    ├── main.go        # Wails 应用入口
-    ├── go.mod         # Go 依赖
-    ├── wails.json     # Wails 配置
-    ├── tests/
-    │   └── test_config_syntax.py   # 契约测试
-    └── scripts/
-        └── build.ps1               # 构建验证脚本
+├── .github/           # GitHub Actions CI
+└── .env.example       # 环境变量示例
 ```
 
-### 3.2 Go 端（MikuMikuAR/ 下）
+### 3.2 Go 端（仓库根）
 
-Go 端核心文件：
+Go 端核心文件（均在仓库根目录）：
 - `app.go` — Wails Binding 入口（文件IO/HTTP服务器/扫描/标签/预设/换装）
 - `pmx.go` — PMX Header 二进制解析
 - `main.go` — Wails 应用入口
@@ -239,7 +239,7 @@ Go 端核心文件：
 ### 3.3 前端
 
 ```
-MikuMikuAR/frontend/
+frontend/
 ├── src/
 │   ├── core/
 │   │   ├── main.ts           # ★ 入口 — 事件绑定 + 快捷键 + 初始化
@@ -539,7 +539,7 @@ git checkout --theirs path # 接受对方版本，重新 apply 自己的改动
 - **Shell**：优先用 `bash`
 - **路径分隔符**：统一正斜杠 `/`
 - **调试日志用完即删**：`console.log` / `fmt.Print` 测试完后**必须请示用户确认**再删
-- **发版**：`cd MikuMikuAR && wails build`
+- **发版**：`go build -o MikuMikuAR.exe .` （Wails v3，无 wails CLI）
 
 ---
 
