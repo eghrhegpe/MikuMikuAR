@@ -1,4 +1,4 @@
-# Android 一键构建脚本 (Windows PowerShell)
+﻿# Android 一键构建脚本 (Windows PowerShell)
 # 用法: .\scripts\build-android.ps1 -Arch arm64|amd64|all -Production -Clean
 param(
     [ValidateSet("arm64", "amd64", "x86_64", "all")]
@@ -119,11 +119,11 @@ if (Test-Path $apkPath) {
     Copy-Item $apkPath $distApk -Force
     $size = (Get-Item $distApk).Length / 1MB
     Write-Output ""
-    Write-Output "[build-android] 构建完成"
-    Write-Output "   产物: $distApk"
-    Write-Output "   大小: $([math]::Round($size, 2)) MB"
+    Write-Output "[build-android] Build complete"
+    Write-Output "   APK: $distApk"
+    Write-Output "   Size: $([math]::Round($size, 2)) MB"
 } else {
-    Write-Error "未找到构建产物: $apkPath"
+    Write-Error "Build artifact not found: $apkPath"
     exit 1
 }
 
