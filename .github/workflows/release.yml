@@ -70,6 +70,7 @@ jobs:
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
       - name: Build
         run: .\scripts\build-windows.ps1 -Production
+        shell: powershell
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
@@ -152,34 +153,13 @@ jobs:
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
 
-      - name: Cache Android SDK
-        id: cache-sdk
-        uses: actions/cache@v5
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
         with:
-          path: C:\Android\Sdk
-          key: android-sdk-${{ runner.os }}-ndk26-platform34-bt34
+          packages: ''
 
-      - name: Install Android SDK
-        if: steps.cache-sdk.outputs.cache-hit != 'true'
-        run: |
-          $sdkDir = "C:\Android\Sdk"
-          New-Item -ItemType Directory -Path $sdkDir -Force | Out-Null
-          $url = "https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip"
-          $zip = "$env:TEMP\cmdline-tools.zip"
-          $ok = $false
-          for ($i = 1; $i -le 3; $i++) {
-            try { Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing -TimeoutSec 120; $ok = $true; break }
-            catch { if ($i -lt 3) { Start-Sleep -Seconds 5 } }
-          }
-          if (-not $ok) { Write-Error "Download failed"; exit 1 }
-          Expand-Archive $zip -DestinationPath "$sdkDir\cmdline-tools-temp" -Force
-          Move-Item "$sdkDir\cmdline-tools-temp\cmdline-tools" "$sdkDir\cmdline-tools\latest" -Force
-          Remove-Item $zip, "$sdkDir\cmdline-tools-temp" -Recurse -Force
-          $sm = "$sdkDir\cmdline-tools\latest\bin\sdkmanager.bat"
-          $af = "$env:TEMP\ans.txt"; "y,y,y,y,y,y,y,y" -split "," | Out-File $af -Encoding ascii
-          Get-Content $af | & $sm --licenses --sdk_root=$sdkDir | Out-Null; Remove-Item $af -Force
-          & $sm "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;26.3.11579264" --sdk_root=$sdkDir
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Install Android NDK & Build Tools
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;26.3.11579264"
 
       - name: Cache Gradle
         uses: actions/cache@v5
