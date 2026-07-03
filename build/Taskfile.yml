@@ -2,7 +2,7 @@ version: '3'
 
 vars:
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
-  VITE_PORT: '{{.VITE_PORT | default "5173"}}'
+  VITE_PORT: '{{.VITE_PORT | default "9245"}}'
   APP_NAME: '{{.APP_NAME | default "MikuMikuAR"}}'
   BIN_DIR: '{{.BIN_DIR | default "bin"}}'
 

@@ -85,7 +85,7 @@ Phase 9     扩展物理与平台                    ← ✅ 已完成
                ├── 布料模拟/软体物理 ✅ XPBD 核心引擎 + 程序化裙摆
                └── 多相机模式(Freefly/One-shot/Concert) ✅
               ↓
-Phase 10    Android 适配                     ← 远期
+Phase 10    Android 适配                     ← 发版测试中
 ```
 
 ---

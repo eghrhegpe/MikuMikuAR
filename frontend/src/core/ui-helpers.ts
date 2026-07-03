@@ -14,6 +14,9 @@ export function slideRow(
     headerToggle?: {
         value: boolean;
         onChange: (v: boolean) => void;
+        disabled?: boolean;
+        disabledHint?: string;
+        onDisabledClick?: () => void;
     }
 ): void {
     const row = document.createElement('div');
@@ -57,18 +60,30 @@ export function slideRow(
         // Toggle
         const toggle = document.createElement('label');
         toggle.className = 'toggle header-toggle';
+        if (headerToggle.disabled) {
+            toggle.classList.add('toggle-disabled');
+        }
         const input = document.createElement('input');
         input.type = 'checkbox';
         input.checked = headerToggle.value;
+        input.disabled = !!headerToggle.disabled;
         const slider = document.createElement('span');
         slider.className = 'slider';
         toggle.appendChild(input);
         toggle.appendChild(slider);
-        toggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            input.checked = !input.checked;
-            headerToggle.onChange(input.checked);
-        });
+
+        if (!headerToggle.disabled) {
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                input.checked = !input.checked;
+                headerToggle.onChange(input.checked);
+            });
+        } else if (headerToggle.onDisabledClick) {
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                headerToggle.onDisabledClick!();
+            });
+        }
         row.appendChild(toggle);
 
         // Arrow

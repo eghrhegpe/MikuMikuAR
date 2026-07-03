@@ -25,7 +25,21 @@ export interface ClothConfig {
  */
 export interface Config {
     "ui_state": UIState;
-    "library_root": string;
+
+    /**
+     * 迁移后清空，保留字段用于自动迁移
+     */
+    "library_root"?: string;
+
+    /**
+     * 总根目录
+     */
+    "resource_root": string;
+
+    /**
+     * 各类型路径覆写
+     */
+    "override_paths": OverridePaths;
     "external_paths": ExternalPath[] | null;
     "blender_path": string;
 
@@ -302,6 +316,42 @@ export interface ModelPresetEntry {
     "modelRef": string;
     "updatedAt": number;
     "autoApply": boolean;
+}
+
+/**
+ * OverridePaths allows per-category path overrides.
+ * If a field is empty, the default path under ResourceRoot is used.
+ */
+export interface OverridePaths {
+    /**
+     * 默认 resource_root/PMX
+     */
+    "pmx": string;
+
+    /**
+     * 默认 resource_root/VMD
+     */
+    "vmd": string;
+
+    /**
+     * 默认 resource_root/stage
+     */
+    "stage": string;
+
+    /**
+     * 默认 resource_root/environment
+     */
+    "environment": string;
+
+    /**
+     * 默认 resource_root/MD-dress
+     */
+    "md_dress": string;
+
+    /**
+     * 默认 resource_root/setting
+     */
+    "setting": string;
 }
 
 /**

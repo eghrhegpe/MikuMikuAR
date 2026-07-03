@@ -527,6 +527,37 @@ body {
 .toggle.header-toggle input:checked + .slider::before {
     transform: translateX(14px);
 }
+/* Disabled toggle (e.g. WebGL 2.0 required) */
+.toggle.header-toggle.toggle-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.toggle.header-toggle.toggle-disabled .slider {
+    background: var(--border, #555) !important;
+}
+
+/* Experimental feature warning */
+.experimental-warning {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--warning, #f0a020);
+    background: var(--warning-bg, rgba(240, 160, 32, 0.08));
+    border: 1px solid var(--warning-border, rgba(240, 160, 32, 0.25));
+}
+.experimental-warning iconify-icon {
+    flex-shrink: 0;
+}
+.experimental-hint {
+    font-size: 10px;
+    color: var(--text-dim, #888);
+    padding: 4px 10px 8px;
+    opacity: 0.7;
+}
 
 /* Icon fallback (shown when Iconify icon fails to load) */
 .cs-icon-fallback {

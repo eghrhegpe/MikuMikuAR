@@ -311,10 +311,23 @@ type UIState struct {
 	PerformanceMode string  `json:"performanceMode"` // "auto"|"quality"|"balanced"|"performance"
 }
 
+// OverridePaths allows per-category path overrides.
+// If a field is empty, the default path under ResourceRoot is used.
+type OverridePaths struct {
+	PMX         string `json:"pmx"`         // 默认 resource_root/PMX
+	VMD         string `json:"vmd"`         // 默认 resource_root/VMD
+	Stage       string `json:"stage"`       // 默认 resource_root/stage
+	Environment string `json:"environment"` // 默认 resource_root/environment
+	MDDress     string `json:"md_dress"`    // 默认 resource_root/MD-dress
+	Setting     string `json:"setting"`     // 默认 resource_root/setting
+}
+
 // Config holds persistent user settings.
 type Config struct {
 	UIState             UIState             `json:"ui_state"`
-	LibraryRoot         string              `json:"library_root"`
+	LibraryRoot         string              `json:"library_root,omitempty"` // 迁移后清空，保留字段用于自动迁移
+	ResourceRoot        string              `json:"resource_root"`          // 总根目录
+	OverridePaths       OverridePaths       `json:"override_paths"`        // 各类型路径覆写
 	ExternalPaths       []ExternalPath      `json:"external_paths"`
 	BlenderPath         string              `json:"blender_path"`
 	DisplayNamePriority string              `json:"display_name_priority"` // "name_jp" | "name_en" | "filename"
@@ -482,6 +495,88 @@ func (a *App) AddRecentModel(libraryRef string) error {
 			cfg.RecentModels = cfg.RecentModels[:maxRecentModels]
 		}
 	}, false)
+}
+
+// DefaultResourceRoot returns the default resource root path for the current platform.
+func DefaultResourceRoot() string {
+	switch stdruntime.GOOS {
+	case "android":
+		if sd := os.Getenv("EXTERNAL_STORAGE"); sd != "" {
+			return filepath.Join(sd, "MMD")
+		}
+		return "/sdcard/MMD"
+	case "darwin":
+		home, _ := os.UserHomeDir()
+		return filepath.Join(home, "Documents", "MMD")
+	default:
+		home, _ := os.UserHomeDir()
+		return filepath.Join(home, "MMD")
+	}
+}
+
+// ensureResourceDirs creates the default subdirectories under ResourceRoot if they don't exist.
+func (a *App) ensureResourceDirs(cfg *Config) {
+	root := cfg.ResourceRoot
+	if root == "" {
+		root = DefaultResourceRoot()
+		cfg.ResourceRoot = root
+	}
+	dirs := []string{"PMX", "VMD", "stage", "environment", "MD-dress", "setting"}
+	for _, d := range dirs {
+		os.MkdirAll(filepath.Join(root, d), 0755)
+	}
+}
+
+// GetPath returns the effective path for a category.
+func (a *App) GetPath(cfg *Config, category string) string {
+	root := cfg.ResourceRoot
+	if root == "" {
+		root = DefaultResourceRoot()
+	}
+	switch category {
+	case "pmx":
+		if cfg.OverridePaths.PMX != "" {
+			return cfg.OverridePaths.PMX
+		}
+		return filepath.Join(root, "PMX")
+	case "vmd":
+		if cfg.OverridePaths.VMD != "" {
+			return cfg.OverridePaths.VMD
+		}
+		return filepath.Join(root, "VMD")
+	case "stage":
+		if cfg.OverridePaths.Stage != "" {
+			return cfg.OverridePaths.Stage
+		}
+		return filepath.Join(root, "stage")
+	case "environment":
+		if cfg.OverridePaths.Environment != "" {
+			return cfg.OverridePaths.Environment
+		}
+		return filepath.Join(root, "environment")
+	case "md_dress":
+		if cfg.OverridePaths.MDDress != "" {
+			return cfg.OverridePaths.MDDress
+		}
+		return filepath.Join(root, "MD-dress")
+	case "setting":
+		if cfg.OverridePaths.Setting != "" {
+			return cfg.OverridePaths.Setting
+		}
+		return filepath.Join(root, "setting")
+	default:
+		return root
+	}
+}
+
+// migrateLibraryRoot migrates the old library_root field to resource_root.
+func (a *App) migrateLibraryRoot(cfg *Config) bool {
+	if cfg.LibraryRoot != "" && cfg.ResourceRoot == "" {
+		cfg.ResourceRoot = cfg.LibraryRoot
+		cfg.LibraryRoot = ""
+		return true
+	}
+	return false
 }
 
 // ======== Model Preset Bindings ========

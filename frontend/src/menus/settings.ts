@@ -27,7 +27,7 @@ import {
     dom,
     closeAllOverlays,
     setStatus,
-    libraryRoot,
+    resourceRoot,
     externalPaths,
     displayNamePriority,
     setDisplayNamePriority,
@@ -43,6 +43,7 @@ import {
     setLibrarySortMode,
 } from '../core/config';
 import { SlideMenu } from './menu';
+import { selectResourceRoot, selectOverridePath } from './library-core';
 import { slideRow, addToggleRow } from '../core/ui-helpers';
 import { setPerformanceMode, getPerformanceMode } from '../scene/scene-performance';
 import { rescanAndSync, reloadConfig } from './library';
@@ -531,10 +532,30 @@ function buildSettingsClearCacheLevel(): PopupLevel {
 }
 
 function buildSettingsSystemLevel(): PopupLevel {
+    const root = resourceRoot;
+    const rootSub = root ? (root.length > 20 ? '...' + root.slice(-17) : root) : '未设置';
+    const paths = overridePaths || {};
+    const pathSub = (key: string, defSub: string) => {
+        const val = paths[key as keyof typeof paths];
+        if (val) {
+            const s = val as string;
+            return s.length > 20 ? '...' + s.slice(-17) : s;
+        }
+        return defSub;
+    };
     return {
         label: '系统',
         dir: '',
         items: [
+            { kind: 'action', label: '📁 资源根目录', icon: 'folder', target: 'set:resourceroot', sublabel: rootSub },
+            { kind: 'divider', label: '资源路径', icon: '' },
+            { kind: 'action', label: '🎭 PMX 模型', icon: 'box', target: 'set:path:pmx', sublabel: pathSub('pmx', '默认') },
+            { kind: 'action', label: '💃 VMD 动作', icon: 'music', target: 'set:path:vmd', sublabel: pathSub('vmd', '默认') },
+            { kind: 'action', label: '🏠 Stage 场景', icon: 'home', target: 'set:path:stage', sublabel: pathSub('stage', '默认') },
+            { kind: 'action', label: '🌤  Environment', icon: 'cloud', target: 'set:path:environment', sublabel: pathSub('environment', '默认') },
+            { kind: 'action', label: '👗 MD-dress', icon: 'shirt', target: 'set:path:md_dress', sublabel: pathSub('md_dress', '默认') },
+            { kind: 'action', label: '⚙️ 配置目录', icon: 'settings', target: 'set:path:setting', sublabel: pathSub('setting', '默认') },
+            { kind: 'divider', label: '', icon: '' },
             { kind: 'folder', label: '外部库管理', icon: 'plug', target: 'settings:external' },
             { kind: 'folder', label: '清除缓存', icon: 'trash-2', target: 'settings:clearcache' },
         ],
@@ -566,6 +587,22 @@ function handleSettingsAction(row: PopupRow): void {
                     .catch(console.warn);
             }
             break;
+        case 'set:libraryroot':
+            selectResourceRoot().catch(console.warn);
+            break;
+        case 'set:resourceroot':
+            selectResourceRoot().catch(console.warn);
+            break;
+        case 'set:path:pmx':
+        case 'set:path:vmd':
+        case 'set:path:stage':
+        case 'set:path:environment':
+        case 'set:path:md_dress':
+        case 'set:path:setting': {
+            const cat = row.target.replace('set:path:', '');
+            selectOverridePath(cat).catch(console.warn);
+            break;
+        }
         case 'set:addexternal':
             (async () => {
                 try {

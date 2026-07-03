@@ -354,6 +354,23 @@ export let libraryRoot = '';
 export function setLibraryRoot(r: string): void {
     libraryRoot = r;
 }
+export let resourceRoot = '';
+export function setResourceRoot(r: string): void {
+    resourceRoot = r;
+    libraryRoot = r;
+}
+export interface OverridePaths {
+    pmx?: string;
+    vmd?: string;
+    stage?: string;
+    environment?: string;
+    md_dress?: string;
+    setting?: string;
+}
+export let overridePaths: OverridePaths = {};
+export function setOverridePaths(p: OverridePaths): void {
+    overridePaths = p;
+}
 
 export let allModels: LibraryModel[] = [];
 export function setAllModels(m: LibraryModel[]): void {
