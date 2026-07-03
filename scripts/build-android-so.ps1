@@ -10,12 +10,15 @@ param(
 $scriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectDir = Resolve-Path "$scriptsDir\.." | Select-Object -ExpandProperty Path
 
-# SDK / NDK 自动定位
-$sdkDir = [Environment]::GetEnvironmentVariable("ANDROID_HOME", "User")
+# SDK / NDK 自动定位（兼容 CI Process 级 + 本地 User 级环境变量）
+$sdkDir = $env:ANDROID_HOME
+if (-not $sdkDir) { $sdkDir = $env:ANDROID_SDK_ROOT }
+if (-not $sdkDir) { $sdkDir = [Environment]::GetEnvironmentVariable("ANDROID_HOME", "User") }
 if (-not $sdkDir) { $sdkDir = [Environment]::GetEnvironmentVariable("ANDROID_SDK_ROOT", "User") }
 if (-not $sdkDir) { $sdkDir = "C:\Android\Sdk" }
 
-$ndkDir = [Environment]::GetEnvironmentVariable("ANDROID_NDK_HOME", "User")
+$ndkDir = $env:ANDROID_NDK_HOME
+if (-not $ndkDir) { $ndkDir = [Environment]::GetEnvironmentVariable("ANDROID_NDK_HOME", "User") }
 if (-not $ndkDir -and (Test-Path "$sdkDir\ndk")) {
     $ndkDir = Get-ChildItem "$sdkDir\ndk" -Directory | Sort-Object Name -Descending | Select-Object -First 1 -ExpandProperty FullName
 }

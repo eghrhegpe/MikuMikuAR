@@ -37,6 +37,30 @@ if ($Clean) {
     Remove-Item "$androidDir\app\src\main\jniLibs" -Recurse -Force -ErrorAction SilentlyContinue
 }
 
+# 前端构建（跳过 npm ci 避免 Windows 文件锁问题）
+Write-Output "[build-android] 构建前端..."
+Set-Location frontend
+if (-not (Test-Path "node_modules\vite\index.js")) {
+    Write-Output "[build-android] node_modules 不存在，执行 npm ci..."
+    npm ci --quiet
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+} else {
+    Write-Output "[build-android] node_modules 已就绪，跳过 npm ci"
+}
+npx vite build
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Set-Location $projectDir
+
+# 前端产物拷贝到 Android assets
+$assetsDir = "$androidDir\app\src\main\assets"
+if (Test-Path $assetsDir) {
+    Remove-Item "$assetsDir\*" -Recurse -Force -ErrorAction SilentlyContinue
+} else {
+    New-Item -ItemType Directory -Path $assetsDir -Force | Out-Null
+}
+Copy-Item "frontend\dist\*" $assetsDir -Recurse -Force
+Write-Output "[build-android] Android assets 已更新"
+
 # 生成 overlay.json
 $overlayJson = "$androidDir\overlay.json"
 if (-not (Test-Path $overlayJson)) {
@@ -91,7 +115,7 @@ New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
 if (Test-Path $apkPath) {
     $archLabel = if ($Arch -eq "all") { "multi" } else { $Arch }
-    $distApk = "$distDir\-$version-android-$archLabel.apk"
+    $distApk = "$distDir\MikuMikuAR-$version-android-$archLabel.apk"
     Copy-Item $apkPath $distApk -Force
     $size = (Get-Item $distApk).Length / 1MB
     Write-Output ""
