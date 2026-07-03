@@ -14,10 +14,10 @@
 
 | 操作 | 文件 | 说明 |
 |------|------|------|
-| 修改 | `MikuMikuAR/app.go` | 新增 `SelectVPDPose` binding |
-| 修改 | `MikuMikuAR/frontend/src/scene.ts` | 新增 `loadVPDPose` 函数 |
-| 创建 | `MikuMikuAR/frontend/src/vpd-parser.ts` | VPD 解析 + VMD 二进制生成 |
-| 修改 | `MikuMikuAR/frontend/src/library.ts` | 动作绑定子菜单加"加载姿势" |
+| 修改 | `app.go` | 新增 `SelectVPDPose` binding |
+| 修改 | `frontend/src/scene.ts` | 新增 `loadVPDPose` 函数 |
+| 创建 | `frontend/src/vpd-parser.ts` | VPD 解析 + VMD 二进制生成 |
+| 修改 | `frontend/src/library.ts` | 动作绑定子菜单加"加载姿势" |
 | 修改 | `MikuMikuAR/docs/reusables.md` | 追加 `SelectVPDPose` 条目 |
 
 ---
@@ -262,13 +262,13 @@ func (a *App) SelectVPDPose() (string, error) {
 - [ ] **Step 3: 构建验证**
 
 ```bash
-cd MikuMikuAR && go build ./... 2>&1
+cd . && go build ./... 2>&1
 ```
 
 - [ ] **Step 4: 重建 Wails 绑定**
 
 ```bash
-cd MikuMikuAR && wails dev
+cd . && wails dev
 ```
 
 等待前端构建完成，确认 `wailsjs/go/main/App.js` 和 `App.d.ts` 已包含 `SelectVPDPose`。
@@ -320,7 +320,7 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
 - [ ] **Step 2: 构建验证**
 
 ```bash
-cd MikuMikuAR/frontend && npx vite build 2>&1
+cd frontend && npx vite build 2>&1
 ```
 
 ---
@@ -386,7 +386,7 @@ import { SelectVPDPose } from "../wailsjs/go/main/App";
 - [ ] **Step 4: 构建验证**
 
 ```bash
-cd MikuMikuAR/frontend && npx vite build 2>&1
+cd frontend && npx vite build 2>&1
 ```
 
 ---

@@ -54,23 +54,23 @@ MorphKeyFrameBytes = 15(name) + 4(frame) + 4(weight) = 23
 
 | File | Action | Responsibility |
 |------|--------|---------------|
-| `MikuMikuAR/frontend/src/vmd-writer.ts` | **CREATE** | 正确的二进制 VMD 写入器：多帧骨骼帧(111B) + morph帧(23B) + 默认插值 |
-| `MikuMikuAR/frontend/src/beat-detector.ts` | **CREATE** | Web Audio 节拍检测：AnalyserNode 接入 + BPM 估计 + beat phase |
-| `MikuMikuAR/frontend/src/procedural-motion.ts` | **CREATE** | 程序化动作管理器：Idle/Auto Dance VMD 生成 + 状态管理 + tick 集成 |
-| `MikuMikuAR/frontend/src/audio.ts` | **MODIFY** | 暴露 AudioContext + AnalyserNode 供 beat-detector 使用 |
-| `MikuMikuAR/frontend/src/scene.ts` | **MODIFY** | 接入 procedural-motion tick；VMD 加载时禁用；场景序列化字段 |
-| `MikuMikuAR/frontend/src/scene-menu.ts` | **MODIFY** | 场景菜单新增「程序化动作」入口（toggle + 滑块） |
-| `MikuMikuAR/frontend/src/__tests__/vmd-writer.test.ts` | **CREATE** | VMD 二进制格式单元测试 |
-| `MikuMikuAR/frontend/src/__tests__/beat-detector.test.ts` | **CREATE** | 节拍检测逻辑测试（合成频率数据） |
-| `MikuMikuAR/frontend/src/__tests__/procedural-motion.test.ts` | **CREATE** | Idle/Auto Dance VMD 生成测试 |
+| `frontend/src/vmd-writer.ts` | **CREATE** | 正确的二进制 VMD 写入器：多帧骨骼帧(111B) + morph帧(23B) + 默认插值 |
+| `frontend/src/beat-detector.ts` | **CREATE** | Web Audio 节拍检测：AnalyserNode 接入 + BPM 估计 + beat phase |
+| `frontend/src/procedural-motion.ts` | **CREATE** | 程序化动作管理器：Idle/Auto Dance VMD 生成 + 状态管理 + tick 集成 |
+| `frontend/src/audio.ts` | **MODIFY** | 暴露 AudioContext + AnalyserNode 供 beat-detector 使用 |
+| `frontend/src/scene.ts` | **MODIFY** | 接入 procedural-motion tick；VMD 加载时禁用；场景序列化字段 |
+| `frontend/src/scene-menu.ts` | **MODIFY** | 场景菜单新增「程序化动作」入口（toggle + 滑块） |
+| `frontend/src/__tests__/vmd-writer.test.ts` | **CREATE** | VMD 二进制格式单元测试 |
+| `frontend/src/__tests__/beat-detector.test.ts` | **CREATE** | 节拍检测逻辑测试（合成频率数据） |
+| `frontend/src/__tests__/procedural-motion.test.ts` | **CREATE** | Idle/Auto Dance VMD 生成测试 |
 
 ---
 
 ### Task 1: VMD 写入器模块 + 测试
 
 **Files:**
-- Create: `MikuMikuAR/frontend/src/vmd-writer.ts`
-- Test: `MikuMikuAR/frontend/src/__tests__/vmd-writer.test.ts`
+- Create: `frontend/src/vmd-writer.ts`
+- Test: `frontend/src/__tests__/vmd-writer.test.ts`
 
 - [ ] **Step 1: 创建 vmd-writer.ts**
 
@@ -297,18 +297,18 @@ describe("vmd-writer interpolation", () => {
 
 - [ ] **Step 3: 运行测试验证通过**
 
-Run: `cd MikuMikuAR/frontend && npx vitest run src/__tests__/vmd-writer.test.ts`
+Run: `cd frontend && npx vitest run src/__tests__/vmd-writer.test.ts`
 Expected: PASS (all tests green)
 
 - [ ] **Step 4: 构建验证**
 
-Run: `cd MikuMikuAR/frontend && npx tsc --noEmit 2>&1 | head -20`
+Run: `cd frontend && npx tsc --noEmit 2>&1 | head -20`
 Expected: 无类型错误
 
 - [ ] **Step 5: 提交**
 
 ```bash
-cd MikuMikuAR/frontend && git add src/vmd-writer.ts src/__tests__/vmd-writer.test.ts
+cd frontend && git add src/vmd-writer.ts src/__tests__/vmd-writer.test.ts
 git commit -m "feat(procedural-motion): add VMD binary writer with correct 111-byte bone frames"
 ```
 
@@ -317,8 +317,8 @@ git commit -m "feat(procedural-motion): add VMD binary writer with correct 111-b
 ### Task 2: 节拍检测模块 + 测试
 
 **Files:**
-- Create: `MikuMikuAR/frontend/src/beat-detector.ts`
-- Test: `MikuMikuAR/frontend/src/__tests__/beat-detector.test.ts`
+- Create: `frontend/src/beat-detector.ts`
+- Test: `frontend/src/__tests__/beat-detector.test.ts`
 
 - [ ] **Step 1: 创建 beat-detector.ts**
 
@@ -546,13 +546,13 @@ describe("BeatDetector instance", () => {
 
 - [ ] **Step 3: 运行测试**
 
-Run: `cd MikuMikuAR/frontend && npx vitest run src/__tests__/beat-detector.test.ts`
+Run: `cd frontend && npx vitest run src/__tests__/beat-detector.test.ts`
 Expected: PASS
 
 - [ ] **Step 4: 构建验证 + 提交**
 
 ```bash
-cd MikuMikuAR/frontend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 git add src/beat-detector.ts src/__tests__/beat-detector.test.ts
 git commit -m "feat(procedural-motion): add Web Audio beat detector with BPM estimation"
 ```
@@ -562,8 +562,8 @@ git commit -m "feat(procedural-motion): add Web Audio beat detector with BPM est
 ### Task 3: 程序化动作管理器 + 测试
 
 **Files:**
-- Create: `MikuMikuAR/frontend/src/procedural-motion.ts`
-- Test: `MikuMikuAR/frontend/src/__tests__/procedural-motion.test.ts`
+- Create: `frontend/src/procedural-motion.ts`
+- Test: `frontend/src/__tests__/procedural-motion.test.ts`
 
 - [ ] **Step 1: 创建 procedural-motion.ts**
 
@@ -887,13 +887,13 @@ describe("auto-switch logic", () => {
 
 - [ ] **Step 3: 运行测试**
 
-Run: `cd MikuMikuAR/frontend && npx vitest run src/__tests__/procedural-motion.test.ts`
+Run: `cd frontend && npx vitest run src/__tests__/procedural-motion.test.ts`
 Expected: PASS
 
 - [ ] **Step 4: 构建验证 + 提交**
 
 ```bash
-cd MikuMikuAR/frontend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 git add src/procedural-motion.ts src/__tests__/procedural-motion.test.ts
 git commit -m "feat(procedural-motion): add Idle/Auto Dance VMD generator with bone+morph keyframes"
 ```
@@ -903,11 +903,11 @@ git commit -m "feat(procedural-motion): add Idle/Auto Dance VMD generator with b
 ### Task 4: 音频分析器接入
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/audio.ts`
+- Modify: `frontend/src/audio.ts`
 
 - [ ] **Step 1: 读取 audio.ts 当前结构确认**
 
-Read `MikuMikuAR/frontend/src/audio.ts` lines 1-20（确认模块变量与 `ensureAudio` 已存在，见前置上下文 — 已确认）。
+Read `frontend/src/audio.ts` lines 1-20（确认模块变量与 `ensureAudio` 已存在，见前置上下文 — 已确认）。
 
 - [ ] **Step 2: 暴露 BeatDetector 接入点**
 
@@ -973,13 +973,13 @@ export function notifyBeatDetectorReset(): void {
 
 - [ ] **Step 5: 构建验证**
 
-Run: `cd MikuMikuAR/frontend && npx tsc --noEmit`
+Run: `cd frontend && npx tsc --noEmit`
 Expected: 无错误
 
 - [ ] **Step 6: 提交**
 
 ```bash
-cd MikuMikuAR/frontend && git add src/audio.ts
+cd frontend && git add src/audio.ts
 git commit -m "feat(procedural-motion): expose beat detector attachment point in audio module"
 ```
 
@@ -988,11 +988,11 @@ git commit -m "feat(procedural-motion): expose beat detector attachment point in
 ### Task 5: 接入场景动画循环
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/scene.ts`
+- Modify: `frontend/src/scene.ts`
 
 - [ ] **Step 1: 读取 scene.ts 关键区域确认行号**
 
-Read `MikuMikuAR/frontend/src/scene.ts` lines 42-55（imports）和 323-373（initScene + tick handler）。已在前置确认：tick handler 在 line 335，`runtime.onAnimationTickObservable.add`。
+Read `frontend/src/scene.ts` lines 42-55（imports）和 323-373（initScene + tick handler）。已在前置确认：tick handler 在 line 335，`runtime.onAnimationTickObservable.add`。
 
 - [ ] **Step 2: 添加 imports**
 
@@ -1155,18 +1155,18 @@ export function regenerateProcMotion(): void {
 
 - [ ] **Step 9: 构建验证**
 
-Run: `cd MikuMikuAR/frontend && npx tsc --noEmit 2>&1 | head -30`
+Run: `cd frontend && npx tsc --noEmit 2>&1 | head -30`
 Expected: 无错误（若有 `isAudioPlaying` 未导出错误，确认 audio.ts line 112 已 export）
 
 - [ ] **Step 10: 运行全量测试确认无回归**
 
-Run: `cd MikuMikuAR/frontend && npx vitest run`
+Run: `cd frontend && npx vitest run`
 Expected: 全部 PASS（现有 93 tests + 新增 tests）
 
 - [ ] **Step 11: 提交**
 
 ```bash
-cd MikuMikuAR/frontend && git add src/scene.ts
+cd frontend && git add src/scene.ts
 git commit -m "feat(procedural-motion): wire Idle/Auto Dance into scene animation tick"
 ```
 
@@ -1175,11 +1175,11 @@ git commit -m "feat(procedural-motion): wire Idle/Auto Dance into scene animatio
 ### Task 6: 场景菜单 UI
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/scene-menu.ts`
+- Modify: `frontend/src/scene-menu.ts`
 
 - [ ] **Step 1: 读取 scene-menu.ts 根菜单结构确认**
 
-Read `MikuMikuAR/frontend/src/scene-menu.ts` lines 33-48（`buildSceneRoot`，已在前置确认）。根菜单项数组在 line 37-46。
+Read `frontend/src/scene-menu.ts` lines 33-48（`buildSceneRoot`，已在前置确认）。根菜单项数组在 line 37-46。
 
 - [ ] **Step 2: 添加 imports**
 
@@ -1288,18 +1288,18 @@ function buildProcMotionModeLevel(): PopupLevel {
 
 - [ ] **Step 7: 构建验证**
 
-Run: `cd MikuMikuAR/frontend && npx tsc --noEmit 2>&1 | head -30`
+Run: `cd frontend && npx tsc --noEmit 2>&1 | head -30`
 Expected: 无错误
 
 - [ ] **Step 8: 构建 bundle**
 
-Run: `cd MikuMikuAR/frontend && npx vite build 2>&1 | tail -10`
+Run: `cd frontend && npx vite build 2>&1 | tail -10`
 Expected: 构建成功
 
 - [ ] **Step 9: 提交**
 
 ```bash
-cd MikuMikuAR/frontend && git add src/scene-menu.ts
+cd frontend && git add src/scene-menu.ts
 git commit -m "feat(procedural-motion): add scene menu entry with mode toggle + intensity/speed sliders"
 ```
 
@@ -1308,11 +1308,11 @@ git commit -m "feat(procedural-motion): add scene menu entry with mode toggle + 
 ### Task 7: 场景序列化
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/scene.ts`
+- Modify: `frontend/src/scene.ts`
 
 - [ ] **Step 1: 读取 SceneFile 类型定义确认**
 
-Read `MikuMikuAR/frontend/src/scene.ts` 搜索 `interface SceneFile` 或 `type SceneFile`（reusables.md 记录在 line 481 附近）。
+Read `frontend/src/scene.ts` 搜索 `interface SceneFile` 或 `type SceneFile`（reusables.md 记录在 line 481 附近）。
 
 - [ ] **Step 2: 扩展 SceneFile 类型**
 
@@ -1347,13 +1347,13 @@ Read `MikuMikuAR/frontend/src/scene.ts` 搜索 `interface SceneFile` 或 `type S
 
 - [ ] **Step 5: 构建验证 + 全量测试**
 
-Run: `cd MikuMikuAR/frontend && npx tsc --noEmit && npx vitest run`
+Run: `cd frontend && npx tsc --noEmit && npx vitest run`
 Expected: 无错误，全部测试通过
 
 - [ ] **Step 6: 提交**
 
 ```bash
-cd MikuMikuAR/frontend && git add src/scene.ts
+cd frontend && git add src/scene.ts
 git commit -m "feat(procedural-motion): serialize procMotion state in scene files"
 ```
 
@@ -1367,7 +1367,7 @@ git commit -m "feat(procedural-motion): serialize procMotion state in scene file
 
 - [ ] **Step 1: 手动验证清单**
 
-启动应用 `cd MikuMikuAR && wails dev`，逐项验证：
+启动应用 `cd . && wails dev`，逐项验证：
 
 1. 加载一个有 `まばたき` morph 的 PMX 模型（无 VMD）
 2. 打开场景菜单 → 程序化动作 → 模式 → Idle 呼吸

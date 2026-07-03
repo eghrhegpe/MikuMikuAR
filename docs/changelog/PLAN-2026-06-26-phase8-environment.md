@@ -37,7 +37,7 @@
 - [ ] **Step 1: 安装 `@babylonjs/materials`**
 
 ```bash
-cd MikuMikuAR/frontend
+cd frontend
 npm install @babylonjs/materials
 ```
 
@@ -145,7 +145,7 @@ export function setEnvState(partial: Partial<EnvState>): void {
 确认：查看 config.ts 末尾是否有 `triggerAutoSave`。
 
 ```bash
-cd MikuMikuAR/frontend
+cd frontend
 grep -n "triggerAutoSave" src/config.ts
 ```
 
@@ -244,7 +244,7 @@ describe("setEnvState partial merge", () => {
 - [ ] **Step 6: 运行测试验证通过**
 
 ```bash
-cd MikuMikuAR/frontend
+cd frontend
 npx vitest run src/__tests__/env-state.test.ts
 ```
 
@@ -253,7 +253,7 @@ Expected: 5 个测试全部 PASS。
 - [ ] **Step 7: Commit**
 
 ```bash
-cd MikuMikuAR
+cd .
 git add frontend/package.json frontend/src/config.ts "frontend/src/__tests__/env-state.test.ts"
 git commit -m "build(env): add @babylonjs/materials + EnvState interface + tests"
 ```
@@ -611,7 +611,7 @@ case "scene:env": return buildEnvLevel();
 - [ ] **Step 10: Commit**
 
 ```bash
-cd MikuMikuAR
+cd .
 git add frontend/src/scene.ts frontend/src/scene-menu.ts
 git commit -m "feat(env): sky system with 4 modes (color/gradient/texture/procedural)"
 
@@ -712,7 +712,7 @@ export function setLightState(partial: Partial<LightState>): void {
 - [ ] **Step 5: Commit**
 
 ```bash
-cd MikuMikuAR
+cd .
 git add frontend/src/scene.ts frontend/src/scene-menu.ts
 git commit -m "feat(env): lighting enhancement with shadow + color control"
 ```
@@ -820,7 +820,7 @@ case "scene:env:ground": return buildGroundLevel();
 - [ ] **Step 4: Commit**
 
 ```bash
-cd MikuMikuAR
+cd .
 git add frontend/src/scene.ts frontend/src/scene-menu.ts
 git commit -m "feat(env): enhanced ground with grid/checker modes"
 ```
@@ -988,7 +988,7 @@ function buildParticleLevel(): PopupLevel {
 - [ ] **Step 5: Commit**
 
 ```bash
-cd MikuMikuAR
+cd .
 git add frontend/src/scene.ts frontend/src/scene-menu.ts
 git commit -m "feat(env): particle system with sakura/rain/snow/fireworks"
 ```
@@ -1044,7 +1044,7 @@ function buildWindLevel(): PopupLevel {
 - [ ] **Step 4: Commit**
 
 ```bash
-cd MikuMikuAR
+cd .
 git add frontend/src/scene.ts
 git commit -m "feat(env): wind system driving particle direction"
 ```
@@ -1136,7 +1136,7 @@ function buildCloudLevel(): PopupLevel {
 - [ ] **Step 4: Commit**
 
 ```bash
-cd MikuMikuAR
+cd .
 git add frontend/src/scene.ts frontend/src/scene-menu.ts
 git commit -m "feat(env): volumetric clouds V1 (procedural plane)"
 ```
@@ -1215,7 +1215,7 @@ addToggleRow(container, "暗角", renderState.vignetteEnabled, (v) => setRenderS
 - [ ] **Step 4: Commit**
 
 ```bash
-cd MikuMikuAR
+cd .
 git add frontend/src/scene.ts frontend/src/scene-menu.ts
 git commit -m "feat(env): post-processing DOF + vignette"
 ```
@@ -1331,7 +1331,7 @@ case "scene:env:presets": return buildPresetLevel();
 - [ ] **Step 5: Commit**
 
 ```bash
-cd MikuMikuAR
+cd .
 git add frontend/src/scene-menu.ts frontend/src/scene.ts
 git commit -m "feat(env): environment menu with sky/light/ground/particle/wind/cloud/presets"
 ```
@@ -1373,7 +1373,7 @@ export function deserializeScene(json: string): void {
 - [ ] **Step 3: Commit**
 
 ```bash
-cd MikuMikuAR
+cd .
 git add frontend/src/scene.ts
 git commit -m "feat(env): serialize/deserialize EnvState in .mmascene"
 ```

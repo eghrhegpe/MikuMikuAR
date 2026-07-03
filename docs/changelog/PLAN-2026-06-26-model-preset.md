@@ -36,18 +36,18 @@ MikuMikuAR 的 `ModelInstance.meshes` 是 `MmdModel.getMeshes()` 返回的数组
 
 | File | What changes |
 |------|-------------|
-| `MikuMikuAR/app.go` | +4 Go bindings: `SaveModelPreset`, `LoadModelPreset`, `SelectPresetSaveFile`, `SelectPresetOpenFile` |
-| `MikuMikuAR/frontend/src/config.ts` | +`rootMesh: Mesh` 字段到 `ModelInstance` |
-| `MikuMikuAR/frontend/src/scene.ts` | +`rootMesh` 赋值 + `stopVMD()` + `getMatState()` + `applyMatState()`(含 cast) |
-| `MikuMikuAR/frontend/src/library.ts` | +`serializeModelPreset()`, `applyModelPreset()`, `selectAndSavePreset()`, `selectAndLoadPreset()`; modify `buildModelDetailLevel()` to add preset rows; modify `onItemClick` to handle preset actions; add import lines |
-| `MikuMikuAR/frontend/src/audio.ts` | Verify all needed getters are exported |
+| `app.go` | +4 Go bindings: `SaveModelPreset`, `LoadModelPreset`, `SelectPresetSaveFile`, `SelectPresetOpenFile` |
+| `frontend/src/config.ts` | +`rootMesh: Mesh` 字段到 `ModelInstance` |
+| `frontend/src/scene.ts` | +`rootMesh` 赋值 + `stopVMD()` + `getMatState()` + `applyMatState()`(含 cast) |
+| `frontend/src/library.ts` | +`serializeModelPreset()`, `applyModelPreset()`, `selectAndSavePreset()`, `selectAndLoadPreset()`; modify `buildModelDetailLevel()` to add preset rows; modify `onItemClick` to handle preset actions; add import lines |
+| `frontend/src/audio.ts` | Verify all needed getters are exported |
 
 ---
 
 ### Task 1: Add Go bindings for preset file I/O
 
 **Files:**
-- Modify: `MikuMikuAR/app.go`
+- Modify: `app.go`
 
 - [ ] **Step 1: Add `SaveModelPreset` and `LoadModelPreset` bindings**
 
@@ -114,7 +114,7 @@ func (a *App) SelectPresetOpenFile() (string, error) {
 - [ ] **Step 3: Build and verify**
 
 ```bash
-cd MikuMikuAR && go build ./...
+cd . && go build ./...
 ```
 Expected: `go build` succeeds with no errors.
 
@@ -123,8 +123,8 @@ Expected: `go build` succeeds with no errors.
 ### Task 2: Add rootMesh + stopVMD + material state to scene.ts
 
 **Files:**
-- Modify: `MikuMikuAR/frontend/src/config.ts`
-- Modify: `MikuMikuAR/frontend/src/scene.ts`
+- Modify: `frontend/src/config.ts`
+- Modify: `frontend/src/scene.ts`
 
 - [ ] **Step 1 (坑一): Add `rootMesh` field to `ModelInstance` in config.ts**
 
@@ -245,7 +245,7 @@ export function applyMatState(id: string, state: {
 - [ ] **Step 6: Build to verify**
 
 ```bash
-cd MikuMikuAR/frontend && npx vite build 2>&1
+cd frontend && npx vite build 2>&1
 ```
 Expected: build succeeds with no TypeScript errors.
 
@@ -548,7 +548,7 @@ Add two new action rows after the "移除" divider:
 - [ ] **Step 10: Build to verify**
 
 ```bash
-cd MikuMikuAR/frontend && npx vite build 2>&1
+cd frontend && npx vite build 2>&1
 ```
 Expected: build succeeds with no TypeScript errors.
 
