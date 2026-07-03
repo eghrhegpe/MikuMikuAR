@@ -5,10 +5,32 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>MikuMikuAR</title>
     <link rel="icon" href="data:,">
+    <script>
+        // 安卓闪退诊断 — 放在所有脚本之前，捕获早期加载错误
+        (function() {
+            var el = document.createElement('div');
+            el.id = 'diag-error';
+            el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1a2e;color:#ff6b6b;font:13px monospace;padding:16px;white-space:pre-wrap;word-break:break-word;max-height:100vh;overflow:auto;';
+            (document.body || document.documentElement).appendChild(el);
+            function show(e) {
+                var msg = e && e.message ? e.message : String(e);
+                if (e && e.stack) msg += '\n' + e.stack.split('\n').slice(0,5).join('\n');
+                el.textContent += (el.textContent ? '\n---\n' : '') + msg;
+                el.style.display = 'block';
+            }
+            window.onerror = function(msg, url, line, col, err) { show(err || msg); return true; };
+            window.addEventListener('unhandledrejection', function(e) { show(e.reason); });
+            // 捕获资源加载失败（如 babylon.js 404）
+            document.addEventListener('error', function(e) {
+                if (e.target && e.target.tagName === 'SCRIPT') show('Script load error: ' + e.target.src);
+                if (e.target && e.target.tagName === 'LINK') show('Style load error: ' + e.target.href);
+            }, true);
+        })();
+    </script>
     <!-- Babylon.js 必须在主 bundle 之前加载 -->
-    <script src="/lib/babylon.js"></script>
-    <script src="/lib/babylonjs.materials.min.js"></script>
-    <link href="./src/app.css" rel="stylesheet">
+    <!-- TEMP: 注释掉验证闪退是否 babylon 加载导致 -->
+    <!-- <script src="/lib/babylon.js"></script> -->
+    <!-- <script src="/lib/babylonjs.materials.min.js"></script> -->
 </head>
 <body>
     <div id="app">

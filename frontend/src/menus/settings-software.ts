@@ -13,6 +13,7 @@ import {
 import { setStatus, cardContainer, escapeHtml, PopupLevel } from '../core/config';
 import { slideRow } from '../core/ui-helpers';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
+import { showPrompt } from '../core/dialog';
 
 // ======== 路径设置 API（统一入口） ========
 
@@ -52,10 +53,7 @@ export async function addCustomSoftware(): Promise<boolean> {
         const path = await SelectExeFile();
         if (!path) return false;
         const name = path.split(/[/\\]/).pop()?.replace(/\.exe$/i, '') || '未知';
-        const args = prompt(
-            '输入启动参数模板（支持 {model} 占位符，留空则不带参数）：',
-            ''
-        );
+        const args = await showPrompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
         if (args === null) return false;
         await AddCustomSoftware(path, name, args);
         await scanSoftwareDir();
@@ -316,10 +314,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                 convertRow.appendChild(cl);
                 convertRow.addEventListener('click', async () => {
                     try {
-                        const args = prompt(
-                            '输入启动参数模板（支持 {model} 占位符，留空则不带参数）：',
-                            ''
-                        );
+                        const args = await showPrompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
                         if (args === null) {
                             return;
                         }

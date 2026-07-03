@@ -66,10 +66,7 @@ import {
 } from '../scene/scene';
 import type { ProcMotionMode } from '../motion/procedural-motion';
 import {
-    buildCameraLevel,
-    buildProcMotionLevel,
-    buildProcMotionModeLevel,
-    buildLipSyncLevel,
+    buildProcMotionLevel, buildProcMotionModeLevel, buildLipSyncLevel,
 } from './scene-menu';
 import { toggleCloth } from '../physics/cloth-manager';
 import { setEnvState } from '../scene/scene';
@@ -398,7 +395,6 @@ export function showMotionPopup(): void {
 
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:music', '音乐', true, () => { motionMenu.push(buildActionMusicLevel()); });
-                slideRow(c, 'lucide:camera', '相机模式', true, () => { motionMenu.push(buildCameraLevel()); });
                 slideRow(c, 'lucide:wind', '程序化动作', true, () => { motionMenu.push(buildProcMotionLevel()); });
             });
 

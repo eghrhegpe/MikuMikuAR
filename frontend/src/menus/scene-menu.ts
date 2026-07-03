@@ -140,6 +140,12 @@ function buildSceneRoot(): PopupLevel {
                 slideRow(c, 'lucide:bookmark', '预设场景', true, () =>
                     sceneMenu.push(buildPresetScenesLevel())
                 );
+                slideRow(c, 'lucide:save', '保存场景', false, () => {
+                    handleSceneAction({ kind: 'action', label: '', icon: '', target: 'scene:save' });
+                });
+                slideRow(c, 'lucide:folder-open', '加载场景', false, () => {
+                    handleSceneAction({ kind: 'action', label: '', icon: '', target: 'scene:load' });
+                });
             });
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:sparkles', '后处理', true, () =>
