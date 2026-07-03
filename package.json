@@ -1,9 +1,15 @@
 {
+  "name": "mikumikuar",
   "private": true,
+  "version": "1.0.0",
   "scripts": {
     "test:e2e": "cd MikuMikuAR/frontend && npm run test:e2e",
     "test": "cd MikuMikuAR/frontend && npm test",
     "build": "cd MikuMikuAR/frontend && npm run build",
-    "dev": "cd MikuMikuAR/frontend && npm run dev"
+    "dev": "cd MikuMikuAR/frontend && npm run dev",
+    "build:win": "powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1",
+    "build:linux": "bash scripts/build-linux.sh",
+    "build:android": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Arch arm64",
+    "build:android:release": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Arch arm64 -Production"
   }
 }
