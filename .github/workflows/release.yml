@@ -1,0 +1,228 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      skip_sign:
+        description: 'Skip Android signing (debug only)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  GO_VERSION: '1.25.0'
+  NODE_VERSION: '20'
+
+jobs:
+  # ── 读取版本号 ─────────────────────────────────────────
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      wails_ver: ${{ steps.ver.outputs.wails_ver }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract version
+        id: ver
+        run: |
+          VER=$(node -e "console.log(require('./package.json').version)")
+          echo "version=$VER" >> $GITHUB_OUTPUT
+          WAILS_VER=$(grep 'wails/v3' MikuMikuAR/go.mod | head -1 | sed 's/.*v//;s/ .*//')
+          echo "wails_ver=$WAILS_VER" >> $GITHUB_OUTPUT
+          echo "Version: $VER  Wails: $WAILS_VER"
+
+  # ── Windows 构建 ───────────────────────────────────────
+  build-windows:
+    name: Windows
+    needs: prepare
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: MikuMikuAR/frontend/package-lock.json
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
+      - name: Build
+        run: powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1 -Production
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-amd64
+          path: dist/*.exe
+          if-no-files-found: error
+
+  # ── Linux 构建 ─────────────────────────────────────────
+  build-linux:
+    name: Linux
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: MikuMikuAR/frontend/package-lock.json
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Build
+        run: bash scripts/build-linux.sh --production
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-amd64
+          path: dist/mikumikuar-*
+          if-no-files-found: error
+
+  # ── Android 构建 ───────────────────────────────────────
+  build-android:
+    name: Android
+    needs: prepare
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: MikuMikuAR/frontend/package-lock.json
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
+
+      - name: Cache Android SDK
+        id: cache-sdk
+        uses: actions/cache@v4
+        with:
+          path: C:\Android\Sdk
+          key: android-sdk-${{ runner.os }}-ndk26-platform34-bt34
+
+      - name: Install Android SDK
+        if: steps.cache-sdk.outputs.cache-hit != 'true'
+        run: |
+          $sdkDir = "C:\Android\Sdk"
+          New-Item -ItemType Directory -Path $sdkDir -Force | Out-Null
+          $url = "https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip"
+          $zip = "$env:TEMP\cmdline-tools.zip"
+          $ok = $false
+          for ($i = 1; $i -le 3; $i++) {
+            try { Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing -TimeoutSec 120; $ok = $true; break }
+            catch { if ($i -lt 3) { Start-Sleep -Seconds 5 } }
+          }
+          if (-not $ok) { Write-Error "Download failed"; exit 1 }
+          Expand-Archive $zip -DestinationPath "$sdkDir\cmdline-tools-temp" -Force
+          Move-Item "$sdkDir\cmdline-tools-temp\cmdline-tools" "$sdkDir\cmdline-tools\latest" -Force
+          Remove-Item $zip, "$sdkDir\cmdline-tools-temp" -Recurse -Force
+          $sm = "$sdkDir\cmdline-tools\latest\bin\sdkmanager.bat"
+          $af = "$env:TEMP\ans.txt"; "y,y,y,y,y,y,y,y" -split "," | Out-File $af -Encoding ascii
+          Get-Content $af | & $sm --licenses --sdk_root=$sdkDir | Out-Null; Remove-Item $af -Force
+          & $sm "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;26.3.11579264" --sdk_root=$sdkDir
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('MikuMikuAR/build/android/gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Build Frontend
+        run: |
+          cd MikuMikuAR/frontend
+          npm ci
+          npx vite build
+
+      - name: Decode keystore
+        if: github.event.inputs.skip_sign != 'true'
+        run: |
+          $dir = "${{ github.workspace }}\MikuMikuAR\build\android\keystore"
+          New-Item -ItemType Directory -Path $dir -Force | Out-Null
+          $file = "$dir\release.keystore"
+          $b64 = '${{ secrets.ANDROID_KEYSTORE_BASE64 }}'
+          if ([string]::IsNullOrWhiteSpace($b64)) { Write-Error "ANDROID_KEYSTORE_BASE64 empty"; exit 1 }
+          [System.Convert]::FromBase64String($b64) | Set-Content $file -Encoding Byte -NoNewline
+
+      - name: Build Android (Release)
+        if: github.event.inputs.skip_sign != 'true'
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ github.workspace }}\MikuMikuAR\build\android\keystore\release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd MikuMikuAR
+          powershell -ExecutionPolicy Bypass -File ..\scripts\build-android.ps1 -Arch arm64 -Production
+
+      - name: Build Android (Debug, no sign)
+        if: github.event.inputs.skip_sign == 'true'
+        run: |
+          cd MikuMikuAR
+          powershell -ExecutionPolicy Bypass -File ..\scripts\build-android.ps1 -Arch arm64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-arm64
+          path: dist/*.apk
+          if-no-files-found: error
+
+  # ── 合并发布 ───────────────────────────────────────────
+  release:
+    name: GitHub Release
+    needs: [prepare, build-windows, build-linux, build-android]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: List assets
+        run: ls -lh release-assets/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: MikuMikuAR ${{ needs.prepare.outputs.version }}
+          generate_release_notes: true
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

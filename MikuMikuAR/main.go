@@ -8,11 +8,14 @@ import (
 	"mikumikuar/internal/app"
 )
 
+// AppVersion is injected via -ldflags "-X main.AppVersion=..." at build time.
+var AppVersion = "dev"
+
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
-	myApp := app.NewApp()
+	myApp := app.NewApp(AppVersion)
 
 	wailsApp := application.New(application.Options{
 		Name:        "MikuMikuAR",

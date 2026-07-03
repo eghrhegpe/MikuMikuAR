@@ -4,21 +4,84 @@ includes:
   common: ../Taskfile.yml
 
 tasks:
+  check:deps:
+    summary: Verifies build prerequisites for Linux
+    cmds:
+      - |
+        set -euo pipefail
+        echo "Checking Linux build prerequisites..."
+        missing=0
+        for cmd in go; do
+          if ! command -v "$cmd" >/dev/null 2>&1; then
+            echo "ERROR: $cmd not found. Please install Go 1.25+." >&2
+            missing=1
+          fi
+        done
+        if ! command -v go >/dev/null 2>&1; then
+          true
+        elif ! go version 2>/dev/null | grep -qE 'go1\.(2[5-9]|[3-9][0-9])'; then
+          echo "WARNING: Go version may be too old. Requires 1.25+." >&2
+        fi
+        if [ "${CGO_ENABLED:-}" = "0" ]; then
+          echo "WARNING: CGO_ENABLED=0. GTK/WebKit bindings will be statically linked." >&2
+        fi
+        if [ "$missing" -ne 0 ]; then
+          exit 1
+        fi
+        echo "All prerequisites satisfied."
+
   build:
     summary: Builds the application for Linux
     deps:
+      - task: check:deps
       - task: common:build:frontend
     cmds:
+      - mkdir -p "{{.BIN_DIR}}"
       - go build -tags production -o "{{.BIN_DIR}}/{{.APP_NAME}}"
     vars:
       BIN_DIR: "bin"
       APP_NAME: "MikuMikuAR"
 
   run:
+    preconditions:
+      - sh: test -x "{{.BIN_DIR}}/{{.APP_NAME}}"
+        msg: "Binary not found. Run 'task build' first."
     cmds:
       - '{{.BIN_DIR}}/{{.APP_NAME}}'
+    vars:
+      BIN_DIR: "bin"
+      APP_NAME: "MikuMikuAR"
 
   package:
-    summary: Packages the application
+    summary: Builds and packages as deb/rpm via nfpm
     cmds:
       - task: build
+      - task: package:nfpm
+
+  package:nfpm:
+    summary: Runs nfpm to produce .deb / .rpm packages
+    preconditions:
+      - sh: command -v nfpm
+        msg: "nfpm not found. Install: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest"
+      - sh: test -f "{{.BIN_DIR}}/{{.APP_NAME}}"
+        msg: "Binary not found at {{.BIN_DIR}}/{{.APP_NAME}}. Run 'task build' first."
+      - sh: test -f "build/appicon.png"
+        msg: "Icon not found at build/appicon.png"
+    cmds:
+      - nfpm package --packager deb -f build/linux/nfpm/nfpm.yaml
+      - nfpm package --packager rpm -f build/linux/nfpm/nfpm.yaml
+    vars:
+      BIN_DIR: "bin"
+      APP_NAME: "MikuMikuAR"
+
+  package:deb:
+    summary: Produces .deb package only
+    cmds:
+      - task: build
+      - nfpm package --packager deb -f build/linux/nfpm/nfpm.yaml
+
+  package:rpm:
+    summary: Produces .rpm package only
+    cmds:
+      - task: build
+      - nfpm package --packager rpm -f build/linux/nfpm/nfpm.yaml

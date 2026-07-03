@@ -13,6 +13,20 @@ $projectDir = "$repoRoot\MikuMikuAR"
 $androidDir = "$projectDir\build\android"
 $apkDir = "$androidDir\app\build\outputs\apk"
 
+# 读取版本号
+$pkgJson = Get-Content "$repoRoot\package.json" -Raw | ConvertFrom-Json
+$version = $pkgJson.version
+Write-Output "[build-android] 版本: $version"
+
+# 同步 config.yml version
+$configYml = "$projectDir\build\config.yml"
+if (Test-Path $configYml) {
+    $content = Get-Content $configYml -Raw
+    $content = $content -replace '(?m)^(\s+version:\s*)"([^"]*)"', "`$1`"$version`""
+    Set-Content $configYml $content -NoNewline
+    Write-Output "[build-android] 同步 config.yml version -> $version"
+}
+
 Set-Location $projectDir
 
 # 清理
@@ -41,19 +55,52 @@ foreach ($a in $archs) {
 # Gradle 打包
 $gradleTask = if ($Production) { "assembleRelease" } else { "assembleDebug" }
 Write-Output "[build-android] Gradle 打包: $gradleTask ..."
+
+if ($Production) {
+    $keystoreFile = "$androidDir\keystore\release.keystore"
+    if (-not (Test-Path $keystoreFile)) {
+        Write-Error "keystore 文件不存在: $keystoreFile"
+        exit 1
+    }
+
+    $storePass = [Environment]::GetEnvironmentVariable("ANDROID_KEYSTORE_PASSWORD")
+    $keyAlias = [Environment]::GetEnvironmentVariable("ANDROID_KEY_ALIAS")
+    $keyPass = [Environment]::GetEnvironmentVariable("ANDROID_KEY_PASSWORD")
+
+    if (-not $storePass -or -not $keyAlias -or -not $keyPass) {
+        Write-Error "Release 构建需要环境变量: ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD"
+        exit 1
+    }
+
+    $env:ANDROID_KEYSTORE_FILE = $keystoreFile
+    $env:ANDROID_KEYSTORE_PASSWORD = $storePass
+    $env:ANDROID_KEY_ALIAS = $keyAlias
+    $env:ANDROID_KEY_PASSWORD = $keyPass
+    Write-Output "[build-android] 使用 keystore: $keystoreFile (alias=$keyAlias)"
+}
+
 Set-Location $androidDir
 & .\gradlew.bat $gradleTask 2>&1
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-# 输出产物路径
+# 产物重命名
 $flavor = if ($Production) { "release" } else { "debug" }
 $apkPath = "$apkDir\$flavor\app-$flavor.apk"
-Write-Output ""
-Write-Output "✅ Android 构建完成"
-Write-Output "   APK: $apkPath"
+$distDir = "$repoRoot\dist"
+New-Item -ItemType Directory -Path $distDir -Force | Out-Null
+
 if (Test-Path $apkPath) {
-    $size = (Get-Item $apkPath).Length / 1MB
+    $archLabel = if ($Arch -eq "all") { "multi" } else { $Arch }
+    $distApk = "$distDir\MikuMikuAR-$version-android-$archLabel.apk"
+    Copy-Item $apkPath $distApk -Force
+    $size = (Get-Item $distApk).Length / 1MB
+    Write-Output ""
+    Write-Output "[build-android] 构建完成"
+    Write-Output "   产物: $distApk"
     Write-Output "   大小: $([math]::Round($size, 2)) MB"
+} else {
+    Write-Error "未找到构建产物: $apkPath"
+    exit 1
 }
 
 Set-Location $repoRoot

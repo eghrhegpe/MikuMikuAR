@@ -39,6 +39,7 @@ func (a *App) safeLogError(format string, args ...interface{}) {
 // App struct
 type App struct {
 	wailsApp    *application.App
+	appVersion  string // injected via -ldflags at build time
 	httpServers map[string]*httpServerInfo // keyed by dirPath
 	httpSrvMu   sync.Mutex
 	configMu    sync.Mutex // guards GetConfig/writeConfig sequences
@@ -59,10 +60,16 @@ type httpServerInfo struct {
 }
 
 // NewApp creates a new App application struct
-func NewApp() *App {
+func NewApp(version string) *App {
 	return &App{
+		appVersion:  version,
 		httpServers: make(map[string]*httpServerInfo),
 	}
+}
+
+// GetAppVersion returns the application version (injected via -ldflags at build time).
+func (a *App) GetAppVersion() string {
+	return a.appVersion
 }
 
 // ServiceStartup implements application.ServiceStartup interface.

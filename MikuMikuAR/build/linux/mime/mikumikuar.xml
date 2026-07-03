@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-pmx">
+    <comment>PMX 3D Model</comment>
+    <comment xml:lang="ja">PMX 3Dモデル</comment>
+    <glob pattern="*.pmx"/>
+    <sub-class-of type="application/octet-stream"/>
+  </mime-type>
+  <mime-type type="application/x-vmd">
+    <comment>VMD Motion Data</comment>
+    <comment xml:lang="ja">VMDモーションデータ</comment>
+    <glob pattern="*.vmd"/>
+    <sub-class-of type="application/octet-stream"/>
+  </mime-type>
+  <mime-type type="application/x-mmascene">
+    <comment>MikuMikuAR Scene</comment>
+    <glob pattern="*.mmascene"/>
+    <sub-class-of type="application/json"/>
+  </mime-type>
+</mime-info>

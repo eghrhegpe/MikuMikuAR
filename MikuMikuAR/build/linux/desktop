@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
-Name=MikuMikuAR
-Comment=PMX Player with physics simulation
-# The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/ %u
-Terminal=false
 Type=Application
-Icon=
-Categories=Utility;
-StartupWMClass=
-
- 
+Name=MikuMikuAR
+GenericName=3D Model Viewer
+Comment=PMX model player with real-time physics simulation
+Exec=/usr/local/bin/MikuMikuAR %u
+Icon=mikuMikuAR
+Terminal=false
+Categories=Utility;Graphics;3DGraphics;
+StartupWMClass=MikuMikuAR
+MimeType=application/x-pmx;application/x-vmd;application/x-mmascene;
+Keywords=pmx;mmd;mikumikudance;3d;model;animation;

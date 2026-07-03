@@ -15,8 +15,59 @@ vars:
   CROSS_IMAGE: wails-cross
 
 tasks:
+  check:deps:
+    summary: Verifies Windows build prerequisites
+    cmds:
+      - |
+        set -euo pipefail
+        echo "Checking Windows build prerequisites..."
+        missing=0
+
+        # Go
+        if ! command -v go >/dev/null 2>&1; then
+          echo "ERROR: go not found. Install: https://go.dev/dl/" >&2
+          missing=1
+        fi
+
+        # wails3
+        if ! command -v wails3 >/dev/null 2>&1; then
+          echo "ERROR: wails3 not found. Install: go install github.com/wailsapp/wails/v3/cmd/wails3@latest" >&2
+          missing=1
+        fi
+
+        # icon.ico (required for .syso generation)
+        if [ ! -f "build/windows/icon.ico" ]; then
+          echo "ERROR: build/windows/icon.ico not found. Run: wails3 generate icons" >&2
+          missing=1
+        fi
+
+        # wails.exe.manifest
+        if [ ! -f "build/windows/wails.exe.manifest" ]; then
+          echo "ERROR: build/windows/wails.exe.manifest not found" >&2
+          missing=1
+        fi
+
+        # info.json
+        if [ ! -f "build/windows/info.json" ]; then
+          echo "ERROR: build/windows/info.json not found" >&2
+          missing=1
+        fi
+
+        # appicon.png (source for icon generation)
+        if [ ! -f "build/appicon.png" ]; then
+          echo "ERROR: build/appicon.png not found" >&2
+          missing=1
+        fi
+
+        if [ "$missing" -ne 0 ]; then
+          exit 1
+        fi
+        echo "All prerequisites satisfied."
+
   build:
     summary: Builds the application for Windows
+    deps:
+      - task: check:deps
     cmds:
       # Auto-detect CGO: if CGO_ENABLED=1, use Docker; otherwise use native Go cross-compile
       - task: '{{if and (ne OS "windows") (eq .CGO_ENABLED "1")}}build:docker{{else}}build:native{{end}}'
@@ -95,7 +146,7 @@ tasks:
         sh: 'wails3 tool docker-mounts'
 
   package:
-    summary: Packages the application
+    summary: Packages the application as NSIS installer or MSIX
     cmds:
       - task: '{{if eq (.FORMAT | default "nsis") "msix"}}create:msix:package{{else}}create:nsis:installer{{end}}'
         vars:
@@ -107,6 +158,13 @@ tasks:
   generate:syso:
     summary: Generates Windows `.syso` file
     dir: build
+    preconditions:
+      - sh: test -f "windows/icon.ico"
+        msg: "windows/icon.ico not found. Run: wails3 generate icons"
+      - sh: test -f "windows/wails.exe.manifest"
+        msg: "windows/wails.exe.manifest not found"
+      - sh: test -f "windows/info.json"
+        msg: "windows/info.json not found"
     cmds:
       - wails3 generate syso -arch {{.ARCH}} -icon windows/icon.ico -manifest windows/wails.exe.manifest -info windows/info.json -out ../wails_windows_{{.ARCH}}.syso
     vars:
@@ -118,8 +176,12 @@ tasks:
     deps:
       - task: build
     preconditions:
+      - sh: command -v makensis >/dev/null 2>&1
+        msg: "makensis (NSIS) not found. Install NSIS: https://nsis.sourceforge.io/Download"
       - sh: '[ "{{.INSTALL_SCOPE}}" = "user" ] || [ "{{.INSTALL_SCOPE}}" = "machine" ]'
         msg: "INSTALL_SCOPE must be 'user' or 'machine', got '{{.INSTALL_SCOPE}}'"
+      - sh: test -f "{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.exe"
+        msg: "Binary not found at {{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.exe. Run 'task build' first."
     cmds:
       # Create the Microsoft WebView2 bootstrapper if it doesn't exist
       - wails3 generate webview2bootstrapper -dir "{{.ROOT_DIR}}/build/windows/nsis"
@@ -138,6 +200,11 @@ tasks:
     summary: Creates an MSIX package
     deps:
       - task: build
+    preconditions:
+      - sh: command -v wails3 >/dev/null 2>&1
+        msg: "wails3 not found."
+      - sh: test -f "{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.exe"
+        msg: "Binary not found. Run 'task build' first."
     cmds:
       - |-
         wails3 tool msix \
@@ -161,6 +228,9 @@ tasks:
       - wails3 tool msix-install-tools
 
   run:
+    preconditions:
+      - sh: test -f "{{.BIN_DIR}}/{{.APP_NAME}}.exe"
+        msg: "Binary not found. Run 'task build' first."
     cmds:
       - '{{.BIN_DIR}}/{{.APP_NAME}}.exe'
 
@@ -172,11 +242,13 @@ tasks:
       Password is retrieved from system keychain (run: wails3 setup signing)
     deps:
       - task: build
-    cmds:
-      - wails3 tool sign --input "{{.BIN_DIR}}/{{.APP_NAME}}.exe" {{if .SIGN_CERTIFICATE}}--certificate {{.SIGN_CERTIFICATE}}{{end}} {{if .SIGN_THUMBPRINT}}--thumbprint {{.SIGN_THUMBPRINT}}{{end}} {{if .TIMESTAMP_SERVER}}--timestamp {{.TIMESTAMP_SERVER}}{{end}}
     preconditions:
       - sh: '[ -n "{{.SIGN_CERTIFICATE}}" ] || [ -n "{{.SIGN_THUMBPRINT}}" ]'
         msg: "Either SIGN_CERTIFICATE or SIGN_THUMBPRINT is required. Set it in the vars section at the top of build/windows/Taskfile.yml"
+      - sh: test -f "{{.BIN_DIR}}/{{.APP_NAME}}.exe"
+        msg: "Binary not found. Run 'task build' first."
+    cmds:
+      - wails3 tool sign --input "{{.BIN_DIR}}/{{.APP_NAME}}.exe" {{if .SIGN_CERTIFICATE}}--certificate {{.SIGN_CERTIFICATE}}{{end}} {{if .SIGN_THUMBPRINT}}--thumbprint {{.SIGN_THUMBPRINT}}{{end}} {{if .TIMESTAMP_SERVER}}--timestamp {{.TIMESTAMP_SERVER}}{{end}}
 
   sign:installer:
     summary: Signs the NSIS installer
@@ -190,8 +262,8 @@ tasks:
           INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
     vars:
       INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
-    cmds:
-      - wails3 tool sign --input "build/windows/nsis/{{.APP_NAME}}-installer.exe" {{if .SIGN_CERTIFICATE}}--certificate {{.SIGN_CERTIFICATE}}{{end}} {{if .SIGN_THUMBPRINT}}--thumbprint {{.SIGN_THUMBPRINT}}{{end}} {{if .TIMESTAMP_SERVER}}--timestamp {{.TIMESTAMP_SERVER}}{{end}}
     preconditions:
       - sh: '[ -n "{{.SIGN_CERTIFICATE}}" ] || [ -n "{{.SIGN_THUMBPRINT}}" ]'
         msg: "Either SIGN_CERTIFICATE or SIGN_THUMBPRINT is required. Set it in the vars section at the top of build/windows/Taskfile.yml"
+    cmds:
+      - wails3 tool sign --input "build/windows/nsis/{{.APP_NAME}}-installer.exe" {{if .SIGN_CERTIFICATE}}--certificate {{.SIGN_CERTIFICATE}}{{end}} {{if .SIGN_THUMBPRINT}}--thumbprint {{.SIGN_THUMBPRINT}}{{end}} {{if .TIMESTAMP_SERVER}}--timestamp {{.TIMESTAMP_SERVER}}{{end}}
