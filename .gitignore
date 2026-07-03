@@ -28,4 +28,6 @@ coverage/
 # Binary / executable artifacts
 *.exe
 
+# Trae IDE
+.trae/
 
