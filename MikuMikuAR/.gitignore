@@ -29,3 +29,9 @@ Thumbs.db
 # Temp
 *.tmp
 tmp/
+
+# Wails3 build temp
+.bindings-tmp-*
+.task/
+frontend/wailsjs/
+bin/

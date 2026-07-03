@@ -23,6 +23,10 @@ export default defineConfig(({ command }) => {
   });
 
   return {
+    server: {
+      // 强制 IPv4 监听，修复 Go ExternalAssetHandler 连 127.0.0.1 被拒的问题
+      host: '127.0.0.1',
+    },
     optimizeDeps: {
       // @babylonjs/core 必须排除，ESBuild 不认识 .fx shader 文件
       // babylon-mmd 也必须排除（WASM 加载方式特殊）
