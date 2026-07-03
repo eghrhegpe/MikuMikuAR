@@ -837,35 +837,50 @@ export async function initLibrary(): Promise<void> {
     }
 }
 
-async function _selectAndSetLibraryRoot(): Promise<void> {
+export async function selectResourceRoot(): Promise<void> {
     try {
         const dir = await SelectDir();
         if (!dir) {
             return;
         }
-        setLibraryRoot(dir);
-        setStatus('扫描模型库...', false);
+        setResourceRoot(dir);
+        setStatus('扫描资源库...', false);
         const models = await rescanAndSync();
         setStatus(`✓ ${models.length} 个条目`, true);
-        showModelPopup();
     } catch (err) {
-        console.error('Error setting library root:', err);
+        console.error('Error setting resource root:', err);
         setStatus('✗ 目录扫描失败: ' + formatError(err), false);
     }
 }
 
+export async function selectOverridePath(category: string): Promise<void> {
+    try {
+        const dir = await SelectDir();
+        if (!dir) {
+            return;
+        }
+        await SetOverridePath(category, dir);
+        setStatus('扫描资源库...', false);
+        const models = await rescanAndSync();
+        setStatus(`✓ ${models.length} 个条目`, true);
+    } catch (err) {
+        console.error('Error setting override path:', err);
+        setStatus('✗ 目录设置失败: ' + formatError(err), false);
+    }
+}
+
 export async function rescanAndSync(dir?: string): Promise<LibraryModel[]> {
-    const root = dir ?? libraryRoot;
-    const models = await ScanModelDir(root, externalPaths);
+    const models = await ScanModelDir('', externalPaths);
     setAllModels(models);
-    await SetLibraryRoot(root);
     return models;
 }
 
 export async function reloadConfig(): Promise<void> {
     const cfg = await GetConfig();
     if (cfg) {
-        setLibraryRoot(cfg.library_root || '');
+        setResourceRoot(cfg.resource_root || '');
+        setLibraryRoot(cfg.resource_root || ''); // keep in sync
+        setOverridePaths(cfg.override_paths || {});
         setExternalPaths(cfg.external_paths || []);
     }
 }

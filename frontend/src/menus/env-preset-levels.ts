@@ -1,0 +1,202 @@
+// [doc:architecture] Env Preset Levels — 环境预设弹窗层级
+// 从 env-menu.ts 拆分
+
+import { envState, cardContainer, setStatus } from '../core/config';
+import type { PopupLevel, PopupRow } from '../core/config';
+import { createIconifyIcon } from '../core/icons';
+import { slideRow, addSliderRow } from '../core/ui-helpers';
+import {
+    setEnvState,
+    getEnvSunAngle,
+    setEnvSunAngle,
+    applyEnvPresetObject,
+    transitionRenderState,
+} from '../scene/scene';
+import {
+    getLightState,
+    transitionLighting,
+} from '../scene/scene-lighting';
+import {
+    ENV_PRESETS as ENV_LIGHTING_PRESETS,
+    exportEnvPreset,
+    importEnvPreset,
+    type EnvPreset,
+} from '../scene/env-lighting';
+import {
+    SaveEnvPreset, LoadEnvPreset, ListEnvPresets, DeleteEnvPreset,
+} from '../core/wails-bindings';
+
+import { getEnvMenu } from './env-menu';
+
+// ======== User-Saved Env Presets ========
+
+export function snapshotCurrentEnvPreset(label: string): EnvPreset {
+    return {
+        label,
+        skyColorTop: [...envState.skyColorTop] as [number, number, number],
+        skyColorBot: [...envState.skyColorBot] as [number, number, number],
+        sunAngle: getEnvSunAngle(),
+        azimuth: envState.azimuth ?? -45,
+        exposure: getLightState().dirIntensity > 0 ? 1.0 : 0.5,
+        toneMapping: 1,
+    };
+}
+
+export function renderUserEnvPresets(container: HTMLElement): void {
+    const wrapper = document.createElement('div');
+    wrapper.style.paddingTop = '4px';
+
+    const title = document.createElement('div');
+    title.className = 'section-title';
+    title.textContent = '我的预设';
+    wrapper.appendChild(title);
+
+    const listHost = document.createElement('div');
+    listHost.style.paddingBottom = '6px';
+    wrapper.appendChild(listHost);
+
+    const renderList = async () => {
+        listHost.innerHTML = '';
+        let entries: { name: string; label: string; createdAt: number }[] = [];
+        try {
+            entries = await ListEnvPresets();
+        } catch (err) {
+            console.warn('[env-menu] ListEnvPresets failed:', err);
+        }
+        if (entries.length === 0) {
+            const empty = document.createElement('div');
+            empty.textContent = '（暂无自定义预设）';
+            empty.style.cssText = 'opacity:0.5;font-size:11px;padding:4px 0;';
+            listHost.appendChild(empty);
+            return;
+        }
+        entries.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+        for (const e of entries) {
+            const row = document.createElement('div');
+            row.className = 'cs-row';
+            const labelEl = document.createElement('button');
+            labelEl.className = 'preset-chip';
+            labelEl.textContent = e.label || e.name;
+            labelEl.style.flex = '1';
+            labelEl.addEventListener('click', async () => {
+                try {
+                    const json = await LoadEnvPreset(e.name);
+                    const preset = importEnvPreset(json);
+                    if (!preset) { setStatus('✗ 预设文件格式错误', false); return; }
+                    applyEnvPresetObject(preset);
+                    setStatus(`✓ 已应用预设：${preset.label}`, true);
+                } catch (err) {
+                    console.error('[env-menu] LoadEnvPreset failed:', err);
+                    setStatus('✗ 加载预设失败', false);
+                }
+            });
+            row.appendChild(labelEl);
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'preset-chip';
+            delBtn.style.cssText = 'flex:0 0 auto;padding:0 8px;color:var(--text-dim);';
+            delBtn.textContent = '✕';
+            delBtn.title = '删除预设';
+            delBtn.addEventListener('click', async () => {
+                try {
+                    await DeleteEnvPreset(e.name);
+                    setStatus(`✓ 已删除预设：${e.label}`, true);
+                    renderList();
+                } catch (err) {
+                    console.error('[env-menu] DeleteEnvPreset failed:', err);
+                    setStatus('✗ 删除预设失败', false);
+                }
+            });
+            row.appendChild(delBtn);
+            listHost.appendChild(row);
+        }
+    };
+
+    const saveRow = document.createElement('div');
+    saveRow.className = 'cs-row';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'preset-chip';
+    saveBtn.style.flex = '1';
+    saveBtn.textContent = '＋ 保存当前为预设';
+    saveBtn.addEventListener('click', async () => {
+        const name = window.prompt('请输入预设名称（用作文件名，仅限字母数字/_/-/中文）');
+        if (!name) return;
+        try {
+            const preset = snapshotCurrentEnvPreset(name);
+            const json = exportEnvPreset(preset);
+            await SaveEnvPreset(name, json);
+            setStatus(`✓ 已保存预设：${name}`, true);
+            renderList();
+        } catch (err) {
+            console.error('[env-menu] SaveEnvPreset failed:', err);
+            setStatus('✗ 保存预设失败', false);
+        }
+    });
+    saveRow.appendChild(saveBtn);
+    wrapper.appendChild(saveRow);
+
+    container.appendChild(wrapper);
+    renderList();
+}
+
+// ======== Env Preset Config ========
+
+interface EnvPresetConfig {
+    env: Partial<import('../core/config').EnvState>;
+    lights?: Partial<import('../scene/scene').LightState>;
+    render?: Partial<import('../scene/scene').RenderState>;
+}
+
+export const ENV_PRESETS: Record<string, EnvPresetConfig> = {
+    '舞台-A 打光': {
+        env: {
+            skyMode: 'procedural', skyColorTop: [0.05, 0.05, 0.15], skyColorBot: [0.1, 0.05, 0.15],
+            envIntensity: 0.5, groundMode: 'solid', groundColor: [0.05, 0.05, 0.08], particleEnabled: false,
+        },
+        lights: { hemiIntensity: 0.4, dirIntensity: 0.6, dirColor: [1, 0.85, 0.7], shadowEnabled: true, shadowType: 'soft' },
+        render: { vignetteEnabled: true, vignetteDarkness: 0.3, exposure: 1.2 },
+    },
+    '户外晴天': {
+        env: {
+            skyMode: 'procedural', skyColorTop: [0.3, 0.6, 1], skyColorBot: [0.6, 0.8, 1],
+            skyBrightness: 2, envIntensity: 1.5, groundMode: 'grid', groundColor: [0.3, 0.35, 0.3],
+        },
+        lights: { hemiIntensity: 1, dirIntensity: 1.2, dirColor: [1, 0.95, 0.85], shadowEnabled: true, shadowType: 'pcf' },
+        render: { exposure: 1.4, toneMapping: 1 },
+    },
+    '演唱会蓝紫': {
+        env: {
+            skyMode: 'procedural', skyColorTop: [0.4, 0.1, 0.6], skyColorMid: [0.2, 0.05, 0.4],
+            skyColorBot: [0.1, 0.02, 0.2], envIntensity: 0.3, groundMode: 'solid',
+            groundColor: [0.05, 0.02, 0.1], particleEnabled: true, particleType: 'fireworks',
+        },
+        lights: { hemiIntensity: 0.3, dirIntensity: 0.5, dirColor: [0.6, 0.3, 0.8], hemiColor: [0.3, 0.1, 0.5], shadowEnabled: false },
+        render: { vignetteEnabled: true, vignetteDarkness: 0.5, exposure: 0.9, toneMapping: 3 },
+    },
+};
+
+export function buildPresetLevel(): PopupLevel {
+    const entries = Object.entries(ENV_PRESETS);
+    return {
+        label: '系统预设',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove('render-card');
+            cardContainer(container, (c) => {
+                for (const [name, preset] of entries) {
+                    slideRow(c, 'lucide:bookmark', name, false, () => {
+                        setEnvState({ ...preset.env });
+                        if (preset.lights) {
+                            transitionLighting(preset.lights, 2000);
+                        }
+                        if (preset.render) {
+                            transitionRenderState(preset.render, 2000);
+                        }
+                        getEnvMenu()?.reRender();
+                    });
+                }
+            });
+        },
+    };
+}

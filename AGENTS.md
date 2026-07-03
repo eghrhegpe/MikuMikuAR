@@ -92,8 +92,8 @@ docs/
 | **改前端渲染** | `docs/architecture.md`（PMX/VMD 环节）→ `frontend/src/scene/scene.ts` |
 | **换装 / 纹理变体** | `docs/architecture.md` §16 → `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
 | **音频 / VMD 同步** | `frontend/src/outfit/audio.ts` |
-| **场景菜单 / 相机 / 灯光 / 渲染** | `docs/architecture.md` §渲染环节 → `frontend/src/menus/scene-menu.ts` + `frontend/src/scene/camera.ts` |
-| **环境 / 天空 / 粒子** | `frontend/src/menus/env-menu.ts` + `frontend/src/scene/env-lighting.ts` |
+| **场景菜单 / 相机 / 灯光 / 渲染** | `docs/architecture.md` §渲染环节 → `frontend/src/menus/scene-menu.ts` + `frontend/src/menus/scene-camera-levels.ts` + `frontend/src/menus/scene-render-levels.ts` |
+| **环境 / 天空 / 粒子** | `frontend/src/menus/env-menu.ts` + `frontend/src/menus/env-feature-levels.ts` + `frontend/src/scene/env-lighting.ts` |
 | **模型详情 / 材质调节 / 表情** | `frontend/src/menus/model-detail.ts` + `frontend/src/menus/model-material.ts` |
 | **文件 URL / HTTP 服务器 / 安全隔离** | `docs/architecture.md` §数据通道 | `frontend/src/core/fileservice.ts` |
 | **程序化动作 / 节拍检测** | `frontend/src/motion/procedural-motion.ts` + `frontend/src/motion/beat-detector.ts` |
@@ -101,7 +101,7 @@ docs/
 | **VPD 姿势导入** | `frontend/src/motion/vpd-parser.ts` |
 | **LipSync** | `frontend/src/motion/lipsync.ts` |
 | **模型预设** | `frontend/src/menus/model-preset.ts` + `docs/architecture.md` §场景序列化 |
-| **动作库弹窗 / 音乐 / 舞蹈套装** | `frontend/src/menus/motion-popup.ts` |
+| **动作库弹窗 / 音乐 / 舞蹈套装** | `frontend/src/menus/motion-popup.ts` + `frontend/src/menus/motion-dance-sets.ts` + `frontend/src/menus/motion-cloth-levels.ts` |
 | **遇到加载问题** | `docs/troubleshooting.md` |
 | **查项目地基** | `docs/foundation.md` |
 | **查命名演变 / 术语** | `docs/glossary.md` |
@@ -127,8 +127,8 @@ docs/
 | 3D 场景 / 模型加载 / PMX / VMD / 播放 | `docs/architecture.md` §渲染环节 | `frontend/src/scene/scene.ts` |
 | 模型库 / 扫描 / zip 解压 / 缩略图 | `docs/architecture.md` §模型库管理 | `frontend/src/menus/library-core.ts` + `frontend/src/menus/library.ts` |
 | 文件 URL / HTTP 服务器 / 安全隔离 | `docs/architecture.md` §数据通道 | `frontend/src/core/fileservice.ts` |
-| 相机 / 灯光 / 渲染参数 / 后处理 | `docs/architecture.md` §渲染环节 | `frontend/src/menus/scene-menu.ts` + `frontend/src/scene/camera.ts` |
-| 环境 / 天空 / 粒子 / 地面 | `docs/architecture.md` §环境系统 | `frontend/src/menus/env-menu.ts` + `frontend/src/scene/env-lighting.ts` |
+| 相机 / 灯光 / 渲染参数 / 后处理 | `docs/architecture.md` §渲染环节 | `frontend/src/menus/scene-camera-levels.ts` + `frontend/src/menus/scene-render-levels.ts` |
+| 环境 / 天空 / 粒子 / 地面 | `docs/architecture.md` §环境系统 | `frontend/src/menus/env-menu.ts` + `frontend/src/menus/env-feature-levels.ts` |
 | 材质调节 / 按部位 / 逐材质调参 | `docs/architecture.md` §材质系统 | `frontend/src/scene/scene-material.ts`（`_catOf`/`_applyAll`/`setMatParams`）+ `frontend/src/menus/model-material.ts` |
 | 模型详情 / 模型信息 / 可见性 / 变换 | `frontend/src/menus/model-detail.ts`（`build*Level`） | `frontend/src/scene/scene-model.ts`（ModelManager）+ `frontend/src/scene/scene.ts`（`focusedModelId`） |
 | 配置 / 外部库 / Blender / MMD | `docs/architecture.md` §生态聚合 | `frontend/src/menus/settings.ts` |
@@ -140,7 +140,7 @@ docs/
 | 程序化动作 / Idle / Auto Dance | `frontend/src/motion/procedural-motion.ts` | `frontend/src/motion/beat-detector.ts` |
 | VPD 姿势导入 | `frontend/src/motion/vpd-parser.ts` | `docs/architecture.md` §VMD 环节 |
 | LipSync / 口型同步 | `frontend/src/motion/lipsync.ts` | `frontend/src/scene/scene-lipsync.ts` |
-| 舞蹈套装 / 动作库弹窗 | `frontend/src/menus/motion-popup.ts` | `frontend/src/menus/library-core.ts` |
+| 舞蹈套装 / 动作库弹窗 | `frontend/src/menus/motion-dance-sets.ts` | `frontend/src/menus/motion-popup.ts` + `frontend/src/menus/library-core.ts` |
 | 模型预设 / 自动应用 | `frontend/src/menus/model-preset.ts` | `frontend/src/menus/model-detail.ts`（`buildPresetListLevel`） |
 | XPBD / 布料 / 物理模拟 / 软体 | `frontend/src/physics/xpbd-solver.ts` | `frontend/src/physics/xpbd-cloth.ts` + `cloth-manager.ts` |
 | SDF / 碰撞胶囊 / 身体碰撞 | `frontend/src/physics/xpbd-collider.ts` | `frontend/src/physics/cloth-manager.ts` |
@@ -272,18 +272,30 @@ frontend/
 │   │   ├── scene-env-particles.ts # 粒子（雨/雪/樱花/落叶/萤火虫/烟花）
 │   │   └── env-lighting.ts   # 光照推导（天空色→方向光参数）
 │   ├── menus/
-│   │   ├── menu.ts           # SlideMenu 通用菜单导航（动画 + 键盘）
-│   │   ├── library.ts        # 模型库入口 barrel
-│   │   ├── library-core.ts   # 模型库核心（扫描/搜索/层级/标签）
-│   │   ├── model-detail.ts   # 模型详情（信息/变换/可见性/标签/表情）
-│   │   ├── model-material.ts # 逐材质 + 分类调参
-│   │   ├── model-preset.ts   # 模型预设保存/加载/库管理/自动应用
-│   │   ├── scene-menu.ts     # 场景菜单（相机/灯光/渲染/程序化动作）
-│   │   ├── env-menu.ts       # 环境菜单（天空/地面/粒子/风/云/道具）
-│   │   ├── motion-popup.ts   # 动作弹窗（VMD/姿势/舞蹈套装/布料参数）
-│   │   ├── settings.ts       # 设置页（UI/主题/字体/外部库）
-│   │   ├── settings-software.ts # 设置-软件管理子菜单（MMD/Blender/自定义软件）
-│   │   └── outfit-ui.ts      # 服装变体子菜单
+│   │   ├── menu.ts                      # SlideMenu 通用菜单导航（动画 + 键盘）
+│   │   ├── library.ts                   # 模型库入口 barrel
+│   │   ├── library-core.ts              # 模型库核心（扫描/搜索/层级/标签）
+│   │   ├── model-detail.ts              # 模型详情（信息/变换/可见性/标签/表情）
+│   │   ├── model-material.ts            # 逐材质 + 分类调参
+│   │   ├── model-preset.ts              # 模型预设保存/加载/库管理/自动应用
+│   │   ├── outfit-ui.ts                 # 服装变体子菜单
+│   │   │
+│   │   ├── scene-menu.ts                # 场景弹窗入口 + 路由器
+│   │   ├── scene-camera-levels.ts       #   相机模式 + 参数面板
+│   │   ├── scene-procmotion-levels.ts   #   程序化动作 + LipSync
+│   │   ├── scene-render-levels.ts       #   后处理/舞台/渲染预设
+│   │   │
+│   │   ├── env-menu.ts                  # 环境弹窗入口 + 导航
+│   │   ├── env-feature-levels.ts        #   天空/地面/水面/风/云/实验功能
+│   │   ├── env-prop-levels.ts           #   道具系统
+│   │   ├── env-preset-levels.ts         #   环境预设（内置 + 用户保存）
+│   │   │
+│   │   ├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐
+│   │   ├── motion-dance-sets.ts         #   舞蹈套装数据 + UI
+│   │   ├── motion-cloth-levels.ts       #   布料参数面板
+│   │   │
+│   │   ├── settings.ts                  # 设置页（UI/主题/字体/外部库）
+│   │   └── settings-software.ts         #   软件管理子菜单（MMD/Blender/自定义软件）
 │   ├── motion/
 │   │   ├── procedural-motion.ts # 程序化动作（Idle/AutoDance VMD生成）
 │   │   ├── vmd-writer.ts     # VMD 二进制写入（Shift-JIS骨骼名）

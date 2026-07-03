@@ -17,6 +17,7 @@ export type {
     ModelEntry,
     ModelMeta,
     ModelPresetEntry,
+    OverridePaths,
     RenderPreset,
     SoftwareEntry,
     UIState

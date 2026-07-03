@@ -16,6 +16,7 @@ vars:
 
 tasks:
   check:deps:
+    silent: true
     summary: Verifies Windows build prerequisites
     cmds:
       - |

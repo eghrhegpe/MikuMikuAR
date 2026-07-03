@@ -2,14 +2,11 @@ package app
 
 import (
 	"archive/zip"
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"golang.org/x/sync/errgroup"
 
 	"mikumikuar/internal/util"
 )
@@ -37,76 +34,116 @@ func (a *App) SelectDir() (string, error) {
 	return filepath.ToSlash(path), nil
 }
 
-// ScanModelDir scans main root + all external paths and returns merged ModelEntry list.
-// Main root entries have Source=""; external entries get Source = ep.Name.
-// root may be "" (external-only scan); external may be nil (main-only scan).
+// ScanModelDir scans all resource directories and returns merged ModelEntry list.
+// Uses ResourceRoot + OverridePaths from config; scans each category directory
+// with extension filtering (no auto-classification by directory name).
 func (a *App) ScanModelDir(root string, external []ExternalPath) ([]ModelEntry, error) {
+	// root and external are ignored; use config instead
 	return util.SafeCall(func() ([]ModelEntry, error) {
-		return a.scanModelDirUnsafe(root, external)
+		cfg, err := a.GetConfig()
+		if err != nil || cfg == nil {
+			cfg = &Config{}
+		}
+		return a.scanAllCategories(cfg)
 	})
 }
 
-func (a *App) scanModelDirUnsafe(root string, external []ExternalPath) ([]ModelEntry, error) {
+// scanAllCategories scans each resource category directory.
+func (a *App) scanAllCategories(cfg *Config) ([]ModelEntry, error) {
+	type categoryScan struct {
+		Category string
+		Exts     []string
+	}
+	scans := []categoryScan{
+		{"model", []string{".pmx"}},
+		{"motion", []string{".vmd"}},
+		{"scene", []string{".x", ".pmx"}},
+		{"environment", []string{".png", ".jpg", ".jpeg", ".hdr", ".dds", ".json"}},
+		{"outfit", []string{".zip", ".pmx", ".x"}},
+	}
+	var allModels []ModelEntry
+	for _, s := range scans {
+		dir := a.GetPath(cfg, mapCategoryKey(s.Category))
+		entries, err := a.scanDirByExt(dir, s.Category, s.Exts, "")
+		if err != nil {
+			continue // skip unreadable dirs
+		}
+		allModels = append(allModels, entries...)
+	}
+	// Also scan external paths (if any)
+	for _, ep := range cfg.ExternalPaths {
+		for _, s := range scans {
+			dir := filepath.Join(ep.Path, s.Category)
+			entries, err := a.scanDirByExt(dir, s.Category, s.Exts, ep.Name)
+			if err != nil {
+				continue
+			}
+			allModels = append(allModels, entries...)
+		}
+	}
+	return allModels, nil
+}
+
+// mapCategoryKey maps internal category name to OverridePaths key.
+func mapCategoryKey(category string) string {
+	switch category {
+	case "model":
+		return "pmx"
+	case "motion":
+		return "vmd"
+	case "scene":
+		return "stage"
+	case "environment":
+		return "environment"
+	case "outfit":
+		return "md_dress"
+	default:
+		return category
+	}
+}
+
+// scanDirByExt scans a directory for files with given extensions.
+func (a *App) scanDirByExt(dir, category string, exts []string, source string) ([]ModelEntry, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var models []ModelEntry
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		ext := strings.ToLower(filepath.Ext(name))
+		matched := false
+		for _, validExt := range exts {
+			if ext == validExt {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			continue
+		}
+		fullPath := filepath.Join(dir, name)
+		m := ModelEntry{
+			Dir:      filepath.ToSlash(dir),
+			PMXPath:  filepath.ToSlash(fullPath),
+			NameEn:   strings.TrimSuffix(name, ext),
+			Type:     category,
+			Format:   strings.TrimPrefix(ext, "."),
+			Container: "file",
+			Source:   source,
+		}
+		models = append(models, m)
+	}
+	return models, nil
+}
 	// Collect all roots to scan
 	type scanRoot struct {
 		path   string
 		source string
 	}
-	var roots []scanRoot
-	if root != "" {
-		roots = append(roots, scanRoot{root, ""})
-	}
-	for _, ep := range external {
-		roots = append(roots, scanRoot{ep.Path, ep.Name})
-	}
-
-	// Parallel scan using errgroup — each root's I/O is independent
-	g, ctx := errgroup.WithContext(context.Background())
-	g.SetLimit(4) // cap concurrent directory scans
-
-	results := make([][]ModelEntry, len(roots))
-	for i, r := range roots {
-		i, r := i, r
-		g.Go(func() error {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-			}
-			results[i] = a.scanSingleRoot(r.path, r.source)
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Merge all results
-	var total int
-	for _, r := range results {
-		total += len(r)
-	}
-	models := make([]ModelEntry, 0, total)
-	for _, r := range results {
-		models = append(models, r...)
-	}
-
-	// Deduplicate by PMXPath+ZipInner
-	seen := make(map[string]bool, total)
-	deduped := models[:0]
-	for _, m := range models {
-		key := m.PMXPath + ":" + m.ZipInner
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		deduped = append(deduped, m)
-	}
-
-	return deduped, nil
-}
-
 // GetModelMeta parses the PMX header for a single PMX file and returns its metadata.
 // Returns empty meta on error (non-fatal), logs real errors.
 func (a *App) GetModelMeta(pmxPath string) (ModelMeta, error) {
@@ -346,6 +383,15 @@ func (a *App) GetConfig() (*Config, error) {
 		a.safeLogError("GetConfig: json unmarshal error %v", err)
 		return &Config{}, nil
 	}
+	// Migrate library_root → resource_root
+	if cfg.LibraryRoot != "" && cfg.ResourceRoot == "" {
+		cfg.ResourceRoot = cfg.LibraryRoot
+		cfg.LibraryRoot = ""
+		// Persist migrated config
+		a.writeConfig(&cfg) // best-effort, ignore error
+	}
+	// Ensure resource directories exist
+	a.ensureResourceDirs(&cfg)
 	return &cfg, nil
 }
 
@@ -365,9 +411,32 @@ func (a *App) updateConfig(mutate func(*Config), rescan bool) error {
 	return a.writeConfig(cfg)
 }
 
-// SetLibraryRoot persists the library root path (preserving external paths) and triggers a rescan+reindex.
-func (a *App) SetLibraryRoot(root string) error {
-	return a.updateConfig(func(cfg *Config) { cfg.LibraryRoot = root }, true)
+// SetResourceRoot persists the resource root path and triggers a rescan+reindex.
+func (a *App) SetResourceRoot(root string) error {
+	return a.updateConfig(func(cfg *Config) {
+		cfg.ResourceRoot = root
+		cfg.LibraryRoot = "" // clear old field
+	}, true)
+}
+
+// SetOverridePath sets an override path for a category and triggers a rescan.
+func (a *App) SetOverridePath(category string, path string) error {
+	return a.updateConfig(func(cfg *Config) {
+		switch category {
+		case "pmx":
+			cfg.OverridePaths.PMX = path
+		case "vmd":
+			cfg.OverridePaths.VMD = path
+		case "stage":
+			cfg.OverridePaths.Stage = path
+		case "environment":
+			cfg.OverridePaths.Environment = path
+		case "md_dress":
+			cfg.OverridePaths.MDDress = path
+		case "setting":
+			cfg.OverridePaths.Setting = path
+		}
+	}, true)
 }
 
 // AddExternalPath adds an external library path with auto-generated basename name, triggers rescan+reindex.

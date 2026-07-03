@@ -5,6 +5,41 @@
 
 ---
 
+## 文件目录（2026-07 拆分后）
+
+```
+frontend/src/menus/
+├── menu.ts                      # SlideMenu 核心类（导航栈 + 动画 + dispose）
+├── library.ts                   # barrel：re-export model/motion popup 入口
+├── library-core.ts              # 模型库核心（扫描/搜索/层级/标签）
+├── model-detail.ts              # 模型详情（信息/变换/可见性/表情）
+├── model-material.ts            # 逐材质 + 分类调参
+├── model-preset.ts              # 模型预设保存/加载/库管理
+├── outfit-ui.ts                 # 服装变体子菜单
+│
+├── scene-menu.ts                # 场景弹窗入口 + 路由器（~440 行）
+│   ├── scene-camera-levels.ts   #   相机模式 + 参数面板
+│   ├── scene-procmotion-levels.ts # 程序化动作 + LipSync
+│   └── scene-render-levels.ts   #   后处理/舞台/渲染预设
+│
+├── env-menu.ts                  # 环境弹窗入口 + 导航（~290 行）
+│   ├── env-feature-levels.ts    #   天空/地面/水面/风/云/实验功能
+│   ├── env-prop-levels.ts       #   道具系统
+│   └── env-preset-levels.ts     #   环境预设（内置 + 用户保存）
+│
+├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐（~425 行）
+│   ├── motion-dance-sets.ts     #   舞蹈套装数据 + UI
+│   └── motion-cloth-levels.ts   #   布料参数面板
+│
+└── settings.ts                  # 设置页（MenuStack）
+    └── settings-software.ts     #   软件管理子菜单
+```
+
+> 每个主文件（scene-menu / env-menu / motion-popup）负责根级导航 + 入口 + barrel re-export。
+> 子文件是纯叶子模块，只导出 `build*Level` 函数，不持有菜单实例。
+
+---
+
 ## 核心机制
 
 `SlideMenu` 类管理一个导航栈（`levels: PopupLevel[]`），每个层级是一个独立面板（`.slide-panel`），层级之间用淡入淡出 + 上下偏移实现切换效果。
@@ -60,7 +95,7 @@ type PopupRow = {
 ### 🎵 模型弹窗
 
 ```
-模型                        ← 根菜单
+模型                        ← 根菜单（library-core.ts）
 ├── 已加载模型列表          → 点击进模型详情子菜单
 │
 ├── 📁 加载模型             → 第二层：PMX 文件夹浏览（buildLevel + pmx 过滤）
@@ -69,13 +104,13 @@ type PopupRow = {
 ├── 🕐 最近打开             → 子菜单：最近加载的模型列表（最多 20 条）
 ├── 🏷 标签                 → 子菜单：标签概览（收藏 / 自定义标签）
 │
-├── 模型详情（选中模型后）   ← card1~card4 实际布局
+├── 模型详情（选中模型后）   ← model-detail.ts（buildModelDetailLevel）
 │
 │   card1:
 │   ├── 📋 模型信息         → renderCustom：顶点/面/骨骼/表情数
 │   ├── 📐 变换             → renderCustom：位置 X/Y/Z + 缩放 + 旋转 Y 滑块
 │   ├── 👁 可见性           → renderCustom：显示/半透明/隐藏 + 线框 + 骨骼显示 + 物理分类开关
-│   ├── 🎨 材质调节         → 根菜单：按部位批量调 / 逐材质调参 / 重置
+│   ├── 🎨 材质调节         → model-material.ts（buildMatRootLevel）
 │   ├── 🏷 模型标签         → renderCustom：收藏 + 标签管理
 │   └── 😊 表情预览         → renderCustom：morph 滑块列表
 │
@@ -84,94 +119,24 @@ type PopupRow = {
 │   └── 🗑 移除             → action：从场景删除
 │
 │   card3:
-│   ├── 💾 保存预设         → action：保存到预设库
+│   ├── 💾 保存预设         → model-preset.ts（buildPresetListLevel）
 │   └── 📂 加载预设         → 子菜单：预设库浏览
 │
 │   card4:
-│   └── 🔗 用…打开          → 子菜单：外部软件列表
+│   └── 🔗 用…打开          → buildOpenWithLevel：外部软件列表
 ```
 
 ### ⚙ 设置弹窗
 
 ```
-设置                        ← 根菜单
-├── 🎨 显示                → action: 日文名 / 英文名 / 文件名
-├── ⬇ 下载                → action: 监听目录 / 自动导入
-├── ⚙ 系统                → action: 清除缓存
-└── 🔌 外部库              → action，打开外部库管理面板
-```
-
-**添加新功能**：在 `showPopup()` 的 `rootItems` 数组加一行。
-
-**示例 — 添加「物理设置」功能**：
-```typescript
-// library.ts showPopup() 中
-const rootItems: PopupRow[] = [
-    { kind: "folder", label: "🎯 加载模型", icon: "📁", target: "models:browse" },
-    { kind: "folder", label: "🔧 物理设置", icon: "🔧", target: "models:physics" },  // ← 新增
-    // ... 保留其他项
-];
-
-// makeModelMenu() 的 onFolderEnter 中
-if (row.target === "models:physics") {
-    return { label: "物理设置", dir: "", items: [
-        { kind: "action", label: "重力", icon: "⬇", target: "set:gravity" },
-        { kind: "action", label: "布料模拟", icon: "🧵", target: "set:cloth" },
-    ]};
-}
-```
-
----
-
-### 💃 动作弹窗
-
-```
-动作                        ← 根菜单
-├── 💃 加载动作            → 第二层：VMD 文件夹浏览（buildLevel + vmd 过滤）
-├── 🎵 加载音乐            → 文件选择：MP3/WAV/OGG/M4A/AAC
-│   └── ⏱ 音频偏移        → 滑块：-5s~+5s
-├── 🎵🎬 舞蹈套装          → 子菜单：VMD+音频捆绑文件夹浏览
-└── ⏱ 动作倍率            → 滑块：0.25x~2x
-```
-
-**代码入口**：`showMotionPopup()` → `motionMenu.reset(rootItems)`
-
----
-
-### 🎬 场景弹窗
-
-```
-场景 ← 根菜单
-├── 📷 相机模式 → 子菜单：轨道/自由飞行/镜头预设/演唱会
-├── 💡 灯光 → 子菜单：环境光强度/方向光强度/方向光角度XZ
-├── ✨ 后处理 → 子菜单：Bloom/轮廓线/色彩校正/景深/SSS/锐化/暗角/FXAA
-├── 🎬 舞台 → 子菜单：反射地面/色调映射/曝光/FOV/背景色/网格线
-├── 🎭 渲染预设 → action：展开预设列表（标准/卡通/写实/暖光/赛博朋克/etc）
-├── 🏃 程序化动作 → 子菜单：待机呼吸 / 自动舞蹈 / 强度/速度
-├── ⏱ 动画速度 → 滑块：0.1x~3x
-├── 🎥 加载相机VMD → 文件选择
-├── 📸 截图 → action：单帧截图 / 批量截图
-└── 🔲 显示 → 子菜单：线框/骨骼/地面 toggle
-```
-
-> 材质调节已移至模型详情 → 材质调节（模型级）。场景菜单不再包含材质参数。
-
-**代码入口**：`showSceneMenu()` → `sceneMenu.reset(rootItems)`（`scene-menu.ts`）
-
-**特别注意**：场景弹窗从 2 项暴增到 10+ 项，根菜单过长时考虑把「渲染」相关归入一个 `🎨 渲染设置` 文件夹分类。
-
----
-
-### ⚙ 设置弹窗
-
-```
-设置                        ← 根菜单
+设置                        ← 根菜单（settings.ts）
 ├── 🎨 显示                → action: 日文名（name_jp）/ 英文名（name_en）/ 文件名（filename）
 ├── 🎨 界面                → 子菜单：UI 缩放 / 高级设置（弹窗宽度/动画开关/背景模糊/主题色/字体/恢复默认）
 ├── ⬇ 下载                → action: 监听目录 / 自动导入
-├── 🧰 软件管理            → 子菜单：扫描 software/ 目录，列出可执行程序
+├── 🧰 软件管理            → settings-software.ts：MMD/Blender/自定义软件路径设置
 ├── 🌐 语言                → action：简体中文 / English
 ├── ⚙ 系统                → action: 清除提取缓存
+├── 📊 性能                → 子菜单：性能降级/质量设置
 └── 🔌 外部库              → action，打开外部库管理面板
 ```
 
@@ -181,18 +146,83 @@ if (row.target === "models:physics") {
 - 所有叶子菜单项用 `kind: "action"`，通过 `handleSettingsAction()` 分发。
 - 「界面」子菜单使用 `renderCustom` 渲染滑块（UI 缩放 0.8~1.3）、主题色预设（6 色块 + 自定义 hex）、字体切换（系统/思源黑体/微软雅黑）、toggle 开关（动画/模糊）。
 
+---
+
+### 💃 动作弹窗
+
+```
+动作 ← 根菜单（motion-popup.ts）
+├── [已加载模型列表]     → 点击进动作绑定子菜单（更换动作/清除/调试）
+├── 🕐 最近使用          → 子菜单：最近使用动作列表
+├── 🎵 音乐              → 子菜单：音频加载/偏移/音量
+├── 📷 相机模式          → 子菜单：相机参数（复用 scene-camera-levels）
+├── 🌬 程序化动作        → 子菜单：待机呼吸/自动舞蹈/强度/速度（复用 scene-procmotion-levels）
+├── ⬇ 物理重力          → 滑块：0~2
+├── 🧵 布料参数          → 子菜单：布料预设/形状/物理/碰撞
+├── 📦 舞蹈套装          → 子菜单：舞蹈套装浏览/详情/应用
+├── 🎯 线框/骨骼/关节    → 调试开关
+└── 🧊 碰撞胶囊          → 调试可视化开关
+```
+
+**子文件拆分**：
+
+| 子文件 | 职责 | 函数 |
+|--------|------|------|
+| `motion-dance-sets.ts` | 舞蹈套装数据 + UI | `DanceSet` 类型, `loadDanceSets`, `buildDanceSetsOverviewLevel`, `buildDanceSetDetailLevel` |
+| `motion-cloth-levels.ts` | 布料参数面板 | `buildClothParamsLevel` |
+
+**跨文件复用**：`motion-popup.ts` 从 `scene-camera-levels` 和 `scene-procmotion-levels` 直接导入相机/动作面板，避免重复实现。
+
+**代码入口**：`showMotionPopup()` → `motionMenu.reset(rootItems)`（`motion-popup.ts`）
+
+---
+
+### 🎬 场景弹窗
+
+```
+场景 ← 根菜单（scene-menu.ts）
+├── 📋 预设场景 → 子菜单：预设场景浏览/加载/保存/删除
+├── ✨ 后处理 → 子菜单：Bloom/轮廓线/色彩校正/景深/SSS/锐化/暗角/FXAA
+├── 🎬 舞台 → 子菜单：色调映射/曝光/FOV/背景色/网格线
+├── 🎭 渲染预设 → 子菜单：内置预设 + 用户保存预设
+├── 💡 舞台灯光 → 子菜单：灯光参数面板
+└── 📸 截图 → 子菜单：单帧/批量截图
+```
+
+**子文件拆分**（按功能域，解决 1700+ 行巨型文件问题）：
+
+| 子文件 | 职责 | 函数 |
+|--------|------|------|
+| `scene-camera-levels.ts` | 相机模式 + 参数 | `buildCameraLevel`, `buildCameraParamsLevel` |
+| `scene-procmotion-levels.ts` | 程序化动作 + LipSync | `buildProcMotionLevel`, `buildProcMotionModeLevel`, `buildLipSyncLevel` |
+| `scene-render-levels.ts` | 后处理/舞台/渲染预设 | `buildPostProcessLevel`, `buildStageLevel`, `buildPresetsLevel`, `buildStageLightLevel` |
+
+**代码入口**：`showSceneMenu()` → `sceneMenu.reset(rootItems)`（`scene-menu.ts`）
+
+**路由机制**：`sceneOnFolderEnter()` 统一路由，根据 `row.target` 分发到子文件的 `build*Level`。
+
+---
+
 ### 🌍 环境弹窗
 
 ```
-环境 ← 根菜单
-├── ☀️ 环境光              → 子菜单：太阳角度 XZ + 环境光强度 + 半球光强度 + 天空颜色
-├── 🌫 雾                  → 子菜单：雾模式/颜色/密度/起始/结束
-├── 🌄 天空盒              → 子菜单：天空盒模式/颜色/贴图
-├── 🌊 地面                → 子菜单：地面可见性/透明度/网格/反射
-├── 💨 风                  → 子菜单：风向/风速/强度
-├── ☁️ 云                  → 子菜单：云量/速度/高度
-└── ✨ 粒子                → 子菜单：粒子类型/数量/速度/大小/颜色
+环境 ← 根菜单（env-menu.ts）
+├── ☀️ 天空 → 子菜单：天空模式/颜色/光照/太阳角度 + 环境预设
+├── 🌊 水面 → 子菜单：水面开关/预设/Gerstner波浪参数
+├── ✨ 粒子 → 子菜单：粒子类型/数量/速度/大小
+├── 💨 风 → 子菜单：风向/风速/强度
+├── 🧪 实验功能 → 子菜单：实验性环境功能
+├── 📦 道具 → 子菜单：道具加载/变换/列表
+└── 📋 系统预设 → 子菜单：内置环境预设 + 用户保存预设
 ```
+
+**子文件拆分**：
+
+| 子文件 | 职责 | 函数 |
+|--------|------|------|
+| `env-feature-levels.ts` | 天空/地面/水面/风/云/实验功能 | `buildSkyLevel`, `buildGroundLevel`, `buildWaterLevel`, `buildWindLevel`, `buildCloudLevel`, `buildExperimentalLevel` |
+| `env-prop-levels.ts` | 道具系统 | `buildPropLevel`, `buildPropDetailLevel` |
+| `env-preset-levels.ts` | 环境预设（内置 + 用户保存） | `buildPresetLevel`, `renderUserEnvPresets`, `snapshotCurrentEnvPreset` |
 
 **代码入口**：`showEnvMenu()` → `envMenu.reset(rootItems)`（`env-menu.ts`）
 
@@ -212,34 +242,54 @@ if (row.target === "models:physics") {
 
 ## 如何添加新功能（标准流程）
 
-1. 打开 `library.ts`（或对应弹窗的文件）
-2. 在 `showXxx()` 的 `rootItems` 数组中加一行 `PopupRow`
-3. 如果是 **导航到子菜单**（`folder`）：在 `makeXxxMenu()` 的 `onFolderEnter` 中处理新 `target`
-4. 如果是 **直接操作**（`action`）：在 `onItemClick` 中处理，或加专用回调函数
-5. 重建确认无 TypeScript 错误
+1. 确定功能属于哪个弹窗（场景 / 环境 / 动作 / 模型 / 设置）
+2. 找到对应入口文件：
+   - 场景 → `scene-menu.ts`（路由器 + 根级）
+   - 环境 → `env-menu.ts`（导航 + 根级）
+   - 动作 → `motion-popup.ts`（入口 + 动作绑定）
+   - 模型 → `library-core.ts`（模型库）或 `model-detail.ts`（模型详情）
+   - 设置 → `settings.ts`
+3. 如果是**独立功能域**（300+ 行），新建子文件：`<menu>-<feature>-levels.ts`
+4. 在入口文件的根级 `renderCustom` 中加一行 `slideRow`
+5. 在路由器（`sceneOnFolderEnter` / `onFolderEnter`）中处理新 `target`
+6. barrel re-export 新文件的 `build*Level` 函数
+7. `npx tsc --noEmit` 确认零新错误
 
-### 示例：在模型弹窗加「物理设置」
+### 示例：在场景弹窗加「景深」功能
 
 ```typescript
-// Step 1: 加菜单项
-const rootItems: PopupRow[] = [
-    { kind: "folder", label: "🎯 加载模型", icon: "📁", target: "models:browse" },
-    { kind: "folder", label: "🔧 物理设置", icon: "🔧", target: "models:physics" },  // +
-    { kind: "folder", label: "📷 相机", ... },
-    ...
-];
-
-// Step 2: 处理导航
-onFolderEnter: (row) => {
-    if (row.target === "models:browse") { ... }
-    if (row.target === "models:physics") {                       // +
-        return { label: "物理设置", dir: "", items: [           // +
-            { kind: "action", label: "重力", icon: "⬇", target: "set:gravity" },
-            { kind: "action", label: "布料模拟", icon: "🧵", target: "set:cloth" },
-        ]};
-    }
-    ...
+// Step 1: 在 scene-render-levels.ts 添加 buildDepthOfFieldLevel()
+export function buildDepthOfFieldLevel(): PopupLevel {
+    return {
+        label: '景深',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                addSliderRow(c, '焦距', ...);
+                addSliderRow(c, '光圈', ...);
+            });
+        },
+    };
 }
+
+// Step 2: 在 scene-menu.ts 的 sceneOnFolderEnter 中加路由
+case 'scene:render:dof':
+    return buildDepthOfFieldLevel();
+
+// Step 3: 在 buildSceneRoot 或 buildPostProcessLevel 中加菜单行
+slideRow(c, 'lucide:aperture', '景深', true, () =>
+    sceneMenu.push(buildDepthOfFieldLevel())
+);
+```
+
+### 跨弹窗复用
+
+如果动作弹窗需要某个场景弹窗的面板（如相机模式），直接从子文件导入：
+
+```typescript
+// motion-popup.ts
+import { buildCameraLevel } from './scene-camera-levels';
 ```
 
 ---

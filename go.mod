@@ -5,7 +5,6 @@ go 1.25.0
 require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha2.105
-	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.37.0
 )
 

@@ -349,7 +349,7 @@ type DanceSet struct {
 - **DanceXR 共用**：扫描器已原生支持 DanceXR 8 种分类目录约定。外部库挂载已实现：通过 `Config.ExternalPaths` 配置多源联合扫描，弹窗根层显示 🔌 虚拟入口，下钻复用 `buildLevel` 导航链路。条目带 `Source` 标签区分来源。
 - **模之屋下载接管**：拦截下载链接 → Wails 走原生 HTTP 下载 → 落库到模型目录（绕开浏览器下载）
 - **Blender 唤起**：Wails `exec.Command` 启动本地 Blender + 传模型路径参数
-- **Android**：远期，考虑 Wails mobile 或 React Native + JS 端重做渲染
+- **Android**：发版测试中，全链路需兼容安卓端（Wails mobile 桥接 + 文件系统沙盒适配 + 触摸交互优化）
 
 ### 10. 目录结构
 

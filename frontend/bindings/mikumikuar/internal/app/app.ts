@@ -138,6 +138,13 @@ export function GetAllTags(): $CancellablePromise<string[] | null> {
 }
 
 /**
+ * GetAppVersion returns the application version (injected via -ldflags at build time).
+ */
+export function GetAppVersion(): $CancellablePromise<string> {
+    return $Call.ByID(3698795868);
+}
+
+/**
  * GetConfig reads the persisted config from disk.
  * Returns an empty Config (no error) if file doesn't exist.
  * Real I/O errors (permission, filesystem) are logged via safeLogError.
@@ -203,6 +210,13 @@ export function GetModelPresets(): $CancellablePromise<$models.ModelPresetEntry[
  */
 export function GetModelsByTag(tag: string): $CancellablePromise<string[] | null> {
     return $Call.ByID(1267757778, tag);
+}
+
+/**
+ * GetPath returns the effective path for a category.
+ */
+export function GetPath(cfg: $models.Config | null, category: string): $CancellablePromise<string> {
+    return $Call.ByID(1008988522, cfg, category);
 }
 
 /**
@@ -493,9 +507,9 @@ export function SaveThumbnail(modelPath: string, base64PNG: string): $Cancellabl
 }
 
 /**
- * ScanModelDir scans main root + all external paths and returns merged ModelEntry list.
- * Main root entries have Source=""; external entries get Source = ep.Name.
- * root may be "" (external-only scan); external may be nil (main-only scan).
+ * ScanModelDir scans all resource directories and returns merged ModelEntry list.
+ * Uses ResourceRoot + OverridePaths from config; scans each category directory
+ * with extension filtering (no auto-classification by directory name).
  */
 export function ScanModelDir(root: string, external: $models.ExternalPath[] | null): $CancellablePromise<$models.ModelEntry[] | null> {
     return $Call.ByID(586056714, root, external);
@@ -504,6 +518,7 @@ export function ScanModelDir(root: string, external: $models.ExternalPath[] | nu
 /**
  * ScanSoftwareDir scans the software/ directory for .exe files, merges with user-added
  * custom software from config, and returns the combined list (deduplicated by path).
+ * On Android, only returns config-persisted entries (no .exe scanning).
  */
 export function ScanSoftwareDir(): $CancellablePromise<$models.SoftwareEntry[] | null> {
     return $Call.ByID(1513075534);
@@ -518,6 +533,8 @@ export function SelectAudioFile(): $CancellablePromise<string> {
 
 /**
  * SelectDir opens a directory picker dialog.
+ * On Android, native directory picker is not available in Wails 3 alpha;
+ * returns the default storage path as a starting point.
  */
 export function SelectDir(): $CancellablePromise<string> {
     return $Call.ByID(1910889222);
@@ -623,13 +640,6 @@ export function SetEnvState(env: $models.EnvState): $CancellablePromise<void> {
 }
 
 /**
- * SetLibraryRoot persists the library root path (preserving external paths) and triggers a rescan+reindex.
- */
-export function SetLibraryRoot(root: string): $CancellablePromise<void> {
-    return $Call.ByID(372180192, root);
-}
-
-/**
  * SetMMDPath saves the MMD executable path to config.
  * If path is empty, automatically detects MMD from common install locations.
  */
@@ -638,10 +648,24 @@ export function SetMMDPath(path: string): $CancellablePromise<void> {
 }
 
 /**
+ * SetOverridePath sets an override path for a category and triggers a rescan.
+ */
+export function SetOverridePath(category: string, path: string): $CancellablePromise<void> {
+    return $Call.ByID(4226099462, category, path);
+}
+
+/**
  * SetPerformanceMode persists the performance mode setting.
  */
 export function SetPerformanceMode(mode: string): $CancellablePromise<void> {
     return $Call.ByID(1916922602, mode);
+}
+
+/**
+ * SetResourceRoot persists the resource root path and triggers a rescan+reindex.
+ */
+export function SetResourceRoot(root: string): $CancellablePromise<void> {
+    return $Call.ByID(4185962653, root);
 }
 
 /**
@@ -708,6 +732,7 @@ export function StartFileServer(dirPath: string): $CancellablePromise<number> {
  * If already watching a directory, it stops the previous watcher first.
  * Only files with .zip/.pmx/.vmd extensions trigger notifications,
  * filtered through Magic Number detection to skip incomplete downloads.
+ * On Android, file system watching is not supported — returns an error.
  */
 export function StartWatchDir(dir: string): $CancellablePromise<void> {
     return $Call.ByID(1501929991, dir);
