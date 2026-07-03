@@ -136,6 +136,7 @@ jobs:
     needs: prepare
     runs-on: windows-latest
     timeout-minutes: 30
+    if: false
     defaults:
       run:
         shell: pwsh
@@ -216,7 +217,7 @@ jobs:
   # ── 合并发布 ───────────────────────────────────────────
   release:
     name: GitHub Release
-    needs: [prepare, build-windows, build-linux, build-android]
+    needs: [prepare, build-windows, build-linux]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
