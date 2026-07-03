@@ -1,27 +1,22 @@
 import { defineConfig } from "vitest/config";
+import path from "path";
 
 export default defineConfig({
+    resolve: {
+        alias: {
+            // Redirect Engine import to our mock BEFORE esbuild sees the real source.
+            // This prevents the _renderLoops parse error on CI (Ubuntu/Node 20).
+            "@babylonjs/core/Engines/engine": path.resolve(
+                __dirname,
+                "src/__tests__/mocks/engine-mock.ts"
+            ),
+        },
+    },
     test: {
         environment: "happy-dom",
         globals: true,
         exclude: ["e2e/**", "node_modules/**"],
         setupFiles: ["./src/__tests__/setup-wails.ts"],
-        // Tell Vitest NOT to transform @babylonjs/* — esbuild on CI (Ubuntu/Node 20)
-        // can't parse private class fields (_renderLoops) in Babylon.js source.
-        // vi.mock() still works because it intercepts module resolution, not transformation.
-        deps: {
-            optimizer: {
-                ssr: {
-                    include: ["@babylonjs/core", "@babylonjs/materials", "babylon-mmd"],
-                },
-            },
-            inline: [],
-        },
-        server: {
-            deps: {
-                external: [/^@babylonjs\//, /^babylon-mmd/],
-            },
-        },
         coverage: {
             provider: "v8",
             reporter: ["text", "html"],
