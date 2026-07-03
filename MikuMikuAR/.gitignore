@@ -35,3 +35,13 @@ tmp/
 .task/
 frontend/wailsjs/
 bin/
+
+# Android build artifacts
+build/android/.gradle/
+build/android/build/
+build/android/gen/
+build/android/local.properties
+build/android/app/build/
+build/android/app/.gradle/
+build/android/*.jar
+build/android/*.apk

@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.wails.app'
+    namespace 'com.mikumikuar.app'
     compileSdk 34
 
     buildFeatures {
@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.wails.app"
+        applicationId "com.mikumikuar.app"
         minSdk 21
         targetSdk 34
         versionCode 1

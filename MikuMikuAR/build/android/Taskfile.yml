@@ -32,24 +32,11 @@ tasks:
     prompt: This will check and install Android development dependencies. Continue?
 
   build:
-    summary: Creates a debug build of the application for Android
-    deps:
-      - task: common:go:mod:tidy
-      - task: generate:android:overlay
-      - task: common:build:frontend
-        vars:
-          BUILD_FLAGS:
-            ref: .BUILD_FLAGS
-          PRODUCTION:
-            ref: .PRODUCTION
+    summary: Creates a debug build of the application for Android (Windows PowerShell path)
     cmds:
-      - echo "Building Android app {{.APP_NAME}}..."
-      - task: compile:go:shared
-        vars:
-          ARCH: '{{.ARCH | default .HOST_ARCH}}'
+      - |
+        powershell -ExecutionPolicy Bypass -File "{{.ROOT_DIR}}\scripts\build-android.ps1" -Arch '{{.ARCH | default "arm64"}}' {{if eq .PRODUCTION "true"}}-Production{{end}}
     vars:
-      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production,android -trimpath -buildvcs=false -ldflags="-w -s"{{else}}-tags android,debug -buildvcs=false -gcflags=all="-l"{{end}}'
-    env:
       PRODUCTION: '{{.PRODUCTION | default "false"}}'
 
   compile:go:shared:
