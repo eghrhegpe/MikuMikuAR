@@ -28,6 +28,8 @@ import {
     closeAllOverlays,
     setStatus,
     resourceRoot,
+    libraryRoot,
+    overridePaths,
     externalPaths,
     displayNamePriority,
     setDisplayNamePriority,
@@ -48,6 +50,7 @@ import { slideRow, addToggleRow } from '../core/ui-helpers';
 import { setPerformanceMode, getPerformanceMode } from '../scene/scene-performance';
 import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
+import { showConfirm, showPrompt } from '../core/dialog';
 
 // ======== Helpers re-exported ========
 export { refreshLibrary } from './library';
@@ -184,7 +187,7 @@ function buildSettingsDisplayLevel(): PopupLevel {
                     <span class="slide-label">添加材质映射</span>
                 `;
                 addRow.addEventListener('click', async () => {
-                    const pattern = prompt('输入正则匹配模式（如 skirt|スカート）：');
+                    const pattern = await showPrompt('输入正则匹配模式（如 skirt|スカート）：');
                     if (!pattern) return;
                     try {
                         new RegExp(pattern);
@@ -192,7 +195,7 @@ function buildSettingsDisplayLevel(): PopupLevel {
                         setStatus('✗ 无效的正则表达式', false);
                         return;
                     }
-                    const category = prompt('输入目标分类（皮肤/头发/眼睛/服装/配件/道具）：');
+                    const category = await showPrompt('输入目标分类（皮肤/头发/眼睛/服装/配件/道具）：');
                     if (!category) return;
                     if (!['皮肤', '头发', '眼睛', '服装', '配件', '道具'].includes(category)) {
                         setStatus('✗ 无效的分类名', false);
@@ -546,19 +549,27 @@ function buildSettingsSystemLevel(): PopupLevel {
     return {
         label: '系统',
         dir: '',
-        items: [
-            { kind: 'action', label: '📁 资源根目录', icon: 'folder', target: 'set:resourceroot', sublabel: rootSub },
-            { kind: 'divider', label: '资源路径', icon: '' },
-            { kind: 'action', label: '🎭 PMX 模型', icon: 'box', target: 'set:path:pmx', sublabel: pathSub('pmx', '默认') },
-            { kind: 'action', label: '💃 VMD 动作', icon: 'music', target: 'set:path:vmd', sublabel: pathSub('vmd', '默认') },
-            { kind: 'action', label: '🏠 Stage 场景', icon: 'home', target: 'set:path:stage', sublabel: pathSub('stage', '默认') },
-            { kind: 'action', label: '🌤  Environment', icon: 'cloud', target: 'set:path:environment', sublabel: pathSub('environment', '默认') },
-            { kind: 'action', label: '👗 MD-dress', icon: 'shirt', target: 'set:path:md_dress', sublabel: pathSub('md_dress', '默认') },
-            { kind: 'action', label: '⚙️ 配置目录', icon: 'settings', target: 'set:path:setting', sublabel: pathSub('setting', '默认') },
-            { kind: 'divider', label: '', icon: '' },
-            { kind: 'folder', label: '外部库管理', icon: 'plug', target: 'settings:external' },
-            { kind: 'folder', label: '清除缓存', icon: 'trash-2', target: 'settings:clearcache' },
-        ],
+        items: [],
+        renderCustom: (container) => {
+            // Card 1: 资源根目录
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:folder', '资源根目录', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:resourceroot' }), rootSub);
+            });
+            // Card 2: 资源路径覆盖
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:box', 'PMX 模型', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:pmx' }), pathSub('pmx', '默认'));
+                slideRow(c, 'lucide:music', 'VMD 动作', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:vmd' }), pathSub('vmd', '默认'));
+                slideRow(c, 'lucide:home', 'Stage 场景', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:stage' }), pathSub('stage', '默认'));
+                slideRow(c, 'lucide:cloud', 'Environment', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:environment' }), pathSub('environment', '默认'));
+                slideRow(c, 'lucide:shirt', 'MD-dress', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:md_dress' }), pathSub('md_dress', '默认'));
+                slideRow(c, 'lucide:settings', '配置目录', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:setting' }), pathSub('setting', '默认'));
+            });
+            // Card 3: 管理
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:plug', '外部库管理', true, () => handleSettingsAction({ kind: 'folder', label: '', icon: '', target: 'settings:external' }));
+                slideRow(c, 'lucide:trash-2', '清除缓存', true, () => handleSettingsAction({ kind: 'folder', label: '', icon: '', target: 'settings:clearcache' }));
+            });
+        },
     };
 }
 
@@ -581,11 +592,13 @@ function handleSettingsAction(row: PopupRow): void {
                 .catch(console.warn);
             break;
         case 'set:clearthumbnail':
-            if (confirm('确定要清除所有缩略图缓存吗？下次加载模型时将重新生成。')) {
-                ClearThumbnailCache()
-                    .then(() => setStatus('✓ 缩略图缓存已清除', true))
-                    .catch(console.warn);
-            }
+            (async () => {
+                if (await showConfirm('确定要清除所有缩略图缓存吗？下次加载模型时将重新生成。')) {
+                    ClearThumbnailCache()
+                        .then(() => setStatus('✓ 缩略图缓存已清除', true))
+                        .catch(console.warn);
+                }
+            })();
             break;
         case 'set:libraryroot':
             selectResourceRoot().catch(console.warn);
@@ -654,7 +667,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                         <button class="ext-del" style="background:none;border:none;color:var(--danger,#e74c3c);cursor:pointer;font-size:12px;padding:2px 4px;">✕</button>
                     `;
                     row.querySelector('.ext-rename')!.addEventListener('click', async () => {
-                        const newName = prompt('输入新的显示名称：', ep.name);
+                        const newName = await showPrompt('输入新的显示名称：', ep.name);
                         if (newName && newName.trim() && newName.trim() !== ep.name) {
                             try {
                                 await RenameExternalPath(ep.path, newName.trim());

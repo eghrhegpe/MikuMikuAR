@@ -1692,3 +1692,91 @@ body {
     padding: var(--lcard-pad-y) var(--lcard-pad-x);
     margin-bottom: var(--lcard-margin-bottom);
 }
+
+/* ===== 对话框（替换 prompt/confirm） ===== */
+#mmd-dialog-overlay {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: var(--overlay-bg);
+    backdrop-filter: var(--overlay-blur);
+    -webkit-backdrop-filter: var(--overlay-blur);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+#mmd-dialog-overlay.mmd-dialog-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.mmd-dialog {
+    background: #2a2a38;
+    border: var(--overlay-border);
+    border-radius: var(--overlay-radius);
+    padding: 20px 24px;
+    min-width: 260px;
+    max-width: 340px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    transform: translateY(10px) scale(0.97);
+    transition: transform 0.2s ease;
+}
+#mmd-dialog-overlay.mmd-dialog-visible .mmd-dialog {
+    transform: translateY(0) scale(1);
+}
+.mmd-dialog-title {
+    font-size: var(--font-title);
+    font-weight: 600;
+    color: #eee;
+    margin-bottom: 8px;
+}
+.mmd-dialog-message {
+    font-size: var(--font-ui);
+    color: #aaa;
+    line-height: 1.4;
+    margin-bottom: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.mmd-dialog-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.3);
+    color: #eee;
+    font-size: var(--font-ui);
+    outline: none;
+    margin-bottom: 14px;
+}
+.mmd-dialog-input:focus {
+    border-color: var(--accent, #4a6cf7);
+}
+.mmd-dialog-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+.mmd-dialog-btn {
+    padding: 7px 18px;
+    border-radius: 8px;
+    border: none;
+    font-size: var(--font-ui);
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.mmd-dialog-btn:active {
+    opacity: 0.7;
+}
+.mmd-dialog-confirm {
+    background: var(--accent, #4a6cf7);
+    color: #fff;
+}
+.mmd-dialog-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+}

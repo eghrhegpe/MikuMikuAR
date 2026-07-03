@@ -43,6 +43,7 @@ import {
     setVolume,
     setAudioOffset,
 } from '../outfit/audio';
+import { showConfirm, showPrompt } from '../core/dialog';
 
 export interface ModelPresetEntry {
     name: string;
@@ -383,7 +384,7 @@ export async function applyPresetFromLib(
 }
 
 export async function savePresetToLibDialog(id: string): Promise<void> {
-    const name = prompt('输入预设名称：');
+    const name = await showPrompt('输入预设名称：');
     if (!name) {
         return;
     }
@@ -482,7 +483,7 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
                         'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 6px;';
                     delBtn.addEventListener('click', async (ev) => {
                         ev.stopPropagation();
-                        if (!confirm(`确定删除「${e.presetName || e.name}」？`)) {
+                        if (!(await showConfirm(`确定删除「${e.presetName || e.name}」？`))) {
                             return;
                         }
                         try {

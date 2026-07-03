@@ -5,6 +5,7 @@ import { setStatus, cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
+import { showConfirm, showPrompt } from '../core/dialog';
 import {
     addSliderRow,
     addToggleRow,
@@ -78,45 +79,6 @@ export function buildPresetScenesLevel(): PopupLevel {
             }
 
             cardContainer(container, (c) => {
-                const navRow = document.createElement('div');
-                navRow.className = 'preset-group';
-                navRow.style.padding = '8px 14px 10px';
-                const prevBtn = document.createElement('button');
-                prevBtn.className = 'preset-chip';
-                prevBtn.style.flex = '1';
-                const prevIcon = createIconifyIcon('lucide:skip-back');
-                if (prevIcon) {
-                    prevBtn.appendChild(prevIcon);
-                }
-                prevBtn.appendChild(document.createTextNode(' 上一个'));
-                prevBtn.addEventListener('click', async () => {
-                    if (scenes.length === 0) return;
-                    if (currentPresetIndex < 0) currentPresetIndex = 0;
-                    currentPresetIndex = (currentPresetIndex - 1 + scenes.length) % scenes.length;
-                    if (await _loadPresetScene(scenes[currentPresetIndex])) {
-                        setStatus(`✓ 预设场景: ${scenes[currentPresetIndex]} (${currentPresetIndex + 1}/${scenes.length})`, true);
-                    }
-                });
-                const nextBtn = document.createElement('button');
-                nextBtn.className = 'preset-chip';
-                nextBtn.style.flex = '1';
-                nextBtn.appendChild(document.createTextNode('下一个 '));
-                const nextIcon = createIconifyIcon('lucide:skip-forward');
-                if (nextIcon) {
-                    nextBtn.appendChild(nextIcon);
-                }
-                nextBtn.addEventListener('click', async () => {
-                    if (scenes.length === 0) return;
-                    if (currentPresetIndex < 0) currentPresetIndex = 0;
-                    currentPresetIndex = (currentPresetIndex + 1) % scenes.length;
-                    if (await _loadPresetScene(scenes[currentPresetIndex])) {
-                        setStatus(`✓ 预设场景: ${scenes[currentPresetIndex]} (${currentPresetIndex + 1}/${scenes.length})`, true);
-                    }
-                });
-                navRow.appendChild(prevBtn);
-                navRow.appendChild(nextBtn);
-                c.appendChild(navRow);
-
                 for (let i = 0; i < scenes.length; i++) {
                     const name = scenes[i];
                     const isActive = i === currentPresetIndex;
@@ -137,7 +99,7 @@ export function buildPresetScenesLevel(): PopupLevel {
                     delBtn.style.cssText = 'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 4px;';
                     delBtn.addEventListener('click', async (e) => {
                         e.stopPropagation();
-                        if (!confirm(`确定删除「${name}」？`)) return;
+                        if (!(await showConfirm(`确定删除「${name}」？`))) return;
                         try {
                             await DeletePresetScene(name);
                             if (currentPresetIndex === i) currentPresetIndex = -1;
@@ -471,8 +433,8 @@ export function buildPresetsLevel(): PopupLevel {
     };
 }
 
-export function showPresetSaveDialog(): void {
-    const name = prompt('输入预设名称：');
+export async function showPresetSaveDialog(): Promise<void> {
+    const name = await showPrompt('输入预设名称：');
     if (!name || !name.trim()) return;
     const trimmed = name.trim();
     const state = getRenderState();

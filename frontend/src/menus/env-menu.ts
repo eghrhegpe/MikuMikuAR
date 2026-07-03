@@ -207,12 +207,26 @@ export function buildEnvLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             container.classList.remove('render-card');
+            // 氛围预设芯片组——新手一键切换
+            cardContainer(container, (c) => {
+                const chipGroup = document.createElement('div');
+                chipGroup.className = 'preset-group';
+                chipGroup.style.paddingBottom = '6px';
+                for (const [key, p] of Object.entries(ENV_LIGHTING_PRESETS)) {
+                    const btn = document.createElement('button');
+                    btn.textContent = p.label;
+                    btn.className = 'preset-chip';
+                    btn.addEventListener('click', () => { applyEnvPreset(key); envMenu.reRender(); });
+                    chipGroup.appendChild(btn);
+                }
+                c.appendChild(chipGroup);
+            });
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:sun', '天空', true, () => envMenu.push(buildEnvUnifiedLevel()));
                 slideRow(c, 'lucide:waves', '水面', true, () => envMenu.push(buildWaterLevel()),
                     undefined, undefined,
                     { value: envState.waterEnabled, onChange: (v) => setEnvState({ waterEnabled: v }) });
-                slideRow(c, 'lucide:wind', '粒子', true, () => envMenu.push(buildParticleLevel()),
+                slideRow(c, 'lucide:sparkles', '粒子', true, () => envMenu.push(buildParticleLevel()),
                     undefined, undefined,
                     { value: envState.particleEnabled, onChange: (v) => setEnvState({ particleEnabled: v }) });
                 slideRow(c, 'lucide:wind', '风', true, () => envMenu.push(buildWindLevel()),

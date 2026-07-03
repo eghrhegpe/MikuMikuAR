@@ -3,7 +3,8 @@
 
 import {
     GetConfig,
-    SetLibraryRoot,
+    SetResourceRoot,
+    SetOverridePath,
     SelectDir,
     ScanModelDir,
     GetLibraryIndex,
@@ -22,9 +23,11 @@ import {
     setStatus,
     setLibraryRoot,
     libraryRoot,
+    setResourceRoot,
     setAllModels,
     allModels,
     setExternalPaths,
+    setOverridePaths,
     externalPaths,
     LibraryModel,
     PopupRow,
@@ -843,10 +846,11 @@ export async function selectResourceRoot(): Promise<void> {
         if (!dir) {
             return;
         }
-        setResourceRoot(dir);
+        await SetResourceRoot(dir);
+        await reloadConfig();
         setStatus('扫描资源库...', false);
         const models = await rescanAndSync();
-        setStatus(`✓ ${models.length} 个条目`, true);
+        setStatus(`✓ ${(models || []).length} 个条目`, true);
     } catch (err) {
         console.error('Error setting resource root:', err);
         setStatus('✗ 目录扫描失败: ' + formatError(err), false);
@@ -860,9 +864,10 @@ export async function selectOverridePath(category: string): Promise<void> {
             return;
         }
         await SetOverridePath(category, dir);
+        await reloadConfig();
         setStatus('扫描资源库...', false);
         const models = await rescanAndSync();
-        setStatus(`✓ ${models.length} 个条目`, true);
+        setStatus(`✓ ${(models || []).length} 个条目`, true);
     } catch (err) {
         console.error('Error setting override path:', err);
         setStatus('✗ 目录设置失败: ' + formatError(err), false);
@@ -956,7 +961,7 @@ export async function refreshLibrary(): Promise<void> {
     try {
         await ClearExtractCache();
         const models = await rescanAndSync();
-        setStatus(`✓ ${models.length} 个条目`, true);
+        setStatus(`✓ ${(models || []).length} 个条目`, true);
         CleanOrphanCache().catch((err) => console.warn('CleanOrphanCache (background):', err));
         if (
             dom.sceneOverlay.classList.contains('visible') &&

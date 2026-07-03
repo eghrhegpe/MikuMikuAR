@@ -8,6 +8,7 @@ import {
     SelectVMDMotion, SelectAudioFile, GetDanceSets, DeleteDanceSet, ImportDanceSet,
 } from '../core/wails-bindings';
 import { loadAudioFile, setAudioOffset } from '../outfit/audio';
+import { showConfirm, showPrompt } from '../core/dialog';
 import { loadVMDFromPath, focusModel } from '../scene/scene';
 import { closeAllOverlays } from '../core/config';
 
@@ -185,8 +186,8 @@ export function buildDanceSetDetailLevel(setId: string): PopupLevel {
                 const deleteBtn = document.createElement('div');
                 deleteBtn.className = 'slide-item';
                 deleteBtn.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:trash-2"></iconify-icon></span><span class="slide-label" style="color:var(--danger,#ff6b6b);">删除套装</span>';
-                deleteBtn.addEventListener('click', () => {
-                    if (confirm(`确定要删除舞蹈套装「${ds.name}」吗？`)) {
+                deleteBtn.addEventListener('click', async () => {
+                    if (await showConfirm(`确定要删除舞蹈套装「${ds.name}」吗？`)) {
                         DeleteDanceSet(setId)
                             .then(() => {
                                 setStatus('✓ 已删除舞蹈套装', true);
@@ -226,7 +227,7 @@ async function createNewDanceSet(): Promise<void> {
         const audioPath = await SelectAudioFile().catch(() => '');
 
         const defaultName = vmdPath.split(/[\\/]/).pop().replace(/\.vmd$/i, '') || '';
-        const name = prompt('请输入舞蹈套装名称：', defaultName);
+        const name = await showPrompt('请输入舞蹈套装名称：', defaultName);
         if (!name) return;
 
         const setId = await ImportDanceSet(vmdPath, audioPath, name);

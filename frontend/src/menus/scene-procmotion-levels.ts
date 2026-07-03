@@ -3,11 +3,8 @@
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import {
-    addSliderRow,
-    addToggleRow,
-    addModeSlider,
-} from '../core/ui-helpers';
+import { addSliderRow, addToggleRow, addModeSlider, } from '../core/ui-helpers';
+import { showConfirm } from '../core/dialog';
 import {
     setProcMotionMode,
     setProcMotionIntensity,
@@ -159,17 +156,19 @@ export function buildProcMotionLevel(): PopupLevel {
                     getMmdRuntimeType(),
                     (v) => {
                         if (v === getMmdRuntimeType()) return;
-                        const ok = confirm(
-                            v === 'js'
-                                ? '切换到 JS 调试模式将丢失当前场景并重新加载（无物理）。继续？'
-                                : '切换到 WASM 物理模式将丢失当前场景并重新加载。继续？'
-                        );
-                        if (!ok) {
-                            reRenderSceneMenu();
-                            return;
-                        }
-                        setMmdRuntimeType(v);
-                        location.reload();
+                        (async () => {
+                            const ok = await showConfirm(
+                                v === 'js'
+                                    ? '切换到 JS 调试模式将丢失当前场景并重新加载（无物理）。继续？'
+                                    : '切换到 WASM 物理模式将丢失当前场景并重新加载。继续？'
+                            );
+                            if (!ok) {
+                                reRenderSceneMenu();
+                                return;
+                            }
+                            setMmdRuntimeType(v);
+                            location.reload();
+                        })();
                     },
                     'lucide:cpu'
                 );

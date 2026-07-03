@@ -5,6 +5,7 @@ import { envState, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow } from '../core/ui-helpers';
+import { showPrompt } from '../core/dialog';
 import {
     setEnvState,
     getEnvSunAngle,
@@ -119,7 +120,7 @@ export function renderUserEnvPresets(container: HTMLElement): void {
     saveBtn.style.flex = '1';
     saveBtn.textContent = '＋ 保存当前为预设';
     saveBtn.addEventListener('click', async () => {
-        const name = window.prompt('请输入预设名称（用作文件名，仅限字母数字/_/-/中文）');
+        const name = await showPrompt('请输入预设名称（用作文件名，仅限字母数字/_/-/中文）');
         if (!name) return;
         try {
             const preset = snapshotCurrentEnvPreset(name);
