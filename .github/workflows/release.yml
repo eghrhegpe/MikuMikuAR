@@ -69,7 +69,7 @@ jobs:
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
       - name: Build
-        run: powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1 -Production
+        run: .\scripts\build-windows.ps1 -Production
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
