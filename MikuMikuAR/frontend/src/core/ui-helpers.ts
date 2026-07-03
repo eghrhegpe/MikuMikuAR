@@ -299,7 +299,7 @@ export function addSliderRow(
 
         switch (e.key) {
             case 'ArrowLeft':
-            case 'ArrowDown':
+            case 'ArrowDown': {
                 e.preventDefault();
                 const lower = Math.max(min, snapToStep(currentValue - delta));
                 if (lower !== currentValue) {
@@ -308,8 +308,9 @@ export function addSliderRow(
                     onDragEndCb?.(lower);
                 }
                 break;
+            }
             case 'ArrowRight':
-            case 'ArrowUp':
+            case 'ArrowUp': {
                 e.preventDefault();
                 const upper = Math.min(max, snapToStep(currentValue + delta));
                 if (upper !== currentValue) {
@@ -318,6 +319,7 @@ export function addSliderRow(
                     onDragEndCb?.(upper);
                 }
                 break;
+            }
             case 'Home':
                 e.preventDefault();
                 if (min !== currentValue) {
@@ -479,17 +481,19 @@ export function addColorSliderRow(
             const delta = e.shiftKey ? 0.1 : 0.01;
             switch (e.key) {
                 case 'ArrowLeft':
-                case 'ArrowDown':
+                case 'ArrowDown': {
                     e.preventDefault();
                     const lower = Math.max(0, Math.round((current[ci] - delta) * 100) / 100);
                     if (lower !== current[ci]) updateDisplay(lower);
                     break;
+                }
                 case 'ArrowRight':
-                case 'ArrowUp':
+                case 'ArrowUp': {
                     e.preventDefault();
                     const upper = Math.min(1, Math.round((current[ci] + delta) * 100) / 100);
                     if (upper !== current[ci]) updateDisplay(upper);
                     break;
+                }
                 case 'Home':
                     e.preventDefault();
                     if (0 !== current[ci]) updateDisplay(0);
@@ -612,7 +616,7 @@ export function addModeSlider<T extends string | number>(
         const shiftMult = e.shiftKey ? Math.max(1, Math.floor(total / 4)) : 1;
         switch (e.key) {
             case 'ArrowLeft':
-            case 'ArrowDown':
+            case 'ArrowDown': {
                 e.preventDefault();
                 const lower = Math.max(0, currentIndex - shiftMult);
                 if (lower !== currentIndex) {
@@ -621,8 +625,9 @@ export function addModeSlider<T extends string | number>(
                     onDragEndCb?.(options[lower].value);
                 }
                 break;
+            }
             case 'ArrowRight':
-            case 'ArrowUp':
+            case 'ArrowUp': {
                 e.preventDefault();
                 const upper = Math.min(total - 1, currentIndex + shiftMult);
                 if (upper !== currentIndex) {
@@ -631,6 +636,7 @@ export function addModeSlider<T extends string | number>(
                     onDragEndCb?.(options[upper].value);
                 }
                 break;
+            }
             case 'Home':
                 e.preventDefault();
                 if (0 !== currentIndex) {

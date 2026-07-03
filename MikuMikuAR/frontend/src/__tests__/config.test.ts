@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
     formatTime,
     formatError,
@@ -89,7 +89,11 @@ describe('config pure functions', () => {
         });
 
         it('returns "unknown error" for objects that throw on String()', () => {
-            const bad = { toString: () => { throw new Error('bad'); } };
+            const bad = {
+                toString: () => {
+                    throw new Error('bad');
+                },
+            };
             expect(formatError(bad)).toBe('unknown error');
         });
     });
@@ -166,9 +170,7 @@ describe('config pure functions', () => {
 describe('computeLibraryRef', () => {
     beforeEach(() => {
         setLibraryRoot('C:/Users/test/MMD');
-        setExternalPaths([
-            { path: 'D:/ExternalLib', name: 'ExtLib' },
-        ]);
+        setExternalPaths([{ path: 'D:/ExternalLib', name: 'ExtLib' }]);
     });
 
     it('returns relative path for main library file', () => {
@@ -198,9 +200,7 @@ describe('computeLibraryRef', () => {
 describe('resolveLibraryRef', () => {
     beforeEach(() => {
         setLibraryRoot('C:/Users/test/MMD');
-        setExternalPaths([
-            { path: 'D:/ExternalLib', name: 'ExtLib' },
-        ]);
+        setExternalPaths([{ path: 'D:/ExternalLib', name: 'ExtLib' }]);
     });
 
     it('returns null for empty ref', () => {
