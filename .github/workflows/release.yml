@@ -99,8 +99,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: MikuMikuAR/frontend/package-lock.json
-      - name: Install Wails
-        run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
       - name: Install Linux dependencies
         run: |
           sudo apt-get update -qq
@@ -114,6 +112,8 @@ jobs:
             libcairo2-dev \
             libatk1.0-dev \
             libgirepository1.0-dev
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
       - name: Build
         run: bash scripts/build-linux.sh --production
       - name: Upload artifact
