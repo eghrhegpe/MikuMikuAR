@@ -28,6 +28,7 @@ import {
     allModels,
     setExternalPaths,
     setOverridePaths,
+    overridePaths,
     externalPaths,
     LibraryModel,
     PopupRow,
@@ -728,8 +729,9 @@ export function showModelPopup(): void {
                         });
                         return;
                     }
+                    const browseDir = overridePaths.pmx || libraryRoot + '/PMX';
                     const level = buildLevel(
-                        libraryRoot + '/PMX',
+                        browseDir,
                         'PMX',
                         (m) => m.format === 'pmx',
                         stackRegistry.modelStack!,
@@ -810,7 +812,7 @@ export function showModelPopup(): void {
 export async function initLibrary(): Promise<void> {
     try {
         const cfg = await GetConfig();
-        const cfgRoot = cfg.resource_root || cfg.library_root || '';
+        const cfgRoot = cfg.resource_root || cfg.library_root || cfg.override_paths?.pmx || '';
         if (!cfgRoot) {
             setStatus(
                 '📦 首次使用：点击这里打开模型库 → 加载模型，模型目录请在 ⚙ 设置中配置',
@@ -896,7 +898,7 @@ export async function reloadConfig(): Promise<void> {
     const cfg = await GetConfig();
     if (cfg) {
         setResourceRoot(cfg.resource_root || '');
-        setLibraryRoot(cfg.resource_root || ''); // keep in sync
+        setLibraryRoot(cfg.resource_root || cfg.override_paths?.pmx || ''); // keep in sync, fallback to pmx override
         setOverridePaths(cfg.override_paths || {});
         setExternalPaths(cfg.external_paths || []);
     }

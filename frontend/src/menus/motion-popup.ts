@@ -31,8 +31,6 @@ import {
     loadCameraVmdFromPath,
     updatePlaybackUI,
     focusModel,
-    setGravityStrength,
-    getGravityStrength,
     getPhysicsCategories,
     isPhysicsCategoryEnabled,
     setPhysicsCategory,
@@ -63,11 +61,11 @@ import {
     buildProcMotionLevel, buildProcMotionModeLevel, buildLipSyncLevel,
 } from './motion-procmotion-levels';
 import { buildCameraLevel } from './motion-camera-levels';
-import { toggleCloth } from '../physics/cloth-manager';
 import { setEnvState } from '../scene/scene';
 
 // ======== 从子文件导入 ========
 import { buildClothParamsLevel } from './motion-cloth-levels';
+import { buildPhysicsLevel } from './motion-physics-levels';
 
 // ======== Barrel Re-Exports ========
 export { buildClothParamsLevel } from './motion-cloth-levels';
@@ -237,6 +235,7 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
     if (row.target === 'motion:recent') { return buildRecentMotionsLevel(); }
     if (row.target === 'motion:procmotion') { return buildProcMotionLevel(); }
     if (row.target === 'motion:cloth') { return buildClothParamsLevel(); }
+    if (row.target === 'motion:physics') { return buildPhysicsLevel(); }
     if (row.target === 'procmotion:mode') { return buildProcMotionModeLevel(); }
     if (row.target === 'lipsync:menu') { return buildLipSyncLevel(); }
     if (row.target && row.target.startsWith('action:binding:')) {
@@ -410,31 +409,12 @@ function buildMotionRootItems(): PopupRow[] {
     items.push({ kind: 'folder', label: '音乐', icon: 'lucide:music', target: '__music__' });
     items.push({ kind: 'folder', label: '程序化动作', icon: 'lucide:wind', target: 'motion:procmotion' });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    // Card 4: 物理重力 + 布料模拟
-    items.push({
-        kind: 'slider',
-        label: '物理重力',
-        icon: 'lucide:arrow-down',
-        target: 'motion:gravity',
-        sliderValue: getGravityStrength(),
-        sliderMin: 0,
-        sliderMax: 2,
-        sliderStep: 0.05,
-        onSliderChange: (v) => setGravityStrength(v),
-    });
+    // Card 4: 物理
     items.push({
         kind: 'folder',
-        label: '布料模拟',
-        icon: 'lucide:shirt',
-        target: 'motion:cloth',
-        headerToggle: {
-            value: envState.clothEnabled,
-            onChange: (v) => {
-                setEnvState({ clothEnabled: v });
-                if (v) toggleCloth(true); else toggleCloth(false);
-                refreshMotionRoot();
-            },
-        },
+        label: '物理',
+        icon: 'lucide:atom',
+        target: 'motion:physics',
     });
     return items;
 }
