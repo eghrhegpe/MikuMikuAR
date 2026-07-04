@@ -848,12 +848,10 @@ export async function selectResourceRoot(): Promise<void> {
         }
         await SetResourceRoot(dir);
         await reloadConfig();
-        setStatus('扫描资源库...', false);
-        const models = await rescanAndSync();
-        setStatus(`✓ ${(models || []).length} 个条目`, true);
+        await refreshLibrary();
     } catch (err) {
         console.error('Error setting resource root:', err);
-        setStatus('✗ 目录扫描失败: ' + formatError(err), false);
+        setStatus('✗ 目录设置失败: ' + formatError(err), false);
     }
 }
 
@@ -865,9 +863,7 @@ export async function selectOverridePath(category: string): Promise<void> {
         }
         await SetOverridePath(category, dir);
         await reloadConfig();
-        setStatus('扫描资源库...', false);
-        const models = await rescanAndSync();
-        setStatus(`✓ ${(models || []).length} 个条目`, true);
+        await refreshLibrary();
     } catch (err) {
         console.error('Error setting override path:', err);
         setStatus('✗ 目录设置失败: ' + formatError(err), false);

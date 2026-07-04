@@ -54,7 +54,7 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $distDir = "$repoRoot\dist"
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$exeName = ".exe"
+$exeName = "MikuMikuAR.exe"
 $srcExe = "$projectDir\bin\$exeName"
 $dstExe = "$distDir\-$version-windows-amd64.exe"
 
