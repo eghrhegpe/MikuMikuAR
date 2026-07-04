@@ -194,6 +194,13 @@ export async function loadPMXFile(
                     _capture(mesh.material);
                 }
             }
+            // 绑定 Reflection Probe 到新材料（如果探针已启用）
+            try {
+                const { bindReflectionProbeToModel } = await import('../render/renderer');
+                bindReflectionProbeToModel(meshes);
+            } catch {
+                // Intentionally empty — renderer 未初始化时忽略
+            }
             setFocusedModelId(id);
             _modelManager.focus(id);
             setStatus(`✓ ${displayName} (场景)`, true);
@@ -248,6 +255,13 @@ export async function loadPMXFile(
             if (mesh.material) {
                 _capture(mesh.material);
             }
+        }
+        // 绑定 Reflection Probe 到新材料（如果探针已启用）
+        try {
+            const { bindReflectionProbeToModel } = await import('../render/renderer');
+            bindReflectionProbeToModel(meshes);
+        } catch {
+            // Intentionally empty — renderer 未初始化时忽略
         }
         if (wasmModel instanceof MmdWasmModel) {
             const states = wasmModel.rigidBodyStates;

@@ -394,9 +394,10 @@ function _applyRenderState(s: Partial<RenderState>): void {
     // SSR (Screen-Space Reflections) — 独立 pipeline，不走 DefaultRenderingPipeline
     if (s.ssrEnabled !== undefined || ssrStr !== undefined || ssrFal !== undefined || ssrStp !== undefined || ssrThk !== undefined) {
         if (s.ssrEnabled !== undefined) {
-            if (s.ssrEnabled && !_ssrPipeline && _scene && _pipelineCamera) {
+            const ssrCamera = _pipelineCamera ?? _scene.activeCamera;
+            if (s.ssrEnabled && !_ssrPipeline && _scene && ssrCamera) {
                 try {
-                    _ssrPipeline = new SSRRenderingPipeline('ssr', _scene, [_pipelineCamera]);
+                    _ssrPipeline = new SSRRenderingPipeline('ssr', _scene, [ssrCamera]);
                     _ssrPipeline.maxDistance = 50;
                     _ssrPipeline.step = 1;
                     _ssrPipeline.thickness = 0.5;
@@ -419,9 +420,10 @@ function _applyRenderState(s: Partial<RenderState>): void {
             if (ssrStp !== undefined) _ssrPipeline.step = Math.round(ssrStp);
             if (ssrThk !== undefined) _ssrPipeline.thickness = ssrThk;
             // SSR + Bloom 互斥：Bloom weight > 0.5 时自动降低 SSR 强度防止白出
+            // 基于当前 pipeline 强度（已更新）而非传入值，避免覆盖用户设置
             const bloomW = pipeline.bloomWeight ?? 0;
-            if (bloomW > 0.5 && ssrStr !== undefined) {
-                _ssrPipeline.strength = ssrStr * (1 - (bloomW - 0.5));
+            if (bloomW > 0.5) {
+                _ssrPipeline.strength *= (1 - (bloomW - 0.5));
             }
         }
     }
@@ -480,9 +482,10 @@ function _applyRenderState(s: Partial<RenderState>): void {
     // SSAO (Screen-Space Ambient Occlusion) — 独立 pipeline
     if (s.ssaoEnabled !== undefined || s.ssaoStrength !== undefined || s.ssaoRadius !== undefined || s.ssaoSamples !== undefined) {
         if (s.ssaoEnabled !== undefined) {
-            if (s.ssaoEnabled && !_ssaoPipeline && _scene && _pipelineCamera) {
+            const ssaoCamera = _pipelineCamera ?? _scene.activeCamera;
+            if (s.ssaoEnabled && !_ssaoPipeline && _scene && ssaoCamera) {
                 try {
-                    _ssaoPipeline = new SSAO2RenderingPipeline('ssao', _scene, 0.5, [_pipelineCamera]);
+                    _ssaoPipeline = new SSAO2RenderingPipeline('ssao', _scene, 0.5, [ssaoCamera]);
                     _ssaoPipeline.totalStrength = 1.0;
                     _ssaoPipeline.radius = 2.0;
                     _ssaoPipeline.samples = 8;
@@ -742,6 +745,19 @@ export function refreshReflectionProbe(): void {
     // 强制刷新：临时设置 refreshRate 为 1 触发重新渲染
     _reflectionProbe.refreshRate = 1;
     _reflectionProbe.refreshRate = 0;
+}
+
+/** 将 Reflection Probe 绑定到指定模型的所有材质（模型加载后调用）。 */
+export function bindReflectionProbeToModel(meshes: import('@babylonjs/core/Meshes/mesh').Mesh[]): void {
+    if (!_reflectionProbe) return;
+    const rt = _reflectionProbe.cubeTexture;
+    if (!rt) return;
+    for (const mesh of meshes) {
+        const m = mesh.material;
+        if (m && 'reflectionTexture' in m) {
+            (m as { reflectionTexture: import('@babylonjs/core/Materials/Textures/texture').Texture }).reflectionTexture = rt;
+        }
+    }
 }
 
 /** 当模型注册表更新时，重新应用边缘高亮状态。 */

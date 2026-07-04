@@ -46,7 +46,7 @@ import {
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { selectResourceRoot, selectOverridePath } from './library-core';
-import { slideRow, addToggleRow } from '../core/ui-helpers';
+import { slideRow, addToggleRow, addSliderRow } from '../core/ui-helpers';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
 import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
@@ -250,14 +250,14 @@ function buildSettingsUILevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                addCsRow(c, 'UI 缩放', 'lucide:maximize', 0.8, 1.3, 0.05, 1, (v) => {
+                addSliderRow(c, 'UI 缩放', 1, 0.8, 1.3, 0.05, (v) => {
                     document.documentElement.style.setProperty('--ui-scale', String(v));
                     SetUIScale(v).catch(() => {});
-                });
-                addCsRow(c, '弹窗宽度', 'lucide:sidebar', 220, 360, 10, 280, (v) => {
+                }, 'lucide:maximize');
+                addSliderRow(c, '弹窗宽度', 280, 220, 360, 10, (v) => {
                     document.documentElement.style.setProperty('--popup-width', v + 'px');
                     SetUIPopupWidth(v).catch(() => {});
-                });
+                }, 'lucide:sidebar');
             });
 
             const currentAccent =
