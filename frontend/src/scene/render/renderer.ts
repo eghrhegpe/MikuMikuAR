@@ -43,9 +43,7 @@ export interface RenderState {
     chromaticAberrationAmount: number; // 0-1, default 0（内部映射到 0~8）
     grainEnabled: boolean;
     grainIntensity: number; // 0-1, default 0（内部映射到 0~50）
-    // Phase 10 — 运动模糊 + 锐化 + 辉光
-    motionBlurEnabled: boolean;
-    motionBlurAmount: number; // 0-1, default 0（内部映射到 motionStrength 0~1）
+    // Phase 10 — 锐化 + 辉光
     sharpenAmount: number; // 0-1, default 0（内部映射到 sharpen.edgeAmount）
     glowEnabled: boolean;
     glowIntensity: number; // 0-1, default 0（GlowLayer.intensity）
@@ -144,8 +142,6 @@ export function getRenderState(): RenderState {
         chromaticAberrationAmount: pipeline.chromaticAberration ? clamp(pipeline.chromaticAberration.aberrationAmount / 8, 0, 1) : 0,
         grainEnabled: pipeline.grainEnabled ?? false,
         grainIntensity: pipeline.grain ? clamp(pipeline.grain.intensity / 50, 0, 1) : 0,
-        motionBlurEnabled: pipeline.motionBlurEnabled ?? false,
-        motionBlurAmount: pipeline.motionBlur ? clamp(pipeline.motionBlur.motionStrength, 0, 1) : 0,
         sharpenAmount: pipeline.sharpen ? clamp(pipeline.sharpen.edgeAmount, 0, 1) : 0,
         glowEnabled: _glowLayer !== null && _glowLayer.intensity > 0,
         glowIntensity: _glowLayer ? clamp(_glowLayer.intensity, 0, 1) : 0,
@@ -173,8 +169,6 @@ function _defaultRenderState(): RenderState {
         chromaticAberrationAmount: 0,
         grainEnabled: false,
         grainIntensity: 0,
-        motionBlurEnabled: false,
-        motionBlurAmount: 0,
         sharpenAmount: 0,
         glowEnabled: false,
         glowIntensity: 0,
@@ -203,7 +197,6 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const vd = s.vignetteDarkness !== undefined ? clamp(s.vignetteDarkness, 0, 1) : undefined;
     const ca = s.chromaticAberrationAmount !== undefined ? clamp(s.chromaticAberrationAmount, 0, 1) : undefined;
     const gi = s.grainIntensity !== undefined ? clamp(s.grainIntensity, 0, 1) : undefined;
-    const mb = s.motionBlurAmount !== undefined ? clamp(s.motionBlurAmount, 0, 1) : undefined;
     const sa = s.sharpenAmount !== undefined ? clamp(s.sharpenAmount, 0, 1) : undefined;
     const gl = s.glowIntensity !== undefined ? clamp(s.glowIntensity, 0, 1) : undefined;
 
@@ -291,14 +284,6 @@ function _applyRenderState(s: Partial<RenderState>): void {
         pipeline.grain.intensity = gi * 50;
     }
 
-    // Motion Blur
-    if (s.motionBlurEnabled !== undefined) {
-        pipeline.motionBlurEnabled = s.motionBlurEnabled;
-    }
-    if (mb !== undefined && pipeline.motionBlur) {
-        pipeline.motionBlur.motionStrength = mb;
-    }
-
     // Sharpen
     if (sa !== undefined && pipeline.sharpen) {
         pipeline.sharpenEnabled = sa > 0;
@@ -381,7 +366,6 @@ export function transitionRenderState(
         'vignetteDarkness',
         'chromaticAberrationAmount',
         'grainIntensity',
-        'motionBlurAmount',
         'sharpenAmount',
         'glowIntensity',
     ];
@@ -396,7 +380,6 @@ export function transitionRenderState(
         'vignetteEnabled',
         'chromaticAberrationEnabled',
         'grainEnabled',
-        'motionBlurEnabled',
         'glowEnabled',
     ];
     // 枚举字段（动画结束时切换）
@@ -431,7 +414,7 @@ export function transitionRenderState(
             if (key === 'chromaticAberrationEnabled' || key === 'grainEnabled') {
                 return t >= 0.3;
             }
-            if (key === 'motionBlurEnabled' || key === 'glowEnabled') {
+            if (key === 'glowEnabled') {
                 return t >= 0.3;
             }
             // outline / fxaa 无关联数值，延迟到 80%
