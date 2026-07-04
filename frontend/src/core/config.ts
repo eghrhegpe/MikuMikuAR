@@ -311,6 +311,8 @@ export interface EnvState {
     // ======== XPBD 布料模拟 ========
     clothEnabled: boolean;
     clothConfig: ClothConfig;
+    /** XPBD 求解器迭代次数（全局默认值，新建布料时生效） */
+    solverSubsteps: number;
 
     // ======== 太阳参数（序列化用）========
     sunAngle: number; // 太阳高度角, -15~90
@@ -636,6 +638,7 @@ export const envState: EnvState = {
     // ======== XPBD 布料模拟 ========
     clothEnabled: false,
     clothConfig: { ...DEFAULT_CLOTH_CONFIG },
+    solverSubsteps: 4,
 
     // ======== 太阳参数（序列化用）====
     sunAngle: 45,

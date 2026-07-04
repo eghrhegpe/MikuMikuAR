@@ -82,6 +82,7 @@ const defaultEnv: EnvState = {
         gravityScale: 1.0,
         bendCompliance: 0.005,
     },
+    solverSubsteps: 4,
     sunAngle: 45,
     azimuth: -45,
 };

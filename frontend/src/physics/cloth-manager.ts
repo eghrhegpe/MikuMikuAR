@@ -84,6 +84,8 @@ function _createClothForFocusedModel(): void {
 
     // Create cloth
     const cloth = createCloth(scene, cfg, collider);
+    // 应用全局 solver substeps
+    cloth.solver.substeps = envState.solverSubsteps;
 
     // Build update function
     const updateFn = buildClothUpdateFn(cloth, anchorMatrixFn, collider);
@@ -269,4 +271,38 @@ export function disposeDebugRenderer(): void {
     _debugParticles = false;
     _debugConstraints = false;
     _debugColliders = false;
+}
+
+// ======== Solver 参数 API =========
+
+/** 获取全局 solver 迭代次数 */
+export function getSolverSubsteps(): number {
+    return envState.solverSubsteps;
+}
+
+/** 设置全局 solver 迭代次数（更新现有布料 + 新建布料默认值） */
+export function setSolverSubsteps(v: number): void {
+    envState.solverSubsteps = v;
+    // 应用到所有现有布料
+    for (const [, cloth] of modelManager.clothInstances) {
+        if (cloth && cloth.solver) {
+            cloth.solver.substeps = v;
+        }
+    }
+}
+
+/** 获取地面碰撞开关状态 */
+export function getGroundCollisionEnabled(): boolean {
+    const first = modelManager.clothInstances.values().next();
+    if (first.done || !first.value.cloth.solver) return false;
+    return first.value.cloth.solver.groundCollisionEnabled;
+}
+
+/** 设置地面碰撞开关（应用到所有现有布料） */
+export function setGroundCollisionEnabled(v: boolean): void {
+    for (const [, cloth] of modelManager.clothInstances) {
+        if (cloth && cloth.solver) {
+            cloth.solver.groundCollisionEnabled = v;
+        }
+    }
 }
