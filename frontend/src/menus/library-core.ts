@@ -412,7 +412,7 @@ export function buildLevel(
 // Register buildLevel for use by motion-popup.ts (avoids circular import)
 stackRegistry.buildLevel = buildLevel;
 
-function modelToRow(m: LibraryModel): PopupRow {
+export function modelToRow(m: LibraryModel): PopupRow {
     let icon = 'box';
     if (m.format === 'vmd') {
         icon = 'music';

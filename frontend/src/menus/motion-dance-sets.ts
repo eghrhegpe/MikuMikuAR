@@ -1,8 +1,10 @@
 // [doc:architecture] Motion Dance Sets — 舞蹈套装弹窗层级
 // 从 motion-popup.ts 拆分
 
-import { cardContainer, stackRegistry, setStatus, escapeHtml, libraryRoot } from '../core/config';
+import { cardContainer, stackRegistry, setStatus, escapeHtml, libraryRoot,
+    allModels, displayNamePriority, modelMetaCache } from '../core/config';
 import type { PopupLevel, PopupRow, LibraryModel } from '../core/config';
+import { modelToRow } from './library-core';
 import { createIconifyIcon } from '../core/icons';
 import {
     GetDanceSets, DeleteDanceSet, ImportDanceSet,
@@ -227,8 +229,6 @@ function createNewDanceSet(): void {
 }
 
 function selectDanceSetVmd(): void {
-    const { allModels, libraryRoot, displayNamePriority, modelMetaCache } = require('../core/config');
-    const { modelToRow } = require('./library-core');
     const vmdModels = (allModels || []).filter((m: LibraryModel) => m.format === 'vmd');
     
     const level: PopupLevel = {
@@ -277,8 +277,6 @@ function selectDanceSetVmd(): void {
 }
 
 function selectDanceSetAudio(): void {
-    const { allModels, libraryRoot } = require('../core/config');
-    const { modelToRow } = require('./library-core');
     const audioModels = (allModels || []).filter((m: LibraryModel) => m.format === 'audio');
     
     const level: PopupLevel = {
