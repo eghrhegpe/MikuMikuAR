@@ -713,8 +713,8 @@ export function showModelPopup(): void {
                         return;
                     }
                     const level = buildLevel(
-                        libraryRoot,
-                        '模型库',
+                        libraryRoot + '/PMX',
+                        'PMX',
                         (m) => m.format === 'pmx',
                         stackRegistry.modelStack!,
                         externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
