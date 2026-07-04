@@ -3,9 +3,12 @@
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
+import { SSRRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/ssrRenderingPipeline';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import type { Camera } from '@babylonjs/core/Cameras/camera';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
+import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
+import type { Observer } from '@babylonjs/core/Misc/observable';
 
 // ======== Tone Mapping Modes ========
 
@@ -47,6 +50,14 @@ export interface RenderState {
     sharpenAmount: number; // 0-1, default 0（内部映射到 sharpen.edgeAmount）
     glowEnabled: boolean;
     glowIntensity: number; // 0-1, default 0（GlowLayer.intensity）
+    // Phase 11 — SSR + Reflection Probe
+    ssrEnabled: boolean;
+    ssrStrength: number; // 0-1, default 0（SSRRenderingPipeline.strength）
+    ssrFalloff: number; // 0-1, default 0（映射到 reflectionSpecularFalloffExponent 1~8）
+    ssrStep: number; // 1-32, default 1（SSRRenderingPipeline.step）
+    ssrThickness: number; // 0-2, default 0.5（SSRRenderingPipeline.thickness）
+    reflectionProbeEnabled: boolean;
+    reflectionIntensity: number; // 0-1, default 0
 }
 
 // ======== Renderer State (module-level) ========
@@ -59,6 +70,10 @@ let _pipelineCamera: Camera | null = null;
 let _modelRegistry: Map<string, import('../../core/config').ModelInstance> | null = null;
 let _triggerAutoSave: (() => void) | null = null;
 let _glowLayer: GlowLayer | null = null;
+let _ssrPipeline: SSRRenderingPipeline | null = null;
+let _reflectionProbe: ReflectionProbe | null = null;
+let _probeRefreshObserver: Observer<import('@babylonjs/core/scene').Scene> | null = null;
+let _lastProbeRefresh = 0;
 
 // ======== 数值钳制工具 ========
 
@@ -90,6 +105,24 @@ export function initRenderer(
     pipeline.fxaaEnabled = false;
     pipeline.bloomEnabled = false;
     pipeline.imageProcessingEnabled = true;
+
+    // Reflection Probe 自动刷新 — 每 10 秒检查一次环境变化
+    _probeRefreshObserver = scene.onBeforeRenderObservable.add(() => {
+        if (!_reflectionProbe || !scene) return;
+        const now = performance.now();
+        if (now - _lastProbeRefresh < 10000) return;
+        _lastProbeRefresh = now;
+        try {
+            _reflectionProbe!.renderList = scene.meshes.filter((m) =>
+                m.name.includes('sky') || m.name.includes('env') || m.name.includes('ground') || m.name.includes('water')
+            );
+            // 强制刷新：临时设置 refreshRate 为 1 触发重新渲染
+            _reflectionProbe!.refreshRate = 1;
+            _reflectionProbe!.refreshRate = 0;
+        } catch {
+            // Intentionally empty — refresh 失败不影响渲染
+        }
+    });
 }
 
 /** 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 */
@@ -99,9 +132,21 @@ export function isRendererReady(): boolean {
 
 /** 释放渲染管线及相关资源。在场景销毁时调用。 */
 export function disposeRenderer(): void {
+    if (_probeRefreshObserver && _scene) {
+        _scene.onBeforeRenderObservable.remove(_probeRefreshObserver);
+        _probeRefreshObserver = null;
+    }
     if (_glowLayer) {
         _glowLayer.dispose();
         _glowLayer = null;
+    }
+    if (_ssrPipeline) {
+        _ssrPipeline.dispose();
+        _ssrPipeline = null;
+    }
+    if (_reflectionProbe) {
+        _reflectionProbe.dispose();
+        _reflectionProbe = null;
     }
     if (pipeline) {
         pipeline.dispose();
@@ -145,6 +190,13 @@ export function getRenderState(): RenderState {
         sharpenAmount: pipeline.sharpen ? clamp(pipeline.sharpen.edgeAmount, 0, 1) : 0,
         glowEnabled: _glowLayer !== null && _glowLayer.intensity > 0,
         glowIntensity: _glowLayer ? clamp(_glowLayer.intensity, 0, 1) : 0,
+        ssrEnabled: _ssrPipeline !== null && _ssrPipeline.isEnabled,
+        ssrStrength: _ssrPipeline ? clamp(_ssrPipeline.strength, 0, 1) : 0,
+        ssrFalloff: _ssrPipeline ? clamp((_ssrPipeline.reflectionSpecularFalloffExponent - 1) / 7, 0, 1) : 0,
+        ssrStep: _ssrPipeline ? clamp(_ssrPipeline.step, 1, 32) : 1,
+        ssrThickness: _ssrPipeline ? clamp(_ssrPipeline.thickness, 0, 2) : 0.5,
+        reflectionProbeEnabled: _reflectionProbe !== null,
+        reflectionIntensity: _reflectionProbe ? 1 : 0,
     };
 }
 
@@ -172,6 +224,13 @@ function _defaultRenderState(): RenderState {
         sharpenAmount: 0,
         glowEnabled: false,
         glowIntensity: 0,
+        ssrEnabled: false,
+        ssrStrength: 0,
+        ssrFalloff: 0,
+        ssrStep: 1,
+        ssrThickness: 0.5,
+        reflectionProbeEnabled: false,
+        reflectionIntensity: 0,
     };
 }
 
@@ -199,6 +258,10 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const gi = s.grainIntensity !== undefined ? clamp(s.grainIntensity, 0, 1) : undefined;
     const sa = s.sharpenAmount !== undefined ? clamp(s.sharpenAmount, 0, 1) : undefined;
     const gl = s.glowIntensity !== undefined ? clamp(s.glowIntensity, 0, 1) : undefined;
+    const ssrStr = s.ssrStrength !== undefined ? clamp(s.ssrStrength, 0, 1) : undefined;
+    const ssrFal = s.ssrFalloff !== undefined ? clamp(s.ssrFalloff, 0, 1) : undefined;
+    const ssrStp = s.ssrStep !== undefined ? clamp(s.ssrStep, 1, 32) : undefined;
+    const ssrThk = s.ssrThickness !== undefined ? clamp(s.ssrThickness, 0, 2) : undefined;
 
     // Post-processing
     if (s.bloomEnabled !== undefined) {
@@ -309,6 +372,92 @@ function _applyRenderState(s: Partial<RenderState>): void {
         }
     }
 
+    // SSR (Screen-Space Reflections) — 独立 pipeline，不走 DefaultRenderingPipeline
+    if (s.ssrEnabled !== undefined || ssrStr !== undefined || ssrFal !== undefined || ssrStp !== undefined || ssrThk !== undefined) {
+        if (s.ssrEnabled !== undefined) {
+            if (s.ssrEnabled && !_ssrPipeline && _scene && _pipelineCamera) {
+                try {
+                    _ssrPipeline = new SSRRenderingPipeline('ssr', _scene, [_pipelineCamera]);
+                    _ssrPipeline.maxDistance = 50;
+                    _ssrPipeline.step = 1;
+                    _ssrPipeline.thickness = 0.5;
+                    _ssrPipeline.strength = 1;
+                    _ssrPipeline.reflectionSpecularFalloffExponent = 1;
+                    _ssrPipeline.samples = 1;
+                    _ssrPipeline.isEnabled = true;
+                } catch (err) {
+                    console.warn('[renderer] SSR pipeline 创建失败:', err);
+                    _ssrPipeline = null;
+                }
+            } else if (!s.ssrEnabled && _ssrPipeline) {
+                _ssrPipeline.dispose();
+                _ssrPipeline = null;
+            }
+        }
+        if (_ssrPipeline) {
+            if (ssrStr !== undefined) _ssrPipeline.strength = ssrStr;
+            if (ssrFal !== undefined) _ssrPipeline.reflectionSpecularFalloffExponent = 1 + ssrFal * 7; // 0→1, 1→8
+            if (ssrStp !== undefined) _ssrPipeline.step = Math.round(ssrStp);
+            if (ssrThk !== undefined) _ssrPipeline.thickness = ssrThk;
+            // SSR + Bloom 互斥：Bloom weight > 0.5 时自动降低 SSR 强度防止白出
+            const bloomW = pipeline.bloomWeight ?? 0;
+            if (bloomW > 0.5 && ssrStr !== undefined) {
+                _ssrPipeline.strength = ssrStr * (1 - (bloomW - 0.5));
+            }
+        }
+    }
+
+    // Reflection Probe — 环境反射
+    if (s.reflectionProbeEnabled !== undefined || s.reflectionIntensity !== undefined) {
+        if (s.reflectionProbeEnabled !== undefined) {
+            if (s.reflectionProbeEnabled && !_reflectionProbe && _scene) {
+                try {
+                    _reflectionProbe = new ReflectionProbe('envProbe', 256, _scene);
+                    _reflectionProbe.renderList = _scene.meshes.filter((m) =>
+                        m.name.includes('sky') || m.name.includes('env') || m.name.includes('ground') || m.name.includes('water')
+                    );
+                    _reflectionProbe.refreshRate = 0; // 静态环境，仅渲染一次
+                } catch (err) {
+                    console.warn('[renderer] ReflectionProbe 创建失败:', err);
+                    _reflectionProbe = null;
+                }
+            } else if (!s.reflectionProbeEnabled && _reflectionProbe) {
+                // 清除所有模型材质的 reflectionTexture
+                if (_modelRegistry) {
+                    for (const inst of _modelRegistry.values()) {
+                        for (const mesh of inst.meshes) {
+                            const m = mesh.material;
+                            if (m && 'reflectionTexture' in m) {
+                                (m as { reflectionTexture: unknown }).reflectionTexture = null;
+                            }
+                        }
+                    }
+                }
+                _reflectionProbe.dispose();
+                _reflectionProbe = null;
+            }
+        }
+        // 绑定反射探针到模型材质
+        if (_reflectionProbe && s.reflectionProbeEnabled) {
+            const rt = _reflectionProbe.cubeTexture;
+            if (rt && _modelRegistry) {
+                for (const inst of _modelRegistry.values()) {
+                    for (const mesh of inst.meshes) {
+                        const m = mesh.material;
+                        if (m && 'reflectionTexture' in m) {
+                            (m as { reflectionTexture: import('@babylonjs/core/Materials/Textures/texture').Texture }).reflectionTexture = rt;
+                            // 设置反射强度
+                            if (s.reflectionIntensity !== undefined && 'reflectionColor' in m) {
+                                const intensity = s.reflectionIntensity;
+                                (m as { reflectionColor: import('@babylonjs/core/Maths/math.color').Color3 }).reflectionColor.set(intensity, intensity, intensity);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Stage / imageProcessing
     if (pipeline.imageProcessing) {
         if (s.toneMapping !== undefined) {
@@ -368,6 +517,11 @@ export function transitionRenderState(
         'grainIntensity',
         'sharpenAmount',
         'glowIntensity',
+        'ssrStrength',
+        'ssrFalloff',
+        'ssrStep',
+        'ssrThickness',
+        'reflectionIntensity',
     ];
     // 颜色字段列表（逐通道 lerp）
     const colorKeys: (keyof RenderState)[] = ['outlineColor'];
@@ -381,6 +535,8 @@ export function transitionRenderState(
         'chromaticAberrationEnabled',
         'grainEnabled',
         'glowEnabled',
+        'ssrEnabled',
+        'reflectionProbeEnabled',
     ];
     // 枚举字段（动画结束时切换）
     const enumKeys: (keyof RenderState)[] = ['toneMapping'];
@@ -415,6 +571,9 @@ export function transitionRenderState(
                 return t >= 0.3;
             }
             if (key === 'glowEnabled') {
+                return t >= 0.3;
+            }
+            if (key === 'ssrEnabled' || key === 'reflectionProbeEnabled') {
                 return t >= 0.3;
             }
             // outline / fxaa 无关联数值，延迟到 80%
@@ -497,10 +656,31 @@ export function reattachPipeline(): void {
         }
         pipeline.addCamera(_scene.activeCamera);
         _pipelineCamera = _scene.activeCamera;
+        // SSR pipeline 也需要重新挂接相机
+        if (_ssrPipeline) {
+            try {
+                _ssrPipeline.dispose();
+                _ssrPipeline = null;
+                // 下次 _applyRenderState 时会重建
+            } catch {
+                // Intentionally empty — SSR pipeline dispose 失败不影响主流程
+            }
+        }
     }
 }
 
 // ======== 边缘高亮重建 ========
+
+/** 当环境变化时（天空/地面/水面切换），刷新 Reflection Probe 的 renderList。 */
+export function refreshReflectionProbe(): void {
+    if (!_reflectionProbe || !_scene) return;
+    _reflectionProbe.renderList = _scene.meshes.filter((m) =>
+        m.name.includes('sky') || m.name.includes('env') || m.name.includes('ground') || m.name.includes('water')
+    );
+    // 强制刷新：临时设置 refreshRate 为 1 触发重新渲染
+    _reflectionProbe.refreshRate = 1;
+    _reflectionProbe.refreshRate = 0;
+}
 
 /** 当模型注册表更新时，重新应用边缘高亮状态。 */
 export function rebuildOutlineState(): void {

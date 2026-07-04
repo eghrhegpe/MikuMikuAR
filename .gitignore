@@ -60,6 +60,7 @@ tmp/
 .task/
 frontend/wailsjs/
 bin/
+*.syso
 
 # Android build artifacts
 build/android/.gradle/

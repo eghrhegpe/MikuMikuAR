@@ -111,6 +111,15 @@ let _cameraMode: CameraMode = 'orbit';
 let _currentCamera: Camera | null = null;
 let _fov = 0.8; // default FOV, migrated from RenderState in Phase 9
 
+/** Detect touch-capable device for camera parameter tuning. */
+export function isTouchDevice(): boolean {
+    return (
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia('(pointer: coarse)').matches
+    );
+}
+
 function clampFov(v: number): number {
     return Math.max(0.1, Math.min(3, v));
 }
@@ -244,8 +253,16 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
     );
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
-    cam.panningSensibility = 50;
     cam.attachControl(canvas, true);
+    // 触屏设备：降低捏合精度（更灵敏）、降低平移灵敏度（更容易拖动）
+    if (isTouchDevice()) {
+        cam.pinchPrecision = 32;
+        cam.panningSensibility = 20;
+        cam.multiTouchPanAndZoom = true;
+        cam.multiTouchPanning = true;
+    } else {
+        cam.panningSensibility = 50;
+    }
     return cam;
 }
 
@@ -290,8 +307,15 @@ function createOneshotCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotate
     );
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
-    cam.panningSensibility = 50;
     cam.attachControl(canvas, true);
+    if (isTouchDevice()) {
+        cam.pinchPrecision = 32;
+        cam.panningSensibility = 20;
+        cam.multiTouchPanAndZoom = true;
+        cam.multiTouchPanning = true;
+    } else {
+        cam.panningSensibility = 50;
+    }
     return cam;
 }
 

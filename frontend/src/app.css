@@ -203,17 +203,29 @@ body {
     overflow: hidden;
     background: var(--bg-app);
     font-family: var(--font);
+    /* 阻止浏览器默认手势（双指缩放/平移），全部交给 Babylon.js 处理 */
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+/* 输入框/文本区域恢复文字选中能力 */
+input, textarea, [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
 }
 #app {
     width: 100%;
     height: 100%;
     position: relative;
+    touch-action: none;
 }
 #renderCanvas {
     width: 100%;
     height: 100%;
     display: block;
     outline: none;
+    touch-action: none;
 }
 
 /* ===== 通用弹窗容器 ===== */
@@ -367,6 +379,36 @@ body {
     cursor: pointer;
     position: relative;
     flex-shrink: 0;
+    /* 触屏设备：扩大触控热区到 44px（Apple HIG 最小触控目标），
+       视觉高度仍为 4px，通过伪元素向下扩展点击区域 */
+    touch-action: none;
+}
+/* 触屏设备 seek bar 扩大触控区域 */
+@media (pointer: coarse) {
+    #seekBar {
+        height: 44px;
+        margin-top: -20px;
+        background: transparent;
+        border-radius: 0;
+    }
+    #seekBar::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        pointer-events: none;
+    }
+    #seekProgress {
+        height: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        bottom: auto;
+    }
 }
 #seekProgress {
     height: 100%;

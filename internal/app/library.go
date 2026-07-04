@@ -54,12 +54,12 @@ func (a *App) scanAllCategories(cfg *Config) ([]ModelEntry, error) {
 		Exts     []string
 	}
 	scans := []categoryScan{
-		{"model", []string{".pmx"}},
-		{"motion", []string{".vmd"}},
+		{"model", []string{".pmx", ".zip"}},
+		{"motion", []string{".vmd", ".zip"}},
 		{"audio", []string{".mp3", ".wav", ".ogg", ".flac", ".wma"}},
 		{"pose", []string{".vpd"}},
-		{"scene", []string{".x", ".pmx"}},
-		{"environment", []string{".png", ".jpg", ".jpeg", ".hdr", ".dds", ".json"}},
+		{"scene", []string{".x", ".pmx", ".zip"}},
+		{"environment", []string{".png", ".jpg", ".jpeg", ".hdr", ".dds", ".json", ".zip"}},
 		{"outfit", []string{".zip", ".pmx", ".x"}},
 	}
 	var allModels []ModelEntry
@@ -107,6 +107,58 @@ func mapCategoryKey(category string) string {
 	}
 }
 
+// expandZipEntries opens a zip file and returns ModelEntry for each recognized inner file.
+// Supports: .pmx, .vmd, .mp3/.wav/.ogg/.flac/.wma, .vpd.
+// If typeOverride is non-empty (and not "other"), it replaces the inferred inner type.
+func expandZipEntries(zipPath, category, source, typeOverride string) []ModelEntry {
+	zr, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return nil
+	}
+	defer zr.Close()
+
+	var models []ModelEntry
+	fullPath := filepath.ToSlash(zipPath)
+	zipBase := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
+
+	for _, zf := range zr.File {
+		entryName := decodeZipName(zf.Name, zf.NonUTF8)
+		zfLower := strings.ToLower(entryName)
+		var innerFormat, innerType string
+		switch {
+		case strings.HasSuffix(zfLower, ".pmx"):
+			innerFormat, innerType = "pmx", "actor"
+		case strings.HasSuffix(zfLower, ".vmd"):
+			innerFormat, innerType = "vmd", "motion"
+		case strings.HasSuffix(zfLower, ".mp3"), strings.HasSuffix(zfLower, ".wav"),
+			strings.HasSuffix(zfLower, ".ogg"), strings.HasSuffix(zfLower, ".flac"),
+			strings.HasSuffix(zfLower, ".wma"):
+			innerFormat, innerType = "audio", "audio"
+		case strings.HasSuffix(zfLower, ".vpd"):
+			innerFormat, innerType = "vpd", "pose"
+		default:
+			continue
+		}
+		innerName := filepath.Base(entryName)
+		entryType := innerType
+		if typeOverride != "" && typeOverride != "other" {
+			entryType = typeOverride
+		}
+		models = append(models, ModelEntry{
+			Dir:       filepath.Dir(fullPath) + "/" + zipBase,
+			PMXPath:   fullPath,
+			Format:    innerFormat,
+			Container: "zip",
+			ZipInner:  entryName,
+			NameEn:    strings.TrimSuffix(innerName, filepath.Ext(innerName)),
+			Type:      entryType,
+			Category:  category,
+			Source:    source,
+		})
+	}
+	return models
+}
+
 // scanDirByExt scans a directory recursively for files with given extensions.
 func (a *App) scanDirByExt(dir, category string, exts []string, source string) ([]ModelEntry, error) {
 	var models []ModelEntry
@@ -122,7 +174,6 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 			return nil // skip inaccessible paths
 		}
 		if d.IsDir() {
-			// Skip dot-directories
 			if strings.HasPrefix(d.Name(), ".") {
 				return filepath.SkipDir
 			}
@@ -133,7 +184,13 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 			return nil
 		}
 		fullPath := filepath.ToSlash(walkPath)
-		m := ModelEntry{
+
+		if ext == ".zip" {
+			models = append(models, expandZipEntries(walkPath, category, source, "")...)
+			return nil
+		}
+
+		models = append(models, ModelEntry{
 			Dir:       filepath.Dir(fullPath),
 			PMXPath:   fullPath,
 			NameEn:    strings.TrimSuffix(d.Name(), filepath.Ext(d.Name())),
@@ -141,8 +198,7 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 			Format:    strings.TrimPrefix(ext, "."),
 			Container: "file",
 			Source:    source,
-		}
-		models = append(models, m)
+		})
 		return nil
 	})
 	if err != nil {
@@ -150,11 +206,6 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 	}
 	return models, nil
 }
-	// Collect all roots to scan
-	type scanRoot struct {
-		path   string
-		source string
-	}
 // GetModelMeta parses the PMX header for a single PMX file and returns its metadata.
 // Returns empty meta on error (non-fatal), logs real errors.
 func (a *App) GetModelMeta(pmxPath string) (ModelMeta, error) {
@@ -357,59 +408,7 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 			models = append(models, m)
 
 		case strings.HasSuffix(lowerName, ".zip"):
-			// Traverse zip entries for .pmx/.vmd without extracting.
-			zr, err := zip.OpenReader(walkPath)
-			if err != nil {
-				return nil // skip unreadable zip
-			}
-			defer zr.Close()
-
-			for _, zf := range zr.File {
-				// Decode zip entry name (Shift-JIS → UTF-8 if needed)
-				entryName := decodeZipName(zf.Name, zf.NonUTF8)
-				zfLower := strings.ToLower(entryName)
-				var innerFormat string
-				var innerType string
-				switch {
-				case strings.HasSuffix(zfLower, ".pmx"):
-					innerFormat = "pmx"
-					innerType = "actor"
-				case strings.HasSuffix(zfLower, ".vmd"):
-					innerFormat = "vmd"
-					innerType = "motion"
-				case strings.HasSuffix(zfLower, ".mp3"), strings.HasSuffix(zfLower, ".wav"),
-					strings.HasSuffix(zfLower, ".ogg"), strings.HasSuffix(zfLower, ".flac"),
-					strings.HasSuffix(zfLower, ".wma"):
-					innerFormat = "audio"
-					innerType = "audio"
-				case strings.HasSuffix(zfLower, ".vpd"):
-					innerFormat = "vpd"
-					innerType = "pose"
-				default:
-					continue
-				}
-
-				innerName := filepath.Base(entryName)
-				// Zip entries get Dir = zip dir + "/" + zip basename (without .zip),
-				// making the zip appear as a virtual folder in the library tree.
-				zipBase := strings.TrimSuffix(filepath.Base(walkPath), ".zip")
-				m := ModelEntry{
-					Dir:       filepath.ToSlash(filepath.Dir(walkPath)) + "/" + zipBase,
-					PMXPath:   walkPath,
-					Format:    innerFormat,
-					Container: "zip",
-					ZipInner:  entryName,
-					NameEn:    strings.TrimSuffix(innerName, filepath.Ext(innerName)),
-					Category:  category,
-				}
-				if entryType != "" && entryType != "other" {
-					m.Type = entryType
-				} else {
-					m.Type = innerType
-				}
-
-				models = append(models, m)
-			}
+			models = append(models, expandZipEntries(walkPath, category, "", entryType)...)
 		}
 
 		return nil

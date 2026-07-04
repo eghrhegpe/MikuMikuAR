@@ -503,6 +503,22 @@ export function buildPostProcessLevel(): PopupLevel {
                     (v) => { setRenderState({ sharpenAmount: v }); triggerAutoSave(); });
                 sliderRow(c, '辉光', state.glowIntensity, 0, 1, 0.05, 'lucide:sparkles',
                     (v) => { setRenderState({ glowEnabled: v > 0, glowIntensity: v }); triggerAutoSave(); });
+                // SSR — 屏幕空间反射
+                addToggleRow(c, '屏幕空间反射', state.ssrEnabled,
+                    (v) => { setRenderState({ ssrEnabled: v }); triggerAutoSave(); reRenderSceneMenu(); }, 'lucide:reflect');
+                if (state.ssrEnabled) {
+                    sliderRow(c, '反射强度', state.ssrStrength, 0, 1, 0.05, 'lucide:opacity',
+                        (v) => { setRenderState({ ssrStrength: v }); triggerAutoSave(); });
+                    sliderRow(c, '边缘衰减', state.ssrFalloff, 0, 1, 0.05, 'lucide:border',
+                        (v) => { setRenderState({ ssrFalloff: v }); triggerAutoSave(); });
+                    sliderRow(c, '步长', state.ssrStep, 1, 32, 1, 'lucide:ruler',
+                        (v) => { setRenderState({ ssrStep: v }); triggerAutoSave(); });
+                    sliderRow(c, '厚度容差', state.ssrThickness, 0, 2, 0.1, 'lucide:layers',
+                        (v) => { setRenderState({ ssrThickness: v }); triggerAutoSave(); });
+                }
+                // Reflection Probe — 环境反射探针
+                addToggleRow(c, '环境反射', state.reflectionProbeEnabled,
+                    (v) => { setRenderState({ reflectionProbeEnabled: v, reflectionIntensity: v ? 1 : 0 }); triggerAutoSave(); }, 'lucide:scan');
             });
 
             // 色调映射 — 后处理色彩环节，影响整体画面风格
@@ -794,6 +810,8 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         fxaaEnabled: true, outlineEnabled: false,
         toneMapping: 1, exposure: 2.0, contrast: 1.2,
         vignetteEnabled: true, vignetteDarkness: 0.35,
+        ssrEnabled: true, ssrStrength: 0.5, ssrFalloff: 0.3,
+        reflectionProbeEnabled: true, reflectionIntensity: 0.8,
     },
     // --- Reinhard — 高饱和·高对比·边缘线框 = 卡通风格 ---
     cartoon: {
@@ -808,12 +826,15 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         toneMapping: 1, exposure: 1.5, contrast: 1.15,
         vignetteEnabled: true, vignetteDarkness: 0.5,
         dofEnabled: true, dofAperture: 0.15,
+        ssrEnabled: true, ssrStrength: 0.3, ssrFalloff: 0.2,
+        reflectionProbeEnabled: true, reflectionIntensity: 0.6,
     },
     // --- Cineon 胶片曲线 + 暖色调背景 ---
     warm: {
         bloomEnabled: true, bloomWeight: 0.45, bloomThreshold: 0.4, bloomKernel: 96,
         fxaaEnabled: true, outlineEnabled: false,
         toneMapping: 3, exposure: 2.2, contrast: 1.3,
+        reflectionProbeEnabled: true, reflectionIntensity: 0.5,
     },
     // --- Neutral + 极端后处理 — 赛博朋克风格 ---
     cyberpunk: {
@@ -823,6 +844,8 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         vignetteEnabled: true, vignetteDarkness: 0.6,
         chromaticAberrationEnabled: true, chromaticAberrationAmount: 0.3,
         grainEnabled: true, grainIntensity: 0.4,
+        ssrEnabled: true, ssrStrength: 0.4, ssrFalloff: 0.15,
+        reflectionProbeEnabled: true, reflectionIntensity: 0.9,
     },
 };
 
