@@ -83,7 +83,7 @@ export {
 export type { MaterialCategoryParams, MaterialCategory } from './manager/material';
 
 import { ModelManager } from './manager/model-manager';
-import { updateProcMotion, createProcBeatDetector, getProcBeatDetector } from './motion/proc-motion-bridge';
+import { updateProcMotion, createProcBeatDetector, getProcBeatDetector, onModelRemoved } from './motion/proc-motion-bridge';
 import { updateLipSync, initLipSync } from './motion/lipsync-bridge';
 import { triggerAutoSaveImpl } from './scene-serialize';
 
@@ -155,6 +155,11 @@ export async function initScene(): Promise<void> {
     //    确保所有子系统（loader / lighting / renderer）触发保存时函数已实现。
     modelManager = new ModelManager(scene, triggerAutoSave, autoFrame);
     modelManager.onRemoveModel = (id) => {
+        // 程序化动作清理（视线追踪 observer 拆除）必须早于 destroyMmdModel
+        // 否则下一帧 observer 同时读到 _procVmdActive=true + mmdModel 已销毁 → skeleton null → TypeError
+        // 见 proc-motion-bridge.ts onModelRemoved
+        onModelRemoved(id);
+
         const inst = modelRegistry.get(id);
         if (inst.mmdModel && mmdRuntime) {
             try {
@@ -296,6 +301,7 @@ export {
 export type { CameraState } from './camera/camera';
 export {
     syncAudioPlayback,
+    loadAudioFile,
     attachBeatDetector,
     disposeAudio,
     isAudioPlaying,

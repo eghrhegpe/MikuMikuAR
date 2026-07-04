@@ -8,8 +8,6 @@ export interface EnvPreset {
     skyColorBot: [number, number, number];
     sunAngle: number; // -15~90
     azimuth?: number; // 太阳方位角（度），默认 -45（西北）
-    exposure: number;
-    toneMapping: number; // 0=OFF 1=ACES 2=Reinhard 3=Cineon 4=Neutral
 }
 
 export interface DerivedLighting {
@@ -64,16 +62,14 @@ export function deriveLighting(
     return { dirDiffuse, dirDirection, dirIntensity, hemiIntensity };
 }
 
-/** 预设数据表。按时间线排列：黎明 → 正午 → 夕阳 → 黄昏 → 夜景 → 阴天 */
+/** 预设数据表。按时间线排列：黎明 → 正午 → 夕阳 → 夜景 → 阴天 → 霓虹夜 */
 export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
     dawn: {
         label: '黎明',
         skyColorTop: [0.85, 0.55, 0.35],
         skyColorBot: [0.2, 0.15, 0.35],
         sunAngle: 5,
-        azimuth: -90, // 太阳在东方
-        exposure: 0.65,
-        toneMapping: 2,
+        azimuth: -90,
         ...deriveLighting([0.85, 0.55, 0.35], 5, -90),
     },
     noon: {
@@ -82,8 +78,6 @@ export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
         skyColorBot: [0.3, 0.5, 0.8],
         sunAngle: 75,
         azimuth: -45,
-        exposure: 1.0,
-        toneMapping: 1,
         ...deriveLighting([0.53, 0.71, 0.91], 75, -45),
     },
     sunset: {
@@ -91,29 +85,15 @@ export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
         skyColorTop: [0.9, 0.45, 0.2],
         skyColorBot: [0.6, 0.2, 0.1],
         sunAngle: 15,
-        azimuth: 90, // 太阳在西方
-        exposure: 0.7,
-        toneMapping: 2,
+        azimuth: 90,
         ...deriveLighting([0.9, 0.45, 0.2], 15, 90),
-    },
-    dusk: {
-        label: '黄昏',
-        skyColorTop: [0.35, 0.2, 0.5],
-        skyColorBot: [0.6, 0.3, 0.15],
-        sunAngle: 3, // 太阳刚落山，暮光
-        azimuth: 90, // 太阳在西方
-        exposure: 0.55,
-        toneMapping: 2,
-        ...deriveLighting([0.35, 0.2, 0.5], 3, 90),
     },
     night: {
         label: '夜景',
         skyColorTop: [0.05, 0.05, 0.15],
         skyColorBot: [0.02, 0.02, 0.08],
-        sunAngle: -6, // 民用暮光下限
+        sunAngle: -6,
         azimuth: 0,
-        exposure: 0.4,
-        toneMapping: 4,
         ...deriveLighting([0.05, 0.05, 0.15], -6, 0),
     },
     overcast: {
@@ -122,20 +102,7 @@ export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
         skyColorBot: [0.25, 0.25, 0.3],
         sunAngle: 45,
         azimuth: -45,
-        exposure: 0.8,
-        toneMapping: 1,
         ...deriveLighting([0.4, 0.4, 0.45], 45, -45),
-    },
-    // 场景化预设
-    storm: {
-        label: '暴风雨',
-        skyColorTop: [0.15, 0.15, 0.2],
-        skyColorBot: [0.08, 0.08, 0.1],
-        sunAngle: 10,
-        azimuth: -45,
-        exposure: 0.4,
-        toneMapping: 2,
-        ...deriveLighting([0.15, 0.15, 0.2], 10, -45),
     },
     neon: {
         label: '霓虹夜',
@@ -143,29 +110,7 @@ export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
         skyColorBot: [0.1, 0.02, 0.15],
         sunAngle: -5,
         azimuth: 0,
-        exposure: 0.8,
-        toneMapping: 1,
         ...deriveLighting([0.05, 0.02, 0.1], -5, 0),
-    },
-    sakura: {
-        label: '樱花季',
-        skyColorTop: [0.95, 0.85, 0.9],
-        skyColorBot: [0.7, 0.6, 0.75],
-        sunAngle: 45,
-        azimuth: -30,
-        exposure: 0.9,
-        toneMapping: 2,
-        ...deriveLighting([0.95, 0.85, 0.9], 45, -30),
-    },
-    concert: {
-        label: '演唱会',
-        skyColorTop: [0.02, 0.01, 0.05],
-        skyColorBot: [0.05, 0.02, 0.08],
-        sunAngle: 0,
-        azimuth: 0,
-        exposure: 0.6,
-        toneMapping: 1,
-        ...deriveLighting([0.02, 0.01, 0.05], 0, 0),
     },
 };
 
@@ -173,14 +118,12 @@ export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
 export function exportEnvPreset(p: EnvPreset): string {
     return JSON.stringify(
         {
-            version: 1,
+            version: 2,
             label: p.label,
             skyColorTop: p.skyColorTop,
             skyColorBot: p.skyColorBot,
             sunAngle: p.sunAngle,
             azimuth: p.azimuth ?? -45,
-            exposure: p.exposure,
-            toneMapping: p.toneMapping,
         },
         null,
         2
@@ -206,8 +149,6 @@ export function importEnvPreset(json: string): (EnvPreset & DerivedLighting) | n
             skyColorBot: raw.skyColorBot,
             sunAngle: raw.sunAngle,
             azimuth,
-            exposure: raw.exposure ?? 1.0,
-            toneMapping: raw.toneMapping ?? 1,
             ...deriveLighting(raw.skyColorTop, raw.sunAngle, azimuth),
         };
     } catch {

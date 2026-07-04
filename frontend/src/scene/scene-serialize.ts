@@ -22,6 +22,7 @@ import {
     getCameraVmdName,
     getCameraMode,
     switchCameraMode,
+    setFov,
 } from './camera/camera';
 import { loadCameraVmdFromPath } from './motion/vmd-loader';
 import type { CameraState } from './camera/camera';
@@ -392,6 +393,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     }
     if (data.render) {
         setRenderState(data.render);
+    }
+    // Backward compat: old scene files store FOV in render.fov (pre-Phase 9)
+    if (data.render && 'fov' in data.render) {
+        setFov((data.render as unknown as Record<string, number>).fov);
     }
 
     // --- Environment ---

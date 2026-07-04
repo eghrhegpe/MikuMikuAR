@@ -1,6 +1,7 @@
 // [doc:architecture] Env Menu — 环境弹窗（核心 + barrel export）
 // 拆分后保留: 导航/统一面板/环境光照/粒子/入口 + barrel re-export
-// 子文件: env-feature-levels.ts, env-prop-levels.ts, env-preset-levels.ts
+// 子文件: env-feature-levels.ts, env-preset-levels.ts
+// 道具已迁移到 scene-prop-levels.ts（舞台域）
 
 import {
     envState,
@@ -51,12 +52,10 @@ import { setStatus } from '../core/config';
 import {
     buildSkyLevel, buildGroundLevel, buildWaterLevel, buildWindLevel, buildCloudLevel, buildExperimentalLevel,
 } from './env-feature-levels';
-import { buildPropLevel, buildPropDetailLevel } from './env-prop-levels';
 import { buildPresetLevel, renderUserEnvPresets, snapshotCurrentEnvPreset, ENV_PRESETS } from './env-preset-levels';
 
 // ======== Barrel Re-Exports ========
 export { buildSkyLevel, buildGroundLevel, buildWaterLevel, buildWindLevel, buildCloudLevel, buildExperimentalLevel } from './env-feature-levels';
-export { buildPropLevel, buildPropDetailLevel } from './env-prop-levels';
 export { buildPresetLevel, ENV_PRESETS } from './env-preset-levels';
 
 // ======== Env Menu State ========
@@ -96,7 +95,6 @@ export function buildEnvLightingLevel(): PopupLevel {
         renderCustom: (container) => {
             cardContainer(container, (c) => {
                 renderPresetChips(c);
-                renderUserEnvPresets(c);
                 addSliderRow(c, '太阳角度', sunAngle, -15, 90, 1, (v) => {
                     setEnvSunAngle(v);
                     setEnvState({ sunAngle: v });
@@ -122,7 +120,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
     const s = envState;
 
     return {
-        label: '天空',
+        label: '天空氛围',
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -134,8 +132,6 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                 ], s.skyMode, (v) => { setEnvState({ skyMode: v }); envMenu.reRender(); }, 'lucide:layers');
 
                 renderPresetChips(c);
-
-                renderUserEnvPresets(c);
 
                 addCollapsible(c, {
                     title: '光照控制', icon: 'lucide:sun', defaultOpen: false,
@@ -244,7 +240,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
 /** 环境弹窗根级 items 构建器——动态反映 envState 各 toggle 状态。 */
 function buildEnvRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    // Card 1: 氛围预设芯片组——新手一键切换
+    // Card 1: 氛围预设芯片组——新手一键切换（L1 天空氛围）
     items.push({
         kind: 'chips',
         label: '', icon: '', target: 'env:presets-chips',
@@ -257,7 +253,10 @@ function buildEnvRootItems(): PopupRow[] {
         })),
     });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    // Card 2: 环境功能入口（天空/水面/粒子/风/实验/道具）
+    // Card 2: 环境预设（L2 精选组合 + 用户自定义）
+    items.push({ kind: 'folder', label: '环境预设', icon: 'lucide:bookmark', target: 'env:presets' });
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    // Card 3: 环境功能入口（天空/水面/粒子/风/实验/道具）
     items.push({ kind: 'folder', label: '天空', icon: 'lucide:sun', target: 'env:unified' });
     items.push({
         kind: 'folder', label: '水面', icon: 'lucide:waves', target: 'env:water',
@@ -271,11 +270,9 @@ function buildEnvRootItems(): PopupRow[] {
         kind: 'folder', label: '风', icon: 'lucide:wind', target: 'env:wind',
         headerToggle: { value: envState.windEnabled, onChange: (v) => setEnvState({ windEnabled: v }) },
     });
-    items.push({ kind: 'folder', label: '实验功能', icon: 'lucide:flask-conical', target: 'env:experimental' });
-    items.push({ kind: 'folder', label: '道具', icon: 'lucide:box', target: 'env:prop' });
-    items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    // Card 3: 系统预设
-    items.push({ kind: 'folder', label: '系统预设', icon: 'lucide:bookmark', target: 'env:presets' });
+    items.push(
+        { kind: 'folder', label: '实验功能', icon: 'lucide:flask-conical', target: 'env:experimental' },
+    );
     return items;
 }
 
@@ -357,7 +354,6 @@ function envOnFolderEnter(row: PopupRow): PopupLevel | null {
         case 'env:wind': return buildWindLevel();
         case 'env:cloud': return buildCloudLevel();
         case 'env:experimental': return buildExperimentalLevel();
-        case 'env:prop': return buildPropLevel();
         case 'env:presets': return buildPresetLevel();
         default: return null;
     }

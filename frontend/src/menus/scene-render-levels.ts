@@ -288,37 +288,6 @@ export function buildStageLevel(): PopupLevel {
                             (v) => { setRenderState({ contrast: v }); triggerAutoSave(); });
                     },
                 });
-
-                addCollapsible(c, {
-                    title: '视场角',
-                    icon: 'lucide:maximize-2',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        addSliderRow(inner, 'FOV', state.fov, 0.3, 2, 0.05, () => {}, 'lucide:maximize-2',
-                            (v) => { setRenderState({ fov: v }); triggerAutoSave(); });
-                    },
-                });
-
-                addCollapsible(c, {
-                    title: '背景色',
-                    icon: 'lucide:droplet',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        const bgFields: Array<{ label: string; key: 0 | 1 | 2; icon: string }> = [
-                            { label: 'R', key: 0, icon: 'lucide:droplet' },
-                            { label: 'G', key: 1, icon: 'lucide:droplet' },
-                            { label: 'B', key: 2, icon: 'lucide:droplet' },
-                        ];
-                        for (const f of bgFields) {
-                            addSliderRow(inner, f.label, state.bgColor[f.key], 0, 1, 0.01, (v) => {
-                                const bg = [...getRenderState().bgColor] as [number, number, number];
-                                bg[f.key] = v;
-                                setRenderState({ bgColor: bg });
-                                triggerAutoSave();
-                            }, f.icon);
-                        }
-                    },
-                });
             });
         },
         reRenderCustom: (container) => {
@@ -362,48 +331,42 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         bloomEnabled: true, bloomWeight: 0.3, bloomThreshold: 0.6, bloomKernel: 64,
         fxaaEnabled: true, outlineEnabled: false,
         toneMapping: 0, exposure: 1.0, contrast: 1.0,
-        fov: 0.8, bgColor: [0.12, 0.12, 0.16],
     },
     // --- ACES 电影曲线 — 自然高光滚降，暗角增加电影感 ---
     cinematic: {
         bloomEnabled: true, bloomWeight: 0.4, bloomThreshold: 0.5, bloomKernel: 64,
         fxaaEnabled: true, outlineEnabled: false,
         toneMapping: 1, exposure: 2.0, contrast: 1.2,
-        fov: 0.75, vignetteEnabled: true, vignetteDarkness: 0.35,
-        bgColor: [0.08, 0.08, 0.12],
+        vignetteEnabled: true, vignetteDarkness: 0.35,
     },
     // --- Reinhard — 高饱和·高对比·边缘线框 = 卡通风格 ---
     cartoon: {
         bloomEnabled: true, bloomWeight: 0.5, bloomThreshold: 0.3, bloomKernel: 128,
         fxaaEnabled: true, outlineEnabled: true, outlineColor: [0, 0, 0],
         toneMapping: 2, exposure: 2.0, contrast: 1.5,
-        fov: 0.8, bgColor: [0.18, 0.18, 0.22],
     },
     // --- ACES + 景深/暗角 — 浅景深电影写实 ---
     realistic: {
         bloomEnabled: true, bloomWeight: 0.25, bloomThreshold: 0.7, bloomKernel: 64,
         fxaaEnabled: true, outlineEnabled: false,
         toneMapping: 1, exposure: 1.5, contrast: 1.15,
-        fov: 0.7, vignetteEnabled: true, vignetteDarkness: 0.5,
+        vignetteEnabled: true, vignetteDarkness: 0.5,
         dofEnabled: true, dofAperture: 0.15,
-        bgColor: [0.06, 0.06, 0.1],
     },
     // --- Cineon 胶片曲线 + 暖色调背景 ---
     warm: {
         bloomEnabled: true, bloomWeight: 0.45, bloomThreshold: 0.4, bloomKernel: 96,
         fxaaEnabled: true, outlineEnabled: false,
         toneMapping: 3, exposure: 2.2, contrast: 1.3,
-        fov: 0.8, bgColor: [0.3, 0.2, 0.1],
     },
     // --- Neutral + 极端后处理 — 赛博朋克风格 ---
     cyberpunk: {
         bloomEnabled: true, bloomWeight: 0.7, bloomThreshold: 0.2, bloomKernel: 192,
         fxaaEnabled: true, outlineEnabled: true, outlineColor: [1, 0, 1],
         toneMapping: 4, exposure: 3.0, contrast: 1.6,
-        fov: 0.85, vignetteEnabled: true, vignetteDarkness: 0.6,
+        vignetteEnabled: true, vignetteDarkness: 0.6,
         chromaticAberrationEnabled: true, chromaticAberrationAmount: 0.3,
         grainEnabled: true, grainIntensity: 0.4,
-        bgColor: [0.02, 0.02, 0.06],
     },
 };
 

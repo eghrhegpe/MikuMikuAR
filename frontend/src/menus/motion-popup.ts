@@ -9,7 +9,6 @@ import {
     PopupLevel,
     PopupRow,
     escapeHtml,
-    modelRegistry,
     isPlaying,
     setIsPlaying,
     mmdRuntime,
@@ -53,11 +52,6 @@ import {
     getVolume,
 } from '../outfit/audio';
 import {
-    SelectAudioFile,
-    SelectVMDMotion,
-    SelectVPDPose,
-} from '../core/wails-bindings';
-import {
     setProcMotionMode,
     setProcMotionAutoSwitch,
     getProcMotionState,
@@ -84,7 +78,7 @@ export { buildClothParamsLevel } from './motion-cloth-levels';
 // ======== Build action model row and binding ========
 
 function _buildActionModelRow(id: string): PopupRow {
-    const inst = modelRegistry.get(id);
+    const inst = modelManager.get(id);
     if (!inst) {
         return { kind: 'action', label: '?', icon: 'help-circle', target: '' };
     }
@@ -99,7 +93,7 @@ function _buildActionModelRow(id: string): PopupRow {
 }
 
 function buildActionBindingLevel(id: string): PopupLevel {
-    const inst = modelRegistry.get(id);
+    const inst = modelManager.get(id);
     if (!inst) {
         return { label: '动作绑定', dir: '', items: [] };
     }
@@ -124,15 +118,10 @@ function buildActionBindingLevel(id: string): PopupLevel {
                     if (motionMenu) motionMenu.push(level);
                 });
                 c.appendChild(row);
-                slideRow(c, 'lucide:user', '加载姿势 (VPD)', false, async () => {
-                    try {
-                        const path = await SelectVPDPose();
-                        if (!path) { setStatus('✗ 未选择文件', false); return; }
-                        await loadVPDPose(path, id);
-                        motionMenu.reRender();
-                    } catch (err: unknown) {
-                        setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
-                    }
+                slideRow(c, 'lucide:user', '姿势库', true, () => {
+                    const level = stackRegistry.buildLevel!(libraryRoot, '姿势库', (m) => m.format === 'vpd');
+                    level.label = `姿势 → ${inst.name}`;
+                    if (motionMenu) motionMenu.push(level);
                 });
             });
 
@@ -194,18 +183,19 @@ function buildActionMusicLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:music', '加载音乐', true, async () => {
-                    try {
-                        const path = await SelectAudioFile();
-                        if (!path) return;
-                        await loadAudioFile(path);
-                        setStatus(`✓ 音乐: ${getAudioName()}`, true);
-                        motionMenu.reRender();
-                    } catch (err) {
-                        console.warn('Load audio failed:', err);
-                        setStatus('✗ 音乐加载失败', false);
-                    }
-                }, getAudioName() || undefined);
+                const browseAudioRow = document.createElement('div');
+                browseAudioRow.className = 'slide-item';
+                browseAudioRow.innerHTML = `
+                    <span class="slide-icon"><iconify-icon icon="lucide:folder-open"></iconify-icon></span>
+                    <span class="slide-label">浏览音乐库</span>
+                    <span class="slide-sublabel">${getAudioName() || '无音乐'}</span>
+                    <span class="slide-arrow">></span>
+                `;
+                browseAudioRow.addEventListener('click', () => {
+                    const level = stackRegistry.buildLevel!(libraryRoot, '音乐库', (m) => m.format === 'audio');
+                    if (motionMenu) motionMenu.push(level);
+                });
+                c.appendChild(browseAudioRow);
                 if (getAudioName()) {
                     slideRow(c, 'lucide:trash-2', '移除音乐', false, () => {
                         clearAudio();
@@ -246,17 +236,17 @@ function makeMotionMenu(container: HTMLElement): SlideMenu {
             if (row.target === 'procmotion:mode') { return buildProcMotionModeLevel(); }
             if (row.target === 'lipsync:menu') { return buildLipSyncLevel(); }
             if (row.target && row.target.startsWith('action:binding:')) {
-                setMotionBindingTargetId(null);
-                return buildActionBindingLevel(row.target.replace('action:binding:', ''));
-            }
-            if (row.target && row.target.startsWith('action:motion:browse:')) {
-                const id = row.target.replace('action:motion:browse:', '');
-                setMotionBindingTargetId(id);
-                const level = stackRegistry.buildLevel!(libraryRoot, '动作库', (m) => m.format === 'vmd');
-                const inst = modelRegistry.get(id);
-                level.label = `绑定动作 → ${inst ? inst.name : '模型'}`;
-                return level;
-            }
+                    setMotionBindingTargetId(null);
+                    return buildActionBindingLevel(row.target.replace('action:binding:', ''));
+                }
+                if (row.target && row.target.startsWith('action:motion:browse:')) {
+                    const id = row.target.replace('action:motion:browse:', '');
+                    setMotionBindingTargetId(id);
+                    const level = stackRegistry.buildLevel!(libraryRoot, '动作库', (m) => m.format === 'vmd');
+                    const inst = modelManager.get(id);
+                    level.label = `绑定动作 → ${inst ? inst.name : '模型'}`;
+                    return level;
+                }
             return null;
         },
         onItemClick: (row: PopupRow) => {
@@ -294,7 +284,7 @@ function makeMotionMenu(container: HTMLElement): SlideMenu {
                 const action = parts[2];
                 const id = parts.slice(3).join(':');
                 if (!id) return;
-                const inst = modelRegistry.get(id);
+                const inst = modelManager.get(id);
                 if (!inst) return;
                 switch (action) {
                     case 'pause':
@@ -370,12 +360,12 @@ function buildRecentMotionsLevel(): PopupLevel {
 
 // ======== Motion Root (items-based) ========
 
-/** 动作弹窗根级 items 构建器——动态反映 modelRegistry / recent / cloth 状态。 */
+/** 动作弹窗根级 items 构建器——动态反映 modelManager / recent / cloth 状态。 */
 function buildMotionRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
     // Card 1: 已加载模型
-    if (modelRegistry.size > 0) {
-        for (const [id, inst] of modelRegistry) {
+    if (modelManager.size > 0) {
+        for (const [id, inst] of modelManager.modelRegistry) {
             items.push({
                 kind: 'folder',
                 label: inst.name,
