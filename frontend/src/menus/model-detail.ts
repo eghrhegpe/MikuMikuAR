@@ -1,8 +1,7 @@
-// [doc:architecture] Model Detail — 模型详情子菜单（从 library.ts 提取）
-// 职责: 模型详情各层级构建（信息/变换/可见性/标签/表情/材质）
+// [doc:architecture] Model — 模型子菜单（从 library.ts 提取）
+// 职责: 模型各层级构建（外观/信息/标签/表情/材质）
 
 import {
-    modelRegistry,
     escapeHtml,
     cardContainer,
     setStatus,
@@ -13,35 +12,19 @@ import {
     stackRegistry,
 } from '../core/config';
 import {
-    scene,
-    getModelPosition,
-    setModelPosition,
-    setModelScaling,
-    setModelRotationY,
+    modelManager,
     getModelMorphs,
     setModelMorphWeight,
     resetModelMorphs,
-    setModelWireframe,
-    setModelBoneLinesVis,
-    setModelBoneJointsVis,
     setModelVisibility,
     setModelOpacity,
     removeModel,
-    resetModelTransform,
-    getPhysicsCategories,
-    isPhysicsCategoryEnabled,
-    setPhysicsCategory,
-    getProcMotionState,
-    setProcMotionMode,
-    setProcMotionAutoSwitch,
-    regenerateProcMotion,
 } from '../scene/scene';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
 import {
     slideRow,
     addModeSlider,
-    addToggleRow,
     addCollapsible,
 } from '../core/ui-helpers';
 import { buildOutfitLevel } from './outfit-ui';
@@ -84,7 +67,7 @@ export function buildOpenWithLevel(id: string): PopupLevel {
                     row.className = 'slide-item';
                     row.innerHTML = `<span class="slide-icon"><iconify-icon icon="${softwareKindIcon(sw.kind)}"></iconify-icon></span><span class="slide-label">${escapeHtml(sw.name)}</span>`;
                     row.addEventListener('click', async () => {
-                        const inst = modelRegistry.get(id);
+                        const inst = modelManager.get(id);
                         if (!inst.filePath) {
                             setStatus('✗ 模型无文件路径', false);
                             return;
@@ -114,8 +97,8 @@ export function buildOpenWithLevel(id: string): PopupLevel {
 
 // ======== Model Detail Root ========
 
-export function buildModelDetailLevel(id: string): PopupLevel {
-    const inst = modelRegistry.get(id);
+export function buildModelLevel(id: string): PopupLevel {
+    const inst = modelManager.get(id);
     if (!inst) {
         return { label: '未知模型', dir: '', items: [] };
     }
@@ -152,12 +135,16 @@ export function buildModelDetailLevel(id: string): PopupLevel {
                     icon: 'lucide:info',
                     defaultOpen: false,
                     renderContent: (inner) => {
-                        slideRow(inner, 'lucide:info', '模型信息', true, () => {
+                        slideRow(inner, 'lucide:info', '基本信息', true, () => {
                             const level = buildModelInfoLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
                         slideRow(inner, 'lucide:git-branch', '骨骼层级', true, () => {
                             const level = buildBoneHierarchyLevel(id);
+                            stackRegistry.modelStack.push(level);
+                        });
+                        slideRow(inner, 'lucide:tag', '标签管理', true, () => {
+                            const level = buildModelTagsLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
                         // 可见性直接嵌入信息处
@@ -245,7 +232,7 @@ export function buildModelDetailLevel(id: string): PopupLevel {
         },
         reRenderCustom: (container) => {
             // 可见性 mode slider：更新值显示
-            const inst = modelRegistry.get(id);
+            const inst = modelManager.get(id);
             if (!inst) return;
             let visMode: 'visible' | 'semi' | 'hidden';
             if (inst.visible && inst.opacity >= 0.99) visMode = 'visible';
@@ -276,7 +263,7 @@ export function buildModelDetailLevel(id: string): PopupLevel {
 // ======== Model Info ========
 
 export function buildModelInfoLevel(id: string): PopupLevel {
-    const inst = modelRegistry.get(id);
+    const inst = modelManager.get(id);
     if (!inst) {
         return { label: '模型信息', dir: '', items: [] };
     }
@@ -326,242 +313,10 @@ export function buildModelInfoLevel(id: string): PopupLevel {
     };
 }
 
-// ======== Transform ========
-
-export function buildTransformLevel(id: string): PopupLevel {
-    const inst = modelRegistry.get(id);
-    if (!inst) {
-        return { label: '变换', dir: '', items: [] };
-    }
-    let updatingFromSlider = false;
-    return {
-        label: '变换',
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const fields: Array<{
-                    label: string;
-                    key: string;
-                    min: number;
-                    max: number;
-                    step: number;
-                    get: () => number;
-                    set: (v: number) => void;
-                }> = [
-                    {
-                        label: '位置 X',
-                        key: 'px',
-                        min: -20,
-                        max: 20,
-                        step: 0.1,
-                        get: () => {
-                            const p = getModelPosition(id);
-                            return p[0];
-                        },
-                        set: (v) => {
-                            const p = getModelPosition(id);
-                            setModelPosition(id, v, p[1], p[2]);
-                        },
-                    },
-                    {
-                        label: '位置 Y',
-                        key: 'py',
-                        min: -20,
-                        max: 20,
-                        step: 0.1,
-                        get: () => {
-                            const p = getModelPosition(id);
-                            return p[1];
-                        },
-                        set: (v) => {
-                            const p = getModelPosition(id);
-                            setModelPosition(id, p[0], v, p[2]);
-                        },
-                    },
-                    {
-                        label: '位置 Z',
-                        key: 'pz',
-                        min: -20,
-                        max: 20,
-                        step: 0.1,
-                        get: () => {
-                            const p = getModelPosition(id);
-                            return p[2];
-                        },
-                        set: (v) => {
-                            const p = getModelPosition(id);
-                            setModelPosition(id, p[0], p[1], v);
-                        },
-                    },
-                    {
-                        label: '缩放',
-                        key: 'scale',
-                        min: 0.01,
-                        max: 5,
-                        step: 0.05,
-                        get: () => modelRegistry.get(id)?.scaling ?? 1,
-                        set: (v) => setModelScaling(id, v),
-                    },
-                    {
-                        label: '旋转 Y',
-                        key: 'ry',
-                        min: -180,
-                        max: 180,
-                        step: 1,
-                        get: () => ((modelRegistry.get(id)?.rotationY ?? 0) * 180) / Math.PI,
-                        set: (v) => setModelRotationY(id, (v * Math.PI) / 180),
-                    },
-                ];
-                const FIELD_ICONS: Record<string, string> = {
-                    px: 'lucide:move',
-                    py: 'lucide:move',
-                    pz: 'lucide:move',
-                    scale: 'lucide:maximize',
-                    ry: 'lucide:rotate-cw',
-                };
-                const updateDisplayFns: Array<(v: number) => void> = [];
-                const lastValues: number[] = [];
-                for (let i = 0; i < fields.length; i++) {
-                    const f = fields[i];
-                    let currentValue = f.get();
-                    lastValues.push(currentValue);
-                    const range = f.max - f.min;
-                    const row = document.createElement('div');
-                    row.className = 'cs-row';
-
-                    const top = document.createElement('div');
-                    top.className = 'cs-top';
-
-                    const iconBox = document.createElement('span');
-                    iconBox.className = 'cs-icon';
-                    const iconEl = createIconifyIcon(FIELD_ICONS[f.key] || 'lucide:settings');
-                    if (iconEl) {
-                        iconBox.appendChild(iconEl);
-                    }
-                    top.appendChild(iconBox);
-
-                    const lbl = document.createElement('span');
-                    lbl.className = 'cs-label';
-                    lbl.textContent = f.label;
-
-                    const val = document.createElement('span');
-                    val.className = 'cs-value';
-                    const fmt = (v: number) =>
-                        f.step >= 1 ? String(Math.round(v)) : v.toFixed(f.step < 0.1 ? 2 : 1);
-                    val.textContent = fmt(currentValue);
-
-                    top.appendChild(lbl);
-                    top.appendChild(val);
-
-                    const bar = document.createElement('div');
-                    bar.className = 'cs-bar';
-
-                    const fill = document.createElement('div');
-                    fill.className = 'cs-fill';
-                    const pct = ((currentValue - f.min) / range) * 100;
-                    fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-
-                    bar.appendChild(fill);
-
-                    const updateDisplay = (v: number): void => {
-                        currentValue = v;
-                        val.textContent = fmt(v);
-                        const newPct = ((v - f.min) / range) * 100;
-                        fill.style.width = Math.max(0, Math.min(100, newPct)) + '%';
-                    };
-                    updateDisplayFns.push(updateDisplay);
-
-                    row.addEventListener('pointerdown', () => {
-                        updatingFromSlider = true;
-                    });
-                    row.addEventListener('pointerup', () => {
-                        updatingFromSlider = false;
-                    });
-                    row.addEventListener('pointercancel', () => {
-                        updatingFromSlider = false;
-                    });
-
-                    row.addEventListener('click', (e) => {
-                        const rect = row.getBoundingClientRect();
-                        const x = (e.clientX - rect.left) / rect.width;
-                        let delta: number;
-                        if (x < 0.25) {
-                            delta = -0.5;
-                        } else if (x < 0.5) {
-                            delta = -0.1;
-                        } else if (x < 0.75) {
-                            delta = 0.1;
-                        } else {
-                            delta = 0.5;
-                        }
-                        let newVal = currentValue + delta;
-                        newVal = Math.round(newVal / f.step) * f.step;
-                        newVal = Math.max(f.min, Math.min(f.max, newVal));
-                        updatingFromSlider = true;
-                        updateDisplay(newVal);
-                        f.set(newVal);
-                        lastValues[i] = newVal;
-                        setTimeout(() => {
-                            updatingFromSlider = false;
-                        }, 0);
-                    });
-
-                    row.appendChild(top);
-                    row.appendChild(bar);
-                    c.appendChild(row);
-                }
-
-                const observer = scene.onBeforeRenderObservable.add(() => {
-                    if (!document.body.contains(container)) {
-                        scene.onBeforeRenderObservable.remove(observer);
-                        return;
-                    }
-                    if (updatingFromSlider) {
-                        return;
-                    }
-                    const modelInst = modelRegistry.get(id);
-                    if (!modelInst) {
-                        return;
-                    }
-                    for (let i = 0; i < fields.length; i++) {
-                        const f = fields[i];
-                        const newVal = f.get();
-                        if (Math.abs(newVal - lastValues[i]) > f.step / 2) {
-                            lastValues[i] = newVal;
-                            updateDisplayFns[i](newVal);
-                        }
-                    }
-                });
-
-                const resetBtn = document.createElement('div');
-                resetBtn.className = 'slide-item';
-                resetBtn.setAttribute('data-hint', '重置所有变换参数');
-                const resetIcon = document.createElement('span');
-                resetIcon.className = 'slide-icon';
-                const resetIconEl = createIconifyIcon('lucide:rotate-ccw');
-                if (resetIconEl) {
-                    resetIcon.appendChild(resetIconEl);
-                }
-                const resetLabel = document.createElement('span');
-                resetLabel.className = 'slide-label';
-                resetLabel.textContent = '重置变换';
-                resetBtn.appendChild(resetIcon);
-                resetBtn.appendChild(resetLabel);
-                resetBtn.addEventListener('click', () => {
-                    resetModelTransform(id);
-                    setStatus('✓ 变换已重置', true);
-                });
-                c.appendChild(resetBtn);
-            });
-        },
-    };
-}
-
 // ======== Tags Management ========
 
 export function buildModelTagsLevel(id: string): PopupLevel {
-    const inst = modelRegistry.get(id);
+    const inst = modelManager.get(id);
     if (!inst) {
         return { label: '标签', dir: '', items: [] };
     }
@@ -709,7 +464,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
 // ======== Morph Preview ========
 
 export function buildMorphPreviewLevel(id: string): PopupLevel {
-    const inst = modelRegistry.get(id);
+    const inst = modelManager.get(id);
     const morphs = inst ? (getModelMorphs(id) ?? []) : [];
     const typeLabels: Record<number, string> = {
         0: '组',
@@ -800,7 +555,7 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
 // ======== Bone Hierarchy ========
 
 export function buildBoneHierarchyLevel(id: string): PopupLevel {
-    const inst = modelRegistry.get(id);
+    const inst = modelManager.get(id);
     if (!inst?.mmdModel) {
         return { label: '骨骼层级', dir: '', items: [] };
     }

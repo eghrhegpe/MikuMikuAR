@@ -95,7 +95,7 @@ function buildActionBindingLevel(id: string): PopupLevel {
         return { label: '动作绑定', dir: '', items: [] };
     }
     return {
-        label: `动作 — ${inst.name}`,
+        label: inst.name,
         dir: '',
         items: [],
         renderCustom: (container) => {

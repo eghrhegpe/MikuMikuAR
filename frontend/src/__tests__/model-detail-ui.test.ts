@@ -223,9 +223,8 @@ vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () => ({}))
 vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => ({}));
 
 import {
-    buildModelDetailLevel,
+    buildModelLevel,
     buildModelInfoLevel,
-    buildTransformLevel,
     buildModelTagsLevel,
     buildMorphPreviewLevel,
 } from '../menus/model-detail';
@@ -318,12 +317,12 @@ function hasRenderCustom(level: PopupLevel): boolean {
 
 beforeEach(() => cleanup());
 
-// ======== buildModelDetailLevel ========
+// ======== buildModelLevel ========
 
-describe('buildModelDetailLevel', () => {
+describe('buildModelLevel', () => {
     it('returns correct label for existing model', () => {
         createModel('m1', { name: '初音ミク' });
-        const level = buildModelDetailLevel('m1');
+        const level = buildModelLevel('m1');
         expect(level.label).toBe('初音ミク');
         expect(level.dir).toBe('');
         expect(Array.isArray(level.items)).toBe(true);
@@ -331,13 +330,13 @@ describe('buildModelDetailLevel', () => {
     });
 
     it('returns fallback label for non-existent model', () => {
-        const level = buildModelDetailLevel('nonexistent');
+        const level = buildModelLevel('nonexistent');
         expect(level.label).toBe('未知模型');
     });
 
     it('renderCustom creates DOM structure with slide items', () => {
         createModel('m1');
-        const level = buildModelDetailLevel('m1');
+        const level = buildModelLevel('m1');
         const container = document.createElement('div');
         level.renderCustom!(container);
 
@@ -348,7 +347,7 @@ describe('buildModelDetailLevel', () => {
 
     it('cards contain expected action labels', () => {
         createModel('m1');
-        const level = buildModelDetailLevel('m1');
+        const level = buildModelLevel('m1');
         const container = document.createElement('div');
         level.renderCustom!(container);
 
@@ -359,7 +358,7 @@ describe('buildModelDetailLevel', () => {
             (el) => el.textContent
         );
         const allLabels = [...slideLabels, ...csLabels];
-        // Cards rendered in buildModelDetailLevel (labels may change with UI)
+        // Cards rendered in buildModelLevel (labels may change with UI)
         expect(allLabels.length).toBeGreaterThan(5);
         expect(allLabels.some((l) => l && l.includes('模型信息'))).toBe(true);
         expect(allLabels.some((l) => l && l.includes('可见性'))).toBe(true);
@@ -404,24 +403,6 @@ describe('buildModelInfoLevel', () => {
         expect(labels.some((l) => l && l.includes('1,000'))).toBe(true);
         expect(labels.some((l) => l && l.includes('20'))).toBe(true);
         expect(labels.some((l) => l && l.includes('10'))).toBe(true);
-    });
-});
-
-// ======== buildTransformLevel ========
-
-describe('buildTransformLevel', () => {
-    it('returns valid PopupLevel', () => {
-        createModel('m1');
-        const level = buildTransformLevel('m1');
-        expect(level.label).toBe('变换');
-        expect(hasRenderCustom(level)).toBe(true);
-    });
-
-    it('renderCustom does not throw', () => {
-        createModel('m1');
-        const level = buildTransformLevel('m1');
-        const container = document.createElement('div');
-        expect(() => level.renderCustom!(container)).not.toThrow();
     });
 });
 
