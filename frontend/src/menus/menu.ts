@@ -25,6 +25,8 @@ export class SlideMenu {
     /** 触屏滑动手势起始坐标 */
     private _swipeStartX = 0;
     private _swipeStartY = 0;
+    private _swipeTouchStartHandler: ((e: TouchEvent) => void) | null = null;
+    private _swipeTouchEndHandler: ((e: TouchEvent) => void) | null = null;
 
     onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
     onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
@@ -102,23 +104,25 @@ export class SlideMenu {
         // 触屏手势：右滑返回上一层级
         this._swipeStartX = 0;
         this._swipeStartY = 0;
-        this.container.addEventListener('touchstart', (e: TouchEvent) => {
+        this._swipeTouchStartHandler = (e: TouchEvent) => {
             if (e.touches.length === 1) {
                 this._swipeStartX = e.touches[0].clientX;
                 this._swipeStartY = e.touches[0].clientY;
             }
-        }, { passive: true });
-        this.container.addEventListener('touchend', (e: TouchEvent) => {
+        };
+        this._swipeTouchEndHandler = (e: TouchEvent) => {
             if (this.transitioning || this.levels.length <= 1) return;
-            const endX = e.changedTouches[0].clientX;
-            const endY = e.changedTouches[0].clientY;
-            const dx = endX - this._swipeStartX;
-            const dy = Math.abs(endY - this._swipeStartY);
+            const ct = e.changedTouches[0];
+            if (!ct) return;
+            const dx = ct.clientX - this._swipeStartX;
+            const dy = Math.abs(ct.clientY - this._swipeStartY);
             // 右滑 > 60px 且垂直偏移 < 40px → 返回
             if (dx > 60 && dy < 40) {
                 this.pop();
             }
-        }, { passive: true });
+        };
+        this.container.addEventListener('touchstart', this._swipeTouchStartHandler, { passive: true });
+        this.container.addEventListener('touchend', this._swipeTouchEndHandler, { passive: true });
     }
 
     // ======== 公共 API ========
@@ -538,12 +542,20 @@ export class SlideMenu {
         }
     }
 
-    /** 释放所有资源（清除动画定时器、键盘监听、状态），调用后实例不可再用。 */
+    /** 释放所有资源（清除动画定时器、键盘/触摸监听、状态），调用后实例不可再用。 */
     dispose(): void {
         this._cancelAnim();
         if (this._keydownHandler) {
             this.container.removeEventListener('keydown', this._keydownHandler);
             this._keydownHandler = null;
+        }
+        if (this._swipeTouchStartHandler) {
+            this.container.removeEventListener('touchstart', this._swipeTouchStartHandler);
+            this._swipeTouchStartHandler = null;
+        }
+        if (this._swipeTouchEndHandler) {
+            this.container.removeEventListener('touchend', this._swipeTouchEndHandler);
+            this._swipeTouchEndHandler = null;
         }
         this.levels = [];
         this._cachedExtraBtns = null;
