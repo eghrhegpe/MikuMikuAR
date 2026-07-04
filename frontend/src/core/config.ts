@@ -147,7 +147,8 @@ export type LibraryModel = {
 };
 
 export type PopupRow = {
-    kind: 'folder' | 'model' | 'action' | 'divider';
+    kind: 'folder' | 'model' | 'action' | 'divider'
+        | 'slider' | 'toggle' | 'modeSlider' | 'chips';
     label: string;
     icon: string;
     target: string;
@@ -170,6 +171,30 @@ export type PopupRow = {
      * divider 类型不必传。
      */
     rowKey?: string;
+    /** folder kind: 在右侧渲染一个 toggle 开关（与 slideRow headerToggle 一致）。 */
+    headerToggle?: {
+        value: boolean;
+        onChange: (v: boolean) => void;
+        disabled?: boolean;
+        disabledHint?: string;
+        onDisabledClick?: () => void;
+    };
+    /** slider kind: 数值滑块。 */
+    sliderValue?: number;
+    sliderMin?: number;
+    sliderMax?: number;
+    sliderStep?: number;
+    onSliderChange?: (v: number) => void;
+    onSliderDragEnd?: (v: number) => void;
+    /** toggle kind: 独立开关行。 */
+    toggleValue?: boolean;
+    onToggleChange?: (v: boolean) => void;
+    /** modeSlider kind: 离散模式滑块。 */
+    modeOptions?: { value: string | number; label: string }[];
+    modeValue?: string | number;
+    onModeChange?: (v: string | number) => void;
+    /** chips kind: 横向预设芯片组。 */
+    chips?: { label: string; active?: boolean; onClick: () => void }[];
 };
 
 export type PopupLevel = {

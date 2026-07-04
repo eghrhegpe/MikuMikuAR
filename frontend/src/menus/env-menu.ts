@@ -66,6 +66,27 @@ export function getEnvMenu(): SlideMenu | null {
     return envMenu;
 }
 
+/**
+ * 渲染环境氛围预设芯片组（去重：原 buildEnvLevel / buildEnvUnifiedLevel / buildEnvLightingLevel 三处重复）。
+ * 点击芯片 → 应用预设 → 触发当前 envMenu 重绘。
+ */
+function renderPresetChips(container: HTMLElement): void {
+    const chipGroup = document.createElement('div');
+    chipGroup.className = 'preset-group';
+    chipGroup.style.paddingBottom = '6px';
+    for (const [key, p] of Object.entries(ENV_LIGHTING_PRESETS)) {
+        const btn = document.createElement('button');
+        btn.textContent = p.label;
+        btn.className = 'preset-chip';
+        btn.addEventListener('click', () => {
+            applyEnvPreset(key);
+            envMenu.reRender();
+        });
+        chipGroup.appendChild(btn);
+    }
+    container.appendChild(chipGroup);
+}
+
 export function buildEnvLightingLevel(): PopupLevel {
     const sunAngle = getEnvSunAngle();
     return {
@@ -74,19 +95,7 @@ export function buildEnvLightingLevel(): PopupLevel {
         items: [{ kind: 'divider' as const, label: '', icon: '', target: '' } as PopupRow],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                const presetRow = document.createElement('div');
-                presetRow.className = 'preset-group';
-                for (const [key, p] of Object.entries(ENV_LIGHTING_PRESETS)) {
-                    const btn = document.createElement('button');
-                    btn.textContent = p.label;
-                    btn.className = 'preset-chip';
-                    btn.addEventListener('click', () => {
-                        applyEnvPreset(key);
-                        envMenu.reRender();
-                    });
-                    presetRow.appendChild(btn);
-                }
-                c.appendChild(presetRow);
+                renderPresetChips(c);
                 renderUserEnvPresets(c);
                 addSliderRow(c, '太阳角度', sunAngle, -15, 90, 1, (v) => {
                     setEnvSunAngle(v);
@@ -124,17 +133,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     { value: 'texture', label: '贴图' },
                 ], s.skyMode, (v) => { setEnvState({ skyMode: v }); envMenu.reRender(); }, 'lucide:layers');
 
-                const presetRow = document.createElement('div');
-                presetRow.className = 'preset-group';
-                presetRow.style.paddingBottom = '6px';
-                for (const [key, p] of Object.entries(ENV_LIGHTING_PRESETS)) {
-                    const btn = document.createElement('button');
-                    btn.textContent = p.label;
-                    btn.className = 'preset-chip';
-                    btn.addEventListener('click', () => { applyEnvPreset(key); envMenu.reRender(); });
-                    presetRow.appendChild(btn);
-                }
-                c.appendChild(presetRow);
+                renderPresetChips(c);
 
                 renderUserEnvPresets(c);
 
@@ -242,48 +241,60 @@ export function buildEnvUnifiedLevel(): PopupLevel {
     };
 }
 
+/** 环境弹窗根级 items 构建器——动态反映 envState 各 toggle 状态。 */
+function buildEnvRootItems(): PopupRow[] {
+    const items: PopupRow[] = [];
+    // Card 1: 氛围预设芯片组——新手一键切换
+    items.push({
+        kind: 'chips',
+        label: '', icon: '', target: 'env:presets-chips',
+        chips: Object.entries(ENV_LIGHTING_PRESETS).map(([key, p]) => ({
+            label: p.label,
+            onClick: () => {
+                applyEnvPreset(key);
+                envMenu?.reRender();
+            },
+        })),
+    });
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    // Card 2: 环境功能入口（天空/水面/粒子/风/实验/道具）
+    items.push({ kind: 'folder', label: '天空', icon: 'lucide:sun', target: 'env:unified' });
+    items.push({
+        kind: 'folder', label: '水面', icon: 'lucide:waves', target: 'env:water',
+        headerToggle: { value: envState.waterEnabled, onChange: (v) => setEnvState({ waterEnabled: v }) },
+    });
+    items.push({
+        kind: 'folder', label: '粒子', icon: 'lucide:sparkles', target: 'env:particle',
+        headerToggle: { value: envState.particleEnabled, onChange: (v) => setEnvState({ particleEnabled: v }) },
+    });
+    items.push({
+        kind: 'folder', label: '风', icon: 'lucide:wind', target: 'env:wind',
+        headerToggle: { value: envState.windEnabled, onChange: (v) => setEnvState({ windEnabled: v }) },
+    });
+    items.push({ kind: 'folder', label: '实验功能', icon: 'lucide:flask-conical', target: 'env:experimental' });
+    items.push({ kind: 'folder', label: '道具', icon: 'lucide:box', target: 'env:prop' });
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    // Card 3: 系统预设
+    items.push({ kind: 'folder', label: '系统预设', icon: 'lucide:bookmark', target: 'env:presets' });
+    return items;
+}
+
 export function buildEnvLevel(): PopupLevel {
     return {
         label: '环境',
         dir: '',
-        items: [],
-        renderCustom: (container) => {
-            container.classList.remove('render-card');
-            // 氛围预设芯片组——新手一键切换
-            cardContainer(container, (c) => {
-                const chipGroup = document.createElement('div');
-                chipGroup.className = 'preset-group';
-                chipGroup.style.paddingBottom = '6px';
-                for (const [key, p] of Object.entries(ENV_LIGHTING_PRESETS)) {
-                    const btn = document.createElement('button');
-                    btn.textContent = p.label;
-                    btn.className = 'preset-chip';
-                    btn.addEventListener('click', () => { applyEnvPreset(key); envMenu.reRender(); });
-                    chipGroup.appendChild(btn);
-                }
-                c.appendChild(chipGroup);
-            });
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:sun', '天空', true, () => envMenu.push(buildEnvUnifiedLevel()));
-                slideRow(c, 'lucide:waves', '水面', true, () => envMenu.push(buildWaterLevel()),
-                    undefined, undefined,
-                    { value: envState.waterEnabled, onChange: (v) => setEnvState({ waterEnabled: v }) });
-                slideRow(c, 'lucide:sparkles', '粒子', true, () => envMenu.push(buildParticleLevel()),
-                    undefined, undefined,
-                    { value: envState.particleEnabled, onChange: (v) => setEnvState({ particleEnabled: v }) });
-                slideRow(c, 'lucide:wind', '风', true, () => envMenu.push(buildWindLevel()),
-                    undefined, undefined,
-                    { value: envState.windEnabled, onChange: (v) => setEnvState({ windEnabled: v }) });
-                slideRow(c, 'lucide:flask-conical', '实验功能', true, () => envMenu.push(buildExperimentalLevel()));
-                slideRow(c, 'lucide:box', '道具', true, () => envMenu.push(buildPropLevel()));
-            });
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:bookmark', '系统预设', true, () => envMenu.push(buildPresetLevel()));
-            });
-        },
-        // reRender 仅由预设芯片触发，UI 无视觉变化，跳过全量重建
-        reRenderCustom: () => {},
+        items: buildEnvRootItems(),
     };
+}
+
+/** 重新计算根级 items 并触发 reRender（toggle 状态变化后调用）。 */
+export function refreshEnvRoot(): void {
+    if (!envMenu) return;
+    const root = envMenu.getLevel(0);
+    if (root) {
+        root.items = buildEnvRootItems();
+        envMenu.reRender();
+    }
 }
 
 export function buildParticleLevel(): PopupLevel {
@@ -345,6 +356,7 @@ function envOnFolderEnter(row: PopupRow): PopupLevel | null {
         case 'env:particle': return buildParticleLevel();
         case 'env:wind': return buildWindLevel();
         case 'env:cloud': return buildCloudLevel();
+        case 'env:experimental': return buildExperimentalLevel();
         case 'env:prop': return buildPropLevel();
         case 'env:presets': return buildPresetLevel();
         default: return null;
