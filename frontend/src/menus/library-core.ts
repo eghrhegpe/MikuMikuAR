@@ -59,6 +59,7 @@ import {
     SelectVPDPose,
 } from '../core/wails-bindings';
 import { buildModelDetailLevel } from './model-detail';
+import { buildStageTransformLevel } from './scene-menu';
 import { buildDanceSetDetailLevel, loadDanceSets } from './motion-popup';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
@@ -79,7 +80,9 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 if (!inst) {
                     return null;
                 }
-                return buildModelDetailLevel(id);
+                return inst.kind === 'stage'
+                    ? buildStageTransformLevel(id)
+                    : buildModelDetailLevel(id);
             }
             if (row.target === '__recent__') {
                 const recentMap = new Map<string, number>();
@@ -698,7 +701,9 @@ export function showModelPopup(): void {
                     cardContainer(container, (c) => {
                         for (const [id, inst] of modelRegistry) {
                             slideRow(c, 'tabler:cube-3d-sphere', inst.name, true, () => {
-                                const level = buildModelDetailLevel(id);
+                                const level = inst.kind === 'stage'
+                                    ? buildStageTransformLevel(id)
+                                    : buildModelDetailLevel(id);
                                 stackRegistry.modelStack.push(level);
                             });
                         }

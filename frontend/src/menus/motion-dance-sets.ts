@@ -1,11 +1,11 @@
 // [doc:architecture] Motion Dance Sets — 舞蹈套装弹窗层级
 // 从 motion-popup.ts 拆分
 
-import { cardContainer, stackRegistry, setStatus, escapeHtml } from '../core/config';
-import type { PopupLevel, PopupRow } from '../core/config';
+import { cardContainer, stackRegistry, setStatus, escapeHtml, libraryRoot } from '../core/config';
+import type { PopupLevel, PopupRow, LibraryModel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import {
-    SelectVMDMotion, SelectAudioFile, GetDanceSets, DeleteDanceSet, ImportDanceSet,
+    GetDanceSets, DeleteDanceSet, ImportDanceSet,
 } from '../core/wails-bindings';
 import { loadAudioFile, setAudioOffset } from '../outfit/audio';
 import { showConfirm, showPrompt } from '../core/dialog';
@@ -219,27 +219,139 @@ async function loadDanceSet(ds: DanceSet): Promise<void> {
     setStatus(`✓ 已加载舞蹈套装: ${ds.name}`, true);
 }
 
-async function createNewDanceSet(): Promise<void> {
+let _danceSetBuilder: { vmdPath?: string } | null = null;
+
+function createNewDanceSet(): void {
+    _danceSetBuilder = {};
+    selectDanceSetVmd();
+}
+
+function selectDanceSetVmd(): void {
+    const { allModels, libraryRoot, displayNamePriority, modelMetaCache } = require('../core/config');
+    const { modelToRow } = require('./library-core');
+    const vmdModels = (allModels || []).filter((m: LibraryModel) => m.format === 'vmd');
+    
+    const level: PopupLevel = {
+        label: '选择动作',
+        dir: libraryRoot,
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove('render-card');
+            cardContainer(container, (c) => {
+                const hint = document.createElement('div');
+                hint.className = 'slide-item';
+                hint.style.cssText = 'color:var(--text-dim);font-size:12px;padding:6px 14px;';
+                hint.textContent = '请选择一个 VMD 动作文件';
+                c.appendChild(hint);
+            });
+            cardContainer(container, (c) => {
+                if (vmdModels.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'slide-item';
+                    empty.style.opacity = '0.5';
+                    empty.textContent = '暂无 VMD 文件';
+                    c.appendChild(empty);
+                    return;
+                }
+                for (const m of vmdModels) {
+                    const row = modelToRow(m);
+                    const el = document.createElement('div');
+                    el.className = 'slide-item';
+                    el.innerHTML = `
+                        <span class="slide-icon"><iconify-icon icon="${row.icon}"></iconify-icon></span>
+                        <span class="slide-label">${row.label}</span>
+                        ${row.sublabel ? `<span class="slide-sublabel">${row.sublabel}</span>` : ''}
+                        <span class="slide-arrow">></span>
+                    `;
+                    el.addEventListener('click', () => {
+                        _danceSetBuilder!.vmdPath = m.file_path;
+                        selectDanceSetAudio();
+                    });
+                    c.appendChild(el);
+                }
+            });
+        },
+    };
+    const stack = stackRegistry.modelStack;
+    if (stack) stack.push(level);
+}
+
+function selectDanceSetAudio(): void {
+    const { allModels, libraryRoot } = require('../core/config');
+    const { modelToRow } = require('./library-core');
+    const audioModels = (allModels || []).filter((m: LibraryModel) => m.format === 'audio');
+    
+    const level: PopupLevel = {
+        label: '选择音频',
+        dir: libraryRoot,
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove('render-card');
+            cardContainer(container, (c) => {
+                const hint = document.createElement('div');
+                hint.className = 'slide-item';
+                hint.style.cssText = 'color:var(--text-dim);font-size:12px;padding:6px 14px;';
+                hint.textContent = '请选择音频文件（可选）';
+                c.appendChild(hint);
+                const skipBtn = document.createElement('div');
+                skipBtn.className = 'slide-item';
+                skipBtn.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:skip-forward"></iconify-icon></span><span class="slide-label">跳过（无音频）</span>';
+                skipBtn.addEventListener('click', () => confirmDanceSetName(''));
+                c.appendChild(skipBtn);
+            });
+            cardContainer(container, (c) => {
+                if (audioModels.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'slide-item';
+                    empty.style.opacity = '0.5';
+                    empty.textContent = '暂无音频文件';
+                    c.appendChild(empty);
+                    return;
+                }
+                for (const m of audioModels) {
+                    const row = modelToRow(m);
+                    const el = document.createElement('div');
+                    el.className = 'slide-item';
+                    el.innerHTML = `
+                        <span class="slide-icon"><iconify-icon icon="${row.icon}"></iconify-icon></span>
+                        <span class="slide-label">${row.label}</span>
+                        ${row.sublabel ? `<span class="slide-sublabel">${row.sublabel}</span>` : ''}
+                        <span class="slide-arrow">></span>
+                    `;
+                    el.addEventListener('click', () => {
+                        confirmDanceSetName(m.file_path);
+                    });
+                    c.appendChild(el);
+                }
+            });
+        },
+    };
+    const stack = stackRegistry.modelStack;
+    if (stack) stack.push(level);
+}
+
+async function confirmDanceSetName(audioPath: string): Promise<void> {
+    const vmdPath = _danceSetBuilder?.vmdPath;
+    _danceSetBuilder = null;
+    if (!vmdPath) {
+        setStatus('✗ 未选择动作文件', false);
+        return;
+    }
+    const defaultName = vmdPath.split(/[\\/]/).pop()?.replace(/\.vmd$/i, '') || '';
+    const name = await showPrompt('请输入舞蹈套装名称：', defaultName);
+    if (!name) return;
     try {
-        const vmdPath = await SelectVMDMotion();
-        if (!vmdPath) return;
-
-        const audioPath = await SelectAudioFile().catch(() => '');
-
-        const defaultName = vmdPath.split(/[\\/]/).pop().replace(/\.vmd$/i, '') || '';
-        const name = await showPrompt('请输入舞蹈套装名称：', defaultName);
-        if (!name) return;
-
         const setId = await ImportDanceSet(vmdPath, audioPath, name);
         if (setId) {
             setStatus('✓ 已创建舞蹈套装', true);
             await loadDanceSets();
-            if (stackRegistry.modelStack) {
-                stackRegistry.modelStack.reRender();
+            const stack = stackRegistry.modelStack;
+            if (stack) {
+                stack.reRender();
             }
         }
     } catch (err) {
-        console.warn('createNewDanceSet failed:', err);
+        console.warn('confirmDanceSetName failed:', err);
         setStatus('✗ 创建失败', false);
     }
 }

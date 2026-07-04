@@ -199,6 +199,7 @@ export async function loadPMXFile(
             setStatus(`✓ ${displayName} (场景)`, true);
             _modelManager.arrange();
             _refreshWaterRenderList();
+            rebuildShadowCasters();
             _rebuildOutlineState?.();
             triggerAutoSave();
             try {

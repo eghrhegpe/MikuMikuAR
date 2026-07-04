@@ -1,6 +1,6 @@
 # ADR-022: 预设治理 — 统一管理范围与分级架构
 
-> **状态**: 提议
+> **状态**: 已实现
 > **日期**: 2026-07-04
 > **关联**: ADR-013(天空盒)、ADR-014(模型预设库)、env-lighting-unification.md
 
@@ -265,3 +265,47 @@ interface EnvPreset {
 | L1 label 用中文双字 | 简洁统一 | `黎明`, `正午`, `夕阳` |
 | L2 label 用中文四字以内 | 描述场景全貌 | `舞台-A`, `户外晴天`, `赛博都市` |
 | 禁止同名预设跨域 | 同名 key 不可出现在不同域 | ❌ 两套 `ENV_PRESETS` |
+
+---
+
+## 9. 实施记录
+
+### 9.1 实际实施内容
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| EnvPreset 接口移除 exposure/toneMapping | ✅ 已完成 | `env-lighting.ts` |
+| 天空氛围预设从 10 精简到 6 | ✅ 已完成 | 移除 dusk/storm/sakura/concert |
+| L2 环境预设从 3 扩展到 8 | ✅ 已完成 | 新增摄影棚/黄昏柔光/雨天/樱花季/赛博都市 |
+| 环境预设子面板提升为首个 + 重命名 | ✅ 已完成 | 从"系统预设"改为"环境预设" |
+| 用户预设快照从天空移到环境预设 | ✅ 已完成 | `renderUserEnvPresets` 移入 `buildPresetLevel` |
+| L1 天空氛围芯片组从根级移除 | ✅ 已完成 | 仅保留在天空子面板内部 |
+| applyEnvPresetObject 移除 exposure/toneMapping | ✅ 已完成 | `env-bridge.ts` |
+| exportEnvPreset 版本号升级到 2 | ✅ 已完成 | 向后兼容旧版本预设文件 |
+
+### 9.2 方案调整
+
+| 调整项 | 原始方案 | 实际实施 | 原因 |
+|--------|---------|---------|------|
+| 水面独立文件 | 计划拆到 `env-water-levels.ts` | 保持在 `env-feature-levels.ts` | 已有独立函数 `buildWaterLevel()`，无需额外拆分 |
+| 级联机制 | 计划新增 `applyEnvPresetCascade` | 修改 `applyEnvPresetObject` | 原有函数已满足需求，无需新增 |
+| 根级芯片组 | 计划保留 L1 天空氛围芯片组 | 移除根级芯片组 | 用户反馈"天空预设还在顶部"，根级只保留 L2 环境预设 |
+
+### 9.3 额外修复
+
+| 修复项 | 文件 | 说明 |
+|--------|------|------|
+| motion-popup modelRegistry 引用 | `motion-popup.ts` | 改为使用 `modelManager.get()` / `modelManager.modelRegistry`，避免引用过期的 Map |
+
+### 9.4 向后兼容
+
+- `exportEnvPreset` 版本号从 1 升级到 2，移除 `exposure` 和 `toneMapping` 字段
+- `importEnvPreset` 兼容旧版本（v1），忽略多余字段
+- L2 用户预设中的 bloom/dof 等高级后处理参数将被忽略
+
+### 9.5 构建验证
+
+```bash
+cd frontend && npx tsc --noEmit  # ✅ 通过
+cd frontend && npx vite build    # ✅ 通过（457 modules）
+```

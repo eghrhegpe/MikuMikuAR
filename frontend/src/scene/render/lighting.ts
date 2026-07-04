@@ -12,6 +12,10 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
+import { CascadedShadowGenerator } from '@babylonjs/core/Lights/Shadows/cascadedShadowGenerator';
+import { PositionGizmo } from '@babylonjs/core/Gizmos/positionGizmo';
+import { RotationGizmo } from '@babylonjs/core/Gizmos/rotationGizmo';
+import { UtilityLayerRenderer } from '@babylonjs/core/Rendering/utilityLayerRenderer';
 import type { ModelInstance, PropInstance } from '../../core/config';
 
 function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
@@ -39,6 +43,8 @@ export interface LightState {
 export type StageLightType = 'spot' | 'point' | 'directional';
 
 export interface StageLightState {
+    id: string;            // 唯一标识
+    name: string;          // 显示名
     enabled: boolean;
     type: StageLightType;   // 灯光类型
     intensity: number;
@@ -48,6 +54,11 @@ export interface StageLightState {
     exponent: number;       // 衰减指数
     // PointLight 专属
     range: number;          // 衰减距离
+    // 阴影投射
+    shadowEnabled: boolean;
+    shadowType: 'hard' | 'soft' | 'pcf';
+    shadowResolution: number;
+    shadowBias: number;
     // 位置
     posX: number;
     posY: number;
@@ -62,15 +73,21 @@ export interface StageLightState {
     orbitDistance: number;  // 距原点距离
 }
 
-function _defaultStageLightState(): StageLightState {
+function _defaultStageLightState(id: string, name: string): StageLightState {
     return {
+        id,
+        name,
         enabled: false,
         type: 'spot',
         intensity: 0.8,
         color: [1, 1, 1],
-        angle: 0.8,  // ≈46°，兼顾覆盖和聚光感
+        angle: 0.8,
         exponent: 2,
         range: 50,
+        shadowEnabled: false,
+        shadowType: 'soft',
+        shadowResolution: 1024,
+        shadowBias: 0.0001,
         posX: 0,
         posY: 15,
         posZ: -10,
@@ -93,10 +110,20 @@ let _triggerAutoSave: (() => void) | null = null;
 
 export let hemiLight: HemisphericLight;
 export let dirLight: DirectionalLight;
-export let stageLight: SpotLight | PointLight | DirectionalLight;
 
-let _stageLightState: StageLightState = _defaultStageLightState();
-let _stageLightType: StageLightType = 'spot';
+interface StageLightEntry {
+    state: StageLightState;
+    light: SpotLight | PointLight | DirectionalLight;
+}
+const _stageLights = new Map<string, StageLightEntry>();
+let _activeStageLightId: string | null = null;
+let _stageLightCounter = 0;
+
+// ======== Gizmo State ========
+let _gizmoLayer: UtilityLayerRenderer | null = null;
+let _posGizmo: PositionGizmo | null = null;
+let _rotGizmo: RotationGizmo | null = null;
+let _gizmoTarget: string | null = null; // 当前 gizmo 绑定的灯光 ID
 
 let _shadowEnabled = false;
 let _shadowType: LightState['shadowType'] = 'soft';
@@ -138,8 +165,11 @@ export function initLighting(
     dirLight.intensity = 0.4;
     dirLight.position = new Vector3(0, 40, 0);
 
-    const def = _defaultStageLightState();
-    stageLight = _createStageLight(def.type, def);
+    const def = _defaultStageLightState('light-1', '主光');
+    const light = _createStageLight(def.type, def);
+    _stageLights.set(def.id, { state: def, light });
+    _activeStageLightId = def.id;
+    _stageLightCounter = 1;
 }
 
 function _createStageLight(type: StageLightType, state: StageLightState): SpotLight | PointLight | DirectionalLight {
@@ -149,31 +179,28 @@ function _createStageLight(type: StageLightType, state: StageLightState): SpotLi
     const intensity = state.enabled ? state.intensity : 0;
 
     if (type === 'spot') {
-        const light = new SpotLight('stage', pos, new Vector3(0, -1, 0), state.angle, state.exponent, _scene!);
+        const light = new SpotLight(state.id, pos, new Vector3(0, -1, 0), state.angle, state.exponent, _scene!);
         light.intensity = intensity;
         light.diffuse = diffuse;
         light.specular = new Color3(0.3, 0.3, 0.3);
         light.setDirectionToTarget(target);
-        _stageLightType = 'spot';
         return light;
     }
     if (type === 'point') {
-        const light = new PointLight('stage', pos, _scene!);
+        const light = new PointLight(state.id, pos, _scene!);
         light.intensity = intensity;
         light.diffuse = diffuse;
         light.specular = new Color3(0.3, 0.3, 0.3);
         light.range = state.range;
-        _stageLightType = 'point';
         return light;
     }
     // directional
     const dir = target.subtract(pos).normalize();
-    const light = new DirectionalLight('stage', dir, _scene!);
+    const light = new DirectionalLight(state.id, dir, _scene!);
     light.intensity = intensity;
     light.diffuse = diffuse;
     light.specular = new Color3(0.3, 0.3, 0.3);
     light.position = pos.clone();
-    _stageLightType = 'directional';
     return light;
 }
 
@@ -259,11 +286,11 @@ export function setLightState(s: Partial<LightState>): void {
     if (s.shadowType !== undefined) {
         _shadowType = s.shadowType;
     }
+    let needRebuildShadow = false;
     if (s.shadowCascades !== undefined) {
         _shadowCascades = s.shadowCascades;
+        needRebuildShadow = true;
     }
-
-    let needRebuildShadow = false;
     if (s.shadowResolution !== undefined && s.shadowResolution !== _shadowResolution) {
         _shadowResolution = s.shadowResolution;
         needRebuildShadow = true;
@@ -372,14 +399,14 @@ export function _updateSunDisc(): void {
     const hasIntensity = dirLight.intensity > SUN_DISC_MIN_INTENSITY;
     disc.setEnabled(aboveHorizon && hasIntensity);
     if (aboveHorizon && hasIntensity) {
-        disc.position = new Vector3(
+        disc.position.set(
             -d.x * SUN_DISC_DISTANCE,
             -d.y * SUN_DISC_DISTANCE,
             -d.z * SUN_DISC_DISTANCE
         );
         const b = Math.max(0.05, dirLight.intensity);
         const mat = disc.material as StandardMaterial;
-        mat.emissiveColor = new Color3(b, b * 0.9, b * 0.7);
+        mat.emissiveColor.set(b, b * 0.9, b * 0.7);
     }
 }
 
@@ -405,7 +432,8 @@ function _ensureShadow(): void {
         return;
     }
 
-    const gen = new ShadowGenerator(_shadowResolution, dirLight);
+    const gen = new CascadedShadowGenerator(_shadowResolution, dirLight);
+    gen.numCascades = _shadowCascades;
     gen.useBlurExponentialShadowMap = _shadowType !== 'hard';
     gen.useKernelBlur = _shadowType === 'pcf';
     gen.bias = _shadowBias;
@@ -433,115 +461,391 @@ function _ensureShadow(): void {
 /** 当模型/道具注册表更新时，重新生成阴影投射者列表。 */
 export function rebuildShadowCasters(): void {
     _ensureShadow();
+    rebuildStageLightShadows();
 }
 
-// ======== Stage Light ========
+// ======== Stage Lights ========
 
-export function getStageLightState(): StageLightState {
-    if (!stageLight) return _defaultStageLightState();
-    const base: StageLightState = {
-        ..._stageLightState,
-        type: _stageLightType,
-        intensity: stageLight.intensity,
-        color: [stageLight.diffuse.r, stageLight.diffuse.g, stageLight.diffuse.b],
-        posX: stageLight.position.x,
-        posY: stageLight.position.y,
-        posZ: stageLight.position.z,
-        orbitAzimuth: Math.round(Math.atan2(stageLight.position.x, stageLight.position.z) * 180 / Math.PI),
-        orbitElevation: Math.round(Math.asin(stageLight.position.y / Math.max(0.1, stageLight.position.length())) * 180 / Math.PI),
-        orbitDistance: Math.round(stageLight.position.length()),
-    };
-    if (_stageLightType === 'spot' && stageLight instanceof SpotLight) {
-        base.angle = stageLight.angle;
-        base.exponent = stageLight.exponent;
+const _stageShadows = new Map<string, ShadowGenerator>();
+
+export function getStageLights(): StageLightState[] {
+    const result: StageLightState[] = [];
+    for (const [, entry] of _stageLights) {
+        result.push(_readStageLightState(entry));
     }
-    if (_stageLightType === 'point' && stageLight instanceof PointLight) {
-        base.range = stageLight.range;
-    }
-    return base;
+    return result;
 }
 
-export function setStageLightState(s: Partial<StageLightState>): void {
-    if (!stageLight || !_triggerAutoSave) return;
+export function getActiveStageLightId(): string | null {
+    return _activeStageLightId;
+}
 
-    // 类型切换：dispose 旧灯 + 创建新灯
-    if (s.type !== undefined && s.type !== _stageLightType) {
-        Object.assign(_stageLightState, s);
-        stageLight.dispose();
-        stageLight = _createStageLight(s.type, _stageLightState);
+export function setActiveStageLightId(id: string): void {
+    if (_stageLights.has(id)) {
+        _activeStageLightId = id;
+    }
+}
+
+export function getStageLightState(id?: string): StageLightState {
+    const entry = _getEntry(id);
+    if (!entry) return _defaultStageLightState('light-1', '主光');
+    return _readStageLightState(entry);
+}
+
+export function setStageLightState(s: Partial<StageLightState>, id?: string): void {
+    const targetId = id ?? s.id ?? _activeStageLightId;
+    if (!targetId) return;
+    const entry = _stageLights.get(targetId);
+    if (!entry || !_triggerAutoSave) return;
+
+    // 类型切换：dispose 旧灯 + 旧阴影 + 创建新灯
+    if (s.type !== undefined && s.type !== entry.state.type) {
+        Object.assign(entry.state, s);
+        entry.light.dispose();
+        _disposeStageShadow(targetId);
+        entry.light = _createStageLight(s.type, entry.state);
+        _ensureStageShadow(targetId);
         _triggerAutoSave();
         return;
     }
 
-    Object.assign(_stageLightState, s);
+    Object.assign(entry.state, s);
+    _applyStageLightParams(entry, s);
+
+    // 阴影重建条件
+    const shadowKeys = new Set(['enabled', 'shadowEnabled', 'shadowType', 'shadowResolution', 'shadowBias']);
+    let needShadowRebuild = false;
+    for (const key of shadowKeys) {
+        if ((s as Record<string, unknown>)[key] !== undefined) {
+            needShadowRebuild = true;
+            break;
+        }
+    }
+    if (needShadowRebuild) {
+        _ensureStageShadow(targetId);
+    }
+
+    _triggerAutoSave();
+}
+
+export function addStageLight(type: StageLightType = 'spot', preset?: Partial<StageLightState>): string {
+    _stageLightCounter++;
+    const id = `light-${_stageLightCounter}`;
+    const defaultNames: Record<StageLightType, string> = {
+        spot: '聚光灯',
+        point: '点光源',
+        directional: '平行光',
+    };
+    const name = `${defaultNames[type]} ${_stageLightCounter}`;
+    const state = { ..._defaultStageLightState(id, name), type, ...preset, id, name };
+    state.posX = _stageLightCounter * 2 - 2;
+    state.orbitAzimuth = 180 + (_stageLightCounter - 1) * 30;
+    const light = _createStageLight(type, state);
+    _stageLights.set(id, { state, light });
+    _activeStageLightId = id;
+    _ensureStageShadow(id);
+    if (_triggerAutoSave) _triggerAutoSave();
+    return id;
+}
+
+export function removeStageLight(id: string): boolean {
+    const entry = _stageLights.get(id);
+    if (!entry) return false;
+    if (_stageLights.size <= 1) return false;
+    entry.light.dispose();
+    _disposeStageShadow(id);
+    _stageLights.delete(id);
+    if (_activeStageLightId === id) {
+        _activeStageLightId = _stageLights.keys().next().value ?? null;
+    }
+    if (_triggerAutoSave) _triggerAutoSave();
+    return true;
+}
+
+/** 批量加载舞台灯（反序列化用），会清空现有灯 */
+export function loadStageLights(states: StageLightState[]): void {
+    // 清空旧灯
+    for (const [lid, entry] of _stageLights) {
+        entry.light.dispose();
+    }
+    _stageLights.clear();
+    for (const [sid] of _stageShadows) {
+        _disposeStageShadow(sid);
+    }
+    _stageShadows.clear();
+
+    if (states.length === 0) {
+        const def = _defaultStageLightState('light-1', '主光');
+        const light = _createStageLight(def.type, def);
+        _stageLights.set(def.id, { state: def, light });
+        _activeStageLightId = def.id;
+        _stageLightCounter = 1;
+        _ensureStageShadow(def.id);
+        return;
+    }
+
+    let maxNum = 0;
+    for (const s of states) {
+        const light = _createStageLight(s.type, s);
+        _stageLights.set(s.id, { state: { ...s }, light });
+        _ensureStageShadow(s.id);
+        const m = s.id.match(/light-(\d+)/);
+        if (m) maxNum = Math.max(maxNum, parseInt(m[1]));
+    }
+    _stageLightCounter = maxNum;
+    _activeStageLightId = states[0].id;
+}
+
+/** 重建所有舞台灯的阴影投射者列表（模型/道具变化时调用） */
+export function rebuildStageLightShadows(): void {
+    for (const [id] of _stageLights) {
+        _ensureStageShadow(id);
+    }
+}
+
+// —— 内部辅助 ——
+
+function _getEntry(id?: string): StageLightEntry | null {
+    const targetId = id ?? _activeStageLightId;
+    if (!targetId) return null;
+    return _stageLights.get(targetId) ?? null;
+}
+
+function _readStageLightState(entry: StageLightEntry): StageLightState {
+    const { state, light } = entry;
+    const base: StageLightState = {
+        ...state,
+        intensity: light.intensity,
+        color: [light.diffuse.r, light.diffuse.g, light.diffuse.b],
+        posX: light.position.x,
+        posY: light.position.y,
+        posZ: light.position.z,
+        orbitAzimuth: Math.atan2(light.position.x, light.position.z) * 180 / Math.PI,
+        orbitElevation: Math.asin(light.position.y / Math.max(0.1, light.position.length())) * 180 / Math.PI,
+        orbitDistance: light.position.length(),
+    };
+    if (state.type === 'spot' && light instanceof SpotLight) {
+        base.angle = light.angle;
+        base.exponent = light.exponent;
+    }
+    if (state.type === 'point' && light instanceof PointLight) {
+        base.range = light.range;
+    }
+    return base;
+}
+
+function _applyStageLightParams(entry: StageLightEntry, s: Partial<StageLightState>): void {
+    const { state, light } = entry;
+    const type = state.type;
 
     if (s.enabled !== undefined) {
-        stageLight.intensity = s.enabled ? _stageLightState.intensity : 0;
+        light.intensity = s.enabled ? state.intensity : 0;
     }
-    if (s.intensity !== undefined && _stageLightState.enabled) {
-        stageLight.intensity = s.intensity;
+    if (s.intensity !== undefined && state.enabled) {
+        light.intensity = s.intensity;
     }
     if (s.color !== undefined) {
-        stageLight.diffuse = new Color3(s.color[0], s.color[1], s.color[2]);
+        light.diffuse = new Color3(s.color[0], s.color[1], s.color[2]);
     }
 
-    // Spot 专属
-    if (_stageLightType === 'spot' && stageLight instanceof SpotLight) {
-        if (s.angle !== undefined) stageLight.angle = s.angle;
-        if (s.exponent !== undefined) stageLight.exponent = s.exponent;
+    if (type === 'spot' && light instanceof SpotLight) {
+        if (s.angle !== undefined) light.angle = s.angle;
+        if (s.exponent !== undefined) light.exponent = s.exponent;
     }
-    // Point 专属
-    if (_stageLightType === 'point' && stageLight instanceof PointLight) {
-        if (s.range !== undefined) stageLight.range = s.range;
+    if (type === 'point' && light instanceof PointLight) {
+        if (s.range !== undefined) light.range = s.range;
     }
 
     if (s.orbitAzimuth !== undefined || s.orbitElevation !== undefined || s.orbitDistance !== undefined) {
-        const az = (s.orbitAzimuth ?? _stageLightState.orbitAzimuth) * Math.PI / 180;
-        const el = (s.orbitElevation ?? _stageLightState.orbitElevation) * Math.PI / 180;
-        const dist = s.orbitDistance ?? _stageLightState.orbitDistance;
-        stageLight.position = new Vector3(
+        const az = (s.orbitAzimuth ?? state.orbitAzimuth) * Math.PI / 180;
+        const el = (s.orbitElevation ?? state.orbitElevation) * Math.PI / 180;
+        const dist = s.orbitDistance ?? state.orbitDistance;
+        light.position = new Vector3(
             dist * Math.cos(el) * Math.sin(az),
             dist * Math.sin(el),
             dist * Math.cos(el) * Math.cos(az)
         );
-        // spot 重新对准目标；directional 重新计算方向
-        if (_stageLightType === 'spot' && stageLight instanceof SpotLight) {
-            stageLight.setDirectionToTarget(new Vector3(
-                _stageLightState.targetX, _stageLightState.targetY, _stageLightState.targetZ
-            ));
+        if (type === 'spot' && light instanceof SpotLight) {
+            light.setDirectionToTarget(new Vector3(state.targetX, state.targetY, state.targetZ));
         }
-        if (_stageLightType === 'directional' && stageLight instanceof DirectionalLight) {
+        if (type === 'directional' && light instanceof DirectionalLight) {
             const dir = new Vector3(
-                _stageLightState.targetX - stageLight.position.x,
-                _stageLightState.targetY - stageLight.position.y,
-                _stageLightState.targetZ - stageLight.position.z
+                state.targetX - light.position.x,
+                state.targetY - light.position.y,
+                state.targetZ - light.position.z
             ).normalize();
-            stageLight.direction = dir;
+            light.direction = dir;
         }
     }
     if (s.posX !== undefined || s.posY !== undefined || s.posZ !== undefined) {
-        stageLight.position = new Vector3(
-            s.posX ?? stageLight.position.x,
-            s.posY ?? stageLight.position.y,
-            s.posZ ?? stageLight.position.z
+        light.position = new Vector3(
+            s.posX ?? light.position.x,
+            s.posY ?? light.position.y,
+            s.posZ ?? light.position.z
         );
     }
-    if ((s.targetX !== undefined || s.targetY !== undefined || s.targetZ !== undefined)) {
-        if (_stageLightType === 'spot' && stageLight instanceof SpotLight) {
-            stageLight.setDirectionToTarget(new Vector3(
-                s.targetX ?? _stageLightState.targetX,
-                s.targetY ?? _stageLightState.targetY,
-                s.targetZ ?? _stageLightState.targetZ
+    if (s.targetX !== undefined || s.targetY !== undefined || s.targetZ !== undefined) {
+        if (type === 'spot' && light instanceof SpotLight) {
+            light.setDirectionToTarget(new Vector3(
+                s.targetX ?? state.targetX,
+                s.targetY ?? state.targetY,
+                s.targetZ ?? state.targetZ
             ));
         }
-        if (_stageLightType === 'directional' && stageLight instanceof DirectionalLight) {
+        if (type === 'directional' && light instanceof DirectionalLight) {
             const dir = new Vector3(
-                (s.targetX ?? _stageLightState.targetX) - stageLight.position.x,
-                (s.targetY ?? _stageLightState.targetY) - stageLight.position.y,
-                (s.targetZ ?? _stageLightState.targetZ) - stageLight.position.z
+                (s.targetX ?? state.targetX) - light.position.x,
+                (s.targetY ?? state.targetY) - light.position.y,
+                (s.targetZ ?? state.targetZ) - light.position.z
             ).normalize();
-            stageLight.direction = dir;
+            light.direction = dir;
         }
     }
-    _triggerAutoSave();
+}
+
+function _ensureStageShadow(id: string): void {
+    if (!_scene || !_modelRegistry || !_propRegistry) return;
+    const entry = _stageLights.get(id);
+    if (!entry) return;
+    const { state, light } = entry;
+
+    // dispose 旧的
+    const old = _stageShadows.get(id);
+    if (old) {
+        old.dispose();
+        _stageShadows.delete(id);
+    }
+
+    if (!state.enabled || !state.shadowEnabled) return;
+    if (state.type === 'point') return; // PointLight 不支持 ShadowGenerator
+    if (!(light instanceof SpotLight) && !(light instanceof DirectionalLight)) return;
+
+    const gen = new ShadowGenerator(state.shadowResolution, light);
+    gen.useBlurExponentialShadowMap = state.shadowType !== 'hard';
+    gen.useKernelBlur = state.shadowType === 'pcf';
+    gen.bias = state.shadowBias;
+
+    for (const [, inst] of _modelRegistry) {
+        for (const m of inst.meshes) {
+            if (m instanceof Mesh) {
+                gen.addShadowCaster(m);
+                m.receiveShadows = true;
+            }
+        }
+    }
+    for (const [, inst] of _propRegistry) {
+        for (const m of inst.meshes) {
+            if (m instanceof Mesh) {
+                gen.addShadowCaster(m);
+                m.receiveShadows = true;
+            }
+        }
+    }
+    _stageShadows.set(id, gen);
+}
+
+function _disposeStageShadow(id: string): void {
+    const gen = _stageShadows.get(id);
+    if (gen) {
+        gen.dispose();
+        _stageShadows.delete(id);
+    }
+}
+
+// ======== 3D Gizmo (Position + Rotation) ========
+
+/** 获取或创建 gizmo 渲染层（独立于主场景渲染）。 */
+function _getGizmoLayer(): UtilityLayerRenderer {
+    if (!_gizmoLayer && _scene) {
+        _gizmoLayer = new UtilityLayerRenderer(_scene);
+        _gizmoLayer.shouldRender = false; // 默认不渲染
+    }
+    return _gizmoLayer!;
+}
+
+/**
+ * 为指定灯光激活 3D 拖拽 Gizmo。
+ * - PositionGizmo：拖拽坐标轴移动灯光位置
+ * - RotationGizmo：拖拽圆环调整聚光灯方向（仅 spot/directional）
+ */
+export function attachLightGizmo(id: string): boolean {
+    if (!_scene) return false;
+    const entry = _stageLights.get(id);
+    if (!entry) return false;
+
+    // 先detach之前的
+    detachLightGizmo();
+
+    const layer = _getGizmoLayer();
+    layer.shouldRender = true;
+
+    // Position gizmo
+    _posGizmo = new PositionGizmo(layer);
+    _posGizmo.attachedNode = entry.light;
+    _posGizmo.onDragEndObservable.add(() => {
+        const pos = entry.light.position;
+        setStageLightState({
+            posX: pos.x,
+            posY: pos.y,
+            posZ: pos.z,
+        }, id);
+    });
+
+    // Rotation gizmo（仅 spot/directional，point 无方向）
+    if (entry.state.type !== 'point') {
+        _rotGizmo = new RotationGizmo(layer);
+        _rotGizmo.attachedNode = entry.light;
+        _rotGizmo.onDragEndObservable.add(() => {
+            // 从灯光当前 position + target 推导新目标
+            // （direction 属性不可直接旋转，通过 position 位移同步）
+            const pos = entry.light.position;
+            if (entry.state.type === 'spot' && entry.light instanceof SpotLight) {
+                const curDir = entry.light.direction;
+                const target = pos.add(curDir.scale(10));
+                setStageLightState({
+                    targetX: target.x,
+                    targetY: target.y,
+                    targetZ: target.z,
+                }, id);
+            }
+            if (entry.state.type === 'directional' && entry.light instanceof DirectionalLight) {
+                const dir = entry.light.direction;
+                const target = pos.add(dir.scale(10));
+                setStageLightState({
+                    targetX: target.x,
+                    targetY: target.y,
+                    targetZ: target.z,
+                }, id);
+            }
+        });
+    }
+
+    _gizmoTarget = id;
+    return true;
+}
+
+/** 移除当前灯光的 3D Gizmo。 */
+export function detachLightGizmo(): void {
+    if (_posGizmo) {
+        _posGizmo.dispose();
+        _posGizmo = null;
+    }
+    if (_rotGizmo) {
+        _rotGizmo.dispose();
+        _rotGizmo = null;
+    }
+    if (_gizmoLayer) {
+        _gizmoLayer.shouldRender = false;
+    }
+    _gizmoTarget = null;
+}
+
+/** 当前是否有 gizmo 激活。 */
+export function isGizmoActive(): boolean {
+    return _gizmoTarget !== null;
+}
+
+/** 获取当前 gizmo 绑定的灯光 ID。 */
+export function getGizmoTargetId(): string | null {
+    return _gizmoTarget;
 }

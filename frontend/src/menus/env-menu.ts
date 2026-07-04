@@ -240,23 +240,10 @@ export function buildEnvUnifiedLevel(): PopupLevel {
 /** 环境弹窗根级 items 构建器——动态反映 envState 各 toggle 状态。 */
 function buildEnvRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    // Card 1: 氛围预设芯片组——新手一键切换（L1 天空氛围）
-    items.push({
-        kind: 'chips',
-        label: '', icon: '', target: 'env:presets-chips',
-        chips: Object.entries(ENV_LIGHTING_PRESETS).map(([key, p]) => ({
-            label: p.label,
-            onClick: () => {
-                applyEnvPreset(key);
-                envMenu?.reRender();
-            },
-        })),
-    });
-    items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    // Card 2: 环境预设（L2 精选组合 + 用户自定义）
+    // Card 1: 环境预设（L2 精选组合 + 用户自定义）
     items.push({ kind: 'folder', label: '环境预设', icon: 'lucide:bookmark', target: 'env:presets' });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    // Card 3: 环境功能入口（天空/水面/粒子/风/实验/道具）
+    // Card 2: 环境功能入口（天空/水面/粒子/风/实验/道具）
     items.push({ kind: 'folder', label: '天空', icon: 'lucide:sun', target: 'env:unified' });
     items.push({
         kind: 'folder', label: '水面', icon: 'lucide:waves', target: 'env:water',
