@@ -19,6 +19,7 @@ import {
     _updateSunDisc,
 } from '../render/lighting';
 import type { LightState } from '../render/lighting';
+import { applyLightingPresetFromEnv } from '../render/lighting';
 import { scene, setRenderState } from '../scene';
 
 function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {

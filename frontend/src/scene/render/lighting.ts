@@ -1010,16 +1010,6 @@ function _tweenColor3(
     durationMs: number,
     onUpdate: (c: Color3) => void
 ): void {
-    _tweenValue(from.r, to.r, durationMs, (r) => {
-        const g = from.g + (to.g - from.g) * Math.min(1, (performance.now() - (performance.now() - durationMs)) / durationMs);
-        // 简化：逐分量独立 tween，最终合并
-        onUpdate(new Color3(
-            from.r + (to.r - from.r) * Math.min(1, 1),
-            from.g + (to.g - from.g) * Math.min(1, 1),
-            from.b + (to.b - from.b) * Math.min(1, 1)
-        ));
-    });
-    // 更精确的实现：三个分量独立 tween，最后一帧合并
     let curR = from.r, curG = from.g, curB = from.b;
     _tweenValue(0, 1, durationMs, (t) => {
         curR = from.r + (to.r - from.r) * t;

@@ -33,6 +33,9 @@ import {
     detachLightGizmo,
     isGizmoActive,
 } from '../scene/scene';
+import { LIGHTING_PRESETS, PRESET_NAMES } from '../scene/render/lighting-presets';
+import { envState } from '../core/config';
+import { setEnvState } from '../scene/env/env-bridge';
 import {
     GetRenderPresets,
     SaveRenderPreset,
@@ -177,6 +180,37 @@ export function buildStageLightLevel(): PopupLevel {
             const lights = getStageLights();
             const activeId = getActiveStageLightId();
             const state = lights.find(l => l.id === activeId) ?? lights[0];
+
+            // —— 预设芯片组 ——
+            cardContainer(container, (c) => {
+                const chipGroup = document.createElement('div');
+                chipGroup.className = 'preset-group';
+                chipGroup.style.paddingBottom = '4px';
+                const currentPreset = envState.lightingPresetName;
+                for (const name of PRESET_NAMES) {
+                    const p = LIGHTING_PRESETS[name];
+                    const btn = document.createElement('button');
+                    btn.className = 'preset-chip' + (currentPreset === name ? ' active' : '');
+                    btn.textContent = p.label;
+                    btn.addEventListener('click', () => {
+                        setEnvState({ lightingPresetName: name });
+                        reRenderSceneMenu();
+                    });
+                    chipGroup.appendChild(btn);
+                }
+                // 自定义按钮（清除预设）
+                if (currentPreset) {
+                    const customBtn = document.createElement('button');
+                    customBtn.className = 'preset-chip';
+                    customBtn.textContent = '自定义';
+                    customBtn.addEventListener('click', () => {
+                        setEnvState({ lightingPresetName: undefined });
+                        reRenderSceneMenu();
+                    });
+                    chipGroup.appendChild(customBtn);
+                }
+                c.appendChild(chipGroup);
+            });
 
             // —— 灯列表 ——
             cardContainer(container, (c) => {
