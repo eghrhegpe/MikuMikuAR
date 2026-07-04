@@ -160,45 +160,44 @@ export function buildModelDetailLevel(id: string): PopupLevel {
                             const level = buildBoneHierarchyLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
-                    },
-                });
-
-                // 可见性（直接显示）
-                let visMode: 'visible' | 'semi' | 'hidden';
-                if (inst.visible && inst.opacity >= 0.99) {
-                    visMode = 'visible';
-                } else if (inst.visible && inst.opacity < 0.99) {
-                    visMode = 'semi';
-                } else {
-                    visMode = 'hidden';
-                }
-                addModeSlider(
-                    c,
-                    '可见性',
-                    [
-                        { value: 'visible', label: '显示' },
-                        { value: 'semi', label: '半透明' },
-                        { value: 'hidden', label: '隐藏' },
-                    ],
-                    visMode,
-                    (v) => {
-                        if (v === 'visible') {
-                            setModelVisibility(id, true);
-                            setModelOpacity(id, 1);
-                        } else if (v === 'semi') {
-                            setModelVisibility(id, true);
-                            setModelOpacity(id, 0.5);
+                        // 可见性直接嵌入信息处
+                        let visMode: 'visible' | 'semi' | 'hidden';
+                        if (inst.visible && inst.opacity >= 0.99) {
+                            visMode = 'visible';
+                        } else if (inst.visible && inst.opacity < 0.99) {
+                            visMode = 'semi';
                         } else {
-                            setModelVisibility(id, false);
+                            visMode = 'hidden';
                         }
-                        stackRegistry.modelStack.reRender();
-                        setStatus(
-                            v === 'visible' ? '完全可见' : v === 'semi' ? '半透明 50%' : '完全隐藏',
-                            true
+                        addModeSlider(
+                            inner,
+                            '可见性',
+                            [
+                                { value: 'visible', label: '显示' },
+                                { value: 'semi', label: '半透明' },
+                                { value: 'hidden', label: '隐藏' },
+                            ],
+                            visMode,
+                            (v) => {
+                                if (v === 'visible') {
+                                    setModelVisibility(id, true);
+                                    setModelOpacity(id, 1);
+                                } else if (v === 'semi') {
+                                    setModelVisibility(id, true);
+                                    setModelOpacity(id, 0.5);
+                                } else {
+                                    setModelVisibility(id, false);
+                                }
+                                stackRegistry.modelStack.reRender();
+                                setStatus(
+                                    v === 'visible' ? '完全可见' : v === 'semi' ? '半透明 50%' : '完全隐藏',
+                                    true
+                                );
+                            },
+                            'lucide:eye'
                         );
                     },
-                    'lucide:eye'
-                );
+                });
 
                 // 工具折叠组
                 addCollapsible(c, {
@@ -232,9 +231,8 @@ export function buildModelDetailLevel(id: string): PopupLevel {
                     removeIcon.appendChild(removeIconEl);
                 }
                 const removeLabel = document.createElement('span');
-                removeLabel.className = 'slide-label';
+                removeLabel.className = 'slide-label danger-text';
                 removeLabel.textContent = '移除模型';
-                removeLabel.style.color = 'var(--danger)';
                 removeBtn.appendChild(removeIcon);
                 removeBtn.appendChild(removeLabel);
                 removeBtn.addEventListener('click', async () => {

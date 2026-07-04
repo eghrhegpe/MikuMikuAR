@@ -695,15 +695,14 @@ export function showModelPopup(): void {
         renderCustom: (container) => {
             container.classList.remove('render-card');
 
-            // Card 1: loaded models
+            // Card 1: loaded models (only actors — stage models have dedicated UI in scene menu)
             try {
-                if (modelRegistry.size > 0) {
+                const actors = Array.from(modelRegistry.entries()).filter(([, inst]) => inst.kind === 'actor');
+                if (actors.length > 0) {
                     cardContainer(container, (c) => {
-                        for (const [id, inst] of modelRegistry) {
+                        for (const [id, inst] of actors) {
                             slideRow(c, 'tabler:cube-3d-sphere', inst.name, true, () => {
-                                const level = inst.kind === 'stage'
-                                    ? buildStageTransformLevel(id)
-                                    : buildModelDetailLevel(id);
+                                const level = buildModelDetailLevel(id);
                                 stackRegistry.modelStack.push(level);
                             });
                         }
