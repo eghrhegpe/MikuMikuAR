@@ -344,6 +344,11 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         impl.updateWaterAnimSpeed(partial.waterAnimSpeed);
     }
 
+    // 灯光预设变化 → 平滑过渡
+    if (partial.lightingPresetName !== undefined) {
+        applyLightingPresetFromEnv(partial.lightingPresetName);
+    }
+
     if (_envPersistTimer) {
         clearTimeout(_envPersistTimer);
     }

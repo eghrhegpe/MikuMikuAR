@@ -5,6 +5,7 @@
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import type { Camera } from '@babylonjs/core/Cameras/camera';
+import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
 
 // ======== Tone Mapping Modes ========
 
@@ -42,6 +43,12 @@ export interface RenderState {
     chromaticAberrationAmount: number; // 0-1, default 0（内部映射到 0~8）
     grainEnabled: boolean;
     grainIntensity: number; // 0-1, default 0（内部映射到 0~50）
+    // Phase 10 — 运动模糊 + 锐化 + 辉光
+    motionBlurEnabled: boolean;
+    motionBlurAmount: number; // 0-1, default 0（内部映射到 motionStrength 0~1）
+    sharpenAmount: number; // 0-1, default 0（内部映射到 sharpen.edgeAmount）
+    glowEnabled: boolean;
+    glowIntensity: number; // 0-1, default 0（GlowLayer.intensity）
 }
 
 // ======== Renderer State (module-level) ========
@@ -53,6 +60,7 @@ let _outlineColor: [number, number, number] = [0, 0, 0];
 let _pipelineCamera: Camera | null = null;
 let _modelRegistry: Map<string, import('../../core/config').ModelInstance> | null = null;
 let _triggerAutoSave: (() => void) | null = null;
+let _glowLayer: GlowLayer | null = null;
 
 // ======== 数值钳制工具 ========
 
@@ -93,6 +101,10 @@ export function isRendererReady(): boolean {
 
 /** 释放渲染管线及相关资源。在场景销毁时调用。 */
 export function disposeRenderer(): void {
+    if (_glowLayer) {
+        _glowLayer.dispose();
+        _glowLayer = null;
+    }
     if (pipeline) {
         pipeline.dispose();
         pipeline = undefined;
@@ -132,6 +144,11 @@ export function getRenderState(): RenderState {
         chromaticAberrationAmount: pipeline.chromaticAberration ? clamp(pipeline.chromaticAberration.aberrationAmount / 8, 0, 1) : 0,
         grainEnabled: pipeline.grainEnabled ?? false,
         grainIntensity: pipeline.grain ? clamp(pipeline.grain.intensity / 50, 0, 1) : 0,
+        motionBlurEnabled: pipeline.motionBlurEnabled ?? false,
+        motionBlurAmount: pipeline.motionBlur ? clamp(pipeline.motionBlur.motionStrength, 0, 1) : 0,
+        sharpenAmount: pipeline.sharpen ? clamp(pipeline.sharpen.edgeAmount, 0, 1) : 0,
+        glowEnabled: _glowLayer !== null && _glowLayer.intensity > 0,
+        glowIntensity: _glowLayer ? clamp(_glowLayer.intensity, 0, 1) : 0,
     };
 }
 
@@ -156,6 +173,11 @@ function _defaultRenderState(): RenderState {
         chromaticAberrationAmount: 0,
         grainEnabled: false,
         grainIntensity: 0,
+        motionBlurEnabled: false,
+        motionBlurAmount: 0,
+        sharpenAmount: 0,
+        glowEnabled: false,
+        glowIntensity: 0,
     };
 }
 
@@ -181,6 +203,9 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const vd = s.vignetteDarkness !== undefined ? clamp(s.vignetteDarkness, 0, 1) : undefined;
     const ca = s.chromaticAberrationAmount !== undefined ? clamp(s.chromaticAberrationAmount, 0, 1) : undefined;
     const gi = s.grainIntensity !== undefined ? clamp(s.grainIntensity, 0, 1) : undefined;
+    const mb = s.motionBlurAmount !== undefined ? clamp(s.motionBlurAmount, 0, 1) : undefined;
+    const sa = s.sharpenAmount !== undefined ? clamp(s.sharpenAmount, 0, 1) : undefined;
+    const gl = s.glowIntensity !== undefined ? clamp(s.glowIntensity, 0, 1) : undefined;
 
     // Post-processing
     if (s.bloomEnabled !== undefined) {
@@ -266,6 +291,39 @@ function _applyRenderState(s: Partial<RenderState>): void {
         pipeline.grain.intensity = gi * 50;
     }
 
+    // Motion Blur
+    if (s.motionBlurEnabled !== undefined) {
+        pipeline.motionBlurEnabled = s.motionBlurEnabled;
+    }
+    if (mb !== undefined && pipeline.motionBlur) {
+        pipeline.motionBlur.motionStrength = mb;
+    }
+
+    // Sharpen
+    if (sa !== undefined && pipeline.sharpen) {
+        pipeline.sharpenEnabled = sa > 0;
+        pipeline.sharpen.edgeAmount = sa;
+    }
+
+    // GlowLayer + Bloom 互斥：Bloom weight > 0.5 时自动降低 Glow 强度防止白出
+    if (s.glowEnabled !== undefined || gl !== undefined) {
+        const targetGlow = gl ?? (_glowLayer ? _glowLayer.intensity : 0);
+        const bloomW = pipeline.bloomWeight ?? 0;
+        const adjustedGlow = bloomW > 0.5 ? targetGlow * (1 - (bloomW - 0.5)) : targetGlow;
+        if (s.glowEnabled !== undefined) {
+            if (s.glowEnabled && !_glowLayer && _scene) {
+                _glowLayer = new GlowLayer('glow', _scene, { blurKernelSize: 32 });
+                _glowLayer.intensity = adjustedGlow;
+            } else if (!s.glowEnabled && _glowLayer) {
+                _glowLayer.dispose();
+                _glowLayer = null;
+            }
+        }
+        if (_glowLayer && gl !== undefined) {
+            _glowLayer.intensity = adjustedGlow;
+        }
+    }
+
     // Stage / imageProcessing
     if (pipeline.imageProcessing) {
         if (s.toneMapping !== undefined) {
@@ -323,6 +381,9 @@ export function transitionRenderState(
         'vignetteDarkness',
         'chromaticAberrationAmount',
         'grainIntensity',
+        'motionBlurAmount',
+        'sharpenAmount',
+        'glowIntensity',
     ];
     // 颜色字段列表（逐通道 lerp）
     const colorKeys: (keyof RenderState)[] = ['outlineColor'];
@@ -335,6 +396,8 @@ export function transitionRenderState(
         'vignetteEnabled',
         'chromaticAberrationEnabled',
         'grainEnabled',
+        'motionBlurEnabled',
+        'glowEnabled',
     ];
     // 枚举字段（动画结束时切换）
     const enumKeys: (keyof RenderState)[] = ['toneMapping'];
@@ -366,6 +429,9 @@ export function transitionRenderState(
                 return t >= 0.3;
             }
             if (key === 'chromaticAberrationEnabled' || key === 'grainEnabled') {
+                return t >= 0.3;
+            }
+            if (key === 'motionBlurEnabled' || key === 'glowEnabled') {
                 return t >= 0.3;
             }
             // outline / fxaa 无关联数值，延迟到 80%

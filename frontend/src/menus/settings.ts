@@ -44,8 +44,7 @@ import {
     librarySortMode,
     setLibrarySortMode,
 } from '../core/config';
-import { SlideMenu } from './menu';
-import { showPopupMenu } from './menu-factory';
+import { registerPopupMenu } from './menu-factory';
 import { selectResourceRoot, selectOverridePath } from './library-core';
 import { slideRow, addToggleRow } from '../core/ui-helpers';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
@@ -61,7 +60,19 @@ import { buildSettingsSoftwareLevel, buildSoftwareDetailLevel } from './settings
 
 // ======== Settings (SlideMenu) ========
 
-let settingsMenu: SlideMenu | null = null;
+const { getMenu: getSettingsMenu, refreshRoot: refreshSettingsRoot, show: showSettings } = registerPopupMenu({
+    wrapperKey: 'settings-menu',
+    popupType: 'settings',
+    overlayClass: 'sceneOverlay-settings',
+    buildRoot: () => buildSettingsRoot(),
+    buildRootItems: () => buildSettingsRootItems(),
+    handlers: {
+        onItemClick: (row) => handleSettingsAction(row),
+        onFolderEnter: settingsOnFolderEnter,
+    },
+});
+
+export { getSettingsMenu, refreshSettingsRoot, showSettings };
 
 /** 设置弹窗根级 items 构建器——items-based，支持增量 patch */
 function buildSettingsRootItems(): PopupRow[] {
@@ -96,16 +107,6 @@ function buildSettingsRoot(): PopupLevel {
     };
 }
 
-/** 重新计算根级 items 并触发 reRender（自动导入开关等状态变化后调用）。 */
-export function refreshSettingsRoot(): void {
-    if (!settingsMenu) return;
-    const root = settingsMenu.getLevel(0);
-    if (root) {
-        root.items = buildSettingsRootItems();
-        settingsMenu.reRender();
-    }
-}
-
 function buildSettingsDisplayLevel(): PopupLevel {
     return {
         label: '显示',
@@ -121,7 +122,7 @@ function buildSettingsDisplayLevel(): PopupLevel {
                     true,
                     () => {
                         setLibrarySortMode(librarySortMode === 'name' ? 'default' : 'name');
-                        settingsMenu.reRender();
+                        getSettingsMenu()?.reRender();
                     }
                 );
             });
@@ -153,7 +154,7 @@ function buildSettingsDisplayLevel(): PopupLevel {
                             delete uiState.materialCategoryMap;
                         }
                         setUIState({ materialCategoryMap: uiState.materialCategoryMap });
-                        settingsMenu.reRender();
+                        getSettingsMenu()?.reRender();
                     });
                     c.appendChild(row);
                 }
@@ -186,7 +187,7 @@ function buildSettingsDisplayLevel(): PopupLevel {
                     }
                     uiState.materialCategoryMap[pattern] = category;
                     setUIState({ materialCategoryMap: uiState.materialCategoryMap });
-                    settingsMenu.reRender();
+                    getSettingsMenu()?.reRender();
                 });
                 c.appendChild(addRow);
             });
@@ -234,7 +235,7 @@ function buildSettingsDisplayLevel(): PopupLevel {
                         delete uiState.materialCategoryMap;
                     }
                     setUIState({ materialCategoryMap: uiState.materialCategoryMap });
-                    settingsMenu.reRender();
+                    getSettingsMenu()?.reRender();
                 });
                 mapCard.insertBefore(row, addRow);
             }
@@ -321,7 +322,7 @@ function buildSettingsUILevel(): PopupLevel {
                     row.addEventListener('click', () => {
                         document.documentElement.style.setProperty('--font', f.css);
                         SetUIFontFamily(key).catch(() => {});
-                        settingsMenu?.reRender();
+                        getSettingsMenu()?.reRender();
                         setStatus(`✓ 字体已设为 ${f.label}`, true);
                     });
                     c.appendChild(row);
@@ -392,7 +393,7 @@ function buildSettingsUILevel(): PopupLevel {
                     SetDisplayNamePriority('filename').catch(() => {});
                     setPerformanceMode('auto');
                     SetPerformanceMode('auto').catch(() => {});
-                    settingsMenu?.reRender();
+                    getSettingsMenu()?.reRender();
                     setStatus('✓ 设置已恢复默认', true);
                 });
                 c.appendChild(resetRow);
@@ -600,7 +601,7 @@ async function setTheme(hex: string): Promise<void> {
     } catch {
         setStatus('✗ 主题色保存失败', false);
     }
-    settingsMenu.reRender();
+    getSettingsMenu()?.reRender();
 }
 
 const FONT_MAP: Record<string, { label: string; css: string }> = {
@@ -766,7 +767,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                             try {
                                 await RenameExternalPath(ep.path, newName.trim());
                                 await reloadConfig();
-                                settingsMenu.reRender();
+                                getSettingsMenu()?.reRender();
                                 setStatus('✓ 已重命名', true);
                             } catch {
                                 setStatus('✗ 重命名失败', false);
@@ -780,7 +781,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                             if (libraryRoot) {
                                 await rescanAndSync();
                             }
-                            settingsMenu.reRender();
+                            getSettingsMenu()?.reRender();
                         } catch (err) {
                             console.error('RemoveExternalPath error:', err);
                         }
@@ -801,7 +802,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                         if (libraryRoot) {
                             await rescanAndSync();
                         }
-                        settingsMenu.reRender();
+                        getSettingsMenu()?.reRender();
                         setStatus('✓ 外部库已添加', true);
                     } catch (err) {
                         console.error('AddExternalPath error:', err);
@@ -839,7 +840,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                         try {
                             await RenameExternalPath(ep.path, newName.trim());
                             await reloadConfig();
-                            settingsMenu.reRender();
+                            getSettingsMenu()?.reRender();
                             setStatus('✓ 已重命名', true);
                         } catch {
                             setStatus('✗ 重命名失败', false);
@@ -853,7 +854,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                         if (libraryRoot) {
                             await rescanAndSync();
                         }
-                        settingsMenu.reRender();
+                        getSettingsMenu()?.reRender();
                     } catch (err) {
                         console.error('RemoveExternalPath error:', err);
                     }
@@ -992,7 +993,7 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                     row.addEventListener('click', () => {
                         setPerformanceMode(m.key);
                         SetPerformanceMode(m.key).catch(() => {});
-                        settingsMenu.reRender();
+                        getSettingsMenu()?.reRender();
                         setStatus(`✓ 性能模式: ${m.label}`, true);
                     });
                     c.appendChild(row);
@@ -1039,35 +1040,4 @@ function settingsOnFolderEnter(row: PopupRow): PopupLevel | null {
     }
 }
 
-/** 每次 show 时注册 window 全局引用（onClose 会清空它们） */
-function registerSettingsGlobals(menu: SlideMenu): void {
-    (window as any).__getSettingsMenuPush = () => menu?.push.bind(menu);
-    (window as any).__getSettingsMenuPop = () => menu?.pop.bind(menu);
-    (window as any).__getSettingsMenuReRender = () => menu?.reRender.bind(menu);
-    (window as any).__handleSettingsAction = handleSettingsAction;
-}
 
-/** 关闭时清空 window 全局引用 */
-function unregisterSettingsGlobals(): void {
-    (window as any).__getSettingsMenuPush = null;
-    (window as any).__getSettingsMenuPop = null;
-    (window as any).__getSettingsMenuReRender = null;
-    (window as any).__handleSettingsAction = null;
-}
-
-export async function showSettings(): Promise<void> {
-    showPopupMenu({
-        getMenu: () => settingsMenu,
-        setMenu: (m) => { settingsMenu = m; },
-        wrapperKey: 'settings-menu',
-        popupType: 'settings',
-        overlayClass: 'sceneOverlay-settings',
-        buildRoot: buildSettingsRoot,
-        handlers: {
-            onItemClick: (row) => handleSettingsAction(row),
-            onFolderEnter: settingsOnFolderEnter,
-        },
-        onShow: (menu) => registerSettingsGlobals(menu),
-        onClose: () => unregisterSettingsGlobals(),
-    });
-}

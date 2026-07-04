@@ -20,11 +20,8 @@ export interface PopupMenuHandlers {
     extraButtonFactory?: () => HTMLElement[];
 }
 
-export interface PopupMenuConfig {
-    /** 菜单引用 getter（返回当前实例或 null） */
-    getMenu: () => SlideMenu | null;
-    /** 菜单引用 setter（首次创建时注入新实例） */
-    setMenu: (m: SlideMenu | null) => void;
+/** 注册式菜单配置——工厂内部维护引用，返回 handle */
+export interface RegisteredPopupMenuConfig {
     /** wrapper DOM id（传给 getMenuWrapper） */
     wrapperKey: string;
     /** dataset.popupType 值 */
@@ -33,28 +30,120 @@ export interface PopupMenuConfig {
     overlayClass?: string;
     /** 根级构建器 */
     buildRoot: () => PopupLevel;
+    /** 根级 items 构建器（用于 refreshRoot） */
+    buildRootItems?: () => PopupRow[];
     /** 业务回调 */
     handlers: PopupMenuHandlers;
     /**
-     * 实例创建后的副作用钩子（如 settings 用来注册 window.__getSettingsMenuPush 等全局引用）。
-     * 每次 show 都会调用——因为 onClose 可能清空引用，需要在每次显示时重新注册。
+     * 每次 show 时调用的副作用钩子（如注册全局引用）。
+     * 每次 show 都会调用——因为 onClose 可能清空引用。
      */
     onShow?: (menu: SlideMenu) => void;
     /**
-     * 关闭前的副作用钩子（如 settings 用来清空 window 全局引用）。
+     * 关闭前的副作用钩子（如清空全局引用）。
      * 在 closeAllOverlays() 之前调用。
      */
     onClose?: () => void;
 }
 
+/** 注册后的菜单句柄——提供 get/refresh 能力 */
+export interface PopupMenuHandle {
+    /** 获取当前菜单实例（可能为 null） */
+    getMenu: () => SlideMenu | null;
+    /** 重新计算根级 items 并触发 reRender */
+    refreshRoot: () => void;
+    /** 显示菜单（内部调用 showPopupMenu） */
+    show: () => void;
+}
+
 /**
- * 统一弹窗入口：替代各 showXxxMenu 中 16~60 行的模板代码。
+ * 注册弹窗菜单——工厂内部维护引用，返回统一的 handle。
  *
- * 模板流程：
- * 1. 清理 dom.sceneOverlay 的 class，加 overlayClass（可选），设 dataset.popupType
- * 2. 取 wrapper；若菜单已存在 → resetToRoot + reRender + onShow，返回
- * 3. 否则 new SlideMenu → setMenu 注入 → onShow → reset(buildRoot())
+ * 相比 showPopupMenu，此模式：
+ * 1. 内部维护 menu 引用，不需要调用方声明 let xxxMenu
+ * 2. 返回 getMenu/refreshRoot，所有菜单统一暴露能力
+ * 3. onClose 时自动清空引用
+ *
+ * @example
+ * const { getMenu, refreshRoot, show } = registerPopupMenu({
+ *     wrapperKey: 'settings-menu',
+ *     popupType: 'settings',
+ *     buildRoot: buildSettingsRoot,
+ *     buildRootItems: buildSettingsRootItems,
+ *     handlers: { onItemClick, onFolderEnter },
+ * });
+ * export { getMenu as getSettingsMenu, refreshRoot as refreshSettingsRoot };
  */
+export function registerPopupMenu(config: RegisteredPopupMenuConfig): PopupMenuHandle {
+    let menu: SlideMenu | null = null;
+
+    const getMenu = (): SlideMenu | null => menu;
+
+    const refreshRoot = (): void => {
+        if (!menu) return;
+        const root = menu.getLevel(0);
+        if (root && config.buildRootItems) {
+            root.items = config.buildRootItems();
+            menu.reRender();
+        }
+    };
+
+    const show = (): void => {
+        dom.sceneOverlay.classList.remove(
+            'sceneOverlay-model',
+            'sceneOverlay-motion',
+            'sceneOverlay-settings'
+        );
+        if (config.overlayClass) {
+            dom.sceneOverlay.classList.add(config.overlayClass);
+        }
+        dom.sceneOverlay.dataset.popupType = config.popupType;
+
+        const wrapper = getMenuWrapper(config.wrapperKey);
+        if (menu) {
+            config.onShow?.(menu);
+            menu.resetToRoot();
+            menu.reRender();
+            return;
+        }
+
+        const newMenu = new SlideMenu({
+            container: wrapper,
+            onClose: () => {
+                config.onClose?.();
+                menu = null;
+                closeAllOverlays();
+            },
+            onItemClick: config.handlers.onItemClick,
+            onFolderEnter: config.handlers.onFolderEnter,
+            onHover: config.handlers.onHover,
+            onAfterRender: config.handlers.onAfterRender,
+            extraButtonFactory: config.handlers.extraButtonFactory,
+        });
+        menu = newMenu;
+        config.onShow?.(menu);
+        menu.reset(config.buildRoot());
+    };
+
+    return { getMenu, refreshRoot, show };
+}
+
+/**
+ * 轻量级弹窗入口：适用于不需要注册 handle 的一次性场景。
+ * 调用方自行维护菜单引用。
+ */
+export interface PopupMenuConfig {
+    getMenu: () => SlideMenu | null;
+    setMenu: (m: SlideMenu | null) => void;
+    wrapperKey: string;
+    popupType: string;
+    overlayClass?: string;
+    buildRoot: () => PopupLevel;
+    handlers: PopupMenuHandlers;
+    onShow?: (menu: SlideMenu) => void;
+    onClose?: () => void;
+}
+
 export function showPopupMenu(config: PopupMenuConfig): void {
     dom.sceneOverlay.classList.remove(
         'sceneOverlay-model',

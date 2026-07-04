@@ -45,6 +45,8 @@ interface LevelConfig {
     outlineEnabled: boolean;
     chromaticAberrationEnabled: boolean;
     grainEnabled: boolean;
+    motionBlurEnabled: boolean;
+    glowEnabled: boolean;
     label: string;
 }
 
@@ -59,6 +61,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         outlineEnabled: true,
         chromaticAberrationEnabled: true,
         grainEnabled: true,
+        motionBlurEnabled: true,
+        glowEnabled: true,
         label: '正常',
     },
     1: {
@@ -71,6 +75,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         outlineEnabled: true,
         chromaticAberrationEnabled: false,
         grainEnabled: false,
+        motionBlurEnabled: false,
+        glowEnabled: false,
         label: '轻度降级',
     },
     2: {
@@ -83,6 +89,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         outlineEnabled: true,
         chromaticAberrationEnabled: false,
         grainEnabled: false,
+        motionBlurEnabled: false,
+        glowEnabled: false,
         label: '中度降级',
     },
     3: {
@@ -95,6 +103,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         outlineEnabled: false,
         chromaticAberrationEnabled: false,
         grainEnabled: false,
+        motionBlurEnabled: false,
+        glowEnabled: false,
         label: '重度降级',
     },
 };
@@ -132,6 +142,12 @@ function levelDiff(
     }
     if (prev.grainEnabled !== next.grainEnabled) {
         render.grainEnabled = next.grainEnabled;
+    }
+    if (prev.motionBlurEnabled !== next.motionBlurEnabled) {
+        render.motionBlurEnabled = next.motionBlurEnabled;
+    }
+    if (prev.glowEnabled !== next.glowEnabled) {
+        render.glowEnabled = next.glowEnabled;
     }
     return { light, render };
 }
