@@ -534,7 +534,8 @@ export function SelectAudioFile(): $CancellablePromise<string> {
 /**
  * SelectDir opens a directory picker dialog.
  * On Android, native directory picker is not available in Wails 3 alpha;
- * returns the default storage path as a starting point.
+ * returns the default resource root (/sdcard/MMD) as the starting point.
+ * SAF-based directory selection will replace this in a future update.
  */
 export function SelectDir(): $CancellablePromise<string> {
     return $Call.ByID(1910889222);

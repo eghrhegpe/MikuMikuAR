@@ -81,7 +81,7 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 	dest := filepath.Join(cacheRoot, zipCacheName(zipPath))
 
 	// Stat source zip
-	srcInfo, err := os.Stat(zipPath)
+	srcInfo, err := fileAccessor.Stat(zipPath)
 	if err != nil {
 		return nil, util.WrapError(op, fmt.Errorf("压缩包无法访问: %w", err))
 	}
@@ -205,7 +205,7 @@ func (a *App) CleanOrphanCache() (int, error) {
 		if json.Unmarshal(data, &m) != nil {
 			continue
 		}
-		if _, err := os.Stat(m.Source); os.IsNotExist(err) {
+		if _, err := fileAccessor.Stat(m.Source); os.IsNotExist(err) {
 			os.RemoveAll(filepath.Join(cacheRoot, entry.Name()))
 			cleaned++
 			a.safeLogInfo("CleanOrphanCache: removed %s (source %s gone)", entry.Name(), m.Source)
@@ -491,7 +491,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 func basenameFallbackFS(root string, logFn func(string, ...interface{})) http.Handler {
 	// Build basename index: lowercase basename → first real path found
 	index := make(map[string]string)
-	filepath.WalkDir(root, func(walkPath string, d os.DirEntry, err error) error {
+	fileAccessor.WalkDir(root, func(walkPath string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return nil
 		}

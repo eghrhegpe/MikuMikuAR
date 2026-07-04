@@ -185,6 +185,8 @@ UI 渲染架构革命：从全量重建到增量 patch，议会三路分流，20
 |----|------|------|
 | 1 | 议会的三路分流 | [vol-10-incremental-republic/01-议会的三路分流.md](vol-10-incremental-republic/01-议会的三路分流.md) |
 | 2 | 城邦的户籍重划 | [vol-10-incremental-republic/02-城邦的户籍重划.md](vol-10-incremental-republic/02-城邦的户籍重划.md) |
+| 3 | 灯塔的觉醒 | [vol-10-incremental-republic/03-灯塔的觉醒.md](vol-10-incremental-republic/03-灯塔的觉醒.md) |
+| 3 | 光的七宗罪 | [vol-10-incremental-republic/03-光的七宗罪.md](vol-10-incremental-republic/03-光的七宗罪.md) |
 
 ---
 

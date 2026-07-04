@@ -117,7 +117,7 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 		extSet[strings.ToLower(e)] = true
 	}
 
-	err := filepath.WalkDir(dir, func(walkPath string, d os.DirEntry, err error) error {
+	err := fileAccessor.WalkDir(dir, func(walkPath string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil // skip inaccessible paths
 		}
@@ -203,7 +203,7 @@ func (a *App) LoadOutfitFile(pmxPath string) (string, error) {
 
 // ListSubDirs returns first-level subdirectory names under the given directory.
 func (a *App) ListSubDirs(dirPath string) ([]string, error) {
-	entries, err := os.ReadDir(dirPath)
+	entries, err := fileAccessor.ReadDir(dirPath)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (a *App) scanSingleRoot(root string, source string) []ModelEntry {
 	// Compute thumbnail dir once for HasThumb checks
 	thumbDir, _ := thumbnailDir()
 
-	topEntries, err := os.ReadDir(root)
+	topEntries, err := fileAccessor.ReadDir(root)
 	if err != nil {
 		a.safeLogWarning("scanSingleRoot: skipping %s: %v", root, err)
 		return nil
@@ -263,7 +263,7 @@ func (a *App) scanSingleRoot(root string, source string) []ModelEntry {
 func scanDirRecursive(dir string, category string, entryType string, thumbDir string) []ModelEntry {
 	var models []ModelEntry
 
-	filepath.WalkDir(dir, func(walkPath string, d os.DirEntry, err error) error {
+	fileAccessor.WalkDir(dir, func(walkPath string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil // skip inaccessible paths
 		}

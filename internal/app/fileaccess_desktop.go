@@ -4,6 +4,7 @@ package app
 
 import (
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -27,5 +28,14 @@ func (d *desktopFileAccessor) ReadDir(path string) ([]os.DirEntry, error) {
 	return os.ReadDir(path)
 }
 
-func (d *desktopFileAccessor) WalkDir(root string, fn filepath.WalkDirFunc) error {
-	return filepath.WalkDir(root,
+func (d *desktopFileAccessor) WalkDir(root string, fn fs.WalkDirFunc) error {
+	return filepath.WalkDir(root, fn)
+}
+
+func (d *desktopFileAccessor) Abs(path string) (string, error) {
+	return filepath.Abs(path)
+}
+
+func init() {
+	fileAccessor = newFileAccessor()
+}

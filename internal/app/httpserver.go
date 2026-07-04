@@ -66,10 +66,10 @@ func isolateDir(filePath string, logFn func(string, ...interface{})) (string, er
 
 	// Copy ALL sibling files and subdirectories (not just dirs — many models
 	// have textures like face.bmp sitting next to the .pmx file)
-	entries, err := os.ReadDir(srcDir)
+	entries, err := fileAccessor.ReadDir(srcDir)
 	if err != nil {
 		if logFn != nil && isAndroid {
-			logFn("isolateDir: os.ReadDir(%s) failed: %v [android: sibling scan skipped, only main file served]", srcDir, err)
+			logFn("isolateDir: ReadDir(%s) failed: %v [android: sibling scan skipped, only main file served]", srcDir, err)
 		}
 		return dstDir, nil
 	}
@@ -91,7 +91,7 @@ func copyFile(src, dst string) error {
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 		return err
 	}
-	in, err := os.Open(src)
+	in, err := fileAccessor.Open(src)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func copyFile(src, dst string) error {
 }
 
 func copyDir(src, dst string, logFn func(string, ...interface{})) error {
-	return filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error {
+	return fileAccessor.WalkDir(src, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			if logFn != nil {
 				logFn("copyDir: walk error at %s: %v", path, err)
