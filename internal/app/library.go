@@ -417,11 +417,31 @@ func (a *App) updateConfig(mutate func(*Config), rescan bool) error {
 	return a.writeConfig(cfg)
 }
 
-// SetResourceRoot persists the resource root path and triggers a rescan+reindex.
+// SetResourceRoot persists the resource root path, initialises all category
+// override paths to their default subdirectories, and triggers a rescan+reindex.
 func (a *App) SetResourceRoot(root string) error {
 	return a.updateConfig(func(cfg *Config) {
 		cfg.ResourceRoot = root
 		cfg.LibraryRoot = "" // clear old field
+		// Atomically set default override paths for all categories
+		if cfg.OverridePaths.PMX == "" {
+			cfg.OverridePaths.PMX = filepath.Join(root, "PMX")
+		}
+		if cfg.OverridePaths.VMD == "" {
+			cfg.OverridePaths.VMD = filepath.Join(root, "VMD")
+		}
+		if cfg.OverridePaths.Stage == "" {
+			cfg.OverridePaths.Stage = filepath.Join(root, "stage")
+		}
+		if cfg.OverridePaths.Environment == "" {
+			cfg.OverridePaths.Environment = filepath.Join(root, "environment")
+		}
+		if cfg.OverridePaths.MDDress == "" {
+			cfg.OverridePaths.MDDress = filepath.Join(root, "MD-dress")
+		}
+		if cfg.OverridePaths.Setting == "" {
+			cfg.OverridePaths.Setting = filepath.Join(root, "setting")
+		}
 	}, true)
 }
 
