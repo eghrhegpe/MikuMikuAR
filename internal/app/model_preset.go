@@ -181,7 +181,7 @@ func (a *App) RenameModelPreset(oldName, newName string) error {
 // writeConfig persists only the config JSON (no rescan). Use for settings changes
 // that don't affect the model index (e.g. Blender path).
 func (a *App) writeConfig(cfg *Config) error {
-	dir, err := configDir()
+	dir, err := settingDir(cfg)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (a *App) writeConfigAndRescan(cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	dir, err := configDir()
+	dir, err := settingDir(cfg)
 	if err != nil {
 		return err
 	}
@@ -216,6 +216,16 @@ func (a *App) writeConfigAndRescan(cfg *Config) error {
 
 // GetLibraryIndex reads the last scanned index from disk.
 func (a *App) GetLibraryIndex() ([]ModelEntry, error) {
+	// Try setting/ subdirectory first
+	cfg, _ := a.GetConfig()
+	sd, sErr := settingDir(cfg)
+	if sErr == nil {
+		data, rErr := os.ReadFile(filepath.Join(sd, "index.json"))
+		if rErr == nil {
+			return a.parseLibraryIndex(data)
+		}
+	}
+	// Fallback: AppData
 	dir, err := configDir()
 	if err != nil {
 		return nil, err
@@ -224,12 +234,14 @@ func (a *App) GetLibraryIndex() ([]ModelEntry, error) {
 	if err != nil {
 		return nil, err
 	}
+	return a.parseLibraryIndex(data)
+}
+
+func (a *App) parseLibraryIndex(data []byte) ([]ModelEntry, error) {
 	var models []ModelEntry
 	if err := json.Unmarshal(data, &models); err != nil {
 		return nil, err
 	}
-	// Filter out entries with empty FilePath — they come from old index.json
-	// that still used "pmx_path" as the JSON key before the rename.
 	valid := models[:0]
 	for _, m := range models {
 		if m.PMXPath != "" {
