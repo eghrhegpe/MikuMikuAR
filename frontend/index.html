@@ -10,12 +10,22 @@
         (function() {
             var el = document.createElement('div');
             el.id = 'diag-error';
-            el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1a2e;color:#ff6b6b;font:13px monospace;padding:16px;white-space:pre-wrap;word-break:break-word;max-height:100vh;overflow:auto;';
+            el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1a2e;color:#ff6b6b;font:13px monospace;padding:16px;white-space:pre-wrap;word-break:break-word;max-height:100vh;overflow:auto;display:none;';
+            // 关闭按钮（sticky 不随滚动消失）
+            var closeBtn = document.createElement('span');
+            closeBtn.textContent = '\u2715 \u5173\u95ED';
+            closeBtn.style.cssText = 'position:sticky;top:0;float:right;cursor:pointer;font-size:12px;color:#ff6b6b;background:#1a1a2e;padding:2px 6px;border-radius:4px;user-select:none;';
+            closeBtn.addEventListener('click', function() { el.style.display = 'none'; });
+            el.appendChild(closeBtn);
+            // 错误文本容器（与关闭按钮分离，避免 textContent 覆盖）
+            var textEl = document.createElement('div');
+            textEl.style.cssText = 'margin-top:8px;';
+            el.appendChild(textEl);
             (document.body || document.documentElement).appendChild(el);
             function show(e) {
                 var msg = e && e.message ? e.message : String(e);
                 if (e && e.stack) msg += '\n' + e.stack.split('\n').slice(0,5).join('\n');
-                el.textContent += (el.textContent ? '\n---\n' : '') + msg;
+                textEl.textContent += (textEl.textContent ? '\n---\n' : '') + msg;
                 el.style.display = 'block';
             }
             window.onerror = function(msg, url, line, col, err) { show(err || msg); return true; };

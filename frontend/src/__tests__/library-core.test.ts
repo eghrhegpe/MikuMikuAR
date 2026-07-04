@@ -50,7 +50,6 @@ vi.mock('../core/wails-bindings', () => ({
 
 vi.mock('./model-detail', () => ({ buildModelDetailLevel: vi.fn() }));
 vi.mock('../menus/scene-menu', () => ({ buildStageTransformLevel: vi.fn() }));
-vi.mock('./motion-popup', () => ({ buildDanceSetDetailLevel: vi.fn(), loadDanceSets: vi.fn() }));
 vi.mock('./menu', () => ({ SlideMenu: vi.fn() }));
 vi.mock('../core/icons', () => ({ createIconifyIcon: vi.fn(() => null) }));
 vi.mock('../core/ui-helpers', () => ({

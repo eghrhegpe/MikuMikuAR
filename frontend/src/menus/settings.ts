@@ -13,6 +13,7 @@ import {
     ClearThumbnailCache,
     SetDownloadWatchDir,
     SetDownloadAutoImport,
+    GetDownloadAutoImport,
     GetDownloadWatchStatus,
     StopWatchDir,
     SetUIScale,
@@ -58,6 +59,19 @@ export { refreshLibrary } from './library';
 // ======== Software Management (external) ========
 import { buildSettingsSoftwareLevel, buildSoftwareDetailLevel } from './settings-software';
 
+// ======== Auto-import state cache ========
+// buildRootItems 是同步签名，无法内部 await；用模块级缓存 + 启动预加载。
+let autoImportCached = false;
+
+/** 启动时预加载自动导入开关状态。在 main.ts init 中调用。 */
+export async function preloadAutoImportState(): Promise<void> {
+    try {
+        autoImportCached = await GetDownloadAutoImport();
+    } catch {
+        autoImportCached = false;
+    }
+}
+
 // ======== Settings (SlideMenu) ========
 
 const { getMenu: getSettingsMenu, refreshRoot: refreshSettingsRoot, show: showSettings } = registerPopupMenu({
@@ -82,10 +96,11 @@ function buildSettingsRootItems(): PopupRow[] {
     items.push({
         kind: 'folder', label: '自动导入', icon: 'lucide:download', target: 'settings:download',
         headerToggle: {
-            value: false,
+            value: autoImportCached,
             onChange: async (v) => {
                 try {
                     await SetDownloadAutoImport(v);
+                    autoImportCached = v; // 同步缓存，避免重开弹窗时回退
                     setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
                 } catch {
                     setStatus('✗ 设置失败', false);
@@ -125,6 +140,27 @@ function buildSettingsDisplayLevel(): PopupLevel {
                         getSettingsMenu()?.reRender();
                     }
                 );
+            });
+            // 显示名称优先级
+            cardContainer(container, (c) => {
+                addSectionTitle(c, '显示名称优先级');
+                const options: Array<[DisplayNamePriority, string]> = [
+                    ['name_jp', '日语名'],
+                    ['name_en', '英语名'],
+                    ['filename', '文件名'],
+                ];
+                for (const [key, label] of options) {
+                    const isActive = displayNamePriority === key;
+                    const row = document.createElement('div');
+                    row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
+                    row.dataset.namePriority = key;
+                    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check-circle' : 'circle'}"></iconify-icon></span><span class="slide-label">${label}</span>`;
+                    row.addEventListener('click', () => {
+                        applyDisplayNamePriority(key);
+                        getSettingsMenu()?.reRender();
+                    });
+                    c.appendChild(row);
+                }
             });
             // 材质分类映射
             cardContainer(container, (c) => {
@@ -199,7 +235,17 @@ function buildSettingsDisplayLevel(): PopupLevel {
                 }
             }
 
-            // 2. 材质映射列表：重建 data-map-card 内的映射行（保留 title 和 add 行）
+            // 2. 显示名称优先级：更新选中态图标 + class
+            const nameRows = container.querySelectorAll<HTMLElement>('[data-name-priority]');
+            nameRows.forEach((row) => {
+                const key = row.dataset.namePriority as DisplayNamePriority;
+                const isActive = displayNamePriority === key;
+                row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
+                const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
+                if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
+            });
+
+            // 3. 材质映射列表：重建 data-map-card 内的映射行（保留 title 和 add 行）
             const mapCard = container.querySelector<HTMLElement>('[data-map-card]');
             if (!mapCard) return;
             const addRow = mapCard.querySelector<HTMLElement>('[data-map-add]');
@@ -488,18 +534,21 @@ function generateTextColors(hex: string): { bright: string; dim: string; muted: 
     const rgb = hexToRgb(hex);
     const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
 
-    const mix = (target: number) => {
-        const factor = target / 255;
-        const r = Math.round(rgb.r * factor + 255 * (1 - factor));
-        const g = Math.round(rgb.g * factor + 255 * (1 - factor));
-        const b = Math.round(rgb.b * factor + 255 * (1 - factor));
+    // factor 直接作为混合比例：0 = 纯白，1 = 纯主题色
+    // 亮主题（brightness>128）→ 文字偏暗 → factor 大（更多主题色）
+    // 暗主题 → 文字偏亮 → factor 小（更多白）
+    const mix = (factor: number) => {
+        const f = Math.max(0, Math.min(1, factor));
+        const r = Math.round(rgb.r * f + 255 * (1 - f));
+        const g = Math.round(rgb.g * f + 255 * (1 - f));
+        const b = Math.round(rgb.b * f + 255 * (1 - f));
         return `rgb(${r}, ${g}, ${b})`;
     };
 
     return {
-        bright: mix(brightness > 128 ? 0.15 : 0.1),
-        dim: mix(brightness > 128 ? 0.3 : 0.2),
-        muted: mix(brightness > 128 ? 0.45 : 0.35),
+        bright: mix(brightness > 128 ? 0.85 : 0.1),
+        dim: mix(brightness > 128 ? 0.6 : 0.25),
+        muted: mix(brightness > 128 ? 0.4 : 0.4),
     };
 }
 
@@ -626,7 +675,6 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
             }
         })();
     },
-    'set:libraryroot': () => selectResourceRoot().catch(console.warn),
     'set:resourceroot': () => selectResourceRoot().catch(console.warn),
     'set:path:pmx': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
     'set:path:vmd': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
@@ -634,24 +682,6 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     'set:path:environment': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
     'set:path:md_dress': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
     'set:path:setting': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
-    'set:addexternal': () => {
-        (async () => {
-            try {
-                const dir = await SelectDir();
-                if (!dir) {
-                    return;
-                }
-                await AddExternalPath(dir);
-                await reloadConfig();
-                if (libraryRoot) {
-                    await rescanAndSync();
-                }
-                setStatus('✓ 外部库已添加', true);
-            } catch (err) {
-                console.error('AddExternalPath error:', err);
-            }
-        })();
-    },
 };
 
 function applyDisplayNamePriority(priority: DisplayNamePriority): void {
@@ -802,7 +832,7 @@ function buildSettingsExternalLevel(): PopupLevel {
 
 function buildSettingsDownloadLevel(): PopupLevel {
     return {
-        label: '下载',
+        label: '自动导入',
         dir: '',
         items: [],
         renderCustom: async (container) => {

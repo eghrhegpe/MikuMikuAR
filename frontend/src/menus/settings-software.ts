@@ -122,7 +122,7 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:plus', '添加自定义软件', false, async () => {
                     if (await addCustomSoftware()) {
-                        // refresh
+                        getSettingsMenu()?.reRender();
                     }
                 });
                 slideRow(c, 'lucide:search', '自动检测 MMD', false, () => detectMMD());

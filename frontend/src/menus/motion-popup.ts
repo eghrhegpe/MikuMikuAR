@@ -1,6 +1,6 @@
 // [doc:architecture] Motion Popup — 动作弹窗（核心 + barrel export）
 // 拆分后保留: 动作绑定/音乐/动作菜单/入口 + barrel re-export
-// 子文件: motion-dance-sets.ts, motion-cloth-levels.ts
+// 子文件: motion-cloth-levels.ts
 
 import {
     setStatus,
@@ -70,8 +70,6 @@ import { setEnvState } from '../scene/scene';
 import { buildClothParamsLevel } from './motion-cloth-levels';
 
 // ======== Barrel Re-Exports ========
-export type { DanceSet } from './motion-dance-sets';
-export { loadDanceSets, buildDanceSetDetailLevel } from './motion-dance-sets';
 export { buildClothParamsLevel } from './motion-cloth-levels';
 
 // ======== Build action model row and binding ========
@@ -102,21 +100,12 @@ function buildActionBindingLevel(id: string): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                const row = document.createElement('div');
-                row.className = 'slide-item';
-                row.innerHTML = `
-          <span class="slide-icon"><iconify-icon icon="lucide:music"></iconify-icon></span>
-          <span class="slide-label">更换动作</span>
-          <span class="slide-sublabel">${inst.vmdName || '无'}</span>
-          <span class="slide-arrow">&gt;</span>
-        `;
-                row.addEventListener('click', () => {
+                slideRow(c, 'lucide:music', '更换动作', true, () => {
                     setMotionBindingTargetId(id);
                     const level = stackRegistry.buildLevel!(libraryRoot, '动作库', (m) => m.format === 'vmd');
                     level.label = `绑定动作 → ${inst.name}`;
                     if (getMotionMenu()) getMotionMenu()?.push(level);
-                });
-                c.appendChild(row);
+                }, inst.vmdName || '无');
                 slideRow(c, 'lucide:user', '姿势库', true, () => {
                     const level = stackRegistry.buildLevel!(libraryRoot, '姿势库', (m) => m.format === 'vpd');
                     level.label = `姿势 → ${inst.name}`;
@@ -169,8 +158,18 @@ function buildActionBindingLevel(id: string): PopupLevel {
                 c.appendChild(group);
             });
         },
-        // 物理 toggle 自管理，VMD 清除/加载需要更新子标签 → 暂时跳过，后续可加针对性 sublabel 更新
-        reRenderCustom: () => {},
+        reRenderCustom: (container) => {
+            const currentInst = modelManager.get(id);
+            if (!currentInst) return;
+            const firstCard = container.querySelector('.card-container');
+            if (!firstCard) return;
+            const firstRow = firstCard.querySelector('.slide-item');
+            if (!firstRow) return;
+            const sublabelEl = firstRow.querySelector('.slide-sublabel');
+            if (sublabelEl) {
+                sublabelEl.textContent = currentInst.vmdName || '无';
+            }
+        },
     };
 }
 

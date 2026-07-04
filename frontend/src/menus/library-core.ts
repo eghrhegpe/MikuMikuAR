@@ -60,7 +60,6 @@ import {
 } from '../core/wails-bindings';
 import { buildModelDetailLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
-import { buildDanceSetDetailLevel, loadDanceSets } from './motion-popup';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
@@ -113,10 +112,6 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                                   },
                               ],
                 };
-            }
-            if (row.target && row.target.startsWith('__dance_set:')) {
-                const setId = row.target.replace('__dance_set:', '');
-                return buildDanceSetDetailLevel(setId);
             }
             if (row.target === '__tags__') {
                 return buildTagsOverviewLevel();
@@ -838,11 +833,6 @@ export async function initLibrary(): Promise<void> {
             }
         } catch (err) {
             console.warn('Load recent models:', err);
-        }
-        try {
-            await loadDanceSets();
-        } catch (err) {
-            console.warn('Load dance sets:', err);
         }
         try {
             const cached = await GetLibraryIndex();

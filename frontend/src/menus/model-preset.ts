@@ -247,7 +247,7 @@ function showUndoToast(message: string, undoFn: () => void): void {
     const toast = document.createElement('div');
     toast.id = 'preset-undo-toast';
     toast.style.cssText =
-        'position:fixed;bottom:48px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:8px 16px;display:flex;align-items:center;gap:12px;z-index:9999;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,0.3);';
+        'position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:8px 16px;display:flex;align-items:center;gap:12px;z-index:9999;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,0.3);';
     const msg = document.createElement('span');
     msg.textContent = message;
     toast.appendChild(msg);

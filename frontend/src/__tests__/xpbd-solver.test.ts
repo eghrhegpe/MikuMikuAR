@@ -260,4 +260,21 @@ describe('XpbdSolver edge cases', () => {
         // 软弹簧会产生明显伸长（比 restLength 1.0 长）
         expect(dy).toBeGreaterThan(1.0 + 0.01);
     });
+
+    it('getKineticEnergy returns zero for fixed particles', () => {
+        const solver = new XpbdSolver();
+        solver.addParticle([0, 0, 0], Infinity);
+        expect(solver.getKineticEnergy()).toBe(0);
+    });
+
+    it('getKineticEnergy returns positive value for moving particles', () => {
+        const solver = new XpbdSolver();
+        const idx = solver.addParticle([0, 0, 0], 1.0);
+        const p = solver.particles[idx];
+        p.v[1] = 5;
+        // Set prevP so step computes velocity correctly
+        p.prevP[1] = p.p[1] - p.v[1] * (1 / 60);
+        const ke = solver.getKineticEnergy();
+        expect(ke).toBeGreaterThan(0);
+    });
 });

@@ -22,7 +22,7 @@ import { setProcMotionBoneToggle, setProcMotionEyeTrackingEnabled, setProcMotion
 import { getProcMotionBoneCategories } from '../motion/procedural-motion';
 import { getMmdRuntimeType, setMmdRuntimeType } from '../core/config';
 import type { ProcMotionMode } from '../motion/procedural-motion';
-import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
+import { getMotionMenu } from './motion-popup';
 
 export function buildProcMotionLevel(): PopupLevel {
     const st = getProcMotionState();
@@ -53,7 +53,7 @@ export function buildProcMotionLevel(): PopupLevel {
                 }, 'lucide:repeat');
                 addToggleRow(c, 'LipSync', lipSt.enabled, (v) => {
                     setLipSyncEnabled(v);
-                    reRenderSceneMenu();
+                    getMotionMenu()?.reRender();
                 }, 'lucide:mic');
             });
             cardContainer(container, (c) => {
@@ -136,11 +136,11 @@ export function buildProcMotionLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addToggleRow(c, '眼部跟随', st.eyeTrackingEnabled, (v) => {
                     setProcMotionEyeTrackingEnabled(v);
-                    reRenderSceneMenu();
+                    getMotionMenu()?.reRender();
                 }, 'lucide:eye');
                 addToggleRow(c, '头部跟随', st.headTrackingEnabled, (v) => {
                     setProcMotionHeadTrackingEnabled(v);
-                    reRenderSceneMenu();
+                    getMotionMenu()?.reRender();
                 }, 'lucide:mouse-pointer-2');
             });
 
@@ -163,7 +163,7 @@ export function buildProcMotionLevel(): PopupLevel {
                                     : '切换到 WASM 物理模式将丢失当前场景并重新加载。继续？'
                             );
                             if (!ok) {
-                                reRenderSceneMenu();
+                                getMotionMenu()?.reRender();
                                 return;
                             }
                             setMmdRuntimeType(v);
