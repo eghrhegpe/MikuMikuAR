@@ -22,7 +22,10 @@ export async function resolveFileUrl(
     return { url, port, dir: safeDir };
 }
 
-/** 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。 */
+/** 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。
+ *  注意：Android SAF URI（content://...）原样返回，不做转换。 */
 export function normPath(p: string): string {
+    // SAF URI 原样返回，不做反斜杠转换
+    if (p.startsWith('content://')) return p;
     return p.replace(/\\/g, '/').replace(/\/+$/, '');
 }

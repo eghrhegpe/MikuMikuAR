@@ -2,8 +2,8 @@ package app
 
 import (
 	"io"
+	"io/fs"
 	"os"
-	"path/filepath"
 )
 
 // FileAccessor abstracts read-only file system operations across platforms.
@@ -27,7 +27,7 @@ type FileAccessor interface {
 	ReadDir(path string) ([]os.DirEntry, error)
 
 	// WalkDir recursively walks a directory tree.
-	WalkDir(root string, fn filepath.WalkDirFunc) error
+	WalkDir(root string, fn fs.WalkDirFunc) error
 
 	// Abs returns an absolute representation of the path.
 	Abs(path string) (string, error)
