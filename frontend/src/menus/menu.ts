@@ -17,6 +17,8 @@ export class SlideMenu {
     private _pendingTimeouts: ReturnType<typeof setTimeout>[] = [];
     /** 缓存的额外按钮，避免每次 updateHeader 重建、旧监听器泄漏 */
     private _cachedExtraBtns: HTMLElement[] | null = null;
+    /** 记录未决的 RAF reRender，用于去抖 */
+    private _reRenderPending = false;
     /** keydown 监听器引用，供 dispose 清理 */
     private _keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
@@ -252,20 +254,64 @@ export class SlideMenu {
         });
     }
 
-    reRender(): void {
+    reRender(opts?: { preserveFocus?: boolean }): void {
         if (this.transitioning) {
             return;
         }
+        // RAF 去抖：同帧内多次 reRender 合并为一次
+        if (this._reRenderPending) {
+            return;
+        }
+        this._reRenderPending = true;
+        requestAnimationFrame(() => {
+            this._reRenderPending = false;
+            this._doReRender(opts);
+        });
+    }
+
+    private _doReRender(opts?: { preserveFocus?: boolean }): void {
         const level = this.currentLevel;
         if (!level) {
             return;
         }
         this._cachedExtraBtns = null;
-        this.buildPanel(level).then(() => {
+
+        const finalize = () => {
             this.updateHeader(level);
-            this.setupFocus();
+            if (!opts?.preserveFocus) {
+                this.setupFocus();
+            }
             this.onAfterRender?.(level, this);
-        });
+        };
+
+        if (level.reRenderCustom) {
+            // === 增量路径：patch items（非空时）+ reRenderCustom ===
+            const list = this.panel.querySelector('.slide-list');
+            if (list) {
+                if (level.items.length > 0) {
+                    this.patchPanel(level.items);
+                }
+                level.reRenderCustom(list as HTMLElement);
+                finalize();
+                return;
+            }
+            // 没有旧 DOM → 退化为全量重建
+            this.buildPanel(level).then(finalize);
+        } else if (level.renderCustom || level.items.length === 0) {
+            // === 自定义渲染 / 空列表 → 全量重建 ===
+            this.buildPanel(level).then(finalize);
+        } else {
+            // === 纯 items → 增量 patch ===
+            this.patchPanel(level.items);
+            finalize();
+        }
+    }
+
+    /** 重置导航栈到根层级，不触发渲染 */
+    resetToRoot(): void {
+        if (this.levels.length > 1) {
+            this.levels = [this.levels[0]];
+        }
     }
 
     getLevel(index: number): PopupLevel | undefined {
@@ -282,9 +328,35 @@ export class SlideMenu {
         }
     }
 
+    /**
+     * 精准替换第 index 行的 DOM，不走 reRender 全量重建。
+     * 常用于单行状态变化（开关、选中态等）。
+     */
+    updateRow(index: number, row: PopupRow): void {
+        const level = this.currentLevel;
+        if (!level || index < 0 || index >= level.items.length) return;
+        level.items[index] = row;
+        const list = this.panel.querySelector('.slide-list');
+        if (!list) return;
+        const oldChild = list.children[index] as HTMLElement | undefined;
+        if (oldChild) {
+            const newEl = this.createRow(row);
+            if (newEl) oldChild.replaceWith(newEl);
+        }
+    }
+
+    /** 只刷新标题栏（返回按钮 + 标题 + 额外按钮），不碰面板 */
+    refreshHeader(): void {
+        const level = this.currentLevel;
+        if (!level) return;
+        this._cachedExtraBtns = null;
+        this.updateHeader(level);
+    }
+
     /** 强制结束当前动画，清除所有未决定时器，重置过渡状态 */
     private _cancelAnim(): void {
         this.transitioning = false;
+        this._reRenderPending = false;
         this._cancelTimeout();
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
@@ -364,6 +436,54 @@ export class SlideMenu {
 
     private _buildSeq = 0;
 
+    // ======== 增量渲染 ========
+
+    /** 生成行的稳定标识 key：优先用 row.rowKey，否则按 kind:target 自动推导 */
+    private rowKey(row: PopupRow): string {
+        if (row.rowKey) return row.rowKey;
+        if (row.kind === 'divider') return '__divider__';
+        return `${row.kind}:${row.target}`;
+    }
+
+    /** 增量 patch 当前 panel：只创建/替换/删除有变化的行 */
+    private patchPanel(items: PopupRow[]): void {
+        if (items.length === 0) return; // 空 items 意味着不需要 patch 行
+        const list = this.panel.querySelector('.slide-list');
+        if (!list) {
+            this.buildPanel(this.currentLevel!);
+            return;
+        }
+
+        const oldChildren = Array.from(list.children) as HTMLElement[];
+        const maxLen = Math.max(oldChildren.length, items.length);
+
+        // 1. 删除多余的行（从后往前，避免索引偏移）
+        for (let i = oldChildren.length - 1; i >= items.length; i--) {
+            oldChildren[i].remove();
+        }
+
+        // 2. 逐行比较
+        for (let i = 0; i < items.length; i++) {
+            const newRow = items[i];
+            const newKey = this.rowKey(newRow);
+
+            if (i < oldChildren.length) {
+                const oldEl = oldChildren[i];
+                const oldKey = oldEl.dataset.rowKey || '';
+                if (oldKey !== newKey) {
+                    // key 不匹配 → 替换整行
+                    const newEl = this.createRow(newRow);
+                    if (newEl) oldEl.replaceWith(newEl);
+                }
+                // key 匹配 → 行不变，跳过 DOM 操作
+            } else {
+                // 追加新行
+                const newEl = this.createRow(newRow);
+                if (newEl) list.appendChild(newEl);
+            }
+        }
+    }
+
     private async buildPanel(level: PopupLevel): Promise<void> {
         const seq = ++this._buildSeq;
         this.panel.innerHTML = '';
@@ -442,6 +562,7 @@ export class SlideMenu {
 
         const el = document.createElement('div');
         el.className = 'slide-item';
+        el.dataset.rowKey = this.rowKey(row);
         const hint = row.sublabel || (row.model ? '暂无描述' : '暂无提示');
         el.setAttribute('data-hint', hint);
 

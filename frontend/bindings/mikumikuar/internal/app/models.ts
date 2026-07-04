@@ -181,6 +181,23 @@ export interface EnvState {
     "waterWaveHeight": number;
     "waterSize": number;
     "waterAnimSpeed": number;
+
+    /**
+     * 水面高级着色器参数（持久化，避免材质重建时重置）
+     */
+    "fresnelBias": number;
+    "fresnelPower": number;
+    "diffuseStrength": number;
+    "ambientStrength": number;
+    "foamTransitionRange": number;
+    "rippleNormalStrength": number;
+    "rippleGlintStrength": number;
+    "causticColor1": number[];
+    "causticColor2": number[];
+    "causticScrollX": number;
+    "causticScrollY": number;
+    "fresnelAlphaInfluence": number;
+    "foamAlphaInfluence": number;
     "cloudsEnabled": boolean;
     "cloudCover": number;
     "cloudScale": number;

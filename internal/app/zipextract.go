@@ -155,11 +155,12 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 			continue
 		}
 
-		if _, err := io.Copy(outFile, rc); err != nil {
-			a.safeLogError("ExtractZip: copy error for %s: %v", entryName, err)
-		}
+		_, copyErr := io.Copy(outFile, rc)
 		outFile.Close()
 		rc.Close()
+		if copyErr != nil {
+			a.safeLogError("ExtractZip: copy error for %s: %v", entryName, copyErr)
+		}
 	}
 
 	// Write manifest

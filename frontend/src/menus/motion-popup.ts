@@ -23,6 +23,7 @@ import {
     cardContainer,
     envState,
     getRecentMotions,
+    getMenuWrapper,
 } from '../core/config';
 import { SlideMenu } from './menu';
 import { slideRow, addSliderRow, addToggleRow } from '../core/ui-helpers';
@@ -179,6 +180,8 @@ function buildActionBindingLevel(id: string): PopupLevel {
                 c.appendChild(group);
             });
         },
+        // 物理 toggle 自管理，VMD 清除/加载需要更新子标签 → 暂时跳过，后续可加针对性 sublabel 更新
+        reRenderCustom: () => {},
     };
 }
 
@@ -229,9 +232,9 @@ export function getMotionMenu(): SlideMenu | null {
     return motionMenu;
 }
 
-function makeMotionMenu(): SlideMenu {
+function makeMotionMenu(container: HTMLElement): SlideMenu {
     return new SlideMenu({
-        container: dom.sceneOverlay,
+        container,
         onClose: closeAllOverlays,
         onFolderEnter: (row) => {
             if (row.target === '__music__') { setMotionBindingTargetId(null); return buildActionMusicLevel(); }
@@ -361,13 +364,18 @@ function buildRecentMotionsLevel(): PopupLevel {
 }
 
 export function showMotionPopup(): void {
-    dom.sceneOverlay.innerHTML = '';
     dom.sceneOverlay.classList.remove('sceneOverlay-model', 'sceneOverlay-settings');
     dom.sceneOverlay.classList.add('sceneOverlay-motion');
     dom.sceneOverlay.dataset.popupType = 'motion';
 
-    motionMenu?.dispose();
-    motionMenu = makeMotionMenu();
+    const wrapper = getMenuWrapper('motion-popup');
+    if (motionMenu) {
+        motionMenu.resetToRoot();
+        motionMenu.reRender();
+        return;
+    }
+
+    motionMenu = makeMotionMenu(wrapper);
 
     motionMenu.reset({
         label: '动作',
@@ -413,6 +421,8 @@ export function showMotionPopup(): void {
                 });
             });
         },
+        // reRender 由布料模拟 headerToggle 触发，toggle 自管理，跳过重建
+        reRenderCustom: () => {},
     });
 }
 

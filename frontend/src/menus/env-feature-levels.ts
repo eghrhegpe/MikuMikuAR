@@ -93,6 +93,22 @@ export function buildSkyLevel(): PopupLevel {
                 addSliderRow(c, '天空旋转速度', s.skyRotationSpeed ?? 0, 0, 5, 0.1, (v) => setEnvState({ skyRotationSpeed: v }), 'lucide:rotate-cw');
             });
         },
+        reRenderCustom: (container) => {
+            const s = envState;
+            const labels: Record<string, string> = { color: '纯色', texture: '贴图', procedural: '程序化' };
+            const modeSlider = container.querySelector('.cs-row:first-child');
+            if (!modeSlider) return;
+            const valEl = modeSlider.querySelector('.cs-value');
+            if (valEl) valEl.textContent = labels[s.skyMode] || s.skyMode;
+            const idx = ['color', 'texture', 'procedural'].indexOf(s.skyMode);
+            if (idx >= 0) {
+                const fill = modeSlider.querySelector('.cs-fill') as HTMLElement | null;
+                const thumb = modeSlider.querySelector('.cs-thumb') as HTMLElement | null;
+                const pct = idx > 0 ? (idx / 2) * 100 : 0;
+                if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+                if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
+            }
+        },
     };
 }
 
@@ -118,6 +134,27 @@ export function buildGroundLevel(): PopupLevel {
                     addSliderRow(c, '透明度', s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), 'lucide:eye');
                 }
             });
+        },
+        reRenderCustom: (container) => {
+            const s = envState;
+            const labels: Record<string, string> = { solid: '纯色', grid: '网格', checker: '棋盘格' };
+            const rows = container.querySelectorAll('.cs-row');
+            for (const row of Array.from(rows) as HTMLElement[]) {
+                const label = row.querySelector('.cs-label');
+                if (label && label.textContent === '地面模式') {
+                    const valEl = row.querySelector('.cs-value');
+                    if (valEl) valEl.textContent = labels[s.groundMode] || s.groundMode;
+                    const idx = ['solid', 'grid', 'checker'].indexOf(s.groundMode);
+                    if (idx >= 0) {
+                        const fill = row.querySelector('.cs-fill') as HTMLElement | null;
+                        const thumb = row.querySelector('.cs-thumb') as HTMLElement | null;
+                        const pct = idx > 0 ? (idx / 2) * 100 : 0;
+                        if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+                        if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
+                    }
+                    break;
+                }
+            }
         },
     };
 }
@@ -178,6 +215,69 @@ export function buildWaterLevel(): PopupLevel {
                     },
                 });
             });
+        },
+        // reRender: 更新所有滑块和色值显示，反映 envState 最新值
+        reRenderCustom: (container) => {
+            const s = envState;
+            // 更新常规滑块
+            const updateSlider = (label: string, value: number) => {
+                const rows = container.querySelectorAll('.cs-row');
+                for (const row of Array.from(rows) as HTMLElement[]) {
+                    const lbl = row.querySelector('.cs-label');
+                    if (lbl && lbl.textContent === label) {
+                        const valEl = row.querySelector('.cs-value');
+                        const bar = row.querySelector('.cs-bar');
+                        if (valEl) valEl.textContent = String(Number(value.toFixed(2)));
+                        if (bar) {
+                            const min = parseFloat(bar.getAttribute('aria-valuemin') || '0');
+                            const max = parseFloat(bar.getAttribute('aria-valuemax') || '1');
+                            const range = max - min;
+                            const pct = range > 0 ? ((value - min) / range) * 100 : 0;
+                            const fill = bar.querySelector('.cs-fill') as HTMLElement | null;
+                            const thumb = bar.querySelector('.cs-thumb') as HTMLElement | null;
+                            if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+                            if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
+                            bar.setAttribute('aria-valuenow', String(value));
+                        }
+                        break;
+                    }
+                }
+            };
+            // 更新颜色选择器
+            const updateColor = (label: string, color: [number, number, number]) => {
+                const blocks = container.querySelectorAll('.clr-block');
+                for (const block of Array.from(blocks) as HTMLElement[]) {
+                    const title = block.querySelector('.clr-title');
+                    if (title && title.textContent === label) {
+                        const swatch = block.querySelector('.clr-swatch') as HTMLElement | null;
+                        if (swatch) swatch.style.background = `rgb(${Math.round(color[0]*255)},${Math.round(color[1]*255)},${Math.round(color[2]*255)})`;
+                        const vals = block.querySelectorAll('.clr-value');
+                        const bars = block.querySelectorAll('.clr-row .cs-bar');
+                        for (let ci = 0; ci < 3; ci++) {
+                            if (vals[ci]) vals[ci].textContent = color[ci].toFixed(2);
+                            if (bars[ci]) {
+                                const fill = bars[ci].querySelector('.cs-fill') as HTMLElement | null;
+                                if (fill) fill.style.width = Math.max(0, Math.min(100, color[ci] * 100)) + '%';
+                            }
+                        }
+                        break;
+                    }
+                }
+            };
+            // 基础参数
+            updateSlider('高度', s.waterLevel);
+            updateColor('水色', s.waterColor);
+            updateSlider('透明度', s.waterTransparency);
+            // 波浪
+            updateSlider('波高', s.waterWaveHeight);
+            updateSlider('泡沫阈值', s.foamThreshold);
+            updateSlider('泡沫强度', s.foamIntensity);
+            updateSlider('动画速度', s.waterAnimSpeed ?? 1);
+            updateSlider('范围', s.waterSize);
+            // 水下效果
+            updateColor('水下雾色', s.underwaterFogColor);
+            updateSlider('雾密度', s.underwaterFogDensity);
+            updateSlider('色差强度', s.underwaterChromaticAmount);
         },
     };
 }

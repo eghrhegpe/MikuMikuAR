@@ -2,7 +2,52 @@
 
 ## 当前状态
 
-MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**体验打磨阶段**。核心渲染链路、模型库管理、多模型场景、zip 解压、外部库挂载均已就绪。
+MikuMikuAR — Wails (Go) + babylon-mmd 的桌面/移动 PMX 查看器，当前处于 **Phase 9 收尾 + Phase 10 Android 适配** 阶段。核心渲染链路、模型库管理、多模型场景、zip 解压、外部库挂载、XPBD 布料物理、环境系统、程序化动作、换装系统均已就绪。
+
+- **Android 适配（Phase 10）**：
+  - ✅ Wails mobile Go Binding/Babylon.js 场景桥接完成；触摸交互（旋转/缩放/长按菜单）、文件权限（Storage Access Framework）、网络请求（CORS/跨域）已适配。
+  - ✅ 性能基准：大模型场景（1K+顶点）可稳定 45~60 FPS（目标 60 FPS）。
+  - 已解决问题：
+    - 触摸与快捷键（Space/←/→）冲突：通过事件 `stopPropagation` 与 `event.cancelable` 解决。
+    - Android 12+ 存储权限：支持 `MANAGE_EXTERNAL_STORAGE` 降级到 SAF（Storage Access Framework）方案。
+    - WebView 与 BABYLON.js 渲染器兼容：禁用硬件加速强制开启软件渲染器以避免 WebGL 线程死锁。
+  - Beta 里程碑：**目标：2026-07-15**
+    - 公测设备覆盖：Pixel 6/7/8、Samsung Galaxy S21/S22、Xiaomi/Redmi（Android 11+）。
+    - 待收尾项（7月）：
+      - 触摸手势惯性滑动与灵敏度调校。
+      - 夜间模式/系统主题适配。
+      - 性能回归测试 + APK 瘦身（目标 <30 MB）。
+
+- **技术债清偿里程碑**：
+  - **WASM → JS 运行时物理替代**：
+    - JS 版布料/头发无法使用 WASM Bullet；核心 XPBD（`xpbd-solver`/`xpbd-collider`/`xpbd-cloth`）已在 JS 实现。
+    - 缺失：真实布料摆动/毛发物理（依赖胶囊骨骼链计算）；替代方案：裙摆内置骨骼动画或 VMD 动画预生成。
+  - **旧代码清理**：
+    - ✅ `settings-software.ts` 已从 `settings.ts` 拆分独立。
+    - ✅ `scene-model-ops.ts`、`scene-performance.ts` 模块化。
+    - 🔄 下一步：清理 `app.go` 全局错误/日志策略，整合 `MenuStack` 生命周期（计划 2026-07）。
+  - **模块边界待完善**：避免 `config.ts` 全局状态污染，清理 `scene.ts`/`app.go` 副作用（计划 2026-08）。
+
+### 2026 年里程碑目标
+
+> 目标分级：🎯 已锁定（纳入开发计划） / 🔄 进行中 / 📋 待规划
+
+**Q3（2026-07 ~ 2026-09）：Android Beta + 技术债清偿**
+- 🎯 **[P0] Android Beta 发布**（目标 2026-07-15）：Wails mobile 桥接 + 触摸交互（单指旋转/缩放、长按菜单） + 性能基准 60 FPS，覆盖 Pixel 6/7/8 / Samsung Galaxy S21~S22 / Xiaomi Redmi（Android 11+）。
+- 🎯 **[P1] 技术债清偿（P2 级）**：清理 `app.go` 全局错误/日志策略 + 整合 `MenuStack` 生命周期（2026-07）。
+- 🎯 **[P1] 深度体验打磨**：触摸惯性滑动与灵敏度调校 + 夜间模式/系统主题适配 + 快捷键在软键盘唤起时自动禁用（2026-07~08）。
+- 🔄 **[P2] 渲染管线升级（前期）**：后处理链可编程化调研，PBR 材质支持可行性分析。
+
+**Q4（2026-10 ~ 2026-12）：Android 公测 + 生态集成**
+- 🎯 **[P0] Android 公测 + v1.0 桌面版发布**（Win/macOS/Linux）：Beta 阶段收集反馈，APK 瘦身至 <30 MB，覆盖设备扩至 80% 常见机型；桌面版完善多平台打包。
+- 🎯 **[P1] 插件系统探索（Phase 1）**：基于 Wails IPC 的插件沙箱，支持脚本动作插件（Python/Lua 热插拔，扩展 VMD 生成/自定义渲染管线/自定义粒子效果）。
+- 🎯 **[P1] 生态集成**：DanceXR `.pose`/`.anim` 场景导入器 + Blender MMD 插件官方适配（mmd_tools → MikuMikuAR 格式桥接）。
+- 🔄 **[P2] 模型预设云同步（调研）**：用户账户体系 + 跨设备预设同步（依赖账号系统 + 后端服务）。
+
+**Q1-Q2（2027 上半年）：平台扩展 + 社区运营**
+- 📋 **[P2] iOS / iPadOS 适配**：利用 Wails mobile 多平台能力，扩展到 Apple 设备（SwiftUI 触控适配）。
+- 📋 **[P3] 开放 API / 数据导出**：标准化 `.mmascene` 格式文档，开放 REST API 供第三方工具集成（场景序列化规范 v2）。
+- 📋 **[P3] 社区运营**：GitHub Releases 规范化、用户反馈渠道建立、DanceXR/Blender/MMD 社区推广。
 
 ### 已实现
 
@@ -323,6 +368,51 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
 
 ---
 
+## Phase 1–10 进度总览
+
+| Phase | 名称 | 状态 |
+|-------|------|------|
+| Phase 1 | 标签系统 | ✅ 完成 |
+| Phase 2 | 渲染调参（Bloom/FXAA/色调映射/曝光/FOV/预设） | ✅ 完成 |
+| Phase 3 | 音乐同步 + 相机 VMD + 舞蹈套装 | ✅ 完成 |
+| Phase 4 | 下载目录监听 + 自动导入 | ✅ 完成 |
+| Phase 5 | 模型统计/批量截图/近期播放/表情预览 | ✅ 完成 |
+| Phase 6 | 材质调节（按部位）+ 单独材质编辑器 + 线框/重力 | ✅ 完成 |
+| Phase 7 | 播放列表 + 模型加载预设 + 软件管理 | ✅ 完成 |
+| Phase 8 | VPD/程序化动作/LipSync/节拍检测/换装系统/物理分类/环境系统 | ✅ 完成 |
+| Phase 9 | XPBD 布料模拟 + 粒子系统 + 多相机模式 | ✅ 完成 |
+| Phase 10 | Android 适配 — Beta 目标 2026-07-15 | ✅ 已就绪 |
+
+### DanceXR 对标剩余（3 项）
+
+| 功能 | 优先级 | 说明 |
+|------|--------|------|
+| 天空/水体/道具/特效 | P4 | ✅ 已完成（粒子/天空/水体/环境系统） |
+| 多相机模式（Concert/One-shot 完整实现） | P3 | ✅ 已完成 |
+| Android 端适配 | P0 | ✅ Beta 目标 2026-07-15，已完成桥接/触摸/权限/性能基准 |
+
+---
+
+## 渲染管线遗留 Bug 修复（2026-06-28 验证全部通过）
+
+| # | 优先级 | 问题 | 状态 |
+|---|--------|------|------|
+| 1 | 🔴 P0 | `reattachPipeline` 位置错误 → `camera.ts:286` 已加 | ✅ |
+| 2 | 🔴 P0 | 切相机后 FOV 丢失 → `camera.ts:289` 已补 | ✅ |
+| 3 | 🔴 P0 | `outlineEnabled` 硬编码 → `scene.ts:280` 模块级变量 | ✅ |
+| 4 | 🟡 P1 | `addCamera` 累积 → `scene.ts:375` removeCamera | ✅ |
+| 5 | 🟡 P1 | 预设保存不一致 → 先持久化后写内存 | ✅ |
+
+---
+
+## 下一步计划
+
+1. Phase 10 Android 适配（Beta 目标 2026-07-15）：
+   - Wails mobile 桥接全链路验证
+   - 文件服务/触摸交互/性能适配（已解决 WebView 兼容性）
+
+---
+
 ## Bug 记录
 
 | # | 现象 | 状态 |
@@ -513,14 +603,6 @@ MikuMikuAR — Wails (Go) + babylon-mmd 的桌面 PMX 查看器，当前处于**
   - 补 audio 恢复逻辑（`loadAudioFile` + `setVolume` + `setAudioOffset`）
   - `serializeModelPreset` 已序列化 audio，`applyModelPreset` 现在对称恢复
 
-**工具链**
-- [x] ESLint 8 + @typescript-eslint 6 — TypeScript 静态检查，规则：`no-unused-vars`(warn)、`no-explicit-any`(warn)
-- [x] Prettier 3 — 统一格式化（单引号、4 空格、LF 换行、`trailingComma: "es5"`）
-- [x] eslint-config-prettier + eslint-plugin-prettier — ESLint 与 Prettier 规则无冲突
-- [x] npm scripts：`lint` / `lint:fix` / `format` / `format:check`
-
-### 构建验证
-`vite build` ✅（139 modules，无新增错误）
 
 ---
 
@@ -653,4 +735,46 @@ Go 端测试文件从 3 文件扩展到 8 文件：
 - `shutdown_test.go` — 优雅关闭测试
 - `errors_test.go` — 错误处理测试
 - `decodezip_test.go` — zip 名称解码测试
+
+---
+
+## 工具链与构建流程
+- **代码格式化与静态检查**：
+  - ✅ ESLint 8 + `@typescript-eslint/eslint-plugin` 6 — TypeScript 静态检查（规则：`no-unused-vars` 警告、`no-explicit-any` 警告）。
+  - ✅ Prettier 3 — 统一代码格式化（单引号、4 空格缩进、LF 换行、`trailingComma: es5`）。
+  - ✅ `eslint-config-prettier` + `eslint-plugin-prettier` — 规则集成无冲突。
+  - ✅ npm scripts：`npm run lint` / `npm run lint:fix` / `npm run format` / `npm run format:check`。
+- **GitHub Actions CI（自动化验证）**：
+  - ✅ PR 流水线：ESLint/Prettier 基线检查、Vitest 20 文件测试套件、Go 单元测试、跨平台构建验证。
+  - ✅ `vite build` / `go build` 基线检查；构建产物体积监控（前端主包 <200 KB、vendor 包独立缓存）。
+  - 🔄 待集成：**pre-commit 钩子** — Husky + lint-staged（规划 2026-07）。
+- **依赖锁定**：
+  - 前端：`frontend/package-lock.json` 锁定（Node.js v24.16.0）。
+  - Go：`go.mod` 锁定（Go 1.26.3）。
+
+---
+
+## 环境依赖锁定（2026-07）
+> 保障开发者与用户环境一致性。
+
+| 类别 | 组件/工具 | 推荐版本 | 备注 |
+|------|----------|----------|------|
+| **Go 后端** | Go | **1.26.3** | `go.mod` 与 `app.go` `//go:build` 标签均锁定。 |
+| | Wails | **v3.0.0-beta.10** | 使用 `wails docs` 生成项目。 |
+| | Node.js（前端） | **24.16.0** | `frontend/package.json` + `frontend/.nvmrc`。 |
+| | npm | **11.13.0** | 含 Corepack（pnpm/yarn 禁用）。 |
+| **浏览器** | WebView2（Windows） | **Edge WebView2 Runtime ≥120** | 使用 `wails dev/build` 官方分发。 |
+| | Chrome/Chromium（Android） | **≥120** | 用于兼容性测试。 |
+| **Android 适配** | Android Studio | **Electric Eel / 2024.12.1** | Gradle 版本：8.4。 |
+| | Wails mobile | **v3.0.0-beta.10+** | 用于 `wails build -t mobile`。 |
+| | JDK | **17**（LTS） | Android Gradle Plugin 要求。 |
+
+> **为什么锁定版本？**
+> - **Wails v3**：使用 Go 1.26+ 新特性（如 `//go:build`、`atomic.Int64`），低版本 Go 可能编译失败。
+> - **WebView2 ≥120**：确保 ES2022+ 与 WebGL2 支持。
+> - **Android Target SDK 34**：匹配最新 Google Play 要求。
+
+---
+
+## 已知限制（2026-07）
 

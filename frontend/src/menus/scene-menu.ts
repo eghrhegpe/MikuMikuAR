@@ -12,6 +12,7 @@ import {
     modelRegistry,
     focusedModelId,
     setFocusedModelId,
+    getMenuWrapper,
 } from '../core/config';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
@@ -425,15 +426,21 @@ function handleSceneAction(row: PopupRow): void {
 // ======== Show Scene Menu ========
 
 export async function showSceneMenu(): Promise<void> {
-    sceneMenu?.dispose();
-    dom.sceneOverlay.innerHTML = '';
     dom.sceneOverlay.classList.remove('sceneOverlay-model', 'sceneOverlay-motion', 'sceneOverlay-settings');
     dom.sceneOverlay.dataset.popupType = 'scene';
+
+    const wrapper = getMenuWrapper('scene-menu');
+    if (sceneMenu) {
+        await loadUserPresets();
+        sceneMenu.resetToRoot();
+        sceneMenu.reRender();
+        return;
+    }
 
     await loadUserPresets();
 
     sceneMenu = new SlideMenu({
-        container: dom.sceneOverlay,
+        container: wrapper,
         onClose: () => closeAllOverlays(),
         onItemClick: (row) => handleSceneAction(row),
         onFolderEnter: sceneOnFolderEnter,

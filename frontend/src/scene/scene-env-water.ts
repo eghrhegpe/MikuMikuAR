@@ -301,19 +301,109 @@ void main() {
 
 // ======== Water System ========
 
-export function createWater(state: EnvState): void {
-    ensureEnvUpdateObserver();
-
-    // Always start clean — disposeWater handles all cleanup, including LOD meshes,
-    // material, caustic texture, ripples, and the render observer.
-    // This ensures consistent state even on rapid preset switches or force-recreate scenarios
-    // (e.g. environment texture changed, requiring shader recompilation).
-    disposeWater();
-
-    if (!state.waterEnabled) {
+/**
+ * 同步水面材质的全部 uniform 参数（非破坏性，不销毁/重建材质）。
+ * 由 createWater 在惰性路径和首次创建后调用。
+ */
+function _syncWaterUniforms(state: EnvState, scene: Scene): void {
+    const mat = _envSys.water.material as ShaderMaterial | null;
+    const mesh = _envSys.water.mesh;
+    if (!mat || !mesh) {
         return;
     }
 
+    // ——— 基础参数 ———
+    mat.setFloat('waveHeight', state.waterWaveHeight);
+    mat.setFloat('waveSpeed', (state.waterAnimSpeed ?? 1) * 1.0);
+    mat.setColor3('waterColor', new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]));
+    mat.setFloat('waterTransparency', state.waterTransparency);
+    mat.setFloat('waterLevel', state.waterLevel);
+
+    const hasEnv = !!scene.environmentTexture;
+    mat.setFloat('envIntensity', hasEnv ? (scene.environmentIntensity ?? 0.8) : 0);
+    if (hasEnv && scene.environmentTexture) {
+        mat.setTexture('envTexture', scene.environmentTexture);
+    }
+
+    // ——— 泡沫 ———
+    mat.setColor3('foamColor', new Color3(1, 1, 1));
+    mat.setFloat('foamThreshold', state.foamThreshold);
+    mat.setFloat('foamIntensity', state.foamIntensity);
+
+    // ——— 灯光 ———
+    const dirLight = scene.getLightByName('dir') as DirectionalLight | null;
+    if (dirLight) {
+        mat.setVector3('lightDir', dirLight.direction);
+        mat.setColor3('lightColor', dirLight.diffuse);
+    } else {
+        mat.setVector3('lightDir', new Vector3(-0.5, -1, -0.5));
+        mat.setColor3('lightColor', new Color3(1, 1, 1));
+    }
+    mat.setFloat('ambientIntensity', 0.3);
+
+    // ——— 焦散 ———
+    const causticTex = ensureCausticTexture(scene);
+    mat.setTexture('uCausticTex', causticTex);
+    mat.setFloat('uCausticIntensity', 0.15);
+    mat.setFloat('uCausticSpeed', 0.5);
+    mat.setFloat('uCausticScale', 0.04);
+
+    // ——— 高级参数（从 EnvState 读取，持久化）———
+    mat.setFloat('fresnelBias', state.fresnelBias);
+    mat.setFloat('fresnelPower', state.fresnelPower);
+    mat.setFloat('diffuseStrength', state.diffuseStrength);
+    mat.setFloat('ambientStrength', state.ambientStrength);
+    mat.setFloat('foamTransitionRange', state.foamTransitionRange);
+    mat.setFloat('rippleNormalStrength', state.rippleNormalStrength);
+    mat.setFloat('rippleGlintStrength', state.rippleGlintStrength);
+    mat.setVector3('causticColor1', new Vector3(state.causticColor1[0], state.causticColor1[1], state.causticColor1[2]));
+    mat.setVector3('causticColor2', new Vector3(state.causticColor2[0], state.causticColor2[1], state.causticColor2[2]));
+    mat.setFloat('causticScrollX', state.causticScrollX);
+    mat.setFloat('causticScrollY', state.causticScrollY);
+    mat.setFloat('fresnelAlphaInfluence', state.fresnelAlphaInfluence);
+    mat.setFloat('foamAlphaInfluence', state.foamAlphaInfluence);
+
+    // ——— 雾 ———
+    mat.setColor3('fogColor', scene.fogColor);
+    mat.setFloat('fogDensity', scene.fogDensity);
+
+    // ——— 涟漪数组（初始化为空）———
+    mat.setArray4('uRipplePosRad', new Array(MAX_RIPPLES * 4).fill(0));
+    mat.setArray4('uRippleStrSpdLife', new Array(MAX_RIPPLES * 4).fill(0));
+    mat.setInt('uRippleCount', 0);
+}
+
+/**
+ * 更新水面网格的位置和缩放（非破坏性）。
+ */
+function _updateWaterMesh(state: EnvState): void {
+    const mesh = _envSys.water.mesh;
+    if (!mesh) {
+        return;
+    }
+    mesh.position.y = state.waterLevel;
+    const scale = Math.max(1, state.waterSize / WATER_BASE_SIZE);
+    mesh.scaling = new Vector3(scale, 1, scale);
+}
+
+export function createWater(state: EnvState): void {
+    ensureEnvUpdateObserver();
+
+    // **惰性路径**：水面已初始化且启用 → 只同步参数，不销毁重建
+    if (state.waterEnabled && _envSys.water.material && _envSys.water.mesh) {
+        const scene = getScene();
+        _syncWaterUniforms(state, scene);
+        _updateWaterMesh(state);
+        return;
+    }
+
+    // **关闭路径**：水面未启用 → 清理资源
+    if (!state.waterEnabled) {
+        disposeWater();
+        return;
+    }
+
+    // **首次创建路径**：水面不存在且启用 → 全量构建
     const scene = getScene();
 
     _waterLODs = [];
@@ -325,6 +415,8 @@ export function createWater(state: EnvState): void {
     );
     meshHigh.isPickable = false;
     meshHigh.position.y = state.waterLevel;
+    const scale = Math.max(1, state.waterSize / WATER_BASE_SIZE);
+    meshHigh.scaling = new Vector3(scale, 1, scale);
 
     const meshMid = MeshBuilder.CreateGround(
         'envWater_LOD1',
@@ -383,7 +475,6 @@ export function createWater(state: EnvState): void {
                 'uCausticIntensity',
                 'uCausticSpeed',
                 'uCausticScale',
-                // 新增：从着色器硬编码提取的可调参数
                 'fresnelBias',
                 'fresnelPower',
                 'diffuseStrength',
@@ -405,62 +496,6 @@ export function createWater(state: EnvState): void {
         }
     );
 
-    mat.setFloat('waveHeight', state.waterWaveHeight);
-    mat.setFloat('waveSpeed', (state.waterAnimSpeed ?? 1) * 1.0);
-    mat.setColor3(
-        'waterColor',
-        new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2])
-    );
-    mat.setFloat('waterTransparency', state.waterTransparency);
-    mat.setFloat('waterLevel', state.waterLevel);
-    mat.setFloat('envIntensity', hasEnv ? (scene.environmentIntensity ?? 0.8) : 0);
-
-    if (hasEnv && scene.environmentTexture) {
-        mat.setTexture('envTexture', scene.environmentTexture);
-    }
-
-    mat.setColor3('foamColor', new Color3(1, 1, 1));
-    mat.setFloat('foamThreshold', state.foamThreshold);
-    mat.setFloat('foamIntensity', state.foamIntensity);
-
-    const dirLight = scene.getLightByName('dir') as DirectionalLight | null;
-    if (dirLight) {
-        mat.setVector3('lightDir', dirLight.direction);
-        mat.setColor3('lightColor', dirLight.diffuse);
-    } else {
-        mat.setVector3('lightDir', new Vector3(-0.5, -1, -0.5));
-        mat.setColor3('lightColor', new Color3(1, 1, 1));
-    }
-    mat.setFloat('ambientIntensity', 0.3);
-
-    mat.setArray4('uRipplePosRad', new Array(MAX_RIPPLES * 4).fill(0));
-    mat.setArray4('uRippleStrSpdLife', new Array(MAX_RIPPLES * 4).fill(0));
-    mat.setInt('uRippleCount', 0);
-
-    const causticTex = ensureCausticTexture(scene);
-    mat.setTexture('uCausticTex', causticTex);
-    mat.setFloat('uCausticIntensity', 0.15);
-    mat.setFloat('uCausticSpeed', 0.5);
-    mat.setFloat('uCausticScale', 0.04);
-
-    // ======== 设置提取的 uniform 参数的默认值 ==========
-    mat.setFloat('fresnelBias', 0.02);
-    mat.setFloat('fresnelPower', 3.0);
-    mat.setFloat('diffuseStrength', 0.15);
-    mat.setFloat('ambientStrength', 0.15);
-    mat.setFloat('foamTransitionRange', 0.15);
-    mat.setFloat('rippleNormalStrength', 0.15);
-    mat.setFloat('rippleGlintStrength', 0.25);
-    mat.setVector3('causticColor1', new Vector3(1.0, 0.9, 0.6));
-    mat.setVector3('causticColor2', new Vector3(1.0, 1.0, 0.8));
-    mat.setFloat('causticScrollX', 0.1);
-    mat.setFloat('causticScrollY', 0.15);
-    mat.setFloat('fresnelAlphaInfluence', 0.5);
-    mat.setFloat('foamAlphaInfluence', 0.2);
-
-    mat.setColor3('fogColor', scene.fogColor);
-    mat.setFloat('fogDensity', scene.fogDensity);
-
     meshHigh.material = mat;
     meshMid.material = mat;
     meshLow.material = mat;
@@ -468,6 +503,10 @@ export function createWater(state: EnvState): void {
     _envSys.water.mesh = meshHigh;
     _envSys.water.material = mat;
 
+    // 同步所有 uniform（复用 _syncWaterUniforms 逻辑）
+    _syncWaterUniforms(state, scene);
+
+    // —— 每帧更新 observer（涟漪衰减 + 动态数据）——
     if (!_waterUpdateObserver) {
         _waterUpdateObserver = scene.onBeforeRenderObservable.add(() => {
             if (!_envSys.water.material) {

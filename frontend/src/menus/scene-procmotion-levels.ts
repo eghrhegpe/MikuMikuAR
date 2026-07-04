@@ -194,6 +194,8 @@ export function buildProcMotionLevel(): PopupLevel {
                 );
             });
         },
+        // reRender 仅由 toggle 触发（LipSync/眼/头），toggle 自管理状态，无需重建
+        reRenderCustom: () => {},
     };
 }
 

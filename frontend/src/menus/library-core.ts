@@ -57,13 +57,13 @@ import { buildDanceSetDetailLevel, loadDanceSets } from './motion-popup';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
-import { stackRegistry } from '../core/config';
+import { stackRegistry, getMenuWrapper } from '../core/config';
 
 // ======== Model Stack ========
 
-const makeModelMenu = (): SlideMenu => {
+const makeModelMenu = (container: HTMLElement): SlideMenu => {
     return new SlideMenu({
-        container: dom.sceneOverlay,
+        container,
         onClose: closeAllOverlays,
         onFolderEnter: (row) => {
             if (row.target && row.target.startsWith('scene:')) {
@@ -657,17 +657,20 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
 
 /** Show function for toggleOverlay — builds the model menu stack. */
 export function showModelPopup(): void {
-    // 不再自管理生命周期，由 toggleOverlay 统一管理
-    // 清空旧内容，避免与其他弹窗 DOM 混在一起
-    dom.sceneOverlay.innerHTML = '';
     dom.sceneOverlay.classList.remove('sceneOverlay-motion', 'sceneOverlay-settings');
     dom.sceneOverlay.classList.add('sceneOverlay-model'); // 宽度 280px
     dom.sceneOverlay.dataset.popupType = 'model';
 
-    // 释放旧 stack（清除 keydown/transitionend/setTimeout），再重建
-    stackRegistry.modelStack?.dispose();
-    stackRegistry.modelStack = makeModelMenu();
+    const wrapper = getMenuWrapper('model-popup');
+    if (stackRegistry.modelStack) {
+        // 缓存命中：回到根后 reRender
+        stackRegistry.modelStack.resetToRoot();
+        stackRegistry.modelStack.reRender();
+        return;
+    }
 
+    // 首次：创建 SlideMenu
+    stackRegistry.modelStack = makeModelMenu(wrapper);
     stackRegistry.modelStack.reset({
         label: '模型',
         dir: '',

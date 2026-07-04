@@ -183,6 +183,8 @@ export function buildStageLightLevel(): PopupLevel {
                     (v) => setStageLightState({ orbitDistance: v }));
             });
         },
+        // reRender 由 toggle 触发，toggle 已自管理状态，无需重建
+        reRenderCustom: () => {},
     };
 }
 
@@ -325,6 +327,28 @@ export function buildStageLevel(): PopupLevel {
                     },
                 });
             });
+        },
+        reRenderCustom: (container) => {
+            // 色调映射模式改变 → 更新 mode slider 的显示值
+            const toneMapping = getRenderState().toneMapping;
+            const labels = ['关闭', 'ACES', 'Reinhard', 'Cineon', 'Neutral'];
+            // 找第一个 collapsible 内 label="模式" 的 cs-row
+            const firstCollapsible = container.querySelector('.collapsible-wrapper');
+            if (!firstCollapsible) return;
+            const csRows = firstCollapsible.querySelectorAll('.cs-row');
+            for (const row of Array.from(csRows) as HTMLElement[]) {
+                const label = row.querySelector('.cs-label');
+                if (label && label.textContent === '模式') {
+                    const valEl = row.querySelector('.cs-value');
+                    if (valEl) valEl.textContent = labels[toneMapping] ?? String(toneMapping);
+                    const fill = row.querySelector('.cs-fill') as HTMLElement | null;
+                    const thumb = row.querySelector('.cs-thumb') as HTMLElement | null;
+                    const pct = toneMapping > 0 ? (toneMapping / 4) * 100 : 0;
+                    if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+                    if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
+                    break;
+                }
+            }
         },
     };
 }
