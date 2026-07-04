@@ -34,10 +34,11 @@ export function deriveLighting(
 ): DerivedLighting {
     const L = calcLuminance(skyColor);
 
-    // Night / below-horizon: disable directional light (logic fix)
-    const isBelowHorizon = sunAngle <= 0;
-    const dirIntensity = isBelowHorizon ? 0 : Math.max(L * 1.2, 0.15);
-    const hemiIntensity = isBelowHorizon ? 0.3 : Math.min(1, 1.0 - dirIntensity * 0.5);
+    // 渐变过渡：太阳角度 0°~10° 方向光平滑衰减，-5° 以下完全关闭
+    const horizonFade = Math.max(0, Math.min(1, (sunAngle + 5) / 10)); // -5→0, 0→0.5, 5→1
+    const dirIntensity = horizonFade * Math.max(L * 1.2, 0.15);
+    // 半球光：白天随方向光反向补偿，夜晚保持足够亮度
+    const hemiIntensity = sunAngle <= 0 ? Math.min(0.8, 0.3 + L * 0.5) : Math.min(1, 0.6 + (1 - dirIntensity) * 0.4);
 
     // dirDiffuse: preserve sky hue, scale so brightest channel ≈ 0.9-1.0
     // (old formula: sky*0.3+0.7 → washed out to white)
@@ -51,8 +52,8 @@ export function deriveLighting(
 
     const theta = sunAngle * TO_RAD;
     // Night: flat direction (y=0) — intensity is 0 so direction is irrelevant
-    const az = isBelowHorizon ? 0 : azimuthDeg * TO_RAD;
-    const dirY = isBelowHorizon ? 0 : Math.sin(theta);
+    const az = sunAngle <= 0 ? 0 : azimuthDeg * TO_RAD;
+    const dirY = sunAngle <= 0 ? 0 : Math.sin(theta);
     const dirDirection: [number, number, number] = [
         Math.cos(az) * Math.cos(theta),
         dirY,

@@ -185,7 +185,7 @@ export function buildDanceSetDetailLevel(setId: string): PopupLevel {
 
                 const deleteBtn = document.createElement('div');
                 deleteBtn.className = 'slide-item';
-                deleteBtn.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:trash-2"></iconify-icon></span><span class="slide-label" style="color:var(--danger,#ff6b6b);">删除套装</span>';
+                deleteBtn.innerHTML = '<span class="slide-icon"><iconify-icon icon="lucide:trash-2"></iconify-icon></span><span class="slide-label danger-text">删除套装</span>';
                 deleteBtn.addEventListener('click', async () => {
                     if (await showConfirm(`确定要删除舞蹈套装「${ds.name}」吗？`)) {
                         DeleteDanceSet(setId)

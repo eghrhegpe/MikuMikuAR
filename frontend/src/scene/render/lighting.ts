@@ -114,6 +114,8 @@ export let dirLight: DirectionalLight;
 interface StageLightEntry {
     state: StageLightState;
     light: SpotLight | PointLight | DirectionalLight;
+    indicator: Mesh | null;
+    dirLine: Mesh | null;
 }
 const _stageLights = new Map<string, StageLightEntry>();
 let _activeStageLightId: string | null = null;
@@ -138,7 +140,7 @@ export function setSkipLightAutoSave(skip: boolean): void {
     _skipLightAutoSave = skip;
 }
 
-const SUN_DISC_DISTANCE = 400;
+const SUN_DISC_DISTANCE = 1000;
 
 /** 太阳圆盘可见的最小方向光强度。低于此值时隐藏。 */
 const SUN_DISC_MIN_INTENSITY = 0.01;
@@ -167,9 +169,10 @@ export function initLighting(
 
     const def = _defaultStageLightState('light-1', '主光');
     const light = _createStageLight(def.type, def);
-    _stageLights.set(def.id, { state: def, light });
+    _stageLights.set(def.id, { state: def, light, indicator: null, dirLine: null });
     _activeStageLightId = def.id;
     _stageLightCounter = 1;
+    _updateIndicator(_stageLights.get(def.id)!);
 }
 
 function _createStageLight(type: StageLightType, state: StageLightState): SpotLight | PointLight | DirectionalLight {
@@ -202,6 +205,85 @@ function _createStageLight(type: StageLightType, state: StageLightState): SpotLi
     light.specular = new Color3(0.3, 0.3, 0.3);
     light.position = pos.clone();
     return light;
+}
+
+// ======== Stage Light Indicator ========
+
+function _createIndicator(): Mesh {
+    const mesh = MeshBuilder.CreateSphere('lightIndicator', { diameter: 0.5, segments: 8 }, _scene!);
+    const mat = new StandardMaterial('lightIndicatorMat', _scene!);
+    mat.emissiveColor = new Color3(1, 1, 1);
+    mat.disableLighting = true;
+    mesh.material = mat;
+    mesh.isPickable = false;
+    return mesh;
+}
+
+function _createDirLine(): Mesh {
+    const mesh = MeshBuilder.CreateLines('lightDirLine', {
+        points: [Vector3.Zero(), new Vector3(0, -2, 0)],
+    }, _scene!);
+    mesh.color = new Color3(1, 1, 0.5);
+    mesh.isPickable = false;
+    return mesh;
+}
+
+function _updateIndicator(entry: StageLightEntry): void {
+    if (!_scene) return;
+    const { state, light } = entry;
+
+    // 更新球体指示器
+    if (state.enabled) {
+        if (!entry.indicator) {
+            entry.indicator = _createIndicator();
+        }
+        entry.indicator.position.copyFrom(light.position);
+        const scale = state.enabled ? 1 : 0;
+        entry.indicator.scaling.setAll(scale);
+        entry.indicator.setEnabled(true);
+
+        // 聚光灯：显示方向线
+        if (state.type === 'spot' && light instanceof SpotLight) {
+            if (!entry.dirLine) {
+                entry.dirLine = _createDirLine();
+            }
+            const target = new Vector3(state.targetX, state.targetY, state.targetZ);
+            const dir = target.subtract(light.position).normalize().scale(3);
+            entry.dirLine.position.copyFrom(light.position);
+            // 更新线段点
+            entry.dirLine.dispose();
+            entry.dirLine = MeshBuilder.CreateLines('lightDirLine', {
+                points: [Vector3.Zero(), dir],
+            }, _scene!);
+            entry.dirLine.color = new Color3(1, 1, 0.5);
+            entry.dirLine.isPickable = false;
+            entry.dirLine.position.copyFrom(light.position);
+            entry.dirLine.setEnabled(true);
+        } else {
+            if (entry.dirLine) {
+                entry.dirLine.dispose();
+                entry.dirLine = null;
+            }
+        }
+    } else {
+        if (entry.indicator) {
+            entry.indicator.setEnabled(false);
+        }
+        if (entry.dirLine) {
+            entry.dirLine.setEnabled(false);
+        }
+    }
+}
+
+function _disposeIndicator(entry: StageLightEntry): void {
+    if (entry.indicator) {
+        entry.indicator.dispose();
+        entry.indicator = null;
+    }
+    if (entry.dirLine) {
+        entry.dirLine.dispose();
+        entry.dirLine = null;
+    }
 }
 
 function _defaultLightState(): LightState {
@@ -509,6 +591,7 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
         _disposeStageShadow(targetId);
         entry.light = _createStageLight(s.type, entry.state);
         _ensureStageShadow(targetId);
+        _updateIndicator(entry);
         _triggerAutoSave();
         return;
     }
@@ -529,6 +612,9 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
         _ensureStageShadow(targetId);
     }
 
+    // 更新指示器
+    _updateIndicator(entry);
+
     _triggerAutoSave();
 }
 
@@ -545,9 +631,11 @@ export function addStageLight(type: StageLightType = 'spot', preset?: Partial<St
     state.posX = _stageLightCounter * 2 - 2;
     state.orbitAzimuth = 180 + (_stageLightCounter - 1) * 30;
     const light = _createStageLight(type, state);
-    _stageLights.set(id, { state, light });
+    const entry: StageLightEntry = { state, light, indicator: null, dirLine: null };
+    _stageLights.set(id, entry);
     _activeStageLightId = id;
     _ensureStageShadow(id);
+    _updateIndicator(entry);
     if (_triggerAutoSave) _triggerAutoSave();
     return id;
 }
@@ -556,6 +644,7 @@ export function removeStageLight(id: string): boolean {
     const entry = _stageLights.get(id);
     if (!entry) return false;
     if (_stageLights.size <= 1) return false;
+    _disposeIndicator(entry);
     entry.light.dispose();
     _disposeStageShadow(id);
     _stageLights.delete(id);
@@ -570,6 +659,7 @@ export function removeStageLight(id: string): boolean {
 export function loadStageLights(states: StageLightState[]): void {
     // 清空旧灯
     for (const [lid, entry] of _stageLights) {
+        _disposeIndicator(entry);
         entry.light.dispose();
     }
     _stageLights.clear();
@@ -581,18 +671,22 @@ export function loadStageLights(states: StageLightState[]): void {
     if (states.length === 0) {
         const def = _defaultStageLightState('light-1', '主光');
         const light = _createStageLight(def.type, def);
-        _stageLights.set(def.id, { state: def, light });
+        const entry: StageLightEntry = { state: def, light, indicator: null, dirLine: null };
+        _stageLights.set(def.id, entry);
         _activeStageLightId = def.id;
         _stageLightCounter = 1;
         _ensureStageShadow(def.id);
+        _updateIndicator(entry);
         return;
     }
 
     let maxNum = 0;
     for (const s of states) {
         const light = _createStageLight(s.type, s);
-        _stageLights.set(s.id, { state: { ...s }, light });
+        const entry: StageLightEntry = { state: { ...s }, light, indicator: null, dirLine: null };
+        _stageLights.set(s.id, entry);
         _ensureStageShadow(s.id);
+        _updateIndicator(entry);
         const m = s.id.match(/light-(\d+)/);
         if (m) maxNum = Math.max(maxNum, parseInt(m[1]));
     }
@@ -786,6 +880,15 @@ export function attachLightGizmo(id: string): boolean {
     // Position gizmo
     _posGizmo = new PositionGizmo(layer);
     _posGizmo.attachedNode = entry.light;
+    // 拖拽中实时更新指示器
+    _posGizmo.onDragObservable.add(() => {
+        if (entry.indicator) {
+            entry.indicator.position.copyFrom(entry.light.position);
+        }
+        if (entry.dirLine) {
+            entry.dirLine.position.copyFrom(entry.light.position);
+        }
+    });
     _posGizmo.onDragEndObservable.add(() => {
         const pos = entry.light.position;
         setStageLightState({

@@ -43,9 +43,9 @@ import {
     setUIState,
     librarySortMode,
     setLibrarySortMode,
-    getMenuWrapper,
 } from '../core/config';
 import { SlideMenu } from './menu';
+import { showPopupMenu } from './menu-factory';
 import { selectResourceRoot, selectOverridePath } from './library-core';
 import { slideRow, addToggleRow } from '../core/ui-helpers';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
@@ -63,43 +63,47 @@ import { buildSettingsSoftwareLevel, buildSoftwareDetailLevel } from './settings
 
 let settingsMenu: SlideMenu | null = null;
 
+/** 设置弹窗根级 items 构建器——items-based，支持增量 patch */
+function buildSettingsRootItems(): PopupRow[] {
+    const items: PopupRow[] = [];
+    items.push({ kind: 'folder', label: '显示', icon: 'lucide:palette', target: 'settings:display' });
+    items.push({ kind: 'folder', label: '界面', icon: 'lucide:monitor', target: 'settings:ui' });
+    items.push({
+        kind: 'folder', label: '自动导入', icon: 'lucide:download', target: 'settings:download',
+        headerToggle: {
+            value: false,
+            onChange: async (v) => {
+                try {
+                    await SetDownloadAutoImport(v);
+                    setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
+                } catch {
+                    setStatus('✗ 设置失败', false);
+                }
+            },
+        },
+    });
+    items.push({ kind: 'folder', label: '性能', icon: 'lucide:zap', target: 'settings:performance' });
+    items.push({ kind: 'folder', label: '系统', icon: 'lucide:settings', target: 'settings:system' });
+    items.push({ kind: 'folder', label: '软件管理', icon: 'lucide:package', target: 'settings:software' });
+    return items;
+}
+
 function buildSettingsRoot(): PopupLevel {
     return {
         label: '设置',
         dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:palette', '显示', true, () =>
-                    settingsMenu.push(buildSettingsDisplayLevel())
-                );
-                slideRow(c, 'lucide:monitor', '界面', true, () =>
-                    settingsMenu.push(buildSettingsUILevel())
-                );
-                slideRow(c, 'lucide:download', '自动导入', true, () =>
-                    settingsMenu.push(buildSettingsDownloadLevel()),
-                    undefined, undefined,
-                    { value: false, onChange: async (v) => {
-                        try {
-                            await SetDownloadAutoImport(v);
-                            setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
-                        } catch {
-                            setStatus('✗ 设置失败', false);
-                        }
-                    }}
-                );
-                slideRow(c, 'lucide:zap', '性能', true, () =>
-                    settingsMenu.push(buildSettingsPerformanceLevel())
-                );
-                slideRow(c, 'lucide:settings', '系统', true, () =>
-                    settingsMenu.push(buildSettingsSystemLevel())
-                );
-                slideRow(c, 'lucide:package', '软件管理', true, () =>
-                    settingsMenu.push(buildSettingsSoftwareLevel())
-                );
-            });
-        },
+        items: buildSettingsRootItems(),
     };
+}
+
+/** 重新计算根级 items 并触发 reRender（自动导入开关等状态变化后调用）。 */
+export function refreshSettingsRoot(): void {
+    if (!settingsMenu) return;
+    const root = settingsMenu.getLevel(0);
+    if (root) {
+        root.items = buildSettingsRootItems();
+        settingsMenu.reRender();
+    }
 }
 
 function buildSettingsDisplayLevel(): PopupLevel {
@@ -669,69 +673,61 @@ function buildSettingsSystemLevel(): PopupLevel {
     };
 }
 
+/** 设置动作映射表——替代原 handleSettingsAction 的 switch 链 */
+const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
+    'set:name_jp': (row) => applyDisplayNamePriority(row.target!.replace('set:', '') as DisplayNamePriority),
+    'set:name_en': (row) => applyDisplayNamePriority(row.target!.replace('set:', '') as DisplayNamePriority),
+    'set:filename': () => applyDisplayNamePriority('filename'),
+    'set:clearextractcache': () => {
+        ClearExtractCache()
+            .then(() => setStatus('✓ 提取缓存已清除', true))
+            .catch(console.warn);
+    },
+    'set:clearthumbnail': () => {
+        (async () => {
+            if (await showConfirm('确定要清除所有缩略图缓存吗？下次加载模型时将重新生成。')) {
+                ClearThumbnailCache()
+                    .then(() => setStatus('✓ 缩略图缓存已清除', true))
+                    .catch(console.warn);
+            }
+        })();
+    },
+    'set:libraryroot': () => selectResourceRoot().catch(console.warn),
+    'set:resourceroot': () => selectResourceRoot().catch(console.warn),
+    'set:path:pmx': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
+    'set:path:vmd': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
+    'set:path:stage': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
+    'set:path:environment': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
+    'set:path:md_dress': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
+    'set:path:setting': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
+    'set:addexternal': () => {
+        (async () => {
+            try {
+                const dir = await SelectDir();
+                if (!dir) {
+                    return;
+                }
+                await AddExternalPath(dir);
+                await reloadConfig();
+                if (libraryRoot) {
+                    await rescanAndSync();
+                }
+                setStatus('✓ 外部库已添加', true);
+            } catch (err) {
+                console.error('AddExternalPath error:', err);
+            }
+        })();
+    },
+};
+
+function applyDisplayNamePriority(priority: DisplayNamePriority): void {
+    setDisplayNamePriority(priority);
+    SetDisplayNamePriority(priority).catch(console.warn);
+}
+
 function handleSettingsAction(row: PopupRow): void {
-    switch (row.target) {
-        case 'set:name_jp':
-        case 'set:name_en': {
-            const priority = row.target.replace('set:', '') as DisplayNamePriority;
-            setDisplayNamePriority(priority);
-            SetDisplayNamePriority(priority).catch(console.warn);
-            break;
-        }
-        case 'set:filename':
-            setDisplayNamePriority('filename');
-            SetDisplayNamePriority('filename').catch(console.warn);
-            break;
-        case 'set:clearextractcache':
-            ClearExtractCache()
-                .then(() => setStatus('✓ 提取缓存已清除', true))
-                .catch(console.warn);
-            break;
-        case 'set:clearthumbnail':
-            (async () => {
-                if (await showConfirm('确定要清除所有缩略图缓存吗？下次加载模型时将重新生成。')) {
-                    ClearThumbnailCache()
-                        .then(() => setStatus('✓ 缩略图缓存已清除', true))
-                        .catch(console.warn);
-                }
-            })();
-            break;
-        case 'set:libraryroot':
-            selectResourceRoot().catch(console.warn);
-            break;
-        case 'set:resourceroot':
-            selectResourceRoot().catch(console.warn);
-            break;
-        case 'set:path:pmx':
-        case 'set:path:vmd':
-        case 'set:path:stage':
-        case 'set:path:environment':
-        case 'set:path:md_dress':
-        case 'set:path:setting': {
-            const cat = row.target.replace('set:path:', '');
-            selectOverridePath(cat).catch(console.warn);
-            break;
-        }
-        case 'set:addexternal':
-            (async () => {
-                try {
-                    const dir = await SelectDir();
-                    if (!dir) {
-                        return;
-                    }
-                    await AddExternalPath(dir);
-                    await reloadConfig();
-                    if (libraryRoot) {
-                        await rescanAndSync();
-                    }
-                    setStatus('✓ 外部库已添加', true);
-                } catch (err) {
-                    console.error('AddExternalPath error:', err);
-                }
-            })();
-            break;
-        default:
-            break;
+    if (row.target) {
+        SETTINGS_ACTIONS[row.target]?.(row);
     }
 }
 
@@ -943,9 +939,8 @@ function buildSettingsDownloadLevel(): PopupLevel {
                 }
                 stopRow.appendChild(si);
                 const sl = document.createElement('span');
-                sl.className = 'slide-label';
+                sl.className = 'slide-label danger-text';
                 sl.textContent = '停止监听';
-                sl.style.color = 'var(--danger,#e74c3c)';
                 stopRow.appendChild(sl);
                 stopRow.addEventListener('click', async () => {
                     try {
@@ -1018,64 +1013,61 @@ function buildSettingsPerformanceLevel(): PopupLevel {
     };
 }
 
-export async function showSettings(): Promise<void> {
-    dom.sceneOverlay.classList.remove('sceneOverlay-model', 'sceneOverlay-motion');
-    dom.sceneOverlay.classList.add('sceneOverlay-settings');
-    dom.sceneOverlay.dataset.popupType = 'settings';
-
-    const wrapper = getMenuWrapper('settings-menu');
-    if (settingsMenu) {
-        // 每次显示重新注册全局引用（onClose 会清空它们）
-        (window as any).__getSettingsMenuPush = () => settingsMenu?.push.bind(settingsMenu);
-        (window as any).__getSettingsMenuPop = () => settingsMenu?.pop.bind(settingsMenu);
-        (window as any).__getSettingsMenuReRender = () => settingsMenu?.reRender.bind(settingsMenu);
-        (window as any).__handleSettingsAction = handleSettingsAction;
-        settingsMenu.resetToRoot();
-        settingsMenu.reRender();
-        return;
-    }
-
-    settingsMenu = new SlideMenu({
-        container: wrapper,
-        onClose: () => {
-            (window as any).__getSettingsMenuPush = null;
-            (window as any).__getSettingsMenuPop = null;
-            (window as any).__getSettingsMenuReRender = null;
-            (window as any).__handleSettingsAction = null;
-            closeAllOverlays();
-        },
-        onItemClick: (row) => handleSettingsAction(row),
-        onFolderEnter: (row) => {
-            switch (row.target) {
-                case 'settings:display':
-                    return buildSettingsDisplayLevel();
-                case 'settings:download':
-                    return buildSettingsDownloadLevel();
-                case 'settings:ui':
-                    return buildSettingsUILevel();
-                case 'settings:system':
-                    return buildSettingsSystemLevel();
-                case 'settings:external':
-                    return buildSettingsExternalLevel();
-                case 'settings:clearcache':
-                    return buildSettingsClearCacheLevel();
-                case 'settings:software':
-                    return buildSettingsSoftwareLevel();
-                default:
-                    if (row.target && row.target.startsWith('settings:software-detail:')) {
-                        const path = row.target.slice('settings:software-detail:'.length);
-                        return buildSoftwareDetailLevel(path);
-                    }
-                    return null;
+/** settings 的 onFolderEnter 路由（从 showSettings 提取） */
+function settingsOnFolderEnter(row: PopupRow): PopupLevel | null {
+    switch (row.target) {
+        case 'settings:display':
+            return buildSettingsDisplayLevel();
+        case 'settings:download':
+            return buildSettingsDownloadLevel();
+        case 'settings:ui':
+            return buildSettingsUILevel();
+        case 'settings:system':
+            return buildSettingsSystemLevel();
+        case 'settings:external':
+            return buildSettingsExternalLevel();
+        case 'settings:clearcache':
+            return buildSettingsClearCacheLevel();
+        case 'settings:software':
+            return buildSettingsSoftwareLevel();
+        default:
+            if (row.target && row.target.startsWith('settings:software-detail:')) {
+                const path = row.target.slice('settings:software-detail:'.length);
+                return buildSoftwareDetailLevel(path);
             }
-        },
-        onAfterRender: () => {},
-    });
+            return null;
+    }
+}
 
-    (window as any).__getSettingsMenuPush = () => settingsMenu?.push.bind(settingsMenu);
-    (window as any).__getSettingsMenuPop = () => settingsMenu?.pop.bind(settingsMenu);
-    (window as any).__getSettingsMenuReRender = () => settingsMenu?.reRender.bind(settingsMenu);
+/** 每次 show 时注册 window 全局引用（onClose 会清空它们） */
+function registerSettingsGlobals(menu: SlideMenu): void {
+    (window as any).__getSettingsMenuPush = () => menu?.push.bind(menu);
+    (window as any).__getSettingsMenuPop = () => menu?.pop.bind(menu);
+    (window as any).__getSettingsMenuReRender = () => menu?.reRender.bind(menu);
     (window as any).__handleSettingsAction = handleSettingsAction;
+}
 
-    settingsMenu.reset(buildSettingsRoot());
+/** 关闭时清空 window 全局引用 */
+function unregisterSettingsGlobals(): void {
+    (window as any).__getSettingsMenuPush = null;
+    (window as any).__getSettingsMenuPop = null;
+    (window as any).__getSettingsMenuReRender = null;
+    (window as any).__handleSettingsAction = null;
+}
+
+export async function showSettings(): Promise<void> {
+    showPopupMenu({
+        getMenu: () => settingsMenu,
+        setMenu: (m) => { settingsMenu = m; },
+        wrapperKey: 'settings-menu',
+        popupType: 'settings',
+        overlayClass: 'sceneOverlay-settings',
+        buildRoot: buildSettingsRoot,
+        handlers: {
+            onItemClick: (row) => handleSettingsAction(row),
+            onFolderEnter: settingsOnFolderEnter,
+        },
+        onShow: (menu) => registerSettingsGlobals(menu),
+        onClose: () => unregisterSettingsGlobals(),
+    });
 }

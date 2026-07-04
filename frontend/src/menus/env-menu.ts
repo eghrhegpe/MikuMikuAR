@@ -9,11 +9,9 @@ import {
     PopupRow,
     escapeHtml,
     cardContainer,
-    dom,
-    closeAllOverlays,
-    getMenuWrapper,
 } from '../core/config';
 import { SlideMenu } from './menu';
+import { showPopupMenu } from './menu-factory';
 import { createIconifyIcon } from '../core/icons';
 import {
     slideRow,
@@ -65,9 +63,11 @@ export function getEnvMenu(): SlideMenu | null {
     return envMenu;
 }
 
+/** 当前选中的环境氛围预设 key */
+let _activeEnvPresetKey = 'noon';
+
 /**
- * 渲染环境氛围预设芯片组（去重：原 buildEnvLevel / buildEnvUnifiedLevel / buildEnvLightingLevel 三处重复）。
- * 点击芯片 → 应用预设 → 触发当前 envMenu 重绘。
+ * 渲染环境氛围预设芯片组（紧凑 preset-chip 布局，替代旧 slideRow 全宽行）。
  */
 function renderPresetChips(container: HTMLElement): void {
     const chipGroup = document.createElement('div');
@@ -78,6 +78,7 @@ function renderPresetChips(container: HTMLElement): void {
         btn.textContent = p.label;
         btn.className = 'preset-chip';
         btn.addEventListener('click', () => {
+            _activeEnvPresetKey = key;
             applyEnvPreset(key);
             envMenu.reRender();
         });
@@ -349,23 +350,12 @@ function envOnFolderEnter(row: PopupRow): PopupLevel | null {
 // ======== Show Env Menu ========
 
 export function showEnvMenu(): void {
-    dom.sceneOverlay.classList.remove('sceneOverlay-model', 'sceneOverlay-motion', 'sceneOverlay-settings');
-    dom.sceneOverlay.dataset.popupType = 'env';
-
-    const wrapper = getMenuWrapper('env-menu');
-    if (envMenu) {
-        envMenu.resetToRoot();
-        envMenu.reRender();
-        return;
-    }
-
-    envMenu = new SlideMenu({
-        container: wrapper,
-        onClose: () => closeAllOverlays(),
-        onItemClick: () => {},
-        onFolderEnter: envOnFolderEnter,
-        onAfterRender: () => {},
+    showPopupMenu({
+        getMenu: () => envMenu,
+        setMenu: (m) => { envMenu = m; },
+        wrapperKey: 'env-menu',
+        popupType: 'env',
+        buildRoot: buildEnvLevel,
+        handlers: { onFolderEnter: envOnFolderEnter },
     });
-
-    envMenu.reset(buildEnvLevel());
 }
