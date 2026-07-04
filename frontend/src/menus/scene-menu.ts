@@ -20,36 +20,23 @@ import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
 import {
-    triggerAutoSave,
     serializeScene,
-    deserializeScene,
-    getRenderState,
-    setRenderState,
-    transitionRenderState,
 } from '../scene/scene';
 import {
-    SelectSceneSaveFile,
-    SelectSceneOpenFile,
-    SaveSceneFile,
-    LoadSceneFile,
-    DeleteRenderPreset,
     SelectDir,
     SaveScreenshot,
-    GetPresetScenes,
-    GetPresetScenesDir,
     SaveScenePreset,
-    DeletePresetScene,
 } from '../core/wails-bindings';
 import { focusModel } from '../scene/scene';
 
 // ======== 从子文件导入 ========
 import {
-    buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel, buildPresetScenesLevel, buildPresetsLevel, loadUserPresets, showPresetSaveDialog, userPresets, getBuiltinPreset, getPresetName,
+    buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel, buildPresetScenesLevel,
 } from './scene-render-levels';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
-export { buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel, buildPresetScenesLevel, buildPresetsLevel, loadUserPresets, showPresetSaveDialog, userPresets, getBuiltinPreset, getPresetName } from './scene-render-levels';
+export { buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel, buildPresetScenesLevel } from './scene-render-levels';
 
 // ======== Scene Menu State ========
 
@@ -104,9 +91,6 @@ function buildSceneRoot(): PopupLevel {
                 slideRow(c, 'lucide:save', '保存场景', false, () => {
                     handleSceneAction({ kind: 'action', label: '', icon: '', target: 'scene:save' });
                 });
-                slideRow(c, 'lucide:folder-open', '加载场景', false, () => {
-                    handleSceneAction({ kind: 'action', label: '', icon: '', target: 'scene:load' });
-                });
             });
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:sparkles', '后处理', true, () =>
@@ -115,11 +99,6 @@ function buildSceneRoot(): PopupLevel {
                 slideRow(c, 'lucide:monitor', '舞台', true, () =>
                     sceneMenu.push(buildStageLevel())
                 );
-                slideRow(c, 'lucide:palette', '渲染预设', true, () =>
-                    sceneMenu.push(buildPresetsLevel())
-                );
-            });
-            cardContainer(container, (c) => {
                 slideRow(c, 'lucide:lightbulb', '舞台灯光', true, () =>
                     sceneMenu.push(buildStageLightLevel())
                 );
@@ -145,8 +124,6 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
             return buildPostProcessLevel();
         case 'scene:render:stage':
             return buildStageLevel();
-        case 'scene:render:presets':
-            return buildPresetsLevel();
         default:
             return null;
     }
@@ -210,73 +187,19 @@ function handleSceneAction(row: PopupRow): void {
         })();
         return;
     }
-    // Save scene
+    // Save scene — auto-numbered save to preset directory
     if (row.target === 'scene:save') {
         (async () => {
             try {
-                const path = await SelectSceneSaveFile();
-                if (!path) return;
                 const json = JSON.stringify(serializeScene(), null, 2);
-                await SaveSceneFile(json, path);
-                await SaveScenePreset(json);
-                setStatus('✓ 场景已保存', true);
+                const filename = await SaveScenePreset(json);
+                setStatus(`✓ 场景已保存: ${filename}`, true);
+                reRenderSceneMenu();
             } catch (err) {
                 setStatus('✗ 保存失败', false);
                 console.error('Save scene error:', err);
             }
         })();
-        return;
-    }
-    // Load scene
-    if (row.target === 'scene:load') {
-        (async () => {
-            try {
-                const path = await SelectSceneOpenFile();
-                if (!path) return;
-                const json = await LoadSceneFile(path);
-                await deserializeScene(JSON.parse(json));
-                setStatus('✓ 场景已加载', true);
-            } catch (err) {
-                setStatus('✗ 加载失败', false);
-                console.error('Load scene error:', err);
-            }
-        })();
-        return;
-    }
-    // Render preset handling
-    if (row.target && row.target.startsWith('scene:preset:')) {
-        const action = row.target.replace('scene:preset:', '');
-        if (action === 'save') { showPresetSaveDialog(); return; }
-        if (action.startsWith('delete:')) {
-            const name = action.replace('delete:', '');
-            (async () => {
-                try {
-                    await DeleteRenderPreset(name);
-                    delete userPresets[name];
-                    if (sceneMenu) {
-                        sceneMenu.setLevel(sceneMenu.levelCount - 1, buildPresetsLevel());
-                        reRenderSceneMenu();
-                    }
-                    setStatus(`✓ 预设已删除: ${name}`, true);
-                } catch (err) {
-                    console.warn('DeleteRenderPreset failed:', err);
-                    setStatus('✗ 删除预设失败', false);
-                }
-            })();
-            return;
-        }
-        let preset: Partial<import('../scene/scene').RenderState> | undefined;
-        if (action.startsWith('user:')) {
-            const userName = action.substring(5);
-            preset = userPresets[userName];
-        } else {
-            preset = getBuiltinPreset(action);
-        }
-        if (preset) {
-            transitionRenderState(preset, 2000);
-            triggerAutoSave();
-            setStatus(`✓ 预设: ${getPresetName(action)}`, true);
-        }
         return;
     }
 }
@@ -289,13 +212,10 @@ export async function showSceneMenu(): Promise<void> {
 
     const wrapper = getMenuWrapper('scene-menu');
     if (sceneMenu) {
-        await loadUserPresets();
         sceneMenu.resetToRoot();
         sceneMenu.reRender();
         return;
     }
-
-    await loadUserPresets();
 
     sceneMenu = new SlideMenu({
         container: wrapper,

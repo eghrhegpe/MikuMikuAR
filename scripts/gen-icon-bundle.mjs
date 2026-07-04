@@ -60,9 +60,21 @@ async function main() {
 
 import { addCollection } from 'iconify-icon';
 
-const LUCIDE_BUNDLE = ${JSON.stringify({ prefix: 'lucide', icons: lucideData.icons, aliases: lucideData.aliases }, null, 2)};
+const LUCIDE_BUNDLE = ${JSON.stringify({
+    prefix: 'lucide',
+    icons: lucideData.icons,
+    aliases: lucideData.aliases,
+    width: lucideData.width ?? 24,
+    height: lucideData.height ?? 24,
+}, null, 2)};
 
-const TABLER_BUNDLE = ${JSON.stringify({ prefix: 'tabler', icons: tablerData.icons, aliases: tablerData.aliases }, null, 2)};
+const TABLER_BUNDLE = ${JSON.stringify({
+    prefix: 'tabler',
+    icons: tablerData.icons,
+    aliases: tablerData.aliases,
+    width: tablerData.width ?? 24,
+    height: tablerData.height ?? 24,
+}, null, 2)};
 
 export function registerIconBundle(): void {
   addCollection(LUCIDE_BUNDLE);

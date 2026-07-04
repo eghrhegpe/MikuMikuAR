@@ -184,6 +184,7 @@ UI 渲染架构革命：从全量重建到增量 patch，议会三路分流，20
 | 章 | 标题 | 文件 |
 |----|------|------|
 | 1 | 议会的三路分流 | [vol-10-incremental-republic/01-议会的三路分流.md](vol-10-incremental-republic/01-议会的三路分流.md) |
+| 2 | 城邦的户籍重划 | [vol-10-incremental-republic/02-城邦的户籍重划.md](vol-10-incremental-republic/02-城邦的户籍重划.md) |
 
 ---
 
