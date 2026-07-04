@@ -325,7 +325,8 @@ export function buildLevel(
     const subdirs = new Set<string>();
     const subdirIsLeaf = new Set<string>();
 
-    for (const m of allModels) {
+    const modelList = allModels || [];
+    for (const m of modelList) {
         if (filter && !filter(m)) {
             continue;
         }
@@ -350,7 +351,7 @@ export function buildLevel(
     for (const d of Array.from(subdirs).sort()) {
         const fullPath = dir + '/' + d;
         if (subdirIsLeaf.has(d) && !isRoot) {
-            const entries = allModels.filter((m) => {
+            const entries = modelList.filter((m) => {
                 if (filter && !filter(m)) {
                     return false;
                 }
@@ -613,7 +614,7 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
                         '<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">该标签下没有模型</div>';
                     return;
                 }
-                const matched = allModels.filter((m) => {
+                const matched = (allModels || []).filter((m) => {
                     const ref = computeLibraryRef(m.file_path);
                     return ref && modelRefs.includes(ref);
                 });
@@ -871,7 +872,7 @@ export async function selectOverridePath(category: string): Promise<void> {
 }
 
 export async function rescanAndSync(dir?: string): Promise<LibraryModel[]> {
-    const models = await ScanModelDir('', externalPaths);
+    const models = (await ScanModelDir('', externalPaths)) || [];
     setAllModels(models);
     return models;
 }
