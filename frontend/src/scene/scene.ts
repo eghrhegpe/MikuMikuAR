@@ -52,12 +52,12 @@ import {
 } from '../core/config';
 import { attachBeatDetector } from '../outfit/audio';
 import { loadOutfits } from '../outfit/outfit';
-import { _catState, _matState, _matEnabled } from './model/material';
+import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
 import { tryAutoApplyPreset } from '../menus/model-preset';
 import { initLighting, _updateSunDisc } from './render/lighting';
 import { initRenderer, rebuildOutlineState, pipeline } from './render/renderer';
-import { initLoader } from './model/model-loader';
+import { initLoader } from './manager/model-loader';
 
 // Re-export material system (extracted to material.ts for file size)
 export {
@@ -79,10 +79,10 @@ export {
     resetAllMatParams,
     getMatState,
     applyMatState,
-} from './model/material';
-export type { MaterialCategoryParams, MaterialCategory } from './model/material';
+} from './manager/material';
+export type { MaterialCategoryParams, MaterialCategory } from './manager/material';
 
-import { ModelManager } from './model/model-manager';
+import { ModelManager } from './manager/model-manager';
 import { updateProcMotion, createProcBeatDetector, getProcBeatDetector } from './motion/proc-motion-bridge';
 import { updateLipSync, initLipSync } from './motion/lipsync-bridge';
 import { triggerAutoSaveImpl } from './scene-serialize';
@@ -277,8 +277,8 @@ export * from './scene-serialize';
 export * from './env/env-bridge';
 export * from './render/lighting';
 export * from './render/renderer';
-export * from './model/model-ops';
-export { loadPMXFile, captureThumbnail, initLoader } from './model/model-loader';
+export * from './manager/model-ops';
+export { loadPMXFile, captureThumbnail, initLoader } from './manager/model-loader';
 export {
     initCameraSystem,
     autoFrame,
@@ -310,5 +310,5 @@ export {
     LoadLastScene,
     SetEnvState,
 } from '../core/wails-bindings';
-export type { LightState, StageLightState } from './scene-lighting';
-export type { RenderState } from './scene-renderer';
+export type { LightState, StageLightState } from './render/lighting';
+export type { RenderState } from './render/renderer';

@@ -1,15 +1,15 @@
 // scene-env.ts — Environment Facade (Phase 8)
 // Delegates all environment calls to scene-env-impl.ts
 // External modules should ONLY import from this file.
-import * as impl from './scene-env-impl';
-import { EnvState, envState } from '../core/config';
+import * as impl from './env-impl';
+import { EnvState, envState } from '../../core/config';
 
 // Re-export _envSys for backward compatibility (used by scene.ts)
-export { _envSys } from './scene-env-impl';
+export { _envSys } from './env-impl';
 // Re-export callback registry for bridge module (time-of-day)
-export { registerSceneTickCallback } from './scene-env-impl';
+export { registerSceneTickCallback } from './env-impl';
 // Re-export observer init for bridge module
-export { ensureEnvUpdateObserver } from './scene-env-impl';
+export { ensureEnvUpdateObserver } from './env-impl';
 
 // Time-of-Day 使用 bridge.ts 的实现（统一的 scene observer）
 import {
@@ -18,7 +18,7 @@ import {
     isTimeOfDayActive as bridgeIsTimeOfDayActive,
     getTimeOfDaySpeed as bridgeGetTimeOfDaySpeed,
     setTimeOfDaySpeed as bridgeSetTimeOfDaySpeed,
-} from './scene-env-bridge';
+} from './env-bridge';
 import { Scene } from '@babylonjs/core/scene';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';

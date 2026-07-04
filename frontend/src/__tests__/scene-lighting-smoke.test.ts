@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as sceneLighting from '../scene/scene-lighting';
+import * as sceneLighting from '../scene/render/lighting';
 
 // Mock Babylon.js modules
 vi.mock('@babylonjs/core/Lights/hemisphericLight', () => ({

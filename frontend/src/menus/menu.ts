@@ -58,7 +58,7 @@ export class SlideMenu {
         // 内联样式由 CSS 控制，只设置必要的过渡
         this.panel.style.transition = `opacity ${TRANSITION_DURATION} ease, transform ${TRANSITION_DURATION} ease`;
         this.panel.style.opacity = '1';
-        this.panel.style.transform = 'translateY(0)';
+        this.panel.style.transform = 'translateX(0)';
         this.panel.style.display = 'flex';
 
         this.viewport.appendChild(this.panel);
@@ -112,7 +112,7 @@ export class SlideMenu {
         this.levels = [level];
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
-        this.panel.style.transform = 'translateY(0)';
+        this.panel.style.transform = 'translateX(0)';
         this.buildPanel(level).then(() => {
             this.updateHeader(level);
             this.setupFocus();
@@ -130,7 +130,7 @@ export class SlideMenu {
         // 旧内容淡出
         this.panel.style.transition = `opacity ${TRANSITION_DURATION_FAST} ease, transform ${TRANSITION_DURATION_FAST} ease`;
         this.panel.style.opacity = '0';
-        this.panel.style.transform = 'translateY(-8px)';
+        this.panel.style.transform = 'translateX(-8px)';
 
         const onFadeOut = async () => {
             this.panel.removeEventListener('transitionend', onFadeOut);
@@ -139,11 +139,11 @@ export class SlideMenu {
             // 新内容从下方淡入
             this.panel.style.transition = 'none';
             this.panel.style.opacity = '0';
-            this.panel.style.transform = 'translateY(8px)';
+            this.panel.style.transform = 'translateX(8px)';
             void this.panel.offsetHeight;
             this.panel.style.transition = `opacity ${TRANSITION_DURATION} ease, transform ${TRANSITION_DURATION} ease`;
             this.panel.style.opacity = '1';
-            this.panel.style.transform = 'translateY(0)';
+            this.panel.style.transform = 'translateX(0)';
 
             const onFadeIn = () => {
                 this.panel.removeEventListener('transitionend', onFadeIn);
@@ -157,7 +157,7 @@ export class SlideMenu {
                 setTimeout(() => {
                     if (this.transitioning) {
                         this.panel.style.opacity = '1';
-                        this.panel.style.transform = 'translateY(0)';
+                        this.panel.style.transform = 'translateX(0)';
                         this.transitioning = false;
                         this.setupFocus();
                         this.onAfterRender?.(level, this);
@@ -171,7 +171,7 @@ export class SlideMenu {
             setTimeout(() => {
                 if (this.transitioning) {
                     this.panel.style.opacity = '0';
-                    this.panel.style.transform = 'translateY(-8px)';
+                    this.panel.style.transform = 'translateX(-8px)';
                     onFadeOut();
                 }
             }, 150)
@@ -188,7 +188,7 @@ export class SlideMenu {
 
         this.panel.style.transition = `opacity ${TRANSITION_DURATION_FAST} ease, transform ${TRANSITION_DURATION_FAST} ease`;
         this.panel.style.opacity = '0';
-        this.panel.style.transform = 'translateY(8px)';
+        this.panel.style.transform = 'translateX(8px)';
 
         const onFadeOut = async () => {
             this.panel.removeEventListener('transitionend', onFadeOut);
@@ -196,11 +196,11 @@ export class SlideMenu {
             this.updateHeader(prevLevel);
             this.panel.style.transition = 'none';
             this.panel.style.opacity = '0';
-            this.panel.style.transform = 'translateY(-8px)';
+            this.panel.style.transform = 'translateX(-8px)';
             void this.panel.offsetHeight;
             this.panel.style.transition = `opacity ${TRANSITION_DURATION} ease, transform ${TRANSITION_DURATION} ease`;
             this.panel.style.opacity = '1';
-            this.panel.style.transform = 'translateY(0)';
+            this.panel.style.transform = 'translateX(0)';
 
             const onFadeIn = () => {
                 this.panel.removeEventListener('transitionend', onFadeIn);
@@ -214,7 +214,7 @@ export class SlideMenu {
                 setTimeout(() => {
                     if (this.transitioning) {
                         this.panel.style.opacity = '1';
-                        this.panel.style.transform = 'translateY(0)';
+                        this.panel.style.transform = 'translateX(0)';
                         this.transitioning = false;
                         this.setupFocus();
                         this.onAfterRender?.(prevLevel, this);
@@ -228,7 +228,7 @@ export class SlideMenu {
             setTimeout(() => {
                 if (this.transitioning) {
                     this.panel.style.opacity = '0';
-                    this.panel.style.transform = 'translateY(8px)';
+                    this.panel.style.transform = 'translateX(8px)';
                     onFadeOut();
                 }
             }, 150)
@@ -247,7 +247,7 @@ export class SlideMenu {
         const level = this.currentLevel!;
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
-        this.panel.style.transform = 'translateY(0)';
+        this.panel.style.transform = 'translateX(0)';
         this.buildPanel(level).then(() => {
             this.updateHeader(level);
             this.setupFocus();
@@ -279,7 +279,9 @@ export class SlideMenu {
 
         const finalize = () => {
             this.updateHeader(level);
-            if (!opts?.preserveFocus) {
+            // reRenderCustom 路径是增量更新，不抢焦点
+            const preserve = opts?.preserveFocus ?? (level.reRenderCustom !== undefined);
+            if (!preserve) {
                 this.setupFocus();
             }
             this.onAfterRender?.(level, this);
@@ -361,7 +363,7 @@ export class SlideMenu {
         this._cancelTimeout();
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
-        this.panel.style.transform = 'translateY(0)';
+        this.panel.style.transform = 'translateX(0)';
     }
 
     /** 记录一个由动画生命周期管理的 setTimeout */

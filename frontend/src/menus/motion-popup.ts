@@ -69,6 +69,7 @@ import type { ProcMotionMode } from '../motion/procedural-motion';
 import {
     buildProcMotionLevel, buildProcMotionModeLevel, buildLipSyncLevel,
 } from './motion-procmotion-levels';
+import { buildCameraLevel } from './motion-camera-levels';
 import { toggleCloth } from '../physics/cloth-manager';
 import { setEnvState } from '../scene/scene';
 
@@ -237,6 +238,7 @@ function makeMotionMenu(container: HTMLElement): SlideMenu {
         container,
         onClose: closeAllOverlays,
         onFolderEnter: (row) => {
+            if (row.target === 'motion:camera') { return buildCameraLevel(); }
             if (row.target === '__music__') { setMotionBindingTargetId(null); return buildActionMusicLevel(); }
             if (row.target === 'motion:recent') { return buildRecentMotionsLevel(); }
             if (row.target === 'motion:procmotion') { return buildProcMotionLevel(); }
@@ -369,67 +371,69 @@ function buildRecentMotionsLevel(): PopupLevel {
 // ======== Motion Root (items-based) ========
 
 /** 动作弹窗根级 items 构建器——动态反映 modelRegistry / recent / cloth 状态。 */
-function buildMotionRootItems(): PopupRow[] {
-    const items: PopupRow[] = [];
-    // Card 1: 已加载模型
-    if (modelRegistry.size > 0) {
-        for (const [id, inst] of modelRegistry) {
-            items.push({
-                kind: 'folder',
-                label: inst.name,
-                icon: 'tabler:cube-3d-sphere',
-                target: `action:binding:${id}`,
-                sublabel: inst.vmdName || undefined,
-                catTag: inst.kind === 'actor' ? '角色' : '舞台',
+function buildMotionRootLevel(): PopupLevel {
+    const renderContent = (container: HTMLElement) => {
+        // Card 1: 已加载模型
+        if (modelRegistry.size > 0) {
+            cardContainer(container, (c) => {
+                for (const [id, inst] of modelRegistry) {
+                    slideRow(c, 'tabler:cube-3d-sphere', inst.name, true, () => {
+                        motionMenu.push(buildActionBindingLevel(id));
+                    }, inst.vmdName || undefined, inst.kind === 'actor' ? '角色' : '舞台');
+                }
             });
         }
-        items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    }
-    // Card 2: 最近使用
-    if (getRecentMotions().length > 0) {
-        items.push({
-            kind: 'folder', label: '最近使用', icon: 'lucide:clock', target: 'motion:recent',
+
+        // Card 2: 最近使用
+        const recent = getRecentMotions();
+        if (recent.length > 0) {
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:clock', '最近使用', true, () => {
+                    motionMenu.push(buildRecentMotionsLevel());
+                });
+            });
+        }
+
+        // Card 3: 相机 + 音乐 + 程序化动作
+        cardContainer(container, (c) => {
+            slideRow(c, 'lucide:video', '相机', true, () => motionMenu.push(buildCameraLevel()));
+            slideRow(c, 'lucide:music', '音乐', true, () => { setMotionBindingTargetId(null); motionMenu.push(buildActionMusicLevel()); });
+            slideRow(c, 'lucide:wind', '程序化动作', true, () => motionMenu.push(buildProcMotionLevel()));
         });
-        items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    }
-    // Card 3: 音乐 + 程序化动作
-    items.push({ kind: 'folder', label: '音乐', icon: 'lucide:music', target: '__music__' });
-    items.push({ kind: 'folder', label: '程序化动作', icon: 'lucide:wind', target: 'motion:procmotion' });
-    items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    // Card 4: 物理重力 + 布料模拟
-    items.push({
-        kind: 'slider',
-        label: '物理重力',
-        icon: 'lucide:arrow-down',
-        target: 'motion:gravity',
-        sliderValue: getGravityStrength(),
-        sliderMin: 0,
-        sliderMax: 2,
-        sliderStep: 0.05,
-        onSliderChange: (v) => setGravityStrength(v),
-    });
-    items.push({
-        kind: 'folder',
-        label: '布料模拟',
-        icon: 'lucide:shirt',
-        target: 'motion:cloth',
-        headerToggle: {
-            value: envState.clothEnabled,
-            onChange: (v) => {
-                setEnvState({ clothEnabled: v });
-                if (v) toggleCloth(true); else toggleCloth(false);
-                refreshMotionRoot();
-            },
+
+        // Card 4: 物理重力 + 布料模拟 headerToggle
+        cardContainer(container, (c) => {
+            addSliderRow(c, '物理重力', getGravityStrength(), 0, 2, 0.05,
+                (v) => setGravityStrength(v), 'lucide:arrow-down');
+            slideRow(c, 'lucide:shirt', '布料模拟', true,
+                () => motionMenu.push(buildClothParamsLevel()),
+                undefined, undefined, {
+                    value: envState.clothEnabled,
+                    onChange: (v) => {
+                        setEnvState({ clothEnabled: v });
+                        if (v) toggleCloth(true); else toggleCloth(false);
+                        refreshMotionRoot();
+                    },
+                });
+        });
+    };
+
+    return {
+        label: '动作',
+        dir: '',
+        items: [],
+        renderCustom: renderContent,
+        reRenderCustom: (container) => {
+            container.querySelectorAll('.lcard').forEach(el => el.remove());
+            renderContent(container);
         },
-    });
-    return items;
+    };
 }
 
-const motionRootLevel: PopupLevel = { label: '动作', dir: '', items: [] };
+const _motionRootLevel = buildMotionRootLevel();
 
-/** 重新计算根级 items 并触发 reRender（toggle/slider 状态变化后调用）。 */
+/** 重新渲染运动根面板（toggle/slider 状态变化后调用）。 */
 export function refreshMotionRoot(): void {
-    motionRootLevel.items = buildMotionRootItems();
     motionMenu?.reRender();
 }
 
@@ -440,15 +444,13 @@ export function showMotionPopup(): void {
 
     const wrapper = getMenuWrapper('motion-popup');
     if (motionMenu) {
-        motionRootLevel.items = buildMotionRootItems();
         motionMenu.resetToRoot();
         motionMenu.reRender();
         return;
     }
 
     motionMenu = makeMotionMenu(wrapper);
-    motionRootLevel.items = buildMotionRootItems();
-    motionMenu.reset(motionRootLevel);
+    motionMenu.reset(_motionRootLevel);
 }
 
 export function hideMotionPopup(): void {

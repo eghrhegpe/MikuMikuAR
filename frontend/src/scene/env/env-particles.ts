@@ -5,8 +5,8 @@ import {
     GPUParticleSystem,
     ParticleSystem,
 } from '@babylonjs/core';
-import { EnvState, envState } from '../core/config';
-import { _envSys, getScene } from './scene-env-impl';
+import { EnvState, envState } from '../../core/config';
+import { _envSys, getScene } from './env-impl';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';

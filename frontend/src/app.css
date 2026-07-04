@@ -283,6 +283,20 @@ body {
     color: rgba(255, 255, 255, 0.35);
     font-size: calc(var(--font-time) - 1px);
 }
+
+/* ===== 无 UI 模式 ===== */
+.ui-hidden #bottomNav,
+.ui-hidden #playbackBar,
+.ui-hidden #statusBar {
+    display: none !important;
+}
+
+/* ===== 图标默认尺寸（约束 iconify-icon 避免 bundle 注册后尺寸异常） ===== */
+.menu-icon-svg {
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+}
 #loading {
     display: none;
     position: absolute;

@@ -1,6 +1,6 @@
 // [doc:architecture] Scene Menu — 场景弹窗（核心 + barrel export）
 // 职责: MenuStack 场景弹窗路由/入口，拆分后只保留根级 + 路由 + 动作处理
-// 子文件: scene-camera-levels.ts, scene-render-levels.ts
+// 子文件: scene-render-levels.ts
 // 程序化动作/LipSync 已归位 motion-procmotion-levels.ts（动作弹窗域）
 // 环境功能归位 env-menu.ts（环境弹窗域）
 
@@ -20,15 +20,6 @@ import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
 import {
-    switchCameraMode,
-    getCameraMode,
-    hasCameraVmd,
-    clearCameraVmd,
-    getConcertPaused,
-    setConcertPaused,
-    type CameraMode,
-} from '../scene/camera';
-import {
     triggerAutoSave,
     serializeScene,
     deserializeScene,
@@ -42,7 +33,6 @@ import {
     SaveSceneFile,
     LoadSceneFile,
     DeleteRenderPreset,
-    SelectVMDMotion,
     SelectDir,
     SaveScreenshot,
     GetPresetScenes,
@@ -51,22 +41,14 @@ import {
     DeletePresetScene,
 } from '../core/wails-bindings';
 import { focusModel } from '../scene/scene';
-import { loadCameraVmdFromPath } from '../scene/scene';
 
 // ======== 从子文件导入 ========
 import {
-    buildCameraLevel, buildCameraParamsLevel,
-    // re-exported below
-} from './scene-camera-levels';
-import {
-    buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel,
-    buildPresetScenesLevel, buildPresetsLevel,
-    loadUserPresets, showPresetSaveDialog, userPresets, getBuiltinPreset, getPresetName,
+    buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel, buildPresetScenesLevel, buildPresetsLevel, loadUserPresets, showPresetSaveDialog, userPresets, getBuiltinPreset, getPresetName,
 } from './scene-render-levels';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
-export { buildCameraLevel, buildCameraParamsLevel } from './scene-camera-levels';
 export { buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel, buildPresetScenesLevel, buildPresetsLevel, loadUserPresets, showPresetSaveDialog, userPresets, getBuiltinPreset, getPresetName } from './scene-render-levels';
 
 // ======== Scene Menu State ========
@@ -155,18 +137,10 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
     switch (row.target) {
         case 'scene:presets':
             return buildPresetScenesLevel();
-        case 'scene:camera':
-            return buildCameraLevel();
         case 'scene:render':
             return buildRenderLevel();
         case 'scene:screenshot':
             return buildScreenshotLevel();
-        case 'camera:params:orbit':
-            return buildCameraParamsLevel('orbit');
-        case 'camera:params:freefly':
-            return buildCameraParamsLevel('freefly');
-        case 'camera:params:concert':
-            return buildCameraParamsLevel('concert');
         case 'scene:render:postprocess':
             return buildPostProcessLevel();
         case 'scene:render:stage':
@@ -181,50 +155,6 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
 // ======== handleSceneAction ========
 
 function handleSceneAction(row: PopupRow): void {
-    // Camera VMD actions
-    if (row.target === 'camera:load-vmd') {
-        (async () => {
-            try {
-                const path = await SelectVMDMotion();
-                if (!path) return;
-                await loadCameraVmdFromPath(path);
-                reRenderSceneMenu();
-            } catch (err) {
-                console.error('Load camera VMD failed:', err);
-                setStatus('✗ 相机 VMD 加载失败', false);
-            }
-        })();
-        return;
-    }
-    if (row.target === 'camera:clear-vmd') {
-        clearCameraVmd();
-        reRenderSceneMenu();
-        setStatus('✓ 已清除相机 VMD', true);
-        return;
-    }
-    if (row.target === 'camera:concert:toggle') {
-        const current = getConcertPaused();
-        setConcertPaused(!current);
-        reRenderSceneMenu();
-        setStatus(current ? '▶ 演唱会旋转已恢复' : '⏸ 演唱会旋转已暂停', true);
-        return;
-    }
-    // Camera mode switching
-    if (row.target && row.target.startsWith('camera:') && !row.target.includes(':params:') && !row.target.includes(':concert:')) {
-        const mode = row.target.replace('camera:', '') as CameraMode;
-        if (mode === 'vmd' && !hasCameraVmd()) {
-            setStatus('✗ 请先加载相机 VMD', false);
-            return;
-        }
-        switchCameraMode(mode);
-        reRenderSceneMenu();
-        if (mode !== 'oneshot') triggerAutoSave();
-        const labels: Record<string, string> = {
-            orbit: '轨道', freefly: '自由飞行', concert: '演唱会', oneshot: '单拍', vmd: 'VMD 相机',
-        };
-        setStatus(`✓ 相机: ${labels[mode] || mode}`, true);
-        return;
-    }
     // Screenshot current focused model
     if (row.target === 'screenshot:current') {
         (async () => {

@@ -2,9 +2,9 @@
 // 在渲染循环中调用，根据帧率自动调整渲染质量。
 // 注意：模块级状态假定单例场景，不适用于多渲染上下文。
 
-import { engine } from './scene';
-import { setLightState, setRenderState, getLightState, getRenderState } from './scene';
-import type { LightState, RenderState } from './scene';
+import { engine } from '../scene';
+import { setLightState, setRenderState, getLightState, getRenderState } from '../scene';
+import type { LightState, RenderState } from '../scene';
 
 // ======== Types ========
 

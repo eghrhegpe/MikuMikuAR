@@ -5,8 +5,8 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 
-import { modelRegistry, uiState } from '../core/config';
-import { triggerAutoSave } from '../core/config';
+import { modelRegistry, uiState } from '../../core/config';
+import { triggerAutoSave } from '../../core/config';
 
 export type MaterialCategoryParams = {
     diffuseMul: number;

@@ -12,12 +12,12 @@ import {
     seekDragging,
     formatTime,
     mmdRuntime,
-} from '../core/config';
-import { syncAudioPlayback, isAudioPlaying } from '../outfit/audio';
-import { animateCameraVmd } from './camera';
+} from '../../core/config';
+import { syncAudioPlayback, isAudioPlaying } from '../../outfit/audio';
+import { animateCameraVmd } from '../camera/camera';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
-import type { ModelManager } from './scene-model';
-import type { BeatDetector } from '../motion/beat-detector';
+import type { ModelManager } from '../manager/model-manager';
+import type { BeatDetector } from '../../motion/beat-detector';
 
 // ======== 辅助函数 ========
 

@@ -837,3 +837,40 @@ export function addCollapsible(
         panel.style.maxHeight = '0';
     }
 }
+
+// ======== 便捷封装 — 新代码推荐使用 ========
+
+/**
+ * addSliderRow 的简化版：real-time 回调固定为空，只保留 onDragEnd。
+ * 签名：sliderRow(container, label, value, min, max, step, icon, onDragEnd)
+ */
+export function sliderRow(
+    container: HTMLElement,
+    label: string,
+    value: number,
+    min: number,
+    max: number,
+    step: number,
+    icon: string,
+    onDragEnd: (v: number) => void
+): void {
+    addSliderRow(container, label, value, min, max, step, () => {}, icon, onDragEnd);
+}
+
+/**
+ * addToggleRow 的简化版：自动在 onChange 后调用 onSave（如 triggerAutoSave）。
+ * 签名：toggleRow(container, label, value, icon, onChange, onSave?)
+ */
+export function toggleRow(
+    container: HTMLElement,
+    label: string,
+    value: boolean,
+    icon: string,
+    onChange: (v: boolean) => void,
+    onSave?: () => void
+): void {
+    addToggleRow(container, label, value, (v) => {
+        onChange(v);
+        onSave?.();
+    }, icon);
+}

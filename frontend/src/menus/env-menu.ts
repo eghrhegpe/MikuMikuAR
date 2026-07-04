@@ -35,13 +35,13 @@ import {
     getLightState,
     setLightState as setLightingState,
     transitionLighting,
-} from '../scene/scene-lighting';
+} from '../scene/render/lighting';
 import {
     ENV_PRESETS as ENV_LIGHTING_PRESETS,
     exportEnvPreset,
     importEnvPreset,
     type EnvPreset,
-} from '../scene/env-lighting';
+} from '../scene/env/env-lighting';
 import {
     SelectEnvTextureFile,
 } from '../core/wails-bindings';

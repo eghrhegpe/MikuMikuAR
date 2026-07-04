@@ -9,15 +9,15 @@ import {
     findLipMorph,
     findAllLipMorphs,
     amplitudeToWeight,
-} from '../motion/lipsync';
-import { focusedModelId, triggerAutoSave } from '../core/config';
-import { isAudioPlaying } from '../outfit/audio';
-import { setModelMorphWeight } from './scene';
-import { getProcBeatDetector } from './scene-proc-motion';
+} from '../../motion/lipsync';
+import { focusedModelId, triggerAutoSave } from '../../core/config';
+import { isAudioPlaying } from '../../outfit/audio';
+import { setModelMorphWeight } from '../scene';
+import { getProcBeatDetector } from './proc-motion-bridge';
 
-let _modelManager: import('./scene-model').ModelManager | null = null;
+let _modelManager: import('../manager/model-manager').ModelManager | null = null;
 
-export function initLipSync(mm: import('./scene-model').ModelManager): void {
+export function initLipSync(mm: import('../manager/model-manager').ModelManager): void {
     _modelManager = mm;
 }
 

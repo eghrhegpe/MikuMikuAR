@@ -20,7 +20,7 @@ import {
     ShaderMaterial,
 } from '@babylonjs/core';
 import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
-import { EnvState, envState } from '../core/config';
+import { EnvState, envState } from '../../core/config';
 
 // ======== Scene Tick Callback Registry (统一 scene observer) ========
 /** 统一管理所有 scene.onBeforeRenderObservable 回调。
@@ -74,8 +74,8 @@ export {
     _underwaterSavedFog,
     _underwaterTransitionProgress,
     _underwaterTarget,
-} from './scene-env-water';
-export { createClouds, disposeClouds } from './scene-env-clouds';
+} from './env-water';
+export { createClouds, disposeClouds } from './env-clouds';
 import {
     createParticleEmitter,
     disposeParticles,
@@ -83,9 +83,9 @@ import {
     updateParticleWind,
     updateParticleParams,
     getCurrentParticleType,
-} from './scene-env-particles';
-import { _disposeSunDisc } from './scene-lighting';
-import { updateUnderwaterTransition, resetUnderwaterState } from './scene-env-water';
+} from './env-particles';
+import { _disposeSunDisc } from '../render/lighting';
+import { updateUnderwaterTransition, resetUnderwaterState } from './env-water';
 
 export { createParticleEmitter, disposeParticles, applyWindToParticles, updateParticleWind };
 

@@ -92,8 +92,8 @@ docs/
 | **改前端渲染** | `docs/architecture.md`（PMX/VMD 环节）→ `frontend/src/scene/scene.ts` |
 | **换装 / 纹理变体** | `docs/architecture.md` §16 → `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
 | **音频 / VMD 同步** | `frontend/src/outfit/audio.ts` |
-| **场景菜单 / 相机 / 灯光 / 渲染** | `docs/architecture.md` §渲染环节 → `frontend/src/menus/scene-menu.ts` + `frontend/src/menus/scene-camera-levels.ts` + `frontend/src/menus/scene-render-levels.ts` |
-| **环境 / 天空 / 粒子** | `frontend/src/menus/env-menu.ts` + `frontend/src/menus/env-feature-levels.ts` + `frontend/src/scene/env-lighting.ts` |
+| **场景菜单 / 灯光 / 渲染** | `docs/architecture.md` §渲染环节 → `frontend/src/menus/scene-menu.ts` + `frontend/src/menus/scene-render-levels.ts` |
+| **环境 / 天空 / 粒子** | `frontend/src/menus/env-menu.ts` + `frontend/src/menus/env-feature-levels.ts` + `frontend/src/scene/env/env-lighting.ts` |
 | **模型详情 / 材质调节 / 表情** | `frontend/src/menus/model-detail.ts` + `frontend/src/menus/model-material.ts` |
 | **文件 URL / HTTP 服务器 / 安全隔离** | `docs/architecture.md` §数据通道 | `frontend/src/core/fileservice.ts` |
 | **程序化动作 / 节拍检测** | `frontend/src/motion/procedural-motion.ts` + `frontend/src/motion/beat-detector.ts` |
@@ -101,7 +101,7 @@ docs/
 | **VPD 姿势导入** | `frontend/src/motion/vpd-parser.ts` |
 | **LipSync** | `frontend/src/motion/lipsync.ts` |
 | **模型预设** | `frontend/src/menus/model-preset.ts` + `docs/architecture.md` §场景序列化 |
-| **动作库弹窗 / 音乐 / 舞蹈套装** | `frontend/src/menus/motion-popup.ts` + `frontend/src/menus/motion-dance-sets.ts` + `frontend/src/menus/motion-cloth-levels.ts` |
+| **动作库弹窗 / 音乐 / 舞蹈套装** | `frontend/src/menus/motion-popup.ts` + `frontend/src/menus/motion-camera-levels.ts` + `frontend/src/menus/motion-dance-sets.ts` + `frontend/src/menus/motion-cloth-levels.ts` |
 | **遇到加载问题** | `docs/troubleshooting.md` |
 | **查项目地基** | `docs/foundation.md` |
 | **查命名演变 / 术语** | `docs/glossary.md` |
@@ -127,10 +127,10 @@ docs/
 | 3D 场景 / 模型加载 / PMX / VMD / 播放 | `docs/architecture.md` §渲染环节 | `frontend/src/scene/scene.ts` |
 | 模型库 / 扫描 / zip 解压 / 缩略图 | `docs/architecture.md` §模型库管理 | `frontend/src/menus/library-core.ts` + `frontend/src/menus/library.ts` |
 | 文件 URL / HTTP 服务器 / 安全隔离 | `docs/architecture.md` §数据通道 | `frontend/src/core/fileservice.ts` |
-| 相机 / 灯光 / 渲染参数 / 后处理 | `docs/architecture.md` §渲染环节 | `frontend/src/menus/scene-camera-levels.ts` + `frontend/src/menus/scene-render-levels.ts` |
+| 相机 / 灯光 / 渲染参数 / 后处理 | `docs/architecture.md` §渲染环节 | `frontend/src/menus/motion-camera-levels.ts` + `frontend/src/menus/scene-render-levels.ts` |
 | 环境 / 天空 / 粒子 / 地面 | `docs/architecture.md` §环境系统 | `frontend/src/menus/env-menu.ts` + `frontend/src/menus/env-feature-levels.ts` |
-| 材质调节 / 按部位 / 逐材质调参 | `docs/architecture.md` §材质系统 | `frontend/src/scene/scene-material.ts`（`_catOf`/`_applyAll`/`setMatParams`）+ `frontend/src/menus/model-material.ts` |
-| 模型详情 / 模型信息 / 可见性 / 变换 | `frontend/src/menus/model-detail.ts`（`build*Level`） | `frontend/src/scene/scene-model.ts`（ModelManager）+ `frontend/src/scene/scene.ts`（`focusedModelId`） |
+| 材质调节 / 按部位 / 逐材质调参 | `docs/architecture.md` §材质系统 | `frontend/src/scene/manager/material.ts`（`_catOf`/`_applyAll`/`setMatParams`）+ `frontend/src/menus/model-material.ts` |
+| 模型详情 / 模型信息 / 可见性 / 变换 | `frontend/src/menus/model-detail.ts`（`build*Level`） | `frontend/src/scene/manager/model-manager.ts`（ModelManager）+ `frontend/src/scene/scene.ts`（`focusedModelId`） |
 | 配置 / 外部库 / Blender / MMD | `docs/architecture.md` §生态聚合 | `frontend/src/menus/settings.ts` |
 | 场景序列化 / 自动保存 / libraryRef | `docs/architecture.md` §场景序列化 | `frontend/src/scene/scene.ts` |
 | 修复 / Bug / 崩溃 / 不显示 | `docs/troubleshooting.md` | `docs/fix-cycle.md` |
@@ -139,19 +139,19 @@ docs/
 | 音频 / 音乐 / VMD 同步 | `frontend/src/outfit/audio.ts` | `frontend/src/scene/scene.ts`（`syncAudioPlayback`） |
 | 程序化动作 / Idle / Auto Dance | `frontend/src/motion/procedural-motion.ts` | `frontend/src/menus/motion-procmotion-levels.ts`（UI）+ `frontend/src/motion/beat-detector.ts` |
 | VPD 姿势导入 | `frontend/src/motion/vpd-parser.ts` | `docs/architecture.md` §VMD 环节 |
-| LipSync / 口型同步 | `frontend/src/motion/lipsync.ts` | `frontend/src/scene/scene-lipsync.ts` + `frontend/src/menus/motion-procmotion-levels.ts`（UI） |
+| LipSync / 口型同步 | `frontend/src/motion/lipsync.ts` | `frontend/src/scene/motion/lipsync-bridge.ts` + `frontend/src/menus/motion-procmotion-levels.ts`（UI） |
 | 舞蹈套装 / 动作库弹窗 | `frontend/src/menus/motion-dance-sets.ts` | `frontend/src/menus/motion-popup.ts` + `frontend/src/menus/library-core.ts` |
 | 模型预设 / 自动应用 | `frontend/src/menus/model-preset.ts` | `frontend/src/menus/model-detail.ts`（`buildPresetListLevel`） |
 | XPBD / 布料 / 物理模拟 / 软体 | `frontend/src/physics/xpbd-solver.ts` | `frontend/src/physics/xpbd-cloth.ts` + `cloth-manager.ts` |
 | SDF / 碰撞胶囊 / 身体碰撞 | `frontend/src/physics/xpbd-collider.ts` | `frontend/src/physics/cloth-manager.ts` |
 | VMD 生成 / 程序化动作 VMD | `frontend/src/motion/vmd-writer.ts` | `frontend/src/motion/procedural-motion.ts` |
 | VPD 姿势导入 / 文本解析 | `frontend/src/motion/vpd-parser.ts` | `frontend/src/motion/vmd-writer.ts` |
-| 环境预设 / envAutoLink / 时间流转 | `frontend/src/scene/scene-env-bridge.ts` | `frontend/src/scene/env-lighting.ts` |
-| 灯光过渡 / shadowBias / 阴影重建 | `frontend/src/scene/scene-lighting.ts` | `frontend/src/scene/scene-env-bridge.ts` |
+| 环境预设 / envAutoLink / 时间流转 | `frontend/src/scene/env/env-bridge.ts` | `frontend/src/scene/env/env-lighting.ts` |
+| 灯光过渡 / shadowBias / 阴影重建 | `frontend/src/scene/render/lighting.ts` | `frontend/src/scene/env/env-bridge.ts` |
 | SlideMenu / 菜单动画 / dispose | `frontend/src/menus/menu.ts` | `docs/menu-architecture.md` |
 | 节拍检测 / BPM / BeatDetector | `frontend/src/motion/beat-detector.ts` | `frontend/src/outfit/audio.ts` |
 | 音频 / 音量 / GainNode | `frontend/src/outfit/audio.ts` | `frontend/src/motion/beat-detector.ts` |
-| 性能降级 / FPS / 渲染质量 | `frontend/src/scene/scene-performance.ts` | — |
+| 性能降级 / FPS / 渲染质量 | `frontend/src/scene/render/performance.ts` | — |
 | 软件管理 / MMD / Blender / 自定义软件 | `frontend/src/menus/settings-software.ts` | `frontend/src/menus/settings.ts` |
 | 任何新增函数 | `docs/reusables.md`（先查是否已存在） | — |
 
@@ -249,28 +249,33 @@ frontend/
 │   │   ├── iconify-registry.ts # Iconify 本地图标注册表（自动生成，图标常量定义）
 │   │   └── ui-helpers.ts     # DOM 构建函数（slideRow/addToggleRow/addSliderRow）
 │   ├── scene/
-│   │   ├── scene.ts          # ★ 3D 场景编排入口
-│   │   ├── camera.ts         # 相机模式管理
-│   │   ├── scene-model.ts    # ModelManager（模型注册表 + 生命周期）
-│   │   ├── scene-material.ts # 材质系统（分类/逐材质/序列化）
-│   │   ├── scene-loader.ts   # PMX 加载 + 缩略图
-│   │   ├── scene-vmd.ts      # VMD 加载/播放入口
-│   │   ├── scene-playback.ts # 播放控制（进度条/seek）
-│   │   ├── scene-proc-motion.ts # 程序化动作桥接
-│   │   ├── scene-lipsync.ts  # LipSync 桥接
-│   │   ├── scene-model-ops.ts # 模型操作（变换/可见性/VMD清空）
-│   │   ├── scene-props.ts    # 道具系统
-│   │   ├── scene-serialize.ts # 场景序列化
-│   │   ├── scene-performance.ts # 性能降级
-│   │   ├── scene-renderer.ts # 渲染管线（Bloom/DOF/色调映射/边缘）
-│   │   ├── scene-lighting.ts # 灯光 + 阴影生成器 + 太阳盘
-│   │   ├── scene-env.ts      # 环境系统门面
-│   │   ├── scene-env-impl.ts # 环境实现（天空/地面/雾/云/水/粒子/风）
-│   │   ├── scene-env-bridge.ts # 环境→灯光联动 + 预设 + 时间流转
-│   │   ├── scene-env-water.ts # 水面系统（Gerstner波浪+焦散+水下）
-│   │   ├── scene-env-clouds.ts # 体积云
-│   │   ├── scene-env-particles.ts # 粒子（雨/雪/樱花/落叶/萤火虫/烟花）
-│   │   └── env-lighting.ts   # 光照推导（天空色→方向光参数）
+│   │   ├── scene.ts              # ★ 3D 场景编排入口
+│   │   ├── scene-serialize.ts    # 场景序列化
+│   │   ├── camera/
+│   │   │   └── camera.ts         # 相机模式管理
+│   │   ├── motion/               # 动作桥接（依赖 Babylon.js）
+│   │   │   ├── vmd-loader.ts     # VMD 加载/播放入口
+│   │   │   ├── proc-motion-bridge.ts # 程序化动作桥接
+│   │   │   ├── lipsync-bridge.ts # LipSync 桥接
+│   │   │   └── playback.ts       # 播放控制（进度条/seek）
+│   │   ├── manager/              # 模型管理器（依赖 Babylon.js）
+│   │   │   ├── model-manager.ts  # ModelManager（模型注册表 + 生命周期）
+│   │   │   ├── material.ts       # 材质系统（分类/逐材质/序列化）
+│   │   │   ├── model-loader.ts   # PMX 加载 + 缩略图
+│   │   │   └── model-ops.ts      # 模型操作（变换/可见性/VMD清空）
+│   │   ├── env/                  # 环境系统（依赖 Babylon.js）
+│   │   │   ├── env.ts            # 环境系统门面
+│   │   │   ├── env-impl.ts       # 环境实现（天空/地面/雾/云/水/粒子/风）
+│   │   │   ├── env-bridge.ts     # 环境→灯光联动 + 预设 + 时间流转
+│   │   │   ├── env-water.ts      # 水面系统（Gerstner波浪+焦散+水下）
+│   │   │   ├── env-clouds.ts     # 体积云
+│   │   │   ├── env-particles.ts  # 粒子（雨/雪/樱花/落叶/萤火虫/烟花）
+│   │   │   ├── env-lighting.ts   # 光照推导（天空色→方向光参数）
+│   │   │   └── props.ts          # 道具系统
+│   │   └── render/               # 渲染管线（依赖 Babylon.js）
+│   │       ├── renderer.ts       # 渲染管线（Bloom/DOF/色调映射/边缘）
+│   │       ├── lighting.ts       # 灯光 + 阴影生成器 + 太阳盘
+│   │       └── performance.ts    # 性能降级
 │   ├── menus/
 │   │   ├── menu.ts                      # SlideMenu 通用菜单导航（动画 + 键盘）
 │   │   ├── library.ts                   # 模型库入口 barrel
@@ -281,7 +286,6 @@ frontend/
 │   │   ├── outfit-ui.ts                 # 服装变体子菜单
 │   │   │
 │   │   ├── scene-menu.ts                # 场景弹窗入口 + 路由器
-│   │   ├── scene-camera-levels.ts       #   相机模式 + 参数面板
 │   │   ├── scene-render-levels.ts       #   后处理/舞台/渲染预设
 │   │   │
 │   │   ├── env-menu.ts                  # 环境弹窗入口 + 导航
@@ -289,7 +293,8 @@ frontend/
 │   │   ├── env-prop-levels.ts           #   道具系统
 │   │   ├── env-preset-levels.ts         #   环境预设（内置 + 用户保存）
 │   │   │
-│   │   ├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐
+│   │   ├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐/相机
+│   │   ├── motion-camera-levels.ts      #   相机模式 + 参数面板
 │   │   ├── motion-procmotion-levels.ts  #   程序化动作 + LipSync
 │   │   ├── motion-dance-sets.ts         #   舞蹈套装数据 + UI
 │   │   ├── motion-cloth-levels.ts       #   布料参数面板
@@ -318,7 +323,7 @@ frontend/
 └── vite.config.ts            # Vite 配置
 ```
 
-> 📁 目录重组记录：2026-06 将 scene/ 拆分为子模块，新增 scene-env-*/scene-lighting/scene-renderer 等。physics/ 为独立目录（XPBD 引擎），motion/ 为动作相关独立目录。
+> 📁 目录重组记录：2026-07 scene/ 按业务域拆分为 camera/motion/manager/env/render 子目录。相机 UI 迁移到 motion-popup。physics/ 为独立目录（XPBD 引擎），motion/ 为动作算法独立目录。
 
 ### 3.4 技术栈速览
 
@@ -352,26 +357,26 @@ frontend/
 | `engine`, `scene`, `camera` | `scene/scene.ts` | Babylon.js 核心对象 |
 | `initScene()` | `scene/scene.ts` | 注册 MMD loader、创建 runtime、地面 |
 | `loadPMXFile()` | `scene/scene.ts` | HTTP 加载 PMX + `createMmdModel` |
-| `loadVMDMotion()` | `scene/scene-vmd.ts` | ArrayBuffer → VMD → `createRuntimeAnimation` |
-| `loadVMDFromPath()` | `scene/scene-vmd.ts` | 路径→HTTP fetch→`loadVMDMotion` |
-| `loadCameraVmdFromPath()` | `scene/scene-vmd.ts` | VMD 文件→相机轨道 |
-| `loadVPDPose()` | `scene/scene-vmd.ts` | VPD 姿势→VMD 帧→绑定 |
+| `loadVMDMotion()` | `scene/motion/vmd-loader.ts` | ArrayBuffer → VMD → `createRuntimeAnimation` |
+| `loadVMDFromPath()` | `scene/motion/vmd-loader.ts` | 路径→HTTP fetch→`loadVMDMotion` |
+| `loadCameraVmdFromPath()` | `scene/motion/vmd-loader.ts` | VMD 文件→相机轨道 |
+| `loadVPDPose()` | `scene/motion/vmd-loader.ts` | VPD 姿势→VMD 帧→绑定 |
 | `removeModel()` | `scene/scene.ts`（委托 modelManager） | 销毁 MMD 模型 + 清理 mesh |
 | `focusModel()` | `scene/scene.ts`（委托 modelManager） | 相机自动 framing |
 | `arrangeModels()` | `scene/scene.ts`（委托 modelManager） | 多模型横向排列 |
-| `updatePlaybackUI()` | `scene/scene-playback.ts` | 进度条 + 时间显示 |
-| `seekFromEvent()` | `scene/scene-playback.ts` | 点击/拖拽定位 |
-| `ModelManager` | `scene/scene-model.ts` | 模型注册表 + 生命周期 + 属性管理 |
-| `focusedMmdModel()` | `scene/scene-model.ts`（->modelManager） | 当前聚焦模型的 WASM 对象 |
-| `focusedModel()` | `scene/scene-model.ts`（->modelManager） | 当前聚焦模型实例 |
-| `removeModel()` / `focusModel()` / `arrangeModels()` | `scene/scene-model-ops.ts` | 模型生命周期操作（委托 modelManager） |
-| `setModelVisibility()` / `setModelOpacity()` | `scene/scene-model-ops.ts` | 可见性/透明度 |
-| `setModelWireframe()` / `setModelBoneLinesVis()` | `scene/scene-model-ops.ts` | 线框/骨骼调试 |
-| `setModelPhysics()` / `setPhysicsCategory()` | `scene/scene-model-ops.ts` | 物理开关/按分类控制 |
-| `setModelScaling()` / `setModelRotationY()` / `setModelPosition()` | `scene/scene-model-ops.ts` | 变换操作 |
-| `stopVMD()` / `applyVPDPose()` | `scene/scene-model-ops.ts` | VMD 停止/VPD 姿势应用 |
-| `setModelMorphWeight()` / `resetModelMorphs()` | `scene/scene-model-ops.ts` | 表情权重/重置 |
-| `_catOf()`, `_applyAll()`, `setMatParams()` | `scene/scene-material.ts` | 材质分类/批量应用/按类设参 |
+| `updatePlaybackUI()` | `scene/motion/playback.ts` | 进度条 + 时间显示 |
+| `seekFromEvent()` | `scene/motion/playback.ts` | 点击/拖拽定位 |
+| `ModelManager` | `scene/manager/model-manager.ts` | 模型注册表 + 生命周期 + 属性管理 |
+| `focusedMmdModel()` | `scene/manager/model-manager.ts`（->modelManager） | 当前聚焦模型的 WASM 对象 |
+| `focusedModel()` | `scene/manager/model-manager.ts`（->modelManager） | 当前聚焦模型实例 |
+| `removeModel()` / `focusModel()` / `arrangeModels()` | `scene/manager/model-ops.ts` | 模型生命周期操作（委托 modelManager） |
+| `setModelVisibility()` / `setModelOpacity()` | `scene/manager/model-ops.ts` | 可见性/透明度 |
+| `setModelWireframe()` / `setModelBoneLinesVis()` | `scene/manager/model-ops.ts` | 线框/骨骼调试 |
+| `setModelPhysics()` / `setPhysicsCategory()` | `scene/manager/model-ops.ts` | 物理开关/按分类控制 |
+| `setModelScaling()` / `setModelRotationY()` / `setModelPosition()` | `scene/manager/model-ops.ts` | 变换操作 |
+| `stopVMD()` / `applyVPDPose()` | `scene/manager/model-ops.ts` | VMD 停止/VPD 姿势应用 |
+| `setModelMorphWeight()` / `resetModelMorphs()` | `scene/manager/model-ops.ts` | 表情权重/重置 |
+| `_catOf()`, `_applyAll()`, `setMatParams()` | `scene/manager/material.ts` | 材质分类/批量应用/按类设参 |
 
 #### 模型库 & 弹窗
 
@@ -399,10 +404,11 @@ frontend/
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `switchCameraMode()` | `scene/camera.ts` | 切换相机模式 |
-| `getCameraMode()` | `scene/camera.ts` | 当前模式 |
-| `freeflyInput` | `scene/camera.ts` | WASD 自由飞行输入状态 |
-| `hasCameraVmd()`, `clearCameraVmd()`, `animateCameraVmd()` | `scene/camera.ts` | 相机 VMD 轨道 |
+| `switchCameraMode()` | `scene/camera/camera.ts` | 切换相机模式 |
+| `getCameraMode()` | `scene/camera/camera.ts` | 当前模式 |
+| `freeflyInput` | `scene/camera/camera.ts` | WASD 自由飞行输入状态 |
+| `hasCameraVmd()`, `clearCameraVmd()`, `animateCameraVmd()` | `scene/camera/camera.ts` | 相机 VMD 轨道 |
+| `buildCameraLevel()` / `buildCameraParamsLevel()` | `menus/motion-camera-levels.ts` | 相机 UI 面板（在动作弹窗中） |
 
 #### 共享状态 & 工具
 
@@ -453,24 +459,24 @@ frontend/
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `initLighting()` / `setLightState()` / `transitionLighting()` | `scene/scene-lighting.ts` | 灯光初始化/设置/平滑过渡 |
-| `setSkipLightAutoSave()` | `scene/scene-lighting.ts` | 预设动画期间抑制灯光自动保存 |
+| `initLighting()` / `setLightState()` / `transitionLighting()` | `scene/render/lighting.ts` | 灯光初始化/设置/平滑过渡 |
+| `setSkipLightAutoSave()` | `scene/render/lighting.ts` | 预设动画期间抑制灯光自动保存 |
 | `initEnvFacade()` / `applyEnvState()` | `scene/scene-env.ts` | 环境门面入口 |
-| `setEnvState()` / `redoEnvAutoLink()` | `scene/scene-env-bridge.ts` | 环境状态设置 + 光照联动 |
-| `applyEnvPreset()` | `scene/scene-env-bridge.ts` | 环境预设切换（带取消机制）|
-| `deriveLighting()` / `ENV_PRESETS` | `scene/env-lighting.ts` | 天空色→光照参数推导 + 预设表 |
-| `createWater()` / `disposeWater()` | `scene/scene-env-water.ts` | 水面创建/销毁 |
-| `createParticleEmitter()` / `updateParticleWind()` | `scene/scene-env-particles.ts` | 粒子系统 |
-| `createClouds()` / `disposeClouds()` | `scene/scene-env-clouds.ts` | 体积云 |
+| `setEnvState()` / `redoEnvAutoLink()` | `scene/env/env-bridge.ts` | 环境状态设置 + 光照联动 |
+| `applyEnvPreset()` | `scene/env/env-bridge.ts` | 环境预设切换（带取消机制）|
+| `deriveLighting()` / `ENV_PRESETS` | `scene/env/env-lighting.ts` | 天空色→光照参数推导 + 预设表 |
+| `createWater()` / `disposeWater()` | `scene/env/env-water.ts` | 水面创建/销毁 |
+| `createParticleEmitter()` / `updateParticleWind()` | `scene/env/env-particles.ts` | 粒子系统 |
+| `createClouds()` / `disposeClouds()` | `scene/env/env-clouds.ts` | 体积云 |
 
 #### 材质系统
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `_catOf()` / `_applyAll()` / `setMatParams()` | `scene/scene-material.ts` | 材质分类/批量应用/逐材质设参 |
-| `_capture()` | `scene/scene-material.ts` | 材质原始值捕获（模型加载时预调用）|
-| `getMatCatGroups()` / `getMatDetailList()` | `scene/scene-material.ts` | 材质分组/详情查询 |
-| `resetMatCatParams()` / `disposeModelMaterialState()` | `scene/scene-material.ts` | 重置分类参数 + 清理模型材质状态 |
+| `_catOf()` / `_applyAll()` / `setMatParams()` | `scene/manager/material.ts` | 材质分类/批量应用/逐材质设参 |
+| `_capture()` | `scene/manager/material.ts` | 材质原始值捕获（模型加载时预调用）|
+| `getMatCatGroups()` / `getMatDetailList()` | `scene/manager/material.ts` | 材质分组/详情查询 |
+| `resetMatCatParams()` / `disposeModelMaterialState()` | `scene/manager/material.ts` | 重置分类参数 + 清理模型材质状态 |
 
 ---
 

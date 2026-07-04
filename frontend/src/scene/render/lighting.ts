@@ -11,7 +11,7 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
-import type { ModelInstance, PropInstance } from '../core/config';
+import type { ModelInstance, PropInstance } from '../../core/config';
 
 function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
     obj[key] = value;

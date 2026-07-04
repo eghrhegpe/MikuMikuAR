@@ -15,10 +15,10 @@ import {
     triggerAutoSave,
     dom,
     PropInstance,
-} from '../core/config';
-import { resolveFileUrl, normPath } from '../core/fileservice';
-import { scene } from './scene';
-import { _envSys } from './scene-env';
+} from '../../core/config';
+import { resolveFileUrl, normPath } from '../../core/fileservice';
+import { scene } from '../scene';
+import { _envSys } from './env';
 
 // ======== 加载队列（替代简单的布尔锁） ========
 // 允许多次 loadProp 调用依次执行，而非直接返回 null。

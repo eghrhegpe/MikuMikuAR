@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ModelManager } from '../scene/scene-model';
+import { ModelManager } from '../scene/manager/model-manager';
 import type { ModelInstance } from '../core/config';
 
 // ─── Pure unit tests for ModelManager ───────────────────────────────

@@ -14,7 +14,7 @@ import {
     addCollapsible,
 } from '../core/ui-helpers';
 import { setEnvState, engine } from '../scene/scene';
-import { WATER_PRESETS, applyWaterPresetToCurrent } from '../scene/scene-env-water';
+import { WATER_PRESETS, applyWaterPresetToCurrent } from '../scene/env/env-water';
 import { SelectEnvTextureFile, SelectPMXFile } from '../core/wails-bindings';
 import { getEnvMenu } from './env-menu';
 

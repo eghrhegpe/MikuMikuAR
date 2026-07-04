@@ -191,7 +191,7 @@ import {
     isPlaying,
     mmdRuntime,
 } from '../core/config';
-import { updatePlaybackUI } from '../scene/scene-playback';
+import { updatePlaybackUI } from '../scene/motion/playback';
 
 // ======== Test setup ========
 
