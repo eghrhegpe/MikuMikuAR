@@ -672,9 +672,19 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
             envState.underwaterFogColor[1],
             envState.underwaterFogColor[2]
         );
-        scene.fogDensity = envState.underwaterFogDensity * t;
+        scene.fogDensity = envState.underwaterFogDensity * t * envState.underwaterFogMultiplier;
+        if ((pipeline as any).imageProcessing) {
+            const ip = (pipeline as any).imageProcessing;
+            const wc = envState.waterColor;
+            ip.tintColor = new Color3(wc[0] * 0.7, wc[1] * 0.7, wc[2] * 0.7);
+            ip.tintAmount = t * envState.underwaterToneIntensity * (1 - envState.waterTransparency * 0.5);
+        }
     } else if (!_underwaterActive) {
         pipeline.chromaticAberrationEnabled = false;
+        const ip: any = (pipeline as any).imageProcessing;
+        if (ip) {
+            ip.tintAmount = 0;
+        }
     }
 }
 
@@ -689,6 +699,10 @@ export function resetUnderwaterState(scene: Scene, pipeline: DefaultRenderingPip
     _underwaterTransitionProgress = 0;
     _underwaterTarget = false;
     pipeline.chromaticAberrationEnabled = false;
+    const ip: any = (pipeline as any).imageProcessing;
+    if (ip) {
+        ip.tintAmount = 0;
+    }
 }
 
 // ======== Water Presets (migrated from env-lighting.ts) =======

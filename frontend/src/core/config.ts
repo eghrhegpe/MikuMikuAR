@@ -238,9 +238,12 @@ export interface EnvState {
     envIntensity: number;
 
     groundVisible: boolean;
-    groundMode: 'solid' | 'grid' | 'checker';
+    groundMode: 'solid' | 'grid' | 'checker' | 'texture';
     groundColor: [number, number, number];
     groundAlpha: number;
+    groundTexture: string;
+    groundTextureEnabled: boolean;
+    groundTextureScale: number;
 
     windEnabled: boolean;
     windDirection: [number, number, number];
@@ -251,6 +254,7 @@ export interface EnvState {
     particleEmitRate: number;
     particleSize: number;
     particleSpeed: number;
+    particleSplash: boolean;
 
     // 场景地面高度（世界 Y 坐标），用于粒子系统等的高度参考
     groundLevel: number;
@@ -286,6 +290,8 @@ export interface EnvState {
     underwaterFogColor: [number, number, number];
     underwaterFogDensity: number;
     underwaterChromaticAmount: number;
+    underwaterToneIntensity: number;
+    underwaterFogMultiplier: number;
 
     cloudsEnabled: boolean;
     /** Enable debug visualization (red ring + yellow/green markers) */
@@ -563,6 +569,9 @@ export const envState: EnvState = {
     groundMode: 'solid',
     groundColor: [0.15, 0.15, 0.18],
     groundAlpha: 0.6,
+    groundTexture: '',
+    groundTextureEnabled: false,
+    groundTextureScale: 1,
 
     windEnabled: true,
     windDirection: [0, 0, 1],
@@ -573,6 +582,7 @@ export const envState: EnvState = {
     particleEmitRate: 1,
     particleSize: 1,
     particleSpeed: 1,
+    particleSplash: false,
 
     groundLevel: 0,
 
@@ -607,6 +617,8 @@ export const envState: EnvState = {
     underwaterFogColor: [0.08, 0.2, 0.45],
     underwaterFogDensity: 0.015,
     underwaterChromaticAmount: 20,
+    underwaterToneIntensity: 0.5,
+    underwaterFogMultiplier: 2,
 
     cloudsEnabled: false,
     debugClouds: false,
