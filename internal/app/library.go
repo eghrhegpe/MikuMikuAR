@@ -102,40 +102,46 @@ func mapCategoryKey(category string) string {
 	}
 }
 
-// scanDirByExt scans a directory for files with given extensions.
+// scanDirByExt scans a directory recursively for files with given extensions.
 func (a *App) scanDirByExt(dir, category string, exts []string, source string) ([]ModelEntry, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
 	var models []ModelEntry
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
+
+	// Build extension set for O(1) lookup
+	extSet := make(map[string]bool, len(exts))
+	for _, e := range exts {
+		extSet[strings.ToLower(e)] = true
+	}
+
+	err := filepath.WalkDir(dir, func(walkPath string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil // skip inaccessible paths
 		}
-		name := e.Name()
-		ext := strings.ToLower(filepath.Ext(name))
-		matched := false
-		for _, validExt := range exts {
-			if ext == validExt {
-				matched = true
-				break
+		if d.IsDir() {
+			// Skip dot-directories
+			if strings.HasPrefix(d.Name(), ".") {
+				return filepath.SkipDir
 			}
+			return nil
 		}
-		if !matched {
-			continue
+		ext := strings.ToLower(filepath.Ext(d.Name()))
+		if !extSet[ext] {
+			return nil
 		}
-		fullPath := filepath.Join(dir, name)
+		fullPath := filepath.ToSlash(walkPath)
 		m := ModelEntry{
-			Dir:      filepath.ToSlash(dir),
-			PMXPath:  filepath.ToSlash(fullPath),
-			NameEn:   strings.TrimSuffix(name, ext),
-			Type:     category,
-			Format:   strings.TrimPrefix(ext, "."),
+			Dir:       filepath.Dir(fullPath),
+			PMXPath:   fullPath,
+			NameEn:    strings.TrimSuffix(d.Name(), filepath.Ext(d.Name())),
+			Type:      category,
+			Format:    strings.TrimPrefix(ext, "."),
 			Container: "file",
-			Source:   source,
+			Source:    source,
 		}
 		models = append(models, m)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return models, nil
 }
