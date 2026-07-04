@@ -794,14 +794,18 @@ export function showModelPopup(): void {
 export async function initLibrary(): Promise<void> {
     try {
         const cfg = await GetConfig();
-        if (!cfg.library_root) {
+        const cfgRoot = cfg.resource_root || cfg.library_root || '';
+        if (!cfgRoot) {
             setStatus(
                 '📦 首次使用：点击这里打开模型库 → 加载模型，模型目录请在 ⚙ 设置中配置',
                 false
             );
             return;
         }
-        setLibraryRoot(cfg.library_root);
+        setLibraryRoot(cfgRoot);
+        setResourceRoot(cfgRoot);
+        setExternalPaths(cfg.external_paths || []);
+        setOverridePaths(cfg.override_paths || {});
         setExternalPaths(cfg.external_paths || []);
         if (cfg.display_name_priority) {
             setDisplayNamePriority(cfg.display_name_priority as DisplayNamePriority);
