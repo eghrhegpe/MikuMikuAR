@@ -46,7 +46,7 @@ import {
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { selectResourceRoot, selectOverridePath } from './library-core';
-import { slideRow, addToggleRow, addSliderRow } from '../core/ui-helpers';
+import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
 import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
@@ -129,10 +129,7 @@ function buildSettingsDisplayLevel(): PopupLevel {
             // 材质分类映射
             cardContainer(container, (c) => {
                 c.dataset.mapCard = '1';
-                const title = document.createElement('div');
-                title.className = 'section-title';
-                title.textContent = '材质分类映射（正则 → 分类）';
-                c.appendChild(title);
+                addSectionTitle(c, '材质分类映射（正则 → 分类）');
 
                 const map = uiState.materialCategoryMap || {};
                 const entries = Object.entries(map);
@@ -264,10 +261,7 @@ function buildSettingsUILevel(): PopupLevel {
                 getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
                 '#4a6cf7';
             cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.className = 'section-title';
-                title.textContent = '主题色';
-                c.appendChild(title);
+                addSectionTitle(c, '主题色');
                 for (const p of THEME_PRESETS) {
                     const isActive = currentAccent.toLowerCase() === p.color.toLowerCase();
                     const row = document.createElement('div');
@@ -309,10 +303,7 @@ function buildSettingsUILevel(): PopupLevel {
                 .getPropertyValue('--font')
                 .trim();
             cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.className = 'section-title';
-                title.textContent = '字体';
-                c.appendChild(title);
+                addSectionTitle(c, '字体');
                 for (const [key, f] of Object.entries(FONT_MAP)) {
                     const isActive = currentCss === f.css;
                     const row = document.createElement('div');
@@ -468,78 +459,6 @@ function buildSettingsUILevel(): PopupLevel {
             }
         },
     };
-}
-
-function addCsRow(
-    container: HTMLElement,
-    label: string,
-    icon: string,
-    min: number,
-    max: number,
-    step: number,
-    initial: number,
-    onChange: (v: number) => void
-): void {
-    let currentValue = initial;
-    const range = max - min;
-    const row = document.createElement('div');
-    row.className = 'cs-row';
-
-    const top = document.createElement('div');
-    top.className = 'cs-top';
-    const iconBox = document.createElement('span');
-    iconBox.className = 'cs-icon';
-    const iconEl = createIconifyIcon(icon);
-    if (iconEl) {
-        iconBox.appendChild(iconEl);
-    }
-    top.appendChild(iconBox);
-    const lbl = document.createElement('span');
-    lbl.className = 'cs-label';
-    lbl.textContent = label;
-    const val = document.createElement('span');
-    val.className = 'cs-value';
-    const fmt = (v: number) => (step >= 1 ? String(Math.round(v)) : v.toFixed(2));
-    val.textContent = fmt(currentValue);
-    top.appendChild(lbl);
-    top.appendChild(val);
-
-    const bar = document.createElement('div');
-    bar.className = 'cs-bar';
-    const fill = document.createElement('div');
-    fill.className = 'cs-fill';
-    const pct = ((currentValue - min) / range) * 100;
-    fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-    bar.appendChild(fill);
-
-    function updateDisplay(v: number): void {
-        currentValue = v;
-        val.textContent = fmt(v);
-        fill.style.width = Math.max(0, Math.min(100, ((v - min) / range) * 100)) + '%';
-    }
-
-    row.addEventListener('click', (e) => {
-        const rect = row.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        let delta: number;
-        if (x < 0.25) {
-            delta = -(range * 0.15);
-        } else if (x < 0.5) {
-            delta = -(range * 0.05);
-        } else if (x < 0.75) {
-            delta = range * 0.05;
-        } else {
-            delta = range * 0.15;
-        }
-        let newVal = Math.round((currentValue + delta) / step) * step;
-        newVal = Math.max(min, Math.min(max, newVal));
-        updateDisplay(newVal);
-        onChange(newVal);
-    });
-
-    row.appendChild(top);
-    row.appendChild(bar);
-    container.appendChild(row);
 }
 
 const THEME_PRESETS: Array<{ label: string; color: string }> = [

@@ -14,6 +14,7 @@ import {
     addCollapsible,
     sliderRow,
     slideRow,
+    addSectionTitle,
 } from '../core/ui-helpers';
 import {
     triggerAutoSave,
@@ -214,10 +215,7 @@ export function buildStageLightLevel(): PopupLevel {
 
             // —— 灯列表 ——
             cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.className = 'section-title';
-                title.textContent = '灯光列表';
-                c.appendChild(title);
+                addSectionTitle(c, '灯光列表');
 
                 const chipGroup = document.createElement('div');
                 chipGroup.className = 'preset-group';
@@ -634,10 +632,7 @@ export function buildStageLevel(): PopupLevel {
 
             if (stageModels.length > 0) {
                 cardContainer(container, (c) => {
-                    const title = document.createElement('div');
-                    title.className = 'section-title';
-                    title.textContent = '已加载舞台';
-                    c.appendChild(title);
+                    addSectionTitle(c, '已加载舞台');
 
                     for (const [id, inst] of stageModels) {
                         const row = document.createElement('div');
