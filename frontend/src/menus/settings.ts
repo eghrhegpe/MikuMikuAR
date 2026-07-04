@@ -102,40 +102,12 @@ function buildSettingsRoot(): PopupLevel {
 }
 
 function buildSettingsDisplayLevel(): PopupLevel {
-    const current = displayNamePriority;
-    function pick(p: DisplayNamePriority): void {
-        setDisplayNamePriority(p);
-        SetDisplayNamePriority(p).catch(console.warn);
-        settingsMenu.reRender();
-    }
     return {
         label: '显示',
         dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                slideRow(
-                    c,
-                    current === 'name_jp' ? 'lucide:check-circle' : 'lucide:circle',
-                    '日文名（name_jp）',
-                    false,
-                    () => pick('name_jp')
-                );
-                slideRow(
-                    c,
-                    current === 'name_en' ? 'lucide:check-circle' : 'lucide:circle',
-                    '英文名（name_en）',
-                    false,
-                    () => pick('name_en')
-                );
-                slideRow(
-                    c,
-                    current === 'filename' ? 'lucide:check-circle' : 'lucide:circle',
-                    '文件名（filename）',
-                    false,
-                    () => pick('filename')
-                );
-            });
+            // 排序模式
             cardContainer(container, (c) => {
                 slideRow(
                     c,
