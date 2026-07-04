@@ -373,6 +373,20 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 // Returns an empty Config (no error) if file doesn't exist.
 // Real I/O errors (permission, filesystem) are logged via safeLogError.
 func (a *App) GetConfig() (*Config, error) {
+	// 1. Try setting/ subdirectory first (new location)
+	sd, sErr := settingDir(nil)
+	if sErr == nil {
+		data, rErr := os.ReadFile(filepath.Join(sd, "config.json"))
+		if rErr == nil {
+			var cfg Config
+			if uErr := json.Unmarshal(data, &cfg); uErr == nil {
+				a.finaliseConfig(&cfg)
+				return &cfg, nil
+			}
+		}
+	}
+
+	// 2. Fallback: read from AppData (old location)
 	dir, err := configDir()
 	if err != nil {
 		return &Config{}, nil
@@ -389,16 +403,19 @@ func (a *App) GetConfig() (*Config, error) {
 		a.safeLogError("GetConfig: json unmarshal error %v", err)
 		return &Config{}, nil
 	}
+	a.finaliseConfig(&cfg)
+	return &cfg, nil
+}
+
+// finaliseConfig runs migrations and ensure-dirs after loading a config.
+func (a *App) finaliseConfig(cfg *Config) {
 	// Migrate library_root → resource_root
 	if cfg.LibraryRoot != "" && cfg.ResourceRoot == "" {
 		cfg.ResourceRoot = cfg.LibraryRoot
 		cfg.LibraryRoot = ""
-		// Persist migrated config
-		a.writeConfig(&cfg) // best-effort, ignore error
 	}
 	// Ensure resource directories exist
-	a.ensureResourceDirs(&cfg)
-	return &cfg, nil
+	a.ensureResourceDirs(cfg)
 }
 
 // updateConfig loads the config, runs a mutation under configMu, then persists.

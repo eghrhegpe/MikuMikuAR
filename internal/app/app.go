@@ -161,12 +161,8 @@ func (a *App) shutdownWithTimeout(ctx context.Context, timeout time.Duration) er
 }
 
 // openFileDialog is a shared helper for selecting files via OS dialog.
-// On Android, native file dialogs are not available through Wails alpha;
-// returns a clear error so the frontend can offer an alternative flow.
+// On Android, Wails v3 supports SAF-based file picker (GOOS=android).
 func (a *App) openFileDialog(title string, filters []application.FileFilter) (string, error) {
-	if isAndroid {
-		return "", fmt.Errorf("文件选择器在 Android 上暂不可用，请通过文件管理器手动打开文件")
-	}
 	if a.wailsApp == nil {
 		return "", fmt.Errorf("application not initialized")
 	}
@@ -444,6 +440,19 @@ func ensureDir(subDir string, useCache bool) (string, error) {
 // configDir returns the application configuration directory (%APPDATA%/MikuMikuAR).
 func configDir() (string, error) {
 	return ensureDir("", false)
+}
+
+// settingDir returns the setting subdirectory under the resource root, or falls back to configDir.
+// config.json and index.json are stored here when ResourceRoot is configured.
+func settingDir(cfg *Config) (string, error) {
+	if cfg != nil && cfg.ResourceRoot != "" {
+		d := filepath.Join(cfg.ResourceRoot, "setting")
+		if err := os.MkdirAll(d, 0755); err != nil {
+			return configDir()
+		}
+		return d, nil
+	}
+	return configDir()
 }
 
 // extractedDir returns the cache root for extracted zip contents (%LOCALAPPDATA%/MikuMikuAR/extracted).
