@@ -519,6 +519,17 @@ export function buildPostProcessLevel(): PopupLevel {
                 // Reflection Probe — 环境反射探针
                 addToggleRow(c, '环境反射', state.reflectionProbeEnabled,
                     (v) => { setRenderState({ reflectionProbeEnabled: v, reflectionIntensity: v ? 1 : 0 }); triggerAutoSave(); }, 'lucide:scan');
+                // SSAO — 屏幕空间环境遮蔽
+                addToggleRow(c, '环境遮蔽 (SSAO)', state.ssaoEnabled,
+                    (v) => { setRenderState({ ssaoEnabled: v }); triggerAutoSave(); reRenderSceneMenu(); }, 'lucide:shadow');
+                if (state.ssaoEnabled) {
+                    sliderRow(c, '遮蔽强度', state.ssaoStrength, 0, 1, 0.05, 'lucide:circle-half',
+                        (v) => { setRenderState({ ssaoStrength: v }); triggerAutoSave(); });
+                    sliderRow(c, '遮蔽半径', state.ssaoRadius, 0, 1, 0.05, 'lucide:circle-dot',
+                        (v) => { setRenderState({ ssaoRadius: v }); triggerAutoSave(); });
+                    sliderRow(c, '采样数', state.ssaoSamples, 4, 32, 1, 'lucide:grid-3x3',
+                        (v) => { setRenderState({ ssaoSamples: v }); triggerAutoSave(); });
+                }
             });
 
             // 色调映射 — 后处理色彩环节，影响整体画面风格
@@ -812,6 +823,7 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         vignetteEnabled: true, vignetteDarkness: 0.35,
         ssrEnabled: true, ssrStrength: 0.5, ssrFalloff: 0.3,
         reflectionProbeEnabled: true, reflectionIntensity: 0.8,
+        ssaoEnabled: true, ssaoStrength: 0.6, ssaoRadius: 0.5,
     },
     // --- Reinhard — 高饱和·高对比·边缘线框 = 卡通风格 ---
     cartoon: {
@@ -828,6 +840,7 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         dofEnabled: true, dofAperture: 0.15,
         ssrEnabled: true, ssrStrength: 0.3, ssrFalloff: 0.2,
         reflectionProbeEnabled: true, reflectionIntensity: 0.6,
+        ssaoEnabled: true, ssaoStrength: 0.5, ssaoRadius: 0.4,
     },
     // --- Cineon 胶片曲线 + 暖色调背景 ---
     warm: {
@@ -846,6 +859,7 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         grainEnabled: true, grainIntensity: 0.4,
         ssrEnabled: true, ssrStrength: 0.4, ssrFalloff: 0.15,
         reflectionProbeEnabled: true, reflectionIntensity: 0.9,
+        ssaoEnabled: true, ssaoStrength: 0.7, ssaoRadius: 0.6,
     },
 };
 

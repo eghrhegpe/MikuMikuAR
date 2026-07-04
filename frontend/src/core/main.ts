@@ -20,6 +20,8 @@ import {
     UIState,
     EnvState,
     formatError,
+    focusedModelId,
+    stackRegistry,
 } from './config';
 import { registerIconBundle } from './icons-bundle';
 import { GetConfig, ImportZip, ImportLocalFile, Events } from './wails-bindings';
@@ -36,6 +38,7 @@ import {
     loadPMXFile,
     loadVMDFromPath,
 } from '../scene/scene';
+import { focusModel } from '../scene/manager/model-ops';
 import {
     updatePerformance,
     setPerformanceMode,
@@ -334,7 +337,9 @@ window.addEventListener('pointerup', async () => {
 // Only clicks on the 3D canvas trigger toggle — all other UI is ignored.
 // Records the last visible overlay so a second canvas click can restore it.
 let _pointerDownPos = { x: 0, y: 0 };
+let _longPressTimer: ReturnType<typeof setTimeout> | null = null;
 let _lastHiddenOverlay: { id: string; showFn: () => void } | null = null;
+let _lastTapTime = 0;
 
 function _getAllOverlays(): HTMLElement[] {
     const seen = new Set<string>();
@@ -382,9 +387,27 @@ function _toggleOverlays(): void {
 
 window.addEventListener('pointerdown', (e) => {
     _pointerDownPos = { x: e.clientX, y: e.clientY };
+    // 长按检测：500ms 后弹出模型详情
+    _longPressTimer = setTimeout(() => {
+        if (!dom.canvas.contains(e.target as Node)) return;
+        const id = focusedModelId;
+        if (!id) return;
+        // 打开模型弹窗并 push 详情层级
+        showModelPopup();
+        import('../menus/model-detail').then(({ buildModelDetailLevel }) => {
+            if (stackRegistry?.modelStack) {
+                stackRegistry.modelStack.push(buildModelDetailLevel(id));
+            }
+        });
+        _longPressTimer = null;
+    }, 500);
 });
 
 window.addEventListener('pointerup', (e) => {
+    if (_longPressTimer) {
+        clearTimeout(_longPressTimer);
+        _longPressTimer = null;
+    }
     const dx = e.clientX - _pointerDownPos.x;
     const dy = e.clientY - _pointerDownPos.y;
     if (Math.sqrt(dx * dx + dy * dy) > 5) {
@@ -396,7 +419,27 @@ window.addEventListener('pointerup', (e) => {
         return;
     }
 
+    // 双击聚焦：300ms 内两次点击同一位置 → 自动构图聚焦模型
+    const now = Date.now();
+    if (now - _lastTapTime < 300 && focusedModelId) {
+        focusModel(focusedModelId);
+        _lastTapTime = 0;
+        return;
+    }
+    _lastTapTime = now;
+
     _toggleOverlays();
+});
+
+window.addEventListener('pointermove', (e) => {
+    if (_longPressTimer) {
+        const dx = e.clientX - _pointerDownPos.x;
+        const dy = e.clientY - _pointerDownPos.y;
+        if (Math.sqrt(dx * dx + dy * dy) > 10) {
+            clearTimeout(_longPressTimer);
+            _longPressTimer = null;
+        }
+    }
 });
 
 // Nav buttons — event listeners are registered in init() via dom.btnXxx

@@ -4,6 +4,7 @@
 
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { SSRRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/ssrRenderingPipeline';
+import { SSAO2RenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/ssao2RenderingPipeline';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import type { Camera } from '@babylonjs/core/Cameras/camera';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
@@ -58,6 +59,11 @@ export interface RenderState {
     ssrThickness: number; // 0-2, default 0.5（SSRRenderingPipeline.thickness）
     reflectionProbeEnabled: boolean;
     reflectionIntensity: number; // 0-1, default 0
+    // Phase 11 — SSAO
+    ssaoEnabled: boolean;
+    ssaoStrength: number; // 0-1, default 0（SSAO2RenderingPipeline.totalStrength 0~2）
+    ssaoRadius: number; // 0-1, default 0（SSAO2RenderingPipeline.radius 0~4）
+    ssaoSamples: number; // 4-32, default 8（SSAO2RenderingPipeline.samples）
 }
 
 // ======== Renderer State (module-level) ========
@@ -71,6 +77,7 @@ let _modelRegistry: Map<string, import('../../core/config').ModelInstance> | nul
 let _triggerAutoSave: (() => void) | null = null;
 let _glowLayer: GlowLayer | null = null;
 let _ssrPipeline: SSRRenderingPipeline | null = null;
+let _ssaoPipeline: SSAO2RenderingPipeline | null = null;
 let _reflectionProbe: ReflectionProbe | null = null;
 let _probeRefreshObserver: Observer<import('@babylonjs/core/scene').Scene> | null = null;
 let _lastProbeRefresh = 0;
@@ -144,6 +151,10 @@ export function disposeRenderer(): void {
         _ssrPipeline.dispose();
         _ssrPipeline = null;
     }
+    if (_ssaoPipeline) {
+        _ssaoPipeline.dispose();
+        _ssaoPipeline = null;
+    }
     if (_reflectionProbe) {
         _reflectionProbe.dispose();
         _reflectionProbe = null;
@@ -197,6 +208,10 @@ export function getRenderState(): RenderState {
         ssrThickness: _ssrPipeline ? clamp(_ssrPipeline.thickness, 0, 2) : 0.5,
         reflectionProbeEnabled: _reflectionProbe !== null,
         reflectionIntensity: _reflectionProbe ? 1 : 0,
+        ssaoEnabled: _ssaoPipeline !== null,
+        ssaoStrength: _ssaoPipeline ? clamp(_ssaoPipeline.totalStrength / 2, 0, 1) : 0,
+        ssaoRadius: _ssaoPipeline ? clamp(_ssaoPipeline.radius / 4, 0, 1) : 0,
+        ssaoSamples: _ssaoPipeline ? clamp(_ssaoPipeline.samples, 4, 32) : 8,
     };
 }
 
@@ -231,6 +246,10 @@ function _defaultRenderState(): RenderState {
         ssrThickness: 0.5,
         reflectionProbeEnabled: false,
         reflectionIntensity: 0,
+        ssaoEnabled: false,
+        ssaoStrength: 0,
+        ssaoRadius: 0,
+        ssaoSamples: 8,
     };
 }
 
@@ -458,6 +477,35 @@ function _applyRenderState(s: Partial<RenderState>): void {
         }
     }
 
+    // SSAO (Screen-Space Ambient Occlusion) — 独立 pipeline
+    if (s.ssaoEnabled !== undefined || s.ssaoStrength !== undefined || s.ssaoRadius !== undefined || s.ssaoSamples !== undefined) {
+        if (s.ssaoEnabled !== undefined) {
+            if (s.ssaoEnabled && !_ssaoPipeline && _scene && _pipelineCamera) {
+                try {
+                    _ssaoPipeline = new SSAO2RenderingPipeline('ssao', _scene, 0.5, [_pipelineCamera]);
+                    _ssaoPipeline.totalStrength = 1.0;
+                    _ssaoPipeline.radius = 2.0;
+                    _ssaoPipeline.samples = 8;
+                    _ssaoPipeline.epsilon = 0.02;
+                    _ssaoPipeline.expensiveBlur = true;
+                    _ssaoPipeline.bilateralSamples = 16;
+                    _ssaoPipeline.bilateralSoften = 0.5;
+                } catch (err) {
+                    console.warn('[renderer] SSAO pipeline 创建失败:', err);
+                    _ssaoPipeline = null;
+                }
+            } else if (!s.ssaoEnabled && _ssaoPipeline) {
+                _ssaoPipeline.dispose();
+                _ssaoPipeline = null;
+            }
+        }
+        if (_ssaoPipeline) {
+            if (s.ssaoStrength !== undefined) _ssaoPipeline.totalStrength = clamp(s.ssaoStrength * 2, 0, 2);
+            if (s.ssaoRadius !== undefined) _ssaoPipeline.radius = clamp(s.ssaoRadius * 4, 0, 4);
+            if (s.ssaoSamples !== undefined) _ssaoPipeline.samples = Math.round(clamp(s.ssaoSamples, 4, 32));
+        }
+    }
+
     // Stage / imageProcessing
     if (pipeline.imageProcessing) {
         if (s.toneMapping !== undefined) {
@@ -522,6 +570,9 @@ export function transitionRenderState(
         'ssrStep',
         'ssrThickness',
         'reflectionIntensity',
+        'ssaoStrength',
+        'ssaoRadius',
+        'ssaoSamples',
     ];
     // 颜色字段列表（逐通道 lerp）
     const colorKeys: (keyof RenderState)[] = ['outlineColor'];
@@ -537,6 +588,7 @@ export function transitionRenderState(
         'glowEnabled',
         'ssrEnabled',
         'reflectionProbeEnabled',
+        'ssaoEnabled',
     ];
     // 枚举字段（动画结束时切换）
     const enumKeys: (keyof RenderState)[] = ['toneMapping'];
@@ -573,7 +625,7 @@ export function transitionRenderState(
             if (key === 'glowEnabled') {
                 return t >= 0.3;
             }
-            if (key === 'ssrEnabled' || key === 'reflectionProbeEnabled') {
+            if (key === 'ssrEnabled' || key === 'reflectionProbeEnabled' || key === 'ssaoEnabled') {
                 return t >= 0.3;
             }
             // outline / fxaa 无关联数值，延迟到 80%
@@ -664,6 +716,16 @@ export function reattachPipeline(): void {
                 // 下次 _applyRenderState 时会重建
             } catch {
                 // Intentionally empty — SSR pipeline dispose 失败不影响主流程
+            }
+        }
+        // SSAO pipeline 也需要重新挂接相机
+        if (_ssaoPipeline) {
+            try {
+                _ssaoPipeline.dispose();
+                _ssaoPipeline = null;
+                // 下次 _applyRenderState 时会重建
+            } catch {
+                // Intentionally empty — SSAO pipeline dispose 失败不影响主流程
             }
         }
     }

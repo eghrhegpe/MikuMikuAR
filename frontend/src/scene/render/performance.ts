@@ -48,6 +48,7 @@ interface LevelConfig {
     glowEnabled: boolean;
     ssrEnabled: boolean;
     reflectionProbeEnabled: boolean;
+    ssaoEnabled: boolean;
     label: string;
 }
 
@@ -65,6 +66,7 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         glowEnabled: true,
         ssrEnabled: true,
         reflectionProbeEnabled: true,
+        ssaoEnabled: true,
         label: '正常',
     },
     1: {
@@ -80,6 +82,7 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         glowEnabled: false,
         ssrEnabled: false,
         reflectionProbeEnabled: true,
+        ssaoEnabled: true,
         label: '轻度降级',
     },
     2: {
@@ -95,6 +98,7 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         glowEnabled: false,
         ssrEnabled: false,
         reflectionProbeEnabled: false,
+        ssaoEnabled: false,
         label: '中度降级',
     },
     3: {
@@ -110,6 +114,7 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         glowEnabled: false,
         ssrEnabled: false,
         reflectionProbeEnabled: false,
+        ssaoEnabled: false,
         label: '重度降级',
     },
 };
@@ -156,6 +161,9 @@ function levelDiff(
     }
     if (prev.reflectionProbeEnabled !== next.reflectionProbeEnabled) {
         render.reflectionProbeEnabled = next.reflectionProbeEnabled;
+    }
+    if (prev.ssaoEnabled !== next.ssaoEnabled) {
+        render.ssaoEnabled = next.ssaoEnabled;
     }
     return { light, render };
 }

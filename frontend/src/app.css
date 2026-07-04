@@ -248,6 +248,8 @@ input, textarea, [contenteditable] {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Safe area: 刘海屏/底部手势条内缩 */
+    padding-bottom: env(safe-area-inset-bottom);
 }
 .nav-btn {
     width: 48px;
@@ -278,6 +280,8 @@ input, textarea, [contenteditable] {
     align-items: center;
     gap: 20px;
     color: rgba(255, 255, 255, 0.4);
+    /* Safe area: 底部手势条内缩 */
+    padding-bottom: env(safe-area-inset-bottom);
     font-size: var(--font-time);
     background: rgba(0, 0, 0, 0.25);
     padding: 4px 14px;
