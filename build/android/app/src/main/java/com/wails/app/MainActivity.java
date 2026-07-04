@@ -3,6 +3,7 @@ package com.wails.app;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
@@ -14,12 +15,14 @@ import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.PowerManager;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
+import android.provider.Settings;
 import android.util.Base64;
 import android.util.Log;
 import android.webkit.WebResourceRequest;
@@ -27,8 +30,10 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 import androidx.webkit.WebViewAssetLoader;
@@ -54,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String WAILS_SCHEME = "https";
     private static final String WAILS_HOST = "wails.localhost";
     private static final int FILE_PICKER_REQUEST = 7001;
+    private static final int MANAGE_STORAGE_REQUEST = 7011;
 
     private WebView webView;
     private WailsBridge bridge;
@@ -62,6 +68,11 @@ public class MainActivity extends AppCompatActivity {
     // network/screen broadcasts don't wake the app.
     private boolean systemReceiversRegistered = false;
     private WebViewAssetLoader assetLoader;
+
+    // Tracks whether MANAGE_EXTERNAL_STORAGE was granted the last time we
+    // checked. onResume compares against this to detect a fresh grant and
+    // fires a "storage:permissionGranted" event so JS can rescan the library.
+    private boolean lastStorageGranted = false;
 
     // The Go-side dialog ID of the in-flight file picker (-1 when idle)
     private int pendingFilePickerCallbackID = -1;
@@ -94,6 +105,11 @@ public class MainActivity extends AppCompatActivity {
 
         // Load the application
         loadApplication();
+
+        // Check external storage permission (MANAGE_EXTERNAL_STORAGE on Android 11+).
+        // The check is deferred to onResume so the WebView is ready when the
+        // grant event fires; onCreate just seeds the initial state.
+        lastStorageGranted = hasManageStoragePermission();
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -206,6 +222,80 @@ public class MainActivity extends AppCompatActivity {
         String url = WAILS_SCHEME + "://" + WAILS_HOST + "/";
         if (DEBUG) Log.d(TAG, "Loading URL: " + url);
         webView.loadUrl(url);
+    }
+
+    // ---- External storage permission (MANAGE_EXTERNAL_STORAGE) -----------
+    // On Android 11+, reading arbitrary paths under /sdcard requires the
+    // "All files access" permission. The user must grant it manually in
+    // Settings — there is no runtime dialog. We surface a Toast + dialog
+    // prompting them, and fire a "storage:permissionGranted" event when the
+    // grant is detected so JS can rescan the model library.
+
+    /** Returns true if the app holds MANAGE_EXTERNAL_STORAGE (Android 11+)
+     *  or READ/WRITE_EXTERNAL_STORAGE (Android 10 and below). */
+    public boolean hasManageStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return Environment.isExternalStorageManager();
+        }
+        // Android 10 and below: legacy READ/WRITE_EXTERNAL_STORAGE
+        return checkSelfPermission("android.permission.READ_EXTERNAL_STORAGE")
+                == PackageManager.PERMISSION_GRANTED
+            && checkSelfPermission("android.permission.WRITE_EXTERNAL_STORAGE")
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** Prompts the user to grant "All files access" in Settings.
+     *  Called from JS via WailsBridge when the model library finds itself
+     *  unable to read /sdcard/MMD. */
+    public void requestStoragePermission() {
+        if (hasManageStoragePermission()) {
+            if (bridge != null) {
+                bridge.emitSystemEvent("storage:permissionGranted", "{}");
+            }
+            return;
+        }
+        runOnUiThread(() -> {
+            new AlertDialog.Builder(this)
+                .setTitle("需要文件访问权限")
+                .setMessage("MikuMikuAR 需要读取 /sdcard/MMD 下的模型、动作和音乐文件。\n\n" +
+                            "请在接下来的设置页面中，开启「允许管理所有文件」权限，然后返回应用。")
+                .setPositiveButton("去设置", (DialogInterface d, int which) -> {
+                    launchAllFilesAccessSettings();
+                })
+                .setNegativeButton("稍后", (DialogInterface d, int which) -> {
+                    Toast.makeText(this, "未授权，模型库将无法读取 /sdcard/MMD", Toast.LENGTH_LONG).show();
+                    d.dismiss();
+                })
+                .setCancelable(false)
+                .show();
+        });
+    }
+
+    private void launchAllFilesAccessSettings() {
+        try {
+            Intent intent;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+            } else {
+                intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+            }
+            intent.addCategory(Intent.CATEGORY_DEFAULT);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivityForResult(intent, MANAGE_STORAGE_REQUEST);
+        } catch (Exception e) {
+            Log.e(TAG, "launchAllFilesAccessSettings failed", e);
+            // Fallback: open generic settings
+            try {
+                Intent fallback = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                fallback.setData(Uri.parse("package:" + getPackageName()));
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivityForResult(fallback, MANAGE_STORAGE_REQUEST);
+            } catch (Exception e2) {
+                Log.e(TAG, "fallback settings intent also failed", e2);
+            }
+        }
     }
 
     /**
@@ -437,6 +527,20 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PHOTO_CAPTURE_REQUEST || requestCode == VIDEO_CAPTURE_REQUEST) {
             handleCaptureResult(resultCode, data);
+            return;
+        }
+        if (requestCode == MANAGE_STORAGE_REQUEST) {
+            // User came back from the "All files access" settings page.
+            // Check the new state and notify JS if granted.
+            boolean nowGranted = hasManageStoragePermission();
+            if (nowGranted && !lastStorageGranted && bridge != null) {
+                if (DEBUG) Log.d(TAG, "MANAGE_EXTERNAL_STORAGE granted — firing storage:permissionGranted");
+                bridge.emitSystemEvent("storage:permissionGranted", "{}");
+            }
+            lastStorageGranted = nowGranted;
+            if (!nowGranted) {
+                Toast.makeText(this, "未授权，模型库将无法读取 /sdcard/MMD", Toast.LENGTH_LONG).show();
+            }
             return;
         }
         if (requestCode != FILE_PICKER_REQUEST) {
@@ -756,6 +860,17 @@ public class MainActivity extends AppCompatActivity {
         if (bridge != null) {
             bridge.onResume();
         }
+        // Detect a fresh MANAGE_EXTERNAL_STORAGE grant while the app was
+        // backgrounded (user just toggled it in Settings). Fire an event so
+        // JS can rescan the model library.
+        boolean nowGranted = hasManageStoragePermission();
+        if (nowGranted && !lastStorageGranted) {
+            if (DEBUG) Log.d(TAG, "MANAGE_EXTERNAL_STORAGE granted while paused — firing storage:permissionGranted");
+            if (bridge != null) {
+                bridge.emitSystemEvent("storage:permissionGranted", "{}");
+            }
+        }
+        lastStorageGranted = nowGranted;
     }
 
     @Override

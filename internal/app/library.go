@@ -13,15 +13,11 @@ import (
 
 // SelectDir opens a directory picker dialog.
 // On Android, native directory picker is not available in Wails 3 alpha;
-// returns the default storage path as a starting point.
+// returns the default resource root (/sdcard/MMD) as the starting point.
+// SAF-based directory selection will replace this in a future update.
 func (a *App) SelectDir() (string, error) {
 	if isAndroid {
-		// Android: 暂返回默认路径，SAF 后续扩展点
-		base, err := platformPathMgr.AppDataRoot()
-		if err != nil {
-			return "", err
-		}
-		return filepath.Join(base, "MikuMikuAR"), nil
+		return platformPathMgr.ResourceRoot(), nil
 	}
 	if a.wailsApp == nil {
 		return "", fmt.Errorf("application not initialized")

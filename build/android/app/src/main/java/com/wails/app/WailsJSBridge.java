@@ -116,6 +116,41 @@ public class WailsJSBridge {
     }
 
     /**
+     * Request MANAGE_EXTERNAL_STORAGE permission (Android 11+).
+     * Shows a dialog guiding the user to the "All files access" settings page.
+     * When the grant is detected (via onResume or onActivityResult), a
+     * "storage:permissionGranted" system event is emitted to JS.
+     *
+     * Called from JavaScript: wails.requestStoragePermission()
+     */
+    @JavascriptInterface
+    public void requestStoragePermission() {
+        android.app.Activity activity = bridge.getActivity();
+        if (activity instanceof MainActivity) {
+            ((MainActivity) activity).requestStoragePermission();
+        } else {
+            Log.w(TAG, "requestStoragePermission: activity is not MainActivity");
+        }
+    }
+
+    /**
+     * Check whether MANAGE_EXTERNAL_STORAGE (Android 11+) or legacy
+     * READ/WRITE_EXTERNAL_STORAGE (Android 10-) is currently granted.
+     *
+     * Called from JavaScript: wails.hasStoragePermission()
+     *
+     * @return true if the app can read /sdcard/MMD
+     */
+    @JavascriptInterface
+    public boolean hasStoragePermission() {
+        android.app.Activity activity = bridge.getActivity();
+        if (activity instanceof MainActivity) {
+            return ((MainActivity) activity).hasManageStoragePermission();
+        }
+        return false;
+    }
+
+    /**
      * Send a callback response to JavaScript
      */
     private void sendCallback(String callbackId, String result, String error) {

@@ -111,6 +111,10 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $flavor = if ($Production) { "release" } else { "debug" }
 $apkPath = "$apkDir\$flavor\app-$flavor.apk"
 $distDir = "$repoRoot\dist"
+# 清理旧 APK，避免遗留旧版本产物
+if (Test-Path $distDir) {
+    Remove-Item "$distDir\*.apk" -Force -ErrorAction SilentlyContinue
+}
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
 if (Test-Path $apkPath) {

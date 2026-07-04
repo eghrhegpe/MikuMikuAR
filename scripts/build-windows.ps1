@@ -23,10 +23,16 @@ if (Test-Path $configYml) {
     Write-Output "[build-windows] 同步 config.yml version -> $version"
 }
 
-# 清理
+# 清理构建产物
 if ($Clean) {
     Write-Output "[build-windows] 清理构建产物..."
     Remove-Item "$projectDir\bin" -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# 确保 dist 目录不存在旧产物
+$distDir = "$repoRoot\dist"
+if (Test-Path $distDir) {
+    Remove-Item "$distDir\*" -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 Set-Location $projectDir
@@ -56,7 +62,7 @@ New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
 $exeName = "MikuMikuAR.exe"
 $srcExe = "$projectDir\bin\$exeName"
-$dstExe = "$distDir\-$version-windows-amd64.exe"
+$dstExe = "$distDir\MikuMikuAR-$version-windows-amd64.exe"
 
 if (Test-Path $srcExe) {
     Copy-Item $srcExe $dstExe -Force
