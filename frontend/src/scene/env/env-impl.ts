@@ -307,6 +307,8 @@ export function applySky(state: EnvState): void {
 }
 
 // ======== Ground ========
+let _currentGroundKey: string = '';
+
 function applyCheckerGround(ground: Mesh, state: EnvState): void {
     const scene = getScene();
     const canvas = document.createElement('canvas');
@@ -335,10 +337,15 @@ function applyCheckerGround(ground: Mesh, state: EnvState): void {
 }
 
 export function applyGround(state: EnvState): void {
-    const scene = getScene();
+	const scene = getScene();
 
-    // 如果地面已存在且可见，直接更新颜色/透明度，不重建网格和材质
-    if (_envSys.ground.mesh && state.groundVisible) {
+	const typeKey = state.groundTextureEnabled && state.groundTexture
+		? `texture:${state.groundTexture}`
+		: `mode:${state.groundMode}`;
+	const keyChanged = typeKey !== _currentGroundKey;
+
+	// 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放
+	if (_envSys.ground.mesh && state.groundVisible && !keyChanged) {
         const mat = _envSys.ground.mesh.material;
         if (mat) {
             if (mat instanceof GridMaterial) {
@@ -359,11 +366,15 @@ export function applyGround(state: EnvState): void {
                     state.groundColor[2]
                 );
                 mat.alpha = state.groundAlpha;
+                if (mat.diffuseTexture && mat.diffuseTexture instanceof Texture) {
+                    (mat.diffuseTexture as Texture).uScale = (mat.diffuseTexture as Texture).vScale = 1 / Math.max(0.1, state.groundTextureScale);
+                }
             }
         }
         return;
     }
 
+    _currentGroundKey = typeKey;
     if (_envSys.ground.mesh) {
         _envSys.ground.mesh.dispose();
         _envSys.ground.mesh = null;
@@ -401,6 +412,16 @@ export function applyGround(state: EnvState): void {
         ground.material = mat;
     } else if (state.groundMode === 'checker') {
         applyCheckerGround(ground, state);
+    } else if (state.groundTextureEnabled && state.groundTexture) {
+        // 纹理地面：subdivisions 保持 2（性能），纹理重复由 uScale/vScale 控制
+        const tex = new Texture(state.groundTexture, scene);
+        tex.uScale = tex.vScale = 1 / Math.max(0.1, state.groundTextureScale);
+        const mat = new StandardMaterial('envGroundMat', scene);
+        mat.diffuseTexture = tex;
+        mat.diffuseColor = new Color3(1, 1, 1);
+        mat.alpha = state.groundAlpha;
+        mat.backFaceCulling = false;
+        ground.material = mat;
     } else {
         const mat = new StandardMaterial('envGroundMat', scene);
         mat.diffuseColor = new Color3(

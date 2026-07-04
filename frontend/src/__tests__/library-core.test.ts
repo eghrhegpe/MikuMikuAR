@@ -268,7 +268,7 @@ describe('modelToRow', () => {
         it('truncates comment to 28 chars', () => {
             const m = makeModel({ comment: 'A very long comment that should be truncated by the function' });
             const row = modelToRow(m);
-            expect(row.sublabel).toBe('A very long comment that sh');
+            expect(row.sublabel).toBe('A very long comment that sho');
             expect(row.sublabel!.length).toBe(28);
         });
 
@@ -357,7 +357,8 @@ describe('buildLevel', () => {
         expect(rows[1].label).toBe('b.pmx');
     });
 
-    it('creates folder entries for subdirectories', () => {
+    it('creates folder entries for subdirectories when at root level', () => {
+        mockState.libraryRoot = '/test/root/models';
         mockState.allModels = [
             makeModel({ file_path: '/test/root/models/sub/a.pmx', dir: '/test/root/models/sub' }),
         ];
@@ -454,7 +455,8 @@ describe('buildLevel', () => {
         expect(rows[1].label).toBe('c.pmx');
     });
 
-    it('handles mixed direct models and subdirs', () => {
+    it('handles mixed direct models and subdir folders when browsed at root', () => {
+        mockState.libraryRoot = '/test';
         mockState.allModels = [
             makeModel({ file_path: '/test/root.pmx', dir: '/test' }),
             makeModel({ file_path: '/test/sub/a.pmx', dir: '/test/sub' }),

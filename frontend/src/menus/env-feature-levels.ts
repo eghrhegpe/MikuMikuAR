@@ -126,6 +126,7 @@ export function buildGroundLevel(): PopupLevel {
                     { value: 'solid', label: '纯色' },
                     { value: 'grid', label: '网格' },
                     { value: 'checker', label: '棋盘格' },
+                    { value: 'texture', label: '纹理' },
                 ], s.groundMode, (v) => {
                     setEnvState({ groundMode: v });
                     getEnvMenu()?.reRender();
@@ -134,11 +135,29 @@ export function buildGroundLevel(): PopupLevel {
                 if (s.groundMode === 'solid' || s.groundMode === 'checker') {
                     addSliderRow(c, '透明度', s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), 'lucide:eye');
                 }
+                if (s.groundMode === 'texture') {
+                    const texturePresets = [
+                        { value: '', label: '无' },
+                        { value: 'textures/grass.jpg', label: '草地' },
+                        { value: 'textures/stone.jpg', label: '石板' },
+                        { value: 'textures/sand.jpg', label: '沙滩' },
+                    ];
+                    const chipRow = document.createElement('div');
+                    chipRow.className = 'preset-group';
+                    for (const tp of texturePresets) {
+                        addPresetChip(chipRow, tp.label, s.groundTexture === tp.value, () => {
+                            setEnvState({ groundTexture: tp.value, groundTextureEnabled: !!tp.value });
+                            getEnvMenu()?.reRender();
+                        });
+                    }
+                    c.appendChild(chipRow);
+                    addSliderRow(c, '纹理缩放', s.groundTextureScale, 0.1, 5, 0.1, (v) => setEnvState({ groundTextureScale: v }), 'lucide:zoom-in');
+                }
             });
         },
         reRenderCustom: (container) => {
             const s = envState;
-            const labels: Record<string, string> = { solid: '纯色', grid: '网格', checker: '棋盘格' };
+            const labels: Record<string, string> = { solid: '纯色', grid: '网格', checker: '棋盘格', texture: '纹理' };
             const rows = container.querySelectorAll('.cs-row');
             for (const row of Array.from(rows) as HTMLElement[]) {
                 const label = row.querySelector('.cs-label');
@@ -209,6 +228,8 @@ export function buildWaterLevel(): PopupLevel {
                         addColorSliderRow(cc, '水下雾色', s.underwaterFogColor, (v) => setEnvState({ underwaterFogColor: v }));
                         addSliderRow(cc, '雾密度', s.underwaterFogDensity, 0, 0.1, 0.001, (v) => setEnvState({ underwaterFogDensity: v }));
                         addSliderRow(cc, '色差强度', s.underwaterChromaticAmount, 0, 20, 0.5, (v) => setEnvState({ underwaterChromaticAmount: v }));
+                        addSliderRow(cc, '色调强度', s.underwaterToneIntensity, 0, 1, 0.05, (v) => setEnvState({ underwaterToneIntensity: v }), 'lucide:palette');
+                        addSliderRow(cc, '雾倍率', s.underwaterFogMultiplier, 1, 5, 0.1, (v) => setEnvState({ underwaterFogMultiplier: v }), 'lucide:cloud-fog');
                     },
                 });
             });
