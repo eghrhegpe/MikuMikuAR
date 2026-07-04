@@ -31,13 +31,13 @@ import { focusModel } from '../scene/scene';
 
 // ======== 从子文件导入 ========
 import {
-    buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel, buildPresetScenesLevel,
+    buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildPresetScenesLevel,
 } from './scene-render-levels';
 import { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
-export { buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel, buildPresetScenesLevel } from './scene-render-levels';
+export { buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildPresetScenesLevel } from './scene-render-levels';
 export { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 
 // ======== Scene Menu State ========
@@ -100,12 +100,6 @@ function buildSceneRoot(): PopupLevel {
                 );
                 slideRow(c, 'lucide:monitor', '舞台', true, () =>
                     sceneMenu.push(buildStageLevel())
-                );
-                slideRow(c, 'lucide:lightbulb', '舞台灯光', true, () =>
-                    sceneMenu.push(buildStageLightLevel())
-                );
-                slideRow(c, 'lucide:box', '舞台道具', true, () =>
-                    sceneMenu.push(buildPropLevel())
                 );
                 slideRow(c, 'lucide:camera', '截图', true, () =>
                     sceneMenu.push(buildScreenshotLevel())

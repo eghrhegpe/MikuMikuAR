@@ -30,6 +30,7 @@ import { createIconifyIcon } from '../core/icons';
 import {
     loadVMDFromPath,
     loadVPDPose,
+    loadCameraVmdFromPath,
     updatePlaybackUI,
     focusModel,
     setGravityStrength,
@@ -261,7 +262,29 @@ function makeMotionMenu(container: HTMLElement): SlideMenu {
                     return;
                 }
                 hideMotionPopup();
-                if (row.model.format === 'vmd') loadVMDFromPath(row.model.file_path);
+                if (row.model.format === 'vmd') {
+                    if (motionBindingTargetId) {
+                        loadVMDFromPath(row.model.file_path);
+                    } else {
+                        loadCameraVmdFromPath(row.model.file_path).then(() => {
+                            const menu = getMotionMenu();
+                            if (menu) menu.reRender();
+                        }).catch((err) => {
+                            console.error('Load camera VMD failed:', err);
+                        });
+                    }
+                    return;
+                }
+                if (row.model.format === 'audio') {
+                    loadAudioFile(row.model.file_path);
+                    setStatus(`✓ 音乐: ${getAudioName()}`, true);
+                    if (motionMenu) motionMenu.reRender();
+                    return;
+                }
+                if (row.model.format === 'vpd') {
+                    loadVPDPose(row.model.file_path);
+                    return;
+                }
                 return;
             }
             if (row.target && row.target.startsWith('procmotion:set-mode:')) {
@@ -306,14 +329,9 @@ function makeMotionMenu(container: HTMLElement): SlideMenu {
                         break;
                     case 'pose':
                         (async () => {
-                            try {
-                                const path = await SelectVPDPose();
-                                if (!path) { setStatus('✗ 未选择文件', false); return; }
-                                await loadVPDPose(path, id);
-                                motionMenu.reRender();
-                            } catch (err: unknown) {
-                                setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
-                            }
+                            const level = stackRegistry.buildLevel!(libraryRoot, '姿势库', (m) => m.format === 'vpd');
+                            level.label = `姿势 → ${inst.name}`;
+                            if (motionMenu) motionMenu.push(level);
                         })();
                         break;
                     case 'loop':

@@ -5,6 +5,7 @@
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { SpotLight } from '@babylonjs/core/Lights/spotLight';
+import { PointLight } from '@babylonjs/core/Lights/pointLight';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
@@ -35,15 +36,23 @@ export interface LightState {
     shadowBias: number; // 新增
 }
 
+export type StageLightType = 'spot' | 'point' | 'directional';
+
 export interface StageLightState {
     enabled: boolean;
+    type: StageLightType;   // 灯光类型
     intensity: number;
     color: [number, number, number];
-    angle: number;      // 锥角（弧度），默认 ~30° = π/6
-    exponent: number;   // 衰减指数
+    // SpotLight 专属
+    angle: number;          // 锥角（弧度）
+    exponent: number;       // 衰减指数
+    // PointLight 专属
+    range: number;          // 衰减距离
+    // 位置
     posX: number;
     posY: number;
     posZ: number;
+    // 目标点（spot 用；directional 用其反推方向）
     targetX: number;
     targetY: number;
     targetZ: number;
@@ -56,10 +65,12 @@ export interface StageLightState {
 function _defaultStageLightState(): StageLightState {
     return {
         enabled: false,
+        type: 'spot',
         intensity: 0.8,
         color: [1, 1, 1],
         angle: 0.8,  // ≈46°，兼顾覆盖和聚光感
         exponent: 2,
+        range: 50,
         posX: 0,
         posY: 15,
         posZ: -10,
@@ -82,9 +93,10 @@ let _triggerAutoSave: (() => void) | null = null;
 
 export let hemiLight: HemisphericLight;
 export let dirLight: DirectionalLight;
-export let stageLight: SpotLight;
+export let stageLight: SpotLight | PointLight | DirectionalLight;
 
 let _stageLightState: StageLightState = _defaultStageLightState();
+let _stageLightType: StageLightType = 'spot';
 
 let _shadowEnabled = false;
 let _shadowType: LightState['shadowType'] = 'soft';

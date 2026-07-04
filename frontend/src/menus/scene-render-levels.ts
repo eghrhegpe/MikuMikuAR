@@ -13,6 +13,7 @@ import {
     addModeSlider,
     addCollapsible,
     sliderRow,
+    slideRow,
 } from '../core/ui-helpers';
 import {
     triggerAutoSave,
@@ -29,6 +30,7 @@ import {
     SaveRenderPreset,
     SelectSceneSaveFile,
     SaveSceneFile,
+    SelectPMXFile,
     GetPresetScenes,
     GetPresetScenesDir,
     SaveScenePreset,
@@ -36,6 +38,8 @@ import {
     LoadSceneFile,
 } from '../core/wails-bindings';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
+import { loadPMXFile } from '../scene/scene';
+import { buildPropLevel } from './scene-prop-levels';
 
 // ======== Scene Preset ========
 
@@ -254,17 +258,8 @@ export function buildPostProcessLevel(): PopupLevel {
                 sliderRow(c, '颗粒', state.grainIntensity, 0, 1, 0.05, 'lucide:grid-3x3',
                     (v) => { setRenderState({ grainEnabled: v > 0, grainIntensity: v }); triggerAutoSave(); });
             });
-        },
-    };
-}
 
-export function buildStageLevel(): PopupLevel {
-    return {
-        label: '舞台',
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            const state = getRenderState();
+            // 色调映射 — 后处理色彩环节，影响整体画面风格
             cardContainer(container, (c) => {
                 addCollapsible(c, {
                     title: '色调映射',
@@ -294,23 +289,60 @@ export function buildStageLevel(): PopupLevel {
             // 色调映射模式改变 → 更新 mode slider 的显示值
             const toneMapping = getRenderState().toneMapping;
             const labels = ['关闭', 'ACES', 'Reinhard', 'Cineon', 'Neutral'];
-            // 找第一个 collapsible 内 label="模式" 的 cs-row
-            const firstCollapsible = container.querySelector('.collapsible-wrapper');
-            if (!firstCollapsible) return;
-            const csRows = firstCollapsible.querySelectorAll('.cs-row');
-            for (const row of Array.from(csRows) as HTMLElement[]) {
-                const label = row.querySelector('.cs-label');
-                if (label && label.textContent === '模式') {
-                    const valEl = row.querySelector('.cs-value');
-                    if (valEl) valEl.textContent = labels[toneMapping] ?? String(toneMapping);
-                    const fill = row.querySelector('.cs-fill') as HTMLElement | null;
-                    const thumb = row.querySelector('.cs-thumb') as HTMLElement | null;
-                    const pct = toneMapping > 0 ? (toneMapping / 4) * 100 : 0;
-                    if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-                    if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
-                    break;
+            // 遍历所有 card 找色调映射 collapsible 内 label="模式" 的 cs-row
+            const wrappers = container.querySelectorAll('.collapsible-wrapper');
+            for (const wrapper of Array.from(wrappers) as HTMLElement[]) {
+                const csRows = wrapper.querySelectorAll('.cs-row');
+                for (const row of Array.from(csRows) as HTMLElement[]) {
+                    const label = row.querySelector('.cs-label');
+                    if (label && label.textContent === '模式') {
+                        const valEl = row.querySelector('.cs-value');
+                        if (valEl) valEl.textContent = labels[toneMapping] ?? String(toneMapping);
+                        const fill = row.querySelector('.cs-fill') as HTMLElement | null;
+                        const thumb = row.querySelector('.cs-thumb') as HTMLElement | null;
+                        const pct = toneMapping > 0 ? (toneMapping / 4) * 100 : 0;
+                        if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+                        if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
+                        return;
+                    }
                 }
             }
+        },
+    };
+}
+
+// ======== 舞台根面板：舞台加载、灯光、道具 ========
+
+export function buildStageLevel(): PopupLevel {
+    return {
+        label: '舞台',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove('render-card');
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:upload', '加载舞台 PMX', true, () => {
+                    (async () => {
+                        try {
+                            const path = await SelectPMXFile();
+                            if (!path) return;
+                            await loadPMXFile(path, true);
+                            setStatus('✓ 舞台已加载', true);
+                        } catch (err) {
+                            setStatus('✗ 舞台加载失败', false);
+                            console.error('Stage load error:', err);
+                        }
+                    })();
+                });
+                slideRow(c, 'lucide:lightbulb', '舞台灯光', true, () => {
+                    const sm = getSceneMenu();
+                    if (sm) sm.push(buildStageLightLevel());
+                });
+                slideRow(c, 'lucide:box', '舞台道具', true, () => {
+                    const sm = getSceneMenu();
+                    if (sm) sm.push(buildPropLevel());
+                });
+            });
         },
     };
 }

@@ -1,7 +1,7 @@
 // [doc:architecture] Camera Levels — 相机参数弹窗层级
 // 从 scene-menu.ts 迁移到 motion-popup.ts
 
-import { setStatus, cardContainer } from '../core/config';
+import { setStatus, cardContainer, libraryRoot, stackRegistry, motionBindingTargetId, setMotionBindingTargetId } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
@@ -23,7 +23,6 @@ import {
     type CameraMode,
 } from '../scene/camera/camera';
 import { triggerAutoSave } from '../scene/scene';
-import { SelectVMDMotion } from '../core/wails-bindings';
 import { loadCameraVmdFromPath } from '../scene/scene';
 import { getMotionMenu } from './motion-popup';
 
@@ -138,19 +137,10 @@ export function buildCameraLevel(): PopupLevel {
                 loadLabel.textContent = '加载相机 VMD';
                 loadRow.appendChild(loadLabel);
                 loadRow.addEventListener('click', () => {
-                    (async () => {
-                        try {
-                            const path = await SelectVMDMotion();
-                            if (!path) {
-                                return;
-                            }
-                            await loadCameraVmdFromPath(path);
-                            refreshCameraLevel();
-                        } catch (err) {
-                            console.error('Load camera VMD failed:', err);
-                            setStatus('✗ 相机 VMD 加载失败', false);
-                        }
-                    })();
+                    setMotionBindingTargetId(null);
+                    const level = stackRegistry.buildLevel!(libraryRoot, '相机 VMD', (m) => m.format === 'vmd');
+                    const menu = getMotionMenu();
+                    if (menu) menu.push(level);
                 });
                 c.appendChild(loadRow);
             });
