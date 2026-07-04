@@ -142,25 +142,18 @@ function buildSettingsDisplayLevel(): PopupLevel {
                 );
             });
             // 显示名称优先级
+            const priorityIndex = displayNamePriority === 'name_jp' ? 0 : displayNamePriority === 'name_en' ? 1 : 2;
             cardContainer(container, (c) => {
-                addSectionTitle(c, '显示名称优先级');
-                const options: Array<[DisplayNamePriority, string]> = [
-                    ['name_jp', '日语名'],
-                    ['name_en', '英语名'],
-                    ['filename', '文件名'],
-                ];
-                for (const [key, label] of options) {
-                    const isActive = displayNamePriority === key;
-                    const row = document.createElement('div');
-                    row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                    row.dataset.namePriority = key;
-                    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check-circle' : 'circle'}"></iconify-icon></span><span class="slide-label">${label}</span>`;
-                    row.addEventListener('click', () => {
-                        applyDisplayNamePriority(key);
-                        getSettingsMenu()?.reRender();
-                    });
-                    c.appendChild(row);
-                }
+                c.dataset.namePriCard = '1';
+                addSliderRow(c, '显示名称优先级', priorityIndex, 0, 2, 1, (v) => {
+                    applyDisplayNamePriority(NAME_PRIORITY_INDEX[v]);
+                    getSettingsMenu()?.reRender();
+                }, 'lucide:type', undefined, {
+                    onUpdate: (el) => {
+                        const valEl = el.querySelector('.cs-value');
+                        if (valEl) valEl.textContent = NAME_PRIORITY_LABELS[displayNamePriority];
+                    },
+                });
             });
             // 材质分类映射
             cardContainer(container, (c) => {
@@ -235,15 +228,12 @@ function buildSettingsDisplayLevel(): PopupLevel {
                 }
             }
 
-            // 2. 显示名称优先级：更新选中态图标 + class
-            const nameRows = container.querySelectorAll<HTMLElement>('[data-name-priority]');
-            nameRows.forEach((row) => {
-                const key = row.dataset.namePriority as DisplayNamePriority;
-                const isActive = displayNamePriority === key;
-                row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
-                if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
-            });
+            // 2. 显示名称优先级 cs-value：更新文本（cs-row 内部 fill/thumb 由 updateControls 同步）
+            const namePriCard = container.querySelector<HTMLElement>('[data-name-pri-card]');
+            if (namePriCard) {
+                const valEl = namePriCard.querySelector('.cs-value');
+                if (valEl) valEl.textContent = NAME_PRIORITY_LABELS[displayNamePriority];
+            }
 
             // 3. 材质映射列表：重建 data-map-card 内的映射行（保留 title 和 add 行）
             const mapCard = container.querySelector<HTMLElement>('[data-map-card]');
@@ -515,6 +505,18 @@ const THEME_PRESETS: Array<{ label: string; color: string }> = [
     { label: '暗夜紫', color: '#6c4af7' },
     { label: '极简灰', color: '#888888' },
 ];
+
+const NAME_PRIORITY_LABELS: Record<DisplayNamePriority, string> = {
+    name_jp: '日语名',
+    name_en: '英语名',
+    filename: '文件名',
+};
+
+const NAME_PRIORITY_INDEX: Record<number, DisplayNamePriority> = {
+    0: 'name_jp',
+    1: 'name_en',
+    2: 'filename',
+};
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

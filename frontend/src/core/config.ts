@@ -363,7 +363,7 @@ export function setPropRegistry(m: Map<string, PropInstance>): void {
 }
 
 export let focusedModelId: string | null = null;
-// [doc:architecture] focusedModelId — 当前聚焦模型ID（用于键盘/相机/VMD绑定/详情面板）
+// [doc:architecture] focusedModelId — 当前聚焦模型ID（用于键盘/相机/VMD绑定/模型面板）
 // ⚠️ 修改时同步: focusModel(切换) / loadPMXFile(新增后自动) / removeModel(删除后迁移)
 export function setFocusedModelId(id: string | null): void {
     focusedModelId = id;

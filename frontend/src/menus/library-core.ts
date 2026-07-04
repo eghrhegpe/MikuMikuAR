@@ -58,7 +58,7 @@ import {
     SelectVMDMotion,
     SelectVPDPose,
 } from '../core/wails-bindings';
-import { buildModelDetailLevel } from './model-detail';
+import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
@@ -81,7 +81,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 }
                 return inst.kind === 'stage'
                     ? buildStageTransformLevel(id)
-                    : buildModelDetailLevel(id);
+                    : buildModelLevel(id);
             }
             if (row.target === '__recent__') {
                 const recentMap = new Map<string, number>();
@@ -599,7 +599,7 @@ function buildTagsOverviewLevel(): PopupLevel {
                     ls.textContent = '新建标签';
                     row.appendChild(ls);
                     row.addEventListener('click', () => {
-                        setStatus('请先进入模型详情页，在详情中为模型添加标签', false);
+                        setStatus('请先进入模型页，在模型页中为模型添加标签', false);
                         stackRegistry.modelStack.pop();
                     });
                     c.appendChild(row);
@@ -697,7 +697,7 @@ export function showModelPopup(): void {
                     cardContainer(container, (c) => {
                         for (const [id, inst] of actors) {
                             slideRow(c, 'tabler:cube-3d-sphere', inst.name, true, () => {
-                                const level = buildModelDetailLevel(id);
+                                const level = buildModelLevel(id);
                                 stackRegistry.modelStack.push(level);
                             });
                         }

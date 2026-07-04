@@ -387,16 +387,16 @@ function _toggleOverlays(): void {
 
 window.addEventListener('pointerdown', (e) => {
     _pointerDownPos = { x: e.clientX, y: e.clientY };
-    // 长按检测：500ms 后弹出模型详情
+    // 长按检测：500ms 后弹出模型面板
     _longPressTimer = setTimeout(() => {
         if (!dom.canvas.contains(e.target as Node)) return;
         const id = focusedModelId;
         if (!id) return;
-        // 打开模型弹窗并 push 详情层级
+        // 打开模型弹窗并 push 模型层级
         showModelPopup();
-        import('../menus/model-detail').then(({ buildModelDetailLevel }) => {
+        import('../menus/model-detail').then(({ buildModelLevel }) => {
             if (stackRegistry?.modelStack) {
-                stackRegistry.modelStack.push(buildModelDetailLevel(id));
+                stackRegistry.modelStack.push(buildModelLevel(id));
             }
         });
         _longPressTimer = null;

@@ -4,7 +4,10 @@
 import { envState, focusedModelId, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { addSliderRow, addToggleRow, addCollapsible, addPresetChip } from '../core/ui-helpers';
-import { setEnvState, setModelWireframe, setModelBoneLinesVis, setModelBoneJointsVis, modelManager } from '../scene/scene';
+import {
+    setEnvState, setModelWireframe, setModelBoneLinesVis, setModelBoneJointsVis, modelManager,
+    getModelPosition, setModelPosition, setModelScaling, setModelRotationY, resetModelTransform, scene,
+} from '../scene/scene';
 import {
     getCollider, getColliderSpecs, setCapsuleRadius, setCapsuleHalfHeight,
     setColliderStiffness, setColliderFriction, setDebugParticles, setDebugConstraints,
@@ -127,6 +130,70 @@ export function buildClothParamsLevel(): PopupLevel {
                                 },
                             });
                         }
+                    },
+                });
+
+                addCollapsible(c, {
+                    title: '变换', icon: 'lucide:move', defaultOpen: false,
+                    renderContent: (cc) => {
+                        const id = focusedModelId;
+                        if (!id || !modelManager) {
+                            const hint = document.createElement('div');
+                            hint.style.cssText = 'padding:12px;color:var(--text-muted);font-size:12px;';
+                            hint.textContent = '请先加载模型';
+                            cc.appendChild(hint);
+                            return;
+                        }
+                        const inst = modelManager.get(id);
+                        if (!inst) return;
+
+                        addSliderRow(cc, '位置 X', getModelPosition(id)[0], -20, 20, 0.1, (v) => {
+                            const p = getModelPosition(id);
+                            setModelPosition(id, v, p[1], p[2]);
+                        }, 'lucide:move', undefined, {
+                            bind: () => getModelPosition(id)[0],
+                        });
+                        addSliderRow(cc, '位置 Y', getModelPosition(id)[1], -20, 20, 0.1, (v) => {
+                            const p = getModelPosition(id);
+                            setModelPosition(id, p[0], v, p[2]);
+                        }, 'lucide:move', undefined, {
+                            bind: () => getModelPosition(id)[1],
+                        });
+                        addSliderRow(cc, '位置 Z', getModelPosition(id)[2], -20, 20, 0.1, (v) => {
+                            const p = getModelPosition(id);
+                            setModelPosition(id, p[0], p[1], v);
+                        }, 'lucide:move', undefined, {
+                            bind: () => getModelPosition(id)[2],
+                        });
+                        addSliderRow(cc, '缩放', inst.scaling, 0.01, 5, 0.05, (v) => {
+                            setModelScaling(id, v);
+                        }, 'lucide:maximize', undefined, {
+                            bind: () => modelManager.get(id)?.scaling ?? 1,
+                        });
+                        addSliderRow(cc, '旋转 Y', (inst.rotationY * 180) / Math.PI, -180, 180, 1, (v) => {
+                            setModelRotationY(id, (v * Math.PI) / 180);
+                        }, 'lucide:rotate-cw', undefined, {
+                            bind: () => ((modelManager.get(id)?.rotationY ?? 0) * 180) / Math.PI,
+                        });
+
+                        const resetBtn = document.createElement('div');
+                        resetBtn.className = 'slide-item';
+                        resetBtn.setAttribute('data-hint', '重置所有变换参数');
+                        resetBtn.innerHTML =
+                            '<span class="slide-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="slide-label">重置变换</span>';
+                        resetBtn.addEventListener('click', () => {
+                            resetModelTransform(id);
+                            setStatus('✓ 变换已重置', true);
+                        });
+                        cc.appendChild(resetBtn);
+
+                        const observer = scene.onBeforeRenderObservable.add(() => {
+                            if (!document.body.contains(cc)) {
+                                scene.onBeforeRenderObservable.remove(observer);
+                                return;
+                            }
+                            import('./motion-popup').then(m => m.getMotionMenu()?.updateControls());
+                        });
                     },
                 });
 
