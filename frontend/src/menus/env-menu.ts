@@ -19,6 +19,7 @@ import {
     addColorSliderRow,
     addModeSlider,
     addCollapsible,
+    addPresetChip,
 } from '../core/ui-helpers';
 import {
     setEnvState,
@@ -78,15 +79,11 @@ function renderPresetChips(container: HTMLElement): void {
     chipGroup.className = 'preset-group';
     chipGroup.style.paddingBottom = '6px';
     for (const [key, p] of Object.entries(ENV_LIGHTING_PRESETS)) {
-        const btn = document.createElement('button');
-        btn.textContent = p.label;
-        btn.className = 'preset-chip';
-        btn.addEventListener('click', () => {
+        addPresetChip(chipGroup, p.label, false, () => {
             _activeEnvPresetKey = key;
             applyEnvPreset(key);
             getEnvMenu()?.reRender();
         });
-        chipGroup.appendChild(btn);
     }
     container.appendChild(chipGroup);
 }
@@ -196,12 +193,10 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                         shadowQualityRow.className = 'preset-group';
                         shadowQualityRow.dataset.shadowChips = '1';
                         for (const sq of [{ label: '低', value: 512 }, { label: '中', value: 1024 }, { label: '高', value: 2048 }, { label: '超高', value: 4096 }]) {
-                            const btn = document.createElement('button');
-                            btn.textContent = sq.label;
-                            btn.className = 'preset-chip';
-                            if (getLightState().shadowResolution === sq.value) btn.classList.add('active');
-                            btn.addEventListener('click', () => { setLightingState({ shadowResolution: sq.value }); getEnvMenu()?.reRender(); });
-                            shadowQualityRow.appendChild(btn);
+                            addPresetChip(shadowQualityRow, sq.label, getLightState().shadowResolution === sq.value, () => {
+                                setLightingState({ shadowResolution: sq.value });
+                                getEnvMenu()?.reRender();
+                            });
                         }
                         inner.appendChild(shadowQualityRow);
                         addSliderRow(inner, '阴影偏移', getLightState().shadowBias, 0, 0.01, 0.0001, (v) => setLightingState({ shadowBias: v }), 'lucide:move');
