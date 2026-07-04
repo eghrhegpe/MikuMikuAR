@@ -10,6 +10,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
+import type { LinesMesh } from '@babylonjs/core/Meshes/linesMesh';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
 import { CascadedShadowGenerator } from '@babylonjs/core/Lights/Shadows/cascadedShadowGenerator';
@@ -255,7 +256,7 @@ function _updateIndicator(entry: StageLightEntry): void {
             entry.dirLine = MeshBuilder.CreateLines('lightDirLine', {
                 points: [Vector3.Zero(), dir],
             }, _scene!);
-            entry.dirLine.color = new Color3(1, 1, 0.5);
+            (entry.dirLine as LinesMesh).color = new Color3(1, 1, 0.5);
             entry.dirLine.isPickable = false;
             entry.dirLine.position.copyFrom(light.position);
             entry.dirLine.setEnabled(true);

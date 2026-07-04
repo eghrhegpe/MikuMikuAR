@@ -499,8 +499,6 @@ export function buildPostProcessLevel(): PopupLevel {
                     (v) => { setRenderState({ chromaticAberrationEnabled: v > 0, chromaticAberrationAmount: v }); triggerAutoSave(); });
                 sliderRow(c, '颗粒', state.grainIntensity, 0, 1, 0.05, 'lucide:grid-3x3',
                     (v) => { setRenderState({ grainEnabled: v > 0, grainIntensity: v }); triggerAutoSave(); });
-                sliderRow(c, '运动模糊', state.motionBlurAmount, 0, 1, 0.05, 'lucide:wind',
-                    (v) => { setRenderState({ motionBlurEnabled: v > 0, motionBlurAmount: v }); triggerAutoSave(); });
                 sliderRow(c, '锐化', state.sharpenAmount, 0, 1, 0.05, 'lucide:focus',
                     (v) => { setRenderState({ sharpenAmount: v }); triggerAutoSave(); });
                 sliderRow(c, '辉光', state.glowIntensity, 0, 1, 0.05, 'lucide:sparkles',
@@ -796,7 +794,6 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         fxaaEnabled: true, outlineEnabled: false,
         toneMapping: 1, exposure: 2.0, contrast: 1.2,
         vignetteEnabled: true, vignetteDarkness: 0.35,
-        motionBlurEnabled: true, motionBlurAmount: 0.3,
     },
     // --- Reinhard — 高饱和·高对比·边缘线框 = 卡通风格 ---
     cartoon: {
@@ -811,7 +808,6 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
         toneMapping: 1, exposure: 1.5, contrast: 1.15,
         vignetteEnabled: true, vignetteDarkness: 0.5,
         dofEnabled: true, dofAperture: 0.15,
-        motionBlurEnabled: true, motionBlurAmount: 0.2,
     },
     // --- Cineon 胶片曲线 + 暖色调背景 ---
     warm: {
