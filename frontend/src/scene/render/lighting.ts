@@ -434,8 +434,12 @@ function _ensureShadow(): void {
 
     const gen = new CascadedShadowGenerator(_shadowResolution, dirLight);
     gen.numCascades = _shadowCascades;
-    gen.useBlurExponentialShadowMap = _shadowType !== 'hard';
-    gen.useKernelBlur = _shadowType === 'pcf';
+    // CSM 仅支持 FILTER_NONE / FILTER_PCF / FILTER_PCSS
+    if (_shadowType === 'pcf') {
+        gen.usePercentageCloserFiltering = true;
+    } else if (_shadowType === 'soft') {
+        gen.useContactHardeningShadow = true;
+    }
     gen.bias = _shadowBias;
 
     for (const [, inst] of _modelRegistry) {

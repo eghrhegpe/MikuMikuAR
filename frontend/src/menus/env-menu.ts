@@ -200,7 +200,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                         }
                         inner.appendChild(shadowQualityRow);
                         addSliderRow(inner, '阴影偏移', getLightState().shadowBias, 0, 0.01, 0.0001, (v) => setLightingState({ shadowBias: v }), 'lucide:move');
-                        addSliderRow(inner, '阴影级联', getLightState().shadowCascades, 1, 4, 1, (v) => setLightingState({ shadowCascades: v }), 'lucide:layers');
+                        addSliderRow(inner, '阴影级联', getLightState().shadowCascades, 2, 4, 1, (v) => setLightingState({ shadowCascades: v }), 'lucide:layers');
                     },
                 });
             });

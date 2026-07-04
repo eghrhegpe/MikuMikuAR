@@ -474,6 +474,15 @@ body {
     background: rgba(255, 68, 68, 0.1);
     color: var(--danger-hover);
 }
+
+/* 危险文字统一样式 */
+.danger-text {
+    color: var(--danger);
+}
+.danger-text:hover {
+    color: var(--danger-hover);
+}
+
 .btn-sm {
     font-size: var(--font-ui-sm);
     padding: 4px 10px;

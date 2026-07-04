@@ -1,7 +1,7 @@
 // [doc:architecture] Scene Render Levels — 渲染/后处理/舞台/灯光/预设弹窗层级
 // 从 scene-menu.ts 拆分
 
-import { setStatus, cardContainer, libraryRoot, stackRegistry } from '../core/config';
+import { setStatus, cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
@@ -262,114 +262,123 @@ export function buildStageLightLevel(): PopupLevel {
             });
 
             // —— 参数卡片（按类型动态）——
-            cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.className = 'section-title';
-                title.textContent = '参数';
-                c.appendChild(title);
-
-                if (state.type === 'spot') {
-                    addSliderRow(c, '锥角', state.angle, 0.1, 2.0, 0.05, () => {}, 'lucide:circle',
-                        (v) => setStageLightState({ angle: v }, state.id));
-                    addSliderRow(c, '衰减', state.exponent, 0, 4, 0.1, () => {}, 'lucide:arrow-down',
-                        (v) => setStageLightState({ exponent: v }, state.id));
-                    addCollapsible(c, {
-                        title: '目标点',
-                        icon: 'lucide:target',
-                        defaultOpen: false,
-                        renderContent: (inner) => {
-                            addSliderRow(inner, '目标 X', state.targetX, -10, 10, 0.1, () => {}, 'lucide:move-horizontal',
-                                (v) => setStageLightState({ targetX: v }, state.id));
-                            addSliderRow(inner, '目标 Y', state.targetY, 0, 15, 0.1, () => {}, 'lucide:move-vertical',
-                                (v) => setStageLightState({ targetY: v }, state.id));
-                            addSliderRow(inner, '目标 Z', state.targetZ, -10, 10, 0.1, () => {}, 'lucide:move',
-                                (v) => setStageLightState({ targetZ: v }, state.id));
-                        },
-                    });
-                } else if (state.type === 'point') {
-                    addSliderRow(c, '衰减距离', state.range, 1, 100, 0.5, () => {}, 'lucide:ruler',
-                        (v) => setStageLightState({ range: v }, state.id));
-                } else if (state.type === 'directional') {
-                    addCollapsible(c, {
-                        title: '方向（目标点）',
-                        icon: 'lucide:compass',
-                        defaultOpen: false,
-                        renderContent: (inner) => {
-                            addSliderRow(inner, '目标 X', state.targetX, -10, 10, 0.1, () => {}, 'lucide:move-horizontal',
-                                (v) => setStageLightState({ targetX: v }, state.id));
-                            addSliderRow(inner, '目标 Y', state.targetY, 0, 15, 0.1, () => {}, 'lucide:move-vertical',
-                                (v) => setStageLightState({ targetY: v }, state.id));
-                            addSliderRow(inner, '目标 Z', state.targetZ, -10, 10, 0.1, () => {}, 'lucide:move',
-                                (v) => setStageLightState({ targetZ: v }, state.id));
-                        },
-                    });
-                }
-            });
+            if (state.type === 'spot') {
+                addCollapsible(container, {
+                    title: '参数',
+                    icon: 'lucide:sliders',
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addSliderRow(inner, '锥角', state.angle, 0.1, 2.0, 0.05, () => {}, 'lucide:circle',
+                            (v) => setStageLightState({ angle: v }, state.id));
+                        addSliderRow(inner, '衰减', state.exponent, 0, 4, 0.1, () => {}, 'lucide:arrow-down',
+                            (v) => setStageLightState({ exponent: v }, state.id));
+                        addCollapsible(inner, {
+                            title: '目标点',
+                            icon: 'lucide:target',
+                            defaultOpen: false,
+                            renderContent: (inner2) => {
+                                addSliderRow(inner2, '目标 X', state.targetX, -10, 10, 0.1, () => {}, 'lucide:move-horizontal',
+                                    (v) => setStageLightState({ targetX: v }, state.id));
+                                addSliderRow(inner2, '目标 Y', state.targetY, 0, 15, 0.1, () => {}, 'lucide:move-vertical',
+                                    (v) => setStageLightState({ targetY: v }, state.id));
+                                addSliderRow(inner2, '目标 Z', state.targetZ, -10, 10, 0.1, () => {}, 'lucide:move',
+                                    (v) => setStageLightState({ targetZ: v }, state.id));
+                            },
+                        });
+                    },
+                });
+            } else if (state.type === 'point') {
+                addCollapsible(container, {
+                    title: '参数',
+                    icon: 'lucide:sliders',
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addSliderRow(inner, '衰减距离', state.range, 1, 100, 0.5, () => {}, 'lucide:ruler',
+                            (v) => setStageLightState({ range: v }, state.id));
+                    },
+                });
+            } else if (state.type === 'directional') {
+                addCollapsible(container, {
+                    title: '方向（目标点）',
+                    icon: 'lucide:compass',
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addSliderRow(inner, '目标 X', state.targetX, -10, 10, 0.1, () => {}, 'lucide:move-horizontal',
+                            (v) => setStageLightState({ targetX: v }, state.id));
+                        addSliderRow(inner, '目标 Y', state.targetY, 0, 15, 0.1, () => {}, 'lucide:move-vertical',
+                            (v) => setStageLightState({ targetY: v }, state.id));
+                        addSliderRow(inner, '目标 Z', state.targetZ, -10, 10, 0.1, () => {}, 'lucide:move',
+                            (v) => setStageLightState({ targetZ: v }, state.id));
+                    },
+                });
+            }
 
             // —— 阴影卡片 ——
             if (state.type !== 'point') {
-                cardContainer(container, (c) => {
-                    const title = document.createElement('div');
-                    title.className = 'section-title';
-                    title.textContent = '阴影';
-                    c.appendChild(title);
-                    addToggleRow(c, '投射阴影', state.shadowEnabled, (v) => {
+                addCollapsible(container, {
+                    title: '阴影',
+                    icon: 'lucide:cloud',
+                    defaultOpen: false,
+                    headerToggle: { value: state.shadowEnabled, onChange: (v) => {
                         setStageLightState({ shadowEnabled: v }, state.id);
                         reRenderSceneMenu();
-                    }, 'lucide:cloud');
-                    if (state.shadowEnabled) {
-                        addModeSlider(c, '阴影类型', [
-                            { value: 'hard', label: '硬阴影' },
-                            { value: 'soft', label: '软阴影' },
-                            { value: 'pcf', label: 'PCF' },
-                        ], state.shadowType, (v) => {
-                            setStageLightState({ shadowType: v as 'hard' | 'soft' | 'pcf' }, state.id);
-                        }, 'lucide:cloud');
-                        addSliderRow(c, '分辨率', state.shadowResolution, 256, 4096, 256, () => {}, 'lucide:grid-3x3',
-                            (v) => setStageLightState({ shadowResolution: v }, state.id));
-                        addSliderRow(c, '阴影偏移', state.shadowBias, 0, 0.01, 0.0001, () => {}, 'lucide:move',
-                            (v) => setStageLightState({ shadowBias: v }, state.id));
-                    }
+                    }},
+                    renderContent: (inner) => {
+                        if (state.shadowEnabled) {
+                            addModeSlider(inner, '阴影类型', [
+                                { value: 'hard', label: '硬阴影' },
+                                { value: 'soft', label: '软阴影' },
+                                { value: 'pcf', label: 'PCF' },
+                            ], state.shadowType, (v) => {
+                                setStageLightState({ shadowType: v as 'hard' | 'soft' | 'pcf' }, state.id);
+                            }, 'lucide:cloud');
+                            addSliderRow(inner, '分辨率', state.shadowResolution, 256, 4096, 256, () => {}, 'lucide:grid-3x3',
+                                (v) => setStageLightState({ shadowResolution: v }, state.id));
+                            addSliderRow(inner, '阴影偏移', state.shadowBias, 0, 0.01, 0.0001, () => {}, 'lucide:move',
+                                (v) => setStageLightState({ shadowBias: v }, state.id));
+                        }
+                    },
                 });
             }
 
             // —— 轨道卡片 ——
-            cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.className = 'section-title';
-                title.textContent = '位置（轨道）';
-                c.appendChild(title);
-                addSliderRow(c, '水平角度', state.orbitAzimuth, -180, 180, 1, () => {}, 'lucide:refresh-cw',
-                    (v) => setStageLightState({ orbitAzimuth: v }, state.id));
-                addSliderRow(c, '仰角', state.orbitElevation, -90, 90, 1, () => {}, 'lucide:arrow-up-down',
-                    (v) => setStageLightState({ orbitElevation: v }, state.id));
-                addSliderRow(c, '距离', state.orbitDistance, 1, 100, 0.5, () => {}, 'lucide:move',
-                    (v) => setStageLightState({ orbitDistance: v }, state.id));
+            addCollapsible(container, {
+                title: '位置（轨道）',
+                icon: 'lucide:orbit',
+                defaultOpen: true,
+                renderContent: (inner) => {
+                    addSliderRow(inner, '水平角度', state.orbitAzimuth, -180, 180, 1, () => {}, 'lucide:refresh-cw',
+                        (v) => setStageLightState({ orbitAzimuth: v }, state.id));
+                    addSliderRow(inner, '仰角', state.orbitElevation, -90, 90, 1, () => {}, 'lucide:arrow-up-down',
+                        (v) => setStageLightState({ orbitElevation: v }, state.id));
+                    addSliderRow(inner, '距离', state.orbitDistance, 1, 100, 0.5, () => {}, 'lucide:move',
+                        (v) => setStageLightState({ orbitDistance: v }, state.id));
 
-                // 拖拽定位按钮
-                const gizmoActive = isGizmoActive();
-                const gizmoBtn = document.createElement('div');
-                gizmoBtn.className = 'slide-item';
-                const gizmoIcon = document.createElement('span');
-                gizmoIcon.className = 'slide-icon';
-                const gizmoIconEl = createIconifyIcon(gizmoActive ? 'lucide:x' : 'lucide:move-3d');
-                if (gizmoIconEl) gizmoIcon.appendChild(gizmoIconEl);
-                gizmoBtn.appendChild(gizmoIcon);
-                const gizmoLabel = document.createElement('span');
-                gizmoLabel.className = 'slide-label';
-                gizmoLabel.textContent = gizmoActive ? '退出拖拽' : '拖拽定位';
-                gizmoBtn.appendChild(gizmoLabel);
-                gizmoBtn.addEventListener('click', () => {
-                    if (gizmoActive) {
-                        detachLightGizmo();
-                        setStatus('✓ 已退出拖拽模式', true);
-                    } else {
-                        attachLightGizmo(state.id);
-                        setStatus('拖拽坐标轴移动位置，拖拽圆环调整方向', false);
-                    }
-                    reRenderSceneMenu();
-                });
-                c.appendChild(gizmoBtn);
+                    // 拖拽定位按钮
+                    const gizmoActive = isGizmoActive();
+                    const gizmoBtn = document.createElement('div');
+                    gizmoBtn.className = 'slide-item';
+                    const gizmoIcon = document.createElement('span');
+                    gizmoIcon.className = 'slide-icon';
+                    const gizmoIconEl = createIconifyIcon(gizmoActive ? 'lucide:x' : 'lucide:move-3d');
+                    if (gizmoIconEl) gizmoIcon.appendChild(gizmoIconEl);
+                    gizmoBtn.appendChild(gizmoIcon);
+                    const gizmoLabel = document.createElement('span');
+                    gizmoLabel.className = 'slide-label';
+                    gizmoLabel.textContent = gizmoActive ? '退出拖拽' : '拖拽定位';
+                    gizmoBtn.appendChild(gizmoLabel);
+                    gizmoBtn.addEventListener('click', () => {
+                        if (gizmoActive) {
+                            detachLightGizmo();
+                            setStatus('✓ 已退出拖拽模式', true);
+                        } else {
+                            attachLightGizmo(state.id);
+                            setStatus('拖拽坐标轴移动位置，拖拽圆环调整方向', false);
+                        }
+                        reRenderSceneMenu();
+                    });
+                    inner.appendChild(gizmoBtn);
+                },
             });
 
             // —— 删除按钮 ——
@@ -541,9 +550,18 @@ export function buildStageLevel(): PopupLevel {
             // —— 卡片 1：功能入口 ——
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:upload', '加载舞台 PMX', true, () => {
-                    const level = stackRegistry.buildLevel!(libraryRoot, '舞台', (m) => m.type === 'stage' || m.type === 'scene');
-                    const sm = getSceneMenu();
-                    if (sm) sm.push(level);
+                    (async () => {
+                        try {
+                            const path = await SelectPMXFile();
+                            if (!path) return;
+                            await loadPMXFile(path, true);
+                            setStatus('✓ 舞台已加载', true);
+                            reRenderSceneMenu();
+                        } catch (err) {
+                            setStatus('✗ 舞台加载失败', false);
+                            console.error('Stage load error:', err);
+                        }
+                    })();
                 });
                 slideRow(c, 'lucide:lightbulb', '舞台灯光', true, () => {
                     const sm = getSceneMenu();
