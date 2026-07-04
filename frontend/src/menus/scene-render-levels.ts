@@ -158,29 +158,85 @@ export function buildStageLightLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             const state = getStageLightState();
+
+            // —— 基础卡片 ——
             cardContainer(container, (c) => {
                 addToggleRow(c, '启用', state.enabled, (v) => {
                     setStageLightState({ enabled: v });
                     reRenderSceneMenu();
                 }, 'lucide:power');
+                addModeSlider(c, '类型', [
+                    { value: 'spot', label: '聚光灯' },
+                    { value: 'point', label: '点光源' },
+                    { value: 'directional', label: '平行光' },
+                ], state.type, (v) => {
+                    setStageLightState({ type: v as 'spot' | 'point' | 'directional' });
+                    reRenderSceneMenu();
+                }, 'lucide:lightbulb');
                 addSliderRow(c, '强度', state.intensity, 0, 2, 0.05, () => {}, 'lucide:sun',
                     (v) => setStageLightState({ intensity: v }));
                 addColorSliderRow(c, '颜色', state.color, (v) => setStageLightState({ color: v }));
-                addSliderRow(c, '锥角', state.angle, 0.1, 2.0, 0.05, () => {}, 'lucide:circle',
-                    (v) => setStageLightState({ angle: v }));
-                addSliderRow(c, '衰减', state.exponent, 0, 4, 0.1, () => {}, 'lucide:arrow-down',
-                    (v) => setStageLightState({ exponent: v }));
             });
+
+            // —— 参数卡片（按类型动态）——
             cardContainer(container, (c) => {
+                const title = document.createElement('div');
+                title.className = 'section-title';
+                title.textContent = '参数';
+                c.appendChild(title);
+
+                if (state.type === 'spot') {
+                    addSliderRow(c, '锥角', state.angle, 0.1, 2.0, 0.05, () => {}, 'lucide:circle',
+                        (v) => setStageLightState({ angle: v }));
+                    addSliderRow(c, '衰减', state.exponent, 0, 4, 0.1, () => {}, 'lucide:arrow-down',
+                        (v) => setStageLightState({ exponent: v }));
+                    addCollapsible(c, {
+                        title: '目标点',
+                        icon: 'lucide:target',
+                        defaultOpen: false,
+                        renderContent: (inner) => {
+                            addSliderRow(inner, '目标 X', state.targetX, -10, 10, 0.1, () => {}, 'lucide:move-horizontal',
+                                (v) => setStageLightState({ targetX: v }));
+                            addSliderRow(inner, '目标 Y', state.targetY, 0, 15, 0.1, () => {}, 'lucide:move-vertical',
+                                (v) => setStageLightState({ targetY: v }));
+                            addSliderRow(inner, '目标 Z', state.targetZ, -10, 10, 0.1, () => {}, 'lucide:move',
+                                (v) => setStageLightState({ targetZ: v }));
+                        },
+                    });
+                } else if (state.type === 'point') {
+                    addSliderRow(c, '衰减距离', state.range, 1, 100, 0.5, () => {}, 'lucide:ruler',
+                        (v) => setStageLightState({ range: v }));
+                } else if (state.type === 'directional') {
+                    addCollapsible(c, {
+                        title: '方向（目标点）',
+                        icon: 'lucide:compass',
+                        defaultOpen: false,
+                        renderContent: (inner) => {
+                            addSliderRow(inner, '目标 X', state.targetX, -10, 10, 0.1, () => {}, 'lucide:move-horizontal',
+                                (v) => setStageLightState({ targetX: v }));
+                            addSliderRow(inner, '目标 Y', state.targetY, 0, 15, 0.1, () => {}, 'lucide:move-vertical',
+                                (v) => setStageLightState({ targetY: v }));
+                            addSliderRow(inner, '目标 Z', state.targetZ, -10, 10, 0.1, () => {}, 'lucide:move',
+                                (v) => setStageLightState({ targetZ: v }));
+                        },
+                    });
+                }
+            });
+
+            // —— 轨道卡片 ——
+            cardContainer(container, (c) => {
+                const title = document.createElement('div');
+                title.className = 'section-title';
+                title.textContent = '位置（轨道）';
+                c.appendChild(title);
                 addSliderRow(c, '水平角度', state.orbitAzimuth, -180, 180, 1, () => {}, 'lucide:refresh-cw',
                     (v) => setStageLightState({ orbitAzimuth: v }));
                 addSliderRow(c, '仰角', state.orbitElevation, -90, 90, 1, () => {}, 'lucide:arrow-up-down',
                     (v) => setStageLightState({ orbitElevation: v }));
-                addSliderRow(c, '距离', state.orbitDistance, 5, 50, 0.5, () => {}, 'lucide:move',
+                addSliderRow(c, '距离', state.orbitDistance, 1, 100, 0.5, () => {}, 'lucide:move',
                     (v) => setStageLightState({ orbitDistance: v }));
             });
         },
-        // reRender 由 toggle 触发，toggle 已自管理状态，无需重建
         reRenderCustom: () => {},
     };
 }

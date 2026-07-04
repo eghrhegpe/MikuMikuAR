@@ -139,19 +139,42 @@ export function initLighting(
     dirLight.position = new Vector3(0, 40, 0);
 
     const def = _defaultStageLightState();
-    stageLight = new SpotLight(
-        'stage',
-        new Vector3(def.posX, def.posY, def.posZ),
-        new Vector3(0, -1, 0).normalize(), // 临时方向，马上 setDirectionToTarget 修正
-        def.angle,
-        def.exponent,
-        scene
-    );
-    stageLight.intensity = 0; // 默认关闭
-    stageLight.diffuse = new Color3(def.color[0], def.color[1], def.color[2]);
-    stageLight.specular = new Color3(0.3, 0.3, 0.3);
-    // 对准角色中心
-    stageLight.setDirectionToTarget(new Vector3(def.targetX, def.targetY, def.targetZ));
+    stageLight = _createStageLight(def.type, def);
+}
+
+function _createStageLight(type: StageLightType, state: StageLightState): SpotLight | PointLight | DirectionalLight {
+    const pos = new Vector3(state.posX, state.posY, state.posZ);
+    const target = new Vector3(state.targetX, state.targetY, state.targetZ);
+    const diffuse = new Color3(state.color[0], state.color[1], state.color[2]);
+    const intensity = state.enabled ? state.intensity : 0;
+
+    if (type === 'spot') {
+        const light = new SpotLight('stage', pos, new Vector3(0, -1, 0), state.angle, state.exponent, _scene!);
+        light.intensity = intensity;
+        light.diffuse = diffuse;
+        light.specular = new Color3(0.3, 0.3, 0.3);
+        light.setDirectionToTarget(target);
+        _stageLightType = 'spot';
+        return light;
+    }
+    if (type === 'point') {
+        const light = new PointLight('stage', pos, _scene!);
+        light.intensity = intensity;
+        light.diffuse = diffuse;
+        light.specular = new Color3(0.3, 0.3, 0.3);
+        light.range = state.range;
+        _stageLightType = 'point';
+        return light;
+    }
+    // directional
+    const dir = target.subtract(pos).normalize();
+    const light = new DirectionalLight('stage', dir, _scene!);
+    light.intensity = intensity;
+    light.diffuse = diffuse;
+    light.specular = new Color3(0.3, 0.3, 0.3);
+    light.position = pos.clone();
+    _stageLightType = 'directional';
+    return light;
 }
 
 function _defaultLightState(): LightState {
@@ -416,24 +439,40 @@ export function rebuildShadowCasters(): void {
 
 export function getStageLightState(): StageLightState {
     if (!stageLight) return _defaultStageLightState();
-    return {
+    const base: StageLightState = {
         ..._stageLightState,
+        type: _stageLightType,
         intensity: stageLight.intensity,
         color: [stageLight.diffuse.r, stageLight.diffuse.g, stageLight.diffuse.b],
-        angle: stageLight.angle,
-        exponent: stageLight.exponent,
         posX: stageLight.position.x,
         posY: stageLight.position.y,
         posZ: stageLight.position.z,
-        // 从位置推导轨道参数
         orbitAzimuth: Math.round(Math.atan2(stageLight.position.x, stageLight.position.z) * 180 / Math.PI),
         orbitElevation: Math.round(Math.asin(stageLight.position.y / Math.max(0.1, stageLight.position.length())) * 180 / Math.PI),
         orbitDistance: Math.round(stageLight.position.length()),
     };
+    if (_stageLightType === 'spot' && stageLight instanceof SpotLight) {
+        base.angle = stageLight.angle;
+        base.exponent = stageLight.exponent;
+    }
+    if (_stageLightType === 'point' && stageLight instanceof PointLight) {
+        base.range = stageLight.range;
+    }
+    return base;
 }
 
 export function setStageLightState(s: Partial<StageLightState>): void {
     if (!stageLight || !_triggerAutoSave) return;
+
+    // 类型切换：dispose 旧灯 + 创建新灯
+    if (s.type !== undefined && s.type !== _stageLightType) {
+        Object.assign(_stageLightState, s);
+        stageLight.dispose();
+        stageLight = _createStageLight(s.type, _stageLightState);
+        _triggerAutoSave();
+        return;
+    }
+
     Object.assign(_stageLightState, s);
 
     if (s.enabled !== undefined) {
@@ -445,12 +484,17 @@ export function setStageLightState(s: Partial<StageLightState>): void {
     if (s.color !== undefined) {
         stageLight.diffuse = new Color3(s.color[0], s.color[1], s.color[2]);
     }
-    if (s.angle !== undefined) {
-        stageLight.angle = s.angle;
+
+    // Spot 专属
+    if (_stageLightType === 'spot' && stageLight instanceof SpotLight) {
+        if (s.angle !== undefined) stageLight.angle = s.angle;
+        if (s.exponent !== undefined) stageLight.exponent = s.exponent;
     }
-    if (s.exponent !== undefined) {
-        stageLight.exponent = s.exponent;
+    // Point 专属
+    if (_stageLightType === 'point' && stageLight instanceof PointLight) {
+        if (s.range !== undefined) stageLight.range = s.range;
     }
+
     if (s.orbitAzimuth !== undefined || s.orbitElevation !== undefined || s.orbitDistance !== undefined) {
         const az = (s.orbitAzimuth ?? _stageLightState.orbitAzimuth) * Math.PI / 180;
         const el = (s.orbitElevation ?? _stageLightState.orbitElevation) * Math.PI / 180;
@@ -460,8 +504,20 @@ export function setStageLightState(s: Partial<StageLightState>): void {
             dist * Math.sin(el),
             dist * Math.cos(el) * Math.cos(az)
         );
-        // 移动后重新对准目标
-        stageLight.setDirectionToTarget(new Vector3(0, 0, 0));
+        // spot 重新对准目标；directional 重新计算方向
+        if (_stageLightType === 'spot' && stageLight instanceof SpotLight) {
+            stageLight.setDirectionToTarget(new Vector3(
+                _stageLightState.targetX, _stageLightState.targetY, _stageLightState.targetZ
+            ));
+        }
+        if (_stageLightType === 'directional' && stageLight instanceof DirectionalLight) {
+            const dir = new Vector3(
+                _stageLightState.targetX - stageLight.position.x,
+                _stageLightState.targetY - stageLight.position.y,
+                _stageLightState.targetZ - stageLight.position.z
+            ).normalize();
+            stageLight.direction = dir;
+        }
     }
     if (s.posX !== undefined || s.posY !== undefined || s.posZ !== undefined) {
         stageLight.position = new Vector3(
@@ -470,12 +526,22 @@ export function setStageLightState(s: Partial<StageLightState>): void {
             s.posZ ?? stageLight.position.z
         );
     }
-    if (s.targetX !== undefined || s.targetY !== undefined || s.targetZ !== undefined) {
-        stageLight.setDirectionToTarget(new Vector3(
-            s.targetX ?? _stageLightState.targetX,
-            s.targetY ?? _stageLightState.targetY,
-            s.targetZ ?? _stageLightState.targetZ
-        ));
+    if ((s.targetX !== undefined || s.targetY !== undefined || s.targetZ !== undefined)) {
+        if (_stageLightType === 'spot' && stageLight instanceof SpotLight) {
+            stageLight.setDirectionToTarget(new Vector3(
+                s.targetX ?? _stageLightState.targetX,
+                s.targetY ?? _stageLightState.targetY,
+                s.targetZ ?? _stageLightState.targetZ
+            ));
+        }
+        if (_stageLightType === 'directional' && stageLight instanceof DirectionalLight) {
+            const dir = new Vector3(
+                (s.targetX ?? _stageLightState.targetX) - stageLight.position.x,
+                (s.targetY ?? _stageLightState.targetY) - stageLight.position.y,
+                (s.targetZ ?? _stageLightState.targetZ) - stageLight.position.z
+            ).normalize();
+            stageLight.direction = dir;
+        }
     }
     _triggerAutoSave();
 }

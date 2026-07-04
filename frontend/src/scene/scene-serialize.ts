@@ -413,7 +413,8 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         setGravityStrength(data.gravityStrength);
     }
     if (data.stageLight) {
-        setStageLightState(data.stageLight);
+        const sl = { type: 'spot' as const, range: 50, ...data.stageLight };
+        setStageLightState(sl);
     }
 
     // --- Procedural Motion ---
