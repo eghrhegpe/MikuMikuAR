@@ -4,7 +4,7 @@ includes:
   common: ../Taskfile.yml
 
 vars:
-  APP_ID: '{{.APP_ID | default "com.wails.app"}}'
+  APP_ID: '{{.APP_ID | default "com.mikumikuar.app"}}'
   MIN_SDK: '21'
   TARGET_SDK: '34'
   # The emulator runs the host architecture; physical devices are arm64
@@ -245,7 +245,7 @@ tasks:
       - task: ensure-emulator
       - '"{{.ADB}}" uninstall {{.APP_ID}} 2>/dev/null || true'
       - '"{{.ADB}}" install "{{.BIN_DIR}}/{{.APP_NAME}}.apk"'
-      - '"{{.ADB}}" shell am start -n {{.APP_ID}}/com.wails.app.MainActivity'
+      - '"{{.ADB}}" shell am start -n {{.APP_ID}}/{{.APP_ID}}.MainActivity'
 
   run:
     summary: Build, install and launch a debug build in the Android Emulator
@@ -256,7 +256,7 @@ tasks:
       - task: assemble:apk
       - '"{{.ADB}}" uninstall {{.APP_ID}} 2>/dev/null || true'
       - '"{{.ADB}}" install "{{.BIN_DIR}}/{{.APP_NAME}}.apk"'
-      - '"{{.ADB}}" shell am start -n {{.APP_ID}}/com.wails.app.MainActivity'
+      - '"{{.ADB}}" shell am start -n {{.APP_ID}}/{{.APP_ID}}.MainActivity'
 
   logs:
     summary: Stream Android logcat filtered to this app
