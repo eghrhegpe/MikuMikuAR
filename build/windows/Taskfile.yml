@@ -13,6 +13,8 @@ vars:
 
   # Docker image for cross-compilation with CGO (used when CGO_ENABLED=1 on non-Windows)
   CROSS_IMAGE: wails-cross
+  # Default to host architecture when ARCH is not explicitly set
+  ARCH: '{{.ARCH | default "amd64"}}'
 
 tasks:
   check:deps:

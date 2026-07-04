@@ -639,13 +639,27 @@ function buildSettingsSystemLevel(): PopupLevel {
     const root = resourceRoot;
     const rootSub = root ? (root.length > 20 ? '...' + root.slice(-17) : root) : '未设置';
     const paths = overridePaths || {};
+    // key → 默认子目录名（与 Go 端 GetPath 的目录名一致，大小写不统一）
+    const defaultDirName: Record<string, string> = {
+        pmx: 'PMX',
+        vmd: 'VMD',
+        stage: 'stage',
+        environment: 'environment',
+        md_dress: 'MD-dress',
+        setting: 'setting'
+    };
     const pathSub = (key: string, defSub: string) => {
         const val = paths[key as keyof typeof paths];
+        let actual: string;
         if (val) {
-            const s = val as string;
-            return s.length > 20 ? '...' + s.slice(-17) : s;
+            actual = val as string;
+        } else if (root) {
+            // 无覆写时显示默认路径 ResourceRoot/类别子目录
+            actual = `${root}/${defaultDirName[key] || key}`;
+        } else {
+            return defSub;
         }
-        return defSub;
+        return actual.length > 20 ? '...' + actual.slice(-17) : actual;
     };
     return {
         label: '系统',

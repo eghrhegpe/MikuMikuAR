@@ -46,6 +46,8 @@ interface LevelConfig {
     chromaticAberrationEnabled: boolean;
     grainEnabled: boolean;
     glowEnabled: boolean;
+    ssrEnabled: boolean;
+    reflectionProbeEnabled: boolean;
     label: string;
 }
 
@@ -61,6 +63,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         chromaticAberrationEnabled: true,
         grainEnabled: true,
         glowEnabled: true,
+        ssrEnabled: true,
+        reflectionProbeEnabled: true,
         label: '正常',
     },
     1: {
@@ -74,6 +78,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         chromaticAberrationEnabled: false,
         grainEnabled: false,
         glowEnabled: false,
+        ssrEnabled: false,
+        reflectionProbeEnabled: true,
         label: '轻度降级',
     },
     2: {
@@ -87,6 +93,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         chromaticAberrationEnabled: false,
         grainEnabled: false,
         glowEnabled: false,
+        ssrEnabled: false,
+        reflectionProbeEnabled: false,
         label: '中度降级',
     },
     3: {
@@ -100,6 +108,8 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         chromaticAberrationEnabled: false,
         grainEnabled: false,
         glowEnabled: false,
+        ssrEnabled: false,
+        reflectionProbeEnabled: false,
         label: '重度降级',
     },
 };
@@ -140,6 +150,12 @@ function levelDiff(
     }
     if (prev.glowEnabled !== next.glowEnabled) {
         render.glowEnabled = next.glowEnabled;
+    }
+    if (prev.ssrEnabled !== next.ssrEnabled) {
+        render.ssrEnabled = next.ssrEnabled;
+    }
+    if (prev.reflectionProbeEnabled !== next.reflectionProbeEnabled) {
+        render.reflectionProbeEnabled = next.reflectionProbeEnabled;
     }
     return { light, render };
 }

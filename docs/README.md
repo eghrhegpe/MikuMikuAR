@@ -13,7 +13,7 @@ design-archive.md    🗑️ UI 设计归档（已否决方案）
 troubleshooting.md   🐛 故障排查集锦
 reusables.md         🔧 复用函数索引
 menu-architecture.md 📐 菜单架构设计
-adr/                 📜 架构决策记录（15 条）
+adr/                 📜 架构决策记录（23 条）
 changelog/           📋 变更记录（分阶段总结）
 research/            🧊 调研归档 — AI 默认不读
 ```
