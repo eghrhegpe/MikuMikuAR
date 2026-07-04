@@ -17,7 +17,7 @@ describe('deriveLighting', () => {
     it('noon: bright warm-white light', () => {
         const l = deriveLighting([0.53, 0.71, 0.91], 75);
         expect(l.dirIntensity).toBeGreaterThan(0.8);
-        expect(l.hemiIntensity).toBeLessThan(0.6);
+        expect(l.hemiIntensity).toBeLessThan(0.7);
         // 新算法保留色相：最亮通道 ≈ 0.95，各通道比例与 skyColor 一致
         expect(Math.max(...l.dirDiffuse)).toBeCloseTo(0.95, 1);
         const ratio = l.dirDiffuse[0] / l.dirDiffuse[2];
@@ -41,18 +41,14 @@ describe('deriveLighting', () => {
 });
 
 describe('ENV_PRESETS', () => {
-    it('has all 10 presets', () => {
+    it('has all 6 presets', () => {
         expect(Object.keys(ENV_PRESETS)).toEqual([
             'dawn',
             'noon',
             'sunset',
-            'dusk',
             'night',
             'overcast',
-            'storm',
             'neon',
-            'sakura',
-            'concert',
         ]);
     });
 

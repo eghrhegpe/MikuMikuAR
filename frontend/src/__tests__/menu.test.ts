@@ -148,7 +148,7 @@ describe('SlideMenu — 渲染', () => {
         expect(custom[0]?.textContent).toBe('Hello');
     });
 
-    it('reRender 重新构建当前层级', () => {
+    it('reRender 重新构建当前层级', async () => {
         const level: PopupLevel = {
             label: 'R',
             dir: '',
@@ -159,6 +159,8 @@ describe('SlideMenu — 渲染', () => {
 
         level.items.push({ kind: 'action' as const, label: 'B', icon: 'i', target: 'b' });
         menu.reRender();
+        // reRender 使用 RAF 去抖，需等待下一帧
+        await new Promise(resolve => requestAnimationFrame(resolve));
         expect(container.querySelectorAll('.slide-item').length).toBe(2);
     });
 });
