@@ -18,11 +18,12 @@ frontend/src/menus/
 ├── outfit-ui.ts                 # 服装变体子菜单
 │
 ├── scene-menu.ts                # 场景弹窗入口 + 路由器（~320 行）
-│   └── scene-render-levels.ts   #   后处理/舞台/渲染预设
+│   ├── scene-render-levels.ts   #   后处理/舞台/渲染预设
+│   └── scene-prop-levels.ts     #   道具系统
 │
 ├── env-menu.ts                  # 环境弹窗入口 + 导航（~290 行）
 │   ├── env-feature-levels.ts    #   天空/地面/水面/风/云/实验功能
-│   ├── env-prop-levels.ts       #   道具系统
+│   ├── scene-prop-levels.ts     #   道具系统（从 env 迁入）
 │   └── env-preset-levels.ts     #   环境预设（内置 + 用户保存）
 │
 ├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐/相机
@@ -206,6 +207,7 @@ type PopupRow = {
 ├── 🎬 舞台 → 子菜单：色调映射/曝光/FOV/背景色/网格线
 ├── 🎭 渲染预设 → 子菜单：内置预设 + 用户保存预设
 ├── 💡 舞台灯光 → 子菜单：灯光参数面板
+├── 📦 舞台道具 → 子菜单：道具加载/变换/列表
 └── 📸 截图 → 子菜单：单帧/批量截图
 ```
 
@@ -233,7 +235,6 @@ type PopupRow = {
 ├── ✨ 粒子 → 子菜单：粒子类型/数量/速度/大小
 ├── 💨 风 → 子菜单：风向/风速/强度
 ├── 🧪 实验功能 → 子菜单：实验性环境功能
-├── 📦 道具 → 子菜单：道具加载/变换/列表
 └── 📋 系统预设 → 子菜单：内置环境预设 + 用户保存预设
 ```
 
@@ -242,8 +243,8 @@ type PopupRow = {
 | 子文件 | 职责 | 函数 |
 |--------|------|------|
 | `env-feature-levels.ts` | 天空/地面/水面/风/云/实验功能 | `buildSkyLevel`, `buildGroundLevel`, `buildWaterLevel`, `buildWindLevel`, `buildCloudLevel`, `buildExperimentalLevel` |
-| `env-prop-levels.ts` | 道具系统 | `buildPropLevel`, `buildPropDetailLevel` |
 | `env-preset-levels.ts` | 环境预设（内置 + 用户保存） | `buildPresetLevel`, `renderUserEnvPresets`, `snapshotCurrentEnvPreset` |
+| `scene-prop-levels.ts` | 道具系统（从 env 迁入） | `buildPropLevel`, `buildPropDetailLevel` |
 
 **代码入口**：`showEnvMenu()` → `envMenu.reset(rootItems)`（`env-menu.ts`）
 
@@ -267,9 +268,9 @@ type PopupRow = {
 
 | 前缀 | 域 | 职责 | 禁止放入 |
 |------|----|------|---------|
-| `scene-*` | 场景 | 保存/加载/预设/舞台/灯光/截图/后处理/相机 | 程序化动作、LipSync、布料（属 motion 域）；天空/水面/粒子（属 env 域） |
+| `scene-*` | 场景 | 保存/加载/预设/舞台/灯光/道具/截图/后处理/相机 | 程序化动作、LipSync、布料（属 motion 域）；天空/水面/粒子（属 env 域） |
 | `motion-*` | 动作 | 程序化动作/LipSync/布料/重力/动作绑定/舞蹈套装 | 保存/加载场景、渲染预设（属 scene 域） |
-| `env-*` | 环境 | 天空/水面/风/粒子/云/地面/环境预设/道具 | 相机参数、截图（属 scene 域） |
+| `env-*` | 环境 | 天空/水面/风/粒子/云/地面/环境预设 | 相机参数、截图（属 scene 域） |
 | `model-*` | 模型 | 模型详情/材质/预设/换装 | 动作绑定、布料（属 motion 域） |
 | `library-*` | 模型库 | 模型库浏览/搜索/缩略图 | 模型详情面板（属 model 域） |
 
@@ -303,7 +304,7 @@ type PopupRow = {
 | 文件 | 原 renderCustom | 新 items 结构 |
 |------|----------------|--------------|
 | `motion-popup.ts` | 模型列表 + 最近 + 音乐/程序化 + 重力滑块 + 布料 toggle | folder × N + divider + slider + folder+headerToggle |
-| `env-menu.ts` | 预设芯片 + 天空/水面/粒子/风/实验/道具 + 系统预设 | chips + divider + folder × 6（部分带 headerToggle）+ divider + folder |
+| `env-menu.ts` | 预设芯片 + 天空/水面/粒子/风/实验 + 系统预设 | chips + divider + folder × 5（部分带 headerToggle）+ divider + folder |
 
 ### items-based 根级刷新模式
 

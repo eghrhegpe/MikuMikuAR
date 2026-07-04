@@ -1,5 +1,5 @@
-// [doc:architecture] Env Prop Levels — 环境道具弹窗层级
-// 从 env-menu.ts 拆分
+// [doc:architecture] Scene Prop Levels — 舞台道具弹窗层级
+// 从 env-prop-levels.ts 迁移至舞台域
 
 import { cardContainer, escapeHtml, propRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
@@ -7,7 +7,7 @@ import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addToggleRow } from '../core/ui-helpers';
 import { loadProp, removeProp, setPropTransform, getPropList } from '../scene/scene';
 import { SelectPMXFile } from '../core/wails-bindings';
-import { getEnvMenu } from './env-menu';
+import { getSceneMenu } from './scene-menu';
 
 export function buildPropLevel(): PopupLevel {
     return {
@@ -21,7 +21,7 @@ export function buildPropLevel(): PopupLevel {
                 slideRow(c, 'lucide:plus', '添加道具文件', false, () => {
                     SelectPMXFile().then((path) => {
                         if (path) {
-                            loadProp(path).then(() => getEnvMenu()?.reRender()).catch(() => {});
+                            loadProp(path).then(() => getSceneMenu()?.reRender()).catch(() => {});
                         }
                     });
                 });
@@ -33,7 +33,7 @@ export function buildPropLevel(): PopupLevel {
                         const row = document.createElement('div');
                         row.className = 'slide-item';
                         row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(p.name)}</span><span class="slide-arrow">&gt;</span>`;
-                        row.addEventListener('click', () => getEnvMenu()?.push(buildPropDetailLevel(p.id)));
+                        row.addEventListener('click', () => getSceneMenu()?.push(buildPropDetailLevel(p.id)));
                         const delBtn = document.createElement('span');
                         delBtn.className = 'slide-del-btn';
                         delBtn.textContent = '×';
@@ -41,7 +41,7 @@ export function buildPropLevel(): PopupLevel {
                         delBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
                             removeProp(p.id);
-                            getEnvMenu()?.reRender();
+                            getSceneMenu()?.reRender();
                         });
                         row.appendChild(delBtn);
                         c.appendChild(row);
@@ -116,7 +116,7 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                 delBtn.style.cssText = 'width:calc(100% - 28px);margin:10px 14px 6px;';
                 delBtn.addEventListener('click', () => {
                     removeProp(propId);
-                    const menu = getEnvMenu();
+                    const menu = getSceneMenu();
                     if (menu) { menu.pop(); menu.reRender(); }
                 });
                 c.appendChild(delBtn);

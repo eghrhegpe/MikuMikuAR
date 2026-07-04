@@ -60,6 +60,8 @@ func (a *App) scanAllCategories(cfg *Config) ([]ModelEntry, error) {
 	scans := []categoryScan{
 		{"model", []string{".pmx"}},
 		{"motion", []string{".vmd"}},
+		{"audio", []string{".mp3", ".wav", ".ogg", ".flac", ".wma"}},
+		{"pose", []string{".vpd"}},
 		{"scene", []string{".x", ".pmx"}},
 		{"environment", []string{".png", ".jpg", ".jpeg", ".hdr", ".dds", ".json"}},
 		{"outfit", []string{".zip", ".pmx", ".x"}},
@@ -94,6 +96,10 @@ func mapCategoryKey(category string) string {
 		return "pmx"
 	case "motion":
 		return "vmd"
+	case "audio":
+		return "audio"
+	case "pose":
+		return "pose"
 	case "scene":
 		return "stage"
 	case "environment":

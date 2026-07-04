@@ -18,6 +18,8 @@ import {
     setConcertParams,
     getConcertPaused,
     setConcertPaused,
+    getFov,
+    setFov,
     type CameraMode,
 } from '../scene/camera/camera';
 import { triggerAutoSave } from '../scene/scene';
@@ -69,6 +71,21 @@ export function buildCameraLevel(): PopupLevel {
                         refreshCameraLevel();
                     },
                     'lucide:camera'
+                );
+
+                addSliderRow(
+                    c,
+                    '视场角',
+                    getFov(),
+                    0.3,
+                    2,
+                    0.05,
+                    () => {},
+                    'lucide:maximize-2',
+                    (v) => {
+                        setFov(v);
+                        triggerAutoSave();
+                    }
                 );
 
                 const paramsContainer = document.createElement('div');

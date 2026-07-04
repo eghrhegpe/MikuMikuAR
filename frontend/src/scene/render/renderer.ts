@@ -32,8 +32,6 @@ export interface RenderState {
     toneMapping: number; // 0=OFF 1=ACES 2=Reinhard 3=Cineon 4=Neutral
     exposure: number; // 0-4, default 1
     contrast: number; // 0-4, default 1
-    fov: number; // 0.1-3 rad, default 0.8
-    bgColor: [number, number, number]; // 0-1
     // Phase 8 — DOF + Vignette
     dofEnabled: boolean;
     dofAperture: number; // 0-1, default 0（内部映射到 fStop 0.5~10）
@@ -113,7 +111,6 @@ export function getRenderState(): RenderState {
     if (!_scene || !pipeline) {
         return _defaultRenderState();
     }
-    const cam = _scene.activeCamera;
     return {
         bloomEnabled: pipeline.bloomEnabled,
         bloomWeight: pipeline.bloomWeight ?? 0,
@@ -126,8 +123,6 @@ export function getRenderState(): RenderState {
         toneMapping: pipeline.imageProcessing.toneMappingType ?? 0,
         exposure: pipeline.imageProcessing.exposure ?? 1,
         contrast: pipeline.imageProcessing.contrast ?? 1,
-        fov: cam ? (cam.fov ?? 0.8) : 0.8,
-        bgColor: [_scene.clearColor.r, _scene.clearColor.g, _scene.clearColor.b],
         dofEnabled: pipeline.depthOfFieldEnabled,
         // fStop 0.5~10 → 归一化 0~1（0=最大虚化 fStop=0.5, 1=无虚化 fStop=10）
         dofAperture: pipeline.depthOfField ? clamp((pipeline.depthOfField.fStop - 0.5) / 9.5, 0, 1) : 0,
@@ -153,8 +148,6 @@ function _defaultRenderState(): RenderState {
         toneMapping: 0,
         exposure: 1,
         contrast: 1,
-        fov: 0.8,
-        bgColor: [0.12, 0.12, 0.16],
         dofEnabled: false,
         dofAperture: 0,
         vignetteEnabled: false,
@@ -184,7 +177,6 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const k = s.bloomKernel !== undefined ? clamp(s.bloomKernel, 16, 256) : undefined;
     const e = s.exposure !== undefined ? clamp(s.exposure, 0, 4) : undefined;
     const c = s.contrast !== undefined ? clamp(s.contrast, 0, 4) : undefined;
-    const f = s.fov !== undefined ? clamp(s.fov, 0.1, 3) : undefined;
     const da = s.dofAperture !== undefined ? clamp(s.dofAperture, 0, 1) : undefined;
     const vd = s.vignetteDarkness !== undefined ? clamp(s.vignetteDarkness, 0, 1) : undefined;
     const ca = s.chromaticAberrationAmount !== undefined ? clamp(s.chromaticAberrationAmount, 0, 1) : undefined;
@@ -286,17 +278,6 @@ function _applyRenderState(s: Partial<RenderState>): void {
             pipeline.imageProcessing.contrast = c;
         }
     }
-    if (f !== undefined && _scene.activeCamera) {
-        _scene.activeCamera.fov = f;
-    }
-    if (s.bgColor !== undefined) {
-        _scene.clearColor = new Color4(
-            clampColorChannel(s.bgColor[0]),
-            clampColorChannel(s.bgColor[1]),
-            clampColorChannel(s.bgColor[2]),
-            1.0
-        );
-    }
 }
 
 // ======== 对外状态设置（含自动保存） ========
@@ -338,14 +319,13 @@ export function transitionRenderState(
         'bloomKernel',
         'exposure',
         'contrast',
-        'fov',
         'dofAperture',
         'vignetteDarkness',
         'chromaticAberrationAmount',
         'grainIntensity',
     ];
     // 颜色字段列表（逐通道 lerp）
-    const colorKeys: (keyof RenderState)[] = ['outlineColor', 'bgColor'];
+    const colorKeys: (keyof RenderState)[] = ['outlineColor'];
     // 布尔字段列表（按阈值提前启用/禁用以减少视觉跳跃）
     const boolKeys: (keyof RenderState)[] = [
         'bloomEnabled',

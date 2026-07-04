@@ -124,6 +124,8 @@ function _setupGazeTracking(): void {
     const isWasm = _isWasmRuntime(headRuntime ?? eyeRuntimes[0]);
     _headTrackingObserver = scene.onBeforeRenderObservable.add(() => {
         if (!_procVmdActive) return;
+        // 防御：模型已被移除时 mmdModel.mesh/metadata 可能为 null
+        if (!mmdModel?.mesh?.metadata) return;
         const cam = scene.activeCamera;
         if (!cam) return;
 

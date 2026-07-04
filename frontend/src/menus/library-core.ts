@@ -51,7 +51,13 @@ import {
     formatError,
     librarySortMode,
 } from '../core/config';
-import { loadPMXFile, loadVMDFromPath, removeModel } from '../scene/scene';
+import { loadPMXFile, loadVMDFromPath, removeModel, loadAudioFile } from '../scene/scene';
+import { loadVPDPose } from '../scene/scene';
+import {
+    SelectAudioFile,
+    SelectVMDMotion,
+    SelectVPDPose,
+} from '../core/wails-bindings';
 import { buildModelDetailLevel } from './model-detail';
 import { buildDanceSetDetailLevel, loadDanceSets } from './motion-popup';
 import { SlideMenu } from './menu';
@@ -407,6 +413,10 @@ function modelToRow(m: LibraryModel): PopupRow {
     let icon = 'box';
     if (m.format === 'vmd') {
         icon = 'music';
+    } else if (m.format === 'audio') {
+        icon = 'volume-2';
+    } else if (m.format === 'vpd') {
+        icon = 'user';
     } else if (m.container === 'zip' && m.format === 'pmx') {
         icon = 'archive';
     }
@@ -487,6 +497,10 @@ function onModelRowClick(m: LibraryModel): void {
         loadPMXFile(m.file_path, isStage);
     } else if (m.format === 'vmd') {
         loadVMDFromPath(m.file_path);
+    } else if (m.format === 'audio') {
+        loadAudioFile(m.file_path);
+    } else if (m.format === 'vpd') {
+        loadVPDPose(m.file_path);
     }
 }
 

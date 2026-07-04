@@ -218,14 +218,12 @@ export function applyEnvPresetObject(preset: {
     skyColorBot: [number, number, number];
     sunAngle: number;
     azimuth?: number;
-    exposure: number;
-    toneMapping: number;
     dirDiffuse?: [number, number, number];
     dirDirection?: [number, number, number];
     dirIntensity?: number;
     hemiIntensity?: number;
 }): boolean {
-    _presetAnimId++; // 取消所有正在进行的预设动画
+    _presetAnimId++;
     const myId = _presetAnimId;
     envSunAngle = preset.sunAngle;
 
@@ -235,7 +233,6 @@ export function applyEnvPresetObject(preset: {
         (preset.skyColorTop[2] + preset.skyColorBot[2]) / 2,
     ];
 
-    // 捕获当前状态用于插值
     const startSkyTop = [...envState.skyColorTop] as [number, number, number];
     const startSkyBot = [...envState.skyColorBot] as [number, number, number];
     const startSkyMid = envState.skyColorMid
@@ -246,10 +243,7 @@ export function applyEnvPresetObject(preset: {
               (startSkyTop[2] + startSkyBot[2]) / 2,
           ];
 
-    // 捕获当前灯光状态用于插值
     const startLight = getLightState();
-    // 若 preset 缺少 DerivedLighting 字段（如自定义预设未经过 importEnvPreset），
-    // 现场推导一次。
     const derived = preset.dirDirection
         ? preset
         : (() => {
@@ -261,7 +255,6 @@ export function applyEnvPresetObject(preset: {
               return { ...preset, ...d };
           })();
     const targetLight: Partial<LightState> = {
-        // 方向光是太阳光，颜色固定为白色（不随天空色偏蓝）
         dirColor: [1, 0.95, 0.9],
         dirX: derived.dirDirection[0],
         dirY: derived.dirDirection[1],
@@ -273,12 +266,10 @@ export function applyEnvPresetObject(preset: {
     const duration = 2000;
     const startTime = performance.now();
 
-    // 动画期间抑制自动保存；先释放旧动画的锁（若有）
     setSkipLightAutoSave(false);
     setSkipLightAutoSave(true);
 
     const animLoop = () => {
-        // 取消检测：新预设已启动，当前动画失效
         if (_presetAnimId !== myId) {
             setSkipLightAutoSave(false);
             return;
@@ -287,7 +278,6 @@ export function applyEnvPresetObject(preset: {
         const t = Math.min(elapsed / duration, 1.0);
         const lerp = (a: number, b: number) => a + (b - a) * t;
 
-        // 插值天空颜色
         const skyTop: [number, number, number] = [
             lerp(startSkyTop[0], preset.skyColorTop[0]),
             lerp(startSkyTop[1], preset.skyColorTop[1]),
@@ -316,9 +306,8 @@ export function applyEnvPresetObject(preset: {
                 envIntensity: 2,
             },
             true
-        ); // skipAutoSave
+        );
 
-        // 插值方向光（太阳）参数
         const interpLight: Partial<LightState> = {};
         for (const key of Object.keys(targetLight) as (keyof LightState)[]) {
             const a = startLight[key];
@@ -333,7 +322,6 @@ export function applyEnvPresetObject(preset: {
 
         if (t >= 1) {
             setSkipLightAutoSave(false);
-            setRenderState({ exposure: preset.exposure, toneMapping: preset.toneMapping });
             SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
             triggerAutoSave();
         } else {

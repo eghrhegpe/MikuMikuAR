@@ -12,7 +12,7 @@ import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
 import { focusedModelId, modelRegistry } from '../../core/config';
-import { focusModel, reattachPipeline, getRenderState } from '../scene';
+import { focusModel, reattachPipeline } from '../scene';
 
 // ======== Types ========
 export type CameraMode = 'orbit' | 'freefly' | 'concert' | 'oneshot' | 'vmd';
@@ -109,6 +109,11 @@ let _scene: Scene | null = null;
 let _canvas: HTMLCanvasElement | null = null;
 let _cameraMode: CameraMode = 'orbit';
 let _currentCamera: Camera | null = null;
+let _fov = 0.8; // default FOV, migrated from RenderState in Phase 9
+
+function clampFov(v: number): number {
+    return Math.max(0.1, Math.min(3, v));
+}
 let _concertUpdateFn: (() => void) | null = null;
 let _concertAngle = 0;
 let _concertPaused = false;
@@ -201,6 +206,17 @@ export function getCurrentCamera(): Camera | null {
 }
 export function getCameraMode(): CameraMode {
     return _cameraMode;
+}
+
+export function getFov(): number {
+    return _fov;
+}
+
+export function setFov(v: number): void {
+    _fov = clampFov(v);
+    if (_currentCamera) {
+        _currentCamera.fov = _fov;
+    }
 }
 
 // ======== Freefly Input State ========
@@ -398,11 +414,8 @@ export function switchCameraMode(mode: CameraMode): void {
 
     // Re-attach post-processing pipeline to the new camera
     reattachPipeline();
-    // Apply current FOV from render state to the new camera
-    const rs = getRenderState();
-    if (rs.fov) {
-        newCam.fov = rs.fov;
-    }
+    // Apply FOV to the new camera
+    newCam.fov = clampFov(_fov);
 }
 
 // ======== Auto Frame ========
@@ -533,6 +546,7 @@ function stopConcert(): void {
 export interface CameraState {
     mode: CameraMode;
     preset: CameraPreset;
+    fov?: number; // FOV in radians, default 0.8 (migrated from RenderState in Phase 9)
     alpha: number;
     beta: number;
     radius: number;
@@ -554,6 +568,7 @@ export function getCameraState(): CameraState {
     return {
         mode: _cameraMode,
         preset: JSON.parse(JSON.stringify(_currentPreset)),
+        fov: _fov,
         alpha,
         beta,
         radius,
@@ -575,6 +590,10 @@ export function setCameraState(s: CameraState): void {
     }
     if (s.preset) {
         _currentPreset = JSON.parse(JSON.stringify(s.preset));
+    }
+    // Restore FOV (from new scene files; old scenes store it in render.fov)
+    if (s.fov !== undefined) {
+        setFov(s.fov);
     }
     const cam = _currentCamera;
     if (!cam) {
