@@ -14,9 +14,9 @@ import {
     modelRegistry,
     focusedModelId,
     setFocusedModelId,
-    getMenuWrapper,
 } from '../core/config';
 import { SlideMenu } from './menu';
+import { showPopupMenu } from './menu-factory';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
 import {
@@ -78,35 +78,34 @@ function buildScreenshotLevel(): PopupLevel {
 
 // ======== Scene Root ========
 
+/** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
+function buildSceneRootItems(): PopupRow[] {
+    const items: PopupRow[] = [];
+    items.push({ kind: 'folder', label: '预设场景', icon: 'lucide:bookmark', target: 'scene:presets' });
+    items.push({ kind: 'action', label: '保存场景', icon: 'lucide:save', target: 'scene:save' });
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    items.push({ kind: 'folder', label: '后处理', icon: 'lucide:sparkles', target: 'scene:render:postprocess' });
+    items.push({ kind: 'folder', label: '舞台', icon: 'lucide:monitor', target: 'scene:render:stage' });
+    items.push({ kind: 'folder', label: '截图', icon: 'lucide:camera', target: 'scene:screenshot' });
+    return items;
+}
+
 function buildSceneRoot(): PopupLevel {
     return {
         label: '场景',
         dir: '',
-        items: [],
-        renderCustom: (container) => {
-            container.classList.remove('render-card');
-            container.style.padding = '0';
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:bookmark', '预设场景', true, () =>
-                    sceneMenu.push(buildPresetScenesLevel())
-                );
-                slideRow(c, 'lucide:save', '保存场景', false, () => {
-                    handleSceneAction({ kind: 'action', label: '', icon: '', target: 'scene:save' });
-                });
-            });
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:sparkles', '后处理', true, () =>
-                    sceneMenu.push(buildPostProcessLevel())
-                );
-                slideRow(c, 'lucide:monitor', '舞台', true, () =>
-                    sceneMenu.push(buildStageLevel())
-                );
-                slideRow(c, 'lucide:camera', '截图', true, () =>
-                    sceneMenu.push(buildScreenshotLevel())
-                );
-            });
-        },
+        items: buildSceneRootItems(),
     };
+}
+
+/** 重新计算根级 items 并触发 reRender。 */
+export function refreshSceneRoot(): void {
+    if (!sceneMenu) return;
+    const root = sceneMenu.getLevel(0);
+    if (root) {
+        root.items = buildSceneRootItems();
+        sceneMenu.reRender();
+    }
 }
 
 // ======== onFolderEnter Router ========
@@ -132,101 +131,97 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
 
 // ======== handleSceneAction ========
 
+/** 截图当前焦点模型 */
+async function screenshotCurrent(): Promise<void> {
+    const id = focusedModelId;
+    if (!id) { setStatus('✗ 无焦点模型', false); return; }
+    const inst = modelRegistry.get(id);
+    if (!inst) { setStatus('✗ 模型不存在', false); return; }
+    try {
+        const dir = await SelectDir();
+        if (!dir) return;
+        await new Promise((r) => requestAnimationFrame(r));
+        await new Promise((r) => requestAnimationFrame(r));
+        const base64 = dom.canvas.toDataURL('image/png', 0.9).replace(/^data:image\/png;base64,/, '');
+        const ts = Date.now();
+        const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.png`;
+        await SaveScreenshot(dir, filename, base64);
+        setStatus(`✓ 截图已保存: ${filename}`, true);
+    } catch (err) {
+        setStatus('✗ 截图失败', false);
+        console.error('Screenshot error:', err);
+    }
+}
+
+/** 批量截图所有已加载模型 */
+async function screenshotBatch(): Promise<void> {
+    if (modelRegistry.size === 0) { setStatus('✗ 场景中无模型', false); return; }
+    const dir = await SelectDir();
+    if (!dir) return;
+    let saved = 0;
+    const prevFocused = focusedModelId;
+    try {
+        for (const [id, inst] of modelRegistry) {
+            setFocusedModelId(id);
+            focusModel(id);
+            await new Promise((r) => requestAnimationFrame(r));
+            await new Promise((r) => requestAnimationFrame(r));
+            await new Promise((r) => requestAnimationFrame(r));
+            const base64 = dom.canvas.toDataURL('image/png', 0.9).replace(/^data:image\/png;base64,/, '');
+            const ts = Date.now();
+            const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.png`;
+            await SaveScreenshot(dir, filename, base64);
+            saved++;
+            setStatus(`截图中… ${saved}/${modelRegistry.size}`, true);
+        }
+        if (prevFocused) { setFocusedModelId(prevFocused); focusModel(prevFocused); }
+        setStatus(`✓ 批量截图完成: ${saved} 张`, true);
+    } catch (err) {
+        setStatus('✗ 批量截图失败', false);
+        console.error('Batch screenshot error:', err);
+    }
+}
+
+/** 保存场景（自动编号到预设目录） */
+async function saveScene(): Promise<void> {
+    try {
+        const json = JSON.stringify(serializeScene(), null, 2);
+        const filename = await SaveScenePreset(json);
+        setStatus(`✓ 场景已保存: ${filename}`, true);
+        reRenderSceneMenu();
+    } catch (err) {
+        setStatus('✗ 保存失败', false);
+        console.error('Save scene error:', err);
+    }
+}
+
+/** 场景动作映射表——替代原 handleSceneAction 的 if 链 */
+const SCENE_ACTIONS: Record<string, () => void> = {
+    'screenshot:current': () => { void screenshotCurrent(); },
+    'screenshot:batch': () => { void screenshotBatch(); },
+    'scene:save': () => { void saveScene(); },
+};
+
 function handleSceneAction(row: PopupRow): void {
-    // Screenshot current focused model
-    if (row.target === 'screenshot:current') {
-        (async () => {
-            const id = focusedModelId;
-            if (!id) { setStatus('✗ 无焦点模型', false); return; }
-            const inst = modelRegistry.get(id);
-            if (!inst) { setStatus('✗ 模型不存在', false); return; }
-            try {
-                const dir = await SelectDir();
-                if (!dir) return;
-                await new Promise((r) => requestAnimationFrame(r));
-                await new Promise((r) => requestAnimationFrame(r));
-                const base64 = dom.canvas.toDataURL('image/png', 0.9).replace(/^data:image\/png;base64,/, '');
-                const ts = Date.now();
-                const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.png`;
-                await SaveScreenshot(dir, filename, base64);
-                setStatus(`✓ 截图已保存: ${filename}`, true);
-            } catch (err) {
-                setStatus('✗ 截图失败', false);
-                console.error('Screenshot error:', err);
-            }
-        })();
-        return;
-    }
-    // Batch screenshot all loaded models
-    if (row.target === 'screenshot:batch') {
-        if (modelRegistry.size === 0) { setStatus('✗ 场景中无模型', false); return; }
-        (async () => {
-            const dir = await SelectDir();
-            if (!dir) return;
-            let saved = 0;
-            const prevFocused = focusedModelId;
-            try {
-                for (const [id, inst] of modelRegistry) {
-                    setFocusedModelId(id);
-                    focusModel(id);
-                    await new Promise((r) => requestAnimationFrame(r));
-                    await new Promise((r) => requestAnimationFrame(r));
-                    await new Promise((r) => requestAnimationFrame(r));
-                    const base64 = dom.canvas.toDataURL('image/png', 0.9).replace(/^data:image\/png;base64,/, '');
-                    const ts = Date.now();
-                    const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.png`;
-                    await SaveScreenshot(dir, filename, base64);
-                    saved++;
-                    setStatus(`截图中… ${saved}/${modelRegistry.size}`, true);
-                }
-                if (prevFocused) { setFocusedModelId(prevFocused); focusModel(prevFocused); }
-                setStatus(`✓ 批量截图完成: ${saved} 张`, true);
-            } catch (err) {
-                setStatus('✗ 批量截图失败', false);
-                console.error('Batch screenshot error:', err);
-            }
-        })();
-        return;
-    }
-    // Save scene — auto-numbered save to preset directory
-    if (row.target === 'scene:save') {
-        (async () => {
-            try {
-                const json = JSON.stringify(serializeScene(), null, 2);
-                const filename = await SaveScenePreset(json);
-                setStatus(`✓ 场景已保存: ${filename}`, true);
-                reRenderSceneMenu();
-            } catch (err) {
-                setStatus('✗ 保存失败', false);
-                console.error('Save scene error:', err);
-            }
-        })();
-        return;
+    if (row.target) {
+        SCENE_ACTIONS[row.target]?.();
     }
 }
 
 // ======== Show Scene Menu ========
 
 export async function showSceneMenu(): Promise<void> {
-    dom.sceneOverlay.classList.remove('sceneOverlay-model', 'sceneOverlay-motion', 'sceneOverlay-settings');
-    dom.sceneOverlay.dataset.popupType = 'scene';
-
-    const wrapper = getMenuWrapper('scene-menu');
-    if (sceneMenu) {
-        sceneMenu.resetToRoot();
-        sceneMenu.reRender();
-        return;
-    }
-
-    sceneMenu = new SlideMenu({
-        container: wrapper,
-        onClose: () => closeAllOverlays(),
-        onItemClick: (row) => handleSceneAction(row),
-        onFolderEnter: sceneOnFolderEnter,
-        onAfterRender: () => {},
+    showPopupMenu({
+        getMenu: () => sceneMenu,
+        setMenu: (m) => { sceneMenu = m; },
+        wrapperKey: 'scene-menu',
+        popupType: 'scene',
+        buildRoot: buildSceneRoot,
+        handlers: {
+            onItemClick: (row) => handleSceneAction(row),
+            onFolderEnter: sceneOnFolderEnter,
+        },
     });
-
-    sceneMenu.reset(buildSceneRoot());
 }
 
 // Wire up events in main.ts:243-244 — do NOT re-register here.

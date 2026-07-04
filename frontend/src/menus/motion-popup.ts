@@ -3,7 +3,6 @@
 // 子文件: motion-dance-sets.ts, motion-cloth-levels.ts
 
 import {
-    dom,
     setStatus,
     libraryRoot,
     PopupLevel,
@@ -22,9 +21,9 @@ import {
     cardContainer,
     envState,
     getRecentMotions,
-    getMenuWrapper,
 } from '../core/config';
 import { SlideMenu } from './menu';
+import { showPopupMenu } from './menu-factory';
 import { slideRow, addSliderRow, addToggleRow } from '../core/ui-helpers';
 import { createIconifyIcon } from '../core/icons';
 import {
@@ -224,126 +223,123 @@ export function getMotionMenu(): SlideMenu | null {
     return motionMenu;
 }
 
-function makeMotionMenu(container: HTMLElement): SlideMenu {
-    return new SlideMenu({
-        container,
-        onClose: closeAllOverlays,
-        onFolderEnter: (row) => {
-            if (row.target === 'motion:camera') { return buildCameraLevel(); }
-            if (row.target === '__music__') { setMotionBindingTargetId(null); return buildActionMusicLevel(); }
-            if (row.target === 'motion:recent') { return buildRecentMotionsLevel(); }
-            if (row.target === 'motion:procmotion') { return buildProcMotionLevel(); }
-            if (row.target === 'motion:cloth') { return buildClothParamsLevel(); }
-            if (row.target === 'procmotion:mode') { return buildProcMotionModeLevel(); }
-            if (row.target === 'lipsync:menu') { return buildLipSyncLevel(); }
-            if (row.target && row.target.startsWith('action:binding:')) {
-                    setMotionBindingTargetId(null);
-                    return buildActionBindingLevel(row.target.replace('action:binding:', ''));
+/** motion-popup 的 onFolderEnter 路由（从 makeMotionMenu 提取） */
+function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
+    if (row.target === 'motion:camera') { return buildCameraLevel(); }
+    if (row.target === '__music__') { setMotionBindingTargetId(null); return buildActionMusicLevel(); }
+    if (row.target === 'motion:recent') { return buildRecentMotionsLevel(); }
+    if (row.target === 'motion:procmotion') { return buildProcMotionLevel(); }
+    if (row.target === 'motion:cloth') { return buildClothParamsLevel(); }
+    if (row.target === 'procmotion:mode') { return buildProcMotionModeLevel(); }
+    if (row.target === 'lipsync:menu') { return buildLipSyncLevel(); }
+    if (row.target && row.target.startsWith('action:binding:')) {
+        setMotionBindingTargetId(null);
+        return buildActionBindingLevel(row.target.replace('action:binding:', ''));
+    }
+    if (row.target && row.target.startsWith('action:motion:browse:')) {
+        const id = row.target.replace('action:motion:browse:', '');
+        setMotionBindingTargetId(id);
+        const level = stackRegistry.buildLevel!(libraryRoot, '动作库', (m) => m.format === 'vmd');
+        const inst = modelManager.get(id);
+        level.label = `绑定动作 → ${inst ? inst.name : '模型'}`;
+        return level;
+    }
+    return null;
+}
+
+/** motion-popup 的 onItemClick（从 makeMotionMenu 提取） */
+function motionOnItemClick(row: PopupRow): void {
+    if (row.model) {
+        if (row.model.format === 'vmd' && motionBindingTargetId) {
+            hideMotionPopup();
+            loadVMDFromPath(row.model.file_path, motionBindingTargetId).catch((err) => {
+                setStatus('✗ 动作加载失败', false);
+                console.warn('motion-popup loadVMDFromPath:', err);
+            });
+            setMotionBindingTargetId(null);
+            return;
+        }
+        hideMotionPopup();
+        if (row.model.format === 'vmd') {
+            if (motionBindingTargetId) {
+                loadVMDFromPath(row.model.file_path);
+            } else {
+                loadCameraVmdFromPath(row.model.file_path).then(() => {
+                    const menu = getMotionMenu();
+                    if (menu) menu.reRender();
+                }).catch((err) => {
+                    console.error('Load camera VMD failed:', err);
+                });
+            }
+            return;
+        }
+        if (row.model.format === 'audio') {
+            loadAudioFile(row.model.file_path);
+            setStatus(`✓ 音乐: ${getAudioName()}`, true);
+            if (motionMenu) motionMenu.reRender();
+            return;
+        }
+        if (row.model.format === 'vpd') {
+            loadVPDPose(row.model.file_path);
+            return;
+        }
+        return;
+    }
+    if (row.target && row.target.startsWith('procmotion:set-mode:')) {
+        setProcMotionMode(row.target.replace('procmotion:set-mode:', '') as ProcMotionMode);
+        regenerateProcMotion();
+        return;
+    }
+    if (row.target === 'procmotion:autoswitch') {
+        setProcMotionAutoSwitch(!getProcMotionState().autoSwitch);
+        motionMenu.reRender();
+        return;
+    }
+    if (row.target === 'lipsync:toggle') {
+        setLipSyncEnabled(!getLipSyncState().enabled);
+        motionMenu.reRender();
+        return;
+    }
+    if (row.target && row.target.startsWith('action:motion:')) {
+        const parts = row.target.split(':');
+        const action = parts[2];
+        const id = parts.slice(3).join(':');
+        if (!id) return;
+        const inst = modelManager.get(id);
+        if (!inst) return;
+        switch (action) {
+            case 'pause':
+                if (mmdRuntime) {
+                    if (isPlaying) { mmdRuntime.pauseAnimation(); setIsPlaying(false); setAutoLoop(false); }
+                    else { setAutoLoop(true); mmdRuntime.playAnimation().then(() => setIsPlaying(true)); }
+                    updatePlaybackUI(); motionMenu.reRender();
                 }
-                if (row.target && row.target.startsWith('action:motion:browse:')) {
-                    const id = row.target.replace('action:motion:browse:', '');
-                    setMotionBindingTargetId(id);
-                    const level = stackRegistry.buildLevel!(libraryRoot, '动作库', (m) => m.format === 'vmd');
-                    const inst = modelManager.get(id);
-                    level.label = `绑定动作 → ${inst ? inst.name : '模型'}`;
-                    return level;
-                }
-            return null;
-        },
-        onItemClick: (row: PopupRow) => {
-            if (row.model) {
-                if (row.model.format === 'vmd' && motionBindingTargetId) {
-                    hideMotionPopup();
-                    loadVMDFromPath(row.model.file_path, motionBindingTargetId).catch((err) => {
-                        setStatus('✗ 动作加载失败', false);
-                        console.warn('motion-popup loadVMDFromPath:', err);
-                    });
-                    setMotionBindingTargetId(null);
-                    return;
-                }
-                hideMotionPopup();
-                if (row.model.format === 'vmd') {
-                    if (motionBindingTargetId) {
-                        loadVMDFromPath(row.model.file_path);
-                    } else {
-                        loadCameraVmdFromPath(row.model.file_path).then(() => {
-                            const menu = getMotionMenu();
-                            if (menu) menu.reRender();
-                        }).catch((err) => {
-                            console.error('Load camera VMD failed:', err);
-                        });
-                    }
-                    return;
-                }
-                if (row.model.format === 'audio') {
-                    loadAudioFile(row.model.file_path);
-                    setStatus(`✓ 音乐: ${getAudioName()}`, true);
+                break;
+            case 'reset':
+                if (inst.mmdModel && mmdRuntime) {
+                    inst.mmdModel.setRuntimeAnimation(null);
+                    inst.vmdData = null; inst.vmdName = ''; inst.vmdPath = null; inst.animationDuration = 0;
+                    if (isPlaying) { mmdRuntime.pauseAnimation(); setIsPlaying(false); }
+                    updatePlaybackUI();
                     if (motionMenu) motionMenu.reRender();
-                    return;
+                    setStatus('✓ 动作已重置', true);
                 }
-                if (row.model.format === 'vpd') {
-                    loadVPDPose(row.model.file_path);
-                    return;
-                }
-                return;
-            }
-            if (row.target && row.target.startsWith('procmotion:set-mode:')) {
-                setProcMotionMode(row.target.replace('procmotion:set-mode:', '') as ProcMotionMode);
-                regenerateProcMotion();
-                return;
-            }
-            if (row.target === 'procmotion:autoswitch') {
-                setProcMotionAutoSwitch(!getProcMotionState().autoSwitch);
+                break;
+            case 'pose':
+                (async () => {
+                    const level = stackRegistry.buildLevel!(libraryRoot, '姿势库', (m) => m.format === 'vpd');
+                    level.label = `姿势 → ${inst.name}`;
+                    if (motionMenu) motionMenu.push(level);
+                })();
+                break;
+            case 'loop':
+                setAutoLoop(!autoLoop);
                 motionMenu.reRender();
-                return;
-            }
-            if (row.target === 'lipsync:toggle') {
-                setLipSyncEnabled(!getLipSyncState().enabled);
-                motionMenu.reRender();
-                return;
-            }
-            if (row.target && row.target.startsWith('action:motion:')) {
-                const parts = row.target.split(':');
-                const action = parts[2];
-                const id = parts.slice(3).join(':');
-                if (!id) return;
-                const inst = modelManager.get(id);
-                if (!inst) return;
-                switch (action) {
-                    case 'pause':
-                        if (mmdRuntime) {
-                            if (isPlaying) { mmdRuntime.pauseAnimation(); setIsPlaying(false); setAutoLoop(false); }
-                            else { setAutoLoop(true); mmdRuntime.playAnimation().then(() => setIsPlaying(true)); }
-                            updatePlaybackUI(); motionMenu.reRender();
-                        }
-                        break;
-                    case 'reset':
-                        if (inst.mmdModel && mmdRuntime) {
-                            inst.mmdModel.setRuntimeAnimation(null);
-                            inst.vmdData = null; inst.vmdName = ''; inst.vmdPath = null; inst.animationDuration = 0;
-                            if (isPlaying) { mmdRuntime.pauseAnimation(); setIsPlaying(false); }
-                            updatePlaybackUI();
-                            if (motionMenu) motionMenu.reRender();
-                            setStatus('✓ 动作已重置', true);
-                        }
-                        break;
-                    case 'pose':
-                        (async () => {
-                            const level = stackRegistry.buildLevel!(libraryRoot, '姿势库', (m) => m.format === 'vpd');
-                            level.label = `姿势 → ${inst.name}`;
-                            if (motionMenu) motionMenu.push(level);
-                        })();
-                        break;
-                    case 'loop':
-                        setAutoLoop(!autoLoop);
-                        motionMenu.reRender();
-                        setStatus(`循环: ${autoLoop ? '开' : '关'}`, true);
-                        break;
-                }
-                return;
-            }
-        },
-    });
+                setStatus(`循环: ${autoLoop ? '开' : '关'}`, true);
+                break;
+        }
+        return;
+    }
 }
 
 function buildRecentMotionsLevel(): PopupLevel {
@@ -455,19 +451,18 @@ export function refreshMotionRoot(): void {
 }
 
 export function showMotionPopup(): void {
-    dom.sceneOverlay.classList.remove('sceneOverlay-model', 'sceneOverlay-settings');
-    dom.sceneOverlay.classList.add('sceneOverlay-motion');
-    dom.sceneOverlay.dataset.popupType = 'motion';
-
-    const wrapper = getMenuWrapper('motion-popup');
-    if (motionMenu) {
-        motionMenu.resetToRoot();
-        motionMenu.reRender();
-        return;
-    }
-
-    motionMenu = makeMotionMenu(wrapper);
-    motionMenu.reset(buildMotionRootLevel());
+    showPopupMenu({
+        getMenu: () => motionMenu,
+        setMenu: (m) => { motionMenu = m; },
+        wrapperKey: 'motion-popup',
+        popupType: 'motion',
+        overlayClass: 'sceneOverlay-motion',
+        buildRoot: buildMotionRootLevel,
+        handlers: {
+            onItemClick: motionOnItemClick,
+            onFolderEnter: motionOnFolderEnter,
+        },
+    });
 }
 
 export function hideMotionPopup(): void {

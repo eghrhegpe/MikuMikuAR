@@ -124,8 +124,8 @@ export function getRenderState(): RenderState {
         exposure: pipeline.imageProcessing.exposure ?? 1,
         contrast: pipeline.imageProcessing.contrast ?? 1,
         dofEnabled: pipeline.depthOfFieldEnabled,
-        // fStop 0.5~10 → 归一化 0~1（0=最大虚化 fStop=0.5, 1=无虚化 fStop=10）
-        dofAperture: pipeline.depthOfField ? clamp((pipeline.depthOfField.fStop - 0.5) / 9.5, 0, 1) : 0,
+        // fStop 0.5~10 → 归一化 0~1（0=无虚化 fStop=10, 1=最大虚化 fStop=0.5）
+        dofAperture: pipeline.depthOfField ? clamp((10 - pipeline.depthOfField.fStop) / 9.5, 0, 1) : 0,
         vignetteEnabled: pipeline.imageProcessing.vignetteEnabled ?? false,
         vignetteDarkness: pipeline.imageProcessing.vignetteWeight ?? 0,
         chromaticAberrationEnabled: pipeline.chromaticAberrationEnabled ?? false,
@@ -239,7 +239,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
         pipeline.depthOfFieldEnabled = s.dofEnabled;
     }
     if (da !== undefined && pipeline.depthOfField) {
-        pipeline.depthOfField.fStop = 0.5 + da * 9.5;
+        pipeline.depthOfField.fStop = 10 - da * 9.5;  // 0→清晰(f10), 1→虚化(f0.5)
     }
 
     // Vignette

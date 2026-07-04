@@ -220,45 +220,28 @@ export function buildStageLightLevel(): PopupLevel {
 
             if (!state) return;
 
-            // —— 基础卡片 ——
-            cardContainer(container, (c) => {
-                addToggleRow(c, '启用', state.enabled, (v) => {
+            // —— 基础卡片（精简）——
+            addCollapsible(container, {
+                title: state.name,
+                icon: 'lucide:lightbulb',
+                defaultOpen: false,
+                headerToggle: { value: state.enabled, onChange: (v) => {
                     setStageLightState({ enabled: v }, state.id);
                     reRenderSceneMenu();
-                }, 'lucide:power');
-
-                // 名称行
-                const nameRow = document.createElement('div');
-                nameRow.className = 'cs-row';
-                nameRow.style.display = 'flex';
-                nameRow.style.alignItems = 'center';
-                nameRow.style.gap = '8px';
-                const nameLabel = document.createElement('span');
-                nameLabel.className = 'cs-label';
-                nameLabel.textContent = '名称';
-                const nameInput = document.createElement('input');
-                nameInput.type = 'text';
-                nameInput.value = state.name;
-                nameInput.style.cssText = 'flex:1;background:var(--bg-2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:11px;';
-                nameInput.addEventListener('change', () => {
-                    setStageLightState({ name: nameInput.value.trim() || state.name }, state.id);
-                    reRenderSceneMenu();
-                });
-                nameRow.appendChild(nameLabel);
-                nameRow.appendChild(nameInput);
-                c.appendChild(nameRow);
-
-                addModeSlider(c, '类型', [
-                    { value: 'spot', label: '聚光灯' },
-                    { value: 'point', label: '点光源' },
-                    { value: 'directional', label: '平行光' },
-                ], state.type, (v) => {
-                    setStageLightState({ type: v as 'spot' | 'point' | 'directional' }, state.id);
-                    reRenderSceneMenu();
-                }, 'lucide:lightbulb');
-                addSliderRow(c, '强度', state.intensity, 0, 2, 0.05, () => {}, 'lucide:sun',
-                    (v) => setStageLightState({ intensity: v }, state.id));
-                addColorSliderRow(c, '颜色', state.color, (v) => setStageLightState({ color: v }, state.id));
+                }},
+                renderContent: (inner) => {
+                    addModeSlider(inner, '类型', [
+                        { value: 'spot', label: '聚光灯' },
+                        { value: 'point', label: '点光源' },
+                        { value: 'directional', label: '平行光' },
+                    ], state.type, (v) => {
+                        setStageLightState({ type: v as 'spot' | 'point' | 'directional' }, state.id);
+                        reRenderSceneMenu();
+                    }, 'lucide:lightbulb');
+                    addSliderRow(inner, '强度', state.intensity, 0, 2, 0.05, () => {}, 'lucide:sun',
+                        (v) => setStageLightState({ intensity: v }, state.id));
+                    addColorSliderRow(inner, '颜色', state.color, (v) => setStageLightState({ color: v }, state.id));
+                },
             });
 
             // —— 参数卡片（按类型动态）——
@@ -407,7 +390,6 @@ export function buildStageLightLevel(): PopupLevel {
                 });
             }
         },
-        reRenderCustom: () => {},
     };
 }
 
@@ -549,17 +531,25 @@ export function buildStageLevel(): PopupLevel {
 
             // —— 卡片 1：功能入口 ——
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:upload', '加载舞台 PMX', true, () => {
+                slideRow(c, 'lucide:upload', '加载舞台', true, () => {
                     (async () => {
                         try {
-                            const path = await SelectPMXFile();
-                            if (!path) return;
-                            await loadPMXFile(path, true);
-                            setStatus('✓ 舞台已加载', true);
-                            reRenderSceneMenu();
+                            const { libraryRoot } = await import('../core/config');
+                            if (!libraryRoot) {
+                                setStatus('✗ 请先在设置中配置模型库目录', false);
+                                return;
+                            }
+                            const { buildLevel } = await import('./library-core');
+                            const level = buildLevel(
+                                libraryRoot,
+                                '舞台',
+                                (m) => m.type === 'stage' || m.type === 'scene'
+                            );
+                            const sm = getSceneMenu();
+                            if (sm) sm.push(level);
                         } catch (err) {
-                            setStatus('✗ 舞台加载失败', false);
-                            console.error('Stage load error:', err);
+                            setStatus('✗ 打开舞台库失败', false);
+                            console.error('Stage library error:', err);
                         }
                     })();
                 });

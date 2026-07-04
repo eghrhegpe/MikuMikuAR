@@ -232,9 +232,8 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     }
                     delRow.appendChild(di);
                     const dl = document.createElement('span');
-                    dl.className = 'slide-label';
+                    dl.className = 'slide-label danger-text';
                     dl.textContent = '删除';
-                    dl.style.color = 'var(--danger,#e74c3c)';
                     delRow.appendChild(dl);
                     delRow.addEventListener('click', async () => {
                         try {

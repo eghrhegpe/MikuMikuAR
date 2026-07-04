@@ -4,7 +4,7 @@
 import { envState, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSliderRow } from '../core/ui-helpers';
+import { addSliderRow } from '../core/ui-helpers';
 import { showPrompt } from '../core/dialog';
 import {
     setEnvState,
@@ -223,8 +223,14 @@ export function buildPresetLevel(): PopupLevel {
         renderCustom: (container) => {
             container.classList.remove('render-card');
             cardContainer(container, (c) => {
+                const chipGroup = document.createElement('div');
+                chipGroup.className = 'preset-group';
+                chipGroup.style.paddingBottom = '6px';
                 for (const [name, preset] of entries) {
-                    slideRow(c, 'lucide:bookmark', name, false, () => {
+                    const btn = document.createElement('button');
+                    btn.className = 'preset-chip';
+                    btn.textContent = name;
+                    btn.addEventListener('click', () => {
                         setEnvState({ ...preset.env });
                         if (preset.lights) {
                             transitionLighting(preset.lights, 2000);
@@ -234,7 +240,9 @@ export function buildPresetLevel(): PopupLevel {
                         }
                         getEnvMenu()?.reRender();
                     });
+                    chipGroup.appendChild(btn);
                 }
+                c.appendChild(chipGroup);
                 renderUserEnvPresets(c);
             });
         },
