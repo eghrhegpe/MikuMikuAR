@@ -258,8 +258,6 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
     if (isTouchDevice()) {
         cam.pinchPrecision = 32;
         cam.panningSensibility = 20;
-        cam.multiTouchPanAndZoom = true;
-        cam.multiTouchPanning = true;
     } else {
         cam.panningSensibility = 50;
     }
@@ -311,8 +309,6 @@ function createOneshotCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotate
     if (isTouchDevice()) {
         cam.pinchPrecision = 32;
         cam.panningSensibility = 20;
-        cam.multiTouchPanAndZoom = true;
-        cam.multiTouchPanning = true;
     } else {
         cam.panningSensibility = 50;
     }

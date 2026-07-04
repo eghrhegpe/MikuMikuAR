@@ -12,6 +12,7 @@ import {
     addColorSliderRow,
     addModeSlider,
     addCollapsible,
+    addPresetChip,
 } from '../core/ui-helpers';
 import { setEnvState, engine } from '../scene/scene';
 import { WATER_PRESETS, applyWaterPresetToCurrent } from '../scene/env/env-water';
@@ -170,10 +171,7 @@ export function buildWaterLevel(): PopupLevel {
                 const waterPresetRow = document.createElement('div');
                 waterPresetRow.className = 'preset-group';
                 for (const [_key, wp] of Object.entries(WATER_PRESETS)) {
-                    const btn = document.createElement('button');
-                    btn.textContent = wp.label;
-                    btn.className = 'preset-chip';
-                    btn.addEventListener('click', () => {
+                    addPresetChip(waterPresetRow, wp.label, false, () => {
                         setEnvState({
                             waterColor: wp.waterColor, waterTransparency: wp.waterTransparency,
                             waterWaveHeight: wp.waterWaveHeight, waterAnimSpeed: wp.waterAnimSpeed,
@@ -182,7 +180,6 @@ export function buildWaterLevel(): PopupLevel {
                         applyWaterPresetToCurrent(wp);
                         getEnvMenu()?.reRender();
                     });
-                    waterPresetRow.appendChild(btn);
                 }
                 c.appendChild(waterPresetRow);
 

@@ -849,6 +849,30 @@ export function addSectionTitle(container: HTMLElement, text: string): void {
     container.appendChild(title);
 }
 
+/**
+ * 创建一个 preset-chip 按钮并追加到 container（通常是 .preset-group div）。
+ * 极简工具：只管单个 chip 的创建+追加，group 容器和数据源由调用方管理。
+ *
+ * @param container 父容器（一般是 div.preset-group）
+ * @param label     按钮文本
+ * @param active    是否激活（追加 'active' class）
+ * @param onClick   点击回调
+ * @returns 创建的 button 元素（调用方可继续加内联 style 等）
+ */
+export function addPresetChip(
+    container: HTMLElement,
+    label: string,
+    active: boolean,
+    onClick: () => void,
+): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.className = 'preset-chip' + (active ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', onClick);
+    container.appendChild(btn);
+    return btn;
+}
+
 // ======== 便捷封装 — 新代码推荐使用 ========
 
 /**

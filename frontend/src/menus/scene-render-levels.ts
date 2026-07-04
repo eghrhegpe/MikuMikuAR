@@ -15,6 +15,7 @@ import {
     sliderRow,
     slideRow,
     addSectionTitle,
+    addPresetChip,
 } from '../core/ui-helpers';
 import {
     triggerAutoSave,
@@ -102,15 +103,11 @@ export function buildPresetScenesLevel(): PopupLevel {
                 chipGroup.className = 'preset-group';
                 chipGroup.style.paddingBottom = '6px';
                 for (const [key, label] of Object.entries(PRESET_LABELS)) {
-                    const btn = document.createElement('button');
-                    btn.className = 'preset-chip';
-                    btn.textContent = label;
-                    btn.addEventListener('click', () => {
+                    addPresetChip(chipGroup, label, false, () => {
                         const preset = getBuiltinPreset(key);
                         if (preset) transitionRenderState(preset, 2000);
                         setStatus(`✓ 滤镜: ${label}`, true);
                     });
-                    chipGroup.appendChild(btn);
                 }
                 c.appendChild(chipGroup);
             });
@@ -190,25 +187,17 @@ export function buildStageLightLevel(): PopupLevel {
                 const currentPreset = envState.lightingPresetName;
                 for (const name of PRESET_NAMES) {
                     const p = LIGHTING_PRESETS[name];
-                    const btn = document.createElement('button');
-                    btn.className = 'preset-chip' + (currentPreset === name ? ' active' : '');
-                    btn.textContent = p.label;
-                    btn.addEventListener('click', () => {
+                    addPresetChip(chipGroup, p.label, currentPreset === name, () => {
                         setEnvState({ lightingPresetName: name });
                         reRenderSceneMenu();
                     });
-                    chipGroup.appendChild(btn);
                 }
                 // 自定义按钮（清除预设）
                 if (currentPreset) {
-                    const customBtn = document.createElement('button');
-                    customBtn.className = 'preset-chip';
-                    customBtn.textContent = '自定义';
-                    customBtn.addEventListener('click', () => {
+                    addPresetChip(chipGroup, '自定义', false, () => {
                         setEnvState({ lightingPresetName: undefined });
                         reRenderSceneMenu();
                     });
-                    chipGroup.appendChild(customBtn);
                 }
                 c.appendChild(chipGroup);
             });
