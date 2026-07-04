@@ -82,7 +82,11 @@ function renderPresetChips(container: HTMLElement): void {
         addPresetChip(chipGroup, p.label, false, () => {
             _activeEnvPresetKey = key;
             applyEnvPreset(key);
-            getEnvMenu()?.reRender();
+            getEnvMenu()?.updateControls();
+        }, {
+            onUpdate: (btn) => {
+                btn.classList.toggle('active', _activeEnvPresetKey === key);
+            }
         });
     }
     container.appendChild(chipGroup);
@@ -100,19 +104,11 @@ export function buildEnvLightingLevel(): PopupLevel {
                 addSliderRow(c, '太阳角度', sunAngle, -15, 90, 1, (v) => {
                     setEnvSunAngle(v);
                     setEnvState({ sunAngle: v });
-                }, 'lucide:sun');
+                    getEnvMenu()?.updateControls();
+                }, 'lucide:sun', undefined, {
+                    bind: () => getEnvSunAngle(),
+                });
             });
-        },
-        reRenderCustom: (container) => {
-            // 只更新太阳角度滑块的值
-            const angleSlider = container.querySelector('.cs-row:last-child .cs-value');
-            if (angleSlider) angleSlider.textContent = String(Math.round(getEnvSunAngle()));
-            const angleFill = container.querySelector('.cs-row:last-child .cs-fill') as HTMLElement | null;
-            if (angleFill) {
-                const v = getEnvSunAngle();
-                const pct = Math.max(0, Math.min(100, ((v + 15) / 105) * 100));
-                angleFill.style.width = pct + '%';
-            }
         },
     };
 }
@@ -131,7 +127,9 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     { value: 'procedural', label: '程序化' },
                     { value: 'color', label: '纯色' },
                     { value: 'texture', label: '贴图' },
-                ], s.skyMode, (v) => { setEnvState({ skyMode: v }); getEnvMenu()?.reRender(); }, 'lucide:layers');
+                ], s.skyMode, (v) => { setEnvState({ skyMode: v }); getEnvMenu()?.updateControls(); }, 'lucide:layers', undefined, {
+                    bind: () => envState.skyMode,
+                });
 
                 renderPresetChips(c);
 
@@ -139,10 +137,14 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     title: '光照控制', icon: 'lucide:sun', defaultOpen: false,
                     renderContent: (inner) => {
                         addSliderRow(inner, '太阳强度', getLightState().dirIntensity, 0, 1, 0.05,
-                            (v) => { setLightingState({ dirIntensity: v }); setRenderState({ exposure: Math.max(0.3, Math.min(2.0, v + 0.6)) }); },
-                            'lucide:sun');
+                            (v) => { setLightingState({ dirIntensity: v }); setRenderState({ exposure: Math.max(0.3, Math.min(2.0, v + 0.6)) }); getEnvMenu()?.updateControls(); },
+                            'lucide:sun', undefined, {
+                                bind: () => getLightState().dirIntensity,
+                            });
                         addSliderRow(inner, '天空照明', s.envIntensity / 3, 0, 1, 0.05,
-                            (v) => setEnvState({ envIntensity: v * 3 }), 'lucide:sun');
+                            (v) => { setEnvState({ envIntensity: v * 3 }); getEnvMenu()?.updateControls(); }, 'lucide:sun', undefined, {
+                                bind: () => envState.envIntensity / 3,
+                            });
                     },
                 });
 
@@ -172,67 +174,55 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     title: '高级天空设置', icon: 'lucide:settings', defaultOpen: false,
                     renderContent: (inner) => {
                         if (s.skyMode === 'procedural') {
-                            addToggleRow(inner, '星空', s.starsEnabled ?? false, (v) => setEnvState({ starsEnabled: v }), 'lucide:sparkles');
+                            addToggleRow(inner, '星空', s.starsEnabled ?? false, (v) => { setEnvState({ starsEnabled: v }); getEnvMenu()?.updateControls(); }, 'lucide:sparkles', {
+                                bind: () => !!envState.starsEnabled,
+                            });
                         }
-                        addSliderRow(inner, '天空旋转速度', s.skyRotationSpeed ?? 0, 0, 5, 0.1, (v) => setEnvState({ skyRotationSpeed: v }), 'lucide:rotate-cw');
-                        addSliderRow(inner, '太阳角度', sunAngle, -15, 90, 1, (v) => { setEnvSunAngle(v); setEnvState({ sunAngle: v }); }, 'lucide:sun');
+                        addSliderRow(inner, '天空旋转速度', s.skyRotationSpeed ?? 0, 0, 5, 0.1, (v) => { setEnvState({ skyRotationSpeed: v }); getEnvMenu()?.updateControls(); }, 'lucide:rotate-cw', undefined, {
+                            bind: () => envState.skyRotationSpeed ?? 0,
+                        });
+                        addSliderRow(inner, '太阳角度', sunAngle, -15, 90, 1, (v) => { setEnvSunAngle(v); setEnvState({ sunAngle: v }); getEnvMenu()?.updateControls(); }, 'lucide:sun', undefined, {
+                            bind: () => getEnvSunAngle(),
+                        });
                         if (s.skyMode === 'texture') {
-                            addSliderRow(inner, '旋转 Y', s.skyRotationY, 0, 360, 1, (v) => setEnvState({ skyRotationY: v }), 'lucide:refresh-cw');
+                            addSliderRow(inner, '旋转 Y', s.skyRotationY, 0, 360, 1, (v) => { setEnvState({ skyRotationY: v }); getEnvMenu()?.updateControls(); }, 'lucide:refresh-cw', undefined, {
+                                bind: () => envState.skyRotationY,
+                            });
                         }
                     },
                 });
 
                 addCollapsible(c, {
                     title: '阴影设置', icon: 'lucide:cloud', defaultOpen: false,
-                    headerToggle: { value: getLightState().shadowEnabled, onChange: (v) => setLightingState({ shadowEnabled: v }) },
+                    headerToggle: { value: getLightState().shadowEnabled, onChange: (v) => { setLightingState({ shadowEnabled: v }); getEnvMenu()?.reRender(); } },
                     renderContent: (inner) => {
                         addModeSlider(inner, '阴影类型', [
                             { value: 'hard', label: '硬阴影' }, { value: 'soft', label: '软阴影' }, { value: 'pcf', label: 'PCF' },
-                        ], getLightState().shadowType, (v) => setLightingState({ shadowType: v }), 'lucide:cloud');
+                        ], getLightState().shadowType, (v) => { setLightingState({ shadowType: v }); getEnvMenu()?.updateControls(); }, 'lucide:cloud', undefined, {
+                            bind: () => getLightState().shadowType,
+                        });
                         const shadowQualityRow = document.createElement('div');
                         shadowQualityRow.className = 'preset-group';
-                        shadowQualityRow.dataset.shadowChips = '1';
                         for (const sq of [{ label: '低', value: 512 }, { label: '中', value: 1024 }, { label: '高', value: 2048 }, { label: '超高', value: 4096 }]) {
                             addPresetChip(shadowQualityRow, sq.label, getLightState().shadowResolution === sq.value, () => {
                                 setLightingState({ shadowResolution: sq.value });
-                                getEnvMenu()?.reRender();
+                                getEnvMenu()?.updateControls();
+                            }, {
+                                onUpdate: (btn) => {
+                                    btn.classList.toggle('active', getLightState().shadowResolution === sq.value);
+                                }
                             });
                         }
                         inner.appendChild(shadowQualityRow);
-                        addSliderRow(inner, '阴影偏移', getLightState().shadowBias, 0, 0.01, 0.0001, (v) => setLightingState({ shadowBias: v }), 'lucide:move');
-                        addSliderRow(inner, '阴影级联', getLightState().shadowCascades, 2, 4, 1, (v) => setLightingState({ shadowCascades: v }), 'lucide:layers');
+                        addSliderRow(inner, '阴影偏移', getLightState().shadowBias, 0, 0.01, 0.0001, (v) => { setLightingState({ shadowBias: v }); getEnvMenu()?.updateControls(); }, 'lucide:move', undefined, {
+                            bind: () => getLightState().shadowBias,
+                        });
+                        addSliderRow(inner, '阴影级联', getLightState().shadowCascades, 2, 4, 1, (v) => { setLightingState({ shadowCascades: v }); getEnvMenu()?.updateControls(); }, 'lucide:layers', undefined, {
+                            bind: () => getLightState().shadowCascades,
+                        });
                     },
                 });
             });
-        },
-        reRenderCustom: (container) => {
-            // 1. 更新天空模式 mode slider 的显示
-            const s = envState;
-            const modeOptions: Record<string, string> = { procedural: '程序化', color: '纯色', texture: '贴图' };
-            const modeSlider = container.querySelector('.card-container .cs-row:first-child');
-            if (modeSlider) {
-                const valEl = modeSlider.querySelector('.cs-value');
-                if (valEl) valEl.textContent = modeOptions[s.skyMode] || s.skyMode;
-                // mode slider 有 thumb
-                const idx = ['procedural', 'color', 'texture'].indexOf(s.skyMode);
-                if (idx >= 0) {
-                    const fill = modeSlider.querySelector('.cs-fill') as HTMLElement | null;
-                    const thumb = modeSlider.querySelector('.cs-thumb') as HTMLElement | null;
-                    const pct = idx > 0 ? (idx / 2) * 100 : 0;
-                    if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-                    if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
-                }
-            }
-
-            // 2. 更新阴影分辨率芯片的 active 状态
-            const shadowChips = container.querySelector<HTMLElement>('[data-shadow-chips]');
-            if (shadowChips) {
-                const currentRes = getLightState().shadowResolution;
-                Array.from(shadowChips.children).forEach((btn) => {
-                    const value = parseInt((btn as HTMLElement).textContent || '0');
-                    (btn as HTMLElement).classList.toggle('active', value === currentRes);
-                });
-            }
         },
     };
 }
@@ -289,33 +279,19 @@ export function buildParticleLevel(): PopupLevel {
                     { value: 'fireworks', label: '🎆 烟花' },
                     { value: 'fireflies', label: '✨ 萤火虫' },
                     { value: 'leaves', label: '🍂 落叶' },
-                ], s.particleType, (v) => { setEnvState({ particleType: v }); getEnvMenu()?.reRender(); }, 'lucide:sparkles');
-                addSliderRow(c, '密度', s.particleEmitRate, 0, 3, 0.1, (v) => setEnvState({ particleEmitRate: v }), 'lucide:layers');
-                addSliderRow(c, '大小', s.particleSize, 0.1, 3, 0.1, (v) => setEnvState({ particleSize: v }), 'lucide:maximize');
-                addSliderRow(c, '速度', s.particleSpeed, 0.1, 5, 0.1, (v) => setEnvState({ particleSpeed: v }), 'lucide:gauge');
+                ], s.particleType, (v) => { setEnvState({ particleType: v }); getEnvMenu()?.updateControls(); }, 'lucide:sparkles', undefined, {
+                    bind: () => envState.particleType,
+                });
+                addSliderRow(c, '密度', s.particleEmitRate, 0, 3, 0.1, (v) => { setEnvState({ particleEmitRate: v }); getEnvMenu()?.updateControls(); }, 'lucide:layers', undefined, {
+                    bind: () => envState.particleEmitRate,
+                });
+                addSliderRow(c, '大小', s.particleSize, 0.1, 3, 0.1, (v) => { setEnvState({ particleSize: v }); getEnvMenu()?.updateControls(); }, 'lucide:maximize', undefined, {
+                    bind: () => envState.particleSize,
+                });
+                addSliderRow(c, '速度', s.particleSpeed, 0.1, 5, 0.1, (v) => { setEnvState({ particleSpeed: v }); getEnvMenu()?.updateControls(); }, 'lucide:gauge', undefined, {
+                    bind: () => envState.particleSpeed,
+                });
             });
-        },
-        reRenderCustom: (container) => {
-            // 更新粒子类型 mode slider 的显示
-            const s = envState;
-            const options = ['none', 'sakura', 'rain', 'snow', 'fireworks', 'fireflies', 'leaves'];
-            const idx = options.indexOf(s.particleType);
-            if (idx < 0) return;
-            const labels = ['无', '🌸 樱花', '🌧 雨', '❄ 雪', '🎆 烟花', '✨ 萤火虫', '🍂 落叶'];
-            const csRow = container.querySelector('.card-container .cs-row:first-child');
-            if (!csRow) return;
-            const valEl = csRow.querySelector('.cs-value');
-            if (valEl) valEl.textContent = labels[idx];
-            const fill = csRow.querySelector('.cs-fill') as HTMLElement | null;
-            if (fill) {
-                const pct = idx > 0 ? (idx / (options.length - 1)) * 100 : 0;
-                fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-            }
-            const thumb = csRow.querySelector('.cs-thumb') as HTMLElement | null;
-            if (thumb) {
-                const pct = idx > 0 ? (idx / (options.length - 1)) * 100 : 0;
-                thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
-            }
         },
     };
 }
