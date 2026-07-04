@@ -19,7 +19,6 @@ frontend/src/menus/
 │
 ├── scene-menu.ts                # 场景弹窗入口 + 路由器（~440 行）
 │   ├── scene-camera-levels.ts   #   相机模式 + 参数面板
-│   ├── scene-procmotion-levels.ts # 程序化动作 + LipSync
 │   └── scene-render-levels.ts   #   后处理/舞台/渲染预设
 │
 ├── env-menu.ts                  # 环境弹窗入口 + 导航（~290 行）
@@ -28,6 +27,7 @@ frontend/src/menus/
 │   └── env-preset-levels.ts     #   环境预设（内置 + 用户保存）
 │
 ├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐（~425 行）
+│   ├── motion-procmotion-levels.ts # 程序化动作 + LipSync
 │   ├── motion-dance-sets.ts     #   舞蹈套装数据 + UI
 │   └── motion-cloth-levels.ts   #   布料参数面板
 │
@@ -65,7 +65,8 @@ type PopupLevel = {
 };
 
 type PopupRow = {
-    kind: "folder" | "model" | "action" | "divider";
+    kind: "folder" | "model" | "action" | "divider"
+        | "slider" | "toggle" | "modeSlider" | "chips";
     label: string;
     icon: string;
     target: string;      // 用于识别行类型
@@ -76,17 +77,35 @@ type PopupRow = {
     favRef?: string;     // 收藏/取消收藏关联的 libraryRef
     onAddClick?: () => void;     // 右侧「+」按钮点击
     onDetailClick?: () => void;  // 右侧「详情」按钮点击
+    rowKey?: string;     // 稳定标识 key，用于增量渲染 row diff
+    // folder + headerToggle：右侧渲染开关（与 slideRow headerToggle 一致）
+    headerToggle?: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean; ... };
+    // slider kind
+    sliderValue?, sliderMin?, sliderMax?, sliderStep?: number;
+    onSliderChange?, onSliderDragEnd?: (v: number) => void;
+    // toggle kind
+    toggleValue?: boolean; onToggleChange?: (v: boolean) => void;
+    // modeSlider kind
+    modeOptions?: { value: string | number; label: string }[];
+    modeValue?: string | number; onModeChange?: (v: string | number) => void;
+    // chips kind：横向预设芯片组
+    chips?: { label: string; active?: boolean; onClick: () => void }[];
 };
 ```
 
-### 三种行类型
+### 行类型
 
 | kind | 箭头 | 点击行为 | 用途 |
 |------|------|---------|------|
 | `folder` | > | 调用 `onFolderEnter` → 返回下一级 `PopupLevel` → `push()` | 导航到子菜单或文件浏览器 |
+| `folder` + `headerToggle` | > | 行点击进子菜单；右侧 toggle 切换开关 | 带启用开关的功能入口（水面/粒子/风/布料） |
 | `action` | 无 | 调用 `onItemClick` | 设置项、切换、操作 |
 | `model` | 无 | 调用 `onItemClick` | 加载模型/动作文件 |
 | `divider` | 无 | 不可点击 | 视觉分组分隔线 |
+| `slider` | 无 | 拖拽滑块 → `onSliderChange(v)` | 内嵌数值滑块（物理重力等） |
+| `toggle` | 无 | 切换 → `onToggleChange(v)` | 独立开关行 |
+| `modeSlider` | 无 | 拖拽 → `onModeChange(v)` | 离散模式滑块（粒子类型/天空模式等） |
+| `chips` | 无 | 点击芯片 → `chip.onClick()` | 横向预设芯片组（环境氛围预设等） |
 
 ---
 
@@ -156,7 +175,7 @@ type PopupRow = {
 ├── 🕐 最近使用          → 子菜单：最近使用动作列表
 ├── 🎵 音乐              → 子菜单：音频加载/偏移/音量
 ├── 📷 相机模式          → 子菜单：相机参数（复用 scene-camera-levels）
-├── 🌬 程序化动作        → 子菜单：待机呼吸/自动舞蹈/强度/速度（复用 scene-procmotion-levels）
+├── 🌬 程序化动作        → 子菜单：待机呼吸/自动舞蹈/强度/速度（motion-procmotion-levels）
 ├── ⬇ 物理重力          → 滑块：0~2
 ├── 🧵 布料参数          → 子菜单：布料预设/形状/物理/碰撞
 ├── 📦 舞蹈套装          → 子菜单：舞蹈套装浏览/详情/应用
@@ -168,12 +187,13 @@ type PopupRow = {
 
 | 子文件 | 职责 | 函数 |
 |--------|------|------|
+| `motion-procmotion-levels.ts` | 程序化动作 + LipSync | `buildProcMotionLevel`, `buildProcMotionModeLevel`, `buildLipSyncLevel` |
 | `motion-dance-sets.ts` | 舞蹈套装数据 + UI | `DanceSet` 类型, `loadDanceSets`, `buildDanceSetsOverviewLevel`, `buildDanceSetDetailLevel` |
 | `motion-cloth-levels.ts` | 布料参数面板 | `buildClothParamsLevel` |
 
-**跨文件复用**：`motion-popup.ts` 从 `scene-camera-levels` 和 `scene-procmotion-levels` 直接导入相机/动作面板，避免重复实现。
+**跨文件复用**：`motion-popup.ts` 从 `scene-camera-levels` 直接导入相机面板，避免重复实现。
 
-**代码入口**：`showMotionPopup()` → `motionMenu.reset(rootItems)`（`motion-popup.ts`）
+**代码入口**：`showMotionPopup()` → `motionMenu.reset(motionRootLevel)`（`motion-popup.ts`，items-based 根级）
 
 ---
 
@@ -194,8 +214,9 @@ type PopupRow = {
 | 子文件 | 职责 | 函数 |
 |--------|------|------|
 | `scene-camera-levels.ts` | 相机模式 + 参数 | `buildCameraLevel`, `buildCameraParamsLevel` |
-| `scene-procmotion-levels.ts` | 程序化动作 + LipSync | `buildProcMotionLevel`, `buildProcMotionModeLevel`, `buildLipSyncLevel` |
 | `scene-render-levels.ts` | 后处理/舞台/渲染预设 | `buildPostProcessLevel`, `buildStageLevel`, `buildPresetsLevel`, `buildStageLightLevel` |
+
+> 程序化动作 / LipSync 已迁移到 motion 域（`motion-procmotion-levels.ts`），见动作弹窗章节。
 
 **代码入口**：`showSceneMenu()` → `sceneMenu.reset(rootItems)`（`scene-menu.ts`）
 
@@ -237,6 +258,81 @@ type PopupRow = {
 ```
 
 **代码入口**：`initDownloadManager()` → `downloadMenu.reset(rootLevel)`
+
+---
+
+## 功能域归属规则
+
+> **硬规则**：文件名前缀 = 功能域。AI 判断代码归属依据文件名前缀。
+
+| 前缀 | 域 | 职责 | 禁止放入 |
+|------|----|------|---------|
+| `scene-*` | 场景 | 保存/加载/预设/舞台/灯光/截图/后处理/相机 | 程序化动作、LipSync、布料（属 motion 域）；天空/水面/粒子（属 env 域） |
+| `motion-*` | 动作 | 程序化动作/LipSync/布料/重力/动作绑定/舞蹈套装 | 保存/加载场景、渲染预设（属 scene 域） |
+| `env-*` | 环境 | 天空/水面/风/粒子/云/地面/环境预设/道具 | 相机参数、截图（属 scene 域） |
+| `model-*` | 模型 | 模型详情/材质/预设/换装 | 动作绑定、布料（属 motion 域） |
+| `library-*` | 模型库 | 模型库浏览/搜索/缩略图 | 模型详情面板（属 model 域） |
+
+### 违规检查
+
+- `scene-*` 文件中**不得 import** `motion-*` / `env-*` 的 builder 函数
+- `motion-*` 文件中**不得 import** `scene-render-levels` / `env-feature-levels` 的 builder 函数
+- 跨域复用仅允许通过 barrel re-export（`scene-menu.ts` / `env-menu.ts` / `motion-popup.ts`）
+
+### 迁移记录（2026-07）
+
+- `scene-procmotion-levels.ts` → `motion-procmotion-levels.ts`（程序化动作归位 motion 域）
+- `scene-menu.ts` 移除环境入口路由（环境功能仅从 `env-menu.ts` 访问）
+- `scene-menu.ts` 移除动作路由（程序化动作/LipSync 仅从 `motion-popup.ts` 访问）
+
+---
+
+## renderCustom → items 渐进迁移
+
+### 何时用 items vs renderCustom
+
+| 场景 | 推荐方式 | 原因 |
+|------|---------|------|
+| 纯导航行（folder/action/model） | `items` | 支持增量 patch，reRender 不丢失焦点 |
+| 内嵌滑块/开关/芯片组 | `items`（slider/toggle/modeSlider/chips kind） | 声明式，createRow 统一渲染 |
+| 复杂表单（collapsible + 多控件） | `renderCustom` | 灵活，但 reRender 全量重建 |
+| 动态列表（模型库/预设库） | `renderCustom` | 数据异步加载 |
+
+### 已迁移到 items 的根级
+
+| 文件 | 原 renderCustom | 新 items 结构 |
+|------|----------------|--------------|
+| `motion-popup.ts` | 模型列表 + 最近 + 音乐/程序化 + 重力滑块 + 布料 toggle | folder × N + divider + slider + folder+headerToggle |
+| `env-menu.ts` | 预设芯片 + 天空/水面/粒子/风/实验/道具 + 系统预设 | chips + divider + folder × 6（部分带 headerToggle）+ divider + folder |
+
+### items-based 根级刷新模式
+
+```typescript
+// 持久根级对象
+const rootLevel: PopupLevel = { label: '...', dir: '', items: [] };
+
+// 动态 items 构建器
+function buildRootItems(): PopupRow[] { /* 反映当前状态 */ }
+
+// 刷新：重算 items + reRender
+export function refreshRoot(): void {
+    rootLevel.items = buildRootItems();
+    menu?.reRender();
+}
+
+// 入口
+export function showMenu(): void {
+    if (menu) {
+        rootLevel.items = buildRootItems();
+        menu.resetToRoot();
+        menu.reRender();
+        return;
+    }
+    menu = makeMenu(wrapper);
+    rootLevel.items = buildRootItems();
+    menu.reset(rootLevel);
+}
+```
 
 ---
 

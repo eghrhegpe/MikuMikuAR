@@ -36,8 +36,8 @@ import {
     _envSys,
     refreshWaterRenderList,
     addRipple,
-} from './scene-env';
-import { initCameraSystem, autoFrame } from './camera';
+} from './env/env';
+import { initCameraSystem, autoFrame } from './camera/camera';
 import {
     dom,
     setMmdRuntime,
@@ -52,14 +52,14 @@ import {
 } from '../core/config';
 import { attachBeatDetector } from '../outfit/audio';
 import { loadOutfits } from '../outfit/outfit';
-import { _catState, _matState, _matEnabled } from './scene-material';
-import { updatePlaybackUI, initPlaybackObservables } from './scene-playback';
+import { _catState, _matState, _matEnabled } from './model/material';
+import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
 import { tryAutoApplyPreset } from '../menus/model-preset';
-import { initLighting, _updateSunDisc } from './scene-lighting';
-import { initRenderer, rebuildOutlineState, pipeline } from './scene-renderer';
-import { initLoader } from './scene-loader';
+import { initLighting, _updateSunDisc } from './render/lighting';
+import { initRenderer, rebuildOutlineState, pipeline } from './render/renderer';
+import { initLoader } from './model/model-loader';
 
-// Re-export material system (extracted to scene-material.ts for file size)
+// Re-export material system (extracted to material.ts for file size)
 export {
     _catState,
     _matState,
@@ -79,12 +79,12 @@ export {
     resetAllMatParams,
     getMatState,
     applyMatState,
-} from './scene-material';
-export type { MaterialCategoryParams, MaterialCategory } from './scene-material';
+} from './model/material';
+export type { MaterialCategoryParams, MaterialCategory } from './model/material';
 
-import { ModelManager } from './scene-model';
-import { updateProcMotion, createProcBeatDetector, getProcBeatDetector } from './scene-proc-motion';
-import { updateLipSync, initLipSync } from './scene-lipsync';
+import { ModelManager } from './model/model-manager';
+import { updateProcMotion, createProcBeatDetector, getProcBeatDetector } from './motion/proc-motion-bridge';
+import { updateLipSync, initLipSync } from './motion/lipsync-bridge';
 import { triggerAutoSaveImpl } from './scene-serialize';
 
 // ======== Babylon.js ========
@@ -239,8 +239,8 @@ export function getScene(): Scene {
 }
 
 // Re-exports from extracted sub-modules (zero-change for consumers)
-export { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from './scene-vmd';
-export { updatePlaybackUI, seekFromEvent, initPlaybackObservables } from './scene-playback';
+export { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from './motion/vmd-loader';
+export { updatePlaybackUI, seekFromEvent, initPlaybackObservables } from './motion/playback';
 export {
     dom,
     setStatus,
@@ -270,15 +270,15 @@ export {
 } from '../core/config';
 export type { EnvState, ModelInstance, PropInstance } from '../core/config';
 export { resolveFileUrl, normPath } from '../core/fileservice';
-export * from './scene-proc-motion';
-export * from './scene-lipsync';
-export * from './scene-props';
+export * from './motion/proc-motion-bridge';
+export * from './motion/lipsync-bridge';
+export * from './env/props';
 export * from './scene-serialize';
-export * from './scene-env-bridge';
-export * from './scene-lighting';
-export * from './scene-renderer';
-export * from './scene-model-ops';
-export { loadPMXFile, captureThumbnail, initLoader } from './scene-loader';
+export * from './env/env-bridge';
+export * from './render/lighting';
+export * from './render/renderer';
+export * from './model/model-ops';
+export { loadPMXFile, captureThumbnail, initLoader } from './model/model-loader';
 export {
     initCameraSystem,
     autoFrame,
@@ -292,8 +292,8 @@ export {
     getCameraVmdPath,
     switchCameraMode,
     getCameraMode,
-} from './camera';
-export type { CameraState } from './camera';
+} from './camera/camera';
+export type { CameraState } from './camera/camera';
 export {
     syncAudioPlayback,
     attachBeatDetector,

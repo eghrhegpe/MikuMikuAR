@@ -1,5 +1,6 @@
 import { PopupLevel, PopupRow, showHint, hideHint } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
+import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
 const TRANSITION_DURATION = '0.15s';
@@ -560,6 +561,82 @@ export class SlideMenu {
             return el;
         }
 
+        // ======== 新 kind：slider / toggle / modeSlider / chips ========
+        // 这些 kind 不是可点击的导航行，而是内嵌控件行。
+        // 通过 ui-helpers 渲染，包一层带 rowKey 的 wrapper 以支持增量 patch。
+        if (row.kind === 'slider' || row.kind === 'toggle' || row.kind === 'modeSlider' || row.kind === 'chips') {
+            const wrapper = document.createElement('div');
+            wrapper.dataset.rowKey = this.rowKey(row);
+            if (row.kind === 'slider') {
+                addSliderRow(
+                    wrapper, row.label,
+                    row.sliderValue ?? 0,
+                    row.sliderMin ?? 0,
+                    row.sliderMax ?? 1,
+                    row.sliderStep ?? 0.1,
+                    row.onSliderChange ?? (() => {}),
+                    row.icon || undefined,
+                    row.onSliderDragEnd
+                );
+            } else if (row.kind === 'toggle') {
+                addToggleRow(
+                    wrapper, row.label,
+                    row.toggleValue ?? false,
+                    row.onToggleChange ?? (() => {}),
+                    row.icon || undefined
+                );
+            } else if (row.kind === 'modeSlider') {
+                addModeSlider(
+                    wrapper, row.label,
+                    row.modeOptions ?? [],
+                    row.modeValue as string & (string | number),
+                    row.onModeChange ?? (() => {}),
+                    row.icon || undefined
+                );
+            } else if (row.kind === 'chips') {
+                wrapper.className = 'preset-group';
+                for (const chip of row.chips ?? []) {
+                    const btn = document.createElement('button');
+                    btn.textContent = chip.label;
+                    btn.className = 'preset-chip' + (chip.active ? ' active' : '');
+                    btn.addEventListener('click', chip.onClick);
+                    wrapper.appendChild(btn);
+                }
+            }
+            return wrapper;
+        }
+
+        // ======== folder / model / action：原有 slide-item 逻辑 ========
+
+        // folder + headerToggle：委托给 slideRow（与 renderCustom 中的视觉一致）
+        if (row.kind === 'folder' && row.headerToggle) {
+            const wrapper = document.createElement('div');
+            slideRow(
+                wrapper, row.icon, row.label, true,
+                () => {
+                    const next = this.onFolderEnter(row, this);
+                    if (next) this.push(next);
+                },
+                row.sublabel, row.catTag, row.headerToggle
+            );
+            const el = wrapper.firstChild as HTMLElement | null;
+            if (el) {
+                el.dataset.rowKey = this.rowKey(row);
+                const hint = row.sublabel || '暂无提示';
+                el.setAttribute('data-hint', hint);
+                el.addEventListener('mouseenter', () => {
+                    if (this.focusIndex >= 0) { this.clearFocus(); this.focusIndex = -1; }
+                    showHint(hint);
+                    this.onHover?.(row, true);
+                });
+                el.addEventListener('mouseleave', () => {
+                    hideHint();
+                    this.onHover?.(row, false);
+                });
+            }
+            return el;
+        }
+
         const el = document.createElement('div');
         el.className = 'slide-item';
         el.dataset.rowKey = this.rowKey(row);
@@ -626,11 +703,11 @@ export class SlideMenu {
                 this.focusIndex = -1;
             }
             showHint(hint);
-            this.onHover(row, true);
+            this.onHover?.(row, true);
         });
         el.addEventListener('mouseleave', () => {
             hideHint();
-            this.onHover(row, false);
+            this.onHover?.(row, false);
         });
 
         return el;

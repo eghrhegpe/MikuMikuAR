@@ -1,6 +1,8 @@
 // [doc:architecture] Scene Menu — 场景弹窗（核心 + barrel export）
 // 职责: MenuStack 场景弹窗路由/入口，拆分后只保留根级 + 路由 + 动作处理
-// 子文件: scene-camera-levels.ts, scene-procmotion-levels.ts, scene-render-levels.ts
+// 子文件: scene-camera-levels.ts, scene-render-levels.ts
+// 程序化动作/LipSync 已归位 motion-procmotion-levels.ts（动作弹窗域）
+// 环境功能归位 env-menu.ts（环境弹窗域）
 
 import {
     dom,
@@ -48,37 +50,14 @@ import {
     SaveScenePreset,
     DeletePresetScene,
 } from '../core/wails-bindings';
-import {
-    focusModel,
-    setProcMotionMode,
-    setProcMotionAutoSwitch,
-    getProcMotionState,
-    regenerateProcMotion,
-    getLipSyncState,
-    setLipSyncEnabled,
-} from '../scene/scene';
+import { focusModel } from '../scene/scene';
 import { loadCameraVmdFromPath } from '../scene/scene';
-import type { ProcMotionMode } from '../motion/procedural-motion';
-import {
-    buildEnvLevel,
-    buildEnvLightingLevel,
-    buildSkyLevel,
-    buildGroundLevel,
-    buildParticleLevel,
-    buildWindLevel,
-    buildCloudLevel,
-    buildPresetLevel,
-} from './env-menu';
 
 // ======== 从子文件导入 ========
 import {
     buildCameraLevel, buildCameraParamsLevel,
     // re-exported below
 } from './scene-camera-levels';
-import {
-    buildProcMotionLevel, buildProcMotionModeLevel, buildLipSyncLevel,
-    // re-exported below
-} from './scene-procmotion-levels';
 import {
     buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel,
     buildPresetScenesLevel, buildPresetsLevel,
@@ -88,7 +67,6 @@ import {
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
 export { buildCameraLevel, buildCameraParamsLevel } from './scene-camera-levels';
-export { buildProcMotionLevel, buildProcMotionModeLevel, buildLipSyncLevel } from './scene-procmotion-levels';
 export { buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageLightLevel, buildPresetScenesLevel, buildPresetsLevel, loadUserPresets, showPresetSaveDialog, userPresets, getBuiltinPreset, getPresetName } from './scene-render-levels';
 
 // ======== Scene Menu State ========
@@ -177,32 +155,10 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
     switch (row.target) {
         case 'scene:presets':
             return buildPresetScenesLevel();
-        case 'scene:env':
-            return buildEnvLevel();
-        case 'scene:env:sky':
-            return buildSkyLevel();
-        case 'scene:env:ground':
-            return buildGroundLevel();
-        case 'scene:env:particle':
-            return buildParticleLevel();
-        case 'scene:env:wind':
-            return buildWindLevel();
-        case 'scene:env:cloud':
-            return buildCloudLevel();
-        case 'scene:env:lighting':
-            return buildEnvLightingLevel();
-        case 'scene:env:post':
-            return buildPostProcessLevel();
-        case 'scene:env:presets':
-            return buildPresetLevel();
         case 'scene:camera':
             return buildCameraLevel();
         case 'scene:render':
             return buildRenderLevel();
-        case 'scene:procmotion':
-            return buildProcMotionLevel();
-        case 'procmotion:mode':
-            return buildProcMotionModeLevel();
         case 'scene:screenshot':
             return buildScreenshotLevel();
         case 'camera:params:orbit':
@@ -391,34 +347,6 @@ function handleSceneAction(row: PopupRow): void {
             triggerAutoSave();
             setStatus(`✓ 预设: ${getPresetName(action)}`, true);
         }
-        return;
-    }
-    // Procedural Motion actions
-    if (row.target && row.target.startsWith('procmotion:set-mode:')) {
-        const mode = row.target.replace('procmotion:set-mode:', '') as ProcMotionMode;
-        setProcMotionMode(mode);
-        regenerateProcMotion();
-        sceneMenu.pop();
-        reRenderSceneMenu();
-        return;
-    }
-    if (row.target === 'procmotion:autoswitch') {
-        setProcMotionAutoSwitch(!getProcMotionState().autoSwitch);
-        reRenderSceneMenu();
-        return;
-    }
-    if (row.target === 'procmotion:mode') {
-        sceneMenu.push(buildProcMotionModeLevel());
-        return;
-    }
-    // LipSync actions
-    if (row.target === 'lipsync:menu') {
-        sceneMenu.push(buildLipSyncLevel());
-        return;
-    }
-    if (row.target === 'lipsync:toggle') {
-        setLipSyncEnabled(!getLipSyncState().enabled);
-        reRenderSceneMenu();
         return;
     }
 }

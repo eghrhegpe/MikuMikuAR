@@ -137,9 +137,9 @@ docs/
 | Go 后端 / Binding / 文件操作 | `docs/architecture.md` §Go 后端 | `app.go` |
 | 换装 / 纹理变体 / outfits.json | `docs/architecture.md` §16 | `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
 | 音频 / 音乐 / VMD 同步 | `frontend/src/outfit/audio.ts` | `frontend/src/scene/scene.ts`（`syncAudioPlayback`） |
-| 程序化动作 / Idle / Auto Dance | `frontend/src/motion/procedural-motion.ts` | `frontend/src/motion/beat-detector.ts` |
+| 程序化动作 / Idle / Auto Dance | `frontend/src/motion/procedural-motion.ts` | `frontend/src/menus/motion-procmotion-levels.ts`（UI）+ `frontend/src/motion/beat-detector.ts` |
 | VPD 姿势导入 | `frontend/src/motion/vpd-parser.ts` | `docs/architecture.md` §VMD 环节 |
-| LipSync / 口型同步 | `frontend/src/motion/lipsync.ts` | `frontend/src/scene/scene-lipsync.ts` |
+| LipSync / 口型同步 | `frontend/src/motion/lipsync.ts` | `frontend/src/scene/scene-lipsync.ts` + `frontend/src/menus/motion-procmotion-levels.ts`（UI） |
 | 舞蹈套装 / 动作库弹窗 | `frontend/src/menus/motion-dance-sets.ts` | `frontend/src/menus/motion-popup.ts` + `frontend/src/menus/library-core.ts` |
 | 模型预设 / 自动应用 | `frontend/src/menus/model-preset.ts` | `frontend/src/menus/model-detail.ts`（`buildPresetListLevel`） |
 | XPBD / 布料 / 物理模拟 / 软体 | `frontend/src/physics/xpbd-solver.ts` | `frontend/src/physics/xpbd-cloth.ts` + `cloth-manager.ts` |
@@ -282,7 +282,6 @@ frontend/
 │   │   │
 │   │   ├── scene-menu.ts                # 场景弹窗入口 + 路由器
 │   │   ├── scene-camera-levels.ts       #   相机模式 + 参数面板
-│   │   ├── scene-procmotion-levels.ts   #   程序化动作 + LipSync
 │   │   ├── scene-render-levels.ts       #   后处理/舞台/渲染预设
 │   │   │
 │   │   ├── env-menu.ts                  # 环境弹窗入口 + 导航
@@ -291,6 +290,7 @@ frontend/
 │   │   ├── env-preset-levels.ts         #   环境预设（内置 + 用户保存）
 │   │   │
 │   │   ├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐
+│   │   ├── motion-procmotion-levels.ts  #   程序化动作 + LipSync
 │   │   ├── motion-dance-sets.ts         #   舞蹈套装数据 + UI
 │   │   ├── motion-cloth-levels.ts       #   布料参数面板
 │   │   │
@@ -379,6 +379,8 @@ frontend/
 |-----------|------|------|
 | `togglePopup()`, `showPopup()`, `hidePopup()` | `menus/library.ts` | 模型库弹窗开关 |
 | `showMotionPopup()`, `hideMotionPopup()` | `menus/library.ts` | 动作库弹窗开关 |
+| `refreshMotionRoot()` | `menus/motion-popup.ts` | 重算动作弹窗根级 items + reRender（toggle/slider 状态变化后调用）|
+| `refreshEnvRoot()` | `menus/env-menu.ts` | 重算环境弹窗根级 items + reRender |
 | `initLibrary()` | `menus/library.ts` | 启动时加载配置 + 扫描模型库 |
 | `refreshLibrary()` | `menus/library.ts` | 重新扫描 + 刷新弹窗 |
 | `loadThumbnailsForLevel()` | `menus/library.ts` | 批量加载缩略图 |
@@ -444,6 +446,8 @@ frontend/
 | `loadVPDFromBuffer()` | `motion/vpd-parser.ts` | VPD 文本解析→VMD 二进制 |
 | `BeatDetector` | `motion/beat-detector.ts` | 节拍检测器（attach/dispose/setVolume/getLevel/getBPM）|
 | `amplitudeToWeight()` / `findLipMorph()` | `motion/lipsync.ts` | 振幅→morph权重映射 + morph名查找 |
+| `buildProcMotionLevel()` / `buildProcMotionModeLevel()` | `menus/motion-procmotion-levels.ts` | 程序化动作面板（mode/参数/自动切换）|
+| `buildLipSyncLevel()` | `menus/motion-procmotion-levels.ts` | LipSync 面板（启用/灵敏度）|
 
 #### 环境系统
 
