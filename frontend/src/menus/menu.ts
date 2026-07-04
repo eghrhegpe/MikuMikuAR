@@ -22,6 +22,9 @@ export class SlideMenu {
     private _reRenderPending = false;
     /** keydown 监听器引用，供 dispose 清理 */
     private _keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+    /** 触屏滑动手势起始坐标 */
+    private _swipeStartX = 0;
+    private _swipeStartY = 0;
 
     onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
     onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
@@ -95,6 +98,27 @@ export class SlideMenu {
             }
         };
         this.container.addEventListener('keydown', this._keydownHandler);
+
+        // 触屏手势：右滑返回上一层级
+        this._swipeStartX = 0;
+        this._swipeStartY = 0;
+        this.container.addEventListener('touchstart', (e: TouchEvent) => {
+            if (e.touches.length === 1) {
+                this._swipeStartX = e.touches[0].clientX;
+                this._swipeStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+        this.container.addEventListener('touchend', (e: TouchEvent) => {
+            if (this.transitioning || this.levels.length <= 1) return;
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const dx = endX - this._swipeStartX;
+            const dy = Math.abs(endY - this._swipeStartY);
+            // 右滑 > 60px 且垂直偏移 < 40px → 返回
+            if (dx > 60 && dy < 40) {
+                this.pop();
+            }
+        }, { passive: true });
     }
 
     // ======== 公共 API ========

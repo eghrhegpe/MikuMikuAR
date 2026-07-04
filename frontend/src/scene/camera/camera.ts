@@ -423,6 +423,7 @@ export function switchCameraMode(mode: CameraMode): void {
     // Start new mode's side-effects
     if (mode === 'freefly') {
         initFreeflyUpdate(scene);
+        initFreeflyTouch(canvas);
     }
     if (mode === 'concert') {
         startConcert(scene);
@@ -506,6 +507,80 @@ function initFreeflyUpdate(scene: Scene): void {
     scene.onBeforeRenderObservable.add(_freeflyUpdateFn);
 }
 
+// ======== Freefly Touch Controls ========
+// 双指滑动：上下 = 前后移动，左右 = 平移
+// 双指捏合：前进/后退
+let _freeflyTouchHandler: ((e: TouchEvent) => void) | null = null;
+let _freeflyTouchEndHandler: (() => void) | null = null;
+let _touchPrevDist = 0;
+let _touchPrevMidX = 0;
+let _touchPrevMidY = 0;
+
+function initFreeflyTouch(canvas: HTMLCanvasElement): void {
+    if (!isTouchDevice()) return;
+
+    _freeflyTouchHandler = (e: TouchEvent) => {
+        if (_cameraMode !== 'freefly') return;
+        if (e.touches.length < 2) return;
+        e.preventDefault();
+
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        const midX = (t0.clientX + t1.clientX) / 2;
+        const midY = (t0.clientY + t1.clientY) / 2;
+        const dx = t1.clientX - t0.clientX;
+        const dy = t1.clientY - t0.clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (_touchPrevDist > 0) {
+            const dDist = dist - _touchPrevDist;
+            const dMidX = midX - _touchPrevMidX;
+            const dMidY = midY - _touchPrevMidY;
+
+            // 捏合 → 前进/后退（dist 增大 = 后退，减小 = 前进）
+            freeflyInput.forward = dDist < -3;
+            freeflyInput.backward = dDist > 3;
+
+            // 双指水平滑动 → 左右平移
+            freeflyInput.left = dMidX > 4;
+            freeflyInput.right = dMidX < -4;
+
+            // 双指垂直滑动 → 上下移动
+            freeflyInput.up = dMidY > 4;
+            freeflyInput.down = dMidY < -4;
+        }
+
+        _touchPrevDist = dist;
+        _touchPrevMidX = midX;
+        _touchPrevMidY = midY;
+    };
+
+    _freeflyTouchEndHandler = () => {
+        freeflyInput.forward = false;
+        freeflyInput.backward = false;
+        freeflyInput.left = false;
+        freeflyInput.right = false;
+        freeflyInput.up = false;
+        freeflyInput.down = false;
+        _touchPrevDist = 0;
+    };
+
+    canvas.addEventListener('touchmove', _freeflyTouchHandler, { passive: false });
+    canvas.addEventListener('touchend', _freeflyTouchEndHandler);
+    canvas.addEventListener('touchcancel', _freeflyTouchEndHandler);
+}
+
+function stopFreeflyTouch(): void {
+    if (_canvas && _freeflyTouchHandler) {
+        _canvas.removeEventListener('touchmove', _freeflyTouchHandler);
+        _canvas.removeEventListener('touchend', _freeflyTouchEndHandler!);
+        _canvas.removeEventListener('touchcancel', _freeflyTouchEndHandler!);
+        _freeflyTouchHandler = null;
+        _freeflyTouchEndHandler = null;
+    }
+    _touchPrevDist = 0;
+}
+
 function stopFreefly(): void {
     // Reset input state
     freeflyInput.forward = false;
@@ -514,6 +589,8 @@ function stopFreefly(): void {
     freeflyInput.right = false;
     freeflyInput.up = false;
     freeflyInput.down = false;
+
+    stopFreeflyTouch();
 
     if (_freeflyUpdateFn && _scene) {
         _scene.onBeforeRenderObservable.removeCallback(_freeflyUpdateFn);
