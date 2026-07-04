@@ -15,6 +15,17 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!-- External storage access for model library (/sdcard/MMD).
+         On Android 13+ READ_EXTERNAL_STORAGE is deprecated; MANAGE_EXTERNAL_STORAGE
+         is the only way to read arbitrary user-selected paths outside the app's
+         private dirs. User must grant "All files access" in Settings. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
     <queries>
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />
@@ -32,6 +43,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.WailsApp"
         android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="true"
         tools:targetApi="31">
 
         <activity

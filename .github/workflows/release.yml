@@ -122,12 +122,12 @@ jobs:
       - name: Build
         run: |
           mkdir -p bin
-          go build -tags production -ldflags="-X main.AppVersion=${{ needs.prepare.outputs.version }} -s -w" -o bin/mikumikuar
+          go build -tags production -ldflags="-X main.AppVersion=${{ needs.prepare.outputs.version }} -s -w" -o "bin/mikumikuar-${{ needs.prepare.outputs.version }}-linux-amd64"
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
           name: linux-amd64
-          path: bin/mikumikuar
+          path: bin/mikumikuar-*
           if-no-files-found: error
 
   # ── Android 构建 ───────────────────────────────────────

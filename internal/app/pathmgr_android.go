@@ -16,7 +16,7 @@ func (a *androidPathMgr) AppDataRoot() (string, error) {
 }
 
 func (a *androidPathMgr) CacheRoot() (string, error) {
-	return "/data/data/com.mikumikuar.app/files", nil
+	return "/data/data/com.mikumikuar.app/cache", nil
 }
 
 func (a *androidPathMgr) ResourceRoot() string {

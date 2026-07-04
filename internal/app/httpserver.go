@@ -1,24 +1,42 @@
 package app
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"io"
 
 	"mikumikuar/internal/util"
 )
 
 // ======== Safe Serving (Privacy Isolation) ========
 
+// serveDir returns the root directory for isolated model directories.
+// Uses platformPathMgr.CacheRoot() so Android gets a writable private cache dir
+// instead of os.TempDir() which may not exist on all Android devices.
+func serveRootDir() (string, error) {
+	cacheRoot, err := platformPathMgr.CacheRoot()
+	if err != nil {
+		return "", fmt.Errorf("serveRootDir: cache root unavailable: %w", err)
+	}
+	return filepath.Join(cacheRoot, "MikuMikuAR", "serve"), nil
+}
+
 // isolateDir copies the PMX file and ALL its sibling files/subdirectories
-// to a temp directory. Uses a hash of the source path to prevent collisions.
+// to a cache directory. Uses a hash of the source path to prevent collisions.
 // logFn is optional; when non-nil, failures during sibling copy are logged.
 func isolateDir(filePath string, logFn func(string, ...interface{})) (string, error) {
 	srcDir := filepath.Dir(filePath)
 	hash := sha256Hex(srcDir)[:12]
-	dstDir := filepath.Join(os.TempDir(), "MikuMikuAR", "serve", hash)
+	serveRoot, err := serveRootDir()
+	if err != nil {
+		if logFn != nil {
+			logFn("isolateDir: serve root unavailable (%v), falling back to source dir", err)
+		}
+		return srcDir, err
+	}
+	dstDir := filepath.Join(serveRoot, hash)
 
 	// Remove previous stale copy
 	os.RemoveAll(dstDir)
@@ -27,7 +45,21 @@ func isolateDir(filePath string, logFn func(string, ...interface{})) (string, er
 	baseName := filepath.Base(filePath)
 	if err := copyFile(filePath, filepath.Join(dstDir, baseName)); err != nil {
 		if logFn != nil {
-			logFn("isolateDir: copyFile(%s) failed: %v, falling back to original dir", filePath, err)
+			if isAndroid {
+				// On Android, copy failures are usually permission issues;
+				// probe the source path to aid diagnosis.
+				srcInfo, statErr := os.Stat(filePath)
+				srcDirInfo, dirStatErr := os.Stat(srcDir)
+				logFn("isolateDir: copyFile(%s) failed: %v [android: srcStat=%v srcDirStat=%v srcIsDir=%v srcSize=%d dirIsDir=%v dirSize=%d], falling back to original dir",
+					filePath, err, statErr, dirStatErr,
+					srcInfo != nil && srcInfo.IsDir(),
+					func() int64 { if srcInfo != nil { return srcInfo.Size() }; return 0 }(),
+					srcDirInfo != nil && srcDirInfo.IsDir(),
+					func() int64 { if srcDirInfo != nil { return srcDirInfo.Size() }; return 0 }(),
+				)
+			} else {
+				logFn("isolateDir: copyFile(%s) failed: %v, falling back to original dir", filePath, err)
+			}
 		}
 		return srcDir, err // fall back to original if copy fails
 	}
@@ -36,6 +68,9 @@ func isolateDir(filePath string, logFn func(string, ...interface{})) (string, er
 	// have textures like face.bmp sitting next to the .pmx file)
 	entries, err := os.ReadDir(srcDir)
 	if err != nil {
+		if logFn != nil && isAndroid {
+			logFn("isolateDir: os.ReadDir(%s) failed: %v [android: sibling scan skipped, only main file served]", srcDir, err)
+		}
 		return dstDir, nil
 	}
 	for _, e := range entries {

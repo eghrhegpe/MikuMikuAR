@@ -657,8 +657,6 @@ Events.On('watch:newfile', (ev) => {
     }, 10000);
 });
 
-init().catch(console.error);
-
 // ======== E2E Capture Helper (exposed for Playwright tests, DEV only) ========
 if (import.meta.env.DEV) {
     window.__capture = async (): Promise<string> => {
@@ -668,3 +666,62 @@ if (import.meta.env.DEV) {
         return CreateScreenshotAsync(engine, scene.activeCamera!, 512);
     };
 }
+
+// ======== Android storage permission (MANAGE_EXTERNAL_STORAGE) ========
+// On Android 11+, reading /sdcard/MMD requires "All files access" permission.
+// The native side fires a "storage:permissionGranted" event when the user
+// grants it in Settings. We listen for that and rescan the model library.
+//
+// The native bridge also exposes window.wails.hasStoragePermission() and
+// window.wails.requestStoragePermission() for the JS side to query/prompt.
+
+declare global {
+    interface Window {
+        wails?: {
+            platform?: () => string;
+            hasStoragePermission?: () => boolean;
+            requestStoragePermission?: () => void;
+        };
+    }
+}
+
+function isAndroidPlatform(): boolean {
+    return typeof window !== 'undefined'
+        && typeof window.wails?.platform === 'function'
+        && window.wails.platform() === 'android';
+}
+
+// On first launch on Android, if permission isn't granted, prompt the user.
+// We delay this so the scene/UI is ready before the dialog appears.
+let androidStoragePromptShown = false;
+function checkAndroidStoragePermission(): void {
+    if (!isAndroidPlatform()) return;
+    if (androidStoragePromptShown) return;
+
+    const w = window.wails!;
+    if (typeof w.hasStoragePermission === 'function' && !w.hasStoragePermission()) {
+        androidStoragePromptShown = true;
+        if (typeof w.requestStoragePermission === 'function') {
+            setStatus('⚠️ 需要文件访问权限才能读取 /sdcard/MMD，请在弹窗中授权', true);
+            w.requestStoragePermission();
+        }
+    }
+}
+
+// When the native side reports a fresh grant, rescan the library.
+Events.On('storage:permissionGranted', async () => {
+    setStatus('✅ 文件权限已授予，正在重新扫描模型库...', false);
+    try {
+        await refreshLibrary();
+        setStatus('✅ 模型库已刷新', false);
+    } catch (err) {
+        console.error('refreshLibrary after permission grant:', err);
+        setStatus('⚠️ 模型库刷新失败：' + formatError(err), true);
+    }
+});
+
+// Boot the app, then on Android prompt for storage permission if needed.
+init().then(() => {
+    // Small delay so the main UI is ready before the permission dialog.
+    setTimeout(checkAndroidStoragePermission, 1500);
+}).catch(console.error);
