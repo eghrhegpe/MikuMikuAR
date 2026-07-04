@@ -15,7 +15,7 @@ import {
 } from '../physics/cloth-manager';
 import type { ClothConfig } from '../physics/xpbd-cloth';
 
-/** 布料预设 */
+/** 布料预设 — 物理材质手感 */
 const CLOTH_PRESETS: Record<string, Partial<ClothConfig>> = {
     silk: { compliance: 0.0005, bendCompliance: 0.001, damping: 0.98, gravityScale: 0.8, totalMass: 0.3 },
     cotton: { compliance: 0.001, bendCompliance: 0.005, damping: 0.96, gravityScale: 1.0, totalMass: 0.5 },
@@ -25,6 +25,19 @@ const CLOTH_PRESETS: Record<string, Partial<ClothConfig>> = {
 
 const CLOTH_PRESET_LABELS: Record<string, string> = {
     silk: '丝绸', cotton: '棉布', leather: '皮革', stiff: '硬质',
+};
+
+/** 布料预设 — 常见服装样式（拓扑 + 形状） */
+const CLOTH_STYLE_PRESETS: Record<string, Partial<ClothConfig>> = {
+    shortSkirt: { topology: 'skirt', length: 0.35, slope: 25, segmentsV: 8, innerRadius: 0.14 },
+    longSkirt: { topology: 'skirt', length: 1.1, slope: 8, segmentsV: 16, innerRadius: 0.16 },
+    cape: { topology: 'cape', length: 0.7, slope: 30, segmentsV: 10, innerRadius: 0.12 },
+    tube: { topology: 'tube', length: 0.5, slope: 5, segmentsV: 12, innerRadius: 0.13 },
+    ribbon: { topology: 'rope', length: 1.4, slope: 0, segmentsV: 20, innerRadius: 0.08 },
+};
+
+const CLOTH_STYLE_LABELS: Record<string, string> = {
+    shortSkirt: '短裙', longSkirt: '长裙', cape: '披风', tube: '筒裙', ribbon: '飘带',
 };
 
 export function buildClothParamsLevel(): PopupLevel {
@@ -43,6 +56,35 @@ export function buildClothParamsLevel(): PopupLevel {
                         recreateCloth();
                     }, 100);
                 };
+
+                // 常见样式预设
+                const styleLabel = document.createElement('div');
+                styleLabel.className = 'cs-top';
+                styleLabel.innerHTML = '<span class="cs-label" style="font-size:12px;color:var(--text-muted);">常见样式</span>';
+                styleLabel.style.marginBottom = '4px';
+                c.appendChild(styleLabel);
+
+                const styleGroup = document.createElement('div');
+                styleGroup.className = 'preset-group';
+                styleGroup.style.paddingBottom = '6px';
+                for (const [key] of Object.entries(CLOTH_STYLE_PRESETS)) {
+                    addPresetChip(styleGroup, CLOTH_STYLE_LABELS[key] || key, false, () => {
+                        const preset = CLOTH_STYLE_PRESETS[key];
+                        if (preset) {
+                            setEnvState({ clothConfig: { ...cfg, ...preset } });
+                            recreateCloth();
+                            import('./motion-popup').then(m => m.getMotionMenu()?.reRender());
+                        }
+                    });
+                }
+                c.appendChild(styleGroup);
+
+                // 材质手感预设
+                const feelLabel = document.createElement('div');
+                feelLabel.className = 'cs-top';
+                feelLabel.innerHTML = '<span class="cs-label" style="font-size:12px;color:var(--text-muted);">材质手感</span>';
+                feelLabel.style.marginBottom = '4px';
+                c.appendChild(feelLabel);
 
                 const chipGroup = document.createElement('div');
                 chipGroup.className = 'preset-group';
