@@ -11,11 +11,11 @@ import {
     generateAutoDanceVmd,
     shouldAutoDance,
     shouldIdle,
-} from '../motion/procedural-motion';
-import { BeatDetector } from '../motion/beat-detector';
-import { mmdRuntime, triggerAutoSave, focusedModelId } from '../core/config';
-import { isAudioPlaying } from '../outfit/audio';
-import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from './scene';
+} from '../../motion/procedural-motion';
+import { BeatDetector } from '../../motion/beat-detector';
+import { mmdRuntime, triggerAutoSave, focusedModelId } from '../../core/config';
+import { isAudioPlaying } from '../../outfit/audio';
+import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from '../scene';
 import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
@@ -327,7 +327,7 @@ export function createProcBeatDetector(): BeatDetector {
 }
 
 /** 清除模型上的 vmdData/vmdName（两分支复用）。 */
-function _clearVmdData(inst: import('../core/config').ModelInstance | null | undefined): void {
+function _clearVmdData(inst: import('../../core/config').ModelInstance | null | undefined): void {
     if (inst) {
         inst.vmdData = null;
         inst.vmdName = '';

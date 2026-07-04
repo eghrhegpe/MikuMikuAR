@@ -1,5 +1,5 @@
-// [doc:architecture] Scene Camera Levels — 相机参数弹窗层级
-// 从 scene-menu.ts 拆分
+// [doc:architecture] Camera Levels — 相机参数弹窗层级
+// 从 scene-menu.ts 迁移到 motion-popup.ts
 
 import { setStatus, cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
@@ -19,18 +19,18 @@ import {
     getConcertPaused,
     setConcertPaused,
     type CameraMode,
-} from '../scene/camera';
+} from '../scene/camera/camera';
 import { triggerAutoSave } from '../scene/scene';
 import { SelectVMDMotion } from '../core/wails-bindings';
 import { loadCameraVmdFromPath } from '../scene/scene';
-import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
+import { getMotionMenu } from './motion-popup';
 
 let cameraExpandedMode: CameraMode | null = null;
 
 function refreshCameraLevel(): void {
-    const menu = getSceneMenu();
+    const menu = getMotionMenu();
     if (menu) {
-        reRenderSceneMenu();
+        menu.reRender();
     }
 }
 
@@ -66,7 +66,7 @@ export function buildCameraLevel(): PopupLevel {
                             switchCameraMode(v as CameraMode);
                             cameraExpandedMode = v === 'oneshot' ? null : v as CameraMode;
                         }
-                        reRenderSceneMenu();
+                        refreshCameraLevel();
                     },
                     'lucide:camera'
                 );

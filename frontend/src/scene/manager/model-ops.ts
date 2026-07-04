@@ -10,13 +10,13 @@ import {
     dom,
     setPendingVmd,
     mmdRuntime,
-} from '../core/config';
-import { _catState, _matState, _matEnabled, disposeModelMaterialState } from './scene-material';
-import { refreshWaterRenderList } from './scene-env';
-import { getCameraMode, switchCameraMode } from './camera';
-import { updatePlaybackUI } from './scene-playback';
-import { disposeAudio } from '../outfit/audio';
-import { modelManager } from './scene';
+} from '../../core/config';
+import { _catState, _matState, _matEnabled, disposeModelMaterialState } from './material';
+import { refreshWaterRenderList } from '../env/env';
+import { getCameraMode, switchCameraMode } from '../camera/camera';
+import { updatePlaybackUI } from '../motion/playback';
+import { disposeAudio } from '../../outfit/audio';
+import { modelManager } from '../scene';
 
 export type PhysicsCategory = 'skirt' | 'chest' | 'hair' | 'accessory';
 
@@ -162,7 +162,7 @@ export function resetModelMorphs(id: string): void {
 
 // ======== VPD Pose ========
 
-import type { VPDBoneData, VPDMorphData } from '../motion/vpd-parser';
+import type { VPDBoneData, VPDMorphData } from '../../motion/vpd-parser';
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 /**

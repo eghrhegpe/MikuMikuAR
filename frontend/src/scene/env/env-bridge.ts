@@ -3,23 +3,23 @@
 // 职责: envAutoLink、太阳角、时间流转、环境预设、setEnvState、重力控制
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
-import { SetEnvState } from '../core/wails-bindings';
+import { SetEnvState } from '../../core/wails-bindings';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 
-import { envState, EnvState, triggerAutoSave, mmdRuntime } from '../core/config';
+import { envState, EnvState, triggerAutoSave, mmdRuntime } from '../../core/config';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { deriveLighting, ENV_PRESETS } from './env-lighting';
-import * as impl from './scene-env-impl';
+import * as impl from './env-impl';
 import {
     setLightState,
     getLightState,
     setSkipLightAutoSave,
     hemiLight,
     _updateSunDisc,
-} from './scene-lighting';
-import type { LightState } from './scene-lighting';
-import { scene, setRenderState } from './scene';
+} from '../render/lighting';
+import type { LightState } from '../render/lighting';
+import { scene, setRenderState } from '../scene';
 
 function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
     obj[key] = value;
@@ -334,7 +334,7 @@ export function applyEnvPresetObject(preset: {
         if (t >= 1) {
             setSkipLightAutoSave(false);
             setRenderState({ exposure: preset.exposure, toneMapping: preset.toneMapping });
-            SetEnvState(envState as unknown as import('../core/wails-bindings').EnvState).catch(() => {});
+            SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
             triggerAutoSave();
         } else {
             requestAnimationFrame(animLoop);
@@ -359,7 +359,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         clearTimeout(_envPersistTimer);
     }
     _envPersistTimer = setTimeout(() => {
-        SetEnvState(envState as unknown as import('../core/wails-bindings').EnvState).catch(() => {});
+        SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
     }, 500);
 
     if (!skipAutoSave) {

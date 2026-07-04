@@ -22,9 +22,9 @@ import {
     getCameraVmdName,
     getCameraMode,
     switchCameraMode,
-} from './camera';
-import { loadCameraVmdFromPath } from './scene-vmd';
-import type { CameraState } from './camera';
+} from './camera/camera';
+import { loadCameraVmdFromPath } from './motion/vmd-loader';
+import type { CameraState } from './camera/camera';
 import {
     getAudioName,
     getAudioPath,
@@ -56,11 +56,11 @@ import {
     StageLightState,
     RenderState,
 } from './scene';
-import { removeProp, loadProp, setPropTransform } from './scene-props';
-import { setEnvState, setEnvSunAngle } from './scene-env-bridge';
-import { setGravityStrength, getGravityStrength } from './scene-env-bridge';
-import { regenerateProcMotion, getProcMotionState, setProcMotionState } from './scene-proc-motion';
-import { getLipSyncState, setLipSyncState } from './scene-lipsync';
+import { removeProp, loadProp, setPropTransform } from './env/props';
+import { setEnvState, setEnvSunAngle } from './env/env-bridge';
+import { setGravityStrength, getGravityStrength } from './env/env-bridge';
+import { regenerateProcMotion, getProcMotionState, setProcMotionState } from './motion/proc-motion-bridge';
+import { getLipSyncState, setLipSyncState } from './motion/lipsync-bridge';
 
 import { DEFAULT_PROC_STATE } from '../motion/procedural-motion';
 import { DEFAULT_LIPSYNC_STATE } from '../motion/lipsync';

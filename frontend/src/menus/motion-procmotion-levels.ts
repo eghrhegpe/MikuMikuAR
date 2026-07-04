@@ -18,7 +18,7 @@ import {
     setLipSyncIntensity,
     setProcMotionInterpOverride,
 } from '../scene/scene';
-import { setProcMotionBoneToggle, setProcMotionEyeTrackingEnabled, setProcMotionHeadTrackingEnabled } from '../scene/scene-proc-motion';
+import { setProcMotionBoneToggle, setProcMotionEyeTrackingEnabled, setProcMotionHeadTrackingEnabled } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion/procedural-motion';
 import { getMmdRuntimeType, setMmdRuntimeType } from '../core/config';
 import type { ProcMotionMode } from '../motion/procedural-motion';

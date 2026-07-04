@@ -17,8 +17,7 @@ frontend/src/menus/
 ├── model-preset.ts              # 模型预设保存/加载/库管理
 ├── outfit-ui.ts                 # 服装变体子菜单
 │
-├── scene-menu.ts                # 场景弹窗入口 + 路由器（~440 行）
-│   ├── scene-camera-levels.ts   #   相机模式 + 参数面板
+├── scene-menu.ts                # 场景弹窗入口 + 路由器（~320 行）
 │   └── scene-render-levels.ts   #   后处理/舞台/渲染预设
 │
 ├── env-menu.ts                  # 环境弹窗入口 + 导航（~290 行）
@@ -26,7 +25,8 @@ frontend/src/menus/
 │   ├── env-prop-levels.ts       #   道具系统
 │   └── env-preset-levels.ts     #   环境预设（内置 + 用户保存）
 │
-├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐（~425 行）
+├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐/相机
+│   ├── motion-camera-levels.ts  #   相机模式 + 参数面板
 │   ├── motion-procmotion-levels.ts # 程序化动作 + LipSync
 │   ├── motion-dance-sets.ts     #   舞蹈套装数据 + UI
 │   └── motion-cloth-levels.ts   #   布料参数面板
@@ -174,7 +174,7 @@ type PopupRow = {
 ├── [已加载模型列表]     → 点击进动作绑定子菜单（更换动作/清除/调试）
 ├── 🕐 最近使用          → 子菜单：最近使用动作列表
 ├── 🎵 音乐              → 子菜单：音频加载/偏移/音量
-├── 📷 相机模式          → 子菜单：相机参数（复用 scene-camera-levels）
+├── 📷 相机模式          → 子菜单：相机参数（motion-camera-levels）
 ├── 🌬 程序化动作        → 子菜单：待机呼吸/自动舞蹈/强度/速度（motion-procmotion-levels）
 ├── ⬇ 物理重力          → 滑块：0~2
 ├── 🧵 布料参数          → 子菜单：布料预设/形状/物理/碰撞
@@ -191,7 +191,7 @@ type PopupRow = {
 | `motion-dance-sets.ts` | 舞蹈套装数据 + UI | `DanceSet` 类型, `loadDanceSets`, `buildDanceSetsOverviewLevel`, `buildDanceSetDetailLevel` |
 | `motion-cloth-levels.ts` | 布料参数面板 | `buildClothParamsLevel` |
 
-**跨文件复用**：`motion-popup.ts` 从 `scene-camera-levels` 直接导入相机面板，避免重复实现。
+**跨文件复用**：`motion-popup.ts` 从 `motion-camera-levels` 直接导入相机面板，避免重复实现。
 
 **代码入口**：`showMotionPopup()` → `motionMenu.reset(motionRootLevel)`（`motion-popup.ts`，items-based 根级）
 
@@ -213,7 +213,7 @@ type PopupRow = {
 
 | 子文件 | 职责 | 函数 |
 |--------|------|------|
-| `scene-camera-levels.ts` | 相机模式 + 参数 | `buildCameraLevel`, `buildCameraParamsLevel` |
+| `motion-camera-levels.ts` | 相机模式 + 参数 | `buildCameraLevel`, `buildCameraParamsLevel` |
 | `scene-render-levels.ts` | 后处理/舞台/渲染预设 | `buildPostProcessLevel`, `buildStageLevel`, `buildPresetsLevel`, `buildStageLightLevel` |
 
 > 程序化动作 / LipSync 已迁移到 motion 域（`motion-procmotion-levels.ts`），见动作弹窗章节。
@@ -281,7 +281,7 @@ type PopupRow = {
 
 ### 迁移记录（2026-07）
 
-- `scene-procmotion-levels.ts` → `motion-procmotion-levels.ts`（程序化动作归位 motion 域）
+- `motion-procmotion-levels.ts`（程序化动作归位 motion 域）
 - `scene-menu.ts` 移除环境入口路由（环境功能仅从 `env-menu.ts` 访问）
 - `scene-menu.ts` 移除动作路由（程序化动作/LipSync 仅从 `motion-popup.ts` 访问）
 
@@ -385,7 +385,7 @@ slideRow(c, 'lucide:aperture', '景深', true, () =>
 
 ```typescript
 // motion-popup.ts
-import { buildCameraLevel } from './scene-camera-levels';
+import { buildCameraLevel } from './motion-camera-levels';
 ```
 
 ---

@@ -12,6 +12,8 @@ import {
     addColorSliderRow,
     addModeSlider,
     addCollapsible,
+    sliderRow,
+    toggleRow,
 } from '../core/ui-helpers';
 import {
     triggerAutoSave,
@@ -222,11 +224,11 @@ export function buildPostProcessLevel(): PopupLevel {
                         },
                     },
                     renderContent: (inner) => {
-                        addSliderRow(inner, '强度', state.bloomWeight, 0, 1, 0.05, () => {}, 'lucide:sun',
+                        sliderRow(inner, '强度', state.bloomWeight, 0, 1, 0.05, 'lucide:sun',
                             (v) => { setRenderState({ bloomWeight: v }); triggerAutoSave(); });
-                        addSliderRow(inner, '阈值', state.bloomThreshold, 0, 1, 0.05, () => {}, 'lucide:sliders',
+                        sliderRow(inner, '阈值', state.bloomThreshold, 0, 1, 0.05, 'lucide:sliders',
                             (v) => { setRenderState({ bloomThreshold: v }); triggerAutoSave(); });
-                        addSliderRow(inner, '核大小', state.bloomKernel, 16, 256, 2, () => {}, 'lucide:circle',
+                        sliderRow(inner, '核大小', state.bloomKernel, 16, 256, 2, 'lucide:circle',
                             (v) => { setRenderState({ bloomKernel: v }); triggerAutoSave(); });
                     },
                 });
@@ -252,13 +254,13 @@ export function buildPostProcessLevel(): PopupLevel {
                     triggerAutoSave();
                 }, 'lucide:scan-line');
 
-                addSliderRow(c, '景深', state.dofAperture, 0, 1, 0.05, () => {}, 'lucide:camera',
+                sliderRow(c, '景深', state.dofAperture, 0, 1, 0.05, 'lucide:camera',
                     (v) => { setRenderState({ dofEnabled: v > 0, dofAperture: v }); triggerAutoSave(); });
-                addSliderRow(c, '暗角', state.vignetteDarkness, 0, 1, 0.05, () => {}, 'lucide:circle-dot',
+                sliderRow(c, '暗角', state.vignetteDarkness, 0, 1, 0.05, 'lucide:circle-dot',
                     (v) => { setRenderState({ vignetteEnabled: v > 0, vignetteDarkness: v }); triggerAutoSave(); });
-                addSliderRow(c, '色差', state.chromaticAberrationAmount, 0, 1, 0.05, () => {}, 'lucide:rainbow',
+                sliderRow(c, '色差', state.chromaticAberrationAmount, 0, 1, 0.05, 'lucide:rainbow',
                     (v) => { setRenderState({ chromaticAberrationEnabled: v > 0, chromaticAberrationAmount: v }); triggerAutoSave(); });
-                addSliderRow(c, '颗粒', state.grainIntensity, 0, 1, 0.05, () => {}, 'lucide:grid-3x3',
+                sliderRow(c, '颗粒', state.grainIntensity, 0, 1, 0.05, 'lucide:grid-3x3',
                     (v) => { setRenderState({ grainEnabled: v > 0, grainIntensity: v }); triggerAutoSave(); });
             });
         },

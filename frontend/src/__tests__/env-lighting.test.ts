@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { deriveLighting, calcLuminance, ENV_PRESETS } from '../scene/env-lighting';
+import { deriveLighting, calcLuminance, ENV_PRESETS } from '../scene/env/env-lighting';
 
 describe('calcLuminance', () => {
     it('white is 1.0', () => {

@@ -5,7 +5,7 @@
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
-import { SaveThumbnail } from '../core/wails-bindings';
+import { SaveThumbnail } from '../../core/wails-bindings';
 import {
     dom,
     setStatus,
@@ -18,20 +18,20 @@ import {
     triggerAutoSave,
     formatError,
     type RuntimeModel,
-} from '../core/config';
-import { resolveFileUrl, normPath } from '../core/fileservice';
+} from '../../core/config';
+import { resolveFileUrl, normPath } from '../../core/fileservice';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
-import { loadVMDMotion } from './scene-vmd';
-import { _capture } from './scene-material';
-import { rebuildShadowCasters } from './scene-lighting';
+import { loadVMDMotion } from '../motion/vmd-loader';
+import { _capture } from './material';
+import { rebuildShadowCasters } from '../render/lighting';
 
 // ======== Loader Dependencies ========
 
 let _scene: import('@babylonjs/core/scene').Scene | null = null;
 let _mmdRuntime: IMmdRuntime | null = null;
-let _modelManager: import('./scene-model').ModelManager | null = null;
+let _modelManager: import('./model-manager').ModelManager | null = null;
 let _refreshWaterRenderList: (() => void) | null = null;
 let _tryAutoApplyPreset: ((id: string) => Promise<void>) | null = null;
 let _loadOutfits: ((id: string) => Promise<void>) | null = null;
@@ -40,7 +40,7 @@ let _rebuildOutlineState: (() => void) | null = null;
 export function initLoader(
     scene: import('@babylonjs/core/scene').Scene,
     mmdRuntime: IMmdRuntime,
-    modelManager: import('./scene-model').ModelManager,
+    modelManager: import('./model-manager').ModelManager,
     refreshWaterRenderList: () => void,
     tryAutoApplyPreset: (id: string) => Promise<void>,
     loadOutfits: (id: string) => Promise<void>,

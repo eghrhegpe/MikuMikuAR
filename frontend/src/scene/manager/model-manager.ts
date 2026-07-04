@@ -22,9 +22,9 @@ import {
     focusedModelId as configFocusedId,
     type PhysicsCategory,
     type RuntimeModel,
-} from '../core/config';
-import type { ClothInstance } from '../physics/xpbd-cloth';
-import { disposeCloth } from '../physics/xpbd-cloth';
+} from '../../core/config';
+import type { ClothInstance } from '../../physics/xpbd-cloth';
+import { disposeCloth } from '../../physics/xpbd-cloth';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)

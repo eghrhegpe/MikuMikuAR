@@ -21,6 +21,7 @@ import {
     EnvState,
     formatError,
 } from './config';
+import { registerIconBundle } from './icons-bundle';
 import { GetConfig, ImportZip, ImportLocalFile, Events } from './wails-bindings';
 import {
     initScene,
@@ -38,9 +39,9 @@ import {
 import {
     updatePerformance,
     setPerformanceMode,
-} from '../scene/scene-performance';
+} from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
-import { freeflyInput, getCameraMode } from '../scene/camera';
+import { freeflyInput, getCameraMode } from '../scene/camera/camera';
 import './iconify-registry';
 import 'iconify-icon';
 
@@ -148,12 +149,14 @@ async function toggleOverlay(id: string, showFn: () => void): Promise<void> {
             el.classList.remove('overlay-fade-out', 'visible');
             closeAllOverlays();
             showFn();
+            document.body.classList.remove('ui-hidden');
             el.classList.add('visible');
             // Phase 3: fade-in plays automatically via CSS transition on .visible
         }
     } else {
         closeAllOverlays();
         showFn();
+        document.body.classList.remove('ui-hidden');
         el.classList.remove('overlay-fade-out'); // 防御：确保残留动画类不影响显示
         el.classList.add('visible');
     }
@@ -246,6 +249,7 @@ window.addEventListener('keydown', async (e) => {
         dom.btnPlayPause.click();
     } else if (e.code === 'Escape') {
         closeAllOverlays();
+        document.body.classList.remove('ui-hidden'); // ESC 同时退出无 UI 模式
     } else if (e.code === 'ArrowLeft' && mmdRuntime) {
         const foc = focusedModel();
         const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
@@ -360,10 +364,18 @@ function _toggleOverlays(): void {
         }
         all.forEach((el) => el.classList.remove('visible'));
         setPopupOpen(false);
-    } else if (_lastHiddenOverlay) {
-        // Second canvas click restores the previously hidden overlay
-        toggleOverlay(_lastHiddenOverlay.id, _lastHiddenOverlay.showFn);
-        _lastHiddenOverlay = null;
+        // 无 UI 模式：隐藏菜单后连导航栏一起隐藏
+        document.body.classList.add('ui-hidden');
+    } else {
+        // 无菜单时点击 canvas：如果有上次记住的菜单则恢复，否则切换无 UI 模式
+        if (_lastHiddenOverlay) {
+            // Second canvas click restores the previously hidden overlay
+            toggleOverlay(_lastHiddenOverlay.id, _lastHiddenOverlay.showFn);
+            _lastHiddenOverlay = null;
+        } else {
+            // 没有记住的菜单 → 切换无 UI 模式
+            document.body.classList.toggle('ui-hidden');
+        }
     }
     syncNavAriaExpanded();
 }
@@ -400,6 +412,8 @@ setOnCloseAllOverlays(() => {
 // ======== Init ========
 async function init(): Promise<void> {
     try {
+        // 注册本地图标 bundle，使 iconify 离线可用
+        registerIconBundle();
         buildNavMaps();
         setStatus('正在初始化...', false);
         await initScene();

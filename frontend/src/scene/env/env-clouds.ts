@@ -12,8 +12,8 @@ import {
     DirectionalLight,
     RawTexture3D,
 } from '@babylonjs/core';
-import { EnvState } from '../core/config';
-import { _envSys, getScene, ensureEnvUpdateObserver } from './scene-env-impl';
+import { EnvState } from '../../core/config';
+import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 
 // ======== Cloud System Constants ========
 /** Density scale factor applied to cloudCover (1.2 = 20% boost) */

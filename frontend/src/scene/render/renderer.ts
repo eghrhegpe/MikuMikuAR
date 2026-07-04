@@ -53,7 +53,7 @@ export let pipeline: DefaultRenderingPipeline | undefined;
 let _outlineEnabled = false;
 let _outlineColor: [number, number, number] = [0, 0, 0];
 let _pipelineCamera: Camera | null = null;
-let _modelRegistry: Map<string, import('../core/config').ModelInstance> | null = null;
+let _modelRegistry: Map<string, import('../../core/config').ModelInstance> | null = null;
 let _triggerAutoSave: (() => void) | null = null;
 
 // ======== 数值钳制工具 ========
@@ -74,7 +74,7 @@ function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]
 
 export function initRenderer(
     scene: import('@babylonjs/core/scene').Scene,
-    modelRegistry: Map<string, import('../core/config').ModelInstance>,
+    modelRegistry: Map<string, import('../../core/config').ModelInstance>,
     triggerAutoSave: () => void
 ): void {
     _scene = scene;

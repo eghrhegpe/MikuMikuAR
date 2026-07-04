@@ -18,16 +18,16 @@ import {
     setStatus,
     triggerAutoSave,
     addRecentMotion,
-} from '../core/config';
-import { resolveFileUrl, normPath } from '../core/fileservice';
-import { loadCameraVmd } from './camera';
-import { loadAudioFile } from '../outfit/audio';
+} from '../../core/config';
+import { resolveFileUrl, normPath } from '../../core/fileservice';
+import { loadCameraVmd } from '../camera/camera';
+import { loadAudioFile } from '../../outfit/audio';
 
 // Dynamic re-import of scene.ts to access its module-level state
 // (scene, focusedMmdModel, focusedModel, isProcVmdActive, stopProcMotion)
 // without creating a static circular dependency.
 function getScene() {
-    return import('./scene') as Promise<typeof import('./scene')>;
+    return import('../scene') as Promise<typeof import('../scene')>;
 }
 
 // ======== VMD Loading ========
@@ -168,7 +168,7 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
                 await loadAudioFile(audioPath);
                 setStatus(`✓ VMD + 音频: ${audioName}`, true);
                 // 确保播放栏可见
-                const { updatePlaybackUI } = await import('./scene-playback');
+                const { updatePlaybackUI } = await import('./playback');
                 updatePlaybackUI();
                 return;
             }
@@ -222,8 +222,8 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
         }
 
         // 解析 VPD 并作为静态姿势应用（不生成 VMD 动画）
-        const { decodeVPDData, parseVPDText } = await import('../motion/vpd-parser');
-        const { applyVPDPose } = await import('./scene-model-ops');
+        const { decodeVPDData, parseVPDText } = await import('../../motion/vpd-parser');
+        const { applyVPDPose } = await import('../manager/model-ops');
         const text = decodeVPDData(rawData);
         const pose = parseVPDText(text);
         const id = targetModelId || focusedModelId;

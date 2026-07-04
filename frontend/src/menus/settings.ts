@@ -48,7 +48,7 @@ import {
 import { SlideMenu } from './menu';
 import { selectResourceRoot, selectOverridePath } from './library-core';
 import { slideRow, addToggleRow } from '../core/ui-helpers';
-import { setPerformanceMode, getPerformanceMode } from '../scene/scene-performance';
+import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
 import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
 import { showConfirm, showPrompt } from '../core/dialog';
