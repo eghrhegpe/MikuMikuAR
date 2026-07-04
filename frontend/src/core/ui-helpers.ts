@@ -2,6 +2,15 @@
 // 从 scene-menu.ts 和 model-detail.ts 提取的统一版本
 
 import { createIconifyIcon } from './icons';
+import { getCurrentRenderingMenu } from '../menus/menu';
+
+/** 控件通用选项：支持 bind 自动更新或 onUpdate 手动更新 */
+interface ControlOptions<T = number | boolean | string> {
+    /** 声明取值方式，updateControls() 时自动拉取最新值并更新显示 */
+    bind?: () => T;
+    /** 自定义更新逻辑，优先级高于 bind */
+    onUpdate?: (el: HTMLElement) => void;
+}
 
 export function slideRow(
     container: HTMLElement,
@@ -149,7 +158,8 @@ export function addToggleRow(
     label: string,
     value: boolean,
     onChange: (v: boolean) => void,
-    icon?: string
+    icon?: string,
+    opts?: ControlOptions<boolean>
 ): void {
     const row = document.createElement('div');
     row.className = 'toggle-row';
@@ -207,6 +217,24 @@ export function addToggleRow(
     });
 
     container.appendChild(row);
+
+    // === 自更新支持 ===
+    if (opts) {
+        let cachedValue = value;
+        const update = (): void => {
+            if (opts.onUpdate) {
+                opts.onUpdate(row);
+                return;
+            }
+            if (!opts.bind) return;
+            const newVal = !!opts.bind();
+            if (newVal === cachedValue) return;
+            cachedValue = newVal;
+            toggle.checked = newVal;
+            toggle.setAttribute('aria-checked', String(newVal));
+        };
+        getCurrentRenderingMenu()?.registerControl(update);
+    }
 }
 
 export function addSliderRow(
@@ -218,7 +246,8 @@ export function addSliderRow(
     step: number,
     onChange: (v: number) => void,
     icon?: string,
-    onDragEndCb?: (v: number) => void
+    onDragEndCb?: (v: number) => void,
+    opts?: ControlOptions<number>
 ): void {
     let currentValue = value;
     const range = max - min;
@@ -390,6 +419,24 @@ export function addSliderRow(
     row.appendChild(top);
     row.appendChild(bar);
     container.appendChild(row);
+
+    // === 自更新支持 ===
+    if (opts) {
+        let cachedValue = value;
+        const update = (): void => {
+            if (opts.onUpdate) {
+                opts.onUpdate(row);
+                return;
+            }
+            if (!opts.bind) return;
+            const newVal = Number(opts.bind());
+            if (!Number.isFinite(newVal)) return;
+            if (newVal === cachedValue) return;
+            cachedValue = newVal;
+            updateDisplay(newVal);
+        };
+        getCurrentRenderingMenu()?.registerControl(update);
+    }
 }
 
 export function addModeRow<T extends string | number>(
@@ -543,7 +590,8 @@ export function addModeSlider<T extends string | number>(
     currentValue: T,
     onChange: (v: T) => void,
     icon?: string,
-    onDragEndCb?: (v: T) => void
+    onDragEndCb?: (v: T) => void,
+    opts?: ControlOptions<T>
 ): void {
     const total = options.length;
     if (total === 0) {
@@ -731,6 +779,26 @@ export function addModeSlider<T extends string | number>(
     row.appendChild(top);
     row.appendChild(bar);
     container.appendChild(row);
+
+    // === 自更新支持 ===
+    if (opts) {
+        let cachedValue = currentValue;
+        const update = (): void => {
+            if (opts.onUpdate) {
+                opts.onUpdate(row);
+                return;
+            }
+            if (!opts.bind) return;
+            const newVal = opts.bind() as T;
+            if (newVal === cachedValue) return;
+            cachedValue = newVal;
+            const idx = options.findIndex((o) => o.value === newVal);
+            if (idx >= 0) {
+                updateDisplay(idx);
+            }
+        };
+        getCurrentRenderingMenu()?.registerControl(update);
+    }
 }
 
 /**
@@ -857,6 +925,7 @@ export function addSectionTitle(container: HTMLElement, text: string): void {
  * @param label     按钮文本
  * @param active    是否激活（追加 'active' class）
  * @param onClick   点击回调
+ * @param opts      自更新选项（onUpdate 自定义更新逻辑）
  * @returns 创建的 button 元素（调用方可继续加内联 style 等）
  */
 export function addPresetChip(
@@ -864,12 +933,19 @@ export function addPresetChip(
     label: string,
     active: boolean,
     onClick: () => void,
+    opts?: { onUpdate?: (btn: HTMLButtonElement) => void }
 ): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.className = 'preset-chip' + (active ? ' active' : '');
     btn.textContent = label;
     btn.addEventListener('click', onClick);
     container.appendChild(btn);
+
+    // === 自更新支持 ===
+    if (opts?.onUpdate) {
+        getCurrentRenderingMenu()?.registerControl(() => opts.onUpdate!(btn));
+    }
+
     return btn;
 }
 

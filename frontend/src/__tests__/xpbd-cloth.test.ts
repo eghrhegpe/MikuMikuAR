@@ -10,8 +10,69 @@
  * 5. 布料从重力下落并保持约束
  */
 
-import { describe, it, expect } from 'vitest';
+// ============================================================
+// vi.mock must be hoisted BEFORE imports
+// ============================================================
+
+vi.mock('@babylonjs/core/scene', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { Scene: m.MockScene };
+});
+
+vi.mock('@babylonjs/core/Meshes/mesh', () => {
+    const { MockAbstractMesh } = require('./mocks/babylon-classes.ts');
+    // Extended with updateVerticesData for _updateClothMesh
+    class MockClothMesh {
+        position = { x: 0, y: 0, z: 0 };
+        name = '';
+        material: any = null;
+        scaling = { x: 1, y: 1, z: 1 };
+        rotation = { x: 0, y: 0, z: 0 };
+        visibility = 1;
+        constructor(name = '', _scene?: any) { this.name = name; }
+        getClassName() { return 'Mesh'; }
+        setEnabled() {}
+        getTotalVertices() { return 1000; }
+        getTotalIndices() { return 3000; }
+        dispose() {}
+        updateVerticesData(_kind: string, _data: Float32Array, _b1: boolean, _b2: boolean) {}
+    }
+    return { AbstractMesh: MockAbstractMesh, Mesh: MockClothMesh };
+});
+
+vi.mock('@babylonjs/core/Meshes/mesh.vertexData', () => ({
+    VertexData: class MockVertexData {
+        positions: number[] = [];
+        indices: number[] = [];
+        normals: number[] = [];
+        uvs: number[] = [];
+        applyToMesh(_mesh: any) {}
+        static ComputeNormals(_positions: Float32Array, _indices: Int32Array, normals: Float32Array) {
+            for (let i = 0; i < normals.length; i++) normals[i] = 0;
+        }
+    }
+}));
+
+vi.mock('@babylonjs/core/Buffers/buffer', () => ({
+    VertexBuffer: {
+        PositionKind: 'position',
+        NormalKind: 'normal',
+    }
+}));
+
+vi.mock('@babylonjs/core/Materials/standardMaterial', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { StandardMaterial: m.MockStandardMaterial };
+});
+
+vi.mock('@babylonjs/core/Maths/math.color', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { Color3: m.MockColor3, Color4: m.MockColor4, TmpColors: { Color3: [] } };
+});
+
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { XpbdSolver } from '../physics/xpbd-solver';
+import { createCloth, buildClothUpdateFn, disposeCloth, setDebugUpdateFn, DEFAULT_CLOTH_CONFIG } from '../physics/xpbd-cloth';
 
 // ============================================================
 // 辅助：模拟 createCloth 的约束生成逻辑
@@ -307,5 +368,194 @@ describe('M4: Cloth Topology (xpbd-cloth)', () => {
         expect(solver.constraints.filter((c) => c.type === 'distance').length).toBe(20);
         // 弯曲: 3*4 + 1*4 = 16
         expect(solver.constraints.filter((c) => c.type === 'bend').length).toBe(16);
+    });
+});
+
+// ============================================================
+// 扩展测试：直接调用 xpbd-cloth.ts 的真实函数（需 Babylon mock）
+// ============================================================
+
+describe('xpbd-cloth real function coverage', () => {
+    beforeEach(() => {
+        setDebugUpdateFn(null);
+    });
+
+    it('DEFAULT_CLOTH_CONFIG has expected default values', () => {
+        expect(DEFAULT_CLOTH_CONFIG.anchorBone).toBe('腰');
+        expect(DEFAULT_CLOTH_CONFIG.topology).toBe('skirt');
+        expect(DEFAULT_CLOTH_CONFIG.innerRadius).toBe(0.15);
+        expect(DEFAULT_CLOTH_CONFIG.length).toBe(0.6);
+        expect(DEFAULT_CLOTH_CONFIG.slope).toBe(15);
+        expect(DEFAULT_CLOTH_CONFIG.segmentsH).toBe(24);
+        expect(DEFAULT_CLOTH_CONFIG.segmentsV).toBe(12);
+        expect(DEFAULT_CLOTH_CONFIG.particleRadius).toBe(0.03);
+        expect(DEFAULT_CLOTH_CONFIG.compliance).toBe(0.001);
+        expect(DEFAULT_CLOTH_CONFIG.totalMass).toBe(0.5);
+        expect(DEFAULT_CLOTH_CONFIG.damping).toBe(0.96);
+        expect(DEFAULT_CLOTH_CONFIG.gravityScale).toBe(1.0);
+        expect(DEFAULT_CLOTH_CONFIG.bendCompliance).toBe(0.005);
+    });
+
+    it('createCloth returns valid ClothInstance with correct structure', () => {
+        const sceneStub = {};
+        const instance = createCloth(sceneStub);
+
+        expect(instance).toBeDefined();
+        expect(instance.solver).toBeDefined();
+        expect(instance.config).toBeDefined();
+        expect(instance.mesh).not.toBeNull();
+        expect(instance.enabled).toBe(true);
+
+        // Grid dimensions
+        expect(instance.ringSize).toBe(24);
+        expect(instance.ringCount).toBe(12);
+        expect(instance.particleGrid.length).toBe(288);
+        expect(instance.anchorIndices.length).toBe(24);
+
+        // All anchor particles have invMass = 0
+        for (const idx of instance.anchorIndices) {
+            expect(instance.solver.particles[idx].invMass).toBe(0);
+        }
+
+        // Non-anchor particles have invMass > 0
+        const anchorSet = new Set(instance.anchorIndices);
+        for (let i = 0; i < instance.solver.particles.length; i++) {
+            if (!anchorSet.has(i)) {
+                expect(instance.solver.particles[i].invMass).toBeGreaterThan(0);
+            }
+        }
+
+        // Config merge (all defaults)
+        expect(instance.config.anchorBone).toBe('腰');
+        expect(instance.config.innerRadius).toBe(0.15);
+        expect(instance.config.slope).toBe(15);
+
+        // Mesh data
+        expect(instance.meshIndices).toBeInstanceOf(Int32Array);
+        expect(instance.meshIndices.length).toBeGreaterThan(0);
+        expect(instance._positionCache).toBeInstanceOf(Float32Array);
+        expect(instance._normalCache).toBeInstanceOf(Float32Array);
+        expect(instance._uvCache).toBeInstanceOf(Float32Array);
+
+        // updateFn is set after buildClothUpdateFn, not here
+        expect(instance.updateFn).toBeUndefined();
+    });
+
+    it('createCloth with partial config overrides defaults', () => {
+        const sceneStub = {};
+        const instance = createCloth(sceneStub, {
+            length: 0.8,
+            slope: 30,
+            totalMass: 1.0,
+        });
+
+        expect(instance.config.length).toBe(0.8);
+        expect(instance.config.slope).toBe(30);
+        expect(instance.config.totalMass).toBe(1.0);
+
+        // Unchanged defaults
+        expect(instance.config.anchorBone).toBe('腰');
+        expect(instance.config.innerRadius).toBe(0.15);
+        expect(instance.config.segmentsH).toBe(24);
+        expect(instance.config.segmentsV).toBe(12);
+    });
+
+    it('createCloth clamps small segmentsH and segmentsV to minimum', () => {
+        const sceneStub = {};
+        const instance = createCloth(sceneStub, {
+            segmentsH: 3,
+            segmentsV: 2,
+        });
+
+        expect(instance.ringSize).toBe(8);   // min is 8
+        expect(instance.ringCount).toBe(4);  // min is 4
+        expect(instance.particleGrid.length).toBe(32); // 8 * 4
+    });
+
+    it('createCloth with zero segments falls back to DEFAULT_CLOTH_CONFIG', () => {
+        const sceneStub = {};
+        const instance = createCloth(sceneStub, {
+            segmentsH: 0,
+            segmentsV: 0,
+        });
+
+        expect(instance.ringSize).toBe(24); // DEFAULT
+        expect(instance.ringCount).toBe(12); // DEFAULT
+    });
+
+    it('createCloth with empty anchorBone falls back to default', () => {
+        const sceneStub = {};
+        const instance = createCloth(sceneStub, {
+            anchorBone: '',
+        });
+
+        expect(instance.config.anchorBone).toBe('腰');
+    });
+
+    it('createCloth with extreme values does not throw', () => {
+        const sceneStub = {};
+        expect(() => createCloth(sceneStub, {
+            segmentsH: 64,
+            segmentsV: 32,
+            slope: 90,
+            particleRadius: 0.1,
+            compliance: 0,
+            totalMass: 10,
+            damping: 1,
+            gravityScale: 5,
+        })).not.toThrow();
+    });
+
+    it('setDebugUpdateFn accepts and clears callback', () => {
+        const fn = vi.fn();
+        expect(() => setDebugUpdateFn(fn)).not.toThrow();
+        expect(() => setDebugUpdateFn(null)).not.toThrow();
+        expect(() => setDebugUpdateFn(fn)).not.toThrow();
+    });
+
+    it('buildClothUpdateFn returns callable closure for missing anchor bone', () => {
+        const sceneStub = {};
+        const instance = createCloth(sceneStub, { segmentsH: 8, segmentsV: 4 });
+        const anchorMatrixFn = vi.fn().mockReturnValue(null);
+
+        const updateFn = buildClothUpdateFn(instance, anchorMatrixFn);
+        expect(updateFn).toBeInstanceOf(Function);
+
+        // Calling with delta time should not throw
+        expect(() => updateFn(1 / 60)).not.toThrow();
+    });
+
+    it('buildClothUpdateFn closure does not run when cloth is disabled', () => {
+        const sceneStub = {};
+        const instance = createCloth(sceneStub, { segmentsH: 8, segmentsV: 4 });
+        const anchorMatrixFn = vi.fn().mockReturnValue(null);
+
+        const updateFn = buildClothUpdateFn(instance, anchorMatrixFn);
+
+        expect(anchorMatrixFn).toHaveBeenCalledTimes(0);
+
+        instance.enabled = false;
+        expect(() => updateFn(1 / 60)).not.toThrow();
+
+        // Should not have been called (disabled skips anchor update)
+        expect(anchorMatrixFn).toHaveBeenCalledTimes(0);
+    });
+
+    it('disposeCloth disables cloth and disposes mesh and material', () => {
+        const sceneStub = {};
+        const instance = createCloth(sceneStub, { segmentsH: 8, segmentsV: 4 });
+
+        expect(instance.enabled).toBe(true);
+        expect(instance.mesh).not.toBeNull();
+        expect(instance.mesh!.material).not.toBeNull();
+
+        const meshDispose = vi.spyOn(instance.mesh!, 'dispose');
+        const matDispose = vi.spyOn(instance.mesh!.material!, 'dispose');
+
+        disposeCloth(instance);
+
+        expect(instance.enabled).toBe(false);
+        expect(meshDispose).toHaveBeenCalledOnce();
+        expect(matDispose).toHaveBeenCalledOnce();
     });
 });

@@ -3,7 +3,7 @@
 
 import { envState, focusedModelId, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { addSliderRow, addToggleRow, addCollapsible } from '../core/ui-helpers';
+import { addSliderRow, addToggleRow, addCollapsible, addPresetChip } from '../core/ui-helpers';
 import { setEnvState, setModelWireframe, setModelBoneLinesVis, setModelBoneJointsVis, modelManager } from '../scene/scene';
 import {
     getCollider, getColliderSpecs, setCapsuleRadius, setCapsuleHalfHeight,
@@ -45,10 +45,7 @@ export function buildClothParamsLevel(): PopupLevel {
                 chipGroup.className = 'preset-group';
                 chipGroup.style.paddingBottom = '6px';
                 for (const [key] of Object.entries(CLOTH_PRESETS)) {
-                    const btn = document.createElement('button');
-                    btn.className = 'preset-chip';
-                    btn.textContent = CLOTH_PRESET_LABELS[key] || key;
-                    btn.addEventListener('click', () => {
+                    addPresetChip(chipGroup, CLOTH_PRESET_LABELS[key] || key, false, () => {
                         const preset = CLOTH_PRESETS[key];
                         if (preset) {
                             setEnvState({ clothConfig: { ...cfg, ...preset } });
@@ -56,7 +53,6 @@ export function buildClothParamsLevel(): PopupLevel {
                             import('./motion-popup').then(m => m.getMotionMenu()?.reRender());
                         }
                     });
-                    chipGroup.appendChild(btn);
                 }
                 c.appendChild(chipGroup);
 

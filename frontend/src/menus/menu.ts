@@ -6,6 +6,14 @@ import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-
 const TRANSITION_DURATION = '0.15s';
 const TRANSITION_DURATION_FAST = '0.12s';
 
+/** 渲染上下文栈 — 控件创建函数通过 getCurrentRenderingMenu() 获得当前菜单 */
+const _renderingStack: SlideMenu[] = [];
+
+/** 获取当前正在渲染的 SlideMenu 实例（供 ui-helpers 中的控件函数自动注册） */
+export function getCurrentRenderingMenu(): SlideMenu | null {
+    return _renderingStack[_renderingStack.length - 1] ?? null;
+}
+
 export class SlideMenu {
     private levels: PopupLevel[] = [];
     private container: HTMLElement;
@@ -27,6 +35,8 @@ export class SlideMenu {
     private _swipeStartY = 0;
     private _swipeTouchStartHandler: ((e: TouchEvent) => void) | null = null;
     private _swipeTouchEndHandler: ((e: TouchEvent) => void) | null = null;
+    /** 自更新控件注册表 — 每个元素有 update() 方法，由 updateControls() 统一调用 */
+    private _controls: Array<{ update: () => void }> = [];
 
     onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
     onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
@@ -298,6 +308,18 @@ export class SlideMenu {
         });
     }
 
+    /** 注册一个自更新控件，由 updateControls() 统一驱动刷新 */
+    registerControl(update: () => void): void {
+        this._controls.push({ update });
+    }
+
+    /** 增量刷新所有已注册的自更新控件（不重建 DOM） */
+    updateControls(): void {
+        for (const c of this._controls) {
+            c.update();
+        }
+    }
+
     private _doReRender(opts?: { preserveFocus?: boolean }): void {
         const level = this.currentLevel;
         if (!level) {
@@ -518,6 +540,8 @@ export class SlideMenu {
     private async buildPanel(level: PopupLevel): Promise<void> {
         const seq = ++this._buildSeq;
         this.panel.innerHTML = '';
+        // 每次重建面板，清空旧的控件注册表
+        this._controls = [];
         const list = document.createElement('div');
         list.className = 'slide-list';
 
@@ -531,9 +555,14 @@ export class SlideMenu {
                     list.appendChild(el);
                 }
             }
-            // 如有 renderCustom，追加自定义内容
+            // 如有 renderCustom，追加自定义内容（压入渲染栈，让控件能自动注册）
             if (level.renderCustom) {
-                await level.renderCustom(list);
+                _renderingStack.push(this);
+                try {
+                    await level.renderCustom(list);
+                } finally {
+                    _renderingStack.pop();
+                }
             }
         }
         // 只有最新的 build 才 appendChild，防止并发导致重复
