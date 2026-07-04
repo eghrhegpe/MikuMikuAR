@@ -161,6 +161,13 @@ export function GetDanceSets(): $CancellablePromise<$models.DanceSet[] | null> {
 }
 
 /**
+ * GetDownloadAutoImport returns the current auto-import preference from config.
+ */
+export function GetDownloadAutoImport(): $CancellablePromise<boolean> {
+    return $Call.ByID(1682181459);
+}
+
+/**
  * GetDownloadWatchStatus returns the current watch state (directory being watched or empty string).
  */
 export function GetDownloadWatchStatus(): $CancellablePromise<string> {

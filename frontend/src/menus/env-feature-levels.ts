@@ -138,9 +138,9 @@ export function buildGroundLevel(): PopupLevel {
                 if (s.groundMode === 'texture') {
                     const texturePresets = [
                         { value: '', label: '无' },
-                        { value: 'textures/grass.jpg', label: '草地' },
-                        { value: 'textures/stone.jpg', label: '石板' },
-                        { value: 'textures/sand.jpg', label: '沙滩' },
+                        { value: 'textures/grass.png', label: '草地' },
+                        { value: 'textures/stone.png', label: '石板' },
+                        { value: 'textures/sand.png', label: '沙滩' },
                     ];
                     const chipRow = document.createElement('div');
                     chipRow.className = 'preset-group';

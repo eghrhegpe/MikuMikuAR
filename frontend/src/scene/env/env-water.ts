@@ -10,6 +10,8 @@ import {
     Observer,
     DirectionalLight,
     DefaultRenderingPipeline,
+    Effect,
+    PostProcess,
 } from '@babylonjs/core';
 import { EnvState, envState } from '../../core/config';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
@@ -44,6 +46,43 @@ interface RippleSource {
 }
 let _ripples: RippleSource[] = [];
 let _rippleDirty = true;
+
+// ======== 水下 Tint 后处理（自定义 PostProcess，替代不存在的 tintColor/tintAmount）========
+Effect.ShadersStore['underwaterTintFragmentShader'] = [
+    'precision highp float;',
+    'varying vec2 vUV;',
+    'uniform sampler2D textureSampler;',
+    'uniform vec3 tintColor;',
+    'uniform float tintAmount;',
+    'void main() {',
+    '    vec4 color = texture2D(textureSampler, vUV);',
+    '    vec3 mixed = mix(color.rgb, tintColor, tintAmount);',
+    '    gl_FragColor = vec4(mixed, color.a);',
+    '}',
+].join('\n');
+
+let _tintPostProcess: PostProcess | null = null;
+
+function ensureTintPostProcess(camera: any): void {
+    if (_tintPostProcess) return;
+    _tintPostProcess = new PostProcess(
+        'underwaterTint',
+        'underwaterTint',
+        ['tintColor', 'tintAmount'],
+        null,
+        1.0,
+        camera,
+        Constants.TEXTURE_BILINEAR_SAMPLINGMODE
+    );
+    (_tintPostProcess as any).disable();
+}
+
+function disposeTintPostProcess(): void {
+    if (_tintPostProcess) {
+        _tintPostProcess.dispose();
+        _tintPostProcess = null;
+    }
+}
 
 export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, maxLife = 3): void {
     let idx = -1;
@@ -598,6 +637,7 @@ export function disposeWater(): void {
     _underwaterSavedFog = null;
     _underwaterTransitionProgress = 0;
     _underwaterTarget = false;
+    disposeTintPostProcess();
 }
 
 /**
@@ -673,17 +713,26 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
             envState.underwaterFogColor[2]
         );
         scene.fogDensity = envState.underwaterFogDensity * t * envState.underwaterFogMultiplier;
-        if ((pipeline as any).imageProcessing) {
-            const ip = (pipeline as any).imageProcessing;
+
+        // 自定义 Tint PostProcess（替代不存在的 tintColor/tintAmount）
+        if (scene.activeCamera) {
+            ensureTintPostProcess(scene.activeCamera);
+        }
+        if (_tintPostProcess) {
+            (_tintPostProcess as any).enable();
             const wc = envState.waterColor;
-            ip.tintColor = new Color3(wc[0] * 0.7, wc[1] * 0.7, wc[2] * 0.7);
-            ip.tintAmount = t * envState.underwaterToneIntensity * (1 - envState.waterTransparency * 0.5);
+            _tintPostProcess.onApply = (effect) => {
+                effect.setFloat3('tintColor', wc[0] * 0.7, wc[1] * 0.7, wc[2] * 0.7);
+                effect.setFloat(
+                    'tintAmount',
+                    t * envState.underwaterToneIntensity * (1 - envState.waterTransparency * 0.5)
+                );
+            };
         }
     } else if (!_underwaterActive) {
         pipeline.chromaticAberrationEnabled = false;
-        const ip: any = (pipeline as any).imageProcessing;
-        if (ip) {
-            ip.tintAmount = 0;
+        if (_tintPostProcess) {
+            (_tintPostProcess as any).disable();
         }
     }
 }
@@ -699,9 +748,8 @@ export function resetUnderwaterState(scene: Scene, pipeline: DefaultRenderingPip
     _underwaterTransitionProgress = 0;
     _underwaterTarget = false;
     pipeline.chromaticAberrationEnabled = false;
-    const ip: any = (pipeline as any).imageProcessing;
-    if (ip) {
-        ip.tintAmount = 0;
+    if (_tintPostProcess) {
+        (_tintPostProcess as any).disable();
     }
 }
 

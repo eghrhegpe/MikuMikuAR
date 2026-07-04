@@ -273,15 +273,15 @@ input, textarea, [contenteditable] {
 /* ===== 状态栏 + 加载 ===== */
 #statusBar {
     position: absolute;
-    bottom: 16px;
+    top: 16px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 20px;
     color: rgba(255, 255, 255, 0.4);
-    /* Safe area: 底部手势条内缩 */
-    padding-bottom: env(safe-area-inset-bottom);
+    /* Safe area: 顶部刘海/状态栏内缩 */
+    padding-top: env(safe-area-inset-top);
     font-size: var(--font-time);
     background: rgba(0, 0, 0, 0.25);
     padding: 4px 14px;
@@ -343,7 +343,7 @@ input, textarea, [contenteditable] {
 /* ===== 播放控制 ===== */
 #playbackBar {
     position: absolute;
-    bottom: 56px;
+    bottom: 0;
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
@@ -354,8 +354,9 @@ input, textarea, [contenteditable] {
     background: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(8px);
     border: 1px solid var(--divider);
-    border-radius: 20px;
+    border-radius: 20px 20px 0 0;
     padding: 4px 16px 4px 8px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
 }
 .playback-btn {
     background: none;
@@ -980,7 +981,7 @@ input, textarea, [contenteditable] {
 /* ======== Import Toast ======== */
 .toast {
     position: fixed;
-    bottom: 64px;
+    top: 64px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -999,7 +1000,7 @@ input, textarea, [contenteditable] {
 }
 .toast.hidden {
     opacity: 0;
-    transform: translateX(-50%) translateY(10px);
+    transform: translateX(-50%) translateY(-10px);
     pointer-events: none;
 }
 .toast.visible {

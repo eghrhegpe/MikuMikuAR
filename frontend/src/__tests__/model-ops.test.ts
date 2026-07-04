@@ -130,6 +130,7 @@ import {
     setModelRegistry,
     setIsPlaying,
     setMmdRuntime,
+    setFocusedModelId,
 } from '../core/config';
 
 import * as cameraModule from '../scene/camera/camera';
@@ -537,5 +538,12 @@ describe('removeFocusedModel', () => {
     it('is safe to call (API contract — delegates to removeModel when model focused)', () => {
         removeFocusedModel();
         expect(mockModelManager.remove).not.toHaveBeenCalled();
+    });
+
+    it('calls removeModel and clears pendingVmd when a model is focused', () => {
+        modelRegistry.set('m1', makeInst({ id: 'm1' }));
+        setFocusedModelId('m1');
+        removeFocusedModel();
+        expect(mockModelManager.remove).toHaveBeenCalledWith('m1');
     });
 });

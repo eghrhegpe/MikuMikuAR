@@ -173,6 +173,15 @@ func (a *App) SetDownloadAutoImport(auto bool) error {
 	}, false)
 }
 
+// GetDownloadAutoImport returns the current auto-import preference from config.
+func (a *App) GetDownloadAutoImport() bool {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil {
+		return false
+	}
+	return cfg.DownloadAutoImport
+}
+
 // GetDownloadWatchStatus returns the current watch state (directory being watched or empty string).
 func (a *App) GetDownloadWatchStatus() string {
 	a.watchMu.Lock()

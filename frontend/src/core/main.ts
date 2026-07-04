@@ -478,6 +478,7 @@ async function init(): Promise<void> {
         });
         dom.btnSettings.addEventListener('click', async () => {
             const m = await import('../menus/settings');
+            await m.preloadAutoImportState();
             toggleOverlay('sceneOverlay', m.showSettings);
         });
         console.info('MikuMikuAR initialized');

@@ -77,6 +77,31 @@ Bone0:左肩
         const result = parseVPDText(text);
         expect(result.morphs).toHaveLength(0);
     });
+
+    it('parses modelName from model "..." header line', () => {
+        const text = `Vocaloid Pose Data file
+model "TestModel"
+{
+Bone0:左肩
+    -0.051100 0.000000 0.000000
+    0.000000 0.069756 0.000000 0.997564
+}`;
+        const result = parseVPDText(text);
+        expect(result.modelName).toBe('TestModel');
+    });
+
+    it('skips unrecognized lines gracefully (fallthrough i++ path)', () => {
+        const text = `Vocaloid Pose Data file
+{
+Bone0:左肩
+    -0.051100 0.000000 0.000000
+    0.000000 0.069756 0.000000 0.997564
+some_unrecognized_line_here
+}`;
+        const result = parseVPDText(text);
+        expect(result.bones).toHaveLength(1);
+        expect(result.morphs).toHaveLength(0);
+    });
 });
 
 // ======== decodeVPDData (encoding detection) ========
