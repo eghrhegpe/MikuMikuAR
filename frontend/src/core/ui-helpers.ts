@@ -838,6 +838,17 @@ export function addCollapsible(
     }
 }
 
+/**
+ * 区块标题（section-title），用于 cardContainer 内的视觉分组。
+ * 11px 白色文字，底部 border，和设计规范一致。
+ */
+export function addSectionTitle(container: HTMLElement, text: string): void {
+    const title = document.createElement('div');
+    title.className = 'section-title';
+    title.textContent = text;
+    container.appendChild(title);
+}
+
 // ======== 便捷封装 — 新代码推荐使用 ========
 
 /**

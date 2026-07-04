@@ -4,7 +4,7 @@
 import { envState, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { addSliderRow } from '../core/ui-helpers';
+import { addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { showPrompt } from '../core/dialog';
 import {
     setEnvState,
@@ -44,11 +44,7 @@ export function snapshotCurrentEnvPreset(label: string): EnvPreset {
 export function renderUserEnvPresets(container: HTMLElement): void {
     const wrapper = document.createElement('div');
     wrapper.style.paddingTop = '4px';
-
-    const title = document.createElement('div');
-    title.className = 'section-title';
-    title.textContent = '我的预设';
-    wrapper.appendChild(title);
+    addSectionTitle(wrapper, '我的预设');
 
     const listHost = document.createElement('div');
     listHost.style.paddingBottom = '6px';
