@@ -1,6 +1,7 @@
 # Build artifacts
 build/bin
 frontend/dist
+/dist/
 frontend/node_modules
 
 # E2E
