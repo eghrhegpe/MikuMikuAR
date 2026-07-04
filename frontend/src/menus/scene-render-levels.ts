@@ -13,7 +13,6 @@ import {
     addModeSlider,
     addCollapsible,
     sliderRow,
-    toggleRow,
 } from '../core/ui-helpers';
 import {
     triggerAutoSave,
@@ -28,7 +27,6 @@ import {
 import {
     GetRenderPresets,
     SaveRenderPreset,
-    DeleteRenderPreset,
     SelectSceneSaveFile,
     SaveSceneFile,
     GetPresetScenes,
@@ -72,6 +70,26 @@ export function buildPresetScenesLevel(): PopupLevel {
             _presetScenes = (await GetPresetScenes()) || [];
             container.innerHTML = '';
             const scenes = _presetScenes;
+
+            // 快速渲染滤镜芯片组
+            cardContainer(container, (c) => {
+                const chipGroup = document.createElement('div');
+                chipGroup.className = 'preset-group';
+                chipGroup.style.paddingBottom = '6px';
+                for (const [key, label] of Object.entries(PRESET_LABELS)) {
+                    const btn = document.createElement('button');
+                    btn.className = 'preset-chip';
+                    btn.textContent = label;
+                    btn.addEventListener('click', () => {
+                        const preset = getBuiltinPreset(key);
+                        if (preset) transitionRenderState(preset, 2000);
+                        setStatus(`✓ 滤镜: ${label}`, true);
+                    });
+                    chipGroup.appendChild(btn);
+                }
+                c.appendChild(chipGroup);
+            });
+
             if (scenes.length === 0) {
                 const empty = document.createElement('div');
                 empty.style.cssText = 'font-size:12px;color:#fff;text-align:center;padding:24px;';
@@ -122,33 +140,6 @@ export function buildPresetScenesLevel(): PopupLevel {
                     });
                     c.appendChild(row);
                 }
-
-                // 保存场景按钮
-                const saveRow = document.createElement('div');
-                saveRow.className = 'slide-item';
-                const saveIcon = document.createElement('span');
-                saveIcon.className = 'slide-icon';
-                const saveIconEl = createIconifyIcon('lucide:save');
-                if (saveIconEl) saveIcon.appendChild(saveIconEl);
-                saveRow.appendChild(saveIcon);
-                const saveLabel = document.createElement('span');
-                saveLabel.className = 'slide-label';
-                saveLabel.textContent = '保存场景';
-                saveRow.appendChild(saveLabel);
-                saveRow.addEventListener('click', () => {
-                    SelectSceneSaveFile().then((path) => {
-                        if (!path) return;
-                        const json = JSON.stringify(serializeScene(), null, 2);
-                        SaveSceneFile(json, path)
-                            .then(() => SaveScenePreset(json))
-                            .then(() => {
-                                setStatus('✓ 场景已保存', true);
-                                reRenderSceneMenu();
-                            })
-                            .catch(() => setStatus('✗ 保存失败', false));
-                    });
-                });
-                c.appendChild(saveRow);
             });
         },
     };
@@ -357,44 +348,80 @@ export function buildStageLevel(): PopupLevel {
 
 // ======== Render Presets ========
 
+//
+// 内置渲染预设 — 6 套，各有独立色调映射模式 + 匹配曝光/后处理
+//
+// 设计原则：
+//   - 曝光 ≥1.5 将亮度推入 HDR 域，使不同 tone mapping 曲线的高光压缩差异可见
+//   - 开启 Bloom → 产生 HDR 高亮像素 → tone mapping 的高光滚降特性充分展示
+//   - 每套预设锁定一个色调映射模式，配合互补后处理形成鲜明视觉风格
+//
 const builtinPresets: Record<string, Partial<RenderState>> = {
+    // --- reference：Standard 色调映射，保守曝光作为基准 ---
     standard: {
         bloomEnabled: true, bloomWeight: 0.3, bloomThreshold: 0.6, bloomKernel: 64,
-        fxaaEnabled: true, outlineEnabled: false, toneMapping: 1, exposure: 1, contrast: 1.1,
+        fxaaEnabled: true, outlineEnabled: false,
+        toneMapping: 0, exposure: 1.0, contrast: 1.0,
         fov: 0.8, bgColor: [0.12, 0.12, 0.16],
     },
+    // --- ACES 电影曲线 — 自然高光滚降，暗角增加电影感 ---
+    cinematic: {
+        bloomEnabled: true, bloomWeight: 0.4, bloomThreshold: 0.5, bloomKernel: 64,
+        fxaaEnabled: true, outlineEnabled: false,
+        toneMapping: 1, exposure: 2.0, contrast: 1.2,
+        fov: 0.75, vignetteEnabled: true, vignetteDarkness: 0.35,
+        bgColor: [0.08, 0.08, 0.12],
+    },
+    // --- Reinhard — 高饱和·高对比·边缘线框 = 卡通风格 ---
     cartoon: {
         bloomEnabled: true, bloomWeight: 0.5, bloomThreshold: 0.3, bloomKernel: 128,
         fxaaEnabled: true, outlineEnabled: true, outlineColor: [0, 0, 0],
-        toneMapping: 2, exposure: 1.1, contrast: 1.4, fov: 0.8, bgColor: [0.18, 0.18, 0.22],
+        toneMapping: 2, exposure: 2.0, contrast: 1.5,
+        fov: 0.8, bgColor: [0.18, 0.18, 0.22],
     },
+    // --- ACES + 景深/暗角 — 浅景深电影写实 ---
     realistic: {
         bloomEnabled: true, bloomWeight: 0.25, bloomThreshold: 0.7, bloomKernel: 64,
-        fxaaEnabled: true, outlineEnabled: false, toneMapping: 1, exposure: 1.1, contrast: 1.2,
-        fov: 0.7, vignetteEnabled: true, vignetteDarkness: 0.4, dofEnabled: true, dofAperture: 0.15,
-        bgColor: [0.08, 0.08, 0.12],
+        fxaaEnabled: true, outlineEnabled: false,
+        toneMapping: 1, exposure: 1.5, contrast: 1.15,
+        fov: 0.7, vignetteEnabled: true, vignetteDarkness: 0.5,
+        dofEnabled: true, dofAperture: 0.15,
+        bgColor: [0.06, 0.06, 0.1],
     },
+    // --- Cineon 胶片曲线 + 暖色调背景 ---
     warm: {
         bloomEnabled: true, bloomWeight: 0.45, bloomThreshold: 0.4, bloomKernel: 96,
-        fxaaEnabled: true, outlineEnabled: false, toneMapping: 2, exposure: 1.2, contrast: 1.1,
-        fov: 0.8, bgColor: [0.2, 0.15, 0.1],
+        fxaaEnabled: true, outlineEnabled: false,
+        toneMapping: 3, exposure: 2.2, contrast: 1.3,
+        fov: 0.8, bgColor: [0.3, 0.2, 0.1],
     },
+    // --- Neutral + 极端后处理 — 赛博朋克风格 ---
     cyberpunk: {
         bloomEnabled: true, bloomWeight: 0.7, bloomThreshold: 0.2, bloomKernel: 192,
         fxaaEnabled: true, outlineEnabled: true, outlineColor: [1, 0, 1],
-        toneMapping: 4, exposure: 1.4, contrast: 1.6, fov: 0.85,
-        vignetteEnabled: true, vignetteDarkness: 0.6,
-        chromaticAberrationEnabled: true, chromaticAberrationAmount: 0.25,
-        grainEnabled: true, grainIntensity: 0.3,
+        toneMapping: 4, exposure: 3.0, contrast: 1.6,
+        fov: 0.85, vignetteEnabled: true, vignetteDarkness: 0.6,
+        chromaticAberrationEnabled: true, chromaticAberrationAmount: 0.3,
+        grainEnabled: true, grainIntensity: 0.4,
         bgColor: [0.02, 0.02, 0.06],
     },
 };
 
 const PRESET_LABELS: Record<string, string> = {
-    standard: '标准', cartoon: '卡通', realistic: '写实', warm: '暖光', cyberpunk: '赛博朋克',
+    standard: '标准', cinematic: '电影', cartoon: '卡通',
+    realistic: '写实', warm: '暖光', cyberpunk: '赛博朋克',
 };
 
-export function getBuiltinPreset(name: string): Partial<RenderState> | undefined {
+const PRESET_DESCS: Record<string, string> = {
+    standard: 'Standard 色调映射 · 基准参考',
+    cinematic: 'ACES 色调映射 · 电影胶片曲线 · 自然高光滚降',
+    cartoon: 'Reinhard 色调映射 · 高饱和高对比 · 黑色线框',
+    realistic: 'ACES 色调映射 · 浅景深 · 电影暗角',
+    warm: 'Cineon 色调映射 · 暖色背景 · 胶片感',
+    cyberpunk: 'Neutral 色调映射 · 高光溢出 · 极端后处理',
+};
+
+function getBuiltinPreset(name: string): Partial<RenderState> | undefined {
     return builtinPresets[name];
 }
 
@@ -413,6 +440,9 @@ export function buildPresetsLevel(): PopupLevel {
             chipGroup.className = 'preset-group';
             chipGroup.style.paddingBottom = '6px';
             for (const [key] of Object.entries(builtinPresets)) {
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;';
+
                 const btn = document.createElement('button');
                 btn.className = 'preset-chip';
                 btn.textContent = PRESET_LABELS[key] || key;
@@ -421,7 +451,14 @@ export function buildPresetsLevel(): PopupLevel {
                     if (preset) transitionRenderState(preset, 2000);
                     setStatus(`✓ 预设: ${PRESET_LABELS[key]}`, true);
                 });
-                chipGroup.appendChild(btn);
+                wrapper.appendChild(btn);
+
+                const desc = document.createElement('span');
+                desc.textContent = PRESET_DESCS[key] || '';
+                desc.style.cssText = 'font-size:9px;color:var(--text-dim);opacity:0.7;white-space:nowrap;line-height:1.2;';
+                wrapper.appendChild(desc);
+
+                chipGroup.appendChild(wrapper);
             }
             container.appendChild(chipGroup);
             const saveRow = document.createElement('div');
