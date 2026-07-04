@@ -375,6 +375,21 @@ type EnvState struct {
 	WaterSize         float64    `json:"waterSize"`
 	WaterAnimSpeed    float64    `json:"waterAnimSpeed"`
 
+	// 水面高级着色器参数（持久化，避免材质重建时重置）
+	FresnelBias           float64    `json:"fresnelBias"`
+	FresnelPower          float64    `json:"fresnelPower"`
+	DiffuseStrength       float64    `json:"diffuseStrength"`
+	AmbientStrength       float64    `json:"ambientStrength"`
+	FoamTransitionRange   float64    `json:"foamTransitionRange"`
+	RippleNormalStrength  float64    `json:"rippleNormalStrength"`
+	RippleGlintStrength   float64    `json:"rippleGlintStrength"`
+	CausticColor1         [3]float64 `json:"causticColor1"`
+	CausticColor2         [3]float64 `json:"causticColor2"`
+	CausticScrollX        float64    `json:"causticScrollX"`
+	CausticScrollY        float64    `json:"causticScrollY"`
+	FresnelAlphaInfluence float64    `json:"fresnelAlphaInfluence"`
+	FoamAlphaInfluence    float64    `json:"foamAlphaInfluence"`
+
 	CloudsEnabled bool    `json:"cloudsEnabled"`
 	CloudCover    float64 `json:"cloudCover"`
 	CloudScale    float64 `json:"cloudScale"`
@@ -417,17 +432,15 @@ var userConfigDir = os.UserConfigDir
 // ensureDir returns the subdirectory under the user's config or cache dir,
 // creating it (and parents) if it doesn't exist.
 //
-//	useCache=true  → os.UserCacheDir()/MikuMikuAR/subDir
-//	useCache=false → os.UserConfigDir()/MikuMikuAR/subDir
+//	useCache=true  → platformPathMgr.CacheRoot()/MikuMikuAR/subDir
+//	useCache=false → platformPathMgr.AppDataRoot()/MikuMikuAR/subDir
 func ensureDir(subDir string, useCache bool) (string, error) {
 	var base string
 	var err error
-	if isAndroid {
-		base = "/data/data/com.mikumikuar.app/files"
-	} else if useCache {
-		base, err = os.UserCacheDir()
+	if useCache {
+		base, err = platformPathMgr.CacheRoot()
 	} else {
-		base, err = userConfigDir()
+		base, err = platformPathMgr.AppDataRoot()
 	}
 	if err != nil {
 		return "", err
@@ -510,19 +523,7 @@ func (a *App) AddRecentModel(libraryRef string) error {
 
 // DefaultResourceRoot returns the default resource root path for the current platform.
 func DefaultResourceRoot() string {
-	switch stdruntime.GOOS {
-	case "android":
-		if sd := os.Getenv("EXTERNAL_STORAGE"); sd != "" {
-			return filepath.Join(sd, "MMD")
-		}
-		return "/sdcard/MMD"
-	case "darwin":
-		home, _ := os.UserHomeDir()
-		return filepath.Join(home, "Documents", "MMD")
-	default:
-		home, _ := os.UserHomeDir()
-		return filepath.Join(home, "MMD")
-	}
+	return platformPathMgr.ResourceRoot()
 }
 
 // ensureResourceDirs creates the default subdirectories under ResourceRoot if they don't exist.

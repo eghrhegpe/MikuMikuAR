@@ -83,18 +83,8 @@ func copyDir(src, dst string, logFn func(string, ...interface{})) error {
 		if d.IsDir() {
 			return os.MkdirAll(target, 0755)
 		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			if logFn != nil {
-				logFn("copyDir: read error %s: %v", path, err)
-			}
-			return nil
-		}
-		if err := os.WriteFile(target, data, 0644); err != nil {
-			if logFn != nil {
-				logFn("copyDir: write error %s -> %s: %v", path, target, err)
-			}
-			return nil
+		if err := copyFile(path, target); err != nil && logFn != nil {
+			logFn("copyDir: copy error %s -> %s: %v", path, target, err)
 		}
 		return nil
 	})
@@ -118,7 +108,10 @@ func (a *App) isSafePath(filePath string) bool {
 // trustedRoots returns all directory paths that are safe to serve from.
 func (a *App) trustedRoots() []string {
 	cfg, _ := a.GetConfig()
-	roots := make([]string, 0, 1+len(cfg.ExternalPaths))
+	roots := make([]string, 0, 2+len(cfg.ExternalPaths))
+	if cfg.ResourceRoot != "" {
+		roots = append(roots, cfg.ResourceRoot)
+	}
 	if cfg.LibraryRoot != "" {
 		roots = append(roots, cfg.LibraryRoot)
 	}

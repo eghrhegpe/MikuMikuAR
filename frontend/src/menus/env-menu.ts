@@ -10,6 +10,7 @@ import {
     cardContainer,
     dom,
     closeAllOverlays,
+    getMenuWrapper,
 } from '../core/config';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
@@ -92,6 +93,17 @@ export function buildEnvLightingLevel(): PopupLevel {
                     setEnvState({ sunAngle: v });
                 }, 'lucide:sun');
             });
+        },
+        reRenderCustom: (container) => {
+            // 只更新太阳角度滑块的值
+            const angleSlider = container.querySelector('.cs-row:last-child .cs-value');
+            if (angleSlider) angleSlider.textContent = String(Math.round(getEnvSunAngle()));
+            const angleFill = container.querySelector('.cs-row:last-child .cs-fill') as HTMLElement | null;
+            if (angleFill) {
+                const v = getEnvSunAngle();
+                const pct = Math.max(0, Math.min(100, ((v + 15) / 105) * 100));
+                angleFill.style.width = pct + '%';
+            }
         },
     };
 }
@@ -182,6 +194,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                         ], getLightState().shadowType, (v) => setLightingState({ shadowType: v }), 'lucide:cloud');
                         const shadowQualityRow = document.createElement('div');
                         shadowQualityRow.className = 'preset-group';
+                        shadowQualityRow.dataset.shadowChips = '1';
                         for (const sq of [{ label: '低', value: 512 }, { label: '中', value: 1024 }, { label: '高', value: 2048 }, { label: '超高', value: 4096 }]) {
                             const btn = document.createElement('button');
                             btn.textContent = sq.label;
@@ -196,6 +209,35 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     },
                 });
             });
+        },
+        reRenderCustom: (container) => {
+            // 1. 更新天空模式 mode slider 的显示
+            const s = envState;
+            const modeOptions: Record<string, string> = { procedural: '程序化', color: '纯色', texture: '贴图' };
+            const modeSlider = container.querySelector('.card-container .cs-row:first-child');
+            if (modeSlider) {
+                const valEl = modeSlider.querySelector('.cs-value');
+                if (valEl) valEl.textContent = modeOptions[s.skyMode] || s.skyMode;
+                // mode slider 有 thumb
+                const idx = ['procedural', 'color', 'texture'].indexOf(s.skyMode);
+                if (idx >= 0) {
+                    const fill = modeSlider.querySelector('.cs-fill') as HTMLElement | null;
+                    const thumb = modeSlider.querySelector('.cs-thumb') as HTMLElement | null;
+                    const pct = idx > 0 ? (idx / 2) * 100 : 0;
+                    if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+                    if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
+                }
+            }
+
+            // 2. 更新阴影分辨率芯片的 active 状态
+            const shadowChips = container.querySelector<HTMLElement>('[data-shadow-chips]');
+            if (shadowChips) {
+                const currentRes = getLightState().shadowResolution;
+                Array.from(shadowChips.children).forEach((btn) => {
+                    const value = parseInt((btn as HTMLElement).textContent || '0');
+                    (btn as HTMLElement).classList.toggle('active', value === currentRes);
+                });
+            }
         },
     };
 }
@@ -239,6 +281,8 @@ export function buildEnvLevel(): PopupLevel {
                 slideRow(c, 'lucide:bookmark', '系统预设', true, () => envMenu.push(buildPresetLevel()));
             });
         },
+        // reRender 仅由预设芯片触发，UI 无视觉变化，跳过全量重建
+        reRenderCustom: () => {},
     };
 }
 
@@ -264,6 +308,28 @@ export function buildParticleLevel(): PopupLevel {
                 addSliderRow(c, '速度', s.particleSpeed, 0.1, 5, 0.1, (v) => setEnvState({ particleSpeed: v }), 'lucide:gauge');
             });
         },
+        reRenderCustom: (container) => {
+            // 更新粒子类型 mode slider 的显示
+            const s = envState;
+            const options = ['none', 'sakura', 'rain', 'snow', 'fireworks', 'fireflies', 'leaves'];
+            const idx = options.indexOf(s.particleType);
+            if (idx < 0) return;
+            const labels = ['无', '🌸 樱花', '🌧 雨', '❄ 雪', '🎆 烟花', '✨ 萤火虫', '🍂 落叶'];
+            const csRow = container.querySelector('.card-container .cs-row:first-child');
+            if (!csRow) return;
+            const valEl = csRow.querySelector('.cs-value');
+            if (valEl) valEl.textContent = labels[idx];
+            const fill = csRow.querySelector('.cs-fill') as HTMLElement | null;
+            if (fill) {
+                const pct = idx > 0 ? (idx / (options.length - 1)) * 100 : 0;
+                fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+            }
+            const thumb = csRow.querySelector('.cs-thumb') as HTMLElement | null;
+            if (thumb) {
+                const pct = idx > 0 ? (idx / (options.length - 1)) * 100 : 0;
+                thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
+            }
+        },
     };
 }
 
@@ -288,13 +354,18 @@ function envOnFolderEnter(row: PopupRow): PopupLevel | null {
 // ======== Show Env Menu ========
 
 export function showEnvMenu(): void {
-    dom.sceneOverlay.innerHTML = '';
     dom.sceneOverlay.classList.remove('sceneOverlay-model', 'sceneOverlay-motion', 'sceneOverlay-settings');
     dom.sceneOverlay.dataset.popupType = 'env';
 
-    envMenu?.dispose();
+    const wrapper = getMenuWrapper('env-menu');
+    if (envMenu) {
+        envMenu.resetToRoot();
+        envMenu.reRender();
+        return;
+    }
+
     envMenu = new SlideMenu({
-        container: dom.sceneOverlay,
+        container: wrapper,
         onClose: () => closeAllOverlays(),
         onItemClick: () => {},
         onFolderEnter: envOnFolderEnter,

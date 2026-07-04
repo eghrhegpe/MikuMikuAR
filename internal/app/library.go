@@ -16,10 +16,10 @@ import (
 // returns the default storage path as a starting point.
 func (a *App) SelectDir() (string, error) {
 	if isAndroid {
-		// Android: use app's writable data directory (no SAF directory picker yet)
-		base, err := os.UserConfigDir()
+		// Android: 暂返回默认路径，SAF 后续扩展点
+		base, err := platformPathMgr.AppDataRoot()
 		if err != nil {
-			return "/sdcard/MikuMikuAR", nil // fallback
+			return "", err
 		}
 		return filepath.Join(base, "MikuMikuAR"), nil
 	}

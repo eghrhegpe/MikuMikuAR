@@ -177,6 +177,14 @@
 |----|------|------|
 | 1 | 断桥重建 | [vol-9-the-bridge/01-断桥重建.md](vol-9-the-bridge/01-断桥重建.md) |
 
+## 第十卷 · 增量共和
+
+UI 渲染架构革命：从全量重建到增量 patch，议会三路分流，20+ 面板跳过 innerHTML 重置。
+
+| 章 | 标题 | 文件 |
+|----|------|------|
+| 1 | 议会的三路分流 | [vol-10-incremental-republic/01-议会的三路分流.md](vol-10-incremental-republic/01-议会的三路分流.md) |
+
 ---
 
 ## 附录

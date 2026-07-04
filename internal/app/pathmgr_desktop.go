@@ -1,0 +1,32 @@
+//go:build !android
+
+package app
+
+import (
+	"os"
+	"path/filepath"
+	stdruntime "runtime"
+)
+
+type desktopPathMgr struct{}
+
+func newPlatformPathMgr() PathManager { return &desktopPathMgr{} }
+
+func (d *desktopPathMgr) AppDataRoot() (string, error) {
+	return userConfigDir()
+}
+
+func (d *desktopPathMgr) CacheRoot() (string, error) {
+	return os.UserCacheDir()
+}
+
+func (d *desktopPathMgr) ResourceRoot() string {
+	switch stdruntime.GOOS {
+	case "darwin":
+		home, _ := os.UserHomeDir()
+		return filepath.Join(home, "Documents", "MMD")
+	default:
+		home, _ := os.UserHomeDir()
+		return filepath.Join(home, "MMD")
+	}
+}

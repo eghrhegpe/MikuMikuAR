@@ -440,7 +440,24 @@ async function init(): Promise<void> {
 async function restoreEnvState(): Promise<void> {
     const cfg = await GetConfig();
     if (cfg.env) {
-        setEnvState(cfg.env as unknown as Partial<EnvState>);
+        const loaded = cfg.env as unknown as Partial<EnvState>;
+        // 向后兼容：旧配置缺少高级水面参数时补上默认值
+        if (loaded.fresnelBias === undefined || loaded.fresnelBias === 0) {
+            loaded.fresnelBias = 0.02;
+            loaded.fresnelPower = 3.0;
+            loaded.diffuseStrength = 0.15;
+            loaded.ambientStrength = 0.15;
+            loaded.foamTransitionRange = 0.15;
+            loaded.rippleNormalStrength = 0.15;
+            loaded.rippleGlintStrength = 0.25;
+            loaded.causticColor1 = [1.0, 0.9, 0.6];
+            loaded.causticColor2 = [1.0, 1.0, 0.8];
+            loaded.causticScrollX = 0.1;
+            loaded.causticScrollY = 0.15;
+            loaded.fresnelAlphaInfluence = 0.5;
+            loaded.foamAlphaInfluence = 0.2;
+        }
+        setEnvState(loaded as Partial<EnvState>);
     }
 }
 

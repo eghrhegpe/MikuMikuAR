@@ -184,5 +184,7 @@ export function buildClothParamsLevel(): PopupLevel {
                 });
             });
         },
+        // reRender 均为调试 toggle 触发，toggle 自管理状态，跳过全量重建
+        reRenderCustom: () => {},
     };
 }

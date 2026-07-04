@@ -164,6 +164,12 @@ export type PopupRow = {
      *  navigating into the folder (onFolderEnter). Set this to override —
      *  e.g. to focus the model instead of opening its detail submenu. */
     onDetailClick?: () => void;
+    /**
+     * 稳定标识 key，用于增量渲染 row diff。
+     * 不传时由 SlideMenu 按 `${kind}:${target}` 自动推导。
+     * divider 类型不必传。
+     */
+    rowKey?: string;
 };
 
 export type PopupLevel = {
@@ -173,6 +179,13 @@ export type PopupLevel = {
     /** Optional custom render function — overrides items when set.
      *  May be async; SlideMenu will await completion before onAfterRender. */
     renderCustom?: (container: HTMLElement) => void | Promise<void>;
+    /**
+     * 增量重绘回调（可选）。
+     * 当 reRender() 触发且此函数存在时，SlideMenu 不再执行 full buildPanel，
+     * 而是调用此函数让面板自行 patch 有变化的部分。
+     * container 参数是已有 DOM 的 .slide-list 元素。
+     */
+    reRenderCustom?: (container: HTMLElement) => void;
 };
 
 export interface UIState {
@@ -228,6 +241,21 @@ export interface EnvState {
     // ======== 水面泡沫 ========
     foamThreshold: number;
     foamIntensity: number;
+
+    // ======== 水面高级着色器参数（从硬编码提取的可调参数）========
+    fresnelBias: number;          // Fresnel 偏移
+    fresnelPower: number;          // Fresnel 幂次
+    diffuseStrength: number;       // 漫反射强度
+    ambientStrength: number;       // 环境光强度系数
+    foamTransitionRange: number;   // 泡沫过渡范围
+    rippleNormalStrength: number;  // 涟漪法线影响强度
+    rippleGlintStrength: number;   // 涟漪光泽强度
+    causticColor1: [number, number, number]; // 焦散颜色1（亮部）
+    causticColor2: [number, number, number]; // 焦散颜色2（暗部）
+    causticScrollX: number;        // 焦散UV滚动速度X
+    causticScrollY: number;        // 焦散UV滚动速度Y
+    fresnelAlphaInfluence: number; // Fresnel对alpha的影响
+    foamAlphaInfluence: number;    // 泡沫对alpha的影响
 
     // ======== 水下效果 ========
     underwaterFogColor: [number, number, number];
@@ -532,6 +560,21 @@ export const envState: EnvState = {
     foamThreshold: 0.1,
     foamIntensity: 0.5,
 
+    // ======== 水面高级着色器参数（默认值与 scene-env-water.ts 硬编码一致）========
+    fresnelBias: 0.02,
+    fresnelPower: 3.0,
+    diffuseStrength: 0.15,
+    ambientStrength: 0.15,
+    foamTransitionRange: 0.15,
+    rippleNormalStrength: 0.15,
+    rippleGlintStrength: 0.25,
+    causticColor1: [1.0, 0.9, 0.6],
+    causticColor2: [1.0, 1.0, 0.8],
+    causticScrollX: 0.1,
+    causticScrollY: 0.15,
+    fresnelAlphaInfluence: 0.5,
+    foamAlphaInfluence: 0.2,
+
     // ======== 水下效果 ========
     underwaterFogColor: [0.08, 0.2, 0.45],
     underwaterFogDensity: 0.015,
@@ -831,6 +874,50 @@ export function closeAllOverlays(): void {
 let _onCloseAllOverlays: (() => void) | null = null;
 export function setOnCloseAllOverlays(fn: (() => void) | null): void {
     _onCloseAllOverlays = fn;
+}
+
+// ======== Menu Wrapper Management (avoid dispose+new on show) ========
+
+const _menuWrapperRegistry = new Map<string, HTMLElement>();
+
+/**
+ * 获取或创建菜单包装容器。只显示当前激活的包装器，隐藏其他。
+ * 避免每次 show*() 时 dispose + new SlideMenu 导致的 DOM 全量重建。
+ */
+export function getMenuWrapper(menuId: string): HTMLElement {
+    let wrapper = _menuWrapperRegistry.get(menuId);
+    if (!wrapper) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'menu-wrapper';
+        wrapper.dataset.menuId = menuId;
+        dom.sceneOverlay.appendChild(wrapper);
+        _menuWrapperRegistry.set(menuId, wrapper);
+    }
+    // 隐藏所有其他包装器，只显示当前
+    for (const [id, w] of _menuWrapperRegistry) {
+        (w as HTMLElement).style.display = id === menuId ? '' : 'none';
+    }
+    return wrapper;
+}
+
+/**
+ * 销毁并清除指定菜单的包装器（在重建整个 overlay 时调用）。
+ */
+export function disposeMenuWrapper(menuId: string): void {
+    const wrapper = _menuWrapperRegistry.get(menuId);
+    if (wrapper) {
+        wrapper.remove();
+        _menuWrapperRegistry.delete(menuId);
+    }
+}
+
+/**
+ * 清除所有菜单包装器。
+ */
+export function clearAllMenuWrappers(): void {
+    for (const [id] of _menuWrapperRegistry) {
+        disposeMenuWrapper(id);
+    }
 }
 
 // ======== Auto-save trigger (injected by scene.ts) ========
