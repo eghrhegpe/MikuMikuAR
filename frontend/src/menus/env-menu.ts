@@ -10,8 +10,7 @@ import {
     escapeHtml,
     cardContainer,
 } from '../core/config';
-import { SlideMenu } from './menu';
-import { showPopupMenu } from './menu-factory';
+import { registerPopupMenu } from './menu-factory';
 import { createIconifyIcon } from '../core/icons';
 import {
     slideRow,
@@ -58,10 +57,15 @@ export { buildPresetLevel, ENV_PRESETS } from './env-preset-levels';
 
 // ======== Env Menu State ========
 
-let envMenu: SlideMenu | null = null;
-export function getEnvMenu(): SlideMenu | null {
-    return envMenu;
-}
+const { getMenu: getEnvMenu, refreshRoot: refreshEnvRoot, show: showEnvMenu } = registerPopupMenu({
+    wrapperKey: 'env-menu',
+    popupType: 'env',
+    buildRoot: () => buildEnvLevel(),
+    buildRootItems: () => buildEnvRootItems(),
+    handlers: { onFolderEnter: envOnFolderEnter },
+});
+
+export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 
 /** 当前选中的环境氛围预设 key */
 let _activeEnvPresetKey = 'noon';
@@ -80,7 +84,7 @@ function renderPresetChips(container: HTMLElement): void {
         btn.addEventListener('click', () => {
             _activeEnvPresetKey = key;
             applyEnvPreset(key);
-            envMenu.reRender();
+            getEnvMenu()?.reRender();
         });
         chipGroup.appendChild(btn);
     }
@@ -130,7 +134,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     { value: 'procedural', label: '程序化' },
                     { value: 'color', label: '纯色' },
                     { value: 'texture', label: '贴图' },
-                ], s.skyMode, (v) => { setEnvState({ skyMode: v }); envMenu.reRender(); }, 'lucide:layers');
+                ], s.skyMode, (v) => { setEnvState({ skyMode: v }); getEnvMenu()?.reRender(); }, 'lucide:layers');
 
                 renderPresetChips(c);
 
@@ -196,7 +200,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                             btn.textContent = sq.label;
                             btn.className = 'preset-chip';
                             if (getLightState().shadowResolution === sq.value) btn.classList.add('active');
-                            btn.addEventListener('click', () => { setLightingState({ shadowResolution: sq.value }); envMenu.reRender(); });
+                            btn.addEventListener('click', () => { setLightingState({ shadowResolution: sq.value }); getEnvMenu()?.reRender(); });
                             shadowQualityRow.appendChild(btn);
                         }
                         inner.appendChild(shadowQualityRow);
@@ -272,15 +276,7 @@ export function buildEnvLevel(): PopupLevel {
     };
 }
 
-/** 重新计算根级 items 并触发 reRender（toggle 状态变化后调用）。 */
-export function refreshEnvRoot(): void {
-    if (!envMenu) return;
-    const root = envMenu.getLevel(0);
-    if (root) {
-        root.items = buildEnvRootItems();
-        envMenu.reRender();
-    }
-}
+
 
 export function buildParticleLevel(): PopupLevel {
     return {
@@ -298,7 +294,7 @@ export function buildParticleLevel(): PopupLevel {
                     { value: 'fireworks', label: '🎆 烟花' },
                     { value: 'fireflies', label: '✨ 萤火虫' },
                     { value: 'leaves', label: '🍂 落叶' },
-                ], s.particleType, (v) => { setEnvState({ particleType: v }); envMenu.reRender(); }, 'lucide:sparkles');
+                ], s.particleType, (v) => { setEnvState({ particleType: v }); getEnvMenu()?.reRender(); }, 'lucide:sparkles');
                 addSliderRow(c, '密度', s.particleEmitRate, 0, 3, 0.1, (v) => setEnvState({ particleEmitRate: v }), 'lucide:layers');
                 addSliderRow(c, '大小', s.particleSize, 0.1, 3, 0.1, (v) => setEnvState({ particleSize: v }), 'lucide:maximize');
                 addSliderRow(c, '速度', s.particleSpeed, 0.1, 5, 0.1, (v) => setEnvState({ particleSpeed: v }), 'lucide:gauge');
@@ -347,15 +343,4 @@ function envOnFolderEnter(row: PopupRow): PopupLevel | null {
     }
 }
 
-// ======== Show Env Menu ========
 
-export function showEnvMenu(): void {
-    showPopupMenu({
-        getMenu: () => envMenu,
-        setMenu: (m) => { envMenu = m; },
-        wrapperKey: 'env-menu',
-        popupType: 'env',
-        buildRoot: buildEnvLevel,
-        handlers: { onFolderEnter: envOnFolderEnter },
-    });
-}

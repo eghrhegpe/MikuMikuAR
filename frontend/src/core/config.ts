@@ -309,6 +309,9 @@ export interface EnvState {
     // ======== 太阳参数（序列化用）========
     sunAngle: number; // 太阳高度角, -15~90
     azimuth: number; // 太阳方位角（度）, 默认 -45
+
+    // ======== 灯光预设 ========
+    lightingPresetName?: string; // 当前灯光预设名，null/undefined = 自定义
 }
 
 // ======== Shared Mutable State ========

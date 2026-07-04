@@ -14,6 +14,7 @@ import { setStatus, cardContainer, escapeHtml, PopupLevel } from '../core/config
 import { slideRow } from '../core/ui-helpers';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
 import { showPrompt } from '../core/dialog';
+import { getSettingsMenu } from './settings';
 
 // ======== 路径设置 API（统一入口） ========
 
@@ -94,10 +95,7 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
                             if ((e.target as HTMLElement).closest('.btn')) {
                                 return;
                             }
-                            const pushFn = (window as any).__getSettingsMenuPush?.();
-                            if (pushFn) {
-                                pushFn(buildSoftwareDetailLevel(entry.path));
-                            }
+                            getSettingsMenu()?.push(buildSoftwareDetailLevel(entry.path));
                         });
                         row.innerHTML = `
                             <span class="slide-icon"><iconify-icon icon="${softwareKindIcon(entry.kind)}"></iconify-icon></span>
@@ -242,10 +240,9 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                                 (e) => e.path !== entry.path
                             );
                             setStatus(`✓ 已删除: ${entry.name}`, true);
-                            const popFn = (window as any).__getSettingsMenuPop?.();
-                            const reRenderFn = (window as any).__getSettingsMenuReRender?.();
-                            popFn?.();
-                            reRenderFn?.();
+                            const menu = getSettingsMenu();
+                            menu?.pop();
+                            menu?.reRender();
                         } catch {
                             setStatus('✗ 删除失败', false);
                         }
@@ -320,10 +317,9 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                         await AddCustomSoftware(entry.path, entry.name, args);
                         cachedSoftwareEntries = await ScanSoftwareDir();
                         setStatus(`✓ 已转为自定义: ${entry.name}`, true);
-                        const popFn = (window as any).__getSettingsMenuPop?.();
-                        const reRenderFn = (window as any).__getSettingsMenuReRender?.();
-                        popFn?.();
-                        reRenderFn?.();
+                        const menu = getSettingsMenu();
+                        menu?.pop();
+                        menu?.reRender();
                     } catch (err: unknown) {
                         setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
                     }

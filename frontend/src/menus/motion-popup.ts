@@ -22,8 +22,7 @@ import {
     envState,
     getRecentMotions,
 } from '../core/config';
-import { SlideMenu } from './menu';
-import { showPopupMenu } from './menu-factory';
+import { registerPopupMenu } from './menu-factory';
 import { slideRow, addSliderRow, addToggleRow } from '../core/ui-helpers';
 import { createIconifyIcon } from '../core/icons';
 import {
@@ -115,13 +114,13 @@ function buildActionBindingLevel(id: string): PopupLevel {
                     setMotionBindingTargetId(id);
                     const level = stackRegistry.buildLevel!(libraryRoot, '动作库', (m) => m.format === 'vmd');
                     level.label = `绑定动作 → ${inst.name}`;
-                    if (motionMenu) motionMenu.push(level);
+                    if (getMotionMenu()) getMotionMenu()?.push(level);
                 });
                 c.appendChild(row);
                 slideRow(c, 'lucide:user', '姿势库', true, () => {
                     const level = stackRegistry.buildLevel!(libraryRoot, '姿势库', (m) => m.format === 'vpd');
                     level.label = `姿势 → ${inst.name}`;
-                    if (motionMenu) motionMenu.push(level);
+                    if (getMotionMenu()) getMotionMenu()?.push(level);
                 });
             });
 
@@ -136,7 +135,7 @@ function buildActionBindingLevel(id: string): PopupLevel {
                             const enabled = isPhysicsCategoryEnabled(id, cat);
                             addToggleRow(c, CAT_LABELS[cat] || cat, enabled, (v) => {
                                 setPhysicsCategory(id, cat, v);
-                                if (motionMenu) motionMenu.reRender();
+                                if (getMotionMenu()) getMotionMenu()?.reRender();
                                 setStatus(v ? `✓ ${CAT_LABELS[cat] || cat} 已开启` : `✕ ${CAT_LABELS[cat] || cat} 已关闭`, true);
                             }, 'lucide:settings');
                         }
@@ -162,7 +161,7 @@ function buildActionBindingLevel(id: string): PopupLevel {
                         inst.vmdData = null; inst.vmdName = ''; inst.vmdPath = null; inst.animationDuration = 0;
                         if (isPlaying) { mmdRuntime.pauseAnimation(); setIsPlaying(false); }
                         updatePlaybackUI();
-                        if (motionMenu) motionMenu.reRender();
+                        if (getMotionMenu()) getMotionMenu()?.reRender();
                         setStatus('✓ 动作已清除', true);
                     }
                 });
@@ -193,14 +192,14 @@ function buildActionMusicLevel(): PopupLevel {
                 `;
                 browseAudioRow.addEventListener('click', () => {
                     const level = stackRegistry.buildLevel!(libraryRoot, '音乐库', (m) => m.format === 'audio');
-                    if (motionMenu) motionMenu.push(level);
+                    if (getMotionMenu()) getMotionMenu()?.push(level);
                 });
                 c.appendChild(browseAudioRow);
                 if (getAudioName()) {
                     slideRow(c, 'lucide:trash-2', '移除音乐', false, () => {
                         clearAudio();
                         setStatus('✓ 音乐已移除', true);
-                        motionMenu.reRender();
+                        getMotionMenu()?.reRender();
                     });
                 }
             });
@@ -218,10 +217,19 @@ function buildActionMusicLevel(): PopupLevel {
 
 // ======== Motion Stack ========
 
-let motionMenu: SlideMenu | null = null;
-export function getMotionMenu(): SlideMenu | null {
-    return motionMenu;
-}
+const { getMenu: getMotionMenu, refreshRoot: refreshMotionRoot, show: showMotionPopup } = registerPopupMenu({
+    wrapperKey: 'motion-popup',
+    popupType: 'motion',
+    overlayClass: 'sceneOverlay-motion',
+    buildRoot: () => buildMotionRootLevel(),
+    buildRootItems: () => buildMotionRootItems(),
+    handlers: {
+        onItemClick: motionOnItemClick,
+        onFolderEnter: motionOnFolderEnter,
+    },
+});
+
+export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 
 /** motion-popup 的 onFolderEnter 路由（从 makeMotionMenu 提取） */
 function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
@@ -276,7 +284,7 @@ function motionOnItemClick(row: PopupRow): void {
         if (row.model.format === 'audio') {
             loadAudioFile(row.model.file_path);
             setStatus(`✓ 音乐: ${getAudioName()}`, true);
-            if (motionMenu) motionMenu.reRender();
+            if (getMotionMenu()) getMotionMenu()?.reRender();
             return;
         }
         if (row.model.format === 'vpd') {
@@ -292,12 +300,12 @@ function motionOnItemClick(row: PopupRow): void {
     }
     if (row.target === 'procmotion:autoswitch') {
         setProcMotionAutoSwitch(!getProcMotionState().autoSwitch);
-        motionMenu.reRender();
+        getMotionMenu()?.reRender();
         return;
     }
     if (row.target === 'lipsync:toggle') {
         setLipSyncEnabled(!getLipSyncState().enabled);
-        motionMenu.reRender();
+        getMotionMenu()?.reRender();
         return;
     }
     if (row.target && row.target.startsWith('action:motion:')) {
@@ -312,7 +320,7 @@ function motionOnItemClick(row: PopupRow): void {
                 if (mmdRuntime) {
                     if (isPlaying) { mmdRuntime.pauseAnimation(); setIsPlaying(false); setAutoLoop(false); }
                     else { setAutoLoop(true); mmdRuntime.playAnimation().then(() => setIsPlaying(true)); }
-                    updatePlaybackUI(); motionMenu.reRender();
+                    updatePlaybackUI(); getMotionMenu()?.reRender();
                 }
                 break;
             case 'reset':
@@ -321,7 +329,7 @@ function motionOnItemClick(row: PopupRow): void {
                     inst.vmdData = null; inst.vmdName = ''; inst.vmdPath = null; inst.animationDuration = 0;
                     if (isPlaying) { mmdRuntime.pauseAnimation(); setIsPlaying(false); }
                     updatePlaybackUI();
-                    if (motionMenu) motionMenu.reRender();
+                    if (getMotionMenu()) getMotionMenu()?.reRender();
                     setStatus('✓ 动作已重置', true);
                 }
                 break;
@@ -329,12 +337,12 @@ function motionOnItemClick(row: PopupRow): void {
                 (async () => {
                     const level = stackRegistry.buildLevel!(libraryRoot, '姿势库', (m) => m.format === 'vpd');
                     level.label = `姿势 → ${inst.name}`;
-                    if (motionMenu) motionMenu.push(level);
+                    if (getMotionMenu()) getMotionMenu()?.push(level);
                 })();
                 break;
             case 'loop':
                 setAutoLoop(!autoLoop);
-                motionMenu.reRender();
+                getMotionMenu()?.reRender();
                 setStatus(`循环: ${autoLoop ? '开' : '关'}`, true);
                 break;
         }
@@ -440,30 +448,7 @@ function buildMotionRootLevel(): PopupLevel {
     };
 }
 
-/** 重新计算根级 items 并触发 reRender（toggle/slider 状态变化后调用）。 */
-export function refreshMotionRoot(): void {
-    if (!motionMenu) return;
-    const root = motionMenu.getLevel(0);
-    if (root) {
-        root.items = buildMotionRootItems();
-        motionMenu.reRender();
-    }
-}
 
-export function showMotionPopup(): void {
-    showPopupMenu({
-        getMenu: () => motionMenu,
-        setMenu: (m) => { motionMenu = m; },
-        wrapperKey: 'motion-popup',
-        popupType: 'motion',
-        overlayClass: 'sceneOverlay-motion',
-        buildRoot: buildMotionRootLevel,
-        handlers: {
-            onItemClick: motionOnItemClick,
-            onFolderEnter: motionOnFolderEnter,
-        },
-    });
-}
 
 export function hideMotionPopup(): void {
     closeAllOverlays();

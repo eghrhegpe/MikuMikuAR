@@ -15,8 +15,7 @@ import {
     focusedModelId,
     setFocusedModelId,
 } from '../core/config';
-import { SlideMenu } from './menu';
-import { showPopupMenu } from './menu-factory';
+import { registerPopupMenu } from './menu-factory';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
 import {
@@ -42,15 +41,22 @@ export { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 
 // ======== Scene Menu State ========
 
-let sceneMenu: SlideMenu | null = null;
+const { getMenu: getSceneMenu, refreshRoot: refreshSceneRoot, show: showSceneMenu } = registerPopupMenu({
+    wrapperKey: 'scene-menu',
+    popupType: 'scene',
+    buildRoot: () => buildSceneRoot(),
+    buildRootItems: () => buildSceneRootItems(),
+    handlers: {
+        onItemClick: (row) => handleSceneAction(row),
+        onFolderEnter: sceneOnFolderEnter,
+    },
+});
 
-export function getSceneMenu(): SlideMenu | null {
-    return sceneMenu;
-}
+export { getSceneMenu, refreshSceneRoot, showSceneMenu };
 
 /** 安全 reRender：菜单可能正在 async 重建中（showSceneMenu 的 await 期间），此时 sceneMenu 为 null。 */
 export function reRenderSceneMenu(): void {
-    sceneMenu?.reRender();
+    getSceneMenu()?.reRender();
 }
 
 function buildScreenshotLevel(): PopupLevel {
@@ -96,16 +102,6 @@ function buildSceneRoot(): PopupLevel {
         dir: '',
         items: buildSceneRootItems(),
     };
-}
-
-/** 重新计算根级 items 并触发 reRender。 */
-export function refreshSceneRoot(): void {
-    if (!sceneMenu) return;
-    const root = sceneMenu.getLevel(0);
-    if (root) {
-        root.items = buildSceneRootItems();
-        sceneMenu.reRender();
-    }
 }
 
 // ======== onFolderEnter Router ========
@@ -206,22 +202,6 @@ function handleSceneAction(row: PopupRow): void {
     if (row.target) {
         SCENE_ACTIONS[row.target]?.();
     }
-}
-
-// ======== Show Scene Menu ========
-
-export async function showSceneMenu(): Promise<void> {
-    showPopupMenu({
-        getMenu: () => sceneMenu,
-        setMenu: (m) => { sceneMenu = m; },
-        wrapperKey: 'scene-menu',
-        popupType: 'scene',
-        buildRoot: buildSceneRoot,
-        handlers: {
-            onItemClick: (row) => handleSceneAction(row),
-            onFolderEnter: sceneOnFolderEnter,
-        },
-    });
 }
 
 // Wire up events in main.ts:243-244 — do NOT re-register here.
