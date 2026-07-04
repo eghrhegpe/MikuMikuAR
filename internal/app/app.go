@@ -422,7 +422,9 @@ var userConfigDir = os.UserConfigDir
 func ensureDir(subDir string, useCache bool) (string, error) {
 	var base string
 	var err error
-	if useCache {
+	if isAndroid {
+		base = "/data/data/com.mikumikuar.app/files"
+	} else if useCache {
 		base, err = os.UserCacheDir()
 	} else {
 		base, err = userConfigDir()

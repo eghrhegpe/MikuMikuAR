@@ -1,4 +1,4 @@
-package com.mikumikuar.app;
+package com.wails.app;
 
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
@@ -131,6 +131,8 @@ public class MainActivity extends AppCompatActivity {
                 if (request.getUrl().getHost() != null &&
                         request.getUrl().getHost().equals(WAILS_HOST)) {
 
+                    if (DEBUG) Log.d(TAG, "Request: " + request.getUrl().getPath());
+
                     // For wails API calls (runtime, capabilities, etc.) pass the
                     // full URL including the query string, because
                     // WebViewAssetLoader.PathHandler strips query params
@@ -177,8 +179,9 @@ public class MainActivity extends AppCompatActivity {
                         return serveCaptureFile(path.substring("/__capture__/".length()), request);
                     }
 
-                    // For regular assets, use the asset loader
-                    return assetLoader.shouldInterceptRequest(request.getUrl());
+                    // For regular assets, serve directly through WailsPathHandler
+                    WailsPathHandler handler = new WailsPathHandler(bridge);
+                    return handler.handle(path);
                 }
 
                 return super.shouldInterceptRequest(view, request);

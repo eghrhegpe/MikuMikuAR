@@ -1,4 +1,4 @@
-package com.mikumikuar.app;
+package com.wails.app;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

@@ -662,7 +662,8 @@ export function SetPerformanceMode(mode: string): $CancellablePromise<void> {
 }
 
 /**
- * SetResourceRoot persists the resource root path and triggers a rescan+reindex.
+ * SetResourceRoot persists the resource root path, initialises all category
+ * override paths to their default subdirectories, and triggers a rescan+reindex.
  */
 export function SetResourceRoot(root: string): $CancellablePromise<void> {
     return $Call.ByID(4185962653, root);

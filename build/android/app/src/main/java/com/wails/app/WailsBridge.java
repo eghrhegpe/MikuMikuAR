@@ -1,4 +1,4 @@
-package com.mikumikuar.app;
+package com.wails.app;
 
 import android.app.Activity;
 import android.app.Notification;
@@ -120,6 +120,10 @@ public class WailsBridge {
 
     public WailsBridge(Activity activity) {
         this.activity = activity;
+    }
+
+    public Activity getActivity() {
+        return activity;
     }
 
     /**

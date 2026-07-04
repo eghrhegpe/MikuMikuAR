@@ -16,9 +16,12 @@ import (
 // returns the default storage path as a starting point.
 func (a *App) SelectDir() (string, error) {
 	if isAndroid {
-		// Android: return the default MikuMikuAR directory on external storage.
-		// The user can set a custom path via SetLibraryRoot directly.
-		return "/sdcard/MikuMikuAR", nil
+		// Android: use app's writable data directory (no SAF directory picker yet)
+		base, err := os.UserConfigDir()
+		if err != nil {
+			return "/sdcard/MikuMikuAR", nil // fallback
+		}
+		return filepath.Join(base, "MikuMikuAR"), nil
 	}
 	if a.wailsApp == nil {
 		return "", fmt.Errorf("application not initialized")

@@ -10,7 +10,7 @@ def versionParts = pkgVersion.split('\\.')
 def computedVersionCode = (versionParts[0].toInteger() * 10000) + (versionParts[1].toInteger() * 100) + (versionParts.length > 2 ? versionParts[2].toInteger() : 0)
 
 android {
-    namespace 'com.mikumikuar.app'
+    namespace 'com.wails.app'
     compileSdk 34
 
     buildFeatures {
