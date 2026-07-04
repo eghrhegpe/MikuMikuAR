@@ -37,7 +37,7 @@ import { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
-export { buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildPresetScenesLevel } from './scene-render-levels';
+export { buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageTransformLevel, buildPresetScenesLevel } from './scene-render-levels';
 export { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 
 // ======== Scene Menu State ========

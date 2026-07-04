@@ -326,6 +326,40 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 			}
 			models = append(models, m)
 
+		case strings.HasSuffix(lowerName, ".mp3"), strings.HasSuffix(lowerName, ".wav"),
+			strings.HasSuffix(lowerName, ".ogg"), strings.HasSuffix(lowerName, ".flac"),
+			strings.HasSuffix(lowerName, ".wma"):
+			m := ModelEntry{
+				Dir:       filepath.Dir(walkPath),
+				PMXPath:   walkPath,
+				Format:    "audio",
+				Container: "file",
+				NameEn:    cleanModelName(strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))),
+				Category:  category,
+			}
+			if entryType != "" && entryType != "other" {
+				m.Type = entryType
+			} else {
+				m.Type = "audio"
+			}
+			models = append(models, m)
+
+		case strings.HasSuffix(lowerName, ".vpd"):
+			m := ModelEntry{
+				Dir:       filepath.Dir(walkPath),
+				PMXPath:   walkPath,
+				Format:    "vpd",
+				Container: "file",
+				NameEn:    cleanModelName(strings.TrimSuffix(d.Name(), ".vpd")),
+				Category:  category,
+			}
+			if entryType != "" && entryType != "other" {
+				m.Type = entryType
+			} else {
+				m.Type = "pose"
+			}
+			models = append(models, m)
+
 		case strings.HasSuffix(lowerName, ".zip"):
 			// Traverse zip entries for .pmx/.vmd without extracting.
 			zr, err := zip.OpenReader(walkPath)
@@ -339,11 +373,23 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 				entryName := decodeZipName(zf.Name, zf.NonUTF8)
 				zfLower := strings.ToLower(entryName)
 				var innerFormat string
-				if strings.HasSuffix(zfLower, ".pmx") {
+				var innerType string
+				switch {
+				case strings.HasSuffix(zfLower, ".pmx"):
 					innerFormat = "pmx"
-				} else if strings.HasSuffix(zfLower, ".vmd") {
+					innerType = "actor"
+				case strings.HasSuffix(zfLower, ".vmd"):
 					innerFormat = "vmd"
-				} else {
+					innerType = "motion"
+				case strings.HasSuffix(zfLower, ".mp3"), strings.HasSuffix(zfLower, ".wav"),
+					strings.HasSuffix(zfLower, ".ogg"), strings.HasSuffix(zfLower, ".flac"),
+					strings.HasSuffix(zfLower, ".wma"):
+					innerFormat = "audio"
+					innerType = "audio"
+				case strings.HasSuffix(zfLower, ".vpd"):
+					innerFormat = "vpd"
+					innerType = "pose"
+				default:
 					continue
 				}
 
@@ -362,10 +408,8 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 				}
 				if entryType != "" && entryType != "other" {
 					m.Type = entryType
-				} else if innerFormat == "pmx" {
-					m.Type = "actor"
 				} else {
-					m.Type = "motion"
+					m.Type = innerType
 				}
 
 				models = append(models, m)

@@ -42,8 +42,8 @@ import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
 import {
     getLightState,
     setLightState,
-    getStageLightState,
-    setStageLightState,
+    getStageLights,
+    loadStageLights,
     getRenderState,
     setRenderState,
     removeModel,
@@ -149,6 +149,7 @@ export interface SceneFile {
     }>;
     gravityStrength?: number;
     stageLight?: StageLightState;
+    stageLights?: StageLightState[];
 }
 
 // ======== Serialization ========
@@ -250,7 +251,7 @@ export function serializeScene(): SceneFile {
             };
         }),
         gravityStrength: getGravityStrength(),
-        stageLight: getStageLightState(),
+        stageLights: getStageLights(),
     };
 }
 
@@ -412,9 +413,18 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     if (data.gravityStrength !== undefined) {
         setGravityStrength(data.gravityStrength);
     }
-    if (data.stageLight) {
-        const sl = { type: 'spot' as const, range: 50, ...data.stageLight };
-        setStageLightState(sl);
+    // 舞台灯光：优先新格式 stageLights，兼容旧格式 stageLight
+    if (data.stageLights && data.stageLights.length > 0) {
+        loadStageLights(data.stageLights);
+    } else if (data.stageLight) {
+        const sl = {
+            id: 'light-1',
+            name: '主光',
+            type: 'spot' as const,
+            range: 50,
+            ...data.stageLight,
+        };
+        loadStageLights([sl]);
     }
 
     // --- Procedural Motion ---

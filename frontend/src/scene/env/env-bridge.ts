@@ -70,8 +70,8 @@ function _applyEnvStateFacade(state: EnvState): void {
         console.warn('[env] cloud fail:', e);
     }
 
-    // 半球光 — 固定强度，颜色随天空色（MMD 材质对其不敏感，设为稳定值）
-    hemiLight.intensity = 0.5;
+    // 半球光 — 强度跟随当前灯光状态，颜色随天空色
+    hemiLight.intensity = getLightState().hemiIntensity;
     const skyMid = state.skyColorMid ?? [
         (state.skyColorTop[0] + state.skyColorBot[0]) / 2,
         (state.skyColorTop[1] + state.skyColorBot[1]) / 2,
@@ -185,6 +185,8 @@ export function stopTimeOfDay(): void {
     _timeOfDayActive = false;
     _unregisterTimeOfDay();
     _unregisterTimeOfDay = null;
+    // 持久化当前 sunAngle 到后端
+    SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
 }
 
 export function isTimeOfDayActive(): boolean {
@@ -266,7 +268,6 @@ export function applyEnvPresetObject(preset: {
     const duration = 2000;
     const startTime = performance.now();
 
-    setSkipLightAutoSave(false);
     setSkipLightAutoSave(true);
 
     const animLoop = () => {
