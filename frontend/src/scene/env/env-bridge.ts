@@ -306,6 +306,7 @@ export function applyEnvPresetObject(preset: {
 
     const duration = 2000;
     const startTime = performance.now();
+    let frameCount = 0;
 
     setSkipLightAutoSave(true);
 
@@ -317,37 +318,43 @@ export function applyEnvPresetObject(preset: {
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / duration, 1.0);
         const lerp = (a: number, b: number) => a + (b - a) * t;
+        frameCount++;
 
-        const skyTop: [number, number, number] = [
-            lerp(startSkyTop[0], preset.skyColorTop[0]),
-            lerp(startSkyTop[1], preset.skyColorTop[1]),
-            lerp(startSkyTop[2], preset.skyColorTop[2]),
-        ];
-        const skyBot: [number, number, number] = [
-            lerp(startSkyBot[0], preset.skyColorBot[0]),
-            lerp(startSkyBot[1], preset.skyColorBot[1]),
-            lerp(startSkyBot[2], preset.skyColorBot[2]),
-        ];
-        const skyMid: [number, number, number] = [
-            lerp(startSkyMid[0], mid[0]),
-            lerp(startSkyMid[1], mid[1]),
-            lerp(startSkyMid[2], mid[2]),
-        ];
+        // 天空纹理重建开销大（dispose + 重新生成），每 3 帧更新一次（~20fps），
+        // 视觉上 2 秒过渡期内无感知差异，但 texture rebuild 从 ~120 次降到 ~40 次。
+        if (frameCount % 3 === 0 || t >= 1) {
+            const skyTop: [number, number, number] = [
+                lerp(startSkyTop[0], preset.skyColorTop[0]),
+                lerp(startSkyTop[1], preset.skyColorTop[1]),
+                lerp(startSkyTop[2], preset.skyColorTop[2]),
+            ];
+            const skyBot: [number, number, number] = [
+                lerp(startSkyBot[0], preset.skyColorBot[0]),
+                lerp(startSkyBot[1], preset.skyColorBot[1]),
+                lerp(startSkyBot[2], preset.skyColorBot[2]),
+            ];
+            const skyMid: [number, number, number] = [
+                lerp(startSkyMid[0], mid[0]),
+                lerp(startSkyMid[1], mid[1]),
+                lerp(startSkyMid[2], mid[2]),
+            ];
 
-        setEnvState(
-            {
-                skyMode: 'procedural',
-                skyColorTop: skyTop,
-                skyColorMid: skyMid,
-                skyColorBot: skyBot,
-                skyBrightness: 1.0,
-                sunAngle: preset.sunAngle,
-                azimuth: preset.azimuth ?? -45,
-                envIntensity: 2,
-            },
-            true
-        );
+            setEnvState(
+                {
+                    skyMode: 'procedural',
+                    skyColorTop: skyTop,
+                    skyColorMid: skyMid,
+                    skyColorBot: skyBot,
+                    skyBrightness: 1.0,
+                    sunAngle: preset.sunAngle,
+                    azimuth: preset.azimuth ?? -45,
+                    envIntensity: 2,
+                },
+                true
+            );
+        }
 
+        // 灯光每帧更新（开销小，无纹理重建）
         const interpLight: Partial<LightState> = {};
         for (const key of Object.keys(targetLight) as (keyof LightState)[]) {
             const a = startLight[key];
