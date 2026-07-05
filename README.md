@@ -3,12 +3,17 @@
 > 基于 Wails v3 + Babylon.js / babylon-mmd 的跨平台 MMD 桌面播放器——
 > PMX 模型查看、VMD 动作播放、即时换装、程序化舞蹈、XPBD 布料物理，一处搞定。
 
+[![CI](https://img.shields.io/github/actions/workflow/status/eghrhegpe/MikuMikuAR/ci.yml?logo=github)](https://github.com/eghrhegpe/MikuMikuAR/actions)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev/)
 [![Wails](https://img.shields.io/badge/Wails-v3-DF0000?logo=wails)](https://wails.io)
 [![Babylon.js](https://img.shields.io/badge/Babylon.js-MMD-AD1F23?logo=babylondotjs)](https://babylonjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=nodedotjs)](https://nodejs.org/)
 [![Android SDK](https://img.shields.io/badge/Android%20SDK-API%2034-34A853?logo=android)](https://developer.android.com/studio)
+[![babylon-mmd](https://img.shields.io/badge/babylon--mmd-1.2.0-FF6F00?logo=babylondotjs)](https://github.com/noname0310/babylon-mmd)
+[![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite)](https://vitejs.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-4-729B1A?logo=vitest)](https://vitest.dev/)
+[![WebView2](https://img.shields.io/badge/WebView2-Windows-0078D4?logo=microsoft)](https://learn.microsoft.com/edge/webview2/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 | 平台 | 状态 |
