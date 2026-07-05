@@ -25,7 +25,7 @@ import {
     getRecentMotions,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { slideRow, addSliderRow, addToggleRow } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addToggleRow, addEmptyRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import {
@@ -363,11 +363,7 @@ function buildRecentMotionsLevel(): PopupLevel {
         renderCustom: (container) => {
             cardContainer(container, (c) => {
                 if (recent.length === 0) {
-                    const empty = document.createElement('div');
-                    empty.className = 'slide-item';
-                    empty.style.opacity = '0.5';
-                    empty.textContent = '暂无最近使用动作';
-                    c.appendChild(empty);
+                    addEmptyRow(c, '暂无最近使用动作');
                     return;
                 }
                 for (const r of recent) {
@@ -408,11 +404,7 @@ function buildLayersLevel(id: string): PopupLevel {
             // 图层列表
             if (layers.length === 0) {
                 cardContainer(container, (c) => {
-                    const empty = document.createElement('div');
-                    empty.className = 'slide-item';
-                    empty.style.opacity = '0.5';
-                    empty.textContent = '暂无图层 — 添加第二个 VMD 开启叠加';
-                    c.appendChild(empty);
+                    addEmptyRow(c, '暂无图层 — 添加第二个 VMD 开启叠加');
                 });
             } else {
                 cardContainer(container, (c) => {

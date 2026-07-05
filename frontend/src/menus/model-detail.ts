@@ -79,14 +79,11 @@ export function buildOpenWithLevel(id: string): PopupLevel {
                     });
                 }
 
-                const manageLink = document.createElement('div');
-                manageLink.className = 'slide-item';
-                manageLink.innerHTML =
-                    '<span class="slide-icon"><iconify-icon icon="lucide:plus"></iconify-icon></span><span class="slide-label" style="color:var(--accent);">管理软件</span>';
-                manageLink.addEventListener('click', () => {
+                slideRow(c, 'lucide:plus', '管理软件', false, () => {
                     dom.btnSettings.click();
+                }, undefined, undefined, undefined, undefined, {
+                    variant: 'accent',
                 });
-                c.appendChild(manageLink);
             });
         },
     };

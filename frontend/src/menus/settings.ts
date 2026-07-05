@@ -50,7 +50,7 @@ import {
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { selectResourceRoot, selectOverridePath } from './library-core';
-import { slideRow, addToggleRow, addSliderRow, addSectionTitle, addDangerRow } from '../core/ui-helpers';
+import { slideRow, addToggleRow, addSliderRow, addSectionTitle, addDangerRow, addEmptyRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
 import { setVolume, getVolume } from '../outfit/audio';
@@ -60,6 +60,7 @@ import { softwareKindIcon } from '../core/icons';
 import { showConfirm, showPrompt } from '../core/dialog';
 import { tryCatchStatus } from '../core/utils';
 import { getAllShortcuts, setKeyBinding, resetKeyBinding, resetAllKeyBindings, loadKeyBindings, exportKeyBindings } from '../core/shortcut-registry';
+import { SETTINGS, SETTINGS_ACTION, SOFTWARE_DETAIL_PREFIX } from './settings-targets';
 
 // ======== Helpers re-exported ========
 export { refreshLibrary } from './library';
@@ -99,15 +100,15 @@ export { getSettingsMenu, refreshSettingsRoot, showSettings };
 /** 设置弹窗根级 items 构建器——items-based，支持增量 patch */
 function buildSettingsRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    items.push({ kind: 'folder', label: '外观', icon: 'lucide:palette', target: 'settings:appearance' });
-    items.push({ kind: 'folder', label: '文件名', icon: 'lucide:file-text', target: 'settings:filename' });
-    items.push({ kind: 'folder', label: '性能', icon: 'lucide:zap', target: 'settings:performance' });
-    items.push({ kind: 'folder', label: '路径', icon: 'lucide:folder-tree', target: 'settings:paths' });
-    items.push({ kind: 'folder', label: '软件', icon: 'lucide:package', target: 'settings:software' });
-    items.push({ kind: 'folder', label: '截图', icon: 'lucide:camera', target: 'settings:screenshot' });
-    items.push({ kind: 'folder', label: '音频', icon: 'lucide:volume-2', target: 'settings:audio' });
-    items.push({ kind: 'folder', label: '快捷键', icon: 'lucide:keyboard', target: 'settings:shortcuts' });
-    items.push({ kind: 'folder', label: '关于', icon: 'lucide:info', target: 'settings:about' });
+    items.push({ kind: 'folder', label: '外观', icon: 'lucide:palette', target: SETTINGS.APPEARANCE });
+    items.push({ kind: 'folder', label: '文件名', icon: 'lucide:file-text', target: SETTINGS.FILENAME });
+    items.push({ kind: 'folder', label: '性能', icon: 'lucide:zap', target: SETTINGS.PERFORMANCE });
+    items.push({ kind: 'folder', label: '路径', icon: 'lucide:folder-tree', target: SETTINGS.PATHS });
+    items.push({ kind: 'folder', label: '软件', icon: 'lucide:package', target: SETTINGS.SOFTWARE });
+    items.push({ kind: 'folder', label: '截图', icon: 'lucide:camera', target: SETTINGS.SCREENSHOT });
+    items.push({ kind: 'folder', label: '音频', icon: 'lucide:volume-2', target: SETTINGS.AUDIO });
+    items.push({ kind: 'folder', label: '快捷键', icon: 'lucide:keyboard', target: SETTINGS.SHORTCUTS });
+    items.push({ kind: 'folder', label: '关于', icon: 'lucide:info', target: SETTINGS.ABOUT });
     return items;
 }
 
@@ -613,7 +614,7 @@ function buildSettingsPathsLevel(): PopupLevel {
 
 /** 设置动作映射表——替代原 handleSettingsAction 的 switch 链 */
 const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
-    'set:clearextractcache': () => {
+    [SETTINGS_ACTION.CLEAR_EXTRACT_CACHE]: () => {
         ClearExtractCache()
             .then(() => {
                 setStatus('✓ 提取缓存已清除', true);
@@ -621,7 +622,7 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
             })
             .catch(console.warn);
     },
-    'set:clearthumbnail': () => {
+    [SETTINGS_ACTION.CLEAR_THUMBNAIL]: () => {
         (async () => {
             if (await showConfirm('确定要清除所有缩略图缓存吗？下次加载模型时将重新生成。')) {
                 ClearThumbnailCache()
@@ -633,7 +634,7 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
             }
         })();
     },
-    'set:clearallcache': () => {
+    [SETTINGS_ACTION.CLEAR_ALL_CACHE]: () => {
         (async () => {
             if (await showConfirm('确定要清除全部缓存吗？包括提取缓存、缩略图、HTTP 隔离目录。下次加载模型时将重新生成。')) {
                 ClearAllCaches()
@@ -645,13 +646,13 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
             }
         })();
     },
-    'set:resourceroot': () => selectResourceRoot().catch(console.warn),
-    'set:path:pmx': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
-    'set:path:vmd': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
-    'set:path:stage': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
-    'set:path:environment': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
-    'set:path:md_dress': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
-    'set:path:setting': (row) => selectOverridePath(row.target!.replace('set:path:', '')).catch(console.warn),
+    [SETTINGS_ACTION.RESOURCE_ROOT]: () => selectResourceRoot().catch(console.warn),
+    [SETTINGS_ACTION.PATH_PMX]: (row) => selectOverridePath('pmx').catch(console.warn),
+    [SETTINGS_ACTION.PATH_VMD]: (row) => selectOverridePath('vmd').catch(console.warn),
+    [SETTINGS_ACTION.PATH_STAGE]: (row) => selectOverridePath('stage').catch(console.warn),
+    [SETTINGS_ACTION.PATH_ENVIRONMENT]: (row) => selectOverridePath('environment').catch(console.warn),
+    [SETTINGS_ACTION.PATH_MD_DRESS]: (row) => selectOverridePath('md_dress').catch(console.warn),
+    [SETTINGS_ACTION.PATH_SETTING]: (row) => selectOverridePath('setting').catch(console.warn),
 };
 
 function applyDisplayNamePriority(priority: DisplayNamePriority): void {
@@ -675,51 +676,52 @@ function buildSettingsExternalLevel(): PopupLevel {
         renderCustom: (container) => {
             cardContainer(container, (c) => {
                 if (externalPaths.length === 0) {
-                    const empty = document.createElement('div');
-                    empty.className = 'ext-empty';
-                    empty.style.cssText =
-                        'font-size:11px;color:var(--text-dim);padding:8px 0;text-align:center;';
-                    empty.textContent = '暂无外部库';
-                    c.appendChild(empty);
+                    addEmptyRow(c, '暂无外部库');
                     return;
                 }
                 for (const ep of externalPaths) {
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    row.innerHTML = `
-                        <span class="slide-icon"><iconify-icon icon="lucide:plug"></iconify-icon></span>
-                        <span class="slide-label" style="flex:0 0 auto;margin-right:6px;">${escapeHtml(ep.name)}</span>
-                        <span class="slide-sublabel" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim);font-size:10px;">${escapeHtml(ep.path)}</span>
-                        <button class="ext-rename" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:2px 4px;">✎</button>
-                        <button class="ext-del" style="background:none;border:none;color:var(--danger,#e74c3c);cursor:pointer;font-size:12px;padding:2px 4px;">✕</button>
-                    `;
-                    row.querySelector('.ext-rename')!.addEventListener('click', async () => {
-                        const newName = await showPrompt('输入新的显示名称：', ep.name);
-                        if (newName && newName.trim() && newName.trim() !== ep.name) {
-                            const r = await tryCatchStatus(async () => {
-                                await RenameExternalPath(ep.path, newName.trim());
-                                return true;
-                            }, '✗ 重命名失败');
-                            if (r) {
-                                await reloadConfig();
-                                getSettingsMenu()?.reRender();
-                                setStatus('✓ 已重命名', true);
-                            }
-                        }
-                    });
-                    row.querySelector('.ext-del')!.addEventListener('click', async () => {
-                        try {
-                            await RemoveExternalPath(ep.path);
-                            await reloadConfig();
-                            if (libraryRoot) {
-                                await rescanAndSync();
-                            }
-                            getSettingsMenu()?.reRender();
-                        } catch (err) {
-                            console.error('RemoveExternalPath error:', err);
-                        }
-                    });
-                    c.appendChild(row);
+                    slideRow(c, 'lucide:plug', ep.name, false, () => {},
+                        escapeHtml(ep.path), undefined, undefined, undefined, {
+                            inlineSub: true,
+                            actionIcons: [
+                                {
+                                    icon: '✎',
+                                    title: '重命名',
+                                    onClick: async () => {
+                                        const newName = await showPrompt('输入新的显示名称：', ep.name);
+                                        if (newName && newName.trim() && newName.trim() !== ep.name) {
+                                            const r = await tryCatchStatus(async () => {
+                                                await RenameExternalPath(ep.path, newName.trim());
+                                                return true;
+                                            }, '✗ 重命名失败');
+                                            if (r) {
+                                                await reloadConfig();
+                                                getSettingsMenu()?.reRender();
+                                                setStatus('✓ 已重命名', true);
+                                            }
+                                        }
+                                    },
+                                },
+                                {
+                                    icon: '✕',
+                                    danger: true,
+                                    title: '删除',
+                                    onClick: async () => {
+                                        try {
+                                            await RemoveExternalPath(ep.path);
+                                            await reloadConfig();
+                                            if (libraryRoot) {
+                                                await rescanAndSync();
+                                            }
+                                            getSettingsMenu()?.reRender();
+                                        } catch (err) {
+                                            console.error('RemoveExternalPath error:', err);
+                                        }
+                                    },
+                                },
+                            ],
+                        },
+                    );
                 }
             });
 
@@ -1171,35 +1173,30 @@ function formatBytes(bytes: number): string {
 }
 
 /** settings 的 onFolderEnter 路由（从 showSettings 提取） */
+const SETTINGS_FOLDER_ROUTES: Partial<Record<string, () => PopupLevel>> = {
+    [SETTINGS.APPEARANCE]: buildSettingsAppearanceLevel,
+    [SETTINGS.FILENAME]: buildSettingsFilenameLevel,
+    [SETTINGS.PERFORMANCE]: buildSettingsPerformanceLevel,
+    [SETTINGS.PATHS]: buildSettingsPathsLevel,
+    [SETTINGS.EXTERNAL]: buildSettingsExternalLevel,
+    [SETTINGS.SOFTWARE]: buildSettingsSoftwareLevel,
+    [SETTINGS.SCREENSHOT]: buildSettingsScreenshotLevel,
+    [SETTINGS.AUDIO]: buildSettingsAudioLevel,
+    [SETTINGS.SHORTCUTS]: buildSettingsShortcutsLevel,
+    [SETTINGS.ABOUT]: buildSettingsAboutLevel,
+};
+
 function settingsOnFolderEnter(row: PopupRow): PopupLevel | null {
-    switch (row.target) {
-        case 'settings:appearance':
-            return buildSettingsAppearanceLevel();
-        case 'settings:filename':
-            return buildSettingsFilenameLevel();
-        case 'settings:performance':
-            return buildSettingsPerformanceLevel();
-        case 'settings:paths':
-            return buildSettingsPathsLevel();
-        case 'settings:external':
-            return buildSettingsExternalLevel();
-        case 'settings:software':
-            return buildSettingsSoftwareLevel();
-        case 'settings:screenshot':
-            return buildSettingsScreenshotLevel();
-        case 'settings:audio':
-            return buildSettingsAudioLevel();
-        case 'settings:shortcuts':
-            return buildSettingsShortcutsLevel();
-        case 'settings:about':
-            return buildSettingsAboutLevel();
-        default:
-            if (row.target && row.target.startsWith('settings:software-detail:')) {
-                const path = row.target.slice('settings:software-detail:'.length);
-                return buildSoftwareDetailLevel(path);
-            }
-            return null;
+    if (row.target) {
+        const builder = SETTINGS_FOLDER_ROUTES[row.target];
+        if (builder) return builder();
+
+        if (row.target.startsWith(SOFTWARE_DETAIL_PREFIX)) {
+            const path = row.target.slice(SOFTWARE_DETAIL_PREFIX.length);
+            return buildSoftwareDetailLevel(path);
+        }
     }
+    return null;
 }
 
 

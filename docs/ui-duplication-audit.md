@@ -174,7 +174,7 @@ btn.className = 'btn btn-sm btn-primary';  // 或 btn-ghost, btn-danger
 
 ---
 
-## 七、重构结果（2026-07-05）
+## 七、重构结果（2026-07-05 — 第一轮）
 
 | 指标 | 改前 | 改后 |
 |------|------|------|
@@ -185,7 +185,7 @@ btn.className = 'btn btn-sm btn-primary';  // 或 btn-ghost, btn-danger
 | CSS 新类 | — | `.field-label` `.field-value` `.slide-act-btn` |
 | 测试回归 | — | ✅ 958/958 通过 |
 
-### 具体改动
+### 具体改动（第一轮）
 
 | 文件 | 改动 | 效果 |
 |------|------|------|
@@ -200,10 +200,25 @@ btn.className = 'btn btn-sm btn-primary';  // 或 btn-ghost, btn-danger
 | `menus/scene-stage-levels.ts` | 用 `addDangerRow` 替换 | -8 行 |
 | `menus/scene-stage-lights.ts` | 用 `addDangerRow` 替换 | -10 行 |
 
-### 未纳入重构的模式
+### 第二轮（2026-07-05）— 解决剩余模式
 
-- **motion-popup.ts / outfit-ui.ts** — 行内有动态图标状态（check/circle），不适合通用组件
-- **tags 容器 (model-detail.ts)** — 异步加载 + 复杂交互，需独立抽象
-- **外部库双按钮行** — rename+del 两个按钮，单 `actionIcon` 不够
+| 文件 | 改动 | 效果 |
+|------|------|------|
+| `core/ui-slide-row.ts` | 加 `variant: 'accent'`、`actionIcons[]`、`iconFactory`、`inlineSub` | 支持 accent 色标签、多操作按钮、动态图标、内联 sublabel |
+| `core/ui-rows.ts` | 加 `addEmptyRow()` | 空状态占位行标准化 |
+| `core/app.css` | 加 `.accent-text` `.slide-item-muted` `.slide-sublabel-inline` `.slide-act-danger` | 替代 inline style |
+| `core/ui-helpers.ts` | 导出 `addEmptyRow` `SlideAction` | — |
+| `menus/motion-popup.ts` | 用 `addEmptyRow` 替换 2 处空状态 | -6 行 |
+| `menus/model-detail.ts` | 用 `variant: 'accent'` 替换 "管理软件" inline style | 消除 innerHTML |
+| `menus/outfit-ui.ts` | 用 `slideRow(iconFactory)` 替换变体行手动 DOM | -30 行 |
+| `menus/settings.ts` | 用 `slideRow(inlineSub + actionIcons[])` 替换外部库行 innerHTML | 消除 innerHTML |
+| 测试回归 | — | ✅ 982/982 通过 |
 
-**剩余估计重复率 ≈ 20%**（仍有 ~5 处手动 `.slide-item` 和 ~21 行 inline style 留待后续）。
+### 截至目前未纳入重构的模式
+
+- **motion-popup.ts 图层行** — 权重滑条 + 实时百分比 + toggle + 删除，4 控件组合太特殊
+- **model-detail.ts / library-core.ts favorites** — 动态颜色 + 条件文字 toggle，耦合度高
+- **env-preset-levels.ts 空状态** — 非 `.slide-item` 上下文，在自定义 listHost 中
+- **scene-stage-lights.ts opacity toggle** — 按钮启用/禁用视觉反馈，非重复模式
+
+**剩余估计重复率 ≈ 15%**（仅剩高度特化的 ~4 处自定义模式）。

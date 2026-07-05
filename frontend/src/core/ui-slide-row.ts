@@ -14,15 +14,28 @@ export interface HeaderToggleConfig {
     bind?: () => boolean;
 }
 
+export interface SlideAction {
+    icon: string;
+    title?: string;
+    danger?: boolean;
+    onClick: (e: MouseEvent) => void;
+}
+
 export interface SlideRowExtra {
-    /** 危险操作行（label 变红） */
-    variant?: 'default' | 'danger';
-    /** 右侧操作按钮图标（如 '✕', '▶', '✎'）*/
+    /** label 颜色变体：danger(红), accent(主题色) */
+    variant?: 'default' | 'danger' | 'accent';
+    /** 右侧操作按钮图标（如 '✕', '▶', '✎'）— 单个按钮快捷方式 */
     actionIcon?: string;
-    /** 操作按钮点击回调 */
+    /** 操作按钮点击回调（配合 actionIcon） */
     onActionClick?: (e: MouseEvent) => void;
+    /** 多操作按钮数组（与 actionIcon 叠加渲染） */
+    actionIcons?: SlideAction[];
     /** 自定义右侧 label（key-value 布局用） */
     rightLabel?: string;
+    /** 动态图标工厂函数——替代 icon 字符串参数，每次渲染调用 */
+    iconFactory?: () => HTMLElement;
+    /** sublabel 内联在 label 后（而非右对齐），适合需要 text-overflow 的场景 */
+    inlineSub?: boolean;
 }
 
 export function slideRow(
@@ -132,14 +145,19 @@ export function slideRow(
 
         const iconSpan = document.createElement('span');
         iconSpan.className = 'slide-icon';
-        const iconEl = createIconifyIcon(icon);
-        if (iconEl) {
-            iconSpan.appendChild(iconEl);
+        if (extra?.iconFactory) {
+            const el = extra.iconFactory();
+            if (el) iconSpan.appendChild(el);
         } else {
-            const fb = document.createElement('span');
-            fb.className = 'cs-icon-fallback';
-            fb.textContent = label.charAt(0) || '?';
-            iconSpan.appendChild(fb);
+            const iconEl = createIconifyIcon(icon);
+            if (iconEl) {
+                iconSpan.appendChild(iconEl);
+            } else {
+                const fb = document.createElement('span');
+                fb.className = 'cs-icon-fallback';
+                fb.textContent = label.charAt(0) || '?';
+                iconSpan.appendChild(fb);
+            }
         }
         row.appendChild(iconSpan);
 
@@ -157,14 +175,17 @@ export function slideRow(
             row.appendChild(rightSpan);
         } else {
             const labelSpan = document.createElement('span');
-            labelSpan.className = 'slide-label' + (variant === 'danger' ? ' danger-text' : '');
+            let labelCls = 'slide-label';
+            if (variant === 'danger') labelCls += ' danger-text';
+            else if (variant === 'accent') labelCls += ' accent-text';
+            labelSpan.className = labelCls;
             labelSpan.textContent = label;
             row.appendChild(labelSpan);
         }
 
         if (sublabel) {
             const sub = document.createElement('span');
-            sub.className = 'slide-sublabel';
+            sub.className = 'slide-sublabel' + (extra?.inlineSub ? ' slide-sublabel-inline' : '');
             sub.textContent = sublabel;
             row.appendChild(sub);
         }
@@ -188,6 +209,21 @@ export function slideRow(
                 });
             }
             row.appendChild(btn);
+        }
+        // 多操作按钮数组
+        if (extra?.actionIcons?.length) {
+            for (const act of extra.actionIcons) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-ghost btn-sm btn-icon slide-act-btn';
+                if (act.danger) btn.classList.add('slide-act-danger');
+                btn.textContent = act.icon;
+                btn.title = act.title || '';
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    act.onClick(e);
+                });
+                row.appendChild(btn);
+            }
         }
 
         if (hasArrow) {
