@@ -306,7 +306,8 @@ export function applyEnvPresetObject(preset: {
 
     const duration = 2000;
     const startTime = performance.now();
-    let frameCount = 0;
+    let lastSkyUpdate = 0;
+    const SKY_UPDATE_INTERVAL = 50; // ms — 显示器刷新率无关，始终 ~20fps
 
     setSkipLightAutoSave(true);
 
@@ -318,11 +319,10 @@ export function applyEnvPresetObject(preset: {
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / duration, 1.0);
         const lerp = (a: number, b: number) => a + (b - a) * t;
-        frameCount++;
 
-        // 天空纹理重建开销大（dispose + 重新生成），每 3 帧更新一次（~20fps），
-        // 视觉上 2 秒过渡期内无感知差异，但 texture rebuild 从 ~120 次降到 ~40 次。
-        if (frameCount % 3 === 0 || t >= 1) {
+        // 天空纹理重建开销大（dispose + 重新生成），50ms 间隔节流（~20fps），
+        // 显示器刷新率无关，texture rebuild 从 ~120 次降到 ~40 次。
+        if (elapsed - lastSkyUpdate >= SKY_UPDATE_INTERVAL || t >= 0.999) {
             const skyTop: [number, number, number] = [
                 lerp(startSkyTop[0], preset.skyColorTop[0]),
                 lerp(startSkyTop[1], preset.skyColorTop[1]),
@@ -352,6 +352,7 @@ export function applyEnvPresetObject(preset: {
                 },
                 true
             );
+            lastSkyUpdate = elapsed;
         }
 
         // 灯光每帧更新（开销小，无纹理重建）

@@ -204,17 +204,21 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
 
         let maxEndFrame = 0;
 
+        // weight 归一化：确保总权重 = 1.0，避免多层 weight=1.0 时骨骼旋转溢出
+        const totalWeight = enabledLayers.reduce((sum, l) => sum + l.weight, 0);
+
         for (const layer of enabledLayers) {
             const mmdAnimation = await vmdLoader.loadFromBufferAsync(layer.name, layer.data);
             const endFrame = mmdAnimation.endFrame;
             if (endFrame > maxEndFrame) maxEndFrame = endFrame;
 
+            const normalizedWeight = totalWeight > 0 ? layer.weight / totalWeight : 0;
             const span = new MmdAnimationSpan(
                 mmdAnimation,
                 0,          // startFrame
                 endFrame,   // endFrame
                 0,          // offset (所有图层从头开始)
-                layer.weight
+                normalizedWeight
             );
             composite.addSpan(span);
         }
@@ -224,12 +228,13 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         // WASM 运行时不支持 MmdCompositeAnimation（缺 createRuntimeModelAnimation），
         // 回退到主图层
         if (mmdRuntime instanceof MmdWasmRuntime) {
+            if (enabledLayers.length > 1) {
+                console.warn(`[MotionLayers] WASM runtime: ${enabledLayers.length} layers requested, only primary layer supported`);
+            }
             const primaryLayer = enabledLayers[0];
             const { loadVMDMotion } = await import('./vmd-loader');
             await loadVMDMotion(primaryLayer.data, primaryLayer.name, modelId);
-            if (enabledLayers.length > 1) {
-                setStatus(`⚠ WASM 仅支持单图层，已加载: ${primaryLayer.name}`, false);
-            }
+            setStatus(`⚠ WASM 仅支持单图层，已加载: ${primaryLayer.name}`, false);
             return;
         }
 

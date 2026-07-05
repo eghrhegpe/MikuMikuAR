@@ -282,6 +282,11 @@ function _renderParamCard(
     detailList: { name: string; index: number; modified: boolean }[]
 ): void {
     if (!_paramCardEl) return;
+    // 防止幽灵引用：容器被销毁后置 null
+    if (!_paramCardEl.isConnected) {
+        _paramCardEl = null;
+        return;
+    }
     _paramCardEl.innerHTML = '';
 
     if (index === -1 || !cat) {
@@ -325,6 +330,8 @@ function _renderParamCard(
     }, 'lucide:sun');
 
     if (current !== null) {
+        // 重置：批量状态变化 + 预期全量刷新，用 reRender。
+        // 色块点击：单点切换，用增量更新（内联 DOM 操作），避免 200+ 行折叠列表重建。
         slideRow(card, 'lucide:rotate-ccw', '重置此材质', false, () => {
             resetSingleMatParams(id, index);
             _selectedMat = null;
