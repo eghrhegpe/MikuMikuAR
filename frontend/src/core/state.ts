@@ -211,6 +211,13 @@ export function setMotionBindingTargetId(v: string | null): void {
     motionBindingTargetId = v;
 }
 
+// ======== Layer Binding Target (Motion Layers) ========
+
+export let layerBindingTargetId: string | null = null;
+export function setLayerBindingTargetId(v: string | null): void {
+    layerBindingTargetId = v;
+}
+
 // ======== Model Metadata Cache ========
 
 export let modelMetaCache = new Map<

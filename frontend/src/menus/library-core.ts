@@ -48,11 +48,14 @@ import {
     computeLibraryRef,
     motionBindingTargetId,
     setMotionBindingTargetId,
+    layerBindingTargetId,
+    setLayerBindingTargetId,
     cardContainer,
     formatError,
     librarySortMode,
 } from '../core/config';
 import { loadPMXFile, loadVMDFromPath, removeModel, loadAudioFile } from '../scene/scene';
+import { addVmdLayerFromPath } from '../scene/motion/vmd-layers';
 import { loadVPDPose } from '../scene/scene';
 import {
     SelectAudioFile,
@@ -156,6 +159,12 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
         },
         onItemClick: (row: PopupRow) => {
             if (row.model) {
+                if (row.model.format === 'vmd' && layerBindingTargetId) {
+                    closeAllOverlays();
+                    addVmdLayerFromPath(row.model.file_path, layerBindingTargetId);
+                    setLayerBindingTargetId(null);
+                    return;
+                }
                 if (row.model.format === 'vmd' && motionBindingTargetId) {
                     closeAllOverlays();
                     loadVMDFromPath(row.model.file_path, motionBindingTargetId);
