@@ -5,13 +5,10 @@ vars:
   BIN_DIR: "bin"
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
-  # 版本号注入：优先用环境变量 APP_VERSION，否则从 git describe 生成，最终回退到 "dev"
-  # 构建 example: APP_VERSION=0.2.0 task build
-  #                或 git tag v0.2.0 && task build（自动读取）
-  APP_VERSION: '{{.APP_VERSION | default (sh "git describe --tags --always --dirty 2>/dev/null || echo dev")}}'
-  # 构建时间 + commit hash，用于「关于」页诊断
-  BUILD_TIME: '{{.BUILD_TIME | default (sh "date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown")}}'
-  COMMIT_HASH: '{{.COMMIT_HASH | default (sh "git rev-parse --short HEAD 2>/dev/null || echo unknown")}}'
+  # 版本号：dev 模式直接用 "dev"，正式构建通过环境变量注入
+  APP_VERSION: '{{.APP_VERSION | default "dev"}}'
+  BUILD_TIME: '{{.BUILD_TIME | default "unknown"}}'
+  COMMIT_HASH: '{{.COMMIT_HASH | default "unknown"}}'
 
 includes:
   common: ./build/Taskfile.yml

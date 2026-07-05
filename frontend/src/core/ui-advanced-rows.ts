@@ -115,11 +115,34 @@ export function addColorSliderRow(
             }
         }
 
-        bar.addEventListener('click', (e) => {
+        let didDrag = false;
+        let dragRect: DOMRect | null = null;
+
+        function onDragMove(e: MouseEvent): void {
+            if (!didDrag) didDrag = true;
+            e.preventDefault();
+            if (dragRect) setValueFromClientX(e.clientX, dragRect);
+        }
+
+        function onDragEnd(e: MouseEvent): void {
+            document.removeEventListener('mousemove', onDragMove);
+            document.removeEventListener('mouseup', onDragEnd);
+            if (!didDrag) {
+                const rect = bar.getBoundingClientRect();
+                setValueFromClientX(e.clientX, rect);
+            }
+            dragRect = null;
+            didDrag = false;
+        }
+
+        bar.addEventListener('mousedown', (e) => {
             e.preventDefault();
             bar.focus();
-            const rect = bar.getBoundingClientRect();
-            setValueFromClientX(e.clientX, rect);
+            dragRect = bar.getBoundingClientRect();
+            didDrag = false;
+            setValueFromClientX(e.clientX, dragRect);
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('mouseup', onDragEnd);
         });
 
         bar.addEventListener('keydown', handleKeyDown);
