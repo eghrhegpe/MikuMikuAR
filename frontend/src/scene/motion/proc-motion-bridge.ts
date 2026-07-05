@@ -11,6 +11,8 @@ import {
     generateAutoDanceVmd,
     shouldAutoDance,
     shouldIdle,
+    PROC_VMD_NAME_IDLE,
+    PROC_VMD_NAME_AUTODANCE,
 } from '../../motion-algos/procedural-motion';
 import { BeatDetector } from '../../motion-algos/beat-detector';
 import { mmdRuntime, triggerAutoSave, focusedModelId } from '../../core/config';
@@ -373,7 +375,7 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     try {
         await loadVMDMotion(
             buf,
-            targetMode === 'autodance' && bpmValid ? 'AutoDance' : 'IdleMotion'
+            targetMode === 'autodance' && bpmValid ? PROC_VMD_NAME_AUTODANCE : PROC_VMD_NAME_IDLE
         );
 
         // Issue #3: 验证焦点模型是否在异步期间被切换
@@ -540,26 +542,24 @@ export function getBpmQuantizeEnabled(): boolean {
     return procBeatDetector?.getBpmQuantizeEnabled() ?? true;
 }
 
-/** 设置眼部跟随开关（实时效果，不重新生成 VMD）。 */
-export function setProcMotionEyeTrackingEnabled(v: boolean): void {
-    procState = { ...procState, eyeTrackingEnabled: v };
+/** 通用视线/头部追踪设定（重建追踪以应用新值）。 */
+function _setGazeTrackingSetting(field: 'eyeTrackingEnabled' | 'headTrackingEnabled', value: boolean): void {
+    procState = { ...procState, [field]: value };
     triggerAutoSave();
-    // 重新启动视线追踪（会先 teardown）
     if (_procVmdActive) {
         _teardownGazeTracking();
         _setupGazeTracking();
     }
 }
 
+/** 设置眼部跟随开关（实时效果，不重新生成 VMD）。 */
+export function setProcMotionEyeTrackingEnabled(v: boolean): void {
+    _setGazeTrackingSetting('eyeTrackingEnabled', v);
+}
+
 /** 设置头部跟随开关（实时效果，不重新生成 VMD）。 */
 export function setProcMotionHeadTrackingEnabled(v: boolean): void {
-    procState = { ...procState, headTrackingEnabled: v };
-    triggerAutoSave();
-    // 重新启动视线追踪（会先 teardown）
-    if (_procVmdActive) {
-        _teardownGazeTracking();
-        _setupGazeTracking();
-    }
+    _setGazeTrackingSetting('headTrackingEnabled', v);
 }
 
 export function regenerateProcMotion(): void {

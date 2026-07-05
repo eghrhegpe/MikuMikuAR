@@ -7,7 +7,7 @@ import {
 } from '@babylonjs/core';
 import { EnvState, envState } from '../../core/config';
 import { getWindVector } from '../../core/physics/wind-utils';
-import { _envSys, getScene } from './env-impl';
+import { _envSys, getScene, addRipple } from './env-impl';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';
@@ -268,21 +268,17 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
         }
         case 'fireworks': {
             ps.blendMode = ParticleSystem.BLENDMODE_ADD;
-            ps.emitRate = 80;
-            ps.gravity = new Vector3(0, -4, 0);
-            ps.minLifeTime = 1.2;
-            ps.maxLifeTime = 2.2;
-            ps.minEmitPower = 6;
-            ps.maxEmitPower = 10;
-            ps.minSize = 0.15;
-            ps.maxSize = 0.35;
-            ps.createSphereEmitter(0.1);
-            ps.addColorGradient(0, new Color4(1, 1, 0.6, 1), new Color4(1, 0.9, 0.4, 1));
-            ps.addColorGradient(0.5, new Color4(1, 0.6, 0.2, 1), new Color4(1, 0.4, 0.1, 1));
-            ps.addColorGradient(1, new Color4(1, 0.3, 0.1, 0), new Color4(0.8, 0.2, 0, 0));
-            ps.addSizeGradient(0, 0.1, 0.2);
-            ps.addSizeGradient(0.3, 0.3, 0.4);
-            ps.addSizeGradient(1, 0.05, 0.1);
+            ps.emitRate = 5; // 低发射率环境光晕；实际爆发由 burst 管理器生成临时系统
+            ps.gravity = new Vector3(0, -2, 0);
+            ps.minLifeTime = 1.5;
+            ps.maxLifeTime = 3;
+            ps.minEmitPower = 2;
+            ps.maxEmitPower = 5;
+            ps.minSize = 0.05;
+            ps.maxSize = 0.12;
+            ps.createSphereEmitter(2);
+            ps.addColorGradient(0, new Color4(1, 0.9, 0.4, 0.3), new Color4(1, 0.8, 0.2, 0.2));
+            ps.addColorGradient(1, new Color4(1, 0.5, 0.1, 0), new Color4(0.8, 0.3, 0, 0));
             break;
         }
         case 'fireflies': {
@@ -396,6 +392,11 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
 
     // 粒子类型变更后同步溅射状态（雨/雪才有溅射）
     syncSplashState();
+
+    // 烟花类型启动 burst 调度
+    if (type === 'fireworks') {
+        scheduleNextFireworkBurst();
+    }
 }
 
 export function disposeParticles(): void {
@@ -409,6 +410,7 @@ export function disposeParticles(): void {
         _envSys.particles.system = null;
     }
     disposeSplash(); // 粒子销毁时同步销毁溅射
+    stopFireworkBursts(); // 烟花 burst 清理
     // 释放粒子纹理缓存（防止 GPU 资源泄漏）
     for (const tex of _particleTextures.values()) {
         tex.dispose();
@@ -477,6 +479,14 @@ export function createSplashEmitter(): void {
         const rx = cam.position.x + (Math.random() - 0.5) * 80;
         const rz = cam.position.z + (Math.random() - 0.5) * 80;
         ps.emitter = new Vector3(rx, groundY + 0.1, rz);
+
+        // 雨滴落水涟漪：水面开启时，溅射位置在水面范围内则概率触发
+        if (envState.waterEnabled) {
+            const halfSize = envState.waterSize / 2;
+            if (Math.abs(rx) <= halfSize && Math.abs(rz) <= halfSize && Math.random() < 0.25) {
+                addRipple(new Vector3(rx, envState.waterLevel, rz), 1.5, 0.25, 1, 2);
+            }
+        }
     });
 }
 
@@ -501,6 +511,94 @@ export function syncSplashState(): void {
     } else if (!shouldShow && _splashSystem) {
         disposeSplash();
     }
+}
+
+// ======== Firework Multi-Burst System ========
+interface FireworkBurstInstance {
+    system: GPUParticleSystem;
+    cleanupTimer: ReturnType<typeof setTimeout>;
+}
+let _fireworkBursts: FireworkBurstInstance[] = [];
+let _fireworkScheduler: ReturnType<typeof setTimeout> | null = null;
+
+function spawnFireworkBurst(): void {
+    const scene = getScene();
+    const cam = scene.activeCamera;
+    if (!cam) return;
+
+    const groundY = envState.groundLevel ?? 0;
+    // 在相机附近随机位置爆散
+    const pos = new Vector3(
+        cam.position.x + (Math.random() - 0.5) * 30,
+        groundY + FIREWORK_HEIGHT_OFFSET + (Math.random() - 0.5) * 4,
+        cam.position.z + (Math.random() - 0.5) * 30,
+    );
+
+    const burst = new GPUParticleSystem(
+        `firework_${_fireworkBursts.length}_${Date.now()}`,
+        { capacity: 200 },
+        scene,
+    );
+    burst.particleTexture = makeParticleTexture('fireworks');
+    burst.emitter = pos;
+    burst.emitRate = 300; // 瞬时高密度爆发，50ms 后停发
+    setTimeout(() => { burst.emitRate = 0; }, 50);
+
+    burst.minLifeTime = 0.4;
+    burst.maxLifeTime = 1.0;
+    burst.minEmitPower = 4;
+    burst.maxEmitPower = 10;
+    burst.gravity = new Vector3(0, -2, 0);
+    burst.blendMode = ParticleSystem.BLENDMODE_ADD;
+    burst.createSphereEmitter(0.2);
+
+    // 每发随机色相
+    const hue = Math.random();
+    const r = 0.5 + Math.cos(hue * Math.PI * 2) * 0.5;
+    const g = 0.5 + Math.cos((hue + 1 / 3) * Math.PI * 2) * 0.5;
+    const b = 0.5 + Math.cos((hue + 2 / 3) * Math.PI * 2) * 0.5;
+
+    burst.addColorGradient(0, new Color4(r, g, b, 1), new Color4(r, g, b, 1));
+    burst.addColorGradient(0.4, new Color4(r, g, b, 0.8), new Color4(r * 0.8, g * 0.8, b * 0.8, 0.6));
+    burst.addColorGradient(1, new Color4(r * 0.3, g * 0.3, b * 0.3, 0), new Color4(r * 0.2, g * 0.2, b * 0.2, 0));
+
+    // 尺寸：爆炸膨胀后缩小
+    burst.minSize = 0.05;
+    burst.maxSize = 0.1;
+    burst.addSizeGradient(0, 0.02, 0.04);
+    burst.addSizeGradient(0.3, 0.2, 0.35);
+    burst.addSizeGradient(1, 0.04, 0.08);
+
+    burst.start();
+
+    const cleanupTimer = setTimeout(() => {
+        burst.dispose();
+        _fireworkBursts = _fireworkBursts.filter((b) => b.system !== burst);
+    }, 3000);
+
+    _fireworkBursts.push({ system: burst, cleanupTimer });
+}
+
+function scheduleNextFireworkBurst(): void {
+    const delay = 1200 + Math.random() * 1800; // 1.2~3s 间隔
+    _fireworkScheduler = setTimeout(() => {
+        if (_currentParticleType !== 'fireworks') return;
+        if (!envState.particleEnabled) return;
+        spawnFireworkBurst();
+        scheduleNextFireworkBurst();
+    }, delay);
+}
+
+function stopFireworkBursts(): void {
+    if (_fireworkScheduler !== null) {
+        clearTimeout(_fireworkScheduler);
+        _fireworkScheduler = null;
+    }
+    for (const b of _fireworkBursts) {
+        clearTimeout(b.cleanupTimer);
+        b.system.dispose();
+    }
+    _fireworkBursts = [];
 }
 
 // ======== Wind System ========

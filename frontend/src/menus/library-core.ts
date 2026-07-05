@@ -64,6 +64,7 @@ import { buildStageTransformLevel } from './scene-menu';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
+import { tryCatchStatus } from '../core/utils';
 import { stackRegistry, getMenuWrapper } from '../core/config';
 
 // ======== Model Stack ========
@@ -554,27 +555,9 @@ function buildTagsOverviewLevel(): PopupLevel {
                     c.appendChild(favRow);
 
                     for (const tag of regularTags) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        const is = document.createElement('span');
-                        is.className = 'slide-icon';
-                        const ie = createIconifyIcon('lucide:tag');
-                        if (ie) {
-                            is.appendChild(ie);
-                        }
-                        row.appendChild(is);
-                        const ls = document.createElement('span');
-                        ls.className = 'slide-label';
-                        ls.textContent = tag;
-                        row.appendChild(ls);
-                        const ar = document.createElement('span');
-                        ar.className = 'slide-arrow';
-                        ar.textContent = '>';
-                        row.appendChild(ar);
-                        row.addEventListener('click', () =>
+                        slideRow(c, 'lucide:tag', tag, true, () =>
                             stackRegistry.modelStack.push(buildTagDetailLevel(tag))
                         );
-                        c.appendChild(row);
                     }
 
                     if (regularTags.length === 0) {
@@ -625,23 +608,7 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
                 cardContainer(container, (c) => {
                     for (const m of matched) {
                         const row = modelToRow(m);
-                        const el = document.createElement('div');
-                        el.className = 'slide-item';
-                        const is = document.createElement('span');
-                        is.className = 'slide-icon';
-                        const ie = createIconifyIcon(row.icon);
-                        if (ie) {
-                            is.appendChild(ie);
-                        } else {
-                            is.textContent = row.icon;
-                        }
-                        el.appendChild(is);
-                        const ls = document.createElement('span');
-                        ls.className = 'slide-label';
-                        ls.textContent = row.label;
-                        el.appendChild(ls);
-                        el.addEventListener('click', () => onModelRowClick(m));
-                        c.appendChild(el);
+                        slideRow(c, row.icon, row.label, false, () => onModelRowClick(m));
                     }
                 });
             } catch (err) {
@@ -845,33 +812,27 @@ export async function initLibrary(): Promise<void> {
 }
 
 export async function selectResourceRoot(): Promise<void> {
-    try {
-        const dir = await SelectDir();
-        if (!dir) {
-            return;
-        }
+    const dir = await SelectDir();
+    if (!dir) {
+        return;
+    }
+    await tryCatchStatus(async () => {
         await SetResourceRoot(dir);
         await reloadConfig();
         await refreshLibrary();
-    } catch (err) {
-        console.error('Error setting resource root:', err);
-        setStatus('✗ 目录设置失败: ' + formatError(err), false);
-    }
+    }, '✗ 目录设置失败');
 }
 
 export async function selectOverridePath(category: string): Promise<void> {
-    try {
-        const dir = await SelectDir();
-        if (!dir) {
-            return;
-        }
+    const dir = await SelectDir();
+    if (!dir) {
+        return;
+    }
+    await tryCatchStatus(async () => {
         await SetOverridePath(category, dir);
         await reloadConfig();
         await refreshLibrary();
-    } catch (err) {
-        console.error('Error setting override path:', err);
-        setStatus('✗ 目录设置失败: ' + formatError(err), false);
-    }
+    }, '✗ 目录设置失败');
 }
 
 export async function rescanAndSync(dir?: string): Promise<LibraryModel[]> {
@@ -958,31 +919,31 @@ function restoreBrowsePath(pathDirs: string[]): void {
 export async function refreshLibrary(): Promise<void> {
     const prevPath = getCurrentBrowsePath();
     setStatus('扫描中...', false);
-    try {
+    const models = await tryCatchStatus(async () => {
         await ClearExtractCache();
-        const models = await rescanAndSync();
-        setStatus(`✓ ${(models || []).length} 个条目`, true);
-        CleanOrphanCache().catch((err) => console.warn('CleanOrphanCache (background):', err));
-        if (
-            dom.sceneOverlay.classList.contains('visible') &&
-            dom.sceneOverlay.dataset.popupType === 'model'
-        ) {
-            showModelPopup();
-            if (prevPath.length > 0 && libraryRoot) {
-                const rootDir = normPath(libraryRoot);
-                const rootLevel = buildLevel(
-                    rootDir,
-                    '模型库',
-                    (m) => m.format === 'pmx',
-                    stackRegistry.modelStack!,
-                    externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
-                );
-                stackRegistry.modelStack!.push(rootLevel);
-                restoreBrowsePath(prevPath);
-            }
+        const m = await rescanAndSync();
+        return m;
+    }, '✗ 扫描失败');
+    if (models === undefined) return;
+    setStatus(`✓ ${(models || []).length} 个条目`, true);
+    CleanOrphanCache().catch((err) => console.warn('CleanOrphanCache (background):', err));
+    if (
+        dom.sceneOverlay.classList.contains('visible') &&
+        dom.sceneOverlay.dataset.popupType === 'model'
+    ) {
+        showModelPopup();
+        if (prevPath.length > 0 && libraryRoot) {
+            const rootDir = normPath(libraryRoot);
+            const rootLevel = buildLevel(
+                rootDir,
+                '模型库',
+                (m) => m.format === 'pmx',
+                stackRegistry.modelStack!,
+                externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+            );
+            stackRegistry.modelStack!.push(rootLevel);
+            restoreBrowsePath(prevPath);
         }
-    } catch (_err) {
-        setStatus('✗ 扫描失败', false);
     }
 }
 

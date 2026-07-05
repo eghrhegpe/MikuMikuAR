@@ -15,6 +15,10 @@ import {
 
 export type ProcMotionMode = 'off' | 'idle' | 'autodance';
 
+/** 程序化 VMD 动画名，用于 vmd-loader 区分用户文件 vs 程序化生成。 */
+export const PROC_VMD_NAME_IDLE = 'IdleMotion';
+export const PROC_VMD_NAME_AUTODANCE = 'AutoDance';
+
 /** 程序化动作微动效果类别（用于 boneToggles 开关） */
 export const PROC_MOTION_BONE_CATEGORIES = [
     'center',        // センター（重心弹跳/摇摆）
@@ -353,7 +357,7 @@ export function generateIdleVmd(
     for (const b of bones) {
         b.interp = INTERP_EASE_IN_OUT;
     }
-    return buildVmd(bones, morphs, 'IdleMotion');
+    return buildVmd(bones, morphs, PROC_VMD_NAME_IDLE);
 }
 
 // ============================================================================
@@ -754,7 +758,7 @@ export function generateAutoDanceVmd(
             b.interp = INTERP_EASE_IN_OUT;
         }
     }
-    return buildVmd(bones, morphs, 'AutoDance');
+    return buildVmd(bones, morphs, PROC_VMD_NAME_AUTODANCE);
 }
 
 // ============================================================================

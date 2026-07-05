@@ -1,7 +1,7 @@
-# ADR-031: 全量文档翻新 + DanceXR 差距挖掘 + AGENTS.md 瘦身 + AI Mistake Tracker
+# ADR-031: 全量文档翻新 + DanceXR 差距挖掘 + AGENTS.md 瘦身 + AI Mistake Tracker + 竞品分析
 
 **日期**：2026-07-05
-> **状态**: 已完成 — 30 条 ADR 全量状态标记 + 粒子溅射实现 + HTTP 隔离修复 + roadmap/status 翻新
+> **状态**: 已完成 — ADR 全量状态标记+描述完善 + 粒子溅射 + HTTP 隔离 + SAF Spike + roadmap/status 翻新 + AGENTS.md 硬约束精简
 
 ---
 
@@ -224,13 +224,64 @@ AGENTS.md §1.3 任务触发器索引新增：「风场 / windDirection / windSp
 
 **教训**：反馈循环比预防文档更有效。tracker 数据直接反哺 AGENTS.md 的硬约束，比人工猜测"AI 会犯什么错"更可靠。
 
+### 19. MMD 生态竞品分析报告
+
+**新增 `docs/competitive-analysis.md`**（201 行）：
+- 覆盖 13 个核心竞品 + 20+ GitHub 项目（Saba/Coocoo3D/flowerMiku/mmd-viewer-js/HBR MMD Tools/MMD Bridge/SampleWebMMD 等）
+- 四大维度对标矩阵（渲染/动作/角色/系统）
+- MikuMikuAR 独特优势 8 项（聚合管理器/多模型同场/XPBD 布料/环境系统/程序化动作/模型预设/软件管理/Android 适配）
+- 关键差距三梯队排序（P2 5 项/中期 6 项/远期 5 项）
+- 差异化策略：聚合管理器 + 多模型导演台 + 跨平台
+
+**从其他 MMD 项目挖掘 15 个新目标**（写入 roadmap.md §G-J）：
+- G. 骨骼与动画增强（T-pose/A-pose 转换、BVH 导入、高斯眨眼、共振峰口型）
+- H. 渲染与视觉增强（Ray Tracing/GI、Decal、智能材质分类）
+- I. 导出与互通（Alembic/glTF、URL 场景分享、轻量视频录制）
+- J. 工作流增强（Pose Studio、Lua/JS 脚本层、VR 180）
+
+**累计差距清单**：DanceXR 25 项 + 其他项目 15 项 = 40 个增量目标
+
+### 20. AGENTS.md research 规则修正
+
+**根因**：旧规则「禁止读 `docs/research/`」太粗暴，AI 遇到 research 目录就连 grep 都不敢用，导致竞争报告没引用已有研究。
+
+**修复**：
+```
+旧：禁止读 `docs/research/` — 除非用户明确要求
+新：禁止全量读 `docs/research/` — 允许 grep 搜索，读取需用户确认或任务明确涉及
+```
+
+**教训**：禁止规则要区分「搜索」和「读取」——搜索是低成本操作（几行输出），读取才是高成本操作（填满上下文）。
+
+### 19. ADR 状态描述完善
+
+18 条 ADR 原先只写「已完成」或「已实现」无上下文，逐条补充具体实现内容。31 条 ADR 统一为 `> **状态**:` 格式，grep 可检索。
+
+### 20. ADR-023 SAF Spike
+
+Java 侧验证 SAF 可行性：
+- `WailsBridge.java`：+`openDocumentTree(int callbackID)` + `handleSafTreeResult(int, Intent)` + `pendingSafTreeCallbackID`
+- `MainActivity.java`：+`SAF_TREE_REQUEST` 常量 + `onActivityResult` 分支处理
+- 结论：Java 侧可行（Intent API + takePersistableUriPermission），Go 侧受 Wails v3 alpha `androidBridgeVoidIntString` 包内函数限制，无法从外部调用自定义 Java 方法
+
+### 21. AGENTS.md 硬约束精简
+
+7 条 → 6 条：
+- 删除「禁止 `ls` 探索未知目录」（过猛，有时需确认目录结构）
+- 「禁止全量读大文件」→「大文件 (>500 行) 先 grep 再读」（加具体阈值）
+- 「改完立即 build」→「改代码后 build，改文档不需要」（区分代码/文档）
+
+### 22. Roadmap 重复清理
+
+- 去掉「近期」表和 G/J 区的重复条目（T-pose/A-pose、Pose Studio 等各只保留一处）
+- 修正 ADR 计数：23→25, 5→3（005/016 已完成不再算部分完成）
+
 ## 影响
 
-- 其他 AI 会话启动时 grep `docs/adr/` 即可掌握全局进展
-- 剩余可做项仅 3 条：003（远期构想）、023（SAF Spike）、024（SSS 上游阻塞）
-- 文档体积缩减 ~85%（核心三文件 1843→324 行），信息密度大幅提升
-- `motion-algos/` 结构改名永久消除 AI 放错目录的根源
-- CI stale-link 检查防止未来断链
-- Phase 11-13 规划为后续开发提供明确方向（25 个增量目标，按优先级分层）
-- 文件职责边界明确化防止 AI 重复更新同一内容
-- AI Mistake Tracker 建立反馈循环，数据驱动文档改进（fix 率 35%，env 子系统 16 次连续链已写入硬约束）
+- 31 条 ADR 全部有状态标记+上下文描述，grep `docs/adr/` 即可掌握全局
+- 剩余可做项仅 3 条：003（远期构想）、023（SAF 等 Wails 稳定）、024（SSS 上游阻塞）
+- 文档体积缩减 ~85%（核心三文件 1843→324 行）
+- AGENTS.md 硬约束更贴合实际工作流（6 条，去掉过度限制）
+- Roadmap 无重复条目，G/J 区详细列表 + 近期/中期表互不冗余
+- 竞品分析报告覆盖 13 竞品 + 20+ GitHub 项目，明确三条护城河（聚合管理器/多模型导演/跨平台）
+- research 规则修正：搜索 vs 读取分离，避免 AI 因规则过严而忽略已有研究

@@ -26,6 +26,11 @@ let lipSyncMorphName: string | null = null;
 let lipSyncMorphSet: { open: string | null; close: string | null; pucker: string | null; smile: string | null } | null = null;
 let lastFocusedId: string | null = null;
 
+// morphName 缓存：避免每帧 O(M) 扫描 morphs 数组 + 数组分配
+let _lastCachedModelId: string | null = null;
+let _lastMorphNames: string[] = [];
+let _lastMorphNameSet = new Set<string>();
+
 // 平滑滤波器状态（低通滤波，减少 morph 权重抖动）
 let _smoothLow = 0;
 let _smoothHigh = 0;
@@ -118,10 +123,15 @@ export function updateLipSync(): void {
     }
 
     const morphs = inst.mmdModel.morph.morphs;
-    const morphNames = morphs.map((m) => m.name);
-    if (!lipSyncMorphName || !morphs.some((m) => m.name === lipSyncMorphName)) {
-        lipSyncMorphName = findLipMorph(morphNames);
-        lipSyncMorphSet = findAllLipMorphs(morphNames);
+    // morphName 缓存：仅 modelId 变化时重建，消除每帧 O(M) 扫描 + 数组分配
+    if (modelId !== _lastCachedModelId) {
+        _lastCachedModelId = modelId;
+        _lastMorphNames = morphs.map((m) => m.name);
+        _lastMorphNameSet = new Set(_lastMorphNames);
+    }
+    if (!lipSyncMorphName || !_lastMorphNameSet.has(lipSyncMorphName)) {
+        lipSyncMorphName = findLipMorph(_lastMorphNames);
+        lipSyncMorphSet = findAllLipMorphs(_lastMorphNames);
     }
     if (!lipSyncMorphName) {
         return;

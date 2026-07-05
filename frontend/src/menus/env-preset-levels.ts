@@ -6,6 +6,7 @@ import type { PopupLevel, PopupRow } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { addSliderRow, addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { showPrompt } from '../core/dialog';
+import { tryCatchStatus } from '../core/utils';
 import {
     setEnvState,
     getEnvSunAngle,
@@ -74,16 +75,14 @@ export function renderUserEnvPresets(container: HTMLElement): void {
             labelEl.textContent = e.label || e.name;
             labelEl.style.flex = '1';
             labelEl.addEventListener('click', async () => {
-                try {
+                const r = await tryCatchStatus(async () => {
                     const json = await LoadEnvPreset(e.name);
                     const preset = importEnvPreset(json);
                     if (!preset) { setStatus('✗ 预设文件格式错误', false); return; }
                     applyEnvPresetObject(preset);
-                    setStatus(`✓ 已应用预设：${preset.label}`, true);
-                } catch (err) {
-                    console.error('[env-menu] LoadEnvPreset failed:', err);
-                    setStatus('✗ 加载预设失败', false);
-                }
+                    return preset;
+                }, '✗ 加载预设失败');
+                if (r) setStatus(`✓ 已应用预设：${r.label}`, true);
             });
             row.appendChild(labelEl);
 
@@ -93,13 +92,13 @@ export function renderUserEnvPresets(container: HTMLElement): void {
             delBtn.textContent = '✕';
             delBtn.title = '删除预设';
             delBtn.addEventListener('click', async () => {
-                try {
+                const r = await tryCatchStatus(async () => {
                     await DeleteEnvPreset(e.name);
+                    return true;
+                }, '✗ 删除预设失败');
+                if (r) {
                     setStatus(`✓ 已删除预设：${e.label}`, true);
                     renderList();
-                } catch (err) {
-                    console.error('[env-menu] DeleteEnvPreset failed:', err);
-                    setStatus('✗ 删除预设失败', false);
                 }
             });
             row.appendChild(delBtn);
@@ -116,15 +115,15 @@ export function renderUserEnvPresets(container: HTMLElement): void {
     saveBtn.addEventListener('click', async () => {
         const name = await showPrompt('请输入预设名称（用作文件名，仅限字母数字/_/-/中文）');
         if (!name) return;
-        try {
+        const r = await tryCatchStatus(async () => {
             const preset = snapshotCurrentEnvPreset(name);
             const json = exportEnvPreset(preset);
             await SaveEnvPreset(name, json);
+            return true;
+        }, '✗ 保存预设失败');
+        if (r) {
             setStatus(`✓ 已保存预设：${name}`, true);
             renderList();
-        } catch (err) {
-            console.error('[env-menu] SaveEnvPreset failed:', err);
-            setStatus('✗ 保存预设失败', false);
         }
     });
     saveRow.appendChild(saveBtn);

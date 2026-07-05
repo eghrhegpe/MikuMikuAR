@@ -22,6 +22,7 @@ import {
 import { resolveFileUrl, normPath } from '../../core/fileservice';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '../../outfit/audio';
+import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '../../motion-algos/procedural-motion';
 
 // Dynamic re-import of scene.ts to access its module-level state
 // (scene, focusedMmdModel, focusedModel, isProcVmdActive, stopProcMotion)
@@ -39,7 +40,7 @@ export async function loadVMDMotion(
     const { scene, focusedMmdModel: _focusedMmdModel, isProcVmdActive, stopProcMotion, focusedModel: _focusedModel } =
         await getScene();
     // If user loads a real VMD, stop procedural motion
-    if (isProcVmdActive() && name !== 'IdleMotion' && name !== 'AutoDance') {
+    if (isProcVmdActive() && name !== PROC_VMD_NAME_IDLE && name !== PROC_VMD_NAME_AUTODANCE) {
         stopProcMotion();
     }
     if (!mmdRuntime) {
@@ -159,22 +160,25 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
     const baseUrl = vmdUrl.substring(0, vmdUrl.lastIndexOf('/') + 1);
     const basePath = vmdPath.replace(/\.vmd$/i, '');
     const exts = ['.mp3', '.wav', '.ogg', '.flac', '.wma'];
-    for (const ext of exts) {
+
+    // 并行 HEAD 探针，取首个成功的扩展名（Promise.any 只取最快的成功结果）
+    const probes = exts.map(async (ext) => {
         const audioPath = basePath + ext;
         const audioName = audioPath.split('/').pop() || '';
-        try {
-            const resp = await fetch(baseUrl + encodeURIComponent(audioName), { method: 'HEAD' });
-            if (resp.ok) {
-                await loadAudioFile(audioPath);
-                setStatus(`✓ VMD + 音频: ${audioName}`, true);
-                // 确保播放栏可见
-                const { updatePlaybackUI } = await import('./playback');
-                updatePlaybackUI();
-                return;
-            }
-        } catch {
-            // 文件不存在，尝试下一个扩展名
-        }
+        const resp = await fetch(baseUrl + encodeURIComponent(audioName), { method: 'HEAD' });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        return { audioPath, audioName };
+    });
+
+    try {
+        const { audioPath, audioName } = await Promise.any(probes);
+        await loadAudioFile(audioPath);
+        setStatus(`✓ VMD + 音频: ${audioName}`, true);
+        // 确保播放栏可见
+        const { updatePlaybackUI } = await import('./playback');
+        updatePlaybackUI();
+    } catch {
+        // 所有扩展名都未找到，静默跳过
     }
 }
 

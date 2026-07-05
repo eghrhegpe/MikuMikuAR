@@ -6,6 +6,7 @@ import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
 import { showConfirm, showPrompt } from '../core/dialog';
+import { tryCatchStatus } from '../core/utils';
 import {
     addSliderRow,
     addToggleRow,
@@ -69,16 +70,14 @@ let currentPresetIndex = -1;
 let _presetScenes: string[] = [];
 
 async function _loadPresetScene(name: string): Promise<boolean> {
-    try {
+    const r = await tryCatchStatus(async () => {
         const dir = await GetPresetScenesDir();
         const json = await LoadSceneFile(dir + '/' + name);
         await deserializeScene(JSON.parse(json));
         return true;
-    } catch (err) {
-        console.error('Load preset scene failed:', err);
-        setStatus('✗ 加载预设场景失败', false);
-        return false;
-    }
+    }, '✗ 加载预设场景失败');
+    if (r) return true;
+    return false;
 }
 
 export function buildPresetScenesLevel(): PopupLevel {
@@ -142,14 +141,15 @@ export function buildPresetScenesLevel(): PopupLevel {
                     delBtn.addEventListener('click', async (e) => {
                         e.stopPropagation();
                         if (!(await showConfirm(`确定删除「${name}」？`))) return;
-                        try {
+                        const r = await tryCatchStatus(async () => {
                             await DeletePresetScene(name);
+                            return true;
+                        }, '✗ 删除失败');
+                        if (r) {
                             if (currentPresetIndex === i) currentPresetIndex = -1;
                             else if (currentPresetIndex > i) currentPresetIndex--;
                             reRenderSceneMenu();
                             setStatus(`✓ 已删除: ${name}`, true);
-                        } catch {
-                            setStatus('✗ 删除失败', false);
                         }
                     });
                     row.appendChild(delBtn);
@@ -501,18 +501,7 @@ export function buildStageLightLevel(): PopupLevel {
 
                     // 拖拽定位按钮
                     const gizmoActive = isGizmoActive();
-                    const gizmoBtn = document.createElement('div');
-                    gizmoBtn.className = 'slide-item';
-                    const gizmoIcon = document.createElement('span');
-                    gizmoIcon.className = 'slide-icon';
-                    const gizmoIconEl = createIconifyIcon(gizmoActive ? 'lucide:x' : 'lucide:move-3d');
-                    if (gizmoIconEl) gizmoIcon.appendChild(gizmoIconEl);
-                    gizmoBtn.appendChild(gizmoIcon);
-                    const gizmoLabel = document.createElement('span');
-                    gizmoLabel.className = 'slide-label';
-                    gizmoLabel.textContent = gizmoActive ? '退出拖拽' : '拖拽定位';
-                    gizmoBtn.appendChild(gizmoLabel);
-                    gizmoBtn.addEventListener('click', () => {
+                    slideRow(inner, gizmoActive ? 'lucide:x' : 'lucide:move-3d', gizmoActive ? '退出拖拽' : '拖拽定位', false, () => {
                         if (gizmoActive) {
                             detachLightGizmo();
                             setStatus('✓ 已退出拖拽模式', true);
@@ -522,7 +511,6 @@ export function buildStageLightLevel(): PopupLevel {
                         }
                         reRenderSceneMenu();
                     });
-                    inner.appendChild(gizmoBtn);
                 },
             });
 
@@ -875,23 +863,11 @@ export function buildStageTransformLevel(id: string): PopupLevel {
 
             // —— 重置 + 删除 ——
             cardContainer(container, (c) => {
-                const resetRow = document.createElement('div');
-                resetRow.className = 'slide-item';
-                const resetIcon = document.createElement('span');
-                resetIcon.className = 'slide-icon';
-                const resetIconEl = createIconifyIcon('lucide:rotate-ccw');
-                if (resetIconEl) resetIcon.appendChild(resetIconEl);
-                resetRow.appendChild(resetIcon);
-                const resetLabel = document.createElement('span');
-                resetLabel.className = 'slide-label';
-                resetLabel.textContent = '重置变换';
-                resetRow.appendChild(resetLabel);
-                resetRow.addEventListener('click', () => {
+                slideRow(c, 'lucide:rotate-ccw', '重置变换', false, () => {
                     resetModelTransform(id);
                     reRenderSceneMenu();
                     setStatus('✓ 舞台变换已重置', true);
                 });
-                c.appendChild(resetRow);
 
                 const delRow = document.createElement('div');
                 delRow.className = 'slide-item';
@@ -1038,21 +1014,7 @@ export function buildPresetsLevel(): PopupLevel {
                 chipGroup.appendChild(wrapper);
             }
             container.appendChild(chipGroup);
-            const saveRow = document.createElement('div');
-            saveRow.className = 'slide-item';
-            {
-                const iconSpan = document.createElement('span');
-                iconSpan.className = 'slide-icon';
-                const iconEl = createIconifyIcon('lucide:save');
-                if (iconEl) iconSpan.appendChild(iconEl);
-                saveRow.appendChild(iconSpan);
-                const labelSpan = document.createElement('span');
-                labelSpan.className = 'slide-label';
-                labelSpan.textContent = '保存当前为预设';
-                saveRow.appendChild(labelSpan);
-            }
-            saveRow.addEventListener('click', showPresetSaveDialog);
-            container.appendChild(saveRow);
+            slideRow(container, 'lucide:save', '保存当前为预设', false, showPresetSaveDialog);
             if (Object.keys(userPresets).length > 0) {
                 const userChipGroup = document.createElement('div');
                 userChipGroup.className = 'preset-group';
@@ -1078,20 +1040,19 @@ export async function showPresetSaveDialog(): Promise<void> {
     if (!name || !name.trim()) return;
     const trimmed = name.trim();
     const state = getRenderState();
-    SaveRenderPreset(trimmed, JSON.stringify(state))
-        .then(() => {
-            userPresets[trimmed] = state;
-            setStatus(`✓ 预设已保存: ${trimmed}`, true);
-            const menu = getSceneMenu();
-            if (menu) {
-                menu.setLevel(menu.levelCount - 1, buildPresetsLevel());
-                reRenderSceneMenu();
-            }
-        })
-        .catch((err: unknown) => {
-            console.warn('SaveRenderPreset failed:', err);
-            setStatus('✗ 保存预设失败', false);
-        });
+    const r = await tryCatchStatus(async () => {
+        await SaveRenderPreset(trimmed, JSON.stringify(state));
+        return true;
+    }, '✗ 保存预设失败');
+    if (r) {
+        userPresets[trimmed] = state;
+        setStatus(`✓ 预设已保存: ${trimmed}`, true);
+        const menu = getSceneMenu();
+        if (menu) {
+            menu.setLevel(menu.levelCount - 1, buildPresetsLevel());
+            reRenderSceneMenu();
+        }
+    }
 }
 
 export const userPresets: Record<string, Partial<RenderState>> = {};

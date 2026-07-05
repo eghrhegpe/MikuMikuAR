@@ -89,7 +89,7 @@ cd frontend && npm run test     # vitest 单元测试
 | JS 运行时无 WASM Bullet 物理 | 注视追踪需切到 JS 运行时（`VITE_MMD_RUNTIME=js`），布料/头发摆动失效 |
 | SSS 次表面散射未实现 | 依赖 babylon-mmd 支持 PBR 材质，上游阻塞 |
 | SAF 完整路径待 Spike | Android 文件访问 Phase C 未实施 |
-| config.ts 全局状态耦合 | 多模块共享，改一处可能影响全局 |
+| ~~config.ts 全局状态耦合~~ | ✅ 已拆为 types/state/dom/utils 四文件（ADR-032） |
 
 ---
 

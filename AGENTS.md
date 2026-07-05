@@ -6,12 +6,11 @@
 ## 硬约束
 
 1. **禁止递归扫描 `docs/`** — 只读地图列出的文件
-2. **禁止读 `docs/research/`** — 除非用户明确要求
-3. **禁止 `ls` 探索未知目录** — 没列出的目录不存在
-4. **禁止全量读大文件** — 先 grep，再读匹配段落
-5. **改前读文件，改完立即 build** — 不攒修改
-6. **写新函数前查 `docs/reusables.md`** — 已有不重复
-7. **Markdown 链接写完确认目标存在** — 断链 = 下一个 AI 被误导
+2. **禁止全量读 `docs/research/`** — 允许 grep 搜索，读取需用户确认或任务明确涉及
+3. **大文件 (>500 行) 先 grep 再读** — 不要一次读完整个大文件，先定位再读匹配段落
+4. **改代码后立即 build** — 不攒修改；改文档/markdown 不需要 build
+5. **写新函数前查 `docs/reusables.md`** — 已有不重复
+6. **Markdown 链接写完确认目标存在** — 断链 = 下一个 AI 被误导
 
 ## AI 高频犯错区（tracker 数据驱动）
 
@@ -38,6 +37,7 @@
 | `docs/workflow.md` | 环境约定 + 会话边界 + 失败熔断 | ❌ |
 | `docs/multi-ai.md` | 多 AI 并发约束 | ❌ |
 | `docs/function-map.md` | 函数映射表（按需 grep，不全读） | ❌ |
+| `docs/competitive-analysis.md` | 竞品分析报告（20+ GitHub 项目对标） | ❌ |
 | `docs/fix-cycle.md` | Bug 修复流程模板 | ❌ |
 | `docs/outfits-spec.md` | 换装系统用户文档 | ❌ |
 | `frontend/AGENTS.md` | 前端子包专用（构建/测试/TS 约定/目录索引） | ❌ |
@@ -57,6 +57,7 @@
 | 复用函数 | `docs/reusables.md`（grep） |
 | 修 Bug | `docs/troubleshooting.md` → `docs/fix-cycle.md` |
 | 多 AI 并发 | `docs/multi-ai.md` |
+| 竞品对标 | `docs/competitive-analysis.md` |
 
 ## 仓库结构
 

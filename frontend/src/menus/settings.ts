@@ -184,13 +184,7 @@ function buildSettingsFilenameLevel(): PopupLevel {
                 }
 
                 // 添加新映射
-                const addRow = document.createElement('div');
-                addRow.className = 'slide-item';
-                addRow.innerHTML = `
-                    <span class="slide-icon"><iconify-icon icon="lucide:plus"></iconify-icon></span>
-                    <span class="slide-label">添加材质映射</span>
-                `;
-                addRow.addEventListener('click', async () => {
+                slideRow(c, 'lucide:plus', '添加材质映射', false, async () => {
                     const pattern = await showPrompt('输入正则匹配模式（如 skirt|スカート）：');
                     if (!pattern) return;
                     try {
@@ -212,7 +206,6 @@ function buildSettingsFilenameLevel(): PopupLevel {
                     setUIState({ materialCategoryMap: uiState.materialCategoryMap });
                     getSettingsMenu()?.reRender();
                 });
-                c.appendChild(addRow);
             });
             // 自动导入
             addSectionTitle(container, '自动导入');
@@ -465,11 +458,7 @@ function buildSettingsAppearanceLevel(): PopupLevel {
             });
 
             cardContainer(container, (c) => {
-                const resetRow = document.createElement('div');
-                resetRow.className = 'slide-item';
-                resetRow.innerHTML =
-                    '<span class="slide-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="slide-label">恢复默认外观</span>';
-                resetRow.addEventListener('click', () => {
+                slideRow(c, 'lucide:rotate-ccw', '恢复默认外观', false, () => {
                     const root = document.documentElement;
                     root.style.setProperty('--ui-scale', '1');
                     root.style.setProperty('--popup-width', '280px');
@@ -494,7 +483,6 @@ function buildSettingsAppearanceLevel(): PopupLevel {
                     getSettingsMenu()?.updateControls();
                     setStatus('✓ 外观已恢复默认', true);
                 });
-                c.appendChild(resetRow);
             });
         },
     };
@@ -727,13 +715,14 @@ function buildSettingsExternalLevel(): PopupLevel {
                     row.querySelector('.ext-rename')!.addEventListener('click', async () => {
                         const newName = await showPrompt('输入新的显示名称：', ep.name);
                         if (newName && newName.trim() && newName.trim() !== ep.name) {
-                            try {
+                            const r = await tryCatchStatus(async () => {
                                 await RenameExternalPath(ep.path, newName.trim());
+                                return true;
+                            }, '✗ 重命名失败');
+                            if (r) {
                                 await reloadConfig();
                                 getSettingsMenu()?.reRender();
                                 setStatus('✓ 已重命名', true);
-                            } catch {
-                                setStatus('✗ 重命名失败', false);
                             }
                         }
                     });
@@ -942,32 +931,9 @@ function buildSettingsAboutLevel(): PopupLevel {
             // 维护工具：清除缓存
             cardContainer(container, (c) => {
                 addSectionTitle(c, '维护工具');
-                const extractRow = document.createElement('div');
-                extractRow.className = 'slide-item';
-                extractRow.innerHTML = `
-                    <span class="slide-icon"><iconify-icon icon="lucide:trash-2"></iconify-icon></span>
-                    <span class="slide-label">清除提取缓存</span>
-                `;
-                extractRow.addEventListener('click', () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearextractcache' }));
-                c.appendChild(extractRow);
-
-                const thumbRow = document.createElement('div');
-                thumbRow.className = 'slide-item';
-                thumbRow.innerHTML = `
-                    <span class="slide-icon"><iconify-icon icon="lucide:image"></iconify-icon></span>
-                    <span class="slide-label">清除缩略图缓存</span>
-                `;
-                thumbRow.addEventListener('click', () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearthumbnail' }));
-                c.appendChild(thumbRow);
-
-                const allRow = document.createElement('div');
-                allRow.className = 'slide-item';
-                allRow.innerHTML = `
-                    <span class="slide-icon"><iconify-icon icon="lucide:trash"></iconify-icon></span>
-                    <span class="slide-label">清除全部缓存</span>
-                `;
-                allRow.addEventListener('click', () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearallcache' }));
-                c.appendChild(allRow);
+                slideRow(c, 'lucide:trash-2', '清除提取缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearextractcache' }));
+                slideRow(c, 'lucide:image', '清除缩略图缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearthumbnail' }));
+                slideRow(c, 'lucide:trash', '清除全部缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearallcache' }));
             });
         },
     };

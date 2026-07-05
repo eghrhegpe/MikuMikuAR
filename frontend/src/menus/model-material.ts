@@ -24,7 +24,7 @@ import {
     setMatEnabled,
 } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
-import { addSliderRow, addCollapsible } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addCollapsible } from '../core/ui-helpers';
 
 let _selectedMat: { cat: string; index: number } | null = null;
 
@@ -131,25 +131,11 @@ export function buildPerMatLevel(
                 });
 
                 if (isModified) {
-                    const resetRow = document.createElement('div');
-                    resetRow.className = 'slide-item';
-                    const ri = document.createElement('span');
-                    ri.className = 'slide-icon';
-                    const re = createIconifyIcon('lucide:rotate-ccw');
-                    if (re) {
-                        ri.appendChild(re);
-                    }
-                    resetRow.appendChild(ri);
-                    const rl = document.createElement('span');
-                    rl.className = 'slide-label';
-                    rl.textContent = '重置此材质';
-                    resetRow.appendChild(rl);
-                    resetRow.addEventListener('click', () => {
+                    slideRow(c, 'lucide:rotate-ccw', '重置此材质', false, () => {
                         resetSingleMatParams(id, matIndex);
                         stackRegistry.modelStack.reRender();
                         setStatus(`✓ 已重置: ${matName}`, true);
                     });
-                    c.appendChild(resetRow);
                 }
             });
         },
@@ -308,17 +294,12 @@ export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
                         'lucide:sun'
                     );
 
-                    const resetRow = document.createElement('div');
-                    resetRow.className = 'slide-item';
-                    resetRow.innerHTML =
-                        '<span class="slide-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="slide-label">重置此材质</span>';
-                    resetRow.addEventListener('click', () => {
+                    slideRow(c, 'lucide:rotate-ccw', '重置此材质', false, () => {
                         resetSingleMatParams(id, index);
                         _selectedMat = null;
                         stackRegistry.modelStack.reRender();
                         setStatus(`✓ 已重置: ${matName}`, true);
                     });
-                    c.appendChild(resetRow);
                 } else {
                     const hint = document.createElement('div');
                     hint.style.cssText =
@@ -330,18 +311,13 @@ export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
 
             // 卡片 3：重置全部
             cardContainer(container, (c) => {
-                const resetAllRow = document.createElement('div');
-                resetAllRow.className = 'slide-item';
-                resetAllRow.innerHTML =
-                    '<span class="slide-icon"><iconify-icon icon="lucide:refresh-ccw"></iconify-icon></span><span class="slide-label">重置全部材质参数</span>';
-                resetAllRow.addEventListener('click', () => {
+                slideRow(c, 'lucide:refresh-ccw', '重置全部材质参数', false, () => {
                     resetMatCatParams(id);
                     resetAllMatParams(id);
                     _selectedMat = null;
                     stackRegistry.modelStack.reRender();
                     setStatus('✓ 全部材质参数已重置', true);
                 });
-                c.appendChild(resetAllRow);
             });
         },
     };
