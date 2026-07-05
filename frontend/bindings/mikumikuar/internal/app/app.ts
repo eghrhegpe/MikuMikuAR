@@ -799,3 +799,19 @@ export function ToggleFavorite(libraryRef: string): $CancellablePromise<void> {
 export function UpdateCustomSoftware(path: string, name: string, args: string): $CancellablePromise<void> {
     return $Call.ByID(1840334952, path, name, args);
 }
+
+// ======== Scene Bundle bindings (run `wails generate` to refresh IDs) ========
+
+/**
+ * BundleScene packages a scene JSON + all referenced asset files into a zip.
+ */
+export function BundleScene(targetPath: string, sceneJSON: string, assetPaths: string[]): $CancellablePromise<void> {
+    return $Call.ByID(0, targetPath, sceneJSON, assetPaths); // TODO: run `wails generate` to get correct ID
+}
+
+/**
+ * SelectBundleSaveFile opens a save dialog for scene bundle files.
+ */
+export function SelectBundleSaveFile(): $CancellablePromise<string> {
+    return $Call.ByID(0); // TODO: run `wails generate` to get correct ID
+}

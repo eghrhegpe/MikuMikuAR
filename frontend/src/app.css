@@ -882,6 +882,28 @@ input, textarea, [contenteditable] {
     flex-shrink: 0;
     margin-left: 4px;
 }
+
+/* Field label/value — 键值字段行（替代 inline style） */
+.field-label {
+    flex: none !important;
+    color: var(--text-dim) !important;
+}
+.field-value {
+    text-align: right;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11px;
+    color: var(--text);
+}
+
+/* Slide action button — 行内操作按钮（替代 inline button style） */
+.slide-act-btn {
+    flex-shrink: 0;
+    margin-left: auto;
+    font-size: 12px;
+    padding: 2px 4px;
+}
 .slide-divider {
     height: 1px;
     background: rgba(255, 255, 255, 0.06);

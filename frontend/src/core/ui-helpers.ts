@@ -3,12 +3,15 @@
 
 export type { ControlOptions } from './ui-types';
 export { slideRow } from './ui-slide-row';
+export type { SlideRowExtra, HeaderToggleConfig } from './ui-slide-row';
 export {
     addToggleRow,
     addSliderRow,
     addModeRow,
     sliderRow,
     toggleRow,
+    addDangerRow,
+    addFieldRow,
 } from './ui-rows';
 export {
     addColorSliderRow,

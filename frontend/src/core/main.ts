@@ -47,6 +47,7 @@ import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '..
 import { freeflyInput, getCameraMode } from '../scene/camera/camera';
 import './iconify-registry';
 import 'iconify-icon';
+import { registerShortcuts, initShortcutDispatcher } from './shortcut-registry';
 
 function hexToRgb(hex: string): string {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -206,25 +207,128 @@ function buildNavMaps(): void {
     });
 }
 
-// Keyboard shortcuts
-window.addEventListener('keydown', async (e) => {
-    const t = e.target as HTMLElement;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
-        return;
-    }
+// ======== Register global shortcuts via ShortcutRegistry ========
+function registerAppShortcuts(): void {
+    registerShortcuts([
+        {
+            id: 'toggle:models',
+            label: '模型库',
+            defaultKey: 'Digit1',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                navActions[1]();
+                setStatus(navLabels[1] || '', false);
+            },
+            group: '弹窗导航',
+        },
+        {
+            id: 'toggle:motion',
+            label: '动作',
+            defaultKey: 'Digit2',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                navActions[2]();
+                setStatus(navLabels[2] || '', false);
+            },
+            group: '弹窗导航',
+        },
+        {
+            id: 'toggle:scene',
+            label: '场景',
+            defaultKey: 'Digit3',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                navActions[3]();
+                setStatus(navLabels[3] || '', false);
+            },
+            group: '弹窗导航',
+        },
+        {
+            id: 'toggle:env',
+            label: '环境',
+            defaultKey: 'Digit4',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                navActions[4]();
+                setStatus(navLabels[4] || '', false);
+            },
+            group: '弹窗导航',
+        },
+        {
+            id: 'toggle:settings',
+            label: '设置',
+            defaultKey: 'Digit5',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                navActions[5]();
+                setStatus(navLabels[5] || '', false);
+            },
+            group: '弹窗导航',
+        },
+        {
+            id: 'playback:toggle',
+            label: '播放/暂停',
+            defaultKey: 'Space',
+            prevent: true,
+            handler: () => {
+                if (mmdRuntime && focusedMmdModel()) {
+                    dom.btnPlayPause.click();
+                }
+            },
+            group: '播放控制',
+        },
+        {
+            id: 'global:close',
+            label: '关闭弹窗',
+            defaultKey: 'Escape',
+            handler: () => {
+                closeAllOverlays();
+                document.body.classList.remove('ui-hidden');
+            },
+            group: '全局',
+        },
+        {
+            id: 'playback:seek-back',
+            label: '后退 5 秒',
+            defaultKey: 'ArrowLeft',
+            prevent: true,
+            handler: () => {
+                if (!mmdRuntime) return;
+                const foc = focusedModel();
+                const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
+                if (dur <= 0) return;
+                mmdRuntime.seekAnimation(Math.max(0, mmdRuntime.currentTime - 5), true);
+                updatePlaybackUI();
+            },
+            group: '播放控制',
+        },
+        {
+            id: 'playback:seek-forward',
+            label: '前进 5 秒',
+            defaultKey: 'ArrowRight',
+            prevent: true,
+            handler: () => {
+                if (!mmdRuntime) return;
+                const foc = focusedModel();
+                const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
+                if (dur <= 0) return;
+                mmdRuntime.seekAnimation(Math.min(dur, mmdRuntime.currentTime + 5), true);
+                updatePlaybackUI();
+            },
+            group: '播放控制',
+        },
+    ]);
+}
 
-    // Ctrl+1/2/3/4/5: toggle nav overlays
-    if (e.ctrlKey && !e.repeat && /^Digit\d$/.test(e.code)) {
-        e.preventDefault();
-        const num = parseInt(e.code.slice(-1), 10);
-        if (navActions[num]) {
-            await navActions[num]();
-            setStatus(navLabels[num] || '', false);
-        }
-        return;
-    }
-
-    // Freefly WASD (only respond in freefly mode)
+// ======== Freefly WASD (only respond in freefly mode) ========
+// Other shortcuts (Ctrl+1~5, Space, Escape, ArrowLeft/Right) are
+// handled by the ShortcutRegistry dispatcher initialized in init().
+window.addEventListener('keydown', (e) => {
     if (getCameraMode() === 'freefly') {
         if (e.code === 'KeyW') {
             freeflyInput.forward = true;
@@ -245,32 +349,6 @@ window.addEventListener('keydown', async (e) => {
             freeflyInput.down = true;
             e.preventDefault();
         }
-    }
-
-    if (e.code === 'Space' && !e.repeat && mmdRuntime && focusedMmdModel()) {
-        e.preventDefault();
-        dom.btnPlayPause.click();
-    } else if (e.code === 'Escape') {
-        closeAllOverlays();
-        document.body.classList.remove('ui-hidden'); // ESC 同时退出无 UI 模式
-    } else if (e.code === 'ArrowLeft' && mmdRuntime) {
-        const foc = focusedModel();
-        const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
-        if (dur <= 0) {
-            return;
-        }
-        e.preventDefault();
-        mmdRuntime.seekAnimation(Math.max(0, mmdRuntime.currentTime - 5), true);
-        updatePlaybackUI();
-    } else if (e.code === 'ArrowRight' && mmdRuntime) {
-        const foc = focusedModel();
-        const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
-        if (dur <= 0) {
-            return;
-        }
-        e.preventDefault();
-        mmdRuntime.seekAnimation(Math.min(dur, mmdRuntime.currentTime + 5), true);
-        updatePlaybackUI();
     }
 });
 
@@ -458,6 +536,9 @@ async function init(): Promise<void> {
         // 注册本地图标 bundle，使 iconify 离线可用
         registerIconBundle();
         buildNavMaps();
+        // Register keyboard shortcuts via ShortcutRegistry
+        registerAppShortcuts();
+        initShortcutDispatcher();
         setStatus('正在初始化...', false);
         await initScene();
         initDropHandler();

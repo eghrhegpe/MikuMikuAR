@@ -12,8 +12,8 @@ import {
 } from '../core/wails-bindings';
 import { setStatus, cardContainer, escapeHtml } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { slideRow } from '../core/ui-helpers';
-import { softwareKindIcon, createIconifyIcon } from '../core/icons';
+import { slideRow, addDangerRow, addFieldRow } from '../core/ui-helpers';
+import { softwareKindIcon } from '../core/icons';
 import { showPrompt } from '../core/dialog';
 import { tryCatchStatus } from '../core/utils';
 import { getSettingsMenu } from './settings';
@@ -92,30 +92,19 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
             if (entries && entries.length > 0) {
                 cardContainer(container, (c) => {
                     for (const entry of entries) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        row.addEventListener('click', (e) => {
-                            if ((e.target as HTMLElement).closest('.btn')) {
-                                return;
-                            }
-                            getSettingsMenu()?.push(buildSoftwareDetailLevel(entry.path));
-                        });
-                        row.innerHTML = `
-                            <span class="slide-icon"><iconify-icon icon="${softwareKindIcon(entry.kind)}"></iconify-icon></span>
-                            <span class="slide-label">${escapeHtml(entry.name)}</span>
-                            <span class="slide-sublabel">${escapeHtml(entry.kind)}</span>
-                            <span class="slide-tag">${entry.managed ? '自定义' : 'auto'}</span>
-                            <button class="btn btn-ghost btn-sm btn-icon" title="直接启动">▶</button>
-                        `;
-                        row.querySelector('.btn')!.addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            const r = await tryCatchStatus(async () => {
-                                await LaunchSoftware(entry.path, entry.args || '');
-                                return true;
-                            }, `✗ 启动 ${entry.name}`);
-                            if (r) setStatus(`✓ 已启动: ${entry.name}`, true);
-                        });
-                        c.appendChild(row);
+                        slideRow(c, softwareKindIcon(entry.kind), escapeHtml(entry.name), false,
+                            () => getSettingsMenu()?.push(buildSoftwareDetailLevel(entry.path)),
+                            escapeHtml(entry.kind),
+                            entry.managed ? '自定义' : 'auto',
+                            undefined, undefined,
+                            { actionIcon: '▶', onActionClick: async () => {
+                                const r = await tryCatchStatus(async () => {
+                                    await LaunchSoftware(entry.path, entry.args || '');
+                                    return true;
+                                }, `✗ 启动 ${entry.name}`);
+                                if (r) setStatus(`✓ 已启动: ${entry.name}`, true);
+                            }}
+                        );
                     }
                 });
             }
@@ -164,12 +153,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                         { label: '类型', value: entry.kind },
                     ];
                     for (const f of fields) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        row.style.cssText =
-                            'display:flex;justify-content:space-between;padding:6px 14px;min-height:auto;margin:0;';
-                        row.innerHTML = `<span class="slide-label" style="color:var(--text-dim);flex:none;">${f.label}</span><span class="slide-label" style="text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;font-size:11px;">${escapeHtml(f.value)}</span>`;
-                        c.appendChild(row);
+                        addFieldRow(c, f.label, escapeHtml(f.value));
                     }
                     const argRow = document.createElement('div');
                     argRow.style.cssText = 'padding:6px 14px;';
@@ -202,26 +186,13 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                 });
 
                 cardContainer(container, (c) => {
-                slideRow(c, 'lucide:play', '启动', false, () => {
-                    LaunchSoftware(entry.path, '')
-                        .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
-                        .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
-                });
+                    slideRow(c, 'lucide:play', '启动', false, () => {
+                        LaunchSoftware(entry.path, '')
+                            .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
+                            .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
+                    });
 
-                    const delRow = document.createElement('div');
-                    delRow.className = 'slide-item';
-                    const di = document.createElement('span');
-                    di.className = 'slide-icon';
-                    const de = createIconifyIcon('lucide:trash-2');
-                    if (de) {
-                        di.appendChild(de);
-                    }
-                    delRow.appendChild(di);
-                    const dl = document.createElement('span');
-                    dl.className = 'slide-label danger-text';
-                    dl.textContent = '删除';
-                    delRow.appendChild(dl);
-                    delRow.addEventListener('click', async () => {
+                    addDangerRow(c, 'lucide:trash-2', '删除', async () => {
                         const r = await tryCatchStatus(async () => {
                             await RemoveCustomSoftware(entry.path);
                             return true;
@@ -236,7 +207,6 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                             menu?.reRender();
                         }
                     });
-                    c.appendChild(delRow);
                 });
             },
         };
@@ -254,12 +224,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     { label: '类型', value: entry.kind },
                 ];
                 for (const f of fields) {
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    row.style.cssText =
-                        'display:flex;justify-content:space-between;padding:6px 14px;min-height:auto;margin:0;';
-                    row.innerHTML = `<span class="slide-label" style="color:var(--text-dim);flex:none;">${f.label}</span><span class="slide-label" style="text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;font-size:11px;">${escapeHtml(f.value)}</span>`;
-                    c.appendChild(row);
+                    addFieldRow(c, f.label, escapeHtml(f.value));
                 }
             });
 

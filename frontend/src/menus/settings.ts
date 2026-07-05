@@ -50,15 +50,16 @@ import {
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { selectResourceRoot, selectOverridePath } from './library-core';
-import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
+import { slideRow, addToggleRow, addSliderRow, addSectionTitle, addDangerRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
 import { setVolume, getVolume } from '../outfit/audio';
 import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
 import { rescanAndSync, reloadConfig } from './library';
-import { softwareKindIcon, createIconifyIcon } from '../core/icons';
+import { softwareKindIcon } from '../core/icons';
 import { showConfirm, showPrompt } from '../core/dialog';
 import { tryCatchStatus } from '../core/utils';
+import { getAllShortcuts, setKeyBinding, resetKeyBinding, resetAllKeyBindings, loadKeyBindings, exportKeyBindings } from '../core/shortcut-registry';
 
 // ======== Helpers re-exported ========
 export { refreshLibrary } from './library';
@@ -105,6 +106,7 @@ function buildSettingsRootItems(): PopupRow[] {
     items.push({ kind: 'folder', label: '软件', icon: 'lucide:package', target: 'settings:software' });
     items.push({ kind: 'folder', label: '截图', icon: 'lucide:camera', target: 'settings:screenshot' });
     items.push({ kind: 'folder', label: '音频', icon: 'lucide:volume-2', target: 'settings:audio' });
+    items.push({ kind: 'folder', label: '快捷键', icon: 'lucide:keyboard', target: 'settings:shortcuts' });
     items.push({ kind: 'folder', label: '关于', icon: 'lucide:info', target: 'settings:about' });
     return items;
 }
@@ -167,24 +169,17 @@ function buildSettingsFilenameLevel(): PopupLevel {
                 const entries = Object.entries(map);
 
                 for (const [pattern, category] of entries) {
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    row.innerHTML = `
-                        <span class="slide-icon"><iconify-icon icon="lucide:tag"></iconify-icon></span>
-                        <span class="slide-label" style="font-family:monospace;font-size:11px;">${escapeHtml(pattern)}</span>
-                        <span class="slide-sublabel" style="color:var(--accent);">${escapeHtml(category)}</span>
-                        <button class="btn btn-ghost btn-sm btn-icon" title="删除">✕</button>
-                    `;
-                    row.querySelector('.btn')!.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        delete uiState.materialCategoryMap![pattern];
-                        if (Object.keys(uiState.materialCategoryMap!).length === 0) {
-                            delete uiState.materialCategoryMap;
-                        }
-                        setUIState({ materialCategoryMap: uiState.materialCategoryMap });
-                        getSettingsMenu()?.reRender();
-                    });
-                    c.appendChild(row);
+                    slideRow(c, 'lucide:tag', pattern, false, () => {}, category,
+                        undefined, undefined, undefined,
+                        { actionIcon: '✕', onActionClick: () => {
+                            delete uiState.materialCategoryMap![pattern];
+                            if (Object.keys(uiState.materialCategoryMap!).length === 0) {
+                                delete uiState.materialCategoryMap;
+                            }
+                            setUIState({ materialCategoryMap: uiState.materialCategoryMap });
+                            getSettingsMenu()?.reRender();
+                        }}
+                    );
                 }
 
                 // 添加新映射
@@ -280,26 +275,12 @@ function buildSettingsFilenameLevel(): PopupLevel {
             });
 
             cardContainer(container, (c) => {
-                const stopRow = document.createElement('div');
-                stopRow.className = 'slide-item';
-                const si = document.createElement('span');
-                si.className = 'slide-icon';
-                const se = createIconifyIcon('lucide:stop-circle');
-                if (se) {
-                    si.appendChild(se);
-                }
-                stopRow.appendChild(si);
-                const sl = document.createElement('span');
-                sl.className = 'slide-label danger-text';
-                sl.textContent = '停止监听';
-                stopRow.appendChild(sl);
-                stopRow.addEventListener('click', async () => {
+                addDangerRow(c, 'lucide:stop-circle', '停止监听', async () => {
                     const _r = await tryCatchStatus(() => StopWatchDir(), '✗ 停止监听失败');
                     if (_r !== undefined) {
                         setStatus('✓ 已停止监听', true);
                     }
                 });
-                c.appendChild(stopRow);
             });
         },
     };
@@ -1041,6 +1022,144 @@ function buildSettingsAboutLevel(): PopupLevel {
     };
 }
 
+// ======== Shortcuts Settings ========
+
+/** Format a key code + modifiers into a display string like "Ctrl+1" or "←". */
+function _fmtKeyBinding(key: string, ctrl: boolean, shift: boolean, alt: boolean): string {
+    const parts: string[] = [];
+    if (ctrl) parts.push('Ctrl');
+    if (shift) parts.push('Shift');
+    if (alt) parts.push('Alt');
+    let display = key;
+    if (key === 'Space') display = 'Space';
+    else if (key === 'Escape') display = 'Esc';
+    else if (key === 'ArrowLeft') display = '←';
+    else if (key === 'ArrowRight') display = '→';
+    else if (key === 'ArrowUp') display = '↑';
+    else if (key === 'ArrowDown') display = '↓';
+    else if (key === 'Enter') display = 'Enter';
+    else if (key.startsWith('Digit')) display = key.slice(5);
+    else if (key.startsWith('Key')) display = key.slice(3);
+    parts.push(display);
+    return parts.join('+');
+}
+
+function _isModifierOnly(code: string): boolean {
+    return code === 'ControlLeft' || code === 'ControlRight'
+        || code === 'ShiftLeft' || code === 'ShiftRight'
+        || code === 'AltLeft' || code === 'AltRight'
+        || code === 'MetaLeft' || code === 'MetaRight';
+}
+
+/** Tracks which shortcut is waiting for a new key binding (null = none). */
+let _rebindingId: string | null = null;
+
+function buildSettingsShortcutsLevel(): PopupLevel {
+    return {
+        label: '快捷键',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            // Reset waiting state on each render
+            _rebindingId = null;
+
+            // Load persisted overrides into the registry
+            const persisted = (uiState as Record<string, unknown>).keyBindings as
+                Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }> | undefined;
+            if (persisted) {
+                loadKeyBindings(persisted);
+            }
+
+            const allShortcuts = getAllShortcuts();
+
+            // Group by 'group' field, preserving registration order
+            const groups = new Map<string, typeof allShortcuts>();
+            for (const s of allShortcuts) {
+                const list = groups.get(s.group);
+                if (list) {
+                    list.push(s);
+                } else {
+                    groups.set(s.group, [s]);
+                }
+            }
+
+            for (const [groupName, items] of groups) {
+                addSectionTitle(container, groupName);
+                cardContainer(container, (c) => {
+                    for (const s of items) {
+                        const combo = _fmtKeyBinding(s.currentKey, s.currentCtrl, s.currentShift, s.currentAlt);
+                        const isOverridden = s.currentKey !== s.defaultKey
+                            || s.currentCtrl !== (s.defaultCtrl ?? false)
+                            || s.currentShift !== (s.defaultShift ?? false)
+                            || s.currentAlt !== (s.defaultAlt ?? false);
+                        const sublabel = combo + (isOverridden ? ' · 自定义' : '');
+
+                        slideRow(c, 'lucide:keyboard', s.label, false, () => {
+                            if (_rebindingId) return;
+                            _rebindingId = s.id;
+
+                            // Update row to show waiting state
+                            const labelSpan = c.querySelector('.slide-label');
+                            const sublabelSpan = c.querySelector('.slide-sublabel');
+                            if (labelSpan) labelSpan.textContent = '按下新组合键...';
+                            if (sublabelSpan) sublabelSpan.textContent = '';
+
+                            const handler = (e: KeyboardEvent) => {
+                                if (e.repeat) return;
+                                e.stopPropagation();
+                                e.preventDefault();
+
+                                // Ignore modifier-only presses (keep waiting)
+                                if (_isModifierOnly(e.code)) return;
+
+                                document.removeEventListener('keydown', handler, true);
+
+                                // Cancel on Escape
+                                if (e.code === 'Escape') {
+                                    _rebindingId = null;
+                                    getSettingsMenu()?.reRender();
+                                    return;
+                                }
+
+                                const id = _rebindingId!;
+                                _rebindingId = null;
+
+                                const result = setKeyBinding(id, e.code, e.ctrlKey, e.shiftKey, e.altKey);
+                                if (!('conflictId' in result)) {
+                                    (uiState as Record<string, unknown>).keyBindings = exportKeyBindings();
+                                    getSettingsMenu()?.reRender();
+                                } else {
+                                    const conflictId = result.conflictId;
+                                    const conflictLabel = result.conflictLabel;
+                                    showConfirm(`快捷键 "${conflictLabel}" 已使用此组合键，是否覆盖？`).then((ok) => {
+                                        if (ok) {
+                                            resetKeyBinding(conflictId);
+                                            setKeyBinding(id, e.code, e.ctrlKey, e.shiftKey, e.altKey);
+                                            (uiState as Record<string, unknown>).keyBindings = exportKeyBindings();
+                                        }
+                                        getSettingsMenu()?.reRender();
+                                    });
+                                }
+                            };
+                            document.addEventListener('keydown', handler, true);
+                        }, sublabel);
+                    }
+                });
+            }
+
+            // Reset all button
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:rotate-ccw', '恢复默认快捷键', false, () => {
+                    resetAllKeyBindings();
+                    (uiState as Record<string, unknown>).keyBindings = exportKeyBindings();
+                    getSettingsMenu()?.reRender();
+                    setStatus('✓ 快捷键已恢复默认', true);
+                });
+            });
+        },
+    };
+}
+
 /** 格式化字节数为人类可读字符串 */
 function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
@@ -1070,6 +1189,8 @@ function settingsOnFolderEnter(row: PopupRow): PopupLevel | null {
             return buildSettingsScreenshotLevel();
         case 'settings:audio':
             return buildSettingsAudioLevel();
+        case 'settings:shortcuts':
+            return buildSettingsShortcutsLevel();
         case 'settings:about':
             return buildSettingsAboutLevel();
         default:

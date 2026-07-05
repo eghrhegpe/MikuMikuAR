@@ -583,6 +583,11 @@ export function applyFog(state: EnvState): void {
                 scene.fogStart = state.fogStart;
                 scene.fogEnd = state.fogEnd;
                 break;
+            default:
+                console.warn(`[env] unknown fogMode "${fogMode}", falling back to exp2`);
+                scene.fogMode = Scene.FOGMODE_EXP2;
+                scene.fogDensity = state.fogDensity;
+                break;
         }
         scene.fogColor = new Color3(state.fogColor[0], state.fogColor[1], state.fogColor[2]);
     } else {
