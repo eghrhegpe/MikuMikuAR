@@ -32,6 +32,17 @@ jobs:
       wails_ver: ${{ steps.ver.outputs.wails_ver }}
     steps:
       - uses: actions/checkout@v5
+      - name: Validate version consistency
+        run: |
+          PKG_VER=$(node -e "console.log(require('./package.json').version)")
+          TAG_VER=${GITHUB_REF#refs/tags/v}
+          echo "package.json version: $PKG_VER"
+          echo "git tag version:    $TAG_VER"
+          if [ "$PKG_VER" != "$TAG_VER" ]; then
+            echo "::error::Version mismatch! package.json=$PKG_VER  tag=$TAG_VER"
+            echo "Fix: update package.json version to $TAG_VER, commit, then re-tag."
+            exit 1
+          fi
       - name: Extract version
         id: ver
         run: |
