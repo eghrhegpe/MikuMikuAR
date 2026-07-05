@@ -1,3 +1,4 @@
+// @ts-nocheck — 大量 Babylon.js mock 类型无法通过编译时验证（vi.mock 运行时替换）
 // Comprehensive unit tests for ModelManager
 // Raises coverage of model-manager.ts from ~20% to 60%+ lines.
 // Vitest hoists vi.mock calls - the factory uses require() for shared mocks.
@@ -95,7 +96,7 @@ import { disposeCloth } from '../physics/xpbd-cloth';
 
 // ---- Helpers ----
 
-function makeModelInstance(id, overrides) {
+function makeModelInstance(id: string, overrides?: any): ModelInstance {
     overrides = overrides || {};
     return Object.assign({
         id: id,
@@ -129,12 +130,12 @@ function makeModelInstance(id, overrides) {
 function createTestMesh(name, mat) {
     var mesh = new Mesh(name);
     mesh.material = mat || new StandardMaterial(name + '_mat');
-    mesh.position = { x: 0, y: 0, z: 0, set: function(x,y,z) { this.x=x; this.y=y; this.z=z; } };
+    mesh.position = { x: 0, y: 0, z: 0, set: function(x,y,z) { this.x=x; this.y=y; this.z=z; } } as any;
     mesh.scaling = {
         x: 1, y: 1, z: 1,
         setAll: function(v) { this.x = this.y = this.z = v; },
-    };
-    mesh.rotation = { x: 0, y: 0, z: 0 };
+    } as any;
+    mesh.rotation = { x: 0, y: 0, z: 0 } as any;
     mesh.dispose = vi.fn();
     mesh.setEnabled = vi.fn();
     mesh.computeWorldMatrix = vi.fn();
@@ -144,8 +145,8 @@ function createTestMesh(name, mat) {
                 minimumWorld: { x: -0.5, y: 0, z: -0.5 },
                 maximumWorld: { x: 0.5, y: 1.5, z: 0.5 },
             },
-        };
-    });
+        } as any;
+    }) as any;
     return mesh;
 }
 
@@ -160,7 +161,7 @@ function makeBone(name, rigidBodyIndices) {
     };
 }
 
-function makeMmdModel(bones, morphs, rigidBodyStates) {
+function makeMmdModel(bones?: any[], morphs?: any[], rigidBodyStates?: Uint8Array) {
     bones = bones || [];
     morphs = morphs || [];
     rigidBodyStates = rigidBodyStates || new Uint8Array(10).fill(1);
@@ -203,14 +204,14 @@ function makeClothInstance(overrides) {
 }
 
 function makeObservableScene() {
-    var scene = new Scene();
-    var callbacks = [];
+    var scene = new Scene() as any;
+    var callbacks: any[] = [];
     scene.onBeforeRenderObservable = {
-        add: function(cb) {
+        add: function(cb: any) {
             callbacks.push(cb);
             return cb;
         },
-        remove: function(cb) {
+        remove: function(cb: any) {
             var idx = callbacks.indexOf(cb);
             if (idx >= 0) callbacks.splice(idx, 1);
         },

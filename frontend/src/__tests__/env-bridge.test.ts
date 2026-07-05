@@ -728,7 +728,7 @@ describe('Time of Day', () => {
         vi.clearAllMocks();
         registeredTickCallback = null;
 
-        mockRegisterSceneTickCallback.mockImplementation((cb: () => void) => {
+        mockRegisterSceneTickCallback.mockImplementation((cb?: () => void) => {
             registeredTickCallback = cb;
             return vi.fn();
         });

@@ -111,6 +111,7 @@ export function registerPopupMenu(config: RegisteredPopupMenuConfig): PopupMenuH
             container: wrapper,
             onClose: () => {
                 config.onClose?.();
+                newMenu.dispose();
                 menu = null;
                 closeAllOverlays();
             },
@@ -168,6 +169,8 @@ export function showPopupMenu(config: PopupMenuConfig): void {
         container: wrapper,
         onClose: () => {
             config.onClose?.();
+            menu.dispose();
+            config.setMenu(null);
             closeAllOverlays();
         },
         onItemClick: config.handlers.onItemClick,

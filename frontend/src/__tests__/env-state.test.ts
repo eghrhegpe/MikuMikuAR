@@ -83,6 +83,10 @@ const defaultEnv: EnvState = {
         bendCompliance: 0.005,
     },
     solverSubsteps: 4,
+    solverTimeScale: 1.0,
+    collisionEnabled: true,
+    bodyCollisionEnabled: true,
+    groundCollisionEnabled: true,
     sunAngle: 45,
     azimuth: -45,
 };

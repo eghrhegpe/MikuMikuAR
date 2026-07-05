@@ -14,6 +14,7 @@ import {
     PostProcess,
 } from '@babylonjs/core';
 import { EnvState, envState } from '../../core/config';
+import { getWindVector, isWindActive } from '../../core/physics/wind-utils';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 
 // ======== 常量定义 ========
@@ -27,6 +28,39 @@ export let _underwaterActive = false;
 export let _underwaterSavedFog: { mode: number; color: Color3; density: number } | null = null;
 export let _underwaterTransitionProgress = 0;
 export let _underwaterTarget = false;
+
+// ======== 波方向计算（风向联动）========
+/**
+ * 根据风向计算 4 层 Gerstner 波的 vec2 方向数组。
+ * 主方向与风向对齐，其余 3 层以微小偏移分散，保持波浪自然丰富度。
+ * 风向为零或无效时回退到默认的均匀分布方向。
+ */
+function computeWaveDirs(windDir: [number, number, number]): number[] {
+    // Float32Array → number[] 因为 Babylon setArray2 需要 number[]
+    const arr: number[] = new Array(8).fill(0); // 4 × vec2
+    if (!windDir || (windDir[0] === 0 && windDir[2] === 0)) {
+        // 无有效风向 → 回退到原硬编码的均匀分布
+        const fallback: [number, number][] = [
+            [0.8, 0.6], [-0.3, 0.9], [-0.7, -0.5], [0.5, -0.8],
+        ];
+        for (let i = 0; i < 4; i++) {
+            const len = Math.sqrt(fallback[i][0] ** 2 + fallback[i][1] ** 2);
+            arr[i * 2] = fallback[i][0] / len;
+            arr[i * 2 + 1] = fallback[i][1] / len;
+        }
+        return arr;
+    }
+    // 从 windDirection 计算风向角（XZ 平面）
+    const angle = Math.atan2(windDir[0], windDir[2]);
+    // 4 个波方向：主方向对齐风向，其余偏移以保持波面复杂度
+    const offsets = [0, 0.3, -0.2, 0.1];
+    for (let i = 0; i < 4; i++) {
+        const a = angle + offsets[i];
+        arr[i * 2] = Math.sin(a);
+        arr[i * 2 + 1] = Math.cos(a);
+    }
+    return arr;
+}
 
 // === LOD 水面：记录所有 LOD 子网格，用于同步缩放和位置 ===
 let _waterLODs: Mesh[] = [];
@@ -184,14 +218,10 @@ uniform float time;
 uniform float waveHeight;
 uniform float waveSpeed;
 
-// Gerstner 波参数（4层波浪，硬编码为精心调整的视觉效果）
+// Gerstner 波参数
+// WAVE_DIR 由外部 uniform uWindDir[4] 驱动（风向联动），在 createWater 时计算并传入
 const int WAVE_COUNT = 4;
-const vec2 WAVE_DIR[4] = vec2[4](
-    normalize(vec2(0.8, 0.6)),
-    normalize(vec2(-0.3, 0.9)),
-    normalize(vec2(-0.7, -0.5)),
-    normalize(vec2(0.5, -0.8))
-);
+uniform vec2 uWindDir[4];
 const float WAVE_FREQ[4] = float[4](0.15, 0.2, 0.25, 0.3);
 const float WAVE_AMP[4] = float[4](0.3, 0.25, 0.2, 0.15);
 const float WAVE_SPEED[4] = float[4](0.7, 0.9, 0.5, 1.2);
@@ -208,7 +238,7 @@ void main() {
     vec3 n = vec3(0.0, 1.0, 0.0);
 
     for (int i = 0; i < WAVE_COUNT; i++) {
-        vec2 dir = WAVE_DIR[i];
+        vec2 dir = uWindDir[i];
         float f = WAVE_FREQ[i];
         float a = WAVE_AMP[i] * waveHeight;
         float th = f * dot(dir, p.xz) + WAVE_SPEED[i] * time * waveSpeed;
@@ -406,6 +436,10 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setColor3('fogColor', scene.fogColor);
     mat.setFloat('fogDensity', scene.fogDensity);
 
+    // ——— 波方向（风向联动）———
+    const windDirs = computeWaveDirs(envState.windDirection);
+    mat.setArray2('uWindDir', windDirs);
+
     // ——— 涟漪数组（初始化为空）———
     mat.setArray4('uRipplePosRad', new Array(MAX_RIPPLES * 4).fill(0));
     mat.setArray4('uRippleStrSpdLife', new Array(MAX_RIPPLES * 4).fill(0));
@@ -527,6 +561,7 @@ export function createWater(state: EnvState): void {
                 'causticScrollY',
                 'fresnelAlphaInfluence',
                 'foamAlphaInfluence',
+                'uWindDir',
             ],
             uniformBuffers: [],
             samplers: ['uCausticTex'].concat(hasEnv ? ['envTexture'] : []),

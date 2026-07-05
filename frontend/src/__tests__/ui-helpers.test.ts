@@ -103,7 +103,7 @@ describe('slideRow', () => {
         const toggle = header.querySelector('.toggle')!;
         expect(toggle.classList.contains('toggle-disabled')).toBe(true);
 
-        toggle.click();
+        (toggle as HTMLElement).click();
         expect(onDisabledClick).toHaveBeenCalled();
     });
 
@@ -160,7 +160,7 @@ describe('addToggleRow', () => {
         const row = container.querySelector('.toggle-row')!;
         // Click the row (not the toggle label) to trigger the row-level handler
         const left = row.querySelector('.toggle-left')!;
-        left.click();
+        (left as HTMLElement).click();
 
         const checkbox = row.querySelector('input[type="checkbox"]') as HTMLInputElement;
         expect(checkbox.checked).toBe(true);
@@ -278,11 +278,11 @@ describe('addCollapsible', () => {
         expect(panel.classList.contains('open')).toBe(false);
 
         // Click to open
-        header.click();
+        (header as HTMLElement).click();
         expect(panel.classList.contains('open')).toBe(true);
 
         // Click to close
-        header.click();
+        (header as HTMLElement).click();
         expect(panel.classList.contains('open')).toBe(false);
     });
 
@@ -296,7 +296,7 @@ describe('addCollapsible', () => {
         });
 
         const toggle = container.querySelector('.toggle.header-toggle')!;
-        toggle.click();
+        (toggle as HTMLElement).click();
 
         expect(onToggle).toHaveBeenCalledWith(false);
     });
@@ -398,7 +398,7 @@ describe('toggleRow', () => {
 
         const row = container.querySelector('.toggle-row')!;
         const left = row.querySelector('.toggle-left')!;
-        left.click();
+        (left as HTMLElement).click();
 
         expect(onChange).toHaveBeenCalledWith(true);
         expect(onSave).toHaveBeenCalled();

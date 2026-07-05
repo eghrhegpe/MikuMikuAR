@@ -72,7 +72,7 @@ export function buildClothParamsLevel(): PopupLevel {
                         if (preset) {
                             setEnvState({ clothConfig: { ...cfg, ...preset } });
                             recreateCloth();
-                            import('./motion-popup').then(m => m.getMotionMenu()?.reRender());
+                            import('./scene-menu').then(m => m.getSceneMenu()?.reRender());
                         }
                     });
                 }
@@ -94,7 +94,7 @@ export function buildClothParamsLevel(): PopupLevel {
                         if (preset) {
                             setEnvState({ clothConfig: { ...cfg, ...preset } });
                             recreateCloth();
-                            import('./motion-popup').then(m => m.getMotionMenu()?.reRender());
+                            import('./scene-menu').then(m => m.getSceneMenu()?.reRender());
                         }
                     });
                 }
@@ -233,7 +233,7 @@ export function buildClothParamsLevel(): PopupLevel {
                                 scene.onBeforeRenderObservable.remove(observer);
                                 return;
                             }
-                            import('./motion-popup').then(m => m.getMotionMenu()?.updateControls());
+                            import('./scene-menu').then(m => m.getSceneMenu()?.updateControls());
                         });
                     },
                 });

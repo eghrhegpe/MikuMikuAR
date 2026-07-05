@@ -33,6 +33,13 @@ import {
     buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildPresetScenesLevel,
 } from './scene-render-levels';
 import { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
+import {
+    buildPhysicsLevel,
+    buildPhysicsDebugLevel,
+    buildCollisionLevel,
+    buildWasmPhysicsLevel,
+} from './scene-physics-levels';
+import { buildClothParamsLevel } from './motion-cloth-levels';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
@@ -93,6 +100,8 @@ function buildSceneRootItems(): PopupRow[] {
     items.push({ kind: 'folder', label: '后处理', icon: 'lucide:sparkles', target: 'scene:render:postprocess' });
     items.push({ kind: 'folder', label: '舞台', icon: 'lucide:monitor', target: 'scene:render:stage' });
     items.push({ kind: 'folder', label: '截图', icon: 'lucide:camera', target: 'scene:screenshot' });
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    items.push({ kind: 'folder', label: '物理', icon: 'lucide:atom', target: 'scene:physics' });
     return items;
 }
 
@@ -120,6 +129,16 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
             return buildStageLevel();
         case 'scene:render:props':
             return buildPropLevel();
+        case 'scene:physics':
+            return buildPhysicsLevel();
+        case 'physics:cloth':
+            return buildClothParamsLevel();
+        case 'physics:debug':
+            return buildPhysicsDebugLevel();
+        case 'physics:collision':
+            return buildCollisionLevel();
+        case 'physics:wasm':
+            return buildWasmPhysicsLevel();
         default:
             return null;
     }

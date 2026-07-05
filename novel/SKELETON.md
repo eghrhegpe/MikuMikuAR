@@ -298,10 +298,22 @@ MikuMikuAR 在某次 `wails dev` 扫完所有外部库后产生的自意识。
 
 | 类别 | 规则 | 示例 |
 |------|------|------|
+| 功能父目录 | `NN-功能名/`，两位数字编号 + 中文功能名 | `03-UI交互系统/` |
 | 卷目录 | `vol-N-kebab-case`，全小写 + 短横线 | `vol-4-the-new-world` |
 | 正文章 | `NN-标题.md`，两位数字编号 | `07-三层闭包.md` |
 | 番外篇 | `番外-标题.md`，不加数字编号 | `番外-云层协议.md` |
 | 尾章 | `尾章-标题.md`，不加数字编号 | `尾章-减法.md` |
+
+卷必须放在对应的功能父目录下。新卷续写前，先确定其核心主题归属哪个功能分类，然后放置到对应父目录，并在 `README.md` 中更新路径前缀。
+
+| 功能父目录 | 包含的卷 |
+|-----------|---------|
+| `01-基础设施与依赖/` | vol-0-foundation, vol-2-expansion |
+| `02-核心渲染与场景/` | vol-1-genesis, vol-8-the-heraldry-of-materials |
+| `03-UI交互系统/` | vol-3-upper, vol-3-lower, vol-10-incremental-republic |
+| `04-架构重构与模块化/` | vol-4-the-new-world, vol-7-the-frontiers, vol-9-the-bridge |
+| `05-物理引擎与环境系统/` | vol-5-the-light-of-physics |
+| `06-安全审计与性能优化/` | vol-6-federal-checkup |
 
 ### 卷的定位（不可越界）
 
@@ -345,7 +357,7 @@ MikuMikuAR 在某次 `wails dev` 扫完所有外部库后产生的自意识。
 
 1. 先读本文件，再读对应卷的已有章节，最后动笔
 2. 查 `docs/status.md` 的 Bug 记录与已实现清单
-3. 写完同步更新 `README.md` 目录索引
+3. 写完同步更新 `README.md` 目录索引（注意路径前缀：`03-UI交互系统/vol-3-upper/...`）
 4. 不更新索引的续写 = 没写。下一个 AI 找不到，等于不存在。
 
 ---

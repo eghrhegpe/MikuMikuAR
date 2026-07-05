@@ -18,6 +18,7 @@ import { PositionGizmo } from '@babylonjs/core/Gizmos/positionGizmo';
 import { RotationGizmo } from '@babylonjs/core/Gizmos/rotationGizmo';
 import { UtilityLayerRenderer } from '@babylonjs/core/Rendering/utilityLayerRenderer';
 import type { ModelInstance, PropInstance } from '../../core/config';
+import { scheduleRefresh } from '../../core/reactivity';
 
 function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
     obj[key] = value;
@@ -394,6 +395,7 @@ export function setLightState(s: Partial<LightState>): void {
     if (!_skipLightAutoSave) {
         _triggerAutoSave();
     }
+    scheduleRefresh();
 }
 
 /** 平滑过渡当前灯光到目标灯光参数，默认 2 秒 */

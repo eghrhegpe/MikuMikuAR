@@ -98,28 +98,29 @@ func TestDecodeZipName_ShiftJIS(t *testing.T) {
 }
 
 func TestZipCacheName(t *testing.T) {
-	tests := []struct {
-			input    string
-			contains string
-		}{
-			{"C:/Users/test/model.zip", "Users_test_model.zip"},
-			{"/home/user/model.zip", "home_user_model.zip"},
-		}
+	// zipCacheName now returns SHA-256 hex (64 chars), not path-escaped string.
+	// Same input must always produce same hash; different inputs must differ.
+	a := zipCacheName("C:/Users/test/model.zip")
+	b := zipCacheName("C:/Users/test/model.zip")
+	c := zipCacheName("/home/user/model.zip")
 
-	for _, tc := range tests {
-		got := zipCacheName(tc.input)
-		if got == "" {
-			t.Errorf("zipCacheName(%q) returned empty string", tc.input)
-		}
-		if !contains(got, tc.contains) {
-			t.Errorf("zipCacheName(%q) = %q, should contain %q", tc.input, got, tc.contains)
-		}
+	if a == "" {
+		t.Fatal("zipCacheName returned empty string")
+	}
+	if len(a) != 64 {
+		t.Errorf("zipCacheName len = %d, want 64 (SHA-256 hex)", len(a))
+	}
+	if a != b {
+		t.Errorf("zipCacheName not deterministic: %q vs %q", a, b)
+	}
+	if a == c {
+		t.Errorf("zipCacheName collision: different paths produced same hash")
 	}
 }
 
 func TestExtractCacheVersion(t *testing.T) {
-	if extractCacheVersion != 5 {
-		t.Errorf("extractCacheVersion = %d, want 5", extractCacheVersion)
+	if extractCacheVersion != 6 {
+		t.Errorf("extractCacheVersion = %d, want 6", extractCacheVersion)
 	}
 }
 

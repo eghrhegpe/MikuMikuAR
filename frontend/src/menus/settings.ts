@@ -11,6 +11,7 @@ import {
     RenameExternalPath,
     ClearExtractCache,
     ClearThumbnailCache,
+    ClearAllCaches,
     SetDownloadWatchDir,
     SetDownloadAutoImport,
     GetDownloadAutoImport,
@@ -23,6 +24,7 @@ import {
     SetUIAnimations,
     SetUIBlurBg,
     SetPerformanceMode,
+    GetAppVersion,
 } from '../core/wails-bindings';
 import {
     dom,
@@ -92,27 +94,12 @@ export { getSettingsMenu, refreshSettingsRoot, showSettings };
 /** 设置弹窗根级 items 构建器——items-based，支持增量 patch */
 function buildSettingsRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    items.push({ kind: 'folder', label: '显示', icon: 'lucide:palette', target: 'settings:display' });
-    items.push({ kind: 'folder', label: '界面', icon: 'lucide:monitor', target: 'settings:ui' });
-    items.push({
-        kind: 'folder', label: '自动导入', icon: 'lucide:download', target: 'settings:download',
-        headerToggle: {
-            value: autoImportCached,
-            onChange: async (v) => {
-                try {
-                    await SetDownloadAutoImport(v);
-                    autoImportCached = v; // 同步缓存，避免重开弹窗时回退
-                    setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
-                } catch {
-                    setStatus('✗ 设置失败', false);
-                }
-            },
-            bind: () => autoImportCached,
-        },
-    });
+    items.push({ kind: 'folder', label: '外观', icon: 'lucide:palette', target: 'settings:appearance' });
+    items.push({ kind: 'folder', label: '文件名', icon: 'lucide:file-text', target: 'settings:filename' });
     items.push({ kind: 'folder', label: '性能', icon: 'lucide:zap', target: 'settings:performance' });
-    items.push({ kind: 'folder', label: '系统', icon: 'lucide:settings', target: 'settings:system' });
-    items.push({ kind: 'folder', label: '软件管理', icon: 'lucide:package', target: 'settings:software' });
+    items.push({ kind: 'folder', label: '路径', icon: 'lucide:folder-tree', target: 'settings:paths' });
+    items.push({ kind: 'folder', label: '软件', icon: 'lucide:package', target: 'settings:software' });
+    items.push({ kind: 'folder', label: '关于', icon: 'lucide:info', target: 'settings:about' });
     return items;
 }
 
@@ -124,9 +111,9 @@ function buildSettingsRoot(): PopupLevel {
     };
 }
 
-function buildSettingsDisplayLevel(): PopupLevel {
+function buildSettingsFilenameLevel(): PopupLevel {
     return {
-        label: '显示',
+        label: '文件名',
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -225,18 +212,110 @@ function buildSettingsDisplayLevel(): PopupLevel {
                 });
                 c.appendChild(addRow);
             });
+            // 自动导入
+            addSectionTitle(container, '自动导入');
+            cardContainer(container, (c) => {
+                addToggleRow(c, '自动导入', autoImportCached, (v) => {
+                    autoImportCached = v;
+                    SetDownloadAutoImport(v).catch(() => {});
+                    getSettingsMenu()?.updateControls();
+                    setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
+                }, 'lucide:download', {
+                    bind: () => autoImportCached,
+                });
+            });
+            cardContainer(container, (c) => {
+                let dirInput: HTMLInputElement;
+                let refreshStatus: () => Promise<void>;
+
+                const statusEl = document.createElement('div');
+                statusEl.style.cssText = 'font-size:11px;color:var(--text);padding:4px 14px;';
+                c.appendChild(statusEl);
+
+                refreshStatus = async () => {
+                    try {
+                        const dir = await GetDownloadWatchStatus();
+                        statusEl.textContent = dir ? `监听中: ${dir}` : '监听已停止';
+                    } catch {
+                        statusEl.textContent = '监听已停止';
+                    }
+                };
+                refreshStatus();
+
+                const dirRow = document.createElement('div');
+                dirRow.style.cssText = 'display:flex;gap:6px;padding:6px 14px;';
+                dirInput = document.createElement('input');
+                dirInput.type = 'text';
+                dirInput.placeholder = '选择监听目录...';
+                dirInput.readOnly = true;
+                dirInput.style.cssText =
+                    'flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;';
+                const selectBtn = document.createElement('button');
+                selectBtn.textContent = '📁';
+                selectBtn.className = 'mode-btn';
+                selectBtn.addEventListener('click', async () => {
+                    try {
+                        const dir = await SelectDir();
+                        if (!dir) {
+                            return;
+                        }
+                        dirInput.value = dir;
+                        await SetDownloadWatchDir(dir);
+                        refreshStatus();
+                        setStatus(`✓ 监听目录已设置: ${dir}`, true);
+                    } catch {
+                        setStatus('✗ 设置监听目录失败', false);
+                    }
+                });
+                dirRow.appendChild(dirInput);
+                dirRow.appendChild(selectBtn);
+                c.appendChild(dirRow);
+
+                GetDownloadWatchStatus()
+                    .then((dir) => {
+                        if (dir) {
+                            dirInput.value = dir;
+                        }
+                    })
+                    .catch(() => {});
+            });
+
+            cardContainer(container, (c) => {
+                const stopRow = document.createElement('div');
+                stopRow.className = 'slide-item';
+                const si = document.createElement('span');
+                si.className = 'slide-icon';
+                const se = createIconifyIcon('lucide:stop-circle');
+                if (se) {
+                    si.appendChild(se);
+                }
+                stopRow.appendChild(si);
+                const sl = document.createElement('span');
+                sl.className = 'slide-label danger-text';
+                sl.textContent = '停止监听';
+                stopRow.appendChild(sl);
+                stopRow.addEventListener('click', async () => {
+                    try {
+                        await StopWatchDir();
+                        setStatus('✓ 已停止监听', true);
+                    } catch {
+                        setStatus('✗ 停止监听失败', false);
+                    }
+                });
+                c.appendChild(stopRow);
+            });
         },
     };
 }
 
-function buildSettingsUILevel(): PopupLevel {
+function buildSettingsAppearanceLevel(): PopupLevel {
     const initialScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
     const initialWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--popup-width')) || 280;
     const initialAnim = getComputedStyle(document.documentElement).getPropertyValue('--ui-animations').trim() !== '0';
     const initialBlur = getComputedStyle(document.documentElement).getPropertyValue('--ui-blur').trim() !== '0';
 
     return {
-        label: '界面',
+        label: '外观',
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -389,7 +468,7 @@ function buildSettingsUILevel(): PopupLevel {
                 const resetRow = document.createElement('div');
                 resetRow.className = 'slide-item';
                 resetRow.innerHTML =
-                    '<span class="slide-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="slide-label">恢复默认</span>';
+                    '<span class="slide-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="slide-label">恢复默认外观</span>';
                 resetRow.addEventListener('click', () => {
                     const root = document.documentElement;
                     root.style.setProperty('--ui-scale', '1');
@@ -412,12 +491,8 @@ function buildSettingsUILevel(): PopupLevel {
                     SetUIFontFamily('system').catch(() => {});
                     SetUIAnimations(true).catch(() => {});
                     SetUIBlurBg(false).catch(() => {});
-                    setDisplayNamePriority('filename');
-                    SetDisplayNamePriority('filename').catch(() => {});
-                    setPerformanceMode('auto');
-                    SetPerformanceMode('auto').catch(() => {});
                     getSettingsMenu()?.updateControls();
-                    setStatus('✓ 设置已恢复默认', true);
+                    setStatus('✓ 外观已恢复默认', true);
                 });
                 c.appendChild(resetRow);
             });
@@ -517,23 +592,7 @@ const FONT_MAP: Record<string, { label: string; css: string }> = {
     },
 };
 
-function buildSettingsClearCacheLevel(): PopupLevel {
-    return {
-        label: '清除缓存',
-        dir: '',
-        items: [
-            { kind: 'action', label: '提取缓存', icon: 'trash-2', target: 'set:clearextractcache' },
-            {
-                kind: 'action',
-                label: '缩略图缓存',
-                icon: 'image',
-                target: 'set:clearthumbnail',
-            },
-        ],
-    };
-}
-
-function buildSettingsSystemLevel(): PopupLevel {
+function buildSettingsPathsLevel(): PopupLevel {
     const root = resourceRoot;
     const rootSub = root ? (root.length > 20 ? '...' + root.slice(-17) : root) : '未设置';
     const paths = overridePaths || {};
@@ -560,7 +619,7 @@ function buildSettingsSystemLevel(): PopupLevel {
         return actual.length > 20 ? '...' + actual.slice(-17) : actual;
     };
     return {
-        label: '系统',
+        label: '路径',
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -577,10 +636,9 @@ function buildSettingsSystemLevel(): PopupLevel {
                 slideRow(c, 'lucide:shirt', 'MD-dress', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:md_dress' }), pathSub('md_dress', '默认'));
                 slideRow(c, 'lucide:settings', '配置目录', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:setting' }), pathSub('setting', '默认'));
             });
-            // Card 3: 管理
+            // Card 3: 外部库
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:plug', '外部库管理', true, () => handleSettingsAction({ kind: 'folder', label: '', icon: '', target: 'settings:external' }));
-                slideRow(c, 'lucide:trash-2', '清除缓存', true, () => handleSettingsAction({ kind: 'folder', label: '', icon: '', target: 'settings:clearcache' }));
             });
         },
     };
@@ -588,9 +646,6 @@ function buildSettingsSystemLevel(): PopupLevel {
 
 /** 设置动作映射表——替代原 handleSettingsAction 的 switch 链 */
 const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
-    'set:name_jp': (row) => applyDisplayNamePriority(row.target!.replace('set:', '') as DisplayNamePriority),
-    'set:name_en': (row) => applyDisplayNamePriority(row.target!.replace('set:', '') as DisplayNamePriority),
-    'set:filename': () => applyDisplayNamePriority('filename'),
     'set:clearextractcache': () => {
         ClearExtractCache()
             .then(() => setStatus('✓ 提取缓存已清除', true))
@@ -601,6 +656,15 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
             if (await showConfirm('确定要清除所有缩略图缓存吗？下次加载模型时将重新生成。')) {
                 ClearThumbnailCache()
                     .then(() => setStatus('✓ 缩略图缓存已清除', true))
+                    .catch(console.warn);
+            }
+        })();
+    },
+    'set:clearallcache': () => {
+        (async () => {
+            if (await showConfirm('确定要清除全部缓存吗？包括提取缓存、缩略图、HTTP 隔离目录。下次加载模型时将重新生成。')) {
+                ClearAllCaches()
+                    .then(() => setStatus('✓ 全部缓存已清除', true))
                     .catch(console.warn);
             }
         })();
@@ -625,7 +689,7 @@ function handleSettingsAction(row: PopupRow): void {
     }
 }
 
-// ======== Download Settings ========
+// ======== External Paths ========
 
 function buildSettingsExternalLevel(): PopupLevel {
     return {
@@ -705,100 +769,6 @@ function buildSettingsExternalLevel(): PopupLevel {
     };
 }
 
-// ======== Download Settings ========
-
-function buildSettingsDownloadLevel(): PopupLevel {
-    return {
-        label: '自动导入',
-        dir: '',
-        items: [],
-        renderCustom: async (container) => {
-            let dirInput: HTMLInputElement;
-            let refreshStatus: () => Promise<void>;
-
-            cardContainer(container, (c) => {
-                const statusEl = document.createElement('div');
-                statusEl.style.cssText = 'font-size:11px;color:var(--text);padding:4px 14px;';
-                c.appendChild(statusEl);
-
-                refreshStatus = async () => {
-                    try {
-                        const dir = await GetDownloadWatchStatus();
-                        statusEl.textContent = dir ? `监听中: ${dir}` : '监听已停止';
-                    } catch {
-                        statusEl.textContent = '监听已停止';
-                    }
-                };
-                refreshStatus();
-
-                const dirRow = document.createElement('div');
-                dirRow.style.cssText = 'display:flex;gap:6px;padding:6px 14px;';
-                dirInput = document.createElement('input');
-                dirInput.type = 'text';
-                dirInput.placeholder = '选择监听目录...';
-                dirInput.readOnly = true;
-                dirInput.style.cssText =
-                    'flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;';
-                const selectBtn = document.createElement('button');
-                selectBtn.textContent = '📁';
-                selectBtn.className = 'mode-btn';
-                selectBtn.addEventListener('click', async () => {
-                    try {
-                        const dir = await SelectDir();
-                        if (!dir) {
-                            return;
-                        }
-                        dirInput.value = dir;
-                        await SetDownloadWatchDir(dir);
-                        refreshStatus();
-                        setStatus(`✓ 监听目录已设置: ${dir}`, true);
-                    } catch {
-                        setStatus('✗ 设置监听目录失败', false);
-                    }
-                });
-                dirRow.appendChild(dirInput);
-                dirRow.appendChild(selectBtn);
-                c.appendChild(dirRow);
-
-                GetDownloadWatchStatus()
-                    .then((dir) => {
-                        if (dir) {
-                            dirInput.value = dir;
-                        }
-                    })
-                    .catch(() => {});
-            });
-
-            cardContainer(container, (c) => {
-                const stopRow = document.createElement('div');
-                stopRow.className = 'slide-item';
-                const si = document.createElement('span');
-                si.className = 'slide-icon';
-                const se = createIconifyIcon('lucide:stop-circle');
-                if (se) {
-                    si.appendChild(se);
-                }
-                stopRow.appendChild(si);
-                const sl = document.createElement('span');
-                sl.className = 'slide-label danger-text';
-                sl.textContent = '停止监听';
-                stopRow.appendChild(sl);
-                stopRow.addEventListener('click', async () => {
-                    try {
-                        await StopWatchDir();
-                        dirInput.value = '';
-                        refreshStatus();
-                        setStatus('✓ 已停止监听', true);
-                    } catch {
-                        setStatus('✗ 停止监听失败', false);
-                    }
-                });
-                c.appendChild(stopRow);
-            });
-        },
-    };
-}
-
 // ======== Performance Settings ========
 
 const PERFORMANCE_MODES: Array<{
@@ -855,23 +825,122 @@ function buildSettingsPerformanceLevel(): PopupLevel {
     };
 }
 
+// ======== About ========
+
+function buildSettingsAboutLevel(): PopupLevel {
+    const shortcuts: Array<{ key: string; desc: string }> = [
+        { key: 'Ctrl+1', desc: '模型库' },
+        { key: 'Ctrl+2', desc: '动作面板' },
+        { key: 'Ctrl+3', desc: '场景设置' },
+        { key: 'Ctrl+4', desc: '环境设置' },
+        { key: 'Ctrl+5', desc: '设置' },
+        { key: 'Space', desc: '播放/暂停' },
+        { key: 'Esc', desc: '关闭弹窗' },
+        { key: '← / →', desc: '快退/快进 5 秒' },
+        { key: 'WASD', desc: '自由飞行相机移动' },
+        { key: 'Q / E', desc: '自由飞行相机下降/上升' },
+    ];
+
+    return {
+        label: '关于',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            // 版本信息
+            cardContainer(container, (c) => {
+                const title = document.createElement('div');
+                title.style.cssText = 'text-align:center;padding:16px 14px 8px;';
+                title.innerHTML = `
+                    <div style="font-size:15px;font-weight:600;color:var(--text);">MikuMikuAR</div>
+                    <div data-app-version style="font-size:11px;color:var(--text-dim);margin-top:2px;">v…</div>
+                `;
+                c.appendChild(title);
+                // 异步从 Go 端读取注入的版本号（ldflags 注入，默认 "dev"）
+                GetAppVersion()
+                    .then((v) => {
+                        const el = title.querySelector<HTMLElement>('[data-app-version]');
+                        if (el) el.textContent = `v${v}`;
+                    })
+                    .catch(() => {});
+            });
+
+            // 快捷键
+            cardContainer(container, (c) => {
+                addSectionTitle(c, '快捷键');
+                for (const s of shortcuts) {
+                    const row = document.createElement('div');
+                    row.className = 'slide-item';
+                    row.style.cssText = 'padding:6px 14px;';
+                    row.innerHTML = `
+                        <span class="slide-label" style="flex:1;">${s.desc}</span>
+                        <span style="font-family:monospace;font-size:11px;color:var(--accent);background:var(--accent-dim);padding:2px 8px;border-radius:4px;">${s.key}</span>
+                    `;
+                    c.appendChild(row);
+                }
+            });
+
+            // 许可证
+            cardContainer(container, (c) => {
+                const licenseRow = document.createElement('div');
+                licenseRow.className = 'slide-item';
+                licenseRow.innerHTML = `
+                    <span class="slide-icon"><iconify-icon icon="lucide:scroll"></iconify-icon></span>
+                    <span class="slide-label">开源许可证</span>
+                `;
+                c.appendChild(licenseRow);
+            });
+
+            // 维护工具：清除缓存
+            cardContainer(container, (c) => {
+                addSectionTitle(c, '维护工具');
+                const extractRow = document.createElement('div');
+                extractRow.className = 'slide-item';
+                extractRow.innerHTML = `
+                    <span class="slide-icon"><iconify-icon icon="lucide:trash-2"></iconify-icon></span>
+                    <span class="slide-label">清除提取缓存</span>
+                `;
+                extractRow.addEventListener('click', () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearextractcache' }));
+                c.appendChild(extractRow);
+
+                const thumbRow = document.createElement('div');
+                thumbRow.className = 'slide-item';
+                thumbRow.innerHTML = `
+                    <span class="slide-icon"><iconify-icon icon="lucide:image"></iconify-icon></span>
+                    <span class="slide-label">清除缩略图缓存</span>
+                `;
+                thumbRow.addEventListener('click', () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearthumbnail' }));
+                c.appendChild(thumbRow);
+
+                const allRow = document.createElement('div');
+                allRow.className = 'slide-item';
+                allRow.innerHTML = `
+                    <span class="slide-icon"><iconify-icon icon="lucide:trash"></iconify-icon></span>
+                    <span class="slide-label">清除全部缓存</span>
+                `;
+                allRow.addEventListener('click', () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearallcache' }));
+                c.appendChild(allRow);
+            });
+        },
+    };
+}
+
 /** settings 的 onFolderEnter 路由（从 showSettings 提取） */
 function settingsOnFolderEnter(row: PopupRow): PopupLevel | null {
     switch (row.target) {
-        case 'settings:display':
-            return buildSettingsDisplayLevel();
-        case 'settings:download':
-            return buildSettingsDownloadLevel();
-        case 'settings:ui':
-            return buildSettingsUILevel();
-        case 'settings:system':
-            return buildSettingsSystemLevel();
+        case 'settings:appearance':
+            return buildSettingsAppearanceLevel();
+        case 'settings:filename':
+            return buildSettingsFilenameLevel();
+        case 'settings:performance':
+            return buildSettingsPerformanceLevel();
+        case 'settings:paths':
+            return buildSettingsPathsLevel();
         case 'settings:external':
             return buildSettingsExternalLevel();
-        case 'settings:clearcache':
-            return buildSettingsClearCacheLevel();
         case 'settings:software':
             return buildSettingsSoftwareLevel();
+        case 'settings:about':
+            return buildSettingsAboutLevel();
         default:
             if (row.target && row.target.startsWith('settings:software-detail:')) {
                 const path = row.target.slice('settings:software-detail:'.length);

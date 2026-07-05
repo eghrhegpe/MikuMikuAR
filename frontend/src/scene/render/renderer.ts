@@ -10,6 +10,7 @@ import type { Camera } from '@babylonjs/core/Cameras/camera';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
 import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
 import type { Observer } from '@babylonjs/core/Misc/observable';
+import { scheduleRefresh } from '../../core/reactivity';
 
 // ======== Tone Mapping Modes ========
 
@@ -534,6 +535,7 @@ export function setRenderState(s: Partial<RenderState>): void {
     _applyRenderState(s);
 
     _triggerAutoSave();
+    scheduleRefresh();
 }
 
 // ======== 平滑过渡 ========

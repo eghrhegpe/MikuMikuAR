@@ -80,7 +80,6 @@ function renderPresetChips(container: HTMLElement): void {
         addPresetChip(chipGroup, p.label, false, () => {
             _activeEnvPresetKey = key;
             applyEnvPreset(key);
-            getEnvMenu()?.updateControls();
         }, {
             onUpdate: (btn) => {
                 btn.classList.toggle('active', _activeEnvPresetKey === key);
@@ -102,7 +101,6 @@ export function buildEnvLightingLevel(): PopupLevel {
                 addSliderRow(c, '太阳角度', sunAngle, -15, 90, 1, (v) => {
                     setEnvSunAngle(v);
                     setEnvState({ sunAngle: v });
-                    getEnvMenu()?.updateControls();
                 }, 'lucide:sun', undefined, {
                     bind: () => getEnvSunAngle(),
                 });
@@ -123,7 +121,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     { value: 'procedural', label: '程序化' },
                     { value: 'color', label: '纯色' },
                     { value: 'texture', label: '贴图' },
-                ], s.skyMode, (v) => { setEnvState({ skyMode: v }); getEnvMenu()?.updateControls(); }, 'lucide:layers', undefined, {
+                ], s.skyMode, (v) => { setEnvState({ skyMode: v }); }, 'lucide:layers', undefined, {
                     bind: () => envState.skyMode,
                 });
 
@@ -133,14 +131,14 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     title: '天空外观', icon: 'lucide:palette', defaultOpen: false,
                     renderContent: (inner) => {
                         if (s.skyMode === 'procedural') {
-                            addColorSliderRow(inner, '天顶色', s.skyColorTop, (v) => { setEnvState({ skyColorTop: v }); getEnvMenu()?.updateControls(); }, {
+                            addColorSliderRow(inner, '天顶色', s.skyColorTop, (v) => { setEnvState({ skyColorTop: v }); }, {
                                 bind: () => envState.skyColorTop,
                             });
-                            addColorSliderRow(inner, '地平色', s.skyColorBot, (v) => { setEnvState({ skyColorBot: v }); getEnvMenu()?.updateControls(); }, {
+                            addColorSliderRow(inner, '地平色', s.skyColorBot, (v) => { setEnvState({ skyColorBot: v }); }, {
                                 bind: () => envState.skyColorBot,
                             });
                         } else if (s.skyMode === 'color') {
-                            addColorSliderRow(inner, '天空色', s.skyColorTop, (v) => { setEnvState({ skyColorTop: v }); getEnvMenu()?.updateControls(); }, {
+                            addColorSliderRow(inner, '天空色', s.skyColorTop, (v) => { setEnvState({ skyColorTop: v }); }, {
                                 bind: () => envState.skyColorTop,
                             });
                         } else if (s.skyMode === 'texture') {
@@ -161,18 +159,18 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     title: '高级天空设置', icon: 'lucide:settings', defaultOpen: false,
                     renderContent: (inner) => {
                         if (s.skyMode === 'procedural') {
-                            addToggleRow(inner, '星空', s.starsEnabled ?? false, (v) => { setEnvState({ starsEnabled: v }); getEnvMenu()?.updateControls(); }, 'lucide:sparkles', {
+                            addToggleRow(inner, '星空', s.starsEnabled ?? false, (v) => { setEnvState({ starsEnabled: v }); }, 'lucide:sparkles', {
                                 bind: () => !!envState.starsEnabled,
                             });
                         }
-                        addSliderRow(inner, '天空旋转速度', s.skyRotationSpeed ?? 0, 0, 5, 0.1, (v) => { setEnvState({ skyRotationSpeed: v }); getEnvMenu()?.updateControls(); }, 'lucide:rotate-cw', undefined, {
+                        addSliderRow(inner, '天空旋转速度', s.skyRotationSpeed ?? 0, 0, 5, 0.1, (v) => { setEnvState({ skyRotationSpeed: v }); }, 'lucide:rotate-cw', undefined, {
                             bind: () => envState.skyRotationSpeed ?? 0,
                         });
-                        addSliderRow(inner, '太阳角度', getEnvSunAngle(), -15, 90, 1, (v) => { setEnvSunAngle(v); setEnvState({ sunAngle: v }); getEnvMenu()?.updateControls(); }, 'lucide:sun', undefined, {
+                        addSliderRow(inner, '太阳角度', getEnvSunAngle(), -15, 90, 1, (v) => { setEnvSunAngle(v); setEnvState({ sunAngle: v }); }, 'lucide:sun', undefined, {
                             bind: () => getEnvSunAngle(),
                         });
                         if (s.skyMode === 'texture') {
-                            addSliderRow(inner, '旋转 Y', s.skyRotationY, 0, 360, 1, (v) => { setEnvState({ skyRotationY: v }); getEnvMenu()?.updateControls(); }, 'lucide:refresh-cw', undefined, {
+                            addSliderRow(inner, '旋转 Y', s.skyRotationY, 0, 360, 1, (v) => { setEnvState({ skyRotationY: v }); }, 'lucide:refresh-cw', undefined, {
                                 bind: () => envState.skyRotationY,
                             });
                         }
@@ -247,16 +245,16 @@ export function buildParticleLevel(): PopupLevel {
                     { value: 'fireworks', label: '🎆 烟花' },
                     { value: 'fireflies', label: '✨ 萤火虫' },
                     { value: 'leaves', label: '🍂 落叶' },
-                ], s.particleType, (v) => { setEnvState({ particleType: v }); getEnvMenu()?.updateControls(); }, 'lucide:sparkles', undefined, {
+                ], s.particleType, (v) => { setEnvState({ particleType: v }); }, 'lucide:sparkles', undefined, {
                     bind: () => envState.particleType,
                 });
-                addSliderRow(c, '密度', s.particleEmitRate, 0, 3, 0.1, (v) => { setEnvState({ particleEmitRate: v }); getEnvMenu()?.updateControls(); }, 'lucide:layers', undefined, {
+                addSliderRow(c, '密度', s.particleEmitRate, 0, 3, 0.1, (v) => { setEnvState({ particleEmitRate: v }); }, 'lucide:layers', undefined, {
                     bind: () => envState.particleEmitRate,
                 });
-                addSliderRow(c, '大小', s.particleSize, 0.1, 3, 0.1, (v) => { setEnvState({ particleSize: v }); getEnvMenu()?.updateControls(); }, 'lucide:maximize', undefined, {
+                addSliderRow(c, '大小', s.particleSize, 0.1, 3, 0.1, (v) => { setEnvState({ particleSize: v }); }, 'lucide:maximize', undefined, {
                     bind: () => envState.particleSize,
                 });
-                addSliderRow(c, '速度', s.particleSpeed, 0.1, 5, 0.1, (v) => { setEnvState({ particleSpeed: v }); getEnvMenu()?.updateControls(); }, 'lucide:gauge', undefined, {
+                addSliderRow(c, '速度', s.particleSpeed, 0.1, 5, 0.1, (v) => { setEnvState({ particleSpeed: v }); }, 'lucide:gauge', undefined, {
                     bind: () => envState.particleSpeed,
                 });
             });
