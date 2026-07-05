@@ -194,12 +194,10 @@ function _timeOfDayTick(): void {
 
     if (Math.abs(envSunAngle - _lastAutoLinkSunAngle) >= _AUTO_LINK_THRESHOLD_DEG) {
         _lastAutoLinkSunAngle = envSunAngle;
-        // 更新 envState.sunAngle 使天空和半球光跟随
+        _lastSkySunAngle = envSunAngle; // sync so 0.4 check won't double-fire (Fix C)
         envState.sunAngle = envSunAngle;
         _applyEnvStateFacade(envState);
-    }
-
-    if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
+    } else if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
         _lastSkySunAngle = envSunAngle;
         if (envState.skyMode === 'procedural') {
             impl.applySky(envState);
