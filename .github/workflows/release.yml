@@ -191,7 +191,7 @@ jobs:
             Write-Output "ANDROID_KEYSTORE_BASE64 not set — skipping signed build"
             return
           }
-          [System.Convert]::FromBase64String($b64) | Set-Content $file -Encoding Byte -NoNewline
+          [System.IO.File]::WriteAllBytes($file, [System.Convert]::FromBase64String($b64))
           Write-Output "Keystore decoded"
 
       - name: Check keystore exists
