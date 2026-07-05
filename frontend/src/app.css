@@ -529,6 +529,27 @@ input, textarea, [contenteditable] {
 .danger-text:hover {
     color: var(--danger-hover);
 }
+.accent-text {
+    color: var(--accent);
+}
+
+/* 空状态行 — 灰色、不可点击 */
+.slide-item-muted {
+    opacity: 0.5;
+    font-size: var(--font-ui-sm);
+    cursor: default;
+}
+.slide-item-muted:hover {
+    background: transparent;
+}
+
+/* 危险操作按钮（红色） */
+.slide-act-danger {
+    color: var(--danger);
+}
+.slide-act-danger:hover {
+    color: var(--danger-hover);
+}
 
 .btn-sm {
     font-size: var(--font-ui-sm);
@@ -867,6 +888,14 @@ input, textarea, [contenteditable] {
     color: var(--text);
     margin-left: auto;
     white-space: nowrap;
+}
+.slide-sublabel-inline {
+    margin-left: 0;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-dim);
 }
 .slide-tag {
     font-size: var(--font-ui-xs);

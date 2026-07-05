@@ -5,6 +5,7 @@ import { modelRegistry, cardContainer, PopupLevel, setStatus } from '../core/con
 import type { OutfitFile } from '../core/config';
 import { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
 import { createIconifyIcon } from '../core/icons';
+import { slideRow } from '../core/ui-helpers';
 import { tryCatchStatus } from '../core/utils';
 
 export function buildOutfitLevel(id: string): PopupLevel {
@@ -53,22 +54,8 @@ export function buildOutfitLevel(id: string): PopupLevel {
                 const circleIcon = () => createIconifyIcon('lucide:circle');
 
                 cardContainer(container, (c) => {
-                    const defRow = document.createElement('div');
-                    defRow.className = 'slide-item';
-                    const defIcon = document.createElement('span');
-                    defIcon.className = 'slide-icon';
-                    defIcon.appendChild(
-                        active === undefined || active === '默认' ? checkIcon() : circleIcon()
-                    );
-                    defRow.appendChild(defIcon);
-                    const defLabel = document.createElement('span');
-                    defLabel.className = 'slide-label';
-                    defLabel.textContent = '默认';
-                    defRow.appendChild(defLabel);
-                    defRow.addEventListener('click', async () => {
-                        if (_loading) {
-                            return;
-                        }
+                    slideRow(c, '', '默认', false, async () => {
+                        if (_loading) return;
                         _loading = true;
                         setStatus('⏳ 切换变体中…', true);
                         const _r = await tryCatchStatus(() => applyOutfitVariant(id, '默认'), '✗ 切换变体失败');
@@ -77,24 +64,13 @@ export function buildOutfitLevel(id: string): PopupLevel {
                         }
                         _loading = false;
                         await _render();
+                    }, undefined, undefined, undefined, undefined, {
+                        iconFactory: () => createIconifyIcon(active === undefined || active === '默认' ? 'lucide:check-circle' : 'lucide:circle'),
                     });
-                    c.appendChild(defRow);
 
                     for (const v of outfit.variants) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        const icon = document.createElement('span');
-                        icon.className = 'slide-icon';
-                        icon.appendChild(active === v.name ? checkIcon() : circleIcon());
-                        row.appendChild(icon);
-                        const label = document.createElement('span');
-                        label.className = 'slide-label';
-                        label.textContent = v.name;
-                        row.appendChild(label);
-                        row.addEventListener('click', async () => {
-                            if (_loading) {
-                                return;
-                            }
+                        slideRow(c, '', v.name, false, async () => {
+                            if (_loading) return;
                             _loading = true;
                             setStatus('⏳ 切换变体中…', true);
                             const _r = await tryCatchStatus(() => applyOutfitVariant(id, v.name), '✗ 切换变体失败');
@@ -103,8 +79,9 @@ export function buildOutfitLevel(id: string): PopupLevel {
                             }
                             _loading = false;
                             await _render();
+                        }, undefined, undefined, undefined, undefined, {
+                            iconFactory: () => createIconifyIcon(active === v.name ? 'lucide:check-circle' : 'lucide:circle'),
                         });
-                        c.appendChild(row);
                     }
 
                     const resetBtn = document.createElement('button');

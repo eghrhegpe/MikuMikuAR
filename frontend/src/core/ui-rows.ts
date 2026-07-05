@@ -328,6 +328,21 @@ export function addModeRow<T extends string | number>(
 }
 
 // ===================================================================
+// addEmptyRow — 空状态占位行
+// ===================================================================
+
+/**
+ * 创建空状态占位行（灰色文字，不可点击），替代手动 `el.style.opacity = '0.5'` 模式
+ */
+export function addEmptyRow(parent: HTMLElement, text: string): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'slide-item slide-item-muted';
+    el.textContent = text;
+    parent.appendChild(el);
+    return el;
+}
+
+// ===================================================================
 // addDangerRow — 危险/删除操作行
 // ===================================================================
 
