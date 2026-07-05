@@ -1,21 +1,22 @@
-# ADR-026: 环境系统增强 — 纹理地面、粒子溅射、水下后处理联动
+# ADR-026: 环境系统增强 — 纹理地面、粒子系统、粒子溅射、水下后处理联动
 
 **日期**：2026-07-04
-> **状态**: 已完成 — Phase A 纹理地面 + Phase B 粒子溅射 + Phase C 水下后处理全部完成
+> **状态**: 已完成 — Phase A 纹理地面 + Phase B 粒子系统+溅射 + Phase C 水下后处理全部完成
 
 ---
 
 ## 背景
 
-当前环境系统三个子系统存在功能缺口：
+当前环境系统四个子系统存在功能缺口：
 
 | 子系统 | 当前状态 | 缺口 |
 |--------|----------|------|
 | 地面 | 纯色/网格二选一（`groundColor`/`groundGrid`） | 无纹理地面（如草地） |
+| 粒子 | 仅 rain/snow 两种基础类型 | 缺 sakura/fireworks/fireflies/leaves；无程序化纹理；无运行时调参 |
 | 雨雪粒子 | GPU 粒子系统，出生即下落 | 无落地溅射效果 |
 | 水下后处理 | `camera.y < waterLevel` 触发简单 pipeline 参数切换 | 未随水色/透明度动态变化 |
 
-目标：补齐三个缺口，提升场景真实感。
+目标：补齐四个缺口，提升场景真实感。
 
 ---
 
@@ -62,7 +63,73 @@
 
 ---
 
-## 决策二：雨雪粒子落地溅射（Phase B）— 已确认，B1 方案
+## 决策二：核心粒子系统架构（Phase B 前置）— 已实现
+
+### 设计目标
+
+6 种粒子类型（sakura/rain/snow/fireworks/fireflies/leaves），全部程序化纹理，无需外部图片资源。两类发射策略（全景天气 / 局部效果），运行时参数可调。
+
+### 纹理生成：Canvas 2D 程序化绘制
+
+不依赖外部图片文件。`makeParticleTexture(kind)` 用 Canvas 2D 绘制 64×64 纹理，缓存到 `_particleTextures` Map 防止重复创建。
+
+| 类型 | 绘制方式 | 视觉效果 |
+|------|---------|---------|
+| sakura | 5 瓣椭圆旋转 + 黄色花蕊圆 | 粉色樱花瓣 |
+| rain | 线性渐变 rect（透明→半透→透明） | 竖向雨滴条纹 |
+| snow | 6 臂晶体线条（60° 间隔 + 分叉） | 六角雪花 |
+| fireworks | 径向渐变 + 十字线 | 爆炸光点 |
+| fireflies | 径向渐变（绿→透明） | 萤火虫光晕 |
+| leaves | 椭圆 + 叶脉线（倾斜 0.3rad） | 秋叶 |
+| splash | 径向渐变（白→透明，小半径） | 溅射水滴 |
+
+### 两类发射策略
+
+| 策略 | 适用类型 | 发射器 | 位置跟随 |
+|------|---------|--------|---------|
+| **全景天气** | sakura/rain/snow/leaves | Box 80×80 | XZ 跟随相机，Y 固定地面上方 25 单位 |
+| **局部效果** | fireworks/fireflies | Sphere | XZ 跟随相机，Y 相对地面偏移（萤火虫 1.5 / 烟花 8） |
+
+判断逻辑：`isWeather = ['sakura', 'rain', 'snow', 'leaves'].includes(type)`
+
+### GPUParticleSystem 容量规划
+
+```
+capacity >= max(emitRate) × max(maxLifeTime) × 2.5
+雨：1000 × 2 × 2.5 = 5000 → 实际 capacity=10000（留余量给 multiplier）
+```
+
+### 运行时调参机制
+
+保存创建时的基础值（`_baseEmitRate` / `_baseMinSize` / `_baseMaxSize` / `_baseMinEmitPower` / `_baseMaxEmitPower`），滑条变化时乘以用户 multiplier：
+
+```typescript
+ps.emitRate = _baseEmitRate * envState.particleEmitRate;
+ps.minSize = _baseMinSize * envState.particleSize;
+ps.minEmitPower = _baseMinEmitPower * envState.particleSpeed;
+```
+
+### 风场联动
+
+保存初始发射方向 `_initialDir1` / `_initialDir2`，每帧基于 `getWindVector().scale(0.1)` 叠加风力偏移。关键：风力始终基于初始值计算，避免方向累积叠加。
+
+```typescript
+ps.direction1 = _initialDir1.clone().add(wind);
+ps.direction2 = _initialDir2.clone().add(wind);
+```
+
+### 涉及文件
+
+| 文件 | 职责 |
+|------|------|
+| `frontend/src/scene/env/env-particles.ts` | 核心粒子系统（536 行） |
+| `frontend/src/menus/env-menu.ts` | 粒子 UI 面板（类型/密度/大小/速度/溅射） |
+| `frontend/src/core/config.ts` | `EnvState` 粒子相关字段 |
+| `frontend/src/core/physics/wind-utils.ts` | 风向量计算 |
+
+---
+
+## 决策三：雨雪粒子落地溅射（Phase B）— 已确认，B1 方案
 
 ### 方案：视觉欺骗（B1）
 
@@ -87,7 +154,7 @@
 
 ---
 
-## 决策三：水下后处理联动水色（Phase C）— 已确认，轻量版
+## 决策四：水下后处理联动水色（Phase C）— 已确认，轻量版
 
 ### 方案：复用 `imageProcessing.tintColor` / `tintAmount`
 

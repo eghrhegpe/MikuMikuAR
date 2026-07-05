@@ -3,7 +3,7 @@
 
 import { envState, focusedModelId, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { addSliderRow, addCollapsible, addPresetChip } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addCollapsible, addPresetChip } from '../core/ui-helpers';
 import {
     setEnvState, modelManager,
     getModelPosition, setModelPosition, setModelScaling, setModelRotationY, resetModelTransform, scene,
@@ -217,16 +217,10 @@ export function buildClothParamsLevel(): PopupLevel {
                             bind: () => ((modelManager.get(id)?.rotationY ?? 0) * 180) / Math.PI,
                         });
 
-                        const resetBtn = document.createElement('div');
-                        resetBtn.className = 'slide-item';
-                        resetBtn.setAttribute('data-hint', '重置所有变换参数');
-                        resetBtn.innerHTML =
-                            '<span class="slide-icon"><iconify-icon icon="lucide:rotate-ccw"></iconify-icon></span><span class="slide-label">重置变换</span>';
-                        resetBtn.addEventListener('click', () => {
+                        slideRow(cc, 'lucide:rotate-ccw', '重置变换', false, () => {
                             resetModelTransform(id);
                             setStatus('✓ 变换已重置', true);
                         });
-                        cc.appendChild(resetBtn);
 
                         const observer = scene.onBeforeRenderObservable.add(() => {
                             if (!document.body.contains(cc)) {

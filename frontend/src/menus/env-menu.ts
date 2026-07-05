@@ -142,15 +142,11 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                                 bind: () => envState.skyColorTop,
                             });
                         } else if (s.skyMode === 'texture') {
-                            const texRow = document.createElement('div');
-                            texRow.className = 'slide-item';
                             const fileName = s.skyTexture ? s.skyTexture.split(/[/\\]/).pop() : '未选择';
-                            texRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:image"></iconify-icon></span><span class="slide-label">环境贴图</span><span class="slide-sublabel">${escapeHtml(fileName)}</span>`;
-                            texRow.addEventListener('click', async () => {
+                            slideRow(inner, 'lucide:image', '环境贴图', false, async () => {
                                 const path = await SelectEnvTextureFile().catch(() => '');
                                 if (path) setEnvState({ skyTexture: path });
-                            });
-                            inner.appendChild(texRow);
+                            }, fileName);
                         }
                     },
                 });

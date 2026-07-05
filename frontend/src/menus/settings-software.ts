@@ -14,56 +14,58 @@ import { setStatus, cardContainer, escapeHtml, PopupLevel } from '../core/config
 import { slideRow } from '../core/ui-helpers';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
 import { showPrompt } from '../core/dialog';
+import { tryCatchStatus } from '../core/utils';
 import { getSettingsMenu } from './settings';
 
 // ======== 路径设置 API（统一入口） ========
 
 export async function detectMMD(): Promise<void> {
-    try {
-        const path = await AutoDetectMMD();
+    const path = await tryCatchStatus(() => AutoDetectMMD(), '✗ 未找到 MMD，请手动添加');
+    if (path !== undefined) {
         setStatus(`✓ MMD 已检测: ${path}`, true);
-    } catch {
-        setStatus('✗ 未找到 MMD，请手动添加', false);
     }
 }
 
 export async function setBlenderPath(): Promise<void> {
-    try {
-        const path = await SelectExeFile();
-        if (!path) return;
+    const path = await SelectExeFile();
+    if (!path) return;
+    const r = await tryCatchStatus(async () => {
         await SetBlenderPath(path);
+        return true;
+    }, '✗ 设置失败');
+    if (r) {
         setStatus('✓ Blender 路径已设置', true);
-    } catch (err: unknown) {
-        setStatus('✗ 设置失败: ' + (err instanceof Error ? err.message : String(err)), false);
     }
 }
 
 export async function setMMDPath(): Promise<void> {
-    try {
-        const path = await SelectExeFile();
-        if (!path) return;
+    const path = await SelectExeFile();
+    if (!path) return;
+    const r = await tryCatchStatus(async () => {
         await SetMMDPath(path);
+        return true;
+    }, '✗ 设置失败');
+    if (r) {
         setStatus('✓ MMD 路径已设置', true);
-    } catch (err: unknown) {
-        setStatus('✗ 设置失败: ' + (err instanceof Error ? err.message : String(err)), false);
     }
 }
 
 export async function addCustomSoftware(): Promise<boolean> {
-    try {
-        const path = await SelectExeFile();
-        if (!path) return false;
-        const name = path.split(/[/\\]/).pop()?.replace(/\.exe$/i, '') || '未知';
-        const args = await showPrompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
-        if (args === null) return false;
+    const path = await SelectExeFile();
+    if (!path) return false;
+    const name = path.split(/[/\\]/).pop()?.replace(/\.exe$/i, '') || '未知';
+    const args = await showPrompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
+    if (args === null) return false;
+    const r = await tryCatchStatus(async () => {
         await AddCustomSoftware(path, name, args);
+        return true;
+    }, '✗ 添加失败');
+    if (r) {
         await scanSoftwareDir();
         setStatus(`✓ 已添加: ${name}`, true);
         return true;
-    } catch (err: unknown) {
-        setStatus('✗ 添加失败: ' + (err instanceof Error ? err.message : String(err)), false);
-        return false;
     }
+    return false;
 }
 
 let cachedSoftwareEntries: import('../core/wails-bindings').SoftwareEntry[] | null = null;
@@ -104,15 +106,13 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
                             <span class="slide-tag">${entry.managed ? '自定义' : 'auto'}</span>
                             <button class="btn btn-ghost btn-sm btn-icon" title="直接启动">▶</button>
                         `;
-                        row.querySelector('.btn')!.addEventListener('click', (e) => {
+                        row.querySelector('.btn')!.addEventListener('click', async (e) => {
                             e.stopPropagation();
-                            LaunchSoftware(entry.path, entry.args || '')
-                                .then(() => {
-                                    setStatus(`✓ 已启动: ${entry.name}`, true);
-                                })
-                                .catch((err: unknown) => {
-                                    setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
-                                });
+                            const r = await tryCatchStatus(async () => {
+                                await LaunchSoftware(entry.path, entry.args || '');
+                                return true;
+                            }, `✗ 启动 ${entry.name}`);
+                            if (r) setStatus(`✓ 已启动: ${entry.name}`, true);
                         });
                         c.appendChild(row);
                     }
@@ -186,12 +186,13 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     input.style.cssText =
                         'width:100%;background:transparent;border:none;color:var(--text);font-size:12px;outline:none;';
                     input.addEventListener('blur', async () => {
-                        try {
+                        const r = await tryCatchStatus(async () => {
                             await UpdateCustomSoftware(entry.path, entry.name, input.value);
+                            return true;
+                        }, '✗ 更新失败');
+                        if (r) {
                             entry.args = input.value;
                             setStatus('✓ 参数已更新', true);
-                        } catch {
-                            setStatus('✗ 更新失败', false);
                         }
                     });
                     val.appendChild(input);
@@ -200,25 +201,11 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                 });
 
                 cardContainer(container, (c) => {
-                    const launchRow = document.createElement('div');
-                    launchRow.className = 'slide-item';
-                    const li = document.createElement('span');
-                    li.className = 'slide-icon';
-                    const le = createIconifyIcon('lucide:play');
-                    if (le) {
-                        li.appendChild(le);
-                    }
-                    launchRow.appendChild(li);
-                    const ll = document.createElement('span');
-                    ll.className = 'slide-label';
-                    ll.textContent = '启动';
-                    launchRow.appendChild(ll);
-                    launchRow.addEventListener('click', () => {
-                        LaunchSoftware(entry.path, entry.args)
-                            .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
-                            .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
-                    });
-                    c.appendChild(launchRow);
+                slideRow(c, 'lucide:play', '启动', false, () => {
+                    LaunchSoftware(entry.path, '')
+                        .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
+                        .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
+                });
 
                     const delRow = document.createElement('div');
                     delRow.className = 'slide-item';
@@ -234,8 +221,11 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     dl.textContent = '删除';
                     delRow.appendChild(dl);
                     delRow.addEventListener('click', async () => {
-                        try {
+                        const r = await tryCatchStatus(async () => {
                             await RemoveCustomSoftware(entry.path);
+                            return true;
+                        }, '✗ 删除失败');
+                        if (r) {
                             cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
                                 (e) => e.path !== entry.path
                             );
@@ -243,8 +233,6 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                             const menu = getSettingsMenu();
                             menu?.pop();
                             menu?.reRender();
-                        } catch {
-                            setStatus('✗ 删除失败', false);
                         }
                     });
                     c.appendChild(delRow);
@@ -275,56 +263,29 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
             });
 
             cardContainer(container, (c) => {
-                const launchRow = document.createElement('div');
-                launchRow.className = 'slide-item';
-                const li = document.createElement('span');
-                li.className = 'slide-icon';
-                const le = createIconifyIcon('lucide:play');
-                if (le) {
-                    li.appendChild(le);
-                }
-                launchRow.appendChild(li);
-                const ll = document.createElement('span');
-                ll.className = 'slide-label';
-                ll.textContent = '启动';
-                launchRow.appendChild(ll);
-                launchRow.addEventListener('click', () => {
-                    LaunchSoftware(entry.path, '')
-                        .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
-                        .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
-                });
-                c.appendChild(launchRow);
+                    slideRow(c, 'lucide:play', '启动', false, () => {
+                        LaunchSoftware(entry.path, entry.args)
+                            .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
+                            .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
+                    });
 
-                const convertRow = document.createElement('div');
-                convertRow.className = 'slide-item';
-                const ci = document.createElement('span');
-                ci.className = 'slide-icon';
-                const ce = createIconifyIcon('lucide:plus');
-                if (ce) {
-                    ci.appendChild(ce);
-                }
-                convertRow.appendChild(ci);
-                const cl = document.createElement('span');
-                cl.className = 'slide-label';
-                cl.textContent = '转为自定义（以便编辑参数）';
-                convertRow.appendChild(cl);
-                convertRow.addEventListener('click', async () => {
-                    try {
-                        const args = await showPrompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
-                        if (args === null) {
-                            return;
-                        }
+                slideRow(c, 'lucide:plus', '转为自定义（以便编辑参数）', false, async () => {
+                    const args = await showPrompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
+                    if (args === null) {
+                        return;
+                    }
+                    const r = await tryCatchStatus(async () => {
                         await AddCustomSoftware(entry.path, entry.name, args);
+                        return true;
+                    }, '✗ 转为自定义');
+                    if (r) {
                         cachedSoftwareEntries = await ScanSoftwareDir();
                         setStatus(`✓ 已转为自定义: ${entry.name}`, true);
                         const menu = getSettingsMenu();
                         menu?.pop();
                         menu?.reRender();
-                    } catch (err: unknown) {
-                        setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
                     }
                 });
-                c.appendChild(convertRow);
             });
         },
     };

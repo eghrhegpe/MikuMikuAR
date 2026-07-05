@@ -4,7 +4,7 @@
 import { setStatus, cardContainer, libraryRoot, stackRegistry, motionBindingTargetId, setMotionBindingTargetId } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
 import {
     switchCameraMode,
     getCameraMode,
@@ -102,51 +102,19 @@ export function buildCameraLevel(): PopupLevel {
                 }
 
                 if (vmdLoaded) {
-                    const clearRow = document.createElement('div');
-                    clearRow.className = 'slide-item';
-                    clearRow.style.marginTop = '6px';
-                    const clearIcon = document.createElement('span');
-                    clearIcon.className = 'slide-icon';
-                    const clearIconEl = createIconifyIcon('lucide:trash-2');
-                    if (clearIconEl) {
-                        clearIcon.appendChild(clearIconEl);
-                    }
-                    clearRow.appendChild(clearIcon);
-                    const clearLabel = document.createElement('span');
-                    clearLabel.className = 'slide-label';
-                    clearLabel.textContent = '清除相机 VMD';
-                    clearRow.appendChild(clearLabel);
-                    clearRow.addEventListener('click', () => {
+                    slideRow(c, 'lucide:trash-2', '清除相机 VMD', false, () => {
                         clearCameraVmd();
                         refreshCameraLevel();
                         setStatus('✓ 已清除相机 VMD', true);
                     });
-                    c.appendChild(clearRow);
                 }
 
-                const loadRow = document.createElement('div');
-                loadRow.className = 'slide-item';
-                if (!vmdLoaded) {
-                    loadRow.style.marginTop = '6px';
-                }
-                const loadIcon = document.createElement('span');
-                loadIcon.className = 'slide-icon';
-                const loadIconEl = createIconifyIcon('lucide:upload');
-                if (loadIconEl) {
-                    loadIcon.appendChild(loadIconEl);
-                }
-                loadRow.appendChild(loadIcon);
-                const loadLabel = document.createElement('span');
-                loadLabel.className = 'slide-label';
-                loadLabel.textContent = '加载相机 VMD';
-                loadRow.appendChild(loadLabel);
-                loadRow.addEventListener('click', () => {
+                slideRow(c, 'lucide:upload', '加载相机 VMD', false, () => {
                     setMotionBindingTargetId(null);
                     const level = stackRegistry.buildLevel!(libraryRoot, '相机 VMD', (m) => m.format === 'vmd');
                     const menu = getMotionMenu();
                     if (menu) menu.push(level);
                 });
-                c.appendChild(loadRow);
             });
         },
     };

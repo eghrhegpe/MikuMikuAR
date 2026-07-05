@@ -26,6 +26,7 @@ import {
     SaveScreenshot,
     SaveScenePreset,
 } from '../core/wails-bindings';
+import { tryCatchStatus } from '../core/utils';
 import { focusModel } from '../scene/scene';
 
 // ======== 从子文件导入 ========
@@ -152,20 +153,18 @@ async function screenshotCurrent(): Promise<void> {
     if (!id) { setStatus('✗ 无焦点模型', false); return; }
     const inst = modelRegistry.get(id);
     if (!inst) { setStatus('✗ 模型不存在', false); return; }
-    try {
-        const dir = await SelectDir();
-        if (!dir) return;
-        await new Promise((r) => requestAnimationFrame(r));
-        await new Promise((r) => requestAnimationFrame(r));
-        const base64 = dom.canvas.toDataURL('image/png', 0.9).replace(/^data:image\/png;base64,/, '');
-        const ts = Date.now();
-        const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.png`;
+    const dir = await SelectDir();
+    if (!dir) return;
+    await new Promise((r) => requestAnimationFrame(r));
+    await new Promise((r) => requestAnimationFrame(r));
+    const base64 = dom.canvas.toDataURL('image/png', 0.9).replace(/^data:image\/png;base64,/, '');
+    const ts = Date.now();
+    const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.png`;
+    const r = await tryCatchStatus(async () => {
         await SaveScreenshot(dir, filename, base64);
-        setStatus(`✓ 截图已保存: ${filename}`, true);
-    } catch (err) {
-        setStatus('✗ 截图失败', false);
-        console.error('Screenshot error:', err);
-    }
+        return true;
+    }, '✗ 截图失败');
+    if (r) setStatus(`✓ 截图已保存: ${filename}`, true);
 }
 
 /** 批量截图所有已加载模型 */
@@ -175,7 +174,7 @@ async function screenshotBatch(): Promise<void> {
     if (!dir) return;
     let saved = 0;
     const prevFocused = focusedModelId;
-    try {
+    const batchOk = await tryCatchStatus(async () => {
         for (const [id, inst] of modelRegistry) {
             setFocusedModelId(id);
             focusModel(id);
@@ -190,23 +189,20 @@ async function screenshotBatch(): Promise<void> {
             setStatus(`截图中… ${saved}/${modelRegistry.size}`, true);
         }
         if (prevFocused) { setFocusedModelId(prevFocused); focusModel(prevFocused); }
+        return true;
+    }, '✗ 批量截图失败');
+    if (batchOk) {
         setStatus(`✓ 批量截图完成: ${saved} 张`, true);
-    } catch (err) {
-        setStatus('✗ 批量截图失败', false);
-        console.error('Batch screenshot error:', err);
     }
 }
 
 /** 保存场景（自动编号到预设目录） */
 async function saveScene(): Promise<void> {
-    try {
-        const json = JSON.stringify(serializeScene(), null, 2);
-        const filename = await SaveScenePreset(json);
+    const json = JSON.stringify(serializeScene(), null, 2);
+    const filename = await tryCatchStatus(() => SaveScenePreset(json), '✗ 保存失败');
+    if (filename !== undefined) {
         setStatus(`✓ 场景已保存: ${filename}`, true);
         reRenderSceneMenu();
-    } catch (err) {
-        setStatus('✗ 保存失败', false);
-        console.error('Save scene error:', err);
     }
 }
 

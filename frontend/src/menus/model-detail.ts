@@ -358,13 +358,15 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                 chip.className = 'tag-chip';
                                 chip.innerHTML = `${escapeHtml(tag)} <span class="tag-del">✕</span>`;
                                 chip.title = '点击移除标签';
-                                chip.addEventListener('click', () => {
-                                    RemoveTag(libRef, tag)
-                                        .then(() => {
-                                            refreshTags();
-                                            setStatus(`✓ 已移除标签: ${tag}`, true);
-                                        })
-                                        .catch(() => setStatus('✗ 移除标签失败', false));
+                                chip.addEventListener('click', async () => {
+                                    const r = await tryCatchStatus(async () => {
+                                        await RemoveTag(libRef, tag);
+                                        return true;
+                                    }, '✗ 移除标签失败');
+                                    if (r) {
+                                        refreshTags();
+                                        setStatus(`✓ 已移除标签: ${tag}`, true);
+                                    }
                                 });
                                 tagContainer.appendChild(chip);
                             }

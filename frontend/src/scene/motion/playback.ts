@@ -30,6 +30,18 @@ function _getDuration(runtime: IMmdRuntime, manager: ModelManager): number {
 /** 当前是否有 auto-loop 在进行中（用于避免 UI 闪烁）。 */
 let _loopPending = false;
 
+/** Module-level ModelManager 引用，供 updatePlaybackUI 统一获取动画时长。 */
+let _manager: ModelManager | null = null;
+
+/** 安全清理 observable 回调，静默吞异常。 */
+function _safeRemoveCallback<T>(obs: { removeCallback: (cb: T) => void } | undefined, cb: T): void {
+    try {
+        obs?.removeCallback(cb);
+    } catch {
+        // Intentionally empty
+    }
+}
+
 // ======== Playback Callbacks Initialization ========
 
 export interface PlaybackObservablesDispose {
@@ -44,6 +56,7 @@ export function initPlaybackObservables(
     updateLipSync: () => void,
     getProcBeatDetector: () => BeatDetector | null
 ): PlaybackObservablesDispose {
+    _manager = manager;
     const tickHandler = () => {
         // 每帧统一刷新节拍检测器（供 LipSync + Auto Dance 共享）
         const beatDetector = getProcBeatDetector();
@@ -93,8 +106,9 @@ export function initPlaybackObservables(
         ) {
             // 设置 loopPending 标志，阻止 setIsPlaying(false) 导致的 UI 闪烁
             _loopPending = true;
+            const loop = autoLoop; // 快照：防止 async 间隙 autoLoop 变化导致状态漂移
             runtime.seekAnimation(0, true).then(() => {
-                if (!autoLoop) {
+                if (!loop) {
                     _loopPending = false;
                     return;
                 }
@@ -120,21 +134,9 @@ export function initPlaybackObservables(
 
     // 返回 dispose 函数，供场景销毁时清理观察者，防止内存泄漏
     return () => {
-        try {
-            runtime.onAnimationTickObservable.removeCallback(tickHandler);
-        } catch {
-            // Intentionally empty — 清理观察者时失败不产生副作用
-        }
-        try {
-            runtime.onPlayAnimationObservable.removeCallback(playHandler);
-        } catch {
-            // Intentionally empty — 清理观察者时失败不产生副作用
-        }
-        try {
-            runtime.onPauseAnimationObservable.removeCallback(pauseHandler);
-        } catch {
-            // Intentionally empty — 清理观察者时失败不产生副作用
-        }
+        _safeRemoveCallback(runtime.onAnimationTickObservable, tickHandler);
+        _safeRemoveCallback(runtime.onPlayAnimationObservable, playHandler);
+        _safeRemoveCallback(runtime.onPauseAnimationObservable, pauseHandler);
     };
 }
 
@@ -152,7 +154,7 @@ export function updatePlaybackUI(): void {
     dom.playbackBar.style.display = 'flex';
     dom.btnPlayPause.textContent = isPlaying ? '⏸' : '▶';
     dom.btnLoopToggle.style.opacity = autoLoop ? '1' : '0.35';
-    const duration = mmdRuntime.animationDuration;
+    const duration = _manager ? _getDuration(mmdRuntime, _manager) : mmdRuntime.animationDuration;
     dom.timeDisplay.textContent = `${formatTime(mmdRuntime.currentTime)} / ${formatTime(duration)}`;
     if (duration > 0) {
         const pct = (mmdRuntime.currentTime / duration) * 100;
