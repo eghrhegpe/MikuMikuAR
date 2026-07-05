@@ -1,8 +1,8 @@
-# 第 17 章 · 不存在的 bug
+# 不存在的 bug
 
-> 对应真实事件：2026-07-01 beforeunload 状态持久化验证。审计清单里以为状态持久化有遗漏，实际查证后发现 scene-serialize.ts 已实现 `visibilitychange` + `beforeunload` 双保险，且 `serializeScene` 完整包含 `envState`、模型状态等。无需修改，仅记录验证结果。
+> **背景**：审计怀疑 beforeunload 持久化遗漏，但需要先确认是否是虚惊。
 >
-> 相关代码：[scene-serialize.ts](file:///C:/Users/zhujieling11/frontend/src/scene/scene-serialize.ts)
+> **过程**：验证 scene-serialize.ts 双保险 + 全字段覆盖。
 
 ---
 
