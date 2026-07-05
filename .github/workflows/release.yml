@@ -61,12 +61,33 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
+      - name: Cache Go build cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.os == 'Windows' && '~\AppData\Local\go-build' || '~/.cache/go-build' }}
+          key: go-build-${{ runner.os }}-${{ env.GO_VERSION }}-${{ github.sha }}
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ env.GO_VERSION }}-
+      - name: Cache Wails binary
+        uses: actions/cache@v5
+        id: cache-wails
+        with:
+          path: ${{ runner.os == 'Windows' && '~\go\bin\wails3.exe' || '~/go/bin/wails3' }}
+          key: wails-${{ needs.prepare.outputs.wails_ver }}-${{ runner.os }}
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
+      - name: Cache node_modules
+        uses: actions/cache@v5
+        with:
+          path: frontend/node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            nm-${{ runner.os }}-
       - name: Install Wails
+        if: steps.cache-wails.outputs.cache-hit != 'true'
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
       - name: Build
         run: .\scripts\build-windows.ps1 -Production
@@ -94,11 +115,31 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
+      - name: Cache Go build cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/go-build
+          key: go-build-${{ runner.os }}-${{ env.GO_VERSION }}-${{ github.sha }}
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ env.GO_VERSION }}-
+      - name: Cache Wails binary
+        uses: actions/cache@v5
+        id: cache-wails-linux
+        with:
+          path: ~/go/bin/wails3
+          key: wails-${{ needs.prepare.outputs.wails_ver }}-${{ runner.os }}
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
+      - name: Cache node_modules
+        uses: actions/cache@v5
+        with:
+          path: frontend/node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            nm-${{ runner.os }}-
       - name: Install Linux dependencies
         run: |
           sudo apt-get update -qq
@@ -113,6 +154,7 @@ jobs:
             libatk1.0-dev \
             libgirepository1.0-dev
       - name: Install Wails
+        if: steps.cache-wails-linux.outputs.cache-hit != 'true'
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
       - name: Build Frontend
         run: |
@@ -150,13 +192,33 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
+      - name: Cache Go build cache
+        uses: actions/cache@v5
+        with:
+          path: ~\AppData\Local\go-build
+          key: go-build-${{ runner.os }}-${{ env.GO_VERSION }}-${{ github.sha }}
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ env.GO_VERSION }}-
+      - name: Cache Wails binary
+        uses: actions/cache@v5
+        id: cache-wails-android
+        with:
+          path: ~\go\bin\wails3.exe
+          key: wails-${{ needs.prepare.outputs.wails_ver }}-${{ runner.os }}
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-
+      - name: Cache node_modules
+        uses: actions/cache@v5
+        with:
+          path: frontend/node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            nm-${{ runner.os }}-
       - name: Install Wails
+        if: steps.cache-wails-android.outputs.cache-hit != 'true'
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
 
       - name: Setup Android SDK
