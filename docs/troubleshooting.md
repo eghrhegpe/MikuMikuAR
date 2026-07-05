@@ -199,23 +199,23 @@ console.log(BABYLON.ShaderStore.ShadersStore["textureAlphaCheckerVertexShader"])
 > 来源：`docs/plans/渲染调参审核结果.txt`（已归档至 `docs/changelog/`）
 > 修复日期：2026-06-28
 
-### ✅ P0：reattachPipeline 位置错误（#1）
+### ✅ reattachPipeline 位置错误（#1）
 
 **修复**：`camera.ts:286-291` — `switchCameraMode` 末尾已加 `reattachPipeline()` 调用，`scene-menu.ts` 中无重复调用。
 
-### ✅ P0：切相机后 FOV 丢失（#2）
+### ✅ 切相机后 FOV 丢失（#2）
 
 **修复**：`camera.ts:289-290` — `switchCameraMode` 重挂管线后立即读取 `getRenderState().fov` 并应用到新相机。
 
-### ✅ P0：getRenderState() outlineEnabled 硬编码（#3）
+### ✅ getRenderState() outlineEnabled 硬编码（#3）
 
 **修复**：`scene.ts:280-281` — 模块级 `_outlineEnabled` / `_outlineColor` 变量；`getRenderState` 读取，`setRenderState` 更新。
 
-### ✅ P1：reattachPipeline 相机累积（#4）
+### ✅ reattachPipeline 相机累积（#4）
 
 **修复**：`scene.ts:371-380` — 改为先 `removeCamera` 旧相机再 `addCamera` 新相机，用 `_pipelineCamera` 追踪。
 
-### ✅ P1：用户预设保存失败时状态不一致（#5）
+### ✅ 用户预设保存失败时状态不一致（#5）
 
 **修复**：`scene-menu.ts:661` — 改为先调用 `SaveRenderPreset` 持久化，成功后再写内存 `userPresets`，无需回滚。
 

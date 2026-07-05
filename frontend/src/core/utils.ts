@@ -310,11 +310,13 @@ export function triggerAutoSave(): void {
  *
  * @param fn - The function to execute (can be async or sync)
  * @param context - Description of what was being attempted (e.g. "加载模型")
+ * @param onError - Optional callback invoked when an error occurs (for recovery logic)
  * @returns The function result, or undefined on error
  */
 export async function tryCatchStatus<T>(
     fn: () => T | Promise<T>,
-    context: string
+    context: string,
+    onError?: (err: unknown) => void
 ): Promise<T | undefined> {
     try {
         return await fn();
@@ -322,6 +324,7 @@ export async function tryCatchStatus<T>(
         const msg = err instanceof Error ? err.message : String(err ?? 'unknown error');
         setStatus(`${context}: ${msg}`, false);
         console.warn(`[${context}]`, err);
+        onError?.(err);
         return undefined;
     }
 }

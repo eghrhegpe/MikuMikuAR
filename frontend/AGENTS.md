@@ -64,7 +64,7 @@ npm run check                                          # 确认未新增错误
 > ⚠️ **如实记录现状，不承诺 strict 化政策**。靠 code review 人工把关。
 
 - **不要新增 `any` 逃生** — 即使 `strict: false` 允许，新代码仍要避免 `as any` / `@ts-ignore` / `@ts-expect-error`。需要时加注释说明业务理由。
-- **类型定义就近放置** — 项目**没有**集中的 `src/types/` 目录。interface/type 与使用它的文件同模块放置；跨模块共享类型放 `core/config.ts`（注意该文件是冲突热点，见 [docs/multi-ai.md](../docs/multi-ai.md) §一）。
+- **类型定义就近放置** — 项目**没有**集中的 `src/types/` 目录。interface/type 与使用它的文件同模块放置；跨模块共享类型放 `core/config.ts`（注意该文件是冲突热点，需要根据终端/IDE 的并发控制策略来管理）。
 - **没有路径别名** — `tsconfig.json` 无 `paths` 配置。一律用相对路径 import（如 `import { dom } from '../core/config'`）。
 - **binding 不可手改** — `frontend/wailsjs/go/` 是 Wails 自动生成。改 Go binding 后跑 `wails generate` 或在主代理处 build。
 
@@ -123,19 +123,3 @@ frontend/src/
 
 `scene/` 已按业务域拆分为 `camera/` / `motion/` / `manager/` / `env/` / `render/` 子目录。`physics/` 为独立目录（XPBD 引擎），`motion-algos/` 为动作算法独立目录。相机 UI 已迁移到 `motion-popup`。
 
----
-
-## 四、配套文档速查
-
-| 任务 | 读哪里 |
-|------|--------|
-| 函数 / 符号定位 | 根 [`AGENTS.md`](../AGENTS.md) §三.5「函数映射表」 |
-| 全局架构 / PMX / VMD / 环境环节 | [`docs/architecture.md`](../docs/architecture.md) |
-| 菜单架构 + 新增菜单项流程 | [`docs/menu-architecture.md`](../docs/menu-architecture.md) |
-| UI 设计规范（lcard / cs-row / preset-chip） | [`docs/design.md`](../docs/design.md) |
-| 代码风格规范（图标/术语/状态栏/Go 错误） | [`docs/terminology.md`](../docs/terminology.md) |
-| 复用函数索引（写代码前先查） | [`docs/reusables.md`](../docs/reusables.md) |
-| 工作流细则（改前/改后/失败熔断/会话边界） | [`docs/workflow.md`](../docs/workflow.md) |
-| 多 AI 并发 / 子代理 | [`docs/multi-ai.md`](../docs/multi-ai.md) |
-| 加载问题排查 | [`docs/troubleshooting.md`](../docs/troubleshooting.md) |
-| 前端全模块审计（2026-06-30 第二轮） | [`docs/audit-2026-06-30.md`](../docs/audit-2026-06-30.md) |

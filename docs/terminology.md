@@ -1,12 +1,9 @@
 # MikuMikuAR 专业术语规范
 
 > **定位**：代码级规范（面向开发者）— 图标规则/状态栏规范/Go 错误消息/命名约定。
-> 用户可见术语和项目命名历史见 [`glossary.md`](glossary.md)。
 
 > 本文档统一全项目 UI 用语、图标规则、状态栏格式、Go 错误消息风格。
-> 所有新增代码必须遵守此规范。存量代码已在 2026-06-26 完成全量迁移。
-
-> **状态**：§一/§三/§四/§五/§六 所列违规项已全部修复 ✅
+> 所有新增代码必须遵守此规范。存量违规已于 2026-06-26 全量修复。
 
 ---
 
@@ -21,31 +18,6 @@
 | `setStatus()` | 规范前缀符号（见 §四） | Emoji | 状态栏不是图标展示区 |
 | HTML `data-hint` | 纯文字 | Emoji | 辅助功能/屏幕阅读器不读 Emoji |
 | HTML 静态内容 | Iconify 组件 / 纯文字 | Emoji | 一致性 |
-
-### 当前违规清单（已全部修复 ✅）
-
-> 以下 18 处 label Emoji 违规已于 2026-06-26 全部修正。
-
-| 当前写法 | 位置 | 修正为 |
-|---------|------|--------|
-| ~~`label: "🧰 软件管理"`~~ | settings.ts | `label: "软件管理", icon: "package"` |
-| ~~`label: "📤 检测 MMD 路径"`~~ | settings.ts | `label: "检测 MMD 路径", icon: "search"` |
-| ~~`label: "📂 设置 MMD 路径"`~~ | settings.ts | `label: "设置 MMD 路径", icon: "folder"` |
-| ~~`label: "✏️ 设置 Blender 路径"`~~ | settings.ts | `label: "设置 Blender 路径", icon: "edit-3"` |
-| ~~`label: "📂 打开目录"`~~ | settings.ts | `label: "打开目录", icon: "folder-open"` |
-| ~~`label: "🏷 标签"`~~ | library.ts | `label: "标签", icon: "tag"` |
-| ~~`label: "🎯 聚焦"`~~ | library.ts | `label: "聚焦", icon: "target"` |
-| ~~`label: "🗑 移除"`~~ | library.ts | `label: "移除", icon: "trash-2"` |
-| ~~`label: "📤 导出到 MMD"`~~ | library.ts | `label: "导出到 MMD", icon: "external-link"` |
-| ~~`label: "✏️ 在 Blender 中编辑"`~~ | library.ts | `label: "在 Blender 中编辑", icon: "edit-3"` |
-| ~~`label: "🎨 渲染"`~~ | scene-menu.ts | `label: "渲染", icon: "sparkles"` |
-| ~~`label: "✨ 后处理"`~~ | scene-menu.ts | `label: "后处理", icon: "sparkles"` |
-| ~~`label: "🎬 舞台"`~~ | scene-menu.ts | `label: "舞台", icon: "monitor"` |
-| ~~`label: "🎭 渲染预设"`~~ | scene-menu.ts | `label: "渲染预设", icon: "palette"` |
-| ~~`label: "💾 保存当前为预设"`~~ | scene-menu.ts | `label: "保存当前为预设", icon: "save"` |
-| ~~`label: "🗑 ${name}"`~~ | scene-menu.ts | `label: name, icon: "trash"` |
-| ~~`icon: "🎭"`~~ | library.ts 模型行 | `icon: "tabler:cube-3d-sphere"` |
-| ~~`label: "★ 取消收藏"` / `"☆ 收藏"`~~ | library.ts | `label: "取消收藏" / "收藏", icon: "star"` |
 
 ### 唯一允许 Emoji 的位置
 
@@ -162,30 +134,6 @@ runtime.LogErrorf(a.ctx, "ExtractZip: open zip: %w", err)
 return nil, fmt.Errorf("压缩包内未找到模型文件")
 ```
 
-### 3.3 当前违规清单（已全部修复 ✅）
-
-> 以下 14 处 Go 错误消息违规已于 2026-06-26 全部修正。
-
-| 当前写法 | 位置 | 修正为 |
-|---------|------|--------|
-| ~~`"启动 Blender 失败: %w", err`~~ | app.go | `"启动 Blender 失败"` |
-| ~~`"启动 MMD 失败: %w", err`~~ | app.go | `"启动 MMD 失败"` |
-| ~~`"启动软件失败: %w", err`~~ | app.go | `"启动软件失败"` |
-| ~~`"读取软件目录失败: %w", err`~~ | app.go | `"读取软件目录失败"` |
-| ~~`"创建软件目录失败: %w", err`~~ | app.go | `"创建软件目录失败"` |
-| ~~`"extractedDir: %w", err`~~ | app.go | `"解压失败"` |
-| ~~`"source zip not accessible: %w", err`~~ | app.go | `"压缩包无法访问"` |
-| ~~`"mkdir cache: %w", err`~~ | app.go | `"创建缓存目录失败"` |
-| ~~`"zip.OpenReader: %w", err`~~ | app.go | `"打开压缩包失败"` |
-| ~~`"abs dest: %w", err`~~ | app.go | `"解析路径失败"` |
-| ~~`"manifest marshal: %w", err`~~ | app.go | `"保存索引失败"` |
-| ~~`"manifest write: %w", err`~~ | app.go | `"写入索引失败"` |
-| ~~`"open zip: %w", err`~~ | app.go | `"打开压缩包失败"` |
-| ~~`"监听目录不可访问: %w", err`~~ | app.go | `"监听目录不可访问"` |
-| ~~`"创建文件监听器失败: %w", err`~~ | app.go | `"创建文件监听器失败"` |
-| ~~`"添加监听目录失败: %w", err`~~ | app.go | `"添加监听目录失败"` |
-| ~~`"no .pmx found in zip"`~~ | app.go | `"压缩包内未找到模型文件"` |
-
 ---
 
 ## 四、状态栏消息规范
@@ -221,63 +169,38 @@ return nil, fmt.Errorf("压缩包内未找到模型文件")
 | 路径检测 | `✓ MMD 已检测: {路径}` | `✓ MMD 已检测: C:\MMD\mmd.exe` |
 | 软件启动 | `✓ 已启动: {名称}` | `✓ 已启动: MikuMikuDance` |
 
-### 4.3 当前违规清单（已全部修复 ✅）
+---
 
-> 以下 15 处 setStatus Emoji 违规已于 2026-06-26 全部修正。
+## 五、Hover Hint 规范
 
-| 当前写法 | 位置 | 修正为 |
-|---------|------|--------|
-| ~~`"🎯 聚焦: ${name}"`~~ | library.ts | `"✓ 已聚焦: ${name}"` |
-| ~~`"🗑 已移除: ${name}"`~~ | library.ts | `"✓ 已移除: ${name}"` |
-| ~~`"📤 已在 MMD 中打开"`~~ | library.ts | `"✓ 已启动: MMD"` |
-| ~~`"✏️ 已在 Blender 中打开"`~~ | library.ts | `"✓ 已启动: Blender"` |
-| ~~`"✏️ 已重命名为: ${name}"`~~ | settings.ts | `"✓ 已重命名: ${name}"` |
-| ~~`"📤 MMD 已检测: ${path}"`~~ | settings.ts | `"✓ MMD 已检测: ${path}"` |
-| ~~`"✏️ Blender 路径已设置: ${path}"`~~ | settings.ts | `"✓ Blender 路径已设置"` |
-| ~~`"📂 MMD 路径已设置: ${path}"`~~ | settings.ts | `"✓ MMD 路径已设置"` |
-| ~~`"💾 预设已保存: ${name}"`~~ | scene-menu.ts | `"✓ 预设已保存: ${name}"` |
-| ~~`"🗑 已删除预设: ${name}"`~~ | scene-menu.ts | `"✓ 预设已删除: ${name}"` |
-| ~~`"🎭 预设: ${name}"`~~ | scene-menu.ts | `"✓ 预设: ${name}"` |
-| ~~`"📷 ${label}"`~~ | scene-menu.ts | `"✓ 相机: ${label}"` |
-| ~~`"🏷 已移除标签: ${tag}"`~~ | library.ts | `"✓ 已移除标签: ${tag}"` |
-| ~~`"🏷 已添加标签: ${tag}"`~~ | library.ts | `"✓ 已添加标签: ${tag}"` |
-| ~~`"🔄 动作已重置"`~~ | library.ts | `"✓ 动作已重置"` |
+纯文字，无 Emoji。底部导航栏 hint 见 §2.3，其余常用 target 规范：
+
+| target | hint 文本 |
+|--------|----------|
+| `detail:fav` | 收藏或取消收藏此模型 |
+| `detail:focus` | 相机对准此模型 |
+| `detail:remove` | 从场景中移除此模型 |
+| `detail:export-mmd` | 在 MikuMikuDance 中打开此模型 |
+| `detail:blender` | 在 Blender 中编辑此模型 |
+| `detail:motion:pause` | 暂停或继续当前动作 |
+| `detail:motion:reset` | 移除动作，恢复初始姿势 |
+| `detail:motion:loop` | 切换动作自动循环 |
 
 ---
 
-## 五、Hover Hint 规范（已全部修复 ✅）
+## 六、HTML 静态文本规范
 
-> 以下 9 处 hover hint 违规已于 2026-06-26 全部修正。
-
-| target | 当前 hint | 修正为 |
-|--------|----------|--------|
-| ~~`models:browse`~~ | ~~📁 浏览模型库 · 加载 PMX 模型~~ | 浏览和加载 PMX 模型 |
-| ~~`detail:fav`~~ | ~~★ 收藏/取消收藏此模型~~ | 收藏或取消收藏此模型 |
-| ~~`detail:focus`~~ | ~~🎯 相机对准此模型~~ | 相机对准此模型 |
-| ~~`detail:remove`~~ | ~~🗑 从场景中删除此模型~~ | 从场景中移除此模型 |
-| ~~`detail:export-mmd`~~ | ~~📤 在 MikuMikuDance 中打开此模型~~ | 在 MikuMikuDance 中打开此模型 |
-| ~~`detail:blender`~~ | ~~✏️ 在 Blender 中编辑此模型~~ | 在 Blender 中编辑此模型 |
-| ~~`detail:motion:pause`~~ | ~~⏸ 暂停/继续当前动作~~ | 暂停或继续当前动作 |
-| ~~`detail:motion:reset`~~ | ~~🔄 移除 VMD，恢复 T-Pose~~ | 移除动作，恢复初始姿势 |
-| ~~`detail:motion:loop`~~ | ~~🔁 切换自动循环~~ | 切换动作自动循环 |
-
----
-
-## 六、HTML 静态文本规范（已全部修复 ✅）
-
-> 以下 8 处 HTML 违规已于 2026-06-26 全部修正。
-
-| 元素 | 当前 | 修正为 |
-|------|------|--------|
-| ~~`#statusBar` 默认~~ | ~~`点击 📦 打开模型库 · 鼠标拖拽旋转 · 滚轮缩放`~~ | `点击模型按钮打开模型库 · 拖拽旋转 · 滚轮缩放` |
-| ~~`#btnMainAction` data-hint~~ | ~~`📦 模型库 — 浏览和加载 PMX 模型 · Ctrl+1`~~ | `浏览和加载 PMX 模型 · Ctrl+1` |
-| ~~`#btnMotionPopup` data-hint~~ | ~~`打开动作库`~~ | `浏览和加载 VMD 动作 · Ctrl+2` |
-| ~~`#btnScene` data-hint~~ | ~~`场景设置 — 相机和灯光控制`~~ | `相机、灯光和渲染设置 · Ctrl+3` |
-| ~~`#btnSettings` data-hint~~ | ~~`打开设置面板`~~ | `应用偏好设置 · Ctrl+4` |
-| ~~`#popupEmpty`~~ | ~~`📭 这个目录是空的`~~ | `此目录为空` |
-| ~~`#motionPopupEmpty`~~ | ~~`🎬 没有找到动作文件`~~ | `未找到动作文件` |
-| ~~`#dropOverlay` 文字~~ | ~~`📦 释放文件以导入到模型库`~~ | `释放文件以导入` |
-| `#dropOverlay` 提示 | `支持 .zip · .pmx · .vmd` | （保留，格式清晰） |
+| 元素 | 规范文本 |
+|------|---------|
+| `#statusBar` 默认 | 点击模型按钮打开模型库 · 拖拽旋转 · 滚轮缩放 |
+| `#btnMainAction` data-hint | 浏览和加载 PMX 模型 · Ctrl+1 |
+| `#btnMotionPopup` data-hint | 浏览和加载 VMD 动作 · Ctrl+2 |
+| `#btnScene` data-hint | 相机、灯光和渲染设置 · Ctrl+3 |
+| `#btnSettings` data-hint | 应用偏好设置 · Ctrl+4 |
+| `#popupEmpty` | 此目录为空 |
+| `#motionPopupEmpty` | 未找到动作文件 |
+| `#dropOverlay` 文字 | 释放文件以导入 |
+| `#dropOverlay` 提示 | 支持 .zip · .pmx · .vmd |
 
 ---
 
@@ -318,20 +241,7 @@ return nil, fmt.Errorf("压缩包内未找到模型文件")
 
 ---
 
-## 八、迁移状态
-
-| 优先级 | 范围 | 影响文件 | 违规数 | 状态 |
-|:---:|------|---------|:---:|:----:|
-| P0 | label 去 Emoji | library.ts, settings.ts, scene-menu.ts | 18 | ✅ 2026-06-26 已修复 |
-| P0 | setStatus 去 Emoji | library.ts, settings.ts, scene-menu.ts | 15 | ✅ 2026-06-26 已修复 |
-| P1 | Go 错误消息中文化 | app.go | 16 | ✅ 2026-06-26 已修复 |
-| P1 | HTML 去 Emoji | index.html | 4 | ✅ 2026-06-26 已修复 |
-| P2 | sublabel 统一风格 | library.ts, scene-menu.ts | 5 | ✅ 2026-06-26 已修复 |
-| P2 | hover hint 去 Emoji | library.ts | 9 | ✅ 2026-06-26 已修复 |
-
----
-
-## 九、开发沟通风格
+## 八、开发沟通风格
 
 > 从根 [`AGENTS.md`](../AGENTS.md) §六 迁入。AI 回答开发者问题时遵守此风格。
 
