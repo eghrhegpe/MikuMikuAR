@@ -22,6 +22,7 @@ import {
     formatError,
     focusedModelId,
     stackRegistry,
+    uiState,
 } from './config';
 import { registerIconBundle } from './icons-bundle';
 import { GetConfig, ImportZip, ImportLocalFile, Events } from './wails-bindings';
@@ -708,7 +709,18 @@ async function handleDropFile(path: string): Promise<void> {
     }
 }
 
+// ======== Render Loop (with optional FPS limit) ========
+let _lastFrameTime = 0;
 engine.runRenderLoop(() => {
+    const fpsLimit = uiState.fpsLimit ?? 0;
+    if (fpsLimit > 0) {
+        const now = performance.now();
+        const minInterval = 1000 / fpsLimit;
+        if (now - _lastFrameTime < minInterval) {
+            return; // 跳过本帧
+        }
+        _lastFrameTime = now;
+    }
     scene.render();
     updatePerformance();
 });

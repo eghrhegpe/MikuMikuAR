@@ -60,7 +60,7 @@ import { softwareKindIcon } from '../core/icons';
 import { showConfirm, showPrompt } from '../core/dialog';
 import { tryCatchStatus } from '../core/utils';
 import { getAllShortcuts, setKeyBinding, resetKeyBinding, resetAllKeyBindings, loadKeyBindings, exportKeyBindings } from '../core/shortcut-registry';
-import { SETTINGS, SETTINGS_ACTION, SOFTWARE_DETAIL_PREFIX } from './settings-targets';
+import { SETTINGS, SETTINGS_ACTION, SOFTWARE_DETAIL_PREFIX, type SettingsFolderTarget } from './settings-targets';
 
 // ======== Helpers re-exported ========
 export { refreshLibrary } from './library';
@@ -98,7 +98,12 @@ const { getMenu: getSettingsMenu, refreshRoot: refreshSettingsRoot, show: showSe
 export { getSettingsMenu, refreshSettingsRoot, showSettings };
 
 /** 设置弹窗根级 items 构建器——items-based，支持增量 patch */
+/** 缓存：items 固定不变，无需重复创建 */
+let _cachedRootItems: PopupRow[] | null = null;
+
 function buildSettingsRootItems(): PopupRow[] {
+    if (_cachedRootItems) return _cachedRootItems;
+
     const items: PopupRow[] = [];
     items.push({ kind: 'folder', label: '外观', icon: 'lucide:palette', target: SETTINGS.APPEARANCE });
     items.push({ kind: 'folder', label: '文件名', icon: 'lucide:file-text', target: SETTINGS.FILENAME });
@@ -109,6 +114,7 @@ function buildSettingsRootItems(): PopupRow[] {
     items.push({ kind: 'folder', label: '音频', icon: 'lucide:volume-2', target: SETTINGS.AUDIO });
     items.push({ kind: 'folder', label: '快捷键', icon: 'lucide:keyboard', target: SETTINGS.SHORTCUTS });
     items.push({ kind: 'folder', label: '关于', icon: 'lucide:info', target: SETTINGS.ABOUT });
+    _cachedRootItems = items;
     return items;
 }
 
@@ -593,20 +599,20 @@ function buildSettingsPathsLevel(): PopupLevel {
         renderCustom: (container) => {
             // Card 1: 资源根目录
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:folder', '资源根目录', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:resourceroot' }), rootSub);
+                slideRow(c, 'lucide:folder', '资源根目录', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.RESOURCE_ROOT }), rootSub);
             });
             // Card 2: 资源路径覆盖
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:box', 'PMX 模型', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:pmx' }), pathSub('pmx', '默认'));
-                slideRow(c, 'lucide:music', 'VMD 动作', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:vmd' }), pathSub('vmd', '默认'));
-                slideRow(c, 'lucide:home', 'Stage 场景', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:stage' }), pathSub('stage', '默认'));
-                slideRow(c, 'lucide:cloud', 'Environment', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:environment' }), pathSub('environment', '默认'));
-                slideRow(c, 'lucide:shirt', 'MD-dress', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:md_dress' }), pathSub('md_dress', '默认'));
-                slideRow(c, 'lucide:settings', '配置目录', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:path:setting' }), pathSub('setting', '默认'));
+                slideRow(c, 'lucide:box', 'PMX 模型', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PMX }), pathSub('pmx', '默认'));
+                slideRow(c, 'lucide:music', 'VMD 动作', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_VMD }), pathSub('vmd', '默认'));
+                slideRow(c, 'lucide:home', 'Stage 场景', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_STAGE }), pathSub('stage', '默认'));
+                slideRow(c, 'lucide:cloud', 'Environment', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_ENVIRONMENT }), pathSub('environment', '默认'));
+                slideRow(c, 'lucide:shirt', 'MD-dress', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_MD_DRESS }), pathSub('md_dress', '默认'));
+                slideRow(c, 'lucide:settings', '配置目录', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_SETTING }), pathSub('setting', '默认'));
             });
             // Card 3: 外部库
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plug', '外部库管理', true, () => handleSettingsAction({ kind: 'folder', label: '', icon: '', target: 'settings:external' }));
+                slideRow(c, 'lucide:plug', '外部库管理', true, () => handleSettingsAction({ kind: 'folder', label: '', icon: '', target: SETTINGS.EXTERNAL }));
             });
         },
     };
@@ -791,6 +797,23 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                         if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
                     }
                 });
+            });
+
+            // 帧率限制
+            cardContainer(container, (c) => {
+                const currentFps = uiState.fpsLimit ?? 0;
+                addSliderRow(c, '帧率上限', currentFps, 0, 144, 1, (v) => {
+                    const limit = Math.round(v);
+                    setUIState({ fpsLimit: limit === 0 ? 0 : limit });
+                    getSettingsMenu()?.updateControls();
+                    setStatus(limit === 0 ? '✓ 帧率不限制' : `✓ 帧率上限: ${limit} FPS`, true);
+                }, 'lucide:gauge', undefined, {
+                    bind: () => uiState.fpsLimit ?? 0,
+                });
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.textContent = '设为 0 表示不限制。移动端建议 30 以省电。';
+                c.appendChild(hint);
             });
         },
     };
@@ -1016,9 +1039,9 @@ function buildSettingsAboutLevel(): PopupLevel {
             // 维护工具：清除缓存
             cardContainer(container, (c) => {
                 addSectionTitle(c, '维护工具');
-                slideRow(c, 'lucide:trash-2', '清除提取缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearextractcache' }));
-                slideRow(c, 'lucide:image', '清除缩略图缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearthumbnail' }));
-                slideRow(c, 'lucide:trash', '清除全部缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: 'set:clearallcache' }));
+                slideRow(c, 'lucide:trash-2', '清除提取缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE }));
+                slideRow(c, 'lucide:image', '清除缩略图缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_THUMBNAIL }));
+                slideRow(c, 'lucide:trash', '清除全部缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_ALL_CACHE }));
             });
         },
     };
@@ -1173,7 +1196,7 @@ function formatBytes(bytes: number): string {
 }
 
 /** settings 的 onFolderEnter 路由（从 showSettings 提取） */
-const SETTINGS_FOLDER_ROUTES: Partial<Record<string, () => PopupLevel>> = {
+const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
     [SETTINGS.APPEARANCE]: buildSettingsAppearanceLevel,
     [SETTINGS.FILENAME]: buildSettingsFilenameLevel,
     [SETTINGS.PERFORMANCE]: buildSettingsPerformanceLevel,
