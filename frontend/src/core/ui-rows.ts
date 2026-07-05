@@ -4,6 +4,7 @@
 import { createIconifyIcon } from './icons';
 import { getCurrentRenderingMenu } from '../menus/menu';
 import { ControlOptions } from './ui-types';
+import { slideRow } from './ui-slide-row';
 
 // ===================================================================
 // addToggleRow
@@ -324,6 +325,42 @@ export function addModeRow<T extends string | number>(
         row.appendChild(btn);
     }
     container.appendChild(row);
+}
+
+// ===================================================================
+// addDangerRow — 危险/删除操作行
+// ===================================================================
+
+/**
+ * 创建危险操作行（icon + red label），替代手动拼接 `div.slide-item > icon + label.danger-text`
+ */
+export function addDangerRow(
+    container: HTMLElement,
+    icon: string,
+    label: string,
+    onClick: () => void
+): HTMLElement {
+    return slideRow(container, icon, label, false, onClick, undefined, undefined, undefined, undefined, {
+        variant: 'danger',
+    });
+}
+
+// ===================================================================
+// addFieldRow — 键值字段行
+// ===================================================================
+
+/**
+ * 创建字段行（左 label + 右 value），替代手动拼接的
+ * `div.slide-item > span.slide-label.field-label + span.field-value`
+ */
+export function addFieldRow(
+    container: HTMLElement,
+    label: string,
+    value: string
+): HTMLElement {
+    return slideRow(container, '', label, false, () => {}, undefined, undefined, undefined, undefined, {
+        rightLabel: value,
+    });
 }
 
 // ===================================================================

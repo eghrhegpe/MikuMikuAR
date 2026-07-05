@@ -1,8 +1,29 @@
 // [doc:architecture] slideRow — 菜单行组件
-// 带图标+标签+箭头+可选 sublabel/tag/headerToggle 的通用菜单行
+// 带图标+标签+箭头+可选 sublabel/tag/headerToggle + actionBtn + variant 的通用菜单行
 
 import { createIconifyIcon } from './icons';
 import { getCurrentRenderingMenu } from '../menus/menu';
+
+export interface HeaderToggleConfig {
+    value: boolean;
+    onChange: (v: boolean) => void;
+    disabled?: boolean;
+    disabledHint?: string;
+    onDisabledClick?: () => void;
+    /** 声明取值方式，updateControls() 时自动同步 toggle 状态 */
+    bind?: () => boolean;
+}
+
+export interface SlideRowExtra {
+    /** 危险操作行（label 变红） */
+    variant?: 'default' | 'danger';
+    /** 右侧操作按钮图标（如 '✕', '▶', '✎'）*/
+    actionIcon?: string;
+    /** 操作按钮点击回调 */
+    onActionClick?: (e: MouseEvent) => void;
+    /** 自定义右侧 label（key-value 布局用） */
+    rightLabel?: string;
+}
 
 export function slideRow(
     container: HTMLElement,
@@ -13,15 +34,8 @@ export function slideRow(
     sublabel?: string,
     tag?: string,
     focused?: boolean,
-    headerToggle?: {
-        value: boolean;
-        onChange: (v: boolean) => void;
-        disabled?: boolean;
-        disabledHint?: string;
-        onDisabledClick?: () => void;
-        /** 声明取值方式，updateControls() 时自动同步 toggle 状态 */
-        bind?: () => boolean;
-    }
+    headerToggle?: HeaderToggleConfig,
+    extra?: SlideRowExtra
 ): HTMLElement {
     const row = document.createElement('div');
 
@@ -113,6 +127,7 @@ export function slideRow(
         row.addEventListener('click', onClick);
     } else {
         // 原始 slide-item 样式（无 toggle）
+        const variant = extra?.variant ?? 'default';
         row.className = 'slide-item' + (focused ? ' slide-focused' : '');
 
         const iconSpan = document.createElement('span');
@@ -128,10 +143,24 @@ export function slideRow(
         }
         row.appendChild(iconSpan);
 
-        const labelSpan = document.createElement('span');
-        labelSpan.className = 'slide-label';
-        labelSpan.textContent = label;
-        row.appendChild(labelSpan);
+        // 右侧 label（key-value 布局）
+        if (extra?.rightLabel !== undefined) {
+            // 左侧 label（字段名）
+            const leftSpan = document.createElement('span');
+            leftSpan.className = 'slide-label field-label';
+            leftSpan.textContent = label;
+            row.appendChild(leftSpan);
+            // 右侧 label（字段值）
+            const rightSpan = document.createElement('span');
+            rightSpan.className = 'field-value';
+            rightSpan.textContent = extra.rightLabel;
+            row.appendChild(rightSpan);
+        } else {
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'slide-label' + (variant === 'danger' ? ' danger-text' : '');
+            labelSpan.textContent = label;
+            row.appendChild(labelSpan);
+        }
 
         if (sublabel) {
             const sub = document.createElement('span');
@@ -145,6 +174,20 @@ export function slideRow(
             tagSpan.className = 'slide-tag';
             tagSpan.textContent = tag;
             row.appendChild(tagSpan);
+        }
+
+        // 操作按钮 (actionBtn)
+        if (extra?.actionIcon !== undefined) {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-ghost btn-sm btn-icon slide-act-btn';
+            btn.textContent = extra.actionIcon;
+            if (extra.onActionClick) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    extra.onActionClick!(e);
+                });
+            }
+            row.appendChild(btn);
         }
 
         if (hasArrow) {

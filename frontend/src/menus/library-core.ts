@@ -739,22 +739,8 @@ export function showModelPopup(): void {
                             cardContainer(c2, (c3) => {
                                 for (const m of recentModelsList) {
                                     const row = modelToRow(m);
-                                    const el = document.createElement('div');
-                                    el.className = 'slide-item';
-                                    el.setAttribute('data-hint', row.sublabel || '');
-                                    const iconSpan = document.createElement('span');
-                                    iconSpan.className = 'slide-icon';
-                                    const iconEl = createIconifyIcon(row.icon);
-                                    if (iconEl) {
-                                        iconSpan.appendChild(iconEl);
-                                    }
-                                    el.appendChild(iconSpan);
-                                    const labelSpan = document.createElement('span');
-                                    labelSpan.className = 'slide-label';
-                                    labelSpan.textContent = row.label;
-                                    el.appendChild(labelSpan);
-                                    el.addEventListener('click', () => onModelRowClick(m));
-                                    c3.appendChild(el);
+                                    const el = slideRow(c3, row.icon, row.label, false, () => onModelRowClick(m));
+                                    if (row.sublabel) el.dataset.hint = row.sublabel;
                                 }
                             });
                         },

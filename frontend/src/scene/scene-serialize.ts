@@ -76,7 +76,7 @@ import type { LipSyncState as LipSyncStateType } from '../motion-algos/lipsync';
  * This centralizes the "(libraryRef ? resolveLibraryRef(...) : null) || filePath" pattern
  * that appears repeatedly in serialize/deserialize.
  */
-function resolvePathFromRef(filePath: string, libraryRef?: string): string | null {
+export function resolvePathFromRef(filePath: string, libraryRef?: string): string | null {
     if (libraryRef) {
         const resolved = resolveLibraryRef(libraryRef);
         if (resolved) {

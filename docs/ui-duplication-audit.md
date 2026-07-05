@@ -170,6 +170,40 @@ btn.className = 'btn btn-sm btn-primary';  // 或 btn-ghost, btn-danger
 | **实际复用** | 🔴 **较低**。大量菜单文件仍手动拼接 `className` 和 `innerHTML` |
 | **inline style** | 🔴 **偏多**。31 行分散在 7 文件，是维护隐患 |
 
-**总体 UI 重复率 ≈ 35%**（估算：31 inline + 约 45 行手动创建 `.slide-item` / `.preset-group` 等，占 145 总行的 ~30~40%）。
+**本次重构前 UI 重复率 ≈ 35%**（31 inline + 约 45 行手动创建 `.slide-item` / `.preset-group` 等，占 145 总行的 ~30~40%）。
 
-通过扩展 `slideRow()` 参数和提取 2~3 个通用组件，可将重复率降至 **< 15%**。
+---
+
+## 七、重构结果（2026-07-05）
+
+| 指标 | 改前 | 改后 |
+|------|------|------|
+| `className` 赋值行 | 145 行 | **~105 行**（↓28%） |
+| inline style 行 | 31 行 | **~21 行**（↓32%） |
+| 手动 `.slide-item` | 10+ 处 | **~5 处**（↓50%） |
+| 核心新组件 | — | `slideRow(extra)` `addDangerRow()` `addFieldRow()` |
+| CSS 新类 | — | `.field-label` `.field-value` `.slide-act-btn` |
+| 测试回归 | — | ✅ 958/958 通过 |
+
+### 具体改动
+
+| 文件 | 改动 | 效果 |
+|------|------|------|
+| `core/ui-slide-row.ts` | 加 `SlideRowExtra` 接口：`variant`、`actionIcon`、`onActionClick`、`rightLabel` | 一次封装消除多处重复 |
+| `core/ui-rows.ts` | 加 `addDangerRow()` `addFieldRow()` | 危险行和字段行标准化 |
+| `core/ui-helpers.ts` | 导出新类型和函数 | — |
+| `core/app.css` | 加 `.field-label` `.field-value` `.slide-act-btn` | 替代 inline style |
+| `menus/model-detail.ts` | 用 `addFieldRow` / `addDangerRow` 替换两处手动 | -12 行 |
+| `menus/settings.ts` | 用 `addDangerRow` / `slideRow(actionIcon)` 替换 | -14 行 |
+| `menus/settings-software.ts` | 用 `addFieldRow` / `addDangerRow` / `slideRow(actionIcon)` 替换 | -22 行 |
+| `menus/library-core.ts` | 用 `slideRow` 替换手动创建 | -8 行 |
+| `menus/scene-stage-levels.ts` | 用 `addDangerRow` 替换 | -8 行 |
+| `menus/scene-stage-lights.ts` | 用 `addDangerRow` 替换 | -10 行 |
+
+### 未纳入重构的模式
+
+- **motion-popup.ts / outfit-ui.ts** — 行内有动态图标状态（check/circle），不适合通用组件
+- **tags 容器 (model-detail.ts)** — 异步加载 + 复杂交互，需独立抽象
+- **外部库双按钮行** — rename+del 两个按钮，单 `actionIcon` 不够
+
+**剩余估计重复率 ≈ 20%**（仍有 ~5 处手动 `.slide-item` 和 ~21 行 inline style 留待后续）。

@@ -1,7 +1,9 @@
 package app
 
 import (
+	"archive/zip"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -568,4 +570,105 @@ func (a *App) LoadLastScene() (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+// ======== Scene Bundle (zip packaging) ========
+
+// BundleScene packages a scene JSON + all referenced asset files into a zip.
+// sceneJSON: the rewritten SceneFile JSON (libraryRef pointing to assets/ inside the bundle).
+// assetPaths: deduplicated absolute paths of files to include.
+// Each asset is stored at "assets/<relativeFromRoot>" preserving directory structure.
+func (a *App) BundleScene(targetPath string, sceneJSON string, assetPaths []string) error {
+	f, err := os.Create(targetPath)
+	if err != nil {
+		return fmt.Errorf("create bundle file: %w", err)
+	}
+	defer f.Close()
+
+	zw := zip.NewWriter(f)
+	defer zw.Close()
+
+	// Write scene.json
+	sw, err := zw.Create("scene.json")
+	if err != nil {
+		return fmt.Errorf("create scene.json in zip: %w", err)
+	}
+	if _, err := sw.Write([]byte(sceneJSON)); err != nil {
+		return fmt.Errorf("write scene.json: %w", err)
+	}
+
+	// Determine the library root for computing relative paths
+	cfg, _ := a.GetConfig()
+	libRoot := ""
+	if cfg != nil && cfg.ResourceRoot != "" {
+		libRoot = cfg.ResourceRoot
+	}
+
+	// Write each asset file
+	for _, absPath := range assetPaths {
+		rel := _bundleRelPath(absPath, libRoot)
+		_ = _copyFileToZip(zw, absPath, "assets/"+rel)
+	}
+
+	return nil
+}
+
+// _bundleRelPath computes the relative path for a bundle asset.
+func _bundleRelPath(absPath string, libRoot string) string {
+	normalised := filepath.ToSlash(absPath)
+	if libRoot != "" {
+		libNorm := filepath.ToSlash(libRoot)
+		if strings.HasPrefix(normalised, libNorm+"/") {
+			return normalised[len(libNorm)+1:]
+		}
+	}
+	return filepath.Base(absPath)
+}
+
+// _copyFileToZip copies a file into a zip archive at the given entry path.
+func _copyFileToZip(zw *zip.Writer, srcPath string, entryPath string) error {
+	src, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	info, err := src.Stat()
+	if err != nil {
+		return err
+	}
+
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return err
+	}
+	header.Name = entryPath
+	header.Method = zip.Deflate
+
+	w, err := zw.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(w, src)
+	return err
+}
+
+// SelectBundleSaveFile opens a save dialog for scene bundle files.
+func (a *App) SelectBundleSaveFile() (string, error) {
+	if a.wailsApp == nil {
+		return "", fmt.Errorf("application not initialized")
+	}
+	dialog := a.wailsApp.Dialog.SaveFileWithOptions(&application.SaveFileDialogOptions{
+		Title:    "导出场景包",
+		Filename: "scene.mmascene",
+		Filters: []application.FileFilter{
+			{DisplayName: "MikuMikuAR Scene Bundle (*.mmascene)", Pattern: "*.mmascene"},
+			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+		},
+	})
+	path, err := dialog.PromptForSingleSelection()
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(path), nil
 }

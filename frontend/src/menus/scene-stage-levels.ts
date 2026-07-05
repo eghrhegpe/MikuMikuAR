@@ -10,6 +10,7 @@ import {
     addToggleRow,
     addSliderRow,
     addSectionTitle,
+    addDangerRow,
 } from '../core/ui-helpers';
 import {
     getModelPosition,
@@ -197,19 +198,7 @@ export function buildStageTransformLevel(id: string): PopupLevel {
                     setStatus('✓ 舞台变换已重置', true);
                 });
 
-                const delRow = document.createElement('div');
-                delRow.className = 'slide-item';
-                delRow.style.color = '#ff6b6b';
-                const delIcon = document.createElement('span');
-                delIcon.className = 'slide-icon';
-                const delIconEl = createIconifyIcon('lucide:trash-2');
-                if (delIconEl) delIcon.appendChild(delIconEl);
-                delRow.appendChild(delIcon);
-                const delLabel = document.createElement('span');
-                delLabel.className = 'slide-label';
-                delLabel.textContent = '卸载此舞台';
-                delRow.appendChild(delLabel);
-                delRow.addEventListener('click', async () => {
+                addDangerRow(c, 'lucide:trash-2', '卸载此舞台', async () => {
                     if (!(await showConfirm(`确定卸载舞台「${name}」？`))) return;
                     removeModel(id);
                     const sm = getSceneMenu();
@@ -217,7 +206,6 @@ export function buildStageTransformLevel(id: string): PopupLevel {
                     reRenderSceneMenu();
                     setStatus(`✓ 已卸载: ${name}`, true);
                 });
-                c.appendChild(delRow);
             });
         },
     };

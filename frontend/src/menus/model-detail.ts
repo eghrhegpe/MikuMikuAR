@@ -26,6 +26,8 @@ import {
     slideRow,
     addModeSlider,
     addCollapsible,
+    addDangerRow,
+    addFieldRow,
 } from '../core/ui-helpers';
 import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
@@ -214,25 +216,11 @@ export function buildModelLevel(id: string): PopupLevel {
 
             // 危险操作：移除（独立在底部）
             cardContainer(container, (c) => {
-                const removeBtn = document.createElement('div');
-                removeBtn.className = 'slide-item';
-                const removeIcon = document.createElement('span');
-                removeIcon.className = 'slide-icon';
-                const removeIconEl = createIconifyIcon('lucide:trash-2');
-                if (removeIconEl) {
-                    removeIcon.appendChild(removeIconEl);
-                }
-                const removeLabel = document.createElement('span');
-                removeLabel.className = 'slide-label danger-text';
-                removeLabel.textContent = '移除模型';
-                removeBtn.appendChild(removeIcon);
-                removeBtn.appendChild(removeLabel);
-                removeBtn.addEventListener('click', async () => {
+                addDangerRow(c, 'lucide:trash-2', '移除模型', async () => {
                     const { getSceneMenu } = await import('./scene-menu');
                     getSceneMenu()?.popTo(0);
                     removeModel(id);
                 });
-                c.appendChild(removeBtn);
             });
         },
     };
@@ -279,12 +267,7 @@ export function buildModelInfoLevel(id: string): PopupLevel {
             ];
             cardContainer(container, (c) => {
                 for (const f of fields) {
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    row.style.cssText =
-                        'display:flex;justify-content:space-between;padding:6px 14px;min-height:auto;margin:0;';
-                    row.innerHTML = `<span class="slide-label" style="color:var(--text-dim);flex:none;">${f.label}</span><span class="slide-label" style="text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(f.value)}</span>`;
-                    c.appendChild(row);
+                    addFieldRow(c, f.label, escapeHtml(f.value));
                 }
             });
         },

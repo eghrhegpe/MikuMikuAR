@@ -3,7 +3,6 @@
 
 import { setStatus, cardContainer, envState } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { createIconifyIcon } from '../core/icons';
 import { showConfirm } from '../core/dialog';
 import {
     addSliderRow,
@@ -13,6 +12,7 @@ import {
     slideRow,
     addSectionTitle,
     addPresetChip,
+    addDangerRow,
 } from '../core/ui-helpers';
 import {
     setStageLightState,
@@ -379,26 +379,12 @@ export function buildStageLightLevel(): PopupLevel {
             // —— 删除按钮 ——
             if (lights.length > 1) {
                 cardContainer(container, (c) => {
-                    const delRow = document.createElement('div');
-                    delRow.className = 'slide-item';
-                    delRow.style.color = '#ff6b6b';
-                    delRow.style.cursor = 'pointer';
-                    const iconSpan = document.createElement('span');
-                    iconSpan.className = 'slide-icon';
-                    const icon = createIconifyIcon('lucide:trash-2');
-                    if (icon) iconSpan.appendChild(icon);
-                    delRow.appendChild(iconSpan);
-                    const labelSpan = document.createElement('span');
-                    labelSpan.className = 'slide-label';
-                    labelSpan.textContent = `删除「${state.name}」`;
-                    delRow.appendChild(labelSpan);
-                    delRow.addEventListener('click', async () => {
+                    addDangerRow(c, 'lucide:trash-2', `删除「${state.name}」`, async () => {
                         if (!(await showConfirm(`确定删除「${state.name}」？`))) return;
                         removeStageLight(state.id);
                         reRenderSceneMenu();
                         setStatus('✓ 已删除灯光', true);
                     });
-                    c.appendChild(delRow);
                 });
             }
         },
