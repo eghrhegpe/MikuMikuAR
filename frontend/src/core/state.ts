@@ -330,8 +330,11 @@ export const envState: EnvState = reactive<EnvState>({
     cloudGap: 0.5,
 
     fogEnabled: false,
+    fogMode: 'exp2',
     fogColor: [0.5, 0.5, 0.6],
     fogDensity: 0.01,
+    fogStart: 10,
+    fogEnd: 100,
 
     clothEnabled: false,
     clothConfig: { ...DEFAULT_CLOTH_CONFIG },

@@ -20,10 +20,14 @@ import {
     setConcertPaused,
     getFov,
     setFov,
+    setAutoCameraEnabled,
+    isAutoCameraEnabled,
+    setAutoCameraBeatsPerSwitch,
+    getAutoCameraBeatsPerSwitch,
     type CameraMode,
 } from '../scene/camera/camera';
 import { triggerAutoSave } from '../scene/scene';
-import { loadCameraVmdFromPath } from '../scene/scene';
+import { loadCameraVmdFromPath, getProcBeatDetector } from '../scene/scene';
 import { getMotionMenu } from './motion-popup';
 
 let cameraExpandedMode: CameraMode | null = null;
@@ -90,7 +94,35 @@ export function buildCameraLevel(): PopupLevel {
                         triggerAutoSave();
                     }
                 );
+            });
 
+            // Auto Camera
+            cardContainer(container, (c) => {
+                addToggleRow(c, '自动运镜', isAutoCameraEnabled(), (v) => {
+                    const bd = getProcBeatDetector();
+                    setAutoCameraEnabled(v, bd ?? undefined);
+                    refreshCameraLevel();
+                }, 'lucide:video', {
+                    bind: () => isAutoCameraEnabled(),
+                });
+                if (isAutoCameraEnabled()) {
+                    addSliderRow(
+                        c,
+                        '切换间隔（拍）',
+                        getAutoCameraBeatsPerSwitch(),
+                        1,
+                        8,
+                        1,
+                        (v) => { setAutoCameraBeatsPerSwitch(Math.round(v)); },
+                        'lucide:timer',
+                        undefined,
+                        { bind: () => getAutoCameraBeatsPerSwitch() }
+                    );
+                }
+            });
+
+            // Camera params + VMD
+            cardContainer(container, (c) => {
                 const paramsContainer = document.createElement('div');
                 paramsContainer.className = 'cs-params';
                 const modeToExpand = cameraExpandedMode ?? currentMode;

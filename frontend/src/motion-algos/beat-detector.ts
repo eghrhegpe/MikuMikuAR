@@ -35,6 +35,7 @@ export class BeatDetector {
     private phaseStartTime = 0;
     private phaseInterval = 500; // ms per beat
     private bpmQuantizeEnabled = true; // P1 开关：BPM 量化（默认开）
+    private _onBeatCallbacks: Array<() => void> = [];
 
     /** 接入音频元素。惰性创建 AudioContext + GainNode。
      *  注意：createMediaElementSource 后音频路由经 AudioContext，
@@ -104,6 +105,16 @@ export class BeatDetector {
         this.currentBpm = 120;
         this.phaseInterval = 500;
         this.phaseStartTime = 0;
+        this._onBeatCallbacks = [];
+    }
+
+    /** 注册 beat 回调。返回取消注册函数。 */
+    onBeat(cb: () => void): () => void {
+        this._onBeatCallbacks.push(cb);
+        return () => {
+            const idx = this._onBeatCallbacks.indexOf(cb);
+            if (idx >= 0) this._onBeatCallbacks.splice(idx, 1);
+        };
     }
 
     /** 每帧调用。更新能量历史、检测 beat、估计 BPM。 */
@@ -141,6 +152,10 @@ export class BeatDetector {
                 this.beatTimes.shift();
             }
             this.phaseStartTime = now;
+            // 触发 beat 回调
+            for (const cb of this._onBeatCallbacks) {
+                try { cb(); } catch (e) { console.warn('[BeatDetector] onBeat callback error:', e); }
+            }
             if (this.beatTimes.length >= 2) {
                 const intervals: number[] = [];
                 for (let i = 1; i < this.beatTimes.length; i++) {

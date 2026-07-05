@@ -568,9 +568,23 @@ export function disposeEnvUpdateObserver(): void {
 export function applyFog(state: EnvState): void {
     const scene = getScene();
     if (state.fogEnabled) {
-        scene.fogMode = Scene.FOGMODE_EXP2;
+        const fogMode = state.fogMode || 'exp2';
+        switch (fogMode) {
+            case 'exp':
+                scene.fogMode = Scene.FOGMODE_EXP;
+                scene.fogDensity = state.fogDensity;
+                break;
+            case 'exp2':
+                scene.fogMode = Scene.FOGMODE_EXP2;
+                scene.fogDensity = state.fogDensity;
+                break;
+            case 'linear':
+                scene.fogMode = Scene.FOGMODE_LINEAR;
+                scene.fogStart = state.fogStart;
+                scene.fogEnd = state.fogEnd;
+                break;
+        }
         scene.fogColor = new Color3(state.fogColor[0], state.fogColor[1], state.fogColor[2]);
-        scene.fogDensity = state.fogDensity;
     } else {
         scene.fogMode = Scene.FOGMODE_NONE;
     }

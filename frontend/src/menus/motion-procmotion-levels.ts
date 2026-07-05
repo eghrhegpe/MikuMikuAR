@@ -17,6 +17,8 @@ import {
     setLipSyncSensitivity,
     setLipSyncIntensity,
     setProcMotionInterpOverride,
+    setLifelikeEnabled,
+    setLifelikeIntensity,
 } from '../scene/scene';
 import { setProcMotionBoneToggle, setProcMotionEyeTrackingEnabled, setProcMotionHeadTrackingEnabled } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
@@ -63,6 +65,12 @@ export function buildProcMotionLevel(): PopupLevel {
                 }, 'lucide:mic', {
                     bind: () => getLipSyncState().enabled,
                 });
+                addToggleRow(c, '微动叠加', st.lifelikeEnabled, (v) => {
+                    setLifelikeEnabled(v);
+                    getMotionMenu()?.updateControls();
+                }, 'lucide:sparkles', {
+                    bind: () => getProcMotionState().lifelikeEnabled,
+                });
             });
             cardContainer(container, (c) => {
                 addSliderRow(
@@ -100,6 +108,28 @@ export function buildProcMotionLevel(): PopupLevel {
                     }
                 );
             });
+
+            // ======== Lifelike 微动叠加强度 ========
+            if (st.lifelikeEnabled) {
+                cardContainer(container, (c) => {
+                    addSliderRow(
+                        c,
+                        '微动强度',
+                        st.lifelikeIntensity,
+                        0,
+                        1,
+                        0.05,
+                        (v) => {
+                            setLifelikeIntensity(v);
+                        },
+                        'lucide:sparkles',
+                        undefined,
+                        {
+                            bind: () => getProcMotionState().lifelikeIntensity,
+                        }
+                    );
+                });
+            }
 
             // ======== 微动效果开关 ========
             cardContainer(container, (c) => {

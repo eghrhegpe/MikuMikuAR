@@ -17,6 +17,8 @@ import { getCameraMode, switchCameraMode } from '../camera/camera';
 import { updatePlaybackUI } from '../motion/playback';
 import { disposeAudio } from '../../outfit/audio';
 import { modelManager } from '../scene';
+import type { FormationType } from './model-manager';
+import { getFormationLabels } from './model-manager';
 
 export type PhysicsCategory = 'skirt' | 'chest' | 'hair' | 'accessory';
 
@@ -57,6 +59,13 @@ export function focusModel(id: string): void {
 export function arrangeModels(): void {
     modelManager?.arrange();
 }
+
+export function setModelFormation(type: FormationType): void {
+    modelManager?.setFormation(type);
+}
+
+export { getFormationLabels };
+export type { FormationType };
 
 // ======== Visibility / Material / Debug ========
 

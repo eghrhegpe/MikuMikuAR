@@ -12,6 +12,7 @@ export function slideRow(
     onClick: () => void,
     sublabel?: string,
     tag?: string,
+    focused?: boolean,
     headerToggle?: {
         value: boolean;
         onChange: (v: boolean) => void;
@@ -21,7 +22,7 @@ export function slideRow(
         /** 声明取值方式，updateControls() 时自动同步 toggle 状态 */
         bind?: () => boolean;
     }
-): void {
+): HTMLElement {
     const row = document.createElement('div');
 
     if (headerToggle) {
@@ -112,7 +113,7 @@ export function slideRow(
         row.addEventListener('click', onClick);
     } else {
         // 原始 slide-item 样式（无 toggle）
-        row.className = 'slide-item';
+        row.className = 'slide-item' + (focused ? ' slide-focused' : '');
 
         const iconSpan = document.createElement('span');
         iconSpan.className = 'slide-icon';
@@ -157,4 +158,5 @@ export function slideRow(
     }
 
     container.appendChild(row);
+    return row;
 }

@@ -10,7 +10,8 @@ import {
     SetMMDPath,
     SelectExeFile,
 } from '../core/wails-bindings';
-import { setStatus, cardContainer, escapeHtml, PopupLevel } from '../core/config';
+import { setStatus, cardContainer, escapeHtml } from '../core/config';
+import type { PopupLevel } from '../core/config';
 import { slideRow } from '../core/ui-helpers';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
 import { showPrompt } from '../core/dialog';

@@ -31,11 +31,46 @@ export function cardContainer(container: HTMLElement, fn: (c: HTMLElement) => vo
 let hintActive = false;
 let savedStatusText = '';
 let savedStatusColor = '';
+let _statusTimer: ReturnType<typeof setTimeout> | null = null;
 
-export function setStatus(text: string, ok: boolean): void {
-    if (hintActive || !dom.statusText) return;
+/**
+ * 设置状态栏文本。
+ * @param ok true=成功(绿色), false=信息/错误(白灰色)
+ * @param hold true=持续显示不自动消失(默认 false, 2s/5s 后淡出)
+ */
+export function setStatus(text: string, ok: boolean, hold = false): void {
+    if (!dom.statusText) return;
+
+    // 清除旧定时器
+    if (_statusTimer) {
+        clearTimeout(_statusTimer);
+        _statusTimer = null;
+    }
+
+    // hint 激活时仍然更新保存的值，hint 结束后显示最新状态
+    if (hintActive) {
+        savedStatusText = text;
+        savedStatusColor = ok ? 'rgba(111,207,151,0.7)' : 'rgba(255,255,255,0.4)';
+        return;
+    }
+
     dom.statusText.textContent = text;
     dom.statusText.style.color = ok ? 'rgba(111,207,151,0.7)' : 'rgba(255,255,255,0.4)';
+    dom.statusText.style.opacity = '1';
+
+    // 自动淡出
+    if (!hold) {
+        const delay = ok ? 2000 : 5000;
+        _statusTimer = setTimeout(() => {
+            dom.statusText.style.transition = 'opacity 0.5s ease';
+            dom.statusText.style.opacity = '0';
+            _statusTimer = setTimeout(() => {
+                dom.statusText.textContent = '';
+                dom.statusText.style.transition = '';
+                dom.statusText.style.opacity = '1';
+            }, 500);
+        }, delay);
+    }
 }
 
 export function showHint(text: string): void {
@@ -47,13 +82,16 @@ export function showHint(text: string): void {
     hintActive = true;
     dom.statusText.textContent = text;
     dom.statusText.style.color = 'rgba(255,255,255,0.4)';
+    dom.statusText.style.opacity = '1';
 }
 
 export function hideHint(): void {
     hintActive = false;
     if (!dom.statusText) return;
+    // 恢复到最新保存的状态（可能已被 setStatus 更新过）
     dom.statusText.textContent = savedStatusText;
     dom.statusText.style.color = savedStatusColor;
+    dom.statusText.style.opacity = '1';
 }
 
 export function initHints(): void {

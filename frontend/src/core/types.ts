@@ -199,6 +199,8 @@ export interface UIState {
     blurBg?: boolean;
     performanceMode?: 'auto' | 'quality' | 'balanced' | 'performance';
     materialCategoryMap?: Record<string, string>;
+    screenshotFormat?: 'image/png' | 'image/jpeg' | 'image/webp';
+    screenshotQuality?: number;
 }
 
 // ======== Environment State ========
@@ -278,8 +280,11 @@ export interface EnvState {
     cloudGap: number;
 
     fogEnabled: boolean;
+    fogMode: 'exp' | 'exp2' | 'linear';
     fogColor: [number, number, number];
     fogDensity: number;
+    fogStart: number;
+    fogEnd: number;
 
     clothEnabled: boolean;
     clothConfig: ClothConfig;
