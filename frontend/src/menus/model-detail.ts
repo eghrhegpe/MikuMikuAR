@@ -80,6 +80,8 @@ export function buildOpenWithLevel(id: string): PopupLevel {
                 }
 
                 slideRow(c, 'lucide:plus', '管理软件', false, () => {
+                    // Pop model stack first so returning from settings shows root level
+                    stackRegistry.modelStack?.popTo(0);
                     dom.btnSettings.click();
                 }, undefined, undefined, undefined, undefined, {
                     variant: 'accent',
@@ -214,9 +216,11 @@ export function buildModelLevel(id: string): PopupLevel {
             // 危险操作：移除（独立在底部）
             cardContainer(container, (c) => {
                 addDangerRow(c, 'lucide:trash-2', '移除模型', async () => {
-                    const { getSceneMenu } = await import('./scene-menu');
-                    getSceneMenu()?.popTo(0);
                     removeModel(id);
+                    // Pop model stack to root so the updated model list is shown
+                    if (stackRegistry.modelStack) {
+                        stackRegistry.modelStack.popTo(0);
+                    }
                 });
             });
         },
