@@ -24,6 +24,15 @@ vi.mock('@wailsio/runtime', () => ({
         off: vi.fn(),
         emit: vi.fn(),
     },
+    // Create is used by auto-generated bindings (models.js / app.js) to construct
+    // serializable types. The mock provides the same surface: Nullable, Array, Map, Any.
+    Create: {
+        Nullable: vi.fn((type) => type),
+        Array: vi.fn((type) => type),
+        Map: vi.fn((keyType, valueType) => ({})),
+        Any: 'any',
+        Events: Object.freeze({}),
+    },
     Window: {
         SetTitle: vi.fn(),
         SetBackgroundColour: vi.fn(),

@@ -544,6 +544,12 @@ public class MainActivity extends AppCompatActivity {
             }
             return;
         }
+        if (requestCode == SAF_TREE_REQUEST) {
+            if (bridge != null) {
+                bridge.handleSafTreeResult(resultCode, data);
+            }
+            return;
+        }
         if (requestCode != FILE_PICKER_REQUEST) {
             return;
         }

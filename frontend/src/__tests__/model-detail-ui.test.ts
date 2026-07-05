@@ -125,6 +125,47 @@ vi.mock('babylon-mmd/esm/Loader/mmdModelLoader.default', () => ({}));
 vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () => ({}));
 vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => ({}));
 
+// ── Mock scene/scene for modelManager et al. ──────────────────────────
+const { mockModelManager } = vi.hoisted(() => {
+    const mm = {
+        get: vi.fn(),
+        focus: vi.fn(),
+        arrange: vi.fn(),
+        setVisibility: vi.fn(),
+        setOpacity: vi.fn(),
+        setWireframe: vi.fn(),
+        setBoneLinesVis: vi.fn(),
+        setBoneJointsVis: vi.fn(),
+        setPhysics: vi.fn(),
+        getPhysicsCategories: vi.fn().mockReturnValue([]),
+        getPhysicsCatState: vi.fn().mockReturnValue(null),
+        isPhysicsCategoryEnabled: vi.fn().mockReturnValue(false),
+        setPhysicsCategory: vi.fn(),
+        setScaling: vi.fn(),
+        setRotationY: vi.fn(),
+        setPosition: vi.fn(),
+        getPosition: vi.fn().mockReturnValue([0, 0, 0]),
+        resetTransform: vi.fn(),
+        clearVmdData: vi.fn(),
+        getMorphs: vi.fn().mockReturnValue([]),
+        setMorphWeight: vi.fn(),
+        getMorphWeight: vi.fn().mockReturnValue(0),
+        resetMorphs: vi.fn(),
+        remove: vi.fn(),
+    };
+    return { mockModelManager: mm };
+});
+
+vi.mock('../scene/scene', () => ({
+    get modelManager() { return mockModelManager; },
+    getModelMorphs: vi.fn().mockReturnValue([]),
+    setModelMorphWeight: vi.fn(),
+    resetModelMorphs: vi.fn(),
+    setModelVisibility: vi.fn(),
+    setModelOpacity: vi.fn(),
+    removeModel: vi.fn(),
+}));
+
 vi.mock('../scene-menu', () => ({
     getSceneMenu: () => null,
 }));
@@ -299,12 +340,20 @@ function createModel(id: string, overrides?: Partial<any>): string {
         scaling: 1,
         rotationY: 0,
     };
-    modelRegistry.set(id, { ...defaults, ...overrides } as any);
+    const entry = { ...defaults, ...overrides } as any;
+    modelRegistry.set(id, entry);
+    // Also register in the mock modelManager so functions that query
+    // modelManager.get(id) (e.g. buildModelInfoLevel, buildModelTagsLevel,
+    // buildMorphPreviewLevel) can find the model.
+    mockModelManager.get.mockImplementation((mid: string) =>
+        mid === id ? entry : undefined
+    );
     return id;
 }
 
 function cleanup(): void {
     modelRegistry.clear();
+    mockModelManager.get.mockReset();
 }
 
 function _getLevelLabel(level: PopupLevel): string {
@@ -360,7 +409,7 @@ describe('buildModelLevel', () => {
         const allLabels = [...slideLabels, ...csLabels];
         // Cards rendered in buildModelLevel (labels may change with UI)
         expect(allLabels.length).toBeGreaterThan(5);
-        expect(allLabels.some((l) => l && l.includes('模型信息'))).toBe(true);
+        expect(allLabels.some((l) => l && l.includes('基本信息'))).toBe(true);
         expect(allLabels.some((l) => l && l.includes('可见性'))).toBe(true);
         expect(allLabels.some((l) => l && l.includes('材质调节'))).toBe(true);
     });
