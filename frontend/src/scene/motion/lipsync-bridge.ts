@@ -11,7 +11,7 @@ import {
     amplitudeToWeight,
 } from '../../motion-algos/lipsync';
 import { focusedModelId, triggerAutoSave } from '../../core/config';
-import { isAudioPlaying } from '../../outfit/audio';
+import { isAudioPlaying, getAudioPath } from '../../outfit/audio';
 import { setModelMorphWeight } from '../scene';
 import { getProcBeatDetector } from './proc-motion-bridge';
 
@@ -34,6 +34,9 @@ let _lastMorphNameSet = new Set<string>();
 // 平滑滤波器状态（低通滤波，减少 morph 权重抖动）
 let _smoothLow = 0;
 let _smoothHigh = 0;
+
+// #10: Track last audio path to detect audio source changes
+let _lastAudioPath = '';
 
 const VOICE_BIN_START = 10;
 const VOICE_BIN_END = 50;
@@ -92,11 +95,28 @@ export function updateLipSync(): void {
     if (!lipSyncState.enabled) {
         return;
     }
-    if (!isAudioPlaying()) {
-        resetLipMorph();
+
+    // #10: Audio source change → reset lip sync state immediately
+    if (getAudioPath() !== _lastAudioPath) {
+        lipSyncMorphName = null;
+        lipSyncMorphSet = null;
         _smoothLow = 0;
         _smoothHigh = 0;
-        return;
+        resetLipMorph();
+        _lastAudioPath = getAudioPath();
+    }
+
+    if (!isAudioPlaying()) {
+        // #12: Exponential decay when audio stops (fade over ~20 frames)
+        _smoothLow *= 0.85;
+        _smoothHigh *= 0.85;
+        if (_smoothLow < 0.005 && _smoothHigh < 0.005) {
+            _smoothLow = 0;
+            _smoothHigh = 0;
+            resetLipMorph();
+            return;
+        }
+        // Still decaying — continue to apply morph weights with decaying values
     }
     const modelId = focusedModelId;
     // 聚焦变化时自动重置 morph 名，消除对外部 resetLipSyncOnFocusChange 的依赖
@@ -142,8 +162,11 @@ export function updateLipSync(): void {
     const highLevel = beatDetector ? beatDetector.getLevel(HIGH_BIN_START, HIGH_BIN_END) : 0;
 
     // 低通滤波（平滑抖动，系数 0.7 旧值 + 0.3 新值）
-    _smoothLow = _smoothLow * 0.7 + lowLevel * 0.3;
-    _smoothHigh = _smoothHigh * 0.7 + highLevel * 0.3;
+    // Skip smoothing when audio stopped (decay mode) to preserve the 0.85 exponential fade
+    if (isAudioPlaying()) {
+        _smoothLow = _smoothLow * 0.7 + lowLevel * 0.3;
+        _smoothHigh = _smoothHigh * 0.7 + highLevel * 0.3;
+    }
 
     const openWeight = amplitudeToWeight(_smoothLow, lipSyncState.sensitivity, lipSyncState.intensity);
     setModelMorphWeight(modelId, lipSyncMorphName, openWeight);

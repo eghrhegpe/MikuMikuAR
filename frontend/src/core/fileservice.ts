@@ -22,10 +22,27 @@ export async function resolveFileUrl(
     return { url, port, dir: safeDir };
 }
 
+// ======== normPath 缓存（buildLevel 每模型调用一次，缓存避免重复正则） ========
+const _normPathCache = new Map<string, string>();
+const NORM_PATH_CACHE_MAX = 5000;
+
 /** 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。
- *  注意：Android SAF URI（content://...）原样返回，不做转换。 */
+ *  注意：Android SAF URI（content://...）原样返回，不做转换。
+ *  结果缓存，避免 buildLevel 遍历千级模型时重复正则替换。 */
 export function normPath(p: string): string {
-    // SAF URI 原样返回，不做反斜杠转换
-    if (p.startsWith('content://')) return p;
-    return p.replace(/\\/g, '/').replace(/\/+$/, '');
+    const cached = _normPathCache.get(p);
+    if (cached !== undefined) return cached;
+
+    let result: string;
+    if (p.startsWith('content://')) {
+        result = p;
+    } else {
+        result = p.replace(/\\/g, '/').replace(/\/+$/, '');
+    }
+
+    if (_normPathCache.size >= NORM_PATH_CACHE_MAX) {
+        _normPathCache.clear();
+    }
+    _normPathCache.set(p, result);
+    return result;
 }

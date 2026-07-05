@@ -37,8 +37,22 @@ const WEATHER_BOX_XZ_HALF = 40; // XZ 半宽（80×80 覆盖区）
 const FIREFLY_HEIGHT_OFFSET = 1.5;
 const FIREWORK_HEIGHT_OFFSET = 8;
 
-function makeParticleTexture(kind: string): Texture {
+function makeParticleTexture(kind: string, externalUrl?: string): Texture {
     const scene = getScene();
+
+    // 自定义纹理优先：从外部图片加载
+    if (externalUrl) {
+        const cacheKey = `_custom_${externalUrl}`;
+        const cached = _particleTextures.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        const tex = new Texture(externalUrl, scene, false, false);
+        tex.hasAlpha = true;
+        _particleTextures.set(cacheKey, tex);
+        return tex;
+    }
+
     const cached = _particleTextures.get(kind);
     if (cached) {
         return cached;
@@ -185,7 +199,7 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     // capacity >= max(emitRate) * max(maxLifeTime) * 2.5
     // 雨上限：1000 * 2 * 2.5 = 5000；particleEmitRate 放大时需要同步扩大
     const ps = new GPUParticleSystem('envParticles', { capacity: 10000 }, scene);
-    ps.particleTexture = makeParticleTexture(type);
+    ps.particleTexture = makeParticleTexture(type, envState.particleCustomTexture || undefined);
     ps.updateSpeed = 0.01;
     // 初始 emitter 占位（实际位置在 followObserver 中设置）
     ps.emitter = new Vector3(0, 0, 0);
@@ -631,4 +645,13 @@ export function updateParticleParams(): void {
     ps.maxSize = _baseMaxSize * envState.particleSize;
     ps.minEmitPower = _baseMinEmitPower * envState.particleSpeed;
     ps.maxEmitPower = _baseMaxEmitPower * envState.particleSpeed;
+}
+
+/** 运行时更新粒子纹理（响应自定义纹理变化） */
+export function updateParticleTexture(): void {
+    const ps = _envSys.particles.system;
+    if (!ps || !_currentParticleType || _currentParticleType === 'none') {
+        return;
+    }
+    ps.particleTexture = makeParticleTexture(_currentParticleType, envState.particleCustomTexture || undefined);
 }

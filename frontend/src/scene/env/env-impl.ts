@@ -22,6 +22,17 @@ import {
 import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
 import { EnvState, envState } from '../../core/config';
 
+// ======== Static Asset URL Resolver (Android 安全) ========
+/** 将相对路径转为绝对 URL，确保 Android WebView 能正确加载嵌入资源。
+ *  相对路径（如 'textures/grass.png'）在 Android 可能因 base URL 不同而 404。 */
+function resolveStaticAsset(path: string): string {
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+        return path; // 已经是绝对 URL 或 data URL，原样返回
+    }
+    // 相对路径 → 绝对 URL（基于当前页面 origin）
+    return new URL(path, window.location.origin).href;
+}
+
 // ======== Scene Tick Callback Registry (统一 scene observer) ========
 /** 统一管理所有 scene.onBeforeRenderObservable 回调。
  *  避免多个模块各自添加 observer，导致重复 tick 或竞态。 */
@@ -82,6 +93,7 @@ import {
     applyWindToParticles,
     updateParticleWind,
     updateParticleParams,
+    updateParticleTexture,
     syncSplashState,
     disposeSplash,
     getCurrentParticleType,
@@ -89,7 +101,7 @@ import {
 import { _disposeSunDisc } from '../render/lighting';
 import { updateUnderwaterTransition, resetUnderwaterState } from './env-water';
 
-export { createParticleEmitter, disposeParticles, applyWindToParticles, updateParticleWind };
+export { createParticleEmitter, disposeParticles, applyWindToParticles, updateParticleWind, updateParticleTexture };
 
 export const _envSys: {
     sky: EnvSkyResources;
@@ -418,7 +430,7 @@ export function applyGround(state: EnvState): void {
         applyCheckerGround(ground, state);
     } else if (state.groundTextureEnabled && state.groundTexture) {
         // 纹理地面：subdivisions 保持 2（性能），纹理重复由 uScale/vScale 控制
-        const tex = new Texture(state.groundTexture, scene);
+        const tex = new Texture(resolveStaticAsset(state.groundTexture), scene);
         tex.uScale = tex.vScale = 1 / Math.max(0.1, state.groundTextureScale);
         const mat = new StandardMaterial('envGroundMat', scene);
         mat.diffuseTexture = tex;
@@ -445,6 +457,7 @@ export function applyGround(state: EnvState): void {
 let _envUpdateObserver: Observer<Scene> | null = null;
 let _prevParticleEnabled = true; // 用于检测 particleEnabled 变化
 let _prevSplash = false; // 用于检测 particleSplash 变化
+let _prevCustomTexture = ''; // 用于检测 particleCustomTexture 变化
 
 export function ensureEnvUpdateObserver(): void {
     const scene = getScene();
@@ -512,6 +525,14 @@ export function ensureEnvUpdateObserver(): void {
         if (_prevSplash !== envState.particleSplash) {
             _prevSplash = envState.particleSplash;
             syncSplashState();
+        }
+
+        // 自定义粒子纹理变化检测
+        if (_prevCustomTexture !== envState.particleCustomTexture) {
+            _prevCustomTexture = envState.particleCustomTexture ?? '';
+            if (_envSys.particles.system) {
+                updateParticleTexture();
+            }
         }
 
         // Sky rotation animation

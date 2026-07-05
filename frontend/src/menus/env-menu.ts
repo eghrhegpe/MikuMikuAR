@@ -256,6 +256,44 @@ export function buildParticleLevel(): PopupLevel {
                 addToggleRow(c, '落地溅射', s.particleSplash, (v) => { setEnvState({ particleSplash: v }); }, 'lucide:splash', {
                     bind: () => envState.particleSplash,
                 });
+                // 自定义纹理按钮
+                const texRow = document.createElement('div');
+                texRow.className = 'cs-row';
+                const texLabel = document.createElement('span');
+                texLabel.textContent = '自定义纹理';
+                texRow.appendChild(texLabel);
+                const texBtn = document.createElement('button');
+                texBtn.className = 'cs-btn cs-btn-sm';
+                texBtn.textContent = envState.particleCustomTexture ? '更换' : '选择';
+                texBtn.onclick = () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = () => {
+                        const file = input.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            setEnvState({ particleCustomTexture: e.target?.result as string ?? '' });
+                            texBtn.textContent = '更换';
+                        };
+                        reader.readAsDataURL(file);
+                    };
+                    input.click();
+                };
+                texRow.appendChild(texBtn);
+                if (envState.particleCustomTexture) {
+                    const clearBtn = document.createElement('button');
+                    clearBtn.className = 'cs-btn cs-btn-sm';
+                    clearBtn.textContent = '清除';
+                    clearBtn.onclick = () => {
+                        setEnvState({ particleCustomTexture: '' });
+                        texBtn.textContent = '选择';
+                        clearBtn.remove();
+                    };
+                    texRow.appendChild(clearBtn);
+                }
+                c.appendChild(texRow);
             });
         },
     };

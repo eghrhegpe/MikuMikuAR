@@ -31,6 +31,9 @@ function getScene() {
     return import('../scene') as Promise<typeof import('../scene')>;
 }
 
+// 缓存已加载的同名伴音，避免重复加载
+const _companionAudioCache = new Set<string>();
+
 // ======== VMD Loading ========
 export async function loadVMDMotion(
     data: ArrayBuffer,
@@ -99,6 +102,7 @@ export async function loadVMDMotion(
         inst.mmdModel.setRuntimeAnimation(handle);
 
         inst.vmdData = data;
+        _companionAudioCache.clear();
         inst.vmdName = name;
         // Convert from 30fps frames to seconds
         inst.animationDuration = mmdAnimation.endFrame / 30;
@@ -159,6 +163,7 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
 async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<void> {
     const baseUrl = vmdUrl.substring(0, vmdUrl.lastIndexOf('/') + 1);
     const basePath = vmdPath.replace(/\.vmd$/i, '');
+    if (_companionAudioCache.has(basePath)) return;
     const exts = ['.mp3', '.wav', '.ogg', '.flac', '.wma'];
 
     // 并行 HEAD 探针，取首个成功的扩展名（Promise.any 只取最快的成功结果）
@@ -173,6 +178,7 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
     try {
         const { audioPath, audioName } = await Promise.any(probes);
         await loadAudioFile(audioPath);
+        _companionAudioCache.add(basePath);
         setStatus(`✓ VMD + 音频: ${audioName}`, true);
         // 确保播放栏可见
         const { updatePlaybackUI } = await import('./playback');

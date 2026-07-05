@@ -6,6 +6,7 @@ import {
     ProcMotionState,
     ProcMotionMode,
     ProcMotionBoneCategory,
+    PROC_MOTION_BONE_CATEGORIES,
     DEFAULT_PROC_STATE,
     generateIdleVmd,
     generateAutoDanceVmd,
@@ -26,6 +27,7 @@ let procBeatDetector: BeatDetector | null = null;
 let _procVmdActive = false;
 let lastBeatBpm = 120;
 let procStarting = false;
+let _regeneratePending = false;
 let procActiveKind: ProcMotionMode = 'idle';
 let procModelId: string | null = null;
 
@@ -411,6 +413,14 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         _clearVmdData(focusedModel());
     } finally {
         procStarting = false;
+        if (_regeneratePending) {
+            _regeneratePending = false;
+            // Re-trigger with current state
+            const mode = procState.mode === 'autodance' ? 'autodance' : 'idle';
+            const bpm = procBeatDetector?.getBPM() ?? 120;
+            // Only regenerate if still relevant (mode is 'idle'|'autodance' here, never 'off')
+            startProcMotion(mode, mode === 'autodance' ? bpm : undefined);
+        }
     }
 }
 
@@ -509,6 +519,14 @@ export function setProcMotionState(s: ProcMotionState): void {
 
 /** 设置单个微动效果的开关 */
 export function setProcMotionBoneToggle(cat: ProcMotionBoneCategory, v: boolean): void {
+    if (!PROC_MOTION_BONE_CATEGORIES.includes(cat)) {
+        console.warn(`[proc-motion] invalid bone category: ${cat}`);
+        return;
+    }
+    if (typeof v !== 'boolean') {
+        console.warn(`[proc-motion] setProcMotionBoneToggle: invalid value type, expected boolean`);
+        return;
+    }
     const bt = { ...procState.boneToggles };
     bt[cat] = v;
     procState = { ...procState, boneToggles: bt };
@@ -517,22 +535,41 @@ export function setProcMotionBoneToggle(cat: ProcMotionBoneCategory, v: boolean)
 
 /** 批量设置微动效果开关 */
 export function setProcMotionBoneToggles(bt: Partial<Record<ProcMotionBoneCategory, boolean>>): void {
+    for (const [k, v] of Object.entries(bt)) {
+        if (typeof v !== 'boolean') {
+            console.warn(`[proc-motion] setProcMotionBoneToggles: invalid value type for key "${k}", expected boolean`);
+            return;
+        }
+    }
     procState = { ...procState, boneToggles: { ...procState.boneToggles, ...bt } };
     triggerAutoSave();
 }
 
 export function setProcMotionVpdApplyEnabled(v: boolean): void {
+    if (typeof v !== 'boolean') {
+        console.warn(`[proc-motion] setProcMotionVpdApplyEnabled: invalid value type, expected boolean`);
+        return;
+    }
     procState = { ...procState, vpdApplyEnabled: v };
     triggerAutoSave();
 }
 
 export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']): void {
+    const valid = ['auto', 'sharp', 'ease-in-out', 'ease-out'] as const;
+    if (!valid.includes(v as typeof valid[number])) {
+        console.warn(`[proc-motion] setProcMotionInterpOverride: invalid value "${v}"`);
+        return;
+    }
     procState = { ...procState, interpOverride: v };
     triggerAutoSave();
 }
 
 /** 设置 BPM 量化开关（通过 BeatDetector 实例） */
 export function setBpmQuantizeEnabled(v: boolean): void {
+    if (typeof v !== 'boolean') {
+        console.warn(`[proc-motion] setBpmQuantizeEnabled: invalid value type, expected boolean`);
+        return;
+    }
     if (procBeatDetector) {
         procBeatDetector.setBpmQuantizeEnabled(v);
     }
@@ -569,6 +606,11 @@ export function regenerateProcMotion(): void {
     // 无焦点模型时静默返回，添加警告辅助调试
     if (!focusedMmdModel()) {
         console.warn('[proc-motion] regenerateProcMotion: 无焦点 MMD 模型，跳过');
+        return;
+    }
+    // Issue #4: 如果 regenerate 调用时正在生成，标记 deferred 重跑
+    if (procStarting) {
+        _regeneratePending = true;
         return;
     }
     const mode = procState.mode === 'autodance' ? ('autodance' as const) : ('idle' as const);
