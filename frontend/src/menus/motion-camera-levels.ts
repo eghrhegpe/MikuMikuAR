@@ -69,7 +69,11 @@ export function buildCameraLevel(): PopupLevel {
                         }
                         refreshCameraLevel();
                     },
-                    'lucide:camera'
+                    'lucide:camera',
+                    undefined,
+                    {
+                        bind: () => getCameraMode(),
+                    }
                 );
 
                 addSliderRow(
@@ -144,27 +148,6 @@ export function buildCameraLevel(): PopupLevel {
                 });
                 c.appendChild(loadRow);
             });
-        },
-        reRenderCustom: (container) => {
-            // 只更新 mode slider 的值
-            const mode = getCameraMode();
-            const labels: Record<string, string> = { orbit: '轨道', freefly: '自由飞行', concert: '演唱会', oneshot: '单拍', vmd: 'VMD 相机' };
-            const firstCard = container.querySelector('.card-container');
-            if (!firstCard) return;
-            const modeSlider = firstCard.querySelector('.cs-row:first-child');
-            if (!modeSlider) return;
-            const valEl = modeSlider.querySelector('.cs-value');
-            if (valEl) valEl.textContent = labels[mode] || mode;
-            const modeOptions = hasCameraVmd() ? ['orbit', 'freefly', 'concert', 'oneshot', 'vmd'] : ['orbit', 'freefly', 'concert', 'oneshot'];
-            const idx = modeOptions.indexOf(mode);
-            if (idx >= 0) {
-                const fill = modeSlider.querySelector('.cs-fill') as HTMLElement | null;
-                const thumb = modeSlider.querySelector('.cs-thumb') as HTMLElement | null;
-                const total = modeOptions.length;
-                const pct = total > 1 ? (idx / (total - 1)) * 100 : 0;
-                if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-                if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
-            }
         },
     };
 }

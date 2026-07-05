@@ -3,24 +3,23 @@
 
 import { envState, focusedModelId, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { addSliderRow, addToggleRow, addCollapsible, addPresetChip } from '../core/ui-helpers';
+import { addSliderRow, addCollapsible, addPresetChip } from '../core/ui-helpers';
 import {
-    setEnvState, setModelWireframe, setModelBoneLinesVis, setModelBoneJointsVis, modelManager,
+    setEnvState, modelManager,
     getModelPosition, setModelPosition, setModelScaling, setModelRotationY, resetModelTransform, scene,
 } from '../scene/scene';
 import {
     getCollider, getColliderSpecs, setCapsuleRadius, setCapsuleHalfHeight,
-    setColliderStiffness, setColliderFriction, setDebugParticles, setDebugConstraints,
-    setDebugColliders, getDebugState, recreateCloth,
+    setColliderStiffness, setColliderFriction, recreateCloth,
 } from '../physics/cloth-manager';
 import type { ClothConfig } from '../physics/xpbd-cloth';
 
-/** 布料预设 — 物理材质手感 */
+/** 布料预设 — 物理材质手感（重力由根页面统控，预设不含 gravityScale） */
 const CLOTH_PRESETS: Record<string, Partial<ClothConfig>> = {
-    silk: { compliance: 0.0005, bendCompliance: 0.001, damping: 0.98, gravityScale: 0.8, totalMass: 0.3 },
-    cotton: { compliance: 0.001, bendCompliance: 0.005, damping: 0.96, gravityScale: 1.0, totalMass: 0.5 },
-    leather: { compliance: 0.003, bendCompliance: 0.015, damping: 0.92, gravityScale: 1.3, totalMass: 0.8 },
-    stiff: { compliance: 0.008, bendCompliance: 0.04, damping: 0.88, gravityScale: 1.5, totalMass: 1.0 },
+    silk: { compliance: 0.0005, bendCompliance: 0.001, damping: 0.98, totalMass: 0.3 },
+    cotton: { compliance: 0.001, bendCompliance: 0.005, damping: 0.96, totalMass: 0.5 },
+    leather: { compliance: 0.003, bendCompliance: 0.015, damping: 0.92, totalMass: 0.8 },
+    stiff: { compliance: 0.008, bendCompliance: 0.04, damping: 0.88, totalMass: 1.0 },
 };
 
 const CLOTH_PRESET_LABELS: Record<string, string> = {
@@ -239,57 +238,7 @@ export function buildClothParamsLevel(): PopupLevel {
                     },
                 });
 
-                addCollapsible(c, {
-                    title: '调试', icon: 'lucide:bug', defaultOpen: false,
-                    renderContent: (cc) => {
-                        const id = focusedModelId;
-                        if (!id || !modelManager) {
-                            const hint = document.createElement('div');
-                            hint.style.cssText = 'padding:12px;color:var(--text-muted);font-size:12px;';
-                            hint.textContent = '请先加载模型';
-                            cc.appendChild(hint);
-                            return;
-                        }
-                        const inst = modelManager.get(id);
-                        if (!inst) return;
-
-                        addToggleRow(cc, '材质线框', inst.wireframe, (v) => {
-                            setModelWireframe(id, v);
-                            import('./motion-popup').then(m => m.getMotionMenu()?.reRender());
-                            setStatus(v ? '材质线框: 开' : '材质线框: 关', true);
-                        }, 'lucide:square');
-                        addToggleRow(cc, '骨骼线', inst.showBoneLines, (v) => {
-                            setModelBoneLinesVis(id, v);
-                            import('./motion-popup').then(m => m.getMotionMenu()?.reRender());
-                            setStatus(v ? '骨骼线: 开' : '骨骼线: 关', true);
-                        }, 'lucide:git-branch');
-                        addToggleRow(cc, '骨骼关节球', inst.showBoneJoints, (v) => {
-                            setModelBoneJointsVis(id, v);
-                            import('./motion-popup').then(m => m.getMotionMenu()?.reRender());
-                            setStatus(v ? '骨骼关节球: 开' : '骨骼关节球: 关', true);
-                        }, 'lucide:circle-dot');
-
-                        const debugState = getDebugState();
-                        addToggleRow(cc, '粒子球', debugState.particles, (v) => {
-                            setDebugParticles(v);
-                            import('./motion-popup').then(m => m.getMotionMenu()?.reRender());
-                            setStatus(v ? '粒子球: 开' : '粒子球: 关', true);
-                        }, 'lucide:circle');
-                        addToggleRow(cc, '约束线', debugState.constraints, (v) => {
-                            setDebugConstraints(v);
-                            import('./motion-popup').then(m => m.getMotionMenu()?.reRender());
-                            setStatus(v ? '约束线: 开' : '约束线: 关', true);
-                        }, 'lucide:minus');
-                        addToggleRow(cc, '碰撞体线框', debugState.colliders, (v) => {
-                            setDebugColliders(v);
-                            import('./motion-popup').then(m => m.getMotionMenu()?.reRender());
-                            setStatus(v ? '碰撞体线框: 开' : '碰撞体线框: 关', true);
-                        }, 'lucide:box');
-                    },
-                });
             });
         },
-        // reRender 均为调试 toggle 触发，toggle 自管理状态，跳过全量重建
-        reRenderCustom: () => {},
     };
 }

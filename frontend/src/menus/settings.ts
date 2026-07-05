@@ -48,6 +48,7 @@ import {
 import { registerPopupMenu } from './menu-factory';
 import { selectResourceRoot, selectOverridePath } from './library-core';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
+import { getCurrentRenderingMenu } from './menu';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
 import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
@@ -137,18 +138,27 @@ function buildSettingsDisplayLevel(): PopupLevel {
                     true,
                     () => {
                         setLibrarySortMode(librarySortMode === 'name' ? 'default' : 'name');
-                        getSettingsMenu()?.reRender();
+                        getSettingsMenu()?.updateControls();
                     }
                 );
+                const sortRow = c.querySelector('.slide-item');
+                if (sortRow) {
+                    const labelSpan = sortRow.querySelector('.slide-label');
+                    if (labelSpan) {
+                        getCurrentRenderingMenu()?.registerControl(() => {
+                            labelSpan.textContent = librarySortMode === 'name' ? '动作排序：名称' : '动作排序：默认';
+                        });
+                    }
+                }
             });
             // 显示名称优先级
             const priorityIndex = displayNamePriority === 'name_jp' ? 0 : displayNamePriority === 'name_en' ? 1 : 2;
             cardContainer(container, (c) => {
-                c.dataset.namePriCard = '1';
                 addSliderRow(c, '显示名称优先级', priorityIndex, 0, 2, 1, (v) => {
                     applyDisplayNamePriority(NAME_PRIORITY_INDEX[v]);
-                    getSettingsMenu()?.reRender();
+                    getSettingsMenu()?.updateControls();
                 }, 'lucide:type', undefined, {
+                    bind: () => displayNamePriority === 'name_jp' ? 0 : displayNamePriority === 'name_en' ? 1 : 2,
                     onUpdate: (el) => {
                         const valEl = el.querySelector('.cs-value');
                         if (valEl) valEl.textContent = NAME_PRIORITY_LABELS[displayNamePriority];
@@ -157,7 +167,6 @@ function buildSettingsDisplayLevel(): PopupLevel {
             });
             // 材质分类映射
             cardContainer(container, (c) => {
-                c.dataset.mapCard = '1';
                 addSectionTitle(c, '材质分类映射（正则 → 分类）');
 
                 const map = uiState.materialCategoryMap || {};
@@ -166,7 +175,6 @@ function buildSettingsDisplayLevel(): PopupLevel {
                 for (const [pattern, category] of entries) {
                     const row = document.createElement('div');
                     row.className = 'slide-item';
-                    row.dataset.mapPattern = pattern;
                     row.innerHTML = `
                         <span class="slide-icon"><iconify-icon icon="lucide:tag"></iconify-icon></span>
                         <span class="slide-label" style="font-family:monospace;font-size:11px;">${escapeHtml(pattern)}</span>
@@ -188,7 +196,6 @@ function buildSettingsDisplayLevel(): PopupLevel {
                 // 添加新映射
                 const addRow = document.createElement('div');
                 addRow.className = 'slide-item';
-                addRow.dataset.mapAdd = '1';
                 addRow.innerHTML = `
                     <span class="slide-icon"><iconify-icon icon="lucide:plus"></iconify-icon></span>
                     <span class="slide-label">添加材质映射</span>
@@ -218,79 +225,35 @@ function buildSettingsDisplayLevel(): PopupLevel {
                 c.appendChild(addRow);
             });
         },
-        reRenderCustom: (container) => {
-            // 1. 排序模式：更新 label
-            const sortRow = container.querySelector<HTMLElement>('.card-container .slide-item');
-            if (sortRow) {
-                const labelSpan = sortRow.querySelector('.slide-label');
-                if (labelSpan) {
-                    labelSpan.textContent = librarySortMode === 'name' ? '动作排序：名称' : '动作排序：默认';
-                }
-            }
-
-            // 2. 显示名称优先级 cs-value：更新文本（cs-row 内部 fill/thumb 由 updateControls 同步）
-            const namePriCard = container.querySelector<HTMLElement>('[data-name-pri-card]');
-            if (namePriCard) {
-                const valEl = namePriCard.querySelector('.cs-value');
-                if (valEl) valEl.textContent = NAME_PRIORITY_LABELS[displayNamePriority];
-            }
-
-            // 3. 材质映射列表：重建 data-map-card 内的映射行（保留 title 和 add 行）
-            const mapCard = container.querySelector<HTMLElement>('[data-map-card]');
-            if (!mapCard) return;
-            const addRow = mapCard.querySelector<HTMLElement>('[data-map-add]');
-            // 删除所有旧映射行（title 之后、addRow 之前）
-            let child = mapCard.firstChild;
-            while (child && child !== addRow) {
-                const next = child.nextSibling;
-                if (child.nodeType === Node.ELEMENT_NODE && (child as HTMLElement).dataset?.mapPattern !== undefined) {
-                    mapCard.removeChild(child);
-                }
-                child = next;
-            }
-            // 插入当前映射行（在 addRow 之前）
-            const map = uiState.materialCategoryMap || {};
-            const entries = Object.entries(map);
-            for (const [pattern, category] of entries) {
-                const row = document.createElement('div');
-                row.className = 'slide-item';
-                row.dataset.mapPattern = pattern;
-                row.innerHTML = `
-                    <span class="slide-icon"><iconify-icon icon="lucide:tag"></iconify-icon></span>
-                    <span class="slide-label" style="font-family:monospace;font-size:11px;">${escapeHtml(pattern)}</span>
-                    <span class="slide-sublabel" style="color:var(--accent);">${escapeHtml(category)}</span>
-                    <button class="btn btn-ghost btn-sm btn-icon" title="删除">✕</button>
-                `;
-                row.querySelector('.btn')!.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    delete uiState.materialCategoryMap![pattern];
-                    if (Object.keys(uiState.materialCategoryMap!).length === 0) {
-                        delete uiState.materialCategoryMap;
-                    }
-                    setUIState({ materialCategoryMap: uiState.materialCategoryMap });
-                    getSettingsMenu()?.reRender();
-                });
-                mapCard.insertBefore(row, addRow);
-            }
-        },
     };
 }
 
 function buildSettingsUILevel(): PopupLevel {
+    const initialScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+    const initialWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--popup-width')) || 280;
+    const initialAnim = getComputedStyle(document.documentElement).getPropertyValue('--ui-animations').trim() !== '0';
+    const initialBlur = getComputedStyle(document.documentElement).getPropertyValue('--ui-blur').trim() !== '0';
+
     return {
         label: '界面',
         dir: '',
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                addSliderRow(c, 'UI 缩放', 1, 0.8, 1.3, 0.05, (v) => {
+                addSliderRow(c, 'UI 缩放', initialScale, 0.8, 1.3, 0.05, (v) => {
                     document.documentElement.style.setProperty('--ui-scale', String(v));
                     SetUIScale(v).catch(() => {});
-                }, 'lucide:maximize');
-                addSliderRow(c, '弹窗宽度', 280, 220, 360, 10, (v) => {
+                    getSettingsMenu()?.updateControls();
+                }, 'lucide:maximize', undefined, {
+                    bind: () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1,
+                });
+                addSliderRow(c, '弹窗宽度', initialWidth, 220, 360, 10, (v) => {
                     document.documentElement.style.setProperty('--popup-width', v + 'px');
                     SetUIPopupWidth(v).catch(() => {});
-                }, 'lucide:sidebar');
+                    getSettingsMenu()?.updateControls();
+                }, 'lucide:sidebar', undefined, {
+                    bind: () => parseInt(getComputedStyle(document.documentElement).getPropertyValue('--popup-width')) || 280,
+                });
             });
 
             const currentAccent =
@@ -298,6 +261,7 @@ function buildSettingsUILevel(): PopupLevel {
                 '#4a6cf7';
             cardContainer(container, (c) => {
                 addSectionTitle(c, '主题色');
+                const themeRows: HTMLElement[] = [];
                 for (const p of THEME_PRESETS) {
                     const isActive = currentAccent.toLowerCase() === p.color.toLowerCase();
                     const row = document.createElement('div');
@@ -310,7 +274,18 @@ function buildSettingsUILevel(): PopupLevel {
                     row.appendChild(swatch);
                     row.addEventListener('click', () => setTheme(p.color));
                     c.appendChild(row);
+                    themeRows.push(row);
                 }
+                getCurrentRenderingMenu()?.registerControl(() => {
+                    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4a6cf7';
+                    for (const row of themeRows) {
+                        const color = row.dataset.themeColor!;
+                        const isActive = accent.toLowerCase() === color.toLowerCase();
+                        row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
+                        const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
+                        if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
+                    }
+                });
             });
             cardContainer(container, (c) => {
                 c.className = 'card-container accent-input-card';
@@ -333,6 +308,10 @@ function buildSettingsUILevel(): PopupLevel {
                 });
                 c.appendChild(input);
                 c.appendChild(applyBtn);
+                getCurrentRenderingMenu()?.registerControl(() => {
+                    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4a6cf7';
+                    input.value = accent;
+                });
             });
 
             const currentCss = getComputedStyle(document.documentElement)
@@ -340,6 +319,7 @@ function buildSettingsUILevel(): PopupLevel {
                 .trim();
             cardContainer(container, (c) => {
                 addSectionTitle(c, '字体');
+                const fontRows: HTMLElement[] = [];
                 for (const [key, f] of Object.entries(FONT_MAP)) {
                     const isActive = currentCss === f.css;
                     const row = document.createElement('div');
@@ -349,43 +329,58 @@ function buildSettingsUILevel(): PopupLevel {
                     row.addEventListener('click', () => {
                         document.documentElement.style.setProperty('--font', f.css);
                         SetUIFontFamily(key).catch(() => {});
-                        getSettingsMenu()?.reRender();
+                        getSettingsMenu()?.updateControls();
                         setStatus(`✓ 字体已设为 ${f.label}`, true);
                     });
                     c.appendChild(row);
+                    fontRows.push(row);
                 }
+                getCurrentRenderingMenu()?.registerControl(() => {
+                    const fontCss = getComputedStyle(document.documentElement).getPropertyValue('--font').trim();
+                    for (const row of fontRows) {
+                        const key = row.dataset.fontKey!;
+                        const isActive = FONT_MAP[key] && fontCss === FONT_MAP[key].css;
+                        row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
+                        const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
+                        if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check' : 'circle'}`);
+                    }
+                });
             });
 
             cardContainer(container, (c) => {
                 addToggleRow(
                     c,
                     '滑动动画',
-                    getComputedStyle(document.documentElement)
-                        .getPropertyValue('--ui-animations')
-                        .trim() !== '0',
+                    initialAnim,
                     (v) => {
                         document.documentElement.style.setProperty(
                             '--ui-animations',
                             v ? '1' : '0'
                         );
                         SetUIAnimations(v).catch(() => {});
+                        getSettingsMenu()?.updateControls();
                     },
-                    'lucide:move'
+                    'lucide:move',
+                    {
+                        bind: () => getComputedStyle(document.documentElement).getPropertyValue('--ui-animations').trim() !== '0',
+                    }
                 );
                 addToggleRow(
                     c,
                     '背景模糊',
-                    getComputedStyle(document.documentElement)
-                        .getPropertyValue('--ui-blur')
-                        .trim() !== '0',
+                    initialBlur,
                     (v) => {
                         document.documentElement.style.setProperty('--ui-blur', v ? '1' : '0');
                         document
                             .querySelectorAll<HTMLElement>('.overlay')
                             .forEach((el) => el.classList.toggle('blur-bg', v));
                         SetUIBlurBg(v).catch(() => {});
+                        getSettingsMenu()?.updateControls();
                     },
-                    'lucide:monitor'
+                    'lucide:monitor',
+                    {
+                        bind: () => getComputedStyle(document.documentElement).getPropertyValue('--ui-blur').trim() !== '0',
+                    }
                 );
             });
 
@@ -420,79 +415,11 @@ function buildSettingsUILevel(): PopupLevel {
                     SetDisplayNamePriority('filename').catch(() => {});
                     setPerformanceMode('auto');
                     SetPerformanceMode('auto').catch(() => {});
-                    getSettingsMenu()?.reRender();
+                    getSettingsMenu()?.updateControls();
                     setStatus('✓ 设置已恢复默认', true);
                 });
                 c.appendChild(resetRow);
             });
-        },
-        reRenderCustom: (container) => {
-            // 1. 主题色预设：更新选中态的图标 + class
-            const currentAccent =
-                getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
-                '#4a6cf7';
-            const themeRows = container.querySelectorAll<HTMLElement>('[data-theme-color]');
-            themeRows.forEach((row) => {
-                const color = row.dataset.themeColor!;
-                const isActive = currentAccent.toLowerCase() === color.toLowerCase();
-                row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
-                if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
-            });
-
-            // 2. 自定义 hex 输入框
-            const hexInput = container.querySelector<HTMLInputElement>('.accent-input-card .tag-input');
-            if (hexInput) hexInput.value = currentAccent;
-
-            // 3. 字体：更新选中态的图标 + class
-            const currentCss = getComputedStyle(document.documentElement)
-                .getPropertyValue('--font')
-                .trim();
-            const fontRows = container.querySelectorAll<HTMLElement>('[data-font-key]');
-            fontRows.forEach((row) => {
-                const key = row.dataset.fontKey!;
-                const isActive = FONT_MAP[key] && currentCss === FONT_MAP[key].css;
-                row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
-                if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check' : 'circle'}`);
-            });
-
-            // 4. 开关：同步 CSS 变量值到 toggle checkbox
-            const animToggle = container.querySelector<HTMLInputElement>(
-                '.toggle-row:first-child .toggle input[type="checkbox"]'
-            );
-            if (animToggle) {
-                animToggle.checked =
-                    getComputedStyle(document.documentElement)
-                        .getPropertyValue('--ui-animations')
-                        .trim() !== '0';
-            }
-            const blurToggle = container.querySelector<HTMLInputElement>(
-                '.toggle-row:last-child .toggle input[type="checkbox"]'
-            );
-            if (blurToggle) {
-                blurToggle.checked =
-                    getComputedStyle(document.documentElement)
-                        .getPropertyValue('--ui-blur')
-                        .trim() !== '0';
-            }
-
-            // 5. cs-row 滑块：更新显示值
-            const root = document.documentElement;
-            const uiScale = parseFloat(root.style.getPropertyValue('--ui-scale')) || 1;
-            const popupWidth = parseInt(root.style.getPropertyValue('--popup-width')) || 280;
-            const csRows = container.querySelectorAll<HTMLElement>('.cs-row');
-            if (csRows.length >= 2) {
-                const scaleVal = csRows[0].querySelector('.cs-value');
-                const scaleFill = csRows[0].querySelector('.cs-fill') as HTMLElement | null;
-                if (scaleVal) scaleVal.textContent = String(Math.round(uiScale));
-                if (scaleFill) scaleFill.style.width = Math.max(0, Math.min(100, ((uiScale - 0.8) / 0.5) * 100)) + '%';
-
-                const widthVal = csRows[1].querySelector('.cs-value');
-                const widthFill = csRows[1].querySelector('.cs-fill') as HTMLElement | null;
-                if (widthVal) widthVal.textContent = String(Math.round(popupWidth));
-                if (widthFill) widthFill.style.width = Math.max(0, Math.min(100, ((popupWidth - 220) / 140) * 100)) + '%';
-            }
         },
     };
 }
@@ -571,7 +498,7 @@ async function setTheme(hex: string): Promise<void> {
     } catch {
         setStatus('✗ 主题色保存失败', false);
     }
-    getSettingsMenu()?.reRender();
+    getSettingsMenu()?.updateControls();
 }
 
 const FONT_MAP: Record<string, { label: string; css: string }> = {
@@ -706,7 +633,6 @@ function buildSettingsExternalLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                c.dataset.extCard = '1';
                 if (externalPaths.length === 0) {
                     const empty = document.createElement('div');
                     empty.className = 'ext-empty';
@@ -774,58 +700,6 @@ function buildSettingsExternalLevel(): PopupLevel {
                     }
                 });
             });
-        },
-        reRenderCustom: (container) => {
-            // 重建第一个 card（外部路径列表），保留第二个 card（添加按钮）不变
-            const extCard = container.querySelector<HTMLElement>('[data-ext-card]');
-            if (!extCard) return;
-            extCard.innerHTML = '';
-            if (externalPaths.length === 0) {
-                const empty = document.createElement('div');
-                empty.className = 'ext-empty';
-                empty.style.cssText =
-                    'font-size:11px;color:var(--text-dim);padding:8px 0;text-align:center;';
-                empty.textContent = '暂无外部库';
-                extCard.appendChild(empty);
-                return;
-            }
-            for (const ep of externalPaths) {
-                const row = document.createElement('div');
-                row.className = 'slide-item';
-                row.innerHTML = `
-                    <span class="slide-icon"><iconify-icon icon="lucide:plug"></iconify-icon></span>
-                    <span class="slide-label" style="flex:0 0 auto;margin-right:6px;">${escapeHtml(ep.name)}</span>
-                    <span class="slide-sublabel" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim);font-size:10px;">${escapeHtml(ep.path)}</span>
-                    <button class="ext-rename" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:2px 4px;">✎</button>
-                    <button class="ext-del" style="background:none;border:none;color:var(--danger,#e74c3c);cursor:pointer;font-size:12px;padding:2px 4px;">✕</button>
-                `;
-                row.querySelector('.ext-rename')!.addEventListener('click', async () => {
-                    const newName = await showPrompt('输入新的显示名称：', ep.name);
-                    if (newName && newName.trim() && newName.trim() !== ep.name) {
-                        try {
-                            await RenameExternalPath(ep.path, newName.trim());
-                            await reloadConfig();
-                            getSettingsMenu()?.reRender();
-                            setStatus('✓ 已重命名', true);
-                        } catch {
-                            setStatus('✗ 重命名失败', false);
-                        }
-                    }
-                });
-                row.querySelector('.ext-del')!.addEventListener('click', async () => {
-                    try {
-                        await RemoveExternalPath(ep.path);
-                        await reloadConfig();
-                        if (libraryRoot) {
-                            await rescanAndSync();
-                        }
-                        getSettingsMenu()?.reRender();
-                    } catch (err) {
-                        console.error('RemoveExternalPath error:', err);
-                    }
-                });
-                extCard.appendChild(row);
-            }
         },
     };
 }
@@ -945,6 +819,7 @@ function buildSettingsPerformanceLevel(): PopupLevel {
         renderCustom: (container) => {
             cardContainer(container, (c) => {
                 const current = getPerformanceMode();
+                const perfRows: HTMLElement[] = [];
                 for (const m of PERFORMANCE_MODES) {
                     const isActive = current === m.key;
                     const row = document.createElement('div');
@@ -958,22 +833,22 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                     row.addEventListener('click', () => {
                         setPerformanceMode(m.key);
                         SetPerformanceMode(m.key).catch(() => {});
-                        getSettingsMenu()?.reRender();
+                        getSettingsMenu()?.updateControls();
                         setStatus(`✓ 性能模式: ${m.label}`, true);
                     });
                     c.appendChild(row);
+                    perfRows.push(row);
                 }
-            });
-        },
-        reRenderCustom: (container) => {
-            const current = getPerformanceMode();
-            const rows = container.querySelectorAll<HTMLElement>('[data-perf-key]');
-            rows.forEach((row) => {
-                const key = row.dataset.perfKey!;
-                const isActive = current === key;
-                row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
-                if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
+                getCurrentRenderingMenu()?.registerControl(() => {
+                    const currentMode = getPerformanceMode();
+                    for (const row of perfRows) {
+                        const key = row.dataset.perfKey!;
+                        const isActive = currentMode === key;
+                        row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
+                        const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
+                        if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
+                    }
+                });
             });
         },
     };

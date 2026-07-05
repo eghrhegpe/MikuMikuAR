@@ -46,15 +46,23 @@ export function buildProcMotionLevel(): PopupLevel {
                         setProcMotionMode(v);
                         regenerateProcMotion();
                     },
-                    'lucide:wind'
+                    'lucide:wind',
+                    undefined,
+                    {
+                        bind: () => getProcMotionState().mode,
+                    }
                 );
                 addToggleRow(c, '自动切换', st.autoSwitch, (v) => {
                     setProcMotionAutoSwitch(v);
-                }, 'lucide:repeat');
+                }, 'lucide:repeat', {
+                    bind: () => getProcMotionState().autoSwitch,
+                });
                 addToggleRow(c, 'LipSync', lipSt.enabled, (v) => {
                     setLipSyncEnabled(v);
-                    getMotionMenu()?.reRender();
-                }, 'lucide:mic');
+                    getMotionMenu()?.updateControls();
+                }, 'lucide:mic', {
+                    bind: () => getLipSyncState().enabled,
+                });
             });
             cardContainer(container, (c) => {
                 addSliderRow(
@@ -68,7 +76,11 @@ export function buildProcMotionLevel(): PopupLevel {
                         setProcMotionIntensity(v);
                         regenerateProcMotion();
                     },
-                    'lucide:activity'
+                    'lucide:activity',
+                    undefined,
+                    {
+                        bind: () => getProcMotionState().intensity,
+                    }
                 );
                 addSliderRow(
                     c,
@@ -81,7 +93,11 @@ export function buildProcMotionLevel(): PopupLevel {
                         setProcMotionSpeed(v);
                         regenerateProcMotion();
                     },
-                    'lucide:fast-forward'
+                    'lucide:fast-forward',
+                    undefined,
+                    {
+                        bind: () => getProcMotionState().speed,
+                    }
                 );
             });
 
@@ -127,7 +143,10 @@ export function buildProcMotionLevel(): PopupLevel {
                             setProcMotionBoneToggle(cat, v);
                             regenerateProcMotion();
                         },
-                        icons[cat] ?? 'lucide:circle'
+                        icons[cat] ?? 'lucide:circle',
+                        {
+                            bind: () => getProcMotionState().boneToggles[cat],
+                        }
                     );
                 }
             });
@@ -136,12 +155,16 @@ export function buildProcMotionLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addToggleRow(c, '眼部跟随', st.eyeTrackingEnabled, (v) => {
                     setProcMotionEyeTrackingEnabled(v);
-                    getMotionMenu()?.reRender();
-                }, 'lucide:eye');
+                    getMotionMenu()?.updateControls();
+                }, 'lucide:eye', {
+                    bind: () => getProcMotionState().eyeTrackingEnabled,
+                });
                 addToggleRow(c, '头部跟随', st.headTrackingEnabled, (v) => {
                     setProcMotionHeadTrackingEnabled(v);
-                    getMotionMenu()?.reRender();
-                }, 'lucide:mouse-pointer-2');
+                    getMotionMenu()?.updateControls();
+                }, 'lucide:mouse-pointer-2', {
+                    bind: () => getProcMotionState().headTrackingEnabled,
+                });
             });
 
             // ======== MMD 运行时切换（WASM 物理 / JS 调试） ========
@@ -163,14 +186,18 @@ export function buildProcMotionLevel(): PopupLevel {
                                     : '切换到 WASM 物理模式将丢失当前场景并重新加载。继续？'
                             );
                             if (!ok) {
-                                getMotionMenu()?.reRender();
+                                getMotionMenu()?.updateControls();
                                 return;
                             }
                             setMmdRuntimeType(v);
                             location.reload();
                         })();
                     },
-                    'lucide:cpu'
+                    'lucide:cpu',
+                    undefined,
+                    {
+                        bind: () => getMmdRuntimeType(),
+                    }
                 );
             });
 
@@ -190,12 +217,14 @@ export function buildProcMotionLevel(): PopupLevel {
                         setProcMotionInterpOverride(v);
                         regenerateProcMotion();
                     },
-                    'lucide:sliders'
+                    'lucide:sliders',
+                    undefined,
+                    {
+                        bind: () => getProcMotionState().interpOverride,
+                    }
                 );
             });
         },
-        // reRender 仅由 toggle 触发（LipSync/眼/头），toggle 自管理状态，无需重建
-        reRenderCustom: () => {},
     };
 }
 
@@ -248,7 +277,11 @@ export function buildLipSyncLevel(): PopupLevel {
                     (v) => {
                         setLipSyncSensitivity(1 - v);
                     },
-                    'lucide:volume-2'
+                    'lucide:volume-2',
+                    undefined,
+                    {
+                        bind: () => 1 - getLipSyncState().sensitivity,
+                    }
                 );
                 addSliderRow(
                     c,
@@ -260,7 +293,11 @@ export function buildLipSyncLevel(): PopupLevel {
                     (v) => {
                         setLipSyncIntensity(v);
                     },
-                    'lucide:activity'
+                    'lucide:activity',
+                    undefined,
+                    {
+                        bind: () => getLipSyncState().intensity,
+                    }
                 );
             });
         },
