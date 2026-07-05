@@ -7,6 +7,8 @@
 [![Wails](https://img.shields.io/badge/Wails-v3-DF0000?logo=wails)](https://wails.io)
 [![Babylon.js](https://img.shields.io/badge/Babylon.js-MMD-AD1F23?logo=babylondotjs)](https://babylonjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=nodedotjs)](https://nodejs.org/)
+[![Android SDK](https://img.shields.io/badge/Android%20SDK-API%2034-34A853?logo=android)](https://developer.android.com/studio)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 | 平台 | 状态 |
