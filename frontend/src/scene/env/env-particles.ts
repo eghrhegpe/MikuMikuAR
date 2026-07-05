@@ -555,7 +555,8 @@ function spawnFireworkBurst(): void {
     );
     burst.particleTexture = makeParticleTexture('fireworks');
     burst.emitter = pos;
-    burst.emitRate = 300; // 瞬时高密度爆发，50ms 后停发
+    // 瞬时高密度爆发：emitRate=2000，50ms 内出约 100 粒子，之后停发
+    burst.emitRate = 2000;
     setTimeout(() => { burst.emitRate = 0; }, 50);
 
     burst.minLifeTime = 0.4;
@@ -648,10 +649,22 @@ export function updateParticleParams(): void {
 }
 
 /** 运行时更新粒子纹理（响应自定义纹理变化） */
+let _prevCustomTexKey: string | null = null;
 export function updateParticleTexture(): void {
     const ps = _envSys.particles.system;
     if (!ps || !_currentParticleType || _currentParticleType === 'none') {
         return;
     }
-    ps.particleTexture = makeParticleTexture(_currentParticleType, envState.particleCustomTexture || undefined);
+    const url = envState.particleCustomTexture || undefined;
+    const newKey = url ? `_custom_${url}` : null;
+    // 切换前 dispose 上一个自定义纹理（释放 GPU 资源）
+    if (_prevCustomTexKey && _prevCustomTexKey !== newKey) {
+        const old = _particleTextures.get(_prevCustomTexKey);
+        if (old) {
+            old.dispose();
+            _particleTextures.delete(_prevCustomTexKey);
+        }
+    }
+    ps.particleTexture = makeParticleTexture(_currentParticleType, url);
+    _prevCustomTexKey = newKey;
 }

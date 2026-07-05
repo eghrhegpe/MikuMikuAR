@@ -136,8 +136,8 @@ func TestManifestJSON(t *testing.T) {
 	if m.Source != "/path/to/test.zip" {
 		t.Errorf("manifest.Source = %q, want %q", m.Source, "/path/to/test.zip")
 	}
-	if m.Version != 5 {
-		t.Errorf("manifest.Version = %d, want 5", m.Version)
+	if m.Version != extractCacheVersion {
+		t.Errorf("manifest.Version = %d, want %d", m.Version, extractCacheVersion)
 	}
 }
 
