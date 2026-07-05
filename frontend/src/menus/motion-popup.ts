@@ -16,6 +16,8 @@ import {
     focusedModelId,
     motionBindingTargetId,
     setMotionBindingTargetId,
+    layerBindingTargetId,
+    setLayerBindingTargetId,
     stackRegistry,
     closeAllOverlays,
     cardContainer,
@@ -40,6 +42,14 @@ import {
     setModelBoneJointsVis,
     modelManager,
 } from '../scene/scene';
+import {
+    getVmdLayers,
+    toggleVmdLayer,
+    setVmdLayerWeight,
+    removeVmdLayer,
+    addVmdLayerFromPath,
+    clearVmdLayers,
+} from '../scene/motion/vmd-layers';
 import {
     loadAudioFile,
     clearAudio,
@@ -224,6 +234,11 @@ export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 /** motion-popup 的 onFolderEnter 路由（从 makeMotionMenu 提取） */
 function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
     if (row.target === 'motion:camera') { return buildCameraLevel(); }
+
+    if (row.target && row.target.startsWith('motion:layers:')) {
+        const id = row.target.replace('motion:layers:', '');
+        return buildLayersLevel(id);
+    }
     if (row.target === '__music__') { setMotionBindingTargetId(null); return buildActionMusicLevel(); }
     if (row.target === 'motion:recent') { return buildRecentMotionsLevel(); }
     if (row.target === 'motion:procmotion') { return buildProcMotionLevel(); }
@@ -369,6 +384,146 @@ function buildRecentMotionsLevel(): PopupLevel {
     };
 }
 
+// ======== Motion Layers (图层) ========
+
+function buildLayersLevel(id: string): PopupLevel {
+    const inst = modelManager.get(id);
+    return {
+        label: `图层 → ${inst?.name ?? '?'}`,
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            const layers = getVmdLayers(id);
+
+            // 添加图层按钮
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:plus', '添加图层', true, () => {
+                    setLayerBindingTargetId(id);
+                    const level = stackRegistry.buildLevel!(libraryRoot, '动作库', (m) => m.format === 'vmd');
+                    level.label = `添加图层 → ${inst?.name ?? '?'}`;
+                    if (getMotionMenu()) getMotionMenu()?.push(level);
+                });
+            });
+
+            // 图层列表
+            if (layers.length === 0) {
+                cardContainer(container, (c) => {
+                    const empty = document.createElement('div');
+                    empty.className = 'slide-item';
+                    empty.style.opacity = '0.5';
+                    empty.textContent = '暂无图层 — 添加第二个 VMD 开启叠加';
+                    c.appendChild(empty);
+                });
+            } else {
+                cardContainer(container, (c) => {
+                    for (const layer of layers) {
+                        const row = document.createElement('div');
+                        row.className = 'slide-item';
+
+                        const left = document.createElement('div');
+                        left.className = 'slide-left';
+                        left.style.flex = '1';
+                        left.style.minWidth = '0';
+
+                        const label = document.createElement('div');
+                        label.className = 'slide-label';
+                        label.textContent = layer.name;
+                        label.style.overflow = 'hidden';
+                        label.style.textOverflow = 'ellipsis';
+                        label.style.whiteSpace = 'nowrap';
+                        left.appendChild(label);
+
+                        // 权重滑条
+                        const sliderRow = document.createElement('div');
+                        sliderRow.style.display = 'flex';
+                        sliderRow.style.alignItems = 'center';
+                        sliderRow.style.gap = '6px';
+                        sliderRow.style.marginTop = '4px';
+
+                        const slider = document.createElement('input');
+                        slider.type = 'range';
+                        slider.min = '0';
+                        slider.max = '1';
+                        slider.step = '0.05';
+                        slider.value = String(layer.weight);
+                        slider.style.flex = '1';
+                        slider.style.height = '3px';
+                        slider.disabled = !layer.enabled;
+                        slider.addEventListener('input', () => {
+                            setVmdLayerWeight(layer.id, parseFloat(slider.value), id);
+                        });
+
+                        const weightLabel = document.createElement('span');
+                        weightLabel.textContent = `${Math.round(layer.weight * 100)}%`;
+                        weightLabel.style.fontSize = 'var(--font-ui-sm)';
+                        weightLabel.style.opacity = '0.6';
+                        weightLabel.style.minWidth = '32px';
+                        weightLabel.style.textAlign = 'right';
+                        // 实时更新权重显示
+                        getCurrentRenderingMenu()?.registerControl(() => {
+                            const cur = getVmdLayers(id).find(l => l.id === layer.id);
+                            if (cur) {
+                                weightLabel.textContent = `${Math.round(cur.weight * 100)}%`;
+                                slider.value = String(cur.weight);
+                            }
+                        });
+
+                        sliderRow.appendChild(slider);
+                        sliderRow.appendChild(weightLabel);
+                        left.appendChild(sliderRow);
+
+                        row.appendChild(left);
+
+                        // 启用/禁用 toggle
+                        const toggle = document.createElement('button');
+                        toggle.className = 'slide-action';
+                        toggle.textContent = layer.enabled ? '👁' : '🚫';
+                        toggle.title = layer.enabled ? '点击禁用' : '点击启用';
+                        toggle.style.opacity = layer.enabled ? '1' : '0.4';
+                        toggle.addEventListener('click', () => {
+                            toggleVmdLayer(layer.id, id);
+                            getMotionMenu()?.reRender();
+                        });
+                        row.appendChild(toggle);
+
+                        // 删除按钮
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'slide-action';
+                        delBtn.textContent = '✕';
+                        delBtn.title = '删除图层';
+                        delBtn.style.opacity = '0.5';
+                        delBtn.addEventListener('click', () => {
+                            removeVmdLayer(layer.id, id);
+                            getMotionMenu()?.reRender();
+                        });
+                        row.appendChild(delBtn);
+
+                        c.appendChild(row);
+                    }
+                });
+            }
+
+            // 全部清除按钮
+            if (layers.length > 0) {
+                cardContainer(container, (c) => {
+                    const group = document.createElement('div');
+                    group.className = 'preset-group';
+                    group.style.padding = '0';
+                    const clearBtn = document.createElement('button');
+                    clearBtn.className = 'preset-chip';
+                    clearBtn.textContent = '🗑 清除所有图层';
+                    clearBtn.addEventListener('click', () => {
+                        clearVmdLayers(id);
+                        getMotionMenu()?.reRender();
+                    });
+                    group.appendChild(clearBtn);
+                    c.appendChild(group);
+                });
+            }
+        },
+    };
+}
+
 // ======== Motion Root (items-based) ========
 
 /** 动作弹窗根级 items 构建器——动态反映 modelManager / recent / cloth 状态。 */
@@ -385,6 +540,19 @@ function buildMotionRootItems(): PopupRow[] {
                 sublabel: inst.vmdName || undefined,
                 catTag: inst.kind === 'actor' ? '角色' : '舞台',
             });
+        }
+        // 图层入口（仅角色模型）
+        for (const [id, inst] of modelManager.modelRegistry) {
+            if (inst.kind === 'actor') {
+                const layerCount = inst.vmdLayers.length;
+                items.push({
+                    kind: 'folder',
+                    label: `${inst.name} 图层`,
+                    icon: 'lucide:layers',
+                    target: `motion:layers:${id}`,
+                    sublabel: layerCount > 0 ? `${layerCount} 层` : undefined,
+                });
+            }
         }
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
     }
