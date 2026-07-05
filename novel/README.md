@@ -186,25 +186,25 @@ VMD 加载播放、程序化动作桥接、LipSync 桥接、播放控制。
 
 | 章 | 标题 | 文件 |
 |----|------|------|
-| 1 | 八城审计 | [appendix/跨模块重构/01-八城审计.md](appendix/跨模块重构/01-八城审计.md) |
-| 1 | 印章与账本 | [appendix/跨模块重构/01-印章与账本.md](appendix/跨模块重构/01-印章与账本.md) |
 | 1 | 重构日 | [appendix/跨模块重构/01-重构日.md](appendix/跨模块重构/01-重构日.md) |
-| 2 | 物理之躯 | [appendix/跨模块重构/02-物理之躯.md](appendix/跨模块重构/02-物理之躯.md) |
-| 4 | 循环深渊 | [appendix/跨模块重构/04-循环深渊.md](appendix/跨模块重构/04-循环深渊.md) |
-| 5 | 审计报告 | [appendix/跨模块重构/05-审计报告.md](appendix/跨模块重构/05-审计报告.md) |
-| 6 | 三审 | [appendix/跨模块重构/06-三审.md](appendix/跨模块重构/06-三审.md) |
-| 5 | 四条路 | [appendix/跨模块重构/05-四条路.md](appendix/跨模块重构/05-四条路.md) |
-| 7 | 八城之盟 | [appendix/跨模块重构/07-八城之盟.md](appendix/跨模块重构/07-八城之盟.md) |
-| 8 | 三刀之后 | [appendix/跨模块重构/08-三刀之后.md](appendix/跨模块重构/08-三刀之后.md) |
-| 9 | 第九城 | [appendix/跨模块重构/09-第九城.md](appendix/跨模块重构/09-第九城.md) |
-| 9 | 工坊与节拍 | [appendix/跨模块重构/09-工坊与节拍.md](appendix/跨模块重构/09-工坊与节拍.md) |
-| 9 | 西西弗斯之夜 | [appendix/跨模块重构/09-西西弗斯之夜.md](appendix/跨模块重构/09-西西弗斯之夜.md) |
-| 11 | 组装与检查 | [appendix/跨模块重构/11-组装与检查.md](appendix/跨模块重构/11-组装与检查.md) |
-| 12 | 瘦身日 | [appendix/跨模块重构/12-瘦身日.md](appendix/跨模块重构/12-瘦身日.md) |
-| 14 | 中段清算 | [appendix/跨模块重构/14-中段清算.md](appendix/跨模块重构/14-中段清算.md) |
-| 15 | 打包之战 | [appendix/跨模块重构/15-打包之战.md](appendix/跨模块重构/15-打包之战.md) |
-| 24 | 三十颗绿石子 | [appendix/跨模块重构/24-三十颗绿石子.md](appendix/跨模块重构/24-三十颗绿石子.md) |
-| 25 | 审计报告的最后一页 | [appendix/跨模块重构/25-审计报告的最后一页.md](appendix/跨模块重构/25-审计报告的最后一页.md) |
+| 2 | 瘦身日 | [appendix/跨模块重构/02-瘦身日.md](appendix/跨模块重构/02-瘦身日.md) |
+| 3 | 八城之盟 | [appendix/跨模块重构/03-八城之盟.md](appendix/跨模块重构/03-八城之盟.md) |
+| 4 | 三刀之后 | [appendix/跨模块重构/04-三刀之后.md](appendix/跨模块重构/04-三刀之后.md) |
+| 5 | 第九城 | [appendix/跨模块重构/05-第九城.md](appendix/跨模块重构/05-第九城.md) |
+| 6 | 西西弗斯之夜 | [appendix/跨模块重构/06-西西弗斯之夜.md](appendix/跨模块重构/06-西西弗斯之夜.md) |
+| 7 | 循环深渊 | [appendix/跨模块重构/07-循环深渊.md](appendix/跨模块重构/07-循环深渊.md) |
+| 8 | 打包之战 | [appendix/跨模块重构/08-打包之战.md](appendix/跨模块重构/08-打包之战.md) |
+| 9 | 八城审计 | [appendix/跨模块重构/09-八城审计.md](appendix/跨模块重构/09-八城审计.md) |
+| 10 | 物理之躯 | [appendix/跨模块重构/10-物理之躯.md](appendix/跨模块重构/10-物理之躯.md) |
+| 11 | 三审 | [appendix/跨模块重构/11-三审.md](appendix/跨模块重构/11-三审.md) |
+| 12 | 中段清算 | [appendix/跨模块重构/12-中段清算.md](appendix/跨模块重构/12-中段清算.md) |
+| 13 | 四条路 | [appendix/跨模块重构/13-四条路.md](appendix/跨模块重构/13-四条路.md) |
+| 14 | 三十颗绿石子 | [appendix/跨模块重构/14-三十颗绿石子.md](appendix/跨模块重构/14-三十颗绿石子.md) |
+| 15 | 审计报告 | [appendix/跨模块重构/15-审计报告.md](appendix/跨模块重构/15-审计报告.md) |
+| 16 | 审计报告的最后一页 | [appendix/跨模块重构/16-审计报告的最后一页.md](appendix/跨模块重构/16-审计报告的最后一页.md) |
+| 17 | 印章与账本 | [appendix/跨模块重构/17-印章与账本.md](appendix/跨模块重构/17-印章与账本.md) |
+| 9 | 工坊与节拍（待确认） | [appendix/跨模块重构/09-工坊与节拍.md](appendix/跨模块重构/09-工坊与节拍.md) |
+| 11 | 组装与检查（待确认） | [appendix/跨模块重构/11-组装与检查.md](appendix/跨模块重构/11-组装与检查.md) |
 
 ---
 
@@ -214,14 +214,14 @@ VMD 加载播放、程序化动作桥接、LipSync 桥接、播放控制。
 
 | 章 | 标题 | 文件 |
 |----|------|------|
-| 3 | 议会与织工 | [appendix/文档演进/03-议会与织工.md](appendix/文档演进/03-议会与织工.md) |
-| 4 | 代码的镜厅 | [appendix/文档演进/04-代码的镜厅.md](appendix/文档演进/04-代码的镜厅.md) |
-| 4 | 绘图师 | [appendix/文档演进/04-绘图师.md](appendix/文档演进/04-绘图师.md) |
-| 4 | DanceXR 调研 | [appendix/文档演进/04-DanceXR调研.md](appendix/文档演进/04-DanceXR调研.md) |
-| 4 | 伪影与真镜 | [appendix/文档演进/04-伪影与真镜.md](appendix/文档演进/04-伪影与真镜.md) |
-| 5 | 读图 | [appendix/文档演进/05-读图.md](appendix/文档演进/05-读图.md) |
-| 10 | 审计之光 | [appendix/文档演进/10-审计之光.md](appendix/文档演进/10-审计之光.md) |
-| 14 | 试金石试验室 | [appendix/文档演进/14-试金石试验室.md](appendix/文档演进/14-试金石试验室.md) |
+| 1 | 读图 | [appendix/文档演进/01-读图.md](appendix/文档演进/01-读图.md) |
+| 2 | 绘图师 | [appendix/文档演进/02-绘图师.md](appendix/文档演进/02-绘图师.md) |
+| 3 | 试金石试验室 | [appendix/文档演进/03-试金石试验室.md](appendix/文档演进/03-试金石试验室.md) |
+| 4 | 审计之光 | [appendix/文档演进/04-审计之光.md](appendix/文档演进/04-审计之光.md) |
+| 5 | 伪影与真镜 | [appendix/文档演进/05-伪影与真镜.md](appendix/文档演进/05-伪影与真镜.md) |
+| 6 | 代码的镜厅 | [appendix/文档演进/06-代码的镜厅.md](appendix/文档演进/06-代码的镜厅.md) |
+| 7 | DanceXR 调研 | [appendix/文档演进/07-DanceXR调研.md](appendix/文档演进/07-DanceXR调研.md) |
+| 8 | 议会与织工 | [appendix/文档演进/08-议会与织工.md](appendix/文档演进/08-议会与织工.md) |
 
 ---
 
@@ -231,8 +231,8 @@ Go 代码与 Wails 框架。
 
 | 章 | 标题 | 文件 |
 |----|------|------|
-| 1 | 断桥重建 | [appendix/Go后端/01-断桥重建.md](appendix/Go后端/01-断桥重建.md) |
-| 12 | 地下管道的检修 | [appendix/Go后端/12-地下管道的检修.md](appendix/Go后端/12-地下管道的检修.md) |
+| 1 | 地下管道的检修 | [appendix/Go后端/01-地下管道的检修.md](appendix/Go后端/01-地下管道的检修.md) |
+| 2 | 断桥重建 | [appendix/Go后端/02-断桥重建.md](appendix/Go后端/02-断桥重建.md) |
 
 ---
 
@@ -242,9 +242,9 @@ Go 代码与 Wails 框架。
 
 | 章 | 标题 | 文件 |
 |----|------|------|
-| 3 | 追赶者的阴影 | [appendix/安全横切/03-追赶者的阴影.md](appendix/安全横切/03-追赶者的阴影.md) |
-| 6 | XSS 攻坚战 | [appendix/安全横切/06-XSS攻坚战.md](appendix/安全横切/06-XSS攻坚战.md) |
-| 7 | 路径的陷阱 | [appendix/安全横切/07-路径的陷阱.md](appendix/安全横切/07-路径的陷阱.md) |
+| 1 | 追赶者的阴影 | [appendix/安全横切/01-追赶者的阴影.md](appendix/安全横切/01-追赶者的阴影.md) |
+| 2 | XSS 攻坚战 | [appendix/安全横切/02-XSS攻坚战.md](appendix/安全横切/02-XSS攻坚战.md) |
+| 3 | 路径的陷阱 | [appendix/安全横切/03-路径的陷阱.md](appendix/安全横切/03-路径的陷阱.md) |
 
 ---
 
