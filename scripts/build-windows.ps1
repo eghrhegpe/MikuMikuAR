@@ -54,7 +54,23 @@ if ($Production) {
 
 Write-Output "[build-windows] 编译 Go (tags=$buildTags)..."
 & wails3 build -tags $buildTags
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "wails3 build 失败，降级为 go build 直接编译..."
+    $ldflags = '-w -s -H windowsgui'
+    $ldflags += " -X main.AppVersion=$version"
+    $ldflags += " -X main.BuildTime=$(Get-Date -Format 'yyyy-MM-dd')"
+    $ldflags += " -X main.CommitHash=$(git rev-parse --short HEAD 2>$null)"
+    $goArgs = @(
+        'build'
+        "-tags", $buildTags
+        '-trimpath'
+        '-buildvcs=false'
+        "-ldflags=`"$ldflags`""
+        '-o', "bin/MikuMikuAR.exe"
+    )
+    & go @goArgs
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
 
 # 重命名产物
 $distDir = "$repoRoot\dist"
