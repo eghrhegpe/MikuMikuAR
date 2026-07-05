@@ -121,6 +121,12 @@ export function registerPopupMenu(config: RegisteredPopupMenuConfig): PopupMenuH
             onAfterRender: config.handlers.onAfterRender,
             extraButtonFactory: config.handlers.extraButtonFactory,
         });
+        // 覆写 dispose：确保无论通过何种路径 dispose，menu 引用都会被清空
+        const _origDispose = newMenu.dispose.bind(newMenu);
+        newMenu.dispose = () => {
+            _origDispose();
+            menu = null;
+        };
         menu = newMenu;
         config.onShow?.(menu);
         menu.reset(config.buildRoot());

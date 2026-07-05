@@ -486,14 +486,6 @@ export interface UIState {
      * "auto"|"quality"|"balanced"|"performance"
      */
     "performanceMode": string;
-
-    /**
-     * image/png | image/jpeg | image/webp, default "image/png"
-     */
     "screenshotFormat": string;
-
-    /**
-     * 0.5~1.0, default 0.9
-     */
     "screenshotQuality": number;
 }
