@@ -67,7 +67,7 @@ cd frontend && npm run check         # = tsc --noEmit
 - **Shell**：优先用 `bash`
 - **路径分隔符**：统一正斜杠 `/`
 - **调试日志用完即删**：`console.log` / `fmt.Print` 测试完后**必须请示用户确认**再删
-- **发版**：`go build -o MikuMikuAR.exe .` （Wails v3，无 wails CLI）
+- **发版**：详见 `docs/release.md`（版本管理 + 各平台构建脚本 + 分发清单）
 
 ---
 

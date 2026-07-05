@@ -53,6 +53,7 @@ import {
     cardContainer,
     formatError,
     librarySortMode,
+    setPendingVmd,
 } from '../core/config';
 import { loadPMXFile, loadVMDFromPath, removeModel, loadAudioFile } from '../scene/scene';
 import { addVmdLayerFromPath } from '../scene/motion/vmd-layers';
@@ -68,9 +69,15 @@ import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
 import { tryCatchStatus } from '../core/utils';
+import { showConfirm } from '../core/dialog';
 import { stackRegistry, getMenuWrapper } from '../core/config';
 
 // ======== Model Stack ========
+
+/** 判断 row.target 是否为文件目录浏览路径（而非内置命令或特殊条目） */
+function isModelDirTarget(target: string | undefined): boolean {
+    return !!target && !target.startsWith('models:') && !target.startsWith('__');
+}
 
 const makeModelMenu = (container: HTMLElement): SlideMenu => {
     return new SlideMenu({
@@ -147,7 +154,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
                 );
             }
-            if (row.target && !row.target.startsWith('models:') && !row.target.startsWith('__')) {
+            if (isModelDirTarget(row.target)) {
                 return buildLevel(
                     row.target,
                     row.label,
@@ -341,6 +348,17 @@ export function buildLevel(
     const subdirIsLeaf = new Set<string>();
 
     const modelList = allModels || [];
+
+    // Background prefetch: warm metadata cache for all models in this level
+    // so modelToRow lookups are more likely to hit in subsequent re-renders
+    const pmxPaths = modelList
+        .filter((m) => !filter || filter(m))
+        .map((m) => m.file_path)
+        .filter(Boolean) as string[];
+    if (pmxPaths.length > 0) {
+        _ensureModelMeta(pmxPaths);
+    }
+
     for (const m of modelList) {
         if (filter && !filter(m)) {
             continue;
@@ -516,6 +534,7 @@ function onModelRowClick(m: LibraryModel): void {
 /** 移除当前聚焦模型后加载新模型。无聚焦模型时直接添加（非严格"替换"语义）。 */
 function replaceModel(m: LibraryModel): void {
     if (focusedModelId) {
+        setPendingVmd(null);
         removeModel(focusedModelId);
     }
     onModelRowClick(m);
@@ -639,6 +658,8 @@ export function showModelPopup(): void {
     const wrapper = getMenuWrapper('model-popup');
     if (stackRegistry.modelStack) {
         // 缓存命中：回到根后 reRender
+        // 当前根级使用 renderCustom（实时读取 modelRegistry / allModels），reRender 能拿到最新数据。
+        // ⚠️ 若未来根级改为 items 化，必须先调 setLevel(0, ...) 更新根级 items，否则 reRender 显示旧数据。
         stackRegistry.modelStack.resetToRoot();
         stackRegistry.modelStack.reRender();
         return;
@@ -779,7 +800,7 @@ export async function initLibrary(): Promise<void> {
         try {
             const recents = await GetRecentModels();
             if (recents && recents.length > 0) {
-                setRecentModels(recents);
+                setRecentModels(recents.slice(0, 20));
             }
         } catch (err) {
             console.warn('Load recent models:', err);
@@ -807,6 +828,11 @@ export async function initLibrary(): Promise<void> {
 }
 
 export async function selectResourceRoot(): Promise<void> {
+    const ok = await showConfirm(
+        '修改资源根目录会导致模型库重新扫描。确定继续吗？',
+        '切换资源根目录',
+    );
+    if (!ok) return;
     const dir = await SelectDir();
     if (!dir) {
         return;
