@@ -126,6 +126,9 @@ export const _envSys: {
     shadow: { generator: null },
 };
 
+/** Cache key for procedural gradient: skip rebuild when unchanged */
+let _lastProceduralSkyKey = '';
+
 // ======== Sky ========
 export function disposeSky(): void {
     const scene = getScene();
@@ -134,10 +137,11 @@ export function disposeSky(): void {
         _envSys.sky.skyMesh = null;
     }
     if (_envSys.sky.envTexture) {
+        scene.environmentTexture = null;
         _envSys.sky.envTexture.dispose();
         _envSys.sky.envTexture = null;
-        scene.environmentTexture = null;
     }
+    _lastProceduralSkyKey = '';
     disposeSunDisc();
 }
 
@@ -150,8 +154,8 @@ function buildGradientTexture(
     mid: Color3,
     bot: Color3,
     brightness: number,
-    sunAngle: number = 45,
-    starsEnabled: boolean = false
+    sunAngle: number,
+    starsEnabled: boolean
 ): Texture {
     const scene = getScene();
     const W = 256,
@@ -234,6 +238,7 @@ function createProceduralSky(state: EnvState): void {
     sphere.material = mat;
     _envSys.sky.skyMesh = sphere;
     scene.clearColor = new Color4(0, 0, 0, 1);
+    _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.sunAngle}|${state.starsEnabled}`;
 }
 
 function loadEnvTexture(path: string, rotationY: number, intensity: number): void {
@@ -247,7 +252,20 @@ function loadEnvTexture(path: string, rotationY: number, intensity: number): voi
         return;
     }
 
-    const cubeTex = new CubeTexture(path, scene);
+    const cubeTex = new CubeTexture(
+        path,
+        scene,
+        null,  // extensionsOrOptions
+        false, // noMipmap
+        null,  // files
+        null,  // onLoad
+        (message?: string, exception?: any) => {
+            // Texture load failed — fall back to procedural sky (Fix E)
+            console.warn(`[sky] loadEnvTexture failed: ${message}`, exception);
+            disposeSky();
+            createProceduralSky(envState);
+        }
+    );
     cubeTex.rotationY = rotationY;
     scene.environmentTexture = cubeTex;
     scene.environmentIntensity = intensity;
@@ -298,6 +316,25 @@ export function applySky(state: EnvState): void {
         }
         if (mesh.material && mesh.material.getClassName() === 'StandardMaterial') {
             const mat = mesh.material as StandardMaterial;
+
+            // Early-out: skip rebuild when gradient inputs haven't changed (Fix J)
+            const skyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.sunAngle}|${state.starsEnabled}`;
+            if (skyKey === _lastProceduralSkyKey && mat.emissiveTexture) {
+                return;
+            }
+            _lastProceduralSkyKey = skyKey;
+
+            // Clean up CubeTexture / reflectionTexture when transitioning texture→procedural
+            // Prevents A) visual corruption from dual reflection+emissive, and H) stale scene.environmentTexture
+            if (_envSys.sky.envTexture || mat.reflectionTexture) {
+                if (_envSys.sky.envTexture) {
+                    scene.environmentTexture = null;
+                    _envSys.sky.envTexture.dispose();
+                    _envSys.sky.envTexture = null;
+                }
+                mat.reflectionTexture = null;
+            }
+
             if (mat.emissiveTexture) {
                 mat.emissiveTexture.dispose();
             }
