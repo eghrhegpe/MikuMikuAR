@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { envState } from '../core/config';
 import type { EnvState } from '../core/config';
 
 const defaultEnv: EnvState = {
@@ -28,6 +29,7 @@ const defaultEnv: EnvState = {
     particleSize: 1,
     particleSpeed: 1,
     particleSplash: false,
+    particleCustomTexture: '',
     groundLevel: 0,
     waterEnabled: false,
     waterLevel: 0,
@@ -194,5 +196,94 @@ describe('setEnvState partial merge', () => {
         expect(updated.skyBrightness).toBe(1.5);
         expect(updated.groundVisible).toBe(true);
         expect(updated.envIntensity).toBe(1);
+    });
+});
+
+// ====================================================================
+// EnvState 颜色字段隔离（env-state-integrity 合并）
+// ====================================================================
+
+function setColorField<K extends keyof typeof envState>(key: K, value: (typeof envState)[K]) {
+    Object.assign(envState, { [key]: value });
+}
+
+describe('envState — color field isolation', () => {
+    beforeEach(() => {
+        envState.skyColorTop = [0.3, 0.5, 0.8];
+        envState.skyColorBot = [0.2, 0.2, 0.25];
+        envState.skyColorMid = [0.8, 0.8, 0.9];
+    });
+
+    it('skyColorTop does not leak into skyColorBot', () => {
+        setColorField('skyColorTop', [0.8, 0.2, 0.2]);
+        expect(envState.skyColorTop).toEqual([0.8, 0.2, 0.2]);
+        expect(envState.skyColorBot).toEqual([0.2, 0.2, 0.25]);
+    });
+
+    it('skyColorBot does not leak into skyColorTop', () => {
+        setColorField('skyColorBot', [0.1, 0.9, 0.3]);
+        expect(envState.skyColorBot).toEqual([0.1, 0.9, 0.3]);
+        expect(envState.skyColorTop).toEqual([0.3, 0.5, 0.8]);
+    });
+
+    it('skyColorMid is independent', () => {
+        setColorField('skyColorMid', [1, 0, 1]);
+        expect(envState.skyColorMid).toEqual([1, 0, 1]);
+        expect(envState.skyColorTop).toEqual([0.3, 0.5, 0.8]);
+        expect(envState.skyColorBot).toEqual([0.2, 0.2, 0.25]);
+    });
+
+    it('rapid sequential calls preserve final values', () => {
+        setColorField('skyColorTop', [0.5, 0.5, 0.5]);
+        setColorField('skyColorBot', [0.7, 0.3, 0.7]);
+        setColorField('skyColorTop', [0.9, 0.1, 0.9]);
+        setColorField('skyColorBot', [0.2, 0.8, 0.2]);
+        expect(envState.skyColorTop).toEqual([0.9, 0.1, 0.9]);
+        expect(envState.skyColorBot).toEqual([0.2, 0.8, 0.2]);
+    });
+
+    it('envIntensity does not clobber sky colors', () => {
+        setColorField('envIntensity', 0.5 as any);
+        expect(envState.skyColorTop).toEqual([0.3, 0.5, 0.8]);
+    });
+
+    it('skyBrightness does not clobber sky colors', () => {
+        setColorField('skyBrightness', 2 as any);
+        expect(envState.skyColorTop).toEqual([0.3, 0.5, 0.8]);
+    });
+
+    it('mode switch to gradient does not mute color state', () => {
+        setColorField('skyMode', 'gradient' as any);
+        expect(envState.skyMode).toBe('gradient');
+        expect(envState.skyColorTop).toEqual([0.3, 0.5, 0.8]);
+    });
+
+    it('rapid skyColorTop drags keep bot unchanged', () => {
+        setColorField('skyColorTop', [1, 0, 0]);
+        setColorField('skyColorTop', [1, 0.5, 0]);
+        setColorField('skyColorTop', [1, 0.5, 0.8]);
+        expect(envState.skyColorTop).toEqual([1, 0.5, 0.8]);
+        expect(envState.skyColorBot).toEqual([0.2, 0.2, 0.25]);
+    });
+
+    it('rapid skyColorBot drags keep top unchanged', () => {
+        setColorField('skyColorBot', [0, 1, 0]);
+        setColorField('skyColorBot', [0, 0, 1]);
+        setColorField('skyColorBot', [0.5, 0.5, 0.8]);
+        expect(envState.skyColorBot).toEqual([0.5, 0.5, 0.8]);
+        expect(envState.skyColorTop).toEqual([0.3, 0.5, 0.8]);
+    });
+
+    it('never produces black from color manipulation', () => {
+        for (let i = 0; i < 10; i++) {
+            setColorField('skyColorTop', [0.3 + i * 0.05, 0.5, 0.8]);
+            setColorField('skyColorBot', [0.2, 0.2 + i * 0.05, 0.25]);
+        }
+        expect(envState.skyColorTop[0]).toBeGreaterThan(0);
+        expect(envState.skyColorTop[1]).toBeGreaterThan(0);
+        expect(envState.skyColorTop[2]).toBeGreaterThan(0);
+        expect(envState.skyColorBot[0]).toBeGreaterThan(0);
+        expect(envState.skyColorBot[1]).toBeGreaterThan(0);
+        expect(envState.skyColorBot[2]).toBeGreaterThan(0);
     });
 });

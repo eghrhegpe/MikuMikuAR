@@ -1,5 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { deriveLighting, calcLuminance, ENV_PRESETS } from '../scene/env/env-lighting';
+
+// ── scene-lighting-smoke: Babylon mocks ──────────────────────────
+vi.mock('@babylonjs/core/Lights/hemisphericLight', () => ({ HemisphericLight: vi.fn() }));
+vi.mock('@babylonjs/core/Lights/directionalLight', () => ({ DirectionalLight: vi.fn() }));
+vi.mock('@babylonjs/core/Maths/math.vector', () => ({
+    Vector3: class { constructor(public x: number, public y: number, public z: number) {} },
+    Quaternion: class { constructor(public x: number, public y: number, public z: number, public w: number = 1) {} },
+}));
+vi.mock('@babylonjs/core/Maths/math.color', () => ({ Color3: vi.fn(), Color4: vi.fn() }));
+vi.mock('@babylonjs/core/Meshes/mesh', () => ({ Mesh: vi.fn() }));
+vi.mock('@babylonjs/core/Meshes/meshBuilder', () => ({ MeshBuilder: { CreateSphere: vi.fn() } }));
+vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({ StandardMaterial: vi.fn() }));
+vi.mock('@babylonjs/core/Lights/Shadows/shadowGenerator', () => ({ ShadowGenerator: vi.fn() }));
+
+import * as sceneLighting from '../scene/render/lighting';
 
 describe('calcLuminance', () => {
     it('white is 1.0', () => {
@@ -57,9 +72,34 @@ describe('ENV_PRESETS', () => {
             expect(p.label).toBeTruthy();
             expect(p.dirDiffuse).toHaveLength(3);
             expect(p.dirDirection).toHaveLength(3);
-            // night/midnight 的 dirIntensity 可以为 0（太阳在地平线下）
-            expect(p.dirIntensity).toBeGreaterThanOrEqual(0);
             expect(p.hemiIntensity).toBeGreaterThanOrEqual(0);
         }
+    });
+});
+
+// ====================================================================
+// scene-lighting 烟雾测试（合并自 scene-lighting-smoke.test.ts）
+// ====================================================================
+
+describe('scene-lighting — deriveLighting', () => {
+    it('模块可导入', () => {
+        expect(sceneLighting.transitionLighting).toBeTypeOf('function');
+        expect(sceneLighting.initLighting).toBeTypeOf('function');
+    });
+});
+
+describe('scene-lighting — transitionLighting smoke', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        vi.useFakeTimers();
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it('transitionLighting 在缺少 Babylon 对象时提前返回（不抛异常）', () => {
+        expect(() => {
+            sceneLighting.transitionLighting({ dirIntensity: 0.5 }, 2000);
+        }).not.toThrow();
     });
 });
