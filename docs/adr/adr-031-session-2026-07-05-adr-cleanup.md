@@ -1,4 +1,4 @@
-# ADR-031: 全量文档翻新 + 结构清理 + ADR 体系整饬 + DanceXR 差距挖掘 + AGENTS.md 瘦身
+# ADR-031: 全量文档翻新 + DanceXR 差距挖掘 + AGENTS.md 瘦身 + AI Mistake Tracker
 
 **日期**：2026-07-05
 > **状态**: 已完成 — 30 条 ADR 全量状态标记 + 粒子溅射实现 + HTTP 隔离修复 + roadmap/status 翻新
@@ -192,6 +192,38 @@ AGENTS.md §1.3 任务触发器索引新增：「风场 / windDirection / windSp
 
 从 AGENTS.md 提取的 140 行函数映射表，独立为按需 grep 文件。AGENTS.md 只需一行索引：`函数定位 → docs/function-map.md`。
 
+### 18. AI Mistake Tracker — 自动化犯错追踪
+
+**背景**：文档越厚 AI 越瞎，与其写更多防错文档，不如建反馈循环——用数据驱动文档改进。
+
+**新增 `tests/ai_mistake_tracker.py`**：
+- 分析 git 历史中的 fix 提交模式（分类统计）
+- 检测连续修复链（同一子系统的连续 fix = AI 反复犯错热点）
+- 文件热力图（哪些文件被反复修改 = 文档不够清晰的信号）
+- 规则违反扫描（AI 是否读了不该读的文件）
+- 支持 `--json` 输出供 CI 集成
+
+**CI 集成**（`.github/workflows/ci.yml`）：
+- 新增 `ai-mistake-report` job，仅 main 分支 push 时运行
+- 输出 JSON 报告 + 可读摘要，上传为 artifact
+- 不阻塞 CI（纯报告型）
+
+**数据发现**（300 commit 样本）：
+
+| 子系统 | fix 数 | 最长连续链 | 根因 |
+|--------|--------|-----------|------|
+| env (天空 shader) | 31 | 16 次 | Babylon.js ShaderMaterial 生命周期管理复杂，GL 程序复用冲突 |
+| ci/build | 24 | 9 次 | Wails v3 构建参数与 v2 不兼容 |
+| library-core.ts | 6 | - | 路径迁移后旧字段残留 |
+
+**AGENTS.md 新增「AI 高频犯错区」**：
+- 基于 tracker 数据写入 3 条高价值警告（否定句 + 正确做法）
+- env 天空 shader：禁止直接替换 material，必须走 `forceCompilationAsync`
+- CI/构建：改构建脚本前先读 `Taskfile.yml`
+- library-core.ts：改 library 逻辑前先 grep `resource_root` vs `library_root`
+
+**教训**：反馈循环比预防文档更有效。tracker 数据直接反哺 AGENTS.md 的硬约束，比人工猜测"AI 会犯什么错"更可靠。
+
 ## 影响
 
 - 其他 AI 会话启动时 grep `docs/adr/` 即可掌握全局进展
@@ -201,3 +233,4 @@ AGENTS.md §1.3 任务触发器索引新增：「风场 / windDirection / windSp
 - CI stale-link 检查防止未来断链
 - Phase 11-13 规划为后续开发提供明确方向（25 个增量目标，按优先级分层）
 - 文件职责边界明确化防止 AI 重复更新同一内容
+- AI Mistake Tracker 建立反馈循环，数据驱动文档改进（fix 率 35%，env 子系统 16 次连续链已写入硬约束）

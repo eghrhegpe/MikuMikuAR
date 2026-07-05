@@ -155,16 +155,87 @@ cardContainer(container: HTMLElement, fn: (c: HTMLElement) => void): void
 }
 ```
 
-### 3.4 通用折叠 `addCollapsible`
+### 3.4 分区标题 `section-title`
+
+用于在单卡片内划分语义区块（如「☀️ 光照控制」「🎨 天空外观」）。
+
+**CSS 样式**：
+```css
+.section-title {
+    font-size: 11px;
+    color: var(--text);
+    padding: 8px 14px 4px;
+    border-bottom: 1px solid var(--white-06);
+    margin-bottom: 2px;
+    letter-spacing: 0.3px;
+}
+```
+
+### 3.5 通用行按钮 `slideRow`
+
+最通用的菜单行组件，支持点击+箭头/标签+详情文字+右侧 toggle 开关。**大部分菜单列表项用此函数创建。**
+
+```ts
+slideRow(
+    container: HTMLElement,    // 父容器
+    icon: string,              // Iconify 图标名（如 "lucide:folder"）
+    label: string,             // 标签文字
+    hasArrow: boolean,         // 是否显示右侧箭头（>）
+    onClick: () => void,       // 点击回调
+    sublabel?: string,         // 灰色辅助文字（如文件名/状态）
+    tag?: string,              // 彩色标签徽章（如 "Beta"）
+    headerToggle?: {
+        value: boolean;
+        onChange: (v: boolean) => void;
+        disabled?: boolean;
+        disabledHint?: string;
+        onDisabledClick?: () => void;
+        bind?: () => boolean;     // 声明取值方式，updateControls() 时自动同步
+    }
+): void
+```
+
+**两种样式**：
+- **无 headerToggle** → `className = 'slide-item'` + `>` 箭头（hasArrow 时）
+- **有 headerToggle** → `collapsible-header` 样式 + 右侧开关 + `▾` 箭头
+
+**用法示例——简单菜单项**：
+```ts
+slideRow(c, 'lucide:info', '模型信息', true, () => {
+    stack.push(buildModelInfoLevel());
+});
+```
+
+**用法示例——带 toggle 开关**：
+```ts
+slideRow(c, 'lucide:eye', '可见', false, () => {}, undefined, undefined, {
+    value: inst.visible,
+    onChange: (v) => { setVisibility(id, v); },
+});
+```
+
+**用法示例——带辅助文字**：
+```ts
+slideRow(c, 'lucide:folder-open', '浏览音乐库', true, () => {
+    pushMusicLevel();
+}, getAudioName() || '无音乐');
+```
+
+### 3.6 通用折叠 `addCollapsible`
 
 用于将低频/高级参数折叠收起，保持主面板简洁。
 
-**工具函数**：
 ```ts
 addCollapsible(container, {
-    title: string;          // 标题文字
-    icon?: string;         // Iconify 图标名（如 "lucide:settings"）
-    defaultOpen?: boolean; // 默认是否展开（默认 false）
+    title: string;
+    icon?: string;
+    variant?: 'default' | 'mat';
+    defaultOpen?: boolean;
+    headerToggle?: {
+        value: boolean;
+        onChange: (v: boolean) => void;
+        bind?: () => boolean;
+    };
     renderContent: (inner: HTMLElement) => void;
 }): void
 ```
@@ -191,39 +262,120 @@ addCollapsible(container, {
 .collapsible-inner { padding: 2px 0 4px; }
 ```
 
-### 3.5 分区标题 `section-title`
+### 3.7 标准开关 `addToggleRow`
 
-用于在单卡片内划分语义区块（如「☀️ 光照控制」「🎨 天空外观」）。
+单行切换开关。整行可点击（toggle 区域除外）。
 
-**CSS 样式**：
-```css
-.section-title {
-    font-size: 11px;
-    color: var(--text);
-    padding: 8px 14px 4px;
-    border-bottom: 1px solid var(--white-06);
-    margin-bottom: 2px;
-    letter-spacing: 0.3px;
-}
+```ts
+addToggleRow(
+    container: HTMLElement,   // 父容器
+    label: string,            // 标签文字
+    value: boolean,           // 当前值
+    onChange: (v: boolean) => void,
+    icon?: string,            // Iconify 图标名（如 "lucide:eye"）
+    opts?: ControlOptions     // bind / onUpdate（可选）
+): void
 ```
 
-### 3.6 模式滑条 `addModeSlider`
+**用法示例**：
+```ts
+addToggleRow(c, '启用物理', cfg.physics, (v) => { setPhysics(v); }, 'lucide:zap');
+```
 
-用于在少量选项间切换（如天空模式：程序化 / 纯色 / 贴图）。
+> **简化变体** `toggleRow(container, label, value, icon, onChange, onSave?)` ——自动在 onChange 后调用 onSave（如自动保存配置）。
 
-详见 [reusables.md](./reusables.md#addmodeslider)。
+### 3.8 标准滑条 `addSliderRow`
 
-### 3.7 标准滑条 `addSliderRow`
+连续数值调节，支持拖拽 thumb + 行内区间点击 + 键盘操作。
 
-详见 [reusables.md](./reusables.md#addsliderrow)。
+```ts
+addSliderRow(
+    container: HTMLElement,        // 父容器
+    label: string,                 // 标签文字
+    value: number,                 // 当前值
+    min: number,                   // 最小值
+    max: number,                   // 最大值
+    step: number,                  // 步长（如 0.05 / 1）
+    onChange: (v: number) => void, // 实时回调
+    icon?: string,                 // Iconify 图标名
+    onDragEndCb?: (v: number) => void,  // 拖拽结束回调
+    opts?: ControlOptions<number>       // bind / onUpdate
+): void
+```
 
-### 3.8 标准颜色滑条 `addColorSliderRow`
+**交互行为**：
+- 拖拽 thumb 实时更新
+- 点击行左侧 1/4 → 减 15%，左中 → 减 5%，右中 → 加 5%，右侧 1/4 → 加 15%
+- 键盘 ← → 按 step 步进，Shift + ← → 10x 步进，Home / End → 极值
+- 图标可选，显示在标签左侧
 
-详见 [reusables.md](./reusables.md#addcolorsliderrow)。
+**用法示例**：
+```ts
+addSliderRow(c, '亮度', value, 0, 2, 0.05, (v) => { setBrightness(v); }, 'lucide:sun');
+```
 
-### 3.9 标准开关 `addToggleRow`
+> **简化变体** `sliderRow(container, label, value, min, max, step, icon, onDragEnd)` ——无实时回调，仅在拖拽结束时触发。
 
-详见 [reusables.md](./reusables.md#addtogglerow)。
+### 3.9 模式滑条 `addModeSlider`
+
+离散选项切换（如天空模式：程序化 / 纯色 / 贴图），外观与 `addSliderRow` 一致。
+
+```ts
+addModeSlider<T extends string | number>(
+    container: HTMLElement,
+    label: string,
+    options: Array<{ value: T; label: string }>,
+    currentValue: T,
+    onChange: (v: T) => void,
+    icon?: string,
+    onDragEndCb?: (v: T) => void,
+    opts?: ControlOptions<T>
+): void
+```
+
+**用法示例**：
+```ts
+addModeSlider(c, '天空模式', [
+    { value: 'procedural', label: '程序化' },
+    { value: 'solid', label: '纯色' },
+    { value: 'texture', label: '贴图' },
+], skyMode, (v) => { setSkyMode(v); }, 'lucide:cloud-sun');
+```
+
+### 3.10 标准颜色滑条 `addColorSliderRow`
+
+RGB 三通道颜色选择器，每通道独立滑条 + 色块预览。
+
+```ts
+addColorSliderRow(
+    container: HTMLElement,
+    label: string,
+    color: [number, number, number],
+    onChange: (v: [number, number, number]) => void,
+    opts?: ControlOptions<[number, number, number]>
+): void
+```
+
+**用法示例**：
+```ts
+addColorSliderRow(c, '漫反射色', [1, 0.8, 0.6], (v) => { setDiffuse(v); });
+```
+
+### 3.11 控件选项 `ControlOptions`
+
+`addSliderRow` / `addToggleRow` / `addModeSlider` / `addColorSliderRow` 的可选参数。两种模式二选一：
+
+| 字段 | 类型 | 作用 |
+|------|------|------|
+| `bind` | `() => T` | 声明取值函数，`updateControls()` 自动拉取最新值并刷新显示 |
+| `onUpdate` | `(el: HTMLElement) => void` | 自定义更新逻辑，优先级高于 `bind` |
+
+**用法示例**：
+```ts
+addSliderRow(c, '角度', angle, 0, 360, 1, onChange, undefined, undefined, {
+    bind: () => state.angle
+});
+```
 
 ---
 
