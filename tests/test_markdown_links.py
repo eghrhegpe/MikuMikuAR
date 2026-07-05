@@ -33,7 +33,7 @@ def _exists(path: Path) -> bool:
 
 
 def strip_code(text: str) -> str:
-    """用占位符替换代码块和行内代码，防止误匹配。"""
+    """用占位符替换代码块、行内代码和 HTML 标签，防止误匹配。"""
     placeholders: list[str] = []
     def _ph(m):
         placeholders.append(m.group(0))
@@ -41,6 +41,8 @@ def strip_code(text: str) -> str:
     text = re.sub(r'`[^`]+`', _ph, text)
     text = re.sub(r'(?s)```.*?```', _ph, text)
     text = re.sub(r'(?s)~~~.*?~~~', _ph, text)
+    # 剥离 HTML 标签（<tag>...</tag> 或 <tag/>），避免 </span> 被误判为路径
+    text = re.sub(r'</?[a-zA-Z][^>]*>', _ph, text)
     return text
 
 
