@@ -162,7 +162,7 @@ export function resetModelMorphs(id: string): void {
 
 // ======== VPD Pose ========
 
-import type { VPDBoneData, VPDMorphData } from '../../motion/vpd-parser';
+import type { VPDBoneData, VPDMorphData } from '../../motion-algos/vpd-parser';
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 /**

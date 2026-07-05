@@ -1,7 +1,7 @@
 # ADR-015: 材质编辑器 UI 重构 + 逐材质开关
 
 **日期**：2026-06-27
-> **状态**: 已完成
+> **状态**: 已完成 — buildMatRootLevel/ListLevel/BatchLevel 三级面板 + _matEnabled 开关
 
 ---
 

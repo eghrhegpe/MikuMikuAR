@@ -17,7 +17,7 @@ import { syncAudioPlayback, isAudioPlaying } from '../../outfit/audio';
 import { animateCameraVmd } from '../camera/camera';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { ModelManager } from '../manager/model-manager';
-import type { BeatDetector } from '../../motion/beat-detector';
+import type { BeatDetector } from '../../motion-algos/beat-detector';
 
 // ======== 辅助函数 ========
 

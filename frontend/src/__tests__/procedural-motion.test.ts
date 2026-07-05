@@ -6,7 +6,7 @@ import {
     shouldIdle,
     DEFAULT_PROC_STATE,
     type ProcMotionState,
-} from '../motion/procedural-motion';
+} from '../motion-algos/procedural-motion';
 
 const state: ProcMotionState = { ...DEFAULT_PROC_STATE, mode: 'idle', intensity: 0.5, speed: 1.0 };
 

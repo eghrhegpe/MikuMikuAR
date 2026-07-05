@@ -1,7 +1,7 @@
 # ADR-021: 程序化动作系统（Idle/Auto Dance + LipSync + 视线追踪）
 
 **日期**：2026-07-03
-> **状态**: 已完成
+> **状态**: 已完成 — Idle/AutoDance/LipSync/VPD/VMD-writer 5 套测试全通过
 
 ---
 

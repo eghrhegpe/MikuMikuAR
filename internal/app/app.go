@@ -348,6 +348,7 @@ type OverridePaths struct {
 
 // Config holds persistent user settings.
 type Config struct {
+	ConfigVersion       int                 `json:"config_version"`        // 配置版本号，用于迁移；0=旧配置（迁移前）
 	UIState             UIState             `json:"ui_state"`
 	LibraryRoot         string              `json:"library_root,omitempty"` // 迁移后清空，保留字段用于自动迁移
 	ResourceRoot        string              `json:"resource_root"`          // 总根目录

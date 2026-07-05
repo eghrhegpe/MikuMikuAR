@@ -9,7 +9,7 @@ import {
     findLipMorph,
     findAllLipMorphs,
     amplitudeToWeight,
-} from '../../motion/lipsync';
+} from '../../motion-algos/lipsync';
 import { focusedModelId, triggerAutoSave } from '../../core/config';
 import { isAudioPlaying } from '../../outfit/audio';
 import { setModelMorphWeight } from '../scene';

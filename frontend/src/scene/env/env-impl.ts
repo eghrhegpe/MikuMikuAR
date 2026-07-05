@@ -82,6 +82,8 @@ import {
     applyWindToParticles,
     updateParticleWind,
     updateParticleParams,
+    syncSplashState,
+    disposeSplash,
     getCurrentParticleType,
 } from './env-particles';
 import { _disposeSunDisc } from '../render/lighting';
@@ -93,6 +95,7 @@ export const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
     particles: { system: GPUParticleSystem | null; followObserver: Observer<Scene> | null };
+    splash: { observer: Observer<Scene> | null };
     clouds: {
         postProcess: Mesh | null;
         postProcess2: Mesh | null;
@@ -105,6 +108,7 @@ export const _envSys: {
     sky: { skyMesh: null, envTexture: null },
     ground: { mesh: null },
     particles: { system: null, followObserver: null },
+    splash: { observer: null },
     clouds: { postProcess: null, postProcess2: null, material: null, texture: null },
     water: { mesh: null, material: null },
     shadow: { generator: null },
@@ -440,6 +444,7 @@ export function applyGround(state: EnvState): void {
 // ======== Env Update Observer (wind, sky rotation, underwater) ========
 let _envUpdateObserver: Observer<Scene> | null = null;
 let _prevParticleEnabled = true; // 用于检测 particleEnabled 变化
+let _prevSplash = false; // 用于检测 particleSplash 变化
 
 export function ensureEnvUpdateObserver(): void {
     const scene = getScene();
@@ -493,6 +498,7 @@ export function ensureEnvUpdateObserver(): void {
             _prevParticleEnabled = envState.particleEnabled;
             if (!envState.particleEnabled && _envSys.particles.system) {
                 disposeParticles();
+                disposeSplash(); // 粒子关闭时也关闭溅射
             } else if (
                 envState.particleEnabled &&
                 !_envSys.particles.system &&
@@ -500,6 +506,12 @@ export function ensureEnvUpdateObserver(): void {
             ) {
                 createParticleEmitter(getCurrentParticleType(), envState.windEnabled);
             }
+        }
+
+        // 同步溅射状态（检测 particleSplash 或粒子类型变化）
+        if (_prevSplash !== envState.particleSplash) {
+            _prevSplash = envState.particleSplash;
+            syncSplashState();
         }
 
         // Sky rotation animation

@@ -586,24 +586,10 @@ function buildTagsOverviewLevel(): PopupLevel {
                 });
 
                 cardContainer(container, (c) => {
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    const is = document.createElement('span');
-                    is.className = 'slide-icon';
-                    const ie = createIconifyIcon('lucide:plus');
-                    if (ie) {
-                        is.appendChild(ie);
-                    }
-                    row.appendChild(is);
-                    const ls = document.createElement('span');
-                    ls.className = 'slide-label';
-                    ls.textContent = '新建标签';
-                    row.appendChild(ls);
-                    row.addEventListener('click', () => {
+                    slideRow(c, 'lucide:plus', '新建标签', false, () => {
                         setStatus('请先进入模型页，在模型页中为模型添加标签', false);
                         stackRegistry.modelStack.pop();
                     });
-                    c.appendChild(row);
                 });
             } catch (err) {
                 console.warn('buildTagsOverviewLevel:', err);

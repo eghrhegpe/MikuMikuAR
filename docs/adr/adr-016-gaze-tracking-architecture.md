@@ -1,7 +1,7 @@
 # ADR-016: 视线追踪子系统架构
 
 **日期**：2026-07-03
-> **状态**: 部分完成 — 核心骨骼链已实现，手动计时方案待定
+> **状态**: 已完成 — 双路径方案已实施（WASM frontBuffer 直写 + JS linkedBone + updateWorldMatrix），手动计时方案（方案 A）为优化项，需上游 babylon-mmd 暴露 beforePhysics/afterPhysics API
 
 ---
 

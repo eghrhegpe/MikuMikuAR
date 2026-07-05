@@ -64,7 +64,12 @@ func (a *App) ImportLocalFile(path string) (*ExtractResult, error) {
 	case ".zip":
 		return a.ImportZip(path)
 	case ".pmx", ".vmd":
-		return &ExtractResult{FilePath: path, Dir: filepath.Dir(path)}, nil
+		dir, err := a.IsolateModelDir(path)
+		if err != nil {
+			// 隔离失败时降级到原目录（保功能不保隐私）
+			dir = filepath.Dir(path)
+		}
+		return &ExtractResult{FilePath: path, Dir: dir}, nil
 	default:
 		return nil, fmt.Errorf("不支持的文件格式: %s", ext)
 	}

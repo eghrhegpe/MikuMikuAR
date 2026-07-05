@@ -4,8 +4,8 @@ import {
     decodeVPDData,
     poseDataToVmdBuffer,
     loadVPDFromBuffer,
-} from '../motion/vpd-parser';
-import { BONE_FRAME_SIZE } from '../motion/vmd-writer';
+} from '../motion-algos/vpd-parser';
+import { BONE_FRAME_SIZE } from '../motion-algos/vmd-writer';
 
 // ======== parseVPDText ========
 

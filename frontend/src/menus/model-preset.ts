@@ -44,6 +44,7 @@ import {
     setAudioOffset,
 } from '../outfit/audio';
 import { showConfirm, showPrompt } from '../core/dialog';
+import { tryCatchStatus } from '../core/utils';
 
 export interface ModelPresetEntry {
     name: string;
@@ -229,11 +230,9 @@ export async function selectAndSavePreset(id: string): Promise<void> {
         setStatus('✗ 无法序列化模型状态', false);
         return;
     }
-    try {
-        await SaveModelPreset(json, path);
+    const _r0 = await tryCatchStatus(() => SaveModelPreset(json, path), '✗ 保存失败');
+    if (_r0 !== undefined) {
         setStatus('✓ 预设已保存', true);
-    } catch (err: unknown) {
-        setStatus('✗ 保存失败: ' + (err instanceof Error ? err.message : String(err)), false);
     }
 }
 
@@ -321,30 +320,26 @@ export async function selectAndLoadPreset(id: string): Promise<void> {
     if (!path) {
         return;
     }
-    try {
+    await tryCatchStatus(async () => {
         const json = await LoadModelPreset(path);
         await applyModelPreset(id, json);
-    } catch (err: unknown) {
-        setStatus('✗ 加载失败: ' + (err instanceof Error ? err.message : String(err)), false);
-    }
+    }, '✗ 加载失败');
 }
 
 export async function togglePresetAutoApply(name: string): Promise<void> {
-    try {
+    await tryCatchStatus(async () => {
         const json = await LoadModelPresetFromLib(name);
         const preset: ModelPresetFile = JSON.parse(json);
         preset.autoApply = !preset.autoApply;
         await SaveModelPresetToLib(name, JSON.stringify(preset, null, 2));
-    } catch (err: unknown) {
-        setStatus('✗ 切换自动应用失败: ' + (err instanceof Error ? err.message : String(err)), false);
-    }
+    }, '✗ 切换自动应用失败');
 }
 
 export async function applyPresetFromLib(
     presetName: string,
     targetModelId: string | null
 ): Promise<void> {
-    try {
+    await tryCatchStatus(async () => {
         const json = await LoadModelPresetFromLib(presetName);
         const preset: ModelPresetFile = JSON.parse(json);
         if (targetModelId) {
@@ -378,9 +373,7 @@ export async function applyPresetFromLib(
                 }
             }
         }
-    } catch (err: unknown) {
-        setStatus('✗ 应用预设失败: ' + (err instanceof Error ? err.message : String(err)), false);
-    }
+    }, '✗ 应用预设失败');
 }
 
 export async function savePresetToLibDialog(id: string): Promise<void> {
@@ -411,11 +404,9 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
     } catch {
         /* no existing preset — fine */
     }
-    try {
-        await SaveModelPresetToLib(trimmed, json);
+    const _r1 = await tryCatchStatus(() => SaveModelPresetToLib(trimmed, json), '✗ 保存失败');
+    if (_r1 !== undefined) {
         setStatus('✓ 预设已保存到库', true);
-    } catch (err: unknown) {
-        setStatus('✗ 保存失败: ' + (err instanceof Error ? err.message : String(err)), false);
     }
 }
 
@@ -486,12 +477,12 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
                         if (!(await showConfirm(`确定删除「${e.presetName || e.name}」？`))) {
                             return;
                         }
-                        try {
+                        const _r2 = await tryCatchStatus(async () => {
                             await DeleteModelPreset(e.name);
                             stackRegistry.modelStack.reRender();
+                        }, '✗ 删除失败');
+                        if (_r2 !== undefined) {
                             setStatus('✓ 预设已删除', true);
-                        } catch {
-                            setStatus('✗ 删除失败', false);
                         }
                     });
                     row.appendChild(delBtn);

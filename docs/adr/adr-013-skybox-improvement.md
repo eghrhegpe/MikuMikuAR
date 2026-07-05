@@ -1,7 +1,7 @@
 # ADR-013: Skybox 贴图系统改进
 
 **日期**：2026-06-27
-> **状态**: 已完成
+> **状态**: 已完成 — SelectEnvTextureFile binding + CubeTexture 统一加载 + 天空穹顶
 
 ---
 

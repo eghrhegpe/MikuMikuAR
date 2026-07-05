@@ -57,7 +57,7 @@ import {
     getLipSyncState,
     setLipSyncEnabled,
 } from '../scene/scene';
-import type { ProcMotionMode } from '../motion/procedural-motion';
+import type { ProcMotionMode } from '../motion-algos/procedural-motion';
 import {
     buildProcMotionLevel, buildProcMotionModeLevel, buildLipSyncLevel,
 } from './motion-procmotion-levels';
@@ -181,19 +181,10 @@ function buildActionMusicLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                const browseAudioRow = document.createElement('div');
-                browseAudioRow.className = 'slide-item';
-                browseAudioRow.innerHTML = `
-                    <span class="slide-icon"><iconify-icon icon="lucide:folder-open"></iconify-icon></span>
-                    <span class="slide-label">浏览音乐库</span>
-                    <span class="slide-sublabel">${getAudioName() || '无音乐'}</span>
-                    <span class="slide-arrow">></span>
-                `;
-                browseAudioRow.addEventListener('click', () => {
+                slideRow(c, 'lucide:folder-open', '浏览音乐库', true, () => {
                     const level = stackRegistry.buildLevel!(libraryRoot, '音乐库', (m) => m.format === 'audio');
                     if (getMotionMenu()) getMotionMenu()?.push(level);
-                });
-                c.appendChild(browseAudioRow);
+                }, getAudioName() || '无音乐');
                 if (getAudioName()) {
                     slideRow(c, 'lucide:trash-2', '移除音乐', false, () => {
                         clearAudio();

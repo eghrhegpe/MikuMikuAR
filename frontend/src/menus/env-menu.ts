@@ -257,6 +257,9 @@ export function buildParticleLevel(): PopupLevel {
                 addSliderRow(c, '速度', s.particleSpeed, 0.1, 5, 0.1, (v) => { setEnvState({ particleSpeed: v }); }, 'lucide:gauge', undefined, {
                     bind: () => envState.particleSpeed,
                 });
+                addToggleRow(c, '落地溅射', s.particleSplash, (v) => { setEnvState({ particleSplash: v }); }, 'lucide:splash', {
+                    bind: () => envState.particleSplash,
+                });
             });
         },
     };

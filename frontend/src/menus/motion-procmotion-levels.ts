@@ -19,9 +19,9 @@ import {
     setProcMotionInterpOverride,
 } from '../scene/scene';
 import { setProcMotionBoneToggle, setProcMotionEyeTrackingEnabled, setProcMotionHeadTrackingEnabled } from '../scene/motion/proc-motion-bridge';
-import { getProcMotionBoneCategories } from '../motion/procedural-motion';
+import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
 import { getMmdRuntimeType, setMmdRuntimeType } from '../core/config';
-import type { ProcMotionMode } from '../motion/procedural-motion';
+import type { ProcMotionMode } from '../motion-algos/procedural-motion';
 import { getMotionMenu } from './motion-popup';
 
 export function buildProcMotionLevel(): PopupLevel {

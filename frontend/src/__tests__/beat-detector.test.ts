@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { BeatDetector } from '../motion/beat-detector';
+import { BeatDetector } from '../motion-algos/beat-detector';
 
 describe('BeatDetector.detectBeatsFromEnergies', () => {
     it('detects beats in periodic energy peaks', () => {

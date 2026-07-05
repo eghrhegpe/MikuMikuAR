@@ -117,3 +117,32 @@ jobs:
 
       - name: Run config syntax test
         run: python tests/test_config_syntax.py
+
+      - name: Check markdown links
+        run: python tests/test_markdown_links.py
+
+  ai-mistake-report:
+    name: AI — Mistake Tracker Report
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Run mistake tracker
+        run: python tests/ai_mistake_tracker.py --limit 300 --json > ai-mistake-report.json
+
+      - name: Print summary
+        run: python tests/ai_mistake_tracker.py --limit 300
+
+      - name: Upload report
+        uses: actions/upload-artifact@v5
+        with:
+          name: ai-mistake-report
+          path: ai-mistake-report.json

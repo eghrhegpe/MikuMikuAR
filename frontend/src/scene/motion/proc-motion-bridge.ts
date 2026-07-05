@@ -11,8 +11,8 @@ import {
     generateAutoDanceVmd,
     shouldAutoDance,
     shouldIdle,
-} from '../../motion/procedural-motion';
-import { BeatDetector } from '../../motion/beat-detector';
+} from '../../motion-algos/procedural-motion';
+import { BeatDetector } from '../../motion-algos/beat-detector';
 import { mmdRuntime, triggerAutoSave, focusedModelId } from '../../core/config';
 import { isAudioPlaying } from '../../outfit/audio';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from '../scene';

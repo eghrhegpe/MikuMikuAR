@@ -1,7 +1,7 @@
 # ADR-006: 扫描简化 + 文件名多编码自动检测
 
 **日期**：2026-07-16
-> **状态**: 已完成
+> **状态**: 已完成 — bestDecode/cleanModelName + modelMetaCache 全链路上线
 
 ---
 

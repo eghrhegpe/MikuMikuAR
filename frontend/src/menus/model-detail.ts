@@ -38,6 +38,7 @@ import {
     ScanSoftwareDir,
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
+import { tryCatchStatus } from '../core/utils';
 
 // ======== Open With (software tools submenu) ========
 
@@ -63,23 +64,17 @@ export function buildOpenWithLevel(id: string): PopupLevel {
 
             cardContainer(container, (c) => {
                 for (const sw of entries) {
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="${softwareKindIcon(sw.kind)}"></iconify-icon></span><span class="slide-label">${escapeHtml(sw.name)}</span>`;
-                    row.addEventListener('click', async () => {
+                    slideRow(c, softwareKindIcon(sw.kind), sw.name, false, async () => {
                         const inst = modelManager.get(id);
                         if (!inst.filePath) {
                             setStatus('✗ 模型无文件路径', false);
                             return;
                         }
-                        try {
-                            await OpenWithSoftware(inst.filePath, sw.path, sw.args || '');
+                        const _r = await tryCatchStatus(() => OpenWithSoftware(inst.filePath, sw.path, sw.args || ''), '✗ 启动失败');
+                        if (_r !== undefined) {
                             setStatus(`✓ 已启动: ${sw.name}`, true);
-                        } catch (err: unknown) {
-                            setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false);
                         }
                     });
-                    c.appendChild(row);
                 }
 
                 const manageLink = document.createElement('div');
@@ -326,7 +321,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                         if (!libRef) {
                             return;
                         }
-                        try {
+                        await tryCatchStatus(async () => {
                             if (isFav) {
                                 await RemoveTag(libRef, '收藏');
                                 setStatus('✓ 已取消收藏', true);
@@ -335,9 +330,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                 setStatus('✓ 已收藏', true);
                             }
                             refreshFav();
-                        } catch (_err) {
-                            setStatus('✗ 收藏操作失败', false);
-                        }
+                        }, '✗ 收藏操作失败');
                     };
                 };
                 refreshFav();

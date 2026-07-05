@@ -3,7 +3,7 @@
 
 import { resolveFileUrl } from '../core/fileservice';
 import { triggerAutoSave } from '../core/config';
-import type { BeatDetector } from '../motion/beat-detector';
+import type { BeatDetector } from '../motion-algos/beat-detector';
 
 let audioElement: HTMLAudioElement | null = null;
 let audioName = '';
