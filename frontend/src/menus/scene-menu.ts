@@ -31,8 +31,9 @@ import { focusModel } from '../scene/scene';
 
 // ======== 从子文件导入 ========
 import {
-    buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildPresetScenesLevel,
+    buildRenderLevel, buildPostProcessLevel, buildPresetScenesLevel,
 } from './scene-render-levels';
+import { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels';
 import { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 import {
     buildPhysicsLevel,
@@ -44,7 +45,8 @@ import { buildClothParamsLevel } from './motion-cloth-levels';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
-export { buildRenderLevel, buildPostProcessLevel, buildStageLevel, buildStageTransformLevel, buildPresetScenesLevel } from './scene-render-levels';
+export { buildRenderLevel, buildPostProcessLevel, buildPresetScenesLevel } from './scene-render-levels';
+export { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels';
 export { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 
 // ======== Scene Menu State ========

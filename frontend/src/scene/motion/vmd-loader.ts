@@ -18,6 +18,7 @@ import {
     setStatus,
     triggerAutoSave,
     addRecentMotion,
+    dom,
 } from '../../core/config';
 import { resolveFileUrl, normPath } from '../../core/fileservice';
 import { loadCameraVmd } from '../camera/camera';
@@ -125,6 +126,8 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
         return;
     }
     setIsLoadingVmd(true);
+    dom.loadingEl.style.display = 'block';
+    dom.loadingText.textContent = 'VMD 加载中...';
     try {
         const { url } = await resolveFileUrl(path);
         const vmdName = normPath(path).split('/').pop() || '';
@@ -155,6 +158,7 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
         console.error('loadVMDFromPath:', err);
         setStatus('✗ VMD 加载失败', false);
     } finally {
+        dom.loadingEl.style.display = 'none';
         setIsLoadingVmd(false);
     }
 }
@@ -190,6 +194,8 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
 
 export async function loadCameraVmdFromPath(path: string): Promise<void> {
     const { scene } = await getScene();
+    dom.loadingEl.style.display = 'block';
+    dom.loadingText.textContent = '相机 VMD 加载中...';
     try {
         const { url } = await resolveFileUrl(path);
         const vmdName = normPath(path).split('/').pop() || '';
@@ -208,6 +214,8 @@ export async function loadCameraVmdFromPath(path: string): Promise<void> {
     } catch (err) {
         console.error('loadCameraVmdFromPath:', err);
         setStatus('✗ 相机 VMD 加载失败', false);
+    } finally {
+        dom.loadingEl.style.display = 'none';
     }
 }
 
@@ -217,6 +225,8 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
         return;
     }
     setIsLoadingVmd(true);
+    dom.loadingEl.style.display = 'block';
+    dom.loadingText.textContent = 'VPD 姿势加载中...';
     try {
         const { url } = await resolveFileUrl(path);
         const poseName = normPath(path).split('/').pop() || '';
@@ -252,6 +262,7 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
         console.error('loadVPDPose:', err);
         setStatus('✗ 姿势加载失败', false);
     } finally {
+        dom.loadingEl.style.display = 'none';
         setIsLoadingVmd(false);
     }
 }
