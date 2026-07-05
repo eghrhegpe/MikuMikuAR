@@ -219,6 +219,7 @@ export interface EnvState {
     particleSize: number;
     particleSpeed: number;
     particleSplash: boolean;
+    particleCustomTexture: string; // 自定义粒子纹理 data URL，空=默认
 
     groundLevel: number;
 

@@ -278,6 +278,7 @@ export const envState: EnvState = reactive<EnvState>({
     particleSize: 1,
     particleSpeed: 1,
     particleSplash: false,
+    particleCustomTexture: '',
 
     groundLevel: 0,
 

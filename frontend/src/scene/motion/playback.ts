@@ -33,6 +33,9 @@ let _loopPending = false;
 /** Module-level ModelManager 引用，供 updatePlaybackUI 统一获取动画时长。 */
 let _manager: ModelManager | null = null;
 
+/** Dispose guard: prevents double-cleanup if dispose() called more than once. */
+let _disposed = false;
+
 /** 安全清理 observable 回调，静默吞异常。 */
 function _safeRemoveCallback<T>(obs: { removeCallback: (cb: T) => void } | undefined, cb: T): void {
     try {
@@ -57,6 +60,7 @@ export function initPlaybackObservables(
     getProcBeatDetector: () => BeatDetector | null
 ): PlaybackObservablesDispose {
     _manager = manager;
+    _disposed = false; // 重置 dispose guard，支持多轮 init/dispose
     const tickHandler = () => {
         // 每帧统一刷新节拍检测器（供 LipSync + Auto Dance 共享）
         const beatDetector = getProcBeatDetector();
@@ -112,6 +116,11 @@ export function initPlaybackObservables(
                     _loopPending = false;
                     return;
                 }
+                // 检查 runtime 和 manager 在 async 间隙是否仍有效
+                if (!loop || !runtime || !_manager) {
+                    _loopPending = false;
+                    return;
+                }
                 runtime
                     .playAnimation()
                     .then(() => {
@@ -123,6 +132,9 @@ export function initPlaybackObservables(
                         _loopPending = false;
                         console.error('[playback] auto-loop playAnimation failed:', err);
                     });
+            }).catch((err: unknown) => {
+                _loopPending = false;
+                console.error('[playback] auto-loop seekAnimation failed:', err);
             });
             return;
         }
@@ -134,6 +146,8 @@ export function initPlaybackObservables(
 
     // 返回 dispose 函数，供场景销毁时清理观察者，防止内存泄漏
     return () => {
+        if (_disposed) return;
+        _disposed = true;
         _safeRemoveCallback(runtime.onAnimationTickObservable, tickHandler);
         _safeRemoveCallback(runtime.onPlayAnimationObservable, playHandler);
         _safeRemoveCallback(runtime.onPauseAnimationObservable, pauseHandler);
