@@ -265,6 +265,21 @@ export function buildParticleLevel(): PopupLevel {
                 const texBtn = document.createElement('button');
                 texBtn.className = 'cs-btn cs-btn-sm';
                 texBtn.textContent = envState.particleCustomTexture ? '更换' : '选择';
+                const ensureClearBtn = (): HTMLButtonElement => {
+                    const existing = texRow.querySelector<HTMLButtonElement>('button.cs-btn[data-clear]');
+                    if (existing) return existing;
+                    const btn = document.createElement('button');
+                    btn.className = 'cs-btn cs-btn-sm';
+                    btn.dataset.clear = '1';
+                    btn.textContent = '清除';
+                    btn.onclick = () => {
+                        setEnvState({ particleCustomTexture: '' });
+                        texBtn.textContent = '选择';
+                        btn.remove();
+                    };
+                    texRow.appendChild(btn);
+                    return btn;
+                };
                 texBtn.onclick = () => {
                     const input = document.createElement('input');
                     input.type = 'file';
@@ -274,8 +289,10 @@ export function buildParticleLevel(): PopupLevel {
                         if (!file) return;
                         const reader = new FileReader();
                         reader.onload = (e) => {
-                            setEnvState({ particleCustomTexture: e.target?.result as string ?? '' });
+                            const url = e.target?.result as string ?? '';
+                            setEnvState({ particleCustomTexture: url });
                             texBtn.textContent = '更换';
+                            ensureClearBtn();
                         };
                         reader.readAsDataURL(file);
                     };
@@ -283,15 +300,7 @@ export function buildParticleLevel(): PopupLevel {
                 };
                 texRow.appendChild(texBtn);
                 if (envState.particleCustomTexture) {
-                    const clearBtn = document.createElement('button');
-                    clearBtn.className = 'cs-btn cs-btn-sm';
-                    clearBtn.textContent = '清除';
-                    clearBtn.onclick = () => {
-                        setEnvState({ particleCustomTexture: '' });
-                        texBtn.textContent = '选择';
-                        clearBtn.remove();
-                    };
-                    texRow.appendChild(clearBtn);
+                    ensureClearBtn();
                 }
                 c.appendChild(texRow);
             });

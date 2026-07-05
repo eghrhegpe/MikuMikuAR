@@ -200,6 +200,7 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     // 雨上限：1000 * 2 * 2.5 = 5000；particleEmitRate 放大时需要同步扩大
     const ps = new GPUParticleSystem('envParticles', { capacity: 10000 }, scene);
     ps.particleTexture = makeParticleTexture(type, envState.particleCustomTexture || undefined);
+    _prevCustomTexKey = envState.particleCustomTexture ? `_custom_${envState.particleCustomTexture}` : null;
     ps.updateSpeed = 0.01;
     // 初始 emitter 占位（实际位置在 followObserver 中设置）
     ps.emitter = new Vector3(0, 0, 0);
@@ -437,6 +438,7 @@ export function disposeParticles(): void {
     _baseMaxSize = 0;
     _baseMinEmitPower = 0;
     _baseMaxEmitPower = 0;
+    _prevCustomTexKey = null;
     // 不重置 _currentParticleType，以便 particleEnabled 自动恢复时知道上次类型
 }
 

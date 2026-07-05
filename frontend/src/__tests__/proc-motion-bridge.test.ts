@@ -47,9 +47,9 @@ vi.mock('../outfit/audio', () => ({
 
 vi.mock('../scene/scene', () => ({
     modelManager: mockState.modelManager,
-    focusedMmdModel: (...args: unknown[]) => mockState.focusedMmdModel(...args),
-    focusedModel: (...args: unknown[]) => mockState.focusedModel(...args),
-    loadVMDMotion: (...args: unknown[]) => mockState.loadVMDMotion(...args),
+    focusedMmdModel: ((...args: any[]) => (mockState.focusedMmdModel as any)(...args)) as any,
+    focusedModel: ((...args: any[]) => (mockState.focusedModel as any)(...args)) as any,
+    loadVMDMotion: ((...args: any[]) => (mockState.loadVMDMotion as any)(...args)) as any,
     scene: mockState.scene,
 }));
 

@@ -116,6 +116,7 @@ function createBaseInstance(overrides: Record<string, any> = {}) {
         vmdName: '',
         vmdPath: null,
         animationDuration: 0,
+        vmdLayers: [],
         modelDir: '/models',
         outfitFile: undefined,
         activeVariant: undefined,

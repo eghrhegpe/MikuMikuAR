@@ -499,6 +499,7 @@ export class ModelManager {
         inst.vmdName = '';
         inst.vmdPath = null;
         inst.animationDuration = 0;
+        inst.vmdLayers = [];
         this.onChange();
     }
 
