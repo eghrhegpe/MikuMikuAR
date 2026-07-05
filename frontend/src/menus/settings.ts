@@ -56,6 +56,7 @@ import { setPerformanceMode, getPerformanceMode } from '../scene/render/performa
 import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
 import { showConfirm, showPrompt } from '../core/dialog';
+import { tryCatchStatus } from '../core/utils';
 
 // ======== Helpers re-exported ========
 export { refreshLibrary } from './library';
@@ -296,11 +297,9 @@ function buildSettingsFilenameLevel(): PopupLevel {
                 sl.textContent = '停止监听';
                 stopRow.appendChild(sl);
                 stopRow.addEventListener('click', async () => {
-                    try {
-                        await StopWatchDir();
+                    const _r = await tryCatchStatus(() => StopWatchDir(), '✗ 停止监听失败');
+                    if (_r !== undefined) {
                         setStatus('✓ 已停止监听', true);
-                    } catch {
-                        setStatus('✗ 停止监听失败', false);
                     }
                 });
                 c.appendChild(stopRow);
@@ -569,11 +568,9 @@ async function setTheme(hex: string): Promise<void> {
     root.style.setProperty('--text-dim', textColors.dim);
     root.style.setProperty('--text-muted', textColors.muted);
 
-    try {
-        await SetUIAccent(hex);
+    const _r = await tryCatchStatus(() => SetUIAccent(hex), '✗ 主题色保存失败');
+    if (_r !== undefined) {
         setStatus(`✓ 主题色已设为 ${hex}`, true);
-    } catch {
-        setStatus('✗ 主题色保存失败', false);
     }
     getSettingsMenu()?.updateControls();
 }
@@ -649,14 +646,20 @@ function buildSettingsPathsLevel(): PopupLevel {
 const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     'set:clearextractcache': () => {
         ClearExtractCache()
-            .then(() => setStatus('✓ 提取缓存已清除', true))
+            .then(() => {
+                setStatus('✓ 提取缓存已清除', true);
+                window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
+            })
             .catch(console.warn);
     },
     'set:clearthumbnail': () => {
         (async () => {
             if (await showConfirm('确定要清除所有缩略图缓存吗？下次加载模型时将重新生成。')) {
                 ClearThumbnailCache()
-                    .then(() => setStatus('✓ 缩略图缓存已清除', true))
+                    .then(() => {
+                        setStatus('✓ 缩略图缓存已清除', true);
+                        window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
+                    })
                     .catch(console.warn);
             }
         })();
@@ -665,7 +668,10 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
         (async () => {
             if (await showConfirm('确定要清除全部缓存吗？包括提取缓存、缩略图、HTTP 隔离目录。下次加载模型时将重新生成。')) {
                 ClearAllCaches()
-                    .then(() => setStatus('✓ 全部缓存已清除', true))
+                    .then(() => {
+                        setStatus('✓ 全部缓存已清除', true);
+                        window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
+                    })
                     .catch(console.warn);
             }
         })();
@@ -911,20 +917,26 @@ function buildSettingsAboutLevel(): PopupLevel {
                     <div data-cache-detail style="font-size:10px;color:var(--text-dim);line-height:1.6;font-family:monospace;"></div>
                 `;
                 c.appendChild(statRow);
-                GetCacheStats()
-                    .then((s) => {
-                        const total = statRow.querySelector<HTMLElement>('[data-cache-total]');
-                        const detail = statRow.querySelector<HTMLElement>('[data-cache-detail]');
-                        if (total) total.textContent = `总计 ${formatBytes(s.totalBytes)}`;
-                        if (detail) {
-                            detail.innerHTML = `
-                                <div>提取: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div>
-                                <div>缩略图: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div>
-                                <div>隔离: ${formatBytes(s.serveBytes)} (${s.serveCount} 项)</div>
-                            `;
-                        }
-                    })
-                    .catch(() => {});
+
+                const refreshCacheStats = () => {
+                    GetCacheStats()
+                        .then((s) => {
+                            const total = statRow.querySelector<HTMLElement>('[data-cache-total]');
+                            const detail = statRow.querySelector<HTMLElement>('[data-cache-detail]');
+                            if (total) total.textContent = `总计 ${formatBytes(s.totalBytes)}`;
+                            if (detail) {
+                                detail.innerHTML = `
+                                    <div>提取: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div>
+                                    <div>缩略图: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div>
+                                    <div>隔离: ${formatBytes(s.serveBytes)} (${s.serveCount} 项)</div>
+                                `;
+                            }
+                        })
+                        .catch(() => {});
+                };
+                refreshCacheStats();
+                // 清缓存后自动刷新统计
+                window.addEventListener('mmar:cache-cleared', refreshCacheStats);
             });
 
             // 维护工具：清除缓存

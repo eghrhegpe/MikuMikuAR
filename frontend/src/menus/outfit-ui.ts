@@ -5,6 +5,7 @@ import { modelRegistry, cardContainer, PopupLevel, setStatus } from '../core/con
 import type { OutfitFile } from '../core/config';
 import { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
 import { createIconifyIcon } from '../core/icons';
+import { tryCatchStatus } from '../core/utils';
 
 export function buildOutfitLevel(id: string): PopupLevel {
     return {
@@ -70,11 +71,9 @@ export function buildOutfitLevel(id: string): PopupLevel {
                         }
                         _loading = true;
                         setStatus('⏳ 切换变体中…', true);
-                        try {
-                            await applyOutfitVariant(id, '默认');
+                        const _r = await tryCatchStatus(() => applyOutfitVariant(id, '默认'), '✗ 切换变体失败');
+                        if (_r !== undefined) {
                             setStatus('✓ 变体已切换', true);
-                        } catch (_e) {
-                            setStatus('✗ 切换变体失败', false);
                         }
                         _loading = false;
                         await _render();
@@ -98,11 +97,9 @@ export function buildOutfitLevel(id: string): PopupLevel {
                             }
                             _loading = true;
                             setStatus('⏳ 切换变体中…', true);
-                            try {
-                                await applyOutfitVariant(id, v.name);
+                            const _r = await tryCatchStatus(() => applyOutfitVariant(id, v.name), '✗ 切换变体失败');
+                            if (_r !== undefined) {
                                 setStatus('✓ 变体已切换', true);
-                            } catch (_e) {
-                                setStatus('✗ 切换变体失败', false);
                             }
                             _loading = false;
                             await _render();
@@ -120,15 +117,15 @@ export function buildOutfitLevel(id: string): PopupLevel {
                         }
                         _loading = true;
                         setStatus('⏳ 重置服装中…', true);
-                        try {
+                        const _r = await tryCatchStatus(async () => {
                             const newOutfit = await loadOutfits(id);
                             if (newOutfit) {
                                 inst.outfitFile = newOutfit;
                             }
                             resetOutfit(id);
+                        }, '✗ 重置服装失败');
+                        if (_r !== undefined) {
                             setStatus('✓ 服装已重置', true);
-                        } catch (_e) {
-                            setStatus('✗ 重置服装失败', false);
                         }
                         _loading = false;
                         await _render();

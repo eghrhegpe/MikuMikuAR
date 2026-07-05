@@ -81,24 +81,27 @@ frontend/src/
 │   ├── icons.ts         # Iconify 图标创建
 │   ├── iconify-registry.ts  # 本地图标注册表
 │   ├── ui-helpers.ts    # DOM 构建工具（slideRow / addToggleRow 等）
-│   └── physics/         # 物理辅助（如 wind-utils.ts）
+│   ├── dialog.ts        # 通用对话框
+│   ├── reactivity.ts    # 简易响应式（signal / effect）
+│   ├── wails-bindings.ts # Wails Go binding 类型封装
+│   └── physics/         # 状态→桥接辅助（仅 wind-utils；新物理逻辑放 src/physics/）
 ├── scene/               # 3D 场景（Babylon.js）
 │   ├── scene.ts             # ★ 场景编排入口
 │   ├── scene-serialize.ts   # 场景序列化
 │   ├── camera/              # 相机模式
-│   ├── motion/              # 动作桥接（vmd-loader / proc-motion / lipsync / playback）
+│   ├── motion/              # [桥接层] 动作桥接（vmd-loader / proc-motion-bridge / lipsync-bridge / playback）→ 调 src/motion-algos/ 算法
 │   ├── manager/             # 模型管理（model-manager / material / loader / ops）
-│   ├── env/                 # 环境（天空/地面/水/云/粒子/灯光/道具）
-│   └── render/              # 渲染管线（renderer / lighting / performance）
+│   ├── env/                 # 环境系统（env.ts + env-impl.ts + env-bridge.ts + env-water / cloud / particle / lighting-preset / props）
+│   └── render/              # 渲染管线（renderer / lighting 灯光管理 / performance）
 ├── menus/               # SlideMenu 弹窗系统
 │   ├── menu.ts          # 通用菜单导航组件
 │   ├── library*.ts      # 模型库（扫描/搜索/层级/标签）
 │   ├── model-*.ts       # 模型详情/材质/预设
 │   ├── env-*.ts         # 环境菜单（天空/水面/风/云/预设）
 │   ├── scene-*.ts       # 场景菜单（渲染/舞台/道具）
-│   ├── motion-*.ts      # 动作菜单（动作绑定/相机/程序化/LipSync/布料/舞蹈套装）
+│   ├── motion-*.ts      # [UI层] 动作菜单（动作绑定/相机/程序化/LipSync/布料）
 │   └── settings*.ts     # 设置页（UI 主题 / 外部库 / 软件管理）
-├── motion/              # 动作算法（独立引擎）
+├── motion-algos/              # [算法层] 动作生成算法，无 Babylon 依赖（供 scene/motion/ 调用）
 │   ├── procedural-motion.ts    # Idle / AutoDance VMD 生成
 │   ├── vmd-writer.ts           # VMD 二进制写入（Shift-JIS 骨骼名）
 │   ├── vpd-parser.ts           # VPD 姿势解析→VMD
@@ -118,7 +121,7 @@ frontend/src/
 
 ### 目录重组记录（2026-07）
 
-`scene/` 已按业务域拆分为 `camera/` / `motion/` / `manager/` / `env/` / `render/` 子目录。`physics/` 为独立目录（XPBD 引擎），`motion/` 为动作算法独立目录。相机 UI 已迁移到 `motion-popup`。
+`scene/` 已按业务域拆分为 `camera/` / `motion/` / `manager/` / `env/` / `render/` 子目录。`physics/` 为独立目录（XPBD 引擎），`motion-algos/` 为动作算法独立目录。相机 UI 已迁移到 `motion-popup`。
 
 ---
 

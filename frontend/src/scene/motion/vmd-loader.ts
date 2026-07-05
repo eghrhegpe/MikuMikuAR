@@ -222,7 +222,7 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
         }
 
         // 解析 VPD 并作为静态姿势应用（不生成 VMD 动画）
-        const { decodeVPDData, parseVPDText } = await import('../../motion/vpd-parser');
+        const { decodeVPDData, parseVPDText } = await import('../../motion-algos/vpd-parser');
         const { applyVPDPose } = await import('../manager/model-ops');
         const text = decodeVPDData(rawData);
         const pose = parseVPDText(text);

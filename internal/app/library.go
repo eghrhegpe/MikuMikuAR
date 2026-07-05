@@ -455,13 +455,23 @@ func (a *App) GetConfig() (*Config, error) {
 	return &cfg, nil
 }
 
+// currentConfigVersion is the latest config schema version.
+// Increment when adding breaking config changes; add migration logic in finaliseConfig.
+const currentConfigVersion = 1
+
 // finaliseConfig runs migrations and ensure-dirs after loading a config.
 func (a *App) finaliseConfig(cfg *Config) {
-	// Migrate library_root → resource_root
+	// --- Migrations ---
+	// v0 → v1: migrate library_root → resource_root
 	if cfg.LibraryRoot != "" && cfg.ResourceRoot == "" {
 		cfg.ResourceRoot = cfg.LibraryRoot
 		cfg.LibraryRoot = ""
 	}
+	// Future migrations: if cfg.ConfigVersion < 2 { ... }
+
+	// Stamp current version
+	cfg.ConfigVersion = currentConfigVersion
+
 	// Ensure resource directories exist
 	a.ensureResourceDirs(cfg)
 }

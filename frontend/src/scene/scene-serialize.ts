@@ -63,10 +63,10 @@ import { setGravityStrength, getGravityStrength } from './env/env-bridge';
 import { regenerateProcMotion, getProcMotionState, setProcMotionState } from './motion/proc-motion-bridge';
 import { getLipSyncState, setLipSyncState } from './motion/lipsync-bridge';
 
-import { DEFAULT_PROC_STATE } from '../motion/procedural-motion';
-import { DEFAULT_LIPSYNC_STATE } from '../motion/lipsync';
-import type { ProcMotionState } from '../motion/procedural-motion';
-import type { LipSyncState as LipSyncStateType } from '../motion/lipsync';
+import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
+import { DEFAULT_LIPSYNC_STATE } from '../motion-algos/lipsync';
+import type { ProcMotionState } from '../motion-algos/procedural-motion';
+import type { LipSyncState as LipSyncStateType } from '../motion-algos/lipsync';
 
 // ======== Utilities ========
 

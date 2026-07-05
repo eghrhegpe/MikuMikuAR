@@ -4,7 +4,7 @@ import {
     findLipMorph,
     findAllLipMorphs,
     amplitudeToWeight,
-} from '../motion/lipsync';
+} from '../motion-algos/lipsync';
 
 describe('findLipMorph', () => {
     it('prefers あ first', () => {

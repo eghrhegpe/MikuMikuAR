@@ -13,6 +13,9 @@ import { _envSys, getScene } from './env-impl';
 let _currentParticleType: EnvState['particleType'] = 'none';
 const _particleTextures = new Map<string, Texture>();
 
+// ======== Splash System (Phase B) ========
+let _splashSystem: GPUParticleSystem | null = null;
+
 // 保存粒子系统创建时的初始发射方向，风力基于此计算，避免叠加
 let _initialDir1: Vector3 | null = null;
 let _initialDir2: Vector3 | null = null;
@@ -143,6 +146,16 @@ function drawParticleShape(ctx: CanvasRenderingContext2D, kind: string): void {
             ctx.lineTo(0, 19);
             ctx.stroke();
             ctx.restore();
+            break;
+        }
+        case 'splash': {
+            // 溅射水滴：小圆形白色粒子
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 12);
+            grad.addColorStop(0, 'rgba(220,235,255,0.9)');
+            grad.addColorStop(0.5, 'rgba(200,220,255,0.5)');
+            grad.addColorStop(1, 'rgba(180,210,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 64, 64);
             break;
         }
         default: {
@@ -380,6 +393,9 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
 
     _envSys.particles.system = ps;
     ps.start();
+
+    // 粒子类型变更后同步溅射状态（雨/雪才有溅射）
+    syncSplashState();
 }
 
 export function disposeParticles(): void {
@@ -392,6 +408,7 @@ export function disposeParticles(): void {
         _envSys.particles.system.dispose();
         _envSys.particles.system = null;
     }
+    disposeSplash(); // 粒子销毁时同步销毁溅射
     // 释放粒子纹理缓存（防止 GPU 资源泄漏）
     for (const tex of _particleTextures.values()) {
         tex.dispose();
@@ -410,6 +427,80 @@ export function disposeParticles(): void {
 /** 获取当前粒子类型（用于 particleEnabled 自动启停） */
 export function getCurrentParticleType(): EnvState['particleType'] {
     return _currentParticleType;
+}
+
+// ======== Splash System (Phase B: 雨雪落地溅射) ========
+
+/** 判断当前粒子类型是否支持溅射 */
+function isWeatherType(type: EnvState['particleType']): boolean {
+    return type === 'rain' || type === 'snow';
+}
+
+/** 创建溅射粒子系统（地面随机位置脉冲触发，视觉欺骗方案） */
+export function createSplashEmitter(): void {
+    if (_splashSystem) {
+        return;
+    }
+    const scene = getScene();
+    const ps = new GPUParticleSystem('splashParticles', { capacity: 500 }, scene);
+    ps.particleTexture = makeParticleTexture('splash');
+    ps.emitRate = 8; // 低频持续发射，位置随机化产生溅射感
+    ps.emitter = new Vector3(0, 0, 0);
+    ps.minLifeTime = 0.3;
+    ps.maxLifeTime = 0.6;
+    ps.minSize = 0.03;
+    ps.maxSize = 0.08;
+    ps.minEmitPower = 2;
+    ps.maxEmitPower = 5;
+    ps.gravity = new Vector3(0, -15, 0);
+    ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
+
+    // 向上溅射 + 水平随机偏移
+    ps.direction1 = new Vector3(-1, 2, -1);
+    ps.direction2 = new Vector3(1, 4, 1);
+
+    ps.addColorGradient(0, new Color4(0.8, 0.9, 1, 0.8), new Color4(0.9, 0.95, 1, 0.9));
+    ps.addColorGradient(1, new Color4(0.8, 0.9, 1, 0), new Color4(0.9, 0.95, 1, 0));
+
+    _splashSystem = ps;
+    ps.start();
+
+    // 每帧在地面随机位置移动发射器，产生散落溅射效果
+    _envSys.splash.observer = scene.onBeforeRenderObservable.add(() => {
+        if (!envState.particleSplash || !isWeatherType(_currentParticleType)) {
+            return;
+        }
+        const cam = scene.activeCamera;
+        if (!cam) return;
+        const groundY = envState.groundLevel ?? 0;
+        // 在相机附近 80x80 范围内随机跳动
+        const rx = cam.position.x + (Math.random() - 0.5) * 80;
+        const rz = cam.position.z + (Math.random() - 0.5) * 80;
+        ps.emitter = new Vector3(rx, groundY + 0.1, rz);
+    });
+}
+
+/** 销毁溅射粒子系统 */
+export function disposeSplash(): void {
+    if (_splashSystem) {
+        _splashSystem.dispose();
+        _splashSystem = null;
+    }
+    if (_envSys.splash.observer) {
+        const scene = getScene();
+        scene.onBeforeRenderObservable.remove(_envSys.splash.observer);
+        _envSys.splash.observer = null;
+    }
+}
+
+/** 溅射开关切换（由 env-impl 检测 particleSplash 变化时调用） */
+export function syncSplashState(): void {
+    const shouldShow = envState.particleSplash && isWeatherType(_currentParticleType) && envState.particleEnabled;
+    if (shouldShow && !_splashSystem) {
+        createSplashEmitter();
+    } else if (!shouldShow && _splashSystem) {
+        disposeSplash();
+    }
 }
 
 // ======== Wind System ========

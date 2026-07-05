@@ -118,6 +118,9 @@ public class WailsBridge {
     private static native void nativeEmitSystemEvent(String name, String json);
     private static native void nativeEmitEvent(String name, String json);
 
+    // SAF tree picker callback ID (-1 when idle)
+    private volatile int pendingSafTreeCallbackID = -1;
+
     public WailsBridge(Activity activity) {
         this.activity = activity;
     }
@@ -288,6 +291,71 @@ public class WailsBridge {
             return;
         }
         mainHandler.post(() -> view.evaluateJavascript(js, null));
+    }
+
+    // Facilities called from Go via JNI
+
+    /**
+     * Launch SAF tree picker (ACTION_OPEN_DOCUMENT_TREE).
+     * The selected tree URI is returned via nativeFilePickerResult as a
+     * content:// string, then nativeFilePickerDone signals completion.
+     * Returns immediately; result arrives asynchronously.
+     */
+    public void openDocumentTree(int callbackID) {
+        if (pendingSafTreeCallbackID != -1) {
+            // Already one in flight — fail fast
+            nativeFilePickerDone(callbackID);
+            return;
+        }
+        pendingSafTreeCallbackID = callbackID;
+        mainHandler.post(() -> {
+            try {
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                // Use startActivityForResult via the activity
+                if (activity instanceof MainActivity) {
+                    ((MainActivity) activity).startActivityForResult(intent,
+                            MainActivity.SAF_TREE_REQUEST);
+                } else {
+                    nativeFilePickerDone(callbackID);
+                    pendingSafTreeCallbackID = -1;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "openDocumentTree failed", e);
+                nativeFilePickerDone(callbackID);
+                pendingSafTreeCallbackID = -1;
+            }
+        });
+    }
+
+    /**
+     * Called by MainActivity.onActivityResult when the SAF tree picker returns.
+     * Takes persistable URI permission and delivers the URI to Go.
+     */
+    public void handleSafTreeResult(int resultCode, Intent data) {
+        int cbID = pendingSafTreeCallbackID;
+        pendingSafTreeCallbackID = -1;
+        if (cbID == -1) return;
+
+        if (resultCode != Activity.RESULT_OK || data == null || data.getData() == null) {
+            nativeFilePickerDone(cbID);
+            return;
+        }
+
+        Uri treeUri = data.getData();
+        try {
+            // Take persistable permission so the URI survives reboot
+            activity.getContentResolver().takePersistableUriPermission(treeUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } catch (SecurityException e) {
+            Log.e(TAG, "takePersistableUriPermission failed", e);
+        }
+
+        String uriString = treeUri.toString();
+        Log.i(TAG, "SAF tree selected: " + uriString);
+        nativeFilePickerResult(cbID, uriString);
+        nativeFilePickerDone(cbID);
     }
 
     // Facilities called from Go via JNI

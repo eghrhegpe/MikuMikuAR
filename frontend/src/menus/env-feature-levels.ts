@@ -75,27 +75,11 @@ export function buildSkyLevel(): PopupLevel {
                     hint.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px 0;';
                     hint.textContent = '支持 .hdr / .dds / .exr 格式的环境贴图';
                     c.appendChild(hint);
-                    const texRow = document.createElement('div');
-                    texRow.className = 'slide-item';
                     const fileName = s.skyTexture ? s.skyTexture.split(/[/\\]/).pop() : '未选择';
-                    const ti = document.createElement('span');
-                    ti.className = 'slide-icon';
-                    const te = createIconifyIcon('lucide:image');
-                    if (te) { ti.appendChild(te); }
-                    texRow.appendChild(ti);
-                    const tl = document.createElement('span');
-                    tl.className = 'slide-label';
-                    tl.textContent = '环境贴图';
-                    texRow.appendChild(tl);
-                    const ts = document.createElement('span');
-                    ts.className = 'slide-sublabel';
-                    ts.textContent = fileName;
-                    texRow.appendChild(ts);
-                    texRow.addEventListener('click', async () => {
+                    slideRow(c, 'lucide:image', '环境贴图', false, async () => {
                         const path = await SelectEnvTextureFile().catch(() => '');
                         if (path) { setEnvState({ skyTexture: path }); }
-                    });
-                    c.appendChild(texRow);
+                    }, fileName);
                     addSliderRow(c, '旋 Y', s.skyRotationY, 0, 360, 1, (v) => setEnvState({ skyRotationY: v }), 'lucide:refresh-cw');
                 }
                 if (s.skyMode === 'procedural') {
@@ -414,26 +398,9 @@ export function buildShadowLevel(): PopupLevel {
                 c.appendChild(charRow);
 
                 // ── 光照阴影（舞台灯光）──
-                const lightRow = document.createElement('div');
-                lightRow.className = 'slide-item';
-                lightRow.style.cursor = 'pointer';
-                const li = document.createElement('span');
-                li.className = 'slide-icon';
-                const le = createIconifyIcon('lucide:lightbulb');
-                if (le) li.appendChild(le);
-                lightRow.appendChild(li);
-                const ll = document.createElement('span');
-                ll.className = 'slide-label';
-                ll.textContent = '舞台灯光阴影';
-                lightRow.appendChild(ll);
-                const lh = document.createElement('span');
-                lh.className = 'slide-sublabel';
-                lh.textContent = '→ 场景菜单';
-                lightRow.appendChild(lh);
-                lightRow.addEventListener('click', () => {
+                slideRow(c, 'lucide:lightbulb', '舞台灯光阴影', false, () => {
                     setStatus('在「场景」→「舞台灯光」中可逐个调节灯光阴影参数', true);
-                });
-                c.appendChild(lightRow);
+                }, '→ 场景菜单');
             });
         },
     };

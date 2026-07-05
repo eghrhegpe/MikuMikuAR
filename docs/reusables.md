@@ -195,6 +195,16 @@
 | `computeLibraryRef` | `core/config.ts:257` | `(filePath: string) => string\|null` | 计算可移植库标识符，用于场景序列化避免路径依赖 |
 | `resolveLibraryRef` | `core/config.ts:280` | `(libraryRef: string) => string\|null` | 将库标识符解析为当前配置下的绝对路径 |
 
+### 风场辅助（core/physics/wind-utils.ts）
+
+| 函数 | 签名 | 用途 |
+|------|------|------|
+| `getWindVector` | `() => Vector3` | 读 `envState`, 返回 `windDirection × windSpeed`（windDisabled 时返回 Zero） |
+| `getWindStrength` | `() => number` | 返回 `windSpeed` 或 0（windDisabled） |
+| `isWindActive` | `() => boolean` | windEnabled && windSpeed > 0.01 |
+
+> 🔁 **跨子系统广播** — `windDirection`/`windSpeed` 影响 4 个子系统：水面(`env-water.ts`) + 粒子(`env-particles.ts`) + 云(`env-impl.ts`/`env-clouds.ts`) + 布料(`xpbd-cloth.ts`)。改前通知所有消费者。
+
 ### 场景编排（scene/）
 
 所有函数从 `scene/scene.ts` 导出（re-export），部分实现在子模块中。

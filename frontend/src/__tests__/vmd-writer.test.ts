@@ -6,7 +6,7 @@ import {
     BONE_FRAME_SIZE,
     MORPH_FRAME_SIZE,
     type BoneKeyFrame,
-} from '../motion/vmd-writer';
+} from '../motion-algos/vmd-writer';
 
 describe('vmd-writer frame sizes', () => {
     it('bone frame is 111 bytes', () => {

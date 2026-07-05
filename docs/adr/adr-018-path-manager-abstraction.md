@@ -1,7 +1,7 @@
 # ADR-018: PathManager 平台抽象层 + 文件 I/O 审计
 
 **日期**：2026-07-04
-> **状态**: 已完成
+> **状态**: 已完成 — PathManager 接口 + trustedRoots 修复 + copyDir 流式复制 + zipextract 句柄关闭修正
 
 ---
 
