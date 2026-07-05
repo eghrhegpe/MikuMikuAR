@@ -74,15 +74,44 @@
 
 ```
 frontend/src/
-├── core/         # main.ts(入口), config.ts(状态), fileservice.ts, icons.ts, ui-helpers.ts
+├── core/         # 基础设施
+│   ├── main.ts          # ★ 应用入口（事件绑定 + 快捷键 + 初始化）
+│   ├── config.ts        # barrel re-export（→ types/state/dom/utils）
+│   ├── types.ts         # 类型定义（ModelInstance/EnvState/UIState 等）
+│   ├── state.ts         # 可变全局状态 + setter（envState/uiState/focusedModelId 等）
+│   ├── dom.ts           # DOM 元素引用（#statusBar/#fpsClock 等）
+│   ├── utils.ts         # 工具函数（setStatus/showHint/formatTime 等）
+│   ├── fileservice.ts   # resolveFileUrl 统一文件 URL 解析
+│   ├── dialog.ts        # prompt/confirm 对话框封装
+│   ├── reactivity.ts    # 状态订阅机制（subscribe/notify）
+│   ├── shortcut-registry.ts # 快捷键注册表
+│   ├── icons.ts         # Iconify 图标创建
+│   ├── iconify-registry.ts  # 本地图标注册表
+│   ├── ui-helpers.ts    # DOM 构建工具（slideRow / addToggleRow 等）
+│   ├── ui-rows.ts       # 行类型渲染（folder/action/slider/toggle/modeSlider）
+│   ├── ui-slide-row.ts  # SlideMenu 行组件
+│   ├── ui-collapsible.ts # 折叠面板组件
+│   ├── ui-advanced-rows.ts # 高级行组件（colorSlider 等）
+│   ├── ui-types.ts      # UI 类型定义
+│   └── wails-bindings.ts # Wails Go binding 类型
 ├── scene/
-│   ├── scene.ts  # ★ 3D 场景编排
-│   ├── camera/   # 相机模式
-│   ├── motion/   # VMD 加载/播放/LipSync 桥接
-│   ├── manager/  # ModelManager + 材质系统 + 模型操作
-│   ├── env/      # 天空/水面/云/粒子/道具/光照联动
-│   └── render/   # 渲染管线 + 灯光 + 性能降级
-├── menus/        # menu.ts + 各弹窗（library/model-detail/scene-menu/env-menu/motion-popup/settings）
+│   ├── scene.ts              # ★ 场景编排入口（初始化 + 模型加载 + VMD + 程序化动作）
+│   ├── scene-serialize.ts    # 场景序列化/反序列化（.mmascene）
+│   ├── scene-bundle.ts       # 场景打包（export）
+│   ├── camera/               # 相机模式（orbit/freefly/oneshot/concert）
+│   ├── motion/               # VMD 加载/播放/LipSync 桥接
+│   ├── manager/              # ModelManager + 材质系统 + 模型操作
+│   ├── env/                  # 天空/水面/云/粒子/道具/光照联动
+│   └── render/               # 渲染管线 + 灯光 + 性能降级
+├── menus/        # 菜单系统
+│   ├── menu.ts               # SlideMenu 导航栈（push/pop/reRender/updateControls）
+│   ├── menu-factory.ts       # registerPopupMenu 工厂
+│   ├── library*.ts           # 模型库（扫描/搜索/层级/标签）
+│   ├── model-*.ts            # 模型详情/材质/预设
+│   ├── env-*.ts              # 环境菜单（天空/水面/风/云/预设）
+│   ├── scene-*.ts            # 场景菜单（渲染/舞台/道具/灯光/物理）
+│   ├── motion-*.ts           # 动作菜单（动作绑定/相机/程序化/布料）
+│   └── settings*.ts          # 设置页（UI 主题 / 外部库 / 软件管理）
 ├── motion-algos/ # procedural-motion, vmd-writer, vpd-parser, beat-detector, lipsync
 ├── outfit/       # outfit.ts + audio.ts
 ├── physics/      # xpbd-solver/cloth/collider/renderer + cloth-manager
