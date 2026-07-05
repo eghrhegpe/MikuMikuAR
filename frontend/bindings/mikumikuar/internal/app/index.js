@@ -8,6 +8,8 @@ export {
 };
 
 export {
+    BuildInfo,
+    CacheStats,
     ClothConfig,
     Config,
     DanceSet,

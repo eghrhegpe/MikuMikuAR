@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -15,13 +16,25 @@ func sha256Hex(s string) string {
 	return hex.EncodeToString(h[:])
 }
 
+// thumbKey builds a content-aware cache key for a model file.
+// Uses path + mtime + size so the thumbnail auto-invalidates when
+// the model file is modified (e.g. re-textured, re-exported).
+// Falls back to path-only hash if stat fails (e.g. file gone).
+func thumbKey(modelPath string) string {
+	info, err := os.Stat(modelPath)
+	if err != nil {
+		return sha256Hex(modelPath)
+	}
+	return sha256Hex(modelPath + "|" + info.ModTime().Format("20060102-150405.000") + "|" + fmt.Sprintf("%d", info.Size()))
+}
+
 // SaveThumbnail saves a base64-encoded PNG thumbnail for the given model path.
 func (a *App) SaveThumbnail(modelPath string, base64PNG string) error {
 	thumbDir, err := thumbnailDir()
 	if err != nil {
 		return err
 	}
-	hash := sha256Hex(modelPath)
+	hash := thumbKey(modelPath)
 	thumbPath := filepath.Join(thumbDir, hash+".png")
 	data, err := base64.StdEncoding.DecodeString(base64PNG)
 	if err != nil {
@@ -48,7 +61,7 @@ func (a *App) GetThumbnail(modelPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	hash := sha256Hex(modelPath)
+	hash := thumbKey(modelPath)
 	data, err := os.ReadFile(filepath.Join(thumbDir, hash+".png"))
 	if err != nil {
 		return "", err

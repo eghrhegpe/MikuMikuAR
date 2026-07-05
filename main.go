@@ -11,11 +11,15 @@ import (
 // AppVersion is injected via -ldflags "-X main.AppVersion=..." at build time.
 var AppVersion = "dev"
 
+// BuildTime / CommitHash / GoVersion are injected the same way for diagnostics.
+var BuildTime = "unknown"
+var CommitHash = "unknown"
+
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
-	myApp := app.NewApp(AppVersion)
+	myApp := app.NewApp(AppVersion, BuildTime, CommitHash)
 
 	wailsApp := application.New(application.Options{
 		Name:        "MikuMikuAR",

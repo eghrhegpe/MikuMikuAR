@@ -44,6 +44,8 @@ func (a *App) safeLogError(format string, args ...interface{}) {
 type App struct {
 	wailsApp    *application.App
 	appVersion  string // injected via -ldflags at build time
+	buildTime   string // injected via -ldflags at build time
+	commitHash  string // injected via -ldflags at build time
 	httpServers map[string]*httpServerInfo // keyed by dirPath
 	httpSrvMu   sync.Mutex
 	configMu    sync.Mutex // guards GetConfig/writeConfig sequences
@@ -64,9 +66,11 @@ type httpServerInfo struct {
 }
 
 // NewApp creates a new App application struct
-func NewApp(version string) *App {
+func NewApp(version, buildTime, commitHash string) *App {
 	return &App{
 		appVersion:  version,
+		buildTime:   buildTime,
+		commitHash:  commitHash,
 		httpServers: make(map[string]*httpServerInfo),
 	}
 }
@@ -76,10 +80,34 @@ func (a *App) GetAppVersion() string {
 	return a.appVersion
 }
 
+// BuildInfo holds build-time diagnostics for the "About" page.
+type BuildInfo struct {
+	Version    string `json:"version"`
+	BuildTime  string `json:"buildTime"`
+	CommitHash string `json:"commitHash"`
+	GoVersion  string `json:"goVersion"`
+}
+
+// GetBuildInfo returns build-time diagnostics (version + build time + commit + Go version).
+func (a *App) GetBuildInfo() *BuildInfo {
+	return &BuildInfo{
+		Version:    a.appVersion,
+		BuildTime:  a.buildTime,
+		CommitHash: a.commitHash,
+		GoVersion:  stdruntime.Version(),
+	}
+}
+
 // ServiceStartup implements application.ServiceStartup interface.
 func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
 	// Restore download directory watching from saved config
 	a.restoreWatcher()
+	// Auto-clean orphaned extraction cache (source zip gone) in background
+	go func() {
+		if cleaned, err := a.CleanOrphanCache(); err == nil && cleaned > 0 {
+			a.safeLogInfo("ServiceStartup: auto-cleaned %d orphan cache dirs", cleaned)
+		}
+	}()
 	return nil
 }
 

@@ -189,6 +189,26 @@ export function GetAppVersion() {
 }
 
 /**
+ * GetBuildInfo returns build-time diagnostics (version + build time + commit + Go version).
+ * @returns {$CancellablePromise<$models.BuildInfo | null>}
+ */
+export function GetBuildInfo() {
+    return $Call.ByID(1666856379).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType4($result);
+    }));
+}
+
+/**
+ * GetCacheStats returns the total size and file count of all cache directories.
+ * @returns {$CancellablePromise<$models.CacheStats | null>}
+ */
+export function GetCacheStats() {
+    return $Call.ByID(2256096336).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType6($result);
+    }));
+}
+
+/**
  * GetConfig reads the persisted config from disk.
  * Returns an empty Config (no error) if file doesn't exist.
  * Real I/O errors (permission, filesystem) are logged via safeLogError.
@@ -196,7 +216,7 @@ export function GetAppVersion() {
  */
 export function GetConfig() {
     return $Call.ByID(445048723).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType4($result);
+        return $$createType8($result);
     }));
 }
 
@@ -206,7 +226,7 @@ export function GetConfig() {
  */
 export function GetDanceSets() {
     return $Call.ByID(3501710593).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType6($result);
+        return $$createType10($result);
     }));
 }
 
@@ -243,7 +263,7 @@ export function GetFavorites() {
  */
 export function GetLibraryIndex() {
     return $Call.ByID(503588120).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType8($result);
+        return $$createType12($result);
     }));
 }
 
@@ -255,7 +275,7 @@ export function GetLibraryIndex() {
  */
 export function GetModelMeta(pmxPath) {
     return $Call.ByID(4247543483, pmxPath).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType9($result);
+        return $$createType13($result);
     }));
 }
 
@@ -267,7 +287,7 @@ export function GetModelMeta(pmxPath) {
  */
 export function GetModelMetaBatch(paths) {
     return $Call.ByID(1848295501, paths).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType10($result);
+        return $$createType14($result);
     }));
 }
 
@@ -277,7 +297,7 @@ export function GetModelMetaBatch(paths) {
  */
 export function GetModelPresets() {
     return $Call.ByID(1521700402).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType12($result);
+        return $$createType16($result);
     }));
 }
 
@@ -336,7 +356,7 @@ export function GetRecentModels() {
  */
 export function GetRenderPresets() {
     return $Call.ByID(2867608539).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType14($result);
+        return $$createType18($result);
     }));
 }
 
@@ -367,7 +387,7 @@ export function GetThumbnail(modelPath) {
  */
 export function GetThumbnailBatch(paths) {
     return $Call.ByID(3092149765, paths).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType15($result);
+        return $$createType19($result);
     }));
 }
 
@@ -438,7 +458,7 @@ export function LaunchSoftware(path, args) {
  */
 export function ListEnvPresets() {
     return $Call.ByID(3980938190).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType17($result);
+        return $$createType21($result);
     }));
 }
 
@@ -705,7 +725,7 @@ export function SaveThumbnail(modelPath, base64PNG) {
  */
 export function ScanModelDir(root, external) {
     return $Call.ByID(586056714, root, external).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType8($result);
+        return $$createType12($result);
     }));
 }
 
@@ -717,7 +737,7 @@ export function ScanModelDir(root, external) {
  */
 export function ScanSoftwareDir() {
     return $Call.ByID(1513075534).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType19($result);
+        return $$createType23($result);
     }));
 }
 
@@ -1029,20 +1049,24 @@ export function UpdateCustomSoftware(path, name, args) {
 const $$createType0 = $models.ExtractResult.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = $Create.Array($Create.Any);
-const $$createType3 = $models.Config.createFrom;
+const $$createType3 = $models.BuildInfo.createFrom;
 const $$createType4 = $Create.Nullable($$createType3);
-const $$createType5 = $models.DanceSet.createFrom;
-const $$createType6 = $Create.Array($$createType5);
-const $$createType7 = $models.ModelEntry.createFrom;
-const $$createType8 = $Create.Array($$createType7);
-const $$createType9 = $models.ModelMeta.createFrom;
-const $$createType10 = $Create.Map($Create.Any, $$createType9);
-const $$createType11 = $models.ModelPresetEntry.createFrom;
+const $$createType5 = $models.CacheStats.createFrom;
+const $$createType6 = $Create.Nullable($$createType5);
+const $$createType7 = $models.Config.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = $models.DanceSet.createFrom;
+const $$createType10 = $Create.Array($$createType9);
+const $$createType11 = $models.ModelEntry.createFrom;
 const $$createType12 = $Create.Array($$createType11);
-const $$createType13 = $models.RenderPreset.createFrom;
-const $$createType14 = $Create.Array($$createType13);
-const $$createType15 = $Create.Map($Create.Any, $Create.Any);
-const $$createType16 = $models.EnvPresetEntry.createFrom;
-const $$createType17 = $Create.Array($$createType16);
-const $$createType18 = $models.SoftwareEntry.createFrom;
-const $$createType19 = $Create.Array($$createType18);
+const $$createType13 = $models.ModelMeta.createFrom;
+const $$createType14 = $Create.Map($Create.Any, $$createType13);
+const $$createType15 = $models.ModelPresetEntry.createFrom;
+const $$createType16 = $Create.Array($$createType15);
+const $$createType17 = $models.RenderPreset.createFrom;
+const $$createType18 = $Create.Array($$createType17);
+const $$createType19 = $Create.Map($Create.Any, $Create.Any);
+const $$createType20 = $models.EnvPresetEntry.createFrom;
+const $$createType21 = $Create.Array($$createType20);
+const $$createType22 = $models.SoftwareEntry.createFrom;
+const $$createType23 = $Create.Array($$createType22);

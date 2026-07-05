@@ -24,7 +24,8 @@ import {
     SetUIAnimations,
     SetUIBlurBg,
     SetPerformanceMode,
-    GetAppVersion,
+    GetBuildInfo,
+    GetCacheStats,
 } from '../core/wails-bindings';
 import {
     dom,
@@ -846,7 +847,7 @@ function buildSettingsAboutLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            // 版本信息
+            // 版本信息 + 构建诊断
             cardContainer(container, (c) => {
                 const title = document.createElement('div');
                 title.style.cssText = 'text-align:center;padding:16px 14px 8px;';
@@ -855,11 +856,20 @@ function buildSettingsAboutLevel(): PopupLevel {
                     <div data-app-version style="font-size:11px;color:var(--text-dim);margin-top:2px;">v…</div>
                 `;
                 c.appendChild(title);
-                // 异步从 Go 端读取注入的版本号（ldflags 注入，默认 "dev"）
-                GetAppVersion()
-                    .then((v) => {
+                // 异步从 Go 端读取构建信息（ldflags 注入）
+                GetBuildInfo()
+                    .then((info) => {
                         const el = title.querySelector<HTMLElement>('[data-app-version]');
-                        if (el) el.textContent = `v${v}`;
+                        if (el) el.textContent = `v${info.version}`;
+                        // 构建详情行
+                        const detail = document.createElement('div');
+                        detail.style.cssText = 'font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.6;font-family:monospace;';
+                        detail.innerHTML = `
+                            <div>build: ${info.buildTime}</div>
+                            <div>commit: ${info.commitHash}</div>
+                            <div>go: ${info.goVersion}</div>
+                        `;
+                        c.appendChild(detail);
                     })
                     .catch(() => {});
             });
@@ -888,6 +898,33 @@ function buildSettingsAboutLevel(): PopupLevel {
                     <span class="slide-label">开源许可证</span>
                 `;
                 c.appendChild(licenseRow);
+            });
+
+            // 缓存统计
+            cardContainer(container, (c) => {
+                addSectionTitle(c, '缓存占用');
+                const statRow = document.createElement('div');
+                statRow.className = 'slide-item';
+                statRow.style.cssText = 'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
+                statRow.innerHTML = `
+                    <div data-cache-total style="font-size:13px;color:var(--text);font-weight:500;">统计中…</div>
+                    <div data-cache-detail style="font-size:10px;color:var(--text-dim);line-height:1.6;font-family:monospace;"></div>
+                `;
+                c.appendChild(statRow);
+                GetCacheStats()
+                    .then((s) => {
+                        const total = statRow.querySelector<HTMLElement>('[data-cache-total]');
+                        const detail = statRow.querySelector<HTMLElement>('[data-cache-detail]');
+                        if (total) total.textContent = `总计 ${formatBytes(s.totalBytes)}`;
+                        if (detail) {
+                            detail.innerHTML = `
+                                <div>提取: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div>
+                                <div>缩略图: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div>
+                                <div>隔离: ${formatBytes(s.serveBytes)} (${s.serveCount} 项)</div>
+                            `;
+                        }
+                    })
+                    .catch(() => {});
             });
 
             // 维护工具：清除缓存
@@ -922,6 +959,16 @@ function buildSettingsAboutLevel(): PopupLevel {
             });
         },
     };
+}
+
+/** 格式化字节数为人类可读字符串 */
+function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const idx = Math.min(i, units.length - 1);
+    const val = bytes / Math.pow(1024, idx);
+    return `${val.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
 }
 
 /** settings 的 onFolderEnter 路由（从 showSettings 提取） */

@@ -7,6 +7,131 @@
 import { Create as $Create } from "@wailsio/runtime";
 
 /**
+ * BuildInfo holds build-time diagnostics for the "About" page.
+ */
+export class BuildInfo {
+    /**
+     * Creates a new BuildInfo instance.
+     * @param {Partial<BuildInfo>} [$$source = {}] - The source object to create the BuildInfo.
+     */
+    constructor($$source = {}) {
+        if (!("version" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["version"] = "";
+        }
+        if (!("buildTime" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["buildTime"] = "";
+        }
+        if (!("commitHash" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["commitHash"] = "";
+        }
+        if (!("goVersion" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["goVersion"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BuildInfo instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {BuildInfo}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new BuildInfo(/** @type {Partial<BuildInfo>} */($$parsedSource));
+    }
+}
+
+/**
+ * CacheStats holds size/file-count for one cache directory.
+ */
+export class CacheStats {
+    /**
+     * Creates a new CacheStats instance.
+     * @param {Partial<CacheStats>} [$$source = {}] - The source object to create the CacheStats.
+     */
+    constructor($$source = {}) {
+        if (!("extractedBytes" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["extractedBytes"] = 0;
+        }
+        if (!("extractedCount" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["extractedCount"] = 0;
+        }
+        if (!("thumbnailBytes" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["thumbnailBytes"] = 0;
+        }
+        if (!("thumbnailCount" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["thumbnailCount"] = 0;
+        }
+        if (!("serveBytes" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["serveBytes"] = 0;
+        }
+        if (!("serveCount" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["serveCount"] = 0;
+        }
+        if (!("totalBytes" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["totalBytes"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CacheStats instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {CacheStats}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CacheStats(/** @type {Partial<CacheStats>} */($$parsedSource));
+    }
+}
+
+/**
  * ClothConfig stores XPBD cloth simulation parameters.
  */
 export class ClothConfig {

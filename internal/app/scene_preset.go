@@ -9,24 +9,30 @@ import (
 
 // ======== Scene Presets (numbered auto-saves) ========
 
-func scenePresetDir() (string, error) {
-	dir, err := configDir()
+// scenePresetDir returns the scenes/ subdirectory under settingDir.
+// In portable mode (ResourceRoot set), presets live under <ResourceRoot>/setting/scenes/.
+func (a *App) scenePresetDir() (string, error) {
+	cfg, _ := a.GetConfig()
+	base, err := settingDir(cfg)
 	if err != nil {
 		return "", err
 	}
-	presetDir := filepath.Join(dir, "scenes")
+	presetDir := filepath.Join(base, "scenes")
 	if err := os.MkdirAll(presetDir, 0755); err != nil {
 		return "", err
 	}
 	return presetDir, nil
 }
 
-func modelPresetDir() (string, error) {
-	dir, err := configDir()
+// modelPresetDir returns the models/ subdirectory under settingDir.
+// In portable mode (ResourceRoot set), presets live under <ResourceRoot>/setting/models/.
+func (a *App) modelPresetDir() (string, error) {
+	cfg, _ := a.GetConfig()
+	base, err := settingDir(cfg)
 	if err != nil {
 		return "", err
 	}
-	presetDir := filepath.Join(dir, "models")
+	presetDir := filepath.Join(base, "models")
 	if err := os.MkdirAll(presetDir, 0755); err != nil {
 		return "", err
 	}
@@ -35,12 +41,12 @@ func modelPresetDir() (string, error) {
 
 // GetPresetScenesDir returns the absolute path of the scene presets directory.
 func (a *App) GetPresetScenesDir() (string, error) {
-	return scenePresetDir()
+	return a.scenePresetDir()
 }
 
 // GetPresetScenes lists numbered .mmascene files in the scene presets directory.
 func (a *App) GetPresetScenes() []string {
-	dir, err := scenePresetDir()
+	dir, err := a.scenePresetDir()
 	if err != nil {
 		return nil
 	}
@@ -60,7 +66,7 @@ func (a *App) GetPresetScenes() []string {
 // SaveScenePreset saves a scene JSON as an auto-numbered .mmascene in the presets directory.
 // Returns the generated filename (e.g. "003.mmascene").
 func (a *App) SaveScenePreset(jsonStr string) (string, error) {
-	dir, err := scenePresetDir()
+	dir, err := a.scenePresetDir()
 	if err != nil {
 		return "", err
 	}
@@ -85,7 +91,7 @@ func (a *App) SaveScenePreset(jsonStr string) (string, error) {
 
 // DeletePresetScene deletes a named preset scene file.
 func (a *App) DeletePresetScene(name string) error {
-	dir, err := scenePresetDir()
+	dir, err := a.scenePresetDir()
 	if err != nil {
 		return err
 	}

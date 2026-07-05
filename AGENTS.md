@@ -94,7 +94,7 @@ docs/
 | **每次会话起步** | 本文件 |
 | **接新任务** | `docs/requirements.md`（需求全貌）→ `docs/status.md`（当前状态）→ `docs/roadmap.md`（路线图） |
 | **改前端代码** | [`frontend/AGENTS.md`](frontend/AGENTS.md)（前端构建/测试/TS 约定）→ 需要的子模块 |
-| **改 Go 逻辑** | `docs/architecture.md`（整体架构）→ `app.go` |
+| **改 Go 逻辑** | `docs/architecture.md`（整体架构）→ `internal/app/app.go` |
 | **改前端渲染** | `docs/architecture.md`（PMX/VMD 环节）→ `frontend/src/scene/scene.ts` |
 | **换装 / 纹理变体** | `docs/architecture.md` §16 → `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
 | **音频 / VMD 同步** | `frontend/src/outfit/audio.ts` |
@@ -141,13 +141,13 @@ docs/
 | 配置 / 外部库 / Blender / MMD | `docs/architecture.md` §生态聚合 | `frontend/src/menus/settings.ts` |
 | 场景序列化 / 自动保存 / libraryRef | `docs/architecture.md` §场景序列化 | `frontend/src/scene/scene.ts` |
 | 修复 / Bug / 崩溃 / 不显示 | `docs/troubleshooting.md` | `docs/fix-cycle.md` |
-| Go 后端 / Binding / 文件操作 | `docs/architecture.md` §Go 后端 | `app.go` |
+| Go 后端 / Binding / 文件操作 | `docs/architecture.md` §Go 后端 | `internal/app/app.go` |
 | 换装 / 纹理变体 / outfits.json | `docs/architecture.md` §16 | `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
 | 音频 / 音乐 / VMD 同步 | `frontend/src/outfit/audio.ts` | `frontend/src/scene/scene.ts`（`syncAudioPlayback`） |
 | 程序化动作 / Idle / Auto Dance | `frontend/src/motion/procedural-motion.ts` | `frontend/src/menus/motion-procmotion-levels.ts`（UI）+ `frontend/src/motion/beat-detector.ts` |
 | VPD 姿势导入 | `frontend/src/motion/vpd-parser.ts` | `docs/architecture.md` §VMD 环节 |
 | LipSync / 口型同步 | `frontend/src/motion/lipsync.ts` | `frontend/src/scene/motion/lipsync-bridge.ts` + `frontend/src/menus/motion-procmotion-levels.ts`（UI） |
-| 舞蹈套装 / 动作库弹窗 | `frontend/src/menus/motion-dance-sets.ts` | `frontend/src/menus/motion-popup.ts` + `frontend/src/menus/library-core.ts` |
+| 舞蹈套装 / 动作库弹窗 | `internal/app/dancesets.go`（Go binding）| `frontend/src/menus/motion-popup.ts` + `frontend/src/menus/library-core.ts` |
 | 模型预设 / 自动应用 | `frontend/src/menus/model-preset.ts` | `frontend/src/menus/model-detail.ts`（`buildPresetListLevel`） |
 | XPBD / 布料 / 物理模拟 / 软体 | `frontend/src/physics/xpbd-solver.ts` | `frontend/src/physics/xpbd-cloth.ts` + `cloth-manager.ts` |
 | SDF / 碰撞胶囊 / 身体碰撞 | `frontend/src/physics/xpbd-collider.ts` | `frontend/src/physics/cloth-manager.ts` |
@@ -225,7 +225,7 @@ cd frontend && npx vite build 2>&1
 ```
 仓库根（本文件所在目录）
 ├── AGENTS.md          # 🔑 AI 入口（本文件）
-├── app.go             # Wails Binding 入口（Go 后端）
+├── internal/app/     # Go 后端（app.go / dancesets.go 等）
 ├── main.go            # Wails 应用入口
 ├── go.mod             # Go 依赖
 ├── Taskfile.yml       # Wails v3 任务配置
@@ -239,12 +239,12 @@ cd frontend && npx vite build 2>&1
 └── .env.example       # 环境变量示例
 ```
 
-### 3.2 Go 端（仓库根）
+### 3.2 Go 端
 
-Go 端核心文件（均在仓库根目录）：
-- `app.go` — Wails Binding 入口（文件IO/HTTP服务器/扫描/标签/预设/换装）
-- `pmx.go` — PMX Header 二进制解析
-- `main.go` — Wails 应用入口
+Go 端核心文件：
+- `internal/app/app.go` — Wails Binding 入口（文件IO/HTTP服务器/扫描/标签/预设/换装）
+- `internal/util/pmx.go` — PMX Header 二进制解析
+- `main.go` — Wails 应用入口（仓库根）
 
 ### 3.3 前端
 
@@ -306,7 +306,6 @@ frontend/
 │   │   ├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐/相机
 │   │   ├── motion-camera-levels.ts      #   相机模式 + 参数面板
 │   │   ├── motion-procmotion-levels.ts  #   程序化动作 + LipSync
-│   │   ├── motion-dance-sets.ts         #   舞蹈套装数据 + UI
 │   │   ├── motion-cloth-levels.ts       #   布料参数面板
 │   │   │
 │   │   ├── settings.ts                  # 设置页（UI/主题/字体/外部库）

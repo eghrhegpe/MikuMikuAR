@@ -29,7 +29,6 @@ frontend/src/menus/
 ├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐/相机
 │   ├── motion-camera-levels.ts  #   相机模式 + 参数面板
 │   ├── motion-procmotion-levels.ts # 程序化动作 + LipSync
-│   ├── motion-dance-sets.ts     #   舞蹈套装数据 + UI
 │   └── motion-cloth-levels.ts   #   布料参数面板
 │
 └── settings.ts                  # 设置页（MenuStack）
