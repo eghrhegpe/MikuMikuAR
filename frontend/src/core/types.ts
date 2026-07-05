@@ -198,6 +198,8 @@ export interface UIState {
     animations?: boolean;
     blurBg?: boolean;
     performanceMode?: 'auto' | 'quality' | 'balanced' | 'performance';
+    /** 帧率上限（0=不限） */
+    fpsLimit?: number;
     materialCategoryMap?: Record<string, string>;
     screenshotFormat?: 'image/png' | 'image/jpeg' | 'image/webp';
     screenshotQuality?: number;
