@@ -107,6 +107,7 @@ function buildSettingsRootItems(): PopupRow[] {
                     setStatus('✗ 设置失败', false);
                 }
             },
+            bind: () => autoImportCached,
         },
     });
     items.push({ kind: 'folder', label: '性能', icon: 'lucide:zap', target: 'settings:performance' });

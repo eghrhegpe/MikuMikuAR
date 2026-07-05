@@ -116,8 +116,9 @@ export function buildPhysicsLevel(): PopupLevel {
                     onChange: (v) => {
                         setCollisionEnabled(v);
                         refreshMotionRoot();
-                        reRender();
+                        getMotionMenu()?.updateControls();
                     },
+                    bind: () => getCollisionEnabled(),
                 },
             } as PopupRow,
             // 精细调节 → 布料子页

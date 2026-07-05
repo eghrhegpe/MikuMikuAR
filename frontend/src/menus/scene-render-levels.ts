@@ -255,7 +255,12 @@ export function buildStageLightLevel(): PopupLevel {
                 defaultOpen: false,
                 headerToggle: { value: state.enabled, onChange: (v) => {
                     setStageLightState({ enabled: v }, state.id);
-                    reRenderSceneMenu();
+                    getSceneMenu()?.updateControls();
+                }, bind: () => {
+                    const lights = getStageLights();
+                    const activeId = getActiveStageLightId();
+                    const s = lights.find(l => l.id === activeId) ?? lights[0];
+                    return s?.enabled ?? true;
                 }},
                 renderContent: (inner) => {
                     addModeSlider(inner, '类型', [
@@ -282,7 +287,14 @@ export function buildStageLightLevel(): PopupLevel {
                             return s?.intensity ?? 1;
                         },
                     });
-                    addColorSliderRow(inner, '颜色', state.color, (v) => setStageLightState({ color: v }, state.id));
+                    addColorSliderRow(inner, '颜色', state.color, (v) => { setStageLightState({ color: v }, state.id); getSceneMenu()?.updateControls(); }, {
+                        bind: () => {
+                            const lights = getStageLights();
+                            const activeId = getActiveStageLightId();
+                            const s = lights.find(l => l.id === activeId) ?? lights[0];
+                            return s?.color ?? [1, 1, 1];
+                        },
+                    });
                 },
             });
 
@@ -410,6 +422,11 @@ export function buildStageLightLevel(): PopupLevel {
                     headerToggle: { value: state.shadowEnabled, onChange: (v) => {
                         setStageLightState({ shadowEnabled: v }, state.id);
                         reRenderSceneMenu();
+                    }, bind: () => {
+                        const lights = getStageLights();
+                        const activeId = getActiveStageLightId();
+                        const s = lights.find(l => l.id === activeId) ?? lights[0];
+                        return s?.shadowEnabled ?? false;
                     }},
                     renderContent: (inner) => {
                         if (state.shadowEnabled) {
@@ -572,6 +589,7 @@ export function buildPostProcessLevel(): PopupLevel {
                             setRenderState({ bloomEnabled: v });
                             triggerAutoSave();
                         },
+                        bind: () => getRenderState().bloomEnabled,
                     },
                     renderContent: (inner) => {
                         sliderRow(inner, '强度', state.bloomWeight, 0, 1, 0.05, 'lucide:sun',

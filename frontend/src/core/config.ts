@@ -178,6 +178,8 @@ export type PopupRow = {
         disabled?: boolean;
         disabledHint?: string;
         onDisabledClick?: () => void;
+        /** 声明取值方式，updateControls() 时自动同步 toggle 状态 */
+        bind?: () => boolean;
     };
     /** slider kind: 数值滑块。 */
     sliderValue?: number;
