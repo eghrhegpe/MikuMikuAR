@@ -49,16 +49,25 @@ export function buildSkyLevel(): PopupLevel {
                 );
 
                 if (s.skyMode === 'color') {
-                    addColorSliderRow(c, '天空色', s.skyColorTop, (v) =>
-                        setEnvState({ skyColorTop: v })
-                    );
+                    addColorSliderRow(c, '天空色', s.skyColorTop, (v) => {
+                        setEnvState({ skyColorTop: v });
+                        getEnvMenu()?.updateControls();
+                    }, {
+                        bind: () => envState.skyColorTop,
+                    });
                 } else if (s.skyMode === 'procedural') {
-                    addColorSliderRow(c, '天顶色', s.skyColorTop, (v) =>
-                        setEnvState({ skyColorTop: v })
-                    );
-                    addColorSliderRow(c, '地平色', s.skyColorBot, (v) =>
-                        setEnvState({ skyColorBot: v })
-                    );
+                    addColorSliderRow(c, '天顶色', s.skyColorTop, (v) => {
+                        setEnvState({ skyColorTop: v });
+                        getEnvMenu()?.updateControls();
+                    }, {
+                        bind: () => envState.skyColorTop,
+                    });
+                    addColorSliderRow(c, '地平色', s.skyColorBot, (v) => {
+                        setEnvState({ skyColorBot: v });
+                        getEnvMenu()?.updateControls();
+                    }, {
+                        bind: () => envState.skyColorBot,
+                    });
                     addToggleRow(c, '星空 ✨', s.starsEnabled ?? false, (v) =>
                         setEnvState({ starsEnabled: v })
                     );
@@ -137,7 +146,9 @@ export function buildGroundLevel(): PopupLevel {
                 }, 'lucide:square', undefined, {
                     bind: () => envState.groundMode,
                 });
-                addColorSliderRow(c, '地面色', s.groundColor, (v) => setEnvState({ groundColor: v }));
+                addColorSliderRow(c, '地面色', s.groundColor, (v) => { setEnvState({ groundColor: v }); getEnvMenu()?.updateControls(); }, {
+                    bind: () => envState.groundColor,
+                });
                 if (s.groundMode === 'solid' || s.groundMode === 'checker') {
                     addSliderRow(c, '透明度', s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), 'lucide:eye');
                 }
@@ -186,7 +197,7 @@ export function buildWaterLevel(): PopupLevel {
                             foamThreshold: wp.foamThreshold, foamIntensity: wp.foamIntensity,
                         });
                         applyWaterPresetToCurrent(wp);
-                        getEnvMenu()?.reRender();
+                        getEnvMenu()?.updateControls();
                     });
                 }
                 c.appendChild(waterPresetRow);
@@ -197,7 +208,9 @@ export function buildWaterLevel(): PopupLevel {
                         addSliderRow(cc, '高度', s.waterLevel, -10, 10, 0.1, (v) => { setEnvState({ waterLevel: v }); getEnvMenu()?.updateControls(); }, 'lucide:arrow-up', undefined, {
                             bind: () => envState.waterLevel,
                         });
-                        addColorSliderRow(cc, '水色', s.waterColor, (v) => setEnvState({ waterColor: v }));
+                        addColorSliderRow(cc, '水色', s.waterColor, (v) => { setEnvState({ waterColor: v }); getEnvMenu()?.updateControls(); }, {
+                            bind: () => envState.waterColor,
+                        });
                         addSliderRow(cc, '透明度', s.waterTransparency, 0, 1, 0.05, (v) => { setEnvState({ waterTransparency: v }); getEnvMenu()?.updateControls(); }, 'lucide:eye', undefined, {
                             bind: () => envState.waterTransparency,
                         });
@@ -228,7 +241,9 @@ export function buildWaterLevel(): PopupLevel {
                 addCollapsible(c, {
                     title: '水下效果', icon: 'lucide:waves',
                     renderContent: (cc) => {
-                        addColorSliderRow(cc, '水下雾色', s.underwaterFogColor, (v) => setEnvState({ underwaterFogColor: v }));
+                        addColorSliderRow(cc, '水下雾色', s.underwaterFogColor, (v) => { setEnvState({ underwaterFogColor: v }); getEnvMenu()?.updateControls(); }, {
+                            bind: () => envState.underwaterFogColor,
+                        });
                         addSliderRow(cc, '雾密度', s.underwaterFogDensity, 0, 0.1, 0.001, (v) => { setEnvState({ underwaterFogDensity: v }); getEnvMenu()?.updateControls(); }, undefined, undefined, {
                             bind: () => envState.underwaterFogDensity,
                         });
@@ -333,7 +348,9 @@ export function buildFogLevel(): PopupLevel {
                 addToggleRow(c, '启用雾', s.fogEnabled, (v) => { setEnvState({ fogEnabled: v }); getEnvMenu()?.updateControls(); }, 'lucide:cloud-fog', {
                     bind: () => envState.fogEnabled,
                 });
-                addColorSliderRow(c, '雾色', s.fogColor, (v) => setEnvState({ fogColor: v }));
+                addColorSliderRow(c, '雾色', s.fogColor, (v) => { setEnvState({ fogColor: v }); getEnvMenu()?.updateControls(); }, {
+                    bind: () => envState.fogColor,
+                });
                 addSliderRow(c, '雾密度', s.fogDensity, 0, 0.1, 0.001, (v) => { setEnvState({ fogDensity: v }); getEnvMenu()?.updateControls(); }, 'lucide:droplets', undefined, {
                     bind: () => envState.fogDensity,
                 });
@@ -353,7 +370,7 @@ export function buildShadowLevel(): PopupLevel {
                 // ── 环境阴影（主场景方向光阴影）──
                 addCollapsible(c, {
                     title: '环境阴影', icon: 'lucide:cloud', defaultOpen: true,
-                    headerToggle: { value: ls.shadowEnabled, onChange: (v) => { setLightingState({ shadowEnabled: v }); getEnvMenu()?.reRender(); } },
+                    headerToggle: { value: ls.shadowEnabled, onChange: (v) => { setLightingState({ shadowEnabled: v }); getEnvMenu()?.updateControls(); }, bind: () => getLightState().shadowEnabled },
                     renderContent: (inner) => {
                         addModeSlider(inner, '阴影类型', [
                             { value: 'hard', label: '硬阴影' }, { value: 'soft', label: '软阴影' }, { value: 'pcf', label: 'PCF' },

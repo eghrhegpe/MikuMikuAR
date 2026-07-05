@@ -26,6 +26,8 @@ export function slideRow(
         disabled?: boolean;
         disabledHint?: string;
         onDisabledClick?: () => void;
+        /** 声明取值方式，updateControls() 时自动同步 toggle 状态 */
+        bind?: () => boolean;
     }
 ): void {
     const row = document.createElement('div');
@@ -94,6 +96,18 @@ export function slideRow(
             });
         }
         row.appendChild(toggle);
+
+        // === headerToggle 自更新支持 ===
+        if (headerToggle.bind) {
+            let cachedValue = headerToggle.value;
+            const update = (): void => {
+                const newVal = !!headerToggle!.bind!();
+                if (newVal === cachedValue) return;
+                cachedValue = newVal;
+                input.checked = newVal;
+            };
+            getCurrentRenderingMenu()?.registerControl(update);
+        }
 
         // Arrow
         if (hasArrow) {
@@ -466,7 +480,8 @@ export function addColorSliderRow(
     container: HTMLElement,
     label: string,
     color: [number, number, number],
-    onChange: (v: [number, number, number]) => void
+    onChange: (v: [number, number, number]) => void,
+    opts?: ControlOptions<[number, number, number]>
 ): void {
     const block = document.createElement('div');
     block.className = 'clr-block';
@@ -581,6 +596,49 @@ export function addColorSliderRow(
         block.appendChild(sub);
     }
     container.appendChild(block);
+
+    // === 自更新支持 ===
+    if (opts) {
+        let cached: [number, number, number] = [color[0], color[1], color[2]];
+        const update = (): void => {
+            if (opts.onUpdate) {
+                opts.onUpdate(block);
+                return;
+            }
+            if (!opts.bind) return;
+            const newVal = opts.bind();
+            if (!Array.isArray(newVal) || newVal.length < 3) return;
+            let changed = false;
+            for (let i = 0; i < 3; i++) {
+                if (newVal[i] !== cached[i]) {
+                    changed = true;
+                    cached[i] = newVal[i];
+                    current[i] = newVal[i];
+                    // 更新该通道的 DOM
+                    vals[i].textContent = newVal[i].toFixed(2);
+                    fills[i].style.width = (newVal[i] * 100) + '%';
+                    thumbs[i].style.left = (newVal[i] * 100) + '%';
+                    bars[i].setAttribute('aria-valuenow', String(newVal[i]));
+                }
+            }
+            if (changed) {
+                swatch.style.background = `rgb(${Math.round(cached[0] * 255)},${Math.round(cached[1] * 255)},${Math.round(cached[2] * 255)})`;
+            }
+        };
+        // 收集 3 个通道的 DOM 引用（闭包里的 val/fill/thumb/bar 是循环变量，需要捕获）
+        const vals: HTMLElement[] = [];
+        const fills: HTMLElement[] = [];
+        const thumbs: HTMLElement[] = [];
+        const bars: HTMLElement[] = [];
+        const clrRows = block.querySelectorAll('.clr-row');
+        clrRows.forEach((row, i) => {
+            vals[i] = row.querySelector('.clr-value') as HTMLElement;
+            fills[i] = row.querySelector('.cs-fill') as HTMLElement;
+            thumbs[i] = row.querySelector('.cs-thumb') as HTMLElement;
+            bars[i] = row.querySelector('.cs-bar') as HTMLElement;
+        });
+        getCurrentRenderingMenu()?.registerControl(update);
+    }
 }
 
 export function addModeSlider<T extends string | number>(
@@ -819,6 +877,8 @@ export function addCollapsible(
         headerToggle?: {
             value: boolean;
             onChange: (v: boolean) => void;
+            /** 声明取值方式，updateControls() 时自动同步 toggle 状态 */
+            bind?: () => boolean;
         };
         renderContent: (container: HTMLElement) => void;
     }
@@ -863,6 +923,18 @@ export function addCollapsible(
             config.headerToggle!.onChange(input.checked);
         });
         header.appendChild(toggle);
+
+        // === headerToggle 自更新支持 ===
+        if (config.headerToggle.bind) {
+            let cachedValue = config.headerToggle.value;
+            const update = (): void => {
+                const newVal = !!config.headerToggle!.bind!();
+                if (newVal === cachedValue) return;
+                cachedValue = newVal;
+                input.checked = newVal;
+            };
+            getCurrentRenderingMenu()?.registerControl(update);
+        }
     }
 
     const arrow = document.createElement('span');

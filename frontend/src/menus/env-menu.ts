@@ -133,10 +133,16 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                     title: '天空外观', icon: 'lucide:palette', defaultOpen: false,
                     renderContent: (inner) => {
                         if (s.skyMode === 'procedural') {
-                            addColorSliderRow(inner, '天顶色', s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
-                            addColorSliderRow(inner, '地平色', s.skyColorBot, (v) => setEnvState({ skyColorBot: v }));
+                            addColorSliderRow(inner, '天顶色', s.skyColorTop, (v) => { setEnvState({ skyColorTop: v }); getEnvMenu()?.updateControls(); }, {
+                                bind: () => envState.skyColorTop,
+                            });
+                            addColorSliderRow(inner, '地平色', s.skyColorBot, (v) => { setEnvState({ skyColorBot: v }); getEnvMenu()?.updateControls(); }, {
+                                bind: () => envState.skyColorBot,
+                            });
                         } else if (s.skyMode === 'color') {
-                            addColorSliderRow(inner, '天空色', s.skyColorTop, (v) => setEnvState({ skyColorTop: v }));
+                            addColorSliderRow(inner, '天空色', s.skyColorTop, (v) => { setEnvState({ skyColorTop: v }); getEnvMenu()?.updateControls(); }, {
+                                bind: () => envState.skyColorTop,
+                            });
                         } else if (s.skyMode === 'texture') {
                             const texRow = document.createElement('div');
                             texRow.className = 'slide-item';
@@ -187,27 +193,27 @@ function buildEnvRootItems(): PopupRow[] {
     items.push({ kind: 'folder', label: '天空', icon: 'lucide:sun', target: 'env:sky' });
     items.push({
         kind: 'folder', label: '水面', icon: 'lucide:waves', target: 'env:water',
-        headerToggle: { value: envState.waterEnabled, onChange: (v) => setEnvState({ waterEnabled: v }) },
+        headerToggle: { value: envState.waterEnabled, onChange: (v) => setEnvState({ waterEnabled: v }), bind: () => envState.waterEnabled },
     });
     items.push({
         kind: 'folder', label: '粒子', icon: 'lucide:sparkles', target: 'env:particle',
-        headerToggle: { value: envState.particleEnabled, onChange: (v) => setEnvState({ particleEnabled: v }) },
+        headerToggle: { value: envState.particleEnabled, onChange: (v) => setEnvState({ particleEnabled: v }), bind: () => envState.particleEnabled },
     });
     items.push({
         kind: 'folder', label: '风', icon: 'lucide:wind', target: 'env:wind',
-        headerToggle: { value: envState.windEnabled, onChange: (v) => setEnvState({ windEnabled: v }) },
+        headerToggle: { value: envState.windEnabled, onChange: (v) => setEnvState({ windEnabled: v }), bind: () => envState.windEnabled },
     });
     items.push({
         kind: 'folder', label: '地面', icon: 'lucide:square', target: 'env:ground',
-        headerToggle: { value: envState.groundVisible, onChange: (v) => setEnvState({ groundVisible: v }) },
+        headerToggle: { value: envState.groundVisible, onChange: (v) => setEnvState({ groundVisible: v }), bind: () => envState.groundVisible },
     });
     items.push({
         kind: 'folder', label: '雾', icon: 'lucide:cloud-fog', target: 'env:fog',
-        headerToggle: { value: envState.fogEnabled, onChange: (v) => setEnvState({ fogEnabled: v }) },
+        headerToggle: { value: envState.fogEnabled, onChange: (v) => setEnvState({ fogEnabled: v }), bind: () => envState.fogEnabled },
     });
     items.push({
         kind: 'folder', label: '阴影', icon: 'lucide:cloud', target: 'env:shadow',
-        headerToggle: { value: getLightState().shadowEnabled, onChange: (v) => setLightingState({ shadowEnabled: v }) },
+        headerToggle: { value: getLightState().shadowEnabled, onChange: (v) => setLightingState({ shadowEnabled: v }), bind: () => getLightState().shadowEnabled },
     });
     items.push(
         { kind: 'folder', label: '实验功能', icon: 'lucide:flask-conical', target: 'env:experimental' },
