@@ -1,6 +1,7 @@
-# 第 6 章 · XSS 攻坚战
+# XSS 攻坚战
 
-> 对应真实事件：2026-07-01 settings.ts XSS 安全加固，优先处理用户输入路径（addToggleRow / addSliderRow 的 label 参数、软件管理用户输入名称），后端已校验数据延后处理。
+> **背景**：settings.ts 有数十处 innerHTML 拼接用户输入——软件名称、路径、参数都可能被注入恶意脚本。
+> **过程**：攻击面分级（城门/护城河/内墙）+ addToggleRow/addSliderRow label 改用 textContent + 软件管理页面 7 处转义。先堵 80%，剩下 20% 后补。
 
 ---
 

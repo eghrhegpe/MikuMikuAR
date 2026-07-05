@@ -70,7 +70,7 @@ type ModelPresetEntry struct {
 
 // GetModelPresets lists all .mcupreset.json files in the model presets directory.
 func (a *App) GetModelPresets() []ModelPresetEntry {
-	dir, err := modelPresetDir()
+	dir, err := a.modelPresetDir()
 	if err != nil {
 		return nil
 	}
@@ -127,7 +127,7 @@ func (a *App) SaveModelPresetToLib(name string, jsonStr string) error {
 	if !validPresetName(name) {
 		return fmt.Errorf("invalid preset name: %q", name)
 	}
-	dir, err := modelPresetDir()
+	dir, err := a.modelPresetDir()
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func (a *App) LoadModelPresetFromLib(name string) (string, error) {
 	if !validPresetName(name) {
 		return "", fmt.Errorf("invalid preset name: %q", name)
 	}
-	dir, err := modelPresetDir()
+	dir, err := a.modelPresetDir()
 	if err != nil {
 		return "", err
 	}
@@ -157,7 +157,7 @@ func (a *App) DeleteModelPreset(name string) error {
 	if !validPresetName(name) {
 		return fmt.Errorf("invalid preset name: %q", name)
 	}
-	dir, err := modelPresetDir()
+	dir, err := a.modelPresetDir()
 	if err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func (a *App) RenameModelPreset(oldName, newName string) error {
 	if !validPresetName(oldName) || !validPresetName(newName) {
 		return fmt.Errorf("invalid preset name")
 	}
-	dir, err := modelPresetDir()
+	dir, err := a.modelPresetDir()
 	if err != nil {
 		return err
 	}

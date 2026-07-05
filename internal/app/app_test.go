@@ -29,7 +29,8 @@ func TestValidatePresetName(t *testing.T) {
 }
 
 func TestScenePresetDir(t *testing.T) {
-	dir, err := scenePresetDir()
+	a := &App{}
+	dir, err := a.scenePresetDir()
 	if err != nil {
 		t.Fatalf("scenePresetDir() error: %v", err)
 	}

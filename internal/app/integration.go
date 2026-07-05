@@ -393,9 +393,19 @@ func (a *App) SelectSceneSaveFile() (string, error) {
 
 // ======== Env Presets (user-saved .env files) ========
 
-// envPresetsDir returns the directory for user-saved environment presets.
-func envPresetsDir() (string, error) {
-	return ensureDir("env-presets", false)
+// envPresetsDir returns the env-presets/ subdirectory under settingDir.
+// In portable mode (ResourceRoot set), presets live under <ResourceRoot>/setting/env-presets/.
+func (a *App) envPresetsDir() (string, error) {
+	cfg, _ := a.GetConfig()
+	base, err := settingDir(cfg)
+	if err != nil {
+		return "", err
+	}
+	presetDir := filepath.Join(base, "env-presets")
+	if err := os.MkdirAll(presetDir, 0755); err != nil {
+		return "", err
+	}
+	return presetDir, nil
 }
 
 // sanitizePresetName allows only alphanumerics, dash, underscore, and CJK chars.
@@ -427,7 +437,7 @@ func (a *App) SaveEnvPreset(name string, jsonStr string) error {
 		if clean == "" {
 			return fmt.Errorf("invalid preset name: %q", name)
 		}
-		dir, err := envPresetsDir()
+		dir, err := a.envPresetsDir()
 		if err != nil {
 			return err
 		}
@@ -443,7 +453,7 @@ func (a *App) LoadEnvPreset(name string) (string, error) {
 		if clean == "" {
 			return "", fmt.Errorf("invalid preset name: %q", name)
 		}
-		dir, err := envPresetsDir()
+		dir, err := a.envPresetsDir()
 		if err != nil {
 			return "", err
 		}
@@ -458,7 +468,7 @@ func (a *App) LoadEnvPreset(name string) (string, error) {
 // ListEnvPresets returns all user-saved env presets in the presets directory.
 func (a *App) ListEnvPresets() ([]EnvPresetEntry, error) {
 	return util.SafeCall(func() ([]EnvPresetEntry, error) {
-		dir, err := envPresetsDir()
+		dir, err := a.envPresetsDir()
 		if err != nil {
 			return nil, err
 		}
@@ -512,7 +522,7 @@ func (a *App) DeleteEnvPreset(name string) error {
 		if clean == "" {
 			return fmt.Errorf("invalid preset name: %q", name)
 		}
-		dir, err := envPresetsDir()
+		dir, err := a.envPresetsDir()
 		if err != nil {
 			return err
 		}

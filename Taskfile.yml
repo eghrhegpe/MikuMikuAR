@@ -9,6 +9,9 @@ vars:
   # 构建 example: APP_VERSION=0.2.0 task build
   #                或 git tag v0.2.0 && task build（自动读取）
   APP_VERSION: '{{.APP_VERSION | default (sh "git describe --tags --always --dirty 2>/dev/null || echo dev")}}'
+  # 构建时间 + commit hash，用于「关于」页诊断
+  BUILD_TIME: '{{.BUILD_TIME | default (sh "date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown")}}'
+  COMMIT_HASH: '{{.COMMIT_HASH | default (sh "git rev-parse --short HEAD 2>/dev/null || echo unknown")}}'
 
 includes:
   common: ./build/Taskfile.yml

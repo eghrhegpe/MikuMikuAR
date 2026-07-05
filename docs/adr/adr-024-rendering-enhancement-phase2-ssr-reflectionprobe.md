@@ -1,6 +1,7 @@
 # ADR-024: 渲染增强 Phase 2 — SSR / SSAO / Reflection Probe / SSS 决策
 
 **日期**：2026-07-04
+> **状态**: 部分完成 — SSR/ReflectionProbe/SSAO 已实施，SSS 未做
 
 ---
 

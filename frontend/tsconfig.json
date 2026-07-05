@@ -9,6 +9,7 @@
     ],
     "moduleResolution": "Bundler",
     "strict": false,
+    "allowJs": true,
     "sourceMap": true,
     "resolveJsonModule": true,
     "isolatedModules": true,

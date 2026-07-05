@@ -1,6 +1,7 @@
 # ADR-023: Android 文件访问策略 — FileAccessor 抽象与 SAF 决策
 
 **日期**：2026-07-04
+> **状态**: 部分完成 — Phase A+B 已实施，SAF 完整路径待 Spike 验证
 
 ---
 

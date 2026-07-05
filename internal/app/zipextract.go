@@ -281,6 +281,51 @@ func (a *App) ClearAllCaches() error {
 	return nil
 }
 
+// CacheStats holds size/file-count for one cache directory.
+type CacheStats struct {
+	ExtractedBytes int64 `json:"extractedBytes"`
+	ExtractedCount int   `json:"extractedCount"`
+	ThumbnailBytes int64 `json:"thumbnailBytes"`
+	ThumbnailCount int   `json:"thumbnailCount"`
+	ServeBytes     int64 `json:"serveBytes"`
+	ServeCount     int   `json:"serveCount"`
+	TotalBytes     int64 `json:"totalBytes"`
+}
+
+// GetCacheStats returns the total size and file count of all cache directories.
+func (a *App) GetCacheStats() (*CacheStats, error) {
+	var stats CacheStats
+
+	if dir, err := extractedDir(); err == nil {
+		stats.ExtractedBytes, stats.ExtractedCount = dirSize(dir)
+	}
+	if dir, err := thumbnailDir(); err == nil {
+		stats.ThumbnailBytes, stats.ThumbnailCount = dirSize(dir)
+	}
+	if dir, err := serveRootDir(); err == nil {
+		stats.ServeBytes, stats.ServeCount = dirSize(dir)
+	}
+	stats.TotalBytes = stats.ExtractedBytes + stats.ThumbnailBytes + stats.ServeBytes
+	return &stats, nil
+}
+
+// dirSize walks a directory and returns total bytes + file count.
+func dirSize(path string) (int64, int) {
+	var total int64
+	var count int
+	filepath.WalkDir(path, func(p string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		if info, err := d.Info(); err == nil {
+			total += info.Size()
+			count++
+		}
+		return nil
+	})
+	return total, count
+}
+
 // ImportZip opens a zip file, finds the first .pmx entry, and extracts via ExtractZip.
 // Returns *ExtractResult as a convenience for the frontend import flow.
 func (a *App) ImportZip(zipPath string) (*ExtractResult, error) {
