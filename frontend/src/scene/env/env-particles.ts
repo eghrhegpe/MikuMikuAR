@@ -6,6 +6,7 @@ import {
     ParticleSystem,
 } from '@babylonjs/core';
 import { EnvState, envState } from '../../core/config';
+import { getWindVector } from '../../core/physics/wind-utils';
 import { _envSys, getScene } from './env-impl';
 
 // ======== Particle System ========
@@ -417,9 +418,8 @@ export function applyWindToParticles(ps: GPUParticleSystem): void {
     if (!_initialDir1 || !_initialDir2) {
         return;
     }
-    const dir = envState.windDirection;
-    const speed = envState.windSpeed;
-    const wind = new Vector3(dir[0] * speed * 0.1, dir[1] * speed * 0.1, dir[2] * speed * 0.1);
+    // 粒子风响应系数 0.1（比布料小，粒子更轻但受发射方向约束）
+    const wind = getWindVector().scale(0.1);
     ps.direction1 = _initialDir1.clone().add(wind);
     ps.direction2 = _initialDir2.clone().add(wind);
 }

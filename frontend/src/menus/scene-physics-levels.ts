@@ -1,5 +1,5 @@
-// [doc:architecture] Motion Physics Levels — 物理设置子页
-// 从 motion-popup.ts 提取，独立管理全局物理参数
+// [doc:architecture] Scene Physics Levels — 物理设置子页（场景弹窗域）
+// 从 scene-menu.ts 引用，独立管理全局物理参数（WASM Bullet + XPBD 布料）
 
 import type { PopupLevel, PopupRow } from '../core/config';
 import { envState, focusedModelId } from '../core/config';
@@ -35,11 +35,11 @@ import {
     setModelPhysics,
 } from '../scene/scene';
 import { buildClothParamsLevel } from './motion-cloth-levels';
-import { getMotionMenu, refreshMotionRoot } from './motion-popup';
+import { getSceneMenu, refreshSceneRoot } from './scene-menu';
 
 /** 构建物理设置子页 */
 export function buildPhysicsLevel(): PopupLevel {
-    const reRender = () => { if (getMotionMenu()) getMotionMenu()?.reRender(); };
+    const reRender = () => { if (getSceneMenu()) getSceneMenu()?.reRender(); };
 
     return {
         label: '物理',
@@ -61,7 +61,14 @@ export function buildPhysicsLevel(): PopupLevel {
                     reRender();
                 },
             } as PopupRow,
-            // 布料模拟：独立开关
+            // WASM 物理（MMD Bullet 骨髁物理）— 通用物理系统，放第二
+            {
+                kind: 'folder',
+                label: 'WASM 物理',
+                icon: 'lucide:atom',
+                target: 'physics:wasm',
+            } as PopupRow,
+            // 布料模拟：独立开关（XPBD 附加）
             {
                 kind: 'toggle',
                 label: '布料模拟',
@@ -71,7 +78,7 @@ export function buildPhysicsLevel(): PopupLevel {
                 onToggleChange: (v: boolean) => {
                     envState.clothEnabled = v;
                     toggleCloth(v);
-                    refreshMotionRoot();
+                    refreshSceneRoot();
                     reRender();
                 },
             } as PopupRow,
@@ -115,8 +122,8 @@ export function buildPhysicsLevel(): PopupLevel {
                     value: getCollisionEnabled(),
                     onChange: (v) => {
                         setCollisionEnabled(v);
-                        refreshMotionRoot();
-                        getMotionMenu()?.updateControls();
+                        refreshSceneRoot();
+                        getSceneMenu()?.updateControls();
                     },
                     bind: () => getCollisionEnabled(),
                 },
@@ -128,13 +135,6 @@ export function buildPhysicsLevel(): PopupLevel {
                 icon: 'lucide:sliders',
                 target: 'physics:cloth',
             } as PopupRow,
-            // WASM 物理（MMD Bullet 骨髁物理）
-            {
-                kind: 'folder',
-                label: 'WASM 物理',
-                icon: 'lucide:atom',
-                target: 'physics:wasm',
-            } as PopupRow,
             // 调试（材质/骨骼/XPBD 可视化）
             {
                 kind: 'folder',
@@ -143,19 +143,12 @@ export function buildPhysicsLevel(): PopupLevel {
                 target: 'physics:debug',
             } as PopupRow,
         ],
-        onFolderEnter: (row: PopupRow) => {
-            if (row.target === 'physics:cloth') return buildClothParamsLevel();
-            if (row.target === 'physics:debug') return buildPhysicsDebugLevel();
-            if (row.target === 'physics:collision') return buildCollisionLevel();
-            if (row.target === 'physics:wasm') return buildWasmPhysicsLevel();
-            return null;
-        },
     };
 }
 
 /** 构建碰撞子页（地面碰撞 + 身体碰撞） */
 export function buildCollisionLevel(): PopupLevel {
-    const reRender = () => { if (getMotionMenu()) getMotionMenu()?.reRender(); };
+    const reRender = () => { if (getSceneMenu()) getSceneMenu()?.reRender(); };
 
     return {
         label: '碰撞',
@@ -169,7 +162,7 @@ export function buildCollisionLevel(): PopupLevel {
                 toggleValue: getGroundCollisionEnabled(),
                 onToggleChange: (v: boolean) => {
                     setGroundCollisionEnabled(v);
-                    refreshMotionRoot();
+                    refreshSceneRoot();
                     reRender();
                 },
             } as PopupRow,
@@ -181,7 +174,7 @@ export function buildCollisionLevel(): PopupLevel {
                 toggleValue: getBodyCollisionEnabled(),
                 onToggleChange: (v: boolean) => {
                     setBodyCollisionEnabled(v);
-                    refreshMotionRoot();
+                    refreshSceneRoot();
                     reRender();
                 },
             } as PopupRow,
@@ -193,7 +186,7 @@ export function buildCollisionLevel(): PopupLevel {
 export function buildWasmPhysicsLevel(): PopupLevel {
     const id = focusedModelId;
     const inst = id ? modelManager.get(id) : null;
-    const reRender = () => { if (getMotionMenu()) getMotionMenu()?.reRender(); };
+    const reRender = () => { if (getSceneMenu()) getSceneMenu()?.reRender(); };
     const items: PopupRow[] = [];
 
     if (!id || !inst) {
@@ -261,7 +254,7 @@ export function buildPhysicsDebugLevel(): PopupLevel {
     const id = focusedModelId;
     const inst = id ? modelManager.get(id) : null;
     const dbg = getDebugState();
-    const reRender = () => { if (getMotionMenu()) getMotionMenu()?.reRender(); };
+    const reRender = () => { if (getSceneMenu()) getSceneMenu()?.reRender(); };
 
     return {
         label: '调试',

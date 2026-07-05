@@ -6,6 +6,7 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { ClothConfig } from '../physics/xpbd-cloth';
 import { DEFAULT_CLOTH_CONFIG } from '../physics/xpbd-cloth';
+import { reactive } from './reactivity';
 
 // ======== Types ========
 
@@ -565,7 +566,7 @@ export function setUIState(state: UIState): void {
 
 // ======== Environment State (Phase 8) ========
 
-export const envState: EnvState = {
+export const envState: EnvState = reactive<EnvState>({
     skyMode: 'color',
     skyColorTop: [0.3, 0.5, 0.8],
     skyColorMid: [0.8, 0.8, 0.9],
@@ -657,7 +658,7 @@ export const envState: EnvState = {
     // ======== 太阳参数（序列化用）====
     sunAngle: 45,
     azimuth: -45,
-};
+});
 
 // ======== DOM Element Refs ========
 

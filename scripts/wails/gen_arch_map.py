@@ -1,12 +1,11 @@
 """
-前端架构图自动生成器
-扫描 src/ 目录，分析 import/export，生成架构概览文档。
+[归档] 前端架构图自动生成器 — 已停用（2026-07-05）
+生成的 architecture-map.md 已因目录结构变迁而废弃删除。
+输出路径、FILE_DESC、FILE_DESC 均使用旧文件名（scene-vmd.ts 等），
+需要全局更新文件名后才可重新启用。
 
-用法:
-    python scripts/gen_arch_map.py
-
-输出:
-    docs/architecture-map.md
+上次输出:
+    docs/architecture-map.md（已删除）
 """
 
 import os

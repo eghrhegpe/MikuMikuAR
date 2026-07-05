@@ -1,6 +1,7 @@
 import { PopupLevel, PopupRow, showHint, hideHint } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
+import { subscribe } from '../core/reactivity';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
 const TRANSITION_DURATION = '0.15s';
@@ -37,6 +38,8 @@ export class SlideMenu {
     private _swipeTouchEndHandler: ((e: TouchEvent) => void) | null = null;
     /** 自更新控件注册表 — 每个元素有 update() 方法，由 updateControls() 统一调用 */
     private _controls: Array<{ update: () => void }> = [];
+    /** 响应式订阅取消函数 — dispose 时调用 */
+    private _unsubscribe: (() => void) | null = null;
 
     onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
     onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
@@ -133,6 +136,9 @@ export class SlideMenu {
         };
         this.container.addEventListener('touchstart', this._swipeTouchStartHandler, { passive: true });
         this.container.addEventListener('touchend', this._swipeTouchEndHandler, { passive: true });
+
+        // 响应式订阅：状态变更 → 自动 updateControls
+        this._unsubscribe = subscribe(() => this.updateControls());
     }
 
     // ======== 公共 API ========
@@ -574,6 +580,10 @@ export class SlideMenu {
     /** 释放所有资源（清除动画定时器、键盘/触摸监听、状态），调用后实例不可再用。 */
     dispose(): void {
         this._cancelAnim();
+        if (this._unsubscribe) {
+            this._unsubscribe();
+            this._unsubscribe = null;
+        }
         if (this._keydownHandler) {
             this.container.removeEventListener('keydown', this._keydownHandler);
             this._keydownHandler = null;

@@ -189,7 +189,6 @@ export function buildStageLightLevel(): PopupLevel {
                     const p = LIGHTING_PRESETS[name];
                     addPresetChip(chipGroup, p.label, currentPreset === name, () => {
                         setEnvState({ lightingPresetName: name });
-                        getSceneMenu()?.updateControls();
                     }, {
                         onUpdate: (btn) => {
                             btn.classList.toggle('active', envState.lightingPresetName === name);
@@ -199,7 +198,6 @@ export function buildStageLightLevel(): PopupLevel {
                 // 自定义按钮（清除预设）
                 addPresetChip(chipGroup, '自定义', false, () => {
                     setEnvState({ lightingPresetName: undefined });
-                    getSceneMenu()?.updateControls();
                 }, {
                     onUpdate: (btn) => {
                         btn.style.display = envState.lightingPresetName ? '' : 'none';
@@ -692,7 +690,6 @@ export function buildPostProcessLevel(): PopupLevel {
                         ], state.toneMapping, (v) => {
                             setRenderState({ toneMapping: v });
                             triggerAutoSave();
-                            getSceneMenu()?.updateControls();
                         }, 'lucide:palette', undefined, {
                             bind: () => getRenderState().toneMapping,
                         });

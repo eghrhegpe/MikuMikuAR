@@ -33,7 +33,7 @@ type ExtractResult struct {
 	Cached   bool   `json:"cached"`    // Whether cache was hit (no re-extract)
 }
 
-const extractCacheVersion = 5
+const extractCacheVersion = 6
 
 // manifest stores source zip metadata for cache validation.
 type manifest struct {
@@ -43,15 +43,15 @@ type manifest struct {
 	Version int    `json:"version,omitempty"`
 }
 
-// zipCacheName converts an absolute zip path into a safe directory name.
-// "C:\Users\models\miku.zip" → "C__Users_models_miku_zip"
+// zipCacheName converts a zip path into a safe, collision-free directory name
+// using SHA-256 of the absolute path. This avoids path-length limits and
+// naming conflicts that the old path-escaping approach suffered from.
 func zipCacheName(zipPath string) string {
 	abs, err := filepath.Abs(zipPath)
 	if err != nil {
 		abs = zipPath
 	}
-	s := strings.NewReplacer(":", "_", string(filepath.Separator), "_", " ", "_").Replace(abs)
-	return s
+	return sha256Hex(abs)
 }
 
 // ExtractZip extracts a zip file to the cache directory and returns the path
@@ -256,6 +256,28 @@ func (a *App) ClearThumbnailCache() error {
 		}
 	}
 	a.safeLogInfo("ClearThumbnailCache: removed %d files", removed)
+	return nil
+}
+
+// ClearAllCaches removes ALL cache directories (extracted, thumbnails, serve)
+// in one shot. This is the unified entry point for the "clear all caches" UI action.
+func (a *App) ClearAllCaches() error {
+	// Clear extracted
+	if err := a.ClearExtractCache(); err != nil {
+		return util.WrapError("ClearAllCaches", fmt.Errorf("清除提取缓存失败: %w", err))
+	}
+	// Clear thumbnails
+	if err := a.ClearThumbnailCache(); err != nil {
+		return util.WrapError("ClearAllCaches", fmt.Errorf("清除缩略图缓存失败: %w", err))
+	}
+	// Clear serve (isolated HTTP model copies)
+	serveRoot, err := serveRootDir()
+	if err != nil {
+		a.safeLogInfo("ClearAllCaches: serve dir unavailable: %v", err)
+	} else if err := os.RemoveAll(serveRoot); err != nil {
+		return util.WrapError("ClearAllCaches", fmt.Errorf("清除 serve 目录失败: %w", err))
+	}
+	a.safeLogInfo("ClearAllCaches: all cache directories cleared")
 	return nil
 }
 

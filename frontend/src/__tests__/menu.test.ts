@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SlideMenu } from '../menus/menu';
 import type { PopupLevel, PopupRow } from '../core/config';
 
@@ -891,7 +891,7 @@ describe('SlideMenu — 高阶功能 (extraButtonFactory / onClose / 手势)', (
         // 根层级返回按钮使用 X 图标，点击触发 onClose
         const backBtn = container.querySelector('.slide-back')!;
         expect(backBtn).toBeTruthy();
-        backBtn.click();
+        (backBtn as HTMLElement).click();
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 

@@ -397,7 +397,7 @@ describe('xpbd-cloth real function coverage', () => {
     });
 
     it('createCloth returns valid ClothInstance with correct structure', () => {
-        const sceneStub = {};
+        const sceneStub = {} as any;
         const instance = createCloth(sceneStub);
 
         expect(instance).toBeDefined();
@@ -442,7 +442,7 @@ describe('xpbd-cloth real function coverage', () => {
     });
 
     it('createCloth with partial config overrides defaults', () => {
-        const sceneStub = {};
+        const sceneStub = {} as any;
         const instance = createCloth(sceneStub, {
             length: 0.8,
             slope: 30,
@@ -461,7 +461,7 @@ describe('xpbd-cloth real function coverage', () => {
     });
 
     it('createCloth clamps small segmentsH and segmentsV to minimum', () => {
-        const sceneStub = {};
+        const sceneStub = {} as any;
         const instance = createCloth(sceneStub, {
             segmentsH: 3,
             segmentsV: 2,
@@ -473,7 +473,7 @@ describe('xpbd-cloth real function coverage', () => {
     });
 
     it('createCloth with zero segments falls back to DEFAULT_CLOTH_CONFIG', () => {
-        const sceneStub = {};
+        const sceneStub = {} as any;
         const instance = createCloth(sceneStub, {
             segmentsH: 0,
             segmentsV: 0,
@@ -484,7 +484,7 @@ describe('xpbd-cloth real function coverage', () => {
     });
 
     it('createCloth with empty anchorBone falls back to default', () => {
-        const sceneStub = {};
+        const sceneStub = {} as any;
         const instance = createCloth(sceneStub, {
             anchorBone: '',
         });
@@ -493,7 +493,7 @@ describe('xpbd-cloth real function coverage', () => {
     });
 
     it('createCloth with extreme values does not throw', () => {
-        const sceneStub = {};
+        const sceneStub = {} as any;
         expect(() => createCloth(sceneStub, {
             segmentsH: 64,
             segmentsV: 32,
@@ -514,7 +514,7 @@ describe('xpbd-cloth real function coverage', () => {
     });
 
     it('buildClothUpdateFn returns callable closure for missing anchor bone', () => {
-        const sceneStub = {};
+        const sceneStub = {} as any;
         const instance = createCloth(sceneStub, { segmentsH: 8, segmentsV: 4 });
         const anchorMatrixFn = vi.fn().mockReturnValue(null);
 
@@ -526,7 +526,7 @@ describe('xpbd-cloth real function coverage', () => {
     });
 
     it('buildClothUpdateFn closure does not run when cloth is disabled', () => {
-        const sceneStub = {};
+        const sceneStub = {} as any;
         const instance = createCloth(sceneStub, { segmentsH: 8, segmentsV: 4 });
         const anchorMatrixFn = vi.fn().mockReturnValue(null);
 
@@ -542,7 +542,7 @@ describe('xpbd-cloth real function coverage', () => {
     });
 
     it('disposeCloth disables cloth and disposes mesh and material', () => {
-        const sceneStub = {};
+        const sceneStub = {} as any;
         const instance = createCloth(sceneStub, { segmentsH: 8, segmentsV: 4 });
 
         expect(instance.enabled).toBe(true);

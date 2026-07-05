@@ -12,6 +12,7 @@
 
 import { XpbdSolver } from './xpbd-solver';
 import type { SdfCollider } from './xpbd-collider';
+import { isWindActive, getWindVector } from '../core/physics/wind-utils';
 
 import { Scene } from '@babylonjs/core/scene';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
@@ -336,6 +337,30 @@ export function buildClothUpdateFn(
 
         // 3. XPBD 步进（支持模拟速度倍率）
         const adjustedDt = getTimeScale ? dt * getTimeScale() : dt;
+
+        // 3.1 风场力（作用于非固定粒子，每帧随 dt 自然积分）
+        if (isWindActive()) {
+            const wind = getWindVector();
+            // 布料风响应系数（比粒子小，布有惯性/质量约束）
+            const windFactor = 0.2;
+            const wx = wind.x * windFactor * adjustedDt;
+            const wy = wind.y * windFactor * adjustedDt;
+            const wz = wind.z * windFactor * adjustedDt;
+            // 对所有非锚定粒子施加随机扰动的风位移（避免所有粒子平行飘动）
+            for (let i = 0; i < cloth.particleGrid.length; i++) {
+                const idx = cloth.particleGrid[i];
+                const p = solver.particles[idx];
+                if (p.invMass === 0) {
+                    continue;
+                }
+                // 随机因子 0.6~1.4，给布料自然的飘动变化
+                const rf = 0.6 + Math.random() * 0.8;
+                p.p[0] += wx * rf;
+                p.p[1] += wy * rf;
+                p.p[2] += wz * rf;
+            }
+        }
+
         solver.step(adjustedDt);
 
         // 4. 更新 Mesh 顶点

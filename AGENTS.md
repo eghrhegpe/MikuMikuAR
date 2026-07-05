@@ -71,16 +71,21 @@ docs/
 ├── design-archive.md     # 🗑️ UI 设计归档（已否决的设计方案，供参考）
 ├── troubleshooting.md    # 🐛 故障排查（CORS、WASM 404、纹理不显示）
 ├── outfits-spec.md       # 👗 服装变体配置指南（换装系统用户文档）
-├── adr/                  # 📜 决策记录（15条，adr-001 ~ adr-015）
+├── adr/                  # 📜 决策记录（28条，adr-001 ~ adr-028）
 ├── changelog/            # 📋 变更记录（分阶段总结）
 ├── research/             # 🧊 调研归档 — AI 默认不读
-    ├── pmx-ecosystem.md
-    ├── tech-stack-comparison.md
-    ├── dancexr-structure.md
-    ├── dancexr-directory.md
-    ├── pmx-header-layout.md
-    └── blender-integration.md
+│   ├── pmx-ecosystem.md
+│   ├── tech-stack-comparison.md
+│   ├── dancexr-structure.md
+│   ├── dancexr-directory.md
+│   ├── pmx-header-layout.md
+│   ├── blender-integration.md
+│   ├── mmd-tools-analysis.md
+│   └── dancexr-zh/       # DanceXR 中文文档整站镜像（~200 文件）
+├── audit-2026-06-30.md   # 🔍 前端全模块审计记录（第二轮）
 ```
+
+> 📁 **嵌套 AGENTS.md**：[`frontend/AGENTS.md`](frontend/AGENTS.md) — 前端子包专用（构建/测试/TS 约定/目录索引）。改前端代码时优先读它。
 
 ### 1.2 关键文件速查
 
@@ -88,6 +93,7 @@ docs/
 |------|-----------|
 | **每次会话起步** | 本文件 |
 | **接新任务** | `docs/requirements.md`（需求全貌）→ `docs/status.md`（当前状态）→ `docs/roadmap.md`（路线图） |
+| **改前端代码** | [`frontend/AGENTS.md`](frontend/AGENTS.md)（前端构建/测试/TS 约定）→ 需要的子模块 |
 | **改 Go 逻辑** | `docs/architecture.md`（整体架构）→ `app.go` |
 | **改前端渲染** | `docs/architecture.md`（PMX/VMD 环节）→ `frontend/src/scene/scene.ts` |
 | **换装 / 纹理变体** | `docs/architecture.md` §16 → `frontend/src/outfit/outfit.ts` + `frontend/src/menus/outfit-ui.ts` |
@@ -101,7 +107,7 @@ docs/
 | **VPD 姿势导入** | `frontend/src/motion/vpd-parser.ts` |
 | **LipSync** | `frontend/src/motion/lipsync.ts` |
 | **模型预设** | `frontend/src/menus/model-preset.ts` + `docs/architecture.md` §场景序列化 |
-| **动作库弹窗 / 音乐 / 舞蹈套装** | `frontend/src/menus/motion-popup.ts` + `frontend/src/menus/motion-camera-levels.ts` + `frontend/src/menus/motion-dance-sets.ts` + `frontend/src/menus/motion-cloth-levels.ts` |
+| **动作库弹窗 / 音乐 / 舞蹈套装** | `frontend/src/menus/motion-popup.ts` + `frontend/src/menus/motion-camera-levels.ts` + `frontend/src/menus/motion-cloth-levels.ts` + `internal/app/dancesets.go`（Go binding） |
 | **遇到加载问题** | `docs/troubleshooting.md` |
 | **查项目地基** | `docs/foundation.md` |
 | **查命名演变 / 术语** | `docs/glossary.md` |
@@ -113,7 +119,8 @@ docs/
 | **查技术选型理由** | `docs/requirements.md` §「技术选型决策」 |
 | **查项目路线图** | `docs/roadmap.md` |
 | **查调研细节** | 先问用户 → 再读 `docs/research/` 对应文件 |
-| **调 oh-my-opencode 子代理** | 本文件 §「Oh My OpenAgent 子代理」→ `~/.config/opencode/oh-my-openagent.jsonc` |
+| **调子代理 / 多 AI 并发 / 会话边界** | [`docs/multi-ai.md`](docs/multi-ai.md) |
+| **工作流细则（改前/改后/环境）** | [`docs/workflow.md`](docs/workflow.md) |
 
 ### 1.3 任务触发索引
 
@@ -162,6 +169,9 @@ docs/
 ---
 
 ## 二、工作流规则
+
+> 细则（环境约定/会话边界/失败熔断）→ 见 [`docs/workflow.md`](docs/workflow.md)
+> 本节只列**高频项**：改前读文件 + 改完立即构建。
 
 ### 2.1 确认当前状态
 
@@ -482,208 +492,25 @@ frontend/
 
 ## 四、多 AI 并发约束（重要）
 
-### 4.1 文件级互斥
-
-| 文件 | 最多同时修改的 AI 数 | 原因 |
-|------|----------------------|------|
-| `frontend/src/core/config.ts` | **1** | 共享类型定义，合并冲突极高 |
-| `frontend/src/scene/scene.ts` | **1** | 模块级副作用（import 即执行），diff 三向合并必碎 |
-| `frontend/src/menus/model-detail.ts` | **1** | 同上 |
-| `app.go` | **1** | Wails binding 注册表，同名 binding 覆盖无提示 |
-| `frontend/wailsjs/go/` | **0**（不手动改） | Wails 自动生成，谁 build 谁覆盖 |
-| 其余 `*.ts` / `*.go` | 不限制 | 函数级新增，冲突概率低 |
-
-### 4.2 操作纪律
-
-1. **改前 `git pull && git log --oneline -5`** — 确认 HEAD 不是别人的半成品
-2. **不改已声明「本会话独占」的文件** — 如果另一个 AI 先占了 config.ts，你去改 scene 需要等它提交
-3. **新增类型优先放独立文件** — 避免 config.ts 成为瓶颈
-4. **提交前检查 tsc 基线** — 先 `git stash` → `npx tsc --noEmit` 确认基线错误数 → `git stash pop` 后确认未新增
-5. **`wails dev / build` 只在一个 AI 上跑** — 自动生成文件会覆盖其他人的 binding
-6. **测试文件名带系统前缀** — 如 `outfit.test.ts` ✓，`test-helpers.ts` ✗（冲突）
-
-### 4.3 冲突时的熔断
-
-```bash
-git stash                  # 暂存自己
-git pull --rebase          # 变基拉取
-git stash pop              # 解暂存
-# 如果 pop 失败（文件级冲突）：
-git checkout --theirs path # 接受对方版本，重新 apply 自己的改动
-```
+> 已独立成 [`docs/multi-ai.md`](docs/multi-ai.md)：文件级互斥 + 操作纪律 + 冲突熔断 + 子代理速查。
 
 ---
 
 ## 五、审计记录
 
-> 🔍 2026-06-30 完成前端全模块深度审计与修复（第二轮）。覆盖 scene/、physics/、motion/、outfit/、menus/ 共 25+ 文件，修复 80+ 项问题。
-
-### 关键修复亮点
-
-| 模块 | 关键修复 |
-|------|---------|
-| `xpbd-solver.ts` | 子步内 Verlet 积分重构（外力移入子步循环）、地面碰撞增加弹性系数 |
-| `xpbd-cloth.ts` | 锚点粒子 prevP 不覆盖（防撕裂）、碰撞胶囊矩阵每帧更新、移除 globalThis.BABYLON |
-| `xpbd-collider.ts` | 摩擦改为 prevP 实现、多胶囊防重复摩擦、updateCapsuleSizes 骨骼名修复 |
-| `scene-lighting.ts` | transitionLighting 跳帧保护 + shadowBias 实时生效 + 夜间逻辑条件修正 + setSkipLightAutoSave |
-| `scene-env-bridge.ts` | 打断循环依赖（→ impl 直导）、预设动画省保存（skipAutoSave）、isFullRestore 移除、动画取消机制 |
-| `scene-lipsync.ts` | modelRegistry 注入 ModelManager、聚焦变化自动重置 morph 名 |
-| `scene-vmd.ts` | 旧动画句柄释放 + wasmAnimation 泄漏修复 + VmdLoader 清理 |
-| `scene-material.ts` | instanceof StandardMaterial 守卫 + resetMatCatParams 同步清理 _matState |
-| `scene-loader.ts` | 模型预捕获材质原始值 + 注册顺序修正 + 加载锁提示 + modelRegistry→_modelManager |
-| `vmd-writer.ts` | trailer 补第四字段(ik count) + Shift-JIS 编码表 + 帧排序 + 字符边界截断 |
-| `beat-detector.ts` | GainNode 音量控制 + AudioContext try-catch + dispose 清理 phaseStartTime |
-| `menu.ts` | _cancelAnim 动画取消 + _pendingTimeouts 跟踪 + dispose() + keydown 清理 + async renderCustom |
-| `outfit-ui.ts` | loadOutfits try-catch + applyOutfitVariant await + 重置刷新 + 图标改用 createIconifyIcon |
-
-### 审计时发现的高频模式（写新代码注意）
-
-1. **SlideMenu 生命周期**：每次 `new SlideMenu()` 前必须 `oldMenu?.dispose()`，否则 keydown 监听器累积
-2. **modelRegistry 来源**：优先用 `modelManager.modelRegistry`（非 `config.ts` 的裸 export），或注入 ModelManager
-3. **异步操作缺 try-catch**：`loadVMDFromPath`、`applyOutfitVariant` 等均需 catch + setStatus
-4. **`innerHTML` 拼接未转义**：优先用 DOM 方法（`textContent`/`createElement`）或 `escapeHtml`
-5. **XPBD 物理**：碰撞胶囊必须每帧 `updateMatrices`，摩擦须改 `prevP`（非 `p.v`），子步须含外力积分
+> 审计详情移入独立文件 → [`docs/audit-2026-06-30.md`](docs/audit-2026-06-30.md)
 
 ---
 
 ## 六、沟通风格
 
-- 简洁：能用 1 句话不说 2 句
-- 精确：给行号、文件路径、函数名
-- 结构化：表格 > 段落
-- 不废话：不做无谓的「总的来说」「总结一下」
-- 不改不拆：发现不够改的问题先问「要修吗」
+> 已迁入 [`docs/terminology.md`](docs/terminology.md) §九「开发沟通风格」。
 
 ---
 
-## 七、环境提示
+## 七、环境提示 / 会话边界 / 多 AI / 子代理
 
-- **Shell**：优先用 `bash`
-- **路径分隔符**：统一正斜杠 `/`
-- **调试日志用完即删**：`console.log` / `fmt.Print` 测试完后**必须请示用户确认**再删
-- **发版**：`go build -o MikuMikuAR.exe .` （Wails v3，无 wails CLI）
+> 全部迁出：
+> - 环境 + 会话边界 → [`docs/workflow.md`](docs/workflow.md)
+> - 多 AI 并发 + 子代理详情 → [`docs/multi-ai.md`](docs/multi-ai.md)
 
----
-
-## 八、会话边界
-
-### 什么时候开新窗口
-
-当前会话出现以下任一情况时，**关闭当前会话，开新窗口继续**：
-
-| 条件 | 原因 |
-|------|------|
-| ✅ 一个功能做完，验收通过 | 上下文干净，下个功能从头开始 |
-| ✅ 新功能与当前会话无关（不同模块、不同文件） | 避免无关代码污染上下文 |
-| ✅ 会话超过 30 轮 AI 交互 | 上下文窗口前半段被压缩，AI 开始遗忘早期约定 |
-| ✅ AI 开始重复问同一个问题 | 退化信号，换窗口恢复精度 |
-
-### 新窗口加载清单
-
-```
-1. AGENTS.md（项目宪法 + 文档地图）
-2. docs/status.md（当前状态 + 阻塞点）
-3. 本次任务的 spec（你写的需求描述或 fix-cycle.md 模板）
-4. docs/reusables.md（复用函数索引）
-5. "本次不改的文件不要读"（你指定的范围）
-```
-
-不给：之前会话的完整对话记录、不相关模块的代码、`docs/research/`。
-
-### AI 的义务
-
-- AI 发现自己走过 20 轮还没收尾 → 主动提醒「是否拆小或开新窗口」
-- AI 发现自己需要反复读同一段代码来理解 → 建议提取到 `docs/reusables.md`
-
-## 九、Oh My OpenAgent 子代理
-
-> 本项目通过 `oh-my-opencode` 插件安装了多 agent 系统。主代理 Sisyphus 负责调度子代理。
-
-### 8.1 子代理速查
-
-| 子代理 | 角色 | 调用方式 |
-|--------|------|----------|
-| **Oracle** 🧠 | 高难度推理（审架构、复杂调试） | `task(subagent_type="oracle", ...)` |
-| **Hephaestus** 🔧 | 自主探索+端到端实现 | `task(subagent_type="hephaestus", ...)` |
-| **Hephaestus deep** | 同上，深度研究型 | `task(category="deep", ...)` |
-| **Explore** 🔎 | 代码库搜索 | `task(subagent_type="explore", ...)` 或直接用 `grep`（免费） |
-| **Librarian** 📚 | 查外部文档/开源代码 | `task(subagent_type="librarian", ...)` |
-| **Prometheus** 📋 | 战略规划（Tab 切 Plan 模式触发） | 自动触发 |
-| **Metis** 🔍 | 需求预分析 | `task(subagent_type="metis", ...)` |
-| **Momus** 🧐 | 方案评审 | `task(subagent_type="momus", ...)` |
-
-### 8.2 使用提示
-
-Sisyphus 可能习惯自己干活而不是调度子代理。复杂任务时加以下用语提醒：
-
-```
-用 Oracle 先审一下架构
-开 explore 搜一下现有模式
-让 Hephaestus 自己探索代码再实现
-用 Metis 分析一下这个需求有没有歧义
-用 Momus 评审一下方案
-```
-
-> **注意**：轻量搜索直接用 `grep`/`glob` 工具，免费且更快，不需要调子代理。
-
-### 8.3 当前模型配置
-
-> 详见 `~/.config/opencode/oh-my-openagent.jsonc`
-
-| Agent | 模型 | 级别 |
-|-------|------|------|
-| Agent | 模型 | 级别 |
-|-------|------|------|
-| Sisyphus | deepseek-v4-flash | 调度，不碰硬活 |
-| Oracle | deepseek-v4-pro | 唯一 Pro，硬推理 |
-| Hephaestus | deepseek-v4-flash | 写代码主力，Sisyphus review 兜底 |
-| Metis / Momus | deepseek-v4-flash | 分析/评审 |
-| Explore / Librarian / Looker / Atlas / Junior | deepseek-v4-flash | 搜索/轻活 |
-| Prometheus | 全局默认 flash | 偶尔触发 |
-
-> **只有 Oracle 用 Pro**。所有子代理统一 flash，Sisyphus review 兜底，不浪费 Pro 预算。
-
-### 8.4 Trae 内置 Task 工具（今日验证可用）
-
-> 以上 oh-my-opencode 子代理是插件体系。Trae 自身还提供了 `Task` 工具作为通用子代理调度能力，**今天已验证可用**。
-
-**工具名**：`Task`
-
-**参数**：
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `description` | string | 短描述（3-5 词），任务标题 |
-| `query` | string | 任务详细描述（<=30 词？实际可以更长），包含目标、约束、验收标准 |
-| `response_language` | string | 响应语言，如 `"中文"` |
-| `subagent_type` | string | 子代理类型，**`"general_purpose_task"`** 是通用代码任务类型 |
-
-**调用示例**：
-
-```
-Task(
-  description="库列表rAF分片渲染",
-  query="实现 Task 10：模型库列表 rAF 分片渲染优化...",
-  response_language="中文",
-  subagent_type="general_purpose_task"
-)
-```
-
-**特点**：
-- ✅ 支持**并发调用**（同一条消息里放多个 Task 工具调用，子代理并行执行）
-- ✅ 子代理有独立的 tool call 能力（读文件、grep、编辑、跑命令）
-- ✅ 返回结构化总结，不污染主会话上下文
-- ⚠️ `subagent_type="hephaestus"` 等 oh-my-opencode 类型在此工具下**无效**，请用 `"general_purpose_task"`
-- ⚠️ 不确定的 subagent_type 先试一次，失败就换回通用型
-
-**适用场景**：
-1. 多个独立文件的改动可以并行发包（如同时改 3 个不同模块的低优任务）
-2. 改完即忘的一次性任务（避免大量中间步骤挤占主会话上下文）
-3. 需要独立探索+实现的中等复杂度任务
-
-**踩坑记录（2026-07-01）**：
-
-| 错误尝试 | 原因 | 正确做法 |
-|----------|------|----------|
-| `subagent_type="hephaestus"` | oh-my-opencode 类型不适用 Task 工具 | 用 `"general_purpose_task"` |
-| 工具名 `general_purpose_task` | 工具名不存在，类型名≠工具名 | 工具名是 `Task` |
