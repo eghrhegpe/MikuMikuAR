@@ -101,6 +101,7 @@ export interface SceneFile {
         vmdPath: string | null;
         vmdLibraryRef?: string;
         vmdName: string;
+        vmdLayers?: { name: string; path: string | null; weight: number; boneFilter: string[] }[];
         positionX: number;
         positionY?: number;
         positionZ?: number;
@@ -186,6 +187,14 @@ export function serializeScene(): SceneFile {
             vmdPath: inst.vmdPath,
             vmdLibraryRef: inst.vmdPath ? computeLibraryRef(inst.vmdPath) || undefined : undefined,
             vmdName: inst.vmdName,
+            vmdLayers: inst.vmdLayers.length > 0
+                ? inst.vmdLayers.map(l => ({
+                    name: l.name,
+                    path: l.path,
+                    weight: l.weight,
+                    boneFilter: l.boneFilter,
+                }))
+                : undefined,
             positionX: inst.meshes[0]?.position.x ?? 0,
             positionY: inst.meshes[0]?.position.y ?? 0,
             positionZ: inst.meshes[0]?.position.z ?? 0,
@@ -373,6 +382,22 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 }
             } catch (err) {
                 console.warn(`场景恢复: 模型 ${m.name} VMD 加载失败:`, err);
+            }
+        }
+        // 恢复 Motion Layers
+        if (m.vmdLayers && m.vmdLayers.length > 0) {
+            try {
+                const { addVmdLayerFromPath } = await import('./motion/vmd-layers');
+                for (const layer of m.vmdLayers) {
+                    if (layer.path) {
+                        const resolvedPath = resolvePathFromRef(layer.path);
+                        if (resolvedPath) {
+                            await addVmdLayerFromPath(resolvedPath, id, layer.weight, layer.boneFilter);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn(`场景恢复: 模型 ${m.name} 图层恢复失败:`, err);
             }
         }
         if (m.outfitVariant) {

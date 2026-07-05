@@ -90,6 +90,11 @@ cd frontend && npm run test     # vitest 单元测试
 | SSS 次表面散射未实现 | 依赖 babylon-mmd 支持 PBR 材质，上游阻塞 |
 | SAF 完整路径待 Spike | Android 文件访问 Phase C 未实施 |
 | ~~config.ts 全局状态耦合~~ | ✅ 已拆为 types/state/dom/utils 四文件（ADR-032） |
+| **Android: Babylon.js 加载路径** | `index.html` 用 `<script src="/lib/babylon.js">` 根相对路径，Android WebView base URL 不同时可能 404 |
+| **Android: localStorage 容量** | 场景自动保存写 localStorage，Android 有 5MB 限制，大场景可能写满 |
+| **Android: AudioContext 惰性创建** | Android WebView 需用户交互后才能创建 AudioContext，首次无声音频可能失败 |
+| **Android: Canvas 2D 纹理兼容** | 粒子/天空/水面用 Canvas 2D 绘制纹理，低端 Android GPU 可能有兼容问题 |
+| **Android: 软件渲染性能** | 禁用硬件加速强制软件渲染器，大模型场景 FPS 可能低于桌面 |
 
 ---
 

@@ -29,7 +29,7 @@ vi.mock('../outfit/audio', () => ({
 }));
 
 vi.mock('../scene/scene', () => ({
-    setModelMorphWeight: (...args: unknown[]) => mockState.setModelMorphWeight(...args),
+    setModelMorphWeight: ((...args: any[]) => (mockState.setModelMorphWeight as any)(...args)) as any,
 }));
 
 vi.mock('../scene/motion/proc-motion-bridge', () => ({

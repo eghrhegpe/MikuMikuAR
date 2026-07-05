@@ -10,6 +10,18 @@ import type { ClothConfig } from '../physics/xpbd-cloth';
 
 export type ModelKind = 'actor' | 'stage';
 
+/** VMD 动画图层 — 支持多 VMD 叠加（Motion Layers） */
+export type VmdLayer = {
+    id: string;
+    name: string;
+    data: ArrayBuffer;
+    path: string | null;
+    weight: number;
+    enabled: boolean;
+    /** 骨骼过滤：空数组=全部骨骼，非空=仅这些骨骼受此层影响 */
+    boneFilter: string[];
+};
+
 /**
  * IMmdModel 接口不含 setRuntimeAnimation / createRuntimeAnimation
  * （这两个方法在 MmdModel 和 MmdWasmModel 具体类上）。
@@ -33,6 +45,8 @@ export type ModelInstance = {
     vmdName: string;
     vmdPath: string | null;
     animationDuration: number;
+    /** 多 VMD 图层（Motion Layers），空数组=单 VMD 模式 */
+    vmdLayers: VmdLayer[];
     kind: ModelKind;
     visible: boolean;
     opacity: number;
