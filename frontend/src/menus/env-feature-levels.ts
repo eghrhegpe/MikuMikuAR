@@ -295,7 +295,7 @@ export function buildExperimentalLevel(): PopupLevel {
 
                 const isWebGL2 = engine.webGLVersion >= 2;
                 slideRow(c, 'lucide:cloud', '体积云', true, () => getEnvMenu()?.push(buildCloudLevel()),
-                    undefined, undefined, {
+                    undefined, undefined, undefined, {
                         value: envState.cloudsEnabled,
                         onChange: (v) => setEnvState({ cloudsEnabled: v }),
                         disabled: !isWebGL2,
@@ -327,11 +327,42 @@ export function buildFogLevel(): PopupLevel {
                 addToggleRow(c, '启用雾', s.fogEnabled, (v) => { setEnvState({ fogEnabled: v }); }, 'lucide:cloud-fog', {
                     bind: () => envState.fogEnabled,
                 });
+                addModeSlider(
+                    c,
+                    '雾模式',
+                    [
+                        { value: 'exp2', label: 'EXP2' },
+                        { value: 'exp', label: 'EXP' },
+                        { value: 'linear', label: '线性' },
+                    ],
+                    s.fogMode,
+                    (v) => { setEnvState({ fogMode: v as 'exp' | 'exp2' | 'linear' }); },
+                    'lucide:layers',
+                    undefined,
+                    {
+                        bind: () => envState.fogMode,
+                    }
+                );
                 addColorSliderRow(c, '雾色', s.fogColor, (v) => { setEnvState({ fogColor: v }); }, {
                     bind: () => envState.fogColor,
                 });
                 addSliderRow(c, '雾密度', s.fogDensity, 0, 0.1, 0.001, (v) => { setEnvState({ fogDensity: v }); }, 'lucide:droplets', undefined, {
                     bind: () => envState.fogDensity,
+                    onUpdate: (el) => {
+                        el.style.display = envState.fogMode === 'linear' ? 'none' : '';
+                    },
+                });
+                addSliderRow(c, '雾起始', s.fogStart ?? 10, 0, 200, 1, (v) => { setEnvState({ fogStart: v }); }, undefined, undefined, {
+                    bind: () => envState.fogStart,
+                    onUpdate: (el) => {
+                        el.style.display = envState.fogMode === 'linear' ? '' : 'none';
+                    },
+                });
+                addSliderRow(c, '雾结束', s.fogEnd ?? 100, 0, 200, 1, (v) => { setEnvState({ fogEnd: v }); }, undefined, undefined, {
+                    bind: () => envState.fogEnd,
+                    onUpdate: (el) => {
+                        el.style.display = envState.fogMode === 'linear' ? '' : 'none';
+                    },
                 });
             });
         },

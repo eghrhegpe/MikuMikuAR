@@ -332,8 +332,10 @@ type UIState struct {
 	FontFamily      string  `json:"fontFamily"`      // "system"|"noto"|"yahei"
 	Animations      bool    `json:"animations"`      // enable menu slide animations
 	BlurBg          bool    `json:"blurBg"`          // enable background blur on overlays
-	PerformanceMode string  `json:"performanceMode"` // "auto"|"quality"|"balanced"|"performance"
-}
+		PerformanceMode string  `json:"performanceMode"` // "auto"|"quality"|"balanced"|"performance"
+		ScreenshotFormat  string  `json:"screenshotFormat"`
+		ScreenshotQuality float64 `json:"screenshotQuality"`
+	}
 
 // OverridePaths allows per-category path overrides.
 // If a field is empty, the default path under ResourceRoot is used.
@@ -425,8 +427,11 @@ type EnvState struct {
 	CloudHeight   float64 `json:"cloudHeight"`
 
 	FogEnabled bool       `json:"fogEnabled"`
+	FogMode    string     `json:"fogMode"`
 	FogColor   [3]float64 `json:"fogColor"`
 	FogDensity float64    `json:"fogDensity"`
+	FogStart   float64    `json:"fogStart"`
+	FogEnd     float64    `json:"fogEnd"`
 
 	ClothEnabled bool        `json:"clothEnabled"`
 	ClothConfig  ClothConfig `json:"clothConfig"`

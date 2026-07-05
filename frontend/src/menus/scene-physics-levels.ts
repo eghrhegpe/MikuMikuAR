@@ -37,10 +37,22 @@ import {
 import { buildClothParamsLevel } from './motion-cloth-levels';
 import { getSceneMenu, refreshSceneRoot } from './scene-menu';
 
+/**
+ * 增量更新 toggle 行的 DOM 状态（不触发 reRender）。
+ * 通过 rowKey 定位行 DOM，翻转 switch 类名。
+ */
+function _patchToggle(target: string, newValue: boolean): void {
+    const row = document.querySelector(`[data-row-key="${target}"]`) as HTMLElement | null;
+    if (!row) return;
+    const sw = row.querySelector('.switch');
+    if (sw) {
+        sw.classList.toggle('on', newValue);
+        sw.classList.toggle('off', !newValue);
+    }
+}
+
 /** 构建物理设置子页 */
 export function buildPhysicsLevel(): PopupLevel {
-    const reRender = () => { if (getSceneMenu()) getSceneMenu()?.reRender(); };
-
     return {
         label: '物理',
         dir: '',
@@ -58,7 +70,6 @@ export function buildPhysicsLevel(): PopupLevel {
                 onSliderChange: (v: number) => {
                     setGravityStrength(v);
                     setClothGravity(v);
-                    reRender();
                 },
             } as PopupRow,
             // WASM 物理（MMD Bullet 骨髁物理）— 通用物理系统，放第二
@@ -79,7 +90,7 @@ export function buildPhysicsLevel(): PopupLevel {
                     envState.clothEnabled = v;
                     toggleCloth(v);
                     refreshSceneRoot();
-                    reRender();
+                    _patchToggle('physics:cloth-toggle', v);
                 },
             } as PopupRow,
             // 求解质量（原名 求解迭代）
@@ -94,7 +105,6 @@ export function buildPhysicsLevel(): PopupLevel {
                 sliderStep: 1,
                 onSliderChange: (v: number) => {
                     setSolverSubsteps(v);
-                    reRender();
                 },
             } as PopupRow,
             // 模拟速度
@@ -109,7 +119,6 @@ export function buildPhysicsLevel(): PopupLevel {
                 sliderStep: 0.1,
                 onSliderChange: (v: number) => {
                     setTimeScale(v);
-                    reRender();
                 },
             } as PopupRow,
             // 碰撞：folder + headerToggle
@@ -123,7 +132,6 @@ export function buildPhysicsLevel(): PopupLevel {
                     onChange: (v) => {
                         setCollisionEnabled(v);
                         refreshSceneRoot();
-                        getSceneMenu()?.updateControls();
                     },
                     bind: () => getCollisionEnabled(),
                 },
@@ -148,8 +156,6 @@ export function buildPhysicsLevel(): PopupLevel {
 
 /** 构建碰撞子页（地面碰撞 + 身体碰撞） */
 export function buildCollisionLevel(): PopupLevel {
-    const reRender = () => { if (getSceneMenu()) getSceneMenu()?.reRender(); };
-
     return {
         label: '碰撞',
         dir: '',
@@ -163,7 +169,7 @@ export function buildCollisionLevel(): PopupLevel {
                 onToggleChange: (v: boolean) => {
                     setGroundCollisionEnabled(v);
                     refreshSceneRoot();
-                    reRender();
+                    _patchToggle('collision:ground', v);
                 },
             } as PopupRow,
             {
@@ -175,7 +181,7 @@ export function buildCollisionLevel(): PopupLevel {
                 onToggleChange: (v: boolean) => {
                     setBodyCollisionEnabled(v);
                     refreshSceneRoot();
-                    reRender();
+                    _patchToggle('collision:body', v);
                 },
             } as PopupRow,
         ],
@@ -186,7 +192,6 @@ export function buildCollisionLevel(): PopupLevel {
 export function buildWasmPhysicsLevel(): PopupLevel {
     const id = focusedModelId;
     const inst = id ? modelManager.get(id) : null;
-    const reRender = () => { if (getSceneMenu()) getSceneMenu()?.reRender(); };
     const items: PopupRow[] = [];
 
     if (!id || !inst) {
@@ -208,7 +213,7 @@ export function buildWasmPhysicsLevel(): PopupLevel {
         toggleValue: inst.physicsEnabled,
         onToggleChange: (v) => {
             setModelPhysics(id, v);
-            reRender();
+            _patchToggle('wasm:master', v);
         },
     } as PopupRow);
 
@@ -241,7 +246,7 @@ export function buildWasmPhysicsLevel(): PopupLevel {
             toggleValue: enabled,
             onToggleChange: (v) => {
                 setPhysicsCategory(id, cat, v);
-                reRender();
+                _patchToggle(`wasm:cat:${cat}`, v);
             },
         } as PopupRow);
     }
@@ -254,7 +259,6 @@ export function buildPhysicsDebugLevel(): PopupLevel {
     const id = focusedModelId;
     const inst = id ? modelManager.get(id) : null;
     const dbg = getDebugState();
-    const reRender = () => { if (getSceneMenu()) getSceneMenu()?.reRender(); };
 
     return {
         label: '调试',
@@ -264,37 +268,37 @@ export function buildPhysicsDebugLevel(): PopupLevel {
                 kind: 'toggle', label: '材质线框', icon: 'lucide:square',
                 target: 'debug:wireframe',
                 toggleValue: inst?.wireframe ?? false,
-                onToggleChange: (v) => { if (id) setModelWireframe(id, v); reRender(); },
+                onToggleChange: (v) => { if (id) setModelWireframe(id, v); _patchToggle('debug:wireframe', v); },
             } as PopupRow,
             {
                 kind: 'toggle', label: '骨骼线', icon: 'lucide:git-branch',
                 target: 'debug:bonelines',
                 toggleValue: inst?.showBoneLines ?? false,
-                onToggleChange: (v) => { if (id) setModelBoneLinesVis(id, v); reRender(); },
+                onToggleChange: (v) => { if (id) setModelBoneLinesVis(id, v); _patchToggle('debug:bonelines', v); },
             } as PopupRow,
             {
                 kind: 'toggle', label: '骨骼关节球', icon: 'lucide:circle-dot',
                 target: 'debug:bonejoints',
                 toggleValue: inst?.showBoneJoints ?? false,
-                onToggleChange: (v) => { if (id) setModelBoneJointsVis(id, v); reRender(); },
+                onToggleChange: (v) => { if (id) setModelBoneJointsVis(id, v); _patchToggle('debug:bonejoints', v); },
             } as PopupRow,
             {
                 kind: 'toggle', label: '粒子球', icon: 'lucide:circle',
                 target: 'debug:particles',
                 toggleValue: dbg.particles,
-                onToggleChange: (v) => { setDebugParticles(v); reRender(); },
+                onToggleChange: (v) => { setDebugParticles(v); _patchToggle('debug:particles', v); },
             } as PopupRow,
             {
                 kind: 'toggle', label: '约束线', icon: 'lucide:minus',
                 target: 'debug:constraints',
                 toggleValue: dbg.constraints,
-                onToggleChange: (v) => { setDebugConstraints(v); reRender(); },
+                onToggleChange: (v) => { setDebugConstraints(v); _patchToggle('debug:constraints', v); },
             } as PopupRow,
             {
                 kind: 'toggle', label: '碰撞体线框', icon: 'lucide:box',
                 target: 'debug:colliders',
                 toggleValue: dbg.colliders,
-                onToggleChange: (v) => { setDebugColliders(v); reRender(); },
+                onToggleChange: (v) => { setDebugColliders(v); _patchToggle('debug:colliders', v); },
             } as PopupRow,
         ],
     };

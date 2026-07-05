@@ -66,7 +66,7 @@ describe('slideRow', () => {
         const container = document.createElement('div');
         const onClick = vi.fn();
         const onToggle = vi.fn();
-        slideRow(container, 'icon', 'My Label', true, onClick, undefined, undefined, {
+        slideRow(container, 'icon', 'My Label', true, onClick, undefined, undefined, undefined, {
             value: true,
             onChange: onToggle,
         });
@@ -91,7 +91,7 @@ describe('slideRow', () => {
         const container = document.createElement('div');
         const onClick = vi.fn();
         const onDisabledClick = vi.fn();
-        slideRow(container, 'icon', 'Label', false, onClick, undefined, undefined, {
+        slideRow(container, 'icon', 'Label', false, onClick, undefined, undefined, undefined, {
             value: true,
             onChange: vi.fn(),
             disabled: true,

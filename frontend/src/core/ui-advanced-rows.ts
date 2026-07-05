@@ -127,9 +127,8 @@ export function addColorSliderRow(
         function onDragEnd(e: MouseEvent): void {
             document.removeEventListener('mousemove', onDragMove);
             document.removeEventListener('mouseup', onDragEnd);
-            if (!didDrag) {
-                const rect = bar.getBoundingClientRect();
-                setValueFromClientX(e.clientX, rect);
+            if (!didDrag && dragRect) {
+                setValueFromClientX(e.clientX, dragRect);
             }
             dragRect = null;
             didDrag = false;
@@ -140,7 +139,6 @@ export function addColorSliderRow(
             bar.focus();
             dragRect = bar.getBoundingClientRect();
             didDrag = false;
-            setValueFromClientX(e.clientX, dragRect);
             document.addEventListener('mousemove', onDragMove);
             document.addEventListener('mouseup', onDragEnd);
         });

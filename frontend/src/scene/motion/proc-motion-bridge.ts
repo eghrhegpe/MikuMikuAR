@@ -10,15 +10,18 @@ import {
     DEFAULT_PROC_STATE,
     generateIdleVmd,
     generateAutoDanceVmd,
+    generateLifelikeVmd,
     shouldAutoDance,
     shouldIdle,
     PROC_VMD_NAME_IDLE,
     PROC_VMD_NAME_AUTODANCE,
+    PROC_VMD_NAME_LIFELIKE,
 } from '../../motion-algos/procedural-motion';
 import { BeatDetector } from '../../motion-algos/beat-detector';
 import { mmdRuntime, triggerAutoSave, focusedModelId } from '../../core/config';
 import { isAudioPlaying } from '../../outfit/audio';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from '../scene';
+import { addVmdLayer, removeVmdLayer, getVmdLayers, clearVmdLayers } from './vmd-layers';
 import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
@@ -597,6 +600,64 @@ export function setProcMotionEyeTrackingEnabled(v: boolean): void {
 /** 设置头部跟随开关（实时效果，不重新生成 VMD）。 */
 export function setProcMotionHeadTrackingEnabled(v: boolean): void {
     _setGazeTrackingSetting('headTrackingEnabled', v);
+}
+
+// ======== Lifelike Motion Layer（微动叠加层） ========
+
+let _lifelikeLayerId: string | null = null;
+
+/** 生成 lifelike VMD 并作为图层添加到当前模型。 */
+async function _applyLifelikeLayer(): Promise<void> {
+    const modelId = focusedModelId;
+    if (!modelId) return;
+    const inst = modelManager.get(modelId);
+    if (!inst?.mmdModel) return;
+
+    // 先移除旧的 lifelike 图层
+    if (_lifelikeLayerId) {
+        await removeVmdLayer(_lifelikeLayerId, modelId);
+        _lifelikeLayerId = null;
+    }
+
+    const morphNames = inst.mmdModel.morph.morphs.map(m => m.name) ?? [];
+    const boneNames = inst.mmdModel.runtimeBones.map(b => b.name);
+    const buf = generateLifelikeVmd(procState, morphNames, boneNames);
+
+    const layer = await addVmdLayer(buf, 'Lifelike', modelId, procState.lifelikeIntensity);
+    if (layer) {
+        _lifelikeLayerId = layer.id;
+    }
+}
+
+/** 移除 lifelike 图层。 */
+async function _removeLifelikeLayer(): Promise<void> {
+    if (_lifelikeLayerId) {
+        const modelId = focusedModelId;
+        if (modelId) {
+            await removeVmdLayer(_lifelikeLayerId, modelId);
+        }
+        _lifelikeLayerId = null;
+    }
+}
+
+/** 设置 lifelike 开关。 */
+export async function setLifelikeEnabled(v: boolean): Promise<void> {
+    procState = { ...procState, lifelikeEnabled: v };
+    triggerAutoSave();
+    if (v) {
+        await _applyLifelikeLayer();
+    } else {
+        await _removeLifelikeLayer();
+    }
+}
+
+/** 设置 lifelike 强度并重新应用。 */
+export async function setLifelikeIntensity(v: number): Promise<void> {
+    procState = { ...procState, lifelikeIntensity: Math.max(0, Math.min(1, v)) };
+    triggerAutoSave();
+    if (procState.lifelikeEnabled) {
+        await _applyLifelikeLayer();
+    }
 }
 
 export function regenerateProcMotion(): void {

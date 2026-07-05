@@ -87,6 +87,73 @@ function syncModelTransform(inst: ModelInstance): void {
     }
 }
 
+// ======== Formation Types ========
+
+export type FormationType = 'line' | 'v-shape' | 'circle' | 'grid' | 'diagonal' | 'arc';
+
+const FORMATION_LABELS: Record<FormationType, string> = {
+    'line': '一字排列',
+    'v-shape': 'V 字阵型',
+    'circle': '圆形阵型',
+    'grid': '网格阵型',
+    'diagonal': '对角排列',
+    'arc': '弧形排列',
+};
+
+export function getFormationLabels(): Record<FormationType, string> {
+    return { ...FORMATION_LABELS };
+}
+
+function _computeFormationPos(
+    type: FormationType,
+    index: number,
+    total: number,
+    spacing: number
+): [number, number, number] {
+    const cx = 0, cz = 0;
+    switch (type) {
+        case 'line': {
+            const x = (index - (total - 1) / 2) * spacing;
+            return [cx + x, 0, cz];
+        }
+        case 'v-shape': {
+            const half = Math.floor(total / 2);
+            const row = Math.abs(index - half);
+            const x = (index - half) * spacing * 0.6;
+            const z = row * spacing * 0.8;
+            return [cx + x, 0, cz + z];
+        }
+        case 'circle': {
+            const radius = Math.max(spacing, (total * spacing) / (2 * Math.PI));
+            const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
+            const x = cx + Math.cos(angle) * radius;
+            const z = cz + Math.sin(angle) * radius;
+            return [x, 0, z];
+        }
+        case 'grid': {
+            const cols = Math.ceil(Math.sqrt(total));
+            const row = Math.floor(index / cols);
+            const col = index % cols;
+            const x = (col - (cols - 1) / 2) * spacing;
+            const z = row * spacing;
+            return [cx + x, 0, cz + z];
+        }
+        case 'diagonal': {
+            const x = (index - (total - 1) / 2) * spacing * 0.7;
+            const z = index * spacing * 0.5;
+            return [cx + x, 0, cz + z];
+        }
+        case 'arc': {
+            const radius = Math.max(spacing * 2, total * spacing * 0.8);
+            const spread = Math.min(Math.PI * 0.8, (total - 1) * 0.4);
+            const angle = -spread / 2 + (index / Math.max(1, total - 1)) * spread;
+            const x = cx + Math.sin(angle) * radius;
+            const z = cz + (1 - Math.cos(angle)) * radius * 0.3;
+            return [x, 0, z];
+        }
+    }
+}
+
 // ======== ModelManager Class ========
 
 export class ModelManager {
@@ -330,6 +397,21 @@ export class ModelManager {
                 inst.meshes[0].position.x = offsetX;
             }
         });
+        this.onChange();
+    }
+
+    /** Apply a formation preset to all models. */
+    setFormation(type: FormationType): void {
+        const models = Array.from(this.modelRegistry.values());
+        const n = models.length;
+        if (n === 0) return;
+        const spacing = 3;
+        for (let i = 0; i < n; i++) {
+            const inst = models[i];
+            if (inst.meshes.length === 0) continue;
+            const pos = _computeFormationPos(type, i, n, spacing);
+            inst.meshes[0].position.set(pos[0], pos[1], pos[2]);
+        }
         this.onChange();
     }
 

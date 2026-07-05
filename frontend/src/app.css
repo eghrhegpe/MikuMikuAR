@@ -1316,6 +1316,7 @@ input, textarea, [contenteditable] {
     font-variant-numeric: tabular-nums;
 }
 .cs-bar {
+    flex: 1;
     height: var(--cs-bar-height);
     background: var(--white-12);
     border-radius: var(--cs-bar-radius);

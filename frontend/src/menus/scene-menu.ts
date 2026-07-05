@@ -14,6 +14,7 @@ import {
     modelRegistry,
     focusedModelId,
     setFocusedModelId,
+    uiState,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { createIconifyIcon } from '../core/icons';
@@ -28,6 +29,8 @@ import {
 } from '../core/wails-bindings';
 import { tryCatchStatus } from '../core/utils';
 import { focusModel } from '../scene/scene';
+import { setModelFormation, getFormationLabels } from '../scene/scene';
+import type { FormationType } from '../scene/scene';
 
 // ======== 从子文件导入 ========
 import {
@@ -69,6 +72,29 @@ export function reRenderSceneMenu(): void {
     getSceneMenu()?.reRender();
 }
 
+function buildFormationLevel(): PopupLevel {
+    const labels = getFormationLabels();
+    const formations: FormationType[] = ['line', 'v-shape', 'circle', 'grid', 'diagonal', 'arc'];
+    const icons: Record<FormationType, string> = {
+        'line': 'lucide:minus',
+        'v-shape': 'lucide:chevron-up',
+        'circle': 'lucide:circle',
+        'grid': 'lucide:grid-3x3',
+        'diagonal': 'lucide:trending-up',
+        'arc': 'lucide:arrow-up-right',
+    };
+    return {
+        label: '队形',
+        dir: '',
+        items: formations.map((f) => ({
+            kind: 'action' as const,
+            label: labels[f],
+            icon: icons[f],
+            target: `formation:set:${f}`,
+        })),
+    };
+}
+
 function buildScreenshotLevel(): PopupLevel {
     return {
         label: '截图',
@@ -105,6 +131,9 @@ function buildSceneRootItems(): PopupRow[] {
     items.push({ kind: 'folder', label: '截图', icon: 'lucide:camera', target: 'scene:screenshot' });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({ kind: 'folder', label: '物理', icon: 'lucide:atom', target: 'scene:physics' });
+    if (modelRegistry.size > 1) {
+        items.push({ kind: 'folder', label: '队形', icon: 'lucide:layout-grid', target: 'scene:formation' });
+    }
     return items;
 }
 
@@ -134,6 +163,8 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
             return buildPropLevel();
         case 'scene:physics':
             return buildPhysicsLevel();
+        case 'scene:formation':
+            return buildFormationLevel();
         case 'physics:cloth':
             return buildClothParamsLevel();
         case 'physics:debug':
@@ -159,9 +190,12 @@ async function screenshotCurrent(): Promise<void> {
     if (!dir) return;
     await new Promise((r) => requestAnimationFrame(r));
     await new Promise((r) => requestAnimationFrame(r));
-    const base64 = dom.canvas.toDataURL('image/png', 0.9).replace(/^data:image\/png;base64,/, '');
+    const fmt = uiState.screenshotFormat ?? 'image/png';
+    const q = uiState.screenshotQuality ?? 0.9;
+    const base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
     const ts = Date.now();
-    const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.png`;
+    const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
+    const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.${ext}`;
     const r = await tryCatchStatus(async () => {
         await SaveScreenshot(dir, filename, base64);
         return true;
@@ -183,9 +217,12 @@ async function screenshotBatch(): Promise<void> {
             await new Promise((r) => requestAnimationFrame(r));
             await new Promise((r) => requestAnimationFrame(r));
             await new Promise((r) => requestAnimationFrame(r));
-            const base64 = dom.canvas.toDataURL('image/png', 0.9).replace(/^data:image\/png;base64,/, '');
+            const fmt = uiState.screenshotFormat ?? 'image/png';
+            const q = uiState.screenshotQuality ?? 0.9;
+            const base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
             const ts = Date.now();
-            const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.png`;
+            const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
+            const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.${ext}`;
             await SaveScreenshot(dir, filename, base64);
             saved++;
             setStatus(`截图中… ${saved}/${modelRegistry.size}`, true);
@@ -213,6 +250,12 @@ const SCENE_ACTIONS: Record<string, () => void> = {
     'screenshot:current': () => { void screenshotCurrent(); },
     'screenshot:batch': () => { void screenshotBatch(); },
     'scene:save': () => { void saveScene(); },
+    'formation:set:line': () => { setModelFormation('line'); setStatus('✓ 一字排列', true); },
+    'formation:set:v-shape': () => { setModelFormation('v-shape'); setStatus('✓ V 字阵型', true); },
+    'formation:set:circle': () => { setModelFormation('circle'); setStatus('✓ 圆形阵型', true); },
+    'formation:set:grid': () => { setModelFormation('grid'); setStatus('✓ 网格阵型', true); },
+    'formation:set:diagonal': () => { setModelFormation('diagonal'); setStatus('✓ 对角排列', true); },
+    'formation:set:arc': () => { setModelFormation('arc'); setStatus('✓ 弧形排列', true); },
 };
 
 function handleSceneAction(row: PopupRow): void {

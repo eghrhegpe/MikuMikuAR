@@ -694,7 +694,7 @@ export class SlideMenu {
                     const next = this.onFolderEnter(row, this);
                     if (next) this.push(next);
                 },
-                row.sublabel, row.catTag, row.headerToggle
+                row.sublabel, row.catTag, undefined, row.headerToggle
             );
             const el = wrapper.firstChild as HTMLElement | null;
             if (el) {

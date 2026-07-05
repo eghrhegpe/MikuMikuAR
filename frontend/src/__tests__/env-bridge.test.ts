@@ -407,8 +407,15 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
         });
     });
 
-    it('calls applySky, applyGround, applyFog', () => {
+    it('calls only the relevant subsystems for changed keys', () => {
         setEnvState({ skyMode: 'procedural' });
+        expect(mockImplApplySky).toHaveBeenCalled();
+        expect(mockImplApplyGround).not.toHaveBeenCalled();
+        expect(mockImplApplyFog).not.toHaveBeenCalled();
+    });
+
+    it('calls all subsystems when keys from all groups change', () => {
+        setEnvState({ skyMode: 'procedural', groundMode: 'solid', fogEnabled: true });
         expect(mockImplApplySky).toHaveBeenCalled();
         expect(mockImplApplyGround).toHaveBeenCalled();
         expect(mockImplApplyFog).toHaveBeenCalled();
@@ -1036,7 +1043,7 @@ describe('Module-level edge cases', () => {
             throw new Error('sky error');
         });
         expect(() => {
-            setEnvState({ skyMode: 'procedural' });
+            setEnvState({ skyMode: 'procedural', groundColor: [0.5, 0.5, 0.5] });
         }).not.toThrow();
         expect(mockImplApplyGround).toHaveBeenCalled();
     });

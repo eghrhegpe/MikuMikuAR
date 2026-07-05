@@ -708,3 +708,95 @@ export function setCameraState(s: CameraState): void {
         cam.setTarget(new Vector3(s.targetX, s.targetY, s.targetZ));
     }
 }
+
+// ======== Auto Camera（节拍驱动运镜） ========
+
+interface AutoCameraPreset {
+    alpha: number;   // 水平角度 (rad)
+    beta: number;    // 垂直角度 (rad)
+    radius: number;  // 距离
+}
+
+const AUTO_CAMERA_PRESETS: AutoCameraPreset[] = [
+    { alpha: -Math.PI / 2,  beta: Math.PI / 3,      radius: 16 },  // 正面标准
+    { alpha: -Math.PI / 4,  beta: Math.PI / 3.5,    radius: 14 },  // 右前 45°
+    { alpha: -Math.PI * 3/4, beta: Math.PI / 3.5,   radius: 14 },  // 左前 45°
+    { alpha: -Math.PI / 2,  beta: Math.PI / 6,      radius: 18 },  // 高角度俯拍
+    { alpha: -Math.PI / 2,  beta: Math.PI / 2.5,    radius: 10 },  // 近距离正面
+    { alpha: 0,             beta: Math.PI / 3,      radius: 16 },  // 右侧 90°
+    { alpha: -Math.PI,      beta: Math.PI / 3,      radius: 16 },  // 左侧 90°
+    { alpha: -Math.PI / 2,  beta: Math.PI / 4,      radius: 22 },  // 远景
+];
+
+let _autoCameraEnabled = false;
+let _autoCameraBeatCount = 0;
+let _autoCameraPresetIdx = 0;
+let _autoCameraBeatsPerSwitch = 4; // 每 4 拍切换一次
+let _autoCameraUnsub: (() => void) | null = null;
+
+/** 设置 Auto Camera 开关。启用时注册 beat 回调，禁用时移除。 */
+export function setAutoCameraEnabled(v: boolean, beatDetector?: { onBeat: (cb: () => void) => () => void } | null): void {
+    if (v === _autoCameraEnabled) return;
+    _autoCameraEnabled = v;
+    if (v) {
+        _autoCameraBeatCount = 0;
+        _autoCameraPresetIdx = 0;
+        if (beatDetector) {
+            _autoCameraUnsub = beatDetector.onBeat(_onAutoCameraBeat);
+        }
+    } else {
+        if (_autoCameraUnsub) {
+            _autoCameraUnsub();
+            _autoCameraUnsub = null;
+        }
+    }
+}
+
+export function isAutoCameraEnabled(): boolean {
+    return _autoCameraEnabled;
+}
+
+/** 设置每多少拍切换一次镜头。 */
+export function setAutoCameraBeatsPerSwitch(n: number): void {
+    _autoCameraBeatsPerSwitch = Math.max(1, Math.min(16, Math.round(n)));
+}
+
+export function getAutoCameraBeatsPerSwitch(): number {
+    return _autoCameraBeatsPerSwitch;
+}
+
+function _onAutoCameraBeat(): void {
+    if (!_autoCameraEnabled) return;
+    _autoCameraBeatCount++;
+    if (_autoCameraBeatCount < _autoCameraBeatsPerSwitch) return;
+    _autoCameraBeatCount = 0;
+
+    const cam = _currentCamera;
+    if (!cam || !(cam instanceof ArcRotateCamera)) return;
+    if (_cameraMode !== 'orbit' && _cameraMode !== 'concert') return;
+
+    // 切到下一个预设（避免连续重复）
+    let nextIdx = (_autoCameraPresetIdx + 1 + Math.floor(Math.random() * (AUTO_CAMERA_PRESETS.length - 1))) % AUTO_CAMERA_PRESETS.length;
+    if (nextIdx === _autoCameraPresetIdx) nextIdx = (nextIdx + 1) % AUTO_CAMERA_PRESETS.length;
+    _autoCameraPresetIdx = nextIdx;
+
+    const preset = AUTO_CAMERA_PRESETS[nextIdx];
+
+    // 平滑过渡到新预设（用 setTimeout 分步插值，~0.5s 完成）
+    const startAlpha = cam.alpha;
+    const startBeta = cam.beta;
+    const startRadius = cam.radius;
+    const duration = 500; // ms
+    const startTime = performance.now();
+
+    const animate = () => {
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(1, elapsed / duration);
+        const ease = t * t * (3 - 2 * t); // smoothstep
+        cam.alpha = startAlpha + (preset.alpha - startAlpha) * ease;
+        cam.beta = startBeta + (preset.beta - startBeta) * ease;
+        cam.radius = startRadius + (preset.radius - startRadius) * ease;
+        if (t < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+}

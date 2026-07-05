@@ -68,6 +68,9 @@ const defaultEnv: EnvState = {
     fogEnabled: false,
     fogColor: [0.5, 0.5, 0.6],
     fogDensity: 0.01,
+    fogMode: 'exp2',
+    fogStart: 10,
+    fogEnd: 100,
     clothEnabled: false,
     clothConfig: {
         anchorBone: '腰',
@@ -151,6 +154,9 @@ describe('EnvState defaults', () => {
             'fogEnabled',
             'fogColor',
             'fogDensity',
+            'fogMode',
+            'fogStart',
+            'fogEnd',
             'clothEnabled',
             'clothConfig',
         ];

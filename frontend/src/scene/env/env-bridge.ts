@@ -27,48 +27,88 @@ function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]
 }
 
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
-function _applyEnvStateFacade(state: EnvState): void {
-    try {
-        impl.applySky(state);
-    } catch (e) {
-        console.warn('[env] sky fail:', e);
-    }
-    try {
-        impl.applyGround(state);
-    } catch (e) {
-        console.warn('[env] ground fail:', e);
-    }
-    try {
-        impl.applyFog(state);
-    } catch (e) {
-        console.warn('[env] fog fail:', e);
-    }
-    try {
-        if (state.waterEnabled) {
-            impl.createWater(state);
-        } else {
-            impl.disposeWater();
+function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): void {
+    const changed = partial ? Object.keys(partial) : null;
+
+    // Guard: skip sky rebuild unless a sky-related property changed
+    const skyKeys = ['skyMode', 'skyColorTop', 'skyColorMid', 'skyColorBot', 'skyTexture',
+        'skyRotationY', 'skyRotationSpeed', 'skyBrightness', 'starsEnabled', 'envIntensity',
+        'sunAngle', 'azimuth'];
+    if (!changed || changed.some((k) => skyKeys.includes(k))) {
+        try {
+            impl.applySky(state);
+        } catch (e) {
+            console.warn('[env] sky fail:', e);
         }
-    } catch (e) {
-        console.warn('[env] water fail:', e);
     }
-    try {
-        if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
-            impl.createParticleEmitter(state.particleType, state.windEnabled);
-        } else {
-            impl.disposeParticles();
+
+    // Guard: skip ground rebuild unless ground-related property changed
+    const groundKeys = ['groundVisible', 'groundMode', 'groundColor', 'groundAlpha',
+        'groundTexture', 'groundTextureEnabled', 'groundTextureScale'];
+    if (!changed || changed.some((k) => groundKeys.includes(k))) {
+        try {
+            impl.applyGround(state);
+        } catch (e) {
+            console.warn('[env] ground fail:', e);
         }
-    } catch (e) {
-        console.warn('[env] particle fail:', e);
     }
-    try {
-        if (state.cloudsEnabled) {
-            impl.createClouds(state);
-        } else {
-            impl.disposeClouds();
+
+    // Guard: skip fog rebuild unless fog-related property changed
+    const fogKeys = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
+    if (!changed || changed.some((k) => fogKeys.includes(k))) {
+        try {
+            impl.applyFog(state);
+        } catch (e) {
+            console.warn('[env] fog fail:', e);
         }
-    } catch (e) {
-        console.warn('[env] cloud fail:', e);
+    }
+
+    // Water
+    const waterKeys = ['waterEnabled', 'waterLevel', 'waterColor', 'waterTransparency',
+        'waterWaveHeight', 'waterSize', 'waterAnimSpeed', 'fresnelBias', 'fresnelPower',
+        'diffuseStrength', 'ambientStrength', 'foamTransitionRange', 'rippleNormalStrength',
+        'rippleGlintStrength', 'causticColor1', 'causticColor2', 'causticScrollX',
+        'causticScrollY', 'fresnelAlphaInfluence', 'foamAlphaInfluence'];
+    if (!changed || changed.some((k) => waterKeys.includes(k))) {
+        try {
+            if (state.waterEnabled) {
+                impl.createWater(state);
+            } else {
+                impl.disposeWater();
+            }
+        } catch (e) {
+            console.warn('[env] water fail:', e);
+        }
+    }
+
+    // Particles
+    const particleKeys = ['particleEnabled', 'particleType', 'particleEmitRate',
+        'particleSize', 'particleSpeed', 'particleSplash', 'particleCustomTexture'];
+    if (!changed || changed.some((k) => particleKeys.includes(k))) {
+        try {
+            if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
+                impl.createParticleEmitter(state.particleType, state.windEnabled);
+            } else {
+                impl.disposeParticles();
+            }
+        } catch (e) {
+            console.warn('[env] particle fail:', e);
+        }
+    }
+
+    // Clouds
+    const cloudKeys = ['cloudsEnabled', 'cloudCover', 'cloudScale', 'cloudHeight',
+        'cloudThickness', 'cloudVisibility', 'cloudGap'];
+    if (!changed || changed.some((k) => cloudKeys.includes(k))) {
+        try {
+            if (state.cloudsEnabled) {
+                impl.createClouds(state);
+            } else {
+                impl.disposeClouds();
+            }
+        } catch (e) {
+            console.warn('[env] cloud fail:', e);
+        }
     }
 
     // 半球光 — 强度跟随当前灯光状态，颜色随天空色
@@ -339,7 +379,7 @@ export function applyEnvPresetObject(preset: {
 export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): void {
     Object.assign(envState, partial);
 
-    _applyEnvStateFacade(envState);
+    _applyEnvStateFacade(envState, partial);
 
     if (partial.waterAnimSpeed !== undefined) {
         impl.updateWaterAnimSpeed(partial.waterAnimSpeed);

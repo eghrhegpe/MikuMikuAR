@@ -53,6 +53,8 @@ import { selectResourceRoot, selectOverridePath } from './library-core';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
+import { setVolume, getVolume } from '../outfit/audio';
+import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
 import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon, createIconifyIcon } from '../core/icons';
 import { showConfirm, showPrompt } from '../core/dialog';
@@ -101,6 +103,8 @@ function buildSettingsRootItems(): PopupRow[] {
     items.push({ kind: 'folder', label: '性能', icon: 'lucide:zap', target: 'settings:performance' });
     items.push({ kind: 'folder', label: '路径', icon: 'lucide:folder-tree', target: 'settings:paths' });
     items.push({ kind: 'folder', label: '软件', icon: 'lucide:package', target: 'settings:software' });
+    items.push({ kind: 'folder', label: '截图', icon: 'lucide:camera', target: 'settings:screenshot' });
+    items.push({ kind: 'folder', label: '音频', icon: 'lucide:volume-2', target: 'settings:audio' });
     items.push({ kind: 'folder', label: '关于', icon: 'lucide:info', target: 'settings:about' });
     return items;
 }
@@ -395,17 +399,13 @@ function buildSettingsAppearanceLevel(): PopupLevel {
                 const fontRows: HTMLElement[] = [];
                 for (const [key, f] of Object.entries(FONT_MAP)) {
                     const isActive = currentCss === f.css;
-                    const row = document.createElement('div');
-                    row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                    row.dataset.fontKey = key;
-                    row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check' : 'circle'}"></iconify-icon></span><span class="slide-label">${f.label}</span>`;
-                    row.addEventListener('click', () => {
+                    const row = slideRow(c, `lucide:${isActive ? 'check' : 'circle'}`, f.label, false, () => {
                         document.documentElement.style.setProperty('--font', f.css);
                         SetUIFontFamily(key).catch(() => {});
                         getSettingsMenu()?.updateControls();
                         setStatus(`✓ 字体已设为 ${f.label}`, true);
-                    });
-                    c.appendChild(row);
+                    }, undefined, undefined, isActive);
+                    row.dataset.fontKey = key;
                     fontRows.push(row);
                 }
                 getCurrentRenderingMenu()?.registerControl(() => {
@@ -789,21 +789,13 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                 const perfRows: HTMLElement[] = [];
                 for (const m of PERFORMANCE_MODES) {
                     const isActive = current === m.key;
-                    const row = document.createElement('div');
-                    row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                    row.dataset.perfKey = m.key;
-                    row.innerHTML = `
-                        <span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check-circle' : 'circle'}"></iconify-icon></span>
-                        <span class="slide-label">${m.label}</span>
-                        <span class="slide-sublabel">${m.desc}</span>
-                    `;
-                    row.addEventListener('click', () => {
+                    const row = slideRow(c, `lucide:${isActive ? 'check-circle' : 'circle'}`, m.label, false, () => {
                         setPerformanceMode(m.key);
                         SetPerformanceMode(m.key).catch(() => {});
                         getSettingsMenu()?.updateControls();
                         setStatus(`✓ 性能模式: ${m.label}`, true);
-                    });
-                    c.appendChild(row);
+                    }, m.desc, undefined, isActive);
+                    row.dataset.perfKey = m.key;
                     perfRows.push(row);
                 }
                 getCurrentRenderingMenu()?.registerControl(() => {
@@ -815,6 +807,116 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                         const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
                         if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
                     }
+                });
+            });
+        },
+    };
+}
+
+// ======== Screenshot Settings ========
+
+function buildSettingsScreenshotLevel(): PopupLevel {
+    return {
+        label: '截图',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            // Format selector: PNG / JPEG / WebP
+            cardContainer(container, (c) => {
+                addSectionTitle(c, '截图格式');
+                const formats: Array<{ key: 'image/png' | 'image/jpeg' | 'image/webp'; label: string; icon: string }> = [
+                    { key: 'image/png', label: 'PNG', icon: 'lucide:file-image' },
+                    { key: 'image/jpeg', label: 'JPEG', icon: 'lucide:file-image' },
+                    { key: 'image/webp', label: 'WebP', icon: 'lucide:file-image' },
+                ];
+                const formatRows: HTMLElement[] = [];
+                for (const f of formats) {
+                    const isActive = (uiState.screenshotFormat ?? 'image/png') === f.key;
+                    const row = slideRow(c, `lucide:${isActive ? 'check-circle' : 'circle'}`, f.label, false, () => {
+                        uiState.screenshotFormat = f.key;
+                        setUIState({ screenshotFormat: f.key });
+                        getSettingsMenu()?.updateControls();
+                        setStatus(`✓ 截图格式已设为 ${f.label}`, true);
+                    }, undefined, undefined, isActive);
+                    row.dataset.formatKey = f.key;
+                    formatRows.push(row);
+                }
+                getCurrentRenderingMenu()?.registerControl(() => {
+                    const current = uiState.screenshotFormat ?? 'image/png';
+                    for (const row of formatRows) {
+                        const key = row.dataset.formatKey!;
+                        const isActive = current === key;
+                        row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
+                        const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
+                        if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
+                    }
+                });
+            });
+
+            // Quality slider
+            cardContainer(container, (c) => {
+                addSliderRow(c, '截图质量', uiState.screenshotQuality ?? 0.9, 0.5, 1.0, 0.05, (v) => {
+                    uiState.screenshotQuality = v;
+                    setUIState({ screenshotQuality: v });
+                    getSettingsMenu()?.updateControls();
+                }, 'lucide:gauge', undefined, {
+                    bind: () => uiState.screenshotQuality ?? 0.9,
+                    onUpdate: (el) => {
+                        const valEl = el.querySelector('.cs-value');
+                        if (valEl) valEl.textContent = Math.round((uiState.screenshotQuality ?? 0.9) * 100) + '%';
+                    },
+                });
+            });
+        },
+    };
+}
+
+// ======== Audio Settings ========
+
+function buildSettingsAudioLevel(): PopupLevel {
+    return {
+        label: '音频',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            // Default volume
+            cardContainer(container, (c) => {
+                addSliderRow(c, '默认音量', getVolume(), 0, 1, 0.05, (v) => {
+                    setVolume(v);
+                    getSettingsMenu()?.updateControls();
+                }, 'lucide:volume-2', undefined, {
+                    bind: () => getVolume(),
+                    onUpdate: (el) => {
+                        const valEl = el.querySelector('.cs-value');
+                        if (valEl) valEl.textContent = Math.round(getVolume() * 100) + '%';
+                    },
+                });
+            });
+
+            // Mute toggle
+            cardContainer(container, (c) => {
+                let muteFlag = false;
+                addToggleRow(c, '静音', false, (v) => {
+                    muteFlag = v;
+                    if (v) {
+                        setVolume(0);
+                    } else {
+                        setVolume(1);
+                    }
+                    getSettingsMenu()?.updateControls();
+                }, 'lucide:volume-x', {
+                    bind: () => getVolume() === 0,
+                });
+            });
+
+            // BPM Quantization
+            cardContainer(container, (c) => {
+                addToggleRow(c, 'BPM 量化', true, (v) => {
+                    setBpmQuantizeEnabled(v);
+                    getSettingsMenu()?.updateControls();
+                    setStatus(v ? '✓ BPM 量化已开启' : '✓ BPM 量化已关闭', true);
+                }, 'lucide:activity', {
+                    bind: () => getBpmQuantizeEnabled(),
                 });
             });
         },
@@ -964,6 +1066,10 @@ function settingsOnFolderEnter(row: PopupRow): PopupLevel | null {
             return buildSettingsExternalLevel();
         case 'settings:software':
             return buildSettingsSoftwareLevel();
+        case 'settings:screenshot':
+            return buildSettingsScreenshotLevel();
+        case 'settings:audio':
+            return buildSettingsAudioLevel();
         case 'settings:about':
             return buildSettingsAboutLevel();
         default:
