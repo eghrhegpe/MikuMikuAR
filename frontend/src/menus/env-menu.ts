@@ -27,13 +27,10 @@ import {
     setEnvSunAngle,
     applyEnvPreset,
     applyEnvPresetObject,
-    setRenderState,
-    engine,
 } from '../scene/scene';
 import {
     getLightState,
     setLightState as setLightingState,
-    transitionLighting,
 } from '../scene/render/lighting';
 import {
     ENV_PRESETS as ENV_LIGHTING_PRESETS,
@@ -49,11 +46,12 @@ import { setStatus } from '../core/config';
 // ======== 从子文件导入 ========
 import {
     buildSkyLevel, buildGroundLevel, buildWaterLevel, buildWindLevel, buildCloudLevel, buildExperimentalLevel,
+    buildFogLevel, buildShadowLevel,
 } from './env-feature-levels';
 import { buildPresetLevel, renderUserEnvPresets, snapshotCurrentEnvPreset, ENV_PRESETS } from './env-preset-levels';
 
 // ======== Barrel Re-Exports ========
-export { buildSkyLevel, buildGroundLevel, buildWaterLevel, buildWindLevel, buildCloudLevel, buildExperimentalLevel } from './env-feature-levels';
+export { buildSkyLevel, buildGroundLevel, buildWaterLevel, buildWindLevel, buildCloudLevel, buildExperimentalLevel, buildFogLevel, buildShadowLevel } from './env-feature-levels';
 export { buildPresetLevel, ENV_PRESETS } from './env-preset-levels';
 
 // ======== Env Menu State ========
@@ -114,11 +112,9 @@ export function buildEnvLightingLevel(): PopupLevel {
 }
 
 export function buildEnvUnifiedLevel(): PopupLevel {
-    const sunAngle = getEnvSunAngle();
     const s = envState;
-
     return {
-        label: '天空氛围',
+        label: '天空',
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -132,21 +128,6 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                 });
 
                 renderPresetChips(c);
-
-                addCollapsible(c, {
-                    title: '光照控制', icon: 'lucide:sun', defaultOpen: false,
-                    renderContent: (inner) => {
-                        addSliderRow(inner, '太阳强度', getLightState().dirIntensity, 0, 1, 0.05,
-                            (v) => { setLightingState({ dirIntensity: v }); setRenderState({ exposure: Math.max(0.3, Math.min(2.0, v + 0.6)) }); getEnvMenu()?.updateControls(); },
-                            'lucide:sun', undefined, {
-                                bind: () => getLightState().dirIntensity,
-                            });
-                        addSliderRow(inner, '天空照明', s.envIntensity / 3, 0, 1, 0.05,
-                            (v) => { setEnvState({ envIntensity: v * 3 }); getEnvMenu()?.updateControls(); }, 'lucide:sun', undefined, {
-                                bind: () => envState.envIntensity / 3,
-                            });
-                    },
-                });
 
                 addCollapsible(c, {
                     title: '天空外观', icon: 'lucide:palette', defaultOpen: false,
@@ -181,7 +162,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                         addSliderRow(inner, '天空旋转速度', s.skyRotationSpeed ?? 0, 0, 5, 0.1, (v) => { setEnvState({ skyRotationSpeed: v }); getEnvMenu()?.updateControls(); }, 'lucide:rotate-cw', undefined, {
                             bind: () => envState.skyRotationSpeed ?? 0,
                         });
-                        addSliderRow(inner, '太阳角度', sunAngle, -15, 90, 1, (v) => { setEnvSunAngle(v); setEnvState({ sunAngle: v }); getEnvMenu()?.updateControls(); }, 'lucide:sun', undefined, {
+                        addSliderRow(inner, '太阳角度', getEnvSunAngle(), -15, 90, 1, (v) => { setEnvSunAngle(v); setEnvState({ sunAngle: v }); getEnvMenu()?.updateControls(); }, 'lucide:sun', undefined, {
                             bind: () => getEnvSunAngle(),
                         });
                         if (s.skyMode === 'texture') {
@@ -189,37 +170,6 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                                 bind: () => envState.skyRotationY,
                             });
                         }
-                    },
-                });
-
-                addCollapsible(c, {
-                    title: '阴影设置', icon: 'lucide:cloud', defaultOpen: false,
-                    headerToggle: { value: getLightState().shadowEnabled, onChange: (v) => { setLightingState({ shadowEnabled: v }); getEnvMenu()?.reRender(); } },
-                    renderContent: (inner) => {
-                        addModeSlider(inner, '阴影类型', [
-                            { value: 'hard', label: '硬阴影' }, { value: 'soft', label: '软阴影' }, { value: 'pcf', label: 'PCF' },
-                        ], getLightState().shadowType, (v) => { setLightingState({ shadowType: v }); getEnvMenu()?.updateControls(); }, 'lucide:cloud', undefined, {
-                            bind: () => getLightState().shadowType,
-                        });
-                        const shadowQualityRow = document.createElement('div');
-                        shadowQualityRow.className = 'preset-group';
-                        for (const sq of [{ label: '低', value: 512 }, { label: '中', value: 1024 }, { label: '高', value: 2048 }, { label: '超高', value: 4096 }]) {
-                            addPresetChip(shadowQualityRow, sq.label, getLightState().shadowResolution === sq.value, () => {
-                                setLightingState({ shadowResolution: sq.value });
-                                getEnvMenu()?.updateControls();
-                            }, {
-                                onUpdate: (btn) => {
-                                    btn.classList.toggle('active', getLightState().shadowResolution === sq.value);
-                                }
-                            });
-                        }
-                        inner.appendChild(shadowQualityRow);
-                        addSliderRow(inner, '阴影偏移', getLightState().shadowBias, 0, 0.01, 0.0001, (v) => { setLightingState({ shadowBias: v }); getEnvMenu()?.updateControls(); }, 'lucide:move', undefined, {
-                            bind: () => getLightState().shadowBias,
-                        });
-                        addSliderRow(inner, '阴影级联', getLightState().shadowCascades, 2, 4, 1, (v) => { setLightingState({ shadowCascades: v }); getEnvMenu()?.updateControls(); }, 'lucide:layers', undefined, {
-                            bind: () => getLightState().shadowCascades,
-                        });
                     },
                 });
             });
@@ -233,8 +183,8 @@ function buildEnvRootItems(): PopupRow[] {
     // Card 1: 环境预设（L2 精选组合 + 用户自定义）
     items.push({ kind: 'folder', label: '环境预设', icon: 'lucide:bookmark', target: 'env:presets' });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    // Card 2: 环境功能入口（天空/水面/粒子/风/实验/道具）
-    items.push({ kind: 'folder', label: '天空', icon: 'lucide:sun', target: 'env:unified' });
+    // Card 2: 环境功能入口（天空/水面/粒子/风/地面/雾/阴影/实验）
+    items.push({ kind: 'folder', label: '天空', icon: 'lucide:sun', target: 'env:sky' });
     items.push({
         kind: 'folder', label: '水面', icon: 'lucide:waves', target: 'env:water',
         headerToggle: { value: envState.waterEnabled, onChange: (v) => setEnvState({ waterEnabled: v }) },
@@ -246,6 +196,18 @@ function buildEnvRootItems(): PopupRow[] {
     items.push({
         kind: 'folder', label: '风', icon: 'lucide:wind', target: 'env:wind',
         headerToggle: { value: envState.windEnabled, onChange: (v) => setEnvState({ windEnabled: v }) },
+    });
+    items.push({
+        kind: 'folder', label: '地面', icon: 'lucide:square', target: 'env:ground',
+        headerToggle: { value: envState.groundVisible, onChange: (v) => setEnvState({ groundVisible: v }) },
+    });
+    items.push({
+        kind: 'folder', label: '雾', icon: 'lucide:cloud-fog', target: 'env:fog',
+        headerToggle: { value: envState.fogEnabled, onChange: (v) => setEnvState({ fogEnabled: v }) },
+    });
+    items.push({
+        kind: 'folder', label: '阴影', icon: 'lucide:cloud', target: 'env:shadow',
+        headerToggle: { value: getLightState().shadowEnabled, onChange: (v) => setLightingState({ shadowEnabled: v }) },
     });
     items.push(
         { kind: 'folder', label: '实验功能', icon: 'lucide:flask-conical', target: 'env:experimental' },
@@ -300,14 +262,15 @@ export function buildParticleLevel(): PopupLevel {
 
 function envOnFolderEnter(row: PopupRow): PopupLevel | null {
     switch (row.target) {
-        case 'env:unified': return buildEnvUnifiedLevel();
-        case 'env:lighting': return buildEnvLightingLevel();
         case 'env:sky': return buildSkyLevel();
+        case 'env:lighting': return buildEnvLightingLevel();
         case 'env:ground': return buildGroundLevel();
         case 'env:water': return buildWaterLevel();
         case 'env:particle': return buildParticleLevel();
         case 'env:wind': return buildWindLevel();
         case 'env:cloud': return buildCloudLevel();
+        case 'env:fog': return buildFogLevel();
+        case 'env:shadow': return buildShadowLevel();
         case 'env:experimental': return buildExperimentalLevel();
         case 'env:presets': return buildPresetLevel();
         default: return null;

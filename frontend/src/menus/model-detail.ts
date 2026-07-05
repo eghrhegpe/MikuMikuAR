@@ -175,13 +175,23 @@ export function buildModelLevel(id: string): PopupLevel {
                                 } else {
                                     setModelVisibility(id, false);
                                 }
-                                stackRegistry.modelStack.reRender();
+                                stackRegistry.modelStack.updateControls();
                                 setStatus(
                                     v === 'visible' ? '完全可见' : v === 'semi' ? '半透明 50%' : '完全隐藏',
                                     true
                                 );
                             },
-                            'lucide:eye'
+                            'lucide:eye',
+                            undefined,
+                            {
+                                bind: () => {
+                                    const inst = modelManager.get(id);
+                                    if (!inst) return 'visible';
+                                    if (inst.visible && inst.opacity >= 0.99) return 'visible';
+                                    if (inst.visible && inst.opacity < 0.99) return 'semi';
+                                    return 'hidden';
+                                },
+                            }
                         );
                     },
                 });
@@ -229,33 +239,6 @@ export function buildModelLevel(id: string): PopupLevel {
                 });
                 c.appendChild(removeBtn);
             });
-        },
-        reRenderCustom: (container) => {
-            // 可见性 mode slider：更新值显示
-            const inst = modelManager.get(id);
-            if (!inst) return;
-            let visMode: 'visible' | 'semi' | 'hidden';
-            if (inst.visible && inst.opacity >= 0.99) visMode = 'visible';
-            else if (inst.visible && inst.opacity < 0.99) visMode = 'semi';
-            else visMode = 'hidden';
-            const labels: Record<string, string> = { visible: '显示', semi: '半透明', hidden: '隐藏' };
-            const rows = container.querySelectorAll('.cs-row');
-            for (const row of Array.from(rows) as HTMLElement[]) {
-                const label = row.querySelector('.cs-label');
-                if (label && label.textContent === '可见性') {
-                    const valEl = row.querySelector('.cs-value');
-                    if (valEl) valEl.textContent = labels[visMode] || visMode;
-                    const idx = ['visible', 'semi', 'hidden'].indexOf(visMode);
-                    if (idx >= 0) {
-                        const fill = row.querySelector('.cs-fill') as HTMLElement | null;
-                        const thumb = row.querySelector('.cs-thumb') as HTMLElement | null;
-                        const pct = idx > 0 ? (idx / 2) * 100 : 0;
-                        if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-                        if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
-                    }
-                    break;
-                }
-            }
         },
     };
 }

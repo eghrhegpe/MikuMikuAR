@@ -15,6 +15,7 @@ import {
     addPresetChip,
 } from '../core/ui-helpers';
 import { setEnvState, engine } from '../scene/scene';
+import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
 import { WATER_PRESETS, applyWaterPresetToCurrent } from '../scene/env/env-water';
 import { SelectEnvTextureFile, SelectPMXFile } from '../core/wails-bindings';
 import { getEnvMenu } from './env-menu';
@@ -40,7 +41,11 @@ export function buildSkyLevel(): PopupLevel {
                         setEnvState({ skyMode: v });
                         getEnvMenu()?.reRender();
                     },
-                    'lucide:sun'
+                    'lucide:sun',
+                    undefined,
+                    {
+                        bind: () => envState.skyMode,
+                    }
                 );
 
                 if (s.skyMode === 'color') {
@@ -86,29 +91,28 @@ export function buildSkyLevel(): PopupLevel {
                     });
                     c.appendChild(texRow);
                     addSliderRow(c, '旋 Y', s.skyRotationY, 0, 360, 1, (v) => setEnvState({ skyRotationY: v }), 'lucide:refresh-cw');
-                    addSliderRow(c, '天空照明', s.envIntensity / 3, 0, 1, 0.05, (v) => setEnvState({ envIntensity: v * 3 }), 'lucide:sun');
                 }
                 if (s.skyMode === 'procedural') {
                     addSliderRow(c, '亮度', s.skyBrightness, 0.1, 5, 0.1, (v) => setEnvState({ skyBrightness: v }), 'lucide:sun');
                 }
                 addSliderRow(c, '天空旋转速度', s.skyRotationSpeed ?? 0, 0, 5, 0.1, (v) => setEnvState({ skyRotationSpeed: v }), 'lucide:rotate-cw');
+
+                // ── 光照控制（从 buildEnvUnifiedLevel 迁入）──
+                addCollapsible(c, {
+                    title: '光照控制', icon: 'lucide:sun', defaultOpen: false,
+                    renderContent: (inner) => {
+                        addSliderRow(inner, '太阳强度', getLightState().dirIntensity, 0, 1, 0.05,
+                            (v) => { setLightingState({ dirIntensity: v }); getEnvMenu()?.updateControls(); },
+                            'lucide:sun', undefined, {
+                                bind: () => getLightState().dirIntensity,
+                            });
+                        addSliderRow(inner, '天空照明', s.envIntensity / 3, 0, 1, 0.05,
+                            (v) => { setEnvState({ envIntensity: v * 3 }); getEnvMenu()?.updateControls(); }, 'lucide:sun', undefined, {
+                                bind: () => envState.envIntensity / 3,
+                            });
+                    },
+                });
             });
-        },
-        reRenderCustom: (container) => {
-            const s = envState;
-            const labels: Record<string, string> = { color: '纯色', texture: '贴图', procedural: '程序化' };
-            const modeSlider = container.querySelector('.cs-row:first-child');
-            if (!modeSlider) return;
-            const valEl = modeSlider.querySelector('.cs-value');
-            if (valEl) valEl.textContent = labels[s.skyMode] || s.skyMode;
-            const idx = ['color', 'texture', 'procedural'].indexOf(s.skyMode);
-            if (idx >= 0) {
-                const fill = modeSlider.querySelector('.cs-fill') as HTMLElement | null;
-                const thumb = modeSlider.querySelector('.cs-thumb') as HTMLElement | null;
-                const pct = idx > 0 ? (idx / 2) * 100 : 0;
-                if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-                if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
-            }
         },
     };
 }
@@ -130,7 +134,9 @@ export function buildGroundLevel(): PopupLevel {
                 ], s.groundMode, (v) => {
                     setEnvState({ groundMode: v });
                     getEnvMenu()?.reRender();
-                }, 'lucide:square');
+                }, 'lucide:square', undefined, {
+                    bind: () => envState.groundMode,
+                });
                 addColorSliderRow(c, '地面色', s.groundColor, (v) => setEnvState({ groundColor: v }));
                 if (s.groundMode === 'solid' || s.groundMode === 'checker') {
                     addSliderRow(c, '透明度', s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), 'lucide:eye');
@@ -147,34 +153,17 @@ export function buildGroundLevel(): PopupLevel {
                     for (const tp of texturePresets) {
                         addPresetChip(chipRow, tp.label, s.groundTexture === tp.value, () => {
                             setEnvState({ groundTexture: tp.value, groundTextureEnabled: !!tp.value });
-                            getEnvMenu()?.reRender();
+                            getEnvMenu()?.updateControls();
+                        }, {
+                            onUpdate: (btn) => {
+                                btn.classList.toggle('active', envState.groundTexture === tp.value);
+                            }
                         });
                     }
                     c.appendChild(chipRow);
                     addSliderRow(c, '纹理缩放', s.groundTextureScale, 0.1, 5, 0.1, (v) => setEnvState({ groundTextureScale: v }), 'lucide:zoom-in');
                 }
             });
-        },
-        reRenderCustom: (container) => {
-            const s = envState;
-            const labels: Record<string, string> = { solid: '纯色', grid: '网格', checker: '棋盘格', texture: '纹理' };
-            const rows = container.querySelectorAll('.cs-row');
-            for (const row of Array.from(rows) as HTMLElement[]) {
-                const label = row.querySelector('.cs-label');
-                if (label && label.textContent === '地面模式') {
-                    const valEl = row.querySelector('.cs-value');
-                    if (valEl) valEl.textContent = labels[s.groundMode] || s.groundMode;
-                    const idx = ['solid', 'grid', 'checker'].indexOf(s.groundMode);
-                    if (idx >= 0) {
-                        const fill = row.querySelector('.cs-fill') as HTMLElement | null;
-                        const thumb = row.querySelector('.cs-thumb') as HTMLElement | null;
-                        const pct = idx > 0 ? (idx / 2) * 100 : 0;
-                        if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-                        if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
-                    }
-                    break;
-                }
-            }
         },
     };
 }
@@ -205,20 +194,34 @@ export function buildWaterLevel(): PopupLevel {
                 addCollapsible(c, {
                     title: '基础参数', icon: 'lucide:sliders', defaultOpen: false,
                     renderContent: (cc) => {
-                        addSliderRow(cc, '高度', s.waterLevel, -10, 10, 0.1, (v) => setEnvState({ waterLevel: v }), 'lucide:arrow-up');
+                        addSliderRow(cc, '高度', s.waterLevel, -10, 10, 0.1, (v) => { setEnvState({ waterLevel: v }); getEnvMenu()?.updateControls(); }, 'lucide:arrow-up', undefined, {
+                            bind: () => envState.waterLevel,
+                        });
                         addColorSliderRow(cc, '水色', s.waterColor, (v) => setEnvState({ waterColor: v }));
-                        addSliderRow(cc, '透明度', s.waterTransparency, 0, 1, 0.05, (v) => setEnvState({ waterTransparency: v }), 'lucide:eye');
+                        addSliderRow(cc, '透明度', s.waterTransparency, 0, 1, 0.05, (v) => { setEnvState({ waterTransparency: v }); getEnvMenu()?.updateControls(); }, 'lucide:eye', undefined, {
+                            bind: () => envState.waterTransparency,
+                        });
                     },
                 });
 
                 addCollapsible(c, {
                     title: '波浪', icon: 'lucide:waves', defaultOpen: false,
                     renderContent: (cc) => {
-                        addSliderRow(cc, '波高', s.waterWaveHeight, 0, 3, 0.1, (v) => setEnvState({ waterWaveHeight: v }), 'lucide:waves');
-                        addSliderRow(cc, '泡沫阈值', s.foamThreshold, 0, 1, 0.01, (v) => setEnvState({ foamThreshold: v }));
-                        addSliderRow(cc, '泡沫强度', s.foamIntensity, 0, 1, 0.05, (v) => setEnvState({ foamIntensity: v }), 'lucide:sparkles');
-                        addSliderRow(cc, '动画速度', s.waterAnimSpeed ?? 1, 0.1, 5, 0.1, (v) => setEnvState({ waterAnimSpeed: v }), 'lucide:fast-forward');
-                        addSliderRow(cc, '范围', s.waterSize, 10, 200, 5, (v) => setEnvState({ waterSize: v }), 'lucide:maximize');
+                        addSliderRow(cc, '波高', s.waterWaveHeight, 0, 3, 0.1, (v) => { setEnvState({ waterWaveHeight: v }); getEnvMenu()?.updateControls(); }, 'lucide:waves', undefined, {
+                            bind: () => envState.waterWaveHeight,
+                        });
+                        addSliderRow(cc, '泡沫阈值', s.foamThreshold, 0, 1, 0.01, (v) => { setEnvState({ foamThreshold: v }); getEnvMenu()?.updateControls(); }, undefined, undefined, {
+                            bind: () => envState.foamThreshold,
+                        });
+                        addSliderRow(cc, '泡沫强度', s.foamIntensity, 0, 1, 0.05, (v) => { setEnvState({ foamIntensity: v }); getEnvMenu()?.updateControls(); }, 'lucide:sparkles', undefined, {
+                            bind: () => envState.foamIntensity,
+                        });
+                        addSliderRow(cc, '动画速度', s.waterAnimSpeed ?? 1, 0.1, 5, 0.1, (v) => { setEnvState({ waterAnimSpeed: v }); getEnvMenu()?.updateControls(); }, 'lucide:fast-forward', undefined, {
+                            bind: () => envState.waterAnimSpeed ?? 1,
+                        });
+                        addSliderRow(cc, '范围', s.waterSize, 10, 200, 5, (v) => { setEnvState({ waterSize: v }); getEnvMenu()?.updateControls(); }, 'lucide:maximize', undefined, {
+                            bind: () => envState.waterSize,
+                        });
                     },
                 });
 
@@ -226,76 +229,21 @@ export function buildWaterLevel(): PopupLevel {
                     title: '水下效果', icon: 'lucide:waves',
                     renderContent: (cc) => {
                         addColorSliderRow(cc, '水下雾色', s.underwaterFogColor, (v) => setEnvState({ underwaterFogColor: v }));
-                        addSliderRow(cc, '雾密度', s.underwaterFogDensity, 0, 0.1, 0.001, (v) => setEnvState({ underwaterFogDensity: v }));
-                        addSliderRow(cc, '色差强度', s.underwaterChromaticAmount, 0, 20, 0.5, (v) => setEnvState({ underwaterChromaticAmount: v }));
-                        addSliderRow(cc, '色调强度', s.underwaterToneIntensity, 0, 1, 0.05, (v) => setEnvState({ underwaterToneIntensity: v }), 'lucide:palette');
-                        addSliderRow(cc, '雾倍率', s.underwaterFogMultiplier, 1, 5, 0.1, (v) => setEnvState({ underwaterFogMultiplier: v }), 'lucide:cloud-fog');
+                        addSliderRow(cc, '雾密度', s.underwaterFogDensity, 0, 0.1, 0.001, (v) => { setEnvState({ underwaterFogDensity: v }); getEnvMenu()?.updateControls(); }, undefined, undefined, {
+                            bind: () => envState.underwaterFogDensity,
+                        });
+                        addSliderRow(cc, '色差强度', s.underwaterChromaticAmount, 0, 20, 0.5, (v) => { setEnvState({ underwaterChromaticAmount: v }); getEnvMenu()?.updateControls(); }, undefined, undefined, {
+                            bind: () => envState.underwaterChromaticAmount,
+                        });
+                        addSliderRow(cc, '色调强度', s.underwaterToneIntensity, 0, 1, 0.05, (v) => { setEnvState({ underwaterToneIntensity: v }); getEnvMenu()?.updateControls(); }, 'lucide:palette', undefined, {
+                            bind: () => envState.underwaterToneIntensity,
+                        });
+                        addSliderRow(cc, '雾倍率', s.underwaterFogMultiplier, 1, 5, 0.1, (v) => { setEnvState({ underwaterFogMultiplier: v }); getEnvMenu()?.updateControls(); }, 'lucide:cloud-fog', undefined, {
+                            bind: () => envState.underwaterFogMultiplier,
+                        });
                     },
                 });
             });
-        },
-        // reRender: 更新所有滑块和色值显示，反映 envState 最新值
-        reRenderCustom: (container) => {
-            const s = envState;
-            // 更新常规滑块
-            const updateSlider = (label: string, value: number) => {
-                const rows = container.querySelectorAll('.cs-row');
-                for (const row of Array.from(rows) as HTMLElement[]) {
-                    const lbl = row.querySelector('.cs-label');
-                    if (lbl && lbl.textContent === label) {
-                        const valEl = row.querySelector('.cs-value');
-                        const bar = row.querySelector('.cs-bar');
-                        if (valEl) valEl.textContent = String(Number(value.toFixed(2)));
-                        if (bar) {
-                            const min = parseFloat(bar.getAttribute('aria-valuemin') || '0');
-                            const max = parseFloat(bar.getAttribute('aria-valuemax') || '1');
-                            const range = max - min;
-                            const pct = range > 0 ? ((value - min) / range) * 100 : 0;
-                            const fill = bar.querySelector('.cs-fill') as HTMLElement | null;
-                            const thumb = bar.querySelector('.cs-thumb') as HTMLElement | null;
-                            if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-                            if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
-                            bar.setAttribute('aria-valuenow', String(value));
-                        }
-                        break;
-                    }
-                }
-            };
-            // 更新颜色选择器
-            const updateColor = (label: string, color: [number, number, number]) => {
-                const blocks = container.querySelectorAll('.clr-block');
-                for (const block of Array.from(blocks) as HTMLElement[]) {
-                    const title = block.querySelector('.clr-title');
-                    if (title && title.textContent === label) {
-                        const swatch = block.querySelector('.clr-swatch') as HTMLElement | null;
-                        if (swatch) swatch.style.background = `rgb(${Math.round(color[0]*255)},${Math.round(color[1]*255)},${Math.round(color[2]*255)})`;
-                        const vals = block.querySelectorAll('.clr-value');
-                        const bars = block.querySelectorAll('.clr-row .cs-bar');
-                        for (let ci = 0; ci < 3; ci++) {
-                            if (vals[ci]) vals[ci].textContent = color[ci].toFixed(2);
-                            if (bars[ci]) {
-                                const fill = bars[ci].querySelector('.cs-fill') as HTMLElement | null;
-                                if (fill) fill.style.width = Math.max(0, Math.min(100, color[ci] * 100)) + '%';
-                            }
-                        }
-                        break;
-                    }
-                }
-            };
-            // 基础参数
-            updateSlider('高度', s.waterLevel);
-            updateColor('水色', s.waterColor);
-            updateSlider('透明度', s.waterTransparency);
-            // 波浪
-            updateSlider('波高', s.waterWaveHeight);
-            updateSlider('泡沫阈值', s.foamThreshold);
-            updateSlider('泡沫强度', s.foamIntensity);
-            updateSlider('动画速度', s.waterAnimSpeed ?? 1);
-            updateSlider('范围', s.waterSize);
-            // 水下效果
-            updateColor('水下雾色', s.underwaterFogColor);
-            updateSlider('雾密度', s.underwaterFogDensity);
-            updateSlider('色差强度', s.underwaterChromaticAmount);
         },
     };
 }
@@ -369,6 +317,112 @@ export function buildExperimentalLevel(): PopupLevel {
                     hint.textContent = '（当前设备不支持 WebGL 2.0，体积云不可用）';
                     c.appendChild(hint);
                 }
+            });
+        },
+    };
+}
+
+export function buildFogLevel(): PopupLevel {
+    return {
+        label: '雾',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            const s = envState;
+            cardContainer(container, (c) => {
+                addToggleRow(c, '启用雾', s.fogEnabled, (v) => { setEnvState({ fogEnabled: v }); getEnvMenu()?.updateControls(); }, 'lucide:cloud-fog', {
+                    bind: () => envState.fogEnabled,
+                });
+                addColorSliderRow(c, '雾色', s.fogColor, (v) => setEnvState({ fogColor: v }));
+                addSliderRow(c, '雾密度', s.fogDensity, 0, 0.1, 0.001, (v) => { setEnvState({ fogDensity: v }); getEnvMenu()?.updateControls(); }, 'lucide:droplets', undefined, {
+                    bind: () => envState.fogDensity,
+                });
+            });
+        },
+    };
+}
+
+export function buildShadowLevel(): PopupLevel {
+    return {
+        label: '阴影',
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            const ls = getLightState();
+            cardContainer(container, (c) => {
+                // ── 环境阴影（主场景方向光阴影）──
+                addCollapsible(c, {
+                    title: '环境阴影', icon: 'lucide:cloud', defaultOpen: true,
+                    headerToggle: { value: ls.shadowEnabled, onChange: (v) => { setLightingState({ shadowEnabled: v }); getEnvMenu()?.reRender(); } },
+                    renderContent: (inner) => {
+                        addModeSlider(inner, '阴影类型', [
+                            { value: 'hard', label: '硬阴影' }, { value: 'soft', label: '软阴影' }, { value: 'pcf', label: 'PCF' },
+                        ], ls.shadowType, (v) => { setLightingState({ shadowType: v }); getEnvMenu()?.updateControls(); }, 'lucide:cloud', undefined, {
+                            bind: () => getLightState().shadowType,
+                        });
+                        const shadowQualityRow = document.createElement('div');
+                        shadowQualityRow.className = 'preset-group';
+                        for (const sq of [{ label: '低', value: 512 }, { label: '中', value: 1024 }, { label: '高', value: 2048 }, { label: '超高', value: 4096 }]) {
+                            addPresetChip(shadowQualityRow, sq.label, ls.shadowResolution === sq.value, () => {
+                                setLightingState({ shadowResolution: sq.value });
+                                getEnvMenu()?.updateControls();
+                            }, {
+                                onUpdate: (btn) => {
+                                    btn.classList.toggle('active', getLightState().shadowResolution === sq.value);
+                                }
+                            });
+                        }
+                        inner.appendChild(shadowQualityRow);
+                        addSliderRow(inner, '阴影偏移', ls.shadowBias, 0, 0.01, 0.0001, (v) => { setLightingState({ shadowBias: v }); getEnvMenu()?.updateControls(); }, 'lucide:move', undefined, {
+                            bind: () => getLightState().shadowBias,
+                        });
+                        addSliderRow(inner, '阴影级联', ls.shadowCascades, 2, 4, 1, (v) => { setLightingState({ shadowCascades: v }); getEnvMenu()?.updateControls(); }, 'lucide:layers', undefined, {
+                            bind: () => getLightState().shadowCascades,
+                        });
+                    },
+                });
+
+                // ── 角色阴影 ──
+                const charRow = document.createElement('div');
+                charRow.className = 'slide-item';
+                charRow.style.opacity = '0.6';
+                charRow.style.cursor = 'default';
+                const ci = document.createElement('span');
+                ci.className = 'slide-icon';
+                const ce = createIconifyIcon('lucide:user');
+                if (ce) ci.appendChild(ce);
+                charRow.appendChild(ci);
+                const cl = document.createElement('span');
+                cl.className = 'slide-label';
+                cl.textContent = '角色阴影';
+                charRow.appendChild(cl);
+                const cs = document.createElement('span');
+                cs.className = 'slide-sublabel';
+                cs.textContent = 'MMD 模型自动接收阴影';
+                charRow.appendChild(cs);
+                c.appendChild(charRow);
+
+                // ── 光照阴影（舞台灯光）──
+                const lightRow = document.createElement('div');
+                lightRow.className = 'slide-item';
+                lightRow.style.cursor = 'pointer';
+                const li = document.createElement('span');
+                li.className = 'slide-icon';
+                const le = createIconifyIcon('lucide:lightbulb');
+                if (le) li.appendChild(le);
+                lightRow.appendChild(li);
+                const ll = document.createElement('span');
+                ll.className = 'slide-label';
+                ll.textContent = '舞台灯光阴影';
+                lightRow.appendChild(ll);
+                const lh = document.createElement('span');
+                lh.className = 'slide-sublabel';
+                lh.textContent = '→ 场景菜单';
+                lightRow.appendChild(lh);
+                lightRow.addEventListener('click', () => {
+                    setStatus('在「场景」→「舞台灯光」中可逐个调节灯光阴影参数', true);
+                });
+                c.appendChild(lightRow);
             });
         },
     };

@@ -189,16 +189,23 @@ export function buildStageLightLevel(): PopupLevel {
                     const p = LIGHTING_PRESETS[name];
                     addPresetChip(chipGroup, p.label, currentPreset === name, () => {
                         setEnvState({ lightingPresetName: name });
-                        reRenderSceneMenu();
+                        getSceneMenu()?.updateControls();
+                    }, {
+                        onUpdate: (btn) => {
+                            btn.classList.toggle('active', envState.lightingPresetName === name);
+                        }
                     });
                 }
                 // 自定义按钮（清除预设）
-                if (currentPreset) {
-                    addPresetChip(chipGroup, '自定义', false, () => {
-                        setEnvState({ lightingPresetName: undefined });
-                        reRenderSceneMenu();
-                    });
-                }
+                addPresetChip(chipGroup, '自定义', false, () => {
+                    setEnvState({ lightingPresetName: undefined });
+                    getSceneMenu()?.updateControls();
+                }, {
+                    onUpdate: (btn) => {
+                        btn.style.display = envState.lightingPresetName ? '' : 'none';
+                        btn.classList.toggle('active', !envState.lightingPresetName);
+                    }
+                });
                 c.appendChild(chipGroup);
             });
 
@@ -258,9 +265,23 @@ export function buildStageLightLevel(): PopupLevel {
                     ], state.type, (v) => {
                         setStageLightState({ type: v as 'spot' | 'point' | 'directional' }, state.id);
                         reRenderSceneMenu();
-                    }, 'lucide:lightbulb');
+                    }, 'lucide:lightbulb', undefined, {
+                        bind: () => {
+                            const lights = getStageLights();
+                            const activeId = getActiveStageLightId();
+                            const s = lights.find(l => l.id === activeId) ?? lights[0];
+                            return s?.type ?? 'spot';
+                        },
+                    });
                     addSliderRow(inner, '强度', state.intensity, 0, 2, 0.05, () => {}, 'lucide:sun',
-                        (v) => setStageLightState({ intensity: v }, state.id));
+                        (v) => setStageLightState({ intensity: v }, state.id), {
+                        bind: () => {
+                            const lights = getStageLights();
+                            const activeId = getActiveStageLightId();
+                            const s = lights.find(l => l.id === activeId) ?? lights[0];
+                            return s?.intensity ?? 1;
+                        },
+                    });
                     addColorSliderRow(inner, '颜色', state.color, (v) => setStageLightState({ color: v }, state.id));
                 },
             });
@@ -273,20 +294,55 @@ export function buildStageLightLevel(): PopupLevel {
                     defaultOpen: false,
                     renderContent: (inner) => {
                         addSliderRow(inner, '锥角', state.angle, 0.1, 2.0, 0.05, () => {}, 'lucide:circle',
-                            (v) => setStageLightState({ angle: v }, state.id));
+                            (v) => setStageLightState({ angle: v }, state.id), {
+                            bind: () => {
+                                const lights = getStageLights();
+                                const activeId = getActiveStageLightId();
+                                const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                return s?.angle ?? 1.0;
+                            },
+                        });
                         addSliderRow(inner, '衰减', state.exponent, 0, 4, 0.1, () => {}, 'lucide:arrow-down',
-                            (v) => setStageLightState({ exponent: v }, state.id));
+                            (v) => setStageLightState({ exponent: v }, state.id), {
+                            bind: () => {
+                                const lights = getStageLights();
+                                const activeId = getActiveStageLightId();
+                                const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                return s?.exponent ?? 1;
+                            },
+                        });
                         addCollapsible(inner, {
                             title: '目标点',
                             icon: 'lucide:target',
                             defaultOpen: false,
                             renderContent: (inner2) => {
                                 addSliderRow(inner2, '目标 X', state.targetX, -10, 10, 0.1, () => {}, 'lucide:move-horizontal',
-                                    (v) => setStageLightState({ targetX: v }, state.id));
+                                    (v) => setStageLightState({ targetX: v }, state.id), {
+                                    bind: () => {
+                                        const lights = getStageLights();
+                                        const activeId = getActiveStageLightId();
+                                        const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                        return s?.targetX ?? 0;
+                                    },
+                                });
                                 addSliderRow(inner2, '目标 Y', state.targetY, 0, 15, 0.1, () => {}, 'lucide:move-vertical',
-                                    (v) => setStageLightState({ targetY: v }, state.id));
+                                    (v) => setStageLightState({ targetY: v }, state.id), {
+                                    bind: () => {
+                                        const lights = getStageLights();
+                                        const activeId = getActiveStageLightId();
+                                        const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                        return s?.targetY ?? 5;
+                                    },
+                                });
                                 addSliderRow(inner2, '目标 Z', state.targetZ, -10, 10, 0.1, () => {}, 'lucide:move',
-                                    (v) => setStageLightState({ targetZ: v }, state.id));
+                                    (v) => setStageLightState({ targetZ: v }, state.id), {
+                                    bind: () => {
+                                        const lights = getStageLights();
+                                        const activeId = getActiveStageLightId();
+                                        const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                        return s?.targetZ ?? 0;
+                                    },
+                                });
                             },
                         });
                     },
@@ -298,7 +354,14 @@ export function buildStageLightLevel(): PopupLevel {
                     defaultOpen: false,
                     renderContent: (inner) => {
                         addSliderRow(inner, '衰减距离', state.range, 1, 100, 0.5, () => {}, 'lucide:ruler',
-                            (v) => setStageLightState({ range: v }, state.id));
+                            (v) => setStageLightState({ range: v }, state.id), {
+                            bind: () => {
+                                const lights = getStageLights();
+                                const activeId = getActiveStageLightId();
+                                const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                return s?.range ?? 10;
+                            },
+                        });
                     },
                 });
             } else if (state.type === 'directional') {
@@ -308,11 +371,32 @@ export function buildStageLightLevel(): PopupLevel {
                     defaultOpen: false,
                     renderContent: (inner) => {
                         addSliderRow(inner, '目标 X', state.targetX, -10, 10, 0.1, () => {}, 'lucide:move-horizontal',
-                            (v) => setStageLightState({ targetX: v }, state.id));
+                            (v) => setStageLightState({ targetX: v }, state.id), {
+                            bind: () => {
+                                const lights = getStageLights();
+                                const activeId = getActiveStageLightId();
+                                const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                return s?.targetX ?? 0;
+                            },
+                        });
                         addSliderRow(inner, '目标 Y', state.targetY, 0, 15, 0.1, () => {}, 'lucide:move-vertical',
-                            (v) => setStageLightState({ targetY: v }, state.id));
+                            (v) => setStageLightState({ targetY: v }, state.id), {
+                            bind: () => {
+                                const lights = getStageLights();
+                                const activeId = getActiveStageLightId();
+                                const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                return s?.targetY ?? 5;
+                            },
+                        });
                         addSliderRow(inner, '目标 Z', state.targetZ, -10, 10, 0.1, () => {}, 'lucide:move',
-                            (v) => setStageLightState({ targetZ: v }, state.id));
+                            (v) => setStageLightState({ targetZ: v }, state.id), {
+                            bind: () => {
+                                const lights = getStageLights();
+                                const activeId = getActiveStageLightId();
+                                const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                return s?.targetZ ?? 0;
+                            },
+                        });
                     },
                 });
             }
@@ -335,11 +419,32 @@ export function buildStageLightLevel(): PopupLevel {
                                 { value: 'pcf', label: 'PCF' },
                             ], state.shadowType, (v) => {
                                 setStageLightState({ shadowType: v as 'hard' | 'soft' | 'pcf' }, state.id);
-                            }, 'lucide:cloud');
+                            }, 'lucide:cloud', undefined, {
+                                bind: () => {
+                                    const lights = getStageLights();
+                                    const activeId = getActiveStageLightId();
+                                    const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                    return s?.shadowType ?? 'hard';
+                                },
+                            });
                             addSliderRow(inner, '分辨率', state.shadowResolution, 256, 4096, 256, () => {}, 'lucide:grid-3x3',
-                                (v) => setStageLightState({ shadowResolution: v }, state.id));
+                                (v) => setStageLightState({ shadowResolution: v }, state.id), {
+                                bind: () => {
+                                    const lights = getStageLights();
+                                    const activeId = getActiveStageLightId();
+                                    const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                    return s?.shadowResolution ?? 1024;
+                                },
+                            });
                             addSliderRow(inner, '阴影偏移', state.shadowBias, 0, 0.01, 0.0001, () => {}, 'lucide:move',
-                                (v) => setStageLightState({ shadowBias: v }, state.id));
+                                (v) => setStageLightState({ shadowBias: v }, state.id), {
+                                bind: () => {
+                                    const lights = getStageLights();
+                                    const activeId = getActiveStageLightId();
+                                    const s = lights.find(l => l.id === activeId) ?? lights[0];
+                                    return s?.shadowBias ?? 0.001;
+                                },
+                            });
                         }
                     },
                 });
@@ -352,11 +457,32 @@ export function buildStageLightLevel(): PopupLevel {
                 defaultOpen: true,
                 renderContent: (inner) => {
                     addSliderRow(inner, '水平角度', state.orbitAzimuth, -180, 180, 1, () => {}, 'lucide:refresh-cw',
-                        (v) => setStageLightState({ orbitAzimuth: v }, state.id));
+                        (v) => setStageLightState({ orbitAzimuth: v }, state.id), {
+                        bind: () => {
+                            const lights = getStageLights();
+                            const activeId = getActiveStageLightId();
+                            const s = lights.find(l => l.id === activeId) ?? lights[0];
+                            return s?.orbitAzimuth ?? 0;
+                        },
+                    });
                     addSliderRow(inner, '仰角', state.orbitElevation, -90, 90, 1, () => {}, 'lucide:arrow-up-down',
-                        (v) => setStageLightState({ orbitElevation: v }, state.id));
+                        (v) => setStageLightState({ orbitElevation: v }, state.id), {
+                        bind: () => {
+                            const lights = getStageLights();
+                            const activeId = getActiveStageLightId();
+                            const s = lights.find(l => l.id === activeId) ?? lights[0];
+                            return s?.orbitElevation ?? 30;
+                        },
+                    });
                     addSliderRow(inner, '距离', state.orbitDistance, 1, 100, 0.5, () => {}, 'lucide:move',
-                        (v) => setStageLightState({ orbitDistance: v }, state.id));
+                        (v) => setStageLightState({ orbitDistance: v }, state.id), {
+                        bind: () => {
+                            const lights = getStageLights();
+                            const activeId = getActiveStageLightId();
+                            const s = lights.find(l => l.id === activeId) ?? lights[0];
+                            return s?.orbitDistance ?? 10;
+                        },
+                    });
 
                     // 拖拽定位按钮
                     const gizmoActive = isGizmoActive();
@@ -460,7 +586,9 @@ export function buildPostProcessLevel(): PopupLevel {
                 addToggleRow(c, '边缘高亮', state.outlineEnabled, (v) => {
                     setRenderState({ outlineEnabled: v });
                     triggerAutoSave();
-                }, 'lucide:square');
+                }, 'lucide:square', {
+                    bind: () => getRenderState().outlineEnabled,
+                });
 
                 addModeSlider(c, '抗锯齿', [
                     { value: 'off', label: '关闭' },
@@ -476,7 +604,12 @@ export function buildPostProcessLevel(): PopupLevel {
                     else { updates.fxaaEnabled = false; updates.msaaSamples = parseInt(v); }
                     setRenderState(updates);
                     triggerAutoSave();
-                }, 'lucide:scan-line');
+                }, 'lucide:scan-line', undefined, {
+                    bind: () => {
+                        const s = getRenderState();
+                        return s.msaaSamples > 1 ? `${s.msaaSamples}x` : s.fxaaEnabled ? 'fxaa' : 'off';
+                    },
+                });
 
                 sliderRow(c, '景深', state.dofAperture, 0, 1, 0.05, 'lucide:camera',
                     (v) => { setRenderState({ dofEnabled: v > 0, dofAperture: v }); triggerAutoSave(); });
@@ -492,7 +625,9 @@ export function buildPostProcessLevel(): PopupLevel {
                     (v) => { setRenderState({ glowEnabled: v > 0, glowIntensity: v }); triggerAutoSave(); });
                 // SSR — 屏幕空间反射
                 addToggleRow(c, '屏幕空间反射', state.ssrEnabled,
-                    (v) => { setRenderState({ ssrEnabled: v }); triggerAutoSave(); reRenderSceneMenu(); }, 'lucide:reflect');
+                    (v) => { setRenderState({ ssrEnabled: v }); triggerAutoSave(); reRenderSceneMenu(); }, 'lucide:reflect', {
+                    bind: () => getRenderState().ssrEnabled,
+                });
                 if (state.ssrEnabled) {
                     sliderRow(c, '反射强度', state.ssrStrength, 0, 1, 0.05, 'lucide:opacity',
                         (v) => { setRenderState({ ssrStrength: v }); triggerAutoSave(); });
@@ -505,10 +640,14 @@ export function buildPostProcessLevel(): PopupLevel {
                 }
                 // Reflection Probe — 环境反射探针
                 addToggleRow(c, '环境反射', state.reflectionProbeEnabled,
-                    (v) => { setRenderState({ reflectionProbeEnabled: v, reflectionIntensity: v ? 1 : 0 }); triggerAutoSave(); }, 'lucide:scan');
+                    (v) => { setRenderState({ reflectionProbeEnabled: v, reflectionIntensity: v ? 1 : 0 }); triggerAutoSave(); }, 'lucide:scan', {
+                    bind: () => getRenderState().reflectionProbeEnabled,
+                });
                 // SSAO — 屏幕空间环境遮蔽
                 addToggleRow(c, '环境遮蔽 (SSAO)', state.ssaoEnabled,
-                    (v) => { setRenderState({ ssaoEnabled: v }); triggerAutoSave(); reRenderSceneMenu(); }, 'lucide:shadow');
+                    (v) => { setRenderState({ ssaoEnabled: v }); triggerAutoSave(); reRenderSceneMenu(); }, 'lucide:shadow', {
+                    bind: () => getRenderState().ssaoEnabled,
+                });
                 if (state.ssaoEnabled) {
                     sliderRow(c, '遮蔽强度', state.ssaoStrength, 0, 1, 0.05, 'lucide:circle-half',
                         (v) => { setRenderState({ ssaoStrength: v }); triggerAutoSave(); });
@@ -535,38 +674,21 @@ export function buildPostProcessLevel(): PopupLevel {
                         ], state.toneMapping, (v) => {
                             setRenderState({ toneMapping: v });
                             triggerAutoSave();
-                            reRenderSceneMenu();
-                        }, 'lucide:palette');
+                            getSceneMenu()?.updateControls();
+                        }, 'lucide:palette', undefined, {
+                            bind: () => getRenderState().toneMapping,
+                        });
                         addSliderRow(inner, '曝光', state.exposure, 0, 4, 0.05, () => {}, 'lucide:lightbulb',
-                            (v) => { setRenderState({ exposure: v }); triggerAutoSave(); });
+                            (v) => { setRenderState({ exposure: v }); triggerAutoSave(); }, {
+                            bind: () => getRenderState().exposure,
+                        });
                         addSliderRow(inner, '对比度', state.contrast, 0, 4, 0.05, () => {}, 'lucide:contrast',
-                            (v) => { setRenderState({ contrast: v }); triggerAutoSave(); });
+                            (v) => { setRenderState({ contrast: v }); triggerAutoSave(); }, {
+                            bind: () => getRenderState().contrast,
+                        });
                     },
                 });
             });
-        },
-        reRenderCustom: (container) => {
-            // 色调映射模式改变 → 更新 mode slider 的显示值
-            const toneMapping = getRenderState().toneMapping;
-            const labels = ['关闭', 'ACES', 'Reinhard', 'Cineon', 'Neutral'];
-            // 遍历所有 card 找色调映射 collapsible 内 label="模式" 的 cs-row
-            const wrappers = container.querySelectorAll('.collapsible-wrapper');
-            for (const wrapper of Array.from(wrappers) as HTMLElement[]) {
-                const csRows = wrapper.querySelectorAll('.cs-row');
-                for (const row of Array.from(csRows) as HTMLElement[]) {
-                    const label = row.querySelector('.cs-label');
-                    if (label && label.textContent === '模式') {
-                        const valEl = row.querySelector('.cs-value');
-                        if (valEl) valEl.textContent = labels[toneMapping] ?? String(toneMapping);
-                        const fill = row.querySelector('.cs-fill') as HTMLElement | null;
-                        const thumb = row.querySelector('.cs-thumb') as HTMLElement | null;
-                        const pct = toneMapping > 0 ? (toneMapping / 4) * 100 : 0;
-                        if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-                        if (thumb) thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
-                        return;
-                    }
-                }
-            }
         },
     };
 }

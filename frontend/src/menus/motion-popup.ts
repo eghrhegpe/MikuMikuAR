@@ -24,6 +24,7 @@ import {
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { slideRow, addSliderRow, addToggleRow } from '../core/ui-helpers';
+import { getCurrentRenderingMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import {
     loadVMDFromPath,
@@ -65,7 +66,12 @@ import { setEnvState } from '../scene/scene';
 
 // ======== 从子文件导入 ========
 import { buildClothParamsLevel } from './motion-cloth-levels';
-import { buildPhysicsLevel } from './motion-physics-levels';
+import {
+    buildPhysicsLevel,
+    buildPhysicsDebugLevel,
+    buildCollisionLevel,
+    buildWasmPhysicsLevel,
+} from './motion-physics-levels';
 
 // ======== Barrel Re-Exports ========
 export { buildClothParamsLevel } from './motion-cloth-levels';
@@ -104,6 +110,18 @@ function buildActionBindingLevel(id: string): PopupLevel {
                     level.label = `绑定动作 → ${inst.name}`;
                     if (getMotionMenu()) getMotionMenu()?.push(level);
                 }, inst.vmdName || '无');
+                const firstRow = c.querySelector('.slide-item');
+                if (firstRow) {
+                    const sublabelEl = firstRow.querySelector('.slide-sublabel');
+                    if (sublabelEl) {
+                        getCurrentRenderingMenu()?.registerControl(() => {
+                            const currentInst = modelManager.get(id);
+                            if (currentInst) {
+                                sublabelEl.textContent = currentInst.vmdName || '无';
+                            }
+                        });
+                    }
+                }
                 slideRow(c, 'lucide:user', '姿势库', true, () => {
                     const level = stackRegistry.buildLevel!(libraryRoot, '姿势库', (m) => m.format === 'vpd');
                     level.label = `姿势 → ${inst.name}`;
@@ -122,9 +140,11 @@ function buildActionBindingLevel(id: string): PopupLevel {
                             const enabled = isPhysicsCategoryEnabled(id, cat);
                             addToggleRow(c, CAT_LABELS[cat] || cat, enabled, (v) => {
                                 setPhysicsCategory(id, cat, v);
-                                if (getMotionMenu()) getMotionMenu()?.reRender();
+                                getMotionMenu()?.updateControls();
                                 setStatus(v ? `✓ ${CAT_LABELS[cat] || cat} 已开启` : `✕ ${CAT_LABELS[cat] || cat} 已关闭`, true);
-                            }, 'lucide:settings');
+                            }, 'lucide:settings', {
+                                bind: () => isPhysicsCategoryEnabled(id, cat),
+                            });
                         }
                     });
                 }
@@ -148,25 +168,13 @@ function buildActionBindingLevel(id: string): PopupLevel {
                         inst.vmdData = null; inst.vmdName = ''; inst.vmdPath = null; inst.animationDuration = 0;
                         if (isPlaying) { mmdRuntime.pauseAnimation(); setIsPlaying(false); }
                         updatePlaybackUI();
-                        if (getMotionMenu()) getMotionMenu()?.reRender();
+                        getMotionMenu()?.updateControls();
                         setStatus('✓ 动作已清除', true);
                     }
                 });
                 group.appendChild(clearBtn);
                 c.appendChild(group);
             });
-        },
-        reRenderCustom: (container) => {
-            const currentInst = modelManager.get(id);
-            if (!currentInst) return;
-            const firstCard = container.querySelector('.card-container');
-            if (!firstCard) return;
-            const firstRow = firstCard.querySelector('.slide-item');
-            if (!firstRow) return;
-            const sublabelEl = firstRow.querySelector('.slide-sublabel');
-            if (sublabelEl) {
-                sublabelEl.textContent = currentInst.vmdName || '无';
-            }
         },
     };
 }
@@ -236,6 +244,10 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
     if (row.target === 'motion:procmotion') { return buildProcMotionLevel(); }
     if (row.target === 'motion:cloth') { return buildClothParamsLevel(); }
     if (row.target === 'motion:physics') { return buildPhysicsLevel(); }
+    if (row.target === 'physics:cloth') { return buildClothParamsLevel(); }
+    if (row.target === 'physics:debug') { return buildPhysicsDebugLevel(); }
+    if (row.target === 'physics:collision') { return buildCollisionLevel(); }
+    if (row.target === 'physics:wasm') { return buildWasmPhysicsLevel(); }
     if (row.target === 'procmotion:mode') { return buildProcMotionModeLevel(); }
     if (row.target === 'lipsync:menu') { return buildLipSyncLevel(); }
     if (row.target && row.target.startsWith('action:binding:')) {

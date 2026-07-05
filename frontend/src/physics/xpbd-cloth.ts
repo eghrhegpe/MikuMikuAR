@@ -263,7 +263,8 @@ export function createCloth(
 export function buildClothUpdateFn(
     cloth: ClothInstance,
     anchorMatrixFn: (boneName: string) => Float32Array | null,
-    collider?: SdfCollider | null
+    collider?: SdfCollider | null,
+    getTimeScale?: () => number,
 ): (dt: number) => void {
     // 锚定粒子在局部空间的初始位置缓存（相对于 anchor bone）
     const anchorLocalPositions: [number, number, number][] = [];
@@ -333,8 +334,9 @@ export function buildClothUpdateFn(
             collider.solve(solver);
         }
 
-        // 3. XPBD 步进（使用实际帧时间）
-        solver.step(dt);
+        // 3. XPBD 步进（支持模拟速度倍率）
+        const adjustedDt = getTimeScale ? dt * getTimeScale() : dt;
+        solver.step(adjustedDt);
 
         // 4. 更新 Mesh 顶点
         _updateClothMesh(cloth);

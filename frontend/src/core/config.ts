@@ -313,6 +313,14 @@ export interface EnvState {
     clothConfig: ClothConfig;
     /** XPBD 求解器迭代次数（全局默认值，新建布料时生效） */
     solverSubsteps: number;
+    /** 模拟速度倍率（dt 乘数） */
+    solverTimeScale: number;
+    /** 碰撞主开关 */
+    collisionEnabled: boolean;
+    /** 身体碰撞（SDF 胶囊）开关 */
+    bodyCollisionEnabled: boolean;
+    /** 地面碰撞开关 */
+    groundCollisionEnabled: boolean;
 
     // ======== 太阳参数（序列化用）========
     sunAngle: number; // 太阳高度角, -15~90
@@ -639,6 +647,10 @@ export const envState: EnvState = {
     clothEnabled: false,
     clothConfig: { ...DEFAULT_CLOTH_CONFIG },
     solverSubsteps: 4,
+    solverTimeScale: 1.0,
+    collisionEnabled: true,
+    bodyCollisionEnabled: true,
+    groundCollisionEnabled: true,
 
     // ======== 太阳参数（序列化用）====
     sunAngle: 45,

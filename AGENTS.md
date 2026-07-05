@@ -290,7 +290,7 @@ frontend/
 │   │   │
 │   │   ├── env-menu.ts                  # 环境弹窗入口 + 导航
 │   │   ├── env-feature-levels.ts        #   天空/地面/水面/风/云/实验功能
-│   │   ├── env-prop-levels.ts           #   道具系统
+│   │   ├── scene-prop-levels.ts         #   道具系统（从 env 迁入 scene）
 │   │   ├── env-preset-levels.ts         #   环境预设（内置 + 用户保存）
 │   │   │
 │   │   ├── motion-popup.ts              # 动作弹窗入口 + 动作绑定/音乐/相机

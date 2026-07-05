@@ -12,6 +12,9 @@ import { focusedModelId, envState, setStatus } from '../core/config';
 /** 当前布料的碰撞体引用 */
 let _currentCollider: SdfCollider | null = null;
 
+/** 当前布料重力倍率（与 WASM 共用同一 slider，独立追踪避免耦合） */
+let _clothGravity = 1.0;
+
 /** 调试可视化渲染器 */
 let _renderer: XpbdRenderer | null = null;
 
@@ -86,12 +89,17 @@ function _createClothForFocusedModel(): void {
     const cloth = createCloth(scene, cfg, collider);
     // 应用全局 solver substeps
     cloth.solver.substeps = envState.solverSubsteps;
+    // 应用全局重力
+    cloth.solver.setGravity(0, -9.8 * _clothGravity, 0);
 
-    // Build update function
-    const updateFn = buildClothUpdateFn(cloth, anchorMatrixFn, collider);
+    // Build update function (with time scale getter)
+    const updateFn = buildClothUpdateFn(cloth, anchorMatrixFn, collider, () => envState.solverTimeScale);
 
     // Register with model manager
     modelManager.addCloth(id, cloth, updateFn);
+
+    // 应用当前碰撞状态到新布料
+    _applyCollisionState();
 
     // 设置调试更新回调（如果调试可视化已启用）
     if (_debugParticles || _debugConstraints || _debugColliders) {
@@ -273,6 +281,24 @@ export function disposeDebugRenderer(): void {
     _debugColliders = false;
 }
 
+// ======== 碰撞状态同步（内部）========
+
+/** 应用当前 envState 碰撞开关到所有布料和碰撞体 */
+function _applyCollisionState(): void {
+    const groundEffective = envState.collisionEnabled && envState.groundCollisionEnabled;
+    const bodyEffective = envState.collisionEnabled && envState.bodyCollisionEnabled;
+
+    for (const [, cloth] of modelManager.clothInstances) {
+        if (cloth && cloth.solver) {
+            cloth.solver.groundCollisionEnabled = groundEffective;
+        }
+    }
+
+    if (_currentCollider) {
+        _currentCollider.setAllEnabled(bodyEffective);
+    }
+}
+
 // ======== Solver 参数 API =========
 
 /** 获取全局 solver 迭代次数 */
@@ -283,7 +309,6 @@ export function getSolverSubsteps(): number {
 /** 设置全局 solver 迭代次数（更新现有布料 + 新建布料默认值） */
 export function setSolverSubsteps(v: number): void {
     envState.solverSubsteps = v;
-    // 应用到所有现有布料
     for (const [, cloth] of modelManager.clothInstances) {
         if (cloth && cloth.solver) {
             cloth.solver.substeps = v;
@@ -291,18 +316,61 @@ export function setSolverSubsteps(v: number): void {
     }
 }
 
-/** 获取地面碰撞开关状态 */
-export function getGroundCollisionEnabled(): boolean {
-    const first = modelManager.clothInstances.values().next();
-    if (first.done || !first.value.cloth.solver) return false;
-    return first.value.cloth.solver.groundCollisionEnabled;
+// ======== 模拟速度 API =========
+
+/** 获取模拟速度倍率 */
+export function getTimeScale(): number {
+    return envState.solverTimeScale;
 }
 
-/** 设置地面碰撞开关（应用到所有现有布料） */
-export function setGroundCollisionEnabled(v: boolean): void {
+/** 设置模拟速度倍率（实时生效） */
+export function setTimeScale(v: number): void {
+    envState.solverTimeScale = v;
+}
+
+// ======== 布料重力 API =========
+
+/** 设置布料重力倍率（应用到所有现有布料） */
+export function setClothGravity(scale: number): void {
+    _clothGravity = scale;
     for (const [, cloth] of modelManager.clothInstances) {
         if (cloth && cloth.solver) {
-            cloth.solver.groundCollisionEnabled = v;
+            cloth.solver.setGravity(0, -9.8 * scale, 0);
         }
     }
+}
+
+// ======== 碰撞 API =========
+
+/** 获取碰撞主开关状态 */
+export function getCollisionEnabled(): boolean {
+    return envState.collisionEnabled;
+}
+
+/** 设置碰撞主开关 */
+export function setCollisionEnabled(v: boolean): void {
+    envState.collisionEnabled = v;
+    _applyCollisionState();
+}
+
+/** 获取身体碰撞开关状态 */
+export function getBodyCollisionEnabled(): boolean {
+    return envState.bodyCollisionEnabled;
+}
+
+/** 设置身体碰撞开关 */
+export function setBodyCollisionEnabled(v: boolean): void {
+    envState.bodyCollisionEnabled = v;
+    _applyCollisionState();
+}
+
+/** 获取地面碰撞开关状态（从 envState） */
+export function getGroundCollisionEnabled(): boolean {
+    return envState.groundCollisionEnabled;
+}
+
+/** 设置地面碰撞开关 */
+export function setGroundCollisionEnabled(v: boolean): void {
+    envState.groundCollisionEnabled = v;
+    _applyCollisionState();
 }
