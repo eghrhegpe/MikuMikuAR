@@ -26,6 +26,7 @@ import {
 } from './config';
 import { registerIconBundle } from './icons-bundle';
 import { GetConfig, ImportZip, ImportLocalFile, Events } from './wails-bindings';
+import { generateTextColors } from '../menus/settings';
 import { loadManager } from './load-manager';
 import {
     initScene,
@@ -632,6 +633,10 @@ async function restoreUIState(): Promise<void> {
         root.style.setProperty('--accent', s.accent);
         root.style.setProperty('--accent-rgb', hexToRgb(s.accent));
         root.style.setProperty('--accent-dim', s.accent + '33');
+        const textColors = generateTextColors(s.accent);
+        root.style.setProperty('--text-bright', textColors.bright);
+        root.style.setProperty('--text-dim', textColors.dim);
+        root.style.setProperty('--text-muted', textColors.muted);
     }
     if (s.fontFamily && FONT_RESTORE[s.fontFamily]) {
         root.style.setProperty('--font', FONT_RESTORE[s.fontFamily]);

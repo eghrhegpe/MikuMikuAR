@@ -2,8 +2,8 @@
 // addColorSliderRow / addModeSlider
 
 import { createIconifyIcon } from './icons';
-import { getCurrentRenderingMenu } from '../menus/menu';
 import { ControlOptions } from './ui-types';
+import { initControl } from './ui-rows';
 
 // ===================================================================
 // addColorSliderRow
@@ -153,31 +153,6 @@ export function addColorSliderRow(
 
     // === 自更新支持 ===
     if (opts) {
-        let cached: [number, number, number] = [color[0], color[1], color[2]];
-        const update = (): void => {
-            if (opts.onUpdate) {
-                opts.onUpdate(block);
-                return;
-            }
-            if (!opts.bind) return;
-            const newVal = opts.bind();
-            if (!Array.isArray(newVal) || newVal.length < 3) return;
-            let changed = false;
-            for (let i = 0; i < 3; i++) {
-                if (newVal[i] !== cached[i]) {
-                    changed = true;
-                    cached[i] = newVal[i];
-                    current[i] = newVal[i];
-                    vals[i].textContent = newVal[i].toFixed(2);
-                    fills[i].style.width = (newVal[i] * 100) + '%';
-                    thumbs[i].style.left = (newVal[i] * 100) + '%';
-                    bars[i].setAttribute('aria-valuenow', String(newVal[i]));
-                }
-            }
-            if (changed) {
-                swatch.style.background = `rgb(${Math.round(cached[0] * 255)},${Math.round(cached[1] * 255)},${Math.round(cached[2] * 255)})`;
-            }
-        };
         const vals: HTMLElement[] = [];
         const fills: HTMLElement[] = [];
         const thumbs: HTMLElement[] = [];
@@ -189,7 +164,24 @@ export function addColorSliderRow(
             thumbs[i] = row.querySelector('.cs-thumb') as HTMLElement;
             bars[i] = row.querySelector('.cs-bar') as HTMLElement;
         });
-        getCurrentRenderingMenu()?.registerControl(update);
+        initControl(block, opts, [color[0], color[1], color[2]], (v, cached) => {
+            if (!Array.isArray(v) || v.length < 3) return false;
+            let changed = false;
+            for (let i = 0; i < 3; i++) {
+                if (v[i] !== cached[i]) {
+                    changed = true;
+                    current[i] = v[i];
+                    vals[i].textContent = v[i].toFixed(2);
+                    fills[i].style.width = (v[i] * 100) + '%';
+                    thumbs[i].style.left = (v[i] * 100) + '%';
+                    bars[i].setAttribute('aria-valuenow', String(v[i]));
+                }
+            }
+            if (changed) {
+                swatch.style.background = `rgb(${Math.round(v[0] * 255)},${Math.round(v[1] * 255)},${Math.round(v[2] * 255)})`;
+            }
+            return changed;
+        });
     }
 }
 
@@ -391,22 +383,10 @@ export function addModeSlider<T extends string | number>(
     container.appendChild(row);
 
     // === 自更新支持 ===
-    if (opts) {
-        let cachedValue = currentValue;
-        const update = (): void => {
-            if (opts.onUpdate) {
-                opts.onUpdate(row);
-                return;
-            }
-            if (!opts.bind) return;
-            const newVal = opts.bind() as T;
-            if (newVal === cachedValue) return;
-            cachedValue = newVal;
-            const idx = options.findIndex((o) => o.value === newVal);
-            if (idx >= 0) {
-                updateDisplay(idx);
-            }
-        };
-        getCurrentRenderingMenu()?.registerControl(update);
-    }
+    initControl(row, opts, currentValue, (v, cached) => {
+        if (v === cached) return false;
+        const idx = options.findIndex((o) => o.value === v);
+        if (idx >= 0) updateDisplay(idx);
+        return true;
+    });
 }

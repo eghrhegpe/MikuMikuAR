@@ -172,7 +172,9 @@ export function addPresetChip(
 
     // === 自更新支持 ===
     if (opts?.onUpdate) {
-        getCurrentRenderingMenu()?.registerControl(() => opts.onUpdate!(btn));
+        const update = () => opts.onUpdate!(btn);
+        getCurrentRenderingMenu()?.registerControl(update);
+        update();
     }
 
     return btn;

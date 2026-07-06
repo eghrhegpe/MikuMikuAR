@@ -83,6 +83,10 @@ export type ModelInstance = {
             ambientB: number;
         }
     >;
+    /** FBX overlay mesh 列表（切换变体时加载/释放） */
+    _overlayMeshes?: Mesh[];
+    /** 原始材质可见性快照（hideMaterials 前保存，用于 restore） */
+    _origMaterialVisibility?: Map<number, boolean>;
 };
 
 /** [doc:architecture] PropInstance — 场景道具实例（独立于模型库，不参与 VMD/物理/排列） */
@@ -118,6 +122,10 @@ export type OutfitVariant = {
     byCategory?: Record<string, OutfitSlot>;
     byMaterial?: Record<string, OutfitSlot>;
     all?: OutfitSlot;
+    /** FBX overlay 文件路径（相对模型目录），有此字段时加载 mesh 叠加层 */
+    meshFile?: string;
+    /** 切换此变体时隐藏的 PMX 材质名列表 */
+    hideMaterials?: string[];
 };
 
 export type OutfitFile = {

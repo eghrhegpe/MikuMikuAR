@@ -76,22 +76,42 @@ export function addToggleRow(
     container.appendChild(row);
 
     // === 自更新支持 ===
-    if (opts) {
-        let cachedValue = value;
-        const update = (): void => {
-            if (opts.onUpdate) {
-                opts.onUpdate(row);
-                return;
-            }
-            if (!opts.bind) return;
-            const newVal = !!opts.bind();
-            if (newVal === cachedValue) return;
-            cachedValue = newVal;
-            toggle.checked = newVal;
-            toggle.setAttribute('aria-checked', String(newVal));
-        };
-        getCurrentRenderingMenu()?.registerControl(update);
-    }
+    initControl(row, opts, value, (v, cached) => {
+        const b = !!v;
+        if (b === cached) return false;
+        toggle.checked = b;
+        toggle.setAttribute('aria-checked', String(b));
+        return true;
+    });
+}
+
+// ===================================================================
+// initControl — 控件自更新注册 + 立即初始化
+// ===================================================================
+
+/**
+ * 封装 registerControl + immediate update 模式。
+ * `apply` 返回 true 表示值已变更，用于更新缓存。
+ */
+export function initControl<T>(
+    el: HTMLElement,
+    opts: ControlOptions<T> | undefined,
+    initial: T,
+    apply: (v: T, cached: T) => boolean,
+): void {
+    if (!opts) return;
+    let cached = initial;
+    const update = (): void => {
+        if (opts.onUpdate) {
+            opts.onUpdate(el);
+            return;
+        }
+        if (!opts.bind) return;
+        const v = opts.bind();
+        if (apply(v, cached)) cached = v;
+    };
+    getCurrentRenderingMenu()?.registerControl(update);
+    update();
 }
 
 // ===================================================================
@@ -286,22 +306,12 @@ export function addSliderRow(
     container.appendChild(row);
 
     // === 自更新支持 ===
-    if (opts) {
-        let cachedValue = value;
-        const update = (): void => {
-            if (opts.onUpdate) {
-                opts.onUpdate(row);
-                return;
-            }
-            if (!opts.bind) return;
-            const newVal = Number(opts.bind());
-            if (!Number.isFinite(newVal)) return;
-            if (newVal === cachedValue) return;
-            cachedValue = newVal;
-            updateDisplay(newVal);
-        };
-        getCurrentRenderingMenu()?.registerControl(update);
-    }
+    initControl(row, opts, value, (v, cached) => {
+        const n = Number(v);
+        if (!Number.isFinite(n) || n === cached) return false;
+        updateDisplay(n);
+        return true;
+    });
 }
 
 // ===================================================================
