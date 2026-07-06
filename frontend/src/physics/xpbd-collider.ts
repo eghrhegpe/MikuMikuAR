@@ -303,8 +303,9 @@ export class SdfCollider {
                     // 半高 = 骨骼距离的一半
                     capsule.halfHeight = dist * 0.5;
 
-                    // 半径 = 骨骼距离的 0.2 倍（可调整）
-                    capsule.radius = dist * 0.2;
+                    // 半径 = 骨骼距离 × 0.8
+                    // 参考：腰高（下半身→腰 ≈ 0.15）× 0.8 = 0.12，与 DEFAULT 腰半径 0.13 一致
+                    capsule.radius = dist * 0.8;
                 }
             }
 

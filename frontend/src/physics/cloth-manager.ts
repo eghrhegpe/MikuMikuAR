@@ -4,7 +4,7 @@
 
 import { SdfCollider, DEFAULT_BODY_CAPSULES } from './xpbd-collider';
 import type { CapsuleSpec } from './xpbd-collider';
-import { createCloth, buildClothUpdateFn, setDebugUpdateFn } from './xpbd-cloth';
+import { createCloth, buildClothUpdateFn, setDebugUpdateFn, DEFAULT_CLOTH_CONFIG } from './xpbd-cloth';
 import { XpbdRenderer } from './xpbd-renderer';
 import { scene, modelManager } from '../scene/scene';
 import { focusedModelId, envState, setStatus } from '../core/config';
@@ -43,12 +43,14 @@ function _createClothForFocusedModel(): void {
     collider.init(DEFAULT_BODY_CAPSULES);
     _currentCollider = collider;
 
-    // Scale collider to match model size
+    // 提领模型整体高度（用于 autoFitClothDimensions 归一化）
+    let modelHeight: number | undefined;
+
     const model = modelManager.modelRegistry.get(id);
     if (model && model.rootMesh) {
         const boundingInfo = model.rootMesh.getBoundingInfo();
         if (boundingInfo) {
-            const modelHeight =
+            modelHeight =
                 boundingInfo.boundingBox.maximumWorld.y - boundingInfo.boundingBox.minimumWorld.y;
             if (modelHeight > 0.001) {
                 const defaultHeight = 2.0;
@@ -80,12 +82,16 @@ function _createClothForFocusedModel(): void {
     // Use config from envState
     let cfg = { ...envState.clothConfig };
 
-    // 首次创建（innerRadius == 1.0 是旧默认值笔误）时自动推算尺寸
-    if (cfg.innerRadius >= 0.9) {
+    // 自动推算尺寸：innerRadius 仍为出厂默认值 0.12（未自定义过）或旧存档笔误值 1.0
+    const atDefault =
+        Math.abs(cfg.innerRadius - DEFAULT_CLOTH_CONFIG.innerRadius) < 0.001 &&
+        Math.abs(cfg.length - DEFAULT_CLOTH_CONFIG.length) < 0.001;
+    if (cfg.innerRadius >= 0.9 || atDefault) {
         const fitted = autoFitClothDimensions(
             cfg.anchorBone || '腰',
             anchorMatrixFn,
             mmdForBones?.runtimeBones ?? [],
+            modelHeight,
         );
         cfg.innerRadius = fitted.innerRadius;
         cfg.length = fitted.length;
@@ -159,55 +165,117 @@ export function recreateCloth(): boolean {
 /**
  * 从模型骨骼实际位置推算布料尺寸参数。
  *
+ * 算法思路（v2 — 基于模型整体比例，非链段长度）：
+ * - 用模型 bounding box 高度建立"身高参考"
+ * - innerRadius: 用锚骨骼所在层的"截面半径"，通过在该层采样周围骨骼横向距离的中位数来估算
+ * - length: BFS 找最深末端骨骼的垂直距离，按裙装比例换算（而非简单 ×0.5）
+ *
  * @param anchorBoneName 锚定骨骼名（如 "腰"）
  * @param getBoneMatrix 获取骨骼世界矩阵的函数
  * @param bones MMD 运行时骨骼列表（含 parentBone 引用）
- * @returns 推算出的 innerRadius 和 length（已 clamp 到合理范围）
+ * @param modelHeight 可选的模型高度（米），用于归一化。如果不传则从骨骼数据推估。
+ * @returns 推算出的 innerRadius 和 length
  */
 export function autoFitClothDimensions(
     anchorBoneName: string,
     getBoneMatrix: (name: string) => Float32Array | null,
     bones: ReadonlyArray<{ name: string; parentBone: { name: string } | null; worldMatrix: Float32Array }>,
+    modelHeight?: number,
 ): { innerRadius: number; length: number } {
-    const DEFAULTS = { innerRadius: 0.12, length: 0.6 };
+    // 人体比例参考（米）：
+    // 身高 1.6m → 腰节（头顶到腰）≈ 0.95m，腰围 ≈ 0.70m（半径 0.111m）
+    // 身高 1.7m → 腰节 ≈ 1.01m，腰围 ≈ 0.75m（半径 0.119m）
+    // 身高 1.8m → 腰节 ≈ 1.07m，腰围 ≈ 0.80m（半径 0.127m）
+    const REF_HEIGHT = 1.7; // 参考身高（米）
+    const REF_WAIST_RADIUS = 0.119; // 参考腰半径（米）
+    const REF_WAIST_TO_FLOOR = 0.95; // 参考腰到地面（脚踝）高度（米）
+    // 裙长经验值：及膝 ≈ 0.5m，及踝 ≈ 0.85m，拖地 ≈ 1.2m
+    const REF_SKIRT_LENGTH = 0.65; // 参考裙长（米）
 
     const anchorMat = getBoneMatrix(anchorBoneName);
-    if (!anchorMat) return DEFAULTS;
+    if (!anchorMat) return { innerRadius: REF_WAIST_RADIUS, length: REF_SKIRT_LENGTH };
 
     const anchorBone = bones.find((b) => b.name === anchorBoneName);
-    if (!anchorBone) return DEFAULTS;
+    if (!anchorBone) return { innerRadius: REF_WAIST_RADIUS, length: REF_SKIRT_LENGTH };
 
-    // --- innerRadius：锚骨骼与父骨骼的距离 × 0.8 ---
-    const parentName = anchorBone.parentBone?.name;
-    const parentMat = parentName ? getBoneMatrix(parentName) : null;
-    let innerRadius = DEFAULTS.innerRadius;
-    if (parentMat) {
-        const dx = anchorMat[12] - parentMat[12];
-        const dy = anchorMat[13] - parentMat[13];
-        const dz = anchorMat[14] - parentMat[14];
-        const boneLen = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (boneLen > 0.01) {
-            innerRadius = boneLen * 0.8;
+    // ---- 推估模型身高（如果未传入）----
+    let height = modelHeight ?? REF_HEIGHT;
+    if (!modelHeight) {
+        // 从骨骼 Y 范围估算：找最高和最低骨骼的 Y 差
+        let minY = Infinity, maxY = -Infinity;
+        for (const b of bones) {
+            const m = getBoneMatrix(b.name);
+            if (m) {
+                const y = m[13]; // world matrix translation Y
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+        if (isFinite(minY) && isFinite(maxY) && maxY - minY > 0.1) {
+            height = maxY - minY;
         }
     }
 
-    // --- length：从锚骨骼向下找最远的末端骨骼，用 Y 轴垂直距离 ---
-    // 典型链：腰 → 下半身 → 左足 → 左ひざ → 左足首
+    // 模型身高归一化系数（把骨骼单位 → 米）
+    // MMD 模型通常 1 unit ≈ 1 cm，所以直接用差值即可
+    // 若模型实际身高 1.5m，height=1.5；若 2.0m，height=2.0
+    const scaleFactor = height / REF_HEIGHT; // 1.0 = 标准身高，>1 = 高大，<1 = 娇小
+
+    // ---- innerRadius：通过横向扩散采样估算 ----
+    // 以锚骨骼为中心，采样同层（相近 Y 高度）所有骨骼的径向距离
     const anchorY = anchorMat[13];
+    const anchorX = anchorMat[12];
+    const anchorZ = anchorMat[14];
+
+    // 收集 anchor 层附近（|Y - anchorY| < 0.1）的骨骼，统计径向距离分布
+    const lateralDistances: number[] = [];
+    for (const b of bones) {
+        if (b.name === anchorBoneName) continue;
+        const m = getBoneMatrix(b.name);
+        if (!m) continue;
+        const dy = Math.abs(m[13] - anchorY);
+        if (dy > 0.1) continue; // 同层骨骼
+        const dx = m[12] - anchorX;
+        const dz = m[14] - anchorZ;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist > 0.01) lateralDistances.push(dist);
+    }
+
+    let innerRadius: number;
+    if (lateralDistances.length >= 3) {
+        // 取中位数 × 0.55 作为半径（分布通常包含左右各一半身体）
+        lateralDistances.sort((a, b) => a - b);
+        const medianDist = lateralDistances[Math.floor(lateralDistances.length / 2)];
+        innerRadius = medianDist * 0.55;
+    } else {
+        // fallback：骨骼链段长度 × 系数
+        const parentName = anchorBone.parentBone?.name;
+        const parentMat = parentName ? getBoneMatrix(parentName) : null;
+        if (parentMat) {
+            const dx = anchorMat[12] - parentMat[12];
+            const dy = anchorMat[13] - parentMat[13];
+            const dz = anchorMat[14] - parentMat[14];
+            const boneLen = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            innerRadius = boneLen * 0.7;
+        } else {
+            innerRadius = REF_WAIST_RADIUS * scaleFactor;
+        }
+    }
+
+    // ---- length：从锚骨骼向下 BFS 找最深骨骼的垂直距离 ----
     let minY = anchorY;
-    // 找所有从锚骨骼向下可达的骨骼（BFS，最多 6 层）
     const visited = new Set<string>([anchorBoneName]);
     let frontier: string[] = [anchorBoneName];
-    for (let depth = 0; depth < 6 && frontier.length > 0; depth++) {
+    for (let depth = 0; depth < 8 && frontier.length > 0; depth++) {
         const next: string[] = [];
         for (const name of frontier) {
             for (const b of bones) {
                 if (b.parentBone?.name === name && !visited.has(b.name)) {
                     visited.add(b.name);
                     next.push(b.name);
-                    const mat = getBoneMatrix(b.name);
-                    if (mat && mat[13] < minY) {
-                        minY = mat[13];
+                    const m = getBoneMatrix(b.name);
+                    if (m && m[13] < minY) {
+                        minY = m[13];
                     }
                 }
             }
@@ -215,16 +283,20 @@ export function autoFitClothDimensions(
         frontier = next;
     }
 
-    const verticalSpan = anchorY - minY; // 正值 = 从腰往下到最远末端
-    let length = DEFAULTS.length;
-    if (verticalSpan > 0.05) {
-        // 裙长取垂直跨度的 40%~60%（裙不到脚踝，留有余量）
-        length = verticalSpan * 0.5;
+    const verticalSpan = anchorY - minY;
+    let length: number;
+    if (verticalSpan > 0.1) {
+        // 裙长 = max(腰到脚踝 × 60%, 参考裙长 × 身高归一化)
+        // 60% 为保守余量（不过踝）；参考裙长保证极矮模型也有基础长度
+        length = Math.max(verticalSpan * 0.6, REF_SKIRT_LENGTH * scaleFactor);
+    } else {
+        length = REF_SKIRT_LENGTH * scaleFactor;
     }
 
+    // 宽松范围限制
     return {
-        innerRadius: Math.max(0.03, Math.min(innerRadius, 0.5)),
-        length: Math.max(0.1, Math.min(length, 2.0)),
+        innerRadius: Math.max(0.05, Math.min(innerRadius, 0.6)),
+        length: Math.max(0.15, Math.min(length, 2.2)),
     };
 }
 
