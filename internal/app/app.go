@@ -48,7 +48,7 @@ type App struct {
 	commitHash  string // injected via -ldflags at build time
 	httpServers map[string]*httpServerInfo // keyed by dirPath
 	httpSrvMu   sync.Mutex
-	configMu    sync.Mutex // guards GetConfig/writeConfig sequences
+	configMu    sync.RWMutex // guards GetConfig/writeConfig sequences
 
 	// 下载目录监听
 	watcher      *fsnotify.Watcher
@@ -254,8 +254,6 @@ func (a *App) SelectExeFile() (string, error) {
 		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 	})
 }
-
-// ReadFileBytes reads a file from the given path and returns its bytes as base64.
 
 // ======== Model Library Types ========
 

@@ -420,10 +420,10 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 	return models
 }
 
-// GetConfig reads the persisted config from disk.
-// Returns an empty Config (no error) if file doesn't exist.
-// Real I/O errors (permission, filesystem) are logged via safeLogError.
-func (a *App) GetConfig() (*Config, error) {
+// getConfigUnsafe reads config from disk without locking.
+// Caller must hold configMu (at least RLock) if concurrent writes are possible.
+// Used internally by updateConfig (which holds Lock) and by GetConfig (RLock).
+func (a *App) getConfigUnsafe() (*Config, error) {
 	// Phase 1: read bootstrap config from internal storage (configDir).
 	// This gives us ResourceRoot so we can locate the setting/ directory.
 	dir, err := configDir()
@@ -463,6 +463,14 @@ func (a *App) GetConfig() (*Config, error) {
 	return &Config{}, nil
 }
 
+// GetConfig reads the persisted config from disk with a read lock,
+// ensuring safe concurrent access with write operations.
+func (a *App) GetConfig() (*Config, error) {
+	a.configMu.RLock()
+	defer a.configMu.RUnlock()
+	return a.getConfigUnsafe()
+}
+
 // currentConfigVersion is the latest config schema version.
 // Increment when adding breaking config changes; add migration logic in finaliseConfig.
 const currentConfigVersion = 1
@@ -489,7 +497,7 @@ func (a *App) finaliseConfig(cfg *Config) {
 func (a *App) updateConfig(mutate func(*Config), rescan bool) error {
 	a.configMu.Lock()
 	defer a.configMu.Unlock()
-	cfg, err := a.GetConfig()
+	cfg, err := a.getConfigUnsafe()
 	if err != nil {
 		cfg = &Config{}
 	}

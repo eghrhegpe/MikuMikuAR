@@ -180,6 +180,7 @@ func (a *App) RenameModelPreset(oldName, newName string) error {
 
 // writeConfig persists only the config JSON (no rescan). Use for settings changes
 // that don't affect the model index (e.g. Blender path).
+// Uses tmp+rename for atomicity: prevents corrupted config on crash/power loss.
 func (a *App) writeConfig(cfg *Config) error {
 	dir, err := settingDir(cfg)
 	if err != nil {
@@ -189,7 +190,12 @@ func (a *App) writeConfig(cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "config.json"), data, 0644)
+	path := filepath.Join(dir, "config.json")
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, path)
 }
 
 // writeConfigAndRescan persists the config, runs a full scan with current settings,

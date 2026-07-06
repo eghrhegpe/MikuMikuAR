@@ -10,6 +10,15 @@ import (
 	"mikumikuar/internal/util"
 )
 
+const (
+	// maxIsolateFileSize is the maximum size (500 MB) for any single file copied
+	// during model isolation, preventing OOM from unexpectedly large files.
+	maxIsolateFileSize int64 = 500 * 1024 * 1024
+	// maxIsolateTotalSize is the maximum total size (2 GB) for all files copied
+	// during a single isolation operation.
+	maxIsolateTotalSize int64 = 2 * 1024 * 1024 * 1024
+)
+
 // ======== Safe Serving (Privacy Isolation) ========
 
 // serveDir returns the root directory for isolated model directories.
