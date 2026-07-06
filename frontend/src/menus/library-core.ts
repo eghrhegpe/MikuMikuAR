@@ -6,6 +6,8 @@ import {
     SetResourceRoot,
     SetOverridePath,
     SelectDir,
+    SelectImportFile,
+    ImportZip,
     ScanModelDir,
     GetLibraryIndex,
     ExtractZip,
@@ -69,7 +71,7 @@ import { buildStageTransformLevel } from './scene-menu';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus, getBrowseDir } from '../core/utils';
 import { showConfirm } from '../core/dialog';
 import { stackRegistry, getMenuWrapper } from '../core/config';
 
@@ -168,16 +170,17 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
         },
         onItemClick: (row: PopupRow) => {
             if (row.model) {
+                // closeAllOverlays 会自动清 binding targets，需先取到本地变量
                 if (row.model.format === 'vmd' && layerBindingTargetId) {
+                    const targetId = layerBindingTargetId;
                     closeAllOverlays();
-                    addVmdLayerFromPath(row.model.file_path, layerBindingTargetId);
-                    setLayerBindingTargetId(null);
+                    addVmdLayerFromPath(row.model.file_path, targetId);
                     return;
                 }
                 if (row.model.format === 'vmd' && motionBindingTargetId) {
+                    const targetId = motionBindingTargetId;
                     closeAllOverlays();
-                    loadManager.load({ kind: 'vmd', path: row.model.file_path, modelId: motionBindingTargetId });
-                    setMotionBindingTargetId(null);
+                    loadManager.load({ kind: 'vmd', path: row.model.file_path, modelId: targetId });
                     return;
                 }
                 closeAllOverlays();
@@ -188,6 +191,10 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 refreshLibrary();
                 return;
             }
+            if (row.target === 'models:import-file') {
+                importFile();
+                return;
+            }
         },
         onHover: (row, entering) => {
             if (!entering) {
@@ -196,6 +203,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             }
             const hints: Record<string, string> = {
                 'models:browse': '浏览和加载 PMX 模型',
+                'models:import-file': '从文件选择器导入 PMX/ZIP/VMD 文件',
             };
             const hint = hints[row.target || ''];
             if (hint) {
@@ -672,6 +680,7 @@ export function buildModelRootItems(): PopupRow[] {
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
     }
     items.push({ kind: 'folder', label: '加载模型', icon: 'lucide:folder', target: 'models:browse' });
+    items.push({ kind: 'action', label: '导入文件', icon: 'lucide:file-plus', target: 'models:import-file' });
     items.push({ kind: 'action', label: '重新扫描', icon: 'lucide:refresh-cw', target: 'models:rescan' });
     items.push({ kind: 'folder', label: '最近打开', icon: 'lucide:clock', target: '__recent__' });
     items.push({ kind: 'folder', label: '标签', icon: 'lucide:tag', target: '__tags__' });
@@ -890,6 +899,45 @@ export async function refreshLibrary(): Promise<void> {
             stackRegistry.modelStack!.push(rootLevel);
             restoreBrowsePath(prevPath);
         }
+    }
+}
+
+// ======== Import file via SAF file picker ========
+
+export async function importFile(): Promise<void> {
+    const path = await SelectImportFile();
+    if (!path) return;
+    const lower = path.toLowerCase();
+    if (lower.endsWith('.zip')) {
+        setStatus('⏳ 导入压缩包...', false);
+        try {
+            await ImportZip(path);
+            setStatus('✓ 压缩包已导入', true);
+            await refreshLibrary().catch((err) =>
+                console.warn('refresh after zip import:', err)
+            );
+        } catch (err) {
+            setStatus('✗ 导入失败: ' + formatError(err), false);
+            console.error('ImportZip failed:', err);
+        }
+    } else if (lower.endsWith('.pmx')) {
+        setStatus('⏳ 加载模型...', false);
+        try {
+            await loadManager.load({ kind: 'actor', path });
+        } catch (err) {
+            setStatus('✗ 模型加载失败: ' + formatError(err), false);
+            console.error('loadManager actor failed:', err);
+        }
+    } else if (lower.endsWith('.vmd')) {
+        setStatus('⏳ 加载动作...', false);
+        try {
+            await loadManager.load({ kind: 'vmd', path });
+        } catch (err) {
+            setStatus('✗ VMD 加载失败: ' + formatError(err), false);
+            console.error('loadManager vmd failed:', err);
+        }
+    } else {
+        setStatus('不支持的文件格式（支持 PMX / ZIP / VMD）', false);
     }
 }
 

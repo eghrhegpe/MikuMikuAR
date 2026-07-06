@@ -6,7 +6,7 @@ import type { PopupLevel, PopupRow } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { addSliderRow, addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { showPrompt } from '../core/dialog';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus, showErrorToast } from '../core/utils';
 import {
     setEnvState,
     getEnvSunAngle,
@@ -121,7 +121,7 @@ export function renderUserEnvPresets(container: HTMLElement): void {
             const json = exportEnvPreset(preset);
             await SaveEnvPreset(name, json);
             return true;
-        }, '✗ 保存预设失败');
+        }, '✗ 保存预设失败', (err) => showErrorToast('保存环境预设失败', err instanceof Error ? err.message : String(err)));
         if (r) {
             setStatus(`✓ 已保存预设：${name}`, true);
             renderList();
