@@ -270,21 +270,6 @@ function addEmptyRow(parent: HTMLElement, text: string): HTMLElement
 
 ---
 
-## 待统一清单
-
-以下模块尚未完全标准化：
-
-| 模块 | 当前状态 |
-|------|----------|
-| 模型材质（`model-material.ts`） | 已用 `addCollapsible` 分组折叠，残留手动色块 swatch |
-| 模型详情（`model-detail.ts`） | 已完成改造，残余少量 custom 行 |
-| 动作库弹窗（`motion-popup.ts`） | 已完成 `addEmptyRow` 改造，图层行保持 custom |
-| 设置页（`settings.ts`） | 已完成改造，残余软件条目 inline style |
-| 服装变体（`outfit-ui.ts`） | 已标准化 |
-| 其他遗留界面 | 逐步按本规范统一 |
-
----
-
 ## 命名约定
 
 | 概念 | 命名 | 示例 |

@@ -92,6 +92,7 @@ task package      # 打包发布版
 ```
 
 构建产物输出到 `bin/`，单文件可执行 `MikuMikuAR.exe` 也在仓库根。
+用GitHub的自动发版时，记得填写realise 文件，并确保云端正确缓存了wails v3、go、node_modules，加快编译速度。
 
 ---
 
