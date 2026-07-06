@@ -578,9 +578,7 @@ export function SelectBundleSaveFile(): $CancellablePromise<string> {
 
 /**
  * SelectDir opens a directory picker dialog.
- * On Android, native directory picker is not available in Wails 3 alpha;
- * returns the default resource root (/sdcard/MMD) as the starting point.
- * SAF-based directory selection will replace this in a future update.
+ * On Android, uses Wails v3 SAF-based file picker (GOOS=android).
  */
 export function SelectDir(): $CancellablePromise<string> {
     return $Call.ByID(1910889222);
@@ -598,6 +596,14 @@ export function SelectEnvTextureFile(): $CancellablePromise<string> {
  */
 export function SelectExeFile(): $CancellablePromise<string> {
     return $Call.ByID(2290473707);
+}
+
+/**
+ * SelectImportFile opens a file dialog to select PMX / ZIP / VMD files.
+ * Used by the "导入文件" menu entry in library-core.ts.
+ */
+export function SelectImportFile(): $CancellablePromise<string> {
+    return $Call.ByID(750228192);
 }
 
 /**

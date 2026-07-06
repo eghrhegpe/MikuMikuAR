@@ -328,7 +328,7 @@ describe('binding contract: function exports', () => {
         'SaveSceneFile', 'SaveScenePreset', 'SaveScreenshot', 'SaveThumbnail',
         'ScanModelDir', 'ScanSoftwareDir', 'SelectAudioFile',
         'SelectBundleSaveFile', 'SelectDir', 'SelectEnvTextureFile',
-        'SelectExeFile', 'SelectPMXFile', 'SelectPresetOpenFile',
+        'SelectExeFile', 'SelectImportFile', 'SelectPMXFile', 'SelectPresetOpenFile',
         'SelectPresetSaveFile', 'SelectSceneOpenFile', 'SelectSceneSaveFile',
         'SelectVMDMotion', 'SelectVPDPose', 'SetBlenderPath',
         'SetDisplayNamePriority', 'SetDownloadAutoImport', 'SetDownloadWatchDir',
