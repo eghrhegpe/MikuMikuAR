@@ -14,10 +14,21 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 // ── Set up DOM elements the real config module depends on ────────────
 vi.hoisted(() => {
     const ids = [
-        'renderCanvas', 'statusBar', 'loading', 'btnMainAction',
-        'btnMotionPopup', 'playbackBar', 'btnPlayPause', 'btnLoopToggle',
-        'timeDisplay', 'seekBar', 'seekProgress', 'loadingText',
-        'btnSettings', 'btnScene', 'sceneOverlay',
+        'renderCanvas',
+        'statusBar',
+        'loading',
+        'btnMainAction',
+        'btnMotionPopup',
+        'playbackBar',
+        'btnPlayPause',
+        'btnLoopToggle',
+        'timeDisplay',
+        'seekBar',
+        'seekProgress',
+        'loadingText',
+        'btnSettings',
+        'btnScene',
+        'sceneOverlay',
     ];
     for (const id of ids) {
         const el = document.createElement('div');
@@ -57,7 +68,9 @@ const { mockModelManager } = vi.hoisted(() => {
 });
 
 vi.mock('../scene/scene', () => ({
-    get modelManager() { return mockModelManager; },
+    get modelManager() {
+        return mockModelManager;
+    },
 }));
 
 // Mock other scene sub-module imports (camera/motion/playback etc.)
@@ -358,9 +371,12 @@ describe('stopVMD', () => {
 
     it('clears runtime animation when mmdModel exists, pauses when playing', () => {
         const setRuntimeAnim = vi.fn();
-        modelRegistry.set('m1', makeInst({
-            mmdModel: { setRuntimeAnimation: setRuntimeAnim, runtimeBones: [] },
-        }));
+        modelRegistry.set(
+            'm1',
+            makeInst({
+                mmdModel: { setRuntimeAnimation: setRuntimeAnim, runtimeBones: [] },
+            })
+        );
         const mockPause = vi.fn();
         setMmdRuntime({ pauseAnimation: mockPause } as any);
         setIsPlaying(true);
@@ -375,9 +391,12 @@ describe('stopVMD', () => {
 
     it('does not pause when isPlaying is false even with mmdModel', () => {
         const setRuntimeAnim = vi.fn();
-        modelRegistry.set('m1', makeInst({
-            mmdModel: { setRuntimeAnimation: setRuntimeAnim, runtimeBones: [] },
-        }));
+        modelRegistry.set(
+            'm1',
+            makeInst({
+                mmdModel: { setRuntimeAnimation: setRuntimeAnim, runtimeBones: [] },
+            })
+        );
         const mockPause = vi.fn();
         setMmdRuntime({ pauseAnimation: mockPause } as any);
         setIsPlaying(false);
@@ -407,20 +426,14 @@ describe('applyVPDPose', () => {
 
     it('is a no-op and warns when model is not in registry', () => {
         applyVPDPose('unknown', [], []);
-        expect(console.warn).toHaveBeenCalledWith(
-            '[applyVPDPose] 模型未找到:',
-            'unknown',
-        );
+        expect(console.warn).toHaveBeenCalledWith('[applyVPDPose] 模型未找到:', 'unknown');
         expect(mockModelManager.clearVmdData).not.toHaveBeenCalled();
     });
 
     it('is a no-op when mmdModel is missing from the instance', () => {
         modelRegistry.set('m1', makeInst({ mmdModel: undefined }));
         applyVPDPose('m1', [], []);
-        expect(console.warn).toHaveBeenCalledWith(
-            '[applyVPDPose] 模型未找到:',
-            'm1',
-        );
+        expect(console.warn).toHaveBeenCalledWith('[applyVPDPose] 模型未找到:', 'm1');
     });
 
     it('applies bone transforms and morph weights to a valid model', () => {
@@ -434,21 +447,30 @@ describe('applyVPDPose', () => {
         };
         const setRuntimeAnim = vi.fn();
 
-        modelRegistry.set('m1', makeInst({
-            mmdModel: {
-                setRuntimeAnimation: setRuntimeAnim,
-                runtimeBones: [boneLeftShoulder, boneRightShoulder],
-            },
-        }));
+        modelRegistry.set(
+            'm1',
+            makeInst({
+                mmdModel: {
+                    setRuntimeAnimation: setRuntimeAnim,
+                    runtimeBones: [boneLeftShoulder, boneRightShoulder],
+                },
+            })
+        );
         const mockPause = vi.fn();
         setMmdRuntime({ pauseAnimation: mockPause } as any);
         setIsPlaying(false);
 
         const bones = [
-            { name: '左肩', position: [0.1, 0.2, 0.3] as [number, number, number],
-              rotation: [0, 0.07, 0, 1] as [number, number, number, number] },
-            { name: '右肩', position: [-0.1, 0.2, 0.3] as [number, number, number],
-              rotation: [0, -0.07, 0, 1] as [number, number, number, number] },
+            {
+                name: '左肩',
+                position: [0.1, 0.2, 0.3] as [number, number, number],
+                rotation: [0, 0.07, 0, 1] as [number, number, number, number],
+            },
+            {
+                name: '右肩',
+                position: [-0.1, 0.2, 0.3] as [number, number, number],
+                rotation: [0, -0.07, 0, 1] as [number, number, number, number],
+            },
         ];
         const morphs = [
             { name: 'あ', weight: 0.8 },
@@ -476,8 +498,11 @@ describe('applyVPDPose', () => {
         mockModelManager.setMorphWeight.mockClear();
         const unknownBones = [
             ...bones,
-            { name: '非存在ボーン', position: [0, 0, 0] as [number, number, number],
-              rotation: [0, 0, 0, 1] as [number, number, number, number] },
+            {
+                name: '非存在ボーン',
+                position: [0, 0, 0] as [number, number, number],
+                rotation: [0, 0, 0, 1] as [number, number, number, number],
+            },
         ];
         applyVPDPose('m1', unknownBones, []);
         expect(boneLeftShoulder.linkedBone.position.x).toBe(0.1);

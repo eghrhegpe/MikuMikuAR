@@ -31,9 +31,20 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     const changed = partial ? Object.keys(partial) : null;
 
     // Guard: skip sky rebuild unless a sky-related property changed
-    const skyKeys = ['skyMode', 'skyColorTop', 'skyColorMid', 'skyColorBot', 'skyTexture',
-        'skyRotationY', 'skyRotationSpeed', 'skyBrightness', 'starsEnabled', 'envIntensity',
-        'sunAngle', 'azimuth'];
+    const skyKeys = [
+        'skyMode',
+        'skyColorTop',
+        'skyColorMid',
+        'skyColorBot',
+        'skyTexture',
+        'skyRotationY',
+        'skyRotationSpeed',
+        'skyBrightness',
+        'starsEnabled',
+        'envIntensity',
+        'sunAngle',
+        'azimuth',
+    ];
     if (!changed || changed.some((k) => skyKeys.includes(k))) {
         try {
             impl.applySky(state);
@@ -43,8 +54,15 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     }
 
     // Guard: skip ground rebuild unless ground-related property changed
-    const groundKeys = ['groundVisible', 'groundMode', 'groundColor', 'groundAlpha',
-        'groundTexture', 'groundTextureEnabled', 'groundTextureScale'];
+    const groundKeys = [
+        'groundVisible',
+        'groundMode',
+        'groundColor',
+        'groundAlpha',
+        'groundTexture',
+        'groundTextureEnabled',
+        'groundTextureScale',
+    ];
     if (!changed || changed.some((k) => groundKeys.includes(k))) {
         try {
             impl.applyGround(state);
@@ -64,11 +82,28 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     }
 
     // Water
-    const waterKeys = ['waterEnabled', 'waterLevel', 'waterColor', 'waterTransparency',
-        'waterWaveHeight', 'waterSize', 'waterAnimSpeed', 'fresnelBias', 'fresnelPower',
-        'diffuseStrength', 'ambientStrength', 'foamTransitionRange', 'rippleNormalStrength',
-        'rippleGlintStrength', 'causticColor1', 'causticColor2', 'causticScrollX',
-        'causticScrollY', 'fresnelAlphaInfluence', 'foamAlphaInfluence'];
+    const waterKeys = [
+        'waterEnabled',
+        'waterLevel',
+        'waterColor',
+        'waterTransparency',
+        'waterWaveHeight',
+        'waterSize',
+        'waterAnimSpeed',
+        'fresnelBias',
+        'fresnelPower',
+        'diffuseStrength',
+        'ambientStrength',
+        'foamTransitionRange',
+        'rippleNormalStrength',
+        'rippleGlintStrength',
+        'causticColor1',
+        'causticColor2',
+        'causticScrollX',
+        'causticScrollY',
+        'fresnelAlphaInfluence',
+        'foamAlphaInfluence',
+    ];
     if (!changed || changed.some((k) => waterKeys.includes(k))) {
         try {
             if (state.waterEnabled) {
@@ -82,8 +117,15 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     }
 
     // Particles
-    const particleKeys = ['particleEnabled', 'particleType', 'particleEmitRate',
-        'particleSize', 'particleSpeed', 'particleSplash', 'particleCustomTexture'];
+    const particleKeys = [
+        'particleEnabled',
+        'particleType',
+        'particleEmitRate',
+        'particleSize',
+        'particleSpeed',
+        'particleSplash',
+        'particleCustomTexture',
+    ];
     if (!changed || changed.some((k) => particleKeys.includes(k))) {
         try {
             if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
@@ -97,8 +139,15 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     }
 
     // Clouds
-    const cloudKeys = ['cloudsEnabled', 'cloudCover', 'cloudScale', 'cloudHeight',
-        'cloudThickness', 'cloudVisibility', 'cloudGap'];
+    const cloudKeys = [
+        'cloudsEnabled',
+        'cloudCover',
+        'cloudScale',
+        'cloudHeight',
+        'cloudThickness',
+        'cloudVisibility',
+        'cloudGap',
+    ];
     if (!changed || changed.some((k) => cloudKeys.includes(k))) {
         try {
             if (state.cloudsEnabled) {
@@ -122,7 +171,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     hemiLight.groundColor = new Color3(
         state.groundColor[0] * 0.5,
         state.groundColor[1] * 0.5,
-        state.groundColor[2] * 0.5,
+        state.groundColor[2] * 0.5
     );
     // 场景环境色 — 直接影响 MMD 材质的 ambient 项，envIntensity 控制渗透力度
     // 0→0, 默认2→0.3, 3→0.45，最大不超过 0.5 以免冲淡方向光
@@ -130,7 +179,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     scene.ambientColor = new Color3(
         skyMid[0] * ambientStrength,
         skyMid[1] * ambientStrength,
-        skyMid[2] * ambientStrength,
+        skyMid[2] * ambientStrength
     );
 }
 
@@ -230,7 +279,9 @@ export function stopTimeOfDay(): void {
         _unregisterTimeOfDay = null;
     }
     // 持久化当前 sunAngle 到后端
-    SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
+    SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(
+        () => {}
+    );
 }
 
 export function isTimeOfDayActive(): boolean {
@@ -300,11 +351,7 @@ export function applyEnvPresetObject(preset: {
     const derived = preset.dirDirection
         ? preset
         : (() => {
-              const d = deriveLighting(
-                  preset.skyColorTop,
-                  preset.sunAngle,
-                  preset.azimuth ?? -45
-              );
+              const d = deriveLighting(preset.skyColorTop, preset.sunAngle, preset.azimuth ?? -45);
               return { ...preset, ...d };
           })();
     const targetLight: Partial<LightState> = {
@@ -382,7 +429,9 @@ export function applyEnvPresetObject(preset: {
 
         if (t >= 1) {
             setSkipLightAutoSave(false);
-            SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
+            SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(
+                () => {}
+            );
             triggerAutoSave();
             return;
         }
@@ -413,7 +462,9 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         clearTimeout(_envPersistTimer);
     }
     _envPersistTimer = setTimeout(() => {
-        SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
+        SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(
+            () => {}
+        );
     }, 500);
 
     if (!skipAutoSave) {
@@ -427,5 +478,7 @@ export function flushEnvState(): void {
         clearTimeout(_envPersistTimer);
         _envPersistTimer = null;
     }
-    SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
+    SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(
+        () => {}
+    );
 }

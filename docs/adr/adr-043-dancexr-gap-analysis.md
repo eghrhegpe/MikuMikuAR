@@ -24,4 +24,4 @@
 
 ## 关联
 
-完整差距清单已写入 `docs/roadmap.md`。ADR-037 已实现其中 5 项（Motion Layers、Lifelike、Formation、Auto Camera、Scene Bundle）。
+完整差距清单已并入 `docs/competitive-analysis.md`（原 `docs/roadmap.md` 已由 ADR-039 废除）。ADR-037 已实现其中 5 项（Motion Layers、Lifelike、Formation、Auto Camera、Scene Bundle）。

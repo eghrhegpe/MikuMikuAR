@@ -50,12 +50,19 @@ import {
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { selectResourceRoot, selectOverridePath } from './library-core';
-import { slideRow, addToggleRow, addSliderRow, addSectionTitle, addDangerRow, addEmptyRow } from '../core/ui-helpers';
+import {
+    slideRow,
+    addToggleRow,
+    addSliderRow,
+    addSectionTitle,
+    addDangerRow,
+    addEmptyRow,
+} from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
 import { getRenderState, setRenderState } from '../scene/render/renderer';
 import { getLightState, setLightState } from '../scene/render/lighting';
-import { engine } from '../scene/scene';
+import { engine, applyFrameControl } from '../scene/scene';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
@@ -63,8 +70,20 @@ import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon } from '../core/icons';
 import { showConfirm, showPrompt } from '../core/dialog';
 import { tryCatchStatus } from '../core/utils';
-import { getAllShortcuts, setKeyBinding, resetKeyBinding, resetAllKeyBindings, loadKeyBindings, exportKeyBindings } from '../core/shortcut-registry';
-import { SETTINGS, SETTINGS_ACTION, SOFTWARE_DETAIL_PREFIX, type SettingsFolderTarget } from './settings-targets';
+import {
+    getAllShortcuts,
+    setKeyBinding,
+    resetKeyBinding,
+    resetAllKeyBindings,
+    loadKeyBindings,
+    exportKeyBindings,
+} from '../core/shortcut-registry';
+import {
+    SETTINGS,
+    SETTINGS_ACTION,
+    SOFTWARE_DETAIL_PREFIX,
+    type SettingsFolderTarget,
+} from './settings-targets';
 
 // ======== Helpers re-exported ========
 export { refreshLibrary } from './library';
@@ -99,7 +118,11 @@ export function setAutoLoadCompanionAudio(v: boolean): void {
 
 // ======== Settings (SlideMenu) ========
 
-const { getMenu: getSettingsMenu, refreshRoot: refreshSettingsRoot, show: showSettings } = registerPopupMenu({
+const {
+    getMenu: getSettingsMenu,
+    refreshRoot: refreshSettingsRoot,
+    show: showSettings,
+} = registerPopupMenu({
     wrapperKey: 'settings-menu',
     popupType: 'settings',
     overlayClass: 'sceneOverlay-settings',
@@ -118,17 +141,49 @@ export { getSettingsMenu, refreshSettingsRoot, showSettings };
 let _cachedRootItems: PopupRow[] | null = null;
 
 function buildSettingsRootItems(): PopupRow[] {
-    if (_cachedRootItems) return _cachedRootItems;
+    if (_cachedRootItems) {
+        return _cachedRootItems;
+    }
 
     const items: PopupRow[] = [];
-    items.push({ kind: 'folder', label: '外观', icon: 'lucide:palette', target: SETTINGS.APPEARANCE });
-    items.push({ kind: 'folder', label: '文件名', icon: 'lucide:file-text', target: SETTINGS.FILENAME });
+    items.push({
+        kind: 'folder',
+        label: '外观',
+        icon: 'lucide:palette',
+        target: SETTINGS.APPEARANCE,
+    });
+    items.push({
+        kind: 'folder',
+        label: '文件名',
+        icon: 'lucide:file-text',
+        target: SETTINGS.FILENAME,
+    });
     items.push({ kind: 'folder', label: '性能', icon: 'lucide:zap', target: SETTINGS.PERFORMANCE });
-    items.push({ kind: 'folder', label: '路径', icon: 'lucide:folder-tree', target: SETTINGS.PATHS });
-    items.push({ kind: 'folder', label: '软件', icon: 'lucide:package', target: SETTINGS.SOFTWARE });
-    items.push({ kind: 'folder', label: '截图', icon: 'lucide:camera', target: SETTINGS.SCREENSHOT });
+    items.push({
+        kind: 'folder',
+        label: '路径',
+        icon: 'lucide:folder-tree',
+        target: SETTINGS.PATHS,
+    });
+    items.push({
+        kind: 'folder',
+        label: '软件',
+        icon: 'lucide:package',
+        target: SETTINGS.SOFTWARE,
+    });
+    items.push({
+        kind: 'folder',
+        label: '截图',
+        icon: 'lucide:camera',
+        target: SETTINGS.SCREENSHOT,
+    });
     items.push({ kind: 'folder', label: '音频', icon: 'lucide:volume-2', target: SETTINGS.AUDIO });
-    items.push({ kind: 'folder', label: '快捷键', icon: 'lucide:keyboard', target: SETTINGS.SHORTCUTS });
+    items.push({
+        kind: 'folder',
+        label: '快捷键',
+        icon: 'lucide:keyboard',
+        target: SETTINGS.SHORTCUTS,
+    });
     items.push({ kind: 'folder', label: '关于', icon: 'lucide:info', target: SETTINGS.ABOUT });
     _cachedRootItems = items;
     return items;
@@ -165,24 +220,44 @@ function buildSettingsFilenameLevel(): PopupLevel {
                     const labelSpan = sortRow.querySelector('.slide-label');
                     if (labelSpan) {
                         getCurrentRenderingMenu()?.registerControl(() => {
-                            labelSpan.textContent = librarySortMode === 'name' ? '动作排序：名称' : '动作排序：默认';
+                            labelSpan.textContent =
+                                librarySortMode === 'name' ? '动作排序：名称' : '动作排序：默认';
                         });
                     }
                 }
             });
             // 显示名称优先级
-            const priorityIndex = displayNamePriority === 'name_jp' ? 0 : displayNamePriority === 'name_en' ? 1 : 2;
+            const priorityIndex =
+                displayNamePriority === 'name_jp' ? 0 : displayNamePriority === 'name_en' ? 1 : 2;
             cardContainer(container, (c) => {
-                addSliderRow(c, '显示名称优先级', priorityIndex, 0, 2, 1, (v) => {
-                    applyDisplayNamePriority(NAME_PRIORITY_INDEX[v]);
-                    getSettingsMenu()?.updateControls();
-                }, 'lucide:type', undefined, {
-                    bind: () => displayNamePriority === 'name_jp' ? 0 : displayNamePriority === 'name_en' ? 1 : 2,
-                    onUpdate: (el) => {
-                        const valEl = el.querySelector('.cs-value');
-                        if (valEl) valEl.textContent = NAME_PRIORITY_LABELS[displayNamePriority];
+                addSliderRow(
+                    c,
+                    '显示名称优先级',
+                    priorityIndex,
+                    0,
+                    2,
+                    1,
+                    (v) => {
+                        applyDisplayNamePriority(NAME_PRIORITY_INDEX[v]);
+                        getSettingsMenu()?.updateControls();
                     },
-                });
+                    'lucide:type',
+                    undefined,
+                    {
+                        bind: () =>
+                            displayNamePriority === 'name_jp'
+                                ? 0
+                                : displayNamePriority === 'name_en'
+                                  ? 1
+                                  : 2,
+                        onUpdate: (el) => {
+                            const valEl = el.querySelector('.cs-value');
+                            if (valEl) {
+                                valEl.textContent = NAME_PRIORITY_LABELS[displayNamePriority];
+                            }
+                        },
+                    }
+                );
             });
             // 材质分类映射
             cardContainer(container, (c) => {
@@ -192,31 +267,48 @@ function buildSettingsFilenameLevel(): PopupLevel {
                 const entries = Object.entries(map);
 
                 for (const [pattern, category] of entries) {
-                    slideRow(c, 'lucide:tag', pattern, false, () => {}, category,
-                        undefined, undefined, undefined,
-                        { actionIcon: '✕', onActionClick: () => {
-                            delete uiState.materialCategoryMap![pattern];
-                            if (Object.keys(uiState.materialCategoryMap!).length === 0) {
-                                delete uiState.materialCategoryMap;
-                            }
-                            setUIState({ materialCategoryMap: uiState.materialCategoryMap });
-                            getSettingsMenu()?.reRender();
-                        }}
+                    slideRow(
+                        c,
+                        'lucide:tag',
+                        pattern,
+                        false,
+                        () => {},
+                        category,
+                        undefined,
+                        undefined,
+                        undefined,
+                        {
+                            actionIcon: '✕',
+                            onActionClick: () => {
+                                delete uiState.materialCategoryMap![pattern];
+                                if (Object.keys(uiState.materialCategoryMap!).length === 0) {
+                                    delete uiState.materialCategoryMap;
+                                }
+                                setUIState({ materialCategoryMap: uiState.materialCategoryMap });
+                                getSettingsMenu()?.reRender();
+                            },
+                        }
                     );
                 }
 
                 // 添加新映射
                 slideRow(c, 'lucide:plus', '添加材质映射', false, async () => {
                     const pattern = await showPrompt('输入正则匹配模式（如 skirt|スカート）：');
-                    if (!pattern) return;
+                    if (!pattern) {
+                        return;
+                    }
                     try {
                         new RegExp(pattern);
                     } catch {
                         setStatus('✗ 无效的正则表达式', false);
                         return;
                     }
-                    const category = await showPrompt('输入目标分类（皮肤/头发/眼睛/服装/配件/道具）：');
-                    if (!category) return;
+                    const category = await showPrompt(
+                        '输入目标分类（皮肤/头发/眼睛/服装/配件/道具）：'
+                    );
+                    if (!category) {
+                        return;
+                    }
                     if (!['皮肤', '头发', '眼睛', '服装', '配件', '道具'].includes(category)) {
                         setStatus('✗ 无效的分类名', false);
                         return;
@@ -232,24 +324,28 @@ function buildSettingsFilenameLevel(): PopupLevel {
             // 自动导入
             addSectionTitle(container, '自动导入');
             cardContainer(container, (c) => {
-                addToggleRow(c, '自动导入', autoImportCached, (v) => {
-                    autoImportCached = v;
-                    SetDownloadAutoImport(v).catch(() => {});
-                    getSettingsMenu()?.updateControls();
-                    setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
-                }, 'lucide:download', {
-                    bind: () => autoImportCached,
-                });
+                addToggleRow(
+                    c,
+                    '自动导入',
+                    autoImportCached,
+                    (v) => {
+                        autoImportCached = v;
+                        SetDownloadAutoImport(v).catch(() => {});
+                        getSettingsMenu()?.updateControls();
+                        setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
+                    },
+                    'lucide:download',
+                    {
+                        bind: () => autoImportCached,
+                    }
+                );
             });
             cardContainer(container, (c) => {
-                let dirInput: HTMLInputElement;
-                let refreshStatus: () => Promise<void>;
-
                 const statusEl = document.createElement('div');
                 statusEl.style.cssText = 'font-size:11px;color:var(--text);padding:4px 14px;';
                 c.appendChild(statusEl);
 
-                refreshStatus = async () => {
+                const refreshStatus = async () => {
                     try {
                         const dir = await GetDownloadWatchStatus();
                         statusEl.textContent = dir ? `监听中: ${dir}` : '监听已停止';
@@ -261,7 +357,7 @@ function buildSettingsFilenameLevel(): PopupLevel {
 
                 const dirRow = document.createElement('div');
                 dirRow.style.cssText = 'display:flex;gap:6px;padding:6px 14px;';
-                dirInput = document.createElement('input');
+                const dirInput = document.createElement('input');
                 dirInput.type = 'text';
                 dirInput.placeholder = '选择监听目录...';
                 dirInput.readOnly = true;
@@ -310,10 +406,16 @@ function buildSettingsFilenameLevel(): PopupLevel {
 }
 
 function buildSettingsAppearanceLevel(): PopupLevel {
-    const initialScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
-    const initialWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--popup-width')) || 280;
-    const initialAnim = getComputedStyle(document.documentElement).getPropertyValue('--ui-animations').trim() !== '0';
-    const initialBlur = getComputedStyle(document.documentElement).getPropertyValue('--ui-blur').trim() !== '0';
+    const initialScale =
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+    const initialWidth =
+        parseInt(getComputedStyle(document.documentElement).getPropertyValue('--popup-width')) ||
+        280;
+    const initialAnim =
+        getComputedStyle(document.documentElement).getPropertyValue('--ui-animations').trim() !==
+        '0';
+    const initialBlur =
+        getComputedStyle(document.documentElement).getPropertyValue('--ui-blur').trim() !== '0';
 
     return {
         label: '外观',
@@ -321,20 +423,52 @@ function buildSettingsAppearanceLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                addSliderRow(c, 'UI 缩放', initialScale, 0.8, 1.3, 0.05, (v) => {
-                    document.documentElement.style.setProperty('--ui-scale', String(v));
-                    SetUIScale(v).catch(() => {});
-                    getSettingsMenu()?.updateControls();
-                }, 'lucide:maximize', undefined, {
-                    bind: () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1,
-                });
-                addSliderRow(c, '弹窗宽度', initialWidth, 220, 360, 10, (v) => {
-                    document.documentElement.style.setProperty('--popup-width', v + 'px');
-                    SetUIPopupWidth(v).catch(() => {});
-                    getSettingsMenu()?.updateControls();
-                }, 'lucide:sidebar', undefined, {
-                    bind: () => parseInt(getComputedStyle(document.documentElement).getPropertyValue('--popup-width')) || 280,
-                });
+                addSliderRow(
+                    c,
+                    'UI 缩放',
+                    initialScale,
+                    0.8,
+                    1.3,
+                    0.05,
+                    (v) => {
+                        document.documentElement.style.setProperty('--ui-scale', String(v));
+                        SetUIScale(v).catch(() => {});
+                        getSettingsMenu()?.updateControls();
+                    },
+                    'lucide:maximize',
+                    undefined,
+                    {
+                        bind: () =>
+                            parseFloat(
+                                getComputedStyle(document.documentElement).getPropertyValue(
+                                    '--ui-scale'
+                                )
+                            ) || 1,
+                    }
+                );
+                addSliderRow(
+                    c,
+                    '弹窗宽度',
+                    initialWidth,
+                    220,
+                    360,
+                    10,
+                    (v) => {
+                        document.documentElement.style.setProperty('--popup-width', v + 'px');
+                        SetUIPopupWidth(v).catch(() => {});
+                        getSettingsMenu()?.updateControls();
+                    },
+                    'lucide:sidebar',
+                    undefined,
+                    {
+                        bind: () =>
+                            parseInt(
+                                getComputedStyle(document.documentElement).getPropertyValue(
+                                    '--popup-width'
+                                )
+                            ) || 280,
+                    }
+                );
             });
 
             const currentAccent =
@@ -358,13 +492,23 @@ function buildSettingsAppearanceLevel(): PopupLevel {
                     themeRows.push(row);
                 }
                 getCurrentRenderingMenu()?.registerControl(() => {
-                    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4a6cf7';
+                    const accent =
+                        getComputedStyle(document.documentElement)
+                            .getPropertyValue('--accent')
+                            .trim() || '#4a6cf7';
                     for (const row of themeRows) {
                         const color = row.dataset.themeColor!;
                         const isActive = accent.toLowerCase() === color.toLowerCase();
                         row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                        const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
-                        if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
+                        const icon = row.querySelector(
+                            '.slide-icon iconify-icon'
+                        ) as HTMLElement | null;
+                        if (icon) {
+                            icon.setAttribute(
+                                'icon',
+                                `lucide:${isActive ? 'check-circle' : 'circle'}`
+                            );
+                        }
                     }
                 });
             });
@@ -390,7 +534,10 @@ function buildSettingsAppearanceLevel(): PopupLevel {
                 c.appendChild(input);
                 c.appendChild(applyBtn);
                 getCurrentRenderingMenu()?.registerControl(() => {
-                    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4a6cf7';
+                    const accent =
+                        getComputedStyle(document.documentElement)
+                            .getPropertyValue('--accent')
+                            .trim() || '#4a6cf7';
                     input.value = accent;
                 });
             });
@@ -403,23 +550,38 @@ function buildSettingsAppearanceLevel(): PopupLevel {
                 const fontRows: HTMLElement[] = [];
                 for (const [key, f] of Object.entries(FONT_MAP)) {
                     const isActive = currentCss === f.css;
-                    const row = slideRow(c, `lucide:${isActive ? 'check' : 'circle'}`, f.label, false, () => {
-                        document.documentElement.style.setProperty('--font', f.css);
-                        SetUIFontFamily(key).catch(() => {});
-                        getSettingsMenu()?.updateControls();
-                        setStatus(`✓ 字体已设为 ${f.label}`, true);
-                    }, undefined, undefined, isActive);
+                    const row = slideRow(
+                        c,
+                        `lucide:${isActive ? 'check' : 'circle'}`,
+                        f.label,
+                        false,
+                        () => {
+                            document.documentElement.style.setProperty('--font', f.css);
+                            SetUIFontFamily(key).catch(() => {});
+                            getSettingsMenu()?.updateControls();
+                            setStatus(`✓ 字体已设为 ${f.label}`, true);
+                        },
+                        undefined,
+                        undefined,
+                        isActive
+                    );
                     row.dataset.fontKey = key;
                     fontRows.push(row);
                 }
                 getCurrentRenderingMenu()?.registerControl(() => {
-                    const fontCss = getComputedStyle(document.documentElement).getPropertyValue('--font').trim();
+                    const fontCss = getComputedStyle(document.documentElement)
+                        .getPropertyValue('--font')
+                        .trim();
                     for (const row of fontRows) {
                         const key = row.dataset.fontKey!;
                         const isActive = FONT_MAP[key] && fontCss === FONT_MAP[key].css;
                         row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                        const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
-                        if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check' : 'circle'}`);
+                        const icon = row.querySelector(
+                            '.slide-icon iconify-icon'
+                        ) as HTMLElement | null;
+                        if (icon) {
+                            icon.setAttribute('icon', `lucide:${isActive ? 'check' : 'circle'}`);
+                        }
                     }
                 });
             });
@@ -439,7 +601,10 @@ function buildSettingsAppearanceLevel(): PopupLevel {
                     },
                     'lucide:move',
                     {
-                        bind: () => getComputedStyle(document.documentElement).getPropertyValue('--ui-animations').trim() !== '0',
+                        bind: () =>
+                            getComputedStyle(document.documentElement)
+                                .getPropertyValue('--ui-animations')
+                                .trim() !== '0',
                     }
                 );
                 addToggleRow(
@@ -456,7 +621,10 @@ function buildSettingsAppearanceLevel(): PopupLevel {
                     },
                     'lucide:monitor',
                     {
-                        bind: () => getComputedStyle(document.documentElement).getPropertyValue('--ui-blur').trim() !== '0',
+                        bind: () =>
+                            getComputedStyle(document.documentElement)
+                                .getPropertyValue('--ui-blur')
+                                .trim() !== '0',
                     }
                 );
             });
@@ -515,7 +683,9 @@ const NAME_PRIORITY_INDEX: Record<number, DisplayNamePriority> = {
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return { r: 74, g: 108, b: 247 };
+    if (!result) {
+        return { r: 74, g: 108, b: 247 };
+    }
     return {
         r: parseInt(result[1], 16),
         g: parseInt(result[2], 16),
@@ -546,8 +716,8 @@ export function generateTextColors(hex: string): { bright: string; dim: string; 
         // 暗背景（brightness≤128）→ 文字偏亮，轻染主题色
         // 亮背景                 → 文字偏暗，但饱和度不过高
         bright: mix(brightness > 128 ? 0.55 : 0.25),
-        dim:    mix(brightness > 128 ? 0.35 : 0.40),
-        muted:  mix(0.40),
+        dim: mix(brightness > 128 ? 0.35 : 0.4),
+        muted: mix(0.4),
     };
 }
 
@@ -590,15 +760,15 @@ function buildSettingsPathsLevel(): PopupLevel {
     const paths = overridePaths || {};
     // key → 默认子目录名（与 Go 端 GetPath 的目录名一致，大小写不统一）
     const defaultDirName: Record<string, string> = {
-    pmx: 'PMX',
-    vmd: 'VMD',
-    audio: 'audio',
-    stage: 'stage',
-    prop: 'prop',
-    environment: 'environment',
-    md_dress: 'MD-dress',
-    setting: 'setting',
-};
+        pmx: 'PMX',
+        vmd: 'VMD',
+        audio: 'audio',
+        stage: 'stage',
+        prop: 'prop',
+        environment: 'environment',
+        md_dress: 'MD-dress',
+        setting: 'setting',
+    };
     const pathSub = (key: string, defSub: string) => {
         const val = paths[key as keyof typeof paths];
         let actual: string;
@@ -619,22 +789,146 @@ function buildSettingsPathsLevel(): PopupLevel {
         renderCustom: (container) => {
             // Card 1: 资源根目录
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:folder', '资源根目录', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.RESOURCE_ROOT }), rootSub);
+                slideRow(
+                    c,
+                    'lucide:folder',
+                    '资源根目录',
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.RESOURCE_ROOT,
+                        }),
+                    rootSub
+                );
             });
             // Card 2: 资源路径覆盖
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:box', 'PMX 模型', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PMX }), pathSub('pmx', '默认'));
-                slideRow(c, 'lucide:music', 'VMD 动作', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_VMD }), pathSub('vmd', '默认'));
-                slideRow(c, 'lucide:headphones', 'Audio 音乐', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_AUDIO }), pathSub('audio', '默认'));
-                slideRow(c, 'lucide:box', 'Prop 道具', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PROP }), pathSub('prop', '默认'));
-                slideRow(c, 'lucide:home', 'Stage 场景', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_STAGE }), pathSub('stage', '默认'));
-                slideRow(c, 'lucide:cloud', 'Environment', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_ENVIRONMENT }), pathSub('environment', '默认'));
-                slideRow(c, 'lucide:shirt', 'MD-dress', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_MD_DRESS }), pathSub('md_dress', '默认'));
-                slideRow(c, 'lucide:settings', '配置目录', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_SETTING }), pathSub('setting', '默认'));
+                slideRow(
+                    c,
+                    'lucide:box',
+                    'PMX 模型',
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.PATH_PMX,
+                        }),
+                    pathSub('pmx', '默认')
+                );
+                slideRow(
+                    c,
+                    'lucide:music',
+                    'VMD 动作',
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.PATH_VMD,
+                        }),
+                    pathSub('vmd', '默认')
+                );
+                slideRow(
+                    c,
+                    'lucide:headphones',
+                    'Audio 音乐',
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.PATH_AUDIO,
+                        }),
+                    pathSub('audio', '默认')
+                );
+                slideRow(
+                    c,
+                    'lucide:box',
+                    'Prop 道具',
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.PATH_PROP,
+                        }),
+                    pathSub('prop', '默认')
+                );
+                slideRow(
+                    c,
+                    'lucide:home',
+                    'Stage 场景',
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.PATH_STAGE,
+                        }),
+                    pathSub('stage', '默认')
+                );
+                slideRow(
+                    c,
+                    'lucide:cloud',
+                    'Environment',
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.PATH_ENVIRONMENT,
+                        }),
+                    pathSub('environment', '默认')
+                );
+                slideRow(
+                    c,
+                    'lucide:shirt',
+                    'MD-dress',
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.PATH_MD_DRESS,
+                        }),
+                    pathSub('md_dress', '默认')
+                );
+                slideRow(
+                    c,
+                    'lucide:settings',
+                    '配置目录',
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.PATH_SETTING,
+                        }),
+                    pathSub('setting', '默认')
+                );
             });
             // Card 3: 外部库
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plug', '外部库管理', true, () => handleSettingsAction({ kind: 'folder', label: '', icon: '', target: SETTINGS.EXTERNAL }));
+                slideRow(c, 'lucide:plug', '外部库管理', true, () =>
+                    handleSettingsAction({
+                        kind: 'folder',
+                        label: '',
+                        icon: '',
+                        target: SETTINGS.EXTERNAL,
+                    })
+                );
             });
         },
     };
@@ -664,7 +958,11 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     },
     [SETTINGS_ACTION.CLEAR_ALL_CACHE]: () => {
         (async () => {
-            if (await showConfirm('确定要清除全部缓存吗？包括提取缓存、缩略图、HTTP 隔离目录。下次加载模型时将重新生成。')) {
+            if (
+                await showConfirm(
+                    '确定要清除全部缓存吗？包括提取缓存、缩略图、HTTP 隔离目录。下次加载模型时将重新生成。'
+                )
+            ) {
                 ClearAllCaches()
                     .then(() => {
                         setStatus('✓ 全部缓存已清除', true);
@@ -680,7 +978,8 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     [SETTINGS_ACTION.PATH_AUDIO]: (row) => selectOverridePath('audio').catch(console.warn),
     [SETTINGS_ACTION.PATH_PROP]: (row) => selectOverridePath('prop').catch(console.warn),
     [SETTINGS_ACTION.PATH_STAGE]: (row) => selectOverridePath('stage').catch(console.warn),
-    [SETTINGS_ACTION.PATH_ENVIRONMENT]: (row) => selectOverridePath('environment').catch(console.warn),
+    [SETTINGS_ACTION.PATH_ENVIRONMENT]: (row) =>
+        selectOverridePath('environment').catch(console.warn),
     [SETTINGS_ACTION.PATH_MD_DRESS]: (row) => selectOverridePath('md_dress').catch(console.warn),
     [SETTINGS_ACTION.PATH_SETTING]: (row) => selectOverridePath('setting').catch(console.warn),
 };
@@ -710,16 +1009,32 @@ function buildSettingsExternalLevel(): PopupLevel {
                     return;
                 }
                 for (const ep of externalPaths) {
-                    slideRow(c, 'lucide:plug', ep.name, false, () => {},
-                        escapeHtml(ep.path), undefined, undefined, undefined, {
+                    slideRow(
+                        c,
+                        'lucide:plug',
+                        ep.name,
+                        false,
+                        () => {},
+                        escapeHtml(ep.path),
+                        undefined,
+                        undefined,
+                        undefined,
+                        {
                             inlineSub: true,
                             actionIcons: [
                                 {
                                     icon: '✎',
                                     title: '重命名',
                                     onClick: async () => {
-                                        const newName = await showPrompt('输入新的显示名称：', ep.name);
-                                        if (newName && newName.trim() && newName.trim() !== ep.name) {
+                                        const newName = await showPrompt(
+                                            '输入新的显示名称：',
+                                            ep.name
+                                        );
+                                        if (
+                                            newName &&
+                                            newName.trim() &&
+                                            newName.trim() !== ep.name
+                                        ) {
                                             const r = await tryCatchStatus(async () => {
                                                 await RenameExternalPath(ep.path, newName.trim());
                                                 return true;
@@ -750,7 +1065,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                                     },
                                 },
                             ],
-                        },
+                        }
                     );
                 }
             });
@@ -803,17 +1118,26 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                 const perfRows: HTMLElement[] = [];
                 for (const m of PERFORMANCE_MODES) {
                     const isActive = current === m.key;
-                    const row = slideRow(c, `lucide:${isActive ? 'check-circle' : 'circle'}`, m.label, false, () => {
-                        setPerformanceMode(m.key);
-                        SetPerformanceMode(m.key).catch(() => {});
-                        if (m.key === 'custom') {
-                            // 进入自定义模式：整页重建以渲染独立开关精编面板
-                            getSettingsMenu()?.reRender();
-                        } else {
-                            getSettingsMenu()?.updateControls();
-                        }
-                        setStatus(`✓ 性能模式: ${m.label}`, true);
-                    }, m.desc, undefined, isActive);
+                    const row = slideRow(
+                        c,
+                        `lucide:${isActive ? 'check-circle' : 'circle'}`,
+                        m.label,
+                        false,
+                        () => {
+                            setPerformanceMode(m.key);
+                            SetPerformanceMode(m.key).catch(() => {});
+                            if (m.key === 'custom') {
+                                // 进入自定义模式：整页重建以渲染独立开关精编面板
+                                getSettingsMenu()?.reRender();
+                            } else {
+                                getSettingsMenu()?.updateControls();
+                            }
+                            setStatus(`✓ 性能模式: ${m.label}`, true);
+                        },
+                        m.desc,
+                        undefined,
+                        isActive
+                    );
                     row.dataset.perfKey = m.key;
                     perfRows.push(row);
                 }
@@ -823,8 +1147,15 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                         const key = row.dataset.perfKey!;
                         const isActive = currentMode === key;
                         row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                        const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
-                        if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
+                        const icon = row.querySelector(
+                            '.slide-icon iconify-icon'
+                        ) as HTMLElement | null;
+                        if (icon) {
+                            icon.setAttribute(
+                                'icon',
+                                `lucide:${isActive ? 'check-circle' : 'circle'}`
+                            );
+                        }
                     }
                 });
             });
@@ -832,45 +1163,98 @@ function buildSettingsPerformanceLevel(): PopupLevel {
             // 帧率限制
             cardContainer(container, (c) => {
                 const currentFps = uiState.fpsLimit ?? 0;
-                addSliderRow(c, '帧率上限', currentFps, 0, 144, 1, (v) => {
-                    const limit = Math.round(v);
-                    engine.maxFPS = limit === 0 ? undefined : limit;
-                    setUIState({ fpsLimit: limit === 0 ? 0 : limit });
-                    getSettingsMenu()?.updateControls();
-                    setStatus(limit === 0 ? '✓ 帧率不限制' : `✓ 帧率上限: ${limit} FPS`, true);
-                }, 'lucide:gauge', undefined, {
-                    bind: () => uiState.fpsLimit ?? 0,
-                });
+                addSliderRow(
+                    c,
+                    '帧率上限',
+                    currentFps,
+                    0,
+                    144,
+                    1,
+                    (v) => {
+                        const limit = Math.round(v);
+                        setUIState({ fpsLimit: limit === 0 ? 0 : limit });
+                        applyFrameControl();
+                        getSettingsMenu()?.updateControls();
+                        setStatus(limit === 0 ? '✓ 帧率不限制' : `✓ 帧率上限: ${limit} FPS`, true);
+                    },
+                    'lucide:gauge',
+                    undefined,
+                    {
+                        bind: () => uiState.fpsLimit ?? 0,
+                    }
+                );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
                 hint.textContent = '设为 0 表示不限制。移动端建议 30 以省电。';
                 c.appendChild(hint);
             });
 
-            // 默认物理开关
+            // 垂直同步
             cardContainer(container, (c) => {
-                addToggleRow(c, '默认启用物理模拟', uiState.defaultPhysicsEnabled !== false, (v) => {
-                    setUIState({ defaultPhysicsEnabled: v });
-                    getSettingsMenu()?.updateControls();
-                    setStatus(v ? '✓ 默认启用物理模拟' : '✓ 默认关闭物理模拟（仅影响后续加载）', true);
-                }, 'lucide:atom');
+                addToggleRow(
+                    c,
+                    '垂直同步',
+                    uiState.vsync !== false,
+                    (v) => {
+                        setUIState({ vsync: v });
+                        applyFrameControl();
+                        getSettingsMenu()?.updateControls();
+                        setStatus(`✓ 垂直同步: ${v ? '开' : '关'}`, true);
+                    },
+                    'lucide:monitor-check'
+                );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                hint.textContent = '关闭可提升低配设备性能；仅影响后续加载的模型，已加载模型不受影响。';
+                hint.textContent =
+                    '浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，天然与刷新同步；关闭后解除人为限帧（实际仍受刷新率约束）。';
+                c.appendChild(hint);
+            });
+
+            // 默认物理开关
+            cardContainer(container, (c) => {
+                addToggleRow(
+                    c,
+                    '默认启用物理模拟',
+                    uiState.defaultPhysicsEnabled !== false,
+                    (v) => {
+                        setUIState({ defaultPhysicsEnabled: v });
+                        getSettingsMenu()?.updateControls();
+                        setStatus(
+                            v ? '✓ 默认启用物理模拟' : '✓ 默认关闭物理模拟（仅影响后续加载）',
+                            true
+                        );
+                    },
+                    'lucide:atom'
+                );
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.textContent =
+                    '关闭可提升低配设备性能；仅影响后续加载的模型，已加载模型不受影响。';
                 c.appendChild(hint);
             });
 
             // 渲染分辨率缩放
             cardContainer(container, (c) => {
-                addSliderRow(c, '渲染分辨率缩放', uiState.renderScale ?? 1, 0.5, 2, 0.05, (v) => {
-                    const s = Math.round(v * 100) / 100;
-                    engine.setHardwareScalingLevel(1 / s);
-                    setUIState({ renderScale: s });
-                    getSettingsMenu()?.updateControls();
-                    setStatus(`✓ 渲染缩放: ${Math.round(s * 100)}%`, true);
-                }, 'lucide:scan', undefined, {
-                    bind: () => uiState.renderScale ?? 1,
-                });
+                addSliderRow(
+                    c,
+                    '渲染分辨率缩放',
+                    uiState.renderScale ?? 1,
+                    0.5,
+                    2,
+                    0.05,
+                    (v) => {
+                        const s = Math.round(v * 100) / 100;
+                        engine.setHardwareScalingLevel(1 / s);
+                        setUIState({ renderScale: s });
+                        getSettingsMenu()?.updateControls();
+                        setStatus(`✓ 渲染缩放: ${Math.round(s * 100)}%`, true);
+                    },
+                    'lucide:scan',
+                    undefined,
+                    {
+                        bind: () => uiState.renderScale ?? 1,
+                    }
+                );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
                 hint.textContent = '低于 100% 提升性能，高于 100% 超采样更清晰（更耗 GPU）。';
@@ -879,15 +1263,26 @@ function buildSettingsPerformanceLevel(): PopupLevel {
 
             // 鼠标/触控灵敏度
             cardContainer(container, (c) => {
-                addSliderRow(c, '鼠标/触控灵敏度', uiState.cameraSensitivity ?? 1, 0.2, 3, 0.1, (v) => {
-                    const s = Math.round(v * 10) / 10;
-                    setUIState({ cameraSensitivity: s });
-                    refreshCameraUserSettings();
-                    getSettingsMenu()?.updateControls();
-                    setStatus(`✓ 相机灵敏度: ${s}x`, true);
-                }, 'lucide:move', undefined, {
-                    bind: () => uiState.cameraSensitivity ?? 1,
-                });
+                addSliderRow(
+                    c,
+                    '鼠标/触控灵敏度',
+                    uiState.cameraSensitivity ?? 1,
+                    0.2,
+                    3,
+                    0.1,
+                    (v) => {
+                        const s = Math.round(v * 10) / 10;
+                        setUIState({ cameraSensitivity: s });
+                        refreshCameraUserSettings();
+                        getSettingsMenu()?.updateControls();
+                        setStatus(`✓ 相机灵敏度: ${s}x`, true);
+                    },
+                    'lucide:move',
+                    undefined,
+                    {
+                        bind: () => uiState.cameraSensitivity ?? 1,
+                    }
+                );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
                 hint.textContent = '影响旋转/缩放/平移速度，实时作用于当前相机。';
@@ -896,12 +1291,18 @@ function buildSettingsPerformanceLevel(): PopupLevel {
 
             // 反转 Y 轴
             cardContainer(container, (c) => {
-                addToggleRow(c, '反转 Y 轴（垂直拖拽）', uiState.invertYAxis === true, (v) => {
-                    setUIState({ invertYAxis: v });
-                    refreshCameraUserSettings();
-                    getSettingsMenu()?.updateControls();
-                    setStatus(`✓ 反转 Y 轴: ${v ? '开' : '关'}`, true);
-                }, 'lucide:flip-vertical');
+                addToggleRow(
+                    c,
+                    '反转 Y 轴（垂直拖拽）',
+                    uiState.invertYAxis === true,
+                    (v) => {
+                        setUIState({ invertYAxis: v });
+                        refreshCameraUserSettings();
+                        getSettingsMenu()?.updateControls();
+                        setStatus(`✓ 反转 Y 轴: ${v ? '开' : '关'}`, true);
+                    },
+                    'lucide:flip-vertical'
+                );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
                 hint.textContent = '反转上下拖拽方向，立即作用于当前相机（ArcRotate 模式）。';
@@ -914,29 +1315,89 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                     addSectionTitle(c, '自定义渲染项');
                     const rs = getRenderState();
                     const ls = getLightState();
-                    const renderToggles: Array<{ label: string; value: boolean; apply: (v: boolean) => void }> = [
-                        { label: '阴影', value: ls.shadowEnabled, apply: (v) => setLightState({ shadowEnabled: v }) },
-                        { label: '泛光 (Bloom)', value: rs.bloomEnabled, apply: (v) => setRenderState({ bloomEnabled: v }) },
-                        { label: 'FXAA 抗锯齿', value: rs.fxaaEnabled, apply: (v) => setRenderState({ fxaaEnabled: v }) },
-                        { label: '景深 (DOF)', value: rs.dofEnabled, apply: (v) => setRenderState({ dofEnabled: v }) },
-                        { label: '暗角', value: rs.vignetteEnabled, apply: (v) => setRenderState({ vignetteEnabled: v }) },
-                        { label: '边缘高亮', value: rs.outlineEnabled, apply: (v) => setRenderState({ outlineEnabled: v }) },
-                        { label: '辉光 (Glow)', value: rs.glowEnabled, apply: (v) => setRenderState({ glowEnabled: v }) },
-                        { label: '色差', value: rs.chromaticAberrationEnabled, apply: (v) => setRenderState({ chromaticAberrationEnabled: v }) },
-                        { label: '颗粒', value: rs.grainEnabled, apply: (v) => setRenderState({ grainEnabled: v }) },
-                        { label: '屏幕空间反射 (SSR)', value: rs.ssrEnabled, apply: (v) => setRenderState({ ssrEnabled: v }) },
-                        { label: '环境反射探针', value: rs.reflectionProbeEnabled, apply: (v) => setRenderState({ reflectionProbeEnabled: v }) },
-                        { label: '环境光遮蔽 (SSAO)', value: rs.ssaoEnabled, apply: (v) => setRenderState({ ssaoEnabled: v }) },
+                    const renderToggles: Array<{
+                        label: string;
+                        value: boolean;
+                        apply: (v: boolean) => void;
+                    }> = [
+                        {
+                            label: '阴影',
+                            value: ls.shadowEnabled,
+                            apply: (v) => setLightState({ shadowEnabled: v }),
+                        },
+                        {
+                            label: '泛光 (Bloom)',
+                            value: rs.bloomEnabled,
+                            apply: (v) => setRenderState({ bloomEnabled: v }),
+                        },
+                        {
+                            label: 'FXAA 抗锯齿',
+                            value: rs.fxaaEnabled,
+                            apply: (v) => setRenderState({ fxaaEnabled: v }),
+                        },
+                        {
+                            label: '景深 (DOF)',
+                            value: rs.dofEnabled,
+                            apply: (v) => setRenderState({ dofEnabled: v }),
+                        },
+                        {
+                            label: '暗角',
+                            value: rs.vignetteEnabled,
+                            apply: (v) => setRenderState({ vignetteEnabled: v }),
+                        },
+                        {
+                            label: '边缘高亮',
+                            value: rs.outlineEnabled,
+                            apply: (v) => setRenderState({ outlineEnabled: v }),
+                        },
+                        {
+                            label: '辉光 (Glow)',
+                            value: rs.glowEnabled,
+                            apply: (v) => setRenderState({ glowEnabled: v }),
+                        },
+                        {
+                            label: '色差',
+                            value: rs.chromaticAberrationEnabled,
+                            apply: (v) => setRenderState({ chromaticAberrationEnabled: v }),
+                        },
+                        {
+                            label: '颗粒',
+                            value: rs.grainEnabled,
+                            apply: (v) => setRenderState({ grainEnabled: v }),
+                        },
+                        {
+                            label: '屏幕空间反射 (SSR)',
+                            value: rs.ssrEnabled,
+                            apply: (v) => setRenderState({ ssrEnabled: v }),
+                        },
+                        {
+                            label: '环境反射探针',
+                            value: rs.reflectionProbeEnabled,
+                            apply: (v) => setRenderState({ reflectionProbeEnabled: v }),
+                        },
+                        {
+                            label: '环境光遮蔽 (SSAO)',
+                            value: rs.ssaoEnabled,
+                            apply: (v) => setRenderState({ ssaoEnabled: v }),
+                        },
                     ];
                     for (const t of renderToggles) {
-                        addToggleRow(c, t.label, t.value, (v) => {
-                            t.apply(v);
-                            setStatus(`✓ ${t.label}: ${v ? '开' : '关'}`, true);
-                        }, 'lucide:sliders-horizontal');
+                        addToggleRow(
+                            c,
+                            t.label,
+                            t.value,
+                            (v) => {
+                                t.apply(v);
+                                setStatus(`✓ ${t.label}: ${v ? '开' : '关'}`, true);
+                            },
+                            'lucide:sliders-horizontal'
+                        );
                     }
                     const hint = document.createElement('div');
-                    hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                    hint.textContent = '自定义模式下这些开关为权威配置，性能监控不会覆盖；MSAA 档位与强度参数请在场景→渲染菜单调整。';
+                    hint.style.cssText =
+                        'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                    hint.textContent =
+                        '自定义模式下这些开关为权威配置，性能监控不会覆盖；MSAA 档位与强度参数请在场景→渲染菜单调整。';
                     c.appendChild(hint);
                 });
             }
@@ -955,7 +1416,11 @@ function buildSettingsScreenshotLevel(): PopupLevel {
             // Format selector: PNG / JPEG / WebP
             cardContainer(container, (c) => {
                 addSectionTitle(c, '截图格式');
-                const formats: Array<{ key: 'image/png' | 'image/jpeg' | 'image/webp'; label: string; icon: string }> = [
+                const formats: Array<{
+                    key: 'image/png' | 'image/jpeg' | 'image/webp';
+                    label: string;
+                    icon: string;
+                }> = [
                     { key: 'image/png', label: 'PNG', icon: 'lucide:file-image' },
                     { key: 'image/jpeg', label: 'JPEG', icon: 'lucide:file-image' },
                     { key: 'image/webp', label: 'WebP', icon: 'lucide:file-image' },
@@ -963,12 +1428,21 @@ function buildSettingsScreenshotLevel(): PopupLevel {
                 const formatRows: HTMLElement[] = [];
                 for (const f of formats) {
                     const isActive = (uiState.screenshotFormat ?? 'image/png') === f.key;
-                    const row = slideRow(c, `lucide:${isActive ? 'check-circle' : 'circle'}`, f.label, false, () => {
-                        uiState.screenshotFormat = f.key;
-                        setUIState({ screenshotFormat: f.key });
-                        getSettingsMenu()?.updateControls();
-                        setStatus(`✓ 截图格式已设为 ${f.label}`, true);
-                    }, undefined, undefined, isActive);
+                    const row = slideRow(
+                        c,
+                        `lucide:${isActive ? 'check-circle' : 'circle'}`,
+                        f.label,
+                        false,
+                        () => {
+                            uiState.screenshotFormat = f.key;
+                            setUIState({ screenshotFormat: f.key });
+                            getSettingsMenu()?.updateControls();
+                            setStatus(`✓ 截图格式已设为 ${f.label}`, true);
+                        },
+                        undefined,
+                        undefined,
+                        isActive
+                    );
                     row.dataset.formatKey = f.key;
                     formatRows.push(row);
                 }
@@ -978,25 +1452,46 @@ function buildSettingsScreenshotLevel(): PopupLevel {
                         const key = row.dataset.formatKey!;
                         const isActive = current === key;
                         row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                        const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
-                        if (icon) icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
+                        const icon = row.querySelector(
+                            '.slide-icon iconify-icon'
+                        ) as HTMLElement | null;
+                        if (icon) {
+                            icon.setAttribute(
+                                'icon',
+                                `lucide:${isActive ? 'check-circle' : 'circle'}`
+                            );
+                        }
                     }
                 });
             });
 
             // Quality slider
             cardContainer(container, (c) => {
-                addSliderRow(c, '截图质量', uiState.screenshotQuality ?? 0.9, 0.5, 1.0, 0.05, (v) => {
-                    uiState.screenshotQuality = v;
-                    setUIState({ screenshotQuality: v });
-                    getSettingsMenu()?.updateControls();
-                }, 'lucide:gauge', undefined, {
-                    bind: () => uiState.screenshotQuality ?? 0.9,
-                    onUpdate: (el) => {
-                        const valEl = el.querySelector('.cs-value');
-                        if (valEl) valEl.textContent = Math.round((uiState.screenshotQuality ?? 0.9) * 100) + '%';
+                addSliderRow(
+                    c,
+                    '截图质量',
+                    uiState.screenshotQuality ?? 0.9,
+                    0.5,
+                    1.0,
+                    0.05,
+                    (v) => {
+                        uiState.screenshotQuality = v;
+                        setUIState({ screenshotQuality: v });
+                        getSettingsMenu()?.updateControls();
                     },
-                });
+                    'lucide:gauge',
+                    undefined,
+                    {
+                        bind: () => uiState.screenshotQuality ?? 0.9,
+                        onUpdate: (el) => {
+                            const valEl = el.querySelector('.cs-value');
+                            if (valEl) {
+                                valEl.textContent =
+                                    Math.round((uiState.screenshotQuality ?? 0.9) * 100) + '%';
+                            }
+                        },
+                    }
+                );
             });
         },
     };
@@ -1012,78 +1507,237 @@ function buildSettingsAudioLevel(): PopupLevel {
         renderCustom: (container) => {
             // Default volume
             cardContainer(container, (c) => {
-                addSliderRow(c, '默认音量', getVolume(), 0, 1, 0.05, (v) => {
-                    setVolume(v);
-                    getSettingsMenu()?.updateControls();
-                }, 'lucide:volume-2', undefined, {
-                    bind: () => getVolume(),
-                    onUpdate: (el) => {
-                        const valEl = el.querySelector('.cs-value');
-                        if (valEl) valEl.textContent = Math.round(getVolume() * 100) + '%';
+                addSliderRow(
+                    c,
+                    '默认音量',
+                    getVolume(),
+                    0,
+                    1,
+                    0.05,
+                    (v) => {
+                        setVolume(v);
+                        getSettingsMenu()?.updateControls();
                     },
-                });
+                    'lucide:volume-2',
+                    undefined,
+                    {
+                        bind: () => getVolume(),
+                        onUpdate: (el) => {
+                            const valEl = el.querySelector('.cs-value');
+                            if (valEl) {
+                                valEl.textContent = Math.round(getVolume() * 100) + '%';
+                            }
+                        },
+                    }
+                );
             });
 
             // Mute toggle
             cardContainer(container, (c) => {
                 let muteFlag = false;
-                addToggleRow(c, '静音', false, (v) => {
-                    muteFlag = v;
-                    if (v) {
-                        setVolume(0);
-                    } else {
-                        setVolume(1);
+                addToggleRow(
+                    c,
+                    '静音',
+                    false,
+                    (v) => {
+                        muteFlag = v;
+                        if (v) {
+                            setVolume(0);
+                        } else {
+                            setVolume(1);
+                        }
+                        getSettingsMenu()?.updateControls();
+                    },
+                    'lucide:volume-x',
+                    {
+                        bind: () => getVolume() === 0,
                     }
-                    getSettingsMenu()?.updateControls();
-                }, 'lucide:volume-x', {
-                    bind: () => getVolume() === 0,
-                });
+                );
             });
 
             // Audio offset
             cardContainer(container, (c) => {
-                addSliderRow(c, '音频偏移', getAudioOffset(), -5, 5, 0.1, (v) => {
-                    setAudioOffset(v);
-                    getSettingsMenu()?.updateControls();
-                }, 'lucide:clock', undefined, {
-                    bind: () => getAudioOffset(),
-                    onUpdate: (el) => {
-                        const valEl = el.querySelector('.cs-value');
-                        if (valEl) valEl.textContent = getAudioOffset().toFixed(2);
+                addSliderRow(
+                    c,
+                    '音频偏移',
+                    getAudioOffset(),
+                    -5,
+                    5,
+                    0.1,
+                    (v) => {
+                        setAudioOffset(v);
+                        getSettingsMenu()?.updateControls();
                     },
-                });
+                    'lucide:clock',
+                    undefined,
+                    {
+                        bind: () => getAudioOffset(),
+                        onUpdate: (el) => {
+                            const valEl = el.querySelector('.cs-value');
+                            if (valEl) {
+                                valEl.textContent = getAudioOffset().toFixed(2);
+                            }
+                        },
+                    }
+                );
                 const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-dark);text-align:center;margin-top:4px;';
+                hint.style.cssText =
+                    'font-size:10px;color:var(--text-dark);text-align:center;margin-top:4px;';
                 hint.textContent = '正=音频先播，负=音频后播（对所有音乐全局生效）';
                 c.appendChild(hint);
             });
 
             // BPM Quantization
             cardContainer(container, (c) => {
-                addToggleRow(c, 'BPM 量化', true, (v) => {
-                    setBpmQuantizeEnabled(v);
-                    getSettingsMenu()?.updateControls();
-                    setStatus(v ? '✓ BPM 量化已开启' : '✓ BPM 量化已关闭', true);
-                }, 'lucide:activity', {
-                    bind: () => getBpmQuantizeEnabled(),
-                });
+                addToggleRow(
+                    c,
+                    'BPM 量化',
+                    true,
+                    (v) => {
+                        setBpmQuantizeEnabled(v);
+                        getSettingsMenu()?.updateControls();
+                        setStatus(v ? '✓ BPM 量化已开启' : '✓ BPM 量化已关闭', true);
+                    },
+                    'lucide:activity',
+                    {
+                        bind: () => getBpmQuantizeEnabled(),
+                    }
+                );
             });
 
             // 加载动作时自动加载同目录音乐
             cardContainer(container, (c) => {
-                addToggleRow(c, '加载动作时自动加载同目录音乐', autoLoadCompanionAudio, (v) => {
-                    setAutoLoadCompanionAudio(v);
-                    getSettingsMenu()?.updateControls();
-                    setStatus(v ? '✓ 伴音自动加载已开启' : '✓ 伴音自动加载已关闭', true);
-                }, 'lucide:disc-3', {
-                    bind: () => autoLoadCompanionAudio,
-                });
+                addToggleRow(
+                    c,
+                    '加载动作时自动加载同目录音乐',
+                    autoLoadCompanionAudio,
+                    (v) => {
+                        setAutoLoadCompanionAudio(v);
+                        getSettingsMenu()?.updateControls();
+                        setStatus(v ? '✓ 伴音自动加载已开启' : '✓ 伴音自动加载已关闭', true);
+                    },
+                    'lucide:disc-3',
+                    {
+                        bind: () => autoLoadCompanionAudio,
+                    }
+                );
             });
         },
     };
 }
 
 // ======== About ========
+
+/** 导出当前全部设置（uiState）为 JSON 文件。 */
+function exportSettings(): void {
+    const data = JSON.stringify(uiState, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `mikumikuar-settings-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setStatus('✓ 设置已导出', true);
+}
+
+/** 外观相关 CSS 变量应用（与启动 restoreUIState 保持一致的子集）。 */
+const SETTINGS_FONT_RESTORE: Record<string, string> = {
+    system: "'Segoe UI', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK SC', system-ui, sans-serif",
+    noto: "'Source Han Sans SC', 'Noto Sans CJK SC', system-ui, sans-serif",
+    yahei: "'Microsoft YaHei', 'Microsoft YaHei UI', system-ui, sans-serif",
+};
+
+function applyUIAppearanceDom(s: UIState): void {
+    const root = document.documentElement;
+    if (s.scale) root.style.setProperty('--ui-scale', String(s.scale));
+    if (s.popupWidth) root.style.setProperty('--popup-width', s.popupWidth + 'px');
+    if (s.accent) {
+        root.style.setProperty('--accent', s.accent);
+        root.style.setProperty('--accent-rgb', rgbToString(hexToRgb(s.accent)));
+        root.style.setProperty('--accent-dim', s.accent + '33');
+        const tc = generateTextColors(s.accent);
+        root.style.setProperty('--text-bright', tc.bright);
+        root.style.setProperty('--text-dim', tc.dim);
+        root.style.setProperty('--text-muted', tc.muted);
+    }
+    if (s.fontFamily && SETTINGS_FONT_RESTORE[s.fontFamily]) {
+        root.style.setProperty('--font', SETTINGS_FONT_RESTORE[s.fontFamily]);
+    }
+    root.style.setProperty('--ui-animations', s.animations === false ? '0' : '1');
+    root.style.setProperty('--ui-blur', s.blurBg ? '1' : '0');
+    document
+        .querySelectorAll<HTMLElement>('.overlay')
+        .forEach((el) => el.classList.toggle('blur-bg', !!s.blurBg));
+}
+
+/** 将导入（或重置）后的 uiState 重新应用到运行时，并持久化外观子集到 Go。 */
+function reapplyImportedSettings(): void {
+    // 帧率控制（垂直同步 + 帧率上限）
+    applyFrameControl();
+    // 渲染分辨率缩放
+    engine.setHardwareScalingLevel(1 / (uiState.renderScale ?? 1));
+    // 相机灵敏度 + 反 Y 轴
+    refreshCameraUserSettings();
+    // 音频
+    setVolume(getVolume());
+    setAudioOffset(getAudioOffset());
+    // 外观 DOM
+    applyUIAppearanceDom(uiState);
+    // 性能模式（运行时降级策略 + Go 持久化）
+    const pm = uiState.performanceMode ?? 'auto';
+    setPerformanceMode(pm);
+    SetPerformanceMode(pm).catch(() => {});
+    // 持久化外观子集到 Go（确保重启后仍生效）
+    SetUIScale(uiState.scale ?? 1).catch(() => {});
+    if (uiState.popupWidth) SetUIPopupWidth(uiState.popupWidth).catch(() => {});
+    if (uiState.accent) SetUIAccent(uiState.accent).catch(() => {});
+    if (uiState.fontFamily) SetUIFontFamily(uiState.fontFamily).catch(() => {});
+    SetUIAnimations(uiState.animations !== false).catch(() => {});
+    SetUIBlurBg(!!uiState.blurBg).catch(() => {});
+}
+
+/** 从本地文件导入设置（JSON），合并到当前 uiState 后重新应用。 */
+function importSettings(): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.onchange = () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const parsed = JSON.parse(String(reader.result)) as Record<string, unknown>;
+                if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+                    throw new Error('文件格式不正确');
+                }
+                Object.assign(uiState, parsed);
+                reapplyImportedSettings();
+                getSettingsMenu()?.reRender();
+                setStatus('✓ 设置已导入', true);
+            } catch (e) {
+                setStatus('✗ 导入失败：' + (e instanceof Error ? e.message : String(e)), true);
+            }
+        };
+        reader.onerror = () => setStatus('✗ 读取文件失败', true);
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+/** 清空全部设置并恢复默认。 */
+function resetAllSettings(): void {
+    for (const k of Object.keys(uiState)) {
+        delete (uiState as Record<string, unknown>)[k];
+    }
+    reapplyImportedSettings();
+    getSettingsMenu()?.reRender();
+    setStatus('✓ 已恢复默认设置', true);
+}
 
 function buildSettingsAboutLevel(): PopupLevel {
     const shortcuts: Array<{ key: string; desc: string }> = [
@@ -1117,10 +1771,13 @@ function buildSettingsAboutLevel(): PopupLevel {
                 GetBuildInfo()
                     .then((info) => {
                         const el = title.querySelector<HTMLElement>('[data-app-version]');
-                        if (el) el.textContent = `v${info.version}`;
+                        if (el) {
+                            el.textContent = `v${info.version}`;
+                        }
                         // 构建详情行
                         const detail = document.createElement('div');
-                        detail.style.cssText = 'font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.6;font-family:monospace;';
+                        detail.style.cssText =
+                            'font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.6;font-family:monospace;';
                         detail.innerHTML = `
                             <div>build: ${info.buildTime}</div>
                             <div>commit: ${info.commitHash}</div>
@@ -1162,7 +1819,8 @@ function buildSettingsAboutLevel(): PopupLevel {
                 addSectionTitle(c, '缓存占用');
                 const statRow = document.createElement('div');
                 statRow.className = 'slide-item';
-                statRow.style.cssText = 'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
+                statRow.style.cssText =
+                    'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
                 statRow.innerHTML = `
                     <div data-cache-total style="font-size:13px;color:var(--text);font-weight:500;">统计中…</div>
                     <div data-cache-detail style="font-size:10px;color:var(--text-dim);line-height:1.6;font-family:monospace;"></div>
@@ -1173,8 +1831,11 @@ function buildSettingsAboutLevel(): PopupLevel {
                     GetCacheStats()
                         .then((s) => {
                             const total = statRow.querySelector<HTMLElement>('[data-cache-total]');
-                            const detail = statRow.querySelector<HTMLElement>('[data-cache-detail]');
-                            if (total) total.textContent = `总计 ${formatBytes(s.totalBytes)}`;
+                            const detail =
+                                statRow.querySelector<HTMLElement>('[data-cache-detail]');
+                            if (total) {
+                                total.textContent = `总计 ${formatBytes(s.totalBytes)}`;
+                            }
                             if (detail) {
                                 detail.innerHTML = `
                                     <div>提取: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div>
@@ -1193,9 +1854,47 @@ function buildSettingsAboutLevel(): PopupLevel {
             // 维护工具：清除缓存
             cardContainer(container, (c) => {
                 addSectionTitle(c, '维护工具');
-                slideRow(c, 'lucide:trash-2', '清除提取缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE }));
-                slideRow(c, 'lucide:image', '清除缩略图缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_THUMBNAIL }));
-                slideRow(c, 'lucide:trash', '清除全部缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_ALL_CACHE }));
+                slideRow(c, 'lucide:trash-2', '清除提取缓存', false, () =>
+                    handleSettingsAction({
+                        kind: 'action',
+                        label: '',
+                        icon: '',
+                        target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE,
+                    })
+                );
+                slideRow(c, 'lucide:image', '清除缩略图缓存', false, () =>
+                    handleSettingsAction({
+                        kind: 'action',
+                        label: '',
+                        icon: '',
+                        target: SETTINGS_ACTION.CLEAR_THUMBNAIL,
+                    })
+                );
+                slideRow(c, 'lucide:trash', '清除全部缓存', false, () =>
+                    handleSettingsAction({
+                        kind: 'action',
+                        label: '',
+                        icon: '',
+                        target: SETTINGS_ACTION.CLEAR_ALL_CACHE,
+                    })
+                );
+            });
+
+            // 设置管理：导入 / 导出 / 恢复默认
+            cardContainer(container, (c) => {
+                addSectionTitle(c, '设置管理');
+                slideRow(c, 'lucide:download', '导出设置', false, () => exportSettings());
+                slideRow(c, 'lucide:upload', '导入设置', false, () => importSettings());
+                slideRow(c, 'lucide:rotate-ccw', '恢复默认设置', false, () => {
+                    if (window.confirm('确定要恢复所有设置为默认值吗？此操作不可撤销。')) {
+                        resetAllSettings();
+                    }
+                });
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.textContent =
+                    '导出为 JSON 备份；导入将合并到当前设置并立即生效。外观/性能模式会持久化，其余偏好在当前会话生效。';
+                c.appendChild(hint);
             });
         },
     };
@@ -1206,28 +1905,50 @@ function buildSettingsAboutLevel(): PopupLevel {
 /** Format a key code + modifiers into a display string like "Ctrl+1" or "←". */
 function _fmtKeyBinding(key: string, ctrl: boolean, shift: boolean, alt: boolean): string {
     const parts: string[] = [];
-    if (ctrl) parts.push('Ctrl');
-    if (shift) parts.push('Shift');
-    if (alt) parts.push('Alt');
+    if (ctrl) {
+        parts.push('Ctrl');
+    }
+    if (shift) {
+        parts.push('Shift');
+    }
+    if (alt) {
+        parts.push('Alt');
+    }
     let display = key;
-    if (key === 'Space') display = 'Space';
-    else if (key === 'Escape') display = 'Esc';
-    else if (key === 'ArrowLeft') display = '←';
-    else if (key === 'ArrowRight') display = '→';
-    else if (key === 'ArrowUp') display = '↑';
-    else if (key === 'ArrowDown') display = '↓';
-    else if (key === 'Enter') display = 'Enter';
-    else if (key.startsWith('Digit')) display = key.slice(5);
-    else if (key.startsWith('Key')) display = key.slice(3);
+    if (key === 'Space') {
+        display = 'Space';
+    } else if (key === 'Escape') {
+        display = 'Esc';
+    } else if (key === 'ArrowLeft') {
+        display = '←';
+    } else if (key === 'ArrowRight') {
+        display = '→';
+    } else if (key === 'ArrowUp') {
+        display = '↑';
+    } else if (key === 'ArrowDown') {
+        display = '↓';
+    } else if (key === 'Enter') {
+        display = 'Enter';
+    } else if (key.startsWith('Digit')) {
+        display = key.slice(5);
+    } else if (key.startsWith('Key')) {
+        display = key.slice(3);
+    }
     parts.push(display);
     return parts.join('+');
 }
 
 function _isModifierOnly(code: string): boolean {
-    return code === 'ControlLeft' || code === 'ControlRight'
-        || code === 'ShiftLeft' || code === 'ShiftRight'
-        || code === 'AltLeft' || code === 'AltRight'
-        || code === 'MetaLeft' || code === 'MetaRight';
+    return (
+        code === 'ControlLeft' ||
+        code === 'ControlRight' ||
+        code === 'ShiftLeft' ||
+        code === 'ShiftRight' ||
+        code === 'AltLeft' ||
+        code === 'AltRight' ||
+        code === 'MetaLeft' ||
+        code === 'MetaRight'
+    );
 }
 
 /** Tracks which shortcut is waiting for a new key binding (null = none). */
@@ -1244,7 +1965,8 @@ function buildSettingsShortcutsLevel(): PopupLevel {
 
             // Load persisted overrides into the registry
             const persisted = (uiState as Record<string, unknown>).keyBindings as
-                Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }> | undefined;
+                | Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }>
+                | undefined;
             if (persisted) {
                 loadKeyBindings(persisted);
             }
@@ -1266,62 +1988,101 @@ function buildSettingsShortcutsLevel(): PopupLevel {
                 addSectionTitle(container, groupName);
                 cardContainer(container, (c) => {
                     for (const s of items) {
-                        const combo = _fmtKeyBinding(s.currentKey, s.currentCtrl, s.currentShift, s.currentAlt);
-                        const isOverridden = s.currentKey !== s.defaultKey
-                            || s.currentCtrl !== (s.defaultCtrl ?? false)
-                            || s.currentShift !== (s.defaultShift ?? false)
-                            || s.currentAlt !== (s.defaultAlt ?? false);
+                        const combo = _fmtKeyBinding(
+                            s.currentKey,
+                            s.currentCtrl,
+                            s.currentShift,
+                            s.currentAlt
+                        );
+                        const isOverridden =
+                            s.currentKey !== s.defaultKey ||
+                            s.currentCtrl !== (s.defaultCtrl ?? false) ||
+                            s.currentShift !== (s.defaultShift ?? false) ||
+                            s.currentAlt !== (s.defaultAlt ?? false);
                         const sublabel = combo + (isOverridden ? ' · 自定义' : '');
 
-                        slideRow(c, 'lucide:keyboard', s.label, false, () => {
-                            if (_rebindingId) return;
-                            _rebindingId = s.id;
-
-                            // Update row to show waiting state
-                            const labelSpan = c.querySelector('.slide-label');
-                            const sublabelSpan = c.querySelector('.slide-sublabel');
-                            if (labelSpan) labelSpan.textContent = '按下新组合键...';
-                            if (sublabelSpan) sublabelSpan.textContent = '';
-
-                            const handler = (e: KeyboardEvent) => {
-                                if (e.repeat) return;
-                                e.stopPropagation();
-                                e.preventDefault();
-
-                                // Ignore modifier-only presses (keep waiting)
-                                if (_isModifierOnly(e.code)) return;
-
-                                document.removeEventListener('keydown', handler, true);
-
-                                // Cancel on Escape
-                                if (e.code === 'Escape') {
-                                    _rebindingId = null;
-                                    getSettingsMenu()?.reRender();
+                        slideRow(
+                            c,
+                            'lucide:keyboard',
+                            s.label,
+                            false,
+                            () => {
+                                if (_rebindingId) {
                                     return;
                                 }
+                                _rebindingId = s.id;
 
-                                const id = _rebindingId!;
-                                _rebindingId = null;
-
-                                const result = setKeyBinding(id, e.code, e.ctrlKey, e.shiftKey, e.altKey);
-                                if (!('conflictId' in result)) {
-                                    (uiState as Record<string, unknown>).keyBindings = exportKeyBindings();
-                                    getSettingsMenu()?.reRender();
-                                } else {
-                                    const conflictId = result.conflictId;
-                                    const conflictLabel = result.conflictLabel;
-                                    showConfirm(`快捷键 "${conflictLabel}" 已使用此组合键，是否覆盖？`).then((ok) => {
-                                        if (ok) {
-                                            resetKeyBinding(conflictId);
-                                            setKeyBinding(id, e.code, e.ctrlKey, e.shiftKey, e.altKey);
-                                            (uiState as Record<string, unknown>).keyBindings = exportKeyBindings();
-                                        }
-                                        getSettingsMenu()?.reRender();
-                                    });
+                                // Update row to show waiting state
+                                const labelSpan = c.querySelector('.slide-label');
+                                const sublabelSpan = c.querySelector('.slide-sublabel');
+                                if (labelSpan) {
+                                    labelSpan.textContent = '按下新组合键...';
                                 }
-                            };
-                            document.addEventListener('keydown', handler, true);
-                        }, sublabel);
+                                if (sublabelSpan) {
+                                    sublabelSpan.textContent = '';
+                                }
+
+                                const handler = (e: KeyboardEvent) => {
+                                    if (e.repeat) {
+                                        return;
+                                    }
+                                    e.stopPropagation();
+                                    e.preventDefault();
+
+                                    // Ignore modifier-only presses (keep waiting)
+                                    if (_isModifierOnly(e.code)) {
+                                        return;
+                                    }
+
+                                    document.removeEventListener('keydown', handler, true);
+
+                                    // Cancel on Escape
+                                    if (e.code === 'Escape') {
+                                        _rebindingId = null;
+                                        getSettingsMenu()?.reRender();
+                                        return;
+                                    }
+
+                                    const id = _rebindingId!;
+                                    _rebindingId = null;
+
+                                    const result = setKeyBinding(
+                                        id,
+                                        e.code,
+                                        e.ctrlKey,
+                                        e.shiftKey,
+                                        e.altKey
+                                    );
+                                    if (!('conflictId' in result)) {
+                                        (uiState as Record<string, unknown>).keyBindings =
+                                            exportKeyBindings();
+                                        getSettingsMenu()?.reRender();
+                                    } else {
+                                        const conflictId = result.conflictId;
+                                        const conflictLabel = result.conflictLabel;
+                                        showConfirm(
+                                            `快捷键 "${conflictLabel}" 已使用此组合键，是否覆盖？`
+                                        ).then((ok) => {
+                                            if (ok) {
+                                                resetKeyBinding(conflictId);
+                                                setKeyBinding(
+                                                    id,
+                                                    e.code,
+                                                    e.ctrlKey,
+                                                    e.shiftKey,
+                                                    e.altKey
+                                                );
+                                                (uiState as Record<string, unknown>).keyBindings =
+                                                    exportKeyBindings();
+                                            }
+                                            getSettingsMenu()?.reRender();
+                                        });
+                                    }
+                                };
+                                document.addEventListener('keydown', handler, true);
+                            },
+                            sublabel
+                        );
                     }
                 });
             }
@@ -1341,7 +2102,9 @@ function buildSettingsShortcutsLevel(): PopupLevel {
 
 /** 格式化字节数为人类可读字符串 */
 function formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {
+        return '0 B';
+    }
     const units = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     const idx = Math.min(i, units.length - 1);
@@ -1366,7 +2129,9 @@ const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
 function settingsOnFolderEnter(row: PopupRow): PopupLevel | null {
     if (row.target) {
         const builder = SETTINGS_FOLDER_ROUTES[row.target];
-        if (builder) return builder();
+        if (builder) {
+            return builder();
+        }
 
         if (row.target.startsWith(SOFTWARE_DETAIL_PREFIX)) {
             const path = row.target.slice(SOFTWARE_DETAIL_PREFIX.length);
@@ -1375,5 +2140,3 @@ function settingsOnFolderEnter(row: PopupRow): PopupLevel | null {
     }
     return null;
 }
-
-

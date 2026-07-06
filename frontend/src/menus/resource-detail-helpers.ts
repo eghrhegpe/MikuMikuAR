@@ -19,7 +19,14 @@ import {
     getModelPositionMode,
     setModelPositionMode,
 } from '../scene/manager/model-ops';
-import { setPropTransform, removeProp, setPropOrbit, getPropOrbit, setPropPositionMode, getPropPositionMode } from '../scene/scene';
+import {
+    setPropTransform,
+    removeProp,
+    setPropOrbit,
+    getPropOrbit,
+    setPropPositionMode,
+    getPropPositionMode,
+} from '../scene/scene';
 import { buildMatRootLevel } from './model-material';
 import type { SlideMenu } from './menu';
 import type { ResourceKind } from '../core/load-manager';
@@ -51,37 +58,127 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 
         if (kind === 'actor' || kind === 'stage') {
             const inst = modelRegistry.get(id);
-            if (!inst) return;
+            if (!inst) {
+                return;
+            }
             const mode = getModelPositionMode(id);
             const scaling = inst.scaling ?? 1;
             const rotationY = inst.rotationY ?? 0;
 
             cardContainer(root, (c) => {
-                addToggleRow(c, '可见', inst.visible ?? true, (v) => setModelVisibility(id, v), 'lucide:eye');
+                addToggleRow(
+                    c,
+                    '可见',
+                    inst.visible ?? true,
+                    (v) => setModelVisibility(id, v),
+                    'lucide:eye'
+                );
                 addModeRow(c, '坐标模式', POSITION_MODE_OPTS, mode, (v) => {
                     setModelPositionMode(id, v as 'cartesian' | 'orbit');
                     render();
                 });
                 if (mode === 'orbit') {
                     const o = getModelOrbit(id) ?? { azimuth: 0, elevation: 0, distance: 10 };
-                    addSliderRow(c, '方位角', o.azimuth, -180, 180, 1, () => {}, 'lucide:compass', (v) => setModelOrbit(id, v, o.elevation, o.distance));
-                    addSliderRow(c, '仰角', o.elevation, -90, 90, 1, () => {}, 'lucide:arrow-up', (v) => setModelOrbit(id, o.azimuth, v, o.distance));
-                    addSliderRow(c, '距离', o.distance, 0.1, 100, 0.5, () => {}, 'lucide:move', (v) => setModelOrbit(id, o.azimuth, o.elevation, v));
+                    addSliderRow(
+                        c,
+                        '方位角',
+                        o.azimuth,
+                        -180,
+                        180,
+                        1,
+                        () => {},
+                        'lucide:compass',
+                        (v) => setModelOrbit(id, v, o.elevation, o.distance)
+                    );
+                    addSliderRow(
+                        c,
+                        '仰角',
+                        o.elevation,
+                        -90,
+                        90,
+                        1,
+                        () => {},
+                        'lucide:arrow-up',
+                        (v) => setModelOrbit(id, o.azimuth, v, o.distance)
+                    );
+                    addSliderRow(
+                        c,
+                        '距离',
+                        o.distance,
+                        0.1,
+                        100,
+                        0.5,
+                        () => {},
+                        'lucide:move',
+                        (v) => setModelOrbit(id, o.azimuth, o.elevation, v)
+                    );
                 } else {
                     const pos = getModelPosition(id);
-                    addSliderRow(c, 'X', pos[0], -50, 50, 0.5, () => {}, 'lucide:move-horizontal', (v) => setModelPosition(id, v, pos[1], pos[2]));
-                    addSliderRow(c, 'Y', pos[1], -50, 50, 0.5, () => {}, 'lucide:move-vertical', (v) => setModelPosition(id, pos[0], v, pos[2]));
-                    addSliderRow(c, 'Z', pos[2], -50, 50, 0.5, () => {}, 'lucide:move', (v) => setModelPosition(id, pos[0], pos[1], v));
+                    addSliderRow(
+                        c,
+                        'X',
+                        pos[0],
+                        -50,
+                        50,
+                        0.5,
+                        () => {},
+                        'lucide:move-horizontal',
+                        (v) => setModelPosition(id, v, pos[1], pos[2])
+                    );
+                    addSliderRow(
+                        c,
+                        'Y',
+                        pos[1],
+                        -50,
+                        50,
+                        0.5,
+                        () => {},
+                        'lucide:move-vertical',
+                        (v) => setModelPosition(id, pos[0], v, pos[2])
+                    );
+                    addSliderRow(
+                        c,
+                        'Z',
+                        pos[2],
+                        -50,
+                        50,
+                        0.5,
+                        () => {},
+                        'lucide:move',
+                        (v) => setModelPosition(id, pos[0], pos[1], v)
+                    );
                 }
-                addSliderRow(c, '缩放', scaling, 0.1, 10, 0.1, () => {}, 'lucide:maximize', (v) => setModelScaling(id, v));
-                addSliderRow(c, '旋转 Y', rotationY, -Math.PI, Math.PI, 0.05, () => {}, 'lucide:rotate-cw', (v) => setModelRotationY(id, v));
+                addSliderRow(
+                    c,
+                    '缩放',
+                    scaling,
+                    0.1,
+                    10,
+                    0.1,
+                    () => {},
+                    'lucide:maximize',
+                    (v) => setModelScaling(id, v)
+                );
+                addSliderRow(
+                    c,
+                    '旋转 Y',
+                    rotationY,
+                    -Math.PI,
+                    Math.PI,
+                    0.05,
+                    () => {},
+                    'lucide:rotate-cw',
+                    (v) => setModelRotationY(id, v)
+                );
             });
             return;
         }
 
         if (kind === 'prop') {
             const p = propRegistry.get(id);
-            if (!p) return;
+            if (!p) {
+                return;
+            }
             const mode = getPropPositionMode(id);
 
             cardContainer(root, (c) => {
@@ -91,17 +188,103 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
                 });
                 if (mode === 'orbit') {
                     const o = getPropOrbit(id) ?? { azimuth: 0, elevation: 0, distance: 10 };
-                    addSliderRow(c, '方位角', o.azimuth, -180, 180, 1, () => {}, 'lucide:compass', (v) => setPropOrbit(id, v, o.elevation, o.distance));
-                    addSliderRow(c, '仰角', o.elevation, -90, 90, 1, () => {}, 'lucide:arrow-up', (v) => setPropOrbit(id, o.azimuth, v, o.distance));
-                    addSliderRow(c, '距离', o.distance, 0.1, 100, 0.5, () => {}, 'lucide:move', (v) => setPropOrbit(id, o.azimuth, o.elevation, v));
+                    addSliderRow(
+                        c,
+                        '方位角',
+                        o.azimuth,
+                        -180,
+                        180,
+                        1,
+                        () => {},
+                        'lucide:compass',
+                        (v) => setPropOrbit(id, v, o.elevation, o.distance)
+                    );
+                    addSliderRow(
+                        c,
+                        '仰角',
+                        o.elevation,
+                        -90,
+                        90,
+                        1,
+                        () => {},
+                        'lucide:arrow-up',
+                        (v) => setPropOrbit(id, o.azimuth, v, o.distance)
+                    );
+                    addSliderRow(
+                        c,
+                        '距离',
+                        o.distance,
+                        0.1,
+                        100,
+                        0.5,
+                        () => {},
+                        'lucide:move',
+                        (v) => setPropOrbit(id, o.azimuth, o.elevation, v)
+                    );
                 } else {
-                    addSliderRow(c, '位置 X', p.position[0], -50, 50, 0.5, () => {}, 'lucide:move-horizontal', (v) => setPropTransform(id, { position: [v, p.position[1], p.position[2]] }));
-                    addSliderRow(c, '位置 Y', p.position[1], -50, 50, 0.5, () => {}, 'lucide:move-vertical', (v) => setPropTransform(id, { position: [p.position[0], v, p.position[2]] }));
-                    addSliderRow(c, '位置 Z', p.position[2], -50, 50, 0.5, () => {}, 'lucide:move', (v) => setPropTransform(id, { position: [p.position[0], p.position[1], v] }));
+                    addSliderRow(
+                        c,
+                        '位置 X',
+                        p.position[0],
+                        -50,
+                        50,
+                        0.5,
+                        () => {},
+                        'lucide:move-horizontal',
+                        (v) => setPropTransform(id, { position: [v, p.position[1], p.position[2]] })
+                    );
+                    addSliderRow(
+                        c,
+                        '位置 Y',
+                        p.position[1],
+                        -50,
+                        50,
+                        0.5,
+                        () => {},
+                        'lucide:move-vertical',
+                        (v) => setPropTransform(id, { position: [p.position[0], v, p.position[2]] })
+                    );
+                    addSliderRow(
+                        c,
+                        '位置 Z',
+                        p.position[2],
+                        -50,
+                        50,
+                        0.5,
+                        () => {},
+                        'lucide:move',
+                        (v) => setPropTransform(id, { position: [p.position[0], p.position[1], v] })
+                    );
                 }
-                addSliderRow(c, '旋转 Y', p.rotationY, -Math.PI, Math.PI, 0.1, () => {}, 'lucide:rotate-cw', (v) => setPropTransform(id, { rotationY: v }));
-                addSliderRow(c, '缩放', p.scaling, 0.1, 10, 0.1, () => {}, 'lucide:maximize', (v) => { p.scaling = v; setPropTransform(id, { scaling: v }); });
-                addToggleRow(c, '可见', p.visible, (v) => { setPropTransform(id, { visible: v }); p.visible = v; });
+                addSliderRow(
+                    c,
+                    '旋转 Y',
+                    p.rotationY,
+                    -Math.PI,
+                    Math.PI,
+                    0.1,
+                    () => {},
+                    'lucide:rotate-cw',
+                    (v) => setPropTransform(id, { rotationY: v })
+                );
+                addSliderRow(
+                    c,
+                    '缩放',
+                    p.scaling,
+                    0.1,
+                    10,
+                    0.1,
+                    () => {},
+                    'lucide:maximize',
+                    (v) => {
+                        p.scaling = v;
+                        setPropTransform(id, { scaling: v });
+                    }
+                );
+                addToggleRow(c, '可见', p.visible, (v) => {
+                    setPropTransform(id, { visible: v });
+                    p.visible = v;
+                });
             });
         }
     };
@@ -140,16 +323,27 @@ export function buildDangerCard(
                 onRemoved?.();
             });
         }
-        addDangerRow(c, 'lucide:trash-2', `卸载此${kind === 'prop' ? '道具' : kind === 'stage' ? '舞台' : '模型'}`, async () => {
-            if (!(await showConfirm(`确定卸载${kind === 'prop' ? '道具' : kind === 'stage' ? '舞台' : '模型'}「${name}」？`))) return;
-            if (kind === 'prop') {
-                removeProp(id);
-            } else {
-                removeModel(id);
+        addDangerRow(
+            c,
+            'lucide:trash-2',
+            `卸载此${kind === 'prop' ? '道具' : kind === 'stage' ? '舞台' : '模型'}`,
+            async () => {
+                if (
+                    !(await showConfirm(
+                        `确定卸载${kind === 'prop' ? '道具' : kind === 'stage' ? '舞台' : '模型'}「${name}」？`
+                    ))
+                ) {
+                    return;
+                }
+                if (kind === 'prop') {
+                    removeProp(id);
+                } else {
+                    removeModel(id);
+                }
+                onRemoved?.();
+                setStatus(`✓ 已卸载: ${name}`, true);
             }
-            onRemoved?.();
-            setStatus(`✓ 已卸载: ${name}`, true);
-        });
+        );
     });
 }
 
@@ -157,12 +351,16 @@ export function buildDangerCard(
 export function getResourceHandle(id: string, kind: ResourceKind): ResourceHandle | null {
     if (kind === 'actor' || kind === 'stage') {
         const inst = modelRegistry.get(id);
-        if (!inst) return null;
+        if (!inst) {
+            return null;
+        }
         return { id, kind, name: inst.name };
     }
     if (kind === 'prop') {
         const p = propRegistry.get(id);
-        if (!p) return null;
+        if (!p) {
+            return null;
+        }
         return { id, kind, name: p.name };
     }
     return null;

@@ -19,7 +19,9 @@ const mockState = vi.hoisted(() => ({
 // =====================================================================
 
 vi.mock('../core/config', () => ({
-    get focusedModelId() { return mockState.focusedModelId; },
+    get focusedModelId() {
+        return mockState.focusedModelId;
+    },
     triggerAutoSave: mockState.triggerAutoSave,
 }));
 
@@ -29,7 +31,8 @@ vi.mock('../outfit/audio', () => ({
 }));
 
 vi.mock('../scene/scene', () => ({
-    setModelMorphWeight: ((...args: any[]) => (mockState.setModelMorphWeight as any)(...args)) as any,
+    setModelMorphWeight: ((...args: any[]) =>
+        (mockState.setModelMorphWeight as any)(...args)) as any,
 }));
 
 vi.mock('../scene/motion/proc-motion-bridge', () => ({
@@ -185,7 +188,9 @@ describe('setLipSyncMultiMorphEnabled', () => {
     });
 
     it('defaults to DEFAULT_LIPSYNC_STATE.multiMorphEnabled', () => {
-        expect(sut.getLipSyncState().multiMorphEnabled).toBe(DEFAULT_LIPSYNC_STATE.multiMorphEnabled);
+        expect(sut.getLipSyncState().multiMorphEnabled).toBe(
+            DEFAULT_LIPSYNC_STATE.multiMorphEnabled
+        );
     });
 
     it('calls triggerAutoSave', () => {
@@ -256,7 +261,12 @@ describe('setLipSyncState', () => {
         sut.setLipSyncIntensity(0.9);
 
         // Then replace entire state with a minimal object
-        const partial = { enabled: false, sensitivity: 0.1, intensity: 0.2, multiMorphEnabled: true };
+        const partial = {
+            enabled: false,
+            sensitivity: 0.1,
+            intensity: 0.2,
+            multiMorphEnabled: true,
+        };
         sut.setLipSyncState(partial);
         expect(sut.getLipSyncState()).toEqual(partial);
 

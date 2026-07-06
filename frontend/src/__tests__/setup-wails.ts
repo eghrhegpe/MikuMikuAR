@@ -68,16 +68,32 @@ vi.mock('@babylonjs/core/Engines/engine', () => ({
     Engine: class {
         _renderLoops = [];
         _features = {};
-        runRenderLoop(cb) { if (cb) this._renderLoops.push(cb); }
-        stopRenderLoop() { this._renderLoops = []; }
-        getRenderWidth() { return 800; }
-        getRenderHeight() { return 600; }
+        runRenderLoop(cb) {
+            if (cb) {
+                this._renderLoops.push(cb);
+            }
+        }
+        stopRenderLoop() {
+            this._renderLoops = [];
+        }
+        getRenderWidth() {
+            return 800;
+        }
+        getRenderHeight() {
+            return 600;
+        }
         resize() {}
         clear() {}
-        getClassName() { return 'Engine'; }
+        getClassName() {
+            return 'Engine';
+        }
         setHardwareScalingLevel() {}
-        getHardwareScalingLevel() { return 1; }
-        createRenderPassId() { return 0; }
+        getHardwareScalingLevel() {
+            return 1;
+        }
+        createRenderPassId() {
+            return 0;
+        }
         releaseRenderPassId() {}
     },
 }));

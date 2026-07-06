@@ -73,8 +73,8 @@ describe('generateIdleVmd', () => {
     });
 
     it('speed=0.1 (minimum) produces longer loop', () => {
-        const slow = generateIdleVmd({ ...state, speed: 0.1}, [], BONES_CENTER_UPPER);
-        const fast = generateIdleVmd({ ...state, speed: 10}, [], BONES_CENTER_UPPER);
+        const slow = generateIdleVmd({ ...state, speed: 0.1 }, [], BONES_CENTER_UPPER);
+        const fast = generateIdleVmd({ ...state, speed: 10 }, [], BONES_CENTER_UPPER);
         // 极慢速度 → 更多帧 → 更大文件
         expect(slow.byteLength).toBeGreaterThan(fast.byteLength);
     });
@@ -239,7 +239,15 @@ describe('generateAutoDanceVmd', () => {
 
     it('includes emotion morphs when smile morphs available', () => {
         // 提供带笑い的 morph 名列表，触发情绪轮
-        const morphsWithSmile = ['まばたき', '笑い', '悲しみ', '怒り', 'びっくり', '照れ', 'ウィンク'];
+        const morphsWithSmile = [
+            'まばたき',
+            '笑い',
+            '悲しみ',
+            '怒り',
+            'びっくり',
+            '照れ',
+            'ウィンク',
+        ];
         const buf2 = generateAutoDanceVmd(state, 120, morphsWithSmile, BONES_ALL);
         const view = new DataView(buf2);
         const boneCount = view.getUint32(50, true);
@@ -325,7 +333,9 @@ function _parseVmdBones(buf: ArrayBuffer): Record<string, number> {
         const off = 54 + i * 111;
         const raw = new Uint8Array(buf, off, 15);
         const name = decoder.decode(raw).replace(/\0/g, '').trim();
-        if (!name) continue;
+        if (!name) {
+            continue;
+        }
         bones[name] = (bones[name] || 0) + 1;
     }
     return bones;
@@ -333,15 +343,39 @@ function _parseVmdBones(buf: ArrayBuffer): Record<string, number> {
 
 /** 完整标准 MMD 骨骼集（108 骨骼典型子集，覆盖程序化动作的所有候选） */
 const BONES_108_STANDARD = [
-    '全ての親', 'センター', 'グルーブ', '腰',
-    '上半身', '上半身2', '首', '頭',
-    '左肩', '右肩', '左腕', '右腕',
-    '左ひじ', '右ひじ', '左手首', '右手首',
-    '左足', '右足', '左ひざ', '右ひざ',
-    '左足首', '右足首', '左つま先', '右つま先',
-    '左足ＩＫ', '右足ＩＫ', '左つま先ＩＫ', '右つま先ＩＫ',
-    '左目', '右目', '両目',
-    '左胸', '右胸',
+    '全ての親',
+    'センター',
+    'グルーブ',
+    '腰',
+    '上半身',
+    '上半身2',
+    '首',
+    '頭',
+    '左肩',
+    '右肩',
+    '左腕',
+    '右腕',
+    '左ひじ',
+    '右ひじ',
+    '左手首',
+    '右手首',
+    '左足',
+    '右足',
+    '左ひざ',
+    '右ひざ',
+    '左足首',
+    '右足首',
+    '左つま先',
+    '右つま先',
+    '左足ＩＫ',
+    '右足ＩＫ',
+    '左つま先ＩＫ',
+    '右つま先ＩＫ',
+    '左目',
+    '右目',
+    '両目',
+    '左胸',
+    '右胸',
 ];
 
 /** 完整 morph 集 */
@@ -353,7 +387,7 @@ describe('VMD 骨骼诊断', () => {
         const bones = _parseVmdBones(buf);
         const totalFrames = Object.values(bones).reduce((a, b) => a + b, 0);
         console.log(`[VMD诊断 - Idle] 总骨骼帧数: ${totalFrames}`);
-        console.log(`[VMD诊断 - Idle] 骨骼明细:`);
+        console.log('[VMD诊断 - Idle] 骨骼明细:');
         for (const [name, count] of Object.entries(bones).sort((a, b) => b[1] - a[1])) {
             console.log(`  ${name}: ${count}帧`);
         }
@@ -366,7 +400,7 @@ describe('VMD 骨骼诊断', () => {
         const bones = _parseVmdBones(buf);
         const totalFrames = Object.values(bones).reduce((a, b) => a + b, 0);
         console.log(`[VMD诊断 - AutoDance] 总骨骼帧数: ${totalFrames}`);
-        console.log(`[VMD诊断 - AutoDance] 骨骼明细:`);
+        console.log('[VMD诊断 - AutoDance] 骨骼明细:');
         for (const [name, count] of Object.entries(bones).sort((a, b) => b[1] - a[1])) {
             console.log(`  ${name}: ${count}帧`);
         }

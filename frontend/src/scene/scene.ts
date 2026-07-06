@@ -46,6 +46,7 @@ import {
     setModelRegistry,
     propRegistry,
     envState,
+    uiState,
     triggerAutoSave,
     setTriggerAutoSave,
     getMmdRuntimeType,
@@ -88,7 +89,12 @@ export {
 export type { MaterialCategoryParams, MaterialCategory } from './manager/material';
 
 import { ModelManager } from './manager/model-manager';
-import { updateProcMotion, createProcBeatDetector, getProcBeatDetector, onModelRemoved } from './motion/proc-motion-bridge';
+import {
+    updateProcMotion,
+    createProcBeatDetector,
+    getProcBeatDetector,
+    onModelRemoved,
+} from './motion/proc-motion-bridge';
 import { updateLipSync, initLipSync } from './motion/lipsync-bridge';
 import { triggerAutoSaveImpl } from './scene-serialize';
 
@@ -96,6 +102,22 @@ import { triggerAutoSaveImpl } from './scene-serialize';
 export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true, stencil: true });
 export const scene = new Scene(engine);
 scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
+
+/**
+ * 统一应用帧率控制：垂直同步 + 帧率上限。
+ * - 垂直同步关闭（vsync=false）：解除本应用层限帧（engine.maxFPS=0）。
+ *   注意：浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，天然与显示器刷新同步，
+ *   无法在 Web 层真正关闭 vsync；此开关等价于"不施加任何人为限帧"。
+ * - 垂直同步开启（默认）：应用帧率上限 fpsLimit（0=不限制=原生刷新同步）。
+ */
+export function applyFrameControl(): void {
+    if (uiState.vsync === false) {
+        engine.maxFPS = 0; // 关闭垂直同步：不限帧
+        return;
+    }
+    const limit = uiState.fpsLimit ?? 0;
+    engine.maxFPS = limit > 0 ? limit : undefined;
+}
 
 export let modelManager: ModelManager;
 
@@ -249,7 +271,12 @@ export function getScene(): Scene {
 }
 
 // Re-exports from extracted sub-modules (zero-change for consumers)
-export { loadVMDMotion, loadVMDFromPath, loadCameraVmdFromPath, loadVPDPose } from './motion/vmd-loader';
+export {
+    loadVMDMotion,
+    loadVMDFromPath,
+    loadCameraVmdFromPath,
+    loadVPDPose,
+} from './motion/vmd-loader';
 export { updatePlaybackUI, seekFromEvent, initPlaybackObservables } from './motion/playback';
 export {
     dom,
@@ -311,11 +338,6 @@ export { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
 export { createCloth, buildClothUpdateFn, disposeCloth } from '../physics/xpbd-cloth';
 export type { ClothInstance, ClothConfig } from '../physics/xpbd-cloth';
 export { SdfCollider, DEFAULT_BODY_CAPSULES } from '../physics/xpbd-collider';
-export {
-    SaveThumbnail,
-    SaveLastScene,
-    LoadLastScene,
-    SetEnvState,
-} from '../core/wails-bindings';
+export { SaveThumbnail, SaveLastScene, LoadLastScene, SetEnvState } from '../core/wails-bindings';
 export type { LightState, StageLightState } from './render/lighting';
 export type { RenderState } from './render/renderer';

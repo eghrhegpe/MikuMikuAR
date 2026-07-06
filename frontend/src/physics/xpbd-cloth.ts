@@ -28,7 +28,9 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 let _debugUpdateFn: ((solver: XpbdSolver, collider: SdfCollider | null) => void) | null = null;
 
 /** 设置调试更新回调（由 cloth-manager 调用） */
-export function setDebugUpdateFn(fn: ((solver: XpbdSolver, collider: SdfCollider | null) => void) | null): void {
+export function setDebugUpdateFn(
+    fn: ((solver: XpbdSolver, collider: SdfCollider | null) => void) | null
+): void {
     _debugUpdateFn = fn;
 }
 
@@ -291,12 +293,14 @@ export function buildClothUpdateFn(
     cloth: ClothInstance,
     anchorMatrixFn: (boneName: string) => Float32Array | null,
     collider?: SdfCollider | null,
-    getTimeScale?: () => number,
+    getTimeScale?: () => number
 ): (dt: number) => void {
     // 所有粒子在创建时的局部位置缓存（相对于 anchor bone 初始位置）
     const localOffsets: [number, number, number][] = [];
     // 以第一行锚点粒子的平均位置作为局部原点
-    let originX = 0, originY = 0, originZ = 0;
+    let originX = 0,
+        originY = 0,
+        originZ = 0;
     for (const idx of cloth.anchorIndices) {
         const p = cloth.solver.particles[idx];
         originX += p.p[0];

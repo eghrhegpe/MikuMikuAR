@@ -2,12 +2,7 @@
 // 职责: 收集场景引用资源、重写 libraryRef、调用 Go 后端打包/解包
 // 依赖: scene-serialize.ts + config.ts + wails bindings
 
-import {
-    libraryRoot,
-    externalPaths,
-    setStatus,
-    setLibraryRoot,
-} from '../core/config';
+import { libraryRoot, externalPaths, setStatus, setLibraryRoot } from '../core/config';
 import { computeLibraryRef, resolveLibraryRef } from '../core/utils';
 import {
     serializeScene,
@@ -42,9 +37,13 @@ function collectSceneAssets(scene: SceneFile): string[] {
     const paths = new Set<string>();
 
     function add(filePath: string | undefined | null, libraryRef?: string) {
-        if (!filePath && !libraryRef) return;
+        if (!filePath && !libraryRef) {
+            return;
+        }
         const resolved = resolvePathFromRef(filePath ?? '', libraryRef);
-        if (resolved) paths.add(resolved);
+        if (resolved) {
+            paths.add(resolved);
+        }
     }
 
     // Models (PMX)
@@ -102,12 +101,19 @@ async function collectModelTextures(pmxPath: string): Promise<string[]> {
 function rewriteRefsForBundle(scene: SceneFile, libraryRoot: string): SceneFile {
     const rewritten = JSON.parse(JSON.stringify(scene)) as SceneFile;
 
-    function rewritePath(filePath: string | undefined | null, libraryRef: string | undefined): string | undefined {
-        if (!filePath && !libraryRef) return undefined;
+    function rewritePath(
+        filePath: string | undefined | null,
+        libraryRef: string | undefined
+    ): string | undefined {
+        if (!filePath && !libraryRef) {
+            return undefined;
+        }
 
         // 尝试解析绝对路径
         const abs = resolvePathFromRef(filePath ?? '', libraryRef);
-        if (!abs) return undefined;
+        if (!abs) {
+            return undefined;
+        }
 
         // 计算在 bundle assets/ 内的相对路径
         return _bundleInternalPath(abs, libraryRoot);
@@ -118,7 +124,7 @@ function rewriteRefsForBundle(scene: SceneFile, libraryRoot: string): SceneFile 
         const newRef = rewritePath(m.filePath, m.libraryRef);
         if (newRef) {
             m.libraryRef = newRef;
-            m.filePath = '';  // 清除绝对路径，只保留 libraryRef
+            m.filePath = ''; // 清除绝对路径，只保留 libraryRef
         }
         // VMD
         const vmdRef = rewritePath(m.vmdPath, m.vmdLibraryRef);
@@ -228,7 +234,9 @@ export async function exportSceneBundle(): Promise<void> {
 /** 导入场景 bundle zip 文件。 */
 export async function importSceneBundle(): Promise<void> {
     const zipPath = await SelectSceneOpenFile();
-    if (!zipPath) return;
+    if (!zipPath) {
+        return;
+    }
 
     setStatus('正在解包场景…', true);
     try {
@@ -259,7 +267,7 @@ export async function importSceneBundle(): Promise<void> {
 
         try {
             await deserializeScene(sceneData);
-            setStatus(`✓ 场景包已导入`, true);
+            setStatus('✓ 场景包已导入', true);
         } finally {
             // 恢复 libraryRoot
             setLibraryRoot(origRoot);

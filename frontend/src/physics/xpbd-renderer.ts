@@ -247,12 +247,7 @@ export class XpbdRenderer {
             ) as LinesMesh;
             this.bendLines.color = new Color3(color[0], color[1], color[2]);
         } else {
-            this.bendLines.updateVerticesData(
-                'position',
-                new Float32Array(positions),
-                false,
-                true
-            );
+            this.bendLines.updateVerticesData('position', new Float32Array(positions), false, true);
         }
     }
 

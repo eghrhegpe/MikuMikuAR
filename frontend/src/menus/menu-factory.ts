@@ -2,13 +2,7 @@
 // 将 4 个 showXxxMenu 的模板代码（class 清理 / dataset / 复用 / reset）压缩为 1 行调用
 // 参见 docs/menu-architecture.md §「showXxxMenu 入口模式」
 
-import {
-    dom,
-    closeAllOverlays,
-    getMenuWrapper,
-    PopupLevel,
-    PopupRow,
-} from '../core/config';
+import { dom, closeAllOverlays, getMenuWrapper, PopupLevel, PopupRow } from '../core/config';
 import { SlideMenu } from './menu';
 
 /** 不含 container/onClose 的菜单回调（由工厂统一注入） */
@@ -80,7 +74,9 @@ export function registerPopupMenu(config: RegisteredPopupMenuConfig): PopupMenuH
     const getMenu = (): SlideMenu | null => menu;
 
     const refreshRoot = (): void => {
-        if (!menu) return;
+        if (!menu) {
+            return;
+        }
         const root = menu.getLevel(0);
         if (root && config.buildRootItems) {
             root.items = config.buildRootItems();

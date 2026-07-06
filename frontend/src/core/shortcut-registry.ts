@@ -3,16 +3,16 @@
 // KeyboardEvent.code is used for key matching (e.g. 'Digit1', 'Space', 'Escape', 'KeyA').
 
 export interface ShortcutDef {
-    id: string;           // unique, e.g. 'toggle:models'
-    label: string;        // Chinese label, e.g. '模型库'
-    defaultKey: string;   // KeyboardEvent.code value, e.g. 'Digit1'
+    id: string; // unique, e.g. 'toggle:models'
+    label: string; // Chinese label, e.g. '模型库'
+    defaultKey: string; // KeyboardEvent.code value, e.g. 'Digit1'
     defaultCtrl?: boolean;
     defaultShift?: boolean;
     defaultAlt?: boolean;
-    prevent?: boolean;    // call e.preventDefault()
+    prevent?: boolean; // call e.preventDefault()
     handler: () => void | Promise<void>;
-    scope?: string;       // 'global' | 'menu' | 'dialog' | 'slider' (default 'global')
-    group: string;        // UI grouping, e.g. '弹窗导航' '播放控制'
+    scope?: string; // 'global' | 'menu' | 'dialog' | 'slider' (default 'global')
+    group: string; // UI grouping, e.g. '弹窗导航' '播放控制'
 }
 
 // Custom binding overrides stored in-memory (loaded from uiState at init)
@@ -57,22 +57,21 @@ function getEffectiveBinding(def: ShortcutDef): EffectiveBinding {
 }
 
 function bindingMatches(e: KeyboardEvent, b: EffectiveBinding): boolean {
-    return (
-        e.code === b.key
-        && e.ctrlKey === b.ctrl
-        && e.shiftKey === b.shift
-        && e.altKey === b.alt
-    );
+    return e.code === b.key && e.ctrlKey === b.ctrl && e.shiftKey === b.shift && e.altKey === b.alt;
 }
 
 function isInputElement(el: EventTarget | null): boolean {
-    if (!el || !(el instanceof HTMLElement)) return false;
+    if (!el || !(el instanceof HTMLElement)) {
+        return false;
+    }
     const tag = el.tagName;
     return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
 }
 
 function isInsideSlider(el: EventTarget | null): boolean {
-    if (!el || !(el instanceof HTMLElement)) return false;
+    if (!el || !(el instanceof HTMLElement)) {
+        return false;
+    }
     return !!el.closest('.cs-slider, .color-slider');
 }
 
@@ -119,7 +118,7 @@ export function setKeyBinding(
     key: string,
     ctrl?: boolean,
     shift?: boolean,
-    alt?: boolean,
+    alt?: boolean
 ): { ok: true } | { ok: false; conflictId: string; conflictLabel: string } {
     const prospective: EffectiveBinding = {
         key,
@@ -130,13 +129,15 @@ export function setKeyBinding(
 
     // Check all other shortcuts for conflict
     for (const [otherId, otherDef] of _shortcuts) {
-        if (otherId === id) continue;
+        if (otherId === id) {
+            continue;
+        }
         const otherBinding = getEffectiveBinding(otherDef);
         if (
-            prospective.key === otherBinding.key
-            && prospective.ctrl === otherBinding.ctrl
-            && prospective.shift === otherBinding.shift
-            && prospective.alt === otherBinding.alt
+            prospective.key === otherBinding.key &&
+            prospective.ctrl === otherBinding.ctrl &&
+            prospective.shift === otherBinding.shift &&
+            prospective.alt === otherBinding.alt
         ) {
             return {
                 ok: false,
@@ -194,13 +195,14 @@ export function initShortcutDispatcher(): void {
 
     _keydownHandler = (e: KeyboardEvent) => {
         // Skip if target is an input element
-        if (isInputElement(e.target)) return;
+        if (isInputElement(e.target)) {
+            return;
+        }
 
         // Skip arrow keys when inside a slider
-        if (
-            (e.code === 'ArrowLeft' || e.code === 'ArrowRight')
-            && isInsideSlider(e.target)
-        ) return;
+        if ((e.code === 'ArrowLeft' || e.code === 'ArrowRight') && isInsideSlider(e.target)) {
+            return;
+        }
 
         // Find matching shortcut (first match wins)
         for (const def of _shortcuts.values()) {

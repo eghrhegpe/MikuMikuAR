@@ -67,7 +67,9 @@ export function addToggleRow(
 
     // 整行点击（除 toggle 开关外）也可切换
     row.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).closest('.toggle')) return;
+        if ((e.target as HTMLElement).closest('.toggle')) {
+            return;
+        }
         toggle.checked = !toggle.checked;
         toggle.setAttribute('aria-checked', String(toggle.checked));
         onChange(toggle.checked);
@@ -78,7 +80,9 @@ export function addToggleRow(
     // === 自更新支持 ===
     initControl(row, opts, value, (v, cached) => {
         const b = !!v;
-        if (b === cached) return false;
+        if (b === cached) {
+            return false;
+        }
         toggle.checked = b;
         toggle.setAttribute('aria-checked', String(b));
         return true;
@@ -97,18 +101,24 @@ export function initControl<T>(
     el: HTMLElement,
     opts: ControlOptions<T> | undefined,
     initial: T,
-    apply: (v: T, cached: T) => boolean,
+    apply: (v: T, cached: T) => boolean
 ): void {
-    if (!opts) return;
+    if (!opts) {
+        return;
+    }
     let cached = initial;
     const update = (): void => {
         if (opts.onUpdate) {
             opts.onUpdate(el);
             return;
         }
-        if (!opts.bind) return;
+        if (!opts.bind) {
+            return;
+        }
         const v = opts.bind();
-        if (apply(v, cached)) cached = v;
+        if (apply(v, cached)) {
+            cached = v;
+        }
     };
     getCurrentRenderingMenu()?.registerControl(update);
     update();
@@ -307,7 +317,9 @@ export function addSliderRow(
 
     // === 自更新支持 ===
     initControl(row, opts, value, (v, cached) => {
-        if (!Number.isFinite(v) || v === cached) return false;
+        if (!Number.isFinite(v) || v === cached) {
+            return false;
+        }
         updateDisplay(v);
         return true;
     });
@@ -368,9 +380,20 @@ export function addDangerRow(
     label: string,
     onClick: () => void
 ): HTMLElement {
-    return slideRow(container, icon, label, false, onClick, undefined, undefined, undefined, undefined, {
-        variant: 'danger',
-    });
+    return slideRow(
+        container,
+        icon,
+        label,
+        false,
+        onClick,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+            variant: 'danger',
+        }
+    );
 }
 
 // ===================================================================
@@ -381,14 +404,21 @@ export function addDangerRow(
  * 创建字段行（左 label + 右 value），替代手动拼接的
  * `div.slide-item > span.slide-label.field-label + span.field-value`
  */
-export function addFieldRow(
-    container: HTMLElement,
-    label: string,
-    value: string
-): HTMLElement {
-    return slideRow(container, '', label, false, () => {}, undefined, undefined, undefined, undefined, {
-        rightLabel: value,
-    });
+export function addFieldRow(container: HTMLElement, label: string, value: string): HTMLElement {
+    return slideRow(
+        container,
+        '',
+        label,
+        false,
+        () => {},
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+            rightLabel: value,
+        }
+    );
 }
 
 // ===================================================================
@@ -420,8 +450,14 @@ export function toggleRow(
     onChange: (v: boolean) => void,
     onSave?: () => void
 ): void {
-    addToggleRow(container, label, value, (v) => {
-        onChange(v);
-        onSave?.();
-    }, icon);
+    addToggleRow(
+        container,
+        label,
+        value,
+        (v) => {
+            onChange(v);
+            onSave?.();
+        },
+        icon
+    );
 }

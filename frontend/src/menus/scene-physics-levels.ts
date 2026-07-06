@@ -43,7 +43,9 @@ import { getSceneMenu, refreshSceneRoot } from './scene-menu';
  */
 function _patchToggle(target: string, newValue: boolean): void {
     const row = document.querySelector(`[data-row-key="${target}"]`) as HTMLElement | null;
-    if (!row) return;
+    if (!row) {
+        return;
+    }
     const sw = row.querySelector('.switch');
     if (sw) {
         sw.classList.toggle('on', newValue);
@@ -230,10 +232,16 @@ export function buildWasmPhysicsLevel(): PopupLevel {
     }
 
     const CAT_LABELS: Record<string, string> = {
-        skirt: '裙子', chest: '胸部', hair: '头发', accessory: '配件',
+        skirt: '裙子',
+        chest: '胸部',
+        hair: '头发',
+        accessory: '配件',
     };
     const CAT_ICONS: Record<string, string> = {
-        skirt: 'lucide:shirt', chest: 'lucide:heart', hair: 'lucide:person-standing', accessory: 'lucide:gem',
+        skirt: 'lucide:shirt',
+        chest: 'lucide:heart',
+        hair: 'lucide:person-standing',
+        accessory: 'lucide:gem',
     };
 
     for (const cat of categories) {
@@ -265,40 +273,76 @@ export function buildPhysicsDebugLevel(): PopupLevel {
         dir: '',
         items: [
             {
-                kind: 'toggle', label: '材质线框', icon: 'lucide:square',
+                kind: 'toggle',
+                label: '材质线框',
+                icon: 'lucide:square',
                 target: 'debug:wireframe',
                 toggleValue: inst?.wireframe ?? false,
-                onToggleChange: (v) => { if (id) setModelWireframe(id, v); _patchToggle('debug:wireframe', v); },
+                onToggleChange: (v) => {
+                    if (id) {
+                        setModelWireframe(id, v);
+                    }
+                    _patchToggle('debug:wireframe', v);
+                },
             } as PopupRow,
             {
-                kind: 'toggle', label: '骨骼线', icon: 'lucide:git-branch',
+                kind: 'toggle',
+                label: '骨骼线',
+                icon: 'lucide:git-branch',
                 target: 'debug:bonelines',
                 toggleValue: inst?.showBoneLines ?? false,
-                onToggleChange: (v) => { if (id) setModelBoneLinesVis(id, v); _patchToggle('debug:bonelines', v); },
+                onToggleChange: (v) => {
+                    if (id) {
+                        setModelBoneLinesVis(id, v);
+                    }
+                    _patchToggle('debug:bonelines', v);
+                },
             } as PopupRow,
             {
-                kind: 'toggle', label: '骨骼关节球', icon: 'lucide:circle-dot',
+                kind: 'toggle',
+                label: '骨骼关节球',
+                icon: 'lucide:circle-dot',
                 target: 'debug:bonejoints',
                 toggleValue: inst?.showBoneJoints ?? false,
-                onToggleChange: (v) => { if (id) setModelBoneJointsVis(id, v); _patchToggle('debug:bonejoints', v); },
+                onToggleChange: (v) => {
+                    if (id) {
+                        setModelBoneJointsVis(id, v);
+                    }
+                    _patchToggle('debug:bonejoints', v);
+                },
             } as PopupRow,
             {
-                kind: 'toggle', label: '粒子球', icon: 'lucide:circle',
+                kind: 'toggle',
+                label: '粒子球',
+                icon: 'lucide:circle',
                 target: 'debug:particles',
                 toggleValue: dbg.particles,
-                onToggleChange: (v) => { setDebugParticles(v); _patchToggle('debug:particles', v); },
+                onToggleChange: (v) => {
+                    setDebugParticles(v);
+                    _patchToggle('debug:particles', v);
+                },
             } as PopupRow,
             {
-                kind: 'toggle', label: '约束线', icon: 'lucide:minus',
+                kind: 'toggle',
+                label: '约束线',
+                icon: 'lucide:minus',
                 target: 'debug:constraints',
                 toggleValue: dbg.constraints,
-                onToggleChange: (v) => { setDebugConstraints(v); _patchToggle('debug:constraints', v); },
+                onToggleChange: (v) => {
+                    setDebugConstraints(v);
+                    _patchToggle('debug:constraints', v);
+                },
             } as PopupRow,
             {
-                kind: 'toggle', label: '碰撞体线框', icon: 'lucide:box',
+                kind: 'toggle',
+                label: '碰撞体线框',
+                icon: 'lucide:box',
                 target: 'debug:colliders',
                 toggleValue: dbg.colliders,
-                onToggleChange: (v) => { setDebugColliders(v); _patchToggle('debug:colliders', v); },
+                onToggleChange: (v) => {
+                    setDebugColliders(v);
+                    _patchToggle('debug:colliders', v);
+                },
             } as PopupRow,
         ],
     };

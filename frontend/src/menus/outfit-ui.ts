@@ -54,36 +54,76 @@ export function buildOutfitLevel(id: string): PopupLevel {
                 const circleIcon = () => createIconifyIcon('lucide:circle');
 
                 cardContainer(container, (c) => {
-                    slideRow(c, '', '默认', false, async () => {
-                        if (_loading) return;
-                        _loading = true;
-                        setStatus('⏳ 切换变体中…', true);
-                        const _r = await tryCatchStatus(() => applyOutfitVariant(id, '默认'), '✗ 切换变体失败');
-                        if (_r !== undefined) {
-                            setStatus('✓ 变体已切换', true);
-                        }
-                        _loading = false;
-                        await _render();
-                    }, undefined, undefined, undefined, undefined, {
-                        iconFactory: () => createIconifyIcon(active === undefined || active === '默认' ? 'lucide:check-circle' : 'lucide:circle'),
-                    });
-
-                    for (const v of outfit.variants) {
-                        // 带 meshFile 的变体显示 FBX 标记
-                        const label = v.meshFile ? 'FBX' : '';
-                        slideRow(c, label, v.name, false, async () => {
-                            if (_loading) return;
+                    slideRow(
+                        c,
+                        '',
+                        '默认',
+                        false,
+                        async () => {
+                            if (_loading) {
+                                return;
+                            }
                             _loading = true;
                             setStatus('⏳ 切换变体中…', true);
-                            const _r = await tryCatchStatus(() => applyOutfitVariant(id, v.name), '✗ 切换变体失败');
+                            const _r = await tryCatchStatus(
+                                () => applyOutfitVariant(id, '默认'),
+                                '✗ 切换变体失败'
+                            );
                             if (_r !== undefined) {
                                 setStatus('✓ 变体已切换', true);
                             }
                             _loading = false;
                             await _render();
-                        }, undefined, undefined, undefined, undefined, {
-                            iconFactory: () => createIconifyIcon(active === v.name ? 'lucide:check-circle' : 'lucide:circle'),
-                        });
+                        },
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        {
+                            iconFactory: () =>
+                                createIconifyIcon(
+                                    active === undefined || active === '默认'
+                                        ? 'lucide:check-circle'
+                                        : 'lucide:circle'
+                                ),
+                        }
+                    );
+
+                    for (const v of outfit.variants) {
+                        // 带 meshFile 的变体显示 FBX 标记
+                        const label = v.meshFile ? 'FBX' : '';
+                        slideRow(
+                            c,
+                            label,
+                            v.name,
+                            false,
+                            async () => {
+                                if (_loading) {
+                                    return;
+                                }
+                                _loading = true;
+                                setStatus('⏳ 切换变体中…', true);
+                                const _r = await tryCatchStatus(
+                                    () => applyOutfitVariant(id, v.name),
+                                    '✗ 切换变体失败'
+                                );
+                                if (_r !== undefined) {
+                                    setStatus('✓ 变体已切换', true);
+                                }
+                                _loading = false;
+                                await _render();
+                            },
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            {
+                                iconFactory: () =>
+                                    createIconifyIcon(
+                                        active === v.name ? 'lucide:check-circle' : 'lucide:circle'
+                                    ),
+                            }
+                        );
                     }
 
                     const resetBtn = document.createElement('button');

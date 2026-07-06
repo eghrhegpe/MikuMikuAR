@@ -22,19 +22,19 @@ export const PROC_VMD_NAME_LIFELIKE = 'LifelikeMotion';
 
 /** 程序化动作微动效果类别（用于 boneToggles 开关） */
 export const PROC_MOTION_BONE_CATEGORIES = [
-    'center',        // センター（重心弹跳/摇摆）
-    'upper',         // 上半身（呼吸/前倾）
-    'upper2',        // 上半身2（扭转）
-    'waist',         // 腰（扭胯）
-    'head',          // 頭（点头）
-    'arm',           // 手臂（外展+前后甩动）
-    'groove',        // グルーブ
-    'shoulder',      // 肩部（耸肩）
-    'allParent',     // 全ての親（微晃）
-    'wrist',         // 手腕（节拍下压）
-    'footIk',        // 足IK（踏步）
-    'blink',         // 眨眼（待机模式）
-    'emotion',       // 表情情绪轮（AutoDance 模式）
+    'center', // センター（重心弹跳/摇摆）
+    'upper', // 上半身（呼吸/前倾）
+    'upper2', // 上半身2（扭转）
+    'waist', // 腰（扭胯）
+    'head', // 頭（点头）
+    'arm', // 手臂（外展+前后甩动）
+    'groove', // グルーブ
+    'shoulder', // 肩部（耸肩）
+    'allParent', // 全ての親（微晃）
+    'wrist', // 手腕（节拍下压）
+    'footIk', // 足IK（踏步）
+    'blink', // 眨眼（待机模式）
+    'emotion', // 表情情绪轮（AutoDance 模式）
 ] as const;
 export type ProcMotionBoneCategory = (typeof PROC_MOTION_BONE_CATEGORIES)[number];
 
@@ -86,10 +86,10 @@ export const DEFAULT_PROC_STATE: ProcMotionState = {
     vpdApplyEnabled: false,
     interpOverride: 'auto',
     multiMorphEnabled: false,
-    eyeTrackingEnabled: true,  // 默认开启（视线追踪）
+    eyeTrackingEnabled: true, // 默认开启（视线追踪）
     headTrackingEnabled: false, // 默认关闭（头部跟随较影响动画）
-    lifelikeEnabled: false,    // 默认关闭（用户手动开启）
-    lifelikeIntensity: 0.3,    // 默认强度偏低（微动不宜过强）
+    lifelikeEnabled: false, // 默认关闭（用户手动开启）
+    lifelikeIntensity: 0.3, // 默认强度偏低（微动不宜过强）
 };
 
 // ============ 骨骼候选名 ============
@@ -101,10 +101,22 @@ const BONE_HEAD_CANDIDATES = ['頭', 'head', 'Head', '頭頂'];
 
 // 手臂 —— 加入 W 后缀变体
 const BONE_LARM_CANDIDATES = [
-    '左腕', '左腕W', '左arm', '左腕捩', 'left arm', 'LeftArm', 'Left Arm'
+    '左腕',
+    '左腕W',
+    '左arm',
+    '左腕捩',
+    'left arm',
+    'LeftArm',
+    'Left Arm',
 ];
 const BONE_RARM_CANDIDATES = [
-    '右腕', '右腕W', '右arm', '右腕捩', 'right arm', 'RightArm', 'Right Arm'
+    '右腕',
+    '右腕W',
+    '右arm',
+    '右腕捩',
+    'right arm',
+    'RightArm',
+    'Right Arm',
 ];
 
 // 手腕（手首）—— 若有则驱动
@@ -113,10 +125,24 @@ const BONE_WRIST_R_CANDIDATES = ['右手首', '右リスト', 'right wrist', 'Ri
 
 // 肩部（包含 P / C 变体）
 const BONE_SHOULDER_L_CANDIDATES = [
-    '左肩', '左肩P', '左肩C', '左肩捩', 'left shoulder', 'LeftShoulder', 'LeftShoulderP', 'LeftShoulderC'
+    '左肩',
+    '左肩P',
+    '左肩C',
+    '左肩捩',
+    'left shoulder',
+    'LeftShoulder',
+    'LeftShoulderP',
+    'LeftShoulderC',
 ];
 const BONE_SHOULDER_R_CANDIDATES = [
-    '右肩', '右肩P', '右肩C', '右肩捩', 'right shoulder', 'RightShoulder', 'RightShoulderP', 'RightShoulderC'
+    '右肩',
+    '右肩P',
+    '右肩C',
+    '右肩捩',
+    'right shoulder',
+    'RightShoulder',
+    'RightShoulderP',
+    'RightShoulderC',
 ];
 
 // 躯干辅助
@@ -132,7 +158,9 @@ const BONE_LEG_IK_R_CANDIDATES = ['右足IK', 'right leg ik', 'RightLegIK'];
 function _matchBone(actualBones: string[], candidates: string[]): string | null {
     for (const c of candidates) {
         if (actualBones.includes(c)) {
-            if (canEncodeName(c)) return c;
+            if (canEncodeName(c)) {
+                return c;
+            }
             console.warn(`[procedural-motion] 骨骼 "${c}" 无法编码为 Shift-JIS，跳过`);
             return null; // 不继续 fallback 到其他候选（名不同，对应不同骨骼）
         }
@@ -142,8 +170,16 @@ function _matchBone(actualBones: string[], candidates: string[]): string | null 
 
 // ============ Morph 候选名（扩充眨眼） ============
 const MORPH_BLINK_CANDIDATES = [
-    'まばたき', 'blink', 'Blink', '眨眼', 'wink',
-    'eye close', 'EyeClose', '眼', '目', '閉眼'
+    'まばたき',
+    'blink',
+    'Blink',
+    '眨眼',
+    'wink',
+    'eye close',
+    'EyeClose',
+    '眼',
+    '目',
+    '閉眼',
 ];
 
 const FPS = 30;
@@ -167,7 +203,9 @@ export function generateIdleVmd(
     const morphs: MorphKeyFrame[] = [];
 
     // ---------- 眨眼（伪随机间隔 2~8s，自然频率） ----------
-    const blinkMorph = state.boneToggles.blink ? MORPH_BLINK_CANDIDATES.find((c) => morphNames.includes(c)) : null;
+    const blinkMorph = state.boneToggles.blink
+        ? MORPH_BLINK_CANDIDATES.find((c) => morphNames.includes(c))
+        : null;
     if (blinkMorph) {
         const blinkA = Math.round(60 / safeSpeed);
         const blinkB = Math.round(240 / safeSpeed);
@@ -204,16 +242,40 @@ export function generateIdleVmd(
             const rx = _clamp1(Math.sin(phase) * breathAmp);
             const w = Math.sqrt(Math.max(0, 1 - rx * rx));
             if (upperBone) {
-                bones.push({ name: upperBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, 0, w] });
+                bones.push({
+                    name: upperBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [rx, 0, 0, w],
+                });
             }
             if (neckBone) {
                 const nrx = _clamp1(Math.sin(phase) * breathAmp * 0.6);
                 const nw = Math.sqrt(Math.max(0, 1 - nrx * nrx));
-                bones.push({ name: neckBone, frame: f, position: [0, 0, 0], rotation: [nrx, 0, 0, nw] });
+                bones.push({
+                    name: neckBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [nrx, 0, 0, nw],
+                });
             }
         }
-        if (upperBone) bones.push({ name: upperBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (neckBone) bones.push({ name: neckBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (upperBone) {
+            bones.push({
+                name: upperBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (neckBone) {
+            bones.push({
+                name: neckBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // ---------- 上半身2 ----------
@@ -223,9 +285,19 @@ export function generateIdleVmd(
             const phase = (f / loopFrames) * Math.PI * 2;
             const rx = _clamp1(Math.sin(phase * 0.7 + 0.3) * amp2);
             const w = Math.sqrt(Math.max(0, 1 - rx * rx));
-            bones.push({ name: upper2Bone, frame: f, position: [0, 0, 0], rotation: [rx, 0, 0, w] });
+            bones.push({
+                name: upper2Bone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, 0, 0, w],
+            });
         }
-        bones.push({ name: upper2Bone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: upper2Bone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- 腰 ----------
@@ -237,7 +309,12 @@ export function generateIdleVmd(
             const w = Math.sqrt(Math.max(0, 1 - rz * rz));
             bones.push({ name: waistBone, frame: f, position: [0, 0, 0], rotation: [0, 0, rz, w] });
         }
-        bones.push({ name: waistBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: waistBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- 全ての親 ----------
@@ -247,10 +324,20 @@ export function generateIdleVmd(
             const t = (f / loopFrames) * Math.PI * 2;
             const rx = _clamp1(Math.sin(t * 0.2 + 1.1) * parentAmp);
             const rz = _clamp1(Math.sin(t * 0.3 + 2.3) * parentAmp);
-            const w = Math.sqrt(Math.max(0, 1 - rx*rx - rz*rz));
-            bones.push({ name: allParentBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
+            const w = Math.sqrt(Math.max(0, 1 - rx * rx - rz * rz));
+            bones.push({
+                name: allParentBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, 0, rz, w],
+            });
         }
-        bones.push({ name: allParentBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: allParentBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- センター ----------
@@ -291,9 +378,19 @@ export function generateIdleVmd(
             const rx = _clamp1(Math.sin(t * 0.29 + 3.7) * headMicroAmp * 0.7);
             const ry = _clamp1(Math.sin(t * 0.19 + 0.8) * headMicroAmp * 0.4);
             const w = Math.sqrt(Math.max(0, 1 - rz * rz - rx * rx - ry * ry));
-            bones.push({ name: headBone, frame: f, position: [0, 0, 0], rotation: [rx, ry, rz, w] });
+            bones.push({
+                name: headBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, ry, rz, w],
+            });
         }
-        bones.push({ name: headBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: headBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- 手臂（自然钟摆） ----------
@@ -304,14 +401,38 @@ export function generateIdleVmd(
             const rz = _clamp1(Math.sin(phase + 1.5) * armAmp);
             const w = Math.sqrt(Math.max(0, 1 - rz * rz));
             if (larmBone) {
-                bones.push({ name: larmBone, frame: f, position: [0, 0, 0], rotation: [0, 0, rz, w] });
+                bones.push({
+                    name: larmBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [0, 0, rz, w],
+                });
             }
             if (rarmBone) {
-                bones.push({ name: rarmBone, frame: f, position: [0, 0, 0], rotation: [0, 0, -rz, w] });
+                bones.push({
+                    name: rarmBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [0, 0, -rz, w],
+                });
             }
         }
-        if (larmBone) bones.push({ name: larmBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (rarmBone) bones.push({ name: rarmBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (larmBone) {
+            bones.push({
+                name: larmBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (rarmBone) {
+            bones.push({
+                name: rarmBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // ---------- 肩部 ----------
@@ -325,17 +446,41 @@ export function generateIdleVmd(
             const rz = _clamp1(Math.sin(phase + 0.1) * rotAmp);
             const w = Math.sqrt(Math.max(0, 1 - rz * rz));
             if (shoulderLBone) {
-                bones.push({ name: shoulderLBone, frame: f, position: [0, yOffset, 0], rotation: [0, 0, rz, w] });
+                bones.push({
+                    name: shoulderLBone,
+                    frame: f,
+                    position: [0, yOffset, 0],
+                    rotation: [0, 0, rz, w],
+                });
             }
             if (shoulderRBone) {
                 const rOffset = Math.sin(phase + 0.5) * shoulderAmp;
                 const rrz = _clamp1(Math.sin(phase + 0.4) * rotAmp);
                 const rw = Math.sqrt(Math.max(0, 1 - rrz * rrz));
-                bones.push({ name: shoulderRBone, frame: f, position: [0, rOffset, 0], rotation: [0, 0, rrz, rw] });
+                bones.push({
+                    name: shoulderRBone,
+                    frame: f,
+                    position: [0, rOffset, 0],
+                    rotation: [0, 0, rrz, rw],
+                });
             }
         }
-        if (shoulderLBone) bones.push({ name: shoulderLBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (shoulderRBone) bones.push({ name: shoulderRBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (shoulderLBone) {
+            bones.push({
+                name: shoulderLBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (shoulderRBone) {
+            bones.push({
+                name: shoulderRBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // ---------- 手腕（若有） ----------
@@ -346,16 +491,40 @@ export function generateIdleVmd(
             const rx = _clamp1(Math.sin(phase + 0.8) * wristAmp);
             const w = Math.sqrt(Math.max(0, 1 - rx * rx));
             if (wristLBone) {
-                bones.push({ name: wristLBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, 0, w] });
+                bones.push({
+                    name: wristLBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [rx, 0, 0, w],
+                });
             }
             if (wristRBone) {
                 const rxR = _clamp1(Math.sin(phase + 1.1) * wristAmp);
                 const wR = Math.sqrt(Math.max(0, 1 - rxR * rxR));
-                bones.push({ name: wristRBone, frame: f, position: [0, 0, 0], rotation: [rxR, 0, 0, wR] });
+                bones.push({
+                    name: wristRBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [rxR, 0, 0, wR],
+                });
             }
         }
-        if (wristLBone) bones.push({ name: wristLBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (wristRBone) bones.push({ name: wristRBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (wristLBone) {
+            bones.push({
+                name: wristLBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (wristRBone) {
+            bones.push({
+                name: wristRBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // Idle 全部用 EASE_IN_OUT（柔和呼吸感）
@@ -385,7 +554,7 @@ export function generateAutoDanceVmd(
     // ---------- 眨眼（伪随机间隔 2~8s，同 idle） ----------
     const blinkMorph = MORPH_BLINK_CANDIDATES.find((c) => morphNames.includes(c));
     if (blinkMorph) {
-        const blinkA = Math.round(60 / safeSpeed);  // ~2s
+        const blinkA = Math.round(60 / safeSpeed); // ~2s
         const blinkB = Math.round(240 / safeSpeed); // ~8s
         for (let t = blinkA, i = 0; t + 5 <= loopFrames; i++) {
             morphs.push({ name: blinkMorph, frame: t, weight: 0 });
@@ -425,15 +594,15 @@ export function generateAutoDanceVmd(
 
     // ---------- 1. センター（大幅侧摆 + 旋转 + 弹跳） ----------
     if (centerBone && state.boneToggles.center) {
-        const bodyAmp = 0.20 * intensity;      // Y轴扭动
-        const sideAmp = 0.12 * intensity;      // Z轴侧摆（新增）
-        const bobAmp = 0.06 * intensity;       // 弹跳
+        const bodyAmp = 0.2 * intensity; // Y轴扭动
+        const sideAmp = 0.12 * intensity; // Z轴侧摆（新增）
+        const bobAmp = 0.06 * intensity; // 弹跳
         for (let f = 0; f <= loopFrames; f += 3) {
             const s = sinVals[f];
             const c = cosVals[f];
             const ry = _clamp1(s * bodyAmp);
             const rz = _clamp1(c * sideAmp);
-            const w = Math.sqrt(Math.max(0, 1 - ry*ry - rz*rz));
+            const w = Math.sqrt(Math.max(0, 1 - ry * ry - rz * rz));
             const bob = Math.abs(s) * bobAmp;
             bones.push({
                 name: centerBone,
@@ -442,7 +611,12 @@ export function generateAutoDanceVmd(
                 rotation: [0, ry, rz, w],
             });
         }
-        bones.push({ name: centerBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: centerBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- 2. 上半身（前倾后仰） ----------
@@ -454,7 +628,12 @@ export function generateAutoDanceVmd(
             const w = Math.sqrt(Math.max(0, 1 - rx * rx));
             bones.push({ name: upperBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, 0, w] });
         }
-        bones.push({ name: upperBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: upperBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- 3. 上半身2（扭转） ----------
@@ -464,21 +643,36 @@ export function generateAutoDanceVmd(
             const s = sinVals[f];
             const ry = _clamp1(s * 0.6 * amp2);
             const w = Math.sqrt(Math.max(0, 1 - ry * ry));
-            bones.push({ name: upper2Bone, frame: f, position: [0, 0, 0], rotation: [0, ry, 0, w] });
+            bones.push({
+                name: upper2Bone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [0, ry, 0, w],
+            });
         }
-        bones.push({ name: upper2Bone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: upper2Bone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- 4. 腰（扭胯） ----------
     if (waistBone && state.boneToggles.waist) {
-        const waistAmp = 0.20 * intensity;
+        const waistAmp = 0.2 * intensity;
         for (let f = 0; f <= loopFrames; f += 3) {
             const s = sinVals[f + Math.round(beatFrames / 4)] || 0;
             const rz = _clamp1(-s * waistAmp);
             const w = Math.sqrt(Math.max(0, 1 - rz * rz));
             bones.push({ name: waistBone, frame: f, position: [0, 0, 0], rotation: [0, 0, rz, w] });
         }
-        bones.push({ name: waistBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: waistBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- 5. 頭 ----------
@@ -490,31 +684,60 @@ export function generateAutoDanceVmd(
             const w = Math.sqrt(Math.max(0, 1 - rz * rz));
             bones.push({ name: headBone, frame: f, position: [0, 0, 0], rotation: [0, 0, rz, w] });
         }
-        bones.push({ name: headBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: headBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- 6. 手臂（大幅外展 + 前后甩动） ----------
     if ((larmBone || rarmBone) && state.boneToggles.arm) {
-        const armAmpZ = 0.55 * intensity;      // 外展幅度（Z轴）
-        const armAmpX = 0.30 * intensity;      // 前后甩动（X轴）
+        const armAmpZ = 0.55 * intensity; // 外展幅度（Z轴）
+        const armAmpX = 0.3 * intensity; // 前后甩动（X轴）
         for (let f = 0; f <= loopFrames; f += 3) {
             const s = sinVals[f];
             const phase2 = cosVals[f + Math.round(beatFrames / 4)] || 0;
             if (larmBone) {
                 const lz = _clamp1(s * armAmpZ);
                 const lx = _clamp1(phase2 * armAmpX);
-                const w = Math.sqrt(Math.max(0, 1 - lz*lz - lx*lx));
-                bones.push({ name: larmBone, frame: f, position: [0, 0, 0], rotation: [lx, 0, lz, w] });
+                const w = Math.sqrt(Math.max(0, 1 - lz * lz - lx * lx));
+                bones.push({
+                    name: larmBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [lx, 0, lz, w],
+                });
             }
             if (rarmBone) {
                 const rz = _clamp1(-s * armAmpZ);
                 const rx = _clamp1(phase2 * armAmpX);
-                const w = Math.sqrt(Math.max(0, 1 - rz*rz - rx*rx));
-                bones.push({ name: rarmBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
+                const w = Math.sqrt(Math.max(0, 1 - rz * rz - rx * rx));
+                bones.push({
+                    name: rarmBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [rx, 0, rz, w],
+                });
             }
         }
-        if (larmBone) bones.push({ name: larmBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (rarmBone) bones.push({ name: rarmBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (larmBone) {
+            bones.push({
+                name: larmBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (rarmBone) {
+            bones.push({
+                name: rarmBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // ---------- 7. グルーブ ----------
@@ -525,14 +748,24 @@ export function generateAutoDanceVmd(
             const bob = Math.abs(s) * 0.08 * intensity;
             const ry = _clamp1(s * grooveAmp);
             const w = Math.sqrt(Math.max(0, 1 - ry * ry));
-            bones.push({ name: grooveBone, frame: f, position: [0, bob, 0], rotation: [0, ry, 0, w] });
+            bones.push({
+                name: grooveBone,
+                frame: f,
+                position: [0, bob, 0],
+                rotation: [0, ry, 0, w],
+            });
         }
-        bones.push({ name: grooveBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: grooveBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- 8. 肩部（耸肩） ----------
     if ((shoulderLBone || shoulderRBone) && state.boneToggles.shoulder) {
-        const shoulderUpAmp = 0.10 * intensity;
+        const shoulderUpAmp = 0.1 * intensity;
         const shoulderRotAmp = 0.15 * intensity;
         for (let f = 0; f <= loopFrames; f += 3) {
             const s = sinVals[f];
@@ -540,14 +773,38 @@ export function generateAutoDanceVmd(
             const rot = _clamp1(s * shoulderRotAmp);
             const w = Math.sqrt(Math.max(0, 1 - rot * rot));
             if (shoulderLBone) {
-                bones.push({ name: shoulderLBone, frame: f, position: [0, up, 0], rotation: [0, 0, rot, w] });
+                bones.push({
+                    name: shoulderLBone,
+                    frame: f,
+                    position: [0, up, 0],
+                    rotation: [0, 0, rot, w],
+                });
             }
             if (shoulderRBone) {
-                bones.push({ name: shoulderRBone, frame: f, position: [0, up, 0], rotation: [0, 0, rot, w] });
+                bones.push({
+                    name: shoulderRBone,
+                    frame: f,
+                    position: [0, up, 0],
+                    rotation: [0, 0, rot, w],
+                });
             }
         }
-        if (shoulderLBone) bones.push({ name: shoulderLBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (shoulderRBone) bones.push({ name: shoulderRBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (shoulderLBone) {
+            bones.push({
+                name: shoulderLBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (shoulderRBone) {
+            bones.push({
+                name: shoulderRBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // ---------- 9. 全ての親 ----------
@@ -557,10 +814,20 @@ export function generateAutoDanceVmd(
             const t = (f / loopFrames) * Math.PI * 2;
             const rx = _clamp1(Math.sin(t * 0.7 + 1.1) * parentAmp);
             const rz = _clamp1(Math.sin(t * 0.5 + 2.3) * parentAmp);
-            const w = Math.sqrt(Math.max(0, 1 - rx*rx - rz*rz));
-            bones.push({ name: allParentBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
+            const w = Math.sqrt(Math.max(0, 1 - rx * rx - rz * rz));
+            bones.push({
+                name: allParentBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, 0, rz, w],
+            });
         }
-        bones.push({ name: allParentBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: allParentBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---------- 10. 手腕（节拍下压 + 侧摆） ----------
@@ -571,178 +838,260 @@ export function generateAutoDanceVmd(
             const s = sinVals[f];
             const rx = _clamp1(Math.abs(s) * wristAmpX);
             const rz = _clamp1(cosVals[f] * wristAmpZ);
-            const w = Math.sqrt(Math.max(0, 1 - rx*rx - rz*rz));
+            const w = Math.sqrt(Math.max(0, 1 - rx * rx - rz * rz));
             if (wristLBone) {
-                bones.push({ name: wristLBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
+                bones.push({
+                    name: wristLBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [rx, 0, rz, w],
+                });
             }
             if (wristRBone) {
                 const rzR = _clamp1(-cosVals[f] * wristAmpZ);
-                const wR = Math.sqrt(Math.max(0, 1 - rx*rx - rzR*rzR));
-                bones.push({ name: wristRBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rzR, wR] });
+                const wR = Math.sqrt(Math.max(0, 1 - rx * rx - rzR * rzR));
+                bones.push({
+                    name: wristRBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [rx, 0, rzR, wR],
+                });
             }
         }
-        if (wristLBone) bones.push({ name: wristLBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (wristRBone) bones.push({ name: wristRBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (wristLBone) {
+            bones.push({
+                name: wristLBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (wristRBone) {
+            bones.push({
+                name: wristRBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // ---------- 11. 足IK（基础踏步） ----------
     if (state.boneToggles.footIk && (legIkLBone || legIkRBone)) {
-        const stepAmp = 0.08 * intensity;  // Z轴前后位移
-        const liftAmp = 0.03 * intensity;  // Y轴抬脚（只抬不沉，防穿地）
+        const stepAmp = 0.08 * intensity; // Z轴前后位移
+        const liftAmp = 0.03 * intensity; // Y轴抬脚（只抬不沉，防穿地）
         for (let f = 0; f <= loopFrames; f += 3) {
             const s = sinVals[f];
             if (legIkLBone) {
                 const lz = _clamp1(s * stepAmp);
                 const ly = Math.max(0, s) * liftAmp; // 只抬不沉
-                bones.push({ name: legIkLBone, frame: f, position: [0, ly, lz], rotation: [0, 0, 0, 1] });
+                bones.push({
+                    name: legIkLBone,
+                    frame: f,
+                    position: [0, ly, lz],
+                    rotation: [0, 0, 0, 1],
+                });
             }
             if (legIkRBone) {
                 const rz = _clamp1(-s * stepAmp);
                 const ry = Math.max(0, -s) * liftAmp; // 反相
-                bones.push({ name: legIkRBone, frame: f, position: [0, ry, rz], rotation: [0, 0, 0, 1] });
+                bones.push({
+                    name: legIkRBone,
+                    frame: f,
+                    position: [0, ry, rz],
+                    rotation: [0, 0, 0, 1],
+                });
             }
         }
-        if (legIkLBone) bones.push({ name: legIkLBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (legIkRBone) bones.push({ name: legIkRBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (legIkLBone) {
+            bones.push({
+                name: legIkLBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (legIkRBone) {
+            bones.push({
+                name: legIkRBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
-      // ========== 🎭 表情情绪轮（动态扫描可用 morph） ==========
+    // ========== 🎭 表情情绪轮（动态扫描可用 morph） ==========
     // 不再硬编码少数模型专有名字，而是按语义自动分类可用 morph
     if (!state.boneToggles.emotion) {
         // 表情情绪轮已关闭，跳过
     } else {
+        // 忽略纯口型/音素/眨眼 morph，专注表情 morph
+        const BLACKLIST_PATTERNS = [
+            'まばたき',
+            'blink',
+            '眨眼',
+            'wink',
+            'ウィンク',
+            'あ',
+            'い',
+            'う',
+            'え',
+            'お',
+            'a ',
+            'i ',
+            'u ',
+            'e ',
+            'o ',
+        ];
 
-    // 忽略纯口型/音素/眨眼 morph，专注表情 morph
-    const BLACKLIST_PATTERNS = [
-        'まばたき', 'blink', '眨眼', 'wink', 'ウィンク', 'あ', 'い', 'う', 'え', 'お',
-        'a ', 'i ', 'u ', 'e ', 'o ',
-    ];
+        // 按候选关键词给每个 morph 打分，选出最可能的"表情型" morph
+        function _scoreMorph(name: string, keywords: string[]): number {
+            const nameLC = name.toLowerCase();
+            let score = 0;
+            for (const kw of keywords) {
+                if (name.includes(kw) || nameLC.includes(kw.toLowerCase())) {
+                    score += 10;
+                }
+            }
+            // 惩罚音素/眨眼这类非表情 morph
+            for (const bp of BLACKLIST_PATTERNS) {
+                if (name.includes(bp)) {
+                    score -= 10;
+                }
+            }
+            return score;
+        }
 
-    // 按候选关键词给每个 morph 打分，选出最可能的"表情型" morph
-    function _scoreMorph(name: string, keywords: string[]): number {
-        const nameLC = name.toLowerCase();
-        let score = 0;
-        for (const kw of keywords) {
-            if (name.includes(kw) || nameLC.includes(kw.toLowerCase())) {
-                score += 10;
+        // 候选表情映射：luc (表情类别) → 候选关键词列表
+        const EMOTION_CANDIDATES: Record<string, string[]> = {
+            smile: ['にこり', '笑い', 'smile', 'えがお', 'happy', '喜び', '嬉しい', 'よろこび'],
+            sad: ['悲しみ', 'sad', 'cry', '泣き', '哀しみ', 'かなしみ'],
+            angry: ['怒り', 'angry', 'いかり', 'むっ', 'まゆ'],
+            surprise: ['びっくり', 'surprise', 'おどろき', '驚き', 'wonder', 'わお'],
+            worry: ['困る', 'worry', 'こまる', '悩み', 'なやみ', '困惑'],
+            serious: ['真面目', 'serious', 'まじめ', 'じと目', 'じと'],
+            shy: ['照れ', 'shy', 'てれ', 'はにかみ', '恥ずかしい'],
+            wink: ['ウィンク', 'wink', 'ういんく', 'win'],
+        };
+
+        // 为每个表情类别选出得分最高的 morph
+        const emotionMorphs = new Map<string, string>();
+        for (const [category, keywords] of Object.entries(EMOTION_CANDIDATES)) {
+            let bestName: string | null = null;
+            let bestScore = 0;
+            for (const mName of morphNames) {
+                const score = _scoreMorph(mName, keywords);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestName = mName;
+                }
+            }
+            if (bestName) {
+                emotionMorphs.set(category, bestName);
             }
         }
-        // 惩罚音素/眨眼这类非表情 morph
-        for (const bp of BLACKLIST_PATTERNS) {
-            if (name.includes(bp)) score -= 10;
-        }
-        return score;
-    }
 
-    // 候选表情映射：luc (表情类别) → 候选关键词列表
-    const EMOTION_CANDIDATES: Record<string, string[]> = {
-        smile:   ['にこり', '笑い', 'smile', 'えがお', 'happy', '喜び', '嬉しい', 'よろこび'],
-        sad:     ['悲しみ', 'sad', 'cry', '泣き', '哀しみ', 'かなしみ'],
-        angry:   ['怒り', 'angry', 'いかり', 'むっ', 'まゆ'],
-        surprise: ['びっくり', 'surprise', 'おどろき', '驚き', 'wonder', 'わお'],
-        worry:   ['困る', 'worry', 'こまる', '悩み', 'なやみ', '困惑'],
-        serious: ['真面目', 'serious', 'まじめ', 'じと目', 'じと'],
-        shy:     ['照れ', 'shy', 'てれ', 'はにかみ', '恥ずかしい'],
-        wink:    ['ウィンク', 'wink', 'ういんく', 'win'],
-    };
-
-    // 为每个表情类别选出得分最高的 morph
-    const emotionMorphs = new Map<string, string>();
-    for (const [category, keywords] of Object.entries(EMOTION_CANDIDATES)) {
-        let bestName: string | null = null;
-        let bestScore = 0;
-        for (const mName of morphNames) {
-            const score = _scoreMorph(mName, keywords);
-            if (score > bestScore) {
-                bestScore = score;
-                bestName = mName;
+        // 验证 morph 名能否被 Shift-JIS 编码（不能编码的在 VMD 中会乱码，babylon-mmd 找不到匹配）
+        for (const [k, n] of emotionMorphs) {
+            if (!canEncodeName(n)) {
+                console.log(
+                    `[procedural-motion] 表情 morph "${k}=${n}" 无法编码为 Shift-JIS，跳过`
+                );
+                emotionMorphs.delete(k);
             }
         }
-        if (bestName) {
-            emotionMorphs.set(category, bestName);
-        }
-    }
 
-    // 验证 morph 名能否被 Shift-JIS 编码（不能编码的在 VMD 中会乱码，babylon-mmd 找不到匹配）
-    for (const [k, n] of emotionMorphs) {
-        if (!canEncodeName(n)) {
-            console.log(`[procedural-motion] 表情 morph "${k}=${n}" 无法编码为 Shift-JIS，跳过`);
-            emotionMorphs.delete(k);
-        }
-    }
+        // 如果没有找到任何表情 morph，跳过所有情绪逻辑
+        const foundEmotions = Array.from(emotionMorphs.entries()).filter(([k]) => k !== 'wink');
+        if (foundEmotions.length > 0) {
+            console.log(
+                `[procedural-motion] 表情 morph 匹配: [${foundEmotions.map(([k, n]) => `${k}=${n}`).join(', ')}]`
+            );
+            // 微表情专用（surprise 和 wink 短闪用，不加入主轮换）
+            const surpriseMorph = emotionMorphs.get('surprise') ?? null;
+            const winkMorph = emotionMorphs.get('wink') ?? null;
 
-    // 如果没有找到任何表情 morph，跳过所有情绪逻辑
-    const foundEmotions = Array.from(emotionMorphs.entries()).filter(([k]) => k !== 'wink');
-    if (foundEmotions.length > 0) {
-        console.log(`[procedural-motion] 表情 morph 匹配: [${foundEmotions.map(([k, n]) => `${k}=${n}`).join(', ')}]`);
-        // 微表情专用（surprise 和 wink 短闪用，不加入主轮换）
-        const surpriseMorph = emotionMorphs.get('surprise') ?? null;
-        const winkMorph = emotionMorphs.get('wink') ?? null;
+            // 1. 主表情轮换：每 1 小节（4 拍）切换一种情绪，权重 0.5~0.8
+            const cycleBeats = 4; // 4 拍切换一次
+            const cycleFrames = beatFrames * cycleBeats;
+            const cycleCount = Math.min(foundEmotions.length, Math.floor(loopFrames / cycleFrames));
+            const availEmo = foundEmotions.slice(0, cycleCount);
 
-        // 1. 主表情轮换：每 1 小节（4 拍）切换一种情绪，权重 0.5~0.8
-        const cycleBeats = 4; // 4 拍切换一次
-        const cycleFrames = beatFrames * cycleBeats;
-        const cycleCount = Math.min(foundEmotions.length, Math.floor(loopFrames / cycleFrames));
-        const availEmo = foundEmotions.slice(0, cycleCount);
+            for (let ci = 0; ci < availEmo.length; ci++) {
+                const [_, morphName] = availEmo[ci];
+                const start = cycleFrames * ci;
+                const end = Math.min(start + cycleFrames - 1, loopFrames);
+                // 顺滑切入切出：1/4 周期淡入，1/4 周期淡出
+                const fadeIn = Math.floor(beatFrames * 0.3);
+                const fadeOut = Math.max(end - Math.floor(beatFrames * 0.3), start + fadeIn);
+                const weight = 0.5 + 0.3 * intensity;
+                // 淡入段
+                morphs.push({ name: morphName, frame: start, weight: 0 });
+                morphs.push({ name: morphName, frame: start + fadeIn, weight: weight });
+                // 维持段
+                morphs.push({ name: morphName, frame: fadeOut, weight: weight });
+                // 淡出段
+                morphs.push({ name: morphName, frame: end, weight: 0 });
+            }
 
-        for (let ci = 0; ci < availEmo.length; ci++) {
-            const [_, morphName] = availEmo[ci];
-            const start = cycleFrames * ci;
-            const end = Math.min(start + cycleFrames - 1, loopFrames);
-            // 顺滑切入切出：1/4 周期淡入，1/4 周期淡出
-            const fadeIn = Math.floor(beatFrames * 0.3);
-            const fadeOut = Math.max(end - Math.floor(beatFrames * 0.3), start + fadeIn);
-            const weight = 0.5 + 0.3 * intensity;
-            // 淡入段
-            morphs.push({ name: morphName, frame: start, weight: 0 });
-            morphs.push({ name: morphName, frame: start + fadeIn, weight: weight });
-            // 维持段
-            morphs.push({ name: morphName, frame: fadeOut, weight: weight });
-            // 淡出段
-            morphs.push({ name: morphName, frame: end, weight: 0 });
-        }
-
-        // 2. 微表情点缀：在每小节强拍附近随机闪现 surprise 或 wink（仅 6~8 帧）
-        const accentMorph = surpriseMorph ?? winkMorph;
-        if (accentMorph) {
-            const measureCount = Math.min(4, Math.floor(loopFrames / (beatFrames * 2)));
-            for (let m = 0; m < measureCount; m++) {
-                const base = m * beatFrames * 2;
-                const rand = (m * 7 + 3) % 10;
-                if (rand < 3) {
-                    const t = base + Math.floor(beatFrames * 0.2);
-                    if (t + 6 <= loopFrames) {
-                        const w = 0.5 + 0.3 * intensity;
-                        morphs.push({ name: accentMorph, frame: t, weight: 0 });
-                        morphs.push({ name: accentMorph, frame: t + 1, weight: w });
-                        morphs.push({ name: accentMorph, frame: t + 3, weight: w });
-                        morphs.push({ name: accentMorph, frame: t + 6, weight: 0 });
+            // 2. 微表情点缀：在每小节强拍附近随机闪现 surprise 或 wink（仅 6~8 帧）
+            const accentMorph = surpriseMorph ?? winkMorph;
+            if (accentMorph) {
+                const measureCount = Math.min(4, Math.floor(loopFrames / (beatFrames * 2)));
+                for (let m = 0; m < measureCount; m++) {
+                    const base = m * beatFrames * 2;
+                    const rand = (m * 7 + 3) % 10;
+                    if (rand < 3) {
+                        const t = base + Math.floor(beatFrames * 0.2);
+                        if (t + 6 <= loopFrames) {
+                            const w = 0.5 + 0.3 * intensity;
+                            morphs.push({ name: accentMorph, frame: t, weight: 0 });
+                            morphs.push({ name: accentMorph, frame: t + 1, weight: w });
+                            morphs.push({ name: accentMorph, frame: t + 3, weight: w });
+                            morphs.push({ name: accentMorph, frame: t + 6, weight: 0 });
+                        }
                     }
                 }
             }
-        }
 
-        // 3. 害羞表情在副歌位置（倒数 2 小节）插入
-        const shyMorph = emotionMorphs.get('shy') ?? null;
-        if (shyMorph) {
-            const shyStart = loopFrames - beatFrames * 4;
-            if (shyStart > 0) {
-                morphs.push({ name: shyMorph, frame: shyStart, weight: 0 });
-                morphs.push({ name: shyMorph, frame: shyStart + Math.floor(beatFrames * 0.5), weight: 0.6 * intensity });
-                morphs.push({ name: shyMorph, frame: shyStart + beatFrames * 2, weight: 0.6 * intensity });
-                morphs.push({ name: shyMorph, frame: shyStart + beatFrames * 2 + 2, weight: 0 });
+            // 3. 害羞表情在副歌位置（倒数 2 小节）插入
+            const shyMorph = emotionMorphs.get('shy') ?? null;
+            if (shyMorph) {
+                const shyStart = loopFrames - beatFrames * 4;
+                if (shyStart > 0) {
+                    morphs.push({ name: shyMorph, frame: shyStart, weight: 0 });
+                    morphs.push({
+                        name: shyMorph,
+                        frame: shyStart + Math.floor(beatFrames * 0.5),
+                        weight: 0.6 * intensity,
+                    });
+                    morphs.push({
+                        name: shyMorph,
+                        frame: shyStart + beatFrames * 2,
+                        weight: 0.6 * intensity,
+                    });
+                    morphs.push({
+                        name: shyMorph,
+                        frame: shyStart + beatFrames * 2 + 2,
+                        weight: 0,
+                    });
+                }
             }
+        } else {
+            console.warn('[procedural-motion] 未找到任何表情 morph，跳过情绪轮');
         }
-    } else {
-        console.warn('[procedural-motion] 未找到任何表情 morph，跳过情绪轮');
-    }
     } // ← 表情情绪轮 else 块结束
     // 按骨骼类型分配插值曲线（受 interpOverride 控制）
     const _override = state.interpOverride;
     let _overrideInterp: typeof INTERP_SHARP | null = null;
-    if (_override === 'sharp') _overrideInterp = INTERP_SHARP;
-    else if (_override === 'ease-in-out') _overrideInterp = INTERP_EASE_IN_OUT;
-    else if (_override === 'ease-out') _overrideInterp = INTERP_EASE_OUT;
+    if (_override === 'sharp') {
+        _overrideInterp = INTERP_SHARP;
+    } else if (_override === 'ease-in-out') {
+        _overrideInterp = INTERP_EASE_IN_OUT;
+    } else if (_override === 'ease-out') {
+        _overrideInterp = INTERP_EASE_OUT;
+    }
 
     for (const b of bones) {
         if (_overrideInterp) {
@@ -753,13 +1102,9 @@ export function generateAutoDanceVmd(
         // 手臂摆动 → EASE_OUT（快速启动慢停）
         if (n === larmBone || n === rarmBone) {
             b.interp = INTERP_EASE_OUT;
-        }
-        // 中心弹跳 / 腰扭转 / 足IK踏步 → SHARP（锐利节拍感）
-        else if (n === centerBone || n === waistBone || n === legIkLBone || n === legIkRBone) {
+        } else if (n === centerBone || n === waistBone || n === legIkLBone || n === legIkRBone) { // 中心弹跳 / 腰扭转 / 足IK踏步 → SHARP（锐利节拍感）
             b.interp = INTERP_SHARP;
-        }
-        // 其余（肩/手腕/头/上半身/上半身2/全親/グルーブ）→ EASE_IN_OUT
-        else {
+        } else { // 其余（肩/手腕/头/上半身/上半身2/全親/グルーブ）→ EASE_IN_OUT
             b.interp = INTERP_EASE_IN_OUT;
         }
     }
@@ -809,16 +1154,40 @@ export function generateLifelikeVmd(
             const rx = _clamp1(breathMain + breathSub);
             const w = Math.sqrt(Math.max(0, 1 - rx * rx));
             if (upperBone) {
-                bones.push({ name: upperBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, 0, w] });
+                bones.push({
+                    name: upperBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [rx, 0, 0, w],
+                });
             }
             if (neckBone) {
                 const nrx = _clamp1(rx * 0.5);
                 const nw = Math.sqrt(Math.max(0, 1 - nrx * nrx));
-                bones.push({ name: neckBone, frame: f, position: [0, 0, 0], rotation: [nrx, 0, 0, nw] });
+                bones.push({
+                    name: neckBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [nrx, 0, 0, nw],
+                });
             }
         }
-        if (upperBone) bones.push({ name: upperBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (neckBone) bones.push({ name: neckBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (upperBone) {
+            bones.push({
+                name: upperBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (neckBone) {
+            bones.push({
+                name: neckBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // ---- 上半身2（微扭转，不规则频率） ----
@@ -829,9 +1198,19 @@ export function generateLifelikeVmd(
             const rx = _clamp1(Math.sin(t * Math.PI * 2 * 0.43 + 1.2) * amp2);
             const ry = _clamp1(Math.sin(t * Math.PI * 2 * 0.31 + 0.5) * amp2 * 0.6);
             const w = Math.sqrt(Math.max(0, 1 - rx * rx - ry * ry));
-            bones.push({ name: upper2Bone, frame: f, position: [0, 0, 0], rotation: [rx, ry, 0, w] });
+            bones.push({
+                name: upper2Bone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, ry, 0, w],
+            });
         }
-        bones.push({ name: upper2Bone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: upper2Bone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---- 重心漂移（极慢不规则漂移，像真人站立时的重心调整） ----
@@ -843,15 +1222,25 @@ export function generateLifelikeVmd(
             // 三个不相干频率叠加，避免周期感
             const rz = _clamp1(
                 Math.sin(t * Math.PI * 2 * 0.15 + 0.3) * driftAmp * 0.6 +
-                Math.sin(t * Math.PI * 2 * 0.23 + 1.7) * driftAmp * 0.3 +
-                Math.sin(t * Math.PI * 2 * 0.37 + 2.9) * driftAmp * 0.1
+                    Math.sin(t * Math.PI * 2 * 0.23 + 1.7) * driftAmp * 0.3 +
+                    Math.sin(t * Math.PI * 2 * 0.37 + 2.9) * driftAmp * 0.1
             );
             const rx = _clamp1(Math.sin(t * Math.PI * 2 * 0.11 + 0.9) * driftAmp * 0.3);
             const w = Math.sqrt(Math.max(0, 1 - rx * rx - rz * rz));
             const bobY = Math.sin(t * Math.PI * 2 * 0.5) * bobAmp;
-            bones.push({ name: centerBone, frame: f, position: [0, bobY, 0], rotation: [rx, 0, rz, w] });
+            bones.push({
+                name: centerBone,
+                frame: f,
+                position: [0, bobY, 0],
+                rotation: [rx, 0, rz, w],
+            });
         }
-        bones.push({ name: centerBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: centerBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---- 头部（微摆，多频不规则） ----
@@ -859,14 +1248,26 @@ export function generateLifelikeVmd(
         const headAmp = 0.01 * intensity;
         for (let f = 0; f <= loopFrames; f += 3) {
             const t = f / loopFrames;
-            const rz = _clamp1(Math.sin(t * Math.PI * 2 * 0.19 + 0.7) * headAmp * 0.5 +
-                               Math.sin(t * Math.PI * 2 * 0.31 + 2.1) * headAmp * 0.3);
+            const rz = _clamp1(
+                Math.sin(t * Math.PI * 2 * 0.19 + 0.7) * headAmp * 0.5 +
+                    Math.sin(t * Math.PI * 2 * 0.31 + 2.1) * headAmp * 0.3
+            );
             const rx = _clamp1(Math.sin(t * Math.PI * 2 * 0.13 + 1.4) * headAmp * 0.3);
             const ry = _clamp1(Math.sin(t * Math.PI * 2 * 0.09 + 0.3) * headAmp * 0.2);
             const w = Math.sqrt(Math.max(0, 1 - rz * rz - rx * rx - ry * ry));
-            bones.push({ name: headBone, frame: f, position: [0, 0, 0], rotation: [rx, ry, rz, w] });
+            bones.push({
+                name: headBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, ry, rz, w],
+            });
         }
-        bones.push({ name: headBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: headBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---- 腰（微扭，极低频） ----
@@ -878,7 +1279,12 @@ export function generateLifelikeVmd(
             const w = Math.sqrt(Math.max(0, 1 - rz * rz));
             bones.push({ name: waistBone, frame: f, position: [0, 0, 0], rotation: [0, 0, rz, w] });
         }
-        bones.push({ name: waistBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: waistBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---- 肩部（微起伏，模拟呼吸联动） ----
@@ -893,14 +1299,38 @@ export function generateLifelikeVmd(
             const wL = Math.sqrt(Math.max(0, 1 - rzL * rzL));
             const wR = Math.sqrt(Math.max(0, 1 - rzR * rzR));
             if (shoulderLBone) {
-                bones.push({ name: shoulderLBone, frame: f, position: [0, yL, 0], rotation: [0, 0, rzL, wL] });
+                bones.push({
+                    name: shoulderLBone,
+                    frame: f,
+                    position: [0, yL, 0],
+                    rotation: [0, 0, rzL, wL],
+                });
             }
             if (shoulderRBone) {
-                bones.push({ name: shoulderRBone, frame: f, position: [0, yR, 0], rotation: [0, 0, rzR, wR] });
+                bones.push({
+                    name: shoulderRBone,
+                    frame: f,
+                    position: [0, yR, 0],
+                    rotation: [0, 0, rzR, wR],
+                });
             }
         }
-        if (shoulderLBone) bones.push({ name: shoulderLBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (shoulderRBone) bones.push({ name: shoulderRBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (shoulderLBone) {
+            bones.push({
+                name: shoulderLBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (shoulderRBone) {
+            bones.push({
+                name: shoulderRBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // ---- 手臂（极微自然钟摆，不干扰主动画） ----
@@ -911,14 +1341,38 @@ export function generateLifelikeVmd(
             const rz = _clamp1(Math.sin(t * Math.PI * 2 * 0.25 + 1.5) * armAmp);
             const w = Math.sqrt(Math.max(0, 1 - rz * rz));
             if (larmBone) {
-                bones.push({ name: larmBone, frame: f, position: [0, 0, 0], rotation: [0, 0, rz, w] });
+                bones.push({
+                    name: larmBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [0, 0, rz, w],
+                });
             }
             if (rarmBone) {
-                bones.push({ name: rarmBone, frame: f, position: [0, 0, 0], rotation: [0, 0, -rz, w] });
+                bones.push({
+                    name: rarmBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [0, 0, -rz, w],
+                });
             }
         }
-        if (larmBone) bones.push({ name: larmBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (rarmBone) bones.push({ name: rarmBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (larmBone) {
+            bones.push({
+                name: larmBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (rarmBone) {
+            bones.push({
+                name: rarmBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // ---- 手腕（极微晃动） ----
@@ -929,16 +1383,40 @@ export function generateLifelikeVmd(
             const rx = _clamp1(Math.sin(t * Math.PI * 2 * 0.33 + 0.8) * wristAmp);
             const w = Math.sqrt(Math.max(0, 1 - rx * rx));
             if (wristLBone) {
-                bones.push({ name: wristLBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, 0, w] });
+                bones.push({
+                    name: wristLBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [rx, 0, 0, w],
+                });
             }
             if (wristRBone) {
                 const rxR = _clamp1(Math.sin(t * Math.PI * 2 * 0.33 + 1.1) * wristAmp);
                 const wR = Math.sqrt(Math.max(0, 1 - rxR * rxR));
-                bones.push({ name: wristRBone, frame: f, position: [0, 0, 0], rotation: [rxR, 0, 0, wR] });
+                bones.push({
+                    name: wristRBone,
+                    frame: f,
+                    position: [0, 0, 0],
+                    rotation: [rxR, 0, 0, wR],
+                });
             }
         }
-        if (wristLBone) bones.push({ name: wristLBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        if (wristRBone) bones.push({ name: wristRBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        if (wristLBone) {
+            bones.push({
+                name: wristLBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
+        if (wristRBone) {
+            bones.push({
+                name: wristRBone,
+                frame: loopFrames,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+            });
+        }
     }
 
     // ---- 全ての親（极微整体晃动） ----
@@ -949,21 +1427,33 @@ export function generateLifelikeVmd(
             const rx = _clamp1(Math.sin(t * Math.PI * 2 * 0.08 + 1.1) * parentAmp);
             const rz = _clamp1(Math.sin(t * Math.PI * 2 * 0.12 + 2.3) * parentAmp);
             const w = Math.sqrt(Math.max(0, 1 - rx * rx - rz * rz));
-            bones.push({ name: allParentBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
+            bones.push({
+                name: allParentBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, 0, rz, w],
+            });
         }
-        bones.push({ name: allParentBone, frame: loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+        bones.push({
+            name: allParentBone,
+            frame: loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
     }
 
     // ---- 微表情（偶尔的极微 morph 变化） ----
     if (state.boneToggles.emotion) {
         const BLINK_BLACKLIST = ['まばたき', 'blink', '眨眼', 'wink'];
-        const emotionCandidates = morphNames.filter(m => !BLINK_BLACKLIST.some(b => m.includes(b)));
+        const emotionCandidates = morphNames.filter(
+            (m) => !BLINK_BLACKLIST.some((b) => m.includes(b))
+        );
         // 选取前 3 个可用 morph 做极微闪烁
         const selected = emotionCandidates.slice(0, 3);
         for (let mi = 0; mi < selected.length; mi++) {
             const mName = selected[mi];
             // 每个 morph 在不同时间点做极短闪烁（2~4帧）
-            const offset = (mi * loopFrames / selected.length);
+            const offset = (mi * loopFrames) / selected.length;
             const flickerStart = Math.round(offset + loopFrames * 0.1);
             if (flickerStart + 4 <= loopFrames) {
                 const w = 0.15 * intensity;

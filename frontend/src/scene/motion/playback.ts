@@ -111,31 +111,34 @@ export function initPlaybackObservables(
             // 设置 loopPending 标志，阻止 setIsPlaying(false) 导致的 UI 闪烁
             _loopPending = true;
             const loop = autoLoop; // 快照：防止 async 间隙 autoLoop 变化导致状态漂移
-            runtime.seekAnimation(0, true).then(() => {
-                if (!loop) {
-                    _loopPending = false;
-                    return;
-                }
-                // 检查 runtime 和 manager 在 async 间隙是否仍有效
-                if (!loop || !runtime || !_manager) {
-                    _loopPending = false;
-                    return;
-                }
-                runtime
-                    .playAnimation()
-                    .then(() => {
+            runtime
+                .seekAnimation(0, true)
+                .then(() => {
+                    if (!loop) {
                         _loopPending = false;
-                        setIsPlaying(true);
-                        updatePlaybackUI();
-                    })
-                    .catch((err: unknown) => {
+                        return;
+                    }
+                    // 检查 runtime 和 manager 在 async 间隙是否仍有效
+                    if (!loop || !runtime || !_manager) {
                         _loopPending = false;
-                        console.error('[playback] auto-loop playAnimation failed:', err);
-                    });
-            }).catch((err: unknown) => {
-                _loopPending = false;
-                console.error('[playback] auto-loop seekAnimation failed:', err);
-            });
+                        return;
+                    }
+                    runtime
+                        .playAnimation()
+                        .then(() => {
+                            _loopPending = false;
+                            setIsPlaying(true);
+                            updatePlaybackUI();
+                        })
+                        .catch((err: unknown) => {
+                            _loopPending = false;
+                            console.error('[playback] auto-loop playAnimation failed:', err);
+                        });
+                })
+                .catch((err: unknown) => {
+                    _loopPending = false;
+                    console.error('[playback] auto-loop seekAnimation failed:', err);
+                });
             return;
         }
         updatePlaybackUI();
@@ -146,7 +149,9 @@ export function initPlaybackObservables(
 
     // 返回 dispose 函数，供场景销毁时清理观察者，防止内存泄漏
     return () => {
-        if (_disposed) return;
+        if (_disposed) {
+            return;
+        }
         _disposed = true;
         _safeRemoveCallback(runtime.onAnimationTickObservable, tickHandler);
         _safeRemoveCallback(runtime.onPlayAnimationObservable, playHandler);

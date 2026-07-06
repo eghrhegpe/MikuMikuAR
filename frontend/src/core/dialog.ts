@@ -31,7 +31,9 @@ export interface DialogOptions {
 let _overlay: HTMLDivElement | null = null;
 
 function getOverlay(): HTMLDivElement {
-    if (_overlay) return _overlay;
+    if (_overlay) {
+        return _overlay;
+    }
     _overlay = document.createElement('div');
     _overlay.id = 'mmd-dialog-overlay';
     _overlay.innerHTML = `
@@ -96,8 +98,14 @@ function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
         };
 
         const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') { onCancel(); return; }
-            if (e.key === 'Enter' && opts.input) { onConfirm(); return; }
+            if (e.key === 'Escape') {
+                onCancel();
+                return;
+            }
+            if (e.key === 'Enter' && opts.input) {
+                onConfirm();
+                return;
+            }
         };
 
         // Remove old listeners by cloning
@@ -111,9 +119,15 @@ function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
         document.addEventListener('keydown', onKeyDown, { once: true });
 
         // Click on backdrop closes
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) onCancel();
-        }, { once: true });
+        overlay.addEventListener(
+            'click',
+            (e) => {
+                if (e.target === overlay) {
+                    onCancel();
+                }
+            },
+            { once: true }
+        );
 
         // Show with animation
         overlay.classList.add('mmd-dialog-visible');
@@ -159,17 +173,22 @@ export function showErrorAction(title: string, message: string): void {
     };
 
     const onCopy = () => {
-        navigator.clipboard.writeText(message).then(() => {
-            confirmBtn.textContent = '已复制 ✓';
-            setTimeout(() => { confirmBtn.textContent = '复制'; }, 1500);
-        }).catch(() => {
-            // fallback: select the message text
-            const range = document.createRange();
-            range.selectNodeContents(msgEl);
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(range);
-        });
+        navigator.clipboard
+            .writeText(message)
+            .then(() => {
+                confirmBtn.textContent = '已复制 ✓';
+                setTimeout(() => {
+                    confirmBtn.textContent = '复制';
+                }, 1500);
+            })
+            .catch(() => {
+                // fallback: select the message text
+                const range = document.createRange();
+                range.selectNodeContents(msgEl);
+                const sel = window.getSelection();
+                sel?.removeAllRanges();
+                sel?.addRange(range);
+            });
     };
 
     const onClose = () => {
@@ -184,12 +203,24 @@ export function showErrorAction(title: string, message: string): void {
 
     newConfirm.addEventListener('click', onCopy);
     newCancel.addEventListener('click', onClose);
-    document.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Escape') onClose();
-    }, { once: true });
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) onClose();
-    }, { once: true });
+    document.addEventListener(
+        'keydown',
+        (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        },
+        { once: true }
+    );
+    overlay.addEventListener(
+        'click',
+        (e) => {
+            if (e.target === overlay) {
+                onClose();
+            }
+        },
+        { once: true }
+    );
 
     overlay.classList.add('mmd-dialog-visible');
     dialog.style.display = '';
@@ -200,7 +231,7 @@ export function showConfirm(
     message: string,
     title = '确认',
     confirmLabel = '确定',
-    cancelLabel = '取消',
+    cancelLabel = '取消'
 ): Promise<boolean> {
     return showDialog({
         title,
@@ -218,7 +249,7 @@ export function showPrompt(
     title = '输入',
     placeholder = '',
     confirmLabel = '确定',
-    cancelLabel = '取消',
+    cancelLabel = '取消'
 ): Promise<string | null> {
     return showDialog({
         title,

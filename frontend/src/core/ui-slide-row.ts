@@ -122,7 +122,9 @@ export function slideRow(
             let cachedValue = headerToggle.value;
             const update = (): void => {
                 const newVal = !!headerToggle!.bind!();
-                if (newVal === cachedValue) return;
+                if (newVal === cachedValue) {
+                    return;
+                }
                 cachedValue = newVal;
                 input.checked = newVal;
             };
@@ -147,7 +149,9 @@ export function slideRow(
         iconSpan.className = 'slide-icon';
         if (extra?.iconFactory) {
             const el = extra.iconFactory();
-            if (el) iconSpan.appendChild(el);
+            if (el) {
+                iconSpan.appendChild(el);
+            }
         } else {
             const iconEl = createIconifyIcon(icon);
             if (iconEl) {
@@ -176,8 +180,11 @@ export function slideRow(
         } else {
             const labelSpan = document.createElement('span');
             let labelCls = 'slide-label';
-            if (variant === 'danger') labelCls += ' danger-text';
-            else if (variant === 'accent') labelCls += ' accent-text';
+            if (variant === 'danger') {
+                labelCls += ' danger-text';
+            } else if (variant === 'accent') {
+                labelCls += ' accent-text';
+            }
             labelSpan.className = labelCls;
             labelSpan.textContent = label;
             row.appendChild(labelSpan);
@@ -215,7 +222,9 @@ export function slideRow(
             for (const act of extra.actionIcons) {
                 const btn = document.createElement('button');
                 btn.className = 'btn btn-ghost btn-sm btn-icon slide-act-btn';
-                if (act.danger) btn.classList.add('slide-act-danger');
+                if (act.danger) {
+                    btn.classList.add('slide-act-danger');
+                }
                 btn.textContent = act.icon;
                 btn.title = act.title || '';
                 btn.addEventListener('click', (e) => {

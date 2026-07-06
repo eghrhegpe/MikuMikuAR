@@ -101,7 +101,13 @@ import {
 import { _disposeSunDisc } from '../render/lighting';
 import { updateUnderwaterTransition, resetUnderwaterState } from './env-water';
 
-export { createParticleEmitter, disposeParticles, applyWindToParticles, updateParticleWind, updateParticleTexture };
+export {
+    createParticleEmitter,
+    disposeParticles,
+    applyWindToParticles,
+    updateParticleWind,
+    updateParticleTexture,
+};
 
 export const _envSys: {
     sky: EnvSkyResources;
@@ -255,10 +261,10 @@ function loadEnvTexture(path: string, rotationY: number, intensity: number): voi
     const cubeTex = new CubeTexture(
         path,
         scene,
-        null,  // extensionsOrOptions
+        null, // extensionsOrOptions
         false, // noMipmap
-        null,  // files
-        null,  // onLoad
+        null, // files
+        null, // onLoad
         (message?: string, exception?: any) => {
             // Texture load failed — fall back to procedural sky (Fix E)
             console.warn(`[sky] loadEnvTexture failed: ${message}`, exception);
@@ -390,15 +396,16 @@ function applyCheckerGround(ground: Mesh, state: EnvState): void {
 }
 
 export function applyGround(state: EnvState): void {
-	const scene = getScene();
+    const scene = getScene();
 
-	const typeKey = state.groundTextureEnabled && state.groundTexture
-		? `texture:${state.groundTexture}`
-		: `mode:${state.groundMode}`;
-	const keyChanged = typeKey !== _currentGroundKey;
+    const typeKey =
+        state.groundTextureEnabled && state.groundTexture
+            ? `texture:${state.groundTexture}`
+            : `mode:${state.groundMode}`;
+    const keyChanged = typeKey !== _currentGroundKey;
 
-	// 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放
-	if (_envSys.ground.mesh && state.groundVisible && !keyChanged) {
+    // 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放
+    if (_envSys.ground.mesh && state.groundVisible && !keyChanged) {
         const mat = _envSys.ground.mesh.material;
         if (mat) {
             if (mat instanceof GridMaterial) {
@@ -421,7 +428,9 @@ export function applyGround(state: EnvState): void {
                 );
                 mat.alpha = state.groundAlpha;
                 if (mat.diffuseTexture && mat.diffuseTexture instanceof Texture) {
-                    (mat.diffuseTexture as Texture).uScale = (mat.diffuseTexture as Texture).vScale = 1 / Math.max(0.1, state.groundTextureScale);
+                    (mat.diffuseTexture as Texture).uScale = (
+                        mat.diffuseTexture as Texture
+                    ).vScale = 1 / Math.max(0.1, state.groundTextureScale);
                     // Update rotation
                     if (state.groundTextureRotation !== 0) {
                         const angle = (state.groundTextureRotation * Math.PI) / 180;

@@ -14,11 +14,7 @@ export class InvertableArcRotateCameraPointersInput extends ArcRotateCameraPoint
     /** 是否反转 Y 轴（垂直拖拽方向）。默认 false = 原生行为。 */
     public invertY = false;
 
-    public override onTouch(
-        point: PointerTouch | null,
-        offsetX: number,
-        offsetY: number
-    ): void {
+    public override onTouch(point: PointerTouch | null, offsetX: number, offsetY: number): void {
         super.onTouch(point, offsetX, this.invertY ? -offsetY : offsetY);
     }
 

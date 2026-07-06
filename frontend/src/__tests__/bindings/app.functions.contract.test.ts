@@ -31,243 +31,249 @@ describe('app.ts binding surface sanity', () => {
 
 describe('GetAppVersion signature', () => {
     it('returns $CancellablePromise<string>', () => {
-        expectTypeOf<ReturnType<typeof App.GetAppVersion>>()
-            .toEqualTypeOf<$CancellablePromise<string>>();
+        expectTypeOf<ReturnType<typeof App.GetAppVersion>>().toEqualTypeOf<
+            $CancellablePromise<string>
+        >();
     });
     it('takes no parameters', () => {
-        expectTypeOf<typeof App.GetAppVersion>().parameters
-            .toEqualTypeOf<[]>();
+        expectTypeOf<typeof App.GetAppVersion>().parameters.toEqualTypeOf<[]>();
     });
 });
 
 describe('GetBuildInfo signature', () => {
     it('returns $CancellablePromise<BuildInfo | null>', () => {
-        expectTypeOf<ReturnType<typeof App.GetBuildInfo>>()
-            .toEqualTypeOf<$CancellablePromise<BuildInfo | null>>();
+        expectTypeOf<ReturnType<typeof App.GetBuildInfo>>().toEqualTypeOf<
+            $CancellablePromise<BuildInfo | null>
+        >();
     });
     it('takes no parameters', () => {
-        expectTypeOf<typeof App.GetBuildInfo>().parameters
-            .toEqualTypeOf<[]>();
+        expectTypeOf<typeof App.GetBuildInfo>().parameters.toEqualTypeOf<[]>();
     });
 });
 
 describe('GetCacheStats signature', () => {
     it('returns $CancellablePromise<CacheStats | null>', () => {
-        expectTypeOf<ReturnType<typeof App.GetCacheStats>>()
-            .toEqualTypeOf<$CancellablePromise<CacheStats | null>>();
+        expectTypeOf<ReturnType<typeof App.GetCacheStats>>().toEqualTypeOf<
+            $CancellablePromise<CacheStats | null>
+        >();
     });
     it('takes no parameters', () => {
-        expectTypeOf<typeof App.GetCacheStats>().parameters
-            .toEqualTypeOf<[]>();
+        expectTypeOf<typeof App.GetCacheStats>().parameters.toEqualTypeOf<[]>();
     });
 });
 
 describe('GetConfig signature', () => {
     it('returns $CancellablePromise<Config | null>', () => {
-        expectTypeOf<ReturnType<typeof App.GetConfig>>()
-            .toEqualTypeOf<$CancellablePromise<Config | null>>();
+        expectTypeOf<ReturnType<typeof App.GetConfig>>().toEqualTypeOf<
+            $CancellablePromise<Config | null>
+        >();
     });
     it('takes no parameters', () => {
-        expectTypeOf<typeof App.GetConfig>().parameters
-            .toEqualTypeOf<[]>();
+        expectTypeOf<typeof App.GetConfig>().parameters.toEqualTypeOf<[]>();
     });
 });
 
 describe('GetLibraryIndex signature', () => {
     it('returns $CancellablePromise<ModelEntry[] | null>', () => {
-        expectTypeOf<ReturnType<typeof App.GetLibraryIndex>>()
-            .toEqualTypeOf<$CancellablePromise<ModelEntry[] | null>>();
+        expectTypeOf<ReturnType<typeof App.GetLibraryIndex>>().toEqualTypeOf<
+            $CancellablePromise<ModelEntry[] | null>
+        >();
     });
     it('takes no parameters', () => {
-        expectTypeOf<typeof App.GetLibraryIndex>().parameters
-            .toEqualTypeOf<[]>();
+        expectTypeOf<typeof App.GetLibraryIndex>().parameters.toEqualTypeOf<[]>();
     });
 });
 
 describe('GetModelMeta signature', () => {
     it('returns $CancellablePromise<ModelMeta>', () => {
-        expectTypeOf<ReturnType<typeof App.GetModelMeta>>()
-            .toEqualTypeOf<$CancellablePromise<ModelMeta>>();
+        expectTypeOf<ReturnType<typeof App.GetModelMeta>>().toEqualTypeOf<
+            $CancellablePromise<ModelMeta>
+        >();
     });
     it('takes parameters [string]', () => {
-        expectTypeOf<typeof App.GetModelMeta>().parameters
-            .toEqualTypeOf<[string]>();
+        expectTypeOf<typeof App.GetModelMeta>().parameters.toEqualTypeOf<[string]>();
     });
 });
 
 describe('GetModelPresets signature', () => {
     it('returns $CancellablePromise<ModelPresetEntry[] | null>', () => {
-        expectTypeOf<ReturnType<typeof App.GetModelPresets>>()
-            .toEqualTypeOf<$CancellablePromise<ModelPresetEntry[] | null>>();
+        expectTypeOf<ReturnType<typeof App.GetModelPresets>>().toEqualTypeOf<
+            $CancellablePromise<ModelPresetEntry[] | null>
+        >();
     });
     it('takes no parameters', () => {
-        expectTypeOf<typeof App.GetModelPresets>().parameters
-            .toEqualTypeOf<[]>();
+        expectTypeOf<typeof App.GetModelPresets>().parameters.toEqualTypeOf<[]>();
     });
 });
 
 describe('GetRecentModels signature', () => {
     it('returns $CancellablePromise<string[] | null>', () => {
-        expectTypeOf<ReturnType<typeof App.GetRecentModels>>()
-            .toEqualTypeOf<$CancellablePromise<string[] | null>>();
+        expectTypeOf<ReturnType<typeof App.GetRecentModels>>().toEqualTypeOf<
+            $CancellablePromise<string[] | null>
+        >();
     });
     it('takes no parameters', () => {
-        expectTypeOf<typeof App.GetRecentModels>().parameters
-            .toEqualTypeOf<[]>();
+        expectTypeOf<typeof App.GetRecentModels>().parameters.toEqualTypeOf<[]>();
     });
 });
 
 describe('GetRenderPresets signature', () => {
     it('returns $CancellablePromise<RenderPreset[] | null>', () => {
-        expectTypeOf<ReturnType<typeof App.GetRenderPresets>>()
-            .toEqualTypeOf<$CancellablePromise<RenderPreset[] | null>>();
+        expectTypeOf<ReturnType<typeof App.GetRenderPresets>>().toEqualTypeOf<
+            $CancellablePromise<RenderPreset[] | null>
+        >();
     });
     it('takes no parameters', () => {
-        expectTypeOf<typeof App.GetRenderPresets>().parameters
-            .toEqualTypeOf<[]>();
+        expectTypeOf<typeof App.GetRenderPresets>().parameters.toEqualTypeOf<[]>();
     });
 });
 
 describe('ListEnvPresets signature', () => {
     it('returns $CancellablePromise<EnvPresetEntry[] | null>', () => {
-        expectTypeOf<ReturnType<typeof App.ListEnvPresets>>()
-            .toEqualTypeOf<$CancellablePromise<EnvPresetEntry[] | null>>();
+        expectTypeOf<ReturnType<typeof App.ListEnvPresets>>().toEqualTypeOf<
+            $CancellablePromise<EnvPresetEntry[] | null>
+        >();
     });
     it('takes no parameters', () => {
-        expectTypeOf<typeof App.ListEnvPresets>().parameters
-            .toEqualTypeOf<[]>();
+        expectTypeOf<typeof App.ListEnvPresets>().parameters.toEqualTypeOf<[]>();
     });
 });
 
 describe('ScanModelDir signature', () => {
     it('returns $CancellablePromise<ModelEntry[] | null>', () => {
-        expectTypeOf<ReturnType<typeof App.ScanModelDir>>()
-            .toEqualTypeOf<$CancellablePromise<ModelEntry[] | null>>();
+        expectTypeOf<ReturnType<typeof App.ScanModelDir>>().toEqualTypeOf<
+            $CancellablePromise<ModelEntry[] | null>
+        >();
     });
     it('takes parameters [string, ExternalPath[] | null]', () => {
-        expectTypeOf<typeof App.ScanModelDir>().parameters
-            .toEqualTypeOf<[string, ExternalPath[] | null]>();
+        expectTypeOf<typeof App.ScanModelDir>().parameters.toEqualTypeOf<
+            [string, ExternalPath[] | null]
+        >();
     });
 });
 
 describe('SetEnvState signature', () => {
     it('returns $CancellablePromise<void>', () => {
-        expectTypeOf<ReturnType<typeof App.SetEnvState>>()
-            .toEqualTypeOf<$CancellablePromise<void>>();
+        expectTypeOf<ReturnType<typeof App.SetEnvState>>().toEqualTypeOf<
+            $CancellablePromise<void>
+        >();
     });
     it('takes parameters [EnvState]', () => {
-        expectTypeOf<typeof App.SetEnvState>().parameters
-            .toEqualTypeOf<[EnvState]>();
+        expectTypeOf<typeof App.SetEnvState>().parameters.toEqualTypeOf<[EnvState]>();
     });
 });
 
 describe('SetUIAccent signature', () => {
     it('returns $CancellablePromise<void>', () => {
-        expectTypeOf<ReturnType<typeof App.SetUIAccent>>()
-            .toEqualTypeOf<$CancellablePromise<void>>();
+        expectTypeOf<ReturnType<typeof App.SetUIAccent>>().toEqualTypeOf<
+            $CancellablePromise<void>
+        >();
     });
     it('takes parameters [string]', () => {
-        expectTypeOf<typeof App.SetUIAccent>().parameters
-            .toEqualTypeOf<[string]>();
+        expectTypeOf<typeof App.SetUIAccent>().parameters.toEqualTypeOf<[string]>();
     });
 });
 
 describe('SetUIScale signature', () => {
     it('returns $CancellablePromise<void>', () => {
-        expectTypeOf<ReturnType<typeof App.SetUIScale>>()
-            .toEqualTypeOf<$CancellablePromise<void>>();
+        expectTypeOf<ReturnType<typeof App.SetUIScale>>().toEqualTypeOf<
+            $CancellablePromise<void>
+        >();
     });
     it('takes parameters [number]', () => {
-        expectTypeOf<typeof App.SetUIScale>().parameters
-            .toEqualTypeOf<[number]>();
+        expectTypeOf<typeof App.SetUIScale>().parameters.toEqualTypeOf<[number]>();
     });
 });
 
 describe('OpenInBlender signature', () => {
     it('returns $CancellablePromise<void>', () => {
-        expectTypeOf<ReturnType<typeof App.OpenInBlender>>()
-            .toEqualTypeOf<$CancellablePromise<void>>();
+        expectTypeOf<ReturnType<typeof App.OpenInBlender>>().toEqualTypeOf<
+            $CancellablePromise<void>
+        >();
     });
     it('takes parameters [string]', () => {
-        expectTypeOf<typeof App.OpenInBlender>().parameters
-            .toEqualTypeOf<[string]>();
+        expectTypeOf<typeof App.OpenInBlender>().parameters.toEqualTypeOf<[string]>();
     });
 });
 
 describe('SaveSceneFile signature', () => {
     it('returns $CancellablePromise<void>', () => {
-        expectTypeOf<ReturnType<typeof App.SaveSceneFile>>()
-            .toEqualTypeOf<$CancellablePromise<void>>();
+        expectTypeOf<ReturnType<typeof App.SaveSceneFile>>().toEqualTypeOf<
+            $CancellablePromise<void>
+        >();
     });
     it('takes parameters [string, string]', () => {
-        expectTypeOf<typeof App.SaveSceneFile>().parameters
-            .toEqualTypeOf<[string, string]>();
+        expectTypeOf<typeof App.SaveSceneFile>().parameters.toEqualTypeOf<[string, string]>();
     });
 });
 
 describe('ImportDanceSet signature', () => {
     it('returns $CancellablePromise<string>', () => {
-        expectTypeOf<ReturnType<typeof App.ImportDanceSet>>()
-            .toEqualTypeOf<$CancellablePromise<string>>();
+        expectTypeOf<ReturnType<typeof App.ImportDanceSet>>().toEqualTypeOf<
+            $CancellablePromise<string>
+        >();
     });
     it('takes parameters [string, string, string]', () => {
-        expectTypeOf<typeof App.ImportDanceSet>().parameters
-            .toEqualTypeOf<[string, string, string]>();
+        expectTypeOf<typeof App.ImportDanceSet>().parameters.toEqualTypeOf<
+            [string, string, string]
+        >();
     });
 });
 
 describe('LoadLastScene signature', () => {
     it('returns $CancellablePromise<string>', () => {
-        expectTypeOf<ReturnType<typeof App.LoadLastScene>>()
-            .toEqualTypeOf<$CancellablePromise<string>>();
+        expectTypeOf<ReturnType<typeof App.LoadLastScene>>().toEqualTypeOf<
+            $CancellablePromise<string>
+        >();
     });
     it('takes no parameters', () => {
-        expectTypeOf<typeof App.LoadLastScene>().parameters
-            .toEqualTypeOf<[]>();
+        expectTypeOf<typeof App.LoadLastScene>().parameters.toEqualTypeOf<[]>();
     });
 });
 
 describe('BundleScene signature', () => {
     it('returns $CancellablePromise<void>', () => {
-        expectTypeOf<ReturnType<typeof App.BundleScene>>()
-            .toEqualTypeOf<$CancellablePromise<void>>();
+        expectTypeOf<ReturnType<typeof App.BundleScene>>().toEqualTypeOf<
+            $CancellablePromise<void>
+        >();
     });
     it('takes parameters [string, string, string[] | null]', () => {
-        expectTypeOf<typeof App.BundleScene>().parameters
-            .toEqualTypeOf<[string, string, string[] | null]>();
+        expectTypeOf<typeof App.BundleScene>().parameters.toEqualTypeOf<
+            [string, string, string[] | null]
+        >();
     });
 });
 
 describe('SaveModelPreset signature', () => {
     it('returns $CancellablePromise<void>', () => {
-        expectTypeOf<ReturnType<typeof App.SaveModelPreset>>()
-            .toEqualTypeOf<$CancellablePromise<void>>();
+        expectTypeOf<ReturnType<typeof App.SaveModelPreset>>().toEqualTypeOf<
+            $CancellablePromise<void>
+        >();
     });
     it('takes parameters [string, string]', () => {
-        expectTypeOf<typeof App.SaveModelPreset>().parameters
-            .toEqualTypeOf<[string, string]>();
+        expectTypeOf<typeof App.SaveModelPreset>().parameters.toEqualTypeOf<[string, string]>();
     });
 });
 
 describe('StartFileServer signature', () => {
     it('returns $CancellablePromise<number>', () => {
-        expectTypeOf<ReturnType<typeof App.StartFileServer>>()
-            .toEqualTypeOf<$CancellablePromise<number>>();
+        expectTypeOf<ReturnType<typeof App.StartFileServer>>().toEqualTypeOf<
+            $CancellablePromise<number>
+        >();
     });
     it('takes parameters [string]', () => {
-        expectTypeOf<typeof App.StartFileServer>().parameters
-            .toEqualTypeOf<[string]>();
+        expectTypeOf<typeof App.StartFileServer>().parameters.toEqualTypeOf<[string]>();
     });
 });
 
 describe('StopFileServer signature', () => {
     it('returns $CancellablePromise<void>', () => {
-        expectTypeOf<ReturnType<typeof App.StopFileServer>>()
-            .toEqualTypeOf<$CancellablePromise<void>>();
+        expectTypeOf<ReturnType<typeof App.StopFileServer>>().toEqualTypeOf<
+            $CancellablePromise<void>
+        >();
     });
     it('takes parameters [string]', () => {
-        expectTypeOf<typeof App.StopFileServer>().parameters
-            .toEqualTypeOf<[string]>();
+        expectTypeOf<typeof App.StopFileServer>().parameters.toEqualTypeOf<[string]>();
     });
 });
 

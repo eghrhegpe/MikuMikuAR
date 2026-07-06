@@ -1,0 +1,226 @@
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\env-bridge.test.ts
+  43:11  warning  'defaults' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\model-manager.test.ts
+    6:44  warning  'afterEach' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+   95:21  warning  'MockVector3' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   97:10  warning  'disposeCloth' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  254:23  error    Do not access Object.prototype method 'hasOwnProperty' from target object       no-prototype-builtins
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\playback.test.ts
+  95:10  warning  'createMockRuntime' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\proc-motion-bridge.test.ts
+  3:10  warning  'BeatDetector' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\procedural-motion.test.ts
+   14:7   warning  'BONES_STANDARD' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  389:9   warning  Unexpected console statement. Only these console methods are allowed: error, warn, info    no-console
+  390:9   warning  Unexpected console statement. Only these console methods are allowed: error, warn, info    no-console
+  392:13  warning  Unexpected console statement. Only these console methods are allowed: error, warn, info    no-console
+  402:9   warning  Unexpected console statement. Only these console methods are allowed: error, warn, info    no-console
+  403:9   warning  Unexpected console statement. Only these console methods are allowed: error, warn, info    no-console
+  405:13  warning  Unexpected console statement. Only these console methods are allowed: error, warn, info    no-console
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\setup-wails.ts
+  32:21  warning  'keyType' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  32:30  warning  'valueType' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\xpbd.test.ts
+  69:48  warning  'afterEach' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  72:15  warning  'CapsuleSpec' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\utils.ts
+    4:10  warning  'createIconifyIcon' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+   16:10  warning  'getCurrentRenderingMenu' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  363:7   warning  'TOAST_GAP' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\env-feature-levels.ts
+   6:10  warning  'escapeHtml' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  20:32  warning  'SelectPMXFile' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\env-menu.ts
+   6:42  warning  'escapeHtml' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+   8:10  warning  'createIconifyIcon' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  23:5   warning  'applyEnvPresetObject' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  28:5   warning  'exportEnvPreset' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  29:5   warning  'importEnvPreset' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  30:10  warning  'EnvPreset' is defined but never used. Allowed unused vars must match /^_/u                 @typescript-eslint/no-unused-vars
+  33:10  warning  'setStatus' is defined but never used. Allowed unused vars must match /^_/u                 @typescript-eslint/no-unused-vars
+  37:5   warning  'buildSkyLevel' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+  48:5   warning  'renderUserEnvPresets' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  49:5   warning  'snapshotCurrentEnvPreset' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  50:5   warning  'SCENE_PRESETS' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\env-preset-levels.ts
+   5:27  warning  'PopupRow' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+   6:10  warning  'createIconifyIcon' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+   7:10  warning  'addSliderRow' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  13:5   warning  'setEnvSunAngle' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  18:10  warning  'getLightState' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  20:5   warning  'TIME_OF_DAY_PRESETS' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\library-core.ts
+   33:5   warning  'overridePaths' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+   54:5   warning  'setLayerBindingTargetId' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   64:10  warning  'SelectAudioFile' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   64:27  warning  'SelectVMDMotion' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   64:44  warning  'SelectVPDPose' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  816:37  warning  'dir' is defined but never used. Allowed unused args must match /^_/u                      @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\menu.ts
+  540:15  warning  'maxLen' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\model-material.ts
+    5:63  warning  'escapeHtml' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  195:39  warning  'mat' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-camera-levels.ts
+   9:5   warning  'motionBindingTargetId' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  13:10  warning  'createIconifyIcon' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-cloth-levels.ts
+  7:37  warning  'scene' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-popup.ts
+   11:5   warning  'escapeHtml' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+   17:5   warning  'focusedModelId' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+   20:5   warning  'layerBindingTargetId' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   25:5   warning  'envState' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+   31:10  warning  'createIconifyIcon' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+   41:5   warning  'setModelWireframe' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+   42:5   warning  'setModelBoneLinesVis' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   43:5   warning  'setModelBoneJointsVis' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   51:5   warning  'addVmdLayerFromPath' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+   71:10  warning  'setEnvState' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+   74:10  warning  'buildClothParamsLevel' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  207:10  warning  'buildActionMusicLevel' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\outfit-ui.ts
+  53:23  warning  'checkIcon' is assigned a value but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  54:23  warning  'circleIcon' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\scene-menu.ts
+   9:5   warning  'closeAllOverlays' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  13:5   warning  'cardContainer' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+  20:10  warning  'createIconifyIcon' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  21:10  warning  'slideRow' is defined but never used. Allowed unused vars must match /^_/u                  @typescript-eslint/no-unused-vars
+  36:27  warning  'buildStageTransformLevel' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  37:26  warning  'buildPropDetailLevel' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\scene-physics-levels.ts
+  37:10  warning  'buildClothParamsLevel' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  38:10  warning  'getSceneMenu' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\scene-stage-levels.ts
+  11:5   warning  'propRegistry' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  18:10  warning  'loadManager' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings.ts
+    31:5   warning  'dom' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+    32:5   warning  'closeAllOverlays' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+    45:5   warning  'UIState' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+    70:10  warning  'softwareKindIcon' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   351:17  warning  'refreshStatus' is never reassigned. Use 'const' instead                             prefer-const
+   363:17  warning  'dirInput' is never reassigned. Use 'const' instead                                  prefer-const
+   979:34  warning  'row' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+   980:34  warning  'row' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+   981:36  warning  'row' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+   982:35  warning  'row' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+   983:36  warning  'row' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+   984:42  warning  'row' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+   986:39  warning  'row' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+   987:38  warning  'row' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+  1519:21  warning  'muteFlag' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\motion-algos\procedural-motion.ts
+   353:19  warning  'rw' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+   998:17  warning  Unexpected console statement. Only these console methods are allowed: error, warn, info  no-console
+  1008:13  warning  Unexpected console statement. Only these console methods are allowed: error, warn, info  no-console
+  1105:9   warning  Closing curly brace does not appear on the same line as the subsequent block             brace-style
+  1109:9   warning  Closing curly brace does not appear on the same line as the subsequent block             brace-style
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\outfit\outfit-overlay.ts
+   39:54  warning  Expected '!==' and instead saw '!='                                                  eqeqeq
+  105:17  warning  'remapped' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\physics\cloth-manager.ts
+  209:11  warning  'REF_WAIST_TO_FLOOR' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\env-bridge.ts
+  23:17  warning  'setRenderState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\env-impl.ts
+  268:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\env-water.ts
+   17:10  warning  'getWindVector' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   17:25  warning  'isWindActive' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  103:40  warning  Unexpected any. Specify a different type                                         @typescript-eslint/no-explicit-any
+  116:26  warning  Unexpected any. Specify a different type                                         @typescript-eslint/no-explicit-any
+  771:34  warning  Unexpected any. Specify a different type                                         @typescript-eslint/no-explicit-any
+  784:34  warning  Unexpected any. Specify a different type                                         @typescript-eslint/no-explicit-any
+  801:30  warning  Unexpected any. Specify a different type                                         @typescript-eslint/no-explicit-any
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\manager\model-loader.ts
+  16:5  warning  'PropInstance' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\manager\model-ops.ts
+  248:5  warning  Unexpected console statement. Only these console methods are allowed: error, warn, info  no-console
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\proc-motion-bridge.ts
+   18:5   warning  'PROC_VMD_NAME_LIFELIKE' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   24:39  warning  'getVmdLayers' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+   24:53  warning  'clearVmdLayers' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   83:21  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  110:36  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  131:28  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  160:5   warning  Unexpected console statement. Only these console methods are allowed: error, warn, info   no-console
+  196:53  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  235:40  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  236:40  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  238:48  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  239:41  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  241:57  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  243:25  warning  Unexpected console statement. Only these console methods are allowed: error, warn, info   no-console
+  245:50  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  249:29  warning  Unexpected console statement. Only these console methods are allowed: error, warn, info   no-console
+  263:46  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  279:54  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  301:44  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  302:44  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  304:52  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  305:45  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  309:54  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  313:33  warning  Unexpected console statement. Only these console methods are allowed: error, warn, info   no-console
+  353:32  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  365:46  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  403:39  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  410:57  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  417:5   warning  Unexpected console statement. Only these console methods are allowed: error, warn, info   no-console
+  459:5   warning  Unexpected console statement. Only these console methods are allowed: error, warn, info   no-console
+  462:5   warning  Unexpected console statement. Only these console methods are allowed: error, warn, info   no-console
+  508:13  warning  Unexpected console statement. Only these console methods are allowed: error, warn, info   no-console
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\vmd-layers.ts
+  6:10  warning  'MmdWasmAnimation' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\render\lighting.ts
+   439:11  warning  'animLoop' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+   481:16  warning  Empty block statement                                                                  no-empty
+   713:17  warning  'lid' is assigned a value but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  1121:33  warning  'LightingPresetLight' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  1138:11  warning  'currentIds' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\scene-bundle.ts
+   6:10  warning  'computeLibraryRef' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+   6:29  warning  'resolveLibraryRef' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  83:16  warning  'collectModelTextures' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  86:15  warning  'dir' is assigned a value but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\scene.ts
+  148:9  warning  Unexpected console statement. Only these console methods are allowed: error, warn, info  no-console
+
+✖ 153 problems (1 error, 152 warnings)
+

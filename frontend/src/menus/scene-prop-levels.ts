@@ -27,7 +27,9 @@ export function buildPropLevel(): PopupLevel {
                         const row = document.createElement('div');
                         row.className = 'slide-item';
                         row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(p.name)}</span><span class="slide-arrow">&gt;</span>`;
-                        row.addEventListener('click', () => getSceneMenu()?.push(buildPropDetailLevel(p.id)));
+                        row.addEventListener('click', () =>
+                            getSceneMenu()?.push(buildPropDetailLevel(p.id))
+                        );
                         const delBtn = document.createElement('span');
                         delBtn.className = 'slide-del-btn';
                         delBtn.textContent = '×';
@@ -44,7 +46,8 @@ export function buildPropLevel(): PopupLevel {
             } else {
                 cardContainer(container, (c) => {
                     const empty = document.createElement('div');
-                    empty.style.cssText = 'font-size:11px;color:var(--text-dim);padding:8px 4px;text-align:center;';
+                    empty.style.cssText =
+                        'font-size:11px;color:var(--text-dim);padding:8px 4px;text-align:center;';
                     empty.textContent = '暂无道具';
                     c.appendChild(empty);
                 });
@@ -55,7 +58,10 @@ export function buildPropLevel(): PopupLevel {
                 slideRow(c, 'lucide:plus', '添加道具文件', false, () => {
                     SelectPMXFile().then((path) => {
                         if (path) {
-                            loadManager.load({ kind: 'prop', path }).then(() => getSceneMenu()?.reRender()).catch(() => {});
+                            loadManager
+                                .load({ kind: 'prop', path })
+                                .then(() => getSceneMenu()?.reRender())
+                                .catch(() => {});
                         }
                     });
                 });
@@ -84,7 +90,8 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
             // —— 标题 + 变换 ——
             cardContainer(container, (c) => {
                 const title = document.createElement('div');
-                title.style.cssText = 'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                title.style.cssText =
+                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                 title.textContent = p.name;
                 c.appendChild(title);
             });
@@ -96,7 +103,10 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
             // —— 危险操作 ——
             buildDangerCard(container, handle, () => {
                 const menu = getSceneMenu();
-                if (menu) { menu.pop(); menu.reRender(); }
+                if (menu) {
+                    menu.pop();
+                    menu.reRender();
+                }
             });
         },
     };

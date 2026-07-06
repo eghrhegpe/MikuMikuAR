@@ -36,8 +36,12 @@ const mockState = vi.hoisted(() => ({
 // =====================================================================
 
 vi.mock('../core/config', () => ({
-    get focusedModelId() { return mockState.focusedModelId; },
-    get mmdRuntime() { return mockState.mmdRuntime; },
+    get focusedModelId() {
+        return mockState.focusedModelId;
+    },
+    get mmdRuntime() {
+        return mockState.mmdRuntime;
+    },
     triggerAutoSave: mockState.triggerAutoSave,
 }));
 
@@ -314,18 +318,14 @@ describe('setProcMotionBoneToggle', () => {
     it('warns and returns for invalid bone category', () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         sut.setProcMotionBoneToggle('nonexistent' as any, true);
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('invalid bone category')
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid bone category'));
         warnSpy.mockRestore();
     });
 
     it('warns and returns for non-boolean value', () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         sut.setProcMotionBoneToggle('arm', 1 as any);
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('invalid value type')
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid value type'));
         warnSpy.mockRestore();
     });
 
@@ -410,9 +410,7 @@ describe('setProcMotionVpdApplyEnabled', () => {
     it('warns and returns for non-boolean value', () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         sut.setProcMotionVpdApplyEnabled('yes' as any);
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('invalid value type')
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid value type'));
         warnSpy.mockRestore();
     });
 
@@ -443,9 +441,7 @@ describe('setProcMotionInterpOverride', () => {
     it('warns and returns for invalid value', () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         sut.setProcMotionInterpOverride('invalid' as any);
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('invalid value')
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid value'));
         warnSpy.mockRestore();
     });
 
@@ -484,9 +480,7 @@ describe('setBpmQuantizeEnabled / getBpmQuantizeEnabled', () => {
     it('warns and returns for non-boolean value', () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         sut.setBpmQuantizeEnabled('yes' as any);
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('invalid value type')
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid value type'));
         warnSpy.mockRestore();
     });
 
@@ -527,7 +521,9 @@ describe('setProcMotionEyeTrackingEnabled', () => {
     });
 
     it('defaults to DEFAULT_PROC_STATE.eyeTrackingEnabled', () => {
-        expect(sut.getProcMotionState().eyeTrackingEnabled).toBe(DEFAULT_PROC_STATE.eyeTrackingEnabled);
+        expect(sut.getProcMotionState().eyeTrackingEnabled).toBe(
+            DEFAULT_PROC_STATE.eyeTrackingEnabled
+        );
     });
 });
 
@@ -543,7 +539,9 @@ describe('setProcMotionHeadTrackingEnabled', () => {
     });
 
     it('defaults to DEFAULT_PROC_STATE.headTrackingEnabled', () => {
-        expect(sut.getProcMotionState().headTrackingEnabled).toBe(DEFAULT_PROC_STATE.headTrackingEnabled);
+        expect(sut.getProcMotionState().headTrackingEnabled).toBe(
+            DEFAULT_PROC_STATE.headTrackingEnabled
+        );
     });
 });
 
@@ -586,9 +584,7 @@ describe('regenerateProcMotion — guard returns early', () => {
 
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         sut.regenerateProcMotion();
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('无焦点')
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('无焦点'));
         expect(mockState.loadVMDMotion).not.toHaveBeenCalled();
         warnSpy.mockRestore();
     });

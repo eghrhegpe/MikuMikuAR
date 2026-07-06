@@ -3,7 +3,14 @@
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { addSliderRow, addToggleRow, addModeSlider, addCollapsible, addSectionTitle, addPresetChip } from '../core/ui-helpers';
+import {
+    addSliderRow,
+    addToggleRow,
+    addModeSlider,
+    addCollapsible,
+    addSectionTitle,
+    addPresetChip,
+} from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
 import {
     setProcMotionMode,
@@ -20,7 +27,11 @@ import {
     setLifelikeEnabled,
     setLifelikeIntensity,
 } from '../scene/scene';
-import { setProcMotionBoneToggle, setProcMotionEyeTrackingEnabled, setProcMotionHeadTrackingEnabled } from '../scene/motion/proc-motion-bridge';
+import {
+    setProcMotionBoneToggle,
+    setProcMotionEyeTrackingEnabled,
+    setProcMotionHeadTrackingEnabled,
+} from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
 import { getMmdRuntimeType, setMmdRuntimeType } from '../core/config';
 import type { ProcMotionMode } from '../motion-algos/procedural-motion';
@@ -39,27 +50,51 @@ export function buildProcMotionLevel(): PopupLevel {
                 const group = document.createElement('div');
                 group.className = 'preset-group';
                 group.style.padding = '0';
-                addPresetChip(group, '待机呼吸', st.mode === 'idle', () => {
-                    setProcMotionMode('idle');
-                    regenerateProcMotion();
-                    getMotionMenu()?.updateControls();
-                }, {
-                    onUpdate: (btn) => btn.classList.toggle('active', getProcMotionState().mode === 'idle')
-                });
-                addPresetChip(group, '自动舞蹈', st.mode === 'autodance', () => {
-                    setProcMotionMode('autodance');
-                    regenerateProcMotion();
-                    getMotionMenu()?.updateControls();
-                }, {
-                    onUpdate: (btn) => btn.classList.toggle('active', getProcMotionState().mode === 'autodance')
-                });
-                addPresetChip(group, '关闭', st.mode === 'off', () => {
-                    setProcMotionMode('off');
-                    regenerateProcMotion();
-                    getMotionMenu()?.updateControls();
-                }, {
-                    onUpdate: (btn) => btn.classList.toggle('active', getProcMotionState().mode === 'off')
-                });
+                addPresetChip(
+                    group,
+                    '待机呼吸',
+                    st.mode === 'idle',
+                    () => {
+                        setProcMotionMode('idle');
+                        regenerateProcMotion();
+                        getMotionMenu()?.updateControls();
+                    },
+                    {
+                        onUpdate: (btn) =>
+                            btn.classList.toggle('active', getProcMotionState().mode === 'idle'),
+                    }
+                );
+                addPresetChip(
+                    group,
+                    '自动舞蹈',
+                    st.mode === 'autodance',
+                    () => {
+                        setProcMotionMode('autodance');
+                        regenerateProcMotion();
+                        getMotionMenu()?.updateControls();
+                    },
+                    {
+                        onUpdate: (btn) =>
+                            btn.classList.toggle(
+                                'active',
+                                getProcMotionState().mode === 'autodance'
+                            ),
+                    }
+                );
+                addPresetChip(
+                    group,
+                    '关闭',
+                    st.mode === 'off',
+                    () => {
+                        setProcMotionMode('off');
+                        regenerateProcMotion();
+                        getMotionMenu()?.updateControls();
+                    },
+                    {
+                        onUpdate: (btn) =>
+                            btn.classList.toggle('active', getProcMotionState().mode === 'off'),
+                    }
+                );
                 c.appendChild(group);
             });
 
@@ -83,23 +118,44 @@ export function buildProcMotionLevel(): PopupLevel {
                         bind: () => getProcMotionState().mode,
                     }
                 );
-                addToggleRow(c, '自动切换', st.autoSwitch, (v) => {
-                    setProcMotionAutoSwitch(v);
-                }, 'lucide:repeat', {
-                    bind: () => getProcMotionState().autoSwitch,
-                });
-                addToggleRow(c, 'LipSync', lipSt.enabled, (v) => {
-                    setLipSyncEnabled(v);
-                    getMotionMenu()?.updateControls();
-                }, 'lucide:mic', {
-                    bind: () => getLipSyncState().enabled,
-                });
-                addToggleRow(c, '微动叠加', st.lifelikeEnabled, (v) => {
-                    setLifelikeEnabled(v);
-                    getMotionMenu()?.updateControls();
-                }, 'lucide:sparkles', {
-                    bind: () => getProcMotionState().lifelikeEnabled,
-                });
+                addToggleRow(
+                    c,
+                    '自动切换',
+                    st.autoSwitch,
+                    (v) => {
+                        setProcMotionAutoSwitch(v);
+                    },
+                    'lucide:repeat',
+                    {
+                        bind: () => getProcMotionState().autoSwitch,
+                    }
+                );
+                addToggleRow(
+                    c,
+                    'LipSync',
+                    lipSt.enabled,
+                    (v) => {
+                        setLipSyncEnabled(v);
+                        getMotionMenu()?.updateControls();
+                    },
+                    'lucide:mic',
+                    {
+                        bind: () => getLipSyncState().enabled,
+                    }
+                );
+                addToggleRow(
+                    c,
+                    '微动叠加',
+                    st.lifelikeEnabled,
+                    (v) => {
+                        setLifelikeEnabled(v);
+                        getMotionMenu()?.updateControls();
+                    },
+                    'lucide:sparkles',
+                    {
+                        bind: () => getProcMotionState().lifelikeEnabled,
+                    }
+                );
             });
             cardContainer(container, (c) => {
                 addSliderRow(
@@ -168,81 +224,109 @@ export function buildProcMotionLevel(): PopupLevel {
                 renderContent: (inner) => {
                     const cats = getProcMotionBoneCategories();
                     const labels: Record<string, string> = {
-                        center:   '重心弹跳',
-                        upper:    '上半身呼吸',
-                        upper2:   '上半身2扭转',
-                        waist:    '腰部扭胯',
-                        head:     '头部点头',
-                        arm:      '手臂摆动',
-                        groove:   'Groove微晃',
+                        center: '重心弹跳',
+                        upper: '上半身呼吸',
+                        upper2: '上半身2扭转',
+                        waist: '腰部扭胯',
+                        head: '头部点头',
+                        arm: '手臂摆动',
+                        groove: 'Groove微晃',
                         shoulder: '肩部耸肩',
-                        allParent:'全親微晃',
-                        wrist:    '手腕节拍',
-                        footIk:   '足IK踏步',
-                        blink:    '眨眼',
-                        emotion:  '表情情绪轮',
+                        allParent: '全親微晃',
+                        wrist: '手腕节拍',
+                        footIk: '足IK踏步',
+                        blink: '眨眼',
+                        emotion: '表情情绪轮',
                     };
                     const icons: Record<string, string> = {
-                        center:   'lucide:move',
-                        upper:    'lucide:activity',
-                        upper2:   'lucide:rotate-ccw',
-                        waist:    'lucide:uturn-arrow',
-                        head:     'lucide:box-select',
-                        arm:      'lucide:arm-flex',
-                        groove:   'lucide:waves',
+                        center: 'lucide:move',
+                        upper: 'lucide:activity',
+                        upper2: 'lucide:rotate-ccw',
+                        waist: 'lucide:uturn-arrow',
+                        head: 'lucide:box-select',
+                        arm: 'lucide:arm-flex',
+                        groove: 'lucide:waves',
                         shoulder: 'lucide:arrow-up-down',
-                        allParent:'lucide:dot',
-                        wrist:    'lucide:hand',
-                        footIk:   'lucide:footprints',
-                        blink:    'lucide:eye',
-                        emotion:  'lucide:smile',
+                        allParent: 'lucide:dot',
+                        wrist: 'lucide:hand',
+                        footIk: 'lucide:footprints',
+                        blink: 'lucide:eye',
+                        emotion: 'lucide:smile',
                     };
                     // 分组：躯干
                     addSectionTitle(inner, '躯干');
                     for (const cat of ['center', 'allParent', 'waist', 'groove'] as const) {
                         if (cats.includes(cat)) {
-                            addToggleRow(inner, labels[cat] ?? cat, st.boneToggles[cat], (v) => {
-                                setProcMotionBoneToggle(cat, v);
-                                regenerateProcMotion();
-                            }, icons[cat] ?? 'lucide:circle', {
-                                bind: () => getProcMotionState().boneToggles[cat],
-                            });
+                            addToggleRow(
+                                inner,
+                                labels[cat] ?? cat,
+                                st.boneToggles[cat],
+                                (v) => {
+                                    setProcMotionBoneToggle(cat, v);
+                                    regenerateProcMotion();
+                                },
+                                icons[cat] ?? 'lucide:circle',
+                                {
+                                    bind: () => getProcMotionState().boneToggles[cat],
+                                }
+                            );
                         }
                     }
                     // 分组：上半身
                     addSectionTitle(inner, '上半身');
                     for (const cat of ['upper', 'upper2', 'shoulder', 'arm'] as const) {
                         if (cats.includes(cat)) {
-                            addToggleRow(inner, labels[cat] ?? cat, st.boneToggles[cat], (v) => {
-                                setProcMotionBoneToggle(cat, v);
-                                regenerateProcMotion();
-                            }, icons[cat] ?? 'lucide:circle', {
-                                bind: () => getProcMotionState().boneToggles[cat],
-                            });
+                            addToggleRow(
+                                inner,
+                                labels[cat] ?? cat,
+                                st.boneToggles[cat],
+                                (v) => {
+                                    setProcMotionBoneToggle(cat, v);
+                                    regenerateProcMotion();
+                                },
+                                icons[cat] ?? 'lucide:circle',
+                                {
+                                    bind: () => getProcMotionState().boneToggles[cat],
+                                }
+                            );
                         }
                     }
                     // 分组：头部
                     addSectionTitle(inner, '头部');
                     for (const cat of ['head', 'blink', 'emotion'] as const) {
                         if (cats.includes(cat)) {
-                            addToggleRow(inner, labels[cat] ?? cat, st.boneToggles[cat], (v) => {
-                                setProcMotionBoneToggle(cat, v);
-                                regenerateProcMotion();
-                            }, icons[cat] ?? 'lucide:circle', {
-                                bind: () => getProcMotionState().boneToggles[cat],
-                            });
+                            addToggleRow(
+                                inner,
+                                labels[cat] ?? cat,
+                                st.boneToggles[cat],
+                                (v) => {
+                                    setProcMotionBoneToggle(cat, v);
+                                    regenerateProcMotion();
+                                },
+                                icons[cat] ?? 'lucide:circle',
+                                {
+                                    bind: () => getProcMotionState().boneToggles[cat],
+                                }
+                            );
                         }
                     }
                     // 分组：末端
                     addSectionTitle(inner, '末端');
                     for (const cat of ['wrist', 'footIk'] as const) {
                         if (cats.includes(cat)) {
-                            addToggleRow(inner, labels[cat] ?? cat, st.boneToggles[cat], (v) => {
-                                setProcMotionBoneToggle(cat, v);
-                                regenerateProcMotion();
-                            }, icons[cat] ?? 'lucide:circle', {
-                                bind: () => getProcMotionState().boneToggles[cat],
-                            });
+                            addToggleRow(
+                                inner,
+                                labels[cat] ?? cat,
+                                st.boneToggles[cat],
+                                (v) => {
+                                    setProcMotionBoneToggle(cat, v);
+                                    regenerateProcMotion();
+                                },
+                                icons[cat] ?? 'lucide:circle',
+                                {
+                                    bind: () => getProcMotionState().boneToggles[cat],
+                                }
+                            );
                         }
                     }
                 },
@@ -254,18 +338,32 @@ export function buildProcMotionLevel(): PopupLevel {
                 icon: 'lucide:eye',
                 defaultOpen: false,
                 renderContent: (inner) => {
-                    addToggleRow(inner, '眼部跟随', st.eyeTrackingEnabled, (v) => {
-                        setProcMotionEyeTrackingEnabled(v);
-                        getMotionMenu()?.updateControls();
-                    }, 'lucide:eye', {
-                        bind: () => getProcMotionState().eyeTrackingEnabled,
-                    });
-                    addToggleRow(inner, '头部跟随', st.headTrackingEnabled, (v) => {
-                        setProcMotionHeadTrackingEnabled(v);
-                        getMotionMenu()?.updateControls();
-                    }, 'lucide:mouse-pointer-2', {
-                        bind: () => getProcMotionState().headTrackingEnabled,
-                    });
+                    addToggleRow(
+                        inner,
+                        '眼部跟随',
+                        st.eyeTrackingEnabled,
+                        (v) => {
+                            setProcMotionEyeTrackingEnabled(v);
+                            getMotionMenu()?.updateControls();
+                        },
+                        'lucide:eye',
+                        {
+                            bind: () => getProcMotionState().eyeTrackingEnabled,
+                        }
+                    );
+                    addToggleRow(
+                        inner,
+                        '头部跟随',
+                        st.headTrackingEnabled,
+                        (v) => {
+                            setProcMotionHeadTrackingEnabled(v);
+                            getMotionMenu()?.updateControls();
+                        },
+                        'lucide:mouse-pointer-2',
+                        {
+                            bind: () => getProcMotionState().headTrackingEnabled,
+                        }
+                    );
                 },
             });
 
@@ -280,7 +378,9 @@ export function buildProcMotionLevel(): PopupLevel {
                     ],
                     getMmdRuntimeType(),
                     (v) => {
-                        if (v === getMmdRuntimeType()) return;
+                        if (v === getMmdRuntimeType()) {
+                            return;
+                        }
                         (async () => {
                             const ok = await showConfirm(
                                 v === 'js'

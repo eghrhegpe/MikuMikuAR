@@ -19,14 +19,8 @@ import {
 import { registerPopupMenu } from './menu-factory';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
-import {
-    serializeScene,
-} from '../scene/scene';
-import {
-    SelectDir,
-    SaveScreenshot,
-    SaveScenePreset,
-} from '../core/wails-bindings';
+import { serializeScene } from '../scene/scene';
+import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
 import { focusModel } from '../scene/scene';
 import { setModelFormation, getFormationLabels } from '../scene/scene';
@@ -35,7 +29,9 @@ import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
 
 // ======== 从子文件导入 ========
 import {
-    buildRenderLevel, buildPostProcessLevel, buildPresetScenesLevel,
+    buildRenderLevel,
+    buildPostProcessLevel,
+    buildPresetScenesLevel,
 } from './scene-render-levels';
 import { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels';
 import { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
@@ -49,13 +45,21 @@ import { buildClothParamsLevel } from './motion-cloth-levels';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
-export { buildRenderLevel, buildPostProcessLevel, buildPresetScenesLevel } from './scene-render-levels';
+export {
+    buildRenderLevel,
+    buildPostProcessLevel,
+    buildPresetScenesLevel,
+} from './scene-render-levels';
 export { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels';
 export { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 
 // ======== Scene Menu State ========
 
-const { getMenu: getSceneMenu, refreshRoot: refreshSceneRoot, show: showSceneMenu } = registerPopupMenu({
+const {
+    getMenu: getSceneMenu,
+    refreshRoot: refreshSceneRoot,
+    show: showSceneMenu,
+} = registerPopupMenu({
     wrapperKey: 'scene-menu',
     popupType: 'scene',
     buildRoot: () => buildSceneRoot(),
@@ -124,16 +128,41 @@ function buildScreenshotLevel(): PopupLevel {
 /** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
 function buildSceneRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    items.push({ kind: 'folder', label: '预设场景', icon: 'lucide:bookmark', target: 'scene:presets' });
+    items.push({
+        kind: 'folder',
+        label: '预设场景',
+        icon: 'lucide:bookmark',
+        target: 'scene:presets',
+    });
     items.push({ kind: 'action', label: '保存场景', icon: 'lucide:save', target: 'scene:save' });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    items.push({ kind: 'folder', label: '后处理', icon: 'lucide:sparkles', target: 'scene:render:postprocess' });
-    items.push({ kind: 'folder', label: '舞台', icon: 'lucide:monitor', target: 'scene:render:stage' });
-    items.push({ kind: 'folder', label: '截图', icon: 'lucide:camera', target: 'scene:screenshot' });
+    items.push({
+        kind: 'folder',
+        label: '后处理',
+        icon: 'lucide:sparkles',
+        target: 'scene:render:postprocess',
+    });
+    items.push({
+        kind: 'folder',
+        label: '舞台',
+        icon: 'lucide:monitor',
+        target: 'scene:render:stage',
+    });
+    items.push({
+        kind: 'folder',
+        label: '截图',
+        icon: 'lucide:camera',
+        target: 'scene:screenshot',
+    });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({ kind: 'folder', label: '物理', icon: 'lucide:atom', target: 'scene:physics' });
     if (modelRegistry.size > 1) {
-        items.push({ kind: 'folder', label: '队形', icon: 'lucide:layout-grid', target: 'scene:formation' });
+        items.push({
+            kind: 'folder',
+            label: '队形',
+            icon: 'lucide:layout-grid',
+            target: 'scene:formation',
+        });
     }
     return items;
 }
@@ -184,11 +213,19 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
 /** 截图当前焦点模型 */
 async function screenshotCurrent(): Promise<void> {
     const id = focusedModelId;
-    if (!id) { setStatus('✗ 无焦点模型', false); return; }
+    if (!id) {
+        setStatus('✗ 无焦点模型', false);
+        return;
+    }
     const inst = modelRegistry.get(id);
-    if (!inst) { setStatus('✗ 模型不存在', false); return; }
+    if (!inst) {
+        setStatus('✗ 模型不存在', false);
+        return;
+    }
     const dir = await SelectDir();
-    if (!dir) return;
+    if (!dir) {
+        return;
+    }
     await new Promise((r) => requestAnimationFrame(r));
     await new Promise((r) => requestAnimationFrame(r));
     const fmt = uiState.screenshotFormat ?? 'image/png';
@@ -201,14 +238,21 @@ async function screenshotCurrent(): Promise<void> {
         await SaveScreenshot(dir, filename, base64);
         return true;
     }, '✗ 截图失败');
-    if (r) setStatus(`✓ 截图已保存: ${filename}`, true);
+    if (r) {
+        setStatus(`✓ 截图已保存: ${filename}`, true);
+    }
 }
 
 /** 批量截图所有已加载模型 */
 async function screenshotBatch(): Promise<void> {
-    if (modelRegistry.size === 0) { setStatus('✗ 场景中无模型', false); return; }
+    if (modelRegistry.size === 0) {
+        setStatus('✗ 场景中无模型', false);
+        return;
+    }
     const dir = await SelectDir();
-    if (!dir) return;
+    if (!dir) {
+        return;
+    }
     let saved = 0;
     const prevFocused = focusedModelId;
     const batchOk = await tryCatchStatus(async () => {
@@ -228,7 +272,10 @@ async function screenshotBatch(): Promise<void> {
             saved++;
             setStatus(`截图中… ${saved}/${modelRegistry.size}`, true);
         }
-        if (prevFocused) { setFocusedModelId(prevFocused); focusModel(prevFocused); }
+        if (prevFocused) {
+            setFocusedModelId(prevFocused);
+            focusModel(prevFocused);
+        }
         return true;
     }, '✗ 批量截图失败');
     if (batchOk) {
@@ -257,17 +304,45 @@ async function saveScene(): Promise<void> {
 
 /** 场景动作映射表——替代原 handleSceneAction 的 if 链 */
 const SCENE_ACTIONS: Record<string, () => void> = {
-    'screenshot:current': () => { void screenshotCurrent(); },
-    'screenshot:batch': () => { void screenshotBatch(); },
-    'scene:save': () => { void saveScene(); },
-    'scene:export-bundle': () => { void exportSceneBundle(); },
-    'scene:import-bundle': () => { void importSceneBundle(); },
-    'formation:set:line': () => { setModelFormation('line'); setStatus('✓ 一字排列', true); },
-    'formation:set:v-shape': () => { setModelFormation('v-shape'); setStatus('✓ V 字阵型', true); },
-    'formation:set:circle': () => { setModelFormation('circle'); setStatus('✓ 圆形阵型', true); },
-    'formation:set:grid': () => { setModelFormation('grid'); setStatus('✓ 网格阵型', true); },
-    'formation:set:diagonal': () => { setModelFormation('diagonal'); setStatus('✓ 对角排列', true); },
-    'formation:set:arc': () => { setModelFormation('arc'); setStatus('✓ 弧形排列', true); },
+    'screenshot:current': () => {
+        void screenshotCurrent();
+    },
+    'screenshot:batch': () => {
+        void screenshotBatch();
+    },
+    'scene:save': () => {
+        void saveScene();
+    },
+    'scene:export-bundle': () => {
+        void exportSceneBundle();
+    },
+    'scene:import-bundle': () => {
+        void importSceneBundle();
+    },
+    'formation:set:line': () => {
+        setModelFormation('line');
+        setStatus('✓ 一字排列', true);
+    },
+    'formation:set:v-shape': () => {
+        setModelFormation('v-shape');
+        setStatus('✓ V 字阵型', true);
+    },
+    'formation:set:circle': () => {
+        setModelFormation('circle');
+        setStatus('✓ 圆形阵型', true);
+    },
+    'formation:set:grid': () => {
+        setModelFormation('grid');
+        setStatus('✓ 网格阵型', true);
+    },
+    'formation:set:diagonal': () => {
+        setModelFormation('diagonal');
+        setStatus('✓ 对角排列', true);
+    },
+    'formation:set:arc': () => {
+        setModelFormation('arc');
+        setStatus('✓ 弧形排列', true);
+    },
 };
 
 function handleSceneAction(row: PopupRow): void {

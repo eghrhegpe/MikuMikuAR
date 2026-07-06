@@ -316,7 +316,13 @@ export class XpbdSolver {
      * @param stiffness 刚度 (0~1)，修正量缩放，默认 1.0
      * @param damping 约束方向阻尼 (0~1)，默认 0.0（对体积约束暂不生效）
      */
-    addVolumeConstraint(indices: number[], compliance = 0.0, restVolume?: number, stiffness = 1.0, _damping = 0.0): void {
+    addVolumeConstraint(
+        indices: number[],
+        compliance = 0.0,
+        restVolume?: number,
+        stiffness = 1.0,
+        _damping = 0.0
+    ): void {
         if (indices.length !== 4) {
             throw new Error('Volume constraint requires exactly 4 particles');
         }

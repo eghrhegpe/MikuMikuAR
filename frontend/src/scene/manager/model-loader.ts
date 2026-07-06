@@ -247,7 +247,9 @@ export async function loadPMXFile(
         if (uiState.autoScaleModel) {
             const bb = rootMesh.getHierarchyBoundingVectors(true);
             const h = bb.max.y - bb.min.y;
-            if (h > 1e-3) inst.scaling = 18 / h;
+            if (h > 1e-3) {
+                inst.scaling = 18 / h;
+            }
         }
         // Register via ModelManager only — it owns the registry
         // Must register BEFORE VMD load because loadVMDMotion queries modelRegistry
@@ -275,7 +277,9 @@ export async function loadPMXFile(
         setFocusedModelId(id);
 
         // 道具路径下的模型同时注册到 propRegistry（兼容灯光/阴影/序列化）
-        const propDir = (overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')).toLowerCase();
+        const propDir = (
+            overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')
+        ).toLowerCase();
         if (propDir && filePath.toLowerCase().startsWith(propDir)) {
             const rootMesh = inst.meshes[0];
             propRegistry.set(id, {
@@ -317,7 +321,9 @@ export async function loadPMXFile(
         // Auto-capture thumbnail for future popup display
         captureThumbnail(filePath).catch(() => {});
         if (!skipAutoApply) {
-            _tryAutoApplyPreset(id).catch((err: unknown) => console.warn('auto-apply preset:', err));
+            _tryAutoApplyPreset(id).catch((err: unknown) =>
+                console.warn('auto-apply preset:', err)
+            );
         }
         // Pre-load outfit file for UI entry availability
         _loadOutfits(id).catch(() => {});

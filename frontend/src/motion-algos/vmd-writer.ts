@@ -22,8 +22,10 @@ export interface MorphKeyFrame {
 
 // VMD 插值曲线预设（64 字节 = 16 组 × 4 字节 [x1,y1,x2,y2]，值域 0-127）
 export interface InterpCurve {
-    x1: number; y1: number;
-    x2: number; y2: number;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
 }
 export const INTERP_LINEAR: InterpCurve = { x1: 20, y1: 20, x2: 107, y2: 107 };
 export const INTERP_EASE_IN_OUT: InterpCurve = { x1: 20, y1: 40, x2: 80, y2: 107 };
@@ -184,5 +186,3 @@ export function buildVmd(
 
     return buf;
 }
-
-

@@ -5,8 +5,21 @@ import { deriveLighting, calcLuminance, TIME_OF_DAY_PRESETS } from '../scene/env
 vi.mock('@babylonjs/core/Lights/hemisphericLight', () => ({ HemisphericLight: vi.fn() }));
 vi.mock('@babylonjs/core/Lights/directionalLight', () => ({ DirectionalLight: vi.fn() }));
 vi.mock('@babylonjs/core/Maths/math.vector', () => ({
-    Vector3: class { constructor(public x: number, public y: number, public z: number) {} },
-    Quaternion: class { constructor(public x: number, public y: number, public z: number, public w: number = 1) {} },
+    Vector3: class {
+        constructor(
+            public x: number,
+            public y: number,
+            public z: number
+        ) {}
+    },
+    Quaternion: class {
+        constructor(
+            public x: number,
+            public y: number,
+            public z: number,
+            public w: number = 1
+        ) {}
+    },
 }));
 vi.mock('@babylonjs/core/Maths/math.color', () => ({ Color3: vi.fn(), Color4: vi.fn() }));
 vi.mock('@babylonjs/core/Meshes/mesh', () => ({ Mesh: vi.fn() }));

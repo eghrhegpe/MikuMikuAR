@@ -29,7 +29,9 @@ export async function detectMMD(): Promise<void> {
 
 export async function setBlenderPath(): Promise<void> {
     const path = await SelectExeFile();
-    if (!path) return;
+    if (!path) {
+        return;
+    }
     const r = await tryCatchStatus(async () => {
         await SetBlenderPath(path);
         return true;
@@ -41,7 +43,9 @@ export async function setBlenderPath(): Promise<void> {
 
 export async function setMMDPath(): Promise<void> {
     const path = await SelectExeFile();
-    if (!path) return;
+    if (!path) {
+        return;
+    }
     const r = await tryCatchStatus(async () => {
         await SetMMDPath(path);
         return true;
@@ -53,10 +57,18 @@ export async function setMMDPath(): Promise<void> {
 
 export async function addCustomSoftware(): Promise<boolean> {
     const path = await SelectExeFile();
-    if (!path) return false;
-    const name = path.split(/[/\\]/).pop()?.replace(/\.exe$/i, '') || '未知';
+    if (!path) {
+        return false;
+    }
+    const name =
+        path
+            .split(/[/\\]/)
+            .pop()
+            ?.replace(/\.exe$/i, '') || '未知';
     const args = await showPrompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
-    if (args === null) return false;
+    if (args === null) {
+        return false;
+    }
     const r = await tryCatchStatus(async () => {
         await AddCustomSoftware(path, name, args);
         return true;
@@ -92,18 +104,28 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
             if (entries && entries.length > 0) {
                 cardContainer(container, (c) => {
                     for (const entry of entries) {
-                        slideRow(c, softwareKindIcon(entry.kind), escapeHtml(entry.name), false,
+                        slideRow(
+                            c,
+                            softwareKindIcon(entry.kind),
+                            escapeHtml(entry.name),
+                            false,
                             () => getSettingsMenu()?.push(buildSoftwareDetailLevel(entry.path)),
                             escapeHtml(entry.kind),
                             entry.managed ? '自定义' : 'auto',
-                            undefined, undefined,
-                            { actionIcon: '▶', onActionClick: async () => {
-                                const r = await tryCatchStatus(async () => {
-                                    await LaunchSoftware(entry.path, entry.args || '');
-                                    return true;
-                                }, `✗ 启动 ${entry.name}`);
-                                if (r) setStatus(`✓ 已启动: ${entry.name}`, true);
-                            }}
+                            undefined,
+                            undefined,
+                            {
+                                actionIcon: '▶',
+                                onActionClick: async () => {
+                                    const r = await tryCatchStatus(async () => {
+                                        await LaunchSoftware(entry.path, entry.args || '');
+                                        return true;
+                                    }, `✗ 启动 ${entry.name}`);
+                                    if (r) {
+                                        setStatus(`✓ 已启动: ${entry.name}`, true);
+                                    }
+                                },
+                            }
                         );
                     }
                 });
@@ -189,7 +211,12 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     slideRow(c, 'lucide:play', '启动', false, () => {
                         LaunchSoftware(entry.path, '')
                             .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
-                            .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
+                            .catch((err: unknown) =>
+                                setStatus(
+                                    '✗ ' + (err instanceof Error ? err.message : String(err)),
+                                    false
+                                )
+                            );
                     });
 
                     addDangerRow(c, 'lucide:trash-2', '删除', async () => {
@@ -229,14 +256,22 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
             });
 
             cardContainer(container, (c) => {
-                    slideRow(c, 'lucide:play', '启动', false, () => {
-                        LaunchSoftware(entry.path, entry.args)
-                            .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
-                            .catch((err: unknown) => setStatus('✗ ' + (err instanceof Error ? err.message : String(err)), false));
-                    });
+                slideRow(c, 'lucide:play', '启动', false, () => {
+                    LaunchSoftware(entry.path, entry.args)
+                        .then(() => setStatus(`✓ 已启动: ${entry.name}`, true))
+                        .catch((err: unknown) =>
+                            setStatus(
+                                '✗ ' + (err instanceof Error ? err.message : String(err)),
+                                false
+                            )
+                        );
+                });
 
                 slideRow(c, 'lucide:plus', '转为自定义（以便编辑参数）', false, async () => {
-                    const args = await showPrompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
+                    const args = await showPrompt(
+                        '输入启动参数模板（支持 {model} 占位符，留空则不带参数）：',
+                        ''
+                    );
                     if (args === null) {
                         return;
                     }

@@ -29,7 +29,10 @@ export interface VPDPoseData {
 /** Clean a potential VPD numeric line: remove // comments, ; terminators, and commas.
  *  Returns the cleaned string with space-separated numbers, ready for splitting. */
 function _cleanNumericLine(line: string): string {
-    return line.replace(/\/\/.*$/, '').replace(/[;,]/g, ' ').trim();
+    return line
+        .replace(/\/\/.*$/, '')
+        .replace(/[;,]/g, ' ')
+        .trim();
 }
 
 /** 解码 VPD 文本（支持 UTF-8 / Shift-JIS 兜底）。

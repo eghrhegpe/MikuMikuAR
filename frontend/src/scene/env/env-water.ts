@@ -41,7 +41,10 @@ function computeWaveDirs(windDir: [number, number, number]): number[] {
     if (!windDir || (windDir[0] === 0 && windDir[2] === 0)) {
         // 无有效风向 → 回退到原硬编码的均匀分布
         const fallback: [number, number][] = [
-            [0.8, 0.6], [-0.3, 0.9], [-0.7, -0.5], [0.5, -0.8],
+            [0.8, 0.6],
+            [-0.3, 0.9],
+            [-0.7, -0.5],
+            [0.5, -0.8],
         ];
         for (let i = 0; i < 4; i++) {
             const len = Math.sqrt(fallback[i][0] ** 2 + fallback[i][1] ** 2);
@@ -98,7 +101,9 @@ Effect.ShadersStore['underwaterTintFragmentShader'] = [
 let _tintPostProcess: PostProcess | null = null;
 
 function ensureTintPostProcess(camera: any): void {
-    if (_tintPostProcess) return;
+    if (_tintPostProcess) {
+        return;
+    }
     _tintPostProcess = new PostProcess(
         'underwaterTint',
         'underwaterTint',
@@ -384,7 +389,10 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     // ——— 基础参数 ———
     mat.setFloat('waveHeight', state.waterWaveHeight);
     mat.setFloat('waveSpeed', (state.waterAnimSpeed ?? 1) * 1.0);
-    mat.setColor3('waterColor', new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2]));
+    mat.setColor3(
+        'waterColor',
+        new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2])
+    );
     mat.setFloat('waterTransparency', state.waterTransparency);
     mat.setFloat('waterLevel', state.waterLevel);
 
@@ -425,8 +433,14 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('foamTransitionRange', state.foamTransitionRange);
     mat.setFloat('rippleNormalStrength', state.rippleNormalStrength);
     mat.setFloat('rippleGlintStrength', state.rippleGlintStrength);
-    mat.setVector3('causticColor1', new Vector3(state.causticColor1[0], state.causticColor1[1], state.causticColor1[2]));
-    mat.setVector3('causticColor2', new Vector3(state.causticColor2[0], state.causticColor2[1], state.causticColor2[2]));
+    mat.setVector3(
+        'causticColor1',
+        new Vector3(state.causticColor1[0], state.causticColor1[1], state.causticColor1[2])
+    );
+    mat.setVector3(
+        'causticColor2',
+        new Vector3(state.causticColor2[0], state.causticColor2[1], state.causticColor2[2])
+    );
     mat.setFloat('causticScrollX', state.causticScrollX);
     mat.setFloat('causticScrollY', state.causticScrollY);
     mat.setFloat('fresnelAlphaInfluence', state.fresnelAlphaInfluence);

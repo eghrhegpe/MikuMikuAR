@@ -1,10 +1,4 @@
-import {
-    Color4,
-    Vector3,
-    Texture,
-    GPUParticleSystem,
-    ParticleSystem,
-} from '@babylonjs/core';
+import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem } from '@babylonjs/core';
 import { EnvState, envState } from '../../core/config';
 import { getWindVector } from '../../core/physics/wind-utils';
 import { _envSys, getScene, addRipple } from './env-impl';
@@ -200,7 +194,9 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     // 雨上限：1000 * 2 * 2.5 = 5000；particleEmitRate 放大时需要同步扩大
     const ps = new GPUParticleSystem('envParticles', { capacity: 10000 }, scene);
     ps.particleTexture = makeParticleTexture(type, envState.particleCustomTexture || undefined);
-    _prevCustomTexKey = envState.particleCustomTexture ? `_custom_${envState.particleCustomTexture}` : null;
+    _prevCustomTexKey = envState.particleCustomTexture
+        ? `_custom_${envState.particleCustomTexture}`
+        : null;
     ps.updateSpeed = 0.01;
     // 初始 emitter 占位（实际位置在 followObserver 中设置）
     ps.emitter = new Vector3(0, 0, 0);
@@ -489,7 +485,9 @@ export function createSplashEmitter(): void {
             return;
         }
         const cam = scene.activeCamera;
-        if (!cam) return;
+        if (!cam) {
+            return;
+        }
         const groundY = envState.groundLevel ?? 0;
         // 在相机附近 80x80 范围内随机跳动
         const rx = cam.position.x + (Math.random() - 0.5) * 80;
@@ -521,7 +519,8 @@ export function disposeSplash(): void {
 
 /** 溅射开关切换（由 env-impl 检测 particleSplash 变化时调用） */
 export function syncSplashState(): void {
-    const shouldShow = envState.particleSplash && isWeatherType(_currentParticleType) && envState.particleEnabled;
+    const shouldShow =
+        envState.particleSplash && isWeatherType(_currentParticleType) && envState.particleEnabled;
     if (shouldShow && !_splashSystem) {
         createSplashEmitter();
     } else if (!shouldShow && _splashSystem) {
@@ -540,26 +539,30 @@ let _fireworkScheduler: ReturnType<typeof setTimeout> | null = null;
 function spawnFireworkBurst(): void {
     const scene = getScene();
     const cam = scene.activeCamera;
-    if (!cam) return;
+    if (!cam) {
+        return;
+    }
 
     const groundY = envState.groundLevel ?? 0;
     // 在相机附近随机位置爆散
     const pos = new Vector3(
         cam.position.x + (Math.random() - 0.5) * 30,
         groundY + FIREWORK_HEIGHT_OFFSET + (Math.random() - 0.5) * 4,
-        cam.position.z + (Math.random() - 0.5) * 30,
+        cam.position.z + (Math.random() - 0.5) * 30
     );
 
     const burst = new GPUParticleSystem(
         `firework_${_fireworkBursts.length}_${Date.now()}`,
         { capacity: 200 },
-        scene,
+        scene
     );
     burst.particleTexture = makeParticleTexture('fireworks');
     burst.emitter = pos;
     // 瞬时高密度爆发：emitRate=2000，50ms 内出约 100 粒子，之后停发
     burst.emitRate = 2000;
-    setTimeout(() => { burst.emitRate = 0; }, 50);
+    setTimeout(() => {
+        burst.emitRate = 0;
+    }, 50);
 
     burst.minLifeTime = 0.4;
     burst.maxLifeTime = 1.0;
@@ -576,8 +579,16 @@ function spawnFireworkBurst(): void {
     const b = 0.5 + Math.cos((hue + 2 / 3) * Math.PI * 2) * 0.5;
 
     burst.addColorGradient(0, new Color4(r, g, b, 1), new Color4(r, g, b, 1));
-    burst.addColorGradient(0.4, new Color4(r, g, b, 0.8), new Color4(r * 0.8, g * 0.8, b * 0.8, 0.6));
-    burst.addColorGradient(1, new Color4(r * 0.3, g * 0.3, b * 0.3, 0), new Color4(r * 0.2, g * 0.2, b * 0.2, 0));
+    burst.addColorGradient(
+        0.4,
+        new Color4(r, g, b, 0.8),
+        new Color4(r * 0.8, g * 0.8, b * 0.8, 0.6)
+    );
+    burst.addColorGradient(
+        1,
+        new Color4(r * 0.3, g * 0.3, b * 0.3, 0),
+        new Color4(r * 0.2, g * 0.2, b * 0.2, 0)
+    );
 
     // 尺寸：爆炸膨胀后缩小
     burst.minSize = 0.05;
@@ -599,8 +610,12 @@ function spawnFireworkBurst(): void {
 function scheduleNextFireworkBurst(): void {
     const delay = 1200 + Math.random() * 1800; // 1.2~3s 间隔
     _fireworkScheduler = setTimeout(() => {
-        if (_currentParticleType !== 'fireworks') return;
-        if (!envState.particleEnabled) return;
+        if (_currentParticleType !== 'fireworks') {
+            return;
+        }
+        if (!envState.particleEnabled) {
+            return;
+        }
         spawnFireworkBurst();
         scheduleNextFireworkBurst();
     }, delay);

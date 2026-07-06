@@ -211,7 +211,7 @@ describe('SlideMenu — 渲染', () => {
         level.items.push({ kind: 'action' as const, label: 'B', icon: 'i', target: 'b' });
         menu.reRender();
         // reRender 使用 RAF 去抖，需等待下一帧
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(container.querySelectorAll('.slide-item').length).toBe(2);
     });
 });
@@ -298,11 +298,7 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
     });
 
     it('getLevel 返回指定层级', () => {
-        (menu as any).levels = [
-            makeLevel('L0'),
-            makeLevel('L1'),
-            makeLevel('L2'),
-        ];
+        (menu as any).levels = [makeLevel('L0'), makeLevel('L1'), makeLevel('L2')];
         expect(menu.getLevel(1)?.label).toBe('L1');
     });
 
@@ -327,12 +323,10 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
         const level: PopupLevel = {
             label: '根',
             dir: '',
-            items: [
-                { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
-            ],
+            items: [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }],
         };
         menu.reset(level);
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(container.querySelectorAll('.slide-item').length).toBe(1);
 
         const newLevel: PopupLevel = {
@@ -344,7 +338,7 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
             ],
         };
         menu.setLevel(0, newLevel); // index 0 is current (last) level
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(container.querySelectorAll('.slide-item').length).toBe(2);
     });
 
@@ -367,16 +361,14 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
         const level: PopupLevel = {
             label: '根',
             dir: '',
-            items: [
-                { kind: 'action' as const, label: '旧', icon: 'i', target: 'old' },
-            ],
+            items: [{ kind: 'action' as const, label: '旧', icon: 'i', target: 'old' }],
         };
         menu.reset(level);
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(container.querySelector('.slide-item')?.textContent).toContain('旧');
 
         menu.updateRow(0, { kind: 'action' as const, label: '新', icon: 'i', target: 'new' });
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(container.querySelector('.slide-item')?.textContent).toContain('新');
     });
 
@@ -384,9 +376,7 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
         const level: PopupLevel = {
             label: '根',
             dir: '',
-            items: [
-                { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
-            ],
+            items: [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }],
         };
         menu.reset(level);
         // 不会抛异常，也不会改变 items
@@ -396,9 +386,9 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
     });
 
     it('updateRow 无 panel 时正常跳过', () => {
-        (menu as any).levels = [makeLevel('根', '', [
-            { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
-        ])];
+        (menu as any).levels = [
+            makeLevel('根', '', [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }]),
+        ];
         // 不调用 reset/buildPanel，panel 无 .slide-list
         // 应正常跳过 DOM 操作
         expect(() => {
@@ -409,7 +399,7 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
 
     it('refreshHeader 刷新标题栏', async () => {
         menu.reset(makeLevel('原始标题'));
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(container.querySelector('.slide-title')?.textContent).toBe('原始标题');
 
         (menu as any).currentLevel!.label = '新标题';
@@ -448,9 +438,7 @@ describe('SlideMenu — 焦点全面 (setupFocus/clearFocus/applyFocus/activateF
     }
 
     it('setupFocus 初始化焦点为 0 并应用样式', async () => {
-        await initWithItems([
-            { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
-        ]);
+        await initWithItems([{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }]);
         expect((menu as any).focusIndex).toBe(0);
         expect(container.querySelector('.slide-focused')).toBeTruthy();
     });
@@ -484,9 +472,7 @@ describe('SlideMenu — 焦点全面 (setupFocus/clearFocus/applyFocus/activateF
     });
 
     it('applyFocus 越界索引不操作', async () => {
-        await initWithItems([
-            { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
-        ]);
+        await initWithItems([{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }]);
         (menu as any).focusIndex = 99;
         // 不应抛异常
         expect(() => (menu as any).applyFocus()).not.toThrow();
@@ -507,9 +493,7 @@ describe('SlideMenu — 焦点全面 (setupFocus/clearFocus/applyFocus/activateF
     it('activateFocused 越界不操作', async () => {
         const onClick = vi.fn();
         (menu as any).onItemClick = onClick;
-        await initWithItems([
-            { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
-        ]);
+        await initWithItems([{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }]);
         (menu as any).focusIndex = 99;
         (menu as any).activateFocused();
         expect(onClick).not.toHaveBeenCalled();
@@ -713,16 +697,10 @@ describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
             sublabel: '提示文本',
         });
         el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-        expect(onHover).toHaveBeenCalledWith(
-            expect.objectContaining({ label: '悬停测试' }),
-            true
-        );
+        expect(onHover).toHaveBeenCalledWith(expect.objectContaining({ label: '悬停测试' }), true);
 
         el.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
-        expect(onHover).toHaveBeenCalledWith(
-            expect.objectContaining({ label: '悬停测试' }),
-            false
-        );
+        expect(onHover).toHaveBeenCalledWith(expect.objectContaining({ label: '悬停测试' }), false);
     });
 });
 
@@ -871,7 +849,7 @@ describe('SlideMenu — 高阶功能 (extraButtonFactory / onClose / 手势)', (
             extraButtonFactory: () => [extraBtn],
         });
         menu.reset(makeLevel('设置'));
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const header = container.querySelector('.slide-header')!;
         expect(header.contains(extraBtn)).toBe(true);
         expect(header.querySelector('.extra-btn')?.textContent).toBe('⚙');
@@ -887,7 +865,7 @@ describe('SlideMenu — 高阶功能 (extraButtonFactory / onClose / 手势)', (
             onClose,
         });
         menu.reset(makeLevel('根'));
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         // 根层级返回按钮使用 X 图标，点击触发 onClose
         const backBtn = container.querySelector('.slide-back')!;
         expect(backBtn).toBeTruthy();
@@ -904,7 +882,7 @@ describe('SlideMenu — 高阶功能 (extraButtonFactory / onClose / 手势)', (
             onClose: vi.fn(),
         });
         menu.reset(makeLevel('根'));
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         // 根层级：iconify-icon 有 lucide:x
         let backIcon = container.querySelector('.slide-back iconify-icon');
         expect(backIcon?.getAttribute('icon')).toMatch(/x/);
@@ -1066,7 +1044,7 @@ describe('registerPopupMenu — 生命周期', () => {
         });
         show();
         // 等待 requestAnimationFrame（buildPanel 异步）
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(getMenu()).not.toBeNull();
         expect(getMenu()?.levelCount).toBe(1);
     });
@@ -1079,11 +1057,11 @@ describe('registerPopupMenu — 生命周期', () => {
             handlers: {},
         });
         show();
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const firstMenu = getMenu();
 
         show(); // 再次调用
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const secondMenu = getMenu();
 
         expect(secondMenu).toBe(firstMenu); // 同一实例
@@ -1099,7 +1077,7 @@ describe('registerPopupMenu — 生命周期', () => {
             },
         });
         show();
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
 
         // 推入子层级
         getMenu()?.push(makeLevel('子级'));
@@ -1112,9 +1090,7 @@ describe('registerPopupMenu — 生命周期', () => {
     });
 
     it('refreshRoot 更新根级 items', async () => {
-        let rootItems: PopupRow[] = [
-            { kind: 'action', label: 'A', icon: 'i', target: 'a' },
-        ];
+        let rootItems: PopupRow[] = [{ kind: 'action', label: 'A', icon: 'i', target: 'a' }];
         const { getMenu, show, refreshRoot } = registerPopupMenu({
             wrapperKey: 'test-menu',
             popupType: 'test',
@@ -1127,7 +1103,7 @@ describe('registerPopupMenu — 生命周期', () => {
             handlers: {},
         });
         show();
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(getMenu()?.currentLevel?.items.length).toBe(1);
 
         // 更新 items
@@ -1136,7 +1112,7 @@ describe('registerPopupMenu — 生命周期', () => {
             { kind: 'action', label: 'B', icon: 'i', target: 'b' },
         ];
         refreshRoot();
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(getMenu()?.currentLevel?.items.length).toBe(2);
     });
 
@@ -1176,7 +1152,7 @@ describe('registerPopupMenu — 生命周期', () => {
             handlers: {},
         });
         show();
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const menu = getMenu();
         expect(menu).not.toBeNull();
 
@@ -1192,13 +1168,13 @@ describe('registerPopupMenu — 生命周期', () => {
             handlers: {},
         });
         show();
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const firstMenu = getMenu();
 
         // dispose 后重新 show 应创建新实例
         firstMenu?.dispose();
         show();
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const secondMenu = getMenu();
 
         expect(secondMenu).not.toBeNull();

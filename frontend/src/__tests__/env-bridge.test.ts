@@ -117,7 +117,7 @@ const {
         hemiColor: [1, 1, 1] as [number, number, number],
         groundColor: [0.3, 0.3, 0.4] as [number, number, number],
         shadowEnabled: false,
-        shadowType: 'soft' as 'soft',
+        shadowType: 'soft' as const,
         shadowCascades: 2,
         shadowResolution: 1024,
         shadowBias: 0.0001,
@@ -202,40 +202,97 @@ vi.mock('../core/wails-bindings', () => ({
 
 vi.mock('@babylonjs/core/Maths/math.vector', () => {
     class Vec3 {
-        x = 0; y = 0; z = 0;
-        constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
-        clone() { return new Vec3(this.x, this.y, this.z); }
-        set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; return this; }
-        setAll(v: number) { this.x = this.y = this.z = v; return this; }
-        static Zero() { return new Vec3(0, 0, 0); }
+        x = 0;
+        y = 0;
+        z = 0;
+        constructor(x = 0, y = 0, z = 0) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        clone() {
+            return new Vec3(this.x, this.y, this.z);
+        }
+        set(x: number, y: number, z: number) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            return this;
+        }
+        setAll(v: number) {
+            this.x = this.y = this.z = v;
+            return this;
+        }
+        static Zero() {
+            return new Vec3(0, 0, 0);
+        }
     }
     return { Vector3: Vec3 };
 });
 vi.mock('@babylonjs/core/Maths/math.color', () => {
     class Col3 {
-        r = 0; g = 0; b = 0;
-        constructor(r = 0, g = 0, b = 0) { this.r = r; this.g = g; this.b = b; }
-        set(r: number, g: number, b: number) { this.r = r; this.g = g; this.b = b; return this; }
-        clone() { return new Col3(this.r, this.g, this.b); }
+        r = 0;
+        g = 0;
+        b = 0;
+        constructor(r = 0, g = 0, b = 0) {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+        }
+        set(r: number, g: number, b: number) {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            return this;
+        }
+        clone() {
+            return new Col3(this.r, this.g, this.b);
+        }
     }
     return { Color3: Col3 };
 });
 
 vi.mock('../core/config', () => {
     const tas = vi.fn();
-    const MockMmdWR = class { physics = { setGravity: vi.fn() }; };
+    const MockMmdWR = class {
+        physics = { setGravity: vi.fn() };
+    };
     // Create envState as a plain mutable object so Object.assign in setEnvState works
-    const es: Record<string, any> = { sunAngle: 45, azimuth: -45, skyMode: 'color',
-        skyColorTop: [0.3, 0.5, 0.8], skyColorMid: [0.8, 0.8, 0.9],
-        skyColorBot: [0.2, 0.2, 0.25], envIntensity: 2, groundColor: [0.15, 0.15, 0.18],
-        waterEnabled: false, particleEnabled: false, particleType: 'none',
-        cloudsEnabled: false, windEnabled: true, fogEnabled: false,
-        groundVisible: true, groundMode: 'solid', groundAlpha: 0.6,
-        windDirection: [0, 0, 1], windSpeed: 5, groundLevel: 0, waterLevel: 0,
-        waterColor: [0.2, 0.4, 0.6], waterTransparency: 0.8, waterWaveHeight: 0.5,
-        waterSize: 50, waterAnimSpeed: 1, clothEnabled: false, clothConfig: {},
-        skyTexture: '', skyRotationY: 0, skyRotationSpeed: 0, skyBrightness: 1,
-        starsEnabled: false, lightingPresetName: undefined,
+    const es: Record<string, any> = {
+        sunAngle: 45,
+        azimuth: -45,
+        skyMode: 'color',
+        skyColorTop: [0.3, 0.5, 0.8],
+        skyColorMid: [0.8, 0.8, 0.9],
+        skyColorBot: [0.2, 0.2, 0.25],
+        envIntensity: 2,
+        groundColor: [0.15, 0.15, 0.18],
+        waterEnabled: false,
+        particleEnabled: false,
+        particleType: 'none',
+        cloudsEnabled: false,
+        windEnabled: true,
+        fogEnabled: false,
+        groundVisible: true,
+        groundMode: 'solid',
+        groundAlpha: 0.6,
+        windDirection: [0, 0, 1],
+        windSpeed: 5,
+        groundLevel: 0,
+        waterLevel: 0,
+        waterColor: [0.2, 0.4, 0.6],
+        waterTransparency: 0.8,
+        waterWaveHeight: 0.5,
+        waterSize: 50,
+        waterAnimSpeed: 1,
+        clothEnabled: false,
+        clothConfig: {},
+        skyTexture: '',
+        skyRotationY: 0,
+        skyRotationSpeed: 0,
+        skyBrightness: 1,
+        starsEnabled: false,
+        lightingPresetName: undefined,
     };
     return {
         envState: es,
@@ -291,7 +348,9 @@ vi.mock('../scene/scene', () => {
             // Babylon's addOnce defers to the next render frame (~16ms at 60fps).
             // Use setTimeout(16) so Vitest fake timers advance performance.now() per
             // frame, letting the preset animation progress toward t >= 1.
-            addOnce: (cb: () => void) => { setTimeout(cb, 16); },
+            addOnce: (cb: () => void) => {
+                setTimeout(cb, 16);
+            },
         },
     };
     return {
@@ -306,7 +365,10 @@ vi.mock('../scene/scene', () => {
 
 // Import the mocked config/lighting/scene modules to access their actual instances
 // (These are the mock exports from the vi.mock factories above)
-import { envState as mockConfigEnvState, triggerAutoSave as mockConfigTriggerAutoSave } from '../core/config';
+import {
+    envState as mockConfigEnvState,
+    triggerAutoSave as mockConfigTriggerAutoSave,
+} from '../core/config';
 import { hemiLight as mockLightingHemiLight } from '../scene/render/lighting';
 import { scene as mockSceneInstance } from '../scene/scene';
 
@@ -407,11 +469,18 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
         vi.clearAllMocks();
         // Reset envState defaults
         Object.assign(mockConfigEnvState, {
-            skyMode: 'color', skyColorTop: [0.3, 0.5, 0.8],
-            skyColorMid: [0.8, 0.8, 0.9], skyColorBot: [0.2, 0.2, 0.25],
-            envIntensity: 2, groundColor: [0.15, 0.15, 0.18],
-            waterEnabled: false, particleEnabled: false, particleType: 'none',
-            cloudsEnabled: false, windEnabled: true, fogEnabled: false,
+            skyMode: 'color',
+            skyColorTop: [0.3, 0.5, 0.8],
+            skyColorMid: [0.8, 0.8, 0.9],
+            skyColorBot: [0.2, 0.2, 0.25],
+            envIntensity: 2,
+            groundColor: [0.15, 0.15, 0.18],
+            waterEnabled: false,
+            particleEnabled: false,
+            particleType: 'none',
+            cloudsEnabled: false,
+            windEnabled: true,
+            fogEnabled: false,
         });
     });
 
@@ -471,11 +540,19 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
 
     it('updates hemiLight intensity from getLightState()', () => {
         mockGetLightState.mockReturnValueOnce({
-            hemiIntensity: 0.6, dirIntensity: 0.4,
-            dirX: 0, dirY: 1, dirZ: 0, dirColor: [1, 1, 1],
-            hemiColor: [1, 1, 1], groundColor: [0.3, 0.3, 0.4],
-            shadowEnabled: false, shadowType: 'soft', shadowCascades: 2,
-            shadowResolution: 1024, shadowBias: 0.0001,
+            hemiIntensity: 0.6,
+            dirIntensity: 0.4,
+            dirX: 0,
+            dirY: 1,
+            dirZ: 0,
+            dirColor: [1, 1, 1],
+            hemiColor: [1, 1, 1],
+            groundColor: [0.3, 0.3, 0.4],
+            shadowEnabled: false,
+            shadowType: 'soft',
+            shadowCascades: 2,
+            shadowResolution: 1024,
+            shadowBias: 0.0001,
         });
         setEnvState({ skyMode: 'procedural' });
         expect(mockLightingHemiLight.intensity).toBe(0.6);
@@ -649,9 +726,12 @@ describe('setEnvState', () => {
         vi.spyOn(globalThis, 'setTimeout');
         vi.spyOn(globalThis, 'clearTimeout');
         Object.assign(mockConfigEnvState, {
-            skyMode: 'color', skyColorTop: [0.3, 0.5, 0.8],
-            skyColorMid: [0.8, 0.8, 0.9], skyColorBot: [0.2, 0.2, 0.25],
-            sunAngle: 45, azimuth: -45,
+            skyMode: 'color',
+            skyColorTop: [0.3, 0.5, 0.8],
+            skyColorMid: [0.8, 0.8, 0.9],
+            skyColorBot: [0.2, 0.2, 0.25],
+            sunAngle: 45,
+            azimuth: -45,
         });
     });
 

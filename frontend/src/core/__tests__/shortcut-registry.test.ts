@@ -55,9 +55,7 @@ describe('registerShortcut / registerShortcuts', () => {
             handler: undefined as unknown as () => void,
             group: 'g',
         });
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('test:no-handler'),
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('test:no-handler'));
         // Should not have been added
         expect(getAllShortcuts()).toHaveLength(0);
         warnSpy.mockRestore();
@@ -108,7 +106,9 @@ describe('initShortcutDispatcher — key event dispatch', () => {
             group: '测试组',
         });
         initShortcutDispatcher();
-        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '1', bubbles: true }));
+        window.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'Digit1', key: '1', bubbles: true })
+        );
         expect(handler).toHaveBeenCalledTimes(1);
     });
 
@@ -122,7 +122,9 @@ describe('initShortcutDispatcher — key event dispatch', () => {
             group: 'g',
         });
         initShortcutDispatcher();
-        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit2', key: '2', bubbles: true }));
+        window.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'Digit2', key: '2', bubbles: true })
+        );
         expect(handler).not.toHaveBeenCalled();
     });
 
@@ -146,9 +148,14 @@ describe('initShortcutDispatcher — key event dispatch', () => {
         });
         initShortcutDispatcher();
 
-        window.dispatchEvent(new KeyboardEvent('keydown', {
-            code: 'KeyA', key: 'a', ctrlKey: true, bubbles: true,
-        }));
+        window.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                code: 'KeyA',
+                key: 'a',
+                ctrlKey: true,
+                bubbles: true,
+            })
+        );
         expect(handlerCtrlA).toHaveBeenCalledTimes(1);
         expect(handlerPlainA).not.toHaveBeenCalled();
     });
@@ -166,9 +173,13 @@ describe('initShortcutDispatcher — key event dispatch', () => {
 
         const input = document.createElement('input');
         document.body.appendChild(input);
-        input.dispatchEvent(new KeyboardEvent('keydown', {
-            code: 'Digit1', key: '1', bubbles: true,
-        }));
+        input.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                code: 'Digit1',
+                key: '1',
+                bubbles: true,
+            })
+        );
         expect(handler).not.toHaveBeenCalled();
         document.body.removeChild(input);
     });
@@ -186,9 +197,13 @@ describe('initShortcutDispatcher — key event dispatch', () => {
 
         const textarea = document.createElement('textarea');
         document.body.appendChild(textarea);
-        textarea.dispatchEvent(new KeyboardEvent('keydown', {
-            code: 'Digit1', key: '1', bubbles: true,
-        }));
+        textarea.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                code: 'Digit1',
+                key: '1',
+                bubbles: true,
+            })
+        );
         expect(handler).not.toHaveBeenCalled();
         document.body.removeChild(textarea);
     });
@@ -207,9 +222,13 @@ describe('initShortcutDispatcher — key event dispatch', () => {
         const slider = document.createElement('div');
         slider.className = 'cs-slider';
         document.body.appendChild(slider);
-        slider.dispatchEvent(new KeyboardEvent('keydown', {
-            code: 'ArrowLeft', key: 'ArrowLeft', bubbles: true,
-        }));
+        slider.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                code: 'ArrowLeft',
+                key: 'ArrowLeft',
+                bubbles: true,
+            })
+        );
         expect(handler).not.toHaveBeenCalled();
         document.body.removeChild(slider);
     });
@@ -228,9 +247,13 @@ describe('initShortcutDispatcher — key event dispatch', () => {
         const slider = document.createElement('div');
         slider.className = 'color-slider';
         document.body.appendChild(slider);
-        slider.dispatchEvent(new KeyboardEvent('keydown', {
-            code: 'ArrowRight', key: 'ArrowRight', bubbles: true,
-        }));
+        slider.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                code: 'ArrowRight',
+                key: 'ArrowRight',
+                bubbles: true,
+            })
+        );
         expect(handler).not.toHaveBeenCalled();
         document.body.removeChild(slider);
     });
@@ -248,7 +271,10 @@ describe('initShortcutDispatcher — key event dispatch', () => {
         initShortcutDispatcher();
 
         const ev = new KeyboardEvent('keydown', {
-            code: 'KeyP', key: 'p', cancelable: true, bubbles: true,
+            code: 'KeyP',
+            key: 'p',
+            cancelable: true,
+            bubbles: true,
         });
         const preventSpy = vi.spyOn(ev, 'preventDefault');
         window.dispatchEvent(ev);
@@ -320,11 +346,15 @@ describe('setKeyBinding — dispatch after override', () => {
         setKeyBinding('override:test', 'Digit2');
 
         // Old key should not trigger
-        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '1', bubbles: true }));
+        window.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'Digit1', key: '1', bubbles: true })
+        );
         expect(handler).not.toHaveBeenCalled();
 
         // New key should trigger
-        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit2', key: '2', bubbles: true }));
+        window.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'Digit2', key: '2', bubbles: true })
+        );
         expect(handler).toHaveBeenCalledTimes(1);
     });
 });
@@ -346,7 +376,9 @@ describe('resetKeyBinding', () => {
         resetKeyBinding('reset:test');
 
         // Default key should work again
-        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '1', bubbles: true }));
+        window.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'Digit1', key: '1', bubbles: true })
+        );
         expect(handler).toHaveBeenCalledTimes(1);
     });
 });
@@ -436,9 +468,7 @@ describe('initShortcutDispatcher — initialization guard', () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         initShortcutDispatcher();
         initShortcutDispatcher();
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('already initialized'),
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('already initialized'));
         warnSpy.mockRestore();
     });
 });
