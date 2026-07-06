@@ -55,6 +55,7 @@ export class XpbdRenderer {
 
     // 约束可视化（复用单条 LinesMesh，每帧 updateVerticesData）
     private constraintLines: LinesMesh | null = null;
+    private bendLines: LinesMesh | null = null;
     private constraintVisible = false;
 
     // 胶囊可视化
@@ -161,9 +162,10 @@ export class XpbdRenderer {
             return;
         }
 
-        const positions: number[] = [];
+        const distancePositions: number[] = [];
+        const bendPositions: number[] = [];
         for (const c of solver.constraints) {
-            if (c.type === 'volume') {
+            if (c.type === 'volume' || c.type === 'ground') {
                 continue;
             }
             const i = c.indices[0];
@@ -173,10 +175,21 @@ export class XpbdRenderer {
             if (!pi || !pk) {
                 continue;
             }
-            positions.push(pi.p[0], pi.p[1], pi.p[2]);
-            positions.push(pk.p[0], pk.p[1], pk.p[2]);
+            if (c.type === 'bend') {
+                bendPositions.push(pi.p[0], pi.p[1], pi.p[2]);
+                bendPositions.push(pk.p[0], pk.p[1], pk.p[2]);
+            } else {
+                distancePositions.push(pi.p[0], pi.p[1], pi.p[2]);
+                distancePositions.push(pk.p[0], pk.p[1], pk.p[2]);
+            }
         }
 
+        // 距离约束用蓝色，弯曲约束用黄色
+        this._updateConstraintLines(distancePositions, [0.3, 0.6, 1]);
+        this._updateBendLines(bendPositions, [1, 0.8, 0.2]);
+    }
+
+    private _updateConstraintLines(positions: number[], color: [number, number, number]): void {
         if (positions.length === 0) {
             if (this.constraintLines) {
                 this.constraintLines.dispose();
@@ -190,7 +203,6 @@ export class XpbdRenderer {
             if (this.constraintLines) {
                 this.constraintLines.dispose();
             }
-            // 转换为 Vector3[] 以满足类型约束
             const pts: Vector3[] = [];
             for (let i = 0; i < positions.length; i += 3) {
                 pts.push(new Vector3(positions[i], positions[i + 1], positions[i + 2]));
@@ -200,14 +212,43 @@ export class XpbdRenderer {
                 { points: pts, updatable: true },
                 this.scene
             ) as LinesMesh;
-            this.constraintLines.color = new Color3(
-                this.config.constraintColor[0],
-                this.config.constraintColor[1],
-                this.config.constraintColor[2]
-            );
+            this.constraintLines.color = new Color3(color[0], color[1], color[2]);
         } else {
-            // 复用：仅更新顶点缓冲区
             this.constraintLines.updateVerticesData(
+                'position',
+                new Float32Array(positions),
+                false,
+                true
+            );
+        }
+    }
+
+    private _updateBendLines(positions: number[], color: [number, number, number]): void {
+        if (positions.length === 0) {
+            if (this.bendLines) {
+                this.bendLines.dispose();
+                this.bendLines = null;
+            }
+            return;
+        }
+
+        const pointCount = positions.length / 3;
+        if (!this.bendLines || this.bendLines.getTotalVertices() !== pointCount) {
+            if (this.bendLines) {
+                this.bendLines.dispose();
+            }
+            const pts: Vector3[] = [];
+            for (let i = 0; i < positions.length; i += 3) {
+                pts.push(new Vector3(positions[i], positions[i + 1], positions[i + 2]));
+            }
+            this.bendLines = MeshBuilder.CreateLines(
+                'xpbd_bend',
+                { points: pts, updatable: true },
+                this.scene
+            ) as LinesMesh;
+            this.bendLines.color = new Color3(color[0], color[1], color[2]);
+        } else {
+            this.bendLines.updateVerticesData(
                 'position',
                 new Float32Array(positions),
                 false,
@@ -299,6 +340,8 @@ export class XpbdRenderer {
     dispose(): void {
         this.constraintLines?.dispose();
         this.constraintLines = null;
+        this.bendLines?.dispose();
+        this.bendLines = null;
         for (const m of this.particleMeshes) {
             m.dispose();
         }
