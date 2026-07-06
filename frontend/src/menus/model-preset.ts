@@ -42,7 +42,7 @@ import {
     setAudioOffset,
 } from '../outfit/audio';
 import { showConfirm, showPrompt } from '../core/dialog';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus, showErrorToast } from '../core/utils';
 
 export interface ModelPresetEntry {
     name: string;
@@ -228,7 +228,7 @@ export async function selectAndSavePreset(id: string): Promise<void> {
         setStatus('✗ 无法序列化模型状态', false);
         return;
     }
-    const _r0 = await tryCatchStatus(() => SaveModelPreset(json, path), '✗ 保存失败');
+    const _r0 = await tryCatchStatus(() => SaveModelPreset(json, path), '✗ 保存失败', (err) => showErrorToast('保存模型预设失败', err instanceof Error ? err.message : String(err)));
     if (_r0 !== undefined) {
         setStatus('✓ 预设已保存', true);
     }
@@ -237,37 +237,7 @@ export async function selectAndSavePreset(id: string): Promise<void> {
 const _presetUndoStack = new Map<string, string>();
 
 function showUndoToast(message: string, undoFn: () => void): void {
-    const existing = document.getElementById('preset-undo-toast');
-    if (existing) {
-        existing.remove();
-    }
-    const toast = document.createElement('div');
-    toast.id = 'preset-undo-toast';
-    toast.style.cssText =
-        'position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:8px 16px;display:flex;align-items:center;gap:12px;z-index:9999;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,0.3);';
-    const msg = document.createElement('span');
-    msg.textContent = message;
-    toast.appendChild(msg);
-    const undoBtn = document.createElement('button');
-    undoBtn.className = 'mode-btn';
-    undoBtn.textContent = '撤销';
-    undoBtn.style.cssText = 'font-size:12px;padding:2px 10px;cursor:pointer;';
-    undoBtn.addEventListener('click', () => {
-        undoFn();
-        toast.remove();
-    });
-    toast.appendChild(undoBtn);
-    const closeBtn = document.createElement('span');
-    closeBtn.textContent = '✕';
-    closeBtn.style.cssText = 'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px;';
-    closeBtn.addEventListener('click', () => toast.remove());
-    toast.appendChild(closeBtn);
-    document.body.appendChild(toast);
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.remove();
-        }
-    }, 8000);
+    showErrorToast(message, undefined, [{ label: '撤销', onClick: undoFn }], 8000);
 }
 
 export async function tryAutoApplyPreset(id: string): Promise<void> {
@@ -402,7 +372,7 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
     } catch {
         /* no existing preset — fine */
     }
-    const _r1 = await tryCatchStatus(() => SaveModelPresetToLib(trimmed, json), '✗ 保存失败');
+    const _r1 = await tryCatchStatus(() => SaveModelPresetToLib(trimmed, json), '✗ 保存失败', (err) => showErrorToast('保存模型预设失败', err instanceof Error ? err.message : String(err)));
     if (_r1 !== undefined) {
         setStatus('✓ 预设已保存到库', true);
     }

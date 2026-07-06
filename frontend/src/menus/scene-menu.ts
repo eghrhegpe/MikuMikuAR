@@ -27,7 +27,7 @@ import {
     SaveScreenshot,
     SaveScenePreset,
 } from '../core/wails-bindings';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus, showErrorToast } from '../core/utils';
 import { focusModel } from '../scene/scene';
 import { setModelFormation, getFormationLabels } from '../scene/scene';
 import type { FormationType } from '../scene/scene';
@@ -239,10 +239,19 @@ async function screenshotBatch(): Promise<void> {
 /** 保存场景（自动编号到预设目录） */
 async function saveScene(): Promise<void> {
     const json = JSON.stringify(serializeScene(), null, 2);
-    const filename = await tryCatchStatus(() => SaveScenePreset(json), '✗ 保存失败');
-    if (filename !== undefined) {
-        setStatus(`✓ 场景已保存: ${filename}`, true);
+    try {
+        const filename = await SaveScenePreset(json);
+        try {
+            await navigator.clipboard.writeText(json);
+            setStatus(`✓ 场景已保存: ${filename}（已复制到剪贴板）`, true);
+        } catch {
+            setStatus(`✓ 场景已保存: ${filename}`, true);
+        }
         reRenderSceneMenu();
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err ?? 'unknown error');
+        setStatus('✗ 保存失败', false);
+        showErrorToast('保存场景失败', msg);
     }
 }
 

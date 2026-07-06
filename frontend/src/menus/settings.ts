@@ -53,6 +53,7 @@ import { selectResourceRoot, selectOverridePath } from './library-core';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle, addDangerRow, addEmptyRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
+import { engine } from '../scene/scene';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
 import { rescanAndSync, reloadConfig } from './library';
@@ -824,6 +825,7 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                 const currentFps = uiState.fpsLimit ?? 0;
                 addSliderRow(c, '帧率上限', currentFps, 0, 144, 1, (v) => {
                     const limit = Math.round(v);
+                    engine.maxFPS = limit === 0 ? undefined : limit;
                     setUIState({ fpsLimit: limit === 0 ? 0 : limit });
                     getSettingsMenu()?.updateControls();
                     setStatus(limit === 0 ? '✓ 帧率不限制' : `✓ 帧率上限: ${limit} FPS`, true);
