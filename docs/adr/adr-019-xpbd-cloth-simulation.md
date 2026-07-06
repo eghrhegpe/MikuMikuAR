@@ -51,6 +51,22 @@
 - ⚠️ SDF 碰撞体数量固定（13 胶囊），不支持自动适配非标准骨骼模型
 - ✅ 调试渲染器可在开发时可视化粒子/约束/胶囊
 
+### 后续修正
+
+**2026-07-06 — 碰撞胶囊半径公式修正**
+- `updateCapsuleSizes` 半径原为 `dist * 0.2`，导致实测半径仅 DEFAULT_BODY_CAPSULES 参考值的 1/4，粒子穿透率高
+- 修正为 `dist * 0.8`，与 DEFAULT 腰半径 0.13 一致；半高保持 `dist * 0.5` 不变
+- 参考：腰高（下半身→腰 ≈ 0.15）× 0.8 = 0.12，与实际腰围/2π 吻合
+
+**2026-07-06 — `autoFitClothDimensions` 重写（v2）**
+- 原算法使用锚骨骼到父骨骼的链段长度 × 0.8 做 innerRadius（物理意义错误，链段≠体截面半径）
+- v2 改为**横向骨骼采样法**：在锚骨骼 Y 高度附近采集所有骨骼的径向距离，取中位数 × 0.55 作为体半径
+- 回退路径：链段 × 0.7；最终回退：参考腰半径 × 身高归一化系数
+- `length` 从 `verticalSpan × 0.5` 改为 `max(verticalSpan × 0.6, 参考裙长 × scaleFactor)`
+- 新增 `modelHeight` 参数（来自 bounding box），用于身高归一化（REF_HEIGHT = 1.7m）
+- BFS 骨骼搜索深度从 6 层提升至 8 层
+- 触发条件修复：出厂默认值（innerRadius=0.12）也能触发 autoFit（原仅 innerRadius>=0.9 触发）
+
 ## 状态
 
-✅ 已实现并验证（2026-06-28），测试套件 `xpbd-solver.test.ts` + `xpbd-cloth.test.ts`（20 tests 全部通过）。
+✅ 已实现并验证（2026-06-28），测试套件 `xpbd-solver.test.ts` + `xpbd-cloth.test.ts`（52 tests 全部通过）。

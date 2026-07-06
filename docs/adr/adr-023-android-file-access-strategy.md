@@ -1,7 +1,8 @@
 # ADR-023: Android 文件访问策略 — FileAccessor 抽象与 SAF 决策
 
 **日期**：2026-07-04
-> **状态**: 部分完成 — Phase A+B 已实施；Phase C Spike 完成（Java 侧可行，Go 侧受 Wails v3 alpha 限制）
+**更新**：2026-07-06 — Phase C 重新评估：Wails v3 已原生支持 SAF 文件选择
+> **状态**: Phase A+B 已实施；Phase C 文件选择已由 Wails v3 原生解决；目录选择仍需自建 bridge
 
 ---
 
@@ -72,36 +73,35 @@ type FileAccessor interface {
 - `isolateDir` 诊断日志的 `os.Stat` — 故意用 `os.Stat` 探测权限
 - `zip.OpenReader(zipPath)` — Go 标准库限制，Phase C 对 `content://` 先复制到 cache 再调用
 
-### 3. Phase C：SAF 接入策略（决策待定 ⏸）
+### 3. Phase C：SAF 接入策略（2026-07-06 重新评估）
 
-**Wails v3 SAF 能力调研结论**：
+**Wails v3 已原生支持 SAF 文件选择**（dialogs_android.go）：
 
-| SAF 能力 | 状态 | 证据 |
-|----------|------|------|
-| `OpenDocumentTree`（选目录树） | ❌ 不支持 | `mobile_features_android.go` 35 个方法无一项 SAF 相关 |
-| `OpenDocument`（选单文件） | ❌ 不支持 | 同上 |
-| `TakePersistableUriPermission` | ❌ 不支持 | `SecureSet/SecureGet` 是键值对存储，与 URI 权限无关 |
-| `ContentResolver.openFileDescriptor` | ❌ 不支持 | 无任何 content:// 处理 API |
-| `DocumentsContract.buildChildDocumentsUriUsingTree` | ❌ 不支持 | 同上 |
+```go
+// File dialogs by the Storage Access Framework document picker
+// (selected documents are copied into the app's cache directory
+// so callers receive real filesystem paths).
+```
 
-**三条路径对比**：
+| SAF 能力 | Wails v3 状态 | 说明 |
+|----------|-------------|------|
+| `OpenFile`（选单文件） | ✅ 已支持 | SAF 文档选择器 → 自动复制到 cache → 返回真实路径 |
+| `OpenDirectory`（选目录树） | ❌ 不支持 | 返回 "directory selection is not supported on Android" |
+| `SaveFile`（保存文件） | ❌ 不支持 | 返回 "save file dialogs are not supported on Android" |
+| `TakePersistableUriPermission` | ❌ 不支持 | 需自建 bridge |
+| `ContentResolver.openFileDescriptor` | ❌ 不支持 | 需自建 bridge |
 
-| 路径 | 工作量 | 风险 | 适用场景 |
-|------|--------|------|---------|
-| A. Wails 原生 | — | ❌ 否决 | 零 API 可用 |
-| B. 自建 JNI 桥接 | ~4.5 天 | ⚠️ Wails alpha 不稳定，升级可能冲突 | 长期方案 |
-| C. 继续 `MANAGE_EXTERNAL_STORAGE` | 0 | ⚠️ Google Play 审核风险 | sideload/国内渠道 |
+**结论**：文件选择已由 Wails v3 原生解决，不需要自建 JNI 桥接。用户通过 Wails 文件选择器选的模型会自动复制到 cache 目录，返回真实路径，`IsolateModelDir` / `StartFileServer` 全链路正常工作。
 
-**决策：先做 0.5 天 Spike，再决定是否投入完整 4.5 天**
+**仍需自建 bridge 的场景**：目录选择（`OpenDocumentTree`）—— 用于让用户指定资源库根目录。`WailsBridge.java` 中的 `openDocumentTree` Spike 已实现 Java 侧，但 Go→Java JNI 调用链未接通。
 
-Spike 范围（仅验证可行性，不写生产代码）：
-1. `WailsBridge.java` 加 `openDocumentTree()` 方法，启动 `ACTION_OPEN_DOCUMENT_TREE` Intent
-2. 验证能拿到 `content://` URI 字符串回传 Go
-3. 验证 `takePersistableUriPermission` 重启后仍有效
-4. 验证 Wails Activity 的 `onActivityResult` 转发链路是否工作
+**三条路径重新评估**：
 
-**Spike 成功** → 投入剩余 4 天完成完整 SAF（路径 B）
-**Spike 失败**（Wails alpha 阻塞） → 回退路径 C，等 Wails v3 Android 稳定后再启动
+| 路径 | 评估 | 决策 |
+|------|------|------|
+| A. Wails 原生（文件选择） | ✅ 已可用 | **采纳** — 文件选择直接用 Wails API |
+| B. 自建 JNI 桥接（目录选择） | Java 侧 Spike 已完成，Go 侧待接通 | **延后** — 目录选择非核心路径，用户可手动输入路径 |
+| C. `MANAGE_EXTERNAL_STORAGE` | 短期可用 | **保留** — 作为目录选择的 fallback |
 
 ### 4. 桌面端 SelectDir 小问题（已识别，待修复）
 
@@ -158,8 +158,8 @@ Spike 范围（仅验证可行性，不写生产代码）：
 
 ## 后续方向
 
-1. **短期**：执行 Phase C Spike（0.5 天），验证 SAF 可行性
-2. **中期**：根据 Spike 结果决定是否投入完整 SAF 桥接（4 天）
-3. **并行**：修复桌面端 `SelectDir` 弹文件选择器的小问题
-4. **长期**：关注 Wails v3 Android runtime 稳定进展（issue #5020 / PR #5022），稳定后重新评估 SAF 接入成本
+1. ~~短期：执行 Phase C Spike（0.5 天），验证 SAF 可行性~~ → **已由 Wails v3 原生解决文件选择**
+2. **短期**：验证 Wails v3 文件选择器在真机上的行为（cache 复制 + 路径返回）
+3. **中期**：接通目录选择 JNI 桥接（`openDocumentTree` Go→Java 调用链），用于资源库路径选择
+4. **长期**：关注 Wails v3 稳定版发布，确认 SAF 行为无 breaking change
 5. **缓存治理**：`cache/MikuMikuAR/serve/` 目录随 `CleanOrphanCache` 清理，需监控膨胀情况
