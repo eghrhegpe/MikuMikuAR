@@ -61,11 +61,7 @@ import { loadManager } from '../core/load-manager';
 import { removeModel } from '../scene/scene';
 import { addVmdLayerFromPath } from '../scene/motion/vmd-layers';
 import { loadVPDPose } from '../scene/scene';
-import {
-    SelectAudioFile,
-    SelectVMDMotion,
-    SelectVPDPose,
-} from '../core/wails-bindings';
+import { SelectAudioFile, SelectVMDMotion, SelectVPDPose } from '../core/wails-bindings';
 import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
 import { SlideMenu } from './menu';
@@ -94,9 +90,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 if (!inst) {
                     return null;
                 }
-                return inst.kind === 'stage'
-                    ? buildStageTransformLevel(id)
-                    : buildModelLevel(id);
+                return inst.kind === 'stage' ? buildStageTransformLevel(id) : buildModelLevel(id);
             }
             if (row.target === '__recent__') {
                 const recentMap = new Map<string, number>();
@@ -284,12 +278,16 @@ function renderItemsWithRAF(
                         const next = buildLevel(item.target, item.label, filter, targetStack);
                         const stack = targetStack || stackRegistry.modelStack;
                         stack.push(next);
-                    } else                     if (item.model) {
+                    } else if (item.model) {
                         if (item.model.format === 'vmd' && motionBindingTargetId) {
                             const id = motionBindingTargetId;
                             setMotionBindingTargetId(null);
                             closeAllOverlays();
-                            loadManager.load({ kind: 'vmd', path: item.model.file_path, modelId: id });
+                            loadManager.load({
+                                kind: 'vmd',
+                                path: item.model.file_path,
+                                modelId: id,
+                            });
                         } else {
                             onModelRowClick(item.model);
                         }
@@ -326,7 +324,11 @@ function renderItemsWithRAF(
                             const id = motionBindingTargetId;
                             setMotionBindingTargetId(null);
                             closeAllOverlays();
-                            loadManager.load({ kind: 'vmd', path: item.model.file_path, modelId: id });
+                            loadManager.load({
+                                kind: 'vmd',
+                                path: item.model.file_path,
+                                modelId: id,
+                            });
                         } else {
                             onModelRowClick(item.model);
                         }
@@ -512,15 +514,15 @@ function onModelRowClick(m: LibraryModel): void {
         closeAllOverlays();
         setStatus('正在解压 zip...', false);
         _isExtracting = true;
-                ExtractZip(m.file_path, m.zip_inner)
-                    .then((result) => {
-                        setStatus(result.cached ? '✓ 命中缓存' : '✓ 解压完成', true);
-                        if (m.format === 'vmd') {
-                            loadManager.load({ kind: 'vmd', path: result.file_path });
-                        } else {
-                            loadManager.load({ kind: isStage ? 'stage' : 'actor', path: result.file_path });
-                        }
-                    })
+        ExtractZip(m.file_path, m.zip_inner)
+            .then((result) => {
+                setStatus(result.cached ? '✓ 命中缓存' : '✓ 解压完成', true);
+                if (m.format === 'vmd') {
+                    loadManager.load({ kind: 'vmd', path: result.file_path });
+                } else {
+                    loadManager.load({ kind: isStage ? 'stage' : 'actor', path: result.file_path });
+                }
+            })
             .catch((err) => {
                 setStatus('✗ 解压失败: ' + formatError(err), false);
             })
@@ -679,9 +681,24 @@ export function buildModelRootItems(): PopupRow[] {
     if (actors.length > 0) {
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
     }
-    items.push({ kind: 'folder', label: '加载模型', icon: 'lucide:folder', target: 'models:browse' });
-    items.push({ kind: 'action', label: '导入文件', icon: 'lucide:file-plus', target: 'models:import-file' });
-    items.push({ kind: 'action', label: '重新扫描', icon: 'lucide:refresh-cw', target: 'models:rescan' });
+    items.push({
+        kind: 'folder',
+        label: '加载模型',
+        icon: 'lucide:folder',
+        target: 'models:browse',
+    });
+    items.push({
+        kind: 'action',
+        label: '导入文件',
+        icon: 'lucide:file-plus',
+        target: 'models:import-file',
+    });
+    items.push({
+        kind: 'action',
+        label: '重新扫描',
+        icon: 'lucide:refresh-cw',
+        target: 'models:rescan',
+    });
     items.push({ kind: 'folder', label: '最近打开', icon: 'lucide:clock', target: '__recent__' });
     items.push({ kind: 'folder', label: '标签', icon: 'lucide:tag', target: '__tags__' });
 
@@ -696,7 +713,11 @@ export function showModelPopup(): void {
     const wrapper = getMenuWrapper('model-popup');
     if (stackRegistry.modelStack) {
         stackRegistry.modelStack.resetToRoot();
-        stackRegistry.modelStack.setLevel(0, { label: '模型', dir: '', items: buildModelRootItems() });
+        stackRegistry.modelStack.setLevel(0, {
+            label: '模型',
+            dir: '',
+            items: buildModelRootItems(),
+        });
         stackRegistry.modelStack.reRender();
         return;
     }
@@ -764,9 +785,11 @@ export async function initLibrary(): Promise<void> {
 export async function selectResourceRoot(): Promise<void> {
     const ok = await showConfirm(
         '修改资源根目录会导致模型库重新扫描。确定继续吗？',
-        '切换资源根目录',
+        '切换资源根目录'
     );
-    if (!ok) return;
+    if (!ok) {
+        return;
+    }
     const dir = await SelectDir();
     if (!dir) {
         return;
@@ -879,7 +902,9 @@ export async function refreshLibrary(): Promise<void> {
         const m = await rescanAndSync();
         return m;
     }, '✗ 扫描失败');
-    if (models === undefined) return;
+    if (models === undefined) {
+        return;
+    }
     setStatus(`✓ ${(models || []).length} 个条目`, true);
     CleanOrphanCache().catch((err) => console.warn('CleanOrphanCache (background):', err));
     if (
@@ -910,23 +935,28 @@ export async function importFile(): Promise<void> {
         path = await SelectImportFile();
     } catch (err) {
         // 用户取消文件选择 — Wails 抛 "cancelled by user"，静默忽略
-        const msg = err instanceof Error ? err.message
-            : (err && typeof err === 'object' && 'message' in err) ? String((err as { message: unknown }).message)
-            : String(err);
-        if (/cancelled by user/i.test(msg)) return;
+        const msg =
+            err instanceof Error
+                ? err.message
+                : err && typeof err === 'object' && 'message' in err
+                  ? String((err as { message: unknown }).message)
+                  : String(err);
+        if (/cancelled by user/i.test(msg)) {
+            return;
+        }
         setStatus('✗ 选择文件失败: ' + formatError(err), false);
         return;
     }
-    if (!path) return;
+    if (!path) {
+        return;
+    }
     const lower = path.toLowerCase();
     if (lower.endsWith('.zip')) {
         setStatus('⏳ 导入压缩包...', false);
         try {
             await ImportZip(path);
             setStatus('✓ 压缩包已导入', true);
-            await refreshLibrary().catch((err) =>
-                console.warn('refresh after zip import:', err)
-            );
+            await refreshLibrary().catch((err) => console.warn('refresh after zip import:', err));
         } catch (err) {
             setStatus('✗ 导入失败: ' + formatError(err), false);
             console.error('ImportZip failed:', err);

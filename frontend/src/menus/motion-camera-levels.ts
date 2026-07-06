@@ -1,7 +1,14 @@
 // [doc:architecture] Camera Levels — 相机参数弹窗层级
 // 从 scene-menu.ts 迁移到 motion-popup.ts
 
-import { setStatus, cardContainer, libraryRoot, stackRegistry, motionBindingTargetId, setMotionBindingTargetId } from '../core/config';
+import {
+    setStatus,
+    cardContainer,
+    libraryRoot,
+    stackRegistry,
+    motionBindingTargetId,
+    setMotionBindingTargetId,
+} from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
@@ -69,7 +76,7 @@ export function buildCameraLevel(): PopupLevel {
                             cameraExpandedMode = cameraExpandedMode ? null : currentMode;
                         } else {
                             switchCameraMode(v as CameraMode);
-                            cameraExpandedMode = v === 'oneshot' ? null : v as CameraMode;
+                            cameraExpandedMode = v === 'oneshot' ? null : (v as CameraMode);
                         }
                         refreshCameraLevel();
                     },
@@ -98,13 +105,20 @@ export function buildCameraLevel(): PopupLevel {
 
             // Auto Camera
             cardContainer(container, (c) => {
-                addToggleRow(c, '自动运镜', isAutoCameraEnabled(), (v) => {
-                    const bd = getProcBeatDetector();
-                    setAutoCameraEnabled(v, bd ?? undefined);
-                    refreshCameraLevel();
-                }, 'lucide:video', {
-                    bind: () => isAutoCameraEnabled(),
-                });
+                addToggleRow(
+                    c,
+                    '自动运镜',
+                    isAutoCameraEnabled(),
+                    (v) => {
+                        const bd = getProcBeatDetector();
+                        setAutoCameraEnabled(v, bd ?? undefined);
+                        refreshCameraLevel();
+                    },
+                    'lucide:video',
+                    {
+                        bind: () => isAutoCameraEnabled(),
+                    }
+                );
                 if (isAutoCameraEnabled()) {
                     addSliderRow(
                         c,
@@ -113,7 +127,9 @@ export function buildCameraLevel(): PopupLevel {
                         1,
                         8,
                         1,
-                        (v) => { setAutoCameraBeatsPerSwitch(Math.round(v)); },
+                        (v) => {
+                            setAutoCameraBeatsPerSwitch(Math.round(v));
+                        },
                         'lucide:timer',
                         undefined,
                         { bind: () => getAutoCameraBeatsPerSwitch() }
@@ -127,9 +143,13 @@ export function buildCameraLevel(): PopupLevel {
                 paramsContainer.className = 'cs-params';
                 const modeToExpand = cameraExpandedMode ?? currentMode;
                 if (modeToExpand !== 'oneshot' && modeToExpand !== 'vmd') {
-                    if (modeToExpand === 'orbit') renderOrbitParams(paramsContainer);
-                    else if (modeToExpand === 'freefly') renderFreeflyParams(paramsContainer);
-                    else if (modeToExpand === 'concert') renderConcertParams(paramsContainer);
+                    if (modeToExpand === 'orbit') {
+                        renderOrbitParams(paramsContainer);
+                    } else if (modeToExpand === 'freefly') {
+                        renderFreeflyParams(paramsContainer);
+                    } else if (modeToExpand === 'concert') {
+                        renderConcertParams(paramsContainer);
+                    }
                     c.appendChild(paramsContainer);
                 }
 
@@ -143,9 +163,15 @@ export function buildCameraLevel(): PopupLevel {
 
                 slideRow(c, 'lucide:upload', '加载相机 VMD', false, () => {
                     setMotionBindingTargetId(null);
-                    const level = stackRegistry.buildLevel!(libraryRoot, '相机 VMD', (m) => m.format === 'vmd');
+                    const level = stackRegistry.buildLevel!(
+                        libraryRoot,
+                        '相机 VMD',
+                        (m) => m.format === 'vmd'
+                    );
                     const menu = getMotionMenu();
-                    if (menu) menu.push(level);
+                    if (menu) {
+                        menu.push(level);
+                    }
                 });
             });
         },

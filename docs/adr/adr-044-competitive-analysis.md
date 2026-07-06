@@ -34,4 +34,4 @@
 
 ## 关联
 
-完整报告见 `docs/competitive-analysis.md`。从其他项目挖掘 15 个新目标已写入 `docs/roadmap.md` §G-J。
+完整报告见 `docs/competitive-analysis.md`（后续开发方向集中入口见 ADR-054；原 `docs/roadmap.md` 已由 ADR-039 废除）。从其他项目挖掘的 15 个新目标已整合进 `docs/competitive-analysis.md`。

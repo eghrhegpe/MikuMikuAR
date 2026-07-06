@@ -59,21 +59,49 @@ vi.mock('../menus/scene-menu', () => ({ buildStageTransformLevel: vi.fn() }));
 vi.mock('./menu', () => ({ SlideMenu: vi.fn() }));
 vi.mock('../core/icons', () => ({ createIconifyIcon: vi.fn(() => null) }));
 vi.mock('../core/ui-helpers', () => ({
-    slideRow: vi.fn((_card: any, icon: string, label: string, _isFolder: boolean, _onClick: any, sublabel?: string, catTag?: string) => {
-        capturedSlideRows.push({ icon, label, isFolder: _isFolder, sublabel, catTag });
-    }),
+    slideRow: vi.fn(
+        (
+            _card: any,
+            icon: string,
+            label: string,
+            _isFolder: boolean,
+            _onClick: any,
+            sublabel?: string,
+            catTag?: string
+        ) => {
+            capturedSlideRows.push({ icon, label, isFolder: _isFolder, sublabel, catTag });
+        }
+    ),
 }));
 
 vi.mock('../core/config', () => ({
-    get allModels() { return mockState.allModels; },
-    get libraryRoot() { return mockState.libraryRoot; },
-    get displayNamePriority() { return mockState.displayNamePriority; },
-    get librarySortMode() { return mockState.librarySortMode; },
-    get modelMetaCache() { return mockState.modelMetaCache; },
-    get externalPaths() { return mockState.externalPaths; },
-    get recentModels() { return mockState.recentModels; },
-    get focusedModelId() { return mockState.focusedModelId; },
-    get motionBindingTargetId() { return mockState.motionBindingTargetId; },
+    get allModels() {
+        return mockState.allModels;
+    },
+    get libraryRoot() {
+        return mockState.libraryRoot;
+    },
+    get displayNamePriority() {
+        return mockState.displayNamePriority;
+    },
+    get librarySortMode() {
+        return mockState.librarySortMode;
+    },
+    get modelMetaCache() {
+        return mockState.modelMetaCache;
+    },
+    get externalPaths() {
+        return mockState.externalPaths;
+    },
+    get recentModels() {
+        return mockState.recentModels;
+    },
+    get focusedModelId() {
+        return mockState.focusedModelId;
+    },
+    get motionBindingTargetId() {
+        return mockState.motionBindingTargetId;
+    },
 
     normPath: (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, ''),
     cardContainer: (container: HTMLElement, fn: (c: HTMLElement) => void) => {
@@ -181,13 +209,21 @@ describe('modelToRow', () => {
         });
 
         it('uses filename from file_path', () => {
-            const m = makeModel({ file_path: '/root/models/miku.pmx', name_jp: 'ミク', name_en: 'Miku' });
+            const m = makeModel({
+                file_path: '/root/models/miku.pmx',
+                name_jp: 'ミク',
+                name_en: 'Miku',
+            });
             const row = modelToRow(m);
             expect(row.label).toBe('miku.pmx');
         });
 
         it('uses zip_inner filename for zip containers', () => {
-            const m = makeModel({ container: 'zip', file_path: '/root/zips/model.zip', zip_inner: 'models/miku.pmx' });
+            const m = makeModel({
+                container: 'zip',
+                file_path: '/root/zips/model.zip',
+                zip_inner: 'models/miku.pmx',
+            });
             const row = modelToRow(m);
             expect(row.label).toBe('miku.pmx');
         });
@@ -271,7 +307,9 @@ describe('modelToRow', () => {
 
     describe('sublabel', () => {
         it('truncates comment to 28 chars', () => {
-            const m = makeModel({ comment: 'A very long comment that should be truncated by the function' });
+            const m = makeModel({
+                comment: 'A very long comment that should be truncated by the function',
+            });
             const row = modelToRow(m);
             expect(row.sublabel).toBe('A very long comment that sho');
             expect(row.sublabel!.length).toBe(28);
@@ -504,7 +542,7 @@ describe('importFile', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         const mockLm = await import('../core/load-manager');
-        mockLoad = (mockLm.loadManager.load as ReturnType<typeof vi.fn>);
+        mockLoad = mockLm.loadManager.load as ReturnType<typeof vi.fn>;
         const mockB = await import('../core/wails-bindings');
         (mockB.SelectImportFile as any).mockResolvedValue('/test/file.pmx');
     });
@@ -545,34 +583,25 @@ describe('importFile', () => {
         await importFile();
         expect(mockLoad).not.toHaveBeenCalled();
         const { setStatus } = await import('../core/config');
-        expect(setStatus).toHaveBeenCalledWith(
-            expect.stringContaining('不支持的文件格式'),
-            false,
-        );
+        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('不支持的文件格式'), false);
     });
 
     it('catches loadManager error on pmx load', async () => {
         const mockB = await import('../core/wails-bindings');
         (mockB.SelectImportFile as any).mockResolvedValue('/test/model.pmx');
         mockLoad.mockRejectedValue(new Error('corrupt file'));
-        await importFile();  // should not throw
+        await importFile(); // should not throw
         const { setStatus } = await import('../core/config');
-        expect(setStatus).toHaveBeenCalledWith(
-            expect.stringContaining('模型加载失败'),
-            false,
-        );
+        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('模型加载失败'), false);
     });
 
     it('catches ImportZip error', async () => {
         const mockB = await import('../core/wails-bindings');
         (mockB.SelectImportFile as any).mockResolvedValue('/test/archive.zip');
         (mockB.ImportZip as any).mockRejectedValue(new Error('extraction failed'));
-        await importFile();  // should not throw
+        await importFile(); // should not throw
         const { setStatus } = await import('../core/config');
-        expect(setStatus).toHaveBeenCalledWith(
-            expect.stringContaining('导入失败'),
-            false,
-        );
+        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('导入失败'), false);
     });
 });
 

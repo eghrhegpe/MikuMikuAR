@@ -124,9 +124,13 @@ export class SlideMenu {
             }
         };
         this._swipeTouchEndHandler = (e: TouchEvent) => {
-            if (this.transitioning || this.levels.length <= 1) return;
+            if (this.transitioning || this.levels.length <= 1) {
+                return;
+            }
             const ct = e.changedTouches[0];
-            if (!ct) return;
+            if (!ct) {
+                return;
+            }
             const dx = ct.clientX - this._swipeStartX;
             const dy = Math.abs(ct.clientY - this._swipeStartY);
             // 右滑 > 60px 且垂直偏移 < 40px → 返回
@@ -134,7 +138,9 @@ export class SlideMenu {
                 this.pop();
             }
         };
-        this.container.addEventListener('touchstart', this._swipeTouchStartHandler, { passive: true });
+        this.container.addEventListener('touchstart', this._swipeTouchStartHandler, {
+            passive: true,
+        });
         this.container.addEventListener('touchend', this._swipeTouchEndHandler, { passive: true });
 
         // 响应式订阅：状态变更 → 自动 updateControls
@@ -336,7 +342,7 @@ export class SlideMenu {
         const finalize = () => {
             this.updateHeader(level);
             // reRenderCustom 路径是增量更新，不抢焦点
-            const preserve = opts?.preserveFocus ?? (level.reRenderCustom !== undefined);
+            const preserve = opts?.preserveFocus ?? level.reRenderCustom !== undefined;
             if (!preserve) {
                 this.setupFocus();
             }
@@ -393,21 +399,29 @@ export class SlideMenu {
      */
     updateRow(index: number, row: PopupRow): void {
         const level = this.currentLevel;
-        if (!level || index < 0 || index >= level.items.length) return;
+        if (!level || index < 0 || index >= level.items.length) {
+            return;
+        }
         level.items[index] = row;
         const list = this.panel.querySelector('.slide-list');
-        if (!list) return;
+        if (!list) {
+            return;
+        }
         const oldChild = list.children[index] as HTMLElement | undefined;
         if (oldChild) {
             const newEl = this.createRow(row);
-            if (newEl) oldChild.replaceWith(newEl);
+            if (newEl) {
+                oldChild.replaceWith(newEl);
+            }
         }
     }
 
     /** 只刷新标题栏（返回按钮 + 标题 + 额外按钮），不碰面板 */
     refreshHeader(): void {
         const level = this.currentLevel;
-        if (!level) return;
+        if (!level) {
+            return;
+        }
         this._cachedExtraBtns = null;
         this.updateHeader(level);
     }
@@ -499,14 +513,20 @@ export class SlideMenu {
 
     /** 生成行的稳定标识 key：优先用 row.rowKey，否则按 kind:target 自动推导 */
     private rowKey(row: PopupRow): string {
-        if (row.rowKey) return row.rowKey;
-        if (row.kind === 'divider') return '__divider__';
+        if (row.rowKey) {
+            return row.rowKey;
+        }
+        if (row.kind === 'divider') {
+            return '__divider__';
+        }
         return `${row.kind}:${row.target}`;
     }
 
     /** 增量 patch 当前 panel：只创建/替换/删除有变化的行 */
     private patchPanel(items: PopupRow[]): void {
-        if (items.length === 0) return;
+        if (items.length === 0) {
+            return;
+        }
         const list = this.panel.querySelector('.slide-list');
         if (!list) {
             this.buildPanel(this.currentLevel!);
@@ -535,13 +555,17 @@ export class SlideMenu {
                 if (oldKey !== newKey) {
                     // key 不匹配 → 替换整行
                     const newEl = this.createRow(newRow);
-                    if (newEl) oldEl.replaceWith(newEl);
+                    if (newEl) {
+                        oldEl.replaceWith(newEl);
+                    }
                 }
                 // key 匹配 → 行不变，跳过 DOM 操作
             } else {
                 // 追加新行
                 const newEl = this.createRow(newRow);
-                if (newEl) container.appendChild(newEl);
+                if (newEl) {
+                    container.appendChild(newEl);
+                }
             }
         }
     }
@@ -570,13 +594,17 @@ export class SlideMenu {
                     list.appendChild(card);
                 }
                 const el = this.createRow(row);
-                if (el) card.appendChild(el);
+                if (el) {
+                    card.appendChild(el);
+                }
             }
         } else {
             // 有 renderCustom：先渲染 items 导航行，再调自定义回调
             for (const row of level.items) {
                 const el = this.createRow(row);
-                if (el) list.appendChild(el);
+                if (el) {
+                    list.appendChild(el);
+                }
             }
             _renderingStack.push(this);
             try {
@@ -655,12 +683,18 @@ export class SlideMenu {
         // ======== 新 kind：slider / toggle / modeSlider / chips ========
         // 这些 kind 不是可点击的导航行，而是内嵌控件行。
         // 通过 ui-helpers 渲染，包一层带 rowKey 的 wrapper 以支持增量 patch。
-        if (row.kind === 'slider' || row.kind === 'toggle' || row.kind === 'modeSlider' || row.kind === 'chips') {
+        if (
+            row.kind === 'slider' ||
+            row.kind === 'toggle' ||
+            row.kind === 'modeSlider' ||
+            row.kind === 'chips'
+        ) {
             const wrapper = document.createElement('div');
             wrapper.dataset.rowKey = this.rowKey(row);
             if (row.kind === 'slider') {
                 addSliderRow(
-                    wrapper, row.label,
+                    wrapper,
+                    row.label,
                     row.sliderValue ?? 0,
                     row.sliderMin ?? 0,
                     row.sliderMax ?? 1,
@@ -671,14 +705,16 @@ export class SlideMenu {
                 );
             } else if (row.kind === 'toggle') {
                 addToggleRow(
-                    wrapper, row.label,
+                    wrapper,
+                    row.label,
                     row.toggleValue ?? false,
                     row.onToggleChange ?? (() => {}),
                     row.icon || undefined
                 );
             } else if (row.kind === 'modeSlider') {
                 addModeSlider(
-                    wrapper, row.label,
+                    wrapper,
+                    row.label,
                     row.modeOptions ?? [],
                     row.modeValue as string & (string | number),
                     row.onModeChange ?? (() => {}),
@@ -703,12 +739,20 @@ export class SlideMenu {
         if (row.kind === 'folder' && row.headerToggle) {
             const wrapper = document.createElement('div');
             slideRow(
-                wrapper, row.icon, row.label, true,
+                wrapper,
+                row.icon,
+                row.label,
+                true,
                 () => {
                     const next = this.onFolderEnter(row, this);
-                    if (next) this.push(next);
+                    if (next) {
+                        this.push(next);
+                    }
                 },
-                row.sublabel, row.catTag, undefined, row.headerToggle
+                row.sublabel,
+                row.catTag,
+                undefined,
+                row.headerToggle
             );
             const el = wrapper.firstChild as HTMLElement | null;
             if (el) {
@@ -716,7 +760,10 @@ export class SlideMenu {
                 const hint = row.sublabel || '暂无提示';
                 el.setAttribute('data-hint', hint);
                 el.addEventListener('mouseenter', () => {
-                    if (this.focusIndex >= 0) { this.clearFocus(); this.focusIndex = -1; }
+                    if (this.focusIndex >= 0) {
+                        this.clearFocus();
+                        this.focusIndex = -1;
+                    }
                     showHint(hint);
                     this.onHover?.(row, true);
                 });

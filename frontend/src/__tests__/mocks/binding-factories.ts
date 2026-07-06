@@ -238,7 +238,9 @@ export function createMockModelMeta(overrides?: Partial<ModelMeta>): ModelMeta {
     };
 }
 
-export function createMockModelPresetEntry(overrides?: Partial<ModelPresetEntry>): ModelPresetEntry {
+export function createMockModelPresetEntry(
+    overrides?: Partial<ModelPresetEntry>
+): ModelPresetEntry {
     return {
         name: '',
         presetName: '',

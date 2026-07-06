@@ -2,13 +2,7 @@
 
 import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import {
-    cardContainer,
-    setStatus,
-    PopupLevel,
-    stackRegistry,
-    escapeHtml,
-} from '../core/config';
+import { cardContainer, setStatus, PopupLevel, stackRegistry, escapeHtml } from '../core/config';
 import {
     getMatCatGroups,
     getMatCatParams,
@@ -153,7 +147,11 @@ export function buildPerMatLevel(
     };
 }
 
-export function buildMatRootLevel(id: string, modelName: string, targetStack?: SlideMenu | null): PopupLevel {
+export function buildMatRootLevel(
+    id: string,
+    modelName: string,
+    targetStack?: SlideMenu | null
+): PopupLevel {
     _selectedMat = null;
     _paramCardEl = null;
     return {
@@ -235,7 +233,9 @@ export function buildMatRootLevel(id: string, modelName: string, targetStack?: S
                                     toggleInput.checked = newState;
                                     row.classList.toggle('mat-disabled', !newState);
                                     setStatus(
-                                        newState ? `✓ 已显示: ${matInfo.mat.name}` : `✕ 已隐藏: ${matInfo.mat.name}`,
+                                        newState
+                                            ? `✓ 已显示: ${matInfo.mat.name}`
+                                            : `✕ 已隐藏: ${matInfo.mat.name}`,
                                         true
                                     );
                                 });
@@ -245,11 +245,20 @@ export function buildMatRootLevel(id: string, modelName: string, targetStack?: S
                                 row.addEventListener('click', () => {
                                     // 更新选中高亮
                                     const prev = inner.querySelector('.slide-focused');
-                                    if (prev) prev.classList.remove('slide-focused');
+                                    if (prev) {
+                                        prev.classList.remove('slide-focused');
+                                    }
                                     row.classList.add('slide-focused');
                                     // 增量更新参数卡片
                                     _selectedMat = { cat, index: idx };
-                                    _renderParamCard(id, modelName, cat, idx, detailList, targetStack);
+                                    _renderParamCard(
+                                        id,
+                                        modelName,
+                                        cat,
+                                        idx,
+                                        detailList,
+                                        targetStack
+                                    );
                                 });
                                 inner.appendChild(row);
                             }
@@ -289,7 +298,9 @@ function _renderParamCard(
     detailList: { name: string; index: number; modified: boolean }[],
     targetStack?: SlideMenu | null
 ): void {
-    if (!_paramCardEl) return;
+    if (!_paramCardEl) {
+        return;
+    }
     // 防止幽灵引用：容器被销毁后置 null
     if (!_paramCardEl.isConnected) {
         _paramCardEl = null;
@@ -308,7 +319,8 @@ function _renderParamCard(
 
     const card = document.createElement('div');
     card.className = 'card';
-    card.style.cssText = 'margin:8px;border-radius:var(--radius);background:var(--card-bg);padding:0;';
+    card.style.cssText =
+        'margin:8px;border-radius:var(--radius);background:var(--card-bg);padding:0;';
 
     const title = document.createElement('div');
     title.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px;';
@@ -324,18 +336,54 @@ function _renderParamCard(
         ambientMul: 1,
     };
 
-    addSliderRow(card, '漫反射倍率', params.diffuseMul, 0, 2, 0.05, (v) => {
-        setMatParams(id, index, { diffuseMul: v });
-    }, 'lucide:droplet');
-    addSliderRow(card, '高光倍率', params.specularMul, 0, 2, 0.05, (v) => {
-        setMatParams(id, index, { specularMul: v });
-    }, 'lucide:sparkle');
-    addSliderRow(card, '高光指数', params.shininess, 0, 200, 1, (v) => {
-        setMatParams(id, index, { shininess: v });
-    }, 'lucide:zap');
-    addSliderRow(card, '环境光倍率', params.ambientMul, 0, 2, 0.05, (v) => {
-        setMatParams(id, index, { ambientMul: v });
-    }, 'lucide:sun');
+    addSliderRow(
+        card,
+        '漫反射倍率',
+        params.diffuseMul,
+        0,
+        2,
+        0.05,
+        (v) => {
+            setMatParams(id, index, { diffuseMul: v });
+        },
+        'lucide:droplet'
+    );
+    addSliderRow(
+        card,
+        '高光倍率',
+        params.specularMul,
+        0,
+        2,
+        0.05,
+        (v) => {
+            setMatParams(id, index, { specularMul: v });
+        },
+        'lucide:sparkle'
+    );
+    addSliderRow(
+        card,
+        '高光指数',
+        params.shininess,
+        0,
+        200,
+        1,
+        (v) => {
+            setMatParams(id, index, { shininess: v });
+        },
+        'lucide:zap'
+    );
+    addSliderRow(
+        card,
+        '环境光倍率',
+        params.ambientMul,
+        0,
+        2,
+        0.05,
+        (v) => {
+            setMatParams(id, index, { ambientMul: v });
+        },
+        'lucide:sun'
+    );
 
     if (current !== null) {
         // 重置：批量状态变化 + 预期全量刷新，用 reRender。
@@ -351,7 +399,11 @@ function _renderParamCard(
     _paramCardEl.appendChild(card);
 }
 
-export function buildMatListLevel(id: string, modelName: string, targetStack?: SlideMenu | null): PopupLevel {
+export function buildMatListLevel(
+    id: string,
+    modelName: string,
+    targetStack?: SlideMenu | null
+): PopupLevel {
     return {
         label: '逐材质 — ' + modelName,
         dir: '',
@@ -387,7 +439,9 @@ export function buildMatListLevel(id: string, modelName: string, targetStack?: S
                         const modSpan = document.createElement('span');
                         modSpan.className = 'mat-modified';
                         const icon = createIconifyIcon('check-circle');
-                        if (icon) modSpan.appendChild(icon);
+                        if (icon) {
+                            modSpan.appendChild(icon);
+                        }
                         row.appendChild(modSpan);
                     }
 
@@ -417,7 +471,14 @@ export function buildMatListLevel(id: string, modelName: string, targetStack?: S
 
                     row.addEventListener('click', () => {
                         (targetStack ?? stackRegistry.modelStack)?.push(
-                            buildPerMatLevel(id, modelName, detail.name, mat, detail.index, targetStack)
+                            buildPerMatLevel(
+                                id,
+                                modelName,
+                                detail.name,
+                                mat,
+                                detail.index,
+                                targetStack
+                            )
                         );
                     });
                     c.appendChild(row);

@@ -6,19 +6,14 @@ import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { showPrompt } from '../core/dialog';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
-import {
-    slideRow,
-} from '../core/ui-helpers';
+import { slideRow } from '../core/ui-helpers';
 import {
     getRenderState,
     setRenderState,
     transitionRenderState,
     defaultRenderState,
 } from '../scene/scene';
-import {
-    GetRenderPresets,
-    SaveRenderPreset,
-} from '../core/wails-bindings';
+import { GetRenderPresets, SaveRenderPreset } from '../core/wails-bindings';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 
 // ======== Render Presets ========
@@ -34,61 +29,125 @@ import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 const FILTER_PRESETS: Record<string, Partial<RenderState>> = {
     // --- reference：Standard 色调映射，保守曝光作为基准 ---
     standard: {
-        bloomEnabled: true, bloomWeight: 0.3, bloomThreshold: 0.6, bloomKernel: 64,
-        fxaaEnabled: true, outlineEnabled: false,
-        toneMapping: 0, exposure: 1.0, contrast: 1.0,
+        bloomEnabled: true,
+        bloomWeight: 0.3,
+        bloomThreshold: 0.6,
+        bloomKernel: 64,
+        fxaaEnabled: true,
+        outlineEnabled: false,
+        toneMapping: 0,
+        exposure: 1.0,
+        contrast: 1.0,
     },
     // --- ACES 电影曲线 — 自然高光滚降，暗角增加电影感 ---
     cinematic: {
-        bloomEnabled: true, bloomWeight: 0.4, bloomThreshold: 0.5, bloomKernel: 64,
-        fxaaEnabled: true, outlineEnabled: false,
-        toneMapping: 1, exposure: 2.0, contrast: 1.2,
-        vignetteEnabled: true, vignetteDarkness: 0.35,
-        ssrEnabled: true, ssrStrength: 0.5, ssrFalloff: 0.3,
-        reflectionProbeEnabled: true, reflectionIntensity: 0.8,
-        ssaoEnabled: true, ssaoStrength: 0.6, ssaoRadius: 0.5,
+        bloomEnabled: true,
+        bloomWeight: 0.4,
+        bloomThreshold: 0.5,
+        bloomKernel: 64,
+        fxaaEnabled: true,
+        outlineEnabled: false,
+        toneMapping: 1,
+        exposure: 2.0,
+        contrast: 1.2,
+        vignetteEnabled: true,
+        vignetteDarkness: 0.35,
+        ssrEnabled: true,
+        ssrStrength: 0.5,
+        ssrFalloff: 0.3,
+        reflectionProbeEnabled: true,
+        reflectionIntensity: 0.8,
+        ssaoEnabled: true,
+        ssaoStrength: 0.6,
+        ssaoRadius: 0.5,
     },
     // --- Reinhard — 高饱和·高对比·边缘线框 = 卡通风格 ---
     cartoon: {
-        bloomEnabled: true, bloomWeight: 0.5, bloomThreshold: 0.3, bloomKernel: 128,
-        fxaaEnabled: true, outlineEnabled: true, outlineColor: [0, 0, 0],
-        toneMapping: 2, exposure: 2.0, contrast: 1.5,
+        bloomEnabled: true,
+        bloomWeight: 0.5,
+        bloomThreshold: 0.3,
+        bloomKernel: 128,
+        fxaaEnabled: true,
+        outlineEnabled: true,
+        outlineColor: [0, 0, 0],
+        toneMapping: 2,
+        exposure: 2.0,
+        contrast: 1.5,
     },
     // --- ACES + 景深/暗角 — 浅景深电影写实 ---
     realistic: {
-        bloomEnabled: true, bloomWeight: 0.25, bloomThreshold: 0.7, bloomKernel: 64,
-        fxaaEnabled: true, outlineEnabled: false,
-        toneMapping: 1, exposure: 1.5, contrast: 1.15,
-        vignetteEnabled: true, vignetteDarkness: 0.5,
-        dofEnabled: true, dofAperture: 0.15,
-        ssrEnabled: true, ssrStrength: 0.3, ssrFalloff: 0.2,
-        reflectionProbeEnabled: true, reflectionIntensity: 0.6,
-        ssaoEnabled: true, ssaoStrength: 0.5, ssaoRadius: 0.4,
+        bloomEnabled: true,
+        bloomWeight: 0.25,
+        bloomThreshold: 0.7,
+        bloomKernel: 64,
+        fxaaEnabled: true,
+        outlineEnabled: false,
+        toneMapping: 1,
+        exposure: 1.5,
+        contrast: 1.15,
+        vignetteEnabled: true,
+        vignetteDarkness: 0.5,
+        dofEnabled: true,
+        dofAperture: 0.15,
+        ssrEnabled: true,
+        ssrStrength: 0.3,
+        ssrFalloff: 0.2,
+        reflectionProbeEnabled: true,
+        reflectionIntensity: 0.6,
+        ssaoEnabled: true,
+        ssaoStrength: 0.5,
+        ssaoRadius: 0.4,
     },
     // --- Cineon 胶片曲线 + 暖色调背景 ---
     warm: {
-        bloomEnabled: true, bloomWeight: 0.45, bloomThreshold: 0.4, bloomKernel: 96,
-        fxaaEnabled: true, outlineEnabled: false,
-        toneMapping: 3, exposure: 2.2, contrast: 1.3,
-        reflectionProbeEnabled: true, reflectionIntensity: 0.5,
+        bloomEnabled: true,
+        bloomWeight: 0.45,
+        bloomThreshold: 0.4,
+        bloomKernel: 96,
+        fxaaEnabled: true,
+        outlineEnabled: false,
+        toneMapping: 3,
+        exposure: 2.2,
+        contrast: 1.3,
+        reflectionProbeEnabled: true,
+        reflectionIntensity: 0.5,
     },
     // --- Neutral + 极端后处理 — 赛博朋克风格 ---
     cyberpunk: {
-        bloomEnabled: true, bloomWeight: 0.7, bloomThreshold: 0.2, bloomKernel: 192,
-        fxaaEnabled: true, outlineEnabled: true, outlineColor: [1, 0, 1],
-        toneMapping: 4, exposure: 3.0, contrast: 1.6,
-        vignetteEnabled: true, vignetteDarkness: 0.6,
-        chromaticAberrationEnabled: true, chromaticAberrationAmount: 0.3,
-        grainEnabled: true, grainIntensity: 0.4,
-        ssrEnabled: true, ssrStrength: 0.4, ssrFalloff: 0.15,
-        reflectionProbeEnabled: true, reflectionIntensity: 0.9,
-        ssaoEnabled: true, ssaoStrength: 0.7, ssaoRadius: 0.6,
+        bloomEnabled: true,
+        bloomWeight: 0.7,
+        bloomThreshold: 0.2,
+        bloomKernel: 192,
+        fxaaEnabled: true,
+        outlineEnabled: true,
+        outlineColor: [1, 0, 1],
+        toneMapping: 4,
+        exposure: 3.0,
+        contrast: 1.6,
+        vignetteEnabled: true,
+        vignetteDarkness: 0.6,
+        chromaticAberrationEnabled: true,
+        chromaticAberrationAmount: 0.3,
+        grainEnabled: true,
+        grainIntensity: 0.4,
+        ssrEnabled: true,
+        ssrStrength: 0.4,
+        ssrFalloff: 0.15,
+        reflectionProbeEnabled: true,
+        reflectionIntensity: 0.9,
+        ssaoEnabled: true,
+        ssaoStrength: 0.7,
+        ssaoRadius: 0.6,
     },
 };
 
 export const FILTER_PRESET_LABELS: Record<string, string> = {
-    standard: '标准', cinematic: '电影', cartoon: '卡通',
-    realistic: '写实', warm: '暖光', cyberpunk: '赛博朋克',
+    standard: '标准',
+    cinematic: '电影',
+    cartoon: '卡通',
+    realistic: '写实',
+    warm: '暖光',
+    cyberpunk: '赛博朋克',
 };
 
 const FILTER_PRESET_DESCS: Record<string, string> = {
@@ -120,21 +179,25 @@ export function buildPresetsLevel(): PopupLevel {
             chipGroup.style.paddingBottom = '6px';
             for (const [key] of Object.entries(FILTER_PRESETS)) {
                 const wrapper = document.createElement('div');
-                wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;';
+                wrapper.style.cssText =
+                    'display:flex;flex-direction:column;align-items:center;gap:2px;';
 
                 const btn = document.createElement('button');
                 btn.className = 'preset-chip';
                 btn.textContent = FILTER_PRESET_LABELS[key] || key;
                 btn.addEventListener('click', () => {
                     const preset = getFilterPreset(key);
-                    if (preset) transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
+                    if (preset) {
+                        transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
+                    }
                     setStatus(`✓ 预设: ${FILTER_PRESET_LABELS[key]}`, true);
                 });
                 wrapper.appendChild(btn);
 
                 const desc = document.createElement('span');
                 desc.textContent = FILTER_PRESET_DESCS[key] || '';
-                desc.style.cssText = 'font-size:9px;color:var(--text-dim);opacity:0.7;white-space:nowrap;line-height:1.2;';
+                desc.style.cssText =
+                    'font-size:9px;color:var(--text-dim);opacity:0.7;white-space:nowrap;line-height:1.2;';
                 wrapper.appendChild(desc);
 
                 chipGroup.appendChild(wrapper);
@@ -163,13 +226,20 @@ export function buildPresetsLevel(): PopupLevel {
 
 export async function showPresetSaveDialog(): Promise<void> {
     const name = await showPrompt('输入预设名称：');
-    if (!name || !name.trim()) return;
+    if (!name || !name.trim()) {
+        return;
+    }
     const trimmed = name.trim();
     const state = getRenderState();
-    const r = await tryCatchStatus(async () => {
-        await SaveRenderPreset(trimmed, JSON.stringify(state));
-        return true;
-    }, '✗ 保存预设失败', (err) => showErrorToast('保存渲染预设失败', err instanceof Error ? err.message : String(err)));
+    const r = await tryCatchStatus(
+        async () => {
+            await SaveRenderPreset(trimmed, JSON.stringify(state));
+            return true;
+        },
+        '✗ 保存预设失败',
+        (err) =>
+            showErrorToast('保存渲染预设失败', err instanceof Error ? err.message : String(err))
+    );
     if (r) {
         USER_FILTER_PRESETS[trimmed] = state;
         setStatus(`✓ 预设已保存: ${trimmed}`, true);
@@ -186,7 +256,9 @@ export const USER_FILTER_PRESETS: Record<string, Partial<RenderState>> = {};
 let _presetsLoaded = false;
 
 export async function loadUserPresets(): Promise<void> {
-    if (_presetsLoaded) return;
+    if (_presetsLoaded) {
+        return;
+    }
     _presetsLoaded = true;
     try {
         const presets = await GetRenderPresets();

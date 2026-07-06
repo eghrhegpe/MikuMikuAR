@@ -73,17 +73,151 @@ export const _matEnabled = new Map<string, Map<number, boolean>>();
  */
 const CATEGORY_RULES: [string[], MaterialCategory][] = [
     // 服装（最高优先级，确保裙-腰带、裙-蝶结等不会被身体/配件干扰）
-    [['裙', '衣', '服', 'cloth', 'dress', 'skirt', 'sleeve', 'collar', 'belt', '袴', '袖', '襟', '帯', '外套', '胖次', '带'], '服装'],
+    [
+        [
+            '裙',
+            '衣',
+            '服',
+            'cloth',
+            'dress',
+            'skirt',
+            'sleeve',
+            'collar',
+            'belt',
+            '袴',
+            '袖',
+            '襟',
+            '帯',
+            '外套',
+            '胖次',
+            '带',
+        ],
+        '服装',
+    ],
     // 配件（帽子/鞋子/装饰）
-    [['帽', '鞋', '飾', 'accessory', 'acc', 'ring', 'earring', 'necklace', 'bracelet', '蝶结', '结', '星星', '领带', '扣'], '配件'],
+    [
+        [
+            '帽',
+            '鞋',
+            '飾',
+            'accessory',
+            'acc',
+            'ring',
+            'earring',
+            'necklace',
+            'bracelet',
+            '蝶结',
+            '结',
+            '星星',
+            '领带',
+            '扣',
+        ],
+        '配件',
+    ],
     // 眼睛
-    [['眼', '目', 'eye', 'iris', '瞳', '白目', 'pupil', 'eyebrow', '眉', 'eyelash', '睫毛', '泪', '表情'], '眼睛'],
+    [
+        [
+            '眼',
+            '目',
+            'eye',
+            'iris',
+            '瞳',
+            '白目',
+            'pupil',
+            'eyebrow',
+            '眉',
+            'eyelash',
+            '睫毛',
+            '泪',
+            '表情',
+        ],
+        '眼睛',
+    ],
     // 头发
-    [['发', '髪', '頭', 'hair', 'ahoge', '前髪', '後髪', 'まとめ髪', 'ponytail', 'braid', '刘海', '呆毛', '辫子', '侧发', '后发', '后脑'], '头发'],
+    [
+        [
+            '发',
+            '髪',
+            '頭',
+            'hair',
+            'ahoge',
+            '前髪',
+            '後髪',
+            'まとめ髪',
+            'ponytail',
+            'braid',
+            '刘海',
+            '呆毛',
+            '辫子',
+            '侧发',
+            '后发',
+            '后脑',
+        ],
+        '头发',
+    ],
     // 皮肤（嘴巴/牙齿/身体）
-    [['皮', '肌', '肤', 'skin', 'face', 'body', 'neck', '顔', '首', 'cheek', '頬', 'kihada', '嘴', '唇', '齿', '牙', '舌', '口', 'lip', 'tooth', 'teeth', 'tongue', '体', '臂', '指', '甲', '手', '足', '腿', '脚', '背', '胸', '腹', '腰'], '皮肤'],
+    [
+        [
+            '皮',
+            '肌',
+            '肤',
+            'skin',
+            'face',
+            'body',
+            'neck',
+            '顔',
+            '首',
+            'cheek',
+            '頬',
+            'kihada',
+            '嘴',
+            '唇',
+            '齿',
+            '牙',
+            '舌',
+            '口',
+            'lip',
+            'tooth',
+            'teeth',
+            'tongue',
+            '体',
+            '臂',
+            '指',
+            '甲',
+            '手',
+            '足',
+            '腿',
+            '脚',
+            '背',
+            '胸',
+            '腹',
+            '腰',
+        ],
+        '皮肤',
+    ],
     // 道具（武器）
-    [['武', '刀', '剑', '枪', '矛', '弓', '矢', 'weapon', 'gun', 'sword', 'shield', 'rod', 'staff', 'blade', 'axe', 'bow', 'arrow'], '道具'],
+    [
+        [
+            '武',
+            '刀',
+            '剑',
+            '枪',
+            '矛',
+            '弓',
+            '矢',
+            'weapon',
+            'gun',
+            'sword',
+            'shield',
+            'rod',
+            'staff',
+            'blade',
+            'axe',
+            'bow',
+            'arrow',
+        ],
+        '道具',
+    ],
 ];
 
 /** @internal exported for testing */
@@ -412,14 +546,24 @@ export function disposeModelMaterialState(id: string): void {
  */
 export function isMatCategoryAllEnabled(id: string, cat: string): boolean {
     const meshes = _getMeshesById(id);
-    if (!meshes) return true;
+    if (!meshes) {
+        return true;
+    }
     const state = _ensureState(id);
-    if (!state.has(cat)) return true;
+    if (!state.has(cat)) {
+        return true;
+    }
     for (let mi = 0; mi < meshes.length; mi++) {
         const m = meshes[mi].material;
-        if (!m || !(m instanceof StandardMaterial)) continue;
-        if (_catOf(m.name) !== cat) continue;
-        if (!isMatEnabled(id, mi)) return false;
+        if (!m || !(m instanceof StandardMaterial)) {
+            continue;
+        }
+        if (_catOf(m.name) !== cat) {
+            continue;
+        }
+        if (!isMatEnabled(id, mi)) {
+            return false;
+        }
     }
     return true;
 }
@@ -430,15 +574,25 @@ export function isMatCategoryAllEnabled(id: string, cat: string): boolean {
  */
 export function setMatCategoryEnabled(id: string, cat: string, enabled: boolean): void {
     const meshes = _getMeshesById(id);
-    if (!meshes) return;
+    if (!meshes) {
+        return;
+    }
     const state = _ensureState(id);
-    if (!state.has(cat)) return;
+    if (!state.has(cat)) {
+        return;
+    }
     for (let mi = 0; mi < meshes.length; mi++) {
         const m = meshes[mi].material;
-        if (!m || !(m instanceof StandardMaterial)) continue;
-        if (_catOf(m.name) !== cat) continue;
+        if (!m || !(m instanceof StandardMaterial)) {
+            continue;
+        }
+        if (_catOf(m.name) !== cat) {
+            continue;
+        }
         const current = isMatEnabled(id, mi);
-        if (current === enabled) continue;
+        if (current === enabled) {
+            continue;
+        }
         meshes[mi].setEnabled(enabled);
         if (enabled) {
             _matEnabled.get(id)?.delete(mi);

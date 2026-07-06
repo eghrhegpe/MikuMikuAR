@@ -21,7 +21,8 @@ interface MmdStandardMaterial extends StandardMaterial {
     sphereTexture: Texture | null;
 }
 
-type TextureSlotKey = 'diffuseTexture' | 'toonTexture' | 'sphereTexture' | 'bumpTexture' | 'emissiveTexture';
+type TextureSlotKey =
+    'diffuseTexture' | 'toonTexture' | 'sphereTexture' | 'bumpTexture' | 'emissiveTexture';
 
 type OutfitTextureSlot = 'diffuse' | 'toon' | 'spa' | 'normal' | 'emissive';
 
@@ -287,9 +288,7 @@ function _getTintFor(
         return undefined;
     }
     const t =
-        variant.byMaterial?.[smName]?.tint ??
-        variant.byCategory?.[cat]?.tint ??
-        variant.all?.tint;
+        variant.byMaterial?.[smName]?.tint ?? variant.byCategory?.[cat]?.tint ?? variant.all?.tint;
     return t;
 }
 

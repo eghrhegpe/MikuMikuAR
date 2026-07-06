@@ -13,5 +13,5 @@ export type {
     ModelPresetEntry,
     RenderPreset,
     SoftwareEntry,
-    UIState
+    UIState,
 } from '../../bindings/mikumikuar/internal/app/models';

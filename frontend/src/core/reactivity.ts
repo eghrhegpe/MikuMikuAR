@@ -13,7 +13,9 @@ let _refreshScheduled = false;
  * 同帧内多次调用只触发一次刷新。
  */
 export function scheduleRefresh(): void {
-    if (_refreshScheduled) return;
+    if (_refreshScheduled) {
+        return;
+    }
     _refreshScheduled = true;
     requestAnimationFrame(() => {
         _refreshScheduled = false;
@@ -33,7 +35,9 @@ export function scheduleRefresh(): void {
  */
 export function subscribe(fn: () => void): () => void {
     _subscribers.add(fn);
-    return () => { _subscribers.delete(fn); };
+    return () => {
+        _subscribers.delete(fn);
+    };
 }
 
 /**
@@ -46,7 +50,13 @@ export function reactive<T extends object>(obj: T): T {
         get(target, key, receiver): unknown {
             const val = Reflect.get(target, key, receiver);
             // 只代理普通对象（不代理数组/Map/Set/DOM 等）
-            if (val && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Map) && !(val instanceof Set)) {
+            if (
+                val &&
+                typeof val === 'object' &&
+                !Array.isArray(val) &&
+                !(val instanceof Map) &&
+                !(val instanceof Set)
+            ) {
                 return reactive(val as object);
             }
             return val;

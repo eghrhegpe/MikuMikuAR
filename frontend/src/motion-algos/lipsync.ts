@@ -40,10 +40,10 @@ export function findLipMorph(morphNames: string[]): string | null {
 
 /** 多口型 morph 候选（按音素分类） */
 const MOUTH_MORPHS: Record<string, string[]> = {
-    open:   ['あ', 'ア', 'A', 'a', '口', 'mouth', 'open'],
-    close:  ['い', 'イ', 'I', 'i', 'close'],
+    open: ['あ', 'ア', 'A', 'a', '口', 'mouth', 'open'],
+    close: ['い', 'イ', 'I', 'i', 'close'],
     pucker: ['う', 'ウ', 'U', 'u', 'pucker'],
-    smile:  ['え', 'エ', 'E', 'e', 'smile', 'にこり', '笑い'],
+    smile: ['え', 'エ', 'E', 'e', 'smile', 'にこり', '笑い'],
 };
 
 export interface LipSyncMorphSet {
@@ -59,10 +59,10 @@ export interface LipSyncMorphSet {
 export function findAllLipMorphs(morphNames: string[]): LipSyncMorphSet {
     const set = new Set(morphNames);
     return {
-        open:   MOUTH_MORPHS.open.find((n) => set.has(n)) ?? null,
-        close:  MOUTH_MORPHS.close.find((n) => set.has(n)) ?? null,
+        open: MOUTH_MORPHS.open.find((n) => set.has(n)) ?? null,
+        close: MOUTH_MORPHS.close.find((n) => set.has(n)) ?? null,
         pucker: MOUTH_MORPHS.pucker.find((n) => set.has(n)) ?? null,
-        smile:  MOUTH_MORPHS.smile.find((n) => set.has(n)) ?? null,
+        smile: MOUTH_MORPHS.smile.find((n) => set.has(n)) ?? null,
     };
 }
 

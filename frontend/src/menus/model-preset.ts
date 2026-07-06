@@ -228,7 +228,12 @@ export async function selectAndSavePreset(id: string): Promise<void> {
         setStatus('✗ 无法序列化模型状态', false);
         return;
     }
-    const _r0 = await tryCatchStatus(() => SaveModelPreset(json, path), '✗ 保存失败', (err) => showErrorToast('保存模型预设失败', err instanceof Error ? err.message : String(err)));
+    const _r0 = await tryCatchStatus(
+        () => SaveModelPreset(json, path),
+        '✗ 保存失败',
+        (err) =>
+            showErrorToast('保存模型预设失败', err instanceof Error ? err.message : String(err))
+    );
     if (_r0 !== undefined) {
         setStatus('✓ 预设已保存', true);
     }
@@ -333,7 +338,10 @@ export async function applyPresetFromLib(
             if (matchedId) {
                 await applyModelPreset(matchedId, json);
             } else {
-                const handle = await loadManager.load({ kind: 'actor', path: preset.model.filePath });
+                const handle = await loadManager.load({
+                    kind: 'actor',
+                    path: preset.model.filePath,
+                });
                 if (handle) {
                     await applyModelPreset(handle.id, json);
                 } else {
@@ -372,7 +380,12 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
     } catch {
         /* no existing preset — fine */
     }
-    const _r1 = await tryCatchStatus(() => SaveModelPresetToLib(trimmed, json), '✗ 保存失败', (err) => showErrorToast('保存模型预设失败', err instanceof Error ? err.message : String(err)));
+    const _r1 = await tryCatchStatus(
+        () => SaveModelPresetToLib(trimmed, json),
+        '✗ 保存失败',
+        (err) =>
+            showErrorToast('保存模型预设失败', err instanceof Error ? err.message : String(err))
+    );
     if (_r1 !== undefined) {
         setStatus('✓ 预设已保存到库', true);
     }

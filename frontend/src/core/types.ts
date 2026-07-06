@@ -170,8 +170,7 @@ export type LibraryModel = {
 // ======== Popup/Menu Types ========
 
 export type PopupRow = {
-    kind: 'folder' | 'model' | 'action' | 'divider'
-        | 'slider' | 'toggle' | 'modeSlider' | 'chips';
+    kind: 'folder' | 'model' | 'action' | 'divider' | 'slider' | 'toggle' | 'modeSlider' | 'chips';
     label: string;
     icon: string;
     target: string;
@@ -225,6 +224,8 @@ export interface UIState {
     performanceMode?: 'auto' | 'quality' | 'balanced' | 'performance' | 'custom';
     /** 帧率上限（0=不限） */
     fpsLimit?: number;
+    /** 垂直同步：开启时按显示器刷新率渲染（默认）；关闭时解除人为限帧。undefined 视为 true */
+    vsync?: boolean;
     /** 默认物理开关：新加载的 actor 模型是否默认启用物理模拟（WASM 版）。undefined 视为 true */
     defaultPhysicsEnabled?: boolean;
     /** 渲染分辨率缩放倍数（1=原生，<1 降分辨率提速，>1 超采样更清晰） */
@@ -264,7 +265,7 @@ export interface EnvState {
     groundTextureEnabled: boolean;
     groundTextureScale: number;
     groundTextureRotation: number; // 纹理旋转角度 (0-360)
-    groundGridSize: number;       // 网格/棋盘格大小 (0.5-5)
+    groundGridSize: number; // 网格/棋盘格大小 (0.5-5)
     groundLineColor: [number, number, number]; // 网格线颜色 / 棋盘格第二色
 
     windEnabled: boolean;

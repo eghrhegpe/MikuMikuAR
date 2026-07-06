@@ -199,7 +199,17 @@ describe('addSliderRow', () => {
         const bar = container.querySelector('.cs-bar')! as HTMLDivElement;
         // Mock getBoundingClientRect for a deterministic click position
         bar.getBoundingClientRect = () =>
-            ({ left: 0, width: 200, top: 0, height: 20, right: 200, bottom: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+            ({
+                left: 0,
+                width: 200,
+                top: 0,
+                height: 20,
+                right: 200,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
 
         bar.dispatchEvent(new MouseEvent('click', { clientX: 50 }));
         // clientX=50 on width=200 → x=0.25 → 0 + 0.25*100 = 25
@@ -268,7 +278,9 @@ describe('addCollapsible', () => {
         const container = document.createElement('div');
         addCollapsible(container, {
             title: 'Toggle Test',
-            renderContent: (inner) => { inner.textContent = 'content'; },
+            renderContent: (inner) => {
+                inner.textContent = 'content';
+            },
         });
 
         const header = container.querySelector('.collapsible-header')!;
@@ -292,7 +304,9 @@ describe('addCollapsible', () => {
         addCollapsible(container, {
             title: 'Settings',
             headerToggle: { value: true, onChange: onToggle },
-            renderContent: (inner) => { inner.textContent = 'content'; },
+            renderContent: (inner) => {
+                inner.textContent = 'content';
+            },
         });
 
         const toggle = container.querySelector('.toggle.header-toggle')!;
@@ -346,11 +360,17 @@ describe('addModeRow', () => {
     it('creates mode buttons; active button has active class', () => {
         const container = document.createElement('div');
         const onChange = vi.fn();
-        addModeRow(container, 'Mode', [
-            { value: 'a', label: 'A' },
-            { value: 'b', label: 'B' },
-            { value: 'c', label: 'C' },
-        ], 'b', onChange);
+        addModeRow(
+            container,
+            'Mode',
+            [
+                { value: 'a', label: 'A' },
+                { value: 'b', label: 'B' },
+                { value: 'c', label: 'C' },
+            ],
+            'b',
+            onChange
+        );
 
         const btns = container.querySelectorAll('.mode-btn');
         expect(btns.length).toBe(3);
@@ -380,7 +400,17 @@ describe('sliderRow', () => {
         // so only onDragEnd is called by the click handler's onDragEndCb path.
         const bar = container.querySelector('.cs-bar')! as HTMLDivElement;
         bar.getBoundingClientRect = () =>
-            ({ left: 0, width: 100, top: 0, height: 20, right: 100, bottom: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+            ({
+                left: 0,
+                width: 100,
+                top: 0,
+                height: 20,
+                right: 100,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
         bar.dispatchEvent(new MouseEvent('click', { clientX: 80 }));
 
         expect(onDragEnd).toHaveBeenCalled();

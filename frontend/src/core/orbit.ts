@@ -22,11 +22,7 @@ export const MIN_ORBIT_DISTANCE = 0.001;
  * 合法输入原样返回，因此对正常工作流零影响。供 model-manager / props 的 setter 复用，
  * 确保持久化的 orbit 字段始终合法（损坏场景文件反序列化也不会写入退化值）。
  */
-export function normalizeOrbit(
-    azimuth: number,
-    elevation: number,
-    distance: number,
-): OrbitCoords {
+export function normalizeOrbit(azimuth: number, elevation: number, distance: number): OrbitCoords {
     const safeDistance = Number.isFinite(distance) && distance > 0 ? distance : MIN_ORBIT_DISTANCE;
     const safeElevation = Number.isFinite(elevation) ? Math.max(-90, Math.min(90, elevation)) : 0;
     const safeAzimuth = Number.isFinite(azimuth) ? azimuth : 0;
@@ -42,9 +38,11 @@ export function normalizeOrbit(
 export function orbitToCartesian(
     azimuthDeg: number,
     elevationDeg: number,
-    distance: number,
+    distance: number
 ): [number, number, number] {
-    const safeElevation = Number.isFinite(elevationDeg) ? Math.max(-90, Math.min(90, elevationDeg)) : 0;
+    const safeElevation = Number.isFinite(elevationDeg)
+        ? Math.max(-90, Math.min(90, elevationDeg))
+        : 0;
     const safeDistance = Number.isFinite(distance) && distance > 0 ? distance : MIN_ORBIT_DISTANCE;
     const safeAzimuth = Number.isFinite(azimuthDeg) ? azimuthDeg : 0;
     const az = (safeAzimuth * Math.PI) / 180;

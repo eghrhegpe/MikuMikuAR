@@ -38,12 +38,10 @@ import {
     seekFromEvent,
     tryRestoreLastScene,
     setEnvState,
+    applyFrameControl,
 } from '../scene/scene';
 import { focusModel } from '../scene/manager/model-ops';
-import {
-    updatePerformance,
-    setPerformanceMode,
-} from '../scene/render/performance';
+import { updatePerformance, setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { freeflyInput, getCameraMode, restoreAutoCameraState } from '../scene/camera/camera';
 import { syncTimeOfDayFromEnv } from '../scene/env/env-bridge';
@@ -53,7 +51,9 @@ import { registerShortcuts, initShortcutDispatcher } from './shortcut-registry';
 
 function hexToRgb(hex: string): string {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return '74, 108, 247';
+    if (!result) {
+        return '74, 108, 247';
+    }
     return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
 }
 
@@ -300,10 +300,14 @@ function registerAppShortcuts(): void {
             defaultKey: 'ArrowLeft',
             prevent: true,
             handler: () => {
-                if (!mmdRuntime) return;
+                if (!mmdRuntime) {
+                    return;
+                }
                 const foc = focusedModel();
                 const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
-                if (dur <= 0) return;
+                if (dur <= 0) {
+                    return;
+                }
                 mmdRuntime.seekAnimation(Math.max(0, mmdRuntime.currentTime - 5), true);
                 updatePlaybackUI();
             },
@@ -315,10 +319,14 @@ function registerAppShortcuts(): void {
             defaultKey: 'ArrowRight',
             prevent: true,
             handler: () => {
-                if (!mmdRuntime) return;
+                if (!mmdRuntime) {
+                    return;
+                }
                 const foc = focusedModel();
                 const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
-                if (dur <= 0) return;
+                if (dur <= 0) {
+                    return;
+                }
                 mmdRuntime.seekAnimation(Math.min(dur, mmdRuntime.currentTime + 5), true);
                 updatePlaybackUI();
             },
@@ -469,9 +477,13 @@ window.addEventListener('pointerdown', (e) => {
     _pointerDownPos = { x: e.clientX, y: e.clientY };
     // 长按检测：500ms 后弹出模型面板
     _longPressTimer = setTimeout(() => {
-        if (!dom.canvas.contains(e.target as Node)) return;
+        if (!dom.canvas.contains(e.target as Node)) {
+            return;
+        }
         const id = focusedModelId;
-        if (!id) return;
+        if (!id) {
+            return;
+        }
         // 打开模型弹窗并 push 模型层级
         showModelPopup();
         import('../menus/model-detail').then(({ buildModelLevel }) => {
@@ -722,9 +734,8 @@ async function handleDropFile(path: string): Promise<void> {
     }
 }
 
-// ======== Render Loop (with optional FPS limit via engine.maxFPS) ========
-const initFpsLimit = uiState.fpsLimit ?? 0;
-engine.maxFPS = initFpsLimit > 0 ? initFpsLimit : undefined;
+// ======== Render Loop (with optional FPS limit / vsync via engine.maxFPS) ========
+applyFrameControl();
 engine.setHardwareScalingLevel(1 / (uiState.renderScale ?? 1));
 engine.runRenderLoop(() => {
     scene.render();
@@ -829,17 +840,23 @@ declare global {
 }
 
 function isAndroidPlatform(): boolean {
-    return typeof window !== 'undefined'
-        && typeof window.wails?.platform === 'function'
-        && window.wails.platform() === 'android';
+    return (
+        typeof window !== 'undefined' &&
+        typeof window.wails?.platform === 'function' &&
+        window.wails.platform() === 'android'
+    );
 }
 
 // On first launch on Android, if permission isn't granted, prompt the user.
 // We delay this so the scene/UI is ready before the dialog appears.
 let androidStoragePromptShown = false;
 function checkAndroidStoragePermission(): void {
-    if (!isAndroidPlatform()) return;
-    if (androidStoragePromptShown) return;
+    if (!isAndroidPlatform()) {
+        return;
+    }
+    if (androidStoragePromptShown) {
+        return;
+    }
 
     const w = window.wails!;
     if (typeof w.hasStoragePermission === 'function' && !w.hasStoragePermission()) {
@@ -864,7 +881,9 @@ Events.On('storage:permissionGranted', async () => {
 });
 
 // Boot the app, then on Android prompt for storage permission if needed.
-init().then(() => {
-    // Small delay so the main UI is ready before the permission dialog.
-    setTimeout(checkAndroidStoragePermission, 1500);
-}).catch(console.error);
+init()
+    .then(() => {
+        // Small delay so the main UI is ready before the permission dialog.
+        setTimeout(checkAndroidStoragePermission, 1500);
+    })
+    .catch(console.error);

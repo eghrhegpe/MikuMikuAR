@@ -112,7 +112,8 @@ function _computeFormationPos(
     total: number,
     spacing: number
 ): [number, number, number] {
-    const cx = 0, cz = 0;
+    const cx = 0,
+        cz = 0;
     switch (type) {
         case 'line': {
             const x = (index - (total - 1) / 2) * spacing;
@@ -408,11 +409,15 @@ export class ModelManager {
     setFormation(type: FormationType): void {
         const models = Array.from(this.modelRegistry.values());
         const n = models.length;
-        if (n === 0) return;
+        if (n === 0) {
+            return;
+        }
         const spacing = 3;
         for (let i = 0; i < n; i++) {
             const inst = models[i];
-            if (inst.meshes.length === 0) continue;
+            if (inst.meshes.length === 0) {
+                continue;
+            }
             const pos = _computeFormationPos(type, i, n, spacing);
             inst.meshes[0].position.set(pos[0], pos[1], pos[2]);
         }
@@ -579,7 +584,12 @@ export class ModelManager {
             elevation > 90;
         const o = normalizeOrbit(azimuth, elevation, distance);
         if (invalid) {
-            console.warn('[model-manager] setOrbit: 输入越界已钳制', { azimuth, elevation, distance, result: o });
+            console.warn('[model-manager] setOrbit: 输入越界已钳制', {
+                azimuth,
+                elevation,
+                distance,
+                result: o,
+            });
         }
         inst.positionMode = 'orbit';
         inst.orbitAzimuth = o.azimuth;
@@ -598,8 +608,17 @@ export class ModelManager {
         if (!inst) {
             return null;
         }
-        if (inst.positionMode === 'orbit' && inst.orbitAzimuth !== undefined && inst.orbitElevation !== undefined && inst.orbitDistance !== undefined) {
-            return { azimuth: inst.orbitAzimuth, elevation: inst.orbitElevation, distance: inst.orbitDistance };
+        if (
+            inst.positionMode === 'orbit' &&
+            inst.orbitAzimuth !== undefined &&
+            inst.orbitElevation !== undefined &&
+            inst.orbitDistance !== undefined
+        ) {
+            return {
+                azimuth: inst.orbitAzimuth,
+                elevation: inst.orbitElevation,
+                distance: inst.orbitDistance,
+            };
         }
         const [x, y, z] = this.getPosition(id);
         return cartesianToOrbit(x, y, z);

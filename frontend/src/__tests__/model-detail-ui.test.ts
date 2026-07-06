@@ -161,7 +161,9 @@ const { mockModelManager } = vi.hoisted(() => {
 });
 
 vi.mock('../scene/scene', () => ({
-    get modelManager() { return mockModelManager; },
+    get modelManager() {
+        return mockModelManager;
+    },
     getModelMorphs: vi.fn().mockReturnValue([]),
     setModelMorphWeight: vi.fn(),
     resetModelMorphs: vi.fn(),
@@ -359,9 +361,7 @@ function createModel(id: string, overrides?: Partial<any>): string {
     // Also register in the mock modelManager so functions that query
     // modelManager.get(id) (e.g. buildModelInfoLevel, buildModelTagsLevel,
     // buildMorphPreviewLevel) can find the model.
-    mockModelManager.get.mockImplementation((mid: string) =>
-        mid === id ? entry : undefined
-    );
+    mockModelManager.get.mockImplementation((mid: string) => (mid === id ? entry : undefined));
     return id;
 }
 

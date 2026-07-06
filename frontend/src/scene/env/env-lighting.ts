@@ -38,7 +38,8 @@ export function deriveLighting(
     const horizonFade = Math.max(0, Math.min(1, (sunAngle + 5) / 10)); // -5→0, 0→0.5, 5→1
     const dirIntensity = horizonFade * Math.max(L * 1.2, 0.15);
     // 半球光：白天随方向光反向补偿，夜晚保持足够亮度
-    const hemiIntensity = sunAngle <= 0 ? Math.min(0.8, 0.3 + L * 0.5) : Math.min(1, 0.6 + (1 - dirIntensity) * 0.4);
+    const hemiIntensity =
+        sunAngle <= 0 ? Math.min(0.8, 0.3 + L * 0.5) : Math.min(1, 0.6 + (1 - dirIntensity) * 0.4);
 
     // dirDiffuse: preserve sky hue, scale so brightest channel ≈ 0.9-1.0
     // (old formula: sky*0.3+0.7 → washed out to white)

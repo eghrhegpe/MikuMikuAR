@@ -117,13 +117,21 @@ export function initRenderer(
 
     // Reflection Probe 自动刷新 — 每 10 秒检查一次环境变化
     _probeRefreshObserver = scene.onBeforeRenderObservable.add(() => {
-        if (!_reflectionProbe || !scene) return;
+        if (!_reflectionProbe || !scene) {
+            return;
+        }
         const now = performance.now();
-        if (now - _lastProbeRefresh < 10000) return;
+        if (now - _lastProbeRefresh < 10000) {
+            return;
+        }
         _lastProbeRefresh = now;
         try {
-            _reflectionProbe!.renderList = scene.meshes.filter((m) =>
-                m.name.includes('sky') || m.name.includes('env') || m.name.includes('ground') || m.name.includes('water')
+            _reflectionProbe!.renderList = scene.meshes.filter(
+                (m) =>
+                    m.name.includes('sky') ||
+                    m.name.includes('env') ||
+                    m.name.includes('ground') ||
+                    m.name.includes('water')
             );
             // 强制刷新：临时设置 refreshRate 为 1 触发重新渲染
             _reflectionProbe!.refreshRate = 1;
@@ -193,11 +201,15 @@ export function getRenderState(): RenderState {
         contrast: pipeline.imageProcessing.contrast ?? 1,
         dofEnabled: pipeline.depthOfFieldEnabled,
         // fStop 0.5~10 → 归一化 0~1（0=无虚化 fStop=10, 1=最大虚化 fStop=0.5）
-        dofAperture: pipeline.depthOfField ? clamp((10 - pipeline.depthOfField.fStop) / 9.5, 0, 1) : 0,
+        dofAperture: pipeline.depthOfField
+            ? clamp((10 - pipeline.depthOfField.fStop) / 9.5, 0, 1)
+            : 0,
         vignetteEnabled: pipeline.imageProcessing.vignetteEnabled ?? false,
         vignetteDarkness: pipeline.imageProcessing.vignetteWeight ?? 0,
         chromaticAberrationEnabled: pipeline.chromaticAberrationEnabled ?? false,
-        chromaticAberrationAmount: pipeline.chromaticAberration ? clamp(pipeline.chromaticAberration.aberrationAmount / 8, 0, 1) : 0,
+        chromaticAberrationAmount: pipeline.chromaticAberration
+            ? clamp(pipeline.chromaticAberration.aberrationAmount / 8, 0, 1)
+            : 0,
         grainEnabled: pipeline.grainEnabled ?? false,
         grainIntensity: pipeline.grain ? clamp(pipeline.grain.intensity / 50, 0, 1) : 0,
         sharpenAmount: pipeline.sharpen ? clamp(pipeline.sharpen.edgeAmount, 0, 1) : 0,
@@ -205,7 +217,9 @@ export function getRenderState(): RenderState {
         glowIntensity: _glowLayer ? clamp(_glowLayer.intensity, 0, 1) : 0,
         ssrEnabled: _ssrPipeline !== null && _ssrPipeline.isEnabled,
         ssrStrength: _ssrPipeline ? clamp(_ssrPipeline.strength, 0, 1) : 0,
-        ssrFalloff: _ssrPipeline ? clamp((_ssrPipeline.reflectionSpecularFalloffExponent - 1) / 7, 0, 1) : 0,
+        ssrFalloff: _ssrPipeline
+            ? clamp((_ssrPipeline.reflectionSpecularFalloffExponent - 1) / 7, 0, 1)
+            : 0,
         ssrStep: _ssrPipeline ? clamp(_ssrPipeline.step, 1, 32) : 1,
         ssrThickness: _ssrPipeline ? clamp(_ssrPipeline.thickness, 0, 2) : 0.5,
         reflectionProbeEnabled: _reflectionProbe !== null,
@@ -275,7 +289,10 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const c = s.contrast !== undefined ? clamp(s.contrast, 0, 4) : undefined;
     const da = s.dofAperture !== undefined ? clamp(s.dofAperture, 0, 1) : undefined;
     const vd = s.vignetteDarkness !== undefined ? clamp(s.vignetteDarkness, 0, 1) : undefined;
-    const ca = s.chromaticAberrationAmount !== undefined ? clamp(s.chromaticAberrationAmount, 0, 1) : undefined;
+    const ca =
+        s.chromaticAberrationAmount !== undefined
+            ? clamp(s.chromaticAberrationAmount, 0, 1)
+            : undefined;
     const gi = s.grainIntensity !== undefined ? clamp(s.grainIntensity, 0, 1) : undefined;
     const sa = s.sharpenAmount !== undefined ? clamp(s.sharpenAmount, 0, 1) : undefined;
     const gl = s.glowIntensity !== undefined ? clamp(s.glowIntensity, 0, 1) : undefined;
@@ -341,7 +358,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
         pipeline.depthOfFieldEnabled = s.dofEnabled;
     }
     if (da !== undefined && pipeline.depthOfField) {
-        pipeline.depthOfField.fStop = 10 - da * 9.5;  // 0→清晰(f10), 1→虚化(f0.5)
+        pipeline.depthOfField.fStop = 10 - da * 9.5; // 0→清晰(f10), 1→虚化(f0.5)
     }
 
     // Vignette
@@ -394,7 +411,13 @@ function _applyRenderState(s: Partial<RenderState>): void {
     }
 
     // SSR (Screen-Space Reflections) — 独立 pipeline，不走 DefaultRenderingPipeline
-    if (s.ssrEnabled !== undefined || ssrStr !== undefined || ssrFal !== undefined || ssrStp !== undefined || ssrThk !== undefined) {
+    if (
+        s.ssrEnabled !== undefined ||
+        ssrStr !== undefined ||
+        ssrFal !== undefined ||
+        ssrStp !== undefined ||
+        ssrThk !== undefined
+    ) {
         if (s.ssrEnabled !== undefined) {
             const ssrCamera = _pipelineCamera ?? _scene.activeCamera;
             if (s.ssrEnabled && !_ssrPipeline && _scene && ssrCamera) {
@@ -417,15 +440,23 @@ function _applyRenderState(s: Partial<RenderState>): void {
             }
         }
         if (_ssrPipeline) {
-            if (ssrStr !== undefined) _ssrPipeline.strength = ssrStr;
-            if (ssrFal !== undefined) _ssrPipeline.reflectionSpecularFalloffExponent = 1 + ssrFal * 7; // 0→1, 1→8
-            if (ssrStp !== undefined) _ssrPipeline.step = Math.round(ssrStp);
-            if (ssrThk !== undefined) _ssrPipeline.thickness = ssrThk;
+            if (ssrStr !== undefined) {
+                _ssrPipeline.strength = ssrStr;
+            }
+            if (ssrFal !== undefined) {
+                _ssrPipeline.reflectionSpecularFalloffExponent = 1 + ssrFal * 7;
+            } // 0→1, 1→8
+            if (ssrStp !== undefined) {
+                _ssrPipeline.step = Math.round(ssrStp);
+            }
+            if (ssrThk !== undefined) {
+                _ssrPipeline.thickness = ssrThk;
+            }
             // SSR + Bloom 互斥：Bloom weight > 0.5 时自动降低 SSR 强度防止白出
             // 基于当前 pipeline 强度（已更新）而非传入值，避免覆盖用户设置
             const bloomW = pipeline.bloomWeight ?? 0;
             if (bloomW > 0.5) {
-                _ssrPipeline.strength *= (1 - (bloomW - 0.5));
+                _ssrPipeline.strength *= 1 - (bloomW - 0.5);
             }
         }
     }
@@ -436,8 +467,12 @@ function _applyRenderState(s: Partial<RenderState>): void {
             if (s.reflectionProbeEnabled && !_reflectionProbe && _scene) {
                 try {
                     _reflectionProbe = new ReflectionProbe('envProbe', 256, _scene);
-                    _reflectionProbe.renderList = _scene.meshes.filter((m) =>
-                        m.name.includes('sky') || m.name.includes('env') || m.name.includes('ground') || m.name.includes('water')
+                    _reflectionProbe.renderList = _scene.meshes.filter(
+                        (m) =>
+                            m.name.includes('sky') ||
+                            m.name.includes('env') ||
+                            m.name.includes('ground') ||
+                            m.name.includes('water')
                     );
                     _reflectionProbe.refreshRate = 0; // 静态环境，仅渲染一次
                 } catch (err) {
@@ -468,11 +503,19 @@ function _applyRenderState(s: Partial<RenderState>): void {
                     for (const mesh of inst.meshes) {
                         const m = mesh.material;
                         if (m && 'reflectionTexture' in m) {
-                            (m as { reflectionTexture: import('@babylonjs/core/Materials/Textures/texture').Texture }).reflectionTexture = rt;
+                            (
+                                m as {
+                                    reflectionTexture: import('@babylonjs/core/Materials/Textures/texture').Texture;
+                                }
+                            ).reflectionTexture = rt;
                             // 设置反射强度
                             if (s.reflectionIntensity !== undefined && 'reflectionColor' in m) {
                                 const intensity = s.reflectionIntensity;
-                                (m as { reflectionColor: import('@babylonjs/core/Maths/math.color').Color3 }).reflectionColor.set(intensity, intensity, intensity);
+                                (
+                                    m as {
+                                        reflectionColor: import('@babylonjs/core/Maths/math.color').Color3;
+                                    }
+                                ).reflectionColor.set(intensity, intensity, intensity);
                             }
                         }
                     }
@@ -482,7 +525,12 @@ function _applyRenderState(s: Partial<RenderState>): void {
     }
 
     // SSAO (Screen-Space Ambient Occlusion) — 独立 pipeline
-    if (s.ssaoEnabled !== undefined || s.ssaoStrength !== undefined || s.ssaoRadius !== undefined || s.ssaoSamples !== undefined) {
+    if (
+        s.ssaoEnabled !== undefined ||
+        s.ssaoStrength !== undefined ||
+        s.ssaoRadius !== undefined ||
+        s.ssaoSamples !== undefined
+    ) {
         if (s.ssaoEnabled !== undefined) {
             const ssaoCamera = _pipelineCamera ?? _scene.activeCamera;
             if (s.ssaoEnabled && !_ssaoPipeline && _scene && ssaoCamera) {
@@ -505,9 +553,15 @@ function _applyRenderState(s: Partial<RenderState>): void {
             }
         }
         if (_ssaoPipeline) {
-            if (s.ssaoStrength !== undefined) _ssaoPipeline.totalStrength = clamp(s.ssaoStrength * 2, 0, 2);
-            if (s.ssaoRadius !== undefined) _ssaoPipeline.radius = clamp(s.ssaoRadius * 4, 0, 4);
-            if (s.ssaoSamples !== undefined) _ssaoPipeline.samples = Math.round(clamp(s.ssaoSamples, 4, 32));
+            if (s.ssaoStrength !== undefined) {
+                _ssaoPipeline.totalStrength = clamp(s.ssaoStrength * 2, 0, 2);
+            }
+            if (s.ssaoRadius !== undefined) {
+                _ssaoPipeline.radius = clamp(s.ssaoRadius * 4, 0, 4);
+            }
+            if (s.ssaoSamples !== undefined) {
+                _ssaoPipeline.samples = Math.round(clamp(s.ssaoSamples, 4, 32));
+            }
         }
     }
 
@@ -676,7 +730,11 @@ export function transitionRenderState(
         // 枚举字段：t >= 1 时切换到目标值，否则保持当前值
         for (const key of enumKeys) {
             if (target[key] !== undefined) {
-                setKey(interp, key, (t >= 1 ? target[key] : source[key]) as RenderState[typeof key]);
+                setKey(
+                    interp,
+                    key,
+                    (t >= 1 ? target[key] : source[key]) as RenderState[typeof key]
+                );
             }
         }
 
@@ -688,9 +746,8 @@ export function transitionRenderState(
             }
         } else {
             _applyRenderState(interp);
-           
-}
-};
+        }
+    };
 
     _scene.onBeforeRenderObservable.addOnce(animLoop);
 }
@@ -743,9 +800,15 @@ export function reattachPipeline(): void {
 
 /** 当环境变化时（天空/地面/水面切换），刷新 Reflection Probe 的 renderList。 */
 export function refreshReflectionProbe(): void {
-    if (!_reflectionProbe || !_scene) return;
-    _reflectionProbe.renderList = _scene.meshes.filter((m) =>
-        m.name.includes('sky') || m.name.includes('env') || m.name.includes('ground') || m.name.includes('water')
+    if (!_reflectionProbe || !_scene) {
+        return;
+    }
+    _reflectionProbe.renderList = _scene.meshes.filter(
+        (m) =>
+            m.name.includes('sky') ||
+            m.name.includes('env') ||
+            m.name.includes('ground') ||
+            m.name.includes('water')
     );
     // 强制刷新：临时设置 refreshRate 为 1 触发重新渲染
     _reflectionProbe.refreshRate = 1;
@@ -753,14 +816,24 @@ export function refreshReflectionProbe(): void {
 }
 
 /** 将 Reflection Probe 绑定到指定模型的所有材质（模型加载后调用）。 */
-export function bindReflectionProbeToModel(meshes: import('@babylonjs/core/Meshes/mesh').Mesh[]): void {
-    if (!_reflectionProbe) return;
+export function bindReflectionProbeToModel(
+    meshes: import('@babylonjs/core/Meshes/mesh').Mesh[]
+): void {
+    if (!_reflectionProbe) {
+        return;
+    }
     const rt = _reflectionProbe.cubeTexture;
-    if (!rt) return;
+    if (!rt) {
+        return;
+    }
     for (const mesh of meshes) {
         const m = mesh.material;
         if (m && 'reflectionTexture' in m) {
-            (m as { reflectionTexture: import('@babylonjs/core/Materials/Textures/texture').Texture }).reflectionTexture = rt;
+            (
+                m as {
+                    reflectionTexture: import('@babylonjs/core/Materials/Textures/texture').Texture;
+                }
+            ).reflectionTexture = rt;
         }
     }
 }

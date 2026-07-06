@@ -5,7 +5,10 @@
 import { VmdLoader } from 'babylon-mmd/esm/Loader/vmdLoader';
 import { MmdWasmAnimation } from 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
-import { MmdCompositeAnimation, MmdAnimationSpan } from 'babylon-mmd/esm/Runtime/Animation/mmdCompositeAnimation';
+import {
+    MmdCompositeAnimation,
+    MmdAnimationSpan,
+} from 'babylon-mmd/esm/Runtime/Animation/mmdCompositeAnimation';
 import type { VmdLayer } from '../../core/types';
 import {
     mmdRuntime,
@@ -29,8 +32,12 @@ function _nextLayerId(): string {
 /** 解码 Shift-JIS 字节到 Unicode 字符串（VMD 骨骼名用，最大 len 字节） */
 function _decodeSjis(bytes: Uint8Array): string {
     let end = 0;
-    while (end < bytes.length && bytes[end] !== 0) end++;
-    if (end === 0) return '';
+    while (end < bytes.length && bytes[end] !== 0) {
+        end++;
+    }
+    if (end === 0) {
+        return '';
+    }
     return Encoding.convert(bytes.slice(0, end), {
         to: 'UNICODE',
         from: 'SJIS',
@@ -46,21 +53,29 @@ const VMD_BONE_FRAME_SIZE = 111; // 标准 VMD 骨骼帧大小（15 骨骼名 + 
  * @returns 新的 VMD ArrayBuffer，或 boneFilter 为空时返回原始引用
  */
 function _filterVmdBones(data: ArrayBuffer, boneFilter: string[]): ArrayBuffer {
-    if (boneFilter.length === 0) return data;
+    if (boneFilter.length === 0) {
+        return data;
+    }
     const src = new Uint8Array(data);
     const view = new DataView(data);
     // VMD 头部: 30(signature) + 20(modelName) = 50, 之后 4 字节骨骼帧数
     const boneCount = view.getUint32(50, true);
-    if (boneCount === 0) return data;
+    if (boneCount === 0) {
+        return data;
+    }
     const boneStartOffset = 54;
     const filterSet = new Set(boneFilter);
     const keptIndices: number[] = [];
     for (let i = 0; i < boneCount; i++) {
         const off = boneStartOffset + i * VMD_BONE_FRAME_SIZE;
         const boneName = _decodeSjis(src.slice(off, off + 15));
-        if (filterSet.has(boneName)) keptIndices.push(i);
+        if (filterSet.has(boneName)) {
+            keptIndices.push(i);
+        }
     }
-    if (keptIndices.length === boneCount) return data; // 全保留 = 不变
+    if (keptIndices.length === boneCount) {
+        return data;
+    } // 全保留 = 不变
     // 重建 VMD
     const newBoneCount = keptIndices.length;
     const newBoneSize = newBoneCount * VMD_BONE_FRAME_SIZE;
@@ -141,7 +156,7 @@ export async function addVmdLayerFromPath(
         return null;
     }
     const inst = modelRegistry.get(targetId);
-    if (inst?.vmdLayers?.some(l => l.path === path)) {
+    if (inst?.vmdLayers?.some((l) => l.path === path)) {
         setStatus(`⚠ 图层已存在: ${normPath(path).split('/').pop()}`, false);
         return null;
     }
@@ -149,7 +164,9 @@ export async function addVmdLayerFromPath(
         const { url } = await resolveFileUrl(path);
         const vmdName = normPath(path).split('/').pop() || '';
         const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}`);
+        }
         const data = await resp.arrayBuffer();
         const layer = await addVmdLayer(
             data,
@@ -178,20 +195,34 @@ export async function addVmdLayersFromPaths(
     targetModelId?: string
 ): Promise<number> {
     const targetId = targetModelId || focusedModelId;
-    if (!targetId) return 0;
+    if (!targetId) {
+        return 0;
+    }
     const inst = modelRegistry.get(targetId);
-    if (!inst?.mmdModel) return 0;
+    if (!inst?.mmdModel) {
+        return 0;
+    }
 
     let addedCount = 0;
-    const newLayers: Array<{ data: ArrayBuffer; name: string; weight: number; path: string; boneFilter: string[] }> = [];
+    const newLayers: Array<{
+        data: ArrayBuffer;
+        name: string;
+        weight: number;
+        path: string;
+        boneFilter: string[];
+    }> = [];
 
     for (const layer of layers) {
-        if (inst.vmdLayers.some(l => l.path === layer.path)) continue; // 跳过重复
+        if (inst.vmdLayers.some((l) => l.path === layer.path)) {
+            continue;
+        } // 跳过重复
         try {
             const { url } = await resolveFileUrl(layer.path);
             const vmdName = normPath(layer.path).split('/').pop() || '';
             const resp = await fetch(url);
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            if (!resp.ok) {
+                throw new Error(`HTTP ${resp.status}`);
+            }
             const data = await resp.arrayBuffer();
             newLayers.push({
                 data,
@@ -206,7 +237,9 @@ export async function addVmdLayersFromPaths(
         }
     }
 
-    if (newLayers.length === 0) return 0;
+    if (newLayers.length === 0) {
+        return 0;
+    }
 
     for (const nl of newLayers) {
         const vmLayer: VmdLayer = {
@@ -244,7 +277,7 @@ export async function addGazeLayer(
         return null;
     }
 
-    if (inst.vmdLayers.some(l => l.kind === 'gaze')) {
+    if (inst.vmdLayers.some((l) => l.kind === 'gaze')) {
         setStatus('⚠ 视线追踪图层已存在', false);
         return null;
     }
@@ -269,17 +302,20 @@ export async function addGazeLayer(
 }
 
 /** 移除一个 VMD 图层 */
-export async function removeVmdLayer(
-    layerId: string,
-    targetModelId?: string
-): Promise<void> {
+export async function removeVmdLayer(layerId: string, targetModelId?: string): Promise<void> {
     const targetId = targetModelId || focusedModelId;
-    if (!targetId) return;
+    if (!targetId) {
+        return;
+    }
     const inst = modelRegistry.get(targetId);
-    if (!inst) return;
+    if (!inst) {
+        return;
+    }
 
-    const idx = inst.vmdLayers.findIndex(l => l.id === layerId);
-    if (idx === -1) return;
+    const idx = inst.vmdLayers.findIndex((l) => l.id === layerId);
+    if (idx === -1) {
+        return;
+    }
 
     const removed = inst.vmdLayers.splice(idx, 1)[0];
     if (removed.kind === 'gaze') {
@@ -292,17 +328,20 @@ export async function removeVmdLayer(
 }
 
 /** 切换图层启用/禁用 */
-export async function toggleVmdLayer(
-    layerId: string,
-    targetModelId?: string
-): Promise<void> {
+export async function toggleVmdLayer(layerId: string, targetModelId?: string): Promise<void> {
     const targetId = targetModelId || focusedModelId;
-    if (!targetId) return;
+    if (!targetId) {
+        return;
+    }
     const inst = modelRegistry.get(targetId);
-    if (!inst) return;
+    if (!inst) {
+        return;
+    }
 
-    const layer = inst.vmdLayers.find(l => l.id === layerId);
-    if (!layer) return;
+    const layer = inst.vmdLayers.find((l) => l.id === layerId);
+    if (!layer) {
+        return;
+    }
 
     layer.enabled = !layer.enabled;
     if (layer.kind === 'gaze') {
@@ -320,12 +359,18 @@ export async function setVmdLayerWeight(
     targetModelId?: string
 ): Promise<void> {
     const targetId = targetModelId || focusedModelId;
-    if (!targetId) return;
+    if (!targetId) {
+        return;
+    }
     const inst = modelRegistry.get(targetId);
-    if (!inst) return;
+    if (!inst) {
+        return;
+    }
 
-    const layer = inst.vmdLayers.find(l => l.id === layerId);
-    if (!layer) return;
+    const layer = inst.vmdLayers.find((l) => l.id === layerId);
+    if (!layer) {
+        return;
+    }
 
     layer.weight = Math.max(0, Math.min(1, weight));
     if (layer.kind === 'gaze') {
@@ -339,9 +384,13 @@ export async function setVmdLayerWeight(
 /** 清除所有图层 */
 export async function clearVmdLayers(targetModelId?: string): Promise<void> {
     const targetId = targetModelId || focusedModelId;
-    if (!targetId) return;
+    if (!targetId) {
+        return;
+    }
     const inst = modelRegistry.get(targetId);
-    if (!inst) return;
+    if (!inst) {
+        return;
+    }
 
     inst.vmdLayers = [];
     await _rebuildCompositeAnimation(inst.id);
@@ -357,9 +406,11 @@ let _prevGazeActive = false;
  */
 async function _applyGazeLayers(modelId: string): Promise<void> {
     const inst = modelRegistry.get(modelId);
-    if (!inst) return;
+    if (!inst) {
+        return;
+    }
 
-    const enabledGaze = inst.vmdLayers.filter(l => l.kind === 'gaze' && l.enabled);
+    const enabledGaze = inst.vmdLayers.filter((l) => l.kind === 'gaze' && l.enabled);
     const hasActiveGaze = enabledGaze.length > 0;
     // 无论状态是否变化，只要 gaze 启用就调用（权重可能变了）；
     // 关闭时才只需在状态切换时调用
@@ -384,10 +435,12 @@ async function _applyGazeLayers(modelId: string): Promise<void> {
 async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
     const { scene } = await getScene();
     const inst = modelRegistry.get(modelId);
-    if (!inst?.mmdModel) return;
+    if (!inst?.mmdModel) {
+        return;
+    }
 
-    const enabledLayers = inst.vmdLayers.filter(l => l.enabled);
-    const vmdEnabledLayers = enabledLayers.filter(l => l.kind === 'vmd');
+    const enabledLayers = inst.vmdLayers.filter((l) => l.enabled);
+    const vmdEnabledLayers = enabledLayers.filter((l) => l.kind === 'vmd');
 
     // ── Gaze 层处理（快速路径，不参与 VMD composite） ──
     await _applyGazeLayers(modelId);
@@ -407,7 +460,9 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
     if (vmdEnabledLayers.length === 1 && !hasBaseVmd) {
         const layer = vmdEnabledLayers[0];
         const { loadVMDMotion } = await import('./vmd-loader');
-        const loadData = layer.boneFilter?.length ? _filterVmdBones(layer.data, layer.boneFilter) : layer.data;
+        const loadData = layer.boneFilter?.length
+            ? _filterVmdBones(layer.data, layer.boneFilter)
+            : layer.data;
         await loadVMDMotion(loadData, layer.name, modelId);
         return;
     }
@@ -418,12 +473,22 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         const composite = new MmdCompositeAnimation('motionLayers');
 
         // 收集所有待混合的动画条目：基础 VMD（weight=1.0）+ 各启用的 VMD 图层
-        const sources: { data: ArrayBuffer; name: string; weight: number; boneFilter?: string[] }[] = [];
+        const sources: {
+            data: ArrayBuffer;
+            name: string;
+            weight: number;
+            boneFilter?: string[];
+        }[] = [];
         if (hasBaseVmd) {
             sources.push({ data: inst.vmdData, name: inst.vmdName || 'base', weight: 1.0 });
         }
         for (const layer of vmdEnabledLayers) {
-            sources.push({ data: layer.data, name: layer.name, weight: layer.weight, boneFilter: layer.boneFilter });
+            sources.push({
+                data: layer.data,
+                name: layer.name,
+                weight: layer.weight,
+                boneFilter: layer.boneFilter,
+            });
         }
 
         let maxEndFrame = 0;
@@ -432,17 +497,21 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         const totalWeight = sources.reduce((sum, s) => sum + s.weight, 0);
 
         for (const src of sources) {
-            const loadData = src.boneFilter?.length ? _filterVmdBones(src.data, src.boneFilter) : src.data;
+            const loadData = src.boneFilter?.length
+                ? _filterVmdBones(src.data, src.boneFilter)
+                : src.data;
             const mmdAnimation = await vmdLoader.loadFromBufferAsync(src.name, loadData);
             const endFrame = mmdAnimation.endFrame;
-            if (endFrame > maxEndFrame) maxEndFrame = endFrame;
+            if (endFrame > maxEndFrame) {
+                maxEndFrame = endFrame;
+            }
 
             const normalizedWeight = totalWeight > 0 ? src.weight / totalWeight : 0;
             const span = new MmdAnimationSpan(
                 mmdAnimation,
-                0,          // startFrame
-                endFrame,   // endFrame
-                0,          // offset (所有动画从头开始)
+                0, // startFrame
+                endFrame, // endFrame
+                0, // offset (所有动画从头开始)
                 normalizedWeight
             );
             composite.addSpan(span);
@@ -455,7 +524,9 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         if (mmdRuntime instanceof MmdWasmRuntime) {
             const totalSources = sources.length;
             if (totalSources > 1) {
-                console.warn(`[MotionLayers] WASM runtime: ${totalSources} sources requested, only primary layer supported`);
+                console.warn(
+                    `[MotionLayers] WASM runtime: ${totalSources} sources requested, only primary layer supported`
+                );
             }
             const primarySrc = sources[0];
             const { loadVMDMotion } = await import('./vmd-loader');
@@ -465,7 +536,8 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         }
 
         // JS 运行时：MmdCompositeAnimation 可直接绑定
-        const runtimeAnimation = composite as unknown as import('babylon-mmd/esm/Runtime/Animation/IMmdBindableAnimation').IMmdBindableModelAnimation;
+        const runtimeAnimation =
+            composite as unknown as import('babylon-mmd/esm/Runtime/Animation/IMmdBindableAnimation').IMmdBindableModelAnimation;
 
         // 绑定到模型
         inst.mmdModel.setRuntimeAnimation(null);
@@ -474,7 +546,7 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
 
         // 更新模型状态
         inst.animationDuration = maxEndFrame / 30;
-        inst.vmdName = sources.map(s => s.name).join(' + ');
+        inst.vmdName = sources.map((s) => s.name).join(' + ');
 
         setStatus(`✓ 图层混合: ${inst.vmdName}`, true);
         triggerAutoSave();

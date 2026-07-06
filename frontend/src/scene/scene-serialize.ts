@@ -62,7 +62,11 @@ import {
 import { removeProp, loadProp, setPropTransform, setPropOrbit } from './env/props';
 import { setEnvState, setEnvSunAngle, flushEnvState } from './env/env-bridge';
 import { setGravityStrength, getGravityStrength } from './env/env-bridge';
-import { regenerateProcMotion, getProcMotionState, setProcMotionState } from './motion/proc-motion-bridge';
+import {
+    regenerateProcMotion,
+    getProcMotionState,
+    setProcMotionState,
+} from './motion/proc-motion-bridge';
 import { getLipSyncState, setLipSyncState } from './motion/lipsync-bridge';
 
 import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
@@ -103,7 +107,14 @@ export interface SceneFile {
         vmdPath: string | null;
         vmdLibraryRef?: string;
         vmdName: string;
-        vmdLayers?: { name: string; path: string | null; weight: number; boneFilter: string[]; kind?: 'vmd' | 'gaze'; enabled?: boolean }[];
+        vmdLayers?: {
+            name: string;
+            path: string | null;
+            weight: number;
+            boneFilter: string[];
+            kind?: 'vmd' | 'gaze';
+            enabled?: boolean;
+        }[];
         positionX: number;
         positionY?: number;
         positionZ?: number;
@@ -199,16 +210,17 @@ export function serializeScene(): SceneFile {
             vmdPath: inst.vmdPath,
             vmdLibraryRef: inst.vmdPath ? computeLibraryRef(inst.vmdPath) || undefined : undefined,
             vmdName: inst.vmdName,
-            vmdLayers: inst.vmdLayers.length > 0
-                ? inst.vmdLayers.map(l => ({
-                    kind: l.kind,
-                    name: l.name,
-                    path: l.path,
-                    weight: l.weight,
-                    boneFilter: l.boneFilter,
-                    enabled: l.enabled,
-                }))
-                : undefined,
+            vmdLayers:
+                inst.vmdLayers.length > 0
+                    ? inst.vmdLayers.map((l) => ({
+                          kind: l.kind,
+                          name: l.name,
+                          path: l.path,
+                          weight: l.weight,
+                          boneFilter: l.boneFilter,
+                          enabled: l.enabled,
+                      }))
+                    : undefined,
             positionX: inst.meshes[0]?.position.x ?? 0,
             positionY: inst.meshes[0]?.position.y ?? 0,
             positionZ: inst.meshes[0]?.position.z ?? 0,
@@ -329,9 +341,12 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             }
             await loadPMXFile(resolvedPath, m.kind === 'stage', true);
             // 舞台加载后不抢焦点，需要通过 filePath 反查注册表
-            const inst = m.kind === 'stage'
-                ? Array.from(modelManager.modelRegistry.values()).find(i => i.filePath === resolvedPath) ?? focusedModel()
-                : focusedModel();
+            const inst =
+                m.kind === 'stage'
+                    ? (Array.from(modelManager.modelRegistry.values()).find(
+                          (i) => i.filePath === resolvedPath
+                      ) ?? focusedModel())
+                    : focusedModel();
             if (!inst || inst.meshes.length === 0) {
                 errors.push(`模型 ${m.name}: 加载成功但无网格数据`);
                 modelIds.push(null);
@@ -344,10 +359,20 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             }
 
             // Apply immediate model properties (position, scale, visibility, etc.)
-            if (m.positionMode === 'orbit' && m.orbitAzimuth !== undefined && m.orbitElevation !== undefined && m.orbitDistance !== undefined) {
+            if (
+                m.positionMode === 'orbit' &&
+                m.orbitAzimuth !== undefined &&
+                m.orbitElevation !== undefined &&
+                m.orbitDistance !== undefined
+            ) {
                 modelManager.setOrbit(inst.id, m.orbitAzimuth, m.orbitElevation, m.orbitDistance);
             } else {
-                modelManager.setPosition(inst.id, m.positionX ?? 0, m.positionY ?? 0, m.positionZ ?? 0);
+                modelManager.setPosition(
+                    inst.id,
+                    m.positionX ?? 0,
+                    m.positionY ?? 0,
+                    m.positionZ ?? 0
+                );
                 inst.positionMode = m.positionMode ?? 'cartesian';
             }
             if (m.scaling !== undefined) {
@@ -415,13 +440,15 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             try {
                 const { addVmdLayersFromPaths } = await import('./motion/vmd-layers');
                 const resolvedLayers = m.vmdLayers
-                    .filter(l => l.path)
-                    .map(l => ({
+                    .filter((l) => l.path)
+                    .map((l) => ({
                         path: resolvePathFromRef(l.path!),
                         weight: l.weight,
                         boneFilter: l.boneFilter,
                     }))
-                    .filter((l): l is { path: string; weight: number; boneFilter: string[] } => !!l.path);
+                    .filter(
+                        (l): l is { path: string; weight: number; boneFilter: string[] } => !!l.path
+                    );
                 if (resolvedLayers.length > 0) {
                     await addVmdLayersFromPaths(resolvedLayers, id);
                 }
@@ -431,7 +458,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         }
         // 恢复 gaze 图层（程序化图层，无 VMD 数据）
         if (m.vmdLayers && m.vmdLayers.length > 0) {
-            const gazeLayers = m.vmdLayers.filter(l => l.kind === 'gaze');
+            const gazeLayers = m.vmdLayers.filter((l) => l.kind === 'gaze');
             if (gazeLayers.length > 0) {
                 try {
                     const { addGazeLayer } = await import('./motion/vmd-layers');
@@ -579,7 +606,12 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     if (p.uuid) {
                         propUuidMap.set(propId, p.uuid);
                     }
-                    if (p.positionMode === 'orbit' && p.orbitAzimuth !== undefined && p.orbitElevation !== undefined && p.orbitDistance !== undefined) {
+                    if (
+                        p.positionMode === 'orbit' &&
+                        p.orbitAzimuth !== undefined &&
+                        p.orbitElevation !== undefined &&
+                        p.orbitDistance !== undefined
+                    ) {
                         setPropTransform(propId, {
                             rotationY: p.rotationY,
                             scaling: p.scaling,
@@ -660,7 +692,10 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
         }
     } catch (_err) {
         if (!suppressToast) {
-            showErrorToast('自动保存失败', _err instanceof Error ? _err.message : String(_err ?? 'unknown error'));
+            showErrorToast(
+                '自动保存失败',
+                _err instanceof Error ? _err.message : String(_err ?? 'unknown error')
+            );
         }
     }
 }

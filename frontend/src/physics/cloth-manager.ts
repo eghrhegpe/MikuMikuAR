@@ -4,7 +4,12 @@
 
 import { SdfCollider, DEFAULT_BODY_CAPSULES } from './xpbd-collider';
 import type { CapsuleSpec } from './xpbd-collider';
-import { createCloth, buildClothUpdateFn, setDebugUpdateFn, DEFAULT_CLOTH_CONFIG } from './xpbd-cloth';
+import {
+    createCloth,
+    buildClothUpdateFn,
+    setDebugUpdateFn,
+    DEFAULT_CLOTH_CONFIG,
+} from './xpbd-cloth';
 import { XpbdRenderer } from './xpbd-renderer';
 import { scene, modelManager } from '../scene/scene';
 import { focusedModelId, envState, setStatus } from '../core/config';
@@ -80,7 +85,7 @@ function _createClothForFocusedModel(): void {
     collider.updateCapsuleSizes(anchorMatrixFn, boneParentMap);
 
     // Use config from envState
-    let cfg = { ...envState.clothConfig };
+    const cfg = { ...envState.clothConfig };
 
     // 自动推算尺寸：innerRadius 仍为出厂默认值 0.12（未自定义过）或旧存档笔误值 1.0
     const atDefault =
@@ -91,7 +96,7 @@ function _createClothForFocusedModel(): void {
             cfg.anchorBone || '腰',
             anchorMatrixFn,
             mmdForBones?.runtimeBones ?? [],
-            modelHeight,
+            modelHeight
         );
         cfg.innerRadius = fitted.innerRadius;
         cfg.length = fitted.length;
@@ -107,7 +112,12 @@ function _createClothForFocusedModel(): void {
     cloth.solver.setGravity(0, -9.8 * _clothGravity, 0);
 
     // Build update function (with time scale getter)
-    const updateFn = buildClothUpdateFn(cloth, anchorMatrixFn, collider, () => envState.solverTimeScale);
+    const updateFn = buildClothUpdateFn(
+        cloth,
+        anchorMatrixFn,
+        collider,
+        () => envState.solverTimeScale
+    );
 
     // Register with model manager
     modelManager.addCloth(id, cloth, updateFn);
@@ -116,13 +126,17 @@ function _createClothForFocusedModel(): void {
     _applyCollisionState();
 
     // 设置调试更新回调（如果调试可视化已启用）
-    if (envState.clothDebugParticles || envState.clothDebugConstraints || envState.clothDebugColliders) {
+    if (
+        envState.clothDebugParticles ||
+        envState.clothDebugConstraints ||
+        envState.clothDebugColliders
+    ) {
         setDebugUpdateFn((solver, coll) => updateDebugVisualization(solver, coll));
     }
 
     setStatus(
         `✓ 布料已创建 (${cloth.solver.particles.length} 粒子, ${cloth.solver.constraints.length} 约束, mesh: ${cloth.mesh ? 'ok' : 'null'})`,
-        true,
+        true
     );
 }
 
@@ -179,8 +193,12 @@ export function recreateCloth(): boolean {
 export function autoFitClothDimensions(
     anchorBoneName: string,
     getBoneMatrix: (name: string) => Float32Array | null,
-    bones: ReadonlyArray<{ name: string; parentBone: { name: string } | null; worldMatrix: Float32Array }>,
-    modelHeight?: number,
+    bones: ReadonlyArray<{
+        name: string;
+        parentBone: { name: string } | null;
+        worldMatrix: Float32Array;
+    }>,
+    modelHeight?: number
 ): { innerRadius: number; length: number } {
     // 人体比例参考（米）：
     // 身高 1.6m → 腰节（头顶到腰）≈ 0.95m，腰围 ≈ 0.70m（半径 0.111m）
@@ -193,22 +211,31 @@ export function autoFitClothDimensions(
     const REF_SKIRT_LENGTH = 0.65; // 参考裙长（米）
 
     const anchorMat = getBoneMatrix(anchorBoneName);
-    if (!anchorMat) return { innerRadius: REF_WAIST_RADIUS, length: REF_SKIRT_LENGTH };
+    if (!anchorMat) {
+        return { innerRadius: REF_WAIST_RADIUS, length: REF_SKIRT_LENGTH };
+    }
 
     const anchorBone = bones.find((b) => b.name === anchorBoneName);
-    if (!anchorBone) return { innerRadius: REF_WAIST_RADIUS, length: REF_SKIRT_LENGTH };
+    if (!anchorBone) {
+        return { innerRadius: REF_WAIST_RADIUS, length: REF_SKIRT_LENGTH };
+    }
 
     // ---- 推估模型身高（如果未传入）----
     let height = modelHeight ?? REF_HEIGHT;
     if (!modelHeight) {
         // 从骨骼 Y 范围估算：找最高和最低骨骼的 Y 差
-        let minY = Infinity, maxY = -Infinity;
+        let minY = Infinity,
+            maxY = -Infinity;
         for (const b of bones) {
             const m = getBoneMatrix(b.name);
             if (m) {
                 const y = m[13]; // world matrix translation Y
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
+                if (y < minY) {
+                    minY = y;
+                }
+                if (y > maxY) {
+                    maxY = y;
+                }
             }
         }
         if (isFinite(minY) && isFinite(maxY) && maxY - minY > 0.1) {
@@ -230,15 +257,23 @@ export function autoFitClothDimensions(
     // 收集 anchor 层附近（|Y - anchorY| < 0.1）的骨骼，统计径向距离分布
     const lateralDistances: number[] = [];
     for (const b of bones) {
-        if (b.name === anchorBoneName) continue;
+        if (b.name === anchorBoneName) {
+            continue;
+        }
         const m = getBoneMatrix(b.name);
-        if (!m) continue;
+        if (!m) {
+            continue;
+        }
         const dy = Math.abs(m[13] - anchorY);
-        if (dy > 0.1) continue; // 同层骨骼
+        if (dy > 0.1) {
+            continue;
+        } // 同层骨骼
         const dx = m[12] - anchorX;
         const dz = m[14] - anchorZ;
         const dist = Math.sqrt(dx * dx + dz * dz);
-        if (dist > 0.01) lateralDistances.push(dist);
+        if (dist > 0.01) {
+            lateralDistances.push(dist);
+        }
     }
 
     let innerRadius: number;
@@ -309,7 +344,9 @@ export function getCollider(): SdfCollider | null {
 
 /** 获取碰撞体规格列表 */
 export function getColliderSpecs(): CapsuleSpec[] {
-    if (!_currentCollider) return [];
+    if (!_currentCollider) {
+        return [];
+    }
     return _currentCollider.capsules.map((c) => ({
         name: c.name,
         boneName: c.boneName,
@@ -320,7 +357,9 @@ export function getColliderSpecs(): CapsuleSpec[] {
 
 /** 设置单个碰撞体的半径 */
 export function setCapsuleRadius(name: string, radius: number): void {
-    if (!_currentCollider) return;
+    if (!_currentCollider) {
+        return;
+    }
     const c = _currentCollider.capsules.find((c) => c.name === name);
     if (c) {
         c.radius = radius;
@@ -329,7 +368,9 @@ export function setCapsuleRadius(name: string, radius: number): void {
 
 /** 设置单个碰撞体的半高 */
 export function setCapsuleHalfHeight(name: string, halfHeight: number): void {
-    if (!_currentCollider) return;
+    if (!_currentCollider) {
+        return;
+    }
     const c = _currentCollider.capsules.find((c) => c.name === name);
     if (c) {
         c.halfHeight = halfHeight;
@@ -338,25 +379,33 @@ export function setCapsuleHalfHeight(name: string, halfHeight: number): void {
 
 /** 设置碰撞体刚度 */
 export function setColliderStiffness(stiffness: number): void {
-    if (!_currentCollider) return;
+    if (!_currentCollider) {
+        return;
+    }
     _currentCollider.stiffness = stiffness;
 }
 
 /** 设置碰撞体摩擦系数 */
 export function setColliderFriction(friction: number): void {
-    if (!_currentCollider) return;
+    if (!_currentCollider) {
+        return;
+    }
     _currentCollider.friction = friction;
 }
 
 /** 开关单个碰撞体 */
 export function setCapsuleEnabled(name: string, enabled: boolean): void {
-    if (!_currentCollider) return;
+    if (!_currentCollider) {
+        return;
+    }
     _currentCollider.setEnabledByName(name, enabled);
 }
 
 /** 全部开关碰撞体 */
 export function setAllCapsulesEnabled(enabled: boolean): void {
-    if (!_currentCollider) return;
+    if (!_currentCollider) {
+        return;
+    }
     _currentCollider.setAllEnabled(enabled);
 }
 
@@ -374,7 +423,9 @@ function _getRenderer(): XpbdRenderer {
 export function setDebugParticles(enabled: boolean): void {
     envState.clothDebugParticles = enabled;
     const r = _getRenderer();
-    if (r) r.showParticles(enabled);
+    if (r) {
+        r.showParticles(enabled);
+    }
     _syncDebugUpdateFn();
 }
 
@@ -382,7 +433,9 @@ export function setDebugParticles(enabled: boolean): void {
 export function setDebugConstraints(enabled: boolean): void {
     envState.clothDebugConstraints = enabled;
     const r = _getRenderer();
-    if (r) r.showConstraints(enabled);
+    if (r) {
+        r.showConstraints(enabled);
+    }
     _syncDebugUpdateFn();
 }
 
@@ -390,13 +443,19 @@ export function setDebugConstraints(enabled: boolean): void {
 export function setDebugColliders(enabled: boolean): void {
     envState.clothDebugColliders = enabled;
     const r = _getRenderer();
-    if (r) r.showColliders(enabled);
+    if (r) {
+        r.showColliders(enabled);
+    }
     _syncDebugUpdateFn();
 }
 
 /** 同步调试更新回调 */
 function _syncDebugUpdateFn(): void {
-    if (envState.clothDebugParticles || envState.clothDebugConstraints || envState.clothDebugColliders) {
+    if (
+        envState.clothDebugParticles ||
+        envState.clothDebugConstraints ||
+        envState.clothDebugColliders
+    ) {
         setDebugUpdateFn((solver, coll) => updateDebugVisualization(solver, coll));
     } else {
         setDebugUpdateFn(null);
@@ -413,9 +472,14 @@ export function getDebugState(): { particles: boolean; constraints: boolean; col
 }
 
 /** 更新调试可视化（每帧调用） */
-export function updateDebugVisualization(solver: import('./xpbd-solver').XpbdSolver, collider: SdfCollider | null): void {
+export function updateDebugVisualization(
+    solver: import('./xpbd-solver').XpbdSolver,
+    collider: SdfCollider | null
+): void {
     const r = _getRenderer();
-    if (!r) return;
+    if (!r) {
+        return;
+    }
 
     if (envState.clothDebugParticles) {
         r.updateParticles(solver);
@@ -567,7 +631,7 @@ function _reportClothStatus(): void {
         if (diag.instanceCount > 0) {
             setStatus(
                 `✓ 布料模拟已启用 (${diag.instanceCount} 例, ${diag.particleCount} 粒子, ${diag.constraintCount} 约束)`,
-                true,
+                true
             );
         } else {
             setStatus('⚠ 布料已启用但未找到活跃实例', false);

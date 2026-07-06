@@ -31,7 +31,9 @@ const NORM_PATH_CACHE_MAX = 5000;
  *  结果缓存，避免 buildLevel 遍历千级模型时重复正则替换。 */
 export function normPath(p: string): string {
     const cached = _normPathCache.get(p);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) {
+        return cached;
+    }
 
     let result: string;
     if (p.startsWith('content://')) {

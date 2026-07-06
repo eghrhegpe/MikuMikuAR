@@ -127,11 +127,18 @@ export function getModelPosition(id: string): [number, number, number] {
 
 // ======== [doc:adr-049] 球面坐标轨道控制 ========
 
-export function setModelOrbit(id: string, azimuth: number, elevation: number, distance: number): void {
+export function setModelOrbit(
+    id: string,
+    azimuth: number,
+    elevation: number,
+    distance: number
+): void {
     modelManager?.setOrbit(id, azimuth, elevation, distance);
 }
 
-export function getModelOrbit(id: string): { azimuth: number; elevation: number; distance: number } | null {
+export function getModelOrbit(
+    id: string
+): { azimuth: number; elevation: number; distance: number } | null {
     return modelManager?.getOrbit(id) ?? null;
 }
 
@@ -198,11 +205,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
  * @param bones    VPD 解析出的骨骼数据（position + rotation quaternion）
  * @param morphs   VPD 解析出的表情数据（name + weight）
  */
-export function applyVPDPose(
-    id: string,
-    bones: VPDBoneData[],
-    morphs: VPDMorphData[],
-): void {
+export function applyVPDPose(id: string, bones: VPDBoneData[], morphs: VPDMorphData[]): void {
     const inst = modelRegistry.get(id);
     if (!inst || !inst.mmdModel) {
         console.warn('[applyVPDPose] 模型未找到:', id);
@@ -222,13 +225,18 @@ export function applyVPDPose(
     // 3. 应用骨骼变换（写 linkedBone.position / rotationQuaternion）
     for (const b of bones) {
         const idx = boneNameToIdx.get(b.name);
-        if (idx === undefined) continue;
+        if (idx === undefined) {
+            continue;
+        }
         const linked = runtimeBones[idx].linkedBone;
         // position: VPD 是局部坐标（米），直接写入
         linked.position = new Vector3(b.position[0], b.position[1], b.position[2]);
         // rotation: VPD 是四元数 [x, y, z, w]
         linked.rotationQuaternion = new Quaternion(
-            b.rotation[0], b.rotation[1], b.rotation[2], b.rotation[3],
+            b.rotation[0],
+            b.rotation[1],
+            b.rotation[2],
+            b.rotation[3]
         );
     }
 

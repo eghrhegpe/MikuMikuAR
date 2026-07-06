@@ -59,11 +59,11 @@ export function addColorSliderRow(
         const fill = document.createElement('div');
         fill.className = 'cs-fill';
         fill.style.background = channelColors[ci];
-        fill.style.width = (color[ci] * 100) + '%';
+        fill.style.width = color[ci] * 100 + '%';
 
         const thumb = document.createElement('div');
         thumb.className = 'cs-thumb';
-        thumb.style.left = (color[ci] * 100) + '%';
+        thumb.style.left = color[ci] * 100 + '%';
 
         bar.appendChild(fill);
         bar.appendChild(thumb);
@@ -71,8 +71,8 @@ export function addColorSliderRow(
         function updateDisplay(v: number): void {
             current[ci] = v;
             val.textContent = v.toFixed(2);
-            fill.style.width = (v * 100) + '%';
-            thumb.style.left = (v * 100) + '%';
+            fill.style.width = v * 100 + '%';
+            thumb.style.left = v * 100 + '%';
             bar.setAttribute('aria-valuenow', String(v));
             swatch.style.background = `rgb(${Math.round(current[0] * 255)},${Math.round(current[1] * 255)},${Math.round(current[2] * 255)})`;
             onChange([current[0], current[1], current[2]]);
@@ -94,23 +94,31 @@ export function addColorSliderRow(
                 case 'ArrowDown': {
                     e.preventDefault();
                     const lower = Math.max(0, Math.round((current[ci] - delta) * 100) / 100);
-                    if (lower !== current[ci]) updateDisplay(lower);
+                    if (lower !== current[ci]) {
+                        updateDisplay(lower);
+                    }
                     break;
                 }
                 case 'ArrowRight':
                 case 'ArrowUp': {
                     e.preventDefault();
                     const upper = Math.min(1, Math.round((current[ci] + delta) * 100) / 100);
-                    if (upper !== current[ci]) updateDisplay(upper);
+                    if (upper !== current[ci]) {
+                        updateDisplay(upper);
+                    }
                     break;
                 }
                 case 'Home':
                     e.preventDefault();
-                    if (0 !== current[ci]) updateDisplay(0);
+                    if (0 !== current[ci]) {
+                        updateDisplay(0);
+                    }
                     break;
                 case 'End':
                     e.preventDefault();
-                    if (1 !== current[ci]) updateDisplay(1);
+                    if (1 !== current[ci]) {
+                        updateDisplay(1);
+                    }
                     break;
             }
         }
@@ -119,9 +127,13 @@ export function addColorSliderRow(
         let dragRect: DOMRect | null = null;
 
         function onDragMove(e: MouseEvent): void {
-            if (!didDrag) didDrag = true;
+            if (!didDrag) {
+                didDrag = true;
+            }
             e.preventDefault();
-            if (dragRect) setValueFromClientX(e.clientX, dragRect);
+            if (dragRect) {
+                setValueFromClientX(e.clientX, dragRect);
+            }
         }
 
         function onDragEnd(e: MouseEvent): void {
@@ -165,15 +177,17 @@ export function addColorSliderRow(
             bars[i] = row.querySelector('.cs-bar') as HTMLElement;
         });
         initControl(block, opts, [color[0], color[1], color[2]], (v, cached) => {
-            if (!Array.isArray(v) || v.length < 3) return false;
+            if (!Array.isArray(v) || v.length < 3) {
+                return false;
+            }
             let changed = false;
             for (let i = 0; i < 3; i++) {
                 if (v[i] !== cached[i]) {
                     changed = true;
                     current[i] = v[i];
                     vals[i].textContent = v[i].toFixed(2);
-                    fills[i].style.width = (v[i] * 100) + '%';
-                    thumbs[i].style.left = (v[i] * 100) + '%';
+                    fills[i].style.width = v[i] * 100 + '%';
+                    thumbs[i].style.left = v[i] * 100 + '%';
                     bars[i].setAttribute('aria-valuenow', String(v[i]));
                 }
             }
@@ -384,9 +398,13 @@ export function addModeSlider<T extends string | number>(
 
     // === 自更新支持 ===
     initControl(row, opts, currentValue, (v, cached) => {
-        if (v === cached) return false;
+        if (v === cached) {
+            return false;
+        }
         const idx = options.findIndex((o) => o.value === v);
-        if (idx >= 0) updateDisplay(idx);
+        if (idx >= 0) {
+            updateDisplay(idx);
+        }
         return true;
     });
 }

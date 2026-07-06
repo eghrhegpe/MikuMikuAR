@@ -113,7 +113,9 @@ export class BeatDetector {
         this._onBeatCallbacks.push(cb);
         return () => {
             const idx = this._onBeatCallbacks.indexOf(cb);
-            if (idx >= 0) this._onBeatCallbacks.splice(idx, 1);
+            if (idx >= 0) {
+                this._onBeatCallbacks.splice(idx, 1);
+            }
         };
     }
 
@@ -154,7 +156,11 @@ export class BeatDetector {
             this.phaseStartTime = now;
             // 触发 beat 回调
             for (const cb of this._onBeatCallbacks) {
-                try { cb(); } catch (e) { console.warn('[BeatDetector] onBeat callback error:', e); }
+                try {
+                    cb();
+                } catch (e) {
+                    console.warn('[BeatDetector] onBeat callback error:', e);
+                }
             }
             if (this.beatTimes.length >= 2) {
                 const intervals: number[] = [];

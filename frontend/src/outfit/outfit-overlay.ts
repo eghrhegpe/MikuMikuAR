@@ -30,13 +30,13 @@ function _encodePath(path: string): string {
  *
  * @returns true = 成功重定向，false = 匹配率过低，应降级为静态叠加
  */
-function retargetSkeleton(
-    inst: ModelInstance,
-    fbxMeshes: Mesh[]
-): boolean {
+function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
     const pmxModel = inst.mmdModel;
-    if (!pmxModel) return false;
+    if (!pmxModel) {
+        return false;
+    }
     // 找到第一个有 skeleton 的 FBX mesh
+    // eslint-disable-next-line eqeqeq -- 惯用法:同时排除 null 与 undefined
     const skinned = fbxMeshes.find((m) => m.skeleton != null);
     if (!skinned || !skinned.skeleton) {
         return false;
@@ -84,12 +84,16 @@ function retargetSkeleton(
 
     // 对每个 skinned mesh：重建 bone weight index 映射
     for (const mesh of fbxMeshes) {
-        if (!mesh.skeleton) continue;
+        if (!mesh.skeleton) {
+            continue;
+        }
 
         // 获取 mesh 的 bone weight buffer
         const matricesWeights = mesh.getVerticesData('matricesWeights');
         const matricesIndices = mesh.getVerticesData('matricesIndices');
-        if (!matricesWeights || !matricesIndices) continue;
+        if (!matricesWeights || !matricesIndices) {
+            continue;
+        }
 
         // 重建 matricesIndices：FBX bone index → PMX bone index
         const newIndices = new Float32Array(matricesIndices.length);
@@ -186,7 +190,9 @@ export async function loadOverlay(
  * 隐藏指定材质名的 PMX mesh（保存原始可见性用于恢复）。
  */
 export function hideMaterials(inst: ModelInstance, materialNames: string[]): void {
-    if (!materialNames || materialNames.length === 0) return;
+    if (!materialNames || materialNames.length === 0) {
+        return;
+    }
 
     const nameSet = new Set(materialNames.map((n) => n.toLowerCase()));
 
@@ -197,7 +203,9 @@ export function hideMaterials(inst: ModelInstance, materialNames: string[]): voi
     for (let i = 0; i < inst.meshes.length; i++) {
         const mesh = inst.meshes[i];
         const mat = mesh.material;
-        if (!mat) continue;
+        if (!mat) {
+            continue;
+        }
 
         // 按材质名匹配
         if (nameSet.has(mat.name.toLowerCase())) {
@@ -214,7 +222,9 @@ export function hideMaterials(inst: ModelInstance, materialNames: string[]): voi
  * 恢复被 hideMaterials 隐藏的 PMX mesh 可见性。
  */
 export function restoreMaterials(inst: ModelInstance): void {
-    if (!inst._origMaterialVisibility) return;
+    if (!inst._origMaterialVisibility) {
+        return;
+    }
 
     for (const [idx, wasVisible] of inst._origMaterialVisibility) {
         if (idx < inst.meshes.length) {
@@ -232,7 +242,9 @@ export function restoreMaterials(inst: ModelInstance): void {
  * 释放 overlay mesh 并清理引用。
  */
 export function disposeOverlay(inst: ModelInstance): void {
-    if (!inst._overlayMeshes) return;
+    if (!inst._overlayMeshes) {
+        return;
+    }
 
     // 获取 PMX skeleton 用于比较（避免误释放共享 skeleton）
     const rootMeta = inst.rootMesh.metadata as { skeleton?: Skeleton } | undefined;
@@ -242,7 +254,11 @@ export function disposeOverlay(inst: ModelInstance): void {
     for (const mesh of inst._overlayMeshes) {
         try {
             // 如果 mesh 有独立 skeleton（未重定向成功），先释放
-            if (mesh.skeleton && mesh.skeleton !== pmxSkeleton && !disposedSkeletons.has(mesh.skeleton)) {
+            if (
+                mesh.skeleton &&
+                mesh.skeleton !== pmxSkeleton &&
+                !disposedSkeletons.has(mesh.skeleton)
+            ) {
                 disposedSkeletons.add(mesh.skeleton);
                 mesh.skeleton.dispose();
             }

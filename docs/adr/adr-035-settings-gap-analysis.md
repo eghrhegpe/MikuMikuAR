@@ -113,7 +113,7 @@ Phase C（P2，后续）：
 | 语言切换 (i18n) | P0 | ❌ 未做 |
 | 帧率上限 | P1 | ✅ 已完成（0–144 滑块） |
 | 渲染独立开关 (Custom) | P1 | ✅ 已完成 |
-| 垂直同步 | P1 | ❌ 未做 |
+| 垂直同步 | P1 | ✅ 已完成（`applyFrameControl()`：vsync 关→`engine.maxFPS=0` 解除限帧；浏览器 RAF 天然同步，已注明限制）|
 | 渲染分辨率缩放 | P1 | ✅ 已完成（engine.setHardwareScalingLevel + 性能页滑块 0.5–2x）|
 | 默认模型行为 | P1 | 🟡 部分（auto-scale 已实现；auto-center 与 arrange 冲突待设计）|
 | 鼠标/触控灵敏度 | P1 | ✅ 已完成（ArcRotate/Universal 灵敏度倍率 + 性能页滑块，实时生效）|
@@ -121,7 +121,7 @@ Phase C（P2，后续）：
 | 反 Y 轴 | P1 | ✅ 已完成（`InvertableArcRotateCameraPointersInput` 子类，取反 `onTouch`/`_computeMultiTouchPanning` 的 Y 偏移）|
 | UI 缩放 | P2 | ✅ 已完成 |
 | 模型缓存清理 | P2 | ✅ 已完成 |
-| 重置所有设置 | P2 | 🟡 部分（仅外观/快捷键恢复默认） |
-| 设置导入/导出 | P2 | ❌ 未做 |
+| 重置所有设置 | P2 | ✅ 已完成（关于页「恢复默认设置」清空 uiState 并重新应用默认值） |
+| 设置导入/导出 | P2 | ✅ 已完成（关于页导出/导入全量 uiState JSON；外观/性能模式持久化到 Go，其余会话级生效）|
 | 自动更新开关 | P2 | ❌ 未做 |
 

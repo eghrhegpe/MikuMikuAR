@@ -78,7 +78,9 @@ export function addCollapsible(
             let cachedValue = config.headerToggle.value;
             const update = (): void => {
                 const newVal = !!config.headerToggle!.bind!();
-                if (newVal === cachedValue) return;
+                if (newVal === cachedValue) {
+                    return;
+                }
                 cachedValue = newVal;
                 input.checked = newVal;
             };

@@ -364,20 +364,27 @@ describe('outfit helper functions (via integration)', () => {
             rootMesh: createMockMesh(sm),
             outfitFile: {
                 version: 1,
-                variants: [{
-                    name: 'test',
-                    byMaterial: {
-                        顔: {
-                            diffuse: 'new_diffuse.png',
-                            toon: 'new_toon.png',
-                            spa: 'new_spa.png',
-                            normal: 'new_normal.png',
-                            emissive: 'new_emissive.png',
-                            params: { diffuseMul: 0.8, specularMul: 0.5, shininess: 80, ambientMul: 0.6 },
-                            tint: [0.9, 1.0, 0.9],
+                variants: [
+                    {
+                        name: 'test',
+                        byMaterial: {
+                            顔: {
+                                diffuse: 'new_diffuse.png',
+                                toon: 'new_toon.png',
+                                spa: 'new_spa.png',
+                                normal: 'new_normal.png',
+                                emissive: 'new_emissive.png',
+                                params: {
+                                    diffuseMul: 0.8,
+                                    specularMul: 0.5,
+                                    shininess: 80,
+                                    ambientMul: 0.6,
+                                },
+                                tint: [0.9, 1.0, 0.9],
+                            },
                         },
                     },
-                }],
+                ],
             },
         });
         modelRegistry.set('m1', inst);

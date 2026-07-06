@@ -42,7 +42,9 @@ let _statusTimer: ReturnType<typeof setTimeout> | null = null;
  * @param hold true=持续显示不自动消失(默认 false, 2s/5s 后淡出)
  */
 export function setStatus(text: string, ok: boolean, hold = false): void {
-    if (!dom.statusText) return;
+    if (!dom.statusText) {
+        return;
+    }
 
     // 清除旧定时器
     if (_statusTimer) {
@@ -77,7 +79,9 @@ export function setStatus(text: string, ok: boolean, hold = false): void {
 }
 
 export function showHint(text: string): void {
-    if (!dom.statusText) return;
+    if (!dom.statusText) {
+        return;
+    }
     if (!hintActive) {
         savedStatusText = dom.statusText.textContent || '';
         savedStatusColor = dom.statusText.style.color || '';
@@ -90,7 +94,9 @@ export function showHint(text: string): void {
 
 export function hideHint(): void {
     hintActive = false;
-    if (!dom.statusText) return;
+    if (!dom.statusText) {
+        return;
+    }
     // 恢复到最新保存的状态（可能已被 setStatus 更新过）
     dom.statusText.textContent = savedStatusText;
     dom.statusText.style.color = savedStatusColor;
@@ -116,7 +122,9 @@ export function formatTime(seconds: number): string {
 }
 
 export function formatError(err: unknown, maxLen = 120): string {
-    if (err === null || err === undefined) return 'unknown error';
+    if (err === null || err === undefined) {
+        return 'unknown error';
+    }
     if (err instanceof Error) {
         const msg = err.message;
         return msg.length > maxLen ? msg.slice(0, maxLen - 3) + '...' : msg;
@@ -156,7 +164,12 @@ export const stackRegistry: {
     modelStack: SlideMenu | null;
     sceneStackGetter: (() => SlideMenu | null) | null;
     buildLevel:
-        ((dir: string, label: string, filter?: (m: import('./types').LibraryModel) => boolean) => import('./types').PopupLevel) | null;
+        | ((
+              dir: string,
+              label: string,
+              filter?: (m: import('./types').LibraryModel) => boolean
+          ) => import('./types').PopupLevel)
+        | null;
 } = {
     modelStack: null,
     sceneStackGetter: null,
@@ -204,7 +217,9 @@ function isPathWithinRoot(resolved: string, rootPath: string): boolean {
 }
 
 export function resolveLibraryRef(libraryRef: string): string | null {
-    if (!libraryRef) return null;
+    if (!libraryRef) {
+        return null;
+    }
     if (libraryRef.startsWith('/') || libraryRef.includes('..')) {
         console.warn(`[resolveLibraryRef] suspicious libraryRef rejected: "${libraryRef}"`);
         return null;
@@ -356,7 +371,9 @@ const _activeToasts: Array<{
 
 function getToastContainer(): HTMLElement {
     let container = document.getElementById('mmk-toast-container');
-    if (container) return container;
+    if (container) {
+        return container;
+    }
     container = document.createElement('div');
     container.id = 'mmk-toast-container';
     container.style.cssText = [
@@ -371,19 +388,29 @@ function getToastContainer(): HTMLElement {
 
 function removeToast(id: number): void {
     const idx = _activeToasts.findIndex((t) => t.id === id);
-    if (idx === -1) return;
+    if (idx === -1) {
+        return;
+    }
     const entry = _activeToasts[idx];
-    if (entry.fadeTimer) clearTimeout(entry.fadeTimer);
+    if (entry.fadeTimer) {
+        clearTimeout(entry.fadeTimer);
+    }
     clearTimeout(entry.timer);
-    if (entry.el.parentNode) entry.el.remove();
+    if (entry.el.parentNode) {
+        entry.el.remove();
+    }
     _activeToasts.splice(idx, 1);
 }
 
 function fadeAndRemoveToast(id: number, el: HTMLElement, fadeDuration = 300): void {
     const entry = _activeToasts.find((t) => t.id === id);
-    if (!entry) return;
+    if (!entry) {
+        return;
+    }
     clearTimeout(entry.timer);
-    if (entry.fadeTimer) clearTimeout(entry.fadeTimer);
+    if (entry.fadeTimer) {
+        clearTimeout(entry.fadeTimer);
+    }
     entry.fadeTimer = setTimeout(() => {
         if (el.parentNode) {
             el.style.transition = `opacity ${fadeDuration}ms ease,transform ${fadeDuration}ms ease`;
@@ -394,11 +421,7 @@ function fadeAndRemoveToast(id: number, el: HTMLElement, fadeDuration = 300): vo
     }, 50);
 }
 
-function buildToastElement(
-    title: string,
-    detail?: string,
-    actions?: ToastAction[],
-): HTMLElement {
+function buildToastElement(title: string, detail?: string, actions?: ToastAction[]): HTMLElement {
     const toast = document.createElement('div');
     toast.style.cssText = [
         'pointer-events:auto', // toast itself is interactive
@@ -430,7 +453,8 @@ function buildToastElement(
 
     // Actions area
     const actionsEl = document.createElement('div');
-    actionsEl.style.cssText = 'display:flex;gap:6px;flex-shrink:0;align-items:flex-start;padding-top:2px';
+    actionsEl.style.cssText =
+        'display:flex;gap:6px;flex-shrink:0;align-items:flex-start;padding-top:2px';
 
     // Copy button (only when there's detail to copy)
     if (detail) {
@@ -444,7 +468,9 @@ function buildToastElement(
             try {
                 await navigator.clipboard.writeText(copyText);
                 copyBtn.textContent = '已复制 ✓';
-                setTimeout(() => { copyBtn.textContent = '复制'; }, 1500);
+                setTimeout(() => {
+                    copyBtn.textContent = '复制';
+                }, 1500);
             } catch {
                 // clipboard unavailable — silently ignore
             }
@@ -460,7 +486,10 @@ function buildToastElement(
             btn.style.cssText =
                 'padding:3px 10px;border:none;border-radius:4px;font-size:var(--font-ui-sm);' +
                 'cursor:pointer;background:var(--accent);color:#fff';
-            btn.addEventListener('click', () => { act.onClick(); removeToast(_toastIdCounter); });
+            btn.addEventListener('click', () => {
+                act.onClick();
+                removeToast(_toastIdCounter);
+            });
             actionsEl.appendChild(btn);
         }
     }
@@ -494,13 +523,16 @@ export function showErrorToast(
     title: string,
     detail?: string,
     actions?: ToastAction[],
-    duration = 8000,
+    duration = 8000
 ): void {
     // Enforce max visible — dismiss oldest
     while (_activeToasts.length >= MAX_VISIBLE_TOASTS) {
         const oldest = _activeToasts[0];
-        if (oldest) fadeAndRemoveToast(oldest.id, oldest.el, 150);
-        else break;
+        if (oldest) {
+            fadeAndRemoveToast(oldest.id, oldest.el, 150);
+        } else {
+            break;
+        }
     }
 
     const id = ++_toastIdCounter;
@@ -537,7 +569,11 @@ const CATEGORY_KEY: Record<string, string> = {
 export function getBrowseDir(category: string): string {
     const key = CATEGORY_KEY[category] ?? category;
     const override = (overridePaths as Record<string, string>)[key];
-    if (override) return override;
-    if (!libraryRoot) return '';
+    if (override) {
+        return override;
+    }
+    if (!libraryRoot) {
+        return '';
+    }
     return libraryRoot + '/' + category;
 }

@@ -7,13 +7,7 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 
-import {
-    propRegistry,
-    setStatus,
-    triggerAutoSave,
-    dom,
-    PropInstance,
-} from '../../core/config';
+import { propRegistry, setStatus, triggerAutoSave, dom, PropInstance } from '../../core/config';
 import { resolveFileUrl, normPath } from '../../core/fileservice';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '../../core/orbit';
 import { scene } from '../scene';
@@ -223,7 +217,12 @@ export function setPropTransform(
 // ======== [doc:adr-049] 球面坐标轨道控制 ========
 
 /** 以球面坐标（方位角/仰角/距离）定位道具，等价于围绕原点旋转。 */
-export function setPropOrbit(id: string, azimuth: number, elevation: number, distance: number): void {
+export function setPropOrbit(
+    id: string,
+    azimuth: number,
+    elevation: number,
+    distance: number
+): void {
     const inst = propRegistry.get(id);
     if (!inst) {
         return;
@@ -238,7 +237,12 @@ export function setPropOrbit(id: string, azimuth: number, elevation: number, dis
         elevation > 90;
     const o = normalizeOrbit(azimuth, elevation, distance);
     if (invalid) {
-        console.warn('[props] setPropOrbit: 输入越界已钳制', { azimuth, elevation, distance, result: o });
+        console.warn('[props] setPropOrbit: 输入越界已钳制', {
+            azimuth,
+            elevation,
+            distance,
+            result: o,
+        });
     }
     inst.positionMode = 'orbit';
     inst.orbitAzimuth = o.azimuth;
@@ -252,13 +256,24 @@ export function setPropOrbit(id: string, azimuth: number, elevation: number, dis
 }
 
 /** 读取道具当前球面坐标。orbit 模式下返回存储值，否则从当前笛卡尔位置反推。 */
-export function getPropOrbit(id: string): { azimuth: number; elevation: number; distance: number } | null {
+export function getPropOrbit(
+    id: string
+): { azimuth: number; elevation: number; distance: number } | null {
     const inst = propRegistry.get(id);
     if (!inst) {
         return null;
     }
-    if (inst.positionMode === 'orbit' && inst.orbitAzimuth !== undefined && inst.orbitElevation !== undefined && inst.orbitDistance !== undefined) {
-        return { azimuth: inst.orbitAzimuth, elevation: inst.orbitElevation, distance: inst.orbitDistance };
+    if (
+        inst.positionMode === 'orbit' &&
+        inst.orbitAzimuth !== undefined &&
+        inst.orbitElevation !== undefined &&
+        inst.orbitDistance !== undefined
+    ) {
+        return {
+            azimuth: inst.orbitAzimuth,
+            elevation: inst.orbitElevation,
+            distance: inst.orbitDistance,
+        };
     }
     const [x, y, z] = inst.position;
     return cartesianToOrbit(x, y, z);

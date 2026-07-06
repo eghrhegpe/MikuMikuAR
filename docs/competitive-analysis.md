@@ -38,10 +38,10 @@
 | XPBD 布料 | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Bloom/DOF/色调映射 | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ 基础 |
 | PBR 材质 | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
-| Toon 着色 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Toon 着色 | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | 光线追踪/GI | ❌ | ❌ | ❌ | ✅ DXR | ❌ | ❌ |
-| SSAO | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| 边缘渲染 | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ |
+| SSAO | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| 边缘渲染 | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
 | Decal 贴花 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | 天空/水面/粒子 | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 
@@ -52,16 +52,16 @@
 | VMD 播放/暂停/seek | ✅ | ✅ | ✅ | ❌ | ✅ |
 | 相机 VMD | ✅ | ✅ | ✅ | ❌ | ❌ |
 | 程序化动作 | ✅ Idle/Dance | ✅ | ❌ | ❌ | ❌ |
-| Motion Layers（双 VMD） | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Motion Layers（双 VMD） | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Motion Override（逐骨骼） | ❌ | ✅ | ❌ | ❌ | ❌ |
 | Remix（跨套装音频） | ❌ | ✅ | ❌ | ❌ | ❌ |
 | T-pose/A-pose 转换 | ❌ | ✅ | ❌ | ❌ | ❌ |
 | BVH 动作导入 | ❌ | ✅ | ❌ | ❌ | ❌ |
 | VPD 姿势 | ✅ | ✅ | ✅ | ❌ | ❌ |
 | LipSync | ✅ 振幅 | ✅ | ❌ | ✅ 共振峰 | ❌ |
-| 自动眨眼 | ❌ | ✅ | ❌ | ✅ 高斯 | ❌ |
-| 自动呼吸 | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Eye Contact | ❌ | ✅ | ❌ | ❌ | ❌ |
+| 自动眨眼 | ✅ 伪随机 | ✅ | ❌ | ✅ 高斯 | ❌ |
+| 自动呼吸 | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Eye Contact | ✅ | ✅ | ❌ | ❌ | ❌ |
 | 节拍检测 | ✅ | ✅ | ❌ | ❌ | ❌ |
 
 ### 角色呈现
@@ -72,8 +72,8 @@
 | 模型库管理 | ✅ 核心优势 | ✅ 基础 |
 | 标签系统 | ✅ | ✅ |
 | 换装/纹理变体 | ✅ | ✅ |
-| 队形预设 | ❌ | ✅ V/A/圆弧 |
-| 视线追踪 | ❌ | ✅ |
+| 队形预设 | ✅ 6 种 | ✅ V/A/圆弧 |
+| 视线追踪 | ✅ | ✅ |
 | 脚部地面跟随 | ❌ | ✅ |
 | 布娃娃物理 | ❌ | ✅ |
 | 软体物理 | ❌ | ✅ |
@@ -84,7 +84,7 @@
 | 功能 | MikuMikuAR | DanceXR | Saba | MMD Bridge |
 |------|-----------|---------|------|------------|
 | 场景保存/加载 | ✅ .mmascene | ✅ | ❌ | ❌ |
-| 场景打包（资源捆绑） | ❌ | ✅ | ❌ | ❌ |
+| 场景打包（资源捆绑） | ✅ | ✅ | ❌ | ❌ |
 | 模型预设 | ✅ | ✅ | ❌ | ❌ |
 | Lua/JS 脚本 | ❌ | ❌ | ✅ | ✅ Python |
 | 离线渲染/录制 | ❌ | ✅ Creator | ❌ | ❌ |
@@ -144,6 +144,25 @@
 | Alembic/glTF 导出 | MMD Bridge | DCC 工具互操作 |
 | Soft Body / Ragdoll | DanceXR | 物理扩展 |
 | Toon Shading | mmd-viewer-js | 卡通渲染 |
+
+### 差距闭合进度（2026-07-06 代码核实）
+
+以下差距已在代码事实层面闭合（以 `frontend/src` 实现为准，非仅 ADR 声明）：
+
+| 原差距 | 原梯队 | 状态 | 依据 |
+|--------|--------|------|------|
+| Motion Layers（双 VMD 叠加） | 第一 | ✅ 已闭合 | ADR-037/051：`vmd-layers.ts` + `MmdCompositeAnimation`（仅 JS 运行时） |
+| Eye Contact（视线追踪） | 第一 | ✅ 已闭合 | ADR-016/053：`proc-motion-bridge.ts` + gaze 图层 |
+| Formation（队形预设） | 第一 | ✅ 已闭合 | ADR-037 §6：`model-manager.ts` 6 种预设 + 场景菜单 |
+| 自动眨眼 | 第二 | ✅ 已闭合 | ADR-037 §5 Lifelike：`procedural-motion.ts` 伪随机 2~8s |
+| 自动呼吸 | 第二 | ✅ 已闭合 | ADR-037 §5 / Idle：`procedural-motion.ts` |
+| Auto Camera（程序化运镜） | 第二 | ✅ 已闭合 | ADR-037 §7：`beat-detector.ts` onBeat + `camera.ts` 8 预设 |
+| Scene Bundle（场景打包） | 第二 | ✅ 已闭合 | ADR-037 §8：`scene-bundle.ts` + Go `BundleScene`（限制：zip 内 VMD 加载待支持） |
+| Toon 着色 | 第三 | ✅ 已闭合 | `outfit.ts` toonTexture + `scene-render-presets.ts` cartoon 预设 |
+| SSAO | 渲染 | ✅ 已闭合 | `renderer.ts` `SSAO2RenderingPipeline` |
+| 边缘渲染 | 渲染 | ✅ 已闭合 | `renderer.ts` outlineEnabled + 渲染设置 UI |
+
+> 备注：VMD 图层 composite 与 gaze 仅在 JS 运行时生效（WASM 回退单图层）；PBR 材质、SSS、光线追踪/GI 仍受 `babylon-mmd` 上游阻塞，保持 ❌。
 
 ---
 

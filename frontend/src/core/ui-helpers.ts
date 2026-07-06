@@ -15,12 +15,5 @@ export {
     addFieldRow,
     addEmptyRow,
 } from './ui-rows';
-export {
-    addColorSliderRow,
-    addModeSlider,
-} from './ui-advanced-rows';
-export {
-    addCollapsible,
-    addSectionTitle,
-    addPresetChip,
-} from './ui-collapsible';
+export { addColorSliderRow, addModeSlider } from './ui-advanced-rows';
+export { addCollapsible, addSectionTitle, addPresetChip } from './ui-collapsible';

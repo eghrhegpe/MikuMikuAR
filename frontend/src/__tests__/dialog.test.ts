@@ -95,7 +95,9 @@ describe('showPrompt', () => {
 
     it('pressing Enter resolves with input value', async () => {
         const promise = showPrompt('Enter name:', 'Miku');
-        const inputEl = document.getElementById('mmd-dialog-overlay')!.querySelector('.mmd-dialog-input') as HTMLInputElement;
+        const inputEl = document
+            .getElementById('mmd-dialog-overlay')!
+            .querySelector('.mmd-dialog-input') as HTMLInputElement;
         inputEl.value = '初音ミク';
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
         expect(await promise).toBe('初音ミク');

@@ -24,10 +24,12 @@ vi.mock('@babylonjs/core/Meshes/meshBuilder', () => {
     const MockMeshCls = m.MockMesh;
     return {
         MeshBuilder: {
-            CreateSphere: vi.fn(function() {
-                var s = new MockMeshCls('bone_joint');
+            CreateSphere: vi.fn(function () {
+                const s = new MockMeshCls('bone_joint');
                 s.position.copyFrom = vi.fn();
-                s.position.x = 0; s.position.y = 0; s.position.z = 0;
+                s.position.x = 0;
+                s.position.y = 0;
+                s.position.z = 0;
                 return s;
             }),
             CreateLineSystem: vi.fn(() => ({
@@ -98,48 +100,64 @@ import { disposeCloth } from '../physics/xpbd-cloth';
 
 function makeModelInstance(id: string, overrides?: any): ModelInstance {
     overrides = overrides || {};
-    return Object.assign({
-        id: id,
-        name: id,
-        filePath: 'D:/models/' + id + '.pmx',
-        port: 12345,
-        modelDir: 'D:/models',
-        kind: 'actor',
-        visible: true,
-        opacity: 1,
-        wireframe: false,
-        showBoneLines: false,
-        showBoneJoints: false,
-        physicsEnabled: true,
-        scaling: 1,
-        rotationY: 0,
-        vmdData: null,
-        vmdName: '',
-        vmdPath: null,
-        animationDuration: 0,
-        meshes: [],
-        mmdModel: null,
-        rootMesh: null,
-        outfitFile: undefined,
-        activeVariant: undefined,
-        _origTextures: undefined,
-        _origParams: undefined,
-    }, overrides);
+    return Object.assign(
+        {
+            id: id,
+            name: id,
+            filePath: 'D:/models/' + id + '.pmx',
+            port: 12345,
+            modelDir: 'D:/models',
+            kind: 'actor',
+            visible: true,
+            opacity: 1,
+            wireframe: false,
+            showBoneLines: false,
+            showBoneJoints: false,
+            physicsEnabled: true,
+            scaling: 1,
+            rotationY: 0,
+            vmdData: null,
+            vmdName: '',
+            vmdPath: null,
+            animationDuration: 0,
+            meshes: [],
+            mmdModel: null,
+            rootMesh: null,
+            outfitFile: undefined,
+            activeVariant: undefined,
+            _origTextures: undefined,
+            _origParams: undefined,
+        },
+        overrides
+    );
 }
 
 function createTestMesh(name, mat) {
-    var mesh = new Mesh(name);
+    const mesh = new Mesh(name);
     mesh.material = mat || new StandardMaterial(name + '_mat');
-    mesh.position = { x: 0, y: 0, z: 0, set: function(x,y,z) { this.x=x; this.y=y; this.z=z; } } as any;
+    mesh.position = {
+        x: 0,
+        y: 0,
+        z: 0,
+        set: function (x, y, z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        },
+    } as any;
     mesh.scaling = {
-        x: 1, y: 1, z: 1,
-        setAll: function(v) { this.x = this.y = this.z = v; },
+        x: 1,
+        y: 1,
+        z: 1,
+        setAll: function (v) {
+            this.x = this.y = this.z = v;
+        },
     } as any;
     mesh.rotation = { x: 0, y: 0, z: 0 } as any;
     mesh.dispose = vi.fn();
     mesh.setEnabled = vi.fn();
     mesh.computeWorldMatrix = vi.fn();
-    mesh.getBoundingInfo = vi.fn(function() {
+    mesh.getBoundingInfo = vi.fn(function () {
         return {
             boundingBox: {
                 minimumWorld: { x: -0.5, y: 0, z: -0.5 },
@@ -165,8 +183,12 @@ function makeMmdModel(bones?: any[], morphs?: any[], rigidBodyStates?: Uint8Arra
     bones = bones || [];
     morphs = morphs || [];
     rigidBodyStates = rigidBodyStates || new Uint8Array(10).fill(1);
-    var boneMap = new Map(bones.map(function(b) { return [b.name, b]; }));
-    for (var i = 0; i < bones.length; i++) {
+    const boneMap = new Map(
+        bones.map(function (b) {
+            return [b.name, b];
+        })
+    );
+    for (let i = 0; i < bones.length; i++) {
         if (typeof bones[i].parentBone === 'string') {
             bones[i].parentBone = boneMap.get(bones[i].parentBone) || null;
         }
@@ -176,7 +198,9 @@ function makeMmdModel(bones?: any[], morphs?: any[], rigidBodyStates?: Uint8Arra
         morph: {
             morphs: morphs,
             setMorphWeight: vi.fn(),
-            getMorphWeight: vi.fn(function() { return 0; }),
+            getMorphWeight: vi.fn(function () {
+                return 0;
+            }),
             resetMorphWeights: vi.fn(),
         },
         rigidBodyStates: rigidBodyStates,
@@ -187,7 +211,7 @@ function makeMmdModel(bones?: any[], morphs?: any[], rigidBodyStates?: Uint8Arra
 
 function makeClothInstance(overrides) {
     overrides = overrides || {};
-    var base = {
+    const base = {
         config: {},
         solver: { reset: vi.fn() },
         particleGrid: [],
@@ -204,16 +228,18 @@ function makeClothInstance(overrides) {
 }
 
 function makeObservableScene() {
-    var scene = new Scene() as any;
-    var callbacks: any[] = [];
+    const scene = new Scene() as any;
+    const callbacks: any[] = [];
     scene.onBeforeRenderObservable = {
-        add: function(cb: any) {
+        add: function (cb: any) {
             callbacks.push(cb);
             return cb;
         },
-        remove: function(cb: any) {
-            var idx = callbacks.indexOf(cb);
-            if (idx >= 0) callbacks.splice(idx, 1);
+        remove: function (cb: any) {
+            const idx = callbacks.indexOf(cb);
+            if (idx >= 0) {
+                callbacks.splice(idx, 1);
+            }
         },
     };
     scene.deltaTime = 0.016;
@@ -222,10 +248,10 @@ function makeObservableScene() {
 }
 
 function instSet(mgr, id, props) {
-    var inst = mgr.get(id);
+    const inst = mgr.get(id);
     if (inst) {
-        for (var k in props) {
-            if (props.hasOwnProperty(k)) {
+        for (const k in props) {
+            if (Object.hasOwn(props, k)) {
                 inst[k] = props[k];
             }
         }
@@ -234,10 +260,10 @@ function instSet(mgr, id, props) {
 
 // ---- Tests ----
 
-describe('ModelManager constructor + basic state', function() {
-    var mgr, scene, onChange, autoFrame;
+describe('ModelManager constructor + basic state', function () {
+    let mgr, scene, onChange, autoFrame;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         autoFrame = vi.fn();
@@ -245,40 +271,40 @@ describe('ModelManager constructor + basic state', function() {
         mgr = new ModelManager(scene, onChange, autoFrame);
     });
 
-    it('creates with empty registry and null focus', function() {
+    it('creates with empty registry and null focus', function () {
         expect(mgr.size).toBe(0);
         expect(mgr.focusedModelId).toBeNull();
         expect(mgr.focused()).toBeUndefined();
         expect(mgr.focusedMmdModel()).toBeNull();
     });
 
-    it('focused() returns undefined when no model is focused', function() {
+    it('focused() returns undefined when no model is focused', function () {
         expect(mgr.focused()).toBeUndefined();
     });
 
-    it('focusedMmdModel() returns null when no model is focused', function() {
+    it('focusedMmdModel() returns null when no model is focused', function () {
         expect(mgr.focusedMmdModel()).toBeNull();
     });
 
-    it('onChange and autoFrame are stored as constructor params', function() {
+    it('onChange and autoFrame are stored as constructor params', function () {
         expect(onChange).not.toHaveBeenCalled();
         expect(autoFrame).not.toHaveBeenCalled();
     });
 });
 
-describe('ModelManager registry CRUD', function() {
-    var mgr, scene, onChange;
+describe('ModelManager registry CRUD', function () {
+    let mgr, scene, onChange;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         scene = makeObservableScene();
         mgr = new ModelManager(scene, onChange, vi.fn());
     });
 
-    it('register adds model and size/get/getAll work', function() {
-        var a = makeModelInstance('a');
-        var b = makeModelInstance('b');
+    it('register adds model and size/get/getAll work', function () {
+        const a = makeModelInstance('a');
+        const b = makeModelInstance('b');
         mgr.register(a);
         mgr.register(b);
 
@@ -289,9 +315,9 @@ describe('ModelManager registry CRUD', function() {
         expect(mgr.getAll()).toEqual([a, b]);
     });
 
-    it('register is idempotent - same id overwrites', function() {
-        var a1 = makeModelInstance('a', { name: 'first' });
-        var a2 = makeModelInstance('a', { name: 'second' });
+    it('register is idempotent - same id overwrites', function () {
+        const a1 = makeModelInstance('a', { name: 'first' });
+        const a2 = makeModelInstance('a', { name: 'second' });
         mgr.register(a1);
         mgr.register(a2);
 
@@ -299,7 +325,7 @@ describe('ModelManager registry CRUD', function() {
         expect(mgr.get('a').name).toBe('second');
     });
 
-    it('findByFilePath returns first exact match', function() {
+    it('findByFilePath returns first exact match', function () {
         mgr.register(makeModelInstance('a', { filePath: 'X:/foo/char.pmx' }));
         mgr.register(makeModelInstance('b', { filePath: 'X:/bar/char.pmx' }));
 
@@ -309,20 +335,20 @@ describe('ModelManager registry CRUD', function() {
     });
 });
 
-describe('ModelManager storeRigidBodyState', function() {
-    var mgr, scene;
+describe('ModelManager storeRigidBodyState', function () {
+    let mgr, scene;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         scene = makeObservableScene();
         mgr = new ModelManager(scene, vi.fn(), vi.fn());
     });
 
-    it('stores a copy of the rigid body state', function() {
-        var original = new Uint8Array([1, 0, 1, 1]);
+    it('stores a copy of the rigid body state', function () {
+        const original = new Uint8Array([1, 0, 1, 1]);
         mgr.storeRigidBodyState('m1', original);
 
-        var stored = mgr._initialRigidBodyStates.get('m1');
+        const stored = mgr._initialRigidBodyStates.get('m1');
         expect(stored).toBeInstanceOf(Uint8Array);
         expect(Array.from(stored)).toEqual([1, 0, 1, 1]);
 
@@ -332,10 +358,10 @@ describe('ModelManager storeRigidBodyState', function() {
     });
 });
 
-describe('ModelManager focus + arrange', function() {
-    var mgr, scene, onChange, autoFrame;
+describe('ModelManager focus + arrange', function () {
+    let mgr, scene, onChange, autoFrame;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         autoFrame = vi.fn();
@@ -343,9 +369,9 @@ describe('ModelManager focus + arrange', function() {
         mgr = new ModelManager(scene, onChange, autoFrame);
     });
 
-    it('focus sets focusedModelId and calls onChange + autoFrame with bounds', function() {
-        var mesh = createTestMesh('root');
-        var inst = makeModelInstance('m1', { meshes: [mesh] });
+    it('focus sets focusedModelId and calls onChange + autoFrame with bounds', function () {
+        const mesh = createTestMesh('root');
+        const inst = makeModelInstance('m1', { meshes: [mesh] });
         mgr.register(inst);
 
         mgr.focus('m1');
@@ -353,46 +379,46 @@ describe('ModelManager focus + arrange', function() {
         expect(mgr.focusedModelId).toBe('m1');
         expect(onChange).toHaveBeenCalled();
         expect(autoFrame).toHaveBeenCalledTimes(1);
-        var center = autoFrame.mock.calls[0][0];
-        var extent = autoFrame.mock.calls[0][1];
+        const center = autoFrame.mock.calls[0][0];
+        const extent = autoFrame.mock.calls[0][1];
         expect(center.x).toBeCloseTo(0);
         expect(center.y).toBeCloseTo(0.75);
         expect(center.z).toBeCloseTo(0);
         expect(extent).toBeCloseTo(1.5);
     });
 
-    it('focus with unknown id clears focus', function() {
+    it('focus with unknown id clears focus', function () {
         setFocusedModelId('existing');
         mgr.focus('unknown');
         expect(mgr.focusedModelId).toBeNull();
     });
 
-    it('focused() returns the focused model instance', function() {
-        var inst = makeModelInstance('m1');
+    it('focused() returns the focused model instance', function () {
+        const inst = makeModelInstance('m1');
         mgr.register(inst);
         mgr.focus('m1');
         expect(mgr.focused()).toBe(inst);
     });
 
-    it('focusedMmdModel() returns the mmdModel of the focused instance', function() {
-        var mmd = makeMmdModel([], []);
-        var inst = makeModelInstance('m1', { mmdModel: mmd });
+    it('focusedMmdModel() returns the mmdModel of the focused instance', function () {
+        const mmd = makeMmdModel([], []);
+        const inst = makeModelInstance('m1', { mmdModel: mmd });
         mgr.register(inst);
         mgr.focus('m1');
         expect(mgr.focusedMmdModel()).toBe(mmd);
     });
 
-    it('focusedMmdModel() returns null when focused model has no mmdModel', function() {
-        var inst = makeModelInstance('m1', { mmdModel: null });
+    it('focusedMmdModel() returns null when focused model has no mmdModel', function () {
+        const inst = makeModelInstance('m1', { mmdModel: null });
         mgr.register(inst);
         mgr.focus('m1');
         expect(mgr.focusedMmdModel()).toBeNull();
     });
 
-    it('arrange positions models in a horizontal row', function() {
-        var meshA = createTestMesh('a');
-        var meshB = createTestMesh('b');
-        var meshC = createTestMesh('c');
+    it('arrange positions models in a horizontal row', function () {
+        const meshA = createTestMesh('a');
+        const meshB = createTestMesh('b');
+        const meshC = createTestMesh('c');
         mgr.register(makeModelInstance('a', { meshes: [meshA] }));
         mgr.register(makeModelInstance('b', { meshes: [meshB] }));
         mgr.register(makeModelInstance('c', { meshes: [meshC] }));
@@ -405,22 +431,24 @@ describe('ModelManager focus + arrange', function() {
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('arrange does nothing with no models', function() {
-        expect(function() { mgr.arrange(); }).not.toThrow();
+    it('arrange does nothing with no models', function () {
+        expect(function () {
+            mgr.arrange();
+        }).not.toThrow();
     });
 
-    it('arrange with single model places at center', function() {
-        var mesh = createTestMesh('only');
+    it('arrange with single model places at center', function () {
+        const mesh = createTestMesh('only');
         mgr.register(makeModelInstance('only', { meshes: [mesh] }));
         mgr.arrange();
         expect(mesh.position.x).toBeCloseTo(0);
     });
 });
 
-describe('ModelManager remove', function() {
-    var mgr, scene, onChange, autoFrame, onRemoveModel;
+describe('ModelManager remove', function () {
+    let mgr, scene, onChange, autoFrame, onRemoveModel;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         autoFrame = vi.fn();
@@ -430,9 +458,9 @@ describe('ModelManager remove', function() {
         mgr.onRemoveModel = onRemoveModel;
     });
 
-    it('removes model, disposes meshes, cleans up internal maps', function() {
-        var mesh = createTestMesh('root');
-        var inst = makeModelInstance('m1', { meshes: [mesh] });
+    it('removes model, disposes meshes, cleans up internal maps', function () {
+        const mesh = createTestMesh('root');
+        const inst = makeModelInstance('m1', { meshes: [mesh] });
         mgr.register(inst);
         mgr.register(makeModelInstance('m2'));
 
@@ -449,12 +477,12 @@ describe('ModelManager remove', function() {
         expect(mgr._initialRigidBodyStates.has('m1')).toBe(false);
     });
 
-    it('removes cloth before disposing meshes', function() {
-        var mesh = createTestMesh('root');
-        var inst = makeModelInstance('m1', { meshes: [mesh] });
+    it('removes cloth before disposing meshes', function () {
+        const mesh = createTestMesh('root');
+        const inst = makeModelInstance('m1', { meshes: [mesh] });
         mgr.register(inst);
 
-        var cloth = makeClothInstance();
+        const cloth = makeClothInstance();
         mgr.addCloth('m1', cloth, vi.fn());
         expect(mgr.clothInstances.has('m1')).toBe(true);
 
@@ -463,7 +491,7 @@ describe('ModelManager remove', function() {
         expect(mgr.clothInstances.has('m1')).toBe(false);
     });
 
-    it('transfers focus to the next model when removing focused', function() {
+    it('transfers focus to the next model when removing focused', function () {
         mgr.register(makeModelInstance('a'));
         mgr.register(makeModelInstance('b'));
         mgr.focus('b');
@@ -473,7 +501,7 @@ describe('ModelManager remove', function() {
         expect(mgr.focusedModelId).toBe('a');
     });
 
-    it('clears focus when removing the last model', function() {
+    it('clears focus when removing the last model', function () {
         mgr.register(makeModelInstance('a'));
         mgr.focus('a');
 
@@ -482,14 +510,16 @@ describe('ModelManager remove', function() {
         expect(mgr.focusedModelId).toBeNull();
     });
 
-    it('is no-op for unknown id', function() {
+    it('is no-op for unknown id', function () {
         mgr.register(makeModelInstance('a'));
-        expect(function() { mgr.remove('nope'); }).not.toThrow();
+        expect(function () {
+            mgr.remove('nope');
+        }).not.toThrow();
         expect(mgr.size).toBe(1);
         expect(onRemoveModel).not.toHaveBeenCalled();
     });
 
-    it('removeFocused removes the currently focused model', function() {
+    it('removeFocused removes the currently focused model', function () {
         mgr.register(makeModelInstance('a'));
         mgr.register(makeModelInstance('b'));
         mgr.focus('a');
@@ -500,17 +530,19 @@ describe('ModelManager remove', function() {
         expect(mgr.size).toBe(1);
     });
 
-    it('removeFocused is no-op when no model is focused', function() {
+    it('removeFocused is no-op when no model is focused', function () {
         mgr.register(makeModelInstance('a'));
-        expect(function() { mgr.removeFocused(); }).not.toThrow();
+        expect(function () {
+            mgr.removeFocused();
+        }).not.toThrow();
         expect(mgr.size).toBe(1);
     });
 });
 
-describe('ModelManager visibility / opacity / wireframe', function() {
-    var mgr, scene, onChange, mesh, mat;
+describe('ModelManager visibility / opacity / wireframe', function () {
+    let mgr, scene, onChange, mesh, mat;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         scene = makeObservableScene();
@@ -518,18 +550,18 @@ describe('ModelManager visibility / opacity / wireframe', function() {
 
         mat = new StandardMaterial('test_mat');
         mesh = createTestMesh('root', mat);
-        var inst = makeModelInstance('m1', { meshes: [mesh] });
+        const inst = makeModelInstance('m1', { meshes: [mesh] });
         mgr.register(inst);
     });
 
-    it('setVisibility updates inst.visible and calls mesh.setEnabled', function() {
+    it('setVisibility updates inst.visible and calls mesh.setEnabled', function () {
         mgr.setVisibility('m1', false);
         expect(mgr.get('m1').visible).toBe(false);
         expect(mesh.setEnabled).toHaveBeenCalledWith(false);
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('setVisibility true restores visibility and sets material wireframe', function() {
+    it('setVisibility true restores visibility and sets material wireframe', function () {
         instSet(mgr, 'm1', { wireframe: true });
         mgr.setVisibility('m1', true);
         expect(mgr.get('m1').visible).toBe(true);
@@ -537,14 +569,14 @@ describe('ModelManager visibility / opacity / wireframe', function() {
         expect(mat.wireframe).toBe(true);
     });
 
-    it('setVisibility with wireframe: StandardMaterial.instanceof works', function() {
+    it('setVisibility with wireframe: StandardMaterial.instanceof works', function () {
         mgr.setWireframe('m1', true);
         mgr.setVisibility('m1', false);
         mgr.setVisibility('m1', true);
         expect(mat.wireframe).toBe(true);
     });
 
-    it('setOpacity clamps to [0,1] and updates mesh material alpha', function() {
+    it('setOpacity clamps to [0,1] and updates mesh material alpha', function () {
         mgr.setOpacity('m1', 0.5);
         expect(mgr.get('m1').opacity).toBe(0.5);
         expect(mat.alpha).toBe(0.5);
@@ -557,7 +589,7 @@ describe('ModelManager visibility / opacity / wireframe', function() {
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('setWireframe updates inst.wireframe and material.wireframe', function() {
+    it('setWireframe updates inst.wireframe and material.wireframe', function () {
         mgr.setWireframe('m1', true);
         expect(mgr.get('m1').wireframe).toBe(true);
         expect(mat.wireframe).toBe(true);
@@ -568,28 +600,34 @@ describe('ModelManager visibility / opacity / wireframe', function() {
         expect(mat.wireframe).toBe(false);
     });
 
-    it('setVisibility / setOpacity / setWireframe are no-op for unknown id', function() {
-        expect(function() { mgr.setVisibility('nope', false); }).not.toThrow();
-        expect(function() { mgr.setOpacity('nope', 0.5); }).not.toThrow();
-        expect(function() { mgr.setWireframe('nope', true); }).not.toThrow();
+    it('setVisibility / setOpacity / setWireframe are no-op for unknown id', function () {
+        expect(function () {
+            mgr.setVisibility('nope', false);
+        }).not.toThrow();
+        expect(function () {
+            mgr.setOpacity('nope', 0.5);
+        }).not.toThrow();
+        expect(function () {
+            mgr.setWireframe('nope', true);
+        }).not.toThrow();
     });
 });
 
-describe('ModelManager transform', function() {
-    var mgr, scene, onChange, mesh;
+describe('ModelManager transform', function () {
+    let mgr, scene, onChange, mesh;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         scene = makeObservableScene();
         mgr = new ModelManager(scene, onChange, vi.fn());
 
         mesh = createTestMesh('root');
-        var inst = makeModelInstance('m1', { meshes: [mesh] });
+        const inst = makeModelInstance('m1', { meshes: [mesh] });
         mgr.register(inst);
     });
 
-    it('setScaling updates inst.scaling (clamped >= 0.01) and mesh scaling', function() {
+    it('setScaling updates inst.scaling (clamped >= 0.01) and mesh scaling', function () {
         mgr.setScaling('m1', 2);
         expect(mgr.get('m1').scaling).toBe(2);
         expect(mesh.scaling.x).toBe(2);
@@ -598,7 +636,7 @@ describe('ModelManager transform', function() {
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('setScaling clamps to 0.01 minimum', function() {
+    it('setScaling clamps to 0.01 minimum', function () {
         mgr.setScaling('m1', 0);
         expect(mgr.get('m1').scaling).toBe(0.01);
 
@@ -606,14 +644,14 @@ describe('ModelManager transform', function() {
         expect(mgr.get('m1').scaling).toBe(0.01);
     });
 
-    it('setRotationY updates inst.rotationY and mesh rotation.y', function() {
+    it('setRotationY updates inst.rotationY and mesh rotation.y', function () {
         mgr.setRotationY('m1', 1.57);
         expect(mgr.get('m1').rotationY).toBe(1.57);
         expect(mesh.rotation.y).toBe(1.57);
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('setPosition updates root mesh position and calls onChange', function() {
+    it('setPosition updates root mesh position and calls onChange', function () {
         mgr.setPosition('m1', 10, 20, 30);
         expect(mesh.position.x).toBe(10);
         expect(mesh.position.y).toBe(20);
@@ -621,32 +659,35 @@ describe('ModelManager transform', function() {
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('getPosition returns root mesh position', function() {
+    it('getPosition returns root mesh position', function () {
         mesh.position.x = 5;
         mesh.position.y = 6;
         mesh.position.z = 7;
         expect(mgr.getPosition('m1')).toEqual([5, 6, 7]);
     });
 
-    it('getPosition returns [0,0,0] for unknown id', function() {
+    it('getPosition returns [0,0,0] for unknown id', function () {
         expect(mgr.getPosition('nope')).toEqual([0, 0, 0]);
     });
 
-    it('getPosition returns [0,0,0] when no meshes', function() {
+    it('getPosition returns [0,0,0] when no meshes', function () {
         mgr.register(makeModelInstance('empty', { meshes: [] }));
         expect(mgr.getPosition('empty')).toEqual([0, 0, 0]);
     });
 
-    it('resetTransform restores defaults and updates meshes', function() {
+    it('resetTransform restores defaults and updates meshes', function () {
         instSet(mgr, 'm1', {
-            visible: false, opacity: 0.5, wireframe: true,
-            scaling: 2, rotationY: 1.5,
+            visible: false,
+            opacity: 0.5,
+            wireframe: true,
+            scaling: 2,
+            rotationY: 1.5,
         });
         mgr.get('m1').meshes[0].position.x = 10;
 
         mgr.resetTransform('m1');
 
-        var inst = mgr.get('m1');
+        const inst = mgr.get('m1');
         expect(inst.visible).toBe(true);
         expect(inst.opacity).toBe(1);
         expect(inst.wireframe).toBe(false);
@@ -658,29 +699,37 @@ describe('ModelManager transform', function() {
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('resetTransform is no-op for unknown id', function() {
-        expect(function() { mgr.resetTransform('nope'); }).not.toThrow();
+    it('resetTransform is no-op for unknown id', function () {
+        expect(function () {
+            mgr.resetTransform('nope');
+        }).not.toThrow();
     });
 
-    it('transform setters are no-op for unknown id', function() {
-        expect(function() { mgr.setScaling('nope', 2); }).not.toThrow();
-        expect(function() { mgr.setRotationY('nope', 1); }).not.toThrow();
-        expect(function() { mgr.setPosition('nope', 1, 2, 3); }).not.toThrow();
+    it('transform setters are no-op for unknown id', function () {
+        expect(function () {
+            mgr.setScaling('nope', 2);
+        }).not.toThrow();
+        expect(function () {
+            mgr.setRotationY('nope', 1);
+        }).not.toThrow();
+        expect(function () {
+            mgr.setPosition('nope', 1, 2, 3);
+        }).not.toThrow();
     });
 });
 
-describe('ModelManager VMD / morph', function() {
-    var mgr, scene, onChange;
+describe('ModelManager VMD / morph', function () {
+    let mgr, scene, onChange;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         scene = makeObservableScene();
         mgr = new ModelManager(scene, onChange, vi.fn());
     });
 
-    it('clearVmdData resets VMD fields and calls onChange', function() {
-        var inst = makeModelInstance('m1', {
+    it('clearVmdData resets VMD fields and calls onChange', function () {
+        const inst = makeModelInstance('m1', {
             vmdData: new ArrayBuffer(10),
             vmdName: 'test.vmd',
             vmdPath: '/test.vmd',
@@ -697,35 +746,46 @@ describe('ModelManager VMD / morph', function() {
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('clearVmdData is no-op for unknown id', function() {
-        expect(function() { mgr.clearVmdData('nope'); }).not.toThrow();
+    it('clearVmdData is no-op for unknown id', function () {
+        expect(function () {
+            mgr.clearVmdData('nope');
+        }).not.toThrow();
     });
 
-    it('getMorphs returns morph array from mmdModel', function() {
-        var mmd = makeMmdModel([], [{ name: 'a', type: 0 }, { name: 'smile', type: 1 }]);
+    it('getMorphs returns morph array from mmdModel', function () {
+        const mmd = makeMmdModel(
+            [],
+            [
+                { name: 'a', type: 0 },
+                { name: 'smile', type: 1 },
+            ]
+        );
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
 
-        var morphs = mgr.getMorphs('m1');
-        expect(morphs).toEqual([{ name: 'a', type: 0 }, { name: 'smile', type: 1 }]);
+        const morphs = mgr.getMorphs('m1');
+        expect(morphs).toEqual([
+            { name: 'a', type: 0 },
+            { name: 'smile', type: 1 },
+        ]);
     });
 
-    it('getMorphs returns [] when morph.morphs is undefined', function() {
-        var mmd = makeMmdModel([], []);
+    it('getMorphs returns [] when morph.morphs is undefined', function () {
+        const mmd = makeMmdModel([], []);
         mmd.morph.morphs = undefined;
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
         expect(mgr.getMorphs('m1')).toEqual([]);
     });
 
-    it('setMorphWeight delegates to mmdModel.morph.setMorphWeight', function() {
-        var mmd = makeMmdModel([], [{ name: 'a', type: 0 }]);
+    it('setMorphWeight delegates to mmdModel.morph.setMorphWeight', function () {
+        const mmd = makeMmdModel([], [{ name: 'a', type: 0 }]);
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
 
         mgr.setMorphWeight('m1', 'a', 0.8);
         expect(mmd.morph.setMorphWeight).toHaveBeenCalledWith('a', 0.8);
     });
 
-    it('getMorphWeight delegates to mmdModel.morph.getMorphWeight', function() {
-        var mmd = makeMmdModel([], [{ name: 'a', type: 0 }]);
+    it('getMorphWeight delegates to mmdModel.morph.getMorphWeight', function () {
+        const mmd = makeMmdModel([], [{ name: 'a', type: 0 }]);
         mmd.morph.getMorphWeight.mockReturnValue(0.5);
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
 
@@ -733,8 +793,8 @@ describe('ModelManager VMD / morph', function() {
         expect(mmd.morph.getMorphWeight).toHaveBeenCalledWith('a');
     });
 
-    it('resetMorphs delegates and calls onChange', function() {
-        var mmd = makeMmdModel([], [{ name: 'a', type: 0 }]);
+    it('resetMorphs delegates and calls onChange', function () {
+        const mmd = makeMmdModel([], [{ name: 'a', type: 0 }]);
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
 
         mgr.resetMorphs('m1');
@@ -742,27 +802,29 @@ describe('ModelManager VMD / morph', function() {
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('resetMorphs is safe when no mmdModel.morph', function() {
-        var mmd = { runtimeBones: [], morph: undefined };
+    it('resetMorphs is safe when no mmdModel.morph', function () {
+        const mmd = { runtimeBones: [], morph: undefined };
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
-        expect(function() { mgr.resetMorphs('m1'); }).not.toThrow();
+        expect(function () {
+            mgr.resetMorphs('m1');
+        }).not.toThrow();
     });
 });
 
-describe('ModelManager physics', function() {
-    var mgr, scene, onChange;
+describe('ModelManager physics', function () {
+    let mgr, scene, onChange;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         scene = makeObservableScene();
         mgr = new ModelManager(scene, onChange, vi.fn());
     });
 
-    it('setPhysics enables by restoring stored rigid body states', function() {
-        var states = new Uint8Array([1, 0, 1, 0, 1]);
-        var mmd = makeMmdModel([], [], states);
-        var inst = makeModelInstance('m1', { mmdModel: mmd, physicsEnabled: false });
+    it('setPhysics enables by restoring stored rigid body states', function () {
+        const states = new Uint8Array([1, 0, 1, 0, 1]);
+        const mmd = makeMmdModel([], [], states);
+        const inst = makeModelInstance('m1', { mmdModel: mmd, physicsEnabled: false });
         mgr.register(inst);
         mgr.storeRigidBodyState('m1', new Uint8Array([1, 1, 1, 1, 1]));
 
@@ -773,10 +835,10 @@ describe('ModelManager physics', function() {
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('setPhysics disables by filling states with 0', function() {
-        var states = new Uint8Array([1, 1, 1]);
-        var mmd = makeMmdModel([], [], states);
-        var inst = makeModelInstance('m1', { mmdModel: mmd, physicsEnabled: true });
+    it('setPhysics disables by filling states with 0', function () {
+        const states = new Uint8Array([1, 1, 1]);
+        const mmd = makeMmdModel([], [], states);
+        const inst = makeModelInstance('m1', { mmdModel: mmd, physicsEnabled: true });
         mgr.register(inst);
 
         mgr.setPhysics('m1', false);
@@ -785,8 +847,8 @@ describe('ModelManager physics', function() {
         expect(Array.from(states)).toEqual([0, 0, 0]);
     });
 
-    it('setPhysics toggles flag even without mmdModel', function() {
-        var inst = makeModelInstance('m1', { mmdModel: null, physicsEnabled: true });
+    it('setPhysics toggles flag even without mmdModel', function () {
+        const inst = makeModelInstance('m1', { mmdModel: null, physicsEnabled: true });
         mgr.register(inst);
 
         mgr.setPhysics('m1', false);
@@ -796,9 +858,9 @@ describe('ModelManager physics', function() {
         expect(inst.physicsEnabled).toBe(true);
     });
 
-    it('setPhysics fills with 1 when stored state length mismatches', function() {
-        var states = new Uint8Array([0, 0, 0]);
-        var mmd = makeMmdModel([], [], states);
+    it('setPhysics fills with 1 when stored state length mismatches', function () {
+        const states = new Uint8Array([0, 0, 0]);
+        const mmd = makeMmdModel([], [], states);
         mgr.register(makeModelInstance('m1', { mmdModel: mmd, physicsEnabled: false }));
         mgr.storeRigidBodyState('m1', new Uint8Array([1]));
 
@@ -807,9 +869,9 @@ describe('ModelManager physics', function() {
         expect(Array.from(states)).toEqual([1, 1, 1]);
     });
 
-    it('setPhysics clears physics category state on toggle', function() {
-        var states = new Uint8Array([1, 1]);
-        var mmd = makeMmdModel([], [], states);
+    it('setPhysics clears physics category state on toggle', function () {
+        const states = new Uint8Array([1, 1]);
+        const mmd = makeMmdModel([], [], states);
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
         mgr._physicsCatState.set('m1', new Map([['skirt', false]]));
 
@@ -817,83 +879,90 @@ describe('ModelManager physics', function() {
         expect(mgr._physicsCatState.has('m1')).toBe(false);
     });
 
-    it('setPhysics with null rigidBodyStates does not crash', function() {
-        var mmd = makeMmdModel([], []);
+    it('setPhysics with null rigidBodyStates does not crash', function () {
+        const mmd = makeMmdModel([], []);
         mmd.rigidBodyStates = null;
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
-        expect(function() { mgr.setPhysics('m1', false); }).not.toThrow();
+        expect(function () {
+            mgr.setPhysics('m1', false);
+        }).not.toThrow();
     });
 
-    it('setPhysics is no-op for unknown id', function() {
-        expect(function() { mgr.setPhysics('nope', true); }).not.toThrow();
+    it('setPhysics is no-op for unknown id', function () {
+        expect(function () {
+            mgr.setPhysics('nope', true);
+        }).not.toThrow();
     });
 
     // Physics categories
 
     function setupModelWithBones(bones) {
-        var maxIdx = bones.reduce(function(max, b) {
-            return Math.max(max, b.rigidBodyIndices.length > 0 ? Math.max.apply(null, b.rigidBodyIndices) : 0);
+        const maxIdx = bones.reduce(function (max, b) {
+            return Math.max(
+                max,
+                b.rigidBodyIndices.length > 0 ? Math.max.apply(null, b.rigidBodyIndices) : 0
+            );
         }, 0);
-        var states = new Uint8Array(maxIdx + 1 || 4);
-        var mmd = makeMmdModel(bones, [], states);
-        var id = 'm1';
+        const states = new Uint8Array(maxIdx + 1 || 4);
+        const mmd = makeMmdModel(bones, [], states);
+        const id = 'm1';
         mgr.register(makeModelInstance(id, { mmdModel: mmd }));
         return id;
     }
 
-    it('getPhysicsCategories returns categories from bone classification', function() {
-        var bones = [
+    it('getPhysicsCategories returns categories from bone classification', function () {
+        const bones = [
             makeBone('\u30b9\u30ab\u30fc\u30c8', [0, 1]),
             makeBone('\u80f8', [2, 3]),
             makeBone('\u9aea', [4]),
         ];
-        var id = setupModelWithBones(bones);
+        const id = setupModelWithBones(bones);
 
-        var cats = mgr.getPhysicsCategories(id);
+        const cats = mgr.getPhysicsCategories(id);
         expect(cats).toContain('skirt');
         expect(cats).toContain('chest');
         expect(cats).toContain('hair');
         expect(cats).not.toContain('accessory');
     });
 
-    it('getPhysicsCategories returns [] when no mmdModel', function() {
+    it('getPhysicsCategories returns [] when no mmdModel', function () {
         mgr.register(makeModelInstance('m1', { mmdModel: null }));
         expect(mgr.getPhysicsCategories('m1')).toEqual([]);
     });
 
-    it('getPhysicsCategories returns [] when no bones match', function() {
-        var id = setupModelWithBones([makeBone('leg', [0]), makeBone('arm', [1])]);
+    it('getPhysicsCategories returns [] when no bones match', function () {
+        const id = setupModelWithBones([makeBone('leg', [0]), makeBone('arm', [1])]);
         expect(mgr.getPhysicsCategories(id)).toEqual([]);
     });
 
-    it('getPhysicsCatState returns null initially', function() {
-        var id = setupModelWithBones([makeBone('skirt', [0])]);
+    it('getPhysicsCatState returns null initially', function () {
+        const id = setupModelWithBones([makeBone('skirt', [0])]);
         expect(mgr.getPhysicsCatState(id)).toBeNull();
     });
 
-    it('getPhysicsCatState returns recorded category state', function() {
-        var id = setupModelWithBones([makeBone('skirt', [0])]);
+    it('getPhysicsCatState returns recorded category state', function () {
+        const id = setupModelWithBones([makeBone('skirt', [0])]);
         mgr._physicsCatState.set(id, new Map([['skirt', false]]));
 
-        var state = mgr.getPhysicsCatState(id);
+        const state = mgr.getPhysicsCatState(id);
         expect(state).toEqual({ skirt: false });
     });
 
-    it('isPhysicsCategoryEnabled returns true by default', function() {
-        var id = setupModelWithBones([makeBone('skirt', [0])]);
+    it('isPhysicsCategoryEnabled returns true by default', function () {
+        const id = setupModelWithBones([makeBone('skirt', [0])]);
         expect(mgr.isPhysicsCategoryEnabled(id, 'skirt')).toBe(true);
     });
 
-    it('isPhysicsCategoryEnabled returns stored state', function() {
-        var id = setupModelWithBones([makeBone('skirt', [0])]);
+    it('isPhysicsCategoryEnabled returns stored state', function () {
+        const id = setupModelWithBones([makeBone('skirt', [0])]);
         mgr._physicsCatState.set(id, new Map([['skirt', false]]));
         expect(mgr.isPhysicsCategoryEnabled(id, 'skirt')).toBe(false);
     });
 
-    it('setPhysicsCategory enables a category and restores initial state', function() {
-        var states = new Uint8Array([0, 0, 0, 0, 0]);
-        var bones = [makeBone('skirt', [1])];
-        var mmd = makeMmdModel(bones, [], states);
+    it('setPhysicsCategory enables a category and restores initial state', function () {
+        const states = new Uint8Array([0, 0, 0, 0, 0]);
+        const bones = [makeBone('skirt', [1])];
+        const mmd = makeMmdModel(bones, [], states);
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
         mgr.storeRigidBodyState('m1', new Uint8Array([9, 1, 9, 9, 9]));
 
@@ -902,10 +971,10 @@ describe('ModelManager physics', function() {
         expect(states[1]).toBe(1);
     });
 
-    it('setPhysicsCategory disables a category (sets state to 0)', function() {
-        var states = new Uint8Array([1, 1, 1]);
-        var bones = [makeBone('skirt', [1])];
-        var mmd = makeMmdModel(bones, [], states);
+    it('setPhysicsCategory disables a category (sets state to 0)', function () {
+        const states = new Uint8Array([1, 1, 1]);
+        const bones = [makeBone('skirt', [1])];
+        const mmd = makeMmdModel(bones, [], states);
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
         mgr.storeRigidBodyState('m1', new Uint8Array([1, 1, 1]));
 
@@ -914,11 +983,11 @@ describe('ModelManager physics', function() {
         expect(states[1]).toBe(0);
     });
 
-    it('setPhysicsCategory auto-enables physics when sub-category enabled while physics off', function() {
-        var states = new Uint8Array([0, 0]);
-        var bones = [makeBone('skirt', [0])];
-        var mmd = makeMmdModel(bones, [], states);
-        var inst = makeModelInstance('m1', { mmdModel: mmd, physicsEnabled: false });
+    it('setPhysicsCategory auto-enables physics when sub-category enabled while physics off', function () {
+        const states = new Uint8Array([0, 0]);
+        const bones = [makeBone('skirt', [0])];
+        const mmd = makeMmdModel(bones, [], states);
+        const inst = makeModelInstance('m1', { mmdModel: mmd, physicsEnabled: false });
         mgr.register(inst);
         mgr.storeRigidBodyState('m1', new Uint8Array([1, 1]));
 
@@ -929,31 +998,37 @@ describe('ModelManager physics', function() {
         expect(mgr.isPhysicsCategoryEnabled('m1', 'skirt')).toBe(true);
     });
 
-    it('setPhysicsCategory is no-op for unknown id', function() {
-        expect(function() { mgr.setPhysicsCategory('nope', 'skirt', true); }).not.toThrow();
+    it('setPhysicsCategory is no-op for unknown id', function () {
+        expect(function () {
+            mgr.setPhysicsCategory('nope', 'skirt', true);
+        }).not.toThrow();
     });
 
-    it('setPhysicsCategory is no-op without mmdModel', function() {
+    it('setPhysicsCategory is no-op without mmdModel', function () {
         mgr.register(makeModelInstance('m1', { mmdModel: null }));
-        expect(function() { mgr.setPhysicsCategory('m1', 'skirt', true); }).not.toThrow();
+        expect(function () {
+            mgr.setPhysicsCategory('m1', 'skirt', true);
+        }).not.toThrow();
     });
 
-    it('setPhysicsCategory records state in _physicsCatState', function() {
-        var id = setupModelWithBones([makeBone('skirt', [0])]);
+    it('setPhysicsCategory records state in _physicsCatState', function () {
+        const id = setupModelWithBones([makeBone('skirt', [0])]);
         mgr.setPhysicsCategory(id, 'skirt', false);
         expect(mgr.isPhysicsCategoryEnabled(id, 'skirt')).toBe(false);
     });
 
-    it('setPhysicsCategory is no-op when no rigidBodyStates', function() {
-        var mmd = makeMmdModel([makeBone('skirt', [0])], []);
+    it('setPhysicsCategory is no-op when no rigidBodyStates', function () {
+        const mmd = makeMmdModel([makeBone('skirt', [0])], []);
         mmd.rigidBodyStates = null;
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
-        expect(function() { mgr.setPhysicsCategory('m1', 'skirt', false); }).not.toThrow();
+        expect(function () {
+            mgr.setPhysicsCategory('m1', 'skirt', false);
+        }).not.toThrow();
     });
 
     // Bone classification tests via getPhysicsCategories
-    it('classifyBonePhysics matches skirt patterns', function() {
-        var id = setupModelWithBones([
+    it('classifyBonePhysics matches skirt patterns', function () {
+        const id = setupModelWithBones([
             makeBone('skirt', [0]),
             makeBone('\u30b9\u30ab\u30fc\u30c8', [1]),
             makeBone('frill', [2]),
@@ -962,8 +1037,8 @@ describe('ModelManager physics', function() {
         expect(mgr.getPhysicsCategories(id)).toContain('skirt');
     });
 
-    it('classifyBonePhysics matches chest patterns', function() {
-        var id = setupModelWithBones([
+    it('classifyBonePhysics matches chest patterns', function () {
+        const id = setupModelWithBones([
             makeBone('\u80f8', [0]),
             makeBone('chest', [1]),
             makeBone('bust', [2]),
@@ -971,8 +1046,8 @@ describe('ModelManager physics', function() {
         expect(mgr.getPhysicsCategories(id)).toContain('chest');
     });
 
-    it('classifyBonePhysics matches hair patterns', function() {
-        var id = setupModelWithBones([
+    it('classifyBonePhysics matches hair patterns', function () {
+        const id = setupModelWithBones([
             makeBone('\u9aea', [0]),
             makeBone('hair', [1]),
             makeBone('ahoge', [2]),
@@ -982,8 +1057,8 @@ describe('ModelManager physics', function() {
         expect(mgr.getPhysicsCategories(id)).toContain('hair');
     });
 
-    it('classifyBonePhysics matches accessory patterns', function() {
-        var id = setupModelWithBones([
+    it('classifyBonePhysics matches accessory patterns', function () {
+        const id = setupModelWithBones([
             makeBone('ribbon', [0]),
             makeBone('collar', [1]),
             makeBone('tie', [2]),
@@ -993,19 +1068,19 @@ describe('ModelManager physics', function() {
     });
 });
 
-describe('ModelManager cloth', function() {
-    var mgr, scene, onChange;
+describe('ModelManager cloth', function () {
+    let mgr, scene, onChange;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         scene = makeObservableScene();
         mgr = new ModelManager(scene, onChange, vi.fn());
     });
 
-    it('addCloth stores instance and creates scene observer', function() {
-        var cloth = makeClothInstance();
-        var updateFn = vi.fn();
+    it('addCloth stores instance and creates scene observer', function () {
+        const cloth = makeClothInstance();
+        const updateFn = vi.fn();
 
         mgr.addCloth('m1', cloth, updateFn);
 
@@ -1015,8 +1090,8 @@ describe('ModelManager cloth', function() {
         expect(mgr._clothUpdateObserver).not.toBeNull();
     });
 
-    it('removeCloth disposes cloth and removes from map', function() {
-        var cloth = makeClothInstance();
+    it('removeCloth disposes cloth and removes from map', function () {
+        const cloth = makeClothInstance();
         mgr.addCloth('m1', cloth, vi.fn());
 
         mgr.removeCloth('m1');
@@ -1024,7 +1099,7 @@ describe('ModelManager cloth', function() {
         expect(mgr.clothInstances.has('m1')).toBe(false);
     });
 
-    it('removeCloth disposes observer when last cloth removed', function() {
+    it('removeCloth disposes observer when last cloth removed', function () {
         mgr.addCloth('m1', makeClothInstance(), vi.fn());
         expect(mgr._clothUpdateObserver).not.toBeNull();
 
@@ -1033,22 +1108,24 @@ describe('ModelManager cloth', function() {
         expect(mgr._clothUpdateObserver).toBeNull();
     });
 
-    it('removeCloth is safe when cloth id does not exist', function() {
-        expect(function() { mgr.removeCloth('nope'); }).not.toThrow();
+    it('removeCloth is safe when cloth id does not exist', function () {
+        expect(function () {
+            mgr.removeCloth('nope');
+        }).not.toThrow();
     });
 
-    it('ensureClothUpdateObserver does not create duplicate observers', function() {
+    it('ensureClothUpdateObserver does not create duplicate observers', function () {
         mgr.addCloth('m1', makeClothInstance(), vi.fn());
-        var firstObserver = mgr._clothUpdateObserver;
+        const firstObserver = mgr._clothUpdateObserver;
 
         mgr.addCloth('m2', makeClothInstance(), vi.fn());
 
         expect(mgr._clothUpdateObserver).toBe(firstObserver);
     });
 
-    it('cloth observer is created and stored', function() {
-        var updateFn1 = vi.fn();
-        var updateFn2 = vi.fn();
+    it('cloth observer is created and stored', function () {
+        const updateFn1 = vi.fn();
+        const updateFn2 = vi.fn();
         mgr.addCloth('m1', makeClothInstance({ enabled: true }), updateFn1);
         mgr.addCloth('m2', makeClothInstance({ enabled: true }), updateFn2);
 
@@ -1058,13 +1135,13 @@ describe('ModelManager cloth', function() {
         expect(mgr._clothUpdateObserver).not.toBeNull();
     });
 
-    describe('getBoneWorldMatrix', function() {
-        it('returns worldMatrix of named bone on focused model', function() {
-            var boneWorld = new Float32Array(16);
+    describe('getBoneWorldMatrix', function () {
+        it('returns worldMatrix of named bone on focused model', function () {
+            const boneWorld = new Float32Array(16);
             boneWorld[0] = 42;
-            var bones = [makeBone('waist', []), makeBone('leftLeg', [])];
+            const bones = [makeBone('waist', []), makeBone('leftLeg', [])];
             bones[1].worldMatrix = boneWorld;
-            var mmd = makeMmdModel(bones, []);
+            const mmd = makeMmdModel(bones, []);
             mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
             mgr.focus('m1');
 
@@ -1072,12 +1149,12 @@ describe('ModelManager cloth', function() {
             expect(mgr.getBoneWorldMatrix('leftLeg')[0]).toBe(42);
         });
 
-        it('returns null when no model is focused', function() {
+        it('returns null when no model is focused', function () {
             expect(mgr.getBoneWorldMatrix('waist')).toBeNull();
         });
 
-        it('returns null when bone not found', function() {
-            var mmd = makeMmdModel([makeBone('waist', [])], []);
+        it('returns null when bone not found', function () {
+            const mmd = makeMmdModel([makeBone('waist', [])], []);
             mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
             mgr.focus('m1');
 
@@ -1086,26 +1163,22 @@ describe('ModelManager cloth', function() {
     });
 });
 
-describe('ModelManager bone overlay', function() {
-    var mgr, scene, onChange, bones, mmd;
+describe('ModelManager bone overlay', function () {
+    let mgr, scene, onChange, bones, mmd;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         scene = makeObservableScene();
         mgr = new ModelManager(scene, onChange, vi.fn());
 
         // Bone hierarchy: center -> waist -> upper
-        bones = [
-            makeBone('center', []),
-            makeBone('waist', []),
-            makeBone('upper', []),
-        ];
+        bones = [makeBone('center', []), makeBone('waist', []), makeBone('upper', [])];
         bones[1].parentBone = bones[0];
         bones[2].parentBone = bones[1];
 
         mmd = makeMmdModel(bones, []);
-        var inst = makeModelInstance('m1', {
+        const inst = makeModelInstance('m1', {
             mmdModel: mmd,
             showBoneLines: false,
             showBoneJoints: false,
@@ -1113,11 +1186,11 @@ describe('ModelManager bone overlay', function() {
         mgr.register(inst);
     });
 
-    it('setBoneLinesVis creates overlay when show=true and no overlay exists', function() {
+    it('setBoneLinesVis creates overlay when show=true and no overlay exists', function () {
         mgr.setBoneLinesVis('m1', true);
 
         expect(mgr._boneOverlayMap.has('m1')).toBe(true);
-        var entry = mgr._boneOverlayMap.get('m1');
+        const entry = mgr._boneOverlayMap.get('m1');
         expect(entry.lineSystem).toBeDefined();
         expect(entry.overlay).toBeDefined();
         expect(entry.joints.length).toBeGreaterThan(0);
@@ -1126,7 +1199,7 @@ describe('ModelManager bone overlay', function() {
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('setBoneLinesVis destroys overlay when show=false and overlay exists', function() {
+    it('setBoneLinesVis destroys overlay when show=false and overlay exists', function () {
         mgr.setBoneLinesVis('m1', true);
         expect(mgr._boneOverlayMap.has('m1')).toBe(true);
 
@@ -1136,18 +1209,18 @@ describe('ModelManager bone overlay', function() {
         expect(mgr.get('m1').showBoneLines).toBe(false);
     });
 
-    it('setBoneLinesVis with joints also true keeps overlay', function() {
+    it('setBoneLinesVis with joints also true keeps overlay', function () {
         mgr.setBoneLinesVis('m1', true);
         mgr.setBoneJointsVis('m1', true);
 
         mgr.setBoneLinesVis('m1', false);
 
         expect(mgr._boneOverlayMap.has('m1')).toBe(true);
-        var entry = mgr._boneOverlayMap.get('m1');
+        const entry = mgr._boneOverlayMap.get('m1');
         expect(entry.lineSystem.setEnabled).toHaveBeenCalledWith(false);
     });
 
-    it('setBoneJointsVis creates overlay when show=true and no overlay exists', function() {
+    it('setBoneJointsVis creates overlay when show=true and no overlay exists', function () {
         mgr.setBoneJointsVis('m1', true);
 
         expect(mgr._boneOverlayMap.has('m1')).toBe(true);
@@ -1155,7 +1228,7 @@ describe('ModelManager bone overlay', function() {
         expect(onChange).toHaveBeenCalled();
     });
 
-    it('setBoneJointsVis with lines also true keeps overlay', function() {
+    it('setBoneJointsVis with lines also true keeps overlay', function () {
         mgr.setBoneJointsVis('m1', true);
         mgr.setBoneLinesVis('m1', true);
 
@@ -1164,7 +1237,7 @@ describe('ModelManager bone overlay', function() {
         expect(mgr._boneOverlayMap.has('m1')).toBe(true);
     });
 
-    it('setBoneJointsVis destroys overlay when show=false and no lines active', function() {
+    it('setBoneJointsVis destroys overlay when show=false and no lines active', function () {
         mgr.setBoneJointsVis('m1', true);
         expect(mgr._boneOverlayMap.has('m1')).toBe(true);
 
@@ -1172,39 +1245,43 @@ describe('ModelManager bone overlay', function() {
         expect(mgr._boneOverlayMap.has('m1')).toBe(false);
     });
 
-    it('setBoneLinesVis is no-op for unknown id', function() {
-        expect(function() { mgr.setBoneLinesVis('nope', true); }).not.toThrow();
+    it('setBoneLinesVis is no-op for unknown id', function () {
+        expect(function () {
+            mgr.setBoneLinesVis('nope', true);
+        }).not.toThrow();
     });
 
-    it('setBoneJointsVis is no-op for unknown id', function() {
-        expect(function() { mgr.setBoneJointsVis('nope', true); }).not.toThrow();
+    it('setBoneJointsVis is no-op for unknown id', function () {
+        expect(function () {
+            mgr.setBoneJointsVis('nope', true);
+        }).not.toThrow();
     });
 
-    it('createBoneOverlay is no-op when no mmdModel', function() {
+    it('createBoneOverlay is no-op when no mmdModel', function () {
         mgr.register(makeModelInstance('no-mmd', { mmdModel: null }));
         mgr.setBoneLinesVis('no-mmd', true);
         expect(mgr._boneOverlayMap.has('no-mmd')).toBe(false);
     });
 
-    it('createBoneOverlay is no-op when bones array is empty', function() {
+    it('createBoneOverlay is no-op when bones array is empty', function () {
         mgr.register(makeModelInstance('empty', { mmdModel: makeMmdModel([], []) }));
         mgr.setBoneLinesVis('empty', true);
         expect(mgr._boneOverlayMap.has('empty')).toBe(false);
     });
 
-    it('ensureBoneUpdateObserver creates scene observer', function() {
+    it('ensureBoneUpdateObserver creates scene observer', function () {
         mgr.setBoneLinesVis('m1', true);
 
-        var callbacks = scene._callbacks;
-        var boneCallbacks = callbacks.filter(function(cb) {
+        const callbacks = scene._callbacks;
+        const boneCallbacks = callbacks.filter(function (cb) {
             return cb !== mgr._clothUpdateObserver;
         });
         expect(boneCallbacks.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('bone overlay is created only once (double toggle)', function() {
+    it('bone overlay is created only once (double toggle)', function () {
         mgr.setBoneLinesVis('m1', true);
-        var firstEntry = mgr._boneOverlayMap.get('m1');
+        const firstEntry = mgr._boneOverlayMap.get('m1');
 
         mgr.setBoneLinesVis('m1', true);
 
@@ -1212,18 +1289,24 @@ describe('ModelManager bone overlay', function() {
     });
 });
 
-describe('ModelManager captureThumbnail', function() {
-    var mgr, scene;
+describe('ModelManager captureThumbnail', function () {
+    let mgr, scene;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         scene = makeObservableScene();
         mgr = new ModelManager(scene, vi.fn(), vi.fn());
     });
 
-    it('captures canvas to base64, strips header, calls saveFn', async function() {
-        var canvas = { toDataURL: vi.fn(function() { return 'data:image/png;base64,rawdata123'; }) };
-        var saveFn = vi.fn(function() { return Promise.resolve(); });
+    it('captures canvas to base64, strips header, calls saveFn', async function () {
+        const canvas = {
+            toDataURL: vi.fn(function () {
+                return 'data:image/png;base64,rawdata123';
+            }),
+        };
+        const saveFn = vi.fn(function () {
+            return Promise.resolve();
+        });
 
         await mgr.captureThumbnail('/test.pmx', canvas, saveFn);
 
@@ -1231,10 +1314,16 @@ describe('ModelManager captureThumbnail', function() {
         expect(saveFn).toHaveBeenCalledWith('/test.pmx', 'rawdata123');
     });
 
-    it('handles saveFn rejection gracefully', async function() {
-        var spy = vi.spyOn(console, 'warn').mockImplementation(function() {});
-        var canvas = { toDataURL: vi.fn(function() { return 'data:image/png;base64,raw'; }) };
-        var saveFn = vi.fn(function() { return Promise.reject(new Error('save failed')); });
+    it('handles saveFn rejection gracefully', async function () {
+        const spy = vi.spyOn(console, 'warn').mockImplementation(function () {});
+        const canvas = {
+            toDataURL: vi.fn(function () {
+                return 'data:image/png;base64,raw';
+            }),
+        };
+        const saveFn = vi.fn(function () {
+            return Promise.reject(new Error('save failed'));
+        });
 
         await mgr.captureThumbnail('/test.pmx', canvas, saveFn);
 
@@ -1242,10 +1331,14 @@ describe('ModelManager captureThumbnail', function() {
         spy.mockRestore();
     });
 
-    it('handles canvas error gracefully', async function() {
-        var spy = vi.spyOn(console, 'warn').mockImplementation(function() {});
-        var canvas = { toDataURL: vi.fn(function() { throw new Error('canvas error'); }) };
-        var saveFn = vi.fn();
+    it('handles canvas error gracefully', async function () {
+        const spy = vi.spyOn(console, 'warn').mockImplementation(function () {});
+        const canvas = {
+            toDataURL: vi.fn(function () {
+                throw new Error('canvas error');
+            }),
+        };
+        const saveFn = vi.fn();
 
         await mgr.captureThumbnail('/test.pmx', canvas, saveFn);
 
@@ -1255,20 +1348,20 @@ describe('ModelManager captureThumbnail', function() {
     });
 });
 
-describe('ModelManager dispose', function() {
-    var mgr, scene, onChange;
+describe('ModelManager dispose', function () {
+    let mgr, scene, onChange;
 
-    beforeEach(function() {
+    beforeEach(function () {
         setFocusedModelId(null);
         onChange = vi.fn();
         scene = makeObservableScene();
         mgr = new ModelManager(scene, onChange, vi.fn());
     });
 
-    it('removes bone update observer', function() {
-        var bones = [makeBone('center', []), makeBone('waist', [])];
+    it('removes bone update observer', function () {
+        const bones = [makeBone('center', []), makeBone('waist', [])];
         bones[1].parentBone = bones[0];
-        var mmdModel = makeMmdModel(bones, []);
+        const mmdModel = makeMmdModel(bones, []);
         mgr.register(makeModelInstance('m1', { mmdModel: mmdModel }));
         mgr.setBoneLinesVis('m1', true);
         expect(mgr._boneUpdateObserver).not.toBeNull();
@@ -1278,7 +1371,7 @@ describe('ModelManager dispose', function() {
         expect(mgr._boneUpdateObserver).toBeNull();
     });
 
-    it('removes cloth update observer', function() {
+    it('removes cloth update observer', function () {
         mgr.addCloth('m1', makeClothInstance(), vi.fn());
         expect(mgr._clothUpdateObserver).not.toBeNull();
 
@@ -1287,7 +1380,7 @@ describe('ModelManager dispose', function() {
         expect(mgr._clothUpdateObserver).toBeNull();
     });
 
-    it('disposes all remaining cloth instances', function() {
+    it('disposes all remaining cloth instances', function () {
         mgr.addCloth('m1', makeClothInstance(), vi.fn());
         mgr.addCloth('m2', makeClothInstance(), vi.fn());
 
@@ -1296,7 +1389,9 @@ describe('ModelManager dispose', function() {
         expect(mgr.clothInstances.size).toBe(0);
     });
 
-    it('does not crash when called without any setup', function() {
-        expect(function() { mgr.dispose(); }).not.toThrow();
+    it('does not crash when called without any setup', function () {
+        expect(function () {
+            mgr.dispose();
+        }).not.toThrow();
     });
 });

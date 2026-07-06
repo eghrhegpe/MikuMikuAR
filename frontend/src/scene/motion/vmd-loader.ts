@@ -40,8 +40,13 @@ export async function loadVMDMotion(
     name: string,
     targetModelId?: string
 ): Promise<void> {
-    const { scene, focusedMmdModel: _focusedMmdModel, isProcVmdActive, stopProcMotion, focusedModel: _focusedModel } =
-        await getScene();
+    const {
+        scene,
+        focusedMmdModel: _focusedMmdModel,
+        isProcVmdActive,
+        stopProcMotion,
+        focusedModel: _focusedModel,
+    } = await getScene();
     // If user loads a real VMD, stop procedural motion
     if (isProcVmdActive() && name !== PROC_VMD_NAME_IDLE && name !== PROC_VMD_NAME_AUTODANCE) {
         stopProcMotion();
@@ -159,10 +164,14 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
 
 /** 尝试加载 VMD 同目录下的同名音频文件（.mp3/.wav/.ogg/.flac）。 */
 async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<void> {
-    if (!isAutoLoadCompanionAudioEnabled()) return;
+    if (!isAutoLoadCompanionAudioEnabled()) {
+        return;
+    }
     const baseUrl = vmdUrl.substring(0, vmdUrl.lastIndexOf('/') + 1);
     const basePath = vmdPath.replace(/\.vmd$/i, '');
-    if (_companionAudioCache.has(basePath)) return;
+    if (_companionAudioCache.has(basePath)) {
+        return;
+    }
     const exts = ['.mp3', '.wav', '.ogg', '.flac', '.wma'];
 
     // 并行 HEAD 探针，取首个成功的扩展名（Promise.any 只取最快的成功结果）
@@ -170,7 +179,9 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
         const audioPath = basePath + ext;
         const audioName = audioPath.split('/').pop() || '';
         const resp = await fetch(baseUrl + encodeURIComponent(audioName), { method: 'HEAD' });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}`);
+        }
         return { audioPath, audioName };
     });
 

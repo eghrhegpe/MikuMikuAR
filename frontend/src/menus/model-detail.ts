@@ -19,15 +19,14 @@ import {
     setModelVisibility,
     setModelOpacity,
 } from '../scene/scene';
-import { buildTransformCard, buildDangerCard, type ResourceHandle } from './resource-detail-helpers';
+import {
+    buildTransformCard,
+    buildDangerCard,
+    type ResourceHandle,
+} from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
-import {
-    slideRow,
-    addModeSlider,
-    addCollapsible,
-    addFieldRow,
-} from '../core/ui-helpers';
+import { slideRow, addModeSlider, addCollapsible, addFieldRow } from '../core/ui-helpers';
 import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
 import {
@@ -71,24 +70,42 @@ export function buildOpenWithLevel(id: string): PopupLevel {
                             setStatus('✗ 模型无文件路径', false);
                             return;
                         }
-                        const _r = await tryCatchStatus(() => OpenWithSoftware(inst.filePath, sw.path, sw.args || ''), '✗ 启动失败');
+                        const _r = await tryCatchStatus(
+                            () => OpenWithSoftware(inst.filePath, sw.path, sw.args || ''),
+                            '✗ 启动失败'
+                        );
                         if (_r !== undefined) {
                             setStatus(`✓ 已启动: ${sw.name}`, true);
                         }
                     });
                 }
 
-                slideRow(c, 'lucide:plus', '管理软件', false, () => {
-                    // Pop model stack first so returning from settings shows root level
-                    stackRegistry.modelStack?.popTo(0);
-                    import('./library-core').then(m => {
-                        stackRegistry.modelStack?.setLevel(0, { label: '模型', dir: '', items: m.buildModelRootItems() });
-                        stackRegistry.modelStack?.reRender();
-                    });
-                    dom.btnSettings.click();
-                }, undefined, undefined, undefined, undefined, {
-                    variant: 'accent',
-                });
+                slideRow(
+                    c,
+                    'lucide:plus',
+                    '管理软件',
+                    false,
+                    () => {
+                        // Pop model stack first so returning from settings shows root level
+                        stackRegistry.modelStack?.popTo(0);
+                        import('./library-core').then((m) => {
+                            stackRegistry.modelStack?.setLevel(0, {
+                                label: '模型',
+                                dir: '',
+                                items: m.buildModelRootItems(),
+                            });
+                            stackRegistry.modelStack?.reRender();
+                        });
+                        dom.btnSettings.click();
+                    },
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    {
+                        variant: 'accent',
+                    }
+                );
             });
         },
     };
@@ -176,7 +193,11 @@ export function buildModelLevel(id: string): PopupLevel {
                                 }
                                 stackRegistry.modelStack.updateControls();
                                 setStatus(
-                                    v === 'visible' ? '完全可见' : v === 'semi' ? '半透明 50%' : '完全隐藏',
+                                    v === 'visible'
+                                        ? '完全可见'
+                                        : v === 'semi'
+                                          ? '半透明 50%'
+                                          : '完全隐藏',
                                     true
                                 );
                             },
@@ -185,9 +206,15 @@ export function buildModelLevel(id: string): PopupLevel {
                             {
                                 bind: () => {
                                     const inst = modelManager.get(id);
-                                    if (!inst) return 'visible';
-                                    if (inst.visible && inst.opacity >= 0.99) return 'visible';
-                                    if (inst.visible && inst.opacity < 0.99) return 'semi';
+                                    if (!inst) {
+                                        return 'visible';
+                                    }
+                                    if (inst.visible && inst.opacity >= 0.99) {
+                                        return 'visible';
+                                    }
+                                    if (inst.visible && inst.opacity < 0.99) {
+                                        return 'semi';
+                                    }
                                     return 'hidden';
                                 },
                             }
@@ -214,7 +241,6 @@ export function buildModelLevel(id: string): PopupLevel {
                         });
                     },
                 });
-
             });
 
             // 变换区块（复用公共构建器）
@@ -225,8 +251,12 @@ export function buildModelLevel(id: string): PopupLevel {
             buildDangerCard(container, handle, () => {
                 if (stackRegistry.modelStack) {
                     stackRegistry.modelStack.popTo(0);
-                    import('./library-core').then(m => {
-                        stackRegistry.modelStack?.setLevel(0, { label: '模型', dir: '', items: m.buildModelRootItems() });
+                    import('./library-core').then((m) => {
+                        stackRegistry.modelStack?.setLevel(0, {
+                            label: '模型',
+                            dir: '',
+                            items: m.buildModelRootItems(),
+                        });
                         stackRegistry.modelStack?.reRender();
                     });
                 }
@@ -569,11 +599,7 @@ export function buildBoneHierarchyLevel(id: string): PopupLevel {
                 header.textContent = `共 ${bones.length} 个骨骼`;
                 c.appendChild(header);
 
-                function renderBoneTree(
-                    parent: HTMLElement,
-                    idx: number,
-                    depth: number
-                ): void {
+                function renderBoneTree(parent: HTMLElement, idx: number, depth: number): void {
                     const bone = bones[idx];
                     const row = document.createElement('div');
                     row.style.cssText = `display:flex;align-items:center;padding:2px 14px 2px ${14 + depth * 16}px;font-size:var(--font-ui);color:var(--text);gap:6px;`;
@@ -591,7 +617,8 @@ export function buildBoneHierarchyLevel(id: string): PopupLevel {
                         // Name label (click expands/collapses)
                         const label = document.createElement('span');
                         label.textContent = bone.name;
-                        label.style.cssText = 'cursor:pointer;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                        label.style.cssText =
+                            'cursor:pointer;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
                         row.appendChild(label);
 
                         const childContainer = document.createElement('div');

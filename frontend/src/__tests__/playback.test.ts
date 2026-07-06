@@ -13,24 +13,44 @@ const syncAudioPlayback = vi.hoisted(() => vi.fn());
 const isAudioPlaying = vi.hoisted(() => vi.fn(() => false));
 const animateCameraVmd = vi.hoisted(() => vi.fn());
 
-const mockDom = vi.hoisted(() => ({
-    playbackBar: { style: { display: '' } },
-    btnPlayPause: { textContent: '' },
-    btnLoopToggle: { style: { opacity: '' } },
-    timeDisplay: { textContent: '' },
-    seekBar: {
-        getBoundingClientRect: vi.fn(() => ({ left: 10, width: 200, top: 0, right: 210, bottom: 30, height: 30 })),
-        style: {},
-    },
-    seekProgress: { style: { width: '' } },
-}) as any);
+const mockDom = vi.hoisted(
+    () =>
+        ({
+            playbackBar: { style: { display: '' } },
+            btnPlayPause: { textContent: '' },
+            btnLoopToggle: { style: { opacity: '' } },
+            timeDisplay: { textContent: '' },
+            seekBar: {
+                getBoundingClientRect: vi.fn(() => ({
+                    left: 10,
+                    width: 200,
+                    top: 0,
+                    right: 210,
+                    bottom: 30,
+                    height: 30,
+                })),
+                style: {},
+            },
+            seekProgress: { style: { width: '' } },
+        }) as any
+);
 
 vi.mock('../core/config', () => ({
-    get mmdRuntime() { return mockState.mmdRuntime; },
-    get isPlaying() { return mockState.isPlaying; },
-    setIsPlaying: (v: boolean) => { mockState.isPlaying = v; },
-    get autoLoop() { return mockState.autoLoop; },
-    get seekDragging() { return mockState.seekDragging; },
+    get mmdRuntime() {
+        return mockState.mmdRuntime;
+    },
+    get isPlaying() {
+        return mockState.isPlaying;
+    },
+    setIsPlaying: (v: boolean) => {
+        mockState.isPlaying = v;
+    },
+    get autoLoop() {
+        return mockState.autoLoop;
+    },
+    get seekDragging() {
+        return mockState.seekDragging;
+    },
     dom: mockDom,
     formatTime: (seconds: number) => {
         const m = Math.floor(seconds / 60);
@@ -50,23 +70,25 @@ vi.mock('../scene/camera/camera', () => ({
 
 // ----- SUT -----
 
-import {
-    updatePlaybackUI,
-    seekFromEvent,
-    initPlaybackObservables,
-} from '../scene/motion/playback';
+import { updatePlaybackUI, seekFromEvent, initPlaybackObservables } from '../scene/motion/playback';
 
 // ----- test helpers (not hoisted, available after import) -----
 
 function makeObsMock() {
     const handlers: Array<() => void> = [];
     return {
-        add: vi.fn((h: () => void) => { handlers.push(h); }),
+        add: vi.fn((h: () => void) => {
+            handlers.push(h);
+        }),
         removeCallback: vi.fn((h: () => void) => {
             const idx = handlers.indexOf(h);
-            if (idx >= 0) handlers.splice(idx, 1);
+            if (idx >= 0) {
+                handlers.splice(idx, 1);
+            }
         }),
-        _fire: () => { handlers.forEach((h) => h()); },
+        _fire: () => {
+            handlers.forEach((h) => h());
+        },
     };
 }
 
@@ -218,7 +240,14 @@ describe('seekFromEvent', () => {
     it('seeks to correct position based on mouse position', () => {
         // seekBar rect: left=10, width=200 → clientX=60 → ratio=(60-10)/200=0.25
         // target = 0.25 * 120 = 30
-        mockDom.seekBar.getBoundingClientRect.mockReturnValue({ left: 10, width: 200, top: 0, right: 210, bottom: 30, height: 30 });
+        mockDom.seekBar.getBoundingClientRect.mockReturnValue({
+            left: 10,
+            width: 200,
+            top: 0,
+            right: 210,
+            bottom: 30,
+            height: 30,
+        });
         seekFromEvent(mouseEvent);
         expect(mockState.mmdRuntime.seekAnimation).toHaveBeenCalledWith(30, true);
     });
@@ -282,7 +311,7 @@ describe('initPlaybackObservables', () => {
             mockUpdateUI,
             mockUpdateProcMotion,
             mockUpdateLipSync,
-            mockGetBeatDetector,
+            mockGetBeatDetector
         );
     });
 
@@ -469,7 +498,9 @@ describe('initPlaybackObservables', () => {
     });
 
     it('dispose does not throw when removeCallback fails', () => {
-        tickObs.removeCallback.mockImplementationOnce(() => { throw new Error('cleanup fail'); });
+        tickObs.removeCallback.mockImplementationOnce(() => {
+            throw new Error('cleanup fail');
+        });
         expect(() => dispose()).not.toThrow();
     });
 

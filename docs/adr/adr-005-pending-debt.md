@@ -43,7 +43,7 @@
 
 ### 当前状态
 
-✅ **方案 A 已选定** — `ImportLocalFile` 对库外文件 copy 到 `%LOCALAPPDATA%/MikuMikuAR/temp_serve/`，保留相对路径树。待实施。
+✅ **方案 A 已实施** — `ImportLocalFile` 对库外文件 copy 到 `%LOCALAPPDATA%/MikuMikuAR/temp_serve/` 并保留相对路径树，由 `IsolateModelDir` 绑定实现（见 `internal/app/app.go` + `frontend/src/core/wails-bindings`）。本条债务已结清，与文档顶部状态一致。
 
 ---
 

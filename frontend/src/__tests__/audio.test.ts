@@ -43,15 +43,33 @@ function makeMockAudio(): HTMLAudioElement {
         load: mockLoad,
         addEventListener: mockAddEventListener,
         removeEventListener: mockRemoveEventListener,
-        get currentTime() { return mockCurrentTime; },
-        set currentTime(v: number) { mockCurrentTime = v; },
-        get volume() { return mockVolume; },
-        set volume(v: number) { mockVolume = v; },
-        get paused() { return mockPaused; },
-        get ended() { return mockEnded; },
-        get duration() { return mockDuration; },
-        set src(v: string) { mockSrc = v; },
-        get src() { return mockSrc; },
+        get currentTime() {
+            return mockCurrentTime;
+        },
+        set currentTime(v: number) {
+            mockCurrentTime = v;
+        },
+        get volume() {
+            return mockVolume;
+        },
+        set volume(v: number) {
+            mockVolume = v;
+        },
+        get paused() {
+            return mockPaused;
+        },
+        get ended() {
+            return mockEnded;
+        },
+        get duration() {
+            return mockDuration;
+        },
+        set src(v: string) {
+            mockSrc = v;
+        },
+        get src() {
+            return mockSrc;
+        },
         crossOrigin: '',
     } as unknown as HTMLAudioElement;
     return audio;
@@ -93,9 +111,12 @@ beforeEach(() => {
     mockBeatDetector.setVolume.mockReset();
 
     // Use function keyword so new Audio() can invoke [[Construct]]
-    vi.stubGlobal('Audio', vi.fn().mockImplementation(function () {
-        return makeMockAudio();
-    }));
+    vi.stubGlobal(
+        'Audio',
+        vi.fn().mockImplementation(function () {
+            return makeMockAudio();
+        })
+    );
 });
 
 afterEach(() => {
@@ -421,7 +442,9 @@ describe('attachBeatDetector', () => {
     });
 
     it('handles attach error gracefully', () => {
-        mockBeatDetector.attach.mockImplementationOnce(() => { throw new Error('attach fail'); });
+        mockBeatDetector.attach.mockImplementationOnce(() => {
+            throw new Error('attach fail');
+        });
         void playAudio('test.mp3', 'test');
         attachBeatDetector(mockBeatDetector as any);
     });

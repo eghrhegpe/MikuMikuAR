@@ -274,10 +274,14 @@ export function applyCameraUserSettings(cam: Camera): void {
 
 /** 设置变更后重新应用到当前活动相机 */
 export function refreshCameraUserSettings(): void {
-    if (!_currentCamera) return;
+    if (!_currentCamera) {
+        return;
+    }
     applyCameraUserSettings(_currentCamera);
     const inv = _invertableInputs.get(_currentCamera);
-    if (inv) inv.invertY = uiState.invertYAxis === true;
+    if (inv) {
+        inv.invertY = uiState.invertYAxis === true;
+    }
 }
 
 function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCamera {
@@ -557,11 +561,17 @@ let _touchPrevMidX = 0;
 let _touchPrevMidY = 0;
 
 function initFreeflyTouch(canvas: HTMLCanvasElement): void {
-    if (!isTouchDevice()) return;
+    if (!isTouchDevice()) {
+        return;
+    }
 
     _freeflyTouchHandler = (e: TouchEvent) => {
-        if (_cameraMode !== 'freefly') return;
-        if (e.touches.length < 2) return;
+        if (_cameraMode !== 'freefly') {
+            return;
+        }
+        if (e.touches.length < 2) {
+            return;
+        }
         e.preventDefault();
 
         const t0 = e.touches[0];
@@ -756,20 +766,20 @@ export function setCameraState(s: CameraState): void {
 // ======== Auto Camera（节拍驱动运镜） ========
 
 interface AutoCameraPreset {
-    alpha: number;   // 水平角度 (rad)
-    beta: number;    // 垂直角度 (rad)
-    radius: number;  // 距离
+    alpha: number; // 水平角度 (rad)
+    beta: number; // 垂直角度 (rad)
+    radius: number; // 距离
 }
 
 const AUTO_CAMERA_PRESETS: AutoCameraPreset[] = [
-    { alpha: -Math.PI / 2,  beta: Math.PI / 3,      radius: 16 },  // 正面标准
-    { alpha: -Math.PI / 4,  beta: Math.PI / 3.5,    radius: 14 },  // 右前 45°
-    { alpha: -Math.PI * 3/4, beta: Math.PI / 3.5,   radius: 14 },  // 左前 45°
-    { alpha: -Math.PI / 2,  beta: Math.PI / 6,      radius: 18 },  // 高角度俯拍
-    { alpha: -Math.PI / 2,  beta: Math.PI / 2.5,    radius: 10 },  // 近距离正面
-    { alpha: 0,             beta: Math.PI / 3,      radius: 16 },  // 右侧 90°
-    { alpha: -Math.PI,      beta: Math.PI / 3,      radius: 16 },  // 左侧 90°
-    { alpha: -Math.PI / 2,  beta: Math.PI / 4,      radius: 22 },  // 远景
+    { alpha: -Math.PI / 2, beta: Math.PI / 3, radius: 16 }, // 正面标准
+    { alpha: -Math.PI / 4, beta: Math.PI / 3.5, radius: 14 }, // 右前 45°
+    { alpha: (-Math.PI * 3) / 4, beta: Math.PI / 3.5, radius: 14 }, // 左前 45°
+    { alpha: -Math.PI / 2, beta: Math.PI / 6, radius: 18 }, // 高角度俯拍
+    { alpha: -Math.PI / 2, beta: Math.PI / 2.5, radius: 10 }, // 近距离正面
+    { alpha: 0, beta: Math.PI / 3, radius: 16 }, // 右侧 90°
+    { alpha: -Math.PI, beta: Math.PI / 3, radius: 16 }, // 左侧 90°
+    { alpha: -Math.PI / 2, beta: Math.PI / 4, radius: 22 }, // 远景
 ];
 
 let _autoCameraEnabled = false;
@@ -788,8 +798,13 @@ export function restoreAutoCameraState(): void {
 }
 
 /** 设置 Auto Camera 开关。启用时注册 beat 回调，禁用时移除。 */
-export function setAutoCameraEnabled(v: boolean, beatDetector?: { onBeat: (cb: () => void) => () => void } | null): void {
-    if (v === _autoCameraEnabled) return;
+export function setAutoCameraEnabled(
+    v: boolean,
+    beatDetector?: { onBeat: (cb: () => void) => () => void } | null
+): void {
+    if (v === _autoCameraEnabled) {
+        return;
+    }
     _autoCameraEnabled = v;
     uiState.autoCameraEnabled = v;
     if (v) {
@@ -821,18 +836,30 @@ export function getAutoCameraBeatsPerSwitch(): number {
 }
 
 function _onAutoCameraBeat(): void {
-    if (!_autoCameraEnabled) return;
+    if (!_autoCameraEnabled) {
+        return;
+    }
     _autoCameraBeatCount++;
-    if (_autoCameraBeatCount < _autoCameraBeatsPerSwitch) return;
+    if (_autoCameraBeatCount < _autoCameraBeatsPerSwitch) {
+        return;
+    }
     _autoCameraBeatCount = 0;
 
     const cam = _currentCamera;
-    if (!cam || !(cam instanceof ArcRotateCamera)) return;
-    if (_cameraMode !== 'orbit' && _cameraMode !== 'concert') return;
+    if (!cam || !(cam instanceof ArcRotateCamera)) {
+        return;
+    }
+    if (_cameraMode !== 'orbit' && _cameraMode !== 'concert') {
+        return;
+    }
 
     // 切到下一个预设（避免连续重复）
-    let nextIdx = (_autoCameraPresetIdx + 1 + Math.floor(Math.random() * (AUTO_CAMERA_PRESETS.length - 1))) % AUTO_CAMERA_PRESETS.length;
-    if (nextIdx === _autoCameraPresetIdx) nextIdx = (nextIdx + 1) % AUTO_CAMERA_PRESETS.length;
+    let nextIdx =
+        (_autoCameraPresetIdx + 1 + Math.floor(Math.random() * (AUTO_CAMERA_PRESETS.length - 1))) %
+        AUTO_CAMERA_PRESETS.length;
+    if (nextIdx === _autoCameraPresetIdx) {
+        nextIdx = (nextIdx + 1) % AUTO_CAMERA_PRESETS.length;
+    }
     _autoCameraPresetIdx = nextIdx;
 
     const preset = AUTO_CAMERA_PRESETS[nextIdx];
@@ -846,20 +873,20 @@ function _onAutoCameraBeat(): void {
     const startTime = performance.now();
 
     const cleanup = _scene.onBeforeRenderObservable.add(() => {
-      const elapsed = performance.now() - startTime;
-      t = Math.min(1, elapsed / duration);
-      const ease = t * t * (3 - 2 * t); // smoothstep
-      cam.alpha = startAlpha + (preset.alpha - startAlpha) * ease;
-      cam.beta = startBeta + (preset.beta - startBeta) * ease;
-      cam.radius = startRadius + (preset.radius - startRadius) * ease;
-      if (t >= 1) {
-        _scene.onBeforeRenderObservable.remove(cleanup);
-      }
+        const elapsed = performance.now() - startTime;
+        t = Math.min(1, elapsed / duration);
+        const ease = t * t * (3 - 2 * t); // smoothstep
+        cam.alpha = startAlpha + (preset.alpha - startAlpha) * ease;
+        cam.beta = startBeta + (preset.beta - startBeta) * ease;
+        cam.radius = startRadius + (preset.radius - startRadius) * ease;
+        if (t >= 1) {
+            _scene.onBeforeRenderObservable.remove(cleanup);
+        }
     });
-if (!_scene) {
-  // fallback: no scene reference, complete instantly
-  cam.alpha = preset.alpha;
-  cam.beta = preset.beta;
-  cam.radius = preset.radius;
-}
+    if (!_scene) {
+        // fallback: no scene reference, complete instantly
+        cam.alpha = preset.alpha;
+        cam.beta = preset.beta;
+        cam.radius = preset.radius;
+    }
 }

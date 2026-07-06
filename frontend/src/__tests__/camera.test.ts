@@ -30,7 +30,9 @@ const MockCamera = vi.hoisted(() => {
         position = { x: 0, y: 0, z: 0 };
         name = '';
         constructor(..._args: any[]) {}
-        getClassName() { return 'Camera'; }
+        getClassName() {
+            return 'Camera';
+        }
         attachControl() {}
         detachControl() {}
         dispose() {}
@@ -58,10 +60,16 @@ const MockArcRotateCamera = vi.hoisted(() => {
         inputs = { addGamepad: () => {} };
         name = '';
         constructor(..._args: any[]) {}
-        getClassName() { return 'ArcRotateCamera'; }
+        getClassName() {
+            return 'ArcRotateCamera';
+        }
         attachControl() {}
         detachControl() {}
-        setTarget(_t: any) { this.target.x = _t.x; this.target.y = _t.y; this.target.z = _t.z; }
+        setTarget(_t: any) {
+            this.target.x = _t.x;
+            this.target.y = _t.y;
+            this.target.z = _t.z;
+        }
         dispose() {}
     } as any;
 });
@@ -78,54 +86,118 @@ const MockUniversalCamera = vi.hoisted(() => {
         keysLeft: number[] = [];
         keysRight: number[] = [];
         constructor(..._args: any[]) {}
-        getClassName() { return 'UniversalCamera'; }
+        getClassName() {
+            return 'UniversalCamera';
+        }
         attachControl() {}
         detachControl() {}
         setTarget() {}
-        getDirection(_dir: any) { return { x: 0, y: 0, z: 1, scaleInPlace: () => {}, addInPlace: () => {} }; }
+        getDirection(_dir: any) {
+            return { x: 0, y: 0, z: 1, scaleInPlace: () => {}, addInPlace: () => {} };
+        }
         dispose() {}
     } as any;
 });
 
 const MockVector3 = vi.hoisted(() => {
     const V3 = class {
-        x = 0; y = 0; z = 0;
-        constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
-        clone() { return new V3(this.x, this.y, this.z); }
-        add(v: any) { return new V3(this.x + v.x, this.y + v.y, this.z + v.z); }
-        scale(s: number) { return new V3(this.x * s, this.y * s, this.z * s); }
-        length() { return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z); }
-        normalize() { return this; }
-        set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; return this; }
-        setAll(v: number) { this.x = v; this.y = v; this.z = v; return this; }
-        static Zero() { return new V3(0, 0, 0); }
-        static Right() { return new V3(1, 0, 0); }
-        static Up() { return new V3(0, 1, 0); }
-        static Forward() { return new V3(0, 0, 1); }
+        x = 0;
+        y = 0;
+        z = 0;
+        constructor(x = 0, y = 0, z = 0) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        clone() {
+            return new V3(this.x, this.y, this.z);
+        }
+        add(v: any) {
+            return new V3(this.x + v.x, this.y + v.y, this.z + v.z);
+        }
+        scale(s: number) {
+            return new V3(this.x * s, this.y * s, this.z * s);
+        }
+        length() {
+            return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+        }
+        normalize() {
+            return this;
+        }
+        set(x: number, y: number, z: number) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            return this;
+        }
+        setAll(v: number) {
+            this.x = v;
+            this.y = v;
+            this.z = v;
+            return this;
+        }
+        static Zero() {
+            return new V3(0, 0, 0);
+        }
+        static Right() {
+            return new V3(1, 0, 0);
+        }
+        static Up() {
+            return new V3(0, 1, 0);
+        }
+        static Forward() {
+            return new V3(0, 0, 1);
+        }
     };
     return V3 as any;
 });
 
 const MockQuaternion = vi.hoisted(() => {
     return class {
-        x = 0; y = 0; z = 0; w = 1;
-        constructor(x = 0, y = 0, z = 0, w = 1) { this.x = x; this.y = y; this.z = z; this.w = w; }
-        clone() { return new (this.constructor as any)(this.x, this.y, this.z, this.w); }
-        static Identity() { return new this(0, 0, 0, 1); }
-        static RotationYawPitchRoll() { return new this(0, 0, 0, 1); }
+        x = 0;
+        y = 0;
+        z = 0;
+        w = 1;
+        constructor(x = 0, y = 0, z = 0, w = 1) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+        }
+        clone() {
+            return new (this.constructor as any)(this.x, this.y, this.z, this.w);
+        }
+        static Identity() {
+            return new this(0, 0, 0, 1);
+        }
+        static RotationYawPitchRoll() {
+            return new this(0, 0, 0, 1);
+        }
     } as any;
 });
 
 const MockMatrix = vi.hoisted(() => {
     return class {
         m = new Float32Array(16);
-        constructor() { this.m.fill(0); }
-        getClassName() { return 'Matrix'; }
+        constructor() {
+            this.m.fill(0);
+        }
+        getClassName() {
+            return 'Matrix';
+        }
         invertToRef() {}
         multiplyToRef() {}
         getRotationMatrixToRef() {}
-        decompose() { return { translation: {x:0,y:0,z:0}, rotation: {x:0,y:0,z:0}, scaling: {x:1,y:1,z:1} }; }
-        static Identity() { return new this(); }
+        decompose() {
+            return {
+                translation: { x: 0, y: 0, z: 0 },
+                rotation: { x: 0, y: 0, z: 0 },
+                scaling: { x: 1, y: 1, z: 1 },
+            };
+        }
+        static Identity() {
+            return new this();
+        }
         static IdentityToRef() {}
         static RotationYToRef() {}
     } as any;
@@ -134,12 +206,18 @@ const MockMatrix = vi.hoisted(() => {
 const MockMmdCamera = vi.hoisted(() => {
     return class {
         name: string;
-        constructor(name: string, ..._args: any[]) { this.name = name; }
-        createRuntimeAnimation() { return 0; }
+        constructor(name: string, ..._args: any[]) {
+            this.name = name;
+        }
+        createRuntimeAnimation() {
+            return 0;
+        }
         setRuntimeAnimation() {}
         animate(_frameTime: number) {}
         dispose() {}
-        getClassName() { return 'MmdCamera'; }
+        getClassName() {
+            return 'MmdCamera';
+        }
     } as any;
 });
 
@@ -153,12 +231,27 @@ const MockScene = vi.hoisted(() => {
         materials: any[] = [];
         activeCamera: any = null;
         onBeforeRenderObservable = { add: () => ({}), remove: () => {} };
-        onDisposeObservable = { add: () => ({}), remove: () => {}, notifyObservers: () => {}, hasObservers: false };
-        constructor(engine?: any) { this._engine = engine ?? null; }
-        getEngine() { return this._engine; }
-        getScene() { return this; }
-        getClassName() { return 'Scene'; }
-        getUniqueId() { return this._uniqueIdCounter++; }
+        onDisposeObservable = {
+            add: () => ({}),
+            remove: () => {},
+            notifyObservers: () => {},
+            hasObservers: false,
+        };
+        constructor(engine?: any) {
+            this._engine = engine ?? null;
+        }
+        getEngine() {
+            return this._engine;
+        }
+        getScene() {
+            return this;
+        }
+        getClassName() {
+            return 'Scene';
+        }
+        getUniqueId() {
+            return this._uniqueIdCounter++;
+        }
         registerBeforeRender() {}
         unregisterBeforeRender() {}
         executeWhenReady() {}
@@ -166,9 +259,13 @@ const MockScene = vi.hoisted(() => {
         removeCamera() {}
         attachControl() {}
         detachControl() {}
-        getTransformMatrix() { return {}; }
+        getTransformMatrix() {
+            return {};
+        }
         updateTransformMatrix() {}
-        getProjectionMatrix() { return { clone: () => ({}) }; }
+        getProjectionMatrix() {
+            return { clone: () => ({}) };
+        }
         markAllMaterialsAsDirty() {}
     } as any;
 });
@@ -177,8 +274,12 @@ const MockScene = vi.hoisted(() => {
 // These must be hoisted above the import statements by vitest.
 
 vi.mock('@babylonjs/core/Cameras/camera', () => ({ Camera: MockCamera }));
-vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => ({ ArcRotateCamera: MockArcRotateCamera }));
-vi.mock('@babylonjs/core/Cameras/universalCamera', () => ({ UniversalCamera: MockUniversalCamera }));
+vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => ({
+    ArcRotateCamera: MockArcRotateCamera,
+}));
+vi.mock('@babylonjs/core/Cameras/universalCamera', () => ({
+    UniversalCamera: MockUniversalCamera,
+}));
 vi.mock('@babylonjs/core/Maths/math.vector', () => ({
     Vector3: MockVector3,
     Quaternion: MockQuaternion,
