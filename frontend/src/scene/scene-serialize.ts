@@ -58,7 +58,7 @@ import {
     RenderState,
 } from './scene';
 import { removeProp, loadProp, setPropTransform } from './env/props';
-import { setEnvState, setEnvSunAngle } from './env/env-bridge';
+import { setEnvState, setEnvSunAngle, flushEnvState } from './env/env-bridge';
 import { setGravityStrength, getGravityStrength } from './env/env-bridge';
 import { regenerateProcMotion, getProcMotionState, setProcMotionState } from './motion/proc-motion-bridge';
 import { getLipSyncState, setLipSyncState } from './motion/lipsync-bridge';
@@ -306,7 +306,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 continue;
             }
             await loadPMXFile(resolvedPath, m.kind === 'stage', true);
-            const inst = focusedModel();
+            // 舞台加载后不抢焦点，需要通过 filePath 反查注册表
+            const inst = m.kind === 'stage'
+                ? Array.from(modelManager.modelRegistry.values()).find(i => i.filePath === resolvedPath) ?? focusedModel()
+                : focusedModel();
             if (!inst || inst.meshes.length === 0) {
                 errors.push(`模型 ${m.name}: 加载成功但无网格数据`);
                 modelIds.push(null);
@@ -432,6 +435,11 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     if (data.env && !skipEnv) {
         if (data.env.sunAngle !== undefined) {
             setEnvSunAngle(data.env.sunAngle);
+        }
+        // clothConfig 与默认值合并，确保旧场景文件的缺失字段有正确默认值
+        if (data.env.clothConfig) {
+            const { DEFAULT_CLOTH_CONFIG } = await import('../physics/xpbd-cloth');
+            data.env.clothConfig = { ...DEFAULT_CLOTH_CONFIG, ...data.env.clothConfig };
         }
         setEnvState(data.env, true);
     }
@@ -612,6 +620,7 @@ function cleanupAndFlushSave(): void {
         clearTimeout(autoSaveTimer);
         autoSaveTimer = null;
     }
+    flushEnvState();
     saveSceneImmediate().catch(() => {});
 }
 

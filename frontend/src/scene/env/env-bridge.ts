@@ -9,7 +9,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '../../core/config';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
-import { deriveLighting, ENV_PRESETS } from './env-lighting';
+import { deriveLighting, TIME_OF_DAY_PRESETS } from './env-lighting';
 import * as impl from './env-impl';
 import {
     setLightState,
@@ -208,11 +208,13 @@ function _timeOfDayTick(): void {
 export function startTimeOfDay(speed?: number): void {
     if (speed !== undefined) {
         _timeOfDaySpeed = speed;
+        envState.timeOfDaySpeed = speed;
     }
     if (_timeOfDayActive) {
         return;
     }
     _timeOfDayActive = true;
+    envState.timeOfDayActive = true;
     _lastSkySunAngle = envSunAngle;
     _lastAutoLinkSunAngle = envSunAngle;
     // 使用 impl 的统一 observer 注册表，避免多个独立的 scene observer
@@ -222,6 +224,7 @@ export function startTimeOfDay(speed?: number): void {
 
 export function stopTimeOfDay(): void {
     _timeOfDayActive = false;
+    envState.timeOfDayActive = false;
     _unregisterTimeOfDay();
     _unregisterTimeOfDay = null;
     // 持久化当前 sunAngle 到后端
@@ -238,6 +241,13 @@ export function getTimeOfDaySpeed(): number {
 
 export function setTimeOfDaySpeed(s: number): void {
     _timeOfDaySpeed = s;
+    envState.timeOfDaySpeed = s;
+}
+
+/** 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） */
+export function syncTimeOfDayFromEnv(): void {
+    _timeOfDayActive = envState.timeOfDayActive;
+    _timeOfDaySpeed = envState.timeOfDaySpeed;
 }
 
 // ======== Environment Presets ========
@@ -245,7 +255,7 @@ export function setTimeOfDaySpeed(s: number): void {
 let _presetAnimId = 0; // 动画 ID，每次新预设递增，用于取消旧动画
 
 export function applyEnvPreset(name: string): boolean {
-    const preset = ENV_PRESETS[name];
+    const preset = TIME_OF_DAY_PRESETS[name];
     if (!preset) {
         return false;
     }
@@ -406,4 +416,13 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     if (!skipAutoSave) {
         triggerAutoSave();
     }
+}
+
+/** 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 */
+export function flushEnvState(): void {
+    if (_envPersistTimer) {
+        clearTimeout(_envPersistTimer);
+        _envPersistTimer = null;
+    }
+    SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
 }

@@ -79,6 +79,9 @@ export {
     resetAllMatParams,
     getMatState,
     applyMatState,
+    registerMaterialTarget,
+    unregisterMaterialTarget,
+    getMaterialMeshes,
 } from './manager/material';
 export type { MaterialCategoryParams, MaterialCategory } from './manager/material';
 

@@ -338,6 +338,9 @@ export const envState: EnvState = reactive<EnvState>({
 
     clothEnabled: false,
     clothConfig: { ...DEFAULT_CLOTH_CONFIG },
+    clothDebugParticles: false,
+    clothDebugConstraints: false,
+    clothDebugColliders: false,
     solverSubsteps: 4,
     solverTimeScale: 1.0,
     collisionEnabled: true,
@@ -346,4 +349,7 @@ export const envState: EnvState = reactive<EnvState>({
 
     sunAngle: 45,
     azimuth: -45,
+
+    timeOfDayActive: false,
+    timeOfDaySpeed: 3,
 });

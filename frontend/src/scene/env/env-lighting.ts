@@ -64,7 +64,7 @@ export function deriveLighting(
 }
 
 /** 预设数据表。按时间线排列：黎明 → 正午 → 夕阳 → 夜景 → 阴天 → 霓虹夜 */
-export const ENV_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
+export const TIME_OF_DAY_PRESETS: Record<string, EnvPreset & DerivedLighting> = {
     dawn: {
         label: '黎明',
         skyColorTop: [0.85, 0.55, 0.35],

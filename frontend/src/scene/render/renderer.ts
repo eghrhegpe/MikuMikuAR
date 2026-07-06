@@ -176,7 +176,7 @@ export function disposeRenderer(): void {
 
 export function getRenderState(): RenderState {
     if (!_scene || !pipeline) {
-        return _defaultRenderState();
+        return defaultRenderState();
     }
     return {
         bloomEnabled: pipeline.bloomEnabled,
@@ -216,7 +216,7 @@ export function getRenderState(): RenderState {
     };
 }
 
-function _defaultRenderState(): RenderState {
+export function defaultRenderState(): RenderState {
     return {
         bloomEnabled: false,
         bloomWeight: 0,
