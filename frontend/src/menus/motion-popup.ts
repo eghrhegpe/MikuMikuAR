@@ -49,6 +49,7 @@ import {
     setVmdLayerWeight,
     removeVmdLayer,
     addVmdLayerFromPath,
+    addGazeLayer,
     clearVmdLayers,
 } from '../scene/motion/vmd-layers';
 import {
@@ -384,6 +385,14 @@ function buildLayersLevel(id: string): PopupLevel {
                 });
             });
 
+            // 添加视线追踪图层
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:eye', '添加视线追踪', false, async () => {
+                    await addGazeLayer(id);
+                    getMotionMenu()?.reRender();
+                });
+            });
+
             // 图层列表
             if (layers.length === 0) {
                 cardContainer(container, (c) => {
@@ -392,8 +401,14 @@ function buildLayersLevel(id: string): PopupLevel {
             } else {
                 cardContainer(container, (c) => {
                     for (const layer of layers) {
+                        const isGaze = layer.kind === 'gaze';
                         const row = document.createElement('div');
                         row.className = 'slide-item';
+                        if (isGaze) {
+                            row.style.borderLeft = '3px solid rgba(78, 205, 196, 0.4)';
+                            row.style.paddingLeft = 'calc(14px - 3px)';
+                            row.style.background = 'rgba(128, 128, 128, 0.06)';
+                        }
 
                         const left = document.createElement('div');
                         left.className = 'slide-left';
@@ -402,7 +417,7 @@ function buildLayersLevel(id: string): PopupLevel {
 
                         const label = document.createElement('div');
                         label.className = 'slide-label';
-                        label.textContent = layer.name;
+                        label.textContent = isGaze ? '◎ ' + layer.name : layer.name;
                         label.style.overflow = 'hidden';
                         label.style.textOverflow = 'ellipsis';
                         label.style.whiteSpace = 'nowrap';
