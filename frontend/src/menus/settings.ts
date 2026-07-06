@@ -894,6 +894,20 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                 c.appendChild(hint);
             });
 
+            // 反转 Y 轴
+            cardContainer(container, (c) => {
+                addToggleRow(c, '反转 Y 轴（垂直拖拽）', uiState.invertYAxis === true, (v) => {
+                    setUIState({ invertYAxis: v });
+                    refreshCameraUserSettings();
+                    getSettingsMenu()?.updateControls();
+                    setStatus(`✓ 反转 Y 轴: ${v ? '开' : '关'}`, true);
+                }, 'lucide:flip-vertical');
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.textContent = '反转上下拖拽方向，立即作用于当前相机（ArcRotate 模式）。';
+                c.appendChild(hint);
+            });
+
             // 自定义模式：逐项渲染/光照独立开关（冻结为权威配置，性能监控不覆盖）
             if (getPerformanceMode() === 'custom') {
                 cardContainer(container, (c) => {

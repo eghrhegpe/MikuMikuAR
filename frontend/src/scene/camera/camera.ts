@@ -13,6 +13,7 @@ import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
 import { focusedModelId, modelRegistry, uiState } from '../../core/config';
 import { focusModel, reattachPipeline } from '../scene';
+import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
 
 // ======== Types ========
 export type CameraMode = 'orbit' | 'freefly' | 'concert' | 'oneshot' | 'vmd';
@@ -241,9 +242,21 @@ export const freeflyInput = {
 
 // ======== Camera Factory Functions ========
 
-// ======== 用户相机输入设置（灵敏度）========
+// ======== 用户相机输入设置（灵敏度 / 反 Y 轴）========
 // 基准值取自 Babylon 默认值与本项目既有设定；sens 越大越灵敏（数值越小=反应越快）
 const CAM_BASE = { angular: 2000, wheel: 3, pan: 50, speed: 0.5 };
+
+/** 跟踪每个 ArcRotate 相机实例对应的可反转指针输入，便于设置变更时实时同步 invertY。 */
+const _invertableInputs = new WeakMap<Camera, InvertableArcRotateCameraPointersInput>();
+
+/** 将默认 ArcRotate 指针输入替换为可反转 Y 轴的子类实例，并写入当前反 Y 设置。 */
+function installInvertablePointers(cam: ArcRotateCamera): void {
+    cam.inputs.removeByType('ArcRotateCameraPointersInput');
+    const input = new InvertableArcRotateCameraPointersInput();
+    input.invertY = uiState.invertYAxis === true;
+    cam.inputs.add(input);
+    _invertableInputs.set(cam, input);
+}
 
 /** 将用户灵敏度设置应用到相机实例（orbit/oneshot: ArcRotate；freefly: Universal） */
 export function applyCameraUserSettings(cam: Camera): void {
@@ -261,7 +274,10 @@ export function applyCameraUserSettings(cam: Camera): void {
 
 /** 设置变更后重新应用到当前活动相机 */
 export function refreshCameraUserSettings(): void {
-    if (_currentCamera) applyCameraUserSettings(_currentCamera);
+    if (!_currentCamera) return;
+    applyCameraUserSettings(_currentCamera);
+    const inv = _invertableInputs.get(_currentCamera);
+    if (inv) inv.invertY = uiState.invertYAxis === true;
 }
 
 function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCamera {
@@ -276,6 +292,7 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
     );
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
+    installInvertablePointers(cam);
     cam.attachControl(canvas, true);
     applyCameraUserSettings(cam);
     // 触屏设备：降低捏合精度（更灵敏）、降低平移灵敏度（更容易拖动）
@@ -330,6 +347,7 @@ function createOneshotCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotate
     );
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
+    installInvertablePointers(cam);
     cam.attachControl(canvas, true);
     applyCameraUserSettings(cam);
     if (isTouchDevice()) {
