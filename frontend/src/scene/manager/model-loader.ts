@@ -202,8 +202,6 @@ export async function loadPMXFile(
             } catch {
                 // Intentionally empty — renderer 未初始化时忽略
             }
-            setFocusedModelId(id);
-            _modelManager.focus(id);
             setStatus(`✓ ${displayName} (场景)`, true);
             _modelManager.arrange();
             _refreshWaterRenderList();

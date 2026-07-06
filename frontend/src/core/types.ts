@@ -203,6 +203,8 @@ export interface UIState {
     materialCategoryMap?: Record<string, string>;
     screenshotFormat?: 'image/png' | 'image/jpeg' | 'image/webp';
     screenshotQuality?: number;
+    autoCameraEnabled?: boolean;
+    autoCameraBeatsPerSwitch?: number;
 }
 
 // ======== Environment State ========
@@ -290,6 +292,9 @@ export interface EnvState {
 
     clothEnabled: boolean;
     clothConfig: ClothConfig;
+    clothDebugParticles: boolean;
+    clothDebugConstraints: boolean;
+    clothDebugColliders: boolean;
     solverSubsteps: number;
     solverTimeScale: number;
     collisionEnabled: boolean;
@@ -300,6 +305,9 @@ export interface EnvState {
     azimuth: number;
 
     lightingPresetName?: string;
+
+    timeOfDayActive: boolean;
+    timeOfDaySpeed: number;
 }
 
 // ======== Miscellaneous Types ========
@@ -311,7 +319,9 @@ export type PendingVmd = { data: ArrayBuffer; name: string };
 export interface OverridePaths {
     pmx?: string;
     vmd?: string;
+    audio?: string;
     stage?: string;
+    prop?: string;
     environment?: string;
     md_dress?: string;
     setting?: string;

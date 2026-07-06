@@ -45,7 +45,8 @@ import {
     setPerformanceMode,
 } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
-import { freeflyInput, getCameraMode } from '../scene/camera/camera';
+import { freeflyInput, getCameraMode, restoreAutoCameraState } from '../scene/camera/camera';
+import { syncTimeOfDayFromEnv } from '../scene/env/env-bridge';
 import './iconify-registry';
 import 'iconify-icon';
 import { registerShortcuts, initShortcutDispatcher } from './shortcut-registry';
@@ -569,6 +570,9 @@ async function init(): Promise<void> {
         await restoreEnvState();
         // Apply persisted UI state
         await restoreUIState();
+        // Sync module-level state from persisted envState
+        syncTimeOfDayFromEnv();
+        restoreAutoCameraState();
         // Auto-restore last scene after library + scene init (env already restored above)
         tryRestoreLastScene().catch((err) => console.warn('Auto-restore:', err));
     } catch (err) {
@@ -596,6 +600,11 @@ async function restoreEnvState(): Promise<void> {
             loaded.causticScrollY = 0.15;
             loaded.fresnelAlphaInfluence = 0.5;
             loaded.foamAlphaInfluence = 0.2;
+        }
+        // clothConfig 与代码默认值合并，确保新字段/新默认值生效
+        if (loaded.clothConfig) {
+            const { DEFAULT_CLOTH_CONFIG } = await import('../physics/xpbd-cloth');
+            loaded.clothConfig = { ...DEFAULT_CLOTH_CONFIG, ...loaded.clothConfig };
         }
         setEnvState(loaded as Partial<EnvState>);
     }

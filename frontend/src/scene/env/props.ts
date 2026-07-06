@@ -19,6 +19,7 @@ import {
 import { resolveFileUrl, normPath } from '../../core/fileservice';
 import { scene } from '../scene';
 import { _envSys } from './env';
+import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
 
 // ======== 加载队列（替代简单的布尔锁） ========
 // 允许多次 loadProp 调用依次执行，而非直接返回 null。
@@ -125,6 +126,9 @@ export async function loadProp(filePath: string): Promise<string | null> {
             };
             propRegistry.set(id, inst);
 
+            // 注册到材质系统，使 prop 可用 model 一致的材质 API
+            registerMaterialTarget(id, loadedMeshes);
+
             // 阴影集成
             if (_envSys.shadow.generator) {
                 for (const m of inst.meshes) {
@@ -188,6 +192,9 @@ export function removeProp(id: string): void {
     if (inst.container) {
         inst.container.dispose();
     }
+
+    // 注销材质系统注册（同时清理材质状态）
+    unregisterMaterialTarget(id);
 
     propRegistry.delete(id);
     setStatus(`✓ 已移除道具: ${inst.name}`, true);

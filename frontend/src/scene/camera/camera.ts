@@ -11,7 +11,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
-import { focusedModelId, modelRegistry } from '../../core/config';
+import { focusedModelId, modelRegistry, uiState } from '../../core/config';
 import { focusModel, reattachPipeline } from '../scene';
 
 // ======== Types ========
@@ -734,10 +734,20 @@ let _autoCameraPresetIdx = 0;
 let _autoCameraBeatsPerSwitch = 4; // 每 4 拍切换一次
 let _autoCameraUnsub: (() => void) | null = null;
 
+/** 从 UIState 恢复自动机位状态 */
+export function restoreAutoCameraState(): void {
+    const s = uiState;
+    if (s.autoCameraEnabled) {
+        _autoCameraEnabled = true;
+        _autoCameraBeatsPerSwitch = s.autoCameraBeatsPerSwitch || 4;
+    }
+}
+
 /** 设置 Auto Camera 开关。启用时注册 beat 回调，禁用时移除。 */
 export function setAutoCameraEnabled(v: boolean, beatDetector?: { onBeat: (cb: () => void) => () => void } | null): void {
     if (v === _autoCameraEnabled) return;
     _autoCameraEnabled = v;
+    uiState.autoCameraEnabled = v;
     if (v) {
         _autoCameraBeatCount = 0;
         _autoCameraPresetIdx = 0;
@@ -759,6 +769,7 @@ export function isAutoCameraEnabled(): boolean {
 /** 设置每多少拍切换一次镜头。 */
 export function setAutoCameraBeatsPerSwitch(n: number): void {
     _autoCameraBeatsPerSwitch = Math.max(1, Math.min(16, Math.round(n)));
+    uiState.autoCameraBeatsPerSwitch = _autoCameraBeatsPerSwitch;
 }
 
 export function getAutoCameraBeatsPerSwitch(): number {

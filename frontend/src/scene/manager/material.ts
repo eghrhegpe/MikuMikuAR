@@ -4,9 +4,40 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 
 import { modelRegistry, uiState } from '../../core/config';
 import { triggerAutoSave } from '../../core/config';
+
+// ======== 外部材质目标注册表 ========
+// 让 propRegistry 等 non-model 资源也能复用 id-based 材质 API。
+// modelRegistry 优先，外部表兜底。
+const _externalMeshes = new Map<string, Mesh[]>();
+
+/** 注册外部 meshes（如 prop）到材质系统，使其可用 id 调用所有材质 API。 */
+export function registerMaterialTarget(id: string, meshes: Mesh[]): void {
+    _externalMeshes.set(id, meshes);
+}
+
+/** 注销外部材质目标（资源卸载时调用）。 */
+export function unregisterMaterialTarget(id: string): void {
+    _externalMeshes.delete(id);
+    disposeModelMaterialState(id);
+}
+
+/** 按 id 查询 meshes：先 modelRegistry，后外部注册表。 */
+function _getMeshesById(id: string): Mesh[] | undefined {
+    const inst = modelRegistry.get(id);
+    if (inst) {
+        return inst.meshes;
+    }
+    return _externalMeshes.get(id);
+}
+
+/** 供 UI 层（model-material.ts）按 id 拿 meshes，不依赖 modelRegistry。 */
+export function getMaterialMeshes(id: string): Mesh[] | undefined {
+    return _getMeshesById(id);
+}
 
 export type MaterialCategoryParams = {
     diffuseMul: number;
@@ -96,8 +127,8 @@ export function _capture(mat: Material): void {
 
 /** @internal exported for testing */
 export function _applyAll(id: string): void {
-    const inst = modelRegistry.get(id);
-    if (!inst) {
+    const meshes = _getMeshesById(id);
+    if (!meshes) {
         return;
     }
     const state = _catState.get(id);
@@ -105,8 +136,8 @@ export function _applyAll(id: string): void {
         return;
     }
     const perMat = _matState.get(id) ?? new Map();
-    for (let mi = 0; mi < inst.meshes.length; mi++) {
-        const mesh = inst.meshes[mi];
+    for (let mi = 0; mi < meshes.length; mi++) {
+        const mesh = meshes[mi];
         const m = mesh.material;
         if (!m || !(m instanceof StandardMaterial)) {
             continue;
@@ -173,15 +204,15 @@ export function isMatEnabled(id: string, matIndex: number): boolean {
 }
 
 export function setMatEnabled(id: string, matIndex: number, enabled: boolean): void {
-    const inst = modelRegistry.get(id);
-    if (!inst || matIndex < 0 || matIndex >= inst.meshes.length) {
+    const meshes = _getMeshesById(id);
+    if (!meshes || matIndex < 0 || matIndex >= meshes.length) {
         return;
     }
     const current = isMatEnabled(id, matIndex);
     if (current === enabled) {
         return;
     }
-    inst.meshes[matIndex].setEnabled(enabled);
+    meshes[matIndex].setEnabled(enabled);
     if (enabled) {
         _matEnabled.get(id)?.delete(matIndex);
     } else {
@@ -197,11 +228,11 @@ export function setMatEnabled(id: string, matIndex: number, enabled: boolean): v
 
 export function getMatCatGroups(id: string): Map<string, { name: string; mat: Material }[]> {
     const groups = new Map<string, { name: string; mat: Material }[]>();
-    const inst = modelRegistry.get(id);
-    if (!inst) {
+    const meshes = _getMeshesById(id);
+    if (!meshes) {
         return groups;
     }
-    for (const mesh of inst.meshes) {
+    for (const mesh of meshes) {
         const m = mesh.material;
         if (!m || !(m instanceof StandardMaterial)) {
             continue;
@@ -252,11 +283,11 @@ export function setMatCatParams(
 export function resetMatCatParams(id: string): void {
     _catState.delete(id);
     _matState.delete(id); // 同时清理逐材质覆盖，避免残留状态在下次 _applyAll 中复现
-    const inst = modelRegistry.get(id);
-    if (!inst) {
+    const meshes = _getMeshesById(id);
+    if (!meshes) {
         return;
     }
-    for (const mesh of inst.meshes) {
+    for (const mesh of meshes) {
         const m = mesh.material;
         if (!m || !(m instanceof StandardMaterial)) {
             continue;
@@ -291,13 +322,13 @@ export function getMatDetailList(
         params: MaterialCategoryParams;
         modified: boolean;
     }[] = [];
-    const inst = modelRegistry.get(id);
-    if (!inst) {
+    const meshes = _getMeshesById(id);
+    if (!meshes) {
         return result;
     }
     const perMat = _matState.get(id) ?? new Map();
-    for (let mi = 0; mi < inst.meshes.length; mi++) {
-        const m = inst.meshes[mi].material;
+    for (let mi = 0; mi < meshes.length; mi++) {
+        const m = meshes[mi].material;
         if (!m || !(m instanceof StandardMaterial)) {
             continue;
         }
@@ -324,10 +355,10 @@ export function setMatParams(
     matIndex: number,
     params: Partial<MaterialCategoryParams>
 ): void {
-    const inst = modelRegistry.get(id);
-    if (!inst || matIndex < 0 || matIndex >= inst.meshes.length) {
+    const meshes = _getMeshesById(id);
+    if (!meshes || matIndex < 0 || matIndex >= meshes.length) {
         console.warn(
-            `setMatParams: invalid matIndex ${matIndex} for model "${id}" (${inst ? inst.meshes.length : 0} meshes)`
+            `setMatParams: invalid matIndex ${matIndex} for target "${id}" (${meshes ? meshes.length : 0} meshes)`
         );
         return;
     }
@@ -354,9 +385,9 @@ export function setMatParams(
 }
 
 export function resetSingleMatParams(id: string, matIndex: number): void {
-    const inst = modelRegistry.get(id);
-    if (!inst || matIndex < 0 || matIndex >= inst.meshes.length) {
-        console.warn(`resetSingleMatParams: invalid matIndex ${matIndex} for model "${id}"`);
+    const meshes = _getMeshesById(id);
+    if (!meshes || matIndex < 0 || matIndex >= meshes.length) {
+        console.warn(`resetSingleMatParams: invalid matIndex ${matIndex} for target "${id}"`);
         return;
     }
     const modelState = _matState.get(id);
