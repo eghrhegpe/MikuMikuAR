@@ -33,7 +33,7 @@ import {
     setLightState as setLightingState,
 } from '../scene/render/lighting';
 import {
-    ENV_PRESETS as ENV_LIGHTING_PRESETS,
+    TIME_OF_DAY_PRESETS,
     exportEnvPreset,
     importEnvPreset,
     type EnvPreset,
@@ -48,11 +48,11 @@ import {
     buildSkyLevel, buildGroundLevel, buildWaterLevel, buildWindLevel, buildCloudLevel, buildExperimentalLevel,
     buildFogLevel, buildShadowLevel,
 } from './env-feature-levels';
-import { buildPresetLevel, renderUserEnvPresets, snapshotCurrentEnvPreset, ENV_PRESETS } from './env-preset-levels';
+import { buildPresetLevel, renderUserEnvPresets, snapshotCurrentEnvPreset, SCENE_PRESETS } from './env-preset-levels';
 
 // ======== Barrel Re-Exports ========
 export { buildSkyLevel, buildGroundLevel, buildWaterLevel, buildWindLevel, buildCloudLevel, buildExperimentalLevel, buildFogLevel, buildShadowLevel } from './env-feature-levels';
-export { buildPresetLevel, ENV_PRESETS } from './env-preset-levels';
+export { buildPresetLevel, SCENE_PRESETS } from './env-preset-levels';
 
 // ======== Env Menu State ========
 
@@ -76,7 +76,7 @@ function renderPresetChips(container: HTMLElement): void {
     const chipGroup = document.createElement('div');
     chipGroup.className = 'preset-group';
     chipGroup.style.paddingBottom = '6px';
-    for (const [key, p] of Object.entries(ENV_LIGHTING_PRESETS)) {
+    for (const [key, p] of Object.entries(TIME_OF_DAY_PRESETS)) {
         addPresetChip(chipGroup, p.label, false, () => {
             _activeEnvPresetKey = key;
             applyEnvPreset(key);
@@ -312,7 +312,7 @@ export function buildParticleLevel(): PopupLevel {
 
 function envOnFolderEnter(row: PopupRow): PopupLevel | null {
     switch (row.target) {
-        case 'env:sky': return buildSkyLevel();
+        case 'env:sky': return buildEnvUnifiedLevel();
         case 'env:lighting': return buildEnvLightingLevel();
         case 'env:ground': return buildGroundLevel();
         case 'env:water': return buildWaterLevel();

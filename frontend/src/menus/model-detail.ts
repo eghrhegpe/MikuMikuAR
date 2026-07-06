@@ -18,15 +18,14 @@ import {
     resetModelMorphs,
     setModelVisibility,
     setModelOpacity,
-    removeModel,
 } from '../scene/scene';
+import { buildTransformCard, buildDangerCard, type ResourceHandle } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
 import {
     slideRow,
     addModeSlider,
     addCollapsible,
-    addDangerRow,
     addFieldRow,
 } from '../core/ui-helpers';
 import { buildOutfitLevel } from './outfit-ui';
@@ -211,17 +210,18 @@ export function buildModelLevel(id: string): PopupLevel {
                         });
                     },
                 });
+
             });
 
-            // 危险操作：移除（独立在底部）
-            cardContainer(container, (c) => {
-                addDangerRow(c, 'lucide:trash-2', '移除模型', async () => {
-                    removeModel(id);
-                    // Pop model stack to root so the updated model list is shown
-                    if (stackRegistry.modelStack) {
-                        stackRegistry.modelStack.popTo(0);
-                    }
-                });
+            // 变换区块（复用公共构建器）
+            const handle: ResourceHandle = { id, kind: 'actor', name: inst.name };
+            buildTransformCard(container, handle);
+
+            // 危险区块（复用公共构建器）
+            buildDangerCard(container, handle, () => {
+                if (stackRegistry.modelStack) {
+                    stackRegistry.modelStack.popTo(0);
+                }
             });
         },
     };

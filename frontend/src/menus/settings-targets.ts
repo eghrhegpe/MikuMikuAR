@@ -23,6 +23,8 @@ export const SETTINGS_ACTION = {
   RESOURCE_ROOT: 'set:resourceroot',
   PATH_PMX: 'set:path:pmx',
   PATH_VMD: 'set:path:vmd',
+  PATH_AUDIO: 'set:path:audio',
+  PATH_PROP: 'set:path:prop',
   PATH_STAGE: 'set:path:stage',
   PATH_ENVIRONMENT: 'set:path:environment',
   PATH_MD_DRESS: 'set:path:md_dress',

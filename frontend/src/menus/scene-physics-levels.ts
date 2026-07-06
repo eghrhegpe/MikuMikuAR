@@ -101,7 +101,7 @@ export function buildPhysicsLevel(): PopupLevel {
                 target: 'physics:substeps',
                 sliderValue: getSolverSubsteps(),
                 sliderMin: 1,
-                sliderMax: 16,
+                sliderMax: 4,
                 sliderStep: 1,
                 onSliderChange: (v: number) => {
                     setSolverSubsteps(v);

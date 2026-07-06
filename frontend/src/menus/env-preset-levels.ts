@@ -13,13 +13,14 @@ import {
     setEnvSunAngle,
     applyEnvPresetObject,
     transitionRenderState,
+    defaultRenderState,
 } from '../scene/scene';
 import {
     getLightState,
     transitionLighting,
 } from '../scene/render/lighting';
 import {
-    ENV_PRESETS as ENV_LIGHTING_PRESETS,
+    TIME_OF_DAY_PRESETS,
     exportEnvPreset,
     importEnvPreset,
     type EnvPreset,
@@ -141,7 +142,7 @@ interface EnvPresetConfig {
     render?: Partial<import('../scene/scene').RenderState>;
 }
 
-export const ENV_PRESETS: Record<string, EnvPresetConfig> = {
+export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
     '舞台-A': {
         env: {
             skyMode: 'procedural', skyColorTop: [0.05, 0.05, 0.15], skyColorBot: [0.1, 0.05, 0.15],
@@ -210,7 +211,7 @@ export const ENV_PRESETS: Record<string, EnvPresetConfig> = {
 };
 
 export function buildPresetLevel(): PopupLevel {
-    const entries = Object.entries(ENV_PRESETS);
+    const entries = Object.entries(SCENE_PRESETS);
     return {
         label: '环境预设',
         dir: '',
@@ -228,7 +229,7 @@ export function buildPresetLevel(): PopupLevel {
                             transitionLighting(preset.lights, 2000);
                         }
                         if (preset.render) {
-                            transitionRenderState(preset.render, 2000);
+                            transitionRenderState({ ...defaultRenderState(), ...preset.render }, 2000);
                         }
                         getEnvMenu()?.reRender();
                     });

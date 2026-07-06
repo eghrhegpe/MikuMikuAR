@@ -126,8 +126,6 @@ function buildSceneRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
     items.push({ kind: 'folder', label: '预设场景', icon: 'lucide:bookmark', target: 'scene:presets' });
     items.push({ kind: 'action', label: '保存场景', icon: 'lucide:save', target: 'scene:save' });
-    items.push({ kind: 'action', label: '导出场景包', icon: 'lucide:package-export', target: 'scene:export-bundle' });
-    items.push({ kind: 'action', label: '导入场景包', icon: 'lucide:package-import', target: 'scene:import-bundle' });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({ kind: 'folder', label: '后处理', icon: 'lucide:sparkles', target: 'scene:render:postprocess' });
     items.push({ kind: 'folder', label: '舞台', icon: 'lucide:monitor', target: 'scene:render:stage' });

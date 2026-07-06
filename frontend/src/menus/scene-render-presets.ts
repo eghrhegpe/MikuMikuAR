@@ -13,6 +13,7 @@ import {
     getRenderState,
     setRenderState,
     transitionRenderState,
+    defaultRenderState,
 } from '../scene/scene';
 import {
     GetRenderPresets,
@@ -30,7 +31,7 @@ import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 //   - 开启 Bloom → 产生 HDR 高亮像素 → tone mapping 的高光滚降特性充分展示
 //   - 每套预设锁定一个色调映射模式，配合互补后处理形成鲜明视觉风格
 //
-const builtinPresets: Record<string, Partial<RenderState>> = {
+const FILTER_PRESETS: Record<string, Partial<RenderState>> = {
     // --- reference：Standard 色调映射，保守曝光作为基准 ---
     standard: {
         bloomEnabled: true, bloomWeight: 0.3, bloomThreshold: 0.6, bloomKernel: 64,
@@ -85,12 +86,12 @@ const builtinPresets: Record<string, Partial<RenderState>> = {
     },
 };
 
-export const PRESET_LABELS: Record<string, string> = {
+export const FILTER_PRESET_LABELS: Record<string, string> = {
     standard: '标准', cinematic: '电影', cartoon: '卡通',
     realistic: '写实', warm: '暖光', cyberpunk: '赛博朋克',
 };
 
-const PRESET_DESCS: Record<string, string> = {
+const FILTER_PRESET_DESCS: Record<string, string> = {
     standard: 'Standard 色调映射 · 基准参考',
     cinematic: 'ACES 色调映射 · 电影胶片曲线 · 自然高光滚降',
     cartoon: 'Reinhard 色调映射 · 高饱和高对比 · 黑色线框',
@@ -99,12 +100,12 @@ const PRESET_DESCS: Record<string, string> = {
     cyberpunk: 'Neutral 色调映射 · 高光溢出 · 极端后处理',
 };
 
-export function getBuiltinPreset(name: string): Partial<RenderState> | undefined {
-    return builtinPresets[name];
+export function getFilterPreset(name: string): Partial<RenderState> | undefined {
+    return FILTER_PRESETS[name];
 }
 
-export function getPresetName(name: string): string {
-    return PRESET_LABELS[name] || name;
+export function getFilterPresetName(name: string): string {
+    return FILTER_PRESET_LABELS[name] || name;
 }
 
 export function buildPresetsLevel(): PopupLevel {
@@ -117,22 +118,22 @@ export function buildPresetsLevel(): PopupLevel {
             const chipGroup = document.createElement('div');
             chipGroup.className = 'preset-group';
             chipGroup.style.paddingBottom = '6px';
-            for (const [key] of Object.entries(builtinPresets)) {
+            for (const [key] of Object.entries(FILTER_PRESETS)) {
                 const wrapper = document.createElement('div');
                 wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;';
 
                 const btn = document.createElement('button');
                 btn.className = 'preset-chip';
-                btn.textContent = PRESET_LABELS[key] || key;
+                btn.textContent = FILTER_PRESET_LABELS[key] || key;
                 btn.addEventListener('click', () => {
-                    const preset = getBuiltinPreset(key);
-                    if (preset) transitionRenderState(preset, 2000);
-                    setStatus(`✓ 预设: ${PRESET_LABELS[key]}`, true);
+                    const preset = getFilterPreset(key);
+                    if (preset) transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
+                    setStatus(`✓ 预设: ${FILTER_PRESET_LABELS[key]}`, true);
                 });
                 wrapper.appendChild(btn);
 
                 const desc = document.createElement('span');
-                desc.textContent = PRESET_DESCS[key] || '';
+                desc.textContent = FILTER_PRESET_DESCS[key] || '';
                 desc.style.cssText = 'font-size:9px;color:var(--text-dim);opacity:0.7;white-space:nowrap;line-height:1.2;';
                 wrapper.appendChild(desc);
 
@@ -140,16 +141,16 @@ export function buildPresetsLevel(): PopupLevel {
             }
             container.appendChild(chipGroup);
             slideRow(container, 'lucide:save', '保存当前为预设', false, showPresetSaveDialog);
-            if (Object.keys(userPresets).length > 0) {
+            if (Object.keys(USER_FILTER_PRESETS).length > 0) {
                 const userChipGroup = document.createElement('div');
                 userChipGroup.className = 'preset-group';
                 userChipGroup.style.paddingBottom = '6px';
-                for (const [name] of Object.entries(userPresets)) {
+                for (const [name] of Object.entries(USER_FILTER_PRESETS)) {
                     const btn = document.createElement('button');
                     btn.className = 'preset-chip';
                     btn.textContent = name;
                     btn.addEventListener('click', () => {
-                        setRenderState(userPresets[name]);
+                        setRenderState(USER_FILTER_PRESETS[name]);
                         setStatus(`✓ 预设: ${name}`, true);
                     });
                     userChipGroup.appendChild(btn);
@@ -170,7 +171,7 @@ export async function showPresetSaveDialog(): Promise<void> {
         return true;
     }, '✗ 保存预设失败');
     if (r) {
-        userPresets[trimmed] = state;
+        USER_FILTER_PRESETS[trimmed] = state;
         setStatus(`✓ 预设已保存: ${trimmed}`, true);
         const menu = getSceneMenu();
         if (menu) {
@@ -180,7 +181,7 @@ export async function showPresetSaveDialog(): Promise<void> {
     }
 }
 
-export const userPresets: Record<string, Partial<RenderState>> = {};
+export const USER_FILTER_PRESETS: Record<string, Partial<RenderState>> = {};
 
 let _presetsLoaded = false;
 
@@ -191,7 +192,7 @@ export async function loadUserPresets(): Promise<void> {
         const presets = await GetRenderPresets();
         if (presets) {
             for (const p of presets) {
-                userPresets[p.name] = p.params as unknown as Partial<RenderState>;
+                USER_FILTER_PRESETS[p.name] = p.params as unknown as Partial<RenderState>;
             }
         }
     } catch (err) {
