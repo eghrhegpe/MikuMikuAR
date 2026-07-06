@@ -76,7 +76,7 @@
 | 文件 | 改动 |
 |------|------|
 | `app.go` | `scanDirRecursive` 移除 ParsePMXHeader；新增 `GetModelMeta`/`GetModelMetaBatch` binding；`decodeZipName` 改为 `bestDecode` 多编码检测；新增 `cleanModelName`；`extractCacheVersion` 4→5 |
-| `frontend/src/config.ts` | 新增 `modelMetaCache` 全局状态 |
-| `frontend/src/library.ts` | `modelToRow` 从缓存取元数据；搜索 / 切换显示名时触发按需解析；新增 `ensureModelMeta` |
+| `frontend/src/core/config.ts` | 新增 `modelMetaCache` 全局状态（后拆为 types/state/dom/utils，见 ADR-033） |
+| `frontend/src/menus/library.ts` | `modelToRow` 从缓存取元数据；搜索 / 切换显示名时触发按需解析；新增 `ensureModelMeta` |
 | `frontend/index.html` | 补回缺失的 `#loading` 和 `#scenePanel` 元素 |
 | `frontend/src/app.css` | 新增场景面板样式 |
