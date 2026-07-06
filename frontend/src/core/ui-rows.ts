@@ -307,9 +307,8 @@ export function addSliderRow(
 
     // === 自更新支持 ===
     initControl(row, opts, value, (v, cached) => {
-        const n = Number(v);
-        if (!Number.isFinite(n) || n === cached) return false;
-        updateDisplay(n);
+        if (!Number.isFinite(v) || v === cached) return false;
+        updateDisplay(v);
         return true;
     });
 }

@@ -722,18 +722,10 @@ async function handleDropFile(path: string): Promise<void> {
     }
 }
 
-// ======== Render Loop (with optional FPS limit) ========
-let _lastFrameTime = 0;
+// ======== Render Loop (with optional FPS limit via engine.maxFPS) ========
+const initFpsLimit = uiState.fpsLimit ?? 0;
+engine.maxFPS = initFpsLimit > 0 ? initFpsLimit : undefined;
 engine.runRenderLoop(() => {
-    const fpsLimit = uiState.fpsLimit ?? 0;
-    if (fpsLimit > 0) {
-        const now = performance.now();
-        const minInterval = 1000 / fpsLimit;
-        if (now - _lastFrameTime < minInterval) {
-            return; // 跳过本帧
-        }
-        _lastFrameTime = now;
-    }
     scene.render();
     updatePerformance();
 });
