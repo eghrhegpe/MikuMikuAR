@@ -49,8 +49,11 @@
 | `initLibrary()` | `menus/library.ts` | 启动时加载配置 + 扫描模型库 |
 | `refreshLibrary()` | `menus/library.ts` | 重新扫描 + 刷新弹窗 |
 | `buildLevel()`, `modelToRow()` | `menus/library-core.ts` | 文件浏览层级构建 |
+| `importFile()` | `menus/library-core.ts` | 导入文件：通过 SAF 文件选择器调起 SelectImportFile → 按扩展名路由到 loadManager 或 ImportZip |
 | `showSettings()` | `menus/settings.ts` | 设置页（MenuStack） |
 | `MenuStack` | `menus/menu.ts` | 通用菜单导航组件 |
+| `initControl()` | `core/ui-rows.ts` | 控件自更新注册 + 立即初始化工具函数，封装 `registerControl` + 立即 `update()` 模式，消除 5 个控件的重复 |
+| `registerControl()` / `updateControls()` | `menus/menu.ts` | 注册/统一刷新控件的自更新回调，参见 ADR-027 |
 
 ## 相机
 

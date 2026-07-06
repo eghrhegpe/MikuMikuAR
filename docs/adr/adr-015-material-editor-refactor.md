@@ -63,9 +63,9 @@
 
 | 文件 | 改动 |
 |------|------|
-| `scene.ts` | 新增 `_matEnabled` / `isMatEnabled` / `setMatEnabled`；更新 `removeModel` cleanup |
-| `model-detail.ts` | 新增 `buildMatRootLevel` / `buildMatListLevel`；重命名 `buildMatBatchLevel`；更新 `buildPerMatLevel` 叠加提示 |
-| `library-core.ts` | 更新 import `buildMatCatLevel` → `buildMatRootLevel` |
+| `frontend/src/scene/scene.ts` | 新增 `_matEnabled` / `isMatEnabled` / `setMatEnabled`；更新 `removeModel` cleanup |
+| `frontend/src/menus/model-detail.ts` | 新增 `buildMatRootLevel` / `buildMatListLevel`；重命名 `buildMatBatchLevel`；更新 `buildPerMatLevel` 叠加提示 |
+| `frontend/src/menus/library-core.ts` | 更新 import `buildMatCatLevel` → `buildMatRootLevel` |
 | `app.css` | 新增 `.mat-cat-slider` / `.mat-mat-slider` / `.mat-swatch-disabled` |
 | `material-editor.test.ts` | 新增 `_matEnabled.clear()` cleanup |
 | `model-preset.test.ts` | 新增 `_matEnabled.clear()` cleanup |
