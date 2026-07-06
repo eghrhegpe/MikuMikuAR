@@ -22,6 +22,7 @@ import { resolveFileUrl, normPath } from '../../core/fileservice';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '../../outfit/audio';
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '../../motion-algos/procedural-motion';
+import { isAutoLoadCompanionAudioEnabled } from '../../menus/settings';
 
 // Dynamic re-import of scene.ts to access its module-level state
 // (scene, focusedMmdModel, focusedModel, isProcVmdActive, stopProcMotion)
@@ -158,6 +159,7 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
 
 /** 尝试加载 VMD 同目录下的同名音频文件（.mp3/.wav/.ogg/.flac）。 */
 async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<void> {
+    if (!isAutoLoadCompanionAudioEnabled()) return;
     const baseUrl = vmdUrl.substring(0, vmdUrl.lastIndexOf('/') + 1);
     const basePath = vmdPath.replace(/\.vmd$/i, '');
     if (_companionAudioCache.has(basePath)) return;
