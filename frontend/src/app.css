@@ -682,7 +682,8 @@ input, textarea, [contenteditable] {
     display: flex;
     align-items: center;
     gap: var(--toggle-row-gap);
-    padding: 0 calc(14px * var(--ui-scale));
+    padding: var(--slide-item-pad-y) calc(14px * var(--ui-scale));
+    min-height: var(--slide-item-min-height);
     margin-bottom: var(--toggle-row-margin-bottom);
     justify-content: space-between;
     cursor: pointer;
@@ -861,6 +862,17 @@ input, textarea, [contenteditable] {
     min-height: var(--slide-item-min-height);
     border-radius: var(--slide-item-radius);
     margin-bottom: var(--slide-item-margin-bottom);
+}
+.lcard > .slide-item:first-child {
+    border-radius: var(--lcard-radius) var(--lcard-radius) 0 0;
+}
+.lcard > .slide-item:last-child {
+    border-radius: 0 0 var(--lcard-radius) var(--lcard-radius);
+    margin-bottom: 0;
+}
+.lcard > .slide-item:only-child {
+    border-radius: var(--lcard-radius);
+    margin-bottom: 0;
 }
 .slide-item:hover {
     background: var(--card-hover);
@@ -1894,7 +1906,7 @@ input, textarea, [contenteditable] {
     background: var(--lcard-bg);
     border: var(--lcard-border);
     border-radius: var(--lcard-radius);
-    padding: var(--lcard-pad-y) var(--lcard-pad-x);
+    padding: 0 var(--lcard-pad-x);
     margin-bottom: var(--lcard-margin-bottom);
 }
 

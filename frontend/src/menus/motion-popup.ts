@@ -26,7 +26,7 @@ import {
     getRecentMotions,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { slideRow, addSliderRow, addToggleRow, addEmptyRow } from '../core/ui-helpers';
+import { slideRow, addToggleRow, addEmptyRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import { loadManager } from '../core/load-manager';
@@ -53,11 +53,7 @@ import {
 } from '../scene/motion/vmd-layers';
 import {
     clearAudio,
-    setAudioOffset,
     getAudioName,
-    getAudioOffset,
-    setVolume,
-    getVolume,
 } from '../outfit/audio';
 import {
     setProcMotionMode,
@@ -169,7 +165,6 @@ function buildActionBindingLevel(id: string): PopupLevel {
 }
 
 function buildActionMusicLevel(): PopupLevel {
-    const offset = getAudioOffset();
     return {
         label: '音乐',
         dir: '',
@@ -187,14 +182,6 @@ function buildActionMusicLevel(): PopupLevel {
                         getMotionMenu()?.reRender();
                     });
                 }
-            });
-            cardContainer(container, (c) => {
-                addSliderRow(c, '音量', getVolume(), 0, 1, 0.05, (v) => setVolume(v), 'lucide:volume-2');
-                addSliderRow(c, '音频偏移', offset, -5, 5, 0.1, (v) => setAudioOffset(v), 'lucide:clock');
-                const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-dark);text-align:center;margin-top:4px;';
-                hint.textContent = '正=音频先播，负=音频后播';
-                c.appendChild(hint);
             });
         },
     };
@@ -224,7 +211,7 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
         const id = row.target.replace('motion:layers:', '');
         return buildLayersLevel(id);
     }
-    if (row.target === '__music__') { setMotionBindingTargetId(null); return buildActionMusicLevel(); }
+    
     if (row.target === 'motion:recent') { return buildRecentMotionsLevel(); }
     if (row.target === 'motion:procmotion') { return buildProcMotionLevel(); }
     if (row.target === 'procmotion:mode') { return buildProcMotionModeLevel(); }
@@ -335,6 +322,17 @@ function motionOnItemClick(row: PopupRow): void {
                 setStatus(`循环: ${autoLoop ? '开' : '关'}`, true);
                 break;
         }
+        return;
+    }
+    if (row.target === '__music_browse__') {
+        const level = stackRegistry.buildLevel!(libraryRoot, '音乐库', (m) => m.format === 'audio');
+        if (getMotionMenu()) getMotionMenu()?.push(level);
+        return;
+    }
+    if (row.target === '__music_clear__') {
+        clearAudio();
+        setStatus('✓ 音乐已移除', true);
+        if (getMotionMenu()) getMotionMenu()?.reRender();
         return;
     }
 }
@@ -544,9 +542,18 @@ function buildMotionRootItems(): PopupRow[] {
         });
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
     }
-    // Card 3: 相机 + 音乐 + 程序化动作
+    // Card 3: 相机 + 音乐库 + 程序化动作
     items.push({ kind: 'folder', label: '相机', icon: 'lucide:video', target: 'motion:camera' });
-    items.push({ kind: 'folder', label: '音乐', icon: 'lucide:music', target: '__music__' });
+    items.push({
+        kind: 'action',
+        label: getAudioName() ? '音乐库' : '浏览音乐库',
+        icon: 'lucide:music',
+        target: '__music_browse__',
+        sublabel: getAudioName() || undefined,
+    });
+    if (getAudioName()) {
+        items.push({ kind: 'action', label: '移除音乐', icon: 'lucide:trash-2', target: '__music_clear__' });
+    }
     items.push({ kind: 'folder', label: '程序化动作', icon: 'lucide:wind', target: 'motion:procmotion' });
     return items;
 }

@@ -53,7 +53,7 @@ import { selectResourceRoot, selectOverridePath } from './library-core';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle, addDangerRow, addEmptyRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
-import { setVolume, getVolume } from '../outfit/audio';
+import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
 import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon } from '../core/icons';
@@ -523,7 +523,7 @@ function rgbToString(rgb: { r: number; g: number; b: number }): string {
     return `${rgb.r}, ${rgb.g}, ${rgb.b}`;
 }
 
-function generateTextColors(hex: string): { bright: string; dim: string; muted: string } {
+export function generateTextColors(hex: string): { bright: string; dim: string; muted: string } {
     const rgb = hexToRgb(hex);
     const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
 
@@ -539,9 +539,11 @@ function generateTextColors(hex: string): { bright: string; dim: string; muted: 
     };
 
     return {
-        bright: mix(brightness > 128 ? 0.85 : 0.1),
-        dim: mix(brightness > 128 ? 0.6 : 0.25),
-        muted: mix(brightness > 128 ? 0.4 : 0.4),
+        // 暗背景（brightness≤128）→ 文字偏亮，轻染主题色
+        // 亮背景                 → 文字偏暗，但饱和度不过高
+        bright: mix(brightness > 128 ? 0.55 : 0.25),
+        dim:    mix(brightness > 128 ? 0.35 : 0.40),
+        muted:  mix(0.40),
     };
 }
 
@@ -931,6 +933,24 @@ function buildSettingsAudioLevel(): PopupLevel {
                 }, 'lucide:volume-x', {
                     bind: () => getVolume() === 0,
                 });
+            });
+
+            // Audio offset
+            cardContainer(container, (c) => {
+                addSliderRow(c, '音频偏移', getAudioOffset(), -5, 5, 0.1, (v) => {
+                    setAudioOffset(v);
+                    getSettingsMenu()?.updateControls();
+                }, 'lucide:clock', undefined, {
+                    bind: () => getAudioOffset(),
+                    onUpdate: (el) => {
+                        const valEl = el.querySelector('.cs-value');
+                        if (valEl) valEl.textContent = getAudioOffset().toFixed(2);
+                    },
+                });
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size:10px;color:var(--text-dark);text-align:center;margin-top:4px;';
+                hint.textContent = '正=音频先播，负=音频后播（对所有音乐全局生效）';
+                c.appendChild(hint);
             });
 
             // BPM Quantization
