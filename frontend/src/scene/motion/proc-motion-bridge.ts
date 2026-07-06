@@ -22,7 +22,8 @@ import { mmdRuntime, triggerAutoSave, focusedModelId } from '../../core/config';
 import { isAudioPlaying } from '../../outfit/audio';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from '../scene';
 import { addVmdLayer, removeVmdLayer, getVmdLayers, clearVmdLayers } from './vmd-layers';
-import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
+import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Matrix } from '@babylonjs/core/Maths/math';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
@@ -600,6 +601,21 @@ export function setProcMotionEyeTrackingEnabled(v: boolean): void {
 /** 设置头部跟随开关（实时效果，不重新生成 VMD）。 */
 export function setProcMotionHeadTrackingEnabled(v: boolean): void {
     _setGazeTrackingSetting('headTrackingEnabled', v);
+}
+
+let _gazeLayerActive = false;
+
+/** 图层驱动的视线/头部控制。
+ *  由 vmd-layers 在调整 gaze 图层时调用。
+ *  - intensity > 0 且 active → 启用眼部追踪
+ *  - intensity >= 0.5 且 active → 同时启用头部追踪
+ *  - 否则禁用两者。
+ *  不干涉 _setGazeTrackingSetting 内部重建逻辑。 */
+export function setGazeLayerActive(active: boolean, intensity: number): void {
+    _gazeLayerActive = active;
+    const shouldEnable = active && intensity > 0;
+    setProcMotionEyeTrackingEnabled(shouldEnable);
+    setProcMotionHeadTrackingEnabled(shouldEnable && intensity >= 0.5);
 }
 
 // ======== Lifelike Motion Layer（微动叠加层） ========
