@@ -153,8 +153,8 @@ export function buildStageLevel(): PopupLevel {
                 slideRow(c, 'lucide:upload', '加载舞台', true, () => {
                     (async () => {
                         try {
-                            const { libraryRoot, overridePaths } = await import('../core/config');
-                            const browseDir = overridePaths.stage || (libraryRoot ? libraryRoot + '/stage' : '');
+                            const { getBrowseDir } = await import('../core/utils');
+                            const browseDir = getBrowseDir('stage');
                             if (!browseDir) {
                                 setStatus('✗ 请先在设置中配置模型库目录', false);
                                 return;
@@ -182,8 +182,8 @@ export function buildStageLevel(): PopupLevel {
                 slideRow(c, 'lucide:box', '加载道具', true, () => {
                     (async () => {
                         try {
-                            const { overridePaths, libraryRoot } = await import('../core/config');
-                            const browseDir = overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '');
+                            const { getBrowseDir } = await import('../core/utils');
+                            const browseDir = getBrowseDir('prop');
                             if (!browseDir) {
                                 setStatus('✗ 请先在设置中配置道具库目录', false);
                                 return;

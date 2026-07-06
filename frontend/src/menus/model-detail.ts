@@ -81,6 +81,10 @@ export function buildOpenWithLevel(id: string): PopupLevel {
                 slideRow(c, 'lucide:plus', '管理软件', false, () => {
                     // Pop model stack first so returning from settings shows root level
                     stackRegistry.modelStack?.popTo(0);
+                    import('./library-core').then(m => {
+                        stackRegistry.modelStack?.setLevel(0, { label: '模型', dir: '', items: m.buildModelRootItems() });
+                        stackRegistry.modelStack?.reRender();
+                    });
                     dom.btnSettings.click();
                 }, undefined, undefined, undefined, undefined, {
                     variant: 'accent',
@@ -221,6 +225,10 @@ export function buildModelLevel(id: string): PopupLevel {
             buildDangerCard(container, handle, () => {
                 if (stackRegistry.modelStack) {
                     stackRegistry.modelStack.popTo(0);
+                    import('./library-core').then(m => {
+                        stackRegistry.modelStack?.setLevel(0, { label: '模型', dir: '', items: m.buildModelRootItems() });
+                        stackRegistry.modelStack?.reRender();
+                    });
                 }
             });
         },

@@ -147,8 +147,9 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                         },
                     };
                 }
+                const browseDir = getBrowseDir('pmx');
                 return buildLevel(
-                    libraryRoot,
+                    browseDir,
                     '模型库',
                     (m) => m.format === 'pmx',
                     stackRegistry.modelStack!,
@@ -652,7 +653,7 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
 
 /** Show function for toggleOverlay — builds the model menu stack. */
 /** 模型库根级 items 构建器——items-based，支持全量 reRender */
-function buildModelRootItems(): PopupRow[] {
+export function buildModelRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
 
     // 已加载的角色模型
@@ -662,7 +663,7 @@ function buildModelRootItems(): PopupRow[] {
             kind: 'folder',
             label: inst.name,
             icon: 'tabler:cube-3d-sphere',
-            target: `model:${id}`,
+            target: `scene:${id}`,
         });
     }
 
@@ -670,10 +671,10 @@ function buildModelRootItems(): PopupRow[] {
     if (actors.length > 0) {
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
     }
-    items.push({ kind: 'folder', label: '加载模型', icon: 'lucide:folder', target: 'model:browse' });
-    items.push({ kind: 'action', label: '重新扫描', icon: 'lucide:refresh-cw', target: 'model:rescan' });
-    items.push({ kind: 'folder', label: '最近打开', icon: 'lucide:clock', target: 'model:recent' });
-    items.push({ kind: 'folder', label: '标签', icon: 'lucide:tag', target: 'model:tags' });
+    items.push({ kind: 'folder', label: '加载模型', icon: 'lucide:folder', target: 'models:browse' });
+    items.push({ kind: 'action', label: '重新扫描', icon: 'lucide:refresh-cw', target: 'models:rescan' });
+    items.push({ kind: 'folder', label: '最近打开', icon: 'lucide:clock', target: '__recent__' });
+    items.push({ kind: 'folder', label: '标签', icon: 'lucide:tag', target: '__tags__' });
 
     return items;
 }
@@ -686,6 +687,7 @@ export function showModelPopup(): void {
     const wrapper = getMenuWrapper('model-popup');
     if (stackRegistry.modelStack) {
         stackRegistry.modelStack.resetToRoot();
+        stackRegistry.modelStack.setLevel(0, { label: '模型', dir: '', items: buildModelRootItems() });
         stackRegistry.modelStack.reRender();
         return;
     }
