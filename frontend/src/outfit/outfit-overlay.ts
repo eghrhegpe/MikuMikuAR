@@ -3,14 +3,10 @@
 
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { Skeleton } from '@babylonjs/core/Bones/skeleton';
-import { Bone } from '@babylonjs/core/Bones/bone';
-import { Matrix } from '@babylonjs/core/Maths/math.matrix';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { Quaternion } from '@babylonjs/core/Maths/math.quaternion';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import type { Scene } from '@babylonjs/core/scene';
 
-import { modelRegistry, setStatus, type ModelInstance, type RuntimeModel } from '../core/config';
+import { type ModelInstance } from '../core/config';
 
 // ============================================================
 // URL helpers
@@ -158,7 +154,7 @@ export async function loadOverlay(
         // 尝试骨骼重定向
         let skeletonOk = false;
         if (inst.mmdModel) {
-            skeletonOk = retargetSkeleton(meshes, inst.mmdModel);
+            skeletonOk = retargetSkeleton(inst, meshes);
         }
 
         if (!skeletonOk) {
@@ -238,10 +234,16 @@ export function restoreMaterials(inst: ModelInstance): void {
 export function disposeOverlay(inst: ModelInstance): void {
     if (!inst._overlayMeshes) return;
 
+    // 获取 PMX skeleton 用于比较（避免误释放共享 skeleton）
+    const rootMeta = inst.rootMesh.metadata as { skeleton?: Skeleton } | undefined;
+    const pmxSkeleton = rootMeta?.skeleton;
+
+    const disposedSkeletons = new Set<Skeleton>();
     for (const mesh of inst._overlayMeshes) {
         try {
             // 如果 mesh 有独立 skeleton（未重定向成功），先释放
-            if (mesh.skeleton && mesh.skeleton !== (inst.mmdModel?.skeleton as unknown)) {
+            if (mesh.skeleton && mesh.skeleton !== pmxSkeleton && !disposedSkeletons.has(mesh.skeleton)) {
+                disposedSkeletons.add(mesh.skeleton);
                 mesh.skeleton.dispose();
             }
             mesh.dispose();

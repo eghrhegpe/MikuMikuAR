@@ -14,6 +14,7 @@ import {
 } from '../core/config';
 import { scene, _catOf } from '../scene/scene';
 import { triggerAutoSave } from '../core/config';
+import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
 
 interface MmdStandardMaterial extends StandardMaterial {
     toonTexture: Texture | null;
@@ -399,6 +400,23 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
     _captureOrigParams(inst);
 
     const promises: Promise<void>[] = [];
+
+    // overlay 处理（与纹理替换并行）：清理旧 overlay → 加载新 overlay → 隐藏 PMX 布料
+    promises.push(
+        (async () => {
+            if (inst._overlayMeshes) {
+                disposeOverlay(inst);
+                restoreMaterials(inst);
+            }
+            if (variant?.meshFile) {
+                const meshes = await loadOverlay(inst, variant.meshFile, scene);
+                if (meshes.length > 0 && variant.hideMaterials) {
+                    hideMaterials(inst, variant.hideMaterials);
+                }
+            }
+        })()
+    );
+
     for (let mi = 0; mi < inst.meshes.length; mi++) {
         const sm = inst.meshes[mi].material as StandardMaterial;
         if (!sm) {
@@ -512,6 +530,10 @@ export function resetOutfit(id: string): void {
             sm.ambientColor.set(p.ambientR, p.ambientG, p.ambientB);
         }
     }
+    // 清理 overlay mesh 并恢复被隐藏的 PMX 材质
+    disposeOverlay(inst);
+    restoreMaterials(inst);
+
     inst.activeVariant = undefined;
     inst.outfitFile = undefined;
     inst._origTextures = undefined;
