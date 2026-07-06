@@ -21,6 +21,8 @@ import {
     resetAllMatParams,
     isMatEnabled,
     setMatEnabled,
+    isMatCategoryAllEnabled,
+    setMatCategoryEnabled,
     getMaterialMeshes,
 } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
@@ -64,6 +66,11 @@ export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
                         title: `${cat} (${mats.length})`,
                         icon: CATEGORY_ICONS[cat] || 'box',
                         defaultOpen: false,
+                        headerToggle: {
+                            value: isMatCategoryAllEnabled(id, cat),
+                            onChange: (v) => setMatCategoryEnabled(id, cat, v),
+                            bind: () => isMatCategoryAllEnabled(id, cat),
+                        },
                         renderContent: (panel) => {
                             addSliderRow(panel, '漫反射倍率', params.diffuseMul, 0, 2, 0.05, (v) =>
                                 setMatCatParams(id, cat, { diffuseMul: v })
@@ -174,6 +181,11 @@ export function buildMatRootLevel(id: string, modelName: string, targetStack?: S
                         title: `${cat} (${count})`,
                         icon: 'lucide:layers',
                         defaultOpen: false,
+                        headerToggle: {
+                            value: isMatCategoryAllEnabled(id, cat),
+                            onChange: (v) => setMatCategoryEnabled(id, cat, v),
+                            bind: () => isMatCategoryAllEnabled(id, cat),
+                        },
                         renderContent: (inner) => {
                             for (const matInfo of mats) {
                                 const detail = detailList.find((d) => d.name === matInfo.mat.name);
@@ -184,57 +196,50 @@ export function buildMatRootLevel(id: string, modelName: string, targetStack?: S
                                 const matEnabled = isMatEnabled(id, idx);
                                 const mat = matInfo.mat as StandardMaterial;
 
-                                // 色块样式
-                                let swatchStyle: string;
-                                if (!matEnabled) {
-                                    swatchStyle = 'background:transparent;border:2px dashed var(--text-muted);';
-                                } else {
-                                    swatchStyle = 'background:#555';
-                                    try {
-                                        if (mat.diffuseColor) {
-                                            swatchStyle = `background:rgb(${Math.round(mat.diffuseColor.r * 255)},${Math.round(mat.diffuseColor.g * 255)},${Math.round(mat.diffuseColor.b * 255)})`;
-                                        }
-                                    } catch { /* ignore */ }
-                                }
-
                                 const row = document.createElement('div');
                                 row.className = `slide-item${!matEnabled ? ' mat-disabled' : ''}`;
                                 row.style.cssText = 'padding-left: 28px;';
                                 row.dataset.matIdx = String(idx);
                                 row.dataset.matCat = cat;
-                                row.innerHTML = `
-                  <span class="mat-swatch${!matEnabled ? ' mat-swatch-disabled' : ''}" style="${swatchStyle}"></span>
-                  <span class="slide-label">#${String(idx + 1).padStart(2, '0')} ${escapeHtml(matInfo.mat.name)}</span>
-                  ${detail.modified ? '<span class="slide-sublabel" style="color:var(--accent);">已修改</span>' : ''}
-                `;
 
-                                // 色块点击：增量更新当前行（不 reRender）
-                                const swatch = row.querySelector('.mat-swatch') as HTMLElement;
-                                swatch.addEventListener('click', (e) => {
+                                // Label
+                                const label = document.createElement('span');
+                                label.className = 'slide-label';
+                                label.textContent = `#${String(idx + 1).padStart(2, '0')} ${matInfo.mat.name}`;
+                                row.appendChild(label);
+
+                                if (detail.modified) {
+                                    const sub = document.createElement('span');
+                                    sub.className = 'slide-sublabel';
+                                    sub.style.color = 'var(--accent)';
+                                    sub.textContent = '已修改';
+                                    row.appendChild(sub);
+                                }
+
+                                // Standard toggle 开关（替代小圆点）
+                                const toggle = document.createElement('label');
+                                toggle.className = 'toggle header-toggle';
+                                toggle.style.marginLeft = 'auto';
+                                const toggleInput = document.createElement('input');
+                                toggleInput.type = 'checkbox';
+                                toggleInput.checked = matEnabled;
+                                const slider = document.createElement('span');
+                                slider.className = 'slider';
+                                toggle.appendChild(toggleInput);
+                                toggle.appendChild(slider);
+                                toggle.addEventListener('click', (e) => {
                                     e.stopPropagation();
                                     const newState = !isMatEnabled(id, idx);
                                     setMatEnabled(id, idx, newState);
                                     // 增量更新当前行 DOM
-                                    if (newState) {
-                                        let newStyle = 'background:#555';
-                                        try {
-                                            if (mat.diffuseColor) {
-                                                newStyle = `background:rgb(${Math.round(mat.diffuseColor.r * 255)},${Math.round(mat.diffuseColor.g * 255)},${Math.round(mat.diffuseColor.b * 255)})`;
-                                            }
-                                        } catch { /* ignore */ }
-                                        swatch.style.cssText = newStyle;
-                                        swatch.classList.remove('mat-swatch-disabled');
-                                        row.classList.remove('mat-disabled');
-                                    } else {
-                                        swatch.style.cssText = 'background:transparent;border:2px dashed var(--text-muted);';
-                                        swatch.classList.add('mat-swatch-disabled');
-                                        row.classList.add('mat-disabled');
-                                    }
+                                    toggleInput.checked = newState;
+                                    row.classList.toggle('mat-disabled', !newState);
                                     setStatus(
                                         newState ? `✓ 已显示: ${matInfo.mat.name}` : `✕ 已隐藏: ${matInfo.mat.name}`,
                                         true
                                     );
                                 });
+                                row.appendChild(toggle);
 
                                 // 行点击：只更新参数卡片，不重建列表
                                 row.addEventListener('click', () => {
@@ -363,56 +368,53 @@ export function buildMatListLevel(id: string, modelName: string, targetStack?: S
                     }
 
                     const matEnabled = isMatEnabled(id, detail.index);
-                    let swatchStyle: string;
-                    if (!matEnabled) {
-                        swatchStyle = 'background:transparent;border:2px dashed var(--text-muted);';
-                    } else {
-                        swatchStyle = 'background:#555';
-                        try {
-                            if (mat.diffuseColor) {
-                                swatchStyle = `background:rgb(${Math.round(mat.diffuseColor.r * 255)},${Math.round(mat.diffuseColor.g * 255)},${Math.round(mat.diffuseColor.b * 255)})`;
-                            }
-                        } catch {
-                            // Intentionally empty — 材质颜色读取失败时使用默认灰底，不影响功能
-                        }
-                    }
 
                     const row = document.createElement('div');
                     row.className = `mat-row${detail.modified ? ' modified' : ''}${!matEnabled ? ' mat-disabled' : ''}`;
-                    row.innerHTML = `
-            <span class="mat-swatch${!matEnabled ? ' mat-swatch-disabled' : ''}" style="${swatchStyle}"></span>
-            <span class="mat-index">#${String(detail.index + 1).padStart(2, '0')}</span>
-            <span class="mat-name" title="${escapeHtml(detail.name)}">${escapeHtml(detail.name)}</span>
-            ${detail.modified ? '<span class="mat-modified"><iconify-icon icon="check-circle"></iconify-icon></span>' : ''}
-          `;
-                    const swatch = row.querySelector('.mat-swatch') as HTMLElement;
-                    swatch.addEventListener('click', (e) => {
+
+                    const idxSpan = document.createElement('span');
+                    idxSpan.className = 'mat-index';
+                    idxSpan.textContent = `#${String(detail.index + 1).padStart(2, '0')}`;
+                    row.appendChild(idxSpan);
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'mat-name';
+                    nameSpan.title = detail.name;
+                    nameSpan.textContent = detail.name;
+                    row.appendChild(nameSpan);
+
+                    if (detail.modified) {
+                        const modSpan = document.createElement('span');
+                        modSpan.className = 'mat-modified';
+                        const icon = createIconifyIcon('check-circle');
+                        if (icon) modSpan.appendChild(icon);
+                        row.appendChild(modSpan);
+                    }
+
+                    // Standard toggle 开关（替代小圆点）
+                    const toggle = document.createElement('label');
+                    toggle.className = 'toggle header-toggle';
+                    toggle.style.marginLeft = 'auto';
+                    const toggleInput = document.createElement('input');
+                    toggleInput.type = 'checkbox';
+                    toggleInput.checked = matEnabled;
+                    const slider = document.createElement('span');
+                    slider.className = 'slider';
+                    toggle.appendChild(toggleInput);
+                    toggle.appendChild(slider);
+                    toggle.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const newState = !isMatEnabled(id, detail.index);
                         setMatEnabled(id, detail.index, newState);
-                        if (newState) {
-                            let newStyle = 'background:#555';
-                            try {
-                                if ((mat as StandardMaterial).diffuseColor) {
-                                    newStyle = `background:rgb(${Math.round((mat as StandardMaterial).diffuseColor.r * 255)},${Math.round((mat as StandardMaterial).diffuseColor.g * 255)},${Math.round((mat as StandardMaterial).diffuseColor.b * 255)})`;
-                                }
-                            } catch {
-                                // Intentionally empty — 材质颜色读取失败时使用默认灰底，不影响功能
-                            }
-                            swatch.style.cssText = newStyle;
-                            swatch.classList.remove('mat-swatch-disabled');
-                            row.classList.remove('mat-disabled');
-                        } else {
-                            swatch.style.cssText =
-                                'background:transparent;border:2px dashed var(--text-muted);';
-                            swatch.classList.add('mat-swatch-disabled');
-                            row.classList.add('mat-disabled');
-                        }
+                        toggleInput.checked = newState;
+                        row.classList.toggle('mat-disabled', !newState);
                         setStatus(
                             newState ? `✓ 已显示: ${detail.name}` : `✕ 已隐藏: ${detail.name}`,
                             true
                         );
                     });
+                    row.appendChild(toggle);
+
                     row.addEventListener('click', () => {
                         (targetStack ?? stackRegistry.modelStack)?.push(
                             buildPerMatLevel(id, modelName, detail.name, mat, detail.index, targetStack)
