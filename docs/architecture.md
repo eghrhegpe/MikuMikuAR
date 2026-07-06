@@ -129,6 +129,7 @@ type ModelEntry struct {
 | 收藏 | `menus/library.ts` + Go `ToggleFavorite`/`GetFavorites` | 底层存储在标签系统（内置标签「收藏」），自动迁移旧数据 |
 | 表情预览 | `menus/library.ts` + `scene/scene.ts` | 模型详情 → 表情预览，滑块调节所有 morph 权重 0~1，关闭弹窗自动重置 |
 | 模型统计信息 | `menus/library.ts` | 模型详情 → 模型信息，显示顶点/面/骨骼/表情数等 PMX 元数据 |
+| 导入文件 | `menus/library-core.ts` + `app.go` (`SelectImportFile`) | 模型库根菜单「导入文件」→ SAF 文件选择器（Android）/OS 对话框（桌面）→ 按扩展名自动路由：`.pmx` → `loadManager.load`，`.vmd` → `loadManager.load`，`.zip` → `ImportZip` + `refreshLibrary`。作为拖拽操作的触屏替代方案。 |
 
 ### 6. zip 容器
 
@@ -740,4 +741,137 @@ applyOutfitVariant(id, variantName)
 | 4 | zip 内模型无 outfits.json | 仅自动发现（需 zip 内包含子目录结构） |
 | 5 | 多模型共享同纹理 | 各自 inst._origTextures 独立备份 |
 
+
+
+### 18. VMD 图层系统（`scene/motion/vmd-layers.ts`）
+
+#### 18.1 概述
+
+VMD 图层系统允许在基础 VMD 之上叠加多个局部动作图层，通过 `MmdCompositeAnimation` 按权重混合骨骼变换。每个图层可指定 `boneFilter` 只控制特定骨骼，其余骨骼穿透到基础层。
+
+#### 18.2 数据结构
+
+```typescript
+interface VmdLayer {
+    id: string;              // crypto.randomUUID()
+    name: string;            // 显示名称（通常是 VMD 文件名）
+    path: string | null;     // 文件路径（null = 程序化生成）
+    data: ArrayBuffer;       // VMD 二进制数据
+    enabled: boolean;        // 是否参与混合
+    weight: number;          // 混合权重 0~1
+    boneFilter?: string[];   // 可选：只控制这些骨骼（其他穿透）
+}
+
+interface VmdLayerSerialized {
+    path: string | null;
+    name: string;
+    weight: number;
+    enabled: boolean;
+    boneFilter?: string[];
+}
+```
+
+图层数据存储在 `RuntimeModel.vmdLayers: VmdLayer[]`（`core/state.ts`）。
+
+#### 18.3 核心函数
+
+| 函数 | 说明 |
+|------|------|
+| `addVmdLayer(modelId, name, data, boneFilter?)` | 添加图层，自动 rebuild |
+| `addVmdLayersFromPaths(modelId, paths, boneFilter?)` | 批量添加（一次 rebuild），供反序列化用 |
+| `removeVmdLayer(modelId, layerId)` | 删除图层，自动 rebuild |
+| `toggleVmdLayer(modelId, layerId, enabled)` | 开关图层 |
+| `setVmdLayerWeight(modelId, layerId, weight)` | 调整权重 |
+| `clearVmdLayers(modelId)` | 清除所有图层 |
+| `_rebuildCompositeAnimation(modelId)` | 重建复合动画（核心函数） |
+
+#### 18.4 Composite 混合机制（`_rebuildCompositeAnimation`）
+
+三种路径，按条件选择：
+
+| 条件 | 路径 | 行为 |
+|------|------|------|
+| 无图层 | 单 VMD | 回退到 `loadVMDMotion(inst.vmdData)` |
+| 1 图层 + 无基础 VMD | 单 VMD（零拷贝优化） | 直接加载该图层 |
+| 多图层 / 有基础 VMD | MmdCompositeAnimation | 构建 composite + 权重归一化 |
+
+##### 权重归一化
+
+```typescript
+const totalWeight = sources.reduce((sum, s) => sum + s.weight, 0);
+const normalizedWeight = totalWeight > 0 ? src.weight / totalWeight : 0;
+```
+
+各 span 权重归一化到和 = 1.0，防止旋转插值溢出。
+
+#### 18.5 boneFilter — 骨骼级过滤
+
+##### 为什么不在 MmdBoneAnimationTrack 层面做
+
+`MmdBoneAnimationTrack` 内部使用 typed array + 二进制布局，无公开 API 安全移除轨道。改写会破坏内存结构且不可逆。
+
+##### VMD 二进制过滤方案
+
+在 VMD 二进制层面过滤骨骼帧：
+
+```
+VMD 头部 (54B) — 签名(30) + 模型名(20) + 骨骼帧数(uint32)
+  ├─ 骨骼帧 [0]  — 111B: 骨骼名(15) + 位置(12) + 旋转(16) + 插值曲线(68)
+  ├─ 骨骼帧 [1]  — 111B
+  ├─ ...
+  ├─ 骨骼帧 [N-1] — 111B
+  └─ 尾部 — morph 帧 + 相机/light/shadow/ik 数据
+```
+
+过滤流程：
+1. 读骨骼帧数（offset 50）
+2. 遍历每帧 111B，解码骨骼名（Shift-JIS → UTF-8）
+3. 只保留匹配 `boneFilter` 的帧
+4. 全匹配 → 返回原 `ArrayBuffer` 引用（零拷贝）
+5. 部分匹配 → 重建二进制：头部(54B) + 新帧数 + 保留帧 + 完整尾部
+
+**插值曲线完整保留**：每帧 111B 整块复制，68B 插值曲线不需要重新解析。
+
+##### 解码依赖
+
+`encoding-japanese` 库解码 Shift-JIS（VMD 标准编码）。
+
+#### 18.6 WASM 运行时回退
+
+`MmdWasmRuntime` 不支持 `MmdCompositeAnimation`。检测到 WASM 时：
+
+```typescript
+if (mmdRuntime instanceof MmdWasmRuntime) {
+    console.warn(`[MotionLayers] WASM runtime: only primary layer supported`);
+    // 只加载第一个源
+    await loadVMDMotion(primarySrc.data, primarySrc.name, modelId);
+    setStatus('⚠ WASM 仅支持单图层', false);
+    return;
+}
+```
+
+JS 运行时（`VITE_MMD_RUNTIME=js`）完整支持。
+
+#### 18.7 场景序列化
+
+图层配置存储在 `SceneFile` 的 `models[].vmdLayers` 数组：
+
+```json
+{
+    "vmdPath": "base.vmd",
+    "vmdLayers": [
+        { "path": "handwave.vmd", "name": "handwave", "weight": 0.8, "enabled": true, "boneFilter": ["左手親指", "左手人指"] }
+    ]
+}
+```
+
+反序列化使用 `addVmdLayersFromPaths` 批量 API，避免 N 次 rebuild（详情见 [ADR-051](adr/adr-051-vmd-layers-bonefilter.md)）。
+
+#### 18.8 与视线追踪的关系（参见 ADR-016）
+
+视线追踪在 `onBeforeRenderObservable` 中覆写特定骨骼的局部旋转。VMD 图层的 boneFilter 则是在加载层面过滤骨骼帧，两者互补：
+- **boneFilter**：让图层只控制指定骨骼，其他骨骼不动（适合左手/头/上半身等粗粒度区域）
+- **视线追踪**：每帧动态覆写头部/眼球骨骼旋转（需要运行时交互）
+
 ---
+
