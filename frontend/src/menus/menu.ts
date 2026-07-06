@@ -360,8 +360,8 @@ export class SlideMenu {
             // === 自定义渲染 / 空列表 → 全量重建 ===
             this.buildPanel(level).then(finalize);
         } else {
-            // === 纯 items → 增量 patch ===
-            this.patchPanel(level.items);
+            // === 纯 items → 全量重建（card-per-divider 结构不支持增量 patch） ===
+            this.buildPanel(level).then(finalize);
             finalize();
         }
     }
@@ -506,14 +506,17 @@ export class SlideMenu {
 
     /** 增量 patch 当前 panel：只创建/替换/删除有变化的行 */
     private patchPanel(items: PopupRow[]): void {
-        if (items.length === 0) return; // 空 items 意味着不需要 patch 行
+        if (items.length === 0) return;
         const list = this.panel.querySelector('.slide-list');
         if (!list) {
             this.buildPanel(this.currentLevel!);
             return;
         }
 
-        const oldChildren = Array.from(list.children) as HTMLElement[];
+        // 如果有 lcard 包裹，在 lcard 内部 patch
+        const card = list.querySelector('.lcard') as HTMLElement | null;
+        const container = card || list;
+        const oldChildren = Array.from(container.children) as HTMLElement[];
         const maxLen = Math.max(oldChildren.length, items.length);
 
         // 1. 删除多余的行（从后往前，避免索引偏移）
@@ -538,7 +541,7 @@ export class SlideMenu {
             } else {
                 // 追加新行
                 const newEl = this.createRow(newRow);
-                if (newEl) list.appendChild(newEl);
+                if (newEl) container.appendChild(newEl);
             }
         }
     }
@@ -553,22 +556,33 @@ export class SlideMenu {
 
         if (level.items.length === 0 && !level.renderCustom) {
             list.innerHTML = '<div class="slide-empty">暂无内容</div>';
+        } else if (level.items.length > 0 && !level.renderCustom) {
+            // 纯 items 菜单：按 divider 分组，每组包一个 lcard
+            let card: HTMLElement | null = null;
+            for (const row of level.items) {
+                if (row.kind === 'divider') {
+                    card = null; // 关闭当前组，下一个非 divider 行开启新组
+                    continue;
+                }
+                if (!card) {
+                    card = document.createElement('div');
+                    card.className = 'lcard';
+                    list.appendChild(card);
+                }
+                const el = this.createRow(row);
+                if (el) card.appendChild(el);
+            }
         } else {
-            // 始终渲染 items 导航行
+            // 有 renderCustom：先渲染 items 导航行，再调自定义回调
             for (const row of level.items) {
                 const el = this.createRow(row);
-                if (el) {
-                    list.appendChild(el);
-                }
+                if (el) list.appendChild(el);
             }
-            // 如有 renderCustom，追加自定义内容（压入渲染栈，让控件能自动注册）
-            if (level.renderCustom) {
-                _renderingStack.push(this);
-                try {
-                    await level.renderCustom(list);
-                } finally {
-                    _renderingStack.pop();
-                }
+            _renderingStack.push(this);
+            try {
+                await level.renderCustom(list);
+            } finally {
+                _renderingStack.pop();
             }
         }
         // 只有最新的 build 才 appendChild，防止并发导致重复
