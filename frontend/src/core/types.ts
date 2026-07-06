@@ -14,6 +14,7 @@ export type ModelKind = 'actor' | 'stage';
 export type VmdLayer = {
     id: string;
     name: string;
+    kind: 'vmd' | 'gaze';
     data: ArrayBuffer;
     path: string | null;
     weight: number;
@@ -236,6 +237,9 @@ export interface EnvState {
     groundTexture: string;
     groundTextureEnabled: boolean;
     groundTextureScale: number;
+    groundTextureRotation: number; // 纹理旋转角度 (0-360)
+    groundGridSize: number;       // 网格/棋盘格大小 (0.5-5)
+    groundLineColor: [number, number, number]; // 网格线颜色 / 棋盘格第二色
 
     windEnabled: boolean;
     windDirection: [number, number, number];

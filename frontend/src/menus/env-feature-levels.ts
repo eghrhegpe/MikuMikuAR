@@ -116,6 +116,7 @@ export function buildGroundLevel(): PopupLevel {
             const s = envState;
             cardContainer(container, (c) => {
                 addToggleRow(c, '显示地面', s.groundVisible, (v) => setEnvState({ groundVisible: v }));
+                addSliderRow(c, '地面高度', s.groundLevel, -5, 5, 0.1, (v) => setEnvState({ groundLevel: v }), 'lucide:move-vertical');
                 addModeSlider(c, '地面模式', [
                     { value: 'solid', label: '纯色' },
                     { value: 'grid', label: '网格' },
@@ -132,6 +133,19 @@ export function buildGroundLevel(): PopupLevel {
                 });
                 if (s.groundMode === 'solid' || s.groundMode === 'checker') {
                     addSliderRow(c, '透明度', s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), 'lucide:eye');
+                }
+                // Grid/Checker 模式下的网格/棋盘格大小和第二颜色
+                if (s.groundMode === 'grid') {
+                    addSliderRow(c, '网格大小', s.groundGridSize, 0.5, 5, 0.1, (v) => setEnvState({ groundGridSize: v }), 'lucide:grid-3x3');
+                    addColorSliderRow(c, '网格线色', s.groundLineColor, (v) => { setEnvState({ groundLineColor: v }); }, {
+                        bind: () => envState.groundLineColor,
+                    });
+                }
+                if (s.groundMode === 'checker') {
+                    addSliderRow(c, '棋盘格大小', s.groundGridSize, 0.5, 5, 0.1, (v) => setEnvState({ groundGridSize: v }), 'lucide:grid-3x3');
+                    addColorSliderRow(c, '第二颜色', s.groundLineColor, (v) => { setEnvState({ groundLineColor: v }); }, {
+                        bind: () => envState.groundLineColor,
+                    });
                 }
                 if (s.groundMode === 'texture') {
                     const texturePresets = [
@@ -152,7 +166,55 @@ export function buildGroundLevel(): PopupLevel {
                         });
                     }
                     c.appendChild(chipRow);
+                    // 自定义纹理上传
+                    const texRow = document.createElement('div');
+                    texRow.className = 'cs-row';
+                    const texLabel = document.createElement('span');
+                    texLabel.textContent = '自定义纹理';
+                    texRow.appendChild(texLabel);
+                    const texBtn = document.createElement('button');
+                    texBtn.className = 'cs-btn cs-btn-sm';
+                    texBtn.textContent = s.groundTexture && !s.groundTexture.startsWith('textures/') ? '更换' : '选择';
+                    const ensureClearBtn = (): HTMLButtonElement => {
+                        const existing = texRow.querySelector<HTMLButtonElement>('button.cs-btn[data-clear]');
+                        if (existing) return existing;
+                        const btn = document.createElement('button');
+                        btn.className = 'cs-btn cs-btn-sm';
+                        btn.dataset.clear = '1';
+                        btn.textContent = '清除';
+                        btn.onclick = () => {
+                            setEnvState({ groundTexture: '', groundTextureEnabled: false });
+                            texBtn.textContent = '选择';
+                            btn.remove();
+                        };
+                        texRow.appendChild(btn);
+                        return btn;
+                    };
+                    texBtn.onclick = () => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = () => {
+                            const file = input.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                const url = e.target?.result as string ?? '';
+                                setEnvState({ groundTexture: url, groundTextureEnabled: !!url });
+                                texBtn.textContent = '更换';
+                                ensureClearBtn();
+                            };
+                            reader.readAsDataURL(file);
+                        };
+                        input.click();
+                    };
+                    texRow.appendChild(texBtn);
+                    if (s.groundTexture && !s.groundTexture.startsWith('textures/')) {
+                        ensureClearBtn();
+                    }
+                    c.appendChild(texRow);
                     addSliderRow(c, '纹理缩放', s.groundTextureScale, 0.1, 5, 0.1, (v) => setEnvState({ groundTextureScale: v }), 'lucide:zoom-in');
+                    addSliderRow(c, '纹理旋转', s.groundTextureRotation, 0, 360, 1, (v) => setEnvState({ groundTextureRotation: v }), 'lucide:rotate-cw');
                 }
             });
         },

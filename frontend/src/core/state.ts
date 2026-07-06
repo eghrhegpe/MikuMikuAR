@@ -274,6 +274,9 @@ export const envState: EnvState = reactive<EnvState>({
     groundTexture: '',
     groundTextureEnabled: false,
     groundTextureScale: 1,
+    groundTextureRotation: 0,
+    groundGridSize: 1,
+    groundLineColor: [0.5, 0.5, 0.55],
 
     windEnabled: true,
     windDirection: [0, 0, 1],
