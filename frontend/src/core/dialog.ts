@@ -121,6 +121,80 @@ function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
     });
 }
 
+/**
+ * Show an error dialog with a copy button.
+ * The error message is displayed in a scrollable area, and the user can
+ * copy the full message to clipboard with one click.
+ */
+export function showErrorAction(title: string, message: string): void {
+    const overlay = getOverlay();
+    const dialog = overlay.querySelector('.mmd-dialog') as HTMLElement;
+    const titleEl = overlay.querySelector('.mmd-dialog-title') as HTMLElement;
+    const msgEl = overlay.querySelector('.mmd-dialog-message') as HTMLElement;
+    const inputEl = overlay.querySelector('.mmd-dialog-input') as HTMLInputElement;
+    const confirmBtn = overlay.querySelector('.mmd-dialog-confirm') as HTMLButtonElement;
+    const cancelBtn = overlay.querySelector('.mmd-dialog-cancel') as HTMLButtonElement;
+
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+    msgEl.style.display = '';
+    msgEl.style.maxHeight = '200px';
+    msgEl.style.overflowY = 'auto';
+    msgEl.style.userSelect = 'text';
+    msgEl.style.cursor = 'text';
+    msgEl.style.fontSize = '12px';
+    msgEl.style.fontFamily = 'monospace';
+    msgEl.style.background = 'rgba(0,0,0,0.25)';
+    msgEl.style.padding = '8px 10px';
+    msgEl.style.borderRadius = '6px';
+    msgEl.style.whiteSpace = 'pre-wrap';
+    msgEl.style.wordBreak = 'break-all';
+    inputEl.style.display = 'none';
+
+    cancelBtn.textContent = '关闭';
+    confirmBtn.textContent = '复制';
+
+    const cleanup = () => {
+        overlay.classList.remove('mmd-dialog-visible');
+    };
+
+    const onCopy = () => {
+        navigator.clipboard.writeText(message).then(() => {
+            confirmBtn.textContent = '已复制 ✓';
+            setTimeout(() => { confirmBtn.textContent = '复制'; }, 1500);
+        }).catch(() => {
+            // fallback: select the message text
+            const range = document.createRange();
+            range.selectNodeContents(msgEl);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+        });
+    };
+
+    const onClose = () => {
+        cleanup();
+    };
+
+    // Clone to remove old listeners
+    const newConfirm = confirmBtn.cloneNode(true) as HTMLButtonElement;
+    const newCancel = cancelBtn.cloneNode(true) as HTMLButtonElement;
+    confirmBtn.replaceWith(newConfirm);
+    cancelBtn.replaceWith(newCancel);
+
+    newConfirm.addEventListener('click', onCopy);
+    newCancel.addEventListener('click', onClose);
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+    }, { once: true });
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) onClose();
+    }, { once: true });
+
+    overlay.classList.add('mmd-dialog-visible');
+    dialog.style.display = '';
+}
+
 /** Show a confirmation dialog. Returns true if confirmed, false if cancelled. */
 export function showConfirm(
     message: string,
