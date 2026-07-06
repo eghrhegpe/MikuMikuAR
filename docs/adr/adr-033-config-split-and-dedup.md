@@ -1,4 +1,4 @@
-# ADR-032: config.ts 四向分裂 + tryCatchStatus 泛化 + slideRow 收束
+# ADR-033: config.ts 四向分裂 + tryCatchStatus 泛化 + slideRow 收束
 
 **日期**：2026-07-05
 > **状态**: 已完成 — config.ts 分裂、tryCatchStatus 替换 13 处、slideRow 替换 5 处，tsc + vite build 通过
@@ -110,3 +110,4 @@ if (r !== undefined) {
 - **构建时间**：零影响。barrel import 在 Vite tree-shaking 下与内联 import 等价。
 - **调试**：所有 `tryCatchStatus` 错误自带 `console.warn('[context]', err)`，定位问题更易。
 - **迁移风险**：config.ts barrel re-export 保持引用兼容，无需修改任何现有 import 语句。
+

@@ -1,4 +1,4 @@
-# ADR-033: 菜单体系大统一 — slideRow + cardContainer + lcard
+# ADR-034: 菜单体系大统一 — slideRow + cardContainer + lcard
 
 **日期**: 2026-07-05
 > **状态**: 已完成 — 全量迁移完成，所有菜单面板统一为 slideRow/cardContainer 体系，CSS 变量集中管理
@@ -94,3 +94,4 @@ slideRow(container, icon, label, hasArrow, onClick, sublabel?, tag?, headerToggl
 - **XSS 消除**：`slideRow` / `addToggleRow` / `addSliderRow` 全部使用 `textContent` 而非 `innerHTML`，新建的菜单项天然免疫 XSS
 - **审计友好**：`cardContainer` / `slideRow` 可以单点加日志或监控，不需要改 16 个文件
 - **历史痕迹**：迁入统一体系前的老文件仍有 `style.cssText` / `innerHTML` 残留，audit 清单中标记为 P1/P2 逐步清理
+

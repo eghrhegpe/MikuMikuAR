@@ -1,4 +1,4 @@
-# ADR-035: P2 功能批量交付 — Lifelike / Formation / Auto Camera / Scene Bundle
+# ADR-037: P2 功能批量交付 — Lifelike / Formation / Auto Camera / Scene Bundle
 
 **日期**：2026-07-05
 > **状态**: 已完成
@@ -127,7 +127,7 @@ hold 参数默认 false，176 处现有调用无需改动。
 ### 关联 ADR
 
 - ADR-021（程序化动作）：Lifelike 是程序化动作系统的扩展
-- ADR-035 §1（Motion Layers）：复用图层系统实现叠加
+- ADR-037 §1（Motion Layers）：复用图层系统实现叠加
 
 ---
 
@@ -253,3 +253,4 @@ BeatDetector 新增 `onBeat` 回调机制，Auto Camera 监听 beat 事件按节
 | frontend/src/scene/scene-serialize.ts | 导出 resolvePathFromRef |
 | frontend/src/menus/scene-menu.ts | 导出/导入入口 |
 | frontend/bindings/.../app.ts | +BundleScene + SelectBundleSaveFile（占位 ID） |
+

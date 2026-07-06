@@ -1,4 +1,4 @@
-# ADR-036: 动作系统审计修复 + 雾系统增强 + 颜色滑块拖拽
+# ADR-038: 动作系统审计修复 + 雾系统增强 + 颜色滑块拖拽
 
 **日期**：2026-07-05
 > **状态**: 已完成
@@ -157,3 +157,4 @@
 | menus/env-feature-levels.ts | 雾模式选择器 + 条件参数可见性 |
 | internal/app/app.go | FogMode/FogStart/FogEnd 字段 |
 | bindings/mikumikuar/internal/app/models.ts | 绑定层同步 |
+
