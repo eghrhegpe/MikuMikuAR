@@ -905,7 +905,18 @@ export async function refreshLibrary(): Promise<void> {
 // ======== Import file via SAF file picker ========
 
 export async function importFile(): Promise<void> {
-    const path = await SelectImportFile();
+    let path: string;
+    try {
+        path = await SelectImportFile();
+    } catch (err) {
+        // 用户取消文件选择 — Wails 抛 "cancelled by user"，静默忽略
+        const msg = err instanceof Error ? err.message
+            : (err && typeof err === 'object' && 'message' in err) ? String((err as { message: unknown }).message)
+            : String(err);
+        if (/cancelled by user/i.test(msg)) return;
+        setStatus('✗ 选择文件失败: ' + formatError(err), false);
+        return;
+    }
     if (!path) return;
     const lower = path.toLowerCase();
     if (lower.endsWith('.zip')) {
