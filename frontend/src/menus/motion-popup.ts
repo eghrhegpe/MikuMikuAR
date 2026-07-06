@@ -28,10 +28,10 @@ import { registerPopupMenu } from './menu-factory';
 import { slideRow, addSliderRow, addToggleRow, addEmptyRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
+import { loadManager } from '../core/load-manager';
+
 import {
-    loadVMDFromPath,
     loadVPDPose,
-    loadCameraVmdFromPath,
     updatePlaybackUI,
     focusModel,
     getPhysicsCategories,
@@ -51,7 +51,6 @@ import {
     clearVmdLayers,
 } from '../scene/motion/vmd-layers';
 import {
-    loadAudioFile,
     clearAudio,
     setAudioOffset,
     getAudioName,
@@ -249,9 +248,9 @@ function motionOnItemClick(row: PopupRow): void {
     if (row.model) {
         if (row.model.format === 'vmd' && motionBindingTargetId) {
             hideMotionPopup();
-            loadVMDFromPath(row.model.file_path, motionBindingTargetId).catch((err) => {
+            loadManager.load({ kind: 'vmd', path: row.model.file_path, modelId: motionBindingTargetId }).catch((err) => {
                 setStatus('✗ 动作加载失败', false);
-                console.warn('motion-popup loadVMDFromPath:', err);
+                console.warn('motion-popup load vmd:', err);
             });
             setMotionBindingTargetId(null);
             return;
@@ -259,9 +258,9 @@ function motionOnItemClick(row: PopupRow): void {
         hideMotionPopup();
         if (row.model.format === 'vmd') {
             if (motionBindingTargetId) {
-                loadVMDFromPath(row.model.file_path);
+                loadManager.load({ kind: 'vmd', path: row.model.file_path });
             } else {
-                loadCameraVmdFromPath(row.model.file_path).then(() => {
+                loadManager.load({ kind: 'camera-vmd', path: row.model.file_path }).then(() => {
                     const menu = getMotionMenu();
                     if (menu) menu.reRender();
                 }).catch((err) => {
@@ -271,7 +270,7 @@ function motionOnItemClick(row: PopupRow): void {
             return;
         }
         if (row.model.format === 'audio') {
-            loadAudioFile(row.model.file_path);
+            loadManager.load({ kind: 'audio', path: row.model.file_path });
             setStatus(`✓ 音乐: ${getAudioName()}`, true);
             if (getMotionMenu()) getMotionMenu()?.reRender();
             return;
@@ -354,7 +353,7 @@ function buildRecentMotionsLevel(): PopupLevel {
                 for (const r of recent) {
                     slideRow(c, 'lucide:music', r.name, false, () => {
                         hideMotionPopup();
-                        loadVMDFromPath(r.path).catch((err) => {
+                        loadManager.load({ kind: 'vmd', path: r.path }).catch((err) => {
                             setStatus('✗ 动作加载失败', false);
                             console.warn('recent motion load:', err);
                         });

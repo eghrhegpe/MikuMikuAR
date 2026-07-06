@@ -26,6 +26,7 @@ import {
 } from './config';
 import { registerIconBundle } from './icons-bundle';
 import { GetConfig, ImportZip, ImportLocalFile, Events } from './wails-bindings';
+import { loadManager } from './load-manager';
 import {
     initScene,
     engine,
@@ -36,8 +37,6 @@ import {
     seekFromEvent,
     tryRestoreLastScene,
     setEnvState,
-    loadPMXFile,
-    loadVMDFromPath,
 } from '../scene/scene';
 import { focusModel } from '../scene/manager/model-ops';
 import {
@@ -702,18 +701,18 @@ async function handleDropFile(path: string): Promise<void> {
     } else if (lower.endsWith('.pmx')) {
         setStatus('⏳ 加载模型...', false);
         try {
-            await loadPMXFile(path);
+            await loadManager.load({ kind: 'actor', path });
         } catch (err) {
             setStatus('✗ 模型加载失败: ' + formatError(err), false);
-            console.error('loadPMXFile failed:', err);
+            console.error('loadManager actor failed:', err);
         }
     } else if (lower.endsWith('.vmd')) {
         setStatus('⏳ 加载动作...', false);
         try {
-            await loadVMDFromPath(path);
+            await loadManager.load({ kind: 'vmd', path });
         } catch (err) {
             setStatus('✗ VMD 加载失败: ' + formatError(err), false);
-            console.error('loadVMDFromPath failed:', err);
+            console.error('loadManager vmd failed:', err);
         }
     }
 }

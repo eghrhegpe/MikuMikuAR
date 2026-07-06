@@ -55,7 +55,8 @@ import {
     librarySortMode,
     setPendingVmd,
 } from '../core/config';
-import { loadPMXFile, loadVMDFromPath, removeModel, loadAudioFile } from '../scene/scene';
+import { loadManager } from '../core/load-manager';
+import { removeModel } from '../scene/scene';
 import { addVmdLayerFromPath } from '../scene/motion/vmd-layers';
 import { loadVPDPose } from '../scene/scene';
 import {
@@ -174,7 +175,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 }
                 if (row.model.format === 'vmd' && motionBindingTargetId) {
                     closeAllOverlays();
-                    loadVMDFromPath(row.model.file_path, motionBindingTargetId);
+                    loadManager.load({ kind: 'vmd', path: row.model.file_path, modelId: motionBindingTargetId });
                     setMotionBindingTargetId(null);
                     return;
                 }
@@ -274,12 +275,12 @@ function renderItemsWithRAF(
                         const next = buildLevel(item.target, item.label, filter, targetStack);
                         const stack = targetStack || stackRegistry.modelStack;
                         stack.push(next);
-                    } else if (item.model) {
+                    } else                     if (item.model) {
                         if (item.model.format === 'vmd' && motionBindingTargetId) {
                             const id = motionBindingTargetId;
                             setMotionBindingTargetId(null);
                             closeAllOverlays();
-                            loadVMDFromPath(item.model.file_path, id);
+                            loadManager.load({ kind: 'vmd', path: item.model.file_path, modelId: id });
                         } else {
                             onModelRowClick(item.model);
                         }
@@ -316,7 +317,7 @@ function renderItemsWithRAF(
                             const id = motionBindingTargetId;
                             setMotionBindingTargetId(null);
                             closeAllOverlays();
-                            loadVMDFromPath(item.model.file_path, id);
+                            loadManager.load({ kind: 'vmd', path: item.model.file_path, modelId: id });
                         } else {
                             onModelRowClick(item.model);
                         }
@@ -502,15 +503,15 @@ function onModelRowClick(m: LibraryModel): void {
         closeAllOverlays();
         setStatus('正在解压 zip...', false);
         _isExtracting = true;
-        ExtractZip(m.file_path, m.zip_inner)
-            .then((result) => {
-                setStatus(result.cached ? '✓ 命中缓存' : '✓ 解压完成', true);
-                if (m.format === 'vmd') {
-                    loadVMDFromPath(result.file_path);
-                } else {
-                    loadPMXFile(result.file_path, isStage);
-                }
-            })
+                ExtractZip(m.file_path, m.zip_inner)
+                    .then((result) => {
+                        setStatus(result.cached ? '✓ 命中缓存' : '✓ 解压完成', true);
+                        if (m.format === 'vmd') {
+                            loadManager.load({ kind: 'vmd', path: result.file_path });
+                        } else {
+                            loadManager.load({ kind: isStage ? 'stage' : 'actor', path: result.file_path });
+                        }
+                    })
             .catch((err) => {
                 setStatus('✗ 解压失败: ' + formatError(err), false);
             })
@@ -521,11 +522,11 @@ function onModelRowClick(m: LibraryModel): void {
     }
     closeAllOverlays();
     if (m.format === 'pmx') {
-        loadPMXFile(m.file_path, isStage);
+        loadManager.load({ kind: isStage ? 'stage' : 'actor', path: m.file_path });
     } else if (m.format === 'vmd') {
-        loadVMDFromPath(m.file_path);
+        loadManager.load({ kind: 'vmd', path: m.file_path });
     } else if (m.format === 'audio') {
-        loadAudioFile(m.file_path);
+        loadManager.load({ kind: 'audio', path: m.file_path });
     } else if (m.format === 'vpd') {
         loadVPDPose(m.file_path);
     }

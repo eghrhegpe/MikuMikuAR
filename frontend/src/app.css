@@ -1379,8 +1379,9 @@ input, textarea, [contenteditable] {
     color: var(--text-bright);
     font-variant-numeric: tabular-nums;
 }
+/* standalone / cs-row column: explicit width fills parent */
 .cs-bar {
-    flex: 1;
+    width: 100%;
     height: var(--cs-bar-height);
     background: var(--white-12);
     border-radius: var(--cs-bar-radius);
@@ -1390,6 +1391,11 @@ input, textarea, [contenteditable] {
     box-shadow:
         inset 0 1px 2px rgba(0, 0, 0, 0.3),
         0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+/* clr-row flex context: bar fills remaining inline space */
+.clr-row .cs-bar {
+    flex: 1;
+    width: auto;
 }
 .cs-bar::before {
     content: '';

@@ -62,27 +62,37 @@ class LoadManager {
                 case 'stage': {
                     const { loadPMXFile } = await import('../scene/manager/model-loader');
                     const id = await loadPMXFile(req.path, req.kind === 'stage', req.skipAutoApply);
-                    return id ? { id, kind: req.kind, name: '', filePath: req.path } : null;
+                    if (!id) return null;
+                    const { modelRegistry } = await import('./config');
+                    const inst = modelRegistry.get(id);
+                    this._refreshMenus();
+                    return { id, kind: req.kind, name: inst?.name ?? '', filePath: req.path };
                 }
                 case 'prop': {
                     const { loadProp } = await import('../scene/env/props');
                     const id = await loadProp(req.path);
-                    return id ? { id, kind: 'prop', name: '', filePath: req.path } : null;
+                    if (!id) return null;
+                    const { propRegistry } = await import('./config');
+                    const inst = propRegistry.get(id);
+                    return { id, kind: 'prop', name: inst?.name ?? '', filePath: req.path };
                 }
                 case 'vmd': {
                     const { loadVMDFromPath } = await import('../scene/motion/vmd-loader');
                     await loadVMDFromPath(req.path, req.modelId);
-                    return null;
+                    const fileName = req.path.split(/[\\/]/).pop() || '';
+                    return { id: '', kind: 'vmd', name: fileName.replace(/\.vmd$/i, ''), filePath: req.path };
                 }
                 case 'camera-vmd': {
                     const { loadCameraVmdFromPath } = await import('../scene/motion/vmd-loader');
                     await loadCameraVmdFromPath(req.path);
-                    return null;
+                    const fileName = req.path.split(/[\\/]/).pop() || '';
+                    return { id: '', kind: 'camera-vmd', name: fileName.replace(/\.vmd$/i, ''), filePath: req.path };
                 }
                 case 'audio': {
                     const { loadAudioFile } = await import('../outfit/audio');
                     await loadAudioFile(req.path);
-                    return null;
+                    const fileName = req.path.split(/[\\/]/).pop() || '';
+                    return { id: '', kind: 'audio', name: fileName.replace(/\.(mp3|wav|ogg|flac)$/i, ''), filePath: req.path };
                 }
                 default:
                     return null;
@@ -90,6 +100,15 @@ class LoadManager {
         } finally {
             this._current = null;
         }
+    }
+
+    /** 模型加载成功后刷新依赖模型列表的菜单。 */
+    private _refreshMenus(): void {
+        import('../menus/motion-popup').then(({ refreshMotionRoot }) => {
+            refreshMotionRoot();
+        }).catch(() => {
+            // motion-popup 可能未注册，静默忽略
+        });
     }
 }
 
