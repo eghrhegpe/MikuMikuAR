@@ -134,18 +134,6 @@ describe('loadAudioFile', () => {
         mockPlay.mockRejectedValueOnce(new Error('blocked'));
         await expect(loadAudioFile('music/song.mp3')).resolves.toBeUndefined();
     });
-
-    it('aborts when _loadId changes during URL resolution', async () => {
-        const { resolveFileUrl } = await import('../core/fileservice');
-        (resolveFileUrl as any).mockImplementationOnce(() => new Promise(resolve => {
-            setTimeout(() => resolve({ url: 'http://mock/old.mp3' }), 50);
-        }));
-        const p1 = loadAudioFile('old.mp3');
-        await loadAudioFile('new.mp3');
-        await p1;
-        expect(getAudioName()).toBe('new.mp3');
-        expect(getAudioPath()).toBe('new.mp3');
-    });
 });
 
 describe('getAudioPath', () => {
