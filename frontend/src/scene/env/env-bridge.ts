@@ -225,8 +225,10 @@ export function startTimeOfDay(speed?: number): void {
 export function stopTimeOfDay(): void {
     _timeOfDayActive = false;
     envState.timeOfDayActive = false;
-    _unregisterTimeOfDay();
-    _unregisterTimeOfDay = null;
+    if (_unregisterTimeOfDay) {
+        _unregisterTimeOfDay();
+        _unregisterTimeOfDay = null;
+    }
     // 持久化当前 sunAngle 到后端
     SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
 }

@@ -13,6 +13,10 @@ import {
     pendingVmd,
     setPendingVmd,
     ModelInstance,
+    PropInstance,
+    propRegistry,
+    overridePaths,
+    libraryRoot,
     triggerAutoSave,
     formatError,
     type RuntimeModel,
@@ -262,6 +266,25 @@ export async function loadPMXFile(
             }
         }
         setFocusedModelId(id);
+
+        // 道具路径下的模型同时注册到 propRegistry（兼容灯光/阴影/序列化）
+        const propDir = (overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')).toLowerCase();
+        if (propDir && filePath.toLowerCase().startsWith(propDir)) {
+            const rootMesh = inst.meshes[0];
+            propRegistry.set(id, {
+                id,
+                name: displayName,
+                filePath,
+                port,
+                modelDir,
+                meshes: inst.meshes,
+                rootMesh,
+                position: [0, 0, 0],
+                rotationY: 0,
+                scaling: 1.0,
+                visible: true,
+            });
+        }
 
         // Apply pending VMD if any — failure is isolated, won't roll back model
         let appliedVmd = '';
