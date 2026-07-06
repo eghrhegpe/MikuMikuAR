@@ -217,7 +217,12 @@ func (a *App) writeConfigAndRescan(cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "index.json"), idxData, 0644)
+	idxPath := filepath.Join(dir, "index.json")
+	idxTmpPath := idxPath + ".tmp"
+	if err := os.WriteFile(idxTmpPath, idxData, 0644); err != nil {
+		return err
+	}
+	return os.Rename(idxTmpPath, idxPath)
 }
 
 // GetLibraryIndex reads the last scanned index from disk.
