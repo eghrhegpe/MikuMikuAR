@@ -11,12 +11,12 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
-import { focusedModelId, modelRegistry, uiState } from '../../core/config';
-import { focusModel, reattachPipeline } from '../scene';
+import { focusedModelId, modelRegistry, uiState, setStatus } from '../../core/config';
+import { focusModel, reattachPipeline, setARMode } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
 
 // ======== Types ========
-export type CameraMode = 'orbit' | 'freefly' | 'concert' | 'oneshot' | 'vmd';
+export type CameraMode = 'orbit' | 'freefly' | 'concert' | 'oneshot' | 'vmd' | 'ar';
 
 /** Orbit camera parameters. */
 export interface OrbitParams {
@@ -109,6 +109,7 @@ export function setConcertParams(p: Partial<ConcertParams>): void {
 let _scene: Scene | null = null;
 let _canvas: HTMLCanvasElement | null = null;
 let _cameraMode: CameraMode = 'orbit';
+let _previousMode: CameraMode = 'orbit';
 let _currentCamera: Camera | null = null;
 let _fov = 0.8; // default FOV, migrated from RenderState in Phase 9
 
@@ -182,7 +183,7 @@ export function clearCameraVmd(): void {
             switchCameraMode('orbit');
         }
         _scene.removeCamera(_mmdCamera);
-        _mmdCamera.dispose(); // 释放 GPU 资源，避免反复加载/清除相机 VMD 时内存泄漏
+        _mmdCamera.dispose();
         _mmdCamera = null;
         _cameraAnimationHandle = null;
         _cameraVmdName = '';
@@ -389,6 +390,25 @@ export function switchCameraMode(mode: CameraMode): void {
 
     const scene = _scene;
     const canvas = _canvas;
+
+    if (mode === 'ar') {
+        if (_cameraMode !== 'ar') {
+            _previousMode = _cameraMode;
+        }
+        _cameraMode = 'ar';
+        _currentPreset.mode = 'ar';
+        setARMode(true).then((ok) => {
+            if (!ok) {
+                setStatus('✗ AR 相机启动失败，已切回原模式', false);
+                switchCameraMode(_previousMode);
+            }
+        });
+        return;
+    }
+
+    if (_cameraMode === 'ar') {
+        setARMode(false);
+    }
 
     // Stop current mode's side-effects
     if (_cameraMode === 'freefly') {

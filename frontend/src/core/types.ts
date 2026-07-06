@@ -86,6 +86,8 @@ export type ModelInstance = {
     >;
     /** FBX overlay mesh 列表（切换变体时加载/释放） */
     _overlayMeshes?: Mesh[];
+    /** overlay 加载 token：防止快速切换变体时旧 loadOverlay 完成后覆盖新状态 */
+    _overlayLoadToken?: symbol;
     /** 原始材质可见性快照（hideMaterials 前保存，用于 restore） */
     _origMaterialVisibility?: Map<number, boolean>;
     /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */

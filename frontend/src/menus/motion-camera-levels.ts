@@ -36,6 +36,13 @@ import {
 import { triggerAutoSave } from '../scene/scene';
 import { getProcBeatDetector } from '../scene/scene';
 import { getMotionMenu } from './motion-popup';
+import {
+    switchARCameraFacing,
+    setARMirror,
+    isARMirrored,
+    getARFacing,
+    isARActive,
+} from '../scene/ar/ar-camera';
 
 let cameraExpandedMode: CameraMode | null = null;
 
@@ -61,6 +68,7 @@ export function buildCameraLevel(): PopupLevel {
                     { value: 'freefly', label: '自由飞行' },
                     { value: 'concert', label: '演唱会' },
                     { value: 'oneshot', label: '单拍' },
+                    { value: 'ar', label: 'AR 相机' },
                 ];
                 if (vmdLoaded) {
                     modeOptions.push({ value: 'vmd', label: 'VMD 相机' });
@@ -149,6 +157,8 @@ export function buildCameraLevel(): PopupLevel {
                         renderFreeflyParams(paramsContainer);
                     } else if (modeToExpand === 'concert') {
                         renderConcertParams(paramsContainer);
+                    } else if (modeToExpand === 'ar') {
+                        renderARParams(paramsContainer);
                     }
                     c.appendChild(paramsContainer);
                 }
@@ -328,4 +338,32 @@ function renderConcertParams(container: HTMLElement): void {
             triggerAutoSave();
         }
     );
+}
+
+function renderARParams(container: HTMLElement): void {
+    addToggleRow(
+        container,
+        isARMirrored() ? '已镜像' : '镜像',
+        isARMirrored(),
+        (enabled) => {
+            setARMirror(enabled);
+            triggerAutoSave();
+        }
+    );
+    slideRow(
+        container,
+        'lucide:switch-camera',
+        getARFacing() === 'user' ? '切换到后置' : '切换到前置',
+        false,
+        async () => {
+            await switchARCameraFacing();
+            refreshCameraLevel();
+        }
+    );
+    if (!isARActive()) {
+        const tip = document.createElement('div');
+        tip.className = 'cs-hint';
+        tip.textContent = '摄像头启动中…';
+        container.appendChild(tip);
+    }
 }

@@ -14,6 +14,7 @@ import {
 } from '../core/config';
 import { scene, _catOf } from '../scene/scene';
 import { triggerAutoSave } from '../core/config';
+import { encodeFileRef } from '../core/fileservice';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
 
 interface MmdStandardMaterial extends StandardMaterial {
@@ -80,11 +81,8 @@ function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
 }
 
 function _encodePath(path: string): string {
-    return path
-        .replace(/\\/g, '/')
-        .split('/')
-        .map((p) => encodeURIComponent(p))
-        .join('/');
+    // [doc:adr-057] 复用 fileservice 的 base64url 查询参数编码
+    return path.replace(/\\/g, '/');
 }
 
 export async function loadOutfits(id: string): Promise<OutfitFile | null> {
@@ -129,7 +127,7 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
         for (const subdir of subdirs) {
             for (const m of mappings) {
                 const relPath = subdir + '/' + m.basename;
-                const url = `http://127.0.0.1:${inst.port}/${_encodePath(relPath)}`;
+                const url = `http://127.0.0.1:${inst.port}/?f=${encodeFileRef(_encodePath(relPath))}`;
                 if (seenUrl.has(url)) {
                     continue;
                 }
@@ -210,7 +208,7 @@ async function _applySlot(
     const mmdSm = sm as MmdStandardMaterial & Record<TextureSlotKey, Texture | null>;
     const cur = mmdSm[slot];
     if (newPath) {
-        const url = `http://127.0.0.1:${port}/${_encodePath(newPath)}`;
+        const url = `http://127.0.0.1:${port}/?f=${encodeFileRef(_encodePath(newPath))}`;
         const newTex = new Texture(url, scene);
         let loaded = false;
         await new Promise<void>((resolve) => {
@@ -401,6 +399,9 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
     const promises: Promise<void>[] = [];
 
     // overlay 处理（与纹理替换并行）：清理旧 overlay → 加载新 overlay → 隐藏 PMX 布料
+    // token 守卫：防止快速切换变体时，旧 loadOverlay 完成后覆盖新状态导致孤儿 mesh 泄漏
+    const token = Symbol('overlay');
+    inst._overlayLoadToken = token;
     promises.push(
         (async () => {
             if (inst._overlayMeshes) {
@@ -408,9 +409,27 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
                 restoreMaterials(inst);
             }
             if (variant?.meshFile) {
-                const meshes = await loadOverlay(inst, variant.meshFile, scene);
-                if (meshes.length > 0 && variant.hideMaterials) {
+                const { meshes, retargetOk } = await loadOverlay(inst, variant.meshFile, scene);
+                // token 过期：说明此期间已切换到其他变体，丢弃本次结果
+                if (inst._overlayLoadToken !== token) {
+                    console.info('[outfit] overlay load stale (token mismatch), discarding');
+                    for (const m of meshes) {
+                        try {
+                            m.dispose();
+                        } catch {
+                            // ignore
+                        }
+                    }
+                    return;
+                }
+                // 仅在 overlay 成功加载且骨骼重定向成功时隐藏 PMX 布料；
+                // retarget 失败（静态降级）时保留原布料，避免穿模
+                if (meshes.length > 0 && retargetOk && variant.hideMaterials) {
                     hideMaterials(inst, variant.hideMaterials);
+                } else if (meshes.length > 0 && !retargetOk && variant.hideMaterials) {
+                    console.warn(
+                        '[outfit] FBX overlay retarget failed, keeping PMX materials to avoid穿模'
+                    );
                 }
             }
         })()
@@ -530,6 +549,8 @@ export function resetOutfit(id: string): void {
         }
     }
     // 清理 overlay mesh 并恢复被隐藏的 PMX 材质
+    // token 失效，使进行中的 loadOverlay 完成后丢弃结果
+    inst._overlayLoadToken = undefined;
     disposeOverlay(inst);
     restoreMaterials(inst);
 

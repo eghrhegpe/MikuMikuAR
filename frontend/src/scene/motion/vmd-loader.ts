@@ -18,7 +18,7 @@ import {
     addRecentMotion,
     dom,
 } from '../../core/config';
-import { resolveFileUrl, normPath } from '../../core/fileservice';
+import { resolveFileUrl, normPath, encodeFileRef } from '../../core/fileservice';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '../../outfit/audio';
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '../../motion-algos/procedural-motion';
@@ -167,7 +167,10 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
     if (!isAutoLoadCompanionAudioEnabled()) {
         return;
     }
-    const baseUrl = vmdUrl.substring(0, vmdUrl.lastIndexOf('/') + 1);
+    // [doc:adr-057] vmdUrl 形如 http://127.0.0.1:port/?f=<base64>
+    // 提取 origin+port 作为音频探针的基地址，文件名通过 ?f= 查询参数传递
+    const urlObj = new URL(vmdUrl);
+    const baseOrigin = `${urlObj.protocol}//${urlObj.host}`;
     const basePath = vmdPath.replace(/\.vmd$/i, '');
     if (_companionAudioCache.has(basePath)) {
         return;
@@ -178,7 +181,8 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
     const probes = exts.map(async (ext) => {
         const audioPath = basePath + ext;
         const audioName = audioPath.split('/').pop() || '';
-        const resp = await fetch(baseUrl + encodeURIComponent(audioName), { method: 'HEAD' });
+        const probeUrl = `${baseOrigin}/?f=${encodeFileRef(audioName)}`;
+        const resp = await fetch(probeUrl, { method: 'HEAD' });
         if (!resp.ok) {
             throw new Error(`HTTP ${resp.status}`);
         }

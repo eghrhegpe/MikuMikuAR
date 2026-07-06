@@ -7,18 +7,7 @@ import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import type { Scene } from '@babylonjs/core/scene';
 
 import { type ModelInstance } from '../core/config';
-
-// ============================================================
-// URL helpers
-// ============================================================
-
-function _encodePath(path: string): string {
-    return path
-        .replace(/\\/g, '/')
-        .split('/')
-        .map((p) => encodeURIComponent(p))
-        .join('/');
-}
+import { encodeFileRef } from '../core/fileservice';
 
 // ============================================================
 // Skeleton retargeting
@@ -98,6 +87,7 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
         // 重建 matricesIndices：FBX bone index → PMX bone index
         const newIndices = new Float32Array(matricesIndices.length);
         let remapped = 0;
+        let unmatched = 0;
         for (let i = 0; i < matricesIndices.length; i++) {
             const fbxIdx = matricesIndices[i];
             const pmxIdx = fbxToPmxBoneIdx.get(fbxIdx);
@@ -107,7 +97,13 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
             } else {
                 // 未匹配的 bone → 映射到根 bone (index 0)
                 newIndices[i] = 0;
+                unmatched++;
             }
+        }
+        if (unmatched > 0) {
+            console.warn(
+                `[outfit-overlay] ${unmatched}/${matricesIndices.length} bone weights unmatched on mesh "${mesh.name}", mapped to root bone (index 0)`
+            );
         }
 
         // 更新 vertex buffer
@@ -136,14 +132,24 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
  * @param inst 模型实例
  * @param meshFile FBX 相对路径（相对模型目录）
  * @param scene Babylon scene
- * @returns 加载的 mesh 列表，失败返回空数组
+ * @returns { meshes, retargetOk } — meshes 为加载的 mesh 列表（失败为空数组），retargetOk 表示骨骼重定向是否成功
  */
 export async function loadOverlay(
     inst: ModelInstance,
     meshFile: string,
     scene: Scene
-): Promise<Mesh[]> {
-    const url = `http://127.0.0.1:${inst.port}/${_encodePath(meshFile)}`;
+): Promise<{ meshes: Mesh[]; retargetOk: boolean }> {
+    // meshFile 必须是相对路径（相对模型目录），拒绝绝对路径
+    if (/^[A-Za-z]:[\\/]/.test(meshFile) || meshFile.startsWith('/') || meshFile.startsWith('\\\\')) {
+        console.error(
+            `[outfit-overlay] meshFile must be a relative path (got "${meshFile}"). Use a path relative to the model directory, e.g. "subdir/dress.fbx"`
+        );
+        return { meshes: [], retargetOk: false };
+    }
+    // [doc:adr-057] meshFile 是相对模型目录的路径（可能含子目录）
+    // 先 normalize 反斜杠→正斜杠，再 base64url 编码为查询参数
+    const normalizedMeshFile = meshFile.replace(/\\/g, '/');
+    const url = `http://127.0.0.1:${inst.port}/?f=${encodeFileRef(normalizedMeshFile)}`;
     console.info(`[outfit-overlay] Loading FBX overlay: ${meshFile}`);
 
     try {
@@ -152,7 +158,7 @@ export async function loadOverlay(
 
         if (meshes.length === 0) {
             console.warn('[outfit-overlay] FBX loaded but no meshes found');
-            return [];
+            return { meshes: [], retargetOk: false };
         }
 
         // 尝试骨骼重定向
@@ -175,10 +181,10 @@ export async function loadOverlay(
         }
 
         inst._overlayMeshes = meshes;
-        return meshes;
+        return { meshes, retargetOk: skeletonOk };
     } catch (err) {
         console.error('[outfit-overlay] Failed to load FBX overlay:', err);
-        return [];
+        return { meshes: [], retargetOk: false };
     }
 }
 
@@ -254,13 +260,15 @@ export function disposeOverlay(inst: ModelInstance): void {
     for (const mesh of inst._overlayMeshes) {
         try {
             // 如果 mesh 有独立 skeleton（未重定向成功），先释放
+            const meshSkeleton = mesh.skeleton;
+            mesh.skeleton = null; // 清空引用，避免 mesh.dispose() 内部访问已释放的 skeleton
             if (
-                mesh.skeleton &&
-                mesh.skeleton !== pmxSkeleton &&
-                !disposedSkeletons.has(mesh.skeleton)
+                meshSkeleton &&
+                meshSkeleton !== pmxSkeleton &&
+                !disposedSkeletons.has(meshSkeleton)
             ) {
-                disposedSkeletons.add(mesh.skeleton);
-                mesh.skeleton.dispose();
+                disposedSkeletons.add(meshSkeleton);
+                meshSkeleton.dispose();
             }
             mesh.dispose();
         } catch {

@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -551,6 +552,41 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// toCorruptStringShiftJIS simulates how babylon-mmd incorrectly decodes Shift-JIS bytes as UTF-8.
+// [doc:adr-058] Takes a correct UTF-8 filename, encodes to Shift-JIS, then decodes as UTF-8.
+func toCorruptStringShiftJIS(s string) string {
+	encoded, err := japanese.ShiftJIS.NewEncoder().Bytes([]byte(s))
+	if err != nil {
+		return ""
+	}
+	return corruptFromBytes(encoded)
+}
+
+// toCorruptStringGBK simulates how babylon-mmd incorrectly decodes GBK bytes as UTF-8.
+func toCorruptStringGBK(s string) string {
+	encoded, err := simplifiedchinese.GBK.NewEncoder().Bytes([]byte(s))
+	if err != nil {
+		return ""
+	}
+	return corruptFromBytes(encoded)
+}
+
+func corruptFromBytes(encoded []byte) string {
+	var result strings.Builder
+	i := 0
+	for i < len(encoded) {
+		r, size := utf8.DecodeRune(encoded[i:])
+		if r == utf8.RuneError {
+			result.WriteRune('\uFFFD')
+			i++
+		} else {
+			result.WriteRune(r)
+			i += size
+		}
+	}
+	return result.String()
+}
+
 // basenameFallbackFS builds a basename→real-path index then wraps an http.FileServer
 // so that if a path 404s, we try to find a file with the same basename anywhere
 // under the root. This handles PMX texture path mismatches (..\ subdirs,
@@ -558,6 +594,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 func basenameFallbackFS(root string, logFn func(string, ...interface{})) http.Handler {
 	// Build basename index: lowercase basename → first real path found
 	index := make(map[string]string)
+	corruptIndex := make(map[string]string)
 	fileAccessor.WalkDir(root, func(walkPath string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return nil
@@ -567,10 +604,19 @@ func basenameFallbackFS(root string, logFn func(string, ...interface{})) http.Ha
 		if _, exists := index[base]; !exists {
 			index[base] = rel
 		}
+		// [doc:adr-058] Pre-compute corrupt strings: simulate babylon-mmd incorrectly decoding
+		// Shift-JIS/GBK bytes as UTF-8, producing U+FFFD replacement characters.
+		for _, fn := range []func(string) string{toCorruptStringShiftJIS, toCorruptStringGBK} {
+			if corrupt := fn(base); corrupt != "" && corrupt != base {
+				if _, exists := corruptIndex[corrupt]; !exists {
+					corruptIndex[corrupt] = rel
+				}
+			}
+		}
 		return nil
 	})
 	if logFn != nil {
-		logFn("FS: indexed %d files under %s", len(index), root)
+		logFn("FS: indexed %d files (%d corrupt entries) under %s", len(index), len(corruptIndex), root)
 	}
 
 	fs := http.FileServer(http.Dir(root))
@@ -578,6 +624,36 @@ func basenameFallbackFS(root string, logFn func(string, ...interface{})) http.Ha
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if logFn != nil {
 			logFn("FS: %s %s", r.Method, r.URL.Path)
+		}
+
+		// [doc:adr-057] 优先处理查询参数 ?f=<base64url>
+		// 前端将文件名（或相对路径）base64url 编码后通过 ?f= 传递，
+		// 绕开 URL 路径段编码歧义（U+FFFD 被编码为 %EF%BF%BD 后与 d.Name() 不匹配）。
+		if enc := r.URL.Query().Get("f"); enc != "" {
+			if decoded, err := base64.RawURLEncoding.DecodeString(enc); err == nil {
+				relPath := string(decoded)
+				// 路径遍历防护
+				cleaned := filepath.Clean(relPath)
+				if strings.Contains(cleaned, "..") {
+					http.NotFound(w, r)
+					return
+				}
+				// 1. 尝试完整 relPath（支持 outfit 传来的子目录相对路径）
+				fullPath := filepath.Join(root, filepath.FromSlash(cleaned))
+				if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
+					http.ServeFile(w, r, fullPath)
+					return
+				}
+				// 2. basename fallback（支持 resolveFileUrl 传来的单文件名）
+				reqBase := strings.ToLower(path.Base(cleaned))
+				if entry, ok := index[reqBase]; ok {
+					http.ServeFile(w, r, filepath.Join(root, entry))
+					return
+				}
+				// ?f= 未命中 → 直接 404，不走路径段兜底（避免歧义）
+				http.NotFound(w, r)
+				return
+			}
 		}
 
 		// Buffer the file server response so we can intercept 404s
@@ -598,6 +674,16 @@ func basenameFallbackFS(root string, logFn func(string, ...interface{})) http.Ha
 		}
 		reqBase := strings.ToLower(path.Base(decodedPath))
 		relPath, ok := index[reqBase]
+
+		// [doc:adr-058] Standard match failed → try corrupt string mapping
+		if !ok {
+			if relPath, ok = corruptIndex[reqBase]; ok {
+				if logFn != nil {
+					logFn("FS: corrupt match %q → %s", reqBase, relPath)
+				}
+			}
+		}
+
 		if !ok {
 			// Fallback miss — flush the original 404 response
 			bw.flush()
