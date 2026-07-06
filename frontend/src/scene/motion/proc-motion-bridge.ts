@@ -18,13 +18,15 @@ import {
     PROC_VMD_NAME_LIFELIKE,
 } from '../../motion-algos/procedural-motion';
 import { BeatDetector } from '../../motion-algos/beat-detector';
-import { mmdRuntime, triggerAutoSave, focusedModelId } from '../../core/config';
+import { mmdRuntime, triggerAutoSave, focusedModelId, setStatus } from '../../core/config';
 import { isAudioPlaying } from '../../outfit/audio';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from '../scene';
 import { addVmdLayer, removeVmdLayer, getVmdLayers, clearVmdLayers } from './vmd-layers';
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Matrix } from '@babylonjs/core/Maths/math';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
+import { Camera } from '@babylonjs/core/Cameras/camera';
+import { isARActive } from '../ar/ar-camera';
 
 let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
 let procBeatDetector: BeatDetector | null = null;
@@ -81,6 +83,24 @@ function _q(): Quaternion {
 // 用此检测决定 gaze observer 走哪条路径
 function _isWasmRuntime(bone: IMmdRuntimeBone): boolean {
     return (bone as any).updateWorldMatrix === undefined;
+}
+
+// ── Gaze 目标点计算 ──
+// AR 模式下：目标从相机位置重定向为「相机朝向 + 估算用户距离 1.5m」，增强眼神接触
+// 非 AR 模式下：目标就是相机位置（原有行为）
+const AR_GAZE_DISTANCE = 1.5; // 估算用户到屏幕的距离（米）
+
+function _getGazeTarget(cam: Camera, out: Vector3): Vector3 {
+    if (isARActive()) {
+        // AR 模式：视线目标 = 相机位置 + 相机朝向 × 估算距离
+        // 这样模型会看向"屏幕前方的用户"而非"相机位置"，增强眼神接触
+        const forward = cam.getDirection(Vector3.Forward());
+        out.copyFrom(cam.position);
+        out.addInPlace(forward.scale(AR_GAZE_DISTANCE));
+        return out;
+    }
+    out.copyFrom(cam.position);
+    return out;
 }
 
 // ── WASM 模式辅助：把 Matrix 写回 Float32Array(16) ──
@@ -173,6 +193,17 @@ function _setupGazeTracking(): void {
     // observer 注册在 onBeforeRenderObservable，且在 mmdRuntime.afterPhysics 之后跑，
     // 因此读到的是本帧 WASM 已计算完成的 frontBuffer
     const isWasm = _isWasmRuntime(headRuntime ?? eyeRuntimes[0]);
+
+    // WASM + AR 模式：gaze 无法覆写骨骼（WASM frontBuffer 不由 JS 侧骨骼驱动），
+    // 降级为无操作，并在状态栏提示用户
+    if (isWasm && isARActive()) {
+        console.log('[gaze] WASM + AR 模式：视线追踪暂不可用（物理模式下不支持 gaze 覆写）');
+        setStatus('⚠ AR + 物理模式不支持视线追踪', false);
+        // 仍注册一个空 observer 占位，避免 teardown/setup 时状态不一致
+        _headTrackingObserver = scene.onBeforeRenderObservable.add(() => {});
+        return;
+    }
+
     _headTrackingObserver = scene.onBeforeRenderObservable.add(
         () => {
             if (!_procVmdActive) {
@@ -186,6 +217,7 @@ function _setupGazeTracking(): void {
             if (!cam) {
                 return;
             }
+            const gazeTarget = _getGazeTarget(cam, _v3());
 
             if (isWasm) {
                 // ═══ WASM 模式：直接覆写 frontBuffer worldMatrix ═══
@@ -200,11 +232,9 @@ function _setupGazeTracking(): void {
                         Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
                     );
 
-                    // lookDir = 头部→相机方向（模型面朝方向，与最初稳定版本一致）
-                    // FromLookDirectionRH 的 forward 语义是"相机朝向" = cam→head = -lookDir
-                    // 但之前用 lookDir = headPos - cam.pos 配合 FromLookDirectionRH 工作正常，
-                    // 说明 RH 内部处理了方向，保持与稳定版本一致即可
-                    const lookDir = headPos.subtractToRef(cam.position, _v3());
+                    // lookDir = 头部→gaze 目标方向（AR 模式下重定向到屏幕前 1.5m，增强眼神接触）
+                    // FromLookDirectionRH 的 forward 语义是"相机朝向"，与 lookDir 方向一致
+                    const lookDir = headPos.subtractToRef(gazeTarget, _v3());
                     const lookLen = Math.sqrt(
                         lookDir.x * lookDir.x + lookDir.y * lookDir.y + lookDir.z * lookDir.z
                     );
@@ -267,8 +297,8 @@ function _setupGazeTracking(): void {
                     }
                     eyeCenter.scaleInPlace(1 / eyeRuntimes.length);
 
-                    // 统一目标朝向（从双眼中心朝向相机）
-                    const lookDir = eyeCenter.subtractToRef(cam.position, _v3());
+                    // 统一目标朝向（从双眼中心朝向 gaze 目标）
+                    const lookDir = eyeCenter.subtractToRef(gazeTarget, _v3());
                     if (lookDir.lengthSquared() >= 0.0001) {
                         lookDir.normalize();
                         const targetWorldQ = _q().copyFrom(
@@ -329,8 +359,8 @@ function _setupGazeTracking(): void {
                     const oldHeadRotQ = _q().copyFrom(
                         Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
                     );
-                    // lookDir = 头部→相机（与 WASM 模式一致）
-                    const lookDir = headPos.subtractToRef(cam.position, _v3()).normalize();
+                    // lookDir = 头部→gaze 目标（与 WASM 模式一致）
+                    const lookDir = headPos.subtractToRef(gazeTarget, _v3()).normalize();
                     const targetWorldQ = _q().copyFrom(
                         Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly)
                     );
@@ -369,7 +399,7 @@ function _setupGazeTracking(): void {
                     }
                     eyeCenter.scaleInPlace(1 / eyeRuntimes.length);
 
-                    const lookDir = eyeCenter.subtractToRef(cam.position, _v3());
+                    const lookDir = eyeCenter.subtractToRef(gazeTarget, _v3());
                     if (lookDir.lengthSquared() >= 0.0001) {
                         lookDir.normalize();
                         const targetWorldQ = _q().copyFrom(

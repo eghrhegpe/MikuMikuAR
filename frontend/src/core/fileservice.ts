@@ -4,10 +4,34 @@
 
 import { StartFileServer, IsolateModelDir } from './wails-bindings';
 
+// [doc:adr-057] base64url（无填充）编码文件名，用于查询参数 ?f=
+// 绕开 URL 路径段编码语义，避免 U+FFFD 被编码为 %EF%BF%BD 后与 Go 侧 d.Name() 不匹配。
+// 与 Go 侧 base64.RawURLEncoding 对齐。
+function _toBase64Url(s: string): string {
+    // eslint-disable-next-line no-undef
+    const bytes = new TextEncoder().encode(s);
+    let bin = '';
+    for (const b of bytes) {
+        bin += String.fromCharCode(b);
+    }
+    // btoa → 标准 Base64；转换 +/ → -_，去掉 = 填充
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/**
+ * 编码文件名为查询参数值（base64url 无填充）。
+ * 用于构造 `?f=<encodeFileRef(fileName)>` 形式的 URL。
+ * [doc:adr-057] Shift-JIS URL 乱码修复
+ */
+export function encodeFileRef(fileName: string): string {
+    return _toBase64Url(fileName);
+}
+
 /**
  * 从文件路径解析出 HTTP URL 及对应服务器信息。
  * - 拆分目录/文件名 → 启动/复用文件服务器 → 构造 HTTP URL
  * - 输入路径支持正斜杠或反斜杠，内部统一处理
+ * - URL 形态 `?f=<base64url(fileName)>`，绕开路径段编码歧义（ADR-057）
  *
  * @returns URL、端口、文件所在目录
  */
@@ -18,7 +42,7 @@ export async function resolveFileUrl(
     const safeDir = await IsolateModelDir(normalized);
     const fileName = normalized.substring(normalized.lastIndexOf('/') + 1);
     const port = await StartFileServer(safeDir);
-    const url = `http://127.0.0.1:${port}/${encodeURIComponent(fileName)}`;
+    const url = `http://127.0.0.1:${port}/?f=${encodeFileRef(fileName)}`;
     return { url, port, dir: safeDir };
 }
 

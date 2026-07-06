@@ -26,10 +26,10 @@
 
 ### 🔴 架构裂缝（需中期决策）
 
-**WASM / JS 运行时分裂**
-- 现象：`MmdCompositeAnimation` + gaze 仅 **JS 运行时**生效（`vmd-layers.ts:522` 确认 WASM 回退单图层）；服装/头发 Bullet 物理仅 **WASM** 有。
-- 决策选项：① 推动上游 `babylon-mmd` 支持 WASM composite；② 确定默认运行时策略（性能物理 vs 高级动作二选一）。
-- 影响：高级动作功能无法在默认（高性能物理）运行时生效——当前最该拍板的架构决策。
+**WASM / JS 运行时分裂** — ✅ 已决策（ADR-056，实施中）
+- 现象（已修正）：gaze 双路径已实施（ADR-016，WASM frontBuffer 直写 + JS linkedBone）。真实裂缝仅剩 `MmdCompositeAnimation` 在 WASM 不可用（`vmd-layers.ts:522` 回退单图层）；服装/头发 Bullet 物理仅 WASM 有。
+- 决策：采用 C+B 混合方案（ADR-056）——JS 帧流合并让 WASM 拿到多图层能力，B1 单图层作降级兜底。
+- 影响：高级动作功能将在默认（高性能物理）运行时生效，分裂消除。
 
 ### 🟡 功能缺口
 
@@ -47,7 +47,7 @@
 | 垂直同步开关 | P1 | 低 | RAF 无简单开关 |
 | 设置导入 / 导出 | P2 | 低 | — |
 | 全量重置补全 | P2 | 低 | 当前仅外观 / 快捷键 |
-| Shift-JIS URL 编码 (`%EF%BF%BD`) | P0 | 中 | Base64 + 查询参数方案，稳定性硬伤 |
+| Shift-JIS URL 编码 (`%EF%BF%BD`) | P0 | 中 | 已实施（ADR-057 主文件 + ADR-058 纹理） |
 
 ### 🟡 上游阻塞（卡 `babylon-mmd`，不独立启动）
 
@@ -78,14 +78,15 @@
 9. Scene Bundle 分发（先解 zip 内 VMD 加载债）
 10. Mesh-to-Cloth 自动布料
 11. 道具挂载 / 智能材质分类
-12. WASM 运行时图层支持（推动上游）或运行时策略决策
+12. WASM 运行时图层支持 — ✅ 已决策（ADR-056，C+B 混合方案，实施中）
+13. AR 相机模式（[ADR-055](adr/adr-055-ar-camera-mode.md)，Phase 1 桌面 MVP → Phase 2 移动端 + Gaze 协同）
 
 ### P3（远期探索）
-13. Soft Body / Ragdoll（XPBD 体积约束已预置）
-14. iOS 端
-15. SSS（待上游 PBR proxy）
-16. Lua / JS 脚本层（自动化工作流）
-17. Alembic / glTF 导出
+14. Soft Body / Ragdoll（XPBD 体积约束已预置）
+15. iOS 端
+16. SSS（待上游 PBR proxy）
+17. Lua / JS 脚本层（自动化工作流）
+18. Alembic / glTF 导出
 
 ---
 

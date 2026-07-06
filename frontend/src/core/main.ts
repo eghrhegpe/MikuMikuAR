@@ -44,7 +44,12 @@ import {
 import { focusModel } from '../scene/manager/model-ops';
 import { updatePerformance, setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
-import { freeflyInput, getCameraMode, restoreAutoCameraState } from '../scene/camera/camera';
+import {
+    freeflyInput,
+    getCameraMode,
+    restoreAutoCameraState,
+    switchCameraMode,
+} from '../scene/camera/camera';
 import { syncTimeOfDayFromEnv } from '../scene/env/env-bridge';
 import './iconify-registry';
 import 'iconify-icon';
@@ -272,6 +277,22 @@ function registerAppShortcuts(): void {
                 setStatus(navLabels[5] || '', false);
             },
             group: '弹窗导航',
+        },
+        {
+            id: 'camera:ar',
+            label: 'AR 相机',
+            defaultKey: 'Digit6',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                const currentMode = getCameraMode();
+                if (currentMode === 'ar') {
+                    switchCameraMode('orbit');
+                } else {
+                    switchCameraMode('ar');
+                }
+            },
+            group: '相机控制',
         },
         {
             id: 'playback:toggle',

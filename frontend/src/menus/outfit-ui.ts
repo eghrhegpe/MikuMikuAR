@@ -90,11 +90,11 @@ export function buildOutfitLevel(id: string): PopupLevel {
                     );
 
                     for (const v of outfit.variants) {
-                        // 带 meshFile 的变体显示 FBX 标记
-                        const label = v.meshFile ? 'FBX' : '';
+                        // 带 meshFile 的变体显示 FBX 标记（slideRow 第7位 tag）
+                        const tag = v.meshFile ? 'FBX' : undefined;
                         slideRow(
                             c,
-                            label,
+                            '',
                             v.name,
                             false,
                             async () => {
@@ -114,7 +114,7 @@ export function buildOutfitLevel(id: string): PopupLevel {
                                 await _render();
                             },
                             undefined,
-                            undefined,
+                            tag,
                             undefined,
                             undefined,
                             {
@@ -137,10 +137,6 @@ export function buildOutfitLevel(id: string): PopupLevel {
                         _loading = true;
                         setStatus('⏳ 重置服装中…', true);
                         const _r = await tryCatchStatus(async () => {
-                            const newOutfit = await loadOutfits(id);
-                            if (newOutfit) {
-                                inst.outfitFile = newOutfit;
-                            }
                             resetOutfit(id);
                         }, '✗ 重置服装失败');
                         if (_r !== undefined) {

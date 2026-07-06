@@ -1,0 +1,252 @@
+// [doc:architecture] AR Camera — 摄像头视频透传与模型叠加
+// 规范文档: docs/adr/adr-055-ar-camera-mode.md
+// 职责: 管理摄像头视频流, 提供 start/stop/switchFacing 接口, 维护 <video> 元素
+// 渲染合成策略: 透明 canvas + CSS <video> 底层 (S2 方案, 性能最优)
+
+import { dom, setStatus } from '../../core/config';
+
+// ======== Types ========
+export type CameraFacing = 'user' | 'environment';
+
+export interface ARCameraState {
+    active: boolean;
+    facing: CameraFacing;
+    streamId: string | null;
+}
+
+// ======== Internal State ========
+let _active = false;
+let _facing: CameraFacing = 'user';
+let _stream: MediaStream | null = null;
+let _videoEl: HTMLVideoElement | null = null;
+let _originalClearColor: { r: number; g: number; b: number; a: number } | null = null;
+let _mirrorOverridden = false; // 用户是否手动设置过镜像
+type ARModeChangeListener = (active: boolean) => void;
+const _listeners: ARModeChangeListener[] = [];
+
+function _notifyARModeChange(active: boolean): void {
+    for (const fn of _listeners) {
+        try {
+            fn(active);
+        } catch (e) {
+            console.error('[ar-camera] listener error:', e);
+        }
+    }
+}
+
+/** 订阅 AR 模式切换事件，返回取消订阅函数。 */
+export function addARModeChangeListener(fn: ARModeChangeListener): () => void {
+    _listeners.push(fn);
+    return () => {
+        const i = _listeners.indexOf(fn);
+        if (i >= 0) _listeners.splice(i, 1);
+    };
+}
+
+// ======== Video Element ========
+function getVideoEl(): HTMLVideoElement {
+    if (_videoEl) {
+        return _videoEl;
+    }
+    let el = document.getElementById('arVideo') as HTMLVideoElement | null;
+    if (!el) {
+        el = document.createElement('video');
+        el.id = 'arVideo';
+        el.autoplay = true;
+        el.playsInline = true;
+        el.muted = true;
+        el.setAttribute('aria-hidden', 'true');
+        const canvas = dom.canvas;
+        if (canvas.parentElement) {
+            canvas.parentElement.insertBefore(el, canvas);
+        } else {
+            document.body.appendChild(el);
+        }
+    }
+    _videoEl = el;
+    return el;
+}
+
+// ======== Public API ========
+export function isARActive(): boolean {
+    return _active;
+}
+
+export function getARFacing(): CameraFacing {
+    return _facing;
+}
+
+export function getARVideoEl(): HTMLVideoElement | null {
+    return _videoEl;
+}
+
+/**
+ * 启动 AR 摄像头并显示视频背景。
+ * @param facing 前置(user)或后置(environment)
+ * @returns 是否成功启动
+ */
+export async function startARCamera(facing: CameraFacing = 'user'): Promise<boolean> {
+    if (_active && _facing === facing && _stream) {
+        return true;
+    }
+
+    if (_stream) {
+        stopARCamera();
+    }
+
+    const video = getVideoEl();
+    _facing = facing;
+
+    try {
+        const constraints: MediaStreamConstraints = {
+            video: {
+                facingMode: facing,
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+            } as MediaTrackConstraints,
+            audio: false,
+        };
+
+        _stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = _stream;
+        await video.play();
+
+        _applyVideoMirror();
+        _active = true;
+        _showVideo();
+
+        setStatus('✓ AR 相机已开启', true);
+        _notifyARModeChange(true);
+        return true;
+    } catch (err) {
+        console.warn('[AR] startARCamera failed:', err);
+        _stream = null;
+        _active = false;
+        _hideVideo();
+        setStatus('✗ 摄像头权限被拒绝，已切换黑底模式', false);
+        return false;
+    }
+}
+
+/** 停止 AR 摄像头，释放资源并隐藏视频背景。 */
+export function stopARCamera(): void {
+    if (_stream) {
+        const tracks = _stream.getTracks();
+        for (const track of tracks) {
+            track.stop();
+        }
+        _stream = null;
+    }
+    if (_videoEl) {
+        _videoEl.srcObject = null;
+    }
+    _active = false;
+    _hideVideo();
+    _notifyARModeChange(false);
+}
+
+/** 切换前后摄像头。 */
+export async function switchARCameraFacing(): Promise<boolean> {
+    const nextFacing: CameraFacing = _facing === 'user' ? 'environment' : 'user';
+    const ok = await startARCamera(nextFacing);
+    if (ok) {
+        setStatus(
+            nextFacing === 'user' ? '✓ 已切换到前置摄像头' : '✓ 已切换到后置摄像头',
+            true
+        );
+    }
+    return ok;
+}
+
+/** 设置是否镜像显示（前置默认镜像，后置默认不镜像）。用户手动调用后标记为 overridden，切换摄像头时保持用户设置。 */
+export function setARMirror(mirrored: boolean): void {
+    _mirrorOverridden = true;
+    const el = getVideoEl();
+    el.style.transform = mirrored ? 'scaleX(-1)' : 'scaleX(1)';
+}
+
+/** 当前是否镜像显示。 */
+export function isARMirrored(): boolean {
+    const el = getVideoEl();
+    return el.style.transform === 'scaleX(-1)';
+}
+
+/**
+ * 截取 AR 合成画面（视频底 + 3D 模型层）。
+ * @param format 图片格式，默认 image/png
+ * @param quality 质量 0~1，默认 0.9
+ * @returns base64 字符串（不含 data:image/xxx;base64, 前缀）
+ */
+export function captureARScreenshot(
+    format: string = 'image/png',
+    quality: number = 0.9
+): string {
+    const canvas = dom.canvas;
+    const video = _videoEl;
+
+    if (!_active || !video) {
+        return canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '');
+    }
+
+    const out = document.createElement('canvas');
+    out.width = canvas.width;
+    out.height = canvas.height;
+    const ctx = out.getContext('2d');
+    if (!ctx) {
+        return canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '');
+    }
+
+    const vw = video.videoWidth || canvas.width;
+    const vh = video.videoHeight || canvas.height;
+    const cw = canvas.width;
+    const ch = canvas.height;
+
+    const vRatio = vw / vh;
+    const cRatio = cw / ch;
+
+    let sx = 0,
+        sy = 0,
+        sw = vw,
+        sh = vh;
+    if (vRatio > cRatio) {
+        sw = vh * cRatio;
+        sx = (vw - sw) / 2;
+    } else {
+        sh = vw / cRatio;
+        sy = (vh - sh) / 2;
+    }
+
+    try {
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, cw, ch);
+    } catch (e) {
+        console.warn('[AR] drawImage video failed:', e);
+    }
+
+    ctx.drawImage(canvas, 0, 0, cw, ch);
+
+    return out.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '');
+}
+
+// ======== Internal Helpers ========
+function _showVideo(): void {
+    const video = getVideoEl();
+    video.style.display = 'block';
+}
+
+function _hideVideo(): void {
+    if (_videoEl) {
+        _videoEl.style.display = 'none';
+    }
+}
+
+function _applyVideoMirror(): void {
+    if (_mirrorOverridden) {
+        return; // 用户手动设置过，保持用户设置
+    }
+    const video = getVideoEl();
+    if (_facing === 'user') {
+        video.style.transform = 'scaleX(-1)';
+    } else {
+        video.style.transform = 'none';
+    }
+}

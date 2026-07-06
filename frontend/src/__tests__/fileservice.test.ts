@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { normPath } from '../core/fileservice';
+import { normPath, encodeFileRef } from '../core/fileservice';
 
 // Mock ../core/wails-bindings BEFORE importing fileservice
 // Wails 生成的 JS 在测试环境不存在，必须 mock
@@ -42,8 +42,9 @@ describe('resolveFileUrl', () => {
 
         const result = await resolveFileUrl('C:\\Users\\test\\初音ミク.pmx');
 
-        // 文件名应被 encodeURIComponent
-        expect(result.url).toBe('http://127.0.0.1:12345/%E5%88%9D%E9%9F%B3%E3%83%9F%E3%82%AF.pmx');
+        // [doc:adr-057] URL 形如 ?f=<base64url(fileName)>，绕开路径段编码歧义
+        const expectedEnc = encodeFileRef('初音ミク.pmx');
+        expect(result.url).toBe(`http://127.0.0.1:12345/?f=${expectedEnc}`);
         expect(result.port).toBe(12345);
         expect(IsolateModelDir).toHaveBeenCalledWith('C:/Users/test/初音ミク.pmx');
     });
@@ -74,8 +75,9 @@ describe('resolveFileUrl', () => {
 
         await resolveFileUrl('C:/Users/test/my model.pmx');
 
-        // 空格 → %20
+        // [doc:adr-057] 空格通过 base64url 编码，不再需要 %20 转义
         const { url } = await resolveFileUrl('C:/Users/test/my model.pmx');
-        expect(url).toContain('my%20model.pmx');
+        const expectedEnc = encodeFileRef('my model.pmx');
+        expect(url).toBe(`http://127.0.0.1:1111/?f=${expectedEnc}`);
     });
 });
