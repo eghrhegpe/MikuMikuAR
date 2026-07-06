@@ -21,11 +21,23 @@ UI 组件分布在以下源文件，统一通过 `ui-helpers.ts` barrel re-expor
 
 ### 卡片容器 `lcard`
 
-所有子界面内容必须包裹在 `lcard` 容器中。
+卡片有两种创建方式：
+
+**1. `renderCustom` 菜单**：手动调用 `cardContainer()` 创建 `.lcard`。
 
 ```ts
 cardContainer(container: HTMLElement, fn: (c: HTMLElement) => void): void
 // 自动移除 .render-card，创建 .lcard，注入 fn(c)
+```
+
+**2. 纯 items 菜单**：`buildPanel()` 自动按 `divider` 分组，每组包裹一个 `.lcard`。
+
+```
+items: [预设场景, 保存场景, divider, 后处理, 舞台, 截图, divider, 物理]
+         ↓
+<div class="lcard">预设场景 / 保存场景</div>
+<div class="lcard">后处理 / 舞台 / 截图</div>
+<div class="lcard">物理</div>
 ```
 
 CSS 样式：
@@ -38,7 +50,7 @@ CSS 样式：
 }
 ```
 
-**规则**：`renderCustom` 回调中第一件事就是 `cardContainer(container, (c) => { ... })`。禁止手动创建 `.render-card`。
+**规则**：`renderCustom` 回调中第一件事就是 `cardContainer(container, (c) => { ... })`。禁止手动创建 `.render-card`。items 菜单不需要手动处理卡片——`buildPanel()` 自动完成。
 
 ---
 
