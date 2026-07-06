@@ -651,6 +651,33 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
 // ======== Popup Show / Hide ========
 
 /** Show function for toggleOverlay — builds the model menu stack. */
+/** 模型库根级 items 构建器——items-based，支持全量 reRender */
+function buildModelRootItems(): PopupRow[] {
+    const items: PopupRow[] = [];
+
+    // 已加载的角色模型
+    const actors = Array.from(modelRegistry.entries()).filter(([, inst]) => inst.kind === 'actor');
+    for (const [id, inst] of actors) {
+        items.push({
+            kind: 'folder',
+            label: inst.name,
+            icon: 'tabler:cube-3d-sphere',
+            target: `model:${id}`,
+        });
+    }
+
+    // 分割线 + 操作入口
+    if (actors.length > 0) {
+        items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    }
+    items.push({ kind: 'folder', label: '加载模型', icon: 'lucide:folder', target: 'model:browse' });
+    items.push({ kind: 'action', label: '重新扫描', icon: 'lucide:refresh-cw', target: 'model:rescan' });
+    items.push({ kind: 'folder', label: '最近打开', icon: 'lucide:clock', target: 'model:recent' });
+    items.push({ kind: 'folder', label: '标签', icon: 'lucide:tag', target: 'model:tags' });
+
+    return items;
+}
+
 export function showModelPopup(): void {
     dom.sceneOverlay.classList.remove('sceneOverlay-motion', 'sceneOverlay-settings');
     dom.sceneOverlay.classList.add('sceneOverlay-model'); // 宽度 280px
@@ -658,9 +685,6 @@ export function showModelPopup(): void {
 
     const wrapper = getMenuWrapper('model-popup');
     if (stackRegistry.modelStack) {
-        // 缓存命中：回到根后 reRender
-        // 当前根级使用 renderCustom（实时读取 modelRegistry / allModels），reRender 能拿到最新数据。
-        // ⚠️ 若未来根级改为 items 化，必须先调 setLevel(0, ...) 更新根级 items，否则 reRender 显示旧数据。
         stackRegistry.modelStack.resetToRoot();
         stackRegistry.modelStack.reRender();
         return;
@@ -671,109 +695,7 @@ export function showModelPopup(): void {
     stackRegistry.modelStack.reset({
         label: '模型',
         dir: '',
-        items: [],
-        renderCustom: (container) => {
-            container.classList.remove('render-card');
-
-            // Card 1: loaded models (only actors — stage models have dedicated UI in scene menu)
-            try {
-                const actors = Array.from(modelRegistry.entries()).filter(([, inst]) => inst.kind === 'actor');
-                if (actors.length > 0) {
-                    cardContainer(container, (c) => {
-                        for (const [id, inst] of actors) {
-                            slideRow(c, 'tabler:cube-3d-sphere', inst.name, true, () => {
-                                const level = buildModelLevel(id);
-                                stackRegistry.modelStack.push(level);
-                            });
-                        }
-                    });
-                }
-            } catch (err) {
-                console.warn('showModelPopup: loaded models render error:', err);
-                const warn = document.createElement('div');
-                warn.style.cssText = 'padding:8px 12px;font-size:12px;color:var(--text-dim);';
-                warn.textContent = '加载模型列表失败';
-                container.appendChild(warn);
-            }
-
-            // Card 2: browse & scan
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:folder', '加载模型', true, () => {
-                    if (!libraryRoot) {
-                        stackRegistry.modelStack.push({
-                            label: '模型库',
-                            dir: '',
-                            items: [],
-                            renderCustom: (c2) => {
-                                c2.style.cssText =
-                                    'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
-                                c2.innerHTML =
-                                    '<div>尚未设置模型库目录</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">请前往 设置 → 系统 中设置</div>';
-                            },
-                        });
-                        return;
-                    }
-                    const browseDir = overridePaths.pmx || libraryRoot + '/PMX';
-                    const level = buildLevel(
-                        browseDir,
-                        'PMX',
-                        (m) => m.format === 'pmx',
-                        stackRegistry.modelStack!,
-                        externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
-                    );
-                    stackRegistry.modelStack.push(level);
-                });
-                slideRow(c, 'lucide:refresh-cw', '重新扫描', false, () => {
-                    refreshLibrary();
-                });
-            });
-
-            // Card 3: recent & tags
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:clock', '最近打开', true, () => {
-                    const recentMap = new Map<string, number>();
-                    recentModels.forEach((ref, i) => recentMap.set(ref, i));
-                    const recentModelsList = allModels
-                        .filter((m) => {
-                            const ref = computeLibraryRef(m.file_path);
-                            return ref && recentMap.has(ref);
-                        })
-                        .sort((a, b) => {
-                            const refA = computeLibraryRef(a.file_path);
-                            const refB = computeLibraryRef(b.file_path);
-                            return (recentMap.get(refA!) ?? 999) - (recentMap.get(refB!) ?? 999);
-                        });
-                    stackRegistry.modelStack.push({
-                        label: '最近打开',
-                        dir: '',
-                        items: [],
-                        renderCustom: (c2) => {
-                            c2.classList.remove('render-card');
-                            if (recentModelsList.length === 0) {
-                                const empty = document.createElement('div');
-                                empty.style.cssText =
-                                    'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
-                                empty.innerHTML =
-                                    '<div style="font-size:28px;margin-bottom:6px;">🕐</div><div>暂无记录</div><div style="font-size:11px;margin-top:4px;color:var(--text-dark);">加载模型后会出现在这里</div>';
-                                c2.appendChild(empty);
-                                return;
-                            }
-                            cardContainer(c2, (c3) => {
-                                for (const m of recentModelsList) {
-                                    const row = modelToRow(m);
-                                    const el = slideRow(c3, row.icon, row.label, false, () => onModelRowClick(m));
-                                    if (row.sublabel) el.dataset.hint = row.sublabel;
-                                }
-                            });
-                        },
-                    });
-                });
-                slideRow(c, 'lucide:tag', '标签', true, () => {
-                    const level = buildTagsOverviewLevel();
-                    stackRegistry.modelStack.push(level);
-                });
-            });
-        },
+        items: buildModelRootItems(),
     });
 }
 
