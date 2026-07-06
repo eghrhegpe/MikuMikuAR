@@ -268,6 +268,10 @@ export function addSliderRow(
         } else {
             delta = range * 0.15;
         }
+        // 确保 delta 至少为 step，避免小 range + integer step 下 snap 回原值
+        if (Math.abs(delta) < step) {
+            delta = Math.sign(delta || step) * step;
+        }
         let newVal = snapToStep(currentValue + delta);
         newVal = Math.max(min, Math.min(max, newVal));
         if (newVal !== currentValue) {
