@@ -237,6 +237,11 @@ export interface EnvState {
     "fogEnd": number;
     "clothEnabled": boolean;
     "clothConfig": ClothConfig;
+    "clothDebugParticles": boolean;
+    "clothDebugConstraints": boolean;
+    "clothDebugColliders": boolean;
+    "timeOfDayActive": boolean;
+    "timeOfDaySpeed": number;
 }
 
 /**
@@ -381,9 +386,19 @@ export interface OverridePaths {
     "vmd": string;
 
     /**
+     * 默认 resource_root/audio
+     */
+    "audio": string;
+
+    /**
      * 默认 resource_root/stage
      */
     "stage": string;
+
+    /**
+     * 默认 resource_root/prop
+     */
+    "prop": string;
 
     /**
      * 默认 resource_root/environment
@@ -488,4 +503,6 @@ export interface UIState {
     "performanceMode": string;
     "screenshotFormat": string;
     "screenshotQuality": number;
+    "autoCameraEnabled": boolean;
+    "autoCameraBeatsPerSwitch": number;
 }

@@ -164,6 +164,12 @@ vi.mock('../scene/scene', () => ({
     setModelVisibility: vi.fn(),
     setModelOpacity: vi.fn(),
     removeModel: vi.fn(),
+    getModelPosition: vi.fn().mockReturnValue([0, 0, 0]),
+    setModelPosition: vi.fn(),
+    setModelScaling: vi.fn(),
+    setModelRotationY: vi.fn(),
+    resetModelTransform: vi.fn(),
+    scene: { onBeforeRenderObservable: { add: vi.fn(), remove: vi.fn() } },
 }));
 
 vi.mock('../scene-menu', () => ({

@@ -87,6 +87,9 @@ const defaultEnv: EnvState = {
         gravityScale: 1.0,
         bendCompliance: 0.005,
     },
+    clothDebugParticles: false,
+    clothDebugConstraints: false,
+    clothDebugColliders: false,
     solverSubsteps: 4,
     solverTimeScale: 1.0,
     collisionEnabled: true,
@@ -94,6 +97,8 @@ const defaultEnv: EnvState = {
     groundCollisionEnabled: true,
     sunAngle: 45,
     azimuth: -45,
+    timeOfDayActive: false,
+    timeOfDaySpeed: 3,
 };
 
 describe('EnvState defaults', () => {

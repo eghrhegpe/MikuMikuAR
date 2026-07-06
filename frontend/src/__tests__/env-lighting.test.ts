@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { deriveLighting, calcLuminance, ENV_PRESETS } from '../scene/env/env-lighting';
+import { deriveLighting, calcLuminance, TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
 
 // ── scene-lighting-smoke: Babylon mocks ──────────────────────────
 vi.mock('@babylonjs/core/Lights/hemisphericLight', () => ({ HemisphericLight: vi.fn() }));
@@ -55,9 +55,9 @@ describe('deriveLighting', () => {
     });
 });
 
-describe('ENV_PRESETS', () => {
+describe('TIME_OF_DAY_PRESETS', () => {
     it('has all 6 presets', () => {
-        expect(Object.keys(ENV_PRESETS)).toEqual([
+        expect(Object.keys(TIME_OF_DAY_PRESETS)).toEqual([
             'dawn',
             'noon',
             'sunset',
@@ -68,7 +68,7 @@ describe('ENV_PRESETS', () => {
     });
 
     it('each preset has all required fields', () => {
-        for (const [_key, p] of Object.entries(ENV_PRESETS)) {
+        for (const [_key, p] of Object.entries(TIME_OF_DAY_PRESETS)) {
             expect(p.label).toBeTruthy();
             expect(p.dirDiffuse).toHaveLength(3);
             expect(p.dirDirection).toHaveLength(3);

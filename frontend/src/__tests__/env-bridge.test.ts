@@ -32,7 +32,7 @@ const {
     mockImplDisposeClouds,
     mockImplUpdateWaterAnimSpeed,
     mockDeriveLighting,
-    mockENV_PRESETS,
+    mockTIME_OF_DAY_PRESETS,
 } = vi.hoisted(() => {
     // ── MmdWasmRuntime mock class (for instanceof check) ──
     class _MmdWasmRuntime {
@@ -123,7 +123,7 @@ const {
         shadowBias: 0.0001,
     };
 
-    // ── ENV_PRESETS mock ──
+    // ── TIME_OF_DAY_PRESETS mock ──
     const presets: Record<string, any> = {
         noon: {
             label: '正午',
@@ -184,7 +184,7 @@ const {
                 hemiIntensity: 0.6,
             })
         ),
-        mockENV_PRESETS: presets,
+        mockTIME_OF_DAY_PRESETS: presets,
     };
 });
 
@@ -247,7 +247,7 @@ vi.mock('../core/config', () => {
 
 vi.mock('../scene/env/env-lighting', () => ({
     deriveLighting: mockDeriveLighting,
-    ENV_PRESETS: mockENV_PRESETS,
+    TIME_OF_DAY_PRESETS: mockTIME_OF_DAY_PRESETS,
 }));
 
 vi.mock('../scene/env/env-impl', () => ({
