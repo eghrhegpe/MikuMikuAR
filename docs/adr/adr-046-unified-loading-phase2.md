@@ -139,33 +139,20 @@ async dispatch(req: LoadRequest): Promise<ResourceHandle | null> {
 
 这样调用方始终得到一个有意义的 handle，可为后续进度追踪/撤销功能铺垫。
 
-### 4. Phase 2D：`loadTransaction` 接口
+### 4. Phase 2D：VMD 伴音自动加载（设置开关）
 
-为舞蹈套装（VMD+Audio+Offset）原子加载提供事务接口：
+参照 DanceXR 的"舞蹈套装"设计——加载 VMD 动作文件时，自动发现并加载同目录同名音频文件（.mp3/.wav/.ogg/.flac）。用户可通过设置开关控制此行为，不占用动作弹窗 UI 栏。
 
-```ts
-class LoadManager {
-    async loadTransaction(reqs: LoadRequest[]): Promise<(ResourceHandle | null)[]> {
-        const results: (ResourceHandle | null)[] = [];
-        const loaded: { kind: string; cleanup: () => Promise<void> }[] = [];
-        try {
-            for (const req of reqs) {
-                const result = await this.dispatch(req);
-                results.push(result);
-            }
-            return results;
-        } catch (err) {
-            // 回滚：按加载逆序清理
-            for (const item of loaded.reverse()) {
-                await item.cleanup();
-            }
-            throw err;
-        }
-    }
-}
-```
+**当前实现**已在 `vmd-loader.ts` 的 `_tryLoadCompanionAudio()` 中完成：
+1. VMD 加载成功后，向同目录发送 HEAD 探针（`Promise.any`），检测同名扩展名
+2. 命中后调用 `loadAudioFile()` 加载，更新状态栏为"✓ VMD + 音频: xxx"
 
-当前阶段只定义签名和基本回滚模型。P4 阶段具体落地到"舞蹈套装 UI 触发原子加载"的场景。
+**P4 增量**：
+- 新增设置开关「加载动作时自动加载同目录音乐」（位于`设置 → 音频`页），默认开启
+- `_tryLoadCompanionAudio()` 加 setting check gate，关闭时跳过探针和加载
+- `_companionAudioCache` 保留——当设置开启时，仍避免同一 VMD 被重复探针
+
+**不改为 `loadManager.load({kind:'audio'})` 的原因**：`_tryLoadCompanionAudio` 在 `loadManager.dispatch` 的 VMD case 内部执行，如再入 `loadManager.load()` 会导致队列死锁（VMD 任务持有队列，音频任务排在 VMD 之后，VMD await 音频 → 互相等待）。保持直接调 `loadAudioFile` 不变——伴音加载是 VMD 的同步副操作，不占用独立队列位置。
 
 ## 实施计划
 
@@ -177,7 +164,7 @@ class LoadManager {
 | P3b-3 | `loadProp` 移除 `_propLoadQueue` + `isLoadingProp` | `props.ts` + `state.ts` | 低——LoadManager 已保证串行 |
 | P3b-4 | `loadAudioFile` 移除 `_loadId` | `audio.ts` | 低——不再有并发 |
 | P3c | `ResourceHandle` 返回值统一 | `load-manager.ts` | 低——不影响调用方契约 |
-| P4 | `loadTransaction` 舞蹈套装原子加载 | `load-manager.ts` + UI 层 | 较大——需设计套装 UI |
+| P4 | VMD 伴音自动加载设置开关 | `settings.ts` + `vmd-loader.ts` | 低——仅加 toggle + setting gate |
 
 ### 注意事项
 
