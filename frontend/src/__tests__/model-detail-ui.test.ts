@@ -145,6 +145,10 @@ const { mockModelManager } = vi.hoisted(() => {
         setRotationY: vi.fn(),
         setPosition: vi.fn(),
         getPosition: vi.fn().mockReturnValue([0, 0, 0]),
+        setOrbit: vi.fn(),
+        getOrbit: vi.fn().mockReturnValue(null),
+        setPositionMode: vi.fn(),
+        getPositionMode: vi.fn().mockReturnValue('cartesian'),
         resetTransform: vi.fn(),
         clearVmdData: vi.fn(),
         getMorphs: vi.fn().mockReturnValue([]),
@@ -166,6 +170,10 @@ vi.mock('../scene/scene', () => ({
     removeModel: vi.fn(),
     getModelPosition: vi.fn().mockReturnValue([0, 0, 0]),
     setModelPosition: vi.fn(),
+    setModelOrbit: vi.fn(),
+    getModelOrbit: vi.fn().mockReturnValue(null),
+    setModelPositionMode: vi.fn(),
+    getModelPositionMode: vi.fn().mockReturnValue('cartesian'),
     setModelScaling: vi.fn(),
     setModelRotationY: vi.fn(),
     resetModelTransform: vi.fn(),
@@ -395,9 +403,13 @@ describe('buildModelLevel', () => {
         const container = document.createElement('div');
         level.renderCustom!(container);
 
-        // At least one slide-item should be rendered per card
+        // 折叠组导航行 + 危险卡产出 .slide-item；变换卡产出 .cs-row
         const slideItems = container.querySelectorAll('.slide-item');
+        const csRows = container.querySelectorAll('.cs-row');
         expect(slideItems.length).toBeGreaterThan(5);
+        expect(csRows.length).toBeGreaterThan(0);
+        // 折叠组必须渲染（ADR-049 修复：buildTransformCard 的 innerHTML 清空曾误伤折叠组）
+        expect(container.querySelectorAll('.collapsible-wrapper').length).toBeGreaterThan(0);
     });
 
     it('cards contain expected action labels', () => {
@@ -406,18 +418,13 @@ describe('buildModelLevel', () => {
         const container = document.createElement('div');
         level.renderCustom!(container);
 
-        const slideLabels = Array.from(container.querySelectorAll('.slide-label')).map(
-            (el) => el.textContent
-        );
-        const csLabels = Array.from(container.querySelectorAll('.cs-label')).map(
-            (el) => el.textContent
-        );
-        const allLabels = [...slideLabels, ...csLabels];
-        // Cards rendered in buildModelLevel (labels may change with UI)
-        expect(allLabels.length).toBeGreaterThan(5);
-        expect(allLabels.some((l) => l && l.includes('基本信息'))).toBe(true);
-        expect(allLabels.some((l) => l && l.includes('可见性'))).toBe(true);
-        expect(allLabels.some((l) => l && l.includes('材质调节'))).toBe(true);
+        const text = container.textContent ?? '';
+        // 关键标签以可见文本形式渲染（不依赖具体 class，避免 UI 重构导致脆弱断言）
+        expect(text).toContain('基本信息');
+        expect(text).toContain('可见性');
+        expect(text).toContain('材质调节');
+        // 变换卡的球面坐标控制（ADR-049）已接入
+        expect(text).toContain('坐标模式');
     });
 });
 

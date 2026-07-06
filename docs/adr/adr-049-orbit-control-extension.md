@@ -1,8 +1,33 @@
 # ADR-049: 轨道控制统一 — 球面坐标扩展到模型/道具
 
 **日期**：2026-07-06
-> **状态**：已提议
+> **状态**：已实现（2026-07-06 落地 Phase 1 + Phase 2，`tsc --noEmit` 与 `vite build` 通过）
 > **关联**：ADR-048(变换系统统一)、ADR-037(会话UI改进)
+
+---
+
+## 8. 实现记录（2026-07-06）
+
+### 8.1 落地范围
+- 新增 `core/orbit.ts`：统一 `orbitToCartesian` / `cartesianToOrbit`，公式与 `lighting.ts` 完全一致（避免各子系统重复实现漂移）。
+- `core/types.ts`：`ModelInstance` / `PropInstance` 增加 `positionMode` + `orbitAzimuth/Elevation/Distance`（均为可选，向后兼容）。
+- `model-manager.ts`：`setOrbit` / `getOrbit` / `setPositionMode` / `getPositionMode`（orbit→cartesian 写入 `meshes[0].position`，模式切换无跳变）。
+- `model-ops.ts`：薄封装 `setModelOrbit` / `getModelOrbit` / `setModelPositionMode` / `getModelPositionMode`。
+- `props.ts`：`setPropOrbit` / `getPropOrbit` / `setPropPositionMode` / `getPropPositionMode`。
+- `scene-serialize.ts`：模型/道具序列化与反序列化加入 orbit 字段，`positionMode==='orbit'` 时优先 `setOrbit` 还原。
+- `resource-detail-helpers.ts`：`buildTransformCard` 增加「坐标模式」切换（笛卡尔/轨道），轨道模式下滑条切换为 方位角/仰角/距离；actor / stage / prop 三处入口统一覆盖。
+
+### 8.2 验证
+- `tsc --noEmit`：0 错误
+- `vite build`：成功（481 modules，2.03s → 后续回归修复后 1.87s）
+- `vitest run`：1063 passed / 0 failed（含 `model-detail-ui.test.ts` 的 `buildModelLevel` 两用例，已修复，见 8.3）。
+- 兼容旧场景：缺失 `positionMode` 时默认 `'cartesian'`，行为不变。
+
+### 8.3 回归修复（2026-07-06 21:32）
+- 问题：`buildTransformCard` 的 `render()` 闭包开头用 `container.innerHTML = ''` 清空**整个** container，会抹掉同一次 `buildModelLevel.renderCustom` 里先 append 的折叠组（外观/信息/工具），导致模型详情面板的折叠组在测试与真实 UI 中均不显示。
+- 修复：`buildTransformCard` 改为自管理 `root` 子容器（`style.display='contents'`，布局透明），`render()` 只清 `root.innerHTML`，`cardContainer(root, ...)` 替代 `cardContainer(container, ...)`。
+- 测试债清理：`model-detail-ui.test.ts` 的 `buildModelLevel` 两用例原断言依赖已淘汰的 `.slide-item`/`.slide-label` class（UI 重构后迁移至 `.cs-row`/`.cs-label`/`.collapsible-label`）。已改为检查 `.collapsible-wrapper>0`（验证折叠组不再被误清）+ `container.textContent` 包含关键标签（不依赖具体 class）。
+
 
 ---
 

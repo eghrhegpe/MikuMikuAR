@@ -1,7 +1,7 @@
 # ADR-050: 保存触发机制统一
 
 **日期**：2026-07-06
-> **状态**：已提议
+> **状态**：已实施（代码完成；完整构建受无关预存错误阻塞，见 §6）
 > **关联**：ADR-048(变换系统统一)、ADR-015(材质编辑重构)
 
 ---
@@ -119,3 +119,28 @@ let triggerAutoSave: (() => void) | null = null;
 3. 场景中修改模型位置/缩放/旋转 → 自动保存触发（人工验证 console 或文件写入）
 4. 场景中修改灯光参数 → 自动保存触发
 5. 场景中修改道具变换 → 自动保存触发
+
+---
+
+## 6. 实施记录（2026-07-06）
+
+### 6.1 已落地改动
+
+| 文件 | 改动 |
+|------|------|
+| `scene/manager/model-manager.ts` | 构造函数参数 `onChange` → `triggerAutoSave`；16 处 `this.onChange()` → `this.triggerAutoSave()`；顶部设计注释同步（避免循环依赖的说明） |
+| `scene/render/lighting.ts` | 模块变量 `_triggerAutoSave` → `triggerAutoSave`（声明 + 约 10 处调用）；`initLighting` 注入参数改名为 `saveCb` 以避免与模块变量遮蔽 |
+
+**遮蔽处理**：`lighting.ts` 原 `initLighting(triggerAutoSave)` 参数与模块变量同名，若直接重命名模块变量会导致 `triggerAutoSave = triggerAutoSave` 自赋值；故将注入参数改名为 `saveCb`，赋值改为 `triggerAutoSave = saveCb`。调用点 `triggerAutoSave()` 现统一指向模块变量，与其他模块一致。
+
+### 6.2 验证结果
+
+- `tsc --noEmit`（`npm run check`）：ADR 涉及文件类型正确。
+- `vite build`：✅ 通过（EXIT=0，1.83s）。构建过程中发现并修复了一处**与 ADR-050 无关的预存回归**（`model-ops.ts` 悬空导入，源自本会话早前的 ADR-046 清理）——该修复见 §6.3，不属于本 ADR 的重命名范围。
+- 调用方与测试均以位置参数传值（`new ModelManager(scene, onChange, autoFrame)` 中的 `onChange` 仅为测试本地变量名），构造函数形参改名不影响调用，无破坏风险。
+
+### 6.3 附带修复（超出本 ADR 重命名范围，但阻塞构建）
+
+- **根因**：本会话早前 ADR-046 删除了 `core/state.ts` 的 `setIsLoadingModel`/`setIsLoadingVmd` setter（孤儿状态），但 `scene/manager/model-ops.ts` 仍从 `core/config` 导入并调用这两个符号，导致 `vite build` 报 TS2305。
+- **修复**：按 ADR-046 意图（加载器已不再写入这些状态），移除 `model-ops.ts` 的两行导入与两处 `setIsLoadingModel(false)`/`setIsLoadingVmd(false)` 调用。纯死代码清理，无功能影响。
+- **状态**：已修复，`vite build` 转绿。

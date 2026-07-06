@@ -108,7 +108,7 @@ let _scene: import('@babylonjs/core/scene').Scene | null = null;
 let _modelRegistry: Map<string, ModelInstance> | null = null;
 let _propRegistry: Map<string, PropInstance> | null = null;
 let _envSysShadow: { generator: ShadowGenerator | null } | null = null;
-let _triggerAutoSave: (() => void) | null = null;
+let triggerAutoSave: (() => void) | null = null;
 
 export let hemiLight: HemisphericLight;
 export let dirLight: DirectionalLight;
@@ -152,13 +152,13 @@ export function initLighting(
     modelRegistry: Map<string, ModelInstance>,
     propRegistry: Map<string, PropInstance>,
     envSysShadow: { generator: ShadowGenerator | null },
-    triggerAutoSave: () => void
+    saveCb: () => void
 ): void {
     _scene = scene;
     _modelRegistry = modelRegistry;
     _propRegistry = propRegistry;
     _envSysShadow = envSysShadow;
-    _triggerAutoSave = triggerAutoSave;
+    triggerAutoSave = saveCb;
 
     hemiLight = new HemisphericLight('hemi', new Vector3(0.5, 1, 0.5), scene);
     hemiLight.intensity = 0.8;
@@ -336,7 +336,7 @@ export function getLightState(): LightState {
 }
 
 export function setLightState(s: Partial<LightState>): void {
-    if (!hemiLight || !dirLight || !_triggerAutoSave) {
+    if (!hemiLight || !dirLight || !triggerAutoSave) {
         return;
     }
 
@@ -393,7 +393,7 @@ export function setLightState(s: Partial<LightState>): void {
     }
     _updateSunDisc();
     if (!_skipLightAutoSave) {
-        _triggerAutoSave();
+        triggerAutoSave();
     }
     scheduleRefresh();
 }
@@ -404,7 +404,7 @@ export function transitionLighting(
     duration: number = 2000,
     onComplete?: () => void
 ): void {
-    if (!hemiLight || !dirLight || !_triggerAutoSave) {
+    if (!hemiLight || !dirLight || !triggerAutoSave) {
         return;
     }
     const source = getLightState(); // 当前完整状态
@@ -585,7 +585,7 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
     const targetId = id ?? s.id ?? _activeStageLightId;
     if (!targetId) return;
     const entry = _stageLights.get(targetId);
-    if (!entry || !_triggerAutoSave) return;
+    if (!entry || !triggerAutoSave) return;
 
     // 类型切换：dispose 旧灯 + 旧阴影 + 创建新灯
     if (s.type !== undefined && s.type !== entry.state.type) {
@@ -595,7 +595,7 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
         entry.light = _createStageLight(s.type, entry.state);
         _ensureStageShadow(targetId);
         _updateIndicator(entry);
-        _triggerAutoSave();
+        triggerAutoSave();
         return;
     }
 
@@ -618,7 +618,7 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
     // 更新指示器
     _updateIndicator(entry);
 
-    _triggerAutoSave();
+    triggerAutoSave();
 }
 
 export function addStageLight(type: StageLightType = 'spot', preset?: Partial<StageLightState>): string {
@@ -639,7 +639,7 @@ export function addStageLight(type: StageLightType = 'spot', preset?: Partial<St
     _activeStageLightId = id;
     _ensureStageShadow(id);
     _updateIndicator(entry);
-    if (_triggerAutoSave) _triggerAutoSave();
+    if (triggerAutoSave) triggerAutoSave();
     return id;
 }
 
@@ -654,7 +654,7 @@ export function removeStageLight(id: string): boolean {
     if (_activeStageLightId === id) {
         _activeStageLightId = _stageLights.keys().next().value ?? null;
     }
-    if (_triggerAutoSave) _triggerAutoSave();
+    if (triggerAutoSave) triggerAutoSave();
     return true;
 }
 

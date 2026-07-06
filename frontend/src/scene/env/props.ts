@@ -15,6 +15,7 @@ import {
     PropInstance,
 } from '../../core/config';
 import { resolveFileUrl, normPath } from '../../core/fileservice';
+import { orbitToCartesian, cartesianToOrbit } from '../../core/orbit';
 import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
@@ -217,6 +218,69 @@ export function setPropTransform(
         }
     }
     triggerAutoSave();
+}
+
+// ======== [doc:adr-049] 球面坐标轨道控制 ========
+
+/** 以球面坐标（方位角/仰角/距离）定位道具，等价于围绕原点旋转。 */
+export function setPropOrbit(id: string, azimuth: number, elevation: number, distance: number): void {
+    const inst = propRegistry.get(id);
+    if (!inst) {
+        return;
+    }
+    if (
+        !Number.isFinite(azimuth) ||
+        !Number.isFinite(elevation) ||
+        !Number.isFinite(distance) ||
+        distance <= 0
+    ) {
+        console.warn('[props] setPropOrbit: 无效参数', { azimuth, elevation, distance });
+        return;
+    }
+    inst.positionMode = 'orbit';
+    inst.orbitAzimuth = azimuth;
+    inst.orbitElevation = elevation;
+    inst.orbitDistance = distance;
+    const [x, y, z] = orbitToCartesian(azimuth, elevation, distance);
+    inst.position = [x, y, z];
+    const target = inst.container ?? inst.rootMesh;
+    target.position.set(x, y, z);
+    triggerAutoSave();
+}
+
+/** 读取道具当前球面坐标。orbit 模式下返回存储值，否则从当前笛卡尔位置反推。 */
+export function getPropOrbit(id: string): { azimuth: number; elevation: number; distance: number } | null {
+    const inst = propRegistry.get(id);
+    if (!inst) {
+        return null;
+    }
+    if (inst.positionMode === 'orbit' && inst.orbitAzimuth !== undefined && inst.orbitElevation !== undefined && inst.orbitDistance !== undefined) {
+        return { azimuth: inst.orbitAzimuth, elevation: inst.orbitElevation, distance: inst.orbitDistance };
+    }
+    const [x, y, z] = inst.position;
+    return cartesianToOrbit(x, y, z);
+}
+
+/** 切换坐标模式。切到 orbit 时从当前笛卡尔位置反推球面参数（无跳变）；切回 cartesian 保留当前位置。 */
+export function setPropPositionMode(id: string, mode: 'cartesian' | 'orbit'): void {
+    const inst = propRegistry.get(id);
+    if (!inst) {
+        return;
+    }
+    if (mode === 'orbit') {
+        const o = cartesianToOrbit(inst.position[0], inst.position[1], inst.position[2]);
+        inst.orbitAzimuth = o.azimuth;
+        inst.orbitElevation = o.elevation;
+        inst.orbitDistance = o.distance;
+    }
+    inst.positionMode = mode;
+    triggerAutoSave();
+}
+
+/** 读取道具当前坐标模式（默认 'cartesian'）。 */
+export function getPropPositionMode(id: string): 'cartesian' | 'orbit' {
+    const inst = propRegistry.get(id);
+    return inst?.positionMode ?? 'cartesian';
 }
 
 // ======== 查询 ========

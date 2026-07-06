@@ -288,9 +288,10 @@ vi.mock('../scene/scene', () => {
         onBeforeRenderObservable: {
             add: vi.fn(),
             remove: vi.fn(),
-// Babylon's addOnce defers to the next render frame; use setTimeout(0) so
-        // Vitest fake timers drive the callback at the correct animated time.
-        addOnce: (cb: () => void) => { setTimeout(cb, 0); },
+            // Babylon's addOnce defers to the next render frame (~16ms at 60fps).
+            // Use setTimeout(16) so Vitest fake timers advance performance.now() per
+            // frame, letting the preset animation progress toward t >= 1.
+            addOnce: (cb: () => void) => { setTimeout(cb, 16); },
         },
     };
     return {

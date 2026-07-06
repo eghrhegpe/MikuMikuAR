@@ -19,6 +19,7 @@ import {
     libraryRoot,
     triggerAutoSave,
     formatError,
+    uiState,
     type RuntimeModel,
 } from '../../core/config';
 import { resolveFileUrl, normPath } from '../../core/fileservice';
@@ -238,10 +239,16 @@ export async function loadPMXFile(
             wireframe: false,
             showBoneLines: false,
             showBoneJoints: false,
-            physicsEnabled: true,
+            physicsEnabled: uiState.defaultPhysicsEnabled !== false,
             scaling: 1.0,
             rotationY: 0,
         };
+        // 默认模型自动缩放：按统一目标高度归一化（仅 actor）
+        if (uiState.autoScaleModel) {
+            const bb = rootMesh.getHierarchyBoundingVectors(true);
+            const h = bb.max.y - bb.min.y;
+            if (h > 1e-3) inst.scaling = 18 / h;
+        }
         // Register via ModelManager only — it owns the registry
         // Must register BEFORE VMD load because loadVMDMotion queries modelRegistry
         _modelManager.register(inst);

@@ -12,7 +12,6 @@
 
 import { XpbdSolver } from './xpbd-solver';
 import type { SdfCollider } from './xpbd-collider';
-import { isWindActive, getWindVector } from '../core/physics/wind-utils';
 
 import { Scene } from '@babylonjs/core/scene';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
@@ -64,6 +63,26 @@ export interface ClothConfig {
     gravityScale: number;
     /** 弯曲约束柔度，default = compliance * 5（比距离约束更软） */
     bendCompliance: number;
+    /**
+     * 骨骼碰撞过滤列表。
+     * 空数组 = 检测所有骨骼碰撞体；非空 = 仅检测列出的骨骼名。
+     * 与 VmdLayer.boneFilter 语义一致，用于防止布料穿透特定骨骼。
+     * 可选，默认值在 DEFAULT_CLOTH_CONFIG 中为 []。
+     */
+    boneFilter?: string[];
+
+    /**
+     * 风场启用标志。
+     * 当为 true 且 windStrength > 0 时，每子步对非固定粒子施加风场力。
+     * 默认 false（无风），保持向后兼容。
+     */
+    windEnabled: boolean;
+
+    /** 风向单位向量 [x, y, z]，默认 [0, 0, 0]。 */
+    windDirection: [number, number, number];
+
+    /** 风力强度，越大风越强，默认 0（无风）。 */
+    windStrength: number;
 }
 
 export const DEFAULT_CLOTH_CONFIG: ClothConfig = {
@@ -80,6 +99,10 @@ export const DEFAULT_CLOTH_CONFIG: ClothConfig = {
     damping: 0.96,
     gravityScale: 1.0,
     bendCompliance: 0.005,
+    boneFilter: [],
+    windEnabled: false,
+    windDirection: [0, 0, 0],
+    windStrength: 0,
 };
 
 /** 布料实例（运行时对象） */
@@ -370,33 +393,28 @@ export function buildClothUpdateFn(
             }
             collider.updateMatrices(matrices);
             collider.solve(solver);
+
+            // 2.5 同步骨骼碰撞体数据到 solver（用于子步内穿透检测）
+            // 拷贝胶囊体引用（center/direction 的 Float32Array 在 updateMatrices 后自动更新）
+            solver.boneCollisionEnabled = true;
+            solver.collisionCapsules = collider.capsules;
+            // 从布料配置传递 boneFilter（空数组 = 检查所有碰撞体）
+            solver.boneFilter = cloth.config.boneFilter ?? [];
+        } else {
+            solver.boneCollisionEnabled = false;
+            solver.collisionCapsules = [];
+            solver.boneFilter = [];
         }
 
         // 3. XPBD 步进（支持模拟速度倍率）
         const adjustedDt = getTimeScale ? dt * getTimeScale() : dt;
 
-        // 3.1 风场力（作用于非固定粒子，每帧随 dt 自然积分）
-        if (isWindActive()) {
-            const wind = getWindVector();
-            // 布料风响应系数（比粒子小，布有惯性/质量约束）
-            const windFactor = 0.2;
-            const wx = wind.x * windFactor * adjustedDt;
-            const wy = wind.y * windFactor * adjustedDt;
-            const wz = wind.z * windFactor * adjustedDt;
-            // 对所有非锚定粒子施加随机扰动的风位移（避免所有粒子平行飘动）
-            for (let i = 0; i < cloth.particleGrid.length; i++) {
-                const idx = cloth.particleGrid[i];
-                const p = solver.particles[idx];
-                if (p.invMass === 0) {
-                    continue;
-                }
-                // 随机因子 0.6~1.4，给布料自然的飘动变化
-                const rf = 0.6 + Math.random() * 0.8;
-                p.p[0] += wx * rf;
-                p.p[1] += wy * rf;
-                p.p[2] += wz * rf;
-            }
-        }
+        // 3.1 从布料配置同步风场参数到求解器
+        // 风场力在 solver.step() 内部每子步 Verlet 积分中施加，
+        // 此处仅同步配置，使求解器自身的 windEnabled/windDirection/windStrength 生效。
+        solver.windEnabled = cloth.config.windEnabled;
+        solver.windDirection = cloth.config.windDirection;
+        solver.windStrength = cloth.config.windStrength;
 
         solver.step(adjustedDt);
 

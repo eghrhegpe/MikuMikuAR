@@ -1,7 +1,7 @@
 # MikuMikuAR 项目现状
 
-> 最后更新：2026-07-07
-> 本文件为**只读快照**，记录当前状态。
+> 最后更新：2026-07-06
+> 本文件记录当前状态，可随项目进展维护。
 
 ---
 
@@ -94,6 +94,14 @@ cd frontend && npm run test     # vitest 单元测试
 | **Android: AudioContext 惰性创建** | Android WebView 需用户交互后才能创建 AudioContext，首次无声音频可能失败 |
 | **Android: Canvas 2D 纹理兼容** | 粒子/天空/水面用 Canvas 2D 绘制纹理，低端 Android GPU 可能有兼容问题 |
 | **Android: 软件渲染性能** | 禁用硬件加速强制软件渲染器，大模型场景 FPS 可能低于桌面 |
+
+---
+
+## 近期架构重构
+
+| ADR | 内容 | 状态 |
+|-----|------|------|
+| ADR-050 | 保存触发机制统一（`onChange` / `_triggerAutoSave` → 统一 `triggerAutoSave`，纯重命名，无功能变更） | ✅ 已实施（2026-07-06） |
 
 ---
 

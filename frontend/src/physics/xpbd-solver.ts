@@ -33,12 +33,46 @@ export interface XpbdConstraint {
     type: ConstraintType;
     /** 涉及的粒子索引 */
     indices: number[];
-    /** 柔度 (compliance)，0 = 完全硬，值越大越软 */
+    /** 柔度 (compliance)，0 = 完全硬，值越大越软（逆刚度） */
     compliance: number;
     /** 静止值（距离 / 体积） */
     restValue: number;
     /** 拉格朗日乘子累积 */
     lambda: Float32Array;
+    /**
+     * 刚度 (0~1)，约束修正力度缩放因子。
+     * 1.0 = 完全修正（默认），0.0 = 无修正。
+     * 与 compliance 独立：compliance 控制弹性，stiffness 缩放单帧修正量。
+     */
+    stiffness: number;
+    /**
+     * 约束方向阻尼 (0~1)，沿约束方向的速度衰减系数。
+     * 0.0 = 无阻尼（默认），值越大振动衰减越快。
+     * 对 Volume 约束暂不生效。
+     */
+    damping: number;
+}
+
+/**
+ * 单个骨骼胶囊碰撞体（运行时数据，从 SdfCollider 同步）。
+ * 与 xpbd-collider.ts 的 SdfCapsule 一致但不依赖 SdfCollider 类型，
+ * 允许 XpbdSolver 在无外部依赖的情况下处理骨骼碰撞。
+ */
+export interface SolverCapsule {
+    /** 胶囊名称（如 "chest"） */
+    name: string;
+    /** 关联的骨骼名（用于 boneFilter 匹配） */
+    boneName: string;
+    /** 半径 */
+    radius: number;
+    /** 半高（中心到端点的距离） */
+    halfHeight: number;
+    /** 世界空间中心位置 [x, y, z] */
+    center: Float32Array;
+    /** 世界空间方向（单位向量）[x, y, z] */
+    direction: Float32Array;
+    /** 启用标志 */
+    enabled: boolean;
 }
 
 /** 求解器配置 */
@@ -51,6 +85,12 @@ export interface XpbdSolverConfig {
     damping: number;
     /** 地面 Y 坐标，用于默认地面碰撞 */
     groundY: number;
+    /** 风场启用标志（默认 false，无风） */
+    windEnabled?: boolean;
+    /** 风向单位向量 [x, y, z]（默认 [0,0,0]） */
+    windDirection?: [number, number, number];
+    /** 风速 / 风力强度（默认 0，无风） */
+    windStrength?: number;
 }
 
 const DEFAULT_CONFIG: XpbdSolverConfig = {
@@ -58,7 +98,25 @@ const DEFAULT_CONFIG: XpbdSolverConfig = {
     substeps: 4,
     damping: 0.98,
     groundY: -10,
+    windEnabled: false,
+    windDirection: [0, 0, 0],
+    windStrength: 0,
 };
+
+/**
+ * 使用例（stiffness / damping 参数）：
+ *
+ * ```ts
+ * // 软弹簧（stiffness=0.3 只修正 30%）
+ * solver.addDistanceConstraint(a, b, 0, 1.0, 0.3);
+ *
+ * // 带阻尼的距离约束（damping=0.5 减振）
+ * solver.addDistanceConstraint(a, b, 0.01, 0.5, 1.0, 0.5);
+ *
+ * // 默认值=完全刚性无阻尼（老代码向后兼容）
+ * solver.addDistanceConstraint(a, b);    // compliance=0, stiffness=1, damping=0
+ * ```
+ */
 
 // ============================================================
 // XpbdSolver
@@ -78,6 +136,30 @@ export class XpbdSolver {
     /** 地面弹性系数（0=完全非弹性, 1=完全弹性），default 0.1 */
     restitution = 0.1;
 
+    // ---- 骨骼碰撞体（从 SdfCollider 同步，用于子步内穿透检测） ----
+
+    /** 骨骼碰撞体数组（每帧从 SdfCollider 同步），空数组 = 跳过骨骼碰撞 */
+    collisionCapsules: SolverCapsule[] = [];
+
+    /** 骨骼碰撞过滤列表。
+     *  空数组 = 检查所有碰撞体；非空 = 仅检查 boneName 在此列表中的碰撞体。
+     *  与 VmdLayer.boneFilter 语义一致。 */
+    boneFilter: string[] = [];
+
+    /** 主开关：启用后在 _resolvePenetrations() 中子步级别检测粒子-骨骼碰撞 */
+    boneCollisionEnabled = false;
+
+    // ---- 风场配置 ----
+
+    /** 风场启用标志（默认 false） */
+    windEnabled = false;
+
+    /** 风向单位向量 [x, y, z]（默认 [0, 0, 0] = 无方向） */
+    windDirection: [number, number, number] = [0, 0, 0];
+
+    /** 风力强度（越大风越强，默认 0 = 无风） */
+    windStrength = 0;
+
     /** 粒子计数器（用于调试/统计） */
     private _particleCount = 0;
 
@@ -87,6 +169,10 @@ export class XpbdSolver {
         this.substeps = cfg.substeps;
         this.damping = cfg.damping;
         this.groundY = cfg.groundY;
+        // 风场配置（默认值由 DEFAULT_CONFIG 提供，windEnabled=false 则无风）
+        this.windEnabled = cfg.windEnabled ?? false;
+        this.windDirection = cfg.windDirection ?? [0, 0, 0];
+        this.windStrength = cfg.windStrength ?? 0;
     }
 
     // ---- 粒子管理 ----
@@ -160,8 +246,17 @@ export class XpbdSolver {
      * @param j 粒子 2 索引
      * @param compliance 柔度 (0~1)，默认 0（完全刚性）
      * @param restLength 静止长度，不传则自动使用当前距离
+     * @param stiffness 刚度 (0~1)，修正量缩放，默认 1.0（完全修正）
+     * @param damping 约束方向阻尼 (0~1)，默认 0.0（无阻尼）
      */
-    addDistanceConstraint(i: number, j: number, compliance = 0.0, restLength?: number): void {
+    addDistanceConstraint(
+        i: number,
+        j: number,
+        compliance = 0.0,
+        restLength?: number,
+        stiffness = 1.0,
+        damping = 0.0
+    ): void {
         const pi = this.particles[i].p;
         const pj = this.particles[j].p;
         const dx = pi[0] - pj[0];
@@ -175,19 +270,25 @@ export class XpbdSolver {
             compliance: Math.max(0, compliance),
             restValue: d,
             lambda: new Float32Array(1),
+            stiffness: Math.max(0, Math.min(1, stiffness)),
+            damping: Math.max(0, Math.min(1, damping)),
         });
     }
 
     /**
      * 添加弯曲约束（连续三个粒子，保持 i 到 k 的距离）
      * 防止布料过度折叠
+     * @param stiffness 刚度 (0~1)，修正量缩放，默认 1.0
+     * @param damping 约束方向阻尼 (0~1)，默认 0.0
      */
     addBendConstraint(
         i: number,
         j: number,
         k: number,
         compliance = 0.0,
-        restLength?: number
+        restLength?: number,
+        stiffness = 1.0,
+        damping = 0.0
     ): void {
         const pi = this.particles[i].p;
         const pk = this.particles[k].p;
@@ -202,6 +303,8 @@ export class XpbdSolver {
             compliance: Math.max(0, compliance),
             restValue: d,
             lambda: new Float32Array(1),
+            stiffness: Math.max(0, Math.min(1, stiffness)),
+            damping: Math.max(0, Math.min(1, damping)),
         });
     }
 
@@ -210,8 +313,10 @@ export class XpbdSolver {
      * @param indices 4 个粒子索引（四面体的四个顶点）
      * @param compliance 柔度
      * @param restVolume 静止体积，不传则自动计算
+     * @param stiffness 刚度 (0~1)，修正量缩放，默认 1.0
+     * @param damping 约束方向阻尼 (0~1)，默认 0.0（对体积约束暂不生效）
      */
-    addVolumeConstraint(indices: number[], compliance = 0.0, restVolume?: number): void {
+    addVolumeConstraint(indices: number[], compliance = 0.0, restVolume?: number, stiffness = 1.0, _damping = 0.0): void {
         if (indices.length !== 4) {
             throw new Error('Volume constraint requires exactly 4 particles');
         }
@@ -231,6 +336,8 @@ export class XpbdSolver {
             compliance: Math.max(0, compliance),
             restValue: v,
             lambda: new Float32Array(1),
+            stiffness: Math.max(0, Math.min(1, stiffness)),
+            damping: Math.max(0, Math.min(1, _damping)),
         });
     }
 
@@ -292,6 +399,16 @@ export class XpbdSolver {
                 vy += this.gravity[1] * subDt;
                 vz += this.gravity[2] * subDt;
 
+                // 风场力: v += windDirection * windStrength * subDt（带随机扰动产生自然飘动）
+                // 仅在 windEnabled=true 且 windStrength>0 时生效
+                if (this.windEnabled && this.windStrength > 0) {
+                    // 每粒子随机因子 0.6~1.4，使布料产生自然起伏/飘动效果
+                    const flutter = 0.6 + Math.random() * 0.8;
+                    vx += this.windDirection[0] * this.windStrength * subDt * flutter;
+                    vy += this.windDirection[1] * this.windStrength * subDt * flutter;
+                    vz += this.windDirection[2] * this.windStrength * subDt * flutter;
+                }
+
                 // 保存旧位置
                 p.prevP[0] = px;
                 p.prevP[1] = py;
@@ -305,8 +422,11 @@ export class XpbdSolver {
 
             // ---- 约束求解 ----
             for (const c of this.constraints) {
-                this._solveConstraint(c, alphaTilde);
+                this._solveConstraint(c, alphaTilde, subDt);
             }
+
+            // ---- 粒子间穿透检测 ----
+            this._resolvePenetrations();
 
             // ---- 地面碰撞 ----
             if (this.groundCollisionEnabled) {
@@ -350,21 +470,23 @@ export class XpbdSolver {
      * 距离约束: C(p_i, p_j) = |p_i - p_j| - restLength
      * 弯曲约束: C(p_i, p_k) = |p_i - p_k| - restLength  (skip j in distance)
      * 体积约束: C = 6 * V - restVolume
+     *
+     * @param subDt 子步时间步长，用于约束阻尼计算
      */
-    private _solveConstraint(c: XpbdConstraint, alphaTilde: number): void {
+    private _solveConstraint(c: XpbdConstraint, alphaTilde: number, subDt: number): void {
         switch (c.type) {
             case 'distance':
             case 'bend':
-                this._solveDistanceConstraint(c, alphaTilde);
+                this._solveDistanceConstraint(c, alphaTilde, subDt);
                 break;
             case 'volume':
-                this._solveVolumeConstraint(c, alphaTilde);
+                this._solveVolumeConstraint(c, alphaTilde, subDt);
                 break;
         }
     }
 
     /** 距离/弯曲约束求解 */
-    private _solveDistanceConstraint(c: XpbdConstraint, alphaTilde: number): void {
+    private _solveDistanceConstraint(c: XpbdConstraint, alphaTilde: number, subDt: number): void {
         // 距离约束和弯曲约束都使用两个端点粒子：i 和最后一个粒子 k
         const i = c.indices[0];
         const k = c.indices[c.indices.length - 1];
@@ -397,25 +519,55 @@ export class XpbdSolver {
         const dLambda = -(C + c.compliance * alphaTilde * c.lambda[0]) / denom;
         c.lambda[0] += dLambda;
 
-        // Δp = -Δλ * M⁻¹ * ∇C
         // ∇C direction: (pi - pk) / dist
         const nx = dx / dist;
         const ny = dy / dist;
         const nz = dz / dist;
 
-        // Δp = dLambda * M⁻¹ * ∇C
-        // ∇C_i = (pi - pk) / dist, ∇C_k = (pk - pi) / dist = -∇C_i
-        pi.p[0] += dLambda * pi.invMass * nx;
-        pi.p[1] += dLambda * pi.invMass * ny;
-        pi.p[2] += dLambda * pi.invMass * nz;
+        // ---- 刚度缩放 ----
+        // stiffness 缩放修正量：1.0 = 完全修正，0.5 = 半修正，0.0 = 无修正
+        const s = c.stiffness;
 
-        pk.p[0] -= dLambda * pk.invMass * nx;
-        pk.p[1] -= dLambda * pk.invMass * ny;
-        pk.p[2] -= dLambda * pk.invMass * nz;
+        // Δp = dLambda * M⁻¹ * ∇C * stiffness
+        // ∇C_i = (pi - pk) / dist, ∇C_k = (pk - pi) / dist = -∇C_i
+        pi.p[0] += dLambda * pi.invMass * nx * s;
+        pi.p[1] += dLambda * pi.invMass * ny * s;
+        pi.p[2] += dLambda * pi.invMass * nz * s;
+
+        pk.p[0] -= dLambda * pk.invMass * nx * s;
+        pk.p[1] -= dLambda * pk.invMass * ny * s;
+        pk.p[2] -= dLambda * pk.invMass * nz * s;
+
+        // ---- 约束方向阻尼 ----
+        // 沿约束方向阻尼相对速度，减少振荡
+        if (c.damping > 0) {
+            // 当前相对速度沿约束方向 (from verlet: v = (p - prevP) / subDt)
+            const vix = (pi.p[0] - pi.prevP[0]) / subDt;
+            const viy = (pi.p[1] - pi.prevP[1]) / subDt;
+            const viz = (pi.p[2] - pi.prevP[2]) / subDt;
+            const vkx = (pk.p[0] - pk.prevP[0]) / subDt;
+            const vky = (pk.p[1] - pk.prevP[1]) / subDt;
+            const vkz = (pk.p[2] - pk.prevP[2]) / subDt;
+
+            // 相对速度沿法线分量
+            const relVn = (vix - vkx) * nx + (viy - vky) * ny + (viz - vkz) * nz;
+
+            // 阻尼修正：修改 prevP 以影响下一帧速度
+            // impulse = -damping * relVn / wSum
+            const dampFactor = c.damping / (wSum + 1e-10);
+            const dampDelta = -dampFactor * relVn * subDt;
+
+            pi.prevP[0] += dampDelta * pi.invMass * nx;
+            pi.prevP[1] += dampDelta * pi.invMass * ny;
+            pi.prevP[2] += dampDelta * pi.invMass * nz;
+            pk.prevP[0] -= dampDelta * pk.invMass * nx;
+            pk.prevP[1] -= dampDelta * pk.invMass * ny;
+            pk.prevP[2] -= dampDelta * pk.invMass * nz;
+        }
     }
 
     /** 体积约束求解（四面体） */
-    private _solveVolumeConstraint(c: XpbdConstraint, alphaTilde: number): void {
+    private _solveVolumeConstraint(c: XpbdConstraint, alphaTilde: number, _subDt: number): void {
         const [i0, i1, i2, i3] = c.indices;
         const p0 = this.particles[i0];
         const p1 = this.particles[i1];
@@ -444,13 +596,174 @@ export class XpbdSolver {
         const dLambda = -(C + c.compliance * alphaTilde * c.lambda[0]) / denom;
         c.lambda[0] += dLambda;
 
-        // Δp_i = dLambda * invMass_i * ∇C_i
+        // Δp_i = dLambda * invMass_i * ∇C_i * stiffness
+        const s = c.stiffness;
         for (let i = 0; i < 4; i++) {
             const g = grads[i];
             const mass = particles[i].invMass;
-            particles[i].p[0] += dLambda * mass * g[0];
-            particles[i].p[1] += dLambda * mass * g[1];
-            particles[i].p[2] += dLambda * mass * g[2];
+            particles[i].p[0] += dLambda * mass * g[0] * s;
+            particles[i].p[1] += dLambda * mass * g[1] * s;
+            particles[i].p[2] += dLambda * mass * g[2] * s;
+        }
+    }
+
+    // ---- 穿透检测 ----
+
+    /**
+     * 检测并解决粒子间以及粒子-骨骼碰撞体间的相互穿透。
+     *
+     * 第一部分（原有）：遍历所有距离/弯曲约束的端点对，如果粒子间距离小于半径和，
+     * 说明发生了穿透（快速运动或大时间步导致约束未能阻止重叠），
+     * 将粒子沿分离方向推开消除重叠。
+     *
+     * 第二部分（boneFilter 骨骼碰撞）：当 boneCollisionEnabled 为 true 时，
+     * 检查每个粒子与 collisionCapsules 中每个启用胶囊体的穿透。
+     * 如果 boneFilter 非空，仅检测 boneName 在 filter 中的胶囊体。
+     * 穿透后沿胶囊体法线方向推开粒子，不修改胶囊体位置（胶囊体视为静态碰撞体）。
+     */
+    private _resolvePenetrations(): void {
+        // ---- 粒子-粒子穿透检测（原有逻辑） ----
+        const visited = new Set<string>();
+
+        for (const c of this.constraints) {
+            if (c.type === 'distance' || c.type === 'bend') {
+                const i = c.indices[0];
+                const k = c.indices[c.indices.length - 1];
+
+                // 避免重复处理同一对 (a,b)
+                const key = i < k ? `${i},${k}` : `${k},${i}`;
+                if (visited.has(key)) {
+                    continue;
+                }
+                visited.add(key);
+
+                const pi = this.particles[i];
+                const pk = this.particles[k];
+
+                const dx = pi.p[0] - pk.p[0];
+                const dy = pi.p[1] - pk.p[1];
+                const dz = pi.p[2] - pk.p[2];
+                const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                const minDist = pi.radius + pk.radius;
+                if (dist >= minDist || dist < 1e-10) {
+                    continue;
+                }
+
+                const nx = dx / dist;
+                const ny = dy / dist;
+                const nz = dz / dist;
+
+                const wSum = pi.invMass + pk.invMass;
+                if (wSum < 1e-10) {
+                    continue;
+                }
+
+                // 穿透深度
+                const overlap = minDist - dist;
+                // 按质量倒数比例推开
+                const push = overlap / wSum;
+
+                pi.p[0] += push * pi.invMass * nx;
+                pi.p[1] += push * pi.invMass * ny;
+                pi.p[2] += push * pi.invMass * nz;
+                pk.p[0] -= push * pk.invMass * nx;
+                pk.p[1] -= push * pk.invMass * ny;
+                pk.p[2] -= push * pk.invMass * nz;
+            }
+        }
+
+        // ---- 粒子-骨骼碰撞体穿透检测（boneFilter 过滤） ----
+        if (!this.boneCollisionEnabled || this.collisionCapsules.length === 0) {
+            return;
+        }
+
+        // 预构建 boneFilter 查找集（仅一次）
+        const filterSet = this.boneFilter.length > 0 ? new Set(this.boneFilter) : null;
+
+        for (let ci = 0; ci < this.collisionCapsules.length; ci++) {
+            const cap = this.collisionCapsules[ci];
+            if (!cap.enabled) {
+                continue;
+            }
+
+            // boneFilter 过滤：非空时仅检查列出的骨骼
+            if (filterSet && !filterSet.has(cap.boneName)) {
+                continue;
+            }
+
+            // 胶囊参数：端点 c ± direction * halfHeight
+            const cx = cap.center[0];
+            const cy = cap.center[1];
+            const cz = cap.center[2];
+            const dx = cap.direction[0];
+            const dy = cap.direction[1];
+            const dz = cap.direction[2];
+            const radius = cap.radius;
+            const hh = cap.halfHeight;
+
+            const topX = cx + dx * hh;
+            const topY = cy + dy * hh;
+            const topZ = cz + dz * hh;
+            const botX = cx - dx * hh;
+            const botY = cy - dy * hh;
+            const botZ = cz - dz * hh;
+
+            const segX = topX - botX;
+            const segY = topY - botY;
+            const segZ = topZ - botZ;
+            const segLenSq = segX * segX + segY * segY + segZ * segZ;
+
+            for (let pi = 0; pi < this.particles.length; pi++) {
+                const p = this.particles[pi];
+                if (p.invMass === 0) {
+                    continue; // 固定粒子不碰撞
+                }
+
+                const px = p.p[0];
+                const py = p.p[1];
+                const pz = p.p[2];
+
+                // 点到胶囊线段最近点
+                const toBotX = px - botX;
+                const toBotY = py - botY;
+                const toBotZ = pz - botZ;
+
+                let t: number;
+                if (segLenSq < 1e-12) {
+                    t = 0; // 退化为球体
+                } else {
+                    t = (toBotX * segX + toBotY * segY + toBotZ * segZ) / segLenSq;
+                    t = Math.max(0, Math.min(1, t));
+                }
+
+                const nearX = botX + segX * t;
+                const nearY = botY + segY * t;
+                const nearZ = botZ + segZ * t;
+
+                const diffX = px - nearX;
+                const diffY = py - nearY;
+                const diffZ = pz - nearZ;
+                const dist = Math.sqrt(diffX * diffX + diffY * diffY + diffZ * diffZ);
+
+                const minDist = radius + p.radius;
+                if (dist >= minDist || dist < 1e-10) {
+                    continue; // 未穿透
+                }
+
+                // 穿透深度
+                const penetration = minDist - dist;
+
+                // 单位法线（粒子指向胶囊表面外侧）
+                const nx = diffX / dist;
+                const ny = diffY / dist;
+                const nz = diffZ / dist;
+
+                // 沿法线推开粒子（胶囊体视为刚性，不移动）
+                p.p[0] += nx * penetration;
+                p.p[1] += ny * penetration;
+                p.p[2] += nz * penetration;
+            }
         }
     }
 
@@ -552,5 +865,49 @@ export class XpbdSolver {
         this.gravity[0] = x;
         this.gravity[1] = y;
         this.gravity[2] = z;
+    }
+}
+
+// ============================================================
+// 风场工具函数
+// ============================================================
+
+/**
+ * 对求解器中所有非固定粒子施加风场力。
+ *
+ * 使用求解器的 windEnabled / windDirection / windStrength 属性。
+ * 每粒子添加随机扰动因子 (0.6~1.4) 以产生自然的布料起伏效果。
+ *
+ * 可在 step() 前调用作为预置风场，或由 step() 内部每子步自动调用。
+ *
+ * @param solver  XPBD 求解器实例
+ * @param dt      时间步长（秒）
+ */
+export function applyWind(solver: XpbdSolver, dt: number): void {
+    if (!solver.windEnabled || solver.windStrength <= 0) {
+        return;
+    }
+
+    const [wx, wy, wz] = solver.windDirection;
+    const strength = solver.windStrength;
+
+    for (let i = 0; i < solver.particles.length; i++) {
+        const p = solver.particles[i];
+        if (p.invMass === 0) {
+            continue; // 固定粒子不受风场影响
+        }
+
+        // 随机扰动因子 0.6~1.4，为每粒子产生不同的受力，形成自然飘动
+        const flutter = 0.6 + Math.random() * 0.8;
+
+        // Verlet 积分中，修改 prevP 等价于施加速度脉冲：
+        //   v = (p - prevP) / dt  →  prevP 减去 impulse 后 v 增加 impulse/dt
+        const impulse = wx * strength * dt * flutter;
+        const impulseY = wy * strength * dt * flutter;
+        const impulseZ = wz * strength * dt * flutter;
+
+        p.prevP[0] -= impulse;
+        p.prevP[1] -= impulseY;
+        p.prevP[2] -= impulseZ;
     }
 }

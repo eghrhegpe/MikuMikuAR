@@ -84,24 +84,9 @@ export function setAutoLoop(v: boolean): void {
     autoLoop = v;
 }
 
-// ======== Loading State ========
-
-export let isLoadingModel = false;
-export function setIsLoadingModel(v: boolean): void {
-    isLoadingModel = v;
-}
-
-export let isLoadingVmd = false;
-export function setIsLoadingVmd(v: boolean): void {
-    isLoadingVmd = v;
-}
-
-export let isLoadingProp = false;
-export function setIsLoadingProp(v: boolean): void {
-    isLoadingProp = v;
-}
-
 // ======== Pending VMD ========
+// 注：isLoadingModel / isLoadingVmd / isLoadingProp 已在 ADR-046 (Phase 2B) 移除。
+// 加载串行化现由 LoadManager 队列统一保障，各加载器内部锁已删除，此处不再保留冗余状态。
 
 export let pendingVmd: PendingVmd | null = null;
 export function setPendingVmd(v: PendingVmd | null): void {

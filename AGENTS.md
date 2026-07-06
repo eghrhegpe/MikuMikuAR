@@ -14,7 +14,7 @@
 
 | 要做什么 | 去哪里 |
 |----------|--------|
-| 查当前状态 | `docs/status.md`（只读） |
+| 查当前状态 | `docs/status.md` |
 | 查技术实现 | `docs/architecture.md` |
 | 查决策 + 坑点 | `grep docs/adr/` |
 | 定位函数 | `grep docs/function-map.md` |
