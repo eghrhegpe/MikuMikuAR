@@ -91,7 +91,7 @@ Ctrl+Delete 快速移除焦点模型（已在键盘快捷键中支持）。
 
 ## 技术细节
 
-- **文件变更**：`config.ts`（ModelInstance 扩展）、`library.ts`（新增详情子菜单）、`scene.ts`（应用变换/可见性）
+- **文件变更**：`frontend/src/core/config.ts`（ModelInstance 扩展）、`frontend/src/menus/library.ts`（新增详情子菜单）、`frontend/src/scene/scene.ts`（应用变换/可见性）
 - **新增函数**：`buildModelDetailLevel`、`buildMotionBindingLevel`、`buildTransformLevel`、`buildVisibilityLevel`、`buildModelInfoLevel`
 - **状态管理**：`syncModelTransform(id)`、`syncModelVisibility(id)` 在 scene.ts 中实现
 - **序列化**：`serializeScene` / `deserializeScene` 扩展 transform/visibility 字段

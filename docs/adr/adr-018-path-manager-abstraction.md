@@ -123,4 +123,4 @@ type PathManager interface {
 
 1. **zip 内部条目缓存**：避免每次 `scanDirByExt` 都打开 zip 遍历条目，可缓存 zip 内文件列表
 2. **hasSubdir 索引化**：预建 `dir → children` 映射，将 O(N) 降为 O(1)
-3. **SAF 文件选择器**：Android 目录选择当前返回默认路径，后续接入 SAF URI
+3. **SAF 文件选择器**：已由 ADR-023 Phase C 通过 Wails v3 Dialog (CanChooseDirectories) 接通，无需自建 SAF 桥接
