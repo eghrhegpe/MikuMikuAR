@@ -93,3 +93,12 @@ config.json（settingDir 或 configDir）
 | 自动机位重启重置 | autoCamera* 移入 UIState |
 | 时间流逝重启重置 | timeOfDay* 移入 EnvState |
 | config.ts 拆分后文档过时 | AGENTS.md / architecture.md / function-map.md 已更新 |
+
+## 五、Android 文件选择
+
+Wails v3 (alpha2.105+) 原生支持 SAF 文件选择（`dialogs_android.go`）：
+- `Dialog.OpenFile()` 使用 Android Storage Access Framework
+- 选中的文件自动复制到 app cache 目录，返回真实文件系统路径
+- `openFileDialog()` → `filepath.ToSlash(path)` → 真实路径，不产生 `content://` URI
+
+目录选择（`OpenDocumentTree`）仍不支持，需自建 JNI bridge（非核心路径，延后）。
