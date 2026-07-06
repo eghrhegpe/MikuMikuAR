@@ -10,8 +10,6 @@ import {
     dom,
     setStatus,
     setFocusedModelId,
-    isLoadingModel,
-    setIsLoadingModel,
     pendingVmd,
     setPendingVmd,
     ModelInstance,
@@ -113,12 +111,6 @@ export async function loadPMXFile(
     if (!_scene || !_mmdRuntime) {
         return null;
     }
-    // Single-thread loading lock. Future: replace with a task queue for parallel loading.
-    if (isLoadingModel) {
-        setStatus('模型正在加载中，请稍候...', false);
-        return null;
-    }
-    setIsLoadingModel(true);
     let loadedMeshes: Mesh[] = [];
     let wasmModel: IMmdModel | null = null;
     let registeredId: string | null = null;
@@ -345,7 +337,6 @@ export async function loadPMXFile(
         setStatus('✗ 模型加载失败: ' + formatError(err), false);
         return null;
     } finally {
-        setIsLoadingModel(false);
         dom.loadingEl.style.display = 'none';
     }
 }

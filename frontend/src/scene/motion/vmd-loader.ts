@@ -11,8 +11,6 @@ import {
     focusedModelId,
     isPlaying,
     autoLoop,
-    isLoadingVmd,
-    setIsLoadingVmd,
     setPendingVmd,
     setIsPlaying,
     setStatus,
@@ -122,10 +120,6 @@ export async function loadVMDMotion(
 
 export async function loadVMDFromPath(path: string, targetModelId?: string): Promise<void> {
     const { focusedMmdModel, focusedModel } = await getScene();
-    if (isLoadingVmd) {
-        return;
-    }
-    setIsLoadingVmd(true);
     dom.loadingEl.style.display = 'block';
     dom.loadingText.textContent = 'VMD 加载中...';
     try {
@@ -159,7 +153,6 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
         setStatus('✗ VMD 加载失败', false);
     } finally {
         dom.loadingEl.style.display = 'none';
-        setIsLoadingVmd(false);
     }
 }
 
@@ -193,8 +186,6 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
 }
 
 export async function loadCameraVmdFromPath(path: string): Promise<void> {
-    if (isLoadingVmd) return;
-    setIsLoadingVmd(true);
     const { scene } = await getScene();
     dom.loadingEl.style.display = 'block';
     dom.loadingText.textContent = '相机 VMD 加载中...';
@@ -218,16 +209,11 @@ export async function loadCameraVmdFromPath(path: string): Promise<void> {
         setStatus('✗ 相机 VMD 加载失败', false);
     } finally {
         dom.loadingEl.style.display = 'none';
-        setIsLoadingVmd(false);
     }
 }
 
 export async function loadVPDPose(path: string, targetModelId?: string): Promise<void> {
     const { focusedModel, stopProcMotion, isProcVmdActive } = await getScene();
-    if (isLoadingVmd) {
-        return;
-    }
-    setIsLoadingVmd(true);
     dom.loadingEl.style.display = 'block';
     dom.loadingText.textContent = 'VPD 姿势加载中...';
     try {
@@ -266,6 +252,5 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
         setStatus('✗ 姿势加载失败', false);
     } finally {
         dom.loadingEl.style.display = 'none';
-        setIsLoadingVmd(false);
     }
 }

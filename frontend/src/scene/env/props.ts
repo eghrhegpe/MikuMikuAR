@@ -9,8 +9,6 @@ import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 
 import {
     propRegistry,
-    isLoadingProp,
-    setIsLoadingProp,
     setStatus,
     triggerAutoSave,
     dom,
@@ -20,23 +18,6 @@ import { resolveFileUrl, normPath } from '../../core/fileservice';
 import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
-
-// ======== 加载队列（替代简单的布尔锁） ========
-// 允许多次 loadProp 调用依次执行，而非直接返回 null。
-let _propLoadQueue: Promise<void> = Promise.resolve();
-
-/**
- * 将下一次道具加载入队，确保串行执行。
- * 返回一个 Promise，在本次加载完成后 resolve。
- */
-function enqueueLoad<T>(loader: () => Promise<T>): Promise<T> {
-    const result = _propLoadQueue.then(loader, loader);
-    _propLoadQueue = result.then(
-        () => {},
-        () => {}
-    );
-    return result;
-}
 
 // ======== 类型守卫 ========
 
@@ -51,115 +32,105 @@ function isValidScaling(s: number): boolean {
 // ======== 加载 ========
 
 export async function loadProp(filePath: string): Promise<string | null> {
-    // 通过队列保证串行加载，不再需要直接返回 null
-    return enqueueLoad(async () => {
-        if (isLoadingProp) {
-            // 队列中如果上一个任务还未开始（理论上不会发生），等待即可
+    // 使用 rAF 调度 DOM 操作，避免 onProgress 在非主线程回调中直接操作 DOM
+    const updateLoadingText = (text: string) => {
+        requestAnimationFrame(() => {
+            dom.loadingText.textContent = text;
+        });
+    };
+    let loadedMeshes: Mesh[] = [];
+
+    try {
+        dom.loadingEl.style.display = 'block';
+        updateLoadingText('加载道具 0%');
+
+        console.info('[props] loadProp:', filePath);
+
+        // 检查是否已加载
+        for (const [, inst] of propRegistry) {
+            if (inst.filePath === filePath) {
+                setStatus(`道具已存在: ${inst.name}`, false);
+                return inst.id;
+            }
+        }
+
+        const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
+        const fileName = normPath(filePath).split('/').pop() || '';
+        setStatus('加载道具...', false);
+
+        const result = await ImportMeshAsync(url, scene, {
+            onProgress: (evt) => {
+                if (evt.lengthComputable) {
+                    const pct = Math.round((evt.loaded / evt.total) * 100);
+                    updateLoadingText(`加载道具 ${pct}%`);
+                }
+            },
+        });
+
+        loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
+
+        if (loadedMeshes.length === 0) {
+            setStatus('✗ 道具未加载到网格', false);
             return null;
         }
-        setIsLoadingProp(true);
 
-        // 使用 rAF 调度 DOM 操作，避免 onProgress 在非主线程回调中直接操作 DOM
-        const updateLoadingText = (text: string) => {
-            requestAnimationFrame(() => {
-                dom.loadingText.textContent = text;
-            });
+        const id = `prop_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const displayName = fileName.replace(/\.pmx$/i, '');
+
+        // 创建父级 TransformNode，统一管理所有网格的变换
+        const container = new TransformNode(`prop_container_${id}`, scene);
+        for (const m of loadedMeshes) {
+            m.parent = container;
+        }
+
+        const inst: PropInstance = {
+            id,
+            name: displayName,
+            filePath,
+            port,
+            modelDir,
+            meshes: loadedMeshes,
+            rootMesh: loadedMeshes[0],
+            container,
+            position: [0, 0, 0],
+            rotationY: 0,
+            scaling: 1.0,
+            visible: true,
         };
-        let loadedMeshes: Mesh[] = [];
+        propRegistry.set(id, inst);
 
-        try {
-            dom.loadingEl.style.display = 'block';
-            updateLoadingText('加载道具 0%');
+        // 注册到材质系统，使 prop 可用 model 一致的材质 API
+        registerMaterialTarget(id, loadedMeshes);
 
-            console.info('[props] loadProp:', filePath);
-
-            // 检查是否已加载
-            for (const [, inst] of propRegistry) {
-                if (inst.filePath === filePath) {
-                    setStatus(`道具已存在: ${inst.name}`, false);
-                    return inst.id;
-                }
+        // 阴影集成
+        if (_envSys.shadow.generator) {
+            for (const m of inst.meshes) {
+                _envSys.shadow.generator.addShadowCaster(m);
+                m.receiveShadows = true;
             }
-
-            const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
-            const fileName = normPath(filePath).split('/').pop() || '';
-            setStatus('加载道具...', false);
-
-            const result = await ImportMeshAsync(url, scene, {
-                onProgress: (evt) => {
-                    if (evt.lengthComputable) {
-                        const pct = Math.round((evt.loaded / evt.total) * 100);
-                        updateLoadingText(`加载道具 ${pct}%`);
-                    }
-                },
-            });
-
-            loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
-
-            if (loadedMeshes.length === 0) {
-                setStatus('✗ 道具未加载到网格', false);
-                return null;
-            }
-
-            const id = `prop_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-            const displayName = fileName.replace(/\.pmx$/i, '');
-
-            // 创建父级 TransformNode，统一管理所有网格的变换
-            const container = new TransformNode(`prop_container_${id}`, scene);
-            for (const m of loadedMeshes) {
-                m.parent = container;
-            }
-
-            const inst: PropInstance = {
-                id,
-                name: displayName,
-                filePath,
-                port,
-                modelDir,
-                meshes: loadedMeshes,
-                rootMesh: loadedMeshes[0],
-                container,
-                position: [0, 0, 0],
-                rotationY: 0,
-                scaling: 1.0,
-                visible: true,
-            };
-            propRegistry.set(id, inst);
-
-            // 注册到材质系统，使 prop 可用 model 一致的材质 API
-            registerMaterialTarget(id, loadedMeshes);
-
-            // 阴影集成
-            if (_envSys.shadow.generator) {
-                for (const m of inst.meshes) {
-                    _envSys.shadow.generator.addShadowCaster(m);
-                    m.receiveShadows = true;
-                }
-            }
-
-            setStatus(`✓ 道具: ${displayName}`, true);
-            triggerAutoSave();
-            console.info('[props] load complete:', id, displayName);
-            return id;
-        } catch (err) {
-            console.error('[props] loadProp:', err);
-            // 清理已加载但未注册的资源
-            loadedMeshes.forEach((m) => {
-                try {
-                    m.dispose();
-                } catch {
-                    // Intentionally empty — 回滚阶段单个 mesh dispose 失败不影响整体清理
-                }
-            });
-            setStatus('✗ 道具加载失败', false);
-            return null;
-        } finally {
-            setIsLoadingProp(false);
-            requestAnimationFrame(() => {
-                dom.loadingEl.style.display = 'none';
-            });
         }
-    });
+
+        setStatus(`✓ 道具: ${displayName}`, true);
+        triggerAutoSave();
+        console.info('[props] load complete:', id, displayName);
+        return id;
+    } catch (err) {
+        console.error('[props] loadProp:', err);
+        // 清理已加载但未注册的资源
+        loadedMeshes.forEach((m) => {
+            try {
+                m.dispose();
+            } catch {
+                // Intentionally empty — 回滚阶段单个 mesh dispose 失败不影响整体清理
+            }
+        });
+        setStatus('✗ 道具加载失败', false);
+        return null;
+    } finally {
+        requestAnimationFrame(() => {
+            dom.loadingEl.style.display = 'none';
+        });
+    }
 }
 
 // ======== 移除 ========

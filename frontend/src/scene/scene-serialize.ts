@@ -49,6 +49,7 @@ import {
     removeModel,
     loadPMXFile,
     focusedModel,
+    modelManager,
     setModelBoneLinesVis,
     setModelBoneJointsVis,
     setModelPhysics,
