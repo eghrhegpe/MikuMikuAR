@@ -215,6 +215,17 @@ func (a *App) SelectPMXFile() (string, error) {
 	})
 }
 
+// SelectImportFile opens a file dialog to select PMX / ZIP / VMD files.
+// Used by the "导入文件" menu entry in library-core.ts.
+func (a *App) SelectImportFile() (string, error) {
+	return a.openFileDialog("选择 PMX / ZIP / VMD 文件", []application.FileFilter{
+		{DisplayName: "PMX Model (*.pmx)", Pattern: "*.pmx"},
+		{DisplayName: "MMD Archive (*.zip)", Pattern: "*.zip"},
+		{DisplayName: "VMD Motion (*.vmd)", Pattern: "*.vmd"},
+		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+	})
+}
+
 // SelectVMDMotion opens a file dialog to select a VMD motion file
 func (a *App) SelectVMDMotion() (string, error) {
 	return a.openFileDialog("选择 VMD 动作文件", []application.FileFilter{
