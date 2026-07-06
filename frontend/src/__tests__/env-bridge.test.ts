@@ -285,6 +285,13 @@ vi.mock('../scene/scene', () => {
     const scene = {
         ambientColor: { r: 0, g: 0, b: 0 },
         getAnimationRatio: () => 60,
+        onBeforeRenderObservable: {
+            add: vi.fn(),
+            remove: vi.fn(),
+// Babylon's addOnce defers to the next render frame; use setTimeout(0) so
+        // Vitest fake timers drive the callback at the correct animated time.
+        addOnce: (cb: () => void) => { setTimeout(cb, 0); },
+        },
     };
     return {
         scene,
