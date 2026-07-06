@@ -6,6 +6,7 @@ import { dom } from './dom';
 import {
     externalPaths,
     libraryRoot,
+    overridePaths,
     setPopupOpen,
 } from './state';
 import { normPath } from './fileservice';
@@ -327,4 +328,31 @@ export async function tryCatchStatus<T>(
         onError?.(err);
         return undefined;
     }
+}
+
+// ======== Resource Path Resolution ========
+
+/** 资源类别到 OverridePaths 键名的映射 */
+const CATEGORY_KEY: Record<string, string> = {
+    pmx: 'pmx',
+    vmd: 'vmd',
+    audio: 'audio',
+    stage: 'stage',
+    prop: 'prop',
+    environment: 'environment',
+    md_dress: 'md_dress',
+    setting: 'setting',
+};
+
+/**
+ * 统一的资源浏览目录解析。
+ * 优先级：overridePaths[category] > libraryRoot/subdir
+ * @returns 解析后的目录路径，如果 libraryRoot 未设置则返回空字符串
+ */
+export function getBrowseDir(category: string): string {
+    const key = CATEGORY_KEY[category] ?? category;
+    const override = (overridePaths as Record<string, string>)[key];
+    if (override) return override;
+    if (!libraryRoot) return '';
+    return libraryRoot + '/' + category;
 }
