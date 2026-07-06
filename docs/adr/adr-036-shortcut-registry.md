@@ -1,4 +1,4 @@
-# ADR-035: ShortcutRegistry — 可配置快捷键系统
+# ADR-036: ShortcutRegistry — 可配置快捷键系统
 
 **日期**: 2026-07-05
 > **状态**: 已完成 — ShortcutRegistry 核心 + main.ts 迁移 + 设置面板 UI 全部就位
@@ -132,3 +132,4 @@ Settings > 快捷键（`buildSettingsShortcutsLevel()`）：
 - **ui-rows/ui-advanced-rows slider 键盘** — 元素级控件，scope 特殊
 - **WASD freefly** — 连续输入，不是按键映射
 - **Ctrl-hold shortcuts-visible** — 修饰键自身状态显示，不是快捷键
+
