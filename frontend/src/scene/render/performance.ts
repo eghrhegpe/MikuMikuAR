@@ -8,7 +8,7 @@ import type { LightState, RenderState } from '../scene';
 
 // ======== Types ========
 
-export type PerformanceMode = 'auto' | 'quality' | 'balanced' | 'performance';
+export type PerformanceMode = 'auto' | 'quality' | 'balanced' | 'performance' | 'custom';
 
 /** Degradation level applied when FPS drops. */
 type DegradeLevel = 0 | 1 | 2 | 3;
@@ -281,7 +281,7 @@ const RECOVERY_THRESHOLDS: Record<DegradeLevel, number> = {
  * 采集平滑 FPS 并根据帧率触发降级/恢复。
  */
 export function updatePerformance(): void {
-    if (_mode === 'quality') {
+    if (_mode === 'quality' || _mode === 'custom') {
         return;
     }
 
@@ -341,6 +341,7 @@ export function updatePerformance(): void {
  * - "quality": 强制最高质量，永不降级
  * - "balanced": 强制 Level 1 降级
  * - "performance": 强制 Level 2 降级
+ * - "custom": 冻结当前 RenderState/LightState 为用户权威配置，停止自动降级
  */
 export function setPerformanceMode(mode: PerformanceMode): void {
     _mode = mode;
@@ -352,6 +353,11 @@ export function setPerformanceMode(mode: PerformanceMode): void {
         applyDegrade(1, true);
     } else if (mode === 'performance') {
         applyDegrade(2, true);
+    } else if (mode === 'custom') {
+        // Custom 模式：冻结当前渲染/光照状态为权威配置。
+        // 恢复自动降级遗留的快照（若有），使后续不再被降级覆盖；
+        // updatePerformance 已在 custom 模式下早返，不会再次降级。
+        resetPerformanceSnapshot();
     }
     console.info(`[Performance] Mode set to: ${mode}`);
 }

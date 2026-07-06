@@ -222,7 +222,7 @@ export interface UIState {
     fontFamily?: string;
     animations?: boolean;
     blurBg?: boolean;
-    performanceMode?: 'auto' | 'quality' | 'balanced' | 'performance';
+    performanceMode?: 'auto' | 'quality' | 'balanced' | 'performance' | 'custom';
     /** 帧率上限（0=不限） */
     fpsLimit?: number;
     /** 默认物理开关：新加载的 actor 模型是否默认启用物理模拟（WASM 版）。undefined 视为 true */

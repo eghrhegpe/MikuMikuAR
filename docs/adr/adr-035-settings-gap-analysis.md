@@ -112,7 +112,7 @@ Phase C（P2，后续）：
 | 快捷键/键位映射 | P0 | ✅ 已完成（shortcut-registry + 设置页重绑） |
 | 语言切换 (i18n) | P0 | ❌ 未做 |
 | 帧率上限 | P1 | ✅ 已完成（0–144 滑块） |
-| 渲染独立开关 (Custom) | P1 | ❌ 未做 |
+| 渲染独立开关 (Custom) | P1 | ✅ 已完成 |
 | 垂直同步 | P1 | ❌ 未做 |
 | 渲染分辨率缩放 | P1 | ✅ 已完成（engine.setHardwareScalingLevel + 性能页滑块 0.5–2x）|
 | 默认模型行为 | P1 | 🟡 部分（auto-scale 已实现；auto-center 与 arrange 冲突待设计）|
