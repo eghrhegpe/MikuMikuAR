@@ -241,6 +241,8 @@ export interface UIState {
     screenshotQuality?: number;
     autoCameraEnabled?: boolean;
     autoCameraBeatsPerSwitch?: number;
+    /** 自动检查更新：启动时自动查询 GitHub 最新发布（默认关） */
+    autoUpdateEnabled?: boolean;
 }
 
 // ======== Environment State ========
