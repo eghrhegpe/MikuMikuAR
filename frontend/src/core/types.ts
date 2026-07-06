@@ -231,6 +231,8 @@ export interface UIState {
     renderScale?: number;
     /** 鼠标/触控相机灵敏度倍数（1=默认，越大越灵敏） */
     cameraSensitivity?: number;
+    /** 反转 Y 轴：垂直拖拽方向取反（ArcRotate 相机）。undefined 视为 false */
+    invertYAxis?: boolean;
     /** 默认模型自动缩放：新加载模型按统一目标高度归一化（仅 actor） */
     autoScaleModel?: boolean;
     materialCategoryMap?: Record<string, string>;
