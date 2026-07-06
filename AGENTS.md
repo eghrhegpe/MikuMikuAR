@@ -28,11 +28,14 @@
 
 ## 技术栈
 
-桌面 | Wails v3 (Go + WebView2) |
-前端 | Vite + TypeScript |
-3D | Babylon.js 9.14.0 + babylon-mmd (fork) |
-物理 | XPBD (TS) + WASM Bullet |
-存储 | zip 原档 + 惰性 cache |
+| 层 | 选型 |
+|----|------|
+| 桌面 | Wails v3 (Go + WebView2) |
+| 前端 | Vite + TypeScript |
+| 3D | Babylon.js 9.14.0 + babylon-mmd (fork) |
+| 物理 | XPBD (TS) + WASM Bullet |
+| 存储 | zip 原档 + 惰性 cache |
+| 命令行 | pwsh + GitHub cli|
 
 ## 构建
 

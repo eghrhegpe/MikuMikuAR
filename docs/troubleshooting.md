@@ -131,7 +131,7 @@ scene.onAfterRenderObservable.add(() => {
 改 `linkedBone.rotationQuaternion`（局部旋转），手动触发 `updateWorldMatrix` 重算骨骼链，最后 `_markAsDirty` 刷新渲染矩阵。详见 `docs/architecture.md` §10.1。
 
 ### 涉及文件
-- `frontend/src/scene/scene-proc-motion.ts` — gaze observer 实现
+- `frontend/src/scene/motion/proc-motion-bridge.ts` — gaze observer 实现
 - `frontend/src/scene/scene.ts` — 运行时切换（`VITE_MMD_RUNTIME=js`）
 
 ---
@@ -191,37 +191,5 @@ console.log(BABYLON.ShaderStore.ShadersStore["textureAlphaCheckerVertexShader"])
 
 ### 涉及文件
 - `frontend/src/core/main.ts` — `loadVMDMotion` 函数
-
----
-
-## 渲染管线遗留 Bug（Phase 2 审核遗留，均已修复 ✅）
-
-> 来源：`docs/plans/渲染调参审核结果.txt`（已归档至 `docs/changelog/`）
-> 修复日期：2026-06-28
-
-### ✅ reattachPipeline 位置错误（#1）
-
-**修复**：`camera.ts:286-291` — `switchCameraMode` 末尾已加 `reattachPipeline()` 调用，`scene-menu.ts` 中无重复调用。
-
-### ✅ 切相机后 FOV 丢失（#2）
-
-**修复**：`camera.ts:289-290` — `switchCameraMode` 重挂管线后立即读取 `getRenderState().fov` 并应用到新相机。
-
-### ✅ getRenderState() outlineEnabled 硬编码（#3）
-
-**修复**：`scene.ts:280-281` — 模块级 `_outlineEnabled` / `_outlineColor` 变量；`getRenderState` 读取，`setRenderState` 更新。
-
-### ✅ reattachPipeline 相机累积（#4）
-
-**修复**：`scene.ts:371-380` — 改为先 `removeCamera` 旧相机再 `addCamera` 新相机，用 `_pipelineCamera` 追踪。
-
-### ✅ 用户预设保存失败时状态不一致（#5）
-
-**修复**：`scene-menu.ts:661` — 改为先调用 `SaveRenderPreset` 持久化，成功后再写内存 `userPresets`，无需回滚。
-
-### 涉及文件
-- `frontend/src/scene/camera.ts` — `switchCameraMode`（#1 #2）
-- `frontend/src/scene/scene.ts` — `getRenderState`/`reattachPipeline`（#3 #4）
-- `frontend/src/menus/scene-menu.ts` — `showPresetSaveDialog`（#5）
 
 

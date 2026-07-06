@@ -1,7 +1,6 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> 本文件不可修改，只读。
 
 ## 入口 & 事件
 
@@ -10,7 +9,7 @@
 | `init()` | `core/main.ts` | 应用启动入口 |
 | keyboard shortcuts | `core/main.ts` | Ctrl+1/2/3/4, Space, Escape, ←/→, WASD |
 | seek bar events | `core/main.ts` | pointerdown/move/up |
-| `closeAllOverlays()` | `core/config.ts` | 关闭所有弹窗 |
+| `closeAllOverlays()` | `core/utils.ts` | 关闭所有弹窗 |
 
 ## 3D 场景 & 模型
 
@@ -66,11 +65,11 @@
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `mmdRuntime`, `modelRegistry` | `core/config.ts` | 全局可变状态 |
-| `libraryRoot`, `allModels`, `popupStack` | `core/config.ts` | 模型库/弹窗状态 |
-| `thumbnailCache`, `modelMetaCache` | `core/config.ts` | 内存缓存 |
-| `dom` | `core/config.ts` | 所有 DOM 元素引用 |
-| `setStatus()`, `showHint()`, `hideHint()` | `core/config.ts` | 底部状态栏 |
+| `mmdRuntime`, `modelRegistry` | `core/state.ts` | 全局可变状态 |
+| `libraryRoot`, `allModels` | `core/state.ts` | 模型库状态 |
+| `thumbnailCache`, `modelMetaCache` | `core/state.ts` | 内存缓存 |
+| `dom` | `core/dom.ts` | 所有 DOM 元素引用 |
+| `setStatus()`, `showHint()`, `hideHint()` | `core/utils.ts` | 底部状态栏 |
 | `createIconifyIcon()` | `core/icons.ts` | Iconify 图标元素创建 |
 
 ## XPBD 物理
@@ -88,12 +87,12 @@
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `generateIdleVmd()` | `motion/procedural-motion.ts` | Idle 动作 VMD |
-| `generateAutoDanceVmd()` | `motion/procedural-motion.ts` | AutoDance VMD（节拍驱动）|
-| `buildVmd()` | `motion/vmd-writer.ts` | VMD 二进制构建 |
-| `loadVPDFromBuffer()` | `motion/vpd-parser.ts` | VPD 文本→VMD 二进制 |
-| `BeatDetector` | `motion/beat-detector.ts` | 节拍检测器 |
-| `amplitudeToWeight()` / `findLipMorph()` | `motion/lipsync.ts` | 振幅→morph权重 |
+| `generateIdleVmd()` | `motion-algos/procedural-motion.ts` | Idle 动作 VMD |
+| `generateAutoDanceVmd()` | `motion-algos/procedural-motion.ts` | AutoDance VMD（节拍驱动）|
+| `buildVmd()` | `motion-algos/vmd-writer.ts` | VMD 二进制构建 |
+| `loadVPDFromBuffer()` | `motion-algos/vpd-parser.ts` | VPD 文本→VMD 二进制 |
+| `BeatDetector` | `motion-algos/beat-detector.ts` | 节拍检测器 |
+| `amplitudeToWeight()` / `findLipMorph()` | `motion-algos/lipsync.ts` | 振幅→morph权重 |
 
 ## 环境系统
 

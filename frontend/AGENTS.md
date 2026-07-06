@@ -64,7 +64,7 @@ npm run check                                          # 确认未新增错误
 > ⚠️ **如实记录现状，不承诺 strict 化政策**。靠 code review 人工把关。
 
 - **不要新增 `any` 逃生** — 即使 `strict: false` 允许，新代码仍要避免 `as any` / `@ts-ignore` / `@ts-expect-error`。需要时加注释说明业务理由。
-- **类型定义就近放置** — 项目**没有**集中的 `src/types/` 目录。interface/type 与使用它的文件同模块放置；跨模块共享类型放 `core/config.ts`（注意该文件是冲突热点，需要根据终端/IDE 的并发控制策略来管理）。
+- **类型定义就近放置** — 项目**没有**集中的 `src/types/` 目录。interface/type 与使用它的文件同模块放置；跨模块共享类型放 `core/types.ts`（config.ts 已拆分为 types / state / dom / utils 四个子模块，通过 barrel re-export 保持 import 兼容）。
 - **没有路径别名** — `tsconfig.json` 无 `paths` 配置。一律用相对路径 import（如 `import { dom } from '../core/config'`）。
 - **binding 不可手改** — `frontend/wailsjs/go/` 是 Wails 自动生成。改 Go binding 后跑 `wails generate` 或在主代理处 build。
 
@@ -76,7 +76,7 @@ npm run check                                          # 确认未新增错误
 frontend/src/
 ├── core/                # 基础设施
 │   ├── main.ts          # ★ 应用入口（事件绑定 + 快捷键 + 初始化）
-│   ├── config.ts        # 共享状态 + DOM 引用 + 类型 + 工具函数
+│   ├── config.ts        # barrel re-export → types.ts / state.ts / dom.ts / utils.ts
 │   ├── fileservice.ts   # resolveFileUrl 统一文件 URL 解析
 │   ├── icons.ts         # Iconify 图标创建
 │   ├── iconify-registry.ts  # 本地图标注册表

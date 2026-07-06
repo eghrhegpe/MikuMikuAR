@@ -7,7 +7,7 @@
 
 ## 当前状态
 
-Wails (Go) + babylon-mmd 的桌面/移动 PMX 查看器，Phase 1-10 全部完成，环境系统增强已交付。核心管线、模型库管理、多模型场景、XPBD 布料物理、粒子系统、程序化动作、换装系统、Android 适配均已就绪。
+Wails (Go) + babylon-mmd 的桌面/移动 PMX 查看器。核心管线、模型库管理、多模型场景、XPBD 布料物理、粒子系统、程序化动作、换装系统、环境系统、Android 适配均已就绪。
 
 ---
 
@@ -88,7 +88,6 @@ cd frontend && npm run test     # vitest 单元测试
 | JS 运行时无 WASM Bullet 物理 | 注视追踪需切到 JS 运行时（`VITE_MMD_RUNTIME=js`），布料/头发摆动失效 |
 | SSS 次表面散射未实现 | 依赖 babylon-mmd 支持 PBR 材质，上游阻塞 |
 | SAF 完整路径待 Spike | Android 文件访问 Phase C 未实施 |
-| ~~config.ts 全局状态耦合~~ | ✅ 已拆为 types/state/dom/utils 四文件（ADR-032） |
 | **Android: Babylon.js 加载路径** | `index.html` 用 `<script src="/lib/babylon.js">` 根相对路径，Android WebView base URL 不同时可能 404 |
 | **Android: localStorage 容量** | 场景自动保存写 localStorage，Android 有 5MB 限制，大场景可能写满 |
 | **Android: AudioContext 惰性创建** | Android WebView 需用户交互后才能创建 AudioContext，首次无声音频可能失败 |
@@ -99,4 +98,4 @@ cd frontend && npm run test     # vitest 单元测试
 
 ## Bug 记录
 
-详见 git history。所有已知 Bug（#1-#32）均已修复。
+详见 git history。
