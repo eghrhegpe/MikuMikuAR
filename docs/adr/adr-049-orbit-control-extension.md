@@ -28,6 +28,19 @@
 - 修复：`buildTransformCard` 改为自管理 `root` 子容器（`style.display='contents'`，布局透明），`render()` 只清 `root.innerHTML`，`cardContainer(root, ...)` 替代 `cardContainer(container, ...)`。
 - 测试债清理：`model-detail-ui.test.ts` 的 `buildModelLevel` 两用例原断言依赖已淘汰的 `.slide-item`/`.slide-label` class（UI 重构后迁移至 `.cs-row`/`.cs-label`/`.collapsible-label`）。已改为检查 `.collapsible-wrapper>0`（验证折叠组不再被误清）+ `container.textContent` 包含关键标签（不依赖具体 class）。
 
+### 8.4 边界保护 + 专项单测（2026-07-06 21:47）
+- **问题**：原 `orbitToCartesian` 仅对合法输入安全；`setOrbit`/`setPropOrbit` 为「拒绝式」保护（非法输入 `console.warn`+提前返回），导致**损坏场景文件（orbitDistance=0）反序列化时静默不定位**，模型落到原点。
+- **修复**（钳制式，数学层与 API 层双重）：
+  - `core/orbit.ts`：`orbitToCartesian` 对 `azimuth`/`elevation`/`distance` 三参数均做有限性 + 值域钳制（`elevation`→[-90,90]，`distance`→`MIN_ORBIT_DISTANCE=0.001`，`azimuth` 非有限→0），**任何输入返回有限坐标，绝不 NaN**；`cartesianToOrbit` 增加 `len` 非有限时返回原点轨道坐标。
+  - 新增 `normalizeOrbit()`：复用钳制逻辑，供 `model-manager.setOrbit` / `props.setPropOrbit` 钳制**存储值**，确保持久化 orbit 字段始终合法（损坏文件反序列化也能安全定位，不再静默 no-op）。
+  - 两 setter 由「拒绝」改为「钳制 + 越界时 warn」，行为更稳健。
+- **专项单测**：新增 `src/__tests__/orbit.test.ts`（14 例），覆盖 §6 验证标准：
+  - #1 已知坐标 `orbitToCartesian(45,30,10)` ≈ `[6.1237, 5, 6.1237]`；
+  - #2 往返一致性 `cartesianToOrbit(orbitToCartesian(...))` 还原轨道参数；模式切换 `orbit→cartesian→orbit` 对笛卡尔坐标无跳变；
+  - 边界：`distance=0`/`elevation` 越界/`NaN`/`Infinity` 输入均返回有限坐标；`cartesianToOrbit` 原点与非有限输入安全；`normalizeOrbit` 钳制。
+- **验证**：`vitest run` 1067 passed / 0 failed（含 14 新增）；`tsc --noEmit` 0 错误；`vite build` 通过（1.94s）。
+- **已知无关失败**：`env-lighting.test.ts` 因 `babylon-mmd` 静态初始化 `Quaternion.Identity is not a function`（Babylon 版本不匹配）整文件无法加载，属预存环境级问题，与本次改动无关。
+
 
 ---
 

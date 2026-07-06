@@ -23,7 +23,7 @@ import {
     type PhysicsCategory,
     type RuntimeModel,
 } from '../../core/config';
-import { orbitToCartesian, cartesianToOrbit } from '../../core/orbit';
+import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '../../core/orbit';
 import type { ClothInstance } from '../../physics/xpbd-cloth';
 import { disposeCloth } from '../../physics/xpbd-cloth';
 import { disposeOverlay, restoreMaterials } from '../../outfit/outfit-overlay';
@@ -569,20 +569,23 @@ export class ModelManager {
         if (!inst) {
             return;
         }
-        if (
+        // 边界保护：钳制到合法值域（绝不产生 NaN / 退化），损坏场景文件反序列化也能安全定位。
+        const invalid =
             !Number.isFinite(azimuth) ||
             !Number.isFinite(elevation) ||
             !Number.isFinite(distance) ||
-            distance <= 0
-        ) {
-            console.warn('[model-manager] setOrbit: 无效参数', { azimuth, elevation, distance });
-            return;
+            distance <= 0 ||
+            elevation < -90 ||
+            elevation > 90;
+        const o = normalizeOrbit(azimuth, elevation, distance);
+        if (invalid) {
+            console.warn('[model-manager] setOrbit: 输入越界已钳制', { azimuth, elevation, distance, result: o });
         }
         inst.positionMode = 'orbit';
-        inst.orbitAzimuth = azimuth;
-        inst.orbitElevation = elevation;
-        inst.orbitDistance = distance;
-        const [x, y, z] = orbitToCartesian(azimuth, elevation, distance);
+        inst.orbitAzimuth = o.azimuth;
+        inst.orbitElevation = o.elevation;
+        inst.orbitDistance = o.distance;
+        const [x, y, z] = orbitToCartesian(o.azimuth, o.elevation, o.distance);
         if (inst.meshes.length > 0) {
             inst.meshes[0].position.set(x, y, z);
         }

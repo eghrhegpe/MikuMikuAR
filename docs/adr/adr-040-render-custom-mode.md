@@ -1,7 +1,7 @@
 # ADR-040: 渲染独立开关 — Custom 性能模式
 
 **日期**: 2026-07-06
-> **状态**: 提案（待评审）— 对应 ADR-035 P1 缺口「渲染独立开关 (Custom 覆盖模式)」
+> **状态**: 已实施（Implemented）— 对应 ADR-035 P1 缺口「渲染独立开关 (Custom 覆盖模式)」
 
 ---
 
@@ -157,12 +157,24 @@ PerformanceMode 选择
 
 ## 验收标准
 
-- [ ] 性能页出现「自定义」模式，选中后下方出现 12 项渲染开关。
-- [ ] `custom` 下逐项开关立即生效并随场景保存。
-- [ ] `custom` 下 FPS 再低也不自动降级（`updatePerformance` 早返）。
-- [ ] 从 `balanced`/`performance` 切到 `custom`，用户降级前设置被恢复（阴影/泛光等回到用户值）。
-- [ ] 切回 `auto`，降级/恢复逻辑正常工作。
-- [ ] `npm run build` 通过。
+- [x] 性能页出现「自定义」模式，选中后下方出现 12 项渲染开关。
+- [x] `custom` 下逐项开关立即生效并随场景保存。
+- [x] `custom` 下 FPS 再低也不自动降级（`updatePerformance` 早返）。
+- [x] 从 `balanced`/`performance` 切到 `custom`，用户降级前设置被恢复（阴影/泛光等回到用户值）。
+- [x] 切回 `auto`，降级/恢复逻辑正常工作。
+- [x] `npm run build` 通过。
+
+---
+
+## 实施记录（2026-07-06）
+
+**落地代码**：
+- `scene/render/performance.ts`：`PerformanceMode` 联合新增 `'custom'`；`updatePerformance()` 在 `custom` 模式早返（不降级）；`setPerformanceMode('custom')` 分支调用 `resetPerformanceSnapshot()` 恢复降级前快照并冻结为权威。
+- `scene/render/renderer.ts` / `scene/render/lighting.ts`：在 `setRenderState` / `setLightState` 末尾调用 `resetPerformanceSnapshot()`（附带修复 auto 模式手动改设置不重置快照的既有 bug）。
+- `menus/settings.ts`：`PERFORMANCE_MODES` 加 `custom` 项；切到 custom 时整页 `reRender()`；性能页在 custom 下渲染 12 项独立开关（阴影/泛光/FXAA/景深/暗角/边缘高亮/辉光/色差/颗粒/SSR/环境反射/SSAO），走 `setRenderState`/`setLightState` + 自动保存。
+- `core/types.ts`：`UIState.performanceMode` 联合同步加 `'custom'`。
+
+**验证**：`npm run build`（tsc + vite）✅ 通过（1.89s）。
 
 ---
 

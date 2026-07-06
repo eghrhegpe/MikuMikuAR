@@ -53,6 +53,8 @@ import { selectResourceRoot, selectOverridePath } from './library-core';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle, addDangerRow, addEmptyRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
+import { getRenderState, setRenderState } from '../scene/render/renderer';
+import { getLightState, setLightState } from '../scene/render/lighting';
 import { engine } from '../scene/scene';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
@@ -779,7 +781,7 @@ function buildSettingsExternalLevel(): PopupLevel {
 // ======== Performance Settings ========
 
 const PERFORMANCE_MODES: Array<{
-    key: 'auto' | 'quality' | 'balanced' | 'performance';
+    key: 'auto' | 'quality' | 'balanced' | 'performance' | 'custom';
     label: string;
     desc: string;
 }> = [
@@ -787,6 +789,7 @@ const PERFORMANCE_MODES: Array<{
     { key: 'quality', label: '质量优先', desc: '最高质量，不自动降级' },
     { key: 'balanced', label: '平衡', desc: '中等质量，适合大多数设备' },
     { key: 'performance', label: '性能优先', desc: '最低质量，确保流畅' },
+    { key: 'custom', label: '自定义', desc: '逐项独立控制渲染/光照开关' },
 ];
 
 function buildSettingsPerformanceLevel(): PopupLevel {
@@ -803,7 +806,12 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                     const row = slideRow(c, `lucide:${isActive ? 'check-circle' : 'circle'}`, m.label, false, () => {
                         setPerformanceMode(m.key);
                         SetPerformanceMode(m.key).catch(() => {});
-                        getSettingsMenu()?.updateControls();
+                        if (m.key === 'custom') {
+                            // 进入自定义模式：整页重建以渲染独立开关精编面板
+                            getSettingsMenu()?.reRender();
+                        } else {
+                            getSettingsMenu()?.updateControls();
+                        }
                         setStatus(`✓ 性能模式: ${m.label}`, true);
                     }, m.desc, undefined, isActive);
                     row.dataset.perfKey = m.key;
@@ -885,6 +893,39 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                 hint.textContent = '影响旋转/缩放/平移速度，实时作用于当前相机。';
                 c.appendChild(hint);
             });
+
+            // 自定义模式：逐项渲染/光照独立开关（冻结为权威配置，性能监控不覆盖）
+            if (getPerformanceMode() === 'custom') {
+                cardContainer(container, (c) => {
+                    addSectionTitle(c, '自定义渲染项');
+                    const rs = getRenderState();
+                    const ls = getLightState();
+                    const renderToggles: Array<{ label: string; value: boolean; apply: (v: boolean) => void }> = [
+                        { label: '阴影', value: ls.shadowEnabled, apply: (v) => setLightState({ shadowEnabled: v }) },
+                        { label: '泛光 (Bloom)', value: rs.bloomEnabled, apply: (v) => setRenderState({ bloomEnabled: v }) },
+                        { label: 'FXAA 抗锯齿', value: rs.fxaaEnabled, apply: (v) => setRenderState({ fxaaEnabled: v }) },
+                        { label: '景深 (DOF)', value: rs.dofEnabled, apply: (v) => setRenderState({ dofEnabled: v }) },
+                        { label: '暗角', value: rs.vignetteEnabled, apply: (v) => setRenderState({ vignetteEnabled: v }) },
+                        { label: '边缘高亮', value: rs.outlineEnabled, apply: (v) => setRenderState({ outlineEnabled: v }) },
+                        { label: '辉光 (Glow)', value: rs.glowEnabled, apply: (v) => setRenderState({ glowEnabled: v }) },
+                        { label: '色差', value: rs.chromaticAberrationEnabled, apply: (v) => setRenderState({ chromaticAberrationEnabled: v }) },
+                        { label: '颗粒', value: rs.grainEnabled, apply: (v) => setRenderState({ grainEnabled: v }) },
+                        { label: '屏幕空间反射 (SSR)', value: rs.ssrEnabled, apply: (v) => setRenderState({ ssrEnabled: v }) },
+                        { label: '环境反射探针', value: rs.reflectionProbeEnabled, apply: (v) => setRenderState({ reflectionProbeEnabled: v }) },
+                        { label: '环境光遮蔽 (SSAO)', value: rs.ssaoEnabled, apply: (v) => setRenderState({ ssaoEnabled: v }) },
+                    ];
+                    for (const t of renderToggles) {
+                        addToggleRow(c, t.label, t.value, (v) => {
+                            t.apply(v);
+                            setStatus(`✓ ${t.label}: ${v ? '开' : '关'}`, true);
+                        }, 'lucide:sliders-horizontal');
+                    }
+                    const hint = document.createElement('div');
+                    hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                    hint.textContent = '自定义模式下这些开关为权威配置，性能监控不会覆盖；MSAA 档位与强度参数请在场景→渲染菜单调整。';
+                    c.appendChild(hint);
+                });
+            }
         },
     };
 }

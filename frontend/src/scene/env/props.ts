@@ -15,7 +15,7 @@ import {
     PropInstance,
 } from '../../core/config';
 import { resolveFileUrl, normPath } from '../../core/fileservice';
-import { orbitToCartesian, cartesianToOrbit } from '../../core/orbit';
+import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '../../core/orbit';
 import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
@@ -228,20 +228,23 @@ export function setPropOrbit(id: string, azimuth: number, elevation: number, dis
     if (!inst) {
         return;
     }
-    if (
+    // 边界保护：钳制到合法值域（绝不产生 NaN / 退化），损坏场景文件反序列化也能安全定位。
+    const invalid =
         !Number.isFinite(azimuth) ||
         !Number.isFinite(elevation) ||
         !Number.isFinite(distance) ||
-        distance <= 0
-    ) {
-        console.warn('[props] setPropOrbit: 无效参数', { azimuth, elevation, distance });
-        return;
+        distance <= 0 ||
+        elevation < -90 ||
+        elevation > 90;
+    const o = normalizeOrbit(azimuth, elevation, distance);
+    if (invalid) {
+        console.warn('[props] setPropOrbit: 输入越界已钳制', { azimuth, elevation, distance, result: o });
     }
     inst.positionMode = 'orbit';
-    inst.orbitAzimuth = azimuth;
-    inst.orbitElevation = elevation;
-    inst.orbitDistance = distance;
-    const [x, y, z] = orbitToCartesian(azimuth, elevation, distance);
+    inst.orbitAzimuth = o.azimuth;
+    inst.orbitElevation = o.elevation;
+    inst.orbitDistance = o.distance;
+    const [x, y, z] = orbitToCartesian(o.azimuth, o.elevation, o.distance);
     inst.position = [x, y, z];
     const target = inst.container ?? inst.rootMesh;
     target.position.set(x, y, z);
