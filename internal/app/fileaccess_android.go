@@ -11,12 +11,15 @@ import (
 )
 
 // androidFileAccessor is a hybrid implementation:
-//   - content:// URIs → SAF bridge (Phase C, returns ErrContentUriNotSupported for now)
 //   - filesystem paths → os package (works for /data/data/... and /sdcard/...
 //     provided MANAGE_EXTERNAL_STORAGE is granted)
+//   - content:// URIs → ErrContentUriNotSupported (defensive guard)
 //
-// When Phase C lands, the content:// branch will delegate to a SAF bridge
-// that calls ContentResolver via JNI. Call sites won't need to change.
+// Wails v3 (alpha2.105+) natively handles SAF file selection via
+// Dialog.OpenFile(), which copies selected files to the cache directory
+// and returns real filesystem paths. Therefore content:// URIs should
+// never reach this accessor in normal operation. The guard is retained
+// as a safety net for any code path that might bypass the Wails dialog.
 type androidFileAccessor struct{}
 
 func newFileAccessor() FileAccessor { return &androidFileAccessor{} }
