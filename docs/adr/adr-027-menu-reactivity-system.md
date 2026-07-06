@@ -125,21 +125,38 @@ addPresetChip(group, light.name, false, onClick, {
 
 ### 实现
 
-每个控件内部维护缓存值，`update()` 时重新调用 `bind()` 取最新值，有变化才更新 DOM：
+每个控件内部维护缓存值，`update()` 时重新调用 `bind()` 取最新值，有变化才更新 DOM。
+自 2026-07 重构后，通过统一的 **`initControl`** 工具函数（`core/ui-rows.ts`）完成注册 + 立即初始化：
 
 ```typescript
-// addSliderRow 内部
-if (opts?.bind) {
-    let cachedValue = value;
+// 统一工具函数定义
+export function initControl<T>(
+    el: HTMLElement,
+    opts: ControlOptions<T> | undefined,
+    initial: T,
+    apply: (v: T, cached: T) => boolean,
+): void {
+    if (!opts) return;
+    let cached = initial;
     const update = (): void => {
-        const newVal = Number(opts.bind!());
-        if (newVal === cachedValue) return;  // 值未变化，跳过
-        cachedValue = newVal;
-        updateDisplay(newVal);  // 更新文本、fill、thumb
+        if (opts.onUpdate) { opts.onUpdate(el); return; }  // onUpdate 优先于 bind
+        if (!opts.bind) return;
+        const v = opts.bind();
+        if (apply(v, cached)) cached = v;  // apply 返回 true 才更新缓存
     };
     getCurrentRenderingMenu()?.registerControl(update);
+    update();  // 立即执行一次，避免初始显示原始数值而非文字标签
 }
+
+// 调用方只需提供 apply 回调（addSliderRow 示例）
+initControl(row, opts, value, (v, cached) => {
+    if (!Number.isFinite(v) || v === cached) return false;
+    updateDisplay(v);
+    return true;
+});
 ```
+
+关键约定：**`registerControl` 后必须立即调用 `update()`**，确保控件初始化时 `onUpdate`/`bind` 的首次渲染生效，不依赖后续 `updateControls()` 触发。
 
 ### 支持 bind 的控件清单
 

@@ -79,12 +79,11 @@ docs/
 ├── terminology.md         # 代码级命名规范
 ├── competitive-analysis.md # 竞品分析
 ├── outfits-spec.md        # 换装系统规格
-├── ui-duplication-audit.md # UI 重复审计
 ├── adr/                   # 决策记录（编号制）
 └── research/              # 调研归档（默认不读）
 ```
 
-删除 10 份，保留 11 份 + 2 子目录。
+删除 10 份，保留 10 份 + 2 子目录。`ui-duplication-audit.md` 在计划中但实际未创建。
 
 ## 教训
 

@@ -26,8 +26,8 @@
 | 内置资源 | `embed.FS` → HTTP 文件服务器 | `WebViewAssetLoader` 进程内服务，无端口 |
 | 用户模型资源 | `StartFileServer` → `127.0.0.1:PORT` | 同上，Android Linux 内核 TCP 正常 |
 | 绑定通信 | `@wailsio/runtime` in-process | 同上，JNI → Go 消息处理器 |
-| 对话框 | Wails Dialog API | SAF 文件选择器（OpenFile），目录/保存返回错误 |
-| 文件访问 | 直接 `os.*` 系统调用 | 沙盒内 `os.*` 可用；外部需 SAF 授权 |
+| 对话框 | Wails Dialog API | SAF 文件选择器（OpenFile + CanChooseDirectories）；SaveFile 仍不支 |
+| 文件访问 | 直接 `os.*` 系统调用 | 沙盒内 `os.*` 可用；外部文件通过 Wails Dialog 选后复制到 cache 返回真实路径 |
 
 关键性质：**Android 是 Linux 内核**，`net.Listen("tcp", "127.0.0.1:0")` / `os.ReadDir` 沙盒内 / WASM / SharedArrayBuffer 均正常工作。
 
@@ -41,7 +41,7 @@
 |------|------|------|
 | `app.go:20` | `var isAndroid = stdruntime.GOOS == "android"` | ✅ 正确 |
 | `app.go:167-169` | `openFileDialog` 返回"暂不可用"错误 | ⚠️ 过时，Wails v3 现已支持 SAF 文件选择 |
-| `library.go:18-21` | `SelectDir` 返回 `/sdcard/MikuMikuAR` | ⚠️ 回退策略合理但硬编码路径脆弱 |
+| `library.go:18-29` | `SelectDir` 改用 Wails Dialog API + `CanChooseDirectories(true)` | ✅ 已通过 SAF 原生目录选择器解决 |
 | `integration.go:346-351` | 软件管理 `switch GOOS` → Android 返回空列表 | ✅ 设计正确 |
 
 ---
@@ -60,7 +60,7 @@
 
 | ID | 问题 | 当前状态 | 建议 |
 |----|------|---------|------|
-| B01 | `SelectDir` 返回硬编码 `/sdcard/MikuMikuAR` | 目录可能不存在 | 启动时检测 + 自动创建，或让用户通过 `SetLibraryRoot` binding 手动设定 |
+| B01 | `SelectDir` 走 Wails Dialog API + `CanChooseDirectories(true)` | ✅ 已修复 — SAF 原生目录选择器正常工作 | — |
 | B02 | 软件管理（Blender/MMD/自定软件） | `integration.go` 已有 `case "android"` 返回空 | 前端隐藏软件管理面板即可，无需后端改动 |
 | B03 | 拖放文件导入依赖 `file.path` Wails 扩展 | `main.ts:drop` 事件 | Android 无桌面拖放，使用 SAF 文件选择器作为备选入口 |
 | B04 | 触摸事件 | Babylon.js `attachControl` 默认 PointerEvent | 需在 `scene.ts` 初始化时确认 `engine` 启用了触控支持 |

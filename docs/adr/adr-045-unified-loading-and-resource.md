@@ -80,7 +80,7 @@ class LoadManager {
 
 ### 4. 平台读取收尾
 
-`FileAccessor` 抽象已就位，但 `IsolateModelDir`/`StartFileServer` 未处理 `content://` URI。LoadManager 落地后，前端只调 `loadResource(kind, path)`，path 可以是 `file://` 或 `content://`，后端在 `IsolateModelDir` 加 SAF 桥接（copy to private dir → serve），前端无感。iOS 沙盒适配同路径。
+`FileAccessor` 抽象已就位。Android 文件选择已通过 Wails Dialog (SAF) 完成（ADR-023），Wails 将选中文件复制到 cache 后返回真实路径，LoadManager 只处理 `file://` 路径。`content://` URI 桥接（copy to private dir → serve）因 Wails 原生支持 SAF 文件选择，实际不再需要。iOS 沙盒适配同路径。
 
 ## 实施优先级
 
@@ -91,7 +91,7 @@ class LoadManager {
 | P1 | 道具材质支持（MaterialTarget 抽象）| `material.ts` + `props.ts` + `model-material.ts` + `scene-prop-levels.ts` | ✅ |
 | P1 | LoadManager 骨架 + 队列统一 | 新建 `core/load-manager.ts`（骨架，菜单层尚未迁移）| ✅ |
 | P2 | 统一详情面板骨架 | 新建 `resource-detail-helpers.ts`，stage/prop 改为薄壳；model-detail 因结构差异保持现状 | ✅ |
-| P3 | Android SAF 桥接 IsolateModelDir | Go 后端 | ⏳ |
+| P3 | Android SAF 桥接 IsolateModelDir | Go 后端 | ✅ 已由 ADR-023 Wails Dialog 文件选择器解决，无需自建桥接 |
 
 ## 不在范围
 

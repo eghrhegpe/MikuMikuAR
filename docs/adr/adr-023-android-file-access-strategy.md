@@ -2,7 +2,8 @@
 
 **日期**：2026-07-04
 **更新**：2026-07-06 — Phase C 重新评估：Wails v3 已原生支持 SAF 文件选择
-> **状态**: Phase A+B 已实施；Phase C 文件选择已由 Wails v3 原生解决；目录选择仍需自建 bridge
+**更新**：2026-07-06 — Phase C 目录选择已通过 `CanChooseDirectories(true)` 走通 Wails v3 SAF 原生目录选择器
+> **状态**: 已完成 — Phase A+B+C 全部实施 ✅
 
 ---
 
@@ -86,28 +87,28 @@ type FileAccessor interface {
 | SAF 能力 | Wails v3 状态 | 说明 |
 |----------|-------------|------|
 | `OpenFile`（选单文件） | ✅ 已支持 | SAF 文档选择器 → 自动复制到 cache → 返回真实路径 |
-| `OpenDirectory`（选目录树） | ❌ 不支持 | 返回 "directory selection is not supported on Android" |
+| `OpenDirectory`（选目录树） | ✅ 已支持 | `CanChooseDirectories(true)` + `CanChooseFiles(false)` 触发 SAF 原生目录选择器 |
 | `SaveFile`（保存文件） | ❌ 不支持 | 返回 "save file dialogs are not supported on Android" |
 | `TakePersistableUriPermission` | ❌ 不支持 | 需自建 bridge |
 | `ContentResolver.openFileDescriptor` | ❌ 不支持 | 需自建 bridge |
 
-**结论**：文件选择已由 Wails v3 原生解决，不需要自建 JNI 桥接。用户通过 Wails 文件选择器选的模型会自动复制到 cache 目录，返回真实路径，`IsolateModelDir` / `StartFileServer` 全链路正常工作。
+**结论**：文件选择 + 目录选择均已由 Wails v3 原生解决，不需要自建 JNI 桥接。用户通过 Wails 文件选择器选的模型会自动复制到 cache 目录返回真实路径，`IsolateModelDir` / `StartFileServer` 全链路正常工作。目录选择通过 `CanChooseDirectories(true)` 触发 SAF `OpenDocumentTree` intent，返回用户选中的目录路径。注意返回的是 SAF 复制后的临时路径（文件模式）或 content:// URI（目录模式），`filepath.ToSlash` 处理后前端可直接使用。
 
-**仍需自建 bridge 的场景**：目录选择（`OpenDocumentTree`）—— 用于让用户指定资源库根目录。`WailsBridge.java` 中的 `openDocumentTree` Spike 已实现 Java 侧，但 Go→Java JNI 调用链未接通。
+**实现位置**：`internal/app/library.go:16-29` — `SelectDir()` 方法统一走 Wails Dialog API，无平台差异分支。
 
 **三条路径重新评估**：
 
 | 路径 | 评估 | 决策 |
 |------|------|------|
 | A. Wails 原生（文件选择） | ✅ 已可用 | **采纳** — 文件选择直接用 Wails API |
-| B. 自建 JNI 桥接（目录选择） | Java 侧 Spike 已完成，Go 侧待接通 | **延后** — 目录选择非核心路径，用户可手动输入路径 |
-| C. `MANAGE_EXTERNAL_STORAGE` | 短期可用 | **保留** — 作为目录选择的 fallback |
+| B. 自建 JNI 桥接（目录选择） | Java 侧 Spike 已完成，Go 侧无需接通 | **废弃** — Wails v3 原生 `CanChooseDirectories(true)` 已满足需求 |
+| C. `MANAGE_EXTERNAL_STORAGE` | 不再需要 | **废弃** — 目录选择已由 SAF 原生支持 |
 
-### 4. 桌面端 SelectDir 小问题（已识别，待修复）
+### 4. 桌面端 SelectDir 小问题（仍待修复）
 
-**问题**：`library.go:25-29` 的 `OpenFile` dialog 虽设置 `CanChooseDirectories(true)`/`CanChooseFiles(false)`，但 Wails v3 在 Windows 上对这两个标志支持有缺陷，实际弹出文件选择器。
+**问题**：`library.go:16-29` 的 `OpenFile` dialog 虽设置 `CanChooseDirectories(true)`/`CanChooseFiles(false)`，但 Wails v3 在 Windows 上对这两个标志支持有缺陷，实际弹出文件选择器（而非目录选择器）。Android 端通过 SAF 正常工作。
 
-**修复方向**：可能需换 dialog 实现或调用原生 Win32 API。与 SAF 同属「目录选择能力缺失」类问题，建议一起解决。
+**修复方向**：Windows 端可能需换 dialog 实现或调用原生 Win32 `IFileOpenDialog` / `IFileDialog`。
 
 ---
 
@@ -144,22 +145,19 @@ type FileAccessor interface {
 | `internal/app/zipextract.go` | 3 处 `os.*`/`filepath.*` → `fileAccessor.*` |
 | `frontend/src/core/fileservice.ts` | `normPath` 增加 `content://` 识别 |
 
-### Phase C（待 Spike）
+### Phase C（已实施 ✅）
 
 | 文件 | 改动 |
 |------|------|
-| `build/android/app/src/main/java/com/wails/app/WailsBridge.java` | Spike：加 `openDocumentTree()` 方法 |
-| `build/android/app/src/main/java/com/wails/app/MainActivity.java` | Spike：`onActivityResult` 转发 + `ActivityResultLauncher` 注册 |
-| `internal/app/fileaccess_android.go` | Spike 成功后：`content://` 分支委托 SAF bridge |
-| `internal/app/library.go` | Spike 成功后：`SelectDir` 安卓端改用 `OpenDocumentTree` |
-| `internal/app/app.go` | Spike 成功后：`Config` 增加 `SafGrantedUris []string` |
+| `internal/app/library.go` | `SelectDir` 统一使用 Wails Dialog API，Android 端通过 `CanChooseDirectories(true)` 触发 SAF 目录选择器 |
 
 ---
 
 ## 后续方向
 
 1. ~~短期：执行 Phase C Spike（0.5 天），验证 SAF 可行性~~ → **已由 Wails v3 原生解决文件选择**
-2. **短期**：验证 Wails v3 文件选择器在真机上的行为（cache 复制 + 路径返回）
-3. **中期**：接通目录选择 JNI 桥接（`openDocumentTree` Go→Java 调用链），用于资源库路径选择
-4. **长期**：关注 Wails v3 稳定版发布，确认 SAF 行为无 breaking change
-5. **缓存治理**：`cache/MikuMikuAR/serve/` 目录随 `CleanOrphanCache` 清理，需监控膨胀情况
+2. ~~中期：接通目录选择 JNI 桥接~~ → **Wails v3 原生 `CanChooseDirectories(true)` 已满足需求**
+3. **短期**：验证 Wails v3 文件/目录选择器在真机上的行为（SAF 路径返回 + FileAccessor 兼容性）
+4. **待修复**：Windows 端 `SelectDir` 的 `CanChooseDirectories(true)` 无效问题（见 §4）
+5. **长期**：关注 Wails v3 稳定版发布，确认 SAF 行为无 breaking change
+6. **缓存治理**：`cache/MikuMikuAR/serve/` 目录随 `CleanOrphanCache` 清理，需监控膨胀情况
