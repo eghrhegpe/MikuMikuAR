@@ -177,9 +177,8 @@ export function GetCacheStats(): $CancellablePromise<$models.CacheStats | null> 
 }
 
 /**
- * GetConfig reads the persisted config from disk.
- * Returns an empty Config (no error) if file doesn't exist.
- * Real I/O errors (permission, filesystem) are logged via safeLogError.
+ * GetConfig reads the persisted config from disk with a read lock,
+ * ensuring safe concurrent access with write operations.
  */
 export function GetConfig(): $CancellablePromise<$models.Config | null> {
     return $Call.ByID(445048723);
