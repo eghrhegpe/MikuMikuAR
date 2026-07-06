@@ -26,6 +26,8 @@ import {
     SetPerformanceMode,
     GetBuildInfo,
     GetCacheStats,
+    CheckForUpdate,
+    SetUIAutoUpdate,
 } from '../core/wails-bindings';
 import {
     dom,
@@ -68,6 +70,7 @@ import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/
 import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
 import { rescanAndSync, reloadConfig } from './library';
 import { softwareKindIcon } from '../core/icons';
+import { Browser } from '@wailsio/runtime';
 import { showConfirm, showPrompt } from '../core/dialog';
 import { tryCatchStatus } from '../core/utils';
 import {
@@ -1849,6 +1852,61 @@ function buildSettingsAboutLevel(): PopupLevel {
                 refreshCacheStats();
                 // 清缓存后自动刷新统计
                 window.addEventListener('mmar:cache-cleared', refreshCacheStats);
+            });
+
+            // 更新：自动检查 + 手动检查
+            cardContainer(container, (c) => {
+                addSectionTitle(c, '更新');
+                addToggleRow(
+                    c,
+                    '自动检查更新（启动时）',
+                    uiState.autoUpdateEnabled === true,
+                    (v) => {
+                        setUIState({ autoUpdateEnabled: v });
+                        SetUIAutoUpdate(v);
+                        setStatus(`✓ 自动检查更新: ${v ? '开' : '关'}`, true);
+                    }
+                );
+                const resultRow = document.createElement('div');
+                resultRow.className = 'slide-item';
+                resultRow.style.cssText =
+                    'flex-direction:column;align-items:stretch;gap:4px;padding:8px 14px;';
+                resultRow.innerHTML = `
+                    <div data-update-status style="font-size:12px;color:var(--text);">点击「检查更新」查看版本</div>
+                    <a data-update-link href="#" style="display:none;font-size:12px;color:var(--accent);cursor:pointer;">前往下载最新版本 →</a>
+                `;
+                c.appendChild(resultRow);
+                slideRow(c, 'lucide:download', '检查更新', false, async () => {
+                    const statusEl = resultRow.querySelector<HTMLElement>('[data-update-status]');
+                    const linkEl = resultRow.querySelector<HTMLAnchorElement>('[data-update-link]');
+                    if (statusEl) statusEl.textContent = '检查中…';
+                    if (linkEl) linkEl.style.display = 'none';
+                    try {
+                        const r = await CheckForUpdate();
+                        if (!r) {
+                            if (statusEl) statusEl.textContent = '检查失败';
+                            return;
+                        }
+                        if (r.error) {
+                            if (statusEl) statusEl.textContent = `检查出错：${r.error}`;
+                            return;
+                        }
+                        if (statusEl) {
+                            statusEl.textContent = r.available
+                                ? `发现新版本 v${r.latest}（当前 v${r.current}）`
+                                : `已是最新版本（v${r.current}）`;
+                        }
+                        if (linkEl && r.available && r.url) {
+                            linkEl.style.display = 'inline';
+                            linkEl.onclick = (e) => {
+                                e.preventDefault();
+                                Browser.OpenURL(r.url);
+                            };
+                        }
+                    } catch {
+                        if (statusEl) statusEl.textContent = '检查失败';
+                    }
+                });
             });
 
             // 维护工具：清除缓存

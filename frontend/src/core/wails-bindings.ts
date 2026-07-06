@@ -14,4 +14,5 @@ export type {
     RenderPreset,
     SoftwareEntry,
     UIState,
+    UpdateCheckResult,
 } from '../../bindings/mikumikuar/internal/app/models';

@@ -346,6 +346,7 @@ type UIState struct {
 		ScreenshotQuality float64 `json:"screenshotQuality"`
 		AutoCameraEnabled  bool    `json:"autoCameraEnabled"`
 		AutoCameraBeatsPerSwitch int `json:"autoCameraBeatsPerSwitch"`
+		AutoUpdateEnabled        bool `json:"autoUpdateEnabled"`
 	}
 
 // OverridePaths allows per-category path overrides.

@@ -25,7 +25,8 @@ import {
     uiState,
 } from './config';
 import { registerIconBundle } from './icons-bundle';
-import { GetConfig, ImportZip, ImportLocalFile, Events } from './wails-bindings';
+import { GetConfig, ImportZip, ImportLocalFile, Events, CheckForUpdate } from './wails-bindings';
+import { Browser } from '@wailsio/runtime';
 import { generateTextColors } from '../menus/settings';
 import { loadManager } from './load-manager';
 import {
@@ -582,6 +583,16 @@ async function init(): Promise<void> {
         await restoreEnvState();
         // Apply persisted UI state
         await restoreUIState();
+        // 启动时自动检查更新（若用户在设置中开启）
+        if (uiState.autoUpdateEnabled) {
+            CheckForUpdate()
+                .then((r) => {
+                    if (r && r.available && r.url) {
+                        showUpdateToast(r.latest, r.url);
+                    }
+                })
+                .catch(() => {});
+        }
         // Sync module-level state from persisted envState
         syncTimeOfDayFromEnv();
         restoreAutoCameraState();
@@ -661,6 +672,33 @@ async function restoreUIState(): Promise<void> {
     if (s.performanceMode) {
         setPerformanceMode(s.performanceMode);
     }
+    if (s.autoUpdateEnabled) {
+        uiState.autoUpdateEnabled = s.autoUpdateEnabled;
+    }
+}
+
+// ======== Update Notification ========
+function showUpdateToast(latest: string, url: string): void {
+    const toast = document.getElementById('updateToast');
+    if (!toast) {
+        return;
+    }
+    const fileEl = toast.querySelector<HTMLElement>('.toast-file');
+    if (fileEl) {
+        fileEl.textContent = `v${latest} 可用，点击前往下载`;
+    }
+    const btn = toast.querySelector<HTMLButtonElement>('.toast-import-btn');
+    if (btn) {
+        btn.onclick = () => {
+            Browser.OpenURL(url);
+            toast.classList.remove('visible');
+        };
+    }
+    const ignoreBtn = toast.querySelector<HTMLButtonElement>('.toast-ignore-btn');
+    if (ignoreBtn) {
+        ignoreBtn.onclick = () => toast.classList.remove('visible');
+    }
+    toast.classList.add('visible');
 }
 
 // ======== Drag & Drop Import ========

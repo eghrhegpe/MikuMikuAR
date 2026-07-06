@@ -77,6 +77,7 @@ export function createMockUIState(overrides?: Partial<UIState>): UIState {
         screenshotQuality: 90,
         autoCameraEnabled: false,
         autoCameraBeatsPerSwitch: 4,
+        autoUpdateEnabled: false,
         ...overrides,
     };
 }

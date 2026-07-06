@@ -631,6 +631,11 @@ func (a *App) SetUIBlurBg(on bool) error {
 	return a.updateConfig(func(cfg *Config) { cfg.UIState.BlurBg = on }, false)
 }
 
+// SetUIAutoUpdate persists whether to auto-check for updates on startup.
+func (a *App) SetUIAutoUpdate(on bool) error {
+	return a.updateConfig(func(cfg *Config) { cfg.UIState.AutoUpdateEnabled = on }, false)
+}
+
 // SetPerformanceMode persists the performance mode setting.
 func (a *App) SetPerformanceMode(mode string) error {
 	return a.updateConfig(func(cfg *Config) { cfg.UIState.PerformanceMode = mode }, false)
