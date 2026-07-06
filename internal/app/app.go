@@ -335,6 +335,8 @@ type UIState struct {
 		PerformanceMode string  `json:"performanceMode"` // "auto"|"quality"|"balanced"|"performance"
 		ScreenshotFormat  string  `json:"screenshotFormat"`
 		ScreenshotQuality float64 `json:"screenshotQuality"`
+		AutoCameraEnabled  bool    `json:"autoCameraEnabled"`
+		AutoCameraBeatsPerSwitch int `json:"autoCameraBeatsPerSwitch"`
 	}
 
 // OverridePaths allows per-category path overrides.
@@ -342,7 +344,9 @@ type UIState struct {
 type OverridePaths struct {
 	PMX         string `json:"pmx"`         // 默认 resource_root/PMX
 	VMD         string `json:"vmd"`         // 默认 resource_root/VMD
+	Audio       string `json:"audio"`       // 默认 resource_root/audio
 	Stage       string `json:"stage"`       // 默认 resource_root/stage
+	Prop        string `json:"prop"`        // 默认 resource_root/prop
 	Environment string `json:"environment"` // 默认 resource_root/environment
 	MDDress     string `json:"md_dress"`    // 默认 resource_root/MD-dress
 	Setting     string `json:"setting"`     // 默认 resource_root/setting
@@ -433,8 +437,14 @@ type EnvState struct {
 	FogStart   float64    `json:"fogStart"`
 	FogEnd     float64    `json:"fogEnd"`
 
-	ClothEnabled bool        `json:"clothEnabled"`
-	ClothConfig  ClothConfig `json:"clothConfig"`
+	ClothEnabled         bool        `json:"clothEnabled"`
+	ClothConfig          ClothConfig `json:"clothConfig"`
+	ClothDebugParticles  bool        `json:"clothDebugParticles"`
+	ClothDebugConstraints bool       `json:"clothDebugConstraints"`
+	ClothDebugColliders  bool        `json:"clothDebugColliders"`
+
+	TimeOfDayActive bool    `json:"timeOfDayActive"`
+	TimeOfDaySpeed  float64 `json:"timeOfDaySpeed"`
 }
 
 // ClothConfig stores XPBD cloth simulation parameters.
@@ -567,7 +577,7 @@ func (a *App) ensureResourceDirs(cfg *Config) {
 		root = DefaultResourceRoot()
 		cfg.ResourceRoot = root
 	}
-	dirs := []string{"PMX", "VMD", "stage", "environment", "MD-dress", "setting"}
+	dirs := []string{"PMX", "VMD", "audio", "stage", "prop", "environment", "MD-dress", "setting"}
 	for _, d := range dirs {
 		os.MkdirAll(filepath.Join(root, d), 0755)
 	}
@@ -590,6 +600,16 @@ func (a *App) GetPath(cfg *Config, category string) string {
 			return cfg.OverridePaths.VMD
 		}
 		return filepath.Join(root, "VMD")
+	case "audio":
+		if cfg.OverridePaths.Audio != "" {
+			return cfg.OverridePaths.Audio
+		}
+		return filepath.Join(root, "audio")
+	case "prop":
+		if cfg.OverridePaths.Prop != "" {
+			return cfg.OverridePaths.Prop
+		}
+		return filepath.Join(root, "prop")
 	case "stage":
 		if cfg.OverridePaths.Stage != "" {
 			return cfg.OverridePaths.Stage

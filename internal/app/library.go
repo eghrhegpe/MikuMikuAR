@@ -61,6 +61,7 @@ func (a *App) scanAllCategories(cfg *Config) ([]ModelEntry, error) {
 		{"scene", []string{".x", ".pmx", ".zip"}},
 		{"environment", []string{".png", ".jpg", ".jpeg", ".hdr", ".dds", ".json", ".zip"}},
 		{"outfit", []string{".zip", ".pmx", ".x"}},
+		{"prop", []string{".pmx", ".zip"}},
 	}
 	var allModels []ModelEntry
 	for _, s := range scans {
@@ -94,6 +95,8 @@ func mapCategoryKey(category string) string {
 		return "vmd"
 	case "audio":
 		return "audio"
+	case "prop":
+		return "prop"
 	case "pose":
 		return "pose"
 	case "scene":
@@ -421,38 +424,43 @@ func scanDirRecursive(dir string, category string, entryType string, thumbDir st
 // Returns an empty Config (no error) if file doesn't exist.
 // Real I/O errors (permission, filesystem) are logged via safeLogError.
 func (a *App) GetConfig() (*Config, error) {
-	// 1. Try setting/ subdirectory first (new location)
-	sd, sErr := settingDir(nil)
-	if sErr == nil {
-		data, rErr := os.ReadFile(filepath.Join(sd, "config.json"))
-		if rErr == nil {
-			var cfg Config
-			if uErr := json.Unmarshal(data, &cfg); uErr == nil {
-				a.finaliseConfig(&cfg)
-				return &cfg, nil
-			}
-		}
-	}
-
-	// 2. Fallback: read from AppData (old location)
+	// Phase 1: read bootstrap config from internal storage (configDir).
+	// This gives us ResourceRoot so we can locate the setting/ directory.
 	dir, err := configDir()
 	if err != nil {
 		return &Config{}, nil
 	}
 	data, err := os.ReadFile(filepath.Join(dir, "config.json"))
-	if err != nil {
-		if !os.IsNotExist(err) {
-			a.safeLogError("GetConfig: read error %v", err)
+	if err != nil && !os.IsNotExist(err) {
+		a.safeLogError("GetConfig: read error %v", err)
+	}
+
+	// Phase 2: if bootstrap has a ResourceRoot, also check setting/ for a
+	// potentially newer copy written by writeConfig.
+	if data != nil {
+		var bootstrap Config
+		if uErr := json.Unmarshal(data, &bootstrap); uErr == nil {
+			a.finaliseConfig(&bootstrap)
+			if bootstrap.ResourceRoot != "" {
+				sd, sErr := settingDir(&bootstrap)
+				if sErr == nil {
+					settingData, rErr := os.ReadFile(filepath.Join(sd, "config.json"))
+					if rErr == nil {
+						var settingCfg Config
+						if uErr := json.Unmarshal(settingData, &settingCfg); uErr == nil {
+							a.finaliseConfig(&settingCfg)
+							return &settingCfg, nil
+						}
+					}
+				}
+			}
+			// No ResourceRoot or settingDir failed — use bootstrap as-is.
+			return &bootstrap, nil
 		}
-		return &Config{}, nil
 	}
-	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		a.safeLogError("GetConfig: json unmarshal error %v", err)
-		return &Config{}, nil
-	}
-	a.finaliseConfig(&cfg)
-	return &cfg, nil
+
+	// Phase 3: no valid config anywhere — return empty defaults.
+	return &Config{}, nil
 }
 
 // currentConfigVersion is the latest config schema version.
@@ -528,6 +536,10 @@ func (a *App) SetOverridePath(category string, path string) error {
 			cfg.OverridePaths.PMX = path
 		case "vmd":
 			cfg.OverridePaths.VMD = path
+		case "audio":
+			cfg.OverridePaths.Audio = path
+		case "prop":
+			cfg.OverridePaths.Prop = path
 		case "stage":
 			cfg.OverridePaths.Stage = path
 		case "environment":
