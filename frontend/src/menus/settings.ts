@@ -81,6 +81,18 @@ export async function preloadAutoImportState(): Promise<void> {
     }
 }
 
+// ======== VMD 伴音自动加载 ========
+/** 加载 VMD 动作时自动发现并加载同目录同名音频（.mp3/.wav/.ogg/.flac）。默认开启。 */
+let autoLoadCompanionAudio = true;
+
+export function isAutoLoadCompanionAudioEnabled(): boolean {
+    return autoLoadCompanionAudio;
+}
+
+export function setAutoLoadCompanionAudio(v: boolean): void {
+    autoLoadCompanionAudio = v;
+}
+
 // ======== Settings (SlideMenu) ========
 
 const { getMenu: getSettingsMenu, refreshRoot: refreshSettingsRoot, show: showSettings } = registerPopupMenu({
@@ -929,6 +941,17 @@ function buildSettingsAudioLevel(): PopupLevel {
                     setStatus(v ? '✓ BPM 量化已开启' : '✓ BPM 量化已关闭', true);
                 }, 'lucide:activity', {
                     bind: () => getBpmQuantizeEnabled(),
+                });
+            });
+
+            // 加载动作时自动加载同目录音乐
+            cardContainer(container, (c) => {
+                addToggleRow(c, '加载动作时自动加载同目录音乐', autoLoadCompanionAudio, (v) => {
+                    setAutoLoadCompanionAudio(v);
+                    getSettingsMenu()?.updateControls();
+                    setStatus(v ? '✓ 伴音自动加载已开启' : '✓ 伴音自动加载已关闭', true);
+                }, 'lucide:disc-3', {
+                    bind: () => autoLoadCompanionAudio,
                 });
             });
         },

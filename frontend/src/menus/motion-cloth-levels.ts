@@ -52,7 +52,6 @@ export function buildClothParamsLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                const cfg = envState.clothConfig;
                 let _recreateTimer: ReturnType<typeof setTimeout> | null = null;
                 const debouncedRecreate = () => {
                     if (_recreateTimer) clearTimeout(_recreateTimer);
@@ -76,7 +75,7 @@ export function buildClothParamsLevel(): PopupLevel {
                     addPresetChip(styleGroup, CLOTH_STYLE_LABELS[key] || key, false, () => {
                         const preset = CLOTH_STYLE_PRESETS[key];
                         if (preset) {
-                            setEnvState({ clothConfig: { ...cfg, ...preset } });
+                            setEnvState({ clothConfig: { ...envState.clothConfig, ...preset } });
                             recreateCloth();
                             import('./scene-menu').then(m => m.getSceneMenu()?.reRender());
                         }
@@ -98,7 +97,7 @@ export function buildClothParamsLevel(): PopupLevel {
                     addPresetChip(chipGroup, CLOTH_PRESET_LABELS[key] || key, false, () => {
                         const preset = CLOTH_PRESETS[key];
                         if (preset) {
-                            setEnvState({ clothConfig: { ...cfg, ...preset } });
+                            setEnvState({ clothConfig: { ...envState.clothConfig, ...preset } });
                             recreateCloth();
                             import('./scene-menu').then(m => m.getSceneMenu()?.reRender());
                         }
@@ -111,8 +110,8 @@ export function buildClothParamsLevel(): PopupLevel {
                     const mmd = modelManager?.focusedMmdModel();
                     if (!mmd) { setStatus('⚠ 请先加载模型', false); return; }
                     const getMat = (name: string) => modelManager?.getBoneWorldMatrix(name) ?? null;
-                    const fitted = autoFitClothDimensions(cfg.anchorBone || '腰', getMat, mmd.runtimeBones);
-                    setEnvState({ clothConfig: { ...cfg, ...fitted } });
+                    const fitted = autoFitClothDimensions(envState.clothConfig.anchorBone || '腰', getMat, mmd.runtimeBones);
+                    setEnvState({ clothConfig: { ...envState.clothConfig, ...fitted } });
                     recreateCloth();
                     import('./scene-menu').then(m => m.getSceneMenu()?.reRender());
                     setStatus(`✓ 已推算: 半径 ${fitted.innerRadius.toFixed(3)}, 长度 ${fitted.length.toFixed(2)}`, true);
@@ -121,27 +120,30 @@ export function buildClothParamsLevel(): PopupLevel {
                 addCollapsible(c, {
                     title: '形状', icon: 'lucide:shirt', defaultOpen: false,
                     renderContent: (cc) => {
-                        addSliderRow(cc, '裙长', cfg.length, 0.1, 2.5, 0.05, (v) => { setEnvState({ clothConfig: { ...cfg, length: v } }); debouncedRecreate(); }, 'lucide:ruler');
-                        addSliderRow(cc, '裙摆角度', cfg.slope, 0, 45, 1, (v) => { setEnvState({ clothConfig: { ...cfg, slope: v } }); debouncedRecreate(); }, 'lucide:triangle');
-                        addSliderRow(cc, '腰部半径', cfg.innerRadius, 0.03, 1.0, 0.01, (v) => { setEnvState({ clothConfig: { ...cfg, innerRadius: v } }); debouncedRecreate(); }, 'lucide:circle');
+                        const c2 = envState.clothConfig;
+                        addSliderRow(cc, '裙长', c2.length, 0.1, 2.5, 0.05, (v) => { setEnvState({ clothConfig: { ...envState.clothConfig, length: v } }); debouncedRecreate(); }, 'lucide:ruler');
+                        addSliderRow(cc, '裙摆角度', c2.slope, 0, 45, 1, (v) => { setEnvState({ clothConfig: { ...envState.clothConfig, slope: v } }); debouncedRecreate(); }, 'lucide:triangle');
+                        addSliderRow(cc, '腰部半径', c2.innerRadius, 0.03, 1.0, 0.01, (v) => { setEnvState({ clothConfig: { ...envState.clothConfig, innerRadius: v } }); debouncedRecreate(); }, 'lucide:circle');
                     },
                 });
 
                 addCollapsible(c, {
                     title: '物理', icon: 'lucide:wind', defaultOpen: false,
                     renderContent: (cc) => {
-                        addSliderRow(cc, '布料柔度', cfg.compliance, 0, 0.01, 0.0005, (v) => { setEnvState({ clothConfig: { ...cfg, compliance: v } }); debouncedRecreate(); }, 'lucide:wind');
-                        addSliderRow(cc, '弯曲柔度', cfg.bendCompliance, 0, 0.05, 0.002, (v) => { setEnvState({ clothConfig: { ...cfg, bendCompliance: v } }); debouncedRecreate(); }, 'lucide:curl');
-                        addSliderRow(cc, '阻尼', cfg.damping, 0.8, 0.999, 0.01, (v) => { setEnvState({ clothConfig: { ...cfg, damping: v } }); debouncedRecreate(); }, 'lucide:droplet');
-                        addSliderRow(cc, '重力倍率', cfg.gravityScale, 0.1, 3, 0.1, (v) => { setEnvState({ clothConfig: { ...cfg, gravityScale: v } }); debouncedRecreate(); }, 'lucide:arrow-down');
+                        const c3 = envState.clothConfig;
+                        addSliderRow(cc, '布料柔度', c3.compliance, 0, 0.01, 0.0005, (v) => { setEnvState({ clothConfig: { ...envState.clothConfig, compliance: v } }); debouncedRecreate(); }, 'lucide:wind');
+                        addSliderRow(cc, '弯曲柔度', c3.bendCompliance, 0, 0.05, 0.002, (v) => { setEnvState({ clothConfig: { ...envState.clothConfig, bendCompliance: v } }); debouncedRecreate(); }, 'lucide:curl');
+                        addSliderRow(cc, '阻尼', c3.damping, 0.8, 0.999, 0.01, (v) => { setEnvState({ clothConfig: { ...envState.clothConfig, damping: v } }); debouncedRecreate(); }, 'lucide:droplet');
+                        addSliderRow(cc, '重力倍率', c3.gravityScale, 0.1, 3, 0.1, (v) => { setEnvState({ clothConfig: { ...envState.clothConfig, gravityScale: v } }); debouncedRecreate(); }, 'lucide:arrow-down');
                     },
                 });
 
                 addCollapsible(c, {
                     title: '细分', icon: 'lucide:grid', defaultOpen: false,
                     renderContent: (cc) => {
-                        addSliderRow(cc, '水平分段', cfg.segmentsH, 12, 36, 2, (v) => { setEnvState({ clothConfig: { ...cfg, segmentsH: v } }); debouncedRecreate(); }, 'lucide:grid');
-                        addSliderRow(cc, '垂直分段', cfg.segmentsV, 6, 24, 2, (v) => { setEnvState({ clothConfig: { ...cfg, segmentsV: v } }); debouncedRecreate(); }, 'lucide:grid');
+                        const c4 = envState.clothConfig;
+                        addSliderRow(cc, '水平分段', c4.segmentsH, 12, 36, 2, (v) => { setEnvState({ clothConfig: { ...envState.clothConfig, segmentsH: v } }); debouncedRecreate(); }, 'lucide:grid');
+                        addSliderRow(cc, '垂直分段', c4.segmentsV, 6, 24, 2, (v) => { setEnvState({ clothConfig: { ...envState.clothConfig, segmentsV: v } }); debouncedRecreate(); }, 'lucide:grid');
                     },
                 });
 
