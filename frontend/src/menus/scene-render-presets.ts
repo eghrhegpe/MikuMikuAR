@@ -5,7 +5,7 @@ import { setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { showPrompt } from '../core/dialog';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus, showErrorToast } from '../core/utils';
 import {
     slideRow,
 } from '../core/ui-helpers';
@@ -169,7 +169,7 @@ export async function showPresetSaveDialog(): Promise<void> {
     const r = await tryCatchStatus(async () => {
         await SaveRenderPreset(trimmed, JSON.stringify(state));
         return true;
-    }, '✗ 保存预设失败');
+    }, '✗ 保存预设失败', (err) => showErrorToast('保存渲染预设失败', err instanceof Error ? err.message : String(err)));
     if (r) {
         USER_FILTER_PRESETS[trimmed] = state;
         setStatus(`✓ 预设已保存: ${trimmed}`, true);
