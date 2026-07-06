@@ -1,7 +1,7 @@
 // [doc:architecture] Scene Stage Levels — 舞台管理/舞台变换弹窗层级
 // 从 scene-render-levels.ts 拆分
 
-import { setStatus, cardContainer, modelRegistry, escapeHtml, propRegistry } from '../core/config';
+import { setStatus, cardContainer, modelRegistry, overridePaths, libraryRoot, escapeHtml, propRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { showConfirm } from '../core/dialog';
@@ -14,7 +14,7 @@ import {
     setModelVisibility,
 } from '../scene/manager/model-ops';
 import { loadManager } from '../core/load-manager';
-import { getPropList, removeProp } from '../scene/scene';
+import { getPropList, removeProp, modelManager } from '../scene/scene';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 import { buildStageLightLevel } from './scene-stage-lights';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
@@ -107,22 +107,33 @@ export function buildStageLevel(): PopupLevel {
 
             // —— 卡片 2：已加载道具列表（始终显示） ——
             {
-                const props = getPropList();
+                // 合并 propRegistry + modelRegistry 中 prop 目录下的模型
+                const propDir = (overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')).toLowerCase();
+                const propModels = Array.from(modelManager.modelRegistry.entries())
+                    .filter(([, inst]) => inst.kind === 'actor' && propDir && inst.filePath.toLowerCase().startsWith(propDir));
+                const propItems = [
+                    ...getPropList().map(p => ({ id: p.id, name: p.name, fromPropRegistry: true })),
+                    ...propModels.map(([id, inst]) => ({ id, name: inst.name, fromPropRegistry: false })),
+                ];
                 cardContainer(container, (c) => {
-                    if (props.length > 0) {
-                        for (const p of props) {
+                    if (propItems.length > 0) {
+                        for (const item of propItems) {
                             const row = document.createElement('div');
                             row.className = 'slide-item';
                             row.style.cursor = 'pointer';
-                            row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(p.name)}</span><span class="slide-arrow">&gt;</span>`;
-                            row.addEventListener('click', () => getSceneMenu()?.push(buildPropDetailLevel(p.id)));
+                            row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(item.name)}</span><span class="slide-arrow">&gt;</span>`;
+                            row.addEventListener('click', () => getSceneMenu()?.push(buildPropDetailLevel(item.id)));
                             const delBtn = document.createElement('span');
                             delBtn.className = 'slide-del-btn';
                             delBtn.textContent = '×';
                             delBtn.title = '删除道具';
                             delBtn.addEventListener('click', (e) => {
                                 e.stopPropagation();
-                                removeProp(p.id);
+                                if (item.fromPropRegistry) {
+                                    removeProp(item.id);
+                                } else {
+                                    removeModel(item.id);
+                                }
                                 reRenderSceneMenu();
                             });
                             row.appendChild(delBtn);

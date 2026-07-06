@@ -5,6 +5,7 @@
 import {
     setStatus,
     libraryRoot,
+    overridePaths,
     PopupLevel,
     PopupRow,
     escapeHtml,
@@ -507,9 +508,11 @@ function buildMotionRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
     // Card 1: 已加载模型
     if (modelManager.size > 0) {
+        const propDir = (overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')).toLowerCase();
         for (const [id, inst] of modelManager.modelRegistry) {
-            // 舞台不占用动作栏位——只有角色模型可绑定 VMD
             if (inst.kind !== 'actor') continue;
+            // 路径在 prop 目录下的视为道具，不参与动作绑定
+            if (propDir && inst.filePath.toLowerCase().startsWith(propDir)) continue;
             items.push({
                 kind: 'folder',
                 label: inst.name,
@@ -521,7 +524,7 @@ function buildMotionRootItems(): PopupRow[] {
         }
         // 图层入口（仅角色模型）
         for (const [id, inst] of modelManager.modelRegistry) {
-            if (inst.kind === 'actor') {
+            if (inst.kind === 'actor' && !(propDir && inst.filePath.toLowerCase().startsWith(propDir))) {
                 const layerCount = inst.vmdLayers.length;
                 items.push({
                     kind: 'folder',
