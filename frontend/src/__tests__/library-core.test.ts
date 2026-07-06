@@ -32,6 +32,8 @@ vi.mock('../core/wails-bindings', () => ({
     SetResourceRoot: vi.fn(),
     SetOverridePath: vi.fn(),
     SelectDir: vi.fn(),
+    SelectImportFile: vi.fn(),
+    ImportZip: vi.fn(),
     ScanModelDir: vi.fn(),
     GetLibraryIndex: vi.fn(),
     ExtractZip: vi.fn(),
@@ -46,6 +48,10 @@ vi.mock('../core/wails-bindings', () => ({
     SelectAudioFile: vi.fn(),
     SelectVMDMotion: vi.fn(),
     SelectVPDPose: vi.fn(),
+}));
+
+vi.mock('../core/load-manager', () => ({
+    loadManager: { load: vi.fn() },
 }));
 
 vi.mock('./model-detail', () => ({ buildModelLevel: vi.fn() }));
@@ -105,7 +111,7 @@ vi.mock('../core/config', () => ({
 
 // ----- SUT -----
 
-import { modelToRow, buildLevel } from '../menus/library-core';
+import { modelToRow, buildLevel, importFile } from '../menus/library-core';
 
 // ----- helpers -----
 
@@ -485,6 +491,88 @@ describe('buildLevel', () => {
         expect(rows[0].label).toBe('b.pmx');
         expect(rows[1].label).toBe('c.pmx');
         expect(rows[2].label).toBe('a.pmx');
+    });
+});
+
+// ===================================================================
+// importFile
+// ===================================================================
+
+describe('importFile', () => {
+    let mockLoad: ReturnType<typeof vi.fn>;
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        const mockLm = await import('../core/load-manager');
+        mockLoad = (mockLm.loadManager.load as ReturnType<typeof vi.fn>);
+        const mockB = await import('../core/wails-bindings');
+        (mockB.SelectImportFile as any).mockResolvedValue('/test/file.pmx');
+    });
+
+    it('does nothing when user cancels file picker (returns empty)', async () => {
+        const mockB = await import('../core/wails-bindings');
+        (mockB.SelectImportFile as any).mockResolvedValue('');
+        await importFile();
+        expect(mockB.ImportZip).not.toHaveBeenCalled();
+        expect(mockLoad).not.toHaveBeenCalled();
+    });
+
+    it('routes .pmx to loadManager.load with kind=actor', async () => {
+        const mockB = await import('../core/wails-bindings');
+        (mockB.SelectImportFile as any).mockResolvedValue('/test/model.pmx');
+        await importFile();
+        expect(mockLoad).toHaveBeenCalledWith({ kind: 'actor', path: '/test/model.pmx' });
+    });
+
+    it('routes .vmd to loadManager.load with kind=vmd', async () => {
+        const mockB = await import('../core/wails-bindings');
+        (mockB.SelectImportFile as any).mockResolvedValue('/test/motion.vmd');
+        await importFile();
+        expect(mockLoad).toHaveBeenCalledWith({ kind: 'vmd', path: '/test/motion.vmd' });
+    });
+
+    it('routes .zip to ImportZip and refreshLibrary', async () => {
+        const mockB = await import('../core/wails-bindings');
+        (mockB.SelectImportFile as any).mockResolvedValue('/test/archive.zip');
+        (mockB.ImportZip as any).mockResolvedValue(undefined);
+        await importFile();
+        expect(mockB.ImportZip).toHaveBeenCalledWith('/test/archive.zip');
+    });
+
+    it('shows error for unsupported file extension', async () => {
+        const mockB = await import('../core/wails-bindings');
+        (mockB.SelectImportFile as any).mockResolvedValue('/test/readme.txt');
+        await importFile();
+        expect(mockLoad).not.toHaveBeenCalled();
+        const { setStatus } = await import('../core/config');
+        expect(setStatus).toHaveBeenCalledWith(
+            expect.stringContaining('不支持的文件格式'),
+            false,
+        );
+    });
+
+    it('catches loadManager error on pmx load', async () => {
+        const mockB = await import('../core/wails-bindings');
+        (mockB.SelectImportFile as any).mockResolvedValue('/test/model.pmx');
+        mockLoad.mockRejectedValue(new Error('corrupt file'));
+        await importFile();  // should not throw
+        const { setStatus } = await import('../core/config');
+        expect(setStatus).toHaveBeenCalledWith(
+            expect.stringContaining('模型加载失败'),
+            false,
+        );
+    });
+
+    it('catches ImportZip error', async () => {
+        const mockB = await import('../core/wails-bindings');
+        (mockB.SelectImportFile as any).mockResolvedValue('/test/archive.zip');
+        (mockB.ImportZip as any).mockRejectedValue(new Error('extraction failed'));
+        await importFile();  // should not throw
+        const { setStatus } = await import('../core/config');
+        expect(setStatus).toHaveBeenCalledWith(
+            expect.stringContaining('导入失败'),
+            false,
+        );
     });
 });
 
