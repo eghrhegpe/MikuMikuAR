@@ -25,6 +25,7 @@ import {
 } from '../../core/config';
 import type { ClothInstance } from '../../physics/xpbd-cloth';
 import { disposeCloth } from '../../physics/xpbd-cloth';
+import { disposeOverlay, restoreMaterials } from '../../outfit/outfit-overlay';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
@@ -318,6 +319,8 @@ export class ModelManager {
         }
 
         // Clean up cloth before disposing meshes
+        disposeOverlay(inst);
+        restoreMaterials(inst);
         this.removeCloth(id);
 
         // ⚠️ onRemoveModel（mmdRuntime.destroyMmdModel）必须在网格释放之前调用！
@@ -516,6 +519,10 @@ export class ModelManager {
         if (!inst) {
             return;
         }
+        if (!Number.isFinite(scaling)) {
+            console.warn('[model-manager] setScaling: 无效值', scaling);
+            return;
+        }
         inst.scaling = Math.max(0.01, scaling);
         syncModelTransform(inst);
         this.onChange();
@@ -534,6 +541,10 @@ export class ModelManager {
     setPosition(id: string, x: number, y: number, z: number): void {
         const inst = this.modelRegistry.get(id);
         if (!inst) {
+            return;
+        }
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+            console.warn('[model-manager] setPosition: 无效坐标', { x, y, z });
             return;
         }
         if (inst.meshes.length > 0) {
@@ -860,7 +871,11 @@ export class ModelManager {
             this._boneUpdateObserver = null;
         }
         this._disposeClothObserver();
-        // Dispose all remaining cloth instances
+        // Dispose all remaining overlays and cloth instances
+        for (const [, inst] of this.modelRegistry) {
+            disposeOverlay(inst);
+            restoreMaterials(inst);
+        }
         for (const id of Array.from(this.clothInstances.keys())) {
             this.removeCloth(id);
         }

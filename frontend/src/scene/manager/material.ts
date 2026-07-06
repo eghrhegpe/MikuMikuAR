@@ -406,6 +406,54 @@ export function disposeModelMaterialState(id: string): void {
     _matEnabled.delete(id);
 }
 
+/**
+ * 检查指定分类的全部材质是否都已启用。
+ * 用于 batch level 的 headerToggle bind，返回 true 表示全开。
+ */
+export function isMatCategoryAllEnabled(id: string, cat: string): boolean {
+    const meshes = _getMeshesById(id);
+    if (!meshes) return true;
+    const state = _ensureState(id);
+    if (!state.has(cat)) return true;
+    for (let mi = 0; mi < meshes.length; mi++) {
+        const m = meshes[mi].material;
+        if (!m || !(m instanceof StandardMaterial)) continue;
+        if (_catOf(m.name) !== cat) continue;
+        if (!isMatEnabled(id, mi)) return false;
+    }
+    return true;
+}
+
+/**
+ * 按分类批量切换材质可见性。
+ * 将指定分类下所有材质统一设为 enabled/disabled。
+ */
+export function setMatCategoryEnabled(id: string, cat: string, enabled: boolean): void {
+    const meshes = _getMeshesById(id);
+    if (!meshes) return;
+    const state = _ensureState(id);
+    if (!state.has(cat)) return;
+    for (let mi = 0; mi < meshes.length; mi++) {
+        const m = meshes[mi].material;
+        if (!m || !(m instanceof StandardMaterial)) continue;
+        if (_catOf(m.name) !== cat) continue;
+        const current = isMatEnabled(id, mi);
+        if (current === enabled) continue;
+        meshes[mi].setEnabled(enabled);
+        if (enabled) {
+            _matEnabled.get(id)?.delete(mi);
+        } else {
+            let me = _matEnabled.get(id);
+            if (!me) {
+                me = new Map();
+                _matEnabled.set(id, me);
+            }
+            me.set(mi, false);
+        }
+    }
+    triggerAutoSave();
+}
+
 /** 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。
  *  如需完整恢复材质到原始状态请先调用 resetMatCatParams。 */
 export function resetPerMaterialParams(id: string): void {
