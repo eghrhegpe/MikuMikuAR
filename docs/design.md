@@ -182,6 +182,31 @@ addSliderRow(container, label: string, value: number, min: number, max: number, 
 
 简化变体：`sliderRow(c, label, value, min, max, step, icon, onDragEnd)` —— 拖拽结束时触发。
 
+**内部 DOM 结构**：
+
+```html
+<div class="cs-bar" tabindex="0" role="slider" aria-valuenow="..." aria-valuemin="..." aria-valuemax="...">
+  <div class="cs-fill" style="width: NN%"></div>
+  <div class="cs-thumb" style="left: NN%"></div>
+</div>
+```
+
+| 子元素 | 作用 | 关键样式 |
+|--------|------|----------|
+| `.cs-fill` | 已填充部分的进度条 | `height: 100%`, `width: NN%`（行内），`background: linear-gradient(...)` |
+| `.cs-thumb` | 滑块手柄 | `position: absolute`, `left: NN%`（行内），`height: 100%` |
+
+**两个布局上下文**：
+
+`.cs-bar` 可在两种结构中复用：
+
+| 上下文 | 父容器 | `.cs-bar` 尺寸策略 | 来源 |
+|--------|--------|---------------------|------|
+| 独立滑块 | `.cs-row`（column flex） | `width: 100%` 填满行宽 | `addSliderRow` |
+| 颜色行内滑块 | `.clr-row`（row flex） | `flex: 1` 填充剩余空间 | `addColorSliderRow` |
+
+基类 `.cs-bar` 使用 `width: 100%`（兼容 column/block 布局），颜色行内场景通过 `.clr-row .cs-bar { flex: 1; width: auto; }` 覆盖为 flex 尺寸。
+
 ---
 
 ### 模式按钮组 `addModeRow`
@@ -251,7 +276,9 @@ function addEmptyRow(parent: HTMLElement, text: string): HTMLElement
 | `.slide-sublabel-inline` | 内联 sublabel | `inlineSub: true` |
 | `.toggle-row` | toggle 行容器 | `addToggleRow` |
 | `.mode-btn` / `.mode-btn.active` | 模式按钮 | `addModeRow` |
+| `.cs-bar` / `.cs-fill` / `.cs-thumb` | 滑条轨道/填充/手柄 | `addSliderRow` / `addColorSliderRow` |
 | `.clr-block` / `.clr-swatch` | 颜色选择器 | `addColorSliderRow` |
+| `.clr-row` / `.clr-channel` / `.clr-value` | 颜色行（flex row 布局） | `addColorSliderRow` |
 | `.collapsible-mat` | 材质面板折叠变体 | `addCollapsible(variant:'mat')` |
 
 ---

@@ -194,9 +194,18 @@ WASM Bullet 物理（`babylon-mmd` 的 `MmdWasmPhysics`）仅暴露 `rigidBodySt
 | 碰撞主从开关仅作用 XPBD | WASM Bullet 无独立碰撞 toggle（只有主物理开关和分类开关） | 若 WASM 未来暴露碰撞组掩码，可接入 |
 | 布料/非布料物理参数混在同一个「精细调节」 | 当前只有布料子页，未来可能有非布料 XPBD 参数 | 子页拆分留给后续演进 |
 
----
+## 8. 后续修正
 
-## 8. 验证
+**2026-07-06 — 布料材质预设物理参数反向修复**
+- 原预设中「硬质」compliance=0.008（在 XPBD 中为最软）「丝绸」compliance=0.0005（最硬），值与中文命名完全相反
+- XPBD compliance=0 为完美刚性，值越大约束越软
+- 修正后顺序（从硬到软）：硬质 0.0002 → 皮革 0.0005 → 棉布 0.0015 → 丝绸 0.004
+- bendCompliance 同步修正：硬质 0.0008（最难弯折）→ 丝绸 0.025（最易褶皱）
+- totalMass 微调：丝绸 0.25 → 硬质 0.9（更符合物理：丝绸轻、硬质重）
+
+**关联**: ADR-019 (SDF 碰撞胶囊半径公式修正)
+
+## 9. 验证
 
 - `tsc --noEmit` 通过（仅预存测试 mock 错误，无源代码错误）
 - `vite build` 通过（~1.5s，仅 babylon.js 预存 chunk size warning）
