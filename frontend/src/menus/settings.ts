@@ -572,13 +572,15 @@ function buildSettingsPathsLevel(): PopupLevel {
     const paths = overridePaths || {};
     // key → 默认子目录名（与 Go 端 GetPath 的目录名一致，大小写不统一）
     const defaultDirName: Record<string, string> = {
-        pmx: 'PMX',
-        vmd: 'VMD',
-        stage: 'stage',
-        environment: 'environment',
-        md_dress: 'MD-dress',
-        setting: 'setting'
-    };
+    pmx: 'PMX',
+    vmd: 'VMD',
+    audio: 'audio',
+    stage: 'stage',
+    prop: 'prop',
+    environment: 'environment',
+    md_dress: 'MD-dress',
+    setting: 'setting',
+};
     const pathSub = (key: string, defSub: string) => {
         const val = paths[key as keyof typeof paths];
         let actual: string;
@@ -605,6 +607,8 @@ function buildSettingsPathsLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:box', 'PMX 模型', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PMX }), pathSub('pmx', '默认'));
                 slideRow(c, 'lucide:music', 'VMD 动作', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_VMD }), pathSub('vmd', '默认'));
+                slideRow(c, 'lucide:headphones', 'Audio 音乐', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_AUDIO }), pathSub('audio', '默认'));
+                slideRow(c, 'lucide:box', 'Prop 道具', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PROP }), pathSub('prop', '默认'));
                 slideRow(c, 'lucide:home', 'Stage 场景', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_STAGE }), pathSub('stage', '默认'));
                 slideRow(c, 'lucide:cloud', 'Environment', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_ENVIRONMENT }), pathSub('environment', '默认'));
                 slideRow(c, 'lucide:shirt', 'MD-dress', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_MD_DRESS }), pathSub('md_dress', '默认'));
@@ -655,6 +659,8 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     [SETTINGS_ACTION.RESOURCE_ROOT]: () => selectResourceRoot().catch(console.warn),
     [SETTINGS_ACTION.PATH_PMX]: (row) => selectOverridePath('pmx').catch(console.warn),
     [SETTINGS_ACTION.PATH_VMD]: (row) => selectOverridePath('vmd').catch(console.warn),
+    [SETTINGS_ACTION.PATH_AUDIO]: (row) => selectOverridePath('audio').catch(console.warn),
+    [SETTINGS_ACTION.PATH_PROP]: (row) => selectOverridePath('prop').catch(console.warn),
     [SETTINGS_ACTION.PATH_STAGE]: (row) => selectOverridePath('stage').catch(console.warn),
     [SETTINGS_ACTION.PATH_ENVIRONMENT]: (row) => selectOverridePath('environment').catch(console.warn),
     [SETTINGS_ACTION.PATH_MD_DRESS]: (row) => selectOverridePath('md_dress').catch(console.warn),

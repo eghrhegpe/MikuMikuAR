@@ -82,21 +82,6 @@ export { buildClothParamsLevel } from './motion-cloth-levels';
 
 // ======== Build action model row and binding ========
 
-function _buildActionModelRow(id: string): PopupRow {
-    const inst = modelManager.get(id);
-    if (!inst) {
-        return { kind: 'action', label: '?', icon: 'help-circle', target: '' };
-    }
-    return {
-        kind: 'folder',
-        label: inst.name,
-        icon: 'tabler:cube-3d-sphere',
-        target: `action:binding:${id}`,
-        sublabel: inst.vmdName || undefined,
-        catTag: inst.kind === 'actor' ? '角色' : '舞台',
-    };
-}
-
 function buildActionBindingLevel(id: string): PopupLevel {
     const inst = modelManager.get(id);
     if (!inst) {
@@ -524,13 +509,15 @@ function buildMotionRootItems(): PopupRow[] {
     // Card 1: 已加载模型
     if (modelManager.size > 0) {
         for (const [id, inst] of modelManager.modelRegistry) {
+            // 舞台不占用动作栏位——只有角色模型可绑定 VMD
+            if (inst.kind !== 'actor') continue;
             items.push({
                 kind: 'folder',
                 label: inst.name,
                 icon: 'tabler:cube-3d-sphere',
                 target: `action:binding:${id}`,
                 sublabel: inst.vmdName || undefined,
-                catTag: inst.kind === 'actor' ? '角色' : '舞台',
+                catTag: '角色',
             });
         }
         // 图层入口（仅角色模型）

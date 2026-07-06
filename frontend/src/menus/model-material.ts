@@ -3,7 +3,6 @@
 import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import {
-    modelRegistry,
     cardContainer,
     setStatus,
     PopupLevel,
@@ -22,9 +21,11 @@ import {
     resetAllMatParams,
     isMatEnabled,
     setMatEnabled,
+    getMaterialMeshes,
 } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addCollapsible } from '../core/ui-helpers';
+import type { SlideMenu } from './menu';
 
 let _selectedMat: { cat: string; index: number } | null = null;
 /** 参数卡片容器引用（增量更新用，避免 reRender） */
@@ -89,7 +90,8 @@ export function buildPerMatLevel(
     modelName: string,
     matName: string,
     mat: Material,
-    matIndex: number
+    matIndex: number,
+    targetStack?: SlideMenu | null
 ): PopupLevel {
     const shortName = matName.length > 24 ? matName.slice(0, 24) + '…' : matName;
     return {
@@ -135,7 +137,7 @@ export function buildPerMatLevel(
                 if (isModified) {
                     slideRow(c, 'lucide:rotate-ccw', '重置此材质', false, () => {
                         resetSingleMatParams(id, matIndex);
-                        stackRegistry.modelStack.reRender();
+                        (targetStack ?? stackRegistry.modelStack)?.reRender();
                         setStatus(`✓ 已重置: ${matName}`, true);
                     });
                 }
@@ -144,7 +146,7 @@ export function buildPerMatLevel(
     };
 }
 
-export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
+export function buildMatRootLevel(id: string, modelName: string, targetStack?: SlideMenu | null): PopupLevel {
     _selectedMat = null;
     _paramCardEl = null;
     return {
@@ -242,7 +244,7 @@ export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
                                     row.classList.add('slide-focused');
                                     // 增量更新参数卡片
                                     _selectedMat = { cat, index: idx };
-                                    _renderParamCard(id, modelName, cat, idx, detailList);
+                                    _renderParamCard(id, modelName, cat, idx, detailList, targetStack);
                                 });
                                 inner.appendChild(row);
                             }
@@ -254,7 +256,7 @@ export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
             // 卡片 2：参数微调容器（占位，内容由 _renderParamCard 增量填充）
             _paramCardEl = document.createElement('div');
             container.appendChild(_paramCardEl);
-            _renderParamCard(id, modelName, null, -1, detailList);
+            _renderParamCard(id, modelName, null, -1, detailList, targetStack);
 
             // 卡片 3：重置全部
             cardContainer(container, (c) => {
@@ -262,7 +264,7 @@ export function buildMatRootLevel(id: string, modelName: string): PopupLevel {
                     resetMatCatParams(id);
                     resetAllMatParams(id);
                     _selectedMat = null;
-                    stackRegistry.modelStack.reRender();
+                    (targetStack ?? stackRegistry.modelStack)?.reRender();
                     setStatus('✓ 全部材质参数已重置', true);
                 });
             });
@@ -279,7 +281,8 @@ function _renderParamCard(
     modelName: string,
     cat: string | null,
     index: number,
-    detailList: { name: string; index: number; modified: boolean }[]
+    detailList: { name: string; index: number; modified: boolean }[],
+    targetStack?: SlideMenu | null
 ): void {
     if (!_paramCardEl) return;
     // 防止幽灵引用：容器被销毁后置 null
@@ -335,7 +338,7 @@ function _renderParamCard(
         slideRow(card, 'lucide:rotate-ccw', '重置此材质', false, () => {
             resetSingleMatParams(id, index);
             _selectedMat = null;
-            stackRegistry.modelStack.reRender();
+            (targetStack ?? stackRegistry.modelStack)?.reRender();
             setStatus(`✓ 已重置: ${matName}`, true);
         });
     }
@@ -343,7 +346,7 @@ function _renderParamCard(
     _paramCardEl.appendChild(card);
 }
 
-export function buildMatListLevel(id: string, modelName: string): PopupLevel {
+export function buildMatListLevel(id: string, modelName: string, targetStack?: SlideMenu | null): PopupLevel {
     return {
         label: '逐材质 — ' + modelName,
         dir: '',
@@ -353,8 +356,8 @@ export function buildMatListLevel(id: string, modelName: string): PopupLevel {
             cardContainer(container, (c) => {
                 c.style.padding = '6px 10px';
                 for (const detail of detailList) {
-                    const inst = modelRegistry.get(id);
-                    const mat = inst.meshes[detail.index]?.material as StandardMaterial;
+                    const meshes = getMaterialMeshes(id);
+                    const mat = meshes?.[detail.index]?.material as StandardMaterial;
                     if (!mat) {
                         continue;
                     }
@@ -411,8 +414,8 @@ export function buildMatListLevel(id: string, modelName: string): PopupLevel {
                         );
                     });
                     row.addEventListener('click', () => {
-                        stackRegistry.modelStack.push(
-                            buildPerMatLevel(id, modelName, detail.name, mat, detail.index)
+                        (targetStack ?? stackRegistry.modelStack)?.push(
+                            buildPerMatLevel(id, modelName, detail.name, mat, detail.index, targetStack)
                         );
                     });
                     c.appendChild(row);

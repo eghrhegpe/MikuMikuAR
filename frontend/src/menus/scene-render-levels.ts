@@ -14,14 +14,17 @@ import {
     addModeSlider,
     addCollapsible,
     sliderRow,
+    slideRow,
     addPresetChip,
 } from '../core/ui-helpers';
+import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
 import {
     triggerAutoSave,
     deserializeScene,
     getRenderState,
     setRenderState,
     transitionRenderState,
+    defaultRenderState,
 } from '../scene/scene';
 import {
     GetPresetScenes,
@@ -30,7 +33,7 @@ import {
     LoadSceneFile,
 } from '../core/wails-bindings';
 import { reRenderSceneMenu } from './scene-menu';
-import { PRESET_LABELS, getBuiltinPreset } from './scene-render-presets';
+import { FILTER_PRESET_LABELS, getFilterPreset } from './scene-render-presets';
 
 // ======== Scene Preset ========
 
@@ -55,6 +58,17 @@ export function buildPresetScenesLevel(): PopupLevel {
         items: [],
         renderCustom: async (container) => {
             container.classList.remove('render-card');
+
+            // 导出/导入场景包 action
+            const bundleActions = document.createElement('div');
+            bundleActions.className = 'lcard';
+            slideRow(bundleActions, 'lucide:package-export', '导出场景包', false, () => { void exportSceneBundle(); });
+            slideRow(bundleActions, 'lucide:package-import', '导入场景包', false, () => { void importSceneBundle(); });
+            const bundleDivider = document.createElement('div');
+            bundleDivider.className = 'slide-divider';
+            container.appendChild(bundleActions);
+            container.appendChild(bundleDivider);
+
             const loading = document.createElement('div');
             loading.style.cssText = 'font-size:12px;color:#fff;text-align:center;padding:24px;';
             loading.textContent = '加载中…';
@@ -69,10 +83,10 @@ export function buildPresetScenesLevel(): PopupLevel {
                 const chipGroup = document.createElement('div');
                 chipGroup.className = 'preset-group';
                 chipGroup.style.paddingBottom = '6px';
-                for (const [key, label] of Object.entries(PRESET_LABELS)) {
+                for (const [key, label] of Object.entries(FILTER_PRESET_LABELS)) {
                     addPresetChip(chipGroup, label, false, () => {
-                        const preset = getBuiltinPreset(key);
-                        if (preset) transitionRenderState(preset, 2000);
+                        const preset = getFilterPreset(key);
+                        if (preset) transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
                         setStatus(`✓ 滤镜: ${label}`, true);
                     });
                 }
