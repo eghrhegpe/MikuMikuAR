@@ -432,7 +432,7 @@ func (a *App) getConfigUnsafe() (*Config, error) {
 	}
 	data, err := os.ReadFile(filepath.Join(dir, "config.json"))
 	if err != nil && !os.IsNotExist(err) {
-		a.safeLogError("GetConfig: read error %v", err)
+		a.safeLogError("getConfigUnsafe: read error %v", err)
 	}
 
 	// Phase 2: if bootstrap has a ResourceRoot, also check setting/ for a

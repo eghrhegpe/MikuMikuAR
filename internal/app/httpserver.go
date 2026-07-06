@@ -37,7 +37,26 @@ func serveRootDir() (string, error) {
 // logFn is optional; when non-nil, failures during sibling copy are logged.
 func isolateDir(filePath string, logFn func(string, ...interface{})) (string, error) {
 	srcDir := filepath.Dir(filePath)
-	hash := sha256Hex(srcDir)[:12]
+	baseName := filepath.Base(filePath)
+
+	// Resolve symlink chain on the source directory to prevent directory
+	// traversal: if srcDir is a symlink to a sensitive or oversized
+	// directory, EvalSymlinks reveals the real target before we list it.
+	realDir, err := filepath.EvalSymlinks(srcDir)
+	if err != nil {
+		if logFn != nil {
+			logFn("isolateDir: EvalSymlinks(%s) failed: %v, falling back to source dir", srcDir, err)
+		}
+		realDir = srcDir
+	}
+	if realDir != srcDir && logFn != nil {
+		logFn("isolateDir: symlink resolved %s → %s", srcDir, realDir)
+	}
+
+	// Use the resolved path for all file operations
+	resolvedPath := filepath.Join(realDir, baseName)
+
+	hash := sha256Hex(realDir)[:12]
 	serveRoot, err := serveRootDir()
 	if err != nil {
 		if logFn != nil {
@@ -50,53 +69,85 @@ func isolateDir(filePath string, logFn func(string, ...interface{})) (string, er
 	// Remove previous stale copy
 	os.RemoveAll(dstDir)
 
+	// Track total bytes copied across all siblings; abort if limit exceeded.
+	var totalCopied int64
+
 	// Copy the PMX/VMD file itself
-	baseName := filepath.Base(filePath)
-	if err := copyFile(filePath, filepath.Join(dstDir, baseName)); err != nil {
+	if err := copyFile(resolvedPath, filepath.Join(dstDir, baseName)); err != nil {
 		if logFn != nil {
 			if isAndroid {
 				// On Android, copy failures are usually permission issues;
 				// probe the source path to aid diagnosis.
-				srcInfo, statErr := os.Stat(filePath)
-				srcDirInfo, dirStatErr := os.Stat(srcDir)
+				srcInfo, statErr := os.Stat(resolvedPath)
+				srcDirInfo, dirStatErr := os.Stat(realDir)
 				logFn("isolateDir: copyFile(%s) failed: %v [android: srcStat=%v srcDirStat=%v srcIsDir=%v srcSize=%d dirIsDir=%v dirSize=%d], falling back to original dir",
-					filePath, err, statErr, dirStatErr,
+					resolvedPath, err, statErr, dirStatErr,
 					srcInfo != nil && srcInfo.IsDir(),
 					func() int64 { if srcInfo != nil { return srcInfo.Size() }; return 0 }(),
 					srcDirInfo != nil && srcDirInfo.IsDir(),
 					func() int64 { if srcDirInfo != nil { return srcDirInfo.Size() }; return 0 }(),
 				)
 			} else {
-				logFn("isolateDir: copyFile(%s) failed: %v, falling back to original dir", filePath, err)
+				logFn("isolateDir: copyFile(%s) failed: %v, falling back to original dir", resolvedPath, err)
 			}
 		}
 		return srcDir, err // fall back to original if copy fails
 	}
+	// Track primary file size
+	if fi, fiErr := fileAccessor.Stat(resolvedPath); fiErr == nil {
+		totalCopied += fi.Size()
+	}
 
 	// Copy ALL sibling files and subdirectories (not just dirs — many models
 	// have textures like face.bmp sitting next to the .pmx file)
-	entries, err := fileAccessor.ReadDir(srcDir)
+	entries, err := fileAccessor.ReadDir(realDir)
 	if err != nil {
 		if logFn != nil && isAndroid {
-			logFn("isolateDir: ReadDir(%s) failed: %v [android: sibling scan skipped, only main file served]", srcDir, err)
+			logFn("isolateDir: ReadDir(%s) failed: %v [android: sibling scan skipped, only main file served]", realDir, err)
 		}
 		return dstDir, nil
 	}
 	for _, e := range entries {
-		src := filepath.Join(srcDir, e.Name())
+		src := filepath.Join(realDir, e.Name())
 		dst := filepath.Join(dstDir, e.Name())
 		if e.IsDir() {
-			copyDir(src, dst, logFn)
+			copyDir(src, dst, logFn, &totalCopied)
 		} else if e.Name() != baseName {
-			if err := copyFile(src, dst); err != nil && logFn != nil {
-				logFn("isolateDir: copyFile sibling %s failed: %v", src, err)
+			if err := copyFile(src, dst); err != nil {
+				if logFn != nil {
+					logFn("isolateDir: copyFile sibling %s failed: %v", src, err)
+				}
+			} else {
+				if fi, fiErr := fileAccessor.Stat(src); fiErr == nil {
+					totalCopied += fi.Size()
+				}
+				if totalCopied > maxIsolateTotalSize && logFn != nil {
+					logFn("isolateDir: total copy size %d exceeds limit %d, stopping sibling copy", totalCopied, maxIsolateTotalSize)
+				}
 			}
 		}
 	}
 	return dstDir, nil
 }
 
+// checkFileSize verifies src does not exceed maxIsolateFileSize.
+// Returns nil on success, or a descriptive error if the file is too large.
+func checkFileSize(src string) error {
+	fi, err := fileAccessor.Stat(src)
+	if err != nil {
+		return err
+	}
+	if fi.Size() > maxIsolateFileSize {
+		return fmt.Errorf("file %s: size %d exceeds max %d", src, fi.Size(), maxIsolateFileSize)
+	}
+	return nil
+}
+
 func copyFile(src, dst string) error {
+	// Reject files exceeding the per-file size limit before copying
+	if err := checkFileSize(src); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 		return err
 	}
@@ -114,11 +165,18 @@ func copyFile(src, dst string) error {
 	return err
 }
 
-func copyDir(src, dst string, logFn func(string, ...interface{})) error {
+func copyDir(src, dst string, logFn func(string, ...interface{}), totalCopied *int64) error {
 	return fileAccessor.WalkDir(src, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			if logFn != nil {
 				logFn("copyDir: walk error at %s: %v", path, err)
+			}
+			return nil
+		}
+		// Skip symlinks to prevent traversal and unintended file leaks
+		if d.Type()&os.ModeSymlink != 0 {
+			if logFn != nil {
+				logFn("copyDir: skipping symlink %s", path)
 			}
 			return nil
 		}
@@ -127,8 +185,17 @@ func copyDir(src, dst string, logFn func(string, ...interface{})) error {
 		if d.IsDir() {
 			return os.MkdirAll(target, 0755)
 		}
-		if err := copyFile(path, target); err != nil && logFn != nil {
-			logFn("copyDir: copy error %s -> %s: %v", path, target, err)
+		if err := copyFile(path, target); err != nil {
+			if logFn != nil {
+				logFn("copyDir: copy error %s -> %s: %v", path, target, err)
+			}
+		} else if totalCopied != nil {
+			if fi, fiErr := fileAccessor.Stat(path); fiErr == nil {
+				*totalCopied += fi.Size()
+				if *totalCopied > maxIsolateTotalSize {
+					return fmt.Errorf("copyDir: total copy size %d exceeds limit %d", *totalCopied, maxIsolateTotalSize)
+				}
+			}
 		}
 		return nil
 	})
