@@ -13,6 +13,7 @@ import {
     EnvState,
     modelRegistry,
     propRegistry,
+    showErrorToast,
 } from '../core/config';
 import {
     getCameraState,
@@ -102,7 +103,7 @@ export interface SceneFile {
         vmdPath: string | null;
         vmdLibraryRef?: string;
         vmdName: string;
-        vmdLayers?: { name: string; path: string | null; weight: number; boneFilter: string[] }[];
+        vmdLayers?: { name: string; path: string | null; weight: number; boneFilter: string[]; kind?: 'vmd' | 'gaze'; enabled?: boolean }[];
         positionX: number;
         positionY?: number;
         positionZ?: number;
@@ -190,10 +191,12 @@ export function serializeScene(): SceneFile {
             vmdName: inst.vmdName,
             vmdLayers: inst.vmdLayers.length > 0
                 ? inst.vmdLayers.map(l => ({
+                    kind: l.kind,
                     name: l.name,
                     path: l.path,
                     weight: l.weight,
                     boneFilter: l.boneFilter,
+                    enabled: l.enabled,
                 }))
                 : undefined,
             positionX: inst.meshes[0]?.position.x ?? 0,
@@ -323,16 +326,12 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             }
 
             // Apply immediate model properties (position, scale, visibility, etc.)
-            inst.meshes[0].position.x = m.positionX ?? 0;
-            inst.meshes[0].position.y = m.positionY ?? 0;
-            inst.meshes[0].position.z = m.positionZ ?? 0;
+            modelManager.setPosition(inst.id, m.positionX ?? 0, m.positionY ?? 0, m.positionZ ?? 0);
             if (m.scaling !== undefined) {
-                inst.scaling = m.scaling;
-                inst.meshes[0].scaling.setAll(m.scaling);
+                modelManager.setScaling(inst.id, m.scaling);
             }
             if (m.rotationY !== undefined) {
-                inst.rotationY = m.rotationY;
-                inst.meshes[0].rotation.y = m.rotationY;
+                modelManager.setRotationY(inst.id, m.rotationY);
             }
             inst.visible = m.visible ?? true;
             inst.opacity = m.opacity ?? 1.0;
@@ -388,20 +387,37 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 console.warn(`场景恢复: 模型 ${m.name} VMD 加载失败:`, err);
             }
         }
-        // 恢复 Motion Layers
+        // 恢复 Motion Layers（批量添加，只触发一次 composite rebuild）
         if (m.vmdLayers && m.vmdLayers.length > 0) {
             try {
-                const { addVmdLayerFromPath } = await import('./motion/vmd-layers');
-                for (const layer of m.vmdLayers) {
-                    if (layer.path) {
-                        const resolvedPath = resolvePathFromRef(layer.path);
-                        if (resolvedPath) {
-                            await addVmdLayerFromPath(resolvedPath, id, layer.weight, layer.boneFilter);
-                        }
-                    }
+                const { addVmdLayersFromPaths } = await import('./motion/vmd-layers');
+                const resolvedLayers = m.vmdLayers
+                    .filter(l => l.path)
+                    .map(l => ({
+                        path: resolvePathFromRef(l.path!),
+                        weight: l.weight,
+                        boneFilter: l.boneFilter,
+                    }))
+                    .filter((l): l is { path: string; weight: number; boneFilter: string[] } => !!l.path);
+                if (resolvedLayers.length > 0) {
+                    await addVmdLayersFromPaths(resolvedLayers, id);
                 }
             } catch (err) {
                 console.warn(`场景恢复: 模型 ${m.name} 图层恢复失败:`, err);
+            }
+        }
+        // 恢复 gaze 图层（程序化图层，无 VMD 数据）
+        if (m.vmdLayers && m.vmdLayers.length > 0) {
+            const gazeLayers = m.vmdLayers.filter(l => l.kind === 'gaze');
+            if (gazeLayers.length > 0) {
+                try {
+                    const { addGazeLayer } = await import('./motion/vmd-layers');
+                    for (const gl of gazeLayers) {
+                        await addGazeLayer(id, gl.name, gl.weight, gl.enabled ?? true);
+                    }
+                } catch (err) {
+                    console.warn(`场景恢复: 模型 ${m.name} gaze 图层恢复失败:`, err);
+                }
             }
         }
         if (m.outfitVariant) {
@@ -586,8 +602,9 @@ export function triggerAutoSaveImpl(): void {
     }, 2000);
 }
 
-/** Save scene immediately (no debounce). Used in visibilitychange / beforeunload. */
-export async function saveSceneImmediate(): Promise<void> {
+/** Save scene immediately (no debounce). Used in visibilitychange / beforeunload.
+ *  @param suppressToast  When true (visibilitychange scenario), skip toast on error. */
+export async function saveSceneImmediate(suppressToast = false): Promise<void> {
     try {
         const json = JSON.stringify(serializeScene());
 
@@ -610,7 +627,9 @@ export async function saveSceneImmediate(): Promise<void> {
             // ignore
         }
     } catch (_err) {
-        // Silent — auto-save is best-effort
+        if (!suppressToast) {
+            showErrorToast('自动保存失败', _err instanceof Error ? _err.message : String(_err ?? 'unknown error'));
+        }
     }
 }
 
@@ -622,7 +641,7 @@ function cleanupAndFlushSave(): void {
         autoSaveTimer = null;
     }
     flushEnvState();
-    saveSceneImmediate().catch(() => {});
+    saveSceneImmediate(true).catch(() => {});
 }
 
 // Flush save when page becomes hidden (covers app close / Alt+F4 / refresh).

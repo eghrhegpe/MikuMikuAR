@@ -686,10 +686,11 @@ export function transitionRenderState(
             }
         } else {
             _applyRenderState(interp);
-            requestAnimationFrame(animLoop);
-        }
-    };
-    requestAnimationFrame(animLoop);
+           
+}
+};
+
+    _scene.onBeforeRenderObservable.addOnce(animLoop);
 }
 
 // ======== 相机重挂接 ========

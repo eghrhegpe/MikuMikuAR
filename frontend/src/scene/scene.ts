@@ -82,6 +82,8 @@ export {
     registerMaterialTarget,
     unregisterMaterialTarget,
     getMaterialMeshes,
+    isMatCategoryAllEnabled,
+    setMatCategoryEnabled,
 } from './manager/material';
 export type { MaterialCategoryParams, MaterialCategory } from './manager/material';
 

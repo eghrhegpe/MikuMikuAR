@@ -453,10 +453,10 @@ export function transitionLighting(
                 onComplete();
             }
         } else {
-            requestAnimationFrame(animLoop);
+            
         }
     };
-    requestAnimationFrame(animLoop);
+    
 }
 
 // ======== Sun Disc ========
@@ -986,25 +986,20 @@ function _tweenValue(
     let cancelled = false;
     const start = performance.now();
 
-    const tick = () => {
-        if (cancelled) return;
-        const t = Math.min(1, (performance.now() - start) / durationMs);
-        const eased = t * (2 - t); // ease-out quad
-        onUpdate(from + (to - from) * eased);
-        if (t < 1) {
-            requestAnimationFrame(tick);
-        } else {
-            _activeTweens.delete(id);
-        }
-    };
+  const tick = () => {
+    if (cancelled) return;
+    const t = Math.min(1, (performance.now() - start) / durationMs);
+    const eased = t * (2 - t); // ease-out quad
+    onUpdate(from + (to - from) * eased);
+    if (t >= 1) {
+      _activeTweens.delete(id);
+    }
+  };
 
-    const tw: LightingTween = {
-        id,
-        cancel: () => { cancelled = true; _activeTweens.delete(id); },
-    };
-    _activeTweens.set(id, tw);
-    requestAnimationFrame(tick);
-    return tw;
+  const tw: LightingTween = { id, cancel: () => { cancelled = true; _activeTweens.delete(id); } };
+  _activeTweens.set(id, tw);
+  _scene.onBeforeRenderObservable.addOnce(tick);
+  return tw;
 }
 
 function _tweenColor3(
