@@ -368,14 +368,14 @@ function applyCheckerGround(ground: Mesh, state: EnvState): void {
     canvas.width = 128;
     canvas.height = 128;
     const ctx = canvas.getContext('2d')!;
-    const tileSize = 16;
+    const tileSize = Math.max(4, Math.round(16 * state.groundGridSize));
     for (let y = 0; y < 128; y += tileSize) {
         for (let x = 0; x < 128; x += tileSize) {
             const isWhite = (x / tileSize + y / tileSize) % 2 === 0;
-            const bright = isWhite ? 1 : 0.6;
-            const r = Math.round(state.groundColor[0] * bright * 255);
-            const g = Math.round(state.groundColor[1] * bright * 255);
-            const b = Math.round(state.groundColor[2] * bright * 255);
+            const color = isWhite ? state.groundColor : state.groundLineColor;
+            const r = Math.round(color[0] * 255);
+            const g = Math.round(color[1] * 255);
+            const b = Math.round(color[2] * 255);
             ctx.fillStyle = `rgb(${r},${g},${b})`;
             ctx.fillRect(x, y, tileSize, tileSize);
         }
@@ -408,10 +408,11 @@ export function applyGround(state: EnvState): void {
                     state.groundColor[2]
                 );
                 mat.lineColor = new Color3(
-                    state.groundColor[0] * 1.5,
-                    state.groundColor[1] * 1.5,
-                    state.groundColor[2] * 1.5
+                    state.groundLineColor[0],
+                    state.groundLineColor[1],
+                    state.groundLineColor[2]
                 );
+                mat.gridRatio = state.groundGridSize;
             } else if (mat instanceof StandardMaterial) {
                 mat.diffuseColor = new Color3(
                     state.groundColor[0],
@@ -421,9 +422,19 @@ export function applyGround(state: EnvState): void {
                 mat.alpha = state.groundAlpha;
                 if (mat.diffuseTexture && mat.diffuseTexture instanceof Texture) {
                     (mat.diffuseTexture as Texture).uScale = (mat.diffuseTexture as Texture).vScale = 1 / Math.max(0.1, state.groundTextureScale);
+                    // Update rotation
+                    if (state.groundTextureRotation !== 0) {
+                        const angle = (state.groundTextureRotation * Math.PI) / 180;
+                        const cos = Math.cos(angle);
+                        const sin = Math.sin(angle);
+                        (mat.diffuseTexture as Texture).uOffset = 0.5 * (1 - cos) + 0.5 * sin;
+                        (mat.diffuseTexture as Texture).vOffset = 0.5 * (1 - cos) - 0.5 * sin;
+                    }
                 }
             }
         }
+        // 更新地面高度
+        _envSys.ground.mesh.position.y = state.groundLevel;
         return;
     }
 
@@ -446,20 +457,20 @@ export function applyGround(state: EnvState): void {
         scene
     );
     ground.isPickable = false;
-    ground.position.y = -0.05;
+    ground.position.y = state.groundLevel;
 
     if (state.groundMode === 'grid') {
         const mat = new GridMaterial('envGroundMat', scene);
-        mat.gridRatio = 1;
+        mat.gridRatio = state.groundGridSize;
         mat.mainColor = new Color3(
             state.groundColor[0],
             state.groundColor[1],
             state.groundColor[2]
         );
         mat.lineColor = new Color3(
-            state.groundColor[0] * 1.5,
-            state.groundColor[1] * 1.5,
-            state.groundColor[2] * 1.5
+            state.groundLineColor[0],
+            state.groundLineColor[1],
+            state.groundLineColor[2]
         );
         mat.backFaceCulling = false;
         ground.material = mat;
@@ -469,6 +480,16 @@ export function applyGround(state: EnvState): void {
         // 纹理地面：subdivisions 保持 2（性能），纹理重复由 uScale/vScale 控制
         const tex = new Texture(resolveStaticAsset(state.groundTexture), scene);
         tex.uScale = tex.vScale = 1 / Math.max(0.1, state.groundTextureScale);
+        // Apply texture rotation via UV manipulation
+        if (state.groundTextureRotation !== 0) {
+            const angle = (state.groundTextureRotation * Math.PI) / 180;
+            // Simple rotation by adjusting UV offsets (centered rotation)
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            // Rotation matrix applied to UV
+            tex.uOffset = 0.5 * (1 - cos) + 0.5 * sin;
+            tex.vOffset = 0.5 * (1 - cos) - 0.5 * sin;
+        }
         const mat = new StandardMaterial('envGroundMat', scene);
         mat.diffuseTexture = tex;
         mat.diffuseColor = new Color3(1, 1, 1);
