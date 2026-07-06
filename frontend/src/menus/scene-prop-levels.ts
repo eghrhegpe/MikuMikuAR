@@ -4,7 +4,8 @@
 import { cardContainer, escapeHtml, propRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { slideRow } from '../core/ui-helpers';
-import { loadProp, removeProp, getPropList } from '../scene/scene';
+import { loadManager } from '../core/load-manager';
+import { removeProp, getPropList } from '../scene/scene';
 import { SelectPMXFile } from '../core/wails-bindings';
 import { getSceneMenu } from './scene-menu';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
@@ -54,7 +55,7 @@ export function buildPropLevel(): PopupLevel {
                 slideRow(c, 'lucide:plus', '添加道具文件', false, () => {
                     SelectPMXFile().then((path) => {
                         if (path) {
-                            loadProp(path).then(() => getSceneMenu()?.reRender()).catch(() => {});
+                            loadManager.load({ kind: 'prop', path }).then(() => getSceneMenu()?.reRender()).catch(() => {});
                         }
                     });
                 });

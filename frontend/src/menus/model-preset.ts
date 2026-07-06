@@ -10,6 +10,7 @@ import {
     escapeHtml,
     isPlaying,
 } from '../core/config';
+import { loadManager } from '../core/load-manager';
 import {
     setModelPosition,
     setModelScaling,
@@ -18,10 +19,8 @@ import {
     setModelOpacity,
     setModelWireframe,
     stopVMD,
-    loadVMDFromPath,
     getMatState,
     applyMatState,
-    loadPMXFile,
 } from '../scene/scene';
 import {
     SelectPresetSaveFile,
@@ -34,7 +33,6 @@ import {
     DeleteModelPreset,
 } from '../core/wails-bindings';
 import {
-    loadAudioFile,
     clearAudio,
     getAudioPath,
     getAudioName,
@@ -190,7 +188,7 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
         if (preset.vmd.path) {
             stopVMD(id);
             try {
-                await loadVMDFromPath(preset.vmd.path, id);
+                await loadManager.load({ kind: 'vmd', path: preset.vmd.path, modelId: id });
             } catch (vmdErr) {
                 setStatus('⚠ VMD 加载失败，其余预设已应用', false);
                 console.warn('applyModelPreset: vmd load failed', vmdErr);
@@ -208,7 +206,7 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
     }
     if (preset.audio && preset.audio.path) {
         try {
-            await loadAudioFile(preset.audio.path);
+            await loadManager.load({ kind: 'audio', path: preset.audio.path });
             setVolume(preset.audio.volume);
             setAudioOffset(preset.audio.offset);
         } catch (_) {
@@ -365,9 +363,9 @@ export async function applyPresetFromLib(
             if (matchedId) {
                 await applyModelPreset(matchedId, json);
             } else {
-                const newModelId = await loadPMXFile(preset.model.filePath);
-                if (newModelId) {
-                    await applyModelPreset(newModelId, json);
+                const handle = await loadManager.load({ kind: 'actor', path: preset.model.filePath });
+                if (handle) {
+                    await applyModelPreset(handle.id, json);
                 } else {
                     setStatus('✗ 模型加载失败，无法应用预设', false);
                 }

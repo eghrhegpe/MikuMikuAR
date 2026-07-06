@@ -13,12 +13,19 @@ import {
 } from '../physics/cloth-manager';
 import type { ClothConfig } from '../physics/xpbd-cloth';
 
-/** 布料预设 — 物理材质手感（重力由根页面统控，预设不含 gravityScale） */
+/**
+ * 布料预设 — 物理材质手感（重力由根页面统控，预设不含 gravityScale）
+ *
+ * XPBD compliance 说明：
+ *   compliance=0 → 完美刚性（不拉伸），值越大约束越软（越容易拉长）
+ *   bendCompliance 同理，值越大越容易弯折折叠
+ *   damping：每帧速度保留比例，越大越不易停止
+ */
 const CLOTH_PRESETS: Record<string, Partial<ClothConfig>> = {
-    silk: { compliance: 0.0005, bendCompliance: 0.001, damping: 0.98, totalMass: 0.3 },
-    cotton: { compliance: 0.001, bendCompliance: 0.005, damping: 0.96, totalMass: 0.5 },
-    leather: { compliance: 0.003, bendCompliance: 0.015, damping: 0.92, totalMass: 0.8 },
-    stiff: { compliance: 0.008, bendCompliance: 0.04, damping: 0.88, totalMass: 1.0 },
+    silk:   { compliance: 0.004,  bendCompliance: 0.025, damping: 0.98,  totalMass: 0.25 },
+    cotton: { compliance: 0.0015, bendCompliance: 0.008, damping: 0.96,  totalMass: 0.45 },
+    leather:{ compliance: 0.0005, bendCompliance: 0.002, damping: 0.92,  totalMass: 0.7 },
+    stiff:  { compliance: 0.0002, bendCompliance: 0.0008,damping: 0.88,  totalMass: 0.9 },
 };
 
 const CLOTH_PRESET_LABELS: Record<string, string> = {

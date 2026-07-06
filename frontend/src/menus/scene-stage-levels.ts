@@ -13,11 +13,12 @@ import {
     removeModel,
     setModelVisibility,
 } from '../scene/manager/model-ops';
-import { getPropList, removeProp, loadProp } from '../scene/scene';
+import { loadManager } from '../core/load-manager';
+import { getPropList, removeProp } from '../scene/scene';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 import { buildStageLightLevel } from './scene-stage-lights';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
-import { SelectPMXFile } from '../core/wails-bindings';
+
 import { buildPropDetailLevel } from './scene-prop-levels';
 
 // ======== 舞台根面板：舞台加载、灯光、道具 ========
@@ -104,28 +105,34 @@ export function buildStageLevel(): PopupLevel {
                 });
             }
 
-            // —— 卡片 2：已加载道具列表 ——
-            const props = getPropList();
-            if (props.length > 0) {
+            // —— 卡片 2：已加载道具列表（始终显示） ——
+            {
+                const props = getPropList();
                 cardContainer(container, (c) => {
-                    addSectionTitle(c, '已加载道具');
-                    for (const p of props) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        row.style.cursor = 'pointer';
-                        row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(p.name)}</span><span class="slide-arrow">&gt;</span>`;
-                        row.addEventListener('click', () => getSceneMenu()?.push(buildPropDetailLevel(p.id)));
-                        const delBtn = document.createElement('span');
-                        delBtn.className = 'slide-del-btn';
-                        delBtn.textContent = '×';
-                        delBtn.title = '删除道具';
-                        delBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            removeProp(p.id);
-                            reRenderSceneMenu();
-                        });
-                        row.appendChild(delBtn);
-                        c.appendChild(row);
+                    if (props.length > 0) {
+                        for (const p of props) {
+                            const row = document.createElement('div');
+                            row.className = 'slide-item';
+                            row.style.cursor = 'pointer';
+                            row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(p.name)}</span><span class="slide-arrow">&gt;</span>`;
+                            row.addEventListener('click', () => getSceneMenu()?.push(buildPropDetailLevel(p.id)));
+                            const delBtn = document.createElement('span');
+                            delBtn.className = 'slide-del-btn';
+                            delBtn.textContent = '×';
+                            delBtn.title = '删除道具';
+                            delBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                removeProp(p.id);
+                                reRenderSceneMenu();
+                            });
+                            row.appendChild(delBtn);
+                            c.appendChild(row);
+                        }
+                    } else {
+                        const empty = document.createElement('div');
+                        empty.style.cssText = 'font-size:11px;color:var(--text-dim);text-align:center;padding:8px 0;';
+                        empty.textContent = '暂无道具';
+                        c.appendChild(empty);
                     }
                 });
             }
@@ -161,14 +168,7 @@ export function buildStageLevel(): PopupLevel {
                     const sm = getSceneMenu();
                     if (sm) sm.push(buildStageLightLevel());
                 });
-                slideRow(c, 'lucide:plus', '添加道具文件', false, () => {
-                    SelectPMXFile().then((path) => {
-                        if (path) {
-                            loadProp(path).then(() => reRenderSceneMenu()).catch(() => {});
-                        }
-                    });
-                });
-                slideRow(c, 'lucide:folder-open', '浏览道具库', true, () => {
+                slideRow(c, 'lucide:box', '加载道具', true, () => {
                     (async () => {
                         try {
                             const { overridePaths, libraryRoot } = await import('../core/config');
