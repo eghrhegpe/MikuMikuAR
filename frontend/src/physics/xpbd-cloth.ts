@@ -42,7 +42,7 @@ export interface ClothConfig {
     anchorBone: string;
     /** 拓扑类型 */
     topology: ClothTopology;
-    /** 内半径（腰部开口半径），default 0.15 */
+    /** 内半径（腰部开口半径），default 0.12 */
     innerRadius: number;
     /** 裙长/布料长度（从锚点向下），default 0.6 */
     length: number;
@@ -69,7 +69,7 @@ export interface ClothConfig {
 export const DEFAULT_CLOTH_CONFIG: ClothConfig = {
     anchorBone: '腰',
     topology: 'skirt',
-    innerRadius: 0.15,
+    innerRadius: 0.12,
     length: 0.6,
     slope: 15,
     segmentsH: 24,
@@ -108,6 +108,8 @@ export interface ClothInstance {
     enabled: boolean;
     /** 锚定骨骼未找到时是否已警告过（只打印一次） */
     _anchorMissingWarned: boolean;
+    /** 包围盒是否已刷新过（首帧后刷新一次） */
+    _boundingRefreshed: boolean;
     /**
      * 每帧更新回调（由 buildClothUpdateFn 生成后设置）。
      * 接收 deltaTime（秒），由 ModelManager 的渲染观察者每帧调用。
@@ -243,6 +245,7 @@ export function createCloth(
         _uvCache: uvCache,
         enabled: true,
         _anchorMissingWarned: false,
+        _boundingRefreshed: false,
     };
 
     return instance;
@@ -267,12 +270,27 @@ export function buildClothUpdateFn(
     collider?: SdfCollider | null,
     getTimeScale?: () => number,
 ): (dt: number) => void {
-    // 锚定粒子在局部空间的初始位置缓存（相对于 anchor bone）
-    const anchorLocalPositions: [number, number, number][] = [];
+    // 所有粒子在创建时的局部位置缓存（相对于 anchor bone 初始位置）
+    const localOffsets: [number, number, number][] = [];
+    // 以第一行锚点粒子的平均位置作为局部原点
+    let originX = 0, originY = 0, originZ = 0;
     for (const idx of cloth.anchorIndices) {
         const p = cloth.solver.particles[idx];
-        anchorLocalPositions.push([p.p[0], p.p[1], p.p[2]]);
+        originX += p.p[0];
+        originY += p.p[1];
+        originZ += p.p[2];
     }
+    const n = cloth.anchorIndices.length || 1;
+    originX /= n;
+    originY /= n;
+    originZ /= n;
+
+    for (let i = 0; i < cloth.solver.particles.length; i++) {
+        const p = cloth.solver.particles[i];
+        localOffsets.push([p.p[0] - originX, p.p[1] - originY, p.p[2] - originZ]);
+    }
+
+    let _initialized = false;
 
     return (dt: number) => {
         if (!cloth.enabled) {
@@ -289,20 +307,39 @@ export function buildClothUpdateFn(
                 ty = mat[13],
                 tz = mat[14];
 
-            for (let i = 0; i < cloth.anchorIndices.length; i++) {
-                const idx = cloth.anchorIndices[i];
-                const [lx, ly, lz] = anchorLocalPositions[i];
+            // 首帧：将所有粒子定位到骨骼世界坐标，避免从原点弹跳
+            // 需等骨骼矩阵有效（平移不全为零）再执行，否则 MMD runtime 尚未更新
+            if (!_initialized) {
+                // 检测单位矩阵：平移分量全为零说明骨骼还没算好
+                if (tx === 0 && ty === 0 && tz === 0) {
+                    return;
+                }
+                _initialized = true;
+                for (let i = 0; i < solver.particles.length; i++) {
+                    const [ox, oy, oz] = localOffsets[i];
+                    const p = solver.particles[i];
+                    p.p[0] = mat[0] * ox + mat[4] * oy + mat[8] * oz + tx;
+                    p.p[1] = mat[1] * ox + mat[5] * oy + mat[9] * oz + ty;
+                    p.p[2] = mat[2] * ox + mat[6] * oy + mat[10] * oz + tz;
+                    p.prevP[0] = p.p[0];
+                    p.prevP[1] = p.p[1];
+                    p.prevP[2] = p.p[2];
+                }
+            } else {
+                // 后续帧：仅更新锚点粒子
+                for (let i = 0; i < cloth.anchorIndices.length; i++) {
+                    const idx = cloth.anchorIndices[i];
+                    const [lx, ly, lz] = localOffsets[idx];
 
-                const wx = mat[0] * lx + mat[4] * ly + mat[8] * lz + tx;
-                const wy = mat[1] * lx + mat[5] * ly + mat[9] * lz + ty;
-                const wz = mat[2] * lx + mat[6] * ly + mat[10] * lz + tz;
+                    const wx = mat[0] * lx + mat[4] * ly + mat[8] * lz + tx;
+                    const wy = mat[1] * lx + mat[5] * ly + mat[9] * lz + ty;
+                    const wz = mat[2] * lx + mat[6] * ly + mat[10] * lz + tz;
 
-                const p = solver.particles[idx];
-                // 设置锚点到骨骼世界位置，保留 prevP 让求解器通过距离约束自然传递运动
-                // （覆盖 prevP 会导致骨骼快速移动时布料撕裂）
-                p.p[0] = wx;
-                p.p[1] = wy;
-                p.p[2] = wz;
+                    const p = solver.particles[idx];
+                    p.p[0] = wx;
+                    p.p[1] = wy;
+                    p.p[2] = wz;
+                }
             }
         } else if (!cloth._anchorMissingWarned) {
             console.warn(
@@ -505,6 +542,12 @@ function _updateClothMesh(cloth: ClothInstance): void {
 
     cloth.mesh.updateVerticesData(VertexBuffer.PositionKind, positions, false, true);
     cloth.mesh.updateVerticesData(VertexBuffer.NormalKind, normals, false, true);
+
+    // 首帧后刷新包围盒，防止 Babylon.js 因旧包围盒剔除 mesh
+    if (!cloth._boundingRefreshed) {
+        cloth._boundingRefreshed = true;
+        cloth.mesh.refreshBoundingInfo?.();
+    }
 }
 
 // ============================================================
