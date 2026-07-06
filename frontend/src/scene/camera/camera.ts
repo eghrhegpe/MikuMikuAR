@@ -793,21 +793,29 @@ function _onAutoCameraBeat(): void {
 
     const preset = AUTO_CAMERA_PRESETS[nextIdx];
 
-    // 平滑过渡到新预设（用 setTimeout 分步插值，~0.5s 完成）
+    // 平滑过渡到新预设（逐帧插值，~0.5s 完成）
     const startAlpha = cam.alpha;
     const startBeta = cam.beta;
     const startRadius = cam.radius;
-    const duration = 500; // ms
+    let t = 0;
+    const duration = 500;
     const startTime = performance.now();
 
-    const animate = () => {
-        const elapsed = performance.now() - startTime;
-        const t = Math.min(1, elapsed / duration);
-        const ease = t * t * (3 - 2 * t); // smoothstep
-        cam.alpha = startAlpha + (preset.alpha - startAlpha) * ease;
-        cam.beta = startBeta + (preset.beta - startBeta) * ease;
-        cam.radius = startRadius + (preset.radius - startRadius) * ease;
-        if (t < 1) requestAnimationFrame(animate);
-    };
-    requestAnimationFrame(animate);
+    const cleanup = _scene.onBeforeRenderObservable.add(() => {
+      const elapsed = performance.now() - startTime;
+      t = Math.min(1, elapsed / duration);
+      const ease = t * t * (3 - 2 * t); // smoothstep
+      cam.alpha = startAlpha + (preset.alpha - startAlpha) * ease;
+      cam.beta = startBeta + (preset.beta - startBeta) * ease;
+      cam.radius = startRadius + (preset.radius - startRadius) * ease;
+      if (t >= 1) {
+        _scene.onBeforeRenderObservable.remove(cleanup);
+      }
+    });
+if (!_scene) {
+  // fallback: no scene reference, complete instantly
+  cam.alpha = preset.alpha;
+  cam.beta = preset.beta;
+  cam.radius = preset.radius;
+}
 }
