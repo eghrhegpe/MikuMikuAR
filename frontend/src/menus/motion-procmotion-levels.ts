@@ -3,7 +3,7 @@
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { addSliderRow, addToggleRow, addModeSlider, } from '../core/ui-helpers';
+import { addSliderRow, addToggleRow, addModeSlider, addCollapsible, addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
 import {
     setProcMotionMode,
@@ -34,6 +34,35 @@ export function buildProcMotionLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
+            // ======== 快速预设 ========
+            cardContainer(container, (c) => {
+                const group = document.createElement('div');
+                group.className = 'preset-group';
+                group.style.padding = '0';
+                addPresetChip(group, '待机呼吸', st.mode === 'idle', () => {
+                    setProcMotionMode('idle');
+                    regenerateProcMotion();
+                    getMotionMenu()?.updateControls();
+                }, {
+                    onUpdate: (btn) => btn.classList.toggle('active', getProcMotionState().mode === 'idle')
+                });
+                addPresetChip(group, '自动舞蹈', st.mode === 'autodance', () => {
+                    setProcMotionMode('autodance');
+                    regenerateProcMotion();
+                    getMotionMenu()?.updateControls();
+                }, {
+                    onUpdate: (btn) => btn.classList.toggle('active', getProcMotionState().mode === 'autodance')
+                });
+                addPresetChip(group, '关闭', st.mode === 'off', () => {
+                    setProcMotionMode('off');
+                    regenerateProcMotion();
+                    getMotionMenu()?.updateControls();
+                }, {
+                    onUpdate: (btn) => btn.classList.toggle('active', getProcMotionState().mode === 'off')
+                });
+                c.appendChild(group);
+            });
+
             cardContainer(container, (c) => {
                 addModeSlider(
                     c,
@@ -131,10 +160,13 @@ export function buildProcMotionLevel(): PopupLevel {
                 });
             }
 
-            // ======== 微动效果开关 ========
-            cardContainer(container, (c) => {
-                const cats = getProcMotionBoneCategories();
-                for (const cat of cats) {
+            // ======== 骨骼微动效果（可折叠） ========
+            addCollapsible(container, {
+                title: '骨骼微动效果',
+                icon: 'lucide:activity',
+                defaultOpen: false,
+                renderContent: (inner) => {
+                    const cats = getProcMotionBoneCategories();
                     const labels: Record<string, string> = {
                         center:   '重心弹跳',
                         upper:    '上半身呼吸',
@@ -165,39 +197,79 @@ export function buildProcMotionLevel(): PopupLevel {
                         blink:    'lucide:eye',
                         emotion:  'lucide:smile',
                     };
-                    addToggleRow(
-                        c,
-                        labels[cat] ?? cat,
-                        st.boneToggles[cat],
-                        (v) => {
-                            setProcMotionBoneToggle(cat, v);
-                            regenerateProcMotion();
-                        },
-                        icons[cat] ?? 'lucide:circle',
-                        {
-                            bind: () => getProcMotionState().boneToggles[cat],
+                    // 分组：躯干
+                    addSectionTitle(inner, '躯干');
+                    for (const cat of ['center', 'allParent', 'waist', 'groove'] as const) {
+                        if (cats.includes(cat)) {
+                            addToggleRow(inner, labels[cat] ?? cat, st.boneToggles[cat], (v) => {
+                                setProcMotionBoneToggle(cat, v);
+                                regenerateProcMotion();
+                            }, icons[cat] ?? 'lucide:circle', {
+                                bind: () => getProcMotionState().boneToggles[cat],
+                            });
                         }
-                    );
-                }
+                    }
+                    // 分组：上半身
+                    addSectionTitle(inner, '上半身');
+                    for (const cat of ['upper', 'upper2', 'shoulder', 'arm'] as const) {
+                        if (cats.includes(cat)) {
+                            addToggleRow(inner, labels[cat] ?? cat, st.boneToggles[cat], (v) => {
+                                setProcMotionBoneToggle(cat, v);
+                                regenerateProcMotion();
+                            }, icons[cat] ?? 'lucide:circle', {
+                                bind: () => getProcMotionState().boneToggles[cat],
+                            });
+                        }
+                    }
+                    // 分组：头部
+                    addSectionTitle(inner, '头部');
+                    for (const cat of ['head', 'blink', 'emotion'] as const) {
+                        if (cats.includes(cat)) {
+                            addToggleRow(inner, labels[cat] ?? cat, st.boneToggles[cat], (v) => {
+                                setProcMotionBoneToggle(cat, v);
+                                regenerateProcMotion();
+                            }, icons[cat] ?? 'lucide:circle', {
+                                bind: () => getProcMotionState().boneToggles[cat],
+                            });
+                        }
+                    }
+                    // 分组：末端
+                    addSectionTitle(inner, '末端');
+                    for (const cat of ['wrist', 'footIk'] as const) {
+                        if (cats.includes(cat)) {
+                            addToggleRow(inner, labels[cat] ?? cat, st.boneToggles[cat], (v) => {
+                                setProcMotionBoneToggle(cat, v);
+                                regenerateProcMotion();
+                            }, icons[cat] ?? 'lucide:circle', {
+                                bind: () => getProcMotionState().boneToggles[cat],
+                            });
+                        }
+                    }
+                },
             });
 
-            // ======== 实时效果（每帧执行，不生成 VMD） ========
-            cardContainer(container, (c) => {
-                addToggleRow(c, '眼部跟随', st.eyeTrackingEnabled, (v) => {
-                    setProcMotionEyeTrackingEnabled(v);
-                    getMotionMenu()?.updateControls();
-                }, 'lucide:eye', {
-                    bind: () => getProcMotionState().eyeTrackingEnabled,
-                });
-                addToggleRow(c, '头部跟随', st.headTrackingEnabled, (v) => {
-                    setProcMotionHeadTrackingEnabled(v);
-                    getMotionMenu()?.updateControls();
-                }, 'lucide:mouse-pointer-2', {
-                    bind: () => getProcMotionState().headTrackingEnabled,
-                });
+            // ======== 视线追踪（可折叠） ========
+            addCollapsible(container, {
+                title: '视线追踪',
+                icon: 'lucide:eye',
+                defaultOpen: false,
+                renderContent: (inner) => {
+                    addToggleRow(inner, '眼部跟随', st.eyeTrackingEnabled, (v) => {
+                        setProcMotionEyeTrackingEnabled(v);
+                        getMotionMenu()?.updateControls();
+                    }, 'lucide:eye', {
+                        bind: () => getProcMotionState().eyeTrackingEnabled,
+                    });
+                    addToggleRow(inner, '头部跟随', st.headTrackingEnabled, (v) => {
+                        setProcMotionHeadTrackingEnabled(v);
+                        getMotionMenu()?.updateControls();
+                    }, 'lucide:mouse-pointer-2', {
+                        bind: () => getProcMotionState().headTrackingEnabled,
+                    });
+                },
             });
 
-            // ======== MMD 运行时切换（WASM 物理 / JS 调试） ========
+            // ======== 高级设置 ========
             cardContainer(container, (c) => {
                 addModeSlider(
                     c,
@@ -229,10 +301,6 @@ export function buildProcMotionLevel(): PopupLevel {
                         bind: () => getMmdRuntimeType(),
                     }
                 );
-            });
-
-            // 插值曲线选择器
-            cardContainer(container, (c) => {
                 addModeSlider(
                     c,
                     '插值曲线',
