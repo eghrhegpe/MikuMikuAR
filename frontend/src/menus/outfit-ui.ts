@@ -69,7 +69,9 @@ export function buildOutfitLevel(id: string): PopupLevel {
                     });
 
                     for (const v of outfit.variants) {
-                        slideRow(c, '', v.name, false, async () => {
+                        // 带 meshFile 的变体显示 FBX 标记
+                        const label = v.meshFile ? 'FBX' : '';
+                        slideRow(c, label, v.name, false, async () => {
                             if (_loading) return;
                             _loading = true;
                             setStatus('⏳ 切换变体中…', true);
