@@ -27,7 +27,7 @@ import {
     type CameraMode,
 } from '../scene/camera/camera';
 import { triggerAutoSave } from '../scene/scene';
-import { loadCameraVmdFromPath, getProcBeatDetector } from '../scene/scene';
+import { getProcBeatDetector } from '../scene/scene';
 import { getMotionMenu } from './motion-popup';
 
 let cameraExpandedMode: CameraMode | null = null;

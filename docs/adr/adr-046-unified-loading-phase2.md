@@ -1,7 +1,7 @@
 # ADR-046: 统一加载 Phase 2 — 底层锁移除与菜单层迁移
 
 **日期**：2026-07-06
-> **状态**：提案阶段
+> **状态**：已完成（2026-07-06 落地，`npm run build` 通过）
 
 ---
 
@@ -154,42 +154,6 @@ async dispatch(req: LoadRequest): Promise<ResourceHandle | null> {
 
 **不改为 `loadManager.load({kind:'audio'})` 的原因**：`_tryLoadCompanionAudio` 在 `loadManager.dispatch` 的 VMD case 内部执行，如再入 `loadManager.load()` 会导致队列死锁（VMD 任务持有队列，音频任务排在 VMD 之后，VMD await 音频 → 互相等待）。保持直接调 `loadAudioFile` 不变——伴音加载是 VMD 的同步副操作，不占用独立队列位置。
 
-## 实施计划
-
-| 优先级 | 任务 | 文件 | 影响面 |
-|--------|------|------|--------|
-| P3a | 菜单层迁移到 `loadManager.load()` | `library-core.ts`, `scene-stage-levels.ts`, `scene-prop-levels.ts`, `motion-popup.ts`, `model-preset.ts`, `main.ts` | 中等——每处改为调用 `loadManager.load()` |
-| P3b-1 | `loadPMXFile` 移除 `isLoadingModel` | `model-loader.ts` + `state.ts` | 低——LoadManager 已保证串行 |
-| P3b-2 | `loadVMDFromPath/loadCameraVmdFromPath/loadVPDPose` 移除 `isLoadingVmd` | `vmd-loader.ts` + `state.ts` | 低——LoadManager 已保证串行 |
-| P3b-3 | `loadProp` 移除 `_propLoadQueue` + `isLoadingProp` | `props.ts` + `state.ts` | 低——LoadManager 已保证串行 |
-| P3b-4 | `loadAudioFile` 移除 `_loadId` | `audio.ts` | 低——不再有并发 |
-| P3c | `ResourceHandle` 返回值统一 | `load-manager.ts` | 低——不影响调用方契约 |
-| P4 | VMD 伴音自动加载设置开关 | `settings.ts` + `vmd-loader.ts` | 低——仅加 toggle + setting gate |
-
-### 注意事项
-
-1. **迁移与移除不能同步进行**。必须先完成菜单层迁移，让所有用户操作都走 LoadManager，然后才能移除底层锁。否则会出现"移除了锁但没有排队"的窗口期。
-
-2. **`loadProp` 的 `enqueueLoad` 特殊处理**。`props.ts` 的 `_propLoadQueue` 本身就是 Promise 链 + 布尔锁的混合体。移除 `enqueueLoad` 包装后 `loadProp` 直接是 async 函数体。
-
-3. **`deserializeScene` 的例外必须文档化**。在 scene-serialize.ts 和 load-manager.ts 中都加注释说明"批量反序列化跳过 LoadManager"。
-
-4. **测试策略**。未有覆盖测试，每步需手动验证：
-   - 模型加载中点击另一个模型 → 排队而非被拒绝
-   - VMD 加载中加载道具 → 道具等待 VMD 完成
-   - 连续加载不丢失状态
-   - 序列化恢复正常
-
-## 迁移期间兼容性
-
-P3a 阶段（菜单迁移）完成后但 P3b（移除锁）尚未完成时：
-
-```
-菜单层 → LoadManager → 底层加载器（锁还在，但不会触发因为 LoadManager 已串行）
-```
-
-此时底层锁永远不会被触发（因为 LoadManager 已经串行化请求），锁相当于"安全网"——不产生功能影响，只是冗余代码。这允许分步提交。
-
 ## 结果
 
 **正向**：
@@ -203,11 +167,32 @@ P3a 阶段（菜单迁移）完成后但 P3b（移除锁）尚未完成时：
 - `deserializeScene` 的例外增加了架构理解成本
 - 无涵盖测试，依靠手动验证
 
+## 实施状态（2026-07-06）
+
+四大 Phase 全部落地，`npm run build` 通过。
+
+| Phase | 落地情况 |
+|-------|----------|
+| P3a 菜单层迁移 | `library-core.ts` / `motion-popup.ts` / `model-preset.ts` / `scene-prop-levels.ts` / `main.ts` 均改为 `loadManager.load()`；`scene-stage-levels.ts` 的「加载道具」经库浏览器间接走 LoadManager；`scene-serialize.ts` 保留直接调用（原子批量恢复例外） |
+| P3b 底层锁移除 | `loadPMXFile` 无 `isLoadingModel`；`loadVMDFromPath/loadCameraVmdFromPath/loadVPDPose` 无 `isLoadingVmd`；`loadProp` 已是普通 async（无 `_propLoadQueue`）；`loadAudioFile` 无 `_loadId` |
+| P3c 返回值统一 | `load-manager.ts` dispatch 已为 vmd/audio/camera-vmd 返回 `ResourceHandle` |
+| P4 伴音开关 | `settings.ts` 默认开启 + 设置页 toggle；`vmd-loader.ts` 的 `_tryLoadCompanionAudio` 已加 `isAutoLoadCompanionAudioEnabled()` 门控 |
+
+**死代码清理（与 P3b 同步完成）**：
+- `core/state.ts`：删除 `isLoadingModel / isLoadingVmd / isLoadingProp` 及其 setter（加载器已不再写入，属孤儿状态）。
+- `scene/scene.ts`：删除未使用的 `isLoadingModel / setIsLoadingModel / isLoadingVmd / setIsLoadingVmd` 导入。
+- `menus/motion-camera-levels.ts`：删除未使用的 `loadCameraVmdFromPath` 导入。
+
+## 后续（已知缺口）
+
+1. **测试覆盖**：当前仅靠手动验证（原「决策」测试策略），无自动化单测。建议后续为 `LoadManager` 补串行排队与反序列化恢复（跳过队列）的单元测试，固化并发安全。
+2. **`ResourceHandle.id` 占位**：vmd/audio/camera-vmd 的 handle `id` 暂为空串（仅 `name`/`filePath` 有意义）。待进度追踪/撤销功能落地时再填充稳定 id，非阻塞。
+
 ## 相关
 
 - [ADR-045](adr-045-unified-loading-and-resource.md) — 统一加载与资源管理（Phase 1）
 - `frontend/src/core/load-manager.ts` — LoadManager 实现
-- `frontend/src/core/state.ts` — isLoadingModel / isLoadingVmd / isLoadingProp 定义
+- `frontend/src/core/state.ts` — 加载状态（isLoadingX 已随本 ADR 移除，串行化改由 LoadManager 队列保障）
 - `frontend/src/scene/manager/model-loader.ts` — loadPMXFile
 - `frontend/src/scene/motion/vmd-loader.ts` — loadVMDFromPath / loadCameraVmdFromPath / loadVPDPose
 - `frontend/src/scene/env/props.ts` — loadProp

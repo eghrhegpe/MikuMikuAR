@@ -4,7 +4,7 @@
 // 消费者: scene.ts (编排器)、model-detail.ts (UI)、serialization
 //
 // 设计原则:
-// - 不直接调用 triggerAutoSave → 通过 onChange 回调触发
+// - 不直接 import triggerAutoSave → 通过构造函数注入的 triggerAutoSave 回调触发（避免循环依赖）
 // - 不引用 scene.ts 中的任何符号 → 无循环依赖
 // - 模型状态完全封装，外部只能通过方法访问
 
@@ -23,6 +23,7 @@ import {
     type PhysicsCategory,
     type RuntimeModel,
 } from '../../core/config';
+import { orbitToCartesian, cartesianToOrbit } from '../../core/orbit';
 import type { ClothInstance } from '../../physics/xpbd-cloth';
 import { disposeCloth } from '../../physics/xpbd-cloth';
 import { disposeOverlay, restoreMaterials } from '../../outfit/outfit-overlay';
@@ -181,7 +182,7 @@ export class ModelManager {
 
     constructor(
         private scene: Scene,
-        private onChange: () => void,
+        private triggerAutoSave: () => void,
         private autoFrame: (center: Vector3, extent: number) => void
     ) {}
 
@@ -387,7 +388,7 @@ export class ModelManager {
 
         this.autoFrame(center, extent);
 
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     /** Arrange all models in a horizontal row. */
@@ -400,7 +401,7 @@ export class ModelManager {
                 inst.meshes[0].position.x = offsetX;
             }
         });
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     /** Apply a formation preset to all models. */
@@ -415,7 +416,7 @@ export class ModelManager {
             const pos = _computeFormationPos(type, i, n, spacing);
             inst.meshes[0].position.set(pos[0], pos[1], pos[2]);
         }
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     // ======== Property Setters ========
@@ -427,7 +428,7 @@ export class ModelManager {
         }
         inst.visible = visible;
         syncModelVisibility(inst);
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     setOpacity(id: string, opacity: number): void {
@@ -437,7 +438,7 @@ export class ModelManager {
         }
         inst.opacity = Math.max(0, Math.min(1, opacity));
         syncModelVisibility(inst);
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     setWireframe(id: string, wireframe: boolean): void {
@@ -447,7 +448,7 @@ export class ModelManager {
         }
         inst.wireframe = wireframe;
         syncModelVisibility(inst);
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     setBoneLinesVis(id: string, show: boolean): void {
@@ -466,7 +467,7 @@ export class ModelManager {
             const entry = this._boneOverlayMap.get(id)!;
             entry.lineSystem.setEnabled(show);
         }
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     setBoneJointsVis(id: string, show: boolean): void {
@@ -485,7 +486,7 @@ export class ModelManager {
             const entry = this._boneOverlayMap.get(id)!;
             entry.overlay.setEnabled(show);
         }
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     setPhysics(id: string, enabled: boolean): void {
@@ -511,7 +512,7 @@ export class ModelManager {
             }
         }
         this._physicsCatState.delete(id);
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     setScaling(id: string, scaling: number): void {
@@ -525,7 +526,7 @@ export class ModelManager {
         }
         inst.scaling = Math.max(0.01, scaling);
         syncModelTransform(inst);
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     setRotationY(id: string, rotationY: number): void {
@@ -535,7 +536,7 @@ export class ModelManager {
         }
         inst.rotationY = rotationY;
         syncModelTransform(inst);
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     setPosition(id: string, x: number, y: number, z: number): void {
@@ -550,7 +551,7 @@ export class ModelManager {
         if (inst.meshes.length > 0) {
             inst.meshes[0].position.set(x, y, z);
         }
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     getPosition(id: string): [number, number, number] {
@@ -560,6 +561,74 @@ export class ModelManager {
         }
         const p = inst.meshes[0].position;
         return [p.x, p.y, p.z];
+    }
+
+    /** [doc:adr-049] 以球面坐标（方位角/仰角/距离）定位模型，等价于围绕原点旋转。 */
+    setOrbit(id: string, azimuth: number, elevation: number, distance: number): void {
+        const inst = this.modelRegistry.get(id);
+        if (!inst) {
+            return;
+        }
+        if (
+            !Number.isFinite(azimuth) ||
+            !Number.isFinite(elevation) ||
+            !Number.isFinite(distance) ||
+            distance <= 0
+        ) {
+            console.warn('[model-manager] setOrbit: 无效参数', { azimuth, elevation, distance });
+            return;
+        }
+        inst.positionMode = 'orbit';
+        inst.orbitAzimuth = azimuth;
+        inst.orbitElevation = elevation;
+        inst.orbitDistance = distance;
+        const [x, y, z] = orbitToCartesian(azimuth, elevation, distance);
+        if (inst.meshes.length > 0) {
+            inst.meshes[0].position.set(x, y, z);
+        }
+        this.triggerAutoSave();
+    }
+
+    /** [doc:adr-049] 读取模型当前球面坐标。orbit 模式下返回存储值，否则从当前笛卡尔位置反推。 */
+    getOrbit(id: string): { azimuth: number; elevation: number; distance: number } | null {
+        const inst = this.modelRegistry.get(id);
+        if (!inst) {
+            return null;
+        }
+        if (inst.positionMode === 'orbit' && inst.orbitAzimuth !== undefined && inst.orbitElevation !== undefined && inst.orbitDistance !== undefined) {
+            return { azimuth: inst.orbitAzimuth, elevation: inst.orbitElevation, distance: inst.orbitDistance };
+        }
+        const [x, y, z] = this.getPosition(id);
+        return cartesianToOrbit(x, y, z);
+    }
+
+    /** [doc:adr-049] 切换坐标模式。切到 orbit 时从当前笛卡尔位置反推球面参数（无跳变）；切回 cartesian 保留当前位置。 */
+    setPositionMode(id: string, mode: 'cartesian' | 'orbit'): void {
+        const inst = this.modelRegistry.get(id);
+        if (!inst) {
+            return;
+        }
+        if (mode === 'orbit') {
+            const [x, y, z] = this.getPosition(id);
+            const o = cartesianToOrbit(x, y, z);
+            inst.orbitAzimuth = o.azimuth;
+            inst.orbitElevation = o.elevation;
+            inst.orbitDistance = o.distance;
+        } else {
+            // cartesian 模式：确保 mesh 位置与实例当前位置一致（orbit 模式已写入）
+            const [x, y, z] = this.getPosition(id);
+            if (inst.meshes.length > 0) {
+                inst.meshes[0].position.set(x, y, z);
+            }
+        }
+        inst.positionMode = mode;
+        this.triggerAutoSave();
+    }
+
+    /** [doc:adr-049] 读取模型当前坐标模式（默认 'cartesian'）。 */
+    getPositionMode(id: string): 'cartesian' | 'orbit' {
+        const inst = this.modelRegistry.get(id);
+        return inst?.positionMode ?? 'cartesian';
     }
 
     resetTransform(id: string): void {
@@ -577,7 +646,7 @@ export class ModelManager {
         }
         syncModelVisibility(inst);
         syncModelTransform(inst);
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     /** Stop VMD animation on a model and clean up associated state. */
@@ -593,7 +662,7 @@ export class ModelManager {
         inst.vmdPath = null;
         inst.animationDuration = 0;
         inst.vmdLayers = [];
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     // ======== Physics Categories ========
@@ -651,7 +720,7 @@ export class ModelManager {
             this._physicsCatState.set(id, physMap);
         }
         physMap.set(cat, enabled);
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     // ======== Morphs ========
@@ -686,7 +755,7 @@ export class ModelManager {
             return;
         }
         inst.mmdModel.morph.resetMorphWeights();
-        this.onChange();
+        this.triggerAutoSave();
     }
 
     // ======== Skeletal Bone Overlay ========

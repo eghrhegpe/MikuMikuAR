@@ -54,6 +54,7 @@ import { slideRow, addToggleRow, addSliderRow, addSectionTitle, addDangerRow, ad
 import { getCurrentRenderingMenu } from './menu';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
 import { engine } from '../scene/scene';
+import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
 import { rescanAndSync, reloadConfig } from './library';
@@ -835,6 +836,53 @@ function buildSettingsPerformanceLevel(): PopupLevel {
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
                 hint.textContent = '设为 0 表示不限制。移动端建议 30 以省电。';
+                c.appendChild(hint);
+            });
+
+            // 默认物理开关
+            cardContainer(container, (c) => {
+                addToggleRow(c, '默认启用物理模拟', uiState.defaultPhysicsEnabled !== false, (v) => {
+                    setUIState({ defaultPhysicsEnabled: v });
+                    getSettingsMenu()?.updateControls();
+                    setStatus(v ? '✓ 默认启用物理模拟' : '✓ 默认关闭物理模拟（仅影响后续加载）', true);
+                }, 'lucide:atom');
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.textContent = '关闭可提升低配设备性能；仅影响后续加载的模型，已加载模型不受影响。';
+                c.appendChild(hint);
+            });
+
+            // 渲染分辨率缩放
+            cardContainer(container, (c) => {
+                addSliderRow(c, '渲染分辨率缩放', uiState.renderScale ?? 1, 0.5, 2, 0.05, (v) => {
+                    const s = Math.round(v * 100) / 100;
+                    engine.setHardwareScalingLevel(1 / s);
+                    setUIState({ renderScale: s });
+                    getSettingsMenu()?.updateControls();
+                    setStatus(`✓ 渲染缩放: ${Math.round(s * 100)}%`, true);
+                }, 'lucide:scan', undefined, {
+                    bind: () => uiState.renderScale ?? 1,
+                });
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.textContent = '低于 100% 提升性能，高于 100% 超采样更清晰（更耗 GPU）。';
+                c.appendChild(hint);
+            });
+
+            // 鼠标/触控灵敏度
+            cardContainer(container, (c) => {
+                addSliderRow(c, '鼠标/触控灵敏度', uiState.cameraSensitivity ?? 1, 0.2, 3, 0.1, (v) => {
+                    const s = Math.round(v * 10) / 10;
+                    setUIState({ cameraSensitivity: s });
+                    refreshCameraUserSettings();
+                    getSettingsMenu()?.updateControls();
+                    setStatus(`✓ 相机灵敏度: ${s}x`, true);
+                }, 'lucide:move', undefined, {
+                    bind: () => uiState.cameraSensitivity ?? 1,
+                });
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.textContent = '影响旋转/缩放/平移速度，实时作用于当前相机。';
                 c.appendChild(hint);
             });
         },

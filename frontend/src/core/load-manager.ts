@@ -1,8 +1,8 @@
 // [doc:architecture] Load Manager — 统一资源加载入口
 // 规范文档: docs/adr/adr-045-unified-loading-and-resource.md
 // 职责: 跨资源类型串行排队、统一 LoadRequest/ResourceHandle 类型
-// 现状: 骨架阶段，现有 loadXxx 函数仍保留各自内部锁，LoadManager 为上层调度
-// 后续: 逐步将菜单层调用迁移到 loadManager.load()，再考虑移除底层锁
+// 现状: 菜单层已全部迁移至 loadManager.load()，底层加载器内部锁（isLoadingModel/isLoadingVmd/_propLoadQueue/_loadId）已随 ADR-046 移除，串行化由本队列统一保障。
+// 后续: 为 LoadManager 补并发排队/反序列化恢复（跳过队列）的单元测试覆盖（当前仅靠手动验证）。
 
 export type ResourceKind = 'actor' | 'stage' | 'prop' | 'vmd' | 'audio' | 'camera-vmd';
 
@@ -35,7 +35,7 @@ class LoadManager {
     private queue: Promise<void> = Promise.resolve();
     private _current: LoadRequest | null = null;
 
-    /** 入队一个加载请求，返回 ResourceHandle（VMD/Audio 返回 null）。 */
+    /** 入队一个加载请求，返回 ResourceHandle（所有 kind 均返回 handle，失败返回 null）。 */
     load(req: LoadRequest): Promise<ResourceHandle | null> {
         return this.enqueue(() => this.dispatch(req));
     }

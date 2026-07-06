@@ -384,8 +384,9 @@ export function applyEnvPresetObject(preset: {
             setSkipLightAutoSave(false);
             SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(() => {});
             triggerAutoSave();
+            return;
         }
-    return true;
+        scene.onBeforeRenderObservable?.addOnce(animLoop);
     };
 
     scene.onBeforeRenderObservable?.addOnce(animLoop);

@@ -725,6 +725,7 @@ async function handleDropFile(path: string): Promise<void> {
 // ======== Render Loop (with optional FPS limit via engine.maxFPS) ========
 const initFpsLimit = uiState.fpsLimit ?? 0;
 engine.maxFPS = initFpsLimit > 0 ? initFpsLimit : undefined;
+engine.setHardwareScalingLevel(1 / (uiState.renderScale ?? 1));
 engine.runRenderLoop(() => {
     scene.render();
     updatePerformance();

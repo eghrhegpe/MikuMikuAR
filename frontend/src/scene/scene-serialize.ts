@@ -59,7 +59,7 @@ import {
     StageLightState,
     RenderState,
 } from './scene';
-import { removeProp, loadProp, setPropTransform } from './env/props';
+import { removeProp, loadProp, setPropTransform, setPropOrbit } from './env/props';
 import { setEnvState, setEnvSunAngle, flushEnvState } from './env/env-bridge';
 import { setGravityStrength, getGravityStrength } from './env/env-bridge';
 import { regenerateProcMotion, getProcMotionState, setProcMotionState } from './motion/proc-motion-bridge';
@@ -116,6 +116,11 @@ export interface SceneFile {
         showBoneJoints?: boolean;
         physicsEnabled?: boolean;
         outfitVariant?: string;
+        /** [doc:adr-049] 球面坐标轨道控制：坐标模式，缺省按 'cartesian' 处理 */
+        positionMode?: 'cartesian' | 'orbit';
+        orbitAzimuth?: number;
+        orbitElevation?: number;
+        orbitDistance?: number;
     }>;
     camera: CameraState;
     lights: LightState;
@@ -149,6 +154,11 @@ export interface SceneFile {
         rotationY: number;
         scaling: number;
         visible: boolean;
+        /** [doc:adr-049] 球面坐标轨道控制：坐标模式，缺省按 'cartesian' 处理 */
+        positionMode?: 'cartesian' | 'orbit';
+        orbitAzimuth?: number;
+        orbitElevation?: number;
+        orbitDistance?: number;
     }>;
     gravityStrength?: number;
     stageLight?: StageLightState;
@@ -211,6 +221,10 @@ export function serializeScene(): SceneFile {
             showBoneJoints: inst.showBoneJoints,
             physicsEnabled: inst.physicsEnabled,
             outfitVariant: inst.activeVariant,
+            positionMode: inst.positionMode,
+            orbitAzimuth: inst.orbitAzimuth,
+            orbitElevation: inst.orbitElevation,
+            orbitDistance: inst.orbitDistance,
         };
     });
     return {
@@ -261,6 +275,10 @@ export function serializeScene(): SceneFile {
                 rotationY: p.rotationY,
                 scaling: p.scaling,
                 visible: p.visible,
+                positionMode: p.positionMode,
+                orbitAzimuth: p.orbitAzimuth,
+                orbitElevation: p.orbitElevation,
+                orbitDistance: p.orbitDistance,
             };
         }),
         gravityStrength: getGravityStrength(),
@@ -326,7 +344,12 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             }
 
             // Apply immediate model properties (position, scale, visibility, etc.)
-            modelManager.setPosition(inst.id, m.positionX ?? 0, m.positionY ?? 0, m.positionZ ?? 0);
+            if (m.positionMode === 'orbit' && m.orbitAzimuth !== undefined && m.orbitElevation !== undefined && m.orbitDistance !== undefined) {
+                modelManager.setOrbit(inst.id, m.orbitAzimuth, m.orbitElevation, m.orbitDistance);
+            } else {
+                modelManager.setPosition(inst.id, m.positionX ?? 0, m.positionY ?? 0, m.positionZ ?? 0);
+                inst.positionMode = m.positionMode ?? 'cartesian';
+            }
             if (m.scaling !== undefined) {
                 modelManager.setScaling(inst.id, m.scaling);
             }
@@ -556,12 +579,21 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     if (p.uuid) {
                         propUuidMap.set(propId, p.uuid);
                     }
-                    setPropTransform(propId, {
-                        position: [p.positionX, p.positionY, p.positionZ],
-                        rotationY: p.rotationY,
-                        scaling: p.scaling,
-                        visible: p.visible,
-                    });
+                    if (p.positionMode === 'orbit' && p.orbitAzimuth !== undefined && p.orbitElevation !== undefined && p.orbitDistance !== undefined) {
+                        setPropTransform(propId, {
+                            rotationY: p.rotationY,
+                            scaling: p.scaling,
+                            visible: p.visible,
+                        });
+                        setPropOrbit(propId, p.orbitAzimuth, p.orbitElevation, p.orbitDistance);
+                    } else {
+                        setPropTransform(propId, {
+                            position: [p.positionX, p.positionY, p.positionZ],
+                            rotationY: p.rotationY,
+                            scaling: p.scaling,
+                            visible: p.visible,
+                        });
+                    }
                 }
             } catch (err) {
                 console.warn(`场景恢复: 道具 ${p.name} 加载失败:`, err);

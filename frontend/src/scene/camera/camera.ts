@@ -241,6 +241,29 @@ export const freeflyInput = {
 
 // ======== Camera Factory Functions ========
 
+// ======== 用户相机输入设置（灵敏度）========
+// 基准值取自 Babylon 默认值与本项目既有设定；sens 越大越灵敏（数值越小=反应越快）
+const CAM_BASE = { angular: 2000, wheel: 3, pan: 50, speed: 0.5 };
+
+/** 将用户灵敏度设置应用到相机实例（orbit/oneshot: ArcRotate；freefly: Universal） */
+export function applyCameraUserSettings(cam: Camera): void {
+    const sens = uiState.cameraSensitivity ?? 1;
+    if (cam instanceof ArcRotateCamera) {
+        cam.angularSensibilityX = CAM_BASE.angular / sens;
+        cam.angularSensibilityY = CAM_BASE.angular / sens;
+        cam.wheelPrecision = CAM_BASE.wheel / sens;
+        cam.panningSensibility = CAM_BASE.pan / sens;
+    } else if (cam instanceof UniversalCamera) {
+        cam.angularSensibility = CAM_BASE.angular / sens;
+        cam.speed = CAM_BASE.speed * sens;
+    }
+}
+
+/** 设置变更后重新应用到当前活动相机 */
+export function refreshCameraUserSettings(): void {
+    if (_currentCamera) applyCameraUserSettings(_currentCamera);
+}
+
 function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCamera {
     const p = _currentPreset.orbit;
     const cam = new ArcRotateCamera(
@@ -254,6 +277,7 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
     cam.attachControl(canvas, true);
+    applyCameraUserSettings(cam);
     // 触屏设备：降低捏合精度（更灵敏）、降低平移灵敏度（更容易拖动）
     if (isTouchDevice()) {
         cam.pinchPrecision = 32;
@@ -270,6 +294,7 @@ function createFreeflyCamera(scene: Scene, canvas: HTMLCanvasElement): Universal
     cam.speed = p.speed;
     cam.angularSensibility = p.angularSensibility;
     cam.attachControl(canvas, true);
+    applyCameraUserSettings(cam);
     cam.keysUp = [];
     cam.keysDown = [];
     cam.keysLeft = [];
@@ -306,6 +331,7 @@ function createOneshotCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotate
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
     cam.attachControl(canvas, true);
+    applyCameraUserSettings(cam);
     if (isTouchDevice()) {
         cam.pinchPrecision = 32;
         cam.panningSensibility = 20;

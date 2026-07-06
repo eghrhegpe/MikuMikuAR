@@ -3,8 +3,6 @@ import {
     focusedModelId,
     isPlaying,
     setIsPlaying,
-    setIsLoadingModel,
-    setIsLoadingVmd,
     setAutoLoop,
     setSeekDragging,
     dom,
@@ -34,8 +32,6 @@ export function removeModel(id: string): void {
     }
     if (modelRegistry.size === 0) {
         setIsPlaying(false);
-        setIsLoadingModel(false);
-        setIsLoadingVmd(false);
         setAutoLoop(true);
         setSeekDragging(false);
         dom.playbackBar.style.display = 'none';
@@ -127,6 +123,24 @@ export function setModelPosition(id: string, x: number, y: number, z: number): v
 
 export function getModelPosition(id: string): [number, number, number] {
     return modelManager?.getPosition(id) ?? [0, 0, 0];
+}
+
+// ======== [doc:adr-049] 球面坐标轨道控制 ========
+
+export function setModelOrbit(id: string, azimuth: number, elevation: number, distance: number): void {
+    modelManager?.setOrbit(id, azimuth, elevation, distance);
+}
+
+export function getModelOrbit(id: string): { azimuth: number; elevation: number; distance: number } | null {
+    return modelManager?.getOrbit(id) ?? null;
+}
+
+export function setModelPositionMode(id: string, mode: 'cartesian' | 'orbit'): void {
+    modelManager?.setPositionMode(id, mode);
+}
+
+export function getModelPositionMode(id: string): 'cartesian' | 'orbit' {
+    return modelManager?.getPositionMode(id) ?? 'cartesian';
 }
 
 export function resetModelTransform(id: string): void {

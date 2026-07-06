@@ -88,6 +88,14 @@ export type ModelInstance = {
     _overlayMeshes?: Mesh[];
     /** 原始材质可见性快照（hideMaterials 前保存，用于 restore） */
     _origMaterialVisibility?: Map<number, boolean>;
+    /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */
+    positionMode?: 'cartesian' | 'orbit';
+    /** [doc:adr-049] 水平方位角（度，-180~180），仅 positionMode==='orbit' 时生效 */
+    orbitAzimuth?: number;
+    /** [doc:adr-049] 垂直仰角（度，-90~90），仅 positionMode==='orbit' 时生效 */
+    orbitElevation?: number;
+    /** [doc:adr-049] 距原点距离（>0），仅 positionMode==='orbit' 时生效 */
+    orbitDistance?: number;
 };
 
 /** [doc:architecture] PropInstance — 场景道具实例（独立于模型库，不参与 VMD/物理/排列） */
@@ -104,6 +112,14 @@ export type PropInstance = {
     rotationY: number;
     scaling: number;
     visible: boolean;
+    /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */
+    positionMode?: 'cartesian' | 'orbit';
+    /** [doc:adr-049] 水平方位角（度，-180~180），仅 positionMode==='orbit' 时生效 */
+    orbitAzimuth?: number;
+    /** [doc:adr-049] 垂直仰角（度，-90~90），仅 positionMode==='orbit' 时生效 */
+    orbitElevation?: number;
+    /** [doc:adr-049] 距原点距离（>0），仅 positionMode==='orbit' 时生效 */
+    orbitDistance?: number;
 };
 
 // ======== Outfit System Types ========
@@ -209,6 +225,14 @@ export interface UIState {
     performanceMode?: 'auto' | 'quality' | 'balanced' | 'performance';
     /** 帧率上限（0=不限） */
     fpsLimit?: number;
+    /** 默认物理开关：新加载的 actor 模型是否默认启用物理模拟（WASM 版）。undefined 视为 true */
+    defaultPhysicsEnabled?: boolean;
+    /** 渲染分辨率缩放倍数（1=原生，<1 降分辨率提速，>1 超采样更清晰） */
+    renderScale?: number;
+    /** 鼠标/触控相机灵敏度倍数（1=默认，越大越灵敏） */
+    cameraSensitivity?: number;
+    /** 默认模型自动缩放：新加载模型按统一目标高度归一化（仅 actor） */
+    autoScaleModel?: boolean;
     materialCategoryMap?: Record<string, string>;
     screenshotFormat?: 'image/png' | 'image/jpeg' | 'image/webp';
     screenshotQuality?: number;
