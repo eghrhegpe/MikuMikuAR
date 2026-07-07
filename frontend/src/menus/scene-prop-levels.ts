@@ -9,10 +9,11 @@ import { removeProp, getPropList } from '../scene/scene';
 import { SelectPMXFile } from '../core/wails-bindings';
 import { getSceneMenu } from './scene-menu';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
+import { t } from '../core/i18n/t';
 
 export function buildPropLevel(): PopupLevel {
     return {
-        label: '道具',
+        label: t('scene.prop'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -33,7 +34,7 @@ export function buildPropLevel(): PopupLevel {
                         const delBtn = document.createElement('span');
                         delBtn.className = 'slide-del-btn';
                         delBtn.textContent = '×';
-                        delBtn.title = '删除道具';
+                        delBtn.title = t('scene.deleteProp');
                         delBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
                             removeProp(p.id);
@@ -48,14 +49,14 @@ export function buildPropLevel(): PopupLevel {
                     const empty = document.createElement('div');
                     empty.style.cssText =
                         'font-size:11px;color:var(--text-dim);padding:8px 4px;text-align:center;';
-                    empty.textContent = '暂无道具';
+                    empty.textContent = t('scene.noProps');
                     c.appendChild(empty);
                 });
             }
 
             // —— 卡片 2：加载入口（下）——
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plus', '添加道具文件', false, () => {
+                slideRow(c, 'lucide:plus', t('scene.addPropFile'), false, () => {
                     SelectPMXFile().then((path) => {
                         if (path) {
                             loadManager
@@ -72,7 +73,7 @@ export function buildPropLevel(): PopupLevel {
 
 export function buildPropDetailLevel(propId: string): PopupLevel {
     return {
-        label: '道具变换',
+        label: t('scene.propTransform'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -80,7 +81,7 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
             if (!p) {
                 const empty = document.createElement('div');
                 empty.style.cssText = 'font-size:11px;color:var(--text-dim);padding:8px 4px;';
-                empty.textContent = '道具不存在（可能已被删除）';
+                empty.textContent = t('scene.propNotFound');
                 container.appendChild(empty);
                 return;
             }

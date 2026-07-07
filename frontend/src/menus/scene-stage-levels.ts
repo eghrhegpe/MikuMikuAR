@@ -22,12 +22,13 @@ import { buildStageLightLevel } from './scene-stage-lights';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
 
 import { buildPropDetailLevel } from './scene-prop-levels';
+import { t } from '../core/i18n/t';
 
 // ======== 舞台根面板：舞台加载、灯光、道具 ========
 
 export function buildStageLevel(): PopupLevel {
     return {
-        label: '舞台',
+        label: t('scene.stage'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -40,7 +41,7 @@ export function buildStageLevel(): PopupLevel {
 
             if (stageModels.length > 0) {
                 cardContainer(container, (c) => {
-                    addSectionTitle(c, '已加载舞台');
+                    addSectionTitle(c, t('scene.loadedStages'));
 
                     for (const [id, inst] of stageModels) {
                         const row = document.createElement('div');
@@ -62,7 +63,7 @@ export function buildStageLevel(): PopupLevel {
                             const newVis = !inst.visible;
                             setModelVisibility(id, newVis);
                             reRenderSceneMenu();
-                            setStatus(newVis ? '✓ 舞台已显示' : '✓ 舞台已隐藏', true);
+                            setStatus(newVis ? t('scene.stageShown') : t('scene.stageHidden'), true);
                         });
                         row.appendChild(eyeSpan);
 
@@ -83,15 +84,15 @@ export function buildStageLevel(): PopupLevel {
                         del.textContent = '✕';
                         del.style.cssText =
                             'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 4px;margin-left:4px;';
-                        del.title = '卸载此舞台';
+                        del.title = t('scene.unloadStage');
                         del.addEventListener('click', async (e) => {
                             e.stopPropagation();
-                            if (!(await showConfirm(`确定卸载舞台「${inst.name}」？`))) {
+                            if (!(await showConfirm(t('scene.confirmUnloadStage', { name: inst.name })))) {
                                 return;
                             }
                             removeModel(id);
                             reRenderSceneMenu();
-                            setStatus(`✓ 已卸载: ${inst.name}`, true);
+                            setStatus(t('scene.unloaded', { name: inst.name }), true);
                         });
                         row.appendChild(del);
 
@@ -111,7 +112,7 @@ export function buildStageLevel(): PopupLevel {
                     const empty = document.createElement('div');
                     empty.style.cssText =
                         'font-size:11px;color:var(--text-dim);text-align:center;padding:8px 0;';
-                    empty.textContent = '暂无已加载舞台';
+                    empty.textContent = t('scene.noLoadedStages');
                     c.appendChild(empty);
                 });
             }
@@ -153,7 +154,7 @@ export function buildStageLevel(): PopupLevel {
                             const delBtn = document.createElement('span');
                             delBtn.className = 'slide-del-btn';
                             delBtn.textContent = '×';
-                            delBtn.title = '删除道具';
+                            delBtn.title = t('scene.deleteProp');
                             delBtn.addEventListener('click', (e) => {
                                 e.stopPropagation();
                                 if (item.fromPropRegistry) {
@@ -170,7 +171,7 @@ export function buildStageLevel(): PopupLevel {
                         const empty = document.createElement('div');
                         empty.style.cssText =
                             'font-size:11px;color:var(--text-dim);text-align:center;padding:8px 0;';
-                        empty.textContent = '暂无道具';
+                        empty.textContent = t('scene.noProps');
                         c.appendChild(empty);
                     }
                 });
@@ -178,13 +179,13 @@ export function buildStageLevel(): PopupLevel {
 
             // —— 卡片 3：功能入口（下）——
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:upload', '加载舞台', true, () => {
+                slideRow(c, 'lucide:upload', t('scene.loadStage'), true, () => {
                     (async () => {
                         try {
                             const { getBrowseDir } = await import('../core/utils');
                             const browseDir = getBrowseDir('stage');
                             if (!browseDir) {
-                                setStatus('✗ 请先在设置中配置模型库目录', false);
+                                setStatus(t('scene.statusNoModelLib'), false);
                                 return;
                             }
                             const { buildLevel } = await import('./library-core');
@@ -194,30 +195,30 @@ export function buildStageLevel(): PopupLevel {
                             }
                             const level = buildLevel(
                                 browseDir,
-                                '舞台',
+                                t('scene.loadStage'),
                                 (m) => m.type === 'stage' || m.type === 'scene',
                                 sm
                             );
                             sm.push(level);
                         } catch (err) {
-                            setStatus('✗ 打开舞台库失败', false);
+                            setStatus(t('scene.statusOpenStageLibFailed'), false);
                             console.error('Stage library error:', err);
                         }
                     })();
                 });
-                slideRow(c, 'lucide:lightbulb', '舞台灯光', true, () => {
+                slideRow(c, 'lucide:lightbulb', t('scene.stageLight'), true, () => {
                     const sm = getSceneMenu();
                     if (sm) {
                         sm.push(buildStageLightLevel());
                     }
                 });
-                slideRow(c, 'lucide:box', '加载道具', true, () => {
+                slideRow(c, 'lucide:box', t('scene.loadProp'), true, () => {
                     (async () => {
                         try {
                             const { getBrowseDir } = await import('../core/utils');
                             const browseDir = getBrowseDir('prop');
                             if (!browseDir) {
-                                setStatus('✗ 请先在设置中配置道具库目录', false);
+                                setStatus(t('scene.statusNoPropLib'), false);
                                 return;
                             }
                             const { buildLevel } = await import('./library-core');
@@ -227,13 +228,13 @@ export function buildStageLevel(): PopupLevel {
                             }
                             const level = buildLevel(
                                 browseDir,
-                                '道具库',
+                                t('scene.propLibrary'),
                                 (m) => m.format === 'pmx',
                                 sm
                             );
                             sm.push(level);
                         } catch (err) {
-                            setStatus('✗ 打开道具库失败', false);
+                            setStatus(t('scene.statusOpenPropLibFailed'), false);
                             console.error('Prop library error:', err);
                         }
                     })();
@@ -250,7 +251,7 @@ export function buildStageTransformLevel(id: string): PopupLevel {
     const name = inst?.name ?? id;
 
     return {
-        label: `舞台: ${name}`,
+        label: t('scene.stageLabel', { name }),
         dir: '',
         items: [],
         renderCustom: (container) => {

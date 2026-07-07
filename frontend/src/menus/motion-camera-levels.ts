@@ -43,6 +43,7 @@ import {
     getARFacing,
     isARActive,
 } from '../scene/ar/ar-camera';
+import { t } from '../core/i18n/t'; // [doc:adr-059]
 
 let cameraExpandedMode: CameraMode | null = null;
 
@@ -55,7 +56,7 @@ function refreshCameraLevel(): void {
 
 export function buildCameraLevel(): PopupLevel {
     return {
-        label: '相机模式',
+        label: t('motion.cameraMode'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -64,19 +65,19 @@ export function buildCameraLevel(): PopupLevel {
 
             cardContainer(container, (c) => {
                 const modeOptions: Array<{ value: string; label: string }> = [
-                    { value: 'orbit', label: '轨道' },
-                    { value: 'freefly', label: '自由飞行' },
-                    { value: 'concert', label: '演唱会' },
-                    { value: 'oneshot', label: '单拍' },
-                    { value: 'ar', label: 'AR 相机' },
+                    { value: 'orbit', label: t('motion.camOrbit') },
+                    { value: 'freefly', label: t('motion.camFreefly') },
+                    { value: 'concert', label: t('motion.camConcert') },
+                    { value: 'oneshot', label: t('motion.camOneshot') },
+                    { value: 'ar', label: t('motion.camAR') },
                 ];
                 if (vmdLoaded) {
-                    modeOptions.push({ value: 'vmd', label: 'VMD 相机' });
+                    modeOptions.push({ value: 'vmd', label: t('motion.camVmd') });
                 }
 
                 addModeSlider(
                     c,
-                    '相机模式',
+                    t('motion.cameraMode'),
                     modeOptions.map((o) => ({ value: o.value, label: o.label })),
                     currentMode,
                     (v) => {
@@ -97,7 +98,7 @@ export function buildCameraLevel(): PopupLevel {
 
                 addSliderRow(
                     c,
-                    '视场角',
+                    t('motion.fov'),
                     getFov(),
                     0.3,
                     2,
@@ -115,7 +116,7 @@ export function buildCameraLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addToggleRow(
                     c,
-                    '自动运镜',
+                    t('motion.autoCamera'),
                     isAutoCameraEnabled(),
                     (v) => {
                         const bd = getProcBeatDetector();
@@ -130,7 +131,7 @@ export function buildCameraLevel(): PopupLevel {
                 if (isAutoCameraEnabled()) {
                     addSliderRow(
                         c,
-                        '切换间隔（拍）',
+                        t('motion.switchInterval'),
                         getAutoCameraBeatsPerSwitch(),
                         1,
                         8,
@@ -164,18 +165,18 @@ export function buildCameraLevel(): PopupLevel {
                 }
 
                 if (vmdLoaded) {
-                    slideRow(c, 'lucide:trash-2', '清除相机 VMD', false, () => {
+                    slideRow(c, 'lucide:trash-2', t('motion.clearCamVmd'), false, () => {
                         clearCameraVmd();
                         refreshCameraLevel();
-                        setStatus('✓ 已清除相机 VMD', true);
+                        setStatus(t('motion.camVmdCleared'), true);
                     });
                 }
 
-                slideRow(c, 'lucide:upload', '加载相机 VMD', false, () => {
+                slideRow(c, 'lucide:upload', t('motion.loadCamVmd'), false, () => {
                     setMotionBindingTargetId(null);
                     const level = stackRegistry.buildLevel!(
                         libraryRoot,
-                        '相机 VMD',
+                        t('motion.camVmdLabel'),
                         (m) => m.format === 'vmd'
                     );
                     const menu = getMotionMenu();
@@ -193,12 +194,12 @@ export function buildCameraParamsLevel(mode: CameraMode): PopupLevel {
     return {
         label:
             mode === 'orbit'
-                ? '轨道设置'
+                ? t('motion.camOrbitSettings')
                 : mode === 'freefly'
-                  ? '自由飞行设置'
+                  ? t('motion.camFreeflySettings')
                   : mode === 'concert'
-                    ? '演唱会设置'
-                    : '相机设置',
+                    ? t('motion.camConcertSettings')
+                    : t('motion.cameraSettings'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -219,7 +220,7 @@ function renderOrbitParams(container: HTMLElement): void {
     const p = getOrbitParams();
     addSliderRow(
         container,
-        '目标高度',
+        t('motion.targetHeight'),
         p.targetHeight,
         0,
         30,
@@ -232,7 +233,7 @@ function renderOrbitParams(container: HTMLElement): void {
     );
     addSliderRow(
         container,
-        '距离',
+        t('motion.distance'),
         p.distance,
         2,
         50,
@@ -245,7 +246,7 @@ function renderOrbitParams(container: HTMLElement): void {
     );
     addSliderRow(
         container,
-        '俯仰角',
+        t('motion.pitch'),
         p.beta,
         0.1,
         Math.PI - 0.1,
@@ -262,7 +263,7 @@ function renderFreeflyParams(container: HTMLElement): void {
     const p = getFreeflyParams();
     addSliderRow(
         container,
-        '移动速度',
+        t('motion.moveSpeed'),
         p.speed,
         0.1,
         5,
@@ -275,7 +276,7 @@ function renderFreeflyParams(container: HTMLElement): void {
     );
     addSliderRow(
         container,
-        '鼠标灵敏度',
+        t('motion.mouseSens'),
         p.angularSensibility,
         500,
         5000,
@@ -292,7 +293,7 @@ function renderConcertParams(container: HTMLElement): void {
     const p = getConcertParams();
     addSliderRow(
         container,
-        '轨道半径',
+        t('motion.orbitRadius'),
         p.radius,
         2,
         50,
@@ -305,7 +306,7 @@ function renderConcertParams(container: HTMLElement): void {
     );
     addSliderRow(
         container,
-        '目标高度',
+        t('motion.targetHeight'),
         p.height,
         0,
         30,
@@ -318,7 +319,7 @@ function renderConcertParams(container: HTMLElement): void {
     );
     addSliderRow(
         container,
-        '旋转速度',
+        t('motion.rotateSpeed'),
         p.speed,
         0,
         5,
@@ -331,7 +332,7 @@ function renderConcertParams(container: HTMLElement): void {
     );
     addToggleRow(
         container,
-        getConcertPaused() ? '已暂停' : '旋转中',
+        getConcertPaused() ? t('motion.paused') : t('motion.rotating'),
         !getConcertPaused(),
         (enabled) => {
             setConcertPaused(!enabled);
@@ -343,7 +344,7 @@ function renderConcertParams(container: HTMLElement): void {
 function renderARParams(container: HTMLElement): void {
     addToggleRow(
         container,
-        isARMirrored() ? '已镜像' : '镜像',
+        isARMirrored() ? t('motion.mirrored') : t('motion.mirror'),
         isARMirrored(),
         (enabled) => {
             setARMirror(enabled);
@@ -353,7 +354,7 @@ function renderARParams(container: HTMLElement): void {
     slideRow(
         container,
         'lucide:switch-camera',
-        getARFacing() === 'user' ? '切换到后置' : '切换到前置',
+        getARFacing() === 'user' ? t('motion.toBack') : t('motion.toFront'),
         false,
         async () => {
             await switchARCameraFacing();
@@ -363,7 +364,7 @@ function renderARParams(container: HTMLElement): void {
     if (!isARActive()) {
         const tip = document.createElement('div');
         tip.className = 'cs-hint';
-        tip.textContent = '摄像头启动中…';
+        tip.textContent = t('motion.cameraStarting');
         container.appendChild(tip);
     }
 }

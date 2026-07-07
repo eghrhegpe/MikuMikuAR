@@ -11,14 +11,14 @@ import {
     dom,
     stackRegistry,
 } from '../core/config';
+import { modelManager } from '../scene/scene';
 import {
-    modelManager,
     getModelMorphs,
     setModelMorphWeight,
     resetModelMorphs,
     setModelVisibility,
     setModelOpacity,
-} from '../scene/scene';
+} from '../scene/manager/model-ops';
 import {
     buildTransformCard,
     buildDangerCard,
@@ -39,12 +39,13 @@ import {
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
 import { tryCatchStatus } from '../core/utils';
+import { t } from '../core/i18n/t'; // [doc:adr-059]
 
 // ======== Open With (software tools submenu) ========
 
 export function buildOpenWithLevel(id: string): PopupLevel {
     return {
-        label: '用…打开',
+        label: t('model-detail.openWith'),
         dir: '',
         items: [],
         renderCustom: async (container) => {
@@ -58,7 +59,9 @@ export function buildOpenWithLevel(id: string): PopupLevel {
 
             if (entries.length === 0) {
                 container.innerHTML =
-                    '<div style="font-size:11px;color:var(--text-dim);text-align:center;padding:12px 0;">暂无可用软件<br>请先在设置中添加</div>';
+                    '<div style="font-size:11px;color:var(--text-dim);text-align:center;padding:12px 0;">' +
+                    t('model-detail.noSoftware') +
+                    '</div>';
                 return;
             }
 
@@ -67,15 +70,15 @@ export function buildOpenWithLevel(id: string): PopupLevel {
                     slideRow(c, softwareKindIcon(sw.kind), sw.name, false, async () => {
                         const inst = modelManager.get(id);
                         if (!inst.filePath) {
-                            setStatus('✗ 模型无文件路径', false);
+                            setStatus(t('model-detail.noFilePath'), false);
                             return;
                         }
                         const _r = await tryCatchStatus(
                             () => OpenWithSoftware(inst.filePath, sw.path, sw.args || ''),
-                            '✗ 启动失败'
+                            t('model-detail.launchFailed')
                         );
                         if (_r !== undefined) {
-                            setStatus(`✓ 已启动: ${sw.name}`, true);
+                            setStatus(t('model-detail.launched', { name: sw.name }), true);
                         }
                     });
                 }
@@ -83,14 +86,14 @@ export function buildOpenWithLevel(id: string): PopupLevel {
                 slideRow(
                     c,
                     'lucide:plus',
-                    '管理软件',
+                    t('model-detail.manageSoftware'),
                     false,
                     () => {
                         // Pop model stack first so returning from settings shows root level
                         stackRegistry.modelStack?.popTo(0);
                         import('./library-core').then((m) => {
                             stackRegistry.modelStack?.setLevel(0, {
-                                label: '模型',
+                                label: t('model-detail.model'),
                                 dir: '',
                                 items: m.buildModelRootItems(),
                             });
@@ -116,7 +119,7 @@ export function buildOpenWithLevel(id: string): PopupLevel {
 export function buildModelLevel(id: string): PopupLevel {
     const inst = modelManager.get(id);
     if (!inst) {
-        return { label: '未知模型', dir: '', items: [] };
+        return { label: t('model-detail.unknownModel'), dir: '', items: [] };
     }
     return {
         label: inst.name,
@@ -126,19 +129,19 @@ export function buildModelLevel(id: string): PopupLevel {
             cardContainer(container, (c) => {
                 // 外观折叠组
                 addCollapsible(c, {
-                    title: '外观',
+                    title: t('model-detail.appearance'),
                     icon: 'lucide:palette',
                     defaultOpen: true,
                     renderContent: (inner) => {
-                        slideRow(inner, 'lucide:box', '材质调节', true, () => {
+                        slideRow(inner, 'lucide:box', t('model-detail.materialAdjust'), true, () => {
                             const level = buildMatRootLevel(id, inst.name);
                             stackRegistry.modelStack.push(level);
                         });
-                        slideRow(inner, 'lucide:smile', '表情预览', true, () => {
+                        slideRow(inner, 'lucide:smile', t('model-detail.morphPreview'), true, () => {
                             const level = buildMorphPreviewLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
-                        slideRow(inner, 'lucide:shirt', '服装变体', true, () => {
+                        slideRow(inner, 'lucide:shirt', t('model-detail.outfitVariant'), true, () => {
                             const level = buildOutfitLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
@@ -147,19 +150,19 @@ export function buildModelLevel(id: string): PopupLevel {
 
                 // 信息折叠组
                 addCollapsible(c, {
-                    title: '信息',
+                    title: t('model-detail.info'),
                     icon: 'lucide:info',
                     defaultOpen: false,
                     renderContent: (inner) => {
-                        slideRow(inner, 'lucide:info', '基本信息', true, () => {
+                        slideRow(inner, 'lucide:info', t('model-detail.basicInfo'), true, () => {
                             const level = buildModelInfoLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
-                        slideRow(inner, 'lucide:git-branch', '骨骼层级', true, () => {
+                        slideRow(inner, 'lucide:git-branch', t('model-detail.boneHierarchy'), true, () => {
                             const level = buildBoneHierarchyLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
-                        slideRow(inner, 'lucide:tag', '标签管理', true, () => {
+                        slideRow(inner, 'lucide:tag', t('model-detail.tags'), true, () => {
                             const level = buildModelTagsLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
@@ -174,11 +177,11 @@ export function buildModelLevel(id: string): PopupLevel {
                         }
                         addModeSlider(
                             inner,
-                            '可见性',
+                            t('model-detail.visibility'),
                             [
-                                { value: 'visible', label: '显示' },
-                                { value: 'semi', label: '半透明' },
-                                { value: 'hidden', label: '隐藏' },
+                                { value: 'visible', label: t('model-detail.visible') },
+                                { value: 'semi', label: t('model-detail.semi') },
+                                { value: 'hidden', label: t('model-detail.hidden') },
                             ],
                             visMode,
                             (v) => {
@@ -194,10 +197,10 @@ export function buildModelLevel(id: string): PopupLevel {
                                 stackRegistry.modelStack.updateControls();
                                 setStatus(
                                     v === 'visible'
-                                        ? '完全可见'
+                                        ? t('model-detail.statusVisible')
                                         : v === 'semi'
-                                          ? '半透明 50%'
-                                          : '完全隐藏',
+                                          ? t('model-detail.statusSemi')
+                                          : t('model-detail.statusHidden'),
                                     true
                                 );
                             },
@@ -224,18 +227,18 @@ export function buildModelLevel(id: string): PopupLevel {
 
                 // 工具折叠组
                 addCollapsible(c, {
-                    title: '工具',
+                    title: t('model-detail.tools'),
                     icon: 'lucide:wrench',
                     defaultOpen: false,
                     renderContent: (inner) => {
-                        slideRow(inner, 'lucide:save', '保存预设', false, () => {
+                        slideRow(inner, 'lucide:save', t('model-detail.savePreset'), false, () => {
                             savePresetToLibDialog(id);
                         });
-                        slideRow(inner, 'lucide:folder-open', '加载预设', true, () => {
+                        slideRow(inner, 'lucide:folder-open', t('model-detail.loadPreset'), true, () => {
                             const level = buildPresetListLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
-                        slideRow(inner, 'lucide:external-link', '用…打开', true, () => {
+                        slideRow(inner, 'lucide:external-link', t('model-detail.openWith'), true, () => {
                             const level = buildOpenWithLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
@@ -253,7 +256,7 @@ export function buildModelLevel(id: string): PopupLevel {
                     stackRegistry.modelStack.popTo(0);
                     import('./library-core').then((m) => {
                         stackRegistry.modelStack?.setLevel(0, {
-                            label: '模型',
+                            label: t('model-detail.model'),
                             dir: '',
                             items: m.buildModelRootItems(),
                         });
@@ -270,10 +273,10 @@ export function buildModelLevel(id: string): PopupLevel {
 export function buildModelInfoLevel(id: string): PopupLevel {
     const inst = modelManager.get(id);
     if (!inst) {
-        return { label: '模型信息', dir: '', items: [] };
+        return { label: t('model-detail.infoTitle'), dir: '', items: [] };
     }
     return {
-        label: '模型信息',
+        label: t('model-detail.infoTitle'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -298,21 +301,24 @@ export function buildModelInfoLevel(id: string): PopupLevel {
                 0
             );
             const fields: Array<{ label: string; value: string }> = [
-                { label: '名称', value: inst.name },
-                { label: '文件', value: inst.filePath.split('/').pop() || inst.filePath },
-                { label: '类型', value: inst.kind === 'actor' ? '角色模型' : '舞台模型' },
-                { label: '动作', value: inst.vmdName || '无' },
-                { label: '顶点数', value: vertCount.toLocaleString() },
-                { label: '面数', value: (faceCount / 3).toLocaleString() },
-                { label: '材质数', value: String(matCount) },
-                { label: '骨骼数', value: boneCount !== null ? boneCount.toLocaleString() : 'N/A' },
+                { label: t('model-detail.fName'), value: inst.name },
+                { label: t('model-detail.fFile'), value: inst.filePath.split(/[/\\]/).pop() || inst.filePath },
                 {
-                    label: '表情数',
+                    label: t('model-detail.fType'),
+                    value: inst.kind === 'actor' ? t('model-detail.actorModel') : t('model-detail.stageModel'),
+                },
+                { label: t('model-detail.fMotion'), value: inst.vmdName || t('model-detail.none') },
+                { label: t('model-detail.fVerts'), value: vertCount.toLocaleString() },
+                { label: t('model-detail.fFaces'), value: (faceCount / 3).toLocaleString() },
+                { label: t('model-detail.fMaterials'), value: String(matCount) },
+                { label: t('model-detail.fBones'), value: boneCount !== null ? boneCount.toLocaleString() : 'N/A' },
+                {
+                    label: t('model-detail.fMorphs'),
                     value: morphCount !== null ? morphCount.toLocaleString() : 'N/A',
                 },
-                { label: '日文名', value: meta?.name_jp || '—' },
-                { label: '英文名', value: meta?.name_en || '—' },
-                { label: '备注', value: meta?.comment ? meta.comment.substring(0, 80) : '—' },
+                { label: t('model-detail.fNameJp'), value: meta?.name_jp || '—' },
+                { label: t('model-detail.fNameEn'), value: meta?.name_en || '—' },
+                { label: t('model-detail.fComment'), value: meta?.comment ? meta.comment.substring(0, 80) : '—' },
             ];
             cardContainer(container, (c) => {
                 for (const f of fields) {
@@ -328,11 +334,11 @@ export function buildModelInfoLevel(id: string): PopupLevel {
 export function buildModelTagsLevel(id: string): PopupLevel {
     const inst = modelManager.get(id);
     if (!inst) {
-        return { label: '标签', dir: '', items: [] };
+        return { label: t('model-detail.tagsFallback'), dir: '', items: [] };
     }
     const libRef = inst.filePath ? computeLibraryRef(inst.filePath) : null;
     return {
-        label: '模型标签',
+        label: t('model-detail.tagsTitle'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -341,14 +347,14 @@ export function buildModelTagsLevel(id: string): PopupLevel {
             cardContainer(container, (c) => {
                 const favRow = document.createElement('div');
                 favRow.className = 'slide-item';
-                favRow.setAttribute('data-hint', '收藏此模型到收藏夹');
+                favRow.setAttribute('data-hint', t('model-detail.favHint'));
                 const refreshFav = async () => {
                     if (!libRef) {
                         return;
                     }
                     const tags = await GetTagsByModel(libRef);
                     const isFav = tags && tags.includes('收藏');
-                    favRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:star" style="color:${isFav ? 'var(--accent)' : 'var(--text-muted)'};"></iconify-icon></span><span class="slide-label" style="color:${isFav ? 'var(--accent)' : 'var(--text)'};">${isFav ? '★ 已收藏' : '☆ 加入收藏'}</span>`;
+                    favRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:star" style="color:${isFav ? 'var(--accent)' : 'var(--text-muted)'};"></iconify-icon></span><span class="slide-label" style="color:${isFav ? 'var(--accent)' : 'var(--text)'};">${isFav ? t('model-detail.faved') : t('model-detail.addFav')}</span>`;
                     favRow.onclick = async () => {
                         if (!libRef) {
                             return;
@@ -356,13 +362,13 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                         await tryCatchStatus(async () => {
                             if (isFav) {
                                 await RemoveTag(libRef, '收藏');
-                                setStatus('✓ 已取消收藏', true);
+                                setStatus(t('model-detail.unfaved'), true);
                             } else {
                                 await AddTag(libRef, '收藏');
-                                setStatus('✓ 已收藏', true);
+                                setStatus(t('model-detail.favedStatus'), true);
                             }
                             refreshFav();
-                        }, '✗ 收藏操作失败');
+                        }, t('model-detail.favFailed'));
                     };
                 };
                 refreshFav();
@@ -376,7 +382,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
 
                 function refreshTags(): void {
                     if (!libRef) {
-                        tagContainer.innerHTML = '<span class="tag-empty">无法识别模型路径</span>';
+                        tagContainer.innerHTML = '<span class="tag-empty">' + t('model-detail.noPath') + '</span>';
                         return;
                     }
                     GetTagsByModel(libRef)
@@ -389,22 +395,22 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                 const chip = document.createElement('span');
                                 chip.className = 'tag-chip';
                                 chip.innerHTML = `${escapeHtml(tag)} <span class="tag-del">✕</span>`;
-                                chip.title = '点击移除标签';
+                                chip.title = t('model-detail.removeTagTitle');
                                 chip.addEventListener('click', async () => {
                                     const r = await tryCatchStatus(async () => {
                                         await RemoveTag(libRef, tag);
                                         return true;
-                                    }, '✗ 移除标签失败');
+                                    }, t('model-detail.favFailed'));
                                     if (r) {
                                         refreshTags();
-                                        setStatus(`✓ 已移除标签: ${tag}`, true);
+                                        setStatus(t('model-detail.tagRemoved', { tag }), true);
                                     }
                                 });
                                 tagContainer.appendChild(chip);
                             }
                         })
                         .catch(() => {
-                            tagContainer.textContent = '加载标签失败';
+                            tagContainer.textContent = t('model-detail.loadTagsFailed');
                         });
                 }
                 refreshTags();
@@ -412,7 +418,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                 const pickerLabel = document.createElement('div');
                 pickerLabel.style.cssText =
                     'font-size:11px;color:var(--text-dim);margin:8px 0 4px;';
-                pickerLabel.textContent = '添加已有标签';
+                pickerLabel.textContent = t('model-detail.addExistingTag');
                 c.appendChild(pickerLabel);
 
                 const picker = document.createElement('div');
@@ -422,7 +428,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                         const assigned = new Set<string>();
                         GetTagsByModel(libRef!)
                             .then((modelTags) => {
-                                (modelTags || []).forEach((t) => assigned.add(t));
+                                (modelTags || []).forEach((tm) => assigned.add(tm));
                                 (allTags || []).forEach((tag) => {
                                     if (tag === '收藏') {
                                         return;
@@ -435,8 +441,8 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                         : 'border:1px solid var(--white-08);color:var(--text-dim);background:transparent;cursor:pointer;';
                                     chip.textContent = assigned.has(tag) ? `✓ ${tag}` : `+ ${tag}`;
                                     chip.title = assigned.has(tag)
-                                        ? '已添加，点击移除'
-                                        : '点击添加此标签';
+                                        ? t('model-detail.tagAddedRemove')
+                                        : t('model-detail.tagAdd');
                                     chip.addEventListener('click', () => {
                                         if (!libRef) {
                                             return;
@@ -457,9 +463,11 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                     });
                                     picker.appendChild(chip);
                                 });
-                                if (!allTags || allTags.filter((t) => t !== '收藏').length === 0) {
+                                if (!allTags || allTags.filter((tg) => tg !== '收藏').length === 0) {
                                     picker.innerHTML =
-                                        '<span style="color:var(--text-muted);font-size:11px;">暂无全局标签，可返回标签管理创建</span>';
+                                        '<span style="color:var(--text-muted);font-size:11px;">' +
+                                        t('model-detail.noGlobalTags') +
+                                        '</span>';
                                 }
                             })
                             .catch(() => {});
@@ -477,14 +485,14 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
     const inst = modelManager.get(id);
     const morphs = inst ? (getModelMorphs(id) ?? []) : [];
     const typeLabels: Record<number, string> = {
-        0: '组',
-        1: '顶点',
-        2: '骨骼',
-        3: 'UV',
-        8: '材质',
+        0: t('model-detail.morphTypeGroup'),
+        1: t('model-detail.morphTypeVertex'),
+        2: t('model-detail.morphTypeBone'),
+        3: t('model-detail.morphTypeUV'),
+        8: t('model-detail.morphTypeMaterial'),
     };
     return {
-        label: '表情预览',
+        label: t('model-detail.morphPreview'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -492,7 +500,7 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
             cardContainer(container, (c) => {
                 const resetBtn = document.createElement('button');
                 resetBtn.className = 'btn btn-sm';
-                resetBtn.textContent = '全部重置';
+                resetBtn.textContent = t('model-detail.resetAll');
                 resetBtn.style.cssText = 'width:100%;margin-bottom:8px;';
                 resetBtn.addEventListener('click', () => {
                     resetModelMorphs(id);
@@ -505,7 +513,7 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
                             valLabel.textContent = '0.00';
                         }
                     });
-                    setStatus('✓ 已重置所有表情', true);
+                    setStatus(t('model-detail.morphsReset'), true);
                 });
                 c.appendChild(resetBtn);
 
@@ -523,7 +531,7 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
                     name.title = m.name;
                     const typeTag = document.createElement('span');
                     typeTag.className = 'morph-type';
-                    typeTag.textContent = typeLabels[m.type] || `类型${m.type}`;
+                    typeTag.textContent = typeLabels[m.type] || t('model-detail.morphTypeUnknown', { type: m.type });
                     const valLabel = document.createElement('span');
                     valLabel.className = 'morph-val';
                     valLabel.textContent = '0.00';
@@ -552,7 +560,7 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
                 if (morphs.length === 0) {
                     const empty = document.createElement('div');
                     empty.className = 'morph-empty';
-                    empty.textContent = '此模型无表情数据';
+                    empty.textContent = t('model-detail.noMorph');
                     list.appendChild(empty);
                 }
 
@@ -567,17 +575,22 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
 export function buildBoneHierarchyLevel(id: string): PopupLevel {
     const inst = modelManager.get(id);
     if (!inst?.mmdModel) {
-        return { label: '骨骼层级', dir: '', items: [] };
+        return { label: t('model-detail.boneHierarchy'), dir: '', items: [] };
     }
     const bones = inst.mmdModel.runtimeBones;
     if (!bones || bones.length === 0) {
-        return { label: '骨骼层级', dir: '', items: [] };
+        return { label: t('model-detail.boneHierarchy'), dir: '', items: [] };
     }
 
     // Build parent→children map
     const childrenMap = new Map<number, number[]>();
     const rootIndices: number[] = [];
     const physicsSet = new Set<number>();
+    // [audit-fix] 预建 骨骼→索引 映射，避免循环内 bones.indexOf 的 O(n²) 冗余查找
+    const boneIndex = new Map<(typeof bones)[number], number>();
+    for (let i = 0; i < bones.length; i++) {
+        boneIndex.set(bones[i], i);
+    }
     for (let i = 0; i < bones.length; i++) {
         const bone = bones[i];
         if (bone.rigidBodyIndices.length > 0) {
@@ -585,7 +598,7 @@ export function buildBoneHierarchyLevel(id: string): PopupLevel {
         }
         const parentBone = bone.parentBone;
         if (parentBone) {
-            const parentIdx = bones.indexOf(parentBone);
+            const parentIdx = boneIndex.get(parentBone) ?? -1;
             if (parentIdx >= 0) {
                 const list = childrenMap.get(parentIdx) ?? [];
                 list.push(i);
@@ -597,7 +610,7 @@ export function buildBoneHierarchyLevel(id: string): PopupLevel {
     }
 
     return {
-        label: '骨骼层级',
+        label: t('model-detail.boneHierarchy'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -606,7 +619,7 @@ export function buildBoneHierarchyLevel(id: string): PopupLevel {
                 const header = document.createElement('div');
                 header.style.cssText =
                     'font-size:var(--font-ui-sm);color:var(--text-bright);padding:4px 14px 8px;';
-                header.textContent = `共 ${bones.length} 个骨骼`;
+                header.textContent = t('model-detail.boneCount', { n: bones.length });
                 c.appendChild(header);
 
                 function renderBoneTree(parent: HTMLElement, idx: number, depth: number): void {
@@ -673,7 +686,7 @@ export function buildBoneHierarchyLevel(id: string): PopupLevel {
                         if (iconEl) {
                             badge.appendChild(iconEl);
                         }
-                        badge.title = '有物理刚体';
+                        badge.title = t('model-detail.hasPhysics');
                         badge.style.cssText =
                             'font-size:11px;flex:none;color:var(--accent);display:inline-flex;';
                         row.appendChild(badge);

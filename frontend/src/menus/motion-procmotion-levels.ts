@@ -36,12 +36,30 @@ import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
 import { getMmdRuntimeType, setMmdRuntimeType } from '../core/config';
 import type { ProcMotionMode } from '../motion-algos/procedural-motion';
 import { getMotionMenu } from './motion-popup';
+import { t } from '../core/i18n/t'; // [doc:adr-059]
+
+// [doc:adr-059] 骨骼微动类别 → i18n key（模块级，运行时 t() 支持热切换）
+const BONE_LABEL_KEYS: Record<string, string> = {
+    center: 'motion.boneCenter',
+    upper: 'motion.boneUpper',
+    upper2: 'motion.boneUpper2',
+    waist: 'motion.boneWaist',
+    head: 'motion.boneHead',
+    arm: 'motion.boneArm',
+    groove: 'motion.boneGroove',
+    shoulder: 'motion.boneShoulder',
+    allParent: 'motion.boneAllParent',
+    wrist: 'motion.boneWrist',
+    footIk: 'motion.boneFootIk',
+    blink: 'motion.boneBlink',
+    emotion: 'motion.boneEmotion',
+};
 
 export function buildProcMotionLevel(): PopupLevel {
     const st = getProcMotionState();
     const lipSt = getLipSyncState();
     return {
-        label: '程序化动作',
+        label: t('motion.procMotion'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -52,7 +70,7 @@ export function buildProcMotionLevel(): PopupLevel {
                 group.style.padding = '0';
                 addPresetChip(
                     group,
-                    '待机呼吸',
+                    t('motion.modeIdle'),
                     st.mode === 'idle',
                     () => {
                         setProcMotionMode('idle');
@@ -66,7 +84,7 @@ export function buildProcMotionLevel(): PopupLevel {
                 );
                 addPresetChip(
                     group,
-                    '自动舞蹈',
+                    t('motion.modeAutodance'),
                     st.mode === 'autodance',
                     () => {
                         setProcMotionMode('autodance');
@@ -83,7 +101,7 @@ export function buildProcMotionLevel(): PopupLevel {
                 );
                 addPresetChip(
                     group,
-                    '关闭',
+                    t('motion.modeOff'),
                     st.mode === 'off',
                     () => {
                         setProcMotionMode('off');
@@ -101,11 +119,11 @@ export function buildProcMotionLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addModeSlider(
                     c,
-                    '程序化动作',
+                    t('motion.procMotion'),
                     [
-                        { value: 'off' as const, label: '关闭' },
-                        { value: 'idle' as const, label: '待机呼吸' },
-                        { value: 'autodance' as const, label: '自动舞蹈' },
+                        { value: 'off' as const, label: t('motion.modeOff') },
+                        { value: 'idle' as const, label: t('motion.modeIdle') },
+                        { value: 'autodance' as const, label: t('motion.modeAutodance') },
                     ],
                     st.mode,
                     (v) => {
@@ -120,7 +138,7 @@ export function buildProcMotionLevel(): PopupLevel {
                 );
                 addToggleRow(
                     c,
-                    '自动切换',
+                    t('motion.autoSwitch'),
                     st.autoSwitch,
                     (v) => {
                         setProcMotionAutoSwitch(v);
@@ -132,7 +150,7 @@ export function buildProcMotionLevel(): PopupLevel {
                 );
                 addToggleRow(
                     c,
-                    'LipSync',
+                    t('motion.lipSync'),
                     lipSt.enabled,
                     (v) => {
                         setLipSyncEnabled(v);
@@ -145,7 +163,7 @@ export function buildProcMotionLevel(): PopupLevel {
                 );
                 addToggleRow(
                     c,
-                    '微动叠加',
+                    t('motion.lifelike'),
                     st.lifelikeEnabled,
                     (v) => {
                         setLifelikeEnabled(v);
@@ -160,7 +178,7 @@ export function buildProcMotionLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addSliderRow(
                     c,
-                    '动作强度',
+                    t('motion.intensity'),
                     st.intensity,
                     0,
                     1,
@@ -177,7 +195,7 @@ export function buildProcMotionLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '速度',
+                    t('motion.speed'),
                     st.speed,
                     0.5,
                     2,
@@ -199,7 +217,7 @@ export function buildProcMotionLevel(): PopupLevel {
                 cardContainer(container, (c) => {
                     addSliderRow(
                         c,
-                        '微动强度',
+                        t('motion.lifelikeIntensity'),
                         st.lifelikeIntensity,
                         0,
                         1,
@@ -218,26 +236,11 @@ export function buildProcMotionLevel(): PopupLevel {
 
             // ======== 骨骼微动效果（可折叠） ========
             addCollapsible(container, {
-                title: '骨骼微动效果',
+                title: t('motion.boneMicro'),
                 icon: 'lucide:activity',
                 defaultOpen: false,
                 renderContent: (inner) => {
                     const cats = getProcMotionBoneCategories();
-                    const labels: Record<string, string> = {
-                        center: '重心弹跳',
-                        upper: '上半身呼吸',
-                        upper2: '上半身2扭转',
-                        waist: '腰部扭胯',
-                        head: '头部点头',
-                        arm: '手臂摆动',
-                        groove: 'Groove微晃',
-                        shoulder: '肩部耸肩',
-                        allParent: '全親微晃',
-                        wrist: '手腕节拍',
-                        footIk: '足IK踏步',
-                        blink: '眨眼',
-                        emotion: '表情情绪轮',
-                    };
                     const icons: Record<string, string> = {
                         center: 'lucide:move',
                         upper: 'lucide:activity',
@@ -254,12 +257,12 @@ export function buildProcMotionLevel(): PopupLevel {
                         emotion: 'lucide:smile',
                     };
                     // 分组：躯干
-                    addSectionTitle(inner, '躯干');
+                    addSectionTitle(inner, t('motion.secTorso'));
                     for (const cat of ['center', 'allParent', 'waist', 'groove'] as const) {
                         if (cats.includes(cat)) {
                             addToggleRow(
                                 inner,
-                                labels[cat] ?? cat,
+                                t(BONE_LABEL_KEYS[cat] || cat),
                                 st.boneToggles[cat],
                                 (v) => {
                                     setProcMotionBoneToggle(cat, v);
@@ -273,12 +276,12 @@ export function buildProcMotionLevel(): PopupLevel {
                         }
                     }
                     // 分组：上半身
-                    addSectionTitle(inner, '上半身');
+                    addSectionTitle(inner, t('motion.secUpper'));
                     for (const cat of ['upper', 'upper2', 'shoulder', 'arm'] as const) {
                         if (cats.includes(cat)) {
                             addToggleRow(
                                 inner,
-                                labels[cat] ?? cat,
+                                t(BONE_LABEL_KEYS[cat] || cat),
                                 st.boneToggles[cat],
                                 (v) => {
                                     setProcMotionBoneToggle(cat, v);
@@ -292,12 +295,12 @@ export function buildProcMotionLevel(): PopupLevel {
                         }
                     }
                     // 分组：头部
-                    addSectionTitle(inner, '头部');
+                    addSectionTitle(inner, t('motion.secHead'));
                     for (const cat of ['head', 'blink', 'emotion'] as const) {
                         if (cats.includes(cat)) {
                             addToggleRow(
                                 inner,
-                                labels[cat] ?? cat,
+                                t(BONE_LABEL_KEYS[cat] || cat),
                                 st.boneToggles[cat],
                                 (v) => {
                                     setProcMotionBoneToggle(cat, v);
@@ -311,12 +314,12 @@ export function buildProcMotionLevel(): PopupLevel {
                         }
                     }
                     // 分组：末端
-                    addSectionTitle(inner, '末端');
+                    addSectionTitle(inner, t('motion.secEnd'));
                     for (const cat of ['wrist', 'footIk'] as const) {
                         if (cats.includes(cat)) {
                             addToggleRow(
                                 inner,
-                                labels[cat] ?? cat,
+                                t(BONE_LABEL_KEYS[cat] || cat),
                                 st.boneToggles[cat],
                                 (v) => {
                                     setProcMotionBoneToggle(cat, v);
@@ -334,13 +337,13 @@ export function buildProcMotionLevel(): PopupLevel {
 
             // ======== 视线追踪（可折叠） ========
             addCollapsible(container, {
-                title: '视线追踪',
+                title: t('motion.gazeTracking'),
                 icon: 'lucide:eye',
                 defaultOpen: false,
                 renderContent: (inner) => {
                     addToggleRow(
                         inner,
-                        '眼部跟随',
+                        t('motion.eyeFollow'),
                         st.eyeTrackingEnabled,
                         (v) => {
                             setProcMotionEyeTrackingEnabled(v);
@@ -353,7 +356,7 @@ export function buildProcMotionLevel(): PopupLevel {
                     );
                     addToggleRow(
                         inner,
-                        '头部跟随',
+                        t('motion.headFollow'),
                         st.headTrackingEnabled,
                         (v) => {
                             setProcMotionHeadTrackingEnabled(v);
@@ -371,10 +374,10 @@ export function buildProcMotionLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addModeSlider(
                     c,
-                    '运行时',
+                    t('motion.runtime'),
                     [
-                        { value: 'wasm' as const, label: 'WASM 物理' },
-                        { value: 'js' as const, label: 'JS 调试' },
+                        { value: 'wasm' as const, label: t('motion.runtimeWasm') },
+                        { value: 'js' as const, label: t('motion.runtimeJs') },
                     ],
                     getMmdRuntimeType(),
                     (v) => {
@@ -383,9 +386,7 @@ export function buildProcMotionLevel(): PopupLevel {
                         }
                         (async () => {
                             const ok = await showConfirm(
-                                v === 'js'
-                                    ? '切换到 JS 调试模式将丢失当前场景并重新加载（无物理）。继续？'
-                                    : '切换到 WASM 物理模式将丢失当前场景并重新加载。继续？'
+                                v === 'js' ? t('motion.confirmJs') : t('motion.confirmWasm')
                             );
                             if (!ok) {
                                 getMotionMenu()?.updateControls();
@@ -403,12 +404,12 @@ export function buildProcMotionLevel(): PopupLevel {
                 );
                 addModeSlider(
                     c,
-                    '插值曲线',
+                    t('motion.interpCurve'),
                     [
-                        { value: 'auto' as const, label: '自动' },
-                        { value: 'sharp' as const, label: '锐利' },
-                        { value: 'ease-in-out' as const, label: '缓入缓出' },
-                        { value: 'ease-out' as const, label: '缓出' },
+                        { value: 'auto' as const, label: t('motion.interpAuto') },
+                        { value: 'sharp' as const, label: t('motion.interpSharp') },
+                        { value: 'ease-in-out' as const, label: t('motion.interpEaseInOut') },
+                        { value: 'ease-out' as const, label: t('motion.interpEaseOut') },
                     ],
                     st.interpOverride,
                     (v) => {
@@ -429,16 +430,16 @@ export function buildProcMotionLevel(): PopupLevel {
 export function buildProcMotionModeLevel(): PopupLevel {
     const st = getProcMotionState();
     const modes: { mode: ProcMotionMode; label: string; icon: string }[] = [
-        { mode: 'off', label: '关闭', icon: st.mode === 'off' ? 'check' : 'circle' },
-        { mode: 'idle', label: '待机呼吸', icon: st.mode === 'idle' ? 'check' : 'circle' },
+        { mode: 'off', label: t('motion.modeOff'), icon: st.mode === 'off' ? 'check' : 'circle' },
+        { mode: 'idle', label: t('motion.modeIdle'), icon: st.mode === 'idle' ? 'check' : 'circle' },
         {
             mode: 'autodance',
-            label: '自动舞蹈',
+            label: t('motion.modeAutodance'),
             icon: st.mode === 'autodance' ? 'check' : 'circle',
         },
     ];
     return {
-        label: '程序化动作模式',
+        label: t('motion.procMotionMode'),
         dir: '',
         items: modes.map((m) => ({
             kind: 'action' as const,
@@ -452,22 +453,22 @@ export function buildProcMotionModeLevel(): PopupLevel {
 export function buildLipSyncLevel(): PopupLevel {
     const st = getLipSyncState();
     return {
-        label: 'LipSync',
+        label: t('motion.lipSync'),
         dir: '',
         items: [
             {
                 kind: 'action',
-                label: '启用',
+                label: t('motion.enable'),
                 icon: st.enabled ? 'check' : 'circle',
                 target: 'lipsync:toggle',
-                sublabel: st.enabled ? '开' : '关',
+                sublabel: st.enabled ? t('motion.on') : t('motion.off'),
             },
         ],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
                 addSliderRow(
                     c,
-                    '灵敏度',
+                    t('motion.sensitivity'),
                     1 - st.sensitivity,
                     0,
                     1,
@@ -483,7 +484,7 @@ export function buildLipSyncLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '强度',
+                    t('motion.intensity'),
                     st.intensity,
                     0,
                     1,

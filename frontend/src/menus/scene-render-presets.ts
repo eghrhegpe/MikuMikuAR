@@ -15,6 +15,7 @@ import {
 } from '../scene/scene';
 import { GetRenderPresets, SaveRenderPreset } from '../core/wails-bindings';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
+import { t } from '../core/i18n/t';
 
 // ======== Render Presets ========
 
@@ -141,22 +142,23 @@ const FILTER_PRESETS: Record<string, Partial<RenderState>> = {
     },
 };
 
+// 预设名/描述 → i18n key 映射（热切换安全：仅存 key，不含中文）
 export const FILTER_PRESET_LABELS: Record<string, string> = {
-    standard: '标准',
-    cinematic: '电影',
-    cartoon: '卡通',
-    realistic: '写实',
-    warm: '暖光',
-    cyberpunk: '赛博朋克',
+    standard: 'scene.preset.standard',
+    cinematic: 'scene.preset.cinematic',
+    cartoon: 'scene.preset.cartoon',
+    realistic: 'scene.preset.realistic',
+    warm: 'scene.preset.warm',
+    cyberpunk: 'scene.preset.cyberpunk',
 };
 
 const FILTER_PRESET_DESCS: Record<string, string> = {
-    standard: 'Standard 色调映射 · 基准参考',
-    cinematic: 'ACES 色调映射 · 电影胶片曲线 · 自然高光滚降',
-    cartoon: 'Reinhard 色调映射 · 高饱和高对比 · 黑色线框',
-    realistic: 'ACES 色调映射 · 浅景深 · 电影暗角',
-    warm: 'Cineon 色调映射 · 暖色背景 · 胶片感',
-    cyberpunk: 'Neutral 色调映射 · 高光溢出 · 极端后处理',
+    standard: 'scene.presetDesc.standard',
+    cinematic: 'scene.presetDesc.cinematic',
+    cartoon: 'scene.presetDesc.cartoon',
+    realistic: 'scene.presetDesc.realistic',
+    warm: 'scene.presetDesc.warm',
+    cyberpunk: 'scene.presetDesc.cyberpunk',
 };
 
 export function getFilterPreset(name: string): Partial<RenderState> | undefined {
@@ -164,12 +166,12 @@ export function getFilterPreset(name: string): Partial<RenderState> | undefined 
 }
 
 export function getFilterPresetName(name: string): string {
-    return FILTER_PRESET_LABELS[name] || name;
+    return t(FILTER_PRESET_LABELS[name] || name);
 }
 
 export function buildPresetsLevel(): PopupLevel {
     return {
-        label: '渲染预设',
+        label: t('scene.renderPresets'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -184,18 +186,21 @@ export function buildPresetsLevel(): PopupLevel {
 
                 const btn = document.createElement('button');
                 btn.className = 'preset-chip';
-                btn.textContent = FILTER_PRESET_LABELS[key] || key;
+                btn.textContent = t(FILTER_PRESET_LABELS[key] || key);
                 btn.addEventListener('click', () => {
                     const preset = getFilterPreset(key);
                     if (preset) {
                         transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
                     }
-                    setStatus(`✓ 预设: ${FILTER_PRESET_LABELS[key]}`, true);
+                    setStatus(
+                        t('scene.statusPresetApplied', { name: t(FILTER_PRESET_LABELS[key]) }),
+                        true
+                    );
                 });
                 wrapper.appendChild(btn);
 
                 const desc = document.createElement('span');
-                desc.textContent = FILTER_PRESET_DESCS[key] || '';
+                desc.textContent = t(FILTER_PRESET_DESCS[key] || '');
                 desc.style.cssText =
                     'font-size:9px;color:var(--text-dim);opacity:0.7;white-space:nowrap;line-height:1.2;';
                 wrapper.appendChild(desc);
@@ -203,7 +208,7 @@ export function buildPresetsLevel(): PopupLevel {
                 chipGroup.appendChild(wrapper);
             }
             container.appendChild(chipGroup);
-            slideRow(container, 'lucide:save', '保存当前为预设', false, showPresetSaveDialog);
+            slideRow(container, 'lucide:save', t('scene.saveCurrentAsPreset'), false, showPresetSaveDialog);
             if (Object.keys(USER_FILTER_PRESETS).length > 0) {
                 const userChipGroup = document.createElement('div');
                 userChipGroup.className = 'preset-group';
@@ -214,7 +219,7 @@ export function buildPresetsLevel(): PopupLevel {
                     btn.textContent = name;
                     btn.addEventListener('click', () => {
                         setRenderState(USER_FILTER_PRESETS[name]);
-                        setStatus(`✓ 预设: ${name}`, true);
+                        setStatus(t('scene.statusPresetApplied', { name }), true);
                     });
                     userChipGroup.appendChild(btn);
                 }
@@ -225,7 +230,7 @@ export function buildPresetsLevel(): PopupLevel {
 }
 
 export async function showPresetSaveDialog(): Promise<void> {
-    const name = await showPrompt('输入预设名称：');
+    const name = await showPrompt(t('scene.promptPresetName'));
     if (!name || !name.trim()) {
         return;
     }
@@ -236,13 +241,16 @@ export async function showPresetSaveDialog(): Promise<void> {
             await SaveRenderPreset(trimmed, JSON.stringify(state));
             return true;
         },
-        '✗ 保存预设失败',
+        t('scene.statusSavePresetFailed'),
         (err) =>
-            showErrorToast('保存渲染预设失败', err instanceof Error ? err.message : String(err))
+            showErrorToast(
+                t('scene.toastSavePresetFailed'),
+                err instanceof Error ? err.message : String(err)
+            )
     );
     if (r) {
         USER_FILTER_PRESETS[trimmed] = state;
-        setStatus(`✓ 预设已保存: ${trimmed}`, true);
+        setStatus(t('scene.statusPresetSaved', { trimmed }), true);
         const menu = getSceneMenu();
         if (menu) {
             menu.setLevel(menu.levelCount - 1, buildPresetsLevel());

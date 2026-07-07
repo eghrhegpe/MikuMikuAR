@@ -34,6 +34,7 @@ import {
 } from '../core/wails-bindings';
 import { reRenderSceneMenu } from './scene-menu';
 import { FILTER_PRESET_LABELS, getFilterPreset } from './scene-render-presets';
+import { t } from '../core/i18n/t';
 
 // ======== Scene Preset ========
 
@@ -46,7 +47,7 @@ async function _loadPresetScene(name: string): Promise<boolean> {
         const json = await LoadSceneFile(dir + '/' + name);
         await deserializeScene(JSON.parse(json));
         return true;
-    }, '✗ 加载预设场景失败');
+    }, t('scene.statusLoadPresetFailed'));
     if (r) {
         return true;
     }
@@ -55,7 +56,7 @@ async function _loadPresetScene(name: string): Promise<boolean> {
 
 export function buildPresetScenesLevel(): PopupLevel {
     return {
-        label: '预设场景',
+        label: t('scene.presetScenes'),
         dir: '',
         items: [],
         renderCustom: async (container) => {
@@ -64,10 +65,10 @@ export function buildPresetScenesLevel(): PopupLevel {
             // 导出/导入场景包 action
             const bundleActions = document.createElement('div');
             bundleActions.className = 'lcard';
-            slideRow(bundleActions, 'lucide:package-export', '导出场景包', false, () => {
+            slideRow(bundleActions, 'lucide:package-export', t('scene.exportSceneBundle'), false, () => {
                 void exportSceneBundle();
             });
-            slideRow(bundleActions, 'lucide:package-import', '导入场景包', false, () => {
+            slideRow(bundleActions, 'lucide:package-import', t('scene.importSceneBundle'), false, () => {
                 void importSceneBundle();
             });
             const bundleDivider = document.createElement('div');
@@ -77,7 +78,7 @@ export function buildPresetScenesLevel(): PopupLevel {
 
             const loading = document.createElement('div');
             loading.style.cssText = 'font-size:12px;color:#fff;text-align:center;padding:24px;';
-            loading.textContent = '加载中…';
+            loading.textContent = t('scene.loading');
             container.appendChild(loading);
             currentPresetIndex = -1;
             _presetScenes = (await GetPresetScenes()) || [];
@@ -90,12 +91,12 @@ export function buildPresetScenesLevel(): PopupLevel {
                 chipGroup.className = 'preset-group';
                 chipGroup.style.paddingBottom = '6px';
                 for (const [key, label] of Object.entries(FILTER_PRESET_LABELS)) {
-                    addPresetChip(chipGroup, label, false, () => {
+                    addPresetChip(chipGroup, t(label), false, () => {
                         const preset = getFilterPreset(key);
                         if (preset) {
                             transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
                         }
-                        setStatus(`✓ 滤镜: ${label}`, true);
+                        setStatus(t('scene.statusFilter', { label: t(label) }), true);
                     });
                 }
                 c.appendChild(chipGroup);
@@ -104,7 +105,7 @@ export function buildPresetScenesLevel(): PopupLevel {
             if (scenes.length === 0) {
                 const empty = document.createElement('div');
                 empty.style.cssText = 'font-size:12px;color:#fff;text-align:center;padding:24px;';
-                empty.textContent = '暂无预设场景，保存场景时自动生成';
+                empty.textContent = t('scene.noPresetScenes');
                 container.appendChild(empty);
                 return;
             }
@@ -130,18 +131,18 @@ export function buildPresetScenesLevel(): PopupLevel {
                     row.appendChild(ls);
                     const delBtn = document.createElement('span');
                     delBtn.textContent = '✕';
-                    delBtn.title = '删除此预设场景';
+                    delBtn.title = t('scene.deletePresetScene');
                     delBtn.style.cssText =
                         'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 4px;';
                     delBtn.addEventListener('click', async (e) => {
                         e.stopPropagation();
-                        if (!(await showConfirm(`确定删除「${name}」？`))) {
+                        if (!(await showConfirm(t('scene.confirmDeletePreset', { name })))) {
                             return;
                         }
                         const r = await tryCatchStatus(async () => {
                             await DeletePresetScene(name);
                             return true;
-                        }, '✗ 删除失败');
+                        }, t('scene.statusDeleteFailed'));
                         if (r) {
                             if (currentPresetIndex === i) {
                                 currentPresetIndex = -1;
@@ -149,7 +150,7 @@ export function buildPresetScenesLevel(): PopupLevel {
                                 currentPresetIndex--;
                             }
                             reRenderSceneMenu();
-                            setStatus(`✓ 已删除: ${name}`, true);
+                            setStatus(t('scene.statusDeleted', { name }), true);
                         }
                     });
                     row.appendChild(delBtn);
@@ -157,7 +158,7 @@ export function buildPresetScenesLevel(): PopupLevel {
                         currentPresetIndex = i;
                         if (await _loadPresetScene(name)) {
                             reRenderSceneMenu();
-                            setStatus(`✓ 已加载: ${name}`, true);
+                            setStatus(t('scene.statusLoaded', { name }), true);
                         }
                     });
                     c.appendChild(row);
@@ -171,31 +172,31 @@ export function buildPresetScenesLevel(): PopupLevel {
 
 export function buildRenderLevel(): PopupLevel {
     return {
-        label: '渲染',
+        label: t('scene.render'),
         dir: '',
         items: [
             {
                 kind: 'folder',
-                label: '后处理',
+                label: t('scene.postProcess'),
                 icon: 'sparkles',
                 target: 'scene:render:postprocess',
             },
-            { kind: 'folder', label: '舞台', icon: 'monitor', target: 'scene:render:stage' },
-            { kind: 'folder', label: '渲染预设', icon: 'palette', target: 'scene:render:presets' },
+            { kind: 'folder', label: t('scene.stage'), icon: 'monitor', target: 'scene:render:stage' },
+            { kind: 'folder', label: t('scene.renderPresets'), icon: 'palette', target: 'scene:render:presets' },
         ],
     };
 }
 
 export function buildPostProcessLevel(): PopupLevel {
     return {
-        label: '后处理',
+        label: t('scene.postProcess'),
         dir: '',
         items: [],
         renderCustom: (container) => {
             const state = getRenderState();
             cardContainer(container, (c) => {
                 addCollapsible(c, {
-                    title: '泛光',
+                    title: t('scene.bloom'),
                     icon: 'lucide:sun',
                     defaultOpen: false,
                     headerToggle: {
@@ -209,7 +210,7 @@ export function buildPostProcessLevel(): PopupLevel {
                     renderContent: (inner) => {
                         sliderRow(
                             inner,
-                            '强度',
+                            t('scene.intensity'),
                             state.bloomWeight,
                             0,
                             1,
@@ -222,7 +223,7 @@ export function buildPostProcessLevel(): PopupLevel {
                         );
                         sliderRow(
                             inner,
-                            '阈值',
+                            t('scene.threshold'),
                             state.bloomThreshold,
                             0,
                             1,
@@ -235,7 +236,7 @@ export function buildPostProcessLevel(): PopupLevel {
                         );
                         sliderRow(
                             inner,
-                            '核大小',
+                            t('scene.kernelSize'),
                             state.bloomKernel,
                             16,
                             256,
@@ -251,7 +252,7 @@ export function buildPostProcessLevel(): PopupLevel {
 
                 addToggleRow(
                     c,
-                    '边缘高亮',
+                    t('scene.outline'),
                     state.outlineEnabled,
                     (v) => {
                         setRenderState({ outlineEnabled: v });
@@ -265,9 +266,9 @@ export function buildPostProcessLevel(): PopupLevel {
 
                 addModeSlider(
                     c,
-                    '抗锯齿',
+                    t('scene.antialiasing'),
                     [
-                        { value: 'off', label: '关闭' },
+                        { value: 'off', label: t('scene.off') },
                         { value: 'fxaa', label: 'FXAA' },
                         { value: '2x', label: '2x' },
                         { value: '4x', label: '4x' },
@@ -307,13 +308,13 @@ export function buildPostProcessLevel(): PopupLevel {
                     }
                 );
 
-                sliderRow(c, '景深', state.dofAperture, 0, 1, 0.05, 'lucide:camera', (v) => {
+                sliderRow(c, t('scene.dof'), state.dofAperture, 0, 1, 0.05, 'lucide:camera', (v) => {
                     setRenderState({ dofEnabled: v > 0, dofAperture: v });
                     triggerAutoSave();
                 });
                 sliderRow(
                     c,
-                    '暗角',
+                    t('scene.vignette'),
                     state.vignetteDarkness,
                     0,
                     1,
@@ -326,7 +327,7 @@ export function buildPostProcessLevel(): PopupLevel {
                 );
                 sliderRow(
                     c,
-                    '色差',
+                    t('scene.chromatic'),
                     state.chromaticAberrationAmount,
                     0,
                     1,
@@ -340,22 +341,22 @@ export function buildPostProcessLevel(): PopupLevel {
                         triggerAutoSave();
                     }
                 );
-                sliderRow(c, '颗粒', state.grainIntensity, 0, 1, 0.05, 'lucide:grid-3x3', (v) => {
+                sliderRow(c, t('scene.grain'), state.grainIntensity, 0, 1, 0.05, 'lucide:grid-3x3', (v) => {
                     setRenderState({ grainEnabled: v > 0, grainIntensity: v });
                     triggerAutoSave();
                 });
-                sliderRow(c, '锐化', state.sharpenAmount, 0, 1, 0.05, 'lucide:focus', (v) => {
+                sliderRow(c, t('scene.sharpen'), state.sharpenAmount, 0, 1, 0.05, 'lucide:focus', (v) => {
                     setRenderState({ sharpenAmount: v });
                     triggerAutoSave();
                 });
-                sliderRow(c, '辉光', state.glowIntensity, 0, 1, 0.05, 'lucide:sparkles', (v) => {
+                sliderRow(c, t('scene.glow'), state.glowIntensity, 0, 1, 0.05, 'lucide:sparkles', (v) => {
                     setRenderState({ glowEnabled: v > 0, glowIntensity: v });
                     triggerAutoSave();
                 });
                 // SSR — 屏幕空间反射
                 addToggleRow(
                     c,
-                    '屏幕空间反射',
+                    t('scene.ssr'),
                     state.ssrEnabled,
                     (v) => {
                         setRenderState({ ssrEnabled: v });
@@ -370,7 +371,7 @@ export function buildPostProcessLevel(): PopupLevel {
                 if (state.ssrEnabled) {
                     sliderRow(
                         c,
-                        '反射强度',
+                        t('scene.ssrStrength'),
                         state.ssrStrength,
                         0,
                         1,
@@ -381,17 +382,17 @@ export function buildPostProcessLevel(): PopupLevel {
                             triggerAutoSave();
                         }
                     );
-                    sliderRow(c, '边缘衰减', state.ssrFalloff, 0, 1, 0.05, 'lucide:border', (v) => {
+                    sliderRow(c, t('scene.ssrFalloff'), state.ssrFalloff, 0, 1, 0.05, 'lucide:border', (v) => {
                         setRenderState({ ssrFalloff: v });
                         triggerAutoSave();
                     });
-                    sliderRow(c, '步长', state.ssrStep, 1, 32, 1, 'lucide:ruler', (v) => {
+                    sliderRow(c, t('scene.ssrStep'), state.ssrStep, 1, 32, 1, 'lucide:ruler', (v) => {
                         setRenderState({ ssrStep: v });
                         triggerAutoSave();
                     });
                     sliderRow(
                         c,
-                        '厚度容差',
+                        t('scene.ssrThickness'),
                         state.ssrThickness,
                         0,
                         2,
@@ -406,7 +407,7 @@ export function buildPostProcessLevel(): PopupLevel {
                 // Reflection Probe — 环境反射探针
                 addToggleRow(
                     c,
-                    '环境反射',
+                    t('scene.reflectionProbe'),
                     state.reflectionProbeEnabled,
                     (v) => {
                         setRenderState({
@@ -423,7 +424,7 @@ export function buildPostProcessLevel(): PopupLevel {
                 // SSAO — 屏幕空间环境遮蔽
                 addToggleRow(
                     c,
-                    '环境遮蔽 (SSAO)',
+                    t('scene.ssao'),
                     state.ssaoEnabled,
                     (v) => {
                         setRenderState({ ssaoEnabled: v });
@@ -438,7 +439,7 @@ export function buildPostProcessLevel(): PopupLevel {
                 if (state.ssaoEnabled) {
                     sliderRow(
                         c,
-                        '遮蔽强度',
+                        t('scene.ssaoStrength'),
                         state.ssaoStrength,
                         0,
                         1,
@@ -451,7 +452,7 @@ export function buildPostProcessLevel(): PopupLevel {
                     );
                     sliderRow(
                         c,
-                        '遮蔽半径',
+                        t('scene.ssaoRadius'),
                         state.ssaoRadius,
                         0,
                         1,
@@ -462,7 +463,7 @@ export function buildPostProcessLevel(): PopupLevel {
                             triggerAutoSave();
                         }
                     );
-                    sliderRow(c, '采样数', state.ssaoSamples, 4, 32, 1, 'lucide:grid-3x3', (v) => {
+                    sliderRow(c, t('scene.ssaoSamples'), state.ssaoSamples, 4, 32, 1, 'lucide:grid-3x3', (v) => {
                         setRenderState({ ssaoSamples: v });
                         triggerAutoSave();
                     });
@@ -472,15 +473,15 @@ export function buildPostProcessLevel(): PopupLevel {
             // 色调映射 — 后处理色彩环节，影响整体画面风格
             cardContainer(container, (c) => {
                 addCollapsible(c, {
-                    title: '色调映射',
+                    title: t('scene.toneMapping'),
                     icon: 'lucide:palette',
                     defaultOpen: false,
                     renderContent: (inner) => {
                         addModeSlider(
                             inner,
-                            '模式',
+                            t('scene.mode'),
                             [
-                                { value: 0, label: '关闭' },
+                                { value: 0, label: t('scene.off') },
                                 { value: 1, label: 'ACES' },
                                 { value: 2, label: 'Reinhard' },
                                 { value: 3, label: 'Cineon' },
@@ -499,7 +500,7 @@ export function buildPostProcessLevel(): PopupLevel {
                         );
                         addSliderRow(
                             inner,
-                            '曝光',
+                            t('scene.exposure'),
                             state.exposure,
                             0,
                             4,
@@ -516,7 +517,7 @@ export function buildPostProcessLevel(): PopupLevel {
                         );
                         addSliderRow(
                             inner,
-                            '对比度',
+                            t('scene.contrast'),
                             state.contrast,
                             0,
                             4,

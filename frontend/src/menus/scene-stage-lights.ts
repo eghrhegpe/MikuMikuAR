@@ -28,12 +28,23 @@ import {
 import { LIGHTING_PRESETS, PRESET_NAMES } from '../scene/render/lighting-presets';
 import { setEnvState } from '../scene/env/env-bridge';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
+import { t } from '../core/i18n/t';
+
+// 灯光预设 key 映射（热切换安全：仅存 i18n key，不含中文）
+const LIGHTING_PRESET_KEYS: Record<string, string> = {
+    'character-portrait': 'scene.lightPreset.characterPortrait',
+    'prop-product': 'scene.lightPreset.propProduct',
+    'stage-drama': 'scene.lightPreset.stageDrama',
+    'dance-performance': 'scene.lightPreset.dancePerformance',
+    'natural-daylight': 'scene.lightPreset.naturalDaylight',
+    'night-scene': 'scene.lightPreset.nightScene',
+};
 
 // ======== Stage Light ========
 
 export function buildStageLightLevel(): PopupLevel {
     return {
-        label: '舞台灯光',
+        label: t('scene.stageLight'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -51,7 +62,7 @@ export function buildStageLightLevel(): PopupLevel {
                     const p = LIGHTING_PRESETS[name];
                     addPresetChip(
                         chipGroup,
-                        p.label,
+                        t(LIGHTING_PRESET_KEYS[name] || p.label),
                         currentPreset === name,
                         () => {
                             setEnvState({ lightingPresetName: name });
@@ -69,7 +80,7 @@ export function buildStageLightLevel(): PopupLevel {
                 // 自定义按钮（清除预设）
                 addPresetChip(
                     chipGroup,
-                    '自定义',
+                    t('scene.custom'),
                     false,
                     () => {
                         setEnvState({ lightingPresetName: undefined });
@@ -86,7 +97,7 @@ export function buildStageLightLevel(): PopupLevel {
 
             // —— 灯列表 ——
             cardContainer(container, (c) => {
-                addSectionTitle(c, '灯光列表');
+                addSectionTitle(c, t('scene.lightList'));
 
                 const chipGroup = document.createElement('div');
                 chipGroup.className = 'preset-group';
@@ -111,7 +122,7 @@ export function buildStageLightLevel(): PopupLevel {
                 const addBtn = document.createElement('button');
                 addBtn.className = 'preset-chip';
                 addBtn.textContent = '＋';
-                addBtn.title = '添加灯光';
+                addBtn.title = t('scene.addLight');
                 addBtn.addEventListener('click', () => {
                     addStageLight('spot');
                     reRenderSceneMenu();
@@ -146,11 +157,11 @@ export function buildStageLightLevel(): PopupLevel {
                 renderContent: (inner) => {
                     addModeSlider(
                         inner,
-                        '类型',
+                        t('scene.type'),
                         [
-                            { value: 'spot', label: '聚光灯' },
-                            { value: 'point', label: '点光源' },
-                            { value: 'directional', label: '平行光' },
+                            { value: 'spot', label: t('scene.spot') },
+                            { value: 'point', label: t('scene.point') },
+                            { value: 'directional', label: t('scene.directional') },
                         ],
                         state.type,
                         (v) => {
@@ -173,7 +184,7 @@ export function buildStageLightLevel(): PopupLevel {
                     );
                     addSliderRow(
                         inner,
-                        '强度',
+                        t('scene.intensity'),
                         state.intensity,
                         0,
                         2,
@@ -192,7 +203,7 @@ export function buildStageLightLevel(): PopupLevel {
                     );
                     addColorSliderRow(
                         inner,
-                        '颜色',
+                        t('scene.color'),
                         state.color,
                         (v) => {
                             setStageLightState({ color: v }, state.id);
@@ -213,13 +224,13 @@ export function buildStageLightLevel(): PopupLevel {
             // —— 参数卡片（按类型动态）——
             if (state.type === 'spot') {
                 addCollapsible(container, {
-                    title: '参数',
+                    title: t('scene.params'),
                     icon: 'lucide:sliders',
                     defaultOpen: false,
                     renderContent: (inner) => {
                         addSliderRow(
                             inner,
-                            '锥角',
+                            t('scene.coneAngle'),
                             state.angle,
                             0.1,
                             2.0,
@@ -238,7 +249,7 @@ export function buildStageLightLevel(): PopupLevel {
                         );
                         addSliderRow(
                             inner,
-                            '衰减',
+                            t('scene.falloff'),
                             state.exponent,
                             0,
                             4,
@@ -256,13 +267,13 @@ export function buildStageLightLevel(): PopupLevel {
                             }
                         );
                         addCollapsible(inner, {
-                            title: '目标点',
+                            title: t('scene.targetPoint'),
                             icon: 'lucide:target',
                             defaultOpen: false,
                             renderContent: (inner2) => {
                                 addSliderRow(
                                     inner2,
-                                    '目标 X',
+                                    t('scene.targetX'),
                                     state.targetX,
                                     -10,
                                     10,
@@ -282,7 +293,7 @@ export function buildStageLightLevel(): PopupLevel {
                                 );
                                 addSliderRow(
                                     inner2,
-                                    '目标 Y',
+                                    t('scene.targetY'),
                                     state.targetY,
                                     0,
                                     15,
@@ -302,7 +313,7 @@ export function buildStageLightLevel(): PopupLevel {
                                 );
                                 addSliderRow(
                                     inner2,
-                                    '目标 Z',
+                                    t('scene.targetZ'),
                                     state.targetZ,
                                     -10,
                                     10,
@@ -326,13 +337,13 @@ export function buildStageLightLevel(): PopupLevel {
                 });
             } else if (state.type === 'point') {
                 addCollapsible(container, {
-                    title: '参数',
+                    title: t('scene.params'),
                     icon: 'lucide:sliders',
                     defaultOpen: false,
                     renderContent: (inner) => {
                         addSliderRow(
                             inner,
-                            '衰减距离',
+                            t('scene.attenuationDist'),
                             state.range,
                             1,
                             100,
@@ -353,13 +364,13 @@ export function buildStageLightLevel(): PopupLevel {
                 });
             } else if (state.type === 'directional') {
                 addCollapsible(container, {
-                    title: '方向（目标点）',
+                    title: t('scene.directionTarget'),
                     icon: 'lucide:compass',
                     defaultOpen: false,
                     renderContent: (inner) => {
                         addSliderRow(
                             inner,
-                            '目标 X',
+                            t('scene.targetX'),
                             state.targetX,
                             -10,
                             10,
@@ -378,7 +389,7 @@ export function buildStageLightLevel(): PopupLevel {
                         );
                         addSliderRow(
                             inner,
-                            '目标 Y',
+                            t('scene.targetY'),
                             state.targetY,
                             0,
                             15,
@@ -397,7 +408,7 @@ export function buildStageLightLevel(): PopupLevel {
                         );
                         addSliderRow(
                             inner,
-                            '目标 Z',
+                            t('scene.targetZ'),
                             state.targetZ,
                             -10,
                             10,
@@ -421,7 +432,7 @@ export function buildStageLightLevel(): PopupLevel {
             // —— 阴影卡片 ——
             if (state.type !== 'point') {
                 addCollapsible(container, {
-                    title: '阴影',
+                    title: t('scene.shadow'),
                     icon: 'lucide:cloud',
                     defaultOpen: false,
                     headerToggle: {
@@ -441,10 +452,10 @@ export function buildStageLightLevel(): PopupLevel {
                         if (state.shadowEnabled) {
                             addModeSlider(
                                 inner,
-                                '阴影类型',
+                                t('scene.shadowType'),
                                 [
-                                    { value: 'hard', label: '硬阴影' },
-                                    { value: 'soft', label: '软阴影' },
+                                    { value: 'hard', label: t('scene.hardShadow') },
+                                    { value: 'soft', label: t('scene.softShadow') },
                                     { value: 'pcf', label: 'PCF' },
                                 ],
                                 state.shadowType,
@@ -468,7 +479,7 @@ export function buildStageLightLevel(): PopupLevel {
                             );
                             addSliderRow(
                                 inner,
-                                '分辨率',
+                                t('scene.resolution'),
                                 state.shadowResolution,
                                 256,
                                 4096,
@@ -488,7 +499,7 @@ export function buildStageLightLevel(): PopupLevel {
                             );
                             addSliderRow(
                                 inner,
-                                '阴影偏移',
+                                t('scene.shadowBias'),
                                 state.shadowBias,
                                 0,
                                 0.01,
@@ -513,13 +524,13 @@ export function buildStageLightLevel(): PopupLevel {
 
             // —— 轨道卡片 ——
             addCollapsible(container, {
-                title: '位置（轨道）',
+                title: t('scene.positionOrbit'),
                 icon: 'lucide:orbit',
                 defaultOpen: true,
                 renderContent: (inner) => {
                     addSliderRow(
                         inner,
-                        '水平角度',
+                        t('scene.horizontalAngle'),
                         state.orbitAzimuth,
                         -180,
                         180,
@@ -538,7 +549,7 @@ export function buildStageLightLevel(): PopupLevel {
                     );
                     addSliderRow(
                         inner,
-                        '仰角',
+                        t('scene.elevationAngle'),
                         state.orbitElevation,
                         -90,
                         90,
@@ -557,7 +568,7 @@ export function buildStageLightLevel(): PopupLevel {
                     );
                     addSliderRow(
                         inner,
-                        '距离',
+                        t('scene.distance'),
                         state.orbitDistance,
                         1,
                         100,
@@ -580,15 +591,15 @@ export function buildStageLightLevel(): PopupLevel {
                     slideRow(
                         inner,
                         gizmoActive ? 'lucide:x' : 'lucide:move-3d',
-                        gizmoActive ? '退出拖拽' : '拖拽定位',
+                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
                         false,
                         () => {
                             if (gizmoActive) {
                                 detachLightGizmo();
-                                setStatus('✓ 已退出拖拽模式', true);
+                                setStatus(t('scene.statusExitDrag'), true);
                             } else {
                                 attachLightGizmo(state.id);
-                                setStatus('拖拽坐标轴移动位置，拖拽圆环调整方向', false);
+                                setStatus(t('scene.statusDragHint'), false);
                             }
                             reRenderSceneMenu();
                         }
@@ -599,13 +610,13 @@ export function buildStageLightLevel(): PopupLevel {
             // —— 删除按钮 ——
             if (lights.length > 1) {
                 cardContainer(container, (c) => {
-                    addDangerRow(c, 'lucide:trash-2', `删除「${state.name}」`, async () => {
-                        if (!(await showConfirm(`确定删除「${state.name}」？`))) {
+                    addDangerRow(c, 'lucide:trash-2', t('scene.deleteLight', { name: state.name }), async () => {
+                        if (!(await showConfirm(t('scene.confirmDeleteLight', { name: state.name })))) {
                             return;
                         }
                         removeStageLight(state.id);
                         reRenderSceneMenu();
-                        setStatus('✓ 已删除灯光', true);
+                        setStatus(t('scene.statusLightDeleted'), true);
                     });
                 });
             }
