@@ -7,6 +7,7 @@ frontend/node_modules
 # E2E
 frontend/playwright-report/
 frontend/test-results/
+frontend/e2e/logs_*/
 
 # Model files — do NOT commit (copyrighted, large)
 text-model/

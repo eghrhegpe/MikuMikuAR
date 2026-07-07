@@ -64,6 +64,11 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         'groundTexture',
         'groundTextureEnabled',
         'groundTextureScale',
+        'groundTextureRotation',
+        'groundTerrainHeight',
+        'groundTerrainScale',
+        'groundTerrainSeed',
+        'groundTerrainOctaves',
     ];
     if (!changed || changed.some((k) => groundKeys.includes(k))) {
         try {

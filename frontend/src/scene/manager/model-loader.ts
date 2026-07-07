@@ -30,6 +30,7 @@ import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
 import { loadVMDMotion } from '../motion/vmd-loader';
 import { _capture } from './material';
 import { rebuildShadowCasters } from '../render/lighting';
+import { getGroundHeightAt, setOnTerrainReady } from '../env/env-impl';
 
 // ======== Loader Dependencies ========
 
@@ -54,6 +55,18 @@ export function initLoader(
     _mmdRuntime = mmdRuntime;
     _modelManager = modelManager;
     _refreshWaterRenderList = refreshWaterRenderList;
+    // 地形（heightmap）加载完成后，把所有已加载模型重新贴合到起伏地面
+    setOnTerrainReady(() => {
+        if (!_modelManager) {
+            return;
+        }
+        for (const inst of _modelManager.getAll()) {
+            const root = inst.rootMesh;
+            if (root) {
+                root.position.y = getGroundHeightAt(root.position.x, root.position.z);
+            }
+        }
+    });
     _tryAutoApplyPreset = tryAutoApplyPreset;
     _loadOutfits = loadOutfits;
     _rebuildOutlineState = rebuildOutlineState ?? null;
@@ -259,6 +272,14 @@ export async function loadPMXFile(
         // Must register BEFORE VMD load because loadVMDMotion queries modelRegistry
         _modelManager.register(inst);
         registeredId = id;
+        // 贴地：把模型根节点放到当前地面高度（heightmap 模式=真实起伏，其他模式=groundLevel）。
+        // 地形尚未就绪时回退 groundLevel；地形 onReady 后会回调重新贴地所有模型。
+        if (inst.rootMesh) {
+            inst.rootMesh.position.y = getGroundHeightAt(
+                inst.rootMesh.position.x,
+                inst.rootMesh.position.z
+            );
+        }
         // Pre-capture material original values for reset functionality
         for (const mesh of meshes) {
             if (mesh.material) {
