@@ -3,11 +3,13 @@
 // 职责: envAutoLink、太阳角、时间流转、环境预设、setEnvState、重力控制
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
-import { SetEnvState } from '../../core/wails-bindings';
+import { SetEnvState, SetUIState } from '../../core/wails-bindings';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '../../core/config';
+import { uiState, setUIPersistCallback } from '../../core/state';
+import type { UIState } from '../../core/types';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { deriveLighting, TIME_OF_DAY_PRESETS } from './env-lighting';
 import * as impl from './env-impl';
@@ -482,3 +484,47 @@ export function flushEnvState(): void {
         () => {}
     );
 }
+
+// ======== UIState Persistence ========
+
+let _uiPersistTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 以当前 uiState 完整对象构建持久化载荷，剔除未定义字段。 */
+function _buildUIStatePayload(): Record<string, unknown> {
+    const p: Record<string, unknown> = {};
+    const s = uiState as Record<string, unknown>;
+    for (const key of Object.keys(s)) {
+        const v = (s as any)[key];
+        if (v !== undefined) {
+            p[key] = v;
+        }
+    }
+    return p;
+}
+
+/** 防抖调度 UIState 持久化。修改 uiState 后调用此函数。 */
+export function schedulePersistUI(): void {
+    if (_uiPersistTimer) {
+        clearTimeout(_uiPersistTimer);
+    }
+    _uiPersistTimer = setTimeout(() => {
+        _uiPersistTimer = null;
+        flushUIState();
+    }, 500);
+}
+
+/** 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。 */
+export function flushUIState(): void {
+    if (_uiPersistTimer) {
+        clearTimeout(_uiPersistTimer);
+        _uiPersistTimer = null;
+    }
+    const payload = _buildUIStatePayload();
+    if (Object.keys(payload).length === 0) return; // nothing to persist
+    SetUIState(payload as unknown as import('../../core/wails-bindings').UIState).catch(
+        () => {}
+    );
+}
+
+// 注册持久化回调（state.ts → 本模块，避免循环依赖）
+setUIPersistCallback(schedulePersistUI);

@@ -2,12 +2,18 @@
 import { getLang } from './locale';
 import { zhCN } from './locales/zh-CN';
 import { en } from './locales/en';
+import { ja } from './locales/ja';
+import { ko } from './locales/ko';
+import { zhTW } from './locales/zh-TW';
 
 type Bundle = Record<string, string>;
 
 const bundles: Record<string, Bundle> = {
     'zh-CN': zhCN,
     en,
+    ja,
+    ko,
+    'zh-TW': zhTW,
 };
 
 /**

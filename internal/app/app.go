@@ -321,13 +321,23 @@ type UIState struct {
 	FontFamily      string  `json:"fontFamily"`      // "system"|"noto"|"yahei"
 	Animations      bool    `json:"animations"`      // enable menu slide animations
 	BlurBg          bool    `json:"blurBg"`          // enable background blur on overlays
-		PerformanceMode string  `json:"performanceMode"` // "auto"|"quality"|"balanced"|"performance"
-		ScreenshotFormat  string  `json:"screenshotFormat"`
-		ScreenshotQuality float64 `json:"screenshotQuality"`
-		AutoCameraEnabled  bool    `json:"autoCameraEnabled"`
-		AutoCameraBeatsPerSwitch int `json:"autoCameraBeatsPerSwitch"`
-		AutoUpdateEnabled        bool `json:"autoUpdateEnabled"`
-	}
+	PerformanceMode string  `json:"performanceMode"` // "auto"|"quality"|"balanced"|"performance"
+	ScreenshotFormat  string  `json:"screenshotFormat"`
+	ScreenshotQuality float64 `json:"screenshotQuality"`
+	AutoCameraEnabled  bool    `json:"autoCameraEnabled"`
+	AutoCameraBeatsPerSwitch int `json:"autoCameraBeatsPerSwitch"`
+	AutoUpdateEnabled        bool `json:"autoUpdateEnabled"`
+
+	// --- 以下字段原为前端会话级，2026-07-07 新增持久化支持 ---
+	FpsLimit              int               `json:"fpsLimit,omitempty"`              // 帧率上限；0=不限
+	Vsync                 bool              `json:"vsync,omitempty"`                 // 垂直同步（默认 true）
+	DefaultPhysicsEnabled bool              `json:"defaultPhysicsEnabled,omitempty"` // 新加载 actor 默认物理开关
+	RenderScale           float64           `json:"renderScale,omitempty"`            // 渲染分辨率缩放；1.0=原生
+	CameraSensitivity     float64           `json:"cameraSensitivity,omitempty"`     // 相机灵敏度倍数；1.0=默认
+	InvertYAxis           bool              `json:"invertYAxis,omitempty"`           // 反转 Y 轴
+	AutoScaleModel        bool              `json:"autoScaleModel,omitempty"`        // 新加载模型自动缩放
+	MaterialCategoryMap   map[string]string `json:"materialCategoryMap,omitempty"`   // 材质分类映射
+}
 
 // OverridePaths allows per-category path overrides.
 // If a field is empty, the default path under ResourceRoot is used.

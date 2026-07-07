@@ -26,6 +26,7 @@
 | 改 Go 后端 | `internal/app/app.go` |
 | 竞品参考 | `docs/competitive-analysis.md` |
 | 代码命名/图标/状态栏规范 | `docs/terminology.md` |
+| check bindings 同步 | `grep "^func.*App\)" internal/app/app.go` → `grep "export function" frontend/bindings/mikumikuar/internal/app/app.ts` |
 
 ## 技术栈
 

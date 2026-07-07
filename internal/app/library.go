@@ -529,6 +529,12 @@ func (a *App) SetEnvState(env EnvState) error {
 	return a.updateConfig(func(cfg *Config) { cfg.Env = &env }, false)
 }
 
+// SetUIState persists the full UI state (scale, popupWidth, rendering settings, etc.).
+// Follows the same full-replace pattern as SetEnvState.
+func (a *App) SetUIState(ui UIState) error {
+	return a.updateConfig(func(cfg *Config) { cfg.UIState = ui }, false)
+}
+
 // ToggleFavorite adds or removes a libraryRef from the favorites list.
 // Favorites are stored as the built-in tag "收藏" in the tag system.
 func (a *App) ToggleFavorite(libraryRef string) error {

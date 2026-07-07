@@ -8,6 +8,9 @@ import { test, expect } from "./wails-fixture";
 
 test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
+        // Isolate: clear localStorage so scene state (render preset, env, camera)
+        // from a previous test doesn't carry over.
+        await page.evaluate(() => localStorage.clear());
         await page.click("#btnScene");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     });

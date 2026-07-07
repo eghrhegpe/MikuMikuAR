@@ -719,6 +719,15 @@ async function restoreUIState(): Promise<void> {
     if (s.autoUpdateEnabled) {
         uiState.autoUpdateEnabled = s.autoUpdateEnabled;
     }
+    // 恢复原会话级字段（跨重启持久化）
+    if (s.fpsLimit !== undefined) uiState.fpsLimit = s.fpsLimit;
+    if (s.vsync !== undefined) uiState.vsync = s.vsync;
+    if (s.defaultPhysicsEnabled !== undefined) uiState.defaultPhysicsEnabled = s.defaultPhysicsEnabled;
+    if (s.renderScale !== undefined) uiState.renderScale = s.renderScale;
+    if (s.cameraSensitivity !== undefined) uiState.cameraSensitivity = s.cameraSensitivity;
+    if (s.invertYAxis !== undefined) uiState.invertYAxis = s.invertYAxis;
+    if (s.autoScaleModel !== undefined) uiState.autoScaleModel = s.autoScaleModel;
+    if (s.materialCategoryMap !== undefined) uiState.materialCategoryMap = s.materialCategoryMap;
 }
 
 // ======== Update Notification ========

@@ -8,6 +8,9 @@ import { test, expect } from "./wails-fixture";
 
 test.describe("Motion — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
+        // Isolate: clear localStorage so ProcMotion state, BPM, or playback position
+        // from a previous test don't leak into the next one.
+        await page.evaluate(() => localStorage.clear());
         await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     });

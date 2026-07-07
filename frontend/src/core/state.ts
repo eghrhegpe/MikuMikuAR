@@ -240,8 +240,15 @@ export function toggleExpandedFolder(path: string): void {
 
 export const uiState: UIState = {};
 
+/** 持久化回调。由 env-bridge.ts 在初始化时注册，避免循环依赖。 */
+let _uiPersistCb: (() => void) | null = null;
+export function setUIPersistCallback(cb: () => void): void {
+    _uiPersistCb = cb;
+}
+
 export function setUIState(state: UIState): void {
     Object.assign(uiState, state);
+    _uiPersistCb?.();
 }
 
 // ======== Environment State ========

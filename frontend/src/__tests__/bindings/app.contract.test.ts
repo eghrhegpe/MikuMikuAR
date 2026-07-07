@@ -397,6 +397,7 @@ describe('binding contract: function exports', () => {
         'SetDownloadAutoImport',
         'SetDownloadWatchDir',
         'SetEnvState',
+        'SetUIState',
         'SetMMDPath',
         'SetOverridePath',
         'SetPerformanceMode',
