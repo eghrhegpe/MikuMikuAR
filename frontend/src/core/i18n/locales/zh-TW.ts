@@ -563,6 +563,7 @@ export const zhTW: Record<string, string> = {
     // —— Scene AR ——
     'scene.ar.enabled': '✓ AR 相機已開啟',
     'scene.ar.cameraDenied': '✗ 相機權限被拒，已切換為黑色背景',
+    'scene.ar.cameraUnavailable': '✗ 相機不可用（環境未提供媒體能力，桌面端可能需授予權限）',
     'scene.ar.switchedUser': '✓ 已切換至前置相機',
     'scene.ar.switchedEnv': '✓ 已切換至後置相機',
 
@@ -718,7 +719,7 @@ export const zhTW: Record<string, string> = {
     'env.sky': '天空',
     'env.skyMode': '天空模式',
     'env.solid': '純色',
-    'env.texture': '紋理',
+    'env.texture': '貼圖',
     'env.procedural': '程序化',
     'env.skyColorTop': '天空頂部顏色',
     'env.zenithColor': '天頂顏色',
@@ -744,7 +745,7 @@ export const zhTW: Record<string, string> = {
     'env.groundMode': '地面模式',
     'env.grid': '網格',
     'env.checker': '棋盤格',
-    'env.textureMode': '紋理',
+    'env.textureMode': '貼圖',
     'env.groundColor': '地面色',
     'env.opacity': '透明度',
     'env.gridSize': '網格大小',
@@ -755,12 +756,12 @@ export const zhTW: Record<string, string> = {
     'env.grass': '草地',
     'env.stone': '石板',
     'env.sand': '沙灘',
-    'env.customTexture': '自訂紋理',
+    'env.customTexture': '自訂貼圖',
     'env.change': '更換',
     'env.select': '選擇',
     'env.clear': '清除',
-    'env.textureScale': '紋理縮放',
-    'env.textureRotation': '紋理旋轉',
+    'env.textureScale': '貼圖縮放',
+    'env.textureRotation': '貼圖旋轉',
 
     // —— Water ——
     'env.water': '水面',

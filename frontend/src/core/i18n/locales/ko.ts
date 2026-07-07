@@ -563,6 +563,7 @@ export const ko: Record<string, string> = {
     // —— Scene AR ——
     'scene.ar.enabled': '✓ AR 카메라 켜짐',
     'scene.ar.cameraDenied': '✗ 카메라 권한 거부됨, 검은 배경으로 전환됨',
+    'scene.ar.cameraUnavailable': '✗ 카메라를 사용할 수 없음(환경에서 미디어 기능을 제공하지 않음, 데스크톱은 권한 부여가 필요할 수 있음)',
     'scene.ar.switchedUser': '✓ 전면 카메라로 전환됨',
     'scene.ar.switchedEnv': '✓ 후면 카메라로 전환됨',
 

@@ -25,6 +25,14 @@ let _mirrorOverridden = false; // 用户是否手动设置过镜像
 type ARModeChangeListener = (active: boolean) => void;
 const _listeners: ARModeChangeListener[] = [];
 
+// 代数令牌：每次发起/终止 AR 都会自增，用于作废在途的异步 getUserMedia。
+// 典型竞态：进入 AR 时 getUserMedia 弹窗未关闭，用户已切走——stopARCamera 会 bump
+// 此令牌，pending 的 startARCamera 在 await 后检测到 myGen !== _arGen 即丢弃流并 return false，
+// 避免"幽灵 AR"（isARActive()===true 但已离开 AR 模式）。
+let _arGen = 0;
+// 防重入：避免并发双 getUserMedia 泄漏摄像头流。
+let _starting = false;
+
 function _notifyARModeChange(active: boolean): void {
     for (const fn of _listeners) {
         try {
@@ -87,16 +95,42 @@ export function getARVideoEl(): HTMLVideoElement | null {
  * @returns 是否成功启动
  */
 export async function startARCamera(facing: CameraFacing = 'user'): Promise<boolean> {
+    // 串行化：已有启动在途时直接返回当前状态，避免并发双 getUserMedia 泄漏流。
+    if (_starting) {
+        return _active;
+    }
+    _starting = true;
+    // 占用一个代数；随后任意 stopARCamera 或新的 startARCamera 都会使本代数失效。
+    const myGen = ++_arGen;
+
     if (_active && _facing === facing && _stream) {
+        _starting = false;
         return true;
     }
 
+    // 停止旧流（内联停止，不 bump 代数——我们马上会用新流替换它）。
     if (_stream) {
-        stopARCamera();
+        const old = _stream;
+        _stream = null;
+        old.getTracks().forEach((tr) => tr.stop());
+        if (_videoEl) {
+            _videoEl.srcObject = null;
+        }
+        _active = false;
+        _hideVideo();
     }
 
     const video = getVideoEl();
     _facing = facing;
+
+    // 环境不支持（如 Wails/WebView2 未声明 media 能力）：navigator.mediaDevices 可能为 undefined。
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        _active = false;
+        _hideVideo();
+        setStatus(t('scene.ar.cameraUnavailable'), false);
+        _starting = false;
+        return false;
+    }
 
     try {
         const constraints: MediaStreamConstraints = {
@@ -109,6 +143,17 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
         };
 
         _stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        // 关键：await 之后校验代数是否仍有效（期间可能已被 stopARCamera 或新切换作废）。
+        if (myGen !== _arGen) {
+            _stream.getTracks().forEach((tr) => tr.stop());
+            _stream = null;
+            _active = false;
+            _hideVideo();
+            _starting = false;
+            return false;
+        }
+
         video.srcObject = _stream;
         await video.play();
 
@@ -118,19 +163,26 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
 
         setStatus(t('scene.ar.enabled'), true);
         _notifyARModeChange(true);
+        _starting = false;
         return true;
     } catch (err) {
         console.warn('[AR] startARCamera failed:', err);
-        _stream = null;
+        if (_stream) {
+            _stream.getTracks().forEach((tr) => tr.stop());
+            _stream = null;
+        }
         _active = false;
         _hideVideo();
         setStatus(t('scene.ar.cameraDenied'), false);
+        _starting = false;
         return false;
     }
 }
 
 /** 停止 AR 摄像头，释放资源并隐藏视频背景。 */
 export function stopARCamera(): void {
+    // 作废任何在途的 startARCamera（其 await 后会检测到代数失效并丢弃流）。
+    _arGen++;
     if (_stream) {
         const tracks = _stream.getTracks();
         for (const track of tracks) {

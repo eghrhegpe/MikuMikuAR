@@ -65,8 +65,11 @@ function computeWaveDirs(windDir: [number, number, number]): number[] {
     return arr;
 }
 
-// === LOD 水面：记录所有 LOD 子网格，用于同步缩放和位置 ===
+// === LOD 水面：记录所有 LOD 子网格（兄弟根网格），用于同步缩放/位置和手动可见性控制 ===
 let _waterLODs: Mesh[] = [];
+let _activeWaterLOD = -1; // 手动 LOD 当前层级：-1=未初始化, 0=high, 1=mid, 2=low
+let _waterPhase = 0; // 累计波相位，避免调节波速时相位跳变
+let _waterWaveSpeed = 1; // 当前波速，供每帧相位累加使用
 
 // === 每帧更新水面的 observer ===
 let _waterUpdateObserver: Observer<Scene> | null = null;
@@ -248,7 +251,7 @@ uniform mat4 world;
 uniform mat4 viewProjection;
 uniform float time;
 uniform float waveHeight;
-uniform float waveSpeed;
+uniform float wavePhase;
 uniform int uWaterFlip;
 
 // Gerstner 波参数
@@ -274,7 +277,7 @@ void main() {
         vec2 dir = uWindDir[i];
         float f = WAVE_FREQ[i];
         float a = WAVE_AMP[i] * waveHeight;
-        float th = f * dot(dir, p.xz) + WAVE_SPEED[i] * time * waveSpeed;
+        float th = f * dot(dir, p.xz) + WAVE_SPEED[i] * wavePhase;
         float c = cos(th), s = sin(th);
         p.x += a * dir.x * c; p.z += a * dir.y * c; p.y += a * s;
         n.x -= dir.x * f * a * c; n.z -= dir.y * f * a * c;
@@ -428,7 +431,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
 
     // ——— 基础参数 ———
     mat.setFloat('waveHeight', state.waterWaveHeight);
-    mat.setFloat('waveSpeed', (state.waterAnimSpeed ?? 1) * 1.0);
+    _waterWaveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
+    mat.setFloat('wavePhase', _waterPhase);
     mat.setColor3(
         'waterColor',
         new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2])
@@ -504,17 +508,45 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
 }
 
 /**
- * 更新水面网格的位置和缩放（非破坏性）。
+ * 更新水面网格的位置和缩放（非破坏性）。所有 LOD 层同步变换。
  */
 function _updateWaterMesh(state: EnvState): void {
-    const mesh = _envSys.water.mesh;
-    if (!mesh) {
+    const scale = Math.max(1, state.waterSize / WATER_BASE_SIZE);
+    const rotX = state.waterFlip ? Math.PI : 0;
+    const meshes: Mesh[] = [];
+    if (_envSys.water.mesh) {
+        meshes.push(_envSys.water.mesh);
+    }
+    meshes.push(..._waterLODs);
+    for (const m of meshes) {
+        m.position.y = state.waterLevel;
+        m.scaling = new Vector3(scale, 1, scale);
+        m.rotation.x = rotX;
+    }
+}
+
+/**
+ * 按相机到水面的距离手动切换 LOD 可见性（仅 0/1/2 三层中恰好一层 enabled），
+ * 规避 Babylon addLODLevel 的父子/兄弟重复渲染问题。仅当层级变化时才 setEnabled。
+ */
+function _applyWaterLOD(scene: Scene): void {
+    const high = _envSys.water.mesh;
+    if (!high || _waterLODs.length < 2) {
         return;
     }
-    mesh.position.y = state.waterLevel;
-    const scale = Math.max(1, state.waterSize / WATER_BASE_SIZE);
-    mesh.scaling = new Vector3(scale, 1, scale);
-    mesh.rotation.x = state.waterFlip ? Math.PI : 0;
+    const cam = scene.activeCamera;
+    if (!cam) {
+        return;
+    }
+    const dist = Vector3.Distance(cam.globalPosition, high.getAbsolutePosition());
+    const level = dist > LOD_LOW_DISTANCE ? 2 : dist > LOD_HIGH_DISTANCE ? 1 : 0;
+    if (level === _activeWaterLOD) {
+        return;
+    }
+    _activeWaterLOD = level;
+    high.setEnabled(level === 0);
+    _waterLODs[0].setEnabled(level === 1);
+    _waterLODs[1].setEnabled(level === 2);
 }
 
 export function createWater(state: EnvState): void {
@@ -525,6 +557,7 @@ export function createWater(state: EnvState): void {
         const scene = getScene();
         _syncWaterUniforms(state, scene);
         _updateWaterMesh(state);
+        _applyWaterLOD(scene);
         return;
     }
 
@@ -537,40 +570,32 @@ export function createWater(state: EnvState): void {
     // **首次创建路径**：水面不存在且启用 → 全量构建
     const scene = getScene();
 
-    _waterLODs = [];
-    // 使用基准尺寸创建网格，通过缩放调整最终大小（避免尺寸叠加错误）
-    const meshHigh = MeshBuilder.CreateGround(
-        'envWater',
-        { width: WATER_BASE_SIZE, height: WATER_BASE_SIZE, subdivisions: 48 },
-        scene
-    );
-    meshHigh.isPickable = false;
-    meshHigh.position.y = state.waterLevel;
+    // 三级细分网格，作为兄弟根网格（非父子），由 _applyWaterLOD 按相机距离
+    // 手动切换 setEnabled。避免 Babylon addLODLevel + 父子嵌套导致的多重水面重叠
+    // （z-fighting/重复绘制）：父级 LOD 切换只替换主网格，子节点恒常独立渲染。
     const scale = Math.max(1, state.waterSize / WATER_BASE_SIZE);
-    meshHigh.scaling = new Vector3(scale, 1, scale);
-    meshHigh.rotation.x = state.waterFlip ? Math.PI : 0;
+    const rotX = state.waterFlip ? Math.PI : 0;
+    const makeGround = (name: string, subdivisions: number): Mesh => {
+        const m = MeshBuilder.CreateGround(
+            name,
+            { width: WATER_BASE_SIZE, height: WATER_BASE_SIZE, subdivisions },
+            scene
+        );
+        m.isPickable = false;
+        m.position.y = state.waterLevel;
+        m.scaling = new Vector3(scale, 1, scale);
+        m.rotation.x = rotX;
+        return m;
+    };
 
-    const meshMid = MeshBuilder.CreateGround(
-        'envWater_LOD1',
-        { width: WATER_BASE_SIZE, height: WATER_BASE_SIZE, subdivisions: 16 },
-        scene
-    );
-    meshMid.isPickable = false;
-    meshMid.position = new Vector3(0, 0, 0); // 相对于父网格的偏移
-    meshMid.parent = meshHigh; // 建立父子关系，自动继承变换
-
-    const meshLow = MeshBuilder.CreateGround(
-        'envWater_LOD2',
-        { width: WATER_BASE_SIZE, height: WATER_BASE_SIZE, subdivisions: 6 },
-        scene
-    );
-    meshLow.isPickable = false;
-    meshLow.position = new Vector3(0, 0, 0); // 相对于父网格的偏移
-    meshLow.parent = meshHigh; // 建立父子关系，自动继承变换
-
-    meshHigh.addLODLevel(LOD_HIGH_DISTANCE, meshMid);
-    meshHigh.addLODLevel(LOD_LOW_DISTANCE, meshLow);
+    const meshHigh = makeGround('envWater', 48);
+    const meshMid = makeGround('envWater_LOD1', 16);
+    const meshLow = makeGround('envWater_LOD2', 6);
+    // 默认仅显示最高精度层，其余由 _applyWaterLOD 按需启用
+    meshMid.setEnabled(false);
+    meshLow.setEnabled(false);
     _waterLODs = [meshMid, meshLow];
+    _activeWaterLOD = 0;
 
     const hasEnv = !!scene.environmentTexture;
     const mat = new ShaderMaterial(
@@ -587,7 +612,7 @@ export function createWater(state: EnvState): void {
                 'viewProjection',
                 'time',
                 'waveHeight',
-                'waveSpeed',
+                'wavePhase',
                 'cameraPosition',
                 'waterColor',
                 'waterTransparency',
@@ -643,6 +668,8 @@ export function createWater(state: EnvState): void {
 
     // 同步所有 uniform（复用 _syncWaterUniforms 逻辑）
     _syncWaterUniforms(state, scene);
+    // 初始 LOD 层级（后续由每帧 observer 维护）
+    _applyWaterLOD(scene);
 
     // —— 每帧更新 observer（涟漪衰减 + 动态数据）——
     if (!_waterUpdateObserver) {
@@ -651,8 +678,13 @@ export function createWater(state: EnvState): void {
                 return;
             }
             const m = _envSys.water.material as ShaderMaterial;
+            // 钳制 deltaTime，避免切后台返回时 dt 过大导致相位/涟漪寿命跳变
+            const dt = Math.min(scene.deltaTime / 1000, 0.1);
             const now = performance.now() / 1000;
+            // 逐帧累加波相位：改波速只改变累加速率，不会造成相位跳变（视觉跳帧）
+            _waterPhase += dt * _waterWaveSpeed;
             m.setFloat('time', now);
+            m.setFloat('wavePhase', _waterPhase);
             const cam = scene.activeCamera;
             if (cam) {
                 m.setVector3('cameraPosition', cam.position);
@@ -664,7 +696,6 @@ export function createWater(state: EnvState): void {
                 m.setColor3('lightColor', dl.diffuse);
             }
 
-            const dt = scene.deltaTime / 1000;
             if (dt > 0) {
                 let anyAlive = false;
                 for (const r of _ripples) {
@@ -683,6 +714,8 @@ export function createWater(state: EnvState): void {
                     _rippleDirty = true;
                 }
             }
+            // 手动 LOD 可见性切换（按相机距离）
+            _applyWaterLOD(scene);
             if (_rippleDirty) {
                 _rippleDirty = false;
                 const posRad: number[] = new Array(MAX_RIPPLES * 4).fill(0);
@@ -711,12 +744,18 @@ export function createWater(state: EnvState): void {
 }
 
 export function disposeWater(): void {
+    // LOD 网格为兄弟根网格（非父子），需显式销毁
+    for (const lod of _waterLODs) {
+        lod.dispose();
+    }
     if (_envSys.water.mesh) {
-        _envSys.water.mesh.dispose(true); // true = recursive, disposes LOD children too
+        _envSys.water.mesh.dispose(true); // true = recursive
         _envSys.water.mesh = null;
     }
-    // mesh.dispose(true) 已递归销毁所有子 LOD 网格，仅需清空引用
     _waterLODs = [];
+    _activeWaterLOD = -1;
+    _waterPhase = 0;
+    _waterWaveSpeed = 1;
     clearRipples(); // 清理残留涟漪，避免 dispose 后再次 createWater 时显示旧数据
     if (_envSys.water.material) {
         _envSys.water.material.dispose();
@@ -752,9 +791,11 @@ export function refreshWaterRenderList(): void {}
 
 // ======== Water Animation Speed ========
 export function updateWaterAnimSpeed(speed: number): void {
+    // 只更新累加速率：相位由每帧 observer 累加，改波速不会造成相位跳变
+    _waterWaveSpeed = speed;
     const mat = _envSys.water.material;
     if (mat) {
-        mat.setFloat('waveSpeed', speed * 1.0);
+        mat.setFloat('wavePhase', _waterPhase);
     }
 }
 

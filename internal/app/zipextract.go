@@ -3,8 +3,10 @@ package app
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -13,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"golang.org/x/text/encoding/japanese"
@@ -729,4 +732,29 @@ func (a *App) StartFileServer(dirPath string) (int, error) {
 	}
 
 	return port, nil
+}
+
+// StopFileServer stops and releases the HTTP file server previously started
+// for dirPath via StartFileServer. The underlying listener is closed by the
+// server's Serve goroutine once Shutdown completes. If no server is running
+// for dirPath, it returns an error.
+func (a *App) StopFileServer(dirPath string) error {
+	a.httpSrvMu.Lock()
+	info, ok := a.httpServers[dirPath]
+	if !ok {
+		a.httpSrvMu.Unlock()
+		return fmt.Errorf("no file server running for %s", dirPath)
+	}
+	delete(a.httpServers, dirPath)
+	a.httpSrvMu.Unlock()
+
+	a.safeLogInfo("StopFileServer: stop port %d for %s", info.port, dirPath)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := info.server.Shutdown(ctx); err != nil {
+		a.safeLogError("StopFileServer: shutdown error: %v", err)
+		return err
+	}
+	return nil
 }

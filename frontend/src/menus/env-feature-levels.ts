@@ -414,6 +414,10 @@ export function buildWaterLevel(): PopupLevel {
                             waterFogColor: wp.waterFogColor,
                             waterFogDensity: wp.waterFogDensity,
                             waterFogOpacityInfluence: wp.waterFogOpacityInfluence,
+                            // 扩展参数一并写入 envState：setEnvState 同步触发的 _syncWaterUniforms
+                            // 会据此应用并持久化，避免被后续任意 envState 变化还原
+                            fresnelAlphaInfluence: wp.fresnelAlphaInfluence,
+                            foamOpacity: wp.foamOpacity,
                         });
                         applyWaterPresetToCurrent(wp);
                     });

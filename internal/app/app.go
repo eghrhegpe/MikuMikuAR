@@ -404,11 +404,15 @@ type EnvState struct {
 
 	WaterEnabled      bool       `json:"waterEnabled"`
 	WaterLevel        float64    `json:"waterLevel"`
+	WaterFlip         bool       `json:"waterFlip"`
 	WaterColor        [3]float64 `json:"waterColor"`
 	WaterTransparency float64    `json:"waterTransparency"`
 	WaterWaveHeight   float64    `json:"waterWaveHeight"`
 	WaterSize         float64    `json:"waterSize"`
 	WaterAnimSpeed    float64    `json:"waterAnimSpeed"`
+	FoamThreshold     float64    `json:"foamThreshold"`
+	FoamIntensity     float64    `json:"foamIntensity"`
+	FoamOpacity       float64    `json:"foamOpacity"`
 
 	// 水面高级着色器参数（持久化，避免材质重建时重置）
 	FresnelBias           float64    `json:"fresnelBias"`
@@ -424,6 +428,18 @@ type EnvState struct {
 	CausticScrollY        float64    `json:"causticScrollY"`
 	FresnelAlphaInfluence float64    `json:"fresnelAlphaInfluence"`
 	FoamAlphaInfluence    float64    `json:"foamAlphaInfluence"`
+
+	// 水面雾效（独立于全局雾）
+	WaterFogColor          [3]float64 `json:"waterFogColor"`
+	WaterFogDensity        float64    `json:"waterFogDensity"`
+	WaterFogOpacityInfluence float64  `json:"waterFogOpacityInfluence"`
+
+	// 水下效果
+	UnderwaterFogDensity     float64 `json:"underwaterFogDensity"`
+	UnderwaterChromaticAmount float64 `json:"underwaterChromaticAmount"`
+	UnderwaterToneIntensity  float64 `json:"underwaterToneIntensity"`
+	UnderwaterFogMultiplier  float64 `json:"underwaterFogMultiplier"`
+	UnderwaterTintStrength   float64 `json:"underwaterTintStrength"`
 
 	CloudsEnabled bool    `json:"cloudsEnabled"`
 	CloudCover    float64 `json:"cloudCover"`
