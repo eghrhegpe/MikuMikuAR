@@ -160,12 +160,21 @@ export function initPlaybackObservables(
 }
 
 export function updatePlaybackUI(): void {
-    if (!mmdRuntime || !dom.seekBar) {
-        if (dom.playbackBar) {
-            dom.playbackBar.style.display = 'none';
-        }
+    if (!dom.playbackBar) {
         return;
     }
+
+    // Graceful fallback: 无 mmdRuntime 时显示占位 UI，不隐藏整个栏
+    // [doc:e2e] 纯 Vite 模式下 playbackBar 保持可见，E2E 测试可定位按钮
+    if (!mmdRuntime || !dom.seekBar) {
+        dom.playbackBar.style.display = 'flex';
+        dom.btnPlayPause.textContent = '▶';      // 默认暂停状态
+        dom.btnLoopToggle.style.opacity = '0.35'; // 默认不循环
+        dom.timeDisplay.textContent = '--:-- / --:--'; // 占位时间
+        dom.seekProgress.style.width = '0%';
+        return;
+    }
+
     // 到达此处的 guard 保证了 mmdRuntime 和 dom.seekBar 均可用
     // 它被 observable 回调调用，此时 mmdRuntime 一定可用（已被 initScene 初始化）。
     // 但此函数也可能被外部直接调用（如 seekFromEvent），此时 mmdRuntime 可能为 null，
