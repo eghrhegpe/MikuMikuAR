@@ -16,7 +16,8 @@ test.describe("Motion — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =
     });
 
     test("动作弹窗: 标题与核心区段渲染", async ({ vitePage: page }) => {
-        await expect(page.getByText("动作", { exact: true })).toBeVisible();
+        // 使用 slide-title 类定位弹窗标题，避免匹配导航按钮的 nav-label
+        await expect(page.locator('.slide-title').filter({ hasText: '动作' })).toBeVisible();
         // Core sections
         await expect(page.getByText("动作绑定")).toBeVisible();
         await expect(page.getByText("姿势库")).toBeVisible();

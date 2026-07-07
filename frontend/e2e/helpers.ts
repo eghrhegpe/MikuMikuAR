@@ -100,7 +100,8 @@ export async function openScenePanel(page: Page): Promise<void> {
 /** Open the settings overlay (#btnSettings). */
 export async function openSettingsPanel(page: Page): Promise<void> {
     await page.click("#btnSettings");
-    await page.waitForSelector("#settingsOverlay.visible", { timeout: 5000 });
+    // [doc:e2e] 设置面板使用统一的 #sceneOverlay（非独立 #settingsOverlay）
+    await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 }
 
 /** Navigate into a sub-level of any overlay by clicking its text label. */

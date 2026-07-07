@@ -12,11 +12,13 @@ test.describe("Settings — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, ()
         // from a previous test doesn't leak into the next one.
         await page.evaluate(() => localStorage.clear());
         await page.click("#btnSettings");
-        await page.waitForSelector("#settingsOverlay.visible", { timeout: 5000 });
+        // [doc:e2e] 设置面板使用统一的 #sceneOverlay（非独立 #settingsOverlay）
+        await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     });
 
     test("设置面板: 核心区段渲染", async ({ vitePage: page }) => {
-        await expect(page.getByText("设置", { exact: true })).toBeVisible();
+        // 使用 slide-title 类定位弹窗标题，避免匹配导航按钮的 nav-label
+        await expect(page.locator('.slide-title').filter({ hasText: '设置' })).toBeVisible();
         // Settings folders
         await expect(page.getByText("外观", { exact: true })).toBeVisible();
         await expect(page.getByText("性能", { exact: true })).toBeVisible();
@@ -39,12 +41,12 @@ test.describe("Settings — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, ()
     });
 
     test("设置面板: 关闭后重新打开", async ({ vitePage: page }) => {
-        await page.click("#btnCloseSettings");
-        await page.waitForSelector("#settingsOverlay:not(.visible)", { timeout: 5000 });
+        await page.click("#btnClosePopup");
+        await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
 
         // Re-open
         await page.click("#btnSettings");
-        await page.waitForSelector("#settingsOverlay.visible", { timeout: 5000 });
-        await expect(page.getByText("设置", { exact: true })).toBeVisible();
+        await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
+        await expect(page.locator('.slide-title').filter({ hasText: '设置' })).toBeVisible();
     });
 });
