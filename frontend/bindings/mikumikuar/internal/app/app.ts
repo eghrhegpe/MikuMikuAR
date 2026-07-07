@@ -701,6 +701,13 @@ export function SetEnvState(env: $models.EnvState): $CancellablePromise<void> {
 }
 
 /**
+ * SetUIState persists the full UI state (scale, popupWidth, rendering settings, etc.).
+ */
+export function SetUIState(ui: $models.UIState): $CancellablePromise<void> {
+    return $Call.ByID(1015886004, ui);
+}
+
+/**
  * SetMMDPath saves the MMD executable path to config.
  * If path is empty, automatically detects MMD from common install locations.
  */

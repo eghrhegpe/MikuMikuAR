@@ -8,6 +8,9 @@ import { test, expect } from "./wails-fixture";
 
 test.describe("Settings — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
+        // Isolate: clear localStorage so settings state (theme, language, paths)
+        // from a previous test doesn't leak into the next one.
+        await page.evaluate(() => localStorage.clear());
         await page.click("#btnSettings");
         await page.waitForSelector("#settingsOverlay.visible", { timeout: 5000 });
     });

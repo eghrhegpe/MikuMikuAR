@@ -16,6 +16,7 @@ import type {
     ModelMeta,
     ModelPresetEntry,
     RenderPreset,
+    UIState,
 } from '../../../bindings/mikumikuar/internal/app/models';
 
 // ---------- 总存在性快照 ----------
@@ -163,6 +164,17 @@ describe('SetEnvState signature', () => {
     });
 });
 
+describe('SetUIState signature', () => {
+    it('returns $CancellablePromise<void>', () => {
+        expectTypeOf<ReturnType<typeof App.SetUIState>>().toEqualTypeOf<
+            $CancellablePromise<void>
+        >();
+    });
+    it('takes parameters [UIState]', () => {
+        expectTypeOf<typeof App.SetUIState>().parameters.toEqualTypeOf<[UIState]>();
+    });
+});
+
 describe('SetUIAccent signature', () => {
     it('returns $CancellablePromise<void>', () => {
         expectTypeOf<ReturnType<typeof App.SetUIAccent>>().toEqualTypeOf<
@@ -293,6 +305,7 @@ describe('app.ts binding surface — no unexpected top-level keys drift', () => 
         expect(App).toHaveProperty('ListEnvPresets');
         expect(App).toHaveProperty('ScanModelDir');
         expect(App).toHaveProperty('SetEnvState');
+        expect(App).toHaveProperty('SetUIState');
         expect(App).toHaveProperty('SetUIAccent');
         expect(App).toHaveProperty('SetUIScale');
         expect(App).toHaveProperty('OpenInBlender');

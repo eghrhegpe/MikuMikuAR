@@ -8,6 +8,10 @@ import { test, expect } from "./wails-fixture";
 
 test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
+        // Isolate: clear localStorage so no stale state (resource_root, favorites, tags)
+        // affects the next test. The fixture already provides a fresh browser+page,
+        // but localStorage from a previous run in the same worker could persist.
+        await page.evaluate(() => localStorage.clear());
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     });

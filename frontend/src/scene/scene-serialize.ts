@@ -61,7 +61,7 @@ import {
     RenderState,
 } from './scene';
 import { removeProp, loadProp, setPropTransform, setPropOrbit } from './env/props';
-import { setEnvState, setEnvSunAngle, flushEnvState } from './env/env-bridge';
+import { setEnvState, setEnvSunAngle, flushEnvState, flushUIState } from './env/env-bridge';
 import { setGravityStrength, getGravityStrength } from './env/env-bridge';
 import {
     regenerateProcMotion,
@@ -714,6 +714,7 @@ function cleanupAndFlushSave(): void {
         autoSaveTimer = null;
     }
     flushEnvState();
+    flushUIState();
     saveSceneImmediate(true).catch(() => {});
 }
 
