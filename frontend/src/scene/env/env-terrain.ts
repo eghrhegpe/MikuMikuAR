@@ -3,7 +3,7 @@ import { EnvState } from '../../core/config';
 
 // ======== 确定性值噪声（FBM）========
 // 用整数哈希产生可复现的伪随机，seed 相同则地形一致。
-function hash2(ix: number, iz: number, seed: number): number {
+export function hash2(ix: number, iz: number, seed: number): number {
     let h = Math.imul(ix, 374761393) + Math.imul(iz, 668265263) + Math.imul(seed, 2147483647);
     h = (h ^ (h >>> 13)) >>> 0;
     h = Math.imul(h, 1274126177) >>> 0;
@@ -11,7 +11,7 @@ function hash2(ix: number, iz: number, seed: number): number {
     return h / 4294967295;
 }
 
-function valueNoise(x: number, z: number, seed: number): number {
+export function valueNoise(x: number, z: number, seed: number): number {
     const ix = Math.floor(x);
     const iz = Math.floor(z);
     const fx = x - ix;
@@ -27,7 +27,7 @@ function valueNoise(x: number, z: number, seed: number): number {
     return top + (bot - top) * uz; // [0,1]
 }
 
-function fbm(x: number, z: number, seed: number, octaves: number, baseFreq: number): number {
+export function fbm(x: number, z: number, seed: number, octaves: number, baseFreq: number): number {
     let amp = 1;
     let freq = baseFreq;
     let sum = 0;

@@ -273,7 +273,7 @@ export interface EnvState {
     groundLineColor: [number, number, number]; // 网格线颜色 / 棋盘格第二色
 
     // 地形（heightmap 模式）参数
-    groundTerrainHeight: number; // 峰值振幅（世界单位，地形在 groundLevel 上下浮动范围）
+    groundTerrainHeight: number; // 地形总起伏高度（峰谷差 = 世界单位；网格绕 groundLevel 上下各 ±height/2）
     groundTerrainScale: number; // 噪声频率（越大特征越小越密）
     groundTerrainSeed: number; // 随机种子（同一种子同地形）
     groundTerrainOctaves: number; // FBM 倍频层数（1-8）
