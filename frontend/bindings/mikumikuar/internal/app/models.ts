@@ -517,5 +517,11 @@ export interface UpdateCheckResult {
     "available": boolean;
     "url": string;
     "checkedAt": number;
-    "error": string;
+
+    /**
+     * Error carries network/parse failures. A non-empty Error means the check
+     * could not be completed; the UI degrades gracefully rather than treating
+     * this as a hard failure.
+     */
+    "error"?: string;
 }

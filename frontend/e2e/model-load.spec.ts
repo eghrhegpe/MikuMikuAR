@@ -9,7 +9,7 @@
 import { test, expect } from "./wails-fixture";
 import { waitForSceneHook, loadFirstModel } from "./helpers";
 
-test.describe("核心旅程: 模型加载", () => {
+test.describe("核心旅程: 模型加载", { tag: ["@webgl"] }, () => {
     test("加载首个模型后，meshCount 显著增加且 FPS ≥ 30", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
         await loadFirstModel(page);

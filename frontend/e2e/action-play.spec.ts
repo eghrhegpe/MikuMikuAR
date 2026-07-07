@@ -8,7 +8,7 @@
 import { test, expect } from "./wails-fixture";
 import { waitForSceneHook, loadFirstModel, openMotionPopup } from "./helpers";
 
-test.describe("核心旅程: 动作播放与换装", () => {
+test.describe("核心旅程: 动作播放与换装", { tag: ["@webgl"] }, () => {
     test("切换动作后 currentAnimation 应更新（非 idle）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
         await loadFirstModel(page);

@@ -11,7 +11,7 @@
 import { test, expect } from "./wails-fixture";
 import { waitForSceneHook } from "./helpers";
 
-test.describe("核心旅程: 截图导出", () => {
+test.describe("核心旅程: 截图导出", { tag: ["@webgl"] }, () => {
     test("__scene.capture() 应返回有效 PNG dataURL", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
         // 与菜单「截图当前模型」走同一条 Babylon CreateScreenshotAsync 管线。

@@ -121,6 +121,128 @@ jobs:
       - name: Check markdown links
         run: python tests/test_markdown_links.py
 
+  # ============================================================
+  # E2E — DOM/Overlay Gate (blocking)
+  # Runs the @dom specs via Playwright's own Chromium against the
+  # Vite dev server. No Wails runtime required → reliable on Linux.
+  # @see docs/adr/adr-060-e2e-testing-strategy.md (Phase 3)
+  # ============================================================
+  e2e:
+    name: E2E — DOM/Overlay Gate (@dom, vitePage)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Vite + run @dom E2E
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5173 &
+          VITE_PID=$!
+          for i in $(seq 1 30); do
+            if curl -s http://127.0.0.1:5173 >/dev/null; then
+              echo "Vite dev server is up"; break
+            fi
+            sleep 2
+          done
+          npx playwright test --grep @dom --reporter=line
+          TEST_EXIT=$?
+          kill $VITE_PID 2>/dev/null || true
+          exit $TEST_EXIT
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: playwright-dom-report
+          path: frontend/playwright-report/
+
+  # ============================================================
+  # E2E — Full Integration (best-effort, non-blocking)
+  # Runs the @webgl specs via connectOverCDP against the real Wails
+  # WebView2. NOTE: connectOverCDP is Chromium-only; Wails on Linux
+  # uses WebKitGTK whose remote inspector is NOT CDP-compatible, so
+  # this job MUST run on windows-latest (native WebView2).
+  # Flipped to blocking once validated on a real runner.
+  # @see docs/adr/adr-060-e2e-testing-strategy.md (Phase 3b)
+  # ============================================================
+  e2e-wails:
+    name: E2E — Full Integration (@webgl, wailsPage)
+    runs-on: windows-latest
+    needs: e2e
+    continue-on-error: true
+    defaults:
+      run:
+        shell: bash
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.0'
+          cache-dependency-path: go.sum
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      - name: Install Wails CLI (v3)
+        working-directory: .
+        run: go install github.com/wailsapp/wails/v3/cmd/wails@latest
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Start Wails dev + run @webgl E2E
+        env:
+          # Expose Chrome DevTools Protocol on WebView2 for connectOverCDP.
+          WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "--remote-debugging-port=9222"
+        working-directory: .
+        run: |
+          export PATH="$HOME/go/bin:$PATH"
+          wails dev &
+          WAILS_PID=$!
+          for i in $(seq 1 60); do
+            if curl -s http://127.0.0.1:9222/json/version >/dev/null; then
+              echo "Wails WebView2 CDP is up"; break
+            fi
+            sleep 3
+          done
+          cd frontend
+          npx playwright test --grep @webgl --reporter=line
+          TEST_EXIT=$?
+          kill $WAILS_PID 2>/dev/null || true
+          exit $TEST_EXIT
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: playwright-webgl-report
+          path: frontend/playwright-report/
+
   ai-mistake-report:
     name: AI — Mistake Tracker Report
     runs-on: ubuntu-latest

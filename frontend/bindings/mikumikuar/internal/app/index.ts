@@ -22,5 +22,6 @@ export type {
     OverridePaths,
     RenderPreset,
     SoftwareEntry,
-    UIState
+    UIState,
+    UpdateCheckResult
 } from "./models.js";

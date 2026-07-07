@@ -745,17 +745,17 @@ export function SetUIAnimations(on: boolean): $CancellablePromise<void> {
 }
 
 /**
- * SetUIBlurBg enables or disables background blur on overlays.
- */
-export function SetUIBlurBg(on: boolean): $CancellablePromise<void> {
-    return $Call.ByID(499239929, on);
-}
-
-/**
  * SetUIAutoUpdate persists whether to auto-check for updates on startup.
  */
 export function SetUIAutoUpdate(on: boolean): $CancellablePromise<void> {
     return $Call.ByID(3428263833, on);
+}
+
+/**
+ * SetUIBlurBg enables or disables background blur on overlays.
+ */
+export function SetUIBlurBg(on: boolean): $CancellablePromise<void> {
+    return $Call.ByID(499239929, on);
 }
 
 /**

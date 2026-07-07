@@ -78,3 +78,6 @@ build/android/*.apk
 
 # Trae IDE
 .trae/
+
+# Runtime local config (absolute paths + personal data — never commit)
+setting/

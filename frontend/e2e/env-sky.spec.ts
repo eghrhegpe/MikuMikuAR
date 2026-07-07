@@ -7,7 +7,7 @@
 import { test, expect } from "./wails-fixture";
 import { openEnvPanel, clickSkyMode, clickEnvSubLevel, captureScreenshot, captureFingerprint, compareToBaseline } from "./helpers";
 
-test.describe("Environment — Sky Panel (vitePage, DOM-only)", () => {
+test.describe("Environment — Sky Panel (vitePage, DOM-only)", { tag: ["@dom"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
         await openEnvPanel(page);
         await clickEnvSubLevel(page, "天空");
@@ -38,7 +38,7 @@ test.describe("Environment — Sky Panel (vitePage, DOM-only)", () => {
     });
 });
 
-test.describe("Environment — Sky Panel (wailsPage, screenshot)", () => {
+test.describe("Environment — Sky Panel (wailsPage, screenshot)", { tag: ["@webgl"] }, () => {
     test("纯色纯白截图: 与基线比对（首次运行自动生成基线）", async ({ wailsPage: page }) => {
         await openEnvPanel(page);
         await clickEnvSubLevel(page, "天空");
