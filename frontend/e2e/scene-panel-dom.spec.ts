@@ -16,8 +16,9 @@ test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
     });
 
     test("场景面板: 核心区段渲染", async ({ vitePage: page }) => {
-        // Core scene menu sections
-        await expect(page.getByText("渲染", { exact: true })).toBeVisible();
+        // 使用 slide-title 类定位弹窗标题，避免匹配导航按钮的 nav-label
+        await expect(page.locator('.slide-title').filter({ hasText: '场景' })).toBeVisible();
+        // Core scene menu sections — 这些文本不出现在导航栏，可直接匹配
         await expect(page.getByText("舞台", { exact: true })).toBeVisible();
         await expect(page.getByText("道具", { exact: true })).toBeVisible();
         await expect(page.getByText("舞台灯光")).toBeVisible();
@@ -25,7 +26,8 @@ test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
     });
 
     test("场景面板: 渲染预设区段可导航", async ({ vitePage: page }) => {
-        await page.getByText("渲染", { exact: true }).click();
+        // 点击弹窗内的渲染项，而非导航按钮
+        await page.locator('.slide-panel').getByText("渲染", { exact: true }).click();
         await expect(page.getByText("渲染预设")).toBeVisible();
         // Preset names (standard/cinematic/cartoon...)
         await expect(page.getByText("标准", { exact: true })).toBeVisible();
@@ -33,7 +35,7 @@ test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
     });
 
     test("场景面板: 后处理区段含抗锯齿等选项", async ({ vitePage: page }) => {
-        await page.getByText("渲染", { exact: true }).click();
+        await page.locator('.slide-panel').getByText("渲染", { exact: true }).click();
         await expect(page.getByText("后处理")).toBeVisible();
         // Click into post-process
         await page.getByText("后处理", { exact: true }).click();
