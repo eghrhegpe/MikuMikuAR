@@ -158,7 +158,8 @@
 
 在 `.github/workflows/ci.yml` 落地「两层 E2E 门禁」，spec 用 Playwright 原生 tag（`@dom` / `@webgl`）切分，CI 以 `--grep` 过滤：
 
-- [x] **`e2e` job（阻塞门禁，ubuntu-latest）**：仅跑 `@dom`（`smoke` 3 + `env-sky` DOM-only 4 = 7 个）。Playwright 自带 Chromium 打 Vite 5173，**不依赖 Wails 运行时**，验证菜单/overlay/快捷键等 DOM 层回归。同一步内 `npm run dev &` 后台起 Vite → 轮询 5173 就绪 → `npx playwright test --grep @dom` → 收尾 kill。
+- [x] **`e2e` job（阻塞门禁，ubuntu-latest）**：仅跑 `@dom`（`smoke` 3 + `env-sky` DOM-only 2 = 5 个）。Playwright 自带 Chromium 打 Vite 5173，**不依赖 Wails 运行时**，验证菜单/overlay/快捷键等 DOM 层回归。同一步内 `npm run dev &` 后台起 Vite → 轮询 5173 就绪 → `npx playwright test --grep @dom` → 收尾 kill。
+  - **env-sky `@dom` 断言已据真实 UI 修正**：天空是**统一层级**（非「每模式一组滑块」），分段控件只显示当前模式（程序化/纯色/贴图），另有环境预设 chips（黎明/正午/夕阳/夜景/阴天/霓虹夜）与自定义颜色控件（`天空色` R/G/B，非 `input[type=range]`）。故断言改为：模式控件 + 预设 + 颜色控制均渲染、点击预设不报错。
 - [x] **`e2e-wails` job（best-effort，`windows-latest`，`continue-on-error: true`，`needs: e2e`）**：跑 `@webgl`（model-load 2 + action-play 2 + export-screenshot 2 + env-sky 截图 1 = 7 个）。`wails dev` 启动真实 WebView2、`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222` 开放 CDP，`connectOverCDP` 连 9222 断言 3D 渲染。
 - [x] **平台约束（关键）**：`connectOverCDP` 是 Chromium 专用协议；Wails 在 Linux（ubuntu）用 WebKitGTK，其远程调试器**不兼容 CDP**，故 `wailsPage` 测试只能在 `windows-latest`（原生 WebView2）跑。`e2e-wails` 当前 `continue-on-error`，待真实 runner 验证稳定后翻为阻塞。
 - [x] E2E 失败归档：`playwright-report/` 上传为 artifact（`if: always()`）。
@@ -235,7 +236,23 @@
 
 ---
 
-## 七、验证方式
+## 七、运行指南（Runbook）
+
+> **权威运行手册见 [`frontend/e2e/README.md`](../../frontend/e2e/README.md)**——含前置安装、本地各场景启动命令、报告查看、基线重置、CI 对照与常见失败排查。下文仅给速查。
+
+| 场景 | 前置 | 命令（均在 `frontend/`） | 覆盖 |
+|------|------|--------------------------|------|
+| 快速 DOM 回归（无需 Wails） | Vite 5173 起好 + `npx playwright install chromium` | 终端A `npm run dev -- --host 127.0.0.1 --port 5173`；终端B `npx playwright test --grep "@dom"` | `@dom` ×5 |
+| 完整 3D 集成（需 Wails+WebView2） | 本地装 Wails CLI v3 + Windows WebView2 | 终端A `$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9222"; wails3 dev`；终端B `npx playwright test --grep "@webgl"`（⚠️ `wails dev` 会解析到 v2 报 `wails.json` 缺失；标签须引号） | `@webgl` ×7 |
+| 全量（wails3 dev 就绪时） | 同上 | `npx playwright test`（或 `npm run test:e2e`） | 全 14 |
+| 报告 | — | `npx playwright show-report`（默认 `:9323`） | — |
+| 单元（Vitest） | — | `npm run test` | 33 spec |
+
+CI 门禁：`e2e`(ubuntu, `@dom`, 阻塞) + `e2e-wails`(windows, `@webgl`, `continue-on-error`)，详见 README §7 与 ADR-041 §4。
+
+---
+
+## 八、验证方式
 
 1. **钩子可用**：`wails dev` 起 9222 → Playwright `wailsPage` 打开应用 → `page.evaluate(() => window.__scene.fps)` 返回数值、`meshCount > 0`、`fingerprint()` 返回 256 位串。
 2. **模型加载**：`model-load.spec.ts` 加载默认模型后 `waitForFunction(__scene.meshCount > 10)` 通过且 `fps >= 30`。
@@ -246,7 +263,7 @@
 
 ---
 
-## 八、相关 ADR
+## 九、相关 ADR
 
 - [ADR-041](adr-041-ci-auto-checks.md) — CI 自动检查（E2E 接入点与失败归档挂此）
 - [ADR-019](adr-019-xpbd-cloth-simulation.md) — XPBD 布料（约束/粒子即 `__scene` 数据源）

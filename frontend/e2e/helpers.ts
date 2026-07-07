@@ -3,10 +3,11 @@
  * via Chrome DevTools Protocol.
  *
  * Prerequisites:
- *   1. Project root `.env` must have:
- *        WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222
- *   2. Start the app: `wails dev` (from project root)
- *   3. Run tests: `npx playwright test`
+ *   1. 注入调试端口(见 start-e2e.ps1):
+ *        $env:MMCAR_DEBUG_PORT=9222  → 由 main.go 写入 application.Options.Windows.AdditionalBrowserArgs
+ *        ⚠️ Wails v3 会忽略 WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS env var(已源码实锤),必须用 MMCAR_DEBUG_PORT。
+ *   2. 启动: `wails3 dev`(v3 CLI,非 `wails dev` v2)
+ *   3. 跑测: `npx playwright test --grep "@webgl"`
  */
 import { expect, Page } from "@playwright/test";
 import { chromium } from "@playwright/test";
@@ -43,12 +44,6 @@ export async function openEnvPanel(page: Page): Promise<void> {
     await page.click("#btnEnv");
     // Wait for the overlay to appear
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 3000 });
-}
-
-/** Click a mode button inside the sky level by its visible text label. */
-export async function clickSkyMode(page: Page, modeLabel: string): Promise<void> {
-    // The sky level renders buttons with text like "纯色", "渐变", "贴图", "程序化"
-    await page.getByRole("button", { name: modeLabel }).click();
 }
 
 /** Navigate into a sub-level of the environment menu by clicking its folder row. */
