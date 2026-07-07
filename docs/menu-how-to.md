@@ -22,7 +22,6 @@ frontend/src/menus/
 │
 ├── env-menu.ts                  # 环境弹窗入口 + 导航
 │   ├── env-feature-levels.ts    #   天空/地面/水面/风/云/实验功能
-│   ├── scene-prop-levels.ts     #   道具系统
 │   └── env-preset-levels.ts     #   环境预设
 │
 ├── motion-popup.ts              # 动作弹窗入口
@@ -30,7 +29,7 @@ frontend/src/menus/
 │   ├── motion-procmotion-levels.ts # 程序化动作 + LipSync
 │   └── motion-cloth-levels.ts   #   布料参数面板
 │
-└── settings.ts                  # 设置页（MenuStack）
+└── settings.ts                  # 设置页（SlideMenu）
     └── settings-software.ts     #   软件管理子菜单
 ```
 
@@ -38,9 +37,9 @@ frontend/src/menus/
 - 场景 → `showSceneMenu()`（`scene-menu.ts`）
 - 环境 → `showEnvMenu()`（`env-menu.ts`）
 - 动作 → `showMotionPopup()`（`motion-popup.ts`）
-- 模型库 → `showModelLibrary()`（`library-core.ts`）
+- 模型库 → `showModelPopup()`（`library-core.ts`，经 `library.ts` barrel 导出）
 - 设置 → `showSettings()`（`settings.ts`）
-- 下载 → `initDownloadManager()`
+- 下载 → 见「设置」页「下载监控目录 / 自动导入」（由 Go 绑定 `SetDownloadWatchDir` 等驱动，无顶层入口函数）
 
 ---
 
@@ -74,9 +73,9 @@ export function buildDepthOfFieldLevel(): PopupLevel {
 case 'scene:render:dof':
     return buildDepthOfFieldLevel();
 
-// buildSceneRoot 或 buildPostProcessLevel 中加菜单行
+// buildSceneRoot 或 buildPostProcessLevel 中加菜单行（onClick 里手动 push）
 slideRow(c, 'lucide:aperture', '景深', true, () =>
-    sceneMenu.push(buildDepthOfFieldLevel())
+    getSceneMenu()!.push(buildDepthOfFieldLevel())
 );
 ```
 
@@ -120,12 +119,37 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
 
 ## 关键 API
 
+`SlideMenu` 是导航栈类（`menu.ts`），其方法为**实例方法**，需通过各域的菜单实例调用，不能当静态方法用。
+
+**取菜单实例（按域）**：
 ```typescript
-SlideMenu.reset(level)       // 清空全部层，显示根层
-SlideMenu.push(level)        // 推入新层（动画进入）
-SlideMenu.pop()              // 退回上一层
-SlideMenu.popTo(index)       // 退回到指定层级
-SlideMenu.reRender()         // 全部重建
+getSceneMenu()!    // 场景栈（scene-menu.ts 导出）
+getEnvMenu()!      // 环境栈（env-menu.ts 导出）
+getMotionMenu()!   // 动作栈（motion-popup.ts 导出）
+stackRegistry.modelStack   // 模型库栈（注册表直接字段，core/utils.ts）
+```
+
+**实例方法**（下面 `stack` 为上面任一实例）：
+```typescript
+stack.push(level)        // 推入新层（动画进入）
+stack.pop()              // 退回上一层
+stack.popTo(index)       // 退回到指定层级
+stack.reset(rootLevel)   // 清空全部层，显示根层
+stack.setLevel(i, lvl)   // 替换指定层级
+stack.reRender()         // 全部重建
+```
+
+**推荐导航模式**：菜单行带 `target`，`onFolderEnter` 返回 `PopupLevel`，框架自动 push，无需手动调用：
+```typescript
+// scene-menu.ts 的 sceneOnFolderEnter
+case 'scene:render:dof': return buildDepthOfFieldLevel();
+```
+
+**文件浏览类层级**：用工厂 `stackRegistry.buildLevel!(domain, label, filter, menuWrapper)`，第 4 参传目标栈实例：
+```typescript
+const level = stackRegistry.buildLevel!('environment', t('env.skyTexture'),
+    (m) => ['png','jpg','hdr','dds'].includes(m.format), getEnvMenu()!);
+getEnvMenu()!.push(level);
 ```
 
 PopupLevel 和 PopupRow 类型见 `menu.ts`，行 kind 支持 `folder`/`action`/`model`/`divider`/`slider`/`toggle`/`modeSlider`/`chips`。
