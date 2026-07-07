@@ -748,7 +748,7 @@ export const zhCN: Record<string, string> = {
     'props.loaded': '✓ 道具已加载',
 
     // env-feature-levels — 环境功能弹窗（地面/水面/风/云/实验/雾/阴影，sky 块已由其他会话补充）
-    'env.skyTextureHint': '支持 .hdr / .dds / .exr 格式的环境贴图',
+    'env.skyTextureHint': '天空立方图，同时作为场景反射光源（支持 .hdr / .dds / .exr）',
     'env.notSelected': '未选择',
     'env.skyTexture': '天空贴图',
     'env.rotateY': '旋 Y',

@@ -727,7 +727,7 @@ export const ja: Record<string, string> = {
     'env.shadowHint': '「シーン」→「ステージライト」で影パラメータを個別に調整できます',
 
     // —— Sky Texture ——
-    'env.skyTextureHint': '.hdr / .dds / .exr 形式の環境マップに対応',
+    'env.skyTextureHint': 'スカイキューブマップ（環境反射源としても使用、.hdr / .dds / .exr 対応）',
     'env.notSelected': '未選択',
     'env.skyTexture': 'スカイテクスチャ',
     'env.rotateY': 'Y回転',

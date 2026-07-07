@@ -727,7 +727,7 @@ export const ko: Record<string, string> = {
     'env.shadowHint': '「장면」→「무대 조명」에서 개별 조명 그림자 매개변수를 조절할 수 있습니다',
 
     // —— Sky Texture ——
-    'env.skyTextureHint': '.hdr / .dds / .exr 환경 맵을 지원합니다',
+    'env.skyTextureHint': '하늘 큐브 맵(장면 반사 광원으로도 사용, .hdr / .dds / .exr 지원)',
     'env.notSelected': '선택 안 됨',
     'env.skyTexture': '하늘 텍스처',
     'env.rotateY': 'Y 회전',
