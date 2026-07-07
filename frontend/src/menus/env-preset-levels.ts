@@ -7,6 +7,7 @@ import { createIconifyIcon } from '../core/icons';
 import { addSliderRow, addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { showPrompt } from '../core/dialog';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
+import { t } from '../core/i18n/t';
 import {
     setEnvState,
     getEnvSunAngle,

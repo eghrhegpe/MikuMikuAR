@@ -38,16 +38,25 @@ export const MORPH_FRAME_SIZE = 23;
 const SIGNATURE = 'Vocaloid Motion Data 0002\0'; // 30 bytes
 const DEFAULT_MODEL_NAME = 'Procedural'; // ≤20 bytes
 
-/** 将字符串编码为 Shift-JIS 字节数组，截断/填充至 maxBytes。使用 encoding-japanese 完整覆盖 JIS X 0208。 */
+/** 将字符串编码为 Shift-JIS 字节数组，截断/填充至 maxBytes。使用 encoding-japanese 完整覆盖 JIS X 0208。
+ *  截断时回退到字符边界，避免在双字节字符中间切断导致末字损坏（孤立 lead byte + 0x00 填充）。 */
 function encodeShiftJis(str: string, maxBytes: number): Uint8Array {
     const sjisArr = Encoding.convert(str, {
         to: 'SJIS',
         from: 'UNICODE',
         type: 'array',
-    });
-    const clamped = sjisArr.slice(0, maxBytes);
+    }) as number[];
+    let len = Math.min(sjisArr.length, maxBytes);
+    if (len < sjisArr.length) {
+        // maxBytes 落在某个双字节字符的首字节上 → 回退一格，保留完整字符
+        const b = sjisArr[len - 1];
+        const isLead = (b >= 0x81 && b <= 0x9f) || (b >= 0xe0 && b <= 0xfc);
+        if (isLead) len -= 1;
+    }
     const result = new Uint8Array(maxBytes);
-    result.set(clamped);
+    for (let i = 0; i < len; i++) {
+        result[i] = sjisArr[i];
+    }
     return result;
 }
 

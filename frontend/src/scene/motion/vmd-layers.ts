@@ -18,6 +18,7 @@ import {
     triggerAutoSave,
 } from '../../core/config';
 import { resolveFileUrl, normPath } from '../../core/fileservice';
+import { t } from '../../core/i18n/t';
 import Encoding from 'encoding-japanese';
 
 function getScene() {
@@ -116,12 +117,12 @@ export async function addVmdLayer(
 ): Promise<VmdLayer | null> {
     const targetId = targetModelId || focusedModelId;
     if (!targetId) {
-        setStatus('✗ 没有目标模型', false);
+        setStatus(t('scene.vmd.noTargetModel'), false);
         return null;
     }
     const inst = modelRegistry.get(targetId);
     if (!inst?.mmdModel) {
-        setStatus('✗ 目标模型不支持图层', false);
+        setStatus(t('scene.vmd.modelNoLayers'), false);
         return null;
     }
 
@@ -138,7 +139,7 @@ export async function addVmdLayer(
 
     inst.vmdLayers.push(layer);
     await _rebuildCompositeAnimation(inst.id);
-    setStatus(`✓ 图层已添加: ${name}`, true);
+    setStatus(t('scene.vmd.layerAdded', { name }), true);
     triggerAutoSave();
     return layer;
 }
@@ -152,12 +153,12 @@ export async function addVmdLayerFromPath(
 ): Promise<VmdLayer | null> {
     const targetId = targetModelId || focusedModelId;
     if (!targetId) {
-        setStatus('✗ 没有目标模型', false);
+        setStatus(t('scene.vmd.noTargetModel'), false);
         return null;
     }
     const inst = modelRegistry.get(targetId);
     if (inst?.vmdLayers?.some((l) => l.path === path)) {
-        setStatus(`⚠ 图层已存在: ${normPath(path).split('/').pop()}`, false);
+        setStatus(t('scene.vmd.layerExists', { name: normPath(path).split('/').pop() }), false);
         return null;
     }
     try {
@@ -181,7 +182,7 @@ export async function addVmdLayerFromPath(
         return layer;
     } catch (err) {
         console.error('addVmdLayerFromPath:', err);
-        setStatus('✗ 图层加载失败', false);
+        setStatus(t('scene.vmd.layerLoadFailed'), false);
         return null;
     }
 }
@@ -256,7 +257,7 @@ export async function addVmdLayersFromPaths(
     }
 
     await _rebuildCompositeAnimation(targetId);
-    setStatus(`✓ 已恢复 ${addedCount} 个图层`, true);
+    setStatus(t('scene.vmd.layersRestored', { count: addedCount }), true);
     return addedCount;
 }
 
@@ -273,12 +274,12 @@ export async function addGazeLayer(
 ): Promise<VmdLayer | null> {
     const inst = modelRegistry.get(modelId);
     if (!inst) {
-        setStatus('✗ 模型未找到', false);
+        setStatus(t('scene.vmd.modelNotFound'), false);
         return null;
     }
 
     if (inst.vmdLayers.some((l) => l.kind === 'gaze')) {
-        setStatus('⚠ 视线追踪图层已存在', false);
+        setStatus(t('scene.vmd.gazeExists'), false);
         return null;
     }
 
@@ -323,7 +324,7 @@ export async function removeVmdLayer(layerId: string, targetModelId?: string): P
     } else {
         await _rebuildCompositeAnimation(inst.id);
     }
-    setStatus(`✓ 图层已移除: ${removed.name}`, true);
+    setStatus(t('scene.vmd.layerRemoved', { name: removed.name }), true);
     triggerAutoSave();
 }
 
@@ -555,7 +556,7 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
 
                         inst.animationDuration = maxEndFrame / 30;
                         inst.vmdName = sources.map((s) => s.name).join(' + ');
-                        setStatus(`✓ 图层混合: ${inst.vmdName} (WASM blender)`, true);
+                        setStatus(t('scene.vmd.layersBlendedBlender', { names: inst.vmdName }), true);
                         triggerAutoSave();
                         return;
                     } catch (err) {
@@ -567,7 +568,7 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
             const primarySrc = sources[0];
             const { loadVMDMotion } = await import('./vmd-loader');
             await loadVMDMotion(primarySrc.data, primarySrc.name, modelId);
-            setStatus(`⚠ WASM 仅支持单图层，已加载: ${primarySrc.name}`, false);
+            setStatus(t('scene.vmd.wasmSingleLayer', { name: primarySrc.name }), false);
             return;
         }
 
@@ -584,11 +585,11 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         inst.animationDuration = maxEndFrame / 30;
         inst.vmdName = sources.map((s) => s.name).join(' + ');
 
-        setStatus(`✓ 图层混合: ${inst.vmdName}`, true);
+        setStatus(t('scene.vmd.layersBlended', { names: inst.vmdName }), true);
         triggerAutoSave();
     } catch (err) {
         console.error('Motion Layers rebuild failed:', err);
-        setStatus('✗ 图层混合失败', false);
+        setStatus(t('scene.vmd.blendFailed'), false);
     }
 }
 

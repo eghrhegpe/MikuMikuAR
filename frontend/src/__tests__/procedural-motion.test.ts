@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import Encoding from 'encoding-japanese';
 import {
     generateIdleVmd,
     generateAutoDanceVmd,
@@ -327,12 +328,14 @@ describe('auto-switch logic', () => {
 function _parseVmdBones(buf: ArrayBuffer): Record<string, number> {
     const view = new DataView(buf);
     const boneCount = view.getUint32(50, true);
-    const decoder = new TextDecoder('shift-jis');
     const bones: Record<string, number> = {};
     for (let i = 0; i < boneCount; i++) {
         const off = 54 + i * 111;
         const raw = new Uint8Array(buf, off, 15);
-        const name = decoder.decode(raw).replace(/\0/g, '').trim();
+        // 与生产路径一致：用 encoding-japanese（CP932）读回骨骼名
+        const name = (Encoding.convert(raw, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string)
+            .replace(/\0/g, '')
+            .trim();
         if (!name) {
             continue;
         }

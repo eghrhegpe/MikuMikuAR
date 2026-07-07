@@ -4,6 +4,7 @@
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
 import { SaveLastScene, LoadLastScene } from '../core/wails-bindings';
+import { t } from '../core/i18n/t';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 
 import {
@@ -335,7 +336,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         try {
             const resolvedPath = resolvePathFromRef(m.filePath, m.libraryRef);
             if (!resolvedPath) {
-                errors.push(`模型 ${m.name}: 无法解析文件路径`);
+                errors.push(t('scene.serialize.modelPathUnresolved', { name: m.name }));
                 modelIds.push(null);
                 continue;
             }
@@ -348,7 +349,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                       ) ?? focusedModel())
                     : focusedModel();
             if (!inst || inst.meshes.length === 0) {
-                errors.push(`模型 ${m.name}: 加载成功但无网格数据`);
+                errors.push(t('scene.serialize.modelNoMesh', { name: m.name }));
                 modelIds.push(null);
                 continue;
             }
@@ -412,7 +413,12 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 }
             }
         } catch (err) {
-            errors.push(`模型 ${m.name}: ${(err as Error)?.message ?? String(err)}`);
+            errors.push(
+                t('scene.serialize.modelError', {
+                    name: m.name,
+                    error: (err as Error)?.message ?? String(err),
+                })
+            );
             modelIds.push(null);
         }
     }
@@ -693,7 +699,7 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
     } catch (_err) {
         if (!suppressToast) {
             showErrorToast(
-                '自动保存失败',
+                t('scene.serialize.autosaveFailed'),
                 _err instanceof Error ? _err.message : String(_err ?? 'unknown error')
             );
         }

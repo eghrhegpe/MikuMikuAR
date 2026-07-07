@@ -22,6 +22,7 @@ import {
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addCollapsible } from '../core/ui-helpers';
 import type { SlideMenu } from './menu';
+import { t } from '../core/i18n/t';
 
 let _selectedMat: { cat: string; index: number } | null = null;
 /** 参数卡片容器引用（增量更新用，避免 reRender） */
@@ -66,16 +67,16 @@ export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
                             bind: () => isMatCategoryAllEnabled(id, cat),
                         },
                         renderContent: (panel) => {
-                            addSliderRow(panel, '漫反射倍率', params.diffuseMul, 0, 2, 0.05, (v) =>
+                            addSliderRow(panel, t('model-material.diffuseMul'), params.diffuseMul, 0, 2, 0.05, (v) =>
                                 setMatCatParams(id, cat, { diffuseMul: v })
                             );
-                            addSliderRow(panel, '高光倍率', params.specularMul, 0, 2, 0.05, (v) =>
+                            addSliderRow(panel, t('model-material.specularMul'), params.specularMul, 0, 2, 0.05, (v) =>
                                 setMatCatParams(id, cat, { specularMul: v })
                             );
-                            addSliderRow(panel, '高光指数', params.shininess, 0, 200, 1, (v) =>
+                            addSliderRow(panel, t('model-material.shininess'), params.shininess, 0, 200, 1, (v) =>
                                 setMatCatParams(id, cat, { shininess: v })
                             );
-                            addSliderRow(panel, '环境光倍率', params.ambientMul, 0, 2, 0.05, (v) =>
+                            addSliderRow(panel, t('model-material.ambientMul'), params.ambientMul, 0, 2, 0.05, (v) =>
                                 setMatCatParams(id, cat, { ambientMul: v })
                             );
                         },
@@ -122,16 +123,16 @@ export function buildPerMatLevel(
                 };
                 const isModified = current !== null;
 
-                addSliderRow(c, '漫反射倍率', params.diffuseMul, 0, 2, 0.05, (v) => {
+                addSliderRow(c, t('model-material.diffuseMul'), params.diffuseMul, 0, 2, 0.05, (v) => {
                     setMatParams(id, matIndex, { diffuseMul: v });
                 });
-                addSliderRow(c, '高光倍率', params.specularMul, 0, 2, 0.05, (v) => {
+                addSliderRow(c, t('model-material.specularMul'), params.specularMul, 0, 2, 0.05, (v) => {
                     setMatParams(id, matIndex, { specularMul: v });
                 });
-                addSliderRow(c, '高光指数', params.shininess, 0, 200, 1, (v) => {
+                addSliderRow(c, t('model-material.shininess'), params.shininess, 0, 200, 1, (v) => {
                     setMatParams(id, matIndex, { shininess: v });
                 });
-                addSliderRow(c, '环境光倍率', params.ambientMul, 0, 2, 0.05, (v) => {
+                addSliderRow(c, t('model-material.ambientMul'), params.ambientMul, 0, 2, 0.05, (v) => {
                     setMatParams(id, matIndex, { ambientMul: v });
                 });
 
@@ -338,7 +339,7 @@ function _renderParamCard(
 
     addSliderRow(
         card,
-        '漫反射倍率',
+        t('model-material.diffuseMul'),
         params.diffuseMul,
         0,
         2,
@@ -350,7 +351,7 @@ function _renderParamCard(
     );
     addSliderRow(
         card,
-        '高光倍率',
+        t('model-material.specularMul'),
         params.specularMul,
         0,
         2,
@@ -362,7 +363,7 @@ function _renderParamCard(
     );
     addSliderRow(
         card,
-        '高光指数',
+        t('model-material.shininess'),
         params.shininess,
         0,
         200,
@@ -374,7 +375,7 @@ function _renderParamCard(
     );
     addSliderRow(
         card,
-        '环境光倍率',
+        t('model-material.ambientMul'),
         params.ambientMul,
         0,
         2,

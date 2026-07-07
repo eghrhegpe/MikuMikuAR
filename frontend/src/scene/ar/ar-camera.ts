@@ -4,6 +4,7 @@
 // 渲染合成策略: 透明 canvas + CSS <video> 底层 (S2 方案, 性能最优)
 
 import { dom, setStatus } from '../../core/config';
+import { t } from '../../core/i18n/t';
 
 // ======== Types ========
 export type CameraFacing = 'user' | 'environment';
@@ -115,7 +116,7 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
         _active = true;
         _showVideo();
 
-        setStatus('✓ AR 相机已开启', true);
+        setStatus(t('scene.ar.enabled'), true);
         _notifyARModeChange(true);
         return true;
     } catch (err) {
@@ -123,7 +124,7 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
         _stream = null;
         _active = false;
         _hideVideo();
-        setStatus('✗ 摄像头权限被拒绝，已切换黑底模式', false);
+        setStatus(t('scene.ar.cameraDenied'), false);
         return false;
     }
 }
@@ -151,7 +152,7 @@ export async function switchARCameraFacing(): Promise<boolean> {
     const ok = await startARCamera(nextFacing);
     if (ok) {
         setStatus(
-            nextFacing === 'user' ? '✓ 已切换到前置摄像头' : '✓ 已切换到后置摄像头',
+            nextFacing === 'user' ? t('scene.ar.switchedUser') : t('scene.ar.switchedEnv'),
             true
         );
     }

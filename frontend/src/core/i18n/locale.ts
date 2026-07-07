@@ -3,7 +3,13 @@ import { reactive, scheduleRefresh } from '../reactivity';
 
 export type LangCode = 'zh-CN' | 'en' | 'ja' | 'ko' | 'zh-TW';
 
-/** 受支持语言清单（与竞品 DanceXR 对齐：简/繁中、英、日、韩） */
+/**
+ * 规划支持的语言清单（与竞品 DanceXR 对齐：简/繁中、英、日、韩）。
+ * 这是「声明/规划」清单，不代表都已翻译完成。真正可切换的语言由
+ * core/i18n/t.ts 的 AVAILABLE_LANGS（有 bundle 的语言）决定；语言菜单只
+ * 展示 AVAILABLE_LANGS，避免列出无 bundle 的语言导致「切换无效」。
+ * 新增 ja/ko/zh-TW 时：先补 locales/*.ts bundle，AVAILABLE_LANGS 自动纳入。
+ */
 export const SUPPORTED_LANGS: { code: LangCode; key: string }[] = [
     { code: 'zh-CN', key: 'lang.zh-CN' },
     { code: 'en', key: 'lang.en' },

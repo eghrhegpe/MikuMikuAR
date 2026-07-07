@@ -11,6 +11,14 @@ const bundles: Record<string, Bundle> = {
 };
 
 /**
+ * [doc:adr-059] 当前已补全语言包的语言列表。
+ * 语言菜单只应展示这些语言；ja/ko/zh-TW 等仅声明于 SUPPORTED_LANGS、
+ * 但尚无 bundle 的语言，在 bundle 补齐前不得作为可选项，否则选中后
+ * t() 静默回退中文，造成「切换无效」的误导。
+ */
+export const AVAILABLE_LANGS: string[] = Object.keys(bundles);
+
+/**
  * 翻译一个 key。
  * @param key 形如 'settings.appearance' 的命名空间 key
  * @param params 可选占位符，用于动态字符串，如 t('status.modelsLoaded', { n: 3 })

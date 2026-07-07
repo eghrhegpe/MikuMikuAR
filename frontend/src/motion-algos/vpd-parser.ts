@@ -4,6 +4,7 @@
 // 本模块解析 VPD 并转换为 VMD 二进制，供 loadVMDMotion 加载。
 // VMD 生成委托给 vmd-writer.ts（标准 111/23 字节帧格式）。
 
+import Encoding from 'encoding-japanese';
 import { buildVmd, type BoneKeyFrame, type MorphKeyFrame } from './vmd-writer';
 
 // VPD 解析结果
@@ -35,7 +36,10 @@ function _cleanNumericLine(line: string): string {
         .trim();
 }
 
-/** 解码 VPD 文本（支持 UTF-8 / Shift-JIS 兜底）。
+/** 解码 VPD 文本（支持 UTF-8 / UTF-16 / Shift-JIS）。
+ *  用 encoding-japanese 探测编码并解码，CP932 语义与管线其余部分
+ *  （babylon-mmd 内部、vmd-layers._decodeSjis）保持一致，避免原生
+ *  TextDecoder('shift-jis') 在 Microsoft/IBM 扩展区码位上产生分歧。
  *  @param buffer 文件原始字节
  *  @returns 解码后的文本字符串 */
 export function decodeVPDData(buffer: ArrayBuffer): string {
@@ -48,14 +52,20 @@ export function decodeVPDData(buffer: ArrayBuffer): string {
     if (u8[0] === 0xff && u8[1] === 0xfe) {
         return new TextDecoder('utf-16le').decode(buffer);
     }
-    // 无 BOM → 尝试 UTF-8；若含无效 UTF-8 序列则回退 Shift-JIS
-    try {
-        const text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
-        return text;
-    } catch {
-        // Shift-JIS 兜底（部分 MMD 模型导出 VPD 使用 Shift-JIS）
-        return new TextDecoder('shift-jis').decode(buffer);
+    // 无 BOM → 用 encoding-japanese 探测编码，统计式探测可正确区分
+    // 「字节恰好合法 UTF-8 的 Shift-JIS 内容」，避免原生启发式误判。
+    const detected = Encoding.detect(u8);
+    if (detected === 'SJIS' || detected === 'WINDOWS-31J' || detected === 'CP932') {
+        return Encoding.convert(u8, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string;
     }
+    if (detected === 'UTF16' || detected === 'UTF16LE') {
+        return new TextDecoder('utf-16le').decode(buffer);
+    }
+    if (detected === 'UTF16BE') {
+        return new TextDecoder('utf-16be').decode(buffer);
+    }
+    // UTF8 / ASCII / 未知 → UTF-8
+    return new TextDecoder('utf-8').decode(buffer);
 }
 
 /** 解析 VPD 文本为结构化数据。
