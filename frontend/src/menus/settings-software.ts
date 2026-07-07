@@ -17,6 +17,7 @@ import { softwareKindIcon } from '../core/icons';
 import { showPrompt } from '../core/dialog';
 import { tryCatchStatus } from '../core/utils';
 import { getSettingsMenu } from './settings';
+import { t } from '../core/i18n/t';
 
 // ======== 路径设置 API（统一入口） ========
 
@@ -37,7 +38,7 @@ export async function setBlenderPath(): Promise<void> {
         return true;
     }, '✗ 设置失败');
     if (r) {
-        setStatus('✓ Blender 路径已设置', true);
+        setStatus(t('settings.software.blenderSet'), true);
     }
 }
 
@@ -51,7 +52,7 @@ export async function setMMDPath(): Promise<void> {
         return true;
     }, '✗ 设置失败');
     if (r) {
-        setStatus('✓ MMD 路径已设置', true);
+        setStatus(t('settings.software.mmdSet'), true);
     }
 }
 
@@ -199,7 +200,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                         }, '✗ 更新失败');
                         if (r) {
                             entry.args = input.value;
-                            setStatus('✓ 参数已更新', true);
+                            setStatus(t('settings.software.paramsUpdated'), true);
                         }
                     });
                     val.appendChild(input);

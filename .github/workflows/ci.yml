@@ -46,7 +46,6 @@ jobs:
 
       - name: Lint
         run: npm run lint
-        continue-on-error: true
 
       - name: Build
         run: npx vite build
@@ -60,19 +59,12 @@ jobs:
   test-backend:
     name: Backend — Go Test & Build
     runs-on: ubuntu-latest
-    needs: test-frontend
     defaults:
       run:
         working-directory: .
 
     steps:
       - uses: actions/checkout@v5
-
-      - name: Download frontend dist
-        uses: actions/download-artifact@v5
-        with:
-          name: frontend-dist
-          path: frontend/dist/
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -120,6 +112,39 @@ jobs:
 
       - name: Check markdown links
         run: python tests/test_markdown_links.py
+
+  # ============================================================
+  # Version — tag vs package.json consistency
+  # Ensures that if a tag exists (on PRs to main), the package.json
+  # version matches it. Only meaningful on push/pull to main/master.
+  # ============================================================
+  version-check:
+    name: Version — Consistency
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.base_ref == 'refs/heads/main')
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check version vs latest tag
+        run: |
+          PKG_VER=$(node -e "console.log(require('./package.json').version)")
+          echo "package.json version: $PKG_VER"
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
+          if [ -n "$LATEST_TAG" ]; then
+            echo "latest tag (stripped):   $LATEST_TAG"
+            # On PR to main, the package.json should match or be greater than the latest tag
+            # Normalize to dot-separated numeric for comparison
+            if [ "$PKG_VER" != "$LATEST_TAG" ]; then
+              echo "::warning::package.json version $PKG_VER differs from latest tag v$LATEST_TAG"
+            else
+              echo "✅ Version matches latest tag."
+            fi
+          else
+            echo "No tags found — skipping comparison."
+          fi
 
   # ============================================================
   # E2E — DOM/Overlay Gate (blocking)
@@ -205,12 +230,13 @@ jobs:
           go-version: '1.25.0'
           cache-dependency-path: go.sum
 
-      - name: Install Playwright Chromium
-        run: npx playwright install chromium
-
       - name: Install Wails CLI (v3)
         working-directory: .
-        run: go install github.com/wailsapp/wails/v3/cmd/wails@latest
+        run: |
+          WAILS_VER=$(grep 'wails/v3' go.mod | head -1 | awk '{print $2}')
+          echo "Installing wails3@$WAILS_VER"
+          go install github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VER
+          echo "WAILS_VER=$WAILS_VER" >> $GITHUB_ENV
 
       - name: Install frontend deps
         run: npm ci
@@ -222,7 +248,7 @@ jobs:
         working-directory: .
         run: |
           export PATH="$HOME/go/bin:$PATH"
-          wails dev &
+          wails3 dev &
           WAILS_PID=$!
           for i in $(seq 1 60); do
             if curl -s http://127.0.0.1:9222/json/version >/dev/null; then
@@ -242,6 +268,25 @@ jobs:
         with:
           name: playwright-webgl-report
           path: frontend/playwright-report/
+
+      - name: WebGL Test Summary
+        if: always()
+        run: |
+          if [ -f frontend/test-results/.last-run.json ]; then
+            python3 -c "
+          import json
+          with open('frontend/test-results/.last-run.json') as f:
+              d = json.load(f)
+          p, fl, fa = d.get('passed',0), d.get('flaky',0), d.get('failed',0)
+          if fa > 0:
+              print(f'::warning title=@webgl ({fa} failed)::seed-model={d.get(\"suites\",[])}')
+              print(f'::warning title=@webgl summary::{p} passed, {fa} failed, {fl} flaky')
+          else:
+              print(f'::notice title=@webgl summary::{p} passed, {fa} failed, {fl} flaky')
+          "
+          else
+            echo '::notice title=@webgl report::test-results not found (all passed?)'
+          fi
 
   ai-mistake-report:
     name: AI — Mistake Tracker Report

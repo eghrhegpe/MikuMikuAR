@@ -24,6 +24,7 @@ import {
     stackRegistry,
     uiState,
 } from './config';
+import { t } from './i18n/t';
 import { registerIconBundle } from './icons-bundle';
 import { initI18n } from './i18n/locale'; // [doc:adr-059] 语言在菜单渲染前确定
 import { GetConfig, ImportZip, ImportLocalFile, Events, CheckForUpdate } from './wails-bindings';
@@ -58,6 +59,22 @@ import { syncTimeOfDayFromEnv } from '../scene/env/env-bridge';
 import './iconify-registry';
 import 'iconify-icon';
 import { registerShortcuts, initShortcutDispatcher } from './shortcut-registry';
+
+function _updateStaticHtmlTexts(): void {
+    // Update hardcoded HTML text with i18n translations
+    const setText = (sel: string, key: string, params?: Record<string, string>) => {
+        const el = document.querySelector<HTMLElement>(sel);
+        if (el) el.textContent = t(key, params);
+    };
+    setText('.drop-text', 'main.dropToImport');
+    setText('.drop-hint', 'main.dropHint');
+    setText('#importToast .toast-title', 'main.newFileDetected');
+    setText('#importToast .toast-import-btn', 'main.importImport');
+    setText('#importToast .toast-ignore-btn', 'main.importIgnore');
+    setText('#updateToast .toast-title', 'main.newVersionDetected');
+    setText('#updateToast .toast-import-btn', 'main.download');
+    setText('#updateToast .toast-ignore-btn', 'main.importIgnore');
+}
 
 function hexToRgb(hex: string): string {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -576,11 +593,12 @@ async function init(): Promise<void> {
         // 注册本地图标 bundle，使 iconify 离线可用
         registerIconBundle();
         initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>
+        _updateStaticHtmlTexts(); // 更新 HTML 模板中的硬编码文案
         buildNavMaps();
         // Register keyboard shortcuts via ShortcutRegistry
         registerAppShortcuts();
         initShortcutDispatcher();
-        setStatus('正在初始化...', false);
+        setStatus(t('main.initializing'), false);
         await initScene();
         initDropHandler();
         // Register nav button event listeners (ensured DOM ready)
@@ -626,7 +644,7 @@ async function init(): Promise<void> {
         tryRestoreLastScene().catch((err) => console.warn('Auto-restore:', err));
     } catch (err) {
         console.error('Init failed:', err);
-        setStatus('✗ 初始化失败', false);
+        setStatus(t('main.initFailed'), false);
     }
 }
 
@@ -711,7 +729,7 @@ function showUpdateToast(latest: string, url: string): void {
     }
     const fileEl = toast.querySelector<HTMLElement>('.toast-file');
     if (fileEl) {
-        fileEl.textContent = `v${latest} 可用，点击前往下载`;
+        fileEl.textContent = t('main.versionAvailable', { version: latest });
     }
     const btn = toast.querySelector<HTMLButtonElement>('.toast-import-btn');
     if (btn) {
@@ -770,29 +788,29 @@ function hideDropOverlay(): void {
 async function handleDropFile(path: string): Promise<void> {
     const lower = path.toLowerCase();
     if (lower.endsWith('.zip')) {
-        setStatus('⏳ 导入压缩包...', false);
+        setStatus(t('main.importingZip'), false);
         try {
             await ImportZip(path);
-            setStatus('✓ 压缩包已导入', true);
+            setStatus(t('main.zipImported'), true);
             await refreshLibrary().catch((err) => console.warn('refresh after drop:', err));
         } catch (err) {
-            setStatus('✗ 导入失败: ' + formatError(err), false);
+            setStatus(t('main.importFailedDetail') + formatError(err), false);
             console.error('ImportZip failed:', err);
         }
     } else if (lower.endsWith('.pmx')) {
-        setStatus('⏳ 加载模型...', false);
+        setStatus(t('main.loadingModel'), false);
         try {
             await loadManager.load({ kind: 'actor', path });
         } catch (err) {
-            setStatus('✗ 模型加载失败: ' + formatError(err), false);
+            setStatus(t('main.modelLoadFailed') + formatError(err), false);
             console.error('loadManager actor failed:', err);
         }
     } else if (lower.endsWith('.vmd')) {
-        setStatus('⏳ 加载动作...', false);
+        setStatus(t('main.loadingMotion'), false);
         try {
             await loadManager.load({ kind: 'vmd', path });
         } catch (err) {
-            setStatus('✗ VMD 加载失败: ' + formatError(err), false);
+            setStatus(t('main.vmdLoadFailed') + formatError(err), false);
             console.error('loadManager vmd failed:', err);
         }
     }
@@ -847,17 +865,17 @@ Events.On('watch:newfile', (ev) => {
     if (importBtn) {
         importBtn.onclick = async () => {
             importBtn.disabled = true;
-            importBtn.textContent = '导入中...';
+            importBtn.textContent = t('main.importing');
             try {
                 await ImportLocalFile(payload.path);
-                setStatus('✓ 已导入: ' + (payload.name || payload.path), true);
+                setStatus(t('main.imported', { name: payload.name || payload.path }), true);
                 refreshLibrary().catch(console.warn);
             } catch (err: unknown) {
-                setStatus('✗ 导入失败: ' + formatError(err), false);
+                setStatus(t('main.importFailed') + ': ' + formatError(err), false);
             }
             toast.classList.remove('visible');
             importBtn.disabled = false;
-            importBtn.textContent = '导入';
+            importBtn.textContent = t('main.importImport');
         };
     }
 
@@ -911,19 +929,25 @@ if (import.meta.env.DEV) {
             return n;
         },
         get currentAnimation(): string {
-            // babylon-mmd runtime field name varies by version — safe cast.
-            return (mmdRuntime as any)?.runtimeAnimation?.animationName ?? 'idle';
+            // Use focusedModel().vmdName instead of mmdRuntime.runtimeAnimation
+            // which doesn't exist in babylon-mmd's public API.
+            const inst = focusedModel();
+            return inst?.vmdName ?? 'idle';
         },
         // --- Outfit (换装) behavior hook (DEV only, on-strategy per ADR-060) ---
         // Drives the REAL applyOutfitVariant path so E2E can assert a 3D change
-        // without fragile 3-4 level menu navigation. Returns variant names for
-        // the focused model; empty if no outfits.json or no model loaded.
-        outfitVariants: (): Promise<string[]> => {
+        // without fragile 3-4 level menu navigation. Returns {variants, error}
+        // so the test can distinguish "no outfits" from "loadOutfits failed" —
+        // a .catch(->[]) would silently mask real regressions.
+        outfitVariants: async (): Promise<{ variants: string[]; error: string | null }> => {
             const inst = focusedModel();
-            if (!inst) return Promise.resolve([]);
-            return loadOutfits(inst.id)
-                .then((o) => (o?.variants ?? []).map((v) => v.name))
-                .catch(() => []);
+            if (!inst) return { variants: [], error: null };
+            try {
+                const o = await loadOutfits(inst.id);
+                return { variants: (o?.variants ?? []).map((v) => v.name), error: null };
+            } catch (e) {
+                return { variants: [], error: String(e) };
+            }
         },
         applyOutfit: (variantName: string): Promise<boolean> => {
             const inst = focusedModel();
@@ -936,7 +960,8 @@ if (import.meta.env.DEV) {
         // for "did the picture change" assertions without decoding the PNG.
         // (Do NOT read a '2d' context from the WebGL canvas — getContext returns null.)
         fingerprint: async (): Promise<string> => {
-            const url = await window.__capture!();
+            if (!window.__capture) return '';
+    const url = await window.__capture!();
             const img = new Image();
             img.src = url;
             await img.decode();
@@ -946,15 +971,37 @@ if (import.meta.env.DEV) {
             if (!ctx) return '';
             ctx.drawImage(img, 0, 0, 16, 16);
             const d = ctx.getImageData(0, 0, 16, 16).data;
+            const LUM_THRESHOLD = 384; // ≈ half-brightness: (255×3)/2 = 382.5
             let s = '';
             for (let i = 0; i < d.length; i += 4) {
-                s += d[i] + d[i + 1] + d[i + 2] > 384 ? '1' : '0';
+                s += d[i] + d[i + 1] + d[i + 2] > LUM_THRESHOLD ? '1' : '0';
             }
             return s;
         },
         // Delegate to the existing screenshot helper. NOTE: do NOT read a
         // '2d' context from the WebGL canvas — getContext('2d') returns null.
         capture: (): Promise<string> => window.__capture!(),
+
+        // CI seed model — creates a programmatic Babylon mesh so @webgl E2E tests
+        // can assert a real 3D scene without a PMX file on disk.
+        createTestMesh: async (): Promise<void> => {
+            const { MeshBuilder } = await import('@babylonjs/core/Meshes/meshBuilder');
+            const { StandardMaterial } = await import('@babylonjs/core/Materials/standardMaterial');
+            const { Color3 } = await import('@babylonjs/core/Maths/math.color');
+            // Dispose any previous test meshes first
+            for (const m of [...scene.meshes]) {
+                if (m.name.startsWith('e2e-test-')) m.dispose();
+            }
+            const box = MeshBuilder.CreateBox('e2e-test-mesh', { size: 0.5 }, scene);
+            const mat = new StandardMaterial('e2e-test-mat', scene);
+            mat.diffuseColor = new Color3(1, 0, 0);
+            box.material = mat;
+        },
+        clearTestMeshes: (): void => {
+            for (const m of [...scene.meshes]) {
+                if (m.name.startsWith('e2e-test-')) m.dispose();
+            }
+        },
     };
 }
 
@@ -999,7 +1046,7 @@ function checkAndroidStoragePermission(): void {
     if (typeof w.hasStoragePermission === 'function' && !w.hasStoragePermission()) {
         androidStoragePromptShown = true;
         if (typeof w.requestStoragePermission === 'function') {
-            setStatus('⚠️ 需要文件访问权限才能读取 /sdcard/MMD，请在弹窗中授权', true);
+            setStatus(t('main.needFileAccess'), true);
             w.requestStoragePermission();
         }
     }
@@ -1007,13 +1054,13 @@ function checkAndroidStoragePermission(): void {
 
 // When the native side reports a fresh grant, rescan the library.
 Events.On('storage:permissionGranted', async () => {
-    setStatus('✅ 文件权限已授予，正在重新扫描模型库...', false);
+    setStatus(t('main.permissionGranted'), false);
     try {
         await refreshLibrary();
-        setStatus('✅ 模型库已刷新', false);
+        setStatus(t('main.libraryRefreshed'), false);
     } catch (err) {
         console.error('refreshLibrary after permission grant:', err);
-        setStatus('⚠️ 模型库刷新失败：' + formatError(err), true);
+        setStatus(t('main.libraryRefreshFailed') + formatError(err), true);
     }
 });
 

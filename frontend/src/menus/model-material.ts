@@ -29,7 +29,7 @@ let _selectedMat: { cat: string; index: number } | null = null;
 let _paramCardEl: HTMLElement | null = null;
 
 export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
-    const label = '按部位批量 — ' + modelName;
+    const label = t('model-material.batchByPart', { name: modelName });
     return {
         label,
         dir: '',
@@ -44,7 +44,7 @@ export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
                     const hint = document.createElement('div');
                     hint.style.cssText =
                         'font-size:11px;color:var(--warn);margin-bottom:8px;padding:4px 10px;background:var(--white-04);border-radius:6px;text-align:center;';
-                    hint.textContent = `⚠ ${overrideCount} 个材质有单独覆盖（分类调整不影响已覆盖材质）`;
+                    hint.textContent = t('model-material.overrideHint', { count: overrideCount });
                     c.appendChild(hint);
                 }
 
@@ -111,7 +111,7 @@ export function buildPerMatLevel(
                 const stackingHint = document.createElement('div');
                 stackingHint.style.cssText =
                     'font-size:10px;color:var(--text-muted);margin-bottom:10px;padding:4px 8px;background:var(--accent-dim);border-radius:4px;';
-                stackingHint.textContent = '覆盖分类设置，分类调整仍生效于其他材质';
+                stackingHint.textContent = t('model-material.stackingHint');
                 c.appendChild(stackingHint);
 
                 const current = getMatParams(id, matIndex);
@@ -137,10 +137,10 @@ export function buildPerMatLevel(
                 });
 
                 if (isModified) {
-                    slideRow(c, 'lucide:rotate-ccw', '重置此材质', false, () => {
+                    slideRow(c, 'lucide:rotate-ccw', t('model-material.resetThis'), false, () => {
                         resetSingleMatParams(id, matIndex);
                         (targetStack ?? stackRegistry.modelStack)?.reRender();
-                        setStatus(`✓ 已重置: ${matName}`, true);
+                        setStatus(t('model-material.resetDone', { name: matName }), true);
                     });
                 }
             });
@@ -156,7 +156,7 @@ export function buildMatRootLevel(
     _selectedMat = null;
     _paramCardEl = null;
     return {
-        label: '材质调节 — ' + modelName,
+        label: t('model-material.materialAdjustTitle', { name: modelName }),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -169,7 +169,7 @@ export function buildMatRootLevel(
                     const empty = document.createElement('div');
                     empty.style.cssText =
                         'padding:12px 14px;text-align:center;font-size:11px;color:var(--text-dim);';
-                    empty.textContent = '此模型无材质数据';
+                    empty.textContent = t('model-material.noMaterialData');
                     c.appendChild(empty);
                     return;
                 }
@@ -211,7 +211,7 @@ export function buildMatRootLevel(
                                     const sub = document.createElement('span');
                                     sub.className = 'slide-sublabel';
                                     sub.style.color = 'var(--accent)';
-                                    sub.textContent = '已修改';
+                                    sub.textContent = t('model-material.modified');
                                     row.appendChild(sub);
                                 }
 
@@ -235,8 +235,8 @@ export function buildMatRootLevel(
                                     row.classList.toggle('mat-disabled', !newState);
                                     setStatus(
                                         newState
-                                            ? `✓ 已显示: ${matInfo.mat.name}`
-                                            : `✕ 已隐藏: ${matInfo.mat.name}`,
+                                            ? t('model-material.shown', { name: matInfo.mat.name })
+                                            : t('model-material.hidden', { name: matInfo.mat.name }),
                                         true
                                     );
                                 });
@@ -275,12 +275,12 @@ export function buildMatRootLevel(
 
             // 卡片 3：重置全部
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:refresh-ccw', '重置全部材质参数', false, () => {
+                slideRow(c, 'lucide:refresh-ccw', t('model-material.resetAll'), false, () => {
                     resetMatCatParams(id);
                     resetAllMatParams(id);
                     _selectedMat = null;
                     (targetStack ?? stackRegistry.modelStack)?.reRender();
-                    setStatus('✓ 全部材质参数已重置', true);
+                    setStatus(t('model-material.resetAllDone'), true);
                 });
             });
         },
@@ -313,7 +313,7 @@ function _renderParamCard(
         const hint = document.createElement('div');
         hint.style.cssText =
             'font-size:11px;color:var(--text-dim);padding:12px 14px;text-align:center;';
-        hint.textContent = '请从上方材质列表中选择一个材质进行微调';
+        hint.textContent = t('model-material.selectMaterialHint');
         _paramCardEl.appendChild(hint);
         return;
     }
@@ -325,8 +325,8 @@ function _renderParamCard(
 
     const title = document.createElement('div');
     title.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px;';
-    const matName = detailList.find((d) => d.index === index)?.name || '未知材质';
-    title.textContent = `参数微调 — ${cat} › ${matName}`;
+    const matName = detailList.find((d) => d.index === index)?.name || t('model-material.unknownMaterial');
+    title.textContent = t('model-material.paramTune', { cat, matName });
     card.appendChild(title);
 
     const current = getMatParams(id, index);
@@ -389,7 +389,7 @@ function _renderParamCard(
     if (current !== null) {
         // 重置：批量状态变化 + 预期全量刷新，用 reRender。
         // 色块点击：单点切换，用增量更新（内联 DOM 操作），避免 200+ 行折叠列表重建。
-        slideRow(card, 'lucide:rotate-ccw', '重置此材质', false, () => {
+        slideRow(card, 'lucide:rotate-ccw', t('model-material.resetThis'), false, () => {
             resetSingleMatParams(id, index);
             _selectedMat = null;
             (targetStack ?? stackRegistry.modelStack)?.reRender();
@@ -406,7 +406,7 @@ export function buildMatListLevel(
     targetStack?: SlideMenu | null
 ): PopupLevel {
     return {
-        label: '逐材质 — ' + modelName,
+        label: t('model-material.perMaterial', { name: modelName }),
         dir: '',
         items: [],
         renderCustom: (container) => {

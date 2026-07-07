@@ -189,7 +189,7 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 |------|------|------|------|
 | **A. 自研轻量 `core/i18n/`（本 ADR）** | signal + `t()` + TS bundle + localStorage | 与 `scheduleRefresh` 体系零摩擦、零依赖、热切换天然 | 需自维护 bundle 与抽取流程 |
 | B. i18next | 成熟 i18n 库 | 生态全、plural/ICU 内置 | 与自研 reactivity 重叠；Bundle 体积与 API 对命令式 DOM 过度设计；需适配层 |
-| C. Go `UIState` + `SetUILanguage` | 语言进 Go 持久化 | 与设置导入/导出统一、跨设备 | 需改 Go + `wails generate`；与 `MmdRuntimeType` 的 localStorage 先例不一致 |
+| C. Go `UIState` + `SetUILanguage` | 语言进 Go 持久化 | 与设置导入/导出统一、跨设备 | 需改 Go + `wails3 generate`；与 `MmdRuntimeType` 的 localStorage 先例不一致 |
 
 **选 A 为 MVP**：复用 `setMmdRuntimeType` 的 localStorage 先例，零 Go 改动，最快跑通热切换闭环。
 
@@ -230,7 +230,7 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 
 - [ ] `core/ui-*.ts`、`core/dialog.ts`、`core/state.ts` 状态消息
 - [ ] `physics/*`（cloth-manager 等）、`scene/*` 非菜单模块内 `setStatus`/toast 改为 `t('scene.*'/'physics.*', params)`
-- [ ] `library-core.ts:432` collation 随语言切换（`localeCompare(b.label, getLang())`）
+- [x] `library-core.ts:434` collation 随语言切换（`localeCompare(b.label, getLang())`）
 
 ### Phase 4: 多语言补全 + 防回归（按需）
 

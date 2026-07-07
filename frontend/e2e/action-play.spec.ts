@@ -38,17 +38,20 @@ test.describe("核心旅程: 动作播放与换装", { tag: ["@webgl"] }, () => 
         await waitForSceneHook(page);
         await loadFirstModel(page);
 
-        const variants = await page.evaluate(async () => (window as any).__scene.outfitVariants());
+        const result = await page.evaluate(async () => (window as any).__scene.outfitVariants());
+        // Regression: loadOutfits must not fail. If error is set, it masks a real bug
+        // (zip corruption, path issue, etc.) — not a "no variants to test" skip case.
+        expect(result.error).toBeNull();
         test.skip(
-            variants.length < 2,
-            `焦点模型变体不足 2 个 (${variants.length})；需 CI seed 带 outfits.json 的模型`
+            result.variants.length < 2,
+            `焦点模型变体不足 2 个 (${result.variants.length})；需 CI seed 带 outfits.json 的模型`
         );
 
         const before = await page.evaluate(async () => (window as any).__scene.fingerprint());
         // 应用第二个变体（variants[0] 通常为「默认」）
         const ok = await page.evaluate(
             async (v: string) => (window as any).__scene.applyOutfit(v),
-            variants[1]
+            result.variants[1]
         );
         expect(ok).toBe(true);
 

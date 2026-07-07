@@ -154,11 +154,11 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
     try {
         preset = JSON.parse(jsonStr);
     } catch {
-        setStatus('✗ 预设文件格式错误', false);
+        setStatus(t('model-preset.formatError'), false);
         return;
     }
     if (preset.version !== 1) {
-        setStatus('✗ 不支持的预设版本', false);
+        setStatus(t('model-preset.unsupportedVersion'), false);
         return;
     }
     if (preset.transform) {
@@ -191,7 +191,7 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
             try {
                 await loadManager.load({ kind: 'vmd', path: preset.vmd.path, modelId: id });
             } catch (vmdErr) {
-                setStatus('⚠ VMD 加载失败，其余预设已应用', false);
+                setStatus(t('model-preset.vmdLoadFailed'), false);
                 console.warn('applyModelPreset: vmd load failed', vmdErr);
             }
         } else {
@@ -216,7 +216,7 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
     } else if (getAudioPath()) {
         clearAudio();
     }
-    setStatus('✓ 预设已应用', true);
+    setStatus(t('model-preset.applied'), true);
 }
 
 export async function selectAndSavePreset(id: string): Promise<void> {
@@ -226,17 +226,17 @@ export async function selectAndSavePreset(id: string): Promise<void> {
     }
     const json = serializeModelPreset(id);
     if (!json) {
-        setStatus('✗ 无法序列化模型状态', false);
+        setStatus(t('model-preset.serializeFailed'), false);
         return;
     }
     const _r0 = await tryCatchStatus(
         () => SaveModelPreset(json, path),
-        '✗ 保存失败',
+        t('model-preset.saveFailed'),
         (err) =>
-            showErrorToast('保存模型预设失败', err instanceof Error ? err.message : String(err))
+            showErrorToast(t('model-preset.saveErrorToast'), err instanceof Error ? err.message : String(err))
     );
     if (_r0 !== undefined) {
-        setStatus('✓ 预设已保存', true);
+        setStatus(t('model-preset.saved'), true);
     }
 }
 
@@ -251,7 +251,7 @@ export async function tryAutoApplyPreset(id: string): Promise<void> {
     if (!inst) {
         return;
     }
-    setStatus('正在加载预设库...', false);
+    setStatus(t('model-preset.loadingLib'), false);
     const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
     if (entries.length === 0) {
         return;
@@ -279,13 +279,13 @@ export async function tryAutoApplyPreset(id: string): Promise<void> {
     }
     _presetUndoStack.set(id, serializeModelPreset(id));
     await applyModelPreset(id, json);
-    showUndoToast(`已自动应用预设「${escapeHtml(preset.presetName || match.name)}」`, async () => {
+    showUndoToast(t('model-preset.autoApplied', { name: escapeHtml(preset.presetName || match.name) }), async () => {
         const snap = _presetUndoStack.get(id);
         _presetUndoStack.delete(id);
         if (snap) {
             await applyModelPreset(id, snap);
         }
-        setStatus('✓ 已撤销预设应用', true);
+        setStatus(t('model-preset.undoApplied'), true);
     });
 }
 
@@ -297,7 +297,7 @@ export async function selectAndLoadPreset(id: string): Promise<void> {
     await tryCatchStatus(async () => {
         const json = await LoadModelPreset(path);
         await applyModelPreset(id, json);
-    }, '✗ 加载失败');
+    }, t('model-preset.loadFailed'));
 }
 
 export async function togglePresetAutoApply(name: string): Promise<void> {
@@ -306,7 +306,7 @@ export async function togglePresetAutoApply(name: string): Promise<void> {
         const preset: ModelPresetFile = JSON.parse(json);
         preset.autoApply = !preset.autoApply;
         await SaveModelPresetToLib(name, JSON.stringify(preset, null, 2));
-    }, '✗ 切换自动应用失败');
+    }, t('model-preset.toggleAutoApplyFailed'));
 }
 
 export async function applyPresetFromLib(
@@ -346,26 +346,26 @@ export async function applyPresetFromLib(
                 if (handle) {
                     await applyModelPreset(handle.id, json);
                 } else {
-                    setStatus('✗ 模型加载失败，无法应用预设', false);
+                    setStatus(t('model-preset.modelLoadFailed'), false);
                 }
             }
         }
-    }, '✗ 应用预设失败');
+    }, t('model-preset.applyFailed'));
 }
 
 export async function savePresetToLibDialog(id: string): Promise<void> {
-    const name = await showPrompt('输入预设名称：');
+    const name = await showPrompt(t('model-preset.inputName'));
     if (!name) {
         return;
     }
     const trimmed = name.trim();
     if (!trimmed) {
-        setStatus('✗ 名称不能为空', false);
+        setStatus(t('model-preset.nameEmpty'), false);
         return;
     }
     let json = serializeModelPreset(id, trimmed);
     if (!json) {
-        setStatus('✗ 无法序列化模型状态', false);
+        setStatus(t('model-preset.serializeFailed'), false);
         return;
     }
     try {
@@ -383,29 +383,29 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
     }
     const _r1 = await tryCatchStatus(
         () => SaveModelPresetToLib(trimmed, json),
-        '✗ 保存失败',
+        t('model-preset.saveFailed'),
         (err) =>
-            showErrorToast('保存模型预设失败', err instanceof Error ? err.message : String(err))
+            showErrorToast(t('model-preset.saveErrorToast'), err instanceof Error ? err.message : String(err))
     );
     if (_r1 !== undefined) {
-        setStatus('✓ 预设已保存到库', true);
+        setStatus(t('model-preset.savedToLib'), true);
     }
 }
 
 export function buildPresetListLevel(id: string | null): PopupLevel {
     return {
-        label: '预设库',
+        label: t('model-preset.presetLib'),
         dir: '',
         items: [],
         renderCustom: async (container) => {
             container.classList.remove('render-card');
-            setStatus('正在加载预设库...', false);
+            setStatus(t('model-preset.loadingLib'), false);
             const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
             if (entries.length === 0) {
                 const empty = document.createElement('div');
                 empty.style.cssText =
                     'font-size:12px;color:var(--text-dim);text-align:center;padding:24px;';
-                empty.textContent = '暂无预设';
+                empty.textContent = t('model-preset.noPresets');
                 container.appendChild(empty);
                 return;
             }
@@ -432,7 +432,7 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
                     }
                     const toggleLabel = document.createElement('label');
                     toggleLabel.className = 'toggle';
-                    toggleLabel.title = e.autoApply ? '自动应用：开' : '自动应用：关';
+                    toggleLabel.title = e.autoApply ? t('model-preset.autoApplyOn') : t('model-preset.autoApplyOff');
                     const toggleInput = document.createElement('input');
                     toggleInput.type = 'checkbox';
                     toggleInput.checked = e.autoApply;
@@ -448,20 +448,20 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
                     row.appendChild(toggleLabel);
                     const delBtn = document.createElement('span');
                     delBtn.textContent = '✕';
-                    delBtn.title = '删除此预设';
+                    delBtn.title = t('model-preset.deleteThisPreset');
                     delBtn.style.cssText =
                         'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 6px;';
                     delBtn.addEventListener('click', async (ev) => {
                         ev.stopPropagation();
-                        if (!(await showConfirm(`确定删除「${e.presetName || e.name}」？`))) {
+                        if (!(await showConfirm(t('model-preset.confirmDelete', { name: e.presetName || e.name })))) {
                             return;
                         }
                         const _r2 = await tryCatchStatus(async () => {
                             await DeleteModelPreset(e.name);
                             stackRegistry.modelStack.reRender();
-                        }, '✗ 删除失败');
+                        }, t('model-preset.deleteFailed'));
                         if (_r2 !== undefined) {
-                            setStatus('✓ 预设已删除', true);
+                            setStatus(t('model-preset.deleted'), true);
                         }
                     });
                     row.appendChild(delBtn);

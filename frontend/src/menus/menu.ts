@@ -2,6 +2,7 @@ import { PopupLevel, PopupRow, showHint, hideHint } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
 import { subscribe } from '../core/reactivity';
+import { t } from '../core/i18n/t';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
 const TRANSITION_DURATION = '0.15s';
@@ -757,7 +758,7 @@ export class SlideMenu {
             const el = wrapper.firstChild as HTMLElement | null;
             if (el) {
                 el.dataset.rowKey = this.rowKey(row);
-                const hint = row.sublabel || '暂无提示';
+                const hint = row.sublabel || t('menu.noHint');
                 el.setAttribute('data-hint', hint);
                 el.addEventListener('mouseenter', () => {
                     if (this.focusIndex >= 0) {
@@ -778,7 +779,7 @@ export class SlideMenu {
         const el = document.createElement('div');
         el.className = 'slide-item';
         el.dataset.rowKey = this.rowKey(row);
-        const hint = row.sublabel || (row.model ? '暂无描述' : '暂无提示');
+        const hint = row.sublabel || (row.model ? t('menu.noDesc') : t('menu.noHint'));
         el.setAttribute('data-hint', hint);
 
         const iconSpan = document.createElement('span');

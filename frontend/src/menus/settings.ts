@@ -268,7 +268,7 @@ function buildSettingsFilenameLevel(): PopupLevel {
                     try {
                         new RegExp(pattern);
                     } catch {
-                        setStatus('✗ 无效的正则表达式', false);
+                        setStatus(t('settings.invalidRegex'), false);
                         return;
                     }
                     const category = await showPrompt(
@@ -278,7 +278,7 @@ function buildSettingsFilenameLevel(): PopupLevel {
                         return;
                     }
                     if (!['皮肤', '头发', '眼睛', '服装', '配件', '道具'].includes(category)) {
-                        setStatus('✗ 无效的分类名', false);
+                        setStatus(t('settings.invalidCategory'), false);
                         return;
                     }
                     if (!uiState.materialCategoryMap) {
@@ -345,7 +345,7 @@ function buildSettingsFilenameLevel(): PopupLevel {
                         refreshStatus();
                         setStatus(`✓ 监听目录已设置: ${dir}`, true);
                     } catch {
-                        setStatus('✗ 设置监听目录失败', false);
+                        setStatus(t('settings.watchDirFailed'), false);
                     }
                 });
                 dirRow.appendChild(dirInput);
@@ -365,7 +365,7 @@ function buildSettingsFilenameLevel(): PopupLevel {
                 addDangerRow(c, 'lucide:stop-circle', '停止监听', async () => {
                     const _r = await tryCatchStatus(() => StopWatchDir(), '✗ 停止监听失败');
                     if (_r !== undefined) {
-                        setStatus('✓ 已停止监听', true);
+                        setStatus(t('settings.watchStopped'), true);
                     }
                 });
             });
@@ -496,7 +496,7 @@ function buildSettingsAppearanceLevel(): PopupLevel {
                     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
                         setTheme(hex);
                     } else {
-                        setStatus('✗ 无效的 hex 颜色', false);
+                        setStatus(t('settings.invalidHex'), false);
                     }
                 });
                 c.appendChild(input);
@@ -621,7 +621,7 @@ function buildSettingsAppearanceLevel(): PopupLevel {
                     SetUIAnimations(true).catch(() => {});
                     SetUIBlurBg(false).catch(() => {});
                     getSettingsMenu()?.updateControls();
-                    setStatus('✓ 外观已恢复默认', true);
+                    setStatus(t('settings.appearanceReset'), true);
                 });
             });
         },
@@ -907,7 +907,7 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     [SETTINGS_ACTION.CLEAR_EXTRACT_CACHE]: () => {
         ClearExtractCache()
             .then(() => {
-                setStatus('✓ 提取缓存已清除', true);
+                setStatus(t('settings.extractCacheCleared'), true);
                 window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
             })
             .catch(console.warn);
@@ -917,7 +917,7 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
             if (await showConfirm('确定要清除所有缩略图缓存吗？下次加载模型时将重新生成。')) {
                 ClearThumbnailCache()
                     .then(() => {
-                        setStatus('✓ 缩略图缓存已清除', true);
+                        setStatus(t('settings.thumbnailCacheCleared'), true);
                         window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
                     })
                     .catch(console.warn);
@@ -933,7 +933,7 @@ const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
             ) {
                 ClearAllCaches()
                     .then(() => {
-                        setStatus('✓ 全部缓存已清除', true);
+                        setStatus(t('settings.allCacheCleared'), true);
                         window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
                     })
                     .catch(console.warn);
@@ -1015,7 +1015,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                                             if (r) {
                                                 await reloadConfig();
                                                 getSettingsMenu()?.reRender();
-                                                setStatus('✓ 已重命名', true);
+                                                setStatus(t('settings.renamed'), true);
                                             }
                                         }
                                     },
@@ -1056,7 +1056,7 @@ function buildSettingsExternalLevel(): PopupLevel {
                             await rescanAndSync();
                         }
                         getSettingsMenu()?.reRender();
-                        setStatus('✓ 外部库已添加', true);
+                        setStatus(t('settings.externalLibAdded'), true);
                     } catch (err) {
                         console.error('AddExternalPath error:', err);
                     }
@@ -1614,7 +1614,7 @@ function exportSettings(): void {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setStatus('✓ 设置已导出', true);
+    setStatus(t('settings.exported'), true);
 }
 
 /** 外观相关 CSS 变量应用（与启动 restoreUIState 保持一致的子集）。 */
@@ -1691,12 +1691,12 @@ function importSettings(): void {
                 Object.assign(uiState, parsed);
                 reapplyImportedSettings();
                 getSettingsMenu()?.reRender();
-                setStatus('✓ 设置已导入', true);
+                setStatus(t('settings.imported'), true);
             } catch (e) {
-                setStatus('✗ 导入失败：' + (e instanceof Error ? e.message : String(e)), true);
+                setStatus(t('settings.importFailed') + (e instanceof Error ? e.message : String(e)), true);
             }
         };
-        reader.onerror = () => setStatus('✗ 读取文件失败', true);
+        reader.onerror = () => setStatus(t('settings.readFailed'), true);
         reader.readAsText(file);
     };
     input.click();
@@ -1709,7 +1709,7 @@ function resetAllSettings(): void {
     }
     reapplyImportedSettings();
     getSettingsMenu()?.reRender();
-    setStatus('✓ 已恢复默认设置', true);
+    setStatus(t('settings.resetToDefault'), true);
 }
 
 function buildSettingsAboutLevel(): PopupLevel {
@@ -2121,7 +2121,7 @@ function buildSettingsShortcutsLevel(): PopupLevel {
                     resetAllKeyBindings();
                     (uiState as Record<string, unknown>).keyBindings = exportKeyBindings();
                     getSettingsMenu()?.reRender();
-                    setStatus('✓ 快捷键已恢复默认', true);
+                    setStatus(t('settings.shortcutsReset'), true);
                 });
             });
         },

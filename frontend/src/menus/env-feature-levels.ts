@@ -15,6 +15,7 @@ import {
     addPresetChip,
 } from '../core/ui-helpers';
 import { setEnvState, engine } from '../scene/scene';
+import { t } from '../core/i18n/t';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
 import { WATER_PRESETS, applyWaterPresetToCurrent } from '../scene/env/env-water';
 import { SelectEnvTextureFile, SelectPMXFile } from '../core/wails-bindings';
@@ -22,7 +23,7 @@ import { getEnvMenu } from './env-menu';
 
 export function buildSkyLevel(): PopupLevel {
     return {
-        label: '天空',
+        label: t('env.sky'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -30,11 +31,11 @@ export function buildSkyLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addModeSlider(
                     c,
-                    '天空模式',
+                    t('env.skyMode'),
                     [
-                        { value: 'color', label: '纯色' },
-                        { value: 'texture', label: '贴图' },
-                        { value: 'procedural', label: '程序化' },
+                        { value: 'color', label: t('env.solid') },
+                        { value: 'texture', label: t('env.texture') },
+                        { value: 'procedural', label: t('env.procedural') },
                     ],
                     s.skyMode,
                     (v) => {
@@ -51,7 +52,7 @@ export function buildSkyLevel(): PopupLevel {
                 if (s.skyMode === 'color') {
                     addColorSliderRow(
                         c,
-                        '天空色',
+                        t('env.skyColorTop'),
                         s.skyColorTop,
                         (v) => {
                             setEnvState({ skyColorTop: v });
@@ -63,7 +64,7 @@ export function buildSkyLevel(): PopupLevel {
                 } else if (s.skyMode === 'procedural') {
                     addColorSliderRow(
                         c,
-                        '天顶色',
+                        t('env.zenithColor'),
                         s.skyColorTop,
                         (v) => {
                             setEnvState({ skyColorTop: v });
@@ -74,7 +75,7 @@ export function buildSkyLevel(): PopupLevel {
                     );
                     addColorSliderRow(
                         c,
-                        '地平色',
+                        t('env.horizonColor'),
                         s.skyColorBot,
                         (v) => {
                             setEnvState({ skyColorBot: v });
@@ -83,7 +84,7 @@ export function buildSkyLevel(): PopupLevel {
                             bind: () => envState.skyColorBot,
                         }
                     );
-                    addToggleRow(c, '星空 ✨', s.starsEnabled ?? false, (v) =>
+                    addToggleRow(c, t('env.stars'), s.starsEnabled ?? false, (v) =>
                         setEnvState({ starsEnabled: v })
                     );
                 }
@@ -91,13 +92,13 @@ export function buildSkyLevel(): PopupLevel {
                 if (s.skyMode === 'texture') {
                     const hint = document.createElement('div');
                     hint.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px 0;';
-                    hint.textContent = '支持 .hdr / .dds / .exr 格式的环境贴图';
+                    hint.textContent = t('env.skyTextureHint');
                     c.appendChild(hint);
-                    const fileName = s.skyTexture ? s.skyTexture.split(/[/\\]/).pop() : '未选择';
+                    const fileName = s.skyTexture ? s.skyTexture.split(/[/\\]/).pop() : t('env.notSelected');
                     slideRow(
                         c,
                         'lucide:image',
-                        '环境贴图',
+                        t('env.envTexture'),
                         false,
                         async () => {
                             const path = await SelectEnvTextureFile().catch(() => '');
@@ -109,7 +110,7 @@ export function buildSkyLevel(): PopupLevel {
                     );
                     addSliderRow(
                         c,
-                        '旋 Y',
+                        t('env.rotateY'),
                         s.skyRotationY,
                         0,
                         360,
@@ -121,7 +122,7 @@ export function buildSkyLevel(): PopupLevel {
                 if (s.skyMode === 'procedural') {
                     addSliderRow(
                         c,
-                        '亮度',
+                        t('env.brightness'),
                         s.skyBrightness,
                         0.1,
                         5,
@@ -132,7 +133,7 @@ export function buildSkyLevel(): PopupLevel {
                 }
                 addSliderRow(
                     c,
-                    '天空旋转速度',
+                    t('env.skyRotationSpeed'),
                     s.skyRotationSpeed ?? 0,
                     0,
                     5,
@@ -143,13 +144,13 @@ export function buildSkyLevel(): PopupLevel {
 
                 // ── 光照控制（从 buildEnvUnifiedLevel 迁入）──
                 addCollapsible(c, {
-                    title: '光照控制',
+                    title: t('env.lightControl'),
                     icon: 'lucide:sun',
                     defaultOpen: false,
                     renderContent: (inner) => {
                         addSliderRow(
                             inner,
-                            '太阳强度',
+                            t('env.sunIntensity'),
                             getLightState().dirIntensity,
                             0,
                             1,
@@ -165,7 +166,7 @@ export function buildSkyLevel(): PopupLevel {
                         );
                         addSliderRow(
                             inner,
-                            '天空照明',
+                            t('env.envLighting'),
                             s.envIntensity / 3,
                             0,
                             1,
@@ -188,18 +189,18 @@ export function buildSkyLevel(): PopupLevel {
 
 export function buildGroundLevel(): PopupLevel {
     return {
-        label: '地面',
+        label: t('env.ground'),
         dir: '',
         items: [],
         renderCustom: (container) => {
             const s = envState;
             cardContainer(container, (c) => {
-                addToggleRow(c, '显示地面', s.groundVisible, (v) =>
+                addToggleRow(c, t('env.showGround'), s.groundVisible, (v) =>
                     setEnvState({ groundVisible: v })
                 );
                 addSliderRow(
                     c,
-                    '地面高度',
+                    t('env.groundHeight'),
                     s.groundLevel,
                     -5,
                     5,
@@ -209,12 +210,12 @@ export function buildGroundLevel(): PopupLevel {
                 );
                 addModeSlider(
                     c,
-                    '地面模式',
+                    t('env.groundMode'),
                     [
-                        { value: 'solid', label: '纯色' },
-                        { value: 'grid', label: '网格' },
-                        { value: 'checker', label: '棋盘格' },
-                        { value: 'texture', label: '纹理' },
+                        { value: 'solid', label: t('env.solid') },
+                        { value: 'grid', label: t('env.grid') },
+                        { value: 'checker', label: t('env.checker') },
+                        { value: 'texture', label: t('env.textureMode') },
                     ],
                     s.groundMode,
                     (v) => {
@@ -229,7 +230,7 @@ export function buildGroundLevel(): PopupLevel {
                 );
                 addColorSliderRow(
                     c,
-                    '地面色',
+                    t('env.groundColor'),
                     s.groundColor,
                     (v) => {
                         setEnvState({ groundColor: v });
@@ -241,7 +242,7 @@ export function buildGroundLevel(): PopupLevel {
                 if (s.groundMode === 'solid' || s.groundMode === 'checker') {
                     addSliderRow(
                         c,
-                        '透明度',
+                        t('env.opacity'),
                         s.groundAlpha,
                         0,
                         1,
@@ -254,7 +255,7 @@ export function buildGroundLevel(): PopupLevel {
                 if (s.groundMode === 'grid') {
                     addSliderRow(
                         c,
-                        '网格大小',
+                        t('env.gridSize'),
                         s.groundGridSize,
                         0.5,
                         5,
@@ -264,7 +265,7 @@ export function buildGroundLevel(): PopupLevel {
                     );
                     addColorSliderRow(
                         c,
-                        '网格线色',
+                        t('env.gridLineColor'),
                         s.groundLineColor,
                         (v) => {
                             setEnvState({ groundLineColor: v });
@@ -277,7 +278,7 @@ export function buildGroundLevel(): PopupLevel {
                 if (s.groundMode === 'checker') {
                     addSliderRow(
                         c,
-                        '棋盘格大小',
+                        t('env.checkerSize'),
                         s.groundGridSize,
                         0.5,
                         5,
@@ -287,7 +288,7 @@ export function buildGroundLevel(): PopupLevel {
                     );
                     addColorSliderRow(
                         c,
-                        '第二颜色',
+                        t('env.secondColor'),
                         s.groundLineColor,
                         (v) => {
                             setEnvState({ groundLineColor: v });
@@ -299,10 +300,10 @@ export function buildGroundLevel(): PopupLevel {
                 }
                 if (s.groundMode === 'texture') {
                     const texturePresets = [
-                        { value: '', label: '无' },
-                        { value: 'textures/grass.png', label: '草地' },
-                        { value: 'textures/stone.png', label: '石板' },
-                        { value: 'textures/sand.png', label: '沙滩' },
+                        { value: '', label: t('env.none') },
+                        { value: 'textures/grass.png', label: t('env.grass') },
+                        { value: 'textures/stone.png', label: t('env.stone') },
+                        { value: 'textures/sand.png', label: t('env.sand') },
                     ];
                     const chipRow = document.createElement('div');
                     chipRow.className = 'preset-group';
@@ -332,14 +333,14 @@ export function buildGroundLevel(): PopupLevel {
                     const texRow = document.createElement('div');
                     texRow.className = 'cs-row';
                     const texLabel = document.createElement('span');
-                    texLabel.textContent = '自定义纹理';
+                    texLabel.textContent = t('env.customTexture');
                     texRow.appendChild(texLabel);
                     const texBtn = document.createElement('button');
                     texBtn.className = 'cs-btn cs-btn-sm';
                     texBtn.textContent =
                         s.groundTexture && !s.groundTexture.startsWith('textures/')
-                            ? '更换'
-                            : '选择';
+                            ? t('env.change')
+                            : t('env.select');
                     const ensureClearBtn = (): HTMLButtonElement => {
                         const existing = texRow.querySelector<HTMLButtonElement>(
                             'button.cs-btn[data-clear]'
@@ -350,10 +351,10 @@ export function buildGroundLevel(): PopupLevel {
                         const btn = document.createElement('button');
                         btn.className = 'cs-btn cs-btn-sm';
                         btn.dataset.clear = '1';
-                        btn.textContent = '清除';
+                        btn.textContent = t('env.clear');
                         btn.onclick = () => {
                             setEnvState({ groundTexture: '', groundTextureEnabled: false });
-                            texBtn.textContent = '选择';
+                            texBtn.textContent = t('env.select');
                             btn.remove();
                         };
                         texRow.appendChild(btn);
@@ -372,7 +373,7 @@ export function buildGroundLevel(): PopupLevel {
                             reader.onload = (e) => {
                                 const url = (e.target?.result as string) ?? '';
                                 setEnvState({ groundTexture: url, groundTextureEnabled: !!url });
-                                texBtn.textContent = '更换';
+                                texBtn.textContent = t('env.change');
                                 ensureClearBtn();
                             };
                             reader.readAsDataURL(file);
@@ -386,7 +387,7 @@ export function buildGroundLevel(): PopupLevel {
                     c.appendChild(texRow);
                     addSliderRow(
                         c,
-                        '纹理缩放',
+                        t('env.textureScale'),
                         s.groundTextureScale,
                         0.1,
                         5,
@@ -396,7 +397,7 @@ export function buildGroundLevel(): PopupLevel {
                     );
                     addSliderRow(
                         c,
-                        '纹理旋转',
+                        t('env.textureRotation'),
                         s.groundTextureRotation,
                         0,
                         360,
@@ -412,7 +413,7 @@ export function buildGroundLevel(): PopupLevel {
 
 export function buildWaterLevel(): PopupLevel {
     return {
-        label: '水面',
+        label: t('env.water'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -436,13 +437,13 @@ export function buildWaterLevel(): PopupLevel {
                 c.appendChild(waterPresetRow);
 
                 addCollapsible(c, {
-                    title: '基础参数',
+                    title: t('env.basicParams'),
                     icon: 'lucide:sliders',
                     defaultOpen: false,
                     renderContent: (cc) => {
                         addSliderRow(
                             cc,
-                            '高度',
+                            t('env.height'),
                             s.waterLevel,
                             -10,
                             10,
@@ -458,7 +459,7 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addColorSliderRow(
                             cc,
-                            '水色',
+                            t('env.waterColor'),
                             s.waterColor,
                             (v) => {
                                 setEnvState({ waterColor: v });
@@ -469,7 +470,7 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '透明度',
+                            t('env.opacity'),
                             s.waterTransparency,
                             0,
                             1,
@@ -487,13 +488,13 @@ export function buildWaterLevel(): PopupLevel {
                 });
 
                 addCollapsible(c, {
-                    title: '波浪',
+                    title: t('env.waves'),
                     icon: 'lucide:waves',
                     defaultOpen: false,
                     renderContent: (cc) => {
                         addSliderRow(
                             cc,
-                            '波高',
+                            t('env.waveHeight'),
                             s.waterWaveHeight,
                             0,
                             3,
@@ -509,7 +510,7 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '泡沫阈值',
+                            t('env.foamThreshold'),
                             s.foamThreshold,
                             0,
                             1,
@@ -525,7 +526,7 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '泡沫强度',
+                            t('env.foamIntensity'),
                             s.foamIntensity,
                             0,
                             1,
@@ -541,7 +542,7 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '动画速度',
+                            t('env.animSpeed'),
                             s.waterAnimSpeed ?? 1,
                             0.1,
                             5,
@@ -557,7 +558,7 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '范围',
+                            t('env.range'),
                             s.waterSize,
                             10,
                             200,
@@ -575,12 +576,12 @@ export function buildWaterLevel(): PopupLevel {
                 });
 
                 addCollapsible(c, {
-                    title: '水下效果',
+                    title: t('env.underwaterEffects'),
                     icon: 'lucide:waves',
                     renderContent: (cc) => {
                         addColorSliderRow(
                             cc,
-                            '水下雾色',
+                            t('env.underwaterFogColor'),
                             s.underwaterFogColor,
                             (v) => {
                                 setEnvState({ underwaterFogColor: v });
@@ -591,7 +592,7 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '雾密度',
+                            t('env.fogDensity'),
                             s.underwaterFogDensity,
                             0,
                             0.1,
@@ -607,7 +608,7 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '色差强度',
+                            t('env.chromaticAmount'),
                             s.underwaterChromaticAmount,
                             0,
                             20,
@@ -623,7 +624,7 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '色调强度',
+                            t('env.toneIntensity'),
                             s.underwaterToneIntensity,
                             0,
                             1,
@@ -639,7 +640,7 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '雾倍率',
+                            t('env.fogMultiplier'),
                             s.underwaterFogMultiplier,
                             1,
                             5,
@@ -662,7 +663,7 @@ export function buildWaterLevel(): PopupLevel {
 
 export function buildWindLevel(): PopupLevel {
     return {
-        label: '风',
+        label: t('env.wind'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -672,7 +673,7 @@ export function buildWindLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addSliderRow(
                     c,
-                    '风向角度',
+                    t('env.windAngle'),
                     dirAngleNorm,
                     0,
                     360,
@@ -687,7 +688,7 @@ export function buildWindLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '风速',
+                    t('env.windSpeed'),
                     s.windSpeed,
                     0,
                     10,
@@ -702,7 +703,7 @@ export function buildWindLevel(): PopupLevel {
 
 export function buildCloudLevel(): PopupLevel {
     return {
-        label: '云',
+        label: t('env.cloud'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -710,7 +711,7 @@ export function buildCloudLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addSliderRow(
                     c,
-                    '云量',
+                    t('env.cloudCover'),
                     s.cloudCover,
                     0,
                     1,
@@ -720,7 +721,7 @@ export function buildCloudLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '云隙',
+                    t('env.cloudGap'),
                     s.cloudGap ?? 0.5,
                     0,
                     1,
@@ -730,7 +731,7 @@ export function buildCloudLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '高度',
+                    t('env.height'),
                     s.cloudHeight,
                     50,
                     800,
@@ -740,7 +741,7 @@ export function buildCloudLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '缩放',
+                    t('env.scale'),
                     s.cloudScale,
                     0.1,
                     1,
@@ -750,7 +751,7 @@ export function buildCloudLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '厚度',
+                    t('env.thickness'),
                     s.cloudThickness ?? 15,
                     10,
                     50,
@@ -760,7 +761,7 @@ export function buildCloudLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '可见距离',
+                    t('env.visibility'),
                     s.cloudVisibility ?? 2000,
                     500,
                     8000,
@@ -775,7 +776,7 @@ export function buildCloudLevel(): PopupLevel {
 
 export function buildExperimentalLevel(): PopupLevel {
     return {
-        label: '实验功能',
+        label: t('env.experimental'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -783,14 +784,14 @@ export function buildExperimentalLevel(): PopupLevel {
                 const warning = document.createElement('div');
                 warning.className = 'experimental-warning';
                 warning.innerHTML =
-                    '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>以下功能性能开销较大，可能影响帧率，请谨慎开启。</span>';
+                    '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' + t('env.experimentalWarn') + '</span>';
                 c.appendChild(warning);
 
                 const isWebGL2 = engine.webGLVersion >= 2;
                 slideRow(
                     c,
                     'lucide:cloud',
-                    '体积云',
+                    t('env.volumetricCloud'),
                     true,
                     () => getEnvMenu()?.push(buildCloudLevel()),
                     undefined,
@@ -800,10 +801,10 @@ export function buildExperimentalLevel(): PopupLevel {
                         value: envState.cloudsEnabled,
                         onChange: (v) => setEnvState({ cloudsEnabled: v }),
                         disabled: !isWebGL2,
-                        disabledHint: '体积云需要 WebGL 2.0',
+                        disabledHint: t('env.volumetricCloudNeedWebGL'),
                         onDisabledClick: () => {
                             setStatus(
-                                '⚠ 体积云需要 WebGL 2.0，当前引擎版本：' +
+                                t('env.volumetricCloudNeedWebGL') + '，当前引擎版本：' +
                                     engine.webGLVersion.toFixed(1),
                                 false
                             );
@@ -814,7 +815,7 @@ export function buildExperimentalLevel(): PopupLevel {
                 if (!isWebGL2) {
                     const hint = document.createElement('div');
                     hint.className = 'experimental-hint';
-                    hint.textContent = '（当前设备不支持 WebGL 2.0，体积云不可用）';
+                    hint.textContent = t('env.volumetricCloudUnsupported');
                     c.appendChild(hint);
                 }
             });
@@ -824,7 +825,7 @@ export function buildExperimentalLevel(): PopupLevel {
 
 export function buildFogLevel(): PopupLevel {
     return {
-        label: '雾',
+        label: t('env.fog'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -832,7 +833,7 @@ export function buildFogLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addToggleRow(
                     c,
-                    '启用雾',
+                    t('env.enableFog'),
                     s.fogEnabled,
                     (v) => {
                         setEnvState({ fogEnabled: v });
@@ -844,11 +845,11 @@ export function buildFogLevel(): PopupLevel {
                 );
                 addModeSlider(
                     c,
-                    '雾模式',
+                    t('env.fogMode'),
                     [
                         { value: 'exp2', label: 'EXP2' },
                         { value: 'exp', label: 'EXP' },
-                        { value: 'linear', label: '线性' },
+                        { value: 'linear', label: t('env.linear') },
                     ],
                     s.fogMode,
                     (v) => {
@@ -862,7 +863,7 @@ export function buildFogLevel(): PopupLevel {
                 );
                 addColorSliderRow(
                     c,
-                    '雾色',
+                    t('env.fogColor'),
                     s.fogColor,
                     (v) => {
                         setEnvState({ fogColor: v });
@@ -873,7 +874,7 @@ export function buildFogLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '雾密度',
+                    t('env.fogDensity'),
                     s.fogDensity,
                     0,
                     0.1,
@@ -892,7 +893,7 @@ export function buildFogLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '雾起始',
+                    t('env.fogStart'),
                     s.fogStart ?? 10,
                     0,
                     200,
@@ -911,7 +912,7 @@ export function buildFogLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '雾结束',
+                    t('env.fogEnd'),
                     s.fogEnd ?? 100,
                     0,
                     200,
@@ -935,7 +936,7 @@ export function buildFogLevel(): PopupLevel {
 
 export function buildShadowLevel(): PopupLevel {
     return {
-        label: '阴影',
+        label: t('env.shadow'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -943,7 +944,7 @@ export function buildShadowLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 // ── 环境阴影（主场景方向光阴影）──
                 addCollapsible(c, {
-                    title: '环境阴影',
+                    title: t('env.envShadow'),
                     icon: 'lucide:cloud',
                     defaultOpen: true,
                     headerToggle: {
@@ -956,10 +957,10 @@ export function buildShadowLevel(): PopupLevel {
                     renderContent: (inner) => {
                         addModeSlider(
                             inner,
-                            '阴影类型',
+                            t('env.shadowType'),
                             [
-                                { value: 'hard', label: '硬阴影' },
-                                { value: 'soft', label: '软阴影' },
+                                { value: 'hard', label: t('env.hardShadow') },
+                                { value: 'soft', label: t('env.softShadow') },
                                 { value: 'pcf', label: 'PCF' },
                             ],
                             ls.shadowType,
@@ -975,10 +976,10 @@ export function buildShadowLevel(): PopupLevel {
                         const shadowQualityRow = document.createElement('div');
                         shadowQualityRow.className = 'preset-group';
                         for (const sq of [
-                            { label: '低', value: 512 },
-                            { label: '中', value: 1024 },
-                            { label: '高', value: 2048 },
-                            { label: '超高', value: 4096 },
+                            { label: t('env.low'), value: 512 },
+                            { label: t('env.medium'), value: 1024 },
+                            { label: t('env.high'), value: 2048 },
+                            { label: t('env.ultra'), value: 4096 },
                         ]) {
                             addPresetChip(
                                 shadowQualityRow,
@@ -1000,7 +1001,7 @@ export function buildShadowLevel(): PopupLevel {
                         inner.appendChild(shadowQualityRow);
                         addSliderRow(
                             inner,
-                            '阴影偏移',
+                            t('env.shadowBias'),
                             ls.shadowBias,
                             0,
                             0.01,
@@ -1016,7 +1017,7 @@ export function buildShadowLevel(): PopupLevel {
                         );
                         addSliderRow(
                             inner,
-                            '阴影级联',
+                            t('env.shadowCascades'),
                             ls.shadowCascades,
                             2,
                             4,
@@ -1047,11 +1048,11 @@ export function buildShadowLevel(): PopupLevel {
                 charRow.appendChild(ci);
                 const cl = document.createElement('span');
                 cl.className = 'slide-label';
-                cl.textContent = '角色阴影';
+                cl.textContent = t('env.characterShadow');
                 charRow.appendChild(cl);
                 const cs = document.createElement('span');
                 cs.className = 'slide-sublabel';
-                cs.textContent = 'MMD 模型自动接收阴影';
+                cs.textContent = t('env.characterShadowHint');
                 charRow.appendChild(cs);
                 c.appendChild(charRow);
 
@@ -1059,12 +1060,12 @@ export function buildShadowLevel(): PopupLevel {
                 slideRow(
                     c,
                     'lucide:lightbulb',
-                    '舞台灯光阴影',
+                    t('env.stageLightShadow'),
                     false,
                     () => {
-                        setStatus('在「场景」→「舞台灯光」中可逐个调节灯光阴影参数', true);
+                        setStatus(t('env.shadowHint'), true);
                     },
-                    '→ 场景菜单'
+                    '→ ' + t('env.sceneMenu')
                 );
             });
         },

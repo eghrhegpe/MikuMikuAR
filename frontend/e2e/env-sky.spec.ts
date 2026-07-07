@@ -7,7 +7,7 @@
  * live in a segmented control that shows only the CURRENT mode, so we assert the
  * current mode + presets + color controls rather than per-mode slider counts.
  *
- * Screenshot test uses wailsPage (WebView2 CDP, needs `wails dev` running).
+ * Screenshot test uses wailsPage (WebView2 CDP, needs `wails3 dev` running).
  */
 import { test, expect } from "./wails-fixture";
 import { openEnvPanel, clickEnvSubLevel, captureScreenshot, captureFingerprint, compareToBaseline } from "./helpers";
@@ -46,8 +46,9 @@ test.describe("Environment — Sky Panel (wailsPage, screenshot)", { tag: ["@web
         const dataUrl = await captureScreenshot(page);
         expect(dataUrl).toContain("data:image/png;base64,");
 
-        // 与持久化基线做内容比对（Phase 2, ADR-060）。首次运行无基线会自动生成，
-        // 后续运行若画面发生非预期变化则失败。删除 __baselines__/env-sky-solid-white.json 可重算。
+        // 与持久化基线做内容比对（Phase 2, ADR-060）。需 BASELINE_GEN=1 首次生成
+        // （避免跨平台无意漂移），后续运行若画面变化则失败。
+        // 删除 __baselines__/env-sky-solid-white.json 后设 BASELINE_GEN=1 重算。
         const fp = await captureFingerprint(page);
         const res = await compareToBaseline("env-sky-solid-white", fp);
         if (res.created) {

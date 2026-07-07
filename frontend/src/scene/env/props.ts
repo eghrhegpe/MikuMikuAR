@@ -13,6 +13,7 @@ import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '../../core/o
 import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
+import { t } from '../../core/i18n/t';
 
 // ======== 类型守卫 ========
 
@@ -51,7 +52,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
 
         const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
         const fileName = normPath(filePath).split('/').pop() || '';
-        setStatus('加载道具...', false);
+        setStatus(t('props.loading'), false);
 
         const result = await ImportMeshAsync(url, scene, {
             onProgress: (evt) => {
@@ -65,7 +66,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
         loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
 
         if (loadedMeshes.length === 0) {
-            setStatus('✗ 道具未加载到网格', false);
+            setStatus(t('props.noMesh'), false);
             return null;
         }
 
@@ -119,7 +120,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
                 // Intentionally empty — 回滚阶段单个 mesh dispose 失败不影响整体清理
             }
         });
-        setStatus('✗ 道具加载失败', false);
+        setStatus(t('props.loadFailed'), false);
         return null;
     } finally {
         requestAnimationFrame(() => {

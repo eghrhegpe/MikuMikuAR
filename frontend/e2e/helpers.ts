@@ -16,9 +16,11 @@ import path from "node:path";
 
 export const CDP_ENDPOINT = "http://127.0.0.1:9222";
 
-/** Connect to the already-running Wails WebView2 via CDP. */
+/** Connect to the already-running Wails WebView2 via CDP.
+ *  Uses 30s timeout to prevent hanging on Windows runner when
+ *  connectOverCDP gets ECONNREFUSED (e.g. 9222 not yet open). */
 export async function connectToWails(): Promise<{ page: Page; close: () => Promise<void> }> {
-    const browser = await chromium.connectOverCDP(CDP_ENDPOINT);
+    const browser = await chromium.connectOverCDP(CDP_ENDPOINT, { timeout: 30000 });
     const contexts = browser.contexts();
     // The first/default context has the Wails WebView2 page(s)
     const context = contexts[0] || await browser.newContext();
@@ -83,10 +85,56 @@ export async function openMotionPopup(page: Page): Promise<void> {
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 }
 
+/** Open the library/popup overlay (#btnMainAction). */
+export async function openLibraryPanel(page: Page): Promise<void> {
+    await page.click("#btnMainAction");
+    await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
+}
+
+/** Open the scene overlay (#btnScene). */
+export async function openScenePanel(page: Page): Promise<void> {
+    await page.click("#btnScene");
+    await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
+}
+
+/** Open the settings overlay (#btnSettings). */
+export async function openSettingsPanel(page: Page): Promise<void> {
+    await page.click("#btnSettings");
+    await page.waitForSelector("#settingsOverlay.visible", { timeout: 5000 });
+}
+
+/** Navigate into a sub-level of any overlay by clicking its text label. */
+export async function clickOverlaySubLevel(page: Page, label: string): Promise<void> {
+    await page.getByText(label, { exact: true }).click();
+}
+
+// ======== CI Seed Model Helpers (ADR-060 Phase 3b) ========
+
+/**
+ * Load a programmatic Babylon mesh via the `__scene` DEV hook so @webgl E2E tests
+ * can assert a real 3D scene without a PMX file on disk. Only works in DEV mode.
+ * @returns the meshCount after creation
+ */
+export async function loadSeedModel(page: Page): Promise<number> {
+    await waitForSceneHook(page);
+    await page.evaluate(async () => {
+        await (window as any).__scene.createTestMesh();
+    });
+    return await page.evaluate(() => (window as any).__scene.meshCount);
+}
+
+/** Clear all seed/e2e test meshes from the scene. */
+export async function clearSeedModel(page: Page): Promise<void> {
+    await page.evaluate(() => (window as any).__scene.clearTestMeshes());
+}
+
 // ======== Screenshot baseline (Phase 2, ADR-060) ========
 
 // Anchored to the e2e dir under the frontend package root (npm run test:e2e cwd).
 const BASELINE_DIR = path.resolve(process.cwd(), "e2e", "__baselines__");
+
+/** Schema version for the fingerprint algorithm. Bump when hash format changes. */
+const FINGERPRINT_VERSION = 1;
 
 /** Hamming distance ratio (0..1) between two equal-length bit strings. */
 export function hammingRatio(a: string, b: string): number {
@@ -104,9 +152,10 @@ export interface BaselineResult {
 
 /**
  * Compare a 16x16 luminance fingerprint against a stored baseline.
- * Auto-creates the baseline on first run (generator mode) so CI can seed it
- * without a checked-in golden image. Delete the .json under __baselines__ to
- * regenerate after an intended visual change.
+ * Requires BASELINE_GEN=1 env to auto-create a new baseline (prevents
+ * unintended cross-platform drift when CI ubuntu generates baselines
+ * that differ from Windows rendering). Delete the .json under
+ * __baselines__ to regenerate after an intended visual change.
  *
  * @param name      logical name, e.g. "env-sky-solid-white"
  * @param hash      fingerprint string from window.__scene.fingerprint()
@@ -120,14 +169,25 @@ export async function compareToBaseline(
     const file = path.join(BASELINE_DIR, `${name}.json`);
     try {
         const raw = await fs.readFile(file, "utf-8");
-        const base = JSON.parse(raw).hash as string;
-        const diff = hammingRatio(base, hash);
+        const data = JSON.parse(raw);
+        // Version mismatch → regenerate baseline
+        if (data.version !== FINGERPRINT_VERSION) throw new Error("version mismatch");
+        const diff = hammingRatio(data.hash as string, hash);
         return { match: diff <= tolerance, created: false, diff };
     } catch {
+        // Guard: baseline auto-creation requires explicit BASELINE_GEN env.
+        // Without it, missing baseline is a hard error — prevents accidental
+        // cross-platform drift (ubuntu rendering != Windows WebView2).
+        if (!process.env.BASELINE_GEN) {
+            throw new Error(
+                `Baseline "${name}" not found and BASELINE_GEN not set. ` +
+                `Seed baselines on the intended platform with BASELINE_GEN=1.`
+            );
+        }
         await fs.mkdir(BASELINE_DIR, { recursive: true });
         await fs.writeFile(
             file,
-            JSON.stringify({ hash, updatedAt: new Date().toISOString() }, null, 2)
+            JSON.stringify({ version: FINGERPRINT_VERSION, hash, updatedAt: new Date().toISOString() }, null, 2)
         );
         return { match: true, created: true, diff: 0 };
     }

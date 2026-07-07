@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
-import { createVmdEvaluator } from '../motion-algos/vmd-evaluator';
+import { createVmdEvaluator, shutdownVmdEvaluator } from '../motion-algos/vmd-evaluator';
 import {
     buildVmd,
     INTERP_LINEAR,
@@ -314,5 +314,82 @@ describe('vmd-evaluator: Bezier 非线性验证', () => {
         const distMidToA = Math.abs(slerpMid.x - rotA.x);
         expect(distToA).toBeLessThan(distMidToA);
         evaluator.dispose();
+    });
+});
+
+describe('vmd-evaluator: 混合 bone + movable bone', () => {
+    afterEach(() => {
+        shutdownVmdEvaluator();
+    });
+
+    it('纯 bone track 无 position，movable track 有 position', async () => {
+        const rotA = Quaternion.Identity();
+        const rotB = Quaternion.FromEulerAngles(0.5, 0, 0);
+        const frames: BoneKeyFrame[] = [
+            // 普通骨骼：无位置
+            { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
+            { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+            // 可移动骨骼：有位置
+            { name: '腰', frame: 0, position: [1, 2, 3], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
+            { name: '腰', frame: 10, position: [4, 5, 6], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+        ];
+        const buf = buildVmd(frames);
+        const evaluator = await createVmdEvaluator(buf);
+        const all = evaluator.evalAllBones(5);
+        expect(all.size).toBe(2);
+        // 上半身：无 position，旋转在 rotA 和 rotB 之间
+        const bone = evaluator.evalBoneFrame('上半身', 5)!;
+        expect(bone.position).toBeNull();
+        // Slerp 中点不是 identity 也不是 rotB，而是在球面弧中点
+        expect(bone.rotation.w).toBeLessThan(rotA.w); // 已从 w=1 被"拉向" rotB
+        expect(Quaternion.Dot(bone.rotation, rotA)).toBeLessThan(1.0); // 不是 identity
+        // 腰：有 position
+        const movable = evaluator.evalBoneFrame('腰', 5)!;
+        expect(movable.position).not.toBeNull();
+        expect(movable.position!.x).toBeCloseTo(2.5, 3);
+        expect(movable.position!.y).toBeCloseTo(3.5, 3);
+        expect(movable.position!.z).toBeCloseTo(4.5, 3);
+        evaluator.dispose();
+    });
+
+    it('重复 bone 名（两轨道）应各自独立求值', async () => {
+        const rotA = Quaternion.Identity();
+        const rotB = Quaternion.FromEulerAngles(0, 0.5, 0);
+        const frames: BoneKeyFrame[] = [
+            { name: '左腕', frame: 0, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
+            { name: '左腕', frame: 10, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+        ];
+        const buf = buildVmd(frames);
+        const evaluator = await createVmdEvaluator(buf);
+        const r1 = evaluator.evalBoneFrame('左腕', 3)!;
+        const r2 = evaluator.evalBoneFrame('左腕', 7)!;
+        expect(r1.rotation.y).toBeLessThan(r2.rotation.y);
+        evaluator.dispose();
+    });
+});
+
+describe('vmd-evaluator: shutdownVmdEvaluator', () => {
+    afterEach(() => {
+        shutdownVmdEvaluator();
+    });
+
+    it('shutdown 后可重新创建 evaluator', async () => {
+        const frames: BoneKeyFrame[] = [
+            { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+            { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [0.1, 0, 0, 0.99] },
+        ];
+        const buf = buildVmd(frames);
+        const e1 = await createVmdEvaluator(buf);
+        e1.dispose();
+        shutdownVmdEvaluator();
+        // 重启后应正常
+        const e2 = await createVmdEvaluator(buf);
+        expect(e2.evalBoneFrame('上半身', 5)).not.toBeNull();
+        e2.dispose();
+    });
+
+    it('shutdown 幂等（多次调用不抛错）', () => {
+        expect(() => shutdownVmdEvaluator()).not.toThrow();
+        expect(() => shutdownVmdEvaluator()).not.toThrow();
     });
 });

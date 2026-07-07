@@ -47,7 +47,7 @@ export function snapshotCurrentEnvPreset(label: string): EnvPreset {
 export function renderUserEnvPresets(container: HTMLElement): void {
     const wrapper = document.createElement('div');
     wrapper.style.paddingTop = '4px';
-    addSectionTitle(wrapper, '我的预设');
+    addSectionTitle(wrapper, t('env-preset.myPresets'));
 
     const listHost = document.createElement('div');
     listHost.style.paddingBottom = '6px';
@@ -63,7 +63,7 @@ export function renderUserEnvPresets(container: HTMLElement): void {
         }
         if (entries.length === 0) {
             const empty = document.createElement('div');
-            empty.textContent = '（暂无自定义预设）';
+            empty.textContent = t('env-preset.noCustom');
             empty.style.cssText = 'opacity:0.5;font-size:11px;padding:4px 0;';
             listHost.appendChild(empty);
             return;
@@ -81,14 +81,14 @@ export function renderUserEnvPresets(container: HTMLElement): void {
                     const json = await LoadEnvPreset(e.name);
                     const preset = importEnvPreset(json);
                     if (!preset) {
-                        setStatus('✗ 预设文件格式错误', false);
+                        setStatus(t('env-preset.formatError'), false);
                         return;
                     }
                     applyEnvPresetObject(preset);
                     return preset;
-                }, '✗ 加载预设失败');
+                }, t('env-preset.loadFailed'));
                 if (r) {
-                    setStatus(`✓ 已应用预设：${r.label}`, true);
+                    setStatus(t('env-preset.applied', { label: r.label }), true);
                 }
             });
             row.appendChild(labelEl);
@@ -97,14 +97,14 @@ export function renderUserEnvPresets(container: HTMLElement): void {
             delBtn.className = 'preset-chip';
             delBtn.style.cssText = 'flex:0 0 auto;padding:0 8px;color:var(--text-dim);';
             delBtn.textContent = '✕';
-            delBtn.title = '删除预设';
+            delBtn.title = t('env-preset.deletePreset');
             delBtn.addEventListener('click', async () => {
                 const r = await tryCatchStatus(async () => {
                     await DeleteEnvPreset(e.name);
                     return true;
-                }, '✗ 删除预设失败');
+                }, t('env-preset.deleteFailed'));
                 if (r) {
-                    setStatus(`✓ 已删除预设：${e.label}`, true);
+                    setStatus(t('env-preset.deleted', { label: e.label }), true);
                     renderList();
                 }
             });
@@ -118,9 +118,9 @@ export function renderUserEnvPresets(container: HTMLElement): void {
     const saveBtn = document.createElement('button');
     saveBtn.className = 'preset-chip';
     saveBtn.style.flex = '1';
-    saveBtn.textContent = '＋ 保存当前为预设';
+    saveBtn.textContent = t('env-preset.saveCurrent');
     saveBtn.addEventListener('click', async () => {
-        const name = await showPrompt('请输入预设名称（用作文件名，仅限字母数字/_/-/中文）');
+        const name = await showPrompt(t('env-preset.inputName'));
         if (!name) {
             return;
         }
@@ -133,10 +133,10 @@ export function renderUserEnvPresets(container: HTMLElement): void {
             },
             '✗ 保存预设失败',
             (err) =>
-                showErrorToast('保存环境预设失败', err instanceof Error ? err.message : String(err))
+                showErrorToast(t('env-preset.saveErrorToast'), err instanceof Error ? err.message : String(err))
         );
         if (r) {
-            setStatus(`✓ 已保存预设：${name}`, true);
+            setStatus(t('env-preset.saved', { name }), true);
             renderList();
         }
     });
@@ -320,7 +320,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
 export function buildPresetLevel(): PopupLevel {
     const entries = Object.entries(SCENE_PRESETS);
     return {
-        label: '环境预设',
+        label: t('env-preset.title'),
         dir: '',
         items: [],
         renderCustom: (container) => {
