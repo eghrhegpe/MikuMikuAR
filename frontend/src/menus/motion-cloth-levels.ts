@@ -16,6 +16,7 @@ import {
     autoFitClothDimensions,
 } from '../physics/cloth-manager';
 import type { ClothConfig } from '../physics/xpbd-cloth';
+import { t } from '../core/i18n/t'; // [doc:adr-059]
 
 /**
  * 布料预设 — 物理材质手感（重力由根页面统控，预设不含 gravityScale）
@@ -32,11 +33,12 @@ const CLOTH_PRESETS: Record<string, Partial<ClothConfig>> = {
     stiff: { compliance: 0.0002, bendCompliance: 0.0008, damping: 0.88, totalMass: 0.9 },
 };
 
-const CLOTH_PRESET_LABELS: Record<string, string> = {
-    silk: '丝绸',
-    cotton: '棉布',
-    leather: '皮革',
-    stiff: '硬质',
+// [doc:adr-059] 预设名 → i18n key（模块级，运行时 t() 以支持热切换）
+const CLOTH_PRESET_KEYS: Record<string, string> = {
+    silk: 'motion.clothSilk',
+    cotton: 'motion.clothCotton',
+    leather: 'motion.clothLeather',
+    stiff: 'motion.clothStiff',
 };
 
 /** 布料预设 — 常见服装样式（拓扑 + 形状） */
@@ -48,17 +50,18 @@ const CLOTH_STYLE_PRESETS: Record<string, Partial<ClothConfig>> = {
     ribbon: { topology: 'rope', length: 1.4, slope: 0, segmentsV: 20, innerRadius: 0.08 },
 };
 
-const CLOTH_STYLE_LABELS: Record<string, string> = {
-    shortSkirt: '短裙',
-    longSkirt: '长裙',
-    cape: '披风',
-    tube: '筒裙',
-    ribbon: '飘带',
+// [doc:adr-059] 样式名 → i18n key（模块级，运行时 t()）
+const CLOTH_STYLE_KEYS: Record<string, string> = {
+    shortSkirt: 'motion.styleShortSkirt',
+    longSkirt: 'motion.styleLongSkirt',
+    cape: 'motion.styleCape',
+    tube: 'motion.styleTube',
+    ribbon: 'motion.styleRibbon',
 };
 
 export function buildClothParamsLevel(): PopupLevel {
     return {
-        label: '布料参数',
+        label: t('motion.clothTitle'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -78,7 +81,9 @@ export function buildClothParamsLevel(): PopupLevel {
                 const styleLabel = document.createElement('div');
                 styleLabel.className = 'cs-top';
                 styleLabel.innerHTML =
-                    '<span class="cs-label" style="font-size:12px;color:var(--text-muted);">常见样式</span>';
+                    '<span class="cs-label" style="font-size:12px;color:var(--text-muted);">' +
+                    t('motion.commonStyles') +
+                    '</span>';
                 styleLabel.style.marginBottom = '4px';
                 c.appendChild(styleLabel);
 
@@ -86,7 +91,7 @@ export function buildClothParamsLevel(): PopupLevel {
                 styleGroup.className = 'preset-group';
                 styleGroup.style.paddingBottom = '6px';
                 for (const [key] of Object.entries(CLOTH_STYLE_PRESETS)) {
-                    addPresetChip(styleGroup, CLOTH_STYLE_LABELS[key] || key, false, () => {
+                    addPresetChip(styleGroup, t(CLOTH_STYLE_KEYS[key] || key), false, () => {
                         const preset = CLOTH_STYLE_PRESETS[key];
                         if (preset) {
                             setEnvState({ clothConfig: { ...envState.clothConfig, ...preset } });
@@ -101,7 +106,9 @@ export function buildClothParamsLevel(): PopupLevel {
                 const feelLabel = document.createElement('div');
                 feelLabel.className = 'cs-top';
                 feelLabel.innerHTML =
-                    '<span class="cs-label" style="font-size:12px;color:var(--text-muted);">材质手感</span>';
+                    '<span class="cs-label" style="font-size:12px;color:var(--text-muted);">' +
+                    t('motion.materialFeel') +
+                    '</span>';
                 feelLabel.style.marginBottom = '4px';
                 c.appendChild(feelLabel);
 
@@ -109,7 +116,7 @@ export function buildClothParamsLevel(): PopupLevel {
                 chipGroup.className = 'preset-group';
                 chipGroup.style.paddingBottom = '6px';
                 for (const [key] of Object.entries(CLOTH_PRESETS)) {
-                    addPresetChip(chipGroup, CLOTH_PRESET_LABELS[key] || key, false, () => {
+                    addPresetChip(chipGroup, t(CLOTH_PRESET_KEYS[key] || key), false, () => {
                         const preset = CLOTH_PRESETS[key];
                         if (preset) {
                             setEnvState({ clothConfig: { ...envState.clothConfig, ...preset } });
@@ -121,10 +128,10 @@ export function buildClothParamsLevel(): PopupLevel {
                 c.appendChild(chipGroup);
 
                 // 自动推算按钮
-                slideRow(c, 'lucide:scan', '自动推算尺寸', false, () => {
+                slideRow(c, 'lucide:scan', t('motion.autoFit'), false, () => {
                     const mmd = modelManager?.focusedMmdModel();
                     if (!mmd) {
-                        setStatus('⚠ 请先加载模型', false);
+                        setStatus(t('motion.loadModelFirst'), false);
                         return;
                     }
                     const getMat = (name: string) => modelManager?.getBoneWorldMatrix(name) ?? null;
@@ -137,20 +144,23 @@ export function buildClothParamsLevel(): PopupLevel {
                     recreateCloth();
                     import('./scene-menu').then((m) => m.getSceneMenu()?.reRender());
                     setStatus(
-                        `✓ 已推算: 半径 ${fitted.innerRadius.toFixed(3)}, 长度 ${fitted.length.toFixed(2)}`,
+                        t('motion.fitted', {
+                            r: fitted.innerRadius.toFixed(3),
+                            l: fitted.length.toFixed(2),
+                        }),
                         true
                     );
                 });
 
                 addCollapsible(c, {
-                    title: '形状',
+                    title: t('motion.shape'),
                     icon: 'lucide:shirt',
                     defaultOpen: false,
                     renderContent: (cc) => {
                         const c2 = envState.clothConfig;
                         addSliderRow(
                             cc,
-                            '裙长',
+                            t('motion.skirtLength'),
                             c2.length,
                             0.1,
                             2.5,
@@ -165,7 +175,7 @@ export function buildClothParamsLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '裙摆角度',
+                            t('motion.skirtSlope'),
                             c2.slope,
                             0,
                             45,
@@ -178,7 +188,7 @@ export function buildClothParamsLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '腰部半径',
+                            t('motion.waistRadius'),
                             c2.innerRadius,
                             0.03,
                             1.0,
@@ -195,14 +205,14 @@ export function buildClothParamsLevel(): PopupLevel {
                 });
 
                 addCollapsible(c, {
-                    title: '物理',
+                    title: t('motion.physics'),
                     icon: 'lucide:wind',
                     defaultOpen: false,
                     renderContent: (cc) => {
                         const c3 = envState.clothConfig;
                         addSliderRow(
                             cc,
-                            '布料柔度',
+                            t('motion.clothCompliance'),
                             c3.compliance,
                             0,
                             0.01,
@@ -217,7 +227,7 @@ export function buildClothParamsLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '弯曲柔度',
+                            t('motion.bendCompliance'),
                             c3.bendCompliance,
                             0,
                             0.05,
@@ -232,7 +242,7 @@ export function buildClothParamsLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '阻尼',
+                            t('motion.damping'),
                             c3.damping,
                             0.8,
                             0.999,
@@ -247,7 +257,7 @@ export function buildClothParamsLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '重力倍率',
+                            t('motion.gravityScale'),
                             c3.gravityScale,
                             0.1,
                             3,
@@ -264,14 +274,14 @@ export function buildClothParamsLevel(): PopupLevel {
                 });
 
                 addCollapsible(c, {
-                    title: '细分',
+                    title: t('motion.subdiv'),
                     icon: 'lucide:grid',
                     defaultOpen: false,
                     renderContent: (cc) => {
                         const c4 = envState.clothConfig;
                         addSliderRow(
                             cc,
-                            '水平分段',
+                            t('motion.segH'),
                             c4.segmentsH,
                             12,
                             36,
@@ -286,7 +296,7 @@ export function buildClothParamsLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            '垂直分段',
+                            t('motion.segV'),
                             c4.segmentsV,
                             6,
                             24,
@@ -303,7 +313,7 @@ export function buildClothParamsLevel(): PopupLevel {
                 });
 
                 addCollapsible(c, {
-                    title: '碰撞体',
+                    title: t('motion.collider'),
                     icon: 'lucide:shield',
                     defaultOpen: false,
                     renderContent: (cc) => {
@@ -312,7 +322,7 @@ export function buildClothParamsLevel(): PopupLevel {
                             const hint = document.createElement('div');
                             hint.style.cssText =
                                 'padding:12px;color:var(--text-muted);font-size:12px;';
-                            hint.textContent = '请先启用布料模拟';
+                            hint.textContent = t('motion.enableClothFirst');
                             cc.appendChild(hint);
                             return;
                         }
@@ -321,7 +331,7 @@ export function buildClothParamsLevel(): PopupLevel {
                         if (collider) {
                             addSliderRow(
                                 cc,
-                                '碰撞刚度',
+                                t('motion.colliderStiffness'),
                                 collider.stiffness,
                                 0,
                                 1,
@@ -331,7 +341,7 @@ export function buildClothParamsLevel(): PopupLevel {
                             );
                             addSliderRow(
                                 cc,
-                                '摩擦系数',
+                                t('motion.friction'),
                                 collider.friction,
                                 0,
                                 1,
@@ -342,31 +352,31 @@ export function buildClothParamsLevel(): PopupLevel {
                         }
 
                         const groups = [
-                            { label: '躯干', items: ['chest', 'waist', 'hip'] },
+                            { label: t('motion.torso'), items: ['chest', 'waist', 'hip'] },
                             {
-                                label: '腿部',
+                                label: t('motion.legs'),
                                 items: ['upperLegL', 'upperLegR', 'lowerLegL', 'lowerLegR'],
                             },
                             {
-                                label: '手臂',
+                                label: t('motion.arms'),
                                 items: ['upperArmL', 'upperArmR', 'lowerArmL', 'lowerArmR'],
                             },
                         ];
 
                         const CAPSULE_LABELS: Record<string, string> = {
-                            head: '头部',
-                            neck: '颈部',
-                            chest: '胸部',
-                            waist: '腰部',
-                            hip: '臀部',
-                            upperArmL: '左上臂',
-                            upperArmR: '右上臂',
-                            lowerArmL: '左前臂',
-                            lowerArmR: '右前臂',
-                            upperLegL: '左大腿',
-                            upperLegR: '右大腿',
-                            lowerLegL: '左小腿',
-                            lowerLegR: '右小腿',
+                            head: t('motion.capsuleHead'),
+                            neck: t('motion.capsuleNeck'),
+                            chest: t('motion.capsuleChest'),
+                            waist: t('motion.capsuleWaist'),
+                            hip: t('motion.capsuleHip'),
+                            upperArmL: t('motion.capsuleUpperArmL'),
+                            upperArmR: t('motion.capsuleUpperArmR'),
+                            lowerArmL: t('motion.capsuleLowerArmL'),
+                            lowerArmR: t('motion.capsuleLowerArmR'),
+                            upperLegL: t('motion.capsuleUpperLegL'),
+                            upperLegR: t('motion.capsuleUpperLegR'),
+                            lowerLegL: t('motion.capsuleLowerLegL'),
+                            lowerLegR: t('motion.capsuleLowerLegR'),
                         };
 
                         for (const group of groups) {
@@ -383,7 +393,7 @@ export function buildClothParamsLevel(): PopupLevel {
                                         const label = CAPSULE_LABELS[name] || name;
                                         addSliderRow(
                                             gc,
-                                            `${label} 半径`,
+                                            t('motion.radiusOf', { label }),
                                             spec.radius,
                                             0.02,
                                             0.3,
@@ -393,7 +403,7 @@ export function buildClothParamsLevel(): PopupLevel {
                                         );
                                         addSliderRow(
                                             gc,
-                                            `${label} 半高`,
+                                            t('motion.halfHeightOf', { label }),
                                             spec.halfHeight,
                                             0.02,
                                             0.3,

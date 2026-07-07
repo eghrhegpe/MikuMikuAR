@@ -36,6 +36,7 @@ import {
 } from '../scene/scene';
 import { buildClothParamsLevel } from './motion-cloth-levels';
 import { getSceneMenu, refreshSceneRoot } from './scene-menu';
+import { t } from '../core/i18n/t';
 
 /**
  * 增量更新 toggle 行的 DOM 状态（不触发 reRender）。
@@ -56,13 +57,13 @@ function _patchToggle(target: string, newValue: boolean): void {
 /** 构建物理设置子页 */
 export function buildPhysicsLevel(): PopupLevel {
     return {
-        label: '物理',
+        label: t('scene.physics'),
         dir: '',
         items: [
             // 重力强度（统控 WASM Bullet + XPBD 布料）
             {
                 kind: 'slider',
-                label: '重力强度（WASM + 布料）',
+                label: t('scene.gravityStrength'),
                 icon: 'lucide:arrow-down',
                 target: 'physics:gravity',
                 sliderValue: getGravityStrength(),
@@ -77,14 +78,14 @@ export function buildPhysicsLevel(): PopupLevel {
             // WASM 物理（MMD Bullet 骨髁物理）— 通用物理系统，放第二
             {
                 kind: 'folder',
-                label: 'WASM 物理',
+                label: t('scene.wasmPhysics'),
                 icon: 'lucide:atom',
                 target: 'physics:wasm',
             } as PopupRow,
             // 布料模拟：独立开关（XPBD 附加）
             {
                 kind: 'toggle',
-                label: '布料模拟',
+                label: t('scene.clothSim'),
                 icon: 'lucide:shirt',
                 target: 'physics:cloth-toggle',
                 toggleValue: envState.clothEnabled,
@@ -98,7 +99,7 @@ export function buildPhysicsLevel(): PopupLevel {
             // 求解质量（原名 求解迭代）
             {
                 kind: 'slider',
-                label: '求解质量',
+                label: t('scene.solverQuality'),
                 icon: 'lucide:repeat',
                 target: 'physics:substeps',
                 sliderValue: getSolverSubsteps(),
@@ -112,7 +113,7 @@ export function buildPhysicsLevel(): PopupLevel {
             // 模拟速度
             {
                 kind: 'slider',
-                label: '模拟速度',
+                label: t('scene.simSpeed'),
                 icon: 'lucide:clock',
                 target: 'physics:timescale',
                 sliderValue: getTimeScale(),
@@ -126,7 +127,7 @@ export function buildPhysicsLevel(): PopupLevel {
             // 碰撞：folder + headerToggle
             {
                 kind: 'folder',
-                label: '碰撞',
+                label: t('scene.collision'),
                 icon: 'lucide:shield',
                 target: 'physics:collision',
                 headerToggle: {
@@ -141,14 +142,14 @@ export function buildPhysicsLevel(): PopupLevel {
             // 精细调节 → 布料子页
             {
                 kind: 'folder',
-                label: '精细调节',
+                label: t('scene.fineTune'),
                 icon: 'lucide:sliders',
                 target: 'physics:cloth',
             } as PopupRow,
             // 调试（材质/骨骼/XPBD 可视化）
             {
                 kind: 'folder',
-                label: '调试',
+                label: t('scene.debug'),
                 icon: 'lucide:bug',
                 target: 'physics:debug',
             } as PopupRow,
@@ -159,12 +160,12 @@ export function buildPhysicsLevel(): PopupLevel {
 /** 构建碰撞子页（地面碰撞 + 身体碰撞） */
 export function buildCollisionLevel(): PopupLevel {
     return {
-        label: '碰撞',
+        label: t('scene.collision'),
         dir: '',
         items: [
             {
                 kind: 'toggle',
-                label: '地面碰撞',
+                label: t('scene.groundCollision'),
                 icon: 'lucide:square',
                 target: 'collision:ground',
                 toggleValue: getGroundCollisionEnabled(),
@@ -176,7 +177,7 @@ export function buildCollisionLevel(): PopupLevel {
             } as PopupRow,
             {
                 kind: 'toggle',
-                label: '身体碰撞',
+                label: t('scene.bodyCollision'),
                 icon: 'lucide:accessibility',
                 target: 'collision:body',
                 toggleValue: getBodyCollisionEnabled(),
@@ -199,17 +200,17 @@ export function buildWasmPhysicsLevel(): PopupLevel {
     if (!id || !inst) {
         items.push({
             kind: 'action' as PopupRow['kind'],
-            label: '请先加载模型',
+            label: t('scene.loadModelFirst'),
             icon: 'lucide:info',
             target: 'wasm:none',
         } as PopupRow);
-        return { label: 'WASM 物理', dir: '', items };
+        return { label: t('scene.wasmPhysics'), dir: '', items };
     }
 
     // 模型名 + 总开关
     items.push({
         kind: 'toggle',
-        label: `物理解析（${inst.name}）`,
+        label: t('scene.physicsParse', { name: inst.name }),
         icon: 'lucide:atom',
         target: 'wasm:master',
         toggleValue: inst.physicsEnabled,
@@ -224,18 +225,19 @@ export function buildWasmPhysicsLevel(): PopupLevel {
     if (categories.length === 0) {
         items.push({
             kind: 'action' as PopupRow['kind'],
-            label: '该模型无物理刚体',
+            label: t('scene.noRigidBody'),
             icon: 'lucide:info',
             target: 'wasm:nobody',
         } as PopupRow);
-        return { label: 'WASM 物理', dir: '', items };
+        return { label: t('scene.wasmPhysics'), dir: '', items };
     }
 
-    const CAT_LABELS: Record<string, string> = {
-        skirt: '裙子',
-        chest: '胸部',
-        hair: '头发',
-        accessory: '配件',
+    // 物理类别 key 映射（热切换安全：仅存 i18n key，不含中文）
+    const CAT_KEYS: Record<string, string> = {
+        skirt: 'scene.catSkirt',
+        chest: 'scene.catChest',
+        hair: 'scene.catHair',
+        accessory: 'scene.catAccessory',
     };
     const CAT_ICONS: Record<string, string> = {
         skirt: 'lucide:shirt',
@@ -248,7 +250,7 @@ export function buildWasmPhysicsLevel(): PopupLevel {
         const enabled = isPhysicsCategoryEnabled(id, cat);
         items.push({
             kind: 'toggle',
-            label: CAT_LABELS[cat] || cat,
+            label: t(CAT_KEYS[cat] || cat),
             icon: CAT_ICONS[cat] || 'lucide:settings',
             target: `wasm:cat:${cat}`,
             toggleValue: enabled,
@@ -259,7 +261,7 @@ export function buildWasmPhysicsLevel(): PopupLevel {
         } as PopupRow);
     }
 
-    return { label: 'WASM 物理', dir: '', items };
+    return { label: t('scene.wasmPhysics'), dir: '', items };
 }
 
 /** 构建物理调试子页（材质线框/骨骼/XPBD 可视化 toggle） */
@@ -269,12 +271,12 @@ export function buildPhysicsDebugLevel(): PopupLevel {
     const dbg = getDebugState();
 
     return {
-        label: '调试',
+        label: t('scene.debug'),
         dir: '',
         items: [
             {
                 kind: 'toggle',
-                label: '材质线框',
+                label: t('scene.matWireframe'),
                 icon: 'lucide:square',
                 target: 'debug:wireframe',
                 toggleValue: inst?.wireframe ?? false,
@@ -287,7 +289,7 @@ export function buildPhysicsDebugLevel(): PopupLevel {
             } as PopupRow,
             {
                 kind: 'toggle',
-                label: '骨骼线',
+                label: t('scene.boneLines'),
                 icon: 'lucide:git-branch',
                 target: 'debug:bonelines',
                 toggleValue: inst?.showBoneLines ?? false,
@@ -300,7 +302,7 @@ export function buildPhysicsDebugLevel(): PopupLevel {
             } as PopupRow,
             {
                 kind: 'toggle',
-                label: '骨骼关节球',
+                label: t('scene.boneJoints'),
                 icon: 'lucide:circle-dot',
                 target: 'debug:bonejoints',
                 toggleValue: inst?.showBoneJoints ?? false,
@@ -313,7 +315,7 @@ export function buildPhysicsDebugLevel(): PopupLevel {
             } as PopupRow,
             {
                 kind: 'toggle',
-                label: '粒子球',
+                label: t('scene.particleSpheres'),
                 icon: 'lucide:circle',
                 target: 'debug:particles',
                 toggleValue: dbg.particles,
@@ -324,7 +326,7 @@ export function buildPhysicsDebugLevel(): PopupLevel {
             } as PopupRow,
             {
                 kind: 'toggle',
-                label: '约束线',
+                label: t('scene.constraintLines'),
                 icon: 'lucide:minus',
                 target: 'debug:constraints',
                 toggleValue: dbg.constraints,
@@ -335,7 +337,7 @@ export function buildPhysicsDebugLevel(): PopupLevel {
             } as PopupRow,
             {
                 kind: 'toggle',
-                label: '碰撞体线框',
+                label: t('scene.colliderWireframe'),
                 icon: 'lucide:box',
                 target: 'debug:colliders',
                 toggleValue: dbg.colliders,

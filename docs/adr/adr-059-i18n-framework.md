@@ -1,6 +1,6 @@
 # ADR-059: i18n 多语言切换框架
 
-> **状态**: 实施中（Phase 1 已完成 2026-07-07；Phase 2-4 待做）
+> **状态**: 实施中（Phase 1 已完成 2026-07-07；Phase 2 已完成 2026-07-07；Phase 3-4 待做）
 > **关联**: [ADR-010](adr-010-competitor-ui-mapping.md)（竞品 UI 映射，含 DanceXR 语言项）、[ADR-043](adr-043-dancexr-gap-analysis.md)（DanceXR 差距分析）、[ADR-044](adr-044-competitive-analysis.md)（竞品分析）
 > **背景**: 当前全仓 UI 字符串为硬编码中文，约 100 个 `.ts` 文件含中文字面量，分布于 `menus/`、`core/ui-*`、`scene/`、`physics/`。无 i18n 框架、无语言偏好入口。竞品 DanceXR 已支持 5 种语言（简/繁中、英、日、韩）。本 ADR 锁定一套与现有 `core/reactivity` 体系对齐的轻量 i18n 方案。
 
@@ -210,16 +210,20 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 - [x] 热切换试点：设置根级 9 项 + 语言子菜单均经 `t()` 化，点击语言即 `setLang` → `scheduleRefresh` 热刷新（注：原计划的 `library.ts` 试点改为设置页 pilot——`library.ts` 经核查无用户界面中文字符串，故以设置页为演示载体）
 - [x] 验证：`npm run check` ✅ / `npm run test` ✅（1099 passed）/ `npm run build` ✅
 
-### Phase 2: 批量抽取 menus/（~3–4 天）
+### Phase 2: 批量抽取 menus/（已完成 2026-07-07）
 
-- [ ] `menus/model-detail.ts`、`menus/scene-*.ts`、`menus/motion-*.ts` 全量 `t()` 化
-- [ ] 补全 `locales/zh-CN.ts`；启动 `en.ts` 试点翻译
+- [x] `menus/model-detail.ts`、`menus/scene-*.ts`（7 文件：scene-menu / scene-render-levels / scene-stage-levels / scene-prop-levels / scene-stage-lights / scene-physics-levels / scene-render-presets）、`menus/motion-*.ts`（4 文件：motion-popup / motion-cloth-levels / motion-procmotion-levels / motion-camera-levels）全量 `t()` 化
+- [x] 补全 `locales/zh-CN.ts`；`en.ts` 翻译与 `zh-CN` 同步（feature 命名空间 `model-detail.*` / `motion.*` / `scene.*`，含 procmotion + camera 子域）
+- [x] 约定：**功能反馈消息**进 feature 命名空间（如 `scene.statusXxx`），不另立 `status.*`；模块级 `const LABELS` 中文固化陷阱 → 统一改为 `KEYS` 映射（仅存 i18n key）在运行时 `t()`，保证热切换刷新
+- [x] 验证：`npm run check` ✅ / `npm run test` ✅（1100 passed）/ `npm run build` ✅
 
-### Phase 3: core/scene/physics 抽取（~2–3 天）
+### Phase 3: core / 非菜单模块抽取（~2–3 天）
+
+> 注：菜单域（含 `menus/scene-*.ts`、`menus/motion-*.ts`）内的 `setStatus`/toast 已在 Phase 2 一并 `t('scene.*'/'motion.*')` 化；本阶段仅剩**中央/非菜单**模块。
 
 - [ ] `core/ui-*.ts`、`core/dialog.ts`、`core/state.ts` 状态消息
-- [ ] `scene/*`、`physics/*` 中 `setStatus`/toast 改为 `t('status.*', params)`
-- [ ] `library-core.ts:432` collation 随语言切换
+- [ ] `physics/*`（cloth-manager 等）、`scene/*` 非菜单模块内 `setStatus`/toast 改为 `t('scene.*'/'physics.*', params)`
+- [ ] `library-core.ts:432` collation 随语言切换（`localeCompare(b.label, getLang())`）
 
 ### Phase 4: 多语言补全 + 防回归（按需）
 
