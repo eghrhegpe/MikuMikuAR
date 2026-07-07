@@ -1,9 +1,31 @@
 # ADR-061: 高级骨骼操控与姿态工作室实现计划
 
-> **状态**: 规划（2026-07-08 创建，2026-07-08 补充 Pose Studio，移除 Playback Modes）
+> **状态**: 规划（2026-07-08 创建，补充 Pose Studio，移除 Playback Modes；2026-07-08 架构师评审：Ragdoll 降级单独立项 / T-pose 并入 Pose Studio / 风险1 升为 POC 闸门；2026-07-08 风险1 POC 通过——标准 PMX 下 linkedBone 即原生 Bone，Accessory/Motion Override 闸门解锁）
 > **背景**: 本域五项功能已在 ADR-054 路线图中零散记录（道具挂载 P2、T-pose/A-pose P1、Ragdoll P3、Pose Studio P2），但缺集中式技术方案与代码事实核实；「Motion Override（逐骨骼）」仅见于 ADR-043 gap-analysis，未进任一路线图。本 ADR 补此空白，给出现状核实、技术路线与分期细化。
 > **范围**: 仅规划，不实现。落地时各子项应单独立项（可沿用本 ADR 编号作前缀，如 ADR-061.1）。
 > **排除**: Playback Modes（列表播放/随机/顺序）已评估后移除——MMD 工作流是单模型+单VMD精调，非批量播放场景，边际效益低。
+
+---
+
+## 零、决策评审结论（2026-07-08 架构师评审）
+
+基于 Motion Override + Accessory 两项核心价值，对 ADR-061 五项功能做优先级与范围重审，结论如下。
+
+### 价值与鸡肋评估
+
+| 标记 | 功能 | 评估 | 处置 |
+|------|------|------|------|
+| 🟢 P1 重点 | Motion Override / Accessory | 核心增量，用户可感知 | 保留并优先排期 |
+| 🟡 中等 | Pose Studio | 取决于用户画像（是否截图/分享/二创）；仅播放器用户则 DOF 滑块已够 | 优先级待用户场景核实后定 |
+| ⚪ 微鸡肋 | T-pose / A-pose | 场景极窄，但 2A 路线成本≈0（VPD 预置文件，无运行时逻辑） | 不单列 P1，降级为 Pose Studio 子开关 |
+| 🔴 最鸡肋 | Ragdoll | MMD 非物理沙盒，用户场景为舞蹈/表演展示；XPBD MVP 复用布料引擎但约束调参磨人、效果平淡 | 从主路线降级，单独立项 / 标注「按需发起」，不占 P2 档位 |
+
+### 关键前置决策
+
+- **风险 1（babylon-mmd 骨骼兼容性）升为 POC 闸门** ✅ **POC 已通过 (2026-07-08)**：标准 PMX 下 `runtimeBone.linkedBone` 即 `instanceof Bone === true`（实测 774 根骨骼），`linkedBone.getFinalMatrix()` 在 babylon-mmd 复写的 `_computeTransformMatrices` 下保持新鲜（30 根骨骼 worldMatrix 平移偏差 = `0.000000`），`mesh.attachToBone(bone, rootMesh)` 正确跟随骨骼+根变换（根节点 +5 探针增量 = 5.000）。**结论：无需桥接层，Accessory(2.4)/Motion Override(2.1) 可直接用 `linkedBone`**。POC 脚本留存 `frontend/scripts/poc-mmd-bone-attachment.mjs`。⚠️ 保留意见：HumanoidMmd（proxy skeleton）路径未测，其骨骼树可能虚拟化，该路径若有需求须另测。
+- **Ragdoll 单独立项**：不与原四项捆绑，按需发起（建议沿用 ADR-061.R 编号），不在本 ADR 主分期占用排期。
+- **T-pose / A-pose 并入 Pose Studio**：作为 Pose Studio 的子开关，不单独作为 P1 宣传点。
+- **Pose Studio 优先级待定**：需先核实目标用户是否有截图/分享/二创习惯，再定 P1 / P2。
 
 ---
 
@@ -52,6 +74,8 @@
 
 **依赖**：VPD 体系已就绪。2B 需新增骨骼名标准化模块（与换装系统的骨骼名处理可共用）。
 
+> **【评审结论】**：低成本、低收益，不单列 P1 宣传点；降级为 Pose Studio 子开关（见 2.5）。2A 路线成本≈0（VPD 预置文件，无运行时逻辑），故保留不删。
+
 ### 2.3 布娃娃物理 Ragdoll
 
 **定义**：碰撞 / 受击 / 跌倒驱动的自由骨骼物理，动画暂停后由物理约束解算骨骼姿态。
@@ -81,12 +105,12 @@
 4. UI：骨骼锚点下拉（从 `skeleton.bones` 取名）+ 偏移编辑 + 多道具列表管理。
 5. 持久化：挂载表（资产 ref + boneName + 偏移）存入 Scene Bundle / UIState。
 
-**依赖 / 风险（关键未知数）**：
-- ⚠️ **babylon-mmd 骨骼兼容性**：babylon-mmd 使用自有骨骼/运行时结构（非原生 Babylon `Bone`/`Skeleton`）。须先核实 `skeleton.bones[i]` 是否暴露为可被 `attachToBone` 接受的 Babylon `Bone` 实例；若否，需桥接层（从 babylon-mmd 运行时提取变换矩阵，手动 `mesh.setPreTransformMatrix` / 父子链接）。**这是本功能的最高风险点，落地前必须 POC 验证。**
+**依赖 / 风险**：
+- ✅ **babylon-mmd 骨骼兼容性（已 POC 验证，2026-07-08）**：标准 PMX 下 `runtimeBone.linkedBone` 即为原生 Babylon `Bone`（`instanceof Bone === true`，样本 774 根），`getFinalMatrix()` 在 babylon-mmd 复写的 `_computeTransformMatrices` 下保持新鲜（偏差 `0.000000`），`mesh.attachToBone(linkedBone, rootMesh)` 直接可用、**无需桥接层**。**原「最高风险点」已解除**；唯一保留意见是 HumanoidMmd（proxy skeleton）虚拟化骨骼路径未覆盖，若后续触及须另测。
 
 ### 2.5 Pose Studio / 拍照模式（MVP）
 
-**定义**：专用拍照工作流，聚焦构图辅助 + 景深控制 + 高质量导出。**不包含**姿态编辑（由 2.2 T-pose 覆盖）和播放列表（边际效益低，已排除）。
+**定义**：专用拍照工作流，聚焦构图辅助 + 景深控制 + 高质量导出。**不包含**播放列表（边际效益低，已排除）；姿态编辑由 2.2 T-pose/A-pose 子开关覆盖（已并入本面板）。
 
 **技术路线**：
 1. **构图辅助线**：在 canvas 上叠加三分法 / 黄金分割 / 对角线网格（CSS overlay 或 Babylon.js GUI texture），复用现有 canvas overlay 机制。
@@ -105,7 +129,7 @@
 
 | 约束 | 影响项 | 说明 |
 |------|--------|------|
-| babylon-mmd 骨骼结构 | 2.1 / 2.3 / 2.4 | 动画写入时机、Bone 暴露方式均取决于此；2.4 风险最高 |
+| babylon-mmd 骨骼结构 | 2.1 / 2.4（2.3 Ragdoll 已单独立项） | 动画写入时机、Bone 暴露方式均取决于此；2.4 风险最高，列为 POC 闸门 |
 | WASM / JS 运行时分裂（ADR-056 已统一） | 2.1 / 2.3 | Override 为纯前端后处理，Ragdoll 3B 依赖 Bullet |
 | XPBD 引擎（体积约束预置） | 2.3 | 3A 路线直接复用 |
 | VPD 体系（已就绪） | 2.2 | 2A 零成本路径 |
@@ -120,20 +144,19 @@
 
 | 分期 | 功能 | 路线 | 预估难度 | 备注 |
 |------|------|------|----------|------|
-| **P1（本季度）** | T-pose / A-pose 转换 | 2A（VPD 预设） | 低-中 | 零新依赖，最快见效，可作 Pose Studio 入口 |
-| **P1（本季度）** | Motion Override（逐骨骼） | 2.1 | 中 | 依赖动画写入时机核实；与 ADR-051 boneFilter 互补 |
-| **P2（中期）** | Pose Studio / 拍照模式 | 2.5 | 中 | 复用 DOF + 截图，体验升级 |
-| **P2（中期）** | 道具挂载 Accessory | 2.4 | 中 | **前置 POC**：babylon-mmd Bone 兼容性验证 |
-| **P2（中期）** | 布娃娃 Ragdoll（MVP） | 3A（XPBD 复用） | 高 | 复用布料引擎，调参为主 |
-| **P3（远期）** | Ragdoll 高精度 | 3B（WASM Bullet） | 高 | 解决与服装/头发 Bullet 的写入仲裁后启动 |
+| **前置 POC（半天）** ✅ **PASS (2026-07-08)** | babylon-mmd 骨骼兼容性验证 | 风险1 | — | 标准 PMX 实测通过：linkedBone 即原生 Bone，无需桥接层；Accessory(2.4)/Motion Override(2.1) 闸门已解锁 |
+| **P1（本季度）** | Motion Override（逐骨骼） | 2.1 | 中 | 依赖 POC 通过 + 动画写入时机核实；与 ADR-051 boneFilter 互补 |
+| **P1 / P2（待用户场景核实）** | Pose Studio / 拍照模式 | 2.5 | 中 | 含 T-pose / A-pose 子开关；若目标用户无截图/分享/二创习惯则降为 P2 甚至并入 DOF 滑块 |
+| **P2（中期）** | 道具挂载 Accessory | 2.4 | 中 | **前置 POC 通过**方可排期 |
+| **按需发起（单独立项）** | 布娃娃 Ragdoll（MVP / 高精度） | 3A / 3B | 高 | 移出主路线，见 ADR-061.R；不见明确需求不排期 |
 
-> 顺序逻辑：先填低成本高感知的 T-pose / Motion Override（P1），再以 POC 解锁道具挂载（P2），Pose Studio 复用已有管线（P2），Ragdoll 以 XPBD MVP 低成本切入（P2），Bullet 高精度留 P3。
+> 顺序逻辑：先以**半天 POC** 解锁骨骼兼容性闸门，再排 Motion Override（P1）；Pose Studio 优先级取决于用户场景核实（含 T-pose/A-pose 子开关）；Accessory 待 POC 通过后入 P2；Ragdoll 移出主路线，按需单独立项。
 
 ---
 
 ## 五、风险提醒
 
-1. **babylon-mmd 骨骼兼容性（最高）**：2.4 `attachToBone` 与 2.1/2.3 的 Bone 写入均依赖 babylon-mmd 暴露原生 `Bone`。落地前必须 POC。
+1. **babylon-mmd 骨骼兼容性（已解决·实证 ✅）**：2.4 `attachToBone` 与 2.1 Motion Override 的 Bone 写入均依赖 babylon-mmd 暴露原生 `Bone`。**POC 已通过 (2026-07-08，标准 PMX)**：`runtimeBone.linkedBone instanceof Bone === true`（样本 774 根）、`getFinalMatrix()` 平移偏差 `0.000000`、`attachToBone` 跟随骨骼+根变换正确（探针增量 5.000 == 骨骼世界增量 5.000）。**结论：无需桥接层，Accessory(2.4)/Motion Override(2.1) 可直接用 `linkedBone`**。⚠️ 保留意见：HumanoidMmd（proxy skeleton）路径未测，其骨骼树可能虚拟化，该路径若有需求须另测。
 2. **动画写入时机（高）**：2.1 Override 与 2.3 Ragdoll 回写必须在动画之后执行，否则被覆盖。需锁定 `MmdRuntime` / `MmdCompositeAnimation` 的 observer 顺序。
 3. **物理同场仲裁（中）**：Ragdoll 3B 与现有服装/头发 Bullet 物理并存时的骨骼写入权归属。
 4. **骨骼名标准化（中）**：2.2 程序化路径与 2.4 锚点 UI 均依赖统一的骨骼名映射（MMD / VRM / 自定义），建议与换装系统共用映射模块。

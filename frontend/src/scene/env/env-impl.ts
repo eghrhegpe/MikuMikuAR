@@ -410,7 +410,8 @@ export function getGroundHeightAt(x: number, z: number): number {
     if (m && typeof (m as GroundMesh).getHeightAtCoordinates === 'function' && m.isReady()) {
         try {
             return (m as GroundMesh).getHeightAtCoordinates(x, z);
-        } catch {
+        } catch (e) {
+            console.warn('[terrain] getGroundHeightAt failed', e);
             return envState.groundLevel;
         }
     }
