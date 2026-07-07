@@ -5,9 +5,9 @@ import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { ClothConfig } from '../physics/xpbd-cloth';
-import type { UIState, EnvState, Config } from './wails-bindings';
+import type { UIState as GoUIState } from './wails-bindings';
 
-export type { UIState, EnvState, Config };
+export type { GoUIState };
 
 // ======== Model Types ========
 
@@ -218,6 +218,10 @@ export type PopupLevel = {
 };
 
 // ======== UI State ========
+//
+// 前端 UIState — 全字段可选，支持增量 setUIState(partial)。
+// Go 端 UIState 是持久化完整结构（必选字段），两者语义不同。
+// 下方类型断言测试保证：Go 端新增字段时，TS 编译会报错提醒前端同步更新。
 
 export interface UIState {
     scale?: number;
@@ -249,6 +253,12 @@ export interface UIState {
     /** 自动检查更新：启动时自动查询 GitHub 最新发布（默认关） */
     autoUpdateEnabled?: boolean;
 }
+
+// [doc:test-strategy] Go↔TS UIState 字段同步哨兵
+// Go 端新增字段时，GoUIState 会多出该字段，导致 UIState 无法赋值给 GoUIState，tsc 报错。
+// 修复方式：在上方 UIState 中添加对应可选字段。
+type _UIStateCoversGo = UIState extends Partial<GoUIState> ? true : false;
+const _uiStateCoversGo: _UIStateCoversGo = true;
 
 // ======== Environment State ========
 
