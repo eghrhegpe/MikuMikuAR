@@ -3,10 +3,8 @@ package app
 import (
 	"archive/zip"
 	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -15,7 +13,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"golang.org/x/text/encoding/japanese"
@@ -76,7 +73,7 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 	const op = "ExtractZip"
 	cacheRoot, err := extractedDir()
 	if err != nil {
-		return nil, util.WrapError(op, fmt.Errorf("解压失败: %w", err))
+		return nil, util.WrapErrorf(op, "解压失败", err)
 	}
 
 	dest := filepath.Join(cacheRoot, zipCacheName(zipPath))
@@ -84,7 +81,7 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 	// Stat source zip
 	srcInfo, err := fileAccessor.Stat(zipPath)
 	if err != nil {
-		return nil, util.WrapError(op, fmt.Errorf("压缩包无法访问: %w", err))
+		return nil, util.WrapErrorf(op, "压缩包无法访问", err)
 	}
 	srcMtime := srcInfo.ModTime().Unix()
 	srcSize := srcInfo.Size()
@@ -105,18 +102,18 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 	a.safeLogInfo("ExtractZip: extracting %s → %s", zipPath, dest)
 	os.RemoveAll(dest)
 	if err := os.MkdirAll(dest, 0755); err != nil {
-		return nil, util.WrapError(op, fmt.Errorf("创建缓存目录失败: %w", err))
+		return nil, util.WrapErrorf(op, "创建缓存目录失败", err)
 	}
 
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return nil, util.WrapError(op, fmt.Errorf("打开压缩包失败: %w", err))
+		return nil, util.WrapErrorf(op, "打开压缩包失败", err)
 	}
 	defer zr.Close()
 
 	destAbs, err := filepath.Abs(dest)
 	if err != nil {
-		return nil, util.WrapError(op, fmt.Errorf("解析路径失败: %w", err))
+		return nil, util.WrapErrorf(op, "解析路径失败", err)
 	}
 	destPrefix := destAbs + string(filepath.Separator)
 
@@ -168,10 +165,10 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 	m := manifest{Source: zipPath, Mtime: srcMtime, Size: srcSize, Version: extractCacheVersion}
 	mData, err := json.Marshal(m)
 	if err != nil {
-		return nil, util.WrapError(op, fmt.Errorf("保存索引失败: %w", err))
+		return nil, util.WrapErrorf(op, "保存索引失败", err)
 	}
 	if err := os.WriteFile(manifestPath, mData, 0644); err != nil {
-		return nil, util.WrapError(op, fmt.Errorf("写入索引失败: %w", err))
+		return nil, util.WrapErrorf(op, "写入索引失败", err)
 	}
 
 	resultPath := filepath.ToSlash(filepath.Join(dest, innerPath))
@@ -265,18 +262,18 @@ func (a *App) ClearThumbnailCache() error {
 func (a *App) ClearAllCaches() error {
 	// Clear extracted
 	if err := a.ClearExtractCache(); err != nil {
-		return util.WrapError("ClearAllCaches", fmt.Errorf("清除提取缓存失败: %w", err))
+		return util.WrapErrorf("ClearAllCaches", "清除提取缓存失败", err)
 	}
 	// Clear thumbnails
 	if err := a.ClearThumbnailCache(); err != nil {
-		return util.WrapError("ClearAllCaches", fmt.Errorf("清除缩略图缓存失败: %w", err))
+		return util.WrapErrorf("ClearAllCaches", "清除缩略图缓存失败", err)
 	}
 	// Clear serve (isolated HTTP model copies)
 	serveRoot, err := serveRootDir()
 	if err != nil {
 		a.safeLogInfo("ClearAllCaches: serve dir unavailable: %v", err)
 	} else if err := os.RemoveAll(serveRoot); err != nil {
-		return util.WrapError("ClearAllCaches", fmt.Errorf("清除 serve 目录失败: %w", err))
+		return util.WrapErrorf("ClearAllCaches", "清除 serve 目录失败", err)
 	}
 	a.safeLogInfo("ClearAllCaches: all cache directories cleared")
 	return nil
@@ -339,7 +336,7 @@ func (a *App) importZipUnsafe(zipPath string) (*ExtractResult, error) {
 	const op = "ImportZip"
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return nil, util.WrapError(op, fmt.Errorf("打开压缩包失败: %w", err))
+		return nil, util.WrapErrorf(op, "打开压缩包失败", err)
 	}
 	var firstPmx string
 	for _, zf := range zr.File {
@@ -351,7 +348,7 @@ func (a *App) importZipUnsafe(zipPath string) (*ExtractResult, error) {
 	}
 	zr.Close()
 	if firstPmx == "" {
-		return nil, util.WrapError(op, fmt.Errorf("压缩包内未找到模型文件"))
+		return nil, util.WrapErrorf(op, "压缩包内未找到模型文件", nil)
 	}
 	return a.ExtractZip(zipPath, firstPmx)
 }
@@ -454,59 +451,6 @@ func cleanControlChars(s string) string {
 		cleaned = append(cleaned, r)
 	}
 	return string(cleaned)
-}
-
-// cleanModelName converts a filesystem entry name (from d.Name()) to clean UTF-8.
-// On Windows, Go always returns valid UTF-8 from filepath.WalkDir, but the Unicode
-// may be corrupted if the file was created via ANSI API with a different code page.
-// This function detects and repairs the common case where Shift-JIS bytes were
-// passed through the GBK code page, producing half-width katakana Unicode text.
-func cleanModelName(name string) string {
-	if name == "" {
-		return name
-	}
-	if !utf8.ValidString(name) {
-		return bestDecode(name)
-	}
-	// If already valid clean UTF-8 with no suspicious patterns, use as-is
-	// Check for half-width katakana domination (sign of code page corruption)
-	hwCount := 0
-	for _, r := range name {
-		if r >= 0xFF61 && r <= 0xFF9F {
-			hwCount++
-		}
-	}
-	nonASCII := 0
-	for _, r := range name {
-		if r > 0x7F {
-			nonASCII++
-		}
-	}
-	// If <50% of non-ASCII chars are half-width katakana, name looks clean
-	if nonASCII == 0 || hwCount*2 <= nonASCII {
-		return name
-	}
-	// Half-width katakana dominated — try to recover by mapping each
-	// half-width katakana back to its Shift-JIS byte, then decode as GBK.
-	raw := make([]byte, 0, len(name))
-	for _, r := range name {
-		if r >= 0xFF61 && r <= 0xFF9F {
-			// U+FF61-U+FF9F → Shift-JIS 0xA1-0xDF
-			raw = append(raw, byte(r-0xFF61+0xA1))
-		} else if r <= 0x7F {
-			raw = append(raw, byte(r))
-		}
-		// Skip other non-ASCII chars (corruption artifacts)
-	}
-	if len(raw) > 0 {
-		if decoded, _, err := transform.String(simplifiedchinese.GBK.NewDecoder(), string(raw)); err == nil {
-			cleaned := cleanControlChars(decoded)
-			if cleaned != "" {
-				return cleaned
-			}
-		}
-	}
-	return name
 }
 
 // MMD 圈常见——模型作者把使用条款写在 name_jp 字段里
@@ -778,19 +722,4 @@ func (a *App) StartFileServer(dirPath string) (int, error) {
 	}
 
 	return port, nil
-}
-
-// StopFileServer shuts down the HTTP file server for the given directory.
-// Maintained for future cleanup use (e.g., scene teardown, directory unmount).
-// Currently unused by the frontend — HTTP servers run until app exit.
-func (a *App) StopFileServer(dirPath string) {
-	a.httpSrvMu.Lock()
-	defer a.httpSrvMu.Unlock()
-	if info, ok := a.httpServers[dirPath]; ok {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		info.server.Shutdown(shutdownCtx)
-		cancel()
-		delete(a.httpServers, dirPath)
-		a.safeLogInfo("StopFileServer: stopped port %d for %s", info.port, dirPath)
-	}
 }

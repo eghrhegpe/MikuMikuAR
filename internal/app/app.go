@@ -49,6 +49,7 @@ type App struct {
 	httpServers map[string]*httpServerInfo // keyed by dirPath
 	httpSrvMu   sync.Mutex
 	configMu    sync.RWMutex // guards GetConfig/writeConfig sequences
+	cachedCfg   *Config      // in-memory cache, invalidated by writeConfig
 
 	// 下载目录监听
 	watcher      *fsnotify.Watcher
@@ -143,24 +144,17 @@ func (a *App) ServiceShutdown() error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	return a.shutdownWithTimeout(ctx, 5*time.Second)
+	return shutdownServers(ctx, servers)
 }
 
-func (a *App) shutdownWithTimeout(ctx context.Context, timeout time.Duration) error {
-	a.httpSrvMu.Lock()
-	servers := make([]*http.Server, 0, len(a.httpServers))
-	for _, info := range a.httpServers {
-		servers = append(servers, info.server)
+// shutdownServers gracefully shuts down the given HTTP servers in parallel.
+// If ctx has no deadline, a 5-second timeout is applied.
+func shutdownServers(ctx context.Context, servers []*http.Server) error {
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
 	}
-	a.httpServers = make(map[string]*httpServerInfo)
-	a.httpSrvMu.Unlock()
-
-	if len(servers) == 0 {
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(servers))
@@ -300,20 +294,6 @@ type ModelMeta struct {
 	NameJp  string `json:"name_jp"`
 	NameEn  string `json:"name_en"`
 	Comment string `json:"comment"` // PMX header: local comment (truncated)
-}
-
-// dancexrCategories maps DanceXR directory names → entry type.
-var dancexrCategories = map[string]string{
-	"actors":   "actor",
-	"motion":   "motion",
-	"motions":  "motion",
-	"stage":    "stage",
-	"stages":   "stage",
-	"dressing": "dressing",
-	"bundle":   "bundle",
-	"bundles":  "bundle",
-	"effects":  "effect",
-	"scenes":   "scene",
 }
 
 // ExternalPath represents an external library mount point.
@@ -546,7 +526,7 @@ const maxRecentModels = 20
 // GetRecentModels returns the recently opened model libraryRefs (newest first).
 func (a *App) GetRecentModels() []string {
 	cfg, err := a.GetConfig()
-	if err != nil || cfg == nil {
+	if err != nil {
 		return nil
 	}
 	return cfg.RecentModels
@@ -599,60 +579,27 @@ func (a *App) GetPath(cfg *Config, category string) string {
 	if root == "" {
 		root = DefaultResourceRoot()
 	}
-	switch category {
-	case "pmx":
-		if cfg.OverridePaths.PMX != "" {
-			return cfg.OverridePaths.PMX
-		}
-		return filepath.Join(root, "PMX")
-	case "vmd":
-		if cfg.OverridePaths.VMD != "" {
-			return cfg.OverridePaths.VMD
-		}
-		return filepath.Join(root, "VMD")
-	case "audio":
-		if cfg.OverridePaths.Audio != "" {
-			return cfg.OverridePaths.Audio
-		}
-		return filepath.Join(root, "audio")
-	case "prop":
-		if cfg.OverridePaths.Prop != "" {
-			return cfg.OverridePaths.Prop
-		}
-		return filepath.Join(root, "prop")
-	case "stage":
-		if cfg.OverridePaths.Stage != "" {
-			return cfg.OverridePaths.Stage
-		}
-		return filepath.Join(root, "stage")
-	case "environment":
-		if cfg.OverridePaths.Environment != "" {
-			return cfg.OverridePaths.Environment
-		}
-		return filepath.Join(root, "environment")
-	case "md_dress":
-		if cfg.OverridePaths.MDDress != "" {
-			return cfg.OverridePaths.MDDress
-		}
-		return filepath.Join(root, "MD-dress")
-	case "setting":
-		if cfg.OverridePaths.Setting != "" {
-			return cfg.OverridePaths.Setting
-		}
-		return filepath.Join(root, "setting")
-	default:
-		return root
+	type catDef struct {
+		override *string
+		subdir   string
 	}
-}
-
-// migrateLibraryRoot migrates the old library_root field to resource_root.
-func (a *App) migrateLibraryRoot(cfg *Config) bool {
-	if cfg.LibraryRoot != "" && cfg.ResourceRoot == "" {
-		cfg.ResourceRoot = cfg.LibraryRoot
-		cfg.LibraryRoot = ""
-		return true
+	defs := map[string]catDef{
+		"pmx":         {&cfg.OverridePaths.PMX, "PMX"},
+		"vmd":         {&cfg.OverridePaths.VMD, "VMD"},
+		"audio":       {&cfg.OverridePaths.Audio, "audio"},
+		"prop":        {&cfg.OverridePaths.Prop, "prop"},
+		"stage":       {&cfg.OverridePaths.Stage, "stage"},
+		"environment": {&cfg.OverridePaths.Environment, "environment"},
+		"md_dress":    {&cfg.OverridePaths.MDDress, "MD-dress"},
+		"setting":     {&cfg.OverridePaths.Setting, "setting"},
 	}
-	return false
+	if d, ok := defs[category]; ok {
+		if *d.override != "" {
+			return *d.override
+		}
+		return filepath.Join(root, d.subdir)
+	}
+	return root
 }
 
 // ======== Model Preset Bindings ========

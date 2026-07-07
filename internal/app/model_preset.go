@@ -92,22 +92,27 @@ func (a *App) GetModelPresets() []ModelPresetEntry {
 			Name:      name,
 			UpdatedAt: info.ModTime().Unix(),
 		}
-		// Try to extract fields from JSON header
+		// Read only first 1KB to extract header fields (presetName, autoApply, model info)
 		path := filepath.Join(dir, e.Name())
-		if data, err := os.ReadFile(path); err == nil {
-			var hdr struct {
-				PresetName string `json:"presetName"`
-				AutoApply  bool   `json:"autoApply"`
-				Model      struct {
-					Name       string `json:"name"`
-					LibraryRef string `json:"libraryRef"`
-				} `json:"model"`
-			}
-			if err := json.Unmarshal(data, &hdr); err == nil {
-				entry.PresetName = hdr.PresetName
-				entry.AutoApply = hdr.AutoApply
-				entry.ModelName = hdr.Model.Name
-				entry.ModelRef = hdr.Model.LibraryRef
+		if f, err := os.Open(path); err == nil {
+			buf := make([]byte, 1024)
+			n, _ := f.Read(buf)
+			f.Close()
+			if n > 0 {
+				var hdr struct {
+					PresetName string `json:"presetName"`
+					AutoApply  bool   `json:"autoApply"`
+					Model      struct {
+						Name       string `json:"name"`
+						LibraryRef string `json:"libraryRef"`
+					} `json:"model"`
+				}
+				if err := json.Unmarshal(buf[:n], &hdr); err == nil {
+					entry.PresetName = hdr.PresetName
+					entry.AutoApply = hdr.AutoApply
+					entry.ModelName = hdr.Model.Name
+					entry.ModelRef = hdr.Model.LibraryRef
+				}
 			}
 		}
 		result = append(result, entry)
@@ -115,36 +120,42 @@ func (a *App) GetModelPresets() []ModelPresetEntry {
 	return result
 }
 
-func validPresetName(name string) bool {
-	if name == "" || strings.Contains(name, "..") || strings.ContainsAny(name, "/\\") {
-		return false
+// validatePresetName checks and sanitizes a preset name.
+// Returns the trimmed name if valid, or empty string if invalid.
+// Forbids: empty names, path traversal (..), and filesystem-unsafe chars.
+func validatePresetName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" || strings.Contains(name, "..") || strings.ContainsAny(name, "/\\:*?\"<>|") {
+		return ""
 	}
-	return true
+	return name
 }
 
 // SaveModelPresetToLib saves a model preset JSON to the library with the given name.
 func (a *App) SaveModelPresetToLib(name string, jsonStr string) error {
-	if !validPresetName(name) {
+	clean := validatePresetName(name)
+	if clean == "" {
 		return fmt.Errorf("invalid preset name: %q", name)
 	}
 	dir, err := a.modelPresetDir()
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(dir, name+".mcupreset.json")
+	path := filepath.Join(dir, clean+".mcupreset.json")
 	return os.WriteFile(path, []byte(jsonStr), 0644)
 }
 
 // LoadModelPresetFromLib reads a model preset JSON from the library by name.
 func (a *App) LoadModelPresetFromLib(name string) (string, error) {
-	if !validPresetName(name) {
+	clean := validatePresetName(name)
+	if clean == "" {
 		return "", fmt.Errorf("invalid preset name: %q", name)
 	}
 	dir, err := a.modelPresetDir()
 	if err != nil {
 		return "", err
 	}
-	path := filepath.Join(dir, name+".mcupreset.json")
+	path := filepath.Join(dir, clean+".mcupreset.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
@@ -154,34 +165,39 @@ func (a *App) LoadModelPresetFromLib(name string) (string, error) {
 
 // DeleteModelPreset removes a named model preset from the library.
 func (a *App) DeleteModelPreset(name string) error {
-	if !validPresetName(name) {
+	clean := validatePresetName(name)
+	if clean == "" {
 		return fmt.Errorf("invalid preset name: %q", name)
 	}
 	dir, err := a.modelPresetDir()
 	if err != nil {
 		return err
 	}
-	return os.Remove(filepath.Join(dir, name+".mcupreset.json"))
+	return os.Remove(filepath.Join(dir, clean+".mcupreset.json"))
 }
 
 // RenameModelPreset renames a model preset in the library.
 func (a *App) RenameModelPreset(oldName, newName string) error {
-	if !validPresetName(oldName) || !validPresetName(newName) {
+	cleanOld := validatePresetName(oldName)
+	cleanNew := validatePresetName(newName)
+	if cleanOld == "" || cleanNew == "" {
 		return fmt.Errorf("invalid preset name")
 	}
 	dir, err := a.modelPresetDir()
 	if err != nil {
 		return err
 	}
-	oldPath := filepath.Join(dir, oldName+".mcupreset.json")
-	newPath := filepath.Join(dir, newName+".mcupreset.json")
+	oldPath := filepath.Join(dir, cleanOld+".mcupreset.json")
+	newPath := filepath.Join(dir, cleanNew+".mcupreset.json")
 	return os.Rename(oldPath, newPath)
 }
 
 // writeConfig persists only the config JSON (no rescan). Use for settings changes
 // that don't affect the model index (e.g. Blender path).
 // Uses tmp+rename for atomicity: prevents corrupted config on crash/power loss.
+// Caller must hold configMu (Lock). Invalidates the in-memory config cache.
 func (a *App) writeConfig(cfg *Config) error {
+	a.cachedCfg = nil
 	dir, err := settingDir(cfg)
 	if err != nil {
 		return err

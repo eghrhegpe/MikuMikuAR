@@ -18,12 +18,20 @@ func TestValidatePresetName(t *testing.T) {
 		{"name\\with\\backslash", false},
 		{"name..with..dots", false},
 		{"normal name", true},
+		{"name:with:colon", false},
+		{"name*with*star", false},
+		{"name?with?qmark", false},
+		{"name\"with\"quote", false},
+		{"name<with>angle", false},
+		{"name|with|pipe", false},
+		{" name ", true},
 	}
 
 	for _, tc := range tests {
-		result := validPresetName(tc.input)
-		if result != tc.expected {
-			t.Errorf("validPresetName(%q) = %v, want %v", tc.input, result, tc.expected)
+		result := validatePresetName(tc.input)
+		gotValid := result != ""
+		if gotValid != tc.expected {
+			t.Errorf("validatePresetName(%q) = %q (valid=%v), want valid=%v", tc.input, result, gotValid, tc.expected)
 		}
 	}
 }
@@ -71,14 +79,6 @@ func TestBestDecode_GBK(t *testing.T) {
 	want := "模型.pmx"
 	if got != want {
 		t.Errorf("bestDecode(GBK) = %q, want %q", got, want)
-	}
-}
-
-func TestCleanModelName_ShiftJIS(t *testing.T) {
-	got := cleanModelName("\x8f\x89\x89\xb9\x83\x7e\x83\x4e")
-	want := "初音ミク"
-	if got != want {
-		t.Errorf("cleanModelName(Shift-JIS) = %q, want %q", got, want)
 	}
 }
 

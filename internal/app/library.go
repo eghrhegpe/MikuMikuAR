@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"mikumikuar/internal/util"
 )
@@ -35,14 +36,14 @@ func (a *App) ScanModelDir(root string, external []ExternalPath) ([]ModelEntry, 
 	// root and external are ignored; use config instead
 	return util.SafeCall(func() ([]ModelEntry, error) {
 		cfg, err := a.GetConfig()
-		if err != nil || cfg == nil {
+		if err != nil {
 			cfg = &Config{}
 		}
 		return a.scanAllCategories(cfg)
 	})
 }
 
-// scanAllCategories scans each resource category directory.
+// scanAllCategories scans each resource category directory in parallel.
 func (a *App) scanAllCategories(cfg *Config) ([]ModelEntry, error) {
 	type categoryScan struct {
 		Category string
@@ -58,25 +59,49 @@ func (a *App) scanAllCategories(cfg *Config) ([]ModelEntry, error) {
 		{"outfit", []string{".zip", ".pmx", ".x"}},
 		{"prop", []string{".pmx", ".zip"}},
 	}
-	var allModels []ModelEntry
+
+	// Build scan jobs: main categories + external paths
+	type scanJob struct {
+		dir      string
+		category string
+		exts     []string
+		source   string
+	}
+	var jobs []scanJob
 	for _, s := range scans {
 		dir := a.GetPath(cfg, mapCategoryKey(s.Category))
-		entries, err := a.scanDirByExt(dir, s.Category, s.Exts, "")
-		if err != nil {
-			continue // skip unreadable dirs
-		}
-		allModels = append(allModels, entries...)
+		jobs = append(jobs, scanJob{dir, s.Category, s.Exts, ""})
 	}
-	// Also scan external paths (if any)
 	for _, ep := range cfg.ExternalPaths {
 		for _, s := range scans {
 			dir := filepath.Join(ep.Path, s.Category)
-			entries, err := a.scanDirByExt(dir, s.Category, s.Exts, ep.Name)
-			if err != nil {
-				continue
-			}
-			allModels = append(allModels, entries...)
+			jobs = append(jobs, scanJob{dir, s.Category, s.Exts, ep.Name})
 		}
+	}
+
+	// Scan all jobs in parallel
+	type scanResult struct {
+		entries []ModelEntry
+	}
+	results := make([]scanResult, len(jobs))
+	var wg sync.WaitGroup
+	for i, job := range jobs {
+		wg.Add(1)
+		go func(idx int, j scanJob) {
+			defer wg.Done()
+			entries, err := a.scanDirByExt(j.dir, j.category, j.exts, j.source)
+			if err != nil {
+				return // skip unreadable dirs
+			}
+			results[idx] = scanResult{entries}
+		}(i, job)
+	}
+	wg.Wait()
+
+	// Merge results
+	var allModels []ModelEntry
+	for _, r := range results {
+		allModels = append(allModels, r.entries...)
 	}
 	return allModels, nil
 }
@@ -265,160 +290,16 @@ func (a *App) ListSubDirs(dirPath string) ([]string, error) {
 	return dirs, nil
 }
 
-// scanSingleRoot scans a single root directory, producing ModelEntry with the given source.
-func (a *App) scanSingleRoot(root string, source string) []ModelEntry {
-	var models []ModelEntry
 
-	// Compute thumbnail dir once for HasThumb checks
-	thumbDir, _ := thumbnailDir()
-
-	topEntries, err := fileAccessor.ReadDir(root)
-	if err != nil {
-		a.safeLogWarning("scanSingleRoot: skipping %s: %v", root, err)
-		return nil
-	}
-
-	for _, entry := range topEntries {
-		if !entry.IsDir() {
-			continue
-		}
-		dirName := strings.ToLower(entry.Name())
-		catType, isCategory := dancexrCategories[dirName]
-		catDir := filepath.Join(root, entry.Name())
-
-		if isCategory {
-			subModels := scanDirRecursive(catDir, entry.Name(), catType, thumbDir)
-			models = append(models, subModels...)
-		} else {
-			subModels := scanDirRecursive(catDir, "", "other", thumbDir)
-			models = append(models, subModels...)
-		}
-	}
-
-	flatModels := scanDirRecursive(root, "", "other", thumbDir)
-	models = append(models, flatModels...)
-
-	// Stamp source on all entries
-	for i := range models {
-		models[i].Source = source
-	}
-
-	return models
-}
-
-// scanDirRecursive walks dir recursively and returns ModelEntry for .pmx, .vmd, .zip files.
-// category is the DanceXR top-level directory name if applicable.
-// thumbDir is the thumbnail cache directory; empty string skips thumbnail check.
-func scanDirRecursive(dir string, category string, entryType string, thumbDir string) []ModelEntry {
-	var models []ModelEntry
-
-	fileAccessor.WalkDir(dir, func(walkPath string, d os.DirEntry, err error) error {
-		if err != nil {
-			return nil // skip inaccessible paths
-		}
-
-		// Skip dot-directories (like .git, .svn)
-		if d.IsDir() && strings.HasPrefix(d.Name(), ".") {
-			return filepath.SkipDir
-		}
-
-		if d.IsDir() {
-			return nil
-		}
-
-		// Normalize path separators: Go filepath uses \, frontend needs /
-		walkPath = filepath.ToSlash(walkPath)
-
-		lowerName := strings.ToLower(d.Name())
-
-		switch {
-		case strings.HasSuffix(lowerName, ".pmx"):
-			m := ModelEntry{
-				Dir:      filepath.Dir(walkPath),
-				PMXPath:  walkPath,
-				Format:   "pmx",
-				Container: "file",
-				Category: category,
-				NameEn:   cleanModelName(strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))),
-			}
-			// Infer type from category, or default to "actor" for pmx
-			if entryType != "" && entryType != "other" {
-				m.Type = entryType
-			} else {
-				m.Type = "actor"
-			}
-			if thumbDir != "" {
-				thumbPath := filepath.Join(thumbDir, sha256Hex(walkPath)+".png")
-				if _, err := os.Stat(thumbPath); err == nil {
-					m.HasThumb = true
-				}
-			}
-			models = append(models, m)
-
-		case strings.HasSuffix(lowerName, ".vmd"):
-			m := ModelEntry{
-				Dir:       filepath.Dir(walkPath),
-				PMXPath:   walkPath,
-				Format:    "vmd",
-				Container: "file",
-				NameEn:    cleanModelName(strings.TrimSuffix(d.Name(), ".vmd")),
-				Category:  category,
-			}
-			if entryType != "" && entryType != "other" {
-				m.Type = entryType
-			} else {
-				m.Type = "motion"
-			}
-			models = append(models, m)
-
-		case strings.HasSuffix(lowerName, ".mp3"), strings.HasSuffix(lowerName, ".wav"),
-			strings.HasSuffix(lowerName, ".ogg"), strings.HasSuffix(lowerName, ".flac"),
-			strings.HasSuffix(lowerName, ".wma"):
-			m := ModelEntry{
-				Dir:       filepath.Dir(walkPath),
-				PMXPath:   walkPath,
-				Format:    "audio",
-				Container: "file",
-				NameEn:    cleanModelName(strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))),
-				Category:  category,
-			}
-			if entryType != "" && entryType != "other" {
-				m.Type = entryType
-			} else {
-				m.Type = "audio"
-			}
-			models = append(models, m)
-
-		case strings.HasSuffix(lowerName, ".vpd"):
-			m := ModelEntry{
-				Dir:       filepath.Dir(walkPath),
-				PMXPath:   walkPath,
-				Format:    "vpd",
-				Container: "file",
-				NameEn:    cleanModelName(strings.TrimSuffix(d.Name(), ".vpd")),
-				Category:  category,
-			}
-			if entryType != "" && entryType != "other" {
-				m.Type = entryType
-			} else {
-				m.Type = "pose"
-			}
-			models = append(models, m)
-
-		case strings.HasSuffix(lowerName, ".zip"):
-			models = append(models, expandZipEntries(walkPath, category, "", entryType)...)
-		}
-
-		return nil
-	})
-
-	return models
-}
 
 // getConfigUnsafe reads config from disk without locking.
 // Caller must hold configMu (at least RLock) if concurrent writes are possible.
 // Used internally by updateConfig (which holds Lock) and by GetConfig (RLock).
 func (a *App) getConfigUnsafe() (*Config, error) {
+	if a.cachedCfg != nil {
+		return a.cachedCfg, nil
+	}
+
 	// Phase 1: read bootstrap config from internal storage (configDir).
 	// This gives us ResourceRoot so we can locate the setting/ directory.
 	dir, err := configDir()
@@ -444,12 +325,14 @@ func (a *App) getConfigUnsafe() (*Config, error) {
 						var settingCfg Config
 						if uErr := json.Unmarshal(settingData, &settingCfg); uErr == nil {
 							a.finaliseConfig(&settingCfg)
+							a.cachedCfg = &settingCfg
 							return &settingCfg, nil
 						}
 					}
 				}
 			}
 			// No ResourceRoot or settingDir failed — use bootstrap as-is.
+			a.cachedCfg = &bootstrap
 			return &bootstrap, nil
 		}
 	}
@@ -688,30 +571,4 @@ func (a *App) ToggleFavorite(libraryRef string) error {
 		}
 		cfg.Tags[libraryRef] = filtered
 	}, false)
-}
-
-// GetFavorites returns the current favorites list.
-// Reads from the built-in tag "收藏" in the tag system.
-func (a *App) GetFavorites() []string {
-	cfg, err := a.GetConfig()
-	if err != nil || cfg == nil {
-		return nil
-	}
-	// Migrate old Favorites on read
-	if len(cfg.Favorites) > 0 {
-		return cfg.Favorites
-	}
-	if cfg.Tags == nil {
-		return nil
-	}
-	var result []string
-	for ref, tags := range cfg.Tags {
-		for _, t := range tags {
-			if t == "收藏" {
-				result = append(result, ref)
-				break
-			}
-		}
-	}
-	return result
 }

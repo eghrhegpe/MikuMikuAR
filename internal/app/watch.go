@@ -12,6 +12,11 @@ import (
 
 // ======== Download Directory Watching (ADR-008) ========
 
+// lowerExt returns the lowercase file extension (including the dot).
+func lowerExt(path string) string {
+	return strings.ToLower(filepath.Ext(path))
+}
+
 // watchExts lists the file extensions that trigger watch notifications.
 var watchExts = map[string]bool{
 	".zip": true,
@@ -59,7 +64,7 @@ func checkMagicNumber(path string) bool {
 // For .zip files, it finds the first .pmx inside and extracts via ImportZip.
 // For .pmx/.vmd files, it returns the path directly as an ExtractResult.
 func (a *App) ImportLocalFile(path string) (*ExtractResult, error) {
-	ext := strings.ToLower(filepath.Ext(path))
+	ext := lowerExt(path)
 	switch ext {
 	case ".zip":
 		return a.ImportZip(path)
@@ -181,7 +186,7 @@ func (a *App) SetDownloadAutoImport(auto bool) error {
 // GetDownloadAutoImport returns the current auto-import preference from config.
 func (a *App) GetDownloadAutoImport() bool {
 	cfg, err := a.GetConfig()
-	if err != nil || cfg == nil {
+	if err != nil {
 		return false
 	}
 	return cfg.DownloadAutoImport
@@ -209,7 +214,7 @@ func (a *App) watchLoop(w *fsnotify.Watcher) {
 				continue
 			}
 			// Check extension
-			ext := strings.ToLower(filepath.Ext(event.Name))
+			ext := lowerExt(event.Name)
 			if !watchExts[ext] {
 				continue
 			}
@@ -257,7 +262,7 @@ func (a *App) flushPending() {
 // notifyNewFile emits a watch:newfile event to the frontend with the detected file info.
 func (a *App) notifyNewFile(filePath string) {
 	name := filepath.Base(filePath)
-	ext := strings.ToLower(filepath.Ext(filePath))
+	ext := lowerExt(filePath)
 	fileType := "zip"
 	if ext == ".pmx" {
 		fileType = "model"
@@ -279,7 +284,7 @@ func (a *App) notifyNewFile(filePath string) {
 // Called during app startup.
 func (a *App) restoreWatcher() {
 	cfg, err := a.GetConfig()
-	if err != nil || cfg == nil || cfg.DownloadWatchDir == "" {
+	if err != nil || cfg.DownloadWatchDir == "" {
 		return
 	}
 	if err := a.StartWatchDir(cfg.DownloadWatchDir); err != nil {
