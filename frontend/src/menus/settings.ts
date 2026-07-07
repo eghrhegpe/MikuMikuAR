@@ -87,6 +87,8 @@ import {
     SOFTWARE_DETAIL_PREFIX,
     type SettingsFolderTarget,
 } from './settings-targets';
+import { t } from '../core/i18n/t'; // [doc:adr-059] i18n 翻译
+import { setLang, getLang, SUPPORTED_LANGS, type LangCode } from '../core/i18n/locale'; // [doc:adr-059]
 
 // ======== Helpers re-exported ========
 export { refreshLibrary } from './library';
@@ -139,62 +141,25 @@ const {
 
 export { getSettingsMenu, refreshSettingsRoot, showSettings };
 
-/** 设置弹窗根级 items 构建器——items-based，支持增量 patch */
-/** 缓存：items 固定不变，无需重复创建 */
-let _cachedRootItems: PopupRow[] | null = null;
-
+/** 设置弹窗根级 items 构建器——每次重建以反映当前语言（i18n 热切换） */
 function buildSettingsRootItems(): PopupRow[] {
-    if (_cachedRootItems) {
-        return _cachedRootItems;
-    }
-
     const items: PopupRow[] = [];
-    items.push({
-        kind: 'folder',
-        label: '外观',
-        icon: 'lucide:palette',
-        target: SETTINGS.APPEARANCE,
-    });
-    items.push({
-        kind: 'folder',
-        label: '文件名',
-        icon: 'lucide:file-text',
-        target: SETTINGS.FILENAME,
-    });
-    items.push({ kind: 'folder', label: '性能', icon: 'lucide:zap', target: SETTINGS.PERFORMANCE });
-    items.push({
-        kind: 'folder',
-        label: '路径',
-        icon: 'lucide:folder-tree',
-        target: SETTINGS.PATHS,
-    });
-    items.push({
-        kind: 'folder',
-        label: '软件',
-        icon: 'lucide:package',
-        target: SETTINGS.SOFTWARE,
-    });
-    items.push({
-        kind: 'folder',
-        label: '截图',
-        icon: 'lucide:camera',
-        target: SETTINGS.SCREENSHOT,
-    });
-    items.push({ kind: 'folder', label: '音频', icon: 'lucide:volume-2', target: SETTINGS.AUDIO });
-    items.push({
-        kind: 'folder',
-        label: '快捷键',
-        icon: 'lucide:keyboard',
-        target: SETTINGS.SHORTCUTS,
-    });
-    items.push({ kind: 'folder', label: '关于', icon: 'lucide:info', target: SETTINGS.ABOUT });
-    _cachedRootItems = items;
+    items.push({ kind: 'folder', label: t('settings.appearance'), icon: 'lucide:palette', target: SETTINGS.APPEARANCE });
+    items.push({ kind: 'folder', label: t('settings.filename'), icon: 'lucide:file-text', target: SETTINGS.FILENAME });
+    items.push({ kind: 'folder', label: t('settings.performance'), icon: 'lucide:zap', target: SETTINGS.PERFORMANCE });
+    items.push({ kind: 'folder', label: t('settings.paths'), icon: 'lucide:folder-tree', target: SETTINGS.PATHS });
+    items.push({ kind: 'folder', label: t('settings.software'), icon: 'lucide:package', target: SETTINGS.SOFTWARE });
+    items.push({ kind: 'folder', label: t('settings.screenshot'), icon: 'lucide:camera', target: SETTINGS.SCREENSHOT });
+    items.push({ kind: 'folder', label: t('settings.audio'), icon: 'lucide:volume-2', target: SETTINGS.AUDIO });
+    items.push({ kind: 'folder', label: t('settings.shortcuts'), icon: 'lucide:keyboard', target: SETTINGS.SHORTCUTS });
+    items.push({ kind: 'folder', label: t('settings.language'), icon: 'lucide:languages', target: SETTINGS.LANGUAGE }); // [doc:adr-059]
+    items.push({ kind: 'folder', label: t('settings.about'), icon: 'lucide:info', target: SETTINGS.ABOUT });
     return items;
 }
 
 function buildSettingsRoot(): PopupLevel {
     return {
-        label: '设置',
+        label: t('settings.title'), // [doc:adr-059]
         dir: '',
         items: buildSettingsRootItems(),
     };
@@ -993,6 +958,11 @@ function applyDisplayNamePriority(priority: DisplayNamePriority): void {
 }
 
 function handleSettingsAction(row: PopupRow): void {
+    // [doc:adr-059] 语言切换：lang:<code> 前缀 → setLang（自动 scheduleRefresh 热刷新）
+    if (row.target.startsWith('lang:')) {
+        setLang(row.target.slice(5) as LangCode);
+        return;
+    }
     if (row.target) {
         SETTINGS_ACTIONS[row.target]?.(row);
     }
@@ -2182,7 +2152,24 @@ const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
     [SETTINGS.AUDIO]: buildSettingsAudioLevel,
     [SETTINGS.SHORTCUTS]: buildSettingsShortcutsLevel,
     [SETTINGS.ABOUT]: buildSettingsAboutLevel,
+    [SETTINGS.LANGUAGE]: buildSettingsLanguageLevel, // [doc:adr-059]
 };
+
+// [doc:adr-059] 语言选择子菜单——radio 列表，点击即切换并热刷新
+function buildSettingsLanguageLevel(): PopupLevel {
+    const cur = getLang();
+    const items: PopupRow[] = SUPPORTED_LANGS.map((l) => ({
+        kind: 'action' as const,
+        label: t(l.key),
+        icon: l.code === cur ? 'lucide:check' : '',
+        target: `lang:${l.code}`,
+    }));
+    return {
+        label: t('settings.language'),
+        dir: '',
+        items,
+    };
+}
 
 function settingsOnFolderEnter(row: PopupRow): PopupLevel | null {
     if (row.target) {

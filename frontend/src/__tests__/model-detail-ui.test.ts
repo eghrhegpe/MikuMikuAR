@@ -466,6 +466,26 @@ describe('buildModelInfoLevel', () => {
         expect(labels.some((l) => l && l.includes('20'))).toBe(true);
         expect(labels.some((l) => l && l.includes('10'))).toBe(true);
     });
+
+    it('material count uses mmdModel.materials, not Babylon mesh count', () => {
+        // 1 个 Babylon 网格，但 7 个 PMX 材质 —— 应显示 7 而非 1
+        createModel('m1', {
+            meshes: [fakeMesh('mat0')],
+            mmdModel: {
+                materials: Array(7),
+                runtimeBones: Array(3),
+                morph: { morphs: Array(2) },
+            } as any,
+        });
+        const level = buildModelInfoLevel('m1');
+        const container = document.createElement('div');
+        level.renderCustom!(container);
+        const labels = Array.from(container.querySelectorAll('.slide-label, .field-value')).map(
+            (el) => el.textContent
+        );
+        expect(labels.some((l) => l && l.includes('7'))).toBe(true);
+        expect(labels.some((l) => l && l.includes('材质数'))).toBe(true);
+    });
 });
 
 // ======== buildVisibilityLevel ========

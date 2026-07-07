@@ -25,6 +25,7 @@ import {
     uiState,
 } from './config';
 import { registerIconBundle } from './icons-bundle';
+import { initI18n } from './i18n/locale'; // [doc:adr-059] 语言在菜单渲染前确定
 import { GetConfig, ImportZip, ImportLocalFile, Events, CheckForUpdate } from './wails-bindings';
 import { Browser } from '@wailsio/runtime';
 import { generateTextColors } from '../menus/settings';
@@ -41,6 +42,8 @@ import {
     tryRestoreLastScene,
     setEnvState,
     applyFrameControl,
+    applyOutfitVariant,
+    loadOutfits,
 } from '../scene/scene';
 import { focusModel } from '../scene/manager/model-ops';
 import { updatePerformance, setPerformanceMode } from '../scene/render/performance';
@@ -572,6 +575,7 @@ async function init(): Promise<void> {
     try {
         // 注册本地图标 bundle，使 iconify 离线可用
         registerIconBundle();
+        initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>
         buildNavMaps();
         // Register keyboard shortcuts via ShortcutRegistry
         registerAppShortcuts();
@@ -909,6 +913,44 @@ if (import.meta.env.DEV) {
         get currentAnimation(): string {
             // babylon-mmd runtime field name varies by version — safe cast.
             return (mmdRuntime as any)?.runtimeAnimation?.animationName ?? 'idle';
+        },
+        // --- Outfit (换装) behavior hook (DEV only, on-strategy per ADR-060) ---
+        // Drives the REAL applyOutfitVariant path so E2E can assert a 3D change
+        // without fragile 3-4 level menu navigation. Returns variant names for
+        // the focused model; empty if no outfits.json or no model loaded.
+        outfitVariants: (): Promise<string[]> => {
+            const inst = focusedModel();
+            if (!inst) return Promise.resolve([]);
+            return loadOutfits(inst.id)
+                .then((o) => (o?.variants ?? []).map((v) => v.name))
+                .catch(() => []);
+        },
+        applyOutfit: (variantName: string): Promise<boolean> => {
+            const inst = focusedModel();
+            if (!inst) return Promise.resolve(false);
+            return applyOutfitVariant(inst.id, variantName)
+                .then(() => true)
+                .catch(() => false);
+        },
+        // Coarse 16x16 luminance fingerprint of the current frame. Stable enough
+        // for "did the picture change" assertions without decoding the PNG.
+        // (Do NOT read a '2d' context from the WebGL canvas — getContext returns null.)
+        fingerprint: async (): Promise<string> => {
+            const url = await window.__capture!();
+            const img = new Image();
+            img.src = url;
+            await img.decode();
+            const c = document.createElement('canvas');
+            c.width = c.height = 16;
+            const ctx = c.getContext('2d');
+            if (!ctx) return '';
+            ctx.drawImage(img, 0, 0, 16, 16);
+            const d = ctx.getImageData(0, 0, 16, 16).data;
+            let s = '';
+            for (let i = 0; i < d.length; i += 4) {
+                s += d[i] + d[i + 1] + d[i + 2] > 384 ? '1' : '0';
+            }
+            return s;
         },
         // Delegate to the existing screenshot helper. NOTE: do NOT read a
         // '2d' context from the WebGL canvas — getContext('2d') returns null.

@@ -1,6 +1,6 @@
 # ADR-059: i18n 多语言切换框架
 
-> **状态**: 待实施（2026-07-07 提出）
+> **状态**: 实施中（Phase 1 已完成 2026-07-07；Phase 2-4 待做）
 > **关联**: [ADR-010](adr-010-competitor-ui-mapping.md)（竞品 UI 映射，含 DanceXR 语言项）、[ADR-043](adr-043-dancexr-gap-analysis.md)（DanceXR 差距分析）、[ADR-044](adr-044-competitive-analysis.md)（竞品分析）
 > **背景**: 当前全仓 UI 字符串为硬编码中文，约 100 个 `.ts` 文件含中文字面量，分布于 `menus/`、`core/ui-*`、`scene/`、`physics/`。无 i18n 框架、无语言偏好入口。竞品 DanceXR 已支持 5 种语言（简/繁中、英、日、韩）。本 ADR 锁定一套与现有 `core/reactivity` 体系对齐的轻量 i18n 方案。
 
@@ -201,14 +201,14 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 
 ### Phase 1: 核心框架 + 试点（~2–3 天）
 
-- [ ] 新建 `core/i18n/locale.ts`（`getLang`/`setLang` + localStorage 持久化，镜像 `setMmdRuntimeType`）
-- [ ] 新建 `core/i18n/t.ts`（`t(key, params?)` + 回退链）
-- [ ] 新建 `core/i18n/locales/zh-CN.ts`（基准 bundle，先迁 `settings`+`library` 字符串）
-- [ ] `menus/settings-targets.ts` 增 `SETTINGS.LANGUAGE`
-- [ ] `menus/settings.ts` 增「语言」行 + 子菜单 radio
-- [ ] `main.ts` init 期 `initI18n()` 读取语言
-- [ ] `menus/library.ts` 试点 `t()` 化，验证热切换
-- [ ] 验证：`npm run check && npm run test && npm run build`
+- [x] 新建 `core/i18n/locale.ts`（`getLang`/`setLang` + localStorage 持久化，镜像 `setMmdRuntimeType`）
+- [x] 新建 `core/i18n/t.ts`（`t(key, params?)` + 回退链）
+- [x] 新建 `core/i18n/locales/zh-CN.ts` + `en.ts`（基准 bundle + 英语试点；`settings`/`lang` 命名空间）
+- [x] `menus/settings-targets.ts` 增 `SETTINGS.LANGUAGE`
+- [x] `menus/settings.ts` 增「语言」行（根级 folder）+ 子菜单 radio（`buildSettingsLanguageLevel`，`lang:` target → `setLang`）
+- [x] `main.ts` init 期 `initI18n()` 读取语言并同步 `<html lang>`
+- [x] 热切换试点：设置根级 9 项 + 语言子菜单均经 `t()` 化，点击语言即 `setLang` → `scheduleRefresh` 热刷新（注：原计划的 `library.ts` 试点改为设置页 pilot——`library.ts` 经核查无用户界面中文字符串，故以设置页为演示载体）
+- [x] 验证：`npm run check` ✅ / `npm run test` ✅（1099 passed）/ `npm run build` ✅
 
 ### Phase 2: 批量抽取 menus/（~3–4 天）
 

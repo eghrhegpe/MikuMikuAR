@@ -1,6 +1,6 @@
 # ADR-060: E2E 测试策略（Playwright + 双模式 Fixture + 场景数值钩子）
 
-> **状态**: 实施中（Phase 0 已完成，2026-07-07 提出）
+> **状态**: 实施中（Phase 0 / Phase 1 / Phase 2 已完成，2026-07-07 提出并推进）
 > **关联**: [ADR-041](adr-041-ci-auto-checks.md)（CI 自动检查，E2E 接入点）、[AGENTS.md](../../AGENTS.md)（测试路由与 `npm run test:e2e` 入口）
 > **背景**: 当前测试资产为 **33 个 Vitest 单元 spec + 2 个 Playwright E2E spec**（`smoke` + `env-sky`）。结构呈「逻辑层铜墙铁壁、UI/E2E 层四面漏风」：算法/物理/换装/绑定契约单测覆盖厚，但关键用户旅程（模型加载、动作播放、换装、AR、截图导出）无 E2E，且 3D 渲染层**无任何断言钩子**，旧 `env-sky` 截图仅断言 `data:image/png` 前缀、未比对内容。本 ADR 锁定 E2E 工具选型、断言策略与分阶段落地路标，供多 AI 协同规划。
 
@@ -68,6 +68,28 @@
   get currentAnimation(): string {
     return (mmdRuntime as any)?.runtimeAnimation?.animationName ?? 'idle';
   },
+  // 换装行为钩子（Phase 1）：驱动真实 applyOutfitVariant 路径，避免 3-4 层脆弱菜单导航
+  outfitVariants: (): Promise<string[]> => {
+    const inst = focusedModel();
+    if (!inst) return Promise.resolve([]);
+    return loadOutfits(inst.id).then((o) => (o?.variants ?? []).map((v) => v.name)).catch(() => []);
+  },
+  applyOutfit: (variantName: string): Promise<boolean> => {
+    const inst = focusedModel();
+    if (!inst) return Promise.resolve(false);
+    return applyOutfitVariant(inst.id, variantName).then(() => true).catch(() => false);
+  },
+  // 当前帧 16x16 亮度指纹（Phase 2）：浏览器内生成，避开 PNG 解码与 2D context
+  fingerprint: async (): Promise<string> => {
+    const url = await window.__capture!();
+    const img = new Image(); img.src = url; await img.decode();
+    const c = document.createElement('canvas'); c.width = c.height = 16;
+    const ctx = c.getContext('2d'); if (!ctx) return '';
+    ctx.drawImage(img, 0, 0, 16, 16);
+    const d = ctx.getImageData(0, 0, 16, 16).data;
+    let s = ''; for (let i = 0; i < d.length; i += 4) s += d[i] + d[i+1] + d[i+2] > 384 ? '1' : '0';
+    return s;
+  },
   capture: (): Promise<string> => window.__capture!(),                // 复用既有 Babylon 截图，不碰 2D context
 };
 ```
@@ -78,6 +100,8 @@
 |------|----------|
 | `scene` / `engine` / `modelManager` | `frontend/src/scene/scene.ts` |
 | `mmdRuntime` | `frontend/src/core/state.ts`（经 `core/config` 再导出至 `main.ts`） |
+| `focusedModel()` | `frontend/src/scene/scene.ts`（**函数**，返回焦点 ModelInstance，用 `focusedModel()?.id`） |
+| `applyOutfitVariant` / `loadOutfits` | `frontend/src/scene/scene.ts` 再导出自 `frontend/src/outfit/outfit.ts` |
 | `XpbdSolver.constraints` / `.particles` | `frontend/src/physics/xpbd-solver.ts` |
 | `ClothInstance.solver` | `frontend/src/physics/cloth-manager.ts` |
 | `window.__capture` | `frontend/src/core/main.ts:875` |
@@ -94,20 +118,41 @@
 - [x] `npm run check` 通过（tsc --noEmit exit 0）
 - [x] 中央文件改动已在当日 `memory/YYYY-MM-DD.md` 认领（项目多 AI 铁律）
 
-### Phase 1 — E2E 关键路径骨架（⏳ 待实施）
+### Phase 1 — E2E 关键路径骨架（✅ 已完成 2026-07-07）
 
 按 `wails-fixture.ts` 双模式，新增 3 个 spec（DOM 用 `vitePage`，WebGL 用 `wailsPage`）：
 
-- [ ] `e2e/model-load.spec.ts` — 加载默认模型 → `waitForFunction(__scene.meshCount > 10)` + `fps >= 30`
-- [ ] `e2e/action-play.spec.ts` — 切动作 → 断言 `__scene.currentAnimation` 变化；换装 → 断言 `meshCount` 或 `capture()` 哈希变化
-- [ ] `e2e/export-screenshot.spec.ts` — 触发导出 → 断言 `download` 事件文件名 `/\.(png|jpg)$/`（不比图片内容）
-- [ ] **选择器来源**：`text=加载默认模型` 等是占位，**须 grep `frontend/src/menus/` 与 `index.html` 取真实 `id`/`text`**（如 `#btnLibrary`、`#btnEnv`），禁止凭空猜测
-- [ ] 每个 spec 标注 `// @e2e vitePage` 或 `// @e2e wailsPage`，明确依赖
+- [x] `e2e/model-load.spec.ts` — 默认模型 / 指定名模型 → `waitForFunction(__scene.meshCount > 10)` + `fps >= 30`
+- [x] `e2e/action-play.spec.ts` — 切动作 → 断言 `__scene.currentAnimation` 变化（非 `idle`）；换装 → 经 `__scene.outfitVariants()`/`applyOutfit()` 驱动真实换装路径，比对 `fingerprint()` 前后变化，变体不足 2 个时 `test.skip`
+- [x] `e2e/export-screenshot.spec.ts` — `__scene.capture()` 返回有效 PNG dataURL；场景菜单「截图当前模型」入口 DOM 可见
+- [x] **真实选择器（已 grep 锁定，勿凭空猜）**：
 
-### Phase 2 — 截图基线比对（⏳ 待实施，可选增强）
+  | 入口 | 选择器 | 来源 |
+  |------|--------|------|
+  | 模型库 | `#btnMainAction` | `core/dom.ts` |
+  | 动作弹窗 | `#btnMotionPopup` | `core/dom.ts` |
+  | 场景菜单 | `#btnScene` | `core/dom.ts` |
+  | 环境面板 | `#btnEnv` | `core/dom.ts` |
+  | 菜单项 | `div.slide-item`（标签 `span.slide-label`） | `menus/menu.ts` / `core/ui-slide-row.ts` |
+  | 截图菜单项 | 文本「截图当前模型」(`scene:screenshot`) | `menus/scene-menu.ts` |
+  | 换装入口 | 详情层「外观 → 服装变体」(`buildOutfitLevel`) | `menus/model-detail.ts:141` / `menus/outfit-ui.ts` |
 
-- [ ] `e2e/__snapshots__/` 存 golden 图；`env-sky` 等从「仅断言 dataURL 前缀」升级为内容 diff（允许阈值，抗 WebGL 轻微噪点）
-- [ ] 提供 `updateSnapshots` 脚本，UI 有意变更时一键刷新基线
+- [x] **换装 E2E 策略决策**：模型详情→服装变体是 3-4 层菜单导航（库 `scene:<id>` 行 → 详情 → 外观折叠 → 服装变体 → 变体行），DOM 定位极脆弱且无法在本环境验证。据本 ADR「数值/行为断言为主」原则，**换装行为走 `__scene.applyOutfit()` 钩子**（真实驱动 `applyOutfitVariant`，含 `loadOutfits` + mesh 重定向），仅对画面变化做指纹比对；纯 DOM 菜单路径不作为 E2E 主判据。
+- [x] `npm run check` + `npx playwright test --list` 通过（14 个测试枚举成功）
+
+> **导出截图说明**：本项目截图走 **Wails 原生 `SaveFile` 对话框**（非浏览器 `download` 事件），Playwright 无法拦截。正确做法是断言 `__scene.capture()` 的 Babylon 管线 + 场景菜单入口 DOM（见 `export-screenshot.spec.ts`）。
+
+### Phase 2 — 截图基线比对（✅ 已完成 2026-07-07，指纹方案）
+
+采用 **粗粒度指纹基线** 取代原始「golden PNG + 像素 diff」：
+
+- [x] `window.__scene.fingerprint()`（Phase 0 钩子扩展）：浏览器内 `Image.decode` → 缩到 16×16 → 取每像素亮度阈值生成 256 位 `0/1` 字符串。**完全避开 PNG 解码与 WebGL 2D-context 陷阱**。
+- [x] `helpers.ts`：`compareToBaseline(name, hash, tolerance=0.08)` 用汉明距离比对；**首次运行无基线自动生成**（generator mode，CI seed 用），已存在则比对。
+- [x] `e2e/__baselines__/`（含 `README.md`）：基线 JSON 落盘处；删除对应 `.json` 即可重算。
+- [x] `env-sky.spec.ts`「纯色纯白截图」升级为：校验 `capture()` 管线 + `fingerprint()` 与基线比对（容忍 0.08）。
+- [ ] 后续可扩：`model-load` 默认场景基线、动作切换前后基线 diff（按需）。
+
+> 为何不用 `data:image/png` 字符串直接比对：Babylon `CreateScreenshotAsync` 压缩非确定性，同画面字符串可能不同；指纹方案对驱动/抗锯齿抖动稳健。
 
 ### Phase 3 — CI 集成（⏳ 待实施，挂 ADR-041）
 
@@ -141,13 +186,13 @@
 ### Phase 0: 场景数值钩子（✅ 2026-07-07 完成）
 - 见第三节 Phase 0 清单。
 
-### Phase 1: E2E 关键路径骨架（~0.5–1 天）
-- [ ] grep 真实菜单选择器
-- [ ] 写 `model-load` / `action-play` / `export-screenshot` 三个 spec
-- [ ] 本地 `wails dev` 起 9222 后 `npm run test:e2e` 验证
+### Phase 1: E2E 关键路径骨架（✅ 2026-07-07 完成）
+- [x] grep 真实菜单选择器（见第三节 Phase 1 表）
+- [x] 写 `model-load` / `action-play` / `export-screenshot` 三个 spec（含换装钩子方案）
+- [ ] 本地 `wails dev` 起 9222 后 `npm run test:e2e` 实跑验证（本环境无 Wails 运行时，仅 tsc + list 通过）
 
-### Phase 2: 截图基线（~0.5 天，可选）
-- [ ] golden 图 + diff 阈值；`updateSnapshots` 脚本
+### Phase 2: 截图基线（✅ 2026-07-07 完成，指纹方案）
+- [x] `fingerprint()` 钩子 + `compareToBaseline()` + `__baselines__/` 自动基线
 
 ### Phase 3: CI 接入（~0.5 天，挂 ADR-041）
 - [ ] CI 跑 Vitest 常驻；E2E 按需；失败归档截图
@@ -164,10 +209,12 @@
 | **套用 Three.js 模板**（外部「Wails E2E 指南」常见） | 高 | 本 ADR 明确 Babylon 导出路径表；`window.__scene` 已按真实符号实现；多 AI 改钩子前先读本 ADR |
 | **WebGL canvas 用 `getContext('2d')`** 返回 null 抛错 | 高 | 禁用 2D 哈希；统一走 `window.__capture`（Babylon 截图） |
 | **端口误导**（指南写 `34115` 为 Wails v2） | 中 | 本项目用 5173 + 9222；见 1.1 |
-| `meshCount` 含系统 mesh（地面/辅助）导致阈值误判 | 中 | 断言阈值（如 `> 10`）而非精确值；换装可用 `capture()` 哈希变化 |
+| `meshCount` 含系统 mesh（地面/辅助）导致阈值误判 | 中 | 断言阈值（如 `> 10`）而非精确值；换装用 `fingerprint()` 变化 |
 | E2E 重（需 Wails 运行时）拖慢日常 | 中 | 默认跑 Vitest；E2E 仅 UI 改动时（AGENTS.md 注释） |
 | `mmdRuntime.runtimeAnimation.animationName` 字段名随 babylon-mmd 版本变 | 低 | 已用 `(mmdRuntime as any)?.runtimeAnimation?.animationName ?? 'idle'` 容错 |
-| 截图基线对 WebGL 噪点敏感 | 中 | 仅作次级基线 + 阈值；主判据仍是数值 |
+| 换装菜单导航脆弱（库→详情→外观→服装变体，3-4 层） | 高 | 据本 ADR 分层断言原则，**换装行为走 `__scene.applyOutfit()` 钩子**（真实路径），不做 E2E DOM 导航；仅对画面做 `fingerprint()` 比对 |
+| 截图「golden PNG 像素 diff」对 WebGL 噪点/压缩敏感 | 中 | Phase 2 改用 **16×16 亮度指纹 + 汉明距离（tolerance 0.08）**，对驱动/抗锯齿抖动稳健；主判据仍是数值 |
+| 原生 `SaveFile` 截图对话框不可被 `download` 事件拦截 | 中 | 不拦截；断言 `__scene.capture()` 管线 + 菜单入口 DOM |
 
 ### 边界
 
@@ -181,11 +228,12 @@
 
 ## 七、验证方式
 
-1. **钩子可用**：`wails dev` 起 9222 → Playwright `wailsPage` 打开应用 → `page.evaluate(() => window.__scene.fps)` 返回数值、`meshCount > 0`。
+1. **钩子可用**：`wails dev` 起 9222 → Playwright `wailsPage` 打开应用 → `page.evaluate(() => window.__scene.fps)` 返回数值、`meshCount > 0`、`fingerprint()` 返回 256 位串。
 2. **模型加载**：`model-load.spec.ts` 加载默认模型后 `waitForFunction(__scene.meshCount > 10)` 通过且 `fps >= 30`。
-3. **动作/换装**：`action-play.spec.ts` 切换后 `__scene.currentAnimation` 变化；换装后 `meshCount` 或 `capture()` 变化。
-4. **导出**：`export-screenshot.spec.ts` 触发后产生 `*.png/*.jpg` 下载。
-5. **回归**：`npm run check && npm run test`（Vitest）全绿；E2E 在 `wails dev` 就绪下 `npm run test:e2e` 通过。
+3. **动作/换装**：`action-play.spec.ts` 切换动作后 `__scene.currentAnimation` 变化；换装经 `__scene.outfitVariants()`/`applyOutfit()` 驱动后 `fingerprint()` 前后不同（变体<2 自动 skip）。
+4. **导出**：`export-screenshot.spec.ts` 断言 `__scene.capture()` 返回有效 PNG dataURL，且「截图当前模型」菜单入口可见（原生 SaveFile 对话框不拦截）。
+5. **截图基线**：`env-sky.spec.ts` 纯色白屏 `fingerprint()` 与 `__baselines__/env-sky-solid-white.json` 比对（首次自动生成）。
+6. **回归**：`npm run check && npm run test`（Vitest）全绿；E2E 在 `wails dev` 就绪下 `npm run test:e2e` 通过。
 
 ---
 

@@ -30,22 +30,29 @@ test.describe("核心旅程: 动作播放与换装", () => {
         expect(anim).not.toBe("idle");
     });
 
-    // 换装：依赖模型带 outfit 变体，且在 model-detail 弹窗中可见。
-    // 下列为条件骨架：若当前模型无 outfit，测试应跳过而非失败（TODO 接 skipWhen 判断）。
-    test("换装后画面应发生变化（capture 哈希对比）", async ({ wailsPage: page }) => {
+    // 换装：走 window.__scene 行为钩子（applyOutfit / fingerprint），避免 3-4 层
+    // 脆弱的菜单 DOM 导航。钩子直接驱动真实 applyOutfitVariant 路径（含 loadOutfits +
+    // mesh 重定向），是 ADR-060 规定的「数值/行为断言为主」策略。
+    // 前置：CI 需 seed 一个带 outfits.json（≥2 个变体）的模型，否则自动跳过。
+    test("换装: 应用不同变体后画面应发生变化", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
         await loadFirstModel(page);
 
-        const before = await page.evaluate(async () => await (window as any).__scene.capture());
+        const variants = await page.evaluate(async () => (window as any).__scene.outfitVariants());
+        test.skip(
+            variants.length < 2,
+            `焦点模型变体不足 2 个 (${variants.length})；需 CI seed 带 outfits.json 的模型`
+        );
 
-        // TODO(ADR-060 Phase 1): 打开 model-detail 弹窗并点击 outfit 变体。
-        // 选择器待补：btnMainAction → 点击已加载模型条目 → model-detail 内 outfit 变体行。
-        // 例：
-        //   await page.locator('#btnMainAction').click();
-        //   await page.locator('#sceneOverlay .slide-item', { hasText: '换装' }).first().click();
-        //   await page.locator('.slide-item', { hasText: '变体A' }).click();
+        const before = await page.evaluate(async () => (window as any).__scene.fingerprint());
+        // 应用第二个变体（variants[0] 通常为「默认」）
+        const ok = await page.evaluate(
+            async (v: string) => (window as any).__scene.applyOutfit(v),
+            variants[1]
+        );
+        expect(ok).toBe(true);
 
-        const after = await page.evaluate(async () => await (window as any).__scene.capture());
-        expect(before).not.toBe(after);
+        const after = await page.evaluate(async () => (window as any).__scene.fingerprint());
+        expect(after).not.toBe(before);
     });
 });
