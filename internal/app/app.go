@@ -184,25 +184,6 @@ func shutdownServers(ctx context.Context, servers []*http.Server) error {
 	return firstErr
 }
 
-// openFileDialog is a shared helper for selecting files via OS dialog.
-// On Android, Wails v3 supports SAF-based file picker (GOOS=android).
-func (a *App) openFileDialog(title string, filters []application.FileFilter) (string, error) {
-	if a.wailsApp == nil {
-		return "", fmt.Errorf("application not initialized")
-	}
-	dialog := a.wailsApp.Dialog.OpenFile()
-	dialog.SetTitle(title)
-	dialog.CanChooseFiles(true)
-	for _, f := range filters {
-		dialog.AddFilter(f.DisplayName, f.Pattern)
-	}
-	path, err := dialog.PromptForSingleSelection()
-	if err != nil {
-		return "", err
-	}
-	return filepath.ToSlash(path), nil
-}
-
 // SelectPMXFile opens a file dialog to select a PMX file
 func (a *App) SelectPMXFile() (string, error) {
 	return dialogs.SelectPMX(a.wailsApp)

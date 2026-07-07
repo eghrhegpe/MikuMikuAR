@@ -88,3 +88,68 @@ func SelectEnvTexture(wailsApp *application.App) (string, error) {
 func SelectExe(wailsApp *application.App) (string, error) {
 	return OpenFile(wailsApp, "选择可执行文件", exeFilters)
 }
+
+var presetFilters = []application.FileFilter{
+	{DisplayName: "MikuMikuAR Model Preset (*.mcupreset.json)", Pattern: "*.mcupreset.json"},
+	{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+}
+
+var sceneFilters = []application.FileFilter{
+	{DisplayName: "MikuMikuAR Scene (*.mmascene)", Pattern: "*.mmascene"},
+	{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+}
+
+func SelectPresetOpen(wailsApp *application.App) (string, error) {
+	return OpenFile(wailsApp, "加载模型预设", presetFilters)
+}
+
+func SelectSceneOpen(wailsApp *application.App) (string, error) {
+	return OpenFile(wailsApp, "加载场景", sceneFilters)
+}
+
+func SaveFile(wailsApp *application.App, title, filename string, filters []application.FileFilter) (string, error) {
+	if wailsApp == nil {
+		return "", fmt.Errorf("application not initialized")
+	}
+	dialog := wailsApp.Dialog.SaveFileWithOptions(&application.SaveFileDialogOptions{
+		Title:    title,
+		Filename: filename,
+		Filters:  filters,
+	})
+	path, err := dialog.PromptForSingleSelection()
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(path), nil
+}
+
+func SelectPresetSave(wailsApp *application.App) (string, error) {
+	return SaveFile(wailsApp, "保存模型预设", "preset.mcupreset.json", presetFilters)
+}
+
+func SelectSceneSave(wailsApp *application.App) (string, error) {
+	return SaveFile(wailsApp, "保存场景", "scene.mmascene", sceneFilters)
+}
+
+func SelectBundleSave(wailsApp *application.App) (string, error) {
+	return SaveFile(wailsApp, "导出场景包", "scene.mmascene", sceneFilters)
+}
+
+func SelectDir(wailsApp *application.App, title string) (string, error) {
+	if wailsApp == nil {
+		return "", fmt.Errorf("application not initialized")
+	}
+	dialog := wailsApp.Dialog.OpenFile()
+	dialog.SetTitle(title)
+	dialog.CanChooseDirectories(true)
+	dialog.CanChooseFiles(false)
+	path, err := dialog.PromptForSingleSelection()
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(path), nil
+}
+
+func SelectLibraryDir(wailsApp *application.App) (string, error) {
+	return SelectDir(wailsApp, "选择模型库根目录")
+}
