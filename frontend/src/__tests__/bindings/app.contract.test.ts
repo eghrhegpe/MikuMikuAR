@@ -330,7 +330,6 @@ describe('binding contract: function exports', () => {
         'GetDanceSets',
         'GetDownloadAutoImport',
         'GetDownloadWatchStatus',
-        'GetFavorites',
         'GetLibraryIndex',
         'GetModelMeta',
         'GetModelMetaBatch',

@@ -328,7 +328,7 @@ export interface EnvState {
     underwaterTintStrength: number;
 
     cloudsEnabled: boolean;
-    debugClouds?: boolean;
+    debugClouds: boolean;
     cloudCover: number;
     cloudScale: number;
     cloudHeight: number;

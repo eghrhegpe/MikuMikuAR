@@ -52,7 +52,7 @@ func zipCacheName(zipPath string) string {
 	if err != nil {
 		abs = zipPath
 	}
-	return sha256Hex(abs)
+	return util.SHA256Hex(abs)
 }
 
 // ExtractZip extracts a zip file to the cache directory and returns the path

@@ -56,7 +56,7 @@ func isolateDir(filePath string, logFn func(string, ...interface{})) (string, er
 	// Use the resolved path for all file operations
 	resolvedPath := filepath.Join(realDir, baseName)
 
-	hash := sha256Hex(realDir)[:12]
+	hash := util.SHA256Hex(realDir)[:12]
 	serveRoot, err := serveRootDir()
 	if err != nil {
 		if logFn != nil {

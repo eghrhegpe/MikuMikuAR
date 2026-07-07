@@ -289,7 +289,7 @@ export function stopTimeOfDay(): void {
         _unregisterTimeOfDay = null;
     }
     // 持久化当前 sunAngle 到后端
-    SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(
+    SetEnvState(envState).catch(
         () => {}
     );
 }
@@ -439,7 +439,7 @@ export function applyEnvPresetObject(preset: {
 
         if (t >= 1) {
             setSkipLightAutoSave(false);
-            SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(
+            SetEnvState(envState).catch(
                 () => {}
             );
             triggerAutoSave();
@@ -472,7 +472,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         clearTimeout(_envPersistTimer);
     }
     _envPersistTimer = setTimeout(() => {
-        SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(
+        SetEnvState(envState).catch(
             () => {}
         );
     }, 500);
@@ -488,7 +488,7 @@ export function flushEnvState(): void {
         clearTimeout(_envPersistTimer);
         _envPersistTimer = null;
     }
-    SetEnvState(envState as unknown as import('../../core/wails-bindings').EnvState).catch(
+    SetEnvState(envState).catch(
         () => {}
     );
 }

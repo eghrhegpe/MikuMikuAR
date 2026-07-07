@@ -14,6 +14,8 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/wailsapp/wails/v3/pkg/application"
+
+	"mikumikuar/internal/dialogs"
 )
 
 // isAndroid returns true when running on Android (GOOS=android).
@@ -203,61 +205,38 @@ func (a *App) openFileDialog(title string, filters []application.FileFilter) (st
 
 // SelectPMXFile opens a file dialog to select a PMX file
 func (a *App) SelectPMXFile() (string, error) {
-	return a.openFileDialog("选择 PMX 模型文件", []application.FileFilter{
-		{DisplayName: "PMX Model (*.pmx)", Pattern: "*.pmx"},
-		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-	})
+	return dialogs.SelectPMX(a.wailsApp)
 }
 
 // SelectImportFile opens a file dialog to select PMX / ZIP / VMD files.
 // Used by the "导入文件" menu entry in library-core.ts.
 func (a *App) SelectImportFile() (string, error) {
-	return a.openFileDialog("选择 PMX / ZIP / VMD 文件", []application.FileFilter{
-		{DisplayName: "PMX Model (*.pmx)", Pattern: "*.pmx"},
-		{DisplayName: "MMD Archive (*.zip)", Pattern: "*.zip"},
-		{DisplayName: "VMD Motion (*.vmd)", Pattern: "*.vmd"},
-		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-	})
+	return dialogs.SelectImport(a.wailsApp)
 }
 
 // SelectVMDMotion opens a file dialog to select a VMD motion file
 func (a *App) SelectVMDMotion() (string, error) {
-	return a.openFileDialog("选择 VMD 动作文件", []application.FileFilter{
-		{DisplayName: "VMD Motion (*.vmd)", Pattern: "*.vmd"},
-		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-	})
+	return dialogs.SelectVMD(a.wailsApp)
 }
 
 // SelectVPDPose opens a file dialog to select a VPD pose file
 func (a *App) SelectVPDPose() (string, error) {
-	return a.openFileDialog("选择 VPD 姿势文件", []application.FileFilter{
-		{DisplayName: "VPD Pose (*.vpd)", Pattern: "*.vpd"},
-		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-	})
+	return dialogs.SelectVPD(a.wailsApp)
 }
 
 // SelectAudioFile opens a file dialog to select an audio file
 func (a *App) SelectAudioFile() (string, error) {
-	return a.openFileDialog("选择音乐文件", []application.FileFilter{
-		{DisplayName: "Audio Files (*.mp3 *.wav *.ogg)", Pattern: "*.mp3;*.wav;*.ogg"},
-		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-	})
+	return dialogs.SelectAudio(a.wailsApp)
 }
 
 // SelectEnvTextureFile opens a file dialog to select an environment/skybox texture.
 func (a *App) SelectEnvTextureFile() (string, error) {
-	return a.openFileDialog("选择环境贴图", []application.FileFilter{
-		{DisplayName: "Environment Map (*.hdr *.dds *.exr)", Pattern: "*.hdr;*.dds;*.exr"},
-		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-	})
+	return dialogs.SelectEnvTexture(a.wailsApp)
 }
 
 // SelectExeFile opens a file dialog to select an executable file.
 func (a *App) SelectExeFile() (string, error) {
-	return a.openFileDialog("选择可执行文件", []application.FileFilter{
-		{DisplayName: "Executable (*.exe)", Pattern: "*.exe"},
-		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-	})
+	return dialogs.SelectExe(a.wailsApp)
 }
 
 // ======== Model Library Types ========
@@ -387,20 +366,33 @@ type EnvState struct {
 	StarsEnabled     bool       `json:"starsEnabled"`
 	EnvIntensity     float64    `json:"envIntensity"`
 
-	GroundVisible bool       `json:"groundVisible"`
-	GroundMode    string     `json:"groundMode"`
-	GroundColor   [3]float64 `json:"groundColor"`
-	GroundAlpha   float64    `json:"groundAlpha"`
+	GroundVisible          bool       `json:"groundVisible"`
+	GroundMode             string     `json:"groundMode"`
+	GroundColor            [3]float64 `json:"groundColor"`
+	GroundAlpha            float64    `json:"groundAlpha"`
+	GroundTexture          string     `json:"groundTexture"`
+	GroundTextureEnabled   bool       `json:"groundTextureEnabled"`
+	GroundTextureScale     float64    `json:"groundTextureScale"`
+	GroundTextureRotation  float64    `json:"groundTextureRotation"`
+	GroundGridSize         float64    `json:"groundGridSize"`
+	GroundLineColor        [3]float64 `json:"groundLineColor"`
+	GroundTerrainHeight    float64    `json:"groundTerrainHeight"`
+	GroundTerrainScale     float64    `json:"groundTerrainScale"`
+	GroundTerrainSeed      float64    `json:"groundTerrainSeed"`
+	GroundTerrainOctaves   float64    `json:"groundTerrainOctaves"`
+	GroundLevel            float64    `json:"groundLevel"`
 
 	WindEnabled   bool       `json:"windEnabled"`
 	WindDirection [3]float64 `json:"windDirection"`
 	WindSpeed     float64    `json:"windSpeed"`
 
-	ParticleEnabled  bool    `json:"particleEnabled"`
-	ParticleType     string  `json:"particleType"`
-	ParticleEmitRate float64 `json:"particleEmitRate"`
-	ParticleSize     float64 `json:"particleSize"`
-	ParticleSpeed    float64 `json:"particleSpeed"`
+	ParticleEnabled      bool    `json:"particleEnabled"`
+	ParticleType         string  `json:"particleType"`
+	ParticleEmitRate     float64 `json:"particleEmitRate"`
+	ParticleSize         float64 `json:"particleSize"`
+	ParticleSpeed        float64 `json:"particleSpeed"`
+	ParticleSplash       bool    `json:"particleSplash"`
+	ParticleCustomTexture string `json:"particleCustomTexture"`
 
 	WaterEnabled      bool       `json:"waterEnabled"`
 	WaterLevel        float64    `json:"waterLevel"`
@@ -427,7 +419,6 @@ type EnvState struct {
 	CausticScrollX        float64    `json:"causticScrollX"`
 	CausticScrollY        float64    `json:"causticScrollY"`
 	FresnelAlphaInfluence float64    `json:"fresnelAlphaInfluence"`
-	FoamAlphaInfluence    float64    `json:"foamAlphaInfluence"`
 
 	// 水面雾效（独立于全局雾）
 	WaterFogColor          [3]float64 `json:"waterFogColor"`
@@ -441,10 +432,14 @@ type EnvState struct {
 	UnderwaterFogMultiplier  float64 `json:"underwaterFogMultiplier"`
 	UnderwaterTintStrength   float64 `json:"underwaterTintStrength"`
 
-	CloudsEnabled bool    `json:"cloudsEnabled"`
-	CloudCover    float64 `json:"cloudCover"`
-	CloudScale    float64 `json:"cloudScale"`
-	CloudHeight   float64 `json:"cloudHeight"`
+	CloudsEnabled   bool    `json:"cloudsEnabled"`
+	CloudCover      float64 `json:"cloudCover"`
+	CloudScale      float64 `json:"cloudScale"`
+	CloudHeight     float64 `json:"cloudHeight"`
+	CloudThickness  float64 `json:"cloudThickness"`
+	CloudVisibility float64 `json:"cloudVisibility"`
+	CloudGap        float64 `json:"cloudGap"`
+	DebugClouds     bool    `json:"debugClouds"`
 
 	FogEnabled bool       `json:"fogEnabled"`
 	FogMode    string     `json:"fogMode"`
@@ -458,6 +453,16 @@ type EnvState struct {
 	ClothDebugParticles  bool        `json:"clothDebugParticles"`
 	ClothDebugConstraints bool       `json:"clothDebugConstraints"`
 	ClothDebugColliders  bool        `json:"clothDebugColliders"`
+	SolverSubsteps       float64     `json:"solverSubsteps"`
+	SolverTimeScale      float64     `json:"solverTimeScale"`
+	CollisionEnabled     bool        `json:"collisionEnabled"`
+	BodyCollisionEnabled bool        `json:"bodyCollisionEnabled"`
+	GroundCollisionEnabled bool      `json:"groundCollisionEnabled"`
+
+	SunAngle  float64 `json:"sunAngle"`
+	Azimuth   float64 `json:"azimuth"`
+
+	LightingPresetName *string `json:"lightingPresetName,omitempty"`
 
 	TimeOfDayActive bool    `json:"timeOfDayActive"`
 	TimeOfDaySpeed  float64 `json:"timeOfDaySpeed"`
