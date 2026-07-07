@@ -655,7 +655,7 @@ async function init(): Promise<void> {
 async function restoreEnvState(): Promise<void> {
     const cfg = await GetConfig();
     if (cfg.env) {
-        const loaded = cfg.env as unknown as Partial<EnvState>;
+        const loaded = cfg.env as Partial<EnvState>;
         // 向后兼容：旧配置缺少高级水面参数时补上默认值
         if (loaded.fresnelBias === undefined || loaded.fresnelBias === 0) {
             loaded.fresnelBias = 0.02;

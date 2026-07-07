@@ -52,6 +52,13 @@ export function focusModel(id: string): void {
     updatePlaybackUI();
 }
 
+export function focusedMmdModel() {
+    return modelManager?.focusedMmdModel() ?? null;
+}
+export function focusedModel() {
+    return modelManager?.focused() ?? null;
+}
+
 export function arrangeModels(): void {
     modelManager?.arrange();
 }

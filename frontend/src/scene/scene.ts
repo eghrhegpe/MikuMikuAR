@@ -54,11 +54,6 @@ import {
 } from '../core/config';
 import { attachBeatDetector } from '../outfit/audio';
 import { loadOutfits } from '../outfit/outfit';
-import {
-    getProcMotionState,
-    setProcMotionEyeTrackingEnabled,
-    setProcMotionHeadTrackingEnabled,
-} from './motion/proc-motion-bridge';
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
 import { tryAutoApplyPreset } from '../menus/model-preset';
@@ -103,13 +98,6 @@ import {
 } from './motion/proc-motion-bridge';
 import { updateLipSync, initLipSync } from './motion/lipsync-bridge';
 import { triggerAutoSaveImpl } from './scene-serialize';
-import {
-    startARCamera,
-    stopARCamera,
-    captureARScreenshot,
-    isARActive,
-    type CameraFacing,
-} from './ar/ar-camera';
 
 // ======== Babylon.js ========
 export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true, stencil: true });
@@ -150,13 +138,8 @@ initCameraSystem(scene, dom.canvas);
 // scene-lighting.ts 提供 getLightState / setLightState
 // scene-renderer.ts 提供 getRenderState / setRenderState / reattachPipeline
 
-// ======== Convenience getters ========
-export function focusedMmdModel() {
-    return modelManager.focusedMmdModel() ?? null;
-}
-export function focusedModel() {
-    return modelManager.focused() ?? null;
-}
+// ======== Convenience getters (delegated to model-ops) ========
+export { focusedMmdModel, focusedModel } from './manager/model-ops';
 
 // ======== Init Scene ========
 export async function initScene(): Promise<void> {
@@ -288,68 +271,8 @@ export function getScene(): Scene {
     return scene;
 }
 
-// ======== AR Camera Mode ========
-let _originalClearColor: Color4 | null = null;
-let _skyHidden = false;
-let _prevGazeState: { eye: boolean; head: boolean } | null = null;
-
-/**
- * 切换 AR 模式（摄像头视频背景 + 透明 canvas）。
- * 由 camera.ts 的 switchCameraMode('ar') 调用。
- */
-export async function setARMode(enabled: boolean): Promise<boolean> {
-    if (enabled) {
-        const isMobile =
-            'ontouchstart' in window ||
-            navigator.maxTouchPoints > 0 ||
-            window.matchMedia('(pointer: coarse)').matches;
-        const facing: CameraFacing = isMobile ? 'environment' : 'user';
-        const ok = await startARCamera(facing);
-        if (!ok) {
-            return false;
-        }
-        if (!_originalClearColor) {
-            _originalClearColor = scene.clearColor.clone();
-        }
-        scene.clearColor = new Color4(0, 0, 0, 0);
-        if (_envSys.sky.skyMesh && !_skyHidden) {
-            _envSys.sky.skyMesh.setEnabled(false);
-            _skyHidden = true;
-        }
-        _prevGazeState = {
-            eye: getProcMotionState().eyeTrackingEnabled,
-            head: getProcMotionState().headTrackingEnabled,
-        };
-        setProcMotionEyeTrackingEnabled(true);
-        setProcMotionHeadTrackingEnabled(true);
-        return true;
-    } else {
-        stopARCamera();
-        if (_originalClearColor) {
-            scene.clearColor = _originalClearColor;
-            _originalClearColor = null;
-        }
-        if (_envSys.sky.skyMesh && _skyHidden) {
-            _envSys.sky.skyMesh.setEnabled(true);
-            _skyHidden = false;
-        }
-        if (_prevGazeState) {
-            setProcMotionEyeTrackingEnabled(_prevGazeState.eye);
-            setProcMotionHeadTrackingEnabled(_prevGazeState.head);
-            _prevGazeState = null;
-        }
-        return true;
-    }
-}
-
-/** AR 合成截图（视频底 + 3D 层），供截图功能调用。 */
-export function takeARScreenshot(fmt: string, quality: number): string {
-    return captureARScreenshot(fmt, quality);
-}
-
-export function isARModeActive(): boolean {
-    return isARActive();
-}
+// ======== AR Camera Mode (delegated to ar/ar-scene.ts) ========
+export { setARMode, takeARScreenshot, isARModeActive } from './ar/ar-scene';
 
 // Re-exports from extracted sub-modules (zero-change for consumers)
 export {

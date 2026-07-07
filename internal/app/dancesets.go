@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"mikumikuar/internal/util"
 )
 
 // ======== Dance Sets ========
@@ -49,7 +51,7 @@ func (a *App) ImportDanceSet(vmdPath, audioPath, name string) (string, error) {
 	if name == "" {
 		name = strings.TrimSuffix(filepath.Base(vmdPath), filepath.Ext(vmdPath))
 	}
-	id := sha256Hex(vmdPath + ":" + audioPath)[:16]
+	id := util.SHA256Hex(vmdPath + ":" + audioPath)[:16]
 	ds := DanceSet{
 		Name:        name,
 		VmdPath:     vmdPath,

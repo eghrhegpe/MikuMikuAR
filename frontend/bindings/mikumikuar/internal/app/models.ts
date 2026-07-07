@@ -193,6 +193,17 @@ export interface EnvState {
     "groundMode": string;
     "groundColor": number[];
     "groundAlpha": number;
+    "groundTexture": string;
+    "groundTextureEnabled": boolean;
+    "groundTextureScale": number;
+    "groundTextureRotation": number;
+    "groundGridSize": number;
+    "groundLineColor": number[];
+    "groundTerrainHeight": number;
+    "groundTerrainScale": number;
+    "groundTerrainSeed": number;
+    "groundTerrainOctaves": number;
+    "groundLevel": number;
     "windEnabled": boolean;
     "windDirection": number[];
     "windSpeed": number;
@@ -201,6 +212,8 @@ export interface EnvState {
     "particleEmitRate": number;
     "particleSize": number;
     "particleSpeed": number;
+    "particleSplash": boolean;
+    "particleCustomTexture": string;
     "waterEnabled": boolean;
     "waterLevel": number;
     "waterFlip": boolean;
@@ -228,7 +241,6 @@ export interface EnvState {
     "causticScrollX": number;
     "causticScrollY": number;
     "fresnelAlphaInfluence": number;
-    "foamAlphaInfluence": number;
 
     /**
      * 水面雾效（独立于全局雾）
@@ -249,6 +261,10 @@ export interface EnvState {
     "cloudCover": number;
     "cloudScale": number;
     "cloudHeight": number;
+    "cloudThickness": number;
+    "cloudVisibility": number;
+    "cloudGap": number;
+    "debugClouds": boolean;
     "fogEnabled": boolean;
     "fogMode": string;
     "fogColor": number[];
@@ -260,6 +276,14 @@ export interface EnvState {
     "clothDebugParticles": boolean;
     "clothDebugConstraints": boolean;
     "clothDebugColliders": boolean;
+    "solverSubsteps": number;
+    "solverTimeScale": number;
+    "collisionEnabled": boolean;
+    "bodyCollisionEnabled": boolean;
+    "groundCollisionEnabled": boolean;
+    "sunAngle": number;
+    "azimuth": number;
+    "lightingPresetName"?: string;
     "timeOfDayActive": boolean;
     "timeOfDaySpeed": number;
 }
