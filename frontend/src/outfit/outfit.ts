@@ -12,7 +12,8 @@ import {
     OutfitSlot,
     ModelInstance,
 } from '../core/config';
-import { scene, _catOf } from '../scene/scene';
+import { scene } from '../scene/scene';
+import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
 import { encodeFileRef } from '../core/fileservice';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';

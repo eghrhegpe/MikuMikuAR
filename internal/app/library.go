@@ -3,30 +3,19 @@ package app
 import (
 	"archive/zip"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
+	"mikumikuar/internal/dialogs"
 	"mikumikuar/internal/util"
 )
 
 // SelectDir opens a directory picker dialog.
 // On Android, uses Wails v3 SAF-based file picker (GOOS=android).
 func (a *App) SelectDir() (string, error) {
-	if a.wailsApp == nil {
-		return "", fmt.Errorf("application not initialized")
-	}
-	dialog := a.wailsApp.Dialog.OpenFile()
-	dialog.SetTitle("选择模型库根目录")
-	dialog.CanChooseDirectories(true)
-	dialog.CanChooseFiles(false)
-	path, err := dialog.PromptForSingleSelection()
-	if err != nil {
-		return "", err
-	}
-	return filepath.ToSlash(path), nil
+	return dialogs.SelectLibraryDir(a.wailsApp)
 }
 
 // ScanModelDir scans all resource directories and returns merged ModelEntry list.

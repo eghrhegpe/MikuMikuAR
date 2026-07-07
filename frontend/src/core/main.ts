@@ -43,9 +43,8 @@ import {
     tryRestoreLastScene,
     setEnvState,
     applyFrameControl,
-    applyOutfitVariant,
-    loadOutfits,
 } from '../scene/scene';
+import { applyOutfitVariant, loadOutfits } from '../outfit/outfit';
 import { focusModel } from '../scene/manager/model-ops';
 import { updatePerformance, setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';

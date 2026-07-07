@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#39C5BB"/>
+      <stop offset="0.5" stop-color="#1C9FC4"/>
+      <stop offset="1" stop-color="#0E7BA6"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1024" height="1024" rx="220" fill="url(#g)"/>
+  <rect x="0" y="0" width="1024" height="1024" rx="220" fill="url(#sheen)"/>
+  <rect x="0" y="0" width="1024" height="1024" rx="220" fill="none" stroke="#ffffff" stroke-opacity="0.27" stroke-width="3"/>
+  <g transform="translate(34.71,26.58) scale(1.8644)" fill="#ffffff">
+    <path d="M205,108 C150,120 92,185 86,300 C83,360 92,420 120,432 C112,392 128,330 168,272 C192,238 205,180 205,108 Z"/>
+    <path d="M307,108 C362,120 420,185 426,300 C429,360 420,420 392,432 C400,392 384,330 344,272 C320,238 307,180 307,108 Z"/>
+    <circle cx="256" cy="150" r="72"/>
+    <path d="M222,210 C200,220 188,250 188,300 C188,360 200,400 256,400 C312,400 324,360 324,300 C324,250 312,220 290,210 C278,230 268,238 256,238 C244,238 234,230 222,210 Z"/>
+  </g>
+</svg>

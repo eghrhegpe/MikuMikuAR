@@ -11,8 +11,7 @@ import (
 	stdruntime "runtime"
 	"strings"
 
-	"github.com/wailsapp/wails/v3/pkg/application"
-
+	"mikumikuar/internal/dialogs"
 	"mikumikuar/internal/util"
 )
 
@@ -372,22 +371,7 @@ func (a *App) LoadSceneFile(path string) (string, error) {
 
 // SelectSceneSaveFile opens a save dialog for scene files.
 func (a *App) SelectSceneSaveFile() (string, error) {
-	if a.wailsApp == nil {
-		return "", fmt.Errorf("application not initialized")
-	}
-	dialog := a.wailsApp.Dialog.SaveFileWithOptions(&application.SaveFileDialogOptions{
-		Title:    "保存场景",
-		Filename: "scene.mmascene",
-		Filters: []application.FileFilter{
-			{DisplayName: "MikuMikuAR Scene (*.mmascene)", Pattern: "*.mmascene"},
-			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-		},
-	})
-	path, err := dialog.PromptForSingleSelection()
-	if err != nil {
-		return "", err
-	}
-	return filepath.ToSlash(path), nil
+	return dialogs.SelectSceneSave(a.wailsApp)
 }
 
 // ======== Env Presets (user-saved .env files) ========
@@ -521,16 +505,7 @@ func (a *App) DeleteEnvPreset(name string) error {
 
 // SelectSceneOpenFile opens a file dialog to pick a scene file.
 func (a *App) SelectSceneOpenFile() (string, error) {
-	return a.openFileDialog("加载场景", []application.FileFilter{
-		{
-			DisplayName: "MikuMikuAR Scene (*.mmascene)",
-			Pattern:     "*.mmascene",
-		},
-		{
-			DisplayName: "All Files (*.*)",
-			Pattern:     "*.*",
-		},
-	})
+	return dialogs.SelectSceneOpen(a.wailsApp)
 }
 
 // SaveLastScene stores the current scene state for auto-recovery on next launch.
@@ -638,20 +613,5 @@ func _copyFileToZip(zw *zip.Writer, srcPath string, entryPath string) error {
 
 // SelectBundleSaveFile opens a save dialog for scene bundle files.
 func (a *App) SelectBundleSaveFile() (string, error) {
-	if a.wailsApp == nil {
-		return "", fmt.Errorf("application not initialized")
-	}
-	dialog := a.wailsApp.Dialog.SaveFileWithOptions(&application.SaveFileDialogOptions{
-		Title:    "导出场景包",
-		Filename: "scene.mmascene",
-		Filters: []application.FileFilter{
-			{DisplayName: "MikuMikuAR Scene Bundle (*.mmascene)", Pattern: "*.mmascene"},
-			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-		},
-	})
-	path, err := dialog.PromptForSingleSelection()
-	if err != nil {
-		return "", err
-	}
-	return filepath.ToSlash(path), nil
+	return dialogs.SelectBundleSave(a.wailsApp)
 }

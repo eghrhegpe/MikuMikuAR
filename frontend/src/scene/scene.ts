@@ -53,10 +53,8 @@ import {
     setStatus,
 } from '../core/config';
 import { attachBeatDetector } from '../outfit/audio';
-import { loadOutfits } from '../outfit/outfit';
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
-import { tryAutoApplyPreset } from '../menus/model-preset';
 import { initLighting, _updateSunDisc } from './render/lighting';
 import { initRenderer, rebuildOutlineState, pipeline } from './render/renderer';
 import { initLoader } from './manager/model-loader';
@@ -204,13 +202,17 @@ export async function initScene(): Promise<void> {
     initLipSync(modelManager);
 
     // 5. Loader（必须在 modelManager + setTriggerAutoSave 之后）
+    // 破除循环依赖：scene.ts 不再静态 import outfit / model-preset，
+    // 改在 initScene(async) 内动态 import（同 scene.ts:187，adr-053/adr-064）。
+    const outfitMod = await import('../outfit/outfit');
+    const presetMod = await import('../menus/model-preset');
     initLoader(
         scene,
         runtime,
         modelManager,
         refreshWaterRenderList,
-        tryAutoApplyPreset,
-        (id: string) => loadOutfits(id).then(() => {}),
+        presetMod.tryAutoApplyPreset,
+        (id: string) => outfitMod.loadOutfits(id).then(() => {}),
         rebuildOutlineState
     );
     _disposePlaybackObservables = initPlaybackObservables(
@@ -338,7 +340,6 @@ export {
     disposeAudio,
     isAudioPlaying,
 } from '../outfit/audio';
-export { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
 export { createCloth, buildClothUpdateFn, disposeCloth } from '../physics/xpbd-cloth';
 export type { ClothInstance, ClothConfig } from '../physics/xpbd-cloth';
 export { SdfCollider, DEFAULT_BODY_CAPSULES } from '../physics/xpbd-collider';
