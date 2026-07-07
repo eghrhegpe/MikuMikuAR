@@ -35,30 +35,26 @@ func TestWrapError_PreservesErrorChain(t *testing.T) {
 	}
 }
 
-type testCustomError struct {
-	msg string
-}
-
-func (e *testCustomError) Error() string { return e.msg }
-
-func TestErrorIsOfType_MatchingType(t *testing.T) {
-	err := &testCustomError{msg: "custom"}
-	wrapped := WrapError("op", err)
-	if !ErrorIsOfType[*testCustomError](wrapped) {
-		t.Error("ErrorIsOfType should find *testCustomError through wrapping")
+func TestWrapErrorf_NilError(t *testing.T) {
+	err := WrapErrorf("op", "message", nil)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if err.Error() != "op: message" {
+		t.Errorf("expected 'op: message', got %q", err.Error())
 	}
 }
 
-func TestErrorIsOfType_NotMatchingType(t *testing.T) {
-	err := errors.New("plain")
-	wrapped := WrapError("op", err)
-	if ErrorIsOfType[*testCustomError](wrapped) {
-		t.Error("ErrorIsOfType should return false for non-matching type")
+func TestWrapErrorf_WithInnerError(t *testing.T) {
+	inner := errors.New("inner failure")
+	err := WrapErrorf("LoadModel", "load failed", inner)
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
-}
-
-func TestErrorIsOfType_NilError(t *testing.T) {
-	if ErrorIsOfType[*testCustomError](nil) {
-		t.Error("ErrorIsOfType should return false for nil error")
+	if !strings.HasPrefix(err.Error(), "LoadModel: load failed: ") {
+		t.Errorf("error should start with 'LoadModel: load failed: ', got %q", err.Error())
+	}
+	if !errors.Is(err, inner) {
+		t.Error("errors.Is should find inner error through WrapErrorf")
 	}
 }

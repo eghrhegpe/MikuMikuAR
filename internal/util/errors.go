@@ -1,7 +1,6 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -14,9 +13,12 @@ func WrapError(op string, err error) error {
 	return fmt.Errorf("%s: %w", op, err)
 }
 
-// ErrorIsOfType checks if err (or any error in its chain) has type T.
-// Uses errors.As internally.
-func ErrorIsOfType[T error](err error) bool {
-	var target T
-	return errors.As(err, &target)
+// WrapErrorf adds an operation prefix and a message to an error.
+// Combines the two-step pattern: WrapError(op, fmt.Errorf("msg: %w", err))
+// If err is nil, returns a new error with just the op and message.
+func WrapErrorf(op, msg string, err error) error {
+	if err == nil {
+		return fmt.Errorf("%s: %s", op, msg)
+	}
+	return fmt.Errorf("%s: %s: %w", op, msg, err)
 }

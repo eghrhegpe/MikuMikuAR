@@ -2,6 +2,7 @@ package app
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -172,11 +173,9 @@ func (a *App) ScanSoftwareDir() ([]SoftwareEntry, error) {
 	if isAndroid {
 		scanned := make(map[string]SoftwareEntry)
 		cfg, _ := a.GetConfig()
-		if cfg != nil {
-			for _, sw := range cfg.CustomSoftware {
-				sw.Managed = true
-				scanned[sw.Path] = sw
-			}
+		for _, sw := range cfg.CustomSoftware {
+			sw.Managed = true
+			scanned[sw.Path] = sw
 		}
 		result := make([]SoftwareEntry, 0, len(scanned))
 		for _, sw := range scanned {
@@ -214,16 +213,14 @@ func (a *App) ScanSoftwareDir() ([]SoftwareEntry, error) {
 
 	// Merge custom software from config (custom takes precedence)
 	cfg, _ := a.GetConfig()
-	if cfg != nil {
-		for _, sw := range cfg.CustomSoftware {
-			if _, ok := scanned[sw.Path]; ok {
-				// Custom overrides scanned entry for all fields
-				sw.Managed = true
-				scanned[sw.Path] = sw
-			} else {
-				sw.Managed = true
-				scanned[sw.Path] = sw
-			}
+	for _, sw := range cfg.CustomSoftware {
+		if _, ok := scanned[sw.Path]; ok {
+			// Custom overrides scanned entry for all fields
+			sw.Managed = true
+			scanned[sw.Path] = sw
+		} else {
+			sw.Managed = true
+			scanned[sw.Path] = sw
 		}
 	}
 
@@ -410,20 +407,6 @@ func (a *App) envPresetsDir() (string, error) {
 	return presetDir, nil
 }
 
-// sanitizePresetName allows only alphanumerics, dash, underscore, and CJK chars.
-// Returns the cleaned name, or empty string if invalid.
-func sanitizePresetName(name string) string {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return ""
-	}
-	// Forbid path separators and dangerous chars
-	if strings.ContainsAny(name, `/\:*?"<>|`) {
-		return ""
-	}
-	return name
-}
-
 // EnvPresetEntry is a catalog item returned by ListEnvPresets.
 type EnvPresetEntry struct {
 	Name      string `json:"name"`
@@ -435,7 +418,7 @@ type EnvPresetEntry struct {
 // The name is sanitized; the JSON content is the caller's responsibility.
 func (a *App) SaveEnvPreset(name string, jsonStr string) error {
 	return util.SafeCallVoid(func() error {
-		clean := sanitizePresetName(name)
+		clean := validatePresetName(name)
 		if clean == "" {
 			return fmt.Errorf("invalid preset name: %q", name)
 		}
@@ -451,7 +434,7 @@ func (a *App) SaveEnvPreset(name string, jsonStr string) error {
 // LoadEnvPreset reads a .env JSON file by name.
 func (a *App) LoadEnvPreset(name string) (string, error) {
 	return util.SafeCall(func() (string, error) {
-		clean := sanitizePresetName(name)
+		clean := validatePresetName(name)
 		if clean == "" {
 			return "", fmt.Errorf("invalid preset name: %q", name)
 		}
@@ -491,19 +474,19 @@ func (a *App) ListEnvPresets() ([]EnvPresetEntry, error) {
 				continue
 			}
 			nm := strings.TrimSuffix(e.Name(), ".env")
-			// Read file to extract label (best-effort, ignore errors)
+			// Read first 1KB to extract label (best-effort)
 			label := nm
-			if data, err := os.ReadFile(filepath.Join(dir, e.Name())); err == nil {
-				// Naive label extraction: look for "label":"xxx"
-				s := string(data)
-				if idx := strings.Index(s, `"label"`); idx >= 0 {
-					rest := s[idx+len(`"label"`):]
-					rest = strings.TrimLeft(rest, " \t:")
-					if strings.HasPrefix(rest, `"`) {
-						rest = rest[1:]
-						if end := strings.Index(rest, `"`); end >= 0 {
-							label = rest[:end]
-						}
+			path := filepath.Join(dir, e.Name())
+			if f, err := os.Open(path); err == nil {
+				buf := make([]byte, 1024)
+				n, _ := f.Read(buf)
+				f.Close()
+				if n > 0 {
+					var hdr struct {
+						Label string `json:"label"`
+					}
+					if err := json.Unmarshal(buf[:n], &hdr); err == nil && hdr.Label != "" {
+						label = hdr.Label
 					}
 				}
 			}
@@ -520,7 +503,7 @@ func (a *App) ListEnvPresets() ([]EnvPresetEntry, error) {
 // DeleteEnvPreset removes a .env file by name.
 func (a *App) DeleteEnvPreset(name string) error {
 	return util.SafeCallVoid(func() error {
-		clean := sanitizePresetName(name)
+		clean := validatePresetName(name)
 		if clean == "" {
 			return fmt.Errorf("invalid preset name: %q", name)
 		}
@@ -600,7 +583,7 @@ func (a *App) BundleScene(targetPath string, sceneJSON string, assetPaths []stri
 	// Determine the library root for computing relative paths
 	cfg, _ := a.GetConfig()
 	libRoot := ""
-	if cfg != nil && cfg.ResourceRoot != "" {
+	if cfg.ResourceRoot != "" {
 		libRoot = cfg.ResourceRoot
 	}
 

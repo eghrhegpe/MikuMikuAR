@@ -42,7 +42,7 @@ func (a *App) DeleteRenderPreset(name string) error {
 // GetRenderPresets returns all user-defined render presets.
 func (a *App) GetRenderPresets() []RenderPreset {
 	cfg, err := a.GetConfig()
-	if err != nil || cfg == nil {
+	if err != nil {
 		return nil
 	}
 	return cfg.RenderPresets

@@ -39,7 +39,7 @@ func (a *App) RemoveTag(libraryRef, tag string) error {
 // GetTagsByModel returns the tags for a specific model.
 func (a *App) GetTagsByModel(libraryRef string) []string {
 	cfg, err := a.GetConfig()
-	if err != nil || cfg == nil || cfg.Tags == nil {
+	if err != nil || cfg.Tags == nil {
 		return nil
 	}
 	return cfg.Tags[libraryRef]
@@ -48,7 +48,7 @@ func (a *App) GetTagsByModel(libraryRef string) []string {
 // GetAllTags returns a deduplicated list of all tags across all models.
 func (a *App) GetAllTags() []string {
 	cfg, err := a.GetConfig()
-	if err != nil || cfg == nil || cfg.Tags == nil {
+	if err != nil || cfg.Tags == nil {
 		return nil
 	}
 	seen := make(map[string]bool)
@@ -67,7 +67,7 @@ func (a *App) GetAllTags() []string {
 // GetModelsByTag returns all libraryRefs that have a specific tag.
 func (a *App) GetModelsByTag(tag string) []string {
 	cfg, err := a.GetConfig()
-	if err != nil || cfg == nil || cfg.Tags == nil {
+	if err != nil || cfg.Tags == nil {
 		return nil
 	}
 	var result []string

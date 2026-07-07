@@ -4,9 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 // ======== Thumbnail Cache ========
@@ -25,7 +25,7 @@ func thumbKey(modelPath string) string {
 	if err != nil {
 		return sha256Hex(modelPath)
 	}
-	return sha256Hex(modelPath + "|" + info.ModTime().Format("20060102-150405.000") + "|" + fmt.Sprintf("%d", info.Size()))
+	return sha256Hex(modelPath + "|" + info.ModTime().Format("20060102-150405.000") + "|" + strconv.FormatInt(info.Size(), 10))
 }
 
 // SaveThumbnail saves a base64-encoded PNG thumbnail for the given model path.

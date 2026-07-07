@@ -11,7 +11,7 @@ import (
 // GetDanceSets returns all dance sets.
 func (a *App) GetDanceSets() []DanceSet {
 	cfg, err := a.GetConfig()
-	if err != nil || cfg == nil || cfg.DanceSets == nil {
+	if err != nil || cfg.DanceSets == nil {
 		return nil
 	}
 	result := make([]DanceSet, 0, len(cfg.DanceSets))
