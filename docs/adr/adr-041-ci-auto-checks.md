@@ -27,6 +27,17 @@
 
 CI 集成：新增 `ai-mistake-report` job，仅 main 分支 push 时运行，输出 JSON 报告 + 可读摘要，上传为 artifact。不阻塞 CI（纯报告型）。
 
+### 4. E2E 提交门禁（CI 流水线，详见 ADR-060）
+
+在 `.github/workflows/ci.yml` 新增两个 job，把 ADR-060 的 E2E 防线接进提交门禁：
+
+- **`e2e`（阻塞门禁，ubuntu-latest）**：仅跑 `@dom` 标签的 spec（`smoke` + `env-sky` 的 DOM-only 滑块测试），通过 Playwright 自带 Chromium 打 Vite 开发服务器（5173），**不依赖 Wails 运行时**。验证菜单/overlay/快捷键等 DOM 层回归。
+- **`e2e-wails`（best-effort，windows-latest，`continue-on-error`）**：跑 `@webgl` 标签的 spec（model-load / action-play / export-screenshot / env-sky 截图），`wails dev` 启动真实 WebView2 并开放 CDP 9222，Playwright `connectOverCDP` 连接断言 3D 渲染（`window.__scene` 数值钩子 + 截图基线）。
+
+**平台约束（关键）**：`connectOverCDP` 是 Chromium 专用协议；Wails 在 Linux（ubuntu）上用 WebKitGTK，其远程调试器**不兼容 CDP**，故 `wailsPage` 测试只能在 `windows-latest`（原生 WebView2）上跑。`e2e-wails` 当前 `continue-on-error: true`，待在真实 runner 上验证稳定后翻为阻塞。
+
+E2E spec 用 Playwright 原生 tag（`@dom` / `@webgl`）切分，CI 以 `npx playwright test --grep @dom|@webgl` 过滤。
+
 ### 3. 数据发现（300 commit 样本）
 
 | 子系统 | fix 数 | 最长连续链 | 根因 |

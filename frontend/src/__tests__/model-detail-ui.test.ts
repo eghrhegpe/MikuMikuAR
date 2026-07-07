@@ -467,12 +467,12 @@ describe('buildModelInfoLevel', () => {
         expect(labels.some((l) => l && l.includes('10'))).toBe(true);
     });
 
-    it('material count uses mmdModel.materials, not Babylon mesh count', () => {
-        // 1 个 Babylon 网格，但 7 个 PMX 材质 —— 应显示 7 而非 1
+    it('material count uses MmdMesh.materials, not Babylon mesh count', () => {
+        // 1 个 Babylon 网格（MmdMesh），但其 materials 数组含 7 个 PMX 材质 —— 应显示 7 而非 1
+        const meshWithMaterials = { ...fakeMesh('mat0'), materials: Array(7) };
         createModel('m1', {
-            meshes: [fakeMesh('mat0')],
+            meshes: [meshWithMaterials],
             mmdModel: {
-                materials: Array(7),
                 runtimeBones: Array(3),
                 morph: { morphs: Array(2) },
             } as any,

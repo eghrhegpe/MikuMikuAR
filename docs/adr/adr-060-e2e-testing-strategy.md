@@ -1,6 +1,6 @@
 # ADR-060: E2E 测试策略（Playwright + 双模式 Fixture + 场景数值钩子）
 
-> **状态**: 实施中（Phase 0 / Phase 1 / Phase 2 已完成，2026-07-07 提出并推进）
+> **状态**: 实施中（Phase 0 / Phase 1 / Phase 2 / Phase 3 已完成，2026-07-07 提出并推进；Phase 4 长期）
 > **关联**: [ADR-041](adr-041-ci-auto-checks.md)（CI 自动检查，E2E 接入点）、[AGENTS.md](../../AGENTS.md)（测试路由与 `npm run test:e2e` 入口）
 > **背景**: 当前测试资产为 **33 个 Vitest 单元 spec + 2 个 Playwright E2E spec**（`smoke` + `env-sky`）。结构呈「逻辑层铜墙铁壁、UI/E2E 层四面漏风」：算法/物理/换装/绑定契约单测覆盖厚，但关键用户旅程（模型加载、动作播放、换装、AR、截图导出）无 E2E，且 3D 渲染层**无任何断言钩子**，旧 `env-sky` 截图仅断言 `data:image/png` 前缀、未比对内容。本 ADR 锁定 E2E 工具选型、断言策略与分阶段落地路标，供多 AI 协同规划。
 
@@ -154,11 +154,17 @@
 
 > 为何不用 `data:image/png` 字符串直接比对：Babylon `CreateScreenshotAsync` 压缩非确定性，同画面字符串可能不同；指纹方案对驱动/抗锯齿抖动稳健。
 
-### Phase 3 — CI 集成（⏳ 待实施，挂 ADR-041）
+### Phase 3 — CI 集成（✅ 已完成 2026-07-07，挂 ADR-041）
 
-- [ ] Vitest 每次提交必跑（秒级、无运行时依赖）
-- [ ] E2E 在「UI/菜单级改动」或 nightly 跑：CI 内 `wails dev &` 起 9222 后 `npx playwright test`
-- [ ] E2E 失败 → 归档 `window.__capture()` 截图，便于人工比对
+在 `.github/workflows/ci.yml` 落地「两层 E2E 门禁」，spec 用 Playwright 原生 tag（`@dom` / `@webgl`）切分，CI 以 `--grep` 过滤：
+
+- [x] **`e2e` job（阻塞门禁，ubuntu-latest）**：仅跑 `@dom`（`smoke` 3 + `env-sky` DOM-only 4 = 7 个）。Playwright 自带 Chromium 打 Vite 5173，**不依赖 Wails 运行时**，验证菜单/overlay/快捷键等 DOM 层回归。同一步内 `npm run dev &` 后台起 Vite → 轮询 5173 就绪 → `npx playwright test --grep @dom` → 收尾 kill。
+- [x] **`e2e-wails` job（best-effort，`windows-latest`，`continue-on-error: true`，`needs: e2e`）**：跑 `@webgl`（model-load 2 + action-play 2 + export-screenshot 2 + env-sky 截图 1 = 7 个）。`wails dev` 启动真实 WebView2、`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222` 开放 CDP，`connectOverCDP` 连 9222 断言 3D 渲染。
+- [x] **平台约束（关键）**：`connectOverCDP` 是 Chromium 专用协议；Wails 在 Linux（ubuntu）用 WebKitGTK，其远程调试器**不兼容 CDP**，故 `wailsPage` 测试只能在 `windows-latest`（原生 WebView2）跑。`e2e-wails` 当前 `continue-on-error`，待真实 runner 验证稳定后翻为阻塞。
+- [x] E2E 失败归档：`playwright-report/` 上传为 artifact（`if: always()`）。
+- [x] Vitest 常驻：`test-frontend` job 每次提交必跑（秒级、无运行时）。
+
+> **为何两层而非一层**：单层 `wails dev` 在 ubuntu 上因 WebKit≠CDP 根本连不上，若强行全量阻塞会 100% 红。分层后：可靠 DOM 门禁（`@dom`）作为真·提交门禁；完整 3D 集成（`@webgl`）在正确平台（Windows）上跑且容忍 flake。
 
 ### Phase 4 — AI 辅助维护（⏳ 长期）
 
@@ -194,8 +200,10 @@
 ### Phase 2: 截图基线（✅ 2026-07-07 完成，指纹方案）
 - [x] `fingerprint()` 钩子 + `compareToBaseline()` + `__baselines__/` 自动基线
 
-### Phase 3: CI 接入（~0.5 天，挂 ADR-041）
-- [ ] CI 跑 Vitest 常驻；E2E 按需；失败归档截图
+### Phase 3: CI 接入（✅ 2026-07-07 完成，挂 ADR-041）
+- [x] ci.yml 新增 `e2e`（ubuntu，`@dom` 阻塞）+ `e2e-wails`（windows，`@webgl`，`continue-on-error`）
+- [x] spec 加 `@dom`/`@webgl` tag，`--grep` 切分
+- [x] 平台约束记录：connectOverCDP 仅 Chromium，故 `wailsPage` 跑 Windows
 
 ### Phase 4: AI 维护（长期）
 - [ ] fixture 驱动的 spec 生成/修复 prompt；探索性测试
@@ -215,6 +223,7 @@
 | 换装菜单导航脆弱（库→详情→外观→服装变体，3-4 层） | 高 | 据本 ADR 分层断言原则，**换装行为走 `__scene.applyOutfit()` 钩子**（真实路径），不做 E2E DOM 导航；仅对画面做 `fingerprint()` 比对 |
 | 截图「golden PNG 像素 diff」对 WebGL 噪点/压缩敏感 | 中 | Phase 2 改用 **16×16 亮度指纹 + 汉明距离（tolerance 0.08）**，对驱动/抗锯齿抖动稳健；主判据仍是数值 |
 | 原生 `SaveFile` 截图对话框不可被 `download` 事件拦截 | 中 | 不拦截；断言 `__scene.capture()` 管线 + 菜单入口 DOM |
+| **`connectOverCDP` 仅 Chromium 兼容**：Wails 在 Linux 用 WebKitGTK，远程调试器非 CDP | 高 | `wailsPage`（`@webgl`）测试只能在 `windows-latest`（原生 WebView2）跑；Linux ubuntu 仅跑 `vitePage`（`@dom`）作阻塞门禁；详见 ADR-041 §4 |
 
 ### 边界
 

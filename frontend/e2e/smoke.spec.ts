@@ -5,6 +5,7 @@
  */
 import { test, expect } from "./wails-fixture";
 
+test.describe("Smoke — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
 test("app loaded: canvas and nav bar present", async ({ vitePage: page }) => {
     const canvas = page.locator("#renderCanvas");
     await expect(canvas).toBeVisible({ timeout: 5000 });
@@ -57,4 +58,5 @@ test("Ctrl+1~5 keyboard shortcuts toggle each nav menu", async ({ vitePage: page
     await ctrlNum("5");
     await expect(page.locator("#settingsOverlay")).toHaveClass(/visible/, { timeout: 3000 });
     await ctrlNum("5");
+});
 });

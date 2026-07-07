@@ -12,6 +12,7 @@ import {
     setModelScaling,
     setModelRotationY,
     setModelVisibility,
+    setModelOpacity,
     resetModelTransform,
     removeModel,
     getModelOrbit,
@@ -66,12 +67,22 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
             const rotationY = inst.rotationY ?? 0;
 
             cardContainer(root, (c) => {
-                addToggleRow(
+                // [audit-fix] 用连续透明度滑块替代布尔「可见」开关，与 model-detail
+                // 信息区三态「可见性」预设（显示/半透明/隐藏）形成粗调+细调互补，
+                // 消除同一面板内的重复可见性控制；stage/prop 亦直接受益。
+                addSliderRow(
                     c,
-                    '可见',
-                    inst.visible ?? true,
-                    (v) => setModelVisibility(id, v),
-                    'lucide:eye'
+                    '透明度',
+                    Math.round((inst.opacity ?? 1) * 100),
+                    0,
+                    100,
+                    1,
+                    () => {},
+                    'lucide:eye',
+                    (v) => {
+                        setModelOpacity(id, v / 100);
+                        if (v > 0) setModelVisibility(id, true);
+                    }
                 );
                 addModeRow(c, '坐标模式', POSITION_MODE_OPTS, mode, (v) => {
                     setModelPositionMode(id, v as 'cartesian' | 'orbit');
