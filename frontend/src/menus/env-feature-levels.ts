@@ -19,7 +19,8 @@ import { t } from '../core/i18n/t';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
 import { WATER_PRESETS, applyWaterPresetToCurrent } from '../scene/env/env-water';
 import { SelectEnvTextureFile, SelectPMXFile } from '../core/wails-bindings';
-import { getEnvMenu } from './env-menu';
+import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu';
+import { stackRegistry } from '../core/config';
 
 export function buildSkyLevel(): PopupLevel {
     return {
@@ -100,12 +101,12 @@ export function buildSkyLevel(): PopupLevel {
                         'lucide:image',
                         t('env.envTexture'),
                         false,
-                        async () => {
-                            const path = await SelectEnvTextureFile().catch(() => '');
-                            if (path) {
-                                setEnvState({ skyTexture: path });
-                            }
-                        },
+async () => {
+                          setEnvTextureBindingTarget('sky');
+                          closeAllOverlays();
+                          const level = stackRegistry.buildLevel!('environment', t('env.envTexture'), (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format), getEnvMenu()!);
+                          getEnvMenu()!.push(level);
+                      },
                         fileName
                     );
                     addSliderRow(
@@ -329,62 +330,41 @@ export function buildGroundLevel(): PopupLevel {
                         );
                     }
                     c.appendChild(chipRow);
-                    // 自定义纹理上传
-                    const texRow = document.createElement('div');
-                    texRow.className = 'cs-row';
-                    const texLabel = document.createElement('span');
-                    texLabel.textContent = t('env.customTexture');
-                    texRow.appendChild(texLabel);
-                    const texBtn = document.createElement('button');
-                    texBtn.className = 'cs-btn cs-btn-sm';
-                    texBtn.textContent =
+                    // 自定义纹理：slideRow + 库浏览
+                    const groundFileName =
                         s.groundTexture && !s.groundTexture.startsWith('textures/')
-                            ? t('env.change')
-                            : t('env.select');
-                    const ensureClearBtn = (): HTMLButtonElement => {
-                        const existing = texRow.querySelector<HTMLButtonElement>(
-                            'button.cs-btn[data-clear]'
-                        );
-                        if (existing) {
-                            return existing;
-                        }
-                        const btn = document.createElement('button');
-                        btn.className = 'cs-btn cs-btn-sm';
-                        btn.dataset.clear = '1';
-                        btn.textContent = t('env.clear');
-                        btn.onclick = () => {
-                            setEnvState({ groundTexture: '', groundTextureEnabled: false });
-                            texBtn.textContent = t('env.select');
-                            btn.remove();
-                        };
-                        texRow.appendChild(btn);
-                        return btn;
-                    };
-                    texBtn.onclick = () => {
-                        const input = document.createElement('input');
-                        input.type = 'file';
-                        input.accept = 'image/*';
-                        input.onchange = () => {
-                            const file = input.files?.[0];
-                            if (!file) {
-                                return;
-                            }
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                const url = (e.target?.result as string) ?? '';
-                                setEnvState({ groundTexture: url, groundTextureEnabled: !!url });
-                                texBtn.textContent = t('env.change');
-                                ensureClearBtn();
-                            };
-                            reader.readAsDataURL(file);
-                        };
-                        input.click();
-                    };
-                    texRow.appendChild(texBtn);
+                            ? s.groundTexture.split(/[/\\]/).pop() ?? t('env.notSelected')
+                            : t('env.notSelected');
+                    slideRow(
+                        c,
+                        'lucide:image',
+                        t('env.customTexture'),
+                        false,
+                        () => {
+                            setEnvTextureBindingTarget('ground');
+                            const level = stackRegistry.buildLevel!(
+                                'environment',
+                                t('env.customTexture'),
+                                (m) =>
+                                    ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+                                getEnvMenu()!
+                            );
+                            getEnvMenu()!.push(level);
+                        },
+                        groundFileName
+                    );
                     if (s.groundTexture && !s.groundTexture.startsWith('textures/')) {
-                        ensureClearBtn();
+                        const clearRow = document.createElement('div');
+                        clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+                        const clearBtn = document.createElement('button');
+                        clearBtn.className = 'cs-btn cs-btn-sm';
+                        clearBtn.textContent = t('env.clear');
+                        clearBtn.onclick = () => {
+                            setEnvState({ groundTexture: '', groundTextureEnabled: false });
+                        };
+                        clearRow.appendChild(clearBtn);
+                        c.appendChild(clearRow);
                     }
-                    c.appendChild(texRow);
                     addSliderRow(
                         c,
                         t('env.textureScale'),
@@ -653,6 +633,165 @@ export function buildWaterLevel(): PopupLevel {
                             {
                                 bind: () => envState.underwaterFogMultiplier,
                             }
+                        );
+                    },
+                });
+
+                addCollapsible(c, {
+                    title: t('env.waterAdvanced'),
+                    icon: 'lucide:settings-2',
+                    defaultOpen: false,
+                    renderContent: (cc) => {
+                        // Fresnel
+                        addSliderRow(
+                            cc,
+                            t('env.fresnelBias'),
+                            s.fresnelBias,
+                            0,
+                            0.5,
+                            0.01,
+                            (v) => setEnvState({ fresnelBias: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.fresnelBias }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.fresnelPower'),
+                            s.fresnelPower,
+                            0.5,
+                            10,
+                            0.1,
+                            (v) => setEnvState({ fresnelPower: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.fresnelPower }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.fresnelAlpha'),
+                            s.fresnelAlphaInfluence,
+                            0,
+                            1,
+                            0.05,
+                            (v) => setEnvState({ fresnelAlphaInfluence: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.fresnelAlphaInfluence }
+                        );
+                        // Lighting
+                        addSliderRow(
+                            cc,
+                            t('env.diffuseStrength'),
+                            s.diffuseStrength,
+                            0,
+                            1,
+                            0.05,
+                            (v) => setEnvState({ diffuseStrength: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.diffuseStrength }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.ambientStrength'),
+                            s.ambientStrength,
+                            0,
+                            1,
+                            0.05,
+                            (v) => setEnvState({ ambientStrength: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.ambientStrength }
+                        );
+                        // Foam
+                        addSliderRow(
+                            cc,
+                            t('env.foamTransition'),
+                            s.foamTransitionRange,
+                            0,
+                            1,
+                            0.05,
+                            (v) => setEnvState({ foamTransitionRange: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.foamTransitionRange }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.foamAlpha'),
+                            s.foamAlphaInfluence,
+                            0,
+                            1,
+                            0.05,
+                            (v) => setEnvState({ foamAlphaInfluence: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.foamAlphaInfluence }
+                        );
+                        // Ripple
+                        addSliderRow(
+                            cc,
+                            t('env.rippleNormal'),
+                            s.rippleNormalStrength,
+                            0,
+                            1,
+                            0.05,
+                            (v) => setEnvState({ rippleNormalStrength: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.rippleNormalStrength }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.rippleGlint'),
+                            s.rippleGlintStrength,
+                            0,
+                            1,
+                            0.05,
+                            (v) => setEnvState({ rippleGlintStrength: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.rippleGlintStrength }
+                        );
+                        // Caustic colors
+                        addColorSliderRow(
+                            cc,
+                            t('env.causticColor1'),
+                            s.causticColor1,
+                            (v) => setEnvState({ causticColor1: v }),
+                            { bind: () => envState.causticColor1 }
+                        );
+                        addColorSliderRow(
+                            cc,
+                            t('env.causticColor2'),
+                            s.causticColor2,
+                            (v) => setEnvState({ causticColor2: v }),
+                            { bind: () => envState.causticColor2 }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.causticScrollX'),
+                            s.causticScrollX ?? 0.1,
+                            -1,
+                            1,
+                            0.01,
+                            (v) => setEnvState({ causticScrollX: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.causticScrollX ?? 0.1 }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.causticScrollY'),
+                            s.causticScrollY ?? 0.15,
+                            -1,
+                            1,
+                            0.01,
+                            (v) => setEnvState({ causticScrollY: v }),
+                            undefined,
+                            undefined,
+                            { bind: () => envState.causticScrollY ?? 0.15 }
                         );
                     },
                 });

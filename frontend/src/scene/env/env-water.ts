@@ -113,7 +113,8 @@ function ensureTintPostProcess(camera: any): void {
         camera,
         Constants.TEXTURE_BILINEAR_SAMPLINGMODE
     );
-    (_tintPostProcess as any).disable();
+    // PostProcess 没有 .disable() 实例方法；用 _enabled 属性控制
+    (_tintPostProcess as any)._enabled = false;
 }
 
 function disposeTintPostProcess(): void {
@@ -167,12 +168,11 @@ export function clearRipples(): void {
 
 // ======== 焦散系统（静态纹理 + UV 滚动）========
 let _causticTexture: Texture | null = null;
+let _causticScene: Scene | null = null;
+let _lastCausticColor: [number, number, number] | null = null;
 const CAUSTIC_TEX_SIZE = 128;
 
-function ensureCausticTexture(scene: Scene): Texture {
-    if (_causticTexture) {
-        return _causticTexture;
-    }
+function regenerateCausticTexture(scene: Scene, waterColor: [number, number, number]): void {
     const S = CAUSTIC_TEX_SIZE;
     const canvas = document.createElement('canvas');
     canvas.width = S;
@@ -180,6 +180,10 @@ function ensureCausticTexture(scene: Scene): Texture {
     const ctx = canvas.getContext('2d')!;
     const imgData = ctx.createImageData(S, S);
     const data = imgData.data;
+
+    // 用水色对灰度焦散图案着色：暗部用水色×0.5，亮部用水色
+    const [wr, wg, wb] = waterColor;
+
     for (let y = 0; y < S; y++) {
         for (let x = 0; x < S; x++) {
             const u = x / S,
@@ -194,21 +198,44 @@ function ensureCausticTexture(scene: Scene): Texture {
                 amp *= 0.5;
                 freq *= 2;
             }
-            n = (n / total) * 0.5 + 0.5;
+            n = (n / total) * 0.5 + 0.5; // 灰度 0~1
+
+            // 灰度映射到 [水色×0.3, 水色×1.2]，让暗部偏水色，亮部更亮
             const i = (y * S + x) * 4;
-            const val = Math.floor(128 + (n - 0.5) * 128);
-            data[i] = val;
-            data[i + 1] = val;
-            data[i + 2] = val;
+            const t = n; // 0=暗纹, 1=亮纹
+            data[i]     = Math.min(255, Math.floor((wr * 0.3 + t * wr * 0.9) * 255));
+            data[i + 1] = Math.min(255, Math.floor((wg * 0.3 + t * wg * 0.9) * 255));
+            data[i + 2] = Math.min(255, Math.floor((wb * 0.3 + t * wb * 0.9) * 255));
             data[i + 3] = 255;
         }
     }
+
     ctx.putImageData(imgData, 0, 0);
-    const tex = new Texture(canvas.toDataURL(), scene, false, false);
+    const url = canvas.toDataURL();
+    if (_causticTexture) {
+        _causticTexture.dispose();
+        _causticTexture = null;
+    }
+    const tex = new Texture(url, scene, false, false);
     tex.wrapU = Constants.TEXTURE_WRAP_ADDRESSMODE;
     tex.wrapV = Constants.TEXTURE_WRAP_ADDRESSMODE;
     _causticTexture = tex;
-    return tex;
+    _causticScene = scene;
+    _lastCausticColor = [...waterColor];
+}
+
+function ensureCausticTexture(scene: Scene, waterColor: [number, number, number]): Texture {
+    const needsRegen =
+        !_causticTexture ||
+        _causticScene !== scene ||
+        !_lastCausticColor ||
+        _lastCausticColor.some((v, i) => Math.abs(v - waterColor[i]) > 0.01);
+
+    if (_causticTexture && !needsRegen) {
+        return _causticTexture;
+    }
+    regenerateCausticTexture(scene, waterColor);
+    return _causticTexture!;
 }
 
 // ======== Custom Water Shader — Gerstner Waves + Foam ========
@@ -418,8 +445,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     }
     mat.setFloat('ambientIntensity', 0.3);
 
-    // ——— 焦散 ———
-    const causticTex = ensureCausticTexture(scene);
+    // ——— 焦散（随 waterColor 重新生成）——
+    const causticTex = ensureCausticTexture(scene, state.waterColor);
     mat.setTexture('uCausticTex', causticTex);
     mat.setFloat('uCausticIntensity', 0.15);
     mat.setFloat('uCausticSpeed', 0.5);
@@ -678,6 +705,8 @@ export function disposeWater(): void {
         _causticTexture.dispose();
         _causticTexture = null;
     }
+    _causticScene = null;
+    _lastCausticColor = null;
     if (_waterUpdateObserver) {
         getScene().onBeforeRenderObservable.remove(_waterUpdateObserver);
         _waterUpdateObserver = null;
@@ -768,7 +797,7 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
             ensureTintPostProcess(scene.activeCamera);
         }
         if (_tintPostProcess) {
-            (_tintPostProcess as any).enable();
+            (_tintPostProcess as any)._enabled = true;
             const wc = envState.waterColor;
             _tintPostProcess.onApply = (effect) => {
                 effect.setFloat3('tintColor', wc[0] * 0.7, wc[1] * 0.7, wc[2] * 0.7);
@@ -781,7 +810,7 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
     } else if (!_underwaterActive) {
         pipeline.chromaticAberrationEnabled = false;
         if (_tintPostProcess) {
-            (_tintPostProcess as any).disable();
+            (_tintPostProcess as any)._enabled = false;
         }
     }
 }
@@ -798,7 +827,7 @@ export function resetUnderwaterState(scene: Scene, pipeline: DefaultRenderingPip
     _underwaterTarget = false;
     pipeline.chromaticAberrationEnabled = false;
     if (_tintPostProcess) {
-        (_tintPostProcess as any).disable();
+        (_tintPostProcess as any)._enabled = false;
     }
 }
 
