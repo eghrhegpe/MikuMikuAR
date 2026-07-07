@@ -8,13 +8,11 @@ import {
     overridePaths,
     PopupLevel,
     PopupRow,
-    escapeHtml,
     isPlaying,
     setIsPlaying,
     mmdRuntime,
     autoLoop,
     setAutoLoop,
-    focusedModelId,
     motionBindingTargetId,
     setMotionBindingTargetId,
     layerBindingTargetId,
@@ -22,7 +20,6 @@ import {
     stackRegistry,
     closeAllOverlays,
     cardContainer,
-    envState,
     getRecentMotions,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
@@ -49,7 +46,6 @@ import {
     setVmdLayerWeight,
     removeVmdLayer,
     addVmdLayerFromPath,
-    addGazeLayer,
     clearVmdLayers,
 } from '../scene/motion/vmd-layers';
 import { clearAudio, getAudioName } from '../outfit/audio';
@@ -67,6 +63,7 @@ import {
     buildProcMotionModeLevel,
     buildLipSyncLevel,
 } from './motion-procmotion-levels';
+import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
 import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
@@ -97,6 +94,7 @@ function buildActionBindingLevel(id: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
+            // === Card: 更换动作（替换 Layer 0）===
             cardContainer(container, (c) => {
                 slideRow(
                     c,
@@ -142,6 +140,7 @@ function buildActionBindingLevel(id: string): PopupLevel {
                 });
             });
 
+            // === Card: 物理分类 toggles（仅角色）===
             if (inst.kind === 'actor') {
                 const physCategories = getPhysicsCategories(id);
                 if (physCategories.length > 0) {
@@ -173,6 +172,132 @@ function buildActionBindingLevel(id: string): PopupLevel {
                 }
             }
 
+            // === Card: 添加额外动作 ===
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:plus', t('motion.addLayer'), true, () => {
+                    setLayerBindingTargetId(id);
+                    const level = stackRegistry.buildLevel!(
+                        libraryRoot,
+                        t('motion.motionLibrary'),
+                        (m) => m.format === 'vmd'
+                    );
+                    level.label = t('motion.addLayerTo', { name: inst?.name ?? '?' });
+                    if (getMotionMenu()) {
+                        getMotionMenu()?.push(level);
+                    }
+                });
+            });
+
+            // === Card: 图层列表 ===
+            const layers = getVmdLayers(id);
+            if (layers.length > 0) {
+                cardContainer(container, (c) => {
+                    for (let i = 0; i < layers.length; i++) {
+                        const layer = layers[i];
+                        const isBase = i === 0;
+                        const row = document.createElement('div');
+                        row.className = 'slide-item';
+                        if (isBase) {
+                            row.style.borderLeft = '3px solid rgba(128, 128, 128, 0.3)';
+                            row.style.paddingLeft = 'calc(14px - 3px)';
+                        }
+
+                        const left = document.createElement('div');
+                        left.className = 'slide-left';
+                        left.style.flex = '1';
+                        left.style.minWidth = '0';
+
+                        const label = document.createElement('div');
+                        label.className = 'slide-label';
+                        label.textContent = isBase
+                            ? '◆ ' + layer.name + ' (' + t('motion.baseAction') + ')'
+                            : layer.name;
+                        label.style.overflow = 'hidden';
+                        label.style.textOverflow = 'ellipsis';
+                        label.style.whiteSpace = 'nowrap';
+                        left.appendChild(label);
+
+                        // 权重滑条（Base 层固定 100%）
+                        const sliderRow = document.createElement('div');
+                        sliderRow.style.display = 'flex';
+                        sliderRow.style.alignItems = 'center';
+                        sliderRow.style.gap = '6px';
+                        sliderRow.style.marginTop = '4px';
+
+                        const slider = document.createElement('input');
+                        slider.type = 'range';
+                        slider.min = '0';
+                        slider.max = '1';
+                        slider.step = '0.05';
+                        slider.value = String(layer.weight);
+                        slider.style.flex = '1';
+                        slider.style.height = '3px';
+                        if (isBase) {
+                            slider.disabled = true;
+                            slider.value = '1';
+                        } else {
+                            slider.disabled = !layer.enabled;
+                            slider.addEventListener('input', () => {
+                                setVmdLayerWeight(layer.id, parseFloat(slider.value), id);
+                            });
+                        }
+
+                        const weightLabel = document.createElement('span');
+                        weightLabel.textContent = isBase ? '100%' : `${Math.round(layer.weight * 100)}%`;
+                        weightLabel.style.fontSize = 'var(--font-ui-sm)';
+                        weightLabel.style.opacity = '0.6';
+                        weightLabel.style.minWidth = '32px';
+                        weightLabel.style.textAlign = 'right';
+                        if (!isBase) {
+                            getCurrentRenderingMenu()?.registerControl(() => {
+                                const cur = getVmdLayers(id).find((l) => l.id === layer.id);
+                                if (cur) {
+                                    weightLabel.textContent = `${Math.round(cur.weight * 100)}%`;
+                                    slider.value = String(cur.weight);
+                                }
+                            });
+                        }
+
+                        sliderRow.appendChild(slider);
+                        sliderRow.appendChild(weightLabel);
+                        left.appendChild(sliderRow);
+
+                        row.appendChild(left);
+
+                        // 启用/禁用 toggle（Base 层不显示）
+                        if (!isBase) {
+                            const toggle = document.createElement('button');
+                            toggle.className = 'slide-action';
+                            toggle.textContent = layer.enabled ? '👁' : '🚫';
+                            toggle.title = layer.enabled ? t('motion.disable') : t('motion.enable');
+                            toggle.style.opacity = layer.enabled ? '1' : '0.4';
+                            toggle.addEventListener('click', () => {
+                                toggleVmdLayer(layer.id, id);
+                                getMotionMenu()?.reRender();
+                            });
+                            row.appendChild(toggle);
+                        }
+
+                        // 删除按钮（Base 层不显示）
+                        if (!isBase) {
+                            const delBtn = document.createElement('button');
+                            delBtn.className = 'slide-action';
+                            delBtn.textContent = '✕';
+                            delBtn.title = t('motion.deleteLayer');
+                            delBtn.style.opacity = '0.5';
+                            delBtn.addEventListener('click', () => {
+                                removeVmdLayer(layer.id, id);
+                                getMotionMenu()?.reRender();
+                            });
+                            row.appendChild(delBtn);
+                        }
+
+                        c.appendChild(row);
+                    }
+                });
+            }
+
+            // === Card: 聚焦模型 + 清除 VMD ===
             cardContainer(container, (c) => {
                 const group = document.createElement('div');
                 group.className = 'preset-group';
@@ -192,12 +317,13 @@ function buildActionBindingLevel(id: string): PopupLevel {
                         inst.vmdName = '';
                         inst.vmdPath = null;
                         inst.animationDuration = 0;
+                        await clearVmdLayers(id);
                         if (isPlaying) {
                             mmdRuntime.pauseAnimation();
                             setIsPlaying(false);
                         }
                         updatePlaybackUI();
-                        getMotionMenu()?.updateControls();
+                        getMotionMenu()?.reRender();
                         setStatus(t('motion.motionCleared'), true);
                     }
                 });
@@ -270,16 +396,14 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
         return buildCameraLevel();
     }
 
-    if (row.target && row.target.startsWith('motion:layers:')) {
-        const id = row.target.replace('motion:layers:', '');
-        return buildLayersLevel(id);
-    }
-
     if (row.target === 'motion:recent') {
         return buildRecentMotionsLevel();
     }
     if (row.target === 'motion:procmotion') {
         return buildProcMotionLevel();
+    }
+    if (row.target === 'motion:gaze') {
+        return buildGazeTrackingLevel();
     }
     if (row.target === 'procmotion:mode') {
         return buildProcMotionModeLevel();
@@ -291,48 +415,65 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
         setMotionBindingTargetId(null);
         return buildActionBindingLevel(row.target.replace('action:binding:', ''));
     }
-    if (row.target && row.target.startsWith('action:motion:browse:')) {
-        const id = row.target.replace('action:motion:browse:', '');
-        setMotionBindingTargetId(id);
-        const level = stackRegistry.buildLevel!(libraryRoot, t('motion.motionLibrary'), (m) => m.format === 'vmd');
-        const inst = modelManager.get(id);
-        level.label = t('motion.bindMotionTo', { name: inst ? inst.name : t('motion.model') });
-        return level;
-    }
     return null;
 }
 
 /** motion-popup 的 onItemClick（从 makeMotionMenu 提取） */
 function motionOnItemClick(row: PopupRow): void {
     if (row.model) {
-        if (row.model.format === 'vmd' && motionBindingTargetId) {
-            hideMotionPopup();
-            loadManager
-                .load({ kind: 'vmd', path: row.model.file_path, modelId: motionBindingTargetId })
+        // 图层添加优先：从模型选择 VMD → 添加为图层而非替换基础动作
+        if (row.model.format === 'vmd' && layerBindingTargetId) {
+            const targetId = layerBindingTargetId;
+            setLayerBindingTargetId(null);
+            // 返回图层管理页（pop VMD 浏览器层）
+            if (getMotionMenu()) {
+                getMotionMenu()?.pop();
+            }
+            // 等待图层添加完成后再刷新 UI，避免竞态导致图层列表为空
+            addVmdLayerFromPath(row.model.file_path, targetId)
+                .then(() => {
+                    getMotionMenu()?.reRender();
+                })
                 .catch((err) => {
                     setStatus(t('motion.motionLoadFailed'), false);
-                    console.warn('motion-popup load vmd:', err);
+                    console.warn('motion-popup addVmdLayerFromPath:', err);
+                    getMotionMenu()?.reRender();
                 });
+            return;
+        }
+        if (row.model.format === 'vmd' && motionBindingTargetId) {
+            const targetId = motionBindingTargetId;
             setMotionBindingTargetId(null);
+            // 返回动作详情页（pop VMD 浏览器层）
+            if (getMotionMenu()) {
+                getMotionMenu()?.pop();
+            }
+            // 先清除所有旧图层，再将新动作作为 Layer 0 添加
+            clearVmdLayers(targetId)
+                .then(() => addVmdLayerFromPath(row.model.file_path, targetId))
+                .then(() => {
+                    getMotionMenu()?.reRender();
+                })
+                .catch((err) => {
+                    setStatus(t('motion.motionLoadFailed'), false);
+                    console.warn('motion-popup replace base VMD:', err);
+                    getMotionMenu()?.reRender();
+                });
             return;
         }
         hideMotionPopup();
         if (row.model.format === 'vmd') {
-            if (motionBindingTargetId) {
-                loadManager.load({ kind: 'vmd', path: row.model.file_path });
-            } else {
-                loadManager
-                    .load({ kind: 'camera-vmd', path: row.model.file_path })
-                    .then(() => {
-                        const menu = getMotionMenu();
-                        if (menu) {
-                            menu.reRender();
-                        }
-                    })
-                    .catch((err) => {
-                        console.error('Load camera VMD failed:', err);
-                    });
-            }
+            loadManager
+                .load({ kind: 'camera-vmd', path: row.model.file_path })
+                .then(() => {
+                    const menu = getMotionMenu();
+                    if (menu) {
+                        menu.reRender();
+                    }
+                })
+                .catch((err) => {
+                    console.error('Load camera VMD failed:', err);
+                });
             return;
         }
         if (row.model.format === 'audio') {
@@ -475,162 +616,6 @@ function buildRecentMotionsLevel(): PopupLevel {
     };
 }
 
-// ======== Motion Layers (图层) ========
-
-function buildLayersLevel(id: string): PopupLevel {
-    const inst = modelManager.get(id);
-    return {
-        label: t('motion.layerTo', { name: inst?.name ?? '?' }),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            const layers = getVmdLayers(id);
-
-            // 添加图层按钮
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plus', t('motion.addLayer'), true, () => {
-                    setLayerBindingTargetId(id);
-                    const level = stackRegistry.buildLevel!(
-                        libraryRoot,
-                        t('motion.motionLibrary'),
-                        (m) => m.format === 'vmd'
-                    );
-                    level.label = t('motion.addLayerTo', { name: inst?.name ?? '?' });
-                    if (getMotionMenu()) {
-                        getMotionMenu()?.push(level);
-                    }
-                });
-            });
-
-            // 添加视线追踪图层
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:eye', t('motion.addGaze'), false, async () => {
-                    await addGazeLayer(id);
-                    getMotionMenu()?.reRender();
-                });
-            });
-
-            // 图层列表
-            if (layers.length === 0) {
-                cardContainer(container, (c) => {
-                    addEmptyRow(c, t('motion.noLayers'));
-                });
-            } else {
-                cardContainer(container, (c) => {
-                    for (const layer of layers) {
-                        const isGaze = layer.kind === 'gaze';
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        if (isGaze) {
-                            row.style.borderLeft = '3px solid rgba(78, 205, 196, 0.4)';
-                            row.style.paddingLeft = 'calc(14px - 3px)';
-                            row.style.background = 'rgba(128, 128, 128, 0.06)';
-                        }
-
-                        const left = document.createElement('div');
-                        left.className = 'slide-left';
-                        left.style.flex = '1';
-                        left.style.minWidth = '0';
-
-                        const label = document.createElement('div');
-                        label.className = 'slide-label';
-                        label.textContent = isGaze ? '◎ ' + layer.name : layer.name;
-                        label.style.overflow = 'hidden';
-                        label.style.textOverflow = 'ellipsis';
-                        label.style.whiteSpace = 'nowrap';
-                        left.appendChild(label);
-
-                        // 权重滑条
-                        const sliderRow = document.createElement('div');
-                        sliderRow.style.display = 'flex';
-                        sliderRow.style.alignItems = 'center';
-                        sliderRow.style.gap = '6px';
-                        sliderRow.style.marginTop = '4px';
-
-                        const slider = document.createElement('input');
-                        slider.type = 'range';
-                        slider.min = '0';
-                        slider.max = '1';
-                        slider.step = '0.05';
-                        slider.value = String(layer.weight);
-                        slider.style.flex = '1';
-                        slider.style.height = '3px';
-                        slider.disabled = !layer.enabled;
-                        slider.addEventListener('input', () => {
-                            setVmdLayerWeight(layer.id, parseFloat(slider.value), id);
-                        });
-
-                        const weightLabel = document.createElement('span');
-                        weightLabel.textContent = `${Math.round(layer.weight * 100)}%`;
-                        weightLabel.style.fontSize = 'var(--font-ui-sm)';
-                        weightLabel.style.opacity = '0.6';
-                        weightLabel.style.minWidth = '32px';
-                        weightLabel.style.textAlign = 'right';
-                        // 实时更新权重显示
-                        getCurrentRenderingMenu()?.registerControl(() => {
-                            const cur = getVmdLayers(id).find((l) => l.id === layer.id);
-                            if (cur) {
-                                weightLabel.textContent = `${Math.round(cur.weight * 100)}%`;
-                                slider.value = String(cur.weight);
-                            }
-                        });
-
-                        sliderRow.appendChild(slider);
-                        sliderRow.appendChild(weightLabel);
-                        left.appendChild(sliderRow);
-
-                        row.appendChild(left);
-
-                        // 启用/禁用 toggle
-                        const toggle = document.createElement('button');
-                        toggle.className = 'slide-action';
-                        toggle.textContent = layer.enabled ? '👁' : '🚫';
-                        toggle.title = layer.enabled ? t('motion.disable') : t('motion.enable');
-                        toggle.style.opacity = layer.enabled ? '1' : '0.4';
-                        toggle.addEventListener('click', () => {
-                            toggleVmdLayer(layer.id, id);
-                            getMotionMenu()?.reRender();
-                        });
-                        row.appendChild(toggle);
-
-                        // 删除按钮
-                        const delBtn = document.createElement('button');
-                        delBtn.className = 'slide-action';
-                        delBtn.textContent = '✕';
-                        delBtn.title = t('motion.deleteLayer');
-                        delBtn.style.opacity = '0.5';
-                        delBtn.addEventListener('click', () => {
-                            removeVmdLayer(layer.id, id);
-                            getMotionMenu()?.reRender();
-                        });
-                        row.appendChild(delBtn);
-
-                        c.appendChild(row);
-                    }
-                });
-            }
-
-            // 全部清除按钮
-            if (layers.length > 0) {
-                cardContainer(container, (c) => {
-                    const group = document.createElement('div');
-                    group.className = 'preset-group';
-                    group.style.padding = '0';
-                    const clearBtn = document.createElement('button');
-                    clearBtn.className = 'preset-chip';
-                    clearBtn.textContent = t('motion.clearAllLayers');
-                    clearBtn.addEventListener('click', () => {
-                        clearVmdLayers(id);
-                        getMotionMenu()?.reRender();
-                    });
-                    group.appendChild(clearBtn);
-                    c.appendChild(group);
-                });
-            }
-        },
-    };
-}
-
 // ======== Motion Root (items-based) ========
 
 /** 动作弹窗根级 items 构建器——动态反映 modelManager / recent / cloth 状态。 */
@@ -657,22 +642,6 @@ function buildMotionRootItems(): PopupRow[] {
                 sublabel: inst.vmdName || undefined,
                 catTag: t('motion.actor'),
             });
-        }
-        // 图层入口（仅角色模型）
-        for (const [id, inst] of modelManager.modelRegistry) {
-            if (
-                inst.kind === 'actor' &&
-                !(propDir && inst.filePath.toLowerCase().startsWith(propDir))
-            ) {
-                const layerCount = inst.vmdLayers.length;
-                items.push({
-                    kind: 'folder',
-                    label: t('motion.modelLayers', { name: inst.name }),
-                    icon: 'lucide:layers',
-                    target: `motion:layers:${id}`,
-                    sublabel: layerCount > 0 ? t('motion.layerCount', { n: layerCount }) : undefined,
-                });
-            }
         }
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
     }
@@ -708,6 +677,12 @@ function buildMotionRootItems(): PopupRow[] {
         label: t('motion.procMotion'),
         icon: 'lucide:wind',
         target: 'motion:procmotion',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('motion.gazeTracking'),
+        icon: 'lucide:eye',
+        target: 'motion:gaze',
     });
     return items;
 }

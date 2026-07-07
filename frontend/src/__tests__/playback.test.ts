@@ -136,17 +136,25 @@ describe('updatePlaybackUI', () => {
         mockDom.seekProgress.style.width = '';
     });
 
-    it('hides playbackBar when mmdRuntime is null', () => {
+    it('shows placeholder UI when mmdRuntime is null (E2E mode)', () => {
         mockState.mmdRuntime = null;
         updatePlaybackUI();
-        expect(mockDom.playbackBar.style.display).toBe('none');
+        expect(mockDom.playbackBar.style.display).toBe('flex');
+        expect(mockDom.btnPlayPause.textContent).toBe('▶');
+        expect(mockDom.btnLoopToggle.style.opacity).toBe('0.35');
+        expect(mockDom.timeDisplay.textContent).toBe('--:-- / --:--');
+        expect(mockDom.seekProgress.style.width).toBe('0%');
     });
 
-    it('hides playbackBar when dom.seekBar is null', () => {
+    it('shows placeholder UI when dom.seekBar is null', () => {
         const saved = mockDom.seekBar;
         mockDom.seekBar = null;
         updatePlaybackUI();
-        expect(mockDom.playbackBar.style.display).toBe('none');
+        expect(mockDom.playbackBar.style.display).toBe('flex');
+        expect(mockDom.btnPlayPause.textContent).toBe('▶');
+        expect(mockDom.btnLoopToggle.style.opacity).toBe('0.35');
+        expect(mockDom.timeDisplay.textContent).toBe('--:-- / --:--');
+        expect(mockDom.seekProgress.style.width).toBe('0%');
         mockDom.seekBar = saved;
     });
 

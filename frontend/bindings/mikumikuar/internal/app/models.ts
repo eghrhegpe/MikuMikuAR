@@ -507,22 +507,46 @@ export interface UIState {
     "autoCameraBeatsPerSwitch": number;
     "autoUpdateEnabled": boolean;
 
-    /** 帧率上限；0=不限 */
+    /**
+     * --- 以下字段原为前端会话级，2026-07-07 新增持久化支持 ---
+     * 帧率上限；0=不限
+     */
     "fpsLimit"?: number;
-    /** 垂直同步（默认 true） */
+
+    /**
+     * 垂直同步（默认 true）
+     */
     "vsync"?: boolean;
-    /** 新加载 actor 默认物理开关 */
+
+    /**
+     * 新加载 actor 默认物理开关
+     */
     "defaultPhysicsEnabled"?: boolean;
-    /** 渲染分辨率缩放；1.0=原生 */
+
+    /**
+     * 渲染分辨率缩放；1.0=原生
+     */
     "renderScale"?: number;
-    /** 相机灵敏度倍数；1.0=默认 */
+
+    /**
+     * 相机灵敏度倍数；1.0=默认
+     */
     "cameraSensitivity"?: number;
-    /** 反转 Y 轴 */
+
+    /**
+     * 反转 Y 轴
+     */
     "invertYAxis"?: boolean;
-    /** 新加载模型自动缩放 */
+
+    /**
+     * 新加载模型自动缩放
+     */
     "autoScaleModel"?: boolean;
-    /** 材质分类映射 */
-    "materialCategoryMap"?: Record<string, string>;
+
+    /**
+     * 材质分类映射
+     */
+    "materialCategoryMap"?: { [_ in string]?: string } | null;
 }
 
 /**

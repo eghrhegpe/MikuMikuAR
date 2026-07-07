@@ -41,7 +41,8 @@ test.describe("Settings — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, ()
     });
 
     test("设置面板: 关闭后重新打开", async ({ vitePage: page }) => {
-        await page.click("#btnClosePopup");
+        // Close by clicking the same nav button again (toggle behavior)
+        await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
 
         // Re-open

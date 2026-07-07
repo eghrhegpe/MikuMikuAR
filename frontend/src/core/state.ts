@@ -292,6 +292,7 @@ export const envState: EnvState = reactive<EnvState>({
 
     waterEnabled: false,
     waterLevel: 0,
+    waterFlip: false,
     waterColor: [0.2, 0.4, 0.6],
     waterTransparency: 0.8,
     waterWaveHeight: 0.5,
@@ -300,6 +301,10 @@ export const envState: EnvState = reactive<EnvState>({
 
     foamThreshold: 0.1,
     foamIntensity: 0.5,
+    foamOpacity: 0.8,
+    waterFogColor: [0.45, 0.48, 0.58],
+    waterFogDensity: 0.012,
+    waterFogOpacityInfluence: 0,
 
     fresnelBias: 0.02,
     fresnelPower: 3.0,
@@ -313,13 +318,11 @@ export const envState: EnvState = reactive<EnvState>({
     causticScrollX: 0.1,
     causticScrollY: 0.15,
     fresnelAlphaInfluence: 0.5,
-    foamAlphaInfluence: 0.2,
-
-    underwaterFogColor: [0.08, 0.2, 0.45],
-    underwaterFogDensity: 0.015,
+    underwaterFogDensity: 0.05,
     underwaterChromaticAmount: 20,
     underwaterToneIntensity: 0.5,
     underwaterFogMultiplier: 2,
+    underwaterTintStrength: 0.5,
 
     cloudsEnabled: false,
     debugClouds: false,

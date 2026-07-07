@@ -18,16 +18,16 @@ test.describe("Environment — Sky Panel (vitePage, DOM-only)", { tag: ["@dom"] 
         await clickEnvSubLevel(page, "天空");
     });
 
-    test("天空统一层级：模式控件 + 预设 + 颜色控制均渲染", async ({ vitePage: page }) => {
+    test("天空统一层级：模式控件 + 预设 + 折叠区段均渲染", async ({ vitePage: page }) => {
         await expect(page.getByText("天空模式")).toBeVisible();
         // Current sky mode (segmented control shows only the active value).
         await expect(page.getByText("纯色", { exact: true })).toBeVisible();
-        // Environment presets.
+        // Environment presets (always visible).
         await expect(page.getByText("黎明")).toBeVisible();
         await expect(page.getByText("正午")).toBeVisible();
         await expect(page.getByText("夜景")).toBeVisible();
-        // Color + advanced controls.
-        await expect(page.getByText("天空色")).toBeVisible();
+        // Collapsible sections (titles always visible, content hidden by default).
+        await expect(page.getByText("天空外观")).toBeVisible();
         await expect(page.getByText("高级天空设置")).toBeVisible();
     });
 

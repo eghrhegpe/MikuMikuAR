@@ -249,6 +249,7 @@ uniform mat4 viewProjection;
 uniform float time;
 uniform float waveHeight;
 uniform float waveSpeed;
+uniform int uWaterFlip;
 
 // Gerstner 波参数
 // WAVE_DIR 由外部 uniform uWindDir[4] 驱动（风向联动），在 createWater 时计算并传入
@@ -280,7 +281,11 @@ void main() {
     }
 
     vWorldPos = p;
-    vNormal = normalize(n);
+    vec3 finalNormal = normalize(n);
+    if (uWaterFlip == 1) {
+        finalNormal = -finalNormal;
+    }
+    vNormal = finalNormal;
     vHeight = p.y;
     gl_Position = viewProjection * vec4(p, 1.0);
 }`;
@@ -301,8 +306,6 @@ uniform float envIntensity;
 uniform vec3 foamColor;
 uniform float foamThreshold;
 uniform float foamIntensity;
-uniform vec3 fogColor;
-uniform float fogDensity;
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 uniform float ambientIntensity;
@@ -319,8 +322,11 @@ uniform vec3 causticColor1;     // 焦散颜色1（亮部，默认 vec3(1.0, 0.9
 uniform vec3 causticColor2;     // 焦散颜色2（暗部，默认 vec3(1.0, 1.0, 0.8)）
 uniform float causticScrollX;   // 焦散UV滚动速度X（默认 0.10）
 uniform float causticScrollY;   // 焦散UV滚动速度Y（默认 0.15）
-uniform float fresnelAlphaInfluence; // Fresnel对alpha的影响（默认 0.5）
-uniform float foamAlphaInfluence;    // 泡沫对alpha的影响（默认 0.2）
+uniform float fresnelAlphaInfluence;  // Fresnel 对 alpha 的影响（默认 0.5）
+uniform float foamOpacity;           // 泡沫独立透明度（默认 0.8）
+uniform vec3 waterFogColor;          // 水面雾色（默认灰蓝色，模拟大气雾效果）
+uniform float waterFogDensity;       // 水面雾密度（深度感，默认 0.012）
+uniform float waterFogOpacityInfluence; // 雾对透明度的影响（默认 0，即只混颜色）
 
 uniform sampler2D uCausticTex;
 uniform float uCausticIntensity;
@@ -350,6 +356,12 @@ uniform samplerCube envTexture;
 void main() {
     vec3 viewDir = normalize(cameraPosition - vWorldPos);
     vec3 normal = normalize(vNormal);
+    
+    float facing = dot(viewDir, normal);
+    if (facing < 0.0) {
+        normal = -normal;
+    }
+    
     vec3 reflectDir = reflect(-viewDir, normal);
 
     vec3 reflection = vec3(0.0);
@@ -391,10 +403,11 @@ void main() {
     color += causticCol * caustic * uCausticIntensity;
 
     float depth = length(vWorldPos - cameraPosition);
-    float fog = 1.0 - exp(-fogDensity * depth);
-    color = mix(color, fogColor, fog);
+    float waterFog = 1.0 - exp(-waterFogDensity * depth);
+    color = mix(color, waterFogColor, waterFog);
 
-    float alpha = mix(waterTransparency, 1.0, fresnel * fresnelAlphaInfluence + foam * foamAlphaInfluence);
+    float alpha = mix(waterTransparency, 1.0, fresnel * fresnelAlphaInfluence + foam * foamIntensity * foamOpacity);
+    alpha = mix(alpha, 1.0, waterFog * waterFogOpacityInfluence);
     alpha = clamp(alpha, 0.0, 1.0);
 
     gl_FragColor = vec4(color, alpha);
@@ -422,6 +435,7 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     );
     mat.setFloat('waterTransparency', state.waterTransparency);
     mat.setFloat('waterLevel', state.waterLevel);
+    mat.setInt('uWaterFlip', state.waterFlip ? 1 : 0);
 
     const hasEnv = !!scene.environmentTexture;
     mat.setFloat('envIntensity', hasEnv ? (scene.environmentIntensity ?? 0.8) : 0);
@@ -471,14 +485,16 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('causticScrollX', state.causticScrollX);
     mat.setFloat('causticScrollY', state.causticScrollY);
     mat.setFloat('fresnelAlphaInfluence', state.fresnelAlphaInfluence);
-    mat.setFloat('foamAlphaInfluence', state.foamAlphaInfluence);
-
-    // ——— 雾 ———
-    mat.setColor3('fogColor', scene.fogColor);
-    mat.setFloat('fogDensity', scene.fogDensity);
+    mat.setFloat('foamOpacity', state.foamOpacity);
+    mat.setColor3(
+        'waterFogColor',
+        new Color3(state.waterFogColor[0], state.waterFogColor[1], state.waterFogColor[2])
+    );
+    mat.setFloat('waterFogDensity', state.waterFogDensity);
+    mat.setFloat('waterFogOpacityInfluence', state.waterFogOpacityInfluence);
 
     // ——— 波方向（风向联动）———
-    const windDirs = computeWaveDirs(envState.windDirection);
+    const windDirs = computeWaveDirs(state.windDirection);
     mat.setArray2('uWindDir', windDirs);
 
     // ——— 涟漪数组（初始化为空）———
@@ -498,6 +514,7 @@ function _updateWaterMesh(state: EnvState): void {
     mesh.position.y = state.waterLevel;
     const scale = Math.max(1, state.waterSize / WATER_BASE_SIZE);
     mesh.scaling = new Vector3(scale, 1, scale);
+    mesh.rotation.x = state.waterFlip ? Math.PI : 0;
 }
 
 export function createWater(state: EnvState): void {
@@ -531,6 +548,7 @@ export function createWater(state: EnvState): void {
     meshHigh.position.y = state.waterLevel;
     const scale = Math.max(1, state.waterSize / WATER_BASE_SIZE);
     meshHigh.scaling = new Vector3(scale, 1, scale);
+    meshHigh.rotation.x = state.waterFlip ? Math.PI : 0;
 
     const meshMid = MeshBuilder.CreateGround(
         'envWater_LOD1',
@@ -574,12 +592,11 @@ export function createWater(state: EnvState): void {
                 'waterColor',
                 'waterTransparency',
                 'waterLevel',
+                'uWaterFlip',
                 'envIntensity',
                 'foamColor',
                 'foamThreshold',
                 'foamIntensity',
-                'fogColor',
-                'fogDensity',
                 'lightDir',
                 'lightColor',
                 'ambientIntensity',
@@ -601,7 +618,10 @@ export function createWater(state: EnvState): void {
                 'causticScrollX',
                 'causticScrollY',
                 'fresnelAlphaInfluence',
-                'foamAlphaInfluence',
+                'foamOpacity',
+                'waterFogColor',
+                'waterFogDensity',
+                'waterFogOpacityInfluence',
                 'uWindDir',
             ],
             uniformBuffers: [],
@@ -610,6 +630,9 @@ export function createWater(state: EnvState): void {
             needAlphaBlending: true,
         }
     );
+
+    mat.backFaceCulling = false;
+    mat.disableDepthWrite = true;
 
     meshHigh.material = mat;
     meshMid.material = mat;
@@ -634,8 +657,7 @@ export function createWater(state: EnvState): void {
             if (cam) {
                 m.setVector3('cameraPosition', cam.position);
             }
-            m.setColor3('fogColor', scene.fogColor);
-            m.setFloat('fogDensity', scene.fogDensity);
+            m.setColor3('waterColor', new Color3(envState.waterColor[0], envState.waterColor[1], envState.waterColor[2]));
             const dl = scene.getLightByName('dir') as DirectionalLight | null;
             if (dl) {
                 m.setVector3('lightDir', dl.direction);
@@ -785,12 +807,13 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
             pipeline.chromaticAberration.aberrationAmount = envState.underwaterChromaticAmount * t;
         }
         scene.fogMode = Scene.FOGMODE_EXP2;
+        const wc = envState.waterColor;
         scene.fogColor = new Color3(
-            envState.underwaterFogColor[0],
-            envState.underwaterFogColor[1],
-            envState.underwaterFogColor[2]
+            wc[0] * envState.underwaterTintStrength,
+            wc[1] * envState.underwaterTintStrength,
+            wc[2] * envState.underwaterTintStrength
         );
-        scene.fogDensity = envState.underwaterFogDensity * t * envState.underwaterFogMultiplier;
+        scene.fogDensity = envState.underwaterFogDensity * t * 0.5;
 
         // 自定义 Tint PostProcess（替代不存在的 tintColor/tintAmount）
         if (scene.activeCamera) {
@@ -800,7 +823,13 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
             (_tintPostProcess as any)._enabled = true;
             const wc = envState.waterColor;
             _tintPostProcess.onApply = (effect) => {
-                effect.setFloat3('tintColor', wc[0] * 0.7, wc[1] * 0.7, wc[2] * 0.7);
+                // tintColor 由 waterColor × underwaterTintStrength 派生（默认强度 0.5，即水色×0.5）
+                effect.setFloat3(
+                    'tintColor',
+                    wc[0] * envState.underwaterTintStrength,
+                    wc[1] * envState.underwaterTintStrength,
+                    wc[2] * envState.underwaterTintStrength
+                );
                 effect.setFloat(
                     'tintAmount',
                     t * envState.underwaterToneIntensity * (1 - envState.waterTransparency * 0.5)
@@ -841,6 +870,9 @@ export interface WaterPreset {
     waterAnimSpeed: number;
     foamThreshold: number;
     foamIntensity: number;
+    waterFogColor: [number, number, number];
+    waterFogDensity: number;
+    waterFogOpacityInfluence: number;
     // 新增：从着色器硬编码提取的可调参数（可选，使用默认值如未定义）
     fresnelBias?: number;
     fresnelPower?: number;
@@ -854,54 +886,79 @@ export interface WaterPreset {
     causticScrollX?: number;
     causticScrollY?: number;
     fresnelAlphaInfluence?: number;
-    foamAlphaInfluence?: number;
+    foamOpacity?: number;
 }
 
 export const WATER_PRESETS: Record<string, WaterPreset> = {
     calm: {
         label: '平静',
         waterColor: [0.15, 0.4, 0.6],
-        waterTransparency: 0.8,
+        waterTransparency: 0.88,
         waterWaveHeight: 0.15,
         waterAnimSpeed: 0.2,
         foamThreshold: 0.35,
-        foamIntensity: 0.15,
+        foamIntensity: 0.12,
+        waterFogColor: [0.5, 0.52, 0.62],
+        waterFogDensity: 0.006,
+        waterFogOpacityInfluence: 0,
+        fresnelAlphaInfluence: 0.35,
+        foamOpacity: 0.5,
     },
     ripple: {
         label: '涟漪',
         waterColor: [0.2, 0.42, 0.62],
-        waterTransparency: 0.72,
+        waterTransparency: 0.8,
         waterWaveHeight: 0.6,
         waterAnimSpeed: 1.0,
-        foamThreshold: 0.2,
-        foamIntensity: 0.4,
+        foamThreshold: 0.25,
+        foamIntensity: 0.3,
+        waterFogColor: [0.48, 0.5, 0.6],
+        waterFogDensity: 0.009,
+        waterFogOpacityInfluence: 0,
+        fresnelAlphaInfluence: 0.4,
+        foamOpacity: 0.55,
     },
     ocean: {
         label: '海浪',
         waterColor: [0.08, 0.25, 0.5],
-        waterTransparency: 0.6,
+        waterTransparency: 0.65,
         waterWaveHeight: 1.8,
         waterAnimSpeed: 2.5,
-        foamThreshold: 0.08,
-        foamIntensity: 0.7,
+        foamThreshold: 0.12,
+        foamIntensity: 0.55,
+        waterFogColor: [0.4, 0.42, 0.55],
+        waterFogDensity: 0.014,
+        waterFogOpacityInfluence: 0,
+        fresnelAlphaInfluence: 0.5,
+        foamOpacity: 0.65,
     },
     storm: {
         label: '风暴',
         waterColor: [0.04, 0.14, 0.35],
-        waterTransparency: 0.45,
+        waterTransparency: 0.5,
         waterWaveHeight: 3.0,
         waterAnimSpeed: 5.0,
-        foamThreshold: 0.04,
-        foamIntensity: 0.9,
+        foamThreshold: 0.08,
+        foamIntensity: 0.7,
+        waterFogColor: [0.35, 0.36, 0.48],
+        waterFogDensity: 0.022,
+        waterFogOpacityInfluence: 0,
+        fresnelAlphaInfluence: 0.6,
+        foamOpacity: 0.7,
     },
     tropical: {
         label: '热带',
         waterColor: [0.1, 0.55, 0.7],
-        waterTransparency: 0.7,
+        waterTransparency: 0.78,
         waterWaveHeight: 0.8,
         waterAnimSpeed: 1.2,
-        foamThreshold: 0.2,
-        foamIntensity: 0.35,
+        foamThreshold: 0.25,
+        foamIntensity: 0.25,
+        waterFogColor: [0.45, 0.58, 0.62],
+        waterFogDensity: 0.008,
+        waterFogOpacityInfluence: 0,
+        fresnelAlphaInfluence: 0.42,
+        foamOpacity: 0.55,
     },
 };
 
@@ -955,7 +1012,19 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
     if (preset.fresnelAlphaInfluence !== undefined) {
         mat.setFloat('fresnelAlphaInfluence', preset.fresnelAlphaInfluence);
     }
-    if (preset.foamAlphaInfluence !== undefined) {
-        mat.setFloat('foamAlphaInfluence', preset.foamAlphaInfluence);
+    if (preset.foamOpacity !== undefined) {
+        mat.setFloat('foamOpacity', preset.foamOpacity);
+    }
+    if (preset.waterFogColor !== undefined) {
+        mat.setColor3(
+            'waterFogColor',
+            new Color3(preset.waterFogColor[0], preset.waterFogColor[1], preset.waterFogColor[2])
+        );
+    }
+    if (preset.waterFogDensity !== undefined) {
+        mat.setFloat('waterFogDensity', preset.waterFogDensity);
+    }
+    if (preset.waterFogOpacityInfluence !== undefined) {
+        mat.setFloat('waterFogOpacityInfluence', preset.waterFogOpacityInfluence);
     }
 }

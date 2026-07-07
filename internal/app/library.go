@@ -130,6 +130,16 @@ func mapCategoryKey(category string) string {
 	}
 }
 
+// formatByCategory returns the unified format tag for a file extension and category.
+// Audio files of any extension (mp3/wav/ogg/flac/wma) all use format "audio"
+// to match frontend filter: m.format === 'audio'.
+func formatByCategory(ext, category string) string {
+	if category == "audio" {
+		return "audio"
+	}
+	return strings.TrimPrefix(ext, ".")
+}
+
 // expandZipEntries opens a zip file and returns ModelEntry for each recognized inner file.
 // Supports: .pmx, .vmd, .mp3/.wav/.ogg/.flac/.wma, .vpd.
 // If typeOverride is non-empty (and not "other"), it replaces the inferred inner type.
@@ -218,7 +228,7 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 			PMXPath:   fullPath,
 			NameEn:    strings.TrimSuffix(d.Name(), filepath.Ext(d.Name())),
 			Type:      category,
-			Format:    strings.TrimPrefix(ext, "."),
+			Format:    formatByCategory(ext, category),
 			Container: "file",
 			Source:    source,
 		})

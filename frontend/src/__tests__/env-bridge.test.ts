@@ -85,8 +85,6 @@ const {
         causticScrollX: 0.1,
         causticScrollY: 0.15,
         fresnelAlphaInfluence: 0.5,
-        foamAlphaInfluence: 0.2,
-        underwaterFogColor: [0.08, 0.2, 0.45],
         underwaterFogDensity: 0.015,
         underwaterChromaticAmount: 20,
         cloudsEnabled: false,

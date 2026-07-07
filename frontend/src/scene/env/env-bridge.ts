@@ -104,7 +104,10 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         'causticScrollX',
         'causticScrollY',
         'fresnelAlphaInfluence',
-        'foamAlphaInfluence',
+        'foamOpacity',
+        'waterFogColor',
+        'waterFogDensity',
+        'waterFogOpacityInfluence',
     ];
     if (!changed || changed.some((k) => waterKeys.includes(k))) {
         try {
