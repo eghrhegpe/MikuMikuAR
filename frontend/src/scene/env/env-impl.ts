@@ -17,10 +17,12 @@ import {
     DefaultRenderingPipeline,
     Mesh,
     MeshBuilder,
+    GroundMesh,
     ShaderMaterial,
 } from '@babylonjs/core';
 import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
 import { EnvState, envState } from '../../core/config';
+import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 
 // ======== Static Asset URL Resolver (Android 安全) ========
 /** 将相对路径转为绝对 URL，确保 Android WebView 能正确加载嵌入资源。
@@ -367,6 +369,8 @@ export function applySky(state: EnvState): void {
 
 // ======== Ground ========
 let _currentGroundKey: string = '';
+/** 地形（heightmap）就绪后回调，供 model-loader 重新贴地所有模型。 */
+let _onTerrainReady: (() => void) | null = null;
 
 function applyCheckerGround(ground: Mesh, state: EnvState): void {
     const scene = getScene();
@@ -395,13 +399,38 @@ function applyCheckerGround(ground: Mesh, state: EnvState): void {
     ground.material = mat;
 }
 
+/**
+ * 查询某世界坐标 (x, z) 处的地面高度，用于把模型贴合到地面上。
+ * - heightmap 模式：返回地形网格 getHeightAtCoordinates（真实起伏，world 坐标入参）。
+ * - 其他模式：返回 groundLevel（平面参考高度）。
+ * 地形尚未加载完成时回退到 groundLevel，避免模型被错误地放到 0。
+ */
+export function getGroundHeightAt(x: number, z: number): number {
+    const m = _envSys.ground.mesh;
+    if (m && typeof (m as GroundMesh).getHeightAtCoordinates === 'function' && m.isReady()) {
+        try {
+            return (m as GroundMesh).getHeightAtCoordinates(x, z);
+        } catch {
+            return envState.groundLevel;
+        }
+    }
+    return envState.groundLevel;
+}
+
+/** 注册地形就绪回调（由 model-loader 调用，用于在高度图加载完成后重新贴地所有模型）。 */
+export function setOnTerrainReady(cb: (() => void) | null): void {
+    _onTerrainReady = cb;
+}
+
 export function applyGround(state: EnvState): void {
     const scene = getScene();
 
     const typeKey =
-        state.groundTextureEnabled && state.groundTexture
-            ? `texture:${state.groundTexture}`
-            : `mode:${state.groundMode}`;
+        state.groundMode === 'heightmap'
+            ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}`
+            : state.groundTextureEnabled && state.groundTexture
+              ? `texture:${state.groundTexture}`
+              : `mode:${state.groundMode}`;
     const keyChanged = typeKey !== _currentGroundKey;
 
     // 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放
@@ -453,6 +482,17 @@ export function applyGround(state: EnvState): void {
         _envSys.ground.mesh = null;
     }
     if (!state.groundVisible) {
+        return;
+    }
+
+    // 地形模式：程序化 FBM 高度图 → 可拾取 GroundMesh（自带碰撞）。
+    // onReady（图像异步加载完成后）才建材质并触发模型重贴地。
+    if (state.groundMode === 'heightmap') {
+        const hg = createHeightmapGround(state, scene, (gm) => {
+            applyTerrainMaterial(gm, state, scene);
+            _onTerrainReady?.();
+        });
+        _envSys.ground.mesh = hg;
         return;
     }
 

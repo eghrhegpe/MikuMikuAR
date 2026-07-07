@@ -276,6 +276,11 @@ export const envState: EnvState = reactive<EnvState>({
     groundGridSize: 1,
     groundLineColor: [0.5, 0.5, 0.55],
 
+    groundTerrainHeight: 4,
+    groundTerrainScale: 0.06,
+    groundTerrainSeed: 1337,
+    groundTerrainOctaves: 5,
+
     windEnabled: true,
     windDirection: [0, 0, 1],
     windSpeed: 5,

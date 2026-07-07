@@ -120,3 +120,60 @@ vOffset = 0.5 * (1 - cos(angle)) - 0.5 * sin(angle)
 | `menus/env-feature-levels.ts` | 修改 | `buildGroundLevel` 渲染新 UI 控件 |
 | `scene/env/env-impl.ts` | 修改 | `applyGround` / `applyCheckerGround` 消费新参数 |
 | `__tests__/env-state.test.ts` | 修改 | 同步测试全量字段列表 |
+
+---
+
+## 追加记录：地形模式（`heightmap` / Route A）— 2026-07-08
+
+> 本段为 ADR-052 的延伸。地面新增第 5 种模式 `heightmap`：程序化 FBM 噪声生成高度图 → `CreateGroundFromHeightMap` 建**带碰撞**地形网格，MMD 模型可真正站在坡面上。
+
+### 决策：Route A（真实可踩地形）vs Route B（fork 水面着色器）
+
+| 方案 | 优点 | 缺点 | 结论 |
+|------|------|------|------|
+| **A. CreateGroundFromHeightMap + FBM（选中）** | Babylon 自动生成与视觉一致的碰撞网格；`GroundMesh.getHeightAtCoordinates` 可直接贴地；模型真能站坡 | 高度图异步加载需 `onReady` 回调处理贴地时序；subdivisions 高（200）略增建网格成本 | ✅ |
+| B. 复制水面 `WATER_VERT_SRC` 把 Gerstner 求和替换为 FBM | 复用着色器骨架、可动画 | **无碰撞**，模型仍浮在固定高度；且会继承水面 `wavePhase` 冻结 bug（见坑点 2） | ❌ |
+
+结论：目标是「模型在起伏地面上站得住」，必须走 A。B 仅适合纯视觉动态地表，与需求不符。
+
+### 新字段
+
+```typescript
+// frontend/src/core/types.ts
+groundMode: 'solid' | 'grid' | 'checker' | 'texture' | 'heightmap';
+groundTerrainHeight: number;  // 振幅（峰谷差），默认 4
+groundTerrainScale:  number;  // 噪声频率/密度，默认 0.06
+groundTerrainSeed:   number;  // 确定性种子，默认 1337
+groundTerrainOctaves:number;  // FBM 层数，默认 5
+```
+
+### 实现要点（详见 `scene/env/env-terrain.ts`）
+
+- **确定性值噪声 FBM**：整数哈希值噪声（非 `Math.random`），同 `(seed, scale, octaves, height)` 必复现同一地形；输出 256² 灰度高度图 data URL。
+- **`createHeightmapGround()`**：`MeshBuilder.CreateGroundFromHeightMap('envGround', dataURL, { width:60, height:60, subdivisions:200, minHeight:-h/2, maxHeight:+h/2, onReady })`，返回 `pickable=true` 的 `GroundMesh`（自动带碰撞）。
+- **贴地 API**：`env-impl.ts` 导出 `getGroundHeightAt(x,z)`（转发 `GroundMesh.getHeightAtCoordinates`，收 world 坐标返 world Y）与 `setOnTerrainReady(cb)`（地形网格 `onReady` 后触发）。
+- **模型贴地**：`model-loader.ts` 加载后 `rootMesh.position.y = getGroundHeightAt(x,z)`；并注册 `setOnTerrainReady`，在地形重建后**重新贴地所有已加载模型**。
+- **调参重建**：`env-bridge.ts` 的 `groundKeys` 增加 4 个地形参数，`applyGround` 的 `typeKey` 含地形参数 → 拖滑杆即重建网格（高度图网格无法像材质属性那样热更新）。
+
+### 坑点（Pitfalls）
+
+1. **水面 Gerstner 波形公式不可复用**：Gerstner = 周期行进海浪；地形要的是多倍频噪声（FBM/ridged），数学不对口。且经查 `env-water.ts` 的 `_waterPhase` 全程无 `+=` 自增，波高几何实际处于**冻结静态**，沿用其动画路径需自行补递增逻辑。
+2. **`getHeightAtCoordinates(x,z)` 语义**：收 **world 坐标**、返 **world Y**（Babylon 内部已做世界矩阵反变换）。勿传 local 坐标，也勿二次叠加网格 `position.y`。
+3. **高度图异步加载**：`CreateGroundFromHeightMap` 在 `onReady` 前网格尚未生成，spawn 时 `getHeightAtCoordinates` 不可用。方案：spawn 先回退 `groundLevel`，`onReady` 回调触发 `getGroundHeightAt` 重新贴地——否则模型浮空且永不落地。
+4. **碰撞保真度依赖 subdivisions**：200 细分对 60×60 地面足够；过低 → 碰撞块面化，模型踩进坡里。
+5. **避免循环依赖**：`env-impl.ts` 不反向 import `model-loader`；贴地通过 `setOnTerrainReady` 回调注册，由 model 侧主动订阅。
+6. **测试契约分离**：`__tests__/mocks/binding-factories.ts` 的 `createMockEnvState` 返回的是 `bindings/.../models.ts`（Go 契约镜像，与 `core/types.ts` 失同步、不含 `groundTexture` 等字段），不可往其中加前端 `EnvState` 字段，否则违反契约类型；前端真实 `EnvState` 字面量测试（如 `env-state.test.ts`）才需同步补字段。
+
+### 追加涉及文件
+
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `core/types.ts` | 修改 | `groundMode` 加 `'heightmap'` + 4 个地形字段 |
+| `core/state.ts` | 修改 | 4 个地形字段默认值 |
+| `scene/env/env-terrain.ts` | **新增** | FBM 值噪声 → 高度图 dataURL + `createHeightmapGround()` |
+| `scene/env/env-impl.ts` | 修改 | heightmap 分支；导出 `getGroundHeightAt` / `setOnTerrainReady` |
+| `scene/env/env-bridge.ts` | 修改 | `groundKeys` 加 4 个地形参数 |
+| `menus/env-feature-levels.ts` | 修改 | 地面模式加「地形」；仅 heightmap 显示 4 个滑杆 |
+| `core/i18n/locales/*.ts` (5 语言) | 修改 | 新增 `env.heightmap` / `env.terrainHeight` / `env.terrainScale` / `env.terrainSeed` / `env.terrainOctaves` |
+| `scene/manager/model-loader.ts` | 修改 | spawn 贴地 + 注册 `setOnTerrainReady` 重贴地 |
+| `__tests__/env-state.test.ts` | 修改 | 同步全量 `EnvState` 字段 |

@@ -151,7 +151,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         starsEnabled: false,
         envIntensity: 1,
         groundVisible: true,
-        groundMode: 'color',
+        groundMode: 'solid',
         groundColor: [0.2, 0.8, 0.2],
         groundAlpha: 1,
         windEnabled: false,

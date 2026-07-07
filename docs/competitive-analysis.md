@@ -130,7 +130,7 @@
 |------|------|------|
 | Auto Camera（程序化运镜） | DanceXR | 节拍同步运镜 |
 | Scene Bundle（场景打包） | DanceXR | 场景可分发 |
-| Playback Modes（播放模式） | DanceXR | 单次/随机/循环列表 |
+<!-- | Playback Modes（播放模式） | DanceXR | 单次/随机/循环列表 | — 已评估排除：MMD 工作流为单模型+单VMD精调，非批量播放场景，边际效益低（ADR-061） -->
 | Remix（跨套装音频交换） | DanceXR | VMD 资产复用 |
 | 高斯随机眨眼 | HBR MMD Tools | 自然眨眼 |
 | 智能材质分类 | HBR MMD Tools | 自动检测材质类型 |
