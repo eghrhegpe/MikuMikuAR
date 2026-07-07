@@ -756,7 +756,7 @@ export const zhCN: Record<string, string> = {
     'env.skyRotationSpeed': '天空旋转速度',
     'env.lightControl': '光照控制',
     'env.sunIntensity': '太阳强度',
-    'env.envLighting': '天空照明',
+    'env.skyLighting': '天空照明',
     'env.ground': '地面',
     'env.showGround': '显示地面',
     'env.groundHeight': '地面高度',

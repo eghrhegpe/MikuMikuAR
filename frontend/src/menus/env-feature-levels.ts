@@ -168,7 +168,7 @@ async () => {
                         );
                         addSliderRow(
                             inner,
-                            t('env.envLighting'),
+                            t('env.skyLighting'),
                             s.envIntensity / 3,
                             0,
                             1,

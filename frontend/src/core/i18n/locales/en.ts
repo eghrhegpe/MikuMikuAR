@@ -756,7 +756,7 @@ export const en: Record<string, string> = {
     'env.skyRotationSpeed': 'Sky rotation speed',
     'env.lightControl': 'Light control',
     'env.sunIntensity': 'Sun intensity',
-    'env.envLighting': 'Sky lighting',
+    'env.skyLighting': 'Sky lighting',
     'env.ground': 'Ground',
     'env.showGround': 'Show ground',
     'env.groundHeight': 'Ground height',
