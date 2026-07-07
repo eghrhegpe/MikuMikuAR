@@ -735,7 +735,7 @@ export const ja: Record<string, string> = {
     'env.skyRotationSpeed': '空の回転速度',
     'env.lightControl': '照明制御',
     'env.sunIntensity': '太陽強度',
-    'env.envLighting': 'スカイライティング',
+    'env.skyLighting': 'スカイライティング',
 
     // —— Ground ——
     'env.ground': '地面',

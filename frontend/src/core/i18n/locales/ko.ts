@@ -735,7 +735,7 @@ export const ko: Record<string, string> = {
     'env.skyRotationSpeed': '하늘 회전 속도',
     'env.lightControl': '조명 제어',
     'env.sunIntensity': '태양 강도',
-    'env.envLighting': '하늘 조명',
+    'env.skyLighting': '하늘 조명',
 
     // —— Ground ——
     'env.ground': '지면',

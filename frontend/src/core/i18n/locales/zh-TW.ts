@@ -729,7 +729,7 @@ export const zhTW: Record<string, string> = {
     'env.skyRotationSpeed': '天空旋轉速度',
     'env.lightControl': '光照控制',
     'env.sunIntensity': '太陽強度',
-    'env.envLighting': '天空照明',
+    'env.skyLighting': '天空照明',
 
     // —— Sky Texture ——
     'env.notSelected': '未選擇',
