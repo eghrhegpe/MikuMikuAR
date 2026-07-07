@@ -33,6 +33,7 @@ import {
     initScene,
     engine,
     scene,
+    modelManager,
     focusedMmdModel,
     focusedModel,
     updatePlaybackUI,
@@ -877,6 +878,41 @@ if (import.meta.env.DEV) {
         // Force a render frame so Babylon writes to the backbuffer
         scene.render();
         return CreateScreenshotAsync(engine, scene.activeCamera!, 512);
+    };
+
+    // ======== E2E Scene Inspection Hook (DEV only) ========
+    // Exposes live Babylon.js / XPBD state for Playwright numeric assertions.
+    // Avoids fragile pixel-screenshot comparison for 3D correctness.
+    (window as any).__scene = {
+        get fps(): number {
+            return engine.getFps();
+        },
+        get meshCount(): number {
+            // Babylon keeps a flat meshes array (incl. system meshes like
+            // ground/helpers). Assert a threshold, not an exact number.
+            return scene.meshes.length;
+        },
+        get particleCount(): number {
+            let n = 0;
+            for (const cloth of modelManager.clothInstances.values()) {
+                n += cloth.solver?.particles.length ?? 0;
+            }
+            return n;
+        },
+        get constraintCount(): number {
+            let n = 0;
+            for (const cloth of modelManager.clothInstances.values()) {
+                n += cloth.solver?.constraints.length ?? 0;
+            }
+            return n;
+        },
+        get currentAnimation(): string {
+            // babylon-mmd runtime field name varies by version — safe cast.
+            return (mmdRuntime as any)?.runtimeAnimation?.animationName ?? 'idle';
+        },
+        // Delegate to the existing screenshot helper. NOTE: do NOT read a
+        // '2d' context from the WebGL canvas — getContext('2d') returns null.
+        capture: (): Promise<string> => window.__capture!(),
     };
 }
 

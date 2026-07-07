@@ -1,6 +1,6 @@
 # ADR-054: 后续开发方向路线图
 
-> **状态**: 规划（2026-07-06 创建）
+> **状态**: 规划（2026-07-06 创建；2026-07-07 代码复核修订）
 > **背景**: ADR-039 废除 `docs/roadmap.md` 后，后续方向仅以各 ADR「## 后续方向」小节碎片化存在，无优先级汇总。本 ADR 集中承载**经代码事实核实**的后续开发计划，作为"下一步做什么"的统一入口。
 
 ---
@@ -11,14 +11,14 @@
 
 | 功能 | 落地证据 | 备注 |
 |------|----------|------|
-| Motion Layers（双 VMD / boneFilter） | `vmd-layers.ts` + `MmdCompositeAnimation` | ADR-051 |
-| Eye Contact / 视线追踪 | gaze 图层 | ADR-016 / ADR-053 |
-| 队形预设 Formation | `model-manager.ts` 6 种预设 | — |
-| Auto Camera 程序化运镜 | `beat-detector.ts` + `camera.ts` 8 预设 | — |
-| Scene Bundle 场景打包 | `scene-bundle.ts` + Go `BundleScene` | ⚠️ zip 内 VMD 加载待支持 |
-| Lifelike 生命力 | `procedural-motion.ts` 伪随机眨眼(2~8s) + 自动呼吸 | 区别于竞品「高斯」 |
-| 渲染三件套 | `renderer.ts` SSAO / Outline / Toon | — |
-| LipSync 振幅同步 | `lipsync.ts` | 共振峰口型仍待增强 |
+| Motion Layers（双 VMD / boneFilter） | `scene/motion/vmd-layers.ts` + `MmdCompositeAnimation` | ADR-051 |
+| Eye Contact / 视线追踪 | gaze 图层（`proc-motion-bridge.ts` `setGazeLayerActive`） | ADR-016 / ADR-053 |
+| 队形预设 Formation | `scene/manager/model-manager.ts` 6 种预设 | — |
+| Auto Camera 程序化运镜 | `motion-algos/beat-detector.ts` + `scene/camera/camera.ts` 8 预设 | 节拍驱动闭环已实现 |
+| Scene Bundle 场景打包 | `scene/scene-bundle.ts` + Go `BundleScene` | ✅ zip 内 VMD 已打包/回写 |
+| Lifelike 生命力 | `motion-algos/procedural-motion.ts` 伪随机眨眼(2~8s) + 自动呼吸 | 区别于竞品「高斯」 |
+| 渲染三件套 | `scene/render/renderer.ts` SSAO / Outline + MMD 材质 Toon（`outfit.ts`） | Toon 为材质属性，非后处理 |
+| LipSync 振幅同步 | `motion-algos/lipsync.ts` | 共振峰口型仍待增强 |
 
 ---
 
@@ -26,7 +26,7 @@
 
 ### 🔴 架构裂缝（需中期决策）
 
-**WASM / JS 运行时分裂** — ✅ 已决策（ADR-056，实施中）
+**WASM / JS 运行时分裂** — ✅ 已实施（ADR-056，C+B 混合方案，2026-07-07 commit）
 - 现象（已修正）：gaze 双路径已实施（ADR-016，WASM frontBuffer 直写 + JS linkedBone）。真实裂缝仅剩 `MmdCompositeAnimation` 在 WASM 不可用（`vmd-layers.ts:522` 回退单图层）；服装/头发 Bullet 物理仅 WASM 有。
 - 决策：采用 C+B 混合方案（ADR-056）——JS 帧流合并让 WASM 拿到多图层能力，B1 单图层作降级兜底。
 - 影响：高级动作功能将在默认（高性能物理）运行时生效，分裂消除。
@@ -44,9 +44,9 @@
 | Remix 跨套装音频交换 | 中 | 低 | VMD 资产复用 |
 | LipSync 共振峰口型 | 中 | 中 | 振幅 → 共振峰，HBR MMD Tools 路线 |
 | i18n 语言切换 | P0 | 中 | 打开非中文市场 |
-| 垂直同步开关 | P1 | 低 | RAF 无简单开关 |
-| 设置导入 / 导出 | P2 | 低 | — |
-| 全量重置补全 | P2 | 低 | 当前仅外观 / 快捷键 |
+| 垂直同步开关 | P1 | 低 | ✅ 已实施（`settings.ts` vsync 开关） |
+| 设置导入 / 导出 | P2 | 低 | ✅ 已实施（`settings.ts` exportSettings / importSettings） |
+| 全量重置补全 | P2 | 低 | ✅ 已实施（resetAllSettings 全量重置，非仅外观/快捷键） |
 | Shift-JIS URL 编码 (`%EF%BF%BD`) | P0 | 中 | 已实施（ADR-057 主文件 + ADR-058 纹理） |
 
 ### 🟡 上游阻塞（卡 `babylon-mmd`，不独立启动）
@@ -61,25 +61,25 @@
 ## 三、优先级分期
 
 ### P0（立即，低成本高感知）
-1. i18n 语言切换框架
-2. 垂直同步开关 + 设置导入 / 导出 + 全量重置补全
-3. Shift-JIS URL 编码修复
+1. i18n 语言切换框架（唯一待做项）
+2. ~~垂直同步开关 + 设置导入 / 导出 + 全量重置补全~~ ✅ 已实施（2026-07-07 复核）
+3. ~~Shift-JIS URL 编码修复~~ ✅ 已实施（ADR-057 / ADR-058）
 
-> 注：高斯眨眼 / 自动呼吸 / LipSync 振幅 / Toon 均已实现，不列入。
+> 注：高斯眨眼 / 自动呼吸 / LipSync 振幅 / Toon / 垂直同步 / 设置导入导出 / 全量重置 均已实现，不列入。
 
 ### P1（本季度，护城河 B：多模型导演台核心）
 4. Formation 队形预设（已有 6 预设，待序列化保存）
-5. Auto Camera 程序化运镜（已有 8 预设，待节拍驱动闭环）
+5. Auto Camera 程序化运镜（已有 8 预设 + 节拍驱动闭环 ✅ 已实现）
 6. Playback Modes + Remix
 7. Pose Studio / 拍照模式
 8. T-pose / A-pose 转换
 
 ### P2（中期，深化护城河）
-9. Scene Bundle 分发（先解 zip 内 VMD 加载债）
+9. Scene Bundle 分发（zip 内 VMD 加载债 ✅ 已清，可直接进入分发）
 10. Mesh-to-Cloth 自动布料
 11. 道具挂载 / 智能材质分类
-12. WASM 运行时图层支持 — ✅ 已决策（ADR-056，C+B 混合方案，实施中）
-13. AR 相机模式（[ADR-055](adr/adr-055-ar-camera-mode.md)，Phase 1 桌面 MVP → Phase 2 移动端 + Gaze 协同）
+12. WASM 运行时图层支持 — ✅ 已实施（ADR-056，C+B 混合方案，2026-07-07 commit）
+13. AR 相机模式（[ADR-055](adr/adr-055-ar-camera-mode.md)，Phase 1 桌面 MVP → Phase 2 移动端 + Gaze 协同，状态：待实施）
 
 ### P3（远期探索）
 14. Soft Body / Ragdoll（XPBD 体积约束已预置）

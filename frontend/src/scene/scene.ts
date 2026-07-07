@@ -200,6 +200,11 @@ export async function initScene(): Promise<void> {
         // 见 proc-motion-bridge.ts onModelRemoved
         onModelRemoved(id);
 
+        // WASM 图层混合器 teardown（observer + evaluator 清理）
+        import('./motion/wasm-layers-blender')
+            .then(({ teardownWasmLayersBlender }) => teardownWasmLayersBlender(id))
+            .catch(() => {});
+
         const inst = modelRegistry.get(id);
         if (inst.mmdModel && mmdRuntime) {
             try {
@@ -317,9 +322,6 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
         };
         setProcMotionEyeTrackingEnabled(true);
         setProcMotionHeadTrackingEnabled(true);
-        if (getMmdRuntimeType() === 'wasm') {
-            setStatus('⚠ AR + 物理模式：视线追踪不可用', false, true);
-        }
         return true;
     } else {
         stopARCamera();
