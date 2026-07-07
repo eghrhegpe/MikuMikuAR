@@ -24,6 +24,9 @@ test.describe("核心旅程: 截图导出", { tag: ["@webgl"] }, () => {
         await waitForSceneHook(page);
         await page.click("#btnScene");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
+        // scene 菜单为分级结构:root 仅显示「截图」folder 入口(menus/scene-menu.ts:162),
+        // 需进入子层级 buildScreenshotLevel() 才能看到「截图当前模型」(:119)。
+        await page.getByText("截图", { exact: true }).first().click();
         await expect(page.getByText("截图当前模型", { exact: true })).toBeVisible();
     });
 });

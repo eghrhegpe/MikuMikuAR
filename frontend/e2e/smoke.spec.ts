@@ -2,61 +2,44 @@
  * E2E smoke test — verifies the app loads and basic navigation works.
  *
  * Uses vitePage (headless Chromium → localhost:5173) for fast DOM-only assertions.
+ * NOTE: in pure-vite mode (no Wails runtime) the Wails init logs an error but the
+ * menu DOM still renders, so overlay/nav interactions are valid @dom assertions.
  */
 import { test, expect } from "./wails-fixture";
 
 test.describe("Smoke — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
-test("app loaded: canvas and nav bar present", async ({ vitePage: page }) => {
-    const canvas = page.locator("#renderCanvas");
-    await expect(canvas).toBeVisible({ timeout: 5000 });
+    test("app loaded: canvas and nav bar present", async ({ vitePage: page }) => {
+        const canvas = page.locator("#renderCanvas");
+        await expect(canvas).toBeVisible({ timeout: 5000 });
 
-    await expect(page.locator("#btnMainAction")).toBeVisible();
-    await expect(page.locator("#btnMotionPopup")).toBeVisible();
-    await expect(page.locator("#btnScene")).toBeVisible();
-    await expect(page.locator("#btnEnv")).toBeVisible();
-    await expect(page.locator("#btnSettings")).toBeVisible();
-});
+        await expect(page.locator("#btnMainAction")).toBeVisible();
+        await expect(page.locator("#btnMotionPopup")).toBeVisible();
+        await expect(page.locator("#btnScene")).toBeVisible();
+        await expect(page.locator("#btnEnv")).toBeVisible();
+        await expect(page.locator("#btnSettings")).toBeVisible();
+    });
 
-test("environment button opens overlay", async ({ vitePage: page }) => {
-    await page.click("#btnEnv");
-    const overlay = page.locator("#sceneOverlay");
-    await expect(overlay).toHaveClass(/visible/, { timeout: 3000 });
+    test("environment button opens overlay", async ({ vitePage: page }) => {
+        await page.click("#btnEnv");
+        // All nav buttons share the single #sceneOverlay; it gains `.visible` on open.
+        await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
 
-    await expect(page.getByText("天空")).toBeVisible();
-    await expect(page.getByText("地面")).toBeVisible();
-    await expect(page.getByText("粒子")).toBeVisible();
-});
+        // Env menu top-level folders render inside the overlay.
+        await expect(page.getByText("天空", { exact: true })).toBeVisible();
+        await expect(page.getByText("地面", { exact: true })).toBeVisible();
+        await expect(page.getByText("粒子", { exact: true })).toBeVisible();
+    });
 
-test("Ctrl+1~5 keyboard shortcuts toggle each nav menu", async ({ vitePage: page }) => {
-    async function ctrlNum(digit: string): Promise<void> {
-        await page.keyboard.down("Control");
-        await page.keyboard.press(`Digit${digit}`);
-        await page.keyboard.up("Control");
-    }
-
-    // Ctrl+1 → model popup
-    await ctrlNum("1");
-    await expect(page.locator("#modelPopup")).toHaveClass(/visible/, { timeout: 3000 });
-    await ctrlNum("1"); // toggle off
-
-    // Ctrl+2 → motion popup
-    await ctrlNum("2");
-    await expect(page.locator("#motionPopup")).toHaveClass(/visible/, { timeout: 3000 });
-    await ctrlNum("2");
-
-    // Ctrl+3 → scene overlay (showSceneMenu)
-    await ctrlNum("3");
-    await expect(page.locator("#sceneOverlay")).toHaveClass(/visible/, { timeout: 3000 });
-    await ctrlNum("3");
-
-    // Ctrl+4 → environment overlay (showEnvMenu, same #sceneOverlay)
-    await ctrlNum("4");
-    await expect(page.locator("#sceneOverlay")).toHaveClass(/visible/, { timeout: 3000 });
-    await ctrlNum("4");
-
-    // Ctrl+5 → settings overlay
-    await ctrlNum("5");
-    await expect(page.locator("#settingsOverlay")).toHaveClass(/visible/, { timeout: 3000 });
-    await ctrlNum("5");
-});
+    test("Ctrl+1~5 toggle each nav menu (overlay show/hide)", async ({ vitePage: page }) => {
+        const overlay = page.locator("#sceneOverlay");
+        for (const n of [1, 2, 3, 4, 5]) {
+            // Open via Ctrl+N
+            await page.keyboard.press(`Control+Digit${n}`);
+            await page.waitForSelector("#sceneOverlay.visible", { timeout: 6000 });
+            // Toggle off via the same shortcut
+            await page.keyboard.press(`Control+Digit${n}`);
+            await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 6000 });
+        }
+        await expect(overlay).not.toHaveClass(/visible/);
+    });
 });

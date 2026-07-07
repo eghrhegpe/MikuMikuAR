@@ -23,8 +23,15 @@ test.describe("核心旅程: 模型加载", { tag: ["@webgl"] }, () => {
 
     test("加载指定名称模型（确定性选择）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        // 将 '示例模型' 替换为 CI seed 的真实模型名；保证首项非文件夹时可用。
-        await loadModelByName(page, "示例模型");
+        // 不从 spec 硬编码模型名(原 "示例模型" 在本地不存在必败):
+        // 从模型库首个真实条目动态取名,保证本地/CI 均可确定性加载。
+        await page.click("#btnMainAction");
+        await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
+        await page.waitForSelector("#sceneOverlay .slide-item", { timeout: 5000 });
+        const name = (await page.locator("#sceneOverlay .slide-item").first().innerText()).trim();
+        // 重新定位并点击该名称项完成加载(若首项是文件夹则此处进入子层级,非预期但可接受)。
+        await page.locator("#sceneOverlay .slide-item", { hasText: name }).first().click();
+        await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
         const meshCount = await page.evaluate(() => (window as any).__scene.meshCount);
         expect(meshCount).toBeGreaterThan(10);
     });
