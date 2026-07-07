@@ -71,7 +71,7 @@ export function getPipeline(): DefaultRenderingPipeline {
 // ======== Module-level state ========
 interface EnvSkyResources {
     skyMesh: Mesh | null;
-    envTexture: BaseTexture | null;
+    skyCubeTexture: BaseTexture | null;
 }
 
 export {
@@ -123,7 +123,7 @@ export const _envSys: {
     water: { mesh: Mesh | null; material: ShaderMaterial | null };
     shadow: { generator: ShadowGenerator | null };
 } = {
-    sky: { skyMesh: null, envTexture: null },
+    sky: { skyMesh: null, skyCubeTexture: null },
     ground: { mesh: null },
     particles: { system: null, followObserver: null },
     splash: { observer: null },
@@ -142,10 +142,10 @@ export function disposeSky(): void {
         _envSys.sky.skyMesh.dispose();
         _envSys.sky.skyMesh = null;
     }
-    if (_envSys.sky.envTexture) {
+    if (_envSys.sky.skyCubeTexture) {
         scene.environmentTexture = null;
-        _envSys.sky.envTexture.dispose();
-        _envSys.sky.envTexture = null;
+        _envSys.sky.skyCubeTexture.dispose();
+        _envSys.sky.skyCubeTexture = null;
     }
     _lastProceduralSkyKey = '';
     disposeSunDisc();
@@ -247,7 +247,7 @@ function createProceduralSky(state: EnvState): void {
     _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.sunAngle}|${state.starsEnabled}`;
 }
 
-function loadEnvTexture(path: string, rotationY: number, intensity: number): void {
+function loadSkyCube(path: string, rotationY: number, intensity: number): void {
     const scene = getScene();
     const ext = path.split('.').pop().toLowerCase();
     const supported = ['hdr', 'dds', 'exr'];
@@ -267,7 +267,7 @@ function loadEnvTexture(path: string, rotationY: number, intensity: number): voi
         null, // onLoad
         (message?: string, exception?: any) => {
             // Texture load failed — fall back to procedural sky (Fix E)
-            console.warn(`[sky] loadEnvTexture failed: ${message}`, exception);
+            console.warn(`[sky] loadSkyCube failed: ${message}`, exception);
             disposeSky();
             createProceduralSky(envState);
         }
@@ -276,7 +276,7 @@ function loadEnvTexture(path: string, rotationY: number, intensity: number): voi
     scene.environmentTexture = cubeTex;
     scene.environmentIntensity = intensity;
     scene.clearColor = new Color4(0, 0, 0, 1);
-    _envSys.sky.envTexture = cubeTex;
+    _envSys.sky.skyCubeTexture = cubeTex;
 
     const sphere = MeshBuilder.CreateSphere(
         'envSkyDome',
@@ -332,11 +332,11 @@ export function applySky(state: EnvState): void {
 
             // Clean up CubeTexture / reflectionTexture when transitioning texture→procedural
             // Prevents A) visual corruption from dual reflection+emissive, and H) stale scene.environmentTexture
-            if (_envSys.sky.envTexture || mat.reflectionTexture) {
-                if (_envSys.sky.envTexture) {
+            if (_envSys.sky.skyCubeTexture || mat.reflectionTexture) {
+                if (_envSys.sky.skyCubeTexture) {
                     scene.environmentTexture = null;
-                    _envSys.sky.envTexture.dispose();
-                    _envSys.sky.envTexture = null;
+                    _envSys.sky.skyCubeTexture.dispose();
+                    _envSys.sky.skyCubeTexture = null;
                 }
                 mat.reflectionTexture = null;
             }
@@ -361,7 +361,7 @@ export function applySky(state: EnvState): void {
 
     disposeSky();
     if (state.skyTexture) {
-        loadEnvTexture(state.skyTexture, state.skyRotationY, state.envIntensity);
+        loadSkyCube(state.skyTexture, state.skyRotationY, state.envIntensity);
     }
 }
 
