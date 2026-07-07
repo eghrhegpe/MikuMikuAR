@@ -43,6 +43,7 @@ import {
 } from '../outfit/audio';
 import { showConfirm, showPrompt } from '../core/dialog';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
+import { t } from '../core/i18n/t';
 
 export interface ModelPresetEntry {
     name: string;

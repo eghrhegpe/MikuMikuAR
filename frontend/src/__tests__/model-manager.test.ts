@@ -809,6 +809,26 @@ describe('ModelManager VMD / morph', function () {
             mgr.resetMorphs('m1');
         }).not.toThrow();
     });
+
+    it('morph methods are safe when mmdModel is undefined (stage model)', function () {
+        mgr.register(makeModelInstance('stage1', { mmdModel: undefined, kind: 'stage' }));
+        expect(function () {
+            expect(mgr.getMorphs('stage1')).toEqual([]);
+            mgr.setMorphWeight('stage1', 'a', 0.5);
+            expect(mgr.getMorphWeight('stage1', 'a')).toBe(0);
+            mgr.resetMorphs('stage1');
+        }).not.toThrow();
+    });
+
+    it('focusedMmdModel returns null (no throw) for a stale focused id', function () {
+        setFocusedModelId('ghost-not-registered');
+        let result = null;
+        expect(function () {
+            result = mgr.focusedMmdModel();
+        }).not.toThrow();
+        expect(result).toBeNull();
+        setFocusedModelId(null);
+    });
 });
 
 describe('ModelManager physics', function () {

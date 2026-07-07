@@ -298,7 +298,9 @@ export class ModelManager {
 
     /** Get the currently focused runtime model (RuntimeModel), or null. */
     focusedMmdModel(): RuntimeModel | null {
-        return configFocusedId ? (this.modelRegistry.get(configFocusedId).mmdModel ?? null) : null;
+        if (!configFocusedId) return null;
+        const inst = this.modelRegistry.get(configFocusedId);
+        return inst?.mmdModel ?? null;
     }
 
     /** Find a model by file path. Returns the first match or undefined. */
@@ -749,7 +751,7 @@ export class ModelManager {
 
     getMorphs(id: string): Array<{ name: string; type: number }> {
         const inst = this.modelRegistry.get(id);
-        if (!inst.mmdModel.morph.morphs) {
+        if (!inst || !inst.mmdModel || !inst.mmdModel.morph || !inst.mmdModel.morph.morphs) {
             return [];
         }
         return inst.mmdModel.morph.morphs.map((m) => ({ name: m.name, type: m.type }));
@@ -757,25 +759,19 @@ export class ModelManager {
 
     setMorphWeight(id: string, morphName: string, weight: number): void {
         const inst = this.modelRegistry.get(id);
-        if (!inst.mmdModel.morph) {
-            return;
-        }
+        if (!inst || !inst.mmdModel || !inst.mmdModel.morph) return;
         inst.mmdModel.morph.setMorphWeight(morphName, weight);
     }
 
     getMorphWeight(id: string, morphName: string): number {
         const inst = this.modelRegistry.get(id);
-        if (!inst.mmdModel.morph) {
-            return 0;
-        }
+        if (!inst || !inst.mmdModel || !inst.mmdModel.morph) return 0;
         return inst.mmdModel.morph.getMorphWeight(morphName);
     }
 
     resetMorphs(id: string): void {
         const inst = this.modelRegistry.get(id);
-        if (!inst.mmdModel.morph) {
-            return;
-        }
+        if (!inst || !inst.mmdModel || !inst.mmdModel.morph) return;
         inst.mmdModel.morph.resetMorphWeights();
         this.triggerAutoSave();
     }

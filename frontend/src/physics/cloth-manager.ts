@@ -13,6 +13,7 @@ import {
 import { XpbdRenderer } from './xpbd-renderer';
 import { scene, modelManager } from '../scene/scene';
 import { focusedModelId, envState, setStatus } from '../core/config';
+import { t } from '../core/i18n/t';
 
 /** 当前布料的碰撞体引用 */
 let _currentCollider: SdfCollider | null = null;
@@ -27,19 +28,19 @@ let _renderer: XpbdRenderer | null = null;
 function _createClothForFocusedModel(): void {
     const id = focusedModelId;
     if (!id || !modelManager) {
-        setStatus('⚠ 请先加载模型', false);
+        setStatus(t('physics.loadModelFirst'), false);
         return;
     }
 
     // 防止重复创建（UI 多次点击）
     if (modelManager.clothInstances.has(id)) {
-        setStatus('⚠ 布料已存在', false);
+        setStatus(t('physics.clothExists'), false);
         return;
     }
 
     const mmd = modelManager.focusedMmdModel();
     if (!mmd) {
-        setStatus('⚠ 当前模型无 MMD 数据', false);
+        setStatus(t('physics.noMmdData'), false);
         return;
     }
 
@@ -135,7 +136,11 @@ function _createClothForFocusedModel(): void {
     }
 
     setStatus(
-        `✓ 布料已创建 (${cloth.solver.particles.length} 粒子, ${cloth.solver.constraints.length} 约束, mesh: ${cloth.mesh ? 'ok' : 'null'})`,
+        t('physics.clothCreated', {
+            particles: cloth.solver.particles.length,
+            constraints: cloth.solver.constraints.length,
+            mesh: cloth.mesh ? 'ok' : 'null',
+        }),
         true
     );
 }
@@ -630,13 +635,17 @@ function _reportClothStatus(): void {
     if (diag.enabled) {
         if (diag.instanceCount > 0) {
             setStatus(
-                `✓ 布料模拟已启用 (${diag.instanceCount} 例, ${diag.particleCount} 粒子, ${diag.constraintCount} 约束)`,
+                t('physics.clothEnabled', {
+                    instances: diag.instanceCount,
+                    particles: diag.particleCount,
+                    constraints: diag.constraintCount,
+                }),
                 true
             );
         } else {
-            setStatus('⚠ 布料已启用但未找到活跃实例', false);
+            setStatus(t('physics.noActiveInstance'), false);
         }
     } else {
-        setStatus('布料模拟已关闭', true);
+        setStatus(t('physics.clothDisabled'), true);
     }
 }

@@ -23,6 +23,7 @@ import {
     type RuntimeModel,
 } from '../../core/config';
 import { resolveFileUrl, normPath } from '../../core/fileservice';
+import { t } from '../../core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
@@ -125,23 +126,23 @@ export async function loadPMXFile(
         if (existing) {
             setFocusedModelId(existing.id);
             _modelManager?.focus(existing.id);
-            setStatus(`✓ 已切换至: ${existing.name}`, true);
+            setStatus(t('scene.loader.switched', { name: existing.name }), true);
             return existing.id;
         }
 
         const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
         const fileName = normPath(filePath).split('/').pop() || '';
 
-        setStatus('加载中...', false);
+        setStatus(t('scene.loader.loading'), false);
         dom.loadingEl.style.display = 'block';
-        dom.loadingText.textContent = '加载中 0%';
+        dom.loadingText.textContent = t('scene.loader.loadingZero');
 
         // Keep a reference so we can clean up meshes on failure
         const result = await ImportMeshAsync(url, _scene, {
             onProgress: (evt) => {
                 if (evt.lengthComputable) {
                     const pct = Math.round((evt.loaded / evt.total) * 100);
-                    dom.loadingText.textContent = `加载中 ${pct}%`;
+                    dom.loadingText.textContent = t('scene.loader.loadingProgress', { pct });
                 }
             },
         });
@@ -151,7 +152,7 @@ export async function loadPMXFile(
 
         const meshes = loadedMeshes;
         if (meshes.length === 0) {
-            setStatus('✗ 未加载到网格', false);
+            setStatus(t('scene.loader.noMeshes'), false);
             return null;
         }
 
@@ -199,7 +200,7 @@ export async function loadPMXFile(
             } catch {
                 // Intentionally empty — renderer 未初始化时忽略
             }
-            setStatus(`✓ ${displayName} (场景)`, true);
+            setStatus(t('scene.loader.stageLoaded', { name: displayName }), true);
             _modelManager.arrange();
             _refreshWaterRenderList();
             rebuildShadowCasters();
@@ -308,12 +309,17 @@ export async function loadPMXFile(
             } catch (vmdErr) {
                 console.warn('VMD 加载失败，模型已保留:', vmdErr);
                 appliedVmd = '';
-                setStatus(`⚠ VMD 加载失败，模型已加载: ${displayName}`, false);
+                setStatus(t('scene.loader.vmdFailedModelLoaded', { name: displayName }), false);
             }
         }
 
         _modelManager.focus(id);
-        setStatus(appliedVmd ? `✓ ${displayName} + ${appliedVmd}` : `✓ ${displayName}`, true);
+        setStatus(
+            appliedVmd
+                ? t('scene.loader.actorLoadedWithVmd', { name: displayName, vmd: appliedVmd })
+                : t('scene.loader.actorLoaded', { name: displayName }),
+            true
+        );
         _modelManager.arrange();
         _refreshWaterRenderList();
         rebuildShadowCasters();
@@ -370,7 +376,7 @@ export async function loadPMXFile(
         }
         dom.loadingEl.style.display = 'none';
         console.error('loadPMXFile:', err);
-        setStatus('✗ 模型加载失败: ' + formatError(err), false);
+        setStatus(t('scene.loader.loadFailed', { error: formatError(err) }), false);
         return null;
     } finally {
         dom.loadingEl.style.display = 'none';

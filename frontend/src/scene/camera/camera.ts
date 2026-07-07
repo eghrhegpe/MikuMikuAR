@@ -12,6 +12,7 @@ import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
 import { focusedModelId, modelRegistry, uiState, setStatus } from '../../core/config';
+import { t } from '../../core/i18n/t';
 import { focusModel, reattachPipeline, setARMode } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
 
@@ -399,7 +400,7 @@ export function switchCameraMode(mode: CameraMode): void {
         _currentPreset.mode = 'ar';
         setARMode(true).then((ok) => {
             if (!ok) {
-                setStatus('✗ AR 相机启动失败，已切回原模式', false);
+                setStatus(t('scene.camera.arFailed'), false);
                 switchCameraMode(_previousMode);
             }
         });

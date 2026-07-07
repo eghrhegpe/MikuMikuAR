@@ -217,6 +217,13 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 - [x] 约定：**功能反馈消息**进 feature 命名空间（如 `scene.statusXxx`），不另立 `status.*`；模块级 `const LABELS` 中文固化陷阱 → 统一改为 `KEYS` 映射（仅存 i18n key）在运行时 `t()`，保证热切换刷新
 - [x] 验证：`npm run check` ✅ / `npm run test` ✅（1100 passed）/ `npm run build` ✅
 
+### 修复记录（2026-07-07）
+
+- [x] **幽灵语言修复**：`t.ts` 新增 `AVAILABLE_LANGS`（= 有 bundle 的语言）；`settings.ts` 语言子菜单 `SUPPORTED_LANGS` 用 `AVAILABLE_LANGS.includes(code)` 过滤。ja/ko/zh-TW 在补全 bundle（Phase 4）前不再作为可选项，消除「切换无效」误导。`locale.ts` 的 `SUPPORTED_LANGS` 注释已澄清其为「规划清单」语义。
+- [x] **Library 菜单 i18n**：`menus/library-core.ts` 全量 `t()` 化（~47 个 `library.*` key，`zh-CN.ts`/`en.ts` 同步，407 key 完全对齐）；`AVAILABLE_LANGS` 已含 zh-CN+en。原 Phase 1 完成说明称「`library.ts` 无中文 UI」不准确——真正渲染实现 `library-core.ts` 当时含大量硬编码中文，本次已修正。
+- [x] **排序 collation**：`library-core.ts` 列表排序 `localeCompare(b.label, 'zh')` → `localeCompare(b.label, getLang())`，随语言切换（ADR §3.4）。
+- [x] 验证：`npm run check` ✅ / `npm run test` ✅（1100 passed）/ `npm run build` ✅
+
 ### Phase 3: core / 非菜单模块抽取（~2–3 天）
 
 > 注：菜单域（含 `menus/scene-*.ts`、`menus/motion-*.ts`）内的 `setStatus`/toast 已在 Phase 2 一并 `t('scene.*'/'motion.*')` 化；本阶段仅剩**中央/非菜单**模块。

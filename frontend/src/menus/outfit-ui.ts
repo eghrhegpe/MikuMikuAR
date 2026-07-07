@@ -7,6 +7,7 @@ import { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
 import { tryCatchStatus } from '../core/utils';
+import { t } from '../core/i18n/t';
 
 export function buildOutfitLevel(id: string): PopupLevel {
     return {

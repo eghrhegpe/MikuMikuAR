@@ -87,7 +87,7 @@ import {
     SOFTWARE_DETAIL_PREFIX,
     type SettingsFolderTarget,
 } from './settings-targets';
-import { t } from '../core/i18n/t'; // [doc:adr-059] i18n 翻译
+import { t, AVAILABLE_LANGS } from '../core/i18n/t'; // [doc:adr-059] i18n 翻译
 import { setLang, getLang, SUPPORTED_LANGS, type LangCode } from '../core/i18n/locale'; // [doc:adr-059]
 
 // ======== Helpers re-exported ========
@@ -2158,7 +2158,9 @@ const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
 // [doc:adr-059] 语言选择子菜单——radio 列表，点击即切换并热刷新
 function buildSettingsLanguageLevel(): PopupLevel {
     const cur = getLang();
-    const items: PopupRow[] = SUPPORTED_LANGS.map((l) => ({
+    // [doc:adr-059] 仅列出已补全 bundle 的语言；ja/ko/zh-TW 等无 bundle 语言
+    // 在补齐前不展示，避免「切换无效」的误导（见 t.ts AVAILABLE_LANGS）
+    const items: PopupRow[] = SUPPORTED_LANGS.filter((l) => AVAILABLE_LANGS.includes(l.code)).map((l) => ({
         kind: 'action' as const,
         label: t(l.key),
         icon: l.code === cur ? 'lucide:check' : '',

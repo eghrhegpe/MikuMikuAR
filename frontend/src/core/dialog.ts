@@ -12,6 +12,8 @@
  *   if (!ok) return;
  */
 
+import { t } from './i18n/t';
+
 export interface DialogOptions {
     title: string;
     message?: string;
@@ -76,8 +78,8 @@ function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
             inputEl.value = '';
         }
 
-        confirmBtn.textContent = opts.confirmLabel ?? '确定';
-        cancelBtn.textContent = opts.cancelLabel ?? '取消';
+        confirmBtn.textContent = opts.confirmLabel ?? t('dialog.confirm');
+        cancelBtn.textContent = opts.cancelLabel ?? t('dialog.cancel');
         cancelBtn.style.display = opts.cancelLabel === '' ? 'none' : '';
 
         const cleanup = (result: string | boolean | null) => {
@@ -165,8 +167,8 @@ export function showErrorAction(title: string, message: string): void {
     msgEl.style.wordBreak = 'break-all';
     inputEl.style.display = 'none';
 
-    cancelBtn.textContent = '关闭';
-    confirmBtn.textContent = '复制';
+    cancelBtn.textContent = t('dialog.close');
+    confirmBtn.textContent = t('dialog.copy');
 
     const cleanup = () => {
         overlay.classList.remove('mmd-dialog-visible');
@@ -176,9 +178,9 @@ export function showErrorAction(title: string, message: string): void {
         navigator.clipboard
             .writeText(message)
             .then(() => {
-                confirmBtn.textContent = '已复制 ✓';
+                confirmBtn.textContent = t('dialog.copied');
                 setTimeout(() => {
-                    confirmBtn.textContent = '复制';
+                    confirmBtn.textContent = t('dialog.copy');
                 }, 1500);
             })
             .catch(() => {
@@ -246,10 +248,10 @@ export function showConfirm(
 export function showPrompt(
     message: string,
     defaultValue = '',
-    title = '输入',
+    title = t('dialog.inputTitle'),
     placeholder = '',
-    confirmLabel = '确定',
-    cancelLabel = '取消'
+    confirmLabel = t('dialog.confirm'),
+    cancelLabel = t('dialog.cancel')
 ): Promise<string | null> {
     return showDialog({
         title,
