@@ -26,16 +26,22 @@ export const test = base.extend<WailsFixtures>({
         const page = await browser.newPage();
         await page.goto(VITE_URL, { waitUntil: "domcontentloaded", timeout: 10000 });
         await use(page);
-        await browser.close();
+        try {
+            await use(page);
+        } finally {
+            await browser.close();
+        }
     },
 
-    /** Page connected to the running Wails WebView2 via CDP. */
+    /** Page connected to the running Wails WebView2 via CDP.
+     *  Uses 30s timeout — if 9222 isn't open (e.g. wails3 dev not started
+     *  or msedgewebview2 residual killed), fail fast instead of hanging. */
     wailsPage: async ({}, use) => {
-        const browser = await chromium.connectOverCDP(CDP_ENDPOINT);
+        const browser = await chromium.connectOverCDP(CDP_ENDPOINT, { timeout: 30000 });
         const context = browser.contexts()[0] || await browser.newContext();
         const page = context.pages()[0] || await context.newPage();
         await use(page);
-        await browser.close();
+        await browser.disconnect();
     },
 });
 

@@ -31,6 +31,7 @@ import {
 } from '../scene/env/env-lighting';
 import { SelectEnvTextureFile } from '../core/wails-bindings';
 import { setStatus } from '../core/config';
+import { t } from '../core/i18n/t';
 
 // ======== 从子文件导入 ========
 import {
@@ -111,7 +112,7 @@ function renderPresetChips(container: HTMLElement): void {
 export function buildEnvLightingLevel(): PopupLevel {
     const sunAngle = getEnvSunAngle();
     return {
-        label: '环境光照',
+        label: t('env.lighting'),
         dir: '',
         items: [{ kind: 'divider' as const, label: '', icon: '', target: '' } as PopupRow],
         renderCustom: (container) => {
@@ -119,7 +120,7 @@ export function buildEnvLightingLevel(): PopupLevel {
                 renderPresetChips(c);
                 addSliderRow(
                     c,
-                    '太阳角度',
+                    t('env.sunAngle'),
                     sunAngle,
                     -15,
                     90,
@@ -142,18 +143,18 @@ export function buildEnvLightingLevel(): PopupLevel {
 export function buildEnvUnifiedLevel(): PopupLevel {
     const s = envState;
     return {
-        label: '天空',
+        label: t('env.sky'),
         dir: '',
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
                 addModeSlider(
                     c,
-                    '天空模式',
+                    t('env.skyMode'),
                     [
-                        { value: 'procedural', label: '程序化' },
-                        { value: 'color', label: '纯色' },
-                        { value: 'texture', label: '贴图' },
+                        { value: 'procedural', label: t('env.procedural') },
+                        { value: 'color', label: t('env.solid') },
+                        { value: 'texture', label: t('env.texture') },
                     ],
                     s.skyMode,
                     (v) => {
@@ -169,14 +170,14 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                 renderPresetChips(c);
 
                 addCollapsible(c, {
-                    title: '天空外观',
+                    title: t('env.skyAppearance'),
                     icon: 'lucide:palette',
                     defaultOpen: false,
                     renderContent: (inner) => {
                         if (s.skyMode === 'procedural') {
                             addColorSliderRow(
                                 inner,
-                                '天顶色',
+                                t('env.zenithColor'),
                                 s.skyColorTop,
                                 (v) => {
                                     setEnvState({ skyColorTop: v });
@@ -187,7 +188,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                             );
                             addColorSliderRow(
                                 inner,
-                                '地平色',
+                                t('env.horizonColor'),
                                 s.skyColorBot,
                                 (v) => {
                                     setEnvState({ skyColorBot: v });
@@ -199,7 +200,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                         } else if (s.skyMode === 'color') {
                             addColorSliderRow(
                                 inner,
-                                '天空色',
+                                t('env.skyColorTop'),
                                 s.skyColorTop,
                                 (v) => {
                                     setEnvState({ skyColorTop: v });
@@ -211,11 +212,11 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                         } else if (s.skyMode === 'texture') {
                             const fileName = s.skyTexture
                                 ? s.skyTexture.split(/[/\\]/).pop()
-                                : '未选择';
+                                : t('env.notSelected');
                             slideRow(
                                 inner,
                                 'lucide:image',
-                                '环境贴图',
+                                t('env.envTexture'),
                                 false,
                                 async () => {
                                     const path = await SelectEnvTextureFile().catch(() => '');
@@ -230,14 +231,14 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                 });
 
                 addCollapsible(c, {
-                    title: '高级天空设置',
+                    title: t('env.advancedSky'),
                     icon: 'lucide:settings',
                     defaultOpen: false,
                     renderContent: (inner) => {
                         if (s.skyMode === 'procedural') {
                             addToggleRow(
                                 inner,
-                                '星空',
+                                t('env.stars'),
                                 s.starsEnabled ?? false,
                                 (v) => {
                                     setEnvState({ starsEnabled: v });
@@ -250,7 +251,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                         }
                         addSliderRow(
                             inner,
-                            '天空旋转速度',
+                            t('env.skyRotationSpeed'),
                             s.skyRotationSpeed ?? 0,
                             0,
                             5,
@@ -266,7 +267,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                         );
                         addSliderRow(
                             inner,
-                            '太阳角度',
+                            t('env.sunAngle'),
                             getEnvSunAngle(),
                             -15,
                             90,
@@ -284,7 +285,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                         if (s.skyMode === 'texture') {
                             addSliderRow(
                                 inner,
-                                '旋转 Y',
+                                t('env.rotateY'),
                                 s.skyRotationY,
                                 0,
                                 360,
@@ -312,16 +313,16 @@ function buildEnvRootItems(): PopupRow[] {
     // Card 1: 环境预设（L2 精选组合 + 用户自定义）
     items.push({
         kind: 'folder',
-        label: '环境预设',
+        label: t('env.presets'),
         icon: 'lucide:bookmark',
         target: 'env:presets',
     });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     // Card 2: 环境功能入口（天空/水面/粒子/风/地面/雾/阴影/实验）
-    items.push({ kind: 'folder', label: '天空', icon: 'lucide:sun', target: 'env:sky' });
+    items.push({ kind: 'folder', label: t('env.sky'), icon: 'lucide:sun', target: 'env:sky' });
     items.push({
         kind: 'folder',
-        label: '水面',
+        label: t('env.water'),
         icon: 'lucide:waves',
         target: 'env:water',
         headerToggle: {
@@ -332,7 +333,7 @@ function buildEnvRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: '粒子',
+        label: t('env.particle'),
         icon: 'lucide:sparkles',
         target: 'env:particle',
         headerToggle: {
@@ -343,7 +344,7 @@ function buildEnvRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: '风',
+        label: t('env.wind'),
         icon: 'lucide:wind',
         target: 'env:wind',
         headerToggle: {
@@ -354,7 +355,7 @@ function buildEnvRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: '地面',
+        label: t('env.ground'),
         icon: 'lucide:square',
         target: 'env:ground',
         headerToggle: {
@@ -365,7 +366,7 @@ function buildEnvRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: '雾',
+        label: t('env.fog'),
         icon: 'lucide:cloud-fog',
         target: 'env:fog',
         headerToggle: {
@@ -376,7 +377,7 @@ function buildEnvRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: '阴影',
+        label: t('env.shadow'),
         icon: 'lucide:cloud',
         target: 'env:shadow',
         headerToggle: {
@@ -387,7 +388,7 @@ function buildEnvRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: '实验功能',
+        label: t('env.experimental'),
         icon: 'lucide:flask-conical',
         target: 'env:experimental',
     });
@@ -396,7 +397,7 @@ function buildEnvRootItems(): PopupRow[] {
 
 export function buildEnvLevel(): PopupLevel {
     return {
-        label: '环境',
+        label: t('env.env'),
         dir: '',
         items: buildEnvRootItems(),
     };
@@ -404,7 +405,7 @@ export function buildEnvLevel(): PopupLevel {
 
 export function buildParticleLevel(): PopupLevel {
     return {
-        label: '粒子',
+        label: t('env.particle'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -412,15 +413,15 @@ export function buildParticleLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 addModeSlider(
                     c,
-                    '粒子类型',
+                    t('env.particleType'),
                     [
-                        { value: 'none', label: '无' },
-                        { value: 'sakura', label: '🌸 樱花' },
-                        { value: 'rain', label: '🌧 雨' },
-                        { value: 'snow', label: '❄ 雪' },
-                        { value: 'fireworks', label: '🎆 烟花' },
-                        { value: 'fireflies', label: '✨ 萤火虫' },
-                        { value: 'leaves', label: '🍂 落叶' },
+                        { value: 'none', label: t('env.none') },
+                        { value: 'sakura', label: '🌸 ' + t('env.sakura') },
+                        { value: 'rain', label: '🌧 ' + t('env.rain') },
+                        { value: 'snow', label: '❄ ' + t('env.snow') },
+                        { value: 'fireworks', label: '🎆 ' + t('env.fireworks') },
+                        { value: 'fireflies', label: '✨ ' + t('env.fireflies') },
+                        { value: 'leaves', label: '🍂 ' + t('env.leaves') },
                     ],
                     s.particleType,
                     (v) => {
@@ -434,7 +435,7 @@ export function buildParticleLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '密度',
+                    t('env.density'),
                     s.particleEmitRate,
                     0,
                     3,
@@ -450,7 +451,7 @@ export function buildParticleLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '大小',
+                    t('env.size'),
                     s.particleSize,
                     0.1,
                     3,
@@ -466,7 +467,7 @@ export function buildParticleLevel(): PopupLevel {
                 );
                 addSliderRow(
                     c,
-                    '速度',
+                    t('env.speed'),
                     s.particleSpeed,
                     0.1,
                     5,
@@ -482,7 +483,7 @@ export function buildParticleLevel(): PopupLevel {
                 );
                 addToggleRow(
                     c,
-                    '落地溅射',
+                    t('env.splash'),
                     s.particleSplash,
                     (v) => {
                         setEnvState({ particleSplash: v });
@@ -496,11 +497,11 @@ export function buildParticleLevel(): PopupLevel {
                 const texRow = document.createElement('div');
                 texRow.className = 'cs-row';
                 const texLabel = document.createElement('span');
-                texLabel.textContent = '自定义纹理';
+                texLabel.textContent = t('env.customTexture');
                 texRow.appendChild(texLabel);
                 const texBtn = document.createElement('button');
                 texBtn.className = 'cs-btn cs-btn-sm';
-                texBtn.textContent = envState.particleCustomTexture ? '更换' : '选择';
+                texBtn.textContent = envState.particleCustomTexture ? t('env.change') : t('env.select');
                 const ensureClearBtn = (): HTMLButtonElement => {
                     const existing = texRow.querySelector<HTMLButtonElement>(
                         'button.cs-btn[data-clear]'
@@ -511,7 +512,7 @@ export function buildParticleLevel(): PopupLevel {
                     const btn = document.createElement('button');
                     btn.className = 'cs-btn cs-btn-sm';
                     btn.dataset.clear = '1';
-                    btn.textContent = '清除';
+                    btn.textContent = t('env.clear');
                     btn.onclick = () => {
                         setEnvState({ particleCustomTexture: '' });
                         texBtn.textContent = '选择';
@@ -533,7 +534,7 @@ export function buildParticleLevel(): PopupLevel {
                         reader.onload = (e) => {
                             const url = (e.target?.result as string) ?? '';
                             setEnvState({ particleCustomTexture: url });
-                            texBtn.textContent = '更换';
+                            texBtn.textContent = t('env.change');
                             ensureClearBtn();
                         };
                         reader.readAsDataURL(file);

@@ -45,7 +45,7 @@
 2. **断言分层**：
    - DOM 层（菜单/滑块/overlay）→ Playwright locator，**用 `vitePage`**（5173，快、不依赖 Wails）。
    - 3D 层（模型是否真渲染、物理是否在跑、FPS）→ **`window.__scene` 数值断言**，必要时辅以 `window.__capture()` 截图做次级基线。
-3. **运行纪律**：Vitest 为默认回归（每次改逻辑跑）；E2E 仅在 UI/菜单级改动时跑（需 `wails dev` 或 5173+9222 就绪）。已写入 AGENTS.md 注释。
+3. **运行纪律**：Vitest 为默认回归（每次改逻辑跑）；E2E 仅在 UI/菜单级改动时跑（需 `wails3 dev` 或 5173+9222 就绪）。已写入 AGENTS.md 注释。
 
 ### 2.2 `window.__scene` 数值钩子（Phase 0，已实现）
 
@@ -160,12 +160,12 @@
 
 - [x] **`e2e` job（阻塞门禁，ubuntu-latest）**：仅跑 `@dom`（`smoke` 3 + `env-sky` DOM-only 2 = 5 个）。Playwright 自带 Chromium 打 Vite 5173，**不依赖 Wails 运行时**，验证菜单/overlay/快捷键等 DOM 层回归。同一步内 `npm run dev &` 后台起 Vite → 轮询 5173 就绪 → `npx playwright test --grep @dom` → 收尾 kill。
   - **env-sky `@dom` 断言已据真实 UI 修正**：天空是**统一层级**（非「每模式一组滑块」），分段控件只显示当前模式（程序化/纯色/贴图），另有环境预设 chips（黎明/正午/夕阳/夜景/阴天/霓虹夜）与自定义颜色控件（`天空色` R/G/B，非 `input[type=range]`）。故断言改为：模式控件 + 预设 + 颜色控制均渲染、点击预设不报错。
-- [x] **`e2e-wails` job（best-effort，`windows-latest`，`continue-on-error: true`，`needs: e2e`）**：跑 `@webgl`（model-load 2 + action-play 2 + export-screenshot 2 + env-sky 截图 1 = 7 个）。`wails dev` 启动真实 WebView2、`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222` 开放 CDP，`connectOverCDP` 连 9222 断言 3D 渲染。
+- [x] **`e2e-wails` job（best-effort，`windows-latest`，`continue-on-error: true`，`needs: e2e`）**：跑 `@webgl`（model-load 2 + action-play 2 + export-screenshot 2 + env-sky 截图 1 = 7 个）。`wails3 dev` 启动真实 WebView2、`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222` 开放 CDP，`connectOverCDP` 连 9222 断言 3D 渲染。
 - [x] **平台约束（关键）**：`connectOverCDP` 是 Chromium 专用协议；Wails 在 Linux（ubuntu）用 WebKitGTK，其远程调试器**不兼容 CDP**，故 `wailsPage` 测试只能在 `windows-latest`（原生 WebView2）跑。`e2e-wails` 当前 `continue-on-error`，待真实 runner 验证稳定后翻为阻塞。
 - [x] E2E 失败归档：`playwright-report/` 上传为 artifact（`if: always()`）。
 - [x] Vitest 常驻：`test-frontend` job 每次提交必跑（秒级、无运行时）。
 
-> **为何两层而非一层**：单层 `wails dev` 在 ubuntu 上因 WebKit≠CDP 根本连不上，若强行全量阻塞会 100% 红。分层后：可靠 DOM 门禁（`@dom`）作为真·提交门禁；完整 3D 集成（`@webgl`）在正确平台（Windows）上跑且容忍 flake。
+> **为何两层而非一层**：单层 `wails3 dev` 在 ubuntu 上因 WebKit≠CDP 根本连不上，若强行全量阻塞会 100% 红。分层后：可靠 DOM 门禁（`@dom`）作为真·提交门禁；完整 3D 集成（`@webgl`）在正确平台（Windows）上跑且容忍 flake。
 
 ### Phase 4 — AI 辅助维护（⏳ 长期）
 
@@ -196,7 +196,7 @@
 ### Phase 1: E2E 关键路径骨架（✅ 2026-07-07 完成）
 - [x] grep 真实菜单选择器（见第三节 Phase 1 表）
 - [x] 写 `model-load` / `action-play` / `export-screenshot` 三个 spec（含换装钩子方案）
-- [ ] 本地 `wails dev` 起 9222 后 `npm run test:e2e` 实跑验证（本环境无 Wails 运行时，仅 tsc + list 通过）
+- [ ] 本地 `wails3 dev` 起 9222 后 `npm run test:e2e` 实跑验证（本环境无 Wails 运行时，仅 tsc + list 通过）
 
 ### Phase 2: 截图基线（✅ 2026-07-07 完成，指纹方案）
 - [x] `fingerprint()` 钩子 + `compareToBaseline()` + `__baselines__/` 自动基线
@@ -254,12 +254,12 @@ CI 门禁：`e2e`(ubuntu, `@dom`, 阻塞) + `e2e-wails`(windows, `@webgl`, `cont
 
 ## 八、验证方式
 
-1. **钩子可用**：`wails dev` 起 9222 → Playwright `wailsPage` 打开应用 → `page.evaluate(() => window.__scene.fps)` 返回数值、`meshCount > 0`、`fingerprint()` 返回 256 位串。
+1. **钩子可用**：`wails3 dev` 起 9222 → Playwright `wailsPage` 打开应用 → `page.evaluate(() => window.__scene.fps)` 返回数值、`meshCount > 0`、`fingerprint()` 返回 256 位串。
 2. **模型加载**：`model-load.spec.ts` 加载默认模型后 `waitForFunction(__scene.meshCount > 10)` 通过且 `fps >= 30`。
 3. **动作/换装**：`action-play.spec.ts` 切换动作后 `__scene.currentAnimation` 变化；换装经 `__scene.outfitVariants()`/`applyOutfit()` 驱动后 `fingerprint()` 前后不同（变体<2 自动 skip）。
 4. **导出**：`export-screenshot.spec.ts` 断言 `__scene.capture()` 返回有效 PNG dataURL，且「截图当前模型」菜单入口可见（原生 SaveFile 对话框不拦截）。
 5. **截图基线**：`env-sky.spec.ts` 纯色白屏 `fingerprint()` 与 `__baselines__/env-sky-solid-white.json` 比对（首次自动生成）。
-6. **回归**：`npm run check && npm run test`（Vitest）全绿；E2E 在 `wails dev` 就绪下 `npm run test:e2e` 通过。
+6. **回归**：`npm run check && npm run test`（Vitest）全绿；E2E 在 `wails3 dev` 就绪下 `npm run test:e2e` 通过。
 
 ---
 

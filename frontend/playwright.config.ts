@@ -8,6 +8,15 @@ export default defineConfig({
     workers: process.env.CI ? 1 : undefined,
     reporter: "html",
 
+    // Auto-start Vite for @dom tests. When wails3 dev or another
+    // process already serves :5173, reuseExistingServer skips launch.
+    webServer: {
+        command: "npm run dev",
+        url: "http://localhost:5173",
+        reuseExistingServer: true,
+        timeout: 15000,
+    },
+
     use: {
         // Wails WebView2 exposes CDP on 9222 when .env has WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
         // We connect via connectOverCDP in each test rather than launching a new browser.

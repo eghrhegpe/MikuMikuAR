@@ -552,8 +552,15 @@ func basenameFallbackFS(root string, logFn func(string, ...interface{})) http.Ha
 		// Shift-JIS/GBK bytes as UTF-8, producing U+FFFD replacement characters.
 		for _, fn := range []func(string) string{toCorruptStringShiftJIS, toCorruptStringGBK} {
 			if corrupt := fn(base); corrupt != "" && corrupt != base {
-				if _, exists := corruptIndex[corrupt]; !exists {
+				if prev, exists := corruptIndex[corrupt]; !exists {
 					corruptIndex[corrupt] = rel
+				} else {
+					// [doc:adr-058] Collision: two different files produce the same corrupt
+					// encoding (e.g. ひらがな vs カタカナ under GBK). Log warning and keep
+					// the first-seen entry — arbitrary but deterministic.
+					if logFn != nil {
+						logFn("FS: corruptIndex collision: %q (prev=%q, curr=%q) — keeping first", corrupt, prev, rel)
+					}
 				}
 			}
 		}

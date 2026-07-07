@@ -11,7 +11,7 @@ import { t } from '../core/i18n/t';
 
 export function buildOutfitLevel(id: string): PopupLevel {
     return {
-        label: '服装变体',
+        label: t('outfit.variant'),
         dir: '',
         items: [],
         renderCustom: async (container) => {
@@ -20,7 +20,7 @@ export function buildOutfitLevel(id: string): PopupLevel {
                 container.classList.remove('render-card');
                 const inst = modelRegistry.get(id);
                 if (!inst) {
-                    container.textContent = '模型已移除';
+                    container.textContent = t('outfit.modelRemoved');
                     return;
                 }
 
@@ -33,7 +33,7 @@ export function buildOutfitLevel(id: string): PopupLevel {
                         }
                     } catch (err) {
                         console.warn('buildOutfitLevel: loadOutfits failed', err);
-                        container.textContent = '⚠ 加载服装配置失败';
+                        container.textContent = t('outfit.loadConfigFailed');
                         return;
                     }
                 }
@@ -42,7 +42,7 @@ export function buildOutfitLevel(id: string): PopupLevel {
                     empty.style.cssText =
                         'font-size:11px;color:var(--text-dim);text-align:center;padding:20px;line-height:1.6;';
                     empty.textContent =
-                        '此模型无 outfits.json 配置。在模型所在目录创建 outfits.json 即可启用服装变体。';
+                        t('outfit.noOutfitsConfig');
                     container.appendChild(empty);
                     return;
                 }
@@ -58,20 +58,20 @@ export function buildOutfitLevel(id: string): PopupLevel {
                     slideRow(
                         c,
                         '',
-                        '默认',
+                        t('outfit.default'),
                         false,
                         async () => {
                             if (_loading) {
                                 return;
                             }
                             _loading = true;
-                            setStatus('⏳ 切换变体中…', true);
+                            setStatus(t('outfit.switching'), true);
                             const _r = await tryCatchStatus(
                                 () => applyOutfitVariant(id, '默认'),
-                                '✗ 切换变体失败'
+                                t('outfit.switchFailed')
                             );
                             if (_r !== undefined) {
-                                setStatus('✓ 变体已切换', true);
+                                setStatus(t('outfit.switched'), true);
                             }
                             _loading = false;
                             await _render();
@@ -103,13 +103,13 @@ export function buildOutfitLevel(id: string): PopupLevel {
                                     return;
                                 }
                                 _loading = true;
-                                setStatus('⏳ 切换变体中…', true);
+                                setStatus(t('outfit.switching'), true);
                                 const _r = await tryCatchStatus(
                                     () => applyOutfitVariant(id, v.name),
-                                    '✗ 切换变体失败'
+                                    t('outfit.switchFailed')
                                 );
                                 if (_r !== undefined) {
-                                    setStatus('✓ 变体已切换', true);
+                                    setStatus(t('outfit.switched'), true);
                                 }
                                 _loading = false;
                                 await _render();
@@ -129,19 +129,19 @@ export function buildOutfitLevel(id: string): PopupLevel {
 
                     const resetBtn = document.createElement('button');
                     resetBtn.className = 'btn btn-sm';
-                    resetBtn.textContent = '重置全部';
+                    resetBtn.textContent = t('outfit.resetAll');
                     resetBtn.style.cssText = 'width:100%;margin-top:8px;';
                     resetBtn.addEventListener('click', async () => {
                         if (_loading) {
                             return;
                         }
                         _loading = true;
-                        setStatus('⏳ 重置服装中…', true);
+                        setStatus(t('outfit.resetting'), true);
                         const _r = await tryCatchStatus(async () => {
                             resetOutfit(id);
-                        }, '✗ 重置服装失败');
+                        }, t('outfit.resetFailed'));
                         if (_r !== undefined) {
-                            setStatus('✓ 服装已重置', true);
+                            setStatus(t('outfit.resetDone'), true);
                         }
                         _loading = false;
                         await _render();

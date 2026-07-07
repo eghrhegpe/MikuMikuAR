@@ -203,7 +203,7 @@ BeatDetector 新增 `onBeat` 回调机制，Auto Camera 监听 beat 事件按节
 - `scene-bundle.ts`（新文件）：collectSceneAssets() + rewriteRefsForBundle() + exportSceneBundle() / importSceneBundle()
 - `scene-serialize.ts`：导出 resolvePathFromRef
 - `scene-menu.ts`：导出场景包 / 导入场景包按钮
-- `app.ts`（bindings）：+BundleScene / +SelectBundleSaveFile（需 `wails generate` 刷新 ID）
+- `app.ts`（bindings）：+BundleScene / +SelectBundleSaveFile（需 `wails3 generate` 刷新 ID）
 
 ### 依赖
 
