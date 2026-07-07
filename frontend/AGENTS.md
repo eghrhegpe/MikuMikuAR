@@ -66,7 +66,7 @@ npm run check                                          # 确认未新增错误
 - **不要新增 `any` 逃生** — 即使 `strict: false` 允许，新代码仍要避免 `as any` / `@ts-ignore` / `@ts-expect-error`。需要时加注释说明业务理由。
 - **类型定义就近放置** — 项目**没有**集中的 `src/types/` 目录。interface/type 与使用它的文件同模块放置；跨模块共享类型放 `core/types.ts`（config.ts 已拆分为 types / state / dom / utils 四个子模块，通过 barrel re-export 保持 import 兼容）。
 - **没有路径别名** — `tsconfig.json` 无 `paths` 配置。一律用相对路径 import（如 `import { dom } from '../core/config'`）。
-- **binding 不可手改** — `frontend/wailsjs/go/` 是 Wails 自动生成。改 Go binding 后跑 `wails3 generate` 或在主代理处 build。
+- **binding 自动生成** — 绑定文件在 `frontend/bindings/`，由 Wails v3 自动生成。**严禁手动编辑**。改 Go 端 struct/方法后，在 `frontend/` 目录跑 `npm run generate:bindings` 重新生成。生成参数为 `-ts -i`（TypeScript + interface 模式），输出目录 `frontend/bindings`。TS 侧统一通过 `src/core/wails-bindings.ts` re-export 引入，不要直接 import bindings 目录。
 
 ---
 

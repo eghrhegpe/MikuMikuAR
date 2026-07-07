@@ -283,7 +283,7 @@ export interface EnvState {
     "groundCollisionEnabled": boolean;
     "sunAngle": number;
     "azimuth": number;
-    "lightingPresetName"?: string;
+    "lightingPresetName"?: string | null;
     "timeOfDayActive": boolean;
     "timeOfDaySpeed": number;
 }

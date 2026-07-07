@@ -797,15 +797,6 @@ export function StartFileServer(dirPath: string): $CancellablePromise<number> {
 }
 
 /**
- * StopFileServer stops and releases the HTTP file server previously started
- * for dirPath via StartFileServer. If no server is running for dirPath,
- * the call rejects with an error.
- */
-export function StopFileServer(dirPath: string): $CancellablePromise<void> {
-    return $Call.ByID(1672597494, dirPath);
-}
-
-/**
  * StartWatchDir starts fsnotify-based watching on the specified directory.
  * If already watching a directory, it stops the previous watcher first.
  * Only files with .zip/.pmx/.vmd extensions trigger notifications,
@@ -814,6 +805,16 @@ export function StopFileServer(dirPath: string): $CancellablePromise<void> {
  */
 export function StartWatchDir(dir: string): $CancellablePromise<void> {
     return $Call.ByID(1501929991, dir);
+}
+
+/**
+ * StopFileServer stops and releases the HTTP file server previously started
+ * for dirPath via StartFileServer. The underlying listener is closed by the
+ * server's Serve goroutine once Shutdown completes. If no server is running
+ * for dirPath, it returns an error.
+ */
+export function StopFileServer(dirPath: string): $CancellablePromise<void> {
+    return $Call.ByID(1672597494, dirPath);
 }
 
 /**
