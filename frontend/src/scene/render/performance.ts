@@ -376,11 +376,13 @@ export function getCurrentDegradeLevel(): DegradeLevel {
  */
 export function resetPerformanceSnapshot(): void {
     if (_snapshot) {
-        // 恢复到全质量后再清空
-        setLightState(_snapshot.light);
-        setRenderState(_snapshot.render);
+        // 先提取 + 清空快照，再恢复，避免 setLightState → resetPerformanceSnapshot 死循环
+        const light = _snapshot.light;
+        const render = _snapshot.render;
+        _snapshot = null;
+        setLightState(light);
+        setRenderState(render);
     }
-    _snapshot = null;
     _currentLevel = 0;
     _lastDegradeTime = 0;
     _lastRecoveryTime = 0;

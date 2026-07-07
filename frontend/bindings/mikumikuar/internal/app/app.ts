@@ -215,14 +215,6 @@ export function GetDownloadWatchStatus(): $CancellablePromise<string> {
 }
 
 /**
- * GetFavorites returns the current favorites list.
- * Reads from the built-in tag "收藏" in the tag system.
- */
-export function GetFavorites(): $CancellablePromise<string[] | null> {
-    return $Call.ByID(781046870);
-}
-
-/**
  * GetLibraryIndex reads the last scanned index from disk.
  */
 export function GetLibraryIndex(): $CancellablePromise<$models.ModelEntry[] | null> {
@@ -701,13 +693,6 @@ export function SetEnvState(env: $models.EnvState): $CancellablePromise<void> {
 }
 
 /**
- * SetUIState persists the full UI state (scale, popupWidth, rendering settings, etc.).
- */
-export function SetUIState(ui: $models.UIState): $CancellablePromise<void> {
-    return $Call.ByID(1015886004, ui);
-}
-
-/**
  * SetMMDPath saves the MMD executable path to config.
  * If path is empty, automatically detects MMD from common install locations.
  */
@@ -787,6 +772,14 @@ export function SetUIScale(scale: number): $CancellablePromise<void> {
 }
 
 /**
+ * SetUIState persists the full UI state (scale, popupWidth, rendering settings, etc.).
+ * Follows the same full-replace pattern as SetEnvState.
+ */
+export function SetUIState(ui: $models.UIState): $CancellablePromise<void> {
+    return $Call.ByID(1015886004, ui);
+}
+
+/**
  * ServiceShutdown implements application.ServiceShutdown interface.
  */
 export function SetWailsApp(wailsApp: application$0.App | null): $CancellablePromise<void> {
@@ -812,15 +805,6 @@ export function StartFileServer(dirPath: string): $CancellablePromise<number> {
  */
 export function StartWatchDir(dir: string): $CancellablePromise<void> {
     return $Call.ByID(1501929991, dir);
-}
-
-/**
- * StopFileServer shuts down the HTTP file server for the given directory.
- * Maintained for future cleanup use (e.g., scene teardown, directory unmount).
- * Currently unused by the frontend — HTTP servers run until app exit.
- */
-export function StopFileServer(dirPath: string): $CancellablePromise<void> {
-    return $Call.ByID(1672597494, dirPath);
 }
 
 /**

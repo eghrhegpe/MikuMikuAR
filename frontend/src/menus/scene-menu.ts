@@ -15,6 +15,7 @@ import {
     focusedModelId,
     setFocusedModelId,
     uiState,
+    envState,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { createIconifyIcon } from '../core/icons';
@@ -25,6 +26,7 @@ import { tryCatchStatus, showErrorToast } from '../core/utils';
 import { setModelFormation } from '../scene/scene';
 import { focusModel } from '../scene/scene';
 import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
+import { toggleCloth } from '../physics/cloth-manager';
 import { t } from '../core/i18n/t';
 
 // ======== 从子文件导入 ========
@@ -37,9 +39,11 @@ import { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels'
 import { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 import {
     buildPhysicsLevel,
-    buildPhysicsDebugLevel,
-    buildCollisionLevel,
+    buildClothLevel,
     buildWasmPhysicsLevel,
+    buildCollisionLevel,
+    buildPhysicsDebugLevel,
+    buildClothDebugLevel,
 } from './scene-physics-levels';
 import { buildClothParamsLevel } from './motion-cloth-levels';
 
@@ -165,6 +169,20 @@ function buildSceneRootItems(): PopupRow[] {
     });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({ kind: 'folder', label: t('scene.physics'), icon: 'lucide:atom', target: 'scene:physics' });
+    items.push({
+        kind: 'folder',
+        label: t('scene.clothSim'),
+        icon: 'lucide:shirt',
+        target: 'scene:cloth',
+        headerToggle: {
+            value: envState.clothEnabled,
+            onChange: (v) => {
+                envState.clothEnabled = v;
+                toggleCloth(v);
+            },
+            bind: () => envState.clothEnabled,
+        },
+    });
     if (modelRegistry.size > 1) {
         items.push({
             kind: 'folder',
@@ -202,16 +220,20 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
             return buildPropLevel();
         case 'scene:physics':
             return buildPhysicsLevel();
+        case 'scene:cloth':
+            return buildClothLevel();
         case 'scene:formation':
             return buildFormationLevel();
-        case 'physics:cloth':
+        case 'cloth:fineTune':
             return buildClothParamsLevel();
-        case 'physics:debug':
-            return buildPhysicsDebugLevel();
-        case 'physics:collision':
+        case 'cloth:debug':
+            return buildClothDebugLevel();
+        case 'cloth:collision':
             return buildCollisionLevel();
         case 'physics:wasm':
             return buildWasmPhysicsLevel();
+        case 'wasm:debug':
+            return buildPhysicsDebugLevel();
         default:
             return null;
     }

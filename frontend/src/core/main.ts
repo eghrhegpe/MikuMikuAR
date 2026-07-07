@@ -670,7 +670,6 @@ async function restoreEnvState(): Promise<void> {
             loaded.causticScrollX = 0.1;
             loaded.causticScrollY = 0.15;
             loaded.fresnelAlphaInfluence = 0.5;
-            loaded.foamAlphaInfluence = 0.2;
         }
         // clothConfig 与代码默认值合并，确保新字段/新默认值生效
         if (loaded.clothConfig) {

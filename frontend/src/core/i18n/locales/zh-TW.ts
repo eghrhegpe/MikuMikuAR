@@ -733,7 +733,7 @@ export const zhTW: Record<string, string> = {
 
     // —— Sky Texture ——
     'env.notSelected': '未選擇',
-    'env.envTexture': '環境貼圖',
+    'env.skyTexture': '天空貼圖',
     'env.rotateY': '旋 Y',
     'env.brightness': '亮度',
 
@@ -764,9 +764,11 @@ export const zhTW: Record<string, string> = {
 
     // —— Water ——
     'env.water': '水面',
+    'env.waterFlip': '翻轉水面',
     'env.basicParams': '基礎參數',
     'env.height': '高度',
     'env.waterColor': '水色',
+    'env.color': '顏色',
     'env.waves': '波浪',
     'env.waveHeight': '波高',
     'env.foamThreshold': '泡沫閾值',
@@ -779,6 +781,7 @@ export const zhTW: Record<string, string> = {
     'env.chromaticAmount': '色差強度',
     'env.toneIntensity': '色調強度',
     'env.fogMultiplier': '霧倍率',
+    'env.underwaterTintStrength': '水下色彩強度',
     'env.waterAdvanced': '進階參數',
     'env.fresnelBias': '菲涅耳偏移',
     'env.fresnelPower': '菲涅耳冪次',
@@ -793,6 +796,10 @@ export const zhTW: Record<string, string> = {
     'env.causticScrollY': '焦散縱向滾動',
     'env.fresnelAlpha': '菲涅耳透明度影響',
     'env.foamAlpha': '泡沫透明度影響',
+    'env.foamOpacity': '泡沫透明度',
+    'env.waterFogColor': '水面霧色',
+    'env.waterFogDensity': '水面霧密度',
+    'env.waterFogOpacityInfluence': '水霧透明度影響',
 
     // —— Wind ——
     'env.wind': '風',

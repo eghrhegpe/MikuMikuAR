@@ -138,7 +138,10 @@ export async function loadPMXFile(
         dom.loadingText.textContent = t('scene.loader.loadingZero');
 
         // Keep a reference so we can clean up meshes on failure
+        // [doc:adr-057] URL 使用 ?f=base64url 形式无扩展名，需显式指定 pluginExtension
+        // 否则 SceneLoader 无法识别文件类型，回退到 JSON 解析导致 importMesh has failed JSON parse
         const result = await ImportMeshAsync(url, _scene, {
+            pluginExtension: '.pmx',
             onProgress: (evt) => {
                 if (evt.lengthComputable) {
                     const pct = Math.round((evt.loaded / evt.total) * 100);

@@ -294,9 +294,9 @@ export function buildProcMotionLevel(): PopupLevel {
                             );
                         }
                     }
-                    // 分组：头部
+                    // 分组：表情
                     addSectionTitle(inner, t('motion.secHead'));
-                    for (const cat of ['head', 'blink', 'emotion'] as const) {
+                    for (const cat of ['emotion'] as const) {
                         if (cats.includes(cat)) {
                             addToggleRow(
                                 inner,
@@ -332,41 +332,6 @@ export function buildProcMotionLevel(): PopupLevel {
                             );
                         }
                     }
-                },
-            });
-
-            // ======== 视线追踪（可折叠） ========
-            addCollapsible(container, {
-                title: t('motion.gazeTracking'),
-                icon: 'lucide:eye',
-                defaultOpen: false,
-                renderContent: (inner) => {
-                    addToggleRow(
-                        inner,
-                        t('motion.eyeFollow'),
-                        st.eyeTrackingEnabled,
-                        (v) => {
-                            setProcMotionEyeTrackingEnabled(v);
-                            getMotionMenu()?.updateControls();
-                        },
-                        'lucide:eye',
-                        {
-                            bind: () => getProcMotionState().eyeTrackingEnabled,
-                        }
-                    );
-                    addToggleRow(
-                        inner,
-                        t('motion.headFollow'),
-                        st.headTrackingEnabled,
-                        (v) => {
-                            setProcMotionHeadTrackingEnabled(v);
-                            getMotionMenu()?.updateControls();
-                        },
-                        'lucide:mouse-pointer-2',
-                        {
-                            bind: () => getProcMotionState().headTrackingEnabled,
-                        }
-                    );
                 },
             });
 

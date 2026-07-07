@@ -254,7 +254,8 @@ function _teardownGazeTracking(): void {
 /** 注册眼部跟随 + 头部跟随（独立 observer，实时骨骼叠加）。 */
 function _setupGazeTracking(): void {
     _teardownGazeTracking();
-    const inst = procModelId ? modelManager.get(procModelId) : null;
+    const modelId = procModelId ?? focusedModelId;
+    const inst = modelId ? modelManager.get(modelId) : null;
     const mmdModel = inst?.mmdModel;
     if (!mmdModel) {
         return;
@@ -280,31 +281,43 @@ function _setupGazeTracking(): void {
     const isWasm = _isWasmRuntime(headRuntime ?? eyeRuntimes[0]);
 
     if (isWasm) {
-        // WASM 模式：gaze 由 blender 统一调度，同步配置到 blender
-        const gazeConfig = {
+        // WASM 模式：同步配置到 blender（若有图层混合时由 blender 统一调度），
+        // 同时注册独立 WASM gaze observer 确保无 blender 时仍生效。
+        // 双重 gaze（observer + blender._applyGazeIfEnabled）无害——
+        // 都调用 applyGazeWasm 向同一目标 Slerp，不会累积错误。
+        const gazeConfig: GazeConfig = {
             headEnabled: procState.headTrackingEnabled,
             eyeEnabled: procState.eyeTrackingEnabled,
         };
-        if (procModelId) {
+        if (modelId) {
             import('./wasm-layers-blender')
-                .then(({ setWasmLayersGazeConfig }) => {
-                    setWasmLayersGazeConfig(procModelId!, gazeConfig);
+                .then((m) => {
+                    m.setWasmLayersGazeConfig(modelId!, gazeConfig);
                 })
                 .catch(() => {
                     // blender 未激活，忽略
                 });
         }
+
+        // 独立 WASM gaze observer：直写 frontBuffer，不依赖 _procVmdActive
+        const capturedModelId = modelId;
+        _headTrackingObserver = scene.onBeforeRenderObservable.add(() => {
+            if (!capturedModelId) return;
+            const inst = modelManager.get(capturedModelId);
+            if (!inst?.mmdModel) return;
+            const cam = scene.activeCamera;
+            if (!cam) return;
+            applyGazeWasm(inst.mmdModel.runtimeBones, cam, gazeConfig);
+        });
+
         console.log(
-            `[proc-motion] 视线追踪: WASM 模式，已同步至 blender 眼=${procState.eyeTrackingEnabled} 头=${procState.headTrackingEnabled}`
+            `[proc-motion] 视线追踪: WASM 模式独立 observer 眼=${procState.eyeTrackingEnabled} 头=${procState.headTrackingEnabled}`
         );
         return;
     }
 
     _headTrackingObserver = scene.onBeforeRenderObservable.add(
         () => {
-            if (!_procVmdActive) {
-                return;
-            }
             if (!mmdModel?.mesh?.metadata) {
                 return;
             }
@@ -687,10 +700,9 @@ function _setGazeTrackingSetting(
 ): void {
     procState = { ...procState, [field]: value };
     triggerAutoSave();
-    if (_procVmdActive) {
-        _teardownGazeTracking();
-        _setupGazeTracking();
-    }
+    // 始终重建 gaze，不依赖程序化动作生命周期 —— 允许在仅加载外部 VMD 时生效
+    _teardownGazeTracking();
+    _setupGazeTracking();
 }
 
 /** 设置眼部跟随开关（实时效果，不重新生成 VMD）。 */

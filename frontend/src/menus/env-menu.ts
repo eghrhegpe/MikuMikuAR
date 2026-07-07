@@ -31,6 +31,8 @@ import {
 } from '../scene/env/env-lighting';
 import { SelectEnvTextureFile } from '../core/wails-bindings';
 import { setStatus } from '../core/config';
+import { closeAllOverlays } from '../core/utils';
+import { stackRegistry } from '../core/config';
 import { t } from '../core/i18n/t';
 
 // ======== 从子文件导入 ========
@@ -64,6 +66,20 @@ export {
 } from './env-feature-levels';
 export { buildPresetLevel, SCENE_PRESETS } from './env-preset-levels';
 
+// ======== Env Texture Binding Target ========
+
+type EnvTextureBindingTarget = 'ground' | 'particle' | 'sky' | null;
+
+let _envTextureBindingTarget: EnvTextureBindingTarget = null;
+
+export function setEnvTextureBindingTarget(target: EnvTextureBindingTarget): void {
+    _envTextureBindingTarget = target;
+}
+
+export function clearEnvTextureBindingTarget(): void {
+    _envTextureBindingTarget = null;
+}
+
 // ======== Env Menu State ========
 
 const {
@@ -75,7 +91,10 @@ const {
     popupType: 'env',
     buildRoot: () => buildEnvLevel(),
     buildRootItems: () => buildEnvRootItems(),
-    handlers: { onFolderEnter: envOnFolderEnter },
+    handlers: {
+        onFolderEnter: envOnFolderEnter,
+        onItemClick: envOnItemClick,
+    },
 });
 
 export { getEnvMenu, refreshEnvRoot, showEnvMenu };
@@ -216,7 +235,7 @@ export function buildEnvUnifiedLevel(): PopupLevel {
                             slideRow(
                                 inner,
                                 'lucide:image',
-                                t('env.envTexture'),
+                                t('env.skyTexture'),
                                 false,
                                 async () => {
                                     const path = await SelectEnvTextureFile().catch(() => '');
@@ -493,65 +512,76 @@ export function buildParticleLevel(): PopupLevel {
                         bind: () => envState.particleSplash,
                     }
                 );
-                // 自定义纹理按钮
-                const texRow = document.createElement('div');
-                texRow.className = 'cs-row';
-                const texLabel = document.createElement('span');
-                texLabel.textContent = t('env.customTexture');
-                texRow.appendChild(texLabel);
-                const texBtn = document.createElement('button');
-                texBtn.className = 'cs-btn cs-btn-sm';
-                texBtn.textContent = envState.particleCustomTexture ? t('env.change') : t('env.select');
-                const ensureClearBtn = (): HTMLButtonElement => {
-                    const existing = texRow.querySelector<HTMLButtonElement>(
-                        'button.cs-btn[data-clear]'
-                    );
-                    if (existing) {
-                        return existing;
-                    }
-                    const btn = document.createElement('button');
-                    btn.className = 'cs-btn cs-btn-sm';
-                    btn.dataset.clear = '1';
-                    btn.textContent = t('env.clear');
-                    btn.onclick = () => {
+                // 自定义纹理：slideRow + 库浏览
+                const particleFileName = s.particleCustomTexture
+                    ? s.particleCustomTexture.split(/[/\\]/).pop() ?? t('env.notSelected')
+                    : t('env.notSelected');
+                slideRow(
+                    c,
+                    'lucide:image',
+                    t('env.customTexture'),
+                    false,
+                    () => {
+                        setEnvTextureBindingTarget('particle');
+                        const level = stackRegistry.buildLevel!(
+                            'environment',
+                            t('env.customTexture'),
+                            (m) =>
+                                ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+                            getEnvMenu()!
+                        );
+                        getEnvMenu()!.push(level);
+                    },
+                    particleFileName
+                );
+                if (s.particleCustomTexture) {
+                    const clearRow = document.createElement('div');
+                    clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+                    const clearBtn = document.createElement('button');
+                    clearBtn.className = 'cs-btn cs-btn-sm';
+                    clearBtn.textContent = t('env.clear');
+                    clearBtn.onclick = () => {
                         setEnvState({ particleCustomTexture: '' });
-                        texBtn.textContent = '选择';
-                        btn.remove();
                     };
-                    texRow.appendChild(btn);
-                    return btn;
-                };
-                texBtn.onclick = () => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.onchange = () => {
-                        const file = input.files?.[0];
-                        if (!file) {
-                            return;
-                        }
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const url = (e.target?.result as string) ?? '';
-                            setEnvState({ particleCustomTexture: url });
-                            texBtn.textContent = t('env.change');
-                            ensureClearBtn();
-                        };
-                        reader.readAsDataURL(file);
-                    };
-                    input.click();
-                };
-                texRow.appendChild(texBtn);
-                if (envState.particleCustomTexture) {
-                    ensureClearBtn();
+                    clearRow.appendChild(clearBtn);
+                    c.appendChild(clearRow);
                 }
-                c.appendChild(texRow);
             });
         },
     };
 }
 
 // ======== Env Stack onFolderEnter ========
+
+function envOnItemClick(row: PopupRow): void {
+    if (!row.model) return;
+
+    const IMAGE_FORMATS = ['png', 'jpg', 'jpeg', 'hdr', 'dds'];
+    if (!IMAGE_FORMATS.includes(row.model.format)) return;
+
+    const target = _envTextureBindingTarget;
+    clearEnvTextureBindingTarget();
+    closeAllOverlays();
+
+    switch (target) {
+        case 'ground':
+            setEnvState({
+                groundTexture: row.model.file_path,
+                groundTextureEnabled: !!row.model.file_path,
+            });
+            break;
+        case 'particle':
+            setEnvState({ particleCustomTexture: row.model.file_path });
+            break;
+        case 'sky':
+            setEnvState({ skyTexture: row.model.file_path });
+            break;
+        default:
+            break;
+    }
+
+    getEnvMenu()?.reRender();
+}
 
 function envOnFolderEnter(row: PopupRow): PopupLevel | null {
     switch (row.target) {

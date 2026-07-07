@@ -288,6 +288,7 @@ export interface EnvState {
 
     waterEnabled: boolean;
     waterLevel: number;
+    waterFlip: boolean;
     waterColor: [number, number, number];
     waterTransparency: number;
     waterWaveHeight: number;
@@ -296,6 +297,10 @@ export interface EnvState {
 
     foamThreshold: number;
     foamIntensity: number;
+    foamOpacity: number;
+    waterFogColor: [number, number, number];
+    waterFogDensity: number;
+    waterFogOpacityInfluence: number;
 
     fresnelBias: number;
     fresnelPower: number;
@@ -309,13 +314,12 @@ export interface EnvState {
     causticScrollX: number;
     causticScrollY: number;
     fresnelAlphaInfluence: number;
-    foamAlphaInfluence: number;
 
-    underwaterFogColor: [number, number, number];
     underwaterFogDensity: number;
     underwaterChromaticAmount: number;
     underwaterToneIntensity: number;
     underwaterFogMultiplier: number;
+    underwaterTintStrength: number;
 
     cloudsEnabled: boolean;
     debugClouds?: boolean;

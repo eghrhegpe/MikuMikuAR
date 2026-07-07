@@ -9,7 +9,6 @@ import {
     _writeMatToBuffer,
     _propagateChildrenWasm,
     applyGazeWasm,
-    isProcVmdActive,
     type GazeConfig,
 } from './proc-motion-bridge';
 import { createVmdEvaluator, type VmdEvaluator } from '../../motion-algos/vmd-evaluator';
@@ -147,8 +146,6 @@ export function setWasmLayersGazeConfig(modelId: string, config: GazeConfig): vo
 function _applyGazeIfEnabled(modelId: string): void {
     const state = _blenderStates.get(modelId);
     if (!state) return;
-
-    if (!isProcVmdActive()) return;
 
     const inst = modelManager.get(modelId);
     if (!inst?.mmdModel) return;

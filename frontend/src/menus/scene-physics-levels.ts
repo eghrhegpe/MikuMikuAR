@@ -54,54 +54,37 @@ function _patchToggle(target: string, newValue: boolean): void {
     }
 }
 
-/** 构建物理设置子页 */
+/** 构建 WASM 物理子页（Bullet 骨髁物理 — per-model） */
 export function buildPhysicsLevel(): PopupLevel {
+    return buildWasmPhysicsLevel();
+}
+
+/** 构建布料设置子页（XPBD 布料模拟 — 全局参数） */
+export function buildClothLevel(): PopupLevel {
     return {
-        label: t('scene.physics'),
+        label: t('scene.clothSim'),
         dir: '',
         items: [
-            // 重力强度（统控 WASM Bullet + XPBD 布料）
-            {
-                kind: 'slider',
-                label: t('scene.gravityStrength'),
-                icon: 'lucide:arrow-down',
-                target: 'physics:gravity',
-                sliderValue: getGravityStrength(),
-                sliderMin: 0,
-                sliderMax: 2,
-                sliderStep: 0.05,
-                onSliderChange: (v: number) => {
-                    setGravityStrength(v);
-                    setClothGravity(v);
-                },
-            } as PopupRow,
-            // WASM 物理（MMD Bullet 骨髁物理）— 通用物理系统，放第二
-            {
-                kind: 'folder',
-                label: t('scene.wasmPhysics'),
-                icon: 'lucide:atom',
-                target: 'physics:wasm',
-            } as PopupRow,
-            // 布料模拟：独立开关（XPBD 附加）
+            // 布料模拟：独立开关
             {
                 kind: 'toggle',
                 label: t('scene.clothSim'),
                 icon: 'lucide:shirt',
-                target: 'physics:cloth-toggle',
+                target: 'cloth:toggle',
                 toggleValue: envState.clothEnabled,
                 onToggleChange: (v: boolean) => {
                     envState.clothEnabled = v;
                     toggleCloth(v);
                     refreshSceneRoot();
-                    _patchToggle('physics:cloth-toggle', v);
+                    _patchToggle('cloth:toggle', v);
                 },
             } as PopupRow,
-            // 求解质量（原名 求解迭代）
+            // 求解质量
             {
                 kind: 'slider',
                 label: t('scene.solverQuality'),
                 icon: 'lucide:repeat',
-                target: 'physics:substeps',
+                target: 'cloth:substeps',
                 sliderValue: getSolverSubsteps(),
                 sliderMin: 1,
                 sliderMax: 4,
@@ -129,7 +112,7 @@ export function buildPhysicsLevel(): PopupLevel {
                 kind: 'folder',
                 label: t('scene.collision'),
                 icon: 'lucide:shield',
-                target: 'physics:collision',
+                target: 'cloth:collision',
                 headerToggle: {
                     value: getCollisionEnabled(),
                     onChange: (v) => {
@@ -144,14 +127,14 @@ export function buildPhysicsLevel(): PopupLevel {
                 kind: 'folder',
                 label: t('scene.fineTune'),
                 icon: 'lucide:sliders',
-                target: 'physics:cloth',
+                target: 'cloth:fineTune',
             } as PopupRow,
-            // 调试（材质/骨骼/XPBD 可视化）
+            // 调试（XPBD 可视化）
             {
                 kind: 'folder',
                 label: t('scene.debug'),
                 icon: 'lucide:bug',
-                target: 'physics:debug',
+                target: 'cloth:debug',
             } as PopupRow,
         ],
     };
@@ -191,11 +174,124 @@ export function buildCollisionLevel(): PopupLevel {
     };
 }
 
+/** 构建物理调试子页（材质线框/骨骼 — WASM 相关） */
+export function buildPhysicsDebugLevel(): PopupLevel {
+    const id = focusedModelId;
+    const inst = id ? modelManager.get(id) : null;
+
+    return {
+        label: t('scene.debug'),
+        dir: '',
+        items: [
+            {
+                kind: 'toggle',
+                label: t('scene.matWireframe'),
+                icon: 'lucide:square',
+                target: 'debug:wireframe',
+                toggleValue: inst?.wireframe ?? false,
+                onToggleChange: (v) => {
+                    if (id) {
+                        setModelWireframe(id, v);
+                    }
+                    _patchToggle('debug:wireframe', v);
+                },
+            } as PopupRow,
+            {
+                kind: 'toggle',
+                label: t('scene.boneLines'),
+                icon: 'lucide:git-branch',
+                target: 'debug:bonelines',
+                toggleValue: inst?.showBoneLines ?? false,
+                onToggleChange: (v) => {
+                    if (id) {
+                        setModelBoneLinesVis(id, v);
+                    }
+                    _patchToggle('debug:bonelines', v);
+                },
+            } as PopupRow,
+            {
+                kind: 'toggle',
+                label: t('scene.boneJoints'),
+                icon: 'lucide:circle-dot',
+                target: 'debug:bonejoints',
+                toggleValue: inst?.showBoneJoints ?? false,
+                onToggleChange: (v) => {
+                    if (id) {
+                        setModelBoneJointsVis(id, v);
+                    }
+                    _patchToggle('debug:bonejoints', v);
+                },
+            } as PopupRow,
+        ],
+    };
+}
+
+/** 构建布料调试子页（XPBD 可视化 — 粒子/约束/碰撞体） */
+export function buildClothDebugLevel(): PopupLevel {
+    const dbg = getDebugState();
+
+    return {
+        label: t('scene.debug'),
+        dir: '',
+        items: [
+            {
+                kind: 'toggle',
+                label: t('scene.particleSpheres'),
+                icon: 'lucide:circle',
+                target: 'clothdebug:particles',
+                toggleValue: dbg.particles,
+                onToggleChange: (v) => {
+                    setDebugParticles(v);
+                    _patchToggle('clothdebug:particles', v);
+                },
+            } as PopupRow,
+            {
+                kind: 'toggle',
+                label: t('scene.constraintLines'),
+                icon: 'lucide:minus',
+                target: 'clothdebug:constraints',
+                toggleValue: dbg.constraints,
+                onToggleChange: (v) => {
+                    setDebugConstraints(v);
+                    _patchToggle('clothdebug:constraints', v);
+                },
+            } as PopupRow,
+            {
+                kind: 'toggle',
+                label: t('scene.colliderWireframe'),
+                icon: 'lucide:box',
+                target: 'clothdebug:colliders',
+                toggleValue: dbg.colliders,
+                onToggleChange: (v) => {
+                    setDebugColliders(v);
+                    _patchToggle('clothdebug:colliders', v);
+                },
+            } as PopupRow,
+        ],
+    };
+}
+
 /** 构建 WASM 物理子页（Bullet 骨髁物理信息 + 总开关） */
 export function buildWasmPhysicsLevel(): PopupLevel {
     const id = focusedModelId;
     const inst = id ? modelManager.get(id) : null;
     const items: PopupRow[] = [];
+
+    // 重力强度（统控 WASM Bullet + XPBD 布料）
+    items.push({
+        kind: 'slider',
+        label: t('scene.gravityStrength'),
+        icon: 'lucide:arrow-down',
+        target: 'wasm:gravity',
+        sliderValue: getGravityStrength(),
+        sliderMin: 0,
+        sliderMax: 2,
+        sliderStep: 0.05,
+        onSliderChange: (v: number) => {
+            setGravityStrength(v);
+            setClothGravity(v);
+        },
+    } as PopupRow);
 
     if (!id || !inst) {
         items.push({
@@ -261,91 +357,13 @@ export function buildWasmPhysicsLevel(): PopupLevel {
         } as PopupRow);
     }
 
-    return { label: t('scene.wasmPhysics'), dir: '', items };
-}
-
-/** 构建物理调试子页（材质线框/骨骼/XPBD 可视化 toggle） */
-export function buildPhysicsDebugLevel(): PopupLevel {
-    const id = focusedModelId;
-    const inst = id ? modelManager.get(id) : null;
-    const dbg = getDebugState();
-
-    return {
+    // 调试
+    items.push({
+        kind: 'folder',
         label: t('scene.debug'),
-        dir: '',
-        items: [
-            {
-                kind: 'toggle',
-                label: t('scene.matWireframe'),
-                icon: 'lucide:square',
-                target: 'debug:wireframe',
-                toggleValue: inst?.wireframe ?? false,
-                onToggleChange: (v) => {
-                    if (id) {
-                        setModelWireframe(id, v);
-                    }
-                    _patchToggle('debug:wireframe', v);
-                },
-            } as PopupRow,
-            {
-                kind: 'toggle',
-                label: t('scene.boneLines'),
-                icon: 'lucide:git-branch',
-                target: 'debug:bonelines',
-                toggleValue: inst?.showBoneLines ?? false,
-                onToggleChange: (v) => {
-                    if (id) {
-                        setModelBoneLinesVis(id, v);
-                    }
-                    _patchToggle('debug:bonelines', v);
-                },
-            } as PopupRow,
-            {
-                kind: 'toggle',
-                label: t('scene.boneJoints'),
-                icon: 'lucide:circle-dot',
-                target: 'debug:bonejoints',
-                toggleValue: inst?.showBoneJoints ?? false,
-                onToggleChange: (v) => {
-                    if (id) {
-                        setModelBoneJointsVis(id, v);
-                    }
-                    _patchToggle('debug:bonejoints', v);
-                },
-            } as PopupRow,
-            {
-                kind: 'toggle',
-                label: t('scene.particleSpheres'),
-                icon: 'lucide:circle',
-                target: 'debug:particles',
-                toggleValue: dbg.particles,
-                onToggleChange: (v) => {
-                    setDebugParticles(v);
-                    _patchToggle('debug:particles', v);
-                },
-            } as PopupRow,
-            {
-                kind: 'toggle',
-                label: t('scene.constraintLines'),
-                icon: 'lucide:minus',
-                target: 'debug:constraints',
-                toggleValue: dbg.constraints,
-                onToggleChange: (v) => {
-                    setDebugConstraints(v);
-                    _patchToggle('debug:constraints', v);
-                },
-            } as PopupRow,
-            {
-                kind: 'toggle',
-                label: t('scene.colliderWireframe'),
-                icon: 'lucide:box',
-                target: 'debug:colliders',
-                toggleValue: dbg.colliders,
-                onToggleChange: (v) => {
-                    setDebugColliders(v);
-                    _patchToggle('debug:colliders', v);
-                },
-            } as PopupRow,
-        ],
-    };
+        icon: 'lucide:bug',
+        target: 'wasm:debug',
+    } as PopupRow);
+
+    return { label: t('scene.wasmPhysics'), dir: '', items };
 }

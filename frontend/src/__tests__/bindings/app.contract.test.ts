@@ -208,7 +208,6 @@ describe('binding contract: interface shapes', () => {
             causticScrollX: expect.any(Number),
             causticScrollY: expect.any(Number),
             fresnelAlphaInfluence: expect.any(Number),
-            foamAlphaInfluence: expect.any(Number),
             cloudsEnabled: expect.any(Boolean),
             cloudCover: expect.any(Number),
             cloudScale: expect.any(Number),

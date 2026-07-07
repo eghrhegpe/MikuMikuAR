@@ -21,6 +21,7 @@ import { WATER_PRESETS, applyWaterPresetToCurrent } from '../scene/env/env-water
 import { SelectEnvTextureFile, SelectPMXFile } from '../core/wails-bindings';
 import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu';
 import { stackRegistry } from '../core/config';
+import { closeAllOverlays } from '../core/utils';
 
 export function buildSkyLevel(): PopupLevel {
     return {
@@ -99,12 +100,12 @@ export function buildSkyLevel(): PopupLevel {
                     slideRow(
                         c,
                         'lucide:image',
-                        t('env.envTexture'),
+                        t('env.skyTexture'),
                         false,
 async () => {
                           setEnvTextureBindingTarget('sky');
                           closeAllOverlays();
-                          const level = stackRegistry.buildLevel!('environment', t('env.envTexture'), (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format), getEnvMenu()!);
+                          const level = stackRegistry.buildLevel!('environment', t('env.skyTexture'), (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format), getEnvMenu()!);
                           getEnvMenu()!.push(level);
                       },
                         fileName
@@ -410,6 +411,9 @@ export function buildWaterLevel(): PopupLevel {
                             waterAnimSpeed: wp.waterAnimSpeed,
                             foamThreshold: wp.foamThreshold,
                             foamIntensity: wp.foamIntensity,
+                            waterFogColor: wp.waterFogColor,
+                            waterFogDensity: wp.waterFogDensity,
+                            waterFogOpacityInfluence: wp.waterFogOpacityInfluence,
                         });
                         applyWaterPresetToCurrent(wp);
                     });
@@ -417,36 +421,16 @@ export function buildWaterLevel(): PopupLevel {
                 c.appendChild(waterPresetRow);
 
                 addCollapsible(c, {
-                    title: t('env.basicParams'),
-                    icon: 'lucide:sliders',
-                    defaultOpen: false,
+                    title: t('env.color'),
+                    icon: 'lucide:palette',
+                    defaultOpen: true,
                     renderContent: (cc) => {
-                        addSliderRow(
-                            cc,
-                            t('env.height'),
-                            s.waterLevel,
-                            -10,
-                            10,
-                            0.1,
-                            (v) => {
-                                setEnvState({ waterLevel: v });
-                            },
-                            'lucide:arrow-up',
-                            undefined,
-                            {
-                                bind: () => envState.waterLevel,
-                            }
-                        );
                         addColorSliderRow(
                             cc,
                             t('env.waterColor'),
                             s.waterColor,
-                            (v) => {
-                                setEnvState({ waterColor: v });
-                            },
-                            {
-                                bind: () => envState.waterColor,
-                            }
+                            (v) => setEnvState({ waterColor: v }),
+                            { bind: () => envState.waterColor }
                         );
                         addSliderRow(
                             cc,
@@ -455,86 +439,49 @@ export function buildWaterLevel(): PopupLevel {
                             0,
                             1,
                             0.05,
-                            (v) => {
-                                setEnvState({ waterTransparency: v });
-                            },
+                            (v) => setEnvState({ waterTransparency: v }),
                             'lucide:eye',
                             undefined,
-                            {
-                                bind: () => envState.waterTransparency,
-                            }
+                            { bind: () => envState.waterTransparency }
+                        );
+                        addColorSliderRow(
+                            cc,
+                            t('env.waterFogColor'),
+                            s.waterFogColor,
+                            (v) => setEnvState({ waterFogColor: v }),
+                            { bind: () => envState.waterFogColor }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.waterFogDensity'),
+                            s.waterFogDensity,
+                            0,
+                            0.05,
+                            0.001,
+                            (v) => setEnvState({ waterFogDensity: v }),
+                            'lucide:cloud-fog',
+                            undefined,
+                            { bind: () => envState.waterFogDensity }
                         );
                     },
                 });
 
                 addCollapsible(c, {
-                    title: t('env.waves'),
-                    icon: 'lucide:waves',
-                    defaultOpen: false,
+                    title: t('env.basicParams'),
+                    icon: 'lucide:sliders',
+                    defaultOpen: true,
                     renderContent: (cc) => {
                         addSliderRow(
                             cc,
-                            t('env.waveHeight'),
-                            s.waterWaveHeight,
-                            0,
-                            3,
+                            t('env.height'),
+                            s.waterLevel,
+                            -10,
+                            30,
                             0.1,
-                            (v) => {
-                                setEnvState({ waterWaveHeight: v });
-                            },
-                            'lucide:waves',
+                            (v) => setEnvState({ waterLevel: v }),
+                            'lucide:arrow-up',
                             undefined,
-                            {
-                                bind: () => envState.waterWaveHeight,
-                            }
-                        );
-                        addSliderRow(
-                            cc,
-                            t('env.foamThreshold'),
-                            s.foamThreshold,
-                            0,
-                            1,
-                            0.01,
-                            (v) => {
-                                setEnvState({ foamThreshold: v });
-                            },
-                            undefined,
-                            undefined,
-                            {
-                                bind: () => envState.foamThreshold,
-                            }
-                        );
-                        addSliderRow(
-                            cc,
-                            t('env.foamIntensity'),
-                            s.foamIntensity,
-                            0,
-                            1,
-                            0.05,
-                            (v) => {
-                                setEnvState({ foamIntensity: v });
-                            },
-                            'lucide:sparkles',
-                            undefined,
-                            {
-                                bind: () => envState.foamIntensity,
-                            }
-                        );
-                        addSliderRow(
-                            cc,
-                            t('env.animSpeed'),
-                            s.waterAnimSpeed ?? 1,
-                            0.1,
-                            5,
-                            0.1,
-                            (v) => {
-                                setEnvState({ waterAnimSpeed: v });
-                            },
-                            'lucide:fast-forward',
-                            undefined,
-                            {
-                                bind: () => envState.waterAnimSpeed ?? 1,
-                            }
+                            { bind: () => envState.waterLevel }
                         );
                         addSliderRow(
                             cc,
@@ -543,14 +490,34 @@ export function buildWaterLevel(): PopupLevel {
                             10,
                             200,
                             5,
-                            (v) => {
-                                setEnvState({ waterSize: v });
-                            },
+                            (v) => setEnvState({ waterSize: v }),
                             'lucide:maximize',
                             undefined,
-                            {
-                                bind: () => envState.waterSize,
-                            }
+                            { bind: () => envState.waterSize }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.waveHeight'),
+                            s.waterWaveHeight,
+                            0,
+                            3,
+                            0.1,
+                            (v) => setEnvState({ waterWaveHeight: v }),
+                            'lucide:waves',
+                            undefined,
+                            { bind: () => envState.waterWaveHeight }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.animSpeed'),
+                            s.waterAnimSpeed ?? 1,
+                            0.1,
+                            5,
+                            0.1,
+                            (v) => setEnvState({ waterAnimSpeed: v }),
+                            'lucide:fast-forward',
+                            undefined,
+                            { bind: () => envState.waterAnimSpeed ?? 1 }
                         );
                     },
                 });
@@ -559,24 +526,13 @@ export function buildWaterLevel(): PopupLevel {
                     title: t('env.underwaterEffects'),
                     icon: 'lucide:waves',
                     renderContent: (cc) => {
-                        addColorSliderRow(
-                            cc,
-                            t('env.underwaterFogColor'),
-                            s.underwaterFogColor,
-                            (v) => {
-                                setEnvState({ underwaterFogColor: v });
-                            },
-                            {
-                                bind: () => envState.underwaterFogColor,
-                            }
-                        );
                         addSliderRow(
                             cc,
                             t('env.fogDensity'),
                             s.underwaterFogDensity,
                             0,
-                            0.1,
-                            0.001,
+                            0.15,
+                            0.005,
                             (v) => {
                                 setEnvState({ underwaterFogDensity: v });
                             },
@@ -584,22 +540,6 @@ export function buildWaterLevel(): PopupLevel {
                             undefined,
                             {
                                 bind: () => envState.underwaterFogDensity,
-                            }
-                        );
-                        addSliderRow(
-                            cc,
-                            t('env.chromaticAmount'),
-                            s.underwaterChromaticAmount,
-                            0,
-                            20,
-                            0.5,
-                            (v) => {
-                                setEnvState({ underwaterChromaticAmount: v });
-                            },
-                            undefined,
-                            undefined,
-                            {
-                                bind: () => envState.underwaterChromaticAmount,
                             }
                         );
                         addSliderRow(
@@ -620,19 +560,15 @@ export function buildWaterLevel(): PopupLevel {
                         );
                         addSliderRow(
                             cc,
-                            t('env.fogMultiplier'),
-                            s.underwaterFogMultiplier,
+                            t('env.underwaterTintStrength'),
+                            s.underwaterTintStrength,
+                            0,
                             1,
-                            5,
-                            0.1,
-                            (v) => {
-                                setEnvState({ underwaterFogMultiplier: v });
-                            },
-                            'lucide:cloud-fog',
+                            0.05,
+                            (v) => setEnvState({ underwaterTintStrength: v }),
+                            'lucide:palette',
                             undefined,
-                            {
-                                bind: () => envState.underwaterFogMultiplier,
-                            }
+                            { bind: () => envState.underwaterTintStrength }
                         );
                     },
                 });
@@ -642,31 +578,6 @@ export function buildWaterLevel(): PopupLevel {
                     icon: 'lucide:settings-2',
                     defaultOpen: false,
                     renderContent: (cc) => {
-                        // Fresnel
-                        addSliderRow(
-                            cc,
-                            t('env.fresnelBias'),
-                            s.fresnelBias,
-                            0,
-                            0.5,
-                            0.01,
-                            (v) => setEnvState({ fresnelBias: v }),
-                            undefined,
-                            undefined,
-                            { bind: () => envState.fresnelBias }
-                        );
-                        addSliderRow(
-                            cc,
-                            t('env.fresnelPower'),
-                            s.fresnelPower,
-                            0.5,
-                            10,
-                            0.1,
-                            (v) => setEnvState({ fresnelPower: v }),
-                            undefined,
-                            undefined,
-                            { bind: () => envState.fresnelPower }
-                        );
                         addSliderRow(
                             cc,
                             t('env.fresnelAlpha'),
@@ -679,119 +590,41 @@ export function buildWaterLevel(): PopupLevel {
                             undefined,
                             { bind: () => envState.fresnelAlphaInfluence }
                         );
-                        // Lighting
                         addSliderRow(
                             cc,
-                            t('env.diffuseStrength'),
-                            s.diffuseStrength,
+                            t('env.foamThreshold'),
+                            s.foamThreshold,
                             0,
-                            1,
-                            0.05,
-                            (v) => setEnvState({ diffuseStrength: v }),
-                            undefined,
-                            undefined,
-                            { bind: () => envState.diffuseStrength }
-                        );
-                        addSliderRow(
-                            cc,
-                            t('env.ambientStrength'),
-                            s.ambientStrength,
-                            0,
-                            1,
-                            0.05,
-                            (v) => setEnvState({ ambientStrength: v }),
-                            undefined,
-                            undefined,
-                            { bind: () => envState.ambientStrength }
-                        );
-                        // Foam
-                        addSliderRow(
-                            cc,
-                            t('env.foamTransition'),
-                            s.foamTransitionRange,
-                            0,
-                            1,
-                            0.05,
-                            (v) => setEnvState({ foamTransitionRange: v }),
-                            undefined,
-                            undefined,
-                            { bind: () => envState.foamTransitionRange }
-                        );
-                        addSliderRow(
-                            cc,
-                            t('env.foamAlpha'),
-                            s.foamAlphaInfluence,
-                            0,
-                            1,
-                            0.05,
-                            (v) => setEnvState({ foamAlphaInfluence: v }),
-                            undefined,
-                            undefined,
-                            { bind: () => envState.foamAlphaInfluence }
-                        );
-                        // Ripple
-                        addSliderRow(
-                            cc,
-                            t('env.rippleNormal'),
-                            s.rippleNormalStrength,
-                            0,
-                            1,
-                            0.05,
-                            (v) => setEnvState({ rippleNormalStrength: v }),
-                            undefined,
-                            undefined,
-                            { bind: () => envState.rippleNormalStrength }
-                        );
-                        addSliderRow(
-                            cc,
-                            t('env.rippleGlint'),
-                            s.rippleGlintStrength,
-                            0,
-                            1,
-                            0.05,
-                            (v) => setEnvState({ rippleGlintStrength: v }),
-                            undefined,
-                            undefined,
-                            { bind: () => envState.rippleGlintStrength }
-                        );
-                        // Caustic colors
-                        addColorSliderRow(
-                            cc,
-                            t('env.causticColor1'),
-                            s.causticColor1,
-                            (v) => setEnvState({ causticColor1: v }),
-                            { bind: () => envState.causticColor1 }
-                        );
-                        addColorSliderRow(
-                            cc,
-                            t('env.causticColor2'),
-                            s.causticColor2,
-                            (v) => setEnvState({ causticColor2: v }),
-                            { bind: () => envState.causticColor2 }
-                        );
-                        addSliderRow(
-                            cc,
-                            t('env.causticScrollX'),
-                            s.causticScrollX ?? 0.1,
-                            -1,
                             1,
                             0.01,
-                            (v) => setEnvState({ causticScrollX: v }),
+                            (v) => setEnvState({ foamThreshold: v }),
                             undefined,
                             undefined,
-                            { bind: () => envState.causticScrollX ?? 0.1 }
+                            { bind: () => envState.foamThreshold }
                         );
                         addSliderRow(
                             cc,
-                            t('env.causticScrollY'),
-                            s.causticScrollY ?? 0.15,
-                            -1,
+                            t('env.foamIntensity'),
+                            s.foamIntensity,
+                            0,
                             1,
-                            0.01,
-                            (v) => setEnvState({ causticScrollY: v }),
+                            0.05,
+                            (v) => setEnvState({ foamIntensity: v }),
+                            'lucide:sparkles',
+                            undefined,
+                            { bind: () => envState.foamIntensity }
+                        );
+                        addSliderRow(
+                            cc,
+                            t('env.foamOpacity'),
+                            s.foamOpacity,
+                            0,
+                            1,
+                            0.05,
+                            (v) => setEnvState({ foamOpacity: v }),
                             undefined,
                             undefined,
-                            { bind: () => envState.causticScrollY ?? 0.15 }
+                            { bind: () => envState.foamOpacity }
                         );
                     },
                 });

@@ -281,7 +281,12 @@ function renderItemsWithRAF(
                         const stack = targetStack || stackRegistry.modelStack;
                         stack.push(next);
                     } else if (item.model) {
-                        if (item.model.format === 'vmd' && motionBindingTargetId) {
+                        if (item.model.format === 'vmd' && layerBindingTargetId) {
+                            const id = layerBindingTargetId;
+                            setLayerBindingTargetId(null);
+                            closeAllOverlays();
+                            addVmdLayerFromPath(item.model.file_path, id);
+                        } else if (item.model.format === 'vmd' && motionBindingTargetId) {
                             const id = motionBindingTargetId;
                             setMotionBindingTargetId(null);
                             closeAllOverlays();
@@ -322,7 +327,12 @@ function renderItemsWithRAF(
                         const stack = targetStack || stackRegistry.modelStack;
                         stack.push(next);
                     } else if (item.model) {
-                        if (item.model.format === 'vmd' && motionBindingTargetId) {
+                        if (item.model.format === 'vmd' && layerBindingTargetId) {
+                            const id = layerBindingTargetId;
+                            setLayerBindingTargetId(null);
+                            closeAllOverlays();
+                            addVmdLayerFromPath(item.model.file_path, id);
+                        } else if (item.model.format === 'vmd' && motionBindingTargetId) {
                             const id = motionBindingTargetId;
                             setMotionBindingTargetId(null);
                             closeAllOverlays();

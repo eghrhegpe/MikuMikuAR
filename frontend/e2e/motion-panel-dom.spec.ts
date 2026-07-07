@@ -38,8 +38,8 @@ test.describe("Motion — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =
         // Navigate into a sub-level then back
         await page.getByText("相机", { exact: true }).click();
         await expect(page.getByText("轨道", { exact: true })).toBeVisible();
-        // Close overlay and re-open — resets to root
-        await page.click("#btnClosePopup");
+        // Close overlay by clicking the same nav button again (toggle behavior)
+        await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
     });
 });
