@@ -287,6 +287,16 @@ export function buildModelInfoLevel(id: string): PopupLevel {
             }
             const boneCount = inst.mmdModel?.runtimeBones?.length ?? null;
             const morphCount = inst.mmdModel?.morph?.morphs?.length ?? null;
+            // [audit-fix] 材质数必须以 PMX 材质列表为准：MMD 模型通常仅 1 个 Babylon 网格，
+            // 而 MmdMesh.materials 才是真实材质数组（IMmdModel 不暴露 materials 字段）。
+            // 直接对网格材质计数；mesh.material 单值时按 1 计。
+            const matCount = (inst.meshes ?? []).reduce(
+                (n, m) => {
+                    const mm = m as unknown as { materials?: readonly unknown[] };
+                    return n + (mm.materials?.length ?? (m.material ? 1 : 0));
+                },
+                0
+            );
             const fields: Array<{ label: string; value: string }> = [
                 { label: '名称', value: inst.name },
                 { label: '文件', value: inst.filePath.split('/').pop() || inst.filePath },
@@ -294,7 +304,7 @@ export function buildModelInfoLevel(id: string): PopupLevel {
                 { label: '动作', value: inst.vmdName || '无' },
                 { label: '顶点数', value: vertCount.toLocaleString() },
                 { label: '面数', value: (faceCount / 3).toLocaleString() },
-                { label: '材质数', value: String(inst.meshes?.length ?? 0) },
+                { label: '材质数', value: String(matCount) },
                 { label: '骨骼数', value: boneCount !== null ? boneCount.toLocaleString() : 'N/A' },
                 {
                     label: '表情数',

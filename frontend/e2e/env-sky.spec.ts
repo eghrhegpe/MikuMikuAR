@@ -5,7 +5,7 @@
  * Screenshot test uses wailsPage (WebView2 CDP, needs `wails dev` running).
  */
 import { test, expect } from "./wails-fixture";
-import { openEnvPanel, clickSkyMode, clickEnvSubLevel, captureScreenshot } from "./helpers";
+import { openEnvPanel, clickSkyMode, clickEnvSubLevel, captureScreenshot, captureFingerprint, compareToBaseline } from "./helpers";
 
 test.describe("Environment — Sky Panel (vitePage, DOM-only)", () => {
     test.beforeEach(async ({ vitePage: page }) => {
@@ -39,7 +39,7 @@ test.describe("Environment — Sky Panel (vitePage, DOM-only)", () => {
 });
 
 test.describe("Environment — Sky Panel (wailsPage, screenshot)", () => {
-    test("纯色纯白截图", async ({ wailsPage: page }) => {
+    test("纯色纯白截图: 与基线比对（首次运行自动生成基线）", async ({ wailsPage: page }) => {
         await openEnvPanel(page);
         await clickEnvSubLevel(page, "天空");
         await clickSkyMode(page, "纯色");
@@ -49,7 +49,20 @@ test.describe("Environment — Sky Panel (wailsPage, screenshot)", () => {
         await sliders.nth(1).fill("1");
         await sliders.nth(2).fill("1");
 
+        // 校验截图管线本身仍可用（与菜单「截图当前模型」同源）
         const dataUrl = await captureScreenshot(page);
         expect(dataUrl).toContain("data:image/png;base64,");
+
+        // 与持久化基线做内容比对（Phase 2, ADR-060）。首次运行无基线会自动生成，
+        // 后续运行若画面发生非预期变化则失败。删除 __baselines__/env-sky-solid-white.json 可重算。
+        const fp = await captureFingerprint(page);
+        const res = await compareToBaseline("env-sky-solid-white", fp);
+        if (res.created) {
+            test.info().annotations.push({
+                type: "baseline",
+                description: "auto-generated env-sky-solid-white baseline (first run)",
+            });
+        }
+        expect(res.match, `画面与基线不符 (hamming=${res.diff.toFixed(3)})`).toBe(true);
     });
 });
