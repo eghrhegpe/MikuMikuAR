@@ -5,6 +5,9 @@ import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { ClothConfig } from '../physics/xpbd-cloth';
+import type { UIState, EnvState, Config } from './wails-bindings';
+
+export type { UIState, EnvState, Config };
 
 // ======== Model Types ========
 

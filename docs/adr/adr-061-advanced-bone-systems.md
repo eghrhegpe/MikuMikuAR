@@ -170,5 +170,5 @@
 - [ADR-051](adr-051-vmd-layers-bonefilter.md) — Motion Layers / boneFilter（2.1 的近邻与区别）
 - [ADR-056](adr-056-wasm-runtime-motion-layers.md) — WASM/JS 运行时统一（2.1/2.3 运行时约束）
 - [ADR-050](adr-050-save-callback-unification.md) — 统一保存机制（配置持久化复用）
-- [ADR-029](adr-029-physics-ui-refactor.md) — 物理 UI（2.3 触发/切换 UI 范式）
+- [ADR-029](adr-029-physics-ui-restructure.md) — 物理 UI（2.3 触发/切换 UI 范式）
 - [ADR-043](adr-043-dancexr-gap-analysis.md) — 竞品差距（Motion Override / Pose Studio 出处）
