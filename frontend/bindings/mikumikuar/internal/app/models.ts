@@ -203,11 +203,15 @@ export interface EnvState {
     "particleSpeed": number;
     "waterEnabled": boolean;
     "waterLevel": number;
+    "waterFlip": boolean;
     "waterColor": number[];
     "waterTransparency": number;
     "waterWaveHeight": number;
     "waterSize": number;
     "waterAnimSpeed": number;
+    "foamThreshold": number;
+    "foamIntensity": number;
+    "foamOpacity": number;
 
     /**
      * 水面高级着色器参数（持久化，避免材质重建时重置）
@@ -225,6 +229,22 @@ export interface EnvState {
     "causticScrollY": number;
     "fresnelAlphaInfluence": number;
     "foamAlphaInfluence": number;
+
+    /**
+     * 水面雾效（独立于全局雾）
+     */
+    "waterFogColor": number[];
+    "waterFogDensity": number;
+    "waterFogOpacityInfluence": number;
+
+    /**
+     * 水下效果
+     */
+    "underwaterFogDensity": number;
+    "underwaterChromaticAmount": number;
+    "underwaterToneIntensity": number;
+    "underwaterFogMultiplier": number;
+    "underwaterTintStrength": number;
     "cloudsEnabled": boolean;
     "cloudCover": number;
     "cloudScale": number;

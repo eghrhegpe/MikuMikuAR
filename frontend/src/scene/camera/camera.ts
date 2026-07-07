@@ -396,12 +396,20 @@ export function switchCameraMode(mode: CameraMode): void {
         if (_cameraMode !== 'ar') {
             _previousMode = _cameraMode;
         }
+        // 乐观提交 _cameraMode='ar'，保证"进入 AR 期间用户切走"时下方
+        // `if (_cameraMode === 'ar')` 离开检测能命中并正确注销摄像头。
+        // 真正的视频激活由 setARMode(true) 异步完成；若失败，仅还原模式标记，
+        // 不重建相机（进入 AR 时从未切换/重建 Babylon 相机）。
         _cameraMode = 'ar';
         _currentPreset.mode = 'ar';
         setARMode(true).then((ok) => {
             if (!ok) {
-                setStatus(t('scene.camera.arFailed'), false);
-                switchCameraMode(_previousMode);
+                // 失败：若后续切换尚未把模式改走，才提示并还原标记。
+                if (_cameraMode !== _previousMode) {
+                    setStatus(t('scene.camera.arFailed'), false);
+                }
+                _cameraMode = _previousMode;
+                _currentPreset.mode = _previousMode;
             }
         });
         return;
@@ -757,7 +765,9 @@ export function setCameraState(s: CameraState): void {
     // Switch to the saved mode first (creates the right camera type),
     // then restore the preset over the live state.
     const mode = s.mode || s.preset.mode;
-    if (mode) {
+    // 存档恢复时跳过 AR：进入 AR 需要用户手势授权摄像头，启动时无手势调 getUserMedia
+    // 多数浏览器会直接拒绝；用户可在加载后手动进入 AR。
+    if (mode && mode !== 'ar') {
         switchCameraMode(mode);
     }
     if (s.preset) {

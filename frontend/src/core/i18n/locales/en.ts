@@ -528,6 +528,7 @@ export const en: Record<string, string> = {
     // scene.ar — AR camera status
     'scene.ar.enabled': '✓ AR camera on',
     'scene.ar.cameraDenied': '✗ Camera permission denied, switched to black background',
+    'scene.ar.cameraUnavailable': '✗ Camera unavailable (no media capability in this environment; desktop may need permission grant)',
     'scene.ar.switchedUser': '✓ Switched to front camera',
     'scene.ar.switchedEnv': '✓ Switched to back camera',
 

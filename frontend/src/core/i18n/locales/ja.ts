@@ -563,6 +563,7 @@ export const ja: Record<string, string> = {
     // —— Scene AR ——
     'scene.ar.enabled': '✓ AR カメラ起動中',
     'scene.ar.cameraDenied': '✗ カメラの許可が拒否されました、黒背景に切り替えました',
+    'scene.ar.cameraUnavailable': '✗ カメラが利用できません（環境がメディア機能を提供していません。デスクトップでは権限付与が必要な場合があります）',
     'scene.ar.switchedUser': '✓ フロントカメラに切り替えました',
     'scene.ar.switchedEnv': '✓ バックカメラに切り替えました',
 

@@ -797,6 +797,15 @@ export function StartFileServer(dirPath: string): $CancellablePromise<number> {
 }
 
 /**
+ * StopFileServer stops and releases the HTTP file server previously started
+ * for dirPath via StartFileServer. If no server is running for dirPath,
+ * the call rejects with an error.
+ */
+export function StopFileServer(dirPath: string): $CancellablePromise<void> {
+    return $Call.ByID(1672597494, dirPath);
+}
+
+/**
  * StartWatchDir starts fsnotify-based watching on the specified directory.
  * If already watching a directory, it stops the previous watcher first.
  * Only files with .zip/.pmx/.vmd extensions trigger notifications,
