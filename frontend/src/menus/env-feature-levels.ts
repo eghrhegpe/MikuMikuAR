@@ -17,7 +17,7 @@ import {
 import { setEnvState, engine } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
-import { WATER_PRESETS, applyWaterPresetToCurrent } from '../scene/env/env-water';
+import { WATER_PRESETS, applyWaterPresetToCurrent, buildWaterPresetEnvState } from '../scene/env/env-water';
 import { SelectEnvTextureFile, SelectPMXFile } from '../core/wails-bindings';
 import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu';
 import { stackRegistry } from '../core/config';
@@ -218,6 +218,7 @@ export function buildGroundLevel(): PopupLevel {
                         { value: 'grid', label: t('env.grid') },
                         { value: 'checker', label: t('env.checker') },
                         { value: 'texture', label: t('env.textureMode') },
+                        { value: 'heightmap', label: t('env.heightmap') },
                     ],
                     s.groundMode,
                     (v) => {
@@ -387,6 +388,48 @@ export function buildGroundLevel(): PopupLevel {
                         'lucide:rotate-cw'
                     );
                 }
+                if (s.groundMode === 'heightmap') {
+                    addSliderRow(
+                        c,
+                        t('env.terrainHeight'),
+                        s.groundTerrainHeight,
+                        0,
+                        15,
+                        0.1,
+                        (v) => setEnvState({ groundTerrainHeight: v }),
+                        'lucide:mountain'
+                    );
+                    addSliderRow(
+                        c,
+                        t('env.terrainScale'),
+                        s.groundTerrainScale,
+                        0.01,
+                        0.2,
+                        0.005,
+                        (v) => setEnvState({ groundTerrainScale: v }),
+                        'lucide:ruler'
+                    );
+                    addSliderRow(
+                        c,
+                        t('env.terrainSeed'),
+                        s.groundTerrainSeed,
+                        0,
+                        9999,
+                        1,
+                        (v) => setEnvState({ groundTerrainSeed: v }),
+                        'lucide:dice-5'
+                    );
+                    addSliderRow(
+                        c,
+                        t('env.terrainOctaves'),
+                        s.groundTerrainOctaves,
+                        1,
+                        8,
+                        1,
+                        (v) => setEnvState({ groundTerrainOctaves: v }),
+                        'lucide:layers'
+                    );
+                }
             });
         },
     };
@@ -404,21 +447,8 @@ export function buildWaterLevel(): PopupLevel {
                 waterPresetRow.className = 'preset-group';
                 for (const [_key, wp] of Object.entries(WATER_PRESETS)) {
                     addPresetChip(waterPresetRow, wp.label, false, () => {
-                        setEnvState({
-                            waterColor: wp.waterColor,
-                            waterTransparency: wp.waterTransparency,
-                            waterWaveHeight: wp.waterWaveHeight,
-                            waterAnimSpeed: wp.waterAnimSpeed,
-                            foamThreshold: wp.foamThreshold,
-                            foamIntensity: wp.foamIntensity,
-                            waterFogColor: wp.waterFogColor,
-                            waterFogDensity: wp.waterFogDensity,
-                            waterFogOpacityInfluence: wp.waterFogOpacityInfluence,
-                            // 扩展参数一并写入 envState：setEnvState 同步触发的 _syncWaterUniforms
-                            // 会据此应用并持久化，避免被后续任意 envState 变化还原
-                            fresnelAlphaInfluence: wp.fresnelAlphaInfluence,
-                            foamOpacity: wp.foamOpacity,
-                        });
+                        // 基础 + 扩展参数一并写入 envState，由 _syncWaterUniforms 统一应用并持久化
+                        setEnvState(buildWaterPresetEnvState(wp));
                         applyWaterPresetToCurrent(wp);
                     });
                 }

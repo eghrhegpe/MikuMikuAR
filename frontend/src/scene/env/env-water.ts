@@ -35,7 +35,7 @@ export let _underwaterTarget = false;
  * 主方向与风向对齐，其余 3 层以微小偏移分散，保持波浪自然丰富度。
  * 风向为零或无效时回退到默认的均匀分布方向。
  */
-function computeWaveDirs(windDir: [number, number, number]): number[] {
+export function computeWaveDirs(windDir: [number, number, number]): number[] {
     // Float32Array → number[] 因为 Babylon setArray2 需要 number[]
     const arr: number[] = new Array(8).fill(0); // 4 × vec2
     if (!windDir || (windDir[0] === 0 && windDir[2] === 0)) {
@@ -526,10 +526,24 @@ function _updateWaterMesh(state: EnvState): void {
 }
 
 /**
+ * 按相机到水面的距离选择 LOD 层级（纯函数，便于单测）。
+ * 0=近景高精度, 1=中景, 2=远景低精度。
+ */
+export function selectWaterLOD(distance: number): 0 | 1 | 2 {
+    if (distance > LOD_LOW_DISTANCE) {
+        return 2;
+    }
+    if (distance > LOD_HIGH_DISTANCE) {
+        return 1;
+    }
+    return 0;
+}
+
+/**
  * 按相机到水面的距离手动切换 LOD 可见性（仅 0/1/2 三层中恰好一层 enabled），
  * 规避 Babylon addLODLevel 的父子/兄弟重复渲染问题。仅当层级变化时才 setEnabled。
  */
-function _applyWaterLOD(scene: Scene): void {
+export function _applyWaterLOD(scene: Scene): void {
     const high = _envSys.water.mesh;
     if (!high || _waterLODs.length < 2) {
         return;
@@ -539,7 +553,7 @@ function _applyWaterLOD(scene: Scene): void {
         return;
     }
     const dist = Vector3.Distance(cam.globalPosition, high.getAbsolutePosition());
-    const level = dist > LOD_LOW_DISTANCE ? 2 : dist > LOD_HIGH_DISTANCE ? 1 : 0;
+    const level = selectWaterLOD(dist);
     if (level === _activeWaterLOD) {
         return;
     }
@@ -1002,6 +1016,44 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         foamOpacity: 0.55,
     },
 };
+
+/**
+ * 测试/调试用：读取当前累计波相位。
+ * 相位由每帧累加（dt × 波速），改波速只改变累加速率，不会造成相位跳变。
+ */
+export function getWaterPhase(): number {
+    return _waterPhase;
+}
+
+/**
+ * 测试/调试用：读取当前波速累加速率。
+ */
+export function getWaterWaveSpeed(): number {
+    return _waterWaveSpeed;
+}
+
+/**
+ * 预设 → EnvState 完整字段映射（含扩展参数），供 UI chip handler 调用并持久化。
+ * 修复前扩展参数仅由 applyWaterPresetToCurrent 写入材质、不进 envState，
+ * 会被后续任意 envState 变化还原；此处一并写入，由 _syncWaterUniforms 统一应用。
+ */
+export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState> {
+    return {
+        waterColor: preset.waterColor,
+        waterTransparency: preset.waterTransparency,
+        waterWaveHeight: preset.waterWaveHeight,
+        waterAnimSpeed: preset.waterAnimSpeed,
+        foamThreshold: preset.foamThreshold,
+        foamIntensity: preset.foamIntensity,
+        waterFogColor: preset.waterFogColor,
+        waterFogDensity: preset.waterFogDensity,
+        waterFogOpacityInfluence: preset.waterFogOpacityInfluence,
+        // 扩展参数一并写入：setEnvState 同步触发的 _syncWaterUniforms 据此应用并持久化，
+        // 避免被后续任意 envState 变化还原
+        fresnelAlphaInfluence: preset.fresnelAlphaInfluence,
+        foamOpacity: preset.foamOpacity,
+    };
+}
 
 // ======== 应用水预设参数到当前材质 ========
 export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
