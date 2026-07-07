@@ -11,6 +11,18 @@ vi.mock('@babylonjs/core/Maths/math.vector', () => ({
             public y: number,
             public z: number
         ) {}
+        static Right() {
+            return new this(1, 0, 0);
+        }
+        static Up() {
+            return new this(0, 1, 0);
+        }
+        static Forward() {
+            return new this(0, 0, 1);
+        }
+        static Zero() {
+            return new this(0, 0, 0);
+        }
     },
     Quaternion: class {
         constructor(
@@ -19,6 +31,15 @@ vi.mock('@babylonjs/core/Maths/math.vector', () => ({
             public z: number,
             public w: number = 1
         ) {}
+        static Identity() {
+            return new this(0, 0, 0, 1);
+        }
+    },
+    // babylon-mmd 的 appendTransformSolver.js 在模块求值期调用 Matrix.Identity()
+    Matrix: class {
+        static Identity() {
+            return new this();
+        }
     },
 }));
 vi.mock('@babylonjs/core/Maths/math.color', () => ({ Color3: vi.fn(), Color4: vi.fn() }));
@@ -26,6 +47,82 @@ vi.mock('@babylonjs/core/Meshes/mesh', () => ({ Mesh: vi.fn() }));
 vi.mock('@babylonjs/core/Meshes/meshBuilder', () => ({ MeshBuilder: { CreateSphere: vi.fn() } }));
 vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({ StandardMaterial: vi.fn() }));
 vi.mock('@babylonjs/core/Lights/Shadows/shadowGenerator', () => ({ ShadowGenerator: vi.fn() }));
+
+// --- babylon-mmd 子模块桩（复用 material-editor 已验证集合）---
+// 防止 scene.ts 引入真实 babylon-mmd 触发 mmdStandardMaterial 装饰器 / 静态初始化
+vi.mock('@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader', () => ({}));
+
+vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => {
+    const m = require('./mocks/babylon-mmd-mocks.ts');
+    return { MmdCamera: m.MockMmdCamera };
+});
+
+vi.mock('babylon-mmd/esm/Loader/dynamic', () => {
+    const m = require('./mocks/babylon-mmd-mocks.ts');
+    return { RegisterMmdModelLoaders: m.MockRegisterMmdModelLoaders };
+});
+
+vi.mock('babylon-mmd/esm/Loader/registerDxBmpTextureLoader', () => {
+    const m = require('./mocks/babylon-mmd-mocks.ts');
+    return { RegisterDxBmpTextureLoader: m.MockRegisterDxBmpTextureLoader };
+});
+
+vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance', () => {
+    const m = require('./mocks/babylon-mmd-mocks.ts');
+    return { GetMmdWasmInstance: m.MockGetMmdWasmInstance };
+});
+
+vi.mock('babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease', () => ({
+    MmdWasmInstanceTypeSPR: class Mock {},
+}));
+
+vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => {
+    const m = require('./mocks/babylon-mmd-mocks.ts');
+    return { MmdWasmRuntime: m.MockMmdWasmRuntime };
+});
+
+vi.mock('babylon-mmd/esm/Loader/vmdLoader', () => {
+    const m = require('./mocks/babylon-mmd-mocks.ts');
+    return { VmdLoader: m.MockVmdLoader };
+});
+
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () => {
+    const m = require('./mocks/babylon-mmd-mocks.ts');
+    return { MmdWasmAnimation: m.MockMmdWasmAnimation };
+});
+
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation', () => ({}));
+
+vi.mock('babylon-mmd/esm/Runtime/mmdStandardMaterialProxy', () => {
+    const m = require('./mocks/babylon-mmd-mocks.ts');
+    return { MmdStandardMaterialProxy: m.MockMmdStandardMaterialProxy };
+});
+
+vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', () => {
+    const m = require('./mocks/babylon-mmd-mocks.ts');
+    return { MmdRuntimeShared: m.MockMmdRuntimeShared };
+});
+
+vi.mock('babylon-mmd/esm/Loader/mmdModelLoader.default', () => ({}));
+
+vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () => ({}));
+
+vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => ({}));
+
+vi.mock('@babylonjs/core/scene', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { Scene: m.MockScene };
+});
+
+vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { ArcRotateCamera: m.MockArcRotateCamera };
+});
+
+vi.mock('@babylonjs/core/Cameras/camera', () => {
+    const m = require('./mocks/babylon-classes.ts');
+    return { Camera: m.MockCamera };
+});
 
 import * as sceneLighting from '../scene/render/lighting';
 

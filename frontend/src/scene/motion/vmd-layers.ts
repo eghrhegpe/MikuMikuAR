@@ -439,6 +439,17 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         return;
     }
 
+    // WASM blender 激活时先 teardown，防止 observer 泄漏
+    // 多图层分支会重新 setupWasmLayersBlender
+    try {
+        const { isWasmLayersBlenderActive, teardownWasmLayersBlender } = await import('./wasm-layers-blender');
+        if (isWasmLayersBlenderActive(modelId)) {
+            teardownWasmLayersBlender(modelId);
+        }
+    } catch {
+        // blender 模块不可用，忽略
+    }
+
     const enabledLayers = inst.vmdLayers.filter((l) => l.enabled);
     const vmdEnabledLayers = enabledLayers.filter((l) => l.kind === 'vmd');
 
@@ -519,15 +530,40 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
 
         (vmdLoader as unknown as { dispose?: () => void }).dispose?.();
 
-        // WASM 运行时不支持 MmdCompositeAnimation（缺 createRuntimeModelAnimation），
-        // 回退到主图层
+        // WASM 运行时：使用 JS 帧流合并的 blender 方案
         if (mmdRuntime instanceof MmdWasmRuntime) {
             const totalSources = sources.length;
             if (totalSources > 1) {
-                console.warn(
-                    `[MotionLayers] WASM runtime: ${totalSources} sources requested, only primary layer supported`
-                );
+                const blendEnabled = import.meta.env.VITE_WASM_LAYERS_BLEND !== '0';
+                if (blendEnabled) {
+                    try {
+                        const { setupWasmLayersBlender, addWasmLayer } = await import('./wasm-layers-blender');
+
+                        const baseSrc = sources[0];
+                        await setupWasmLayersBlender(modelId, baseSrc.data, baseSrc.name);
+
+                        for (let i = 1; i < sources.length; i++) {
+                            const src = sources[i];
+                            await addWasmLayer(modelId, {
+                                id: `layer_${i}`,
+                                data: src.data,
+                                weight: src.weight,
+                                boneFilter: src.boneFilter,
+                                name: src.name,
+                            });
+                        }
+
+                        inst.animationDuration = maxEndFrame / 30;
+                        inst.vmdName = sources.map((s) => s.name).join(' + ');
+                        setStatus(`✓ 图层混合: ${inst.vmdName} (WASM blender)`, true);
+                        triggerAutoSave();
+                        return;
+                    } catch (err) {
+                        console.error('[MotionLayers] WASM blender failed, falling back to single layer', err);
+                    }
+                }
             }
+
             const primarySrc = sources[0];
             const { loadVMDMotion } = await import('./vmd-loader');
             await loadVMDMotion(primarySrc.data, primarySrc.name, modelId);

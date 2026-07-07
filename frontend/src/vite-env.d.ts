@@ -25,4 +25,12 @@ declare global {
     }
 }
 
+interface ImportMetaEnv {
+    readonly VITE_WASM_LAYERS_BLEND?: string;
+}
+
+interface ImportMeta {
+    readonly env: ImportMetaEnv;
+}
+
 export {};

@@ -22,6 +22,7 @@
 | 写 UI 组件 | `docs/design.md`（唯一规范） |
 | 修 Bug 查历史 | `docs/troubleshooting.md` + `grep docs/adr/` |
 | 改前端子模块 | `frontend/AGENTS.md` |
+| 写/维护 E2E 测试 | `frontend/e2e/` + `frontend/playwright.config.ts` |
 | 改 Go 后端 | `internal/app/app.go` |
 | 竞品参考 | `docs/competitive-analysis.md` |
 | 代码命名/图标/状态栏规范 | `docs/terminology.md` |
@@ -42,5 +43,6 @@
 ```bash
 go build ./...                    # Go
 cd frontend && npm run build      # 前端
-cd frontend && npm run test       # 测试
+cd frontend && npm run test       # 单元测试 (Vitest)
+cd frontend && npm run test:e2e   # E2E (Playwright; 需 wails dev 或 5173+9222)
 ```

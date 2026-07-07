@@ -19,7 +19,7 @@
 | `scene/camera/camera.ts` | 现有 5 种相机模式（orbit/freefly/oneshot/concert/vmd），AR 作为第 6 种 `ar` 模式接入 |
 | `scene/env/env-impl.ts` | AR 模式下背景由视频流替代天空盒，环境光照仍可保留 |
 | Gaze 视线追踪（ADR-016/053） | **天然协同**：AR 模式下「朝向相机」语义变为「朝向屏幕外真实用户」，gaze 视线变为「与真人眼神接触」 |
-| WASM/JS 运行时分裂（ADR-054） | **不受影响**：视频透传不涉及骨骼覆写，可在 WASM 运行时下保留物理 |
+| WASM/JS 运行时分裂（ADR-054/056） | **不受影响**：gaze 双路径（WASM frontBuffer 直写 + JS linkedBone）已在 ADR-056 验证实施，AR 模式下 WASM 物理与 gaze 协同可同时工作 |
 
 ### 1.3 不做什么
 
@@ -153,7 +153,7 @@ function getGazeTarget(arMode: boolean, camera: Camera): Vector3 {
 }
 ```
 
-> 注意：此处不解决 ADR-054 标记的 WASM/JS 运行时分裂问题——gaze 仍只在 JS 运行时生效。AR 视频背景独立于运行时，可在 WASM 下使用（仅失去 gaze 协同）。检测到 `MmdWasmRuntime` 且开启 AR 时，状态栏显示 `⚠ AR + 物理模式不支持视线追踪`，gaze 分支置为无操作（返回默认目标）。
+> 说明：gaze 双路径（WASM frontBuffer 直写 + JS linkedBone，ADR-056）在 AR 模式下同样有效，WASM 物理运行时不受影响。
 
 ---
 
@@ -216,9 +216,8 @@ function getGazeTarget(arMode: boolean, camera: Camera): Vector3 {
 | R2 | 用户拒绝摄像头权限 | 降级为黑底背景 + 状态栏 `✗ 摄像头权限被拒绝，已切换黑底模式`，不退出 AR 模式（允许模型演示）；成功开启时 `✓ AR 相机已开启` |
 | R3 | 截图合成在 AR 模式下颜色不一致 | 用 `canvas.drawImage(video, ...)` + `canvas.drawImage(renderCanvas, ...)` 两步合成，统一 gamma |
 | R4 | 视频帧率与渲染帧率不同步导致抖动 | `<video>` 由浏览器自动播放，Babylon.js 渲染独立，无需同步 |
-| R5 | AR 模式 + WASM 运行时下 gaze 不可用 | UI 明确提示「AR + 物理模式不支持视线追踪」 |
-| R6 | 桌面端 HTTPS 要求 | Wails v3 默认 localhost，`getUserMedia` 允许 localhost，无需 HTTPS |
-| R7 | 移动端后置摄像头镜像问题 | CSS `transform: scaleX(-1)` 处理前置镜像，后置不镜像 |
+| R5 | 桌面端 HTTPS 要求 | Wails v3 默认 localhost，`getUserMedia` 允许 localhost，无需 HTTPS |
+| R6 | 移动端后置摄像头镜像问题 | CSS `transform: scaleX(-1)` 处理前置镜像，后置不镜像 |
 
 ### 边界
 

@@ -144,6 +144,8 @@ export class MockNode {
     getClassName() {
         return 'Node';
     }
+    // Babylon 在模块求值期调用 Node.AddNodeConstructor 注册相机/网格构造器
+    static AddNodeConstructor(_type: string, _factory: any) {}
 }
 
 // ===== Lights =====
@@ -245,7 +247,11 @@ export class MockArcRotateCamera {
     position = { x: 0, y: 0, z: 0 };
     _scene: any;
     _cameraRotation = { x: 0, y: 0 };
-    inputs = { addGamepad: () => {} };
+    inputs = {
+        add: (_input: any) => {},
+        removeByType: (_type: string) => {},
+        addGamepad: () => {},
+    };
     name = '';
     constructor(..._args: any[]) {}
     getClassName() {
