@@ -599,9 +599,9 @@ async function init(): Promise<void> {
         registerAppShortcuts();
         initShortcutDispatcher();
         setStatus(t('main.initializing'), false);
-        await initScene();
-        initDropHandler();
-        // Register nav button event listeners (ensured DOM ready)
+
+        // [doc:e2e] 按钮监听器在 initScene 之前注册，确保纯 Vite 模式下 overlay 可打开
+        // 即使 WASM 加载失败或场景初始化异常，用户仍能点击导航按钮查看菜单
         dom.btnMainAction.addEventListener('click', () =>
             toggleOverlay('sceneOverlay', showModelPopup)
         );
@@ -618,9 +618,13 @@ async function init(): Promise<void> {
         });
         dom.btnSettings.addEventListener('click', async () => {
             const m = await import('../menus/settings');
-            await m.preloadAutoImportState();
+            await m.preloadAutoImportState().catch(() => {}); // 静默失败，避免阻塞 UI
             toggleOverlay('sceneOverlay', m.showSettings);
         });
+
+        initDropHandler(); // 拖拽导入处理不依赖场景初始化
+
+        await initScene();
         console.info('MikuMikuAR initialized');
         initLibrary().catch((err) => console.warn('Library init:', err));
         // Restore env state from config (authoritative — scene restore skips env)
