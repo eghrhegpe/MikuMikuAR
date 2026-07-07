@@ -748,7 +748,7 @@ export const en: Record<string, string> = {
     'props.loaded': '✓ Prop loaded',
 
     // env-feature-levels — environment feature popups (ground/water/fog/shadow/wind/cloud/experimental; sky block added by other session)
-    'env.skyTextureHint': 'Supports .hdr / .dds / .exr environment maps',
+    'env.skyTextureHint': 'Sky cube map, also used as scene reflection source (supports .hdr / .dds / .exr)',
     'env.notSelected': 'Not selected',
     'env.skyTexture': 'Sky texture',
     'env.rotateY': 'Rotate Y',
