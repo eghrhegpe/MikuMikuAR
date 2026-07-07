@@ -37,6 +37,10 @@ export const BONE_FRAME_SIZE = 111;
 export const MORPH_FRAME_SIZE = 23;
 const SIGNATURE = 'Vocaloid Motion Data 0002\0'; // 30 bytes
 const DEFAULT_MODEL_NAME = 'Procedural'; // ≤20 bytes
+const MAX_MODEL_NAME_BYTES = 20;
+const MAX_BONE_NAME_BYTES = 15;
+// eslint-disable-next-line no-control-regex
+const UNSAFE_NAME_CHARS = /[\x00-\x1F\x7F<>;"'`\\]/g;
 
 /** 将字符串编码为 Shift-JIS 字节数组，截断/填充至 maxBytes。使用 encoding-japanese 完整覆盖 JIS X 0208。
  *  截断时回退到字符边界，避免在双字节字符中间切断导致末字损坏（孤立 lead byte + 0x00 填充）。 */
@@ -51,7 +55,9 @@ function encodeShiftJis(str: string, maxBytes: number): Uint8Array {
         // maxBytes 落在某个双字节字符的首字节上 → 回退一格，保留完整字符
         const b = sjisArr[len - 1];
         const isLead = (b >= 0x81 && b <= 0x9f) || (b >= 0xe0 && b <= 0xfc);
-        if (isLead) len -= 1;
+        if (isLead) {
+            len -= 1;
+        }
     }
     const result = new Uint8Array(maxBytes);
     for (let i = 0; i < len; i++) {
@@ -62,12 +68,41 @@ function encodeShiftJis(str: string, maxBytes: number): Uint8Array {
 
 /** Shift-JIS 编码字符串到 15 字节（空字节 0x00 填充）。 */
 function encodeBoneName(name: string): Uint8Array {
-    return encodeShiftJis(name, 15);
+    const safe = sanitizeName(name, MAX_BONE_NAME_BYTES);
+    return encodeShiftJis(safe, MAX_BONE_NAME_BYTES);
 }
 
 /** Shift-JIS 编码字符串到 20 字节（模型名字段用）。 */
 function encodeModelName(name: string): Uint8Array {
-    return encodeShiftJis(name, 20);
+    const safe = sanitizeName(name, MAX_MODEL_NAME_BYTES);
+    return encodeShiftJis(safe, MAX_MODEL_NAME_BYTES);
+}
+
+/** 清理名称：去除控制字符与注入风险字符，确保可安全编码为 Shift-JIS。 */
+function sanitizeName(name: string, maxBytes: number): string {
+    let safe = name.replace(UNSAFE_NAME_CHARS, '');
+    if (safe.length === 0) {
+        return '_';
+    }
+    const sjisArr = Encoding.convert(safe, {
+        to: 'SJIS',
+        from: 'UNICODE',
+        type: 'array',
+    }) as number[];
+    if (sjisArr.length > maxBytes) {
+        let len = maxBytes;
+        const b = sjisArr[len - 1];
+        const isLead = (b >= 0x81 && b <= 0x9f) || (b >= 0xe0 && b <= 0xfc);
+        if (isLead) {
+            len -= 1;
+        }
+        safe = Encoding.convert(sjisArr.slice(0, len), {
+            to: 'UNICODE',
+            from: 'SJIS',
+            type: 'string',
+        }) as string;
+    }
+    return safe;
 }
 
 /** 检查名称能否被完整编码为 Shift-JIS（round-trip 无误）。 */

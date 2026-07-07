@@ -7,6 +7,8 @@
 import Encoding from 'encoding-japanese';
 import { buildVmd, type BoneKeyFrame, type MorphKeyFrame } from './vmd-writer';
 
+const MAX_VPD_SIZE = 1024 * 1024;
+
 // VPD 解析结果
 export interface VPDBoneData {
     name: string;
@@ -27,10 +29,12 @@ export interface VPDPoseData {
 
 // ========== VPD 文本解析 ==========
 
-/** Clean a potential VPD numeric line: remove // comments, ; terminators, and commas.
+/** Clean a potential VPD numeric line: remove // comments, ; terminators, commas, and XML entity declarations.
  *  Returns the cleaned string with space-separated numbers, ready for splitting. */
 function _cleanNumericLine(line: string): string {
     return line
+        .replace(/<!ENTITY\s+[^>]*>/gi, '')
+        .replace(/<!DOCTYPE\s+[^>]*>/gi, '')
         .replace(/\/\/.*$/, '')
         .replace(/[;,]/g, ' ')
         .trim();
@@ -43,6 +47,9 @@ function _cleanNumericLine(line: string): string {
  *  @param buffer 文件原始字节
  *  @returns 解码后的文本字符串 */
 export function decodeVPDData(buffer: ArrayBuffer): string {
+    if (buffer.byteLength > MAX_VPD_SIZE) {
+        throw new Error(`VPD file too large: ${buffer.byteLength} bytes (max ${MAX_VPD_SIZE})`);
+    }
     const u8 = new Uint8Array(buffer);
     // UTF-8 BOM (0xEF 0xBB 0xBF)
     if (u8[0] === 0xef && u8[1] === 0xbb && u8[2] === 0xbf) {
@@ -56,13 +63,25 @@ export function decodeVPDData(buffer: ArrayBuffer): string {
     // 「字节恰好合法 UTF-8 的 Shift-JIS 内容」，避免原生启发式误判。
     const detected = Encoding.detect(u8);
     if (detected === 'SJIS' || detected === 'WINDOWS-31J' || detected === 'CP932') {
-        return Encoding.convert(u8, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string;
+        try {
+            return Encoding.convert(u8, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string;
+        } catch (e) {
+            console.warn('[vpd-parser] Shift-JIS decode failed, falling back to UTF-8', e);
+        }
     }
     if (detected === 'UTF16' || detected === 'UTF16LE') {
-        return new TextDecoder('utf-16le').decode(buffer);
+        try {
+            return new TextDecoder('utf-16le').decode(buffer);
+        } catch (e) {
+            console.warn('[vpd-parser] UTF-16LE decode failed, falling back to UTF-8', e);
+        }
     }
     if (detected === 'UTF16BE') {
-        return new TextDecoder('utf-16be').decode(buffer);
+        try {
+            return new TextDecoder('utf-16be').decode(buffer);
+        } catch (e) {
+            console.warn('[vpd-parser] UTF-16BE decode failed, falling back to UTF-8', e);
+        }
     }
     // UTF8 / ASCII / 未知 → UTF-8
     return new TextDecoder('utf-8').decode(buffer);

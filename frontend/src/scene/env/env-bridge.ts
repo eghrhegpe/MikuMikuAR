@@ -529,6 +529,8 @@ export function flushUIState(): void {
     }
     const payload = _buildUIStatePayload();
     if (Object.keys(payload).length === 0) return; // nothing to persist
+    // Go 端 SetUIState 语义是 json.Unmarshal 合并（缺省字段保留原值），
+    // 但类型声明是完整 UIState。此处强转后传入部分字段是安全的。
     SetUIState(payload as unknown as import('../../core/wails-bindings').UIState).catch(
         () => {}
     );
