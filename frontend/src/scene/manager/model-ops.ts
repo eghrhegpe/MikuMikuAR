@@ -1,3 +1,4 @@
+import type { PhysicsCategory } from '@/core/types';
 import {
     modelRegistry,
     focusedModelId,
@@ -17,8 +18,6 @@ import { disposeAudio } from '@/outfit/audio';
 import { modelManager } from '../scene';
 import type { FormationType } from './model-manager';
 import { getFormationLabels } from './model-manager';
-
-export type PhysicsCategory = 'skirt' | 'chest' | 'hair' | 'accessory';
 
 // ======== Model Lifecycle ========
 

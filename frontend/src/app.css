@@ -117,6 +117,13 @@
     --cs-row-min-height: calc(44px * var(--ui-scale));
     --cs-row-radius: calc(6px * var(--ui-scale));
     --cs-top-gap: calc(10px * var(--ui-scale));
+
+    /* Resource Panel（缩略图网格） */
+    --resource-thumb-size: calc(80px * var(--ui-scale));
+    --resource-thumb-height: calc(80px * var(--ui-scale));
+    --resource-gap: calc(8px * var(--ui-scale));
+    --resource-radius: calc(8px * var(--ui-scale));
+    --resource-label-height: calc(20px * var(--ui-scale));
     --cs-label-font-size: calc(15px * var(--ui-scale));
     --cs-bar-height: calc(6px * var(--ui-scale));
     --cs-bar-radius: calc(3px * var(--ui-scale));

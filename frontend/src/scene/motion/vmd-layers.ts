@@ -440,6 +440,9 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         return;
     }
 
+    // 捕获图层快照，避免 await 期间图层被外部修改导致不一致
+    const layersSnapshot = [...inst.vmdLayers];
+
     // WASM blender 激活时先 teardown，防止 observer 泄漏
     // 多图层分支会重新 setupWasmLayersBlender
     try {
@@ -451,7 +454,7 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         // blender 模块不可用，忽略
     }
 
-    const enabledLayers = inst.vmdLayers.filter((l) => l.enabled);
+    const enabledLayers = layersSnapshot.filter((l) => l.enabled);
     const vmdEnabledLayers = enabledLayers.filter((l) => l.kind === 'vmd');
 
     // ── Gaze 层处理（快速路径，不参与 VMD composite） ──
@@ -483,53 +486,53 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
     try {
         const vmdLoader = new VmdLoader(scene);
         const composite = new MmdCompositeAnimation('motionLayers');
-
-        // 收集所有待混合的动画条目：基础 VMD（weight=1.0）+ 各启用的 VMD 图层
         const sources: {
             data: ArrayBuffer;
             name: string;
             weight: number;
             boneFilter?: string[];
         }[] = [];
-        if (hasBaseVmd) {
-            sources.push({ data: inst.vmdData, name: inst.vmdName || 'base', weight: 1.0 });
-        }
-        for (const layer of vmdEnabledLayers) {
-            sources.push({
-                data: layer.data,
-                name: layer.name,
-                weight: layer.weight,
-                boneFilter: layer.boneFilter,
-            });
-        }
-
         let maxEndFrame = 0;
-
-        // weight 归一化：确保总权重 = 1.0，避免多层叠加时骨骼旋转溢出
-        const totalWeight = sources.reduce((sum, s) => sum + s.weight, 0);
-
-        for (const src of sources) {
-            const loadData = src.boneFilter?.length
-                ? _filterVmdBones(src.data, src.boneFilter)
-                : src.data;
-            const mmdAnimation = await vmdLoader.loadFromBufferAsync(src.name, loadData);
-            const endFrame = mmdAnimation.endFrame;
-            if (endFrame > maxEndFrame) {
-                maxEndFrame = endFrame;
+        try {
+            // 收集所有待混合的动画条目：基础 VMD（weight=1.0）+ 各启用的 VMD 图层
+            if (hasBaseVmd) {
+                sources.push({ data: inst.vmdData, name: inst.vmdName || 'base', weight: 1.0 });
+            }
+            for (const layer of vmdEnabledLayers) {
+                sources.push({
+                    data: layer.data,
+                    name: layer.name,
+                    weight: layer.weight,
+                    boneFilter: layer.boneFilter,
+                });
             }
 
-            const normalizedWeight = totalWeight > 0 ? src.weight / totalWeight : 0;
-            const span = new MmdAnimationSpan(
-                mmdAnimation,
-                0, // startFrame
-                endFrame, // endFrame
-                0, // offset (所有动画从头开始)
-                normalizedWeight
-            );
-            composite.addSpan(span);
-        }
+            // weight 归一化：确保总权重 = 1.0，避免多层叠加时骨骼旋转溢出
+            const totalWeight = sources.reduce((sum, s) => sum + s.weight, 0);
 
-        (vmdLoader as unknown as { dispose?: () => void }).dispose?.();
+            for (const src of sources) {
+                const loadData = src.boneFilter?.length
+                    ? _filterVmdBones(src.data, src.boneFilter)
+                    : src.data;
+                const mmdAnimation = await vmdLoader.loadFromBufferAsync(src.name, loadData);
+                const endFrame = mmdAnimation.endFrame;
+                if (endFrame > maxEndFrame) {
+                    maxEndFrame = endFrame;
+                }
+
+                const normalizedWeight = totalWeight > 0 ? src.weight / totalWeight : 0;
+                const span = new MmdAnimationSpan(
+                    mmdAnimation,
+                    0, // startFrame
+                    endFrame, // endFrame
+                    0, // offset (所有动画从头开始)
+                    normalizedWeight
+                );
+                composite.addSpan(span);
+            }
+        } finally {
+            (vmdLoader as unknown as { dispose?: () => void }).dispose?.();
+        }
 
         // WASM 运行时：使用 JS 帧流合并的 blender 方案
         if (mmdRuntime instanceof MmdWasmRuntime) {

@@ -229,6 +229,19 @@ export const en: Record<string, string> = {
     'motion.disable': 'Disable',
     'motion.sensitivity': 'Sensitivity',
 
+    // ===== Bone Override =====
+    'motion.boneOverride.title': 'Bone Override',
+    'motion.boneOverride.addOverride': 'Add Override',
+    'motion.boneOverride.apply': 'Apply',
+    'motion.boneOverride.activeOverrides': 'Active Overrides',
+    'motion.boneOverride.remove': 'Remove',
+    'motion.boneOverride.clearAll': 'Clear All',
+    'motion.boneOverride.noModel': '⚠ Load a model first',
+    'motion.boneOverride.noBones': '⚠ Model has no bones',
+    'motion.boneOverride.applied': '✓ {bone} override applied',
+    'motion.boneOverride.removed': '✕ {bone} override removed',
+    'motion.boneOverride.allCleared': '✓ All bone overrides cleared',
+
     // ===== Camera =====
     'motion.cameraMode': 'Camera Mode',
     'motion.camOrbit': 'Orbit',
@@ -376,6 +389,16 @@ export const en: Record<string, string> = {
     'scene.addPropFile': 'Add Prop File',
     'scene.propTransform': 'Prop Transform',
     'scene.propNotFound': 'Prop does not exist (may have been deleted)',
+    'scene.accessory.boneNotFound': '✗ Bone {bone} not found',
+    'scene.accessory.boneNoLink': '✗ Bone cannot attach (proxy skeleton)',
+    'scene.accessory.attached': '✓ {name} attached to {bone}',
+    'scene.accessory.detached': '✕ {name} detached from bone',
+    'scene.accessory.attachToBone': 'Attach to Bone',
+    'scene.accessory.detachFromBone': 'Detach from Bone',
+    'scene.accessory.boneOffset': 'Bone Offset',
+    'scene.accessory.boneRotation': 'Bone Rotation',
+    'scene.accessory.selectBone': 'Select Bone',
+    'scene.accessory.selectModel': 'Select Model',
 
     // —— Stage lights ——
     'scene.custom': 'Custom',
@@ -888,4 +911,9 @@ export const en: Record<string, string> = {
     'env.size': 'Size',
     'env.speed': 'Speed',
     'env.splash': 'Ground splash',
+
+    // about — links section
+    'about.license': 'Open Source License',
+    'about.github': 'GitHub Repository',
+    'about.issues': 'Report Issues',
 };

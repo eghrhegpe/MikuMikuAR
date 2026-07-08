@@ -40,6 +40,7 @@ import {
     PopupLevel,
     normPath,
     setThumbnailCache,
+    thumbnailCache,
     displayNamePriority,
     setDisplayNamePriority,
     DisplayNamePriority,
@@ -69,12 +70,27 @@ import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow } from '../core/ui-helpers';
+import { slideRow, createResourcePanel, createVirtualGrid, openFullscreen, closeFullscreen, getCurrentState, setCurrentState } from '../core/ui-helpers';
+import type { ResourceItem } from '../core/ui-helpers';
 import { tryCatchStatus, getBrowseDir } from '../core/utils';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t'; // [doc:adr-059] i18n 翻译
 import { getLang } from '../core/i18n/locale'; // [doc:adr-059] 用于列表 collation 随语言切换
 import { stackRegistry, getMenuWrapper } from '../core/config';
+
+// ======== Resource View Mode ========
+
+export type ResourceViewMode = 'list' | 'grid';
+
+let resourceViewMode: ResourceViewMode = 'list';
+
+export function getResourceViewMode(): ResourceViewMode {
+    return resourceViewMode;
+}
+
+export function setResourceViewMode(mode: ResourceViewMode): void {
+    resourceViewMode = mode;
+}
 
 // ======== Model Stack ========
 
@@ -452,12 +468,225 @@ export function buildLevel(
         label,
         dir,
         items: [],
+        filter, // [doc:adr-066] 保留 filter 供视图切换时传递
         renderCustom: (container) => {
-            cardContainer(container, (card) => {
-                renderItemsWithRAF(card, items, filter, targetStack);
-            });
+            // [doc:adr-066] 根据视图模式选择渲染路径
+            if (resourceViewMode === 'grid') {
+                renderGridMode(container, items, filter, targetStack);
+            } else {
+                cardContainer(container, (card) => {
+                    renderItemsWithRAF(card, items, filter, targetStack);
+                });
+            }
         },
     };
+}
+
+// ======== Grid Mode Rendering [doc:adr-066] ========
+
+function renderGridMode(
+    container: HTMLElement,
+    items: PopupRow[],
+    filter?: (m: LibraryModel) => boolean,
+    targetStack?: SlideMenu
+): void {
+    // 转换为 ResourceItem 格式
+    const resourceItems: ResourceItem[] = items
+        .filter((item) => item.kind === 'model' || item.kind === 'folder')
+        .map((item) => {
+            const model = item.model;
+            return {
+                id: item.target || '',
+                label: item.label,
+                filePath: model?.file_path || '',
+                icon: item.icon,
+                isFolder: item.kind === 'folder',
+                sublabel: item.sublabel,
+                data: model,
+            };
+        });
+
+    // 获取当前目录下的模型列表
+    const currentDir = items[0]?.target?.split('/').slice(0, -1).join('/') || '';
+    const modelsInDir = (allModels || []).filter((m) => {
+        if (filter && !filter(m)) {
+            return false;
+        }
+        return normPath(m.dir).startsWith(normPath(currentDir));
+    });
+
+    // 转换模型为 ResourceItem
+    const modelItems: ResourceItem[] = modelsInDir.map((m) => {
+        const fp = m.file_path || '';
+        const filename =
+            m.container === 'zip' && m.zip_inner
+                ? m.zip_inner.split('/').pop() || t('library.unknown')
+                : fp.split('/').pop() || t('library.unknown');
+        const cached = modelMetaCache.get(fp);
+        let label: string;
+        switch (displayNamePriority) {
+            case 'filename':
+                label = filename;
+                break;
+            case 'name_en':
+                label = cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
+                break;
+            case 'name_jp':
+            default:
+                label = cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
+                break;
+        }
+        return {
+            id: fp,
+            label,
+            filePath: fp,
+            icon: m.format === 'vmd' ? 'music' : m.format === 'audio' ? 'volume-2' : 'box',
+            isFolder: false,
+            sublabel: cached?.comment || m.comment || undefined,
+            data: m,
+        };
+    });
+
+    // 合并文件夹和模型
+    const folderItems: ResourceItem[] = items
+        .filter((item) => item.kind === 'folder')
+        .map((item) => ({
+            id: item.target || '',
+            label: item.label,
+            filePath: '',
+            icon: 'folder',
+            isFolder: true,
+            sublabel: undefined,
+            data: undefined,
+        }));
+
+    const allResourceItems = [...folderItems, ...modelItems];
+
+    // 渲染容器
+    cardContainer(container, (card) => {
+        // 视图切换按钮
+        const toolbar = document.createElement('div');
+        toolbar.style.cssText = `
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--white-06);
+        `;
+
+        const gridBtn = document.createElement('button');
+        gridBtn.className = 'btn btn-ghost btn-sm' + (resourceViewMode === 'grid' ? ' btn-active' : '');
+        gridBtn.textContent = '⊞';
+        gridBtn.title = t('library.gridView');
+        gridBtn.addEventListener('click', () => {
+            setResourceViewMode('grid');
+            // 切换视图需要重建当前层级
+            const stack = targetStack || stackRegistry.modelStack;
+            if (stack) {
+                const currentLevel = stack.currentLevel;
+                if (currentLevel) {
+                    stack.replaceCurrentLevel(
+                        buildLevel(
+                            currentLevel.dir,
+                            currentLevel.label,
+                            (currentLevel as any).filter,
+                            targetStack
+                        )
+                    );
+                }
+            }
+        });
+
+        const listBtn = document.createElement('button');
+        listBtn.className = 'btn btn-ghost btn-sm' + (resourceViewMode === 'list' ? ' btn-active' : '');
+        listBtn.textContent = '≡';
+        listBtn.title = t('library.listView');
+        listBtn.addEventListener('click', () => {
+            setResourceViewMode('list');
+            const stack = targetStack || stackRegistry.modelStack;
+            if (stack) {
+                const currentLevel = stack.currentLevel;
+                if (currentLevel) {
+                    stack.replaceCurrentLevel(
+                        buildLevel(
+                            currentLevel.dir,
+                            currentLevel.label,
+                            (currentLevel as any).filter,
+                            targetStack
+                        )
+                    );
+                }
+            }
+        });
+
+        toolbar.appendChild(gridBtn);
+        toolbar.appendChild(listBtn);
+
+        // 展开全屏按钮
+        const expandBtn = document.createElement('button');
+        expandBtn.className = 'btn btn-ghost btn-sm';
+        expandBtn.textContent = '⛶';
+        expandBtn.title = t('library.fullscreen');
+        expandBtn.style.marginLeft = 'auto';
+        expandBtn.addEventListener('click', () => {
+            // 从 items 中获取当前目录名作为标题
+            const currentTitle = items[0]?.label || '资源库';
+            openFullscreen({
+                title: currentTitle,
+                onBack: () => {
+                    // 返回嵌入模式
+                    setCurrentState('EMBEDDED_GRID');
+                },
+                renderContent: (container) => {
+                    // 渲染全屏网格
+                    createResourcePanel(container, {
+                        items: allResourceItems,
+                        thumbnailCache: new Map(Object.entries(thumbnailCache)),
+                        onSelect: (item) => {
+                            if (item.data) {
+                                closeFullscreen();
+                                onModelRowClick(item.data as LibraryModel);
+                            }
+                        },
+                        onEnterFolder: (path) => {
+                            // 全屏模式下进入文件夹
+                            const folderItem = folderItems.find((fi) => fi.id === path);
+                            const folderLabel = folderItem?.label || path.split('/').pop() || path;
+                            const stack = targetStack || stackRegistry.modelStack;
+                            if (stack) {
+                                closeFullscreen();
+                                stack.push(buildLevel(path, folderLabel, filter, targetStack));
+                            }
+                        },
+                        layout: 'grid',
+                    });
+                },
+            });
+        });
+
+        toolbar.appendChild(expandBtn);
+        card.appendChild(toolbar);
+
+        // 资源面板
+        createResourcePanel(card, {
+            items: allResourceItems,
+            thumbnailCache: new Map(Object.entries(thumbnailCache)),
+            onSelect: (item) => {
+                if (item.data) {
+                    onModelRowClick(item.data as LibraryModel);
+                }
+            },
+            onEnterFolder: (path) => {
+                const stack = targetStack || stackRegistry.modelStack;
+                if (stack) {
+                    // 找到文件夹项的 label
+                    const folderItem = folderItems.find((fi) => fi.id === path);
+                    const folderLabel = folderItem?.label || path.split('/').pop() || path;
+                    stack.push(buildLevel(path, folderLabel, filter, targetStack));
+                }
+            },
+            layout: 'grid',
+        });
+    });
 }
 
 // Register buildLevel for use by motion-popup.ts (avoids circular import)

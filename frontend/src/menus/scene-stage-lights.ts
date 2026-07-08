@@ -614,6 +614,11 @@ export function buildStageLightLevel(): PopupLevel {
                         if (!(await showConfirm(t('scene.confirmDeleteLight', { name: state.name })))) {
                             return;
                         }
+                        // 确认期间灯光可能已被其他路径删除
+                        if (!getStageLights().find((l) => l.id === state.id)) {
+                            reRenderSceneMenu();
+                            return;
+                        }
                         removeStageLight(state.id);
                         reRenderSceneMenu();
                         setStatus(t('scene.statusLightDeleted'), true);

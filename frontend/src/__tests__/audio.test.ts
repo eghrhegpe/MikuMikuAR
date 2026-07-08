@@ -84,6 +84,23 @@ vi.mock('../core/config', () => ({
     triggerAutoSave: (...args: unknown[]) => mockTriggerAutoSave(...args),
 }));
 
+// Control SettingsStore.get() so get('volume') always returns the test-specified value
+let mockVolumeValue = 1;
+const SETTINGS_UPDATED_MOCK = Symbol('SETTINGS_UPDATED');
+vi.mock('../lib/settings-store', () => ({
+    SettingsStore: {
+        get() {
+            return {
+                get: (key: string) => (key === 'volume' ? mockVolumeValue : 0),
+                set: (_key: string, _value: unknown) => {
+                    globalThis.dispatchEvent(new CustomEvent(SETTINGS_UPDATED_MOCK.description!, { detail: { key: _key, value: _value } }));
+                },
+            };
+        },
+    },
+    SETTINGS_UPDATED: SETTINGS_UPDATED_MOCK,
+}));
+
 // BeatDetector stub
 const mockBeatDetector = {
     attach: vi.fn().mockReturnValue(true),
@@ -111,12 +128,12 @@ beforeEach(() => {
     mockBeatDetector.setVolume.mockReset();
 
     // Use function keyword so new Audio() can invoke [[Construct]]
-    vi.stubGlobal(
-        'Audio',
-        vi.fn().mockImplementation(function () {
-            return makeMockAudio();
-        })
-    );
+    // Do NOT wrap in vi.fn() — a plain function is constructible;
+    // vi.fn() without mockImplementation is not a valid constructor target
+    function MockAudio() {
+        return makeMockAudio();
+    }
+    vi.stubGlobal('Audio', MockAudio);
 });
 
 afterEach(() => {
@@ -450,13 +467,36 @@ describe('attachBeatDetector', () => {
 });
 
 describe('notifyBeatDetectorReset', () => {
-    it('calls reset on attached detector', () => {
-        attachBeatDetector(mockBeatDetector as any);
-        notifyBeatDetectorReset();
-        expect(mockBeatDetector.reset).toHaveBeenCalled();
+  it('calls reset on attached detector', () => {
+    attachBeatDetector(mockBeatDetector as any);
+    notifyBeatDetectorReset();
+    expect(mockBeatDetector.reset).toHaveBeenCalled();
+  });
+
+  it('is no-op when no detector', () => {
+    expect(() => notifyBeatDetectorReset()).not.toThrow();
+  });
+});
+
+describe('SettingsStore integration', () => {
+  it('listener on SETTINGS_UPDATED calls applyGain', () => {
+    const mockAudio = makeMockAudio();
+    vi.stubGlobal('Audio', function MockAudio() {
+        return mockAudio;
     });
 
-    it('is no-op when no detector', () => {
-        expect(() => notifyBeatDetectorReset()).not.toThrow();
-    });
+    // Simulate SettingsStore default volume = 0.7
+    mockVolumeValue = 0.7;
+    void playAudio('test.mp3', 'test');
+    expect(mockAudio.volume).toBe(0.7); // applyGain called at creation
+
+    // setVolume(0.3) updates store and fires SETTINGS_UPDATED → applyGain
+    mockVolumeValue = 0.3;
+    void setVolume(0.3);
+    expect(mockAudio.volume).toBe(0.3); // applyGain re-applies with new value
+
+    // Restore and cleanup
+    mockVolumeValue = 1;
+    vi.unstubAllGlobals();
+  });
 });

@@ -6,8 +6,7 @@ import { getAllShortcuts, setKeyBinding, resetKeyBinding, resetAllKeyBindings, l
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import type { PopupLevel } from '../core/config';
-
-type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
+import type { SettingsMenuHandle } from './settings-shared';
 
 function _fmtKeyBinding(key: string, ctrl: boolean, shift: boolean, alt: boolean): string {
     const parts: string[] = [];

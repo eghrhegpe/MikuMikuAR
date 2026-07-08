@@ -15,6 +15,7 @@ import {
     focusedModelId,
     setFocusedModelId,
     uiState,
+    setUIState,
     envState,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
@@ -242,7 +243,7 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
 // ======== handleSceneAction ========
 
 /** 截图当前焦点模型 */
-async function screenshotCurrent(): Promise<void> {
+export async function screenshotCurrent(): Promise<void> {
     const id = focusedModelId;
     if (!id) {
         setStatus(t('scene.statusNoFocusModel'), false);
@@ -253,15 +254,20 @@ async function screenshotCurrent(): Promise<void> {
         setStatus(t('scene.statusModelNotFound'), false);
         return;
     }
-    const dir = await tryCatchStatus(async () => {
-        const d = await SelectDir();
-        if (!d) {
-            return undefined;
-        }
-        return d;
-    }, t('scene.statusScreenshotFailed'));
+    let dir = uiState.screenshotDir;
     if (!dir) {
-        return;
+        dir = await tryCatchStatus(async () => {
+            const d = await SelectDir();
+            if (!d) {
+                return undefined;
+            }
+            return d;
+        }, t('scene.statusScreenshotFailed'));
+        if (!dir) {
+            return;
+        }
+        uiState.screenshotDir = dir;
+        setUIState({ screenshotDir: dir });
     }
     await new Promise((r) => requestAnimationFrame(r));
     await new Promise((r) => requestAnimationFrame(r));
@@ -286,15 +292,20 @@ async function screenshotBatch(): Promise<void> {
         setStatus(t('scene.statusNoModels'), false);
         return;
     }
-    const dir = await tryCatchStatus(async () => {
-        const d = await SelectDir();
-        if (!d) {
-            return undefined;
-        }
-        return d;
-    }, t('scene.statusScreenshotFailed'));
+    let dir = uiState.screenshotDir;
     if (!dir) {
-        return;
+        dir = await tryCatchStatus(async () => {
+            const d = await SelectDir();
+            if (!d) {
+                return undefined;
+            }
+            return d;
+        }, t('scene.statusScreenshotFailed'));
+        if (!dir) {
+            return;
+        }
+        uiState.screenshotDir = dir;
+        setUIState({ screenshotDir: dir });
     }
     let saved = 0;
     const prevFocused = focusedModelId;

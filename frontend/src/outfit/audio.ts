@@ -4,18 +4,17 @@
 import { resolveFileUrl } from '../core/fileservice';
 import { triggerAutoSave } from '../core/config';
 import type { BeatDetector } from '../motion-algos/beat-detector';
+import { SettingsStore, SETTINGS_UPDATED } from '../lib/settings-store';
 
 let audioElement: HTMLAudioElement | null = null;
 let audioName = '';
 let audioPath = '';
-let audioOffset = 0;
-let volume = 1;
 let isSeeking = false;
 function ensureAudio(): HTMLAudioElement {
     if (!audioElement) {
         audioElement = new Audio();
         audioElement.crossOrigin = 'anonymous';
-        audioElement.volume = volume;
+        audioElement.volume = getVolume();
     }
     // Re-attach beat detector when audio element is (re)created
     if (beatDetector && !beatDetectorAttached) {
@@ -99,7 +98,7 @@ export function disposeAudio(): void {
     }
     audioName = '';
     audioPath = '';
-    audioOffset = 0;
+  
     if (beatDetector) {
         beatDetector.dispose();
         beatDetector = null;
@@ -108,26 +107,20 @@ export function disposeAudio(): void {
 }
 
 export function setVolume(v: number): void {
-    volume = Math.max(0, Math.min(1, v));
-    if (audioElement) {
-        audioElement.volume = volume;
-    }
-    // 若 beatDetector 已接管音频路由，通过 GainNode 控制实际输出音量
-    if (beatDetector) {
-        beatDetector.setVolume(volume);
-    }
+  SettingsStore.get().set('volume', Math.max(0, Math.min(1, v)));
+  applyGain(); // sync beatDetector + audioElement immediately
 }
 
 export function getVolume(): number {
-    return volume;
+  return SettingsStore.get().get('volume') as number;
 }
 
 export function setAudioOffset(seconds: number): void {
-    audioOffset = seconds;
+  SettingsStore.get().set('audioOffset', seconds);
 }
 
 export function getAudioOffset(): number {
-    return audioOffset;
+  return SettingsStore.get().get('audioOffset') as number;
 }
 
 export function getCurrentTime(): number {
@@ -181,7 +174,7 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
         return;
     }
 
-    const audioTargetTime = vmdTime + audioOffset;
+    const audioTargetTime = vmdTime + getAudioOffset();
     const audioDur = getDuration();
 
     if (vmdDuration > 0 && audioDur > 0) {
@@ -210,7 +203,7 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
         }
 
         if (lastVmdDuration > 0 && lastVmdTime > vmdTime + 0.5 && isPlaying) {
-            seekAudio(audioOffset >= 0 ? audioOffset : 0);
+            seekAudio(getAudioOffset() >= 0 ? getAudioOffset() : 0);
         }
     }
 
@@ -225,11 +218,67 @@ let beatDetectorAttached = false;
 
 /** 接入节拍检测器到当前音频元素（惰性，仅调用一次）。 */
 export function attachBeatDetector(detector: BeatDetector): void {
-    beatDetector = detector;
-    if (audioElement && !beatDetectorAttached) {
-        beatDetectorAttached = detector.attach(audioElement);
-    }
+  beatDetector = detector;
+  if (audioElement && !beatDetectorAttached) {
+    beatDetectorAttached = detector.attach(audioElement);
+  }
 }
+
+// AO ✂️ Connect to global settings updates
+export function applyGain(): void {
+  const vol = getVolume();
+  if (audioElement) {
+    audioElement.volume = vol;
+  }
+  if (beatDetector) {
+    beatDetector.setVolume(vol);
+  }
+}
+
+let cleanupSettingsListener: (() => void) | null = null;
+
+function setupSettingsListener(): void {
+  if (cleanupSettingsListener) return;
+  const handler = () => applyGain();
+  globalThis.addEventListener(SETTINGS_UPDATED.description!, handler);
+  cleanupSettingsListener = () => globalThis.removeEventListener(SETTINGS_UPDATED.description!, handler);
+}
+
+function teardownSettingsListener(): void {
+  cleanupSettingsListener?.();
+  cleanupSettingsListener = null;
+}
+
+// AO ✂️ Patch ensureAudio and disposeAudio to wire settings listener
+const origEnsureAudio = ensureAudio as () => HTMLAudioElement;
+const origDisposeAudio = disposeAudio as () => void;
+
+function patchedEnsureAudio(): HTMLAudioElement {
+  const el = origEnsureAudio();
+  setupSettingsListener();
+  return el;
+}
+
+function patchedDisposeAudio(): void {
+  teardownSettingsListener();
+  origDisposeAudio();
+  if (audioElement) {
+    audioElement.pause();
+    audioElement.src = '';
+    audioElement = null;
+  }
+  audioName = '';
+  audioPath = '';
+  if (beatDetector) {
+    beatDetector.dispose();
+    beatDetector = null;
+  }
+  beatDetectorAttached = false;
+}
+
+// Replace originals with patched versions
+(ensureAudio as any) = patchedEnsureAudio;
+(disposeAudio as any) = patchedDisposeAudio;
 
 /** 音频加载后通知 beat detector 重置（新曲目 BPM 估计重新开始）。 */
 export function notifyBeatDetectorReset(): void {
