@@ -17,6 +17,11 @@ import { EnvState, envState } from '../../core/config';
 import { getWindVector, isWindActive } from '../../core/physics/wind-utils';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 
+// PostProcess 私有属性 _enabled 的类型声明（用于控制后处理启用/禁用）
+interface PostProcessInternal {
+    _enabled: boolean;
+}
+
 // ======== 常量定义 ========
 const WATER_BASE_SIZE = 60; // 水面基准尺寸（世界单位），通过缩放调整最终大小
 const LOD_HIGH_DISTANCE = 30; // LOD 切换距离（近）
@@ -117,7 +122,7 @@ function ensureTintPostProcess(camera: any): void {
         Constants.TEXTURE_BILINEAR_SAMPLINGMODE
     );
     // PostProcess 没有 .disable() 实例方法；用 _enabled 属性控制
-    (_tintPostProcess as any)._enabled = false;
+    (_tintPostProcess as unknown as PostProcessInternal)._enabled = false;
 }
 
 function disposeTintPostProcess(): void {
@@ -875,7 +880,7 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
             ensureTintPostProcess(scene.activeCamera);
         }
         if (_tintPostProcess) {
-            (_tintPostProcess as any)._enabled = true;
+            (_tintPostProcess as unknown as PostProcessInternal)._enabled = true;
             const wc = envState.waterColor;
             _tintPostProcess.onApply = (effect) => {
                 // tintColor 由 waterColor × underwaterTintStrength 派生（默认强度 0.5，即水色×0.5）
@@ -894,7 +899,7 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
     } else if (!_underwaterActive) {
         pipeline.chromaticAberrationEnabled = false;
         if (_tintPostProcess) {
-            (_tintPostProcess as any)._enabled = false;
+            (_tintPostProcess as unknown as PostProcessInternal)._enabled = false;
         }
     }
 }
@@ -911,7 +916,7 @@ export function resetUnderwaterState(scene: Scene, pipeline: DefaultRenderingPip
     _underwaterTarget = false;
     pipeline.chromaticAberrationEnabled = false;
     if (_tintPostProcess) {
-        (_tintPostProcess as any)._enabled = false;
+        (_tintPostProcess as unknown as PostProcessInternal)._enabled = false;
     }
 }
 

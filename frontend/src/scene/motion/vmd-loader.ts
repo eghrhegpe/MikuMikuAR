@@ -35,12 +35,31 @@ function getScene() {
 // 缓存已加载的同名伴音，避免重复加载
 const _companionAudioCache = new Set<string>();
 
+// VMD 签名：前 25 字节为 "Vocaloid Motion Data 0002"，共 30 字节（含 \0 填充）
+const VMD_SIGNATURE = 'Vocaloid Motion Data 0002';
+const VMD_HEADER_MIN = 50; // 30(签名+模型名) + 4(骨骼帧数) 的最小合法头部
+
+/** 验证 ArrayBuffer 是否为合法 VMD 格式：检查签名前缀。
+ *  程序化生成的 VMD 也使用此签名（vmd-writer.ts SIGNATURE 常量）。 */
+function isValidVmd(data: ArrayBuffer): boolean {
+    if (data.byteLength < VMD_HEADER_MIN) {
+        return false;
+    }
+    const sig = new TextDecoder('ascii').decode(new Uint8Array(data, 0, 25));
+    return sig === VMD_SIGNATURE;
+}
+
 // ======== VMD Loading ========
 export async function loadVMDMotion(
     data: ArrayBuffer,
     name: string,
     targetModelId?: string
 ): Promise<void> {
+    if (!isValidVmd(data)) {
+        setStatus(t('scene.vmd.loadFailed'), false);
+        console.warn('[vmd-loader] Invalid VMD signature, rejected:', name);
+        return;
+    }
     const {
         scene,
         focusedMmdModel: _focusedMmdModel,

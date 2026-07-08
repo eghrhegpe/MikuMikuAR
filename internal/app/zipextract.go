@@ -534,6 +534,25 @@ func corruptFromBytes(encoded []byte) string {
 	return result.String()
 }
 
+// maxVPDSize 是 VPD 文件的服务端大小上限（1 MB），与前端 vpd-parser.ts 的 MAX_VPD_SIZE 对齐。
+const maxVPDSize = 1024 * 1024
+
+// serveFileWithSizeCheck 对 .vpd 文件做大小校验后透传给 http.ServeFile，防止超大文件耗尽内存。
+func serveFileWithSizeCheck(w http.ResponseWriter, r *http.Request, fullPath string) {
+	if strings.HasSuffix(strings.ToLower(fullPath), ".vpd") {
+		info, err := os.Stat(fullPath)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		if info.Size() > maxVPDSize {
+			http.Error(w, "VPD file too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+	}
+	http.ServeFile(w, r, fullPath)
+}
+
 // basenameFallbackFS builds a basename→real-path index then wraps an http.FileServer
 // so that if a path 404s, we try to find a file with the same basename anywhere
 // under the root. This handles PMX texture path mismatches (..\ subdirs,
@@ -593,17 +612,17 @@ func basenameFallbackFS(root string, logFn func(string, ...interface{})) http.Ha
 					return
 				}
 				// 1. 尝试完整 relPath（支持 outfit 传来的子目录相对路径）
-				fullPath := filepath.Join(root, filepath.FromSlash(cleaned))
-				if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
-					http.ServeFile(w, r, fullPath)
-					return
-				}
-				// 2. basename fallback（支持 resolveFileUrl 传来的单文件名）
-				reqBase := strings.ToLower(path.Base(cleaned))
-				if entry, ok := index[reqBase]; ok {
-					http.ServeFile(w, r, filepath.Join(root, entry))
-					return
-				}
+			fullPath := filepath.Join(root, filepath.FromSlash(cleaned))
+			if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
+				serveFileWithSizeCheck(w, r, fullPath)
+				return
+			}
+			// 2. basename fallback（支持 resolveFileUrl 传来的单文件名）
+			reqBase := strings.ToLower(path.Base(cleaned))
+			if entry, ok := index[reqBase]; ok {
+				serveFileWithSizeCheck(w, r, filepath.Join(root, entry))
+				return
+			}
 				// ?f= 未命中 → 直接 404，不走路径段兜底（避免歧义）
 				http.NotFound(w, r)
 				return
@@ -656,7 +675,7 @@ func basenameFallbackFS(root string, logFn func(string, ...interface{})) http.Ha
 		// Overwrite the 404 with the fallback file
 		fullPath := filepath.Join(root, relPath)
 		r.URL.Path = "/" + filepath.ToSlash(relPath)
-		http.ServeFile(w, r, fullPath)
+		serveFileWithSizeCheck(w, r, fullPath)
 	})
 }
 

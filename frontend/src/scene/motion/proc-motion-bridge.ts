@@ -26,6 +26,18 @@ import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Matrix } from '@babylonjs/core/Maths/math';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import { Camera } from '@babylonjs/core/Cameras/camera';
+
+// ── WASM/JS 运行时差异的本地类型声明 ──
+// babylon-mmd 的 IMmdRuntimeBone 接口未声明 worldMatrix 和 updateWorldMatrix，
+// 但 WASM 与 JS 运行时在运行时均提供这些成员。
+export interface MmdRuntimeBoneExtended extends IMmdRuntimeBone {
+    worldMatrix: Float32Array;
+    updateWorldMatrix(updateAbsoluteTransform: boolean, updateLocalTransform: boolean): void;
+}
+
+interface MeshMetadata {
+    skeleton?: { _markAsDirty?(): void };
+}
 import { isARActive } from '../ar/ar-camera';
 
 let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
@@ -78,7 +90,7 @@ function _q(): Quaternion {
 }
 
 export function _isWasmRuntime(bone: IMmdRuntimeBone): boolean {
-    return (bone as any).updateWorldMatrix === undefined;
+    return !('updateWorldMatrix' in bone);
 }
 
 // ── 眼球追踪平滑系数（0=完全平滑，1=无平滑） ──
@@ -106,7 +118,7 @@ export function applyGazeWasm(
     const gazeTarget = _getGazeTarget(cam, _v3());
 
     if (needHead && headRuntime) {
-        const headBuf = (headRuntime as any).worldMatrix as Float32Array;
+        const headBuf = (headRuntime as MmdRuntimeBoneExtended).worldMatrix;
         const oldHeadMat = _m().copyFrom(Matrix.FromArray(headBuf));
         const headPos = oldHeadMat.getTranslation();
         const oldHeadRotQ = _q().copyFrom(
@@ -139,7 +151,7 @@ export function applyGazeWasm(
     if (needEye) {
         const eyeCenter = _v3();
         for (const eyeRb of eyeRuntimes) {
-            const eb = (eyeRb as any).worldMatrix as Float32Array;
+            const eb = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
             eyeCenter.x += eb[12];
             eyeCenter.y += eb[13];
             eyeCenter.z += eb[14];
@@ -154,7 +166,7 @@ export function applyGazeWasm(
             );
 
             for (const eyeRb of eyeRuntimes) {
-                const eyeBuf = (eyeRb as any).worldMatrix as Float32Array;
+                const eyeBuf = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
                 const eyeMat = _m().copyFrom(Matrix.FromArray(eyeBuf));
                 const eyePos = eyeMat.getTranslation();
                 const curEyeQ = _q().copyFrom(
@@ -218,7 +230,7 @@ export function _propagateChildrenWasm(
     const parentOldInv = new Matrix().copyFrom(parentOldMat);
     parentOldInv.invert();
     for (const child of parent.childBones) {
-        const childBuf = (child as any).worldMatrix as Float32Array;
+        const childBuf = (child as MmdRuntimeBoneExtended).worldMatrix;
         if (!childBuf) {
             continue;
         }
@@ -355,7 +367,7 @@ function _setupGazeTracking(): void {
                 headRuntime.linkedBone.rotationQuaternion = localQ;
 
                 const updateBoneChain = (rb: IMmdRuntimeBone) => {
-                    (rb as any).updateWorldMatrix?.(false, false);
+                    (rb as MmdRuntimeBoneExtended).updateWorldMatrix?.(false, false);
                     for (const child of rb.childBones) {
                         updateBoneChain(child);
                     }
@@ -366,7 +378,7 @@ function _setupGazeTracking(): void {
             if (needEye) {
                 const eyeCenter = _v3();
                 for (const eyeRb of eyeRuntimes) {
-                    const eb = (eyeRb as any).worldMatrix as Float32Array;
+                    const eb = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
                     eyeCenter.x += eb[12];
                     eyeCenter.y += eb[13];
                     eyeCenter.z += eb[14];
@@ -404,12 +416,12 @@ function _setupGazeTracking(): void {
                         parentInvQ.multiplyToRef(newWorldQ, localQ);
                         eyeRb.linkedBone.rotationQuaternion = localQ;
 
-                        (eyeRb as any).updateWorldMatrix?.(false, false);
+                        (eyeRb as MmdRuntimeBoneExtended).updateWorldMatrix?.(false, false);
                     }
                 }
             }
 
-            const skeleton = (mmdModel.mesh.metadata as any).skeleton;
+            const skeleton = (mmdModel.mesh.metadata as MeshMetadata).skeleton;
             skeleton?._markAsDirty?.();
         },
         undefined,

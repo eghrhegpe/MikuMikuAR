@@ -10,6 +10,7 @@ import {
     _propagateChildrenWasm,
     applyGazeWasm,
     type GazeConfig,
+    type MmdRuntimeBoneExtended,
 } from './proc-motion-bridge';
 import { createVmdEvaluator, type VmdEvaluator } from '../../motion-algos/vmd-evaluator';
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
@@ -225,7 +226,7 @@ function _applyLayersBlending(modelId: string): void {
                 newMat.copyFrom(Matrix.Compose(Vector3.One(), blendedRot, pos));
             }
 
-            const buf = (bone as any).worldMatrix as Float32Array;
+            const buf = (bone as MmdRuntimeBoneExtended).worldMatrix;
             _writeMatToBuffer(buf, newMat);
 
             _propagateChildrenWasm(bone, oldMat, newMat);

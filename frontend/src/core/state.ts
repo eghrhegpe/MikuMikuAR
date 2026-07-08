@@ -1,6 +1,6 @@
 /**
- * [Immutable + Single Dispatch] Compatibility shim for migrated state.
- * All internal mutations route to the single store; exports are readonly proxies.
+ * [doc:architecture] Shared mutable state for MikuMikuAR.
+ * Extracted from config.ts — global variables, setters, runtime state.
  */
 
 import { reactive } from './reactivity';
@@ -23,12 +23,9 @@ import type {
 
 // ======== MMD Runtime ========
 
-// 所有状态均迁移到单例 store；以下是向后兼容的 shim
-import { getState, setState, createSelector } from '../store';
-
-export const mmdRuntime = null as unknown as import('../store').mmdRuntime;
+export let mmdRuntime: IMmdRuntime | null = null;
 export function setMmdRuntime(r: IMmdRuntime | null): void {
-  (import('../store') as any).setMmdRuntime(r);
+    mmdRuntime = r;
 }
 
 // ======== MMD Runtime Type Switch (WASM 物理 / JS 调试) ========
@@ -36,24 +33,23 @@ export function setMmdRuntime(r: IMmdRuntime | null): void {
 const MMD_RUNTIME_TYPE_KEY = 'mmdRuntimeType';
 
 export function getMmdRuntimeType(): MmdRuntimeType {
-  try {
-    const v = localStorage.getItem(MMD_RUNTIME_TYPE_KEY);
-    if (v === 'js' || v === 'wasm') {
-      return v;
+    try {
+        const v = localStorage.getItem(MMD_RUNTIME_TYPE_KEY);
+        if (v === 'js' || v === 'wasm') {
+            return v;
+        }
+    } catch {
+        /* localStorage 不可用时回落 env */
     }
-  } catch {
-    /* localStorage 不可用时回落 env */
-  }
-  return import.meta.env.VITE_MMD_RUNTIME === 'js' ? 'js' : 'wasm';
+    return import.meta.env.VITE_MMD_RUNTIME === 'js' ? 'js' : 'wasm';
 }
 
 export function setMmdRuntimeType(v: MmdRuntimeType): void {
-  try {
-    localStorage.setItem(MMD_RUNTIME_TYPE_KEY, v);
-  } catch {
-    /* 忽略 localStorage 写入失败 */
-  }
-  (import('../store') as any).setMmdRuntimeType(v);
+    try {
+        localStorage.setItem(MMD_RUNTIME_TYPE_KEY, v);
+    } catch {
+        /* 忽略 localStorage 写入失败 */
+    }
 }
 
 // ======== Model Registry ========
