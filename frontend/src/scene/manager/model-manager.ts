@@ -22,11 +22,11 @@ import {
     focusedModelId as configFocusedId,
     type PhysicsCategory,
     type RuntimeModel,
-} from '../../core/config';
-import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '../../core/orbit';
-import type { ClothInstance } from '../../physics/xpbd-cloth';
-import { disposeCloth } from '../../physics/xpbd-cloth';
-import { disposeOverlay, restoreMaterials } from '../../outfit/outfit-overlay';
+} from '@/core/config';
+import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
+import type { ClothInstance } from '@/physics/xpbd-cloth';
+import { disposeCloth } from '@/physics/xpbd-cloth';
+import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)

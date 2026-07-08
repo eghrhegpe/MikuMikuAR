@@ -7,13 +7,13 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 
-import { propRegistry, setStatus, triggerAutoSave, dom, PropInstance } from '../../core/config';
-import { resolveFileUrl, normPath } from '../../core/fileservice';
-import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '../../core/orbit';
+import { propRegistry, setStatus, triggerAutoSave, dom, PropInstance } from '@/core/config';
+import { resolveFileUrl, normPath } from '@/core/fileservice';
+import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
 import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
-import { t } from '../../core/i18n/t';
+import { t } from '@/core/i18n/t';
 
 // ======== 类型守卫 ========
 

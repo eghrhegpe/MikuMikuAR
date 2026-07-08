@@ -1,6 +1,6 @@
 import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem } from '@babylonjs/core';
-import { EnvState, envState } from '../../core/config';
-import { getWindVector } from '../../core/physics/wind-utils';
+import { EnvState, envState } from '@/core/config';
+import { getWindVector } from '@/core/physics/wind-utils';
 import { _envSys, getScene, addRipple } from './env-impl';
 
 // ======== Particle System ========

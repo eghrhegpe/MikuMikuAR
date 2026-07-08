@@ -9,16 +9,16 @@ import {
     MmdCompositeAnimation,
     MmdAnimationSpan,
 } from 'babylon-mmd/esm/Runtime/Animation/mmdCompositeAnimation';
-import type { VmdLayer } from '../../core/types';
+import type { VmdLayer } from '@/core/types';
 import {
     mmdRuntime,
     modelRegistry,
     focusedModelId,
     setStatus,
     triggerAutoSave,
-} from '../../core/config';
-import { resolveFileUrl, normPath } from '../../core/fileservice';
-import { t } from '../../core/i18n/t';
+} from '@/core/config';
+import { resolveFileUrl, normPath } from '@/core/fileservice';
+import { t } from '@/core/i18n/t';
 import Encoding from 'encoding-japanese';
 
 function getScene() {

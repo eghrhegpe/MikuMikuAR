@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
     <title>MikuMikuAR</title>
     <link rel="icon" href="data:,">
     <script>
@@ -10,12 +10,39 @@
         (function() {
             var el = document.createElement('div');
             el.id = 'diag-error';
-            el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1a2e;color:#ff6b6b;font:13px monospace;padding:16px;white-space:pre-wrap;word-break:break-word;max-height:100vh;overflow:auto;';
+            el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1a2e;color:#ff6b6b;font:13px monospace;padding:16px;white-space:pre-wrap;word-break:break-word;max-height:100vh;overflow:auto;display:none;';
+            // 错误文本容器（先创建，复制按钮闭包引用）
+            var textEl = document.createElement('div');
+            textEl.style.cssText = 'margin-top:8px;';
+            // 按钮容器（sticky 不随滚动消失，复制/关闭并排）
+            var btnWrap = document.createElement('span');
+            btnWrap.style.cssText = 'position:sticky;top:0;float:right;display:flex;gap:6px;';
+            function mkBtn(label, onClick) {
+                var b = document.createElement('span');
+                b.textContent = label;
+                b.style.cssText = 'cursor:pointer;font-size:12px;color:#ff6b6b;background:#1a1a2e;padding:2px 6px;border-radius:4px;user-select:none;';
+                b.addEventListener('click', onClick);
+                return b;
+            }
+            btnWrap.appendChild(mkBtn('\u590D\u5236', function() {
+                var txt = textEl.textContent || '';
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(txt);
+                } else {
+                    var ta = document.createElement('textarea');
+                    ta.value = txt; document.body.appendChild(ta); ta.select();
+                    try { document.execCommand('copy'); } catch (e) {}
+                    document.body.removeChild(ta);
+                }
+            }));
+            btnWrap.appendChild(mkBtn('\u2715 \u5173\u95ED', function() { el.style.display = 'none'; }));
+            el.appendChild(btnWrap);
+            el.appendChild(textEl);
             (document.body || document.documentElement).appendChild(el);
             function show(e) {
                 var msg = e && e.message ? e.message : String(e);
                 if (e && e.stack) msg += '\n' + e.stack.split('\n').slice(0,5).join('\n');
-                el.textContent += (el.textContent ? '\n---\n' : '') + msg;
+                textEl.textContent += (textEl.textContent ? '\n---\n' : '') + msg;
                 el.style.display = 'block';
             }
             window.onerror = function(msg, url, line, col, err) { show(err || msg); return true; };
@@ -31,7 +58,7 @@
     <!-- TEMP: 注释掉验证闪退是否 babylon 加载导致 -->
     <script src="/lib/babylon.js"></script>
     <script src="/lib/babylonjs.materials.min.js"></script>
-  <script type="module" crossorigin src="/assets/index-COQG8d4f.js"></script>
+  <script type="module" crossorigin src="/assets/index-DmMOiJQG.js"></script>
 </head>
 <body>
     <div id="app">
@@ -88,6 +115,19 @@
             </div>
             <div class="toast-actions">
                 <button class="toast-import-btn">导入</button>
+                <button class="toast-ignore-btn">忽略</button>
+            </div>
+        </div>
+
+        <!-- Update Toast -->
+        <div id="updateToast" class="toast hidden">
+            <div class="toast-icon">🔔</div>
+            <div class="toast-body">
+                <div class="toast-title">发现新版本</div>
+                <div class="toast-file"></div>
+            </div>
+            <div class="toast-actions">
+                <button class="toast-import-btn">前往下载</button>
                 <button class="toast-ignore-btn">忽略</button>
             </div>
         </div>

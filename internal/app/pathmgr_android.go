@@ -20,8 +20,5 @@ func (a *androidPathMgr) CacheRoot() (string, error) {
 }
 
 func (a *androidPathMgr) ResourceRoot() string {
-	if sd := os.Getenv("EXTERNAL_STORAGE"); sd != "" {
-		return filepath.Join(sd, "MMD")
-	}
-	return "/sdcard/MMD"
+	return "/storage/emulated/0/Android/data/com.mikumikuar.app/files/MMD"
 }

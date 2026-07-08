@@ -253,7 +253,13 @@ async function screenshotCurrent(): Promise<void> {
         setStatus(t('scene.statusModelNotFound'), false);
         return;
     }
-    const dir = await SelectDir();
+    const dir = await tryCatchStatus(async () => {
+        const d = await SelectDir();
+        if (!d) {
+            return undefined;
+        }
+        return d;
+    }, t('scene.statusScreenshotFailed'));
     if (!dir) {
         return;
     }
@@ -280,7 +286,13 @@ async function screenshotBatch(): Promise<void> {
         setStatus(t('scene.statusNoModels'), false);
         return;
     }
-    const dir = await SelectDir();
+    const dir = await tryCatchStatus(async () => {
+        const d = await SelectDir();
+        if (!d) {
+            return undefined;
+        }
+        return d;
+    }, t('scene.statusScreenshotFailed'));
     if (!dir) {
         return;
     }

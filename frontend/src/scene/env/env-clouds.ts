@@ -12,7 +12,7 @@ import {
     DirectionalLight,
     RawTexture3D,
 } from '@babylonjs/core';
-import { EnvState } from '../../core/config';
+import { EnvState } from '@/core/config';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 
 // ======== Cloud System Constants ========

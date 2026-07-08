@@ -6,8 +6,8 @@ import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 
-import { modelRegistry, uiState } from '../../core/config';
-import { triggerAutoSave } from '../../core/config';
+import { modelRegistry, uiState } from '@/core/config';
+import { triggerAutoSave } from '@/core/config';
 
 // ======== 外部材质目标注册表 ========
 // 让 propRegistry 等 non-model 资源也能复用 id-based 材质 API。

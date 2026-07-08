@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
+import path from 'path';
 
 // Babylon 相关包：生产构建时从 Bundle 中 externalize，改为 script 标签引入
 const BABYLON_EXTERNAL = [
@@ -26,6 +27,12 @@ export default defineConfig(({ command }) => {
   });
 
   return {
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, 'src'),
+        '@bindings': path.resolve(__dirname, 'bindings'),
+      },
+    },
     server: {
       // 强制 IPv4 监听，修复 Go ExternalAssetHandler 连 127.0.0.1 被拒的问题
       host: '127.0.0.1',

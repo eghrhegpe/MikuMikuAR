@@ -16,10 +16,10 @@ import {
     PROC_VMD_NAME_IDLE,
     PROC_VMD_NAME_AUTODANCE,
     PROC_VMD_NAME_LIFELIKE,
-} from '../../motion-algos/procedural-motion';
-import { BeatDetector } from '../../motion-algos/beat-detector';
-import { mmdRuntime, triggerAutoSave, focusedModelId } from '../../core/config';
-import { isAudioPlaying } from '../../outfit/audio';
+} from '@/motion-algos/procedural-motion';
+import { BeatDetector } from '@/motion-algos/beat-detector';
+import { mmdRuntime, triggerAutoSave, focusedModelId } from '@/core/config';
+import { isAudioPlaying } from '@/outfit/audio';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from '../scene';
 import { addVmdLayer, removeVmdLayer, getVmdLayers, clearVmdLayers } from './vmd-layers';
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';

@@ -3,8 +3,8 @@
 // 职责: 管理摄像头视频流, 提供 start/stop/switchFacing 接口, 维护 <video> 元素
 // 渲染合成策略: 透明 canvas + CSS <video> 底层 (S2 方案, 性能最优)
 
-import { dom, setStatus } from '../../core/config';
-import { t } from '../../core/i18n/t';
+import { dom, setStatus } from '@/core/config';
+import { t } from '@/core/i18n/t';
 
 // ======== Types ========
 export type CameraFacing = 'user' | 'environment';

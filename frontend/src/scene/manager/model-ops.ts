@@ -8,12 +8,12 @@ import {
     dom,
     setPendingVmd,
     mmdRuntime,
-} from '../../core/config';
+} from '@/core/config';
 import { _catState, _matState, _matEnabled, disposeModelMaterialState } from './material';
 import { refreshWaterRenderList } from '../env/env';
 import { getCameraMode, switchCameraMode } from '../camera/camera';
 import { updatePlaybackUI } from '../motion/playback';
-import { disposeAudio } from '../../outfit/audio';
+import { disposeAudio } from '@/outfit/audio';
 import { modelManager } from '../scene';
 import type { FormationType } from './model-manager';
 import { getFormationLabels } from './model-manager';
@@ -199,7 +199,7 @@ export function resetModelMorphs(id: string): void {
 
 // ======== VPD Pose ========
 
-import type { VPDBoneData, VPDMorphData } from '../../motion-algos/vpd-parser';
+import type { VPDBoneData, VPDMorphData } from '@/motion-algos/vpd-parser';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 

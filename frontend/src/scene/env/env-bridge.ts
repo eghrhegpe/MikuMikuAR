@@ -3,13 +3,13 @@
 // 职责: envAutoLink、太阳角、时间流转、环境预设、setEnvState、重力控制
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
-import { SetEnvState, SetUIState } from '../../core/wails-bindings';
+import { SetEnvState, SetUIState } from '@/core/wails-bindings';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 
-import { envState, EnvState, triggerAutoSave, mmdRuntime } from '../../core/config';
-import { uiState, setUIPersistCallback } from '../../core/state';
-import type { UIState } from '../../core/types';
+import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
+import { uiState, setUIPersistCallback } from '@/core/state';
+import type { UIState } from '@/core/types';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { deriveLighting, TIME_OF_DAY_PRESETS } from './env-lighting';
 import * as impl from './env-impl';
@@ -341,6 +341,12 @@ export function applyEnvPresetObject(preset: {
     const myId = _presetAnimId;
     envSunAngle = preset.sunAngle;
 
+    // 暂停 time-of-day，防止其每帧覆盖 sunAngle 导致天空纹理重复重建
+    const wasTimeOfDayActive = _timeOfDayActive;
+    if (wasTimeOfDayActive) {
+        _timeOfDayActive = false;
+    }
+
     const mid: [number, number, number] = [
         (preset.skyColorTop[0] + preset.skyColorBot[0]) / 2,
         (preset.skyColorTop[1] + preset.skyColorBot[1]) / 2,
@@ -439,6 +445,12 @@ export function applyEnvPresetObject(preset: {
 
         if (t >= 1) {
             setSkipLightAutoSave(false);
+            // 恢复 time-of-day（如果之前是激活的）
+            if (wasTimeOfDayActive) {
+                _timeOfDayActive = true;
+                _lastSkySunAngle = envSunAngle;
+                _lastAutoLinkSunAngle = envSunAngle;
+            }
             SetEnvState(envState).catch(
                 () => {}
             );

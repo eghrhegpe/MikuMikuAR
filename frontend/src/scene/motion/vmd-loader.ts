@@ -17,13 +17,13 @@ import {
     triggerAutoSave,
     addRecentMotion,
     dom,
-} from '../../core/config';
-import { resolveFileUrl, normPath, encodeFileRef } from '../../core/fileservice';
-import { t } from '../../core/i18n/t';
+} from '@/core/config';
+import { resolveFileUrl, normPath, encodeFileRef } from '@/core/fileservice';
+import { t } from '@/core/i18n/t';
 import { loadCameraVmd } from '../camera/camera';
-import { loadAudioFile } from '../../outfit/audio';
-import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '../../motion-algos/procedural-motion';
-import { isAutoLoadCompanionAudioEnabled } from '../../menus/settings';
+import { loadAudioFile } from '@/outfit/audio';
+import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '@/motion-algos/procedural-motion';
+import { isAutoLoadCompanionAudioEnabled } from '@/menus/settings';
 
 // Dynamic re-import of scene.ts to access its module-level state
 // (scene, focusedMmdModel, focusedModel, isProcVmdActive, stopProcMotion)

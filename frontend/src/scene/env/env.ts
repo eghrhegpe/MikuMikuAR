@@ -2,7 +2,7 @@
 // Delegates all environment calls to scene-env-impl.ts
 // External modules should ONLY import from this file.
 import * as impl from './env-impl';
-import { EnvState, envState } from '../../core/config';
+import { EnvState, envState } from '@/core/config';
 
 // Re-export _envSys for backward compatibility (used by scene.ts)
 export { _envSys } from './env-impl';

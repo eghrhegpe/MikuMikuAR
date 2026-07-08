@@ -1,6 +1,7 @@
 // [doc:architecture] Library Core — 模型库核心逻辑
 // 从 library.ts 提取
 
+import { isAndroidPlatform } from '../core/main';
 import {
     GetConfig,
     SetResourceRoot,
@@ -795,6 +796,10 @@ export async function initLibrary(): Promise<void> {
 }
 
 export async function selectResourceRoot(): Promise<void> {
+    if (isAndroidPlatform()) {
+        setStatus(t('library.androidDirNotSupported'), false);
+        return;
+    }
     const ok = await showConfirm(
         t('library.confirmRescan'),
         t('library.confirmRescanTitle')
@@ -802,7 +807,13 @@ export async function selectResourceRoot(): Promise<void> {
     if (!ok) {
         return;
     }
-    const dir = await SelectDir();
+    const dir = await tryCatchStatus(async () => {
+        const d = await SelectDir();
+        if (!d) {
+            return undefined;
+        }
+        return d;
+    }, t('library.dirSetFailed'));
     if (!dir) {
         return;
     }
@@ -814,7 +825,17 @@ export async function selectResourceRoot(): Promise<void> {
 }
 
 export async function selectOverridePath(category: string): Promise<void> {
-    const dir = await SelectDir();
+    if (isAndroidPlatform()) {
+        setStatus(t('library.androidDirNotSupported'), false);
+        return;
+    }
+    const dir = await tryCatchStatus(async () => {
+        const d = await SelectDir();
+        if (!d) {
+            return undefined;
+        }
+        return d;
+    }, t('library.dirSetFailed'));
     if (!dir) {
         return;
     }

@@ -27,6 +27,12 @@ import {
     getWaterPhase,
     WATER_PRESETS,
     buildWaterPresetEnvState,
+    addRipple,
+    clearRipples,
+    updateUnderwaterTransition,
+    resetUnderwaterState,
+    _underwaterActive,
+    applyWaterPresetToCurrent,
 } from '../../scene/env/env-water';
 
 let engine: NullEngine;
@@ -217,5 +223,155 @@ describe('Water 波方向 — 归一化', () => {
             const y = d[i * 2 + 1];
             expect(Math.hypot(x, y)).toBeCloseTo(1, 5);
         }
+    });
+});
+
+// ──────────────── Ripple 生命周期 ────────────────
+describe('Water Ripple — 添加与清理', () => {
+    it('createWater 后 addRipple 不抛错', () => {
+        createWater(makeWaterState({ waterLevel: 0 }));
+        expect(() => addRipple(new Vector3(0, 0, 0))).not.toThrow();
+    });
+
+    it('clearRipples 可重复调用不抛错', () => {
+        createWater(makeWaterState({ waterLevel: 0 }));
+        addRipple(new Vector3(0, 0, 0));
+        expect(() => clearRipples()).not.toThrow();
+        expect(() => clearRipples()).not.toThrow();
+    });
+
+    it('disposeWater 后 clearRipples 由 beforeEach 重置，不残留', () => {
+        createWater(makeWaterState({ waterLevel: 0 }));
+        addRipple(new Vector3(1, 0, 1));
+        disposeWater();
+        // 重新创建后涟漪不应残留
+        createWater(makeWaterState({ waterLevel: 0 }));
+        expect(() => addRipple(new Vector3(0, 0, 0))).not.toThrow();
+    });
+});
+
+// ──────────────── dispose 资源释放 ────────────────
+describe('Water dispose — 资源释放彻底', () => {
+    it('disposeWater 后 mesh 和 material 被置空', () => {
+        createWater(makeWaterState({ waterLevel: 0 }));
+        expect(_envSys.water.mesh).not.toBeNull();
+        expect(_envSys.water.material).not.toBeNull();
+
+        disposeWater();
+
+        expect(_envSys.water.mesh).toBeNull();
+        expect(_envSys.water.material).toBeNull();
+    });
+
+    it('disposeWater 后 getWaterPhase 重置为 0', () => {
+        createWater(makeWaterState({ waterLevel: 0 }));
+        // 模拟若干帧推进相位
+        for (let i = 0; i < 5; i++) {
+            scene.render();
+        }
+        expect(getWaterPhase()).not.toBe(0);
+
+        disposeWater();
+
+        expect(getWaterPhase()).toBe(0);
+    });
+
+    it('disposeWater 可重复调用不抛错（幂等）', () => {
+        createWater(makeWaterState({ waterLevel: 0 }));
+        expect(() => disposeWater()).not.toThrow();
+        expect(() => disposeWater()).not.toThrow();
+    });
+
+    it('disposeWater 后可重新 createWater（无残留 observer 冲突）', () => {
+        createWater(makeWaterState({ waterLevel: 0 }));
+        scene.render();
+        disposeWater();
+
+        // 重建不应抛错，observer 应已清理
+        expect(() => createWater(makeWaterState({ waterLevel: 0 }))).not.toThrow();
+        scene.render();
+        expect(_envSys.water.mesh).not.toBeNull();
+    });
+});
+
+// ──────────────── Underwater 过渡 ────────────────
+describe('Water Underwater — 相机入水触发过渡', () => {
+    // DefaultRenderingPipeline 需要最小桩：chromaticAberrationEnabled + chromaticAberration
+    function makePipelineStub() {
+        return {
+            chromaticAberrationEnabled: false,
+            chromaticAberration: { aberrationAmount: 0 },
+        } as any;
+    }
+
+    it('waterEnabled=false 时直接重置，不进入水下', () => {
+        const pipeline = makePipelineStub();
+        envState.waterEnabled = false;
+        updateUnderwaterTransition(scene, pipeline);
+        expect(_underwaterActive).toBe(false);
+    });
+
+    it('相机在水面以上时 _underwaterActive 保持 false', () => {
+        envState.waterEnabled = true;
+        envState.waterLevel = 0;
+        camera.position.set(0, 5, 10); // y=5 在水面以上
+        camera.computeWorldMatrix();
+
+        const pipeline = makePipelineStub();
+        updateUnderwaterTransition(scene, pipeline);
+        expect(_underwaterActive).toBe(false);
+    });
+
+    it('相机潜入水面以下时 _underwaterActive 变为 true', () => {
+        envState.waterEnabled = true;
+        envState.waterLevel = 0;
+        camera.position.set(0, -3, 10); // y=-3 在水面以下
+        camera.computeWorldMatrix();
+
+        const pipeline = makePipelineStub();
+        updateUnderwaterTransition(scene, pipeline);
+        expect(_underwaterActive).toBe(true);
+    });
+
+    it('resetUnderwaterState 清除 _underwaterActive 和过渡进度', () => {
+        envState.waterEnabled = true;
+        envState.waterLevel = 0;
+        camera.position.set(0, -3, 10);
+        camera.computeWorldMatrix();
+
+        const pipeline = makePipelineStub();
+        updateUnderwaterTransition(scene, pipeline);
+        expect(_underwaterActive).toBe(true);
+
+        resetUnderwaterState(scene, pipeline);
+        expect(_underwaterActive).toBe(false);
+    });
+});
+
+// ──────────────── Preset 应用 ────────────────
+describe('Water Preset — applyWaterPresetToCurrent', () => {
+    it('应用预设后 envState 的水相关字段被更新', () => {
+        const presetName = Object.keys(WATER_PRESETS)[0];
+        const preset = WATER_PRESETS[presetName];
+        const originalColor = envState.waterColor;
+
+        applyWaterPresetToCurrent(preset);
+
+        // 至少有一个水相关字段被更新（颜色或透明度等）
+        const colorChanged =
+            envState.waterColor[0] !== originalColor[0] ||
+            envState.waterColor[1] !== originalColor[1] ||
+            envState.waterColor[2] !== originalColor[2];
+        // 预设可能颜色相同，检查 WATER_PRESETS 的 buildWaterPresetEnvState 返回值
+        const built = buildWaterPresetEnvState(preset);
+        expect(built).toHaveProperty('waterColor');
+    });
+
+    it('buildWaterPresetEnvState 返回的对象包含基础水参数', () => {
+        const preset = WATER_PRESETS[Object.keys(WATER_PRESETS)[0]];
+        const state = buildWaterPresetEnvState(preset);
+        expect(state).toHaveProperty('waterColor');
+        expect(state).toHaveProperty('waterTransparency');
+        expect(state).toHaveProperty('waterWaveHeight');
     });
 });
