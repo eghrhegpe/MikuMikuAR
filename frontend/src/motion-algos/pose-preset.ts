@@ -2,6 +2,8 @@
 // 职责: 程序化生成 T-pose（双臂水平）和 A-pose（双臂 45°下垂）VPD 二进制数据
 // 路线: ADR-061 §2.2 — 2A 预设法（VPD 预设，零运行时依赖）
 
+import { Quaternion } from '@babylonjs/core/Maths/math.vector';
+
 const VMD_HEADER_SIGNATURE = 'Vocaloid Motion Data 0002';
 const BONE_FRAME_SIZE = 111; // 标准 VMD 骨骼帧大小
 
@@ -25,19 +27,9 @@ export function generatePoseVmd(type: PoseType): ArrayBuffer {
 
     // 需要设置特定旋转的骨骼（按 MMD 标准骨骼名）
     function addBone(name: string, rx: number, ry: number, rz: number): void {
-        // 四元数从欧拉角（弧度）
-        const cx = Math.cos(rx / 2);
-        const sx = Math.sin(rx / 2);
-        const cy = Math.cos(ry / 2);
-        const sy = Math.sin(ry / 2);
-        const cz = Math.cos(rz / 2);
-        const sz = Math.sin(rz / 2);
-        // ZYX 顺序
-        const qw = cx * cy * cz + sx * sy * sz;
-        const qx = sx * cy * cz - cx * sy * sz;
-        const qy = cx * sy * cz + sx * cy * sz;
-        const qz = cx * cy * sz - sx * sy * cz;
-        poseData.push({ name, rotation: [qx, qy, qz, qw] });
+        // 使用 Babylon 原生 Euler→Quaternion 转换（YXZ 顺序）
+        const q = Quaternion.FromEulerAngles(rx, ry, rz);
+        poseData.push({ name, rotation: [q.x, q.y, q.z, q.w] });
     }
 
     if (type === 'tpose') {

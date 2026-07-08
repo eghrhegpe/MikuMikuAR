@@ -239,7 +239,7 @@ export type PopupLevel = {
     renderCustom?: (container: HTMLElement) => void | Promise<void>;
     reRenderCustom?: (container: HTMLElement) => void;
     /** [doc:adr-066] 保留 filter 供视图切换时传递 */
-    filter?: (m: any) => boolean;
+    filter?: (m: LibraryModel) => boolean;
 };
 
 // ======== UI State ========

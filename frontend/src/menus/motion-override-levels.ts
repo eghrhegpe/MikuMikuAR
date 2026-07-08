@@ -116,25 +116,52 @@ export function buildBoneOverrideLevel(): PopupLevel {
                 c.appendChild(applyBtn);
             });
 
-            // —— 卡片 2：已存在的覆盖列表 ——
-            const overrides = inst.boneOverrides.filter((b) => b.enabled);
-            if (overrides.length > 0) {
+            // —— 卡片 2：已存在的覆盖列表（含 disabled）——
+            const allEntries = inst.boneOverrides; // 显示全部，含 disabled
+            if (allEntries.length > 0) {
                 cardContainer(container, (c) => {
                     const title = document.createElement('div');
                     title.style.cssText = 'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                     title.textContent = t('motion.boneOverride.activeOverrides');
                     c.appendChild(title);
 
-                    for (const ov of overrides) {
+                    for (const ov of allEntries) {
                         const row = document.createElement('div');
                         row.className = 'slide-item';
                         row.style.display = 'flex';
                         row.style.alignItems = 'center';
                         row.style.justifyContent = 'space-between';
 
+                        // enable/disable toggle
+                        const toggleBtn = document.createElement('button');
+                        toggleBtn.className = 'slide-action';
+                        toggleBtn.textContent = ov.enabled ? '●' : '○';
+                        toggleBtn.title = ov.enabled ? t('motion.disable') : t('motion.enable');
+                        toggleBtn.style.opacity = ov.enabled ? '1' : '0.4';
+                        toggleBtn.addEventListener('click', () => {
+                            const updated: BoneOverrideEntry = { ...ov, enabled: !ov.enabled };
+                            inst.boneOverrides = inst.boneOverrides.map((b) =>
+                                b.boneName === ov.boneName ? updated : b
+                            );
+                            if (updated.enabled) {
+                                setBoneOverride(ov.boneName, ov.euler, ov.weight, true);
+                            } else {
+                                clearBoneOverride(ov.boneName);
+                            }
+                            setStatus(
+                                updated.enabled
+                                    ? t('motion.boneOverride.applied', { bone: ov.boneName })
+                                    : t('motion.boneOverride.removed', { bone: ov.boneName }),
+                                true
+                            );
+                            menu?.reRender();
+                        });
+                        row.appendChild(toggleBtn);
+
                         const info = document.createElement('span');
                         info.style.flex = '1';
                         info.style.fontSize = '11px';
+                        info.style.opacity = ov.enabled ? '1' : '0.35';
                         info.textContent = `${ov.boneName}  P:${ov.euler[0].toFixed(0)} Y:${ov.euler[1].toFixed(0)} R:${ov.euler[2].toFixed(0)}  W:${ov.weight.toFixed(2)}`;
 
                         const delBtn = document.createElement('button');
@@ -157,7 +184,7 @@ export function buildBoneOverrideLevel(): PopupLevel {
             }
 
             // —— 卡片 3：全部清除 ——
-            if (overrides.length > 0) {
+            if (allEntries.length > 0) {
                 cardContainer(container, (c) => {
                     const clearBtn = document.createElement('button');
                     clearBtn.className = 'preset-chip';
