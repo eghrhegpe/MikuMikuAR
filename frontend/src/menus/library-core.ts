@@ -6,6 +6,8 @@ import {
     GetConfig,
     SetResourceRoot,
     SetOverridePath,
+    SetStorageMode,
+    GetStorageMode,
     SelectDir,
     SelectImportFile,
     ImportZip,
@@ -841,6 +843,26 @@ export async function selectOverridePath(category: string): Promise<void> {
     }
     await tryCatchStatus(async () => {
         await SetOverridePath(category, dir);
+        await reloadConfig();
+        await refreshLibrary();
+    }, t('library.dirSetFailed'));
+}
+
+export async function switchStorageMode(mode: 'private' | 'shared'): Promise<void> {
+    if (!isAndroidPlatform()) {
+        return;
+    }
+    const ok = await showConfirm(
+        mode === 'shared'
+            ? t('library.confirmSwitchShared')
+            : t('library.confirmSwitchPrivate'),
+        t('library.confirmSwitchTitle')
+    );
+    if (!ok) {
+        return;
+    }
+    await tryCatchStatus(async () => {
+        await SetStorageMode(mode);
         await reloadConfig();
         await refreshLibrary();
     }, t('library.dirSetFailed'));

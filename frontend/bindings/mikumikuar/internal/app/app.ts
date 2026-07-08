@@ -287,6 +287,14 @@ export function GetRenderPresets(): $CancellablePromise<$models.RenderPreset[] |
 }
 
 /**
+ * GetStorageMode returns the current storage mode ("private" or "shared").
+ * On desktop always returns "shared".
+ */
+export function GetStorageMode(): $CancellablePromise<string> {
+    return $Call.ByID(2074302625);
+}
+
+/**
  * GetTagsByModel returns the tags for a specific model.
  */
 export function GetTagsByModel(libraryRef: string): $CancellablePromise<string[] | null> {
@@ -579,7 +587,9 @@ export function SelectBundleSaveFile(): $CancellablePromise<string> {
 
 /**
  * SelectDir opens a directory picker dialog.
- * On Android, uses Wails v3 SAF-based file picker (GOOS=android).
+ * On Android: returns the current resource root directly (Wails v3 does not
+ * support directory selection on Android). Users switch storage mode via
+ * SetStorageMode instead.
  */
 export function SelectDir(): $CancellablePromise<string> {
     return $Call.ByID(1910889222);
@@ -720,6 +730,15 @@ export function SetPerformanceMode(mode: string): $CancellablePromise<void> {
  */
 export function SetResourceRoot(root: string): $CancellablePromise<void> {
     return $Call.ByID(4185962653, root);
+}
+
+/**
+ * SetStorageMode switches the resource root between private and shared directories.
+ * Android only: "private" → app-specific dir, "shared" → /sdcard/MMD (needs MANAGE_EXTERNAL_STORAGE).
+ * On desktop this is a no-op.
+ */
+export function SetStorageMode(mode: string): $CancellablePromise<void> {
+    return $Call.ByID(2011334917, mode);
 }
 
 /**

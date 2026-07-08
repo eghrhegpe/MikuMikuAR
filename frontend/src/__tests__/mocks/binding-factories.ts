@@ -302,6 +302,7 @@ export function createMockConfig(overrides?: Partial<Config>): Config {
         config_version: 1,
         ui_state: createMockUIState(),
         resource_root: '',
+        storage_mode: 'private',
         override_paths: createMockOverridePaths(),
         external_paths: null,
         blender_path: '',

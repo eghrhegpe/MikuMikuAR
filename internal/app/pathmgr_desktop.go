@@ -30,3 +30,11 @@ func (d *desktopPathMgr) ResourceRoot() string {
 		return filepath.Join(home, "MMD")
 	}
 }
+
+func (d *desktopPathMgr) PrivateResourceRoot() string {
+	return d.ResourceRoot()
+}
+
+func (d *desktopPathMgr) SharedResourceRoot() string {
+	return d.ResourceRoot()
+}

@@ -318,6 +318,7 @@ type Config struct {
 	UIState             UIState             `json:"ui_state"`
 	LibraryRoot         string              `json:"library_root,omitempty"` // 迁移后清空，保留字段用于自动迁移
 	ResourceRoot        string              `json:"resource_root"`          // 总根目录
+	StorageMode         string              `json:"storage_mode"`           // "private" | "shared" (Android only)
 	OverridePaths       OverridePaths       `json:"override_paths"`        // 各类型路径覆写
 	ExternalPaths       []ExternalPath      `json:"external_paths"`
 	BlenderPath         string              `json:"blender_path"`

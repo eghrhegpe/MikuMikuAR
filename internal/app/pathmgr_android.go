@@ -22,3 +22,11 @@ func (a *androidPathMgr) CacheRoot() (string, error) {
 func (a *androidPathMgr) ResourceRoot() string {
 	return "/storage/emulated/0/Android/data/com.mikumikuar.app/files/MMD"
 }
+
+func (a *androidPathMgr) PrivateResourceRoot() string {
+	return "/storage/emulated/0/Android/data/com.mikumikuar.app/files/MMD"
+}
+
+func (a *androidPathMgr) SharedResourceRoot() string {
+	return "/sdcard/MMD"
+}

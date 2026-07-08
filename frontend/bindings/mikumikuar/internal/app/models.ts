@@ -64,6 +64,11 @@ export interface Config {
     "resource_root": string;
 
     /**
+     * "private" | "shared" (Android only)
+     */
+    "storage_mode": string;
+
+    /**
      * 各类型路径覆写
      */
     "override_paths": OverridePaths;

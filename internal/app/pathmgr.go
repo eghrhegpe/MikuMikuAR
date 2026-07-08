@@ -12,6 +12,14 @@ type PathManager interface {
 	CacheRoot() (string, error)
 	// ResourceRoot returns default user resource root (e.g. ~/MMD).
 	ResourceRoot() string
+	// PrivateResourceRoot returns the app-private resource directory.
+	// On Android: /storage/emulated/0/Android/data/<pkg>/files/MMD
+	// On desktop: same as ResourceRoot()
+	PrivateResourceRoot() string
+	// SharedResourceRoot returns the shared/public resource directory.
+	// On Android: /sdcard/MMD (requires MANAGE_EXTERNAL_STORAGE)
+	// On desktop: same as ResourceRoot()
+	SharedResourceRoot() string
 }
 
 // platformPathMgr is the active platform implementation.

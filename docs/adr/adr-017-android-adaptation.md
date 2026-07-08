@@ -76,6 +76,7 @@
 | WASM 物理 | ✅ Android Chrome WebView 支持 WASM + SharedArrayBuffer | Chromium 引擎 |
 | `canvas.toDataURL` | ✅ Wails WebView 无跨域 canvas 安全问题 | 自定义协议加载 |
 | 音频 `AudioContext` | ✅ Android WebView 支持 Web Audio API | 自动播放需用户手势触发 |
+| `index.html` 中 `/lib/babylon.js` 绝对路径 404 | ✅ 不 404；`WebViewAssetLoader` 将 base URL 钉死在 `wails://host/`，`/lib/babylon.js` 始终解析为 `wails://host/lib/babylon.js` 由 `WailsPathHandler` 服务（先 Go `embed.FS` `serveAsset`，失败回退 APK assets）。改为相对路径 `lib/babylon.js` 在当前文档基址下解析结果完全相同，属 no-op，无需改动 | `MainActivity.loadApplication()` 用 `loadUrl("wails://host/")` + `addPathHandler("/", new WailsPathHandler(...))`；`WailsPathHandler.handle()` 去前导斜杠后 `serveAsset(goPath)` |
 
 ---
 
