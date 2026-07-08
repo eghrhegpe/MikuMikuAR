@@ -3,8 +3,10 @@ package app
 import (
 	"archive/zip"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -13,8 +15,17 @@ import (
 )
 
 // SelectDir opens a directory picker dialog.
-// On Android, uses Wails v3 SAF-based file picker (GOOS=android).
+// On Android: returns the current resource root directly (Wails v3 does not
+// support directory selection on Android). Users switch storage mode via
+// SetStorageMode instead.
 func (a *App) SelectDir() (string, error) {
+	if runtime.GOOS == "android" {
+		cfg, err := a.GetConfig()
+		if err != nil {
+			return "", util.WrapErrorf("SelectDir", "get config", err)
+		}
+		return cfg.ResourceRoot, nil
+	}
 	return dialogs.SelectLibraryDir(a.wailsApp)
 }
 
@@ -365,6 +376,26 @@ func (a *App) finaliseConfig(cfg *Config) {
 	// Stamp current version
 	cfg.ConfigVersion = currentConfigVersion
 
+	// Android: apply storage mode if set, default to "private"
+	if runtime.GOOS == "android" {
+		if cfg.StorageMode == "" {
+			cfg.StorageMode = "private"
+		}
+		// If resource root is empty or matches the old default, sync with storage mode
+		oldDefault := "/sdcard/MMD"
+		privateDir := platformPathMgr.PrivateResourceRoot()
+		sharedDir := platformPathMgr.SharedResourceRoot()
+		if cfg.ResourceRoot == "" || cfg.ResourceRoot == oldDefault ||
+			cfg.ResourceRoot == privateDir || cfg.ResourceRoot == sharedDir {
+			switch cfg.StorageMode {
+			case "shared":
+				cfg.ResourceRoot = sharedDir
+			default:
+				cfg.ResourceRoot = privateDir
+			}
+		}
+	}
+
 	// Ensure resource directories exist
 	a.ensureResourceDirs(cfg)
 }
@@ -435,6 +466,44 @@ func (a *App) SetOverridePath(category string, path string) error {
 			cfg.OverridePaths.Setting = path
 		}
 	}, true)
+}
+
+// SetStorageMode switches the resource root between private and shared directories.
+// Android only: "private" → app-specific dir, "shared" → /sdcard/MMD (needs MANAGE_EXTERNAL_STORAGE).
+// On desktop this is a no-op.
+func (a *App) SetStorageMode(mode string) error {
+	if runtime.GOOS != "android" {
+		return nil
+	}
+	if mode != "private" && mode != "shared" {
+		return fmt.Errorf("invalid storage mode: %s", mode)
+	}
+	return a.updateConfig(func(cfg *Config) {
+		cfg.StorageMode = mode
+		switch mode {
+		case "shared":
+			cfg.ResourceRoot = platformPathMgr.SharedResourceRoot()
+		default:
+			cfg.ResourceRoot = platformPathMgr.PrivateResourceRoot()
+		}
+		cfg.OverridePaths = OverridePaths{} // reset overrides to re-derive from new root
+	}, true)
+}
+
+// GetStorageMode returns the current storage mode ("private" or "shared").
+// On desktop always returns "shared".
+func (a *App) GetStorageMode() (string, error) {
+	if runtime.GOOS != "android" {
+		return "shared", nil
+	}
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return "private", util.WrapErrorf("GetStorageMode", "get config", err)
+	}
+	if cfg.StorageMode == "" {
+		return "private", nil
+	}
+	return cfg.StorageMode, nil
 }
 
 // AddExternalPath adds an external library path with auto-generated basename name, triggers rescan+reindex.

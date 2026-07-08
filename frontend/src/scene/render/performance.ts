@@ -16,8 +16,8 @@ type DegradeLevel = 0 | 1 | 2 | 3;
 // ======== State ========
 
 let _mode: PerformanceMode = 'auto';
-const _degradeCooldownMs = 5000; // 降级后冷却 5 秒
-const _recoveryCooldownMs = 3000; // 恢复冷却 3 秒（防止帧率抖动导致频繁切换）
+const _degradeCooldownMs = 3000; // 降级后冷却 3 秒（缩短以加快响应）
+const _recoveryCooldownMs = 2000; // 恢复冷却 2 秒（缩短以加快响应）
 let _lastDegradeTime = 0;
 let _lastRecoveryTime = 0;
 let _currentLevel: DegradeLevel = 0;
@@ -262,16 +262,16 @@ function applyDegrade(level: DegradeLevel, force = false): void {
 // 降级阈值（帧率低于此值则降级）
 const DEGRADE_THRESHOLDS: Record<DegradeLevel, number> = {
     0: Infinity, // 不降级
-    1: 25, // FPS < 25 → level 1
-    2: 18, // FPS < 18 → level 2
-    3: 12, // FPS < 12 → level 3
+    1: 28, // FPS < 28 → level 1（原 25，收紧提前干预）
+    2: 20, // FPS < 20 → level 2（原 18，收紧）
+    3: 14, // FPS < 14 → level 3（原 12，收紧）
 };
 // 恢复阈值（帧率高于此值才允许恢复）
 const RECOVERY_THRESHOLDS: Record<DegradeLevel, number> = {
     0: Infinity,
-    1: 32, // FPS > 32 才从 level 1 恢复
-    2: 26, // FPS > 26 才从 level 2 恢复
-    3: 20, // FPS > 20 才从 level 3 恢复
+    1: 32, // FPS > 32 才从 level 1 恢复（gap 4，原 7）
+    2: 24, // FPS > 24 才从 level 2 恢复（gap 4，原 8）
+    3: 18, // FPS > 18 才从 level 3 恢复（gap 4，原 8）
 };
 
 // ======== Public API ========

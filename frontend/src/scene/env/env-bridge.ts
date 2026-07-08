@@ -316,6 +316,7 @@ export function syncTimeOfDayFromEnv(): void {
 // ======== Environment Presets ========
 
 let _presetAnimId = 0; // 动画 ID，每次新预设递增，用于取消旧动画
+let _timeOfDayBeforePreset: boolean | null = null; // 预设动画前的 time-of-day 状态
 
 export function applyEnvPreset(name: string): boolean {
     const preset = TIME_OF_DAY_PRESETS[name];
@@ -342,8 +343,11 @@ export function applyEnvPresetObject(preset: {
     envSunAngle = preset.sunAngle;
 
     // 暂停 time-of-day，防止其每帧覆盖 sunAngle 导致天空纹理重复重建
-    const wasTimeOfDayActive = _timeOfDayActive;
-    if (wasTimeOfDayActive) {
+    // 仅在第一个预设动画开始时记录原始状态（后续切换保持记录不变）
+    if (_timeOfDayBeforePreset === null) {
+        _timeOfDayBeforePreset = _timeOfDayActive;
+    }
+    if (_timeOfDayActive) {
         _timeOfDayActive = false;
     }
 
@@ -388,7 +392,8 @@ export function applyEnvPresetObject(preset: {
 
     const animLoop = () => {
         if (_presetAnimId !== myId) {
-            setSkipLightAutoSave(false);
+            // 旧动画被取消：不重置 _skipLightAutoSave（新动画已接管）
+            // 不恢复 time-of-day（新动画已接管）
             return;
         }
         const elapsed = performance.now() - startTime;
@@ -445,12 +450,13 @@ export function applyEnvPresetObject(preset: {
 
         if (t >= 1) {
             setSkipLightAutoSave(false);
-            // 恢复 time-of-day（如果之前是激活的）
-            if (wasTimeOfDayActive) {
+            // 恢复 time-of-day（如果预设动画前是激活的）
+            if (_timeOfDayBeforePreset) {
                 _timeOfDayActive = true;
                 _lastSkySunAngle = envSunAngle;
                 _lastAutoLinkSunAngle = envSunAngle;
             }
+            _timeOfDayBeforePreset = null;
             SetEnvState(envState).catch(
                 () => {}
             );

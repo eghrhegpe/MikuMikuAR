@@ -1085,14 +1085,13 @@ describe('_presetAnimId cancellation', () => {
         mockSetSkipLightAutoSave.mockClear();
         vi.advanceTimersByTime(3000);
 
-        // setSkipLightAutoSave(false) fires twice:
-        // 1. Cancellation: first anim loop detects _presetAnimId mismatch
-        // 2. Completion: second anim loop finishes at t >= 1
+        // setSkipLightAutoSave(false) fires only once:
+        // Cancellation does NOT reset flag (new animation has taken over)
         expect(mockSetSkipLightAutoSave).toHaveBeenLastCalledWith(false);
         const falseCalls = mockSetSkipLightAutoSave.mock.calls.filter(
             (call: any[]) => call[0] === false
         );
-        expect(falseCalls.length).toBe(2);
+        expect(falseCalls.length).toBe(1);
     });
 
     it('completing second preset calls setLightState at completion', () => {

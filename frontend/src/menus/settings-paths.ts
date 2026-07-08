@@ -4,14 +4,17 @@ import {
     ClearExtractCache,
     ClearThumbnailCache,
     ClearAllCaches,
+    GetStorageMode,
+    SetStorageMode,
 } from '../core/wails-bindings';
 import { setStatus, resourceRoot, overridePaths, cardContainer, PopupRow } from '../core/config';
-import { slideRow, addDangerRow } from '../core/ui-helpers';
+import { slideRow, addDangerRow, addModeRow } from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
-import { selectResourceRoot, selectOverridePath } from './library-core';
+import { selectResourceRoot, selectOverridePath, switchStorageMode } from './library-core';
 import { t } from '../core/i18n/t';
 import type { PopupLevel } from '../core/config';
 import { SETTINGS, SETTINGS_ACTION } from './settings-targets';
+import { isAndroidPlatform } from '../core/main';
 
 type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
 
@@ -79,6 +82,7 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
     const root = resourceRoot;
     const rootSub = root ? (root.length > 20 ? '...' + root.slice(-17) : root) : '未设置';
     const paths = overridePaths || {};
+    const isAndroid = isAndroidPlatform();
     // key → 默认子目录名（与 Go 端 GetPath 的目录名一致，大小写不统一）
     const defaultDirName: Record<string, string> = {
         pmx: 'PMX',
@@ -106,24 +110,54 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
         label: '路径',
         dir: '',
         items: [],
-        renderCustom: (container) => {
-            // Card 1: 资源根目录
-            cardContainer(container, (c) => {
-                slideRow(
-                    c,
-                    'lucide:folder',
-                    '资源根目录',
-                    false,
-                    () =>
-                        handleSettingsAction({
-                            kind: 'action',
-                            label: '',
-                            icon: '',
-                            target: SETTINGS_ACTION.RESOURCE_ROOT,
-                        }),
-                    rootSub
-                );
-            });
+        renderCustom: async (container) => {
+            // Card 1: 资源根目录 / 存储位置（Android）
+            if (isAndroid) {
+                let currentMode = 'private';
+                try {
+                    currentMode = (await GetStorageMode()) || 'private';
+                } catch {
+                    // ignore
+                }
+                cardContainer(container, (c) => {
+                    addModeRow<string>(
+                        c,
+                        t('settings.storageMode'),
+                        [
+                            { value: 'private', label: t('settings.storagePrivate') },
+                            { value: 'shared', label: t('settings.storageShared') },
+                        ],
+                        currentMode,
+                        (mode) => {
+                            switchStorageMode(mode as 'private' | 'shared').then(() => {
+                                getSettingsMenu()?.reRender();
+                            });
+                        }
+                    );
+                    const desc = document.createElement('div');
+                    desc.className = 'storage-mode-desc';
+                    desc.style.cssText = 'font-size:11px;color:var(--text-secondary);padding:2px 12px 8px;line-height:1.4';
+                    desc.textContent = t('settings.storageModeDesc');
+                    c.appendChild(desc);
+                });
+            } else {
+                cardContainer(container, (c) => {
+                    slideRow(
+                        c,
+                        'lucide:folder',
+                        '资源根目录',
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.RESOURCE_ROOT,
+                            }),
+                        rootSub
+                    );
+                });
+            }
             // Card 2: 资源路径覆盖
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:box', 'PMX 模型', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PMX }), pathSub('pmx', '默认'));

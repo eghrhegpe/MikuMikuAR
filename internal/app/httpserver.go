@@ -246,8 +246,21 @@ func (a *App) IsolateModelDir(filePath string) (string, error) {
 }
 
 func (a *App) isolateModelDirUnsafe(filePath string) (string, error) {
-	if a.isSafePath(filePath) {
+	if a.isSafePath(filePath) || isUnderExtractedCache(filePath) {
 		return filepath.Dir(filePath), nil
 	}
 	return isolateDir(filePath, a.safeLogError)
+}
+
+// isUnderExtractedCache reports whether filePath is inside the extracted zip cache
+// directory (%LOCALAPPDATA%/MikuMikuAR/extracted). Files under this path are already
+// in an app-private cache created by ExtractZip and do not need isolateDir copy.
+func isUnderExtractedCache(filePath string) bool {
+	extracted, err := extractedDir()
+	if err != nil {
+		return false
+	}
+	slash := filepath.ToSlash(filePath)
+	extractedSlash := strings.TrimRight(filepath.ToSlash(extracted), "/") + "/"
+	return strings.HasPrefix(slash, extractedSlash)
 }
