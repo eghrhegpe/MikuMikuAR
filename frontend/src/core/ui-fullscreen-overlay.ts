@@ -5,8 +5,8 @@
 // ======== Types ========
 
 export interface FullscreenOverlayOptions {
-    /** 渲染内容的工厂函数 */
-    renderContent: (container: HTMLElement) => void;
+    /** 渲染内容的工厂函数；navigate 可用于在全屏内跳转到新内容 */
+    renderContent: (container: HTMLElement, navigate: (title: string, render: (c: HTMLElement) => void) => void) => void;
     /** 标题 */
     title: string;
     /** 返回回调 */
@@ -123,6 +123,9 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
         animation: fadeIn 0.2s ease-out;
     `;
 
+    // 内部导航栈
+    const navStack: { title: string; render: (c: HTMLElement) => void }[] = [];
+
     // 顶部栏
     const header = document.createElement('div');
     header.className = 'fullscreen-header';
@@ -135,14 +138,21 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
         background: var(--card-bg);
     `;
 
-    // 返回按钮
+    // 返回按钮 — 有导航历史时弹栈，否则关闭全屏
     const backBtn = document.createElement('button');
     backBtn.className = 'btn btn-ghost btn-sm';
     backBtn.textContent = '←';
     backBtn.title = '返回';
     backBtn.addEventListener('click', () => {
-        closeFullscreen();
-        options.onBack();
+        if (navStack.length > 0) {
+            const prev = navStack.pop()!;
+            titleEl.textContent = prev.title;
+            content.innerHTML = '';
+            prev.render(content);
+        } else {
+            closeFullscreen();
+            options.onBack();
+        }
     });
 
     // 标题
@@ -176,7 +186,16 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
         overflow-y: auto;
         padding: 16px;
     `;
-    options.renderContent(content);
+
+    // navigate 回调 — 在全屏内跳转到新内容
+    const navigate = (newTitle: string, newRender: (c: HTMLElement) => void) => {
+        navStack.push({ title: titleEl.textContent || '', render: (c) => options.renderContent(c, navigate) });
+        titleEl.textContent = newTitle;
+        content.innerHTML = '';
+        newRender(content);
+    };
+
+    options.renderContent(content, navigate);
 
     overlay.appendChild(header);
     overlay.appendChild(content);

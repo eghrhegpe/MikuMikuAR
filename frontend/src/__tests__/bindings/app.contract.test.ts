@@ -611,7 +611,7 @@ describe('binding contract: method IDs', () => {
         for (const name of expectedFunctions) {
             const fn = mod[name];
             const id = extractByID(fn);
-            expect(id).withContext(`${name} missing $Call.ByID`).not.toBeNull();
+            expect(id, `${name} missing $Call.ByID`).not.toBeNull();
         }
     });
 });

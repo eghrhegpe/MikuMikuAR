@@ -46,6 +46,13 @@ if ($Arch -eq "arm64") {
 $outputDir = "$projectDir\build\android\app\src\main\jniLibs\$jniDir"
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 
+# 保存原始环境变量，以便编译后恢复，防止污染后续构建
+$origCGO_ENABLED = $env:CGO_ENABLED
+$origGOOS = $env:GOOS
+$origGOARCH = $env:GOARCH
+$origCC = $env:CC
+$origCXX = $env:CXX
+
 $env:CGO_ENABLED = "1"
 $env:GOOS = "android"
 $env:GOARCH = $GOARCH
@@ -72,6 +79,12 @@ try {
     & go build -buildmode=c-shared -overlay $overlayJson $buildFlags -o "$outputDir\libwails.so" 2>&1
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 } finally {
+    # 恢复原始环境变量（Cleanup GOARCH / CC / GOOS / CXX / CGO_ENABLED）
+    if ($null -eq $origCGO_ENABLED) { Remove-Item Env:\CGO_ENABLED -ErrorAction SilentlyContinue } else { $env:CGO_ENABLED = $origCGO_ENABLED }
+    if ($null -eq $origGOOS) { Remove-Item Env:\GOOS -ErrorAction SilentlyContinue } else { $env:GOOS = $origGOOS }
+    if ($null -eq $origGOARCH) { Remove-Item Env:\GOARCH -ErrorAction SilentlyContinue } else { $env:GOARCH = $origGOARCH }
+    if ($null -eq $origCC) { Remove-Item Env:\CC -ErrorAction SilentlyContinue } else { $env:CC = $origCC }
+    if ($null -eq $origCXX) { Remove-Item Env:\CXX -ErrorAction SilentlyContinue } else { $env:CXX = $origCXX }
     Set-Location $startDir
 }
 

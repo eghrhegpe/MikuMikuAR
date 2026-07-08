@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
         // Enable debugging in debug builds
         if (DEBUG) {
@@ -922,6 +922,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        // First, give JS MenuStack a chance to handle the back gesture.
+        // The JS handler should call menuStack.pop() if possible, or
+        // return false to fall through to the default behavior.
+        if (bridge != null) {
+            bridge.emitSystemEvent("android:back", "{}");
+            return;
+        }
+        // Fallback: WebView history navigation
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {

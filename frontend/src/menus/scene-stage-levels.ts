@@ -12,7 +12,6 @@ import {
 } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { showConfirm } from '../core/dialog';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
 import { loadManager } from '../core/load-manager';
@@ -85,11 +84,8 @@ export function buildStageLevel(): PopupLevel {
                         del.style.cssText =
                             'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 4px;margin-left:4px;';
                         del.title = t('scene.unloadStage');
-                        del.addEventListener('click', async (e) => {
+                        del.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            if (!(await showConfirm(t('scene.confirmUnloadStage', { name: inst.name })))) {
-                                return;
-                            }
                             removeModel(id);
                             reRenderSceneMenu();
                             setStatus(t('scene.unloaded', { name: inst.name }), true);

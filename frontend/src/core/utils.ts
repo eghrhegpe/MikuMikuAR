@@ -194,6 +194,12 @@ export function closeAllOverlays(): void {
     document.querySelectorAll<HTMLElement>('[aria-controls]').forEach((btn) => {
         btn.setAttribute('aria-expanded', 'false');
     });
+    // 关闭可能残留的弹窗对话框（menu 关闭时 dialog 未自动隐藏）
+    const dialogOverlay = document.getElementById('mmd-dialog-overlay');
+    if (dialogOverlay) {
+        dialogOverlay.classList.remove('mmd-dialog-visible');
+        dialogOverlay.style.pointerEvents = '';
+    }
     _onCloseAllOverlays?.();
     // 清除图层/动作绑定目标，防止残留下次误触发
     setLayerBindingTargetId(null);
@@ -288,6 +294,18 @@ const CATEGORY_KEY: Record<string, string> = {
     setting: 'setting',
 };
 
+// Go 端 GetPath 使用的实际目录名（大小写敏感）
+const CATEGORY_DIR: Record<string, string> = {
+    pmx: 'PMX',
+    vmd: 'VMD',
+    audio: 'audio',
+    stage: 'stage',
+    prop: 'prop',
+    environment: 'environment',
+    md_dress: 'MD-dress',
+    setting: 'setting',
+};
+
 /**
  * 统一的资源浏览目录解析。
  * 优先级：overridePaths[category] > libraryRoot/subdir
@@ -302,5 +320,7 @@ export function getBrowseDir(category: string): string {
     if (!libraryRoot) {
         return '';
     }
-    return libraryRoot + '/' + category;
+    // 使用与实际目录名一致的子目录名（与 Go 端 GetPath 保持大小写一致）
+    const subdir = CATEGORY_DIR[category] ?? category;
+    return libraryRoot + '/' + subdir;
 }

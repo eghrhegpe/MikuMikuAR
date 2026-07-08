@@ -28,7 +28,7 @@ import { t } from './i18n/t';
 import { registerIconBundle } from './icons-bundle';
 import { initI18n } from './i18n/locale'; // [doc:adr-059] 语言在菜单渲染前确定
 import { GetConfig, ImportZip, ImportLocalFile, Events, CheckForUpdate } from './wails-bindings';
-import { isAndroidPlatform } from './platform';
+import { isAndroidPlatform, openExternalURL } from './platform';
 import { Browser } from '@wailsio/runtime';
 import { generateTextColors } from '../menus/settings';
 import { loadManager } from './load-manager';
@@ -760,7 +760,9 @@ function showUpdateToast(latest: string, url: string): void {
     const btn = toast.querySelector<HTMLButtonElement>('.toast-import-btn');
     if (btn) {
         btn.onclick = () => {
-            Browser.OpenURL(url);
+            if (!openExternalURL(url)) {
+                Browser.OpenURL(url);
+            }
             toast.classList.remove('visible');
         };
     }
@@ -1085,6 +1087,11 @@ Events.On('storage:permissionGranted', async () => {
         console.error('refreshLibrary after permission grant:', err);
         setStatus(t('main.libraryRefreshFailed') + formatError(err), true);
     }
+});
+
+// Android back gesture → pop the MenuStack overlay stack.
+Events.On('android:back', () => {
+    closeAllOverlays();
 });
 
 // Boot the app, then on Android prompt for storage permission if needed.

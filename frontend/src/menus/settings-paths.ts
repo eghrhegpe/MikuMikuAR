@@ -7,10 +7,10 @@ import {
     GetStorageMode,
     SetStorageMode,
 } from '../core/wails-bindings';
-import { setStatus, resourceRoot, overridePaths, cardContainer, PopupRow } from '../core/config';
+import { setStatus, resourceRoot, overridePaths, allModels, cardContainer, PopupRow } from '../core/config';
 import { slideRow, addDangerRow, addModeRow, addSectionTitle } from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
-import { selectResourceRoot, selectOverridePath, switchStorageMode } from './library-core';
+import { selectResourceRoot, selectOverridePath, switchStorageMode, refreshLibrary } from './library-core';
 import { t } from '../core/i18n/t';
 import { setLang, type LangCode } from '../core/i18n/locale';
 import type { PopupLevel } from '../core/config';
@@ -115,6 +115,7 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                 dir: '',
                 items: [],
                 renderCustom: async (container) => {
+                    try {
                     addSectionTitle(container, '存储设置');
                     // Card 1: 资源根目录 / 存储位置（Android）
             if (isAndroid) {
@@ -134,9 +135,27 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                         ],
                         currentMode,
                         (mode) => {
-                            switchStorageMode(mode as 'private' | 'shared').then(() => {
-                                getSettingsMenu()?.reRender();
-                            });
+                            console.log('[paths] mode btn clicked:', mode);
+                            switchStorageMode(mode as 'private' | 'shared')
+                                .then(() => {
+                                    console.log('[paths] switchStorageMode done, reRender');
+                                    getSettingsMenu()?.reRender();
+                                    refreshLibrary()
+                                        .then(() => {
+                                            const msg = allModels.length > 0
+                                                ? `已加载 ${allModels.length} 个模型`
+                                                : '未找到模型，请在 /sdcard/MMD 下放置 PMX/VMD 文件';
+                                            console.log('[paths] refreshLibrary done, models:', allModels.length);
+                                            setStatus(msg, allModels.length === 0);
+                                        })
+                                        .catch((err) => {
+                                            console.warn('[paths] refreshLibrary failed:', err);
+                                        });
+                                })
+                                .catch((err) => {
+                                    console.error('[paths] switchStorageMode failed:', err);
+                                    setStatus(`存储模式切换失败: ${err instanceof Error ? err.message : '未知错误'}`, true);
+                                });
                         }
                     );
                     const desc = document.createElement('div');
@@ -144,6 +163,15 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                     desc.style.cssText = 'font-size:11px;color:var(--text-secondary);padding:2px 12px 8px;line-height:1.4';
                     desc.textContent = t('settings.storageModeDesc');
                     c.appendChild(desc);
+                    // 诊断信息（内嵌在存储模式卡片底部）
+                    const diag = document.createElement('div');
+                    diag.style.cssText = 'margin:6px 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.12);border-radius:6px;font-size:11px;color:var(--text-secondary);line-height:1.7;word-break:break-all';
+                    diag.innerHTML = `
+                        <div><b>存储模式：</b>${currentMode === 'shared' ? '共享' : '私有'}</div>
+                        <div><b>资源目录：</b>${resourceRoot || '<span style="color:var(--danger)">未设置</span>'}</div>
+                        <div><b>模型数量：</b>${allModels.length}</div>
+                    `;
+                    c.appendChild(diag);
                 });
             } else {
                 cardContainer(container, (c) => {
@@ -186,6 +214,12 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                         })
                     );
                 });
+                } catch (err) {
+                    console.error('[paths] renderCustom error:', err);
+                    container.innerHTML = `<div style="padding:16px;color:var(--danger);font-size:12px;text-align:center;">
+                        路径页面加载失败: ${err instanceof Error ? err.message : '未知错误'}
+                    </div>`;
+                }
         },
     };
 }

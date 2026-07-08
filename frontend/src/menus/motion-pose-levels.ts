@@ -18,6 +18,7 @@ import {
 import { addToggleRow, addSliderRow, addEmptyRow } from '../core/ui-helpers';
 import { getMotionMenu } from './motion-popup';
 import { modelManager } from '../scene/scene';
+import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { setRenderState, getRenderState } from '../scene/render/renderer';
 import { getGuideMode, setGuideMode } from '../scene/pose/composition-guide';
 import { generatePoseVmd } from '../motion-algos/pose-preset';
@@ -232,7 +233,6 @@ async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): 
     const { getOrbitParams, setOrbitParams } = await import('../scene/camera/camera');
     const origParams = getOrbitParams();
     const { scene } = await import('../scene/scene');
-    const { ArcRotateCamera } = await import('@babylonjs/core/Cameras/arcRotateCamera');
     const cam = scene.activeCamera;
     const origAlpha = cam instanceof ArcRotateCamera ? cam.alpha : 0;
     let saved = 0;

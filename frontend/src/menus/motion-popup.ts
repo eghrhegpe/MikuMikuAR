@@ -8,6 +8,7 @@ import {
     overridePaths,
     PopupLevel,
     PopupRow,
+    getBrowseDir,
     isPlaying,
     setIsPlaying,
     mmdRuntime,
@@ -106,7 +107,7 @@ function buildActionBindingLevel(id: string): PopupLevel {
                     () => {
                         setMotionBindingTargetId(id);
                         const level = stackRegistry.buildLevel!(
-                            libraryRoot,
+                            getBrowseDir('vmd'),
                             t('motion.motionLibrary'),
                             (m) => m.format === 'vmd'
                         );
@@ -130,8 +131,8 @@ function buildActionBindingLevel(id: string): PopupLevel {
                     }
                 }
                 slideRow(c, 'lucide:user', t('motion.poseLibrary'), true, () => {
-                    const level = stackRegistry.buildLevel!(
-                        libraryRoot,
+                const level = stackRegistry.buildLevel!(
+                        getBrowseDir('vpd'),
                         t('motion.poseLibrary'),
                         (m) => m.format === 'vpd'
                     );
@@ -559,8 +560,8 @@ function motionOnItemClick(row: PopupRow): void {
                 break;
             case 'pose':
                 (async () => {
-                    const level = stackRegistry.buildLevel!(
-                        libraryRoot,
+                const level = stackRegistry.buildLevel!(
+                        getBrowseDir('vpd'),
                         t('motion.poseLibrary'),
                         (m) => m.format === 'vpd'
                     );
@@ -582,7 +583,7 @@ function motionOnItemClick(row: PopupRow): void {
         return;
     }
     if (row.target === '__music_browse__') {
-        const level = stackRegistry.buildLevel!(libraryRoot, t('motion.musicLibrary'), (m) => m.format === 'audio');
+        const level = stackRegistry.buildLevel!(getBrowseDir('audio'), t('motion.musicLibrary'), (m) => m.format === 'audio');
         if (getMotionMenu()) {
             getMotionMenu()?.push(level);
         }

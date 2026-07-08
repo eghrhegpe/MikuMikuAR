@@ -174,11 +174,19 @@ func (a *App) RenameModelPreset(oldName, newName string) error {
 // Caller must hold configMu (Lock). Invalidates the in-memory config cache.
 func (a *App) writeConfig(cfg *Config) error {
 	a.cachedCfg = nil
-	dir, err := settingDir(cfg)
+	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
-	data, err := json.Marshal(cfg)
+	// 写入 bootstrap config（内部存储，供 getConfigUnsafe 定位 setting/ 目录）
+	if bootDir, bErr := configDir(); bErr == nil {
+		bootPath := filepath.Join(bootDir, "config.json")
+		if wErr := os.WriteFile(bootPath+".tmp", data, 0644); wErr == nil {
+			os.Rename(bootPath+".tmp", bootPath)
+		}
+	}
+	// 写入完整 config（setting/ 目录，与 bootstrap 内容一致）
+	dir, err := settingDir(cfg)
 	if err != nil {
 		return err
 	}
@@ -187,7 +195,12 @@ func (a *App) writeConfig(cfg *Config) error {
 	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
 		return err
 	}
-	return os.Rename(tmpPath, path)
+	if err := os.Rename(tmpPath, path); err != nil {
+		return err
+	}
+	// 写入后缓存，防止后续 GetConfig 因 bootstrap 不存在而读到空配置
+	a.cachedCfg = cfg
+	return nil
 }
 
 // writeConfigAndRescan persists the config, runs a full scan with current settings,
@@ -196,8 +209,9 @@ func (a *App) writeConfigAndRescan(cfg *Config) error {
 	if err := a.writeConfig(cfg); err != nil {
 		return err
 	}
-	// Scan and write index
-	models, err := a.ScanModelDir(cfg.LibraryRoot, cfg.ExternalPaths)
+	// Scan and write index — pass cfg directly, don't go through ScanModelDir
+	// which would re-acquire configMu.RLock() and deadlock (we already hold the write lock).
+	models, err := a.scanAllCategories(cfg)
 	if err != nil {
 		return err
 	}
