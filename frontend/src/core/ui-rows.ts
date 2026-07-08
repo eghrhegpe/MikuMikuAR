@@ -10,6 +10,9 @@ import { slideRow } from './ui-slide-row';
 // addToggleRow
 // ===================================================================
 
+// 自增计数器，用于生成稳定的唯一 ID
+let nextToggleId = 0;
+
 export function addToggleRow(
     container: HTMLElement,
     label: string,
@@ -42,7 +45,7 @@ export function addToggleRow(
     const lbl = document.createElement('span');
     lbl.className = 'toggle-label';
     lbl.textContent = label;
-    lbl.id = `toggle-${Math.random().toString(36).slice(2, 11)}`;
+    lbl.id = `toggle-${++nextToggleId}`;
     left.appendChild(lbl);
 
     const toggleLabel = document.createElement('label');
@@ -227,9 +230,11 @@ export function addSliderRow(
 
     function handleKeyDown(e: KeyboardEvent): void {
         const shiftMult = e.shiftKey ? 10 : 1;
-        let delta = step * shiftMult;
+        let delta: number;
         if (step >= 1) {
-            delta = e.shiftKey ? 10 : 1;
+            delta = e.shiftKey ? step * 10 : step;
+        } else {
+            delta = step * shiftMult;
         }
 
         switch (e.key) {
@@ -289,6 +294,7 @@ export function addSliderRow(
         const rect = row.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width;
         let delta: number;
+        // 四分位分区增量：左区大幅减(-15%)→中左微调(-5%)→中右微增(+5%)→右区大幅增(+15%)
         if (x < 0.25) {
             delta = -(range * 0.15);
         } else if (x < 0.5) {

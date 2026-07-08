@@ -277,7 +277,9 @@ function patchedDisposeAudio(): void {
 }
 
 // Replace originals with patched versions
+// eslint-disable-next-line no-func-assign
 (ensureAudio as any) = patchedEnsureAudio;
+// eslint-disable-next-line no-func-assign
 (disposeAudio as any) = patchedDisposeAudio;
 
 /** 音频加载后通知 beat detector 重置（新曲目 BPM 估计重新开始）。 */

@@ -489,7 +489,7 @@ export function buildLevel(
 // ======== Grid Mode Rendering [doc:adr-066] ========
 
 /** 构建指定目录下的 ResourceItem 列表（用于全屏内导航） */
-function buildResourceItemsForDir(
+export function buildResourceItemsForDir(
     dirPath: string,
     filter?: (m: LibraryModel) => boolean
 ): ResourceItem[] {
@@ -546,6 +546,20 @@ function renderFullscreenFolder(
     navigate?: (title: string, render: (c: HTMLElement) => void) => void
 ): void {
     const allItems = buildResourceItemsForDir(dirPath, filter);
+
+    // [doc:adr-066] 预加载当前文件夹所有缩略图
+    const pmxPaths = allItems
+        .filter((item) => !item.isFolder && item.filePath)
+        .map((item) => item.filePath);
+    if (pmxPaths.length > 0) {
+        GetThumbnailBatch(pmxPaths).then((batch) => {
+            const merged = new Map(thumbnailCache);
+            for (const [path, data] of Object.entries(batch)) {
+                merged.set(path, data);
+            }
+            setThumbnailCache(merged);
+        }).catch(() => {});
+    }
 
     // [doc:adr-066] 搜索栏
     const searchWrap = document.createElement('div');

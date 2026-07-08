@@ -542,7 +542,16 @@ func (a *App) SaveLastScene(jsonStr string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "last_scene.json"), []byte(jsonStr), 0644)
+	path := filepath.Join(dir, "last_scene.json")
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := f.WriteString(jsonStr); err != nil {
+		return err
+	}
+	return f.Sync()
 }
 
 // LoadLastScene reads the auto-saved scene state.
