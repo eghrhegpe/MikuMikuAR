@@ -5,7 +5,6 @@
 
 import { cardContainer, setStatus, modelRegistry, propRegistry } from '../core/config';
 import { slideRow, addSliderRow, addToggleRow, addModeRow, addDangerRow } from '../core/ui-helpers';
-import { showConfirm } from '../core/dialog';
 import {
     getModelPosition,
     setModelPosition,
@@ -338,14 +337,7 @@ export function buildDangerCard(
             c,
             'lucide:trash-2',
             `卸载此${kind === 'prop' ? '道具' : kind === 'stage' ? '舞台' : '模型'}`,
-            async () => {
-                if (
-                    !(await showConfirm(
-                        `确定卸载${kind === 'prop' ? '道具' : kind === 'stage' ? '舞台' : '模型'}「${name}」？`
-                    ))
-                ) {
-                    return;
-                }
+            () => {
                 if (kind === 'prop') {
                     removeProp(id);
                 } else {

@@ -32,7 +32,7 @@ import {
 import { SelectEnvTextureFile } from '../core/wails-bindings';
 import { setStatus } from '../core/config';
 import { closeAllOverlays } from '../core/utils';
-import { stackRegistry } from '../core/config';
+import { stackRegistry, getBrowseDir } from '../core/config';
 import { t } from '../core/i18n/t';
 
 // ======== 从子文件导入 ========
@@ -524,7 +524,7 @@ export function buildParticleLevel(): PopupLevel {
                     () => {
                         setEnvTextureBindingTarget('particle');
                         const level = stackRegistry.buildLevel!(
-                            'environment',
+                            getBrowseDir('environment'),
                             t('env.customTexture'),
                             (m) =>
                                 ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),

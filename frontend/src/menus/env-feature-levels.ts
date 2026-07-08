@@ -1,7 +1,7 @@
 // [doc:architecture] Env Feature Levels — 环境功能弹窗层级（天空/地面/水面/风/云/实验功能）
 // 从 env-menu.ts 拆分
 
-import { envState, cardContainer, setStatus } from '../core/config';
+import { envState, cardContainer, setStatus, getBrowseDir } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { escapeHtml } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
@@ -105,7 +105,7 @@ export function buildSkyLevel(): PopupLevel {
 async () => {
                           setEnvTextureBindingTarget('sky');
                           closeAllOverlays();
-                          const level = stackRegistry.buildLevel!('environment', t('env.skyTexture'), (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format), getEnvMenu()!);
+                          const level = stackRegistry.buildLevel!(getBrowseDir('environment'), t('env.skyTexture'), (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format), getEnvMenu()!);
                           getEnvMenu()!.push(level);
                       },
                         fileName

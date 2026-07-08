@@ -9,6 +9,7 @@ import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { Browser } from '@wailsio/runtime';
 import { t } from '../core/i18n/t';
+import { openExternalURL } from '../core/platform';
 import type { PopupLevel, PopupRow } from '../core/config';
 import { SETTINGS_ACTION, SOFTWARE_DETAIL_PREFIX } from './settings-targets';
 import { applyUIAppearanceDom, formatBytes, type SettingsMenuHandle } from './settings-shared';
@@ -144,13 +145,19 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
             cardContainer(container, (c) => {
                 addSectionTitle(c, '链接');
                 slideRow(c, 'lucide:github', t('about.github'), false, () => {
-                    Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR');
+                    if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR')) {
+                        Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR');
+                    }
                 });
                 slideRow(c, 'lucide:scroll', t('about.license'), false, () => {
-                    Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE');
+                    if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE')) {
+                        Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE');
+                    }
                 });
                 slideRow(c, 'lucide:bug', t('about.issues'), false, () => {
-                    Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/issues');
+                    if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR/issues')) {
+                        Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/issues');
+                    }
                 });
             });
 
@@ -202,7 +209,7 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
                         if (!r) { if (statusEl) statusEl.textContent = '检查失败'; return; }
                         if (r.error) { if (statusEl) statusEl.textContent = `检查出错：${r.error}`; return; }
                         if (statusEl) { statusEl.textContent = r.available ? `发现新版本 v${r.latest}（当前 v${r.current}）` : `已是最新版本（v${r.current}）`; }
-                        if (linkEl && r.available && r.url) { linkEl.style.display = 'inline'; linkEl.onclick = (e) => { e.preventDefault(); Browser.OpenURL(r.url); }; }
+                        if (linkEl && r.available && r.url) { linkEl.style.display = 'inline'; linkEl.onclick = (e) => { e.preventDefault(); if (!openExternalURL(r.url)) { Browser.OpenURL(r.url); } }; }
                     } catch { if (statusEl) statusEl.textContent = '检查失败'; }
                 });
             });

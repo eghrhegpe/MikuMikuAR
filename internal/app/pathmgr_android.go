@@ -2,11 +2,6 @@
 
 package app
 
-import (
-	"os"
-	"path/filepath"
-)
-
 type androidPathMgr struct{}
 
 func newPlatformPathMgr() PathManager { return &androidPathMgr{} }

@@ -108,7 +108,7 @@ export function createResourcePanel(
         panel.innerHTML = '';
 
         if (currentLayout === 'grid' && currentItems.length > VIRTUAL_THRESHOLD) {
-            renderVirtualGrid(panel, currentItems, thumbnailCache, onSelect, onEnterFolder, itemHeight);
+            virtualGrid = createVirtualGridFromItems(panel, currentItems, thumbnailCache, onSelect, onEnterFolder, itemHeight);
         } else if (currentLayout === 'grid') {
             renderGrid(panel, currentItems, thumbnailCache, onSelect, onEnterFolder, itemHeight);
         } else {
@@ -140,11 +140,7 @@ export function createResourcePanel(
     return {
         updateItems: (newItems: ResourceItem[]) => {
             currentItems = [...newItems];
-            if (virtualGrid) {
-                virtualGrid.updateItems(currentItems);
-            } else {
-                render();
-            }
+            render();
         },
         setLayout: (newLayout: 'grid' | 'list') => {
             if (currentLayout !== newLayout) {
@@ -161,29 +157,26 @@ export function createResourcePanel(
 
 // ======== Virtual Grid Rendering [doc:adr-066] ========
 
-function renderVirtualGrid(
+function createVirtualGridFromItems(
     container: HTMLElement,
     items: ResourceItem[],
     cache: Map<string, string>,
     onSelect: (item: ResourceItem) => void,
     onEnterFolder?: (path: string) => void,
     itemHeight: number = 120
-): void {
+): VirtualGridHandle<ResourceItem> {
     // 计算列数：基于容器宽度
     const thumbSize = 80; // --resource-thumb-size
     const gap = 8; // --resource-gap
     const cols = Math.max(1, Math.floor((container.clientWidth || 280) / (thumbSize + gap)));
 
-    const handle = createVirtualGrid<ResourceItem>(container, {
+    return createVirtualGrid<ResourceItem>(container, {
         items,
         itemHeight,
         columns: cols,
         renderItem: (item) => createGridCard(item, cache, onSelect, onEnterFolder, itemHeight),
         bufferRows: 2,
     });
-
-    // 存储 handle 以便外部更新
-    (container as any).__virtualGridHandle = handle;
 }
 
 // ======== Grid Rendering ========

@@ -56,6 +56,8 @@ function getOverlay(): HTMLDivElement {
 function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
     return new Promise((resolve) => {
         const overlay = getOverlay();
+        // 清除前一次可能残留的 inline style，让 CSS class 重新生效
+        overlay.style.pointerEvents = '';
         const dialog = overlay.querySelector('.mmd-dialog') as HTMLElement;
         const titleEl = overlay.querySelector('.mmd-dialog-title') as HTMLElement;
         const msgEl = overlay.querySelector('.mmd-dialog-message') as HTMLElement;
@@ -84,6 +86,8 @@ function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
 
         const cleanup = (result: string | boolean | null) => {
             overlay.classList.remove('mmd-dialog-visible');
+            // 隐藏后恢复 pointer-events 为 CSS 默认值
+            overlay.style.pointerEvents = '';
             resolve(result);
         };
 

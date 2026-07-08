@@ -488,6 +488,83 @@ export function buildLevel(
 
 // ======== Grid Mode Rendering [doc:adr-066] ========
 
+/** 构建指定目录下的 ResourceItem 列表（用于全屏内导航） */
+function buildResourceItemsForDir(
+    dirPath: string,
+    filter?: (m: LibraryModel) => boolean
+): ResourceItem[] {
+    const normDir = normPath(dirPath);
+    const items: ResourceItem[] = [];
+    const subdirs = new Set<string>();
+
+    for (const m of allModels || []) {
+        if (filter && !filter(m)) continue;
+        const mdir = normPath(m.dir);
+        if (!mdir.startsWith(normDir)) continue;
+        const rel = mdir.substring(normDir.length).replace(/^\//, '');
+        const parts = rel.split('/').filter(Boolean);
+        if (parts.length === 0) {
+            const fp = m.file_path || '';
+            const filename = m.container === 'zip' && m.zip_inner
+                ? m.zip_inner.split('/').pop() || ''
+                : fp.split('/').pop() || '';
+            const cached = modelMetaCache.get(fp);
+            let label: string;
+            switch (displayNamePriority) {
+                case 'filename': label = filename; break;
+                case 'name_en':
+                    label = cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
+                    break;
+                case 'name_jp':
+                default:
+                    label = cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
+                    break;
+            }
+            items.push({
+                id: fp, label, filePath: fp,
+                icon: m.format === 'vmd' ? 'music' : m.format === 'audio' ? 'volume-2' : 'box',
+                isFolder: false, sublabel: cached?.comment || m.comment || undefined, data: m,
+            });
+        } else {
+            subdirs.add(parts[0]);
+        }
+    }
+
+    const folderItems: ResourceItem[] = Array.from(subdirs).sort().map((d) => ({
+        id: normDir + '/' + d, label: d, filePath: '', icon: 'folder',
+        isFolder: true, sublabel: undefined, data: undefined,
+    }));
+
+    return [...folderItems, ...items];
+}
+
+/** 渲染全屏 overlay 中的单个文件夹内容（支持递归导航） */
+function renderFullscreenFolder(
+    container: HTMLElement,
+    dirPath: string,
+    filter?: (m: LibraryModel) => boolean,
+    navigate?: (title: string, render: (c: HTMLElement) => void) => void
+): void {
+    const folderItems = buildResourceItemsForDir(dirPath, filter);
+    createResourcePanel(container, {
+        items: folderItems,
+        thumbnailCache: new Map(Object.entries(thumbnailCache)),
+        onSelect: (item) => {
+            if (item.data) {
+                closeFullscreen();
+                onModelRowClick(item.data as LibraryModel);
+            }
+        },
+        onEnterFolder: navigate
+            ? (path) => {
+                const label = folderItems.find((i) => i.id === path)?.label || path.split('/').pop() || path;
+                navigate(label, (c) => renderFullscreenFolder(c, path, filter, navigate));
+            }
+            : undefined,
+        layout: 'grid',
+    });
+}
+
 function renderGridMode(
     container: HTMLElement,
     dir: string,
@@ -628,7 +705,7 @@ function renderGridMode(
                     // 返回嵌入模式
                     setCurrentState('EMBEDDED_GRID');
                 },
-                renderContent: (container) => {
+                renderContent: (container, navigate) => {
                     // 渲染全屏网格
                     createResourcePanel(container, {
                         items: allResourceItems,
@@ -640,14 +717,11 @@ function renderGridMode(
                             }
                         },
                         onEnterFolder: (path) => {
-                            // 全屏模式下进入文件夹
-                            const folderItem = folderItems.find((fi) => fi.id === path);
-                            const folderLabel = folderItem?.label || path.split('/').pop() || path;
-                            const stack = targetStack || stackRegistry.modelStack;
-                            if (stack) {
-                                closeFullscreen();
-                                stack.push(buildLevel(path, folderLabel, filter, targetStack));
-                            }
+                            // [doc:adr-066] 全屏内导航
+                            const folderLabel = allResourceItems.find((i) => i.id === path)?.label || path.split('/').pop() || path;
+                            navigate(folderLabel, (c) => {
+                                renderFullscreenFolder(c, path, filter, navigate);
+                            });
                         },
                         layout: 'grid',
                     });
@@ -904,6 +978,7 @@ export function buildModelRootItems(): PopupRow[] {
 
     // 已加载的角色模型
     const actors = Array.from(modelRegistry.entries()).filter(([, inst]) => inst.kind === 'actor');
+    console.log('[buildModelRootItems] actors:', actors.length, 'allModels:', allModels.length, 'libraryRoot:', libraryRoot);
     for (const [id, inst] of actors) {
         items.push({
             kind: 'folder',
@@ -1073,6 +1148,7 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
     if (!isAndroidPlatform()) {
         return;
     }
+    console.log('[switchStorageMode] 1: confirm dialog');
     const ok = await showConfirm(
         mode === 'shared'
             ? t('library.confirmSwitchShared')
@@ -1080,13 +1156,24 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
         t('library.confirmSwitchTitle')
     );
     if (!ok) {
+        console.log('[switchStorageMode] cancelled');
         return;
     }
-    await tryCatchStatus(async () => {
+    console.log('[switchStorageMode] 2: confirmed, calling SetStorageMode');
+    try {
+        console.log('[switchStorageMode] 3: SetStorageMode start');
         await SetStorageMode(mode);
+        console.log('[switchStorageMode] 4: reloadConfig start');
         await reloadConfig();
+        console.log('[switchStorageMode] 5: refreshLibrary start');
         await refreshLibrary();
-    }, t('library.dirSetFailed'));
+        console.log('[switchStorageMode] 6: all done');
+    } catch (err) {
+        console.error('[switchStorageMode] failed:', err);
+        setStatus(`${t('library.dirSetFailed')}: ${err instanceof Error ? err.message : '未知错误'}`, true);
+        throw err;
+    }
+    console.log('[switchStorageMode] 8: success');
 }
 
 export async function rescanAndSync(dir?: string): Promise<LibraryModel[]> {
@@ -1096,13 +1183,16 @@ export async function rescanAndSync(dir?: string): Promise<LibraryModel[]> {
 }
 
 export async function reloadConfig(): Promise<void> {
+    console.log('[reloadConfig] GetConfig start');
     const cfg = await GetConfig();
+    console.log('[reloadConfig] GetConfig done, root:', cfg?.resource_root);
     if (cfg) {
         setResourceRoot(cfg.resource_root || '');
-        setLibraryRoot(cfg.resource_root || cfg.override_paths?.pmx || ''); // keep in sync, fallback to pmx override
+        setLibraryRoot(cfg.resource_root || cfg.override_paths?.pmx || '');
         setOverridePaths(cfg.override_paths || {});
         setExternalPaths(cfg.external_paths || []);
     }
+    console.log('[reloadConfig] state updated');
 }
 
 function getCurrentBrowsePath(): string[] {

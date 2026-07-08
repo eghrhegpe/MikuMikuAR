@@ -618,6 +618,9 @@ export class SlideMenu {
             _renderingStack.push(this);
             try {
                 await level.renderCustom(list);
+            } catch (err) {
+                console.error('[SlideMenu] renderCustom failed:', err);
+                list.innerHTML = `<div class="slide-empty" style="color:var(--danger);">加载失败: ${err instanceof Error ? err.message : '未知错误'}</div>`;
             } finally {
                 _renderingStack.pop();
             }

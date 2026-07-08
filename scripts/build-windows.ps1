@@ -14,6 +14,19 @@ if ($env:NODE_OPTIONS -match 'genie-safe-delete') {
     Write-Output "[build-windows] 已临时禁用 WorkBuddy safe-delete 垫片 (NODE_OPTIONS) 以允许构建期批量删除"
 }
 
+# 防呆: Android 开发/测试之后,GOARCH/CC/CGO_ENABLED 等环境变量会持久留在 shell 中,
+# 导致 wails3 build 用 Android NDK 交叉编译器(aarch64-linux-android21-clang)而非 native mingw linker。
+# 此处显式清除所有 Go 跨编译环境变量,确保 Windows 原生构建不受污染。
+$hasCrossVars = ($env:GOARCH) -or ($env:CC) -or ($env:GOOS) -or ($env:CXX) -or ($env:CGO_ENABLED)
+Remove-Item Env:\GOARCH -ErrorAction SilentlyContinue
+Remove-Item Env:\GOOS -ErrorAction SilentlyContinue
+Remove-Item Env:\CC -ErrorAction SilentlyContinue
+Remove-Item Env:\CXX -ErrorAction SilentlyContinue
+Remove-Item Env:\CGO_ENABLED -ErrorAction SilentlyContinue
+if ($hasCrossVars) {
+    Write-Output "[build-windows] ⚠️ 已清除 Android 残留跨编译环境变量 (GOARCH/CC/GOOS/CXX/CGO_ENABLED)"
+}
+
 $scriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path "$scriptsDir\.." | Select-Object -ExpandProperty Path
 $projectDir = "$repoRoot\"
@@ -90,7 +103,7 @@ if ($LASTEXITCODE -ne 0) {
         "-tags", $buildTags
         '-trimpath'
         '-buildvcs=false'
-        "-ldflags=`"$ldflags`""
+        '--ldflags', $ldflags
         '-o', "bin/MikuMikuAR.exe"
     )
     & go @goArgs

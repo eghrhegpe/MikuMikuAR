@@ -64,9 +64,9 @@
         <canvas id="renderCanvas"></canvas>
 
 <!-- Loading overlay: 内联样式确保 HTML 解析完就是全屏遮罩，不依赖 app.css -->
-<div id="loading" style="position:fixed;inset:0;background:linear-gradient(135deg,#16213e 0%,#1a1a2e 100%);color:#fff;z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;">
+<div id="loading" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;">
 <div class="spinner" style="width:40px;height:40px;border:3px solid #ffffff33;border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;"></div>
-<span id="loadingText">🏗️ 引擎加载中 ...</span>
+<span id="loadingText">正在加载 babymmd ...</span>
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
@@ -94,55 +94,55 @@
 </button>
 </div>
 
-<!-- Playback Controls - 静态页时禁用点击 -->
+<!-- Playback Controls — DOM 锚点，TS 初始化后填充 -->
 <div id="playbackBar">
-<button class="playback-btn" id="btnPlayPause">⏸</button>
+<button class="playback-btn" id="btnPlayPause"></button>
 <button class="playback-btn" id="btnLoopToggle" title="循环播放"><iconify-icon icon="lucide:repeat"></iconify-icon></button>
 <div id="seekBar"><div id="seekProgress"></div></div>
-<span class="time-display" id="timeDisplay">00:00.00 / 00:00.00</span>
+<span class="time-display" id="timeDisplay"></span>
 </div>
 
 <!-- Scene Overlay (SlideMenu) -->
 <div id="sceneOverlay" data-overlay></div>
 
-<!-- 状态栏：弱化操作引导，改为静态加载提示 -->
+<!-- 状态栏 — DOM 锚点，TS 初始化后填充 -->
 <div id="statusBar">
-<span id="statusText">⏳ MikuMikuAR 0.9.0 启动器 ... Babylon.js 引擎准备中</span>
-<span id="fpsClock">60 FPS | 00:00</span>
+<span id="statusText"></span>
+<span id="fpsClock"></span>
 </div>
 
-        <!-- Import Toast -->
+        <!-- Import Toast — DOM 锚点，TS 初始化后填充 i18n 文本 -->
         <div id="importToast" class="toast hidden">
-            <div class="toast-icon">📦</div>
+            <div class="toast-icon"></div>
             <div class="toast-body">
-                <div class="toast-title">检测到新文件</div>
+                <div class="toast-title"></div>
                 <div class="toast-file"></div>
             </div>
             <div class="toast-actions">
-                <button class="toast-import-btn">导入</button>
-                <button class="toast-ignore-btn">忽略</button>
+                <button class="toast-import-btn"></button>
+                <button class="toast-ignore-btn"></button>
             </div>
         </div>
 
-        <!-- Update Toast -->
+        <!-- Update Toast — DOM 锚点，TS 初始化后填充 i18n 文本 -->
         <div id="updateToast" class="toast hidden">
-            <div class="toast-icon">🔔</div>
+            <div class="toast-icon"></div>
             <div class="toast-body">
-                <div class="toast-title">发现新版本</div>
+                <div class="toast-title"></div>
                 <div class="toast-file"></div>
             </div>
             <div class="toast-actions">
-                <button class="toast-import-btn">前往下载</button>
-                <button class="toast-ignore-btn">忽略</button>
+                <button class="toast-import-btn"></button>
+                <button class="toast-ignore-btn"></button>
             </div>
         </div>
 
-        <!-- Drop Overlay -->
+        <!-- Drop Overlay — DOM 锚点，TS 初始化后填充 i18n 文本 -->
         <div id="dropOverlay">
             <div class="drop-indicator">
-                <span class="drop-icon">📦</span>
-                <span class="drop-text">释放文件以导入</span>
-                <span class="drop-hint">支持 .zip · .pmx · .vmd</span>
+                <span class="drop-icon"></span>
+                <span class="drop-text"></span>
+                <span class="drop-hint"></span>
             </div>
         </div>
     </div>
