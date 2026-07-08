@@ -155,6 +155,24 @@ describe('BeatDetector instance', () => {
         expect(bd.getBPM()).toBe(120);
     });
 
+    it('isAvailable returns false when no audio attached', () => {
+        expect(bd.isAvailable()).toBe(false);
+    });
+
+    it('getLastError returns null initially', () => {
+        expect(bd.getLastError()).toBeNull();
+    });
+
+    it('getLastError returns null after dispose', () => {
+        bd.dispose();
+        expect(bd.getLastError()).toBeNull();
+    });
+
+    it('isAvailable returns false after dispose', () => {
+        bd.dispose();
+        expect(bd.isAvailable()).toBe(false);
+    });
+
     it('update without analyser does not throw', () => {
         expect(() => bd.update()).not.toThrow();
     });

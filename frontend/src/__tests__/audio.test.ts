@@ -86,7 +86,7 @@ vi.mock('../core/config', () => ({
 
 // BeatDetector stub
 const mockBeatDetector = {
-    attach: vi.fn(),
+    attach: vi.fn().mockReturnValue(true),
     dispose: vi.fn(),
     reset: vi.fn(),
     setVolume: vi.fn(),
@@ -105,7 +105,7 @@ beforeEach(() => {
     mockDuration = 120;
     mockSrc = '';
     mockTriggerAutoSave.mockReset();
-    mockBeatDetector.attach.mockReset();
+    mockBeatDetector.attach.mockReset().mockReturnValue(true);
     mockBeatDetector.dispose.mockReset();
     mockBeatDetector.reset.mockReset();
     mockBeatDetector.setVolume.mockReset();
@@ -442,11 +442,10 @@ describe('attachBeatDetector', () => {
     });
 
     it('handles attach error gracefully', () => {
-        mockBeatDetector.attach.mockImplementationOnce(() => {
-            throw new Error('attach fail');
-        });
+        mockBeatDetector.attach.mockImplementationOnce(() => false);
         void playAudio('test.mp3', 'test');
         attachBeatDetector(mockBeatDetector as any);
+        // attach 返回 false → beatDetectorAttached 保持 false，可重试
     });
 });
 

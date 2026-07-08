@@ -19,12 +19,7 @@ function ensureAudio(): HTMLAudioElement {
     }
     // Re-attach beat detector when audio element is (re)created
     if (beatDetector && !beatDetectorAttached) {
-        try {
-            beatDetector.attach(audioElement);
-            beatDetectorAttached = true;
-        } catch (err) {
-            console.warn('ensureAudio beat detector attach:', err);
-        }
+        beatDetectorAttached = beatDetector.attach(audioElement);
     }
     return audioElement;
 }
@@ -232,12 +227,7 @@ let beatDetectorAttached = false;
 export function attachBeatDetector(detector: BeatDetector): void {
     beatDetector = detector;
     if (audioElement && !beatDetectorAttached) {
-        try {
-            detector.attach(audioElement);
-            beatDetectorAttached = true;
-        } catch (err) {
-            console.warn('attachBeatDetector:', err);
-        }
+        beatDetectorAttached = detector.attach(audioElement);
     }
 }
 

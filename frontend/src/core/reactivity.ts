@@ -68,3 +68,10 @@ export function reactive<T extends object>(obj: T): T {
         },
     }) as T;
 }
+
+/**
+ * Passthrough readonly — store 层通过约定保证不可变，不做深冻结。
+ */
+export function readonly<T>(obj: T): T {
+    return obj;
+}

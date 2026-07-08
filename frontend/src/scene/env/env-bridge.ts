@@ -502,7 +502,7 @@ function _buildUIStatePayload(): Record<string, unknown> {
     const p: Record<string, unknown> = {};
     const s = uiState as Record<string, unknown>;
     for (const key of Object.keys(s)) {
-        const v = (s as any)[key];
+        const v = s[key];
         if (v !== undefined) {
             p[key] = v;
         }

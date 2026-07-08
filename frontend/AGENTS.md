@@ -123,3 +123,100 @@ frontend/src/
 
 `scene/` 已按业务域拆分为 `camera/` / `motion/` / `manager/` / `env/` / `render/` 子目录。`physics/` 为独立目录（XPBD 引擎），`motion-algos/` 为动作算法独立目录。相机 UI 已迁移到 `motion-popup`。
 
+---
+
+## 四、维护风险清单
+
+> 2026-07-08 排查，按优先级排列。
+
+### 4.1 已修复
+
+| 问题 | 状态 |
+|------|------|
+| `store/` 模块 6 个 tsc 编译错误 | ✅ 已修复（import 路径、RootState 字段、类型导出） |
+| `proc-motion-bridge.ts` 9 个 `as any` | ✅ 已修复（引入 `MmdRuntimeBoneExtended` / `MeshMetadata` 接口） |
+| `env-water.ts` 4 个 `as any` | ✅ 已修复（引入 `PostProcessInternal` 接口） |
+| `wasm-layers-blender.ts` 1 个 `as any` | ✅ 已修复（复用 `MmdRuntimeBoneExtended`） |
+| `env-bridge.ts` 1 个 `as any` | ✅ 已修复（移除冗余断言） |
+
+### 4.2 高风险文件（需关注）
+
+#### `menus/settings.ts` — 2085 行 🔴
+
+| 维度 | 发现 |
+|------|------|
+| 可拆分区 | 外部库管理(L995-1042)、性能设置(L1110-1135)、导入/导出/重置(L1604-1713)、快捷键(L2018-2050)、语言(L2158-2174)、路由(L2143-2189) |
+| 耦合热点 | 从 config.ts 导入 18 个符号；`SETTINGS_ACTIONS` 声明式映射（L905-969）是好的，但函数体仍耦合多模块 |
+| 状态泄漏 | `autoImportCached`(L103)、`autoLoadCompanionAudio`(L115) 模块级可变变量 |
+| `as any` | 0 处 |
+| 死代码 | `formatBytes`(L2131) 仅内部用，无冗余 |
+| 测试 | 无 |
+
+#### `motion-algos/procedural-motion.ts` — 1424 行 🔴
+
+| 维度 | 发现 |
+|------|------|
+| 可拆分区 | Idle(L194-535)、AutoDance(L540-1112)、Lifelike(L1119-1473)、状态判断(L1478-1496) |
+| 耦合热点 | 严重依赖 babylon-mmd 的 BoneKeyFrame/MorphKeyFrame；所有生成函数调 vmd-writer.buildVmd |
+| 状态泄漏 | `BONE_CENTER_CANDIDATES` 等模块级常量数组（只读安全）；`DEFAULT_PROC_STATE` 共享默认值 |
+| `as any` | 0 处 |
+| 数值硬编码 | `FPS=30`、`MAX_FRAMES=600`；骨骼旋转幅度 `0.03*intensity` 等散落各函数体 |
+| 测试 | 有 `procedural-motion.test.ts`，但 `shouldIdle`/`shouldAutoDance` 分支未覆盖 |
+
+#### `scene/render/lighting.ts` — 1135 行 🟡
+
+| 维度 | 发现 |
+|------|------|
+| 可拆分区 | 灯光创建(L1-200)、阴影(L100-200)、状态读写(L200-400)、舞台灯(L400-600)、Gizmo(L600-800)、Tween(L800-1000)、预设(L1000-1150) |
+| 耦合热点 | 依赖 scene.ts 场景对象、env-bridge.ts 环境变量、state.ts 注册表 |
+| 状态泄漏 | `_stageLights`、`_envSysShadow`、`_sunDisc` 模块级 Babylon 对象引用 |
+| 资源泄漏 | `removeStageLight` + `_disposeStageShadow` 有 dispose ✅ |
+| `as any` | `setLightState` 中 `_envSysShadow?.generator` 访问（1 处） |
+| 测试 | 有 `__tests__/env-lighting.test.ts` ✅ |
+
+#### `menus/env-feature-levels.ts` — 1059 行 🟡
+
+| 维度 | 发现 |
+|------|------|
+| 可拆分区 | 天空(L26-189)、地面(L192-435)、水面(L438-667)、风(L670-707)、云(L710-780)、实验(L783-830)、雾(L832-940)、阴影(L943-1078) |
+| 重复模式 | 大量相似 `addSliderRow`/`addColorSliderRow`/`addToggleRow`/`addCollapsible` 调用，结构一致但参数不同 |
+| `as any` | 0 处 |
+| 测试 | 无 |
+
+#### `scene/env/env-water.ts` — 1035 行 🟡
+
+| 维度 | 发现 |
+|------|------|
+| 可拆分区 | 水面创建(L571-763)、涟漪(L170-175)、Uniform 同步(L426-513)、销毁(L765-799)、水下过渡(L821-921)、Tint 后处理(L110-133) |
+| `as any` | 4 处 — 均为 `(_tintPostProcess as any)._enabled` / `as unknown as PostProcessInternal`（访问 Babylon 私有属性） |
+| 资源泄漏 | `disposeWater` 释放 mesh/LOD/材质/纹理/后处理 ✅；需调用 `clearRipples()` ⚠️ |
+| 测试 | 无 |
+
+#### `core/main.ts` — 1026 行 🟡
+
+| 维度 | 发现 |
+|------|------|
+| 可拆分区 | 快捷键注册(L239-378)、弹窗切换(L139-199)、Freefly 控制(L380-435)、拖拽(L761-828)、Seek(L437-464)、初始化(L590-652)、状态恢复(L654-733)、调试暴露(L919-1017) |
+| 耦合热点 | 从 config.ts 导入 18 个符号；`navActions` 依赖懒加载 import |
+| 状态泄漏 | `_lastOverlayFn`(Map)、`_longPressTimer`、`_lastHiddenOverlay`、`_lastTapTime` — 模块级可变状态无生命周期管理 |
+| `as any` | 1 处 — `(window as any).__scene`（E2E/调试用） |
+| 事件泄漏 | `window.keydown/keyup`、`pointermove/pointerup` 无 removeEventListener |
+| 测试 | 无 |
+
+### 4.3 `as any` 重灾区（生产代码）
+
+| 文件 | 数量 | 问题 |
+|------|------|------|
+| ~~`scene/motion/proc-motion-bridge.ts`~~ | ~~10~~ | ✅ 已修复 |
+| ~~`scene/env/env-water.ts`~~ | ~~4~~ | ✅ 已修复 |
+| ~~`scene/motion/wasm-layers-blender.ts`~~ | ~~1~~ | ✅ 已修复 |
+| ~~`scene/env/env-bridge.ts`~~ | ~~1~~ | ✅ 已修复 |
+| ~~`core/state.ts`~~ | ~~2~~ | ✅ 已修复 |
+| `core/main.ts` | 1 | `(window as any).__scene` 调试用，可接受 |
+
+### 4.4 结构性风险
+
+- ~~**状态双源**~~：`store/index.ts` 已删除（2026-07-08），`core/state.ts` 为唯一状态源
+- **深链 import**：无路径别名，深嵌套文件的相对路径 import 容易写错
+- **Barrel re-export**：`core/config.ts` re-export 多个子模块，任一改导出名会级联报错
+

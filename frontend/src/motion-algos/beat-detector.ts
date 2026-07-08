@@ -36,40 +36,55 @@ export class BeatDetector {
     private phaseInterval = 500; // ms per beat
     private bpmQuantizeEnabled = true; // P1 开关：BPM 量化（默认开）
     private _onBeatCallbacks: Array<() => void> = [];
+    private _lastError: string | null = null;
 
     /** 接入音频元素。惰性创建 AudioContext + GainNode。
      *  注意：createMediaElementSource 后音频路由经 AudioContext，
-     *  须 resume() 否则浏览器自动播放策略下静音。 */
-    attach(audioElement: HTMLAudioElement): void {
+     *  须 resume() 否则浏览器自动播放策略下静音。
+     *  @returns true 表示成功初始化；false 表示失败，可通过 getLastError() 查询原因 */
+    attach(audioElement: HTMLAudioElement): boolean {
         if (this.ctx) {
-            return;
+            return true;
         }
         const AudioCtx =
             window.AudioContext ||
             (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (!AudioCtx) {
-            return;
+            this._lastError = 'AudioContext API 不可用';
+            console.warn('BeatDetector:', this._lastError);
+            return false;
         }
         try {
             this.ctx = new AudioCtx();
         } catch (err) {
-            console.warn('BeatDetector: AudioContext creation failed:', err);
-            return;
+            this._lastError = `AudioContext 创建失败: ${err}`;
+            console.warn('BeatDetector:', this._lastError);
+            return false;
         }
         if (this.ctx.state === 'suspended') {
             this.ctx.resume().catch(() => {});
         }
-        this.source = this.ctx.createMediaElementSource(audioElement);
-        this.analyser = this.ctx.createAnalyser();
-        this.analyser.fftSize = 256;
-        this.analyser.smoothingTimeConstant = 0.3;
-        this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
-        // GainNode：使音量控制独立于 audioElement.volume（被 createMediaElementSource 旁路）
-        this.gain = this.ctx.createGain();
-        this.gain.gain.value = 1;
-        this.source.connect(this.analyser);
-        this.analyser.connect(this.gain);
-        this.gain.connect(this.ctx.destination);
+        try {
+            this.source = this.ctx.createMediaElementSource(audioElement);
+            this.analyser = this.ctx.createAnalyser();
+            this.analyser.fftSize = 256;
+            this.analyser.smoothingTimeConstant = 0.3;
+            this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+            // GainNode：使音量控制独立于 audioElement.volume（被 createMediaElementSource 旁路）
+            this.gain = this.ctx.createGain();
+            this.gain.gain.value = 1;
+            this.source.connect(this.analyser);
+            this.analyser.connect(this.gain);
+            this.gain.connect(this.ctx.destination);
+            this._lastError = null;
+            return true;
+        } catch (err) {
+            this._lastError = `音频节点连接失败: ${err}`;
+            console.warn('BeatDetector:', this._lastError);
+            // 清理已创建的资源，防止泄露
+            this.dispose();
+            return false;
+        }
     }
 
     /** 设置输出音量 (0~1)。通过 GainNode 控制，独立于 audioElement.volume。 */
@@ -106,6 +121,7 @@ export class BeatDetector {
         this.phaseInterval = 500;
         this.phaseStartTime = 0;
         this._onBeatCallbacks = [];
+        this._lastError = null;
     }
 
     /** 注册 beat 回调。返回取消注册函数。 */
@@ -216,6 +232,16 @@ export class BeatDetector {
 
     hasAudio(): boolean {
         return this.analyser !== null;
+    }
+
+    /** 节拍检测是否可用（analyser 就绪且无未解决错误）。 */
+    isAvailable(): boolean {
+        return this.analyser !== null && this._lastError === null;
+    }
+
+    /** 返回最近一次错误信息（无错误时为 null）。供 UI 层显示用户可见提示。 */
+    getLastError(): string | null {
+        return this._lastError;
     }
 
     /** 纯逻辑：给定能量序列，返回 beat 触发帧索引。供测试用。 */
