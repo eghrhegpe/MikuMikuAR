@@ -538,31 +538,67 @@ function buildResourceItemsForDir(
     return [...folderItems, ...items];
 }
 
-/** 渲染全屏 overlay 中的单个文件夹内容（支持递归导航） */
+/** 渲染全屏 overlay 中的单个文件夹内容（支持递归导航 + 搜索过滤） */
 function renderFullscreenFolder(
     container: HTMLElement,
     dirPath: string,
     filter?: (m: LibraryModel) => boolean,
     navigate?: (title: string, render: (c: HTMLElement) => void) => void
 ): void {
-    const folderItems = buildResourceItemsForDir(dirPath, filter);
-    createResourcePanel(container, {
-        items: folderItems,
-        thumbnailCache: new Map(Object.entries(thumbnailCache)),
-        onSelect: (item) => {
-            if (item.data) {
-                closeFullscreen();
-                onModelRowClick(item.data as LibraryModel);
-            }
-        },
-        onEnterFolder: navigate
-            ? (path) => {
-                const label = folderItems.find((i) => i.id === path)?.label || path.split('/').pop() || path;
-                navigate(label, (c) => renderFullscreenFolder(c, path, filter, navigate));
-            }
-            : undefined,
-        layout: 'grid',
-    });
+    const allItems = buildResourceItemsForDir(dirPath, filter);
+
+    // [doc:adr-066] 搜索栏
+    const searchWrap = document.createElement('div');
+    searchWrap.style.cssText = 'padding: 8px 0 12px;';
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = t('library.search') || '搜索...';
+    searchInput.className = 'input';
+    searchInput.style.cssText = 'width: 100%; box-sizing: border-box;';
+    searchWrap.appendChild(searchInput);
+    container.appendChild(searchWrap);
+
+    // 资源面板容器
+    const panelContainer = document.createElement('div');
+    panelContainer.style.cssText = 'flex: 1; min-height: 0;';
+    container.appendChild(panelContainer);
+
+    let currentPanel: ReturnType<typeof createResourcePanel> | null = null;
+
+    function renderFiltered(query: string): void {
+        if (currentPanel) {
+            currentPanel.dispose();
+            panelContainer.innerHTML = '';
+        }
+        const q = query.trim().toLowerCase();
+        const filtered = q
+            ? allItems.filter((item) =>
+                item.label.toLowerCase().includes(q) ||
+                item.filePath.toLowerCase().includes(q)
+            )
+            : allItems;
+
+        currentPanel = createResourcePanel(panelContainer, {
+            items: filtered,
+            thumbnailCache: new Map(Object.entries(thumbnailCache)),
+            onSelect: (item) => {
+                if (item.data) {
+                    closeFullscreen();
+                    onModelRowClick(item.data as LibraryModel);
+                }
+            },
+            onEnterFolder: navigate
+                ? (path) => {
+                    const label = filtered.find((i) => i.id === path)?.label || path.split('/').pop() || path;
+                    navigate(label, (c) => renderFullscreenFolder(c, path, filter, navigate));
+                }
+                : undefined,
+            layout: 'grid',
+        });
+    }
+
+    searchInput.addEventListener('input', () => renderFiltered(searchInput.value));
+    renderFiltered('');
 }
 
 function renderGridMode(
@@ -1062,6 +1098,10 @@ export async function initLibrary(): Promise<void> {
         setExternalPaths(cfg.external_paths || []);
         if (cfg.display_name_priority) {
             setDisplayNamePriority(cfg.display_name_priority as DisplayNamePriority);
+        }
+        // [doc:adr-066] 恢复视图模式
+        if (cfg.ui_state?.resourceViewMode === 'grid' || cfg.ui_state?.resourceViewMode === 'list') {
+            resourceViewMode = cfg.ui_state.resourceViewMode;
         }
         try {
             const recents = await GetRecentModels();
