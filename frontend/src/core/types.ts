@@ -9,6 +9,19 @@ import type { UIState as GoUIState } from './wails-bindings';
 
 export type { GoUIState };
 
+// ======== Bone Override Types ========
+
+/** [doc:adr-061] Motion Override — 持久化的单条骨骼覆盖配置 */
+export type BoneOverrideEntry = {
+    boneName: string;
+    /** 欧拉角（度），[pitch, yaw, roll] */
+    euler: [number, number, number];
+    /** 混合权重 0–1，1=硬覆盖 */
+    weight: number;
+    /** 启用/禁用 */
+    enabled: boolean;
+};
+
 // ======== Model Types ========
 
 export type ModelKind = 'actor' | 'stage';
@@ -93,6 +106,8 @@ export type ModelInstance = {
     _overlayLoadToken?: symbol;
     /** 原始材质可见性快照（hideMaterials 前保存，用于 restore） */
     _origMaterialVisibility?: Map<number, boolean>;
+    /** [doc:adr-061] Motion Override — 逐骨骼覆盖条目 */
+    boneOverrides: BoneOverrideEntry[];
     /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */
     positionMode?: 'cartesian' | 'orbit';
     /** [doc:adr-049] 水平方位角（度，-180~180），仅 positionMode==='orbit' 时生效 */
@@ -117,6 +132,14 @@ export type PropInstance = {
     rotationY: number;
     scaling: number;
     visible: boolean;
+    /** [doc:adr-061] 骨骼锚定：目标骨骼名（非空=已锚定到骨骼） */
+    boneName?: string;
+    /** [doc:adr-061] 骨骼锚定：目标模型 ID */
+    targetModelId?: string;
+    /** [doc:adr-061] 骨骼锚定：相对骨骼的偏移 (x, y, z) */
+    boneOffset?: [number, number, number];
+    /** [doc:adr-061] 骨骼锚定：相对骨骼的旋转 (pitch, yaw, roll) */
+    boneRotation?: [number, number, number];
     /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */
     positionMode?: 'cartesian' | 'orbit';
     /** [doc:adr-049] 水平方位角（度，-180~180），仅 positionMode==='orbit' 时生效 */
@@ -215,6 +238,8 @@ export type PopupLevel = {
     items: PopupRow[];
     renderCustom?: (container: HTMLElement) => void | Promise<void>;
     reRenderCustom?: (container: HTMLElement) => void;
+    /** [doc:adr-066] 保留 filter 供视图切换时传递 */
+    filter?: (m: any) => boolean;
 };
 
 // ======== UI State ========
@@ -248,6 +273,8 @@ export interface UIState {
     materialCategoryMap?: Record<string, string>;
     screenshotFormat?: 'image/png' | 'image/jpeg' | 'image/webp';
     screenshotQuality?: number;
+    /** 截图默认保存目录（用户选择后持久化） */
+    screenshotDir?: string;
     autoCameraEnabled?: boolean;
     autoCameraBeatsPerSwitch?: number;
     /** 自动检查更新：启动时自动查询 GitHub 最新发布（默认关） */

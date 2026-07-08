@@ -355,6 +355,34 @@ func (a *App) OpenSoftwareDir() error {
 	return cmd.Start()
 }
 
+// OpenScreenshotDir opens the screenshot save directory in the system file manager.
+// If no directory has been set, it returns an error prompting the user to take a screenshot first.
+func (a *App) OpenScreenshotDir() error {
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return fmt.Errorf("读取配置失败")
+	}
+	dir := cfg.UIState.ScreenshotDir
+	if dir == "" {
+		return fmt.Errorf("尚未设置截图保存目录，请先截图一次")
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("创建截图目录失败")
+	}
+	var cmd *exec.Cmd
+	switch stdruntime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", dir)
+	case "darwin":
+		cmd = exec.Command("open", dir)
+	case "android":
+		return fmt.Errorf("截图目录: %s", dir)
+	default:
+		cmd = exec.Command("xdg-open", dir)
+	}
+	return cmd.Start()
+}
+
 // SaveSceneFile writes a JSON scene file to the given path.
 func (a *App) SaveSceneFile(jsonStr string, path string) error {
 	return os.WriteFile(path, []byte(jsonStr), 0644)

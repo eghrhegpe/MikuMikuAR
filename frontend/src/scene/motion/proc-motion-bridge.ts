@@ -20,6 +20,7 @@ import {
 import { BeatDetector } from '@/motion-algos/beat-detector';
 import { mmdRuntime, triggerAutoSave, focusedModelId } from '@/core/config';
 import { isAudioPlaying } from '@/outfit/audio';
+import { SettingsStore } from '@/lib/settings-store';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from '../scene';
 import { addVmdLayer, removeVmdLayer, getVmdLayers, clearVmdLayers } from './vmd-layers';
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -535,6 +536,11 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         procStarting = false;
         if (_regeneratePending) {
             _regeneratePending = false;
+            // 检查 focusedModelId 是否仍与 procModelId 一致，防止重触发到错误模型
+            if (!procModelId || focusedModelId !== procModelId) {
+                console.warn('[proc-motion] Re-trigger skipped: focusedModelId changed or procModelId cleared');
+                return;
+            }
             // Re-trigger with current state
             const mode = procState.mode === 'autodance' ? 'autodance' : 'idle';
             const bpm = procBeatDetector?.getBPM() ?? 120;
@@ -690,15 +696,17 @@ export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']
     triggerAutoSave();
 }
 
-/** 设置 BPM 量化开关（通过 BeatDetector 实例） */
+/** 设置 BPM 量化开关（通过 SettingsStore） */
+// AO ✂️ Replace state write with SettingsStore.set
 export function setBpmQuantizeEnabled(v: boolean): void {
-    if (typeof v !== 'boolean') {
-        console.warn('[proc-motion] setBpmQuantizeEnabled: invalid value type, expected boolean');
-        return;
-    }
-    if (procBeatDetector) {
-        procBeatDetector.setBpmQuantizeEnabled(v);
-    }
+  if (typeof v !== 'boolean') {
+    console.warn('[proc-motion] setBpmQuantizeEnabled: invalid value type, expected boolean');
+    return;
+  }
+  SettingsStore.get().set('bpmQuantizeEnabled', v);
+  if (procBeatDetector) {
+    procBeatDetector.setBpmQuantizeEnabled(v);
+  }
 }
 
 export function getBpmQuantizeEnabled(): boolean {

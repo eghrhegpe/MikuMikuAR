@@ -47,6 +47,7 @@ import {
 } from '../scene/scene';
 import { applyOutfitVariant, loadOutfits } from '../outfit/outfit';
 import { focusModel } from '../scene/manager/model-ops';
+import { screenshotCurrent } from '../menus/scene-menu';
 import { updatePerformance, setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import {
@@ -375,6 +376,15 @@ function registerAppShortcuts(): void {
             },
             group: '播放控制',
         },
+        {
+            id: 'screenshot:current',
+            label: '截图当前模型',
+            defaultKey: 'F6',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => void screenshotCurrent(),
+            group: '截图',
+        },
     ]);
 }
 
@@ -625,6 +635,8 @@ async function init(): Promise<void> {
         initDropHandler(); // 拖拽导入处理不依赖场景初始化
 
         await initScene();
+        // 引擎就绪 → 隐藏加载遮罩，显示主应用 UI
+        dom.showApp();
         console.info('MikuMikuAR initialized');
         initLibrary().catch((err) => console.warn('Library init:', err));
         // Restore env state from config (authoritative — scene restore skips env)
@@ -648,6 +660,8 @@ async function init(): Promise<void> {
         tryRestoreLastScene().catch((err) => console.warn('Auto-restore:', err));
     } catch (err) {
         console.error('Init failed:', err);
+        const msg = err instanceof Error ? err.message : String(err);
+        dom.showError(msg);
         setStatus(t('main.initFailed'), false);
     }
 }

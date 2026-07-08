@@ -353,10 +353,11 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                         return;
                     }
                     const tags = await GetTagsByModel(libRef);
+                    if (!container.isConnected) return;
                     const isFav = tags && tags.includes('收藏');
                     favRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:star" style="color:${isFav ? 'var(--accent)' : 'var(--text-muted)'};"></iconify-icon></span><span class="slide-label" style="color:${isFav ? 'var(--accent)' : 'var(--text)'};">${isFav ? t('model-detail.faved') : t('model-detail.addFav')}</span>`;
                     favRow.onclick = async () => {
-                        if (!libRef) {
+                        if (!libRef || !container.isConnected) {
                             return;
                         }
                         await tryCatchStatus(async () => {
@@ -387,6 +388,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                     }
                     GetTagsByModel(libRef)
                         .then((tags) => {
+                            if (!container.isConnected) return;
                             tagContainer.innerHTML = '';
                             if (!tags || tags.length === 0) {
                                 return;
@@ -397,6 +399,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                 chip.innerHTML = `${escapeHtml(tag)} <span class="tag-del">✕</span>`;
                                 chip.title = t('model-detail.removeTagTitle');
                                 chip.addEventListener('click', async () => {
+                                    if (!container.isConnected) return;
                                     const r = await tryCatchStatus(async () => {
                                         await RemoveTag(libRef, tag);
                                         return true;
@@ -425,9 +428,11 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                 picker.className = 'tag-container';
                 GetAllTags()
                     .then((allTags) => {
+                        if (!container.isConnected) return;
                         const assigned = new Set<string>();
                         GetTagsByModel(libRef!)
                             .then((modelTags) => {
+                                if (!container.isConnected) return;
                                 (modelTags || []).forEach((tm) => assigned.add(tm));
                                 (allTags || []).forEach((tag) => {
                                     if (tag === '收藏') {
@@ -444,7 +449,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                         ? t('model-detail.tagAddedRemove')
                                         : t('model-detail.tagAdd');
                                     chip.addEventListener('click', () => {
-                                        if (!libRef) {
+                                        if (!libRef || !container.isConnected) {
                                             return;
                                         }
                                         if (assigned.has(tag)) {
@@ -452,13 +457,13 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                                 .then(() => {
                                                     refreshTags();
                                                 })
-                                                .catch(() => {});
+                                                .catch((e) => console.warn('[model-detail] remove tag failed:', e));
                                         } else {
                                             AddTag(libRef, tag)
                                                 .then(() => {
                                                     refreshTags();
                                                 })
-                                                .catch(() => {});
+                                                .catch((e) => console.warn('[model-detail] add tag failed:', e));
                                         }
                                     });
                                     picker.appendChild(chip);
@@ -470,9 +475,9 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                         '</span>';
                                 }
                             })
-                            .catch(() => {});
+                            .catch((e) => console.warn('[model-detail] tag load failed:', e));
                     })
-                    .catch(() => {});
+                    .catch((e) => console.warn('[model-detail] tag load failed:', e));
                 c.appendChild(picker);
             });
         },

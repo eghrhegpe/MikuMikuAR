@@ -404,8 +404,8 @@ export function switchCameraMode(mode: CameraMode): void {
         _currentPreset.mode = 'ar';
         setARMode(true).then((ok) => {
             if (!ok) {
-                // 失败：若后续切换尚未把模式改走，才提示并还原标记。
-                if (_cameraMode !== _previousMode) {
+                // 失败：若后续切换尚未把模式改走（仍在 ar），才提示并还原标记。
+                if (_cameraMode === 'ar') {
                     setStatus(t('scene.camera.arFailed'), false);
                 }
                 _cameraMode = _previousMode;
@@ -443,6 +443,7 @@ export function switchCameraMode(mode: CameraMode): void {
         }
         oldCam.detachControl();
         scene.removeCamera(oldCam);
+        oldCam.dispose();
     }
 
     // Create new camera
@@ -481,6 +482,8 @@ export function switchCameraMode(mode: CameraMode): void {
     if (oldPos) {
         newCam.position = oldPos;
         if (newCam instanceof ArcRotateCamera && oldTarget) {
+            newCam.setTarget(oldTarget);
+        } else if (newCam instanceof UniversalCamera && oldTarget) {
             newCam.setTarget(oldTarget);
         }
     }
@@ -767,11 +770,11 @@ export function setCameraState(s: CameraState): void {
     const mode = s.mode || s.preset.mode;
     // 存档恢复时跳过 AR：进入 AR 需要用户手势授权摄像头，启动时无手势调 getUserMedia
     // 多数浏览器会直接拒绝；用户可在加载后手动进入 AR。
-    if (mode && mode !== 'ar') {
-        switchCameraMode(mode);
-    }
     if (s.preset) {
         _currentPreset = JSON.parse(JSON.stringify(s.preset));
+    }
+    if (mode && mode !== 'ar') {
+        switchCameraMode(mode);
     }
     // Restore FOV (from new scene files; old scenes store it in render.fov)
     if (s.fov !== undefined) {

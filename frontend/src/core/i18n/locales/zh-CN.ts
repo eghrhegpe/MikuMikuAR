@@ -229,6 +229,19 @@ export const zhCN: Record<string, string> = {
     'motion.disable': '禁用',
     'motion.sensitivity': '灵敏度',
 
+    // ===== 骨骼覆盖 boneOverride =====
+    'motion.boneOverride.title': '骨骼覆盖',
+    'motion.boneOverride.addOverride': '添加覆盖',
+    'motion.boneOverride.apply': '应用',
+    'motion.boneOverride.activeOverrides': '当前覆盖',
+    'motion.boneOverride.remove': '移除',
+    'motion.boneOverride.clearAll': '全部清除',
+    'motion.boneOverride.noModel': '⚠ 请先加载模型',
+    'motion.boneOverride.noBones': '⚠ 模型无可用骨骼',
+    'motion.boneOverride.applied': '✓ 已应用 {bone} 覆盖',
+    'motion.boneOverride.removed': '✕ 已移除 {bone} 覆盖',
+    'motion.boneOverride.allCleared': '✓ 已清除所有骨骼覆盖',
+
     // ===== 相机 camera =====
     'motion.cameraMode': '相机模式',
     'motion.camOrbit': '轨道',
@@ -376,6 +389,16 @@ export const zhCN: Record<string, string> = {
     'scene.addPropFile': '添加道具文件',
     'scene.propTransform': '道具变换',
     'scene.propNotFound': '道具不存在（可能已被删除）',
+    'scene.accessory.boneNotFound': '✗ 骨骼 {bone} 未找到',
+    'scene.accessory.boneNoLink': '✗ 骨骼无法绑定（proxy 骨骼暂不支持）',
+    'scene.accessory.attached': '✓ {name} 已挂载到 {bone}',
+    'scene.accessory.detached': '✕ {name} 已从骨骼解除',
+    'scene.accessory.attachToBone': '挂载到骨骼',
+    'scene.accessory.detachFromBone': '从骨骼解除',
+    'scene.accessory.boneOffset': '骨骼偏移',
+    'scene.accessory.boneRotation': '骨骼旋转',
+    'scene.accessory.selectBone': '选择骨骼',
+    'scene.accessory.selectModel': '选择模型',
 
     // —— 舞台灯光 scene-stage-lights ——
     'scene.custom': '自定义',
@@ -888,4 +911,9 @@ export const zhCN: Record<string, string> = {
     'env.size': '大小',
     'env.speed': '速度',
     'env.splash': '落地溅射',
+
+    // about — 链接区域
+    'about.license': '开源许可证',
+    'about.github': 'GitHub 仓库',
+    'about.issues': '问题反馈',
 };

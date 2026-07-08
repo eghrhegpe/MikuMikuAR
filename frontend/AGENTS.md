@@ -57,6 +57,8 @@ npm run check                                          # 确认未新增错误
 | `noImplicitReturns` | `false` | 不报缺失 return |
 | `isolatedModules` | `true` | 配合 esbuild 单文件转译 |
 | `skipLibCheck` | `true` | 跳过 node_modules 类型检查 |
+| `baseUrl` | `"."` | 路径别名基准 |
+| `paths` | `@/*` → `src/*`、`@bindings/*` → `bindings/*` | 路径别名（2026-07-08 添加） |
 | `include` | `src`, `bindings` | Wails 生成的 binding 也参与类型检查 |
 
 ### 2.2 写新代码的约定
@@ -65,8 +67,8 @@ npm run check                                          # 确认未新增错误
 
 - **不要新增 `any` 逃生** — 即使 `strict: false` 允许，新代码仍要避免 `as any` / `@ts-ignore` / `@ts-expect-error`。需要时加注释说明业务理由。
 - **类型定义就近放置** — 项目**没有**集中的 `src/types/` 目录。interface/type 与使用它的文件同模块放置；跨模块共享类型放 `core/types.ts`（config.ts 已拆分为 types / state / dom / utils 四个子模块，通过 barrel re-export 保持 import 兼容）。
-- **没有路径别名** — ~~`tsconfig.json` 无 `paths` 配置。一律用相对路径 import~~ → ✅ 已添加 `@/` → `src/`、`@bindings/` → `bindings/` 别名（2026-07-08）
-- **binding 自动生成** — 绑定文件在 `frontend/bindings/`，由 Wails v3 自动生成。**严禁手动编辑**。改 Go 端 struct/方法后，在 `frontend/` 目录跑 `npm run generate:bindings` 重新生成。生成参数为 `-ts -i`（TypeScript + interface 模式），输出目录 `frontend/bindings`。TS 侧统一通过 `src/core/wails-bindings.ts` re-export 引入，不要直接 import bindings 目录。
+- **路径别名** — `tsconfig.json` 配置了 `@/` → `src/`、`@bindings/` → `bindings/` 别名（2026-07-08 添加）。新代码优先使用别名导入，已有代码逐步迁移。
+- **binding 手写维护** — 绑定文件在 `frontend/bindings/`。**严禁运行 `wails3 generate bindings` / `npm run generate:bindings`**——会删 .ts 绑定、生成无 .d.ts 的 .js，破坏 TS 体系并改目录结构。新增 Go 方法一律手写 .ts 绑定：① `bindings/.../app.ts` 加 `export function`（method ID = FNV-1a 32-bit of `mikumikuar/internal/app.App.<Name>`）；② `bindings/.../models.ts` 加对应 interface；③ `src/core/wails-bindings.ts` 的 `export type {}` 列表登记 model 类型。新增后跑 `npm run test -- src/__tests__/bindings/app.contract.test.ts` 验证 ID 正确性。`npm run generate:bindings` 仅保留作参考（可从中抄 method ID 常量值），切勿运行。TS 侧统一通过 `src/core/wails-bindings.ts` re-export 引入。
 
 ---
 
@@ -208,6 +210,7 @@ frontend/src/
 | ~~`scene/env/env-bridge.ts`~~ | ~~1~~ | ✅ 已修复 |
 | ~~`scene/render/lighting.ts`~~ | ~~1~~ | ✅ 审查确认：当前 0 处 as any，无需改动 |
 | ~~`core/state.ts`~~ | ~~2~~ | ✅ 已修复 |
+| `outfit/audio.ts` | 2 | 函数 monkey-patch（`ensureAudio`/`disposeAudio`），运行时替换无法避免 |
 | `core/main.ts` | 1 | `(window as any).__scene` 调试用，可接受（另有 1 处 `@ts-ignore` 为 Wails v2→v3 过渡兼容） |
 
 #### `menus/library-core.ts` — 954 行 🟢 已审查
@@ -243,11 +246,33 @@ frontend/src/
 ### 4.4 结构性风险
 
 - ~~**状态双源**~~：`store/index.ts` 已删除（2026-07-08），`core/state.ts` 为唯一状态源
-- **深链 import**：~~无路径别名，深嵌套文件的相对路径 import 容易写错~~ → ✅ 已添加 `@/` 和 `@bindings/` 别名（`tsconfig.json` + `vite.config.ts` + `vitest.config.ts`），60 处 `../../` 导入已替换
+- ~~**深链 import**~~：✅ 已添加 `@/` 和 `@bindings/` 别名（`tsconfig.json` + `vite.config.ts` + `vitest.config.ts`），60 处 `../../` 导入已替换
 - **Barrel re-export**：`core/config.ts` re-export 多个子模块，任一改导出名会级联报错
 - **测试覆盖**：92 个模块无直接测试（含 UI builder、i18n、工具函数），核心逻辑模块（xpbd、vmd、config）有间接覆盖
 - **资源释放**：15 个文件调用 `.dispose()`，已审查的文件（lighting、env-water）释放完整
-- **事件监听器泄漏**：✅ 已修复（2026-07-08）。分析 31 个 `addEventListener` 文件：顶层监听器（10 个，应用生命周期）、元素附着监听器（20 个，DOM GC 自动清理）、临时自清理监听器（1 个）、动态累积监听器（1 个 `settings-about.ts`，已添加防重复注册标志）
+- ~~**事件监听器泄漏**~~：✅ 已修复（2026-07-08）。分析 31 个 `addEventListener` 文件：顶层监听器（10 个，应用生命周期）、元素附着监听器（20 个，DOM GC 自动清理）、临时自清理监听器（1 个）、动态累积监听器（1 个 `settings-about.ts`，已添加防重复注册标志）
+
+### 4.7 运行时隐患修复（2026-07-08）
+
+| 模块 | 问题 | 修复 |
+|------|------|------|
+| `outfit.ts` | `loadOutfits` / `applyOutfitVariant` 未检查 `modelRegistry.get()` | 添加 undefined 守卫 |
+| `outfit.ts` | `applyOutfitVariant` 无并发锁 | 添加 `_applyingVariant` Map |
+| `outfit.ts` | `resetOutfit` 丢弃异步 promise | 改为 async + await Promise.all |
+| `outfit.ts` | `loadOutfits` 无请求去重 | 添加 `_loadingOutfits` Set |
+| `camera.ts` | `setCameraState` 先切模式再设 preset | 将 preset 赋值移到 switchCameraMode 之前 |
+| `camera.ts` | 旧相机未 dispose | 添加 `oldCam.dispose()` |
+| `camera.ts` | Orbit→Freefly 丢失观察方向 | 添加 UniversalCamera.setTarget 分支 |
+| `camera.ts` | AR 失败还原逻辑脆弱 | 改为只在 `_cameraMode === 'ar'` 时还原 |
+| `env-bridge.ts` | time-of-day 与预设冲突 | 预设动画期间暂停 time-of-day |
+| `env-bridge.ts` | 预设快速切换竞态 | 用 `_timeOfDayBeforePreset` 记录原始状态 |
+| `vmd-loader.ts` | `loadVMDMotion` 无 generation counter | 添加 `_vmdLoadGeneration` |
+| `vmd-layers.ts` | 异常时 vmdLoader.dispose() 不执行 | 移入 finally 块 |
+| `vmd-layers.ts` | 闭包快照与实际不一致 | 开头捕获 layersSnapshot |
+| `proc-motion-bridge.ts` | regeneratePending 重试时焦点已变更 | 重触发前检查 focusedModelId |
+| `model-detail.ts` | 菜单关闭后 IPC 写操作仍执行 | 用 `container.isConnected` 守卫 |
+| `model-detail.ts` | 三层嵌套 Promise 静默吞错 | `.catch` 改为 console.warn |
+| `scene-stage-lights.ts` | 灯光删除后缺少存在性校验 | showConfirm 返回后重新检查 id |
 
 ### 4.5 测试覆盖更新（2026-07-08）
 

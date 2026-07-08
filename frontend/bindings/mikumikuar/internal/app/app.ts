@@ -430,6 +430,14 @@ export function OpenInMMD(modelPath: string): $CancellablePromise<void> {
 }
 
 /**
+ * OpenScreenshotDir opens the screenshot save directory in the system file manager.
+ * If no directory has been set, it returns an error prompting the user to take a screenshot first.
+ */
+export function OpenScreenshotDir(): $CancellablePromise<void> {
+    return $Call.ByID(3659308950);
+}
+
+/**
  * OpenSoftwareDir opens the software directory in the system file manager.
  */
 export function OpenSoftwareDir(): $CancellablePromise<void> {

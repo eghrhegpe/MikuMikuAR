@@ -1,11 +1,11 @@
 // settings-screenshot.ts — 截图设置子菜单
 
-import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
-import { slideRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
+import { setStatus, uiState, setUIState, cardContainer, escapeHtml } from '../core/config';
+import { slideRow, addSliderRow, addSectionTitle, addFieldRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
+import { SelectDir, OpenScreenshotDir } from '../core/wails-bindings';
 import type { PopupLevel } from '../core/config';
-
-type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
+import type { SettingsMenuHandle } from './settings-shared';
 
 export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
@@ -13,6 +13,7 @@ export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenu
         dir: '',
         items: [],
         renderCustom: (container) => {
+            // —— 卡片 1：截图格式 ——
             cardContainer(container, (c) => {
                 addSectionTitle(c, '截图格式');
                 const formats: Array<{ key: 'image/png' | 'image/jpeg' | 'image/webp'; label: string; icon: string }> = [
@@ -43,6 +44,7 @@ export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenu
                 });
             });
 
+            // —— 卡片 2：截图质量 ——
             cardContainer(container, (c) => {
                 addSliderRow(
                     c, '截图质量', uiState.screenshotQuality ?? 0.9, 0.5, 1.0, 0.05,
@@ -53,6 +55,29 @@ export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenu
                         onUpdate: (el) => { const valEl = el.querySelector('.cs-value'); if (valEl) { valEl.textContent = Math.round((uiState.screenshotQuality ?? 0.9) * 100) + '%'; } },
                     }
                 );
+            });
+
+            // —— 卡片 3：保存目录 ——
+            cardContainer(container, (c) => {
+                addSectionTitle(c, '保存目录');
+                const dir = uiState.screenshotDir ?? '';
+                addFieldRow(c, '当前目录', dir ? escapeHtml(dir) : '（尚未设置，截图时会选择）');
+
+                slideRow(c, 'lucide:folder', '选择目录', false, async () => {
+                    const d = await SelectDir();
+                    if (!d) { return; }
+                    uiState.screenshotDir = d;
+                    setUIState({ screenshotDir: d });
+                    getSettingsMenu()?.reRender();
+                    setStatus(`✓ 截图目录已设置: ${d}`, true);
+                });
+
+                slideRow(c, 'lucide:folder-open', '打开目录', false, () => {
+                    OpenScreenshotDir().catch((err: unknown) => {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        setStatus(`✗ ${msg}`, false);
+                    });
+                });
             });
         },
     };

@@ -138,7 +138,7 @@ export function buildOutfitLevel(id: string): PopupLevel {
                         _loading = true;
                         setStatus(t('outfit.resetting'), true);
                         const _r = await tryCatchStatus(async () => {
-                            resetOutfit(id);
+                            await resetOutfit(id);
                         }, t('outfit.resetFailed'));
                         if (_r !== undefined) {
                             setStatus(t('outfit.resetDone'), true);

@@ -63,47 +63,53 @@
     <div id="app">
         <canvas id="renderCanvas"></canvas>
 
-        <!-- Loading overlay -->
-        <div id="loading"><div class="spinner"></div><span id="loadingText">加载中</span></div>
+<!-- Loading overlay: 内联样式确保 HTML 解析完就是全屏遮罩，不依赖 app.css -->
+<div id="loading" style="position:fixed;inset:0;background:linear-gradient(135deg,#16213e 0%,#1a1a2e 100%);color:#fff;z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;">
+<div class="spinner" style="width:40px;height:40px;border:3px solid #ffffff33;border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;"></div>
+<span id="loadingText">🏗️ 引擎加载中 ...</span>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
-        <!-- Bottom Navigation Bar -->
-        <div id="bottomNav">
-            <button class="nav-tab" id="btnMainAction" title="模型库" aria-label="模型库" aria-controls="sceneOverlay" data-popup-type="model" data-hint="浏览和加载 PMX 模型 · Ctrl+1" data-shortcut="1">
-                <iconify-icon icon="tabler:cube-3d-sphere"></iconify-icon><span class="nav-label">模型</span>
-                <span class="shortcut-badge">1</span>
-            </button>
-            <button class="nav-tab" id="btnMotionPopup" title="动作库" aria-label="动作库" aria-controls="sceneOverlay" data-popup-type="motion" data-hint="浏览和加载 VMD 动作 · Ctrl+2" data-shortcut="2">
-                <iconify-icon icon="lucide:music"></iconify-icon><span class="nav-label">动作</span>
-                <span class="shortcut-badge">2</span>
-            </button>
-            <button class="nav-tab" id="btnScene" title="场景" aria-label="场景" aria-controls="sceneOverlay" data-popup-type="scene" data-hint="相机、灯光和渲染设置 · Ctrl+3" data-shortcut="3">
-                <iconify-icon icon="lucide:monitor"></iconify-icon><span class="nav-label">场景</span>
-                <span class="shortcut-badge">3</span>
-            </button>
-            <button class="nav-tab" id="btnEnv" title="环境" aria-label="环境" aria-controls="sceneOverlay" data-popup-type="env" data-hint="天空、照明、地面和粒子 · Ctrl+4" data-shortcut="4">
-                <iconify-icon icon="lucide:cloud-sun"></iconify-icon><span class="nav-label">环境</span>
-                <span class="shortcut-badge">4</span>
-            </button>
-            <button class="nav-tab" id="btnSettings" title="设置" aria-label="设置" aria-controls="sceneOverlay" data-popup-type="settings" data-hint="应用偏好设置 · Ctrl+5" data-shortcut="5">
-                <iconify-icon icon="lucide:settings"></iconify-icon><span class="nav-label">设置</span>
-                <span class="shortcut-badge">5</span>
-            </button>
-        </div>
+<!-- Bottom Navigation Bar - 静态页时禁用点击 -->
+<div id="bottomNav">
+<button class="nav-tab" id="btnMainAction" title="模型库" aria-label="模型库" aria-controls="sceneOverlay" data-popup-type="model" data-hint="浏览和加载 PMX 模型 · Ctrl+1" data-shortcut="1">
+<iconify-icon icon="tabler:cube-3d-sphere"></iconify-icon><span class="nav-label">模型</span>
+<span class="shortcut-badge">1</span>
+</button>
+<button class="nav-tab" id="btnMotionPopup" title="动作库" aria-label="动作库" aria-controls="sceneOverlay" data-popup-type="motion" data-hint="浏览和加载 VMD 动作 · Ctrl+2" data-shortcut="2">
+<iconify-icon icon="lucide:music"></iconify-icon><span class="nav-label">动作</span>
+<span class="shortcut-badge">2</span>
+</button>
+<button class="nav-tab" id="btnScene" title="场景" aria-label="场景" aria-controls="sceneOverlay" data-popup-type="scene" data-hint="相机、灯光和渲染设置 · Ctrl+3" data-shortcut="3">
+<iconify-icon icon="lucide:monitor"></iconify-icon><span class="nav-label">场景</span>
+<span class="shortcut-badge">3</span>
+</button>
+<button class="nav-tab" id="btnEnv" title="环境" aria-label="环境" aria-controls="sceneOverlay" data-popup-type="env" data-hint="天空、照明、地面和粒子 · Ctrl+4" data-shortcut="4">
+<iconify-icon icon="lucide:cloud-sun"></iconify-icon><span class="nav-label">环境</span>
+<span class="shortcut-badge">4</span>
+</button>
+<button class="nav-tab" id="btnSettings" title="设置" aria-label="设置" aria-controls="sceneOverlay" data-popup-type="settings" data-hint="应用偏好设置 · Ctrl+5" data-shortcut="5">
+<iconify-icon icon="lucide:settings"></iconify-icon><span class="nav-label">设置</span>
+<span class="shortcut-badge">5</span>
+</button>
+</div>
 
-        <!-- Playback Controls -->
-        <div id="playbackBar">
-            <button class="playback-btn" id="btnPlayPause">⏸</button>
-            <button class="playback-btn" id="btnLoopToggle" title="循环播放"><iconify-icon icon="lucide:repeat"></iconify-icon></button>
-            <div id="seekBar"><div id="seekProgress"></div></div>
-            <span class="time-display" id="timeDisplay">00:00.00 / 00:00.00</span>
-        </div>
+<!-- Playback Controls - 静态页时禁用点击 -->
+<div id="playbackBar">
+<button class="playback-btn" id="btnPlayPause">⏸</button>
+<button class="playback-btn" id="btnLoopToggle" title="循环播放"><iconify-icon icon="lucide:repeat"></iconify-icon></button>
+<div id="seekBar"><div id="seekProgress"></div></div>
+<span class="time-display" id="timeDisplay">00:00.00 / 00:00.00</span>
+</div>
 
-        <!-- Current Model Info -->
+<!-- Scene Overlay (SlideMenu) -->
+<div id="sceneOverlay" data-overlay></div>
 
-        <!-- Scene Overlay (SlideMenu) -->
-        <div id="sceneOverlay" data-overlay></div>
-
-        <div id="statusBar"><span id="statusText">点击模型按钮打开模型库 · 拖拽旋转 · 滚轮缩放</span><span id="fpsClock">60 FPS | 00:00</span></div>
+<!-- 状态栏：弱化操作引导，改为静态加载提示 -->
+<div id="statusBar">
+<span id="statusText">⏳ MikuMikuAR 0.9.0 启动器 ... Babylon.js 引擎准备中</span>
+<span id="fpsClock">60 FPS | 00:00</span>
+</div>
 
         <!-- Import Toast -->
         <div id="importToast" class="toast hidden">

@@ -1,11 +1,12 @@
 // [doc:architecture] Scene Prop Levels — 舞台道具弹窗层级
 // 从 env-prop-levels.ts 迁移至舞台域
 
-import { cardContainer, escapeHtml, propRegistry } from '../core/config';
+import { cardContainer, escapeHtml, propRegistry, modelRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { slideRow } from '../core/ui-helpers';
+import { slideRow, addSliderRow } from '../core/ui-helpers';
 import { loadManager } from '../core/load-manager';
 import { removeProp, getPropList } from '../scene/scene';
+import { attachPropToBone, detachPropFromBone } from '../scene/env/accessory';
 import { SelectPMXFile } from '../core/wails-bindings';
 import { getSceneMenu } from './scene-menu';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
@@ -97,6 +98,133 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                 c.appendChild(title);
             });
             buildTransformCard(container, handle);
+
+            // —— 骨骼挂载（Accessory）——
+            cardContainer(container, (c) => {
+                const title = document.createElement('div');
+                title.style.cssText =
+                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                title.textContent = t('scene.accessory.attachToBone');
+                c.appendChild(title);
+
+                if (p.boneName && p.targetModelId) {
+                    // 已挂载状态
+                    const info = document.createElement('div');
+                    info.style.cssText = 'font-size:11px;padding:4px 14px;color:var(--text-dim);';
+                    info.textContent = `${p.boneName} @ ${p.targetModelId.slice(0, 12)}...`;
+                    c.appendChild(info);
+
+                    // 偏移滑块
+                    const offsetSliders = [
+                        { label: 'X', idx: 0 },
+                        { label: 'Y', idx: 1 },
+                        { label: 'Z', idx: 2 },
+                    ];
+                    for (const s of offsetSliders) {
+                        const row = document.createElement('div');
+                        row.style.cssText =
+                            'display:flex;align-items:center;gap:6px;padding:2px 14px;';
+                        const lbl = document.createElement('label');
+                        lbl.textContent = s.label;
+                        lbl.style.cssText = 'font-size:11px;min-width:16px;color:var(--text-dim);';
+                        const slider = document.createElement('input');
+                        slider.type = 'range';
+                        slider.min = '-5';
+                        slider.max = '5';
+                        slider.step = '0.05';
+                        const offset = p.boneOffset ?? [0, 0, 0];
+                        slider.value = String(offset[s.idx]);
+                        slider.style.cssText = 'flex:1;height:3px;';
+                        slider.addEventListener('input', () => {
+                            const newOffset: [number, number, number] = [
+                                ...(p.boneOffset ?? [0, 0, 0]),
+                            ];
+                            newOffset[s.idx] = parseFloat(slider.value);
+                            p.boneOffset = newOffset;
+                            // Reattach with new offset
+                            attachPropToBone(
+                                propId,
+                                p.boneName!,
+                                p.targetModelId!,
+                                newOffset,
+                                p.boneRotation ?? [0, 0, 0]
+                            );
+                        });
+                        const val = document.createElement('span');
+                        val.textContent = slider.value;
+                        val.style.cssText = 'font-size:11px;min-width:28px;text-align:right;opacity:0.6;';
+                        slider.addEventListener('input', () => {
+                            val.textContent = parseFloat(slider.value).toFixed(2);
+                        });
+                        row.appendChild(lbl);
+                        row.appendChild(slider);
+                        row.appendChild(val);
+                        c.appendChild(row);
+                    }
+
+                    // 解除按钮
+                    const detachBtn = document.createElement('button');
+                    detachBtn.className = 'preset-chip';
+                    detachBtn.textContent = t('scene.accessory.detachFromBone');
+                    detachBtn.style.margin = '4px 14px';
+                    detachBtn.addEventListener('click', () => {
+                        detachPropFromBone(propId);
+                        sm?.reRender();
+                    });
+                    c.appendChild(detachBtn);
+                } else {
+                    // 未挂载：选择模型 + 骨骼
+                    const modelSelect = document.createElement('select');
+                    modelSelect.style.cssText =
+                        'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
+                        'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
+                    modelSelect.innerHTML = '<option value="">-- ' + t('scene.accessory.selectModel') + ' --</option>';
+                    for (const [id, inst] of modelRegistry) {
+                        if (inst.kind === 'actor') {
+                            const opt = document.createElement('option');
+                            opt.value = id;
+                            opt.textContent = inst.name;
+                            modelSelect.appendChild(opt);
+                        }
+                    }
+                    c.appendChild(modelSelect);
+
+                    const boneSelect = document.createElement('select');
+                    boneSelect.style.cssText =
+                        'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
+                        'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
+                    boneSelect.innerHTML = '<option value="">-- ' + t('scene.accessory.selectBone') + ' --</option>';
+                    // 模型切换时刷新骨骼列表
+                    modelSelect.addEventListener('change', () => {
+                        const id = modelSelect.value;
+                        boneSelect.innerHTML = '<option value="">-- ' + t('scene.accessory.selectBone') + ' --</option>';
+                        if (!id) return;
+                        const inst = modelRegistry.get(id);
+                        if (inst?.mmdModel) {
+                            for (const b of inst.mmdModel.runtimeBones) {
+                                const opt = document.createElement('option');
+                                opt.value = b.name;
+                                opt.textContent = b.name;
+                                boneSelect.appendChild(opt);
+                            }
+                        }
+                    });
+                    c.appendChild(boneSelect);
+
+                    const attachBtn = document.createElement('button');
+                    attachBtn.className = 'preset-chip';
+                    attachBtn.textContent = t('scene.accessory.attachToBone');
+                    attachBtn.style.marginTop = '4px';
+                    attachBtn.addEventListener('click', () => {
+                        const modelId = modelSelect.value;
+                        const boneName = boneSelect.value;
+                        if (!modelId || !boneName) return;
+                        const ok = attachPropToBone(propId, boneName, modelId, [0, 0, 0], [0, 0, 0]);
+                        if (ok) sm?.reRender();
+                    });
+                    c.appendChild(attachBtn);
+                }
+            });
 
             // —— 材质调节 ——
             buildMaterialCard(container, handle, sm);

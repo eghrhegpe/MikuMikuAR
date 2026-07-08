@@ -44,7 +44,7 @@ const {
     buildRoot: () => buildSettingsRoot(),
     buildRootItems: () => buildSettingsRootItems(),
     handlers: {
-        onItemClick: (row) => handleSettingsAction(row),
+        onItemClick: (row, menu) => handleSettingsAction(row, menu),
         onFolderEnter: settingsOnFolderEnter,
     },
 });

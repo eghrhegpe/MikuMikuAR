@@ -552,6 +552,7 @@ export interface UIState {
     "performanceMode": string;
     "screenshotFormat": string;
     "screenshotQuality": number;
+    "screenshotDir"?: string;
     "autoCameraEnabled": boolean;
     "autoCameraBeatsPerSwitch": number;
     "autoUpdateEnabled": boolean;

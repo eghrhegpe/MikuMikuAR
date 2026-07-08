@@ -461,3 +461,54 @@ export function toggleRow(
         icon
     );
 }
+
+// ===================================================================
+// addWatchDirRow — 监听目录行（状态 + 只读输入框 + 选择按钮）
+// 替代 settings-filename.ts 中 ~40 行手写 DOM 孤岛代码
+// ===================================================================
+
+export function addWatchDirRow(
+    container: HTMLElement,
+    onRefreshStatus: (setStatusText: (text: string) => void) => Promise<void>,
+    onSelectDir: () => Promise<string | undefined>
+): void {
+    const statusEl = document.createElement('div');
+    statusEl.style.cssText = 'font-size:11px;color:var(--text);padding:4px 14px;';
+    container.appendChild(statusEl);
+
+    const setStatusText = (text: string) => {
+        statusEl.textContent = text;
+    };
+
+    onRefreshStatus(setStatusText).catch(() => setStatusText('监听已停止'));
+
+    const dirRow = document.createElement('div');
+    dirRow.style.cssText = 'display:flex;gap:6px;padding:6px 14px;';
+
+    const dirInput = document.createElement('input');
+    dirInput.type = 'text';
+    dirInput.placeholder = '选择监听目录...';
+    dirInput.readOnly = true;
+    dirInput.style.cssText =
+        'flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;';
+
+    const selectBtn = document.createElement('button');
+    selectBtn.textContent = '📁';
+    selectBtn.className = 'mode-btn';
+    selectBtn.addEventListener('click', async () => {
+        const dir = await onSelectDir();
+        if (!dir) return;
+        dirInput.value = dir;
+        await onRefreshStatus(setStatusText);
+    });
+
+    // 回填初始目录
+    onRefreshStatus(async (text) => {
+        const match = text.match(/监听中:\s*(.+)/);
+        if (match) dirInput.value = match[1];
+    }).catch(() => {});
+
+    dirRow.appendChild(dirInput);
+    dirRow.appendChild(selectBtn);
+    container.appendChild(dirRow);
+}

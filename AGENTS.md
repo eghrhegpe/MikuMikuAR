@@ -26,7 +26,7 @@
 | 改 Go 后端 | `internal/app/app.go` |
 | 竞品参考 | `docs/competitive-analysis.md` |
 | 代码命名/图标/状态栏规范 | `docs/terminology.md` |
-| check bindings 同步 | `cd frontend && npm run generate:bindings`，看 git diff 是否有变化 |
+| check bindings 同步 | `cd frontend && npm run test -- src/__tests__/bindings/app.contract.test.ts`（校验 112 个函数存在性 + FNV-1a method ID）|
 
 ## 技术栈
 

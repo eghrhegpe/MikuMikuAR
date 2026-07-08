@@ -174,6 +174,7 @@ function createBaseInstance(overrides: Record<string, any> = {}) {
         vmdPath: null,
         animationDuration: 0,
         vmdLayers: [],
+        boneOverrides: [],
         modelDir: '/models',
         outfitFile: undefined,
         activeVariant: undefined,
@@ -313,7 +314,7 @@ describe('resetOutfit', () => {
 
     it('should clear outfit state', async () => {
         const { resetOutfit } = await import('../outfit/outfit');
-        resetOutfit('m1');
+        await resetOutfit('m1');
         expect(inst.activeVariant).toBeUndefined();
         expect(inst.outfitFile).toBeUndefined();
         expect(inst._origTextures).toBeUndefined();
@@ -321,7 +322,7 @@ describe('resetOutfit', () => {
 
     it('should be a no-op for unknown id', async () => {
         const { resetOutfit } = await import('../outfit/outfit');
-        resetOutfit('nonexistent');
+        await resetOutfit('nonexistent');
         // Should not throw
     });
 
@@ -344,7 +345,7 @@ describe('resetOutfit', () => {
             ],
         ]);
         const { resetOutfit } = await import('../outfit/outfit');
-        resetOutfit('m1');
+        await resetOutfit('m1');
         expect(inst._origParams).toBeUndefined();
     });
 });
@@ -366,8 +367,8 @@ describe('loadOutfits', () => {
 
     it('returns null when model not in registry', async () => {
         const { loadOutfits } = await import('../outfit/outfit');
-        // loadOutfits accesses inst.filePath — undefined inst throws
-        await expect(loadOutfits('nonexistent')).rejects.toThrow();
+        const result = await loadOutfits('nonexistent');
+        expect(result).toBeNull();
     });
 });
 

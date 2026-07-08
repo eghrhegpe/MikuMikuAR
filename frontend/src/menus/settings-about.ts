@@ -11,15 +11,13 @@ import { Browser } from '@wailsio/runtime';
 import { t } from '../core/i18n/t';
 import type { PopupLevel, PopupRow } from '../core/config';
 import { SETTINGS_ACTION, SOFTWARE_DETAIL_PREFIX } from './settings-targets';
-import { applyUIAppearanceDom, formatBytes } from './settings-shared';
+import { applyUIAppearanceDom, formatBytes, type SettingsMenuHandle } from './settings-shared';
 import { setPerformanceMode } from '../scene/render/performance';
 import { engine, applyFrameControl } from '../scene/scene';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { handleSettingsAction } from './settings-paths';
 import { buildSoftwareDetailLevel } from './settings-software';
-
-type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
 
 let _cacheClearedListenerRegistered = false;
 
@@ -144,10 +142,16 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
             });
 
             cardContainer(container, (c) => {
-                const licenseRow = document.createElement('div');
-                licenseRow.className = 'slide-item';
-                licenseRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:scroll"></iconify-icon></span><span class="slide-label">开源许可证</span>`;
-                c.appendChild(licenseRow);
+                addSectionTitle(c, '链接');
+                slideRow(c, 'lucide:github', t('about.github'), false, () => {
+                    Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR');
+                });
+                slideRow(c, 'lucide:scroll', t('about.license'), false, () => {
+                    Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE');
+                });
+                slideRow(c, 'lucide:bug', t('about.issues'), false, () => {
+                    Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/issues');
+                });
             });
 
             cardContainer(container, (c) => {

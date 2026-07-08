@@ -1,6 +1,7 @@
 // [doc:test-strategy] Binding 契约测试
-// 锁住 16 个项目自有 interface 的形状 + 106 个函数导出存在性。
+// 锁住 16 个项目自有 interface 的形状 + 112 个函数导出存在性 + 112 个 FNV-1a method ID。
 // Go 端改 struct 时此处 test 会 fail，防止静默破坏 Go↔TS 边界。
+// 新增 Go 方法后：在 expectedFunctions 加条目，手写绑定后用此测试验证 method ID。
 
 import { describe, it, expect, expectTypeOf } from 'vitest';
 import type {
@@ -303,6 +304,33 @@ describe('binding contract: interface shapes', () => {
 
 // ---------- 函数存在性锁 ----------
 
+/**
+ * FNV-1a 32-bit hash (Wails v3 method ID 算法).
+ * 输入 "mikumikuar/internal/app.App.<MethodName>"
+ * 输出 uint32 数字
+ */
+function fnv1a32(methodName: string): number {
+    const prefix = 'mikumikuar/internal/app.App.';
+    let hash = 0x811c9dc5;
+    const str = prefix + methodName;
+    for (let i = 0; i < str.length; i++) {
+        hash ^= str.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193) >>> 0; // >>>0 确保 uint32
+    }
+    return hash;
+}
+
+/**
+ * 从 binding 函数源码中提取 $Call.ByID(...) 里的数字 ID.
+ * 在 Vitest SSR 模式下，`$Call` 会被 Vite 转写为 `__vite_ssr_import_0__.Call`，
+ * 因此匹配 `Call.ByID(N)` 或 `ByID(N)`。
+ */
+function extractByID(fn: (...args: never[]) => unknown): number | null {
+    const src = fn.toString();
+    const m = src.match(/[Cc]all\.ByID\((\d+)/) ?? src.match(/ByID\((\d+)/);
+    return m ? Number(m[1]) : null;
+}
+
 describe('binding contract: function exports', () => {
     const expectedFunctions = [
         'AddCustomSoftware',
@@ -359,6 +387,7 @@ describe('binding contract: function exports', () => {
         'LoadSceneFile',
         'OpenInBlender',
         'OpenInMMD',
+        'OpenScreenshotDir',
         'OpenSoftwareDir',
         'OpenWithSoftware',
         'RemoveCustomSoftware',
@@ -432,5 +461,157 @@ describe('binding contract: function exports', () => {
         const expectedSet = new Set(expectedFunctions);
         const unexpected = actual.filter((k) => !expectedSet.has(k));
         expect(unexpected).toEqual([]);
+    });
+});
+
+// ---------- method ID 锁 ----------
+
+describe('binding contract: method IDs', () => {
+    const expectedFunctions = [
+        'AddCustomSoftware',
+        'AddExternalPath',
+        'AddRecentModel',
+        'AddTag',
+        'AutoDetectMMD',
+        'BundleScene',
+        'CheckForUpdate',
+        'CleanOrphanCache',
+        'ClearAllCaches',
+        'ClearExtractCache',
+        'ClearThumbnailCache',
+        'DeleteDanceSet',
+        'DeleteEnvPreset',
+        'DeleteModelPreset',
+        'DeletePresetScene',
+        'DeleteRenderPreset',
+        'ExtractZip',
+        'GetAllTags',
+        'GetAppVersion',
+        'GetBuildInfo',
+        'GetCacheStats',
+        'GetConfig',
+        'GetDanceSets',
+        'GetDownloadAutoImport',
+        'GetDownloadWatchStatus',
+        'GetLibraryIndex',
+        'GetModelMeta',
+        'GetModelMetaBatch',
+        'GetModelPresets',
+        'GetModelsByTag',
+        'GetPath',
+        'GetPresetScenes',
+        'GetPresetScenesDir',
+        'GetRecentModels',
+        'GetRenderPresets',
+        'GetTagsByModel',
+        'GetThumbnail',
+        'GetThumbnailBatch',
+        'GetStorageMode',
+        'ImportDanceSet',
+        'ImportLocalFile',
+        'ImportZip',
+        'IsolateModelDir',
+        'LaunchSoftware',
+        'ListEnvPresets',
+        'ListSubDirs',
+        'LoadEnvPreset',
+        'LoadLastScene',
+        'LoadModelPreset',
+        'LoadModelPresetFromLib',
+        'LoadOutfitFile',
+        'LoadSceneFile',
+        'OpenInBlender',
+        'OpenInMMD',
+        'OpenScreenshotDir',
+        'OpenSoftwareDir',
+        'OpenWithSoftware',
+        'RemoveCustomSoftware',
+        'RemoveExternalPath',
+        'RemoveTag',
+        'RenameExternalPath',
+        'RenameModelPreset',
+        'SaveDanceSet',
+        'SaveEnvPreset',
+        'SaveLastScene',
+        'SaveModelPreset',
+        'SaveModelPresetToLib',
+        'SaveRenderPreset',
+        'SaveSceneFile',
+        'SaveScenePreset',
+        'SaveScreenshot',
+        'SaveThumbnail',
+        'ScanModelDir',
+        'ScanSoftwareDir',
+        'SelectAudioFile',
+        'SelectBundleSaveFile',
+        'SelectDir',
+        'SelectEnvTextureFile',
+        'SelectExeFile',
+        'SelectImportFile',
+        'SelectPMXFile',
+        'SelectPresetOpenFile',
+        'SelectPresetSaveFile',
+        'SelectSceneOpenFile',
+        'SelectSceneSaveFile',
+        'SelectVMDMotion',
+        'SelectVPDPose',
+        'SetBlenderPath',
+        'SetDisplayNamePriority',
+        'SetDownloadAutoImport',
+        'SetDownloadWatchDir',
+        'SetEnvState',
+        'SetUIState',
+        'SetMMDPath',
+        'SetOverridePath',
+        'SetPerformanceMode',
+        'SetResourceRoot',
+        'SetStorageMode',
+        'SetUIAccent',
+        'SetUIAnimations',
+        'SetUIAutoUpdate',
+        'SetUIBlurBg',
+        'SetUIFontFamily',
+        'SetUIPopupWidth',
+        'SetUIScale',
+        'SetWailsApp',
+        'StartFileServer',
+        'StartWatchDir',
+        'StopFileServer',
+        'StopWatchDir',
+        'ToggleFavorite',
+        'UpdateCustomSoftware',
+    ];
+
+    it('all method IDs match FNV-1a 32-bit hash', () => {
+        const mod = appBinding as Record<string, (...args: never[]) => unknown>;
+        const failures: Array<{ name: string; declared: number; expected: number }> = [];
+
+        for (const name of expectedFunctions) {
+            const fn = mod[name];
+            const declared = extractByID(fn);
+            const expected = fnv1a32(name);
+
+            if (declared === null) {
+                failures.push({ name, declared: -1, expected });
+            } else if (declared !== expected) {
+                failures.push({ name, declared, expected });
+            }
+        }
+
+        if (failures.length > 0) {
+            const lines = failures.map(
+                (f) => `  ❌ ${f.name}: declared=${f.declared}, expected=${f.expected}`
+            );
+            expect(failures).toEqual([]);
+        }
+    });
+
+    it('each function has a valid $Call.ByID', () => {
+        const mod = appBinding as Record<string, (...args: never[]) => unknown>;
+        for (const name of expectedFunctions) {
+            const fn = mod[name];
+            const id = extractByID(fn);
+            expect(id).withContext(`${name} missing $Call.ByID`).not.toBeNull();
+        }
     });
 });

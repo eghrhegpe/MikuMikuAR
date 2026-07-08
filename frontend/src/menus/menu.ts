@@ -394,6 +394,14 @@ export class SlideMenu {
         }
     }
 
+    /** 用新层级替换当前（栈顶）层级并触发重绘，常用于子菜单状态变化后刷新 */
+    replaceCurrentLevel(level: PopupLevel): void {
+        if (this.levels.length === 0) {
+            return;
+        }
+        this.setLevel(this.levels.length - 1, level);
+    }
+
     /**
      * 精准替换第 index 行的 DOM，不走 reRender 全量重建。
      * 常用于单行状态变化（开关、选中态等）。

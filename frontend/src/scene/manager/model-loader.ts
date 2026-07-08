@@ -199,6 +199,7 @@ export async function loadPMXFile(
                 physicsEnabled: false,
                 scaling: 1.0,
                 rotationY: 0,
+                boneOverrides: [],
             };
             // Register via ModelManager only — it owns the registry
             _modelManager.register(inst);
@@ -259,6 +260,7 @@ export async function loadPMXFile(
             physicsEnabled: uiState.defaultPhysicsEnabled !== false,
             scaling: 1.0,
             rotationY: 0,
+            boneOverrides: [],
         };
         // 默认模型自动缩放：按统一目标高度归一化（仅 actor）
         if (uiState.autoScaleModel) {

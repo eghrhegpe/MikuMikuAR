@@ -9,8 +9,7 @@ import { reloadConfig } from './library';
 import { rescanAndSync } from './library';
 import { t } from '../core/i18n/t';
 import type { PopupLevel } from '../core/config';
-
-type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
+import type { SettingsMenuHandle } from './settings-shared';
 
 export function buildSettingsExternalLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {

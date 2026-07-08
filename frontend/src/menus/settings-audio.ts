@@ -4,10 +4,8 @@ import { setStatus, cardContainer } from '../core/config';
 import { slideRow, addSliderRow, addToggleRow } from '../core/ui-helpers';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
-import { getAutoLoadCompanionAudio, setAutoLoadCompanionAudio } from './settings-shared';
+import { getAutoLoadCompanionAudio, setAutoLoadCompanionAudio, type SettingsMenuHandle } from './settings-shared';
 import type { PopupLevel } from '../core/config';
-
-type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
 
 export function buildSettingsAudioLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {

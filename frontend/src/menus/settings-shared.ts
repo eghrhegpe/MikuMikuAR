@@ -38,18 +38,19 @@ export function setAutoImportCached(v: boolean): void {
 
 // ======== VMD 伴音自动加载 ========
 /** 加载 VMD 动作时自动发现并加载同目录同名音频（.mp3/.wav/.ogg/.flac）。默认开启。 */
-let autoLoadCompanionAudio = true;
+// AO ✂️ Replace setter with SettingsStore.set
+import { SettingsStore } from '../lib/settings-store';
 
 export function isAutoLoadCompanionAudioEnabled(): boolean {
-    return autoLoadCompanionAudio;
+  return SettingsStore.get().get('autoLoadCompanionAudio') as boolean;
 }
 
 export function setAutoLoadCompanionAudio(v: boolean): void {
-    autoLoadCompanionAudio = v;
+  SettingsStore.get().set('autoLoadCompanionAudio', v);
 }
 
 export function getAutoLoadCompanionAudio(): boolean {
-    return autoLoadCompanionAudio;
+  return SettingsStore.get().get('autoLoadCompanionAudio') as boolean;
 }
 
 // ======== Color utilities ========
@@ -167,6 +168,13 @@ export const NAME_PRIORITY_INDEX: Record<number, DisplayNamePriority> = {
     2: 'filename',
 };
 
+/** displayNamePriority → slider index (0/1/2)，消除 settings-filename.ts 中的隐式重复映射 */
+export const PRIORITY_TO_INDEX: Record<DisplayNamePriority, number> = {
+    name_jp: 0,
+    name_en: 1,
+    filename: 2,
+};
+
 // ======== Appearance restore (for import/reset) ========
 
 export function applyUIAppearanceDom(s: UIState): void {
@@ -193,6 +201,10 @@ export function applyUIAppearanceDom(s: UIState): void {
 }
 
 // ======== Format bytes ========
+
+// ======== Shared type for settings menu handle ========
+
+export type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
 
 export function formatBytes(bytes: number): string {
     if (bytes === 0) {

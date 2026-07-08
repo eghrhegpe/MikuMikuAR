@@ -889,5 +889,10 @@ export const ja: Record<string, string> = {
     'physics.clothCreated': '✓ クロスを作成しました ({particles} パーティクル, {constraints} 制約, mesh: {mesh})',
     'physics.clothEnabled': '✓ クロスシミュレーションを有効にしました ({instances} インスタンス, {particles} パーティクル, {constraints} 制約)',
     'physics.noActiveInstance': '⚠ クロスは有効ですが、アクティブなインスタンスが見つかりません',
-    'physics.clothDisabled': 'クロスシミュレーションオフ'
+    'physics.clothDisabled': 'クロスシミュレーションオフ',
+
+    // about — リンクセクション
+    'about.license': 'オープンソースライセンス',
+    'about.github': 'GitHub リポジトリ',
+    'about.issues': '問題報告',
 };

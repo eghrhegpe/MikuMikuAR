@@ -263,3 +263,107 @@ export function showPrompt(
         input: true,
     }) as Promise<string | null>;
 }
+
+// ===================================================================
+// showPrompt2 — 双字段输入对话框（替代连续两次 showPrompt）
+// ===================================================================
+
+export interface Prompt2Options {
+    title: string;
+    label1: string;
+    placeholder1?: string;
+    defaultValue1?: string;
+    label2: string;
+    placeholder2?: string;
+    defaultValue2?: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+}
+
+let _overlay2: HTMLDivElement | null = null;
+
+function getOverlay2(): HTMLDivElement {
+    if (_overlay2) return _overlay2;
+    _overlay2 = document.createElement('div');
+    _overlay2.id = 'mmd-dialog-overlay-2';
+    _overlay2.innerHTML = `
+        <div class="mmd-dialog" role="dialog" aria-modal="true">
+            <div class="mmd-dialog-title"></div>
+            <div class="mmd-dialog-2fields">
+                <div class="mmd-dialog-field">
+                    <label class="mmd-dialog-field-label"></label>
+                    <input class="mmd-dialog-input" type="text" />
+                </div>
+                <div class="mmd-dialog-field">
+                    <label class="mmd-dialog-field-label"></label>
+                    <input class="mmd-dialog-input" type="text" />
+                </div>
+            </div>
+            <div class="mmd-dialog-actions">
+                <button class="mmd-dialog-btn mmd-dialog-cancel"></button>
+                <button class="mmd-dialog-btn mmd-dialog-confirm"></button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(_overlay2);
+    return _overlay2;
+}
+
+/**
+ * 双字段输入对话框。返回 [value1, value2] 或 null（取消）。
+ * 替代连续两次 showPrompt，用户一次交互完成。
+ */
+export function showPrompt2(
+    opts: Prompt2Options
+): Promise<[string, string] | null> {
+    return new Promise((resolve) => {
+        const overlay = getOverlay2();
+        const dialog = overlay.querySelector('.mmd-dialog') as HTMLElement;
+        const titleEl = overlay.querySelector('.mmd-dialog-title') as HTMLElement;
+        const fields = overlay.querySelectorAll<HTMLInputElement>('.mmd-dialog-input');
+        const labels = overlay.querySelectorAll<HTMLLabelElement>('.mmd-dialog-field-label');
+        const confirmBtn = overlay.querySelector('.mmd-dialog-confirm') as HTMLButtonElement;
+        const cancelBtn = overlay.querySelector('.mmd-dialog-cancel') as HTMLButtonElement;
+
+        titleEl.textContent = opts.title;
+        labels[0].textContent = opts.label1;
+        labels[0].htmlFor = 'mmd-dlg-input-0';
+        fields[0].id = 'mmd-dlg-input-0';
+        fields[0].placeholder = opts.placeholder1 ?? '';
+        fields[0].value = opts.defaultValue1 ?? '';
+        labels[1].textContent = opts.label2;
+        labels[1].htmlFor = 'mmd-dlg-input-1';
+        fields[1].id = 'mmd-dlg-input-1';
+        fields[1].placeholder = opts.placeholder2 ?? '';
+        fields[1].value = opts.defaultValue2 ?? '';
+
+        confirmBtn.textContent = opts.confirmLabel ?? t('dialog.confirm');
+        cancelBtn.textContent = opts.cancelLabel ?? t('dialog.cancel');
+
+        const cleanup = (result: [string, string] | null) => {
+            overlay.classList.remove('mmd-dialog-visible');
+            resolve(result);
+        };
+
+        const onConfirm = () => cleanup([fields[0].value, fields[1].value]);
+        const onCancel = () => cleanup(null);
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') { onCancel(); return; }
+            if (e.key === 'Enter') { onConfirm(); return; }
+        };
+
+        const newConfirm = confirmBtn.cloneNode(true) as HTMLButtonElement;
+        const newCancel = cancelBtn.cloneNode(true) as HTMLButtonElement;
+        confirmBtn.replaceWith(newConfirm);
+        cancelBtn.replaceWith(newCancel);
+        newConfirm.addEventListener('click', onConfirm);
+        newCancel.addEventListener('click', onCancel);
+        document.addEventListener('keydown', onKeyDown, { once: true });
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) onCancel(); }, { once: true });
+
+        overlay.classList.add('mmd-dialog-visible');
+        dialog.style.display = '';
+        fields[0].focus();
+    });
+}

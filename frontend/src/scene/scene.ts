@@ -51,6 +51,7 @@ import {
     setTriggerAutoSave,
     getMmdRuntimeType,
     setStatus,
+    focusedModelId,
 } from '../core/config';
 import { attachBeatDetector } from '../outfit/audio';
 import { _catState, _matState, _matEnabled } from './manager/material';
@@ -186,6 +187,11 @@ export async function initScene(): Promise<void> {
             .then(({ teardownWasmLayersBlender }) => teardownWasmLayersBlender(id))
             .catch(() => {});
 
+        // 解除此模型上的所有骨骼锚定道具
+        import('./env/accessory')
+            .then(({ detachModelAccessories }) => detachModelAccessories(id))
+            .catch(() => {});
+
         const inst = modelRegistry.get(id);
         if (inst.mmdModel && mmdRuntime) {
             try {
@@ -264,6 +270,16 @@ export async function initScene(): Promise<void> {
         }
         addRipple(hit, 3, 0.4, 1.5, 2);
     }, PointerEventTypes.POINTERDOWN);
+
+    // 7. Bone Override 系统启动
+    // 注册 onBeforeRenderObservable 回调，在动画应用后逐骨骼覆盖
+    const { startBoneOverride } = await import('./motion/bone-override');
+    startBoneOverride(() => {
+        const id = focusedModelId;
+        if (!id) return [];
+        const inst = modelRegistry.get(id);
+        return inst?.mmdModel?.runtimeBones ?? [];
+    }, scene);
 
     setTriggerAutoSave(triggerAutoSaveImpl);
 }

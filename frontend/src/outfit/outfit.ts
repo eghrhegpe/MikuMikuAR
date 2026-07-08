@@ -87,7 +87,15 @@ function _encodePath(path: string): string {
 }
 
 export async function loadOutfits(id: string): Promise<OutfitFile | null> {
+    if (_loadingOutfits.has(id)) {
+        return null;
+    }
+    _loadingOutfits.add(id);
+    try {
     const inst = modelRegistry.get(id);
+    if (!inst) {
+        return null;
+    }
     if (!inst.filePath) {
         return null;
     }
@@ -196,6 +204,9 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
     } catch {
         inst.outfitFile = undefined;
         return null;
+    }
+    } finally {
+        _loadingOutfits.delete(id);
     }
 }
 
@@ -365,11 +376,25 @@ function _captureOrigParams(inst: ModelInstance): void {
     }
 }
 
+// 并发锁：防止同一模型的变体应用并发执行导致竞态
+const _applyingVariant = new Map<string, boolean>();
+
+// R3 去重：防止对同一模型并发执行 loadOutfits 导致重复请求
+const _loadingOutfits = new Set<string>();
+
 export async function applyOutfitVariant(id: string, variantName: string): Promise<void> {
+    if (_applyingVariant.get(id)) {
+        return;
+    }
     const inst = modelRegistry.get(id);
+    if (!inst) {
+        return;
+    }
     if (!inst.outfitFile) {
         return;
     }
+    _applyingVariant.set(id, true);
+    try {
     const variant =
         variantName === '默认'
             ? undefined
@@ -509,13 +534,17 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
     inst.activeVariant = variantName;
     setStatus(`✓ 已切换服装: ${variantName}`, true);
     triggerAutoSave();
+    } finally {
+        _applyingVariant.delete(id);
+    }
 }
 
-export function resetOutfit(id: string): void {
+export async function resetOutfit(id: string): Promise<void> {
     const inst = modelRegistry.get(id);
     if (!inst) {
         return;
     }
+    const promises: Promise<void>[] = [];
     if (inst._origTextures) {
         for (let mi = 0; mi < inst.meshes.length; mi++) {
             const sm = inst.meshes[mi].material as StandardMaterial;
@@ -526,13 +555,14 @@ export function resetOutfit(id: string): void {
             if (!orig) {
                 continue;
             }
-            _applySlot(sm, 'diffuseTexture', null, orig.diffuse, inst.port);
-            _applySlot(sm, 'toonTexture', null, orig.toon, inst.port);
-            _applySlot(sm, 'sphereTexture', null, orig.spa, inst.port);
-            _applySlot(sm, 'bumpTexture', null, orig.normal, inst.port);
-            _applySlot(sm, 'emissiveTexture', null, orig.emissive, inst.port);
+            promises.push(_applySlot(sm, 'diffuseTexture', null, orig.diffuse, inst.port));
+            promises.push(_applySlot(sm, 'toonTexture', null, orig.toon, inst.port));
+            promises.push(_applySlot(sm, 'sphereTexture', null, orig.spa, inst.port));
+            promises.push(_applySlot(sm, 'bumpTexture', null, orig.normal, inst.port));
+            promises.push(_applySlot(sm, 'emissiveTexture', null, orig.emissive, inst.port));
         }
     }
+    await Promise.all(promises);
     if (inst._origParams) {
         for (let mi = 0; mi < inst.meshes.length; mi++) {
             const sm = inst.meshes[mi].material as StandardMaterial;

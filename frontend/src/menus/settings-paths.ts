@@ -8,15 +8,17 @@ import {
     SetStorageMode,
 } from '../core/wails-bindings';
 import { setStatus, resourceRoot, overridePaths, cardContainer, PopupRow } from '../core/config';
-import { slideRow, addDangerRow, addModeRow } from '../core/ui-helpers';
+import { slideRow, addDangerRow, addModeRow, addSectionTitle } from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
 import { selectResourceRoot, selectOverridePath, switchStorageMode } from './library-core';
 import { t } from '../core/i18n/t';
+import { setLang, type LangCode } from '../core/i18n/locale';
 import type { PopupLevel } from '../core/config';
 import { SETTINGS, SETTINGS_ACTION } from './settings-targets';
 import { isAndroidPlatform } from '../core/platform';
-
-type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
+import { buildSettingsLanguageLevel } from './settings-language';
+import type { SlideMenu } from './menu';
+import type { SettingsMenuHandle } from './settings-shared';
 
 /** 设置动作映射表——替代原 handleSettingsAction 的 switch 链 */
 export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
@@ -68,9 +70,11 @@ export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     [SETTINGS_ACTION.PATH_SETTING]: (row) => selectOverridePath('setting').catch(console.warn),
 };
 
-export function handleSettingsAction(row: PopupRow): void {
-    if (row.target.startsWith('lang:')) {
-        import('../core/i18n/locale').then((m) => m.setLang(row.target!.slice(5) as any));
+export function handleSettingsAction(row: PopupRow, menu?: SlideMenu): void {
+    if (row.target?.startsWith('lang:')) {
+        setLang(row.target.slice(5) as LangCode);
+        // 重建当前（语言）层级 → 勾选标记即时移动到新语言
+        menu?.replaceCurrentLevel(buildSettingsLanguageLevel());
         return;
     }
     if (row.target) {
@@ -106,12 +110,13 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
         }
         return actual.length > 20 ? '...' + actual.slice(-17) : actual;
     };
-    return {
-        label: '路径',
-        dir: '',
-        items: [],
-        renderCustom: async (container) => {
-            // Card 1: 资源根目录 / 存储位置（Android）
+                return {
+                label: '路径',
+                dir: '',
+                items: [],
+                renderCustom: async (container) => {
+                    addSectionTitle(container, '存储设置');
+                    // Card 1: 资源根目录 / 存储位置（Android）
             if (isAndroid) {
                 let currentMode = 'private';
                 try {
@@ -158,28 +163,29 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                     );
                 });
             }
-            // Card 2: 资源路径覆盖
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:box', 'PMX 模型', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PMX }), pathSub('pmx', '默认'));
-                slideRow(c, 'lucide:music', 'VMD 动作', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_VMD }), pathSub('vmd', '默认'));
-                slideRow(c, 'lucide:headphones', 'Audio 音乐', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_AUDIO }), pathSub('audio', '默认'));
-                slideRow(c, 'lucide:box', 'Prop 道具', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PROP }), pathSub('prop', '默认'));
-                slideRow(c, 'lucide:home', 'Stage 场景', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_STAGE }), pathSub('stage', '默认'));
-                slideRow(c, 'lucide:cloud', 'Environment', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_ENVIRONMENT }), pathSub('environment', '默认'));
-                slideRow(c, 'lucide:shirt', 'MD-dress', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_MD_DRESS }), pathSub('md_dress', '默认'));
-                slideRow(c, 'lucide:settings', '配置目录', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_SETTING }), pathSub('setting', '默认'));
-            });
-            // Card 3: 外部库
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plug', '外部库管理', true, () =>
-                    handleSettingsAction({
-                        kind: 'folder',
-                        label: '',
-                        icon: '',
-                        target: SETTINGS.EXTERNAL,
-                    })
-                );
-            });
+                // Card 2: 资源路径覆盖
+                addSectionTitle(container, '路径覆盖');
+                cardContainer(container, (c) => {
+                    slideRow(c, 'lucide:box', 'PMX 模型', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PMX }), pathSub('pmx', '默认'));
+                    slideRow(c, 'lucide:music', 'VMD 动作', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_VMD }), pathSub('vmd', '默认'));
+                    slideRow(c, 'lucide:headphones', 'Audio 音乐', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_AUDIO }), pathSub('audio', '默认'));
+                    slideRow(c, 'lucide:gem', 'Prop 道具', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PROP }), pathSub('prop', '默认'));
+                    slideRow(c, 'lucide:home', 'Stage 场景', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_STAGE }), pathSub('stage', '默认'));
+                    slideRow(c, 'lucide:cloud', 'Environment', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_ENVIRONMENT }), pathSub('environment', '默认'));
+                });
+                
+                // Card 3: 外部库
+                addSectionTitle(container, '外部库管理');
+                cardContainer(container, (c) => {
+                    slideRow(c, 'lucide:plug', '外部库管理', true, () =>
+                        handleSettingsAction({
+                            kind: 'folder',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS.EXTERNAL,
+                        })
+                    );
+                });
         },
     };
 }

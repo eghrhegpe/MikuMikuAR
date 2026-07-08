@@ -35,6 +35,9 @@ function getScene() {
 // 缓存已加载的同名伴音，避免重复加载
 const _companionAudioCache = new Set<string>();
 
+// Generation counter: 每次 loadVMDMotion 调用递增，await 后检查是否过期
+let _vmdLoadGeneration = 0;
+
 // VMD 签名：前 25 字节为 "Vocaloid Motion Data 0002"，共 30 字节（含 \0 填充）
 const VMD_SIGNATURE = 'Vocaloid Motion Data 0002';
 const VMD_HEADER_MIN = 50; // 30(签名+模型名) + 4(骨骼帧数) 的最小合法头部
@@ -86,11 +89,19 @@ export async function loadVMDMotion(
         setStatus(t('scene.vmd.targetNotFound'), false);
         return;
     }
+    const capturedGen = ++_vmdLoadGeneration;
     try {
         // Load VMD from buffer using VmdLoader
         const vmdLoader = new VmdLoader(scene);
         const mmdAnimation = await vmdLoader.loadFromBufferAsync(name, data);
         (vmdLoader as unknown as { dispose?: () => void }).dispose?.(); // 释放解析器内部资源（API 可选）
+
+        // 检查是否在 await 期间有新的 loadVMDMotion 调用，过期则丢弃
+        if (_vmdLoadGeneration !== capturedGen) {
+            console.warn('[vmd-loader] Stale loadVMDMotion result discarded:', name);
+            setStatus(t('scene.vmd.loadFailed'), false);
+            return;
+        }
 
         // Create runtime animation from the loaded data
         // WASM 版需 MmdWasmAnimation 包装；JS 版直接用 mmdAnimation（实现 IMmdBindableModelAnimation）

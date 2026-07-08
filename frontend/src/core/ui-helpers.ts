@@ -14,6 +14,13 @@ export {
     addDangerRow,
     addFieldRow,
     addEmptyRow,
+    addWatchDirRow,
 } from './ui-rows';
 export { addColorSliderRow, addModeSlider } from './ui-advanced-rows';
 export { addCollapsible, addSectionTitle, addPresetChip } from './ui-collapsible';
+export { createResourcePanel } from './ui-resource-panel';
+export type { ResourcePanelOptions, ResourcePanelHandle, ResourceItem } from './ui-resource-panel';
+export { createVirtualGrid } from './ui-virtual-grid';
+export type { VirtualGridOptions, VirtualGridHandle } from './ui-virtual-grid';
+export { openFullscreen, closeFullscreen, getCurrentState, setCurrentState } from './ui-fullscreen-overlay';
+export type { FullscreenOverlayOptions, FullscreenOverlayHandle, OverlayState } from './ui-fullscreen-overlay';

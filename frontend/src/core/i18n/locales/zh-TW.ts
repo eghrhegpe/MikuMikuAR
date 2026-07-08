@@ -891,5 +891,10 @@ export const zhTW: Record<string, string> = {
     'physics.clothCreated': '✓ 布料已創建 ({particles} 粒子, {constraints} 約束, mesh: {mesh})',
     'physics.clothEnabled': '✓ 布料模擬已啟用 ({instances} 實例, {particles} 粒子, {constraints} 約束)',
     'physics.noActiveInstance': '⚠ 布料已啟用但未找到活躍實例',
-    'physics.clothDisabled': '布料模擬已關閉'
+    'physics.clothDisabled': '布料模擬已關閉',
+
+    // about — 連結區塊
+    'about.license': '開源許可證',
+    'about.github': 'GitHub 倉庫',
+    'about.issues': '問題回報',
 };

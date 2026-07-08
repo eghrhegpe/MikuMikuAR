@@ -309,6 +309,60 @@ function addEmptyRow(parent: HTMLElement, text: string): HTMLElement
 
 ---
 
+## Button / Row 类型使用分布
+
+> 统计数据不含测试文件（`__tests__/`）。
+
+### 视图 A：`PopupRow.kind` 类型分布（menu 弹窗节点类型）
+
+> 定义在 `core/types.ts:178`。适合审视菜单项的语义角色。
+
+| Kind | 生产行数 | 典型举例 | 占比 |
+|------|----------|----------|------|
+| `action` | ~22 | 截图、加载 VMD、保存场景、相机切换 | ~31% |
+| `folder` | ~22 | 环境子菜单、渲染预设、场景设置 | ~31% |
+| `divider` | ~10 | 菜单分组分隔线 | ~14% |
+| `toggle` | ~11 | 物理参数开关（scene-physics-levels） | ~16% |
+| `slider` | ~5 | 物理滑条（scene-physics-levels） | ~7% |
+| `model` | ~1 | 库内模型入口（library-core） | ~1% |
+| `modeSlider` | 0 | 生产代码未使用，仅 test 有 | — |
+| `chips` | 0 | 生产代码未使用，仅 test 有 | — |
+
+**合计：~71 个 PopupRow 节点**（menu 测试文件除外）。
+
+### 视图 B：UI Builder 函数调用次数（实际 UI 行数）
+
+> 这些函数内部生成的 DOM 行数没有直接统计，但**调用次数**可以反映 UI 规模。适合评估 UI 复杂度。
+
+| Builder 函数 | 调用次数 | 分布文件数 | 典型场景 |
+|-------------|----------|-----------|---------|
+| `addSliderRow` / `addColorSliderRow` | ~200 次 | 19 个 | 音量 0-100%、音频偏移 -5~5s、材质参数 |
+| `addToggleRow` | ~112 次 | 29 个 | 静音、BPM 量化、伴音自动加载、物理开关 |
+| `slideRow`（含 `sliderRow` / `addFieldRow` / `addEmptyRow`） | ~110 次 | 29 个 | 通用导航行 |
+| `addDangerRow` | 1 次 | 1 个 | 停止监听（危险区，用 `variant: 'danger'`） |
+| `addModeRow` / `addModeSlider` | ~50 次 | 19 个 | 相机模式切换、程序化动作选择 |
+| `addCollapsible` | ~200 次 | 19 个 | 环境/物理/渲染各参数区块折叠 |
+| `addPresetChip` | ~50 次 | 8 个 | 预设按钮组（场景/材质/环境预设） |
+
+### 容易混淆的概念
+
+| 你可能以为的 | 实际 |
+|------------|------|
+| `slideRow` 是 `kind: 'slideRow'` | ❌ 错。`slideRow()` 是 UI 构建函数，`PopupRow.kind` 没有 `'slideRow'` 值 |
+| `addDangerRow` 是独立 kind | ❌ 错。`addDangerRow()` 底层就是 `slideRow(..., { variant: 'danger' })`，危险操作靠 `variant` 区分 |
+| `modeSlider` / `chips` 常用 | ❌ 错。生产代码中从未出现，仅在 test 中定义，是死代码 |
+
+### 健康检查
+
+| 指标 | 当前状态 | 备注 |
+|------|---------|------|
+| `addDangerRow` 使用率 | 🟡 极低（1 次） | 危险操作偏少，可能缺少危险警告 |
+| `toggle` vs `action` 比例 | 🟢 合理（11:22） | 大部分菜单项是可执行 action，少量是开关 |
+| 死类型（`modeSlider`/`chips`） | 🔴 存在 | 类型定义存在但生产代码从未使用 |
+| UI 规模 | 🟢 200+ slider / 110+ toggle | 规模适中，覆盖完整 |
+
+---
+
 ## 命名约定
 
 | 概念 | 命名 | 示例 |

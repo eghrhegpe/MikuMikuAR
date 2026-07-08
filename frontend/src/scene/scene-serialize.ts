@@ -74,6 +74,7 @@ import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { DEFAULT_LIPSYNC_STATE } from '../motion-algos/lipsync';
 import type { ProcMotionState } from '../motion-algos/procedural-motion';
 import type { LipSyncState as LipSyncStateType } from '../motion-algos/lipsync';
+import type { BoneOverrideEntry } from '../core/types';
 
 // ======== Utilities ========
 
@@ -133,6 +134,8 @@ export interface SceneFile {
         orbitAzimuth?: number;
         orbitElevation?: number;
         orbitDistance?: number;
+        /** [doc:adr-061] Motion Override — 逐骨骼覆盖条目 */
+        boneOverrides?: BoneOverrideEntry[];
     }>;
     camera: CameraState;
     lights: LightState;
@@ -171,6 +174,11 @@ export interface SceneFile {
         orbitAzimuth?: number;
         orbitElevation?: number;
         orbitDistance?: number;
+        /** [doc:adr-061] Accessory 骨骼锚定 */
+        boneName?: string;
+        targetModelUuid?: string;
+        boneOffset?: [number, number, number];
+        boneRotation?: [number, number, number];
     }>;
     gravityStrength?: number;
     stageLight?: StageLightState;
@@ -238,6 +246,7 @@ export function serializeScene(): SceneFile {
             orbitAzimuth: inst.orbitAzimuth,
             orbitElevation: inst.orbitElevation,
             orbitDistance: inst.orbitDistance,
+            boneOverrides: inst.boneOverrides.length > 0 ? inst.boneOverrides : undefined,
         };
     });
     return {
@@ -292,6 +301,10 @@ export function serializeScene(): SceneFile {
                 orbitAzimuth: p.orbitAzimuth,
                 orbitElevation: p.orbitElevation,
                 orbitDistance: p.orbitDistance,
+                boneName: p.boneName,
+                targetModelUuid: p.targetModelId ? modelUuidMap.get(p.targetModelId) : undefined,
+                boneOffset: p.boneOffset,
+                boneRotation: p.boneRotation,
             };
         }),
         gravityStrength: getGravityStrength(),
@@ -397,6 +410,14 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 inst.physicsEnabled = m.physicsEnabled;
                 setModelPhysics(inst.id, m.physicsEnabled);
             }
+            if (m.boneOverrides) {
+                inst.boneOverrides = m.boneOverrides.map((b) => ({
+                    boneName: b.boneName,
+                    euler: b.euler,
+                    weight: b.weight,
+                    enabled: b.enabled ?? true,
+                }));
+            }
             if (inst.visible === false) {
                 for (const mesh of inst.meshes) {
                     mesh.setEnabled(false);
@@ -482,6 +503,15 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 applyOutfitVariant(id, m.outfitVariant);
             } catch (err) {
                 console.warn(`场景恢复: 模型 ${m.name} 变体应用失败:`, err);
+            }
+        }
+        // 恢复 Bone Override 运行时状态
+        if (m.boneOverrides && m.boneOverrides.length > 0) {
+            try {
+                const { restoreOverrides } = await import('./motion/bone-override');
+                restoreOverrides(m.boneOverrides);
+            } catch (err) {
+                console.warn(`场景恢复: 模型 ${m.name} 骨骼覆盖恢复失败:`, err);
             }
         }
     }
@@ -635,6 +665,43 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 }
             } catch (err) {
                 console.warn(`场景恢复: 道具 ${p.name} 加载失败:`, err);
+            }
+        }
+    }
+
+    // --- Accessory: 恢复道具骨骼锚定 ---
+    if (data.props && data.props.length > 0) {
+        for (const p of data.props) {
+            if (!p.boneName || !p.targetModelUuid) continue;
+            // 通过 UUID 找到运行时的模型 ID
+            let targetModelId: string | undefined;
+            for (const [runtimeId, uuid] of modelUuidMap) {
+                if (uuid === p.targetModelUuid) {
+                    targetModelId = runtimeId;
+                    break;
+                }
+            }
+            if (!targetModelId) continue;
+            // 找到对应的 prop ID
+            let propId: string | undefined;
+            for (const [runtimeId, uuid] of propUuidMap) {
+                if (uuid === p.uuid) {
+                    propId = runtimeId;
+                    break;
+                }
+            }
+            if (!propId) continue;
+            try {
+                const { attachPropToBone } = await import('./env/accessory');
+                attachPropToBone(
+                    propId,
+                    p.boneName,
+                    targetModelId,
+                    p.boneOffset ?? [0, 0, 0],
+                    p.boneRotation ?? [0, 0, 0]
+                );
+            } catch (err) {
+                console.warn(`场景恢复: 道具 ${p.name} 骨骼锚定失败:`, err);
             }
         }
     }

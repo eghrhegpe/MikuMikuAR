@@ -12,9 +12,9 @@ import {
     setTheme,
     FONT_MAP,
     THEME_PRESETS,
+    SETTINGS_FONT_RESTORE,
+    type SettingsMenuHandle,
 } from './settings-shared';
-
-type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
 
 export function buildSettingsAppearanceLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     const initialScale =
@@ -134,11 +134,16 @@ export function buildSettingsAppearanceLevel(getSettingsMenu: () => SettingsMenu
                 const applyBtn = document.createElement('button');
                 applyBtn.className = 'btn btn-sm btn-primary';
                 applyBtn.textContent = '应用';
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        applyBtn.click();
+                    }
+                });
                 applyBtn.addEventListener('click', () => {
                     const hex = input.value.trim();
                     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
                         setTheme(hex, getSettingsMenu);
-                    } else {
+                    } else if (input.value.trim() !== '') {
                         setStatus('无效的颜色格式，请使用 #RRGGBB', false);
                     }
                 });
@@ -250,7 +255,7 @@ export function buildSettingsAppearanceLevel(getSettingsMenu: () => SettingsMenu
                     root.style.setProperty('--accent-dim', 'rgba(74,108,247,0.2)');
                     root.style.setProperty(
                         '--font',
-                        "'Segoe UI', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK SC', system-ui, sans-serif"
+                        SETTINGS_FONT_RESTORE['system']
                     );
                     root.style.setProperty('--ui-animations', '1');
                     root.style.setProperty('--ui-blur', '0');

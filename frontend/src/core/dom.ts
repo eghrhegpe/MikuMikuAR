@@ -20,4 +20,23 @@ export const dom = {
     btnScene: document.getElementById('btnScene') as HTMLButtonElement,
     btnEnv: document.getElementById('btnEnv') as HTMLButtonElement,
     sceneOverlay: document.getElementById('sceneOverlay') as HTMLElement,
+
+    /** 引擎就绪后调用：隐藏 loading 遮罩，显示主应用 UI */
+    showApp(): void {
+        this.loadingText.textContent = '✅ 引擎就绪';
+        // 短暂显示"就绪"再隐藏，让用户感知切换
+        setTimeout(() => {
+            this.loadingEl.style.display = 'none';
+            this.canvas.style.visibility = 'visible';
+            this.playbackBar.style.pointerEvents = 'auto';
+            this.statusText.textContent = '✨ 准备就绪 · 点击"模型"导入 PMX';
+        }, 150);
+    },
+
+    /** 引擎初始化失败时调用：保留遮罩，显示错误信息 */
+    showError(msg: string): void {
+        this.loadingEl.style.pointerEvents = 'auto';
+        this.loadingText.textContent = '❌ 初始化失败: ' + msg;
+        this.loadingEl.style.background = 'linear-gradient(135deg, #2d1a1a 0%, #1a1a2e 100%)';
+    },
 };

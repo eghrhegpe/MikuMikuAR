@@ -284,6 +284,7 @@ type UIState struct {
 	PerformanceMode string  `json:"performanceMode"` // "auto"|"quality"|"balanced"|"performance"
 	ScreenshotFormat  string  `json:"screenshotFormat"`
 	ScreenshotQuality float64 `json:"screenshotQuality"`
+	ScreenshotDir     string  `json:"screenshotDir,omitempty"`
 	AutoCameraEnabled  bool    `json:"autoCameraEnabled"`
 	AutoCameraBeatsPerSwitch int `json:"autoCameraBeatsPerSwitch"`
 	AutoUpdateEnabled        bool `json:"autoUpdateEnabled"`

@@ -4,14 +4,13 @@ import { SetPerformanceMode } from '../core/wails-bindings';
 import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addSliderRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
-import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
+import { setPerformanceMode, getPerformanceMode, resetPerformanceSnapshot } from '../scene/render/performance';
 import { getRenderState, setRenderState } from '../scene/render/renderer';
 import { getLightState, setLightState } from '../scene/render/lighting';
 import { engine, applyFrameControl } from '../scene/scene';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import type { PopupLevel } from '../core/config';
-
-type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
+import type { SettingsMenuHandle } from './settings-shared';
 
 const PERFORMANCE_MODES: Array<{
     key: 'auto' | 'quality' | 'balanced' | 'performance' | 'custom';
@@ -100,15 +99,21 @@ export function buildSettingsPerformanceLevel(getSettingsMenu: () => SettingsMen
 
             // 垂直同步
             cardContainer(container, (c) => {
-                addToggleRow(c, '垂直同步', uiState.vsync !== false,
-                    (v) => {
-                        setUIState({ vsync: v });
-                        applyFrameControl();
-                        getSettingsMenu()?.updateControls();
-                        setStatus(`✓ 垂直同步: ${v ? '开' : '关'}`, true);
-                    },
-                    'lucide:monitor-check'
-                );
+        addToggleRow(c, '垂直同步', uiState.vsync !== false,
+          (v) => {
+            setUIState({ vsync: v });
+            applyFrameControl();
+            getSettingsMenu()?.updateControls();
+            setStatus(`✓ 垂直同步: ${v ? '开' : '关'}`, true);
+          },
+          'lucide:monitor-check'
+        );
+        const hintVsync = document.createElement('div');
+        hintVsync.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+        hintVsync.textContent = uiState.vsync !== false
+          ? '开启该项后，框架采用 requestAnimationFrame 循环；关闭后帧率不受刷新率限制，但无法设置帧率上限。'
+          : '关闭后无法使用"帧率上限"，Engine 总是不限帧（相当于 maxFPS=0）。';
+        c.appendChild(hintVsync);
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
                 hint.textContent = '浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，天然与刷新同步；关闭后解除人为限帧（实际仍受刷新率约束）。';
@@ -186,13 +191,15 @@ export function buildSettingsPerformanceLevel(getSettingsMenu: () => SettingsMen
                 c.appendChild(hint);
             });
 
-            // 自定义模式：逐项渲染/光照独立开关
-            if (getPerformanceMode() === 'custom') {
-                cardContainer(container, (c) => {
-                    addSectionTitle(c, '自定义渲染项');
-                    const rs = getRenderState();
-                    const ls = getLightState();
-                    const renderToggles: Array<{ label: string; value: boolean; apply: (v: boolean) => void }> = [
+// 自定义模式：逐项渲染/光照独立开关
+if (getPerformanceMode() === 'custom') {
+    cardContainer(container, (c) => {
+        addSectionTitle(c, '自定义渲染项');
+        // 在切入 custom 时若存在自动降级快照，恢复快照=用户原始状态
+        resetPerformanceSnapshot();
+        const rs = getRenderState();
+        const ls = getLightState();
+        const renderToggles: Array<{ label: string; value: boolean; apply: (v: boolean) => void }> = [
                         { label: '阴影', value: ls.shadowEnabled, apply: (v) => setLightState({ shadowEnabled: v }) },
                         { label: '泛光 (Bloom)', value: rs.bloomEnabled, apply: (v) => setRenderState({ bloomEnabled: v }) },
                         { label: 'FXAA 抗锯齿', value: rs.fxaaEnabled, apply: (v) => setRenderState({ fxaaEnabled: v }) },
