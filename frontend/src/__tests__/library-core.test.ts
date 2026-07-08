@@ -48,6 +48,7 @@ vi.mock('../core/wails-bindings', () => ({
     SelectAudioFile: vi.fn(),
     SelectVMDMotion: vi.fn(),
     SelectVPDPose: vi.fn(),
+    SetUIState: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../core/load-manager', () => ({
@@ -139,7 +140,7 @@ vi.mock('../core/config', () => ({
 
 // ----- SUT -----
 
-import { modelToRow, buildLevel, importFile } from '../menus/library-core';
+import { modelToRow, buildLevel, importFile, getResourceViewMode, setResourceViewMode, buildResourceItemsForDir } from '../menus/library-core';
 
 // ----- helpers -----
 
@@ -602,6 +603,101 @@ describe('importFile', () => {
         await importFile(); // should not throw
         const { setStatus } = await import('../core/config');
         expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('导入失败'), false);
+    });
+});
+
+// ===================================================================
+// Resource View Mode [doc:adr-066]
+// ===================================================================
+
+describe('Resource View Mode', () => {
+    beforeEach(() => {
+        // Reset to default
+        setResourceViewMode('list');
+    });
+
+    it('getResourceViewMode returns default "list"', () => {
+        expect(getResourceViewMode()).toBe('list');
+    });
+
+    it('setResourceViewMode updates mode', () => {
+        setResourceViewMode('grid');
+        expect(getResourceViewMode()).toBe('grid');
+        setResourceViewMode('list');
+        expect(getResourceViewMode()).toBe('list');
+    });
+
+    it('setResourceViewMode persists via SetUIState', async () => {
+        const { SetUIState } = await import('../core/wails-bindings');
+        setResourceViewMode('grid');
+        // SetUIState is called asynchronously
+        await new Promise((r) => setTimeout(r, 10));
+        expect(SetUIState).toHaveBeenCalledWith(expect.objectContaining({ resourceViewMode: 'grid' }));
+    });
+});
+
+// ===================================================================
+// buildResourceItemsForDir [doc:adr-066]
+// ===================================================================
+
+describe('buildResourceItemsForDir', () => {
+    beforeEach(() => {
+        mockState.displayNamePriority = 'filename';
+        mockState.modelMetaCache.clear();
+    });
+
+    it('returns models in the specified directory', () => {
+        mockState.allModels = [
+            makeModel({ file_path: '/test/models/a.pmx', dir: '/test/models' }),
+            makeModel({ file_path: '/test/models/b.pmx', dir: '/test/models' }),
+            makeModel({ file_path: '/test/other/c.pmx', dir: '/test/other' }),
+        ];
+
+        const items = buildResourceItemsForDir('/test/models');
+        expect(items).toHaveLength(2);
+        expect(items.every((i) => !i.isFolder)).toBe(true);
+    });
+
+    it('creates folder items for subdirectories', () => {
+        mockState.allModels = [
+            makeModel({ file_path: '/test/models/sub/a.pmx', dir: '/test/models/sub' }),
+        ];
+
+        const items = buildResourceItemsForDir('/test/models');
+        expect(items).toHaveLength(1);
+        expect(items[0].isFolder).toBe(true);
+        expect(items[0].label).toBe('sub');
+    });
+
+    it('mixes folders and models with folders first', () => {
+        mockState.allModels = [
+            makeModel({ file_path: '/test/models/a.pmx', dir: '/test/models' }),
+            makeModel({ file_path: '/test/models/sub/b.pmx', dir: '/test/models/sub' }),
+        ];
+
+        const items = buildResourceItemsForDir('/test/models');
+        expect(items).toHaveLength(2);
+        expect(items[0].isFolder).toBe(true);
+        expect(items[0].label).toBe('sub');
+        expect(items[1].isFolder).toBe(false);
+        expect(items[1].label).toBe('a.pmx');
+    });
+
+    it('applies filter to exclude models', () => {
+        mockState.allModels = [
+            makeModel({ file_path: '/test/a.pmx', dir: '/test', format: 'pmx' }),
+            makeModel({ file_path: '/test/b.vmd', dir: '/test', format: 'vmd' }),
+        ];
+
+        const items = buildResourceItemsForDir('/test', (m) => m.format === 'pmx');
+        expect(items).toHaveLength(1);
+        expect(items[0].filePath).toBe('/test/a.pmx');
+    });
+
+    it('returns empty array for nonexistent directory', () => {
+        mockState.allModels = [];
+        const items = buildResourceItemsForDir('/nonexistent');
+        expect(items).toHaveLength(0);
     });
 });
 

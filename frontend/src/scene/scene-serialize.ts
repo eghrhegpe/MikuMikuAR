@@ -730,13 +730,21 @@ let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 /** localStorage key for backup auto-save (sync fallback when async Go call can't complete). */
 const LOCAL_SAVE_KEY = 'mikumikuar_last_scene_backup';
 
+function clearLocalSceneBackup(): void {
+    try {
+        localStorage.removeItem(LOCAL_SAVE_KEY);
+    } catch {
+        // ignore
+    }
+}
+
 export function triggerAutoSaveImpl(): void {
     if (autoSaveTimer) {
         clearTimeout(autoSaveTimer);
     }
     autoSaveTimer = setTimeout(() => {
         saveSceneImmediate().catch(() => {});
-    }, 2000);
+    }, 500);
 }
 
 /** Save scene immediately (no debounce). Used in visibilitychange / beforeunload.
@@ -745,23 +753,18 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
     try {
         const json = JSON.stringify(serializeScene());
 
-        // Always write to localStorage as a synchronous backup.
-        // If the Go call below is interrupted by window close, this
-        // backup will be picked up on the next app launch.
+        // localStorage 作为主存储（同步写入，保证进程退出前完成）
         try {
             localStorage.setItem(LOCAL_SAVE_KEY, json);
         } catch {
             // localStorage may be full or unavailable — ignore
         }
 
-        await SaveLastScene(json);
-
-        // If we got here, the Go-side save completed successfully.
-        // Clean up the localStorage backup since it's no longer needed.
+        // Go 端作为备份（异步，失败不影响）
         try {
-            localStorage.removeItem(LOCAL_SAVE_KEY);
+            await SaveLastScene(json);
         } catch {
-            // ignore
+            // Go 端失败不影响，localStorage 已有完整数据
         }
     } catch (_err) {
         if (!suppressToast) {
@@ -829,24 +832,22 @@ function migrateScene(data: Record<string, unknown>): Record<string, unknown> {
 export async function tryRestoreLastScene(): Promise<void> {
     let json: string | null = null;
 
+    // 优先从 localStorage 读取（同步，不受进程退出影响）
     try {
-        json = await LoadLastScene();
+        json = localStorage.getItem(LOCAL_SAVE_KEY);
+        if (json) {
+            console.info('从本地存储恢复场景');
+        }
     } catch {
-        // No saved scene from Go backend
+        // localStorage unavailable
     }
 
-    // Fallback: check localStorage for a backup from a previous interrupted save
+    // localStorage 没有时再尝试 Go 端
     if (!json) {
         try {
-            const backup = localStorage.getItem(LOCAL_SAVE_KEY);
-            if (backup) {
-                json = backup;
-                console.info('从本地存储备份恢复场景');
-                // Don't remove the backup here — saveSceneImmediate will do it
-                // after the next successful save.
-            }
+            json = await LoadLastScene();
         } catch {
-            // localStorage unavailable
+            // No saved scene from Go backend
         }
     }
 
@@ -856,24 +857,37 @@ export async function tryRestoreLastScene(): Promise<void> {
 
     try {
         const raw = JSON.parse(json);
-        if (!raw) {
+        
+        // 防御二次序列化：parse 后仍是字符串说明数据异常
+        if (!raw || typeof raw !== 'object') {
+            console.warn('场景数据格式异常（可能被二次序列化），跳过恢复');
+            clearLocalSceneBackup();
             return;
         }
 
-        // Run version migration before checking version
         const data = migrateScene(raw);
         const version = data.version as number;
 
-        if (SUPPORTED_VERSIONS.includes(version)) {
-            await deserializeScene(data as unknown as SceneFile, true);
-            console.info(`从 v${version} 场景文件恢复成功`);
-        } else {
+        // 版本校验 + 基础字段完整性校验
+        if (!SUPPORTED_VERSIONS.includes(version)) {
             console.warn(
                 `场景文件版本 v${version} 不受支持（支持: ${SUPPORTED_VERSIONS.join(', ')}）`
             );
+            clearLocalSceneBackup();
+            return;
         }
+
+        // 确保 models 字段存在且是数组
+        if (!Array.isArray(data.models)) {
+            console.warn('场景数据缺少有效的 models 字段，跳过恢复');
+            clearLocalSceneBackup();
+            return;
+        }
+
+        await deserializeScene(data as unknown as SceneFile, true);
+        console.info(`从 v${version} 场景文件恢复成功`);
     } catch (err) {
-        // Corrupt or unparseable — silently skip
         console.warn('场景恢复失败（数据可能已损坏）:', err);
+        clearLocalSceneBackup();
     }
 }

@@ -20,6 +20,7 @@ import (
 
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/transform"
 
 	"mikumikuar/internal/util"
@@ -370,7 +371,7 @@ func decodeZipName(name string, nonUTF8 bool) string {
 	return bestDecode(name)
 }
 
-// bestDecode tries to decode a non-UTF-8 string using Shift-JIS and GBK,
+// bestDecode tries to decode a non-UTF-8 string using Shift-JIS, GBK and Big5,
 // returning the result with the fewest encoding errors.
 func bestDecode(raw string) string {
 	type candidate struct {
@@ -392,6 +393,10 @@ func bestDecode(raw string) string {
 			d, _, e := transform.String(simplifiedchinese.GBK.NewDecoder(), s)
 			return d, e
 		}, "gbk"},
+		{func(s string) (string, error) {
+			d, _, e := transform.String(traditionalchinese.Big5.NewDecoder(), s)
+			return d, e
+		}, "big5"},
 	} {
 		decoded, err := dec.decode(raw)
 		if decoded == "" {

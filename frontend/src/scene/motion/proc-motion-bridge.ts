@@ -534,18 +534,17 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         _clearVmdData(focusedModel());
     } finally {
         procStarting = false;
-        if (_regeneratePending) {
-            _regeneratePending = false;
-            // 检查 focusedModelId 是否仍与 procModelId 一致，防止重触发到错误模型
-            if (!procModelId || focusedModelId !== procModelId) {
-                console.warn('[proc-motion] Re-trigger skipped: focusedModelId changed or procModelId cleared');
-                return;
-            }
-            // Re-trigger with current state
+    }
+
+    // Re-trigger check after finally (cannot use return inside finally — no-unsafe-finally)
+    if (_regeneratePending) {
+        _regeneratePending = false;
+        if (procModelId && focusedModelId === procModelId) {
             const mode = procState.mode === 'autodance' ? 'autodance' : 'idle';
             const bpm = procBeatDetector?.getBPM() ?? 120;
-            // Only regenerate if still relevant (mode is 'idle'|'autodance' here, never 'off')
             startProcMotion(mode, mode === 'autodance' ? bpm : undefined);
+        } else {
+            console.warn('[proc-motion] Re-trigger skipped: focusedModelId changed or procModelId cleared');
         }
     }
 }

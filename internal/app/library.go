@@ -91,7 +91,8 @@ func (a *App) scanAllCategories(cfg *Config) ([]ModelEntry, error) {
 			defer wg.Done()
 			entries, err := a.scanDirByExt(j.dir, j.category, j.exts, j.source)
 			if err != nil {
-				return // skip unreadable dirs
+				a.safeLogWarning("scanAllCategories: skip dir %q (category=%q): %v", j.dir, j.category, err)
+				return
 			}
 			results[idx] = scanResult{entries}
 		}(i, job)
@@ -140,15 +141,54 @@ func formatByCategory(ext, category string) string {
 	return strings.TrimPrefix(ext, ".")
 }
 
+// ZIP bomb protection thresholds for expandZipEntries.
+const (
+	maxZipEntryFileSize  = 500 * 1024 * 1024 // 500 MB — reject bloated files before zip.OpenReader
+	maxZipEntryCount     = 10000              // reject zip bombs with excessive file entries
+	maxZipTotalBytes     = 2 * 1024 * 1024 * 1024 // 2 GB — total uncompressed size limit
+)
+
+// totalUncompressedZipSize returns the sum of all entries' UncompressedSize64.
+func totalUncompressedZipSize(files []*zip.File) uint64 {
+	var total uint64
+	for _, zf := range files {
+		total += zf.UncompressedSize64
+	}
+	return total
+}
+
 // expandZipEntries opens a zip file and returns ModelEntry for each recognized inner file.
 // Supports: .pmx, .vmd, .mp3/.wav/.ogg/.flac/.wma, .vpd.
 // If typeOverride is non-empty (and not "other"), it replaces the inferred inner type.
-func expandZipEntries(zipPath, category, source, typeOverride string) []ModelEntry {
+//
+// Safety: enforces max file count and total uncompressed size to prevent ZIP bomb attacks.
+func (a *App) expandZipEntries(zipPath, category, source, typeOverride string) []ModelEntry {
+	// Pre-check: reject oversized zip files by file size (quick stat, no decompression)
+	if fi, err := os.Stat(zipPath); err == nil && fi.Size() > maxZipEntryFileSize {
+		a.safeLogWarning("expandZipEntries: skipping oversized zip (%.1f MB) %s",
+			float64(fi.Size())/1024/1024, zipPath)
+		return nil
+	}
+
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return nil
 	}
 	defer zr.Close()
+
+	// Guard 1: reject zip bombs with too many entries
+	if len(zr.File) > maxZipEntryCount {
+		a.safeLogWarning("expandZipEntries: zip %s has %d entries (max %d), possible zip bomb",
+			zipPath, len(zr.File), maxZipEntryCount)
+		return nil
+	}
+
+	// Guard 2: reject zip bombs with excessive total uncompressed size
+	if totalUncompressedZipSize(zr.File) > maxZipTotalBytes {
+		a.safeLogWarning("expandZipEntries: zip %s total uncompressed size exceeds %.0f MB",
+			zipPath, float64(maxZipTotalBytes)/1024/1024)
+		return nil
+	}
 
 	var models []ModelEntry
 	fullPath := filepath.ToSlash(zipPath)
@@ -219,7 +259,7 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 		fullPath := filepath.ToSlash(walkPath)
 
 		if ext == ".zip" {
-			models = append(models, expandZipEntries(walkPath, category, source, "")...)
+			models = append(models, a.expandZipEntries(walkPath, category, source, "")...)
 			return nil
 		}
 
