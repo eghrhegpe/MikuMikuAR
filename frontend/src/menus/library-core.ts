@@ -90,6 +90,10 @@ export function getResourceViewMode(): ResourceViewMode {
 
 export function setResourceViewMode(mode: ResourceViewMode): void {
     resourceViewMode = mode;
+    // [doc:adr-066] 持久化到 config
+    import('../core/wails-bindings').then(({ SetUIState }) => {
+        SetUIState({ resourceViewMode: mode } as any).catch(() => {});
+    });
 }
 
 // ======== Model Stack ========

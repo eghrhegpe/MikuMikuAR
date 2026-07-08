@@ -58,9 +58,13 @@ export function closeFullscreen(): void {
         return;
     }
 
-    // 移除 Overlay
+    // 移除 Overlay 并清理事件监听
     if (currentOverlay) {
         const element = currentOverlay.getElement();
+        const cleanup = (element as any).__cleanup;
+        if (cleanup) {
+            cleanup();
+        }
         element.remove();
         currentOverlay = null;
     }
@@ -180,6 +184,7 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
     // Escape 键关闭
     const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape' && currentState === 'FULLSCREEN') {
+            cleanup();
             closeFullscreen();
             options.onBack();
         }
@@ -189,23 +194,19 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
     // Overlay 背景点击关闭
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay && currentState === 'FULLSCREEN') {
+            cleanup();
             closeFullscreen();
             options.onBack();
         }
     });
 
-    // 清理事件监听
-    const originalClose = currentOverlay?.close;
-    if (originalClose) {
-        const wrappedClose = () => {
-            document.removeEventListener('keydown', handleKeyDown);
-            originalClose();
-        };
-        currentOverlay = {
-            close: wrappedClose,
-            getElement: () => overlay,
-        };
-    }
+    // 清理函数
+    const cleanup = () => {
+        document.removeEventListener('keydown', handleKeyDown);
+    };
+
+    // 将 cleanup 挂载到 overlay 元素上，供外部调用
+    (overlay as any).__cleanup = cleanup;
 
     return overlay;
 }

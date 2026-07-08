@@ -597,6 +597,11 @@ export interface UIState {
      * 材质分类映射
      */
     "materialCategoryMap"?: { [_ in string]?: string } | null;
+
+    /**
+     * [doc:adr-066] 资源库视图模式："list"|"grid"
+     */
+    "resourceViewMode"?: string;
 }
 
 /**
