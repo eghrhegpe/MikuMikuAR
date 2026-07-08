@@ -18,20 +18,23 @@ test.describe("Motion — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =
     test("动作弹窗: 标题与核心区段渲染", async ({ vitePage: page }) => {
         // 使用 slide-title 类定位弹窗标题，避免匹配导航按钮的 nav-label
         await expect(page.locator('.slide-title').filter({ hasText: '动作' })).toBeVisible();
-        // Core sections
-        await expect(page.getByText("动作绑定")).toBeVisible();
-        await expect(page.getByText("姿势库")).toBeVisible();
-        await expect(page.getByText("相机")).toBeVisible();
-        // Note: 程序化动作 may not always be visible depending on state
-        await expect(page.getByText("音乐")).toBeVisible();
+        // Motion root sections (post modularize: 相机 / 浏览音乐库 / 程序化动作 / 视线追踪).
+        // 动作绑定 / 姿势库 only appear after drilling into a specific model.
+        await expect(page.getByText("相机", { exact: true })).toBeVisible();
+        await expect(page.getByText("浏览音乐库", { exact: true })).toBeVisible();
+        await expect(page.getByText("程序化动作", { exact: true })).toBeVisible();
+        await expect(page.getByText("视线追踪", { exact: true })).toBeVisible();
     });
 
     test("动作弹窗: 相机模式可交互", async ({ vitePage: page }) => {
         await page.getByText("相机", { exact: true }).click();
-        // Camera mode options (轨道/自由飞行/演唱会/单拍)
+        // Camera mode is a segmented control showing only the CURRENT value (轨道).
+        // 自由飞行 / 演唱会 / 单拍 live in the slider's hidden listbox, not as
+        // visible text — assert the rendered mode value + controls instead.
         await expect(page.getByText("轨道", { exact: true })).toBeVisible();
-        await expect(page.getByText("自由飞行")).toBeVisible();
-        await expect(page.getByText("相机设置")).toBeVisible();
+        await expect(page.getByText("视场角")).toBeVisible();
+        await expect(page.getByText("自动运镜")).toBeVisible();
+        await expect(page.getByText("加载相机 VMD")).toBeVisible();
     });
 
     test("动作弹窗: 返回上级不崩溃", async ({ vitePage: page }) => {

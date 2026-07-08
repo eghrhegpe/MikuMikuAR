@@ -30,14 +30,20 @@ test.describe("Environment — Sky Panel (vitePage, DOM-only)", { tag: ["@dom"] 
         await expect(page.getByText("天空外观")).toBeVisible();
         await expect(page.getByText("高级天空设置")).toBeVisible();
     });
-
-    test("选择天空预设（夜景）不报错且面板保持可见", async ({ vitePage: page }) => {
-        await page.getByText("夜景", { exact: true }).click();
-        await expect(page.locator("#sceneOverlay")).toHaveClass(/visible/);
-    });
 });
 
 test.describe("Environment — Sky Panel (wailsPage, screenshot)", { tag: ["@webgl"] }, () => {
+    test("选择天空预设（夜景）不报错且面板保持可见", async ({ wailsPage: page }) => {
+        // NOTE: applies a procedural sky preset, which triggers a sky-dome
+        // texture rebuild. Under the @dom fixture's software-GL (SwiftShader)
+        // Chromium this crashes the GPU process; the real WebView2 renderer
+        // (@webgl) handles it fine, so this assertion lives here.
+        await openEnvPanel(page);
+        await clickEnvSubLevel(page, "天空");
+        await page.getByText("夜景", { exact: true }).click();
+        await expect(page.locator("#sceneOverlay")).toHaveClass(/visible/);
+    });
+
     test("纯色纯白截图: 与基线比对（首次运行自动生成基线）", async ({ wailsPage: page }) => {
         await openEnvPanel(page);
         await clickEnvSubLevel(page, "天空");
