@@ -27,17 +27,18 @@ test.describe("Settings — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, ()
     });
 
     test("设置面板: 快捷键区段可导航", async ({ vitePage: page }) => {
-        await expect(page.getByText("快捷键")).toBeVisible();
+        await expect(page.getByText("快捷键", { exact: true })).toBeVisible();
         await page.getByText("快捷键", { exact: true }).click();
         // Shortcuts list renders — at least one shortcut key should be visible
         // We just assert the breadcrumb or title changed
-        await expect(page.getByText("快捷键")).toBeVisible();
+        await expect(page.getByText("快捷键", { exact: true })).toBeVisible();
     });
 
     test("设置面板: 外观区段显示渲染相关选项", async ({ vitePage: page }) => {
         await page.getByText("外观", { exact: true }).click();
-        // Appearance has color/theme options
-        await expect(page.getByText("外观")).toBeVisible();
+        // Appearance has color/theme options. Use exact match — the level also
+        // renders a "恢复默认外观" button.
+        await expect(page.getByText("外观", { exact: true })).toBeVisible();
     });
 
     test("设置面板: 关闭后重新打开", async ({ vitePage: page }) => {

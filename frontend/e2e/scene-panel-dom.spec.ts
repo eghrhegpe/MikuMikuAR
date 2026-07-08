@@ -18,28 +18,26 @@ test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
     test("场景面板: 核心区段渲染", async ({ vitePage: page }) => {
         // 使用 slide-title 类定位弹窗标题，避免匹配导航按钮的 nav-label
         await expect(page.locator('.slide-title').filter({ hasText: '场景' })).toBeVisible();
-        // Core scene menu sections — 这些文本不出现在导航栏，可直接匹配
+        // Core scene menu root sections (post refactor).
+        // 道具 / 舞台灯光 / 队形 live inside the 舞台 sub-level, not at root.
         await expect(page.getByText("舞台", { exact: true })).toBeVisible();
-        await expect(page.getByText("道具", { exact: true })).toBeVisible();
-        await expect(page.getByText("舞台灯光")).toBeVisible();
-        await expect(page.getByText("队形", { exact: true })).toBeVisible();
-    });
-
-    test("场景面板: 渲染预设区段可导航", async ({ vitePage: page }) => {
-        // 点击弹窗内的渲染项，而非导航按钮
-        await page.locator('.slide-panel').getByText("渲染", { exact: true }).click();
-        await expect(page.getByText("渲染预设")).toBeVisible();
-        // Preset names (standard/cinematic/cartoon...)
-        await expect(page.getByText("标准", { exact: true })).toBeVisible();
-        await expect(page.getByText("电影", { exact: true })).toBeVisible();
+        await expect(page.getByText("后处理", { exact: true })).toBeVisible();
+        await expect(page.getByText("预设场景", { exact: true })).toBeVisible();
+        await expect(page.getByText("物理", { exact: true })).toBeVisible();
+        await expect(page.getByText("布料模拟", { exact: true })).toBeVisible();
     });
 
     test("场景面板: 后处理区段含抗锯齿等选项", async ({ vitePage: page }) => {
-        await page.locator('.slide-panel').getByText("渲染", { exact: true }).click();
-        await expect(page.getByText("后处理")).toBeVisible();
-        // Click into post-process
+        // 后处理 is a top-level section in the refactored scene menu.
         await page.getByText("后处理", { exact: true }).click();
         await expect(page.getByText("抗锯齿")).toBeVisible();
         await expect(page.getByText("暗角", { exact: true })).toBeVisible();
+    });
+
+    test("场景面板: 舞台区段含舞台灯光", async ({ vitePage: page }) => {
+        await page.getByText("舞台", { exact: true }).click();
+        // 舞台灯光 / 加载舞台 live inside the 舞台 sub-level.
+        await expect(page.getByText("舞台灯光", { exact: true })).toBeVisible();
+        await expect(page.getByText("加载舞台", { exact: true })).toBeVisible();
     });
 });
