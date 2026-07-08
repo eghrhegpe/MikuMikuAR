@@ -70,7 +70,7 @@ import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, createResourcePanel, createVirtualGrid, openFullscreen, closeFullscreen, getCurrentState, setCurrentState } from '../core/ui-helpers';
+import { slideRow, createResourcePanel, openFullscreen, closeFullscreen, getCurrentState, setCurrentState } from '../core/ui-helpers';
 import type { ResourceItem } from '../core/ui-helpers';
 import { tryCatchStatus, getBrowseDir } from '../core/utils';
 import { showConfirm } from '../core/dialog';
@@ -92,7 +92,7 @@ export function setResourceViewMode(mode: ResourceViewMode): void {
     resourceViewMode = mode;
     // [doc:adr-066] 持久化到 config
     import('../core/wails-bindings').then(({ SetUIState }) => {
-        SetUIState({ resourceViewMode: mode } as any).catch(() => {});
+        SetUIState({ resourceViewMode: mode } as unknown as import('../core/wails-bindings').UIState).catch(() => {});
     });
 }
 
@@ -476,7 +476,7 @@ export function buildLevel(
         renderCustom: (container) => {
             // [doc:adr-066] 根据视图模式选择渲染路径
             if (resourceViewMode === 'grid') {
-                renderGridMode(container, items, filter, targetStack);
+                renderGridMode(container, dir, items, filter, targetStack);
             } else {
                 cardContainer(container, (card) => {
                     renderItemsWithRAF(card, items, filter, targetStack);
@@ -490,33 +490,21 @@ export function buildLevel(
 
 function renderGridMode(
     container: HTMLElement,
+    dir: string,
     items: PopupRow[],
     filter?: (m: LibraryModel) => boolean,
     targetStack?: SlideMenu
 ): void {
-    // 转换为 ResourceItem 格式
-    const resourceItems: ResourceItem[] = items
-        .filter((item) => item.kind === 'model' || item.kind === 'folder')
-        .map((item) => {
-            const model = item.model;
-            return {
-                id: item.target || '',
-                label: item.label,
-                filePath: model?.file_path || '',
-                icon: item.icon,
-                isFolder: item.kind === 'folder',
-                sublabel: item.sublabel,
-                data: model,
-            };
-        });
+    // [doc:adr-066] 进入 grid 模式时设置状态机
+    setCurrentState('EMBEDDED_GRID');
 
-    // 获取当前目录下的模型列表
-    const currentDir = items[0]?.target?.split('/').slice(0, -1).join('/') || '';
+    // 获取当前目录下的模型列表（精确匹配当前层级）
+    const normDir = normPath(dir);
     const modelsInDir = (allModels || []).filter((m) => {
         if (filter && !filter(m)) {
             return false;
         }
-        return normPath(m.dir).startsWith(normPath(currentDir));
+        return normPath(m.dir) === normDir;
     });
 
     // 转换模型为 ResourceItem
@@ -592,7 +580,7 @@ function renderGridMode(
                         buildLevel(
                             currentLevel.dir,
                             currentLevel.label,
-                            (currentLevel as any).filter,
+                            currentLevel.filter,
                             targetStack
                         )
                     );
@@ -614,7 +602,7 @@ function renderGridMode(
                         buildLevel(
                             currentLevel.dir,
                             currentLevel.label,
-                            (currentLevel as any).filter,
+                            currentLevel.filter,
                             targetStack
                         )
                     );

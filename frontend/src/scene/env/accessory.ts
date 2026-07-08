@@ -102,6 +102,8 @@ export function detachPropFromBone(propId: string): void {
     // 恢复场景坐标模式
     prop.boneName = undefined;
     prop.targetModelId = undefined;
+    prop.boneOffset = undefined;
+    prop.boneRotation = undefined;
 
     // 用原来的世界矩阵保持视觉位置不变
     target.position = worldMat.getTranslation();

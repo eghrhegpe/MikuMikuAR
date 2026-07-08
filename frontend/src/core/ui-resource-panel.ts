@@ -1,7 +1,9 @@
 // [doc:architecture] ResourcePanel — 缩略图网格组件
 // 支持网格/列表布局，IntersectionObserver 懒加载
+// [doc:adr-066] 大数据量时使用 VirtualGrid 虚拟滚动
 
 import { createIconifyIcon } from './icons';
+import { createVirtualGrid, type VirtualGridHandle } from './ui-virtual-grid';
 
 // ======== Types ========
 
@@ -59,6 +61,9 @@ const CSS_VARS = `
 
 // ======== Main Component ========
 
+/** 超过此数量时启用虚拟滚动 */
+const VIRTUAL_THRESHOLD = 50;
+
 export function createResourcePanel(
     container: HTMLElement,
     options: ResourcePanelOptions
@@ -77,6 +82,7 @@ export function createResourcePanel(
     let currentItems = [...items];
     let currentLayout = layout;
     let observer: IntersectionObserver | null = null;
+    let virtualGrid: VirtualGridHandle<ResourceItem> | null = null;
 
     // 创建容器
     const panel = document.createElement('div');
@@ -84,15 +90,26 @@ export function createResourcePanel(
     panel.style.cssText = CSS_VARS;
     container.appendChild(panel);
 
-    // 渲染
-    function render(): void {
-        panel.innerHTML = '';
+    // 清理虚拟滚动和观察器
+    function cleanup(): void {
+        if (virtualGrid) {
+            virtualGrid.dispose();
+            virtualGrid = null;
+        }
         if (observer) {
             observer.disconnect();
             observer = null;
         }
+    }
 
-        if (currentLayout === 'grid') {
+    // 渲染
+    function render(): void {
+        cleanup();
+        panel.innerHTML = '';
+
+        if (currentLayout === 'grid' && currentItems.length > VIRTUAL_THRESHOLD) {
+            renderVirtualGrid(panel, currentItems, thumbnailCache, onSelect, onEnterFolder, itemHeight);
+        } else if (currentLayout === 'grid') {
             renderGrid(panel, currentItems, thumbnailCache, onSelect, onEnterFolder, itemHeight);
         } else {
             renderList(panel, currentItems, thumbnailCache, onSelect, onEnterFolder);
@@ -123,7 +140,11 @@ export function createResourcePanel(
     return {
         updateItems: (newItems: ResourceItem[]) => {
             currentItems = [...newItems];
-            render();
+            if (virtualGrid) {
+                virtualGrid.updateItems(currentItems);
+            } else {
+                render();
+            }
         },
         setLayout: (newLayout: 'grid' | 'list') => {
             if (currentLayout !== newLayout) {
@@ -132,13 +153,37 @@ export function createResourcePanel(
             }
         },
         dispose: () => {
-            if (observer) {
-                observer.disconnect();
-                observer = null;
-            }
+            cleanup();
             panel.remove();
         },
     };
+}
+
+// ======== Virtual Grid Rendering [doc:adr-066] ========
+
+function renderVirtualGrid(
+    container: HTMLElement,
+    items: ResourceItem[],
+    cache: Map<string, string>,
+    onSelect: (item: ResourceItem) => void,
+    onEnterFolder?: (path: string) => void,
+    itemHeight: number = 120
+): void {
+    // 计算列数：基于容器宽度
+    const thumbSize = 80; // --resource-thumb-size
+    const gap = 8; // --resource-gap
+    const cols = Math.max(1, Math.floor((container.clientWidth || 280) / (thumbSize + gap)));
+
+    const handle = createVirtualGrid<ResourceItem>(container, {
+        items,
+        itemHeight,
+        columns: cols,
+        renderItem: (item) => createGridCard(item, cache, onSelect, onEnterFolder, itemHeight),
+        bufferRows: 2,
+    });
+
+    // 存储 handle 以便外部更新
+    (container as any).__virtualGridHandle = handle;
 }
 
 // ======== Grid Rendering ========
