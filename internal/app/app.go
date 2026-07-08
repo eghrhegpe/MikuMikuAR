@@ -298,6 +298,7 @@ type UIState struct {
 	InvertYAxis           bool              `json:"invertYAxis,omitempty"`           // 反转 Y 轴
 	AutoScaleModel        bool              `json:"autoScaleModel,omitempty"`        // 新加载模型自动缩放
 	MaterialCategoryMap   map[string]string `json:"materialCategoryMap,omitempty"`   // 材质分类映射
+	ResourceViewMode      string            `json:"resourceViewMode,omitempty"`      // [doc:adr-066] 资源库视图模式："list"|"grid"
 }
 
 // OverridePaths allows per-category path overrides.

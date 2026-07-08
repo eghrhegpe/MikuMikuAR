@@ -66,6 +66,7 @@ import {
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
 import { buildBoneOverrideLevel } from './motion-override-levels';
+import { buildPoseStudioLevel } from './motion-pose-levels';
 import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 
@@ -409,6 +410,9 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
     if (row.target === 'motion:boneOverride') {
         return buildBoneOverrideLevel();
     }
+    if (row.target === 'motion:poseStudio') {
+        return buildPoseStudioLevel();
+    }
     if (row.target === 'procmotion:mode') {
         return buildProcMotionModeLevel();
     }
@@ -693,6 +697,12 @@ function buildMotionRootItems(): PopupRow[] {
         label: t('motion.boneOverride.title'),
         icon: 'tabler:bone',
         target: 'motion:boneOverride',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('motion.poseStudio.title'),
+        icon: 'lucide:camera',
+        target: 'motion:poseStudio',
     });
     return items;
 }

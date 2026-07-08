@@ -279,6 +279,8 @@ export interface UIState {
     autoCameraBeatsPerSwitch?: number;
     /** 自动检查更新：启动时自动查询 GitHub 最新发布（默认关） */
     autoUpdateEnabled?: boolean;
+    /** [doc:adr-066] 资源库视图模式：'list' | 'grid' */
+    resourceViewMode?: 'list' | 'grid';
 }
 
 // [doc:test-strategy] Go↔TS UIState 字段同步哨兵
