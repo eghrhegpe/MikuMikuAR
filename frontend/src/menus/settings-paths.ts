@@ -14,7 +14,7 @@ import { selectResourceRoot, selectOverridePath, switchStorageMode } from './lib
 import { t } from '../core/i18n/t';
 import type { PopupLevel } from '../core/config';
 import { SETTINGS, SETTINGS_ACTION } from './settings-targets';
-import { isAndroidPlatform } from '../core/main';
+import { isAndroidPlatform } from '../core/platform';
 
 type SettingsMenuHandle = { updateControls: () => void; reRender: () => void } | null;
 

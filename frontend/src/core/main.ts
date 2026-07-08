@@ -28,6 +28,7 @@ import { t } from './i18n/t';
 import { registerIconBundle } from './icons-bundle';
 import { initI18n } from './i18n/locale'; // [doc:adr-059] 语言在菜单渲染前确定
 import { GetConfig, ImportZip, ImportLocalFile, Events, CheckForUpdate } from './wails-bindings';
+import { isAndroidPlatform } from './platform';
 import { Browser } from '@wailsio/runtime';
 import { generateTextColors } from '../menus/settings';
 import { loadManager } from './load-manager';
@@ -1034,13 +1035,10 @@ declare global {
     }
 }
 
-export function isAndroidPlatform(): boolean {
-    return (
-        typeof window !== 'undefined' &&
-        typeof window.wails?.platform === 'function' &&
-        window.wails.platform() === 'android'
-    );
-}
+// Platform detection moved to ./core/platform (side-effect-free) so importing
+// it does not pull in this module's bootstrap side effects. Re-exported here
+// to keep the public API stable for any legacy importer.
+export { isAndroidPlatform } from './platform';
 
 // On first launch on Android, if permission isn't granted, prompt the user.
 // We delay this so the scene/UI is ready before the dialog appears.

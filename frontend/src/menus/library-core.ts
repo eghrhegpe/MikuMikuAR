@@ -1,7 +1,7 @@
 // [doc:architecture] Library Core — 模型库核心逻辑
 // 从 library.ts 提取
 
-import { isAndroidPlatform } from '../core/main';
+import { isAndroidPlatform } from '../core/platform';
 import {
     GetConfig,
     SetResourceRoot,
