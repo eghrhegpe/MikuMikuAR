@@ -84,22 +84,33 @@ vi.mock('../core/config', () => ({
     triggerAutoSave: (...args: unknown[]) => mockTriggerAutoSave(...args),
 }));
 
-// Control SettingsStore.get() so get('volume') always returns the test-specified value
-let mockVolumeValue = 1;
-const SETTINGS_UPDATED_MOCK = Symbol('SETTINGS_UPDATED');
-vi.mock('../lib/settings-store', () => ({
-    SettingsStore: {
-        get() {
-            return {
-                get: (key: string) => (key === 'volume' ? mockVolumeValue : 0),
-                set: (_key: string, _value: unknown) => {
-                    globalThis.dispatchEvent(new CustomEvent(SETTINGS_UPDATED_MOCK.description!, { detail: { key: _key, value: _value } }));
-                },
-            };
+// Self-contained mock: no hoisting needed, factory owns its own internal store
+vi.mock('../lib/settings-store', () => {
+    // mutable ref shared between factory and test body
+    const store = {
+        mockVolume: 1,
+        mockOffset: 0,
+    };
+    return {
+        SettingsStore: {
+            get() {
+                return {
+                    get: (key: string) => {
+                        if (key === 'volume') return store.mockVolume;
+                        if (key === 'audioOffset') return store.mockOffset;
+                        return 0;
+                    },
+                    set: (_key: string, _value: unknown) => {
+                        if (_key === 'volume') store.mockVolume = _value as number;
+                        if (_key === 'audioOffset') store.mockOffset = _value as number;
+                        globalThis.dispatchEvent(new CustomEvent('SETTINGS_UPDATED', { detail: { key: _key, value: _value } }));
+                    },
+                };
+            },
         },
-    },
-    SETTINGS_UPDATED: SETTINGS_UPDATED_MOCK,
-}));
+        SETTINGS_UPDATED: Symbol('SETTINGS_UPDATED'),
+    };
+});
 
 // BeatDetector stub
 const mockBeatDetector = {
@@ -485,18 +496,17 @@ describe('SettingsStore integration', () => {
         return mockAudio;
     });
 
-    // Simulate SettingsStore default volume = 0.7
-    mockVolumeValue = 0.7;
+    // Simulate SettingsStore default volume = 0.7 via setVolume (writes to mocked store)
+    setVolume(0.7);
     void playAudio('test.mp3', 'test');
     expect(mockAudio.volume).toBe(0.7); // applyGain called at creation
 
     // setVolume(0.3) updates store and fires SETTINGS_UPDATED → applyGain
-    mockVolumeValue = 0.3;
-    void setVolume(0.3);
+    setVolume(0.3);
     expect(mockAudio.volume).toBe(0.3); // applyGain re-applies with new value
 
     // Restore and cleanup
-    mockVolumeValue = 1;
+    setVolume(1);
     vi.unstubAllGlobals();
   });
 });

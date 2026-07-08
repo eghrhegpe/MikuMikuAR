@@ -412,33 +412,35 @@ input, textarea, [contenteditable] {
     position: relative;
     flex-shrink: 0;
     /* 触屏设备：扩大触控热区到 44px（Apple HIG 最小触控目标），
-       视觉高度仍为 4px，通过伪元素向下扩展点击区域 */
+       视觉高度 10px，通过 ::after 透明叠加层扩展点击区域 */
     touch-action: none;
 }
 /* 触屏设备 seek bar 扩大触控区域 */
 @media (pointer: coarse) {
     #seekBar {
-        height: calc(44px * var(--ui-scale));
-        margin-top: calc(-20px * var(--ui-scale));
-        background: transparent;
-        border-radius: 0;
+        height: calc(10px * var(--ui-scale));    /* 视觉高度 10px，触屏可见但不夸张 */
+        margin-top: 0;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: calc(5px * var(--ui-scale));
+        /* 通过 ::after 透明叠加层扩展触控热区至 ~44px，不改变视觉高度 */
     }
     #seekBar::before {
+        display: none;
+    }
+    #seekBar::after {
         content: '';
         position: absolute;
         left: 0;
         right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        height: calc(4px * var(--ui-scale));
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: calc(2px * var(--ui-scale));
-        pointer-events: none;
+        top: calc(-17px * var(--ui-scale));
+        bottom: calc(-17px * var(--ui-scale));
+        touch-action: none;
+        /* 透明叠加层，仅扩大触控热区 */
     }
     #seekProgress {
-        height: calc(4px * var(--ui-scale));
-        top: 50%;
-        transform: translateY(-50%);
+        height: 100%;    /* 恢复默认，填满 #seekBar 的 10px */
+        top: auto;
+        transform: none;
         bottom: auto;
     }
 }

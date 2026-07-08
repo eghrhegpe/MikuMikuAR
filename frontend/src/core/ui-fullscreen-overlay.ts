@@ -200,12 +200,35 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
     overlay.appendChild(header);
     overlay.appendChild(content);
 
-    // Escape 键关闭
+    // 键盘导航：Escape 关闭，方向键聚焦，Enter 选择
     const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape' && currentState === 'FULLSCREEN') {
+        if (currentState !== 'FULLSCREEN') return;
+
+        if (e.key === 'Escape') {
             cleanup();
             closeFullscreen();
             options.onBack();
+            return;
+        }
+
+        // [doc:adr-066] 方向键 + Enter 键盘导航
+        const cards = content.querySelectorAll<HTMLElement>('.resource-card, .resource-row');
+        if (cards.length === 0) return;
+
+        const focused = content.querySelector<HTMLElement>('.resource-card:focus, .resource-row:focus');
+        const idx = focused ? Array.from(cards).indexOf(focused) : -1;
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            const next = idx < cards.length - 1 ? idx + 1 : 0;
+            cards[next].focus();
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            const prev = idx > 0 ? idx - 1 : cards.length - 1;
+            cards[prev].focus();
+        } else if (e.key === 'Enter' && focused) {
+            e.preventDefault();
+            focused.click();
         }
     };
     document.addEventListener('keydown', handleKeyDown);

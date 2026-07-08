@@ -215,6 +215,7 @@ function createGridCard(
 ): HTMLElement {
     const card = document.createElement('div');
     card.className = 'resource-card';
+    card.tabIndex = 0; // [doc:adr-066] 键盘导航支持
     card.style.cssText = `
         background: var(--card-bg);
         border: 1px solid var(--white-08);
@@ -276,15 +277,19 @@ function createGridCard(
         }
     });
 
-    // Hover 效果
-    card.addEventListener('mouseenter', () => {
+    // Hover + Focus 效果
+    const applyHover = () => {
         card.style.background = 'var(--card-hover)';
         card.style.borderColor = 'var(--white-16)';
-    });
-    card.addEventListener('mouseleave', () => {
+    };
+    const clearHover = () => {
         card.style.background = 'var(--card-bg)';
         card.style.borderColor = 'var(--white-08)';
-    });
+    };
+    card.addEventListener('mouseenter', applyHover);
+    card.addEventListener('mouseleave', clearHover);
+    card.addEventListener('focus', applyHover);
+    card.addEventListener('blur', clearHover);
 
     return card;
 }
@@ -323,6 +328,7 @@ function createListRow(
 ): HTMLElement {
     const row = document.createElement('div');
     row.className = 'resource-row';
+    row.tabIndex = 0; // [doc:adr-066] 键盘导航支持
     row.style.cssText = `
         display: flex;
         align-items: center;
@@ -406,13 +412,13 @@ function createListRow(
         }
     });
 
-    // Hover 效果
-    row.addEventListener('mouseenter', () => {
-        row.style.background = 'var(--card-hover)';
-    });
-    row.addEventListener('mouseleave', () => {
-        row.style.background = 'var(--card-bg)';
-    });
+    // Hover + Focus 效果
+    const applyRowHover = () => { row.style.background = 'var(--card-hover)'; };
+    const clearRowHover = () => { row.style.background = 'var(--card-bg)'; };
+    row.addEventListener('mouseenter', applyRowHover);
+    row.addEventListener('mouseleave', clearRowHover);
+    row.addEventListener('focus', applyRowHover);
+    row.addEventListener('blur', clearRowHover);
 
     return row;
 }
