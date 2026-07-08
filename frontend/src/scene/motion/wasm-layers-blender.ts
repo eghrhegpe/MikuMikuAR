@@ -12,7 +12,7 @@ import {
     type GazeConfig,
     type MmdRuntimeBoneExtended,
 } from './proc-motion-bridge';
-import { createVmdEvaluator, type VmdEvaluator } from '../../motion-algos/vmd-evaluator';
+import { createVmdEvaluator, type VmdEvaluator } from '@/motion-algos/vmd-evaluator';
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 import { scene, modelManager, loadVMDMotion } from '../scene';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';

@@ -13,8 +13,8 @@ import {
     Effect,
     PostProcess,
 } from '@babylonjs/core';
-import { EnvState, envState } from '../../core/config';
-import { getWindVector, isWindActive } from '../../core/physics/wind-utils';
+import { EnvState, envState } from '@/core/config';
+import { getWindVector, isWindActive } from '@/core/physics/wind-utils';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 
 // PostProcess 私有属性 _enabled 的类型声明（用于控制后处理启用/禁用）

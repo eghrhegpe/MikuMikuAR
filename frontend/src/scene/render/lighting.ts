@@ -17,8 +17,8 @@ import { CascadedShadowGenerator } from '@babylonjs/core/Lights/Shadows/cascaded
 import { PositionGizmo } from '@babylonjs/core/Gizmos/positionGizmo';
 import { RotationGizmo } from '@babylonjs/core/Gizmos/rotationGizmo';
 import { UtilityLayerRenderer } from '@babylonjs/core/Rendering/utilityLayerRenderer';
-import type { ModelInstance, PropInstance } from '../../core/config';
-import { scheduleRefresh } from '../../core/reactivity';
+import type { ModelInstance, PropInstance } from '@/core/config';
+import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot } from './performance';
 
 function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {

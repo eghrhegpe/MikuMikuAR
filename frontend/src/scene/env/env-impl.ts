@@ -21,7 +21,7 @@ import {
     ShaderMaterial,
 } from '@babylonjs/core';
 import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
-import { EnvState, envState } from '../../core/config';
+import { EnvState, envState } from '@/core/config';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 
 // ======== Static Asset URL Resolver (Android 安全) ========

@@ -11,8 +11,8 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
-import { focusedModelId, modelRegistry, uiState, setStatus } from '../../core/config';
-import { t } from '../../core/i18n/t';
+import { focusedModelId, modelRegistry, uiState, setStatus } from '@/core/config';
+import { t } from '@/core/i18n/t';
 import { focusModel, reattachPipeline, setARMode } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
 

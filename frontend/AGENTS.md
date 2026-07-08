@@ -65,7 +65,7 @@ npm run check                                          # 确认未新增错误
 
 - **不要新增 `any` 逃生** — 即使 `strict: false` 允许，新代码仍要避免 `as any` / `@ts-ignore` / `@ts-expect-error`。需要时加注释说明业务理由。
 - **类型定义就近放置** — 项目**没有**集中的 `src/types/` 目录。interface/type 与使用它的文件同模块放置；跨模块共享类型放 `core/types.ts`（config.ts 已拆分为 types / state / dom / utils 四个子模块，通过 barrel re-export 保持 import 兼容）。
-- **没有路径别名** — `tsconfig.json` 无 `paths` 配置。一律用相对路径 import（如 `import { dom } from '../core/config'`）。
+- **没有路径别名** — ~~`tsconfig.json` 无 `paths` 配置。一律用相对路径 import~~ → ✅ 已添加 `@/` → `src/`、`@bindings/` → `bindings/` 别名（2026-07-08）
 - **binding 自动生成** — 绑定文件在 `frontend/bindings/`，由 Wails v3 自动生成。**严禁手动编辑**。改 Go 端 struct/方法后，在 `frontend/` 目录跑 `npm run generate:bindings` 重新生成。生成参数为 `-ts -i`（TypeScript + interface 模式），输出目录 `frontend/bindings`。TS 侧统一通过 `src/core/wails-bindings.ts` re-export 引入，不要直接 import bindings 目录。
 
 ---
@@ -102,8 +102,13 @@ frontend/src/
 │   ├── motion-*.ts      # [UI层] 动作菜单（动作绑定/相机/程序化/LipSync/布料）
 │   └── settings*.ts     # 设置页（UI 主题 / 外部库 / 软件管理）
 ├── motion-algos/              # [算法层] 动作生成算法，无 Babylon 依赖（供 scene/motion/ 调用）
-│   ├── procedural-motion.ts    # Idle / AutoDance VMD 生成
+│   ├── procedural-motion.ts    # barrel re-export → shared / idle / autodance / lifelike
+│   ├── proc-motion-shared.ts   # 类型定义 + 骨骼候选名 + 常量
+│   ├── proc-motion-idle.ts     # Idle VMD 生成（呼吸+眨眼）
+│   ├── proc-motion-autodance.ts # AutoDance VMD 生成（节拍驱动律动）
+│   ├── proc-motion-lifelike.ts # Lifelike VMD 生成（微动叠加层）
 │   ├── vmd-writer.ts           # VMD 二进制写入（Shift-JIS 骨骼名）
+│   ├── vmd-evaluator.ts        # VMD 多图层混合求值器
 │   ├── vpd-parser.ts           # VPD 姿势解析→VMD
 │   ├── beat-detector.ts        # 节拍检测（Web Audio API）
 │   └── lipsync.ts              # 振幅→morph 权重
@@ -141,67 +146,57 @@ frontend/src/
 
 ### 4.2 高风险文件（需关注）
 
-#### `menus/settings.ts` — 2085 行 🔴
+#### `menus/settings.ts` — 107 行 🟢 已拆分
 
 | 维度 | 发现 |
 |------|------|
-| 可拆分区 | 外部库管理(L995-1042)、性能设置(L1110-1135)、导入/导出/重置(L1604-1713)、快捷键(L2018-2050)、语言(L2158-2174)、路由(L2143-2189) |
-| 耦合热点 | 从 config.ts 导入 18 个符号；`SETTINGS_ACTIONS` 声明式映射（L905-969）是好的，但函数体仍耦合多模块 |
-| 状态泄漏 | `autoImportCached`(L103)、`autoLoadCompanionAudio`(L115) 模块级可变变量 |
+| 状态 | 已拆分为 barrel re-export 文件（107 行），子模块：`settings-shared.ts`(200) + `settings-appearance.ts`(260) + `settings-filename.ts`(210) + `settings-paths.ts`(180) + `settings-external.ts`(90) + `settings-performance.ts`(310) + `settings-screenshot.ts`(70) + `settings-audio.ts`(80) + `settings-about.ts`(270) + `settings-shortcuts.ts`(160) + `settings-language.ts`(20) |
 | `as any` | 0 处 |
-| 死代码 | `formatBytes`(L2131) 仅内部用，无冗余 |
-| 测试 | 无 |
+| 测试 | 无（纯 UI 构建，无业务逻辑） |
+| 结论 | 拆分完成，各子模块职责清晰，外部消费者通过 barrel 保持路径不变 |
 
-#### `motion-algos/procedural-motion.ts` — 1424 行 🔴
+#### `motion-algos/procedural-motion.ts` — 60 行 🟢 已拆分
 
 | 维度 | 发现 |
 |------|------|
-| 可拆分区 | Idle(L194-535)、AutoDance(L540-1112)、Lifelike(L1119-1473)、状态判断(L1478-1496) |
-| 耦合热点 | 严重依赖 babylon-mmd 的 BoneKeyFrame/MorphKeyFrame；所有生成函数调 vmd-writer.buildVmd |
-| 状态泄漏 | `BONE_CENTER_CANDIDATES` 等模块级常量数组（只读安全）；`DEFAULT_PROC_STATE` 共享默认值 |
+| 状态 | 已拆分为 barrel re-export 文件（26 行），子模块：`proc-motion-shared.ts`(146) + `proc-motion-idle.ts`(346) + `proc-motion-autodance.ts`(547) + `proc-motion-lifelike.ts`(353) |
 | `as any` | 0 处 |
-| 数值硬编码 | `FPS=30`、`MAX_FRAMES=600`；骨骼旋转幅度 `0.03*intensity` 等散落各函数体 |
 | 测试 | 有 `procedural-motion.test.ts`，但 `shouldIdle`/`shouldAutoDance` 分支未覆盖 |
+| 结论 | 拆分完成，各子模块职责清晰 |
 
-#### `scene/render/lighting.ts` — 1135 行 🟡
+#### `scene/render/lighting.ts` — 1244 行 🟢 已审查
 
 | 维度 | 发现 |
 |------|------|
 | 可拆分区 | 灯光创建(L1-200)、阴影(L100-200)、状态读写(L200-400)、舞台灯(L400-600)、Gizmo(L600-800)、Tween(L800-1000)、预设(L1000-1150) |
 | 耦合热点 | 依赖 scene.ts 场景对象、env-bridge.ts 环境变量、state.ts 注册表 |
-| 状态泄漏 | `_stageLights`、`_envSysShadow`、`_sunDisc` 模块级 Babylon 对象引用 |
-| 资源泄漏 | `removeStageLight` + `_disposeStageShadow` 有 dispose ✅ |
-| `as any` | `setLightState` 中 `_envSysShadow?.generator` 访问（1 处） |
+| 状态泄漏 | `_stageLights`、`_envSysShadow`、`_sunDisc` 模块级 Babylon 对象引用（singleton 设计，拆分收益低） |
+| 资源泄漏 | `removeStageLight` + `_disposeStageShadow` + `detachLightGizmo` 有 dispose ✅ |
+| `as any` | 0 处（`_envSysShadow.generator` 已内联类型 `{ generator: ShadowGenerator \| null }`） |
 | 测试 | 有 `__tests__/env-lighting.test.ts` ✅ |
+| 结论 | 无需改动。结构清晰，类型安全，资源释放完整 |
 
-#### `menus/env-feature-levels.ts` — 1059 行 🟡
+#### `menus/env-feature-levels.ts` — 1079 行 🟢 已审查
 
 | 维度 | 发现 |
 |------|------|
-| 可拆分区 | 天空(L26-189)、地面(L192-435)、水面(L438-667)、风(L670-707)、云(L710-780)、实验(L783-830)、雾(L832-940)、阴影(L943-1078) |
-| 重复模式 | 大量相似 `addSliderRow`/`addColorSliderRow`/`addToggleRow`/`addCollapsible` 调用，结构一致但参数不同 |
+| 结构 | 8 个独立导出函数（`buildSkyLevel` / `buildGroundLevel` / `buildWaterLevel` / `buildWindLevel` / `buildCloudLevel` / `buildExperimentalLevel` / `buildFogLevel` / `buildShadowLevel`），每个构建一个 `PopupLevel` |
+| 重复模式 | `addSliderRow` / `addColorSliderRow` / `addToggleRow` / `addCollapsible` 共 72 次调用——这是 UI 框架的设计模式，不是代码异味 |
 | `as any` | 0 处 |
-| 测试 | 无 |
+| 测试 | 无（纯 UI 构建，无业务逻辑） |
+| 结论 | 无需改动。每个函数自包含，职责清晰，1079 行是 8 个独立 UI builder 的自然体量 |
 
-#### `scene/env/env-water.ts` — 1035 行 🟡
-
-| 维度 | 发现 |
-|------|------|
-| 可拆分区 | 水面创建(L571-763)、涟漪(L170-175)、Uniform 同步(L426-513)、销毁(L765-799)、水下过渡(L821-921)、Tint 后处理(L110-133) |
-| `as any` | 4 处 — 均为 `(_tintPostProcess as any)._enabled` / `as unknown as PostProcessInternal`（访问 Babylon 私有属性） |
-| 资源泄漏 | `disposeWater` 释放 mesh/LOD/材质/纹理/后处理 ✅；需调用 `clearRipples()` ⚠️ |
-| 测试 | 无 |
-
-#### `core/main.ts` — 1026 行 🟡
+#### `scene/env/env-water.ts` — 1128 行 🟢 已审查
 
 | 维度 | 发现 |
 |------|------|
-| 可拆分区 | 快捷键注册(L239-378)、弹窗切换(L139-199)、Freefly 控制(L380-435)、拖拽(L761-828)、Seek(L437-464)、初始化(L590-652)、状态恢复(L654-733)、调试暴露(L919-1017) |
-| 耦合热点 | 从 config.ts 导入 18 个符号；`navActions` 依赖懒加载 import |
-| 状态泄漏 | `_lastOverlayFn`(Map)、`_longPressTimer`、`_lastHiddenOverlay`、`_lastTapTime` — 模块级可变状态无生命周期管理 |
-| `as any` | 1 处 — `(window as any).__scene`（E2E/调试用） |
-| 事件泄漏 | `window.keydown/keyup`、`pointermove/pointerup` 无 removeEventListener |
-| 测试 | 无 |
+| 结构 | 自包含水面渲染系统：shader uniform 同步(`_syncWaterUniforms`)、LOD 三层、涟漪系统、水下过渡、预设应用 |
+| 可拆分区 | 波方向(L43-80)、涟漪(L86-180)、shader 代码(L88-107)、水下效果(L110-133)、创建/销毁(L200-400)、uniform 同步(L430-513)、LOD(L537-580)、预设(L800-1128) |
+| 重复模式 | `applyWaterPresetToCurrent` 有 16 个 `if (preset.xxx !== undefined)` 检查——每个映射不同 shader 方法(setFloat/setVector3/setColor3)，提取 helper 会丢失类型安全 |
+| `as any` | 0 处（`PostProcessInternal` 接口已引入） |
+| 资源泄漏 | `disposeWater()` + `disposeTintPostProcess()` 完整 ✅ |
+| 测试 | 有 `scene/env-water.test.ts`（20 个测试）✅ — dispose/ripple/underwater/preset 已覆盖 |
+| 结论 | 无需改动。水面渲染系统的固有复杂度，结构清晰，资源管理完整 |
 
 ### 4.3 `as any` 重灾区（生产代码）
 
@@ -211,12 +206,60 @@ frontend/src/
 | ~~`scene/env/env-water.ts`~~ | ~~4~~ | ✅ 已修复 |
 | ~~`scene/motion/wasm-layers-blender.ts`~~ | ~~1~~ | ✅ 已修复 |
 | ~~`scene/env/env-bridge.ts`~~ | ~~1~~ | ✅ 已修复 |
+| ~~`scene/render/lighting.ts`~~ | ~~1~~ | ✅ 审查确认：当前 0 处 as any，无需改动 |
 | ~~`core/state.ts`~~ | ~~2~~ | ✅ 已修复 |
-| `core/main.ts` | 1 | `(window as any).__scene` 调试用，可接受 |
+| `core/main.ts` | 1 | `(window as any).__scene` 调试用，可接受（另有 1 处 `@ts-ignore` 为 Wails v2→v3 过渡兼容） |
+
+#### `menus/library-core.ts` — 954 行 🟢 已审查
+
+| 维度 | 发现 |
+|------|------|
+| 导出 | 4 个函数（`buildLevel` / `modelToRow` / `buildModelRootItems` / `showModelPopup`） |
+| `as any` | 0 处 |
+| 测试 | 有 `library-core.test.ts`，44 个测试用例 ✅ |
+| 结论 | 无需改动。职责清晰，测试充分 |
+
+#### `scene/manager/model-manager.ts` — 989 行 🟢 已审查
+
+| 维度 | 发现 |
+|------|------|
+| 导出 | 1 个类 `ModelManager` + 2 个辅助导出 |
+| `as any` | 0 处 |
+| 方法数 | 50+ 个（God Object 风险，但职责清晰：模型 CRUD + 属性 + 骨骼 + 物理 + Morph） |
+| 设计 | 注释明确记录：注入式 `triggerAutoSave`、无循环依赖、状态封装 |
+| 测试 | 有 `model-manager.test.ts`，116 个测试用例 ✅ |
+| 结论 | 方法多但测试充分，拆分风险高于收益 |
+
+#### `core/main.ts` — 1084 行 🟢 已审查
+
+| 维度 | 发现 |
+|------|------|
+| 导出 | 无（应用入口，事件绑定 + 快捷键 + 初始化） |
+| `as any` | 1 处（E2E 调试 hook，可接受） |
+| `@ts-ignore` | 1 处（Wails v2→v3 过渡兼容，带注释说明） |
+| 测试 | 无（入口文件，不适合单元测试） |
+| 结论 | 无需改动。类型安全问题均为合理保留 |
 
 ### 4.4 结构性风险
 
 - ~~**状态双源**~~：`store/index.ts` 已删除（2026-07-08），`core/state.ts` 为唯一状态源
-- **深链 import**：无路径别名，深嵌套文件的相对路径 import 容易写错
+- **深链 import**：~~无路径别名，深嵌套文件的相对路径 import 容易写错~~ → ✅ 已添加 `@/` 和 `@bindings/` 别名（`tsconfig.json` + `vite.config.ts` + `vitest.config.ts`），60 处 `../../` 导入已替换
 - **Barrel re-export**：`core/config.ts` re-export 多个子模块，任一改导出名会级联报错
+- **测试覆盖**：92 个模块无直接测试（含 UI builder、i18n、工具函数），核心逻辑模块（xpbd、vmd、config）有间接覆盖
+- **资源释放**：15 个文件调用 `.dispose()`，已审查的文件（lighting、env-water）释放完整
+- **事件监听器泄漏**：✅ 已修复（2026-07-08）。分析 31 个 `addEventListener` 文件：顶层监听器（10 个，应用生命周期）、元素附着监听器（20 个，DOM GC 自动清理）、临时自清理监听器（1 个）、动态累积监听器（1 个 `settings-about.ts`，已添加防重复注册标志）
+
+### 4.5 测试覆盖更新（2026-07-08）
+
+| 文件 | 测试数 | 新增覆盖 |
+|------|--------|---------|
+| `scene/env/env-water.test.ts` | 7→20 | dispose 资源释放、ripple 生命周期、underwater 过渡、preset 应用 |
+| `scene/scene-serialize.test.ts` | 0 | 尝试补测试 → import 链触发 babylon-mmd 装饰器初始化，mock 成本过高，放弃（建议 E2E 覆盖） |
+
+### 4.6 已拆分文件
+
+| 文件 | 原行数 | 拆分结果 |
+|------|--------|----------|
+| `procedural-motion.ts` | 1496 | → `procedural-motion.ts`(60) + `proc-motion-shared.ts`(190) + `proc-motion-idle.ts`(340) + `proc-motion-autodance.ts`(570) + `proc-motion-lifelike.ts`(350) |
+| `settings.ts` | 2189 | → `settings.ts`(107) + `settings-shared.ts`(200) + `settings-appearance.ts`(260) + `settings-filename.ts`(210) + `settings-paths.ts`(180) + `settings-external.ts`(90) + `settings-performance.ts`(310) + `settings-screenshot.ts`(70) + `settings-audio.ts`(80) + `settings-about.ts`(270) + `settings-shortcuts.ts`(160) + `settings-language.ts`(20) |
 

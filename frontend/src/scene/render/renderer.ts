@@ -10,7 +10,7 @@ import type { Camera } from '@babylonjs/core/Cameras/camera';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
 import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
 import type { Observer } from '@babylonjs/core/Misc/observable';
-import { scheduleRefresh } from '../../core/reactivity';
+import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot } from './performance';
 
 // ======== Tone Mapping Modes ========

@@ -4,6 +4,9 @@ import path from "path";
 export default defineConfig({
     resolve: {
         alias: {
+            // Path aliases (matching tsconfig.json paths)
+            "@": path.resolve(__dirname, "src"),
+            "@bindings": path.resolve(__dirname, "bindings"),
             // Redirect Engine import to our mock BEFORE esbuild sees the real source.
             // This prevents the _renderLoops parse error on CI (Ubuntu/Node 20).
             "@babylonjs/core/Engines/engine": path.resolve(

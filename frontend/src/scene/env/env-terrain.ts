@@ -1,5 +1,5 @@
 import { Scene, MeshBuilder, GroundMesh, StandardMaterial, Texture, Color3 } from '@babylonjs/core';
-import { EnvState } from '../../core/config';
+import { EnvState } from '@/core/config';
 
 // ======== 确定性值噪声（FBM）========
 // 用整数哈希产生可复现的伪随机，seed 相同则地形一致。

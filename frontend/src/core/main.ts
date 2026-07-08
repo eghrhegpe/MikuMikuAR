@@ -1034,7 +1034,7 @@ declare global {
     }
 }
 
-function isAndroidPlatform(): boolean {
+export function isAndroidPlatform(): boolean {
     return (
         typeof window !== 'undefined' &&
         typeof window.wails?.platform === 'function' &&

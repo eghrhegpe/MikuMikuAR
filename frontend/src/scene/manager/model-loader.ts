@@ -5,7 +5,7 @@
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
-import { SaveThumbnail } from '../../core/wails-bindings';
+import { SaveThumbnail } from '@/core/wails-bindings';
 import {
     dom,
     setStatus,
@@ -21,9 +21,9 @@ import {
     formatError,
     uiState,
     type RuntimeModel,
-} from '../../core/config';
-import { resolveFileUrl, normPath } from '../../core/fileservice';
-import { t } from '../../core/i18n/t';
+} from '@/core/config';
+import { resolveFileUrl, normPath } from '@/core/fileservice';
+import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';

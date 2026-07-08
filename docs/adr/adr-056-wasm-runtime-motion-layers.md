@@ -1,6 +1,6 @@
 # ADR-056: WASM 运行时 Motion Layers 解锁 — JS 帧流合并 + 单图层兜底
 
-> **状态**: 已决策（2026-07-06 创建），待实施
+> **状态**: ✅ 已实施（2026-07-08 代码核实；wasm-layers-blender.ts 实现 + vmd-layers.ts:534 集成）
 > **背景**: ADR-054 将「WASM/JS 运行时分裂」列为 🔴 P0 架构决策。经代码事实核对，ADR-054 中「gaze 仅 JS 生效」的描述**已过时**——ADR-016 双路径 gaze（WASM frontBuffer 直写 + JS linkedBone）已落地。真实裂缝收窄为单项：`MmdCompositeAnimation` 在 WASM 运行时不可用，多 VMD 图层混合退化为单图层。本 ADR 锁定该裂缝的解决方案。
 
 ---

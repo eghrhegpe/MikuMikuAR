@@ -9,9 +9,9 @@ import {
     findLipMorph,
     findAllLipMorphs,
     amplitudeToWeight,
-} from '../../motion-algos/lipsync';
-import { focusedModelId, triggerAutoSave } from '../../core/config';
-import { isAudioPlaying, getAudioPath } from '../../outfit/audio';
+} from '@/motion-algos/lipsync';
+import { focusedModelId, triggerAutoSave } from '@/core/config';
+import { isAudioPlaying, getAudioPath } from '@/outfit/audio';
 import { setModelMorphWeight } from '../scene';
 import { getProcBeatDetector } from './proc-motion-bridge';
 
