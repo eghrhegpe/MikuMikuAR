@@ -494,9 +494,15 @@ export const zhTW: Record<string, string> = {
     'scene.ssaoStrength': '遮蔽強度',
     'scene.ssaoRadius': '遮蔽半徑',
     'scene.ssaoSamples': '取樣數',
+    'scene.waterReflectionQuality': '平面反射質量',
+    'scene.waterReflectionQualityHigh': '高',
+    'scene.waterReflectionQualityMedium': '中',
+    'scene.waterReflectionQualityLow': '低',
+    'scene.waterReflectionQualityOff': '關',
     'scene.toneMapping': '色調映射',
     'scene.exposure': '曝光',
     'scene.contrast': '對比度',
+    'scene.celShading': '卡通化渲染',
     'scene.loadedStages': '已載入舞台',
     'scene.stageShown': '✓ 舞台已顯示',
     'scene.stageHidden': '✓ 舞台已隱藏',
@@ -723,7 +729,7 @@ export const zhTW: Record<string, string> = {
     'outfit.default': '預設',
     'outfit.switching': '⏳ 切換變體中…',
     'outfit.switchFailed': '✗ 切換變體失敗',
-    'outfit.switched': '✓ 變體已切換',
+    'outfit.switched': '✓ 已切換服裝: {name}',
     'outfit.resetAll': '重設全部',
     'outfit.resetting': '⏳ 重設服裝中…',
     'outfit.resetFailed': '✗ 重設服裝失敗',
@@ -920,6 +926,10 @@ export const zhTW: Record<string, string> = {
     'physics.clothEnabled': '✓ 布料模擬已啟用 ({instances} 實例, {particles} 粒子, {constraints} 約束)',
     'physics.noActiveInstance': '⚠ 布料已啟用但未找到活躍實例',
     'physics.clothDisabled': '布料模擬已關閉',
+
+    // toast — Toast 元件
+    'toast.copy': '複製',
+    'toast.copied': '已複製 ✓',
 
     // about — 連結區塊
     'about.license': '開源許可證',

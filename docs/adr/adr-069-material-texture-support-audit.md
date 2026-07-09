@@ -56,20 +56,20 @@ UI（`model-material.ts`）三层菜单 `buildMatBatchLevel` / `buildPerMatLevel
 |---|---|---|
 | 高光强度·色·光泽度 | ✅ 能 | `specularMul` + `specularColor` + `shininess` |
 | 高光贴图 specular map | ❌ 不能 | `StandardMaterial.specularTexture` 全仓零使用，UI 未暴露 |
-| 法线贴图强度 | ❌ 不能（bumpTexture 已挂但无 level 滑块） | material.ts 未备份未触及 |
-| toon 贴图开关/替换 | ⚠️ 仅通过 outfit 系统 | 材质面板无 toon 感知 |
-| sphere 贴图强度 | ❌ 不能 | 同上 |
-| 自发光强度/颜色 | ❌ 不能 | `emissiveColor` 未备份；面板无 `emissiveMul` |
+| 法线贴图强度 | ✅ 能（P1） | `bumpTexLevel` 已实现，范围 0-3 |
+| toon 贴图开关/替换 | ⚠️ 仅通过 outfit 系统 | 材质面板无 toon 感知，但 **toonTexLevel 强度可调** ✅ |
+| sphere 贴图强度 | ✅ 能（P1） | `sphereTexLevel` 已实现，范围 0-3 |
+| 自发光强度/颜色 | ✅ 能（P2） | `emissiveMul` + `emissiveTexLevel` 已实现 |
 | 环境反射强度 | ⚠️ 半能（renderer.ts reflectionColor.set） | 全局开关非材质级 |
 | 粗糙/金属 PBR | ❌ 完全不能 | 全仓只认 StandardMaterial，无 PBRMaterial |
 
 ---
 
-## 根因（3 条）
+## 根因（3 条）+ P1/P2 解决状态
 
-1. **ADR-015 锁死标量分类乘率模型** — 底层 4 个 float + 39 个测试签名焊死，UI 重构只重新布局没扩维度
-2. **贴图替换归 outfit（ADR-020）** — 颜色维度走材质面板，贴图维度走 outfit，两套正交，有意为之
-3. **renderer.ts reflectionTexture 注入是后挂** — 绕过 material.ts 强转赋值，未入快照，故 reset 不影响它但它也不可被面板感知
+1. **~~ADR-015 锁死标量分类乘率模型~~** — ✅ P1+P2 已扩展：新增 emissiveMul 和 5 槽 `*.TexLevel`，与既有 4 字段完全同构
+2. **~~贴图替换归 outfit（ADR-020）~~** — ✅ P1 的 `*.TexLevel` 与 outfit 正交不冲突；outfit 换贴图本体，level 调强度，两码事
+3. **renderer.ts reflectionTexture 注入是后挂** — 未解决，维持全局后处理语义
 
 ---
 
@@ -77,18 +77,18 @@ UI（`model-material.ts`）三层菜单 `buildMatBatchLevel` / `buildPerMatLevel
 
 延续 ADR-015 / ADR-020 / ADR-024 既有边界，不新立决策。
 
-| 优先级 | 项目 | 改动量 | 与既有系统关系 | 默认推荐 |
-|--------|------|--------|----------------|----------|
-| P1 | 贴图强度滑块（`*.level`） | 小 | `_origValues` 备份 `diffuseTexture.level / bumpTexture.level / toonTexture.level / sphereTexture.level / emissiveTexture.level`，UI 加 level 滑块 — 与 outfit 不撞（outfit 换贴图本体，level 是强度） | **推荐先做**：收益直接，不破坏正交 |
-| P2 | `emissiveMul` 颜色乘率 | 小 | 与现有 4 字段并列加一个，复用滑块位置 | 推荐，低风险补全 |
-| P3 | `specularTexture` 开关+加载 | 中 | PMX 不原生带，需 `.mcupreset` 自定义扩展；多数 MMD 模型用 sphere 代替高光 | **低优先**，等用户场景出现实际诉求再启动 |
-| P4 | 自带文件替换贴图 | 中大 | 与 outfit 撞，**建议统一到 outfit 走临时 variant 路线** | 不另起炉灶 |
-| P5 | PBR 工作流（roughness/metalness） | 大 | 延续 ADR-024 延期决策 — babylon-mmd morph 绑死 StandardMaterial，未解 | **不提上路线**，等 babylon-mmd 支持 PBR material proxy |
+| 优先级 | 项目 | 状态 | 改动量 | 与既有系统关系 | 默认推荐 |
+|--------|------|------|--------|----------------|----------|
+| ~~P1~~ | 贴图强度滑块（`*.level`） | ✅ 已完成 | — | `_origValues` 备份 `diffuseTexture.level / bumpTexture.level / toonTexture.level / sphereTexture.level / emissiveTexture.level`，UI 加 level 滑块 — 与 outfit 不撞（outfit 换贴图本体，level 是强度） | 已实现 |
+| ~~P2~~ | `emissiveMul` 颜色乘率 | ✅ 已完成 | — | 与现有 4 字段并列加一个，复用滑块位置 | 已实现 |
+| P3 | `specularTexture` 开关+加载 | 未启动 | 中 | PMX 不原生带，需 `.mcupreset` 自定义扩展；多数 MMD 模型用 sphere 代替高光 | **低优先**，等用户场景出现实际诉求再启动 |
+| P4 | 自带文件替换贴图 | 未启动 | 中大 | 与 outfit 撞，**建议统一到 outfit 走临时 variant 路线** | 不另起炉灶 |
+| P5 | PBR 工作流（roughness/metalness） | 未启动 | 大 | 延续 ADR-024 延期决策 — babylon-mmd morph 绑死 StandardMaterial，未解 | **不提上路线**，等 babylon-mmd 支持 PBR material proxy |
 
 ### 路线原则
 
-- **惰性推进**：P1/P2 是材质面板分内事，收益直接；P3~P5 全部等用户场景显性触发或上游依赖突破后再启动
-- **正交不破坏**：P1 的 `level` 滑块与 outfit 换贴图本体互不冲突，outfit 换贴图后 level 仍可调
+- ~~**惰性推进**~~：~~P1/P2 是材质面板分内事，收益直接；P3~P5 全部等用户场景显性触发或上游依赖突破后再启动~~ — P1/P2 已完成，P3-P5 维持惰性原则
+- ~~**正交不破坏**~~：~~P1 的 `level` 滑块与 outfit 换贴图本体互不冲突，outfit 换贴图后 level 仍可调~~ — 已验证
 - **renderer.ts 反射**：暂不纳入材质面板控制，维持全局后处理语义；若未来用户明确要求逐材质反射，再开新 ADR
 - **PBR 不再独立评估**：ADR-024 已给致命风险（morph 失效），本 ADR 不重复论证
 
@@ -96,9 +96,10 @@ UI（`model-material.ts`）三层菜单 `buildMatBatchLevel` / `buildPerMatLevel
 
 ## 三个拍板点（默认推荐）
 
-1. **P1 贴图强度滑块** — 默认推荐做；改动小、不撞 outfit、MMD 模型的 sphere/toon 强度可调本身就是常见诉求
-2. **renderer.ts reflectionTexture 纳入材质面板控制** — 默认推荐**不**纳入；维持 ADR-024 的全局后处理语义更清晰，逐材质反射属另一层概念
-3. **PBR 流（roughness/metalness）提上路线** — 默认推荐**不**提；延续 ADR-024 延期决策，等 babylon-mmd 上游突破
+1. ~~**P1 贴图强度滑块**~~ — ✅ 已完成
+2. ~~**P2 emissiveMul**~~ — ✅ 已完成
+3. **renderer.ts reflectionTexture 纳入材质面板控制** — 默认推荐**不**纳入；维持 ADR-024 的全局后处理语义更清晰，逐材质反射属另一层概念
+4. **PBR 流（roughness/metalness）提上路线** — 默认推荐**不**提；延续 ADR-024 延期决策，等 babylon-mmd 上游突破
 
 ---
 

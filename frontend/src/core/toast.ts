@@ -1,3 +1,5 @@
+import { t } from './i18n/t';
+
 export interface ToastAction {
     label: string;
     onClick: () => void;
@@ -65,7 +67,7 @@ function fadeAndRemoveToast(id: number, el: HTMLElement, fadeDuration = 300): vo
     }, 50);
 }
 
-function buildToastElement(title: string, detail?: string, actions?: ToastAction[]): HTMLElement {
+function buildToastElement(title: string, detail?: string, actions?: ToastAction[], toastId?: number): HTMLElement {
     const toast = document.createElement('div');
     toast.style.cssText = [
         'pointer-events:auto',
@@ -101,16 +103,16 @@ function buildToastElement(title: string, detail?: string, actions?: ToastAction
     if (detail) {
         const copyText = `${title}\n${detail}`;
         const copyBtn = document.createElement('button');
-        copyBtn.textContent = '复制';
+        copyBtn.textContent = t('toast.copy');
         copyBtn.style.cssText =
             'padding:3px 10px;border:none;border-radius:4px;font-size:var(--font-ui-sm);cursor:pointer;' +
             'background:var(--white-08);color:var(--text)';
         copyBtn.addEventListener('click', async () => {
             try {
                 await navigator.clipboard.writeText(copyText);
-                copyBtn.textContent = '已复制 ✓';
+                copyBtn.textContent = t('toast.copied');
                 setTimeout(() => {
-                    copyBtn.textContent = '复制';
+                    copyBtn.textContent = t('toast.copy');
                 }, 1500);
             } catch {
                 // clipboard unavailable — silently ignore
@@ -128,7 +130,7 @@ function buildToastElement(title: string, detail?: string, actions?: ToastAction
                 'cursor:pointer;background:var(--accent);color:#fff';
             btn.addEventListener('click', () => {
                 act.onClick();
-                removeToast(_toastIdCounter);
+                if (toastId != null) removeToast(toastId);
             });
             actionsEl.appendChild(btn);
         }
@@ -138,7 +140,9 @@ function buildToastElement(title: string, detail?: string, actions?: ToastAction
     closeBtn.textContent = '✕';
     closeBtn.style.cssText =
         'font-size:11px;color:var(--text-dim);cursor:pointer;padding:2px 4px;line-height:1';
-    closeBtn.addEventListener('click', () => fadeAndRemoveToast(_toastIdCounter, toast, 150));
+    closeBtn.addEventListener('click', () => {
+        if (toastId != null) fadeAndRemoveToast(toastId, toast, 150);
+    });
     actionsEl.appendChild(closeBtn);
 
     toast.appendChild(actionsEl);
@@ -161,7 +165,7 @@ export function showErrorToast(
     }
 
     const id = ++_toastIdCounter;
-    const el = buildToastElement(title, detail, actions);
+    const el = buildToastElement(title, detail, actions, id);
     const container = getToastContainer();
     container.appendChild(el);
 

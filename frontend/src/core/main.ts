@@ -50,6 +50,7 @@ import { focusModel } from '../scene/manager/model-ops';
 import { screenshotCurrent } from '../menus/scene-menu';
 import { updatePerformance, setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
+import { showPlaza } from '../menus/plaza';
 import {
     freeflyInput,
     getCameraMode,
@@ -213,6 +214,7 @@ const navActions: Record<number, () => void | Promise<void>> = {
         const m = await import('../menus/settings');
         toggleOverlay('sceneOverlay', m.showSettings);
     },
+    7: () => toggleOverlay('sceneOverlay', showPlaza),
 };
 const navLabels: Record<number, string> = {};
 function buildNavMaps(): void {
@@ -314,6 +316,18 @@ function registerAppShortcuts(): void {
                 }
             },
             group: '相机控制',
+        },
+        {
+            id: 'toggle:plaza',
+            label: '模型广场',
+            defaultKey: 'Digit7',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                navActions[7]();
+                setStatus(navLabels[7] || '', false);
+            },
+            group: '弹窗导航',
         },
         {
             id: 'playback:toggle',
@@ -630,6 +644,9 @@ async function init(): Promise<void> {
             await m.preloadAutoImportState().catch(() => {}); // 静默失败，避免阻塞 UI
             toggleOverlay('sceneOverlay', m.showSettings);
         });
+        dom.btnPlaza.addEventListener('click', () =>
+            toggleOverlay('sceneOverlay', showPlaza)
+        );
 
         initDropHandler(); // 拖拽导入处理不依赖场景初始化
 

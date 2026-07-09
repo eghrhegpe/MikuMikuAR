@@ -412,9 +412,15 @@ export const zhCN: Record<string, string> = {
     'scene.ssaoStrength': '遮蔽强度',
     'scene.ssaoRadius': '遮蔽半径',
     'scene.ssaoSamples': '采样数',
+    'scene.waterReflectionQuality': '平面反射质量',
+    'scene.waterReflectionQualityHigh': '高',
+    'scene.waterReflectionQualityMedium': '中',
+    'scene.waterReflectionQualityLow': '低',
+    'scene.waterReflectionQualityOff': '关',
     'scene.toneMapping': '色调映射',
     'scene.exposure': '曝光',
     'scene.contrast': '对比度',
+    'scene.celShading': '卡通化渲染',
 
     // —— 舞台层级 scene-stage-levels ——
     'scene.loadedStages': '已加载舞台',
@@ -735,7 +741,7 @@ export const zhCN: Record<string, string> = {
     'outfit.default': '默认',
     'outfit.switching': '⏳ 切换变体中…',
     'outfit.switchFailed': '✗ 切换变体失败',
-    'outfit.switched': '✓ 变体已切换',
+    'outfit.switched': '✓ 已切换服装: {name}',
     'outfit.resetAll': '重置全部',
     'outfit.resetting': '⏳ 重置服装中…',
     'outfit.resetFailed': '✗ 重置服装失败',
@@ -966,6 +972,10 @@ export const zhCN: Record<string, string> = {
     'env.size': '大小',
     'env.speed': '速度',
     'env.splash': '落地溅射',
+
+    // toast — Toast 组件
+    'toast.copy': '复制',
+    'toast.copied': '已复制 ✓',
 
     // about — 链接区域
     'about.license': '开源许可证',

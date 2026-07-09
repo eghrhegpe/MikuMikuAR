@@ -1,4 +1,5 @@
 import { dom } from './dom';
+import { t } from './i18n/t';
 
 let hintActive = false;
 let savedStatusText = '';
@@ -66,7 +67,7 @@ export function hideHint(): void {
 export function initHints(): void {
     document.querySelectorAll('[data-hint]').forEach((el) => {
         el.addEventListener('mouseenter', () => {
-            showHint(el.getAttribute('data-hint') || '暂无提示');
+            showHint(el.getAttribute('data-hint') || t('menu.noHint'));
         });
         el.addEventListener('mouseleave', () => hideHint());
     });
