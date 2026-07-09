@@ -317,7 +317,7 @@ input, textarea, [contenteditable] {
     padding: calc(4px * var(--ui-scale)) calc(14px * var(--ui-scale));
     border-radius: calc(8px * var(--ui-scale));
     pointer-events: none;
-    z-index: 50;
+    z-index: 500;
     white-space: nowrap;
 }
 #statusText {

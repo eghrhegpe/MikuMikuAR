@@ -66,6 +66,8 @@ export interface RenderState {
     ssaoStrength: number; // 0-1, default 0（SSAO2RenderingPipeline.totalStrength 0~2）
     ssaoRadius: number; // 0-1, default 0（SSAO2RenderingPipeline.radius 0~4）
     ssaoSamples: number; // 4-32, default 8（SSAO2RenderingPipeline.samples）
+    // Phase 12 — 卡通化渲染预设（后处理风格化）
+    celShadingMode: boolean;
 }
 
 // ======== Renderer State (module-level) ========
@@ -83,6 +85,9 @@ let _ssaoPipeline: SSAO2RenderingPipeline | null = null;
 let _reflectionProbe: ReflectionProbe | null = null;
 let _probeRefreshObserver: Observer<import('@babylonjs/core/scene').Scene> | null = null;
 let _lastProbeRefresh = 0;
+// 卡通化渲染预设状态
+let _celShadingMode = false;
+let _originalRenderState: RenderState | null = null;
 
 // ======== 数值钳制工具 ========
 
@@ -228,6 +233,7 @@ export function getRenderState(): RenderState {
         ssaoStrength: _ssaoPipeline ? clamp(_ssaoPipeline.totalStrength / 2, 0, 1) : 0,
         ssaoRadius: _ssaoPipeline ? clamp(_ssaoPipeline.radius / 4, 0, 1) : 0,
         ssaoSamples: _ssaoPipeline ? clamp(_ssaoPipeline.samples, 4, 32) : 8,
+        celShadingMode: _celShadingMode,
     };
 }
 
@@ -266,6 +272,7 @@ export function defaultRenderState(): RenderState {
         ssaoStrength: 0,
         ssaoRadius: 0,
         ssaoSamples: 8,
+        celShadingMode: false,
     };
 }
 
@@ -577,6 +584,29 @@ function _applyRenderState(s: Partial<RenderState>): void {
             pipeline.imageProcessing.contrast = c;
         }
     }
+
+    // 卡通化渲染预设：快照/恢复
+    if (s.celShadingMode !== undefined) {
+        if (s.celShadingMode) {
+            // 保存当前状态 → 切换到预设
+            _originalRenderState = getRenderState();
+            _celShadingMode = true;
+            _applyRenderState({
+                exposure: 0.7,
+                contrast: 1.4,
+                toneMapping: ToneMappingMode.ACES,
+                bloomEnabled: true,
+                bloomWeight: 0.25,
+                fxaaEnabled: true,
+            });
+        } else {
+            // 恢复到快照状态
+            _celShadingMode = false;
+            if (_originalRenderState) {
+                _applyRenderState(_originalRenderState);
+            }
+        }
+    }
 }
 
 // ======== 对外状态设置（含自动保存） ========
@@ -650,6 +680,7 @@ export function transitionRenderState(
         'ssrEnabled',
         'reflectionProbeEnabled',
         'ssaoEnabled',
+        'celShadingMode',
     ];
     // 枚举字段（动画结束时切换）
     const enumKeys: (keyof RenderState)[] = ['toneMapping'];

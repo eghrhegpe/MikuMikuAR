@@ -18,7 +18,7 @@
 
 | 阶段 | 决策 | 后续 |
 |------|------|------|
-| **初始决策** | 继续使用 Wails v2，Android 路径两阶段推进（①前端抽象层 ②待定） | — |
+| **初始决策** | 继续使用 Wails v2，Android 路径两阶段推进（①前端抽象层 ②~~待定~~ → ✅ 已解决：v3 迁移后 Android 通过 `CanChooseDirectories(true)` + SAF 原生目录选择走通，见 ADR-023 Phase C） | — |
 | **实际演进** | 仍迁至 v3（alpha2.105）| 抽象层不再需要（v3 直接支持 Go binding import） |
 
 最终迁移路径：选择了原方案 A（立即迁 v3），尽管有 Alpha 风险，但因 Android 需求和时间表压力触发迁移。迁移后 Android 端通过 `CanChooseDirectories(true)` 走通 SAF 原生目录选择（见 ADR-023 Phase C）。

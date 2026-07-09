@@ -38,3 +38,13 @@ func (d *desktopPathMgr) PrivateResourceRoot() string {
 func (d *desktopPathMgr) SharedResourceRoot() string {
 	return d.ResourceRoot()
 }
+
+// DownloadsDir returns the user's Downloads folder (~/Downloads).
+// Empty string if the home directory cannot be resolved.
+func (d *desktopPathMgr) DownloadsDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return ""
+	}
+	return filepath.Join(home, "Downloads")
+}

@@ -275,6 +275,10 @@ export async function tryCatchStatus<T>(
         return await fn();
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err ?? 'unknown error');
+        // 用户取消文件选择 — Wails 抛 "cancelled by user"，静默忽略
+        if (/cancelled by user/i.test(msg)) {
+            return undefined;
+        }
         setStatus(`${context}: ${msg}`, false);
         console.warn(`[${context}]`, err);
         onError?.(err);

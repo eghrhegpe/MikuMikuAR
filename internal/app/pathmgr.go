@@ -20,6 +20,9 @@ type PathManager interface {
 	// On Android: /sdcard/MMD (requires MANAGE_EXTERNAL_STORAGE)
 	// On desktop: same as ResourceRoot()
 	SharedResourceRoot() string
+	// DownloadsDir returns the user's Downloads directory (e.g. ~/Downloads).
+	// Empty string means unsupported (Android fsnotify 不可用).
+	DownloadsDir() string
 }
 
 // platformPathMgr is the active platform implementation.

@@ -6,9 +6,14 @@ import {
     ClearAllCaches,
     GetStorageMode,
     SetStorageMode,
+    SetDownloadWatchEnabled,
+    GetDownloadWatchStatus,
+    SetDownloadWatchDir,
+    SetDownloadAutoImport,
+    SelectDir,
 } from '../core/wails-bindings';
 import { setStatus, resourceRoot, overridePaths, allModels, cardContainer, PopupRow } from '../core/config';
-import { slideRow, addDangerRow, addModeRow, addSectionTitle } from '../core/ui-helpers';
+import { slideRow, addDangerRow, addModeRow, addSectionTitle, addToggleRow, addWatchDirRow } from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
 import { selectResourceRoot, selectOverridePath, switchStorageMode, refreshLibrary } from './library-core';
 import { t } from '../core/i18n/t';
@@ -19,6 +24,12 @@ import { isAndroidPlatform } from '../core/platform';
 import { buildSettingsLanguageLevel } from './settings-language';
 import type { SlideMenu } from './menu';
 import type { SettingsMenuHandle } from './settings-shared';
+import {
+    getDownloadWatchEnabledCached,
+    setDownloadWatchEnabledCached,
+    getAutoImportCached,
+    setAutoImportCached,
+} from './settings-shared';
 
 /** 设置动作映射表——替代原 handleSettingsAction 的 switch 链 */
 export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
@@ -214,6 +225,60 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                         })
                     );
                 });
+
+                // Card 4: 下载监听（桌面端；Android fsnotify 不支持）
+                if (!isAndroid) {
+                    addSectionTitle(container, '下载监听');
+                    cardContainer(container, (c) => {
+                        addToggleRow(
+                            c,
+                            '监听下载目录',
+                            getDownloadWatchEnabledCached(),
+                            (v) => {
+                                setDownloadWatchEnabledCached(v);
+                                SetDownloadWatchEnabled(v).catch((err) => console.warn('[watch] SetDownloadWatchEnabled failed', err));
+                                getSettingsMenu()?.updateControls();
+                                setStatus(v ? '✓ 下载监听已开启' : '✓ 下载监听已关闭', true);
+                            },
+                            'lucide:folder-search',
+                            { bind: () => getDownloadWatchEnabledCached() }
+                        );
+                        addWatchDirRow(
+                            c,
+                            async (setStatusText) => {
+                                const status = await GetDownloadWatchStatus();
+                                setStatusText(status ? `监听中: ${status}` : '监听已停止');
+                            },
+                            async () => {
+                                const dir = await SelectDir();
+                                if (!dir) return undefined;
+                                try {
+                                    await SetDownloadWatchDir(dir);
+                                    setDownloadWatchEnabledCached(true);
+                                    getSettingsMenu()?.updateControls();
+                                    setStatus(`✓ 监听目录已设为 ${dir}`, true);
+                                } catch (err) {
+                                    console.warn('[watch] SetDownloadWatchDir failed', err);
+                                    setStatus(`✗ 监听目录设置失败: ${err instanceof Error ? err.message : '未知错误'}`, true);
+                                }
+                                return dir;
+                            }
+                        );
+                        addToggleRow(
+                            c,
+                            '自动导入（跳过确认）',
+                            getAutoImportCached(),
+                            (v) => {
+                                setAutoImportCached(v);
+                                SetDownloadAutoImport(v).catch((err) => console.warn('[watch] SetDownloadAutoImport failed', err));
+                                getSettingsMenu()?.updateControls();
+                                setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
+                            },
+                            'lucide:download',
+                            { bind: () => getAutoImportCached() }
+                        );
+                    });
+                }
                 } catch (err) {
                     console.error('[paths] renderCustom error:', err);
                     container.innerHTML = `<div style="padding:16px;color:var(--danger);font-size:12px;text-align:center;">

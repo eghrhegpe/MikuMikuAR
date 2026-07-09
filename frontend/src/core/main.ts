@@ -51,6 +51,7 @@ import { screenshotCurrent } from '../menus/scene-menu';
 import { updatePerformance, setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza, closePlaza } from '../menus/plaza';
+import { getAutoImportCached } from '../menus/settings-shared';
 import {
     freeflyInput,
     getCameraMode,
@@ -649,6 +650,7 @@ async function init(): Promise<void> {
         dom.btnSettings.addEventListener('click', async () => {
             const m = await import('../menus/settings');
             await m.preloadAutoImportState().catch(() => {}); // 静默失败，避免阻塞 UI
+            await m.preloadDownloadWatchState().catch(() => {}); // 预加载监听开关状态
             toggleOverlay('sceneOverlay', m.showSettings);
         });
         dom.btnPlaza.addEventListener('click', () => {
@@ -667,6 +669,10 @@ async function init(): Promise<void> {
         dom.showApp();
         console.info('MikuMikuAR initialized');
         initLibrary().catch((err) => console.warn('Library init:', err));
+        // [doc:adr-008] 启动时预加载自动导入开关，供 watch:newfile 自动导入分支判定
+        import('../menus/settings')
+            .then((m) => m.preloadAutoImportState().catch(() => {}))
+            .catch(() => {});
         // Restore env state from config (authoritative — scene restore skips env)
         await restoreEnvState();
         // Apply persisted UI state
@@ -901,8 +907,31 @@ startFpsClock();
 // ======== Download Watch Notification ========
 let importToastTimer: ReturnType<typeof setTimeout> | null = null;
 
+// [doc:adr-008] 入库逻辑：ImportLocalFile 复制文件到 ResourceRoot 分类目录，
+// refreshLibrary 扫描后模型出现在库中。不加载到场景——加载是用户从库中选择的独立动作。
+async function importToLibrary(path: string, displayName: string): Promise<void> {
+    setStatus(t('main.importing') + ': ' + displayName, false);
+    try {
+        await ImportLocalFile(path);
+        setStatus(t('main.imported', { name: displayName }), true);
+        refreshLibrary().catch(console.warn);
+    } catch (err: unknown) {
+        setStatus(t('main.importFailed') + ': ' + formatError(err), false);
+        console.error('[watch] import failed:', err);
+    }
+}
+
 Events.On('watch:newfile', (ev) => {
     const payload = ev.data as { path: string; name: string; type: string };
+    const displayName = payload.name || payload.path;
+
+    // 自动导入模式：跳过 toast，直接入库（不加载到场景）
+    if (getAutoImportCached()) {
+        void importToLibrary(payload.path, displayName);
+        return;
+    }
+
+    // 手动导入模式：显示 toast，用户点击导入按钮触发入库
     if (importToastTimer) {
         clearTimeout(importToastTimer);
     }
@@ -912,30 +941,22 @@ Events.On('watch:newfile', (ev) => {
     }
     const nameEl = toast.querySelector('.toast-file');
     if (nameEl) {
-        nameEl.textContent = payload.name || payload.path;
+        nameEl.textContent = displayName;
     }
     toast.classList.add('visible');
 
-    // Wire up import button
     const importBtn = toast.querySelector('.toast-import-btn') as HTMLButtonElement | null;
     if (importBtn) {
         importBtn.onclick = async () => {
             importBtn.disabled = true;
             importBtn.textContent = t('main.importing');
-            try {
-                await ImportLocalFile(payload.path);
-                setStatus(t('main.imported', { name: payload.name || payload.path }), true);
-                refreshLibrary().catch(console.warn);
-            } catch (err: unknown) {
-                setStatus(t('main.importFailed') + ': ' + formatError(err), false);
-            }
             toast.classList.remove('visible');
+            await importToLibrary(payload.path, displayName);
             importBtn.disabled = false;
             importBtn.textContent = t('main.importImport');
         };
     }
 
-    // Wire up ignore button
     const ignoreBtn = toast.querySelector('.toast-ignore-btn') as HTMLButtonElement | null;
     if (ignoreBtn) {
         ignoreBtn.onclick = () => {

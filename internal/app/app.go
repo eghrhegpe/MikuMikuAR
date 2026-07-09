@@ -45,9 +45,9 @@ func (a *App) safeLogError(format string, args ...interface{}) {
 // App struct
 type App struct {
 	wailsApp    *application.App
-	appVersion  string // injected via -ldflags at build time
-	buildTime   string // injected via -ldflags at build time
-	commitHash  string // injected via -ldflags at build time
+	appVersion  string                     // injected via -ldflags at build time
+	buildTime   string                     // injected via -ldflags at build time
+	commitHash  string                     // injected via -ldflags at build time
 	httpServers map[string]*httpServerInfo // keyed by dirPath
 	httpSrvMu   sync.Mutex
 	configMu    sync.RWMutex // guards GetConfig/writeConfig sequences
@@ -275,25 +275,25 @@ type DanceSet struct {
 
 // UIState stores user-customizable UI preferences.
 type UIState struct {
-	Scale           float64 `json:"scale"`           // 0.8~1.3, default 1.0
-	PopupWidth      int     `json:"popupWidth"`      // 220~380, default 280
-	Accent          string  `json:"accent"`          // hex, default "#4a6cf7"
-	FontFamily      string  `json:"fontFamily"`      // "system"|"noto"|"yahei"
-	Animations      bool    `json:"animations"`      // enable menu slide animations
-	BlurBg          bool    `json:"blurBg"`          // enable background blur on overlays
-	PerformanceMode string  `json:"performanceMode"` // "auto"|"quality"|"balanced"|"performance"
-	ScreenshotFormat  string  `json:"screenshotFormat"`
-	ScreenshotQuality float64 `json:"screenshotQuality"`
-	ScreenshotDir     string  `json:"screenshotDir,omitempty"`
-	AutoCameraEnabled  bool    `json:"autoCameraEnabled"`
-	AutoCameraBeatsPerSwitch int `json:"autoCameraBeatsPerSwitch"`
-	AutoUpdateEnabled        bool `json:"autoUpdateEnabled"`
+	Scale                    float64 `json:"scale"`           // 0.8~1.3, default 1.0
+	PopupWidth               int     `json:"popupWidth"`      // 220~380, default 280
+	Accent                   string  `json:"accent"`          // hex, default "#4a6cf7"
+	FontFamily               string  `json:"fontFamily"`      // "system"|"noto"|"yahei"
+	Animations               bool    `json:"animations"`      // enable menu slide animations
+	BlurBg                   bool    `json:"blurBg"`          // enable background blur on overlays
+	PerformanceMode          string  `json:"performanceMode"` // "auto"|"quality"|"balanced"|"performance"
+	ScreenshotFormat         string  `json:"screenshotFormat"`
+	ScreenshotQuality        float64 `json:"screenshotQuality"`
+	ScreenshotDir            string  `json:"screenshotDir,omitempty"`
+	AutoCameraEnabled        bool    `json:"autoCameraEnabled"`
+	AutoCameraBeatsPerSwitch int     `json:"autoCameraBeatsPerSwitch"`
+	AutoUpdateEnabled        bool    `json:"autoUpdateEnabled"`
 
 	// --- 以下字段原为前端会话级，2026-07-07 新增持久化支持 ---
 	FpsLimit              int               `json:"fpsLimit,omitempty"`              // 帧率上限；0=不限
 	Vsync                 bool              `json:"vsync,omitempty"`                 // 垂直同步（默认 true）
 	DefaultPhysicsEnabled bool              `json:"defaultPhysicsEnabled,omitempty"` // 新加载 actor 默认物理开关
-	RenderScale           float64           `json:"renderScale,omitempty"`            // 渲染分辨率缩放；1.0=原生
+	RenderScale           float64           `json:"renderScale,omitempty"`           // 渲染分辨率缩放；1.0=原生
 	CameraSensitivity     float64           `json:"cameraSensitivity,omitempty"`     // 相机灵敏度倍数；1.0=默认
 	InvertYAxis           bool              `json:"invertYAxis,omitempty"`           // 反转 Y 轴
 	AutoScaleModel        bool              `json:"autoScaleModel,omitempty"`        // 新加载模型自动缩放
@@ -316,25 +316,27 @@ type OverridePaths struct {
 
 // Config holds persistent user settings.
 type Config struct {
-	ConfigVersion       int                 `json:"config_version"`        // 配置版本号，用于迁移；0=旧配置（迁移前）
-	UIState             UIState             `json:"ui_state"`
-	LibraryRoot         string              `json:"library_root,omitempty"` // 迁移后清空，保留字段用于自动迁移
-	ResourceRoot        string              `json:"resource_root"`          // 总根目录
-	StorageMode         string              `json:"storage_mode"`           // "private" | "shared" (Android only)
-	OverridePaths       OverridePaths       `json:"override_paths"`        // 各类型路径覆写
-	ExternalPaths       []ExternalPath      `json:"external_paths"`
-	BlenderPath         string              `json:"blender_path"`
-	DisplayNamePriority string              `json:"display_name_priority"` // "name_jp" | "name_en" | "filename"
-	DownloadWatchDir    string              `json:"download_watch_dir"`    // 监听目录，空则不监听
-	DownloadAutoImport  bool                `json:"download_auto_import"`  // true 则跳过确认直接导入
-	Favorites           []string            `json:"favorites"`             // libraryRef 数组，收藏的模型
-	RenderPresets       []RenderPreset      `json:"render_presets"`        // 用户保存的渲染预设
-	MMDPath             string              `json:"mmd_path"`              // MikuMikuDance 可执行文件路径，空则自动检测
-	CustomSoftware      []SoftwareEntry     `json:"custom_software"`       // 用户手动添加的软件（Managed=true）
-	Tags                map[string][]string `json:"tags"`                  // libraryRef → []tag 列表
-	DanceSets           map[string]DanceSet `json:"dance_sets"`            // 舞蹈套装，key = 套装 ID
-	RecentModels        []string            `json:"recent_models"`         // libraryRef 数组，最近打开的模型（最多20条）
-	Env                 *EnvState           `json:"env,omitempty"`         // 环境状态（天空/地面/粒子等），nil=使用前端默认
+	ConfigVersion            int                 `json:"config_version"` // 配置版本号，用于迁移；0=旧配置（迁移前）
+	UIState                  UIState             `json:"ui_state"`
+	LibraryRoot              string              `json:"library_root,omitempty"` // 迁移后清空，保留字段用于自动迁移
+	ResourceRoot             string              `json:"resource_root"`          // 总根目录
+	StorageMode              string              `json:"storage_mode"`           // "private" | "shared" (Android only)
+	OverridePaths            OverridePaths       `json:"override_paths"`         // 各类型路径覆写
+	ExternalPaths            []ExternalPath      `json:"external_paths"`
+	BlenderPath              string              `json:"blender_path"`
+	DisplayNamePriority      string              `json:"display_name_priority"`                // "name_jp" | "name_en" | "filename"
+	DownloadWatchDir         string              `json:"download_watch_dir"`                   // 监听目录，空则不监听
+	DownloadAutoImport       bool                `json:"download_auto_import"`                 // true 则跳过确认直接导入
+	DownloadWatchEnabled     bool                `json:"download_watch_enabled,omitempty"`     // 监听开关（与 dir 解耦：关闭时保留 dir）
+	DownloadWatchInitialized bool                `json:"download_watch_initialized,omitempty"` // 首启默认是否已应用（防重复默认覆盖用户关闭）
+	Favorites                []string            `json:"favorites"`                            // libraryRef 数组，收藏的模型
+	RenderPresets            []RenderPreset      `json:"render_presets"`                       // 用户保存的渲染预设
+	MMDPath                  string              `json:"mmd_path"`                             // MikuMikuDance 可执行文件路径，空则自动检测
+	CustomSoftware           []SoftwareEntry     `json:"custom_software"`                      // 用户手动添加的软件（Managed=true）
+	Tags                     map[string][]string `json:"tags"`                                 // libraryRef → []tag 列表
+	DanceSets                map[string]DanceSet `json:"dance_sets"`                           // 舞蹈套装，key = 套装 ID
+	RecentModels             []string            `json:"recent_models"`                        // libraryRef 数组，最近打开的模型（最多20条）
+	Env                      *EnvState           `json:"env,omitempty"`                        // 环境状态（天空/地面/粒子等），nil=使用前端默认
 }
 
 // EnvState stores the full environment configuration (sky, ground, particles, fog, etc.).
@@ -350,33 +352,33 @@ type EnvState struct {
 	StarsEnabled     bool       `json:"starsEnabled"`
 	EnvIntensity     float64    `json:"envIntensity"`
 
-	GroundVisible          bool       `json:"groundVisible"`
-	GroundMode             string     `json:"groundMode"`
-	GroundColor            [3]float64 `json:"groundColor"`
-	GroundAlpha            float64    `json:"groundAlpha"`
-	GroundTexture          string     `json:"groundTexture"`
-	GroundTextureEnabled   bool       `json:"groundTextureEnabled"`
-	GroundTextureScale     float64    `json:"groundTextureScale"`
-	GroundTextureRotation  float64    `json:"groundTextureRotation"`
-	GroundGridSize         float64    `json:"groundGridSize"`
-	GroundLineColor        [3]float64 `json:"groundLineColor"`
-	GroundTerrainHeight    float64    `json:"groundTerrainHeight"`
-	GroundTerrainScale     float64    `json:"groundTerrainScale"`
-	GroundTerrainSeed      float64    `json:"groundTerrainSeed"`
-	GroundTerrainOctaves   float64    `json:"groundTerrainOctaves"`
-	GroundLevel            float64    `json:"groundLevel"`
+	GroundVisible         bool       `json:"groundVisible"`
+	GroundMode            string     `json:"groundMode"`
+	GroundColor           [3]float64 `json:"groundColor"`
+	GroundAlpha           float64    `json:"groundAlpha"`
+	GroundTexture         string     `json:"groundTexture"`
+	GroundTextureEnabled  bool       `json:"groundTextureEnabled"`
+	GroundTextureScale    float64    `json:"groundTextureScale"`
+	GroundTextureRotation float64    `json:"groundTextureRotation"`
+	GroundGridSize        float64    `json:"groundGridSize"`
+	GroundLineColor       [3]float64 `json:"groundLineColor"`
+	GroundTerrainHeight   float64    `json:"groundTerrainHeight"`
+	GroundTerrainScale    float64    `json:"groundTerrainScale"`
+	GroundTerrainSeed     float64    `json:"groundTerrainSeed"`
+	GroundTerrainOctaves  float64    `json:"groundTerrainOctaves"`
+	GroundLevel           float64    `json:"groundLevel"`
 
 	WindEnabled   bool       `json:"windEnabled"`
 	WindDirection [3]float64 `json:"windDirection"`
 	WindSpeed     float64    `json:"windSpeed"`
 
-	ParticleEnabled      bool    `json:"particleEnabled"`
-	ParticleType         string  `json:"particleType"`
-	ParticleEmitRate     float64 `json:"particleEmitRate"`
-	ParticleSize         float64 `json:"particleSize"`
-	ParticleSpeed        float64 `json:"particleSpeed"`
-	ParticleSplash       bool    `json:"particleSplash"`
-	ParticleCustomTexture string `json:"particleCustomTexture"`
+	ParticleEnabled       bool    `json:"particleEnabled"`
+	ParticleType          string  `json:"particleType"`
+	ParticleEmitRate      float64 `json:"particleEmitRate"`
+	ParticleSize          float64 `json:"particleSize"`
+	ParticleSpeed         float64 `json:"particleSpeed"`
+	ParticleSplash        bool    `json:"particleSplash"`
+	ParticleCustomTexture string  `json:"particleCustomTexture"`
 
 	WaterEnabled      bool       `json:"waterEnabled"`
 	WaterLevel        float64    `json:"waterLevel"`
@@ -405,16 +407,16 @@ type EnvState struct {
 	FresnelAlphaInfluence float64    `json:"fresnelAlphaInfluence"`
 
 	// 水面雾效（独立于全局雾）
-	WaterFogColor          [3]float64 `json:"waterFogColor"`
-	WaterFogDensity        float64    `json:"waterFogDensity"`
-	WaterFogOpacityInfluence float64  `json:"waterFogOpacityInfluence"`
+	WaterFogColor            [3]float64 `json:"waterFogColor"`
+	WaterFogDensity          float64    `json:"waterFogDensity"`
+	WaterFogOpacityInfluence float64    `json:"waterFogOpacityInfluence"`
 
 	// 水下效果
-	UnderwaterFogDensity     float64 `json:"underwaterFogDensity"`
+	UnderwaterFogDensity      float64 `json:"underwaterFogDensity"`
 	UnderwaterChromaticAmount float64 `json:"underwaterChromaticAmount"`
-	UnderwaterToneIntensity  float64 `json:"underwaterToneIntensity"`
-	UnderwaterFogMultiplier  float64 `json:"underwaterFogMultiplier"`
-	UnderwaterTintStrength   float64 `json:"underwaterTintStrength"`
+	UnderwaterToneIntensity   float64 `json:"underwaterToneIntensity"`
+	UnderwaterFogMultiplier   float64 `json:"underwaterFogMultiplier"`
+	UnderwaterTintStrength    float64 `json:"underwaterTintStrength"`
 
 	CloudsEnabled   bool    `json:"cloudsEnabled"`
 	CloudCover      float64 `json:"cloudCover"`
@@ -432,19 +434,19 @@ type EnvState struct {
 	FogStart   float64    `json:"fogStart"`
 	FogEnd     float64    `json:"fogEnd"`
 
-	ClothEnabled         bool        `json:"clothEnabled"`
-	ClothConfig          ClothConfig `json:"clothConfig"`
-	ClothDebugParticles  bool        `json:"clothDebugParticles"`
-	ClothDebugConstraints bool       `json:"clothDebugConstraints"`
-	ClothDebugColliders  bool        `json:"clothDebugColliders"`
-	SolverSubsteps       float64     `json:"solverSubsteps"`
-	SolverTimeScale      float64     `json:"solverTimeScale"`
-	CollisionEnabled     bool        `json:"collisionEnabled"`
-	BodyCollisionEnabled bool        `json:"bodyCollisionEnabled"`
-	GroundCollisionEnabled bool      `json:"groundCollisionEnabled"`
+	ClothEnabled           bool        `json:"clothEnabled"`
+	ClothConfig            ClothConfig `json:"clothConfig"`
+	ClothDebugParticles    bool        `json:"clothDebugParticles"`
+	ClothDebugConstraints  bool        `json:"clothDebugConstraints"`
+	ClothDebugColliders    bool        `json:"clothDebugColliders"`
+	SolverSubsteps         float64     `json:"solverSubsteps"`
+	SolverTimeScale        float64     `json:"solverTimeScale"`
+	CollisionEnabled       bool        `json:"collisionEnabled"`
+	BodyCollisionEnabled   bool        `json:"bodyCollisionEnabled"`
+	GroundCollisionEnabled bool        `json:"groundCollisionEnabled"`
 
-	SunAngle  float64 `json:"sunAngle"`
-	Azimuth   float64 `json:"azimuth"`
+	SunAngle float64 `json:"sunAngle"`
+	Azimuth  float64 `json:"azimuth"`
 
 	LightingPresetName *string `json:"lightingPresetName,omitempty"`
 

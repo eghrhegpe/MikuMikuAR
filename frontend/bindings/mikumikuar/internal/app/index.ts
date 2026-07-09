@@ -21,8 +21,6 @@ export type {
     ModelPresetEntry,
     OverridePaths,
     PlazaDownloadResult,
-    PlazaExtractResult,
-    PlazaItem,
     RenderPreset,
     SoftwareEntry,
     UIState,

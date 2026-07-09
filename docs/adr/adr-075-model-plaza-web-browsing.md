@@ -2,7 +2,7 @@
 
 > **状态**: 已采纳 · 已实施（Phase 1 基础代理 + 导航接入）
 > **关联**: ADR-003（下载策略，方案 C 已实施）、ADR-011（Wails 版本策略）
-> **增强**: ADR-077（Cookie 中继·登录态）、ADR-078（下载拦截·一键入库）、ADR-079（页面语义提取）
+> **增强**: ADR-077（Cookie 中继·登录态）、ADR-078（下载拦截·一键入库）
 > **来源**: 用户需求 2026-07-09；参考 `ysm-model-manager` 的「创意工坊」实现
 
 ---
@@ -27,9 +27,10 @@
 | 模式 | 流量 | 站点类型 | 登录态 |
 |------|------|----------|--------|
 | A · 内嵌 | Go 反向代理 → `iframe` | 免登录展示站 | 不需要 |
-| B · 外链 | `Browser.OpenURL` → 系统浏览器 | 需登录 SPA | 保留 |
+| B · Wails 新窗口 | `OpenPlazaWindow` → 独立 WebView2 窗口 | 需轻量隔离的站 | 共享 cookiejar |
+| C · 外链 | `Browser.OpenURL` → 系统浏览器 | 需登录 SPA | 保留 |
 
-**落库闭环**：无论哪条路下载的 zip，落入 `Downloads/MMDHub_Inbox`，由 `ADR-003` 方案 C 的 fsnotify 监听 → Magic Number 校验 → `ImportLocalFile` 落库。
+**落库闭环**：无论哪条路下载的 zip，落入用户 `Downloads/` 目录（首启自动监听，详见 `ADR-003` 方案 C），由 fsnotify 监听 → Magic Number 校验 → `ImportLocalFile` 落库。
 
 ---
 
@@ -47,9 +48,9 @@
   - `StartProxy(target string) (string, error)`：启动 `httputil.ReverseProxy`，返回 `http://127.0.0.1:<port>/` 本地 URL；剥离响应头 `X-Frame-Options` 与 CSP 的 `frame-ancestors`；改写页面内相对 URL / 重定向 `Location` 为代理绝对 URL。
   - `StopProxy()`：关闭并清理代理 server。
   - 复用 `zipextract.go` 的 `a.httpSrvMu` / `httpServerInfo` / `shutdownServers` 框架挂载生命周期。
-- **站点元数据**：首版用前端常量 `frontend/src/menus/plaza-sites.ts`（`{ name, url, mode: 'embed'|'external' }`）；后续可下沉到 Go config 做用户配置。
-- **前端新增 `frontend/src/menus/plaza.ts`**：`registerPopupMenu` 建菜单，根级 `slideRow` 列站点；内嵌站进入 `renderCustom` iframe 层（含地址展示 + 「在浏览器打开」按钮），外链站直接 `openExternalURL`。
-- **入口绑定**：`frontend/src/core/main.ts` 用 `toggleOverlay('sceneOverlay', m.showPlaza)` 接入（参考现有 settings 入口）。
+- **站点元数据**：首版用前端常量 `frontend/src/menus/plaza-sites.ts`（`{ name, url, mode: 'embed'|'window'|'external' }`，三模式独立、无自动选路）；后续可下沉到 Go config 做用户配置。
+- **前端新增 `frontend/src/menus/plaza.ts`**：全屏 `#webviewLayer` 视图层（非 SlideMenu 弹窗），根级卡片网格列站点；内嵌站启动反向代理 + iframe，外链站直接 `Browser.OpenURL`。
+- **入口绑定**：`frontend/src/core/main.ts` 用 `dom.btnPlaza.addEventListener('click', ...)` + `Ctrl+7` 快捷键接入。
 - **事件**：无新增前端事件；`StartProxy` 同步返回本地 URL。
 
 ---
@@ -82,4 +83,3 @@
 |-----|------|--------|
 | ADR-077 | Cookie 中继 — 代理层维护 cookiejar，解锁登录态站点内嵌 | P0 |
 | ADR-078 | 下载拦截 — 注入 JS 拦截下载链接，Go 端直接入库 | P0 |
-| ADR-079 | 页面语义提取 — 解析 HTML 返回结构化数据，原生列表替代 iframe | P1 |

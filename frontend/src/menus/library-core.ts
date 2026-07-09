@@ -15,7 +15,6 @@ import {
     GetLibraryIndex,
     ExtractZip,
     CleanOrphanCache,
-    ClearExtractCache,
     GetThumbnailBatch,
     GetModelMetaBatch,
     GetRecentModels,
@@ -1317,7 +1316,6 @@ export async function refreshLibrary(): Promise<void> {
     const prevPath = getCurrentBrowsePath();
     setStatus(t('library.scanning'), false);
     const models = await tryCatchStatus(async () => {
-        await ClearExtractCache();
         const m = await rescanAndSync();
         return m;
     }, t('library.scanFailed'));

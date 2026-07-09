@@ -15,7 +15,7 @@ import {
 
 // ======== Re-exports for backward compatibility ========
 export { refreshLibrary } from './library';
-export { preloadAutoImportState, isAutoLoadCompanionAudioEnabled, setAutoLoadCompanionAudio, generateTextColors } from './settings-shared';
+export { preloadAutoImportState, preloadDownloadWatchState, isAutoLoadCompanionAudioEnabled, setAutoLoadCompanionAudio, generateTextColors } from './settings-shared';
 export { getSettingsMenu, refreshSettingsRoot, showSettings };
 
 // ======== Sub-module imports ========
