@@ -27,7 +27,7 @@ export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenu
                     const isActive = (uiState.screenshotFormat ?? 'image/png') === f.key;
                     const row = slideRow(
                         c, `lucide:${isActive ? 'check-circle' : 'circle'}`, f.label, false,
-                        () => { uiState.screenshotFormat = f.key; setUIState({ screenshotFormat: f.key }); getSettingsMenu()?.updateControls(); setStatus(`✓ 截图格式已设为 ${f.label}`, true); },
+                        () => { uiState.screenshotFormat = f.key; setUIState({ screenshotFormat: f.key }); getSettingsMenu()?.updateControls(); setStatus(t('settings.screenshotFormatSet', {label: f.label}), true); },
                         undefined, undefined, isActive
                     );
                     row.dataset.formatKey = f.key;
@@ -69,8 +69,8 @@ export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenu
                     if (!d) { return; }
                     uiState.screenshotDir = d;
                     setUIState({ screenshotDir: d });
-                    getSettingsMenu()?.reRender();
-                    setStatus(`✓ 截图目录已设置: ${d}`, true);
+      getSettingsMenu()?.reRender();
+      setStatus(t('settings.screenshotDirSet', {dir}), true);
                 });
 
                 slideRow(c, 'lucide:folder-open', '打开目录', false, () => {

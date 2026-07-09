@@ -164,8 +164,8 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                                         });
                                 })
                                 .catch((err) => {
-                                    console.error('[paths] switchStorageMode failed:', err);
-                                    setStatus(`存储模式切换失败: ${err instanceof Error ? err.message : '未知错误'}`, true);
+      console.error('[paths] switchStorageMode failed:', err);
+      setStatus(t('settings.storageModeFail', {err}), true);
                                 });
                         }
                     );
@@ -237,8 +237,8 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                             (v) => {
                                 setDownloadWatchEnabledCached(v);
                                 SetDownloadWatchEnabled(v).catch((err) => console.warn('[watch] SetDownloadWatchEnabled failed', err));
-                                getSettingsMenu()?.updateControls();
-                                setStatus(v ? '✓ 下载监听已开启' : '✓ 下载监听已关闭', true);
+      getSettingsMenu()?.updateControls();
+      setStatus(v ? t('settings.watchOn') : t('settings.watchOff'), true);
                             },
                             'lucide:folder-search',
                             { bind: () => getDownloadWatchEnabledCached() }
@@ -255,11 +255,11 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                                 try {
                                     await SetDownloadWatchDir(dir);
                                     setDownloadWatchEnabledCached(true);
-                                    getSettingsMenu()?.updateControls();
-                                    setStatus(`✓ 监听目录已设为 ${dir}`, true);
+      getSettingsMenu()?.updateControls();
+      setStatus(t('settings.watchDirSet', {dir}), true);
                                 } catch (err) {
-                                    console.warn('[watch] SetDownloadWatchDir failed', err);
-                                    setStatus(`✗ 监听目录设置失败: ${err instanceof Error ? err.message : '未知错误'}`, true);
+      console.warn('[watch] SetDownloadWatchDir failed', err);
+      setStatus(t('settings.watchDirFail', {err}), true);
                                 }
                                 return dir;
                             }
@@ -271,8 +271,8 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                             (v) => {
                                 setAutoImportCached(v);
                                 SetDownloadAutoImport(v).catch((err) => console.warn('[watch] SetDownloadAutoImport failed', err));
-                                getSettingsMenu()?.updateControls();
-                                setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
+      getSettingsMenu()?.updateControls();
+      setStatus(v ? t('settings.autoImportOn') : t('settings.autoImportOff'), true);
                             },
                             'lucide:download',
                             { bind: () => getAutoImportCached() }

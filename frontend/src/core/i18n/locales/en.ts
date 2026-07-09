@@ -603,6 +603,7 @@ export const en: Record<string, string> = {
     'physics.noMmdData': '⚠ Current model has no MMD data',
     'physics.clothCreated': '✓ Cloth created ({particles} particles, {constraints} constraints, mesh: {mesh})',
     'physics.clothEnabled': '✓ Cloth simulation enabled ({instances} instances, {particles} particles, {constraints} constraints)',
+'physics.ragdollEnabled': '✓ Ragdoll physics enabled',
     'physics.noActiveInstance': '⚠ Cloth enabled but no active instance found',
     'physics.clothDisabled': 'Cloth simulation off',
 

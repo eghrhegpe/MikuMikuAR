@@ -1,6 +1,7 @@
 // settings-performance.ts — 性能设置子菜单
 
 import { SetPerformanceMode } from '../core/wails-bindings';
+import { t } from '../core/i18n/t';
 import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addSliderRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
@@ -47,9 +48,9 @@ export function buildSettingsPerformanceLevel(getSettingsMenu: () => SettingsMen
                                 getSettingsMenu()?.reRender();
                             } else {
                                 getSettingsMenu()?.updateControls();
-                            }
-                            setStatus(`✓ 性能模式: ${m.label}`, true);
-                        },
+  }
+setStatus(t('settings.perfModeSet', { label: m.label }), true);
+  },
                         m.desc,
                         undefined,
                         isActive
@@ -85,8 +86,8 @@ export function buildSettingsPerformanceLevel(getSettingsMenu: () => SettingsMen
                         const limit = Math.round(v);
                         setUIState({ fpsLimit: limit === 0 ? 0 : limit });
                         applyFrameControl();
-                        getSettingsMenu()?.updateControls();
-                        setStatus(limit === 0 ? '✓ 帧率不限制' : `✓ 帧率上限: ${limit} FPS`, true);
+      getSettingsMenu()?.updateControls();
+      setStatus(limit === 0 ? t('settings.perfFpsUnlimited') : t('settings.perfFpsLimit', {limit}), true);
                     },
                     'lucide:gauge', undefined,
                     { bind: () => uiState.fpsLimit ?? 0 }
@@ -103,8 +104,8 @@ export function buildSettingsPerformanceLevel(getSettingsMenu: () => SettingsMen
           (v) => {
             setUIState({ vsync: v });
             applyFrameControl();
-            getSettingsMenu()?.updateControls();
-            setStatus(`✓ 垂直同步: ${v ? '开' : '关'}`, true);
+      getSettingsMenu()?.updateControls();
+      setStatus(t('settings.perfVsync', {state: v ? t('common.on') : t('common.off')}), true);
           },
           'lucide:monitor-check'
         );
@@ -125,8 +126,8 @@ export function buildSettingsPerformanceLevel(getSettingsMenu: () => SettingsMen
                 addToggleRow(c, '默认启用物理模拟', uiState.defaultPhysicsEnabled !== false,
                     (v) => {
                         setUIState({ defaultPhysicsEnabled: v });
-                        getSettingsMenu()?.updateControls();
-                        setStatus(v ? '✓ 默认启用物理模拟' : '✓ 默认关闭物理模拟（仅影响后续加载）', true);
+      getSettingsMenu()?.updateControls();
+      setStatus(v ? t('settings.physOn') : t('settings.physOff'), true);
                     },
                     'lucide:atom'
                 );
@@ -143,8 +144,8 @@ export function buildSettingsPerformanceLevel(getSettingsMenu: () => SettingsMen
                         const s = Math.round(v * 100) / 100;
                         engine.setHardwareScalingLevel(1 / s);
                         setUIState({ renderScale: s });
-                        getSettingsMenu()?.updateControls();
-                        setStatus(`✓ 渲染缩放: ${Math.round(s * 100)}%`, true);
+      getSettingsMenu()?.updateControls();
+      setStatus(t('settings.renderScale', {pct: Math.round(s * 100)}), true);
                     },
                     'lucide:scan', undefined,
                     { bind: () => uiState.renderScale ?? 1 }
@@ -162,8 +163,8 @@ export function buildSettingsPerformanceLevel(getSettingsMenu: () => SettingsMen
                         const s = Math.round(v * 10) / 10;
                         setUIState({ cameraSensitivity: s });
                         refreshCameraUserSettings();
-                        getSettingsMenu()?.updateControls();
-                        setStatus(`✓ 相机灵敏度: ${s}x`, true);
+      getSettingsMenu()?.updateControls();
+      setStatus(t('settings.camSens', {x: s}), true);
                     },
                     'lucide:move', undefined,
                     { bind: () => uiState.cameraSensitivity ?? 1 }
@@ -180,8 +181,8 @@ export function buildSettingsPerformanceLevel(getSettingsMenu: () => SettingsMen
                     (v) => {
                         setUIState({ invertYAxis: v });
                         refreshCameraUserSettings();
-                        getSettingsMenu()?.updateControls();
-                        setStatus(`✓ 反转 Y 轴: ${v ? '开' : '关'}`, true);
+      getSettingsMenu()?.updateControls();
+      setStatus(t('settings.invertY', {state: v ? t('common.on') : t('common.off')}), true);
                     },
                     'lucide:flip-vertical'
                 );
@@ -213,9 +214,9 @@ if (getPerformanceMode() === 'custom') {
                         { label: '环境反射探针', value: rs.reflectionProbeEnabled, apply: (v) => setRenderState({ reflectionProbeEnabled: v }) },
                         { label: '环境光遮蔽 (SSAO)', value: rs.ssaoEnabled, apply: (v) => setRenderState({ ssaoEnabled: v }) },
                     ];
-                    for (const t of renderToggles) {
-                        addToggleRow(c, t.label, t.value,
-                            (v) => { t.apply(v); setStatus(`✓ ${t.label}: ${v ? '开' : '关'}`, true); },
+  for (const toggle of renderToggles) {
+                        addToggleRow(c, toggle.label, toggle.value,
+                            (v) => { toggle.apply(v); setStatus(t('settings.toggleState', { label: toggle.label, state: v ? t('common.on') : t('common.off') }), true); },
                             'lucide:sliders-horizontal'
                         );
                     }

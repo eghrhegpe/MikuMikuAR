@@ -603,6 +603,7 @@ export const zhCN: Record<string, string> = {
     'physics.noMmdData': '⚠ 当前模型无 MMD 数据',
     'physics.clothCreated': '✓ 布料已创建 ({particles} 粒子, {constraints} 约束, mesh: {mesh})',
     'physics.clothEnabled': '✓ 布料模拟已启用 ({instances} 例, {particles} 粒子, {constraints} 约束)',
+'physics.ragdollEnabled': '✓ 布娃娃物理已启用',
     'physics.noActiveInstance': '⚠ 布料已启用但未找到活跃实例',
     'physics.clothDisabled': '布料模拟已关闭',
 

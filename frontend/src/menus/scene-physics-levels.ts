@@ -65,20 +65,33 @@ export function buildClothLevel(): PopupLevel {
         label: t('scene.clothSim'),
         dir: '',
         items: [
-            // 布料模拟：独立开关
-            {
-                kind: 'toggle',
-                label: t('scene.clothSim'),
-                icon: 'lucide:shirt',
-                target: 'cloth:toggle',
-                toggleValue: envState.clothEnabled,
-                onToggleChange: (v: boolean) => {
-                    envState.clothEnabled = v;
-                    toggleCloth(v);
-                    refreshSceneRoot();
-                    _patchToggle('cloth:toggle', v);
-                },
-            } as PopupRow,
+// 布料模拟：独立开关
+{
+  kind: 'toggle',
+  label: t('scene.clothSim'),
+  icon: 'lucide:shirt',
+  target: 'cloth:toggle',
+  toggleValue: envState.clothEnabled,
+  onToggleChange: (v: boolean) => {
+    envState.clothEnabled = v;
+    toggleCloth(v);
+    refreshSceneRoot();
+    _patchToggle('cloth:toggle', v);
+  }
+} as PopupRow,
+// 布娃娃物理：独立开关
+{
+  kind: 'toggle',
+  label: t('scene.ragdollPhysics'),
+  icon: 'lucide:user',
+  target: 'ragdoll:toggle',
+  toggleValue: envState.ragdollEnabled,
+  onToggleChange: (v: boolean) => {
+    envState.ragdollEnabled = v;
+    refreshSceneRoot();
+    _patchToggle('ragdoll:toggle', v);
+  }
+} as PopupRow,
             // 求解质量
             {
                 kind: 'slider',

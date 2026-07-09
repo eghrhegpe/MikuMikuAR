@@ -109,14 +109,12 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
                             {
                                 actionIcon: '▶',
                                 onActionClick: async () => {
-                                    const r = await tryCatchStatus(async () => {
-                                        await LaunchSoftware(entry.path, entry.args || '');
-                                        return true;
-                                    }, t('settings.softwareStartFail', {name}), (err: unknown) => {
-        setStatus(t('settings.softwareStartFail', {name, message: err instanceof Error ? err.message : String(err)}), false);
-      });
-      if (r) {
-        setStatus(t('settings.softwareStarted', {name}), true);
+      const r = await tryCatchStatus(async () => {
+        await LaunchSoftware(entry.path, entry.args || '');
+        return true as const;
+      }, t('settings.softwareStartFail', { name: entry.name }));
+      if (r !== undefined) {
+        setStatus(t('settings.softwareStarted', { name: entry.name }), true);
       }
                                 },
                             }
@@ -198,7 +196,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
   cardContainer(container, (c) => {
     slideRow(c, 'lucide:play', '启动', false, () => {
       LaunchSoftware(entry.path, '')
-        .then(() => setStatus(t('settings.softwareStarted', {name}), true))
+        .then(() => setStatus(t('settings.softwareStarted', { name: entry.name }), true))
         .catch((err: unknown) =>
           setStatus(
             t('status.error', {message: err instanceof Error ? err.message : String(err)}),
@@ -211,12 +209,12 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                         const r = await tryCatchStatus(async () => {
                             await RemoveCustomSoftware(entry.path);
                             return true;
-                        }, t('settings.softwareDeleteFail', {name}));
+                        }, t('settings.softwareDeleteFail', { name: entry.name }));
       if (r) {
         cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
           (e) => e.path !== entry.path
         );
-        setStatus(t('settings.softwareDeleted', {name}), true);
+        setStatus(t('settings.softwareDeleted', { name: entry.name }), true);
         const menu = getSettingsMenu();
                             menu?.pop();
                             menu?.reRender();
@@ -246,7 +244,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
   cardContainer(container, (c) => {
     slideRow(c, 'lucide:play', '启动', false, () => {
       LaunchSoftware(entry.path, entry.args)
-        .then(() => setStatus(t('settings.softwareStarted', {name}), true))
+        .then(() => setStatus(t('settings.softwareStarted', { name: entry.name }), true))
         .catch((err: unknown) =>
           setStatus(
             t('status.error', {message: err instanceof Error ? err.message : String(err)}),
@@ -269,7 +267,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     }, '✗ 转为自定义');
       if (r) {
         cachedSoftwareEntries = await ScanSoftwareDir();
-        setStatus(t('settings.softwareToCustom', {name}), true);
+        setStatus(t('settings.softwareToCustom', { name: entry.name }), true);
         const menu = getSettingsMenu();
                         menu?.pop();
                         menu?.reRender();
