@@ -129,3 +129,24 @@ svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{S}" height="{S}" viewB
 with open(r"C:\Users\zhujieling11\MikuMikuAR\build\appicon.svg", "w", encoding="utf-8") as f:
     f.write(svg)
 print("wrote build/appicon.svg")
+
+# --- Android launcher mipmaps (brand icon for mobile) ------------------
+# Reuse the committed 1024 master so desktop + mobile stay in sync.
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ANDROID_RES = os.path.join(ROOT, "build", "android", "app", "src", "main", "res")
+DENSITIES = {  # density -> launcher icon px (legacy non-adaptive PNGs)
+    "mdpi": 48,
+    "hdpi": 72,
+    "xhdpi": 96,
+    "xxhdpi": 144,
+    "xxxhdpi": 192,
+}
+master = Image.open(os.path.join(ROOT, "build", "appicon.png")).convert("RGBA")
+for density, size in DENSITIES.items():
+    d = master.resize((size, size), Image.LANCZOS)
+    for name in ("ic_launcher.png", "ic_launcher_round.png"):
+        dst = os.path.join(ANDROID_RES, f"mipmap-{density}", name)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        d.save(dst)
+        print("wrote", dst)
