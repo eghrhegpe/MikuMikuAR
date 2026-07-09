@@ -24,7 +24,7 @@ import {
     getRecentMotions,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { slideRow, addToggleRow, addEmptyRow } from '../core/ui-helpers';
+import { slideRow, addToggleRow, addEmptyRow, addSliderRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import { loadManager } from '../core/load-manager';
@@ -394,35 +394,32 @@ const {
 export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 
 /** motion-popup 的 onFolderEnter 路由（从 makeMotionMenu 提取） */
-function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
-    if (row.target === 'motion:camera') {
-        return buildCameraLevel();
-    }
+// [doc:adr-065] 子层路由表：target → 纯 items 构建器；自动挂 itemBuilder 实现语言热刷新
+const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
+    'motion:camera': buildCameraLevel,
+    'motion:recent': buildRecentMotionsLevel,
+    'motion:playbackSpeed': buildPlaybackSpeedLevel,
+    'motion:procmotion': buildProcMotionLevel,
+    'motion:gaze': buildGazeTrackingLevel,
+    'motion:boneOverride': buildBoneOverrideLevel,
+    'motion:poseStudio': buildPoseStudioLevel,
+    'procmotion:mode': buildProcMotionModeLevel,
+    'lipsync:menu': buildLipSyncLevel,
+};
 
-    if (row.target === 'motion:recent') {
-        return buildRecentMotionsLevel();
-    }
-    if (row.target === 'motion:procmotion') {
-        return buildProcMotionLevel();
-    }
-    if (row.target === 'motion:gaze') {
-        return buildGazeTrackingLevel();
-    }
-    if (row.target === 'motion:boneOverride') {
-        return buildBoneOverrideLevel();
-    }
-    if (row.target === 'motion:poseStudio') {
-        return buildPoseStudioLevel();
-    }
-    if (row.target === 'procmotion:mode') {
-        return buildProcMotionModeLevel();
-    }
-    if (row.target === 'lipsync:menu') {
-        return buildLipSyncLevel();
-    }
+function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
     if (row.target && row.target.startsWith('action:binding:')) {
+        const id = row.target.replace('action:binding:', '');
         setMotionBindingTargetId(null);
-        return buildActionBindingLevel(row.target.replace('action:binding:', ''));
+        const lvl = buildActionBindingLevel(id);
+        lvl.itemBuilder = () => buildActionBindingLevel(id).items;
+        return lvl;
+    }
+    const builder = MOTION_FOLDER_ROUTES[row.target as string];
+    if (builder) {
+        const lvl = builder();
+        lvl.itemBuilder = () => builder().items;
+        return lvl;
     }
     return null;
 }
@@ -599,6 +596,43 @@ function motionOnItemClick(row: PopupRow): void {
     }
 }
 
+// ======== Playback Speed (VMD timeScale) ========
+// 仅影响 VMD 骨骼动画时间推进（mmdRuntime.timeScale），不联动音频/节拍/物理/相机 VMD。
+// 模块级变量：mmdRuntime 为 null 时仍记忆用户选择，等 runtime 就绪后应用。
+let _playbackSpeed = 1.0;
+
+/** 将记忆中的播放速度同步到新的 mmdRuntime 实例（防状态漂移）。 */
+export function syncPlaybackSpeedToRuntime(runtime: { timeScale: number }): void {
+    runtime.timeScale = _playbackSpeed;
+}
+
+function buildPlaybackSpeedLevel(): PopupLevel {
+    return {
+        label: t('motion.playbackSpeed'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                addSliderRow(
+                    c,
+                    t('motion.playbackSpeed'),
+                    _playbackSpeed,
+                    0.1,
+                    2.0,
+                    0.05,
+                    (v) => {
+                        _playbackSpeed = v;
+                        if (mmdRuntime) {
+                            mmdRuntime.timeScale = v;
+                        }
+                    },
+                    'lucide:gauge'
+                );
+            });
+        },
+    };
+}
+
 function buildRecentMotionsLevel(): PopupLevel {
     const recent = getRecentMotions();
     return {
@@ -665,6 +699,13 @@ function buildMotionRootItems(): PopupRow[] {
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
     }
     // Card 3: 相机 + 音乐库 + 程序化动作
+    items.push({
+        kind: 'folder',
+        label: t('motion.playbackSpeed'),
+        icon: 'lucide:gauge',
+        target: 'motion:playbackSpeed',
+        sublabel: `${_playbackSpeed.toFixed(2)}x`,
+    });
     items.push({ kind: 'folder', label: t('motion.camera'), icon: 'lucide:video', target: 'motion:camera' });
     items.push({
         kind: 'action',

@@ -1,7 +1,8 @@
 # ADR-008: 下载目录监听 + 自动导入（方案 B）
 
 **日期**：2026-07-16
-> **状态**: 已完成 — fsnotify watcher + ImportLocalFile + toast 通知全链路
+> **状态**: ✅ 已合并 → [ADR-003](adr-003-download-strategy.md)
+> **来源**: 本文件内容已合并至 ADR-003 精简版
 
 ---
 

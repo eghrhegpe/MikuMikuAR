@@ -205,39 +205,32 @@ function buildSceneRoot(): PopupLevel {
 
 // ======== onFolderEnter Router ========
 
+// [doc:adr-065] 子层路由表：target → 纯 items 构建器（零参）；自动挂 itemBuilder 实现语言热刷新
+const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
+    'scene:presets': buildPresetScenesLevel,
+    'scene:render': buildRenderLevel,
+    'scene:screenshot': buildScreenshotLevel,
+    'scene:render:postprocess': buildPostProcessLevel,
+    'scene:render:stage': buildStageLevel,
+    'scene:render:props': buildPropLevel,
+    'scene:physics': buildPhysicsLevel,
+    'scene:cloth': buildClothLevel,
+    'scene:formation': buildFormationLevel,
+    'cloth:fineTune': buildClothParamsLevel,
+    'cloth:debug': buildClothDebugLevel,
+    'cloth:collision': buildCollisionLevel,
+    'physics:wasm': buildWasmPhysicsLevel,
+    'wasm:debug': buildPhysicsDebugLevel,
+};
+
 function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
-    switch (row.target) {
-        case 'scene:presets':
-            return buildPresetScenesLevel();
-        case 'scene:render':
-            return buildRenderLevel();
-        case 'scene:screenshot':
-            return buildScreenshotLevel();
-        case 'scene:render:postprocess':
-            return buildPostProcessLevel();
-        case 'scene:render:stage':
-            return buildStageLevel();
-        case 'scene:render:props':
-            return buildPropLevel();
-        case 'scene:physics':
-            return buildPhysicsLevel();
-        case 'scene:cloth':
-            return buildClothLevel();
-        case 'scene:formation':
-            return buildFormationLevel();
-        case 'cloth:fineTune':
-            return buildClothParamsLevel();
-        case 'cloth:debug':
-            return buildClothDebugLevel();
-        case 'cloth:collision':
-            return buildCollisionLevel();
-        case 'physics:wasm':
-            return buildWasmPhysicsLevel();
-        case 'wasm:debug':
-            return buildPhysicsDebugLevel();
-        default:
-            return null;
+    const builder = SCENE_FOLDER_ROUTES[row.target as string];
+    if (builder) {
+        const lvl = builder();
+        lvl.itemBuilder = () => builder().items;
+        return lvl;
     }
+    return null;
 }
 
 // ======== handleSceneAction ========

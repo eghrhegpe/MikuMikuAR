@@ -76,6 +76,12 @@ import { DEFAULT_LIPSYNC_STATE } from '../motion-algos/lipsync';
 import type { ProcMotionState } from '../motion-algos/procedural-motion';
 import type { LipSyncState as LipSyncStateType } from '../motion-algos/lipsync';
 import type { BoneOverrideEntry } from '../core/types';
+import {
+    getPerceptionState,
+    setPerceptionState,
+    activatePerception,
+    type PerceptionState,
+} from './motion/perception';
 
 // ======== Utilities ========
 
@@ -157,6 +163,8 @@ export interface SceneFile {
         playing: boolean;
     };
     procMotion?: ProcMotionState;
+    /** [doc:adr-071] 感知层状态（呼吸/眨眼/视线追踪），独立于程序化动作 */
+    perception?: PerceptionState;
     lipSync?: LipSyncStateType;
     props?: Array<{
         filePath: string;
@@ -280,6 +288,7 @@ export function serializeScene(): SceneFile {
               }
             : undefined,
         procMotion: { ...procState },
+        perception: { ...getPerceptionState() },
         lipSync: { ...lipState },
         props: Array.from(propRegistry.values()).map((p) => {
             let uuid = propUuidMap.get(p.id);
@@ -573,6 +582,22 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         setProcMotionState(s);
         regenerateProcMotion();
     }
+
+    // --- Perception Layer --- [doc:adr-071]
+    // 优先读 data.perception；旧存档无此字段时从 procMotion 迁移
+    if (data.perception) {
+        setPerceptionState(data.perception as Partial<PerceptionState>);
+    } else if (data.procMotion) {
+        const old = data.procMotion as Partial<ProcMotionState>;
+        setPerceptionState({
+            eyeTrackingEnabled: old.eyeTrackingEnabled ?? true,
+            headTrackingEnabled: old.headTrackingEnabled ?? true,
+            // 旧存档：boneToggles.blink 控制眨眼，boneToggles.head 无对应感知字段（head-follow 由 gaze 接管）
+            blinkEnabled: old.boneToggles?.blink ?? true,
+            breathEnabled: true,
+        });
+    }
+    activatePerception();
 
     // --- LipSync ---
     if (data.lipSync) {

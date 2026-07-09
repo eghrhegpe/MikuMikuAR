@@ -19,10 +19,11 @@ import {
 } from './ar-camera';
 import type { CameraFacing } from './ar-camera';
 import {
-    getProcMotionState,
-    setProcMotionEyeTrackingEnabled,
-    setProcMotionHeadTrackingEnabled,
-} from '../motion/proc-motion-bridge';
+    getPerceptionState,
+    setEyeTrackingEnabled,
+    setHeadTrackingEnabled,
+    activatePerception,
+} from '../motion/perception';
 import { focusedModelId, modelRegistry } from '@/core/config';
 
 // ======== Internal State ========
@@ -151,11 +152,12 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
             _skyHidden = true;
         }
         _prevGazeState = {
-            eye: getProcMotionState().eyeTrackingEnabled,
-            head: getProcMotionState().headTrackingEnabled,
+            eye: getPerceptionState().eyeTrackingEnabled,
+            head: getPerceptionState().headTrackingEnabled,
         };
-        setProcMotionEyeTrackingEnabled(true);
-        setProcMotionHeadTrackingEnabled(true);
+        setEyeTrackingEnabled(true);
+        setHeadTrackingEnabled(true);
+        activatePerception();
         _createContactShadow();
         return true;
     } else {
@@ -170,8 +172,9 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
             _skyHidden = false;
         }
         if (_prevGazeState) {
-            setProcMotionEyeTrackingEnabled(_prevGazeState.eye);
-            setProcMotionHeadTrackingEnabled(_prevGazeState.head);
+            setEyeTrackingEnabled(_prevGazeState.eye);
+            setHeadTrackingEnabled(_prevGazeState.head);
+            activatePerception();
             _prevGazeState = null;
         }
         return true;

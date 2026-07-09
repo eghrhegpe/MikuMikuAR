@@ -326,8 +326,7 @@ function _setGazeTrackingSetting(
     value: boolean
 ): void {
     procState = { ...procState, [field]: value };
-    triggerAutoSave();
-    // 同步到 perception.ts
+    // 同步到 perception.ts（内部已调用 triggerAutoSave）
     setGazeConfig(procState.headTrackingEnabled, procState.eyeTrackingEnabled);
     // 重新激活感知层（应用新配置）
     activatePerception();

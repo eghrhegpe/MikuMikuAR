@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SlideMenu } from '../menus/menu';
 import type { PopupLevel, PopupRow } from '../core/config';
+import { setLang } from '../core/i18n/locale';
+import { t } from '../core/i18n/t';
 
 // ─── SlideMenu 测试 ─────────────────────────────────────────────
 // 验证层级栈管理（push / pop / reset / popTo）。
@@ -1355,5 +1357,97 @@ describe('registerPopupMenu — 生命周期', () => {
         });
         show();
         expect(sceneOverlay.dataset.popupType).toBe('my-custom-type');
+    });
+});
+
+// ── ADR-065: 纯 items 层级语言热刷新 ─────────────────────────────
+describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
+    let container: HTMLElement;
+    let menu: SlideMenu;
+
+    beforeEach(() => {
+        // 锁定初始语言，隔离其它测试对全局 lang 状态的污染
+        setLang('zh-CN');
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        menu = new SlideMenu({
+            container,
+            onItemClick: vi.fn(),
+            onFolderEnter: vi.fn(),
+            onAfterRender: vi.fn(),
+            onClose: vi.fn(),
+        });
+    });
+
+    afterEach(() => {
+        menu.dispose();
+        container.remove();
+    });
+
+    it('itemBuilder 使 updateControls 原地刷新标签（key 不变只改文本）', async () => {
+        let lang = 'zh-CN';
+        const labelOf = () => (lang === 'en' ? 'Appearance' : '外观');
+        const level: PopupLevel = {
+            label: '根',
+            dir: '',
+            items: [{ kind: 'action' as const, label: labelOf(), icon: 'i', target: 'appearance' }],
+            // [doc:adr-065] itemBuilder 返回最新语言的 items
+            itemBuilder: () => [{ kind: 'action' as const, label: labelOf(), icon: 'i', target: 'appearance' }],
+        };
+        menu.reset(level);
+        await new Promise((r) => requestAnimationFrame(r));
+        const labelEl = container.querySelector('.slide-label');
+        expect(labelEl?.textContent).toBe('外观');
+
+        // 模拟语言切换后 subscribe 回调触发 updateControls
+        lang = 'en';
+        menu.updateControls();
+        expect(labelEl?.textContent).toBe('Appearance');
+        // 原地刷新：DOM 行数量不变（未重建）
+        expect(container.querySelectorAll('.slide-item').length).toBe(1);
+    });
+
+    it('无 itemBuilder 时 updateControls 不会刷新纯 items 标签（回归基线）', async () => {
+        const level: PopupLevel = {
+            label: '根',
+            dir: '',
+            items: [{ kind: 'action' as const, label: '外观', icon: 'i', target: 'appearance' }],
+        };
+        menu.reset(level);
+        await new Promise((r) => requestAnimationFrame(r));
+        expect(container.querySelector('.slide-label')?.textContent).toBe('外观');
+        // 无 itemBuilder → updateControls 不应改动已渲染文本
+        menu.updateControls();
+        expect(container.querySelector('.slide-label')?.textContent).toBe('外观');
+    });
+
+    it('面板未渲染时 updateControls 不抛错（ADR-065 守卫）', () => {
+        (menu as any).levels = [
+            {
+                label: '根',
+                dir: '',
+                items: [{ kind: 'action' as const, label: '外观', icon: 'i', target: 'appearance' }],
+                itemBuilder: () => [{ kind: 'action' as const, label: 'X', icon: 'i', target: 'appearance' }],
+            },
+        ];
+        // 未 buildPanel → panel 无 .slide-list，应安全跳过
+        expect(() => menu.updateControls()).not.toThrow();
+    });
+
+    it('setLang → scheduleRefresh → 当前层标签热切换（真实 i18n 路径）', async () => {
+        const level: PopupLevel = {
+            label: '根',
+            dir: '',
+            items: [{ kind: 'folder' as const, label: t('settings.appearance'), icon: 'i', target: 'appearance' }],
+            itemBuilder: () => [{ kind: 'folder' as const, label: t('settings.appearance'), icon: 'i', target: 'appearance' }],
+        };
+        menu.reset(level);
+        await new Promise((r) => requestAnimationFrame(r));
+        expect(container.querySelector('.slide-label')?.textContent).toBe('外观');
+
+        setLang('en');
+        // scheduleRefresh 经 requestAnimationFrame 通知订阅者 → updateControls → patchPanel
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        expect(container.querySelector('.slide-label')?.textContent).toBe('Appearance');
     });
 });

@@ -260,6 +260,7 @@ export const zhTW: Record<string, string> = {
     'motion.model': '模型',
     'motion.camera': '相機',
     'motion.procMotion': '程式化動作',
+    'motion.playbackSpeed': '播放速度',
 
     // ===== 布料 cloth =====
     'motion.clothTitle': '布料參數',
@@ -344,6 +345,8 @@ export const zhTW: Record<string, string> = {
     'motion.gazeTracking': '視線追蹤',
     'motion.eyeFollow': '眼部跟隨',
     'motion.headFollow': '頭部跟隨',
+    'motion.perceptionBreath': '呼吸',
+    'motion.perceptionBlink': '眨眼',
     'motion.runtime': '執行時',
     'motion.runtimeWasm': 'WASM 物理',
     'motion.runtimeJs': 'JS 調試',

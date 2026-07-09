@@ -6,10 +6,7 @@ import {
 } from './vmd-writer';
 import {
     BONE_CENTER_CANDIDATES,
-    BONE_UPPER_CANDIDATES,
     BONE_UPPER2_CANDIDATES,
-    BONE_NECK_CANDIDATES,
-    BONE_HEAD_CANDIDATES,
     BONE_WAIST_CANDIDATES,
     BONE_ALLPARENT_CANDIDATES,
     BONE_SHOULDER_L_CANDIDATES,
@@ -38,10 +35,7 @@ export function generateLifelikeVmd(
     const morphs: MorphKeyFrame[] = [];
 
     const centerBone = matchBone(boneNames, BONE_CENTER_CANDIDATES);
-    const upperBone = matchBone(boneNames, BONE_UPPER_CANDIDATES);
     const upper2Bone = matchBone(boneNames, BONE_UPPER2_CANDIDATES);
-    const neckBone = matchBone(boneNames, BONE_NECK_CANDIDATES);
-    const headBone = matchBone(boneNames, BONE_HEAD_CANDIDATES);
     const waistBone = matchBone(boneNames, BONE_WAIST_CANDIDATES);
     const allParentBone = matchBone(boneNames, BONE_ALLPARENT_CANDIDATES);
     const shoulderLBone = matchBone(boneNames, BONE_SHOULDER_L_CANDIDATES);
@@ -50,51 +44,6 @@ export function generateLifelikeVmd(
     const rarmBone = matchBone(boneNames, BONE_RARM_CANDIDATES);
     const wristLBone = matchBone(boneNames, BONE_WRIST_L_CANDIDATES);
     const wristRBone = matchBone(boneNames, BONE_WRIST_R_CANDIDATES);
-
-    if ((upperBone || neckBone) && state.boneToggles.upper) {
-        const breathAmp = 0.015 * intensity;
-        for (let f = 0; f <= loopFrames; f += 3) {
-            const t = f / loopFrames;
-            const breathMain = Math.sin(t * Math.PI * 2) * breathAmp;
-            const breathSub = Math.sin(t * Math.PI * 2 * 0.67 + 0.8) * breathAmp * 0.4;
-            const rx = clamp1(breathMain + breathSub);
-            const w = Math.sqrt(Math.max(0, 1 - rx * rx));
-            if (upperBone) {
-                bones.push({
-                    name: upperBone,
-                    frame: f,
-                    position: [0, 0, 0],
-                    rotation: [rx, 0, 0, w],
-                });
-            }
-            if (neckBone) {
-                const nrx = clamp1(rx * 0.5);
-                const nw = Math.sqrt(Math.max(0, 1 - nrx * nrx));
-                bones.push({
-                    name: neckBone,
-                    frame: f,
-                    position: [0, 0, 0],
-                    rotation: [nrx, 0, 0, nw],
-                });
-            }
-        }
-        if (upperBone) {
-            bones.push({
-                name: upperBone,
-                frame: loopFrames,
-                position: [0, 0, 0],
-                rotation: [0, 0, 0, 1],
-            });
-        }
-        if (neckBone) {
-            bones.push({
-                name: neckBone,
-                frame: loopFrames,
-                position: [0, 0, 0],
-                rotation: [0, 0, 0, 1],
-            });
-        }
-    }
 
     if (upper2Bone && state.boneToggles.upper2) {
         const amp2 = 0.008 * intensity;
@@ -140,32 +89,6 @@ export function generateLifelikeVmd(
         }
         bones.push({
             name: centerBone,
-            frame: loopFrames,
-            position: [0, 0, 0],
-            rotation: [0, 0, 0, 1],
-        });
-    }
-
-    if (headBone && state.boneToggles.head) {
-        const headAmp = 0.01 * intensity;
-        for (let f = 0; f <= loopFrames; f += 3) {
-            const t = f / loopFrames;
-            const rz = clamp1(
-                Math.sin(t * Math.PI * 2 * 0.19 + 0.7) * headAmp * 0.5 +
-                    Math.sin(t * Math.PI * 2 * 0.31 + 2.1) * headAmp * 0.3
-            );
-            const rx = clamp1(Math.sin(t * Math.PI * 2 * 0.13 + 1.4) * headAmp * 0.3);
-            const ry = clamp1(Math.sin(t * Math.PI * 2 * 0.09 + 0.3) * headAmp * 0.2);
-            const w = Math.sqrt(Math.max(0, 1 - rz * rz - rx * rx - ry * ry));
-            bones.push({
-                name: headBone,
-                frame: f,
-                position: [0, 0, 0],
-                rotation: [rx, ry, rz, w],
-            });
-        }
-        bones.push({
-            name: headBone,
             frame: loopFrames,
             position: [0, 0, 0],
             rotation: [0, 0, 0, 1],
@@ -340,11 +263,7 @@ export function generateLifelikeVmd(
     }
 
     if (state.boneToggles.emotion) {
-        const BLINK_BLACKLIST = ['まばたき', 'blink', '眨眼', 'wink'];
-        const emotionCandidates = morphNames.filter(
-            (m) => !BLINK_BLACKLIST.some((b) => m.includes(b))
-        );
-        const selected = emotionCandidates.slice(0, 3);
+        const selected = morphNames.slice(0, 3);
         for (let mi = 0; mi < selected.length; mi++) {
             const mName = selected[mi];
             const offset = (mi * loopFrames) / selected.length;

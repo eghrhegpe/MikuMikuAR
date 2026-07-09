@@ -134,6 +134,7 @@ export const zhCN: Record<string, string> = {
     'motion.model': '模型',
     'motion.camera': '相机',
     'motion.procMotion': '程序化动作',
+    'motion.playbackSpeed': '播放速度',
 
     // ===== 布料 cloth =====
     'motion.clothTitle': '布料参数',
@@ -218,6 +219,8 @@ export const zhCN: Record<string, string> = {
     'motion.gazeTracking': '视线追踪',
     'motion.eyeFollow': '眼部跟随',
     'motion.headFollow': '头部跟随',
+    'motion.perceptionBreath': '呼吸',
+    'motion.perceptionBlink': '眨眼',
     'motion.runtime': '运行时',
     'motion.runtimeWasm': 'WASM 物理',
     'motion.runtimeJs': 'JS 调试',

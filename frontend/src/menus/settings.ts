@@ -5,7 +5,7 @@
 
 import { registerPopupMenu } from './menu-factory';
 import { t } from '../core/i18n/t';
-import { PopupRow } from '../core/config';
+import { PopupRow, PopupLevel } from '../core/config';
 import {
     SETTINGS,
     SETTINGS_ACTION,
@@ -80,18 +80,23 @@ function settingsOnFolderEnter(row: PopupRow) {
     if (row.target) {
         const builder = SETTINGS_FOLDER_ROUTES[row.target as SettingsFolderTarget];
         if (builder) {
-            return builder();
+            // [doc:adr-065] 挂 itemBuilder 使纯 items 子层随语言热刷新
+            const lvl = builder();
+            lvl.itemBuilder = () => builder().items;
+            return lvl;
         }
 
         if (row.target.startsWith(SOFTWARE_DETAIL_PREFIX)) {
             const path = row.target.slice(SOFTWARE_DETAIL_PREFIX.length);
-            return buildSoftwareDetailLevel(path);
+            const lvl = buildSoftwareDetailLevel(path);
+            lvl.itemBuilder = () => buildSoftwareDetailLevel(path).items;
+            return lvl;
         }
     }
     return null;
 }
 
-const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => ReturnType<typeof buildSettingsRoot>> = {
+const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
     [SETTINGS.APPEARANCE]: () => buildSettingsAppearanceLevel(getSettingsMenu),
     [SETTINGS.FILENAME]: () => buildSettingsFilenameLevel(getSettingsMenu),
     [SETTINGS.PERFORMANCE]: () => buildSettingsPerformanceLevel(getSettingsMenu),

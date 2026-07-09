@@ -7,8 +7,13 @@ import type { Observer } from '@babylonjs/core/Misc/observable';
 import { Camera } from '@babylonjs/core/Cameras/camera';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
-import { modelManager, focusedModelId, scene } from '../scene';
+import { modelManager, focusedModelId, scene, triggerAutoSave } from '../scene';
 import { isARActive } from '../ar/ar-camera';
+import {
+    BONE_UPPER_CANDIDATES,
+    MORPH_BLINK_CANDIDATES,
+    matchBone,
+} from '../../motion-algos/proc-motion-shared';
 
 // ── WASM/JS 运行时差异的本地类型声明 ──
 // babylon-mmd 的 IMmdRuntimeBone 接口未声明 worldMatrix 和 updateWorldMatrix，
@@ -91,7 +96,6 @@ const BREATH_AMP = 0.02; // radians
 
 // ── 眨眼参数 ──
 const BLINK_FREQ = 0.15; // Hz
-const BLINK_MORPH_NAME = 'eyeClose';
 
 // ── 眼球追踪平滑系数（0=完全平滑，1=无平滑） ──
 const EYE_SMOOTH = 0.35;
@@ -182,21 +186,25 @@ export function setPerceptionState(s: Partial<PerceptionState>): void {
 /** 设置呼吸开关 */
 export function setBreathEnabled(v: boolean): void {
     perceptionState = { ...perceptionState, breathEnabled: v };
+    triggerAutoSave();
 }
 
 /** 设置眨眼开关 */
 export function setBlinkEnabled(v: boolean): void {
     perceptionState = { ...perceptionState, blinkEnabled: v };
+    triggerAutoSave();
 }
 
 /** 设置头部跟随开关 */
 export function setHeadTrackingEnabled(v: boolean): void {
     perceptionState = { ...perceptionState, headTrackingEnabled: v };
+    triggerAutoSave();
 }
 
 /** 设置眼部跟随开关 */
 export function setEyeTrackingEnabled(v: boolean): void {
     perceptionState = { ...perceptionState, eyeTrackingEnabled: v };
+    triggerAutoSave();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -207,20 +215,19 @@ function _applyBreathing(mmdModel: any, time: number): void {
     const phase = time * BREATH_FREQ * 2 * Math.PI;
     const breathOffset = BREATH_AMP * Math.sin(phase);
 
-    // 查找躯干骨骼（上半身/下半身）
-    const spine = mmdModel.runtimeBones.find(
-        (b: IMmdRuntimeBone) => b.name === '上半身' || b.name === '上半身2'
-    );
+    const boneNames = mmdModel.runtimeBones.map((b: IMmdRuntimeBone) => b.name);
+    const spineName = matchBone(boneNames, BONE_UPPER_CANDIDATES);
+    const spine = spineName
+        ? mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === spineName)
+        : null;
     if (!spine) return;
 
-    // 写入局部旋转（linkedBone 方式，与 gaze 一致）
-    const localQ = spine.linkedBone.rotationQuaternion.clone();
-    const targetQ = Quaternion.RotationAxis(Vector3.Up(), breathOffset);
+    const targetQ = _q().copyFrom(Quaternion.RotationAxis(Vector3.Up(), breathOffset));
+    const localQ = _q().copyFrom(spine.linkedBone.rotationQuaternion);
     Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
 
     spine.linkedBone.rotationQuaternion = localQ;
 
-    // 触发骨骼链重算（JS 模式）
     if ('updateWorldMatrix' in spine) {
         (spine as MmdRuntimeBoneExtended).updateWorldMatrix(false, false);
         for (const child of spine.childBones) {
@@ -244,14 +251,16 @@ function _updateBoneChain(bone: IMmdRuntimeBone): void {
 
 function _applyBlinking(mmdModel: any, time: number): void {
     const phase = time * BLINK_FREQ * 2 * Math.PI;
-    // 脉冲形态：sin(phase) - 0.8 后取 max(0, ...) * 5，产生周期性尖峰
     const blinkIntensity = Math.max(0, Math.sin(phase) - 0.8) * 5;
 
-    // 查找 eyeClose morph
     const morphManager = mmdModel.mesh?.morphTargetManager;
     if (!morphManager) return;
 
-    const eyeClose = morphManager.getMorphTargetByName?.(BLINK_MORPH_NAME);
+    const morphNames = morphManager.getMorphTargetNames?.() || [];
+    const blinkName = matchBone(morphNames, MORPH_BLINK_CANDIDATES);
+    if (!blinkName) return;
+
+    const eyeClose = morphManager.getMorphTargetByName?.(blinkName);
     if (eyeClose) {
         eyeClose.influence = blinkIntensity;
     }
@@ -463,18 +472,18 @@ export function _propagateChildrenWasm(
     parentOldMat: Matrix,
     parentNewMat: Matrix
 ): void {
-    const parentOldInv = new Matrix().copyFrom(parentOldMat);
+    const parentOldInv = _m().copyFrom(parentOldMat);
     parentOldInv.invert();
 
     for (const child of parent.childBones) {
         const childBuf = (child as MmdRuntimeBoneExtended).worldMatrix;
         if (!childBuf) continue;
 
-        const childOldMat = Matrix.FromArray(childBuf);
-        const localMat = new Matrix();
+        const childOldMat = Matrix.FromArrayToRef(childBuf, 0, _m());
+        const localMat = _m();
         childOldMat.multiplyToRef(parentOldInv, localMat);
 
-        const childNewMat = new Matrix();
+        const childNewMat = _m();
         localMat.multiplyToRef(parentNewMat, childNewMat);
 
         _writeMatToBuffer(childBuf, childNewMat);
@@ -493,6 +502,7 @@ export function setGazeConfig(headEnabled: boolean, eyeEnabled: boolean): void {
         headTrackingEnabled: headEnabled,
         eyeTrackingEnabled: eyeEnabled,
     };
+    triggerAutoSave();
 }
 
 /** 兼容接口：模型移除时清理（供 proc-motion-bridge.ts 调用） */

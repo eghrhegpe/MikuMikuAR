@@ -4,7 +4,8 @@
 **更新**：2026-07-06 — Phase C 重新评估：Wails v3 已原生支持 SAF **文件**选择
 **更新**：2026-07-06 — Phase C 目录选择已通过 `CanChooseDirectories(true)` 走通 Wails v3 SAF 原生目录选择器 ⚠️ **此条为误判，已被 2026-07-08 勘误推翻**
 **更新**：2026-07-08 — 勘误：Wails v3 alpha2.105 安卓**不支持**目录选择（见文末「勘误」段）；Java `openDocumentTree` 为孤儿桥，Phase C 目录选择实际未走通
-> **状态**: Phase A+B ✅ 已完成；Phase C ⚠️ **目录选择未走通（误判已纠正，见文末勘误）**
+> **状态**: ✅ 已合并 → [ADR-017](adr-017-android-adaptation.md)
+> **来源**: 本文件内容已合并至 ADR-017 精简版
 
 ---
 

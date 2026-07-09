@@ -238,6 +238,12 @@ export type PopupLevel = {
     items: PopupRow[];
     renderCustom?: (container: HTMLElement) => void | Promise<void>;
     reRenderCustom?: (container: HTMLElement) => void;
+    /**
+     * [doc:adr-065] 纯 items 层级的语言热刷新：提供 items 重建器。
+     * updateControls() 在遍历 _controls 后，若存在则重建 items 并增量 patchPanel。
+     * 仅用于「无 registerControl 的纯导航/动作行」层级；含 renderCustom 的层级不会因此重建自定义内容。
+     */
+    itemBuilder?: () => PopupRow[];
     /** [doc:adr-066] 保留 filter 供视图切换时传递 */
     filter?: (m: LibraryModel) => boolean;
 };
@@ -342,6 +348,9 @@ export interface EnvState {
     waterWaveHeight: number;
     waterSize: number;
     waterAnimSpeed: number;
+
+    planarReflectBlend: number;
+    reflectionQuality: 'high' | 'medium' | 'low' | 'off';
 
     foamThreshold: number;
     foamIntensity: number;

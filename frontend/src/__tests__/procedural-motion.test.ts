@@ -28,11 +28,11 @@ describe('generateIdleVmd', () => {
         expect(sig).toBe('Vocaloid Motion Data 0002');
     });
 
-    it('includes blink morph frames when まばたき available', () => {
+    it('omits blink morph frames even when まばたき available (perception layer owns blink)', () => {
         const view = new DataView(buf);
         const boneCount = view.getUint32(50, true);
         const morphCountOff = 54 + boneCount * 111;
-        expect(view.getUint32(morphCountOff, true)).toBeGreaterThan(0);
+        expect(view.getUint32(morphCountOff, true)).toBe(0);
     });
 
     it('omits blink morph frames when no まばたき', () => {
@@ -197,11 +197,11 @@ describe('generateAutoDanceVmd', () => {
         expect(foundLeftArm).toBe(true);
     });
 
-    it('includes blink morph at 120 BPM', () => {
+    it('omits blink morph at 120 BPM (perception layer owns blink)', () => {
         const view = new DataView(buf);
         const boneCount = view.getUint32(50, true);
         const morphCountOff = 54 + boneCount * 111;
-        expect(view.getUint32(morphCountOff, true)).toBeGreaterThan(0);
+        expect(view.getUint32(morphCountOff, true)).toBe(0);
     });
 
     it('intensity=0 produces minimal motion', () => {

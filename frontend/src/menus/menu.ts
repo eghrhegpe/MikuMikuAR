@@ -331,6 +331,13 @@ export class SlideMenu {
         for (const c of this._controls) {
             c.update();
         }
+        // [doc:adr-065] 纯 items 层级语言热刷新：当前层持有 itemBuilder 时，
+        // 重建 items 并增量 patch（仅当面板已渲染——避免对未打开/已 dispose 的菜单误触发全量 buildPanel）。
+        const level = this.currentLevel;
+        if (level?.itemBuilder && this.panel.querySelector('.slide-list')) {
+            level.items = level.itemBuilder();
+            this.patchPanel(level.items);
+        }
     }
 
     private _doReRender(opts?: { preserveFocus?: boolean }): void {
@@ -567,8 +574,11 @@ export class SlideMenu {
                     if (newEl) {
                         oldEl.replaceWith(newEl);
                     }
+                } else {
+                    // [doc:adr-065] key 匹配但语言可能已切换：原地刷新可见文本（label/catTag/hint），
+                    // 不重建 DOM、保留已有监听器与键盘焦点。控件行（slider/toggle/…）由 registerControl 管理，跳过。
+                    this.refreshRowText(oldEl, newRow);
                 }
-                // key 匹配 → 行不变，跳过 DOM 操作
             } else {
                 // 追加新行
                 const newEl = this.createRow(newRow);
@@ -577,6 +587,32 @@ export class SlideMenu {
                 }
             }
         }
+    }
+
+    /**
+     * [doc:adr-065] 原地刷新单行可见文本（语言热切换用）。
+     * 仅更新 folder/action/model 行的 label / catTag / data-hint，不重建 DOM、不丢焦点与监听器。
+     * 控件行（slider/toggle/modeSlider/chips）由 registerControl 管理，此处跳过。
+     */
+    private refreshRowText(el: HTMLElement, row: PopupRow): void {
+        if (
+            row.kind === 'slider' ||
+            row.kind === 'toggle' ||
+            row.kind === 'modeSlider' ||
+            row.kind === 'chips'
+        ) {
+            return;
+        }
+        const labelEl = el.querySelector('.slide-label') as HTMLElement | null;
+        if (labelEl) {
+            labelEl.textContent = row.label ?? '';
+        }
+        const tagEl = el.querySelector('.slide-tag') as HTMLElement | null;
+        if (tagEl) {
+            tagEl.textContent = row.catTag ?? '';
+        }
+        const hint = row.sublabel || (row.model ? t('menu.noDesc') : t('menu.noHint'));
+        el.setAttribute('data-hint', hint);
     }
 
     private async buildPanel(level: PopupLevel): Promise<void> {

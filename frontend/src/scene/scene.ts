@@ -170,6 +170,10 @@ export async function initScene(): Promise<void> {
     runtime.loggingEnabled = true;
     runtime.register(scene);
     setMmdRuntime(runtime);
+    // 同步用户记忆的播放速度到新 runtime，防状态漂移
+    import('../menus/motion-popup')
+        .then(({ syncPlaybackSpeedToRuntime }) => syncPlaybackSpeedToRuntime(runtime))
+        .catch(() => {});
 
     // 2. 各子系统初始化（相机系统已在模块顶层初始化）
     initLighting(scene, modelRegistry, propRegistry, _envSys.shadow, triggerAutoSave);

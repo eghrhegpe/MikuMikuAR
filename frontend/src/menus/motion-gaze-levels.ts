@@ -1,23 +1,23 @@
 // [doc:architecture] Motion Gaze Levels — 视线追踪独立弹窗层级
+// [doc:adr-071] 感知层统一入口：眼部跟随 / 头部跟随 / 呼吸 / 眨眼
 // 与程序化动作解耦，独立文件责任分明
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { addToggleRow } from '../core/ui-helpers';
 import {
-    getProcMotionState,
-    regenerateProcMotion,
-} from '../scene/scene';
-import {
-    setProcMotionEyeTrackingEnabled,
-    setProcMotionHeadTrackingEnabled,
-    setProcMotionBoneToggle,
-} from '../scene/motion/proc-motion-bridge';
+    getPerceptionState,
+    setEyeTrackingEnabled,
+    setHeadTrackingEnabled,
+    setBreathEnabled,
+    setBlinkEnabled,
+    activatePerception,
+} from '../scene/motion/perception';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 
 export function buildGazeTrackingLevel(): PopupLevel {
-    const st = getProcMotionState();
+    const st = getPerceptionState();
     return {
         label: t('motion.gazeTracking'),
         dir: '',
@@ -29,12 +29,13 @@ export function buildGazeTrackingLevel(): PopupLevel {
                     t('motion.eyeFollow'),
                     st.eyeTrackingEnabled,
                     (v) => {
-                        setProcMotionEyeTrackingEnabled(v);
+                        setEyeTrackingEnabled(v);
+                        activatePerception();
                         getMotionMenu()?.updateControls();
                     },
                     'lucide:eye',
                     {
-                        bind: () => getProcMotionState().eyeTrackingEnabled,
+                        bind: () => getPerceptionState().eyeTrackingEnabled,
                     }
                 );
                 addToggleRow(
@@ -42,40 +43,41 @@ export function buildGazeTrackingLevel(): PopupLevel {
                     t('motion.headFollow'),
                     st.headTrackingEnabled,
                     (v) => {
-                        setProcMotionHeadTrackingEnabled(v);
+                        setHeadTrackingEnabled(v);
+                        activatePerception();
                         getMotionMenu()?.updateControls();
                     },
                     'lucide:mouse-pointer-2',
                     {
-                        bind: () => getProcMotionState().headTrackingEnabled,
+                        bind: () => getPerceptionState().headTrackingEnabled,
                     }
                 );
             });
             cardContainer(container, (c) => {
                 addToggleRow(
                     c,
-                    t('motion.boneHead'),
-                    st.boneToggles.head,
+                    t('motion.perceptionBreath'),
+                    st.breathEnabled,
                     (v) => {
-                        setProcMotionBoneToggle('head', v);
-                        regenerateProcMotion();
+                        setBreathEnabled(v);
+                        getMotionMenu()?.updateControls();
                     },
-                    'lucide:box-select',
+                    'lucide:wind',
                     {
-                        bind: () => getProcMotionState().boneToggles.head,
+                        bind: () => getPerceptionState().breathEnabled,
                     }
                 );
                 addToggleRow(
                     c,
-                    t('motion.boneBlink'),
-                    st.boneToggles.blink,
+                    t('motion.perceptionBlink'),
+                    st.blinkEnabled,
                     (v) => {
-                        setProcMotionBoneToggle('blink', v);
-                        regenerateProcMotion();
+                        setBlinkEnabled(v);
+                        getMotionMenu()?.updateControls();
                     },
                     'lucide:eye',
                     {
-                        bind: () => getProcMotionState().boneToggles.blink,
+                        bind: () => getPerceptionState().blinkEnabled,
                     }
                 );
             });
