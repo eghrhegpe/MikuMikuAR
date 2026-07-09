@@ -5,6 +5,7 @@ import { setStatus, cardContainer } from '../core/config';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import type { PopupLevel, PopupRow } from '../core/config';
+import { t } from '../core/i18n/t';
 import {
     generateTextColors,
     rgbToString,
@@ -144,7 +145,7 @@ export function buildSettingsAppearanceLevel(getSettingsMenu: () => SettingsMenu
                     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
                         setTheme(hex, getSettingsMenu);
                     } else if (input.value.trim() !== '') {
-                        setStatus('无效的颜色格式，请使用 #RRGGBB', false);
+                        setStatus(t('settings.invalidColorFormat'), false);
                     }
                 });
                 c.appendChild(input);
@@ -175,7 +176,7 @@ export function buildSettingsAppearanceLevel(getSettingsMenu: () => SettingsMenu
                             document.documentElement.style.setProperty('--font', f.css);
                             SetUIFontFamily(key).catch(() => {});
                             getSettingsMenu()?.updateControls();
-                            setStatus(`✓ 字体已设为 ${f.label}`, true);
+                            setStatus(t('settings.fontSet', { label: f.label }), true);
                         },
                         undefined,
                         undefined,
@@ -269,7 +270,7 @@ export function buildSettingsAppearanceLevel(getSettingsMenu: () => SettingsMenu
                     SetUIAnimations(true).catch(() => {});
                     SetUIBlurBg(false).catch(() => {});
                     getSettingsMenu()?.updateControls();
-                    setStatus('外观已恢复默认', true);
+                    setStatus(t('settings.appearanceReset'), true);
                 });
             });
         },

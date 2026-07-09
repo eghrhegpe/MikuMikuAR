@@ -238,7 +238,7 @@ export async function selectAndSavePreset(id: string): Promise<void> {
 const _presetUndoStack = new Map<string, string>();
 
 function showUndoToast(message: string, undoFn: () => void): void {
-    showErrorToast(message, undefined, [{ label: '撤销', onClick: undoFn }], 8000);
+  showErrorToast(message, undefined, [{ label: t('toast.undo'), onClick: undoFn }], 8000);
 }
 
 export async function tryAutoApplyPreset(id: string): Promise<void> {

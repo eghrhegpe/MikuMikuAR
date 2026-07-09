@@ -45,7 +45,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
         // 检查是否已加载
         for (const [, inst] of propRegistry) {
             if (inst.filePath === filePath) {
-                setStatus(`道具已存在: ${inst.name}`, false);
+                setStatus(t('env.propExists', {name: inst.name}), false);
                 return inst.id;
             }
         }
@@ -109,7 +109,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
             }
         }
 
-        setStatus(`✓ 道具: ${displayName}`, true);
+        setStatus(t('env.propAdded', {name: displayName}), true);
         triggerAutoSave();
         console.info('[props] load complete:', id, displayName);
         return id;
@@ -167,7 +167,7 @@ export function removeProp(id: string): void {
     unregisterMaterialTarget(id);
 
     propRegistry.delete(id);
-    setStatus(`✓ 已移除道具: ${inst.name}`, true);
+      setStatus(t('env.propRemoved', {name: inst.name}), true);
     triggerAutoSave();
 }
 

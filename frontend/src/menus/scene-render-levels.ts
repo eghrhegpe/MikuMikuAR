@@ -564,6 +564,19 @@ export function buildPostProcessLevel(): PopupLevel {
                                 bind: () => getRenderState().contrast,
                             }
                         );
+                        addToggleRow(
+                            inner,
+                            t('scene.celShading'),
+                            state.celShadingMode,
+                            (v) => {
+                                setRenderState({ celShadingMode: v });
+                                triggerAutoSave();
+                            },
+                            'lucide:sparkles',
+                            {
+                                bind: () => getRenderState().celShadingMode,
+                            }
+                        );
                     },
                 });
             });

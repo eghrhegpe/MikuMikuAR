@@ -1,6 +1,7 @@
 // settings-screenshot.ts — 截图设置子菜单
 
 import { setStatus, uiState, setUIState, cardContainer, escapeHtml } from '../core/config';
+import { t } from '../core/i18n/t';
 import { slideRow, addSliderRow, addSectionTitle, addFieldRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { SelectDir, OpenScreenshotDir } from '../core/wails-bindings';

@@ -110,7 +110,7 @@ dom.btnPlayPause.addEventListener('click', async () => {
 dom.btnLoopToggle.addEventListener('click', () => {
     setAutoLoop(!autoLoop);
     updatePlaybackUI();
-    setStatus(`循环: ${autoLoop ? '开' : '关'}`, true);
+      setStatus(t('status.loop', {state: autoLoop ? t('common.on') : t('common.off')}), true);
 });
 
 // ======== Ctrl shortcuts hint ========
