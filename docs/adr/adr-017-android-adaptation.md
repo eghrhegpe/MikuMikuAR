@@ -1,6 +1,6 @@
 # ADR-017: Android 平台适配（精简版）
 
-> **状态**: 主体已完成（Phase A/B/C ✅）；部分 P0 隐患待实施（见§六）
+> **状态**: 主体已完成（Phase A/B/C ✅）；§六 P0(A0-01/A0-02) 与 P1(A1-01~03) 已实施；A0-01 采用 `MIXED_CONTENT_ALWAYS_ALLOW` 偏离推荐方案（技术债）；SAF 目录选择（§四）仍待实施（核对于 2026-07-10）
 > **关联**: ADR-058（basenameFallbackFS）
 > **来源**: ADR-017 + ADR-023 + ADR-067 + ADR-068 四合一（2026-07-08）
 
@@ -110,22 +110,25 @@ type FileAccessor interface {
 
 > 以下为 ADR-067 扫描出的隐患清单，已排除本 ADR 中已修复的项目。
 
+> **【2026-07-10 核对更新】** 本清单原标注为"待实施"，实际核对代码后：P0 两项（A0-01/A0-02）与 P1 三项（A1-01~03）**均已实施**。其中 A0-02 与推荐方向一致；A0-01 实际以 `MIXED_CONTENT_ALWAYS_ALLOW` 放行，与下方推荐方案及决策点 3（"补 usesCleartextTraffic 而非放宽安全策略"）冲突，列为**技术债**，建议后续改为 `WebViewAssetLoader.PathHandler` 代理模型文件。P2/P3 仍列待实施，本次核对未覆盖。
+
 ### P0 — 阻塞级
 
-| ID | 问题 | 影响 |
-|----|------|------|
-| A0-01 | HTTP 模型文件服务器被 mixed content 拦截（`MIXED_CONTENT_NEVER_ALLOW`） | WebView 页面在 `https://wails.localhost/`，拒绝 `http://127.0.0.1` 请求 → 3D 画面空白 |
-| A0-02 | `setAllowFileAccess(false)` 禁用所有 `file://` 访问 | 所有依赖 `file://` 的资源加载路径全部失效 |
+| ID | 问题 | 影响 | 实际状态（2026-07-10 核对） |
+|----|------|------|------|
+| A0-01 | HTTP 模型文件服务器被 mixed content 拦截 | WebView 页面在 `https://wails.localhost/`，拒绝 `http://127.0.0.1` 请求 → 3D 画面空白 | ✅ 已修复，但用 `MIXED_CONTENT_ALWAYS_ALLOW`（`MainActivity.java:135`）放行，**偏离推荐 PathHandler 代理方案**且与决策点 3 冲突 → 技术债（模型仍走 `http://127.0.0.1:port`，见 `fileservice.ts:44`） |
+| A0-02 | `setAllowFileAccess(false)` 禁用所有 `file://` 访问 | 所有依赖 `file://` 的资源加载路径全部失效 | ✅ 已修复：`MainActivity.java:132` 禁用 `file://`，资源改经 `WebViewAssetLoader`+`WailsPathHandler`（`https://wails.localhost`），方向一致 |
 
-**推荐方案**：`WebViewAssetLoader.PathHandler` 代理模型文件服务——不走 `127.0.0.1:port` HTTP，改走 `https://wails.localhost/models/<port>/file.pmx` 路由经 Java JNI Go 透传，零网络安全配置项。
+**推荐方案（A0-01）**`WebViewAssetLoader.PathHandler` 代理模型文件服务——不走 `127.0.0.1:port` HTTP，改走 `https://wails.localhost/models/<port>/file.pmx` 路由经 Java JNI Go 透传，零网络安全配置项。
+> ⚠️ 现状：`WailsPathHandler` 仅代理**应用静态资源**（index.html/js/wasm 等），模型文件仍由 `StartFileServer`/`IsolateModelDir`（`httpserver.go`）经 `127.0.0.1` HTTP 提供，靠 `MIXED_CONTENT_ALWAYS_ALLOW` 放行。该放行比所需更宽（任何 `http://` 子资源均可加载），建议后续收窄为 PathHandler 代理或至少仅信任本机。
 
 ### P1 — 功能降级
 
-| ID | 问题 | 影响 |
-|----|------|------|
-| A1-01 | `Browser.OpenURL` 在 Android 上无文档保证 | "检查更新"/"查看许可证"等按钮静默无响应 |
-| A1-02 | Blender/MMD/外部程序菜单项可见但点击报错 | 前端需隐藏或灰显这些入口 |
-| A1-03 | `isAndroidPlatform()` 调用时 `window.wails` bridge 未就绪 | 读到 `undefined !== 'android'` → 误判为桌面 |
+| ID | 问题 | 影响 | 实际状态（2026-07-10 核对） |
+|----|------|------|------|
+| A1-01 | `Browser.OpenURL` 在 Android 上无文档保证 | "检查更新"/"查看许可证"等按钮静默无响应 | ✅ 已修复：`frontend/src/core/platform.ts` `openExternalURL()` 安卓走 `<a>` 兜底 |
+| A1-02 | Blender/MMD/外部程序菜单项可见但点击报错 | 前端需隐藏或灰显这些入口 | ✅ 已修复：`platform.ts` `guardExternalAction()` 安卓返回 false（与决策点 5 一致） |
+| A1-03 | `isAndroidPlatform()` 调用时 `window.wails` bridge 未就绪 | 读到 `undefined !== 'android'` → 误判为桌面 | ✅ 已修复：`platform.ts` `isAndroidPlatform()` 改读 `window.wails.platform()` + `awaitWailsBridge()` 轮询待 bridge 就绪 |
 
 ### P2 — 偶发级
 
@@ -145,6 +148,8 @@ type FileAccessor interface {
 | A3-01 | 未对接 Android 生命周期 | 切后台再返回时场景需重新加载 |
 | A3-02 | WASM 默认启用在低端机初始化慢 | 首载体验差，JS 回退路径存在 |
 | A3-03 | 拖拽事件在触屏上无效 | 部分交互失效 |
+
+> **P2/P3 核对说明**：A2-01~A3-03 仍按原计划列为待实施，本次（2026-07-10）核对未覆盖，状态以原表为准。
 
 ---
 
