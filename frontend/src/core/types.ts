@@ -395,11 +395,15 @@ export interface EnvState {
     fogEnd: number;
 
     clothEnabled: boolean;
+  ragdollEnabled: boolean;
     clothConfig: ClothConfig;
-    clothDebugParticles: boolean;
-    clothDebugConstraints: boolean;
-    clothDebugColliders: boolean;
-    solverSubsteps: number;
+  clothDebugParticles: boolean;
+  clothDebugConstraints: boolean;
+  clothDebugColliders: boolean;
+  ragdollDebugParticles: boolean;
+  ragdollDebugConstraints: boolean;
+  ragdollDebugColliders: boolean;
+  solverSubsteps: number;
     solverTimeScale: number;
     collisionEnabled: boolean;
     bodyCollisionEnabled: boolean;

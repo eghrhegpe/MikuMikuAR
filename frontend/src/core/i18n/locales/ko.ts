@@ -917,6 +917,7 @@ export const ko: Record<string, string> = {
     'physics.noMmdData': '⚠ 현재 모델에 MMD 데이터가 없습니다',
     'physics.clothCreated': '✓ 옷감이 생성되었습니다 ({particles} 파티클, {constraints} 제약, mesh: {mesh})',
     'physics.clothEnabled': '✓ 옷감 시뮬레이션이 활성화되었습니다 ({instances} 인스턴스, {particles} 파티클, {constraints} 제약)',
+'physics.ragdollEnabled': '✓ 래그돌 물리 활성화',
     'physics.noActiveInstance': '⚠ 옷감이 활성화되었지만 활성 인스턴스를 찾을 수 없습니다',
     'physics.clothDisabled': '옷감 시뮬레이션 꺼짐',
 

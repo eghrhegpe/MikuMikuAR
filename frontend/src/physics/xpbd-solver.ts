@@ -93,11 +93,11 @@ export interface XpbdSolverConfig {
     windStrength?: number;
 }
 
-const DEFAULT_CONFIG: XpbdSolverConfig = {
-    gravity: [0, -9.8, 0],
-    substeps: 4,
-    damping: 0.98,
-    groundY: -10,
+export const DEFAULT_CONFIG: XpbdSolverConfig = {
+  gravity: [0, -9.8, 0],
+  substeps: 4,
+  damping: 0.98,
+  groundY: -10,
     windEnabled: false,
     windDirection: [0, 0, 0],
     windStrength: 0,

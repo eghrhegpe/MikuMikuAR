@@ -192,7 +192,7 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
             cardContainer(container, (c) => {
                 addSectionTitle(c, '更新');
                 addToggleRow(c, '自动检查更新（启动时）', uiState.autoUpdateEnabled === true,
-                    (v) => { setUIState({ autoUpdateEnabled: v }); SetUIAutoUpdate(v); setStatus(`✓ 自动检查更新: ${v ? '开' : '关'}`, true); }
+                    (v) => { setUIState({ autoUpdateEnabled: v }); SetUIAutoUpdate(v); setStatus(t('settings.autoUpdate', {state: v ? t('common.on') : t('common.off')}), true); }
                 );
                 const resultRow = document.createElement('div');
                 resultRow.className = 'slide-item';

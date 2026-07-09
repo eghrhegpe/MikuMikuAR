@@ -1,7 +1,7 @@
 # ADR-076: 卡通化渲染后处理模式
 
 **日期**：2026-07-09
-> **状态**: ⚠️ 未实施（仅落地 i18n 占位字符串 + ADR 文档；renderer.ts / scene-render-levels.ts 的逻辑块从未写入）— 2026-07-10 核查
+> **状态**: ✅ 已实施（2026-07-10）
 
 ---
 
@@ -54,18 +54,13 @@ Babylon.js 的 `DefaultRenderingPipeline` 不内置 posterize 后处理。自行
 
 ## 实施
 
-> ⚠️ **2026-07-10 核实**：下方「代码改动」表所述实现**从未写入代码库**。
-> 根因：引入该 ADR 的提交 `5825aa9`（feat(ar,plaza): … + 赛璐珞后处理）仅落地了 `docs/adr/adr-076` 文档与 5 个 locale 的 `scene.celShading` 占位字符串，**未修改 `renderer.ts` 与 `scene-render-levels.ts`**（`git show 5825aa9 --stat` 中此二文件无 cel-shading 改动，`git grep celShadingMode` 在 HEAD 与历史中均零命中，排除 locales）。
-> 现状：`RenderState` 无 `celShadingMode` 字段；`_applyRenderState` 无卡通参数块（无 `exposure:0.7` / `contrast:1.4` / `bloomWeight:0.25` 等硬编码）；`scene-render-levels.ts` 无开关。i18n 字符串目前为**孤儿占位**（无 UI 引用）。
-> 结论：本 ADR 仍为设计草案，状态不应标「已实施」。
-
 ### 代码改动
 
 | 文件 | 改动 |
 |------|------|
-| [renderer.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/scene/render/renderer.ts) | `RenderState` 新增 `celShadingMode: boolean`；`_applyRenderState` 新增 cel-shading 逻辑块，开启时快照当前参数并应用卡通参数，关闭时恢复快照 |
-| [scene-render-levels.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/scene-render-levels.ts) | 色调映射折叠区内、对比度滑块下方，新增 `celShading` 开关 |
-| 5 个 locale 文件 | 新增 `scene.celShading` 翻译 |
+| [renderer.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/scene/render/renderer.ts) | `RenderState` 新增 `celShadingMode: boolean`（L70）；模块变量 `_celShadingMode` + `_originalRenderState`（L89-90）；`getRenderState()` / `defaultRenderState()` 支持；`_applyRenderState` 新增 cel-shading 快照/恢复逻辑块（L589-607）；`transitionRenderState` boolKeys 支持（L683）|
+| [scene-render-levels.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/scene-render-levels.ts) | 色调映射折叠区内、对比度滑块下方新增 `celShading` 开关（`addToggleRow`，图标 `lucide:sparkles`）|
+| 5 个 locale 文件 | `scene.celShading` 已有 5 种语言翻译（zh-CN/zh-TW/en/ja/ko）|
 
 ### 状态快照机制
 

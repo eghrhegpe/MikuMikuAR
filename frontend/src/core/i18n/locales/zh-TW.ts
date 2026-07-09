@@ -924,6 +924,7 @@ export const zhTW: Record<string, string> = {
     'physics.noMmdData': '⚠ 當前模型無 MMD 數據',
     'physics.clothCreated': '✓ 布料已創建 ({particles} 粒子, {constraints} 約束, mesh: {mesh})',
     'physics.clothEnabled': '✓ 布料模擬已啟用 ({instances} 實例, {particles} 粒子, {constraints} 約束)',
+'physics.ragdollEnabled': '✓ 布娃娃物理已啟用',
     'physics.noActiveInstance': '⚠ 布料已啟用但未找到活躍實例',
     'physics.clothDisabled': '布料模擬已關閉',
 

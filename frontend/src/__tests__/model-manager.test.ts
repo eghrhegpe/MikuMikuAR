@@ -83,7 +83,13 @@ vi.mock('@babylonjs/core/Materials/standardMaterial', () => {
 });
 
 vi.mock('../../physics/xpbd-cloth', () => ({
-    disposeCloth: vi.fn(),
+  disposeCloth: vi.fn(),
+}));
+
+vi.mock('../../physics/xpbd-ragdoll', () => ({
+  buildRagdoll: vi.fn(),
+  stepRagdoll: vi.fn(),
+  writeBack: vi.fn(),
 }));
 
 // ---- Imports ----
@@ -95,6 +101,8 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { Vector3 as MockVector3 } from '@babylonjs/core/Maths/math.vector';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { disposeCloth } from '../physics/xpbd-cloth';
+import type { RagdollInstance } from '../physics/xpbd-ragdoll';
+import { buildRagdoll, stepRagdoll, writeBack } from '../physics/xpbd-ragdoll';
 
 // ---- Helpers ----
 
@@ -210,21 +218,31 @@ function makeMmdModel(bones?: any[], morphs?: any[], rigidBodyStates?: Uint8Arra
 }
 
 function makeClothInstance(overrides) {
-    overrides = overrides || {};
-    const base = {
-        config: {},
-        solver: { reset: vi.fn() },
-        particleGrid: [],
-        anchorIndices: [0],
-        ringSize: 8,
-        ringCount: 4,
-        mesh: null,
-        meshIndices: new Int32Array(0),
-        enabled: true,
-        _anchorMissingWarned: false,
-        updateFn: undefined,
-    };
-    return Object.assign(base, overrides);
+  overrides = overrides || {};
+  const base = {
+    config: {},
+    solver: { reset: vi.fn() },
+    particleGrid: [],
+    anchorIndices: [0],
+    ringSize: 8,
+    ringCount: 4,
+    mesh: null,
+    meshIndices: new Int32Array(0),
+    enabled: true,
+    _anchorMissingWarned: false,
+    updateFn: undefined,
+  };
+  return Object.assign(base, overrides);
+}
+
+function makeRagdollInstance(overrides?: any): RagdollInstance {
+  overrides = overrides || {};
+  const base = {
+    updateFn: undefined,
+    enabled: true,
+    dispose: vi.fn(),
+  };
+  return Object.assign(base, overrides) as RagdollInstance;
 }
 
 function makeObservableScene() {
@@ -1128,13 +1146,73 @@ describe('ModelManager cloth', function () {
         expect(mgr._clothUpdateObserver).toBeNull();
     });
 
-    it('removeCloth is safe when cloth id does not exist', function () {
-        expect(function () {
-            mgr.removeCloth('nope');
-        }).not.toThrow();
+  it('removeCloth is safe when cloth id does not exist', function () {
+    expect(function () {
+      mgr.removeCloth('nope');
+    }).not.toThrow();
+  });
+
+  describe('Ragdoll management', function () {
+    it('addRagdoll stores instance and creates scene observer', function () {
+      const inst = makeRagdollInstance();
+      const updateFn = vi.fn();
+
+      mgr.addRagdoll('m1', inst, updateFn);
+
+      expect(inst.updateFn).toBe(updateFn);
+      expect(mgr.ragdollInstances.has('m1')).toBe(true);
+      expect(mgr.ragdollInstances.get('m1')).toBe(inst);
+      expect(mgr._ragdollUpdateObserver).not.toBeNull();
     });
 
-    it('ensureClothUpdateObserver does not create duplicate observers', function () {
+    it('removeRagdoll disposes ragdoll and removes from map', function () {
+      const inst = makeRagdollInstance();
+      mgr.addRagdoll('m1', inst, vi.fn());
+
+      mgr.removeRagdoll('m1');
+
+      expect(mgr.ragdollInstances.has('m1')).toBe(false);
+      expect(inst.dispose).toHaveBeenCalled();
+    });
+
+    it('removeRagdoll disposes observer when last ragdoll removed', function () {
+      mgr.addRagdoll('m1', makeRagdollInstance(), vi.fn());
+      expect(mgr._ragdollUpdateObserver).not.toBeNull();
+
+      mgr.removeRagdoll('m1');
+
+      expect(mgr._ragdollUpdateObserver).toBeNull();
+    });
+
+    it('removeRagdoll is safe when ragdoll id does not exist', function () {
+      expect(function () {
+        mgr.removeRagdoll('nope');
+      }).not.toThrow();
+    });
+
+    it('ensureRagdollUpdateObserver does not create duplicate observers', function () {
+      mgr.addRagdoll('m1', makeRagdollInstance(), vi.fn());
+      const firstObserver = mgr._ragdollUpdateObserver;
+
+      mgr.addRagdoll('m2', makeRagdollInstance(), vi.fn());
+
+      expect(mgr._ragdollUpdateObserver).toBe(firstObserver);
+    });
+
+    it('ragdoll observer is created and stored', function () {
+      const updateFn1 = vi.fn();
+      const updateFn2 = vi.fn();
+      mgr.addRagdoll('m1', makeRagdollInstance({ enabled: true }), updateFn1);
+      mgr.addRagdoll('m2', makeRagdollInstance({ enabled: true }), updateFn2);
+
+      expect(mgr.ragdollInstances.size).toBe(2);
+      expect(mgr.ragdollInstances.has('m1')).toBe(true);
+      expect(mgr.ragdollInstances.has('m2')).toBe(true);
+      expect(mgr._ragdollUpdateObserver).not.toBeNull();
+    });
+  });
+
+  it('ensureClothUpdateObserver does not create duplicate observers', function () {
         mgr.addCloth('m1', makeClothInstance(), vi.fn());
         const firstObserver = mgr._clothUpdateObserver;
 

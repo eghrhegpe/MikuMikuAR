@@ -170,20 +170,33 @@ function buildSceneRootItems(): PopupRow[] {
     });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({ kind: 'folder', label: t('scene.physics'), icon: 'lucide:atom', target: 'scene:physics' });
-    items.push({
-        kind: 'folder',
-        label: t('scene.clothSim'),
-        icon: 'lucide:shirt',
-        target: 'scene:cloth',
-        headerToggle: {
-            value: envState.clothEnabled,
-            onChange: (v) => {
-                envState.clothEnabled = v;
-                toggleCloth(v);
-            },
-            bind: () => envState.clothEnabled,
-        },
-    });
+items.push({
+  kind: 'folder',
+  label: t('scene.clothSim'),
+  icon: 'lucide:shirt',
+  target: 'scene:cloth',
+  headerToggle: {
+    value: envState.clothEnabled,
+    onChange: (v) => {
+      envState.clothEnabled = v;
+      toggleCloth(v);
+    },
+    bind: () => envState.clothEnabled,
+  },
+});
+items.push({
+  kind: 'folder',
+  label: t('scene.ragdollPhysics'),
+  icon: 'lucide:user',
+  target: 'scene:ragdoll',
+  headerToggle: {
+    value: envState.ragdollEnabled,
+    onChange: (v) => {
+      envState.ragdollEnabled = v;
+    },
+    bind: () => envState.ragdollEnabled,
+  },
+});
     if (modelRegistry.size > 1) {
         items.push({
             kind: 'folder',
