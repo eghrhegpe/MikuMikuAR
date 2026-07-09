@@ -1,7 +1,7 @@
 # ADR-076: 卡通化渲染后处理模式
 
 **日期**：2026-07-09
-> **状态**: 已实施 — 后处理层 cel-shading 开关，不改动材质系统，面向游戏提取模型的"光难调"问题
+> **状态**: ⚠️ 未实施（仅落地 i18n 占位字符串 + ADR 文档；renderer.ts / scene-render-levels.ts 的逻辑块从未写入）— 2026-07-10 核查
 
 ---
 
@@ -53,6 +53,11 @@ Babylon.js 的 `DefaultRenderingPipeline` 不内置 posterize 后处理。自行
 ---
 
 ## 实施
+
+> ⚠️ **2026-07-10 核实**：下方「代码改动」表所述实现**从未写入代码库**。
+> 根因：引入该 ADR 的提交 `5825aa9`（feat(ar,plaza): … + 赛璐珞后处理）仅落地了 `docs/adr/adr-076` 文档与 5 个 locale 的 `scene.celShading` 占位字符串，**未修改 `renderer.ts` 与 `scene-render-levels.ts`**（`git show 5825aa9 --stat` 中此二文件无 cel-shading 改动，`git grep celShadingMode` 在 HEAD 与历史中均零命中，排除 locales）。
+> 现状：`RenderState` 无 `celShadingMode` 字段；`_applyRenderState` 无卡通参数块（无 `exposure:0.7` / `contrast:1.4` / `bloomWeight:0.25` 等硬编码）；`scene-render-levels.ts` 无开关。i18n 字符串目前为**孤儿占位**（无 UI 引用）。
+> 结论：本 ADR 仍为设计草案，状态不应标「已实施」。
 
 ### 代码改动
 

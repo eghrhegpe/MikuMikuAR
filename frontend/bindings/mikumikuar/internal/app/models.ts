@@ -91,6 +91,16 @@ export interface Config {
     "download_auto_import": boolean;
 
     /**
+     * 监听开关（与 dir 解耦：关闭时保留 dir）
+     */
+    "download_watch_enabled"?: boolean;
+
+    /**
+     * 首启默认是否已应用（防重复默认覆盖用户关闭）
+     */
+    "download_watch_initialized"?: boolean;
+
+    /**
      * libraryRef 数组，收藏的模型
      */
     "favorites": string[] | null;
@@ -472,26 +482,6 @@ export interface PlazaDownloadResult {
     "filePath": string;
     "size": number;
     "fileName": string;
-}
-
-/**
- * PlazaExtractResult is the return type for ExtractPlazaPage.
- */
-export interface PlazaExtractResult {
-    "items": PlazaItem[] | null;
-    "title": string;
-    "url": string;
-}
-
-/**
- * PlazaItem represents a single extracted item from a plaza page (ADR-079).
- */
-export interface PlazaItem {
-    "title": string;
-    "thumbnail"?: string;
-    "downloadUrl"?: string;
-    "author"?: string;
-    "url": string;
 }
 
 /**

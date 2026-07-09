@@ -48,14 +48,6 @@ export function AddTag(libraryRef: string, tag: string): $CancellablePromise<voi
 }
 
 /**
- * AutoDetectMMD searches for MMD in common install paths and saves the result.
- * Returns the detected path, or an error if not found.
- */
-export function AutoDetectMMD(): $CancellablePromise<string> {
-    return $Call.ByID(2288723387);
-}
-
-/**
  * BundleScene packages a scene JSON + all referenced asset files into a zip.
  * sceneJSON: the rewritten SceneFile JSON (libraryRef pointing to assets/ inside the bundle).
  * assetPaths: deduplicated absolute paths of files to include.
@@ -151,15 +143,6 @@ export function DownloadFromPlaza(fileURL: string, fileName: string): $Cancellab
 }
 
 /**
- * ExtractPlazaPage fetches a URL through the proxy's cookie jar and extracts
- * structured data using site-specific rules. Returns nil items (not error) when
- * no rules match — the caller should fall back to iframe mode.
- */
-export function ExtractPlazaPage(pageURL: string): $CancellablePromise<$models.PlazaExtractResult | null> {
-    return $Call.ByID(1076704853, pageURL);
-}
-
-/**
  * ExtractZip extracts a zip file to the cache directory and returns the path
  * to the extracted PMX file specified by innerPath.
  * 
@@ -224,6 +207,13 @@ export function GetDanceSets(): $CancellablePromise<$models.DanceSet[] | null> {
  */
 export function GetDownloadAutoImport(): $CancellablePromise<boolean> {
     return $Call.ByID(1682181459);
+}
+
+/**
+ * GetDownloadWatchEnabled returns whether download watching is enabled in config.
+ */
+export function GetDownloadWatchEnabled(): $CancellablePromise<boolean> {
+    return $Call.ByID(2330451297);
 }
 
 /**
@@ -344,8 +334,10 @@ export function ImportDanceSet(vmdPath: string, audioPath: string, name: string)
 
 /**
  * ImportLocalFile imports a local file into the model library.
- * For .zip files, it finds the first .pmx inside and extracts via ImportZip.
- * For .pmx/.vmd files, it returns the path directly as an ExtractResult.
+ * - .pmx/.zip: 复制原档到 PMX/（zip 由 ScanModelDir 的 expandZipEntries 展开条目）
+ * - .rar: 解压全部内容到 PMX/<rarBase>/（ScanModelDir 直接扫到解压后的 .pmx）
+ * - .vmd: 复制到 VMD/，.vpd: 复制到 pose/
+ * 导入后 ScanModelDir 能扫到。不加载到 3D 场景——加载是用户从库中选择的独立动作。
  */
 export function ImportLocalFile(path: string): $CancellablePromise<$models.ExtractResult | null> {
     return $Call.ByID(3787504267, path);
@@ -449,18 +441,21 @@ export function OpenInMMD(modelPath: string): $CancellablePromise<void> {
 }
 
 /**
+ * OpenPlazaWindow opens a new Wails v3 window with the given URL.
+ * This provides a full Chromium WebView2 instance that bypasses
+ * iframe CSP/X-Frame-Options restrictions (ADR-075 §独立浏览器窗口).
+ * Each call opens an independent window (no dedup), capped at 5 concurrent.
+ */
+export function OpenPlazaWindow(targetURL: string): $CancellablePromise<void> {
+    return $Call.ByID(499016787, targetURL);
+}
+
+/**
  * OpenScreenshotDir opens the screenshot save directory in the system file manager.
  * If no directory has been set, it returns an error prompting the user to take a screenshot first.
  */
 export function OpenScreenshotDir(): $CancellablePromise<void> {
     return $Call.ByID(3659308950);
-}
-
-/**
- * OpenSoftwareDir opens the software directory in the system file manager.
- */
-export function OpenSoftwareDir(): $CancellablePromise<void> {
-    return $Call.ByID(4046736841);
 }
 
 /**
@@ -717,9 +712,19 @@ export function SetDownloadAutoImport(auto: boolean): $CancellablePromise<void> 
 /**
  * SetDownloadWatchDir persists the download watch directory to config
  * and restarts the watcher (if dir is non-empty) or stops it (if dir is empty).
+ * Selecting a non-empty directory implicitly enables watching.
  */
 export function SetDownloadWatchDir(dir: string): $CancellablePromise<void> {
     return $Call.ByID(2350742307, dir);
+}
+
+/**
+ * SetDownloadWatchEnabled toggles directory watching without clearing the
+ * configured directory. When enabling with no dir set, falls back to the
+ * user's Downloads folder (auto-created).
+ */
+export function SetDownloadWatchEnabled(enabled: boolean): $CancellablePromise<void> {
+    return $Call.ByID(3186600413, enabled);
 }
 
 /**

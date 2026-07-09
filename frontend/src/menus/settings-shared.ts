@@ -36,6 +36,27 @@ export function setAutoImportCached(v: boolean): void {
     autoImportCached = v;
 }
 
+// ======== Download watch enabled state cache ========
+// 与 autoImport 同模式：buildRootItems 同步签名无法 await，用模块级缓存 + 启动预加载。
+let downloadWatchEnabledCached = false;
+
+/** 启动时预加载下载监听开关状态。在 main.ts init 中调用。 */
+export async function preloadDownloadWatchState(): Promise<void> {
+    try {
+        downloadWatchEnabledCached = await import('../core/wails-bindings').then((m) => m.GetDownloadWatchEnabled());
+    } catch {
+        downloadWatchEnabledCached = false;
+    }
+}
+
+export function getDownloadWatchEnabledCached(): boolean {
+    return downloadWatchEnabledCached;
+}
+
+export function setDownloadWatchEnabledCached(v: boolean): void {
+    downloadWatchEnabledCached = v;
+}
+
 // ======== VMD 伴音自动加载 ========
 /** 加载 VMD 动作时自动发现并加载同目录同名音频（.mp3/.wav/.ogg/.flac）。默认开启。 */
 // AO ✂️ Replace setter with SettingsStore.set

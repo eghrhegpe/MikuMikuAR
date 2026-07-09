@@ -104,19 +104,6 @@ func (a *App) SetMMDPath(path string) error {
 	return a.updateConfig(func(cfg *Config) { cfg.MMDPath = path }, false)
 }
 
-// AutoDetectMMD searches for MMD in common install paths and saves the result.
-// Returns the detected path, or an error if not found.
-func (a *App) AutoDetectMMD() (string, error) {
-	path := detectMMD()
-	if path == "" {
-		return "", fmt.Errorf("未找到 MikuMikuDance")
-	}
-	if err := a.SetMMDPath(path); err != nil {
-		return "", err
-	}
-	return path, nil
-}
-
 // OpenInMMD launches MikuMikuDance and opens the specified model file.
 func (a *App) OpenInMMD(modelPath string) error {
 	if isAndroid {
@@ -327,32 +314,6 @@ func (a *App) UpdateCustomSoftware(path string, name string, args string) error 
 			}
 		}
 	}, false)
-}
-
-// OpenSoftwareDir opens the software directory in the system file manager.
-func (a *App) OpenSoftwareDir() error {
-	dir, err := softwareDir()
-	if err != nil {
-		return err
-	}
-	// Ensure the directory exists
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("创建软件目录失败")
-	}
-	// Cross-platform: open file manager
-	var cmd *exec.Cmd
-	switch stdruntime.GOOS {
-	case "windows":
-		cmd = exec.Command("explorer", dir)
-	case "darwin":
-		cmd = exec.Command("open", dir)
-	case "android":
-		// Android: no standard file manager opener; return the path for UI display.
-		return fmt.Errorf("软件目录: %s", dir)
-	default:
-		cmd = exec.Command("xdg-open", dir)
-	}
-	return cmd.Start()
 }
 
 // OpenScreenshotDir opens the screenshot save directory in the system file manager.

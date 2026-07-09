@@ -1,6 +1,5 @@
 // settings-filename.ts — 文件名设置子菜单
 
-import { SetDownloadAutoImport } from '../core/wails-bindings';
 import {
     setStatus,
     cardContainer,
@@ -11,14 +10,12 @@ import {
     displayNamePriority,
     setDisplayNamePriority,
 } from '../core/config';
-import { slideRow, addSliderRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { showPrompt, showPrompt2 } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import type { PopupLevel } from '../core/config';
 import {
-    getAutoImportCached,
-    setAutoImportCached,
     NAME_PRIORITY_LABELS,
     NAME_PRIORITY_INDEX,
     PRIORITY_TO_INDEX,
@@ -155,25 +152,6 @@ export function buildSettingsFilenameLevel(getSettingsMenu: () => SettingsMenuHa
                     setUIState({ materialCategoryMap: uiState.materialCategoryMap });
                     getSettingsMenu()?.reRender();
                 });
-            });
-            // 自动导入
-            addSectionTitle(container, '自动导入');
-            cardContainer(container, (c) => {
-                addToggleRow(
-                    c,
-                    '自动导入',
-                    getAutoImportCached(),
-                    (v) => {
-                        setAutoImportCached(v);
-                        SetDownloadAutoImport(v).catch(() => {});
-                        getSettingsMenu()?.updateControls();
-                        setStatus(v ? '✓ 自动导入已开启' : '✓ 自动导入已关闭', true);
-                    },
-                    'lucide:download',
-                    {
-                        bind: () => getAutoImportCached(),
-                    }
-                );
             });
         },
     };

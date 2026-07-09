@@ -1,11 +1,9 @@
 import {
     ScanSoftwareDir,
     LaunchSoftware,
-    OpenSoftwareDir,
     AddCustomSoftware,
     RemoveCustomSoftware,
     UpdateCustomSoftware,
-    AutoDetectMMD,
     SetBlenderPath,
     SetMMDPath,
     SelectExeFile,
@@ -20,13 +18,6 @@ import { getSettingsMenu } from './settings';
 import { t } from '../core/i18n/t';
 
 // ======== 路径设置 API（统一入口） ========
-
-export async function detectMMD(): Promise<void> {
-    const path = await tryCatchStatus(() => AutoDetectMMD(), '✗ 未找到 MMD，请手动添加');
-    if (path !== undefined) {
-        setStatus(`✓ MMD 已检测: ${path}`, true);
-    }
-}
 
 export async function setBlenderPath(): Promise<void> {
     const path = await SelectExeFile();
@@ -138,16 +129,10 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
                         getSettingsMenu()?.reRender();
                     }
                 });
-                slideRow(c, 'lucide:search', '自动检测 MMD', false, () => detectMMD());
                 slideRow(c, 'lucide:folder', '设置 MMD 路径', false, () => setMMDPath());
                 slideRow(c, 'lucide:hexagon', '设置 Blender 路径', false, () => setBlenderPath());
             });
 
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:folder-open', '打开目录', false, () =>
-                    OpenSoftwareDir().catch(console.warn)
-                );
-            });
         },
     };
 }

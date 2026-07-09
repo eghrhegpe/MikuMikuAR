@@ -25,3 +25,8 @@ func (a *androidPathMgr) PrivateResourceRoot() string {
 func (a *androidPathMgr) SharedResourceRoot() string {
 	return "/sdcard/MMD"
 }
+
+// DownloadsDir returns "" on Android — fsnotify 不支持，下载监听走手动导入。
+func (a *androidPathMgr) DownloadsDir() string {
+	return ""
+}

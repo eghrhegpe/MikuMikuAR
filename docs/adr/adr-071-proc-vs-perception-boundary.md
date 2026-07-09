@@ -1,6 +1,6 @@
 # ADR-071: 程序化动作与角色感知边界重构
 
-> **状态**: 草案（2026-07-09 创建）
+> **状态**: 已实施（方案 B 全部落地；2026-07-09 创建，2026-07-10 核实代码已落地）
 > **关联**: ADR-021（程序化动作）、ADR-016（视线追踪）、ADR-053（Gaze 图层集成）、ADR-061（骨骼系统）
 
 ---
@@ -303,6 +303,19 @@ function migrateToPerception(oldProcMotionConfig: ProcMotionConfig): PerceptionS
 ---
 
 ## 附录：代码事实核实（2026-07-09）
+
+> ⚠️ 下方行号为 **方案 B 实施前的快照（2026-07-09）**。重构后这些行号已失效——呼吸/眨眼关键帧已自三个 VMD 生成器移除，gaze 已迁入 `scene/motion/perception.ts`。核验结论见下方「实施后核实」。
+
+### 实施后核实（2026-07-10）
+
+| 核查项 | 结论 | 证据 |
+|--------|------|------|
+| perception.ts 落地 | ✅ | `frontend/src/scene/motion/perception.ts`（542 行），含 `_applyBreathing`（L214）、`_applyBlinking`（L252）实时叠加 + `_applyGaze` |
+| VMD 生成器呼吸关键帧 | ❌ 已移除 | idle/autodance/lifelike 三文件 grep `breath/呼吸` 无任何呼吸关键帧写入（idle 仅 `const breath` 局部变量驱动肩晃，非呼吸行为） |
+| VMD 生成器眨眼关键帧 | ❌ 已移除 | autodance 的 `blink/眨眼` 仅出现在 `BLACKLIST_PATTERNS`（情绪 morph 排除名单），无生成；lifelike 无 `breath/blink/BLINK_BLACKLIST` 残留 |
+| gaze 提取 | ✅ | `proc-motion-bridge.ts` 已无 `breath/blink` 引用；gaze 实现完整迁至 perception.ts |
+| PerceptionState 接管 | ✅ | `perception.ts` 导出 `PerceptionState`；`scene-serialize.ts` 序列化 + 旧 `ProcMotionConfig` 迁移（L589-597）；`motion-gaze-levels.ts` 调 `setBreathEnabled/setBlinkEnabled/activatePerception` |
+| 测试补齐 | ✅ | `src/__tests__/perception.test.ts` 覆盖呼吸/眨眼/生命周期/序列化 |
 
 | 文件 | 行号 | 内容 | 问题 |
 |------|------|------|------|

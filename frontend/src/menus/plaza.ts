@@ -7,12 +7,11 @@
 // 不再寄生在 SlideMenu 弹窗里——浏览器是单一全屏表面，没有层级/返回栈，
 // SlideMenu 的导航机件对它纯属死重。
 
-import { StartProxy, StopProxy } from '../core/wails-bindings';
-import { openExternalURL } from '../core/platform';
 import { Browser } from '@wailsio/runtime';
+import { StartProxy, StopProxy, OpenPlazaWindow } from '../core/wails-bindings';
+import { openExternalURL } from '../core/platform';
 import { closeAllOverlays } from '../core/utils';
 import { PLAZA_SITES, type PlazaSite } from './plaza-sites';
-import { showErrorToast } from '../core/toast';
 import { setStatus } from '../core/status-bar';
 
 const L = {
@@ -24,20 +23,20 @@ const L = {
     proxyError: '代理启动失败：',
 };
 
-// 全局打开方式开关：auto=尊重每站自带 mode；embed=强制内嵌；external=强制系统浏览器。
-// 持久化到 localStorage，重启保留。见 ADR-075。
-type OpenMode = 'auto' | 'embed' | 'external';
+// 全局打开方式开关：embed=内嵌 iframe；window=Wails 新窗口；external=系统浏览器。
+// 三模式相互独立、不自动选路，便于单独测试各打开行为。持久化到 localStorage，重启保留。见 ADR-075。
+type OpenMode = 'embed' | 'external' | 'window';
 const OPEN_MODE_KEY = 'miku.plaza.openMode';
 let openMode: OpenMode = loadOpenMode();
 
 function loadOpenMode(): OpenMode {
     try {
         const v = localStorage.getItem(OPEN_MODE_KEY);
-        if (v === 'auto' || v === 'embed' || v === 'external') return v;
+        if (v === 'embed' || v === 'external' || v === 'window') return v;
     } catch {
-        /* localStorage 不可用时忽略，回退 auto */
+        /* localStorage 不可用时忽略，回退 embed */
     }
-    return 'auto';
+    return 'embed';
 }
 function saveOpenMode(): void {
     try {
@@ -46,15 +45,17 @@ function saveOpenMode(): void {
         /* 忽略 */
     }
 }
-/** 某站点在当前全局开关下的实际打开方式 */
-function effectiveMode(site: PlazaSite): 'embed' | 'external' {
-    return openMode === 'auto' ? site.mode : openMode;
+/** 某站点在当前全局开关下的实际打开方式（三模式独立，无自动选路） */
+function effectiveMode(_site: PlazaSite): 'embed' | 'external' | 'window' {
+    return openMode;
 }
 
 let layer: HTMLElement | null = null;
 let plazaProxyActive = false;
 let observer: MutationObserver | null = null;
 let downloadListenerInstalled = false;
+// [ADR-078] 持有当前内嵌 iframe 引用，供下载请求来源校验
+let plazaIframe: HTMLIFrameElement | null = null;
 
 // [ADR-078] 监听 iframe 内注入脚本发来的下载请求
 function installDownloadListener(): void {
@@ -62,6 +63,8 @@ function installDownloadListener(): void {
     downloadListenerInstalled = true;
     window.addEventListener('message', (e: MessageEvent) => {
         if (e.data?.type !== 'plaza-download-request') return;
+        // [ADR-078] 来源校验：仅接受当前内嵌 iframe 发来的下载请求，阻断任意页伪造
+        if (!plazaIframe || e.source !== plazaIframe.contentWindow) return;
         const { url, filename } = e.data as { url: string; filename: string };
         if (!url) return;
         handlePlazaDownload(url, filename || 'download');
@@ -71,20 +74,16 @@ function installDownloadListener(): void {
 async function handlePlazaDownload(url: string, filename: string): Promise<void> {
     setStatus(`下载中: ${filename}`, false, true);
     try {
-        // 动态导入 DownloadFromPlaza（binding 可能尚未生成，降级到系统浏览器）
+        // 动态绑定导入：binding 可能尚未生成，失败即失败，不自动降级到浏览器。
         const { DownloadFromPlaza } = await import('../core/wails-bindings');
         if (typeof DownloadFromPlaza !== 'function') {
             throw new Error('binding not available');
         }
         const result = await DownloadFromPlaza(url, filename);
         setStatus(`✓ 已下载: ${result.fileName} (${(result.size / 1024).toFixed(1)} KB)`, true);
-    } catch {
-        // 降级：用系统浏览器下载
-        setStatus('下载中（浏览器）...', false, true);
-        if (!openExternalURL(url)) {
-            Browser.OpenURL(url);
-        }
-        setStatus('已在浏览器中下载', true);
+    } catch (e) {
+        // 动态 import 失败或 binding 未生成：仅报状态，不串到系统浏览器下载，便于单独定位内嵌下载问题。
+        setStatus(`下载失败: ${e instanceof Error ? e.message : String(e)}`, true);
     }
 }
 
@@ -94,9 +93,20 @@ function getLayer(): HTMLElement {
 }
 
 function openExternal(site: PlazaSite): void {
+    // 平台分流（非降级）：Android 用 <a> 打开，桌面用 Wails Browser.OpenURL。
     if (!openExternalURL(site.url)) {
         Browser.OpenURL(site.url);
     }
+}
+
+function openInWindow(site: PlazaSite): void {
+    setStatus(`正在打开 ${site.name}...`, false, true);
+    OpenPlazaWindow(site.url)
+        .then(() => setStatus('', false))
+        .catch((e) => {
+            // 不再自动降级到系统浏览器：wails 窗口失败即失败，便于单独测试该模式。
+            setStatus(`打开窗口失败: ${e instanceof Error ? e.message : String(e)}`, true);
+        });
 }
 
 /** 回收 Go 反向代理（幂等，已停则无操作） */
@@ -122,9 +132,9 @@ function buildModeSwitch(): HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'plaza-modeswitch';
     const opts: { key: OpenMode; label: string }[] = [
-        { key: 'auto', label: '自动' },
-        { key: 'embed', label: '内嵌' },
-        { key: 'external', label: '浏览器' },
+        { key: 'embed', label: 'iframe' },
+        { key: 'window', label: 'wails' },
+        { key: 'external', label: 'chrome' },
     ];
     for (const o of opts) {
         const b = document.createElement('button');
@@ -218,10 +228,16 @@ function renderHome(): void {
         card.innerHTML =
             `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon>` +
             `<div class="plaza-card-name">${site.name}</div>` +
-            `<div class="plaza-card-mode">${eff === 'external' ? '系统浏览器' : '内嵌浏览'}</div>`;
+            `<div class="plaza-card-mode">${
+                eff === 'external' ? 'chrome' :
+                eff === 'window' ? 'wails' :
+                'iframe'
+            }</div>`;
         card.onclick = () => {
             if (eff === 'external') {
                 openExternal(site);
+            } else if (eff === 'window') {
+                openInWindow(site);
             } else {
                 renderEmbed(site);
             }
@@ -239,33 +255,30 @@ function renderEmbed(site: PlazaSite): void {
     const root = document.createElement('div');
     root.className = 'plaza-root';
 
+    const body = document.createElement('div');
+    body.className = 'plaza-body';
+    const iframe = document.createElement('iframe');
+    iframe.className = 'plaza-iframe';
+    iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups');
+    plazaIframe = iframe;
+    body.appendChild(iframe);
+
     root.appendChild(
         buildToolbar({
             title: site.name,
             onBack: renderHome,
             onOpen: () => openExternal(site),
-            onRefresh: () => {
-                const f = root.querySelector('iframe');
-                if (f) f.src = f.src;
-            },
+            onRefresh: () => { if (iframe.src) iframe.src = iframe.src; },
             onClose: closePlaza,
         })
     );
 
-    const body = document.createElement('div');
-    body.className = 'plaza-body';
-    const iframe = document.createElement('iframe');
-    iframe.className = 'plaza-iframe';
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
-    body.appendChild(iframe);
     root.appendChild(body);
     el.appendChild(root);
 
     plazaProxyActive = true;
     StartProxy(site.url)
-        .then((proxyUrl) => {
-            iframe.src = proxyUrl;
-        })
+        .then((proxyUrl) => { iframe.src = proxyUrl; })
         .catch((e) => {
             plazaProxyActive = false;
             const err = document.createElement('div');
@@ -282,6 +295,7 @@ export function showPlaza(): void {
 }
 
 export function closePlaza(): void {
+    plazaIframe = null;
     stopProxy();
     closeAllOverlays();
 }
