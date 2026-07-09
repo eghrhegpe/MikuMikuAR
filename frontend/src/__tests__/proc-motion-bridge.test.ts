@@ -50,6 +50,9 @@ vi.mock('../outfit/audio', () => ({
 }));
 
 vi.mock('../scene/scene', () => ({
+    get focusedModelId() {
+        return mockState.focusedModelId;
+    },
     modelManager: mockState.modelManager,
     focusedMmdModel: ((...args: any[]) => (mockState.focusedMmdModel as any)(...args)) as any,
     focusedModel: ((...args: any[]) => (mockState.focusedModel as any)(...args)) as any,
