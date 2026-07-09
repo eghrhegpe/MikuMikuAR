@@ -1,5 +1,5 @@
 // [doc:adr-056] WASM 图层混合器 — JS 帧流合并让 WASM 拿到多图层能力
-// 复用 proc-motion-bridge 的 _isWasmRuntime / _writeMatToBuffer / _propagateChildrenWasm
+// 复用 perception.ts 的 _isWasmRuntime / _writeMatToBuffer / _propagateChildrenWasm
 // 职责: 单 observer 调度（图层混合 → gaze 覆写 → 子骨骼传播）
 
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -9,9 +9,9 @@ import {
     _writeMatToBuffer,
     _propagateChildrenWasm,
     applyGazeWasm,
-    type GazeConfig,
     type MmdRuntimeBoneExtended,
-} from './proc-motion-bridge';
+    type GazeConfig,
+} from './perception';
 import { createVmdEvaluator, type VmdEvaluator } from '@/motion-algos/vmd-evaluator';
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 import { scene, modelManager, loadVMDMotion } from '../scene';
@@ -42,7 +42,7 @@ interface BlenderState {
     observer: Observer<Scene>;
     enabled: boolean;
     baseAnimationName: string;
-    gazeConfig: GazeConfig;
+    gazeConfig: { headEnabled: boolean; eyeEnabled: boolean };
     animationFrame: number;
 }
 
