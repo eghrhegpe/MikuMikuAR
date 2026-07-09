@@ -466,6 +466,35 @@ export interface OverridePaths {
 }
 
 /**
+ * PlazaDownloadResult is the return type for DownloadFromPlaza.
+ */
+export interface PlazaDownloadResult {
+    "filePath": string;
+    "size": number;
+    "fileName": string;
+}
+
+/**
+ * PlazaExtractResult is the return type for ExtractPlazaPage.
+ */
+export interface PlazaExtractResult {
+    "items": PlazaItem[] | null;
+    "title": string;
+    "url": string;
+}
+
+/**
+ * PlazaItem represents a single extracted item from a plaza page (ADR-079).
+ */
+export interface PlazaItem {
+    "title": string;
+    "thumbnail"?: string;
+    "downloadUrl"?: string;
+    "author"?: string;
+    "url": string;
+}
+
+/**
  * RenderPreset stores a user-defined rendering preset.
  */
 export interface RenderPreset {

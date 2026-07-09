@@ -21,6 +21,7 @@ export const dom = {
     btnEnv: document.getElementById('btnEnv') as HTMLButtonElement,
     btnPlaza: document.getElementById('btnPlaza') as HTMLButtonElement,
     sceneOverlay: document.getElementById('sceneOverlay') as HTMLElement,
+    webviewLayer: document.getElementById('webviewLayer') as HTMLElement,
 
     /** 引擎就绪后调用：隐藏 loading 遮罩，显示主应用 UI */
     showApp(): void {

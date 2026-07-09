@@ -137,8 +137,9 @@ export function buildStageLightLevel(): PopupLevel {
             }
 
             // —— 基础卡片（精简）——
-            addCollapsible(container, {
-                title: state.name,
+            cardContainer(container, (c) => {
+                addCollapsible(c, {
+                    title: state.name,
                 icon: 'lucide:lightbulb',
                 defaultOpen: false,
                 headerToggle: {
@@ -219,11 +220,13 @@ export function buildStageLightLevel(): PopupLevel {
                         }
                     );
                 },
+                });
             });
 
             // —— 参数卡片（按类型动态）——
             if (state.type === 'spot') {
-                addCollapsible(container, {
+                cardContainer(container, (c) => {
+                addCollapsible(c, {
                     title: t('scene.params'),
                     icon: 'lucide:sliders',
                     defaultOpen: false,
@@ -335,8 +338,10 @@ export function buildStageLightLevel(): PopupLevel {
                         });
                     },
                 });
+            });
             } else if (state.type === 'point') {
-                addCollapsible(container, {
+                cardContainer(container, (c) => {
+                addCollapsible(c, {
                     title: t('scene.params'),
                     icon: 'lucide:sliders',
                     defaultOpen: false,
@@ -362,8 +367,10 @@ export function buildStageLightLevel(): PopupLevel {
                         );
                     },
                 });
+            });
             } else if (state.type === 'directional') {
-                addCollapsible(container, {
+                cardContainer(container, (c) => {
+                addCollapsible(c, {
                     title: t('scene.directionTarget'),
                     icon: 'lucide:compass',
                     defaultOpen: false,
@@ -427,11 +434,13 @@ export function buildStageLightLevel(): PopupLevel {
                         );
                     },
                 });
+            });
             }
 
             // —— 阴影卡片 ——
             if (state.type !== 'point') {
-                addCollapsible(container, {
+                cardContainer(container, (c) => {
+                addCollapsible(c, {
                     title: t('scene.shadow'),
                     icon: 'lucide:cloud',
                     defaultOpen: false,
@@ -520,10 +529,12 @@ export function buildStageLightLevel(): PopupLevel {
                         }
                     },
                 });
+            });
             }
 
             // —— 轨道卡片 ——
-            addCollapsible(container, {
+            cardContainer(container, (c) => {
+                addCollapsible(c, {
                 title: t('scene.positionOrbit'),
                 icon: 'lucide:orbit',
                 defaultOpen: true,
@@ -605,6 +616,7 @@ export function buildStageLightLevel(): PopupLevel {
                         }
                     );
                 },
+                });
             });
 
             // —— 删除按钮 ——
