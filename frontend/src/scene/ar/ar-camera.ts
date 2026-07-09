@@ -5,9 +5,18 @@
 
 import { dom, setStatus } from '@/core/config';
 import { t } from '@/core/i18n/t';
+import { isAndroidPlatform } from '@/core/platform';
 
 // ======== Types ========
 export type CameraFacing = 'user' | 'environment';
+
+declare global {
+    interface Window {
+        // Callback the Android bridge invokes with the CAMERA permission result
+        // after requestCameraPermission() (see ensureAndroidCameraPermission).
+        __onArcCameraPermission?: (granted: boolean) => void;
+    }
+}
 
 export interface ARCameraState {
     active: boolean;
@@ -128,6 +137,17 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
         _active = false;
         _hideVideo();
         setStatus(t('scene.ar.cameraUnavailable'), false);
+        _starting = false;
+        return false;
+    }
+
+    // Android WebView：进入 AR 前必须持有 CAMERA 运行时权限，否则 getUserMedia
+    // 会被 WebChromeClient 静默拒绝（NotAllowedError）。这里在按钮点击链路里显式
+    // 判断授权状态——已授权则继续，未授权则弹系统授权框并等待用户决策。
+    if (isAndroidPlatform() && !(await ensureAndroidCameraPermission())) {
+        _active = false;
+        _hideVideo();
+        setStatus(t('scene.ar.cameraDenied'), false);
         _starting = false;
         return false;
     }
@@ -281,6 +301,31 @@ export function captureARScreenshot(
 }
 
 // ======== Internal Helpers ========
+/**
+ * 在 Android 上确保 CAMERA 运行时权限已授予，再允许 getUserMedia。
+ * - 非 Android / 无桥接：直接 resolve(true)，走桌面自身逻辑。
+ * - 已授权：立即 resolve(true)。
+ * - 未授权：调用 Java 侧 requestCameraPermission() 弹出系统授权框，
+ *   并以 window.__onArcCameraPermission(granted) 回调返回用户决策。
+ */
+function ensureAndroidCameraPermission(): Promise<boolean> {
+    const w = window.wails;
+    if (!w || typeof w.hasCameraPermission !== 'function') {
+        return Promise.resolve(true);
+    }
+    if (w.hasCameraPermission()) {
+        return Promise.resolve(true);
+    }
+    return new Promise<boolean>((resolve) => {
+        const prev = window.__onArcCameraPermission;
+        window.__onArcCameraPermission = (granted: boolean) => {
+            window.__onArcCameraPermission = prev;
+            resolve(granted);
+        };
+        w.requestCameraPermission!();
+    });
+}
+
 function _showVideo(): void {
     const video = getVideoEl();
     video.style.display = 'block';

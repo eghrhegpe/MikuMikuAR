@@ -27,6 +27,8 @@ import android.util.Base64;
 import android.util.Log;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
+import android.webkit.PermissionRequest;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -82,6 +84,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int CAMERA_PERMISSION_REQUEST = 7010;
     private File pendingCaptureFile;
     private boolean pendingCaptureIsVideo;
+
+    // Set when the AR flow initiated a CAMERA permission request, so
+    // onRequestPermissionsResult can route the result back to the JS callback.
+    private boolean pendingArcCameraPermission = false;
 
     // System-event sources (battery/power, screen lock, network). Registered in
     // onCreate, torn down in onDestroy. Each forwards a "system:*" event to JS
@@ -215,6 +221,41 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Grant camera permission requests that originate from the web frontend
+        // (navigator.mediaDevices.getUserMedia) so AR mode can use the camera.
+        // Without this override, WebView silently denies the permission request
+        // and getUserMedia rejects with NotAllowedError — the AR camera never
+        // starts. We only grant the video resource, and only when the app already
+        // holds the Android CAMERA runtime permission (requested separately via
+        // requestCameraPermission() before entering AR).
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onPermissionRequest(final PermissionRequest request) {
+                runOnUiThread(() -> {
+                    final boolean hasCam =
+                            checkSelfPermission("android.permission.CAMERA")
+                                    == PackageManager.PERMISSION_GRANTED;
+                    if (!hasCam) {
+                        // App-level camera permission is missing: deny here and let
+                        // the AR flow request it via requestCameraPermission().
+                        request.deny();
+                        return;
+                    }
+                    final List<String> grant = new ArrayList<>();
+                    for (final String res : request.getResources()) {
+                        if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res)) {
+                            grant.add(res);
+                        }
+                    }
+                    if (!grant.isEmpty()) {
+                        request.grant(grant.toArray(new String[0]));
+                    } else {
+                        request.deny();
+                    }
+                });
+            }
+        });
+
         // Add JavaScript interface for Go communication
         webView.addJavascriptInterface(new WailsJSBridge(bridge, webView), "wails");
     }
@@ -223,6 +264,38 @@ public class MainActivity extends AppCompatActivity {
         String url = WAILS_SCHEME + "://" + WAILS_HOST + "/";
         if (DEBUG) Log.d(TAG, "Loading URL: " + url);
         webView.loadUrl(url);
+    }
+
+    // ---- Camera permission (for WebView AR getUserMedia) --------------
+    // getUserMedia in the web frontend needs two layers of permission on
+    // Android: the app-level CAMERA runtime permission (this section) AND the
+    // WebView-level grant (WebChromeClient.onPermissionRequest). The JS side
+    // calls requestCameraPermission() on the AR button click; we prompt the
+    // runtime dialog and then report the outcome back to JS via
+    // window.__onArcCameraPermission(granted).
+
+    /** Returns true if the app currently holds the CAMERA runtime permission. */
+    public boolean hasCameraPermission() {
+        return checkSelfPermission("android.permission.CAMERA")
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** Request the CAMERA runtime permission for AR; report result to JS. */
+    public void requestCameraPermission() {
+        if (hasCameraPermission()) {
+            emitCameraPermissionResult(true);
+            return;
+        }
+        pendingArcCameraPermission = true;
+        requestPermissions(new String[]{"android.permission.CAMERA"}, CAMERA_PERMISSION_REQUEST);
+    }
+
+    private void emitCameraPermissionResult(boolean granted) {
+        if (webView != null) {
+            final String js = "window.__onArcCameraPermission && window.__onArcCameraPermission("
+                    + (granted ? "true" : "false") + ");";
+            webView.post(() -> webView.evaluateJavascript(js, null));
+        }
     }
 
     // ---- External storage permission (MANAGE_EXTERNAL_STORAGE) -----------
@@ -580,6 +653,20 @@ public class MainActivity extends AppCompatActivity {
             }
             bridge.filePickerDone(callbackID);
         }).start();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // Only the AR camera flow sets this flag; the system-camera capture path
+        // (launchCameraCapture) leaves it false and is handled elsewhere.
+        if (requestCode != CAMERA_PERMISSION_REQUEST || !pendingArcCameraPermission) {
+            return;
+        }
+        pendingArcCameraPermission = false;
+        final boolean granted = grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+        emitCameraPermissionResult(granted);
     }
 
     /**

@@ -423,6 +423,7 @@ export const zhCN: Record<string, string> = {
     // —— 道具层级 scene-prop-levels ——
     'scene.addPropFile': '添加道具文件',
     'scene.propTransform': '道具变换',
+    'scene.transform': '变换',
     'scene.propNotFound': '道具不存在（可能已被删除）',
     'scene.accessory.boneNotFound': '✗ 骨骼 {bone} 未找到',
     'scene.accessory.boneNoLink': '✗ 骨骼无法绑定（proxy 骨骼暂不支持）',

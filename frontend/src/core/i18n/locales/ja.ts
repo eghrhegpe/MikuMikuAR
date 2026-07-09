@@ -500,6 +500,7 @@ export const ja: Record<string, string> = {
     'scene.stageLabel': 'ステージ: {name}',
     'scene.addPropFile': 'プロップファイルを追加',
     'scene.propTransform': 'プロップ変形',
+    'scene.transform': '変換',
     'scene.propNotFound': 'プロップが存在しません（削除された可能性があります）',
     'scene.custom': 'カスタム',
     'scene.lightList': 'ライト一覧',

@@ -500,6 +500,7 @@ export const zhTW: Record<string, string> = {
     'scene.stageLabel': '舞台: {name}',
     'scene.addPropFile': '新增道具檔案',
     'scene.propTransform': '道具變換',
+    'scene.transform': '變換',
     'scene.propNotFound': '道具不存在（可能已被刪除）',
     'scene.custom': '自訂',
     'scene.lightList': '燈光列表',

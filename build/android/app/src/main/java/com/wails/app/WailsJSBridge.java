@@ -151,6 +151,39 @@ public class WailsJSBridge {
     }
 
     /**
+     * Check whether the Android CAMERA runtime permission is currently granted.
+     * The web frontend needs this before navigator.mediaDevices.getUserMedia
+     * can open the camera for AR mode.
+     *
+     * Called from JavaScript: wails.hasCameraPermission()
+     *
+     * @return true if the app may open the camera for AR mode
+     */
+    @JavascriptInterface
+    public boolean hasCameraPermission() {
+        android.app.Activity activity = bridge.getActivity();
+        if (activity instanceof MainActivity) {
+            return ((MainActivity) activity).hasCameraPermission();
+        }
+        return false;
+    }
+
+    /**
+     * Request the Android CAMERA runtime permission for AR mode. The result is
+     * delivered to JS via window.__onArcCameraPermission(granted).
+     * Called from JavaScript: wails.requestCameraPermission()
+     */
+    @JavascriptInterface
+    public void requestCameraPermission() {
+        android.app.Activity activity = bridge.getActivity();
+        if (activity instanceof MainActivity) {
+            ((MainActivity) activity).requestCameraPermission();
+        } else {
+            Log.w(TAG, "requestCameraPermission: activity is not MainActivity");
+        }
+    }
+
+    /**
      * Send a callback response to JavaScript
      */
     private void sendCallback(String callbackId, String result, String error) {

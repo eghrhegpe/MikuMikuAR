@@ -500,6 +500,7 @@ export const ko: Record<string, string> = {
     'scene.stageLabel': '무대: {name}',
     'scene.addPropFile': '소품 파일 추가',
     'scene.propTransform': '소품 변환',
+    'scene.transform': '변환',
     'scene.propNotFound': '소품이 존재하지 않습니다 (삭제되었을 수 있음)',
     'scene.custom': '사용자 정의',
     'scene.lightList': '조명 목록',
