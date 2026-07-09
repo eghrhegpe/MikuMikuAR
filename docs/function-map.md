@@ -55,6 +55,20 @@
 | `initControl()` | `core/ui-rows.ts` | 控件自更新注册 + 立即初始化工具函数，封装 `registerControl` + 立即 `update()` 模式，消除 5 个控件的重复 |
 | `registerControl()` / `updateControls()` | `menus/menu.ts` | 注册/统一刷新控件的自更新回调，参见 ADR-027 |
 
+## 模型广场
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `showPlaza()` | `menus/plaza.ts` | 打开模型广场全屏视图（iframe/窗口/外部浏览器三模式） |
+| `closePlaza()` | `menus/plaza.ts` | 关闭模型广场并回收代理 |
+| `handlePlazaDownload()` | `menus/plaza.ts` | 处理从 iframe 内注入脚本发来的下载请求（ADR-078） |
+| `installDownloadListener()` | `menus/plaza.ts` | 安装 postMessage 监听器，接收 iframe 下载请求 |
+| `openExternal()` | `menus/plaza.ts` | 用系统浏览器打开广场站点 |
+| `openInWindow()` | `menus/plaza.ts` | 用 Wails 新窗口打开广场站点 |
+| `stopProxy()` | `menus/plaza.ts` | 停止 Go 反向代理（幂等） |
+| `renderHome()` | `menus/plaza.ts` | 渲染广场主页站点列表 |
+| `renderEmbed()` | `menus/plaza.ts` | 渲染内嵌 iframe 视图（启动代理） |
+
 ## 相机
 
 | 函数/符号 | 文件 | 说明 |
@@ -63,6 +77,21 @@
 | `getCameraMode()` | `scene/camera/camera.ts` | 当前模式 |
 | `freeflyInput` | `scene/camera/camera.ts` | WASD 自由飞行输入状态 |
 | `hasCameraVmd()` / `clearCameraVmd()` / `animateCameraVmd()` | `scene/camera/camera.ts` | 相机 VMD 轨道 |
+
+## AR 相机
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `setARMode()` | `scene/ar/ar-scene.ts` | 切换 AR 模式（摄像头视频背景 + 透明 canvas） |
+| `takeARScreenshot()` | `scene/ar/ar-scene.ts` | AR 合成截图（视频底 + 3D 层） |
+| `isARModeActive()` | `scene/ar/ar-scene.ts` | 检查 AR 模式是否激活 |
+| `startARCamera()` | `scene/ar/ar-camera.ts` | 启动 AR 摄像头（自动选择朝向） |
+| `stopARCamera()` | `scene/ar/ar-camera.ts` | 停止 AR 摄像头并释放资源 |
+| `switchARCameraFacing()` | `scene/ar/ar-camera.ts` | 切换前置/后置摄像头 |
+| `setARMirror()` | `scene/ar/ar-camera.ts` | 设置摄像头镜像（前置默认镜像） |
+| `isARMirrored()` | `scene/ar/ar-camera.ts` | 检查摄像头是否镜像 |
+| `captureARScreenshot()` | `scene/ar/ar-camera.ts` | 捕获 AR 截图（内部实现） |
+| `addARModeChangeListener()` | `scene/ar/ar-camera.ts` | 订阅 AR 模式切换事件（返回取消订阅函数） |
 
 ## 共享状态
 
@@ -108,6 +137,14 @@
 | `createWater()` / `disposeWater()` | `scene/env/env-water.ts` | 水面 |
 | `createParticleEmitter()` / `updateParticleWind()` | `scene/env/env-particles.ts` | 粒子 |
 | `createClouds()` / `disposeClouds()` | `scene/env/env-clouds.ts` | 体积云 |
+
+## 渲染状态
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `setRenderState()` | `scene/render/renderer.ts` | 更新渲染状态（含赛璐珞模式等） |
+| `getRenderState()` | `scene/render/renderer.ts` | 获取当前渲染状态快照 |
+| `celShadingMode` | `scene/render/renderer.ts` | 赛璐珞后处理模式开关（ADR-076） |
 
 ## 材质系统
 

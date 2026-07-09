@@ -202,7 +202,7 @@ MikuMikuAR/
 
 - **贴图兼容性** — 部分 PMX 贴图路径不标准（`../tex/` vs `textures/`），已经 `basenameFallbackFS` 兜底，但不保证 100% 覆盖
 - **Blender 编辑** — 需用户自行安装 [mmd_tools](https://github.com/powroupi/blender_mmd_tools) 插件，否则 Blender 无法打开 PMX
-- **Android 实验** — `main_android.gen.go` 用 c-shared 模式 + WebView，文件访问受 Scoped Storage 约束（见 [ADR-023](docs/adr/adr-023-android-file-access-strategy.md)）
+- **Android 实验** — `main_android.gen.go` 用 c-shared 模式 + WebView，文件访问受 Scoped Storage 约束
 - **跨平台路径** — Blender 自动检测仅覆盖 Windows，macOS/Linux 需在设置中手动配置
 
 

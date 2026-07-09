@@ -31,6 +31,7 @@ import { GetConfig, ImportZip, ImportLocalFile, Events, CheckForUpdate } from '.
 import { isAndroidPlatform, openExternalURL } from './platform';
 import { Browser } from '@wailsio/runtime';
 import { generateTextColors } from '../menus/settings';
+import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
 import { loadManager } from './load-manager';
 import {
     initScene,
@@ -728,12 +729,6 @@ async function restoreEnvState(): Promise<void> {
     }
 }
 
-const FONT_RESTORE: Record<string, string> = {
-    system: "'Segoe UI', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK SC', system-ui, sans-serif",
-    noto: "'Source Han Sans SC', 'Noto Sans CJK SC', system-ui, sans-serif",
-    yahei: "'Microsoft YaHei', 'Microsoft YaHei UI', system-ui, sans-serif",
-};
-
 async function restoreUIState(): Promise<void> {
     const cfg = await GetConfig();
     const s = cfg.ui_state as UIState | undefined;
@@ -756,8 +751,8 @@ async function restoreUIState(): Promise<void> {
         root.style.setProperty('--text-dim', textColors.dim);
         root.style.setProperty('--text-muted', textColors.muted);
     }
-    if (s.fontFamily && FONT_RESTORE[s.fontFamily]) {
-        root.style.setProperty('--font', FONT_RESTORE[s.fontFamily]);
+    if (s.fontFamily && SETTINGS_FONT_RESTORE[s.fontFamily]) {
+        root.style.setProperty('--font', SETTINGS_FONT_RESTORE[s.fontFamily]);
     }
     root.style.setProperty('--ui-animations', s.animations === false ? '0' : '1');
     root.style.setProperty('--ui-blur', s.blurBg ? '1' : '0');

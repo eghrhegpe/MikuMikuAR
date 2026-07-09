@@ -26,5 +26,3 @@
 ## 相关文档
 
 - [ADR-003](adr-003-download-strategy.md) — 下载策略决策
-- [ADR-008](adr-008-download-watch-spec.md) — 下载目录监听规范
-- [ADR-023](adr-023-android-file-access-strategy.md) — Android SAF 接入策略

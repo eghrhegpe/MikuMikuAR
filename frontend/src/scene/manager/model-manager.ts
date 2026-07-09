@@ -11,10 +11,11 @@
 import { Scene } from '@babylonjs/core/scene';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
-import { Observer } from '@babylonjs/core/Misc/observable';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import type { Observer } from '@babylonjs/core/Misc/observable';
+import { Nullable } from '@babylonjs/core/types';
 
 import {
     ModelInstance,
@@ -27,6 +28,7 @@ import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit
 import type { ClothInstance } from '@/physics/xpbd-cloth';
 import { disposeCloth } from '@/physics/xpbd-cloth';
 import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
+import type { RagdollInstance } from '@/physics/xpbd-ragdoll';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
@@ -176,10 +178,16 @@ export class ModelManager {
         string,
         { lineSystem: Mesh; overlay: Mesh; joints: Mesh[]; update: () => void }
     >();
-    private _boneUpdateObserver: Observer<Scene> | null = null;
+  private _boneUpdateObserver: Nullable<Observer<Scene>> = null;
 
-    /** Cleanup callback invoked by removeModel for external per-model state. */
-    onRemoveModel: ((id: string) => void) | null = null;
+  /** Cleanup callback invoked by removeModel for external per-model state. */
+  onRemoveModel: ((id: string) => void) | null = null;
+
+  // ======== XPBD Ragdoll Management ========
+
+  /** XPBD 刚体布娃娃实例（key = model ID） */
+  private ragdollInstances = new Map<string, RagdollInstance>();
+  private _ragdollUpdateObserver: Nullable<Observer<Scene>> = null;
 
     constructor(
         private scene: Scene,
@@ -191,7 +199,7 @@ export class ModelManager {
 
     /** XPBD 布料实例（key = model ID） */
     readonly clothInstances = new Map<string, ClothInstance>();
-    private _clothUpdateObserver: Observer<Scene> | null = null;
+    private _clothUpdateObserver: Nullable<Observer<Scene>> = null;
 
     /**
      * 获取当前聚焦模型的指定骨骼世界矩阵（列主序 Float32Array[16]）。
@@ -210,57 +218,110 @@ export class ModelManager {
     }
 
     /** 为指定模型添加布料实例并关联每帧回调。 */
-    addCloth(modelId: string, cloth: ClothInstance, updateFn: (dt: number) => void): void {
-        cloth.updateFn = updateFn;
-        this.clothInstances.set(modelId, cloth);
-        this.ensureClothUpdateObserver();
-    }
+  addCloth(modelId: string, cloth: ClothInstance, updateFn: (dt: number) => void): void {
+    cloth.updateFn = updateFn;
+    this.clothInstances.set(modelId, cloth);
+    this.ensureClothUpdateObserver();
+  }
 
-    /** 移除并销毁指定模型的布料实例。 */
-    removeCloth(modelId: string): void {
-        const cloth = this.clothInstances.get(modelId);
-        if (cloth) {
-            try {
-                disposeCloth(cloth);
-            } catch (e) {
-                console.warn('removeCloth: disposeCloth failed', e);
-            }
-            this.clothInstances.delete(modelId);
-        }
-        if (this.clothInstances.size === 0) {
-            this._disposeClothObserver();
-        }
-    }
+  /** 为指定模型添加刚体布娃娃实例并关联每帧回调。 */
+  addRagdoll(modelId: string, inst: RagdollInstance, updateFn: (dt: number) => void): void {
+    inst.updateFn = updateFn;
+    this.ragdollInstances.set(modelId, inst);
+    this.ensureRagdollUpdateObserver();
+  }
 
-    private ensureClothUpdateObserver(): void {
-        if (this._clothUpdateObserver) {
-            return;
-        }
-        this._clothUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
-            const dt = this.scene.deltaTime / 1000; // ms → s
-            for (const [id, cloth] of this.clothInstances) {
-                if (!cloth.enabled || !cloth.updateFn) {
-                    continue;
-                }
-                // 如果模型已被移除，跳过
-                if (!this.modelRegistry.has(id)) {
-                    continue;
-                }
-                try {
-                    cloth.updateFn(dt);
-                } catch (e) {
-                    console.warn('cloth updateFn error:', e);
-                }
-            }
-        });
+  /** 移除并销毁指定模型的布料实例。 */
+  removeCloth(modelId: string): void {
+    const cloth = this.clothInstances.get(modelId);
+    if (cloth) {
+      try {
+        disposeCloth(cloth);
+      } catch (e) {
+        console.warn('removeCloth: disposeCloth failed', e);
+      }
+      this.clothInstances.delete(modelId);
     }
+    if (this.clothInstances.size === 0) {
+      this._disposeClothObserver();
+    }
+  }
 
-    private _disposeClothObserver(): void {
-        if (this._clothUpdateObserver) {
-            this.scene.onBeforeRenderObservable.remove(this._clothUpdateObserver);
-            this._clothUpdateObserver = null;
-        }
+  /** 移除并销毁指定模型的刚体布娃娃实例。 */
+  removeRagdoll(modelId: string): void {
+    const inst = this.ragdollInstances.get(modelId);
+    if (inst) {
+      try {
+        inst.dispose();
+      } catch (e) {
+        console.warn('removeRagdoll: dispose failed', e);
+      }
+      this.ragdollInstances.delete(modelId);
     }
+    if (this.ragdollInstances.size === 0) {
+      this._disposeRagdollObserver();
+    }
+  }
+
+  private ensureClothUpdateObserver(): void {
+    if (this._clothUpdateObserver) {
+      return;
+    }
+    this._clothUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
+      const rawDt = this.scene.deltaTime / 1000; // ms → s
+      if (!isFinite(rawDt) || rawDt <= 0 || rawDt > 0.5) return;
+      for (const [id, cloth] of this.clothInstances) {
+        if (!cloth.enabled || !cloth.updateFn) {
+          continue;
+        }
+        if (!this.modelRegistry.has(id)) {
+          continue;
+        }
+        try {
+          cloth.updateFn(rawDt);
+        } catch (e) {
+          console.warn('cloth updateFn error:', e);
+        }
+      }
+    });
+  }
+
+  private ensureRagdollUpdateObserver(): void {
+    if (this._ragdollUpdateObserver) {
+      return;
+    }
+    this._ragdollUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
+      const rawDt = this.scene.deltaTime / 1000; // ms → s
+      if (!isFinite(rawDt) || rawDt <= 0 || rawDt > 0.5) return; // clamp behind-tab / sleep recovery
+      for (const [id, inst] of this.ragdollInstances) {
+        if (!inst.enabled || !inst.updateFn) {
+          continue;
+        }
+        if (!this.modelRegistry.has(id)) {
+          continue;
+        }
+        try {
+          inst.updateFn(rawDt);
+        } catch (e) {
+          console.warn('ragdoll updateFn error:', e);
+        }
+      }
+    }) as Nullable<Observer<Scene>>;
+  }
+
+  private _disposeClothObserver(): void {
+    if (this._clothUpdateObserver) {
+      this.scene.onBeforeRenderObservable.remove(this._clothUpdateObserver);
+      this._clothUpdateObserver = null;
+    }
+  }
+
+  private _disposeRagdollObserver(): void {
+    if (this._ragdollUpdateObserver) {
+      this.scene.onBeforeRenderObservable.remove(this._ragdollUpdateObserver);
+      this._ragdollUpdateObserver = null;
+    }
+  }
 
     // ======== Registry ========
 
@@ -322,12 +383,15 @@ export class ModelManager {
             return;
         }
 
-        // Clean up cloth before disposing meshes
-        disposeOverlay(inst);
-        restoreMaterials(inst);
-        this.removeCloth(id);
+    // Clean up cloth before disposing meshes
+    disposeOverlay(inst);
+    restoreMaterials(inst);
+    this.removeCloth(id);
 
-        // ⚠️ onRemoveModel（mmdRuntime.destroyMmdModel）必须在网格释放之前调用！
+    // Clean up ragdoll before disposing meshes
+    this.removeRagdoll(id);
+
+    // ⚠️ onRemoveModel（mmdRuntime.destroyMmdModel）必须在网格释放之前调用！
         // destroyMmdModel 需要 skeleton 尚存才能从运行时中解除 observable 链接，
         // 否则下一帧渲染循环中 mmdWasmModel.skeleton 为 null 会抛 TypeError。
         // onRemoveModel 也必须在 modelRegistry.delete 之前调用，
@@ -963,13 +1027,17 @@ export class ModelManager {
             this._boneUpdateObserver = null;
         }
         this._disposeClothObserver();
-        // Dispose all remaining overlays and cloth instances
+        this._disposeRagdollObserver();
+        // Dispose all remaining overlays and cloth/ragdoll instances
         for (const [, inst] of this.modelRegistry) {
             disposeOverlay(inst);
             restoreMaterials(inst);
         }
         for (const id of Array.from(this.clothInstances.keys())) {
             this.removeCloth(id);
+        }
+        for (const id of Array.from(this.ragdollInstances.keys())) {
+            this.removeRagdoll(id);
         }
     }
 

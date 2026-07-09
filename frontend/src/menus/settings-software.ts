@@ -27,7 +27,7 @@ export async function setBlenderPath(): Promise<void> {
     const r = await tryCatchStatus(async () => {
         await SetBlenderPath(path);
         return true;
-    }, '✗ 设置失败');
+    }, t('settings.software.setFailed'));
     if (r) {
         setStatus(t('settings.software.blenderSet'), true);
     }
@@ -41,7 +41,7 @@ export async function setMMDPath(): Promise<void> {
     const r = await tryCatchStatus(async () => {
         await SetMMDPath(path);
         return true;
-    }, '✗ 设置失败');
+    }, t('settings.software.setFailed'));
     if (r) {
         setStatus(t('settings.software.mmdSet'), true);
     }
@@ -57,14 +57,14 @@ export async function addCustomSoftware(): Promise<boolean> {
             .split(/[/\\]/)
             .pop()
             ?.replace(/\.exe$/i, '') || '未知';
-    const args = await showPrompt('输入启动参数模板（支持 {model} 占位符，留空则不带参数）：', '');
+    const args = await showPrompt(t('settings.software.argsHint'), '');
     if (args === null) {
         return false;
     }
     const r = await tryCatchStatus(async () => {
         await AddCustomSoftware(path, name, args);
         return true;
-    }, '✗ 添加失败');
+    }, t('settings.software.addFailed'));
       if (r) {
         await scanSoftwareDir();
         setStatus(t('settings.softwareAdded', {name}), true);
@@ -86,7 +86,7 @@ export async function scanSoftwareDir(): Promise<void> {
 
 export function buildSettingsSoftwareLevel(): PopupLevel {
     return {
-        label: '软件管理',
+        label: t('settings.software.title'),
         dir: '',
         items: [],
         renderCustom: async (container) => {
@@ -103,7 +103,7 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
                             false,
                             () => getSettingsMenu()?.push(buildSoftwareDetailLevel(entry.path)),
                             escapeHtml(entry.kind),
-                            entry.managed ? '自定义' : 'auto',
+                            entry.managed ? t('settings.software.custom') : 'auto',
                             undefined,
                             undefined,
                             {
@@ -124,13 +124,13 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
             }
 
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plus', '添加自定义软件', false, async () => {
+                slideRow(c, 'lucide:plus', t('settings.software.addCustom'), false, async () => {
                     if (await addCustomSoftware()) {
                         getSettingsMenu()?.reRender();
                     }
                 });
-                slideRow(c, 'lucide:folder', '设置 MMD 路径', false, () => setMMDPath());
-                slideRow(c, 'lucide:hexagon', '设置 Blender 路径', false, () => setBlenderPath());
+                slideRow(c, 'lucide:folder', t('settings.software.setMmdPath'), false, () => setMMDPath());
+                slideRow(c, 'lucide:hexagon', t('settings.software.setBlenderPath'), false, () => setBlenderPath());
             });
 
         },
@@ -142,9 +142,9 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
     const entry = entries.find((e) => e.path === path);
     if (!entry) {
         return {
-            label: '未知软件',
+            label: t('settings.software.unknown'),
             dir: '',
-            items: [{ kind: 'action', label: '软件未找到', icon: 'alert-circle', target: '' }],
+            items: [{ kind: 'action', label: t('settings.software.notFound'), icon: 'alert-circle', target: '' }],
         };
     }
 
@@ -156,9 +156,9 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
             renderCustom: async (container) => {
                 cardContainer(container, (c) => {
                     const fields: Array<{ label: string; value: string }> = [
-                        { label: '名称', value: entry.name },
-                        { label: '路径', value: entry.path },
-                        { label: '类型', value: entry.kind },
+                        { label: t('settings.software.name'), value: entry.name },
+                        { label: t('settings.software.path'), value: entry.path },
+                        { label: t('settings.software.kind'), value: entry.kind },
                     ];
                     for (const f of fields) {
                         addFieldRow(c, f.label, escapeHtml(f.value));
@@ -168,7 +168,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     const argLbl = document.createElement('div');
                     argLbl.style.cssText =
                         'font-size:10px;color:var(--text-dim);margin-bottom:2px;';
-                    argLbl.textContent = '启动参数 (支持 {model} 占位符)';
+                    argLbl.textContent = t('settings.software.argsHint');
                     argRow.appendChild(argLbl);
                     const val = document.createElement('div');
                     val.style.cssText =
@@ -182,7 +182,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                         const r = await tryCatchStatus(async () => {
                             await UpdateCustomSoftware(entry.path, entry.name, input.value);
                             return true;
-                        }, '✗ 更新失败');
+                        }, t('settings.software.updateFailed'));
                         if (r) {
                             entry.args = input.value;
                             setStatus(t('settings.software.paramsUpdated'), true);
@@ -194,7 +194,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                 });
 
   cardContainer(container, (c) => {
-    slideRow(c, 'lucide:play', '启动', false, () => {
+    slideRow(c, 'lucide:play', t('settings.software.launch'), false, () => {
       LaunchSoftware(entry.path, '')
         .then(() => setStatus(t('settings.softwareStarted', { name: entry.name }), true))
         .catch((err: unknown) =>
@@ -205,7 +205,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
         );
                     });
 
-                    addDangerRow(c, 'lucide:trash-2', '删除', async () => {
+                    addDangerRow(c, 'lucide:trash-2', t('settings.software.delete'), async () => {
                         const r = await tryCatchStatus(async () => {
                             await RemoveCustomSoftware(entry.path);
                             return true;
@@ -232,9 +232,9 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
         renderCustom: async (container) => {
             cardContainer(container, (c) => {
                 const fields: Array<{ label: string; value: string }> = [
-                    { label: '名称', value: entry.name },
-                    { label: '路径', value: entry.path },
-                    { label: '类型', value: entry.kind },
+                    { label: t('settings.software.name'), value: entry.name },
+                    { label: t('settings.software.path'), value: entry.path },
+                    { label: t('settings.software.kind'), value: entry.kind },
                 ];
                 for (const f of fields) {
                     addFieldRow(c, f.label, escapeHtml(f.value));
@@ -242,7 +242,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
             });
 
   cardContainer(container, (c) => {
-    slideRow(c, 'lucide:play', '启动', false, () => {
+    slideRow(c, 'lucide:play', t('settings.software.launch'), false, () => {
       LaunchSoftware(entry.path, entry.args)
         .then(() => setStatus(t('settings.softwareStarted', { name: entry.name }), true))
         .catch((err: unknown) =>
@@ -253,9 +253,9 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
         );
                 });
 
-                slideRow(c, 'lucide:plus', '转为自定义（以便编辑参数）', false, async () => {
+                slideRow(c, 'lucide:plus', t('settings.software.convertToCustom'), false, async () => {
                     const args = await showPrompt(
-                        '输入启动参数模板（支持 {model} 占位符，留空则不带参数）：',
+                        t('settings.software.argsHint'),
                         ''
                     );
                     if (args === null) {
@@ -264,7 +264,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     const r = await tryCatchStatus(async () => {
                         await AddCustomSoftware(entry.path, entry.name, args);
                         return true;
-                    }, '✗ 转为自定义');
+                    }, t('settings.software.convertFailed'));
       if (r) {
         cachedSoftwareEntries = await ScanSoftwareDir();
         setStatus(t('settings.softwareToCustom', { name: entry.name }), true);

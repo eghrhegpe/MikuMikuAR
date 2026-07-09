@@ -18,6 +18,7 @@ import { showConfirm } from '../core/dialog';
 import { selectResourceRoot, selectOverridePath, switchStorageMode, refreshLibrary } from './library-core';
 import { t } from '../core/i18n/t';
 import { setLang, type LangCode } from '../core/i18n/locale';
+import { CATEGORY_DIR } from '../core/utils';
 import type { PopupLevel } from '../core/config';
 import { SETTINGS, SETTINGS_ACTION } from './settings-targets';
 import { isAndroidPlatform } from '../core/platform';
@@ -43,7 +44,7 @@ export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     },
     [SETTINGS_ACTION.CLEAR_THUMBNAIL]: () => {
         (async () => {
-            if (await showConfirm('确定要清除所有缩略图缓存吗？下次加载模型时将重新生成。')) {
+            if (await showConfirm(t('settings.paths.clearThumbConfirm'))) {
                 ClearThumbnailCache()
                     .then(() => {
                         setStatus(t('settings.thumbnailCacheCleared'), true);
@@ -57,7 +58,7 @@ export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
         (async () => {
             if (
                 await showConfirm(
-                    '确定要清除全部缓存吗？包括提取缓存、缩略图、HTTP 隔离目录。下次加载模型时将重新生成。'
+                    t('settings.paths.clearAllConfirm')
                 )
             ) {
                 ClearAllCaches()
@@ -95,39 +96,29 @@ export function handleSettingsAction(row: PopupRow, menu?: SlideMenu): void {
 
 export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     const root = resourceRoot;
-    const rootSub = root ? (root.length > 20 ? '...' + root.slice(-17) : root) : '未设置';
+    const rootSub = root ? (root.length > 20 ? '...' + root.slice(-17) : root) : t('settings.paths.notSet');
     const paths = overridePaths || {};
     const isAndroid = isAndroidPlatform();
-    // key → 默认子目录名（与 Go 端 GetPath 的目录名一致，大小写不统一）
-    const defaultDirName: Record<string, string> = {
-        pmx: 'PMX',
-        vmd: 'VMD',
-        audio: 'audio',
-        stage: 'stage',
-        prop: 'prop',
-        environment: 'environment',
-        md_dress: 'MD-dress',
-        setting: 'setting',
-    };
+    // key → 默认子目录名（与 Go 端 GetPath 的目录名一致，大小写不统一；复用 core/utils 的 CATEGORY_DIR）
     const pathSub = (key: string, defSub: string) => {
         const val = paths[key as keyof typeof paths];
         let actual: string;
         if (val) {
             actual = val as string;
         } else if (root) {
-            actual = `${root}/${defaultDirName[key] || key}`;
+            actual = `${root}/${CATEGORY_DIR[key] || key}`;
         } else {
             return defSub;
         }
         return actual.length > 20 ? '...' + actual.slice(-17) : actual;
     };
                 return {
-                label: '路径',
+                label: t('settings.paths.title'),
                 dir: '',
                 items: [],
                 renderCustom: async (container) => {
                     try {
-                    addSectionTitle(container, '存储设置');
+                    addSectionTitle(container, t('settings.paths.storage'));
                     // Card 1: 资源根目录 / 存储位置（Android）
             if (isAndroid) {
                 let currentMode = 'private';
@@ -154,8 +145,8 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                                     refreshLibrary()
                                         .then(() => {
                                             const msg = allModels.length > 0
-                                                ? `已加载 ${allModels.length} 个模型`
-                                                : '未找到模型，请在 /sdcard/MMD 下放置 PMX/VMD 文件';
+                                                ? t('settings.paths.modelsLoaded', {count: allModels.length})
+                                                : t('settings.paths.noModels');
                                             console.log('[paths] refreshLibrary done, models:', allModels.length);
                                             setStatus(msg, allModels.length === 0);
                                         })
@@ -178,8 +169,8 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                     const diag = document.createElement('div');
                     diag.style.cssText = 'margin:6px 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.12);border-radius:6px;font-size:11px;color:var(--text-secondary);line-height:1.7;word-break:break-all';
                     diag.innerHTML = `
-                        <div><b>存储模式：</b>${currentMode === 'shared' ? '共享' : '私有'}</div>
-                        <div><b>资源目录：</b>${resourceRoot || '<span style="color:var(--danger)">未设置</span>'}</div>
+                        <div><b>存储模式：</b>${currentMode === 'shared' ? t('settings.paths.storageModeShared') : t('settings.paths.storageModePrivate')}</div>
+                        <div><b>资源目录：</b>${resourceRoot || '<span style="color:var(--danger)">' + t('settings.paths.notSet') + '</span>'}</div>
                         <div><b>模型数量：</b>${allModels.length}</div>
                     `;
                     c.appendChild(diag);
@@ -189,7 +180,7 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                     slideRow(
                         c,
                         'lucide:folder',
-                        '资源根目录',
+                        t('settings.paths.resourceRoot'),
                         false,
                         () =>
                             handleSettingsAction({
@@ -203,20 +194,20 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                 });
             }
                 // Card 2: 资源路径覆盖
-                addSectionTitle(container, '路径覆盖');
+                addSectionTitle(container, t('settings.paths.override'));
                 cardContainer(container, (c) => {
-                    slideRow(c, 'lucide:box', 'PMX 模型', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PMX }), pathSub('pmx', '默认'));
-                    slideRow(c, 'lucide:music', 'VMD 动作', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_VMD }), pathSub('vmd', '默认'));
-                    slideRow(c, 'lucide:headphones', 'Audio 音乐', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_AUDIO }), pathSub('audio', '默认'));
-                    slideRow(c, 'lucide:gem', 'Prop 道具', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PROP }), pathSub('prop', '默认'));
-                    slideRow(c, 'lucide:home', 'Stage 场景', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_STAGE }), pathSub('stage', '默认'));
-                    slideRow(c, 'lucide:cloud', 'Environment', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_ENVIRONMENT }), pathSub('environment', '默认'));
+                    slideRow(c, 'lucide:box', t('settings.paths.pmx'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PMX }), pathSub('pmx', t('settings.paths.default')));
+                    slideRow(c, 'lucide:music', t('settings.paths.vmd'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_VMD }), pathSub('vmd', t('settings.paths.default')));
+                    slideRow(c, 'lucide:headphones', t('settings.paths.audio'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_AUDIO }), pathSub('audio', t('settings.paths.default')));
+                    slideRow(c, 'lucide:gem', t('settings.paths.prop'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PROP }), pathSub('prop', t('settings.paths.default')));
+                    slideRow(c, 'lucide:home', t('settings.paths.stage'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_STAGE }), pathSub('stage', t('settings.paths.default')));
+                    slideRow(c, 'lucide:cloud', t('settings.paths.environment'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_ENVIRONMENT }), pathSub('environment', t('settings.paths.default')));
                 });
                 
                 // Card 3: 外部库
-                addSectionTitle(container, '外部库管理');
+                addSectionTitle(container, t('settings.paths.externalLib'));
                 cardContainer(container, (c) => {
-                    slideRow(c, 'lucide:plug', '外部库管理', true, () =>
+                    slideRow(c, 'lucide:plug', t('settings.paths.externalLib'), true, () =>
                         handleSettingsAction({
                             kind: 'folder',
                             label: '',
@@ -228,11 +219,11 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
 
                 // Card 4: 下载监听（桌面端；Android fsnotify 不支持）
                 if (!isAndroid) {
-                    addSectionTitle(container, '下载监听');
+                    addSectionTitle(container, t('settings.paths.downloadWatch'));
                     cardContainer(container, (c) => {
                         addToggleRow(
                             c,
-                            '监听下载目录',
+                            t('settings.paths.watchDownloadDir'),
                             getDownloadWatchEnabledCached(),
                             (v) => {
                                 setDownloadWatchEnabledCached(v);
@@ -247,7 +238,7 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                             c,
                             async (setStatusText) => {
                                 const status = await GetDownloadWatchStatus();
-                                setStatusText(status ? `监听中: ${status}` : '监听已停止');
+                                setStatusText(status ? t('settings.paths.watching', {dir: status}) : t('settings.paths.watchStopped'));
                             },
                             async () => {
                                 const dir = await SelectDir();
@@ -266,7 +257,7 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                         );
                         addToggleRow(
                             c,
-                            '自动导入（跳过确认）',
+                            t('settings.paths.autoImport'),
                             getAutoImportCached(),
                             (v) => {
                                 setAutoImportCached(v);
@@ -282,7 +273,7 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                 } catch (err) {
                     console.error('[paths] renderCustom error:', err);
                     container.innerHTML = `<div style="padding:16px;color:var(--danger);font-size:12px;text-align:center;">
-                        路径页面加载失败: ${err instanceof Error ? err.message : '未知错误'}
+                        ${t('settings.paths.loadFailed', {err: err instanceof Error ? err.message : '未知错误'})}
                     </div>`;
                 }
         },

@@ -18,16 +18,16 @@ const PERFORMANCE_MODES: Array<{
     label: string;
     desc: string;
 }> = [
-    { key: 'auto', label: '自动', desc: '监控帧率，自动降低质量' },
-    { key: 'quality', label: '质量优先', desc: '最高质量，不自动降级' },
-    { key: 'balanced', label: '平衡', desc: '中等质量，适合大多数设备' },
-    { key: 'performance', label: '性能优先', desc: '最低质量，确保流畅' },
-    { key: 'custom', label: '自定义', desc: '逐项独立控制渲染/光照开关' },
+    { key: 'auto', label: t('settings.perf.auto'), desc: t('settings.perf.autoDesc') },
+    { key: 'quality', label: t('settings.perf.quality'), desc: t('settings.perf.qualityDesc') },
+    { key: 'balanced', label: t('settings.perf.balanced'), desc: t('settings.perf.balancedDesc') },
+    { key: 'performance', label: t('settings.perf.performance'), desc: t('settings.perf.performanceDesc') },
+    { key: 'custom', label: t('settings.perf.custom'), desc: t('settings.perf.customDesc') },
 ];
 
 export function buildSettingsPerformanceLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
-        label: '性能',
+        label: t('settings.performance.title'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -81,7 +81,7 @@ setStatus(t('settings.perfModeSet', { label: m.label }), true);
             cardContainer(container, (c) => {
                 const currentFps = uiState.fpsLimit ?? 0;
                 addSliderRow(
-                    c, '帧率上限', currentFps, 0, 144, 1,
+                    c, t('settings.perf.fpsCap'), currentFps, 0, 144, 1,
                     (v) => {
                         const limit = Math.round(v);
                         setUIState({ fpsLimit: limit === 0 ? 0 : limit });
@@ -94,13 +94,13 @@ setStatus(t('settings.perfModeSet', { label: m.label }), true);
                 );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                hint.textContent = '设为 0 表示不限制。移动端建议 30 以省电。';
+                hint.textContent = t('settings.perf.fpsHint');
                 c.appendChild(hint);
             });
 
             // 垂直同步
             cardContainer(container, (c) => {
-        addToggleRow(c, '垂直同步', uiState.vsync !== false,
+        addToggleRow(c, t('settings.perf.vsync'), uiState.vsync !== false,
           (v) => {
             setUIState({ vsync: v });
             applyFrameControl();
@@ -112,18 +112,18 @@ setStatus(t('settings.perfModeSet', { label: m.label }), true);
         const hintVsync = document.createElement('div');
         hintVsync.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
         hintVsync.textContent = uiState.vsync !== false
-          ? '开启该项后，框架采用 requestAnimationFrame 循环；关闭后帧率不受刷新率限制，但无法设置帧率上限。'
-          : '关闭后无法使用"帧率上限"，Engine 总是不限帧（相当于 maxFPS=0）。';
+          ? t('settings.perf.vsyncHintOn')
+          : t('settings.perf.vsyncHintOff');
         c.appendChild(hintVsync);
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                hint.textContent = '浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，天然与刷新同步；关闭后解除人为限帧（实际仍受刷新率约束）。';
+                hint.textContent = t('settings.perf.vsyncHintBrowser');
                 c.appendChild(hint);
             });
 
             // 默认物理开关
             cardContainer(container, (c) => {
-                addToggleRow(c, '默认启用物理模拟', uiState.defaultPhysicsEnabled !== false,
+                addToggleRow(c, t('settings.perf.defaultPhysics'), uiState.defaultPhysicsEnabled !== false,
                     (v) => {
                         setUIState({ defaultPhysicsEnabled: v });
       getSettingsMenu()?.updateControls();
@@ -133,13 +133,13 @@ setStatus(t('settings.perfModeSet', { label: m.label }), true);
                 );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                hint.textContent = '关闭可提升低配设备性能；仅影响后续加载的模型，已加载模型不受影响。';
+                hint.textContent = t('settings.perf.defaultPhysicsHint');
                 c.appendChild(hint);
             });
 
             // 渲染分辨率缩放
             cardContainer(container, (c) => {
-                addSliderRow(c, '渲染分辨率缩放', uiState.renderScale ?? 1, 0.5, 2, 0.05,
+                addSliderRow(c, t('settings.perf.renderScale'), uiState.renderScale ?? 1, 0.5, 2, 0.05,
                     (v) => {
                         const s = Math.round(v * 100) / 100;
                         engine.setHardwareScalingLevel(1 / s);
@@ -152,13 +152,13 @@ setStatus(t('settings.perfModeSet', { label: m.label }), true);
                 );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                hint.textContent = '低于 100% 提升性能，高于 100% 超采样更清晰（更耗 GPU）。';
+                hint.textContent = t('settings.perf.renderScaleHint');
                 c.appendChild(hint);
             });
 
             // 鼠标/触控灵敏度
             cardContainer(container, (c) => {
-                addSliderRow(c, '鼠标/触控灵敏度', uiState.cameraSensitivity ?? 1, 0.2, 3, 0.1,
+                addSliderRow(c, t('settings.perf.camSens'), uiState.cameraSensitivity ?? 1, 0.2, 3, 0.1,
                     (v) => {
                         const s = Math.round(v * 10) / 10;
                         setUIState({ cameraSensitivity: s });
@@ -171,13 +171,13 @@ setStatus(t('settings.perfModeSet', { label: m.label }), true);
                 );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                hint.textContent = '影响旋转/缩放/平移速度，实时作用于当前相机。';
+                hint.textContent = t('settings.perf.camSensHint');
                 c.appendChild(hint);
             });
 
             // 反转 Y 轴
             cardContainer(container, (c) => {
-                addToggleRow(c, '反转 Y 轴（垂直拖拽）', uiState.invertYAxis === true,
+                addToggleRow(c, t('settings.perf.invertY'), uiState.invertYAxis === true,
                     (v) => {
                         setUIState({ invertYAxis: v });
                         refreshCameraUserSettings();
@@ -188,31 +188,31 @@ setStatus(t('settings.perfModeSet', { label: m.label }), true);
                 );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                hint.textContent = '反转上下拖拽方向，立即作用于当前相机（ArcRotate 模式）。';
+                hint.textContent = t('settings.perf.invertYHint');
                 c.appendChild(hint);
             });
 
 // 自定义模式：逐项渲染/光照独立开关
 if (getPerformanceMode() === 'custom') {
     cardContainer(container, (c) => {
-        addSectionTitle(c, '自定义渲染项');
+        addSectionTitle(c, t('settings.perf.customRender'));
         // 在切入 custom 时若存在自动降级快照，恢复快照=用户原始状态
         resetPerformanceSnapshot();
         const rs = getRenderState();
         const ls = getLightState();
         const renderToggles: Array<{ label: string; value: boolean; apply: (v: boolean) => void }> = [
-                        { label: '阴影', value: ls.shadowEnabled, apply: (v) => setLightState({ shadowEnabled: v }) },
-                        { label: '泛光 (Bloom)', value: rs.bloomEnabled, apply: (v) => setRenderState({ bloomEnabled: v }) },
-                        { label: 'FXAA 抗锯齿', value: rs.fxaaEnabled, apply: (v) => setRenderState({ fxaaEnabled: v }) },
-                        { label: '景深 (DOF)', value: rs.dofEnabled, apply: (v) => setRenderState({ dofEnabled: v }) },
-                        { label: '暗角', value: rs.vignetteEnabled, apply: (v) => setRenderState({ vignetteEnabled: v }) },
-                        { label: '边缘高亮', value: rs.outlineEnabled, apply: (v) => setRenderState({ outlineEnabled: v }) },
-                        { label: '辉光 (Glow)', value: rs.glowEnabled, apply: (v) => setRenderState({ glowEnabled: v }) },
-                        { label: '色差', value: rs.chromaticAberrationEnabled, apply: (v) => setRenderState({ chromaticAberrationEnabled: v }) },
-                        { label: '颗粒', value: rs.grainEnabled, apply: (v) => setRenderState({ grainEnabled: v }) },
-                        { label: '屏幕空间反射 (SSR)', value: rs.ssrEnabled, apply: (v) => setRenderState({ ssrEnabled: v }) },
-                        { label: '环境反射探针', value: rs.reflectionProbeEnabled, apply: (v) => setRenderState({ reflectionProbeEnabled: v }) },
-                        { label: '环境光遮蔽 (SSAO)', value: rs.ssaoEnabled, apply: (v) => setRenderState({ ssaoEnabled: v }) },
+                        { label: t('settings.perf.shadow'), value: ls.shadowEnabled, apply: (v) => setLightState({ shadowEnabled: v }) },
+                        { label: t('settings.perf.bloom'), value: rs.bloomEnabled, apply: (v) => setRenderState({ bloomEnabled: v }) },
+                        { label: t('settings.perf.fxaa'), value: rs.fxaaEnabled, apply: (v) => setRenderState({ fxaaEnabled: v }) },
+                        { label: t('settings.perf.dof'), value: rs.dofEnabled, apply: (v) => setRenderState({ dofEnabled: v }) },
+                        { label: t('settings.perf.vignette'), value: rs.vignetteEnabled, apply: (v) => setRenderState({ vignetteEnabled: v }) },
+                        { label: t('settings.perf.outline'), value: rs.outlineEnabled, apply: (v) => setRenderState({ outlineEnabled: v }) },
+                        { label: t('settings.perf.glow'), value: rs.glowEnabled, apply: (v) => setRenderState({ glowEnabled: v }) },
+                        { label: t('settings.perf.chromaticAberration'), value: rs.chromaticAberrationEnabled, apply: (v) => setRenderState({ chromaticAberrationEnabled: v }) },
+                        { label: t('settings.perf.grain'), value: rs.grainEnabled, apply: (v) => setRenderState({ grainEnabled: v }) },
+                        { label: t('settings.perf.ssr'), value: rs.ssrEnabled, apply: (v) => setRenderState({ ssrEnabled: v }) },
+                        { label: t('settings.perf.reflectionProbe'), value: rs.reflectionProbeEnabled, apply: (v) => setRenderState({ reflectionProbeEnabled: v }) },
+                        { label: t('settings.perf.ssao'), value: rs.ssaoEnabled, apply: (v) => setRenderState({ ssaoEnabled: v }) },
                     ];
   for (const toggle of renderToggles) {
                         addToggleRow(c, toggle.label, toggle.value,
@@ -222,7 +222,7 @@ if (getPerformanceMode() === 'custom') {
                     }
                     const hint = document.createElement('div');
                     hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                    hint.textContent = '自定义模式下这些开关为权威配置，性能监控不会覆盖；MSAA 档位与强度参数请在场景→渲染菜单调整。';
+                    hint.textContent = t('settings.perf.customHint');
                     c.appendChild(hint);
                 });
             }

@@ -109,7 +109,7 @@ export function buildStageLightLevel(): PopupLevel {
                     btn.textContent = light.name;
                     if (light.id === activeId) {
                         btn.style.background = 'var(--accent)';
-                        btn.style.color = '#fff';
+                        btn.style.color = 'var(--white-85)';
                     }
                     btn.style.opacity = light.enabled ? '1' : '0.5';
                     btn.addEventListener('click', () => {

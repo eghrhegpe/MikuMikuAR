@@ -1,7 +1,7 @@
 # ADR-059: i18n 多语言切换框架
 
 > **状态**: 实施中（Phase 1 已完成 2026-07-07；Phase 2 已完成 2026-07-07；Phase 3-4 待做）
-> **关联**: [ADR-010](adr-010-competitor-ui-mapping.md)（竞品 UI 映射，含 DanceXR 语言项）、[ADR-043](adr-043-dancexr-gap-analysis.md)（DanceXR 差距分析）、[ADR-044](adr-044-competitive-analysis.md)（竞品分析）
+> **关联**: [ADR-043](adr-043-dancexr-gap-analysis.md)（DanceXR 差距分析）、[ADR-044](adr-044-competitive-analysis.md)（竞品分析）
 > **背景**: 当前全仓 UI 字符串为硬编码中文，约 100 个 `.ts` 文件含中文字面量，分布于 `menus/`、`core/ui-*`、`scene/`、`physics/`。无 i18n 框架、无语言偏好入口。竞品 DanceXR 已支持 5 种语言（简/繁中、英、日、韩）。本 ADR 锁定一套与现有 `core/reactivity` 体系对齐的轻量 i18n 方案。
 
 ---
@@ -272,7 +272,6 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 
 ## 八、相关 ADR
 
-- [ADR-010](adr-010-competitor-ui-mapping.md) — 竞品 UI 映射（含 DanceXR 语言项）
 - [ADR-043](adr-043-dancexr-gap-analysis.md) — DanceXR 差距分析
 - [ADR-044](adr-044-competitive-analysis.md) — 竞品分析
 - [ADR-041](adr-041-ci-auto-checks.md) — CI 自动检查（防回归规则可挂此）
