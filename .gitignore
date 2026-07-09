@@ -20,6 +20,7 @@ node_modules/
 
 # Other projects in workspace
 MMDDownloader/
+mmd_tools_repo/
 reasonix.toml
 
 # Environment variables
