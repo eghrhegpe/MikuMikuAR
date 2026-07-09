@@ -507,7 +507,7 @@ export function buildParticleLevel(): PopupLevel {
                     (v) => {
                         setEnvState({ particleSplash: v });
                     },
-                    'lucide:splash',
+                    'lucide:droplets',
                     {
                         bind: () => envState.particleSplash,
                     }

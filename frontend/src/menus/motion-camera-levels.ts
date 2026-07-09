@@ -25,6 +25,10 @@ import {
     setConcertParams,
     getConcertPaused,
     setConcertPaused,
+    getSurroundParams,
+    setSurroundParams,
+    getSurroundPaused,
+    setSurroundPaused,
     getFov,
     setFov,
     setAutoCameraEnabled,
@@ -71,6 +75,7 @@ export function buildCameraLevel(): PopupLevel {
                     { value: 'orbit', label: t('motion.camOrbit') },
                     { value: 'freefly', label: t('motion.camFreefly') },
                     { value: 'concert', label: t('motion.camConcert') },
+                    { value: 'surround', label: t('motion.camSurround') },
                     { value: 'oneshot', label: t('motion.camOneshot') },
                     { value: 'ar', label: t('motion.camAR') },
                 ];
@@ -161,6 +166,8 @@ export function buildCameraLevel(): PopupLevel {
                         renderFreeflyParams(paramsContainer);
                     } else if (modeToExpand === 'concert') {
                         renderConcertParams(paramsContainer);
+                    } else if (modeToExpand === 'surround') {
+                        renderSurroundParams(paramsContainer);
                     } else if (modeToExpand === 'ar') {
                         renderARParams(paramsContainer);
                     }
@@ -200,9 +207,11 @@ export function buildCameraParamsLevel(mode: CameraMode): PopupLevel {
                 ? t('motion.camOrbitSettings')
                 : mode === 'freefly'
                   ? t('motion.camFreeflySettings')
-                  : mode === 'concert'
-                    ? t('motion.camConcertSettings')
-                    : t('motion.cameraSettings'),
+                  :             mode === 'concert'
+                ? t('motion.camConcertSettings')
+                : mode === 'surround'
+                  ? t('motion.camSurroundSettings')
+                  : t('motion.cameraSettings'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -213,6 +222,8 @@ export function buildCameraParamsLevel(mode: CameraMode): PopupLevel {
                     renderFreeflyParams(c);
                 } else if (mode === 'concert') {
                     renderConcertParams(c);
+                } else if (mode === 'surround') {
+                    renderSurroundParams(c);
                 }
             });
         },
@@ -356,6 +367,58 @@ function renderFreeflyParams(container: HTMLElement): void {
     );
 }
 
+function renderSurroundParams(container: HTMLElement): void {
+    const p = getSurroundParams();
+    addSliderRow(
+        container,
+        t('motion.orbitRadius'),
+        p.radius,
+        2,
+        50,
+        0.5,
+        (v) => {
+            setSurroundParams({ radius: v });
+            triggerAutoSave();
+        },
+        'lucide:circle'
+    );
+    addSliderRow(
+        container,
+        t('motion.targetHeight'),
+        p.height,
+        0,
+        30,
+        0.5,
+        (v) => {
+            setSurroundParams({ height: v });
+            triggerAutoSave();
+        },
+        'lucide:maximize'
+    );
+    addSliderRow(
+        container,
+        t('motion.rotateSpeed'),
+        p.speed,
+        0,
+        5,
+        0.1,
+        (v) => {
+            setSurroundParams({ speed: v });
+            triggerAutoSave();
+        },
+        'lucide:rotate-cw'
+    );
+    addToggleRow(
+        container,
+        getSurroundPaused() ? t('motion.paused') : t('motion.rotating'),
+        !getSurroundPaused(),
+        (enabled) => {
+            setSurroundPaused(!enabled);
+            triggerAutoSave();
+        }
+    );
+}
+
 function renderConcertParams(container: HTMLElement): void {
     const p = getConcertParams();
     addSliderRow(
@@ -386,16 +449,68 @@ function renderConcertParams(container: HTMLElement): void {
     );
     addSliderRow(
         container,
-        t('motion.rotateSpeed'),
-        p.speed,
+        t('motion.sweepAngle'),
+        p.sweepAngle,
         0,
+        360,
         5,
-        0.1,
         (v) => {
-            setConcertParams({ speed: v });
+            setConcertParams({ sweepAngle: v });
             triggerAutoSave();
         },
-        'lucide:rotate-cw'
+        'lucide:move-horizontal'
+    );
+    addSliderRow(
+        container,
+        t('motion.sweepSpeed'),
+        p.sweepSpeed,
+        0.1,
+        3,
+        0.1,
+        (v) => {
+            setConcertParams({ sweepSpeed: v });
+            triggerAutoSave();
+        },
+        'lucide:gauge'
+    );
+    addSliderRow(
+        container,
+        t('motion.basePitch'),
+        p.baseBeta,
+        0.1,
+        Math.PI - 0.1,
+        0.05,
+        (v) => {
+            setConcertParams({ baseBeta: v });
+            triggerAutoSave();
+        },
+        'lucide:arrow-up-down'
+    );
+    addSliderRow(
+        container,
+        t('motion.bobAmplitude'),
+        p.bobAmplitude,
+        0,
+        45,
+        1,
+        (v) => {
+            setConcertParams({ bobAmplitude: v });
+            triggerAutoSave();
+        },
+        'lucide:arrow-up'
+    );
+    addSliderRow(
+        container,
+        t('motion.bobSpeed'),
+        p.bobSpeed,
+        0.1,
+        3,
+        0.1,
+        (v) => {
+            setConcertParams({ bobSpeed: v });
+            triggerAutoSave();
+        },
+        'lucide:activity'
     );
     addToggleRow(
         container,

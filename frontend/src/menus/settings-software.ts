@@ -140,7 +140,7 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
                 });
                 slideRow(c, 'lucide:search', '自动检测 MMD', false, () => detectMMD());
                 slideRow(c, 'lucide:folder', '设置 MMD 路径', false, () => setMMDPath());
-                slideRow(c, 'lucide:cube-3d', '设置 Blender 路径', false, () => setBlenderPath());
+                slideRow(c, 'lucide:hexagon', '设置 Blender 路径', false, () => setBlenderPath());
             });
 
             cardContainer(container, (c) => {

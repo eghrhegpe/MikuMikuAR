@@ -426,7 +426,7 @@ export type DisplayNamePriority = 'name_jp' | 'name_en' | 'filename';
 
 export type PhysicsCategory = 'skirt' | 'chest' | 'hair' | 'accessory';
 
-export type CameraMode = 'orbit' | 'freefly' | 'oneshot' | 'concert';
+export type CameraMode = 'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar';
 
 export type LibrarySortMode = 'default' | 'name';
 

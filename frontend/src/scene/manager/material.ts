@@ -75,6 +75,63 @@ interface _OrigMat {
     emissiveTexLevel: number;
 }
 
+/** 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 */
+export const DEFAULT_MAT_PARAMS: MaterialCategoryParams = {
+    diffuseMul: 1,
+    specularMul: 1,
+    shininess: 50,
+    ambientMul: 1,
+    emissiveMul: 1,
+    diffuseTexLevel: 1,
+    bumpTexLevel: 1,
+    toonTexLevel: 1,
+    sphereTexLevel: 1,
+    emissiveTexLevel: 1,
+};
+
+/** 各参数的 clamp 规则：[min, max, round] */
+const CLAMP_RULES: Record<keyof MaterialCategoryParams, [number, number, boolean]> = {
+    diffuseMul: [0, 2, false],
+    specularMul: [0, 2, false],
+    shininess: [0, 200, true],
+    ambientMul: [0, 2, false],
+    emissiveMul: [0, 2, false],
+    diffuseTexLevel: [0, 3, false],
+    bumpTexLevel: [0, 3, false],
+    toonTexLevel: [0, 3, false],
+    sphereTexLevel: [0, 3, false],
+    emissiveTexLevel: [0, 3, false],
+};
+
+/** 将 Partial 参数 clamp 后写入 target — 消除 setMatCatParams / setMatParams 的重复 clamp 逻辑。 */
+function _clampAndAssign(target: MaterialCategoryParams, params: Partial<MaterialCategoryParams>): void {
+    for (const key of Object.keys(params) as (keyof MaterialCategoryParams)[]) {
+        const val = params[key];
+        if (val === undefined) continue;
+        const [min, max, round] = CLAMP_RULES[key];
+        target[key] = round ? Math.max(min, Math.min(max, Math.round(val))) : Math.max(min, Math.min(max, val));
+    }
+}
+
+/** 将一组参数写入 Babylon StandardMaterial — 消除 _applyAll 中分类级与逐材质级的重复写入。 */
+function _applyParamsToMaterial(
+    m: StandardMaterial,
+    mmdMat: MmdStandardMaterial,
+    o: _OrigMat,
+    p: MaterialCategoryParams
+): void {
+    m.diffuseColor.set(o.diffuse.r * p.diffuseMul, o.diffuse.g * p.diffuseMul, o.diffuse.b * p.diffuseMul);
+    m.specularColor.set(o.specular.r * p.specularMul, o.specular.g * p.specularMul, o.specular.b * p.specularMul);
+    m.specularPower = p.shininess;
+    m.ambientColor.set(o.ambient.r * p.ambientMul, o.ambient.g * p.ambientMul, o.ambient.b * p.ambientMul);
+    m.emissiveColor.set(o.emissive.r * p.emissiveMul, o.emissive.g * p.emissiveMul, o.emissive.b * p.emissiveMul);
+    if (m.diffuseTexture) m.diffuseTexture.level = o.diffuseTexLevel * p.diffuseTexLevel;
+    if (m.bumpTexture) m.bumpTexture.level = o.bumpTexLevel * p.bumpTexLevel;
+    if (mmdMat.toonTexture) mmdMat.toonTexture.level = o.toonTexLevel * p.toonTexLevel;
+    if (mmdMat.sphereTexture) mmdMat.sphereTexture.level = o.sphereTexLevel * p.sphereTexLevel;
+    if (m.emissiveTexture) m.emissiveTexture.level = o.emissiveTexLevel * p.emissiveTexLevel;
+}
+
 const _origValues = new WeakMap<Material, _OrigMat>();
 
 /** @internal exported for testing */
@@ -287,82 +344,21 @@ export function _capture(mat: Material): void {
 /** @internal exported for testing */
 export function _applyAll(id: string): void {
     const meshes = _getMeshesById(id);
-    if (!meshes) {
-        return;
-    }
+    if (!meshes) return;
     const state = _catState.get(id);
-    if (!state) {
-        return;
-    }
+    if (!state) return;
     const perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < meshes.length; mi++) {
-        const mesh = meshes[mi];
-        const m = mesh.material;
-        if (!m || !(m instanceof StandardMaterial)) {
-            continue;
-        }
+        const m = meshes[mi].material;
+        if (!m || !(m instanceof StandardMaterial)) continue;
         const mmdMat = m as MmdStandardMaterial;
         _capture(m);
         const o = _origValues.get(m)!;
         const p = state.get(_catOf(m.name));
-        if (!p) {
-            continue;
-        }
-        m.diffuseColor.set(
-            o.diffuse.r * p.diffuseMul,
-            o.diffuse.g * p.diffuseMul,
-            o.diffuse.b * p.diffuseMul
-        );
-        m.specularColor.set(
-            o.specular.r * p.specularMul,
-            o.specular.g * p.specularMul,
-            o.specular.b * p.specularMul
-        );
-        m.specularPower = p.shininess;
-        m.ambientColor.set(
-            o.ambient.r * p.ambientMul,
-            o.ambient.g * p.ambientMul,
-            o.ambient.b * p.ambientMul
-        );
-        m.emissiveColor.set(
-            o.emissive.r * p.emissiveMul,
-            o.emissive.g * p.emissiveMul,
-            o.emissive.b * p.emissiveMul
-        );
-        if (m.diffuseTexture) m.diffuseTexture.level = o.diffuseTexLevel * p.diffuseTexLevel;
-        if (m.bumpTexture) m.bumpTexture.level = o.bumpTexLevel * p.bumpTexLevel;
-        if (mmdMat.toonTexture) mmdMat.toonTexture.level = o.toonTexLevel * p.toonTexLevel;
-        if (mmdMat.sphereTexture) mmdMat.sphereTexture.level = o.sphereTexLevel * p.sphereTexLevel;
-        if (m.emissiveTexture) m.emissiveTexture.level = o.emissiveTexLevel * p.emissiveTexLevel;
+        if (!p) continue;
+        _applyParamsToMaterial(m, mmdMat, o, p);
         const mp = perMat.get(mi);
-        if (mp) {
-            m.diffuseColor.set(
-                o.diffuse.r * mp.diffuseMul,
-                o.diffuse.g * mp.diffuseMul,
-                o.diffuse.b * mp.diffuseMul
-            );
-            m.specularColor.set(
-                o.specular.r * mp.specularMul,
-                o.specular.g * mp.specularMul,
-                o.specular.b * mp.specularMul
-            );
-            m.specularPower = mp.shininess;
-            m.ambientColor.set(
-                o.ambient.r * mp.ambientMul,
-                o.ambient.g * mp.ambientMul,
-                o.ambient.b * mp.ambientMul
-            );
-            m.emissiveColor.set(
-                o.emissive.r * mp.emissiveMul,
-                o.emissive.g * mp.emissiveMul,
-                o.emissive.b * mp.emissiveMul
-            );
-            if (m.diffuseTexture) m.diffuseTexture.level = o.diffuseTexLevel * mp.diffuseTexLevel;
-            if (m.bumpTexture) m.bumpTexture.level = o.bumpTexLevel * mp.bumpTexLevel;
-            if (mmdMat.toonTexture) mmdMat.toonTexture.level = o.toonTexLevel * mp.toonTexLevel;
-            if (mmdMat.sphereTexture) mmdMat.sphereTexture.level = o.sphereTexLevel * mp.sphereTexLevel;
-            if (m.emissiveTexture) m.emissiveTexture.level = o.emissiveTexLevel * mp.emissiveTexLevel;
-        }
+        if (mp) _applyParamsToMaterial(m, mmdMat, o, mp);
     }
 }
 
@@ -373,18 +369,7 @@ function _ensureState(id: string): Map<string, MaterialCategoryParams> {
     }
     m = new Map();
     for (const c of CATEGORIES) {
-        m.set(c, {
-            diffuseMul: 1,
-            specularMul: 1,
-            shininess: 50,
-            ambientMul: 1,
-            emissiveMul: 1,
-            diffuseTexLevel: 1,
-            bumpTexLevel: 1,
-            toonTexLevel: 1,
-            sphereTexLevel: 1,
-            emissiveTexLevel: 1,
-        });
+        m.set(c, { ...DEFAULT_MAT_PARAMS });
     }
     _catState.set(id, m);
     return m;
@@ -440,18 +425,7 @@ export function getMatCatGroups(id: string): Map<string, { name: string; mat: Ma
 export function getMatCatParams(id: string, cat: string): MaterialCategoryParams {
     if (!CATEGORY_SET.has(cat)) {
         console.warn(`[material] getMatCatParams: unknown category "${cat}"`);
-        return {
-            diffuseMul: 1,
-            specularMul: 1,
-            shininess: 50,
-            ambientMul: 1,
-            emissiveMul: 1,
-            diffuseTexLevel: 1,
-            bumpTexLevel: 1,
-            toonTexLevel: 1,
-            sphereTexLevel: 1,
-            emissiveTexLevel: 1,
-        };
+        return { ...DEFAULT_MAT_PARAMS };
     }
     return { ..._ensureState(id).get(cat)! };
 }
@@ -466,36 +440,7 @@ export function setMatCatParams(
         return;
     }
     const target = _ensureState(id).get(cat)!;
-    if (params.diffuseMul !== undefined) {
-        target.diffuseMul = Math.max(0, Math.min(2, params.diffuseMul));
-    }
-    if (params.specularMul !== undefined) {
-        target.specularMul = Math.max(0, Math.min(2, params.specularMul));
-    }
-    if (params.shininess !== undefined) {
-        target.shininess = Math.max(0, Math.min(200, Math.round(params.shininess)));
-    }
-    if (params.ambientMul !== undefined) {
-        target.ambientMul = Math.max(0, Math.min(2, params.ambientMul));
-    }
-    if (params.emissiveMul !== undefined) {
-        target.emissiveMul = Math.max(0, Math.min(2, params.emissiveMul));
-    }
-    if (params.diffuseTexLevel !== undefined) {
-        target.diffuseTexLevel = Math.max(0, Math.min(3, params.diffuseTexLevel));
-    }
-    if (params.bumpTexLevel !== undefined) {
-        target.bumpTexLevel = Math.max(0, Math.min(3, params.bumpTexLevel));
-    }
-    if (params.toonTexLevel !== undefined) {
-        target.toonTexLevel = Math.max(0, Math.min(3, params.toonTexLevel));
-    }
-    if (params.sphereTexLevel !== undefined) {
-        target.sphereTexLevel = Math.max(0, Math.min(3, params.sphereTexLevel));
-    }
-    if (params.emissiveTexLevel !== undefined) {
-        target.emissiveTexLevel = Math.max(0, Math.min(3, params.emissiveTexLevel));
-    }
+    _clampAndAssign(target, params);
     _applyAll(id);
     triggerAutoSave();
 }
@@ -560,20 +505,7 @@ export function getMatDetailList(
             continue;
         }
         const mp = perMat.get(mi);
-        const params: MaterialCategoryParams = mp
-            ? { ...mp }
-            : {
-                  diffuseMul: 1,
-                  specularMul: 1,
-                  shininess: 50,
-                  ambientMul: 1,
-                  emissiveMul: 1,
-                  diffuseTexLevel: 1,
-                  bumpTexLevel: 1,
-                  toonTexLevel: 1,
-                  sphereTexLevel: 1,
-                  emissiveTexLevel: 1,
-              };
+        const params: MaterialCategoryParams = mp ? { ...mp } : { ...DEFAULT_MAT_PARAMS };
         result.push({ name: m.name, index: mi, params, modified: !!mp });
     }
     return result;
@@ -603,50 +535,10 @@ export function setMatParams(
     const state = _ensureMatState(id);
     let entry = state.get(matIndex);
     if (!entry) {
-        entry = {
-            diffuseMul: 1,
-            specularMul: 1,
-            shininess: 50,
-            ambientMul: 1,
-            emissiveMul: 1,
-            diffuseTexLevel: 1,
-            bumpTexLevel: 1,
-            toonTexLevel: 1,
-            sphereTexLevel: 1,
-            emissiveTexLevel: 1,
-        };
+        entry = { ...DEFAULT_MAT_PARAMS };
         state.set(matIndex, entry);
     }
-    if (params.diffuseMul !== undefined) {
-        entry.diffuseMul = Math.max(0, Math.min(2, params.diffuseMul));
-    }
-    if (params.specularMul !== undefined) {
-        entry.specularMul = Math.max(0, Math.min(2, params.specularMul));
-    }
-    if (params.shininess !== undefined) {
-        entry.shininess = Math.max(0, Math.min(200, Math.round(params.shininess)));
-    }
-    if (params.ambientMul !== undefined) {
-        entry.ambientMul = Math.max(0, Math.min(2, params.ambientMul));
-    }
-    if (params.emissiveMul !== undefined) {
-        entry.emissiveMul = Math.max(0, Math.min(2, params.emissiveMul));
-    }
-    if (params.diffuseTexLevel !== undefined) {
-        entry.diffuseTexLevel = Math.max(0, Math.min(3, params.diffuseTexLevel));
-    }
-    if (params.bumpTexLevel !== undefined) {
-        entry.bumpTexLevel = Math.max(0, Math.min(3, params.bumpTexLevel));
-    }
-    if (params.toonTexLevel !== undefined) {
-        entry.toonTexLevel = Math.max(0, Math.min(3, params.toonTexLevel));
-    }
-    if (params.sphereTexLevel !== undefined) {
-        entry.sphereTexLevel = Math.max(0, Math.min(3, params.sphereTexLevel));
-    }
-    if (params.emissiveTexLevel !== undefined) {
-        entry.emissiveTexLevel = Math.max(0, Math.min(3, params.emissiveTexLevel));
-    }
+    _clampAndAssign(entry, params);
     _applyAll(id);
     triggerAutoSave();
 }

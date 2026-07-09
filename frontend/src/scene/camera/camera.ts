@@ -1,8 +1,8 @@
 // [doc:architecture] Camera — 相机模式管理系统
 // 规范文档: docs/architecture.md §渲染环节
-// 职责: 相机模式切换（orbit/freefly/oneshot/concert）、自动构图、自由飞行输入
+// 职责: 相机模式切换（orbit/freefly/surround/concert/oneshot/vmd/ar）、自动构图、自由飞行输入
 // Camera mode manager for MikuMikuAR
-// Handles Orbit, Freefly, Concert, and One-shot camera modes.
+// Handles Orbit, Freefly, Surround (turntable), Concert (fan-cam), One-shot, VMD, and AR modes.
 
 import { Camera } from '@babylonjs/core/Cameras/camera';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
@@ -17,9 +17,13 @@ import { focusModel, reattachPipeline, setARMode } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
 
 // ======== Types ========
-export type CameraMode = 'orbit' | 'freefly' | 'concert' | 'oneshot' | 'vmd' | 'ar';
+export type CameraMode = 'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar';
 
-/** Orbit camera parameters. */
+/**
+ * Orbit camera parameters.
+ * targetHeight: 相对当前聚焦模型中心的垂直偏移（0 = 正中，正 = 抬高，负 = 压低）。
+ *   旧版本为绝对世界 Y；现改为相对偏移，使换不同中心高度的模型时无需反复手调。
+ */
 export interface OrbitParams {
     targetHeight: number;
     distance: number;
@@ -32,11 +36,22 @@ export interface FreeflyParams {
     angularSensibility: number;
 }
 
-/** Concert camera parameters — continuous orbit around target. */
-export interface ConcertParams {
+/** Surround (turntable) camera parameters — automatic full-circle orbit around target. */
+export interface SurroundParams {
     radius: number;
     height: number;
     speed: number;
+}
+
+/** Concert (fan-cam) camera parameters — limited horizontal sweep + sinusoidal vertical bob. */
+export interface ConcertParams {
+    radius: number; // distance to target
+    height: number; // target Y
+    sweepAngle: number; // total horizontal sweep in degrees (default 120 → ±60°)
+    sweepSpeed: number; // horizontal sweep frequency multiplier
+    baseBeta: number; // center pitch in radians (default PI/3)
+    bobAmplitude: number; // vertical oscillation amplitude in degrees
+    bobSpeed: number; // vertical oscillation frequency multiplier
 }
 
 /** Per-mode parameter bundle, persisted with scene files. */
@@ -44,15 +59,25 @@ export interface CameraPreset {
     mode?: CameraMode;
     orbit: OrbitParams;
     freefly: FreeflyParams;
+    surround: SurroundParams;
     concert: ConcertParams;
 }
 
 export function defaultCameraPreset(): CameraPreset {
     return {
         mode: 'orbit',
-        orbit: { targetHeight: 8, distance: 16, beta: Math.PI / 3 },
+        orbit: { targetHeight: 0, distance: 16, beta: Math.PI / 3 },
         freefly: { speed: 0.5, angularSensibility: 2000 },
-        concert: { radius: 12, height: 8, speed: 0.3 },
+        surround: { radius: 12, height: 8, speed: 0.3 },
+        concert: {
+            radius: 12,
+            height: 8,
+            sweepAngle: 120,
+            sweepSpeed: 0.6,
+            baseBeta: Math.PI / 3,
+            bobAmplitude: 12,
+            bobSpeed: 0.7,
+        },
     };
 }
 
@@ -92,6 +117,9 @@ export function getFreeflyParams(): FreeflyParams {
 export function getConcertParams(): ConcertParams {
     return _currentPreset.concert;
 }
+export function getSurroundParams(): SurroundParams {
+    return _currentPreset.surround;
+}
 
 export function setOrbitParams(p: Partial<OrbitParams>): void {
     Object.assign(_currentPreset.orbit, p);
@@ -104,7 +132,7 @@ export function setOrbitParams(p: Partial<OrbitParams>): void {
             _currentCamera.beta = p.beta;
         }
         if (p.targetHeight !== undefined) {
-            _currentCamera.target.y = p.targetHeight;
+            _currentCamera.target.y = _focusCenterY + p.targetHeight;
         }
     }
 }
@@ -129,6 +157,9 @@ export function setFreeflyParams(p: Partial<FreeflyParams>): void {
 export function setConcertParams(p: Partial<ConcertParams>): void {
     Object.assign(_currentPreset.concert, p);
 }
+export function setSurroundParams(p: Partial<SurroundParams>): void {
+    Object.assign(_currentPreset.surround, p);
+}
 
 // ======== Internal State ========
 let _scene: Scene | null = null;
@@ -137,6 +168,9 @@ let _cameraMode: CameraMode = 'orbit';
 let _previousMode: CameraMode = 'orbit';
 let _currentCamera: Camera | null = null;
 let _fov = 0.8; // default FOV, migrated from RenderState in Phase 9
+// 当前聚焦模型包围盒中心的 Y。targetHeight 现表现为「相对此中心的垂直偏移」，
+// 0 = 正中。无模型时的初始值 8 保持与旧默认绝对高度一致，避免首屏镜头压脚底。
+let _focusCenterY = 8;
 
 /** Detect touch-capable device for camera parameter tuning. */
 export function isTouchDevice(): boolean {
@@ -151,15 +185,24 @@ function clampFov(v: number): number {
     return Math.max(0.1, Math.min(3, v));
 }
 let _concertUpdateFn: (() => void) | null = null;
-let _concertAngle = 0;
+let _concertT = 0;
+let _surroundUpdateFn: (() => void) | null = null;
+let _surroundAngle = 0;
 let _concertPaused = false;
-// Cached target vector for concert mode (avoids per-frame Vector3 allocation)
+// Cached target vector for concert/surround modes (avoids per-frame Vector3 allocation)
 const _concertTarget = new Vector3(0, 8, 0);
 
 export function getConcertPaused(): boolean {
     return _concertPaused;
 }
 export function setConcertPaused(paused: boolean): void {
+    _concertPaused = paused;
+}
+/** Surround (turntable) shares the same auto-pause flag as concert. */
+export function getSurroundPaused(): boolean {
+    return _concertPaused;
+}
+export function setSurroundPaused(paused: boolean): void {
     _concertPaused = paused;
 }
 
@@ -323,7 +366,7 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
         -Math.PI / 2,
         p.beta,
         p.distance,
-        new Vector3(0, p.targetHeight, 0),
+        new Vector3(0, _focusCenterY + p.targetHeight, 0),
         scene
     );
     cam.lowerRadiusLimit = 2;
@@ -359,13 +402,34 @@ function createFreeflyCamera(scene: Scene, canvas: HTMLCanvasElement): Universal
     return cam;
 }
 
+function createSurroundCamera(scene: Scene): ArcRotateCamera {
+    const p = _currentPreset.surround;
+    const cam = new ArcRotateCamera(
+        'surroundCam',
+        -Math.PI / 2,
+        Math.PI / 3,
+        p.radius,
+        new Vector3(0, p.height, 0),
+        scene
+    );
+    cam.lowerRadiusLimit = 2;
+    cam.upperRadiusLimit = 50;
+    cam.panningSensibility = 50;
+    // No attachControl — we animate programmatically; mouse would interfere
+    // 相机视角变化时延迟触发保存
+    cam.onViewMatrixChangedObservable.add(scheduleCameraPersist);
+    return cam;
+}
+
+/** Concert (fan-cam): limited horizontal sweep + sinusoidal vertical bob around the target. */
 function createConcertCamera(scene: Scene): ArcRotateCamera {
+    const p = _currentPreset.concert;
     const cam = new ArcRotateCamera(
         'concertCam',
         -Math.PI / 2,
-        Math.PI / 3,
-        16,
-        new Vector3(0, 8, 0),
+        p.baseBeta,
+        p.radius,
+        new Vector3(0, p.height, 0),
         scene
     );
     cam.lowerRadiusLimit = 2;
@@ -465,6 +529,9 @@ export function switchCameraMode(mode: CameraMode): void {
     if (_cameraMode === 'concert') {
         stopConcert();
     }
+    if (_cameraMode === 'surround') {
+        stopSurround();
+    }
     if (_cameraMode === 'orbit') {
         _stopBoneLock();
     }
@@ -499,6 +566,9 @@ export function switchCameraMode(mode: CameraMode): void {
             break;
         case 'concert':
             newCam = createConcertCamera(scene);
+            break;
+        case 'surround':
+            newCam = createSurroundCamera(scene);
             break;
         case 'oneshot':
             newCam = createOneshotCamera(scene, canvas);
@@ -546,6 +616,9 @@ export function switchCameraMode(mode: CameraMode): void {
     if (mode === 'concert') {
         startConcert(scene);
     }
+    if (mode === 'surround') {
+        startSurround(scene);
+    }
 
     // Auto-frame on focused model when switching to orbit
     if (mode === 'orbit' && focusedModelId) {
@@ -570,8 +643,12 @@ export function autoFrame(center: Vector3, extent: number): void {
         return;
     }
 
+    // 记录聚焦模型中心 Y，使 targetHeight 表现为相对中心的偏移
+    _focusCenterY = center.y;
     if (cam instanceof ArcRotateCamera) {
         cam.setTarget(center);
+        // 叠加用户偏移偏好（相对模型中心的垂直偏移，0 = 正中）
+        cam.target.y = center.y + _currentPreset.orbit.targetHeight;
         cam.radius = extent * 0.75 + 2;
         cam.beta = Math.PI / 2.2;
     } else if (cam instanceof UniversalCamera) {
@@ -722,10 +799,54 @@ function stopFreefly(): void {
     }
 }
 
-// ======== Concert ========
+// ======== Surround (turntable) — 整圈匀速自转 =====
+
+function startSurround(scene: Scene): void {
+    _surroundAngle = 0;
+    if (_surroundUpdateFn) {
+        scene.onBeforeRenderObservable.removeCallback(_surroundUpdateFn);
+    }
+    _surroundUpdateFn = () => {
+        const cam = _currentCamera;
+        if (!cam || !(cam instanceof ArcRotateCamera)) {
+            return;
+        }
+        const p = _currentPreset.surround;
+        if (!_concertPaused) {
+            const delta = scene.getAnimationRatio() * p.speed * (scene.deltaTime / 1000);
+            _surroundAngle += delta;
+        }
+        cam.alpha = -Math.PI / 2 + _surroundAngle;
+        cam.radius = p.radius;
+        cam.beta = Math.PI / 3;
+        const focusedId = focusedModelId;
+        if (focusedId) {
+            const inst = modelRegistry.get(focusedId);
+            if (inst && inst.meshes.length > 0) {
+                const root = inst.rootMesh;
+                _concertTarget.set(root.position.x, p.height, root.position.z);
+            } else {
+                _concertTarget.set(0, p.height, 0);
+            }
+        } else {
+            _concertTarget.set(0, p.height, 0);
+        }
+        cam.setTarget(_concertTarget);
+    };
+    scene.onBeforeRenderObservable.add(_surroundUpdateFn);
+}
+
+function stopSurround(): void {
+    if (_surroundUpdateFn && _scene) {
+        _scene.onBeforeRenderObservable.removeCallback(_surroundUpdateFn);
+        _surroundUpdateFn = null;
+    }
+}
+
+// ======== Concert (fan-cam) — 限定水平扫掠 + 正弦上下摆动 =====
 
 function startConcert(scene: Scene): void {
-    _concertAngle = 0;
+    _concertT = 0;
     if (_concertUpdateFn) {
         scene.onBeforeRenderObservable.removeCallback(_concertUpdateFn);
     }
@@ -736,12 +857,15 @@ function startConcert(scene: Scene): void {
         }
         const p = _currentPreset.concert;
         if (!_concertPaused) {
-            const delta = scene.getAnimationRatio() * p.speed * (scene.deltaTime / 1000);
-            _concertAngle += delta;
+            _concertT += scene.getAnimationRatio() * (scene.deltaTime / 1000);
         }
-        cam.alpha = -Math.PI / 2 + _concertAngle;
+        const sweepRad = (p.sweepAngle * Math.PI) / 180;
+        const bobRad = (p.bobAmplitude * Math.PI) / 180;
+        // 水平：在 ±sweepAngle/2 区间内做正弦扫掠（两端自然减速，模拟粉丝机位左右摇摄）
+        cam.alpha = -Math.PI / 2 + (sweepRad / 2) * Math.sin(_concertT * p.sweepSpeed);
+        // 垂直：以 baseBeta 为中心做正弦上下摆动（模拟手持设备的上下晃动/跟拍升降台）
+        cam.beta = p.baseBeta + bobRad * Math.sin(_concertT * p.bobSpeed);
         cam.radius = p.radius;
-        cam.beta = Math.PI / 3;
         const focusedId = focusedModelId;
         if (focusedId) {
             const inst = modelRegistry.get(focusedId);
@@ -900,11 +1024,34 @@ export function getCameraState(): CameraState {
 export function setCameraState(s: CameraState): void {
     // Switch to the saved mode first (creates the right camera type),
     // then restore the preset over the live state.
-    const mode = s.mode || s.preset.mode;
+    let mode = s.mode || s.preset.mode;
     // 存档恢复时跳过 AR：进入 AR 需要用户手势授权摄像头，启动时无手势调 getUserMedia
     // 多数浏览器会直接拒绝；用户可在加载后手动进入 AR。
     if (s.preset) {
-        _currentPreset = JSON.parse(JSON.stringify(s.preset));
+        const def = defaultCameraPreset();
+        const loaded = JSON.parse(JSON.stringify(s.preset)) as CameraPreset;
+        // 旧存档迁移：concert 曾是「整圈自转」形态（带 speed 字段、无 sweepAngle），
+        // 现重定向为 surround（环绕/转台），concert 归位为「粉丝机位」。
+        const oldConcert = loaded.concert as Record<string, any> | undefined;
+        if (oldConcert && 'speed' in oldConcert && !('sweepAngle' in oldConcert)) {
+            loaded.surround = {
+                radius: (oldConcert.radius ?? def.surround.radius) as number,
+                height: (oldConcert.height ?? def.surround.height) as number,
+                speed: (oldConcert.speed ?? def.surround.speed) as number,
+            };
+            if (mode === 'concert') {
+                mode = 'surround';
+            }
+            delete (loaded as Partial<CameraPreset>).concert;
+        }
+        // 深合并到默认预设，补齐新增/缺失字段，防止旧存档缺字段导致 NaN。
+        _currentPreset = {
+            mode: loaded.mode ?? def.mode,
+            orbit: { ...def.orbit, ...(loaded.orbit || {}) },
+            freefly: { ...def.freefly, ...(loaded.freefly || {}) },
+            surround: { ...def.surround, ...(loaded.surround || {}) },
+            concert: { ...def.concert, ...(loaded.concert || {}) },
+        };
     }
     if (mode && mode !== 'ar') {
         switchCameraMode(mode);
@@ -927,6 +1074,11 @@ export function setCameraState(s: CameraState): void {
             cam.position = new Vector3(s.positionX, s.positionY ?? 8, s.positionZ ?? 16);
         }
         cam.setTarget(new Vector3(s.targetX, s.targetY, s.targetZ));
+    }
+    // 反算用户偏移偏好：恢复的绝对 targetY - 聚焦中心（focus 已在 switchCameraMode 内更新 _focusCenterY）。
+    // 使存档恢复后滑块仍反映「相对当前模型的偏移」，换模型时自动保持相对位置。
+    if (cam instanceof ArcRotateCamera) {
+        _currentPreset.orbit.targetHeight = (s.targetY ?? 8) - _focusCenterY;
     }
 }
 

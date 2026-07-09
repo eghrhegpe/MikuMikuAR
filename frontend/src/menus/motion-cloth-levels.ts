@@ -238,7 +238,7 @@ export function buildClothParamsLevel(): PopupLevel {
                                 });
                                 debouncedRecreate();
                             },
-                            'lucide:curl'
+                            'lucide:wind'
                         );
                         addSliderRow(
                             cc,

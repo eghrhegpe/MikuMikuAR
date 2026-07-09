@@ -315,15 +315,19 @@ vi.mock('../scene/camera/camera', () => ({
     getOrbitParams: vi.fn(),
     getFreeflyParams: vi.fn(),
     getConcertParams: vi.fn(),
+    getSurroundParams: vi.fn(),
     setOrbitParams: vi.fn(),
     setFreeflyParams: vi.fn(),
     setConcertParams: vi.fn(),
+    setSurroundParams: vi.fn(),
     hasCameraVmd: vi.fn(() => false),
     clearCameraVmd: vi.fn(),
     getCameraVmdName: vi.fn(() => ''),
     getCameraVmdPath: vi.fn(() => ''),
     getConcertPaused: vi.fn(() => false),
     setConcertPaused: vi.fn(),
+    getSurroundPaused: vi.fn(() => false),
+    setSurroundPaused: vi.fn(),
     defaultCameraPreset: vi.fn(),
     getCameraPreset: vi.fn(),
     setCameraPreset: vi.fn(),
@@ -343,9 +347,11 @@ let cameraModule: {
     getOrbitParams: () => any;
     getFreeflyParams: () => any;
     getConcertParams: () => any;
+    getSurroundParams: () => any;
     setOrbitParams: (p: any) => void;
     setFreeflyParams: (p: any) => void;
     setConcertParams: (p: any) => void;
+    setSurroundParams: (p: any) => void;
     getCameraMode: () => string;
     getCurrentCamera: () => any;
     getFov: () => number;
@@ -356,6 +362,8 @@ let cameraModule: {
     getCameraVmdPath: () => string;
     getConcertPaused: () => boolean;
     setConcertPaused: (p: boolean) => void;
+    getSurroundPaused: () => boolean;
+    setSurroundPaused: (p: boolean) => void;
 };
 
 type CameraPreset = ReturnType<typeof cameraModule.defaultCameraPreset>;
@@ -388,6 +396,7 @@ describe('defaultCameraPreset', () => {
         expect(p).toHaveProperty('orbit');
         expect(p).toHaveProperty('freefly');
         expect(p).toHaveProperty('concert');
+        expect(p).toHaveProperty('surround');
         expect(p.orbit).toHaveProperty('targetHeight');
         expect(p.orbit).toHaveProperty('distance');
         expect(p.orbit).toHaveProperty('beta');
@@ -395,20 +404,34 @@ describe('defaultCameraPreset', () => {
         expect(p.freefly).toHaveProperty('angularSensibility');
         expect(p.concert).toHaveProperty('radius');
         expect(p.concert).toHaveProperty('height');
-        expect(p.concert).toHaveProperty('speed');
+        expect(p.concert).toHaveProperty('sweepAngle');
+        expect(p.concert).toHaveProperty('sweepSpeed');
+        expect(p.concert).toHaveProperty('baseBeta');
+        expect(p.concert).toHaveProperty('bobAmplitude');
+        expect(p.concert).toHaveProperty('bobSpeed');
+        expect(p.surround).toHaveProperty('radius');
+        expect(p.surround).toHaveProperty('height');
+        expect(p.surround).toHaveProperty('speed');
     });
 
     it('has the documented default values', () => {
         const p = cameraModule.defaultCameraPreset();
         expect(p.mode).toBe('orbit');
-        expect(p.orbit.targetHeight).toBe(8);
+        expect(p.orbit.targetHeight).toBe(0);
         expect(p.orbit.distance).toBe(16);
         expect(p.orbit.beta).toBeCloseTo(Math.PI / 3, 6);
         expect(p.freefly.speed).toBe(0.5);
         expect(p.freefly.angularSensibility).toBe(2000);
         expect(p.concert.radius).toBe(12);
         expect(p.concert.height).toBe(8);
-        expect(p.concert.speed).toBe(0.3);
+        expect(p.concert.sweepAngle).toBe(120);
+        expect(p.concert.sweepSpeed).toBeCloseTo(0.6, 6);
+        expect(p.concert.baseBeta).toBeCloseTo(Math.PI / 3, 6);
+        expect(p.concert.bobAmplitude).toBe(12);
+        expect(p.concert.bobSpeed).toBeCloseTo(0.7, 6);
+        expect(p.surround.radius).toBe(12);
+        expect(p.surround.height).toBe(8);
+        expect(p.surround.speed).toBe(0.3);
     });
 
     it('returns a new object on each call (no shared reference)', () => {
@@ -416,7 +439,7 @@ describe('defaultCameraPreset', () => {
         const b = cameraModule.defaultCameraPreset();
         expect(a).not.toBe(b);
         a.orbit.targetHeight = 99;
-        expect(b.orbit.targetHeight).toBe(8);
+        expect(b.orbit.targetHeight).toBe(0);
     });
 });
 
@@ -426,7 +449,8 @@ describe('getCameraPreset / setCameraPreset', () => {
             mode: 'freefly',
             orbit: { targetHeight: 5, distance: 10, beta: 1 },
             freefly: { speed: 1, angularSensibility: 1000 },
-            concert: { radius: 15, height: 6, speed: 0.5 },
+            concert: { radius: 15, height: 6, sweepAngle: 90, sweepSpeed: 1, baseBeta: 1, bobAmplitude: 10, bobSpeed: 1 },
+            surround: { radius: 14, height: 7, speed: 0.4 },
         };
         cameraModule.setCameraPreset(custom);
         const retrieved = cameraModule.getCameraPreset();
@@ -438,14 +462,17 @@ describe('getCameraPreset / setCameraPreset', () => {
         expect(retrieved.freefly.angularSensibility).toBe(1000);
         expect(retrieved.concert.radius).toBe(15);
         expect(retrieved.concert.height).toBe(6);
-        expect(retrieved.concert.speed).toBe(0.5);
+        expect(retrieved.concert.sweepAngle).toBe(90);
+        expect(retrieved.concert.baseBeta).toBe(1);
+        expect(retrieved.surround.radius).toBe(14);
+        expect(retrieved.surround.speed).toBe(0.4);
     });
 });
 
 describe('getOrbitParams / getFreeflyParams / getConcertParams', () => {
     it('getOrbitParams returns the orbit sub-object from the current preset', () => {
         const params = cameraModule.getOrbitParams();
-        expect(params.targetHeight).toBe(8);
+        expect(params.targetHeight).toBe(0);
         expect(params.distance).toBe(16);
         expect(params.beta).toBeCloseTo(Math.PI / 3, 6);
     });
@@ -460,6 +487,14 @@ describe('getOrbitParams / getFreeflyParams / getConcertParams', () => {
         const params = cameraModule.getConcertParams();
         expect(params.radius).toBe(12);
         expect(params.height).toBe(8);
+        expect(params.sweepAngle).toBe(120);
+        expect(params.bobAmplitude).toBe(12);
+    });
+
+    it('getSurroundParams returns the surround sub-object', () => {
+        const params = cameraModule.getSurroundParams();
+        expect(params.radius).toBe(12);
+        expect(params.height).toBe(8);
         expect(params.speed).toBe(0.3);
     });
 
@@ -468,11 +503,13 @@ describe('getOrbitParams / getFreeflyParams / getConcertParams', () => {
             mode: 'orbit',
             orbit: { targetHeight: 99, distance: 1, beta: 2 },
             freefly: { speed: 9, angularSensibility: 500 },
-            concert: { radius: 3, height: 4, speed: 5 },
+            concert: { radius: 3, height: 4, sweepAngle: 30, sweepSpeed: 2, baseBeta: 0.5, bobAmplitude: 5, bobSpeed: 2 },
+            surround: { radius: 7, height: 9, speed: 1.5 },
         });
         expect(cameraModule.getOrbitParams().targetHeight).toBe(99);
         expect(cameraModule.getFreeflyParams().speed).toBe(9);
         expect(cameraModule.getConcertParams().radius).toBe(3);
+        expect(cameraModule.getSurroundParams().radius).toBe(7);
     });
 });
 
@@ -481,7 +518,7 @@ describe('setOrbitParams', () => {
         cameraModule.setOrbitParams({ distance: 20 });
         const params = cameraModule.getOrbitParams();
         expect(params.distance).toBe(20);
-        expect(params.targetHeight).toBe(8);
+        expect(params.targetHeight).toBe(0);
         expect(params.beta).toBeCloseTo(Math.PI / 3, 6);
     });
 
@@ -542,12 +579,13 @@ describe('setFreeflyParams', () => {
 });
 
 describe('setConcertParams', () => {
-    it('updates all three concert fields', () => {
-        cameraModule.setConcertParams({ radius: 20, height: 10, speed: 0.8 });
+    it('updates all concert fields', () => {
+        cameraModule.setConcertParams({ radius: 20, height: 10, sweepAngle: 80, baseBeta: 0.9 });
         const p = cameraModule.getConcertParams();
         expect(p.radius).toBe(20);
         expect(p.height).toBe(10);
-        expect(p.speed).toBe(0.8);
+        expect(p.sweepAngle).toBe(80);
+        expect(p.baseBeta).toBeCloseTo(0.9, 6);
     });
 
     it('partial update preserves unset fields', () => {
@@ -555,11 +593,29 @@ describe('setConcertParams', () => {
         const p = cameraModule.getConcertParams();
         expect(p.radius).toBe(18);
         expect(p.height).toBe(8);
-        expect(p.speed).toBe(0.3);
+        expect(p.sweepAngle).toBe(120);
     });
 
     it('does not throw when called in any state', () => {
         expect(() => cameraModule.setConcertParams({ radius: 99 })).not.toThrow();
+    });
+});
+
+describe('setSurroundParams', () => {
+    it('updates all surround fields', () => {
+        cameraModule.setSurroundParams({ radius: 20, height: 10, speed: 0.8 });
+        const p = cameraModule.getSurroundParams();
+        expect(p.radius).toBe(20);
+        expect(p.height).toBe(10);
+        expect(p.speed).toBe(0.8);
+    });
+
+    it('partial update preserves unset fields', () => {
+        cameraModule.setSurroundParams({ radius: 18 });
+        const p = cameraModule.getSurroundParams();
+        expect(p.radius).toBe(18);
+        expect(p.height).toBe(8);
+        expect(p.speed).toBe(0.3);
     });
 });
 
@@ -668,7 +724,7 @@ describe('getConcertPaused / setConcertPaused', () => {
 
 describe('CameraMode type discrimination', () => {
     it('getCameraMode returns a valid CameraMode string', () => {
-        const validModes = ['orbit', 'freefly', 'concert', 'oneshot', 'vmd'];
+        const validModes = ['orbit', 'freefly', 'surround', 'concert', 'oneshot', 'vmd'];
         const mode = cameraModule.getCameraMode();
         expect(validModes).toContain(mode);
     });

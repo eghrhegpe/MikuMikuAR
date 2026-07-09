@@ -241,6 +241,10 @@ input, textarea, [contenteditable] {
     display: block;
     outline: none;
     touch-action: none;
+    /* 定位 + z-index:1 使透明 canvas 叠在 #arVideo(z-index:0) 之上。
+       否则静态 canvas 会被定位的 video 覆盖，AR 模式下模型被相机画面完全遮挡。 */
+    position: relative;
+    z-index: 1;
 }
 #arVideo {
     position: absolute;

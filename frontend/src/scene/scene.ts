@@ -85,6 +85,7 @@ export {
     getMaterialMeshes,
     isMatCategoryAllEnabled,
     setMatCategoryEnabled,
+    DEFAULT_MAT_PARAMS,
 } from './manager/material';
 export type { MaterialCategoryParams, MaterialCategory } from './manager/material';
 
@@ -99,7 +100,14 @@ import { updateLipSync, initLipSync } from './motion/lipsync-bridge';
 import { triggerAutoSaveImpl } from './scene-serialize';
 
 // ======== Babylon.js ========
-export const engine = new Engine(dom.canvas, true, { preserveDrawingBuffer: true, stencil: true });
+// alpha:true 让 WebGL drawing buffer 携带 alpha 通道，使 AR 模式下 scene.clearColor
+// 的 a=0 生效（透明 canvas），从而透出底层 <video> 相机画面。非 AR 场景 clearColor
+// 的 a=1.0 完全不透明，不受影响。
+export const engine = new Engine(dom.canvas, true, {
+    preserveDrawingBuffer: true,
+    stencil: true,
+    alpha: true,
+});
 export const scene = new Scene(engine);
 scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
 
