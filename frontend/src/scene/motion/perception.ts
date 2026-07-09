@@ -28,11 +28,17 @@ interface MeshMetadata {
 }
 
 // ── 感知状态（独立于 ProcMotionState） ──
+
+/** 情绪类型（微表情驱动） */
+export type Emotion = 'neutral' | 'happy' | 'sad' | 'surprised' | 'angry';
+
 export interface PerceptionState {
     breathEnabled: boolean;
     blinkEnabled: boolean;
     headTrackingEnabled: boolean;
     eyeTrackingEnabled: boolean;
+    microExpressionEnabled: boolean;
+    emotion: Emotion;
 }
 
 /** Gaze 配置类型 */
@@ -43,6 +49,8 @@ const DEFAULT_PERCEPTION_STATE: PerceptionState = {
     blinkEnabled: true,
     headTrackingEnabled: true,
     eyeTrackingEnabled: true,
+    microExpressionEnabled: true,
+    emotion: 'neutral',
 };
 
 let perceptionState: PerceptionState = { ...DEFAULT_PERCEPTION_STATE };

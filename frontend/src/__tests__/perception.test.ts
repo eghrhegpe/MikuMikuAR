@@ -230,3 +230,25 @@ describe('onPerceptionModelRemoved', () => {
         expect(mockState.scene.onBeforeRenderObservable.remove).not.toHaveBeenCalled();
     });
 });
+
+// =====================================================================
+// 微表情（Micro Expression）状态
+// =====================================================================
+
+describe('microExpression state', () => {
+    it('默认 emotion 为 neutral，microExpressionEnabled 为 true', () => {
+        const state = sut.getPerceptionState();
+        expect(state.emotion).toBe('neutral');
+        expect(state.microExpressionEnabled).toBe(true);
+    });
+
+    it('setPerceptionState 可更新 emotion', () => {
+        sut.setPerceptionState({ emotion: 'happy' });
+        expect(sut.getPerceptionState().emotion).toBe('happy');
+    });
+
+    it('setPerceptionState 可关闭微表情', () => {
+        sut.setPerceptionState({ microExpressionEnabled: false });
+        expect(sut.getPerceptionState().microExpressionEnabled).toBe(false);
+    });
+});
