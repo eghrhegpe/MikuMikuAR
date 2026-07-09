@@ -189,7 +189,7 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
 
     // navigate 回调 — 在全屏内跳转到新内容
     const navigate = (newTitle: string, newRender: (c: HTMLElement) => void) => {
-        navStack.push({ title: titleEl.textContent || '', render: (c) => options.renderContent(c, navigate) });
+        navStack.push({ title: titleEl.textContent || '', render: newRender });
         titleEl.textContent = newTitle;
         content.innerHTML = '';
         newRender(content);

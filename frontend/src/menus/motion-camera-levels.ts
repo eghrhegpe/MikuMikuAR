@@ -31,6 +31,9 @@ import {
     isAutoCameraEnabled,
     setAutoCameraBeatsPerSwitch,
     getAutoCameraBeatsPerSwitch,
+    setOrbitBoneLock,
+    getOrbitBoneLock,
+    getFocusedModelBoneNames,
     type CameraMode,
 } from '../scene/camera/camera';
 import { triggerAutoSave } from '../scene/scene';
@@ -257,6 +260,70 @@ function renderOrbitParams(container: HTMLElement): void {
         },
         'lucide:arrow-up-down'
     );
+
+    // === Bone Lock ===
+    const boneLock = getOrbitBoneLock();
+    const boneNames = getFocusedModelBoneNames();
+    addToggleRow(
+        container,
+        t('motion.boneLock'),
+        boneLock.enabled,
+        (v) => {
+            if (v && boneNames.length > 0) {
+                // 启用时默认选择第一个骨骼
+                setOrbitBoneLock(true, boneNames[0]);
+            } else {
+                setOrbitBoneLock(false);
+            }
+            refreshCameraLevel();
+        },
+        'lucide:target',
+        { bind: () => getOrbitBoneLock().enabled }
+    );
+
+    // 骨骼选择器（仅锁定启用且有骨骼时显示）
+    if (boneLock.enabled && boneNames.length > 0) {
+        const selectContainer = document.createElement('div');
+        selectContainer.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;';
+
+        const label = document.createElement('label');
+        label.className = 'cs-label';
+        label.style.cssText = 'flex-shrink:0;font-size:11px;opacity:0.7;min-width:60px;';
+        label.textContent = t('motion.boneLockSelect');
+
+        const select = document.createElement('select');
+        select.className = 'cs-select';
+        select.style.cssText = 'flex:1;padding:4px 8px;border-radius:6px;font-size:12px;';
+
+        for (const bn of boneNames) {
+            const opt = document.createElement('option');
+            opt.value = bn;
+            opt.textContent = bn;
+            if (bn === boneLock.boneName) {
+                opt.selected = true;
+            }
+            select.appendChild(opt);
+        }
+
+        select.addEventListener('change', () => {
+            const bn = select.value;
+            if (bn) {
+                setOrbitBoneLock(true, bn);
+                setStatus(t('motion.boneLockApplied', { bone: bn }), true);
+            }
+        });
+
+        selectContainer.appendChild(label);
+        selectContainer.appendChild(select);
+        container.appendChild(selectContainer);
+    } else if (boneLock.enabled && boneNames.length === 0) {
+        // 有锁定但无骨骼（例如模型未加载）——显示提示
+        const hint = document.createElement('div');
+        hint.className = 'cs-hint';
+        hint.style.cssText = 'font-size:11px;opacity:0.5;padding:4px 0;';
+        hint.textContent = t('motion.boneOverride.noModel');
+        container.appendChild(hint);
+    }
 }
 
 function renderFreeflyParams(container: HTMLElement): void {

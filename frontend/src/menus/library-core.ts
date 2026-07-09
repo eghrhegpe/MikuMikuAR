@@ -56,6 +56,8 @@ import {
     setMotionBindingTargetId,
     layerBindingTargetId,
     setLayerBindingTargetId,
+    modelReplaceTargetId,
+    setModelReplaceTargetId,
     cardContainer,
     formatError,
     librarySortMode,
@@ -625,61 +627,8 @@ function renderGridMode(
     // [doc:adr-066] 进入 grid 模式时设置状态机
     setCurrentState('EMBEDDED_GRID');
 
-    // 获取当前目录下的模型列表（精确匹配当前层级）
-    const normDir = normPath(dir);
-    const modelsInDir = (allModels || []).filter((m) => {
-        if (filter && !filter(m)) {
-            return false;
-        }
-        return normPath(m.dir) === normDir;
-    });
-
-    // 转换模型为 ResourceItem
-    const modelItems: ResourceItem[] = modelsInDir.map((m) => {
-        const fp = m.file_path || '';
-        const filename =
-            m.container === 'zip' && m.zip_inner
-                ? m.zip_inner.split('/').pop() || t('library.unknown')
-                : fp.split('/').pop() || t('library.unknown');
-        const cached = modelMetaCache.get(fp);
-        let label: string;
-        switch (displayNamePriority) {
-            case 'filename':
-                label = filename;
-                break;
-            case 'name_en':
-                label = cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
-                break;
-            case 'name_jp':
-            default:
-                label = cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
-                break;
-        }
-        return {
-            id: fp,
-            label,
-            filePath: fp,
-            icon: m.format === 'vmd' ? 'music' : m.format === 'audio' ? 'volume-2' : 'box',
-            isFolder: false,
-            sublabel: cached?.comment || m.comment || undefined,
-            data: m,
-        };
-    });
-
-    // 合并文件夹和模型
-    const folderItems: ResourceItem[] = items
-        .filter((item) => item.kind === 'folder')
-        .map((item) => ({
-            id: item.target || '',
-            label: item.label,
-            filePath: '',
-            icon: 'folder',
-            isFolder: true,
-            sublabel: undefined,
-            data: undefined,
-        }));
-
-    const allResourceItems = [...folderItems, ...modelItems];
+    // 复用 buildResourceItemsForDir 获取当前目录的 ResourceItem 列表
+    const allResourceItems = buildResourceItemsForDir(dir, filter);
 
     // 渲染容器
     cardContainer(container, (card) => {
@@ -795,7 +744,7 @@ function renderGridMode(
                 const stack = targetStack || stackRegistry.modelStack;
                 if (stack) {
                     // 找到文件夹项的 label
-                    const folderItem = folderItems.find((fi) => fi.id === path);
+                    const folderItem = allResourceItems.find((fi) => fi.id === path);
                     const folderLabel = folderItem?.label || path.split('/').pop() || path;
                     stack.push(buildLevel(path, folderLabel, filter, targetStack));
                 }
@@ -862,6 +811,7 @@ function onModelRowClick(m: LibraryModel): void {
         setStatus(t('library.extracting'), false);
         return;
     }
+    const replaceId = modelReplaceTargetId;
     const isStage = m.type === 'stage' || m.type === 'scene';
     if (m.format === 'pmx') {
         const ref = computeLibraryRef(m.file_path);
@@ -870,6 +820,55 @@ function onModelRowClick(m: LibraryModel): void {
             setRecentModels([ref, ...recentModels.filter((r) => r !== ref)].slice(0, 20));
         }
     }
+
+    // ===== Replace mode: keep menu open, navigate to new model's detail page =====
+    if (replaceId && m.format === 'pmx') {
+        setModelReplaceTargetId(null);
+        setPendingVmd(null);
+        // Pop library browser — return to stale model detail (will be replaced after load)
+        stackRegistry.modelStack?.pop();
+
+        const doReplace = (path: string): void => {
+            removeModel(replaceId);
+            loadManager
+                .load({ kind: 'actor', path })
+                .then((handle) => {
+                    if (handle?.id) {
+                        import('./model-detail').then(({ buildModelLevel }) => {
+                            stackRegistry.modelStack?.resetToRoot();
+                            stackRegistry.modelStack?.push(buildModelLevel(handle.id));
+                        });
+                    } else {
+                        stackRegistry.modelStack?.reRender();
+                    }
+                })
+                .catch((err) => {
+                    setStatus(t('library.modelLoadFailed') + formatError(err), false);
+                    stackRegistry.modelStack?.reRender();
+                });
+        };
+
+        if (m.container === 'zip') {
+            setStatus(t('library.extractingZip'), false);
+            _isExtracting = true;
+            ExtractZip(m.file_path, m.zip_inner)
+                .then((result) => {
+                    setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
+                    doReplace(result.file_path);
+                })
+                .catch((err) => {
+                    setStatus(t('library.extractFailed') + formatError(err), false);
+                })
+                .finally(() => {
+                    _isExtracting = false;
+                });
+        } else {
+            doReplace(m.file_path);
+        }
+        return;
+    }
+
+    // ===== Normal mode (add): close overlays and load =====
     if (m.container === 'zip') {
         closeAllOverlays();
         setStatus(t('library.extractingZip'), false);

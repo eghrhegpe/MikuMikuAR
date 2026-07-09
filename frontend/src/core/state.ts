@@ -211,6 +211,13 @@ export function setLayerBindingTargetId(v: string | null): void {
     layerBindingTargetId = v;
 }
 
+// ======== Model Replace Target (Model Detail → Replace) ========
+
+export let modelReplaceTargetId: string | null = null;
+export function setModelReplaceTargetId(v: string | null): void {
+    modelReplaceTargetId = v;
+}
+
 // ======== Model Metadata Cache ========
 
 export let modelMetaCache = new Map<

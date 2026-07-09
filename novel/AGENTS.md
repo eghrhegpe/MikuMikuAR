@@ -10,7 +10,7 @@
 |------|--------|------------|------|
 | 01 | `01-基础设施与依赖/` | `frontend/src/core/` | 共享状态、配置、文件URL、图标、UI helpers、快捷键路由 |
 | 02 | `02-UI交互/` | `frontend/src/menus/` | MenuStack、弹窗、设置页、模型库UI、动作UI、环境UI、场景UI |
-| 03 | `03-动作演算/` | `frontend/src/motion/` | 程序化动作、VMD写入、VPD解析、节拍检测、LipSync算法 |
+| 03 | `03-动作演算/` | `frontend/src/motion-algos/` | 程序化动作、VMD写入、VPD解析、节拍检测、LipSync算法 |
 | 04 | `04-音频与换装/` | `frontend/src/outfit/` | 音频播放、VMD同步、节拍挂载、换装系统、纹理变体 |
 | 05 | `05-布料物理/` | `frontend/src/physics/` | XPBD求解器、布料生成、SDF碰撞、调试可视化、布料管理器 |
 | 06 | `06-相机移动/` | `frontend/src/scene/camera/` | 相机模式、自由飞行、相机VMD轨道 |

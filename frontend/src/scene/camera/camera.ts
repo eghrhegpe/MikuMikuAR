@@ -91,6 +91,13 @@ export function setOrbitParams(p: Partial<OrbitParams>): void {
         }
     }
 }
+/** Log current camera alpha for diagnostics. */
+export function logCameraAlpha(): void {
+    if (_cameraMode === 'orbit' && _currentCamera instanceof ArcRotateCamera) {
+        console.info('[camera] current alpha:', _currentCamera.alpha.toFixed(3));
+    }
+}
+
 export function setFreeflyParams(p: Partial<FreeflyParams>): void {
     Object.assign(_currentPreset.freefly, p);
     if (_cameraMode === 'freefly' && _currentCamera instanceof UniversalCamera) {
@@ -280,6 +287,12 @@ export function refreshCameraUserSettings(): void {
         return;
     }
     applyCameraUserSettings(_currentCamera);
+    // 触屏设备的参数覆写（applyCameraUserSettings 可能重置了它们）
+    if (isTouchDevice() && _currentCamera instanceof ArcRotateCamera) {
+        _currentCamera.pinchPrecision = 8;
+        _currentCamera.useNaturalPinchZoom = true;
+        _currentCamera.panningSensibility = 20;
+    }
     const inv = _invertableInputs.get(_currentCamera);
     if (inv) {
         inv.invertY = uiState.invertYAxis === true;
@@ -301,10 +314,10 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
     installInvertablePointers(cam);
     cam.attachControl(canvas, true);
     applyCameraUserSettings(cam);
-    // 触屏设备：降低捏合精度（更灵敏）、降低平移灵敏度（更容易拖动）
     if (isTouchDevice()) {
-        cam.pinchPrecision = 32;
+        cam.pinchPrecision = 8;
         cam.panningSensibility = 20;
+        cam.useNaturalPinchZoom = true;
     } else {
         cam.panningSensibility = 50;
     }
@@ -357,8 +370,9 @@ function createOneshotCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotate
     cam.attachControl(canvas, true);
     applyCameraUserSettings(cam);
     if (isTouchDevice()) {
-        cam.pinchPrecision = 32;
+        cam.pinchPrecision = 8;
         cam.panningSensibility = 20;
+        cam.useNaturalPinchZoom = true;
     } else {
         cam.panningSensibility = 50;
     }
@@ -425,6 +439,9 @@ export function switchCameraMode(mode: CameraMode): void {
     }
     if (_cameraMode === 'concert') {
         stopConcert();
+    }
+    if (_cameraMode === 'orbit') {
+        _stopBoneLock();
     }
 
     // Save old camera state
@@ -721,6 +738,97 @@ function stopConcert(): void {
     if (_concertUpdateFn && _scene) {
         _scene.onBeforeRenderObservable.removeCallback(_concertUpdateFn);
         _concertUpdateFn = null;
+    }
+}
+
+// ======== Bone Lock — 轨道相机锁定到骨骼 ========
+// 启用时：每帧将相机 target 设为目标骨骼的世界位置，同时禁用平移。
+// 用户仍可围绕骨骼旋转（alpha/beta）和缩放（radius），但无法将相机拖走。
+
+let _boneLockEnabled = false;
+let _boneLockBoneName: string | null = null;
+let _boneLockModelId: string | null = null;
+let _boneLockUpdateFn: (() => void) | null = null;
+// 可复用临时向量，避免每帧 new Vector3
+const _boneLockTempVec = new Vector3(0, 0, 0);
+// 锁定前保存原始平移灵敏度用于恢复
+let _savedPanningSensibility = 50;
+
+/** 启用/禁用轨道相机骨骼锁定。启用后相机 target 每帧锁定到指定骨骼的世界位置。 */
+export function setOrbitBoneLock(enabled: boolean, boneName?: string): void {
+    if (enabled && boneName && focusedModelId) {
+        _boneLockEnabled = true;
+        _boneLockBoneName = boneName;
+        _boneLockModelId = focusedModelId;
+        _startBoneLock();
+    } else {
+        _boneLockEnabled = false;
+        _boneLockBoneName = null;
+        _boneLockModelId = null;
+        _stopBoneLock();
+    }
+}
+
+/** 获取当前骨骼锁定状态。 */
+export function getOrbitBoneLock(): { enabled: boolean; boneName: string | null } {
+    return { enabled: _boneLockEnabled, boneName: _boneLockBoneName };
+}
+
+/** 获取当前焦点模型的所有骨骼名称列表。 */
+export function getFocusedModelBoneNames(): string[] {
+    const id = focusedModelId;
+    if (!id) return [];
+    const inst = modelRegistry.get(id);
+    return inst?.mmdModel?.runtimeBones.map((b) => b.name) ?? [];
+}
+
+function _startBoneLock(): void {
+    if (!_scene) return;
+    _stopBoneLock();
+
+    // 保存并禁用平移
+    if (_currentCamera instanceof ArcRotateCamera) {
+        _savedPanningSensibility = _currentCamera.panningSensibility;
+        _currentCamera.panningSensibility = 0; // 0 = 完全禁用平移
+    }
+
+    _boneLockUpdateFn = () => {
+        if (!_boneLockEnabled || !_boneLockBoneName || !_boneLockModelId) return;
+        // 仅 orbit 模式生效
+        if (_cameraMode !== 'orbit') return;
+        const cam = _currentCamera;
+        if (!(cam instanceof ArcRotateCamera)) return;
+
+        const inst = modelRegistry.get(_boneLockModelId);
+        if (!inst?.mmdModel) return;
+
+        const bone = inst.mmdModel.runtimeBones.find(
+            (b: { name: string; worldMatrix: Float32Array }) => b.name === _boneLockBoneName
+        );
+        if (!bone) return;
+
+        // 从 worldMatrix（列主序 Float32Array[16]）提取世界位置
+        if (bone.worldMatrix) {
+            _boneLockTempVec.set(
+                bone.worldMatrix[12],
+                bone.worldMatrix[13],
+                bone.worldMatrix[14]
+            );
+            cam.setTarget(_boneLockTempVec);
+        }
+    };
+
+    _scene.onBeforeRenderObservable.add(_boneLockUpdateFn);
+}
+
+function _stopBoneLock(): void {
+    if (_boneLockUpdateFn && _scene) {
+        _scene.onBeforeRenderObservable.removeCallback(_boneLockUpdateFn);
+        _boneLockUpdateFn = null;
+    }
+    // 恢复平移灵敏度
+    if (_currentCamera instanceof ArcRotateCamera) {
+        _currentCamera.panningSensibility = _savedPanningSensibility;
     }
 }
 

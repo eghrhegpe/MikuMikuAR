@@ -19,7 +19,7 @@
 | 平台 | 状态 |
 |------|------|
 | 🪟 Windows | ✅ 已验证 |
-| 🤖 Android | ✅ 实验性（c-shared + WebView） |
+| 🤖 Android | ✅ 已验证（c-shared + WebView） |
 | 🍎 iOS / 🐧 Linux | 🟡 理论兼容（Wails v3 任务已配置，未实测） |
 
 ---
@@ -63,73 +63,62 @@
 
 ### 前置依赖
 
-- **Go 1.25+**
-- **Node.js 18+**（前端构建）
-- Wails v3 CLI（可选，仅用于 `dev` 热重载）：`go install github.com/wailsapp/wails/v3/cmd/wails3@latest`
+| 依赖 | 版本 | 说明 |
+|------|------|------|
+| **Go** | 1.25+ | Go 后端 + Wails 编译 |
+| **Node.js** | 22+ | 前端构建（CI 用 24，别用 18） |
+| **npm** | 10+ | 前端包管理 |
+| **Git** | 任意 | 代码克隆 |
+| **Wails v3 CLI** | 最新 | 热重载开发必需：`go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
+| **Playwright** | — | E2E 测试用：`cd frontend && npx playwright install --with-deps` |
+
+**Linux 额外依赖**（构建桌面应用）：
+```bash
+sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev libglib2.0-dev \
+  libsoup-3.0-dev libgdk-pixbuf-2.0-dev libpango1.0-dev libcairo2-dev \
+  libatk1.0-dev libgirepository1.0-dev
+```
 
 ### 开发运行
 
 ```bash
-# 方式一：纯 Go 构建（无 Wails CLI 依赖，官方推荐）
-go build -o MikuMikuAR.exe .
+# 克隆后初始化前端
+cd frontend && npm install
 
-# 方式二：Wails v3 热重载开发（需 wails3 CLI）
+# 启动热重载开发（Go 后端 + Vite 前端同时跑）
 wails3 dev -config ./build/config.yml -port 9245
 ```
 
-### 生产构建（平台脚本）
+### 测试
+
+```bash
+cd frontend
+
+# 类型检查（改完必跑）
+npm run check
+
+# 单元测试（Vitest）
+npm run test
+npm run test:watch     # 监听模式
+
+# E2E 测试（需先启动 wails3 dev 或 5173+9222 端口）
+npm run test:e2e
+npm run test:e2e:headed   # 有界面调试
+```
+
+### 生产构建
 
 ```bash
 # Windows
 powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1 -Production
 
 # Linux
-bash scripts/build-linux.sh
-
-# 或通过 Taskfile
-task build        # 当前平台
-task package      # 打包发布版
+bash scripts/build-linux.sh --production
 ```
-
-构建产物输出到 `bin/`，单文件可执行 `MikuMikuAR.exe` 也在仓库根。
-用GitHub的自动发版时，记得填写realise 文件，并确保云端正确缓存了wails v3、go、node_modules，加快编译速度。
-
----
-
-## 📁 项目结构
-
-```
-MikuMikuAR/
-├── app.go                  # Go 后端 Binding（文件IO / HTTP服务器 / 扫描 / 下载 / Blender）
-├── pmx.go                  # PMX header 二进制解析
-├── main.go / main_android.gen.go   # Wails 应用入口（桌面 + Android）
-├── internal/               # Go 内部包
-├── Taskfile.yml            # Wails v3 任务编排
-├── build/                  # 各平台构建配置（windows/darwin/linux/ios/android）
-├── scripts/                # 构建 / E2E 脚本
-├── tests/                  # 契约测试
-├── frontend/src/
-│   ├── core/               # 入口 / 共享状态 / 文件URL / 图标
-│   ├── scene/              # 3D 场景编排
-│   │   ├── camera/         # 相机模式
-│   │   ├── motion/         # VMD / 程序化动作 / LipSync / 播放
-│   │   ├── manager/        # ModelManager / 材质 / 加载 / 操作
-│   │   ├── env/            # 环境（天空/水面/云/粒子/光照推导）
-│   │   └── render/         # 渲染管线 / 灯光 / 性能降级
-│   ├── menus/              # SlideMenu 通用导航 + 各弹窗（库/模型/动作/环境/设置）
-│   ├── motion/             # 程序化动作算法 / VMD写入 / VPD解析 / 节拍检测
-│   ├── outfit/             # 换装核心 + 音频
-│   └── physics/            # XPBD 求解器 / 布料 / SDF碰撞器 / 调试渲染
-└── docs/                   # 项目文档（架构 / 状态 / 路线图 / ADR / 修复流程）
-```
-
-> 前端已于 2026-07 按业务域拆分为 `core / scene / menus / motion / outfit / physics`，详见 [`AGENTS.md`](AGENTS.md) 文档地图。
 
 ---
 
 ## 📖 文档
-
-> 本项目有一份面向 AI 协作的「文档宪法」[AGENTS.md](AGENTS.md)——它定义了谁该读什么、怎么改、怎么并发，也含完整文档地图。
 
 | 文档 | 内容 |
 |------|------|
@@ -141,7 +130,47 @@ MikuMikuAR/
 | [项目地基](docs/foundation.md) | 不可修改的技术决策 |
 | [故障排查](docs/troubleshooting.md) | CORS / WASM 404 / 纹理不显示 |
 | [修复流程](docs/fix-cycle.md) | Bug 修复验收契约模板 |
-| [决策档案](docs/adr/) | ADR-001 ~ ADR-024 关键设计决策 |
+| [编码奇谭](novel/README.md) | 开发日志 · 100+ 章节代码演化叙事 |
+| [决策档案](docs/adr/) | 大量关键设计决策记录 |
+
+## 🤖 AI 协作工具链
+
+本项目由 **多个 AI 共同维护**，每个工具各司其职：
+
+| AI 工具 | 角色 |
+|---------|------|
+| **Trae - GLM5.2+doubao2.1** | 首席架构师· 代码生成 · 审查  |
+| **Workbuddy - hy3** | 任务规划 · 进度追踪 · 技能辅助 |
+| **OpenCode - NVidia/mistral-samll-4** |  前端 UI 开发 · 后端调试 |
+| **Reasonix - Deepseek-v4-flash** | 发git的 |
+| **Mimocode - Mimo-v2.5** | 文档生成 · 推理分析 · 问题定位  |
+
+## 📁 项目结构
+
+```
+MikuMikuAR/
+├── main.go / main_android.gen.go   # Wails 应用入口（桌面 + Android）
+├── internal/               # Go 内部包，需wails3 显示指定go目录。
+│   ├── app/               # 核心业务（文件IO / HTTP服务器 / 扫描 / 下载 / Blender / 预设 / 缩略图）
+│   ├── dialogs/           # 文件对话框
+│   ├── thumbnail/         # 缩略图生成
+│   └── util/              # 工具（pmx 解析 / hash / errors / safecall）
+├── build/                  # 各平台构建配置（windows/darwin/linux/ios/android）
+├── scripts/                # 构建 / E2E 脚本
+├── frontend/src/
+│   ├── core/               # 入口 / 共享状态 / 文件URL / 图标 / 响应式
+│   ├── scene/              # 3D 场景编排
+│   │   ├── camera/         # 相机模式
+│   │   ├── motion/         # VMD 桥接 / 程序化动作 / LipSync / 播放控制
+│   │   ├── manager/        # ModelManager / 材质 / 加载 / 操作
+│   │   ├── env/            # 环境（天空/水面/云/粒子/光照/风场）
+│   │   └── render/         # 渲染管线 / 灯光 / 性能降级
+│   ├── menus/              # SlideMenu 弹窗系统（库/模型/动作/环境/设置）
+│   ├── motion-algos/       # 动作算法（无 Babylon 依赖，供 scene/motion/ 调用）
+│   ├── outfit/             # 换装系统 + 音频
+│   └── physics/            # XPBD 求解器 / 布料 / SDF碰撞器
+└── docs/                   # 项目文档（架构 / 状态 / 路线图 / ADR / 修复流程）
+```
 
 ---
 
@@ -152,20 +181,35 @@ MikuMikuAR/
 - **Android 实验** — `main_android.gen.go` 用 c-shared 模式 + WebView，文件访问受 Scoped Storage 约束（见 [ADR-023](docs/adr/adr-023-android-file-access-strategy.md)）
 - **跨平台路径** — Blender 自动检测仅覆盖 Windows，macOS/Linux 需在设置中手动配置
 
----
 
-## 🤝 贡献
+## 🔍 竞品分析
 
-本项目采用单仓多 AI 协作流。改动前请先通读 [AGENTS.md](AGENTS.md) 的「文档地图」与「多 AI 并发约束」——它会告诉你哪些文件互斥、哪些函数可复用（见 `docs/reusables.md`）。
+详见 [docs/competitive-analysis.md](docs/competitive-analysis.md)（23 个项目调研），简要：
+
+**渲染引擎 / 查看器**
+- [babylon-mmd](https://github.com/noname0310/babylon-mmd) — Babylon.js MMD 渲染引擎（本项目基于此）
+- [mmd-viewer-js](https://github.com/pixiставь/mmd-viewer-js) — 零依赖 JS WebGL 查看器，Toon 着色 + 视频录制
+- [Saba](https://github.com/mmd不开心/Saba) — C++ 轻量查看器，Lua 脚本/多后端/宏命令
+
+**桌面播放器**
+- [DanceXR](https://github.com/Chewhern/DanceXR) — 动作组合/角色在场/离线渲染/VR（主要对标）
+- [Coocoo3D](https://github.com/hkrn/coocoo3d) — C#+DX12，光线追踪/GI/SSAO/Decal
+- [flowerMiku](https://github.com/miku333/flowerMiku) — C++/Vulkan，PBR 材质
+
+**DCC 工具链**
+- [mmd_tools](https://github.com/powroupi/blender_mmd_tools) — Blender PMX 插件（本项目 Blender 集成依赖）
+- [MMD Bridge](https://github.com/mmd-bridge/MMDBridge) — Alembic 导出/Python 脚本
+
+**AR / XR**
+- [ar-mmd](https://github.com/code4fukui/ar-mmd) — WebXR AR 空间 MMD 模型播放演示
+- [MikuMikuMixed](https://github.com/importantimport/mikumikumixed) — Experimental WebXR MMD Viewer（React-Three-Fiber + WebXR）
+- [web-mmd](https://github.com/culdo/web-mmd) — 浏览器 MMD 播放器，含 AR 模式（手机相机控制）
+
+**框架**
+- [Wails](https://wails.io) — Go + WebView 桌面框架（本项目选型）
 
 ## 📜 许可
 
 [MIT](LICENSE) — 本项目代码自由使用。
 
 > ⚠️ 本工具不主张任何模型 / 动作 / 贴图文件的版权。用户加载的 PMX / VMD / 贴图文件可能受其各自创作者的许可限制，与本项目无关。
-
-## 🙏 致谢
-
-- [babylon-mmd](https://github.com/noname0310/babylon-mmd) — Babylon.js MMD 渲染引擎
-- [Wails](https://wails.io) — Go + WebView 桌面框架
-- [DanceXR](https://github.com/Chewhern/DanceXR) — 目录结构与功能对标参考

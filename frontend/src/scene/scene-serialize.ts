@@ -25,6 +25,7 @@ import {
     getCameraMode,
     switchCameraMode,
     setFov,
+    logCameraAlpha,
 } from './camera/camera';
 import { loadCameraVmdFromPath } from './motion/vmd-loader';
 import type { CameraState } from './camera/camera';
@@ -885,6 +886,7 @@ export async function tryRestoreLastScene(): Promise<void> {
         }
 
         await deserializeScene(data as unknown as SceneFile, true);
+        logCameraAlpha(); // 记录当前 alpha 诊断
         console.info(`从 v${version} 场景文件恢复成功`);
     } catch (err) {
         console.warn('场景恢复失败（数据可能已损坏）:', err);
