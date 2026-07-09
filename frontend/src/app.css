@@ -514,6 +514,50 @@ input, textarea, [contenteditable] {
     .sceneOverlay-settings { width: calc(240px * var(--ui-scale)); }
 }
 
+/* ===== 模型广场：全屏毛玻璃方框（覆盖 #sceneOverlay 默认左下小框） =====
+   必须用 #sceneOverlay.sceneOverlay-plaza（ID+class）压过 #sceneOverlay 的
+   ID 级 width/position/max-height，否则会落回 --popup-width(280px) 小框。 */
+#sceneOverlay.sceneOverlay-plaza {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    width: 100dvw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    background: rgba(5, 9, 13, 0.80);
+    backdrop-filter: blur(14px) saturate(115%);
+    -webkit-backdrop-filter: blur(14px) saturate(115%);
+    z-index: 200;
+}
+/* 内层容器（menu-wrapper→slide-menu→…→lcard）全屏铺满，去默认卡片装饰 */
+#sceneOverlay.sceneOverlay-plaza .menu-wrapper,
+#sceneOverlay.sceneOverlay-plaza .slide-menu,
+#sceneOverlay.sceneOverlay-plaza .slide-viewport,
+#sceneOverlay.sceneOverlay-plaza .slide-panel,
+#sceneOverlay.sceneOverlay-plaza .slide-list {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+#sceneOverlay.sceneOverlay-plaza .lcard {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    overflow: hidden;
+}
+
 /* ===== 外部库 — 行内路径 ===== */
 
 /* ===== Phase 0: 通用组件系统 ===== */
