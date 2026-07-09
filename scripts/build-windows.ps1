@@ -45,6 +45,20 @@ if (Test-Path $configYml) {
     Write-Output "[build-windows] 同步 config.yml version -> $version"
 }
 
+# 同步 Taskfile 版本占位符（wails3 build 调用 build/windows/Taskfile.yml 的
+# windows:build:native，其 BUILD_FLAGS 引用 {{.APP_VERSION}}/{{.BUILD_TIME}}/{{.COMMIT_HASH}}，
+# 但这些变量从未被 wails3 传入，导致 main.AppVersion 落到 Go 默认值 "dev"，
+# 应用「关于 / 检查更新」会显示 dev 而非真实版本。此处像同步 config.yml 一样在构建前替换占位符。）
+$winTaskfile = "$projectDir\build\windows\Taskfile.yml"
+if (Test-Path $winTaskfile) {
+    $tf = Get-Content $winTaskfile -Raw
+    $tf = $tf -replace '\{\{\.APP_VERSION\}\}', $version
+    $tf = $tf -replace '\{\{\.BUILD_TIME\}\}', (Get-Date -Format 'yyyy-MM-dd')
+    $tf = $tf -replace '\{\{\.COMMIT_HASH\}\}', (git rev-parse --short HEAD 2>$null)
+    Set-Content $winTaskfile $tf -NoNewline
+    Write-Output "[build-windows] 同步 Taskfile 版本占位符 -> $version"
+}
+
 # 清理构建产物
 if ($Clean) {
     Write-Output "[build-windows] 清理构建产物..."
