@@ -425,6 +425,12 @@ describe('per-material parameter state management', () => {
                 specularMul: 1,
                 shininess: 50,
                 ambientMul: 1,
+                emissiveMul: 1,
+                diffuseTexLevel: 1,
+                bumpTexLevel: 1,
+                toonTexLevel: 1,
+                sphereTexLevel: 1,
+                emissiveTexLevel: 1,
             });
             expect(getMatParams('model_rm', 0)).toBeNull();
         });
@@ -478,7 +484,18 @@ describe('applyMatState MaterialCategory cast', () => {
     it('applies category params from preset state', () => {
         applyMatState('model_as', {
             categories: {
-                皮肤: { diffuseMul: 1.5, specularMul: 0.8, shininess: 30, ambientMul: 1 },
+                皮肤: {
+                    diffuseMul: 1.5,
+                    specularMul: 0.8,
+                    shininess: 30,
+                    ambientMul: 1,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
             },
         });
         const p = getMatCatParams('model_as', '皮肤');
@@ -488,7 +505,18 @@ describe('applyMatState MaterialCategory cast', () => {
     it('applies override params from preset state', () => {
         applyMatState('model_as', {
             overrides: {
-                3: { diffuseMul: 1.5, specularMul: 0.5, shininess: 10, ambientMul: 1.2 },
+                3: {
+                    diffuseMul: 1.5,
+                    specularMul: 0.5,
+                    shininess: 10,
+                    ambientMul: 1.2,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
             },
         });
         const p = getMatParams('model_as', 3);
@@ -803,5 +831,215 @@ describe('per-material params write through to Babylon material properties', () 
 
         expect(mat.diffuseColor.set).toHaveBeenCalledTimes(2);
         expect(mat.diffuseColor.r).toBeCloseTo(0.5);
+    });
+});
+
+// ======== P2: emissiveMul tests ========
+
+describe('P2 emissiveMul parameter', () => {
+    const TEST_ID = 'emissive_test';
+
+    beforeEach(() => {
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
+        const old = modelRegistry.get(TEST_ID);
+        if (old) {
+            modelRegistry.delete(TEST_ID);
+        }
+    });
+
+    afterEach(() => {
+        if (modelRegistry.get(TEST_ID)) {
+            modelRegistry.delete(TEST_ID);
+        }
+    });
+
+    it('setMatCatParams applies emissiveMul to emissiveColor', () => {
+        const mat = new StandardMaterial('skin');
+        mat.emissiveColor.set(0.2, 0.3, 0.4);
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        setMatCatParams(TEST_ID, '皮肤', {
+            diffuseMul: 1,
+            specularMul: 1,
+            shininess: 50,
+            ambientMul: 1,
+            emissiveMul: 2,
+        });
+
+        expect(mat.emissiveColor.r).toBeCloseTo(0.4);
+        expect(mat.emissiveColor.g).toBeCloseTo(0.6);
+        expect(mat.emissiveColor.b).toBeCloseTo(0.8);
+    });
+
+    it('per-material emissiveMul overrides category', () => {
+        const mat = new StandardMaterial('skin');
+        mat.emissiveColor.set(0.5, 0.5, 0.5);
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        setMatCatParams(TEST_ID, '皮肤', { emissiveMul: 0.5 });
+        setMatParams(TEST_ID, 0, { emissiveMul: 1.5 });
+
+        expect(mat.emissiveColor.r).toBeCloseTo(0.75);
+    });
+});
+
+// ======== P1: texture level tests ========
+
+describe('P1 texture level parameters', () => {
+    const TEST_ID = 'texture_test';
+
+    beforeEach(() => {
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
+        const old = modelRegistry.get(TEST_ID);
+        if (old) {
+            modelRegistry.delete(TEST_ID);
+        }
+    });
+
+    afterEach(() => {
+        if (modelRegistry.get(TEST_ID)) {
+            modelRegistry.delete(TEST_ID);
+        }
+    });
+
+    it('setMatCatParams applies diffuseTexLevel to diffuseTexture', () => {
+        const mat = new StandardMaterial('skin');
+        // @ts-expect-error mock texture
+        mat.diffuseTexture = { level: 1 };
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        setMatCatParams(TEST_ID, '皮肤', { diffuseTexLevel: 2 });
+
+        expect((mat.diffuseTexture as any)?.level).toBeCloseTo(2);
+    });
+
+    it('setMatCatParams applies bumpTexLevel to bumpTexture', () => {
+        const mat = new StandardMaterial('skin');
+        // @ts-expect-error mock texture
+        mat.bumpTexture = { level: 1 };
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        setMatCatParams(TEST_ID, '皮肤', { bumpTexLevel: 0.5 });
+
+        expect((mat.bumpTexture as any)?.level).toBeCloseTo(0.5);
+    });
+
+    it('setMatCatParams applies toonTexLevel to toonTexture', () => {
+        const mat = new StandardMaterial('skin');
+        (mat as any).toonTexture = { level: 1 };
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        setMatCatParams(TEST_ID, '皮肤', { toonTexLevel: 1.5 });
+
+        expect((mat as any).toonTexture?.level).toBeCloseTo(1.5);
+    });
+
+    it('setMatCatParams applies sphereTexLevel to sphereTexture', () => {
+        const mat = new StandardMaterial('skin');
+        (mat as any).sphereTexture = { level: 1 };
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        setMatCatParams(TEST_ID, '皮肤', { sphereTexLevel: 3 });
+
+        expect((mat as any).sphereTexture?.level).toBeCloseTo(3);
+    });
+
+    it('setMatCatParams applies emissiveTexLevel to emissiveTexture', () => {
+        const mat = new StandardMaterial('skin');
+        // @ts-expect-error mock texture
+        mat.emissiveTexture = { level: 1 };
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        setMatCatParams(TEST_ID, '皮肤', { emissiveTexLevel: 0.3 });
+
+        expect((mat.emissiveTexture as any)?.level).toBeCloseTo(0.3);
+    });
+
+    it('per-material texture level overrides category', () => {
+        const mat = new StandardMaterial('skin');
+        // @ts-expect-error mock texture
+        mat.diffuseTexture = { level: 1 };
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        setMatCatParams(TEST_ID, '皮肤', { diffuseTexLevel: 0.5 });
+        setMatParams(TEST_ID, 0, { diffuseTexLevel: 2 });
+
+        expect((mat.diffuseTexture as any)?.level).toBeCloseTo(2);
+    });
+
+    it('null texture is handled safely (no crash)', () => {
+        const mat = new StandardMaterial('skin');
+        // diffuseTexture is null by default
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        expect(() => {
+            setMatCatParams(TEST_ID, '皮肤', { diffuseTexLevel: 2 });
+        }).not.toThrow();
+    });
+});
+
+// ======== resetMatCatParams restores P1+P2 values ========
+
+describe('resetMatCatParams restores P1+P2 values', () => {
+    const TEST_ID = 'reset_test';
+
+    beforeEach(() => {
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
+        const old = modelRegistry.get(TEST_ID);
+        if (old) {
+            modelRegistry.delete(TEST_ID);
+        }
+    });
+
+    afterEach(() => {
+        if (modelRegistry.get(TEST_ID)) {
+            modelRegistry.delete(TEST_ID);
+        }
+    });
+
+    it('restores emissiveColor to original', () => {
+        const mat = new StandardMaterial('skin');
+        mat.emissiveColor.set(0.2, 0.3, 0.4);
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        setMatCatParams(TEST_ID, '皮肤', { emissiveMul: 2 });
+        expect(mat.emissiveColor.r).toBeCloseTo(0.4);
+
+        resetSingleMatParams(TEST_ID, 0);
+        setMatCatParams(TEST_ID, '皮肤', { emissiveMul: 1 });
+
+        expect(mat.emissiveColor.r).toBeCloseTo(0.2);
+    });
+
+    it('restores texture levels to original', () => {
+        const mat = new StandardMaterial('skin');
+        // @ts-expect-error mock texture
+        mat.diffuseTexture = { level: 1 };
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
+
+        setMatCatParams(TEST_ID, '皮肤', { diffuseTexLevel: 2 });
+        expect((mat.diffuseTexture as any)?.level).toBeCloseTo(2);
+
+        resetSingleMatParams(TEST_ID, 0);
+        setMatCatParams(TEST_ID, '皮肤', { diffuseTexLevel: 1 });
+
+        expect((mat.diffuseTexture as any)?.level).toBeCloseTo(1);
     });
 });

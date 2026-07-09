@@ -216,6 +216,12 @@ func (a *App) expandZipEntries(zipPath, category, source, typeOverride string) [
 		entryType := innerType
 		if typeOverride != "" && typeOverride != "other" {
 			entryType = typeOverride
+		} else if innerType == "actor" {
+			// Use scan category as type for .pmx files, matching standalone
+			// file behavior (scanDirByExt sets Type: category). Without this,
+			// a .pmx inside a stage/ zip would have Type:"actor" instead of
+			// Type:"scene", making it invisible in the stage browser.
+			entryType = category
 		}
 		models = append(models, ModelEntry{
 			Dir:       filepath.Dir(fullPath) + "/" + zipBase,

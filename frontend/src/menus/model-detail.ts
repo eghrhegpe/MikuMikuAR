@@ -10,14 +10,15 @@ import {
     computeLibraryRef,
     dom,
     stackRegistry,
+    setModelReplaceTargetId,
+    libraryRoot,
+    externalPaths,
 } from '../core/config';
 import { modelManager } from '../scene/scene';
 import {
     getModelMorphs,
     setModelMorphWeight,
     resetModelMorphs,
-    setModelVisibility,
-    setModelOpacity,
 } from '../scene/manager/model-ops';
 import {
     buildTransformCard,
@@ -26,7 +27,7 @@ import {
 } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
-import { slideRow, addModeSlider, addCollapsible, addFieldRow } from '../core/ui-helpers';
+import { slideRow, addCollapsible, addFieldRow } from '../core/ui-helpers';
 import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
 import {
@@ -38,7 +39,7 @@ import {
     ScanSoftwareDir,
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus, getBrowseDir } from '../core/utils';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 
 // ======== Open With (software tools submenu) ========
@@ -126,6 +127,7 @@ export function buildModelLevel(id: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
+            const handle: ResourceHandle = { id, kind: 'actor', name: inst.name };
             cardContainer(container, (c) => {
                 // 外观折叠组
                 addCollapsible(c, {
@@ -145,15 +147,6 @@ export function buildModelLevel(id: string): PopupLevel {
                             const level = buildOutfitLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
-                    },
-                });
-
-                // 信息折叠组
-                addCollapsible(c, {
-                    title: t('model-detail.info'),
-                    icon: 'lucide:info',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
                         slideRow(inner, 'lucide:info', t('model-detail.basicInfo'), true, () => {
                             const level = buildModelInfoLevel(id);
                             stackRegistry.modelStack.push(level);
@@ -162,75 +155,29 @@ export function buildModelLevel(id: string): PopupLevel {
                             const level = buildBoneHierarchyLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
-                        slideRow(inner, 'lucide:tag', t('model-detail.tags'), true, () => {
-                            const level = buildModelTagsLevel(id);
-                            stackRegistry.modelStack.push(level);
-                        });
-                        // 可见性直接嵌入信息处
-                        let visMode: 'visible' | 'semi' | 'hidden';
-                        if (inst.visible && inst.opacity >= 0.99) {
-                            visMode = 'visible';
-                        } else if (inst.visible && inst.opacity < 0.99) {
-                            visMode = 'semi';
-                        } else {
-                            visMode = 'hidden';
-                        }
-                        addModeSlider(
-                            inner,
-                            t('model-detail.visibility'),
-                            [
-                                { value: 'visible', label: t('model-detail.visible') },
-                                { value: 'semi', label: t('model-detail.semi') },
-                                { value: 'hidden', label: t('model-detail.hidden') },
-                            ],
-                            visMode,
-                            (v) => {
-                                if (v === 'visible') {
-                                    setModelVisibility(id, true);
-                                    setModelOpacity(id, 1);
-                                } else if (v === 'semi') {
-                                    setModelVisibility(id, true);
-                                    setModelOpacity(id, 0.5);
-                                } else {
-                                    setModelVisibility(id, false);
-                                }
-                                stackRegistry.modelStack.updateControls();
-                                setStatus(
-                                    v === 'visible'
-                                        ? t('model-detail.statusVisible')
-                                        : v === 'semi'
-                                          ? t('model-detail.statusSemi')
-                                          : t('model-detail.statusHidden'),
-                                    true
-                                );
-                            },
-                            'lucide:eye',
-                            undefined,
-                            {
-                                bind: () => {
-                                    const inst = modelManager.get(id);
-                                    if (!inst) {
-                                        return 'visible';
-                                    }
-                                    if (inst.visible && inst.opacity >= 0.99) {
-                                        return 'visible';
-                                    }
-                                    if (inst.visible && inst.opacity < 0.99) {
-                                        return 'semi';
-                                    }
-                                    return 'hidden';
-                                },
-                            }
-                        );
                     },
                 });
 
-                // 工具折叠组
+                // 变换折叠组（复用公共构建器，含动态生成的坐标模式按钮）
+                addCollapsible(c, {
+                    title: t('model-detail.transform'),
+                    icon: 'lucide:move-3d',
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        buildTransformCard(inner, handle);
+                    },
+                });
+
+                // 工具折叠组（标签管理已移入）
                 addCollapsible(c, {
                     title: t('model-detail.tools'),
                     icon: 'lucide:wrench',
                     defaultOpen: false,
                     renderContent: (inner) => {
+                        slideRow(inner, 'lucide:tag', t('model-detail.tags'), true, () => {
+                            const level = buildModelTagsLevel(id);
+                            stackRegistry.modelStack.push(level);
+                        });
                         slideRow(inner, 'lucide:save', t('model-detail.savePreset'), false, () => {
                             savePresetToLibDialog(id);
                         });
@@ -246,9 +193,22 @@ export function buildModelLevel(id: string): PopupLevel {
                 });
             });
 
-            // 变换区块（复用公共构建器）
-            const handle: ResourceHandle = { id, kind: 'actor', name: inst.name };
-            buildTransformCard(container, handle);
+            // 更换模型（替换当前角色，复用模型库浏览器）
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:refresh-cw', t('model-detail.replaceModel'), true, () => {
+                    setModelReplaceTargetId(id);
+                    import('./library-core').then((m) => {
+                        const level = m.buildLevel(
+                            getBrowseDir('pmx'),
+                            t('model-detail.replaceModelTo', { name: inst.name }),
+                            (model) => model.format === 'pmx',
+                            stackRegistry.modelStack!,
+                            externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+                        );
+                        stackRegistry.modelStack?.push(level);
+                    });
+                });
+            });
 
             // 危险区块（复用公共构建器）
             buildDangerCard(container, handle, () => {

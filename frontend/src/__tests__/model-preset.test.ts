@@ -454,10 +454,32 @@ describe('serializeModelPreset', () => {
         createModel('m1', 4);
         applyMatState('m1', {
             categories: {
-                皮肤: { diffuseMul: 1.2, specularMul: 0.8, shininess: 30, ambientMul: 1 },
+                皮肤: {
+                    diffuseMul: 1.2,
+                    specularMul: 0.8,
+                    shininess: 30,
+                    ambientMul: 1,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
             },
             overrides: {
-                3: { diffuseMul: 1.5, specularMul: 0.5, shininess: 10, ambientMul: 1.2 },
+                3: {
+                    diffuseMul: 1.5,
+                    specularMul: 0.5,
+                    shininess: 10,
+                    ambientMul: 1.2,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
             },
         });
 
@@ -562,10 +584,32 @@ describe('applyModelPreset', () => {
             visibility: {},
             vmd: { path: null, name: '' },
             materialCategories: {
-                皮肤: { diffuseMul: 0.8, specularMul: 1.2, shininess: 100, ambientMul: 0.9 },
+                皮肤: {
+                    diffuseMul: 0.8,
+                    specularMul: 1.2,
+                    shininess: 100,
+                    ambientMul: 0.9,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
             },
             materialOverrides: {
-                0: { diffuseMul: 1.5, specularMul: 0.5, shininess: 10, ambientMul: 1.2 },
+                0: {
+                    diffuseMul: 1.5,
+                    specularMul: 0.5,
+                    shininess: 10,
+                    ambientMul: 1.2,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
             },
         };
 
@@ -604,8 +648,30 @@ describe('getMatState / applyMatState', () => {
         createModel('m1');
         applyMatState('m1', {
             categories: {
-                皮肤: { diffuseMul: 1.2, specularMul: 0.8, shininess: 30, ambientMul: 1 },
-                头发: { diffuseMul: 1, specularMul: 1.5, shininess: 80, ambientMul: 0.9 },
+                皮肤: {
+                    diffuseMul: 1.2,
+                    specularMul: 0.8,
+                    shininess: 30,
+                    ambientMul: 1,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
+                头发: {
+                    diffuseMul: 1,
+                    specularMul: 1.5,
+                    shininess: 80,
+                    ambientMul: 0.9,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
             },
         });
 
@@ -619,8 +685,30 @@ describe('getMatState / applyMatState', () => {
         createModel('m1', 8);
         applyMatState('m1', {
             overrides: {
-                3: { diffuseMul: 1.5, specularMul: 0.5, shininess: 10, ambientMul: 1.2 },
-                7: { diffuseMul: 0.8, specularMul: 1.2, shininess: 100, ambientMul: 0.9 },
+                3: {
+                    diffuseMul: 1.5,
+                    specularMul: 0.5,
+                    shininess: 10,
+                    ambientMul: 1.2,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
+                7: {
+                    diffuseMul: 0.8,
+                    specularMul: 1.2,
+                    shininess: 100,
+                    ambientMul: 0.9,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
             },
         });
 

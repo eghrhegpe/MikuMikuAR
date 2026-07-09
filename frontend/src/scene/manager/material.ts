@@ -4,10 +4,16 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 
 import { modelRegistry, uiState } from '@/core/config';
 import { triggerAutoSave } from '@/core/config';
+
+interface MmdStandardMaterial extends StandardMaterial {
+    toonTexture: Texture | null;
+    sphereTexture: Texture | null;
+}
 
 // ======== 外部材质目标注册表 ========
 // 让 propRegistry 等 non-model 资源也能复用 id-based 材质 API。
@@ -44,6 +50,12 @@ export type MaterialCategoryParams = {
     specularMul: number;
     shininess: number;
     ambientMul: number;
+    emissiveMul: number;
+    diffuseTexLevel: number;
+    bumpTexLevel: number;
+    toonTexLevel: number;
+    sphereTexLevel: number;
+    emissiveTexLevel: number;
 };
 
 const CATEGORIES = ['皮肤', '头发', '眼睛', '服装', '配件', '道具'] as const;
@@ -55,6 +67,12 @@ interface _OrigMat {
     specular: Color3;
     specularPower: number;
     ambient: Color3;
+    emissive: Color3;
+    diffuseTexLevel: number;
+    bumpTexLevel: number;
+    toonTexLevel: number;
+    sphereTexLevel: number;
+    emissiveTexLevel: number;
 }
 
 const _origValues = new WeakMap<Material, _OrigMat>();
@@ -251,11 +269,18 @@ export function _capture(mat: Material): void {
     if (_origValues.has(mat) || !(mat instanceof StandardMaterial)) {
         return;
     }
+    const mmdMat = mat as MmdStandardMaterial;
     _origValues.set(mat, {
         diffuse: mat.diffuseColor.clone(),
         specular: mat.specularColor.clone(),
         specularPower: mat.specularPower,
         ambient: mat.ambientColor.clone(),
+        emissive: mat.emissiveColor.clone(),
+        diffuseTexLevel: mat.diffuseTexture?.level ?? 1,
+        bumpTexLevel: mat.bumpTexture?.level ?? 1,
+        toonTexLevel: mmdMat.toonTexture?.level ?? 1,
+        sphereTexLevel: mmdMat.sphereTexture?.level ?? 1,
+        emissiveTexLevel: mat.emissiveTexture?.level ?? 1,
     });
 }
 
@@ -276,6 +301,7 @@ export function _applyAll(id: string): void {
         if (!m || !(m instanceof StandardMaterial)) {
             continue;
         }
+        const mmdMat = m as MmdStandardMaterial;
         _capture(m);
         const o = _origValues.get(m)!;
         const p = state.get(_catOf(m.name));
@@ -298,6 +324,16 @@ export function _applyAll(id: string): void {
             o.ambient.g * p.ambientMul,
             o.ambient.b * p.ambientMul
         );
+        m.emissiveColor.set(
+            o.emissive.r * p.emissiveMul,
+            o.emissive.g * p.emissiveMul,
+            o.emissive.b * p.emissiveMul
+        );
+        if (m.diffuseTexture) m.diffuseTexture.level = o.diffuseTexLevel * p.diffuseTexLevel;
+        if (m.bumpTexture) m.bumpTexture.level = o.bumpTexLevel * p.bumpTexLevel;
+        if (mmdMat.toonTexture) mmdMat.toonTexture.level = o.toonTexLevel * p.toonTexLevel;
+        if (mmdMat.sphereTexture) mmdMat.sphereTexture.level = o.sphereTexLevel * p.sphereTexLevel;
+        if (m.emissiveTexture) m.emissiveTexture.level = o.emissiveTexLevel * p.emissiveTexLevel;
         const mp = perMat.get(mi);
         if (mp) {
             m.diffuseColor.set(
@@ -316,6 +352,16 @@ export function _applyAll(id: string): void {
                 o.ambient.g * mp.ambientMul,
                 o.ambient.b * mp.ambientMul
             );
+            m.emissiveColor.set(
+                o.emissive.r * mp.emissiveMul,
+                o.emissive.g * mp.emissiveMul,
+                o.emissive.b * mp.emissiveMul
+            );
+            if (m.diffuseTexture) m.diffuseTexture.level = o.diffuseTexLevel * mp.diffuseTexLevel;
+            if (m.bumpTexture) m.bumpTexture.level = o.bumpTexLevel * mp.bumpTexLevel;
+            if (mmdMat.toonTexture) mmdMat.toonTexture.level = o.toonTexLevel * mp.toonTexLevel;
+            if (mmdMat.sphereTexture) mmdMat.sphereTexture.level = o.sphereTexLevel * mp.sphereTexLevel;
+            if (m.emissiveTexture) m.emissiveTexture.level = o.emissiveTexLevel * mp.emissiveTexLevel;
         }
     }
 }
@@ -327,7 +373,18 @@ function _ensureState(id: string): Map<string, MaterialCategoryParams> {
     }
     m = new Map();
     for (const c of CATEGORIES) {
-        m.set(c, { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 });
+        m.set(c, {
+            diffuseMul: 1,
+            specularMul: 1,
+            shininess: 50,
+            ambientMul: 1,
+            emissiveMul: 1,
+            diffuseTexLevel: 1,
+            bumpTexLevel: 1,
+            toonTexLevel: 1,
+            sphereTexLevel: 1,
+            emissiveTexLevel: 1,
+        });
     }
     _catState.set(id, m);
     return m;
@@ -383,7 +440,18 @@ export function getMatCatGroups(id: string): Map<string, { name: string; mat: Ma
 export function getMatCatParams(id: string, cat: string): MaterialCategoryParams {
     if (!CATEGORY_SET.has(cat)) {
         console.warn(`[material] getMatCatParams: unknown category "${cat}"`);
-        return { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 };
+        return {
+            diffuseMul: 1,
+            specularMul: 1,
+            shininess: 50,
+            ambientMul: 1,
+            emissiveMul: 1,
+            diffuseTexLevel: 1,
+            bumpTexLevel: 1,
+            toonTexLevel: 1,
+            sphereTexLevel: 1,
+            emissiveTexLevel: 1,
+        };
     }
     return { ..._ensureState(id).get(cat)! };
 }
@@ -410,6 +478,24 @@ export function setMatCatParams(
     if (params.ambientMul !== undefined) {
         target.ambientMul = Math.max(0, Math.min(2, params.ambientMul));
     }
+    if (params.emissiveMul !== undefined) {
+        target.emissiveMul = Math.max(0, Math.min(2, params.emissiveMul));
+    }
+    if (params.diffuseTexLevel !== undefined) {
+        target.diffuseTexLevel = Math.max(0, Math.min(3, params.diffuseTexLevel));
+    }
+    if (params.bumpTexLevel !== undefined) {
+        target.bumpTexLevel = Math.max(0, Math.min(3, params.bumpTexLevel));
+    }
+    if (params.toonTexLevel !== undefined) {
+        target.toonTexLevel = Math.max(0, Math.min(3, params.toonTexLevel));
+    }
+    if (params.sphereTexLevel !== undefined) {
+        target.sphereTexLevel = Math.max(0, Math.min(3, params.sphereTexLevel));
+    }
+    if (params.emissiveTexLevel !== undefined) {
+        target.emissiveTexLevel = Math.max(0, Math.min(3, params.emissiveTexLevel));
+    }
     _applyAll(id);
     triggerAutoSave();
 }
@@ -426,12 +512,19 @@ export function resetMatCatParams(id: string): void {
         if (!m || !(m instanceof StandardMaterial)) {
             continue;
         }
+        const mmdMat = m as MmdStandardMaterial;
         const o = _origValues.get(m);
         if (o) {
             m.diffuseColor.copyFrom(o.diffuse);
             m.specularColor.copyFrom(o.specular);
             m.specularPower = o.specularPower;
             m.ambientColor.copyFrom(o.ambient);
+            m.emissiveColor.copyFrom(o.emissive);
+            if (m.diffuseTexture) m.diffuseTexture.level = o.diffuseTexLevel;
+            if (m.bumpTexture) m.bumpTexture.level = o.bumpTexLevel;
+            if (mmdMat.toonTexture) mmdMat.toonTexture.level = o.toonTexLevel;
+            if (mmdMat.sphereTexture) mmdMat.sphereTexture.level = o.sphereTexLevel;
+            if (m.emissiveTexture) m.emissiveTexture.level = o.emissiveTexLevel;
         }
     }
     triggerAutoSave();
@@ -469,7 +562,18 @@ export function getMatDetailList(
         const mp = perMat.get(mi);
         const params: MaterialCategoryParams = mp
             ? { ...mp }
-            : { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 };
+            : {
+                  diffuseMul: 1,
+                  specularMul: 1,
+                  shininess: 50,
+                  ambientMul: 1,
+                  emissiveMul: 1,
+                  diffuseTexLevel: 1,
+                  bumpTexLevel: 1,
+                  toonTexLevel: 1,
+                  sphereTexLevel: 1,
+                  emissiveTexLevel: 1,
+              };
         result.push({ name: m.name, index: mi, params, modified: !!mp });
     }
     return result;
@@ -499,7 +603,18 @@ export function setMatParams(
     const state = _ensureMatState(id);
     let entry = state.get(matIndex);
     if (!entry) {
-        entry = { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 };
+        entry = {
+            diffuseMul: 1,
+            specularMul: 1,
+            shininess: 50,
+            ambientMul: 1,
+            emissiveMul: 1,
+            diffuseTexLevel: 1,
+            bumpTexLevel: 1,
+            toonTexLevel: 1,
+            sphereTexLevel: 1,
+            emissiveTexLevel: 1,
+        };
         state.set(matIndex, entry);
     }
     if (params.diffuseMul !== undefined) {
@@ -513,6 +628,24 @@ export function setMatParams(
     }
     if (params.ambientMul !== undefined) {
         entry.ambientMul = Math.max(0, Math.min(2, params.ambientMul));
+    }
+    if (params.emissiveMul !== undefined) {
+        entry.emissiveMul = Math.max(0, Math.min(2, params.emissiveMul));
+    }
+    if (params.diffuseTexLevel !== undefined) {
+        entry.diffuseTexLevel = Math.max(0, Math.min(3, params.diffuseTexLevel));
+    }
+    if (params.bumpTexLevel !== undefined) {
+        entry.bumpTexLevel = Math.max(0, Math.min(3, params.bumpTexLevel));
+    }
+    if (params.toonTexLevel !== undefined) {
+        entry.toonTexLevel = Math.max(0, Math.min(3, params.toonTexLevel));
+    }
+    if (params.sphereTexLevel !== undefined) {
+        entry.sphereTexLevel = Math.max(0, Math.min(3, params.sphereTexLevel));
+    }
+    if (params.emissiveTexLevel !== undefined) {
+        entry.emissiveTexLevel = Math.max(0, Math.min(3, params.emissiveTexLevel));
     }
     _applyAll(id);
     triggerAutoSave();

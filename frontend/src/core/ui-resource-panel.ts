@@ -50,15 +50,6 @@ export interface ResourcePanelHandle {
     dispose: () => void;
 }
 
-// ======== CSS Variables ========
-
-const CSS_VARS = `
-    --resource-thumb-size: 80px;
-    --resource-gap: 8px;
-    --resource-radius: 8px;
-    --resource-label-height: 20px;
-`;
-
 // ======== Main Component ========
 
 /** 超过此数量时启用虚拟滚动 */
@@ -87,7 +78,6 @@ export function createResourcePanel(
     // 创建容器
     const panel = document.createElement('div');
     panel.className = 'resource-panel';
-    panel.style.cssText = CSS_VARS;
     container.appendChild(panel);
 
     // 清理虚拟滚动和观察器

@@ -453,6 +453,12 @@ export class MockStandardMaterial {
     ambientColor = this._makeColor(0.3, 0.3, 0.3);
     emissiveColor = this._makeColor(0, 0, 0);
 
+    diffuseTexture: { level: number; setLevel(l: number): void } | null = null;
+    bumpTexture: { level: number; setLevel(l: number): void } | null = null;
+    toonTexture: { level: number; setLevel(l: number): void } | null = null;
+    sphereTexture: { level: number; setLevel(l: number): void } | null = null;
+    emissiveTexture: { level: number; setLevel(l: number): void } | null = null;
+
     private _makeColor(r: number, g: number, b: number) {
         const obj: any = {
             r,
@@ -481,6 +487,38 @@ export class MockStandardMaterial {
             },
         };
         return obj;
+    }
+
+    private _makeTexture(level: number = 1) {
+        let _level = level;
+        return {
+            get level() {
+                return _level;
+            },
+            setLevel(l: number) {
+                _level = l;
+            },
+        };
+    }
+
+    enableDiffuseTexture(level: number = 1): void {
+        this.diffuseTexture = this._makeTexture(level);
+    }
+
+    enableBumpTexture(level: number = 1): void {
+        this.bumpTexture = this._makeTexture(level);
+    }
+
+    enableToonTexture(level: number = 1): void {
+        this.toonTexture = this._makeTexture(level);
+    }
+
+    enableSphereTexture(level: number = 1): void {
+        this.sphereTexture = this._makeTexture(level);
+    }
+
+    enableEmissiveTexture(level: number = 1): void {
+        this.emissiveTexture = this._makeTexture(level);
     }
 
     constructor(name: string) {

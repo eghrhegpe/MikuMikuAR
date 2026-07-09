@@ -21,6 +21,7 @@ import {
     stopVMD,
     getMatState,
     applyMatState,
+    MaterialCategoryParams,
 } from '../scene/scene';
 import {
     SelectPresetSaveFile,
@@ -88,14 +89,8 @@ export interface ModelPresetFile {
         volume: number;
         offset: number;
     };
-    materialCategories?: Record<
-        string,
-        { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }
-    >;
-    materialOverrides?: Record<
-        number,
-        { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }
-    >;
+    materialCategories?: Record<string, MaterialCategoryParams>;
+    materialOverrides?: Record<number, MaterialCategoryParams>;
     materialEnabled?: Record<number, boolean>;
 }
 
