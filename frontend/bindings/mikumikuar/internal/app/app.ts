@@ -824,6 +824,21 @@ export function StartFileServer(dirPath: string): $CancellablePromise<number> {
 }
 
 /**
+ * StartProxy starts a local reverse proxy that forwards to target and returns
+ * the local proxy base URL (e.g. "http://127.0.0.1:PORT/"). It strips
+ * X-Frame-Options and the CSP frame-ancestors directive so the target can be
+ * embedded inside an iframe, and rewrites same-host redirect Location headers
+ * to stay within the proxy.
+ * 
+ * Intended for read-only browsing of login-free model resource sites;
+ * login-gated SPA sites should use the external-browser path instead
+ * (see ADR-075). See also ysm-model-manager's creative-workshop proxy.
+ */
+export function StartProxy(target: string): $CancellablePromise<string> {
+    return $Call.ByID(1126463619, target);
+}
+
+/**
  * StartWatchDir starts fsnotify-based watching on the specified directory.
  * If already watching a directory, it stops the previous watcher first.
  * Only files with .zip/.pmx/.vmd extensions trigger notifications,
@@ -842,6 +857,14 @@ export function StartWatchDir(dir: string): $CancellablePromise<void> {
  */
 export function StopFileServer(dirPath: string): $CancellablePromise<void> {
     return $Call.ByID(1672597494, dirPath);
+}
+
+/**
+ * StopProxy shuts down the model-plaza reverse proxy started by StartProxy.
+ * It is idempotent: calling it when no proxy is running is a no-op.
+ */
+export function StopProxy(): $CancellablePromise<void> {
+    return $Call.ByID(1345891689);
 }
 
 /**
