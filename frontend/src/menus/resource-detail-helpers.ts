@@ -4,6 +4,7 @@
 // 现状: stage/prop 详情面板改为薄壳调用本模块；model-detail 因结构差异大保持现状
 
 import { cardContainer, setStatus, modelRegistry, propRegistry } from '../core/config';
+import { t } from '../core/i18n/t';
 import { slideRow, addSliderRow, addToggleRow, addModeRow, addDangerRow } from '../core/ui-helpers';
 import {
     getModelPosition,
@@ -326,13 +327,13 @@ export function buildDangerCard(
     const { id, kind, name } = handle;
     cardContainer(container, (c) => {
         // stage/actor 提供"重置变换"
-        if (kind === 'actor' || kind === 'stage') {
-            slideRow(c, 'lucide:rotate-ccw', '重置变换', false, () => {
-                resetModelTransform(id);
-                setStatus(`✓ ${kind === 'stage' ? '舞台' : '模型'}变换已重置`, true);
-                onRemoved?.();
-            });
-        }
+      if (kind === 'actor' || kind === 'stage') {
+        slideRow(c, 'lucide:rotate-ccw', t('settings.transformReset'), false, () => {
+          resetModelTransform(id);
+          setStatus(t('settings.transformReset', {kind: kind==='stage'?t('common.stage'):t('common.model')}), true);
+          onRemoved?.();
+        });
+      }
         addDangerRow(
             c,
             'lucide:trash-2',
@@ -343,8 +344,8 @@ export function buildDangerCard(
                 } else {
                     removeModel(id);
                 }
-                onRemoved?.();
-                setStatus(`✓ 已卸载: ${name}`, true);
+      onRemoved?.();
+      setStatus(t('settings.unloaded', {name}), true);
             }
         );
     });

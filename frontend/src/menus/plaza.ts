@@ -13,6 +13,7 @@ import { openExternalURL } from '../core/platform';
 import { closeAllOverlays } from '../core/utils';
 import { PLAZA_SITES, type PlazaSite } from './plaza-sites';
 import { setStatus } from '../core/status-bar';
+import { t } from '../core/i18n/t';
 
 const L = {
     title: '模型广场',
@@ -72,19 +73,19 @@ function installDownloadListener(): void {
 }
 
 async function handlePlazaDownload(url: string, filename: string): Promise<void> {
-    setStatus(`下载中: ${filename}`, false, true);
-    try {
-        // 动态绑定导入：binding 可能尚未生成，失败即失败，不自动降级到浏览器。
-        const { DownloadFromPlaza } = await import('../core/wails-bindings');
-        if (typeof DownloadFromPlaza !== 'function') {
-            throw new Error('binding not available');
-        }
-        const result = await DownloadFromPlaza(url, filename);
-        setStatus(`✓ 已下载: ${result.fileName} (${(result.size / 1024).toFixed(1)} KB)`, true);
-    } catch (e) {
-        // 动态 import 失败或 binding 未生成：仅报状态，不串到系统浏览器下载，便于单独定位内嵌下载问题。
-        setStatus(`下载失败: ${e instanceof Error ? e.message : String(e)}`, true);
+  setStatus(t('plaza.downloading', {name: filename}), false, true);
+  try {
+    // 动态绑定导入：binding 可能尚未生成，失败即失败，不自动降级到浏览器。
+    const { DownloadFromPlaza } = await import('../core/wails-bindings');
+    if (typeof DownloadFromPlaza !== 'function') {
+      throw new Error('binding not available');
     }
+    const result = await DownloadFromPlaza(url, filename);
+    setStatus(t('plaza.downloaded', {name: result.fileName, size: (result.size / 1024).toFixed(1)}), true);
+  } catch (e) {
+    // 动态 import 失败或 binding 未生成：仅报状态，不串到系统浏览器下载，便于单独定位内嵌下载问题。
+    setStatus(t('plaza.downloadFail', {err: e instanceof Error ? e.message : String(e)}), true);
+  }
 }
 
 function getLayer(): HTMLElement {
@@ -100,13 +101,13 @@ function openExternal(site: PlazaSite): void {
 }
 
 function openInWindow(site: PlazaSite): void {
-    setStatus(`正在打开 ${site.name}...`, false, true);
-    OpenPlazaWindow(site.url)
-        .then(() => setStatus('', false))
-        .catch((e) => {
-            // 不再自动降级到系统浏览器：wails 窗口失败即失败，便于单独测试该模式。
-            setStatus(`打开窗口失败: ${e instanceof Error ? e.message : String(e)}`, true);
-        });
+  setStatus(t('plaza.opening', {name: site.name}), false, true);
+  OpenPlazaWindow(site.url)
+  .then(() => setStatus('', false))
+  .catch((e) => {
+    // 不再自动降级到系统浏览器：wails 窗口失败即失败，便于单独测试该模式。
+    setStatus(t('plaza.openFail', {err: e instanceof Error ? e.message : String(e)}), true);
+  });
 }
 
 /** 回收 Go 反向代理（幂等，已停则无操作） */

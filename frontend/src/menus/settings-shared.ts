@@ -132,10 +132,10 @@ export async function setTheme(
     root.style.setProperty('--text-dim', textColors.dim);
     root.style.setProperty('--text-muted', textColors.muted);
 
-    const _r = await tryCatchStatus(() => SetUIAccent(hex), '✗ 主题色保存失败');
-    if (_r !== undefined) {
-        setStatus(`✓ 主题色已设为 ${hex}`, true);
-    }
+  const _r = await tryCatchStatus(() => SetUIAccent(hex), t('status.error'));
+  if (_r !== undefined) {
+    setStatus(t('settings.themeColorSet', {hex}), true);
+  }
     getSettingsMenu()?.updateControls();
 }
 

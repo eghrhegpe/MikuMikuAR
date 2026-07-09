@@ -1,6 +1,7 @@
 // settings-audio.ts — 音频设置子菜单
 
 import { setStatus, cardContainer } from '../core/config';
+import { t } from '../core/i18n/t';
 import { slideRow, addSliderRow, addToggleRow } from '../core/ui-helpers';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
@@ -52,7 +53,7 @@ export function buildSettingsAudioLevel(getSettingsMenu: () => SettingsMenuHandl
 
             cardContainer(container, (c) => {
                 addToggleRow(c, 'BPM 量化', true,
-                    (v) => { setBpmQuantizeEnabled(v); getSettingsMenu()?.updateControls(); setStatus(v ? '✓ BPM 量化已开启' : '✓ BPM 量化已关闭', true); },
+                    (v) => { setBpmQuantizeEnabled(v); getSettingsMenu()?.updateControls(); setStatus(v ? t('settings.bpmQuantOn') : t('settings.bpmQuantOff'), true); },
                     'lucide:activity',
                     { bind: () => getBpmQuantizeEnabled() }
                 );
@@ -60,7 +61,7 @@ export function buildSettingsAudioLevel(getSettingsMenu: () => SettingsMenuHandl
 
             cardContainer(container, (c) => {
                 addToggleRow(c, '加载动作时自动加载同目录音乐', getAutoLoadCompanionAudio(),
-                    (v) => { setAutoLoadCompanionAudio(v); getSettingsMenu()?.updateControls(); setStatus(v ? '✓ 伴音自动加载已开启' : '✓ 伴音自动加载已关闭', true); },
+                    (v) => { setAutoLoadCompanionAudio(v); getSettingsMenu()?.updateControls(); setStatus(v ? t('settings.companionOn') : t('settings.companionOff'), true); },
                     'lucide:disc-3',
                     { bind: () => getAutoLoadCompanionAudio() }
                 );

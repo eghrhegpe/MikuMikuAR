@@ -512,7 +512,7 @@ function _renderParamCard(
             resetSingleMatParams(id, index);
             _selectedMat = null;
             (targetStack ?? stackRegistry.modelStack)?.reRender();
-            setStatus(`✓ 已重置: ${matName}`, true);
+            setStatus(t('model.materialReset', { name: matName }), true);
         });
     }
 
