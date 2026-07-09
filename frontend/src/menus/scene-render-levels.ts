@@ -65,10 +65,10 @@ export function buildPresetScenesLevel(): PopupLevel {
             // 导出/导入场景包 action
             const bundleActions = document.createElement('div');
             bundleActions.className = 'lcard';
-            slideRow(bundleActions, 'lucide:package-export', t('scene.exportSceneBundle'), false, () => {
+            slideRow(bundleActions, 'lucide:file-up', t('scene.exportSceneBundle'), false, () => {
                 void exportSceneBundle();
             });
-            slideRow(bundleActions, 'lucide:package-import', t('scene.importSceneBundle'), false, () => {
+            slideRow(bundleActions, 'lucide:file-down', t('scene.importSceneBundle'), false, () => {
                 void importSceneBundle();
             });
             const bundleDivider = document.createElement('div');
@@ -194,7 +194,10 @@ export function buildPostProcessLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             const state = getRenderState();
+
+            // ===== 核心层：高频效果，Bloom + 景深 = 默认展开 =====
             cardContainer(container, (c) => {
+                // 泛光（强度/阈值/核大小）+ 边缘高亮（语义相关，并入折叠头）
                 addCollapsible(c, {
                     title: t('scene.bloom'),
                     icon: 'lucide:sun',
@@ -247,71 +250,30 @@ export function buildPostProcessLevel(): PopupLevel {
                                 triggerAutoSave();
                             }
                         );
+                        // 边缘高亮 → 语义上属于 Bloom（边缘检测强化泛光效果）
+                        addToggleRow(
+                            inner,
+                            t('scene.outline'),
+                            state.outlineEnabled,
+                            (v) => {
+                                setRenderState({ outlineEnabled: v });
+                                triggerAutoSave();
+                            },
+                            'lucide:square',
+                            {
+                                bind: () => getRenderState().outlineEnabled,
+                            }
+                        );
                     },
                 });
 
-                addToggleRow(
-                    c,
-                    t('scene.outline'),
-                    state.outlineEnabled,
-                    (v) => {
-                        setRenderState({ outlineEnabled: v });
-                        triggerAutoSave();
-                    },
-                    'lucide:square',
-                    {
-                        bind: () => getRenderState().outlineEnabled,
-                    }
-                );
-
-                addModeSlider(
-                    c,
-                    t('scene.antialiasing'),
-                    [
-                        { value: 'off', label: t('scene.off') },
-                        { value: 'fxaa', label: 'FXAA' },
-                        { value: '2x', label: '2x' },
-                        { value: '4x', label: '4x' },
-                        { value: '8x', label: '8x' },
-                    ],
-                    state.msaaSamples > 1
-                        ? `${state.msaaSamples}x`
-                        : state.fxaaEnabled
-                          ? 'fxaa'
-                          : 'off',
-                    (v) => {
-                        const updates: Partial<RenderState> = {};
-                        if (v === 'off') {
-                            updates.fxaaEnabled = false;
-                            updates.msaaSamples = 1;
-                        } else if (v === 'fxaa') {
-                            updates.fxaaEnabled = true;
-                            updates.msaaSamples = 1;
-                        } else {
-                            updates.fxaaEnabled = false;
-                            updates.msaaSamples = parseInt(v);
-                        }
-                        setRenderState(updates);
-                        triggerAutoSave();
-                    },
-                    'lucide:scan-line',
-                    undefined,
-                    {
-                        bind: () => {
-                            const s = getRenderState();
-                            return s.msaaSamples > 1
-                                ? `${s.msaaSamples}x`
-                                : s.fxaaEnabled
-                                  ? 'fxaa'
-                                  : 'off';
-                        },
-                    }
-                );
-
+                // 景深 — 高频效果，默认展开
                 sliderRow(c, t('scene.dof'), state.dofAperture, 0, 1, 0.05, 'lucide:camera', (v) => {
                     setRenderState({ dofEnabled: v > 0, dofAperture: v });
                     triggerAutoSave();
                 });
+
+                // 暗角 — 中频效果，默认展开
                 sliderRow(
                     c,
                     t('scene.vignette'),
@@ -325,152 +287,222 @@ export function buildPostProcessLevel(): PopupLevel {
                         triggerAutoSave();
                     }
                 );
-                sliderRow(
-                    c,
-                    t('scene.chromatic'),
-                    state.chromaticAberrationAmount,
-                    0,
-                    1,
-                    0.05,
-                    'lucide:rainbow',
-                    (v) => {
-                        setRenderState({
-                            chromaticAberrationEnabled: v > 0,
-                            chromaticAberrationAmount: v,
-                        });
-                        triggerAutoSave();
-                    }
-                );
-                sliderRow(c, t('scene.grain'), state.grainIntensity, 0, 1, 0.05, 'lucide:grid-3x3', (v) => {
-                    setRenderState({ grainEnabled: v > 0, grainIntensity: v });
-                    triggerAutoSave();
-                });
+
+                // 锐化 — 中频效果，默认展开
                 sliderRow(c, t('scene.sharpen'), state.sharpenAmount, 0, 1, 0.05, 'lucide:focus', (v) => {
                     setRenderState({ sharpenAmount: v });
                     triggerAutoSave();
                 });
-                sliderRow(c, t('scene.glow'), state.glowIntensity, 0, 1, 0.05, 'lucide:sparkles', (v) => {
-                    setRenderState({ glowEnabled: v > 0, glowIntensity: v });
-                    triggerAutoSave();
-                });
-                // SSR — 屏幕空间反射
-                addToggleRow(
-                    c,
-                    t('scene.ssr'),
-                    state.ssrEnabled,
-                    (v) => {
-                        setRenderState({ ssrEnabled: v });
-                        triggerAutoSave();
-                        reRenderSceneMenu();
-                    },
-                    'lucide:reflect',
-                    {
-                        bind: () => getRenderState().ssrEnabled,
-                    }
-                );
-                if (state.ssrEnabled) {
-                    sliderRow(
-                        c,
-                        t('scene.ssrStrength'),
-                        state.ssrStrength,
-                        0,
-                        1,
-                        0.05,
-                        'lucide:opacity',
-                        (v) => {
-                            setRenderState({ ssrStrength: v });
+
+                // ===== 高级层：低频效果，默认折叠 =====
+
+                // 光学效果（抗锯齿/颗粒/色差/辉光）
+                addCollapsible(c, {
+                    title: t('scene.opticalEffects') ?? '光学效果',
+                    icon: 'lucide:sparkles',
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addModeSlider(
+                            inner,
+                            t('scene.antialiasing'),
+                            [
+                                { value: 'off', label: t('scene.off') },
+                                { value: 'fxaa', label: 'FXAA' },
+                                { value: '2x', label: '2x' },
+                                { value: '4x', label: '4x' },
+                                { value: '8x', label: '8x' },
+                            ],
+                            state.msaaSamples > 1
+                                ? `${state.msaaSamples}x`
+                                : state.fxaaEnabled
+                                  ? 'fxaa'
+                                  : 'off',
+                            (v) => {
+                                const updates: Partial<RenderState> = {};
+                                if (v === 'off') {
+                                    updates.fxaaEnabled = false;
+                                    updates.msaaSamples = 1;
+                                } else if (v === 'fxaa') {
+                                    updates.fxaaEnabled = true;
+                                    updates.msaaSamples = 1;
+                                } else {
+                                    updates.fxaaEnabled = false;
+                                    updates.msaaSamples = parseInt(v);
+                                }
+                                setRenderState(updates);
+                                triggerAutoSave();
+                            },
+                            'lucide:scan-line',
+                            undefined,
+                            {
+                                bind: () => {
+                                    const s = getRenderState();
+                                    return s.msaaSamples > 1
+                                        ? `${s.msaaSamples}x`
+                                        : s.fxaaEnabled
+                                          ? 'fxaa'
+                                          : 'off';
+                                },
+                            }
+                        );
+
+                        sliderRow(inner, t('scene.grain'), state.grainIntensity, 0, 1, 0.05, 'lucide:grid-3x3', (v) => {
+                            setRenderState({ grainEnabled: v > 0, grainIntensity: v });
                             triggerAutoSave();
-                        }
-                    );
-                    sliderRow(c, t('scene.ssrFalloff'), state.ssrFalloff, 0, 1, 0.05, 'lucide:border', (v) => {
-                        setRenderState({ ssrFalloff: v });
-                        triggerAutoSave();
-                    });
-                    sliderRow(c, t('scene.ssrStep'), state.ssrStep, 1, 32, 1, 'lucide:ruler', (v) => {
-                        setRenderState({ ssrStep: v });
-                        triggerAutoSave();
-                    });
-                    sliderRow(
-                        c,
-                        t('scene.ssrThickness'),
-                        state.ssrThickness,
-                        0,
-                        2,
-                        0.1,
-                        'lucide:layers',
-                        (v) => {
-                            setRenderState({ ssrThickness: v });
-                            triggerAutoSave();
-                        }
-                    );
-                }
-                // Reflection Probe — 环境反射探针
-                addToggleRow(
-                    c,
-                    t('scene.reflectionProbe'),
-                    state.reflectionProbeEnabled,
-                    (v) => {
-                        setRenderState({
-                            reflectionProbeEnabled: v,
-                            reflectionIntensity: v ? 1 : 0,
                         });
-                        triggerAutoSave();
-                    },
-                    'lucide:scan',
-                    {
-                        bind: () => getRenderState().reflectionProbeEnabled,
-                    }
-                );
-                // SSAO — 屏幕空间环境遮蔽
-                addToggleRow(
-                    c,
-                    t('scene.ssao'),
-                    state.ssaoEnabled,
-                    (v) => {
-                        setRenderState({ ssaoEnabled: v });
-                        triggerAutoSave();
-                        reRenderSceneMenu();
-                    },
-                    'lucide:shadow',
-                    {
-                        bind: () => getRenderState().ssaoEnabled,
-                    }
-                );
-                if (state.ssaoEnabled) {
-                    sliderRow(
-                        c,
-                        t('scene.ssaoStrength'),
-                        state.ssaoStrength,
-                        0,
-                        1,
-                        0.05,
-                        'lucide:circle-half',
-                        (v) => {
-                            setRenderState({ ssaoStrength: v });
+
+                        sliderRow(
+                            inner,
+                            t('scene.chromatic'),
+                            state.chromaticAberrationAmount,
+                            0,
+                            1,
+                            0.05,
+                            'lucide:rainbow',
+                            (v) => {
+                                setRenderState({
+                                    chromaticAberrationEnabled: v > 0,
+                                    chromaticAberrationAmount: v,
+                                });
+                                triggerAutoSave();
+                            }
+                        );
+
+                        sliderRow(inner, t('scene.glow'), state.glowIntensity, 0, 1, 0.05, 'lucide:sparkles', (v) => {
+                            setRenderState({ glowEnabled: v > 0, glowIntensity: v });
                             triggerAutoSave();
+                        });
+                    },
+                });
+
+                // 环境效果（屏幕空间反射/环境反射/环境遮蔽 SSAO）
+                addCollapsible(c, {
+                    title: t('scene.environmentEffects') ?? '环境效果',
+                    icon: 'lucide:box',
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        // 屏幕空间反射 — 展开时显示 4 个精细参数
+                        addToggleRow(
+                            inner,
+                            t('scene.ssr'),
+                            state.ssrEnabled,
+                            (v) => {
+                                setRenderState({ ssrEnabled: v });
+                                triggerAutoSave();
+                                reRenderSceneMenu();
+                            },
+                            'lucide:flip-horizontal-2',
+                            {
+                                bind: () => getRenderState().ssrEnabled,
+                            }
+                        );
+                        if (state.ssrEnabled) {
+                            sliderRow(
+                                inner,
+                                t('scene.ssrStrength'),
+                                state.ssrStrength,
+                                0,
+                                1,
+                                0.05,
+                                'lucide:circle-dashed',
+                                (v) => {
+                                    setRenderState({ ssrStrength: v });
+                                    triggerAutoSave();
+                                }
+                            );
+                            sliderRow(inner, t('scene.ssrFalloff'), state.ssrFalloff, 0, 1, 0.05, 'lucide:square-dashed', (v) => {
+                                setRenderState({ ssrFalloff: v });
+                                triggerAutoSave();
+                            });
+                            sliderRow(inner, t('scene.ssrStep'), state.ssrStep, 1, 32, 1, 'lucide:ruler', (v) => {
+                                setRenderState({ ssrStep: v });
+                                triggerAutoSave();
+                            });
+                            sliderRow(
+                                inner,
+                                t('scene.ssrThickness'),
+                                state.ssrThickness,
+                                0,
+                                2,
+                                0.1,
+                                'lucide:layers',
+                                (v) => {
+                                    setRenderState({ ssrThickness: v });
+                                    triggerAutoSave();
+                                }
+                            );
                         }
-                    );
-                    sliderRow(
-                        c,
-                        t('scene.ssaoRadius'),
-                        state.ssaoRadius,
-                        0,
-                        1,
-                        0.05,
-                        'lucide:circle-dot',
-                        (v) => {
-                            setRenderState({ ssaoRadius: v });
-                            triggerAutoSave();
+
+                        // 环境反射探针
+                        addToggleRow(
+                            inner,
+                            t('scene.reflectionProbe'),
+                            state.reflectionProbeEnabled,
+                            (v) => {
+                                setRenderState({
+                                    reflectionProbeEnabled: v,
+                                    reflectionIntensity: v ? 1 : 0,
+                                });
+                                triggerAutoSave();
+                            },
+                            'lucide:scan',
+                            {
+                                bind: () => getRenderState().reflectionProbeEnabled,
+                            }
+                        );
+
+                        // 屏幕空间环境遮蔽 — 展开时显示 3 个精细参数
+                        addToggleRow(
+                            inner,
+                            t('scene.ssao'),
+                            state.ssaoEnabled,
+                            (v) => {
+                                setRenderState({ ssaoEnabled: v });
+                                triggerAutoSave();
+                                reRenderSceneMenu();
+                            },
+                            'lucide:box',
+                            {
+                                bind: () => getRenderState().ssaoEnabled,
+                            }
+                        );
+                        if (state.ssaoEnabled) {
+                            sliderRow(
+                                inner,
+                                t('scene.ssaoStrength'),
+                                state.ssaoStrength,
+                                0,
+                                1,
+                                0.05,
+                                'lucide:contrast',
+                                (v) => {
+                                    setRenderState({ ssaoStrength: v });
+                                    triggerAutoSave();
+                                }
+                            );
+                            sliderRow(
+                                inner,
+                                t('scene.ssaoRadius'),
+                                state.ssaoRadius,
+                                0,
+                                1,
+                                0.05,
+                                'lucide:circle-dot',
+                                (v) => {
+                                    setRenderState({ ssaoRadius: v });
+                                    triggerAutoSave();
+                                }
+                            );
+                            sliderRow(inner, t('scene.ssaoSamples'), state.ssaoSamples, 4, 32, 1, 'lucide:grid-3x3', (v) => {
+                                setRenderState({ ssaoSamples: v });
+                                triggerAutoSave();
+                            });
                         }
-                    );
-                    sliderRow(c, t('scene.ssaoSamples'), state.ssaoSamples, 4, 32, 1, 'lucide:grid-3x3', (v) => {
-                        setRenderState({ ssaoSamples: v });
-                        triggerAutoSave();
-                    });
-                }
+                    },
+                });
             });
 
-            // 色调映射 — 后处理色彩环节，影响整体画面风格
+            // ===== 色彩层：色调映射 =====
             cardContainer(container, (c) => {
                 addCollapsible(c, {
                     title: t('scene.toneMapping'),

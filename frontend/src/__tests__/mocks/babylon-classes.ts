@@ -247,6 +247,8 @@ export class MockArcRotateCamera {
     position = { x: 0, y: 0, z: 0 };
     _scene: any;
     _cameraRotation = { x: 0, y: 0 };
+    useNaturalPinchZoom = false;
+    onViewMatrixChangedObservable = { add: (_cb: any) => {} };
     inputs = {
         add: (_input: any) => {},
         removeByType: (_type: string) => {},

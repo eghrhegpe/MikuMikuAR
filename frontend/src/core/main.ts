@@ -57,7 +57,6 @@ import {
     switchCameraMode,
 } from '../scene/camera/camera';
 import { syncTimeOfDayFromEnv } from '../scene/env/env-bridge';
-import './iconify-registry';
 import 'iconify-icon';
 import { registerShortcuts, initShortcutDispatcher } from './shortcut-registry';
 

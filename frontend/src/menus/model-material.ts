@@ -18,6 +18,7 @@ import {
     isMatCategoryAllEnabled,
     setMatCategoryEnabled,
     getMaterialMeshes,
+    DEFAULT_MAT_PARAMS,
 } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addCollapsible } from '../core/ui-helpers';
@@ -27,6 +28,23 @@ import { t } from '../core/i18n/t';
 let _selectedMat: { cat: string; index: number } | null = null;
 /** 参数卡片容器引用（增量更新用，避免 reRender） */
 let _paramCardEl: HTMLElement | null = null;
+
+/** 添加分组分隔线 + 小标题，将颜色乘率与贴图强度视觉分区。 */
+function _addGroupSeparator(panel: HTMLElement, label: string): void {
+    const sep = document.createElement('div');
+    sep.style.cssText = 'display:flex;align-items:center;gap:6px;margin:8px 4px 4px;';
+    const leftLine = document.createElement('div');
+    leftLine.style.cssText = 'flex:1;height:1px;background:var(--border);';
+    const text = document.createElement('span');
+    text.style.cssText = 'font-size:9px;color:var(--text-muted);white-space:nowrap;';
+    text.textContent = label;
+    const rightLine = document.createElement('div');
+    rightLine.style.cssText = 'flex:1;height:1px;background:var(--border);';
+    sep.appendChild(leftLine);
+    sep.appendChild(text);
+    sep.appendChild(rightLine);
+    panel.appendChild(sep);
+}
 
 export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
     const label = t('model-material.batchByPart', { name: modelName });
@@ -82,6 +100,7 @@ export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
                             addSliderRow(panel, t('model-material.emissiveMul'), params.emissiveMul, 0, 2, 0.05, (v) =>
                                 setMatCatParams(id, cat, { emissiveMul: v })
                             );
+                            _addGroupSeparator(panel, t('model-material.texLevelGroup'));
                             addSliderRow(panel, t('model-material.diffuseTexLevel'), params.diffuseTexLevel, 0, 3, 0.1, (v) =>
                                 setMatCatParams(id, cat, { diffuseTexLevel: v })
                             );
@@ -133,18 +152,7 @@ export function buildPerMatLevel(
                 c.appendChild(stackingHint);
 
                 const current = getMatParams(id, matIndex);
-                const params: typeof current = current ?? {
-                    diffuseMul: 1,
-                    specularMul: 1,
-                    shininess: 50,
-                    ambientMul: 1,
-                    emissiveMul: 1,
-                    diffuseTexLevel: 1,
-                    bumpTexLevel: 1,
-                    toonTexLevel: 1,
-                    sphereTexLevel: 1,
-                    emissiveTexLevel: 1,
-                };
+                const params = current ?? { ...DEFAULT_MAT_PARAMS };
                 const isModified = current !== null;
 
                 addSliderRow(c, t('model-material.diffuseMul'), params.diffuseMul, 0, 2, 0.05, (v) => {
@@ -162,6 +170,7 @@ export function buildPerMatLevel(
                 addSliderRow(c, t('model-material.emissiveMul'), params.emissiveMul, 0, 2, 0.05, (v) => {
                     setMatParams(id, matIndex, { emissiveMul: v });
                 });
+                _addGroupSeparator(c, t('model-material.texLevelGroup'));
                 addSliderRow(c, t('model-material.diffuseTexLevel'), params.diffuseTexLevel, 0, 3, 0.1, (v) => {
                     setMatParams(id, matIndex, { diffuseTexLevel: v });
                 });
@@ -372,18 +381,7 @@ function _renderParamCard(
     card.appendChild(title);
 
     const current = getMatParams(id, index);
-    const params = current ?? {
-        diffuseMul: 1,
-        specularMul: 1,
-        shininess: 50,
-        ambientMul: 1,
-        emissiveMul: 1,
-        diffuseTexLevel: 1,
-        bumpTexLevel: 1,
-        toonTexLevel: 1,
-        sphereTexLevel: 1,
-        emissiveTexLevel: 1,
-    };
+    const params = current ?? { ...DEFAULT_MAT_PARAMS };
 
     addSliderRow(
         card,
@@ -445,6 +443,7 @@ function _renderParamCard(
         },
         'lucide:flame'
     );
+    _addGroupSeparator(card, t('model-material.texLevelGroup'));
     addSliderRow(
         card,
         t('model-material.diffuseTexLevel'),

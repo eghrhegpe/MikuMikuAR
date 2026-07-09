@@ -1,9 +1,9 @@
 // Iconify icon registry — mix Lucide + Tabler seamlessly.
-// Convention: icon name "library:icon" or bare "icon" → auto-prefixed with "lucide:".
+// Convention: icon name "library:icon" (e.g. "tabler:bone") or bare "icon" → auto-prefixed with "lucide:".
 
 const defaultLib = 'lucide';
 
-/** Normalize icon name: "folder" → "lucide:folder", "tabler:dance" stays. */
+/** Normalize icon name: "folder" → "lucide:folder"; tabler icons keep their tabler: prefix. */
 function resolveIcon(name: string): string {
     return name.includes(':') ? name : `${defaultLib}:${name}`;
 }

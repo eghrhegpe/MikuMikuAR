@@ -35,6 +35,8 @@
 - **模型预设** — 材质/表情/变换快照，库级管理，一键应用
 - **服装变体** — `outfits.json` 描述纹理/mesh 变体，自动发现 + 一键换装
 
+---
+
 ### 💃 动作与音频
 
 - **VMD 动作播放** — 多模型独立绑定，进度拖拽 / 循环 / 键盘控制
@@ -44,10 +46,14 @@
 - **LipSync** — 振幅 → 口型 morph 权重（支持あ/ア/A 等多种口型命名）
 - **节拍检测** — Web Audio 能量峰值法实时 BPM，支持多轨道
 
+---
+
 ### ⚙️ 物理
 
 - **XPBD 布料物理** — 自研 Verlet + XPBD 求解器 + SDF 胶囊身体碰撞器
 - **WASM Bullet 物理** — MMD 原生刚体 / 关节 / 柔体，与时间轴同步
+
+---
 
 ### 🌍 环境
 
@@ -57,16 +63,38 @@
 - **程序化地形** — FBM 噪声高度图生成
 - **灯光与后处理** — Bloom / DOF / SSAO / SSR / 边缘渲染，性能自动降级
 
+---
+
 ### 📚 库与工具
 
 - **模型库管理** — 递归扫描、8 类分类、zip 内省、标签/收藏/搜索
 - **zip 容器** — 不解压直接加载 PMX/VMD，SHA-256 cache 惰性复用
 - **场景打包** — 场景序列化为 `.mmascene`，可跨设备恢复
 - **Blender 唤起** — 自动检测 / 手动配置路径，点 ✏️ 在 Blender 中编辑 PMX（需 [mmd_tools](https://github.com/powroupi/blender_mmd_tools) 插件）
+---
 
 ### 👁️ 角色感知
 
 - **视线追踪** — 视线跟随（Eye Contact），无 VMD 也能让模型"活起来"
+
+---
+
+
+## 📖 文档
+
+| 文档 | 内容 |
+|------|------|
+| [已实现功能](docs/status.md) | 当前状态 |
+| [关键设计决策](docs/adr/) | 技术思路 |
+| [编码奇谭 · 100+ 章节代码演化叙事](novel/README.md) | 趣味日志 |
+|-
+| [AI文档地图工作流规则](AGENTS.md) | AGENTS  |
+| [架构方案](docs/architecture.md) | 全功能汇总 |
+| [需求与选型](docs/requirements.md) | P0-P4 优先级 + 技术选型理由 |
+| [路线图](docs/roadmap.md) | 阶段规划 + DanceXR 对标 |
+| [项目地基](docs/foundation.md) | 好用框架 |
+| [故障排查](docs/troubleshooting.md) | CORS / WASM 404 / 纹理不显示 |
+| [修复流程](docs/fix-cycle.md) | Bug 修复验收契约模板 |
 
 ---
 
@@ -129,32 +157,17 @@ bash scripts/build-linux.sh --production
 
 ---
 
-## 📖 文档
-
-| 文档 | 内容 |
-|------|------|
-| [AGENTS.md](AGENTS.md) | 🗝️ AI 入口 + 文档地图 + 工作流规则 + 函数映射表 |
-| [项目现状](docs/status.md) | 已实现功能、路线图、Bug 记录 |
-| [架构方案](docs/architecture.md) | 各环节技术实现细节 |
-| [需求与选型](docs/requirements.md) | P0-P4 优先级 + 技术选型理由 |
-| [路线图](docs/roadmap.md) | 下一阶段规划 + DanceXR 对标 |
-| [项目地基](docs/foundation.md) | 不可修改的技术决策 |
-| [故障排查](docs/troubleshooting.md) | CORS / WASM 404 / 纹理不显示 |
-| [修复流程](docs/fix-cycle.md) | Bug 修复验收契约模板 |
-| [编码奇谭](novel/README.md) | 开发日志 · 100+ 章节代码演化叙事 |
-| [决策档案](docs/adr/) | 大量关键设计决策记录 |
-
 ## 🤖 AI 协作工具链
 
 本项目由 **多个 AI 共同维护**，每个工具各司其职：
 
-| AI 工具 | 角色 |
-|---------|------|
-| **Trae - GLM5.2+doubao2.1** | 首席架构师· 代码生成 · 审查  |
-| **Workbuddy - hy3** | 任务规划 · 进度追踪 · 技能辅助 |
-| **OpenCode - NVidia/mistral-samll-4** |  前端 UI 开发 · 后端调试 |
-| **Reasonix - Deepseek-v4-flash** | 发git的 |
-| **Mimocode - Mimo-v2.5** | 文档生成 · 推理分析 · 问题定位  |
+| 终端 | 模型 | 角色 |
+|---------|------|------|
+| **Trae**|**GLM5.2+doubao2.1**| 首席架构师· 代码生成 · 审查  |
+| **Workbuddy**|**hy3** | 任务规划 · 进度追踪 · 技能辅助 |
+| **OpenCode**|**NVidia/mistral-samll-4** |  前端 UI 开发 · 后端调试 |
+| **Reasonix**|**Deepseek-v4-flash** | git push |
+| **Mimocode**|**Mimo-v2.5** | 文档生成 · 推理分析 · 问题定位  |
 
 ## 📁 项目结构
 
