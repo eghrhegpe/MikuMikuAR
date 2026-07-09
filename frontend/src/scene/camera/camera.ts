@@ -11,7 +11,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
-import { focusedModelId, modelRegistry, uiState, setStatus } from '@/core/config';
+import { focusedModelId, modelRegistry, triggerAutoSave, uiState, setStatus } from '@/core/config';
 import { t } from '@/core/i18n/t';
 import { focusModel, reattachPipeline, setARMode } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
@@ -64,6 +64,23 @@ export function getCameraPreset(): CameraPreset {
 }
 export function setCameraPreset(p: CameraPreset): void {
     _currentPreset = p;
+}
+
+// ======== Camera Persist (拖拽结束后自动保存) ========
+let _cameraPersistTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * 相机视角变化时延迟触发保存（500ms 防抖）
+ * 当用户拖拽结束时，视角变化停止，500ms 后自动保存
+ */
+function scheduleCameraPersist(): void {
+    if (_cameraPersistTimer !== null) {
+        clearTimeout(_cameraPersistTimer);
+    }
+    _cameraPersistTimer = setTimeout(() => {
+        _cameraPersistTimer = null;
+        triggerAutoSave();
+    }, 500);
 }
 
 export function getOrbitParams(): OrbitParams {
@@ -321,6 +338,8 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
     } else {
         cam.panningSensibility = 50;
     }
+    // 相机视角变化时延迟触发保存（拖拽/缩放结束后）
+    cam.onViewMatrixChangedObservable.add(scheduleCameraPersist);
     return cam;
 }
 
@@ -335,6 +354,8 @@ function createFreeflyCamera(scene: Scene, canvas: HTMLCanvasElement): Universal
     cam.keysDown = [];
     cam.keysLeft = [];
     cam.keysRight = [];
+    // 相机移动时延迟触发保存
+    cam.onViewMatrixChangedObservable.add(scheduleCameraPersist);
     return cam;
 }
 
@@ -351,6 +372,8 @@ function createConcertCamera(scene: Scene): ArcRotateCamera {
     cam.upperRadiusLimit = 50;
     cam.panningSensibility = 50;
     // No attachControl — we animate programmatically; mouse would interfere
+    // 相机视角变化时延迟触发保存
+    cam.onViewMatrixChangedObservable.add(scheduleCameraPersist);
     return cam;
 }
 
@@ -376,6 +399,8 @@ function createOneshotCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotate
     } else {
         cam.panningSensibility = 50;
     }
+    // 相机视角变化时延迟触发保存
+    cam.onViewMatrixChangedObservable.add(scheduleCameraPersist);
     return cam;
 }
 

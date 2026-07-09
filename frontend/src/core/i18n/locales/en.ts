@@ -423,6 +423,7 @@ export const en: Record<string, string> = {
     // —— Prop levels ——
     'scene.addPropFile': 'Add Prop File',
     'scene.propTransform': 'Prop Transform',
+    'scene.transform': 'Transform',
     'scene.propNotFound': 'Prop does not exist (may have been deleted)',
     'scene.accessory.boneNotFound': '✗ Bone {bone} not found',
     'scene.accessory.boneNoLink': '✗ Bone cannot attach (proxy skeleton)',

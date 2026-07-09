@@ -734,6 +734,12 @@ export function setProcMotionHeadTrackingEnabled(v: boolean): void {
     _setGazeTrackingSetting('headTrackingEnabled', v);
 }
 
+/** 自动激活视线追踪 observer（不依赖程序化动作生命周期）。
+ *  由模型加载 / 焦点切换路径在 mmdModel 就绪后调用，使默认 gaze 配置立即生效。 */
+export function activateGazeTracking(): void {
+    _setupGazeTracking();
+}
+
 let _gazeLayerActive = false;
 
 /** 图层驱动的视线/头部控制。

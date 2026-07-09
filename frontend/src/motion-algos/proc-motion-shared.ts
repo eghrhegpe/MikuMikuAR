@@ -70,7 +70,7 @@ export const DEFAULT_PROC_STATE: ProcMotionState = {
     interpOverride: 'auto',
     multiMorphEnabled: false,
     eyeTrackingEnabled: true,
-    headTrackingEnabled: false,
+    headTrackingEnabled: true,
     lifelikeEnabled: false,
     lifelikeIntensity: 0.3,
 };

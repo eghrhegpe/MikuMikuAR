@@ -376,6 +376,11 @@ export class ModelManager {
         }
         setFocusedModelId(id);
 
+        // 焦点切换后自动激活默认视线追踪，使眼球 / 头部跟随当前焦点模型
+        import('../motion/proc-motion-bridge')
+            .then((m) => m.activateGazeTracking())
+            .catch(() => {});
+
         // Auto-frame camera: compute bounding box from all meshes
         const min = new Vector3(Infinity, Infinity, Infinity);
         const max = new Vector3(-Infinity, -Infinity, -Infinity);

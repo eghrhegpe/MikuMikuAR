@@ -12,7 +12,7 @@ import {
 } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSectionTitle } from '../core/ui-helpers';
+import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
 import { loadManager } from '../core/load-manager';
 import { getPropList, removeProp, modelManager } from '../scene/scene';
@@ -255,7 +255,14 @@ export function buildStageTransformLevel(id: string): PopupLevel {
             const handle = { id, kind: 'stage' as const, name };
 
             // —— 变换 + 可见性 ——
-            buildTransformCard(container, handle);
+            addCollapsible(container, {
+                title: t('scene.transform'),
+                icon: 'lucide:move-3d',
+                defaultOpen: false,
+                renderContent: (inner) => {
+                    buildTransformCard(inner, handle);
+                },
+            });
 
             // —— 材质调节 ——
             buildMaterialCard(container, handle, sm);

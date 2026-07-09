@@ -1047,6 +1047,8 @@ declare global {
             platform?: () => string;
             hasStoragePermission?: () => boolean;
             requestStoragePermission?: () => void;
+            hasCameraPermission?: () => boolean;
+            requestCameraPermission?: () => void;
         };
     }
 }

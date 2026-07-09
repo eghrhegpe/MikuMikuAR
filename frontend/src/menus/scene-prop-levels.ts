@@ -3,7 +3,7 @@
 
 import { cardContainer, escapeHtml, propRegistry, modelRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { slideRow, addSliderRow } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addCollapsible } from '../core/ui-helpers';
 import { loadManager } from '../core/load-manager';
 import { removeProp, getPropList } from '../scene/scene';
 import { attachPropToBone, detachPropFromBone } from '../scene/env/accessory';
@@ -97,7 +97,14 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                 title.textContent = p.name;
                 c.appendChild(title);
             });
-            buildTransformCard(container, handle);
+            addCollapsible(container, {
+                title: t('scene.transform'),
+                icon: 'lucide:move-3d',
+                defaultOpen: false,
+                renderContent: (inner) => {
+                    buildTransformCard(inner, handle);
+                },
+            });
 
             // —— 骨骼挂载（Accessory）——
             cardContainer(container, (c) => {
