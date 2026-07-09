@@ -29,17 +29,17 @@ const CHECK_ONLY = process.argv.includes('--check');
 const SEED_LUCIDE = [
     'alert-circle', 'alert-triangle', 'app-window', 'arrow-down', 'arrow-up',
     'arrow-up-down', 'bookmark', 'box', 'bug', 'camera', 'check', 'check-circle',
-    'chevron-left', 'circle', 'circle-dot', 'clock', 'cloud', 'cloud-sun',
+    'chevron-left', 'circle', 'circle-dot', 'clock', 'cloud',
     'columns', 'compass', 'contrast', 'download',
     'droplet', 'external-link', 'eye', 'fast-forward', 'feather', 'file-code-2',
     'flask-conical', 'folder', 'folder-open', 'gauge', 'git-branch', 'grid',
-    'grid-3x3', 'hand', 'help-circle', 'home', 'image', 'images', 'info',
+    'grid-3x3', 'hand', 'home', 'image', 'images', 'info',
     'layers', 'lightbulb', 'maximize', 'maximize-2', 'monitor', 'mouse-pointer',
     'move', 'move-horizontal', 'move-vertical', 'music', 'package', 'palette',
     'play', 'play-circle', 'plug', 'plus', 'rainbow', 'refresh-ccw', 'refresh-cw',
     'repeat', 'rotate-ccw', 'rotate-cw', 'ruler', 'save', 'scan-line', 'search',
     'settings', 'shield', 'shirt', 'sliders', 'smile', 'sparkles', 'star',
-    'stop-circle', 'sun', 'tag', 'trash-2', 'triangle', 'upload', 'user',
+    'sun', 'tag', 'trash-2', 'triangle', 'upload', 'user',
     'video', 'volume-2', 'waves', 'wind', 'wrench', 'x', 'zap', 'zoom-in',
 ];
 const SEED_TABLER = ['cube-3d-sphere', 'bone'];
