@@ -1,5 +1,5 @@
 // [doc:adr-071] 感知层单元测试 — 状态管理 + 生命周期
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // =====================================================================
 // hoisted mock state
@@ -17,6 +17,8 @@ const mockState = vi.hoisted(() => ({
             remove: vi.fn(),
         },
         activeCamera: null,
+        // 记录最后一次 onBeforeRenderObservable.add 注册的回调，供 triggerLastObserver 触发
+        lastObserverCallback: null as null | (() => void),
     } as any,
 }));
 
@@ -48,7 +50,12 @@ beforeEach(async () => {
     mockState.triggerAutoSave.mockReset();
     mockState.modelManager.get.mockReset();
     mockState.scene.onBeforeRenderObservable.add.mockReset();
-    mockState.scene.onBeforeRenderObservable.add.mockReturnValue({});
+    // 记录 observer 回调，返回空对象作为 Observer 句柄
+    mockState.scene.onBeforeRenderObservable.add.mockImplementation((cb: () => void) => {
+        mockState.scene.lastObserverCallback = cb;
+        return {};
+    });
+    mockState.scene.lastObserverCallback = null;
     mockState.scene.onBeforeRenderObservable.remove.mockReset();
 });
 
@@ -250,5 +257,86 @@ describe('microExpression state', () => {
     it('setPerceptionState 可关闭微表情', () => {
         sut.setPerceptionState({ microExpressionEnabled: false });
         expect(sut.getPerceptionState().microExpressionEnabled).toBe(false);
+    });
+});
+
+// =====================================================================
+// _applyMicroExpression 实时叠加（通过 observer 回调触发）
+// =====================================================================
+
+// Mock morphTargetManager（与 _applyBlinking 用的 API 一致）
+function makeMockMorphManager(names: string[]) {
+    const influences = new Map<string, number>();
+    for (const n of names) influences.set(n, 0);
+    return {
+        getMorphTargetNames: () => names,
+        getMorphTargetByName: (name: string) =>
+            influences.has(name) ? { set influence(v: number) { influences.set(name, v); } } : null,
+        getInfluence: (name: string) => influences.get(name) ?? 0,
+    };
+}
+
+function makeMockModelWithMorphManager(morphManager: ReturnType<typeof makeMockMorphManager>) {
+    return {
+        mesh: { morphTargetManager: morphManager },
+        runtimeBones: [],
+    };
+}
+
+// 触发 perception observer 回调
+function triggerLastObserver(): void {
+    mockState.scene.lastObserverCallback?.();
+}
+
+describe('_applyMicroExpression', () => {
+    beforeEach(() => {
+        vi.spyOn(performance, 'now').mockReturnValue(0);
+    });
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('neutral 情绪不写入任何 morph', () => {
+        const mockMorphManager = makeMockMorphManager(['笑み', '困りォ', '驚き', '怒り']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setPerceptionState({ emotion: 'neutral', microExpressionEnabled: true });
+        sut.activatePerception('m1');
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('笑み')).toBe(0);
+    });
+
+    it('happy 情绪周期性脉冲笑み morph', () => {
+        const mockMorphManager = makeMockMorphManager(['笑み']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setPerceptionState({ emotion: 'happy', microExpressionEnabled: true });
+        sut.activatePerception('m1');
+        // 脉冲峰值在 1/4 周期（t = MICRO_EXPR_PERIOD/4 = 1s），sin²(π/2)=1
+        vi.mocked(performance.now).mockReturnValue(1000);
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('笑み')).toBeGreaterThan(0);
+        expect(mockMorphManager.getInfluence('笑み')).toBeLessThanOrEqual(0.15);
+    });
+
+    it('microExpressionEnabled=false 时不写入', () => {
+        const mockMorphManager = makeMockMorphManager(['笑み']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setPerceptionState({ emotion: 'happy', microExpressionEnabled: false });
+        sut.activatePerception('m1');
+        vi.mocked(performance.now).mockReturnValue(1000);
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('笑み')).toBe(0);
+    });
+
+    it('morph 不存在时静默跳过', () => {
+        const mockMorphManager = makeMockMorphManager([]);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setPerceptionState({ emotion: 'happy', microExpressionEnabled: true });
+        sut.activatePerception('m1');
+        vi.mocked(performance.now).mockReturnValue(1000);
+        expect(() => triggerLastObserver()).not.toThrow();
     });
 });

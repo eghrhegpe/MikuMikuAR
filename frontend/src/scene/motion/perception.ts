@@ -154,7 +154,12 @@ export function activatePerception(modelId?: string): void {
             _applyBlinking(mmdModel, time);
         }
 
-        // 3. 头部跟随 + 眼部跟随（gaze）
+        // 3. 微表情
+        if (perceptionState.microExpressionEnabled) {
+            _applyMicroExpression(mmdModel, time, perceptionState.emotion);
+        }
+
+        // 4. 头部跟随 + 眼部跟随（gaze）
         if (perceptionState.headTrackingEnabled || perceptionState.eyeTrackingEnabled) {
             const cam = scene.activeCamera;
             if (cam) {
@@ -272,6 +277,49 @@ function _applyBlinking(mmdModel: any, time: number): void {
     if (eyeClose) {
         eyeClose.influence = blinkIntensity;
     }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 微表情实现（情绪 morph 实时脉冲）
+// ══════════════════════════════════════════════════════════════
+
+/** 情绪 → morph 名候选（按优先级降序匹配，复用 matchBone） */
+const EMOTION_MORPH_CANDIDATES: Record<Exclude<Emotion, 'neutral'>, string[]> = {
+    happy: ['笑み', 'Smile', 'smile', 'にっこり', 'Happy'],
+    sad: ['困りォ', 'Troubled', 'troubled', '悲しい', 'Sad'],
+    surprised: ['驚き', 'Surprised', 'surprised', 'びっくり', 'Surprise'],
+    angry: ['怒り', 'Angry', 'angry', '怒', 'Angry2'],
+};
+
+/** 微表情脉冲周期（秒） */
+const MICRO_EXPR_PERIOD = 4.0;
+/** 微表情脉冲峰值权重 */
+const MICRO_EXPR_PEAK = 0.12;
+
+function _applyMicroExpression(mmdModel: any, time: number, emotion: Emotion): void {
+    if (emotion === 'neutral') return;
+
+    const candidates = EMOTION_MORPH_CANDIDATES[emotion];
+    if (!candidates || candidates.length === 0) return;
+
+    const morphManager = mmdModel.mesh?.morphTargetManager;
+    if (!morphManager) return;
+
+    // 复用 matchBone 匹配候选 morph 名（与 _applyBlinking 同款模式）
+    const morphNames = morphManager.getMorphTargetNames?.() || [];
+    const targetName = matchBone(morphNames, candidates);
+    if (!targetName) return;
+
+    const targetMorph = morphManager.getMorphTargetByName?.(targetName);
+    if (!targetMorph) return;
+
+    // 周期性脉冲：sin²(t * 2π / period) 在 [0,1] 间振荡，乘以峰值权重
+    const phase = (time % MICRO_EXPR_PERIOD) / MICRO_EXPR_PERIOD; // [0,1)
+    const pulse = Math.sin(phase * Math.PI * 2) ** 2; // [0,1]
+    const weight = pulse * MICRO_EXPR_PEAK;
+
+    // 写入 morph 权重（与 _applyBlinking 的 influence 赋值一致）
+    targetMorph.influence = weight;
 }
 
 // ══════════════════════════════════════════════════════════════
