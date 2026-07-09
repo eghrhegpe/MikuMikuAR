@@ -14,13 +14,17 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"mikumikuar/internal/util"
 )
 
 // plazaInjectScript returns an HTML script element that intercepts download
 // link clicks inside the proxied iframe and forwards them to the parent window
-// via postMessage (ADR-078). The origin parameter restricts postMessage to the
-// expected parent origin (the local proxy URL), preventing any cross-origin
-// injection from a compromised proxy target.
+// via postMessage (ADR-078). The origin parameter is passed as the postMessage
+// targetOrigin. In embed mode the parent is the Wails main window, which is a
+// different origin than the proxy iframe, so it MUST be "*" — using the proxy's
+// own URL would make the browser silently drop the message. Safety relies on the
+// listener verifying e.source (the iframe's contentWindow), not on targetOrigin.
 func plazaInjectScript(origin string) string {
 	return fmt.Sprintf(`<script data-plaza="1">
 (function(){
@@ -80,7 +84,71 @@ var currentProxyTarget string
 
 // plazaDownloadClient is a shared HTTP client for DownloadFromPlaza with an
 // explicit timeout so a hung upstream cannot block the call indefinitely.
+// Its Transport enforces the SSRF guard (plazaSSRFGuard), so downloads can
+// never reach loopback / link-local / private / reserved addresses.
 var plazaDownloadClient = &http.Client{Timeout: 120 * time.Second}
+
+// maxPlazaHTMLBody caps how much of an upstream HTML response we buffer in
+// memory to inject the download-intercept script (ModifyResponse). Larger
+// bodies are passed through un-injected instead of being fully buffered.
+var maxPlazaHTMLBody int64 = 64 << 20 // 64 MiB
+
+// maxPlazaDownloadBytes caps the size of a single DownloadFromPlaza transfer so
+// a hostile upstream cannot fill the disk. Exceeding it aborts and deletes the
+// partially written file.
+var maxPlazaDownloadBytes int64 = 1 << 30 // 1 GiB
+
+// init wires the SSRF-guarded transport into plazaDownloadClient while keeping
+// the default TLS / idle-connection behaviour.
+func init() {
+	base := http.DefaultTransport.(*http.Transport).Clone()
+	base.DialContext = plazaSSRFGuard
+	plazaDownloadClient.Transport = base
+}
+
+// isBlockedIP reports whether ip is loopback, link-local, private (RFC1918 /
+// ULA), or unspecified — i.e. an address an SSRF attacker would aim at
+// (127.0.0.1, 169.254.169.254, 10/8, 172.16/12, 192.168/16, ::1, fc00::/7, …).
+func isBlockedIP(ip net.IP) bool {
+	if ip == nil {
+		return true
+	}
+	return ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
+		ip.IsPrivate() || ip.IsUnspecified()
+}
+
+// plazaSSRFGuard is the DialContext for plazaDownloadClient. It resolves the
+// host and refuses to connect to any blocked address, re-validating on every
+// connection to defeat DNS-rebinding (the IP is checked at connect time, not
+// once at URL-parse time).
+func plazaSSRFGuard(ctx context.Context, network, addr string) (net.Conn, error) {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		// addr may already be host-only (no port); fall back to a default.
+		host = addr
+		port = "80"
+	}
+	addrs, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil {
+		return nil, fmt.Errorf("plaza SSRF guard: DNS lookup failed for %q: %w", host, err)
+	}
+	if len(addrs) == 0 {
+		return nil, fmt.Errorf("plaza SSRF guard: no address for %q", host)
+	}
+	dialer := net.Dialer{}
+	var lastErr error
+	for _, a := range addrs {
+		if isBlockedIP(a.IP) {
+			return nil, fmt.Errorf("plaza SSRF guard: blocked address %s (%s)", host, a.IP)
+		}
+		conn, derr := dialer.DialContext(ctx, network, net.JoinHostPort(a.IP.String(), port))
+		if derr == nil {
+			return conn, nil
+		}
+		lastErr = derr
+	}
+	return nil, lastErr
+}
 
 // StartProxy starts a local reverse proxy that forwards to target and returns
 // the local proxy base URL (e.g. "http://127.0.0.1:PORT/"). It strips
@@ -93,7 +161,8 @@ var plazaDownloadClient = &http.Client{Timeout: 120 * time.Second}
 // subsequent requests from the iframe have matching cookies injected. This
 // enables login-gated sites to work inside the embedded iframe (ADR-077).
 func (a *App) StartProxy(target string) (string, error) {
-	a.httpSrvMu.Lock()
+	return util.SafeCall(func() (string, error) {
+		a.httpSrvMu.Lock()
 	defer a.httpSrvMu.Unlock()
 
 	// [ADR-075 修复] 检测 target 是否变化：如果已有代理但目标不同，先停旧代理再重建。
@@ -181,12 +250,17 @@ func (a *App) StartProxy(target string) (string, error) {
 		}
 		// [ADR-078] 注入下载拦截脚本到 HTML 响应
 		if ct := resp.Header.Get("Content-Type"); strings.Contains(ct, "text/html") && resp.Body != nil {
-			body, err := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			if err == nil {
-				html := string(body)
+			// [资源上限] 仅对已知且不超过上限的 HTML 注入脚本；超大响应直接
+			// 透传不注入，避免 io.ReadAll 把整响应读进内存撑爆。
+			if resp.ContentLength > maxPlazaHTMLBody {
+				// 超上限：保持原始 resp.Body 不变，直接透传。
+			} else {
+				body, err := io.ReadAll(io.LimitReader(resp.Body, maxPlazaHTMLBody))
+				resp.Body.Close()
+				if err == nil {
+					html := string(body)
 				injected := false
-			origin := "http://" + resp.Request.Host
+			origin := "*"
 			script := plazaInjectScript(origin)
 			// 优先插入 </head> 前
 			if idx := strings.LastIndex(strings.ToLower(html), "</head>"); idx != -1 {
@@ -210,6 +284,7 @@ func (a *App) StartProxy(target string) (string, error) {
 				} else {
 					resp.Body = io.NopCloser(strings.NewReader(html))
 				}
+			}
 			}
 		}
 		// Keep same-host redirects inside the proxy.
@@ -248,13 +323,15 @@ func (a *App) StartProxy(target string) (string, error) {
 	proxySessions[proxyServerKey] = sess
 	a.safeLogInfo("StartProxy: target=%s port=%d", target, port)
 	return fmt.Sprintf("http://127.0.0.1:%d/", port), nil
+	})
 }
 
 // StopProxy shuts down the model-plaza reverse proxy started by StartProxy.
 // It is idempotent: calling it when no proxy is running is a no-op.
 // Also clears the cookie jar (ADR-077).
 func (a *App) StopProxy() error {
-	a.httpSrvMu.Lock()
+	return util.SafeCallVoid(func() error {
+		a.httpSrvMu.Lock()
 	info, ok := a.httpServers[proxyServerKey]
 	if !ok {
 		a.httpSrvMu.Unlock()
@@ -273,6 +350,7 @@ func (a *App) StopProxy() error {
 		return err
 	}
 	return nil
+	})
 }
 
 // cookiesToString serializes a slice of http.Cookie into a "Cookie" header value.
@@ -296,14 +374,31 @@ type PlazaDownloadResult struct {
 // The file is classified by extension: .pmx → model/, .vmd → motion/,
 // .zip → model/, .vpd → pose/. Returns the saved file path and size.
 func (a *App) DownloadFromPlaza(fileURL string, fileName string) (*PlazaDownloadResult, error) {
-	if fileURL == "" {
-		return nil, fmt.Errorf("empty download URL")
-	}
+	return util.SafeCall(func() (*PlazaDownloadResult, error) {
+		if fileURL == "" {
+			return nil, fmt.Errorf("empty download URL")
+		}
 
-	parsed, err := url.Parse(fileURL)
-	if err != nil {
-		return nil, fmt.Errorf("invalid URL %q: %w", fileURL, err)
-	}
+		parsed, err := url.Parse(fileURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid URL %q: %w", fileURL, err)
+		}
+		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+			return nil, fmt.Errorf("download URL must be http(s): %q", fileURL)
+		}
+
+		// [SSRF 主防线] 仅允许下载当前已激活广场代理的同 host 资源。
+		// 下载请求本就只应来自已代理的广场站（ADR-078 注入脚本 postMessage 同站链接）。
+		if currentProxyTarget == "" {
+			return nil, fmt.Errorf("no active plaza proxy; call StartProxy before downloading")
+		}
+		proxyTarget, perr := url.Parse(currentProxyTarget)
+		if perr != nil {
+			return nil, fmt.Errorf("internal: invalid proxy target %q: %w", currentProxyTarget, perr)
+		}
+		if !strings.EqualFold(parsed.Host, proxyTarget.Host) {
+			return nil, fmt.Errorf("download host %q does not match active proxy target %q", parsed.Host, proxyTarget.Host)
+		}
 
 	// Build request with cookies from jar
 	req, err := http.NewRequest("GET", fileURL, nil)
@@ -375,10 +470,19 @@ func (a *App) DownloadFromPlaza(fileURL string, fileName string) (*PlazaDownload
 	}
 	defer f.Close()
 
-	n, err := io.Copy(f, resp.Body)
+	// [资源上限] 限制单文件下载大小，防止恶意上游写满磁盘。
+	n, err := io.Copy(f, io.LimitReader(resp.Body, maxPlazaDownloadBytes))
 	if err != nil {
+		f.Close()
 		os.Remove(destPath)
 		return nil, fmt.Errorf("write file: %w", err)
+	}
+	// 确认未被 LimitReader 截断：再多读 1 字节，若仍有数据则已超限。
+	peek := make([]byte, 1)
+	if _, perr := resp.Body.Read(peek); perr != io.EOF {
+		f.Close()
+		os.Remove(destPath)
+		return nil, fmt.Errorf("download exceeds size limit (%d bytes)", maxPlazaDownloadBytes)
 	}
 
 	// Capture cookies from download response
@@ -390,4 +494,5 @@ func (a *App) DownloadFromPlaza(fileURL string, fileName string) (*PlazaDownload
 
 	a.safeLogInfo("DownloadFromPlaza: %s → %s (%d bytes)", fileName, destPath, n)
 	return &PlazaDownloadResult{FilePath: destPath, Size: n, FileName: fileName}, nil
+	})
 }

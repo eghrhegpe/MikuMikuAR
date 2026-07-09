@@ -156,11 +156,9 @@ export const FONT_MAP: Record<string, { label: string; css: string }> = {
     },
 };
 
-export const SETTINGS_FONT_RESTORE: Record<string, string> = {
-    system: "'Segoe UI', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK SC', system-ui, sans-serif",
-    noto: "'Source Han Sans SC', 'Noto Sans CJK SC', system-ui, sans-serif",
-    yahei: "'Microsoft YaHei', 'Microsoft YaHei UI', system-ui, sans-serif",
-};
+export const SETTINGS_FONT_RESTORE: Record<string, string> = Object.fromEntries(
+    Object.entries(FONT_MAP).map(([key, font]) => [key, font.css]),
+);
 
 // ======== Theme presets ========
 

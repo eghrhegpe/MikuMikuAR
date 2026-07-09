@@ -142,9 +142,12 @@ function _disposeRagdollForFocusedModel(): void {
   if (!id || !modelManager) {
     return;
   }
-  
+
   modelManager.removeRagdoll(id);
-  
+
+  // Clean up collider
+  _currentCollider = null;
+
   // Clean up internal state
   _ragdollInstance = null;
   _currentRagdollModelId = null;

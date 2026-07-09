@@ -1,13 +1,17 @@
 package app
 
 import (
+	"context"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCookiesToString(t *testing.T) {
@@ -107,7 +111,7 @@ func TestPlazaInjectScript_InHTML(t *testing.T) {
 	if idx == -1 {
 		t.Fatal("expected </head> in test HTML")
 	}
-	injected := html[:idx] + plazaInjectScript + html[idx:]
+	injected := html[:idx] + plazaInjectScript("http://example.com") + html[idx:]
 	if !strings.Contains(injected, `data-plaza="1"`) {
 		t.Error("injected HTML should contain plaza script marker")
 	}
@@ -127,7 +131,7 @@ func TestPlazaInjectScript_NoHead(t *testing.T) {
 	for end < len(html) && html[end] != '>' {
 		end++
 	}
-	injected := html[:end+1] + plazaInjectScript + html[end+1:]
+	injected := html[:end+1] + plazaInjectScript("http://example.com") + html[end+1:]
 	if !strings.Contains(injected, `data-plaza="1"`) {
 		t.Error("fallback injection should still contain plaza script")
 	}
@@ -152,6 +156,16 @@ func TestDownloadFromPlaza(t *testing.T) {
 		cfg.ResourceRoot = tmpDir
 	}, false)
 
+	// Simulate an active plaza proxy to the test target host. The SSRF dial
+	// guard normally blocks loopback (127.0.0.1), so swap in a plain client.
+	currentProxyTarget = target.URL
+	origClient := plazaDownloadClient
+	plazaDownloadClient = &http.Client{Timeout: 120 * time.Second}
+	defer func() {
+		plazaDownloadClient = origClient
+		currentProxyTarget = ""
+	}()
+
 	result, err := a.DownloadFromPlaza(target.URL+"/model/test.pmx", "test.pmx")
 	if err != nil {
 		t.Fatalf("DownloadFromPlaza() error: %v", err)
@@ -166,5 +180,124 @@ func TestDownloadFromPlaza(t *testing.T) {
 	wantDir := filepath.Join(tmpDir, "model")
 	if !strings.HasPrefix(result.FilePath, wantDir) {
 		t.Errorf("FilePath = %q, should be under %s", result.FilePath, wantDir)
+	}
+}
+
+// TestDownloadFromPlaza_NoActiveProxyRejected verifies the SSRF primary
+// defense: downloads are only allowed while a plaza proxy is active.
+func TestDownloadFromPlaza_NoActiveProxyRejected(t *testing.T) {
+	a := NewApp("test", "", "")
+	if _, err := a.DownloadFromPlaza("http://example.com/x.pmx", "x.pmx"); err == nil {
+		t.Fatal("expected error when no active plaza proxy session")
+	}
+}
+
+// TestDownloadFromPlaza_CrossHostRejected verifies that a download whose host
+// differs from the active proxy target is rejected before any network call
+// (covers loopback / link-local / private targets reachable via host mismatch).
+func TestDownloadFromPlaza_CrossHostRejected(t *testing.T) {
+	a := NewApp("test", "", "")
+	currentProxyTarget = "http://plaza.example.com"
+	defer func() { currentProxyTarget = "" }()
+	if _, err := a.DownloadFromPlaza("http://169.254.169.254/latest/meta-data/", "x.pmx"); err == nil {
+		t.Fatal("expected SSRF host-mismatch rejection for link-local address")
+	}
+	if _, err := a.DownloadFromPlaza("ftp://plaza.example.com/x.pmx", "x.pmx"); err == nil {
+		t.Fatal("expected rejection for non-http(s) scheme")
+	}
+}
+
+// TestIsBlockedIP exercises the address classifier used by the SSRF dial guard.
+func TestIsBlockedIP(t *testing.T) {
+	blocked := []string{
+		"127.0.0.1", "10.0.0.1", "172.16.0.1", "172.31.255.255",
+		"192.168.1.1", "169.254.169.254", "::1", "fc00::1", "0.0.0.0",
+	}
+	for _, s := range blocked {
+		ip := net.ParseIP(s)
+		if ip == nil {
+			t.Fatalf("failed to parse %q", s)
+		}
+		if !isBlockedIP(ip) {
+			t.Errorf("isBlockedIP(%s) = false, want true", s)
+		}
+	}
+	allowed := []string{
+		"93.184.216.34", "1.1.1.1", "2606:2800:220:1:248:1893:25c8:1946",
+	}
+	for _, s := range allowed {
+		ip := net.ParseIP(s)
+		if ip == nil {
+			t.Fatalf("failed to parse %q", s)
+		}
+		if isBlockedIP(ip) {
+			t.Errorf("isBlockedIP(%s) = true, want false", s)
+		}
+	}
+}
+
+// TestPlazaSSRFGuard_BlocksPrivate confirms the dial guard refuses to connect
+// to loopback / link-local / private addresses (DNS-rebinding safe).
+func TestPlazaSSRFGuard_BlocksPrivate(t *testing.T) {
+	for _, addr := range []string{
+		"127.0.0.1:80", "169.254.169.254:80", "10.0.0.1:80",
+		"192.168.1.1:80", "[::1]:80", "[fc00::1]:80",
+	} {
+		_, err := plazaSSRFGuard(context.Background(), "tcp", addr)
+		if err == nil || !strings.Contains(err.Error(), "blocked") {
+			t.Errorf("plazaSSRFGuard(%q) = %v, want a 'blocked' error", addr, err)
+		}
+	}
+}
+
+// TestDownloadFromPlaza_SizeLimit verifies a download exceeding the cap is
+// aborted and the partial file is cleaned up.
+func TestDownloadFromPlaza_SizeLimit(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		buf := make([]byte, 4096)
+		for i := 0; i < 300; i++ { // ~1.2 MiB
+			if _, err := w.Write(buf); err != nil {
+				return
+			}
+		}
+	}))
+	defer target.Close()
+
+	tmpDir := t.TempDir()
+	a := NewApp("test", "", "")
+	a.updateConfig(func(cfg *Config) { cfg.ResourceRoot = tmpDir }, false)
+
+	currentProxyTarget = target.URL
+	origClient := plazaDownloadClient
+	plazaDownloadClient = &http.Client{Timeout: 120 * time.Second}
+	origCap := maxPlazaDownloadBytes
+	maxPlazaDownloadBytes = 4096
+	defer func() {
+		plazaDownloadClient = origClient
+		currentProxyTarget = ""
+		maxPlazaDownloadBytes = origCap
+	}()
+
+	if _, err := a.DownloadFromPlaza(target.URL+"/big.pmx", "big.pmx"); err == nil {
+		t.Fatal("expected size-limit error")
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "model", "big.pmx")); !os.IsNotExist(err) {
+		t.Error("partial download file should have been removed")
+	}
+}
+
+// TestPlazaBindings_NoPanic confirms the four plaza bindings are wrapped with
+// util.SafeCall / SafeCallVoid: invalid input yields an error, never a panic.
+func TestPlazaBindings_NoPanic(t *testing.T) {
+	a := NewApp("test", "", "")
+	if _, err := a.StartProxy(""); err == nil {
+		t.Error("StartProxy(\"\") should return an error")
+	}
+	if err := a.StopProxy(); err != nil {
+		t.Errorf("StopProxy() with no running proxy should be nil, got %v", err)
+	}
+	if err := a.OpenPlazaWindow(""); err == nil {
+		t.Error("OpenPlazaWindow(\"\") should return an error")
 	}
 }

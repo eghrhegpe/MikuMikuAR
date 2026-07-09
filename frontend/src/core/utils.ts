@@ -301,7 +301,7 @@ const CATEGORY_KEY: Record<string, string> = {
 };
 
 // Go 端 GetPath 使用的实际目录名（大小写敏感）
-const CATEGORY_DIR: Record<string, string> = {
+export const CATEGORY_DIR: Record<string, string> = {
     pmx: 'PMX',
     vmd: 'VMD',
     audio: 'audio',

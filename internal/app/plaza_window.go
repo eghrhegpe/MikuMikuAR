@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"mikumikuar/internal/util"
 )
 
 // openPlazaWindows tracks all open model-plaza windows by unique names.
@@ -34,7 +35,8 @@ func sweepClosedPlazaWindows(app *application.App) {
 // iframe CSP/X-Frame-Options restrictions (ADR-075 §独立浏览器窗口).
 // Each call opens an independent window (no dedup), capped at 5 concurrent.
 func (a *App) OpenPlazaWindow(targetURL string) error {
-	if a.wailsApp == nil {
+	return util.SafeCallVoid(func() error {
+		if a.wailsApp == nil {
 		return fmt.Errorf("wails app not initialized")
 	}
 	if targetURL == "" {
@@ -79,4 +81,5 @@ func (a *App) OpenPlazaWindow(targetURL string) error {
 
 	a.safeLogInfo("OpenPlazaWindow: %s (name=%s, total=%d)", targetURL, name, len(openPlazaWindows))
 	return nil
+	})
 }

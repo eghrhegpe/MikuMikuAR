@@ -220,5 +220,4 @@
 | `docs/research/blender-integration.md` | 集成方案 | Blender PMX 导入导出 |
 | `docs/research/dancexr-structure.md` | 结构分析 | DanceXR 文件组织 |
 | `docs/research/dancexr-directory.md` | 目录映射 | DanceXR 目录结构 |
-| `docs/adr/adr-010-competitor-ui-mapping.md` | UI 映射 | lio.cc.cd MMD Viewer |
 | GitHub 20+ 项目 | Web 调研 | Saba/Coocoo3D/flowerMiku/mmd-viewer-js/HBR MMD Tools/MMD Bridge/SampleWebMMD 等 |

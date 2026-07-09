@@ -94,20 +94,20 @@ function resetAllSettings(getSettingsMenu: () => SettingsMenuHandle): void {
 
 export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     const shortcuts: Array<{ key: string; desc: string }> = [
-        { key: 'Ctrl+1', desc: '模型库' },
-        { key: 'Ctrl+2', desc: '动作面板' },
-        { key: 'Ctrl+3', desc: '场景设置' },
-        { key: 'Ctrl+4', desc: '环境设置' },
-        { key: 'Ctrl+5', desc: '设置' },
-        { key: 'Space', desc: '播放/暂停' },
-        { key: 'Esc', desc: '关闭弹窗' },
-        { key: '← / →', desc: '快退/快进 5 秒' },
-        { key: 'WASD', desc: '自由飞行相机移动' },
-        { key: 'Q / E', desc: '自由飞行相机下降/上升' },
+        { key: 'Ctrl+1', desc: t('settings.about.shortcuts.modelLib') },
+        { key: 'Ctrl+2', desc: t('settings.about.shortcuts.motionPanel') },
+        { key: 'Ctrl+3', desc: t('settings.about.shortcuts.sceneSettings') },
+        { key: 'Ctrl+4', desc: t('settings.about.shortcuts.envSettings') },
+        { key: 'Ctrl+5', desc: t('settings.about.shortcuts.settings') },
+        { key: 'Space', desc: t('settings.about.shortcuts.playPause') },
+        { key: 'Esc', desc: t('settings.about.shortcuts.closePopup') },
+        { key: '← / →', desc: t('settings.about.shortcuts.seek') },
+        { key: 'WASD', desc: t('settings.about.shortcuts.freefly') },
+        { key: 'Q / E', desc: t('settings.about.shortcuts.freeflyUpDown') },
     ];
 
     return {
-        label: '关于',
+        label: t('settings.about.title'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -132,7 +132,7 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
             });
 
             cardContainer(container, (c) => {
-                addSectionTitle(c, '快捷键');
+                addSectionTitle(c, t('settings.about.shortcuts'));
                 for (const s of shortcuts) {
                     const row = document.createElement('div');
                     row.className = 'slide-item';
@@ -143,7 +143,7 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
             });
 
             cardContainer(container, (c) => {
-                addSectionTitle(c, '链接');
+                addSectionTitle(c, t('settings.about.links'));
                 slideRow(c, 'lucide:github', t('about.github'), false, () => {
                     if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR')) {
                         Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR');
@@ -162,7 +162,7 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
             });
 
             cardContainer(container, (c) => {
-                addSectionTitle(c, '缓存占用');
+                addSectionTitle(c, t('settings.about.cache'));
                 const statRow = document.createElement('div');
                 statRow.className = 'slide-item';
                 statRow.style.cssText = 'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
@@ -174,9 +174,9 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
                         .then((s) => {
                             const total = statRow.querySelector<HTMLElement>('[data-cache-total]');
                             const detail = statRow.querySelector<HTMLElement>('[data-cache-detail]');
-                            if (total) { total.textContent = `总计 ${formatBytes(s.totalBytes)}`; }
+                            if (total) { total.textContent = `${t('settings.about.cache.total')} ${formatBytes(s.totalBytes)}`; }
                             if (detail) {
-                                detail.innerHTML = `<div>提取: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>缩略图: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div><div>隔离: ${formatBytes(s.serveBytes)} (${s.serveCount} 项)</div>`;
+                                detail.innerHTML = `<div>${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div><div>${t('settings.about.cache.serve')}: ${formatBytes(s.serveBytes)} (${s.serveCount} 项)</div>`;
                             }
                         })
                         .catch(() => {});
@@ -190,8 +190,8 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
             });
 
             cardContainer(container, (c) => {
-                addSectionTitle(c, '更新');
-                addToggleRow(c, '自动检查更新（启动时）', uiState.autoUpdateEnabled === true,
+                addSectionTitle(c, t('settings.about.update'));
+                addToggleRow(c, t('settings.about.update.autoCheck'), uiState.autoUpdateEnabled === true,
                     (v) => { setUIState({ autoUpdateEnabled: v }); SetUIAutoUpdate(v); setStatus(t('settings.autoUpdate', {state: v ? t('common.on') : t('common.off')}), true); }
                 );
                 const resultRow = document.createElement('div');
@@ -199,40 +199,40 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
                 resultRow.style.cssText = 'flex-direction:column;align-items:stretch;gap:4px;padding:8px 14px;';
                 resultRow.innerHTML = `<div data-update-status style="font-size:12px;color:var(--text);">点击「检查更新」查看版本</div><a data-update-link href="#" style="display:none;font-size:12px;color:var(--accent);cursor:pointer;">前往下载最新版本 →</a>`;
                 c.appendChild(resultRow);
-                slideRow(c, 'lucide:download', '检查更新', false, async () => {
+                slideRow(c, 'lucide:download', t('settings.about.update.checkNow'), false, async () => {
                     const statusEl = resultRow.querySelector<HTMLElement>('[data-update-status]');
                     const linkEl = resultRow.querySelector<HTMLAnchorElement>('[data-update-link]');
-                    if (statusEl) statusEl.textContent = '检查中…';
+                    if (statusEl) statusEl.textContent = t('settings.about.update.checking');
                     if (linkEl) linkEl.style.display = 'none';
                     try {
                         const r = await CheckForUpdate();
-                        if (!r) { if (statusEl) statusEl.textContent = '检查失败'; return; }
-                        if (r.error) { if (statusEl) statusEl.textContent = `检查出错：${r.error}`; return; }
-                        if (statusEl) { statusEl.textContent = r.available ? `发现新版本 v${r.latest}（当前 v${r.current}）` : `已是最新版本（v${r.current}）`; }
+                        if (!r) { if (statusEl) statusEl.textContent = t('settings.about.update.failed'); return; }
+                        if (r.error) { if (statusEl) statusEl.textContent = t('settings.about.update.error', {err: r.error}); return; }
+                        if (statusEl) { statusEl.textContent = r.available ? t('settings.about.update.available', {latest: r.latest, current: r.current}) : t('settings.about.update.latest', {current: r.current}); }
                         if (linkEl && r.available && r.url) { linkEl.style.display = 'inline'; linkEl.onclick = (e) => { e.preventDefault(); if (!openExternalURL(r.url)) { Browser.OpenURL(r.url); } }; }
-                    } catch { if (statusEl) statusEl.textContent = '检查失败'; }
+                    } catch { if (statusEl) statusEl.textContent = t('settings.about.update.failed'); }
                 });
             });
 
             cardContainer(container, (c) => {
-                addSectionTitle(c, '维护工具');
-                slideRow(c, 'lucide:trash-2', '清除提取缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE }));
-                slideRow(c, 'lucide:image', '清除缩略图缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_THUMBNAIL }));
-                slideRow(c, 'lucide:trash', '清除全部缓存', false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_ALL_CACHE }));
+                addSectionTitle(c, t('settings.about.maintenance'));
+                slideRow(c, 'lucide:trash-2', t('settings.about.maintenance.clearExtract'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE }));
+                slideRow(c, 'lucide:image', t('settings.about.maintenance.clearThumbnail'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_THUMBNAIL }));
+                slideRow(c, 'lucide:trash', t('settings.about.maintenance.clearAll'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_ALL_CACHE }));
             });
 
             cardContainer(container, (c) => {
-                addSectionTitle(c, '设置管理');
-                slideRow(c, 'lucide:download', '导出设置', false, () => exportSettings());
-                slideRow(c, 'lucide:upload', '导入设置', false, () => { importSettings(); getSettingsMenu()?.reRender(); });
-                slideRow(c, 'lucide:rotate-ccw', '恢复默认设置', false, () => {
-                    if (window.confirm('确定要恢复所有设置为默认值吗？此操作不可撤销。')) {
+                addSectionTitle(c, t('settings.about.settingsMgmt'));
+                slideRow(c, 'lucide:download', t('settings.about.settingsMgmt.export'), false, () => exportSettings());
+                slideRow(c, 'lucide:upload', t('settings.about.settingsMgmt.import'), false, () => { importSettings(); getSettingsMenu()?.reRender(); });
+                slideRow(c, 'lucide:rotate-ccw', t('settings.about.settingsMgmt.reset'), false, () => {
+                    if (window.confirm(t('settings.about.settingsMgmt.resetConfirm'))) {
                         resetAllSettings(getSettingsMenu);
                     }
                 });
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                hint.textContent = '导出为 JSON 备份；导入将合并到当前设置并立即生效。外观/性能模式会持久化，其余偏好在当前会话生效。';
+                hint.textContent = t('settings.about.settingsMgmt.hint');
                 c.appendChild(hint);
             });
         },

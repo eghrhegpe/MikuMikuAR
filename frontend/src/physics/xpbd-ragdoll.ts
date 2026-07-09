@@ -99,7 +99,12 @@ export function buildRagdoll(
   const constraints: XpbdConstraint[] = [];
   const boneNames: string[] = [];
 
-  // Helper to check if a bone should be skipped (finger/toe/eye)
+  // Helper to check if a bone should be skipped (finger/toe/eye: 细枝末节，物理无意义)。
+  // head/頭/首 不跳过：ragdoll 驱动 head 的 position，perception.ts 驱动 head 的 rotation，
+  // 两者靠 onBeforeRenderObservable 注册时序分层（ragdoll 在 scene.ts 启动期注册，
+  // perception 在模型加载/存档恢复时注册，通常晚于 ragdoll）。
+  // 当前 perception 的 _applyHeadGazeJS/_applyHeadGazeWasm 均为"读 position → 写 rotation"，
+  // 与 ragdoll 的 position 写入不冲突；但此分层依赖注册顺序，若调整注册时机需重新评估。
   const shouldSkipBone = (name: string): boolean => {
     const lower = name.toLowerCase();
     return lower.includes('finger') || lower.includes('toe') || lower.includes('eye');
@@ -178,9 +183,11 @@ export function buildRagdoll(
   // Dispose function
   const dispose = () => {
     solver.reset();
+    particles.length = 0;
+    constraints.length = 0;
   };
 
-  return {
+    return {
     solver,
     particles,
     constraints,
@@ -188,7 +195,7 @@ export function buildRagdoll(
     updateFn,
     dispose,
     modelId,
-    isWasm: !('linkedBone' in runtimeBones[0]),
+    isWasm: runtimeBones.length > 0 ? !('linkedBone' in runtimeBones[0]) : false,
     boneNames,
   };
 }
