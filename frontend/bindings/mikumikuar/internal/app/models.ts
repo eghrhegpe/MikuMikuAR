@@ -262,6 +262,11 @@ export interface EnvState {
     "underwaterToneIntensity": number;
     "underwaterFogMultiplier": number;
     "underwaterTintStrength": number;
+
+    /**
+     * 水面/球面反射质量（ADR-074；前端已落地，Go 端补齐以恢复 tsc 一致）
+     */
+    "reflectionQuality": string;
     "cloudsEnabled": boolean;
     "cloudCover": number;
     "cloudScale": number;

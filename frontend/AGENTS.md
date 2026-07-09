@@ -68,7 +68,7 @@ npm run check                                          # 确认未新增错误
 - **不要新增 `any` 逃生** — 即使 `strict: false` 允许，新代码仍要避免 `as any` / `@ts-ignore` / `@ts-expect-error`。需要时加注释说明业务理由。
 - **类型定义就近放置** — 项目**没有**集中的 `src/types/` 目录。interface/type 与使用它的文件同模块放置；跨模块共享类型放 `core/types.ts`（config.ts 已拆分为 types / state / dom / utils 四个子模块，通过 barrel re-export 保持 import 兼容）。
 - **路径别名** — `tsconfig.json` 配置了 `@/` → `src/`、`@bindings/` → `bindings/` 别名（2026-07-08 添加）。新代码优先使用别名导入，已有代码逐步迁移。
-- **binding 手写维护** — 绑定文件在 `frontend/bindings/`。**严禁运行 `wails3 generate bindings` / `npm run generate:bindings`**——会删 .ts 绑定、生成无 .d.ts 的 .js，破坏 TS 体系并改目录结构。新增 Go 方法一律手写 .ts 绑定：① `bindings/.../app.ts` 加 `export function`（method ID = FNV-1a 32-bit of `mikumikuar/internal/app.App.<Name>`）；② `bindings/.../models.ts` 加对应 interface；③ `src/core/wails-bindings.ts` 的 `export type {}` 列表登记 model 类型。新增后跑 `npm run test -- src/__tests__/bindings/app.contract.test.ts` 验证 ID 正确性。`npm run generate:bindings` 仅保留作参考（可从中抄 method ID 常量值），切勿运行。TS 侧统一通过 `src/core/wails-bindings.ts` re-export 引入。
+- **binding 自动生成（禁手写 `bindings/`）** — `frontend/bindings/` 由 `wails3 generate bindings -ts -i -d frontend/bindings ./...`（= `npm run generate:bindings`）自动产出 .ts 绑定，含全部 `export function` 包装与 FNV-1a 32-bit method ID（**生成器自动算，无需手写**）。新增/删除 Go 方法后**重跑生成器**即可，禁止手维护 `bindings/` 下 .ts（手写多余且易漂移）。`app.contract.test.ts` 动态校验导出函数存在性 + FNV-1a ID，仅作生成器输出一致性护栏。`src/core/wails-bindings.ts`（model 类型登记 + re-export 聚合）**不归生成器管、保持手维护**（生成器只写 `bindings/`，不碰 `src/`）。**唯一真陷阱：`-clean` 默认 true 会先清空输出目录**——脚本已带 `-d frontend/bindings` 故安全；切勿裸跑 `wails3 generate bindings -dry`（仍会清空默认目录，已踩坑并用 `git restore frontend/bindings` 救回）。TS 侧统一通过 `src/core/wails-bindings.ts` re-export 引入。
 
 ---
 
