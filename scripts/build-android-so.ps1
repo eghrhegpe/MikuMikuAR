@@ -10,6 +10,10 @@ param(
 $scriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectDir = Resolve-Path "$scriptsDir\.." | Select-Object -ExpandProperty Path
 
+# 读取版本号（注入 -ldflags，避免 Android .so 内 main.AppVersion 落为 Go 默认值 "dev"）
+$pkgJson = Get-Content "$projectDir\package.json" -Raw | ConvertFrom-Json
+$version = $pkgJson.version
+
 # SDK / NDK 自动定位（兼容 CI Process 级 + 本地 User 级环境变量）
 $sdkDir = $env:ANDROID_HOME
 if (-not $sdkDir) { $sdkDir = $env:ANDROID_SDK_ROOT }
@@ -64,6 +68,11 @@ $buildFlags = if ($Production) {
 } else {
     @("-tags", "android,debug", "-buildvcs=false", "-gcflags=all=-l")
 }
+
+# 注入版本信息（与 Windows/Linux 一致，避免 About / 检查更新 显示 dev）
+$buildFlags += '-ldflags'
+$buildFlags += "-X main.AppVersion=$version -X main.BuildTime=$(Get-Date -Format 'yyyy-MM-dd') -X main.CommitHash=$(git rev-parse --short HEAD 2>$null)"
+
 
 $overlayJson = "$projectDir\build\android\overlay.json"
 if (-not (Test-Path $overlayJson)) {
