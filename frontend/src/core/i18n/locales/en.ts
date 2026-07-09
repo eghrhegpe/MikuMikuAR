@@ -412,9 +412,15 @@ export const en: Record<string, string> = {
     'scene.ssaoStrength': 'Occlusion Strength',
     'scene.ssaoRadius': 'Occlusion Radius',
     'scene.ssaoSamples': 'Samples',
+    'scene.waterReflectionQuality': 'Planar Reflection Quality',
+    'scene.waterReflectionQualityHigh': 'High',
+    'scene.waterReflectionQualityMedium': 'Medium',
+    'scene.waterReflectionQualityLow': 'Low',
+    'scene.waterReflectionQualityOff': 'Off',
     'scene.toneMapping': 'Tone Mapping',
     'scene.exposure': 'Exposure',
     'scene.contrast': 'Contrast',
+    'scene.celShading': 'Cel-shading',
 
     // —— Stage levels ——
     'scene.loadedStages': 'Loaded Stages',
@@ -735,7 +741,7 @@ export const en: Record<string, string> = {
     'outfit.default': 'Default',
     'outfit.switching': '⏳ Switching variant...',
     'outfit.switchFailed': '✗ Failed to switch variant',
-    'outfit.switched': '✓ Variant switched',
+    'outfit.switched': '✓ Switched to outfit: {name}',
     'outfit.resetAll': 'Reset All',
     'outfit.resetting': '⏳ Resetting outfit...',
     'outfit.resetFailed': '✗ Failed to reset outfit',
@@ -966,6 +972,10 @@ export const en: Record<string, string> = {
     'env.size': 'Size',
     'env.speed': 'Speed',
     'env.splash': 'Ground splash',
+
+    // toast — Toast component
+    'toast.copy': 'Copy',
+    'toast.copied': 'Copied ✓',
 
     // about — links section
     'about.license': 'Open Source License',

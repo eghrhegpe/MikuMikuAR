@@ -497,6 +497,7 @@ export const ja: Record<string, string> = {
     'scene.toneMapping': 'トーンマッピング',
     'scene.exposure': '露出',
     'scene.contrast': 'コントラスト',
+    'scene.celShading': 'セルシェーディング',
     'scene.loadedStages': '読み込んだステージ',
     'scene.stageShown': '✓ ステージを表示',
     'scene.stageHidden': '✓ ステージを非表示',
@@ -723,7 +724,7 @@ export const ja: Record<string, string> = {
     'outfit.default': 'デフォルト',
     'outfit.switching': '⏳ バリエーションを切り替え中...',
     'outfit.switchFailed': '✗ バリエーションの切り替えに失敗しました',
-    'outfit.switched': '✓ バリエーションを切り替えました',
+    'outfit.switched': '✓ 衣装を切替: {name}',
     'outfit.resetAll': 'すべてリセット',
     'outfit.resetting': '⏳ 衣装をリセット中...',
     'outfit.resetFailed': '✗ 衣装のリセットに失敗しました',
@@ -918,6 +919,10 @@ export const ja: Record<string, string> = {
     'physics.clothEnabled': '✓ クロスシミュレーションを有効にしました ({instances} インスタンス, {particles} パーティクル, {constraints} 制約)',
     'physics.noActiveInstance': '⚠ クロスは有効ですが、アクティブなインスタンスが見つかりません',
     'physics.clothDisabled': 'クロスシミュレーションオフ',
+
+    // toast — Toast コンポーネント
+    'toast.copy': 'コピー',
+    'toast.copied': 'コピー済み ✓',
 
     // about — リンクセクション
     'about.license': 'オープンソースライセンス',

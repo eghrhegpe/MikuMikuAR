@@ -19,6 +19,7 @@ export const dom = {
     btnSettings: document.getElementById('btnSettings') as HTMLButtonElement,
     btnScene: document.getElementById('btnScene') as HTMLButtonElement,
     btnEnv: document.getElementById('btnEnv') as HTMLButtonElement,
+    btnPlaza: document.getElementById('btnPlaza') as HTMLButtonElement,
     sceneOverlay: document.getElementById('sceneOverlay') as HTMLElement,
 
     /** 引擎就绪后调用：隐藏 loading 遮罩，显示主应用 UI */

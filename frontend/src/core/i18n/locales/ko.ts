@@ -497,6 +497,7 @@ export const ko: Record<string, string> = {
     'scene.toneMapping': '톤 매핑',
     'scene.exposure': '노출',
     'scene.contrast': '대비',
+    'scene.celShading': '셀 쉐이딩',
     'scene.loadedStages': '로드된 무대',
     'scene.stageShown': '✓ 무대 표시됨',
     'scene.stageHidden': '✓ 무대 숨겨짐',
@@ -723,7 +724,7 @@ export const ko: Record<string, string> = {
     'outfit.default': '기본',
     'outfit.switching': '⏳ 변형 전환 중...',
     'outfit.switchFailed': '✗ 변형 전환 실패',
-    'outfit.switched': '✓ 변형 전환 완료',
+    'outfit.switched': '✓ 의상 전환: {name}',
     'outfit.resetAll': '모두 초기화',
     'outfit.resetting': '⏳ 의상 초기화 중...',
     'outfit.resetFailed': '✗ 의상 초기화 실패',
@@ -918,6 +919,10 @@ export const ko: Record<string, string> = {
     'physics.clothEnabled': '✓ 옷감 시뮬레이션이 활성화되었습니다 ({instances} 인스턴스, {particles} 파티클, {constraints} 제약)',
     'physics.noActiveInstance': '⚠ 옷감이 활성화되었지만 활성 인스턴스를 찾을 수 없습니다',
     'physics.clothDisabled': '옷감 시뮬레이션 꺼짐',
+
+    // toast — Toast 컴포넌트
+    'toast.copy': '복사',
+    'toast.copied': '복사됨 ✓',
 
     // about — 링크 섹션
     'about.license': '오픈소스 라이선스',

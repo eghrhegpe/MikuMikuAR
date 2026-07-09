@@ -532,7 +532,8 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
 
     await Promise.all(promises);
     inst.activeVariant = variantName;
-    setStatus(`✓ 已切换服装: ${variantName}`, true);
+    const { t } = await import('../core/i18n/t');
+    setStatus(t('outfit.switched', { name: variantName }), true);
     triggerAutoSave();
     } finally {
         _applyingVariant.delete(id);
