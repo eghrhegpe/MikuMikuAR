@@ -583,31 +583,27 @@ function envOnItemClick(row: PopupRow): void {
     getEnvMenu()?.reRender();
 }
 
+// [doc:adr-065] 子层路由表：target → 纯 items 构建器；自动挂 itemBuilder 实现语言热刷新
+const ENV_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
+    'env:sky': buildEnvUnifiedLevel,
+    'env:lighting': buildEnvLightingLevel,
+    'env:ground': buildGroundLevel,
+    'env:water': buildWaterLevel,
+    'env:particle': buildParticleLevel,
+    'env:wind': buildWindLevel,
+    'env:cloud': buildCloudLevel,
+    'env:fog': buildFogLevel,
+    'env:shadow': buildShadowLevel,
+    'env:experimental': buildExperimentalLevel,
+    'env:presets': buildPresetLevel,
+};
+
 function envOnFolderEnter(row: PopupRow): PopupLevel | null {
-    switch (row.target) {
-        case 'env:sky':
-            return buildEnvUnifiedLevel();
-        case 'env:lighting':
-            return buildEnvLightingLevel();
-        case 'env:ground':
-            return buildGroundLevel();
-        case 'env:water':
-            return buildWaterLevel();
-        case 'env:particle':
-            return buildParticleLevel();
-        case 'env:wind':
-            return buildWindLevel();
-        case 'env:cloud':
-            return buildCloudLevel();
-        case 'env:fog':
-            return buildFogLevel();
-        case 'env:shadow':
-            return buildShadowLevel();
-        case 'env:experimental':
-            return buildExperimentalLevel();
-        case 'env:presets':
-            return buildPresetLevel();
-        default:
-            return null;
+    const builder = ENV_FOLDER_ROUTES[row.target as string];
+    if (builder) {
+        const lvl = builder();
+        lvl.itemBuilder = () => builder().items;
+        return lvl;
     }
+    return null;
 }

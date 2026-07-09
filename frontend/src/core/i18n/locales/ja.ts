@@ -260,6 +260,7 @@ export const ja: Record<string, string> = {
     'motion.model': 'モデル',
     'motion.camera': 'カメラ',
     'motion.procMotion': 'プロシージャルモーション',
+    'motion.playbackSpeed': '再生速度',
 
     // ===== クロス cloth =====
     'motion.clothTitle': 'クロスパラメータ',
@@ -344,6 +345,8 @@ export const ja: Record<string, string> = {
     'motion.gazeTracking': '視線追跡',
     'motion.eyeFollow': '目線追随',
     'motion.headFollow': '頭部追随',
+    'motion.perceptionBreath': '呼吸',
+    'motion.perceptionBlink': '瞬き',
     'motion.runtime': 'ランタイム',
     'motion.runtimeWasm': 'WASM 物理',
     'motion.runtimeJs': 'JS デバッグ',

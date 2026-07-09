@@ -125,7 +125,12 @@ export function registerPopupMenu(config: RegisteredPopupMenuConfig): PopupMenuH
         };
         menu = newMenu;
         config.onShow?.(menu);
-        menu.reset(config.buildRoot());
+        // [doc:adr-065] 根层自动挂 itemBuilder，使纯 items 根层随语言热刷新
+        const rootLevel = config.buildRoot();
+        if (config.buildRootItems) {
+            rootLevel.itemBuilder = config.buildRootItems;
+        }
+        menu.reset(rootLevel);
     };
 
     return { getMenu, refreshRoot, show };
@@ -142,6 +147,8 @@ export interface PopupMenuConfig {
     popupType: string;
     overlayClass?: string;
     buildRoot: () => PopupLevel;
+    /** 根级 items 构建器（用于 [doc:adr-065] 根层语言热刷新） */
+    buildRootItems?: () => PopupRow[];
     handlers: PopupMenuHandlers;
     onShow?: (menu: SlideMenu) => void;
     onClose?: () => void;
@@ -183,5 +190,10 @@ export function showPopupMenu(config: PopupMenuConfig): void {
     });
     config.setMenu(menu);
     config.onShow?.(menu);
-    menu.reset(config.buildRoot());
+    // [doc:adr-065] 根层自动挂 itemBuilder，使纯 items 根层随语言热刷新
+    const rootLevel = config.buildRoot();
+    if (config.buildRootItems) {
+        rootLevel.itemBuilder = config.buildRootItems;
+    }
+    menu.reset(rootLevel);
 }

@@ -1,6 +1,7 @@
 # ADR-067: Android 端口隐患清单与修复策略
 
-> **状态**: 待实施
+> **状态**: ⏳ 已合并 → [ADR-017](adr-017-android-adaptation.md)（待实施隐患已移至 ADR-017 §六）
+> **来源**: 本文件隐患清单已合并至 ADR-017 精简版
 > **关联**: ADR-057（Base64 查询参数）、ADR-058（basenameFallbackFS 多编码兜底）
 > **触发**: 2026-07-08 代码库扫描 + 首次 Android 构建（`build-android.ps1`）
 

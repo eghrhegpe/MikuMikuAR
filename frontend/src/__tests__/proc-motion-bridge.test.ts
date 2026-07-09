@@ -58,6 +58,7 @@ vi.mock('../scene/scene', () => ({
     focusedModel: ((...args: any[]) => (mockState.focusedModel as any)(...args)) as any,
     loadVMDMotion: ((...args: any[]) => (mockState.loadVMDMotion as any)(...args)) as any,
     scene: mockState.scene,
+    triggerAutoSave: mockState.triggerAutoSave,
 }));
 
 // Note: BeatDetector, procedural-motion algos, and Babylon.js math

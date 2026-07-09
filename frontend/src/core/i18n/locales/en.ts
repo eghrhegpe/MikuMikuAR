@@ -134,6 +134,7 @@ export const en: Record<string, string> = {
     'motion.model': 'Model',
     'motion.camera': 'Camera',
     'motion.procMotion': 'Procedural Motion',
+    'motion.playbackSpeed': 'Playback Speed',
 
     // ===== Cloth =====
     'motion.clothTitle': 'Cloth Parameters',
@@ -218,6 +219,8 @@ export const en: Record<string, string> = {
     'motion.gazeTracking': 'Gaze Tracking',
     'motion.eyeFollow': 'Eye Follow',
     'motion.headFollow': 'Head Follow',
+    'motion.perceptionBreath': 'Breathing',
+    'motion.perceptionBlink': 'Blink',
     'motion.runtime': 'Runtime',
     'motion.runtimeWasm': 'WASM Physics',
     'motion.runtimeJs': 'JS Debug',

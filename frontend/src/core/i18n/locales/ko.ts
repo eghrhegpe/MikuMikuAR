@@ -260,6 +260,7 @@ export const ko: Record<string, string> = {
     'motion.model': '모델',
     'motion.camera': '카메라',
     'motion.procMotion': '프로그래매틱 모션',
+    'motion.playbackSpeed': '재생 속도',
 
     // ===== 천 cloth =====
     'motion.clothTitle': '천 매개변수',
@@ -344,6 +345,8 @@ export const ko: Record<string, string> = {
     'motion.gazeTracking': '시선 추적',
     'motion.eyeFollow': '눈 따라가기',
     'motion.headFollow': '머리 따라가기',
+    'motion.perceptionBreath': '호흡',
+    'motion.perceptionBlink': '눈 깜빡임',
     'motion.runtime': '런타임',
     'motion.runtimeWasm': 'WASM 물리',
     'motion.runtimeJs': 'JS 디버그',

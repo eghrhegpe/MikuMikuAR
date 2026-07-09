@@ -11,7 +11,6 @@ import {
     BONE_CENTER_CANDIDATES,
     BONE_UPPER_CANDIDATES,
     BONE_UPPER2_CANDIDATES,
-    BONE_HEAD_CANDIDATES,
     BONE_WAIST_CANDIDATES,
     BONE_GROOVE_CANDIDATES,
     BONE_LARM_CANDIDATES,
@@ -23,7 +22,6 @@ import {
     BONE_WRIST_R_CANDIDATES,
     BONE_LEG_IK_L_CANDIDATES,
     BONE_LEG_IK_R_CANDIDATES,
-    MORPH_BLINK_CANDIDATES,
     FPS,
     MAX_FRAMES,
     matchBone,
@@ -46,26 +44,11 @@ export function generateAutoDanceVmd(
     const bones: BoneKeyFrame[] = [];
     const morphs: MorphKeyFrame[] = [];
 
-    const blinkMorph = MORPH_BLINK_CANDIDATES.find((c) => morphNames.includes(c));
-    if (blinkMorph) {
-        const blinkA = Math.round(60 / safeSpeed);
-        const blinkB = Math.round(240 / safeSpeed);
-        for (let t = blinkA, i = 0; t + 5 <= loopFrames; i++) {
-            morphs.push({ name: blinkMorph, frame: t, weight: 0 });
-            morphs.push({ name: blinkMorph, frame: t + 2, weight: 1 });
-            morphs.push({ name: blinkMorph, frame: t + 5, weight: 0 });
-            const step = blinkA + ((i * 17 + 3) % (blinkB - blinkA));
-            t += Math.max(blinkA, step);
-        }
-        morphs.push({ name: blinkMorph, frame: loopFrames, weight: 0 });
-    }
-
     const centerBone = matchBone(boneNames, BONE_CENTER_CANDIDATES);
     const upperBone = matchBone(boneNames, BONE_UPPER_CANDIDATES);
     const upper2Bone = matchBone(boneNames, BONE_UPPER2_CANDIDATES);
     const waistBone = matchBone(boneNames, BONE_WAIST_CANDIDATES);
     const grooveBone = matchBone(boneNames, BONE_GROOVE_CANDIDATES);
-    const headBone = matchBone(boneNames, BONE_HEAD_CANDIDATES);
     const larmBone = matchBone(boneNames, BONE_LARM_CANDIDATES);
     const rarmBone = matchBone(boneNames, BONE_RARM_CANDIDATES);
     const shoulderLBone = matchBone(boneNames, BONE_SHOULDER_L_CANDIDATES);
@@ -157,22 +140,6 @@ export function generateAutoDanceVmd(
         }
         bones.push({
             name: waistBone,
-            frame: loopFrames,
-            position: [0, 0, 0],
-            rotation: [0, 0, 0, 1],
-        });
-    }
-
-    if (headBone && state.boneToggles.head) {
-        const headAmp = 0.12 * intensity;
-        for (let f = 0; f <= loopFrames; f += 3) {
-            const s = sinVals[f];
-            const rz = clamp1(-s * headAmp);
-            const w = Math.sqrt(Math.max(0, 1 - rz * rz));
-            bones.push({ name: headBone, frame: f, position: [0, 0, 0], rotation: [0, 0, rz, w] });
-        }
-        bones.push({
-            name: headBone,
             frame: loopFrames,
             position: [0, 0, 0],
             rotation: [0, 0, 0, 1],
