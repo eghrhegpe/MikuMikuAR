@@ -50,7 +50,7 @@ import { focusModel } from '../scene/manager/model-ops';
 import { screenshotCurrent } from '../menus/scene-menu';
 import { updatePerformance, setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
-import { showPlaza } from '../menus/plaza';
+import { showPlaza, closePlaza } from '../menus/plaza';
 import {
     freeflyInput,
     getCameraMode,
@@ -214,7 +214,14 @@ const navActions: Record<number, () => void | Promise<void>> = {
         const m = await import('../menus/settings');
         toggleOverlay('sceneOverlay', m.showSettings);
     },
-    7: () => toggleOverlay('sceneOverlay', showPlaza),
+    7: () => {
+        const layer = document.getElementById('webviewLayer');
+        if (layer && layer.classList.contains('visible')) {
+            closePlaza();
+        } else {
+            toggleOverlay('webviewLayer', showPlaza);
+        }
+    },
 };
 const navLabels: Record<number, string> = {};
 function buildNavMaps(): void {
@@ -644,9 +651,14 @@ async function init(): Promise<void> {
             await m.preloadAutoImportState().catch(() => {}); // 静默失败，避免阻塞 UI
             toggleOverlay('sceneOverlay', m.showSettings);
         });
-        dom.btnPlaza.addEventListener('click', () =>
-            toggleOverlay('sceneOverlay', showPlaza)
-        );
+        dom.btnPlaza.addEventListener('click', () => {
+            const layer = document.getElementById('webviewLayer');
+            if (layer && layer.classList.contains('visible')) {
+                closePlaza();
+            } else {
+                toggleOverlay('webviewLayer', showPlaza);
+            }
+        });
 
         initDropHandler(); // 拖拽导入处理不依赖场景初始化
 

@@ -141,6 +141,25 @@ export function DeleteRenderPreset(name: string): $CancellablePromise<void> {
 }
 
 /**
+ * DownloadFromPlaza downloads a file from the proxy target using the relayed
+ * cookies and saves it to the appropriate category directory under ResourceRoot.
+ * The file is classified by extension: .pmx → model/, .vmd → motion/,
+ * .zip → model/, .vpd → pose/. Returns the saved file path and size.
+ */
+export function DownloadFromPlaza(fileURL: string, fileName: string): $CancellablePromise<$models.PlazaDownloadResult | null> {
+    return $Call.ByID(890940959, fileURL, fileName);
+}
+
+/**
+ * ExtractPlazaPage fetches a URL through the proxy's cookie jar and extracts
+ * structured data using site-specific rules. Returns nil items (not error) when
+ * no rules match — the caller should fall back to iframe mode.
+ */
+export function ExtractPlazaPage(pageURL: string): $CancellablePromise<$models.PlazaExtractResult | null> {
+    return $Call.ByID(1076704853, pageURL);
+}
+
+/**
  * ExtractZip extracts a zip file to the cache directory and returns the path
  * to the extracted PMX file specified by innerPath.
  * 
@@ -830,9 +849,10 @@ export function StartFileServer(dirPath: string): $CancellablePromise<number> {
  * embedded inside an iframe, and rewrites same-host redirect Location headers
  * to stay within the proxy.
  * 
- * Intended for read-only browsing of login-free model resource sites;
- * login-gated SPA sites should use the external-browser path instead
- * (see ADR-075). See also ysm-model-manager's creative-workshop proxy.
+ * Cookie relay: the proxy maintains an in-memory cookie jar. Responses from
+ * the target that contain Set-Cookie headers are stored in the jar, and
+ * subsequent requests from the iframe have matching cookies injected. This
+ * enables login-gated sites to work inside the embedded iframe (ADR-077).
  */
 export function StartProxy(target: string): $CancellablePromise<string> {
     return $Call.ByID(1126463619, target);
@@ -862,6 +882,7 @@ export function StopFileServer(dirPath: string): $CancellablePromise<void> {
 /**
  * StopProxy shuts down the model-plaza reverse proxy started by StartProxy.
  * It is idempotent: calling it when no proxy is running is a no-op.
+ * Also clears the cookie jar (ADR-077).
  */
 export function StopProxy(): $CancellablePromise<void> {
     return $Call.ByID(1345891689);
