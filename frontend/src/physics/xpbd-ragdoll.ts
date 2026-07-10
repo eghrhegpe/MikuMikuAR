@@ -349,7 +349,9 @@ export function writeBack(
 ): void {
   const bones = getRuntimeBones();
 
-  if (!isWasm) {
+  // 运行时再次确认模式：WASM 骨骼无 linkedBone，强制走 WASM 分支防止 isWasm 标志失同步
+  const actualWasm = bones.length > 0 && !('linkedBone' in bones[0]);
+  if (!isWasm && !actualWasm) {
     // JS mode: write to linkedBone.rotationQuaternion + setPosition
     for (let i = 0; i < inst.particles.length; i++) {
       const boneName = inst.boneNames[i];
@@ -405,8 +407,8 @@ export function writeBack(
         }
       }
 
-      // Force skeleton refresh
-      (rb as MmdRuntimeBoneExtended).updateWorldMatrix(false, false);
+      // Force skeleton refresh（WASM 骨骼无 updateWorldMatrix，可选链守卫）
+      (rb as MmdRuntimeBoneExtended).updateWorldMatrix?.(false, false);
       linked.getSkeleton?.()?._markAsDirty?.();
     }
   } else {
