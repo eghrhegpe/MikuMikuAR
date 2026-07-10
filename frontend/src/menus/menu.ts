@@ -341,7 +341,9 @@ export class SlideMenu {
         }
         const _elapsed = performance.now() - _start;
         if (_elapsed > 4) {
-            console.warn(`[perf:menu] updateControls took ${_elapsed.toFixed(1)}ms (${this._controls.length} controls, itemBuilder=${!!level?.itemBuilder})`);
+            console.warn(
+                `[perf:menu] updateControls took ${_elapsed.toFixed(1)}ms (${this._controls.length} controls, itemBuilder=${!!level?.itemBuilder})`
+            );
         }
     }
 

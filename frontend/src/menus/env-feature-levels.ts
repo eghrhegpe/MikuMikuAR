@@ -17,7 +17,13 @@ import {
 import { setEnvState, engine } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
-import { WATER_PRESETS, applyWaterPresetToCurrent, buildWaterPresetEnvState, disposeWater, createWater } from '../scene/env/env-water';
+import {
+    WATER_PRESETS,
+    applyWaterPresetToCurrent,
+    buildWaterPresetEnvState,
+    disposeWater,
+    createWater,
+} from '../scene/env/env-water';
 import { SelectEnvTextureFile, SelectPMXFile } from '../core/wails-bindings';
 import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu';
 import { stackRegistry } from '../core/config';
@@ -96,18 +102,25 @@ export function buildSkyLevel(): PopupLevel {
                     hint.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px 0;';
                     hint.textContent = t('env.skyTextureHint');
                     c.appendChild(hint);
-                    const fileName = s.skyTexture ? s.skyTexture.split(/[/\\]/).pop() : t('env.notSelected');
+                    const fileName = s.skyTexture
+                        ? s.skyTexture.split(/[/\\]/).pop()
+                        : t('env.notSelected');
                     slideRow(
                         c,
                         'lucide:image',
                         t('env.skyTexture'),
                         false,
-async () => {
-                          setEnvTextureBindingTarget('sky');
-                          closeAllOverlays();
-                          const level = stackRegistry.buildLevel!(getBrowseDir('environment'), t('env.skyTexture'), (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format), getEnvMenu()!);
-                          getEnvMenu()!.push(level);
-                      },
+                        async () => {
+                            setEnvTextureBindingTarget('sky');
+                            closeAllOverlays();
+                            const level = stackRegistry.buildLevel!(
+                                getBrowseDir('environment'),
+                                t('env.skyTexture'),
+                                (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+                                getEnvMenu()!
+                            );
+                            getEnvMenu()!.push(level);
+                        },
                         fileName
                     );
                     addSliderRow(
@@ -335,7 +348,7 @@ export function buildGroundLevel(): PopupLevel {
                     // 自定义纹理：slideRow + 库浏览
                     const groundFileName =
                         s.groundTexture && !s.groundTexture.startsWith('textures/')
-                            ? s.groundTexture.split(/[/\\]/).pop() ?? t('env.notSelected')
+                            ? (s.groundTexture.split(/[/\\]/).pop() ?? t('env.notSelected'))
                             : t('env.notSelected');
                     slideRow(
                         c,
@@ -347,8 +360,7 @@ export function buildGroundLevel(): PopupLevel {
                             const level = stackRegistry.buildLevel!(
                                 'environment',
                                 t('env.customTexture'),
-                                (m) =>
-                                    ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+                                (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
                                 getEnvMenu()!
                             );
                             getEnvMenu()!.push(level);
@@ -357,7 +369,8 @@ export function buildGroundLevel(): PopupLevel {
                     );
                     if (s.groundTexture && !s.groundTexture.startsWith('textures/')) {
                         const clearRow = document.createElement('div');
-                        clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+                        clearRow.style.cssText =
+                            'display:flex;justify-content:flex-end;padding:0 14px 4px;';
                         const clearBtn = document.createElement('button');
                         clearBtn.className = 'cs-btn cs-btn-sm';
                         clearBtn.textContent = t('env.clear');
@@ -674,7 +687,9 @@ export function buildWaterLevel(): PopupLevel {
                             inner,
                             t('env.reflectionIntensity'),
                             s.planarReflectBlend,
-                            0, 1, 0.05,
+                            0,
+                            1,
+                            0.05,
                             (v) => setEnvState({ planarReflectBlend: v }),
                             'lucide:sliders-horizontal',
                             undefined,
@@ -829,7 +844,9 @@ export function buildExperimentalLevel(): PopupLevel {
                 const warning = document.createElement('div');
                 warning.className = 'experimental-warning';
                 warning.innerHTML =
-                    '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' + t('env.experimentalWarn') + '</span>';
+                    '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' +
+                    t('env.experimentalWarn') +
+                    '</span>';
                 c.appendChild(warning);
 
                 const isWebGL2 = engine.webGLVersion >= 2;
@@ -849,7 +866,8 @@ export function buildExperimentalLevel(): PopupLevel {
                         disabledHint: t('env.volumetricCloudNeedWebGL'),
                         onDisabledClick: () => {
                             setStatus(
-                                t('env.volumetricCloudNeedWebGL') + '，当前引擎版本：' +
+                                t('env.volumetricCloudNeedWebGL') +
+                                    '，当前引擎版本：' +
                                     engine.webGLVersion.toFixed(1),
                                 false
                             );

@@ -8,7 +8,6 @@ import { StartFileServer, IsolateModelDir } from './wails-bindings';
 // 绕开 URL 路径段编码语义，避免 U+FFFD 被编码为 %EF%BF%BD 后与 Go 侧 d.Name() 不匹配。
 // 与 Go 侧 base64.RawURLEncoding 对齐。
 function _toBase64Url(s: string): string {
-    // eslint-disable-next-line no-undef
     const bytes = new TextEncoder().encode(s);
     let bin = '';
     for (const b of bytes) {

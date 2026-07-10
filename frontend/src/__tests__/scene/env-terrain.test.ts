@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import {
-    hash2,
-    valueNoise,
-    fbm,
-    generateTerrainHeightmapURL,
-} from '../../scene/env/env-terrain';
+import { hash2, valueNoise, fbm, generateTerrainHeightmapURL } from '../../scene/env/env-terrain';
 
 // happy-dom 无真实 2D canvas；为 generateTerrainHeightmapURL 提供最小桩：
 // createImageData 返回真实 Uint8ClampedArray（FBM 像素写入），putImageData 捕获它，

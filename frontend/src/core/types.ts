@@ -400,17 +400,17 @@ export interface EnvState {
     fogEnd: number;
 
     clothEnabled: boolean;
-  ragdollEnabled: boolean;
-  /** per-joint 参数覆盖（按骨骼名索引），空对象表示全用关节组预设 */
-  ragdollJointParams: Record<string, RagdollJointParams>;
+    ragdollEnabled: boolean;
+    /** per-joint 参数覆盖（按骨骼名索引），空对象表示全用关节组预设 */
+    ragdollJointParams: Record<string, RagdollJointParams>;
     clothConfig: ClothConfig;
-  clothDebugParticles: boolean;
-  clothDebugConstraints: boolean;
-  clothDebugColliders: boolean;
-  ragdollDebugParticles: boolean;
-  ragdollDebugConstraints: boolean;
-  ragdollDebugColliders: boolean;
-  solverSubsteps: number;
+    clothDebugParticles: boolean;
+    clothDebugConstraints: boolean;
+    clothDebugColliders: boolean;
+    ragdollDebugParticles: boolean;
+    ragdollDebugConstraints: boolean;
+    ragdollDebugColliders: boolean;
+    solverSubsteps: number;
     solverTimeScale: number;
     collisionEnabled: boolean;
     bodyCollisionEnabled: boolean;

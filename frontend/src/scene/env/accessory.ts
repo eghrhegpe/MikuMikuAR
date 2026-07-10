@@ -46,7 +46,8 @@ export function attachPropToBone(
 
     // linkedBone: babylon-mmd 的 runtimeBone 有 linkedBone 属性指向原生 Bone
     // POC 验证：standard PMX 下 linkedBone instanceof Bone === true
-    const linkedBone = (rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone }).linkedBone;
+    const linkedBone = (rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone })
+        .linkedBone;
     if (!linkedBone) {
         console.warn('[accessory] bone has no linkedBone (HumanoidMmd path untested):', boneName);
         setStatus(t('scene.accessory.boneNoLink'), false);
@@ -63,16 +64,19 @@ export function attachPropToBone(
     const target = prop.container ?? prop.rootMesh;
 
     // 断开现有父子关系（如果是场景坐标模式）
-    if (target.parent && !(target.parent instanceof TransformNode && target.parent.name.startsWith('prop_container'))) {
+    if (
+        target.parent &&
+        !(target.parent instanceof TransformNode && target.parent.name.startsWith('prop_container'))
+    ) {
         target.parent = null;
     }
 
     // 设置局部偏移/旋转
     target.position.set(offset[0], offset[1], offset[2]);
     const rotQ = Quaternion.FromEulerAngles(
-        rotation[0] * Math.PI / 180,
-        rotation[1] * Math.PI / 180,
-        rotation[2] * Math.PI / 180
+        (rotation[0] * Math.PI) / 180,
+        (rotation[1] * Math.PI) / 180,
+        (rotation[2] * Math.PI) / 180
     );
     target.rotationQuaternion = rotQ;
 
@@ -90,7 +94,7 @@ export function attachPropToBone(
  */
 export function detachPropFromBone(propId: string): void {
     const prop = propRegistry.get(propId);
-    if (!prop) return;
+    if (!prop) {return;}
 
     // 获取当前世界矩阵，以便 detach 后保持视觉位置
     const target = prop.container ?? prop.rootMesh;
@@ -122,8 +126,10 @@ export function reattachAllAccessories(): void {
         if (prop.boneName && prop.targetModelId) {
             const target = prop.container ?? prop.rootMesh;
             // 先 detach 以防残留绑定
-            try { target.detachFromBone(); } catch { /* ignore */ }
-            
+            try {
+                target.detachFromBone();
+            } catch { /* ignore */ }
+
             attachPropToBone(
                 propId,
                 prop.boneName,

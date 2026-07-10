@@ -36,7 +36,8 @@ export const ja: Record<string, string> = {
     'settings.storageMode': 'ストレージの場所',
     'settings.storagePrivate': 'プライベート',
     'settings.storageShared': '共有',
-    'settings.storageModeDesc': 'プライベートディレクトリはアンインストール時に削除；共有ディレクトリ(/sdcard/MMD)はストレージ権限が必要でファイルマネージャーからアクセス可',
+    'settings.storageModeDesc':
+        'プライベートディレクトリはアンインストール時に削除；共有ディレクトリ(/sdcard/MMD)はストレージ権限が必要でファイルマネージャーからアクセス可',
     'settings.exported': '✓ 設定をエクスポートしました',
     'settings.imported': '✓ 設定をインポートしました',
     'settings.importFailed': '✗ インポート失敗: ',
@@ -77,7 +78,8 @@ export const ja: Record<string, string> = {
     'main.modelLoadFailed': '✗ モデル読み込み失敗: ',
     'main.loadingMotion': '⏳ モーション読み込み中...',
     'main.vmdLoadFailed': '✗ VMD 読み込み失敗: ',
-    'main.needFileAccess': '⚠️ /sdcard/MMD を読むにはファイルアクセス権限が必要です。ダイアログで許可してください。',
+    'main.needFileAccess':
+        '⚠️ /sdcard/MMD を読むにはファイルアクセス権限が必要です。ダイアログで許可してください。',
     'main.permissionGranted': '✅ ファイル権限を許可しました、モデルライブラリを再スキャン中...',
     'main.libraryRefreshed': '✅ モデルライブラリを更新しました',
     'main.libraryRefreshFailed': '⚠️ モデルライブラリの更新に失敗: ',
@@ -164,7 +166,8 @@ export const ja: Record<string, string> = {
 
     // ===== マテリアル model-material =====
     'model-material.batchByPart': '部位一括 — {name}',
-    'model-material.overrideHint': '⚠ {count} 個のマテリアルに個別オーバーライドがあります（カテゴリ調整はオーバーライド済みマテリアルに影響しません）',
+    'model-material.overrideHint':
+        '⚠ {count} 個のマテリアルに個別オーバーライドがあります（カテゴリ調整はオーバーライド済みマテリアルに影響しません）',
     'model-material.diffuseMul': '拡散倍率',
     'model-material.specularMul': '鏡面倍率',
     'model-material.shininess': '光沢度',
@@ -176,7 +179,8 @@ export const ja: Record<string, string> = {
     'model-material.sphereTexLevel': 'スフィアテクスチャレベル',
     'model-material.emissiveTexLevel': 'エミッシブテクスチャレベル',
     'model-material.texLevelGroup': 'テクスチャ強度',
-    'model-material.stackingHint': 'カテゴリ設定を上書きします。カテゴリ調整は他のマテリアルに引き続き適用されます',
+    'model-material.stackingHint':
+        'カテゴリ設定を上書きします。カテゴリ調整は他のマテリアルに引き続き適用されます',
     'model-material.resetDone': '✓ リセットしました: {name}',
     'model-material.materialAdjustTitle': 'マテリアル調整 — {name}',
     'model-material.noMaterialData': 'このモデルにはマテリアルデータがありません',
@@ -194,7 +198,8 @@ export const ja: Record<string, string> = {
     // ===== モデルプリセット model-preset =====
     'model-preset.formatError': '✗ プリセットファイル形式エラー',
     'model-preset.unsupportedVersion': '✗ 未対応のプリセットバージョン',
-    'model-preset.vmdLoadFailed': '⚠ VMD 読み込みに失敗しましたが、残りのプリセットは適用されました',
+    'model-preset.vmdLoadFailed':
+        '⚠ VMD 読み込みに失敗しましたが、残りのプリセットは適用されました',
     'model-preset.applied': '✓ プリセットを適用しました',
     'model-preset.serializeFailed': '✗ モデル状態のシリアライズに失敗しました',
     'model-preset.saveFailed': '✗ 保存に失敗しました',
@@ -363,8 +368,10 @@ export const ja: Record<string, string> = {
     'scene.runtime': 'ランタイム',
     'scene.runtimeWasm': 'WASM 物理',
     'scene.runtimeJs': 'JS デバッグ',
-    'scene.confirmJs': 'JSデバッグモードに切り替えると現在のシーンが失われ、リロードされます（物理なし）。続行しますか？',
-    'scene.confirmWasm': 'WASM物理モードに切り替えると現在のシーンが失われ、リロードされます。続行しますか？',
+    'scene.confirmJs':
+        'JSデバッグモードに切り替えると現在のシーンが失われ、リロードされます（物理なし）。続行しますか？',
+    'scene.confirmWasm':
+        'WASM物理モードに切り替えると現在のシーンが失われ、リロードされます。続行しますか？',
     'motion.interpCurve': '補間曲線',
     'motion.interpAuto': '自動',
     'motion.interpSharp': 'シャープ',
@@ -463,7 +470,8 @@ export const ja: Record<string, string> = {
     'scene.statusScreenshotting': 'スクリーンショット中… {saved}/{total}',
     'scene.statusBatchScreenshotFailed': '✗ 一括スクリーンショットに失敗しました',
     'scene.statusBatchScreenshotDone': '✓ 一括スクリーンショット完了: {saved}枚',
-    'scene.statusSceneSavedClipboard': '✓ シーンを保存しました: {filename}（クリップボードにコピー）',
+    'scene.statusSceneSavedClipboard':
+        '✓ シーンを保存しました: {filename}（クリップボードにコピー）',
     'scene.statusSceneSaved': '✓ シーンを保存しました: {filename}',
     'scene.statusSaveFailed': '✗ 保存に失敗しました',
     'scene.toastSaveSceneFailed': 'シーンの保存に失敗しました',
@@ -572,11 +580,13 @@ export const ja: Record<string, string> = {
     'scene.preset.warm': '暖色',
     'scene.preset.cyberpunk': 'サイバーパンク',
     'scene.presetDesc.standard': '標準トーンマッピング・基準参照',
-    'scene.presetDesc.cinematic': 'ACESトーンマッピング・フィルムカーブ・自然なハイライトロールオフ',
+    'scene.presetDesc.cinematic':
+        'ACESトーンマッピング・フィルムカーブ・自然なハイライトロールオフ',
     'scene.presetDesc.cartoon': 'Reinhardトーンマッピング・高彩度/高コントラスト・黒アウトライン',
     'scene.presetDesc.realistic': 'ACESトーンマッピング・浅い被写界深度・シネマティックビネット',
     'scene.presetDesc.warm': 'Cineonトーンマッピング・暖色背景・フィルム調',
-    'scene.presetDesc.cyberpunk': 'Neutralトーンマッピング・ハイライトブルーム・極端なポストプロセス',
+    'scene.presetDesc.cyberpunk':
+        'Neutralトーンマッピング・ハイライトブルーム・極端なポストプロセス',
     'scene.saveCurrentAsPreset': '現在の設定をプリセットとして保存',
     'scene.promptPresetName': 'プリセット名を入力してください:',
     'scene.statusSavePresetFailed': '✗ プリセットの保存に失敗しました',
@@ -610,7 +620,8 @@ export const ja: Record<string, string> = {
     // —— Scene AR ——
     'scene.ar.enabled': '✓ AR カメラ起動中',
     'scene.ar.cameraDenied': '✗ カメラの許可が拒否されました、黒背景に切り替えました',
-    'scene.ar.cameraUnavailable': '✗ カメラが利用できません（環境がメディア機能を提供していません。デスクトップでは権限付与が必要な場合があります）',
+    'scene.ar.cameraUnavailable':
+        '✗ カメラが利用できません（環境がメディア機能を提供していません。デスクトップでは権限付与が必要な場合があります）',
     'scene.ar.switchedUser': '✓ フロントカメラに切り替えました',
     'scene.ar.switchedEnv': '✓ バックカメラに切り替えました',
 
@@ -672,7 +683,8 @@ export const ja: Record<string, string> = {
 
     // —— Scene Serialize ——
     'scene.serialize.modelPathUnresolved': 'モデル {name}: ファイルパスを解決できませんでした',
-    'scene.serialize.modelNoMesh': 'モデル {name}: 読み込み成功しましたがメッシュデータがありません',
+    'scene.serialize.modelNoMesh':
+        'モデル {name}: 読み込み成功しましたがメッシュデータがありません',
     'scene.serialize.modelError': 'モデル {name}: {error}',
     'scene.serialize.autosaveFailed': '自動保存に失敗しました',
 
@@ -706,16 +718,22 @@ export const ja: Record<string, string> = {
     'library.importFile': 'ファイルをインポート',
     'library.rescan': '再スキャン',
     'library.model': 'モデル',
-    'library.firstUseHint': '📦 初めてですか？ここでライブラリを開いて→モデルを読み込んでください。モデルディレクトリは ⚙ 設定で変更できます',
-    'library.browseHint2': '📦 クリックでモデルを閲覧 · 💃 クリックでモーションを読み込み · ドラッグで回転 · スクロールで拡大縮小',
+    'library.firstUseHint':
+        '📦 初めてですか？ここでライブラリを開いて→モデルを読み込んでください。モデルディレクトリは ⚙ 設定で変更できます',
+    'library.browseHint2':
+        '📦 クリックでモデルを閲覧 · 💃 クリックでモーションを読み込み · ドラッグで回転 · スクロールで拡大縮小',
     'library.loadLibraryFailed': '✗ ライブラリの読み込みに失敗: ',
-    'library.confirmRescan': 'リソースルートを変更するとライブラリが再スキャンされます。続行しますか？',
+    'library.confirmRescan':
+        'リソースルートを変更するとライブラリが再スキャンされます。続行しますか？',
     'library.confirmRescanTitle': 'リソースルートの変更',
-    'library.confirmSwitchPrivate': 'プライベートディレクトリに切り替えると、パスの上書きがクリアされライブラリが再スキャンされます。続行しますか？',
-    'library.confirmSwitchShared': '共有ディレクトリに切り替えるにはストレージ権限が必要で、ライブラリが再スキャンされます。続行しますか？',
+    'library.confirmSwitchPrivate':
+        'プライベートディレクトリに切り替えると、パスの上書きがクリアされライブラリが再スキャンされます。続行しますか？',
+    'library.confirmSwitchShared':
+        '共有ディレクトリに切り替えるにはストレージ権限が必要で、ライブラリが再スキャンされます。続行しますか？',
     'library.confirmSwitchTitle': 'ストレージの場所の変更',
     'library.dirSetFailed': '✗ ディレクトリの設定に失敗しました',
-    'library.androidDirNotSupported': '✗ Android ではカスタムディレクトリはサポートされていません。インポート機能を使用してください',
+    'library.androidDirNotSupported':
+        '✗ Android ではカスタムディレクトリはサポートされていません。インポート機能を使用してください',
     'library.scanning': 'スキャン中...',
     'library.scanFailed': '✗ スキャンに失敗しました',
     'library.entriesCount': '✓ {n} 件のエントリ',
@@ -733,7 +751,8 @@ export const ja: Record<string, string> = {
     'outfit.variant': '衣装バリエーション',
     'outfit.modelRemoved': 'モデルが削除されました',
     'outfit.loadConfigFailed': '⚠ 衣装設定の読み込みに失敗しました',
-    'outfit.noOutfitsConfig': 'このモデルに outfits.json がありません。モデルフォルダに outfits.json を作成すると衣装バリエーションが使用できます。',
+    'outfit.noOutfitsConfig':
+        'このモデルに outfits.json がありません。モデルフォルダに outfits.json を作成すると衣装バリエーションが使用できます。',
     'outfit.default': 'デフォルト',
     'outfit.switching': '⏳ バリエーションを切り替え中...',
     'outfit.switchFailed': '✗ バリエーションの切り替えに失敗しました',
@@ -760,7 +779,8 @@ export const ja: Record<string, string> = {
     'env-preset.deleteFailed': '✗ プリセットの削除に失敗しました',
     'env-preset.deleted': '✓ プリセットを削除しました: {label}',
     'env-preset.saveCurrent': '＋ 現在の設定をプリセットとして保存',
-    'env-preset.inputName': 'プリセット名を入力（ファイル名に使用されます。英数字/_/-/漢字が使用可能）',
+    'env-preset.inputName':
+        'プリセット名を入力（ファイル名に使用されます。英数字/_/-/漢字が使用可能）',
     'env-preset.saveFailed': '✗ プリセットの保存に失敗しました',
     'env-preset.saveErrorToast': '環境プリセットの保存に失敗しました',
     'env-preset.saved': '✓ プリセットを保存しました: {name}',
@@ -878,10 +898,12 @@ export const ja: Record<string, string> = {
 
     // —— Experimental ——
     'env.experimental': '実験的機能',
-    'env.experimentalWarn': '以下の機能は処理負荷が高く、フレームレートに影響を与える可能性があります。慎重に有効にしてください。',
+    'env.experimentalWarn':
+        '以下の機能は処理負荷が高く、フレームレートに影響を与える可能性があります。慎重に有効にしてください。',
     'env.volumetricCloud': 'ボリューメトリッククラウド',
     'env.volumetricCloudNeedWebGL': 'ボリューメトリッククラウドには WebGL 2.0 が必要です',
-    'env.volumetricCloudUnsupported': '（お使いの端末は WebGL 2.0 に対応していないため、ボリューメトリッククラウドは利用できません）',
+    'env.volumetricCloudUnsupported':
+        '（お使いの端末は WebGL 2.0 に対応していないため、ボリューメトリッククラウドは利用できません）',
 
     // —— Fog ——
     'env.fog': '霧',
@@ -935,9 +957,11 @@ export const ja: Record<string, string> = {
     'physics.loadModelFirst': '⚠ 先にモデルをロードしてください',
     'physics.clothExists': '⚠ クロスは既に存在します',
     'physics.noMmdData': '⚠ 現在のモデルにMMDデータがありません',
-    'physics.clothCreated': '✓ クロスを作成しました ({particles} パーティクル, {constraints} 制約, mesh: {mesh})',
-    'physics.clothEnabled': '✓ クロスシミュレーションを有効にしました ({instances} インスタンス, {particles} パーティクル, {constraints} 制約)',
-'physics.ragdollEnabled': '✓ ラグドール物理が有効',
+    'physics.clothCreated':
+        '✓ クロスを作成しました ({particles} パーティクル, {constraints} 制約, mesh: {mesh})',
+    'physics.clothEnabled':
+        '✓ クロスシミュレーションを有効にしました ({instances} インスタンス, {particles} パーティクル, {constraints} 制約)',
+    'physics.ragdollEnabled': '✓ ラグドール物理が有効',
     'physics.noActiveInstance': '⚠ クロスは有効ですが、アクティブなインスタンスが見つかりません',
     'physics.clothDisabled': 'クロスシミュレーションオフ',
 
@@ -1001,16 +1025,22 @@ export const ja: Record<string, string> = {
     'settings.perf.fpsCap': 'FPS 上限',
     'settings.perf.fpsHint': '0で無制限。モバイルでは省電力のため30推奨。',
     'settings.perf.vsync': '垂直同期',
-    'settings.perf.vsyncHintOn': '有効にするとrequestAnimationFrameループを使用；無効にするとFPS制限を解除しますが上限設定不可。',
-    'settings.perf.vsyncHintOff': '無効だと「FPS上限」を使用できません。Engineは常に無制限（maxFPS=0相当）。',
-    'settings.perf.vsyncHintBrowser': 'ブラウザ/WebViewはデフォルトでrAFを使用；無効にすると人為的制限を解除（実際はリフレッシュレートで制限）。',
+    'settings.perf.vsyncHintOn':
+        '有効にするとrequestAnimationFrameループを使用；無効にするとFPS制限を解除しますが上限設定不可。',
+    'settings.perf.vsyncHintOff':
+        '無効だと「FPS上限」を使用できません。Engineは常に無制限（maxFPS=0相当）。',
+    'settings.perf.vsyncHintBrowser':
+        'ブラウザ/WebViewはデフォルトでrAFを使用；無効にすると人為的制限を解除（実際はリフレッシュレートで制限）。',
     'settings.perf.defaultPhysics': 'デフォルト物理シミュレーション',
-    'settings.perf.defaultPhysicsHint': '無効にするとローエンドデバイスの性能向上；以降のロードのみ影響。',
-  'settings.perf.autoCenter': '新規モデルの自動中央配置',
-  'settings.perf.autoCenterHint': '新規ロードモデルをカメラが自動で中央配置；無効時は現在の視点を維持しフォーカスのみ切替。',
-  'settings.perf.autoCenterState': '自動中央配置: {state}',
+    'settings.perf.defaultPhysicsHint':
+        '無効にするとローエンドデバイスの性能向上；以降のロードのみ影響。',
+    'settings.perf.autoCenter': '新規モデルの自動中央配置',
+    'settings.perf.autoCenterHint':
+        '新規ロードモデルをカメラが自動で中央配置；無効時は現在の視点を維持しフォーカスのみ切替。',
+    'settings.perf.autoCenterState': '自動中央配置: {state}',
     'settings.perf.renderScale': 'レンダリングスケール',
-    'settings.perf.renderScaleHint': '100%未満で性能向上、100%超でスーパーサンプリング（GPU負荷増）。',
+    'settings.perf.renderScaleHint':
+        '100%未満で性能向上、100%超でスーパーサンプリング（GPU負荷増）。',
     'settings.perf.camSens': 'カメラ感度',
     'settings.perf.camSensHint': '回転/ズーム/パン速度に影響、リアルタイム。',
     'settings.perf.invertY': 'Y軸反転（垂直ドラッグ）',
@@ -1028,7 +1058,8 @@ export const ja: Record<string, string> = {
     'settings.perf.ssr': 'SSR',
     'settings.perf.reflectionProbe': '反射プローブ',
     'settings.perf.ssao': 'SSAO',
-    'settings.perf.customHint': 'カスタムモードではこれらのトグルが権威のある設定となり、パフォーマンスモニターは上書きしません。MSAA/強度はシーン→レンダリングメニューで調整。',
+    'settings.perf.customHint':
+        'カスタムモードではこれらのトグルが権威のある設定となり、パフォーマンスモニターは上書きしません。MSAA/強度はシーン→レンダリングメニューで調整。',
 
     // settings.watch / autoImport / companion / transform
     'settings.watchOn': '✓ ダウンロード監視をオン',
@@ -1078,8 +1109,10 @@ export const ja: Record<string, string> = {
     'settings.about.settingsMgmt.export': '設定をエクスポート',
     'settings.about.settingsMgmt.import': '設定をインポート',
     'settings.about.settingsMgmt.reset': 'デフォルトに戻す',
-    'settings.about.settingsMgmt.resetConfirm': 'すべての設定をデフォルトに戻しますか？この操作は元に戻せません。',
-    'settings.about.settingsMgmt.hint': 'JSONバックアップとしてエクスポート；インポートは現在の設定にマージされ、即座に有効になります。外観/パフォーマンスモードは永続化され、その他はセッション中のみ有効。',
+    'settings.about.settingsMgmt.resetConfirm':
+        'すべての設定をデフォルトに戻しますか？この操作は元に戻せません。',
+    'settings.about.settingsMgmt.hint':
+        'JSONバックアップとしてエクスポート；インポートは現在の設定にマージされ、即座に有効になります。外観/パフォーマンスモードは永続化され、その他はセッション中のみ有効。',
     'settings.about.invalidFormat': '無効なファイル形式',
 
     // settings.paths
@@ -1106,11 +1139,15 @@ export const ja: Record<string, string> = {
     'settings.paths.loadFailed': 'パスページの読み込みに失敗: {err}',
     'settings.paths.storageModePrivate': 'プライベート',
     'settings.paths.storageModeShared': '共有',
-    'settings.paths.storageModeDesc': 'プライベート：アプリサンドボックスのみ。共有：他のアプリからもアクセス可能。',
+    'settings.paths.storageModeDesc':
+        'プライベート：アプリサンドボックスのみ。共有：他のアプリからもアクセス可能。',
     'settings.paths.modelsLoaded': '{count} モデルを読み込みました',
-    'settings.paths.noModels': 'モデルが見つかりません。/sdcard/MMD に PMX/VMD ファイルを配置してください',
-    'settings.paths.clearThumbConfirm': 'すべてのサムネイルキャッシュをクリアしますか？次回のモデル読み込み時に再生成されます。',
-    'settings.paths.clearAllConfirm': 'すべてのキャッシュをクリアしますか？抽出キャッシュ、サムネイル、HTTP分離ディレクトリが含まれます。次回のモデル読み込み時に再生成されます。',
+    'settings.paths.noModels':
+        'モデルが見つかりません。/sdcard/MMD に PMX/VMD ファイルを配置してください',
+    'settings.paths.clearThumbConfirm':
+        'すべてのサムネイルキャッシュをクリアしますか？次回のモデル読み込み時に再生成されます。',
+    'settings.paths.clearAllConfirm':
+        'すべてのキャッシュをクリアしますか？抽出キャッシュ、サムネイル、HTTP分離ディレクトリが含まれます。次回のモデル読み込み時に再生成されます。',
 
     // shortcuts.* (ADR-059 Phase 3)
     'shortcuts.label.models': 'モデルライブラリ',
@@ -1132,7 +1169,8 @@ export const ja: Record<string, string> = {
     'shortcuts.group.screenshot': 'スクリーンショット',
     'shortcuts.title': 'ショートカット',
     'shortcuts.pressNewCombo': '新しいキーを押してください...',
-    'shortcuts.confirmOverride': 'ショートカット "{label}" は既にこの組み合わせを使用しています。上書きしますか？',
+    'shortcuts.confirmOverride':
+        'ショートカット "{label}" は既にこの組み合わせを使用しています。上書きしますか？',
     'shortcuts.resetAll': 'デフォルトのショートカットに戻す',
     'shortcuts.custom': 'カスタム',
     'settings.paths.watchDirPlaceholder': '監視ディレクトリを選択...',

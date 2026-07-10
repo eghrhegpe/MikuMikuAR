@@ -63,12 +63,12 @@ export { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 
 // ======== Formation key map（热切换安全：仅存 i18n key，不含中文）========
 const FORMATION_KEYS: Record<string, string> = {
-    line: 'scene.formation.line',
+    'line': 'scene.formation.line',
     'v-shape': 'scene.formation.vshape',
-    circle: 'scene.formation.circle',
-    grid: 'scene.formation.grid',
-    diagonal: 'scene.formation.diagonal',
-    arc: 'scene.formation.arc',
+    'circle': 'scene.formation.circle',
+    'grid': 'scene.formation.grid',
+    'diagonal': 'scene.formation.diagonal',
+    'arc': 'scene.formation.arc',
 };
 
 // ======== Scene Menu State ========
@@ -192,7 +192,9 @@ function buildExperimentalLevel(): PopupLevel {
             const warning = document.createElement('div');
             warning.className = 'experimental-warning';
             warning.innerHTML =
-                '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' + t('env.experimentalWarn') + '</span>';
+                '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' +
+                t('env.experimentalWarn') +
+                '</span>';
             container.appendChild(warning);
             // lcard 包裹导航 items
             const card = document.createElement('div');
@@ -217,7 +219,12 @@ function buildSceneRootItems(): PopupRow[] {
         icon: 'lucide:bookmark',
         target: 'scene:presets',
     });
-    items.push({ kind: 'action', label: t('scene.saveScene'), icon: 'lucide:save', target: 'scene:save' });
+    items.push({
+        kind: 'action',
+        label: t('scene.saveScene'),
+        icon: 'lucide:save',
+        target: 'scene:save',
+    });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
         kind: 'folder',
@@ -238,7 +245,12 @@ function buildSceneRootItems(): PopupRow[] {
         target: 'scene:screenshot',
     });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    items.push({ kind: 'folder', label: t('scene.physics'), icon: 'lucide:atom', target: 'scene:physics' });
+    items.push({
+        kind: 'folder',
+        label: t('scene.physics'),
+        icon: 'lucide:atom',
+        target: 'scene:physics',
+    });
     items.push({
         kind: 'folder',
         label: t('env.experimental'),

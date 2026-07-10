@@ -6,7 +6,10 @@
 
 export interface FullscreenOverlayOptions {
     /** 渲染内容的工厂函数；navigate 可用于在全屏内跳转到新内容 */
-    renderContent: (container: HTMLElement, navigate: (title: string, render: (c: HTMLElement) => void) => void) => void;
+    renderContent: (
+        container: HTMLElement,
+        navigate: (title: string, render: (c: HTMLElement) => void) => void
+    ) => void;
     /** 标题 */
     title: string;
     /** 返回回调 */
@@ -202,7 +205,9 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
 
     // 键盘导航：Escape 关闭，方向键聚焦，Enter 选择
     const handleKeyDown = (e: KeyboardEvent) => {
-        if (currentState !== 'FULLSCREEN') return;
+        if (currentState !== 'FULLSCREEN') {
+            return;
+        }
 
         if (e.key === 'Escape') {
             cleanup();
@@ -213,9 +218,13 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
 
         // [doc:adr-066] 方向键 + Enter 键盘导航
         const cards = content.querySelectorAll<HTMLElement>('.resource-card, .resource-row');
-        if (cards.length === 0) return;
+        if (cards.length === 0) {
+            return;
+        }
 
-        const focused = content.querySelector<HTMLElement>('.resource-card:focus, .resource-row:focus');
+        const focused = content.querySelector<HTMLElement>(
+            '.resource-card:focus, .resource-row:focus'
+        );
         const idx = focused ? Array.from(cards).indexOf(focused) : -1;
 
         if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {

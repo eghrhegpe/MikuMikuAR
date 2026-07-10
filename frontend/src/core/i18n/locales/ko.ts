@@ -36,7 +36,8 @@ export const ko: Record<string, string> = {
     'settings.storageMode': '저장 위치',
     'settings.storagePrivate': '개인',
     'settings.storageShared': '공유',
-    'settings.storageModeDesc': '개인 디렉터리는 앱 제거 시 삭제되며, 공유 디렉터리(/sdcard/MMD)는 저장 권한이 필요하고 파일 관리자로 접근 가능합니다',
+    'settings.storageModeDesc':
+        '개인 디렉터리는 앱 제거 시 삭제되며, 공유 디렉터리(/sdcard/MMD)는 저장 권한이 필요하고 파일 관리자로 접근 가능합니다',
     'settings.exported': '✓ 설정 내보내기 완료',
     'settings.imported': '✓ 설정 가져오기 완료',
     'settings.importFailed': '✗ 가져오기 실패: ',
@@ -77,8 +78,10 @@ export const ko: Record<string, string> = {
     'main.modelLoadFailed': '✗ 모델 로딩 실패: ',
     'main.loadingMotion': '⏳ 모션 로딩 중...',
     'main.vmdLoadFailed': '✗ VMD 로딩 실패: ',
-    'main.needFileAccess': '⚠️ /sdcard/MMD를 읽으려면 파일 액세스 권한이 필요합니다. 대화상자에서 허용해 주세요.',
-    'main.permissionGranted': '✅ 파일 권한이 허용되었습니다. 모델 라이브러리를 다시 스캔하는 중...',
+    'main.needFileAccess':
+        '⚠️ /sdcard/MMD를 읽으려면 파일 액세스 권한이 필요합니다. 대화상자에서 허용해 주세요.',
+    'main.permissionGranted':
+        '✅ 파일 권한이 허용되었습니다. 모델 라이브러리를 다시 스캔하는 중...',
     'main.libraryRefreshed': '✅ 모델 라이브러리 새로고침 완료',
     'main.libraryRefreshFailed': '⚠️ 모델 라이브러리 새로고침 실패: ',
     'main.newFileDetected': '새 파일 감지됨',
@@ -164,7 +167,8 @@ export const ko: Record<string, string> = {
 
     // ===== 재질 model-material =====
     'model-material.batchByPart': '부위별 일괄 — {name}',
-    'model-material.overrideHint': '⚠ {count}개 재질에 개별 오버라이드가 있습니다 (분류 조정은 오버라이드된 재질에 영향을 주지 않음)',
+    'model-material.overrideHint':
+        '⚠ {count}개 재질에 개별 오버라이드가 있습니다 (분류 조정은 오버라이드된 재질에 영향을 주지 않음)',
     'model-material.diffuseMul': '확산 배율',
     'model-material.specularMul': '반사 배율',
     'model-material.shininess': '광택 지수',
@@ -176,7 +180,8 @@ export const ko: Record<string, string> = {
     'model-material.sphereTexLevel': '스피어 텍스처 레벨',
     'model-material.emissiveTexLevel': '자체 발광 텍스처 레벨',
     'model-material.texLevelGroup': '텍스처 강도',
-    'model-material.stackingHint': '분류 설정을 덮어씁니다. 분류 조정은 다른 재질에 계속 적용됩니다',
+    'model-material.stackingHint':
+        '분류 설정을 덮어씁니다. 분류 조정은 다른 재질에 계속 적용됩니다',
     'model-material.resetDone': '✓ 재설정됨: {name}',
     'model-material.materialAdjustTitle': '재질 조정 — {name}',
     'model-material.noMaterialData': '이 모델에는 재질 데이터가 없습니다',
@@ -363,8 +368,10 @@ export const ko: Record<string, string> = {
     'scene.runtime': '런타임',
     'scene.runtimeWasm': 'WASM 물리',
     'scene.runtimeJs': 'JS 디버그',
-    'scene.confirmJs': 'JS 디버그 모드로 전환하면 현재 장면이 손실되고 다시 로드됩니다 (물리 없음). 계속하시겠습니까?',
-    'scene.confirmWasm': 'WASM 물리 모드로 전환하면 현재 장면이 손실되고 다시 로드됩니다. 계속하시겠습니까?',
+    'scene.confirmJs':
+        'JS 디버그 모드로 전환하면 현재 장면이 손실되고 다시 로드됩니다 (물리 없음). 계속하시겠습니까?',
+    'scene.confirmWasm':
+        'WASM 물리 모드로 전환하면 현재 장면이 손실되고 다시 로드됩니다. 계속하시겠습니까?',
     'motion.interpCurve': '보간 곡선',
     'motion.interpAuto': '자동',
     'motion.interpSharp': '날카롭게',
@@ -610,7 +617,8 @@ export const ko: Record<string, string> = {
     // —— Scene AR ——
     'scene.ar.enabled': '✓ AR 카메라 켜짐',
     'scene.ar.cameraDenied': '✗ 카메라 권한 거부됨, 검은 배경으로 전환됨',
-    'scene.ar.cameraUnavailable': '✗ 카메라를 사용할 수 없음(환경에서 미디어 기능을 제공하지 않음, 데스크톱은 권한 부여가 필요할 수 있음)',
+    'scene.ar.cameraUnavailable':
+        '✗ 카메라를 사용할 수 없음(환경에서 미디어 기능을 제공하지 않음, 데스크톱은 권한 부여가 필요할 수 있음)',
     'scene.ar.switchedUser': '✓ 전면 카메라로 전환됨',
     'scene.ar.switchedEnv': '✓ 후면 카메라로 전환됨',
 
@@ -706,16 +714,22 @@ export const ko: Record<string, string> = {
     'library.importFile': '파일 가져오기',
     'library.rescan': '다시 검색',
     'library.model': '모델',
-    'library.firstUseHint': '📦 처음 사용하시나요? 여기서 라이브러리를 열어 → 모델을 로드하세요. ⚙ 설정에서 라이브러리 디렉터리를 지정할 수 있습니다',
-    'library.browseHint2': '📦 클릭하여 모델 찾기 · 💃 클릭하여 모션 로드 · 드래그로 회전 · 스크롤로 확대/축소',
+    'library.firstUseHint':
+        '📦 처음 사용하시나요? 여기서 라이브러리를 열어 → 모델을 로드하세요. ⚙ 설정에서 라이브러리 디렉터리를 지정할 수 있습니다',
+    'library.browseHint2':
+        '📦 클릭하여 모델 찾기 · 💃 클릭하여 모션 로드 · 드래그로 회전 · 스크롤로 확대/축소',
     'library.loadLibraryFailed': '✗ 라이브러리 로드 실패: ',
-    'library.confirmRescan': '리소스 루트를 변경하면 라이브러리가 다시 스캔됩니다. 계속하시겠습니까?',
+    'library.confirmRescan':
+        '리소스 루트를 변경하면 라이브러리가 다시 스캔됩니다. 계속하시겠습니까?',
     'library.confirmRescanTitle': '리소스 루트 변경',
-    'library.confirmSwitchPrivate': '개인 디렉터리로 전환하면 경로 재정의가 지워지고 라이브러리가 다시 스캔됩니다. 계속하시겠습니까?',
-    'library.confirmSwitchShared': '공유 디렉터리로 전환하려면 저장 권한이 필요하며 라이브러리가 다시 스캔됩니다. 계속하시겠습니까?',
+    'library.confirmSwitchPrivate':
+        '개인 디렉터리로 전환하면 경로 재정의가 지워지고 라이브러리가 다시 스캔됩니다. 계속하시겠습니까?',
+    'library.confirmSwitchShared':
+        '공유 디렉터리로 전환하려면 저장 권한이 필요하며 라이브러리가 다시 스캔됩니다. 계속하시겠습니까?',
     'library.confirmSwitchTitle': '저장 위치 변경',
     'library.dirSetFailed': '✗ 디렉터리 설정 실패',
-    'library.androidDirNotSupported': '✗ Android에서는 사용자 정의 디렉터리를 지원하지 않습니다. 가져오기 기능을 사용하세요',
+    'library.androidDirNotSupported':
+        '✗ Android에서는 사용자 정의 디렉터리를 지원하지 않습니다. 가져오기 기능을 사용하세요',
     'library.scanning': '검색 중...',
     'library.scanFailed': '✗ 검색 실패',
     'library.entriesCount': '✓ {n}개 항목',
@@ -733,7 +747,8 @@ export const ko: Record<string, string> = {
     'outfit.variant': '의상 변형',
     'outfit.modelRemoved': '모델이 제거됨',
     'outfit.loadConfigFailed': '⚠ 의상 설정 로드 실패',
-    'outfit.noOutfitsConfig': '이 모델에는 outfits.json이 없습니다. 모델 폴더에 outfits.json을 생성하면 의상 변형을 사용할 수 있습니다.',
+    'outfit.noOutfitsConfig':
+        '이 모델에는 outfits.json이 없습니다. 모델 폴더에 outfits.json을 생성하면 의상 변형을 사용할 수 있습니다.',
     'outfit.default': '기본',
     'outfit.switching': '⏳ 변형 전환 중...',
     'outfit.switchFailed': '✗ 변형 전환 실패',
@@ -878,10 +893,12 @@ export const ko: Record<string, string> = {
 
     // —— Experimental ——
     'env.experimental': '실험 기능',
-    'env.experimentalWarn': '다음 기능은 성능 부하가 크며 프레임율에 영향을 줄 수 있습니다. 신중하게 활성화하세요.',
+    'env.experimentalWarn':
+        '다음 기능은 성능 부하가 크며 프레임율에 영향을 줄 수 있습니다. 신중하게 활성화하세요.',
     'env.volumetricCloud': '볼류메트릭 구름',
     'env.volumetricCloudNeedWebGL': '볼류메트릭 구름은 WebGL 2.0이 필요합니다',
-    'env.volumetricCloudUnsupported': '(현재 기기에서 WebGL 2.0을 지원하지 않아 볼류메트릭 구름을 사용할 수 없습니다)',
+    'env.volumetricCloudUnsupported':
+        '(현재 기기에서 WebGL 2.0을 지원하지 않아 볼류메트릭 구름을 사용할 수 없습니다)',
 
     // —— Fog ——
     'env.fog': '안개',
@@ -935,9 +952,11 @@ export const ko: Record<string, string> = {
     'physics.loadModelFirst': '⚠ 먼저 모델을 로드하세요',
     'physics.clothExists': '⚠ 옷감이 이미 존재합니다',
     'physics.noMmdData': '⚠ 현재 모델에 MMD 데이터가 없습니다',
-    'physics.clothCreated': '✓ 옷감이 생성되었습니다 ({particles} 파티클, {constraints} 제약, mesh: {mesh})',
-    'physics.clothEnabled': '✓ 옷감 시뮬레이션이 활성화되었습니다 ({instances} 인스턴스, {particles} 파티클, {constraints} 제약)',
-'physics.ragdollEnabled': '✓ 래그돌 물리 활성화',
+    'physics.clothCreated':
+        '✓ 옷감이 생성되었습니다 ({particles} 파티클, {constraints} 제약, mesh: {mesh})',
+    'physics.clothEnabled':
+        '✓ 옷감 시뮬레이션이 활성화되었습니다 ({instances} 인스턴스, {particles} 파티클, {constraints} 제약)',
+    'physics.ragdollEnabled': '✓ 래그돌 물리 활성화',
     'physics.noActiveInstance': '⚠ 옷감이 활성화되었지만 활성 인스턴스를 찾을 수 없습니다',
     'physics.clothDisabled': '옷감 시뮬레이션 꺼짐',
 
@@ -1001,16 +1020,21 @@ export const ko: Record<string, string> = {
     'settings.perf.fpsCap': 'FPS 상한',
     'settings.perf.fpsHint': '0으로 설정 시 무제한. 모바일에서는 절전을 위해 30 권장.',
     'settings.perf.vsync': '수직 동기화',
-    'settings.perf.vsyncHintOn': '활성화 시 requestAnimationFrame 루프 사용; 비활성화 시 FPS 제한 해제 but 상한 설정 불가.',
-    'settings.perf.vsyncHintOff': '비활성화 시 "FPS 상한" 사용 불가; Engine 항상 무제한 (maxFPS=0).',
-    'settings.perf.vsyncHintBrowser': '브라우저/WebView는 기본적으로 rAF 사용; 비활성화 시 인위적 제한 해제 (실제로는 새로고침 주수로 제한).',
+    'settings.perf.vsyncHintOn':
+        '활성화 시 requestAnimationFrame 루프 사용; 비활성화 시 FPS 제한 해제 but 상한 설정 불가.',
+    'settings.perf.vsyncHintOff':
+        '비활성화 시 "FPS 상한" 사용 불가; Engine 항상 무제한 (maxFPS=0).',
+    'settings.perf.vsyncHintBrowser':
+        '브라우저/WebView는 기본적으로 rAF 사용; 비활성화 시 인위적 제한 해제 (실제로는 새로고침 주수로 제한).',
     'settings.perf.defaultPhysics': '기본 물리 시뮬레이션',
     'settings.perf.defaultPhysicsHint': '비활성화 시 저사양 장치 성능 향상; 이후 로드에만 영향.',
-  'settings.perf.autoCenter': '새 모델 자동 중앙 배치',
-  'settings.perf.autoCenterHint': '새로 로드된 모델을 카메라가 자동으로 중앙 배치; 비활성 시 현재 뷰 유지, 포커스만 전환.',
-  'settings.perf.autoCenterState': '자동 중앙 배치: {state}',
+    'settings.perf.autoCenter': '새 모델 자동 중앙 배치',
+    'settings.perf.autoCenterHint':
+        '새로 로드된 모델을 카메라가 자동으로 중앙 배치; 비활성 시 현재 뷰 유지, 포커스만 전환.',
+    'settings.perf.autoCenterState': '자동 중앙 배치: {state}',
     'settings.perf.renderScale': '렌더링 스케일',
-    'settings.perf.renderScaleHint': '100% 미만으로 성능 향상, 100% 초과 시 슈퍼샘플링 (GPU 부하 증가).',
+    'settings.perf.renderScaleHint':
+        '100% 미만으로 성능 향상, 100% 초과 시 슈퍼샘플링 (GPU 부하 증가).',
     'settings.perf.camSens': '카메라 감도',
     'settings.perf.camSensHint': '회전/줌/팬 속도에 영향, 실시간.',
     'settings.perf.invertY': 'Y축 반전 (수직 드래그)',
@@ -1028,7 +1052,8 @@ export const ko: Record<string, string> = {
     'settings.perf.ssr': 'SSR',
     'settings.perf.reflectionProbe': '반사 프로브',
     'settings.perf.ssao': 'SSAO',
-    'settings.perf.customHint': '사용자 지정 모드에서는这些 토글이 권위 있는 설정이며 성능 모니터가 덮어쓰지 않습니다. MSAA/강도는 씬→렌더링 메뉴에서 조정.',
+    'settings.perf.customHint':
+        '사용자 지정 모드에서는这些 토글이 권위 있는 설정이며 성능 모니터가 덮어쓰지 않습니다. MSAA/강도는 씬→렌더링 메뉴에서 조정.',
 
     // settings.watch / autoImport / companion / transform
     'settings.watchOn': '✓ 다운로드 감시 켜짐',
@@ -1078,8 +1103,10 @@ export const ko: Record<string, string> = {
     'settings.about.settingsMgmt.export': '설정 내보내기',
     'settings.about.settingsMgmt.import': '설정 가져오기',
     'settings.about.settingsMgmt.reset': '기본값으로 복원',
-    'settings.about.settingsMgmt.resetConfirm': '모든 설정을 기본값으로 복원하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
-    'settings.about.settingsMgmt.hint': 'JSON 백업으로 내보내기; 가져오기는 현재 설정에 병합되어 즉시 적용됩니다. 외관/성능 모드는 영구 저장되고, 기타 설정은 세션 동안만 적용됩니다.',
+    'settings.about.settingsMgmt.resetConfirm':
+        '모든 설정을 기본값으로 복원하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+    'settings.about.settingsMgmt.hint':
+        'JSON 백업으로 내보내기; 가져오기는 현재 설정에 병합되어 즉시 적용됩니다. 외관/성능 모드는 영구 저장되고, 기타 설정은 세션 동안만 적용됩니다.',
     'settings.about.invalidFormat': '잘못된 파일 형식',
 
     // settings.paths
@@ -1106,11 +1133,14 @@ export const ko: Record<string, string> = {
     'settings.paths.loadFailed': '경로 페이지 로드 실패: {err}',
     'settings.paths.storageModePrivate': '개인',
     'settings.paths.storageModeShared': '공유',
-    'settings.paths.storageModeDesc': '개인: 앱 샌드박스만 접근 가능. 공유: 다른 앱에서도 접근 가능.',
+    'settings.paths.storageModeDesc':
+        '개인: 앱 샌드박스만 접근 가능. 공유: 다른 앱에서도 접근 가능.',
     'settings.paths.modelsLoaded': '{count} 개 모델 로드됨',
     'settings.paths.noModels': '모델을 찾을 수 없습니다. /sdcard/MMD에 PMX/VMD 파일을 배치하세요',
-    'settings.paths.clearThumbConfirm': '모든 썸네일 캐시를 지우시겠습니까? 다음 모델 로드 시 다시 생성됩니다.',
-    'settings.paths.clearAllConfirm': '모든 캐시를 지우시겠습니까? 추출 캐시, 썸네일, HTTP 격리 디렉터리가 포함됩니다. 다음 모델 로드 시 다시 생성됩니다.',
+    'settings.paths.clearThumbConfirm':
+        '모든 썸네일 캐시를 지우시겠습니까? 다음 모델 로드 시 다시 생성됩니다.',
+    'settings.paths.clearAllConfirm':
+        '모든 캐시를 지우시겠습니까? 추출 캐시, 썸네일, HTTP 격리 디렉터리가 포함됩니다. 다음 모델 로드 시 다시 생성됩니다.',
 
     // shortcuts.* (ADR-059 Phase 3)
     'shortcuts.label.models': '모델 라이브러리',
@@ -1132,7 +1162,8 @@ export const ko: Record<string, string> = {
     'shortcuts.group.screenshot': '스크린샷',
     'shortcuts.title': '단축키',
     'shortcuts.pressNewCombo': '새 키 조합을 누르세요...',
-    'shortcuts.confirmOverride': '단축키 "{label}"가 이미 이 조합을 사용 중입니다. 덮어쓰시겠습니까?',
+    'shortcuts.confirmOverride':
+        '단축키 "{label}"가 이미 이 조합을 사용 중입니다. 덮어쓰시겠습니까?',
     'shortcuts.resetAll': '기본 단축키로 재설정',
     'shortcuts.custom': '사용자 정의',
     'settings.paths.watchDirPlaceholder': '감시 디렉터리 선택...',

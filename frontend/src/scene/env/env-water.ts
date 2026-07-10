@@ -223,7 +223,7 @@ function regenerateCausticTexture(scene: Scene, waterColor: [number, number, num
             // 灰度映射到 [水色×0.3, 水色×1.2]，让暗部偏水色，亮部更亮
             const i = (y * S + x) * 4;
             const t = n; // 0=暗纹, 1=亮纹
-            data[i]     = Math.min(255, Math.floor((wr * 0.3 + t * wr * 0.9) * 255));
+            data[i] = Math.min(255, Math.floor((wr * 0.3 + t * wr * 0.9) * 255));
             data[i + 1] = Math.min(255, Math.floor((wg * 0.3 + t * wg * 0.9) * 255));
             data[i + 2] = Math.min(255, Math.floor((wb * 0.3 + t * wb * 0.9) * 255));
             data[i + 3] = 255;
@@ -568,7 +568,7 @@ function _createMirrorRT(scene: Scene, resolution: number): RenderTargetTexture 
         'waterReflectionRT',
         resolution,
         scene,
-        false, // generateMipMaps
+        false // generateMipMaps
     );
     rt.clearColor = new Color4(0, 0, 0, 0);
     rt.refreshRate = RT_REFRESH_ONCE;
@@ -585,7 +585,9 @@ function _createMirrorCam(scene: Scene): FreeCamera {
 
 function _updateMirrorCamera(scene: Scene, waterLevel: number): void {
     const cam = scene.activeCamera;
-    if (!_mirrorCam || !cam) return;
+    if (!_mirrorCam || !cam) {
+        return;
+    }
 
     const mirrorPlane = new Plane(0, 1, 0, -waterLevel);
     const reflMatrix = Matrix.Reflection(mirrorPlane);
@@ -601,24 +603,38 @@ function _updateMirrorCamera(scene: Scene, waterLevel: number): void {
     }
 }
 
-function _populateMirrorRenderList(scene: Scene, rt: RenderTargetTexture, waterLevel: number): void {
+function _populateMirrorRenderList(
+    scene: Scene,
+    rt: RenderTargetTexture,
+    waterLevel: number
+): void {
     rt.renderList = [];
     for (const mesh of scene.meshes) {
-        if (mesh.name.startsWith('envWater')) continue;
-        if (!mesh.isEnabled() || (mesh as any)._worldMatrixFrozen) continue;
+        if (mesh.name.startsWith('envWater')) {
+            continue;
+        }
+        if (!mesh.isEnabled() || (mesh as any)._worldMatrixFrozen) {
+            continue;
+        }
         // 排除水面以下的几何（模拟 clipPlane 效果）
         const bounds = mesh.getBoundingInfo().boundingBox;
-        if (bounds.maximumWorld.y < waterLevel) continue;
+        if (bounds.maximumWorld.y < waterLevel) {
+            continue;
+        }
         rt.renderList.push(mesh);
     }
 }
 
 function _setupMirrorRT(scene: Scene, state: EnvState): void {
-    if (state.reflectionQuality === 'off') return;
+    if (state.reflectionQuality === 'off') {
+        return;
+    }
 
     const resolutionMap = { high: 512, medium: 256, low: 128, off: 0 };
     const resolution = resolutionMap[state.reflectionQuality];
-    if (!resolution) return;
+    if (!resolution) {
+        return;
+    }
 
     _mirrorRT = _createMirrorRT(scene, resolution);
     _mirrorCam = _createMirrorCam(scene);
@@ -626,12 +642,16 @@ function _setupMirrorRT(scene: Scene, state: EnvState): void {
 
     _mirrorRT.onBeforeRenderObservable.add(() => {
         for (const mesh of _mirrorRT!.renderList ?? []) {
-            if (mesh.material) mesh.material.backFaceCulling = false;
+            if (mesh.material) {
+                mesh.material.backFaceCulling = false;
+            }
         }
     });
     _mirrorRT.onAfterRenderObservable.add(() => {
         for (const mesh of _mirrorRT!.renderList ?? []) {
-            if (mesh.material) mesh.material.backFaceCulling = true;
+            if (mesh.material) {
+                mesh.material.backFaceCulling = true;
+            }
         }
     });
 
@@ -806,8 +826,9 @@ export function createWater(state: EnvState): void {
             samplers: ['uCausticTex']
                 .concat(hasEnv ? ['envTexture'] : [])
                 .concat(state.reflectionQuality !== 'off' ? ['reflectionTexture'] : []),
-            defines: (hasEnv ? ['ENV_TEXTURE'] : [])
-                .concat(state.reflectionQuality !== 'off' ? ['PLANAR_REFLECTION'] : []),
+            defines: (hasEnv ? ['ENV_TEXTURE'] : []).concat(
+                state.reflectionQuality !== 'off' ? ['PLANAR_REFLECTION'] : []
+            ),
             needAlphaBlending: true,
         }
     );
@@ -847,7 +868,10 @@ export function createWater(state: EnvState): void {
             if (cam) {
                 m.setVector3('cameraPosition', cam.position);
             }
-            m.setColor3('waterColor', new Color3(envState.waterColor[0], envState.waterColor[1], envState.waterColor[2]));
+            m.setColor3(
+                'waterColor',
+                new Color3(envState.waterColor[0], envState.waterColor[1], envState.waterColor[2])
+            );
             const dl = scene.getLightByName('dir') as DirectionalLight | null;
             if (dl) {
                 m.setVector3('lightDir', dl.direction);
@@ -879,7 +903,12 @@ export function createWater(state: EnvState): void {
             _mirrorFrameCount++;
             const frameSkipMap = { high: 0, medium: 1, low: 3, off: 999 };
             const frameSkip = frameSkipMap[envState.reflectionQuality] ?? 999;
-            if (_mirrorRT && _mirrorCam && !isUnderwater && _mirrorFrameCount % (frameSkip + 1) === 0) {
+            if (
+                _mirrorRT &&
+                _mirrorCam &&
+                !isUnderwater &&
+                _mirrorFrameCount % (frameSkip + 1) === 0
+            ) {
                 _updateMirrorCamera(scene, envState.waterLevel);
                 _populateMirrorRenderList(scene, _mirrorRT, envState.waterLevel);
                 _mirrorRT.render();
@@ -949,7 +978,7 @@ export function disposeWater(): void {
     // 清理平面反射 RT
     const scene = getScene();
     if (_mirrorRT) {
-        scene.customRenderTargets = scene.customRenderTargets.filter(t => t !== _mirrorRT);
+        scene.customRenderTargets = scene.customRenderTargets.filter((t) => t !== _mirrorRT);
         _mirrorRT.dispose();
         _mirrorRT = null;
     }

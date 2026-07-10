@@ -22,7 +22,9 @@ let autoImportCached = false;
 /** 启动时预加载自动导入开关状态。在 main.ts init 中调用。 */
 export async function preloadAutoImportState(): Promise<void> {
     try {
-        autoImportCached = await import('../core/wails-bindings').then((m) => m.GetDownloadAutoImport());
+        autoImportCached = await import('../core/wails-bindings').then((m) =>
+            m.GetDownloadAutoImport()
+        );
     } catch {
         autoImportCached = false;
     }
@@ -43,7 +45,9 @@ let downloadWatchEnabledCached = false;
 /** 启动时预加载下载监听开关状态。在 main.ts init 中调用。 */
 export async function preloadDownloadWatchState(): Promise<void> {
     try {
-        downloadWatchEnabledCached = await import('../core/wails-bindings').then((m) => m.GetDownloadWatchEnabled());
+        downloadWatchEnabledCached = await import('../core/wails-bindings').then((m) =>
+            m.GetDownloadWatchEnabled()
+        );
     } catch {
         downloadWatchEnabledCached = false;
     }
@@ -63,15 +67,15 @@ export function setDownloadWatchEnabledCached(v: boolean): void {
 import { SettingsStore } from '../lib/settings-store';
 
 export function isAutoLoadCompanionAudioEnabled(): boolean {
-  return SettingsStore.get().get('autoLoadCompanionAudio') as boolean;
+    return SettingsStore.get().get('autoLoadCompanionAudio') as boolean;
 }
 
 export function setAutoLoadCompanionAudio(v: boolean): void {
-  SettingsStore.get().set('autoLoadCompanionAudio', v);
+    SettingsStore.get().set('autoLoadCompanionAudio', v);
 }
 
 export function getAutoLoadCompanionAudio(): boolean {
-  return SettingsStore.get().get('autoLoadCompanionAudio') as boolean;
+    return SettingsStore.get().get('autoLoadCompanionAudio') as boolean;
 }
 
 // ======== Color utilities ========
@@ -132,10 +136,10 @@ export async function setTheme(
     root.style.setProperty('--text-dim', textColors.dim);
     root.style.setProperty('--text-muted', textColors.muted);
 
-  const _r = await tryCatchStatus(() => SetUIAccent(hex), t('status.error'));
-  if (_r !== undefined) {
-    setStatus(t('settings.themeColorSet', {hex}), true);
-  }
+    const _r = await tryCatchStatus(() => SetUIAccent(hex), t('status.error'));
+    if (_r !== undefined) {
+        setStatus(t('settings.themeColorSet', { hex }), true);
+    }
     getSettingsMenu()?.updateControls();
 }
 
@@ -157,7 +161,7 @@ export const FONT_MAP: Record<string, { label: string; css: string }> = {
 };
 
 export const SETTINGS_FONT_RESTORE: Record<string, string> = Object.fromEntries(
-    Object.entries(FONT_MAP).map(([key, font]) => [key, font.css]),
+    Object.entries(FONT_MAP).map(([key, font]) => [key, font.css])
 );
 
 // ======== Theme presets ========
@@ -198,8 +202,12 @@ export const PRIORITY_TO_INDEX: Record<DisplayNamePriority, number> = {
 
 export function applyUIAppearanceDom(s: UIState): void {
     const root = document.documentElement;
-    if (s.scale) root.style.setProperty('--ui-scale', String(s.scale));
-    if (s.popupWidth) root.style.setProperty('--popup-width', s.popupWidth + 'px');
+    if (s.scale) {
+        root.style.setProperty('--ui-scale', String(s.scale));
+    }
+    if (s.popupWidth) {
+        root.style.setProperty('--popup-width', s.popupWidth + 'px');
+    }
     if (s.accent) {
         root.style.setProperty('--accent', s.accent);
         root.style.setProperty('--accent-rgb', rgbToString(hexToRgb(s.accent)));

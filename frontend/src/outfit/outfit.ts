@@ -92,119 +92,119 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
     }
     _loadingOutfits.add(id);
     try {
-    const inst = modelRegistry.get(id);
-    if (!inst) {
-        return null;
-    }
-    if (!inst.filePath) {
-        return null;
-    }
-    try {
-        const json = await LoadOutfitFile(inst.filePath);
-        if (json) {
-            const outfit: OutfitFile = JSON.parse(json);
-            if (outfit.version && Array.isArray(outfit.variants)) {
-                inst.outfitFile = outfit;
-                return outfit;
-            }
-        }
-    } catch {
-        /* fall through */
-    }
-
-    try {
-        const mappings = _collectSlotMappings(inst);
-        if (mappings.length === 0) {
-            inst.outfitFile = undefined;
+        const inst = modelRegistry.get(id);
+        if (!inst) {
             return null;
         }
-        const modelDir = inst.filePath.replace(/\\/g, '/').replace(/\/[^/]*$/, '');
-        const subdirs = await ListSubDirs(modelDir);
-        if (!subdirs || subdirs.length === 0) {
-            inst.outfitFile = undefined;
+        if (!inst.filePath) {
             return null;
         }
-        interface _Probe {
-            subdir: string;
-            matName: string;
-            slot: string;
-            relPath: string;
-            url: string;
-        }
-        const seenUrl = new Set<string>();
-        const probes: _Probe[] = [];
-        for (const subdir of subdirs) {
-            for (const m of mappings) {
-                const relPath = subdir + '/' + m.basename;
-                const url = `http://127.0.0.1:${inst.port}/?f=${encodeFileRef(_encodePath(relPath))}`;
-                if (seenUrl.has(url)) {
-                    continue;
+        try {
+            const json = await LoadOutfitFile(inst.filePath);
+            if (json) {
+                const outfit: OutfitFile = JSON.parse(json);
+                if (outfit.version && Array.isArray(outfit.variants)) {
+                    inst.outfitFile = outfit;
+                    return outfit;
                 }
-                seenUrl.add(url);
-                probes.push({ subdir, matName: m.matName, slot: m.slot, relPath, url });
             }
+        } catch {
+            /* fall through */
         }
-        const headCache = new Map<string, boolean>();
-        // 并发限制：避免对大量子目录同时发起数百个 HEAD 请求
-        const HEAD_CONCURRENCY = 6;
-        const semaphore = { count: 0 };
-        const withLimit = async <T>(fn: () => Promise<T>): Promise<T> => {
-            while (semaphore.count >= HEAD_CONCURRENCY) {
-                await new Promise((r) => setTimeout(r, 10));
+
+        try {
+            const mappings = _collectSlotMappings(inst);
+            if (mappings.length === 0) {
+                inst.outfitFile = undefined;
+                return null;
             }
-            semaphore.count++;
-            try {
-                return await fn();
-            } finally {
-                semaphore.count--;
+            const modelDir = inst.filePath.replace(/\\/g, '/').replace(/\/[^/]*$/, '');
+            const subdirs = await ListSubDirs(modelDir);
+            if (!subdirs || subdirs.length === 0) {
+                inst.outfitFile = undefined;
+                return null;
             }
-        };
-        const results = await Promise.all(
-            subdirs.map(async (subdir): Promise<OutfitVariant | null> => {
-                const byMaterial: Record<string, OutfitSlot> = {};
-                let hasAny = false;
-                const subdirProbes = probes.filter((p) => p.subdir === subdir);
-                await Promise.all(
-                    subdirProbes.map(async (p) => {
-                        let ok: boolean;
-                        if (headCache.has(p.url)) {
-                            ok = headCache.get(p.url)!;
-                        } else {
-                            ok = await withLimit(async () => {
-                                try {
-                                    const resp = await fetch(p.url, { method: 'HEAD' });
-                                    return resp.ok;
-                                } catch {
-                                    return false;
-                                }
-                            });
-                            headCache.set(p.url, ok);
-                        }
-                        if (!ok) {
-                            return;
-                        }
-                        if (!byMaterial[p.matName]) {
-                            byMaterial[p.matName] = {};
-                        }
-                        (byMaterial[p.matName] as Record<string, string>)[p.slot] = p.relPath;
-                        hasAny = true;
-                    })
-                );
-                return hasAny ? { name: subdir, byMaterial } : null;
-            })
-        );
-        const variantList: OutfitVariant[] = results.filter(Boolean) as OutfitVariant[];
-        if (variantList.length === 0) {
+            interface _Probe {
+                subdir: string;
+                matName: string;
+                slot: string;
+                relPath: string;
+                url: string;
+            }
+            const seenUrl = new Set<string>();
+            const probes: _Probe[] = [];
+            for (const subdir of subdirs) {
+                for (const m of mappings) {
+                    const relPath = subdir + '/' + m.basename;
+                    const url = `http://127.0.0.1:${inst.port}/?f=${encodeFileRef(_encodePath(relPath))}`;
+                    if (seenUrl.has(url)) {
+                        continue;
+                    }
+                    seenUrl.add(url);
+                    probes.push({ subdir, matName: m.matName, slot: m.slot, relPath, url });
+                }
+            }
+            const headCache = new Map<string, boolean>();
+            // 并发限制：避免对大量子目录同时发起数百个 HEAD 请求
+            const HEAD_CONCURRENCY = 6;
+            const semaphore = { count: 0 };
+            const withLimit = async <T>(fn: () => Promise<T>): Promise<T> => {
+                while (semaphore.count >= HEAD_CONCURRENCY) {
+                    await new Promise((r) => setTimeout(r, 10));
+                }
+                semaphore.count++;
+                try {
+                    return await fn();
+                } finally {
+                    semaphore.count--;
+                }
+            };
+            const results = await Promise.all(
+                subdirs.map(async (subdir): Promise<OutfitVariant | null> => {
+                    const byMaterial: Record<string, OutfitSlot> = {};
+                    let hasAny = false;
+                    const subdirProbes = probes.filter((p) => p.subdir === subdir);
+                    await Promise.all(
+                        subdirProbes.map(async (p) => {
+                            let ok: boolean;
+                            if (headCache.has(p.url)) {
+                                ok = headCache.get(p.url)!;
+                            } else {
+                                ok = await withLimit(async () => {
+                                    try {
+                                        const resp = await fetch(p.url, { method: 'HEAD' });
+                                        return resp.ok;
+                                    } catch {
+                                        return false;
+                                    }
+                                });
+                                headCache.set(p.url, ok);
+                            }
+                            if (!ok) {
+                                return;
+                            }
+                            if (!byMaterial[p.matName]) {
+                                byMaterial[p.matName] = {};
+                            }
+                            (byMaterial[p.matName] as Record<string, string>)[p.slot] = p.relPath;
+                            hasAny = true;
+                        })
+                    );
+                    return hasAny ? { name: subdir, byMaterial } : null;
+                })
+            );
+            const variantList: OutfitVariant[] = results.filter(Boolean) as OutfitVariant[];
+            if (variantList.length === 0) {
+                inst.outfitFile = undefined;
+                return null;
+            }
+            const outfit: OutfitFile = { version: 1, variants: variantList };
+            inst.outfitFile = outfit;
+            return outfit;
+        } catch {
             inst.outfitFile = undefined;
             return null;
         }
-        const outfit: OutfitFile = { version: 1, variants: variantList };
-        inst.outfitFile = outfit;
-        return outfit;
-    } catch {
-        inst.outfitFile = undefined;
-        return null;
-    }
     } finally {
         _loadingOutfits.delete(id);
     }
@@ -395,146 +395,146 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
     }
     _applyingVariant.set(id, true);
     try {
-    const variant =
-        variantName === '默认'
-            ? undefined
-            : inst.outfitFile.variants.find((v) => v.name === variantName);
-    if (!variant && variantName !== '默认') {
-        return;
-    }
+        const variant =
+            variantName === '默认'
+                ? undefined
+                : inst.outfitFile.variants.find((v) => v.name === variantName);
+        if (!variant && variantName !== '默认') {
+            return;
+        }
 
-    if (!inst._origTextures) {
-        inst._origTextures = new Map();
+        if (!inst._origTextures) {
+            inst._origTextures = new Map();
+            for (let mi = 0; mi < inst.meshes.length; mi++) {
+                const sm = inst.meshes[mi].material as StandardMaterial;
+                if (!sm) {
+                    continue;
+                }
+                const mmdSm = sm as MmdStandardMaterial;
+                inst._origTextures.set(mi, {
+                    diffuse: sm.diffuseTexture as Texture | null,
+                    toon: mmdSm.toonTexture,
+                    spa: mmdSm.sphereTexture,
+                    normal: sm.bumpTexture as Texture | null,
+                    emissive: sm.emissiveTexture as Texture | null,
+                });
+            }
+        }
+        _captureOrigParams(inst);
+
+        const promises: Promise<void>[] = [];
+
+        // overlay 处理（与纹理替换并行）：清理旧 overlay → 加载新 overlay → 隐藏 PMX 布料
+        // token 守卫：防止快速切换变体时，旧 loadOverlay 完成后覆盖新状态导致孤儿 mesh 泄漏
+        const token = Symbol('overlay');
+        inst._overlayLoadToken = token;
+        promises.push(
+            (async () => {
+                if (inst._overlayMeshes) {
+                    disposeOverlay(inst);
+                    restoreMaterials(inst);
+                }
+                if (variant?.meshFile) {
+                    const { meshes, retargetOk } = await loadOverlay(inst, variant.meshFile, scene);
+                    // token 过期：说明此期间已切换到其他变体，丢弃本次结果
+                    if (inst._overlayLoadToken !== token) {
+                        console.info('[outfit] overlay load stale (token mismatch), discarding');
+                        for (const m of meshes) {
+                            try {
+                                m.dispose();
+                            } catch {
+                                // ignore
+                            }
+                        }
+                        return;
+                    }
+                    // 仅在 overlay 成功加载且骨骼重定向成功时隐藏 PMX 布料；
+                    // retarget 失败（静态降级）时保留原布料，避免穿模
+                    if (meshes.length > 0 && retargetOk && variant.hideMaterials) {
+                        hideMaterials(inst, variant.hideMaterials);
+                    } else if (meshes.length > 0 && !retargetOk && variant.hideMaterials) {
+                        console.warn(
+                            '[outfit] FBX overlay retarget failed, keeping PMX materials to avoid穿模'
+                        );
+                    }
+                }
+            })()
+        );
+
         for (let mi = 0; mi < inst.meshes.length; mi++) {
             const sm = inst.meshes[mi].material as StandardMaterial;
             if (!sm) {
                 continue;
             }
-            const mmdSm = sm as MmdStandardMaterial;
-            inst._origTextures.set(mi, {
-                diffuse: sm.diffuseTexture as Texture | null,
-                toon: mmdSm.toonTexture,
-                spa: mmdSm.sphereTexture,
-                normal: sm.bumpTexture as Texture | null,
-                emissive: sm.emissiveTexture as Texture | null,
-            });
-        }
-    }
-    _captureOrigParams(inst);
-
-    const promises: Promise<void>[] = [];
-
-    // overlay 处理（与纹理替换并行）：清理旧 overlay → 加载新 overlay → 隐藏 PMX 布料
-    // token 守卫：防止快速切换变体时，旧 loadOverlay 完成后覆盖新状态导致孤儿 mesh 泄漏
-    const token = Symbol('overlay');
-    inst._overlayLoadToken = token;
-    promises.push(
-        (async () => {
-            if (inst._overlayMeshes) {
-                disposeOverlay(inst);
-                restoreMaterials(inst);
+            const origTex = inst._origTextures.get(mi);
+            if (!origTex) {
+                continue;
             }
-            if (variant?.meshFile) {
-                const { meshes, retargetOk } = await loadOverlay(inst, variant.meshFile, scene);
-                // token 过期：说明此期间已切换到其他变体，丢弃本次结果
-                if (inst._overlayLoadToken !== token) {
-                    console.info('[outfit] overlay load stale (token mismatch), discarding');
-                    for (const m of meshes) {
-                        try {
-                            m.dispose();
-                        } catch {
-                            // ignore
-                        }
-                    }
-                    return;
-                }
-                // 仅在 overlay 成功加载且骨骼重定向成功时隐藏 PMX 布料；
-                // retarget 失败（静态降级）时保留原布料，避免穿模
-                if (meshes.length > 0 && retargetOk && variant.hideMaterials) {
-                    hideMaterials(inst, variant.hideMaterials);
-                } else if (meshes.length > 0 && !retargetOk && variant.hideMaterials) {
-                    console.warn(
-                        '[outfit] FBX overlay retarget failed, keeping PMX materials to avoid穿模'
-                    );
-                }
+            const origParams = inst._origParams.get(mi)!;
+            const cat = _catOf(sm.name);
+
+            promises.push(
+                _applySlot(
+                    sm,
+                    'diffuseTexture',
+                    _getSlotFor(variant, sm.name, cat, 'diffuse'),
+                    origTex.diffuse,
+                    inst.port
+                )
+            );
+            promises.push(
+                _applySlot(
+                    sm,
+                    'toonTexture',
+                    _getSlotFor(variant, sm.name, cat, 'toon'),
+                    origTex.toon,
+                    inst.port
+                )
+            );
+            promises.push(
+                _applySlot(
+                    sm,
+                    'sphereTexture',
+                    _getSlotFor(variant, sm.name, cat, 'spa'),
+                    origTex.spa,
+                    inst.port
+                )
+            );
+            promises.push(
+                _applySlot(
+                    sm,
+                    'bumpTexture',
+                    _getSlotFor(variant, sm.name, cat, 'normal'),
+                    origTex.normal,
+                    inst.port
+                )
+            );
+            promises.push(
+                _applySlot(
+                    sm,
+                    'emissiveTexture',
+                    _getSlotFor(variant, sm.name, cat, 'emissive'),
+                    origTex.emissive,
+                    inst.port
+                )
+            );
+
+            const slotParams = _getParamsFor(variant, sm.name, cat);
+            if (slotParams) {
+                _applyOutfitParams(sm, slotParams, origParams);
             }
-        })()
-    );
 
-    for (let mi = 0; mi < inst.meshes.length; mi++) {
-        const sm = inst.meshes[mi].material as StandardMaterial;
-        if (!sm) {
-            continue;
-        }
-        const origTex = inst._origTextures.get(mi);
-        if (!origTex) {
-            continue;
-        }
-        const origParams = inst._origParams.get(mi)!;
-        const cat = _catOf(sm.name);
-
-        promises.push(
-            _applySlot(
-                sm,
-                'diffuseTexture',
-                _getSlotFor(variant, sm.name, cat, 'diffuse'),
-                origTex.diffuse,
-                inst.port
-            )
-        );
-        promises.push(
-            _applySlot(
-                sm,
-                'toonTexture',
-                _getSlotFor(variant, sm.name, cat, 'toon'),
-                origTex.toon,
-                inst.port
-            )
-        );
-        promises.push(
-            _applySlot(
-                sm,
-                'sphereTexture',
-                _getSlotFor(variant, sm.name, cat, 'spa'),
-                origTex.spa,
-                inst.port
-            )
-        );
-        promises.push(
-            _applySlot(
-                sm,
-                'bumpTexture',
-                _getSlotFor(variant, sm.name, cat, 'normal'),
-                origTex.normal,
-                inst.port
-            )
-        );
-        promises.push(
-            _applySlot(
-                sm,
-                'emissiveTexture',
-                _getSlotFor(variant, sm.name, cat, 'emissive'),
-                origTex.emissive,
-                inst.port
-            )
-        );
-
-        const slotParams = _getParamsFor(variant, sm.name, cat);
-        if (slotParams) {
-            _applyOutfitParams(sm, slotParams, origParams);
+            const tint = _getTintFor(variant, sm.name, cat);
+            if (tint) {
+                _applyOutfitTint(sm, tint);
+            }
         }
 
-        const tint = _getTintFor(variant, sm.name, cat);
-        if (tint) {
-            _applyOutfitTint(sm, tint);
-        }
-    }
-
-    await Promise.all(promises);
-    inst.activeVariant = variantName;
-    const { t } = await import('../core/i18n/t');
-    setStatus(t('outfit.switched', { name: variantName }), true);
-    triggerAutoSave();
+        await Promise.all(promises);
+        inst.activeVariant = variantName;
+        const { t } = await import('../core/i18n/t');
+        setStatus(t('outfit.switched', { name: variantName }), true);
+        triggerAutoSave();
     } finally {
         _applyingVariant.delete(id);
     }

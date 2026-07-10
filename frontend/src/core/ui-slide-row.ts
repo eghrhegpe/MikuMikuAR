@@ -36,6 +36,8 @@ export interface SlideRowExtra {
     iconFactory?: () => HTMLElement;
     /** sublabel 内联在 label 后（而非右对齐），适合需要 text-overflow 的场景 */
     inlineSub?: boolean;
+    /** label 允许双行显示（用于长文件名等场景） */
+    wrapLabel?: boolean;
 }
 
 export function slideRow(
@@ -184,6 +186,9 @@ export function slideRow(
                 labelCls += ' danger-text';
             } else if (variant === 'accent') {
                 labelCls += ' accent-text';
+            }
+            if (extra?.wrapLabel) {
+                labelCls += ' wrap-2';
             }
             labelSpan.className = labelCls;
             labelSpan.textContent = label;

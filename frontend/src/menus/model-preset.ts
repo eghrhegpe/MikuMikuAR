@@ -228,7 +228,10 @@ export async function selectAndSavePreset(id: string): Promise<void> {
         () => SaveModelPreset(json, path),
         t('model-preset.saveFailed'),
         (err) =>
-            showErrorToast(t('model-preset.saveErrorToast'), err instanceof Error ? err.message : String(err))
+            showErrorToast(
+                t('model-preset.saveErrorToast'),
+                err instanceof Error ? err.message : String(err)
+            )
     );
     if (_r0 !== undefined) {
         setStatus(t('model-preset.saved'), true);
@@ -238,7 +241,7 @@ export async function selectAndSavePreset(id: string): Promise<void> {
 const _presetUndoStack = new Map<string, string>();
 
 function showUndoToast(message: string, undoFn: () => void): void {
-  showErrorToast(message, undefined, [{ label: t('toast.undo'), onClick: undoFn }], 8000);
+    showErrorToast(message, undefined, [{ label: t('toast.undo'), onClick: undoFn }], 8000);
 }
 
 export async function tryAutoApplyPreset(id: string): Promise<void> {
@@ -274,14 +277,17 @@ export async function tryAutoApplyPreset(id: string): Promise<void> {
     }
     _presetUndoStack.set(id, serializeModelPreset(id));
     await applyModelPreset(id, json);
-    showUndoToast(t('model-preset.autoApplied', { name: escapeHtml(preset.presetName || match.name) }), async () => {
-        const snap = _presetUndoStack.get(id);
-        _presetUndoStack.delete(id);
-        if (snap) {
-            await applyModelPreset(id, snap);
+    showUndoToast(
+        t('model-preset.autoApplied', { name: escapeHtml(preset.presetName || match.name) }),
+        async () => {
+            const snap = _presetUndoStack.get(id);
+            _presetUndoStack.delete(id);
+            if (snap) {
+                await applyModelPreset(id, snap);
+            }
+            setStatus(t('model-preset.undoApplied'), true);
         }
-        setStatus(t('model-preset.undoApplied'), true);
-    });
+    );
 }
 
 export async function selectAndLoadPreset(id: string): Promise<void> {
@@ -380,7 +386,10 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
         () => SaveModelPresetToLib(trimmed, json),
         t('model-preset.saveFailed'),
         (err) =>
-            showErrorToast(t('model-preset.saveErrorToast'), err instanceof Error ? err.message : String(err))
+            showErrorToast(
+                t('model-preset.saveErrorToast'),
+                err instanceof Error ? err.message : String(err)
+            )
     );
     if (_r1 !== undefined) {
         setStatus(t('model-preset.savedToLib'), true);
@@ -427,7 +436,9 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
                     }
                     const toggleLabel = document.createElement('label');
                     toggleLabel.className = 'toggle';
-                    toggleLabel.title = e.autoApply ? t('model-preset.autoApplyOn') : t('model-preset.autoApplyOff');
+                    toggleLabel.title = e.autoApply
+                        ? t('model-preset.autoApplyOn')
+                        : t('model-preset.autoApplyOff');
                     const toggleInput = document.createElement('input');
                     toggleInput.type = 'checkbox';
                     toggleInput.checked = e.autoApply;
@@ -448,7 +459,11 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
                         'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 6px;';
                     delBtn.addEventListener('click', async (ev) => {
                         ev.stopPropagation();
-                        if (!(await showConfirm(t('model-preset.confirmDelete', { name: e.presetName || e.name })))) {
+                        if (
+                            !(await showConfirm(
+                                t('model-preset.confirmDelete', { name: e.presetName || e.name })
+                            ))
+                        ) {
                             return;
                         }
                         const _r2 = await tryCatchStatus(async () => {

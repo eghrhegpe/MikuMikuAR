@@ -287,7 +287,9 @@ export interface Prompt2Options {
 let _overlay2: HTMLDivElement | null = null;
 
 function getOverlay2(): HTMLDivElement {
-    if (_overlay2) return _overlay2;
+    if (_overlay2) {
+        return _overlay2;
+    }
     _overlay2 = document.createElement('div');
     _overlay2.id = 'mmd-dialog-overlay-2';
     _overlay2.innerHTML = `
@@ -317,9 +319,7 @@ function getOverlay2(): HTMLDivElement {
  * 双字段输入对话框。返回 [value1, value2] 或 null（取消）。
  * 替代连续两次 showPrompt，用户一次交互完成。
  */
-export function showPrompt2(
-    opts: Prompt2Options
-): Promise<[string, string] | null> {
+export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | null> {
     return new Promise((resolve) => {
         const overlay = getOverlay2();
         const dialog = overlay.querySelector('.mmd-dialog') as HTMLElement;
@@ -353,8 +353,14 @@ export function showPrompt2(
         const onCancel = () => cleanup(null);
 
         const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') { onCancel(); return; }
-            if (e.key === 'Enter') { onConfirm(); return; }
+            if (e.key === 'Escape') {
+                onCancel();
+                return;
+            }
+            if (e.key === 'Enter') {
+                onConfirm();
+                return;
+            }
         };
 
         const newConfirm = confirmBtn.cloneNode(true) as HTMLButtonElement;
@@ -364,7 +370,15 @@ export function showPrompt2(
         newConfirm.addEventListener('click', onConfirm);
         newCancel.addEventListener('click', onCancel);
         document.addEventListener('keydown', onKeyDown, { once: true });
-        overlay.addEventListener('click', (e) => { if (e.target === overlay) onCancel(); }, { once: true });
+        overlay.addEventListener(
+            'click',
+            (e) => {
+                if (e.target === overlay) {
+                    onCancel();
+                }
+            },
+            { once: true }
+        );
 
         overlay.classList.add('mmd-dialog-visible');
         dialog.style.display = '';

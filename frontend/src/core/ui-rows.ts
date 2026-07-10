@@ -504,16 +504,22 @@ export function addWatchDirRow(
     selectBtn.className = 'mode-btn';
     selectBtn.addEventListener('click', async () => {
         const dir = await onSelectDir();
-        if (!dir) return;
+        if (!dir) {
+            return;
+        }
         dirInput.value = dir;
         await onRefreshStatus(setStatusText);
     });
 
     // 回填初始目录
     onRefreshStatus(async (text) => {
-        const prefix = t('settings.paths.watching').replace(/\{dir\}/g, '').replace(/\s+$/, '');
+        const prefix = t('settings.paths.watching')
+            .replace(/\{dir\}/g, '')
+            .replace(/\s+$/, '');
         const match = text.match(new RegExp(prefix + '\\s*(.+)'));
-        if (match) dirInput.value = match[1];
+        if (match) {
+            dirInput.value = match[1];
+        }
     }).catch(() => {});
 
     dirRow.appendChild(dirInput);

@@ -41,8 +41,7 @@ export function buildOutfitLevel(id: string): PopupLevel {
                     const empty = document.createElement('div');
                     empty.style.cssText =
                         'font-size:11px;color:var(--text-dim);text-align:center;padding:20px;line-height:1.6;';
-                    empty.textContent =
-                        t('outfit.noOutfitsConfig');
+                    empty.textContent = t('outfit.noOutfitsConfig');
                     container.appendChild(empty);
                     return;
                 }

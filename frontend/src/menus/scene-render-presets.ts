@@ -208,7 +208,13 @@ export function buildPresetsLevel(): PopupLevel {
                 chipGroup.appendChild(wrapper);
             }
             container.appendChild(chipGroup);
-            slideRow(container, 'lucide:save', t('scene.saveCurrentAsPreset'), false, showPresetSaveDialog);
+            slideRow(
+                container,
+                'lucide:save',
+                t('scene.saveCurrentAsPreset'),
+                false,
+                showPresetSaveDialog
+            );
             if (Object.keys(USER_FILTER_PRESETS).length > 0) {
                 const userChipGroup = document.createElement('div');
                 userChipGroup.className = 'preset-group';

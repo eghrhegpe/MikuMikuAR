@@ -33,8 +33,13 @@ export async function awaitWailsBridge(timeout = 3000): Promise<boolean> {
     };
     return new Promise((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error('Wails bridge timeout')), timeout);
-        poll((v) => { clearTimeout(timer); resolve(v); }, reject);
-    }).then(() => true).catch(() => false);
+        poll((v) => {
+            clearTimeout(timer);
+            resolve(v);
+        }, reject);
+    })
+        .then(() => true)
+        .catch(() => false);
 }
 
 /**

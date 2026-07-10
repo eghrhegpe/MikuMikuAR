@@ -391,14 +391,17 @@ export function buildClothUpdateFn(
 
             // [debug] 前 60 帧输出骨骼矩阵 + 锚点粒子位置
             if (_debugFrameCount < 60) {
-                const firstAnchor = cloth.anchorIndices.length > 0 ? solver.particles[cloth.anchorIndices[0]] : null;
+                const firstAnchor =
+                    cloth.anchorIndices.length > 0
+                        ? solver.particles[cloth.anchorIndices[0]]
+                        : null;
                 console.log(
                     `[xpbd-cloth] #${_debugFrameCount} bone="${cloth.config.anchorBone}" ` +
-                    `mat[12..14]=(${tx.toFixed(3)}, ${ty.toFixed(3)}, ${tz.toFixed(3)}) ` +
-                    `mat[0]=${mat[0].toFixed(3)} mat[5]=${mat[5].toFixed(3)} mat[10]=${mat[10].toFixed(3)} ` +
-                    `anchor0=${firstAnchor ? `(${firstAnchor.p[0].toFixed(3)}, ${firstAnchor.p[1].toFixed(3)}, ${firstAnchor.p[2].toFixed(3)})` : '(none)'} ` +
-                    `initialized=${_initialized}` +
-                    (cloth.mesh?.parent ? ` parent="${cloth.mesh.parent.name}"` : ' NO_PARENT')
+                        `mat[12..14]=(${tx.toFixed(3)}, ${ty.toFixed(3)}, ${tz.toFixed(3)}) ` +
+                        `mat[0]=${mat[0].toFixed(3)} mat[5]=${mat[5].toFixed(3)} mat[10]=${mat[10].toFixed(3)} ` +
+                        `anchor0=${firstAnchor ? `(${firstAnchor.p[0].toFixed(3)}, ${firstAnchor.p[1].toFixed(3)}, ${firstAnchor.p[2].toFixed(3)})` : '(none)'} ` +
+                        `initialized=${_initialized}` +
+                        (cloth.mesh?.parent ? ` parent="${cloth.mesh.parent.name}"` : ' NO_PARENT')
                 );
                 _debugFrameCount++;
             }

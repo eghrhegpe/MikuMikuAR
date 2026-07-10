@@ -62,7 +62,10 @@ export function buildStageLevel(): PopupLevel {
                             const newVis = !inst.visible;
                             setModelVisibility(id, newVis);
                             reRenderSceneMenu();
-                            setStatus(newVis ? t('scene.stageShown') : t('scene.stageHidden'), true);
+                            setStatus(
+                                newVis ? t('scene.stageShown') : t('scene.stageHidden'),
+                                true
+                            );
                         });
                         row.appendChild(eyeSpan);
 

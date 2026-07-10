@@ -29,7 +29,7 @@ let _active = false;
 let _facing: CameraFacing = 'user';
 let _stream: MediaStream | null = null;
 let _videoEl: HTMLVideoElement | null = null;
-let _originalClearColor: { r: number; g: number; b: number; a: number } | null = null;
+const _originalClearColor: { r: number; g: number; b: number; a: number } | null = null;
 let _mirrorOverridden = false; // 用户是否手动设置过镜像
 type ARModeChangeListener = (active: boolean) => void;
 const _listeners: ARModeChangeListener[] = [];
@@ -57,7 +57,9 @@ export function addARModeChangeListener(fn: ARModeChangeListener): () => void {
     _listeners.push(fn);
     return () => {
         const i = _listeners.indexOf(fn);
-        if (i >= 0) _listeners.splice(i, 1);
+        if (i >= 0) {
+            _listeners.splice(i, 1);
+        }
     };
 }
 
@@ -250,10 +252,7 @@ export function isARMirrored(): boolean {
  * @param quality 质量 0~1，默认 0.9
  * @returns base64 字符串（不含 data:image/xxx;base64, 前缀）
  */
-export function captureARScreenshot(
-    format: string = 'image/png',
-    quality: number = 0.9
-): string {
+export function captureARScreenshot(format: string = 'image/png', quality: number = 0.9): string {
     const canvas = dom.canvas;
     const video = _videoEl;
 

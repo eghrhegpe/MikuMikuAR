@@ -50,7 +50,11 @@ const _blenderStates = new Map<string, BlenderState>();
 
 const VMD_FPS = 30;
 
-export async function setupWasmLayersBlender(modelId: string, baseData: ArrayBuffer, baseName: string): Promise<void> {
+export async function setupWasmLayersBlender(
+    modelId: string,
+    baseData: ArrayBuffer,
+    baseName: string
+): Promise<void> {
     teardownWasmLayersBlender(modelId);
 
     const inst = modelManager.get(modelId);
@@ -60,7 +64,9 @@ export async function setupWasmLayersBlender(modelId: string, baseData: ArrayBuf
 
     const observer = scene.onBeforeRenderObservable.add(() => {
         const state = _blenderStates.get(modelId);
-        if (!state || !state.enabled) return;
+        if (!state || !state.enabled) {
+            return;
+        }
         const dt = scene.deltaTime || 16.67;
         state.animationFrame += (dt / 1000) * VMD_FPS;
         _applyLayersBlending(modelId);
@@ -82,7 +88,9 @@ export async function setupWasmLayersBlender(modelId: string, baseData: ArrayBuf
 
 export function teardownWasmLayersBlender(modelId: string): void {
     const state = _blenderStates.get(modelId);
-    if (!state) return;
+    if (!state) {
+        return;
+    }
 
     scene.onBeforeRenderObservable.remove(state.observer);
 
@@ -119,7 +127,9 @@ export async function addWasmLayer(modelId: string, config: WasmLayerConfig): Pr
 
 export function removeWasmLayer(modelId: string, layerId: string): void {
     const state = _blenderStates.get(modelId);
-    if (!state) return;
+    if (!state) {
+        return;
+    }
 
     const layer = state.layers.get(layerId);
     if (layer) {
@@ -130,7 +140,9 @@ export function removeWasmLayer(modelId: string, layerId: string): void {
 
 export function updateWasmLayerWeight(modelId: string, layerId: string, weight: number): void {
     const state = _blenderStates.get(modelId);
-    if (!state) return;
+    if (!state) {
+        return;
+    }
 
     const layer = state.layers.get(layerId);
     if (layer) {
@@ -140,32 +152,46 @@ export function updateWasmLayerWeight(modelId: string, layerId: string, weight: 
 
 export function setWasmLayersGazeConfig(modelId: string, config: GazeConfig): void {
     const state = _blenderStates.get(modelId);
-    if (!state) return;
+    if (!state) {
+        return;
+    }
     state.gazeConfig = config;
 }
 
 function _applyGazeIfEnabled(modelId: string): void {
     const state = _blenderStates.get(modelId);
-    if (!state) return;
+    if (!state) {
+        return;
+    }
 
     const inst = modelManager.get(modelId);
-    if (!inst?.mmdModel) return;
+    if (!inst?.mmdModel) {
+        return;
+    }
 
     const cam = scene.activeCamera;
-    if (!cam) return;
+    if (!cam) {
+        return;
+    }
 
     applyGazeWasm(inst.mmdModel.runtimeBones, cam, state.gazeConfig);
 }
 
 function _applyLayersBlending(modelId: string): void {
     const state = _blenderStates.get(modelId);
-    if (!state || state.layers.size === 0) return;
+    if (!state || state.layers.size === 0) {
+        return;
+    }
 
     const inst = modelManager.get(modelId);
-    if (!inst?.mmdModel) return;
+    if (!inst?.mmdModel) {
+        return;
+    }
 
     const bones = inst.mmdModel.runtimeBones;
-    if (!bones || bones.length === 0) return;
+    if (!bones || bones.length === 0) {
+        return;
+    }
 
     const frame = state.animationFrame;
 
@@ -186,10 +212,14 @@ function _applyLayersBlending(modelId: string): void {
 
     for (const [boneName, entries] of allFrames) {
         const bone = bones.find((b: IMmdRuntimeBone) => b.name === boneName);
-        if (!bone || !_isWasmRuntime(bone)) continue;
+        if (!bone || !_isWasmRuntime(bone)) {
+            continue;
+        }
 
         const totalWeight = entries.reduce((sum, e) => sum + e.weight, 0);
-        if (totalWeight <= 0) continue;
+        if (totalWeight <= 0) {
+            continue;
+        }
 
         let blendedRot: Quaternion | null = null;
         let blendedPos: Vector3 | null = null;

@@ -207,11 +207,11 @@ export function buildCameraParamsLevel(mode: CameraMode): PopupLevel {
                 ? t('motion.camOrbitSettings')
                 : mode === 'freefly'
                   ? t('motion.camFreeflySettings')
-                  :             mode === 'concert'
-                ? t('motion.camConcertSettings')
-                : mode === 'surround'
-                  ? t('motion.camSurroundSettings')
-                  : t('motion.cameraSettings'),
+                  : mode === 'concert'
+                    ? t('motion.camConcertSettings')
+                    : mode === 'surround'
+                      ? t('motion.camSurroundSettings')
+                      : t('motion.cameraSettings'),
         dir: '',
         items: [],
         renderCustom: (container) => {

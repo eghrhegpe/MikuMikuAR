@@ -327,11 +327,35 @@ describe('vmd-evaluator: 混合 bone + movable bone', () => {
         const rotB = Quaternion.FromEulerAngles(0.5, 0, 0);
         const frames: BoneKeyFrame[] = [
             // 普通骨骼：无位置
-            { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
-            { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+            {
+                name: '上半身',
+                frame: 0,
+                position: [0, 0, 0],
+                rotation: [rotA.x, rotA.y, rotA.z, rotA.w],
+                interp: INTERP_LINEAR,
+            },
+            {
+                name: '上半身',
+                frame: 10,
+                position: [0, 0, 0],
+                rotation: [rotB.x, rotB.y, rotB.z, rotB.w],
+                interp: INTERP_LINEAR,
+            },
             // 可移动骨骼：有位置
-            { name: '腰', frame: 0, position: [1, 2, 3], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
-            { name: '腰', frame: 10, position: [4, 5, 6], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+            {
+                name: '腰',
+                frame: 0,
+                position: [1, 2, 3],
+                rotation: [rotA.x, rotA.y, rotA.z, rotA.w],
+                interp: INTERP_LINEAR,
+            },
+            {
+                name: '腰',
+                frame: 10,
+                position: [4, 5, 6],
+                rotation: [rotB.x, rotB.y, rotB.z, rotB.w],
+                interp: INTERP_LINEAR,
+            },
         ];
         const buf = buildVmd(frames);
         const evaluator = await createVmdEvaluator(buf);
@@ -356,8 +380,20 @@ describe('vmd-evaluator: 混合 bone + movable bone', () => {
         const rotA = Quaternion.Identity();
         const rotB = Quaternion.FromEulerAngles(0, 0.5, 0);
         const frames: BoneKeyFrame[] = [
-            { name: '左腕', frame: 0, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
-            { name: '左腕', frame: 10, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+            {
+                name: '左腕',
+                frame: 0,
+                position: [0, 0, 0],
+                rotation: [rotA.x, rotA.y, rotA.z, rotA.w],
+                interp: INTERP_LINEAR,
+            },
+            {
+                name: '左腕',
+                frame: 10,
+                position: [0, 0, 0],
+                rotation: [rotB.x, rotB.y, rotB.z, rotB.w],
+                interp: INTERP_LINEAR,
+            },
         ];
         const buf = buildVmd(frames);
         const evaluator = await createVmdEvaluator(buf);

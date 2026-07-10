@@ -98,7 +98,14 @@ export function createResourcePanel(
         panel.innerHTML = '';
 
         if (currentLayout === 'grid' && currentItems.length > VIRTUAL_THRESHOLD) {
-            virtualGrid = createVirtualGridFromItems(panel, currentItems, thumbnailCache, onSelect, onEnterFolder, itemHeight);
+            virtualGrid = createVirtualGridFromItems(
+                panel,
+                currentItems,
+                thumbnailCache,
+                onSelect,
+                onEnterFolder,
+                itemHeight
+            );
         } else if (currentLayout === 'grid') {
             renderGrid(panel, currentItems, thumbnailCache, onSelect, onEnterFolder, itemHeight);
         } else {
@@ -403,8 +410,12 @@ function createListRow(
     });
 
     // Hover + Focus 效果
-    const applyRowHover = () => { row.style.background = 'var(--card-hover)'; };
-    const clearRowHover = () => { row.style.background = 'var(--card-bg)'; };
+    const applyRowHover = () => {
+        row.style.background = 'var(--card-hover)';
+    };
+    const clearRowHover = () => {
+        row.style.background = 'var(--card-bg)';
+    };
     row.addEventListener('mouseenter', applyRowHover);
     row.addEventListener('mouseleave', clearRowHover);
     row.addEventListener('focus', applyRowHover);

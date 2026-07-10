@@ -53,7 +53,8 @@ export function buildBoneOverrideLevel(): PopupLevel {
             // —— 卡片 1：添加新覆盖 ——
             cardContainer(container, (c) => {
                 const title = document.createElement('div');
-                title.style.cssText = 'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                title.style.cssText =
+                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                 title.textContent = t('motion.boneOverride.addOverride');
                 c.appendChild(title);
 
@@ -63,7 +64,7 @@ export function buildBoneOverrideLevel(): PopupLevel {
                     'width:100%;padding:6px 8px;margin:6px 0;border-radius:6px;' +
                     'background:var(--surface2);color:var(--text);border:1px solid var(--border);' +
                     'font-size:12px;';
-                
+
                 // 构建骨骼选项（分组：按父级/区域分组）
                 const optGroups = _buildBoneOptions(bones);
                 for (const [groupLabel, boneNames] of optGroups) {
@@ -98,15 +99,26 @@ export function buildBoneOverrideLevel(): PopupLevel {
                 applyBtn.textContent = t('motion.boneOverride.apply');
                 applyBtn.addEventListener('click', () => {
                     const boneName = boneSelect.value;
-                    if (!boneName) return;
-                    
-                    const pitch = parseFloat((pitchSlider.querySelector('input[type="range"]') as HTMLInputElement).value);
-                    const yaw = parseFloat((yawSlider.querySelector('input[type="range"]') as HTMLInputElement).value);
-                    const roll = parseFloat((rollSlider.querySelector('input[type="range"]') as HTMLInputElement).value);
-                    const weight = parseFloat((weightSlider.querySelector('input[type="range"]') as HTMLInputElement).value);
+                    if (!boneName) {
+                        return;
+                    }
+
+                    const pitch = parseFloat(
+                        (pitchSlider.querySelector('input[type="range"]') as HTMLInputElement).value
+                    );
+                    const yaw = parseFloat(
+                        (yawSlider.querySelector('input[type="range"]') as HTMLInputElement).value
+                    );
+                    const roll = parseFloat(
+                        (rollSlider.querySelector('input[type="range"]') as HTMLInputElement).value
+                    );
+                    const weight = parseFloat(
+                        (weightSlider.querySelector('input[type="range"]') as HTMLInputElement)
+                            .value
+                    );
 
                     setBoneOverride(boneName, [pitch, yaw, roll], weight, true);
-                    
+
                     // 持久化到 ModelInstance
                     _syncOverrideToInstance(modelId);
 
@@ -121,7 +133,8 @@ export function buildBoneOverrideLevel(): PopupLevel {
             if (allEntries.length > 0) {
                 cardContainer(container, (c) => {
                     const title = document.createElement('div');
-                    title.style.cssText = 'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.style.cssText =
+                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                     title.textContent = t('motion.boneOverride.activeOverrides');
                     c.appendChild(title);
 
@@ -171,8 +184,13 @@ export function buildBoneOverrideLevel(): PopupLevel {
                         delBtn.title = t('motion.boneOverride.remove');
                         delBtn.addEventListener('click', () => {
                             clearBoneOverride(ov.boneName);
-                            inst.boneOverrides = inst.boneOverrides.filter((b) => b.boneName !== ov.boneName);
-                            setStatus(t('motion.boneOverride.removed', { bone: ov.boneName }), true);
+                            inst.boneOverrides = inst.boneOverrides.filter(
+                                (b) => b.boneName !== ov.boneName
+                            );
+                            setStatus(
+                                t('motion.boneOverride.removed', { bone: ov.boneName }),
+                                true
+                            );
                             menu?.reRender();
                         });
 
@@ -206,12 +224,24 @@ export function buildBoneOverrideLevel(): PopupLevel {
 // ======== 内部工具 ========
 
 /** 按类别分组骨骼选项 */
-function _buildBoneOptions(bones: readonly { name: string; parentBone?: { name?: string } }[]): [string, string[]][] {
+function _buildBoneOptions(
+    bones: readonly { name: string; parentBone?: { name?: string } }[]
+): [string, string[]][] {
     // 常见 MMD 骨骼分组
     const knownGroups: Record<string, string[]> = {
         'センター/腰部': ['センター', 'グルーブ', '腰'],
         '上半身': ['上半身', '上半身2', '胸', '首', '頭'],
-        '下半身': ['下半身', '左足', '右足', '左ひざ', '右ひざ', '左足首', '右足首', '左足IK', '右足IK'],
+        '下半身': [
+            '下半身',
+            '左足',
+            '右足',
+            '左ひざ',
+            '右ひざ',
+            '左足首',
+            '右足首',
+            '左足IK',
+            '右足IK',
+        ],
         '左腕': ['左肩', '左腕', '左ひじ', '左手首'],
         '右腕': ['右肩', '右腕', '右ひじ', '右手首'],
         '左手': ['左親指', '左人指', '左中指', '左薬指', '左小指'],
@@ -229,7 +259,9 @@ function _buildBoneOptions(bones: readonly { name: string; parentBone?: { name?:
     for (const name of allBoneNames) {
         let placed = false;
         for (const [groupName, prefixes] of Object.entries(knownGroups)) {
-            if (groupName === 'その他') continue;
+            if (groupName === 'その他') {
+                continue;
+            }
             if (prefixes.some((p) => name === p || name.startsWith(p))) {
                 groups.get(groupName)!.push(name);
                 placed = true;
@@ -251,10 +283,15 @@ function _buildBoneOptions(bones: readonly { name: string; parentBone?: { name?:
     return result;
 }
 
-function _createSlider(label: string, min: number, max: number, defaultValue: number, step = 1): HTMLElement {
+function _createSlider(
+    label: string,
+    min: number,
+    max: number,
+    defaultValue: number,
+    step = 1
+): HTMLElement {
     const container = document.createElement('div');
-    container.style.cssText =
-        'display:flex;align-items:center;gap:6px;padding:3px 0;';
+    container.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 0;';
 
     const lbl = document.createElement('label');
     lbl.textContent = label;
@@ -285,6 +322,8 @@ function _createSlider(label: string, min: number, max: number, defaultValue: nu
 /** 将 bone-override.ts 的运行时状态同步回 ModelInstance.boneOverrides 用于持久化 */
 export function _syncOverrideToInstance(modelId: string): void {
     const inst = modelRegistry.get(modelId);
-    if (!inst) return;
+    if (!inst) {
+        return;
+    }
     inst.boneOverrides = getAllOverrides();
 }

@@ -384,9 +384,12 @@ describe('mirror camera math', () => {
         const waterLevel = 0;
         const meshAbove = { getBoundingInfo: () => ({ boundingBox: { maximumWorld: { y: 5 } } }) };
         const meshBelow = { getBoundingInfo: () => ({ boundingBox: { maximumWorld: { y: -3 } } }) };
-        const meshAtLevel = { getBoundingInfo: () => ({ boundingBox: { maximumWorld: { y: 0 } } }) };
+        const meshAtLevel = {
+            getBoundingInfo: () => ({ boundingBox: { maximumWorld: { y: 0 } } }),
+        };
 
-        const shouldInclude = (mesh: any) => mesh.getBoundingInfo().boundingBox.maximumWorld.y >= waterLevel;
+        const shouldInclude = (mesh: any) =>
+            mesh.getBoundingInfo().boundingBox.maximumWorld.y >= waterLevel;
         expect(shouldInclude(meshAbove)).toBe(true);
         expect(shouldInclude(meshAtLevel)).toBe(true);
         expect(shouldInclude(meshBelow)).toBe(false);

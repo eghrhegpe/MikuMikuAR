@@ -87,7 +87,9 @@ export function registerPopupMenu(config: RegisteredPopupMenuConfig): PopupMenuH
     const show = (): void => {
         // 清理所有 overlay 类型 class，避免共享 #sceneOverlay 的 class 残留导致样式串台
         Array.from(dom.sceneOverlay.classList).forEach((c) => {
-            if (c.startsWith('sceneOverlay-')) dom.sceneOverlay.classList.remove(c);
+            if (c.startsWith('sceneOverlay-')) {
+                dom.sceneOverlay.classList.remove(c);
+            }
         });
         if (config.overlayClass) {
             dom.sceneOverlay.classList.add(config.overlayClass);

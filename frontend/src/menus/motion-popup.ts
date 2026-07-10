@@ -131,7 +131,7 @@ function buildActionBindingLevel(id: string): PopupLevel {
                     }
                 }
                 slideRow(c, 'lucide:user', t('motion.poseLibrary'), true, () => {
-                const level = stackRegistry.buildLevel!(
+                    const level = stackRegistry.buildLevel!(
                         getBrowseDir('vpd'),
                         t('motion.poseLibrary'),
                         (m) => m.format === 'vpd'
@@ -246,7 +246,9 @@ function buildActionBindingLevel(id: string): PopupLevel {
                         }
 
                         const weightLabel = document.createElement('span');
-                        weightLabel.textContent = isBase ? '100%' : `${Math.round(layer.weight * 100)}%`;
+                        weightLabel.textContent = isBase
+                            ? '100%'
+                            : `${Math.round(layer.weight * 100)}%`;
                         weightLabel.style.fontSize = 'var(--font-ui-sm)';
                         weightLabel.style.opacity = '0.6';
                         weightLabel.style.minWidth = '32px';
@@ -557,7 +559,7 @@ function motionOnItemClick(row: PopupRow): void {
                 break;
             case 'pose':
                 (async () => {
-                const level = stackRegistry.buildLevel!(
+                    const level = stackRegistry.buildLevel!(
                         getBrowseDir('vpd'),
                         t('motion.poseLibrary'),
                         (m) => m.format === 'vpd'
@@ -580,7 +582,11 @@ function motionOnItemClick(row: PopupRow): void {
         return;
     }
     if (row.target === '__music_browse__') {
-        const level = stackRegistry.buildLevel!(getBrowseDir('audio'), t('motion.musicLibrary'), (m) => m.format === 'audio');
+        const level = stackRegistry.buildLevel!(
+            getBrowseDir('audio'),
+            t('motion.musicLibrary'),
+            (m) => m.format === 'audio'
+        );
         if (getMotionMenu()) {
             getMotionMenu()?.push(level);
         }
@@ -684,6 +690,7 @@ function buildMotionRootItems(): PopupRow[] {
                 target: `action:binding:${id}`,
                 sublabel: inst.vmdName || undefined,
                 catTag: t('motion.actor'),
+                wrapLabel: true,
             });
         }
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
@@ -706,7 +713,12 @@ function buildMotionRootItems(): PopupRow[] {
         target: 'motion:playbackSpeed',
         sublabel: `${_playbackSpeed.toFixed(2)}x`,
     });
-    items.push({ kind: 'folder', label: t('motion.camera'), icon: 'lucide:video', target: 'motion:camera' });
+    items.push({
+        kind: 'folder',
+        label: t('motion.camera'),
+        icon: 'lucide:video',
+        target: 'motion:camera',
+    });
     items.push({
         kind: 'action',
         label: getAudioName() ? t('motion.musicLibrary') : t('motion.browseMusic'),

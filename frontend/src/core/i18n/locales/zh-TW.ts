@@ -36,7 +36,8 @@ export const zhTW: Record<string, string> = {
     'settings.storageMode': '儲存位置',
     'settings.storagePrivate': '私有目錄',
     'settings.storageShared': '授權目錄',
-    'settings.storageModeDesc': '私有目錄隨應用解除安裝清除；授權目錄(/sdcard/MMD)需儲存權限，可透過檔案管理員存取',
+    'settings.storageModeDesc':
+        '私有目錄隨應用解除安裝清除；授權目錄(/sdcard/MMD)需儲存權限，可透過檔案管理員存取',
     'settings.exported': '✓ 設定已匯出',
     'settings.imported': '✓ 設定已匯入',
     'settings.importFailed': '✗ 匯入失敗：',
@@ -738,7 +739,8 @@ export const zhTW: Record<string, string> = {
     'outfit.variant': '服裝變體',
     'outfit.modelRemoved': '模型已移除',
     'outfit.loadConfigFailed': '⚠ 載入服裝設定失敗',
-    'outfit.noOutfitsConfig': '此模型無 outfits.json 設定。在模型所在目錄建立 outfits.json 即可啟用服裝變體。',
+    'outfit.noOutfitsConfig':
+        '此模型無 outfits.json 設定。在模型所在目錄建立 outfits.json 即可啟用服裝變體。',
     'outfit.default': '預設',
     'outfit.switching': '⏳ 切換變體中…',
     'outfit.switchFailed': '✗ 切換變體失敗',
@@ -943,8 +945,9 @@ export const zhTW: Record<string, string> = {
     'physics.clothExists': '⚠ 布料已存在',
     'physics.noMmdData': '⚠ 當前模型無 MMD 數據',
     'physics.clothCreated': '✓ 布料已創建 ({particles} 粒子, {constraints} 約束, mesh: {mesh})',
-    'physics.clothEnabled': '✓ 布料模擬已啟用 ({instances} 實例, {particles} 粒子, {constraints} 約束)',
-'physics.ragdollEnabled': '✓ 布娃娃物理已啟用',
+    'physics.clothEnabled':
+        '✓ 布料模擬已啟用 ({instances} 實例, {particles} 粒子, {constraints} 約束)',
+    'physics.ragdollEnabled': '✓ 布娃娃物理已啟用',
     'physics.noActiveInstance': '⚠ 布料已啟用但未找到活躍實例',
     'physics.clothDisabled': '布料模擬已關閉',
 
@@ -1008,14 +1011,19 @@ export const zhTW: Record<string, string> = {
     'settings.perf.fpsCap': '幀率上限',
     'settings.perf.fpsHint': '設為 0 表示不限制。行動裝置建議 30 以省電。',
     'settings.perf.vsync': '垂直同步',
-    'settings.perf.vsyncHintOn': '啟用後採用 requestAnimationFrame 循環；關閉後幀率不受刷新率限制，但無法設定幀率上限。',
-    'settings.perf.vsyncHintOff': '關閉後無法使用「幀率上限」，Engine 總是不限幀（相當於 maxFPS=0）。',
-    'settings.perf.vsyncHintBrowser': '瀏覽器/WebView 渲染循環由 requestAnimationFrame 驅動，天然與刷新同步；關閉後解除人為限幀（實際仍受刷新率約束）。',
+    'settings.perf.vsyncHintOn':
+        '啟用後採用 requestAnimationFrame 循環；關閉後幀率不受刷新率限制，但無法設定幀率上限。',
+    'settings.perf.vsyncHintOff':
+        '關閉後無法使用「幀率上限」，Engine 總是不限幀（相當於 maxFPS=0）。',
+    'settings.perf.vsyncHintBrowser':
+        '瀏覽器/WebView 渲染循環由 requestAnimationFrame 驅動，天然與刷新同步；關閉後解除人為限幀（實際仍受刷新率約束）。',
     'settings.perf.defaultPhysics': '預設啟用物理模擬',
-    'settings.perf.defaultPhysicsHint': '關閉可提升低配裝置效能；僅影響後續載入的模型，已載入模型不受影響。',
-  'settings.perf.autoCenter': '預設模型自動置中',
-  'settings.perf.autoCenterHint': '新載入模型時相機自動對準取景；關閉則保留目前視角，僅切換焦點。',
-  'settings.perf.autoCenterState': '自動置中：{state}',
+    'settings.perf.defaultPhysicsHint':
+        '關閉可提升低配裝置效能；僅影響後續載入的模型，已載入模型不受影響。',
+    'settings.perf.autoCenter': '預設模型自動置中',
+    'settings.perf.autoCenterHint':
+        '新載入模型時相機自動對準取景；關閉則保留目前視角，僅切換焦點。',
+    'settings.perf.autoCenterState': '自動置中：{state}',
     'settings.perf.renderScale': '渲染解析度縮放',
     'settings.perf.renderScaleHint': '低於 100% 提升效能，高於 100% 超取樣更清晰（更耗 GPU）。',
     'settings.perf.camSens': '滑鼠/觸控靈敏度',
@@ -1035,7 +1043,8 @@ export const zhTW: Record<string, string> = {
     'settings.perf.ssr': '螢幕空間反射 (SSR)',
     'settings.perf.reflectionProbe': '環境反射探針',
     'settings.perf.ssao': '環境光遮蔽 (SSAO)',
-    'settings.perf.customHint': '自訂模式下這些開關為權威配置，效能監控不會覆蓋；MSAA 檔位與強度參數請在場景→渲染選單調整。',
+    'settings.perf.customHint':
+        '自訂模式下這些開關為權威配置，效能監控不會覆蓋；MSAA 檔位與強度參數請在場景→渲染選單調整。',
 
     // settings.watch / autoImport / companion / transform
     'settings.watchOn': '✓ 下載監聽已開啟',
@@ -1086,7 +1095,8 @@ export const zhTW: Record<string, string> = {
     'settings.about.settingsMgmt.import': '匯入設定',
     'settings.about.settingsMgmt.reset': '恢復預設設定',
     'settings.about.settingsMgmt.resetConfirm': '確定要恢復所有設定為預設值嗎？此操作不可撤銷。',
-    'settings.about.settingsMgmt.hint': '匯出為 JSON 備份；匯入將合併到目前設定並立即生效。外觀/效能模式會持久化，其餘偏好在當前會話生效。',
+    'settings.about.settingsMgmt.hint':
+        '匯出為 JSON 備份；匯入將合併到目前設定並立即生效。外觀/效能模式會持久化，其餘偏好在當前會話生效。',
     'settings.about.invalidFormat': '檔案格式不正確',
 
     // settings.paths
@@ -1117,7 +1127,8 @@ export const zhTW: Record<string, string> = {
     'settings.paths.modelsLoaded': '已載入 {count} 個模型',
     'settings.paths.noModels': '找不到模型，請在 /sdcard/MMD 下放置 PMX/VMD 檔案',
     'settings.paths.clearThumbConfirm': '確定要清除所有縮圖快取嗎？下次載入模型時將重新生成。',
-    'settings.paths.clearAllConfirm': '確定要清除全部快取嗎？包括提取快取、縮圖、HTTP 隔離目錄。下次載入模型時將重新生成。',
+    'settings.paths.clearAllConfirm':
+        '確定要清除全部快取嗎？包括提取快取、縮圖、HTTP 隔離目錄。下次載入模型時將重新生成。',
 
     // shortcuts.* (ADR-059 Phase 3)
     'shortcuts.label.models': '模型庫',

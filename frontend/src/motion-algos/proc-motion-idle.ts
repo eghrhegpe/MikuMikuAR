@@ -1,9 +1,4 @@
-import {
-    buildVmd,
-    type BoneKeyFrame,
-    type MorphKeyFrame,
-    INTERP_EASE_IN_OUT,
-} from './vmd-writer';
+import { buildVmd, type BoneKeyFrame, type MorphKeyFrame, INTERP_EASE_IN_OUT } from './vmd-writer';
 import {
     BONE_SHOULDER_L_CANDIDATES,
     BONE_SHOULDER_R_CANDIDATES,

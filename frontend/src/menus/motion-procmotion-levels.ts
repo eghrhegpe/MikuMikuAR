@@ -313,7 +313,11 @@ export function buildProcMotionModeLevel(): PopupLevel {
     const st = getProcMotionState();
     const modes: { mode: ProcMotionMode; label: string; icon: string }[] = [
         { mode: 'off', label: t('motion.modeOff'), icon: st.mode === 'off' ? 'check' : 'circle' },
-        { mode: 'idle', label: t('motion.modeIdle'), icon: st.mode === 'idle' ? 'check' : 'circle' },
+        {
+            mode: 'idle',
+            label: t('motion.modeIdle'),
+            icon: st.mode === 'idle' ? 'check' : 'circle',
+        },
         {
             mode: 'autodance',
             label: t('motion.modeAutodance'),

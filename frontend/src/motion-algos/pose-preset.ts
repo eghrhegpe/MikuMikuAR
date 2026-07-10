@@ -12,7 +12,7 @@ export type PoseType = 'tpose' | 'apose' | 'rest';
 /**
  * 生成 T-pose 或 A-pose 的 VMD 二进制数据，可经 VmdLoader 解析后应用。
  * 仅包含骨骼帧（无 morph/相机帧）。
- * 
+ *
  * T-pose: 双臂水平展开（绕 Z 轴旋转约 90°，上腕外张）
  * A-pose: 双臂下垂约 45°（绕 Z 轴旋转约 -45°）
  * Rest: 返回默认姿态（零旋转）
@@ -94,7 +94,7 @@ export function generatePoseVmd(type: PoseType): ArrayBuffer {
         dv.setFloat32(43, pd.rotation[3], true);
         // 插值曲线（64 字节）— 默认线性
         for (let k = 0; k < 64; k++) {
-            boneFrameBuf[off + 47 + k] = k < 16 ? 0 : (k < 32 ? 127 : (k < 48 ? 0 : 127));
+            boneFrameBuf[off + 47 + k] = k < 16 ? 0 : k < 32 ? 127 : k < 48 ? 0 : 127;
         }
     }
 
@@ -105,17 +105,21 @@ export function generatePoseVmd(type: PoseType): ArrayBuffer {
 
     const out = new Uint8Array(totalSize);
     let off = 0;
-    out.set(headerBuf, off); off += 30;
-    out.set(modelName, off); off += 20;
+    out.set(headerBuf, off);
+    off += 30;
+    out.set(modelName, off);
+    off += 20;
     // 骨骼帧数
     const totalDv = new DataView(out.buffer);
     totalDv.setUint32(50, boneCount, true);
     off += 4;
-    out.set(boneFrameBuf, off); off += boneCount * BONE_FRAME_SIZE;
+    out.set(boneFrameBuf, off);
+    off += boneCount * BONE_FRAME_SIZE;
 
     // morph 帧数 = 0
     const morphDv = new DataView(out.buffer, off);
-    morphDv.setUint32(0, 0, true); off += 4;
+    morphDv.setUint32(0, 0, true);
+    off += 4;
     // camera/light/shadow/ik 计数
     for (let i = 0; i < 4; i++) {
         const subDv = new DataView(out.buffer, off);

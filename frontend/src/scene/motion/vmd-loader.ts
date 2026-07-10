@@ -136,7 +136,9 @@ export async function loadVMDMotion(
         // setRuntimeAnimation(null) 仅解绑、不释放 WASM buffer；必须显式 dispose 旧
         // runtime animation（其内部 onDispose 回调触发 _destroyRuntimeAnimation，从
         // _animationHandleMap 删除并回收 WASM AnimCurve 资源），否则每次换 VMD 都泄漏一份。
-        const prevAnim = (inst.mmdModel as { currentAnimation?: { dispose?: () => void } | null }).currentAnimation ?? null;
+        const prevAnim =
+            (inst.mmdModel as { currentAnimation?: { dispose?: () => void } | null })
+                .currentAnimation ?? null;
         inst.mmdModel.setRuntimeAnimation(null);
         if (prevAnim) {
             try {

@@ -1,9 +1,17 @@
 // settings-about.ts — 关于页面 + 设置导入/导出/重置
 
 import {
-    SetUIScale, SetUIPopupWidth, SetUIAccent, SetUIFontFamily,
-    SetUIAnimations, SetUIBlurBg, SetPerformanceMode,
-    GetBuildInfo, GetCacheStats, CheckForUpdate, SetUIAutoUpdate,
+    SetUIScale,
+    SetUIPopupWidth,
+    SetUIAccent,
+    SetUIFontFamily,
+    SetUIAnimations,
+    SetUIBlurBg,
+    SetPerformanceMode,
+    GetBuildInfo,
+    GetCacheStats,
+    CheckForUpdate,
+    SetUIAutoUpdate,
 } from '../core/wails-bindings';
 import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
@@ -48,9 +56,15 @@ function reapplyImportedSettings(): void {
     setPerformanceMode(pm);
     SetPerformanceMode(pm).catch(() => {});
     SetUIScale(uiState.scale ?? 1).catch(() => {});
-    if (uiState.popupWidth) SetUIPopupWidth(uiState.popupWidth).catch(() => {});
-    if (uiState.accent) SetUIAccent(uiState.accent).catch(() => {});
-    if (uiState.fontFamily) SetUIFontFamily(uiState.fontFamily).catch(() => {});
+    if (uiState.popupWidth) {
+        SetUIPopupWidth(uiState.popupWidth).catch(() => {});
+    }
+    if (uiState.accent) {
+        SetUIAccent(uiState.accent).catch(() => {});
+    }
+    if (uiState.fontFamily) {
+        SetUIFontFamily(uiState.fontFamily).catch(() => {});
+    }
     SetUIAnimations(uiState.animations !== false).catch(() => {});
     SetUIBlurBg(!!uiState.blurBg).catch(() => {});
 }
@@ -61,7 +75,9 @@ function importSettings(): void {
     input.accept = 'application/json,.json';
     input.onchange = () => {
         const file = input.files?.[0];
-        if (!file) return;
+        if (!file) {
+            return;
+        }
         const reader = new FileReader();
         reader.onload = () => {
             try {
@@ -74,7 +90,10 @@ function importSettings(): void {
                 // getSettingsMenu will be called via reRender from the caller
                 setStatus(t('settings.imported'), true);
             } catch (e) {
-                setStatus(t('settings.importFailed') + (e instanceof Error ? e.message : String(e)), true);
+                setStatus(
+                    t('settings.importFailed') + (e instanceof Error ? e.message : String(e)),
+                    true
+                );
             }
         };
         reader.onerror = () => setStatus(t('settings.readFailed'), true);
@@ -122,9 +141,12 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
                 GetBuildInfo()
                     .then((info) => {
                         const el = title.querySelector<HTMLElement>('[data-app-version]');
-                        if (el) { el.textContent = `v${info.version}`; }
+                        if (el) {
+                            el.textContent = `v${info.version}`;
+                        }
                         const detail = document.createElement('div');
-                        detail.style.cssText = 'font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.6;font-family:monospace;';
+                        detail.style.cssText =
+                            'font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.6;font-family:monospace;';
                         detail.innerHTML = `<div>build: ${info.buildTime}</div><div>commit: ${info.commitHash}</div><div>go: ${info.goVersion}</div>`;
                         c.appendChild(detail);
                     })
@@ -150,8 +172,14 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
                     }
                 });
                 slideRow(c, 'lucide:scroll', t('about.license'), false, () => {
-                    if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE')) {
-                        Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE');
+                    if (
+                        !openExternalURL(
+                            'https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE'
+                        )
+                    ) {
+                        Browser.OpenURL(
+                            'https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE'
+                        );
                     }
                 });
                 slideRow(c, 'lucide:bug', t('about.issues'), false, () => {
@@ -165,16 +193,21 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
                 addSectionTitle(c, t('settings.about.cache'));
                 const statRow = document.createElement('div');
                 statRow.className = 'slide-item';
-                statRow.style.cssText = 'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
-                statRow.innerHTML = `<div data-cache-total style="font-size:13px;color:var(--text);font-weight:500;">统计中…</div><div data-cache-detail style="font-size:10px;color:var(--text-dim);line-height:1.6;font-family:monospace;"></div>`;
+                statRow.style.cssText =
+                    'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
+                statRow.innerHTML =
+                    '<div data-cache-total style="font-size:13px;color:var(--text);font-weight:500;">统计中…</div><div data-cache-detail style="font-size:10px;color:var(--text-dim);line-height:1.6;font-family:monospace;"></div>';
                 c.appendChild(statRow);
 
                 const refreshCacheStats = () => {
                     GetCacheStats()
                         .then((s) => {
                             const total = statRow.querySelector<HTMLElement>('[data-cache-total]');
-                            const detail = statRow.querySelector<HTMLElement>('[data-cache-detail]');
-                            if (total) { total.textContent = `${t('settings.about.cache.total')} ${formatBytes(s.totalBytes)}`; }
+                            const detail =
+                                statRow.querySelector<HTMLElement>('[data-cache-detail]');
+                            if (total) {
+                                total.textContent = `${t('settings.about.cache.total')} ${formatBytes(s.totalBytes)}`;
+                            }
                             if (detail) {
                                 detail.innerHTML = `<div>${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div><div>${t('settings.about.cache.serve')}: ${formatBytes(s.serveBytes)} (${s.serveCount} 项)</div>`;
                             }
@@ -191,45 +224,144 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
 
             cardContainer(container, (c) => {
                 addSectionTitle(c, t('settings.about.update'));
-                addToggleRow(c, t('settings.about.update.autoCheck'), uiState.autoUpdateEnabled === true,
-                    (v) => { setUIState({ autoUpdateEnabled: v }); SetUIAutoUpdate(v); setStatus(t('settings.autoUpdate', {state: v ? t('common.on') : t('common.off')}), true); }
+                addToggleRow(
+                    c,
+                    t('settings.about.update.autoCheck'),
+                    uiState.autoUpdateEnabled === true,
+                    (v) => {
+                        setUIState({ autoUpdateEnabled: v });
+                        SetUIAutoUpdate(v);
+                        setStatus(
+                            t('settings.autoUpdate', {
+                                state: v ? t('common.on') : t('common.off'),
+                            }),
+                            true
+                        );
+                    }
                 );
                 const resultRow = document.createElement('div');
                 resultRow.className = 'slide-item';
-                resultRow.style.cssText = 'flex-direction:column;align-items:stretch;gap:4px;padding:8px 14px;';
-                resultRow.innerHTML = `<div data-update-status style="font-size:12px;color:var(--text);">点击「检查更新」查看版本</div><a data-update-link href="#" style="display:none;font-size:12px;color:var(--accent);cursor:pointer;">前往下载最新版本 →</a>`;
+                resultRow.style.cssText =
+                    'flex-direction:column;align-items:stretch;gap:4px;padding:8px 14px;';
+                resultRow.innerHTML =
+                    '<div data-update-status style="font-size:12px;color:var(--text);">点击「检查更新」查看版本</div><a data-update-link href="#" style="display:none;font-size:12px;color:var(--accent);cursor:pointer;">前往下载最新版本 →</a>';
                 c.appendChild(resultRow);
-                slideRow(c, 'lucide:download', t('settings.about.update.checkNow'), false, async () => {
-                    const statusEl = resultRow.querySelector<HTMLElement>('[data-update-status]');
-                    const linkEl = resultRow.querySelector<HTMLAnchorElement>('[data-update-link]');
-                    if (statusEl) statusEl.textContent = t('settings.about.update.checking');
-                    if (linkEl) linkEl.style.display = 'none';
-                    try {
-                        const r = await CheckForUpdate();
-                        if (!r) { if (statusEl) statusEl.textContent = t('settings.about.update.failed'); return; }
-                        if (r.error) { if (statusEl) statusEl.textContent = t('settings.about.update.error', {err: r.error}); return; }
-                        if (statusEl) { statusEl.textContent = r.available ? t('settings.about.update.available', {latest: r.latest, current: r.current}) : t('settings.about.update.latest', {current: r.current}); }
-                        if (linkEl && r.available && r.url) { linkEl.style.display = 'inline'; linkEl.onclick = (e) => { e.preventDefault(); if (!openExternalURL(r.url)) { Browser.OpenURL(r.url); } }; }
-                    } catch { if (statusEl) statusEl.textContent = t('settings.about.update.failed'); }
-                });
+                slideRow(
+                    c,
+                    'lucide:download',
+                    t('settings.about.update.checkNow'),
+                    false,
+                    async () => {
+                        const statusEl =
+                            resultRow.querySelector<HTMLElement>('[data-update-status]');
+                        const linkEl =
+                            resultRow.querySelector<HTMLAnchorElement>('[data-update-link]');
+                        if (statusEl) {
+                            statusEl.textContent = t('settings.about.update.checking');
+                        }
+                        if (linkEl) {
+                            linkEl.style.display = 'none';
+                        }
+                        try {
+                            const r = await CheckForUpdate();
+                            if (!r) {
+                                if (statusEl) {
+                                    statusEl.textContent = t('settings.about.update.failed');
+                                }
+                                return;
+                            }
+                            if (r.error) {
+                                if (statusEl) {
+                                    statusEl.textContent = t('settings.about.update.error', {
+                                        err: r.error,
+                                    });
+                                }
+                                return;
+                            }
+                            if (statusEl) {
+                                statusEl.textContent = r.available
+                                    ? t('settings.about.update.available', {
+                                          latest: r.latest,
+                                          current: r.current,
+                                      })
+                                    : t('settings.about.update.latest', { current: r.current });
+                            }
+                            if (linkEl && r.available && r.url) {
+                                linkEl.style.display = 'inline';
+                                linkEl.onclick = (e) => {
+                                    e.preventDefault();
+                                    if (!openExternalURL(r.url)) {
+                                        Browser.OpenURL(r.url);
+                                    }
+                                };
+                            }
+                        } catch {
+                            if (statusEl) {
+                                statusEl.textContent = t('settings.about.update.failed');
+                            }
+                        }
+                    }
+                );
             });
 
             cardContainer(container, (c) => {
                 addSectionTitle(c, t('settings.about.maintenance'));
-                slideRow(c, 'lucide:trash-2', t('settings.about.maintenance.clearExtract'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE }));
-                slideRow(c, 'lucide:image', t('settings.about.maintenance.clearThumbnail'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_THUMBNAIL }));
-                slideRow(c, 'lucide:trash', t('settings.about.maintenance.clearAll'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.CLEAR_ALL_CACHE }));
+                slideRow(
+                    c,
+                    'lucide:trash-2',
+                    t('settings.about.maintenance.clearExtract'),
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE,
+                        })
+                );
+                slideRow(
+                    c,
+                    'lucide:image',
+                    t('settings.about.maintenance.clearThumbnail'),
+                    false,
+                    () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.CLEAR_THUMBNAIL,
+                        })
+                );
+                slideRow(c, 'lucide:trash', t('settings.about.maintenance.clearAll'), false, () =>
+                    handleSettingsAction({
+                        kind: 'action',
+                        label: '',
+                        icon: '',
+                        target: SETTINGS_ACTION.CLEAR_ALL_CACHE,
+                    })
+                );
             });
 
             cardContainer(container, (c) => {
                 addSectionTitle(c, t('settings.about.settingsMgmt'));
-                slideRow(c, 'lucide:download', t('settings.about.settingsMgmt.export'), false, () => exportSettings());
-                slideRow(c, 'lucide:upload', t('settings.about.settingsMgmt.import'), false, () => { importSettings(); getSettingsMenu()?.reRender(); });
-                slideRow(c, 'lucide:rotate-ccw', t('settings.about.settingsMgmt.reset'), false, () => {
-                    if (window.confirm(t('settings.about.settingsMgmt.resetConfirm'))) {
-                        resetAllSettings(getSettingsMenu);
-                    }
+                slideRow(c, 'lucide:download', t('settings.about.settingsMgmt.export'), false, () =>
+                    exportSettings()
+                );
+                slideRow(c, 'lucide:upload', t('settings.about.settingsMgmt.import'), false, () => {
+                    importSettings();
+                    getSettingsMenu()?.reRender();
                 });
+                slideRow(
+                    c,
+                    'lucide:rotate-ccw',
+                    t('settings.about.settingsMgmt.reset'),
+                    false,
+                    () => {
+                        if (window.confirm(t('settings.about.settingsMgmt.resetConfirm'))) {
+                            resetAllSettings(getSettingsMenu);
+                        }
+                    }
+                );
                 const hint = document.createElement('div');
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
                 hint.textContent = t('settings.about.settingsMgmt.hint');

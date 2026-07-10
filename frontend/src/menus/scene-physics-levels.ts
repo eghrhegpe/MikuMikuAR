@@ -2,7 +2,13 @@
 // 从 scene-menu.ts 引用，独立管理全局物理参数（WASM Bullet + XPBD 布料）
 
 import type { PopupLevel, PopupRow } from '../core/config';
-import { envState, focusedModelId, cardContainer, getMmdRuntimeType, setMmdRuntimeType } from '../core/config';
+import {
+    envState,
+    focusedModelId,
+    cardContainer,
+    getMmdRuntimeType,
+    setMmdRuntimeType,
+} from '../core/config';
 import { getGravityStrength, setGravityStrength } from '../scene/env/env-bridge';
 import {
     modelManager,
@@ -86,34 +92,34 @@ export function buildClothLevel(): PopupLevel {
         label: t('scene.clothSim'),
         dir: '',
         items: [
-// 布料模拟：独立开关
-{
-  kind: 'toggle',
-  label: t('scene.clothSim'),
-  icon: 'lucide:shirt',
-  target: 'cloth:toggle',
-  toggleValue: envState.clothEnabled,
-  onToggleChange: (v: boolean) => {
-    envState.clothEnabled = v;
-    toggleCloth(v);
-    refreshSceneRoot();
-    _patchToggle('cloth:toggle', v);
-  }
-} as PopupRow,
-// 布娃娃物理：独立开关
-{
-  kind: 'toggle',
-  label: t('scene.ragdollPhysics'),
-  icon: 'lucide:user',
-  target: 'ragdoll:toggle',
-  toggleValue: envState.ragdollEnabled,
-  onToggleChange: (v: boolean) => {
-    envState.ragdollEnabled = v;
-    toggleRagdoll(v);
-    refreshSceneRoot();
-    _patchToggle('ragdoll:toggle', v);
-  }
-} as PopupRow,
+            // 布料模拟：独立开关
+            {
+                kind: 'toggle',
+                label: t('scene.clothSim'),
+                icon: 'lucide:shirt',
+                target: 'cloth:toggle',
+                toggleValue: envState.clothEnabled,
+                onToggleChange: (v: boolean) => {
+                    envState.clothEnabled = v;
+                    toggleCloth(v);
+                    refreshSceneRoot();
+                    _patchToggle('cloth:toggle', v);
+                },
+            } as PopupRow,
+            // 布娃娃物理：独立开关
+            {
+                kind: 'toggle',
+                label: t('scene.ragdollPhysics'),
+                icon: 'lucide:user',
+                target: 'ragdoll:toggle',
+                toggleValue: envState.ragdollEnabled,
+                onToggleChange: (v: boolean) => {
+                    envState.ragdollEnabled = v;
+                    toggleRagdoll(v);
+                    refreshSceneRoot();
+                    _patchToggle('ragdoll:toggle', v);
+                },
+            } as PopupRow,
             // 求解质量
             {
                 kind: 'slider',
@@ -316,7 +322,9 @@ export function buildRagdollLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 let _recreateTimer: ReturnType<typeof setTimeout> | null = null;
                 const debouncedRecreate = () => {
-                    if (_recreateTimer) clearTimeout(_recreateTimer);
+                    if (_recreateTimer) {
+                        clearTimeout(_recreateTimer);
+                    }
                     _recreateTimer = setTimeout(() => {
                         _recreateTimer = null;
                         recreateRagdoll();
@@ -349,45 +357,73 @@ export function buildRagdollLevel(): PopupLevel {
                 addSectionTitle(c, t('scene.ragdollParams'));
 
                 // Compliance（柔度）
-                addSliderRow(c, t('scene.ragdollCompliance'),
-                    DEFAULT_RAGDOLL_JOINT_PARAMS.compliance, 0, 0.1, 0.001,
+                addSliderRow(
+                    c,
+                    t('scene.ragdollCompliance'),
+                    DEFAULT_RAGDOLL_JOINT_PARAMS.compliance,
+                    0,
+                    0.1,
+                    0.001,
                     (v: number) => {
                         // 对所有关节组设置 compliance
                         for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
                             setRagdollJointParams(group, { compliance: v });
                         }
                         debouncedRecreate();
-                    }, 'lucide:feather');
+                    },
+                    'lucide:feather'
+                );
 
                 // Stiffness（刚度）
-                addSliderRow(c, t('scene.ragdollStiffness'),
-                    DEFAULT_RAGDOLL_JOINT_PARAMS.stiffness, 0, 1, 0.05,
+                addSliderRow(
+                    c,
+                    t('scene.ragdollStiffness'),
+                    DEFAULT_RAGDOLL_JOINT_PARAMS.stiffness,
+                    0,
+                    1,
+                    0.05,
                     (v: number) => {
                         for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
                             setRagdollJointParams(group, { stiffness: v });
                         }
                         debouncedRecreate();
-                    }, 'lucide:wrench');
+                    },
+                    'lucide:wrench'
+                );
 
                 // Damping（阻尼）
-                addSliderRow(c, t('scene.ragdollDamping'),
-                    DEFAULT_RAGDOLL_JOINT_PARAMS.damping, 0, 1, 0.05,
+                addSliderRow(
+                    c,
+                    t('scene.ragdollDamping'),
+                    DEFAULT_RAGDOLL_JOINT_PARAMS.damping,
+                    0,
+                    1,
+                    0.05,
                     (v: number) => {
                         for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
                             setRagdollJointParams(group, { damping: v });
                         }
                         debouncedRecreate();
-                    }, 'lucide:waves');
+                    },
+                    'lucide:waves'
+                );
 
                 // ---- 过渡仲裁 ----
                 addSectionTitle(c, t('scene.ragdollTransition'));
 
                 // blendWeight（物理混合权重 0=动画 1=物理）
-                addSliderRow(c, t('scene.ragdollBlendWeight'),
-                    getRagdollBlendWeight(), 0, 1, 0.05,
+                addSliderRow(
+                    c,
+                    t('scene.ragdollBlendWeight'),
+                    getRagdollBlendWeight(),
+                    0,
+                    1,
+                    0.05,
                     (v: number) => {
                         setRagdollBlendWeight(v);
-                    }, 'lucide:git-merge');
+                    },
+                    'lucide:git-merge'
+                );
             });
         },
     };

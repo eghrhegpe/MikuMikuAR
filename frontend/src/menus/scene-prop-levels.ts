@@ -159,7 +159,8 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                         });
                         const val = document.createElement('span');
                         val.textContent = slider.value;
-                        val.style.cssText = 'font-size:11px;min-width:28px;text-align:right;opacity:0.6;';
+                        val.style.cssText =
+                            'font-size:11px;min-width:28px;text-align:right;opacity:0.6;';
                         slider.addEventListener('input', () => {
                             val.textContent = parseFloat(slider.value).toFixed(2);
                         });
@@ -185,7 +186,8 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                     modelSelect.style.cssText =
                         'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
                         'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
-                    modelSelect.innerHTML = '<option value="">-- ' + t('scene.accessory.selectModel') + ' --</option>';
+                    modelSelect.innerHTML =
+                        '<option value="">-- ' + t('scene.accessory.selectModel') + ' --</option>';
                     for (const [id, inst] of modelRegistry) {
                         if (inst.kind === 'actor') {
                             const opt = document.createElement('option');
@@ -200,12 +202,18 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                     boneSelect.style.cssText =
                         'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
                         'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
-                    boneSelect.innerHTML = '<option value="">-- ' + t('scene.accessory.selectBone') + ' --</option>';
+                    boneSelect.innerHTML =
+                        '<option value="">-- ' + t('scene.accessory.selectBone') + ' --</option>';
                     // 模型切换时刷新骨骼列表
                     modelSelect.addEventListener('change', () => {
                         const id = modelSelect.value;
-                        boneSelect.innerHTML = '<option value="">-- ' + t('scene.accessory.selectBone') + ' --</option>';
-                        if (!id) return;
+                        boneSelect.innerHTML =
+                            '<option value="">-- ' +
+                            t('scene.accessory.selectBone') +
+                            ' --</option>';
+                        if (!id) {
+                            return;
+                        }
                         const inst = modelRegistry.get(id);
                         if (inst?.mmdModel) {
                             for (const b of inst.mmdModel.runtimeBones) {
@@ -225,9 +233,19 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                     attachBtn.addEventListener('click', () => {
                         const modelId = modelSelect.value;
                         const boneName = boneSelect.value;
-                        if (!modelId || !boneName) return;
-                        const ok = attachPropToBone(propId, boneName, modelId, [0, 0, 0], [0, 0, 0]);
-                        if (ok) sm?.reRender();
+                        if (!modelId || !boneName) {
+                            return;
+                        }
+                        const ok = attachPropToBone(
+                            propId,
+                            boneName,
+                            modelId,
+                            [0, 0, 0],
+                            [0, 0, 0]
+                        );
+                        if (ok) {
+                            sm?.reRender();
+                        }
                     });
                     c.appendChild(attachBtn);
                 }

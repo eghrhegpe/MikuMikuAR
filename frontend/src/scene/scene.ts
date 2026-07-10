@@ -283,25 +283,26 @@ export async function initScene(): Promise<void> {
     const { startBoneOverride } = await import('./motion/bone-override');
     startBoneOverride(() => {
         const id = focusedModelId;
-        if (!id) return [];
+        if (!id) {
+            return [];
+        }
         const inst = modelRegistry.get(id);
         return inst?.mmdModel?.runtimeBones ?? [];
-}, scene);
+    }, scene);
 
-// 8. Ragdoll 物理系统启动
-// 在 bone-override 之后注册 onBeforeRenderObservable，确保 ragdoll 成为渲染前最后写入者
-const { initRagdoll } = await import('../physics/ragdoll-manager');
-initRagdoll(
-  () => {
-    const id = focusedModelId;
-    if (!id) return [];
-    const inst = modelRegistry.get(id);
-    return inst?.mmdModel?.runtimeBones ?? [];
-  },
-  scene
-);
+    // 8. Ragdoll 物理系统启动
+    // 在 bone-override 之后注册 onBeforeRenderObservable，确保 ragdoll 成为渲染前最后写入者
+    const { initRagdoll } = await import('../physics/ragdoll-manager');
+    initRagdoll(() => {
+        const id = focusedModelId;
+        if (!id) {
+            return [];
+        }
+        const inst = modelRegistry.get(id);
+        return inst?.mmdModel?.runtimeBones ?? [];
+    }, scene);
 
-setTriggerAutoSave(triggerAutoSaveImpl);
+    setTriggerAutoSave(triggerAutoSaveImpl);
 }
 
 // ======== 快捷 getter ========

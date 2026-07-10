@@ -65,11 +65,11 @@ export async function addCustomSoftware(): Promise<boolean> {
         await AddCustomSoftware(path, name, args);
         return true;
     }, t('settings.software.addFailed'));
-      if (r) {
+    if (r) {
         await scanSoftwareDir();
-        setStatus(t('settings.softwareAdded', {name}), true);
+        setStatus(t('settings.softwareAdded', { name }), true);
         return true;
-      }
+    }
     return false;
 }
 
@@ -109,13 +109,19 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
                             {
                                 actionIcon: '▶',
                                 onActionClick: async () => {
-      const r = await tryCatchStatus(async () => {
-        await LaunchSoftware(entry.path, entry.args || '');
-        return true as const;
-      }, t('settings.softwareStartFail', { name: entry.name }));
-      if (r !== undefined) {
-        setStatus(t('settings.softwareStarted', { name: entry.name }), true);
-      }
+                                    const r = await tryCatchStatus(
+                                        async () => {
+                                            await LaunchSoftware(entry.path, entry.args || '');
+                                            return true as const;
+                                        },
+                                        t('settings.softwareStartFail', { name: entry.name })
+                                    );
+                                    if (r !== undefined) {
+                                        setStatus(
+                                            t('settings.softwareStarted', { name: entry.name }),
+                                            true
+                                        );
+                                    }
                                 },
                             }
                         );
@@ -129,10 +135,13 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
                         getSettingsMenu()?.reRender();
                     }
                 });
-                slideRow(c, 'lucide:folder', t('settings.software.setMmdPath'), false, () => setMMDPath());
-                slideRow(c, 'lucide:hexagon', t('settings.software.setBlenderPath'), false, () => setBlenderPath());
+                slideRow(c, 'lucide:folder', t('settings.software.setMmdPath'), false, () =>
+                    setMMDPath()
+                );
+                slideRow(c, 'lucide:hexagon', t('settings.software.setBlenderPath'), false, () =>
+                    setBlenderPath()
+                );
             });
-
         },
     };
 }
@@ -144,7 +153,14 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
         return {
             label: t('settings.software.unknown'),
             dir: '',
-            items: [{ kind: 'action', label: t('settings.software.notFound'), icon: 'alert-circle', target: '' }],
+            items: [
+                {
+                    kind: 'action',
+                    label: t('settings.software.notFound'),
+                    icon: 'alert-circle',
+                    target: '',
+                },
+            ],
         };
     }
 
@@ -193,29 +209,36 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     c.appendChild(argRow);
                 });
 
-  cardContainer(container, (c) => {
-    slideRow(c, 'lucide:play', t('settings.software.launch'), false, () => {
-      LaunchSoftware(entry.path, '')
-        .then(() => setStatus(t('settings.softwareStarted', { name: entry.name }), true))
-        .catch((err: unknown) =>
-          setStatus(
-            t('status.error', {message: err instanceof Error ? err.message : String(err)}),
-            false
-          )
-        );
+                cardContainer(container, (c) => {
+                    slideRow(c, 'lucide:play', t('settings.software.launch'), false, () => {
+                        LaunchSoftware(entry.path, '')
+                            .then(() =>
+                                setStatus(t('settings.softwareStarted', { name: entry.name }), true)
+                            )
+                            .catch((err: unknown) =>
+                                setStatus(
+                                    t('status.error', {
+                                        message: err instanceof Error ? err.message : String(err),
+                                    }),
+                                    false
+                                )
+                            );
                     });
 
                     addDangerRow(c, 'lucide:trash-2', t('settings.software.delete'), async () => {
-                        const r = await tryCatchStatus(async () => {
-                            await RemoveCustomSoftware(entry.path);
-                            return true;
-                        }, t('settings.softwareDeleteFail', { name: entry.name }));
-      if (r) {
-        cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
-          (e) => e.path !== entry.path
-        );
-        setStatus(t('settings.softwareDeleted', { name: entry.name }), true);
-        const menu = getSettingsMenu();
+                        const r = await tryCatchStatus(
+                            async () => {
+                                await RemoveCustomSoftware(entry.path);
+                                return true;
+                            },
+                            t('settings.softwareDeleteFail', { name: entry.name })
+                        );
+                        if (r) {
+                            cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
+                                (e) => e.path !== entry.path
+                            );
+                            setStatus(t('settings.softwareDeleted', { name: entry.name }), true);
+                            const menu = getSettingsMenu();
                             menu?.pop();
                             menu?.reRender();
                         }
@@ -241,38 +264,45 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                 }
             });
 
-  cardContainer(container, (c) => {
-    slideRow(c, 'lucide:play', t('settings.software.launch'), false, () => {
-      LaunchSoftware(entry.path, entry.args)
-        .then(() => setStatus(t('settings.softwareStarted', { name: entry.name }), true))
-        .catch((err: unknown) =>
-          setStatus(
-            t('status.error', {message: err instanceof Error ? err.message : String(err)}),
-            false
-          )
-        );
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:play', t('settings.software.launch'), false, () => {
+                    LaunchSoftware(entry.path, entry.args)
+                        .then(() =>
+                            setStatus(t('settings.softwareStarted', { name: entry.name }), true)
+                        )
+                        .catch((err: unknown) =>
+                            setStatus(
+                                t('status.error', {
+                                    message: err instanceof Error ? err.message : String(err),
+                                }),
+                                false
+                            )
+                        );
                 });
 
-                slideRow(c, 'lucide:plus', t('settings.software.convertToCustom'), false, async () => {
-                    const args = await showPrompt(
-                        t('settings.software.argsHint'),
-                        ''
-                    );
-                    if (args === null) {
-                        return;
+                slideRow(
+                    c,
+                    'lucide:plus',
+                    t('settings.software.convertToCustom'),
+                    false,
+                    async () => {
+                        const args = await showPrompt(t('settings.software.argsHint'), '');
+                        if (args === null) {
+                            return;
+                        }
+                        const r = await tryCatchStatus(async () => {
+                            await AddCustomSoftware(entry.path, entry.name, args);
+                            return true;
+                        }, t('settings.software.convertFailed'));
+                        if (r) {
+                            cachedSoftwareEntries = await ScanSoftwareDir();
+                            setStatus(t('settings.softwareToCustom', { name: entry.name }), true);
+                            const menu = getSettingsMenu();
+                            menu?.pop();
+                            menu?.reRender();
+                        }
                     }
-                    const r = await tryCatchStatus(async () => {
-                        await AddCustomSoftware(entry.path, entry.name, args);
-                        return true;
-                    }, t('settings.software.convertFailed'));
-      if (r) {
-        cachedSoftwareEntries = await ScanSoftwareDir();
-        setStatus(t('settings.softwareToCustom', { name: entry.name }), true);
-        const menu = getSettingsMenu();
-                        menu?.pop();
-                        menu?.reRender();
-                    }
-                });
+                );
             });
         },
     };

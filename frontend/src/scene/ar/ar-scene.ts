@@ -11,12 +11,7 @@ import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTextur
 import { Material } from '@babylonjs/core/Materials/material';
 import { scene } from '../scene';
 import { _envSys } from '../env/env-impl';
-import {
-    startARCamera,
-    stopARCamera,
-    captureARScreenshot,
-    isARActive,
-} from './ar-camera';
+import { startARCamera, stopARCamera, captureARScreenshot, isARActive } from './ar-camera';
 import type { CameraFacing } from './ar-camera';
 import {
     getPerceptionState,
@@ -106,7 +101,7 @@ function _createContactShadow(): void {
     const ground = MeshBuilder.CreateGround(
         'arContactShadow',
         { width: fp.radius * 2, height: fp.radius * 2, subdivisions: 1 },
-        scene,
+        scene
     );
     ground.material = mat;
     ground.position.set(fp.cx, fp.bottomY + 0.02, fp.cz);

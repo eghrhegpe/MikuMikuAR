@@ -67,7 +67,12 @@ function fadeAndRemoveToast(id: number, el: HTMLElement, fadeDuration = 300): vo
     }, 50);
 }
 
-function buildToastElement(title: string, detail?: string, actions?: ToastAction[], toastId?: number): HTMLElement {
+function buildToastElement(
+    title: string,
+    detail?: string,
+    actions?: ToastAction[],
+    toastId?: number
+): HTMLElement {
     const toast = document.createElement('div');
     toast.style.cssText = [
         'pointer-events:auto',
@@ -130,7 +135,9 @@ function buildToastElement(title: string, detail?: string, actions?: ToastAction
                 'cursor:pointer;background:var(--accent);color:#fff';
             btn.addEventListener('click', () => {
                 act.onClick();
-                if (toastId != null) removeToast(toastId);
+                if (toastId != null) {
+                    removeToast(toastId);
+                }
             });
             actionsEl.appendChild(btn);
         }
@@ -141,7 +148,9 @@ function buildToastElement(title: string, detail?: string, actions?: ToastAction
     closeBtn.style.cssText =
         'font-size:11px;color:var(--text-dim);cursor:pointer;padding:2px 4px;line-height:1';
     closeBtn.addEventListener('click', () => {
-        if (toastId != null) fadeAndRemoveToast(toastId, toast, 150);
+        if (toastId != null) {
+            fadeAndRemoveToast(toastId, toast, 150);
+        }
     });
     actionsEl.appendChild(closeBtn);
 

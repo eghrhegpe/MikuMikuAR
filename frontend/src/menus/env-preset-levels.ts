@@ -133,7 +133,10 @@ export function renderUserEnvPresets(container: HTMLElement): void {
             },
             '✗ 保存预设失败',
             (err) =>
-                showErrorToast(t('env-preset.saveErrorToast'), err instanceof Error ? err.message : String(err))
+                showErrorToast(
+                    t('env-preset.saveErrorToast'),
+                    err instanceof Error ? err.message : String(err)
+                )
         );
         if (r) {
             setStatus(t('env-preset.saved', { name }), true);
@@ -331,7 +334,20 @@ export function buildPresetLevel(): PopupLevel {
                 chipGroup.style.paddingBottom = '6px';
                 for (const [name, preset] of entries) {
                     addPresetChip(chipGroup, name, false, () => {
-                        setEnvState({ ...preset.env });
+                        const envUpdate = { ...preset.env };
+                        // 自动推算中间色，与天空预设双色逻辑看齐
+                        if (
+                            envUpdate.skyColorTop &&
+                            envUpdate.skyColorBot &&
+                            !envUpdate.skyColorMid
+                        ) {
+                            envUpdate.skyColorMid = [
+                                (envUpdate.skyColorTop[0] + envUpdate.skyColorBot[0]) / 2,
+                                (envUpdate.skyColorTop[1] + envUpdate.skyColorBot[1]) / 2,
+                                (envUpdate.skyColorTop[2] + envUpdate.skyColorBot[2]) / 2,
+                            ] as [number, number, number];
+                        }
+                        setEnvState(envUpdate);
                         if (preset.lights) {
                             transitionLighting(preset.lights, 2000);
                         }

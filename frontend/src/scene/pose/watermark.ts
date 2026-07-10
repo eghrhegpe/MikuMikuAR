@@ -42,11 +42,7 @@ export function setWatermarkConfig(partial: Partial<WatermarkConfig>): void {
  * @param quality 图片质量 0-1
  * @returns 带水印的 base64 数据（不含 data:URI 前缀）
  */
-export function applyWatermark(
-    base64: string,
-    format: string,
-    quality: number
-): Promise<string> {
+export function applyWatermark(base64: string, format: string, quality: number): Promise<string> {
     return new Promise((resolve, reject) => {
         if (!_config.enabled) {
             resolve(base64);
@@ -113,7 +109,9 @@ export function applyWatermark(
             ctx.fillText(_config.text, x, y);
             ctx.restore();
 
-            const result = canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '');
+            const result = canvas
+                .toDataURL(format, quality)
+                .replace(/^data:image\/\w+;base64,/, '');
             resolve(result);
         };
         img.onerror = () => reject(new Error('Failed to load image for watermark'));

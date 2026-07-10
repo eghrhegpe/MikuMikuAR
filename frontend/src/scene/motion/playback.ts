@@ -166,7 +166,7 @@ export function updatePlaybackUI(): void {
     // [doc:e2e] 纯 Vite 模式下 playbackBar 保持可见，E2E 测试可定位按钮
     if (!mmdRuntime || !dom.seekBar) {
         dom.playbackBar.style.display = 'flex';
-        dom.btnPlayPause.textContent = '▶';      // 默认暂停状态
+        dom.btnPlayPause.textContent = '▶'; // 默认暂停状态
         dom.btnLoopToggle.style.opacity = '0.35'; // 默认不循环
         dom.timeDisplay.textContent = '--:-- / --:--'; // 占位时间
         dom.seekProgress.style.width = '0%';

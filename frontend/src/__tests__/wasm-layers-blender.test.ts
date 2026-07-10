@@ -22,7 +22,9 @@ describe('wasm-layers-blender: DEFAULT_LAYER_BONE_FILTER', () => {
 describe('wasm-layers-blender: 权重归一化', () => {
     function normalizeWeights(weights: number[]): number[] {
         const total = weights.reduce((a, b) => a + b, 0);
-        if (total <= 0) return weights.map(() => 1 / weights.length);
+        if (total <= 0) {
+            return weights.map(() => 1 / weights.length);
+        }
         return weights.map((w) => w / total);
     }
 
@@ -55,7 +57,9 @@ describe('wasm-layers-blender: 权重归一化', () => {
 
 describe('wasm-layers-blender: boneFilter 匹配', () => {
     function matchBoneFilter(boneName: string, filter: string[]): boolean {
-        if (filter.includes('*')) return true;
+        if (filter.includes('*')) {
+            return true;
+        }
         return filter.includes(boneName);
     }
 

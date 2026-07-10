@@ -81,7 +81,9 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
                     'lucide:eye',
                     (v) => {
                         setModelOpacity(id, v / 100);
-                        if (v > 0) setModelVisibility(id, true);
+                        if (v > 0) {
+                            setModelVisibility(id, true);
+                        }
                     }
                 );
                 addModeRow(c, '坐标模式', POSITION_MODE_OPTS, mode, (v) => {
@@ -327,13 +329,18 @@ export function buildDangerCard(
     const { id, kind, name } = handle;
     cardContainer(container, (c) => {
         // stage/actor 提供"重置变换"
-      if (kind === 'actor' || kind === 'stage') {
-        slideRow(c, 'lucide:rotate-ccw', t('settings.transformReset'), false, () => {
-          resetModelTransform(id);
-          setStatus(t('settings.transformReset', {kind: kind==='stage'?t('common.stage'):t('common.model')}), true);
-          onRemoved?.();
-        });
-      }
+        if (kind === 'actor' || kind === 'stage') {
+            slideRow(c, 'lucide:rotate-ccw', t('settings.transformReset'), false, () => {
+                resetModelTransform(id);
+                setStatus(
+                    t('settings.transformReset', {
+                        kind: kind === 'stage' ? t('common.stage') : t('common.model'),
+                    }),
+                    true
+                );
+                onRemoved?.();
+            });
+        }
         addDangerRow(
             c,
             'lucide:trash-2',
@@ -344,8 +351,8 @@ export function buildDangerCard(
                 } else {
                     removeModel(id);
                 }
-      onRemoved?.();
-      setStatus(t('settings.unloaded', {name}), true);
+                onRemoved?.();
+                setStatus(t('settings.unloaded', { name }), true);
             }
         );
     });

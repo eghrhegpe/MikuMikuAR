@@ -23,7 +23,10 @@ import {
  * This matches the actual evaluator output; test expectations are computed
  * with this same convention.
  */
-function evalBezierWeight(interp: { x1: number; y1: number; x2: number; y2: number }, g: number): number {
+function evalBezierWeight(
+    interp: { x1: number; y1: number; x2: number; y2: number },
+    g: number
+): number {
     const x1 = interp.x1 / 127;
     // Evaluator reads all four rotation-interpolation bytes from the first
     // byte of groups 12-15, which the writer always fills with `x1`.
@@ -33,7 +36,9 @@ function evalBezierWeight(interp: { x1: number; y1: number; x2: number; y2: numb
 /** Blend N rotations using babylon-mmd's sequential-Slerp algorithm. */
 function blendRotations(rots: Quaternion[], rawWeights: number[]): Quaternion {
     const total = rawWeights.reduce((s, w) => s + w, 0);
-    if (total === 0) return Quaternion.Identity();
+    if (total === 0) {
+        return Quaternion.Identity();
+    }
     const norm = total < 1 ? 1 : 1 / total;
     let acc = rots[0].clone();
     let accW = rawWeights[0] * norm;
@@ -48,7 +53,9 @@ function blendRotations(rots: Quaternion[], rawWeights: number[]): Quaternion {
 /** Blend N positions using weighted sum (rest-position = zero). */
 function blendPositions(poses: Vector3[], rawWeights: number[]): Vector3 {
     const total = rawWeights.reduce((s, w) => s + w, 0);
-    if (total === 0) return Vector3.Zero();
+    if (total === 0) {
+        return Vector3.Zero();
+    }
     const norm = total < 1 ? 1 : 1 / total;
     const r = Vector3.Zero();
     for (let i = 0; i < poses.length; i++) {
@@ -84,8 +91,20 @@ describe('vmd-evaluator.regression', () => {
             const rot0 = Quaternion.Identity();
             const rot1 = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
             const frames: BoneKeyFrame[] = [
-                { name: '腰', frame: 0, position: [0, 0, 0], rotation: [rot0.x, rot0.y, rot0.z, rot0.w], interp: INTERP_LINEAR },
-                { name: '腰', frame: 10, position: [10, 20, 30], rotation: [rot1.x, rot1.y, rot1.z, rot1.w], interp: INTERP_LINEAR },
+                {
+                    name: '腰',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [rot0.x, rot0.y, rot0.z, rot0.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '腰',
+                    frame: 10,
+                    position: [10, 20, 30],
+                    rotation: [rot1.x, rot1.y, rot1.z, rot1.w],
+                    interp: INTERP_LINEAR,
+                },
             ];
             const buf = buildVmd(frames);
             const ev = await createVmdEvaluator(buf);
@@ -116,12 +135,36 @@ describe('vmd-evaluator.regression', () => {
             const rb = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
 
             const framesA: BoneKeyFrame[] = [
-                { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [ra.x, ra.y, ra.z, ra.w], interp: INTERP_LINEAR },
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 10,
+                    position: [0, 0, 0],
+                    rotation: [ra.x, ra.y, ra.z, ra.w],
+                    interp: INTERP_LINEAR,
+                },
             ];
             const framesB: BoneKeyFrame[] = [
-                { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rb.x, rb.y, rb.z, rb.w], interp: INTERP_LINEAR },
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 10,
+                    position: [0, 0, 0],
+                    rotation: [rb.x, rb.y, rb.z, rb.w],
+                    interp: INTERP_LINEAR,
+                },
             ];
             const bufA = buildVmd(framesA);
             const bufB = buildVmd(framesB);
@@ -148,8 +191,20 @@ describe('vmd-evaluator.regression', () => {
             const rot0 = Quaternion.Identity();
             const rot1 = Quaternion.FromEulerAngles(0, 0.7, 0);
             const frames: BoneKeyFrame[] = [
-                { name: '腰', frame: 0, position: [0, 0, 0], rotation: [rot0.x, rot0.y, rot0.z, rot0.w], interp: INTERP_LINEAR },
-                { name: '腰', frame: 10, position: [5, 5, 5], rotation: [rot1.x, rot1.y, rot1.z, rot1.w], interp: INTERP_LINEAR },
+                {
+                    name: '腰',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [rot0.x, rot0.y, rot0.z, rot0.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '腰',
+                    frame: 10,
+                    position: [5, 5, 5],
+                    rotation: [rot1.x, rot1.y, rot1.z, rot1.w],
+                    interp: INTERP_LINEAR,
+                },
             ];
             const buf1 = buildVmd(frames);
             const buf2 = buildVmd(frames);
@@ -181,9 +236,26 @@ describe('vmd-evaluator.regression', () => {
             const r3 = Quaternion.FromEulerAngles(0, 0, 0.3);
 
             // Use positional frames to validate position blend as well
-            const mkPos = (n: string, px: number, rot: Quaternion, ip: typeof INTERP_LINEAR): BoneKeyFrame[] => [
-                { name: n, frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: ip },
-                { name: n, frame: 10, position: [px, 0, 0], rotation: [rot.x, rot.y, rot.z, rot.w], interp: ip },
+            const mkPos = (
+                n: string,
+                px: number,
+                rot: Quaternion,
+                ip: typeof INTERP_LINEAR
+            ): BoneKeyFrame[] => [
+                {
+                    name: n,
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: ip,
+                },
+                {
+                    name: n,
+                    frame: 10,
+                    position: [px, 0, 0],
+                    rotation: [rot.x, rot.y, rot.z, rot.w],
+                    interp: ip,
+                },
             ];
             const buf1 = buildVmd(mkPos('腰', 10, r1, INTERP_LINEAR));
             const buf2 = buildVmd(mkPos('腰', 20, r2, INTERP_EASE_IN_OUT));
@@ -239,12 +311,36 @@ describe('vmd-evaluator.regression', () => {
             const rShort = Quaternion.FromEulerAngles(0, 0.5, 0);
 
             const longFrames: BoneKeyFrame[] = [
-                { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 30, position: [0, 0, 0], rotation: [rLong.x, rLong.y, rLong.z, rLong.w], interp: INTERP_LINEAR },
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 30,
+                    position: [0, 0, 0],
+                    rotation: [rLong.x, rLong.y, rLong.z, rLong.w],
+                    interp: INTERP_LINEAR,
+                },
             ];
             const shortFrames: BoneKeyFrame[] = [
-                { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rShort.x, rShort.y, rShort.z, rShort.w], interp: INTERP_LINEAR },
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 10,
+                    position: [0, 0, 0],
+                    rotation: [rShort.x, rShort.y, rShort.z, rShort.w],
+                    interp: INTERP_LINEAR,
+                },
             ];
             const bLong = buildVmd(longFrames);
             const bShort = buildVmd(shortFrames);
@@ -280,12 +376,36 @@ describe('vmd-evaluator.regression', () => {
             const rLate = Quaternion.FromEulerAngles(0, 0.6, 0);
 
             const earlyFrames: BoneKeyFrame[] = [
-                { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rEarly.x, rEarly.y, rEarly.z, rEarly.w], interp: INTERP_LINEAR },
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 10,
+                    position: [0, 0, 0],
+                    rotation: [rEarly.x, rEarly.y, rEarly.z, rEarly.w],
+                    interp: INTERP_LINEAR,
+                },
             ];
             const lateFrames: BoneKeyFrame[] = [
-                { name: '上半身', frame: 20, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 30, position: [0, 0, 0], rotation: [rLate.x, rLate.y, rLate.z, rLate.w], interp: INTERP_LINEAR },
+                {
+                    name: '上半身',
+                    frame: 20,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 30,
+                    position: [0, 0, 0],
+                    rotation: [rLate.x, rLate.y, rLate.z, rLate.w],
+                    interp: INTERP_LINEAR,
+                },
             ];
             const bEarly = buildVmd(earlyFrames);
             const bLate = buildVmd(lateFrames);
@@ -319,8 +439,20 @@ describe('vmd-evaluator.regression', () => {
             const id = Quaternion.Identity();
             const ra = Quaternion.FromEulerAngles(0.5, 0, 0);
             const frames: BoneKeyFrame[] = [
-                { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [ra.x, ra.y, ra.z, ra.w], interp: INTERP_LINEAR },
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 10,
+                    position: [0, 0, 0],
+                    rotation: [ra.x, ra.y, ra.z, ra.w],
+                    interp: INTERP_LINEAR,
+                },
             ];
             const buf1 = buildVmd(frames);
             const buf2 = buildVmd(frames);
@@ -343,10 +475,38 @@ describe('vmd-evaluator.regression', () => {
             const id = Quaternion.Identity();
             const rA = Quaternion.FromEulerAngles(0, 1, 0);
             const rB = Quaternion.FromEulerAngles(0.5, 0, 0);
-            const framesA: BoneKeyFrame[] = [{ name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rA.x, rA.y, rA.z, rA.w], interp: INTERP_LINEAR }];
-            const framesB: BoneKeyFrame[] = [{ name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rB.x, rB.y, rB.z, rB.w], interp: INTERP_LINEAR }];
+            const framesA: BoneKeyFrame[] = [
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 10,
+                    position: [0, 0, 0],
+                    rotation: [rA.x, rA.y, rA.z, rA.w],
+                    interp: INTERP_LINEAR,
+                },
+            ];
+            const framesB: BoneKeyFrame[] = [
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 10,
+                    position: [0, 0, 0],
+                    rotation: [rB.x, rB.y, rB.z, rB.w],
+                    interp: INTERP_LINEAR,
+                },
+            ];
             const eA = await createVmdEvaluator(buildVmd(framesA));
             const eB = await createVmdEvaluator(buildVmd(framesB));
 
@@ -368,8 +528,20 @@ describe('vmd-evaluator.regression', () => {
             const id = Quaternion.Identity();
             const r1 = Quaternion.FromEulerAngles(0.2, 0.3, 0);
             const frames: BoneKeyFrame[] = [
-                { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [r1.x, r1.y, r1.z, r1.w], interp: INTERP_LINEAR },
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 10,
+                    position: [0, 0, 0],
+                    rotation: [r1.x, r1.y, r1.z, r1.w],
+                    interp: INTERP_LINEAR,
+                },
             ];
             const e = await createVmdEvaluator(buildVmd(frames));
             const blended = blendRotations([e.evalBoneFrame('上半身', 5)!.rotation], [1]);
@@ -383,10 +555,38 @@ describe('vmd-evaluator.regression', () => {
             const id = Quaternion.Identity();
             const rA = Quaternion.FromEulerAngles(0, 1, 0);
             const rB = Quaternion.FromEulerAngles(0, 0, 1);
-            const fA: BoneKeyFrame[] = [{ name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rA.x, rA.y, rA.z, rA.w], interp: INTERP_LINEAR }];
-            const fB: BoneKeyFrame[] = [{ name: '上半身', frame: 0, position: [0, 0, 0], rotation: [id.x, id.y, id.z, id.w], interp: INTERP_LINEAR },
-                { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rB.x, rB.y, rB.z, rB.w], interp: INTERP_LINEAR }];
+            const fA: BoneKeyFrame[] = [
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 10,
+                    position: [0, 0, 0],
+                    rotation: [rA.x, rA.y, rA.z, rA.w],
+                    interp: INTERP_LINEAR,
+                },
+            ];
+            const fB: BoneKeyFrame[] = [
+                {
+                    name: '上半身',
+                    frame: 0,
+                    position: [0, 0, 0],
+                    rotation: [id.x, id.y, id.z, id.w],
+                    interp: INTERP_LINEAR,
+                },
+                {
+                    name: '上半身',
+                    frame: 10,
+                    position: [0, 0, 0],
+                    rotation: [rB.x, rB.y, rB.z, rB.w],
+                    interp: INTERP_LINEAR,
+                },
+            ];
             const eA = await createVmdEvaluator(buildVmd(fA));
             const eB = await createVmdEvaluator(buildVmd(fB));
 

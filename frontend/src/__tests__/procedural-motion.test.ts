@@ -102,7 +102,6 @@ describe('generateIdleVmd', () => {
         const boneCount = view.getUint32(50, true);
         expect(boneCount).toBeGreaterThanOrEqual(2);
     });
-
 });
 
 describe('generateAutoDanceVmd', () => {
@@ -294,7 +293,9 @@ function _parseVmdBones(buf: ArrayBuffer): Record<string, number> {
         const off = 54 + i * 111;
         const raw = new Uint8Array(buf, off, 15);
         // 与生产路径一致：用 encoding-japanese（CP932）读回骨骼名
-        const name = (Encoding.convert(raw, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string)
+        const name = (
+            Encoding.convert(raw, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string
+        )
             .replace(/\0/g, '')
             .trim();
         if (!name) {

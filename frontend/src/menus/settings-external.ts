@@ -1,6 +1,11 @@
 // settings-external.ts — 外部库管理子菜单
 
-import { SelectDir, AddExternalPath, RemoveExternalPath, RenameExternalPath } from '../core/wails-bindings';
+import {
+    SelectDir,
+    AddExternalPath,
+    RemoveExternalPath,
+    RenameExternalPath,
+} from '../core/wails-bindings';
 import { setStatus, libraryRoot, externalPaths, cardContainer, escapeHtml } from '../core/config';
 import { slideRow, addEmptyRow } from '../core/ui-helpers';
 import { showPrompt } from '../core/dialog';

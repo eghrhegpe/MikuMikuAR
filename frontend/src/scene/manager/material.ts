@@ -104,12 +104,19 @@ const CLAMP_RULES: Record<keyof MaterialCategoryParams, [number, number, boolean
 };
 
 /** 将 Partial 参数 clamp 后写入 target — 消除 setMatCatParams / setMatParams 的重复 clamp 逻辑。 */
-function _clampAndAssign(target: MaterialCategoryParams, params: Partial<MaterialCategoryParams>): void {
+function _clampAndAssign(
+    target: MaterialCategoryParams,
+    params: Partial<MaterialCategoryParams>
+): void {
     for (const key of Object.keys(params) as (keyof MaterialCategoryParams)[]) {
         const val = params[key];
-        if (val === undefined) continue;
+        if (val === undefined) {
+            continue;
+        }
         const [min, max, round] = CLAMP_RULES[key];
-        target[key] = round ? Math.max(min, Math.min(max, Math.round(val))) : Math.max(min, Math.min(max, val));
+        target[key] = round
+            ? Math.max(min, Math.min(max, Math.round(val)))
+            : Math.max(min, Math.min(max, val));
     }
 }
 
@@ -120,16 +127,42 @@ function _applyParamsToMaterial(
     o: _OrigMat,
     p: MaterialCategoryParams
 ): void {
-    m.diffuseColor.set(o.diffuse.r * p.diffuseMul, o.diffuse.g * p.diffuseMul, o.diffuse.b * p.diffuseMul);
-    m.specularColor.set(o.specular.r * p.specularMul, o.specular.g * p.specularMul, o.specular.b * p.specularMul);
+    m.diffuseColor.set(
+        o.diffuse.r * p.diffuseMul,
+        o.diffuse.g * p.diffuseMul,
+        o.diffuse.b * p.diffuseMul
+    );
+    m.specularColor.set(
+        o.specular.r * p.specularMul,
+        o.specular.g * p.specularMul,
+        o.specular.b * p.specularMul
+    );
     m.specularPower = p.shininess;
-    m.ambientColor.set(o.ambient.r * p.ambientMul, o.ambient.g * p.ambientMul, o.ambient.b * p.ambientMul);
-    m.emissiveColor.set(o.emissive.r * p.emissiveMul, o.emissive.g * p.emissiveMul, o.emissive.b * p.emissiveMul);
-    if (m.diffuseTexture) m.diffuseTexture.level = o.diffuseTexLevel * p.diffuseTexLevel;
-    if (m.bumpTexture) m.bumpTexture.level = o.bumpTexLevel * p.bumpTexLevel;
-    if (mmdMat.toonTexture) mmdMat.toonTexture.level = o.toonTexLevel * p.toonTexLevel;
-    if (mmdMat.sphereTexture) mmdMat.sphereTexture.level = o.sphereTexLevel * p.sphereTexLevel;
-    if (m.emissiveTexture) m.emissiveTexture.level = o.emissiveTexLevel * p.emissiveTexLevel;
+    m.ambientColor.set(
+        o.ambient.r * p.ambientMul,
+        o.ambient.g * p.ambientMul,
+        o.ambient.b * p.ambientMul
+    );
+    m.emissiveColor.set(
+        o.emissive.r * p.emissiveMul,
+        o.emissive.g * p.emissiveMul,
+        o.emissive.b * p.emissiveMul
+    );
+    if (m.diffuseTexture) {
+        m.diffuseTexture.level = o.diffuseTexLevel * p.diffuseTexLevel;
+    }
+    if (m.bumpTexture) {
+        m.bumpTexture.level = o.bumpTexLevel * p.bumpTexLevel;
+    }
+    if (mmdMat.toonTexture) {
+        mmdMat.toonTexture.level = o.toonTexLevel * p.toonTexLevel;
+    }
+    if (mmdMat.sphereTexture) {
+        mmdMat.sphereTexture.level = o.sphereTexLevel * p.sphereTexLevel;
+    }
+    if (m.emissiveTexture) {
+        m.emissiveTexture.level = o.emissiveTexLevel * p.emissiveTexLevel;
+    }
 }
 
 const _origValues = new WeakMap<Material, _OrigMat>();
@@ -344,21 +377,31 @@ export function _capture(mat: Material): void {
 /** @internal exported for testing */
 export function _applyAll(id: string): void {
     const meshes = _getMeshesById(id);
-    if (!meshes) return;
+    if (!meshes) {
+        return;
+    }
     const state = _catState.get(id);
-    if (!state) return;
+    if (!state) {
+        return;
+    }
     const perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < meshes.length; mi++) {
         const m = meshes[mi].material;
-        if (!m || !(m instanceof StandardMaterial)) continue;
+        if (!m || !(m instanceof StandardMaterial)) {
+            continue;
+        }
         const mmdMat = m as MmdStandardMaterial;
         _capture(m);
         const o = _origValues.get(m)!;
         const p = state.get(_catOf(m.name));
-        if (!p) continue;
+        if (!p) {
+            continue;
+        }
         _applyParamsToMaterial(m, mmdMat, o, p);
         const mp = perMat.get(mi);
-        if (mp) _applyParamsToMaterial(m, mmdMat, o, mp);
+        if (mp) {
+            _applyParamsToMaterial(m, mmdMat, o, mp);
+        }
     }
 }
 
@@ -465,11 +508,21 @@ export function resetMatCatParams(id: string): void {
             m.specularPower = o.specularPower;
             m.ambientColor.copyFrom(o.ambient);
             m.emissiveColor.copyFrom(o.emissive);
-            if (m.diffuseTexture) m.diffuseTexture.level = o.diffuseTexLevel;
-            if (m.bumpTexture) m.bumpTexture.level = o.bumpTexLevel;
-            if (mmdMat.toonTexture) mmdMat.toonTexture.level = o.toonTexLevel;
-            if (mmdMat.sphereTexture) mmdMat.sphereTexture.level = o.sphereTexLevel;
-            if (m.emissiveTexture) m.emissiveTexture.level = o.emissiveTexLevel;
+            if (m.diffuseTexture) {
+                m.diffuseTexture.level = o.diffuseTexLevel;
+            }
+            if (m.bumpTexture) {
+                m.bumpTexture.level = o.bumpTexLevel;
+            }
+            if (mmdMat.toonTexture) {
+                mmdMat.toonTexture.level = o.toonTexLevel;
+            }
+            if (mmdMat.sphereTexture) {
+                mmdMat.sphereTexture.level = o.sphereTexLevel;
+            }
+            if (m.emissiveTexture) {
+                m.emissiveTexture.level = o.emissiveTexLevel;
+            }
         }
     }
     triggerAutoSave();
