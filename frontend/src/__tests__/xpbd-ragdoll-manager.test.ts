@@ -267,12 +267,33 @@ describe('ragdoll-manager', () => {
       'initRagdoll',
       'setRagdollJointParams',
       'applyRagdollJointPreset',
+      'setRagdollBlendWeight',
+      'getRagdollBlendWeight',
     ];
 
     requiredExports.forEach((exportName) => {
       it(`should export ${exportName}`, () => {
         expect(ragdollManager[exportName as keyof typeof ragdollManager]).toBeDefined();
       });
+    });
+  });
+
+  describe('blend weight API', () => {
+    it('should export setRagdollBlendWeight and getRagdollBlendWeight', () => {
+      expect(ragdollManager.setRagdollBlendWeight).toBeDefined();
+      expect(ragdollManager.getRagdollBlendWeight).toBeDefined();
+    });
+
+    it('getRagdollBlendWeight should return 0 initially', () => {
+      expect(ragdollManager.getRagdollBlendWeight()).toBe(0);
+    });
+
+    it('setRagdollBlendWeight should clamp to [0,1]', () => {
+      // getter 返回 clamp 后的设定值（target），类似 CSS opacity 立即反映设定
+      ragdollManager.setRagdollBlendWeight(1.5);
+      expect(ragdollManager.getRagdollBlendWeight()).toBe(1);
+      ragdollManager.setRagdollBlendWeight(-0.5);
+      expect(ragdollManager.getRagdollBlendWeight()).toBe(0);
     });
   });
 });
