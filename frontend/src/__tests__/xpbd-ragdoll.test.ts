@@ -187,6 +187,45 @@ describe('xpbd-ragdoll', () => {
       expect(sc.restQuaternion![2]).toBeCloseTo(0, 5);
       expect(sc.restQuaternion![3]).toBeCloseTo(1, 5);
     });
+
+    it('should apply joint params overrides for specific bones', () => {
+      const bones: any[] = [
+        { name: '全ての親', parentBone: null, childBones: [], worldMatrix: new Float32Array(16) },
+        { name: '左腕', parentBone: null, childBones: [], worldMatrix: new Float32Array(16) },
+      ];
+      const rootMat = bones[0].worldMatrix; rootMat[0]=1;rootMat[5]=1;rootMat[10]=1;rootMat[15]=1;
+      const armMat = bones[1].worldMatrix; armMat[0]=1;armMat[5]=1;armMat[10]=1;armMat[15]=1;armMat[12]=1;
+      bones[1].parentBone = bones[0];
+
+      const customCone = Math.PI / 6;
+      const inst = buildRagdoll('m1', bones, {
+        jointParamsOverrides: {
+          '左腕': { compliance: 0.5, stiffness: 0.8, damping: 0.2, coneHalfAngle: customCone, twistRange: [-0.1, 0.1] },
+        },
+      });
+      const armSphere = inst.constraints.find(c => c.type === 'sphere');
+      expect(armSphere).toBeDefined();
+      expect(armSphere!.coneHalfAngle).toBe(customCone);
+      expect(armSphere!.twistRange).toEqual([-0.1, 0.1]);
+      expect(armSphere!.compliance).toBe(0.5);
+      expect(armSphere!.stiffness).toBe(0.8);
+      expect(armSphere!.damping).toBe(0.2);
+    });
+
+    it('should apply joint group preset when no override', () => {
+      const bones: any[] = [
+        { name: '全ての親', parentBone: null, childBones: [], worldMatrix: new Float32Array(16) },
+        { name: '左腕', parentBone: null, childBones: [], worldMatrix: new Float32Array(16) },
+      ];
+      const rootMat = bones[0].worldMatrix; rootMat[0]=1;rootMat[5]=1;rootMat[10]=1;rootMat[15]=1;
+      const armMat = bones[1].worldMatrix; armMat[0]=1;armMat[5]=1;armMat[10]=1;armMat[15]=1;armMat[12]=1;
+      bones[1].parentBone = bones[0];
+
+      const inst = buildRagdoll('m1', bones);
+      const armSphere = inst.constraints.find(c => c.type === 'sphere');
+      // 左腕 应命中 shoulder 组预设
+      expect(armSphere!.coneHalfAngle).toBe(Math.PI / 2); // shoulder coneHalfAngle
+    });
   });
 
   describe('writeBack rotation', () => {
