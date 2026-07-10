@@ -28,6 +28,16 @@ function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]
     obj[key] = value;
 }
 
+/** 时间戳 helper：HH:mm:ss.SSS */
+function _ts(): string {
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    const ms = String(d.getMilliseconds()).padStart(3, '0');
+    return `${h}:${m}:${s}.${ms}`;
+}
+
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): void {
     const changed = partial ? Object.keys(partial) : null;
@@ -49,7 +59,12 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     ];
     if (!changed || changed.some((k) => skyKeys.includes(k))) {
         try {
+            const _skyStart = performance.now();
             impl.applySky(state);
+            const _skyElapsed = performance.now() - _skyStart;
+            if (_skyElapsed > 2) {
+                console.warn(`[${_ts()}][perf:env] applySky took ${_skyElapsed.toFixed(1)}ms`);
+            }
         } catch (e) {
             console.warn('[env] sky fail:', e);
         }
@@ -255,7 +270,12 @@ function _timeOfDayTick(): void {
         _lastAutoLinkSunAngle = envSunAngle;
         _lastSkySunAngle = envSunAngle; // sync so 0.4 check won't double-fire (Fix C)
         envState.sunAngle = envSunAngle;
-        _applyEnvStateFacade(envState);
+        // 传 partial 避免全量重建：sunAngle 变化只影响天空与灯光，不触发 ground/fog/water 分支
+        const _tickStart = performance.now();
+        _applyEnvStateFacade(envState, { sunAngle: envSunAngle });
+        if (performance.now() - _tickStart > 2) {
+            console.warn(`[${_ts()}][perf:tick] _applyEnvStateFacade(sunAngle) took ${performance.now() - _tickStart}ms (angle=${envSunAngle.toFixed(1)})`);
+        }
     } else if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
         _lastSkySunAngle = envSunAngle;
         if (envState.skyMode === 'procedural') {
@@ -400,6 +420,8 @@ export function applyEnvPresetObject(preset: {
         const t = Math.min(elapsed / duration, 1.0);
         const lerp = (a: number, b: number) => a + (b - a) * t;
 
+        const _obsStart = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+
         // 天空纹理重建开销大（dispose + 重新生成），50ms 间隔节流（~20fps），
         // 显示器刷新率无关，texture rebuild 从 ~120 次降到 ~40 次。
         if (elapsed - lastSkyUpdate >= SKY_UPDATE_INTERVAL || t >= 0.999) {
@@ -419,6 +441,7 @@ export function applyEnvPresetObject(preset: {
                 lerp(startSkyMid[2], mid[2]),
             ];
 
+            const _skyStart = performance.now();
             setEnvState(
                 {
                     skyMode: 'procedural',
@@ -432,6 +455,9 @@ export function applyEnvPresetObject(preset: {
                 },
                 true
             );
+            console.warn(`[${_ts()}][perf:sky] setEnvState took ${performance.now() - _skyStart}ms (t=${t.toFixed(2)})`);
+            const _obsNow = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+            console.warn(`[${_ts()}][perf:obs] observers=${_obsNow} (t=${t.toFixed(2)})`);
             lastSkyUpdate = elapsed;
         }
 
@@ -446,7 +472,16 @@ export function applyEnvPresetObject(preset: {
                 setKey(interpLight, key, a.map((v, i) => lerp(v, b[i])) as LightState[typeof key]);
             }
         }
+        const _lightStart = performance.now();
         setLightState(interpLight);
+        if (performance.now() - _lightStart > 2) {
+            console.warn(`[${_ts()}][perf:light] setLightState took ${performance.now() - _lightStart}ms (t=${t.toFixed(2)})`);
+        }
+
+        const _obsAfterLight = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+        if (_obsAfterLight > 100) {
+            console.warn(`[${_ts()}][perf:obs] animLoop Δ=${_obsAfterLight - _obsStart} (start=${_obsStart} afterLight=${_obsAfterLight} t=${t.toFixed(2)})`);
+        }
 
         if (t >= 1) {
             setSkipLightAutoSave(false);
@@ -457,10 +492,17 @@ export function applyEnvPresetObject(preset: {
                 _lastAutoLinkSunAngle = envSunAngle;
             }
             _timeOfDayBeforePreset = null;
+            const _obsBeforeEnd = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+            const _endStart = performance.now();
             SetEnvState(envState).catch(
                 () => {}
             );
+            const _endElapsed = performance.now() - _endStart;
+            const _obsAfterSetEnv = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+            console.warn(`[${_ts()}][perf:sky] animLoop ended: SetEnvState=${_endElapsed.toFixed(1)}ms, observers=${_obsBeforeEnd}→${_obsAfterSetEnv}, triggerAutoSave next`);
             triggerAutoSave();
+            const _obsAfterAutoSave = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+            console.warn(`[${_ts()}][perf:sky] after triggerAutoSave: observers=${_obsAfterAutoSave}`);
             return;
         }
         scene.onBeforeRenderObservable?.addOnce(animLoop);

@@ -8,6 +8,7 @@ import {
     Color4,
     Texture,
     BaseTexture,
+    DynamicTexture,
     StandardMaterial,
     GPUParticleSystem,
     Observer,
@@ -74,6 +75,7 @@ export function getPipeline(): DefaultRenderingPipeline {
 interface EnvSkyResources {
     skyMesh: Mesh | null;
     skyCubeTexture: BaseTexture | null;
+    skyDynamicTex: DynamicTexture | null;
 }
 
 export {
@@ -125,7 +127,7 @@ export const _envSys: {
     water: { mesh: Mesh | null; material: ShaderMaterial | null };
     shadow: { generator: ShadowGenerator | null };
 } = {
-    sky: { skyMesh: null, skyCubeTexture: null },
+    sky: { skyMesh: null, skyCubeTexture: null, skyDynamicTex: null },
     ground: { mesh: null },
     particles: { system: null, followObserver: null },
     splash: { observer: null },
@@ -149,6 +151,10 @@ export function disposeSky(): void {
         _envSys.sky.skyCubeTexture.dispose();
         _envSys.sky.skyCubeTexture = null;
     }
+    if (_envSys.sky.skyDynamicTex) {
+        _envSys.sky.skyDynamicTex.dispose();
+        _envSys.sky.skyDynamicTex = null;
+    }
     _lastProceduralSkyKey = '';
     disposeSunDisc();
 }
@@ -157,21 +163,22 @@ function disposeSunDisc(): void {
     _disposeSunDisc();
 }
 
-function buildGradientTexture(
+/** 天空渐变 canvas 尺寸 */
+const SKY_TEX_SIZE = 256;
+
+/** 绘制天空渐变到已有 canvas 上下文（不创建 Texture，供 DynamicTexture 复用） */
+function drawSkyGradient(
+    ctx: CanvasRenderingContext2D,
     top: Color3,
     mid: Color3,
     bot: Color3,
     brightness: number,
     sunAngle: number,
     starsEnabled: boolean
-): Texture {
-    const scene = getScene();
-    const W = 256,
-        H = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext('2d')!;
+): void {
+    const W = SKY_TEX_SIZE,
+        H = SKY_TEX_SIZE;
+    ctx.clearRect(0, 0, W, H);
 
     const grad = ctx.createLinearGradient(0, 0, 0, H);
     const scale = (c: Color3) =>
@@ -210,11 +217,30 @@ function buildGradientTexture(
             }
         }
     }
+}
 
-    const tex = new Texture('data:' + canvas.toDataURL('image/png'), scene, false);
-    tex.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
-    tex.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
-    tex.hasAlpha = false;
+/** 创建或复用 DynamicTexture 并重绘天空渐变 */
+function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
+    const scene = getScene();
+    let tex = _envSys.sky.skyDynamicTex;
+    if (!tex) {
+        tex = new DynamicTexture('skyGradient', { width: SKY_TEX_SIZE, height: SKY_TEX_SIZE }, scene, false);
+        tex.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        tex.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        tex.hasAlpha = false;
+        _envSys.sky.skyDynamicTex = tex;
+    }
+    const ctx = tex.getContext() as CanvasRenderingContext2D;
+    drawSkyGradient(
+        ctx,
+        new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
+        new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
+        new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
+        state.skyBrightness,
+        state.sunAngle,
+        state.starsEnabled
+    );
+    tex.update();
     return tex;
 }
 
@@ -232,21 +258,14 @@ function createProceduralSky(state: EnvState): void {
     sphere.isPickable = false;
 
     const mat = new StandardMaterial('envSkyMat', scene);
-    mat.emissiveTexture = buildGradientTexture(
-        new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
-        new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
-        new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
-        state.skyBrightness,
-        state.sunAngle,
-        state.starsEnabled
-    );
+    mat.emissiveTexture = updateSkyDynamicTexture(state);
     mat.disableLighting = true;
     mat.backFaceCulling = false;
 
     sphere.material = mat;
     _envSys.sky.skyMesh = sphere;
     scene.clearColor = new Color4(0, 0, 0, 1);
-    _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.sunAngle}|${state.starsEnabled}`;
+    _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.starsEnabled}`;
 }
 
 function loadSkyCube(path: string, rotationY: number, intensity: number): void {
@@ -326,8 +345,10 @@ export function applySky(state: EnvState): void {
             const mat = mesh.material as StandardMaterial;
 
             // Early-out: skip rebuild when gradient inputs haven't changed (Fix J)
-            const skyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.sunAngle}|${state.starsEnabled}`;
-            if (skyKey === _lastProceduralSkyKey && mat.emissiveTexture) {
+            // sunAngle 不参与 key：它只影响星星 alpha，time-of-day 流转时 sunAngle 每 0.4° 变化
+            // 若纳入 key 会导致纹理缓存持续失效 → 每帧 dispose+重建。星星 alpha 退化由下次颜色变化时重建补偿。
+            const skyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.starsEnabled}`;
+            if (skyKey === _lastProceduralSkyKey && _envSys.sky.skyDynamicTex) {
                 return;
             }
             _lastProceduralSkyKey = skyKey;
@@ -343,17 +364,9 @@ export function applySky(state: EnvState): void {
                 mat.reflectionTexture = null;
             }
 
-            if (mat.emissiveTexture) {
-                mat.emissiveTexture.dispose();
-            }
-            mat.emissiveTexture = buildGradientTexture(
-                new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
-                new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
-                new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
-                state.skyBrightness,
-                state.sunAngle,
-                state.starsEnabled
-            );
+            // 复用 DynamicTexture：重绘 canvas + update()，不 dispose/新建
+            // 消除 toDataURL PNG 编码瓶颈（预设动画 40 次重建从 ~4s 阻塞 → ~280ms）
+            mat.emissiveTexture = updateSkyDynamicTexture(state);
             return;
         }
         disposeSky();

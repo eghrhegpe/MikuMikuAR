@@ -6,6 +6,16 @@ import { engine } from '../scene';
 import { setLightState, setRenderState, getLightState, getRenderState } from '../scene';
 import type { LightState, RenderState } from '../scene';
 
+/** Format current wall-clock time as HH:mm:ss.SSS for log timestamps. */
+function logTime(): string {
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    const ms = String(d.getMilliseconds()).padStart(3, '0');
+    return `${hh}:${mm}:${ss}.${ms}`;
+}
+
 // ======== Types ========
 
 export type PerformanceMode = 'auto' | 'quality' | 'balanced' | 'performance' | 'custom';
@@ -30,6 +40,16 @@ let _fpsReady = false; // 累积足够样本后设为 true
 
 // Snapshot of settings before degradation (to restore to user's original state)
 let _snapshot: { light: Partial<LightState>; render: Partial<RenderState> } | null = null;
+
+// 抑制标志：applyDegrade 调 setLightState/setRenderState 时置 true，防止
+// setLightState/setRenderState 内部的 resetPerformanceSnapshot() 反向恢复快照，
+// 形成「降级→恢复→再降级」的反馈循环。
+let _suppressSnapshotReset = false;
+
+/** 供 setLightState/setRenderState 检查是否应跳过 resetPerformanceSnapshot。 */
+export function isSnapshotResetSuppressed(): boolean {
+    return _suppressSnapshotReset;
+}
 
 // ======== 每级完整目标状态 ========
 // 定义每个质量级别下的渲染/光照配置全集。
@@ -215,12 +235,19 @@ function applyDegrade(level: DegradeLevel, force = false): void {
 
     // 恢复到 Level 0：使用快照还原用户原始设置
     if (level === 0 && _snapshot) {
-        setLightState(_snapshot.light);
-        setRenderState(_snapshot.render);
+        const light = _snapshot.light;
+        const render = _snapshot.render;
         _snapshot = null;
+        _suppressSnapshotReset = true;
+        try {
+            setLightState(light);
+            setRenderState(render);
+        } finally {
+            _suppressSnapshotReset = false;
+        }
         _currentLevel = 0;
         _lastRecoveryTime = now;
-        console.info('[Performance] Restored to full quality');
+        console.info(`[${logTime()}] [Performance] Restored to full quality`);
         return;
     }
 
@@ -236,11 +263,16 @@ function applyDegrade(level: DegradeLevel, force = false): void {
     const changes = levelDiff(prevCfg, nextCfg);
 
     if (hasChanges(changes)) {
-        if (Object.keys(changes.light).length > 0) {
-            setLightState(changes.light);
-        }
-        if (Object.keys(changes.render).length > 0) {
-            setRenderState(changes.render);
+        _suppressSnapshotReset = true;
+        try {
+            if (Object.keys(changes.light).length > 0) {
+                setLightState(changes.light);
+            }
+            if (Object.keys(changes.render).length > 0) {
+                setRenderState(changes.render);
+            }
+        } finally {
+            _suppressSnapshotReset = false;
         }
     }
 
@@ -254,7 +286,7 @@ function applyDegrade(level: DegradeLevel, force = false): void {
         // 实际发生了恢复
         _lastRecoveryTime = now;
     }
-    console.info(`[Performance] Level ${level}: ${LEVEL_CONFIGS[level].label}`);
+    console.info(`[${logTime()}] [Performance] Level ${level}: ${LEVEL_CONFIGS[level].label}`);
 }
 
 // ======== Thresholds with Hysteresis ========
@@ -359,7 +391,7 @@ export function setPerformanceMode(mode: PerformanceMode): void {
         // updatePerformance 已在 custom 模式下早返，不会再次降级。
         resetPerformanceSnapshot();
     }
-    console.info(`[Performance] Mode set to: ${mode}`);
+    console.info(`[${logTime()}] [Performance] Mode set to: ${mode}`);
 }
 
 export function getPerformanceMode(): PerformanceMode {
@@ -380,8 +412,14 @@ export function resetPerformanceSnapshot(): void {
         const light = _snapshot.light;
         const render = _snapshot.render;
         _snapshot = null;
-        setLightState(light);
-        setRenderState(render);
+        // 恢复快照时抑制 setLightState/setRenderState 内部的 resetPerformanceSnapshot 调用
+        _suppressSnapshotReset = true;
+        try {
+            setLightState(light);
+            setRenderState(render);
+        } finally {
+            _suppressSnapshotReset = false;
+        }
     }
     _currentLevel = 0;
     _lastDegradeTime = 0;

@@ -144,7 +144,7 @@ function buildScreenshotLevel(): PopupLevel {
 
 /** 实验功能子页面——包含布料物理、布娃娃物理、布娃娃调试 */
 function buildExperimentalLevel(): PopupLevel {
-    return {
+    const lvl: PopupLevel = {
         label: t('env.experimental'),
         dir: '',
         items: [
@@ -184,7 +184,26 @@ function buildExperimentalLevel(): PopupLevel {
                 target: 'scene:ragdoll:debug',
             },
         ],
+        renderCustom: (container) => {
+            // 收集已渲染的 items，用 lcard 包裹维持视觉一致性
+            const itemEls = Array.from(container.children);
+            container.innerHTML = '';
+            // 警告横幅
+            const warning = document.createElement('div');
+            warning.className = 'experimental-warning';
+            warning.innerHTML =
+                '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' + t('env.experimentalWarn') + '</span>';
+            container.appendChild(warning);
+            // lcard 包裹导航 items
+            const card = document.createElement('div');
+            card.className = 'lcard';
+            for (const el of itemEls) {
+                card.appendChild(el);
+            }
+            container.appendChild(card);
+        },
     };
+    return lvl;
 }
 
 // ======== Scene Root ========

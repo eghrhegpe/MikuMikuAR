@@ -877,8 +877,36 @@ async function handleDropFile(path: string): Promise<void> {
 // ======== Render Loop (with optional FPS limit / vsync via engine.maxFPS) ========
 applyFrameControl();
 engine.setHardwareScalingLevel(1 / (uiState.renderScale ?? 1));
+function _ts(): string {
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    const ms = String(d.getMilliseconds()).padStart(3, '0');
+    return `${h}:${m}:${s}.${ms}`;
+}
+let _renderBeforeTime = 0;
+scene.onBeforeRenderObservable.add(() => {
+    _renderBeforeTime = performance.now();
+});
+scene.onAfterRenderObservable.add(() => {
+    const _afterTime = performance.now();
+    const _gpuElapsed = _afterTime - _renderBeforeTime;
+    if (_gpuElapsed > 30) {
+        const _obsCount = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+        console.warn(`[${_ts()}][perf:gpu] before→after render took ${_gpuElapsed.toFixed(1)}ms (observers=${_obsCount})`);
+    }
+});
 engine.runRenderLoop(() => {
+    const _obsBefore = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+    const _rStart = performance.now();
     scene.render();
+    const _rElapsed = performance.now() - _rStart;
+    const _obsAfter = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+    const _obsDelta = _obsAfter - _obsBefore;
+    if (_rElapsed > 30 || (_obsDelta > 0 && _obsAfter > 100)) {
+        console.warn(`[${_ts()}][perf:render] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`);
+    }
     updatePerformance();
 });
 window.addEventListener('resize', () => {

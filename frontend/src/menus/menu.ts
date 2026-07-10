@@ -328,6 +328,7 @@ export class SlideMenu {
 
     /** 增量刷新所有已注册的自更新控件（不重建 DOM） */
     updateControls(): void {
+        const _start = performance.now();
         for (const c of this._controls) {
             c.update();
         }
@@ -337,6 +338,10 @@ export class SlideMenu {
         if (level?.itemBuilder && this.panel.querySelector('.slide-list')) {
             level.items = level.itemBuilder();
             this.patchPanel(level.items);
+        }
+        const _elapsed = performance.now() - _start;
+        if (_elapsed > 4) {
+            console.warn(`[perf:menu] updateControls took ${_elapsed.toFixed(1)}ms (${this._controls.length} controls, itemBuilder=${!!level?.itemBuilder})`);
         }
     }
 
