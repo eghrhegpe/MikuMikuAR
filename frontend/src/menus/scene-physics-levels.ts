@@ -1,5 +1,5 @@
 // [doc:architecture] Scene Physics Levels — 物理设置子页（场景弹窗域）
-// 从 scene-menu.ts 引用，独立管理全局物理参数（WASM Bullet + XPBD 布料）
+// 从 scene-menu.ts 引用，独立管理全局物理参数（WASM Bullet）
 
 import type { PopupLevel, PopupRow } from '../core/config';
 import {
@@ -17,30 +17,19 @@ import {
     setModelBoneJointsVis,
 } from '../scene/scene';
 import {
-    toggleCloth,
-    getSolverSubsteps,
-    setSolverSubsteps,
-    getTimeScale,
-    setTimeScale,
     getCollisionEnabled,
     setCollisionEnabled,
     getBodyCollisionEnabled,
     setBodyCollisionEnabled,
     getGroundCollisionEnabled,
     setGroundCollisionEnabled,
-    setClothGravity,
-    setDebugParticles,
-    setDebugConstraints,
-    setDebugColliders,
-    getDebugState,
-} from '../physics/cloth-manager';
+} from '../scene/env/env-bridge';
 import {
     getPhysicsCategories,
     isPhysicsCategoryEnabled,
     setPhysicsCategory,
     setModelPhysics,
 } from '../scene/scene';
-import { buildClothParamsLevel } from './motion-cloth-levels';
 import { getSceneMenu, refreshSceneRoot } from './scene-menu';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
@@ -51,19 +40,6 @@ import {
     addPresetChip,
     addModeSlider,
 } from '../core/ui-helpers';
-import {
-    toggleRagdoll,
-    recreateRagdoll,
-    setRagdollJointParams,
-    applyRagdollJointPreset,
-    setRagdollBlendWeight,
-    getRagdollBlendWeight,
-    setRagdollDebugParticles,
-    setRagdollDebugConstraints,
-    setRagdollDebugColliders,
-    getRagdollDebugState,
-} from '../physics/ragdoll-manager';
-import { RAGDOLL_JOINT_GROUPS, DEFAULT_RAGDOLL_JOINT_PARAMS } from '../physics/xpbd-ragdoll';
 
 /**
  * 增量更新 toggle 行的 DOM 状态（不触发 reRender）。
@@ -86,100 +62,6 @@ export function buildPhysicsLevel(): PopupLevel {
     return buildWasmPhysicsLevel();
 }
 
-/** 构建布料设置子页（XPBD 布料模拟 — 全局参数） */
-export function buildClothLevel(): PopupLevel {
-    return {
-        label: t('scene.clothSim'),
-        dir: '',
-        items: [
-            // 布料模拟：独立开关
-            {
-                kind: 'toggle',
-                label: t('scene.clothSim'),
-                icon: 'lucide:shirt',
-                target: 'cloth:toggle',
-                toggleValue: envState.clothEnabled,
-                onToggleChange: (v: boolean) => {
-                    envState.clothEnabled = v;
-                    toggleCloth(v);
-                    refreshSceneRoot();
-                    _patchToggle('cloth:toggle', v);
-                },
-            } as PopupRow,
-            // 布娃娃物理：独立开关
-            {
-                kind: 'toggle',
-                label: t('scene.ragdollPhysics'),
-                icon: 'lucide:user',
-                target: 'ragdoll:toggle',
-                toggleValue: envState.ragdollEnabled,
-                onToggleChange: (v: boolean) => {
-                    envState.ragdollEnabled = v;
-                    toggleRagdoll(v);
-                    refreshSceneRoot();
-                    _patchToggle('ragdoll:toggle', v);
-                },
-            } as PopupRow,
-            // 求解质量
-            {
-                kind: 'slider',
-                label: t('scene.solverQuality'),
-                icon: 'lucide:repeat',
-                target: 'cloth:substeps',
-                sliderValue: getSolverSubsteps(),
-                sliderMin: 1,
-                sliderMax: 4,
-                sliderStep: 1,
-                onSliderChange: (v: number) => {
-                    setSolverSubsteps(v);
-                },
-            } as PopupRow,
-            // 模拟速度
-            {
-                kind: 'slider',
-                label: t('scene.simSpeed'),
-                icon: 'lucide:clock',
-                target: 'physics:timescale',
-                sliderValue: getTimeScale(),
-                sliderMin: 0.1,
-                sliderMax: 5,
-                sliderStep: 0.1,
-                onSliderChange: (v: number) => {
-                    setTimeScale(v);
-                },
-            } as PopupRow,
-            // 碰撞：folder + headerToggle
-            {
-                kind: 'folder',
-                label: t('scene.collision'),
-                icon: 'lucide:shield',
-                target: 'cloth:collision',
-                headerToggle: {
-                    value: getCollisionEnabled(),
-                    onChange: (v) => {
-                        setCollisionEnabled(v);
-                        refreshSceneRoot();
-                    },
-                    bind: () => getCollisionEnabled(),
-                },
-            } as PopupRow,
-            // 精细调节 → 布料子页
-            {
-                kind: 'folder',
-                label: t('scene.fineTune'),
-                icon: 'lucide:sliders',
-                target: 'cloth:fineTune',
-            } as PopupRow,
-            // 调试（XPBD 可视化）
-            {
-                kind: 'folder',
-                label: t('scene.debug'),
-                icon: 'lucide:bug',
-                target: 'cloth:debug',
-            } as PopupRow,
-        ],
-    };
-}
 
 /** 构建碰撞子页（地面碰撞 + 身体碰撞） */
 export function buildCollisionLevel(): PopupLevel {
@@ -267,212 +149,8 @@ export function buildPhysicsDebugLevel(): PopupLevel {
     };
 }
 
-/** 构建布料调试子页（XPBD 可视化 — 粒子/约束/碰撞体） */
-export function buildClothDebugLevel(): PopupLevel {
-    const dbg = getDebugState();
 
-    return {
-        label: t('scene.debug'),
-        dir: '',
-        items: [
-            {
-                kind: 'toggle',
-                label: t('scene.particleSpheres'),
-                icon: 'lucide:circle',
-                target: 'clothdebug:particles',
-                toggleValue: dbg.particles,
-                onToggleChange: (v) => {
-                    setDebugParticles(v);
-                    _patchToggle('clothdebug:particles', v);
-                },
-            } as PopupRow,
-            {
-                kind: 'toggle',
-                label: t('scene.constraintLines'),
-                icon: 'lucide:minus',
-                target: 'clothdebug:constraints',
-                toggleValue: dbg.constraints,
-                onToggleChange: (v) => {
-                    setDebugConstraints(v);
-                    _patchToggle('clothdebug:constraints', v);
-                },
-            } as PopupRow,
-            {
-                kind: 'toggle',
-                label: t('scene.colliderWireframe'),
-                icon: 'lucide:box',
-                target: 'clothdebug:colliders',
-                toggleValue: dbg.colliders,
-                onToggleChange: (v) => {
-                    setDebugColliders(v);
-                    _patchToggle('clothdebug:colliders', v);
-                },
-            } as PopupRow,
-        ],
-    };
-}
 
-/** 构建 Ragdoll 设置子页（XPBD 布娃娃 — 全局参数 + per-joint preset） */
-export function buildRagdollLevel(): PopupLevel {
-    return {
-        label: t('scene.ragdollPhysics'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                let _recreateTimer: ReturnType<typeof setTimeout> | null = null;
-                const debouncedRecreate = () => {
-                    if (_recreateTimer) {
-                        clearTimeout(_recreateTimer);
-                    }
-                    _recreateTimer = setTimeout(() => {
-                        _recreateTimer = null;
-                        recreateRagdoll();
-                    }, 100);
-                };
-
-                // ---- 关节组 preset 芯片（loose/normal/stiff）----
-                addSectionTitle(c, t('scene.ragdollPresets'));
-                const presetGroup = document.createElement('div');
-                presetGroup.className = 'preset-group';
-                presetGroup.style.paddingBottom = '6px';
-                const presetKeys = ['loose', 'normal', 'stiff'] as const;
-                const presetLabels: Record<string, string> = {
-                    loose: t('scene.ragdollPresetLoose') || '松软',
-                    normal: t('scene.ragdollPresetNormal') || '正常',
-                    stiff: t('scene.ragdollPresetStiff') || '僵硬',
-                };
-                for (const preset of presetKeys) {
-                    addPresetChip(presetGroup, presetLabels[preset], false, () => {
-                        // 对所有关节组应用同一 preset
-                        for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
-                            applyRagdollJointPreset(group, preset);
-                        }
-                        getSceneMenu()?.reRender();
-                    });
-                }
-                c.appendChild(presetGroup);
-
-                // ---- 全局参数滑块（作用于所有关节）----
-                addSectionTitle(c, t('scene.ragdollParams'));
-
-                // Compliance（柔度）
-                addSliderRow(
-                    c,
-                    t('scene.ragdollCompliance'),
-                    DEFAULT_RAGDOLL_JOINT_PARAMS.compliance,
-                    0,
-                    0.1,
-                    0.001,
-                    (v: number) => {
-                        // 对所有关节组设置 compliance
-                        for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
-                            setRagdollJointParams(group, { compliance: v });
-                        }
-                        debouncedRecreate();
-                    },
-                    'lucide:feather'
-                );
-
-                // Stiffness（刚度）
-                addSliderRow(
-                    c,
-                    t('scene.ragdollStiffness'),
-                    DEFAULT_RAGDOLL_JOINT_PARAMS.stiffness,
-                    0,
-                    1,
-                    0.05,
-                    (v: number) => {
-                        for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
-                            setRagdollJointParams(group, { stiffness: v });
-                        }
-                        debouncedRecreate();
-                    },
-                    'lucide:wrench'
-                );
-
-                // Damping（阻尼）
-                addSliderRow(
-                    c,
-                    t('scene.ragdollDamping'),
-                    DEFAULT_RAGDOLL_JOINT_PARAMS.damping,
-                    0,
-                    1,
-                    0.05,
-                    (v: number) => {
-                        for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
-                            setRagdollJointParams(group, { damping: v });
-                        }
-                        debouncedRecreate();
-                    },
-                    'lucide:waves'
-                );
-
-                // ---- 过渡仲裁 ----
-                addSectionTitle(c, t('scene.ragdollTransition'));
-
-                // blendWeight（物理混合权重 0=动画 1=物理）
-                addSliderRow(
-                    c,
-                    t('scene.ragdollBlendWeight'),
-                    getRagdollBlendWeight(),
-                    0,
-                    1,
-                    0.05,
-                    (v: number) => {
-                        setRagdollBlendWeight(v);
-                    },
-                    'lucide:git-merge'
-                );
-            });
-        },
-    };
-}
-
-/** 构建 Ragdoll 调试子页（XPBD 可视化开关） */
-export function buildRagdollDebugLevel(): PopupLevel {
-    const dbg = getRagdollDebugState();
-
-    return {
-        label: t('scene.debug'),
-        dir: '',
-        items: [
-            {
-                kind: 'toggle',
-                label: t('scene.particleSpheres'),
-                icon: 'lucide:circle',
-                target: 'ragdolldebug:particles',
-                toggleValue: dbg.particles,
-                onToggleChange: (v) => {
-                    setRagdollDebugParticles(v);
-                    _patchToggle('ragdolldebug:particles', v);
-                },
-            } as PopupRow,
-            {
-                kind: 'toggle',
-                label: t('scene.constraintLines'),
-                icon: 'lucide:minus',
-                target: 'ragdolldebug:constraints',
-                toggleValue: dbg.constraints,
-                onToggleChange: (v) => {
-                    setRagdollDebugConstraints(v);
-                    _patchToggle('ragdolldebug:constraints', v);
-                },
-            } as PopupRow,
-            {
-                kind: 'toggle',
-                label: t('scene.colliderWireframe'),
-                icon: 'lucide:box',
-                target: 'ragdolldebug:colliders',
-                toggleValue: dbg.colliders,
-                onToggleChange: (v) => {
-                    setRagdollDebugColliders(v);
-                    _patchToggle('ragdolldebug:colliders', v);
-                },
-            } as PopupRow,
-        ],
-    };
-}
 
 /** 构建 WASM 物理子页（Bullet 骨髁物理信息 + 总开关） */
 export function buildWasmPhysicsLevel(): PopupLevel {
@@ -510,7 +188,7 @@ export function buildWasmPhysicsLevel(): PopupLevel {
         bind: () => getMmdRuntimeType(),
     } as PopupRow);
 
-    // 重力强度（统控 WASM Bullet + XPBD 布料）
+    // 重力强度（统控 WASM Bullet）
     items.push({
         kind: 'slider',
         label: t('scene.gravityStrength'),
@@ -522,7 +200,6 @@ export function buildWasmPhysicsLevel(): PopupLevel {
         sliderStep: 0.05,
         onSliderChange: (v: number) => {
             setGravityStrength(v);
-            setClothGravity(v);
         },
     } as PopupRow);
 

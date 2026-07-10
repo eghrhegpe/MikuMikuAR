@@ -858,15 +858,14 @@ export function modelToRow(m: LibraryModel): PopupRow {
             label = cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
             break;
     }
-    const comment = cached?.comment || m.comment || '';
     return {
         kind: 'model',
         label,
         icon,
         target: m.file_path,
-        sublabel: comment ? comment.substring(0, 28) : undefined,
+        sublabel: undefined,
         model: m,
-        catTag: m.category || undefined,
+        catTag: undefined,
         editable: m.format === 'pmx',
         wrapLabel: true,
         onAddClick: () => {
@@ -884,7 +883,7 @@ function onModelRowClick(m: LibraryModel): void {
         return;
     }
     const replaceId = modelReplaceTargetId;
-    const isStage = m.type === 'stage' || m.type === 'scene';
+    const isStage = m.type === 'stage' || m.type === 'scene' || m.type === 'prop';
     if (m.format === 'pmx') {
         const ref = computeLibraryRef(m.file_path);
         if (ref) {
@@ -903,7 +902,7 @@ function onModelRowClick(m: LibraryModel): void {
         const doReplace = (path: string): void => {
             removeModel(replaceId);
             loadManager
-                .load({ kind: 'actor', path })
+                .load({ kind: isStage ? 'stage' : 'actor', path })
                 .then((handle) => {
                     if (handle?.id) {
                         import('./model-detail').then(({ buildModelLevel }) => {

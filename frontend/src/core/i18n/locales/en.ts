@@ -618,18 +618,6 @@ export const en: Record<string, string> = {
     'dialog.confirmTitle': 'Confirm',
     'dialog.inputTitle': 'Input',
 
-    // physics — cloth simulation status (cloth-manager)
-    'physics.loadModelFirst': '⚠ Load a model first',
-    'physics.clothExists': '⚠ Cloth already exists',
-    'physics.noMmdData': '⚠ Current model has no MMD data',
-    'physics.clothCreated':
-        '✓ Cloth created ({particles} particles, {constraints} constraints, mesh: {mesh})',
-    'physics.clothEnabled':
-        '✓ Cloth simulation enabled ({instances} instances, {particles} particles, {constraints} constraints)',
-    'physics.ragdollEnabled': '✓ Ragdoll physics enabled',
-    'physics.noActiveInstance': '⚠ Cloth enabled but no active instance found',
-    'physics.clothDisabled': 'Cloth simulation off',
-
     // scene.ar — AR camera status
     'scene.ar.enabled': '✓ AR camera on',
     'scene.ar.cameraDenied': '✗ Camera permission denied, switched to black background',

@@ -82,16 +82,6 @@ vi.mock('@babylonjs/core/Materials/standardMaterial', () => {
     return { StandardMaterial: m.MockStandardMaterial };
 });
 
-vi.mock('../../physics/xpbd-cloth', () => ({
-    disposeCloth: vi.fn(),
-}));
-
-vi.mock('../../physics/xpbd-ragdoll', () => ({
-    buildRagdoll: vi.fn(),
-    stepRagdoll: vi.fn(),
-    writeBack: vi.fn(),
-}));
-
 // ---- Imports ----
 
 import { ModelManager } from '../scene/manager/model-manager';
@@ -100,9 +90,6 @@ import { Scene } from '@babylonjs/core/scene';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { Vector3 as MockVector3 } from '@babylonjs/core/Maths/math.vector';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { disposeCloth } from '../physics/xpbd-cloth';
-import type { RagdollInstance } from '../physics/xpbd-ragdoll';
-import { buildRagdoll, stepRagdoll, writeBack } from '../physics/xpbd-ragdoll';
 
 // ---- Helpers ----
 
@@ -215,34 +202,6 @@ function makeMmdModel(bones?: any[], morphs?: any[], rigidBodyStates?: Uint8Arra
         setRuntimeAnimation: vi.fn(),
         createRuntimeAnimation: vi.fn(),
     };
-}
-
-function makeClothInstance(overrides) {
-    overrides = overrides || {};
-    const base = {
-        config: {},
-        solver: { reset: vi.fn() },
-        particleGrid: [],
-        anchorIndices: [0],
-        ringSize: 8,
-        ringCount: 4,
-        mesh: null,
-        meshIndices: new Int32Array(0),
-        enabled: true,
-        _anchorMissingWarned: false,
-        updateFn: undefined,
-    };
-    return Object.assign(base, overrides);
-}
-
-function makeRagdollInstance(overrides?: any): RagdollInstance {
-    overrides = overrides || {};
-    const base = {
-        updateFn: undefined,
-        enabled: true,
-        dispose: vi.fn(),
-    };
-    return Object.assign(base, overrides) as RagdollInstance;
 }
 
 function makeObservableScene() {
@@ -493,20 +452,6 @@ describe('ModelManager remove', function () {
         expect(onRemoveModel).toHaveBeenCalledWith('m1');
         expect(mgr._physicsCatState.has('m1')).toBe(false);
         expect(mgr._initialRigidBodyStates.has('m1')).toBe(false);
-    });
-
-    it('removes cloth before disposing meshes', function () {
-        const mesh = createTestMesh('root');
-        const inst = makeModelInstance('m1', { meshes: [mesh] });
-        mgr.register(inst);
-
-        const cloth = makeClothInstance();
-        mgr.addCloth('m1', cloth, vi.fn());
-        expect(mgr.clothInstances.has('m1')).toBe(true);
-
-        mgr.remove('m1');
-
-        expect(mgr.clothInstances.has('m1')).toBe(false);
     });
 
     it('transfers focus to the next model when removing focused', function () {
@@ -1106,161 +1051,6 @@ describe('ModelManager physics', function () {
     });
 });
 
-describe('ModelManager cloth', function () {
-    let mgr, scene, onChange;
-
-    beforeEach(function () {
-        setFocusedModelId(null);
-        onChange = vi.fn();
-        scene = makeObservableScene();
-        mgr = new ModelManager(scene, onChange, vi.fn());
-    });
-
-    it('addCloth stores instance and creates scene observer', function () {
-        const cloth = makeClothInstance();
-        const updateFn = vi.fn();
-
-        mgr.addCloth('m1', cloth, updateFn);
-
-        expect(cloth.updateFn).toBe(updateFn);
-        expect(mgr.clothInstances.has('m1')).toBe(true);
-        expect(mgr.clothInstances.get('m1')).toBe(cloth);
-        expect(mgr._clothUpdateObserver).not.toBeNull();
-    });
-
-    it('removeCloth disposes cloth and removes from map', function () {
-        const cloth = makeClothInstance();
-        mgr.addCloth('m1', cloth, vi.fn());
-
-        mgr.removeCloth('m1');
-
-        expect(mgr.clothInstances.has('m1')).toBe(false);
-    });
-
-    it('removeCloth disposes observer when last cloth removed', function () {
-        mgr.addCloth('m1', makeClothInstance(), vi.fn());
-        expect(mgr._clothUpdateObserver).not.toBeNull();
-
-        mgr.removeCloth('m1');
-
-        expect(mgr._clothUpdateObserver).toBeNull();
-    });
-
-    it('removeCloth is safe when cloth id does not exist', function () {
-        expect(function () {
-            mgr.removeCloth('nope');
-        }).not.toThrow();
-    });
-
-    describe('Ragdoll management', function () {
-        it('addRagdoll stores instance and creates scene observer', function () {
-            const inst = makeRagdollInstance();
-            const updateFn = vi.fn();
-
-            mgr.addRagdoll('m1', inst, updateFn);
-
-            expect(inst.updateFn).toBe(updateFn);
-            expect(mgr.ragdollInstances.has('m1')).toBe(true);
-            expect(mgr.ragdollInstances.get('m1')).toBe(inst);
-            expect(mgr._ragdollUpdateObserver).not.toBeNull();
-        });
-
-        it('removeRagdoll disposes ragdoll and removes from map', function () {
-            const inst = makeRagdollInstance();
-            mgr.addRagdoll('m1', inst, vi.fn());
-
-            mgr.removeRagdoll('m1');
-
-            expect(mgr.ragdollInstances.has('m1')).toBe(false);
-            expect(inst.dispose).toHaveBeenCalled();
-        });
-
-        it('removeRagdoll disposes observer when last ragdoll removed', function () {
-            mgr.addRagdoll('m1', makeRagdollInstance(), vi.fn());
-            expect(mgr._ragdollUpdateObserver).not.toBeNull();
-
-            mgr.removeRagdoll('m1');
-
-            expect(mgr._ragdollUpdateObserver).toBeNull();
-        });
-
-        it('removeRagdoll is safe when ragdoll id does not exist', function () {
-            expect(function () {
-                mgr.removeRagdoll('nope');
-            }).not.toThrow();
-        });
-
-        it('ensureRagdollUpdateObserver does not create duplicate observers', function () {
-            mgr.addRagdoll('m1', makeRagdollInstance(), vi.fn());
-            const firstObserver = mgr._ragdollUpdateObserver;
-
-            mgr.addRagdoll('m2', makeRagdollInstance(), vi.fn());
-
-            expect(mgr._ragdollUpdateObserver).toBe(firstObserver);
-        });
-
-        it('ragdoll observer is created and stored', function () {
-            const updateFn1 = vi.fn();
-            const updateFn2 = vi.fn();
-            mgr.addRagdoll('m1', makeRagdollInstance({ enabled: true }), updateFn1);
-            mgr.addRagdoll('m2', makeRagdollInstance({ enabled: true }), updateFn2);
-
-            expect(mgr.ragdollInstances.size).toBe(2);
-            expect(mgr.ragdollInstances.has('m1')).toBe(true);
-            expect(mgr.ragdollInstances.has('m2')).toBe(true);
-            expect(mgr._ragdollUpdateObserver).not.toBeNull();
-        });
-    });
-
-    it('ensureClothUpdateObserver does not create duplicate observers', function () {
-        mgr.addCloth('m1', makeClothInstance(), vi.fn());
-        const firstObserver = mgr._clothUpdateObserver;
-
-        mgr.addCloth('m2', makeClothInstance(), vi.fn());
-
-        expect(mgr._clothUpdateObserver).toBe(firstObserver);
-    });
-
-    it('cloth observer is created and stored', function () {
-        const updateFn1 = vi.fn();
-        const updateFn2 = vi.fn();
-        mgr.addCloth('m1', makeClothInstance({ enabled: true }), updateFn1);
-        mgr.addCloth('m2', makeClothInstance({ enabled: true }), updateFn2);
-
-        expect(mgr.clothInstances.size).toBe(2);
-        expect(mgr.clothInstances.has('m1')).toBe(true);
-        expect(mgr.clothInstances.has('m2')).toBe(true);
-        expect(mgr._clothUpdateObserver).not.toBeNull();
-    });
-
-    describe('getBoneWorldMatrix', function () {
-        it('returns worldMatrix of named bone on focused model', function () {
-            const boneWorld = new Float32Array(16);
-            boneWorld[0] = 42;
-            const bones = [makeBone('waist', []), makeBone('leftLeg', [])];
-            bones[1].worldMatrix = boneWorld;
-            const mmd = makeMmdModel(bones, []);
-            mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
-            mgr.focus('m1');
-
-            expect(mgr.getBoneWorldMatrix('leftLeg')).toBe(boneWorld);
-            expect(mgr.getBoneWorldMatrix('leftLeg')[0]).toBe(42);
-        });
-
-        it('returns null when no model is focused', function () {
-            expect(mgr.getBoneWorldMatrix('waist')).toBeNull();
-        });
-
-        it('returns null when bone not found', function () {
-            const mmd = makeMmdModel([makeBone('waist', [])], []);
-            mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
-            mgr.focus('m1');
-
-            expect(mgr.getBoneWorldMatrix('nonexistent')).toBeNull();
-        });
-    });
-});
-
 describe('ModelManager bone overlay', function () {
     let mgr, scene, onChange, bones, mmd;
 
@@ -1467,24 +1257,6 @@ describe('ModelManager dispose', function () {
         mgr.dispose();
 
         expect(mgr._boneUpdateObserver).toBeNull();
-    });
-
-    it('removes cloth update observer', function () {
-        mgr.addCloth('m1', makeClothInstance(), vi.fn());
-        expect(mgr._clothUpdateObserver).not.toBeNull();
-
-        mgr.dispose();
-
-        expect(mgr._clothUpdateObserver).toBeNull();
-    });
-
-    it('disposes all remaining cloth instances', function () {
-        mgr.addCloth('m1', makeClothInstance(), vi.fn());
-        mgr.addCloth('m2', makeClothInstance(), vi.fn());
-
-        mgr.dispose();
-
-        expect(mgr.clothInstances.size).toBe(0);
     });
 
     it('does not crash when called without any setup', function () {

@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"runtime"
 )
 
 // SafeCall executes fn and recovers from any panic, converting it to an error.
@@ -10,10 +11,12 @@ import (
 func SafeCall[T any](fn func() (T, error)) (result T, err error) {
 	defer func() {
 		if r := recover(); r != nil {
+			var stack [4096]byte
+			n := runtime.Stack(stack[:], false)
 			if e, ok := r.(error); ok {
-				err = fmt.Errorf("panic recovered: %w", e)
+				err = fmt.Errorf("panic recovered: %w\nstack:\n%s", e, stack[:n])
 			} else {
-				err = fmt.Errorf("panic recovered: %v", r)
+				err = fmt.Errorf("panic recovered: %v\nstack:\n%s", r, stack[:n])
 			}
 		}
 	}()
@@ -24,10 +27,12 @@ func SafeCall[T any](fn func() (T, error)) (result T, err error) {
 func SafeCallVoid(fn func() error) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
+			var stack [4096]byte
+			n := runtime.Stack(stack[:], false)
 			if e, ok := r.(error); ok {
-				err = fmt.Errorf("panic recovered: %w", e)
+				err = fmt.Errorf("panic recovered: %w\nstack:\n%s", e, stack[:n])
 			} else {
-				err = fmt.Errorf("panic recovered: %v", r)
+				err = fmt.Errorf("panic recovered: %v\nstack:\n%s", r, stack[:n])
 			}
 		}
 	}()

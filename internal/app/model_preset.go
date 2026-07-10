@@ -234,7 +234,10 @@ func (a *App) writeConfigAndRescan(cfg *Config) error {
 // GetLibraryIndex reads the last scanned index from disk.
 func (a *App) GetLibraryIndex() ([]ModelEntry, error) {
 	// Try setting/ subdirectory first
-	cfg, _ := a.GetConfig()
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return nil, err
+	}
 	sd, sErr := settingDir(cfg)
 	if sErr == nil {
 		data, rErr := os.ReadFile(filepath.Join(sd, "index.json"))

@@ -12,7 +12,10 @@ import (
 // scenePresetDir returns the scenes/ subdirectory under settingDir.
 // In portable mode (ResourceRoot set), presets live under <ResourceRoot>/setting/scenes/.
 func (a *App) scenePresetDir() (string, error) {
-	cfg, _ := a.GetConfig()
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return "", err
+	}
 	base, err := settingDir(cfg)
 	if err != nil {
 		return "", err
@@ -27,7 +30,10 @@ func (a *App) scenePresetDir() (string, error) {
 // modelPresetDir returns the models/ subdirectory under settingDir.
 // In portable mode (ResourceRoot set), presets live under <ResourceRoot>/setting/models/.
 func (a *App) modelPresetDir() (string, error) {
-	cfg, _ := a.GetConfig()
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return "", err
+	}
 	base, err := settingDir(cfg)
 	if err != nil {
 		return "", err
@@ -91,9 +97,13 @@ func (a *App) SaveScenePreset(jsonStr string) (string, error) {
 
 // DeletePresetScene deletes a named preset scene file.
 func (a *App) DeletePresetScene(name string) error {
+	clean := validatePresetName(name)
+	if clean == "" {
+		return fmt.Errorf("invalid preset name: %q", name)
+	}
 	dir, err := a.scenePresetDir()
 	if err != nil {
 		return err
 	}
-	return os.Remove(filepath.Join(dir, name))
+	return os.Remove(filepath.Join(dir, clean))
 }

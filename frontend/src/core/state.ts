@@ -4,7 +4,6 @@
  */
 
 import { reactive } from './reactivity';
-import { DEFAULT_CLOTH_CONFIG } from '../physics/xpbd-cloth';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type {
     ModelInstance,
@@ -303,6 +302,7 @@ export const envState: EnvState = reactive<EnvState>({
     particleCustomTexture: '',
 
     groundLevel: 0,
+    groundSize: 60,
 
     waterEnabled: false,
     waterLevel: 0,
@@ -354,18 +354,6 @@ export const envState: EnvState = reactive<EnvState>({
     fogStart: 10,
     fogEnd: 100,
 
-    clothEnabled: false,
-    ragdollEnabled: false,
-    ragdollJointParams: {},
-    clothConfig: { ...DEFAULT_CLOTH_CONFIG },
-    clothDebugParticles: false,
-    clothDebugConstraints: false,
-    clothDebugColliders: false,
-    ragdollDebugParticles: false,
-    ragdollDebugConstraints: false,
-    ragdollDebugColliders: false,
-    solverSubsteps: 4,
-    solverTimeScale: 1.0,
     collisionEnabled: true,
     bodyCollisionEnabled: true,
     groundCollisionEnabled: true,

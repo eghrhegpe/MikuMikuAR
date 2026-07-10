@@ -446,10 +446,10 @@ export function applyGround(state: EnvState): void {
 
     const typeKey =
         state.groundMode === 'heightmap'
-            ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}`
+            ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}`
             : state.groundTextureEnabled && state.groundTexture
-              ? `texture:${state.groundTexture}`
-              : `mode:${state.groundMode}`;
+              ? `texture:${state.groundTexture}:${state.groundSize}`
+              : `mode:${state.groundMode}:${state.groundSize}`;
     const keyChanged = typeKey !== _currentGroundKey;
 
     // 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放
@@ -518,8 +518,8 @@ export function applyGround(state: EnvState): void {
     const ground = MeshBuilder.CreateGround(
         'envGround',
         {
-            width: 60,
-            height: 60,
+            width: state.groundSize,
+            height: state.groundSize,
             subdivisions: 2,
         },
         scene

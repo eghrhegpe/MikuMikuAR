@@ -953,18 +953,6 @@ export const ja: Record<string, string> = {
     'env.speed': '速度',
     'env.splash': '着地スプラッシュ',
 
-    // —— Physics ——
-    'physics.loadModelFirst': '⚠ 先にモデルをロードしてください',
-    'physics.clothExists': '⚠ クロスは既に存在します',
-    'physics.noMmdData': '⚠ 現在のモデルにMMDデータがありません',
-    'physics.clothCreated':
-        '✓ クロスを作成しました ({particles} パーティクル, {constraints} 制約, mesh: {mesh})',
-    'physics.clothEnabled':
-        '✓ クロスシミュレーションを有効にしました ({instances} インスタンス, {particles} パーティクル, {constraints} 制約)',
-    'physics.ragdollEnabled': '✓ ラグドール物理が有効',
-    'physics.noActiveInstance': '⚠ クロスは有効ですが、アクティブなインスタンスが見つかりません',
-    'physics.clothDisabled': 'クロスシミュレーションオフ',
-
     // toast — Toast コンポーネント
     'toast.copy': 'コピー',
     'toast.copied': 'コピー済み ✓',

@@ -948,18 +948,6 @@ export const ko: Record<string, string> = {
     'env.speed': '속도',
     'env.splash': '지면 튀김',
 
-    // —— Physics ——
-    'physics.loadModelFirst': '⚠ 먼저 모델을 로드하세요',
-    'physics.clothExists': '⚠ 옷감이 이미 존재합니다',
-    'physics.noMmdData': '⚠ 현재 모델에 MMD 데이터가 없습니다',
-    'physics.clothCreated':
-        '✓ 옷감이 생성되었습니다 ({particles} 파티클, {constraints} 제약, mesh: {mesh})',
-    'physics.clothEnabled':
-        '✓ 옷감 시뮬레이션이 활성화되었습니다 ({instances} 인스턴스, {particles} 파티클, {constraints} 제약)',
-    'physics.ragdollEnabled': '✓ 래그돌 물리 활성화',
-    'physics.noActiveInstance': '⚠ 옷감이 활성화되었지만 활성 인스턴스를 찾을 수 없습니다',
-    'physics.clothDisabled': '옷감 시뮬레이션 꺼짐',
-
     // toast — Toast 컴포넌트
     'toast.copy': '복사',
     'toast.copied': '복사됨 ✓',

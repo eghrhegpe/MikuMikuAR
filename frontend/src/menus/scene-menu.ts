@@ -27,8 +27,6 @@ import { tryCatchStatus, showErrorToast } from '../core/utils';
 import { setModelFormation } from '../scene/scene';
 import { focusModel } from '../scene/scene';
 import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
-import { toggleCloth } from '../physics/cloth-manager';
-import { toggleRagdoll } from '../physics/ragdoll-manager';
 import { t } from '../core/i18n/t';
 
 // ======== 从子文件导入 ========
@@ -41,15 +39,10 @@ import { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels'
 import { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 import {
     buildPhysicsLevel,
-    buildClothLevel,
     buildWasmPhysicsLevel,
     buildCollisionLevel,
     buildPhysicsDebugLevel,
-    buildClothDebugLevel,
-    buildRagdollLevel,
-    buildRagdollDebugLevel,
 } from './scene-physics-levels';
-import { buildClothParamsLevel } from './motion-cloth-levels';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
@@ -140,74 +133,6 @@ function buildScreenshotLevel(): PopupLevel {
     };
 }
 
-// ======== Experimental Level ========
-
-/** 实验功能子页面——包含布料物理、布娃娃物理、布娃娃调试 */
-function buildExperimentalLevel(): PopupLevel {
-    const lvl: PopupLevel = {
-        label: t('env.experimental'),
-        dir: '',
-        items: [
-            {
-                kind: 'folder',
-                label: t('scene.clothSim'),
-                icon: 'lucide:shirt',
-                target: 'scene:cloth',
-                headerToggle: {
-                    value: envState.clothEnabled,
-                    onChange: (v) => {
-                        envState.clothEnabled = v;
-                        toggleCloth(v);
-                    },
-                    bind: () => envState.clothEnabled,
-                },
-            },
-            {
-                kind: 'folder',
-                label: t('scene.ragdollPhysics'),
-                icon: 'lucide:user',
-                target: 'scene:ragdoll',
-                headerToggle: {
-                    value: envState.ragdollEnabled,
-                    onChange: (v) => {
-                        envState.ragdollEnabled = v;
-                        toggleRagdoll(v);
-                    },
-                    bind: () => envState.ragdollEnabled,
-                },
-            },
-            // Ragdoll 调试（XPBD 可视化）
-            {
-                kind: 'folder',
-                label: t('scene.ragdollDebug'),
-                icon: 'lucide:bug',
-                target: 'scene:ragdoll:debug',
-            },
-        ],
-        renderCustom: (container) => {
-            // 收集已渲染的 items，用 lcard 包裹维持视觉一致性
-            const itemEls = Array.from(container.children);
-            container.innerHTML = '';
-            // 警告横幅
-            const warning = document.createElement('div');
-            warning.className = 'experimental-warning';
-            warning.innerHTML =
-                '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' +
-                t('env.experimentalWarn') +
-                '</span>';
-            container.appendChild(warning);
-            // lcard 包裹导航 items
-            const card = document.createElement('div');
-            card.className = 'lcard';
-            for (const el of itemEls) {
-                card.appendChild(el);
-            }
-            container.appendChild(card);
-        },
-    };
-    return lvl;
-}
-
 // ======== Scene Root ========
 
 /** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
@@ -251,12 +176,6 @@ function buildSceneRootItems(): PopupRow[] {
         icon: 'lucide:atom',
         target: 'scene:physics',
     });
-    items.push({
-        kind: 'folder',
-        label: t('env.experimental'),
-        icon: 'lucide:flask-conical',
-        target: 'scene:experimental',
-    });
     if (modelRegistry.size > 1) {
         items.push({
             kind: 'folder',
@@ -287,13 +206,7 @@ const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:render:stage': buildStageLevel,
     'scene:render:props': buildPropLevel,
     'scene:physics': buildPhysicsLevel,
-    'scene:experimental': buildExperimentalLevel,
-    'scene:cloth': buildClothLevel,
-    'scene:ragdoll': buildRagdollLevel,
-    'scene:ragdoll:debug': buildRagdollDebugLevel,
     'scene:formation': buildFormationLevel,
-    'cloth:fineTune': buildClothParamsLevel,
-    'cloth:debug': buildClothDebugLevel,
     'cloth:collision': buildCollisionLevel,
     'physics:wasm': buildWasmPhysicsLevel,
     'wasm:debug': buildPhysicsDebugLevel,

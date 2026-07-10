@@ -1,6 +1,7 @@
 # MMD 生态竞品分析报告
 
-> 2026-07-05 基于 20+ GitHub 项目调研。
+> 2026-07-05 创建；2026-07-10 代码核实修订。
+> 基于 20+ GitHub 项目调研。
 > 覆盖渲染器、查看器、编辑器、引擎集成、工具链五大类。
 > 本文件为只读参考。
 
@@ -53,9 +54,9 @@
 | 相机 VMD | ✅ | ✅ | ✅ | ❌ | ❌ |
 | 程序化动作 | ✅ Idle/Dance | ✅ | ❌ | ❌ | ❌ |
 | Motion Layers（双 VMD） | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Motion Override（逐骨骼） | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Motion Override（逐骨骼） | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Remix（跨套装音频） | ❌ | ✅ | ❌ | ❌ | ❌ |
-| T-pose/A-pose 转换 | ❌ | ✅ | ❌ | ❌ | ❌ |
+| T-pose/A-pose 转换 | ✅ | ✅ | ❌ | ❌ | ❌ |
 | BVH 动作导入 | ❌ | ✅ | ❌ | ❌ | ❌ |
 | VPD 姿势 | ✅ | ✅ | ✅ | ❌ | ❌ |
 | LipSync | ✅ 振幅 | ✅ | ❌ | ✅ 共振峰 | ❌ |
@@ -75,9 +76,9 @@
 | 队形预设 | ✅ 6 种 | ✅ V/A/圆弧 |
 | 视线追踪 | ✅ | ✅ |
 | 脚部地面跟随 | ❌ | ✅ |
-| 布娃娃物理 | ❌ | ✅ |
+| 布娃娃物理 | ✅ | ✅ |
 | 软体物理 | ❌ | ✅ |
-| 道具挂载 | ❌ | ✅ |
+| 道具挂载 | ✅ | ✅ |
 
 ### 系统与工具
 
@@ -114,26 +115,27 @@
 
 ## 四、关键差距（按影响力排序）
 
-### 第一梯队：用户价值最高
+### 第一梯队：用户价值最高（仅列未闭合项）
 
 | 差距 | 来源 | 影响 |
 |------|------|------|
-| **Motion Layers（双 VMD 叠加）** | DanceXR | 解锁任意舞蹈×任意表情组合 |
-| **T-pose/A-pose 自动转换** | DanceXR/Saba | 实现"任意动作×任意模型" |
-| **Eye Contact（视线追踪）** | DanceXR | 无 VMD 也能让模型活起来 |
-| **Formation System（队形预设）** | DanceXR | 多模型场景从查看器升级为导演工具 |
-| **Pose Studio / 拍照模式** | SampleWebMMD | 专用拍照工作流 |
+| ~~Motion Layers（双 VMD 叠加）~~ | — | ✅ 已闭合（ADR-051） |
+| ~~T-pose/A-pose 自动转换~~ | — | ✅ 已闭合（ADR-061） |
+| ~~Eye Contact（视线追踪）~~ | — | ✅ 已闭合（ADR-053） |
+| ~~Formation System（队形预设）~~ | — | ✅ 已闭合（ADR-037） |
+| ~~Pose Studio / 拍照模式~~ | — | ✅ 已闭合（ADR-061） |
+| Remix（跨套装音频） | DanceXR | VMD 资产复用 |
+| BVH 动作导入 | DanceXR | 格式兼容 |
 
-### 第二梯队：体验补齐
+### 第二梯队：体验补齐（仅列未闭合项）
 
 | 差距 | 来源 | 影响 |
 |------|------|------|
-| Auto Camera（程序化运镜） | DanceXR | 节拍同步运镜 |
-| Scene Bundle（场景打包） | DanceXR | 场景可分发 |
-<!-- | Playback Modes（播放模式） | DanceXR | 单次/随机/循环列表 | — 已评估排除：MMD 工作流为单模型+单VMD精调，非批量播放场景，边际效益低（ADR-061） -->
+| ~~Auto Camera（程序化运镜）~~ | — | ✅ 已闭合（ADR-037） |
+| ~~Scene Bundle（场景打包）~~ | — | ✅ 已闭合（ADR-037） |
+| ~~高斯随机眨眼~~ | — | ✅ 已闭合（ADR-037） |
+| ~~智能材质分类~~ | — | ✅ 已闭合（`model-manager.ts` 物理分类） |
 | Remix（跨套装音频交换） | DanceXR | VMD 资产复用 |
-| 高斯随机眨眼 | HBR MMD Tools | 自然眨眼 |
-| 智能材质分类 | HBR MMD Tools | 自动检测材质类型 |
 
 ### 第三梯队：远期探索
 
@@ -142,27 +144,35 @@
 | Ray Tracing / GI | Coocoo3D | 高端渲染（WebGPU 可期） |
 | Lua/JS 脚本层 | Saba | 自动化工作流 |
 | Alembic/glTF 导出 | MMD Bridge | DCC 工具互操作 |
-| Soft Body / Ragdoll | DanceXR | 物理扩展 |
-| Toon Shading | mmd-viewer-js | 卡通渲染 |
+| ~~Toon Shading~~ | — | ✅ 已闭合（`outfit.ts` + 预设） |
+| ~~Ragdoll~~ | — | ✅ 已闭合（ADR-061） |
+| Soft Body（软体物理） | DanceXR | XPBD VolumeConstraint 已预置，完整功能待实现 |
 
-### 差距闭合进度（2026-07-06 代码核实）
+### 差距闭合进度（2026-07-10 代码核实）
 
 以下差距已在代码事实层面闭合（以 `frontend/src` 实现为准，非仅 ADR 声明）：
 
 | 原差距 | 原梯队 | 状态 | 依据 |
 |--------|--------|------|------|
-| Motion Layers（双 VMD 叠加） | 第一 | ✅ 已闭合 | ADR-037/051：`vmd-layers.ts` + `MmdCompositeAnimation`（仅 JS 运行时） |
+| Motion Layers（双 VMD 叠加） | 第一 | ✅ 已闭合 | ADR-051/056：`vmd-layers.ts` + C+B 混合方案（WASM 已支持多图层） |
 | Eye Contact（视线追踪） | 第一 | ✅ 已闭合 | ADR-016/053：`proc-motion-bridge.ts` + gaze 图层 |
 | Formation（队形预设） | 第一 | ✅ 已闭合 | ADR-037 §6：`model-manager.ts` 6 种预设 + 场景菜单 |
+| T-pose/A-pose 转换 | 第一 | ✅ 已闭合 | ADR-061：`pose-preset.ts` tpose/apose VPD 生成器 |
+| Pose Studio / 拍照模式 | 第一 | ✅ 已闭合 | ADR-061：`motion-pose-levels.ts` 构图辅助 + 批量截图 + 水印 |
+| Motion Override（逐骨骼） | — | ✅ 已闭合 | ADR-061：`bone-override.ts` 引擎 + UI + 序列化 |
+| 布娃娃物理 Ragdoll | 角色 | ✅ 已闭合 | ADR-061：`xpbd-ragdoll.ts` + `ragdoll-manager.ts` |
+| 道具挂载 Accessory | 角色 | ✅ 已闭合 | `accessory.ts` 骨骼锚定 + `scene-prop-levels.ts` UI |
 | 自动眨眼 | 第二 | ✅ 已闭合 | ADR-037 §5 Lifelike：`procedural-motion.ts` 伪随机 2~8s |
 | 自动呼吸 | 第二 | ✅ 已闭合 | ADR-037 §5 / Idle：`procedural-motion.ts` |
 | Auto Camera（程序化运镜） | 第二 | ✅ 已闭合 | ADR-037 §7：`beat-detector.ts` onBeat + `camera.ts` 8 预设 |
-| Scene Bundle（场景打包） | 第二 | ✅ 已闭合 | ADR-037 §8：`scene-bundle.ts` + Go `BundleScene`（限制：zip 内 VMD 加载待支持） |
+| Scene Bundle（场景打包） | 第二 | ✅ 已闭合 | ADR-037 §8：`scene-bundle.ts` + Go `BundleScene` |
+| 高斯随机眨眼 | 第二 | ✅ 已闭合 | ADR-037 §5 Lifelike |
+| 智能材质分类 | 第二 | ✅ 已闭合 | `model-manager.ts` 物理分类 regex 匹配 |
 | Toon 着色 | 第三 | ✅ 已闭合 | `outfit.ts` toonTexture + `scene-render-presets.ts` cartoon 预设 |
 | SSAO | 渲染 | ✅ 已闭合 | `renderer.ts` `SSAO2RenderingPipeline` |
 | 边缘渲染 | 渲染 | ✅ 已闭合 | `renderer.ts` outlineEnabled + 渲染设置 UI |
 
-> 备注：VMD 图层 composite 与 gaze 仅在 JS 运行时生效（WASM 回退单图层）；PBR 材质、SSS、光线追踪/GI 仍受 `babylon-mmd` 上游阻塞，保持 ❌。
+> 备注：PBR 材质、SSS、光线追踪/GI 仍受 `babylon-mmd` 上游阻塞，保持 ❌。脚部地面跟随仅有 Foot IK 步态（`proc-motion-autodance.ts`），非完整地面约束。
 
 ---
 

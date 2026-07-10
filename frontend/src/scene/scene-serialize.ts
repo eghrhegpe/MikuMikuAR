@@ -620,20 +620,6 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         if (data.env.sunAngle !== undefined) {
             setEnvSunAngle(data.env.sunAngle);
         }
-        // clothConfig 与默认值合并，确保旧场景文件的缺失字段有正确默认值
-        if (data.env.clothConfig) {
-            const { DEFAULT_CLOTH_CONFIG } = await import('../physics/xpbd-cloth');
-            data.env.clothConfig = { ...DEFAULT_CLOTH_CONFIG, ...data.env.clothConfig };
-        }
-        // ragdollJointParams 合并默认值（兼容旧场景缺失字段）
-        if (data.env.ragdollJointParams) {
-            const { DEFAULT_RAGDOLL_JOINT_PARAMS } = await import('../physics/xpbd-ragdoll');
-            const merged: Record<string, typeof DEFAULT_RAGDOLL_JOINT_PARAMS> = {};
-            for (const [k, v] of Object.entries(data.env.ragdollJointParams)) {
-                merged[k] = { ...DEFAULT_RAGDOLL_JOINT_PARAMS, ...v };
-            }
-            data.env.ragdollJointParams = merged;
-        }
         setEnvState(data.env, true);
     }
     if (data.gravityStrength !== undefined) {

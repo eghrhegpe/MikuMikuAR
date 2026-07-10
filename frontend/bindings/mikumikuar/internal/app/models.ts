@@ -25,28 +25,6 @@ export interface CacheStats {
 }
 
 /**
- * ClothConfig stores XPBD cloth simulation parameters.
- */
-export interface ClothConfig {
-    "anchorBone": string;
-    "topology": string;
-    "innerRadius": number;
-    "length": number;
-    "slope": number;
-    "segmentsH": number;
-    "segmentsV": number;
-    "particleRadius": number;
-    "compliance": number;
-    "totalMass": number;
-    "damping": number;
-    "gravityScale": number;
-    "elasticAnchor": boolean;
-    "anchorStiffness": number;
-    "anchorDamping": number;
-    "bendCompliance": number;
-}
-
-/**
  * Config holds persistent user settings.
  */
 export interface Config {
@@ -222,6 +200,7 @@ export interface EnvState {
     "groundTerrainSeed": number;
     "groundTerrainOctaves": number;
     "groundLevel": number;
+    "groundSize": number;
     "windEnabled": boolean;
     "windDirection": number[];
     "windSpeed": number;
@@ -289,13 +268,6 @@ export interface EnvState {
     "fogDensity": number;
     "fogStart": number;
     "fogEnd": number;
-    "clothEnabled": boolean;
-    "clothConfig": ClothConfig;
-    "clothDebugParticles": boolean;
-    "clothDebugConstraints": boolean;
-    "clothDebugColliders": boolean;
-    "solverSubsteps": number;
-    "solverTimeScale": number;
     "collisionEnabled": boolean;
     "bodyCollisionEnabled": boolean;
     "groundCollisionEnabled": boolean;

@@ -7,7 +7,6 @@ import { describe, it, expect, expectTypeOf } from 'vitest';
 import type {
     BuildInfo,
     CacheStats,
-    ClothConfig,
     Config,
     DanceSet,
     EnvPresetEntry,
@@ -26,7 +25,6 @@ import * as appBinding from '../../../bindings/mikumikuar/internal/app/app';
 import {
     createMockBuildInfo,
     createMockCacheStats,
-    createMockClothConfig,
     createMockConfig,
     createMockDanceSet,
     createMockEnvPresetEntry,
@@ -68,26 +66,6 @@ describe('binding contract: interface shapes', () => {
             totalBytes: expect.any(Number),
         });
         expectTypeOf(f).toMatchTypeOf<CacheStats>();
-    });
-
-    it('ClothConfig', () => {
-        const f = createMockClothConfig();
-        expect(f).toMatchObject({
-            anchorBone: expect.any(String),
-            topology: expect.any(String),
-            innerRadius: expect.any(Number),
-            length: expect.any(Number),
-            slope: expect.any(Number),
-            segmentsH: expect.any(Number),
-            segmentsV: expect.any(Number),
-            particleRadius: expect.any(Number),
-            compliance: expect.any(Number),
-            totalMass: expect.any(Number),
-            damping: expect.any(Number),
-            gravityScale: expect.any(Number),
-            bendCompliance: expect.any(Number),
-        });
-        expectTypeOf(f).toMatchTypeOf<ClothConfig>();
     });
 
     it('UIState', () => {
@@ -182,6 +160,7 @@ describe('binding contract: interface shapes', () => {
             groundMode: expect.any(String),
             groundColor: expect.any(Array),
             groundAlpha: expect.any(Number),
+            groundSize: expect.any(Number),
             windEnabled: expect.any(Boolean),
             windDirection: expect.any(Array),
             windSpeed: expect.any(Number),
@@ -219,8 +198,6 @@ describe('binding contract: interface shapes', () => {
             fogDensity: expect.any(Number),
             fogStart: expect.any(Number),
             fogEnd: expect.any(Number),
-            clothEnabled: expect.any(Boolean),
-            clothConfig: expect.any(Object),
         });
         expectTypeOf(f).toMatchTypeOf<EnvState>();
     });

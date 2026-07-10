@@ -940,17 +940,6 @@ export const zhTW: Record<string, string> = {
     'env.speed': '速度',
     'env.splash': '落地濺射',
 
-    // —— Physics ——
-    'physics.loadModelFirst': '⚠ 請先加載模型',
-    'physics.clothExists': '⚠ 布料已存在',
-    'physics.noMmdData': '⚠ 當前模型無 MMD 數據',
-    'physics.clothCreated': '✓ 布料已創建 ({particles} 粒子, {constraints} 約束, mesh: {mesh})',
-    'physics.clothEnabled':
-        '✓ 布料模擬已啟用 ({instances} 實例, {particles} 粒子, {constraints} 約束)',
-    'physics.ragdollEnabled': '✓ 布娃娃物理已啟用',
-    'physics.noActiveInstance': '⚠ 布料已啟用但未找到活躍實例',
-    'physics.clothDisabled': '布料模擬已關閉',
-
     // toast — Toast 元件
     'toast.copy': '複製',
     'toast.copied': '已複製 ✓',

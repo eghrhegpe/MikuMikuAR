@@ -4,8 +4,6 @@
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
-import type { ClothConfig } from '../physics/xpbd-cloth';
-import type { RagdollJointParams } from '../physics/xpbd-ragdoll';
 import type { UIState as GoUIState } from './wails-bindings';
 
 export type { GoUIState };
@@ -344,6 +342,7 @@ export interface EnvState {
     particleCustomTexture: string; // 自定义粒子纹理 data URL，空=默认
 
     groundLevel: number;
+    groundSize: number; // 地面范围（边长，世界单位），所有模式通用
 
     waterEnabled: boolean;
     waterLevel: number;
@@ -399,19 +398,6 @@ export interface EnvState {
     fogStart: number;
     fogEnd: number;
 
-    clothEnabled: boolean;
-    ragdollEnabled: boolean;
-    /** per-joint 参数覆盖（按骨骼名索引），空对象表示全用关节组预设 */
-    ragdollJointParams: Record<string, RagdollJointParams>;
-    clothConfig: ClothConfig;
-    clothDebugParticles: boolean;
-    clothDebugConstraints: boolean;
-    clothDebugColliders: boolean;
-    ragdollDebugParticles: boolean;
-    ragdollDebugConstraints: boolean;
-    ragdollDebugColliders: boolean;
-    solverSubsteps: number;
-    solverTimeScale: number;
     collisionEnabled: boolean;
     bodyCollisionEnabled: boolean;
     groundCollisionEnabled: boolean;
