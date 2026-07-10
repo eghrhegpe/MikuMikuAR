@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const _mockState = vi.hoisted(() => ({
   focusedModelId: null as string | null,
-  envState: { ragdollEnabled: false, ragdollDebugParticles: false, ragdollDebugConstraints: false, ragdollDebugColliders: false },
+  envState: { ragdollEnabled: false, ragdollJointParams: {} as Record<string, unknown>, ragdollDebugParticles: false, ragdollDebugConstraints: false, ragdollDebugColliders: false },
 }));
 
 vi.mock('@/core/state', () => _mockState);
@@ -57,6 +57,13 @@ vi.mock('@/physics/xpbd-ragdoll', () => ({
   buildRagdoll: vi.fn(() => mockRagdollInstance),
   stepRagdoll: vi.fn(),
   writeBack: vi.fn(),
+  DEFAULT_RAGDOLL_JOINT_PARAMS: { compliance: 0, stiffness: 1, damping: 0, coneHalfAngle: Math.PI / 4, twistRange: [-Math.PI / 4, Math.PI / 4] },
+  RAGDOLL_JOINT_GROUPS: {
+    spine: { keywords: ['上半身', '下半身', '腰', 'spine', 'chest'], params: { compliance: 0, stiffness: 1, damping: 0.1, coneHalfAngle: Math.PI / 6, twistRange: [-Math.PI / 8, Math.PI / 8] } },
+    shoulder: { keywords: ['肩', '腕', 'shoulder', 'arm'], params: { compliance: 0, stiffness: 1, damping: 0.05, coneHalfAngle: Math.PI / 2, twistRange: [-Math.PI / 4, Math.PI / 4] } },
+    elbow: { keywords: ['ひじ', 'elbow'], params: { compliance: 0, stiffness: 1, damping: 0.05, coneHalfAngle: Math.PI / 8, twistRange: [0, 0] } },
+    neck: { keywords: ['首', '頭', 'head', 'neck'], params: { compliance: 0, stiffness: 1, damping: 0.1, coneHalfAngle: Math.PI / 3, twistRange: [-Math.PI / 4, Math.PI / 4] } },
+  },
 }));
 
 vi.mock('@/physics/xpbd-collider', () => ({
@@ -207,6 +214,39 @@ describe('ragdoll-manager', () => {
     });
   });
 
+  describe('joint params API', () => {
+    it('should export setRagdollJointParams and applyRagdollJointPreset', () => {
+      expect(ragdollManager.setRagdollJointParams).toBeDefined();
+      expect(ragdollManager.applyRagdollJointPreset).toBeDefined();
+    });
+
+    it('should merge partial params into envState.ragdollJointParams', () => {
+      envState.ragdollJointParams = {};
+      ragdollManager.setRagdollJointParams('頭', { stiffness: 0.5 });
+      const stored = (envState.ragdollJointParams as Record<string, any>)['頭'];
+      expect(stored).toBeDefined();
+      expect(stored.stiffness).toBe(0.5);
+      // 未覆盖字段沿用 DEFAULT
+      expect(stored.compliance).toBe(0);
+    });
+
+    it('should apply preset scaling via applyRagdollJointPreset', () => {
+      envState.ragdollJointParams = {};
+      ragdollManager.applyRagdollJointPreset('spine', 'loose');
+      const stored = (envState.ragdollJointParams as Record<string, any>)['spine'];
+      expect(stored).toBeDefined();
+      // spine 默认 stiffness=1, loose 缩放 0.5
+      expect(stored.stiffness).toBeCloseTo(0.5);
+    });
+
+    it('should ignore unknown group / preset', () => {
+      envState.ragdollJointParams = {};
+      ragdollManager.applyRagdollJointPreset('unknown-group', 'loose');
+      ragdollManager.applyRagdollJointPreset('spine', 'bogus' as any);
+      expect(Object.keys(envState.ragdollJointParams)).toHaveLength(0);
+    });
+  });
+
   describe('API surface consistency with cloth-manager', () => {
     const requiredExports = [
       'toggleRagdoll',
@@ -225,6 +265,8 @@ describe('ragdoll-manager', () => {
       'setRagdollCapsuleEnabled',
       'setAllRagdollCapsulesEnabled',
       'initRagdoll',
+      'setRagdollJointParams',
+      'applyRagdollJointPreset',
     ];
 
     requiredExports.forEach((exportName) => {

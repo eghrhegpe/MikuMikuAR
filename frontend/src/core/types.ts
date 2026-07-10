@@ -5,6 +5,7 @@ import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { ClothConfig } from '../physics/xpbd-cloth';
+import type { RagdollJointParams } from '../physics/xpbd-ragdoll';
 import type { UIState as GoUIState } from './wails-bindings';
 
 export type { GoUIState };
@@ -276,6 +277,8 @@ export interface UIState {
     invertYAxis?: boolean;
     /** 默认模型自动缩放：新加载模型按统一目标高度归一化（仅 actor） */
     autoScaleModel?: boolean;
+    /** 默认模型自动居中：新加载模型时相机自动对准取景（仅 actor）。undefined 视为 true */
+    autoCenterModel?: boolean;
     materialCategoryMap?: Record<string, string>;
     screenshotFormat?: 'image/png' | 'image/jpeg' | 'image/webp';
     screenshotQuality?: number;
@@ -396,6 +399,8 @@ export interface EnvState {
 
     clothEnabled: boolean;
   ragdollEnabled: boolean;
+  /** per-joint 参数覆盖（按骨骼名索引），空对象表示全用关节组预设 */
+  ragdollJointParams: Record<string, RagdollJointParams>;
     clothConfig: ClothConfig;
   clothDebugParticles: boolean;
   clothDebugConstraints: boolean;

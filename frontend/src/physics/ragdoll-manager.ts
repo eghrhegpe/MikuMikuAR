@@ -8,8 +8,12 @@ import {
   buildRagdoll,
   stepRagdoll,
   writeBack,
+  DEFAULT_RAGDOLL_JOINT_PARAMS,
+  RAGDOLL_JOINT_GROUPS,
   type RagdollInstance,
+  type RagdollJointParams,
 } from './xpbd-ragdoll';
+import { XpbdRenderer } from './xpbd-renderer';
 import { scene, modelManager } from '../scene/scene';
 import { focusedModelId, envState } from '../core/state';
 import { setStatus } from '../core/status-bar';
@@ -34,6 +38,9 @@ let _isRagdollInitialized = false;
 
 /** 场景引用（懒加载） */
 let _scene: Scene | null = null;
+
+/** 调试可视化渲染器（懒加载；全部 debug 关闭时销毁释放网格） */
+let _renderer: XpbdRenderer | null = null;
 
 /** 获取运行时骨骼的函数 */
 let _getRuntimeBones: (() => readonly IMmdRuntimeBone[]) | null = null;
@@ -114,6 +121,7 @@ function _createRagdollForFocusedModel(): boolean {
     if (!inst.enabled) return;
     stepRagdoll(inst, dt);
     writeBack(inst, inst.isWasm, _getRuntimeBones!);
+    updateRagdollDebugVisualization(inst);
   };
 
   // Register with model manager
@@ -189,6 +197,38 @@ export function recreateRagdoll(): boolean {
   return _createRagdollForFocusedModel();
 }
 
+// ======== 关节参数 API ========
+
+/** 设置单个关节的物理参数（按骨骼名索引，合并到 envState.ragdollJointParams）
+ *  热更新：若布偶已存在，重建约束以应用新参数
+ */
+export function setRagdollJointParams(jointName: string, params: Partial<RagdollJointParams>): void {
+  const existing = envState.ragdollJointParams?.[jointName] ?? DEFAULT_RAGDOLL_JOINT_PARAMS;
+  const merged: RagdollJointParams = { ...DEFAULT_RAGDOLL_JOINT_PARAMS, ...existing, ...params };
+  if (!envState.ragdollJointParams) envState.ragdollJointParams = {};
+  envState.ragdollJointParams[jointName] = merged;
+  // 热更新：若 ragdoll 已存在，重建约束以应用新参数
+  if (_ragdollInstance) {
+    recreateRagdoll();
+  }
+}
+
+/** 对关节组套用 loose/normal/stiff 预设（按 compliance/stiffness 缩放） */
+export function applyRagdollJointPreset(group: string, preset: 'loose' | 'normal' | 'stiff'): void {
+  const multipliers: Record<string, number> = { loose: 0.5, normal: 1, stiff: 1.5 };
+  const m = multipliers[preset];
+  if (m === undefined) return;
+  const g = RAGDOLL_JOINT_GROUPS[group];
+  if (!g) return;
+  setRagdollJointParams(group, {
+    compliance: g.params.compliance * m,
+    stiffness: Math.min(1, g.params.stiffness * m),
+    damping: g.params.damping,
+    coneHalfAngle: g.params.coneHalfAngle,
+    twistRange: g.params.twistRange,
+  });
+}
+
 // ======== 诊断 API ========
 
 /** 布偶状态诊断信息 */
@@ -234,28 +274,64 @@ function _reportRagdollStatus(): void {
 
 // ======== 调试可视化 API ========
 
+/** 获取或创建调试渲染器（懒加载；创建时套用当前 debug 开关状态） */
+function _getRenderer(): XpbdRenderer | null {
+  if (!_scene) return null;
+  if (!_renderer) {
+    _renderer = new XpbdRenderer(_scene);
+    _renderer.showParticles(envState.ragdollDebugParticles);
+    _renderer.showConstraints(envState.ragdollDebugConstraints);
+    _renderer.showColliders(envState.ragdollDebugColliders);
+  }
+  return _renderer;
+}
+
 /** 开关粒子可视化 */
 export function setRagdollDebugParticles(enabled: boolean): void {
   envState.ragdollDebugParticles = enabled;
+  _getRenderer()?.showParticles(enabled);
   _syncDebugUpdateFn();
 }
 
 /** 开关约束可视化 */
 export function setRagdollDebugConstraints(enabled: boolean): void {
   envState.ragdollDebugConstraints = enabled;
+  _getRenderer()?.showConstraints(enabled);
   _syncDebugUpdateFn();
 }
 
 /** 开关碰撞体可视化 */
 export function setRagdollDebugColliders(enabled: boolean): void {
   envState.ragdollDebugColliders = enabled;
+  _getRenderer()?.showColliders(enabled);
   _syncDebugUpdateFn();
 }
 
-/** 同步调试更新回调 */
+/** 同步调试渲染器生命周期：全部 debug 关闭时销毁渲染器释放网格 */
 function _syncDebugUpdateFn(): void {
-  // Ragdoll uses the same pattern as cloth-manager
-  // The actual visualization would be handled by a renderer if implemented
+  const anyOn =
+    envState.ragdollDebugParticles ||
+    envState.ragdollDebugConstraints ||
+    envState.ragdollDebugColliders;
+  if (!anyOn && _renderer) {
+    _renderer.dispose();
+    _renderer = null;
+  }
+}
+
+/** 每帧更新调试可视化（由 ragdoll updateFn 调用，纯展示不参算） */
+function updateRagdollDebugVisualization(inst: RagdollInstance): void {
+  const r = _getRenderer();
+  if (!r) return;
+  if (envState.ragdollDebugParticles) {
+    r.updateParticles(inst.solver);
+  }
+  if (envState.ragdollDebugConstraints) {
+    r.updateConstraints(inst.solver);
+  }
+  if (envState.ragdollDebugColliders && _currentCollider) {
+    r.updateColliders(_currentCollider);
+  }
 }
 
 /** 获取调试状态 */

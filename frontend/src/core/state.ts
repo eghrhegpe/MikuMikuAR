@@ -356,6 +356,7 @@ export const envState: EnvState = reactive<EnvState>({
 
     clothEnabled: false,
   ragdollEnabled: false,
+  ragdollJointParams: {},
     clothConfig: { ...DEFAULT_CLOTH_CONFIG },
   clothDebugParticles: false,
   clothDebugConstraints: false,

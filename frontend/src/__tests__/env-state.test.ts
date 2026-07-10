@@ -106,6 +106,7 @@ const defaultEnv: EnvState = {
     clothDebugConstraints: false,
     clothDebugColliders: false,
     ragdollEnabled: false,
+    ragdollJointParams: {},
     ragdollDebugParticles: false,
     ragdollDebugConstraints: false,
     ragdollDebugColliders: false,
