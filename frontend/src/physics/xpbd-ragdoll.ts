@@ -128,6 +128,48 @@ function _extractRelativeQuaternion(parentMat: Float32Array, childMat: Float32Ar
 
 // ── Ragdoll Builder ──
 
+/** 单个关节的物理参数（per-joint 或 per-group） */
+export interface RagdollJointParams {
+  /** 柔度（compliance），0=完全刚性，越大越软 */
+  compliance: number;
+  /** 刚度缩放 (0~1) */
+  stiffness: number;
+  /** 阻尼 (0~1) */
+  damping: number;
+  /** sphere 专属：圆锥限位半角（弧度） */
+  coneHalfAngle: number;
+  /** sphere 专属：twist 扭转范围 [min, max]（弧度） */
+  twistRange: [number, number];
+}
+
+export const DEFAULT_RAGDOLL_JOINT_PARAMS: RagdollJointParams = {
+  compliance: 0,
+  stiffness: 1.0,
+  damping: 0.0,
+  coneHalfAngle: Math.PI / 4,
+  twistRange: [-Math.PI / 4, Math.PI / 4],
+};
+
+/**
+ * 关节组预设：按骨骼名匹配关键字归组，每组独立参数。
+ * 真实人体各关节限位差异巨大（肩≈90°、肘 twist≈0°），全局统一无意义。
+ */
+export const RAGDOLL_JOINT_GROUPS: Record<string, { keywords: string[]; params: RagdollJointParams }> = {
+  spine:   { keywords: ['上半身', '下半身', '腰', 'spine', 'chest'], params: { compliance: 0, stiffness: 1, damping: 0.1, coneHalfAngle: Math.PI/6, twistRange: [-Math.PI/8, Math.PI/8] } },
+  shoulder:{ keywords: ['肩', '腕', 'shoulder', 'arm'], params: { compliance: 0, stiffness: 1, damping: 0.05, coneHalfAngle: Math.PI/2, twistRange: [-Math.PI/4, Math.PI/4] } },
+  elbow:   { keywords: ['ひじ', 'elbow'], params: { compliance: 0, stiffness: 1, damping: 0.05, coneHalfAngle: Math.PI/8, twistRange: [0, 0] } },
+  neck:    { keywords: ['首', '頭', 'head', 'neck'], params: { compliance: 0, stiffness: 1, damping: 0.1, coneHalfAngle: Math.PI/3, twistRange: [-Math.PI/4, Math.PI/4] } },
+};
+
+/** 按骨骼名查找关节组参数，未匹配返回 DEFAULT */
+export function getJointParams(boneName: string, overrides?: Record<string, RagdollJointParams>): RagdollJointParams {
+  if (overrides?.[boneName]) return overrides[boneName];
+  for (const g of Object.values(RAGDOLL_JOINT_GROUPS)) {
+    if (g.keywords.some(kw => boneName.toLowerCase().includes(kw.toLowerCase()))) return g.params;
+  }
+  return DEFAULT_RAGDOLL_JOINT_PARAMS;
+}
+
 export interface BuildRagdollOptions {
   /** Custom ground Y for clamping (default -10) */
   groundY?: number;

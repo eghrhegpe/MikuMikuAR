@@ -4,7 +4,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildRagdoll, stepRagdoll, writeBack } from '@/physics/xpbd-ragdoll';
+import { buildRagdoll, stepRagdoll, writeBack, RAGDOLL_JOINT_GROUPS, DEFAULT_RAGDOLL_JOINT_PARAMS, getJointParams, type RagdollJointParams } from '@/physics/xpbd-ragdoll';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 // Mock Babylon Vector3 and Quaternion
@@ -313,5 +313,56 @@ describe('xpbd-ragdoll', () => {
       expect(mockLinkedBone.rotationQuaternion).toBeTruthy();
       expect(mockLinkedBone.setPosition).toHaveBeenCalled();
     });
+  });
+});
+
+describe('RagdollJointParams', () => {
+  it('DEFAULT should have all fields', () => {
+    expect(DEFAULT_RAGDOLL_JOINT_PARAMS.compliance).toBeDefined();
+    expect(DEFAULT_RAGDOLL_JOINT_PARAMS.stiffness).toBeDefined();
+    expect(DEFAULT_RAGDOLL_JOINT_PARAMS.damping).toBeDefined();
+    expect(DEFAULT_RAGDOLL_JOINT_PARAMS.coneHalfAngle).toBeDefined();
+    expect(DEFAULT_RAGDOLL_JOINT_PARAMS.twistRange).toBeDefined();
+  });
+
+  it('RAGDOLL_JOINT_GROUPS should include spine/shoulder/elbow/neck', () => {
+    expect(RAGDOLL_JOINT_GROUPS.spine).toBeDefined();
+    expect(RAGDOLL_JOINT_GROUPS.shoulder).toBeDefined();
+    expect(RAGDOLL_JOINT_GROUPS.elbow).toBeDefined();
+    expect(RAGDOLL_JOINT_GROUPS.neck).toBeDefined();
+  });
+
+  it('getJointParams should return shoulder params for arm bone', () => {
+    const params = getJointParams('左腕');
+    expect(params.coneHalfAngle).toBe(RAGDOLL_JOINT_GROUPS.shoulder.params.coneHalfAngle);
+  });
+
+  it('getJointParams should return elbow params for ひじ bone', () => {
+    const params = getJointParams('左ひじ');
+    expect(params.twistRange).toEqual(RAGDOLL_JOINT_GROUPS.elbow.params.twistRange);
+  });
+
+  it('getJointParams should return neck params for 首 bone', () => {
+    const params = getJointParams('首');
+    expect(params.coneHalfAngle).toBe(RAGDOLL_JOINT_GROUPS.neck.params.coneHalfAngle);
+  });
+
+  it('getJointParams should return spine params for 上半身 bone', () => {
+    const params = getJointParams('上半身');
+    expect(params.coneHalfAngle).toBe(RAGDOLL_JOINT_GROUPS.spine.params.coneHalfAngle);
+  });
+
+  it('getJointParams should return DEFAULT for unknown bone', () => {
+    const params = getJointParams('unknown_bone');
+    expect(params).toEqual(DEFAULT_RAGDOLL_JOINT_PARAMS);
+  });
+
+  it('getJointParams should prefer overrides over group preset', () => {
+    const customParams: RagdollJointParams = {
+      compliance: 0.5, stiffness: 0.8, damping: 0.2,
+      coneHalfAngle: Math.PI / 6, twistRange: [-0.1, 0.1],
+    };
+    const params = getJointParams('左腕', { '左腕': customParams });
+    expect(params).toEqual(customParams);
   });
 });
