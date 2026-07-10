@@ -1,7 +1,7 @@
 // [doc:adr-071] 感知层单元测试 — 状态管理 + 生命周期
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // 迁移函数为纯函数，静态导入即可；scene-serialize 的重依赖下方统一 mock
-import { migratePerceptionFromProcMotion } from '../scene/scene-serialize';
+import { migratePerceptionFromProcMotion, migrateBalanceSwayFromProcMotion } from '../scene/scene-serialize';
 
 // =====================================================================
 // hoisted mock state
@@ -434,6 +434,29 @@ describe('scene-serialize perception migration', () => {
         const migrated = migratePerceptionFromProcMotion(oldProcMotion);
         expect(migrated.microExpressionEnabled).toBe(false);
         expect(migrated.emotion).toBe('neutral');
+    });
+});
+
+// =====================================================================
+// scene-serialize balanceSway migration — 旧存档躯干 toggle 迁移
+// =====================================================================
+
+describe('scene-serialize balanceSway migration', () => {
+    it('旧存档 boneToggles.center=true 时映射为 balanceSwayEnabled=true', () => {
+        const old = { boneToggles: { center: true, upper2: false, waist: false, allParent: false } };
+        const migrated = migrateBalanceSwayFromProcMotion(old as any);
+        expect(migrated.balanceSwayEnabled).toBe(true);
+    });
+
+    it('旧存档四个躯干 toggle 全 false 时映射为 balanceSwayEnabled=false', () => {
+        const old = { boneToggles: { center: false, upper2: false, waist: false, allParent: false } };
+        const migrated = migrateBalanceSwayFromProcMotion(old as any);
+        expect(migrated.balanceSwayEnabled).toBe(false);
+    });
+
+    it('旧存档无 boneToggles 时默认 balanceSwayEnabled=true', () => {
+        const migrated = migrateBalanceSwayFromProcMotion({} as any);
+        expect(migrated.balanceSwayEnabled).toBe(true);
     });
 });
 
