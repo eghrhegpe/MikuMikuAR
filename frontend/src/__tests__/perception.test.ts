@@ -315,7 +315,7 @@ describe('_applyMicroExpression', () => {
     });
 
     it('neutral 情绪不写入任何 morph', () => {
-        const mockMorphManager = makeMockMorphManager(['笑み', '困りォ', '驚き', '怒り']);
+        const mockMorphManager = makeMockMorphManager(['笑み', '困り', '驚き', '怒り']);
         const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
         mockState.modelManager.get.mockReturnValue({ mmdModel });
         sut.setPerceptionState({ emotion: 'neutral', microExpressionEnabled: true });
@@ -356,6 +356,56 @@ describe('_applyMicroExpression', () => {
         sut.activatePerception('m1');
         vi.mocked(performance.now).mockReturnValue(1000);
         expect(() => triggerLastObserver()).not.toThrow();
+    });
+
+    it('开启写入后关闭 → 旧 morph influence 归零（防冻结）', () => {
+        const mockMorphManager = makeMockMorphManager(['笑み']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setPerceptionState({ emotion: 'happy', microExpressionEnabled: true });
+        sut.activatePerception('m1');
+        // 1. 写入笑み（峰值 t=1s）
+        vi.mocked(performance.now).mockReturnValue(1000);
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('笑み')).toBeGreaterThan(0);
+        // 2. 关闭开关
+        sut.setPerceptionState({ microExpressionEnabled: false });
+        triggerLastObserver();
+        // 3. 笑み应归零，不残留
+        expect(mockMorphManager.getInfluence('笑み')).toBe(0);
+    });
+
+    it('切换情绪时旧 morph 归零（防串味）', () => {
+        const mockMorphManager = makeMockMorphManager(['笑み', '怒り']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setPerceptionState({ emotion: 'happy', microExpressionEnabled: true });
+        sut.activatePerception('m1');
+        // 1. 写入笑み
+        vi.mocked(performance.now).mockReturnValue(1000);
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('笑み')).toBeGreaterThan(0);
+        // 2. 切换为 angry
+        sut.setPerceptionState({ emotion: 'angry' });
+        triggerLastObserver();
+        // 3. 笑み归零，怒り写入
+        expect(mockMorphManager.getInfluence('笑み')).toBe(0);
+        expect(mockMorphManager.getInfluence('怒り')).toBeGreaterThan(0);
+    });
+
+    it('切换到 neutral 时旧 morph 归零', () => {
+        const mockMorphManager = makeMockMorphManager(['笑み']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setPerceptionState({ emotion: 'happy', microExpressionEnabled: true });
+        sut.activatePerception('m1');
+        vi.mocked(performance.now).mockReturnValue(1000);
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('笑み')).toBeGreaterThan(0);
+        // 切换为 neutral
+        sut.setPerceptionState({ emotion: 'neutral' });
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('笑み')).toBe(0);
     });
 });
 

@@ -154,10 +154,8 @@ export function activatePerception(modelId?: string): void {
             _applyBlinking(mmdModel, time);
         }
 
-        // 3. 微表情
-        if (perceptionState.microExpressionEnabled) {
-            _applyMicroExpression(mmdModel, time, perceptionState.emotion);
-        }
+        // 3. 微表情（无条件调用，内部处理关闭/neutral 复位）
+        _applyMicroExpression(mmdModel, time, perceptionState.microExpressionEnabled, perceptionState.emotion);
 
         // 4. 头部跟随 + 眼部跟随（gaze）
         if (perceptionState.headTrackingEnabled || perceptionState.eyeTrackingEnabled) {
@@ -182,6 +180,7 @@ export function deactivatePerception(): void {
         scene.onBeforeRenderObservable.remove(perceptionObserver);
         perceptionObserver = null;
     }
+    _lastEmotionMorphName = null; // 模型切换时清空，避免旧 morph 名残留
     perceptionModelId = null;
     console.log('[perception] 已注销');
 }
@@ -298,7 +297,7 @@ function _applyBlinking(mmdModel: any, time: number): void {
 /** 情绪 → morph 名候选（按优先级降序匹配，复用 matchBone） */
 const EMOTION_MORPH_CANDIDATES: Record<Exclude<Emotion, 'neutral'>, string[]> = {
     happy: ['笑み', 'Smile', 'smile', 'にっこり', 'Happy'],
-    sad: ['困りォ', 'Troubled', 'troubled', '悲しい', 'Sad'],
+    sad: ['困り', 'Troubled', 'troubled', '悲しい', 'Sad'],
     surprised: ['驚き', 'Surprised', 'surprised', 'びっくり', 'Surprise'],
     angry: ['怒り', 'Angry', 'angry', '怒', 'Angry2'],
 };
@@ -308,14 +307,30 @@ const MICRO_EXPR_PERIOD = 4.0;
 /** 微表情脉冲峰值权重 */
 const MICRO_EXPR_PEAK = 0.12;
 
-function _applyMicroExpression(mmdModel: any, time: number, emotion: Emotion): void {
-    if (emotion === 'neutral') return;
+/** 上次写入的 morph 名（用于关闭/切换情绪时复位，防止残留冻结） */
+let _lastEmotionMorphName: string | null = null;
+
+function _applyMicroExpression(
+    mmdModel: any,
+    time: number,
+    enabled: boolean,
+    emotion: Emotion
+): void {
+    const morphManager = mmdModel.mesh?.morphTargetManager;
+    if (!morphManager) return;
+
+    // 关闭或 neutral：复位上次 morph 并退出（防止非零权重定格）
+    if (!enabled || emotion === 'neutral') {
+        if (_lastEmotionMorphName) {
+            const old = morphManager.getMorphTargetByName?.(_lastEmotionMorphName);
+            if (old) old.influence = 0;
+            _lastEmotionMorphName = null;
+        }
+        return;
+    }
 
     const candidates = EMOTION_MORPH_CANDIDATES[emotion];
     if (!candidates || candidates.length === 0) return;
-
-    const morphManager = mmdModel.mesh?.morphTargetManager;
-    if (!morphManager) return;
 
     // 复用 matchBone 匹配候选 morph 名（与 _applyBlinking 同款模式）
     const morphNames = morphManager.getMorphTargetNames?.() || [];
@@ -325,6 +340,12 @@ function _applyMicroExpression(mmdModel: any, time: number, emotion: Emotion): v
     const targetMorph = morphManager.getMorphTargetByName?.(targetName);
     if (!targetMorph) return;
 
+    // 情绪切换时复位旧 morph（如 happy→angry，清零笑み防串味）
+    if (_lastEmotionMorphName && _lastEmotionMorphName !== targetName) {
+        const old = morphManager.getMorphTargetByName?.(_lastEmotionMorphName);
+        if (old) old.influence = 0;
+    }
+
     // 周期性脉冲：sin²(t * 2π / period) 在 [0,1] 间振荡，乘以峰值权重
     const phase = (time % MICRO_EXPR_PERIOD) / MICRO_EXPR_PERIOD; // [0,1)
     const pulse = Math.sin(phase * Math.PI * 2) ** 2; // [0,1]
@@ -332,6 +353,7 @@ function _applyMicroExpression(mmdModel: any, time: number, emotion: Emotion): v
 
     // 写入 morph 权重（与 _applyBlinking 的 influence 赋值一致）
     targetMorph.influence = weight;
+    _lastEmotionMorphName = targetName;
 }
 
 // ══════════════════════════════════════════════════════════════
