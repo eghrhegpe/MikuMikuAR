@@ -146,6 +146,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Cache node_modules
         uses: actions/cache@v5
+        id: cache-node-modules-linux
         with:
           path: frontend/node_modules
           key: nm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
@@ -167,10 +168,14 @@ jobs:
       - name: Install Wails
         if: steps.cache-wails-linux.outputs.cache-hit != 'true'
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ needs.prepare.outputs.wails_ver }}
-      - name: Build Frontend
+      - name: Install Frontend deps
+        if: steps.cache-node-modules-linux.outputs.cache-hit != 'true'
         run: |
           cd frontend
           npm ci
+      - name: Build Frontend
+        run: |
+          cd frontend
           npx vite build
       - name: Build
         run: |
@@ -223,6 +228,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Cache node_modules
         uses: actions/cache@v5
+        id: cache-node-modules-android
         with:
           path: frontend/node_modules
           key: nm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
@@ -248,10 +254,14 @@ jobs:
             ~/.gradle/wrapper
           key: gradle-${{ runner.os }}-${{ hashFiles('build/android/gradle/wrapper/gradle-wrapper.properties') }}
 
-      - name: Build Frontend
+      - name: Install Frontend deps
+        if: steps.cache-node-modules-android.outputs.cache-hit != 'true'
         run: |
           cd frontend
           npm ci
+      - name: Build Frontend
+        run: |
+          cd frontend
           npx vite build
 
       - name: Decode keystore (if available)
