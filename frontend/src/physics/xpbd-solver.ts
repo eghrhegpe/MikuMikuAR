@@ -23,6 +23,15 @@ export interface XpbdParticle {
     invMass: number;
     /** 碰撞半径 */
     radius: number;
+    /** 角向姿态四元数 [x, y, z, w]，默认 [0,0,0,1]（identity）。
+     *  纯 TS 存储，不依赖 Babylon Quaternion，保持 solver 纯净。 */
+    orientation: Float32Array;
+    /** 上一帧角向姿态（角向 Verlet 积分用） */
+    prevOrientation: Float32Array;
+    /** 角速度 [x, y, z] */
+    angularVelocity: Float32Array;
+    /** 转动惯量倒数 (1/I)，0 = 固定/无限惯量（与 invMass=0 语义对齐） */
+    invInertia: number;
 }
 
 /** 约束类型 */
@@ -190,6 +199,10 @@ export class XpbdSolver {
             v: new Float32Array([0, 0, 0]),
             invMass,
             radius,
+            orientation: new Float32Array([0, 0, 0, 1]),
+            prevOrientation: new Float32Array([0, 0, 0, 1]),
+            angularVelocity: new Float32Array(3),
+            invInertia: invMass === 0 ? 0 : 1,
         };
         const idx = this.particles.length;
         this.particles.push(particle);
