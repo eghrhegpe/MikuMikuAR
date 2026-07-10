@@ -45,6 +45,30 @@ let _renderer: XpbdRenderer | null = null;
 /** 获取运行时骨骼的函数 */
 let _getRuntimeBones: (() => readonly IMmdRuntimeBone[]) | null = null;
 
+/** ragdoll 混合权重目标值 0=动画主导, 1=物理主导。启用时缓动到 1，关闭时归 0。 */
+let _blendTarget = 0;
+/** 当前实际混合权重（缓动值），由 observer tick 驱动向 _blendTarget 逼近；writeBack 用此值做 Slerp */
+let _blendWeight = 0;
+const BLEND_SPEED = 4; // 每秒 4 单位，约 0.25s 完成 0→1
+
+/** 设置 ragdoll 混合权重（clamp 到 [0,1]），作为缓动目标 */
+export function setRagdollBlendWeight(w: number): void {
+  _blendTarget = Math.max(0, Math.min(1, w));
+}
+
+/** 获取 ragdoll 混合权重设定值（clamp 后的 target） */
+export function getRagdollBlendWeight(): number {
+  return _blendTarget;
+}
+
+/** 在 ragdoll observer tick 内调用，驱动 _blendWeight 缓动逼近 _blendTarget */
+function _updateBlendWeight(dt: number): void {
+  const diff = _blendTarget - _blendWeight;
+  const step = BLEND_SPEED * dt;
+  if (Math.abs(diff) < step) _blendWeight = _blendTarget;
+  else _blendWeight += Math.sign(diff) * step;
+}
+
 // ======== 内部工具函数 ========
 
 /** 为当前聚焦模型创建布偶 */
@@ -120,7 +144,8 @@ function _createRagdollForFocusedModel(): boolean {
   const updateFn = (dt: number) => {
     if (!inst.enabled) return;
     stepRagdoll(inst, dt);
-    writeBack(inst, inst.isWasm, _getRuntimeBones!);
+    _updateBlendWeight(dt);
+    writeBack(inst, inst.isWasm, _getRuntimeBones!, _blendWeight);
     updateRagdollDebugVisualization(inst);
   };
 
@@ -179,8 +204,11 @@ export function initRagdoll(getBones: () => readonly IMmdRuntimeBone[], scene: S
 export function toggleRagdoll(enabled: boolean): void {
   if (enabled) {
     _createRagdollForFocusedModel();
+    setRagdollBlendWeight(1); // 物理主导：缓动到 1
   } else {
     _disposeRagdollForFocusedModel();
+    setRagdollBlendWeight(0); // 动画主导：target 归 0
+    _blendWeight = 0; // tick 随 dispose 停止，立即归零保证动画主导
   }
   envState.ragdollEnabled = enabled;
   _reportRagdollStatus();

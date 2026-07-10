@@ -344,7 +344,8 @@ export function stepRagdoll(inst: RagdollInstance, dt: number): void {
 export function writeBack(
   inst: RagdollInstance,
   isWasm: boolean,
-  getRuntimeBones: () => readonly IMmdRuntimeBone[]
+  getRuntimeBones: () => readonly IMmdRuntimeBone[],
+  blendWeight: number = 1
 ): void {
   const bones = getRuntimeBones();
 
@@ -394,7 +395,14 @@ export function writeBack(
         // 仅写 position（ragdoll 仍驱动 head 位置）
       } else {
         const q = p.orientation;
-        linked.rotationQuaternion = new Quaternion(q[0], q[1], q[2], q[3]);
+        const physicsRot = new Quaternion(q[0], q[1], q[2], q[3]);
+        if (blendWeight >= 0.999) {
+          linked.rotationQuaternion = physicsRot;
+        } else {
+          // Slerp(动画姿态, 物理姿态, blendWeight)：blendWeight=0 动画主导, 1 物理主导
+          const animRot = linked.rotationQuaternion ?? Quaternion.Identity();
+          linked.rotationQuaternion = Quaternion.Slerp(animRot, physicsRot, blendWeight);
+        }
       }
 
       // Force skeleton refresh
