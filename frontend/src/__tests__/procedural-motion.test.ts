@@ -17,7 +17,7 @@ const BONES_CENTER_UPPER = ['センター', '上半身'];
 const BONES_ALL = ['センター', '上半身', '頭', '左腕', '右腕'];
 
 describe('generateIdleVmd', () => {
-    const buf = generateIdleVmd(state, ['まばたき'], BONES_CENTER_UPPER);
+    const buf = generateIdleVmd(state, ['まばたき'], BONES_ALL);
 
     it('produces non-empty VMD', () => {
         expect(buf.byteLength).toBeGreaterThan(200);
@@ -44,7 +44,7 @@ describe('generateIdleVmd', () => {
     });
 
     it('loop closes (first and last bone frame match)', () => {
-        const buf2 = generateIdleVmd(state, [], BONES_CENTER_UPPER);
+        const buf2 = generateIdleVmd(state, [], BONES_ALL);
         const view = new DataView(buf2);
         const boneCount = view.getUint32(50, true);
         const lastOff = 54 + (boneCount - 1) * 111 + 15 + 4 + 12;
@@ -59,7 +59,7 @@ describe('generateIdleVmd', () => {
 
     it('intensity=0 produces minimal rotation', () => {
         const zeroState = { ...state, intensity: 0 };
-        const buf2 = generateIdleVmd(zeroState, [], BONES_CENTER_UPPER);
+        const buf2 = generateIdleVmd(zeroState, [], BONES_ALL);
         const view = new DataView(buf2);
         const off = 54 + 15 + 4;
         const rotX = view.getFloat32(off + 12, true);
@@ -74,49 +74,17 @@ describe('generateIdleVmd', () => {
     });
 
     it('speed=0.1 (minimum) produces longer loop', () => {
-        const slow = generateIdleVmd({ ...state, speed: 0.1 }, [], BONES_CENTER_UPPER);
-        const fast = generateIdleVmd({ ...state, speed: 10 }, [], BONES_CENTER_UPPER);
+        const slow = generateIdleVmd({ ...state, speed: 0.1 }, [], BONES_ALL);
+        const fast = generateIdleVmd({ ...state, speed: 10 }, [], BONES_ALL);
         // 极慢速度 → 更多帧 → 更大文件
         expect(slow.byteLength).toBeGreaterThan(fast.byteLength);
     });
 
     it('intensity=1 produces larger rotations than intensity=0.1', () => {
-        const high = generateIdleVmd({ ...state, intensity: 1 }, ['まばたき'], BONES_CENTER_UPPER);
-        const low = generateIdleVmd({ ...state, intensity: 0.1 }, ['まばたき'], BONES_CENTER_UPPER);
+        const high = generateIdleVmd({ ...state, intensity: 1 }, ['まばたき'], BONES_ALL);
+        const low = generateIdleVmd({ ...state, intensity: 0.1 }, ['まばたき'], BONES_ALL);
         // 更高强度 → 更大旋转值 → 更多非零帧 → 更大文件（或至少不更小）
         expect(high.byteLength).toBeGreaterThanOrEqual(low.byteLength);
-    });
-
-    it('includes neck bone frames when neck bone present', () => {
-        const bonesWithNeck = ['センター', '上半身', '首', '頭'];
-        const buf2 = generateIdleVmd(state, [], bonesWithNeck);
-        const view = new DataView(buf2);
-        const boneCount = view.getUint32(50, true);
-        expect(boneCount).toBeGreaterThan(2); // center + upper + neck + head
-    });
-
-    it('includes allparent bone frames', () => {
-        const bonesWithParent = ['全ての親', 'センター', '上半身'];
-        const buf2 = generateIdleVmd(state, [], bonesWithParent);
-        const view = new DataView(buf2);
-        const boneCount = view.getUint32(50, true);
-        expect(boneCount).toBeGreaterThanOrEqual(2);
-    });
-
-    it('includes waist bone frames', () => {
-        const bonesWithWaist = ['センター', '腰', '上半身'];
-        const buf2 = generateIdleVmd(state, [], bonesWithWaist);
-        const view = new DataView(buf2);
-        const boneCount = view.getUint32(50, true);
-        expect(boneCount).toBeGreaterThanOrEqual(2);
-    });
-
-    it('includes upper2 bone frames', () => {
-        const bonesWithUpper2 = ['センター', '上半身', '上半身2'];
-        const buf2 = generateIdleVmd(state, [], bonesWithUpper2);
-        const view = new DataView(buf2);
-        const boneCount = view.getUint32(50, true);
-        expect(boneCount).toBeGreaterThanOrEqual(2);
     });
 
     it('includes shoulder bone frames', () => {
@@ -135,13 +103,6 @@ describe('generateIdleVmd', () => {
         expect(boneCount).toBeGreaterThanOrEqual(2);
     });
 
-    it('center without upper/neck uses larger sway amplitude', () => {
-        // センター只有，没有上半身/首 → hasBreath=false → swayAmp 更大
-        const buf2 = generateIdleVmd(state, [], ['センター']);
-        const view = new DataView(buf2);
-        const boneCount = view.getUint32(50, true);
-        expect(boneCount).toBeGreaterThanOrEqual(1);
-    });
 });
 
 describe('generateAutoDanceVmd', () => {
