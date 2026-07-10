@@ -1,0 +1,144 @@
+# Cache Warm —— 跨发版缓存预热
+#
+# 背景（根因）：release.yml 的 actions/cache 在 tag 触发的 run 里按「tag 作用域」隔离，
+# 不同 tag run 之间互相不可见；只有落盘到默认分支(main)作用域，发版 tag run 才能回退命中。
+# v1.2.5 的 Windows/Linux 虽成功存盘，但存进了各自 tag 作用域，v1.2.6 检索不到 → 每版冷启动。
+#
+# 本 workflow 在每次 push:main 时，复用与 release.yml 完全一致的缓存 key，把
+#   wails3 二进制 / frontend/node_modules / Go modules
+# 预热到 main 作用域。下次发版(tag)时，release.yml 的 restore 即可回退命中，跳过 go install / npm ci。
+#
+# ⚠️ 发版约定：先 `git push origin main` 等本 workflow 跑完落盘，再 `git push origin vX.Y.Z`。
+#    若同秒推 main+tag，Release 的 restore 早于 Cache Warm 的 save，本次发版不受益（仅下次受益），无破坏。
+#
+# 本 workflow 不跑 vite 构建 / 不发布，仅暖缓存，故保持轻量。
+name: Cache Warm
+
+on:
+  push:
+    branches: [main]
+
+# 防止连推产生重复暖缓存浪费；不取消进行中的（让它落盘完成）。
+concurrency:
+  group: cache-warm-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  GO_VERSION: '1.25.0'
+  NODE_VERSION: '24'
+
+jobs:
+  # ── Windows / Android 共享缓存（二者均跑 windows-latest，key 相同）──
+  warm-windows:
+    name: Warm Windows (covers Android shared caches)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+      - name: Extract wails version (from go.mod, 与 release.yml 同源)
+        id: wv
+        run: |
+          $v = (Select-String -Path go.mod -Pattern 'wails/v3\s+(v[^\s]+)').Matches.Groups[1].Value
+          echo "wails_ver=$v" >> $env:GITHUB_OUTPUT
+          Write-Output "wails_ver=$v"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Cache Wails binary
+        uses: actions/cache@v5
+        id: cache-wails
+        with:
+          path: ~\go\bin\wails3.exe
+          key: wails-${{ steps.wv.outputs.wails_ver }}-${{ runner.os }}
+      - name: Cache node_modules
+        uses: actions/cache@v5
+        id: cache-nm
+        with:
+          path: frontend/node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            nm-${{ runner.os }}-
+      - name: Cache Go modules
+        uses: actions/cache@v5
+        id: cache-go
+        with:
+          path: ~/go/pkg/mod
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
+      - name: Install Wails
+        if: steps.cache-wails.outputs.cache-hit != 'true'
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ steps.wv.outputs.wails_ver }}
+      - name: Install Frontend deps
+        if: steps.cache-nm.outputs.cache-hit != 'true'
+        run: |
+          cd frontend
+          npm ci
+      - name: Download Go modules
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        run: go mod download
+
+  # ── Linux 缓存 ──
+  warm-linux:
+    name: Warm Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+      - name: Extract wails version (from go.mod, 与 release.yml 同源)
+        id: wv
+        run: |
+          WAILS_VER=$(grep 'wails/v3' go.mod | head -1 | sed 's/.* //;s/ *$//')
+          echo "wails_ver=$WAILS_VER" >> $GITHUB_OUTPUT
+          echo "wails_ver=$WAILS_VER"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Cache Wails binary
+        uses: actions/cache@v5
+        id: cache-wails
+        with:
+          path: ~/go/bin/wails3
+          key: wails-${{ steps.wv.outputs.wails_ver }}-${{ runner.os }}
+      - name: Cache node_modules
+        uses: actions/cache@v5
+        id: cache-nm
+        with:
+          path: frontend/node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            nm-${{ runner.os }}-
+      - name: Cache Go modules
+        uses: actions/cache@v5
+        id: cache-go
+        with:
+          path: ~/go/pkg/mod
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
+      - name: Install Wails
+        if: steps.cache-wails.outputs.cache-hit != 'true'
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ steps.wv.outputs.wails_ver }}
+      - name: Install Frontend deps
+        if: steps.cache-nm.outputs.cache-hit != 'true'
+        run: |
+          cd frontend
+          npm ci
+      - name: Download Go modules
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        run: go mod download
