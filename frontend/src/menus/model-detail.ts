@@ -178,9 +178,9 @@ export function buildModelLevel(id: string): PopupLevel {
                     },
                 });
 
-                // 变换折叠组（复用公共构建器，含动态生成的坐标模式按钮）
+                // 拖拽操控（Gizmo 拖拽 + 缩放倍率 + 透明度）
                 addCollapsible(c, {
-                    title: t('model-detail.transform'),
+                    title: '拖拽操控',
                     icon: 'lucide:move-3d',
                     defaultOpen: false,
                     renderContent: (inner) => {

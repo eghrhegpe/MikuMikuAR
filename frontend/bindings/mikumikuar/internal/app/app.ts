@@ -539,6 +539,14 @@ export function SaveModelPresetToLib(name: string, jsonStr: string): $Cancellabl
 }
 
 /**
+ * SaveModelPresetToLibAuto saves a model preset JSON as an auto-numbered .mcupreset.json in the model presets directory.
+ * Returns the generated filename (e.g. "003.mcupreset.json").
+ */
+export function SaveModelPresetToLibAuto(jsonStr: string): $CancellablePromise<string> {
+    return $Call.ByID(438435951, jsonStr);
+}
+
+/**
  * SaveRenderPreset saves or updates a named render preset.
  * params is a JSON string of the RenderState fields.
  */
@@ -665,13 +673,6 @@ export function SelectPresetSaveFile(): $CancellablePromise<string> {
  */
 export function SelectSceneOpenFile(): $CancellablePromise<string> {
     return $Call.ByID(741492271);
-}
-
-/**
- * SelectSceneSaveFile opens a save dialog for scene files.
- */
-export function SelectSceneSaveFile(): $CancellablePromise<string> {
-    return $Call.ByID(2590952318);
 }
 
 /**

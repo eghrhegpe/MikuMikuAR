@@ -32,14 +32,12 @@ import {
     DeletePresetScene,
     LoadSceneFile,
 } from '../core/wails-bindings';
+import { presetListContent } from './preset-list-viewer';
 import { reRenderSceneMenu } from './scene-menu';
 import { FILTER_PRESET_LABELS, getFilterPreset } from './scene-render-presets';
 import { t } from '../core/i18n/t';
 
 // ======== Scene Preset ========
-
-let currentPresetIndex = -1;
-let _presetScenes: string[] = [];
 
 async function _loadPresetScene(name: string): Promise<boolean> {
     const r = await tryCatchStatus(async () => {
@@ -52,6 +50,52 @@ async function _loadPresetScene(name: string): Promise<boolean> {
         return true;
     }
     return false;
+}
+
+/** 渲染滤镜预设芯片组 — 供 _renderScenePresetList 和 buildPostProcessLevel 使用 */
+function _renderFilterPresetChips(container: HTMLElement): void {
+    cardContainer(container, (c) => {
+        const chipGroup = document.createElement('div');
+        chipGroup.className = 'preset-group';
+        chipGroup.style.paddingBottom = '6px';
+        for (const [key, label] of Object.entries(FILTER_PRESET_LABELS)) {
+            addPresetChip(chipGroup, t(label), false, () => {
+                const preset = getFilterPreset(key);
+                if (preset) {
+                    transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
+                }
+                setStatus(t('scene.statusFilter', { label: t(label) }), true);
+            });
+        }
+        c.appendChild(chipGroup);
+    });
+}
+
+function _renderScenePresetList(container: HTMLElement, scenes: string[]): void {
+    // 预设列表（通用组件处理空状态 + 列表渲染）
+    presetListContent(
+        container,
+        {
+            getLabel: (s: string) => s,
+            onApply: async (name) => {
+                if (await _loadPresetScene(name)) {
+                    setStatus(t('scene.statusLoaded', { name }), true);
+                }
+            },
+            onDelete: async (name) => {
+                const r = await tryCatchStatus(
+                    () => DeletePresetScene(name),
+                    t('scene.statusDeleteFailed'),
+                );
+                if (r === undefined) throw Error('delete failed');
+                setStatus(t('scene.statusDeleted', { name }), true);
+            },
+            deleteConfirmText: (name) => t('scene.confirmDeletePreset', { name }),
+            emptyText: t('scene.noPresetScenes'),
+        },
+        reRenderSceneMenu,
+        scenes,
+    );
 }
 
 export function buildPresetScenesLevel(): PopupLevel {
@@ -76,94 +120,11 @@ export function buildPresetScenesLevel(): PopupLevel {
             container.appendChild(bundleActions);
             container.appendChild(bundleDivider);
 
-            const loading = document.createElement('div');
-            loading.style.cssText = 'font-size:12px;color:#fff;text-align:center;padding:24px;';
-            loading.textContent = t('scene.loading');
-            container.appendChild(loading);
-            currentPresetIndex = -1;
-            _presetScenes = (await GetPresetScenes()) || [];
-            container.innerHTML = '';
-            const scenes = _presetScenes;
+            // 一次性获取数据，避免双请求
+            const scenes: string[] = (await GetPresetScenes()) || [];
 
-            // 快速渲染滤镜芯片组
-            cardContainer(container, (c) => {
-                const chipGroup = document.createElement('div');
-                chipGroup.className = 'preset-group';
-                chipGroup.style.paddingBottom = '6px';
-                for (const [key, label] of Object.entries(FILTER_PRESET_LABELS)) {
-                    addPresetChip(chipGroup, t(label), false, () => {
-                        const preset = getFilterPreset(key);
-                        if (preset) {
-                            transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
-                        }
-                        setStatus(t('scene.statusFilter', { label: t(label) }), true);
-                    });
-                }
-                c.appendChild(chipGroup);
-            });
-
-            if (scenes.length === 0) {
-                const empty = document.createElement('div');
-                empty.style.cssText = 'font-size:12px;color:#fff;text-align:center;padding:24px;';
-                empty.textContent = t('scene.noPresetScenes');
-                container.appendChild(empty);
-                return;
-            }
-
-            cardContainer(container, (c) => {
-                for (let i = 0; i < scenes.length; i++) {
-                    const name = scenes[i];
-                    const isActive = i === currentPresetIndex;
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    const is = document.createElement('span');
-                    is.className = 'slide-icon';
-                    const ie = createIconifyIcon(
-                        isActive ? 'lucide:play-circle' : 'lucide:bookmark'
-                    );
-                    if (ie) {
-                        is.appendChild(ie);
-                    }
-                    row.appendChild(is);
-                    const ls = document.createElement('span');
-                    ls.className = 'slide-label';
-                    ls.textContent = name;
-                    row.appendChild(ls);
-                    const delBtn = document.createElement('span');
-                    delBtn.textContent = '✕';
-                    delBtn.title = t('scene.deletePresetScene');
-                    delBtn.style.cssText =
-                        'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 4px;';
-                    delBtn.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        if (!(await showConfirm(t('scene.confirmDeletePreset', { name })))) {
-                            return;
-                        }
-                        const r = await tryCatchStatus(async () => {
-                            await DeletePresetScene(name);
-                            return true;
-                        }, t('scene.statusDeleteFailed'));
-                        if (r) {
-                            if (currentPresetIndex === i) {
-                                currentPresetIndex = -1;
-                            } else if (currentPresetIndex > i) {
-                                currentPresetIndex--;
-                            }
-                            reRenderSceneMenu();
-                            setStatus(t('scene.statusDeleted', { name }), true);
-                        }
-                    });
-                    row.appendChild(delBtn);
-                    row.addEventListener('click', async () => {
-                        currentPresetIndex = i;
-                        if (await _loadPresetScene(name)) {
-                            reRenderSceneMenu();
-                            setStatus(t('scene.statusLoaded', { name }), true);
-                        }
-                    });
-                    c.appendChild(row);
-                }
-            });
+            // 滤镜 + 列表（通过通用组件渲染）
+            _renderScenePresetList(container, scenes);
         },
     };
 }
@@ -653,6 +614,8 @@ export function buildPostProcessLevel(): PopupLevel {
                     },
                 });
             });
+            // 滤镜预设芯片组
+            _renderFilterPresetChips(container);
         },
     };
 }

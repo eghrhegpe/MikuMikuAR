@@ -6,6 +6,7 @@
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import { propRegistry, setStatus, triggerAutoSave, dom, PropInstance } from '@/core/config';
 import { resolveFileUrl, normPath } from '@/core/fileservice';
@@ -14,6 +15,7 @@ import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
 import { t } from '@/core/i18n/t';
+import { attachGizmo, detachGizmo, isGizmoActive, getGizmoTargetId } from '../render/transform-gizmo';
 
 // ======== 类型守卫 ========
 
@@ -304,6 +306,39 @@ export function getPropPositionMode(id: string): 'cartesian' | 'orbit' {
     const inst = propRegistry.get(id);
     return inst?.positionMode ?? 'cartesian';
 }
+
+// ======== Prop Gizmo (→ transform-gizmo.ts) ========
+
+/**
+ * 为道具激活 3D 拖拽 Gizmo（PositionGizmo）。
+ * 拖拽结束后自动通过 setPropTransform 持久化。
+ */
+export function attachPropGizmo(id: string): boolean {
+    const inst = propRegistry.get(id);
+    if (!inst) {
+        return false;
+    }
+    const node = inst.container ?? inst.rootMesh;
+    if (!node) {
+        return false;
+    }
+
+    return attachGizmo({
+        id,
+        node,
+        types: ['position'],
+        onPositionDragEnd: (n) => {
+            const v = (n as unknown as { position: Vector3 }).position;
+            setPropTransform(id, { position: [v.x, v.y, v.z] });
+        },
+    });
+}
+
+export {
+    detachGizmo as detachPropGizmo,
+    isGizmoActive as isPropGizmoActive,
+    getGizmoTargetId as getPropGizmoTargetId,
+};
 
 // ======== 查询 ========
 

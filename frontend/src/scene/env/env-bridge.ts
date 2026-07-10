@@ -85,6 +85,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         'groundTerrainSeed',
         'groundTerrainOctaves',
         'groundSize',
+        'groundEdgeFade',
     ];
     if (!changed || changed.some((k) => groundKeys.includes(k))) {
         try {
@@ -207,6 +208,25 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         skyMid[1] * ambientStrength,
         skyMid[2] * ambientStrength
     );
+
+    // 方向光同步：当太阳角度/方位角/天空色变化时，推导并更新 dirLight 参数
+    // 跳过预设动画期间（applyEnvPresetObject 有自己的动画循环管理 dirLight）
+    const lightSyncKeys = ['sunAngle', 'azimuth', 'skyColorTop', 'skyColorBot'];
+    if (_timeOfDayBeforePreset === null && changed && changed.some((k) => lightSyncKeys.includes(k))) {
+        const derived = deriveLighting(
+            state.skyColorTop,
+            state.sunAngle,
+            state.azimuth ?? -45
+        );
+        setLightState({
+            dirColor: [1, 0.95, 0.9],
+            dirX: derived.dirDirection[0],
+            dirY: derived.dirDirection[1],
+            dirZ: derived.dirDirection[2],
+            dirIntensity: derived.dirIntensity,
+            hemiIntensity: derived.hemiIntensity,
+        });
+    }
 }
 
 // ======== Gravity ========

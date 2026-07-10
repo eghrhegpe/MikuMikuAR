@@ -98,7 +98,7 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                 c.appendChild(title);
             });
             addCollapsible(container, {
-                title: t('scene.transform'),
+                title: '拖拽操控',
                 icon: 'lucide:move-3d',
                 defaultOpen: false,
                 renderContent: (inner) => {

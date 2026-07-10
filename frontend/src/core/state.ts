@@ -303,6 +303,7 @@ export const envState: EnvState = reactive<EnvState>({
 
     groundLevel: 0,
     groundSize: 60,
+    groundEdgeFade: 0,
 
     waterEnabled: false,
     waterLevel: 0,

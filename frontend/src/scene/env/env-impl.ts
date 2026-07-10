@@ -441,6 +441,46 @@ export function setOnTerrainReady(cb: (() => void) | null): void {
     _onTerrainReady = cb;
 }
 
+// ======== 地面边缘淡出（径向不透明度贴图）========
+// 生成「中心白→边缘黑」的径向渐变，作为 opacityTexture 挂到各模式材质上，
+// 使地面边缘柔和淡出而非硬方块边。fade<=0 时返回 null（保持原硬边行为）。
+// 按 fade 量化值缓存，避免拖动滑块时反复生成 canvas。
+const _edgeFadeTexCache = new Map<number, Texture>();
+
+function getGroundEdgeFadeTexture(fade: number, scene: Scene): Texture | null {
+    if (fade <= 0) return null;
+    const key = Math.round(fade * 100);
+    const cached = _edgeFadeTexCache.get(key);
+    if (cached) return cached;
+    const S = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = S;
+    canvas.height = S;
+    const ctx = canvas.getContext('2d')!;
+    // r0：保持完全不透明的内部半径占比（0..1）。fade 越大，r0 越小，淡出越广。
+    const r0 = Math.max(0, 1 - fade);
+    const grad = ctx.createRadialGradient(S / 2, S / 2, r0 * (S / 2), S / 2, S / 2, S / 2);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, S, S);
+    const tex = new Texture(canvas.toDataURL(), scene);
+    tex.getAlphaFromRGB = true; // 用亮度（白=不透明，黑=透明）驱动不透明度
+    tex.wrapU = Texture.CLAMP_ADDRESSMODE;
+    tex.wrapV = Texture.CLAMP_ADDRESSMODE;
+    tex.name = 'envGroundEdgeFade';
+    _edgeFadeTexCache.set(key, tex);
+    return tex;
+}
+
+function applyGroundEdgeFade(
+    mat: StandardMaterial | GridMaterial,
+    fade: number,
+    scene: Scene
+): void {
+    mat.opacityTexture = getGroundEdgeFadeTexture(fade, scene);
+}
+
 export function applyGround(state: EnvState): void {
     const scene = getScene();
 
@@ -489,6 +529,8 @@ export function applyGround(state: EnvState): void {
                     }
                 }
             }
+            // 边缘淡出：随滑块实时更新 opacityTexture（fade<=0 时移除）
+            applyGroundEdgeFade(mat as StandardMaterial | GridMaterial, state.groundEdgeFade, scene);
         }
         // 更新地面高度
         _envSys.ground.mesh.position.y = state.groundLevel;
@@ -509,6 +551,7 @@ export function applyGround(state: EnvState): void {
     if (state.groundMode === 'heightmap') {
         const hg = createHeightmapGround(state, scene, (gm) => {
             applyTerrainMaterial(gm, state, scene);
+            applyGroundEdgeFade(gm.material as StandardMaterial, state.groundEdgeFade, scene);
             _onTerrainReady?.();
         });
         _envSys.ground.mesh = hg;
@@ -574,6 +617,11 @@ export function applyGround(state: EnvState): void {
         mat.alpha = state.groundAlpha;
         mat.backFaceCulling = false;
         ground.material = mat;
+    }
+
+    // 边缘淡出（solid/grid/checker/texture 统一在创建后挂载）
+    if (ground.material) {
+        applyGroundEdgeFade(ground.material as StandardMaterial | GridMaterial, state.groundEdgeFade, scene);
     }
 
     _envSys.ground.mesh = ground;
