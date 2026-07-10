@@ -534,6 +534,13 @@ export class XpbdSolver {
                 this._solveConstraint(c, alphaTilde, subDt);
             }
 
+            // ---- 角向状态维护：约束求解后归一化 orientation ----
+            for (let i = 0; i < this.particles.length; i++) {
+                const p = this.particles[i];
+                if (p.invInertia === 0) continue;
+                quatNormalize(p.orientation, p.orientation);
+            }
+
             // ---- 粒子间穿透检测 ----
             this._resolvePenetrations();
 

@@ -214,3 +214,46 @@ describe('_solveSphereConstraint convergence', () => {
     expect(Math.abs(child.orientation[0] - before[0])).toBeLessThan(0.05);
   });
 });
+
+describe('step angular integration', () => {
+  it('should keep orientation normalized after step', () => {
+    const solver = new XpbdSolver({ gravity: [0,0,0], substeps: 2, damping: 1, groundY: -100 });
+    const p = { p: new Float32Array([0,1,0]), prevP: new Float32Array([0,1,0]), v: new Float32Array(3),
+      invMass: 1, radius: 0.1,
+      orientation: new Float32Array([0.1, 0.2, 0.3, 0.9]),
+      prevOrientation: new Float32Array([0.1, 0.2, 0.3, 0.9]),
+      angularVelocity: new Float32Array(3),
+      invInertia: 1 };
+    solver.particles = [p];
+    solver.constraints = [];
+    solver.step(1/60);
+    const len = Math.sqrt(p.orientation[0]**2 + p.orientation[1]**2 + p.orientation[2]**2 + p.orientation[3]**2);
+    expect(len).toBeCloseTo(1, 4);
+  });
+
+  it('should keep orientation normalized after sphere constraint solving', () => {
+    const solver = new XpbdSolver({ gravity: [0,0,0], substeps: 1, damping: 1, groundY: -100 });
+    const parent = { p: new Float32Array([0,0,0]), prevP: new Float32Array([0,0,0]), v: new Float32Array(3),
+      invMass: 0, radius: 0.1,
+      orientation: new Float32Array([0,0,0,1]),
+      prevOrientation: new Float32Array([0,0,0,1]),
+      angularVelocity: new Float32Array(3),
+      invInertia: 0 };
+    const child = { p: new Float32Array([0,1,0]), prevP: new Float32Array([0,1,0]), v: new Float32Array(3),
+      invMass: 1, radius: 0.1,
+      orientation: quatFromAxisAngle(1, 0, 0, 1.0),
+      prevOrientation: new Float32Array([0,0,0,1]),
+      angularVelocity: new Float32Array(3),
+      invInertia: 1 };
+    solver.particles = [parent, child];
+    solver.constraints = [{
+      type: 'sphere', indices: [0, 1],
+      coneHalfAngle: Math.PI / 4, twistRange: [-Math.PI/4, Math.PI/4],
+      restQuaternion: new Float32Array([0,0,0,1]),
+      compliance: 0, restValue: 0, lambda: new Float32Array(2), stiffness: 1.0, damping: 0.0,
+    }];
+    for (let i = 0; i < 50; i++) solver.step(1/60);
+    const len = Math.sqrt(child.orientation[0]**2 + child.orientation[1]**2 + child.orientation[2]**2 + child.orientation[3]**2);
+    expect(len).toBeCloseTo(1, 4);
+  });
+});
