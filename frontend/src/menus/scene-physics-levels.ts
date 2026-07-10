@@ -2,7 +2,7 @@
 // 从 scene-menu.ts 引用，独立管理全局物理参数（WASM Bullet + XPBD 布料）
 
 import type { PopupLevel, PopupRow } from '../core/config';
-import { envState, focusedModelId } from '../core/config';
+import { envState, focusedModelId, cardContainer } from '../core/config';
 import { getGravityStrength, setGravityStrength } from '../scene/env/env-bridge';
 import {
     modelManager,
@@ -37,6 +37,25 @@ import {
 import { buildClothParamsLevel } from './motion-cloth-levels';
 import { getSceneMenu, refreshSceneRoot } from './scene-menu';
 import { t } from '../core/i18n/t';
+import {
+    slideRow,
+    addSliderRow,
+    addSectionTitle,
+    addPresetChip,
+} from '../core/ui-helpers';
+import {
+    toggleRagdoll,
+    recreateRagdoll,
+    setRagdollJointParams,
+    applyRagdollJointPreset,
+    setRagdollBlendWeight,
+    getRagdollBlendWeight,
+    setRagdollDebugParticles,
+    setRagdollDebugConstraints,
+    setRagdollDebugColliders,
+    getRagdollDebugState,
+} from '../physics/ragdoll-manager';
+import { RAGDOLL_JOINT_GROUPS, DEFAULT_RAGDOLL_JOINT_PARAMS } from '../physics/xpbd-ragdoll';
 
 /**
  * 增量更新 toggle 行的 DOM 状态（不触发 reRender）。
@@ -278,6 +297,138 @@ export function buildClothDebugLevel(): PopupLevel {
                 onToggleChange: (v) => {
                     setDebugColliders(v);
                     _patchToggle('clothdebug:colliders', v);
+                },
+            } as PopupRow,
+        ],
+    };
+}
+
+/** 构建 Ragdoll 设置子页（XPBD 布娃娃 — 全局参数 + per-joint preset） */
+export function buildRagdollLevel(): PopupLevel {
+    return {
+        label: t('scene.ragdollPhysics'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                let _recreateTimer: ReturnType<typeof setTimeout> | null = null;
+                const debouncedRecreate = () => {
+                    if (_recreateTimer) clearTimeout(_recreateTimer);
+                    _recreateTimer = setTimeout(() => {
+                        _recreateTimer = null;
+                        recreateRagdoll();
+                    }, 100);
+                };
+
+                // ---- 关节组 preset 芯片（loose/normal/stiff）----
+                addSectionTitle(c, t('scene.ragdollPresets'));
+                const presetGroup = document.createElement('div');
+                presetGroup.className = 'preset-group';
+                presetGroup.style.paddingBottom = '6px';
+                const presetKeys = ['loose', 'normal', 'stiff'] as const;
+                const presetLabels: Record<string, string> = {
+                    loose: t('scene.ragdollPresetLoose') || '松软',
+                    normal: t('scene.ragdollPresetNormal') || '正常',
+                    stiff: t('scene.ragdollPresetStiff') || '僵硬',
+                };
+                for (const preset of presetKeys) {
+                    addPresetChip(presetGroup, presetLabels[preset], false, () => {
+                        // 对所有关节组应用同一 preset
+                        for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
+                            applyRagdollJointPreset(group, preset);
+                        }
+                        getSceneMenu()?.reRender();
+                    });
+                }
+                c.appendChild(presetGroup);
+
+                // ---- 全局参数滑块（作用于所有关节）----
+                addSectionTitle(c, t('scene.ragdollParams'));
+
+                // Compliance（柔度）
+                addSliderRow(c, t('scene.ragdollCompliance'),
+                    DEFAULT_RAGDOLL_JOINT_PARAMS.compliance, 0, 0.1, 0.001,
+                    (v: number) => {
+                        // 对所有关节组设置 compliance
+                        for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
+                            setRagdollJointParams(group, { compliance: v });
+                        }
+                        debouncedRecreate();
+                    }, 'lucide:feather');
+
+                // Stiffness（刚度）
+                addSliderRow(c, t('scene.ragdollStiffness'),
+                    DEFAULT_RAGDOLL_JOINT_PARAMS.stiffness, 0, 1, 0.05,
+                    (v: number) => {
+                        for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
+                            setRagdollJointParams(group, { stiffness: v });
+                        }
+                        debouncedRecreate();
+                    }, 'lucide:wrench');
+
+                // Damping（阻尼）
+                addSliderRow(c, t('scene.ragdollDamping'),
+                    DEFAULT_RAGDOLL_JOINT_PARAMS.damping, 0, 1, 0.05,
+                    (v: number) => {
+                        for (const group of Object.keys(RAGDOLL_JOINT_GROUPS)) {
+                            setRagdollJointParams(group, { damping: v });
+                        }
+                        debouncedRecreate();
+                    }, 'lucide:waves');
+
+                // ---- 过渡仲裁 ----
+                addSectionTitle(c, t('scene.ragdollTransition'));
+
+                // blendWeight（物理混合权重 0=动画 1=物理）
+                addSliderRow(c, t('scene.ragdollBlendWeight'),
+                    getRagdollBlendWeight(), 0, 1, 0.05,
+                    (v: number) => {
+                        setRagdollBlendWeight(v);
+                    }, 'lucide:git-merge');
+            });
+        },
+    };
+}
+
+/** 构建 Ragdoll 调试子页（XPBD 可视化开关） */
+export function buildRagdollDebugLevel(): PopupLevel {
+    const dbg = getRagdollDebugState();
+
+    return {
+        label: t('scene.debug'),
+        dir: '',
+        items: [
+            {
+                kind: 'toggle',
+                label: t('scene.particleSpheres'),
+                icon: 'lucide:circle',
+                target: 'ragdolldebug:particles',
+                toggleValue: dbg.particles,
+                onToggleChange: (v) => {
+                    setRagdollDebugParticles(v);
+                    _patchToggle('ragdolldebug:particles', v);
+                },
+            } as PopupRow,
+            {
+                kind: 'toggle',
+                label: t('scene.constraintLines'),
+                icon: 'lucide:minus',
+                target: 'ragdolldebug:constraints',
+                toggleValue: dbg.constraints,
+                onToggleChange: (v) => {
+                    setRagdollDebugConstraints(v);
+                    _patchToggle('ragdolldebug:constraints', v);
+                },
+            } as PopupRow,
+            {
+                kind: 'toggle',
+                label: t('scene.colliderWireframe'),
+                icon: 'lucide:box',
+                target: 'ragdolldebug:colliders',
+                toggleValue: dbg.colliders,
+                onToggleChange: (v) => {
+                    setRagdollDebugColliders(v);
+                    _patchToggle('ragdolldebug:colliders', v);
                 },
             } as PopupRow,
         ],

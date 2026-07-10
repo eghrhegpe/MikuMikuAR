@@ -45,6 +45,8 @@ import {
     buildCollisionLevel,
     buildPhysicsDebugLevel,
     buildClothDebugLevel,
+    buildRagdollLevel,
+    buildRagdollDebugLevel,
 } from './scene-physics-levels';
 import { buildClothParamsLevel } from './motion-cloth-levels';
 
@@ -197,6 +199,13 @@ items.push({
     bind: () => envState.ragdollEnabled,
   },
 });
+// Ragdoll 调试（XPBD 可视化）
+items.push({
+  kind: 'folder',
+  label: t('scene.ragdollDebug'),
+  icon: 'lucide:bug',
+  target: 'scene:ragdoll:debug',
+});
     if (modelRegistry.size > 1) {
         items.push({
             kind: 'folder',
@@ -228,6 +237,8 @@ const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:render:props': buildPropLevel,
     'scene:physics': buildPhysicsLevel,
     'scene:cloth': buildClothLevel,
+    'scene:ragdoll': buildRagdollLevel,
+    'scene:ragdoll:debug': buildRagdollDebugLevel,
     'scene:formation': buildFormationLevel,
     'cloth:fineTune': buildClothParamsLevel,
     'cloth:debug': buildClothDebugLevel,
