@@ -452,3 +452,115 @@ describe('balanceSway state', () => {
         expect(sut.getPerceptionState().balanceSwayEnabled).toBe(false);
     });
 });
+
+// =====================================================================
+// _applyBalanceSway 实时叠加（通过 observer 回调触发）
+// =====================================================================
+
+// Mock runtimeBones（模拟 babylon-mmd IMmdRuntimeBone + linkedBone）
+function makeMockRuntimeBones(names: string[]) {
+    return names.map(name => ({
+        name,
+        linkedBone: makeMockLinkedBone(),
+        childBones: [],
+        updateWorldMatrix: vi.fn(),
+    }));
+}
+
+// linkedBone：rotationQuaternion 支持 copyFrom 读取 + 重新赋值追踪；
+// position 支持 y 读写 + 写入追踪
+function makeMockLinkedBone() {
+    const pos = makeMockVector3();
+    let rotQ: any = { x: 0, y: 0, z: 0, w: 1 };
+    let rotWritten = false;
+    return {
+        get rotationQuaternion() { return rotQ; },
+        set rotationQuaternion(v: any) { rotQ = v; rotWritten = true; },
+        get _rotWritten() { return rotWritten; },
+        position: pos,
+    };
+}
+
+function makeMockVector3() {
+    let _y = 0;
+    return {
+        x: 0,
+        z: 0,
+        get y() { return _y; },
+        set y(v: number) { _y = v; (this as any)._wasWritten = true; },
+        _wasWritten: false,
+    };
+}
+
+describe('_applyBalanceSway', () => {
+    beforeEach(() => {
+        vi.spyOn(performance, 'now').mockReturnValue(0);
+        // 关闭其他感知功能，隔离重心微动的写入断言（呼吸会写 spine 骨骼干扰）
+        sut.setPerceptionState({
+            breathEnabled: false,
+            blinkEnabled: false,
+            headTrackingEnabled: false,
+            eyeTrackingEnabled: false,
+            microExpressionEnabled: false,
+        });
+    });
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('balanceSwayEnabled=false 时不写入任何骨骼', () => {
+        const mockRuntimeBones = makeMockRuntimeBones(['センター', '上半身2', '腰', '全ての親']);
+        const mmdModel = { runtimeBones: mockRuntimeBones, mesh: {} };
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setBalanceSwayEnabled(false);
+        sut.activatePerception('m1');
+        vi.mocked(performance.now).mockReturnValue(500); // 0.5s
+        triggerLastObserver();
+        // 无骨骼被写入（rotation/position 不变）
+        for (const b of mockRuntimeBones) {
+            expect(b.linkedBone._rotWritten).toBe(false);
+            expect(b.linkedBone.position._wasWritten).toBe(false);
+        }
+    });
+
+    it('开启时写入 center 骨骼的 position 和 rotation', () => {
+        const mockRuntimeBones = makeMockRuntimeBones(['センター']);
+        const mmdModel = { runtimeBones: mockRuntimeBones, mesh: {} };
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setBalanceSwayEnabled(true);
+        sut.activatePerception('m1');
+        vi.mocked(performance.now).mockReturnValue(500); // 0.5s → phase = π/2
+        triggerLastObserver();
+        const center = mockRuntimeBones.find(b => b.name === 'センター')!;
+        expect(center.linkedBone.position._wasWritten).toBe(true);
+        expect(center.linkedBone._rotWritten).toBe(true);
+    });
+
+    it('骨骼不存在时静默跳过', () => {
+        const mockRuntimeBones = makeMockRuntimeBones([]); // 无骨骼
+        const mmdModel = { runtimeBones: mockRuntimeBones, mesh: {} };
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setBalanceSwayEnabled(true);
+        sut.activatePerception('m1');
+        vi.mocked(performance.now).mockReturnValue(500);
+        expect(() => triggerLastObserver()).not.toThrow();
+    });
+
+    it('关闭后 center position.y 归零（防残留）', () => {
+        const mockRuntimeBones = makeMockRuntimeBones(['センター']);
+        const mmdModel = { runtimeBones: mockRuntimeBones, mesh: {} };
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setBalanceSwayEnabled(true);
+        sut.activatePerception('m1');
+        // 1. 开启时写入
+        vi.mocked(performance.now).mockReturnValue(500);
+        triggerLastObserver();
+        const center = mockRuntimeBones.find(b => b.name === 'センター')!;
+        expect(center.linkedBone.position._wasWritten).toBe(true);
+        // 2. 关闭开关
+        sut.setBalanceSwayEnabled(false);
+        triggerLastObserver();
+        // 3. position.y 应归零（Lerp 到 0）
+        expect(center.linkedBone.position.y).toBe(0);
+    });
+});
