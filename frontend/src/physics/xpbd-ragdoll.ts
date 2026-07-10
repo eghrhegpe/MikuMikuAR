@@ -173,6 +173,8 @@ export function getJointParams(boneName: string, overrides?: Record<string, Ragd
 export interface BuildRagdollOptions {
   /** Custom ground Y for clamping (default -10) */
   groundY?: number;
+  /** per-joint 参数覆盖（按骨骼名索引），未覆盖的用关节组预设 */
+  jointParamsOverrides?: Record<string, RagdollJointParams>;
 }
 
 /**
@@ -260,14 +262,16 @@ export function buildRagdoll(
       bone.worldMatrix[14] - bone.parentBone.worldMatrix[14]
     );
 
+    const jp = getJointParams(bone.name, opts.jointParamsOverrides);
+
     constraints.push({
       type: 'distance',
       indices: [parentIdx, i],
-      compliance: 0, // rigid for MVP
+      compliance: jp.compliance,
       restValue,
       lambda: new Float32Array(1),
-      stiffness: 1.0,
-      damping: 0.0,
+      stiffness: jp.stiffness,
+      damping: jp.damping,
     });
 
     // ---- sphere 约束（角向限位，3-DOF）----
@@ -275,14 +279,14 @@ export function buildRagdoll(
     constraints.push({
       type: 'sphere',
       indices: [parentIdx, i],
-      coneHalfAngle: Math.PI / 4,   // 默认 45°，Task 9 参数化覆盖
-      twistRange: [-Math.PI / 4, Math.PI / 4],
+      coneHalfAngle: jp.coneHalfAngle,
+      twistRange: jp.twistRange,
       restQuaternion: restQ,
-      compliance: 0,
+      compliance: jp.compliance,
       restValue: 0,
       lambda: new Float32Array(2),  // [swing, twist]
-      stiffness: 1.0,
-      damping: 0.0,
+      stiffness: jp.stiffness,
+      damping: jp.damping,
     });
   }
 
