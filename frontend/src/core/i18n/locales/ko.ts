@@ -278,6 +278,8 @@ export const ko: Record<string, string> = {
     'motion.bendCompliance': '굽힘 컴플라이언스',
     'motion.damping': '감쇠',
     'motion.gravityScale': '중력 배율',
+    'motion.anchorElasticity': '천 탄성',
+    'motion.anchorDamping': '탄성 감쇠',
     'motion.subdiv': '세분화',
     'motion.segH': '수평 분할',
     'motion.segV': '수직 분할',

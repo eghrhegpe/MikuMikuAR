@@ -278,6 +278,8 @@ export const zhTW: Record<string, string> = {
     'motion.bendCompliance': '彎曲柔度',
     'motion.damping': '阻尼',
     'motion.gravityScale': '重力倍率',
+    'motion.anchorElasticity': '布料彈力',
+    'motion.anchorDamping': '回彈阻尼',
     'motion.subdiv': '細分',
     'motion.segH': '水平分段',
     'motion.segV': '垂直分段',

@@ -1,5 +1,6 @@
 // [doc:adr-071] 感知层单元测试 — 状态管理 + 生命周期
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Quaternion } from '@babylonjs/core';
 // 迁移函数为纯函数，静态导入即可；scene-serialize 的重依赖下方统一 mock
 import { migratePerceptionFromProcMotion, migrateBalanceSwayFromProcMotion, migrateLipSyncFromOldState } from '../scene/scene-serialize';
 
@@ -763,5 +764,56 @@ describe('_applyLipSync', () => {
         sut.setLipSyncEnabled(false);
         triggerLastObserver();
         expect(mockMorphManager.getInfluence('あ')).toBe(0);
+    });
+});
+
+// ── 视线追踪锥形限位回归（防止"背后翻转 180°"悄悄回潮）──
+describe('视线追踪锥形限位（_clampHeadGazeTarget / _clampEyeGazeTarget）', () => {
+    const parentWorldQ = Quaternion.Identity(); // 身体/头部正前、正立
+
+    it('头部：背后相机时被钳到 ±≈75°（而非翻转 180°）', () => {
+        const behindQ = Quaternion.FromEulerAngles(0, Math.PI, 0);
+        const e = sut._clampHeadGazeTarget(Quaternion.Identity(), behindQ, parentWorldQ).toEulerAngles();
+        expect(Math.abs(e.y)).toBeGreaterThan((70 * Math.PI) / 180);
+        expect(Math.abs(e.y)).toBeLessThan((80 * Math.PI) / 180);
+        expect(Math.abs(e.x)).toBeLessThan(1e-3);
+    });
+
+    it('头部：正前方相机时保持正前（不钳制）', () => {
+        const frontQ = Quaternion.FromEulerAngles(0, 0, 0);
+        const e = sut._clampHeadGazeTarget(Quaternion.Identity(), frontQ, parentWorldQ).toEulerAngles();
+        expect(Math.abs(e.y)).toBeLessThan(1e-3);
+        expect(Math.abs(e.x)).toBeLessThan(1e-3);
+    });
+
+    it('头部：俯仰被钳到 ±≈35°，不向上翻 180°', () => {
+        const upQ = Quaternion.FromEulerAngles(Math.PI / 2, 0, 0);
+        const e = sut._clampHeadGazeTarget(Quaternion.Identity(), upQ, parentWorldQ).toEulerAngles();
+        expect(Math.abs(e.x)).toBeGreaterThan((30 * Math.PI) / 180);
+        expect(Math.abs(e.x)).toBeLessThan((40 * Math.PI) / 180);
+        expect(Math.abs(e.y)).toBeLessThan(1e-3);
+    });
+
+    it('眼球：背后相机时被钳到 ±≈9°（而非翻转 180°）', () => {
+        const behindQ = Quaternion.FromEulerAngles(0, Math.PI, 0);
+        const e = sut._clampEyeGazeTarget(Quaternion.Identity(), behindQ, parentWorldQ).toEulerAngles();
+        expect(Math.abs(e.y)).toBeGreaterThan((4 * Math.PI) / 180);
+        expect(Math.abs(e.y)).toBeLessThan((14 * Math.PI) / 180);
+        expect(Math.abs(e.x)).toBeLessThan(1e-3);
+    });
+
+    it('眼球：俯仰被钳到 ±≈8°，不向上翻 180°', () => {
+        const upQ = Quaternion.FromEulerAngles(Math.PI / 2, 0, 0);
+        const e = sut._clampEyeGazeTarget(Quaternion.Identity(), upQ, parentWorldQ).toEulerAngles();
+        expect(Math.abs(e.x)).toBeGreaterThan((3 * Math.PI) / 180);
+        expect(Math.abs(e.x)).toBeLessThan((13 * Math.PI) / 180);
+        expect(Math.abs(e.y)).toBeLessThan(1e-3);
+    });
+
+    it('眼球限位比头部更紧（9° < 75°）：同样背后目标，眼幅更小', () => {
+        const behindQ = Quaternion.FromEulerAngles(0, Math.PI, 0);
+        const eyeYaw = Math.abs(sut._clampEyeGazeTarget(Quaternion.Identity(), behindQ, parentWorldQ).toEulerAngles().y);
+        const headYaw = Math.abs(sut._clampHeadGazeTarget(Quaternion.Identity(), behindQ, parentWorldQ).toEulerAngles().y);
+        expect(eyeYaw).toBeLessThan(headYaw);
     });
 });

@@ -130,6 +130,61 @@ const EYE_SMOOTH = 0.35;
 // ── AR 模式视线距离（米） ──
 const AR_GAZE_DISTANCE = 1.5;
 
+// ── 头部/眼球跟随角度限位（复刻 1.2.3 时代的天然限位效果）──
+// 把骨骼相对【父骨骼坐标系】的偏转角钳制在锥形内：
+//   - 相机绕到背后时，最多侧转 ±MAX_YAW，呈现"侧头/侧视"而非翻转 180°；
+//   - 相对父坐标系（而非当前朝向）钳制，可绝对封顶、避免逐帧蠕变越过上限。
+const HEAD_GAZE_MAX_YAW = (75 * Math.PI) / 180; // 头部左右最大偏航 75°
+const HEAD_GAZE_MAX_PITCH = (35 * Math.PI) / 180; // 头部上下最大俯仰 35°
+// 眼球生理可动范围远小于头部：用更紧的锥形，背后看时接上"不翻转"效果且自然
+const EYE_GAZE_MAX_YAW = (9 * Math.PI) / 180; // 眼球左右最大偏航 9°（头部已承担主要转向，眼珠仅需小幅补充）
+const EYE_GAZE_MAX_PITCH = (8 * Math.PI) / 180; // 眼球上下最大俯仰 8°
+
+/**
+ * 将"转向相机的目标世界旋转"钳制在相对父骨骼坐标系的 yaw/pitch 锥形内。
+ * @param oldWorldQ   当前世界旋转（占位，保持与调用方签名一致，未参与计算）
+ * @param targetWorldQ 未钳制的"正对相机"目标世界旋转
+ * @param parentWorldQ 父骨骼（身体/头部）的世界旋转
+ * @param maxYawRad   最大偏航（弧度）
+ * @param maxPitchRad 最大俯仰（弧度）
+ * @returns 钳制后的目标世界旋转
+ */
+function _clampGazeTargetInParentFrame(
+    oldWorldQ: Quaternion,
+    targetWorldQ: Quaternion,
+    parentWorldQ: Quaternion,
+    maxYawRad: number,
+    maxPitchRad: number
+): Quaternion {
+    const invParent = _q().copyFrom(parentWorldQ).invert();
+    // 目标骨骼相对父骨骼的局部旋转
+    const desiredLocal = _q().copyFrom(invParent).multiplyInPlace(targetWorldQ); // parent⁻¹ * target
+    const e = desiredLocal.toEulerAngles(); // {x: pitch, y: yaw, z: roll}
+    const yaw = Math.max(-maxYawRad, Math.min(maxYawRad, e.y));
+    const pitch = Math.max(-maxPitchRad, Math.min(maxPitchRad, e.x));
+    const clampedLocal = Quaternion.FromEulerAngles(pitch, yaw, 0);
+    // 目标世界 = 父骨骼 * clampedLocal
+    return _q().copyFrom(parentWorldQ).multiplyInPlace(clampedLocal);
+}
+
+/** 头部专用包装（维持已有回归测试签名不变） */
+export function _clampHeadGazeTarget(
+    oldHeadRotQ: Quaternion,
+    targetWorldQ: Quaternion,
+    parentWorldQ: Quaternion
+): Quaternion {
+    return _clampGazeTargetInParentFrame(oldHeadRotQ, targetWorldQ, parentWorldQ, HEAD_GAZE_MAX_YAW, HEAD_GAZE_MAX_PITCH);
+}
+
+/** 眼球专用包装（相对头部坐标系，用更紧的生理锥形） */
+export function _clampEyeGazeTarget(
+    oldEyeRotQ: Quaternion,
+    targetWorldQ: Quaternion,
+    parentWorldQ: Quaternion
+): Quaternion {
+    return _clampGazeTargetInParentFrame(oldEyeRotQ, targetWorldQ, parentWorldQ, EYE_GAZE_MAX_YAW, EYE_GAZE_MAX_PITCH);
+}
+
 // ══════════════════════════════════════════════════════════════
 // 公共 API
 // ══════════════════════════════════════════════════════════════
@@ -496,7 +551,7 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
             if (deltaCenterRz !== 0 || deltaCenterRx !== 0) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaCenterRx, 0, deltaCenterRz));
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
-                localQ.multiplyToRef(deltaQ, localQ);
+                deltaQ.multiplyToRef(localQ, localQ);
                 bone.linkedBone.rotationQuaternion = localQ;
             }
             _lastCenterRz = rz;
@@ -514,7 +569,7 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
             if (deltaRx !== 0) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaRx, 0, 0));
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
-                localQ.multiplyToRef(deltaQ, localQ);
+                deltaQ.multiplyToRef(localQ, localQ);
                 bone.linkedBone.rotationQuaternion = localQ;
             }
             _lastUpperRx = rx;
@@ -531,7 +586,7 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
             if (deltaRz !== 0) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(0, 0, deltaRz));
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
-                localQ.multiplyToRef(deltaQ, localQ);
+                deltaQ.multiplyToRef(localQ, localQ);
                 bone.linkedBone.rotationQuaternion = localQ;
             }
             _lastWaistRz = rz;
@@ -550,7 +605,7 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
             if (deltaRx !== 0 || deltaRz !== 0) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaRx, 0, deltaRz));
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
-                localQ.multiplyToRef(deltaQ, localQ);
+                deltaQ.multiplyToRef(localQ, localQ);
                 bone.linkedBone.rotationQuaternion = localQ;
             }
             _lastAllParentRx = rx;
@@ -774,7 +829,19 @@ function _applyHeadGazeWasm(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3): 
 
     lookDir.scaleInPlace(1 / lookLen);
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
-    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, targetWorldQ, 0.5));
+
+    // 父骨骼（身体）世界旋转，用于角度限位
+    const parentWorldQ = _q();
+    const parentBoneWasm = (headRuntime as any).parentBone as IMmdRuntimeBone | undefined;
+    if (parentBoneWasm && (parentBoneWasm as any).worldMatrix) {
+        parentWorldQ.copyFrom(
+            Quaternion.FromRotationMatrix(Matrix.FromArray((parentBoneWasm as any).worldMatrix))
+        );
+    } else {
+        parentWorldQ.copyFrom(Quaternion.Identity());
+    }
+    const clampedTargetQ = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
+    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTargetQ, 0.5));
 
     const newHeadMat = _m().copyFrom(Matrix.Compose(Vector3.One(), blended, headPos));
     _writeMatToBuffer(headBuf, newHeadMat);
@@ -799,13 +866,25 @@ function _applyEyeGazeWasm(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3):
     lookDir.normalize();
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
 
+    // 眼球父骨骼（头部）世界旋转，用于角度限位（相对头部坐标系钳制）
+    const parentWorldQ = _q();
+    const eyeParentBone = eyeRuntimes[0].parentBone;
+    if (eyeParentBone) {
+        const pMat = _m().copyFrom(Matrix.FromArray(eyeParentBone.worldMatrix));
+        Quaternion.FromRotationMatrixToRef(pMat.getRotationMatrix(), parentWorldQ);
+    } else {
+        parentWorldQ.copyFrom(Quaternion.Identity());
+    }
+
     for (const eyeRb of eyeRuntimes) {
         const eyeBuf = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
         const eyeMat = _m().copyFrom(Matrix.FromArray(eyeBuf));
         const eyePos = eyeMat.getTranslation();
         const curEyeQ = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
 
-        const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, targetWorldQ, EYE_SMOOTH));
+        // 接上与头部一致的锥形限位：背后看时不翻转 180°
+        const clampedTargetQ = _clampGazeTargetInParentFrame(curEyeQ, targetWorldQ, parentWorldQ, EYE_GAZE_MAX_YAW, EYE_GAZE_MAX_PITCH);
+        const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTargetQ, EYE_SMOOTH));
         const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), newEyeQ, eyePos));
 
         _writeMatToBuffer(eyeBuf, newEyeMat);
@@ -823,7 +902,6 @@ function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3): vo
 
     const lookDir = headPos.subtractToRef(gazeTarget, _v3()).normalize();
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
-    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, targetWorldQ, 0.5));
 
     // 世界旋转 → 局部旋转（左乘父骨骼世界逆）
     const parentBone = headRuntime.parentBone;
@@ -836,6 +914,10 @@ function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3): vo
     }
 
     const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
+    // 父骨骼（身体）世界旋转，用于角度限位
+    const parentWorldQ = _q().copyFrom(parentInvQ).invert();
+    const clampedTargetQ = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
+    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTargetQ, 0.5));
     const localQ = _q();
     parentInvQ.multiplyToRef(blended, localQ);
 
@@ -865,7 +947,6 @@ function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3): v
     for (const eyeRb of eyeRuntimes) {
         const eyeMat = _m().copyFrom(Matrix.FromArray(eyeRb.worldMatrix));
         const curWorldQ = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
-        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, targetWorldQ, EYE_SMOOTH));
 
         // 世界旋转 → 局部旋转
         const parentBone = eyeRb.parentBone;
@@ -878,6 +959,11 @@ function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3): v
         }
 
         const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
+        // 接上与头部一致的锥形限位：相对头部坐标系钳制，背后看时不翻转 180°
+        const parentWorldQ = _q().copyFrom(parentInvQ).invert();
+        const clampedTargetQ = _clampGazeTargetInParentFrame(curWorldQ, targetWorldQ, parentWorldQ, EYE_GAZE_MAX_YAW, EYE_GAZE_MAX_PITCH);
+        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTargetQ, EYE_SMOOTH));
+
         const localQ = _q();
         parentInvQ.multiplyToRef(newWorldQ, localQ);
 

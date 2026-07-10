@@ -59,6 +59,9 @@ export function createMockClothConfig(overrides?: Partial<ClothConfig>): ClothCo
         totalMass: 0.1,
         damping: 0.01,
         gravityScale: 1.0,
+        elasticAnchor: true,
+        anchorStiffness: 0.85,
+        anchorDamping: 0.3,
         bendCompliance: 0.01,
         ...overrides,
     };

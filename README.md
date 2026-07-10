@@ -128,7 +128,7 @@ cd frontend && npm install
 wails3 dev -config ./build/config.yml -port 9245
 ```
 
-> **改前端不再重启应用**：`build/config.yml` 的 `dev_mode.watched_extension` 已改为只监听 `*.go`，因此改 `frontend/src/**/*.ts` 时 Wails 不会重编 Go、不会重启进程，改由 Vite HMR 直接整页刷新（已加载模型/场景等运行时状态会重置，与 Wails v2 行为一致）。只有改 Go 才触发重编 + 重启。
+> **改前端不重启应用**：`build/config.yml` 的 `dev_mode.watched_extension` 改为只监听 `*.go`，
 
 #### 进阶：手动拆分（最大控制力）
 

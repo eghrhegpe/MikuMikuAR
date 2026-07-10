@@ -270,6 +270,36 @@ export function buildClothParamsLevel(): PopupLevel {
                             },
                             'lucide:arrow-down'
                         );
+                        addSliderRow(
+                            cc,
+                            t('motion.anchorElasticity'),
+                            c3.anchorStiffness ?? 0.85,
+                            0,
+                            1,
+                            0.05,
+                            (v) => {
+                                setEnvState({
+                                    clothConfig: { ...envState.clothConfig, anchorStiffness: v },
+                                });
+                                debouncedRecreate();
+                            },
+                            'lucide:spring'
+                        );
+                        addSliderRow(
+                            cc,
+                            t('motion.anchorDamping'),
+                            c3.anchorDamping ?? 0.3,
+                            0,
+                            1,
+                            0.05,
+                            (v) => {
+                                setEnvState({
+                                    clothConfig: { ...envState.clothConfig, anchorDamping: v },
+                                });
+                                debouncedRecreate();
+                            },
+                            'lucide:activity'
+                        );
                     },
                 });
 

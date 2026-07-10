@@ -231,6 +231,8 @@ export type PopupRow = {
     modeValue?: string | number;
     onModeChange?: (v: string | number) => void;
     chips?: { label: string; active?: boolean; onClick: () => void }[];
+    /** label 允许双行显示（用于长文件名等场景） */
+    wrapLabel?: boolean;
 };
 
 export type PopupLevel = {
