@@ -72,6 +72,60 @@ function _propagateChildrenWasm(
   }
 }
 
+/** 内部四元数乘法 out = a × b（xpbd-ragdoll 局部用） */
+function _quatMul(a: Float32Array, b: Float32Array, out: Float32Array): void {
+  const ax=a[0],ay=a[1],az=a[2],aw=a[3], bx=b[0],by=b[1],bz=b[2],bw=b[3];
+  out[0]=aw*bx+ax*bw+ay*bz-az*by;
+  out[1]=aw*by-ax*bz+ay*bw+az*bx;
+  out[2]=aw*bz+ax*by-ay*bx+az*bw;
+  out[3]=aw*bw-ax*bx-ay*by-az*bz;
+}
+
+/** 3x3 矩阵转四元数（Shepperd 方法），返回 [x,y,z,w] */
+function _mat3ToQuaternion(r00:number,r01:number,r02:number, r10:number,r11:number,r12:number, r20:number,r21:number,r22:number): Float32Array {
+  const trace = r00 + r11 + r22;
+  let x=0, y=0, z=0, w=1;
+  if (trace > 0) {
+    const s = 0.5 / Math.sqrt(trace + 1);
+    w = 0.25 / s; x = (r21 - r12) * s; y = (r02 - r20) * s; z = (r10 - r01) * s;
+  } else if (r00 > r11 && r00 > r22) {
+    const s = 2 * Math.sqrt(1 + r00 - r11 - r22);
+    w = (r21 - r12) / s; x = 0.25 * s; y = (r01 + r10) / s; z = (r02 + r20) / s;
+  } else if (r11 > r22) {
+    const s = 2 * Math.sqrt(1 + r11 - r00 - r22);
+    w = (r02 - r20) / s; x = (r01 + r10) / s; y = 0.25 * s; z = (r12 + r21) / s;
+  } else {
+    const s = 2 * Math.sqrt(1 + r22 - r00 - r11);
+    w = (r10 - r01) / s; x = (r02 + r20) / s; y = (r12 + r21) / s; z = 0.25 * s;
+  }
+  const q = new Float32Array([x, y, z, w]);
+  const len = Math.sqrt(x*x+y*y+z*z+w*w);
+  if (len > 1e-10) { q[0]/=len; q[1]/=len; q[2]/=len; q[3]/=len; }
+  return q;
+}
+
+/**
+ * 从 parent/child worldMatrix 提取 child 相对 parent 的旋转四元数。
+ * worldMatrix 为 16 元素行优先 Float32Array（Babylon 约定）。
+ * localRot = parentRot⁻¹ × childRot（project_memory: 父逆左乘）。
+ */
+function _extractRelativeQuaternion(parentMat: Float32Array, childMat: Float32Array): Float32Array {
+  // Babylon Matrix 行优先：row0=[0,1,2], row1=[4,5,6], row2=[8,9,10]
+  const parentRot = _mat3ToQuaternion(parentMat[0], parentMat[1], parentMat[2],
+                                       parentMat[4], parentMat[5], parentMat[6],
+                                       parentMat[8], parentMat[9], parentMat[10]);
+  const childRot = _mat3ToQuaternion(childMat[0], childMat[1], childMat[2],
+                                      childMat[4], childMat[5], childMat[6],
+                                      childMat[8], childMat[9], childMat[10]);
+  const parentInv = new Float32Array(4);
+  // 共轭 = 逆（单位四元数）
+  parentInv[0] = -parentRot[0]; parentInv[1] = -parentRot[1];
+  parentInv[2] = -parentRot[2]; parentInv[3] = parentRot[3];
+  const rel = new Float32Array(4);
+  _quatMul(parentInv, childRot, rel); // rel = parentInv × childRot（父逆左乘）
+  return rel;
+}
+
 // ── Ragdoll Builder ──
 
 export interface BuildRagdollOptions {
@@ -170,6 +224,21 @@ export function buildRagdoll(
       compliance: 0, // rigid for MVP
       restValue,
       lambda: new Float32Array(1),
+      stiffness: 1.0,
+      damping: 0.0,
+    });
+
+    // ---- sphere 约束（角向限位，3-DOF）----
+    const restQ = _extractRelativeQuaternion(bone.parentBone.worldMatrix, bone.worldMatrix);
+    constraints.push({
+      type: 'sphere',
+      indices: [parentIdx, i],
+      coneHalfAngle: Math.PI / 4,   // 默认 45°，Task 9 参数化覆盖
+      twistRange: [-Math.PI / 4, Math.PI / 4],
+      restQuaternion: restQ,
+      compliance: 0,
+      restValue: 0,
+      lambda: new Float32Array(2),  // [swing, twist]
       stiffness: 1.0,
       damping: 0.0,
     });

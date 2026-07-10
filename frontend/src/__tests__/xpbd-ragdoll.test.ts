@@ -79,12 +79,12 @@ describe('xpbd-ragdoll', () => {
       // When: buildRagdoll
       const inst = buildRagdoll('test-model', bones);
 
-      // Then: particles.length = 3, root invMass=0, others >0, constraints.length=2
+      // Then: particles.length = 3, root invMass=0, others >0, constraints.length=4 (2 distance + 2 sphere)
       expect(inst.particles).toHaveLength(3);
       expect(inst.particles[0].invMass).toBe(0);
       expect(inst.particles[1].invMass).toBe(1);
       expect(inst.particles[2].invMass).toBe(1);
-      expect(inst.constraints).toHaveLength(2);
+      expect(inst.constraints).toHaveLength(4);
       expect(inst.enabled).toBe(true);
       expect(inst.modelId).toBe('test-model');
     });
@@ -155,6 +155,37 @@ describe('xpbd-ragdoll', () => {
       expect(inst.particles).toHaveLength(0);
       expect(inst.constraints).toHaveLength(0);
       expect(inst.modelId).toBe('test-model');
+    });
+
+    it('should create sphere constraints alongside distance constraints', () => {
+      const bones: IMmdRuntimeBone[] = [
+        { name: '全ての親', parentBone: null, childBones: [], worldMatrix: new Float32Array(16) } as any,
+        { name: '上半身', parentBone: null, childBones: [], worldMatrix: new Float32Array(16) } as any,
+      ];
+      // 设置世界矩阵：root 在原点（identity），spine 在 (0,1,0)（identity 旋转 + 平移）
+      // Float32Array(16) 默认全 0，需设置 identity 旋转部分（对角线）+ 平移
+      const rootMat = (bones[0].worldMatrix as Float32Array);
+      rootMat[0]=1; rootMat[5]=1; rootMat[10]=1; rootMat[15]=1; // identity rotation
+      rootMat[12]=0; rootMat[13]=0; rootMat[14]=0;
+      const spineMat = (bones[1].worldMatrix as Float32Array);
+      spineMat[0]=1; spineMat[5]=1; spineMat[10]=1; spineMat[15]=1; // identity rotation
+      spineMat[12]=0; spineMat[13]=1; spineMat[14]=0;
+      (bones[1].parentBone as any) = bones[0];
+
+      const inst = buildRagdoll('m1', bones as any);
+      const sphereConstraints = inst.constraints.filter(c => c.type === 'sphere');
+      const distConstraints = inst.constraints.filter(c => c.type === 'distance');
+      expect(distConstraints.length).toBeGreaterThan(0);
+      expect(sphereConstraints.length).toBe(distConstraints.length);
+      const sc = sphereConstraints[0];
+      expect(sc.coneHalfAngle).toBeDefined();
+      expect(sc.twistRange).toBeDefined();
+      expect(sc.restQuaternion).toBeDefined();
+      // identity rotation 的相对四元数应为 identity [0,0,0,1]
+      expect(sc.restQuaternion![0]).toBeCloseTo(0, 5);
+      expect(sc.restQuaternion![1]).toBeCloseTo(0, 5);
+      expect(sc.restQuaternion![2]).toBeCloseTo(0, 5);
+      expect(sc.restQuaternion![3]).toBeCloseTo(1, 5);
     });
   });
 
