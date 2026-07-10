@@ -156,6 +156,16 @@ export function activatePerception(modelId?: string): void {
     // 注销旧 observer
     deactivatePerception();
 
+    // 重置重心微动增量状态（避免跨模型/重激活残留导致塌地）
+    _lastBobY = 0;
+    _swayCenterName = null;
+    _lastCenterRz = 0;
+    _lastCenterRx = 0;
+    _lastUpperRx = 0;
+    _lastWaistRz = 0;
+    _lastAllParentRx = 0;
+    _lastAllParentRz = 0;
+
     perceptionModelId = targetId;
     const mmdModel = inst.mmdModel;
 
@@ -430,6 +440,18 @@ const SWAY_AMP = {
 
 /** 上次写入的骨骼名（用于关闭时复位 position，防止残留冻结，与微表情复位逻辑同款） */
 let _lastBalanceSwayBones: string[] = [];
+/** 上次写入 center 的 bobY 偏移，用于增量撤销（避免直接改写 position.y 吃掉基准导致塌地） */
+let _lastBobY = 0;
+/** 受重心微动影响的 center 骨骼名，用于关闭时精确撤销 */
+let _swayCenterName: string | null = null;
+
+/** Rotation 增量跟踪（避免 Slerp 平均吃掉非零基准旋转 / VMD 旋转） */
+let _lastCenterRz = 0;
+let _lastCenterRx = 0;
+let _lastUpperRx = 0;
+let _lastWaistRz = 0;
+let _lastAllParentRx = 0;
+let _lastAllParentRz = 0;
 
 function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void {
     const boneNames: string[] = mmdModel.runtimeBones.map((b: IMmdRuntimeBone) => b.name);
@@ -438,14 +460,16 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
     const waistName = matchBone(boneNames, BONE_WAIST_CANDIDATES);
     const allParentName = matchBone(boneNames, BONE_ALLPARENT_CANDIDATES);
 
-    // 关闭时复位 position.bobY 到 0（防残留冻结，与微表情复位逻辑同款）
+    // 关闭时撤销 center position 的 bob 残留（恢复真实基准 position.y，避免塌到地面）
     if (!enabled) {
-        for (const name of _lastBalanceSwayBones) {
-            const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === name);
-            if (bone?.linkedBone?.position) {
-                bone.linkedBone.position.y = 0;
+        if (_lastBobY !== 0 && _swayCenterName) {
+            const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === _swayCenterName);
+            if (bone?.linkedBone) {
+                bone.linkedBone.position.y -= _lastBobY;
             }
         }
+        _lastBobY = 0;
+        _swayCenterName = null;
         _lastBalanceSwayBones = [];
         return;
     }
@@ -459,16 +483,24 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === centerName);
         if (bone?.linkedBone) {
             const bobY = Math.sin(phase) * SWAY_AMP.center_bobY;
-            // position Lerp 叠加（与当前值 0.5 权重平均，与 _applyBreathing 的 Slerp 叠加同款思想）
-            bone.linkedBone.position.y = (bone.linkedBone.position.y + bobY) * 0.5;
+            // 增量叠加：先撤上帧 bob，再加本帧 bob，保持基准 position.y 不变（修复塌到地面）
+            bone.linkedBone.position.y = bone.linkedBone.position.y - _lastBobY + bobY;
+            _lastBobY = bobY;
+            _swayCenterName = centerName;
 
             const rz = Math.sin(slowPhase) * SWAY_AMP.center_rz;
             const rx = Math.sin(phase * 0.37 + 0.5) * SWAY_AMP.center_rx;
-            // rotation Slerp 叠加（读当前 → Slerp 到目标 → 写回，与 _applyBreathing 同款）
-            const targetQ = _q().copyFrom(Quaternion.FromEulerAngles(rx, 0, rz));
-            const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
-            Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
-            bone.linkedBone.rotationQuaternion = localQ;
+            // rotation 增量叠加（deltaQ * currentQ，避免 Slerp 平均吃掉基准旋转）
+            const deltaCenterRz = rz - _lastCenterRz;
+            const deltaCenterRx = rx - _lastCenterRx;
+            if (deltaCenterRz !== 0 || deltaCenterRx !== 0) {
+                const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaCenterRx, 0, deltaCenterRz));
+                const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
+                localQ.multiplyToRef(deltaQ, localQ);
+                bone.linkedBone.rotationQuaternion = localQ;
+            }
+            _lastCenterRz = rz;
+            _lastCenterRx = rx;
             written.push(centerName);
         }
     }
@@ -478,10 +510,14 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === upper2Name);
         if (bone?.linkedBone) {
             const rx = Math.sin(phase * 0.7 + 0.3) * SWAY_AMP.upper2_rx;
-            const targetQ = _q().copyFrom(Quaternion.FromEulerAngles(rx, 0, 0));
-            const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
-            Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
-            bone.linkedBone.rotationQuaternion = localQ;
+            const deltaRx = rx - _lastUpperRx;
+            if (deltaRx !== 0) {
+                const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaRx, 0, 0));
+                const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
+                localQ.multiplyToRef(deltaQ, localQ);
+                bone.linkedBone.rotationQuaternion = localQ;
+            }
+            _lastUpperRx = rx;
             written.push(upper2Name);
         }
     }
@@ -491,10 +527,14 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === waistName);
         if (bone?.linkedBone) {
             const rz = Math.sin(phase + 0.5) * SWAY_AMP.waist_rz;
-            const targetQ = _q().copyFrom(Quaternion.FromEulerAngles(0, 0, rz));
-            const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
-            Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
-            bone.linkedBone.rotationQuaternion = localQ;
+            const deltaRz = rz - _lastWaistRz;
+            if (deltaRz !== 0) {
+                const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(0, 0, deltaRz));
+                const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
+                localQ.multiplyToRef(deltaQ, localQ);
+                bone.linkedBone.rotationQuaternion = localQ;
+            }
+            _lastWaistRz = rz;
             written.push(waistName);
         }
     }
@@ -505,10 +545,16 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
         if (bone?.linkedBone) {
             const rx = Math.sin(phase * 0.2 + 1.1) * SWAY_AMP.allParent_rx;
             const rz = Math.sin(phase * 0.3 + 2.3) * SWAY_AMP.allParent_rz;
-            const targetQ = _q().copyFrom(Quaternion.FromEulerAngles(rx, 0, rz));
-            const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
-            Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
-            bone.linkedBone.rotationQuaternion = localQ;
+            const deltaRx = rx - _lastAllParentRx;
+            const deltaRz = rz - _lastAllParentRz;
+            if (deltaRx !== 0 || deltaRz !== 0) {
+                const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaRx, 0, deltaRz));
+                const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
+                localQ.multiplyToRef(deltaQ, localQ);
+                bone.linkedBone.rotationQuaternion = localQ;
+            }
+            _lastAllParentRx = rx;
+            _lastAllParentRz = rz;
             written.push(allParentName);
         }
     }

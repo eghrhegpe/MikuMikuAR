@@ -24,10 +24,10 @@ dev_mode:
       - .gitignore
       - .gitkeep
       - "*_test.go"
+    # 只 watch Go：前端 ts/js 改动交给 Vite HMR 自行热刷新，不再重编 Go + 重启进程
+    # （恢复接近 Wails v2 的“改 TS 不退出软件”体验；整页 reload 会重置前端运行时状态）
     watched_extension:
       - "*.go"
-      - "*.js"
-      - "*.ts"
     git_ignore: true
   executes:
     - cmd: wails3 build DEV=true

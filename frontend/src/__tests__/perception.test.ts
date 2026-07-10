@@ -638,6 +638,26 @@ describe('_applyBalanceSway', () => {
         // 3. position.y 应归零（Lerp 到 0）
         expect(center.linkedBone.position.y).toBe(0);
     });
+
+    it('开启时保留 center 基准 position.y（不塌地）', () => {
+        const mockRuntimeBones = makeMockRuntimeBones(['センター']);
+        const center = mockRuntimeBones.find((b) => b.name === 'センター')!;
+        center.linkedBone.position.y = 10; // 真实模型基准高度非零
+        const mmdModel = { runtimeBones: mockRuntimeBones, mesh: {} };
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setBalanceSwayEnabled(true);
+        sut.activatePerception('m1');
+        // 多帧推进（不同 time → 不同 bob 相位）
+        vi.mocked(performance.now).mockReturnValue(0);
+        triggerLastObserver();
+        vi.mocked(performance.now).mockReturnValue(500);
+        triggerLastObserver();
+        vi.mocked(performance.now).mockReturnValue(1000);
+        triggerLastObserver();
+        // position.y 应围绕基准 10 波动，且远未塌到 0
+        expect(center.linkedBone.position.y).toBeGreaterThan(9.5);
+        expect(center.linkedBone.position.y).toBeLessThan(10.5);
+    });
 });
 
 // =====================================================================

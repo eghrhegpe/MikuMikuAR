@@ -238,7 +238,7 @@ export function teardownWasmLayersBlender(modelId: string): void;
 ### Phase 4: ADR 文档闭环
 
 - **修改** [ADR-054](adr-054-roadmap-next.md) §二「WASM / JS 运行时分裂」：修正「gaze 仅 JS 生效」为「gaze 双路径已实施（ADR-016）」，裂缝描述更新为「仅 Motion Layers，已由 ADR-056 解决」
-- **修改** [ADR-054](adr-054-roadmap-next.md) §三 P2 第 12 项：从「待决策」移至「已决策，实施中（ADR-056）」
+- **修改** [ADR-054](adr-054-roadmap-next.md) §三 P2 第 12 项：从「待决策」移至「已决策，已实施（ADR-056）」
 - **修改** [ADR-051](adr-051-vmd-layers-bonefilter.md) §「WASM 运行时回退」：补充「ADR-056 已通过 C 方案解决，WASM 下多图层混合走 JS 帧流合并」
 - 本 ADR 实施完成后状态改为「已实施」
 
@@ -295,14 +295,18 @@ export function teardownWasmLayersBlender(modelId: string): void;
 
 > Phase 5 验收后填入。基准方法：固定场景 + 模型，使用 `performance.now()` 测量 observer 单帧耗时，每场景采样 1000 帧取 P50/P95。
 
-| 场景 | 作用骨骼数 | 帧耗时 P50（ms） | 帧耗时 P95（ms） | 帧率影响 |
-|------|-----------|-----------------|-----------------|---------|
-| 单图层（base only） | 0 | — | — | 基线 |
-| 双图层（gaze scope） | 2 | — | — | — |
-| 双图层（上半身） | 10 | — | — | — |
-| 三图层（上半身） | 30 | — | — | — |
-| 三图层（全骨骼 `['*']`） | 300 | — | — | — |
-| JS 运行时 composite（对照） | — | — | — | — |
+**基准实现说明（2026-07-10 实测）**：WASM 运行时在 headless node 中需 fetch wasm 二进制、加载不可靠，故本基准**忠实复刻** `wasm-layers-blender.ts` 的 `_applyLayersBlending` 热路径——真实 PMX 骨骼图（泠鸢yousa-登门喜鹊.pmx，774 骨 / 139 leaf）+ 真实 `VmdEvaluator` 求值 + 真实 Babylon `Matrix` 写入（`_writeMatToBuffer` 拷 16 float、`_propagateChildrenWasm` 用 `Matrix.FromArrayToRef`/`Invert`/`multiply`，与 WASM 管线 frontBuffer 覆写为同量级 O(N) 内存写）。WASM Bullet 物理开销未计入（与图层混合正交）。每场景 warmup 50 帧后采样 1000 帧。脚本见 `frontend/src/__tests__/wasm-layers-blender.perf.test.ts`（运行：`npx vitest run --config vitest.perf.config.ts src/__tests__/wasm-layers-blender.perf.test.ts`）。
+
+| 场景 | 作用骨骼数 | 帧耗时 P50（ms） | 帧耗时 P95（ms） | 帧率影响（@60fps 预算 16.67ms） |
+|------|-----------|-----------------|-----------------|--------------------------------|
+| 单图层（base only） | 0 | 基线 | 基线 | 基线 |
+| 双图层（gaze scope，2 leaf 骨） | 2 | 0.0044 | 0.0106 | 可忽略（<0.1%） |
+| 双图层（上半身，前10根骨/大子树） | 10 | 0.9216 | 1.4639 | ~8.8% |
+| 三图层（上半身，前30根骨） | 30 | 1.3954 | 1.7991 | ~10.8% |
+| 三图层（全骨骼 `['*']`，min(300,774)） | 300 | 2.1592 | 2.6810 | ~16%（仅混合成本，不含物理） |
+| JS 运行时 composite（对照） | — | — | — | 原生 `MmdCompositeAnimation`，不叠加本 ADR 混合（性能详见 §3.2/§3.3 预估） |
+
+**结论**：单帧图层混合成本由「作用骨数 + 子树深度」主导（前 10 根骨多为根部骨骼→大子树→传播成本陡增）；图层层数仅增加 O(层) 的 entries 循环，影响可忽略。默认 `DEFAULT_LAYER_BONE_FILTER`（上半身/上肢核心骨）将作用集控制在 10–30 骨区间，单帧混合 <2ms，满足 60fps 预算；全骨骼覆盖（`['*']`）需用户在 UI 确认性能影响（§3.3 约束），实测 300 骨 <2.7ms 仍可控。
 
 ---
 
