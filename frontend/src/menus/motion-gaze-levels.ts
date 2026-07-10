@@ -4,7 +4,7 @@
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { addToggleRow, addModeRow } from '../core/ui-helpers';
+import { addToggleRow, addSliderRow, addModeRow } from '../core/ui-helpers';
 import {
     getPerceptionState,
     setEyeTrackingEnabled,
@@ -14,6 +14,10 @@ import {
     setMicroExpressionEnabled,
     setEmotion,
     setBalanceSwayEnabled,
+    setLipSyncEnabled,
+    setLipSyncSensitivity,
+    setLipSyncIntensity,
+    setLipSyncMultiMorphEnabled,
     activatePerception,
 } from '../scene/motion/perception';
 import type { Emotion } from '../scene/motion/perception';
@@ -136,6 +140,59 @@ export function buildGazeTrackingLevel(): PopupLevel {
                         bind: () => getPerceptionState().balanceSwayEnabled,
                     }
                 );
+            });
+            // Lip-sync（口型同步）
+            cardContainer(container, (c) => {
+                addToggleRow(
+                    c,
+                    t('motion.lipSync'),
+                    getPerceptionState().lipSyncEnabled,
+                    (v) => {
+                        setLipSyncEnabled(v);
+                        activatePerception();
+                        getMotionMenu()?.updateControls();
+                    },
+                    'lucide:mic',
+                    {
+                        bind: () => getPerceptionState().lipSyncEnabled,
+                    }
+                );
+                // 灵敏度/强度滑块 + 多口型开关仅在 lip-sync 开启时显示
+                if (getPerceptionState().lipSyncEnabled) {
+                    addSliderRow(
+                        c,
+                        t('motion.lipSyncSensitivity'),
+                        getPerceptionState().lipSyncSensitivity,
+                        0,
+                        1,
+                        0.01,
+                        (v) => {
+                            setLipSyncSensitivity(v);
+                            getMotionMenu()?.updateControls();
+                        }
+                    );
+                    addSliderRow(
+                        c,
+                        t('motion.lipSyncIntensity'),
+                        getPerceptionState().lipSyncIntensity,
+                        0,
+                        1,
+                        0.01,
+                        (v) => {
+                            setLipSyncIntensity(v);
+                            getMotionMenu()?.updateControls();
+                        }
+                    );
+                    addToggleRow(
+                        c,
+                        t('motion.lipSyncMultiMorph'),
+                        getPerceptionState().lipSyncMultiMorphEnabled,
+                        (v) => {
+                            setLipSyncMultiMorphEnabled(v);
+                            getMotionMenu()?.updateControls();
+                        }
+                    );
+                }
             });
         },
     };
