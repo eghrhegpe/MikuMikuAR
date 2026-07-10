@@ -134,6 +134,90 @@ export const DEFAULT_CONFIG: XpbdSolverConfig = {
  */
 
 // ============================================================
+// 纯 TS 四元数运算（保持 solver 无 Babylon 依赖）
+// 四元数格式 [x, y, z, w]，w 为标量部分
+// ============================================================
+
+/** 归一化四元数 */
+export function quatNormalize(src: Float32Array, out: Float32Array): void {
+    const len = Math.sqrt(src[0]*src[0] + src[1]*src[1] + src[2]*src[2] + src[3]*src[3]);
+    if (len < 1e-10) { out[0]=0; out[1]=0; out[2]=0; out[3]=1; return; }
+    const inv = 1 / len;
+    out[0] = src[0]*inv; out[1] = src[1]*inv; out[2] = src[2]*inv; out[3] = src[3]*inv;
+}
+
+/** 四元数乘法 out = a × b（Babylon 约定，行向量 v' = v × M 对应 q' = q_a × q_b） */
+export function quatMultiply(a: Float32Array, b: Float32Array, out: Float32Array): void {
+    const ax=a[0], ay=a[1], az=a[2], aw=a[3];
+    const bx=b[0], by=b[1], bz=b[2], bw=b[3];
+    out[0] = aw*bx + ax*bw + ay*bz - az*by;
+    out[1] = aw*by - ax*bz + ay*bw + az*bx;
+    out[2] = aw*bz + ax*by - ay*bx + az*bw;
+    out[3] = aw*bw - ax*bx - ay*by - az*bz;
+}
+
+/** 共轭（单位四元数的逆） */
+export function quatConjugate(src: Float32Array, out: Float32Array): void {
+    out[0] = -src[0]; out[1] = -src[1]; out[2] = -src[2]; out[3] = src[3];
+}
+
+/** 从轴角构造四元数，返回新 Float32Array(4) */
+export function quatFromAxisAngle(x: number, y: number, z: number, angle: number): Float32Array {
+    const half = angle * 0.5;
+    const s = Math.sin(half);
+    return new Float32Array([x*s, y*s, z*s, Math.cos(half)]);
+}
+
+/** 四元数转轴角，返回 {ax, ay, az, angle} */
+export function quatToAxisAngle(q: Float32Array): { ax: number; ay: number; az: number; angle: number } {
+    const w = Math.max(-1, Math.min(1, q[3]));
+    const angle = 2 * Math.acos(w);
+    const s = Math.sqrt(1 - w*w);
+    if (s < 1e-10) return { ax: 1, ay: 0, az: 0, angle: 0 };
+    return { ax: q[0]/s, ay: q[1]/s, az: q[2]/s, angle };
+}
+
+/** 球面线性插值 */
+export function quatSlerp(a: Float32Array, b: Float32Array, t: number, out: Float32Array): void {
+    let dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3];
+    let bx=b[0], by=b[1], bz=b[2], bw=b[3];
+    if (dot < 0) { bx=-bx; by=-by; bz=-bz; bw=-bw; dot=-dot; }
+    if (dot > 0.9995) {
+        out[0] = a[0] + (bx-a[0])*t; out[1] = a[1] + (by-a[1])*t;
+        out[2] = a[2] + (bz-a[2])*t; out[3] = a[3] + (bw-a[3])*t;
+        quatNormalize(out, out); return;
+    }
+    const theta = Math.acos(dot);
+    const sinTheta = Math.sin(theta);
+    const ka = Math.sin((1-t)*theta) / sinTheta;
+    const kb = Math.sin(t*theta) / sinTheta;
+    out[0] = a[0]*ka + bx*kb; out[1] = a[1]*ka + by*kb;
+    out[2] = a[2]*ka + bz*kb; out[3] = a[3]*ka + bw*kb;
+}
+
+/**
+ * Swing-Twist 分解：将 q 分解为 swing（绕垂直于 twistAxis 的平面）× twist（绕 twistAxis）。
+ * twist = normalize( projection of q.xyz onto twistAxis )，保留 q.w。
+ * swing = q × twist⁻¹ = q × conj(twist)（单位四元数逆=共轭）。
+ * @param q 待分解四元数
+ * @param tx,ty,tz twist 轴（单位向量）
+ * @param swingOut 输出 swing 四元数
+ * @param twistOut 输出 twist 四元数
+ */
+export function swingTwistDecompose(
+    q: Float32Array, tx: number, ty: number, tz: number,
+    swingOut: Float32Array, twistOut: Float32Array
+): void {
+    const dot = q[0]*tx + q[1]*ty + q[2]*tz;
+    twistOut[0] = dot*tx; twistOut[1] = dot*ty; twistOut[2] = dot*tz; twistOut[3] = q[3];
+    quatNormalize(twistOut, twistOut);
+    const twistInv = new Float32Array(4);
+    quatConjugate(twistOut, twistInv);
+    quatMultiply(q, twistInv, swingOut);
+    quatNormalize(swingOut, swingOut);
+}
+
+// ============================================================
 // XpbdSolver
 // ============================================================
 
