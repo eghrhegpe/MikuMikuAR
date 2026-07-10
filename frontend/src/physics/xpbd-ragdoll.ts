@@ -136,7 +136,17 @@ export function buildRagdoll(
 
     const invMass = isRoot ? 0 : 1.0;
 
-    particles.push({ p, prevP, v, invMass, radius: 0.1 });
+    particles.push({
+      p,
+      prevP,
+      v,
+      invMass,
+      radius: 0.1,
+      orientation: new Float32Array([0, 0, 0, 1]),
+      prevOrientation: new Float32Array([0, 0, 0, 1]),
+      angularVelocity: new Float32Array(3),
+      invInertia: invMass === 0 ? 0 : 1,
+    });
     boneNames.push(bone.name);
   }
 
