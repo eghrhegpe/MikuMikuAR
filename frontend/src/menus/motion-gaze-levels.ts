@@ -4,15 +4,18 @@
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { addToggleRow } from '../core/ui-helpers';
+import { addToggleRow, addModeRow } from '../core/ui-helpers';
 import {
     getPerceptionState,
     setEyeTrackingEnabled,
     setHeadTrackingEnabled,
     setBreathEnabled,
     setBlinkEnabled,
+    setMicroExpressionEnabled,
+    setEmotion,
     activatePerception,
 } from '../scene/motion/perception';
+import type { Emotion } from '../scene/motion/perception';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 
@@ -78,6 +81,41 @@ export function buildGazeTrackingLevel(): PopupLevel {
                     'lucide:eye',
                     {
                         bind: () => getPerceptionState().blinkEnabled,
+                    }
+                );
+            });
+            // 微表情 + 情绪选择
+            cardContainer(container, (c) => {
+                addToggleRow(
+                    c,
+                    t('motion.microExpression'),
+                    st.microExpressionEnabled,
+                    (v) => {
+                        setMicroExpressionEnabled(v);
+                        activatePerception();
+                        getMotionMenu()?.updateControls();
+                    },
+                    'lucide:smile',
+                    {
+                        bind: () => getPerceptionState().microExpressionEnabled,
+                    }
+                );
+                const emotionOptions: Array<{ value: Emotion; label: string }> = [
+                    { value: 'neutral', label: t('motion.emotionNeutral') },
+                    { value: 'happy', label: t('motion.emotionHappy') },
+                    { value: 'sad', label: t('motion.emotionSad') },
+                    { value: 'surprised', label: t('motion.emotionSurprised') },
+                    { value: 'angry', label: t('motion.emotionAngry') },
+                ];
+                addModeRow<Emotion>(
+                    c,
+                    t('motion.emotion'),
+                    emotionOptions,
+                    getPerceptionState().emotion,
+                    (v) => {
+                        setEmotion(v);
+                        activatePerception();
+                        getMotionMenu()?.updateControls();
                     }
                 );
             });
