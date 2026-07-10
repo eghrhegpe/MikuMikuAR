@@ -845,6 +845,7 @@ export const ko: Record<string, string> = {
     'env.foamIntensity': '거품 강도',
     'env.animSpeed': '애니메이션 속도',
     'env.range': '범위',
+    'env.edgeFade': '엣지 페이드',
     'env.underwaterEffects': '수중 효과',
     'env.underwaterFogColor': '수중 안개 색상',
     'env.fogDensity': '안개 밀도',

@@ -235,6 +235,18 @@ export function buildGroundLevel(): PopupLevel {
                     undefined,
                     { bind: () => envState.groundSize }
                 );
+                addSliderRow(
+                    c,
+                    t('env.edgeFade'),
+                    s.groundEdgeFade,
+                    0,
+                    1,
+                    0.01,
+                    (v) => setEnvState({ groundEdgeFade: v }),
+                    'lucide:droplet',
+                    undefined,
+                    { bind: () => envState.groundEdgeFade }
+                );
                 addModeSlider(
                     c,
                     t('env.groundMode'),

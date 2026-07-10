@@ -911,6 +911,7 @@ export const en: Record<string, string> = {
     'env.foamIntensity': 'Foam intensity',
     'env.animSpeed': 'Animation speed',
     'env.range': 'Range',
+    'env.edgeFade': 'Edge Fade',
     'env.underwaterEffects': 'Underwater effects',
     'env.underwaterFogColor': 'Underwater fog color',
     'env.fogDensity': 'Fog density',

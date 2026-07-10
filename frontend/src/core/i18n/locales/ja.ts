@@ -850,6 +850,7 @@ export const ja: Record<string, string> = {
     'env.foamIntensity': '泡の強度',
     'env.animSpeed': 'アニメーション速度',
     'env.range': '範囲',
+    'env.edgeFade': 'エッジフェード',
     'env.underwaterEffects': '水中効果',
     'env.underwaterFogColor': '水中フォグ色',
     'env.fogDensity': 'フォグ密度',
