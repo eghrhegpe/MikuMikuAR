@@ -262,22 +262,6 @@ export function generateLifelikeVmd(
         });
     }
 
-    if (state.boneToggles.emotion) {
-        const selected = morphNames.slice(0, 3);
-        for (let mi = 0; mi < selected.length; mi++) {
-            const mName = selected[mi];
-            const offset = (mi * loopFrames) / selected.length;
-            const flickerStart = Math.round(offset + loopFrames * 0.1);
-            if (flickerStart + 4 <= loopFrames) {
-                const w = 0.15 * intensity;
-                morphs.push({ name: mName, frame: flickerStart, weight: 0 });
-                morphs.push({ name: mName, frame: flickerStart + 1, weight: w });
-                morphs.push({ name: mName, frame: flickerStart + 3, weight: w });
-                morphs.push({ name: mName, frame: flickerStart + 4, weight: 0 });
-            }
-        }
-    }
-
     for (const b of bones) {
         b.interp = INTERP_EASE_IN_OUT;
     }
