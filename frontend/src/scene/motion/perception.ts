@@ -11,6 +11,10 @@ import { modelManager, focusedModelId, scene, triggerAutoSave } from '../scene';
 import { isARActive } from '../ar/ar-camera';
 import {
     BONE_UPPER_CANDIDATES,
+    BONE_CENTER_CANDIDATES,
+    BONE_UPPER2_CANDIDATES,
+    BONE_WAIST_CANDIDATES,
+    BONE_ALLPARENT_CANDIDATES,
     MORPH_BLINK_CANDIDATES,
     matchBone,
 } from '../../motion-algos/proc-motion-shared';
@@ -160,7 +164,10 @@ export function activatePerception(modelId?: string): void {
         // 3. 微表情（无条件调用，内部处理关闭/neutral 复位）
         _applyMicroExpression(mmdModel, time, perceptionState.microExpressionEnabled, perceptionState.emotion);
 
-        // 4. 头部跟随 + 眼部跟随（gaze）
+        // 4. 重心微动（无条件调用，内部处理关闭复位）
+        _applyBalanceSway(mmdModel, time, perceptionState.balanceSwayEnabled);
+
+        // 5. 头部跟随 + 眼部跟随（gaze）
         if (perceptionState.headTrackingEnabled || perceptionState.eyeTrackingEnabled) {
             const cam = scene.activeCamera;
             if (cam) {
@@ -363,6 +370,111 @@ function _applyMicroExpression(
     // 写入 morph 权重（与 _applyBlinking 的 influence 赋值一致）
     targetMorph.influence = weight;
     _lastEmotionMorphName = targetName;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 重心微动实现（躯干骨骼平衡微晃，从 proc-motion-idle.ts 迁移）
+// ══════════════════════════════════════════════════════════════
+
+/** 重心微动周期（秒，从 idle loopFrames=120@60fps 转换：120/60=2s） */
+const BALANCE_SWAY_PERIOD = 2.0;
+/** 重心微动各骨骼振幅（从 idle 算法提取，intensity 固定 1.0） */
+const SWAY_AMP = {
+    center_rz: 0.1,      // center 慢速摆动
+    center_rx: 0.03,     // center 微动
+    center_bobY: 0.04,   // center 上下浮动
+    upper2_rx: 0.015,    // 上半身2 前后倾
+    waist_rz: 0.02,      // 腰 左右摆
+    allParent_rx: 0.005, // 全ての親 微倾
+    allParent_rz: 0.005,
+};
+
+/** 上次写入的骨骼名（用于关闭时复位 position，防止残留冻结，与微表情复位逻辑同款） */
+let _lastBalanceSwayBones: string[] = [];
+
+function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void {
+    const boneNames: string[] = mmdModel.runtimeBones.map((b: IMmdRuntimeBone) => b.name);
+    const centerName = matchBone(boneNames, BONE_CENTER_CANDIDATES);
+    const upper2Name = matchBone(boneNames, BONE_UPPER2_CANDIDATES);
+    const waistName = matchBone(boneNames, BONE_WAIST_CANDIDATES);
+    const allParentName = matchBone(boneNames, BONE_ALLPARENT_CANDIDATES);
+
+    // 关闭时复位 position.bobY 到 0（防残留冻结，与微表情复位逻辑同款）
+    if (!enabled) {
+        for (const name of _lastBalanceSwayBones) {
+            const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === name);
+            if (bone?.linkedBone?.position) {
+                bone.linkedBone.position.y = 0;
+            }
+        }
+        _lastBalanceSwayBones = [];
+        return;
+    }
+
+    const phase = (time % BALANCE_SWAY_PERIOD) / BALANCE_SWAY_PERIOD * Math.PI * 2;
+    const slowPhase = phase * 0.5;
+    const written: string[] = [];
+
+    // center: position bobY + rotation rz/rx
+    if (centerName) {
+        const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === centerName);
+        if (bone?.linkedBone) {
+            const bobY = Math.sin(phase) * SWAY_AMP.center_bobY;
+            // position Lerp 叠加（与当前值 0.5 权重平均，与 _applyBreathing 的 Slerp 叠加同款思想）
+            bone.linkedBone.position.y = (bone.linkedBone.position.y + bobY) * 0.5;
+
+            const rz = Math.sin(slowPhase) * SWAY_AMP.center_rz;
+            const rx = Math.sin(phase * 0.37 + 0.5) * SWAY_AMP.center_rx;
+            // rotation Slerp 叠加（读当前 → Slerp 到目标 → 写回，与 _applyBreathing 同款）
+            const targetQ = _q().copyFrom(Quaternion.FromEulerAngles(rx, 0, rz));
+            const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
+            Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
+            bone.linkedBone.rotationQuaternion = localQ;
+            written.push(centerName);
+        }
+    }
+
+    // upper2: rotation rx
+    if (upper2Name) {
+        const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === upper2Name);
+        if (bone?.linkedBone) {
+            const rx = Math.sin(phase * 0.7 + 0.3) * SWAY_AMP.upper2_rx;
+            const targetQ = _q().copyFrom(Quaternion.FromEulerAngles(rx, 0, 0));
+            const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
+            Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
+            bone.linkedBone.rotationQuaternion = localQ;
+            written.push(upper2Name);
+        }
+    }
+
+    // waist: rotation rz
+    if (waistName) {
+        const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === waistName);
+        if (bone?.linkedBone) {
+            const rz = Math.sin(phase + 0.5) * SWAY_AMP.waist_rz;
+            const targetQ = _q().copyFrom(Quaternion.FromEulerAngles(0, 0, rz));
+            const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
+            Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
+            bone.linkedBone.rotationQuaternion = localQ;
+            written.push(waistName);
+        }
+    }
+
+    // allParent: rotation rx/rz
+    if (allParentName) {
+        const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === allParentName);
+        if (bone?.linkedBone) {
+            const rx = Math.sin(phase * 0.2 + 1.1) * SWAY_AMP.allParent_rx;
+            const rz = Math.sin(phase * 0.3 + 2.3) * SWAY_AMP.allParent_rz;
+            const targetQ = _q().copyFrom(Quaternion.FromEulerAngles(rx, 0, rz));
+            const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
+            Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
+            bone.linkedBone.rotationQuaternion = localQ;
+            written.push(allParentName);
+        }
+    }
+
+    _lastBalanceSwayBones = written;
 }
 
 // ══════════════════════════════════════════════════════════════
