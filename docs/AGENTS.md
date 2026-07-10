@@ -27,5 +27,6 @@ research/            🧊 调研归档
 | `dancexr-directory.md` | DanceXR 目录布局参考 |
 | `pmx-header-layout.md` | PMX 文件头二进制布局 |
 | `blender-integration.md` | Blender 集成方案调研 |
+| `adr-060-e2e-testing-strategy.md` | E2E 测试策略（Playwright + 双模式 Fixture + 场景数值钩子） |
 
 > research/ 为调研归档，非当前工作文件。
