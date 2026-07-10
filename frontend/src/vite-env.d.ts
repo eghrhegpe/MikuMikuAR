@@ -23,14 +23,14 @@ declare global {
             skyMode: string;
         };
     }
-}
 
-interface ImportMetaEnv {
-    readonly VITE_WASM_LAYERS_BLEND?: string;
-}
+    interface ImportMetaEnv {
+        readonly VITE_WASM_LAYERS_BLEND?: string;
+    }
 
-interface ImportMeta {
-    readonly env: ImportMetaEnv;
+    interface ImportMeta {
+        readonly env: ImportMetaEnv;
+    }
 }
 
 export {};
