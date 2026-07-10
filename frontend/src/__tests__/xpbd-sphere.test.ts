@@ -158,3 +158,59 @@ describe('quaternion utilities', () => {
     expect(twist[3]).toBeCloseTo(1, 5);
   });
 });
+
+describe('_solveSphereConstraint convergence', () => {
+  it('should clamp swing beyond coneHalfAngle back toward limit', () => {
+    const solver = new XpbdSolver({ gravity: [0,0,0], substeps: 1, damping: 1, groundY: -100 });
+    const parent = { p: new Float32Array([0,0,0]), prevP: new Float32Array([0,0,0]), v: new Float32Array(3),
+      invMass: 0, radius: 0.1,
+      orientation: new Float32Array([0,0,0,1]),
+      prevOrientation: new Float32Array([0,0,0,1]),
+      angularVelocity: new Float32Array(3),
+      invInertia: 0 };
+    const child = { p: new Float32Array([0,1,0]), prevP: new Float32Array([0,1,0]), v: new Float32Array(3),
+      invMass: 1, radius: 0.1,
+      orientation: quatFromAxisAngle(1, 0, 0, 1.0),
+      prevOrientation: new Float32Array([0,0,0,1]),
+      angularVelocity: new Float32Array(3),
+      invInertia: 1 };
+    solver.particles = [parent, child];
+    solver.constraints = [{
+      type: 'sphere', indices: [0, 1],
+      coneHalfAngle: Math.PI / 4,
+      twistRange: [-Math.PI/4, Math.PI/4],
+      restQuaternion: new Float32Array([0,0,0,1]),
+      compliance: 0, restValue: 0, lambda: new Float32Array(2), stiffness: 1.0, damping: 0.0,
+    }];
+    for (let i = 0; i < 50; i++) solver.step(1/60);
+    const aa = quatToAxisAngle(child.orientation);
+    expect(aa.angle).toBeLessThan(Math.PI / 4 + 0.15);
+  });
+
+  it('should not modify orientation within limits', () => {
+    const solver = new XpbdSolver({ gravity: [0,0,0], substeps: 1, damping: 1, groundY: -100 });
+    const parent = { p: new Float32Array([0,0,0]), prevP: new Float32Array([0,0,0]), v: new Float32Array(3),
+      invMass: 0, radius: 0.1,
+      orientation: new Float32Array([0,0,0,1]),
+      prevOrientation: new Float32Array([0,0,0,1]),
+      angularVelocity: new Float32Array(3),
+      invInertia: 0 };
+    const smallSwing = quatFromAxisAngle(0, 1, 0, 0.1);
+    const child = { p: new Float32Array([0,1,0]), prevP: new Float32Array([0,1,0]), v: new Float32Array(3),
+      invMass: 1, radius: 0.1,
+      orientation: new Float32Array(smallSwing),
+      prevOrientation: new Float32Array([0,0,0,1]),
+      angularVelocity: new Float32Array(3),
+      invInertia: 1 };
+    solver.particles = [parent, child];
+    solver.constraints = [{
+      type: 'sphere', indices: [0, 1],
+      coneHalfAngle: Math.PI / 4, twistRange: [-Math.PI/4, Math.PI/4],
+      restQuaternion: new Float32Array([0,0,0,1]),
+      compliance: 0, restValue: 0, lambda: new Float32Array(2), stiffness: 1.0, damping: 0.0,
+    }];
+    const before = child.orientation.slice();
+    for (let i = 0; i < 10; i++) solver.step(1/60);
+    expect(Math.abs(child.orientation[0] - before[0])).toBeLessThan(0.05);
+  });
+});
