@@ -269,7 +269,7 @@ function renderEmbed(site: PlazaSite): void {
             title: site.name,
             onBack: renderHome,
             onOpen: () => openExternal(site),
-            onRefresh: () => { if (iframe.src) iframe.src = iframe.src; },
+            onRefresh: () => { if (iframe.src) { const src = iframe.src; iframe.src = src; } },
             onClose: closePlaza,
         })
     );
