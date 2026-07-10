@@ -96,7 +96,6 @@ import {
     getProcBeatDetector,
     onModelRemoved,
 } from './motion/proc-motion-bridge';
-import { updateLipSync, initLipSync } from './motion/lipsync-bridge';
 import { triggerAutoSaveImpl } from './scene-serialize';
 
 // ======== Babylon.js ========
@@ -216,9 +215,6 @@ export async function initScene(): Promise<void> {
     setModelRegistry(modelManager.modelRegistry);
     setTriggerAutoSave(triggerAutoSaveImpl);
 
-    // 4.5 注入 ModelManager 到依赖模块
-    initLipSync(modelManager);
-
     // 5. Loader（必须在 modelManager + setTriggerAutoSave 之后）
     // 破除循环依赖：scene.ts 不再静态 import outfit / model-preset，
     // 改在 initScene(async) 内动态 import（同 scene.ts:187，adr-053/adr-064）。
@@ -238,7 +234,6 @@ export async function initScene(): Promise<void> {
         modelManager,
         updatePlaybackUI,
         updateProcMotion,
-        updateLipSync,
         getProcBeatDetector
     );
 

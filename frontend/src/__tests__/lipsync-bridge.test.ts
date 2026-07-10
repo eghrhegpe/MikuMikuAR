@@ -305,38 +305,28 @@ describe('resetLipSyncOnFocusChange', () => {
 });
 
 // =====================================================================
-// updateLipSync — early returns
+// updateLipSync — 已迁入 perception.ts，现为 no-op
 // =====================================================================
 
-describe('updateLipSync — early returns', () => {
-    it('returns early when disabled', () => {
-        // enabled is false by default
+describe('updateLipSync — no-op（逻辑已迁入 perception.ts）', () => {
+    it('调用不抛异常', () => {
+        expect(() => sut.updateLipSync()).not.toThrow();
+    });
+
+    it('不调用任何外部依赖', () => {
         sut.updateLipSync();
-        // No external calls should happen
         expect(mockState.isAudioPlaying).not.toHaveBeenCalled();
         expect(mockState.getAudioPath).not.toHaveBeenCalled();
         expect(mockState.setModelMorphWeight).not.toHaveBeenCalled();
+        expect(mockState.getProcBeatDetector).not.toHaveBeenCalled();
     });
 
-    it('returns early when focusedModelId is null', () => {
+    it('即使 enabled=true 也不产生副作用', () => {
         sut.setLipSyncEnabled(true);
-        // focusedModelId is null by default in mocks
+        mockState.focusedModelId = 'model-1';
         sut.updateLipSync();
-        // Should have checked isAudioPlaying (decay path) but not set morph weight
-        // Actually with focusedModelId=null, the path is:
-        //   enabled check pass → audio path check → isAudioPlaying? ... depends on mock
-        //   → modelId = null → modelId !== lastFocusedId (null !== null = false)
-        //   → !modelId → true → return
-        // So isAudioPlaying and getAudioPath might be called
         expect(mockState.setModelMorphWeight).not.toHaveBeenCalled();
-    });
-
-    it('returns early when focusedModelId is null after audio path check', () => {
-        sut.setLipSyncEnabled(true);
-        mockState.focusedModelId = null;
-        sut.updateLipSync();
-        // Should not set any morph weights
-        expect(mockState.setModelMorphWeight).not.toHaveBeenCalled();
+        expect(mockState.getProcBeatDetector).not.toHaveBeenCalled();
     });
 });
 
