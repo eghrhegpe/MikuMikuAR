@@ -21,10 +21,8 @@ import {
     removeStageLight,
     getActiveStageLightId,
     setActiveStageLightId,
-    attachLightGizmo,
-    detachLightGizmo,
-    isGizmoActive,
 } from '../scene/scene';
+import { buildTransformCard } from './resource-detail-helpers';
 import { LIGHTING_PRESETS, PRESET_NAMES } from '../scene/render/lighting-presets';
 import { setEnvState } from '../scene/env/env-bridge';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
@@ -36,8 +34,6 @@ const LIGHTING_PRESET_KEYS: Record<string, string> = {
     'prop-product': 'scene.lightPreset.propProduct',
     'stage-drama': 'scene.lightPreset.stageDrama',
     'dance-performance': 'scene.lightPreset.dancePerformance',
-    'natural-daylight': 'scene.lightPreset.naturalDaylight',
-    'night-scene': 'scene.lightPreset.nightScene',
 };
 
 // ======== Stage Light ========
@@ -141,7 +137,7 @@ export function buildStageLightLevel(): PopupLevel {
                 addCollapsible(c, {
                     title: state.name,
                     icon: 'lucide:lightbulb',
-                    defaultOpen: false,
+                    defaultOpen: true,
                     headerToggle: {
                         value: state.enabled,
                         onChange: (v) => {
@@ -541,91 +537,14 @@ export function buildStageLightLevel(): PopupLevel {
                 });
             }
 
-            // —— 轨道卡片 ——
-            cardContainer(container, (c) => {
-                addCollapsible(c, {
-                    title: t('scene.positionOrbit'),
-                    icon: 'lucide:orbit',
-                    defaultOpen: true,
-                    renderContent: (inner) => {
-                        addSliderRow(
-                            inner,
-                            t('scene.horizontalAngle'),
-                            state.orbitAzimuth,
-                            -180,
-                            180,
-                            1,
-                            () => {},
-                            'lucide:refresh-cw',
-                            (v) => setStageLightState({ orbitAzimuth: v }, state.id),
-                            {
-                                bind: () => {
-                                    const lights = getStageLights();
-                                    const activeId = getActiveStageLightId();
-                                    const s = lights.find((l) => l.id === activeId) ?? lights[0];
-                                    return s?.orbitAzimuth ?? 0;
-                                },
-                            }
-                        );
-                        addSliderRow(
-                            inner,
-                            t('scene.elevationAngle'),
-                            state.orbitElevation,
-                            -90,
-                            90,
-                            1,
-                            () => {},
-                            'lucide:arrow-up-down',
-                            (v) => setStageLightState({ orbitElevation: v }, state.id),
-                            {
-                                bind: () => {
-                                    const lights = getStageLights();
-                                    const activeId = getActiveStageLightId();
-                                    const s = lights.find((l) => l.id === activeId) ?? lights[0];
-                                    return s?.orbitElevation ?? 30;
-                                },
-                            }
-                        );
-                        addSliderRow(
-                            inner,
-                            t('scene.distance'),
-                            state.orbitDistance,
-                            1,
-                            100,
-                            0.5,
-                            () => {},
-                            'lucide:move',
-                            (v) => setStageLightState({ orbitDistance: v }, state.id),
-                            {
-                                bind: () => {
-                                    const lights = getStageLights();
-                                    const activeId = getActiveStageLightId();
-                                    const s = lights.find((l) => l.id === activeId) ?? lights[0];
-                                    return s?.orbitDistance ?? 10;
-                                },
-                            }
-                        );
-
-                        // 拖拽定位按钮
-                        const gizmoActive = isGizmoActive();
-                        slideRow(
-                            inner,
-                            gizmoActive ? 'lucide:x' : 'lucide:move-3d',
-                            t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
-                            false,
-                            () => {
-                                if (gizmoActive) {
-                                    detachLightGizmo();
-                                    setStatus(t('scene.statusExitDrag'), true);
-                                } else {
-                                    attachLightGizmo(state.id);
-                                    setStatus(t('scene.statusDragHint'), false);
-                                }
-                                reRenderSceneMenu();
-                            }
-                        );
-                    },
-                });
+            // —— 拖拽操控（Gizmo 拖拽 + 缩放倍率 + 透明度）——
+            addCollapsible(container, {
+                title: '拖拽操控',
+                icon: 'lucide:move-3d',
+                defaultOpen: false,
+                renderContent: (inner) => {
+                    buildTransformCard(inner, { id: state.id, kind: 'light', name: state.name });
+                },
             });
 
             // —— 删除按钮 ——

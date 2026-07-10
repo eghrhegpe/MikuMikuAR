@@ -163,57 +163,7 @@ export const LIGHTING_PRESETS: Record<string, LightingPreset> = {
             },
         ],
     },
-    'natural-daylight': {
-        name: 'natural-daylight',
-        label: '自然日光',
-        icon: 'lucide:sun',
-        lights: [
-            // 平行光模拟太阳
-            {
-                type: 'directional',
-                state: {
-                    intensity: 0.9,
-                    orbitAzimuth: 135,
-                    orbitElevation: 50,
-                    orbitDistance: 50,
-                    color: [1, 0.97, 0.92],
-                    shadowEnabled: true,
-                    shadowType: 'soft',
-                    shadowResolution: 2048,
-                },
-            },
-        ],
-    },
-    'night-scene': {
-        name: 'night-scene',
-        label: '夜间场景',
-        icon: 'lucide:moon',
-        lights: [
-            // 月光（低强度平行光）
-            {
-                type: 'directional',
-                state: {
-                    intensity: 0.2,
-                    orbitAzimuth: 180,
-                    orbitElevation: 30,
-                    orbitDistance: 50,
-                    color: [0.6, 0.7, 1],
-                },
-            },
-            // 暖色点光源（室内感）
-            {
-                type: 'point',
-                state: {
-                    intensity: 0.3,
-                    posX: 3,
-                    posY: 5,
-                    posZ: 2,
-                    range: 20,
-                    color: [1, 0.8, 0.5],
-                },
-            },
-        ],
-    },
+
 };
 
 /** 预设名称列表（有序） */

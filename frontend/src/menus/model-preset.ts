@@ -29,7 +29,7 @@ import {
     SaveModelPreset,
     LoadModelPreset,
     GetModelPresets,
-    SaveModelPresetToLib,
+    SaveModelPresetToLibAuto,
     LoadModelPresetFromLib,
     DeleteModelPreset,
 } from '../core/wails-bindings';
@@ -42,9 +42,10 @@ import {
     setVolume,
     setAudioOffset,
 } from '../outfit/audio';
-import { showConfirm, showPrompt } from '../core/dialog';
+import { showConfirm } from '../core/dialog';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
 import { t } from '../core/i18n/t';
+import { buildPresetListLevel as buildGenericPresetLevel } from './preset-list-viewer';
 
 export interface ModelPresetEntry {
     name: string;
@@ -301,15 +302,6 @@ export async function selectAndLoadPreset(id: string): Promise<void> {
     }, t('model-preset.loadFailed'));
 }
 
-export async function togglePresetAutoApply(name: string): Promise<void> {
-    await tryCatchStatus(async () => {
-        const json = await LoadModelPresetFromLib(name);
-        const preset: ModelPresetFile = JSON.parse(json);
-        preset.autoApply = !preset.autoApply;
-        await SaveModelPresetToLib(name, JSON.stringify(preset, null, 2));
-    }, t('model-preset.toggleAutoApplyFailed'));
-}
-
 export async function applyPresetFromLib(
     presetName: string,
     targetModelId: string | null
@@ -355,35 +347,13 @@ export async function applyPresetFromLib(
 }
 
 export async function savePresetToLibDialog(id: string): Promise<void> {
-    const name = await showPrompt(t('model-preset.inputName'));
-    if (!name) {
-        return;
-    }
-    const trimmed = name.trim();
-    if (!trimmed) {
-        setStatus(t('model-preset.nameEmpty'), false);
-        return;
-    }
-    let json = serializeModelPreset(id, trimmed);
+    const json = serializeModelPreset(id);
     if (!json) {
         setStatus(t('model-preset.serializeFailed'), false);
         return;
     }
-    try {
-        const existing = await LoadModelPresetFromLib(trimmed);
-        if (existing) {
-            const existingPreset: ModelPresetFile = JSON.parse(existing);
-            if (existingPreset.autoApply) {
-                const merged: ModelPresetFile = JSON.parse(json);
-                merged.autoApply = true;
-                json = JSON.stringify(merged, null, 2);
-            }
-        }
-    } catch {
-        /* no existing preset — fine */
-    }
-    const _r1 = await tryCatchStatus(
-        () => SaveModelPresetToLib(trimmed, json),
+    const filename = await tryCatchStatus(
+        () => SaveModelPresetToLibAuto(json),
         t('model-preset.saveFailed'),
         (err) =>
             showErrorToast(
@@ -391,99 +361,33 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
                 err instanceof Error ? err.message : String(err)
             )
     );
-    if (_r1 !== undefined) {
+    if (filename !== undefined) {
         setStatus(t('model-preset.savedToLib'), true);
     }
 }
 
 export function buildPresetListLevel(id: string | null): PopupLevel {
-    return {
-        label: t('model-preset.presetLib'),
-        dir: '',
-        items: [],
-        renderCustom: async (container) => {
-            container.classList.remove('render-card');
-            setStatus(t('model-preset.loadingLib'), false);
-            const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
-            if (entries.length === 0) {
-                const empty = document.createElement('div');
-                empty.style.cssText =
-                    'font-size:12px;color:var(--text-dim);text-align:center;padding:24px;';
-                empty.textContent = t('model-preset.noPresets');
-                container.appendChild(empty);
-                return;
-            }
-            cardContainer(container, (c) => {
-                for (const e of entries) {
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    const iconSpan = document.createElement('span');
-                    iconSpan.className = 'slide-icon';
-                    const iconify = document.createElement('iconify-icon');
-                    iconify.icon = 'lucide:bookmark';
-                    iconSpan.appendChild(iconify);
-                    row.appendChild(iconSpan);
-                    const labelSpan = document.createElement('span');
-                    labelSpan.className = 'slide-label';
-                    labelSpan.textContent = e.presetName || e.name;
-                    row.appendChild(labelSpan);
-                    if (e.modelName) {
-                        const sub = document.createElement('span');
-                        sub.style.cssText =
-                            'font-size:11px;color:var(--text-dim);margin-right:4px;';
-                        sub.textContent = e.modelName;
-                        row.appendChild(sub);
-                    }
-                    const toggleLabel = document.createElement('label');
-                    toggleLabel.className = 'toggle';
-                    toggleLabel.title = e.autoApply
-                        ? t('model-preset.autoApplyOn')
-                        : t('model-preset.autoApplyOff');
-                    const toggleInput = document.createElement('input');
-                    toggleInput.type = 'checkbox';
-                    toggleInput.checked = e.autoApply;
-                    toggleInput.addEventListener('change', async (ev) => {
-                        ev.stopPropagation();
-                        await togglePresetAutoApply(e.name);
-                        stackRegistry.modelStack.reRender();
-                    });
-                    const slider = document.createElement('span');
-                    slider.className = 'slider';
-                    toggleLabel.appendChild(toggleInput);
-                    toggleLabel.appendChild(slider);
-                    row.appendChild(toggleLabel);
-                    const delBtn = document.createElement('span');
-                    delBtn.textContent = '✕';
-                    delBtn.title = t('model-preset.deleteThisPreset');
-                    delBtn.style.cssText =
-                        'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 6px;';
-                    delBtn.addEventListener('click', async (ev) => {
-                        ev.stopPropagation();
-                        if (
-                            !(await showConfirm(
-                                t('model-preset.confirmDelete', { name: e.presetName || e.name })
-                            ))
-                        ) {
-                            return;
-                        }
-                        const _r2 = await tryCatchStatus(async () => {
-                            await DeleteModelPreset(e.name);
-                            stackRegistry.modelStack.reRender();
-                        }, t('model-preset.deleteFailed'));
-                        if (_r2 !== undefined) {
-                            setStatus(t('model-preset.deleted'), true);
-                        }
-                    });
-                    row.appendChild(delBtn);
-                    row.addEventListener('click', (ev) => {
-                        if ((ev.target as HTMLElement).closest('.toggle')) {
-                            return;
-                        }
-                        applyPresetFromLib(e.name, id);
-                    });
-                    c.appendChild(row);
-                }
-            });
+    const reRender = () => stackRegistry.modelStack.reRender();
+    return buildGenericPresetLevel(
+        {
+            label: t('model-preset.presetLib'),
+            loadItems: () => GetModelPresets().then((e) => e || []),
+            getLabel: (e) => e.presetName || e.name,
+            onApply: async (e) => {
+                await applyPresetFromLib(e.name, id);
+            },
+            onDelete: async (e) => {
+                const r = await tryCatchStatus(
+                    () => DeleteModelPreset(e.name),
+                    t('model-preset.deleteFailed'),
+                );
+                if (r === undefined) throw new Error('delete failed');
+                setStatus(t('model-preset.deleted'), true);
+            },
+            deleteConfirmText: (e) =>
+                t('model-preset.confirmDelete', { name: e.presetName || e.name }),
+            emptyText: t('model-preset.noPresets'),
         },
-    };
+        reRender,
+    );
 }

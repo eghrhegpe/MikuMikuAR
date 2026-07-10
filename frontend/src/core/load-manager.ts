@@ -4,7 +4,7 @@
 // 现状: 菜单层已全部迁移至 loadManager.load()，底层加载器内部锁（isLoadingModel/isLoadingVmd/_propLoadQueue/_loadId）已随 ADR-046 移除，串行化由本队列统一保障。
 // 后续: 为 LoadManager 补并发排队/反序列化恢复（跳过队列）的单元测试覆盖（当前仅靠手动验证）。
 
-export type ResourceKind = 'actor' | 'stage' | 'prop' | 'vmd' | 'audio' | 'camera-vmd';
+export type ResourceKind = 'actor' | 'stage' | 'prop' | 'vmd' | 'audio' | 'camera-vmd' | 'light';
 
 export interface LoadRequest {
     kind: ResourceKind;

@@ -257,9 +257,9 @@ export function buildStageTransformLevel(id: string): PopupLevel {
             const sm = getSceneMenu();
             const handle = { id, kind: 'stage' as const, name };
 
-            // —— 变换 + 可见性 ——
+            // —— 拖拽操控 ——
             addCollapsible(container, {
-                title: t('scene.transform'),
+                title: '拖拽操控',
                 icon: 'lucide:move-3d',
                 defaultOpen: false,
                 renderContent: (inner) => {

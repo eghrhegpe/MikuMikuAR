@@ -18,6 +18,8 @@ import { disposeAudio } from '@/outfit/audio';
 import { modelManager } from '../scene';
 import type { FormationType } from './model-manager';
 import { getFormationLabels } from './model-manager';
+import { attachGizmo, detachGizmo, isGizmoActive, getGizmoTargetId } from '../render/transform-gizmo';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 // ======== Model Lifecycle ========
 
@@ -160,6 +162,38 @@ export function resetModelTransform(id: string): void {
     modelManager?.resetTransform(id);
 }
 
+// ======== Model Gizmo (→ transform-gizmo.ts) ========
+
+/**
+ * 为模型激活 3D 拖拽 Gizmo。
+ * - PositionGizmo：拖拽坐标轴移动模型位置
+ * - ScaleGizmo（等比）：拖拽缩放手柄统一缩放
+ * 拖拽结束后自动通过 modelManager 持久化。
+ */
+export function attachModelGizmo(id: string): boolean {
+    const inst = modelRegistry.get(id);
+    if (!inst || inst.meshes.length === 0) {
+        return false;
+    }
+    const node = inst.meshes[0];
+
+    return attachGizmo({
+        id,
+        node,
+        types: ['position', 'scale'],
+        onPositionDragEnd: (n) => {
+            const v = (n as unknown as { position: Vector3 }).position;
+            modelManager?.setPosition(id, v.x, v.y, v.z);
+        },
+        onScaleDragEnd: (n) => {
+            const v = (n as unknown as { scaling: Vector3 }).scaling;
+            modelManager?.setScaling(id, v.x);
+        },
+    });
+}
+
+export { detachGizmo as detachModelGizmo, isGizmoActive as isModelGizmoActive, getGizmoTargetId as getModelGizmoTargetId };
+
 // ======== VMD ========
 
 export function stopVMD(id: string): void {
@@ -200,7 +234,6 @@ export function resetModelMorphs(id: string): void {
 
 import type { VPDBoneData, VPDMorphData } from '@/motion-algos/vpd-parser';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 /**
  * 应用 VPD 姿势到模型（静态姿势，停掉 VMD 播放）。

@@ -107,6 +107,32 @@ func validatePresetName(name string) string {
 	return name
 }
 
+// SaveModelPresetToLibAuto saves a model preset JSON as an auto-numbered .mcupreset.json in the model presets directory.
+// Returns the generated filename (e.g. "003.mcupreset.json").
+func (a *App) SaveModelPresetToLibAuto(jsonStr string) (string, error) {
+	dir, err := a.modelPresetDir()
+	if err != nil {
+		return "", err
+	}
+	// Find the next available number
+	next := 1
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".mcupreset.json") {
+			var n int
+			if _, err := fmt.Sscanf(e.Name(), "%d.mcupreset.json", &n); err == nil && n >= next {
+				next = n + 1
+			}
+		}
+	}
+	filename := fmt.Sprintf("%03d.mcupreset.json", next)
+	path := filepath.Join(dir, filename)
+	if err := os.WriteFile(path, []byte(jsonStr), 0644); err != nil {
+		return "", err
+	}
+	return filename, nil
+}
+
 // SaveModelPresetToLib saves a model preset JSON to the library with the given name.
 func (a *App) SaveModelPresetToLib(name string, jsonStr string) error {
 	clean := validatePresetName(name)

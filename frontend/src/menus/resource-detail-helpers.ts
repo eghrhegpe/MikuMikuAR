@@ -5,29 +5,34 @@
 
 import { cardContainer, setStatus, modelRegistry, propRegistry } from '../core/config';
 import { t } from '../core/i18n/t';
-import { slideRow, addSliderRow, addToggleRow, addModeRow, addDangerRow } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addDangerRow } from '../core/ui-helpers';
 import {
-    getModelPosition,
-    setModelPosition,
     setModelScaling,
-    setModelRotationY,
     setModelVisibility,
     setModelOpacity,
     resetModelTransform,
     removeModel,
-    getModelOrbit,
-    setModelOrbit,
-    getModelPositionMode,
-    setModelPositionMode,
+    attachModelGizmo,
+    detachModelGizmo,
+    isModelGizmoActive,
+    getModelGizmoTargetId,
 } from '../scene/manager/model-ops';
 import {
     setPropTransform,
     removeProp,
-    setPropOrbit,
-    getPropOrbit,
-    setPropPositionMode,
-    getPropPositionMode,
+    attachPropGizmo,
+    detachPropGizmo,
+    isPropGizmoActive,
+    getPropGizmoTargetId,
 } from '../scene/scene';
+import {
+    attachLightGizmo,
+    detachLightGizmo,
+    isGizmoActive as isLightGizmoActive,
+    getGizmoTargetId as getLightGizmoTargetId,
+    setStageLightState,
+    getStageLightState,
+} from '../scene/render/lighting';
 import { buildMatRootLevel } from './model-material';
 import type { SlideMenu } from './menu';
 import type { ResourceKind } from '../core/load-manager';
@@ -38,266 +43,111 @@ export interface ResourceHandle {
     name: string;
 }
 
-/** 变换区块：可见性 + 坐标模式（笛卡尔/轨道）+ 对应滑条 + 缩放 + 旋转 Y
- *  按 kind 派发到 model-ops（actor/stage）或 prop-ops（prop）
- *  [doc:adr-049] 轨道模式以方位角/仰角/距离绕原点定位；切换模式时反推对方坐标，无跳变。 */
+/** 拖拽操控卡片：Gizmo 拖拽 + 缩放倍率 + 透明度
+ *  [doc:adr-049] 位置/旋转由 3D Gizmo 实时拖拽取代，不再显示滑块。
+ *  按 kind 派发到 model-ops（actor/stage）、prop-ops（prop）或 lighting（light）。 */
 export function buildTransformCard(container: HTMLElement, handle: ResourceHandle): void {
     const { id, kind } = handle;
-    const POSITION_MODE_OPTS = [
-        { value: 'cartesian' as const, label: '笛卡尔' },
-        { value: 'orbit' as const, label: '轨道' },
-    ];
-
-    // 自管理子容器：render() 仅清空本卡片内容，避免误伤同一 container 内
-    // 由 buildModelLevel 先追加的折叠组/危险卡（它们共享同一 container）。
-    const root = document.createElement('div');
-    root.style.display = 'contents';
-    container.appendChild(root);
 
     const render = (): void => {
-        root.innerHTML = '';
+        container.innerHTML = '';
 
-        if (kind === 'actor' || kind === 'stage') {
-            const inst = modelRegistry.get(id);
-            if (!inst) {
-                return;
-            }
-            const mode = getModelPositionMode(id);
-            const scaling = inst.scaling ?? 1;
-            const rotationY = inst.rotationY ?? 0;
-
-            cardContainer(root, (c) => {
-                // [audit-fix] 用连续透明度滑块替代布尔「可见」开关，与 model-detail
-                // 信息区三态「可见性」预设（显示/半透明/隐藏）形成粗调+细调互补，
-                // 消除同一面板内的重复可见性控制；stage/prop 亦直接受益。
-                addSliderRow(
-                    c,
-                    '透明度',
-                    Math.round((inst.opacity ?? 1) * 100),
-                    0,
-                    100,
-                    1,
-                    () => {},
-                    'lucide:eye',
-                    (v) => {
-                        setModelOpacity(id, v / 100);
-                        if (v > 0) {
-                            setModelVisibility(id, true);
-                        }
-                    }
-                );
-                addModeRow(c, '坐标模式', POSITION_MODE_OPTS, mode, (v) => {
-                    setModelPositionMode(id, v as 'cartesian' | 'orbit');
-                    render();
-                });
-                if (mode === 'orbit') {
-                    const o = getModelOrbit(id) ?? { azimuth: 0, elevation: 0, distance: 10 };
-                    addSliderRow(
-                        c,
-                        '方位角',
-                        o.azimuth,
-                        -180,
-                        180,
-                        1,
-                        () => {},
-                        'lucide:compass',
-                        (v) => setModelOrbit(id, v, o.elevation, o.distance)
-                    );
-                    addSliderRow(
-                        c,
-                        '仰角',
-                        o.elevation,
-                        -90,
-                        90,
-                        1,
-                        () => {},
-                        'lucide:arrow-up',
-                        (v) => setModelOrbit(id, o.azimuth, v, o.distance)
-                    );
-                    addSliderRow(
-                        c,
-                        '距离',
-                        o.distance,
-                        0.1,
-                        100,
-                        0.5,
-                        () => {},
-                        'lucide:move',
-                        (v) => setModelOrbit(id, o.azimuth, o.elevation, v)
-                    );
-                } else {
-                    const pos = getModelPosition(id);
-                    addSliderRow(
-                        c,
-                        'X',
-                        pos[0],
-                        -50,
-                        50,
-                        0.5,
-                        () => {},
-                        'lucide:move-horizontal',
-                        (v) => setModelPosition(id, v, pos[1], pos[2])
-                    );
-                    addSliderRow(
-                        c,
-                        'Y',
-                        pos[1],
-                        -50,
-                        50,
-                        0.5,
-                        () => {},
-                        'lucide:move-vertical',
-                        (v) => setModelPosition(id, pos[0], v, pos[2])
-                    );
-                    addSliderRow(
-                        c,
-                        'Z',
-                        pos[2],
-                        -50,
-                        50,
-                        0.5,
-                        () => {},
-                        'lucide:move',
-                        (v) => setModelPosition(id, pos[0], pos[1], v)
-                    );
+        if (kind === 'actor' || kind === 'stage' || kind === 'prop' || kind === 'light') {
+            cardContainer(container, (c) => {
+                // — Gizmo 3D 拖拽（按 kind 派发） —
+                if (kind === 'actor' || kind === 'stage') {
+                    const gizmoActive = isModelGizmoActive() && getModelGizmoTargetId() === id;
+                    slideRow(c, gizmoActive ? 'lucide:x' : 'lucide:move-3d',
+                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'), false, () => {
+                            if (gizmoActive) {
+                                detachModelGizmo();
+                                setStatus(t('scene.statusExitDrag'), true);
+                            } else {
+                                attachModelGizmo(id);
+                                setStatus(t('scene.statusDragHint'), false);
+                            }
+                            render();
+                        });
+                } else if (kind === 'prop') {
+                    const gizmoActive = isPropGizmoActive() && getPropGizmoTargetId() === id;
+                    slideRow(c, gizmoActive ? 'lucide:x' : 'lucide:move-3d',
+                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'), false, () => {
+                            if (gizmoActive) {
+                                detachPropGizmo();
+                                setStatus(t('scene.statusExitDrag'), true);
+                            } else {
+                                attachPropGizmo(id);
+                                setStatus(t('scene.statusDragHint'), false);
+                            }
+                            render();
+                        });
+                } else if (kind === 'light') {
+                    const gizmoActive = isLightGizmoActive() && getLightGizmoTargetId() === id;
+                    slideRow(c, gizmoActive ? 'lucide:x' : 'lucide:move-3d',
+                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'), false, () => {
+                            if (gizmoActive) {
+                                detachLightGizmo();
+                                setStatus(t('scene.statusExitDrag'), true);
+                            } else {
+                                attachLightGizmo(id);
+                                setStatus(t('scene.statusDragHint'), false);
+                            }
+                            render();
+                        });
                 }
-                addSliderRow(
-                    c,
-                    '缩放',
-                    scaling,
-                    0.1,
-                    10,
-                    0.1,
-                    () => {},
-                    'lucide:maximize',
-                    (v) => setModelScaling(id, v)
-                );
-                addSliderRow(
-                    c,
-                    '旋转 Y',
-                    rotationY,
-                    -Math.PI,
-                    Math.PI,
-                    0.05,
-                    () => {},
-                    'lucide:rotate-cw',
-                    (v) => setModelRotationY(id, v)
-                );
-            });
-            return;
-        }
 
-        if (kind === 'prop') {
-            const p = propRegistry.get(id);
-            if (!p) {
-                return;
-            }
-            const mode = getPropPositionMode(id);
-
-            cardContainer(root, (c) => {
-                addModeRow(c, '坐标模式', POSITION_MODE_OPTS, mode, (v) => {
-                    setPropPositionMode(id, v as 'cartesian' | 'orbit');
-                    render();
-                });
-                if (mode === 'orbit') {
-                    const o = getPropOrbit(id) ?? { azimuth: 0, elevation: 0, distance: 10 };
-                    addSliderRow(
-                        c,
-                        '方位角',
-                        o.azimuth,
-                        -180,
-                        180,
-                        1,
-                        () => {},
-                        'lucide:compass',
-                        (v) => setPropOrbit(id, v, o.elevation, o.distance)
-                    );
-                    addSliderRow(
-                        c,
-                        '仰角',
-                        o.elevation,
-                        -90,
-                        90,
-                        1,
-                        () => {},
-                        'lucide:arrow-up',
-                        (v) => setPropOrbit(id, o.azimuth, v, o.distance)
-                    );
-                    addSliderRow(
-                        c,
-                        '距离',
-                        o.distance,
-                        0.1,
-                        100,
-                        0.5,
-                        () => {},
-                        'lucide:move',
-                        (v) => setPropOrbit(id, o.azimuth, o.elevation, v)
-                    );
-                } else {
-                    addSliderRow(
-                        c,
-                        '位置 X',
-                        p.position[0],
-                        -50,
-                        50,
-                        0.5,
-                        () => {},
-                        'lucide:move-horizontal',
-                        (v) => setPropTransform(id, { position: [v, p.position[1], p.position[2]] })
-                    );
-                    addSliderRow(
-                        c,
-                        '位置 Y',
-                        p.position[1],
-                        -50,
-                        50,
-                        0.5,
-                        () => {},
-                        'lucide:move-vertical',
-                        (v) => setPropTransform(id, { position: [p.position[0], v, p.position[2]] })
-                    );
-                    addSliderRow(
-                        c,
-                        '位置 Z',
-                        p.position[2],
-                        -50,
-                        50,
-                        0.5,
-                        () => {},
-                        'lucide:move',
-                        (v) => setPropTransform(id, { position: [p.position[0], p.position[1], v] })
-                    );
-                }
-                addSliderRow(
-                    c,
-                    '旋转 Y',
-                    p.rotationY,
-                    -Math.PI,
-                    Math.PI,
-                    0.1,
-                    () => {},
-                    'lucide:rotate-cw',
-                    (v) => setPropTransform(id, { rotationY: v })
-                );
-                addSliderRow(
-                    c,
-                    '缩放',
-                    p.scaling,
-                    0.1,
-                    10,
-                    0.1,
-                    () => {},
-                    'lucide:maximize',
-                    (v) => {
-                        p.scaling = v;
-                        setPropTransform(id, { scaling: v });
+                // — 缩放倍率（按 kind 派发） —
+                if (kind === 'actor' || kind === 'stage') {
+                    const inst = modelRegistry.get(id);
+                    if (inst) {
+                        addSliderRow(c, '缩放倍率', inst.scaling ?? 1, 0.1, 10, 0.1,
+                            () => {}, 'lucide:maximize',
+                            (v) => setModelScaling(id, v));
                     }
-                );
-                addToggleRow(c, '可见', p.visible, (v) => {
-                    setPropTransform(id, { visible: v });
-                    p.visible = v;
-                });
+                } else if (kind === 'prop') {
+                    const p = propRegistry.get(id);
+                    if (p) {
+                        addSliderRow(c, '缩放倍率', p.scaling, 0.1, 10, 0.1,
+                            () => {}, 'lucide:maximize',
+                            (v) => {
+                                p.scaling = v;
+                                setPropTransform(id, { scaling: v });
+                            });
+                    }
+                } else if (kind === 'light') {
+                    const st = getStageLightState(id);
+                    addSliderRow(c, '缩放倍率', st.indicatorScale, 0.1, 10, 0.1,
+                        () => {}, 'lucide:maximize',
+                        (v) => setStageLightState({ indicatorScale: v }, id));
+                }
+
+                // — 透明度（按 kind 派发） —
+                if (kind === 'actor' || kind === 'stage') {
+                    const inst = modelRegistry.get(id);
+                    if (inst) {
+                        addSliderRow(c, '透明度', Math.round((inst.opacity ?? 1) * 100),
+                            0, 100, 1, () => {}, 'lucide:eye',
+                            (v) => {
+                                setModelOpacity(id, v / 100);
+                                if (v > 0) setModelVisibility(id, true);
+                            });
+                    }
+                } else if (kind === 'prop') {
+                    const p = propRegistry.get(id);
+                    if (p) {
+                        addSliderRow(c, '透明度', p.visible ? 100 : 0, 0, 100, 100,
+                            () => {}, 'lucide:eye',
+                            (v) => {
+                                p.visible = v > 0;
+                                setPropTransform(id, { visible: v > 0 });
+                            });
+                    }
+                } else if (kind === 'light') {
+                    const st = getStageLightState(id);
+                    addSliderRow(c, '透明度', Math.round(st.indicatorOpacity * 100),
+                        0, 100, 1, () => {}, 'lucide:eye',
+                        (v) => setStageLightState({ indicatorOpacity: v / 100 }, id));
+                }
             });
         }
     };
@@ -373,6 +223,11 @@ export function getResourceHandle(id: string, kind: ResourceKind): ResourceHandl
             return null;
         }
         return { id, kind, name: p.name };
+    }
+    // light 不在 registry 中，走 lighting.ts 查询
+    if (kind === 'light') {
+        const st = getStageLightState(id);
+        return { id, kind, name: st?.name ?? id };
     }
     return null;
 }

@@ -343,6 +343,7 @@ export interface EnvState {
 
     groundLevel: number;
     groundSize: number; // 地面范围（边长，世界单位），所有模式通用
+    groundEdgeFade: number; // 边缘淡出：0=硬边（默认），1=最大径向淡出，消除方块硬边
 
     waterEnabled: boolean;
     waterLevel: number;

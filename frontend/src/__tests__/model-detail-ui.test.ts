@@ -425,8 +425,8 @@ describe('buildModelLevel', () => {
         // （与基本信息三态「可见性」预设互补），断言同步更新为可见性细调入口。
         expect(text).toContain('透明度');
         expect(text).toContain('材质调节');
-        // 变换卡的球面坐标控制（ADR-049）已接入
-        expect(text).toContain('坐标模式');
+        // [UI 大统一] 变换卡精简为 Gizmo + 缩放倍率 + 透明度
+        expect(text).toContain('缩放倍率');
     });
 });
 

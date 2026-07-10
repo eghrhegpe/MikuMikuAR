@@ -369,6 +369,7 @@ type EnvState struct {
 	GroundTerrainOctaves  float64    `json:"groundTerrainOctaves"`
 	GroundLevel           float64    `json:"groundLevel"`
 	GroundSize            float64    `json:"groundSize"`
+	GroundEdgeFade        float64    `json:"groundEdgeFade"`
 
 	WindEnabled   bool       `json:"windEnabled"`
 	WindDirection [3]float64 `json:"windDirection"`

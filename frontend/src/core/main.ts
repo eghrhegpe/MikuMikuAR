@@ -725,6 +725,10 @@ async function restoreEnvState(): Promise<void> {
         if (loaded.groundSize === undefined || loaded.groundSize <= 0) {
             loaded.groundSize = 60;
         }
+        // 向后兼容：旧配置缺少 groundEdgeFade 时补默认值 0（硬边）
+        if (loaded.groundEdgeFade === undefined) {
+            loaded.groundEdgeFade = 0;
+        }
         setEnvState(loaded as Partial<EnvState>);
     }
 }

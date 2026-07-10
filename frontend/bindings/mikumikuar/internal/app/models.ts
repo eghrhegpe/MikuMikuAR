@@ -201,6 +201,7 @@ export interface EnvState {
     "groundTerrainOctaves": number;
     "groundLevel": number;
     "groundSize": number;
+    "groundEdgeFade": number;
     "windEnabled": boolean;
     "windDirection": number[];
     "windSpeed": number;

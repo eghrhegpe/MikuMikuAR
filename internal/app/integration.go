@@ -370,11 +370,6 @@ func (a *App) LoadSceneFile(path string) (string, error) {
 	return string(data), nil
 }
 
-// SelectSceneSaveFile opens a save dialog for scene files.
-func (a *App) SelectSceneSaveFile() (string, error) {
-	return dialogs.SelectSceneSave(a.wailsApp)
-}
-
 // ======== Env Presets (user-saved .env files) ========
 
 // envPresetsDir returns the env-presets/ subdirectory under settingDir.
