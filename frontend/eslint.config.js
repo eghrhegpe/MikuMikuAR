@@ -17,6 +17,7 @@ export default [
       'public/lib/**',
       '*.min.js',
       '*.css',
+      '**/poc-mmd-bone-attachment.mjs',
     ],
   },
   {
@@ -161,6 +162,12 @@ export default [
         ...globals.es2022,
       },
       sourceType: 'commonjs',
+    },
+  },
+  {
+    files: ['eslint.config.js'],
+    languageOptions: {
+      sourceType: 'module',
     },
   },
 ];
