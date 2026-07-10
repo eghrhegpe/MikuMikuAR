@@ -28,6 +28,7 @@ import { setModelFormation } from '../scene/scene';
 import { focusModel } from '../scene/scene';
 import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
 import { toggleCloth } from '../physics/cloth-manager';
+import { toggleRagdoll } from '../physics/ragdoll-manager';
 import { t } from '../core/i18n/t';
 
 // ======== 从子文件导入 ========
@@ -195,6 +196,7 @@ items.push({
     value: envState.ragdollEnabled,
     onChange: (v) => {
       envState.ragdollEnabled = v;
+      toggleRagdoll(v);
     },
     bind: () => envState.ragdollEnabled,
   },
