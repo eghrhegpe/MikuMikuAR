@@ -286,7 +286,6 @@ describe('seekFromEvent', () => {
 describe('initPlaybackObservables', () => {
     const mockUpdateUI = vi.fn();
     const mockUpdateProcMotion = vi.fn().mockResolvedValue(undefined);
-    const mockUpdateLipSync = vi.fn();
     const mockGetBeatDetector = vi.fn(() => null);
 
     let dispose: () => void;
@@ -302,7 +301,6 @@ describe('initPlaybackObservables', () => {
         mockRuntime.playAnimation.mockClear().mockResolvedValue(undefined);
         mockUpdateUI.mockClear();
         mockUpdateProcMotion.mockClear().mockResolvedValue(undefined);
-        mockUpdateLipSync.mockClear();
         mockGetBeatDetector.mockClear().mockReturnValue(null);
         syncAudioPlayback.mockClear();
         animateCameraVmd.mockClear();
@@ -318,7 +316,6 @@ describe('initPlaybackObservables', () => {
             mockManager as any,
             mockUpdateUI,
             mockUpdateProcMotion,
-            mockUpdateLipSync,
             mockGetBeatDetector
         );
     });
@@ -337,13 +334,12 @@ describe('initPlaybackObservables', () => {
 
     // ---- tickHandler ----
 
-    it('tickHandler calls updateUI, updateProcMotion, updateLipSync, and audio/camera sync', () => {
+    it('tickHandler calls updateUI, updateProcMotion, and audio/camera sync', () => {
         mockRuntime.currentTime = 10;
         tickObs._fire();
 
         expect(mockUpdateUI).toHaveBeenCalledOnce();
         expect(mockUpdateProcMotion).toHaveBeenCalledOnce();
-        expect(mockUpdateLipSync).toHaveBeenCalledOnce();
         expect(syncAudioPlayback).toHaveBeenCalledWith(10, false, 120);
         expect(animateCameraVmd).toHaveBeenCalledWith(300); // currentTime * 30
     });

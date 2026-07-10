@@ -56,7 +56,6 @@ export function initPlaybackObservables(
     manager: ModelManager,
     updatePlaybackUI: () => void,
     updateProcMotion: () => Promise<void>,
-    updateLipSync: () => void,
     getProcBeatDetector: () => BeatDetector | null
 ): PlaybackObservablesDispose {
     _manager = manager;
@@ -76,7 +75,6 @@ export function initPlaybackObservables(
         updateProcMotion().catch((err: unknown) =>
             console.error('[playback] updateProcMotion:', err)
         );
-        updateLipSync();
     };
     runtime.onAnimationTickObservable.add(tickHandler);
 
