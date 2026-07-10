@@ -45,6 +45,11 @@ export interface PerceptionState {
     emotion: Emotion;
     /** 重心微动开关（躯干骨骼平衡微晃） */
     balanceSwayEnabled: boolean;
+    // Lip-sync（从 lipsync-bridge.ts 迁入）
+    lipSyncEnabled: boolean;
+    lipSyncSensitivity: number;  // 0..1，振幅阈值
+    lipSyncIntensity: number;    // 0..1，最大张嘴幅度
+    lipSyncMultiMorphEnabled: boolean;  // 驱动多口型 morph
 }
 
 /** Gaze 配置类型 */
@@ -58,6 +63,10 @@ const DEFAULT_PERCEPTION_STATE: PerceptionState = {
     microExpressionEnabled: true,
     emotion: 'neutral',
     balanceSwayEnabled: true,
+    lipSyncEnabled: false,
+    lipSyncSensitivity: 0.2,
+    lipSyncIntensity: 0.8,
+    lipSyncMultiMorphEnabled: false,
 };
 
 let perceptionState: PerceptionState = { ...DEFAULT_PERCEPTION_STATE };
@@ -244,6 +253,30 @@ export function setEmotion(v: Emotion): void {
 /** 设置重心微动开关 */
 export function setBalanceSwayEnabled(v: boolean): void {
     perceptionState = { ...perceptionState, balanceSwayEnabled: v };
+    triggerAutoSave();
+}
+
+/** 设置 lip-sync 开关 */
+export function setLipSyncEnabled(enabled: boolean): void {
+    perceptionState = { ...perceptionState, lipSyncEnabled: enabled };
+    triggerAutoSave();
+}
+
+/** 设置 lip-sync 灵敏度（钳制 0..1） */
+export function setLipSyncSensitivity(v: number): void {
+    perceptionState = { ...perceptionState, lipSyncSensitivity: Math.max(0, Math.min(1, v)) };
+    triggerAutoSave();
+}
+
+/** 设置 lip-sync 强度（钳制 0..1） */
+export function setLipSyncIntensity(v: number): void {
+    perceptionState = { ...perceptionState, lipSyncIntensity: Math.max(0, Math.min(1, v)) };
+    triggerAutoSave();
+}
+
+/** 设置多口型 morph 开关 */
+export function setLipSyncMultiMorphEnabled(v: boolean): void {
+    perceptionState = { ...perceptionState, lipSyncMultiMorphEnabled: v };
     triggerAutoSave();
 }
 

@@ -587,3 +587,38 @@ describe('_applyBalanceSway', () => {
         expect(center.linkedBone.position.y).toBe(0);
     });
 });
+
+// =====================================================================
+// Lip-sync 状态
+// =====================================================================
+
+describe('lipSync state', () => {
+    it('默认 lipSyncEnabled 为 false（需用户主动开启）', () => {
+        const state = sut.getPerceptionState();
+        expect(state.lipSyncEnabled).toBe(false);
+    });
+
+    it('默认 sensitivity=0.2, intensity=0.8, multiMorphEnabled=false', () => {
+        const state = sut.getPerceptionState();
+        expect(state.lipSyncSensitivity).toBe(0.2);
+        expect(state.lipSyncIntensity).toBe(0.8);
+        expect(state.lipSyncMultiMorphEnabled).toBe(false);
+    });
+
+    it('setLipSyncEnabled 可开启 lip-sync', () => {
+        sut.setLipSyncEnabled(true);
+        expect(sut.getPerceptionState().lipSyncEnabled).toBe(true);
+    });
+
+    it('setLipSyncSensitivity 钳制 0..1', () => {
+        sut.setLipSyncSensitivity(1.5);
+        expect(sut.getPerceptionState().lipSyncSensitivity).toBe(1);
+        sut.setLipSyncSensitivity(-0.5);
+        expect(sut.getPerceptionState().lipSyncSensitivity).toBe(0);
+    });
+
+    it('setLipSyncIntensity 钳制 0..1', () => {
+        sut.setLipSyncIntensity(2.0);
+        expect(sut.getPerceptionState().lipSyncIntensity).toBe(1);
+    });
+});
