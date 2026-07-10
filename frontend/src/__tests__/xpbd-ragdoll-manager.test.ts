@@ -80,6 +80,18 @@ vi.mock('@/physics/xpbd-collider', () => ({
   DEFAULT_BODY_CAPSULES: [],
 }));
 
+vi.mock('@/physics/xpbd-renderer', () => ({
+  XpbdRenderer: class {
+    showParticles = vi.fn();
+    showConstraints = vi.fn();
+    showColliders = vi.fn();
+    updateParticles = vi.fn();
+    updateConstraints = vi.fn();
+    updateColliders = vi.fn();
+    dispose = vi.fn();
+  },
+}));
+
 vi.mock('@/core/i18n/t', () => ({
   t: (key: string) => key,
 }));
@@ -294,6 +306,50 @@ describe('ragdoll-manager', () => {
       expect(ragdollManager.getRagdollBlendWeight()).toBe(1);
       ragdollManager.setRagdollBlendWeight(-0.5);
       expect(ragdollManager.getRagdollBlendWeight()).toBe(0);
+    });
+  });
+
+  describe('toggleRagdoll delayed dispose (Task 14)', () => {
+    let capturedUpdateFn: ((dt: number) => void) | null = null;
+
+    beforeEach(() => {
+      capturedUpdateFn = null;
+      _mockState.focusedModelId = 'test-model';
+      vi.mocked(modelManager.focused).mockReturnValue({ id: 'test-model' } as never);
+      vi.mocked(modelManager.focusedMmdModel).mockReturnValue(mockMmdModel as never);
+      vi.mocked(modelManager.addRagdoll).mockImplementation(
+        (_id: unknown, _inst: unknown, updateFn: (dt: number) => void) => {
+          capturedUpdateFn = updateFn;
+        }
+      );
+    });
+
+    it('toggleRagdoll(false) should set blend target to 0', () => {
+      ragdollManager.toggleRagdoll(true);
+      expect(ragdollManager.getRagdollBlendWeight()).toBe(1); // target=1
+      ragdollManager.toggleRagdoll(false);
+      expect(ragdollManager.getRagdollBlendWeight()).toBe(0); // target=0
+    });
+
+    it('toggleRagdoll(false) should defer dispose until blendWeight eases to 0', () => {
+      ragdollManager.toggleRagdoll(true);
+      // 驱动 observer tick 让 blendWeight 缓动到 ~1（建立活跃混合）
+      expect(capturedUpdateFn).not.toBeNull();
+      for (let i = 0; i < 30; i++) capturedUpdateFn!(0.016);
+
+      // 禁用：应设 target=0 但不立即销毁（blendWeight 仍 > 0.001）
+      const removeBefore = vi.mocked(modelManager.removeRagdoll).mock.calls.length;
+      ragdollManager.toggleRagdoll(false);
+      expect(ragdollManager.getRagdollBlendWeight()).toBe(0);
+      expect(vi.mocked(modelManager.removeRagdoll).mock.calls.length).toBe(removeBefore);
+
+      // 驱动 observer tick 让 blendWeight 缓动到 0，应触发延迟销毁
+      for (let i = 0; i < 30; i++) {
+        const before = vi.mocked(modelManager.removeRagdoll).mock.calls.length;
+        capturedUpdateFn!(0.016);
+        if (vi.mocked(modelManager.removeRagdoll).mock.calls.length > before) break;
+      }
+      expect(vi.mocked(modelManager.removeRagdoll).mock.calls.length).toBeGreaterThan(removeBefore);
     });
   });
 });

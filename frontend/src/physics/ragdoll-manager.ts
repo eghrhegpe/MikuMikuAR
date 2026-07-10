@@ -145,6 +145,11 @@ function _createRagdollForFocusedModel(): boolean {
     if (!inst.enabled) return;
     stepRagdoll(inst, dt);
     _updateBlendWeight(dt);
+    // 延迟销毁：blendWeight 缓动到 0 后才真正 dispose（blendWeight≈0 时无需 writeBack）
+    if (_blendTarget === 0 && _blendWeight <= 0.001) {
+      _disposeRagdollForFocusedModel();
+      return;
+    }
     writeBack(inst, inst.isWasm, _getRuntimeBones!, _blendWeight);
     updateRagdollDebugVisualization(inst);
   };
@@ -206,9 +211,12 @@ export function toggleRagdoll(enabled: boolean): void {
     _createRagdollForFocusedModel();
     setRagdollBlendWeight(1); // 物理主导：缓动到 1
   } else {
-    _disposeRagdollForFocusedModel();
-    setRagdollBlendWeight(0); // 动画主导：target 归 0
-    _blendWeight = 0; // tick 随 dispose 停止，立即归零保证动画主导
+    setRagdollBlendWeight(0); // 动画主导：target 归 0，让缓动自然到 0
+    // 延迟销毁：若已无活跃混合（blendWeight≈0），立即销毁；
+    // 否则保留实例，等 observer tick 缓动到 0 后由 updateFn 触发销毁
+    if (_blendWeight <= 0.001) {
+      _disposeRagdollForFocusedModel();
+    }
   }
   envState.ragdollEnabled = enabled;
   _reportRagdollStatus();
