@@ -203,7 +203,6 @@ export type PopupRow = {
     target: string;
     sublabel?: string;
     model?: LibraryModel;
-    catTag?: string;
     editable?: boolean;
     favRef?: string;
     onAddClick?: () => void;

@@ -589,7 +589,7 @@ export class SlideMenu {
                         oldEl.replaceWith(newEl);
                     }
                 } else {
-                    // [doc:adr-065] key 匹配但语言可能已切换：原地刷新可见文本（label/catTag/hint），
+                    // [doc:adr-065] key 匹配但语言可能已切换：原地刷新可见文本（label/hint），
                     // 不重建 DOM、保留已有监听器与键盘焦点。控件行（slider/toggle/…）由 registerControl 管理，跳过。
                     this.refreshRowText(oldEl, newRow);
                 }
@@ -668,7 +668,7 @@ export class SlideMenu {
 
     /**
      * [doc:adr-065] 原地刷新单行可见文本（语言热切换用）。
-     * 仅更新 folder/action/model 行的 label / catTag / data-hint，不重建 DOM、不丢焦点与监听器。
+     * 仅更新 folder/action/model 行的 label / data-hint，不重建 DOM、不丢焦点与监听器。
      * 控件行（slider/toggle/modeSlider/chips）由 registerControl 管理，此处跳过。
      */
     private refreshRowText(el: HTMLElement, row: PopupRow): void {
@@ -683,10 +683,6 @@ export class SlideMenu {
         const labelEl = el.querySelector('.slide-label') as HTMLElement | null;
         if (labelEl) {
             labelEl.textContent = row.label ?? '';
-        }
-        const tagEl = el.querySelector('.slide-tag') as HTMLElement | null;
-        if (tagEl) {
-            tagEl.textContent = row.catTag ?? '';
         }
         const hint = row.sublabel || (row.model ? t('menu.noDesc') : t('menu.noHint'));
         el.setAttribute('data-hint', hint);
@@ -875,7 +871,7 @@ export class SlideMenu {
                     }
                 },
                 row.sublabel,
-                row.catTag,
+                undefined,
                 undefined,
                 row.headerToggle
             );
@@ -921,12 +917,6 @@ export class SlideMenu {
         labelSpan.textContent = row.label;
         el.appendChild(labelSpan);
 
-        if (row.catTag) {
-            const tagSpan = document.createElement('span');
-            tagSpan.className = 'slide-tag';
-            tagSpan.textContent = row.catTag;
-            el.appendChild(tagSpan);
-        }
 
         if (row.kind === 'folder') {
             const arrow = document.createElement('span');

@@ -83,12 +83,6 @@ export function slideRow(
             row.appendChild(sub);
         }
 
-        if (tag) {
-            const tagSpan = document.createElement('span');
-            tagSpan.className = 'slide-tag';
-            tagSpan.textContent = tag;
-            row.appendChild(tagSpan);
-        }
 
         // Toggle
         const toggle = document.createElement('label');
@@ -202,12 +196,6 @@ export function slideRow(
             row.appendChild(sub);
         }
 
-        if (tag) {
-            const tagSpan = document.createElement('span');
-            tagSpan.className = 'slide-tag';
-            tagSpan.textContent = tag;
-            row.appendChild(tagSpan);
-        }
 
         // 操作按钮 (actionBtn)
         if (extra?.actionIcon !== undefined) {

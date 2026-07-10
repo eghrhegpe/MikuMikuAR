@@ -341,10 +341,10 @@ function renderItemsWithRAF(
                     }
                 },
                 item.sublabel,
-                item.catTag,
                 undefined,
                 undefined,
-                item.model ? { wrapLabel: true } : undefined
+                undefined,
+                item.wrapLabel === true ? { wrapLabel: true } : undefined
             );
         }
         return;
@@ -390,10 +390,10 @@ function renderItemsWithRAF(
                     }
                 },
                 item.sublabel,
-                item.catTag,
                 undefined,
                 undefined,
-                item.model ? { wrapLabel: true } : undefined
+                undefined,
+                item.wrapLabel === true ? { wrapLabel: true } : undefined
             );
         }
         if (index < items.length) {
@@ -865,7 +865,6 @@ export function modelToRow(m: LibraryModel): PopupRow {
         target: m.file_path,
         sublabel: undefined,
         model: m,
-        catTag: undefined,
         editable: m.format === 'pmx',
         wrapLabel: true,
         onAddClick: () => {

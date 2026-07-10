@@ -67,10 +67,9 @@ vi.mock('../core/ui-helpers', () => ({
             label: string,
             _isFolder: boolean,
             _onClick: any,
-            sublabel?: string,
-            catTag?: string
+            sublabel?: string
         ) => {
-            capturedSlideRows.push({ icon, label, isFolder: _isFolder, sublabel, catTag });
+            capturedSlideRows.push({ icon, label, isFolder: _isFolder, sublabel });
         }
     ),
 }));
@@ -328,11 +327,6 @@ describe('modelToRow', () => {
             const m = makeModel({ file_path: '/some/path/model.pmx' });
             const row = modelToRow(m);
             expect(row.target).toBe('/some/path/model.pmx');
-        });
-
-        it('catTag is undefined', () => {
-            const row = modelToRow(makeModel({ category: 'VRM' }));
-            expect(row.catTag).toBeUndefined();
         });
 
         it('sets editable only for pmx format', () => {
