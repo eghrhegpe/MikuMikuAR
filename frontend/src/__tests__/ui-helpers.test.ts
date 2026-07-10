@@ -49,17 +49,14 @@ describe('slideRow', () => {
         expect(mockIconify).toHaveBeenCalledWith('icon-name');
     });
 
-    it('includes sublabel and tag when provided', () => {
+    it('includes sublabel when provided', () => {
         const container = document.createElement('div');
         const onClick = vi.fn();
-        slideRow(container, 'icon', 'Label', false, onClick, 'sub', 'tag');
+        slideRow(container, 'icon', 'Label', false, onClick, 'sub');
 
         const row = container.querySelector('.slide-item')!;
         const subEl = row.querySelector('.slide-sublabel')!;
         expect(subEl.textContent).toBe('sub');
-
-        const tagEl = row.querySelector('.slide-tag')!;
-        expect(tagEl.textContent).toBe('tag');
     });
 
     it('creates collapsible-header structure when headerToggle is provided', () => {

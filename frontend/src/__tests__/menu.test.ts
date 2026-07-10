@@ -560,17 +560,6 @@ describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
         expect(el.dataset.rowKey).toBe('action:test-target');
     });
 
-    it('action 行带 catTag 生成标签', () => {
-        const el = (menu as any).createRow({
-            kind: 'action' as const,
-            label: '带标签',
-            icon: 'i',
-            target: 't',
-            catTag: '测试标签',
-        });
-        expect(el.querySelector('.slide-tag')?.textContent).toBe('测试标签');
-    });
-
     it('action 行带 onAddClick 生成添加按钮', () => {
         const addClick = vi.fn();
         const el = (menu as any).createRow({
