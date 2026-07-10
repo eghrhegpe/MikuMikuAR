@@ -591,6 +591,9 @@ export class XpbdSolver {
             case 'volume':
                 this._solveVolumeConstraint(c, alphaTilde, subDt);
                 break;
+            case 'sphere':
+                this._solveSphereConstraint(c, alphaTilde, subDt);
+                break;
         }
     }
 
@@ -713,6 +716,94 @@ export class XpbdSolver {
             particles[i].p[0] += dLambda * mass * g[0] * s;
             particles[i].p[1] += dLambda * mass * g[1] * s;
             particles[i].p[2] += dLambda * mass * g[2] * s;
+        }
+    }
+
+    /**
+     * 球窝（sphere）约束求解：3-DOF 角向限位。
+     * 分解为 swing（2D，锥面内摆动，限 coneHalfAngle）+ twist（1D，绕局部 Z 扭转，限 twistRange）。
+     * 各自 XPBD 标量 λ：lambda[0]=swing, lambda[1]=twist。
+     * 角度约束，对称化用 invInertia（非 invMass）。
+     */
+    private _solveSphereConstraint(c: XpbdConstraint, alphaTilde: number, _subDt: number): void {
+        const i = c.indices[0];
+        const k = c.indices[1];
+        const pi = this.particles[i];
+        const pk = this.particles[k];
+
+        const wSum = pi.invInertia + pk.invInertia;
+        if (wSum < 1e-10) return; // 两端均固定
+
+        // 相对旋转 q_rel = q_child × q_parent⁻¹（child 相对 parent 的姿态）
+        const qParentInv = new Float32Array(4);
+        quatConjugate(pi.orientation, qParentInv);
+        const qRel = new Float32Array(4);
+        quatMultiply(pk.orientation, qParentInv, qRel);
+        quatNormalize(qRel, qRel);
+
+        // 减去 rest 姿态：qErr = qRel × restQuaternion⁻¹
+        const restQ = c.restQuaternion ?? new Float32Array([0,0,0,1]);
+        const restInv = new Float32Array(4);
+        quatConjugate(restQ, restInv);
+        const qErr = new Float32Array(4);
+        quatMultiply(qRel, restInv, qErr);
+        quatNormalize(qErr, qErr);
+
+        // swing-twist 分解，twist 轴 = 局部 Z [0,0,1]
+        const swing = new Float32Array(4);
+        const twist = new Float32Array(4);
+        swingTwistDecompose(qErr, 0, 0, 1, swing, twist);
+
+        // ---- swing 限位（cone）----
+        const swingAA = quatToAxisAngle(swing);
+        const coneHalf = c.coneHalfAngle ?? Math.PI;
+        if (swingAA.angle > coneHalf) {
+            const C_swing = swingAA.angle - coneHalf;
+            const denom = wSum + (c.compliance ?? 0) * alphaTilde;
+            if (denom > 1e-10) {
+                const dLambda = -(C_swing + (c.compliance ?? 0) * alphaTilde * c.lambda[0]) / denom;
+                c.lambda[0] += dLambda;
+                const s = c.stiffness;
+                const corrAngle = dLambda * s;
+                const corrQuat = quatFromAxisAngle(swingAA.ax, swingAA.ay, swingAA.az, corrAngle);
+                // 对称化：parent 反向，child 正向
+                const newChild = new Float32Array(4);
+                quatMultiply(corrQuat, pk.orientation, newChild);
+                quatNormalize(newChild, pk.orientation);
+                const corrInv = new Float32Array(4);
+                quatConjugate(corrQuat, corrInv);
+                const newParent = new Float32Array(4);
+                quatMultiply(corrInv, pi.orientation, newParent);
+                quatNormalize(newParent, pi.orientation);
+            }
+        }
+
+        // ---- twist 限位（clamped range）----
+        const twistAA = quatToAxisAngle(twist);
+        let twistAngle = twistAA.angle;
+        if (twistAA.az < 0) twistAngle = -twistAngle;
+        const twistRange = c.twistRange ?? [-Math.PI, Math.PI];
+        const twistMin = twistRange[0];
+        const twistMax = twistRange[1];
+        if (twistAngle < twistMin || twistAngle > twistMax) {
+            const clamped = Math.max(twistMin, Math.min(twistMax, twistAngle));
+            const C_twist = twistAngle - clamped;
+            const denom = wSum + (c.compliance ?? 0) * alphaTilde;
+            if (denom > 1e-10) {
+                const dLambda = -(C_twist + (c.compliance ?? 0) * alphaTilde * c.lambda[1]) / denom;
+                c.lambda[1] += dLambda;
+                const s = c.stiffness;
+                const corrAngle = dLambda * s;
+                const corrQuat = quatFromAxisAngle(0, 0, 1, corrAngle);
+                const newChild = new Float32Array(4);
+                quatMultiply(corrQuat, pk.orientation, newChild);
+                quatNormalize(newChild, pk.orientation);
+                const corrInv = new Float32Array(4);
+                quatConjugate(corrQuat, corrInv);
+                const newParent = new Float32Array(4);
+                quatMultiply(corrInv, pi.orientation, newParent);
+                quatNormalize(newParent, pi.orientation);
+            }
         }
     }
 
