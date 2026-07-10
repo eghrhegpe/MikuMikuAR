@@ -297,6 +297,7 @@ type UIState struct {
 	CameraSensitivity     float64           `json:"cameraSensitivity,omitempty"`     // 相机灵敏度倍数；1.0=默认
 	InvertYAxis           bool              `json:"invertYAxis,omitempty"`           // 反转 Y 轴
 	AutoScaleModel        bool              `json:"autoScaleModel,omitempty"`        // 新加载模型自动缩放
+	AutoCenterModel       bool              `json:"autoCenterModel,omitempty"`       // 新加载模型自动居中取景（相机对准模型）
 	MaterialCategoryMap   map[string]string `json:"materialCategoryMap,omitempty"`   // 材质分类映射
 	ResourceViewMode      string            `json:"resourceViewMode,omitempty"`      // [doc:adr-066] 资源库视图模式："list"|"grid"
 }

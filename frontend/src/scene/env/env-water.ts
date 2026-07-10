@@ -284,12 +284,14 @@ varying vec3 vWorldPos;
 varying vec3 vNormal;
 varying float vHeight;
 varying vec2 vScreenCoord;
+varying vec2 vWaveOffset;
 
 void main() {
     vUV = uv;
     vec3 worldPos = (world * vec4(position, 1.0)).xyz;
     vec3 p = worldPos;
     vec3 n = vec3(0.0, 1.0, 0.0);
+    vec2 waveOffset = vec2(0.0);
 
     for (int i = 0; i < WAVE_COUNT; i++) {
         vec2 dir = uWindDir[i];
@@ -299,7 +301,10 @@ void main() {
         float c = cos(th), s = sin(th);
         p.x += a * dir.x * c; p.z += a * dir.y * c; p.y += a * s;
         n.x -= dir.x * f * a * c; n.z -= dir.y * f * a * c;
+        // 波浪驱动的反射偏移：基于波浪斜率的实时偏移
+        waveOffset += dir * f * a * s;
     }
+    vWaveOffset = waveOffset * 0.01;
 
     vWorldPos = p;
     vec3 finalNormal = normalize(n);
@@ -320,6 +325,7 @@ varying vec3 vWorldPos;
 varying vec3 vNormal;
 varying float vHeight;
 varying vec2 vScreenCoord;
+varying vec2 vWaveOffset;
 
 uniform vec3 cameraPosition;
 uniform vec3 waterColor;
@@ -399,9 +405,9 @@ void main() {
         reflection = cubemapRefl;
     #endif
     #ifdef PLANAR_REFLECTION
-        // P2: 波浪 UV 偏移 — 用世界坐标 XZ 叠加微小偏移，让反射随波浪晃动
+        // P2: 波浪 UV 偏移 — 用世界坐标 XZ + 波浪实时偏移，让反射随波浪晃动
         vec2 reflUV = vec2(vScreenCoord.x, 1.0 - vScreenCoord.y);
-        reflUV += vWorldPos.xz * 0.003;
+        reflUV += vWorldPos.xz * 0.003 + vWaveOffset;
         vec3 planarRefl = texture2D(reflectionTexture, reflUV).rgb;
         #ifdef ENV_TEXTURE
             reflection = mix(cubemapRefl, planarRefl, planarReflectBlend);

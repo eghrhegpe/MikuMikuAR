@@ -4,30 +4,29 @@
 
 ## 硬约束
 
-1. 禁止全量读 `docs/research/`；用 grep 搜索
-2. >500 行文件先 grep 定位再读
-3. 改代码后 build，改文档不需要
-4. 写新函数前 grep `docs/adr/` 看是否已有类似实现
-5. 只允许给 ADR、novel 写编号，别硬塞编号给文档文件
-6. 禁止修复非自己导致的错误，哪怕会影响构建，直接回复即可。
+>
+> 500 行文件先 grep 定位再读。
+> 构思新函数前 grep  `grep docs/adr/` ，看是否已有类似实现。
+> 只允许给 ADR、novel 写编号，别硬塞编号给文档文件。
+> 请勿修复非职责范围的错误，哪怕会影响构建，直接回复用户即可。
+> Grep "规划|实施中|部分实现" in docs\adr
 
-## 模式路由
+## 去哪里查
 
 | 要做什么 | 去哪里 |
 |----------|--------|
-| 查当前状态 | `docs/status.md` |
-| 查技术实现 | `docs/architecture.md` |
-| 查决策 + 坑点 | `grep docs/adr/` |
-| 定位函数 | `grep docs/function-map.md` |
-| 加菜单项 | `docs/menu-how-to.md` |
-| 写 UI 组件 | `docs/design.md`（唯一规范） |
-| 修 Bug 查历史 | `docs/troubleshooting.md` + `grep docs/adr/` |
+| 查当前决策 + 坑点| `grep docs/adr/` |
+| 查旧版状态 | `docs/status.md` |
+| 查项目技术 | `docs/architecture.md` |
+| 查函数大全 | `grep docs/function-map.md` |
+| 加 菜单 | `docs/menu-how-to.md` |
+| 加 按钮 组件 | `docs/design.md`（唯一规范） |
 | 改前端子模块 | `frontend/AGENTS.md` |
+| 改 Go 后端 | `internal/AGENTS.md` |
 | 写/维护 E2E 测试 | `frontend/e2e/` + `frontend/e2e/README.md`(运行手册) + `frontend/playwright.config.ts` |
-| 改 Go 后端 | `internal/app/app.go` |
-| 竞品参考 | `docs/competitive-analysis.md` |
-| 代码命名/图标/状态栏规范 | `docs/terminology.md` |
-| check bindings 同步 | `cd frontend && npm run test -- src/__tests__/bindings/app.contract.test.ts`（校验 116 个函数存在性 + FNV-1a method ID）|
+| 修 Bug 查历史 | `docs/troubleshooting.md` + `grep docs/adr/` |
+| 查竞品参考 | `docs/competitive-analysis.md` |
+| 翻译代码命名/图标/状态栏规范 | `docs/terminology.md` |
 
 ## 技术栈
 
@@ -47,4 +46,5 @@ go build ./...                    # Go
 cd frontend && npm run build      # 前端
 cd frontend && npm run test       # 单元测试 (Vitest)
 cd frontend && npm run test:e2e   # E2E (Playwright; 需 wails dev 或 5173+9222)
+cd frontend && npm run test -- src/__tests__/bindings/app.contract.test.ts` # （校验 116 个函数存在性 + FNV-1a method ID）
 ```

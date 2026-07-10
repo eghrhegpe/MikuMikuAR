@@ -1,6 +1,6 @@
 # ADR-059: i18n 多语言切换框架
 
-> **状态**: 实施中（Phase 1 已完成 2026-07-07；Phase 2 已完成 2026-07-07；Phase 3-4 待做）
+> **状态**: 已完成（2026-07-10 全部 Phase 落地，奇偶校验脚本已接 CI；剩余 ja/ko/zh-TW 翻译缺口为人工/AI 走查任务，非框架范畴）
 > **关联**: [ADR-043](adr-043-dancexr-gap-analysis.md)（DanceXR 差距分析）、[ADR-044](adr-044-competitive-analysis.md)（竞品分析）
 > **背景**: 当前全仓 UI 字符串为硬编码中文，约 100 个 `.ts` 文件含中文字面量，分布于 `menus/`、`core/ui-*`、`scene/`、`physics/`。无 i18n 框架、无语言偏好入口。竞品 DanceXR 已支持 5 种语言（简/繁中、英、日、韩）。本 ADR 锁定一套与现有 `core/reactivity` 体系对齐的轻量 i18n 方案。
 
@@ -178,8 +178,10 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 
 ### 3.5 防回归（可选 Phase）
 
-- 新增 eslint 规则 / grep 检查，禁止在 `menus/`、`core/ui-*`、`scene/`、`physics/` 直接出现中文字面量（i18n 范围内）。
-- ADR 落地后，CI（`adr-041`）可加一条「非 `locales/` 文件不得含未包裹中文」的预检。
+- **key 奇偶校验脚本（已实现，已接 CI，strict 模式）**：`scripts/i18n-check.mjs` 以 `zh-CN` 为基准，比对 `en/ja/ko/zh-TW` 的 key 集合，列出缺失 / 多余 key。已挂 CI（`test-frontend` job，`--strict` 模式阻塞）。新增 key 必须同步翻译到所有 bundle，否则 CI 失败。
+  - 运行：`node ../scripts/i18n-check.mjs --strict`；任何缺失即 exit 1。
+  - npm：`npm run check:i18n`（在 `frontend/` 内）。
+- **字面量 lint-grep（未来可选）**：新增 eslint / grep 预检，禁止在 `menus/`、`core/ui-*`、`scene/`、`physics/`（非 `locales/`）直接出现未包裹中文字面量。当前未被 i18n 化代码仍含中文（如 `settings-filename.ts` 等命名空间尚未迁移），故暂不强制，避免误伤。
 
 ---
 
@@ -228,14 +230,14 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 
 > 注：菜单域（含 `menus/scene-*.ts`、`menus/motion-*.ts`）内的 `setStatus`/toast 已在 Phase 2 一并 `t('scene.*'/'motion.*')` 化；本阶段仅剩**中央/非菜单**模块。
 
-- [ ] `core/ui-*.ts`、`core/dialog.ts`、`core/state.ts` 状态消息
-- [ ] `physics/*`（cloth-manager 等）、`scene/*` 非菜单模块内 `setStatus`/toast 改为 `t('scene.*'/'physics.*', params)`
+- [x] `core/ui-*.ts`、`core/dialog.ts`、`core/state.ts` 状态消息（剩余缺口：main.ts 快捷键注册表 label/group、settings-shortcuts.ts 渲染、dialog.ts 默认按钮、ui-rows.ts 监听目录行 — 2026-07-10 收尾）
+- [x] `physics/*`（cloth-manager 等）、`scene/*` 非菜单模块内 `setStatus`/toast 改为 `t('scene.*'/'physics.*', params)`（核查：scene 11 文件 + physics/ragdoll-manager/cloth-manager 均已 t() 化）
 - [x] `library-core.ts:434` collation 随语言切换（`localeCompare(b.label, getLang())`）
 
 ### Phase 4: 多语言补全 + 防回归（按需）
 
-- [ ] `locales/ja.ts`、`ko.ts`、`zh-TW.ts`（翻译内容工作量，独立于架构）
-- [ ] 可选：eslint/grep 防回归规则接入 CI
+- [x] `locales/ja.ts`、`ko.ts`、`zh-TW.ts` bundle 已建（t.ts 已注册，语言菜单可选）；翻译 key 对齐由 `scripts/i18n-check.mjs` 奇偶校验守门，剩余缺口见 §3.5
+- [x] i18n bundle key 奇偶校验脚本 `scripts/i18n-check.mjs` 接入 CI（见 §3.5，strict 模式，缺口清零后升级）
 
 ---
 

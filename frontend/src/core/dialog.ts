@@ -235,9 +235,9 @@ export function showErrorAction(title: string, message: string): void {
 /** Show a confirmation dialog. Returns true if confirmed, false if cancelled. */
 export function showConfirm(
     message: string,
-    title = '确认',
-    confirmLabel = '确定',
-    cancelLabel = '取消'
+    title = t('dialog.confirmTitle'),
+    confirmLabel = t('dialog.confirm'),
+    cancelLabel = t('dialog.cancel')
 ): Promise<boolean> {
     return showDialog({
         title,

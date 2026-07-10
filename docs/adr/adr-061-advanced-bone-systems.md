@@ -1,6 +1,6 @@
 # ADR-061: 高级骨骼操控与姿态工作室实现计划
 
-> **状态**: 部分实现（Pose Studio ✅，Ragdoll ✅；2026-07-08 创建，补充 Pose Studio，移除 Playback Modes；2026-07-08 架构师评审：Ragdoll 降级单独立项 / T-pose 并入 Pose Studio / 风险1 升为 POC 闸门；2026-07-08 风险1 POC 通过——标准 PMX 下 linkedBone 即原生 Bone，Accessory/Motion Override 闸门解锁；**2026-07-10 更新：Pose Studio 已实现✅，Ragdoll 可行性确认（中-高）**）
+> **状态**: 已完成（2026-07-10）— Pose Studio ✅、Ragdoll ✅、Motion Override ✅、Accessory ✅、T-pose/A-pose ✅（并入 Pose Studio）
 > **背景**: 本域五项功能已在 ADR-054 路线图中零散记录（道具挂载 P2、T-pose/A-pose P1、Ragdoll P3、Pose Studio P2），但缺集中式技术方案与代码事实核实；「Motion Override（逐骨骼）」仅见于 ADR-043 gap-analysis，未进任一路线图。本 ADR 补此空白，给出现状核实、技术路线与分期细化。
 > **范围**: 仅规划，不实现。落地时各子项应单独立项（可沿用本 ADR 编号作前缀，如 ADR-061.1）。
 > **排除**: Playback Modes（列表播放/随机/顺序）已评估后移除——MMD 工作流是单模型+单VMD精调，非批量播放场景，边际效益低。
@@ -15,15 +15,15 @@
 
 | 标记 | 功能 | 评估 | 处置 |
 |------|------|------|------|
-| 🟢 P1 重点 | Motion Override / Accessory | 核心增量，用户可感知 | 保留并优先排期 |
+| 🟢 P1 重点 | Motion Override / Accessory | 核心增量，用户可感知 | ✅ **已实现**（2026-07-10，`bone-override.ts` + `accessory.ts` + UI + 持久化） |
 | 🟡 中等 | Pose Studio | 取决于用户画像（是否截图/分享/二创）；仅播放器用户则 DOF 滑块已够 | ✅ **已实现**（2026-07-10，`motion-pose-levels.ts` 300行，构图辅助+DOF+T-pose/A-pose+批量截图+水印） |
-| ⚪ 微鸡肋 | T-pose / A-pose | 场景极窄，但 2A 路线成本≈0（VPD 预置文件，无运行时逻辑） | 不单列 P1，降级为 Pose Studio 子开关 |
-| 🔴 中-高（可行性已确认，剩余工程量） | Ragdoll | MMD 非物理沙盒，用户场景为舞蹈/表演展示；XPBD MVP 复用布料引擎但约束调参磨人、效果平淡 | ✅ **可行性已确认**：XPBD 引擎已有粒子/距离/体积约束体系，`SdfCollider` 碰撞体现成；剩余工作量：骨骼拓扑分析、关节约束自动生成、动画↔物理切换、参数调优；建议 ADR-061.R 单独立项 |
+| ⚪ 微鸡肋 | T-pose / A-pose | 场景极窄，但 2A 路线成本≈0（VPD 预置文件，无运行时逻辑） | ✅ **已实现**（并入 Pose Studio 子开关） |
+| 🔴 中-高（可行性已确认，剩余工程量） | Ragdoll | MMD 非物理沙盒，用户场景为舞蹈/表演展示；XPBD MVP 复用布料引擎但约束调参磨人、效果平淡 | ✅ **已实现**（2026-07-10，`xpbd-ragdoll.ts` + `ragdoll-manager.ts`，XPBD 3A 求解器落地） |
 
 ### 关键前置决策
 
 - **风险 1（babylon-mmd 骨骼兼容性）升为 POC 闸门** ✅ **POC 已通过 (2026-07-08)**：标准 PMX 下 `runtimeBone.linkedBone` 即 `instanceof Bone === true`（实测 774 根骨骼），`linkedBone.getFinalMatrix()` 在 babylon-mmd 复写的 `_computeTransformMatrices` 下保持新鲜（30 根骨骼 worldMatrix 平移偏差 = `0.000000`），`mesh.attachToBone(bone, rootMesh)` 正确跟随骨骼+根变换（根节点 +5 探针增量 = 5.000）。**结论：无需桥接层，Accessory(2.4)/Motion Override(2.1) 可直接用 `linkedBone`**。POC 脚本留存 `frontend/scripts/poc-mmd-bone-attachment.mjs`。⚠️ 保留意见：HumanoidMmd（proxy skeleton）路径未测，其骨骼树可能虚拟化，该路径若有需求须另测。
-- **Ragdoll 单独立项**：不与原四项捆绑，按需发起（建议沿用 ADR-061.R 编号），不在本 ADR 主分期占用排期。
+- **Ragdoll 单独立项**：不与原四项捆绑，按需发起（建议沿用 ADR-061.R 编号），不在本 ADR 主分期占用排期。✅ **已实现 (2026-07-10)**：`xpbd-ragdoll.ts` + `ragdoll-manager.ts` 落地，接入 scene/model-manager/physics-levels/menu。
 - **T-pose / A-pose 并入 Pose Studio**：作为 Pose Studio 的子开关，不单独作为 P1 宣传点。
 - **Pose Studio 优先级待定**：需先核实目标用户是否有截图/分享/二创习惯，再定 P1 / P2。
 
@@ -35,13 +35,13 @@
 
 | 功能 | 是否已实现 | 近邻能力（可复用） | 证据 |
 |------|-----------|-------------------|------|
-| Motion Override（逐骨骼） | ❌ 未实现 | `MmdCompositeAnimation` 的 `boneFilter`（屏蔽骨骼动画，ADR-051）；`proc-motion-bridge` 程序化动作 | grep `override` 仅命中通用 override（方法/CSS），无骨骼目标值覆盖模块 |
-| T-pose / A-pose 转换 | ❌ 未实现 | VPD loader（ADR-054 baseline 已列 VPD/程序化动作）；`procedural-motion` | grep `restPose/Tpose/Apo` 无重定向逻辑 |
-| 布娃娃物理 Ragdoll | ✅ 已实现（XPBD 3A 求解器） | XPBD 引擎（体积约束已预置）；WASM Bullet（服装/头发摆动已用） | 已实现：`physics/xpbd-ragdoll.ts` + `ragdoll-manager.ts`，接入模型骨骼回写；`xpbd-ragdoll.test.ts` / `scene-ragdoll-wiring.test.ts` 落地；接入点见 `scene.ts` / `model-manager.ts` / `scene-physics-levels.ts` / `scene-menu.ts`；头部骨骼冲突风险见 §五.3 |
-| 道具挂载（骨骼锚点 Accessory） | ❌ 未实现 | `scene/env/props.ts` 场景级道具系统；`scene-prop-levels.ts` UI | grep `attachToBone/accessory` 无骨骼锚定使用；现有 props 为场景坐标级，非骨骼级 |
-| Pose Studio / 拍照模式 | ❌ 未实现 | `scene/camera/` 相机系统；`renderer.ts` 后处理管线；截图功能 | grep `poseStudio\|photoMode\|构图` → 0 命中；截图已有但无构图辅助 |
+| Motion Override（逐骨骼） | ✅ 已实现 | `MmdCompositeAnimation` 的 `boneFilter`（屏蔽骨骼动画，ADR-051）；`proc-motion-bridge` 程序化动作 | `scene/motion/bone-override.ts`（overrideMap + 每帧 Slerp 写入 + `_propagateChildrenWasm`）；`menus/motion-override-levels.ts`（骨骼选择器 + 欧拉角/权重 UI）；`scene-serialize.ts` 持久化恢复；`scene.ts` 注册时序在 ragdoll 之前 |
+| T-pose / A-pose 转换 | ✅ 已实现（并入 Pose Studio） | VPD loader（ADR-054 baseline 已列 VPD/程序化动作）；`procedural-motion` | `motion-pose-levels.ts` 含 T-pose/A-pose 子开关，VPD 预置文件零运行时逻辑 |
+| 布娃娃物理 Ragdoll | ✅ 已实现（XPBD 3A 求解器） | XPBD 引擎（体积约束已预置）；WASM Bullet（服装/头发摆动已用） | `physics/xpbd-ragdoll.ts` + `ragdoll-manager.ts`，接入模型骨骼回写；`xpbd-ragdoll.test.ts` / `scene-ragdoll-wiring.test.ts` 落地；接入点见 `scene.ts` / `model-manager.ts` / `scene-physics-levels.ts` / `scene-menu.ts`；头部骨骼冲突风险见 §五.3 |
+| 道具挂载（骨骼锚点 Accessory） | ✅ 已实现 | `scene/env/props.ts` 场景级道具系统；`scene-prop-levels.ts` UI | `scene/env/accessory.ts`（`attachToBone`/`detachFromBone`，POC 验证通过）；`menus/scene-prop-levels.ts`（骨骼选择器 + 偏移编辑 UI）；`scene-serialize.ts` 持久化恢复；i18n 翻译键 `scene.accessory.*` |
+| Pose Studio / 拍照模式 | ✅ 已实现 | `scene/camera/` 相机系统；`renderer.ts` 后处理管线；截图功能 | `motion-pose-levels.ts`（300行，构图辅助+DOF+T-pose/A-pose+批量截图+水印）；i18n 翻译键 `motion.poseStudio.*` |
 
-> 结论：Pose Studio ✅ 已落地、Ragdoll ✅ 已实现（XPBD 3A 求解器，头部骨骼冲突风险见 §五.3）；Motion Override / Accessory / T-pose 仍为净缺口，但各自存在可复用的基础设施，无需从零起步。
+> 结论：五项功能全部落地——Pose Studio ✅（`motion-pose-levels.ts`）、Ragdoll ✅（XPBD 3A 求解器）、Motion Override ✅（`bone-override.ts` + UI）、Accessory ✅（`accessory.ts` + UI）、T-pose/A-pose ✅（Pose Studio 子开关）。
 
 ---
 
@@ -145,10 +145,10 @@
 | 分期 | 功能 | 路线 | 预估难度 | 备注 |
 |------|------|------|----------|------|
 | **前置 POC（半天）** ✅ **PASS (2026-07-08)** | babylon-mmd 骨骼兼容性验证 | 风险1 | — | 标准 PMX 实测通过：linkedBone 即原生 Bone，无需桥接层；Accessory(2.4)/Motion Override(2.1) 闸门已解锁 |
-| **P1（本季度）** | Motion Override（逐骨骼） | 2.1 | 中 | 依赖 POC 通过 + 动画写入时机核实；与 ADR-051 boneFilter 互补 |
-| **P1 / P2（✅ 已实现）** | Pose Studio / 拍照模式 | 2.5 | 中 | ✅ **已实现**（2026-07-10，`motion-pose-levels.ts` 300行，含构图辅助+DOF+T-pose/A-pose 子开关+批量截图+水印） |
-| **P2（中期）** | 道具挂载 Accessory | 2.4 | 中 | **前置 POC 通过**方可排期 |
-| **按需发起（单独立项 ADR-061.R）** | 布娃娃 Ragdoll（MVP / 高精度） | 3A / 3B | 高 | ✅ **可行性已确认**（XPBD 引擎+粒子+约束+碰撞体现成）；主要工程量在骨骼拓扑自动生成+关节约束+动画↔物理切换；不见明确需求不排期 |
+| **P1（本季度）** ✅ **已完成** | Motion Override（逐骨骼） | 2.1 | 中 | `bone-override.ts` + `motion-override-levels.ts` + 持久化；POC 通过后直接落地 |
+| **P1 / P2** ✅ **已完成** | Pose Studio / 拍照模式 | 2.5 | 中 | `motion-pose-levels.ts`（构图辅助+DOF+T-pose/A-pose 子开关+批量截图+水印） |
+| **P2（中期）** ✅ **已完成** | 道具挂载 Accessory | 2.4 | 中 | `accessory.ts`（attachToBone/detachFromBone）+ `scene-prop-levels.ts`（UI）；POC 通过后直接落地 |
+| **按需发起（单独立项 ADR-061.R）** ✅ **已完成** | 布娃娃 Ragdoll（MVP） | 3A | 高 | `xpbd-ragdoll.ts` + `ragdoll-manager.ts` + 接入 scene/model-manager/physics-levels/menu |
 
 > 顺序逻辑：先以**半天 POC** 解锁骨骼兼容性闸门，再排 Motion Override（P1）；Pose Studio 优先级取决于用户场景核实（含 T-pose/A-pose 子开关）；Accessory 待 POC 通过后入 P2；Ragdoll 移出主路线，按需单独立项。
 

@@ -4,7 +4,7 @@
 
 export interface ShortcutDef {
     id: string; // unique, e.g. 'toggle:models'
-    label: string; // Chinese label, e.g. '模型库'
+    label: string; // i18n key into shortcuts.label.* (e.g. 'shortcuts.label.models')
     defaultKey: string; // KeyboardEvent.code value, e.g. 'Digit1'
     defaultCtrl?: boolean;
     defaultShift?: boolean;

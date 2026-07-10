@@ -9,6 +9,7 @@
     "build": "tsc && vite build",
     "build:dev": "vite build",
     "check": "tsc --noEmit",
+    "check:i18n": "node ../scripts/i18n-check.mjs --strict",
     "gen:icons": "node ../scripts/gen-icon-bundle.mjs",
     "check:icons": "node ../scripts/gen-icon-bundle.mjs --check",
     "preview": "vite preview",

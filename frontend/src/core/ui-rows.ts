@@ -5,6 +5,7 @@ import { createIconifyIcon } from './icons';
 import { getCurrentRenderingMenu } from '../menus/menu';
 import { ControlOptions } from './ui-types';
 import { slideRow } from './ui-slide-row';
+import { t } from './i18n/t';
 
 // ===================================================================
 // addToggleRow
@@ -486,14 +487,14 @@ export function addWatchDirRow(
         statusEl.textContent = text;
     };
 
-    onRefreshStatus(setStatusText).catch(() => setStatusText('监听已停止'));
+    onRefreshStatus(setStatusText).catch(() => setStatusText(t('settings.paths.watchStopped')));
 
     const dirRow = document.createElement('div');
     dirRow.style.cssText = 'display:flex;gap:6px;padding:6px 14px;';
 
     const dirInput = document.createElement('input');
     dirInput.type = 'text';
-    dirInput.placeholder = '选择监听目录...';
+    dirInput.placeholder = t('settings.paths.watchDirPlaceholder');
     dirInput.readOnly = true;
     dirInput.style.cssText =
         'flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;';
@@ -510,7 +511,8 @@ export function addWatchDirRow(
 
     // 回填初始目录
     onRefreshStatus(async (text) => {
-        const match = text.match(/监听中:\s*(.+)/);
+        const prefix = t('settings.paths.watching').replace(/\{dir\}/g, '').replace(/\s+$/, '');
+        const match = text.match(new RegExp(prefix + '\\s*(.+)'));
         if (match) dirInput.value = match[1];
     }).catch(() => {});
 
