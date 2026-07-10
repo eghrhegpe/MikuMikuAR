@@ -220,6 +220,18 @@ export function setEyeTrackingEnabled(v: boolean): void {
     triggerAutoSave();
 }
 
+/** 设置微表情开关 */
+export function setMicroExpressionEnabled(v: boolean): void {
+    perceptionState = { ...perceptionState, microExpressionEnabled: v };
+    triggerAutoSave();
+}
+
+/** 设置情绪类型 */
+export function setEmotion(v: Emotion): void {
+    perceptionState = { ...perceptionState, emotion: v };
+    triggerAutoSave();
+}
+
 // ══════════════════════════════════════════════════════════════
 // 呼吸实现
 // ══════════════════════════════════════════════════════════════
