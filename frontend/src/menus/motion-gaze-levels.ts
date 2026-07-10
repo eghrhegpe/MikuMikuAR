@@ -13,6 +13,7 @@ import {
     setBlinkEnabled,
     setMicroExpressionEnabled,
     setEmotion,
+    setBalanceSwayEnabled,
     activatePerception,
 } from '../scene/motion/perception';
 import type { Emotion } from '../scene/motion/perception';
@@ -116,6 +117,23 @@ export function buildGazeTrackingLevel(): PopupLevel {
                         setEmotion(v);
                         activatePerception();
                         getMotionMenu()?.updateControls();
+                    }
+                );
+            });
+            // 重心微动（躯干骨骼平衡微晃）
+            cardContainer(container, (c) => {
+                addToggleRow(
+                    c,
+                    t('motion.balanceSway'),
+                    st.balanceSwayEnabled,
+                    (v) => {
+                        setBalanceSwayEnabled(v);
+                        activatePerception();
+                        getMotionMenu()?.updateControls();
+                    },
+                    'lucide:activity',
+                    {
+                        bind: () => getPerceptionState().balanceSwayEnabled,
                     }
                 );
             });

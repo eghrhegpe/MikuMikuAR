@@ -228,6 +228,7 @@ export const en: Record<string, string> = {
     'motion.emotionSad': 'Sad',
     'motion.emotionSurprised': 'Surprised',
     'motion.emotionAngry': 'Angry',
+    'motion.balanceSway': 'Balance Sway',
     'motion.runtime': 'Runtime',
     'motion.runtimeWasm': 'WASM Physics',
     'motion.runtimeJs': 'JS Debug',
