@@ -105,15 +105,29 @@ export function resolvePathFromRef(filePath: string, libraryRef?: string): strin
 export function migratePerceptionFromProcMotion(
     old: Partial<ProcMotionState>,
 ): Partial<PerceptionState> {
+    const t = old.boneToggles;
     return {
         eyeTrackingEnabled: old.eyeTrackingEnabled ?? true,
         headTrackingEnabled: old.headTrackingEnabled ?? true,
         // 旧存档：boneToggles.blink 控制眨眼，boneToggles.head 无对应感知字段（head-follow 由 gaze 接管）
-        blinkEnabled: old.boneToggles?.blink ?? true,
+        blinkEnabled: t?.blink ?? true,
         breathEnabled: true,
         // 旧 boneToggles.emotion 语义是「启用微表情」（boolean），不映射具体情绪
-        microExpressionEnabled: old.boneToggles?.emotion ?? true,
+        microExpressionEnabled: t?.emotion ?? true,
         emotion: 'neutral',
+        // 躯干微晃：四个 toggle 任一为 true 则开启；无 boneToggles（旧旧存档）默认开启
+        balanceSwayEnabled: t ? !!(t.center || t.upper2 || t.waist || t.allParent) : true,
+    };
+}
+
+/** 从旧 procMotion 的躯干 toggle 迁移为 balanceSwayEnabled（任一为 true 则 true；无 boneToggles 默认开启） */
+export function migrateBalanceSwayFromProcMotion(
+    old: { boneToggles?: { center?: boolean; upper2?: boolean; waist?: boolean; allParent?: boolean } },
+): { balanceSwayEnabled: boolean } {
+    const t = old.boneToggles;
+    if (!t) return { balanceSwayEnabled: true }; // 无旧数据时默认开启
+    return {
+        balanceSwayEnabled: !!(t.center || t.upper2 || t.waist || t.allParent),
     };
 }
 
