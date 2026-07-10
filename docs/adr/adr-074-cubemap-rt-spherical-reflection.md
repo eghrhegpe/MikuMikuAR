@@ -2,7 +2,7 @@
 
 > **状态**: ✅ 已实施（2026-07-09，Step 1-4 完成；Step 5 测试待补）
 > **关联**: ADR-062（水面反射 RT 系统·P3 路线）、ADR-024（ReflectionProbe 环境反射）、ADR-026（环境系统增强）
-> **前置**: ADR-062 P1（planar RT）已落地，P2（波浪 UV 偏移 + 泡沫衰减）待实施
+> **前置**: ADR-062 P1（planar RT）已实施（2026-07-10），P2（波浪 UV 偏移 + 泡沫衰减）待实施
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### 1.1 现状
 
-ADR-062 P1 已落地 planar RT 反射系统（`env-water.ts`），水面可反射场景几何体（PMX 模型等）。但存在两类反射盲区：
+ADR-062 P1 已实施（2026-07-10）planar RT 反射系统（`env-water.ts`），水面可反射场景几何体（PMX 模型等）。但存在两类反射盲区：
 
 | 反射场景 | 当前方案 | 问题 |
 |----------|---------|------|
@@ -260,7 +260,7 @@ export function bindReflectionProbeToModel(meshes: Mesh[]): void {
 
 ## 八、与现有 ADR 的关系
 
-- **ADR-062 P1**（planar RT）：已落地，P3 不改动。水面仍用 planar RT。
+- **ADR-062 P1**（planar RT）：已实施（2026-07-10），P3 不改动。水面仍用 planar RT。
 - **ADR-062 P3**（本 ADR）：细化 cubemap RT 方案，填补 ADR-062 遗留的"球面反射"缺口。
 - **ADR-024**（ReflectionProbe）：现有静态探针扩展为动态，renderList 从"仅环境"扩展为"环境 + 模型"。
 - **ADR-055**（AR 相机模式）：AR 模式下 cubemap RT 可增强虚拟物体与真实环境的融合感（反射真实环境），但非 P3 范围。

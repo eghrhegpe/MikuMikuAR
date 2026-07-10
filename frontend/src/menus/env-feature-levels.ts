@@ -17,7 +17,7 @@ import {
 import { setEnvState, engine } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
-import { WATER_PRESETS, applyWaterPresetToCurrent, buildWaterPresetEnvState } from '../scene/env/env-water';
+import { WATER_PRESETS, applyWaterPresetToCurrent, buildWaterPresetEnvState, disposeWater, createWater } from '../scene/env/env-water';
 import { SelectEnvTextureFile, SelectPMXFile } from '../core/wails-bindings';
 import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu';
 import { stackRegistry } from '../core/config';
@@ -659,6 +659,45 @@ export function buildWaterLevel(): PopupLevel {
                             undefined,
                             undefined,
                             { bind: () => envState.foamOpacity }
+                        );
+                    },
+                });
+            });
+            // —— 反射（ADR-062 P1）——
+            cardContainer(container, (rc) => {
+                addCollapsible(rc, {
+                    title: t('env.reflection'),
+                    icon: 'lucide:mirror',
+                    defaultOpen: false,
+                    renderContent: (inner) => {
+                        addSliderRow(
+                            inner,
+                            t('env.reflectionIntensity'),
+                            s.planarReflectBlend,
+                            0, 1, 0.05,
+                            (v) => setEnvState({ planarReflectBlend: v }),
+                            'lucide:sliders-horizontal',
+                            undefined,
+                            { bind: () => envState.planarReflectBlend }
+                        );
+                        addModeSlider(
+                            inner,
+                            t('env.reflectionQuality'),
+                            [
+                                { value: 'high', label: t('env.reflectionQualityHigh') },
+                                { value: 'medium', label: t('env.reflectionQualityMedium') },
+                                { value: 'low', label: t('env.reflectionQualityLow') },
+                                { value: 'off', label: t('env.reflectionQualityOff') },
+                            ],
+                            s.reflectionQuality,
+                            (v) => {
+                                setEnvState({ reflectionQuality: v });
+                                disposeWater();
+                                createWater(envState);
+                            },
+                            'lucide:gauge',
+                            undefined,
+                            { bind: () => envState.reflectionQuality }
                         );
                     },
                 });

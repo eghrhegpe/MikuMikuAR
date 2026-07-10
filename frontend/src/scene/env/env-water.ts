@@ -1,6 +1,7 @@
 import {
     Scene,
     Color3,
+    Color4,
     Vector3,
     Texture,
     Constants,
@@ -12,7 +13,13 @@ import {
     DefaultRenderingPipeline,
     Effect,
     PostProcess,
+    FreeCamera,
+    Plane,
+    Matrix,
+    RenderTargetTexture,
 } from '@babylonjs/core';
+// RenderTargetTexture 的 refreshRate 常量定义在类自身而非 Constants 上
+const RT_REFRESH_ONCE = (RenderTargetTexture as any).REFRESHRATE_RENDER_ONCE ?? 0;
 import { EnvState, envState } from '@/core/config';
 import { getWindVector, isWindActive } from '@/core/physics/wind-utils';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
@@ -78,6 +85,11 @@ let _waterWaveSpeed = 1; // 当前波速，供每帧相位累加使用
 
 // === 每帧更新水面的 observer ===
 let _waterUpdateObserver: Observer<Scene> | null = null;
+
+// === Planar Reflection RT（ADR-062 P1）===
+let _mirrorRT: RenderTargetTexture | null = null;
+let _mirrorCam: FreeCamera | null = null;
+let _mirrorFrameCount = 0;
 
 // ======== 涟漪系统（Interaction Ripples）========
 const MAX_RIPPLES = 8;
@@ -271,6 +283,7 @@ varying vec2 vUV;
 varying vec3 vWorldPos;
 varying vec3 vNormal;
 varying float vHeight;
+varying vec2 vScreenCoord;
 
 void main() {
     vUV = uv;
@@ -295,7 +308,9 @@ void main() {
     }
     vNormal = finalNormal;
     vHeight = p.y;
-    gl_Position = viewProjection * vec4(p, 1.0);
+    vec4 clipPos = viewProjection * vec4(p, 1.0);
+    vScreenCoord = clipPos.xy / clipPos.w * 0.5 + 0.5;
+    gl_Position = clipPos;
 }`;
 
 const WATER_FRAG_SRC = `
@@ -304,6 +319,7 @@ varying vec2 vUV;
 varying vec3 vWorldPos;
 varying vec3 vNormal;
 varying float vHeight;
+varying vec2 vScreenCoord;
 
 uniform vec3 cameraPosition;
 uniform vec3 waterColor;
@@ -361,6 +377,11 @@ float calcRipple(vec3 worldPos, vec3 center, float radius, float strength, float
 uniform samplerCube envTexture;
 #endif
 
+#ifdef PLANAR_REFLECTION
+uniform sampler2D reflectionTexture;
+uniform float planarReflectBlend;
+#endif
+
 void main() {
     vec3 viewDir = normalize(cameraPosition - vWorldPos);
     vec3 normal = normalize(vNormal);
@@ -374,21 +395,38 @@ void main() {
 
     vec3 reflection = vec3(0.0);
     #ifdef ENV_TEXTURE
-    reflection = textureCube(envTexture, reflectDir).rgb * envIntensity;
+        vec3 cubemapRefl = textureCube(envTexture, reflectDir).rgb * envIntensity;
+        reflection = cubemapRefl;
     #endif
+    #ifdef PLANAR_REFLECTION
+        // P2: 波浪 UV 偏移 — 用世界坐标 XZ 叠加微小偏移，让反射随波浪晃动
+        vec2 reflUV = vec2(vScreenCoord.x, 1.0 - vScreenCoord.y);
+        reflUV += vWorldPos.xz * 0.003;
+        vec3 planarRefl = texture2D(reflectionTexture, reflUV).rgb;
+        #ifdef ENV_TEXTURE
+            reflection = mix(cubemapRefl, planarRefl, planarReflectBlend);
+        #else
+            reflection = planarRefl;
+        #endif
+    #endif
+
+    // P2: 泡沫区域反射衰减 — 提前计算 foam，用于压低反射
+    float foamH = vHeight - waterLevel;
+    float foam = smoothstep(foamThreshold, foamThreshold + foamTransitionRange, foamH);
+    foam = clamp(foam, 0.0, 1.0);
+    float foamDamp = 1.0 - foam * foamIntensity;
 
     float fresnel = fresnelBias + (1.0 - fresnelBias) * pow(1.0 - max(dot(viewDir, normal), 0.0), fresnelPower);
 
     vec3 base = waterColor;
-    vec3 color = mix(base, reflection, fresnel);
+    // 反射受泡沫衰减：泡沫区反射减弱
+    vec3 color = mix(base, reflection * foamDamp, fresnel);
 
     float diff = max(dot(normal, normalize(lightDir)), 0.0);
     color += diff * lightColor * diffuseStrength;
     color += ambientIntensity * waterColor * ambientStrength;
 
-    float foamH = vHeight - waterLevel;
-    float foam = smoothstep(foamThreshold, foamThreshold + foamTransitionRange, foamH);
-    foam = clamp(foam, 0.0, 1.0);
+    // 泡沫混合（foam 已在上方计算）
     color = mix(color, foamColor, foam * foamIntensity);
 
     float rippleSum = 0.0;
@@ -510,6 +548,94 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setArray4('uRipplePosRad', new Array(MAX_RIPPLES * 4).fill(0));
     mat.setArray4('uRippleStrSpdLife', new Array(MAX_RIPPLES * 4).fill(0));
     mat.setInt('uRippleCount', 0);
+
+    // ——— 平面反射（ADR-062）———
+    mat.setFloat('planarReflectBlend', state.planarReflectBlend ?? 0.5);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ADR-062 P1: Planar Reflection RT（内联实现）
+// ══════════════════════════════════════════════════════════════
+
+function _createMirrorRT(scene: Scene, resolution: number): RenderTargetTexture {
+    const rt = new RenderTargetTexture(
+        'waterReflectionRT',
+        resolution,
+        scene,
+        false, // generateMipMaps
+    );
+    rt.clearColor = new Color4(0, 0, 0, 0);
+    rt.refreshRate = RT_REFRESH_ONCE;
+    return rt;
+}
+
+function _createMirrorCam(scene: Scene): FreeCamera {
+    const cam = new FreeCamera('_mirrorCam', Vector3.Zero(), scene);
+    cam.minZ = 0.5;
+    cam.maxZ = 200;
+    cam.rotation.x = Math.PI / 2;
+    return cam;
+}
+
+function _updateMirrorCamera(scene: Scene, waterLevel: number): void {
+    const cam = scene.activeCamera;
+    if (!_mirrorCam || !cam) return;
+
+    const mirrorPlane = new Plane(0, 1, 0, -waterLevel);
+    const reflMatrix = Matrix.Reflection(mirrorPlane);
+    const camWorld = cam.getWorldMatrix();
+    const mirrorWorld = camWorld.multiply(reflMatrix);
+
+    // setWorldMatrix / freezeWorldMatrix 在 Node 基类上但类型定义可能未暴露
+    (_mirrorCam as any).setWorldMatrix(mirrorWorld);
+    (_mirrorCam as any).freezeWorldMatrix();
+
+    if ('fov' in cam) {
+        (_mirrorCam as any).fov = (cam as any).fov;
+    }
+}
+
+function _populateMirrorRenderList(scene: Scene, rt: RenderTargetTexture, waterLevel: number): void {
+    rt.renderList = [];
+    for (const mesh of scene.meshes) {
+        if (mesh.name.startsWith('envWater')) continue;
+        if (!mesh.isEnabled() || (mesh as any)._worldMatrixFrozen) continue;
+        // 排除水面以下的几何（模拟 clipPlane 效果）
+        const bounds = mesh.getBoundingInfo().boundingBox;
+        if (bounds.maximumWorld.y < waterLevel) continue;
+        rt.renderList.push(mesh);
+    }
+}
+
+function _setupMirrorRT(scene: Scene, state: EnvState): void {
+    if (state.reflectionQuality === 'off') return;
+
+    const resolutionMap = { high: 512, medium: 256, low: 128, off: 0 };
+    const resolution = resolutionMap[state.reflectionQuality];
+    if (!resolution) return;
+
+    _mirrorRT = _createMirrorRT(scene, resolution);
+    _mirrorCam = _createMirrorCam(scene);
+    _mirrorRT.activeCamera = _mirrorCam;
+
+    _mirrorRT.onBeforeRenderObservable.add(() => {
+        for (const mesh of _mirrorRT!.renderList ?? []) {
+            if (mesh.material) mesh.material.backFaceCulling = false;
+        }
+    });
+    _mirrorRT.onAfterRenderObservable.add(() => {
+        for (const mesh of _mirrorRT!.renderList ?? []) {
+            if (mesh.material) mesh.material.backFaceCulling = true;
+        }
+    });
+
+    _populateMirrorRenderList(scene, _mirrorRT, state.waterLevel);
+    scene.customRenderTargets.push(_mirrorRT);
+
+    const mat = _envSys.water.material as ShaderMaterial;
+    if (mat) {
+        mat.setTexture('reflectionTexture', _mirrorRT);
+    }
 }
 
 /**
@@ -576,6 +702,7 @@ export function createWater(state: EnvState): void {
         const scene = getScene();
         _syncWaterUniforms(state, scene);
         _updateWaterMesh(state);
+        _setupMirrorRT(scene, state);
         _applyWaterLOD(scene);
         return;
     }
@@ -667,10 +794,14 @@ export function createWater(state: EnvState): void {
                 'waterFogDensity',
                 'waterFogOpacityInfluence',
                 'uWindDir',
+                'planarReflectBlend',
             ],
             uniformBuffers: [],
-            samplers: ['uCausticTex'].concat(hasEnv ? ['envTexture'] : []),
-            defines: hasEnv ? ['ENV_TEXTURE'] : [],
+            samplers: ['uCausticTex']
+                .concat(hasEnv ? ['envTexture'] : [])
+                .concat(state.reflectionQuality !== 'off' ? ['reflectionTexture'] : []),
+            defines: (hasEnv ? ['ENV_TEXTURE'] : [])
+                .concat(state.reflectionQuality !== 'off' ? ['PLANAR_REFLECTION'] : []),
             needAlphaBlending: true,
         }
     );
@@ -687,6 +818,8 @@ export function createWater(state: EnvState): void {
 
     // 同步所有 uniform（复用 _syncWaterUniforms 逻辑）
     _syncWaterUniforms(state, scene);
+    // ADR-062 P1: 初始化平面反射 RT
+    _setupMirrorRT(scene, state);
     // 初始 LOD 层级（后续由每帧 observer 维护）
     _applyWaterLOD(scene);
 
@@ -732,6 +865,18 @@ export function createWater(state: EnvState): void {
                     _ripples = [];
                     _rippleDirty = true;
                 }
+            }
+            // 水下判断：相机 y < waterLevel 时跳过反射渲染
+            const camY = cam?.position.y ?? 0;
+            const isUnderwater = camY < envState.waterLevel;
+
+            _mirrorFrameCount++;
+            const frameSkipMap = { high: 0, medium: 1, low: 3, off: 999 };
+            const frameSkip = frameSkipMap[envState.reflectionQuality] ?? 999;
+            if (_mirrorRT && _mirrorCam && !isUnderwater && _mirrorFrameCount % (frameSkip + 1) === 0) {
+                _updateMirrorCamera(scene, envState.waterLevel);
+    _populateMirrorRenderList(scene, _mirrorRT, state.waterLevel);
+                _mirrorRT.render();
             }
             // 手动 LOD 可见性切换（按相机距离）
             _applyWaterLOD(scene);
@@ -795,6 +940,18 @@ export function disposeWater(): void {
     _underwaterSavedFog = null;
     _underwaterTransitionProgress = 0;
     _underwaterTarget = false;
+    // 清理平面反射 RT
+    const scene = getScene();
+    if (_mirrorRT) {
+        scene.customRenderTargets = scene.customRenderTargets.filter(t => t !== _mirrorRT);
+        _mirrorRT.dispose();
+        _mirrorRT = null;
+    }
+    if (_mirrorCam) {
+        _mirrorCam.dispose();
+        _mirrorCam = null;
+    }
+    _mirrorFrameCount = 0;
     disposeTintPostProcess();
 }
 
