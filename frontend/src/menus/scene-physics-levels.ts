@@ -2,7 +2,7 @@
 // 从 scene-menu.ts 引用，独立管理全局物理参数（WASM Bullet + XPBD 布料）
 
 import type { PopupLevel, PopupRow } from '../core/config';
-import { envState, focusedModelId, cardContainer } from '../core/config';
+import { envState, focusedModelId, cardContainer, getMmdRuntimeType, setMmdRuntimeType } from '../core/config';
 import { getGravityStrength, setGravityStrength } from '../scene/env/env-bridge';
 import {
     modelManager,
@@ -36,12 +36,14 @@ import {
 } from '../scene/scene';
 import { buildClothParamsLevel } from './motion-cloth-levels';
 import { getSceneMenu, refreshSceneRoot } from './scene-menu';
+import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import {
     slideRow,
     addSliderRow,
     addSectionTitle,
     addPresetChip,
+    addModeSlider,
 } from '../core/ui-helpers';
 import {
     toggleRagdoll,
@@ -441,6 +443,36 @@ export function buildWasmPhysicsLevel(): PopupLevel {
     const id = focusedModelId;
     const inst = id ? modelManager.get(id) : null;
     const items: PopupRow[] = [];
+
+    // 运行时切换（WASM 物理 / JS 调试）— 全局物理引擎开关
+    items.push({
+        kind: 'modeSlider',
+        label: t('scene.runtime'),
+        icon: 'lucide:cpu',
+        target: 'wasm:runtime',
+        modeValue: getMmdRuntimeType(),
+        modeOptions: [
+            { value: 'wasm', label: t('scene.runtimeWasm') },
+            { value: 'js', label: t('scene.runtimeJs') },
+        ],
+        onModeChange: (v: string) => {
+            if (v === getMmdRuntimeType()) {
+                return;
+            }
+            (async () => {
+                const ok = await showConfirm(
+                    v === 'js' ? t('scene.confirmJs') : t('scene.confirmWasm')
+                );
+                if (!ok) {
+                    getSceneMenu()?.updateControls();
+                    return;
+                }
+                setMmdRuntimeType(v as 'wasm' | 'js');
+                location.reload();
+            })();
+        },
+        bind: () => getMmdRuntimeType(),
+    } as PopupRow);
 
     // 重力强度（统控 WASM Bullet + XPBD 布料）
     items.push({
