@@ -27,7 +27,9 @@ try {
     if (-not $node) { $missing += "node" }
     if (-not $npm)  { $missing += "npm" }
 
-    # wails3 CLI
+    # wails3 CLI（版本对齐 go.mod，与 release.yml 同源，禁止 @latest 以免版本漂移）
+    $wailsModVer = (Select-String -Path (Join-Path $root "go.mod") -Pattern 'wails/v3\s+(v[^\s]+)' | ForEach-Object { $_.Matches.Groups[1].Value })
+    $wailsInstallCmd = "go install github.com/wailsapp/wails/v3/cmd/wails3@$wailsModVer"
     $wails = Get-Command wails3 -ErrorAction SilentlyContinue
     if (-not $wails) { $missing += "wails3" }
 
@@ -35,7 +37,7 @@ try {
         Write-Host "ERROR: Missing required tools: $($missing -join ', ')" -ForegroundColor Red
         Write-Host "  Go:       https://go.dev/dl/" -ForegroundColor Gray
         Write-Host "  Node/npm: https://nodejs.org/" -ForegroundColor Gray
-        Write-Host "  wails3:   go install github.com/wailsapp/wails/v3/cmd/wails3@latest" -ForegroundColor Gray
+        Write-Host "  wails3:   $wailsInstallCmd" -ForegroundColor Gray
         exit 1
     }
 
