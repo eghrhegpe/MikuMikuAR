@@ -19,7 +19,7 @@ import { RotationGizmo } from '@babylonjs/core/Gizmos/rotationGizmo';
 import { UtilityLayerRenderer } from '@babylonjs/core/Rendering/utilityLayerRenderer';
 import type { ModelInstance, PropInstance } from '@/core/config';
 import { scheduleRefresh } from '@/core/reactivity';
-import { resetPerformanceSnapshot } from './performance';
+import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 
 function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
     obj[key] = value;
@@ -419,9 +419,13 @@ export function setLightState(s: Partial<LightState>): void {
     _updateSunDisc();
     if (!_skipLightAutoSave) {
         triggerAutoSave();
+        // 用户手动修改灯光/阴影设置：清除自动降级快照，避免 auto 模式后续降级覆盖用户意图。
+        // applyDegrade 触发的 setLightState 通过 _suppressSnapshotReset 跳过，防止降级→恢复→再降级循环。
+        if (!isSnapshotResetSuppressed()) {
+            resetPerformanceSnapshot();
+        }
     }
     scheduleRefresh();
-    resetPerformanceSnapshot(); // 用户手动修改灯光/阴影设置：清除自动降级快照，避免 auto 模式后续降级覆盖用户意图
 }
 
 /** 平滑过渡当前灯光到目标灯光参数，默认 2 秒 */

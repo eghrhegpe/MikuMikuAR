@@ -833,7 +833,14 @@ export function triggerAutoSaveImpl(): void {
  *  @param suppressToast  When true (visibilitychange scenario), skip toast on error. */
 export async function saveSceneImmediate(suppressToast = false): Promise<void> {
     try {
-        const json = JSON.stringify(serializeScene());
+        const _sStart = performance.now();
+        const data = serializeScene();
+        const _sSerialize = performance.now() - _sStart;
+        const json = JSON.stringify(data);
+        const _sJson = performance.now() - _sStart - _sSerialize;
+        if (_sSerialize + _sJson > 2) {
+            console.warn(`[perf:save] serialize=${_sSerialize.toFixed(1)}ms json=${_sJson.toFixed(1)}ms len=${json.length}`);
+        }
 
         // localStorage 作为主存储（同步写入，保证进程退出前完成）
         try {

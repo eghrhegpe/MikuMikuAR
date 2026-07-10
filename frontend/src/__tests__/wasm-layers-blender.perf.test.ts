@@ -25,6 +25,7 @@ import 'babylon-mmd/esm/Loader/pmxLoader.js';
 import { MmdRuntime } from 'babylon-mmd/esm/Runtime/mmdRuntime.js';
 import { createVmdEvaluator, type VmdEvaluator } from '@/motion-algos/vmd-evaluator';
 import { buildVmd } from '@/motion-algos/vmd-writer';
+import { test, expect } from 'vitest';
 
 type RuntimeBone = {
     name: string;
@@ -162,7 +163,7 @@ test('bench wasm layers blender hot path', async () => {
     runtime.register(scene);
     for (let i = 0; i < 3; i++) {
         runtime.beforePhysics(16);
-        runtime.afterPhysics(16);
+        runtime.afterPhysics();
         scene.render();
     }
 

@@ -1091,12 +1091,9 @@ input, textarea, [contenteditable] {
 }
 .slide-label.wrap-2 {
     white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
     line-height: 1.2;
-    max-height: calc(38px * var(--ui-scale));
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
 }
 .slide-sublabel {
     font-size: var(--font-ui-sm);

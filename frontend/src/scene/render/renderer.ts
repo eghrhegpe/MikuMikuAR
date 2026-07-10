@@ -11,7 +11,7 @@ import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
 import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
 import type { Observer } from '@babylonjs/core/Misc/observable';
 import { scheduleRefresh } from '@/core/reactivity';
-import { resetPerformanceSnapshot } from './performance';
+import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 
 // ======== Tone Mapping Modes ========
 
@@ -621,7 +621,11 @@ export function setRenderState(s: Partial<RenderState>): void {
 
     _triggerAutoSave();
     scheduleRefresh();
-    resetPerformanceSnapshot(); // 用户手动修改渲染设置：清除自动降级快照，避免 auto 模式后续降级覆盖用户意图
+    // 用户手动修改渲染设置：清除自动降级快照，避免 auto 模式后续降级覆盖用户意图。
+    // applyDegrade 触发的 setRenderState 通过 _suppressSnapshotReset 跳过，防止降级→恢复→再降级循环。
+    if (!isSnapshotResetSuppressed()) {
+        resetPerformanceSnapshot();
+    }
 }
 
 // ======== 平滑过渡 ========

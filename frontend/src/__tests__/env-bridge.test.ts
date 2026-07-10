@@ -1000,9 +1000,10 @@ describe('Time of Day', () => {
             if (registeredTickCallback) {
                 registeredTickCallback();
             }
+            // sunAngle 属于 skyKeys，只触发 sky 重建，不触发 ground/fog/water（F1 优化：传 partial 避免全量重建）
             expect(mockImplApplySky).toHaveBeenCalled();
-            expect(mockImplApplyGround).toHaveBeenCalled();
-            expect(mockImplApplyFog).toHaveBeenCalled();
+            expect(mockImplApplyGround).not.toHaveBeenCalled();
+            expect(mockImplApplyFog).not.toHaveBeenCalled();
         });
 
         it('does NOT call _applyEnvStateFacade for tiny angle changes below threshold', () => {
