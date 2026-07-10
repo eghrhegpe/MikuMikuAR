@@ -354,6 +354,7 @@ export const ko: Record<string, string> = {
     'motion.emotionSad': '슬픔',
     'motion.emotionSurprised': '놀람',
     'motion.emotionAngry': '분노',
+    'motion.balanceSway': '중심 미동',
     'motion.runtime': '런타임',
     'motion.runtimeWasm': 'WASM 물리',
     'motion.runtimeJs': 'JS 디버그',

@@ -354,6 +354,7 @@ export const zhTW: Record<string, string> = {
     'motion.emotionSad': '悲傷',
     'motion.emotionSurprised': '驚訝',
     'motion.emotionAngry': '憤怒',
+    'motion.balanceSway': '重心微動',
     'motion.runtime': '執行時',
     'motion.runtimeWasm': 'WASM 物理',
     'motion.runtimeJs': 'JS 調試',

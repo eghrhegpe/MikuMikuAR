@@ -354,6 +354,7 @@ export const ja: Record<string, string> = {
     'motion.emotionSad': '悲しい',
     'motion.emotionSurprised': '驚き',
     'motion.emotionAngry': '怒り',
+    'motion.balanceSway': '重心微動',
     'motion.runtime': 'ランタイム',
     'motion.runtimeWasm': 'WASM 物理',
     'motion.runtimeJs': 'JS デバッグ',

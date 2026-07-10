@@ -228,6 +228,7 @@ export const zhCN: Record<string, string> = {
     'motion.emotionSad': '悲伤',
     'motion.emotionSurprised': '惊讶',
     'motion.emotionAngry': '愤怒',
+    'motion.balanceSway': '重心微动',
     'motion.runtime': '运行时',
     'motion.runtimeWasm': 'WASM 物理',
     'motion.runtimeJs': 'JS 调试',

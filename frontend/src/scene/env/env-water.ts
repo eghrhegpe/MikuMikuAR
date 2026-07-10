@@ -875,7 +875,7 @@ export function createWater(state: EnvState): void {
             const frameSkip = frameSkipMap[envState.reflectionQuality] ?? 999;
             if (_mirrorRT && _mirrorCam && !isUnderwater && _mirrorFrameCount % (frameSkip + 1) === 0) {
                 _updateMirrorCamera(scene, envState.waterLevel);
-    _populateMirrorRenderList(scene, _mirrorRT, state.waterLevel);
+                _populateMirrorRenderList(scene, _mirrorRT, envState.waterLevel);
                 _mirrorRT.render();
             }
             // 手动 LOD 可见性切换（按相机距离）
