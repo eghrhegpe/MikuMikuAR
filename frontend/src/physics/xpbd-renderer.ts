@@ -55,6 +55,7 @@ export class XpbdRenderer {
     // 约束可视化（复用单条 LinesMesh，每帧 updateVerticesData）
     private constraintLines: LinesMesh | null = null;
     private bendLines: LinesMesh | null = null;
+    private sphereLines: LinesMesh | null = null;
     private constraintVisible = false;
 
     // 胶囊可视化
@@ -158,11 +159,20 @@ export class XpbdRenderer {
                 this.constraintLines.dispose();
                 this.constraintLines = null;
             }
+            if (this.bendLines) {
+                this.bendLines.dispose();
+                this.bendLines = null;
+            }
+            if (this.sphereLines) {
+                this.sphereLines.dispose();
+                this.sphereLines = null;
+            }
             return;
         }
 
         const distancePositions: number[] = [];
         const bendPositions: number[] = [];
+        const spherePositions: number[] = [];
         for (const c of solver.constraints) {
             if (c.type === 'volume' || c.type === 'ground') {
                 continue;
@@ -177,15 +187,19 @@ export class XpbdRenderer {
             if (c.type === 'bend') {
                 bendPositions.push(pi.p[0], pi.p[1], pi.p[2]);
                 bendPositions.push(pk.p[0], pk.p[1], pk.p[2]);
+            } else if (c.type === 'sphere') {
+                spherePositions.push(pi.p[0], pi.p[1], pi.p[2]);
+                spherePositions.push(pk.p[0], pk.p[1], pk.p[2]);
             } else {
                 distancePositions.push(pi.p[0], pi.p[1], pi.p[2]);
                 distancePositions.push(pk.p[0], pk.p[1], pk.p[2]);
             }
         }
 
-        // 距离约束用蓝色，弯曲约束用黄色
+        // 距离约束用蓝色，弯曲约束用黄色，sphere 约束用绿色
         this._updateConstraintLines(distancePositions, [0.3, 0.6, 1]);
         this._updateBendLines(bendPositions, [1, 0.8, 0.2]);
+        this._updateSphereLines(spherePositions, [0.2, 1, 0.4]);
     }
 
     private _updateConstraintLines(positions: number[], color: [number, number, number]): void {
@@ -248,6 +262,35 @@ export class XpbdRenderer {
             this.bendLines.color = new Color3(color[0], color[1], color[2]);
         } else {
             this.bendLines.updateVerticesData('position', new Float32Array(positions), false, true);
+        }
+    }
+
+    private _updateSphereLines(positions: number[], color: [number, number, number]): void {
+        if (positions.length === 0) {
+            if (this.sphereLines) {
+                this.sphereLines.dispose();
+                this.sphereLines = null;
+            }
+            return;
+        }
+
+        const pointCount = positions.length / 3;
+        if (!this.sphereLines || this.sphereLines.getTotalVertices() !== pointCount) {
+            if (this.sphereLines) {
+                this.sphereLines.dispose();
+            }
+            const pts: Vector3[] = [];
+            for (let i = 0; i < positions.length; i += 3) {
+                pts.push(new Vector3(positions[i], positions[i + 1], positions[i + 2]));
+            }
+            this.sphereLines = MeshBuilder.CreateLines(
+                'xpbd_sphere',
+                { points: pts, updatable: true },
+                this.scene
+            ) as LinesMesh;
+            this.sphereLines.color = new Color3(color[0], color[1], color[2]);
+        } else {
+            this.sphereLines.updateVerticesData('position', new Float32Array(positions), false, true);
         }
     }
 
@@ -336,6 +379,8 @@ export class XpbdRenderer {
         this.constraintLines = null;
         this.bendLines?.dispose();
         this.bendLines = null;
+        this.sphereLines?.dispose();
+        this.sphereLines = null;
         for (const m of this.particleMeshes) {
             m.dispose();
         }
