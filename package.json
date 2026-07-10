@@ -1,7 +1,7 @@
 {
   "name": "mikumikuar",
   "private": true,
-  "version": "1.2.5",
+  "version": "1.2.6",
   "scripts": {
     "test:e2e": "cd frontend && npm run test:e2e",
     "test": "cd frontend && npm test",
