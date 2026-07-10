@@ -223,6 +223,18 @@ export function buildGroundLevel(): PopupLevel {
                     (v) => setEnvState({ groundLevel: v }),
                     'lucide:move-vertical'
                 );
+                addSliderRow(
+                    c,
+                    t('env.range'),
+                    s.groundSize,
+                    10,
+                    200,
+                    5,
+                    (v) => setEnvState({ groundSize: v }),
+                    'lucide:maximize',
+                    undefined,
+                    { bind: () => envState.groundSize }
+                );
                 addModeSlider(
                     c,
                     t('env.groundMode'),

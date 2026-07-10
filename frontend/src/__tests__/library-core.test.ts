@@ -313,31 +313,9 @@ describe('modelToRow', () => {
         });
     });
 
-    describe('sublabel', () => {
-        it('truncates comment to 28 chars', () => {
-            const m = makeModel({
-                comment: 'A very long comment that should be truncated by the function',
-            });
-            const row = modelToRow(m);
-            expect(row.sublabel).toBe('A very long comment that sho');
-            expect(row.sublabel!.length).toBe(28);
-        });
-
-        it('uses cached comment when available', () => {
-            mockState.modelMetaCache.set('/r/miku.pmx', {
-                name_en: '',
-                name_jp: '',
-                comment: 'Cached comment',
-            });
-            const m = makeModel({ file_path: '/r/miku.pmx' });
-            const row = modelToRow(m);
-            expect(row.sublabel).toBe('Cached comment');
-        });
-
-        it('is undefined when no comment', () => {
-            const row = modelToRow(makeModel({ file_path: '/r/miku.pmx', comment: '' }));
-            expect(row.sublabel).toBeUndefined();
-        });
+    it('sublabel is always undefined', () => {
+        const row = modelToRow(makeModel({ comment: 'Any comment' }));
+        expect(row.sublabel).toBeUndefined();
     });
 
     describe('row metadata', () => {
@@ -352,10 +330,9 @@ describe('modelToRow', () => {
             expect(row.target).toBe('/some/path/model.pmx');
         });
 
-        it('sets catTag from category', () => {
-            const m = makeModel({ category: 'VRM' });
-            const row = modelToRow(m);
-            expect(row.catTag).toBe('VRM');
+        it('catTag is undefined', () => {
+            const row = modelToRow(makeModel({ category: 'VRM' }));
+            expect(row.catTag).toBeUndefined();
         });
 
         it('sets editable only for pmx format', () => {

@@ -98,8 +98,6 @@ const {
         fogEnabled: false,
         fogColor: [0.5, 0.5, 0.6],
         fogDensity: 0.01,
-        clothEnabled: false,
-        clothConfig: {},
         sunAngle: 45,
         azimuth: -45,
         lightingPresetName: undefined,
@@ -283,8 +281,6 @@ vi.mock('../core/config', () => {
         waterWaveHeight: 0.5,
         waterSize: 50,
         waterAnimSpeed: 1,
-        clothEnabled: false,
-        clothConfig: {},
         skyTexture: '',
         skyRotationY: 0,
         skyRotationSpeed: 0,
@@ -341,11 +337,29 @@ vi.mock('../scene/scene', () => {
         ambientColor: { r: 0, g: 0, b: 0 },
         getAnimationRatio: () => 60,
         onBeforeRenderObservable: {
-            add: vi.fn(),
-            remove: vi.fn(),
-            // Babylon's addOnce defers to the next render frame (~16ms at 60fps).
-            // Use setTimeout(16) so Vitest fake timers advance performance.now() per
-            // frame, letting the preset animation progress toward t >= 1.
+            _callbacks: new Map<number, { cb: () => void; timerId: ReturnType<typeof setTimeout> }>(),
+            _nextId: 1,
+            add: (cb: () => void) => {
+                const id = scene.onBeforeRenderObservable._nextId++;
+                const fire = () => {
+                    cb();
+                    // Re-schedule if still registered (simulates per-frame observable)
+                    if (scene.onBeforeRenderObservable._callbacks.has(id)) {
+                        const timerId = setTimeout(fire, 16);
+                        scene.onBeforeRenderObservable._callbacks.set(id, { cb, timerId });
+                    }
+                };
+                const timerId = setTimeout(fire, 16);
+                scene.onBeforeRenderObservable._callbacks.set(id, { cb, timerId });
+                return id;
+            },
+            remove: (id: number) => {
+                const entry = scene.onBeforeRenderObservable._callbacks.get(id);
+                if (entry) {
+                    clearTimeout(entry.timerId);
+                    scene.onBeforeRenderObservable._callbacks.delete(id);
+                }
+            },
             addOnce: (cb: () => void) => {
                 setTimeout(cb, 16);
             },

@@ -257,23 +257,23 @@ func (a *App) StartProxy(target string) (string, error) {
 			} else {
 				body, err := io.ReadAll(io.LimitReader(resp.Body, maxPlazaHTMLBody))
 				resp.Body.Close()
-				if err == nil {
-					html := string(body)
+			if err == nil {
+				html := string(body)
 				injected := false
-			origin := "*"
-			script := plazaInjectScript(origin)
-			// 优先插入 </head> 前
-			if idx := strings.LastIndex(strings.ToLower(html), "</head>"); idx != -1 {
-				html = html[:idx] + script + html[idx:]
-				injected = true
-			} else if idx := strings.Index(strings.ToLower(html), "<body"); idx != -1 {
-				// 其次插入 <body> 后
-				end := idx
-				for end < len(html) && html[end] != '>' {
-					end++
-				}
-				if end < len(html) {
-					html = html[:end+1] + script + html[end+1:]
+				origin := "*"
+				script := plazaInjectScript(origin)
+				// 优先插入 </head> 前
+				if idx := strings.LastIndex(strings.ToLower(html), "</head>"); idx != -1 {
+					html = html[:idx] + script + html[idx:]
+					injected = true
+				} else if idx := strings.Index(strings.ToLower(html), "<body"); idx != -1 {
+					// 其次插入 <body> 后
+					end := idx
+					for end < len(html) && html[end] != '>' {
+						end++
+					}
+					if end < len(html) {
+						html = html[:end+1] + script + html[end+1:]
 						injected = true
 					}
 				}
@@ -389,12 +389,15 @@ func (a *App) DownloadFromPlaza(fileURL string, fileName string) (*PlazaDownload
 
 		// [SSRF 主防线] 仅允许下载当前已激活广场代理的同 host 资源。
 		// 下载请求本就只应来自已代理的广场站（ADR-078 注入脚本 postMessage 同站链接）。
-		if currentProxyTarget == "" {
+		a.httpSrvMu.Lock()
+		pt := currentProxyTarget
+		a.httpSrvMu.Unlock()
+		if pt == "" {
 			return nil, fmt.Errorf("no active plaza proxy; call StartProxy before downloading")
 		}
-		proxyTarget, perr := url.Parse(currentProxyTarget)
+		proxyTarget, perr := url.Parse(pt)
 		if perr != nil {
-			return nil, fmt.Errorf("internal: invalid proxy target %q: %w", currentProxyTarget, perr)
+			return nil, fmt.Errorf("internal: invalid proxy target %q: %w", pt, perr)
 		}
 		if !strings.EqualFold(parsed.Host, proxyTarget.Host) {
 			return nil, fmt.Errorf("download host %q does not match active proxy target %q", parsed.Host, proxyTarget.Host)

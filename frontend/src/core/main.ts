@@ -37,7 +37,6 @@ import {
     initScene,
     engine,
     scene,
-    modelManager,
     focusedMmdModel,
     focusedModel,
     updatePlaybackUI,
@@ -722,10 +721,9 @@ async function restoreEnvState(): Promise<void> {
             loaded.causticScrollY = 0.15;
             loaded.fresnelAlphaInfluence = 0.5;
         }
-        // clothConfig 与代码默认值合并，确保新字段/新默认值生效
-        if (loaded.clothConfig) {
-            const { DEFAULT_CLOTH_CONFIG } = await import('../physics/xpbd-cloth');
-            loaded.clothConfig = { ...DEFAULT_CLOTH_CONFIG, ...loaded.clothConfig };
+        // 向后兼容：旧配置缺少 groundSize 时补默认值（否则沿用前端默认 60）
+        if (loaded.groundSize === undefined || loaded.groundSize <= 0) {
+            loaded.groundSize = 60;
         }
         setEnvState(loaded as Partial<EnvState>);
     }
@@ -1045,20 +1043,6 @@ if (import.meta.env.DEV) {
             // ground/helpers). Assert a threshold, not an exact number.
             return scene.meshes.length;
         },
-        get particleCount(): number {
-            let n = 0;
-            for (const cloth of modelManager.clothInstances.values()) {
-                n += cloth.solver?.particles.length ?? 0;
-            }
-            return n;
-        },
-        get constraintCount(): number {
-            let n = 0;
-            for (const cloth of modelManager.clothInstances.values()) {
-                n += cloth.solver?.constraints.length ?? 0;
-            }
-            return n;
-        },
         get currentAnimation(): string {
             // Use focusedModel().vmdName instead of mmdRuntime.runtimeAnimation
             // which doesn't exist in babylon-mmd's public API.
@@ -1144,14 +1128,6 @@ if (import.meta.env.DEV) {
                     m.dispose();
                 }
             }
-        },
-        // DEBUG: 当前布料实例的 config（含 auto-fit 结果）
-        get clothConfig(): Record<string, unknown> | null {
-            const cloth = modelManager.clothInstances.values().next().value;
-            if (!cloth) {
-                return null;
-            }
-            return { ...cloth.config };
         },
     };
 }

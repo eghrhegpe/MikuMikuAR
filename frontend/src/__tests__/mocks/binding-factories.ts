@@ -6,7 +6,6 @@
 import type {
     BuildInfo,
     CacheStats,
-    ClothConfig,
     Config,
     DanceSet,
     EnvPresetEntry,
@@ -41,28 +40,6 @@ export function createMockCacheStats(overrides?: Partial<CacheStats>): CacheStat
         serveBytes: 0,
         serveCount: 0,
         totalBytes: 0,
-        ...overrides,
-    };
-}
-
-export function createMockClothConfig(overrides?: Partial<ClothConfig>): ClothConfig {
-    return {
-        anchorBone: '',
-        topology: 'grid',
-        innerRadius: 0.01,
-        length: 0.15,
-        slope: 0.8,
-        segmentsH: 8,
-        segmentsV: 8,
-        particleRadius: 0.005,
-        compliance: 0.001,
-        totalMass: 0.1,
-        damping: 0.01,
-        gravityScale: 1.0,
-        elasticAnchor: true,
-        anchorStiffness: 0.85,
-        anchorDamping: 0.3,
-        bendCompliance: 0.01,
         ...overrides,
     };
 }
@@ -168,6 +145,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         groundTerrainSeed: 1337,
         groundTerrainOctaves: 5,
         groundLevel: 0,
+        groundSize: 60,
         windEnabled: false,
         windDirection: [1, 0, 0],
         windSpeed: 0,
@@ -223,13 +201,6 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         fogDensity: 0.01,
         fogStart: 10,
         fogEnd: 100,
-        clothEnabled: false,
-        clothConfig: createMockClothConfig(),
-        clothDebugParticles: false,
-        clothDebugConstraints: false,
-        clothDebugColliders: false,
-        solverSubsteps: 4,
-        solverTimeScale: 1.0,
         collisionEnabled: true,
         bodyCollisionEnabled: true,
         groundCollisionEnabled: true,

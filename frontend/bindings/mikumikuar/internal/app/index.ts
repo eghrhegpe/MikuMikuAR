@@ -9,7 +9,6 @@ export {
 export type {
     BuildInfo,
     CacheStats,
-    ClothConfig,
     Config,
     DanceSet,
     EnvPresetEntry,

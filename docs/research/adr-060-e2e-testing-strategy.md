@@ -1,7 +1,7 @@
 # ADR-060: E2E 测试策略（Playwright + 双模式 Fixture + 场景数值钩子）
 
 > **状态**: ✅ 已完成（Phase 0 / Phase 1 / Phase 2 / Phase 3，2026-07-07 提出并推进）
-> **关联**: [ADR-041](adr-041-ci-auto-checks.md)（CI 自动检查，E2E 接入点）、[AGENTS.md](../../AGENTS.md)（测试路由与 `npm run test:e2e` 入口）
+> **关联**: [ADR-041](../adr/adr-041-ci-auto-checks.md)（CI 自动检查，E2E 接入点）、[AGENTS.md](../../AGENTS.md)（测试路由与 `npm run test:e2e` 入口）
 > **背景**: 当前测试资产为 **33 个 Vitest 单元 spec + 2 个 Playwright E2E spec**（`smoke` + `env-sky`）。结构呈「逻辑层铜墙铁壁、UI/E2E 层四面漏风」：算法/物理/换装/绑定契约单测覆盖厚，但关键用户旅程（模型加载、动作播放、换装、AR、截图导出）无 E2E，且 3D 渲染层**无任何断言钩子**，旧 `env-sky` 截图仅断言 `data:image/png` 前缀、未比对内容。本 ADR 锁定 E2E 工具选型、断言策略与分阶段落地路标，供多 AI 协同规划。
 
 ---
@@ -265,7 +265,7 @@ CI 门禁：`e2e`(ubuntu, `@dom`, 阻塞) + `e2e-wails`(windows, `@webgl`, `cont
 
 ## 九、相关 ADR
 
-- [ADR-041](adr-041-ci-auto-checks.md) — CI 自动检查（E2E 接入点与失败归档挂此）
-- [ADR-019](adr-019-xpbd-cloth-simulation.md) — XPBD 布料（约束/粒子即 `__scene` 数据源）
+- [ADR-041](../adr/adr-041-ci-auto-checks.md) — CI 自动检查（E2E 接入点与失败归档挂此）
+- [ADR-019](../adr/adr-019-xpbd-cloth-simulation.md) — XPBD 布料（约束/粒子即 `__scene` 数据源）
 - [ADR-057](adr-057-shift-jis-url-base64.md) / [ADR-058](adr-058-basenameFallbackFS.md) — 资源路径编码（不在本 ADR 范畴）
 - [AGENTS.md](../../AGENTS.md) — 测试路由表与 `npm run test:e2e` 入口（2026-07-07 已补）

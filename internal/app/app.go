@@ -368,6 +368,7 @@ type EnvState struct {
 	GroundTerrainSeed     float64    `json:"groundTerrainSeed"`
 	GroundTerrainOctaves  float64    `json:"groundTerrainOctaves"`
 	GroundLevel           float64    `json:"groundLevel"`
+	GroundSize            float64    `json:"groundSize"`
 
 	WindEnabled   bool       `json:"windEnabled"`
 	WindDirection [3]float64 `json:"windDirection"`
@@ -435,13 +436,6 @@ type EnvState struct {
 	FogStart   float64    `json:"fogStart"`
 	FogEnd     float64    `json:"fogEnd"`
 
-	ClothEnabled           bool        `json:"clothEnabled"`
-	ClothConfig            ClothConfig `json:"clothConfig"`
-	ClothDebugParticles    bool        `json:"clothDebugParticles"`
-	ClothDebugConstraints  bool        `json:"clothDebugConstraints"`
-	ClothDebugColliders    bool        `json:"clothDebugColliders"`
-	SolverSubsteps         float64     `json:"solverSubsteps"`
-	SolverTimeScale        float64     `json:"solverTimeScale"`
 	CollisionEnabled       bool        `json:"collisionEnabled"`
 	BodyCollisionEnabled   bool        `json:"bodyCollisionEnabled"`
 	GroundCollisionEnabled bool        `json:"groundCollisionEnabled"`
@@ -453,26 +447,6 @@ type EnvState struct {
 
 	TimeOfDayActive bool    `json:"timeOfDayActive"`
 	TimeOfDaySpeed  float64 `json:"timeOfDaySpeed"`
-}
-
-// ClothConfig stores XPBD cloth simulation parameters.
-type ClothConfig struct {
-	AnchorBone     string  `json:"anchorBone"`
-	Topology       string  `json:"topology"`
-	InnerRadius    float64 `json:"innerRadius"`
-	Length         float64 `json:"length"`
-	Slope          float64 `json:"slope"`
-	SegmentsH      int     `json:"segmentsH"`
-	SegmentsV      int     `json:"segmentsV"`
-	ParticleRadius float64 `json:"particleRadius"`
-	Compliance     float64 `json:"compliance"`
-	TotalMass      float64 `json:"totalMass"`
-	Damping        float64 `json:"damping"`
-	GravityScale   float64 `json:"gravityScale"`
-	ElasticAnchor  bool    `json:"elasticAnchor"`
-	AnchorStiffness float64 `json:"anchorStiffness"`
-	AnchorDamping  float64 `json:"anchorDamping"`
-	BendCompliance float64 `json:"bendCompliance"`
 }
 
 // RenderPreset stores a user-defined rendering preset.
@@ -518,7 +492,7 @@ func settingDir(cfg *Config) (string, error) {
 	if cfg != nil && cfg.ResourceRoot != "" {
 		d := filepath.Join(cfg.ResourceRoot, "setting")
 		if err := os.MkdirAll(d, 0755); err != nil {
-			return configDir()
+			return "", fmt.Errorf("create setting dir %s: %w", d, err)
 		}
 		return d, nil
 	}

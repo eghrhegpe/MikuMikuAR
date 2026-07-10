@@ -84,6 +84,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         'groundTerrainScale',
         'groundTerrainSeed',
         'groundTerrainOctaves',
+        'groundSize',
     ];
     if (!changed || changed.some((k) => groundKeys.includes(k))) {
         try {
@@ -226,6 +227,35 @@ export function setGravityStrength(value: number): void {
 
 export function getGravityStrength(): number {
     return _gravityStrength;
+}
+
+// ======== Collision (WASM Bullet) ========
+
+export function setCollisionEnabled(value: boolean): void {
+    envState.collisionEnabled = value;
+    triggerAutoSave();
+}
+
+export function getCollisionEnabled(): boolean {
+    return envState.collisionEnabled;
+}
+
+export function setBodyCollisionEnabled(value: boolean): void {
+    envState.bodyCollisionEnabled = value;
+    triggerAutoSave();
+}
+
+export function getBodyCollisionEnabled(): boolean {
+    return envState.bodyCollisionEnabled;
+}
+
+export function setGroundCollisionEnabled(value: boolean): void {
+    envState.groundCollisionEnabled = value;
+    triggerAutoSave();
+}
+
+export function getGroundCollisionEnabled(): boolean {
+    return envState.groundCollisionEnabled;
 }
 
 // ======== Environment Sun Angle ========

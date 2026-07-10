@@ -18,6 +18,7 @@ import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime
 import { MmdWasmPhysics } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysics';
 import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation';
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
+import { initWindPhysics, disposeWindPhysics } from '../physics/wind-physics';
 import { MmdRuntimeShared } from 'babylon-mmd/esm/Runtime/mmdRuntimeShared';
 // JS 版 runtime（无 WASM 双缓冲，worldMatrix 覆写可生效）
 import { MmdRuntime } from 'babylon-mmd/esm/Runtime/mmdRuntime';
@@ -164,6 +165,8 @@ export async function initScene(): Promise<void> {
         const wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
         const mmdWasmPhysics = new MmdWasmPhysics(scene);
         runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
+        initWindPhysics(runtime);
+        scene.onDisposeObservable.add(() => disposeWindPhysics());
         console.log('[scene] 使用 WASM 版 MmdWasmRuntime（含物理）');
     }
     runtime.loggingEnabled = true;
@@ -290,18 +293,6 @@ export async function initScene(): Promise<void> {
         return inst?.mmdModel?.runtimeBones ?? [];
     }, scene);
 
-    // 8. Ragdoll 物理系统启动
-    // 在 bone-override 之后注册 onBeforeRenderObservable，确保 ragdoll 成为渲染前最后写入者
-    const { initRagdoll } = await import('../physics/ragdoll-manager');
-    initRagdoll(() => {
-        const id = focusedModelId;
-        if (!id) {
-            return [];
-        }
-        const inst = modelRegistry.get(id);
-        return inst?.mmdModel?.runtimeBones ?? [];
-    }, scene);
-
     setTriggerAutoSave(triggerAutoSaveImpl);
 }
 
@@ -377,9 +368,6 @@ export {
     disposeAudio,
     isAudioPlaying,
 } from '../outfit/audio';
-export { createCloth, buildClothUpdateFn, disposeCloth } from '../physics/xpbd-cloth';
-export type { ClothInstance, ClothConfig } from '../physics/xpbd-cloth';
-export { SdfCollider, DEFAULT_BODY_CAPSULES } from '../physics/xpbd-collider';
 export { SaveThumbnail, SaveLastScene, LoadLastScene, SetEnvState } from '../core/wails-bindings';
 export type { LightState, StageLightState } from './render/lighting';
 export type { RenderState } from './render/renderer';

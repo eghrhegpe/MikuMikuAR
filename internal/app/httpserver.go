@@ -218,7 +218,10 @@ func (a *App) isSafePath(filePath string) bool {
 
 // trustedRoots returns all directory paths that are safe to serve from.
 func (a *App) trustedRoots() []string {
-	cfg, _ := a.GetConfig()
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return nil
+	}
 	roots := make([]string, 0, 2+len(cfg.ExternalPaths))
 	if cfg.ResourceRoot != "" {
 		roots = append(roots, cfg.ResourceRoot)

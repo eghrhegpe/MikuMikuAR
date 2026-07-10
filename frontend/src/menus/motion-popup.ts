@@ -1,6 +1,5 @@
 // [doc:architecture] Motion Popup — 动作弹窗（核心 + barrel export）
 // 拆分后保留: 动作绑定/音乐/动作菜单/入口 + barrel re-export
-// 子文件: motion-cloth-levels.ts
 
 import {
     setStatus,
@@ -72,11 +71,7 @@ import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 
 // ======== 从子文件导入 ========
-import { buildClothParamsLevel } from './motion-cloth-levels';
-
 // ======== Barrel Re-Exports ========
-export { buildClothParamsLevel } from './motion-cloth-levels';
-
 // ======== 物理类别 → i18n key 映射（运行时 t()，支持热切换）========
 const CAT_KEYS: Record<string, string> = {
     skirt: 'motion.catSkirt',
@@ -689,7 +684,6 @@ function buildMotionRootItems(): PopupRow[] {
                 icon: 'tabler:cube-3d-sphere',
                 target: `action:binding:${id}`,
                 sublabel: inst.vmdName || undefined,
-                catTag: t('motion.actor'),
                 wrapLabel: true,
             });
         }

@@ -610,17 +610,6 @@ export const zhCN: Record<string, string> = {
     'dialog.confirmTitle': '确认',
     'dialog.inputTitle': '输入',
 
-    // physics — 布料模拟状态（cloth-manager）
-    'physics.loadModelFirst': '⚠ 请先加载模型',
-    'physics.clothExists': '⚠ 布料已存在',
-    'physics.noMmdData': '⚠ 当前模型无 MMD 数据',
-    'physics.clothCreated': '✓ 布料已创建 ({particles} 粒子, {constraints} 约束, mesh: {mesh})',
-    'physics.clothEnabled':
-        '✓ 布料模拟已启用 ({instances} 例, {particles} 粒子, {constraints} 约束)',
-    'physics.ragdollEnabled': '✓ 布娃娃物理已启用',
-    'physics.noActiveInstance': '⚠ 布料已启用但未找到活跃实例',
-    'physics.clothDisabled': '布料模拟已关闭',
-
     // scene.ar — AR 相机状态
     'scene.ar.enabled': '✓ AR 相机已开启',
     'scene.ar.cameraDenied': '✗ 摄像头权限被拒绝，已切换黑底模式',

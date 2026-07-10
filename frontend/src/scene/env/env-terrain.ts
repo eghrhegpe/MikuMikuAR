@@ -74,7 +74,6 @@ export function generateTerrainHeightmapURL(opts: {
     return canvas.toDataURL();
 }
 
-const TERRAIN_GROUND_SIZE = 60;
 const TERRAIN_SUBDIVISIONS = 200;
 
 /**
@@ -94,12 +93,13 @@ export function createHeightmapGround(
         octaves: state.groundTerrainOctaves,
     });
     const half = state.groundTerrainHeight / 2;
+    const size = Math.max(1, state.groundSize);
     const ground = MeshBuilder.CreateGroundFromHeightMap(
         'envGround',
         url,
         {
-            width: TERRAIN_GROUND_SIZE,
-            height: TERRAIN_GROUND_SIZE,
+            width: size,
+            height: size,
             subdivisions: TERRAIN_SUBDIVISIONS,
             minHeight: -half,
             maxHeight: half,

@@ -50,7 +50,10 @@ func (a *App) OpenInBlender(modelPath string) error {
 	if isAndroid {
 		return fmt.Errorf("Blender 不可在 Android 上启动")
 	}
-	cfg, _ := a.GetConfig()
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return err
+	}
 	blenderPath := cfg.BlenderPath
 	if blenderPath == "" {
 		blenderPath = detectBlender()
@@ -109,7 +112,10 @@ func (a *App) OpenInMMD(modelPath string) error {
 	if isAndroid {
 		return fmt.Errorf("MikuMikuDance 不可在 Android 上启动")
 	}
-	cfg, _ := a.GetConfig()
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return err
+	}
 	mmdPath := cfg.MMDPath
 	if mmdPath == "" {
 		mmdPath = detectMMD()
@@ -158,7 +164,10 @@ func (a *App) ScanSoftwareDir() ([]SoftwareEntry, error) {
 	// Android: skip .exe directory scan, only return config entries
 	if isAndroid {
 		scanned := make(map[string]SoftwareEntry)
-		cfg, _ := a.GetConfig()
+		cfg, err := a.GetConfig()
+		if err != nil {
+			return nil, err
+		}
 		for _, sw := range cfg.CustomSoftware {
 			sw.Managed = true
 			scanned[sw.Path] = sw
@@ -198,7 +207,10 @@ func (a *App) ScanSoftwareDir() ([]SoftwareEntry, error) {
 	}
 
 	// Merge custom software from config (custom takes precedence)
-	cfg, _ := a.GetConfig()
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return nil, err
+	}
 	for _, sw := range cfg.CustomSoftware {
 		if _, ok := scanned[sw.Path]; ok {
 			// Custom overrides scanned entry for all fields
@@ -368,7 +380,10 @@ func (a *App) SelectSceneSaveFile() (string, error) {
 // envPresetsDir returns the env-presets/ subdirectory under settingDir.
 // In portable mode (ResourceRoot set), presets live under <ResourceRoot>/setting/env-presets/.
 func (a *App) envPresetsDir() (string, error) {
-	cfg, _ := a.GetConfig()
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return "", err
+	}
 	base, err := settingDir(cfg)
 	if err != nil {
 		return "", err
@@ -554,7 +569,10 @@ func (a *App) BundleScene(targetPath string, sceneJSON string, assetPaths []stri
 	}
 
 	// Determine the library root for computing relative paths
-	cfg, _ := a.GetConfig()
+	cfg, err := a.GetConfig()
+	if err != nil {
+		return err
+	}
 	libRoot := ""
 	if cfg.ResourceRoot != "" {
 		libRoot = cfg.ResourceRoot
