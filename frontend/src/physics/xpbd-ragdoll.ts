@@ -341,8 +341,15 @@ export function writeBack(
       // Update position
       linked.setPosition(localPos);
 
-      // Rotation: set to identity (ragdoll drives translation primarily)
-      linked.rotationQuaternion = Quaternion.Identity();
+      // Rotation: 由 solver 解出的 orientation 写回（非 head 骨骼）
+      const isHeadBone = /head|首|頭/i.test(boneName);
+      if (isHeadBone) {
+        // head 划界：不写 rotationQuaternion，保留 perception 的 gaze 写入
+        // 仅写 position（ragdoll 仍驱动 head 位置）
+      } else {
+        const q = p.orientation;
+        linked.rotationQuaternion = new Quaternion(q[0], q[1], q[2], q[3]);
+      }
 
       // Force skeleton refresh
       (rb as MmdRuntimeBoneExtended).updateWorldMatrix(false, false);
@@ -364,9 +371,17 @@ export function writeBack(
       const p = inst.particles[i];
       const oldMat = Matrix.FromArray(buf);
 
-      // Compose new matrix: position from particle.p + rotation from current
+      // Compose new matrix: position from particle.p + rotation from solver orientation
       const pos = Vector3.FromArray(p.p);
-      const rot = Quaternion.Identity(); // Simplified: no rotation solve yet
+      const isHeadBone = /head|首|頭/i.test(boneName);
+      let rot: Quaternion;
+      if (isHeadBone) {
+        // head 划界 MVP：保留原 worldMatrix 旋转（简化用 Identity，后续完善）
+        rot = Quaternion.Identity();
+      } else {
+        const q = p.orientation;
+        rot = new Quaternion(q[0], q[1], q[2], q[3]);
+      }
 
       const newMat = Matrix.Compose(Vector3.One(), rot, pos);
 

@@ -189,6 +189,52 @@ describe('xpbd-ragdoll', () => {
     });
   });
 
+  describe('writeBack rotation', () => {
+    it('should write non-identity rotationQuaternion for non-head bones', () => {
+      const { Quaternion } = require('@babylonjs/core/Maths/math.vector');
+      const bones: any[] = [
+        { name: '全ての親', parentBone: null, childBones: [], worldMatrix: new Float32Array(16) },
+        { name: '上半身', parentBone: null, childBones: [], worldMatrix: new Float32Array(16) },
+      ];
+      const rootMat = bones[0].worldMatrix; rootMat[0]=1;rootMat[5]=1;rootMat[10]=1;rootMat[15]=1;
+      const spineMat = bones[1].worldMatrix; spineMat[0]=1;spineMat[5]=1;spineMat[10]=1;spineMat[15]=1;spineMat[13]=1;
+      bones[1].parentBone = bones[0];
+      const inst = buildRagdoll('m1', bones as any);
+      // 给 child（上半身，非 head）一个非 identity orientation
+      inst.particles[1].orientation = new Float32Array([0.1, 0.2, 0.3, 0.9]);
+
+      const mockLinked = { rotationQuaternion: null, setPosition: () => {}, updateWorldMatrix: () => {}, getSkeleton: () => ({ _markAsDirty: () => {} }) };
+      const getBones = () => [{ name: bones[0].name, linkedBone: mockLinked, worldMatrix: bones[0].worldMatrix, updateWorldMatrix: () => {} },
+                              { name: bones[1].name, linkedBone: mockLinked, worldMatrix: bones[1].worldMatrix, updateWorldMatrix: () => {} }] as any;
+      void Quaternion;
+      writeBack(inst, false, getBones as any);
+      // 非 head 骨骼 rotationQuaternion 应被写入（非 null）
+      // 注意：mockLinked 共享，验证最后一次写入（即上半身）非 Identity
+      expect(mockLinked.rotationQuaternion).not.toBeNull();
+      if (mockLinked.rotationQuaternion) {
+        expect(mockLinked.rotationQuaternion.x).toBeCloseTo(0.1, 5);
+        expect(mockLinked.rotationQuaternion.y).toBeCloseTo(0.2, 5);
+        expect(mockLinked.rotationQuaternion.z).toBeCloseTo(0.3, 5);
+        expect(mockLinked.rotationQuaternion.w).toBeCloseTo(0.9, 5);
+      }
+    });
+
+    it('should NOT write rotationQuaternion for head bones (首/頭/head)', () => {
+      const bones: any[] = [
+        { name: '首', parentBone: null, childBones: [], worldMatrix: new Float32Array(16) },
+      ];
+      const headMat = bones[0].worldMatrix; headMat[0]=1;headMat[5]=1;headMat[10]=1;headMat[15]=1;headMat[13]=1;
+      const inst = buildRagdoll('m1', bones as any);
+      inst.particles[0].orientation = new Float32Array([0.5, 0.5, 0.5, 0.5]);
+
+      const mockLinked = { rotationQuaternion: null, setPosition: () => {}, updateWorldMatrix: () => {}, getSkeleton: () => ({ _markAsDirty: () => {} }) };
+      const getBones = () => [{ name: bones[0].name, linkedBone: mockLinked, worldMatrix: bones[0].worldMatrix, updateWorldMatrix: () => {} }] as any;
+      writeBack(inst, false, getBones as any);
+      // head 骨骼 rotationQuaternion 应保持 null（未被 ragdoll 写入）
+      expect(mockLinked.rotationQuaternion).toBeNull();
+    });
+  });
+
   describe('stepRagdoll', () => {
     it('should clamp non-root particles below groundY', () => {
       // Given: non-root particle below groundY (invMass > 0 so clamp applies)
