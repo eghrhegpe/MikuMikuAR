@@ -1,7 +1,7 @@
 // [doc:adr-071] 感知层单元测试 — 状态管理 + 生命周期
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // 迁移函数为纯函数，静态导入即可；scene-serialize 的重依赖下方统一 mock
-import { migratePerceptionFromProcMotion, migrateBalanceSwayFromProcMotion } from '../scene/scene-serialize';
+import { migratePerceptionFromProcMotion, migrateBalanceSwayFromProcMotion, migrateLipSyncFromOldState } from '../scene/scene-serialize';
 
 // =====================================================================
 // hoisted mock state
@@ -486,6 +486,29 @@ describe('scene-serialize balanceSway migration', () => {
     it('旧存档无 boneToggles 时默认 balanceSwayEnabled=true', () => {
         const migrated = migrateBalanceSwayFromProcMotion({} as any);
         expect(migrated.balanceSwayEnabled).toBe(true);
+    });
+});
+
+// =====================================================================
+// scene-serialize lipSync migration — 旧存档独立 lipSync state 迁移
+// =====================================================================
+
+describe('scene-serialize lipSync migration', () => {
+    it('旧存档 lipSync.enabled=true 时映射为 lipSyncEnabled=true', () => {
+        const old = { lipSync: { enabled: true, sensitivity: 0.3, intensity: 0.9, multiMorphEnabled: true } };
+        const migrated = migrateLipSyncFromOldState(old);
+        expect(migrated.lipSyncEnabled).toBe(true);
+        expect(migrated.lipSyncSensitivity).toBe(0.3);
+        expect(migrated.lipSyncIntensity).toBe(0.9);
+        expect(migrated.lipSyncMultiMorphEnabled).toBe(true);
+    });
+
+    it('旧存档无 lipSync 字段时使用默认值', () => {
+        const migrated = migrateLipSyncFromOldState({});
+        expect(migrated.lipSyncEnabled).toBe(false);
+        expect(migrated.lipSyncSensitivity).toBe(0.2);
+        expect(migrated.lipSyncIntensity).toBe(0.8);
+        expect(migrated.lipSyncMultiMorphEnabled).toBe(false);
     });
 });
 
