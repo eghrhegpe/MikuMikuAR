@@ -107,6 +107,7 @@ export function buildClothLevel(): PopupLevel {
   toggleValue: envState.ragdollEnabled,
   onToggleChange: (v: boolean) => {
     envState.ragdollEnabled = v;
+    toggleRagdoll(v);
     refreshSceneRoot();
     _patchToggle('ragdoll:toggle', v);
   }
