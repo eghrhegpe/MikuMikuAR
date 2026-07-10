@@ -35,7 +35,7 @@ export interface XpbdParticle {
 }
 
 /** 约束类型 */
-export type ConstraintType = 'distance' | 'bend' | 'volume' | 'ground';
+export type ConstraintType = 'distance' | 'bend' | 'volume' | 'ground' | 'sphere';
 
 /** XPBD 约束 */
 export interface XpbdConstraint {
@@ -60,6 +60,12 @@ export interface XpbdConstraint {
      * 对 Volume 约束暂不生效。
      */
     damping: number;
+    /** sphere 专属：圆锥限位半角（弧度），swing 摆动不超过此角 */
+    coneHalfAngle?: number;
+    /** sphere 专属：twist 扭转范围 [min, max]（弧度） */
+    twistRange?: [number, number];
+    /** sphere 专属：rest 姿态的相对四元数 [x,y,z,w]，约束目标 */
+    restQuaternion?: Float32Array;
 }
 
 /**
