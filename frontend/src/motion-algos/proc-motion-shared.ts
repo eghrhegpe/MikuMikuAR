@@ -19,6 +19,7 @@ export const PROC_MOTION_BONE_CATEGORIES = [
     'wrist',
     'footIk',
     'blink',
+    // lifelike 的情绪 morph 已迁入感知层（ADR-079 Phase 1）；autodance 仍使用此 toggle
     'emotion',
 ] as const;
 export type ProcMotionBoneCategory = (typeof PROC_MOTION_BONE_CATEGORIES)[number];
