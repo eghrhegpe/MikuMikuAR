@@ -18,8 +18,9 @@ export default defineConfig({
     },
 
     use: {
-        // Wails WebView2 exposes CDP on 9222 when .env has WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
-        // We connect via connectOverCDP in each test rather than launching a new browser.
+        // Wails WebView2 exposes CDP on 9222 when MMCAR_DEBUG_PORT=9222 is set
+        // (main.go reads it and injects --remote-debugging-port; WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS is
+        // suppressed by Wails v3). We connect via connectOverCDP in each test rather than launching a new browser.
         // This baseURL is only used for direct goto fallback if connectOverCDP fails.
         baseURL: "http://localhost:34115",
 

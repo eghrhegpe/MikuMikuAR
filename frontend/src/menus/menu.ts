@@ -549,11 +549,18 @@ export class SlideMenu {
             return;
         }
 
-        // 如果有 lcard 包裹，在 lcard 内部 patch
-        const card = list.querySelector('.lcard') as HTMLElement | null;
+        // [doc:adr-NNN] 多 lcard（card-per-divider）场景：按 divider 分割 items，
+        // 分别 patch 到对应的 lcard，避免全量重建
+        const cards = list.querySelectorAll(':scope > .lcard') as NodeListOf<HTMLElement>;
+        if (cards.length > 1) {
+            this._patchMultiCard(cards, items);
+            return;
+        }
+
+        // 单容器（无 lcard 或仅一个）→ 原有逻辑
+        const card = cards.length === 1 ? cards[0] : null;
         const container = card || list;
         const oldChildren = Array.from(container.children) as HTMLElement[];
-        const maxLen = Math.max(oldChildren.length, items.length);
 
         // 1. 删除多余的行（从后往前，避免索引偏移）
         for (let i = oldChildren.length - 1; i >= items.length; i--) {
@@ -584,6 +591,69 @@ export class SlideMenu {
                 const newEl = this.createRow(newRow);
                 if (newEl) {
                     container.appendChild(newEl);
+                }
+            }
+        }
+    }
+
+    /** 多 lcard 场景：按 divider 分割 items，逐 card patch */
+    private _patchMultiCard(cards: NodeListOf<HTMLElement>, items: PopupRow[]): void {
+        // 按 divider 分割 items（与 buildPanel 分组逻辑一致：divider 本身不归属任何组）
+        const segments: PopupRow[][] = [];
+        let cur: PopupRow[] = [];
+        for (const row of items) {
+            if (row.kind === 'divider') {
+                if (cur.length > 0) {
+                    segments.push(cur);
+                    cur = [];
+                }
+                continue;
+            }
+            cur.push(row);
+        }
+        if (cur.length > 0) {
+            segments.push(cur);
+        }
+
+        // lcard 数与分组数不匹配 → items 结构变化，回退全量重建
+        if (cards.length !== segments.length) {
+            this.buildPanel(this.currentLevel!);
+            return;
+        }
+
+        // 逐个 lcard 独立 patch
+        for (let c = 0; c < cards.length; c++) {
+            const container = cards[c];
+            const seg = segments[c];
+            const oldChildren = Array.from(container.children) as HTMLElement[];
+            const maxLen = Math.max(oldChildren.length, seg.length);
+
+            // 删除多余的行
+            for (let i = oldChildren.length - 1; i >= seg.length; i--) {
+                oldChildren[i].remove();
+            }
+
+            // 逐行比较
+            for (let i = 0; i < seg.length; i++) {
+                const newRow = seg[i];
+                const newKey = this.rowKey(newRow);
+
+                if (i < oldChildren.length) {
+                    const oldEl = oldChildren[i];
+                    const oldKey = oldEl.dataset.rowKey || '';
+                    if (oldKey !== newKey) {
+                        const newEl = this.createRow(newRow);
+                        if (newEl) {
+                            oldEl.replaceWith(newEl);
+                        }
+                    } else {
+                        this.refreshRowText(oldEl, newRow);
+                    }
+                } else {
+                    const newEl = this.createRow(newRow);
+                    if (newEl) {
+                        container.appendChild(newEl);
+                    }
                 }
             }
         }

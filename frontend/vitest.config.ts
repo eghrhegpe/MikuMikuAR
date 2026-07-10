@@ -18,7 +18,7 @@ export default defineConfig({
     test: {
         environment: "happy-dom",
         globals: true,
-        exclude: ["e2e/**", "node_modules/**"],
+        exclude: ["e2e/**", "node_modules/**", "**/*.perf.test.ts"],
         setupFiles: ["./src/__tests__/setup-wails.ts"],
         coverage: {
             provider: "v8",

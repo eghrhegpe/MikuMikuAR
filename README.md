@@ -128,6 +128,25 @@ cd frontend && npm install
 wails3 dev -config ./build/config.yml -port 9245
 ```
 
+> **改前端不再重启应用**：`build/config.yml` 的 `dev_mode.watched_extension` 已改为只监听 `*.go`，因此改 `frontend/src/**/*.ts` 时 Wails 不会重编 Go、不会重启进程，改由 Vite HMR 直接整页刷新（已加载模型/场景等运行时状态会重置，与 Wails v2 行为一致）。只有改 Go 才触发重编 + 重启。
+
+#### 进阶：手动拆分（最大控制力）
+
+若想要前端完全独立热更新、且 Go 进程长期常驻，可把前后端拆成两个终端跑：
+
+```bash
+# 终端 1 — 前端（Vite HMR，改 TS 秒级刷新，不碰 Go）
+cd frontend && npm run dev          # 等价于 npx vite --port 9245
+
+# 终端 2 — 后端（编译一次后常驻；仅改 Go 时才需要重跑这两步）
+wails3 build DEV=true
+wails3 task run
+```
+
+- 改 **TS / HTML / CSS** → 仅终端 1 的 Vite 自动刷新，应用窗口不重建。
+- 改 **Go** → 回到终端 2 重跑 `wails3 build DEV=true && wails3 task run` 重启后端。
+- 手动拆分时 `wails3 dev` 不参与，需自行保证 Vite 端口（默认 `9245`）与后端加载的 dev URL 一致。
+
 ### 测试
 
 ```bash

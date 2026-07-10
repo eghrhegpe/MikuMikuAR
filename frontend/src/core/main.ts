@@ -1075,6 +1075,12 @@ if (import.meta.env.DEV) {
                 if (m.name.startsWith('e2e-test-')) m.dispose();
             }
         },
+        // DEBUG: 当前布料实例的 config（含 auto-fit 结果）
+        get clothConfig(): Record<string, unknown> | null {
+            const cloth = modelManager.clothInstances.values().next().value;
+            if (!cloth) return null;
+            return { ...cloth.config };
+        },
     };
 }
 

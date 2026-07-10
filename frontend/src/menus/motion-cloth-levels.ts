@@ -145,8 +145,8 @@ export function buildClothParamsLevel(): PopupLevel {
                     import('./scene-menu').then((m) => m.getSceneMenu()?.reRender());
                     setStatus(
                         t('motion.fitted', {
-                            r: fitted.innerRadius.toFixed(3),
-                            l: fitted.length.toFixed(2),
+                            r: (fitted.innerRadiusCm ?? fitted.innerRadius).toFixed(1) + 'cm',
+                            l: (fitted.lengthCm ?? fitted.length).toFixed(1) + 'cm',
                         }),
                         true
                     );

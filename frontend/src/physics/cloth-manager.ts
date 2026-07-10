@@ -195,6 +195,15 @@ export function recreateCloth(): boolean {
  * @param modelHeight 可选的模型高度（米），用于归一化。如果不传则从骨骼数据推估。
  * @returns 推算出的 innerRadius 和 length
  */
+export type AutoFitResult = {
+    innerRadius: number;
+    length: number;
+    /** 服装设计可读的腰半径（cm） */
+    innerRadiusCm: number;
+    /** 服装设计可读的裙长（cm） */
+    lengthCm: number;
+};
+
 export function autoFitClothDimensions(
     anchorBoneName: string,
     getBoneMatrix: (name: string) => Float32Array | null,
@@ -204,7 +213,7 @@ export function autoFitClothDimensions(
         worldMatrix: Float32Array;
     }>,
     modelHeight?: number
-): { innerRadius: number; length: number } {
+): AutoFitResult {
     // 人体比例参考（米）：
     // 身高 1.6m → 腰节（头顶到腰）≈ 0.95m，腰围 ≈ 0.70m（半径 0.111m）
     // 身高 1.7m → 腰节 ≈ 1.01m，腰围 ≈ 0.75m（半径 0.119m）
@@ -217,41 +226,43 @@ export function autoFitClothDimensions(
 
     const anchorMat = getBoneMatrix(anchorBoneName);
     if (!anchorMat) {
-        return { innerRadius: REF_WAIST_RADIUS, length: REF_SKIRT_LENGTH };
+        return {
+            innerRadius: REF_WAIST_RADIUS,
+            length: REF_SKIRT_LENGTH,
+            innerRadiusCm: Math.round(REF_WAIST_RADIUS * 100 * 10) / 10,
+            lengthCm: Math.round(REF_SKIRT_LENGTH * 100 * 10) / 10,
+        };
     }
 
     const anchorBone = bones.find((b) => b.name === anchorBoneName);
     if (!anchorBone) {
-        return { innerRadius: REF_WAIST_RADIUS, length: REF_SKIRT_LENGTH };
+        return {
+            innerRadius: REF_WAIST_RADIUS,
+            length: REF_SKIRT_LENGTH,
+            innerRadiusCm: Math.round(REF_WAIST_RADIUS * 100 * 10) / 10,
+            lengthCm: Math.round(REF_SKIRT_LENGTH * 100 * 10) / 10,
+        };
     }
 
-    // ---- 推估模型身高（如果未传入）----
-    let height = modelHeight ?? REF_HEIGHT;
-    if (!modelHeight) {
-        // 从骨骼 Y 范围估算：找最高和最低骨骼的 Y 差
-        let minY = Infinity,
-            maxY = -Infinity;
-        for (const b of bones) {
-            const m = getBoneMatrix(b.name);
-            if (m) {
-                const y = m[13]; // world matrix translation Y
-                if (y < minY) {
-                    minY = y;
-                }
-                if (y > maxY) {
-                    maxY = y;
-                }
-            }
-        }
-        if (isFinite(minY) && isFinite(maxY) && maxY - minY > 0.1) {
-            height = maxY - minY;
+    // ---- 从骨骼 Y 范围推估模型身高（与 BFS 同坐标系）----
+    // 不使用 boundingBox modelHeight，因为它在缩放后坐标系中，
+    // 而骨骼矩阵是 MMD 原生坐标。
+    let boneMinY = Infinity,
+        boneMaxY = -Infinity;
+    for (const b of bones) {
+        const m = getBoneMatrix(b.name);
+        if (m) {
+            const y = m[13]; // world matrix translation Y
+            if (y < boneMinY) boneMinY = y;
+            if (y > boneMaxY) boneMaxY = y;
         }
     }
-
-    // 模型身高归一化系数（把骨骼单位 → 米）
-    // MMD 模型通常 1 unit ≈ 1 cm，所以直接用差值即可
-    // 若模型实际身高 1.5m，height=1.5；若 2.0m，height=2.0
-    const scaleFactor = height / REF_HEIGHT; // 1.0 = 标准身高，>1 = 高大，<1 = 娇小
+    const height =
+        isFinite(boneMinY) && isFinite(boneMaxY) && boneMaxY - boneMinY > 0.1
+            ? boneMaxY - boneMinY
+            : modelHeight ?? REF_HEIGHT;
+    // 从骨骼单位到参考米制的缩放系数
+    const scaleFactor = height / REF_HEIGHT;
 
     // ---- innerRadius：通过横向扩散采样估算 ----
     // 以锚骨骼为中心，采样同层（相近 Y 高度）所有骨骼的径向距离
@@ -270,9 +281,9 @@ export function autoFitClothDimensions(
             continue;
         }
         const dy = Math.abs(m[13] - anchorY);
-        if (dy > 0.1) {
+        if (dy > 0.1 * scaleFactor) {
             continue;
-        } // 同层骨骼
+        } // 同层骨骼（0.1m ≈ 参考身高 10cm，按 scaleFactor 适配）
         const dx = m[12] - anchorX;
         const dz = m[14] - anchorZ;
         const dist = Math.sqrt(dx * dx + dz * dz);
@@ -333,10 +344,19 @@ export function autoFitClothDimensions(
         length = REF_SKIRT_LENGTH * scaleFactor;
     }
 
-    // 宽松范围限制
+    // 宽松范围限制（按 scaleFactor 适配模型原生坐标系）
+    // 参考：0.6 / 2.2 对应标准身高 1.7m 的腰半径 / 裙长上限
+    const clampScale = Math.max(1, scaleFactor);
+    const innerRadiusModel = Math.max(0.05 * clampScale, Math.min(innerRadius, 0.6 * clampScale));
+    const lengthModel = Math.max(0.15 * clampScale, Math.min(length, 2.2 * clampScale));
+    // 服装设计可读的厘米值（按参考身高 170cm 换算）
+    // 1 模型单位 = REF_HEIGHT * 100 / height cm
+    const _cmPerUnit = (REF_HEIGHT * 100) / height;
     return {
-        innerRadius: Math.max(0.05, Math.min(innerRadius, 0.6)),
-        length: Math.max(0.15, Math.min(length, 2.2)),
+        innerRadius: innerRadiusModel,
+        length: lengthModel,
+        innerRadiusCm: Math.round(innerRadiusModel * _cmPerUnit * 10) / 10,
+        lengthCm: Math.round(lengthModel * _cmPerUnit * 10) / 10,
     };
 }
 

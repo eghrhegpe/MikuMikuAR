@@ -300,12 +300,13 @@ export class SdfCollider {
                     const dz = boneMat[14] - parentMat[14];
                     const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-                    // 半高 = 骨骼距离的一半
-                    capsule.halfHeight = dist * 0.5;
+                    // 半高 = 骨骼距离的 0.35 倍（保守一点防止卡住）
+                    capsule.halfHeight = dist * 0.35;
 
-                    // 半径 = 骨骼距离 × 0.8
-                    // 参考：腰高（下半身→腰 ≈ 0.15）× 0.8 = 0.12，与 DEFAULT 腰半径 0.13 一致
-                    capsule.radius = dist * 0.8;
+                    // 半径 = 骨骼距离 × 0.3
+                    // 匹配原始 MMD 刚体尺寸：size[0]=0.6 → 球半径 = 0.6*L*0.5 = 0.3*L
+                    // 注意：MMD 刚体实际尺寸比布料预设更小，这样对齐可以减少撕裂但可能增加穿透风险
+                    capsule.radius = dist * 0.3;
                 }
             }
 
