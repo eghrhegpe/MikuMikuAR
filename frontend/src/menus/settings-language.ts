@@ -6,12 +6,14 @@ import { getLang, SUPPORTED_LANGS, type LangCode } from '../core/i18n/locale';
 
 export function buildSettingsLanguageLevel(): PopupLevel {
     const cur = getLang();
-    const items: PopupRow[] = SUPPORTED_LANGS.filter((l) => AVAILABLE_LANGS.includes(l.code)).map((l) => ({
-        kind: 'action' as const,
-        label: t(l.key),
-        icon: l.code === cur ? 'lucide:check' : '',
-        target: `lang:${l.code}`,
-    }));
+    const items: PopupRow[] = SUPPORTED_LANGS.filter((l) => AVAILABLE_LANGS.includes(l.code)).map(
+        (l) => ({
+            kind: 'action' as const,
+            label: t(l.key),
+            icon: l.code === cur ? 'lucide:check' : '',
+            target: `lang:${l.code}`,
+        })
+    );
     return {
         label: t('settings.language'),
         dir: '',

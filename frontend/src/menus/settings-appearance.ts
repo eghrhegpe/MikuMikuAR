@@ -1,6 +1,13 @@
 // settings-appearance.ts — 外观设置子菜单
 
-import { SetUIScale, SetUIPopupWidth, SetUIFontFamily, SetUIAnimations, SetUIBlurBg, SetUIAccent } from '../core/wails-bindings';
+import {
+    SetUIScale,
+    SetUIPopupWidth,
+    SetUIFontFamily,
+    SetUIAnimations,
+    SetUIBlurBg,
+    SetUIAccent,
+} from '../core/wails-bindings';
 import { setStatus, cardContainer } from '../core/config';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
@@ -17,7 +24,9 @@ import {
     type SettingsMenuHandle,
 } from './settings-shared';
 
-export function buildSettingsAppearanceLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
+export function buildSettingsAppearanceLevel(
+    getSettingsMenu: () => SettingsMenuHandle
+): PopupLevel {
     const initialScale =
         parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
     const initialWidth =
@@ -254,10 +263,7 @@ export function buildSettingsAppearanceLevel(getSettingsMenu: () => SettingsMenu
                     root.style.setProperty('--accent', '#4a6cf7');
                     root.style.setProperty('--accent-rgb', '74, 108, 247');
                     root.style.setProperty('--accent-dim', 'rgba(74,108,247,0.2)');
-                    root.style.setProperty(
-                        '--font',
-                        SETTINGS_FONT_RESTORE['system']
-                    );
+                    root.style.setProperty('--font', SETTINGS_FONT_RESTORE['system']);
                     root.style.setProperty('--ui-animations', '1');
                     root.style.setProperty('--ui-blur', '0');
                     document

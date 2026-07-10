@@ -140,7 +140,11 @@ export async function loadOverlay(
     scene: Scene
 ): Promise<{ meshes: Mesh[]; retargetOk: boolean }> {
     // meshFile 必须是相对路径（相对模型目录），拒绝绝对路径
-    if (/^[A-Za-z]:[\\/]/.test(meshFile) || meshFile.startsWith('/') || meshFile.startsWith('\\\\')) {
+    if (
+        /^[A-Za-z]:[\\/]/.test(meshFile) ||
+        meshFile.startsWith('/') ||
+        meshFile.startsWith('\\\\')
+    ) {
         console.error(
             `[outfit-overlay] meshFile must be a relative path (got "${meshFile}"). Use a path relative to the model directory, e.g. "subdir/dress.fbx"`
         );

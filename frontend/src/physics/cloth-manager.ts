@@ -124,8 +124,8 @@ function _createClothForFocusedModel(): void {
             const mat = m.material;
             console.log(
                 `  mesh="${m.name}" mat="${mat?.name ?? '(none)'}" ` +
-                `type=${mat?.constructor?.name ?? '(none)'} ` +
-                `isStd=${!(mat instanceof StandardMaterial)}`,
+                    `type=${mat?.constructor?.name ?? '(none)'} ` +
+                    `isStd=${!(mat instanceof StandardMaterial)}`
             );
         }
         // 也检查 rootMesh 的子节点
@@ -135,17 +135,23 @@ function _createClothForFocusedModel(): void {
             if (!model.meshes.includes(c as Mesh)) {
                 console.log(
                     `  [child-only] mesh="${c.name}" mat="${mat?.name ?? '(none)'}" ` +
-                    `type=${mat?.constructor?.name ?? '(none)'}`,
+                        `type=${mat?.constructor?.name ?? '(none)'}`
                 );
             }
         }
         // 检查 metadata 中的原始材料列表
         const meta = (model.rootMesh as any).metadata;
         if (meta?.materials) {
-            console.log(`  metadata.materials[${meta.materials.length}]:`, meta.materials.map((m: any) => m.name));
+            console.log(
+                `  metadata.materials[${meta.materials.length}]:`,
+                meta.materials.map((m: any) => m.name)
+            );
         }
         if (meta?.meshes) {
-            console.log(`  metadata.meshes[${meta.meshes.length}]:`, meta.meshes.map((m: any) => m.name));
+            console.log(
+                `  metadata.meshes[${meta.meshes.length}]:`,
+                meta.meshes.map((m: any) => m.name)
+            );
         }
         console.groupEnd();
 
@@ -201,14 +207,16 @@ function _destroyClothForFocusedModel(): void {
 
 /** 裙子材质名称检测模式（日/中/英/通用） */
 const _SKIRT_NAME_PATTERNS = [
-    'skirt', 'dress',
-    'スカート', 'スカー',
+    'skirt',
+    'dress',
+    'スカート',
+    'スカー',
     '裙',
-    'ボトム',      // bottom
+    'ボトム', // bottom
     '下半身',
-    'フリル',      // frill
-    'apron',       // apron
-    'pinafore',    // pinafore
+    'フリル', // frill
+    'apron', // apron
+    'pinafore', // pinafore
 ];
 
 /**
@@ -259,7 +267,8 @@ function _bindSkirtMaterial(clothMesh: Mesh, modelMeshes: Mesh[]): void {
     // 无匹配：打印所有材质名供调试
     console.warn(
         '[cloth-manager] 未找到裙子材质，布料保留默认实心色。' +
-        '可用名称列表：\n  ' + missed.join('\n  '),
+            '可用名称列表：\n  ' +
+            missed.join('\n  ')
     );
 }
 
@@ -362,14 +371,18 @@ export function autoFitClothDimensions(
         const m = getBoneMatrix(b.name);
         if (m) {
             const y = m[13]; // world matrix translation Y
-            if (y < boneMinY) boneMinY = y;
-            if (y > boneMaxY) boneMaxY = y;
+            if (y < boneMinY) {
+                boneMinY = y;
+            }
+            if (y > boneMaxY) {
+                boneMaxY = y;
+            }
         }
     }
     const height =
         isFinite(boneMinY) && isFinite(boneMaxY) && boneMaxY - boneMinY > 0.1
             ? boneMaxY - boneMinY
-            : modelHeight ?? REF_HEIGHT;
+            : (modelHeight ?? REF_HEIGHT);
     // 从骨骼单位到参考米制的缩放系数
     const scaleFactor = height / REF_HEIGHT;
 

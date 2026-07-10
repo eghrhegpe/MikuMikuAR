@@ -15,7 +15,13 @@ import {
 
 // ======== Re-exports for backward compatibility ========
 export { refreshLibrary } from './library';
-export { preloadAutoImportState, preloadDownloadWatchState, isAutoLoadCompanionAudioEnabled, setAutoLoadCompanionAudio, generateTextColors } from './settings-shared';
+export {
+    preloadAutoImportState,
+    preloadDownloadWatchState,
+    isAutoLoadCompanionAudioEnabled,
+    setAutoLoadCompanionAudio,
+    generateTextColors,
+} from './settings-shared';
 export { getSettingsMenu, refreshSettingsRoot, showSettings };
 
 // ======== Sub-module imports ========
@@ -53,16 +59,66 @@ const {
 
 function buildSettingsRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    items.push({ kind: 'folder', label: t('settings.appearance'), icon: 'lucide:palette', target: SETTINGS.APPEARANCE });
-    items.push({ kind: 'folder', label: t('settings.filename'), icon: 'lucide:file-text', target: SETTINGS.FILENAME });
-    items.push({ kind: 'folder', label: t('settings.performance'), icon: 'lucide:zap', target: SETTINGS.PERFORMANCE });
-    items.push({ kind: 'folder', label: t('settings.paths'), icon: 'lucide:folder-tree', target: SETTINGS.PATHS });
-    items.push({ kind: 'folder', label: t('settings.software'), icon: 'lucide:package', target: SETTINGS.SOFTWARE });
-    items.push({ kind: 'folder', label: t('settings.screenshot'), icon: 'lucide:camera', target: SETTINGS.SCREENSHOT });
-    items.push({ kind: 'folder', label: t('settings.audio'), icon: 'lucide:volume-2', target: SETTINGS.AUDIO });
-    items.push({ kind: 'folder', label: t('settings.shortcuts'), icon: 'lucide:keyboard', target: SETTINGS.SHORTCUTS });
-    items.push({ kind: 'folder', label: t('settings.language'), icon: 'lucide:languages', target: SETTINGS.LANGUAGE });
-    items.push({ kind: 'folder', label: t('settings.about'), icon: 'lucide:info', target: SETTINGS.ABOUT });
+    items.push({
+        kind: 'folder',
+        label: t('settings.appearance'),
+        icon: 'lucide:palette',
+        target: SETTINGS.APPEARANCE,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.filename'),
+        icon: 'lucide:file-text',
+        target: SETTINGS.FILENAME,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.performance'),
+        icon: 'lucide:zap',
+        target: SETTINGS.PERFORMANCE,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.paths'),
+        icon: 'lucide:folder-tree',
+        target: SETTINGS.PATHS,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.software'),
+        icon: 'lucide:package',
+        target: SETTINGS.SOFTWARE,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.screenshot'),
+        icon: 'lucide:camera',
+        target: SETTINGS.SCREENSHOT,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.audio'),
+        icon: 'lucide:volume-2',
+        target: SETTINGS.AUDIO,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.shortcuts'),
+        icon: 'lucide:keyboard',
+        target: SETTINGS.SHORTCUTS,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.language'),
+        icon: 'lucide:languages',
+        target: SETTINGS.LANGUAGE,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.about'),
+        icon: 'lucide:info',
+        target: SETTINGS.ABOUT,
+    });
     return items;
 }
 

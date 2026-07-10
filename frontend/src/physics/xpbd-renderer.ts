@@ -290,7 +290,12 @@ export class XpbdRenderer {
             ) as LinesMesh;
             this.sphereLines.color = new Color3(color[0], color[1], color[2]);
         } else {
-            this.sphereLines.updateVerticesData('position', new Float32Array(positions), false, true);
+            this.sphereLines.updateVerticesData(
+                'position',
+                new Float32Array(positions),
+                false,
+                true
+            );
         }
     }
 

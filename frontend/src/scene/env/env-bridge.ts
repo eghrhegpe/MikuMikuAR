@@ -274,7 +274,9 @@ function _timeOfDayTick(): void {
         const _tickStart = performance.now();
         _applyEnvStateFacade(envState, { sunAngle: envSunAngle });
         if (performance.now() - _tickStart > 2) {
-            console.warn(`[${_ts()}][perf:tick] _applyEnvStateFacade(sunAngle) took ${performance.now() - _tickStart}ms (angle=${envSunAngle.toFixed(1)})`);
+            console.warn(
+                `[${_ts()}][perf:tick] _applyEnvStateFacade(sunAngle) took ${performance.now() - _tickStart}ms (angle=${envSunAngle.toFixed(1)})`
+            );
         }
     } else if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
         _lastSkySunAngle = envSunAngle;
@@ -309,9 +311,7 @@ export function stopTimeOfDay(): void {
         _unregisterTimeOfDay = null;
     }
     // 持久化当前 sunAngle 到后端
-    SetEnvState(envState).catch(
-        () => {}
-    );
+    SetEnvState(envState).catch(() => {});
 }
 
 export function isTimeOfDayActive(): boolean {
@@ -414,13 +414,16 @@ export function applyEnvPresetObject(preset: {
         if (_presetAnimId !== myId) {
             // 旧动画被取消：不重置 _skipLightAutoSave（新动画已接管）
             // 不恢复 time-of-day（新动画已接管）
+            scene.onBeforeRenderObservable.remove(animObserver);
             return;
         }
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / duration, 1.0);
         const lerp = (a: number, b: number) => a + (b - a) * t;
 
-        const _obsStart = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+        const _obsStart = scene.onBeforeRenderObservable.observers
+            ? scene.onBeforeRenderObservable.observers.length
+            : 0;
 
         // 天空纹理重建开销大（dispose + 重新生成），50ms 间隔节流（~20fps），
         // 显示器刷新率无关，texture rebuild 从 ~120 次降到 ~40 次。
@@ -455,8 +458,12 @@ export function applyEnvPresetObject(preset: {
                 },
                 true
             );
-            console.warn(`[${_ts()}][perf:sky] setEnvState took ${performance.now() - _skyStart}ms (t=${t.toFixed(2)})`);
-            const _obsNow = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+            console.warn(
+                `[${_ts()}][perf:sky] setEnvState took ${performance.now() - _skyStart}ms (t=${t.toFixed(2)})`
+            );
+            const _obsNow = scene.onBeforeRenderObservable.observers
+                ? scene.onBeforeRenderObservable.observers.length
+                : 0;
             console.warn(`[${_ts()}][perf:obs] observers=${_obsNow} (t=${t.toFixed(2)})`);
             lastSkyUpdate = elapsed;
         }
@@ -475,15 +482,22 @@ export function applyEnvPresetObject(preset: {
         const _lightStart = performance.now();
         setLightState(interpLight);
         if (performance.now() - _lightStart > 2) {
-            console.warn(`[${_ts()}][perf:light] setLightState took ${performance.now() - _lightStart}ms (t=${t.toFixed(2)})`);
+            console.warn(
+                `[${_ts()}][perf:light] setLightState took ${performance.now() - _lightStart}ms (t=${t.toFixed(2)})`
+            );
         }
 
-        const _obsAfterLight = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+        const _obsAfterLight = scene.onBeforeRenderObservable.observers
+            ? scene.onBeforeRenderObservable.observers.length
+            : 0;
         if (_obsAfterLight > 100) {
-            console.warn(`[${_ts()}][perf:obs] animLoop Δ=${_obsAfterLight - _obsStart} (start=${_obsStart} afterLight=${_obsAfterLight} t=${t.toFixed(2)})`);
+            console.warn(
+                `[${_ts()}][perf:obs] animLoop Δ=${_obsAfterLight - _obsStart} (start=${_obsStart} afterLight=${_obsAfterLight} t=${t.toFixed(2)})`
+            );
         }
 
         if (t >= 1) {
+            scene.onBeforeRenderObservable.remove(animObserver);
             setSkipLightAutoSave(false);
             // 恢复 time-of-day（如果预设动画前是激活的）
             if (_timeOfDayBeforePreset) {
@@ -492,23 +506,30 @@ export function applyEnvPresetObject(preset: {
                 _lastAutoLinkSunAngle = envSunAngle;
             }
             _timeOfDayBeforePreset = null;
-            const _obsBeforeEnd = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+            const _obsBeforeEnd = scene.onBeforeRenderObservable.observers
+                ? scene.onBeforeRenderObservable.observers.length
+                : 0;
             const _endStart = performance.now();
-            SetEnvState(envState).catch(
-                () => {}
-            );
+            SetEnvState(envState).catch(() => {});
             const _endElapsed = performance.now() - _endStart;
-            const _obsAfterSetEnv = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
-            console.warn(`[${_ts()}][perf:sky] animLoop ended: SetEnvState=${_endElapsed.toFixed(1)}ms, observers=${_obsBeforeEnd}→${_obsAfterSetEnv}, triggerAutoSave next`);
+            const _obsAfterSetEnv = scene.onBeforeRenderObservable.observers
+                ? scene.onBeforeRenderObservable.observers.length
+                : 0;
+            console.warn(
+                `[${_ts()}][perf:sky] animLoop ended: SetEnvState=${_endElapsed.toFixed(1)}ms, observers=${_obsBeforeEnd}→${_obsAfterSetEnv}, triggerAutoSave next`
+            );
             triggerAutoSave();
-            const _obsAfterAutoSave = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
-            console.warn(`[${_ts()}][perf:sky] after triggerAutoSave: observers=${_obsAfterAutoSave}`);
+            const _obsAfterAutoSave = scene.onBeforeRenderObservable.observers
+                ? scene.onBeforeRenderObservable.observers.length
+                : 0;
+            console.warn(
+                `[${_ts()}][perf:sky] after triggerAutoSave: observers=${_obsAfterAutoSave}`
+            );
             return;
         }
-        scene.onBeforeRenderObservable?.addOnce(animLoop);
     };
 
-    scene.onBeforeRenderObservable?.addOnce(animLoop);
+    const animObserver = scene.onBeforeRenderObservable.add(animLoop);
     return true;
 }
 
@@ -532,9 +553,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         clearTimeout(_envPersistTimer);
     }
     _envPersistTimer = setTimeout(() => {
-        SetEnvState(envState).catch(
-            () => {}
-        );
+        SetEnvState(envState).catch(() => {});
     }, 500);
 
     if (!skipAutoSave) {
@@ -548,9 +567,7 @@ export function flushEnvState(): void {
         clearTimeout(_envPersistTimer);
         _envPersistTimer = null;
     }
-    SetEnvState(envState).catch(
-        () => {}
-    );
+    SetEnvState(envState).catch(() => {});
 }
 
 // ======== UIState Persistence ========
@@ -588,12 +605,12 @@ export function flushUIState(): void {
         _uiPersistTimer = null;
     }
     const payload = _buildUIStatePayload();
-    if (Object.keys(payload).length === 0) return; // nothing to persist
+    if (Object.keys(payload).length === 0) {
+        return;
+    } // nothing to persist
     // Go 端 SetUIState 语义是 json.Unmarshal 合并（缺省字段保留原值），
     // 但类型声明是完整 UIState。此处强转后传入部分字段是安全的。
-    SetUIState(payload as unknown as import('../../core/wails-bindings').UIState).catch(
-        () => {}
-    );
+    SetUIState(payload as unknown as import('../../core/wails-bindings').UIState).catch(() => {});
 }
 
 // 注册持久化回调（state.ts → 本模块，避免循环依赖）

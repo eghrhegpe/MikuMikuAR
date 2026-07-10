@@ -29,19 +29,19 @@ let lipSyncMorphSet: {
     pucker: string | null;
     smile: string | null;
 } | null = null;
-let lastFocusedId: string | null = null;
+const lastFocusedId: string | null = null;
 
 // morphName 缓存：避免每帧 O(M) 扫描 morphs 数组 + 数组分配
-let _lastCachedModelId: string | null = null;
-let _lastMorphNames: string[] = [];
-let _lastMorphNameSet = new Set<string>();
+const _lastCachedModelId: string | null = null;
+const _lastMorphNames: string[] = [];
+const _lastMorphNameSet = new Set<string>();
 
 // 平滑滤波器状态（低通滤波，减少 morph 权重抖动）
-let _smoothLow = 0;
-let _smoothHigh = 0;
+const _smoothLow = 0;
+const _smoothHigh = 0;
 
 // #10: Track last audio path to detect audio source changes
-let _lastAudioPath = '';
+const _lastAudioPath = '';
 
 const VOICE_BIN_START = 10;
 const VOICE_BIN_END = 50;

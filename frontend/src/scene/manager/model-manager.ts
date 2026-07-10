@@ -178,16 +178,16 @@ export class ModelManager {
         string,
         { lineSystem: Mesh; overlay: Mesh; joints: Mesh[]; update: () => void }
     >();
-  private _boneUpdateObserver: Nullable<Observer<Scene>> = null;
+    private _boneUpdateObserver: Nullable<Observer<Scene>> = null;
 
-  /** Cleanup callback invoked by removeModel for external per-model state. */
-  onRemoveModel: ((id: string) => void) | null = null;
+    /** Cleanup callback invoked by removeModel for external per-model state. */
+    onRemoveModel: ((id: string) => void) | null = null;
 
-  // ======== XPBD Ragdoll Management ========
+    // ======== XPBD Ragdoll Management ========
 
-  /** XPBD 刚体布娃娃实例（key = model ID） */
-  private ragdollInstances = new Map<string, RagdollInstance>();
-  private _ragdollUpdateObserver: Nullable<Observer<Scene>> = null;
+    /** XPBD 刚体布娃娃实例（key = model ID） */
+    private ragdollInstances = new Map<string, RagdollInstance>();
+    private _ragdollUpdateObserver: Nullable<Observer<Scene>> = null;
 
     constructor(
         private scene: Scene,
@@ -218,110 +218,114 @@ export class ModelManager {
     }
 
     /** 为指定模型添加布料实例并关联每帧回调。 */
-  addCloth(modelId: string, cloth: ClothInstance, updateFn: (dt: number) => void): void {
-    cloth.updateFn = updateFn;
-    this.clothInstances.set(modelId, cloth);
-    this.ensureClothUpdateObserver();
-  }
+    addCloth(modelId: string, cloth: ClothInstance, updateFn: (dt: number) => void): void {
+        cloth.updateFn = updateFn;
+        this.clothInstances.set(modelId, cloth);
+        this.ensureClothUpdateObserver();
+    }
 
-  /** 为指定模型添加刚体布娃娃实例并关联每帧回调。 */
-  addRagdoll(modelId: string, inst: RagdollInstance, updateFn: (dt: number) => void): void {
-    inst.updateFn = updateFn;
-    this.ragdollInstances.set(modelId, inst);
-    this.ensureRagdollUpdateObserver();
-  }
+    /** 为指定模型添加刚体布娃娃实例并关联每帧回调。 */
+    addRagdoll(modelId: string, inst: RagdollInstance, updateFn: (dt: number) => void): void {
+        inst.updateFn = updateFn;
+        this.ragdollInstances.set(modelId, inst);
+        this.ensureRagdollUpdateObserver();
+    }
 
-  /** 移除并销毁指定模型的布料实例。 */
-  removeCloth(modelId: string): void {
-    const cloth = this.clothInstances.get(modelId);
-    if (cloth) {
-      try {
-        disposeCloth(cloth);
-      } catch (e) {
-        console.warn('removeCloth: disposeCloth failed', e);
-      }
-      this.clothInstances.delete(modelId);
-    }
-    if (this.clothInstances.size === 0) {
-      this._disposeClothObserver();
-    }
-  }
-
-  /** 移除并销毁指定模型的刚体布娃娃实例。 */
-  removeRagdoll(modelId: string): void {
-    const inst = this.ragdollInstances.get(modelId);
-    if (inst) {
-      try {
-        inst.dispose();
-      } catch (e) {
-        console.warn('removeRagdoll: dispose failed', e);
-      }
-      this.ragdollInstances.delete(modelId);
-    }
-    if (this.ragdollInstances.size === 0) {
-      this._disposeRagdollObserver();
-    }
-  }
-
-  private ensureClothUpdateObserver(): void {
-    if (this._clothUpdateObserver) {
-      return;
-    }
-    this._clothUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
-      const rawDt = this.scene.deltaTime / 1000; // ms → s
-      if (!isFinite(rawDt) || rawDt <= 0 || rawDt > 0.5) return;
-      for (const [id, cloth] of this.clothInstances) {
-        if (!cloth.enabled || !cloth.updateFn) {
-          continue;
+    /** 移除并销毁指定模型的布料实例。 */
+    removeCloth(modelId: string): void {
+        const cloth = this.clothInstances.get(modelId);
+        if (cloth) {
+            try {
+                disposeCloth(cloth);
+            } catch (e) {
+                console.warn('removeCloth: disposeCloth failed', e);
+            }
+            this.clothInstances.delete(modelId);
         }
-        if (!this.modelRegistry.has(id)) {
-          continue;
+        if (this.clothInstances.size === 0) {
+            this._disposeClothObserver();
         }
-        try {
-          cloth.updateFn(rawDt);
-        } catch (e) {
-          console.warn('cloth updateFn error:', e);
-        }
-      }
-    });
-  }
-
-  private ensureRagdollUpdateObserver(): void {
-    if (this._ragdollUpdateObserver) {
-      return;
     }
-    this._ragdollUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
-      const rawDt = this.scene.deltaTime / 1000; // ms → s
-      if (!isFinite(rawDt) || rawDt <= 0 || rawDt > 0.5) return; // clamp behind-tab / sleep recovery
-      for (const [id, inst] of this.ragdollInstances) {
-        if (!inst.enabled || !inst.updateFn) {
-          continue;
-        }
-        if (!this.modelRegistry.has(id)) {
-          continue;
-        }
-        try {
-          inst.updateFn(rawDt);
-        } catch (e) {
-          console.warn('ragdoll updateFn error:', e);
-        }
-      }
-    }) as Nullable<Observer<Scene>>;
-  }
 
-  private _disposeClothObserver(): void {
-    if (this._clothUpdateObserver) {
-      this.scene.onBeforeRenderObservable.remove(this._clothUpdateObserver);
-      this._clothUpdateObserver = null;
+    /** 移除并销毁指定模型的刚体布娃娃实例。 */
+    removeRagdoll(modelId: string): void {
+        const inst = this.ragdollInstances.get(modelId);
+        if (inst) {
+            try {
+                inst.dispose();
+            } catch (e) {
+                console.warn('removeRagdoll: dispose failed', e);
+            }
+            this.ragdollInstances.delete(modelId);
+        }
+        if (this.ragdollInstances.size === 0) {
+            this._disposeRagdollObserver();
+        }
     }
-  }
 
-  private _disposeRagdollObserver(): void {
-    if (this._ragdollUpdateObserver) {
-      this.scene.onBeforeRenderObservable.remove(this._ragdollUpdateObserver);
-      this._ragdollUpdateObserver = null;
+    private ensureClothUpdateObserver(): void {
+        if (this._clothUpdateObserver) {
+            return;
+        }
+        this._clothUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
+            const rawDt = this.scene.deltaTime / 1000; // ms → s
+            if (!isFinite(rawDt) || rawDt <= 0 || rawDt > 0.5) {
+                return;
+            }
+            for (const [id, cloth] of this.clothInstances) {
+                if (!cloth.enabled || !cloth.updateFn) {
+                    continue;
+                }
+                if (!this.modelRegistry.has(id)) {
+                    continue;
+                }
+                try {
+                    cloth.updateFn(rawDt);
+                } catch (e) {
+                    console.warn('cloth updateFn error:', e);
+                }
+            }
+        });
     }
-  }
+
+    private ensureRagdollUpdateObserver(): void {
+        if (this._ragdollUpdateObserver) {
+            return;
+        }
+        this._ragdollUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
+            const rawDt = this.scene.deltaTime / 1000; // ms → s
+            if (!isFinite(rawDt) || rawDt <= 0 || rawDt > 0.5) {
+                return;
+            } // clamp behind-tab / sleep recovery
+            for (const [id, inst] of this.ragdollInstances) {
+                if (!inst.enabled || !inst.updateFn) {
+                    continue;
+                }
+                if (!this.modelRegistry.has(id)) {
+                    continue;
+                }
+                try {
+                    inst.updateFn(rawDt);
+                } catch (e) {
+                    console.warn('ragdoll updateFn error:', e);
+                }
+            }
+        }) as Nullable<Observer<Scene>>;
+    }
+
+    private _disposeClothObserver(): void {
+        if (this._clothUpdateObserver) {
+            this.scene.onBeforeRenderObservable.remove(this._clothUpdateObserver);
+            this._clothUpdateObserver = null;
+        }
+    }
+
+    private _disposeRagdollObserver(): void {
+        if (this._ragdollUpdateObserver) {
+            this.scene.onBeforeRenderObservable.remove(this._ragdollUpdateObserver);
+            this._ragdollUpdateObserver = null;
+        }
+    }
 
     // ======== Registry ========
 
@@ -359,7 +363,9 @@ export class ModelManager {
 
     /** Get the currently focused runtime model (RuntimeModel), or null. */
     focusedMmdModel(): RuntimeModel | null {
-        if (!configFocusedId) return null;
+        if (!configFocusedId) {
+            return null;
+        }
         const inst = this.modelRegistry.get(configFocusedId);
         return inst?.mmdModel ?? null;
     }
@@ -383,15 +389,15 @@ export class ModelManager {
             return;
         }
 
-    // Clean up cloth before disposing meshes
-    disposeOverlay(inst);
-    restoreMaterials(inst);
-    this.removeCloth(id);
+        // Clean up cloth before disposing meshes
+        disposeOverlay(inst);
+        restoreMaterials(inst);
+        this.removeCloth(id);
 
-    // Clean up ragdoll before disposing meshes
-    this.removeRagdoll(id);
+        // Clean up ragdoll before disposing meshes
+        this.removeRagdoll(id);
 
-    // ⚠️ onRemoveModel（mmdRuntime.destroyMmdModel）必须在网格释放之前调用！
+        // ⚠️ onRemoveModel（mmdRuntime.destroyMmdModel）必须在网格释放之前调用！
         // destroyMmdModel 需要 skeleton 尚存才能从运行时中解除 observable 链接，
         // 否则下一帧渲染循环中 mmdWasmModel.skeleton 为 null 会抛 TypeError。
         // onRemoveModel 也必须在 modelRegistry.delete 之前调用，
@@ -832,19 +838,25 @@ export class ModelManager {
 
     setMorphWeight(id: string, morphName: string, weight: number): void {
         const inst = this.modelRegistry.get(id);
-        if (!inst || !inst.mmdModel || !inst.mmdModel.morph) return;
+        if (!inst || !inst.mmdModel || !inst.mmdModel.morph) {
+            return;
+        }
         inst.mmdModel.morph.setMorphWeight(morphName, weight);
     }
 
     getMorphWeight(id: string, morphName: string): number {
         const inst = this.modelRegistry.get(id);
-        if (!inst || !inst.mmdModel || !inst.mmdModel.morph) return 0;
+        if (!inst || !inst.mmdModel || !inst.mmdModel.morph) {
+            return 0;
+        }
         return inst.mmdModel.morph.getMorphWeight(morphName);
     }
 
     resetMorphs(id: string): void {
         const inst = this.modelRegistry.get(id);
-        if (!inst || !inst.mmdModel || !inst.mmdModel.morph) return;
+        if (!inst || !inst.mmdModel || !inst.mmdModel.morph) {
+            return;
+        }
         inst.mmdModel.morph.resetMorphWeights();
         this.triggerAutoSave();
     }

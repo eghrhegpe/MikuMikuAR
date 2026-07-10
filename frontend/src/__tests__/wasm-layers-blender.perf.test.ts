@@ -35,7 +35,7 @@ type RuntimeBone = {
 };
 
 function findPmx(root: string): string {
-    let dirs: string[] = [];
+    const dirs: string[] = [];
     for (const name of readdirSync(root, { withFileTypes: true })) {
         const p = join(root, name.name);
         if (name.isDirectory()) {
@@ -46,13 +46,17 @@ function findPmx(root: string): string {
     }
     for (const d of dirs) {
         const found = findPmx(d);
-        if (found) return found;
+        if (found) {
+            return found;
+        }
     }
-    return "";
+    return '';
 }
 
 function percentile(sorted: number[], p: number): number {
-    if (sorted.length === 0) return 0;
+    if (sorted.length === 0) {
+        return 0;
+    }
     const idx = Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length));
     return sorted[idx];
 }
@@ -60,7 +64,9 @@ function percentile(sorted: number[], p: number): number {
 // ── 忠实复刻 perception.ts / wasm-layers-blender.ts ──
 function writeMatToBuffer(buf: Float32Array, m: Matrix): void {
     const a = m.asArray();
-    for (let i = 0; i < 16; ++i) buf[i] = a[i];
+    for (let i = 0; i < 16; ++i) {
+        buf[i] = a[i];
+    }
 }
 
 function propagateChildrenWasm(
@@ -73,7 +79,9 @@ function propagateChildrenWasm(
     parentOldInv.invert();
     for (const child of parent.childBones) {
         const childBuf = child.worldMatrix;
-        if (!childBuf) continue;
+        if (!childBuf) {
+            continue;
+        }
         const childOldMat = Matrix.FromArrayToRef(childBuf, 0, new Matrix());
         const localMat = new Matrix();
         childOldMat.multiplyToRef(parentOldInv, localMat);
@@ -93,27 +101,42 @@ function applyLayersBlending(
     frame: number
 ): void {
     const frameMap = evaluator.evalAllBones(frame);
-    const allFrames = new Map<string, Array<{ rotation: Quaternion; position: Vector3 | null; weight: number }>>();
+    const allFrames = new Map<
+        string,
+        Array<{ rotation: Quaternion; position: Vector3 | null; weight: number }>
+    >();
     for (const [boneName, fd] of frameMap) {
-        if (!names.includes(boneName)) continue;
-        if (!allFrames.has(boneName)) allFrames.set(boneName, []);
+        if (!names.includes(boneName)) {
+            continue;
+        }
+        if (!allFrames.has(boneName)) {
+            allFrames.set(boneName, []);
+        }
         allFrames.get(boneName)!.push({ rotation: fd.rotation, position: fd.position, weight: 1 });
     }
     for (const [boneName, entries] of allFrames) {
         const bone = bones.find((b) => b.name === boneName);
-        if (!bone) continue;
+        if (!bone) {
+            continue;
+        }
         const totalWeight = entries.reduce((s, e) => s + e.weight, 0);
-        if (totalWeight <= 0) continue;
+        if (totalWeight <= 0) {
+            continue;
+        }
         let blendedRot: Quaternion | null = null;
         let blendedPos: Vector3 | null = null;
         for (const entry of entries) {
             const nw = entry.weight / totalWeight;
             const { rotation, position } = entry;
-            if (blendedRot === null) blendedRot = rotation.clone();
-            else blendedRot = Quaternion.Slerp(blendedRot, rotation, nw);
+            if (blendedRot === null) {
+                blendedRot = rotation.clone();
+            } else {
+                blendedRot = Quaternion.Slerp(blendedRot, rotation, nw);
+            }
             if (position !== null) {
-                if (blendedPos === null) blendedPos = position.clone();
-                else {
+                if (blendedPos === null) {
+                    blendedPos = position.clone();
+                } else {
                     blendedPos.x += (position.x - blendedPos.x) * nw;
                     blendedPos.y += (position.y - blendedPos.y) * nw;
                     blendedPos.z += (position.z - blendedPos.z) * nw;
@@ -136,10 +159,20 @@ function applyLayersBlending(
 }
 
 async function buildOverlayEvaluator(names: string[]): Promise<VmdEvaluator> {
-    const frames: Array<{ name: string; frame: number; position: [number, number, number]; rotation: [number, number, number, number] }> = [];
+    const frames: Array<{
+        name: string;
+        frame: number;
+        position: [number, number, number];
+        rotation: [number, number, number, number];
+    }> = [];
     for (const name of names) {
         frames.push({ name, frame: 0, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-        frames.push({ name, frame: 30, position: [0.1, 0.2, 0.0], rotation: [0.2, 0.1, 0.3, 0.93] });
+        frames.push({
+            name,
+            frame: 30,
+            position: [0.1, 0.2, 0.0],
+            rotation: [0.2, 0.1, 0.3, 0.93],
+        });
     }
     const buf = buildVmd(frames, []);
     return createVmdEvaluator(buf);
@@ -151,14 +184,18 @@ test('bench wasm layers blender hot path', async () => {
     new FreeCamera('cam', new Vector3(0, 5, -20), scene);
 
     const pmx = findPmx(join(__dirname, '..', '..', '..', 'text-model', 'PMX'));
-    if (!pmx) throw new Error('no .pmx found under text-model/PMX');
+    if (!pmx) {
+        throw new Error('no .pmx found under text-model/PMX');
+    }
     const runtime = new MmdRuntime();
     const buf = readFileSync(pmx);
     const res = await ImportMeshAsync(buf, scene, { pluginExtension: '.pmx' });
     const root = res.meshes.find(
         (m) => (m as { metadata?: { isMmdModel?: boolean } }).metadata?.isMmdModel === true
     ) as unknown as never | undefined;
-    if (!root) throw new Error('no mmd model mesh in pmx');
+    if (!root) {
+        throw new Error('no mmd model mesh in pmx');
+    }
     const model = runtime.createMmdModel(root as never);
     runtime.register(scene);
     for (let i = 0; i < 3; i++) {
@@ -174,29 +211,43 @@ test('bench wasm layers blender hot path', async () => {
     for (const b of bones) {
         const p = b.parentBone;
         if (p) {
-            if (!childMap.has(p)) childMap.set(p, []);
+            if (!childMap.has(p)) {
+                childMap.set(p, []);
+            }
             childMap.get(p)!.push(b);
         }
     }
     // 复刻 childBones（由 parentBone 反向建立）
-    for (const b of bones) b.childBones = childMap.get(b) ?? [];
+    for (const b of bones) {
+        b.childBones = childMap.get(b) ?? [];
+    }
 
     const leaves = bones.filter((b) => (childMap.get(b)?.length ?? 0) === 0);
 
     const tiers: Array<{ label: string; names: string[] }> = [
         { label: '双图层（gaze scope，2 leaf 骨）', names: leaves.slice(0, 2).map((b) => b.name) },
-        { label: '双图层（上半身，前 10 根骨/大子树）', names: bones.slice(0, 10).map((b) => b.name) },
+        {
+            label: '双图层（上半身，前 10 根骨/大子树）',
+            names: bones.slice(0, 10).map((b) => b.name),
+        },
         { label: '三图层（上半身，前 30 根骨）', names: bones.slice(0, 30).map((b) => b.name) },
-        { label: '三图层（全骨骼，min(300,total)）', names: bones.slice(0, Math.min(300, totalBones)).map((b) => b.name) },
+        {
+            label: '三图层（全骨骼，min(300,total)）',
+            names: bones.slice(0, Math.min(300, totalBones)).map((b) => b.name),
+        },
     ];
 
-    console.log(`\n[BENCH] model=${pmx.split(/[\\/]/).pop()} totalBones=${totalBones} leaves=${leaves.length}`);
+    console.log(
+        `\n[BENCH] model=${pmx.split(/[\\/]/).pop()} totalBones=${totalBones} leaves=${leaves.length}`
+    );
 
     for (const tier of tiers) {
         const n = tier.names.length;
         const evaluator = await buildOverlayEvaluator(tier.names);
         // warmup
-        for (let f = 0; f < 50; f++) applyLayersBlending(tier.names, evaluator, bones, f % 30);
+        for (let f = 0; f < 50; f++) {
+            applyLayersBlending(tier.names, evaluator, bones, f % 30);
+        }
         const samples: number[] = [];
         const FRAMES = 1000;
         for (let f = 0; f < FRAMES; f++) {
@@ -208,7 +259,9 @@ test('bench wasm layers blender hot path', async () => {
         samples.sort((a, b) => a - b);
         const p50 = percentile(samples, 50);
         const p95 = percentile(samples, 95);
-        console.log(`[BENCH] ${tier.label} | bones=${n} | P50=${p50.toFixed(4)}ms P95=${p95.toFixed(4)}ms`);
+        console.log(
+            `[BENCH] ${tier.label} | bones=${n} | P50=${p50.toFixed(4)}ms P95=${p95.toFixed(4)}ms`
+        );
         evaluator.dispose();
     }
 

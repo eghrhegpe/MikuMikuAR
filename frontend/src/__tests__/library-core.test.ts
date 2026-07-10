@@ -140,7 +140,14 @@ vi.mock('../core/config', () => ({
 
 // ----- SUT -----
 
-import { modelToRow, buildLevel, importFile, getResourceViewMode, setResourceViewMode, buildResourceItemsForDir } from '../menus/library-core';
+import {
+    modelToRow,
+    buildLevel,
+    importFile,
+    getResourceViewMode,
+    setResourceViewMode,
+    buildResourceItemsForDir,
+} from '../menus/library-core';
 
 // ----- helpers -----
 
@@ -632,7 +639,9 @@ describe('Resource View Mode', () => {
         setResourceViewMode('grid');
         // SetUIState is called asynchronously
         await new Promise((r) => setTimeout(r, 10));
-        expect(SetUIState).toHaveBeenCalledWith(expect.objectContaining({ resourceViewMode: 'grid' }));
+        expect(SetUIState).toHaveBeenCalledWith(
+            expect.objectContaining({ resourceViewMode: 'grid' })
+        );
     });
 });
 

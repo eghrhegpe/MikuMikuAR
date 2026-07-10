@@ -86,10 +86,7 @@ class VmdEvaluatorImpl implements VmdEvaluator {
     }
 
     /** 纯旋转骨骼轨道（二分 + Slerp） */
-    private _evalBoneTrack(
-        track: MmdBoneAnimationTrack,
-        frame: number
-    ): VmdBoneFrame | null {
+    private _evalBoneTrack(track: MmdBoneAnimationTrack, frame: number): VmdBoneFrame | null {
         const frameCount = track.frameNumbers.length;
         if (frameCount === 0) {
             return null;
@@ -257,7 +254,11 @@ class VmdEvaluatorImpl implements VmdEvaluator {
         const rotations = track.rotations;
         const positions = track.positions;
         return {
-            position: new Vector3(positions[index * 3], positions[index * 3 + 1], positions[index * 3 + 2]),
+            position: new Vector3(
+                positions[index * 3],
+                positions[index * 3 + 1],
+                positions[index * 3 + 2]
+            ),
             rotation: new Quaternion(
                 rotations[index * 4],
                 rotations[index * 4 + 1],

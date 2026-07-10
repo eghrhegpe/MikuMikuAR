@@ -15,11 +15,7 @@ import {
     externalPaths,
 } from '../core/config';
 import { modelManager } from '../scene/scene';
-import {
-    getModelMorphs,
-    setModelMorphWeight,
-    resetModelMorphs,
-} from '../scene/manager/model-ops';
+import { getModelMorphs, setModelMorphWeight, resetModelMorphs } from '../scene/manager/model-ops';
 import {
     buildTransformCard,
     buildDangerCard,
@@ -135,26 +131,50 @@ export function buildModelLevel(id: string): PopupLevel {
                     icon: 'lucide:palette',
                     defaultOpen: true,
                     renderContent: (inner) => {
-                        slideRow(inner, 'lucide:box', t('model-detail.materialAdjust'), true, () => {
-                            const level = buildMatRootLevel(id, inst.name);
-                            stackRegistry.modelStack.push(level);
-                        });
-                        slideRow(inner, 'lucide:smile', t('model-detail.morphPreview'), true, () => {
-                            const level = buildMorphPreviewLevel(id);
-                            stackRegistry.modelStack.push(level);
-                        });
-                        slideRow(inner, 'lucide:shirt', t('model-detail.outfitVariant'), true, () => {
-                            const level = buildOutfitLevel(id);
-                            stackRegistry.modelStack.push(level);
-                        });
+                        slideRow(
+                            inner,
+                            'lucide:box',
+                            t('model-detail.materialAdjust'),
+                            true,
+                            () => {
+                                const level = buildMatRootLevel(id, inst.name);
+                                stackRegistry.modelStack.push(level);
+                            }
+                        );
+                        slideRow(
+                            inner,
+                            'lucide:smile',
+                            t('model-detail.morphPreview'),
+                            true,
+                            () => {
+                                const level = buildMorphPreviewLevel(id);
+                                stackRegistry.modelStack.push(level);
+                            }
+                        );
+                        slideRow(
+                            inner,
+                            'lucide:shirt',
+                            t('model-detail.outfitVariant'),
+                            true,
+                            () => {
+                                const level = buildOutfitLevel(id);
+                                stackRegistry.modelStack.push(level);
+                            }
+                        );
                         slideRow(inner, 'lucide:info', t('model-detail.basicInfo'), true, () => {
                             const level = buildModelInfoLevel(id);
                             stackRegistry.modelStack.push(level);
                         });
-                        slideRow(inner, 'lucide:git-branch', t('model-detail.boneHierarchy'), true, () => {
-                            const level = buildBoneHierarchyLevel(id);
-                            stackRegistry.modelStack.push(level);
-                        });
+                        slideRow(
+                            inner,
+                            'lucide:git-branch',
+                            t('model-detail.boneHierarchy'),
+                            true,
+                            () => {
+                                const level = buildBoneHierarchyLevel(id);
+                                stackRegistry.modelStack.push(level);
+                            }
+                        );
                     },
                 });
 
@@ -181,14 +201,26 @@ export function buildModelLevel(id: string): PopupLevel {
                         slideRow(inner, 'lucide:save', t('model-detail.savePreset'), false, () => {
                             savePresetToLibDialog(id);
                         });
-                        slideRow(inner, 'lucide:folder-open', t('model-detail.loadPreset'), true, () => {
-                            const level = buildPresetListLevel(id);
-                            stackRegistry.modelStack.push(level);
-                        });
-                        slideRow(inner, 'lucide:external-link', t('model-detail.openWith'), true, () => {
-                            const level = buildOpenWithLevel(id);
-                            stackRegistry.modelStack.push(level);
-                        });
+                        slideRow(
+                            inner,
+                            'lucide:folder-open',
+                            t('model-detail.loadPreset'),
+                            true,
+                            () => {
+                                const level = buildPresetListLevel(id);
+                                stackRegistry.modelStack.push(level);
+                            }
+                        );
+                        slideRow(
+                            inner,
+                            'lucide:external-link',
+                            t('model-detail.openWith'),
+                            true,
+                            () => {
+                                const level = buildOpenWithLevel(id);
+                                stackRegistry.modelStack.push(level);
+                            }
+                        );
                     },
                 });
             });
@@ -253,32 +285,41 @@ export function buildModelInfoLevel(id: string): PopupLevel {
             // [audit-fix] 材质数必须以 PMX 材质列表为准：MMD 模型通常仅 1 个 Babylon 网格，
             // 而 MmdMesh.materials 才是真实材质数组（IMmdModel 不暴露 materials 字段）。
             // 直接对网格材质计数；mesh.material 单值时按 1 计。
-            const matCount = (inst.meshes ?? []).reduce(
-                (n, m) => {
-                    const mm = m as unknown as { materials?: readonly unknown[] };
-                    return n + (mm.materials?.length ?? (m.material ? 1 : 0));
-                },
-                0
-            );
+            const matCount = (inst.meshes ?? []).reduce((n, m) => {
+                const mm = m as unknown as { materials?: readonly unknown[] };
+                return n + (mm.materials?.length ?? (m.material ? 1 : 0));
+            }, 0);
             const fields: Array<{ label: string; value: string }> = [
                 { label: t('model-detail.fName'), value: inst.name },
-                { label: t('model-detail.fFile'), value: inst.filePath.split(/[/\\]/).pop() || inst.filePath },
+                {
+                    label: t('model-detail.fFile'),
+                    value: inst.filePath.split(/[/\\]/).pop() || inst.filePath,
+                },
                 {
                     label: t('model-detail.fType'),
-                    value: inst.kind === 'actor' ? t('model-detail.actorModel') : t('model-detail.stageModel'),
+                    value:
+                        inst.kind === 'actor'
+                            ? t('model-detail.actorModel')
+                            : t('model-detail.stageModel'),
                 },
                 { label: t('model-detail.fMotion'), value: inst.vmdName || t('model-detail.none') },
                 { label: t('model-detail.fVerts'), value: vertCount.toLocaleString() },
                 { label: t('model-detail.fFaces'), value: (faceCount / 3).toLocaleString() },
                 { label: t('model-detail.fMaterials'), value: String(matCount) },
-                { label: t('model-detail.fBones'), value: boneCount !== null ? boneCount.toLocaleString() : 'N/A' },
+                {
+                    label: t('model-detail.fBones'),
+                    value: boneCount !== null ? boneCount.toLocaleString() : 'N/A',
+                },
                 {
                     label: t('model-detail.fMorphs'),
                     value: morphCount !== null ? morphCount.toLocaleString() : 'N/A',
                 },
                 { label: t('model-detail.fNameJp'), value: meta?.name_jp || '—' },
                 { label: t('model-detail.fNameEn'), value: meta?.name_en || '—' },
-                { label: t('model-detail.fComment'), value: meta?.comment ? meta.comment.substring(0, 80) : '—' },
+                {
+                    label: t('model-detail.fComment'),
+                    value: meta?.comment ? meta.comment.substring(0, 80) : '—',
+                },
             ];
             cardContainer(container, (c) => {
                 for (const f of fields) {
@@ -313,7 +354,9 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                         return;
                     }
                     const tags = await GetTagsByModel(libRef);
-                    if (!container.isConnected) return;
+                    if (!container.isConnected) {
+                        return;
+                    }
                     const isFav = tags && tags.includes('收藏');
                     favRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:star" style="color:${isFav ? 'var(--accent)' : 'var(--text-muted)'};"></iconify-icon></span><span class="slide-label" style="color:${isFav ? 'var(--accent)' : 'var(--text)'};">${isFav ? t('model-detail.faved') : t('model-detail.addFav')}</span>`;
                     favRow.onclick = async () => {
@@ -343,12 +386,15 @@ export function buildModelTagsLevel(id: string): PopupLevel {
 
                 function refreshTags(): void {
                     if (!libRef) {
-                        tagContainer.innerHTML = '<span class="tag-empty">' + t('model-detail.noPath') + '</span>';
+                        tagContainer.innerHTML =
+                            '<span class="tag-empty">' + t('model-detail.noPath') + '</span>';
                         return;
                     }
                     GetTagsByModel(libRef)
                         .then((tags) => {
-                            if (!container.isConnected) return;
+                            if (!container.isConnected) {
+                                return;
+                            }
                             tagContainer.innerHTML = '';
                             if (!tags || tags.length === 0) {
                                 return;
@@ -359,7 +405,9 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                 chip.innerHTML = `${escapeHtml(tag)} <span class="tag-del">✕</span>`;
                                 chip.title = t('model-detail.removeTagTitle');
                                 chip.addEventListener('click', async () => {
-                                    if (!container.isConnected) return;
+                                    if (!container.isConnected) {
+                                        return;
+                                    }
                                     const r = await tryCatchStatus(async () => {
                                         await RemoveTag(libRef, tag);
                                         return true;
@@ -388,11 +436,15 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                 picker.className = 'tag-container';
                 GetAllTags()
                     .then((allTags) => {
-                        if (!container.isConnected) return;
+                        if (!container.isConnected) {
+                            return;
+                        }
                         const assigned = new Set<string>();
                         GetTagsByModel(libRef!)
                             .then((modelTags) => {
-                                if (!container.isConnected) return;
+                                if (!container.isConnected) {
+                                    return;
+                                }
                                 (modelTags || []).forEach((tm) => assigned.add(tm));
                                 (allTags || []).forEach((tag) => {
                                     if (tag === '收藏') {
@@ -417,18 +469,31 @@ export function buildModelTagsLevel(id: string): PopupLevel {
                                                 .then(() => {
                                                     refreshTags();
                                                 })
-                                                .catch((e) => console.warn('[model-detail] remove tag failed:', e));
+                                                .catch((e) =>
+                                                    console.warn(
+                                                        '[model-detail] remove tag failed:',
+                                                        e
+                                                    )
+                                                );
                                         } else {
                                             AddTag(libRef, tag)
                                                 .then(() => {
                                                     refreshTags();
                                                 })
-                                                .catch((e) => console.warn('[model-detail] add tag failed:', e));
+                                                .catch((e) =>
+                                                    console.warn(
+                                                        '[model-detail] add tag failed:',
+                                                        e
+                                                    )
+                                                );
                                         }
                                     });
                                     picker.appendChild(chip);
                                 });
-                                if (!allTags || allTags.filter((tg) => tg !== '收藏').length === 0) {
+                                if (
+                                    !allTags ||
+                                    allTags.filter((tg) => tg !== '收藏').length === 0
+                                ) {
                                     picker.innerHTML =
                                         '<span style="color:var(--text-muted);font-size:11px;">' +
                                         t('model-detail.noGlobalTags') +
@@ -496,7 +561,8 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
                     name.title = m.name;
                     const typeTag = document.createElement('span');
                     typeTag.className = 'morph-type';
-                    typeTag.textContent = typeLabels[m.type] || t('model-detail.morphTypeUnknown', { type: m.type });
+                    typeTag.textContent =
+                        typeLabels[m.type] || t('model-detail.morphTypeUnknown', { type: m.type });
                     const valLabel = document.createElement('span');
                     valLabel.className = 'morph-val';
                     valLabel.textContent = '0.00';

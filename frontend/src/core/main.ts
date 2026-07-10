@@ -67,7 +67,9 @@ function _updateStaticHtmlTexts(): void {
     // Update hardcoded HTML text with i18n translations
     const setText = (sel: string, key: string, params?: Record<string, string>) => {
         const el = document.querySelector<HTMLElement>(sel);
-        if (el) el.textContent = t(key, params);
+        if (el) {
+            el.textContent = t(key, params);
+        }
     };
     setText('.drop-text', 'main.dropToImport');
     setText('.drop-hint', 'main.dropHint');
@@ -111,7 +113,7 @@ dom.btnPlayPause.addEventListener('click', async () => {
 dom.btnLoopToggle.addEventListener('click', () => {
     setAutoLoop(!autoLoop);
     updatePlaybackUI();
-      setStatus(t('status.loop', {state: autoLoop ? t('common.on') : t('common.off')}), true);
+    setStatus(t('status.loop', { state: autoLoop ? t('common.on') : t('common.off') }), true);
 });
 
 // ======== Ctrl shortcuts hint ========
@@ -766,15 +768,33 @@ async function restoreUIState(): Promise<void> {
         uiState.autoUpdateEnabled = s.autoUpdateEnabled;
     }
     // 恢复原会话级字段（跨重启持久化）
-    if (s.fpsLimit !== undefined) uiState.fpsLimit = s.fpsLimit;
-    if (s.vsync !== undefined) uiState.vsync = s.vsync;
-    if (s.defaultPhysicsEnabled !== undefined) uiState.defaultPhysicsEnabled = s.defaultPhysicsEnabled;
-    if (s.renderScale !== undefined) uiState.renderScale = s.renderScale;
-    if (s.cameraSensitivity !== undefined) uiState.cameraSensitivity = s.cameraSensitivity;
-    if (s.invertYAxis !== undefined) uiState.invertYAxis = s.invertYAxis;
-    if (s.autoScaleModel !== undefined) uiState.autoScaleModel = s.autoScaleModel;
-    if (s.autoCenterModel !== undefined) uiState.autoCenterModel = s.autoCenterModel;
-    if (s.materialCategoryMap !== undefined) uiState.materialCategoryMap = s.materialCategoryMap;
+    if (s.fpsLimit !== undefined) {
+        uiState.fpsLimit = s.fpsLimit;
+    }
+    if (s.vsync !== undefined) {
+        uiState.vsync = s.vsync;
+    }
+    if (s.defaultPhysicsEnabled !== undefined) {
+        uiState.defaultPhysicsEnabled = s.defaultPhysicsEnabled;
+    }
+    if (s.renderScale !== undefined) {
+        uiState.renderScale = s.renderScale;
+    }
+    if (s.cameraSensitivity !== undefined) {
+        uiState.cameraSensitivity = s.cameraSensitivity;
+    }
+    if (s.invertYAxis !== undefined) {
+        uiState.invertYAxis = s.invertYAxis;
+    }
+    if (s.autoScaleModel !== undefined) {
+        uiState.autoScaleModel = s.autoScaleModel;
+    }
+    if (s.autoCenterModel !== undefined) {
+        uiState.autoCenterModel = s.autoCenterModel;
+    }
+    if (s.materialCategoryMap !== undefined) {
+        uiState.materialCategoryMap = s.materialCategoryMap;
+    }
 }
 
 // ======== Update Notification ========
@@ -893,19 +913,29 @@ scene.onAfterRenderObservable.add(() => {
     const _afterTime = performance.now();
     const _gpuElapsed = _afterTime - _renderBeforeTime;
     if (_gpuElapsed > 30) {
-        const _obsCount = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
-        console.warn(`[${_ts()}][perf:gpu] before→after render took ${_gpuElapsed.toFixed(1)}ms (observers=${_obsCount})`);
+        const _obsCount = scene.onBeforeRenderObservable.observers
+            ? scene.onBeforeRenderObservable.observers.length
+            : 0;
+        console.warn(
+            `[${_ts()}][perf:gpu] before→after render took ${_gpuElapsed.toFixed(1)}ms (observers=${_obsCount})`
+        );
     }
 });
 engine.runRenderLoop(() => {
-    const _obsBefore = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+    const _obsBefore = scene.onBeforeRenderObservable.observers
+        ? scene.onBeforeRenderObservable.observers.length
+        : 0;
     const _rStart = performance.now();
     scene.render();
     const _rElapsed = performance.now() - _rStart;
-    const _obsAfter = scene.onBeforeRenderObservable.observers ? scene.onBeforeRenderObservable.observers.length : 0;
+    const _obsAfter = scene.onBeforeRenderObservable.observers
+        ? scene.onBeforeRenderObservable.observers.length
+        : 0;
     const _obsDelta = _obsAfter - _obsBefore;
     if (_rElapsed > 30 || (_obsDelta > 0 && _obsAfter > 100)) {
-        console.warn(`[${_ts()}][perf:render] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`);
+        console.warn(
+            `[${_ts()}][perf:render] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`
+        );
     }
     updatePerformance();
 });
@@ -1042,7 +1072,9 @@ if (import.meta.env.DEV) {
         // a .catch(->[]) would silently mask real regressions.
         outfitVariants: async (): Promise<{ variants: string[]; error: string | null }> => {
             const inst = focusedModel();
-            if (!inst) return { variants: [], error: null };
+            if (!inst) {
+                return { variants: [], error: null };
+            }
             try {
                 const o = await loadOutfits(inst.id);
                 return { variants: (o?.variants ?? []).map((v) => v.name), error: null };
@@ -1052,7 +1084,9 @@ if (import.meta.env.DEV) {
         },
         applyOutfit: (variantName: string): Promise<boolean> => {
             const inst = focusedModel();
-            if (!inst) return Promise.resolve(false);
+            if (!inst) {
+                return Promise.resolve(false);
+            }
             return applyOutfitVariant(inst.id, variantName)
                 .then(() => true)
                 .catch(() => false);
@@ -1061,15 +1095,19 @@ if (import.meta.env.DEV) {
         // for "did the picture change" assertions without decoding the PNG.
         // (Do NOT read a '2d' context from the WebGL canvas — getContext returns null.)
         fingerprint: async (): Promise<string> => {
-            if (!window.__capture) return '';
-    const url = await window.__capture!();
+            if (!window.__capture) {
+                return '';
+            }
+            const url = await window.__capture!();
             const img = new Image();
             img.src = url;
             await img.decode();
             const c = document.createElement('canvas');
             c.width = c.height = 16;
             const ctx = c.getContext('2d');
-            if (!ctx) return '';
+            if (!ctx) {
+                return '';
+            }
             ctx.drawImage(img, 0, 0, 16, 16);
             const d = ctx.getImageData(0, 0, 16, 16).data;
             const LUM_THRESHOLD = 384; // ≈ half-brightness: (255×3)/2 = 382.5
@@ -1091,7 +1129,9 @@ if (import.meta.env.DEV) {
             const { Color3 } = await import('@babylonjs/core/Maths/math.color');
             // Dispose any previous test meshes first
             for (const m of [...scene.meshes]) {
-                if (m.name.startsWith('e2e-test-')) m.dispose();
+                if (m.name.startsWith('e2e-test-')) {
+                    m.dispose();
+                }
             }
             const box = MeshBuilder.CreateBox('e2e-test-mesh', { size: 0.5 }, scene);
             const mat = new StandardMaterial('e2e-test-mat', scene);
@@ -1100,13 +1140,17 @@ if (import.meta.env.DEV) {
         },
         clearTestMeshes: (): void => {
             for (const m of [...scene.meshes]) {
-                if (m.name.startsWith('e2e-test-')) m.dispose();
+                if (m.name.startsWith('e2e-test-')) {
+                    m.dispose();
+                }
             }
         },
         // DEBUG: 当前布料实例的 config（含 auto-fit 结果）
         get clothConfig(): Record<string, unknown> | null {
             const cloth = modelManager.clothInstances.values().next().value;
-            if (!cloth) return null;
+            if (!cloth) {
+                return null;
+            }
             return { ...cloth.config };
         },
     };

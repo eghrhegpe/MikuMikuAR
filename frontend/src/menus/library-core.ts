@@ -71,7 +71,14 @@ import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, createResourcePanel, openFullscreen, closeFullscreen, getCurrentState, setCurrentState } from '../core/ui-helpers';
+import {
+    slideRow,
+    createResourcePanel,
+    openFullscreen,
+    closeFullscreen,
+    getCurrentState,
+    setCurrentState,
+} from '../core/ui-helpers';
 import type { ResourceItem } from '../core/ui-helpers';
 import { tryCatchStatus, getBrowseDir } from '../core/utils';
 import { showConfirm } from '../core/dialog';
@@ -93,7 +100,9 @@ export function setResourceViewMode(mode: ResourceViewMode): void {
     resourceViewMode = mode;
     // [doc:adr-066] 持久化到 config
     import('../core/wails-bindings').then(({ SetUIState }) => {
-        SetUIState({ resourceViewMode: mode } as unknown as import('../core/wails-bindings').UIState).catch(() => {});
+        SetUIState({
+            resourceViewMode: mode,
+        } as unknown as import('../core/wails-bindings').UIState).catch(() => {});
     });
 }
 
@@ -156,7 +165,12 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 return buildTagDetailLevel(tagName);
             }
             if (row.target === 'models:browse') {
-                console.log('[models:browse] clicked, libraryRoot:', libraryRoot, 'allModels:', allModels.length);
+                console.log(
+                    '[models:browse] clicked, libraryRoot:',
+                    libraryRoot,
+                    'allModels:',
+                    allModels.length
+                );
                 if (!libraryRoot) {
                     console.log('[models:browse] no libraryRoot, showing empty state');
                     return {
@@ -164,12 +178,11 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                         dir: '',
                         items: [],
                         renderCustom: (container) => {
-                                container.style.cssText =
-                                    'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
-                                container.innerHTML =
-                                    `<div>${t('library.noRootDir')}</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">${t('library.noRootDirHint')}</div>`;
-                            },
-                        };
+                            container.style.cssText =
+                                'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
+                            container.innerHTML = `<div>${t('library.noRootDir')}</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">${t('library.noRootDirHint')}</div>`;
+                        },
+                    };
                 }
                 const browseDir = getBrowseDir('pmx');
                 console.log('[models:browse] browseDir:', browseDir);
@@ -328,7 +341,10 @@ function renderItemsWithRAF(
                     }
                 },
                 item.sublabel,
-                item.catTag
+                item.catTag,
+                undefined,
+                undefined,
+                item.model ? { wrapLabel: true } : undefined
             );
         }
         return;
@@ -374,7 +390,10 @@ function renderItemsWithRAF(
                     }
                 },
                 item.sublabel,
-                item.catTag
+                item.catTag,
+                undefined,
+                undefined,
+                item.model ? { wrapLabel: true } : undefined
             );
         }
         if (index < items.length) {
@@ -401,7 +420,12 @@ export function buildLevel(
     const modelList = allModels || [];
     console.log('[buildLevel] dir:', dir, 'modelList.length:', modelList.length, 'isRoot:', isRoot);
     if (modelList.length > 0) {
-        console.log('[buildLevel] sample models:', modelList.slice(0, 5).map(m => ({ dir: m.dir, format: m.format, container: m.container })));
+        console.log(
+            '[buildLevel] sample models:',
+            modelList
+                .slice(0, 5)
+                .map((m) => ({ dir: m.dir, format: m.format, container: m.container }))
+        );
     }
 
     // Background prefetch: warm metadata cache for all models in this level
@@ -422,7 +446,9 @@ export function buildLevel(
         // Windows 路径不区分大小写，比较时忽略大小写
         const mdirLower = mdir.toLowerCase();
         const dirLower = dir.toLowerCase();
-        const rel = mdirLower.startsWith(dirLower) ? mdir.substring(dir.length).replace(/^\//, '') : null;
+        const rel = mdirLower.startsWith(dirLower)
+            ? mdir.substring(dir.length).replace(/^\//, '')
+            : null;
         if (rel === null) {
             if (items.length === 0 && subdirs.size === 0) {
                 console.log('[buildLevel] path mismatch:', { mdir, dir, sample: m.file_path });
@@ -464,6 +490,7 @@ export function buildLevel(
             label: d,
             icon: 'folder',
             target: fullPath,
+            wrapLabel: true,
         });
     }
 
@@ -513,42 +540,62 @@ export function buildResourceItemsForDir(
     const subdirs = new Set<string>();
 
     for (const m of allModels || []) {
-        if (filter && !filter(m)) continue;
+        if (filter && !filter(m)) {
+            continue;
+        }
         const mdir = normPath(m.dir);
-        if (!mdir.startsWith(normDir)) continue;
+        if (!mdir.startsWith(normDir)) {
+            continue;
+        }
         const rel = mdir.substring(normDir.length).replace(/^\//, '');
         const parts = rel.split('/').filter(Boolean);
         if (parts.length === 0) {
             const fp = m.file_path || '';
-            const filename = m.container === 'zip' && m.zip_inner
-                ? m.zip_inner.split('/').pop() || ''
-                : fp.split('/').pop() || '';
+            const filename =
+                m.container === 'zip' && m.zip_inner
+                    ? m.zip_inner.split('/').pop() || ''
+                    : fp.split('/').pop() || '';
             const cached = modelMetaCache.get(fp);
             let label: string;
             switch (displayNamePriority) {
-                case 'filename': label = filename; break;
+                case 'filename':
+                    label = filename;
+                    break;
                 case 'name_en':
-                    label = cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
+                    label =
+                        cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
                     break;
                 case 'name_jp':
                 default:
-                    label = cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
+                    label =
+                        cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
                     break;
             }
             items.push({
-                id: fp, label, filePath: fp,
+                id: fp,
+                label,
+                filePath: fp,
                 icon: m.format === 'vmd' ? 'music' : m.format === 'audio' ? 'volume-2' : 'box',
-                isFolder: false, sublabel: cached?.comment || m.comment || undefined, data: m,
+                isFolder: false,
+                sublabel: cached?.comment || m.comment || undefined,
+                data: m,
             });
         } else {
             subdirs.add(parts[0]);
         }
     }
 
-    const folderItems: ResourceItem[] = Array.from(subdirs).sort().map((d) => ({
-        id: normDir + '/' + d, label: d, filePath: '', icon: 'folder',
-        isFolder: true, sublabel: undefined, data: undefined,
-    }));
+    const folderItems: ResourceItem[] = Array.from(subdirs)
+        .sort()
+        .map((d) => ({
+            id: normDir + '/' + d,
+            label: d,
+            filePath: '',
+            icon: 'folder',
+            isFolder: true,
+            sublabel: undefined,
+            data: undefined,
+        }));
 
     return [...folderItems, ...items];
 }
@@ -567,13 +614,15 @@ function renderFullscreenFolder(
         .filter((item) => !item.isFolder && item.filePath)
         .map((item) => item.filePath);
     if (pmxPaths.length > 0) {
-        GetThumbnailBatch(pmxPaths).then((batch) => {
-            const merged = new Map(thumbnailCache);
-            for (const [path, data] of Object.entries(batch)) {
-                merged.set(path, data);
-            }
-            setThumbnailCache(merged);
-        }).catch(() => {});
+        GetThumbnailBatch(pmxPaths)
+            .then((batch) => {
+                const merged = new Map(thumbnailCache);
+                for (const [path, data] of Object.entries(batch)) {
+                    merged.set(path, data);
+                }
+                setThumbnailCache(merged);
+            })
+            .catch(() => {});
     }
 
     // [doc:adr-066] 搜索栏
@@ -601,10 +650,11 @@ function renderFullscreenFolder(
         }
         const q = query.trim().toLowerCase();
         const filtered = q
-            ? allItems.filter((item) =>
-                item.label.toLowerCase().includes(q) ||
-                item.filePath.toLowerCase().includes(q)
-            )
+            ? allItems.filter(
+                  (item) =>
+                      item.label.toLowerCase().includes(q) ||
+                      item.filePath.toLowerCase().includes(q)
+              )
             : allItems;
 
         currentPanel = createResourcePanel(panelContainer, {
@@ -618,9 +668,12 @@ function renderFullscreenFolder(
             },
             onEnterFolder: navigate
                 ? (path) => {
-                    const label = filtered.find((i) => i.id === path)?.label || path.split('/').pop() || path;
-                    navigate(label, (c) => renderFullscreenFolder(c, path, filter, navigate));
-                }
+                      const label =
+                          filtered.find((i) => i.id === path)?.label ||
+                          path.split('/').pop() ||
+                          path;
+                      navigate(label, (c) => renderFullscreenFolder(c, path, filter, navigate));
+                  }
                 : undefined,
             layout: 'grid',
         });
@@ -655,7 +708,8 @@ function renderGridMode(
         `;
 
         const gridBtn = document.createElement('button');
-        gridBtn.className = 'btn btn-ghost btn-sm' + (resourceViewMode === 'grid' ? ' btn-active' : '');
+        gridBtn.className =
+            'btn btn-ghost btn-sm' + (resourceViewMode === 'grid' ? ' btn-active' : '');
         gridBtn.textContent = '⊞';
         gridBtn.title = t('library.gridView');
         gridBtn.addEventListener('click', () => {
@@ -678,7 +732,8 @@ function renderGridMode(
         });
 
         const listBtn = document.createElement('button');
-        listBtn.className = 'btn btn-ghost btn-sm' + (resourceViewMode === 'list' ? ' btn-active' : '');
+        listBtn.className =
+            'btn btn-ghost btn-sm' + (resourceViewMode === 'list' ? ' btn-active' : '');
         listBtn.textContent = '≡';
         listBtn.title = t('library.listView');
         listBtn.addEventListener('click', () => {
@@ -730,7 +785,10 @@ function renderGridMode(
                         },
                         onEnterFolder: (path) => {
                             // [doc:adr-066] 全屏内导航
-                            const folderLabel = allResourceItems.find((i) => i.id === path)?.label || path.split('/').pop() || path;
+                            const folderLabel =
+                                allResourceItems.find((i) => i.id === path)?.label ||
+                                path.split('/').pop() ||
+                                path;
                             navigate(folderLabel, (c) => {
                                 renderFullscreenFolder(c, path, filter, navigate);
                             });
@@ -1005,8 +1063,7 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
             try {
                 const modelRefs = await GetModelsByTag(tagName);
                 if (!modelRefs || modelRefs.length === 0) {
-                    container.innerHTML =
-                        `<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">${t('library.tagNoModels')}</div>`;
+                    container.innerHTML = `<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">${t('library.tagNoModels')}</div>`;
                     return;
                 }
                 const matched = (allModels || []).filter((m) => {
@@ -1014,14 +1071,13 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
                     return ref && modelRefs.includes(ref);
                 });
                 if (matched.length === 0) {
-                    container.innerHTML =
-                        `<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">${t('library.tagNoMatch')}</div>`;
+                    container.innerHTML = `<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">${t('library.tagNoMatch')}</div>`;
                     return;
                 }
                 cardContainer(container, (c) => {
                     for (const m of matched) {
                         const row = modelToRow(m);
-                        slideRow(c, row.icon, row.label, false, () => onModelRowClick(m));
+                        slideRow(c, row.icon, row.label, false, () => onModelRowClick(m), undefined, undefined, undefined, undefined, { wrapLabel: true });
                     }
                 });
             } catch (err) {
@@ -1041,13 +1097,21 @@ export function buildModelRootItems(): PopupRow[] {
 
     // 已加载的角色模型
     const actors = Array.from(modelRegistry.entries()).filter(([, inst]) => inst.kind === 'actor');
-    console.log('[buildModelRootItems] actors:', actors.length, 'allModels:', allModels.length, 'libraryRoot:', libraryRoot);
+    console.log(
+        '[buildModelRootItems] actors:',
+        actors.length,
+        'allModels:',
+        allModels.length,
+        'libraryRoot:',
+        libraryRoot
+    );
     for (const [id, inst] of actors) {
         items.push({
             kind: 'folder',
             label: inst.name,
             icon: 'tabler:cube-3d-sphere',
             target: `scene:${id}`,
+            wrapLabel: true,
         });
     }
 
@@ -1073,8 +1137,18 @@ export function buildModelRootItems(): PopupRow[] {
         icon: 'lucide:refresh-cw',
         target: 'models:rescan',
     });
-    items.push({ kind: 'folder', label: t('library.recent'), icon: 'lucide:clock', target: '__recent__' });
-    items.push({ kind: 'folder', label: t('library.tags'), icon: 'lucide:tag', target: '__tags__' });
+    items.push({
+        kind: 'folder',
+        label: t('library.recent'),
+        icon: 'lucide:clock',
+        target: '__recent__',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('library.tags'),
+        icon: 'lucide:tag',
+        target: '__tags__',
+    });
 
     return items;
 }
@@ -1112,10 +1186,7 @@ export async function initLibrary(): Promise<void> {
         const cfg = await GetConfig();
         const cfgRoot = cfg.resource_root || cfg.library_root || cfg.override_paths?.pmx || '';
         if (!cfgRoot) {
-            setStatus(
-                t('library.firstUseHint'),
-                false
-            );
+            setStatus(t('library.firstUseHint'), false);
             return;
         }
         setLibraryRoot(cfgRoot);
@@ -1127,7 +1198,10 @@ export async function initLibrary(): Promise<void> {
             setDisplayNamePriority(cfg.display_name_priority as DisplayNamePriority);
         }
         // [doc:adr-066] 恢复视图模式
-        if (cfg.ui_state?.resourceViewMode === 'grid' || cfg.ui_state?.resourceViewMode === 'list') {
+        if (
+            cfg.ui_state?.resourceViewMode === 'grid' ||
+            cfg.ui_state?.resourceViewMode === 'list'
+        ) {
             resourceViewMode = cfg.ui_state.resourceViewMode;
         }
         try {
@@ -1165,10 +1239,7 @@ export async function selectResourceRoot(): Promise<void> {
         setStatus(t('library.androidDirNotSupported'), false);
         return;
     }
-    const ok = await showConfirm(
-        t('library.confirmRescan'),
-        t('library.confirmRescanTitle')
-    );
+    const ok = await showConfirm(t('library.confirmRescan'), t('library.confirmRescanTitle'));
     if (!ok) {
         return;
     }
@@ -1217,9 +1288,7 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
     }
     console.log('[switchStorageMode] 1: confirm dialog');
     const ok = await showConfirm(
-        mode === 'shared'
-            ? t('library.confirmSwitchShared')
-            : t('library.confirmSwitchPrivate'),
+        mode === 'shared' ? t('library.confirmSwitchShared') : t('library.confirmSwitchPrivate'),
         t('library.confirmSwitchTitle')
     );
     if (!ok) {
@@ -1237,7 +1306,10 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
         console.log('[switchStorageMode] 6: all done');
     } catch (err) {
         console.error('[switchStorageMode] failed:', err);
-        setStatus(`${t('library.dirSetFailed')}: ${err instanceof Error ? err.message : '未知错误'}`, true);
+        setStatus(
+            `${t('library.dirSetFailed')}: ${err instanceof Error ? err.message : '未知错误'}`,
+            true
+        );
         throw err;
     }
     console.log('[switchStorageMode] 8: success');

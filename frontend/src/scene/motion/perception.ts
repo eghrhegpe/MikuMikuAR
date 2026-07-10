@@ -50,9 +50,9 @@ export interface PerceptionState {
     balanceSwayEnabled: boolean;
     // Lip-sync（从 lipsync-bridge.ts 迁入）
     lipSyncEnabled: boolean;
-    lipSyncSensitivity: number;  // 0..1，振幅阈值
-    lipSyncIntensity: number;    // 0..1，最大张嘴幅度
-    lipSyncMultiMorphEnabled: boolean;  // 驱动多口型 morph
+    lipSyncSensitivity: number; // 0..1，振幅阈值
+    lipSyncIntensity: number; // 0..1，最大张嘴幅度
+    lipSyncMultiMorphEnabled: boolean; // 驱动多口型 morph
 }
 
 /** Gaze 配置类型 */
@@ -173,7 +173,13 @@ export function _clampHeadGazeTarget(
     targetWorldQ: Quaternion,
     parentWorldQ: Quaternion
 ): Quaternion {
-    return _clampGazeTargetInParentFrame(oldHeadRotQ, targetWorldQ, parentWorldQ, HEAD_GAZE_MAX_YAW, HEAD_GAZE_MAX_PITCH);
+    return _clampGazeTargetInParentFrame(
+        oldHeadRotQ,
+        targetWorldQ,
+        parentWorldQ,
+        HEAD_GAZE_MAX_YAW,
+        HEAD_GAZE_MAX_PITCH
+    );
 }
 
 /** 眼球专用包装（相对头部坐标系，用更紧的生理锥形） */
@@ -182,7 +188,13 @@ export function _clampEyeGazeTarget(
     targetWorldQ: Quaternion,
     parentWorldQ: Quaternion
 ): Quaternion {
-    return _clampGazeTargetInParentFrame(oldEyeRotQ, targetWorldQ, parentWorldQ, EYE_GAZE_MAX_YAW, EYE_GAZE_MAX_PITCH);
+    return _clampGazeTargetInParentFrame(
+        oldEyeRotQ,
+        targetWorldQ,
+        parentWorldQ,
+        EYE_GAZE_MAX_YAW,
+        EYE_GAZE_MAX_PITCH
+    );
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -239,7 +251,12 @@ export function activatePerception(modelId?: string): void {
         }
 
         // 3. 微表情（无条件调用，内部处理关闭/neutral 复位）
-        _applyMicroExpression(mmdModel, time, perceptionState.microExpressionEnabled, perceptionState.emotion);
+        _applyMicroExpression(
+            mmdModel,
+            time,
+            perceptionState.microExpressionEnabled,
+            perceptionState.emotion
+        );
 
         // 4. 重心微动（无条件调用，内部处理关闭复位）
         _applyBalanceSway(mmdModel, time, perceptionState.balanceSwayEnabled);
@@ -364,7 +381,9 @@ function _applyBreathing(mmdModel: any, time: number): void {
     const spine = spineName
         ? mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === spineName)
         : null;
-    if (!spine) return;
+    if (!spine) {
+        return;
+    }
 
     const targetQ = _q().copyFrom(Quaternion.RotationAxis(Vector3.Up(), breathOffset));
     const localQ = _q().copyFrom(spine.linkedBone.rotationQuaternion);
@@ -398,11 +417,15 @@ function _applyBlinking(mmdModel: any, time: number): void {
     const blinkIntensity = Math.max(0, Math.sin(phase) - 0.8) * 5;
 
     const morphManager = mmdModel.mesh?.morphTargetManager;
-    if (!morphManager) return;
+    if (!morphManager) {
+        return;
+    }
 
     const morphNames = morphManager.getMorphTargetNames?.() || [];
     const blinkName = matchBone(morphNames, MORPH_BLINK_CANDIDATES);
-    if (!blinkName) return;
+    if (!blinkName) {
+        return;
+    }
 
     const eyeClose = morphManager.getMorphTargetByName?.(blinkName);
     if (eyeClose) {
@@ -437,33 +460,45 @@ function _applyMicroExpression(
     emotion: Emotion
 ): void {
     const morphManager = mmdModel.mesh?.morphTargetManager;
-    if (!morphManager) return;
+    if (!morphManager) {
+        return;
+    }
 
     // 关闭或 neutral：复位上次 morph 并退出（防止非零权重定格）
     if (!enabled || emotion === 'neutral') {
         if (_lastEmotionMorphName) {
             const old = morphManager.getMorphTargetByName?.(_lastEmotionMorphName);
-            if (old) old.influence = 0;
+            if (old) {
+                old.influence = 0;
+            }
             _lastEmotionMorphName = null;
         }
         return;
     }
 
     const candidates = EMOTION_MORPH_CANDIDATES[emotion];
-    if (!candidates || candidates.length === 0) return;
+    if (!candidates || candidates.length === 0) {
+        return;
+    }
 
     // 复用 matchBone 匹配候选 morph 名（与 _applyBlinking 同款模式）
     const morphNames = morphManager.getMorphTargetNames?.() || [];
     const targetName = matchBone(morphNames, candidates);
-    if (!targetName) return;
+    if (!targetName) {
+        return;
+    }
 
     const targetMorph = morphManager.getMorphTargetByName?.(targetName);
-    if (!targetMorph) return;
+    if (!targetMorph) {
+        return;
+    }
 
     // 情绪切换时复位旧 morph（如 happy→angry，清零笑み防串味）
     if (_lastEmotionMorphName && _lastEmotionMorphName !== targetName) {
         const old = morphManager.getMorphTargetByName?.(_lastEmotionMorphName);
-        if (old) old.influence = 0;
+        if (old) {
+            old.influence = 0;
+        }
     }
 
     // 周期性脉冲：sin²(t * 2π / period) 在 [0,1] 间振荡，乘以峰值权重
@@ -484,11 +519,11 @@ function _applyMicroExpression(
 const BALANCE_SWAY_PERIOD = 2.0;
 /** 重心微动各骨骼振幅（从 idle 算法提取，intensity 固定 1.0） */
 const SWAY_AMP = {
-    center_rz: 0.1,      // center 慢速摆动
-    center_rx: 0.03,     // center 微动
-    center_bobY: 0.04,   // center 上下浮动
-    upper2_rx: 0.015,    // 上半身2 前后倾
-    waist_rz: 0.02,      // 腰 左右摆
+    center_rz: 0.1, // center 慢速摆动
+    center_rx: 0.03, // center 微动
+    center_bobY: 0.04, // center 上下浮动
+    upper2_rx: 0.015, // 上半身2 前后倾
+    waist_rz: 0.02, // 腰 左右摆
     allParent_rx: 0.005, // 全ての親 微倾
     allParent_rz: 0.005,
 };
@@ -518,7 +553,9 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
     // 关闭时撤销 center position 的 bob 残留（恢复真实基准 position.y，避免塌到地面）
     if (!enabled) {
         if (_lastBobY !== 0 && _swayCenterName) {
-            const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === _swayCenterName);
+            const bone = mmdModel.runtimeBones.find(
+                (b: IMmdRuntimeBone) => b.name === _swayCenterName
+            );
             if (bone?.linkedBone) {
                 bone.linkedBone.position.y -= _lastBobY;
             }
@@ -529,7 +566,7 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
         return;
     }
 
-    const phase = (time % BALANCE_SWAY_PERIOD) / BALANCE_SWAY_PERIOD * Math.PI * 2;
+    const phase = ((time % BALANCE_SWAY_PERIOD) / BALANCE_SWAY_PERIOD) * Math.PI * 2;
     const slowPhase = phase * 0.5;
     const written: string[] = [];
 
@@ -549,7 +586,9 @@ function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void 
             const deltaCenterRz = rz - _lastCenterRz;
             const deltaCenterRx = rx - _lastCenterRx;
             if (deltaCenterRz !== 0 || deltaCenterRx !== 0) {
-                const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaCenterRx, 0, deltaCenterRz));
+                const deltaQ = _q().copyFrom(
+                    Quaternion.FromEulerAngles(deltaCenterRx, 0, deltaCenterRz)
+                );
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
                 deltaQ.multiplyToRef(localQ, localQ);
                 bone.linkedBone.rotationQuaternion = localQ;
@@ -629,7 +668,12 @@ const HIGH_BIN_END = 50;
 
 /** lip-sync 状态机（从 lipsync-bridge.ts 搬运：音源切换重置 + 静音指数衰减 + 低通滤波 + morph 缓存） */
 let _lipSyncMorphName: string | null = null;
-let _lipSyncMorphSet: { open: string | null; close: string | null; pucker: string | null; smile: string | null } | null = null;
+let _lipSyncMorphSet: {
+    open: string | null;
+    close: string | null;
+    pucker: string | null;
+    smile: string | null;
+} | null = null;
 let _lastLipSyncModelId: string | null = null;
 let _lastLipSyncMorphNames: string[] = [];
 let _lastLipSyncMorphNameSet = new Set<string>();
@@ -639,17 +683,23 @@ let _lastLipSyncAudioPath = '';
 
 function _applyLipSync(mmdModel: any, time: number, enabled: boolean): void {
     const morphManager = mmdModel.mesh?.morphTargetManager;
-    if (!morphManager) return;
+    if (!morphManager) {
+        return;
+    }
 
     // 关闭时复位 morph influence（防残留冻结，与 _applyMicroExpression 同款）
     if (!enabled) {
         if (_lipSyncMorphName) {
             const old = morphManager.getMorphTargetByName?.(_lipSyncMorphName);
-            if (old) old.influence = 0;
+            if (old) {
+                old.influence = 0;
+            }
         }
         if (_lipSyncMorphSet?.smile) {
             const oldSmile = morphManager.getMorphTargetByName?.(_lipSyncMorphSet.smile);
-            if (oldSmile) oldSmile.influence = 0;
+            if (oldSmile) {
+                oldSmile.influence = 0;
+            }
         }
         _lipSyncMorphName = null;
         _lipSyncMorphSet = null;
@@ -676,7 +726,9 @@ function _applyLipSync(mmdModel: any, time: number, enabled: boolean): void {
             _smoothHigh = 0;
             if (_lipSyncMorphName) {
                 const morph = morphManager.getMorphTargetByName?.(_lipSyncMorphName);
-                if (morph) morph.influence = 0;
+                if (morph) {
+                    morph.influence = 0;
+                }
             }
             return;
         }
@@ -699,7 +751,9 @@ function _applyLipSync(mmdModel: any, time: number, enabled: boolean): void {
         _lipSyncMorphName = findLipMorph(_lastLipSyncMorphNames);
         _lipSyncMorphSet = findAllLipMorphs(_lastLipSyncMorphNames);
     }
-    if (!_lipSyncMorphName) return;
+    if (!_lipSyncMorphName) {
+        return;
+    }
 
     // 从 BeatDetector 取频段能量
     const beatDetector = getProcBeatDetector();
@@ -719,7 +773,9 @@ function _applyLipSync(mmdModel: any, time: number, enabled: boolean): void {
         perceptionState.lipSyncIntensity
     );
     const openMorph = morphManager.getMorphTargetByName?.(_lipSyncMorphName);
-    if (openMorph) openMorph.influence = openWeight;
+    if (openMorph) {
+        openMorph.influence = openWeight;
+    }
 
     // 多口型 morph（close 反比 + pucker 高频驱动）
     if (perceptionState.lipSyncMultiMorphEnabled && _lipSyncMorphSet) {
@@ -731,7 +787,9 @@ function _applyLipSync(mmdModel: any, time: number, enabled: boolean): void {
                 perceptionState.lipSyncIntensity
             );
             const closeMorph = morphManager.getMorphTargetByName?.(_lipSyncMorphSet.close);
-            if (closeMorph) closeMorph.influence = closeWeight;
+            if (closeMorph) {
+                closeMorph.influence = closeWeight;
+            }
         }
         // pucker：由高频能量驱动（模拟「う」口型）
         if (_lipSyncMorphSet.pucker) {
@@ -741,7 +799,9 @@ function _applyLipSync(mmdModel: any, time: number, enabled: boolean): void {
                 perceptionState.lipSyncIntensity
             );
             const puckerMorph = morphManager.getMorphTargetByName?.(_lipSyncMorphSet.pucker);
-            if (puckerMorph) puckerMorph.influence = puckerWeight;
+            if (puckerMorph) {
+                puckerMorph.influence = puckerWeight;
+            }
         }
     }
 
@@ -749,7 +809,9 @@ function _applyLipSync(mmdModel: any, time: number, enabled: boolean): void {
     if (_lipSyncMorphSet?.smile) {
         const smileWeight = Math.max(0, openWeight * 0.3 - 0.1);
         const smileMorph = morphManager.getMorphTargetByName?.(_lipSyncMorphSet.smile);
-        if (smileMorph) smileMorph.influence = smileWeight;
+        if (smileMorph) {
+            smileMorph.influence = smileWeight;
+        }
     }
 }
 
@@ -762,10 +824,13 @@ function _applyGaze(
     cam: Camera,
     config: { headEnabled: boolean; eyeEnabled: boolean }
 ): void {
-    if (!config.headEnabled && !config.eyeEnabled) return;
+    if (!config.headEnabled && !config.eyeEnabled) {
+        return;
+    }
 
     const headRuntime = mmdModel.runtimeBones.find(
-        (b: IMmdRuntimeBone) => b.name === '頭' || b.name === '首' || b.name === 'head' || b.name === 'Head'
+        (b: IMmdRuntimeBone) =>
+            b.name === '頭' || b.name === '首' || b.name === 'head' || b.name === 'Head'
     );
     const eyeRuntimes: IMmdRuntimeBone[] = mmdModel.runtimeBones.filter((b: IMmdRuntimeBone) =>
         ['右目', '左目', 'Eye_R', 'Eye_L', 'eye_r', 'eye_l', 'RightEye', 'LeftEye'].includes(b.name)
@@ -773,7 +838,9 @@ function _applyGaze(
 
     const needHead = config.headEnabled && !!headRuntime;
     const needEye = config.eyeEnabled && eyeRuntimes.length > 0;
-    if (!needHead && !needEye) return;
+    if (!needHead && !needEye) {
+        return;
+    }
 
     const isWasm = _isWasmRuntime(headRuntime ?? eyeRuntimes[0]);
     const gazeTarget = _getGazeTarget(cam, _v3());
@@ -821,11 +888,15 @@ function _applyHeadGazeWasm(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3): 
     const headBuf = (headRuntime as MmdRuntimeBoneExtended).worldMatrix;
     const oldHeadMat = _m().copyFrom(Matrix.FromArray(headBuf));
     const headPos = oldHeadMat.getTranslation();
-    const oldHeadRotQ = _q().copyFrom(Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix()));
+    const oldHeadRotQ = _q().copyFrom(
+        Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
+    );
 
     const lookDir = headPos.subtractToRef(gazeTarget, _v3());
     const lookLen = Math.sqrt(lookDir.x ** 2 + lookDir.y ** 2 + lookDir.z ** 2);
-    if (lookLen <= 0.0001) return;
+    if (lookLen <= 0.0001) {
+        return;
+    }
 
     lookDir.scaleInPlace(1 / lookLen);
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
@@ -861,7 +932,9 @@ function _applyEyeGazeWasm(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3):
     eyeCenter.scaleInPlace(1 / eyeRuntimes.length);
 
     const lookDir = eyeCenter.subtractToRef(gazeTarget, _v3());
-    if (lookDir.lengthSquared() < 0.0001) return;
+    if (lookDir.lengthSquared() < 0.0001) {
+        return;
+    }
 
     lookDir.normalize();
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
@@ -883,7 +956,13 @@ function _applyEyeGazeWasm(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3):
         const curEyeQ = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
 
         // 接上与头部一致的锥形限位：背后看时不翻转 180°
-        const clampedTargetQ = _clampGazeTargetInParentFrame(curEyeQ, targetWorldQ, parentWorldQ, EYE_GAZE_MAX_YAW, EYE_GAZE_MAX_PITCH);
+        const clampedTargetQ = _clampGazeTargetInParentFrame(
+            curEyeQ,
+            targetWorldQ,
+            parentWorldQ,
+            EYE_GAZE_MAX_YAW,
+            EYE_GAZE_MAX_PITCH
+        );
         const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTargetQ, EYE_SMOOTH));
         const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), newEyeQ, eyePos));
 
@@ -898,7 +977,9 @@ function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3): vo
     headRuntime.getWorldTranslationToRef(headPos);
 
     const oldHeadMat = _m().copyFrom(Matrix.FromArray(headRuntime.worldMatrix));
-    const oldHeadRotQ = _q().copyFrom(Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix()));
+    const oldHeadRotQ = _q().copyFrom(
+        Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
+    );
 
     const lookDir = headPos.subtractToRef(gazeTarget, _v3()).normalize();
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
@@ -939,7 +1020,9 @@ function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3): v
     eyeCenter.scaleInPlace(1 / eyeRuntimes.length);
 
     const lookDir = eyeCenter.subtractToRef(gazeTarget, _v3());
-    if (lookDir.lengthSquared() < 0.0001) return;
+    if (lookDir.lengthSquared() < 0.0001) {
+        return;
+    }
 
     lookDir.normalize();
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
@@ -961,7 +1044,13 @@ function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3): v
         const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
         // 接上与头部一致的锥形限位：相对头部坐标系钳制，背后看时不翻转 180°
         const parentWorldQ = _q().copyFrom(parentInvQ).invert();
-        const clampedTargetQ = _clampGazeTargetInParentFrame(curWorldQ, targetWorldQ, parentWorldQ, EYE_GAZE_MAX_YAW, EYE_GAZE_MAX_PITCH);
+        const clampedTargetQ = _clampGazeTargetInParentFrame(
+            curWorldQ,
+            targetWorldQ,
+            parentWorldQ,
+            EYE_GAZE_MAX_YAW,
+            EYE_GAZE_MAX_PITCH
+        );
         const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTargetQ, EYE_SMOOTH));
 
         const localQ = _q();
@@ -995,7 +1084,9 @@ export function _propagateChildrenWasm(
 
     for (const child of parent.childBones) {
         const childBuf = (child as MmdRuntimeBoneExtended).worldMatrix;
-        if (!childBuf) continue;
+        if (!childBuf) {
+            continue;
+        }
 
         const childOldMat = Matrix.FromArrayToRef(childBuf, 0, _m());
         const localMat = _m();
@@ -1039,14 +1130,18 @@ export function applyGazeWasm(
     cam: Camera,
     config: GazeConfig
 ): void {
-    if (!config.headEnabled && !config.eyeEnabled) return;
+    if (!config.headEnabled && !config.eyeEnabled) {
+        return;
+    }
 
     const headRuntime = bones.find((b) => b.name === '頭' || b.name === '首');
     const eyeRuntimes = bones.filter((b) => b.name.includes('目'));
     const needHead = config.headEnabled && !!headRuntime;
     const needEye = config.eyeEnabled && eyeRuntimes.length > 0;
 
-    if (!needHead && !needEye) return;
+    if (!needHead && !needEye) {
+        return;
+    }
 
     const gazeTarget = _getGazeTarget(cam, _v3());
 

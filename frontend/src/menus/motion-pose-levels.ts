@@ -50,7 +50,8 @@ export function buildPoseStudioLevel(): PopupLevel {
             // —— 卡片 1：构图辅助线 ——
             cardContainer(container, (c) => {
                 const title = document.createElement('div');
-                title.style.cssText = 'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                title.style.cssText =
+                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                 title.textContent = t('motion.poseStudio.composition');
                 c.appendChild(title);
 
@@ -63,14 +64,14 @@ export function buildPoseStudioLevel(): PopupLevel {
 
                 const currentMode = getGuideMode();
                 const btnGroup = document.createElement('div');
-                btnGroup.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px 8px;';
+                btnGroup.style.cssText =
+                    'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px 8px;';
                 for (const m of modes) {
                     const btn = document.createElement('button');
                     btn.className = 'preset-chip';
                     btn.textContent = m.label;
-                    btn.style.cssText = m.key === currentMode
-                        ? 'background:var(--accent);color:var(--text);'
-                        : '';
+                    btn.style.cssText =
+                        m.key === currentMode ? 'background:var(--accent);color:var(--text);' : '';
                     btn.addEventListener('click', () => {
                         setGuideMode(m.key as any);
                         menu?.reRender();
@@ -83,7 +84,8 @@ export function buildPoseStudioLevel(): PopupLevel {
             // —— 卡片 2：姿态预设（T-pose / A-pose / Reset）——
             cardContainer(container, (c) => {
                 const title = document.createElement('div');
-                title.style.cssText = 'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                title.style.cssText =
+                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                 title.textContent = t('motion.poseStudio.posePreset');
                 c.appendChild(title);
 
@@ -110,7 +112,11 @@ export function buildPoseStudioLevel(): PopupLevel {
                         const vmdData = generatePoseVmd(pt.key);
                         stopVMD(modelId);
                         try {
-                            await loadVMDMotion(vmdData, pt.key === 'tpose' ? 'T-Pose' : 'A-Pose', modelId);
+                            await loadVMDMotion(
+                                vmdData,
+                                pt.key === 'tpose' ? 'T-Pose' : 'A-Pose',
+                                modelId
+                            );
                             // 暂停动画使其保持姿势
                             if (mmdRuntime && isPlaying) {
                                 mmdRuntime.pauseAnimation();
@@ -130,7 +136,8 @@ export function buildPoseStudioLevel(): PopupLevel {
             // —— 卡片 3：景深控制（复用 renderer DOF）——
             cardContainer(container, (c) => {
                 const title = document.createElement('div');
-                title.style.cssText = 'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                title.style.cssText =
+                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                 title.textContent = t('motion.poseStudio.depthOfField');
                 c.appendChild(title);
 
@@ -138,7 +145,9 @@ export function buildPoseStudioLevel(): PopupLevel {
                     c,
                     t('motion.poseStudio.dofAmount'),
                     renderState.dofAperture,
-                    0, 1, 0.05,
+                    0,
+                    1,
+                    0.05,
                     (v) => {
                         setRenderState({ dofEnabled: v > 0, dofAperture: v });
                     }
@@ -148,7 +157,8 @@ export function buildPoseStudioLevel(): PopupLevel {
             // —— 卡片 4：相机角度预设 + 截图 ——
             cardContainer(container, (c) => {
                 const title = document.createElement('div');
-                title.style.cssText = 'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                title.style.cssText =
+                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                 title.textContent = t('motion.poseStudio.cameraPresets');
                 c.appendChild(title);
 
@@ -162,7 +172,10 @@ export function buildPoseStudioLevel(): PopupLevel {
                     btn.title = preset.description;
                     btn.addEventListener('click', () => {
                         applyCameraPreset(preset);
-                        setStatus(t('motion.poseStudio.cameraApplied', { name: preset.name }), true);
+                        setStatus(
+                            t('motion.poseStudio.cameraApplied', { name: preset.name }),
+                            true
+                        );
                         menu?.reRender();
                     });
                     btnGroup.appendChild(btn);
@@ -172,7 +185,7 @@ export function buildPoseStudioLevel(): PopupLevel {
                 // 批量截图按钮
                 const batchRow = document.createElement('div');
                 batchRow.style.cssText = 'display:flex;gap:6px;padding:8px 14px;';
-                
+
                 const singleBtn = document.createElement('button');
                 singleBtn.className = 'preset-chip';
                 singleBtn.textContent = '📷 ' + t('motion.poseStudio.screenshot');
@@ -194,14 +207,16 @@ export function buildPoseStudioLevel(): PopupLevel {
                 // 批量截图进度提示
                 const progressEl = document.createElement('div');
                 progressEl.id = 'pose-batch-progress';
-                progressEl.style.cssText = 'font-size:11px;color:var(--text-dim);padding:0 14px 8px;display:none;';
+                progressEl.style.cssText =
+                    'font-size:11px;color:var(--text-dim);padding:0 14px 8px;display:none;';
                 c.appendChild(progressEl);
             });
 
             // —— 卡片 5：水印配置 ——
             cardContainer(container, (c) => {
                 const title = document.createElement('div');
-                title.style.cssText = 'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                title.style.cssText =
+                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                 title.textContent = t('motion.poseStudio.watermark');
                 c.appendChild(title);
 
@@ -211,9 +226,17 @@ export function buildPoseStudioLevel(): PopupLevel {
                 });
 
                 if (wmConfig.enabled) {
-                    addSliderRow(c, t('motion.poseStudio.watermarkOpacity'), wmConfig.opacity, 0, 1, 0.1, (v) => {
-                        setWatermarkConfig({ opacity: v });
-                    });
+                    addSliderRow(
+                        c,
+                        t('motion.poseStudio.watermarkOpacity'),
+                        wmConfig.opacity,
+                        0,
+                        1,
+                        0.1,
+                        (v) => {
+                            setWatermarkConfig({ opacity: v });
+                        }
+                    );
                 }
             });
         },
@@ -247,10 +270,10 @@ async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): 
         }
 
         // 切换相机角度
-        const beta = Math.PI / 2 - (preset.elevation * Math.PI / 180);
+        const beta = Math.PI / 2 - (preset.elevation * Math.PI) / 180;
         setOrbitParams({ beta, distance: preset.distance });
         if (cam instanceof ArcRotateCamera) {
-            cam.alpha = preset.azimuth * Math.PI / 180;
+            cam.alpha = (preset.azimuth * Math.PI) / 180;
         }
 
         // 等待渲染完成
@@ -271,7 +294,9 @@ async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): 
         let dir = uiState.screenshotDir;
         if (!dir) {
             dir = await SelectDir();
-            if (!dir) break;
+            if (!dir) {
+                break;
+            }
             uiState.screenshotDir = dir;
             setUIState({ screenshotDir: dir });
         }

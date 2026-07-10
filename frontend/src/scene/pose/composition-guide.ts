@@ -25,7 +25,10 @@ export function setGuideMode(mode: 'off' | 'ruleOfThirds' | 'goldenRatio' | 'dia
 /** 切换当前辅助线模式（off → ruleOfThirds → goldenRatio → diagonal → off） */
 export function cycleGuideMode(): string {
     const modes: Array<'off' | 'ruleOfThirds' | 'goldenRatio' | 'diagonal'> = [
-        'off', 'ruleOfThirds', 'goldenRatio', 'diagonal',
+        'off',
+        'ruleOfThirds',
+        'goldenRatio',
+        'diagonal',
     ];
     const idx = modes.indexOf(_currentMode);
     const next = modes[(idx + 1) % modes.length];
@@ -37,7 +40,9 @@ export function cycleGuideMode(): string {
 function _refresh(): void {
     _dispose();
 
-    if (_currentMode === 'off') return;
+    if (_currentMode === 'off') {
+        return;
+    }
 
     _overlayEl = document.createElement('div');
     _overlayEl.id = 'composition-guide-overlay';
@@ -93,8 +98,12 @@ function _refresh(): void {
 /** 在 SVG 内画一条线。 */
 function _drawLine(
     svg: SVGSVGElement,
-    x1: number, y1: number, x2: number, y2: number,
-    color: string, width: string
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    color: string,
+    width: string
 ): void {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', String(x1));

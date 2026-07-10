@@ -181,8 +181,18 @@ export function buildRenderLevel(): PopupLevel {
                 icon: 'sparkles',
                 target: 'scene:render:postprocess',
             },
-            { kind: 'folder', label: t('scene.stage'), icon: 'monitor', target: 'scene:render:stage' },
-            { kind: 'folder', label: t('scene.renderPresets'), icon: 'palette', target: 'scene:render:presets' },
+            {
+                kind: 'folder',
+                label: t('scene.stage'),
+                icon: 'monitor',
+                target: 'scene:render:stage',
+            },
+            {
+                kind: 'folder',
+                label: t('scene.renderPresets'),
+                icon: 'palette',
+                target: 'scene:render:presets',
+            },
         ],
     };
 }
@@ -268,10 +278,19 @@ export function buildPostProcessLevel(): PopupLevel {
                 });
 
                 // 景深 — 高频效果，默认展开
-                sliderRow(c, t('scene.dof'), state.dofAperture, 0, 1, 0.05, 'lucide:camera', (v) => {
-                    setRenderState({ dofEnabled: v > 0, dofAperture: v });
-                    triggerAutoSave();
-                });
+                sliderRow(
+                    c,
+                    t('scene.dof'),
+                    state.dofAperture,
+                    0,
+                    1,
+                    0.05,
+                    'lucide:camera',
+                    (v) => {
+                        setRenderState({ dofEnabled: v > 0, dofAperture: v });
+                        triggerAutoSave();
+                    }
+                );
 
                 // 暗角 — 中频效果，默认展开
                 sliderRow(
@@ -289,10 +308,19 @@ export function buildPostProcessLevel(): PopupLevel {
                 );
 
                 // 锐化 — 中频效果，默认展开
-                sliderRow(c, t('scene.sharpen'), state.sharpenAmount, 0, 1, 0.05, 'lucide:focus', (v) => {
-                    setRenderState({ sharpenAmount: v });
-                    triggerAutoSave();
-                });
+                sliderRow(
+                    c,
+                    t('scene.sharpen'),
+                    state.sharpenAmount,
+                    0,
+                    1,
+                    0.05,
+                    'lucide:focus',
+                    (v) => {
+                        setRenderState({ sharpenAmount: v });
+                        triggerAutoSave();
+                    }
+                );
 
                 // ===== 高级层：低频效果，默认折叠 =====
 
@@ -346,10 +374,19 @@ export function buildPostProcessLevel(): PopupLevel {
                             }
                         );
 
-                        sliderRow(inner, t('scene.grain'), state.grainIntensity, 0, 1, 0.05, 'lucide:grid-3x3', (v) => {
-                            setRenderState({ grainEnabled: v > 0, grainIntensity: v });
-                            triggerAutoSave();
-                        });
+                        sliderRow(
+                            inner,
+                            t('scene.grain'),
+                            state.grainIntensity,
+                            0,
+                            1,
+                            0.05,
+                            'lucide:grid-3x3',
+                            (v) => {
+                                setRenderState({ grainEnabled: v > 0, grainIntensity: v });
+                                triggerAutoSave();
+                            }
+                        );
 
                         sliderRow(
                             inner,
@@ -368,10 +405,19 @@ export function buildPostProcessLevel(): PopupLevel {
                             }
                         );
 
-                        sliderRow(inner, t('scene.glow'), state.glowIntensity, 0, 1, 0.05, 'lucide:sparkles', (v) => {
-                            setRenderState({ glowEnabled: v > 0, glowIntensity: v });
-                            triggerAutoSave();
-                        });
+                        sliderRow(
+                            inner,
+                            t('scene.glow'),
+                            state.glowIntensity,
+                            0,
+                            1,
+                            0.05,
+                            'lucide:sparkles',
+                            (v) => {
+                                setRenderState({ glowEnabled: v > 0, glowIntensity: v });
+                                triggerAutoSave();
+                            }
+                        );
                     },
                 });
 
@@ -410,14 +456,32 @@ export function buildPostProcessLevel(): PopupLevel {
                                     triggerAutoSave();
                                 }
                             );
-                            sliderRow(inner, t('scene.ssrFalloff'), state.ssrFalloff, 0, 1, 0.05, 'lucide:square-dashed', (v) => {
-                                setRenderState({ ssrFalloff: v });
-                                triggerAutoSave();
-                            });
-                            sliderRow(inner, t('scene.ssrStep'), state.ssrStep, 1, 32, 1, 'lucide:ruler', (v) => {
-                                setRenderState({ ssrStep: v });
-                                triggerAutoSave();
-                            });
+                            sliderRow(
+                                inner,
+                                t('scene.ssrFalloff'),
+                                state.ssrFalloff,
+                                0,
+                                1,
+                                0.05,
+                                'lucide:square-dashed',
+                                (v) => {
+                                    setRenderState({ ssrFalloff: v });
+                                    triggerAutoSave();
+                                }
+                            );
+                            sliderRow(
+                                inner,
+                                t('scene.ssrStep'),
+                                state.ssrStep,
+                                1,
+                                32,
+                                1,
+                                'lucide:ruler',
+                                (v) => {
+                                    setRenderState({ ssrStep: v });
+                                    triggerAutoSave();
+                                }
+                            );
                             sliderRow(
                                 inner,
                                 t('scene.ssrThickness'),
@@ -493,10 +557,19 @@ export function buildPostProcessLevel(): PopupLevel {
                                     triggerAutoSave();
                                 }
                             );
-                            sliderRow(inner, t('scene.ssaoSamples'), state.ssaoSamples, 4, 32, 1, 'lucide:grid-3x3', (v) => {
-                                setRenderState({ ssaoSamples: v });
-                                triggerAutoSave();
-                            });
+                            sliderRow(
+                                inner,
+                                t('scene.ssaoSamples'),
+                                state.ssaoSamples,
+                                4,
+                                32,
+                                1,
+                                'lucide:grid-3x3',
+                                (v) => {
+                                    setRenderState({ ssaoSamples: v });
+                                    triggerAutoSave();
+                                }
+                            );
                         }
                     },
                 });

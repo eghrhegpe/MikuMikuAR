@@ -926,13 +926,17 @@ export function getOrbitBoneLock(): { enabled: boolean; boneName: string | null 
 /** 获取当前焦点模型的所有骨骼名称列表。 */
 export function getFocusedModelBoneNames(): string[] {
     const id = focusedModelId;
-    if (!id) return [];
+    if (!id) {
+        return [];
+    }
     const inst = modelRegistry.get(id);
     return inst?.mmdModel?.runtimeBones.map((b) => b.name) ?? [];
 }
 
 function _startBoneLock(): void {
-    if (!_scene) return;
+    if (!_scene) {
+        return;
+    }
     _stopBoneLock();
 
     // 保存并禁用平移
@@ -942,27 +946,33 @@ function _startBoneLock(): void {
     }
 
     _boneLockUpdateFn = () => {
-        if (!_boneLockEnabled || !_boneLockBoneName || !_boneLockModelId) return;
+        if (!_boneLockEnabled || !_boneLockBoneName || !_boneLockModelId) {
+            return;
+        }
         // 仅 orbit 模式生效
-        if (_cameraMode !== 'orbit') return;
+        if (_cameraMode !== 'orbit') {
+            return;
+        }
         const cam = _currentCamera;
-        if (!(cam instanceof ArcRotateCamera)) return;
+        if (!(cam instanceof ArcRotateCamera)) {
+            return;
+        }
 
         const inst = modelRegistry.get(_boneLockModelId);
-        if (!inst?.mmdModel) return;
+        if (!inst?.mmdModel) {
+            return;
+        }
 
         const bone = inst.mmdModel.runtimeBones.find(
             (b: { name: string; worldMatrix: Float32Array }) => b.name === _boneLockBoneName
         );
-        if (!bone) return;
+        if (!bone) {
+            return;
+        }
 
         // 从 worldMatrix（列主序 Float32Array[16]）提取世界位置
         if (bone.worldMatrix) {
-            _boneLockTempVec.set(
-                bone.worldMatrix[12],
-                bone.worldMatrix[13],
-                bone.worldMatrix[14]
-            );
+            _boneLockTempVec.set(bone.worldMatrix[12], bone.worldMatrix[13], bone.worldMatrix[14]);
             cam.setTarget(_boneLockTempVec);
         }
     };

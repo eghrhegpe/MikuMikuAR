@@ -102,13 +102,28 @@ export function resolvePathFromRef(filePath: string, libraryRef?: string): strin
 }
 
 /** 从旧 lipSync state 迁移为 PerceptionState 的 lip-sync 字段 */
-export function migrateLipSyncFromOldState(
-    old: { lipSync?: { enabled?: boolean; sensitivity?: number; intensity?: number; multiMorphEnabled?: boolean } },
-): { lipSyncEnabled: boolean; lipSyncSensitivity: number; lipSyncIntensity: number; lipSyncMultiMorphEnabled: boolean } {
+export function migrateLipSyncFromOldState(old: {
+    lipSync?: {
+        enabled?: boolean;
+        sensitivity?: number;
+        intensity?: number;
+        multiMorphEnabled?: boolean;
+    };
+}): {
+    lipSyncEnabled: boolean;
+    lipSyncSensitivity: number;
+    lipSyncIntensity: number;
+    lipSyncMultiMorphEnabled: boolean;
+} {
     const l = old.lipSync;
     if (!l) {
         // 旧存档无 lipSync 字段 → 使用默认值（false/0.2/0.8/false）
-        return { lipSyncEnabled: false, lipSyncSensitivity: 0.2, lipSyncIntensity: 0.8, lipSyncMultiMorphEnabled: false };
+        return {
+            lipSyncEnabled: false,
+            lipSyncSensitivity: 0.2,
+            lipSyncIntensity: 0.8,
+            lipSyncMultiMorphEnabled: false,
+        };
     }
     return {
         lipSyncEnabled: l.enabled ?? false,
@@ -120,7 +135,7 @@ export function migrateLipSyncFromOldState(
 
 /** 从旧 procMotion 状态迁移为 PerceptionState（供测试与序列化共用） */
 export function migratePerceptionFromProcMotion(
-    old: Partial<ProcMotionState>,
+    old: Partial<ProcMotionState>
 ): Partial<PerceptionState> {
     const t = old.boneToggles;
     // lip-sync：旧存档独立的 lipSync state 映射为 PerceptionState 字段
@@ -145,11 +160,13 @@ export function migratePerceptionFromProcMotion(
 }
 
 /** 从旧 procMotion 的躯干 toggle 迁移为 balanceSwayEnabled（任一为 true 则 true；无 boneToggles 默认开启） */
-export function migrateBalanceSwayFromProcMotion(
-    old: { boneToggles?: { center?: boolean; upper2?: boolean; waist?: boolean; allParent?: boolean } },
-): { balanceSwayEnabled: boolean } {
+export function migrateBalanceSwayFromProcMotion(old: {
+    boneToggles?: { center?: boolean; upper2?: boolean; waist?: boolean; allParent?: boolean };
+}): { balanceSwayEnabled: boolean } {
     const t = old.boneToggles;
-    if (!t) return { balanceSwayEnabled: true }; // 无旧数据时默认开启
+    if (!t) {
+        return { balanceSwayEnabled: true };
+    } // 无旧数据时默认开启
     return {
         balanceSwayEnabled: !!(t.center || t.upper2 || t.waist || t.allParent),
     };
@@ -651,7 +668,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     if (data.perception) {
         setPerceptionState(data.perception as Partial<PerceptionState>);
     } else if (data.procMotion) {
-        setPerceptionState(migratePerceptionFromProcMotion(data.procMotion as Partial<ProcMotionState>));
+        setPerceptionState(
+            migratePerceptionFromProcMotion(data.procMotion as Partial<ProcMotionState>)
+        );
     }
     activatePerception();
 
@@ -754,7 +773,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     // --- Accessory: 恢复道具骨骼锚定 ---
     if (data.props && data.props.length > 0) {
         for (const p of data.props) {
-            if (!p.boneName || !p.targetModelUuid) continue;
+            if (!p.boneName || !p.targetModelUuid) {
+                continue;
+            }
             // 通过 UUID 找到运行时的模型 ID
             let targetModelId: string | undefined;
             for (const [runtimeId, uuid] of modelUuidMap) {
@@ -763,7 +784,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     break;
                 }
             }
-            if (!targetModelId) continue;
+            if (!targetModelId) {
+                continue;
+            }
             // 找到对应的 prop ID
             let propId: string | undefined;
             for (const [runtimeId, uuid] of propUuidMap) {
@@ -772,7 +795,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     break;
                 }
             }
-            if (!propId) continue;
+            if (!propId) {
+                continue;
+            }
             try {
                 const { attachPropToBone } = await import('./env/accessory');
                 attachPropToBone(
@@ -839,7 +864,9 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
         const json = JSON.stringify(data);
         const _sJson = performance.now() - _sStart - _sSerialize;
         if (_sSerialize + _sJson > 2) {
-            console.warn(`[perf:save] serialize=${_sSerialize.toFixed(1)}ms json=${_sJson.toFixed(1)}ms len=${json.length}`);
+            console.warn(
+                `[perf:save] serialize=${_sSerialize.toFixed(1)}ms json=${_sJson.toFixed(1)}ms len=${json.length}`
+            );
         }
 
         // localStorage 作为主存储（同步写入，保证进程退出前完成）
@@ -946,7 +973,7 @@ export async function tryRestoreLastScene(): Promise<void> {
 
     try {
         const raw = JSON.parse(json);
-        
+
         // 防御二次序列化：parse 后仍是字符串说明数据异常
         if (!raw || typeof raw !== 'object') {
             console.warn('场景数据格式异常（可能被二次序列化），跳过恢复');

@@ -514,7 +514,7 @@ export function buildParticleLevel(): PopupLevel {
                 );
                 // 自定义纹理：slideRow + 库浏览
                 const particleFileName = s.particleCustomTexture
-                    ? s.particleCustomTexture.split(/[/\\]/).pop() ?? t('env.notSelected')
+                    ? (s.particleCustomTexture.split(/[/\\]/).pop() ?? t('env.notSelected'))
                     : t('env.notSelected');
                 slideRow(
                     c,
@@ -526,8 +526,7 @@ export function buildParticleLevel(): PopupLevel {
                         const level = stackRegistry.buildLevel!(
                             getBrowseDir('environment'),
                             t('env.customTexture'),
-                            (m) =>
-                                ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+                            (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
                             getEnvMenu()!
                         );
                         getEnvMenu()!.push(level);
@@ -536,7 +535,8 @@ export function buildParticleLevel(): PopupLevel {
                 );
                 if (s.particleCustomTexture) {
                     const clearRow = document.createElement('div');
-                    clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+                    clearRow.style.cssText =
+                        'display:flex;justify-content:flex-end;padding:0 14px 4px;';
                     const clearBtn = document.createElement('button');
                     clearBtn.className = 'cs-btn cs-btn-sm';
                     clearBtn.textContent = t('env.clear');
@@ -554,10 +554,14 @@ export function buildParticleLevel(): PopupLevel {
 // ======== Env Stack onFolderEnter ========
 
 function envOnItemClick(row: PopupRow): void {
-    if (!row.model) return;
+    if (!row.model) {
+        return;
+    }
 
     const IMAGE_FORMATS = ['png', 'jpg', 'jpeg', 'hdr', 'dds'];
-    if (!IMAGE_FORMATS.includes(row.model.format)) return;
+    if (!IMAGE_FORMATS.includes(row.model.format)) {
+        return;
+    }
 
     const target = _envTextureBindingTarget;
     clearEnvTextureBindingTarget();

@@ -446,7 +446,8 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
     // WASM blender 激活时先 teardown，防止 observer 泄漏
     // 多图层分支会重新 setupWasmLayersBlender
     try {
-        const { isWasmLayersBlenderActive, teardownWasmLayersBlender } = await import('./wasm-layers-blender');
+        const { isWasmLayersBlenderActive, teardownWasmLayersBlender } =
+            await import('./wasm-layers-blender');
         if (isWasmLayersBlenderActive(modelId)) {
             teardownWasmLayersBlender(modelId);
         }
@@ -541,7 +542,8 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
                 const blendEnabled = import.meta.env.VITE_WASM_LAYERS_BLEND !== '0';
                 if (blendEnabled) {
                     try {
-                        const { setupWasmLayersBlender, addWasmLayer } = await import('./wasm-layers-blender');
+                        const { setupWasmLayersBlender, addWasmLayer } =
+                            await import('./wasm-layers-blender');
 
                         const baseSrc = sources[0];
                         await setupWasmLayersBlender(modelId, baseSrc.data, baseSrc.name);
@@ -559,11 +561,17 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
 
                         inst.animationDuration = maxEndFrame / 30;
                         inst.vmdName = sources.map((s) => s.name).join(' + ');
-                        setStatus(t('scene.vmd.layersBlendedBlender', { names: inst.vmdName }), true);
+                        setStatus(
+                            t('scene.vmd.layersBlendedBlender', { names: inst.vmdName }),
+                            true
+                        );
                         triggerAutoSave();
                         return;
                     } catch (err) {
-                        console.error('[MotionLayers] WASM blender failed, falling back to single layer', err);
+                        console.error(
+                            '[MotionLayers] WASM blender failed, falling back to single layer',
+                            err
+                        );
                     }
                 }
             }

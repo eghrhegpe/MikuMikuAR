@@ -224,7 +224,12 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
     const scene = getScene();
     let tex = _envSys.sky.skyDynamicTex;
     if (!tex) {
-        tex = new DynamicTexture('skyGradient', { width: SKY_TEX_SIZE, height: SKY_TEX_SIZE }, scene, false);
+        tex = new DynamicTexture(
+            'skyGradient',
+            { width: SKY_TEX_SIZE, height: SKY_TEX_SIZE },
+            scene,
+            false
+        );
         tex.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
         tex.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
         tex.hasAlpha = false;

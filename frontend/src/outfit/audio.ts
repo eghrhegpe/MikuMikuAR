@@ -98,7 +98,7 @@ export function disposeAudio(): void {
     }
     audioName = '';
     audioPath = '';
-  
+
     if (beatDetector) {
         beatDetector.dispose();
         beatDetector = null;
@@ -107,20 +107,20 @@ export function disposeAudio(): void {
 }
 
 export function setVolume(v: number): void {
-  SettingsStore.get().set('volume', Math.max(0, Math.min(1, v)));
-  applyGain(); // sync beatDetector + audioElement immediately
+    SettingsStore.get().set('volume', Math.max(0, Math.min(1, v)));
+    applyGain(); // sync beatDetector + audioElement immediately
 }
 
 export function getVolume(): number {
-  return SettingsStore.get().get('volume') as number;
+    return SettingsStore.get().get('volume') as number;
 }
 
 export function setAudioOffset(seconds: number): void {
-  SettingsStore.get().set('audioOffset', seconds);
+    SettingsStore.get().set('audioOffset', seconds);
 }
 
 export function getAudioOffset(): number {
-  return SettingsStore.get().get('audioOffset') as number;
+    return SettingsStore.get().get('audioOffset') as number;
 }
 
 export function getCurrentTime(): number {
@@ -218,35 +218,38 @@ let beatDetectorAttached = false;
 
 /** 接入节拍检测器到当前音频元素（惰性，仅调用一次）。 */
 export function attachBeatDetector(detector: BeatDetector): void {
-  beatDetector = detector;
-  if (audioElement && !beatDetectorAttached) {
-    beatDetectorAttached = detector.attach(audioElement);
-  }
+    beatDetector = detector;
+    if (audioElement && !beatDetectorAttached) {
+        beatDetectorAttached = detector.attach(audioElement);
+    }
 }
 
 // AO ✂️ Connect to global settings updates
 export function applyGain(): void {
-  const vol = getVolume();
-  if (audioElement) {
-    audioElement.volume = vol;
-  }
-  if (beatDetector) {
-    beatDetector.setVolume(vol);
-  }
+    const vol = getVolume();
+    if (audioElement) {
+        audioElement.volume = vol;
+    }
+    if (beatDetector) {
+        beatDetector.setVolume(vol);
+    }
 }
 
 let cleanupSettingsListener: (() => void) | null = null;
 
 function setupSettingsListener(): void {
-  if (cleanupSettingsListener) return;
-  const handler = () => applyGain();
-  globalThis.addEventListener(SETTINGS_UPDATED.description!, handler);
-  cleanupSettingsListener = () => globalThis.removeEventListener(SETTINGS_UPDATED.description!, handler);
+    if (cleanupSettingsListener) {
+        return;
+    }
+    const handler = () => applyGain();
+    globalThis.addEventListener(SETTINGS_UPDATED.description!, handler);
+    cleanupSettingsListener = () =>
+        globalThis.removeEventListener(SETTINGS_UPDATED.description!, handler);
 }
 
 function teardownSettingsListener(): void {
-  cleanupSettingsListener?.();
-  cleanupSettingsListener = null;
+    cleanupSettingsListener?.();
+    cleanupSettingsListener = null;
 }
 
 // AO ✂️ Patch ensureAudio and disposeAudio to wire settings listener
@@ -254,26 +257,26 @@ const origEnsureAudio = ensureAudio as () => HTMLAudioElement;
 const origDisposeAudio = disposeAudio as () => void;
 
 function patchedEnsureAudio(): HTMLAudioElement {
-  const el = origEnsureAudio();
-  setupSettingsListener();
-  return el;
+    const el = origEnsureAudio();
+    setupSettingsListener();
+    return el;
 }
 
 function patchedDisposeAudio(): void {
-  teardownSettingsListener();
-  origDisposeAudio();
-  if (audioElement) {
-    audioElement.pause();
-    audioElement.src = '';
-    audioElement = null;
-  }
-  audioName = '';
-  audioPath = '';
-  if (beatDetector) {
-    beatDetector.dispose();
-    beatDetector = null;
-  }
-  beatDetectorAttached = false;
+    teardownSettingsListener();
+    origDisposeAudio();
+    if (audioElement) {
+        audioElement.pause();
+        audioElement.src = '';
+        audioElement = null;
+    }
+    audioName = '';
+    audioPath = '';
+    if (beatDetector) {
+        beatDetector.dispose();
+        beatDetector = null;
+    }
+    beatDetectorAttached = false;
 }
 
 // Replace originals with patched versions

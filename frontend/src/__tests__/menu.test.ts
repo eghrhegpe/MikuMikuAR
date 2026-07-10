@@ -1115,8 +1115,12 @@ describe('showPopupMenu — 菜单创建与复用', () => {
             buildRoot: () => makeLevel('根'),
             handlers: {},
             getMenu: () => storedMenu,
-            setMenu: (m) => { storedMenu = m; },
-            onShow: () => { created = true; },
+            setMenu: (m) => {
+                storedMenu = m;
+            },
+            onShow: () => {
+                created = true;
+            },
         });
         await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(created).toBe(true);
@@ -1133,7 +1137,9 @@ describe('showPopupMenu — 菜单创建与复用', () => {
                 onFolderEnter: () => makeLevel('子级'),
             },
             getMenu: () => storedMenu,
-            setMenu: (m) => { storedMenu = m; },
+            setMenu: (m) => {
+                storedMenu = m;
+            },
         });
         await new Promise((resolve) => requestAnimationFrame(resolve));
 
@@ -1148,7 +1154,9 @@ describe('showPopupMenu — 菜单创建与复用', () => {
             buildRoot: () => makeLevel('根'),
             handlers: {},
             getMenu: () => storedMenu,
-            setMenu: (m) => { storedMenu = m; },
+            setMenu: (m) => {
+                storedMenu = m;
+            },
         });
         await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(storedMenu?.levelCount).toBe(1);
@@ -1392,7 +1400,9 @@ describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
             dir: '',
             items: [{ kind: 'action' as const, label: labelOf(), icon: 'i', target: 'appearance' }],
             // [doc:adr-065] itemBuilder 返回最新语言的 items
-            itemBuilder: () => [{ kind: 'action' as const, label: labelOf(), icon: 'i', target: 'appearance' }],
+            itemBuilder: () => [
+                { kind: 'action' as const, label: labelOf(), icon: 'i', target: 'appearance' },
+            ],
         };
         menu.reset(level);
         await new Promise((r) => requestAnimationFrame(r));
@@ -1426,8 +1436,12 @@ describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
             {
                 label: '根',
                 dir: '',
-                items: [{ kind: 'action' as const, label: '外观', icon: 'i', target: 'appearance' }],
-                itemBuilder: () => [{ kind: 'action' as const, label: 'X', icon: 'i', target: 'appearance' }],
+                items: [
+                    { kind: 'action' as const, label: '外观', icon: 'i', target: 'appearance' },
+                ],
+                itemBuilder: () => [
+                    { kind: 'action' as const, label: 'X', icon: 'i', target: 'appearance' },
+                ],
             },
         ];
         // 未 buildPanel → panel 无 .slide-list，应安全跳过
@@ -1438,8 +1452,22 @@ describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
         const level: PopupLevel = {
             label: '根',
             dir: '',
-            items: [{ kind: 'folder' as const, label: t('settings.appearance'), icon: 'i', target: 'appearance' }],
-            itemBuilder: () => [{ kind: 'folder' as const, label: t('settings.appearance'), icon: 'i', target: 'appearance' }],
+            items: [
+                {
+                    kind: 'folder' as const,
+                    label: t('settings.appearance'),
+                    icon: 'i',
+                    target: 'appearance',
+                },
+            ],
+            itemBuilder: () => [
+                {
+                    kind: 'folder' as const,
+                    label: t('settings.appearance'),
+                    icon: 'i',
+                    target: 'appearance',
+                },
+            ],
         };
         menu.reset(level);
         await new Promise((r) => requestAnimationFrame(r));

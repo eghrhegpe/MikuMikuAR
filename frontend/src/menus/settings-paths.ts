@@ -12,10 +12,29 @@ import {
     SetDownloadAutoImport,
     SelectDir,
 } from '../core/wails-bindings';
-import { setStatus, resourceRoot, overridePaths, allModels, cardContainer, PopupRow } from '../core/config';
-import { slideRow, addDangerRow, addModeRow, addSectionTitle, addToggleRow, addWatchDirRow } from '../core/ui-helpers';
+import {
+    setStatus,
+    resourceRoot,
+    overridePaths,
+    allModels,
+    cardContainer,
+    PopupRow,
+} from '../core/config';
+import {
+    slideRow,
+    addDangerRow,
+    addModeRow,
+    addSectionTitle,
+    addToggleRow,
+    addWatchDirRow,
+} from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
-import { selectResourceRoot, selectOverridePath, switchStorageMode, refreshLibrary } from './library-core';
+import {
+    selectResourceRoot,
+    selectOverridePath,
+    switchStorageMode,
+    refreshLibrary,
+} from './library-core';
 import { t } from '../core/i18n/t';
 import { setLang, type LangCode } from '../core/i18n/locale';
 import { CATEGORY_DIR } from '../core/utils';
@@ -56,11 +75,7 @@ export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     },
     [SETTINGS_ACTION.CLEAR_ALL_CACHE]: () => {
         (async () => {
-            if (
-                await showConfirm(
-                    t('settings.paths.clearAllConfirm')
-                )
-            ) {
+            if (await showConfirm(t('settings.paths.clearAllConfirm'))) {
                 ClearAllCaches()
                     .then(() => {
                         setStatus(t('settings.allCacheCleared'), true);
@@ -96,7 +111,11 @@ export function handleSettingsAction(row: PopupRow, menu?: SlideMenu): void {
 
 export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     const root = resourceRoot;
-    const rootSub = root ? (root.length > 20 ? '...' + root.slice(-17) : root) : t('settings.paths.notSet');
+    const rootSub = root
+        ? root.length > 20
+            ? '...' + root.slice(-17)
+            : root
+        : t('settings.paths.notSet');
     const paths = overridePaths || {};
     const isAndroid = isAndroidPlatform();
     // key → 默认子目录名（与 Go 端 GetPath 的目录名一致，大小写不统一；复用 core/utils 的 CATEGORY_DIR）
@@ -112,98 +131,184 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
         }
         return actual.length > 20 ? '...' + actual.slice(-17) : actual;
     };
-                return {
-                label: t('settings.paths.title'),
-                dir: '',
-                items: [],
-                renderCustom: async (container) => {
+    return {
+        label: t('settings.paths.title'),
+        dir: '',
+        items: [],
+        renderCustom: async (container) => {
+            try {
+                addSectionTitle(container, t('settings.paths.storage'));
+                // Card 1: 资源根目录 / 存储位置（Android）
+                if (isAndroid) {
+                    let currentMode = 'private';
                     try {
-                    addSectionTitle(container, t('settings.paths.storage'));
-                    // Card 1: 资源根目录 / 存储位置（Android）
-            if (isAndroid) {
-                let currentMode = 'private';
-                try {
-                    currentMode = (await GetStorageMode()) || 'private';
-                } catch {
-                    // ignore
-                }
-                cardContainer(container, (c) => {
-                    addModeRow<string>(
-                        c,
-                        t('settings.storageMode'),
-                        [
-                            { value: 'private', label: t('settings.storagePrivate') },
-                            { value: 'shared', label: t('settings.storageShared') },
-                        ],
-                        currentMode,
-                        (mode) => {
-                            console.log('[paths] mode btn clicked:', mode);
-                            switchStorageMode(mode as 'private' | 'shared')
-                                .then(() => {
-                                    console.log('[paths] switchStorageMode done, reRender');
-                                    getSettingsMenu()?.reRender();
-                                    refreshLibrary()
-                                        .then(() => {
-                                            const msg = allModels.length > 0
-                                                ? t('settings.paths.modelsLoaded', {count: allModels.length})
-                                                : t('settings.paths.noModels');
-                                            console.log('[paths] refreshLibrary done, models:', allModels.length);
-                                            setStatus(msg, allModels.length === 0);
-                                        })
-                                        .catch((err) => {
-                                            console.warn('[paths] refreshLibrary failed:', err);
-                                        });
-                                })
-                                .catch((err) => {
-      console.error('[paths] switchStorageMode failed:', err);
-      setStatus(t('settings.storageModeFail', {err}), true);
-                                });
-                        }
-                    );
-                    const desc = document.createElement('div');
-                    desc.className = 'storage-mode-desc';
-                    desc.style.cssText = 'font-size:11px;color:var(--text-secondary);padding:2px 12px 8px;line-height:1.4';
-                    desc.textContent = t('settings.storageModeDesc');
-                    c.appendChild(desc);
-                    // 诊断信息（内嵌在存储模式卡片底部）
-                    const diag = document.createElement('div');
-                    diag.style.cssText = 'margin:6px 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.12);border-radius:6px;font-size:11px;color:var(--text-secondary);line-height:1.7;word-break:break-all';
-                    diag.innerHTML = `
+                        currentMode = (await GetStorageMode()) || 'private';
+                    } catch {
+                        // ignore
+                    }
+                    cardContainer(container, (c) => {
+                        addModeRow<string>(
+                            c,
+                            t('settings.storageMode'),
+                            [
+                                { value: 'private', label: t('settings.storagePrivate') },
+                                { value: 'shared', label: t('settings.storageShared') },
+                            ],
+                            currentMode,
+                            (mode) => {
+                                console.log('[paths] mode btn clicked:', mode);
+                                switchStorageMode(mode as 'private' | 'shared')
+                                    .then(() => {
+                                        console.log('[paths] switchStorageMode done, reRender');
+                                        getSettingsMenu()?.reRender();
+                                        refreshLibrary()
+                                            .then(() => {
+                                                const msg =
+                                                    allModels.length > 0
+                                                        ? t('settings.paths.modelsLoaded', {
+                                                              count: allModels.length,
+                                                          })
+                                                        : t('settings.paths.noModels');
+                                                console.log(
+                                                    '[paths] refreshLibrary done, models:',
+                                                    allModels.length
+                                                );
+                                                setStatus(msg, allModels.length === 0);
+                                            })
+                                            .catch((err) => {
+                                                console.warn('[paths] refreshLibrary failed:', err);
+                                            });
+                                    })
+                                    .catch((err) => {
+                                        console.error('[paths] switchStorageMode failed:', err);
+                                        setStatus(t('settings.storageModeFail', { err }), true);
+                                    });
+                            }
+                        );
+                        const desc = document.createElement('div');
+                        desc.className = 'storage-mode-desc';
+                        desc.style.cssText =
+                            'font-size:11px;color:var(--text-secondary);padding:2px 12px 8px;line-height:1.4';
+                        desc.textContent = t('settings.storageModeDesc');
+                        c.appendChild(desc);
+                        // 诊断信息（内嵌在存储模式卡片底部）
+                        const diag = document.createElement('div');
+                        diag.style.cssText =
+                            'margin:6px 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.12);border-radius:6px;font-size:11px;color:var(--text-secondary);line-height:1.7;word-break:break-all';
+                        diag.innerHTML = `
                         <div><b>存储模式：</b>${currentMode === 'shared' ? t('settings.paths.storageModeShared') : t('settings.paths.storageModePrivate')}</div>
                         <div><b>资源目录：</b>${resourceRoot || '<span style="color:var(--danger)">' + t('settings.paths.notSet') + '</span>'}</div>
                         <div><b>模型数量：</b>${allModels.length}</div>
                     `;
-                    c.appendChild(diag);
-                });
-            } else {
+                        c.appendChild(diag);
+                    });
+                } else {
+                    cardContainer(container, (c) => {
+                        slideRow(
+                            c,
+                            'lucide:folder',
+                            t('settings.paths.resourceRoot'),
+                            false,
+                            () =>
+                                handleSettingsAction({
+                                    kind: 'action',
+                                    label: '',
+                                    icon: '',
+                                    target: SETTINGS_ACTION.RESOURCE_ROOT,
+                                }),
+                            rootSub
+                        );
+                    });
+                }
+                // Card 2: 资源路径覆盖
+                addSectionTitle(container, t('settings.paths.override'));
                 cardContainer(container, (c) => {
                     slideRow(
                         c,
-                        'lucide:folder',
-                        t('settings.paths.resourceRoot'),
+                        'lucide:box',
+                        t('settings.paths.pmx'),
                         false,
                         () =>
                             handleSettingsAction({
                                 kind: 'action',
                                 label: '',
                                 icon: '',
-                                target: SETTINGS_ACTION.RESOURCE_ROOT,
+                                target: SETTINGS_ACTION.PATH_PMX,
                             }),
-                        rootSub
+                        pathSub('pmx', t('settings.paths.default'))
+                    );
+                    slideRow(
+                        c,
+                        'lucide:music',
+                        t('settings.paths.vmd'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.PATH_VMD,
+                            }),
+                        pathSub('vmd', t('settings.paths.default'))
+                    );
+                    slideRow(
+                        c,
+                        'lucide:headphones',
+                        t('settings.paths.audio'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.PATH_AUDIO,
+                            }),
+                        pathSub('audio', t('settings.paths.default'))
+                    );
+                    slideRow(
+                        c,
+                        'lucide:gem',
+                        t('settings.paths.prop'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.PATH_PROP,
+                            }),
+                        pathSub('prop', t('settings.paths.default'))
+                    );
+                    slideRow(
+                        c,
+                        'lucide:home',
+                        t('settings.paths.stage'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.PATH_STAGE,
+                            }),
+                        pathSub('stage', t('settings.paths.default'))
+                    );
+                    slideRow(
+                        c,
+                        'lucide:cloud',
+                        t('settings.paths.environment'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.PATH_ENVIRONMENT,
+                            }),
+                        pathSub('environment', t('settings.paths.default'))
                     );
                 });
-            }
-                // Card 2: 资源路径覆盖
-                addSectionTitle(container, t('settings.paths.override'));
-                cardContainer(container, (c) => {
-                    slideRow(c, 'lucide:box', t('settings.paths.pmx'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PMX }), pathSub('pmx', t('settings.paths.default')));
-                    slideRow(c, 'lucide:music', t('settings.paths.vmd'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_VMD }), pathSub('vmd', t('settings.paths.default')));
-                    slideRow(c, 'lucide:headphones', t('settings.paths.audio'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_AUDIO }), pathSub('audio', t('settings.paths.default')));
-                    slideRow(c, 'lucide:gem', t('settings.paths.prop'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_PROP }), pathSub('prop', t('settings.paths.default')));
-                    slideRow(c, 'lucide:home', t('settings.paths.stage'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_STAGE }), pathSub('stage', t('settings.paths.default')));
-                    slideRow(c, 'lucide:cloud', t('settings.paths.environment'), false, () => handleSettingsAction({ kind: 'action', label: '', icon: '', target: SETTINGS_ACTION.PATH_ENVIRONMENT }), pathSub('environment', t('settings.paths.default')));
-                });
-                
+
                 // Card 3: 外部库
                 addSectionTitle(container, t('settings.paths.externalLib'));
                 cardContainer(container, (c) => {
@@ -227,9 +332,11 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                             getDownloadWatchEnabledCached(),
                             (v) => {
                                 setDownloadWatchEnabledCached(v);
-                                SetDownloadWatchEnabled(v).catch((err) => console.warn('[watch] SetDownloadWatchEnabled failed', err));
-      getSettingsMenu()?.updateControls();
-      setStatus(v ? t('settings.watchOn') : t('settings.watchOff'), true);
+                                SetDownloadWatchEnabled(v).catch((err) =>
+                                    console.warn('[watch] SetDownloadWatchEnabled failed', err)
+                                );
+                                getSettingsMenu()?.updateControls();
+                                setStatus(v ? t('settings.watchOn') : t('settings.watchOff'), true);
                             },
                             'lucide:folder-search',
                             { bind: () => getDownloadWatchEnabledCached() }
@@ -238,19 +345,25 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                             c,
                             async (setStatusText) => {
                                 const status = await GetDownloadWatchStatus();
-                                setStatusText(status ? t('settings.paths.watching', {dir: status}) : t('settings.paths.watchStopped'));
+                                setStatusText(
+                                    status
+                                        ? t('settings.paths.watching', { dir: status })
+                                        : t('settings.paths.watchStopped')
+                                );
                             },
                             async () => {
                                 const dir = await SelectDir();
-                                if (!dir) return undefined;
+                                if (!dir) {
+                                    return undefined;
+                                }
                                 try {
                                     await SetDownloadWatchDir(dir);
                                     setDownloadWatchEnabledCached(true);
-      getSettingsMenu()?.updateControls();
-      setStatus(t('settings.watchDirSet', {dir}), true);
+                                    getSettingsMenu()?.updateControls();
+                                    setStatus(t('settings.watchDirSet', { dir }), true);
                                 } catch (err) {
-      console.warn('[watch] SetDownloadWatchDir failed', err);
-      setStatus(t('settings.watchDirFail', {err}), true);
+                                    console.warn('[watch] SetDownloadWatchDir failed', err);
+                                    setStatus(t('settings.watchDirFail', { err }), true);
                                 }
                                 return dir;
                             }
@@ -261,21 +374,26 @@ export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandl
                             getAutoImportCached(),
                             (v) => {
                                 setAutoImportCached(v);
-                                SetDownloadAutoImport(v).catch((err) => console.warn('[watch] SetDownloadAutoImport failed', err));
-      getSettingsMenu()?.updateControls();
-      setStatus(v ? t('settings.autoImportOn') : t('settings.autoImportOff'), true);
+                                SetDownloadAutoImport(v).catch((err) =>
+                                    console.warn('[watch] SetDownloadAutoImport failed', err)
+                                );
+                                getSettingsMenu()?.updateControls();
+                                setStatus(
+                                    v ? t('settings.autoImportOn') : t('settings.autoImportOff'),
+                                    true
+                                );
                             },
                             'lucide:download',
                             { bind: () => getAutoImportCached() }
                         );
                     });
                 }
-                } catch (err) {
-                    console.error('[paths] renderCustom error:', err);
-                    container.innerHTML = `<div style="padding:16px;color:var(--danger);font-size:12px;text-align:center;">
-                        ${t('settings.paths.loadFailed', {err: err instanceof Error ? err.message : '未知错误'})}
+            } catch (err) {
+                console.error('[paths] renderCustom error:', err);
+                container.innerHTML = `<div style="padding:16px;color:var(--danger);font-size:12px;text-align:center;">
+                        ${t('settings.paths.loadFailed', { err: err instanceof Error ? err.message : '未知错误' })}
                     </div>`;
-                }
+            }
         },
     };
 }

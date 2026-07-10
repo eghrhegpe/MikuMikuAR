@@ -150,7 +150,9 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
             const bpm = procBeatDetector?.getBPM() ?? 120;
             startProcMotion(mode, mode === 'autodance' ? bpm : undefined);
         } else {
-            console.warn('[proc-motion] Re-trigger skipped: focusedModelId changed or procModelId cleared');
+            console.warn(
+                '[proc-motion] Re-trigger skipped: focusedModelId changed or procModelId cleared'
+            );
         }
     }
 }
@@ -306,14 +308,14 @@ export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']
 /** 设置 BPM 量化开关（通过 SettingsStore） */
 // AO ✂️ Replace state write with SettingsStore.set
 export function setBpmQuantizeEnabled(v: boolean): void {
-  if (typeof v !== 'boolean') {
-    console.warn('[proc-motion] setBpmQuantizeEnabled: invalid value type, expected boolean');
-    return;
-  }
-  SettingsStore.get().set('bpmQuantizeEnabled', v);
-  if (procBeatDetector) {
-    procBeatDetector.setBpmQuantizeEnabled(v);
-  }
+    if (typeof v !== 'boolean') {
+        console.warn('[proc-motion] setBpmQuantizeEnabled: invalid value type, expected boolean');
+        return;
+    }
+    SettingsStore.get().set('bpmQuantizeEnabled', v);
+    if (procBeatDetector) {
+        procBeatDetector.setBpmQuantizeEnabled(v);
+    }
 }
 
 export function getBpmQuantizeEnabled(): boolean {

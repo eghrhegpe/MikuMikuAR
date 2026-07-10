@@ -40,9 +40,9 @@ function _q(): Quaternion {
 // MMD 惯例用 ZXY，但为 UI 直观用 Babylon 默认 YXZ
 function _eulerToQuat(pitchDeg: number, yawDeg: number, rollDeg: number): Quaternion {
     return Quaternion.FromEulerAngles(
-        pitchDeg * Math.PI / 180,
-        yawDeg * Math.PI / 180,
-        rollDeg * Math.PI / 180
+        (pitchDeg * Math.PI) / 180,
+        (yawDeg * Math.PI) / 180,
+        (rollDeg * Math.PI) / 180
     );
 }
 
@@ -74,7 +74,9 @@ function _propagateChildrenWasm(
     invMat.invert();
     for (const child of parent.childBones) {
         const childBuf = (child as MmdRuntimeBoneExtended).worldMatrix;
-        if (!childBuf) continue;
+        if (!childBuf) {
+            continue;
+        }
         const childOldMat = Matrix.FromArray(childBuf);
         const localMat = new Matrix();
         childOldMat.multiplyToRef(invMat, localMat);
@@ -141,15 +143,17 @@ export function clearAllOverrides(): void {
 export function getAllOverrides(): BoneOverrideEntry[] {
     const result: BoneOverrideEntry[] = [];
     for (const [boneName, slot] of _overrideMap) {
-        if (!slot.enabled) continue;
+        if (!slot.enabled) {
+            continue;
+        }
         // 需要从四元数反推欧拉角
         const euler = slot.quat.toEulerAngles();
         result.push({
             boneName,
             euler: [
-                euler.x * 180 / Math.PI,
-                euler.y * 180 / Math.PI,
-                euler.z * 180 / Math.PI,
+                (euler.x * 180) / Math.PI,
+                (euler.y * 180) / Math.PI,
+                (euler.z * 180) / Math.PI,
             ],
             weight: slot.weight,
             enabled: slot.enabled,
@@ -178,38 +182,57 @@ export function startBoneOverride(
     getRuntimeBones: () => readonly IMmdRuntimeBone[],
     scene: import('@babylonjs/core/scene').Scene
 ): void {
-    if (_observerHandle) return; // 已启动
+    if (_observerHandle) {
+        return;
+    } // 已启动
 
     const callback = () => {
-        if (_overrideMap.size === 0) return;
+        if (_overrideMap.size === 0) {
+            return;
+        }
         const bones = getRuntimeBones();
-        if (bones.length === 0) return;
+        if (bones.length === 0) {
+            return;
+        }
 
         const isWasm = _isWasmRuntime(bones[0]);
 
         for (const [boneName, slot] of _overrideMap) {
-            if (!slot.enabled) continue;
+            if (!slot.enabled) {
+                continue;
+            }
             const rb = bones.find((b) => b.name === boneName);
-            if (!rb) continue;
+            if (!rb) {
+                continue;
+            }
 
             if (isWasm) {
                 // WASM 模式：直写 worldMatrix
                 const buf = (rb as MmdRuntimeBoneExtended).worldMatrix;
-                if (!buf) continue;
+                if (!buf) {
+                    continue;
+                }
                 const oldMat = Matrix.FromArray(buf);
                 const pos = oldMat.getTranslation();
-                const oldQ = _q().copyFrom(Quaternion.FromRotationMatrix(oldMat.getRotationMatrix()));
-                const blended = slot.weight >= 1
-                    ? slot.quat
-                    : Quaternion.Slerp(oldQ, slot.quat, slot.weight);
+                const oldQ = _q().copyFrom(
+                    Quaternion.FromRotationMatrix(oldMat.getRotationMatrix())
+                );
+                const blended =
+                    slot.weight >= 1 ? slot.quat : Quaternion.Slerp(oldQ, slot.quat, slot.weight);
                 const newMat = Matrix.Compose(Vector3.One(), blended, pos);
                 const arr = newMat.asArray();
-                for (let i = 0; i < 16; i++) buf[i] = arr[i];
+                for (let i = 0; i < 16; i++) {
+                    buf[i] = arr[i];
+                }
                 _propagateChildrenWasm(rb, oldMat, newMat);
             } else {
                 // JS 模式：写 linkedBone.rotationQuaternion
-                const linked = (rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone }).linkedBone;
-                if (!linked) continue;
+                const linked = (
+                    rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone }
+                ).linkedBone;
+                if (!linked) {
+                    continue;
+                }
 
                 if (slot.weight >= 1) {
                     linked.rotationQuaternion = slot.quat.clone();

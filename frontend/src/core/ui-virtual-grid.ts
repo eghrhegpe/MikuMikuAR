@@ -33,13 +33,7 @@ export function createVirtualGrid<T>(
     container: HTMLElement,
     options: VirtualGridOptions<T>
 ): VirtualGridHandle<T> {
-    const {
-        items: initialItems,
-        itemHeight,
-        columns,
-        renderItem,
-        bufferRows = 2,
-    } = options;
+    const { items: initialItems, itemHeight, columns, renderItem, bufferRows = 2 } = options;
 
     // 状态
     let currentItems = [...initialItems];

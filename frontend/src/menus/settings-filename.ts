@@ -112,10 +112,14 @@ export function buildSettingsFilenameLevel(getSettingsMenu: () => SettingsMenuHa
                                     danger: true,
                                     onClick: () => {
                                         delete uiState.materialCategoryMap![pattern];
-                                        if (Object.keys(uiState.materialCategoryMap!).length === 0) {
+                                        if (
+                                            Object.keys(uiState.materialCategoryMap!).length === 0
+                                        ) {
                                             delete uiState.materialCategoryMap;
                                         }
-                                        setUIState({ materialCategoryMap: uiState.materialCategoryMap });
+                                        setUIState({
+                                            materialCategoryMap: uiState.materialCategoryMap,
+                                        });
                                         getSettingsMenu()?.reRender();
                                     },
                                 },
@@ -133,7 +137,9 @@ export function buildSettingsFilenameLevel(getSettingsMenu: () => SettingsMenuHa
                         label2: '目标分类',
                         placeholder2: '皮肤/头发/眼睛/服装/配件/道具',
                     });
-                    if (!result) return;
+                    if (!result) {
+                        return;
+                    }
                     const [pattern, category] = result;
                     try {
                         new RegExp(pattern);

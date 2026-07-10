@@ -8,7 +8,9 @@ import { SelectDir, OpenScreenshotDir } from '../core/wails-bindings';
 import type { PopupLevel } from '../core/config';
 import type { SettingsMenuHandle } from './settings-shared';
 
-export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
+export function buildSettingsScreenshotLevel(
+    getSettingsMenu: () => SettingsMenuHandle
+): PopupLevel {
     return {
         label: '截图',
         dir: '',
@@ -17,7 +19,11 @@ export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenu
             // —— 卡片 1：截图格式 ——
             cardContainer(container, (c) => {
                 addSectionTitle(c, '截图格式');
-                const formats: Array<{ key: 'image/png' | 'image/jpeg' | 'image/webp'; label: string; icon: string }> = [
+                const formats: Array<{
+                    key: 'image/png' | 'image/jpeg' | 'image/webp';
+                    label: string;
+                    icon: string;
+                }> = [
                     { key: 'image/png', label: 'PNG', icon: 'lucide:file-image' },
                     { key: 'image/jpeg', label: 'JPEG', icon: 'lucide:file-image' },
                     { key: 'image/webp', label: 'WebP', icon: 'lucide:file-image' },
@@ -26,9 +32,19 @@ export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenu
                 for (const f of formats) {
                     const isActive = (uiState.screenshotFormat ?? 'image/png') === f.key;
                     const row = slideRow(
-                        c, `lucide:${isActive ? 'check-circle' : 'circle'}`, f.label, false,
-                        () => { uiState.screenshotFormat = f.key; setUIState({ screenshotFormat: f.key }); getSettingsMenu()?.updateControls(); setStatus(t('settings.screenshotFormatSet', {label: f.label}), true); },
-                        undefined, undefined, isActive
+                        c,
+                        `lucide:${isActive ? 'check-circle' : 'circle'}`,
+                        f.label,
+                        false,
+                        () => {
+                            uiState.screenshotFormat = f.key;
+                            setUIState({ screenshotFormat: f.key });
+                            getSettingsMenu()?.updateControls();
+                            setStatus(t('settings.screenshotFormatSet', { label: f.label }), true);
+                        },
+                        undefined,
+                        undefined,
+                        isActive
                     );
                     row.dataset.formatKey = f.key;
                     formatRows.push(row);
@@ -39,8 +55,15 @@ export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenu
                         const key = row.dataset.formatKey!;
                         const isActive = current === key;
                         row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-                        const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
-                        if (icon) { icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`); }
+                        const icon = row.querySelector(
+                            '.slide-icon iconify-icon'
+                        ) as HTMLElement | null;
+                        if (icon) {
+                            icon.setAttribute(
+                                'icon',
+                                `lucide:${isActive ? 'check-circle' : 'circle'}`
+                            );
+                        }
                     }
                 });
             });
@@ -48,12 +71,28 @@ export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenu
             // —— 卡片 2：截图质量 ——
             cardContainer(container, (c) => {
                 addSliderRow(
-                    c, '截图质量', uiState.screenshotQuality ?? 0.9, 0.5, 1.0, 0.05,
-                    (v) => { uiState.screenshotQuality = v; setUIState({ screenshotQuality: v }); getSettingsMenu()?.updateControls(); },
-                    'lucide:gauge', undefined,
+                    c,
+                    '截图质量',
+                    uiState.screenshotQuality ?? 0.9,
+                    0.5,
+                    1.0,
+                    0.05,
+                    (v) => {
+                        uiState.screenshotQuality = v;
+                        setUIState({ screenshotQuality: v });
+                        getSettingsMenu()?.updateControls();
+                    },
+                    'lucide:gauge',
+                    undefined,
                     {
                         bind: () => uiState.screenshotQuality ?? 0.9,
-                        onUpdate: (el) => { const valEl = el.querySelector('.cs-value'); if (valEl) { valEl.textContent = Math.round((uiState.screenshotQuality ?? 0.9) * 100) + '%'; } },
+                        onUpdate: (el) => {
+                            const valEl = el.querySelector('.cs-value');
+                            if (valEl) {
+                                valEl.textContent =
+                                    Math.round((uiState.screenshotQuality ?? 0.9) * 100) + '%';
+                            }
+                        },
                     }
                 );
             });
@@ -66,11 +105,13 @@ export function buildSettingsScreenshotLevel(getSettingsMenu: () => SettingsMenu
 
                 slideRow(c, 'lucide:folder', '选择目录', false, async () => {
                     const d = await SelectDir();
-                    if (!d) { return; }
+                    if (!d) {
+                        return;
+                    }
                     uiState.screenshotDir = d;
                     setUIState({ screenshotDir: d });
-      getSettingsMenu()?.reRender();
-      setStatus(t('settings.screenshotDirSet', {dir}), true);
+                    getSettingsMenu()?.reRender();
+                    setStatus(t('settings.screenshotDirSet', { dir }), true);
                 });
 
                 slideRow(c, 'lucide:folder-open', '打开目录', false, () => {

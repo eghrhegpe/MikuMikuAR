@@ -449,7 +449,15 @@ describe('getCameraPreset / setCameraPreset', () => {
             mode: 'freefly',
             orbit: { targetHeight: 5, distance: 10, beta: 1 },
             freefly: { speed: 1, angularSensibility: 1000 },
-            concert: { radius: 15, height: 6, sweepAngle: 90, sweepSpeed: 1, baseBeta: 1, bobAmplitude: 10, bobSpeed: 1 },
+            concert: {
+                radius: 15,
+                height: 6,
+                sweepAngle: 90,
+                sweepSpeed: 1,
+                baseBeta: 1,
+                bobAmplitude: 10,
+                bobSpeed: 1,
+            },
             surround: { radius: 14, height: 7, speed: 0.4 },
         };
         cameraModule.setCameraPreset(custom);
@@ -503,7 +511,15 @@ describe('getOrbitParams / getFreeflyParams / getConcertParams', () => {
             mode: 'orbit',
             orbit: { targetHeight: 99, distance: 1, beta: 2 },
             freefly: { speed: 9, angularSensibility: 500 },
-            concert: { radius: 3, height: 4, sweepAngle: 30, sweepSpeed: 2, baseBeta: 0.5, bobAmplitude: 5, bobSpeed: 2 },
+            concert: {
+                radius: 3,
+                height: 4,
+                sweepAngle: 30,
+                sweepSpeed: 2,
+                baseBeta: 0.5,
+                bobAmplitude: 5,
+                bobSpeed: 2,
+            },
             surround: { radius: 7, height: 9, speed: 1.5 },
         });
         expect(cameraModule.getOrbitParams().targetHeight).toBe(99);

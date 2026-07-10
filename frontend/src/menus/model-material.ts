@@ -85,36 +85,96 @@ export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
                             bind: () => isMatCategoryAllEnabled(id, cat),
                         },
                         renderContent: (panel) => {
-                            addSliderRow(panel, t('model-material.diffuseMul'), params.diffuseMul, 0, 2, 0.05, (v) =>
-                                setMatCatParams(id, cat, { diffuseMul: v })
+                            addSliderRow(
+                                panel,
+                                t('model-material.diffuseMul'),
+                                params.diffuseMul,
+                                0,
+                                2,
+                                0.05,
+                                (v) => setMatCatParams(id, cat, { diffuseMul: v })
                             );
-                            addSliderRow(panel, t('model-material.specularMul'), params.specularMul, 0, 2, 0.05, (v) =>
-                                setMatCatParams(id, cat, { specularMul: v })
+                            addSliderRow(
+                                panel,
+                                t('model-material.specularMul'),
+                                params.specularMul,
+                                0,
+                                2,
+                                0.05,
+                                (v) => setMatCatParams(id, cat, { specularMul: v })
                             );
-                            addSliderRow(panel, t('model-material.shininess'), params.shininess, 0, 200, 1, (v) =>
-                                setMatCatParams(id, cat, { shininess: v })
+                            addSliderRow(
+                                panel,
+                                t('model-material.shininess'),
+                                params.shininess,
+                                0,
+                                200,
+                                1,
+                                (v) => setMatCatParams(id, cat, { shininess: v })
                             );
-                            addSliderRow(panel, t('model-material.ambientMul'), params.ambientMul, 0, 2, 0.05, (v) =>
-                                setMatCatParams(id, cat, { ambientMul: v })
+                            addSliderRow(
+                                panel,
+                                t('model-material.ambientMul'),
+                                params.ambientMul,
+                                0,
+                                2,
+                                0.05,
+                                (v) => setMatCatParams(id, cat, { ambientMul: v })
                             );
-                            addSliderRow(panel, t('model-material.emissiveMul'), params.emissiveMul, 0, 2, 0.05, (v) =>
-                                setMatCatParams(id, cat, { emissiveMul: v })
+                            addSliderRow(
+                                panel,
+                                t('model-material.emissiveMul'),
+                                params.emissiveMul,
+                                0,
+                                2,
+                                0.05,
+                                (v) => setMatCatParams(id, cat, { emissiveMul: v })
                             );
                             _addGroupSeparator(panel, t('model-material.texLevelGroup'));
-                            addSliderRow(panel, t('model-material.diffuseTexLevel'), params.diffuseTexLevel, 0, 3, 0.1, (v) =>
-                                setMatCatParams(id, cat, { diffuseTexLevel: v })
+                            addSliderRow(
+                                panel,
+                                t('model-material.diffuseTexLevel'),
+                                params.diffuseTexLevel,
+                                0,
+                                3,
+                                0.1,
+                                (v) => setMatCatParams(id, cat, { diffuseTexLevel: v })
                             );
-                            addSliderRow(panel, t('model-material.bumpTexLevel'), params.bumpTexLevel, 0, 3, 0.1, (v) =>
-                                setMatCatParams(id, cat, { bumpTexLevel: v })
+                            addSliderRow(
+                                panel,
+                                t('model-material.bumpTexLevel'),
+                                params.bumpTexLevel,
+                                0,
+                                3,
+                                0.1,
+                                (v) => setMatCatParams(id, cat, { bumpTexLevel: v })
                             );
-                            addSliderRow(panel, t('model-material.toonTexLevel'), params.toonTexLevel, 0, 3, 0.1, (v) =>
-                                setMatCatParams(id, cat, { toonTexLevel: v })
+                            addSliderRow(
+                                panel,
+                                t('model-material.toonTexLevel'),
+                                params.toonTexLevel,
+                                0,
+                                3,
+                                0.1,
+                                (v) => setMatCatParams(id, cat, { toonTexLevel: v })
                             );
-                            addSliderRow(panel, t('model-material.sphereTexLevel'), params.sphereTexLevel, 0, 3, 0.1, (v) =>
-                                setMatCatParams(id, cat, { sphereTexLevel: v })
+                            addSliderRow(
+                                panel,
+                                t('model-material.sphereTexLevel'),
+                                params.sphereTexLevel,
+                                0,
+                                3,
+                                0.1,
+                                (v) => setMatCatParams(id, cat, { sphereTexLevel: v })
                             );
-                            addSliderRow(panel, t('model-material.emissiveTexLevel'), params.emissiveTexLevel, 0, 3, 0.1, (v) =>
-                                setMatCatParams(id, cat, { emissiveTexLevel: v })
+                            addSliderRow(
+                                panel,
+                                t('model-material.emissiveTexLevel'),
+                                params.emissiveTexLevel,
+                                0,
+                                3,
+                                0.1,
+                                (v) => setMatCatParams(id, cat, { emissiveTexLevel: v })
                             );
                         },
                     });
@@ -155,37 +215,109 @@ export function buildPerMatLevel(
                 const params = current ?? { ...DEFAULT_MAT_PARAMS };
                 const isModified = current !== null;
 
-                addSliderRow(c, t('model-material.diffuseMul'), params.diffuseMul, 0, 2, 0.05, (v) => {
-                    setMatParams(id, matIndex, { diffuseMul: v });
-                });
-                addSliderRow(c, t('model-material.specularMul'), params.specularMul, 0, 2, 0.05, (v) => {
-                    setMatParams(id, matIndex, { specularMul: v });
-                });
+                addSliderRow(
+                    c,
+                    t('model-material.diffuseMul'),
+                    params.diffuseMul,
+                    0,
+                    2,
+                    0.05,
+                    (v) => {
+                        setMatParams(id, matIndex, { diffuseMul: v });
+                    }
+                );
+                addSliderRow(
+                    c,
+                    t('model-material.specularMul'),
+                    params.specularMul,
+                    0,
+                    2,
+                    0.05,
+                    (v) => {
+                        setMatParams(id, matIndex, { specularMul: v });
+                    }
+                );
                 addSliderRow(c, t('model-material.shininess'), params.shininess, 0, 200, 1, (v) => {
                     setMatParams(id, matIndex, { shininess: v });
                 });
-                addSliderRow(c, t('model-material.ambientMul'), params.ambientMul, 0, 2, 0.05, (v) => {
-                    setMatParams(id, matIndex, { ambientMul: v });
-                });
-                addSliderRow(c, t('model-material.emissiveMul'), params.emissiveMul, 0, 2, 0.05, (v) => {
-                    setMatParams(id, matIndex, { emissiveMul: v });
-                });
+                addSliderRow(
+                    c,
+                    t('model-material.ambientMul'),
+                    params.ambientMul,
+                    0,
+                    2,
+                    0.05,
+                    (v) => {
+                        setMatParams(id, matIndex, { ambientMul: v });
+                    }
+                );
+                addSliderRow(
+                    c,
+                    t('model-material.emissiveMul'),
+                    params.emissiveMul,
+                    0,
+                    2,
+                    0.05,
+                    (v) => {
+                        setMatParams(id, matIndex, { emissiveMul: v });
+                    }
+                );
                 _addGroupSeparator(c, t('model-material.texLevelGroup'));
-                addSliderRow(c, t('model-material.diffuseTexLevel'), params.diffuseTexLevel, 0, 3, 0.1, (v) => {
-                    setMatParams(id, matIndex, { diffuseTexLevel: v });
-                });
-                addSliderRow(c, t('model-material.bumpTexLevel'), params.bumpTexLevel, 0, 3, 0.1, (v) => {
-                    setMatParams(id, matIndex, { bumpTexLevel: v });
-                });
-                addSliderRow(c, t('model-material.toonTexLevel'), params.toonTexLevel, 0, 3, 0.1, (v) => {
-                    setMatParams(id, matIndex, { toonTexLevel: v });
-                });
-                addSliderRow(c, t('model-material.sphereTexLevel'), params.sphereTexLevel, 0, 3, 0.1, (v) => {
-                    setMatParams(id, matIndex, { sphereTexLevel: v });
-                });
-                addSliderRow(c, t('model-material.emissiveTexLevel'), params.emissiveTexLevel, 0, 3, 0.1, (v) => {
-                    setMatParams(id, matIndex, { emissiveTexLevel: v });
-                });
+                addSliderRow(
+                    c,
+                    t('model-material.diffuseTexLevel'),
+                    params.diffuseTexLevel,
+                    0,
+                    3,
+                    0.1,
+                    (v) => {
+                        setMatParams(id, matIndex, { diffuseTexLevel: v });
+                    }
+                );
+                addSliderRow(
+                    c,
+                    t('model-material.bumpTexLevel'),
+                    params.bumpTexLevel,
+                    0,
+                    3,
+                    0.1,
+                    (v) => {
+                        setMatParams(id, matIndex, { bumpTexLevel: v });
+                    }
+                );
+                addSliderRow(
+                    c,
+                    t('model-material.toonTexLevel'),
+                    params.toonTexLevel,
+                    0,
+                    3,
+                    0.1,
+                    (v) => {
+                        setMatParams(id, matIndex, { toonTexLevel: v });
+                    }
+                );
+                addSliderRow(
+                    c,
+                    t('model-material.sphereTexLevel'),
+                    params.sphereTexLevel,
+                    0,
+                    3,
+                    0.1,
+                    (v) => {
+                        setMatParams(id, matIndex, { sphereTexLevel: v });
+                    }
+                );
+                addSliderRow(
+                    c,
+                    t('model-material.emissiveTexLevel'),
+                    params.emissiveTexLevel,
+                    0,
+                    3,
+                    0.1,
+                    (v) => {
+                        setMatParams(id, matIndex, { emissiveTexLevel: v });
+                    }
+                );
 
                 if (isModified) {
                     slideRow(c, 'lucide:rotate-ccw', t('model-material.resetThis'), false, () => {
@@ -287,7 +419,9 @@ export function buildMatRootLevel(
                                     setStatus(
                                         newState
                                             ? t('model-material.shown', { name: matInfo.mat.name })
-                                            : t('model-material.hidden', { name: matInfo.mat.name }),
+                                            : t('model-material.hidden', {
+                                                  name: matInfo.mat.name,
+                                              }),
                                         true
                                     );
                                 });
@@ -376,7 +510,8 @@ function _renderParamCard(
 
     const title = document.createElement('div');
     title.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px;';
-    const matName = detailList.find((d) => d.index === index)?.name || t('model-material.unknownMaterial');
+    const matName =
+        detailList.find((d) => d.index === index)?.name || t('model-material.unknownMaterial');
     title.textContent = t('model-material.paramTune', { cat, matName });
     card.appendChild(title);
 
