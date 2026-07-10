@@ -17,6 +17,16 @@ name: Cache Warm
 on:
   push:
     branches: [main]
+    # 仅当「影响缓存 key 的依赖文件」变化时才重暖，避免每次 push(main) 都空跑：
+    #   - go.mod / go.sum → go modules 缓存 key + wails_ver(wails3 版本)
+    #   - frontend/package-lock.json → node_modules 缓存 key
+    #   - 本 workflow 自身 → 改了配置当然要重跑
+    # 纯文档/重构推送(如删 catTag 字段、改文件夹名)不会改变这些 key，缓存已暖，无需重跑。
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/cache-warm.yml'
 
 # 防止连推产生重复暖缓存浪费；不取消进行中的（让它落盘完成）。
 concurrency:
@@ -131,6 +141,21 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
+      # wails3 CLI 在 Linux 编译需要 gtk4/webkitgtk-6.0 开发包(pkg-config)；仅缓存未命中时才装/编译。
+      - name: Install Linux build deps (gtk4/webkitgtk, 编译 wails3 CLI 所需)
+        if: steps.cache-wails.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            libgtk-4-dev \
+            libwebkitgtk-6.0-dev \
+            libglib2.0-dev \
+            libsoup-3.0-dev \
+            libgdk-pixbuf-2.0-dev \
+            libpango1.0-dev \
+            libcairo2-dev \
+            libatk1.0-dev \
+            libgirepository1.0-dev
       - name: Install Wails
         if: steps.cache-wails.outputs.cache-hit != 'true'
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ steps.wv.outputs.wails_ver }}
