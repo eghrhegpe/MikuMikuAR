@@ -47,6 +47,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: i18n bundle parity check (strict)
+        # ADR-059 §3.5 / ADR-041：翻译 bundle key 奇偶校验。
+        # --strict 模式：任何 missing/extra key 均 exit 1 阻塞 CI。
+        # 新增 key 必须同步翻译到所有 bundle，否则 CI 失败。
+        run: node ../scripts/i18n-check.mjs --strict
+
       - name: Build
         run: npx vite build
 
@@ -250,8 +256,10 @@ jobs:
 
       - name: Start Wails dev + run @webgl E2E
         env:
-          # Expose Chrome DevTools Protocol on WebView2 for connectOverCDP.
-          WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "--remote-debugging-port=9222"
+          # Expose CDP on WebView2 via MMCAR_DEBUG_PORT — main.go reads it and
+          # injects --remote-debugging-port. WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
+          # is suppressed by Wails v3 (AdditionalBrowserArgs set explicitly).
+          MMCAR_DEBUG_PORT: "9222"
         working-directory: .
         run: |
           export PATH="$HOME/go/bin:$PATH"

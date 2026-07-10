@@ -59,7 +59,9 @@ jobs:
 
       - name: Start Wails dev + run @webgl E2E (blocking)
         env:
-          WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "--remote-debugging-port=9222"
+          # MMCAR_DEBUG_PORT -> main.go injects --remote-debugging-port.
+          # WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS is suppressed by Wails v3.
+          MMCAR_DEBUG_PORT: "9222"
         working-directory: .
         run: |
           export PATH="$HOME/go/bin:$PATH"

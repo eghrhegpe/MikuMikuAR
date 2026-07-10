@@ -252,7 +252,7 @@ function registerAppShortcuts(): void {
     registerShortcuts([
         {
             id: 'toggle:models',
-            label: '模型库',
+            label: 'shortcuts.label.models',
             defaultKey: 'Digit1',
             defaultCtrl: true,
             prevent: true,
@@ -260,11 +260,11 @@ function registerAppShortcuts(): void {
                 navActions[1]();
                 setStatus(navLabels[1] || '', false);
             },
-            group: '弹窗导航',
+            group: 'shortcuts.group.popupNav',
         },
         {
             id: 'toggle:motion',
-            label: '动作',
+            label: 'shortcuts.label.motion',
             defaultKey: 'Digit2',
             defaultCtrl: true,
             prevent: true,
@@ -272,11 +272,11 @@ function registerAppShortcuts(): void {
                 navActions[2]();
                 setStatus(navLabels[2] || '', false);
             },
-            group: '弹窗导航',
+            group: 'shortcuts.group.popupNav',
         },
         {
             id: 'toggle:scene',
-            label: '场景',
+            label: 'shortcuts.label.scene',
             defaultKey: 'Digit3',
             defaultCtrl: true,
             prevent: true,
@@ -284,11 +284,11 @@ function registerAppShortcuts(): void {
                 navActions[3]();
                 setStatus(navLabels[3] || '', false);
             },
-            group: '弹窗导航',
+            group: 'shortcuts.group.popupNav',
         },
         {
             id: 'toggle:env',
-            label: '环境',
+            label: 'shortcuts.label.env',
             defaultKey: 'Digit4',
             defaultCtrl: true,
             prevent: true,
@@ -296,11 +296,11 @@ function registerAppShortcuts(): void {
                 navActions[4]();
                 setStatus(navLabels[4] || '', false);
             },
-            group: '弹窗导航',
+            group: 'shortcuts.group.popupNav',
         },
         {
             id: 'toggle:settings',
-            label: '设置',
+            label: 'shortcuts.label.settings',
             defaultKey: 'Digit5',
             defaultCtrl: true,
             prevent: true,
@@ -308,11 +308,11 @@ function registerAppShortcuts(): void {
                 navActions[5]();
                 setStatus(navLabels[5] || '', false);
             },
-            group: '弹窗导航',
+            group: 'shortcuts.group.popupNav',
         },
         {
             id: 'camera:ar',
-            label: 'AR 相机',
+            label: 'shortcuts.label.arCamera',
             defaultKey: 'Digit6',
             defaultCtrl: true,
             prevent: true,
@@ -324,11 +324,11 @@ function registerAppShortcuts(): void {
                     switchCameraMode('ar');
                 }
             },
-            group: '相机控制',
+            group: 'shortcuts.group.cameraControl',
         },
         {
             id: 'toggle:plaza',
-            label: '模型广场',
+            label: 'shortcuts.label.plaza',
             defaultKey: 'Digit7',
             defaultCtrl: true,
             prevent: true,
@@ -336,11 +336,11 @@ function registerAppShortcuts(): void {
                 navActions[7]();
                 setStatus(navLabels[7] || '', false);
             },
-            group: '弹窗导航',
+            group: 'shortcuts.group.popupNav',
         },
         {
             id: 'playback:toggle',
-            label: '播放/暂停',
+            label: 'shortcuts.label.playPause',
             defaultKey: 'Space',
             prevent: true,
             handler: () => {
@@ -348,21 +348,21 @@ function registerAppShortcuts(): void {
                     dom.btnPlayPause.click();
                 }
             },
-            group: '播放控制',
+            group: 'shortcuts.group.playbackControl',
         },
         {
             id: 'global:close',
-            label: '关闭弹窗',
+            label: 'shortcuts.label.closePopup',
             defaultKey: 'Escape',
             handler: () => {
                 closeAllOverlays();
                 document.body.classList.remove('ui-hidden');
             },
-            group: '全局',
+            group: 'shortcuts.group.global',
         },
         {
             id: 'playback:seek-back',
-            label: '后退 5 秒',
+            label: 'shortcuts.label.seekBack',
             defaultKey: 'ArrowLeft',
             prevent: true,
             handler: () => {
@@ -377,11 +377,11 @@ function registerAppShortcuts(): void {
                 mmdRuntime.seekAnimation(Math.max(0, mmdRuntime.currentTime - 5), true);
                 updatePlaybackUI();
             },
-            group: '播放控制',
+            group: 'shortcuts.group.playbackControl',
         },
         {
             id: 'playback:seek-forward',
-            label: '前进 5 秒',
+            label: 'shortcuts.label.seekForward',
             defaultKey: 'ArrowRight',
             prevent: true,
             handler: () => {
@@ -396,16 +396,16 @@ function registerAppShortcuts(): void {
                 mmdRuntime.seekAnimation(Math.min(dur, mmdRuntime.currentTime + 5), true);
                 updatePlaybackUI();
             },
-            group: '播放控制',
+            group: 'shortcuts.group.playbackControl',
         },
         {
             id: 'screenshot:current',
-            label: '截图当前模型',
+            label: 'shortcuts.label.screenshot',
             defaultKey: 'F6',
             defaultCtrl: true,
             prevent: true,
             handler: () => void screenshotCurrent(),
-            group: '截图',
+            group: 'shortcuts.group.screenshot',
         },
     ]);
 }
@@ -773,6 +773,7 @@ async function restoreUIState(): Promise<void> {
     if (s.cameraSensitivity !== undefined) uiState.cameraSensitivity = s.cameraSensitivity;
     if (s.invertYAxis !== undefined) uiState.invertYAxis = s.invertYAxis;
     if (s.autoScaleModel !== undefined) uiState.autoScaleModel = s.autoScaleModel;
+    if (s.autoCenterModel !== undefined) uiState.autoCenterModel = s.autoCenterModel;
     if (s.materialCategoryMap !== undefined) uiState.materialCategoryMap = s.materialCategoryMap;
 }
 

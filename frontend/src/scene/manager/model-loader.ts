@@ -138,7 +138,7 @@ export async function loadPMXFile(
         const existing = _modelManager?.findByFilePath(filePath);
         if (existing) {
             setFocusedModelId(existing.id);
-            _modelManager?.focus(existing.id);
+            _modelManager?.focus(existing.id, uiState.autoCenterModel);
             setStatus(t('scene.loader.switched', { name: existing.name }), true);
             return existing.id;
         }
@@ -344,7 +344,7 @@ export async function loadPMXFile(
             }
         }
 
-        _modelManager.focus(id);
+        _modelManager.focus(id, uiState.autoCenterModel);
         setStatus(
             appliedVmd
                 ? t('scene.loader.actorLoadedWithVmd', { name: displayName, vmd: appliedVmd })

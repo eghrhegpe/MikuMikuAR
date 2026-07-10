@@ -38,7 +38,7 @@ let _rebindingId: string | null = null;
 
 export function buildSettingsShortcutsLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
-        label: '快捷键',
+        label: t('shortcuts.title'),
         dir: '',
         items: [],
         renderCustom: (container) => {
@@ -57,20 +57,20 @@ export function buildSettingsShortcutsLevel(getSettingsMenu: () => SettingsMenuH
             }
 
             for (const [groupName, items] of groups) {
-                addSectionTitle(container, groupName);
+                addSectionTitle(container, t(groupName));
                 cardContainer(container, (c) => {
                     for (const s of items) {
                         const combo = _fmtKeyBinding(s.currentKey, s.currentCtrl, s.currentShift, s.currentAlt);
                         const isOverridden = s.currentKey !== s.defaultKey || s.currentCtrl !== (s.defaultCtrl ?? false) || s.currentShift !== (s.defaultShift ?? false) || s.currentAlt !== (s.defaultAlt ?? false);
-                        const sublabel = combo + (isOverridden ? ' · 自定义' : '');
+                        const sublabel = combo + (isOverridden ? ' · ' + t('shortcuts.custom') : '');
 
-                        slideRow(c, 'lucide:keyboard', s.label, false,
+                        slideRow(c, 'lucide:keyboard', t(s.label), false,
                             () => {
                                 if (_rebindingId) return;
                                 _rebindingId = s.id;
                                 const labelSpan = c.querySelector('.slide-label');
                                 const sublabelSpan = c.querySelector('.slide-sublabel');
-                                if (labelSpan) labelSpan.textContent = '按下新组合键...';
+                                if (labelSpan) labelSpan.textContent = t('shortcuts.pressNewCombo');
                                 if (sublabelSpan) sublabelSpan.textContent = '';
 
                                 const handler = (e: KeyboardEvent) => {
@@ -89,7 +89,7 @@ export function buildSettingsShortcutsLevel(getSettingsMenu: () => SettingsMenuH
                                     } else {
                                         const conflictId = result.conflictId;
                                         const conflictLabel = result.conflictLabel;
-                                        showConfirm(`快捷键 "${conflictLabel}" 已使用此组合键，是否覆盖？`).then((ok) => {
+                                        showConfirm(t('shortcuts.confirmOverride', { label: t(conflictLabel) })).then((ok) => {
                                             if (ok) {
                                                 resetKeyBinding(conflictId);
                                                 setKeyBinding(id, e.code, e.ctrlKey, e.shiftKey, e.altKey);
@@ -108,7 +108,7 @@ export function buildSettingsShortcutsLevel(getSettingsMenu: () => SettingsMenuH
             }
 
             cardContainer(container, (c) => {
-                slideRow(c, 'lucide:rotate-ccw', '恢复默认快捷键', false, () => {
+                slideRow(c, 'lucide:rotate-ccw', t('shortcuts.resetAll'), false, () => {
                     resetAllKeyBindings();
                     (uiState as Record<string, unknown>).keyBindings = exportKeyBindings();
                     getSettingsMenu()?.reRender();

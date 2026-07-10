@@ -613,6 +613,11 @@ export interface UIState {
     "autoScaleModel"?: boolean;
 
     /**
+     * 新加载模型自动居中取景（相机对准模型）
+     */
+    "autoCenterModel"?: boolean;
+
+    /**
      * 材质分类映射
      */
     "materialCategoryMap"?: { [_ in string]?: string } | null;

@@ -137,6 +137,22 @@ setStatus(t('settings.perfModeSet', { label: m.label }), true);
                 c.appendChild(hint);
             });
 
+            // 默认模型自动居中（相机自动对准新加载模型）
+            cardContainer(container, (c) => {
+                addToggleRow(c, t('settings.perf.autoCenter'), uiState.autoCenterModel !== false,
+                    (v) => {
+                        setUIState({ autoCenterModel: v });
+      getSettingsMenu()?.updateControls();
+      setStatus(t('settings.perf.autoCenterState', { state: v ? t('common.on') : t('common.off') }), true);
+                    },
+                    'lucide:crosshair'
+                );
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.textContent = t('settings.perf.autoCenterHint');
+                c.appendChild(hint);
+            });
+
             // 渲染分辨率缩放
             cardContainer(container, (c) => {
                 addSliderRow(c, t('settings.perf.renderScale'), uiState.renderScale ?? 1, 0.5, 2, 0.05,

@@ -90,4 +90,4 @@ Babylon.js 的 `DefaultRenderingPipeline` 不内置 posterize 后处理。自行
 
 - ADR-024 渲染增强 Phase 2 — `reflectionTexture` 后挂路径 + PBR 延期决策（morph 致命风险），本 ADR 延续"不换材质类型"边界
 - ADR-069 材质面板纹理支持审计 — toon/sphere 贴图槽位审计，本 ADR 针对游戏模型缺失 toon 的兜底方案
-- ADR-040 渲染自定义模式 — `DefaultRenderingPipeline` 的既有参数管理体系
+- ADR-046 渲染自定义模式 — `DefaultRenderingPipeline` 的既有参数管理体系

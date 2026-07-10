@@ -431,8 +431,10 @@ export class ModelManager {
         this.remove(configFocusedId);
     }
 
-    /** Focus a model by ID: set focus + auto-frame camera. */
-    focus(id: string): void {
+    /** Focus a model by ID: set focus + auto-frame camera.
+     *  @param frameCamera 是否自动取景（相机对准模型）。false 时仅切换焦点（不移动相机）。
+     *                     由 uiState.autoCenterModel 控制（undefined 视为 true）。 */
+    focus(id: string, frameCamera = true): void {
         const inst = this.modelRegistry.get(id);
         if (!inst) {
             setFocusedModelId(null);
@@ -445,20 +447,22 @@ export class ModelManager {
             .then((m) => m.activateGazeTracking())
             .catch(() => {});
 
-        // Auto-frame camera: compute bounding box from all meshes
-        const min = new Vector3(Infinity, Infinity, Infinity);
-        const max = new Vector3(-Infinity, -Infinity, -Infinity);
-        for (const m of inst.meshes) {
-            m.computeWorldMatrix(true);
-            const bb = m.getBoundingInfo().boundingBox;
-            min.minimizeInPlace(bb.minimumWorld);
-            max.maximizeInPlace(bb.maximumWorld);
-        }
-        const center = min.add(max).scale(0.5);
-        const size = max.subtract(min);
-        const extent = Math.max(size.x, size.y, size.z);
+        if (frameCamera) {
+            // Auto-frame camera: compute bounding box from all meshes
+            const min = new Vector3(Infinity, Infinity, Infinity);
+            const max = new Vector3(-Infinity, -Infinity, -Infinity);
+            for (const m of inst.meshes) {
+                m.computeWorldMatrix(true);
+                const bb = m.getBoundingInfo().boundingBox;
+                min.minimizeInPlace(bb.minimumWorld);
+                max.maximizeInPlace(bb.maximumWorld);
+            }
+            const center = min.add(max).scale(0.5);
+            const size = max.subtract(min);
+            const extent = Math.max(size.x, size.y, size.z);
 
-        this.autoFrame(center, extent);
+            this.autoFrame(center, extent);
+        }
 
         this.triggerAutoSave();
     }

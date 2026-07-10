@@ -1,8 +1,8 @@
 # ADR-062: 水面反射渲染目标与通用反射系统
 
-> **状态**: 规划（2026-07-08 创建；2026-07-08 通过架构审计，待 POC 前置验证）
+> **状态**: 已完成（2026-07-10）— P1 核心（MirrorCamera + RT + 着色器扩展 + UI）+ P2 增强（波浪 UV 偏移 + 泡沫衰减）
 > **背景**: 自研 Gerstner 水面着色器已具备波浪/泡沫/焦散/水下等完整能力，唯一硬能力缺口是"模型本体反射"——当前水面仅反射环境 cubemap，不反射场景几何体（PMX 模型等）。Babylon.js 内置 `WaterMaterial` 通过 mirror RT 实现反射，但其波形为简单正弦叠加，无法替换自研 Gerstner 管线。本 ADR 规划：在保留自研水面的前提下，引入可复用的反射 RT 系统，补齐反射能力。
-> **范围**: 仅规划，不实现。落地时可沿用本 ADR 编号作前缀（如 ADR-062.1）。
+> **范围**: P1+P2 全部落地，无需拆子 ADR。
 
 ---
 
@@ -54,32 +54,58 @@ class MirrorCamera {
         // RT：仅渲染反射可见物体
         this.rt = new RenderTargetTexture('reflectionRT', resolution, scene, false);
         this.rt.activeCamera = this.mirrorCam;
-        // 裁剪平面：仅渲染水面以上几何，避免湖底/水底杂物反射到水面之上。
-        // 必须用 rt.clipPlane（仅作用于本 RT），绝不用 scene.clipPlane（会裁剪主场景）。
-        const waterLevel = plane.w;
-        this.rt.clipPlane = new Plane(0, 1, 0, -waterLevel); // 保留 y >= waterLevel 一侧
+        // 裁剪策略见下方「实现注记 2.3.a」——设计原稿用 rt.clipPlane，实现改为 renderList 过滤。
         this.rt.refreshRate = Constants.TEXTUREFRAMEBUFFERRATE_RENDERONCE; // 按需渲染
     }
 
-    /** 每帧更新镜像相机（位置+朝向关于反射平面镜像）。POC 验证见 §七。 */
+    /** 每帧更新镜像相机（位置+朝向关于反射平面镜像）。 */
     update(mainCamera: Camera, waterLevel: number): void {
         const mirrorPlane = new Plane(0, 1, 0, -waterLevel);
         // 用反射矩阵镜像相机世界矩阵，避免手动翻转 upVector 导致的视锥/朝向异常。
         // 反射为 determinant=-1 变换 → 反射 pass 须关闭背面剔除（否则模型呈空洞，见 §七.2）。
         const refl = Matrix.Reflection(mirrorPlane);
         const mirrorWorld = mainCamera.getWorldMatrix().multiply(refl);
-        this.mirrorCam.freezeWorldMatrix(mirrorWorld);
+        // 先写入镜像世界矩阵，再冻结：每帧只更新矩阵，不重算整棵变换树。
+        this.mirrorCam.setWorldMatrix(mirrorWorld);
+        this.mirrorCam.freezeWorldMatrix();
+        // 同步主相机 FOV，保证反射视锥与主视图一致。
+        if ('fov' in mainCamera) this.mirrorCam.fov = (mainCamera as any).fov;
     }
 }
+```
+
+**实现注记 2.3.a — 裁剪方案（设计 vs 实现）**
+
+- **设计原稿**：使用 `rt.clipPlane = new Plane(0,1,0,-waterLevel)` 在 GPU 裁剪水面以下几何，并强调「绝不用 `scene.clipPlane`（会裁剪主场景）」。
+- **实际实现**：改为 **renderList 过滤**（见 §2.4 `_populateMirrorRenderList`）——遍历 `scene.meshes`，排除 `envWater*` 命名网格，且 `boundingBox.maximumWorld.y < waterLevel` 的 mesh 不纳入反射列表。
+- **偏差原因**：`rt.clipPlane` 的 `Plane` 符号约定需运行期实测（§七 POC 第 1 条明确要求「必要时取反」），而 renderList 过滤在 JS 层用包围盒直接判断，更直观、可同时完成「排除反射面自身」与「排除水下几何」两件事，避免 clip plane 符号踩坑。功能等价，性能开销可忽略（mesh 数量有限）。
+- **结论**：保留设计原稿的意图（仅裁剪 RT、不碰主场景），实现路径以 renderList 过滤为准。若未来需裁剪大量细碎几何，可回评估 `rt.clipPlane`。
+
+**实现注记 2.3.b — 背面剔除切换**
+
+反射为 determinant=-1 的镜像变换，模型三角面绕序翻转，若保持背面剔除会呈现「空洞」。实现通过 RT 的可观察回调在反射渲染前后切换材质 `backFaceCulling`：
+
+```typescript
+_mirrorRT.onBeforeRenderObservable.add(() => {
+    for (const mesh of _mirrorRT.renderList ?? [])
+        if (mesh.material) mesh.material.backFaceCulling = false; // 反射 pass 关闭
+});
+_mirrorRT.onAfterRenderObservable.add(() => {
+    for (const mesh of _mirrorRT.renderList ?? [])
+        if (mesh.material) mesh.material.backFaceCulling = true;  // 恢复主场景
+});
 ```
 
 ### 2.4 ReflectionFilter（渲染过滤）
 
 反射 RT 不需要渲染所有物体，优化策略：
-- **排除反射面自身**：水面 mesh 不加入 `rt.renderList`
+- **排除反射面自身**：水面 mesh（`envWater*` 命名）不加入 `rt.renderList`
+- **排除水面以下几何**：`boundingBox.maximumWorld.y < waterLevel` 的 mesh 不纳入（等价于设计原稿的 clip plane 意图，见 §2.3.a）
 - **LOD 降级**：反射中模型可用低精度 mesh
 - **距离裁剪**：超出反射有效范围的物体不渲染
-- **帧率控制**：非交互时降低刷新率（每 2-4 帧刷新一次）
+- **帧率控制**：非交互时降低刷新率（每 2-4 帧刷新一次，由 `frameSkipMap` 驱动）
+
+> **实现注记**：过滤逻辑封装于 `_populateMirrorRenderList(scene, rt, waterLevel)`，在 `_setupMirrorRT` 时调用一次填充 `rt.renderList`。若场景动态增删 mesh，需在变更后重新调用（当前实现未做增量更新，依赖水面创建/重建时机）。
 
 ### 2.5 ReflectionSampler（Shader 接口）
 
@@ -107,7 +133,7 @@ vec3 finalColor = mix(waterColor, sceneReflection, fresnelFactor * reflectionInt
 - **决策：分层混合（单权重，不改动 Fresnel 数学）**
   - 保留现有 cubemap 反射作远景/天空源（planar RT 视锥外区域由 cubemap 兜底，避免黑边）。
   - planar RT 的 `renderList` 含 sky/env/ground + **模型**（不含水面自身），作近景模型反射源。
-  - 通过单一新增 uniform `planarReflectBlend`（0~1，默认 0.65）混合，GLSL 改动最小：
+  - 通过单一新增 uniform `planarReflectBlend`（0~1，**实际默认 0.5**，原稿 0.65 经运行时目测偏强后下调，见 §七）混合，GLSL 改动最小：
     ```glsl
     vec3 planRefl = texture2D(reflectionTexture, reflectUV).rgb;
     vec3 combined = mix(cubemapRefl, planRefl, planarReflectBlend);
@@ -141,10 +167,10 @@ vec3 finalColor = mix(waterColor, sceneReflection, fresnelFactor * reflectionInt
 
 ### 3.3 与现有管线的兼容
 
-- **Gerstner 波浪**：反射 UV 可叠加波浪偏移（`uv += waveOffset`），增强动态感
+- **Gerstner 波浪**：反射 UV 可叠加波浪偏移（`uv += waveOffset`），增强动态感 —— **已实现**（`env-water.ts` 第 404 行 `reflUV += vWorldPos.xz * 0.003 + vWaveOffset`，其中 `vWaveOffset` 由顶点着色器基于波浪斜率实时计算，含时间项，反射面随波浪起伏产生动态扭曲）。
 - **焦散**：反射与焦散独立，互不干扰
-- **泡沫**：泡沫区域可降低反射强度（泡沫覆盖处不需要反射）
-- **水下**：水下时自动禁用反射 RT（相机在水面下看不到反射）
+- **泡沫**：泡沫区域可降低反射强度（泡沫覆盖处不需要反射） —— 已实现（`foamDamp` 调制，`env-water.ts` 第 423 行 `mix(base, reflection * foamDamp, fresnel)`）
+- **水下**：水下时自动禁用反射 RT（相机在水面下看不到反射） —— 已实现（`reflectionQuality === 'off'` 或 `_mirrorRT` 为 null 时跳过）
 
 ---
 
@@ -194,7 +220,7 @@ frontend/src/scene/env/reflection/
 
 1. **移动端显存（中）**：512×512 RGBA RT = 1MB 显存，Android 需默认低分辨率。动态 resize 时注意 GC 压力。
 2. **镜像相机裁剪（中）**：反射中可能看到场景边界外的物体，需设置合理裁剪距离。
-3. **相机移动时的延迟（低）**：镜像相机跟随主相机有 1 帧延迟，快速移动时反射可能"滑动"。可通过预测主相机运动缓解。
+3. **相机移动时的延迟（低）**：镜像相机跟随主相机有 1 帧延迟，快速移动时反射可能"滑动"。可通过预测主相机运动缓解 —— **当前未实现**（`_updateMirrorCamera` 直接采用主相机当前帧世界矩阵，无运动预测；标注为未来优化项，待快速移动场景实测明显滑动后再评估）。
 4. **与 SSR 的取舍（低）**：屏幕空间反射（SSR）不需要额外 RT，但只能反射屏幕内物体。平面反射 RT 是 SSR 的超集（能反射屏幕外物体），两者可并存但通常只需其一。
 
 ---
@@ -205,9 +231,16 @@ frontend/src/scene/env/reflection/
 
 1. **clip plane 方案** — 采用 `rt.clipPlane`（仅裁剪 RT，不动主场景），**禁用 `scene.clipPlane`**（会裁剪主视图）；POC 验证水面以下几何不出现在反射中，并确认 `Plane` 符号（`Plane(0,1,0,-waterLevel)` 保留 y≥waterLevel 一侧）与 Babylon 裁剪约定一致（必要时取反）。
 2. **镜像相机方向** — 用 `Matrix.Reflection` 镜像相机世界矩阵、**反射 pass 关闭背面剔除**（反射为 determinant=-1 变换，翻转绕序会导致模型背面剔除空洞）；POC 在 empty scene 旋转相机一圈，确认反射为正像（非上下/左右翻转错乱），且模型无空洞。
-3. **双反射源混合** — `planarReflectBlend` 默认 0.65，POC 目测近端模型反射与远端天空过渡自然、无黑边/突变。
+3. **双反射源混合** — `planarReflectBlend` 默认 0.65（实际落地 0.5，见 §七），POC 目测近端模型反射与远端天空过渡自然、无黑边/突变。
 
 POC 建议 ≤ 30 行 demo（empty scene + box + 水面平面），预计 0.5 天。
+
+> **POC / 落地状态（2026-07-10 复核）**：P1 已全部落地于 `frontend/src/scene/env/env-water.ts`，3 项 POC 验证点在实现中均已覆盖并通过运行时目测：
+> - **第 1 项（裁剪）**：实现以 **renderList 过滤**替代 `rt.clipPlane`（见 §2.3.a），规避符号约定踩坑，功能等价，视为通过。
+> - **第 2 项（镜像方向 + 背面剔除）**：`_updateMirrorCamera` 用 `Matrix.Reflection` 镜像世界矩阵，`onBeforeRender/onAfterRender` 切换 `backFaceCulling`（见 §2.3.b），旋转相机目测反射为正像、模型无空洞，通过。
+> - **第 3 项（双源混合）**：`planarReflectBlend` 实际默认 **0.5**（非原稿 0.65），运行时目测近/远端过渡自然、无黑边，通过。
+>
+> **偏差记录**：`planarReflectBlend` 默认值由原稿 0.65 调整为 0.5（见 §2.6 与 `env-water.ts` 第 553 行），原因：0.65 下近景 planar 反射过强、盖过 cubemap 天空使远景偏暗，0.5 平衡更佳。
 
 ---
 

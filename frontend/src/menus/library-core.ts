@@ -156,20 +156,23 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 return buildTagDetailLevel(tagName);
             }
             if (row.target === 'models:browse') {
+                console.log('[models:browse] clicked, libraryRoot:', libraryRoot, 'allModels:', allModels.length);
                 if (!libraryRoot) {
-                return {
-                    label: t('library.title'),
-                    dir: '',
-                    items: [],
-                    renderCustom: (container) => {
-                            container.style.cssText =
-                                'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
-                            container.innerHTML =
-                                `<div>${t('library.noRootDir')}</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">${t('library.noRootDirHint')}</div>`;
-                        },
-                    };
+                    console.log('[models:browse] no libraryRoot, showing empty state');
+                    return {
+                        label: t('library.title'),
+                        dir: '',
+                        items: [],
+                        renderCustom: (container) => {
+                                container.style.cssText =
+                                    'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
+                                container.innerHTML =
+                                    `<div>${t('library.noRootDir')}</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">${t('library.noRootDirHint')}</div>`;
+                            },
+                        };
                 }
                 const browseDir = getBrowseDir('pmx');
+                console.log('[models:browse] browseDir:', browseDir);
                 return buildLevel(
                     browseDir,
                     t('library.title'),
@@ -396,6 +399,10 @@ export function buildLevel(
     const subdirIsLeaf = new Set<string>();
 
     const modelList = allModels || [];
+    console.log('[buildLevel] dir:', dir, 'modelList.length:', modelList.length, 'isRoot:', isRoot);
+    if (modelList.length > 0) {
+        console.log('[buildLevel] sample models:', modelList.slice(0, 5).map(m => ({ dir: m.dir, format: m.format, container: m.container })));
+    }
 
     // Background prefetch: warm metadata cache for all models in this level
     // so modelToRow lookups are more likely to hit in subsequent re-renders
@@ -412,8 +419,14 @@ export function buildLevel(
             continue;
         }
         const mdir = normPath(m.dir);
-        const rel = mdir.startsWith(dir) ? mdir.substring(dir.length).replace(/^\//, '') : null;
+        // Windows 路径不区分大小写，比较时忽略大小写
+        const mdirLower = mdir.toLowerCase();
+        const dirLower = dir.toLowerCase();
+        const rel = mdirLower.startsWith(dirLower) ? mdir.substring(dir.length).replace(/^\//, '') : null;
         if (rel === null) {
+            if (items.length === 0 && subdirs.size === 0) {
+                console.log('[buildLevel] path mismatch:', { mdir, dir, sample: m.file_path });
+            }
             continue;
         }
         const parts = rel.split('/').filter(Boolean);
@@ -469,6 +482,7 @@ export function buildLevel(
         });
     }
 
+    console.log('[buildLevel] items.length:', items.length, 'subdirs.size:', subdirs.size);
     return {
         label,
         dir,
