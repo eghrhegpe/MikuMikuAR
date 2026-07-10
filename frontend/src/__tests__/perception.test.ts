@@ -22,6 +22,13 @@ const mockState = vi.hoisted(() => ({
         // 记录最后一次 onBeforeRenderObservable.add 注册的回调，供 triggerLastObserver 触发
         lastObserverCallback: null as null | (() => void),
     } as any,
+    // Lip-sync 依赖 mock（audio 管道 + 口型算法）
+    isAudioPlaying: vi.fn(() => false),
+    getAudioPath: vi.fn(() => ''),
+    getProcBeatDetector: vi.fn(() => null),
+    findLipMorph: vi.fn(() => null),
+    findAllLipMorphs: vi.fn(() => ({ open: null, close: null, pucker: null, smile: null })),
+    amplitudeToWeight: vi.fn(() => 0),
 }));
 
 vi.mock('../scene/scene', () => ({
@@ -44,14 +51,23 @@ vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({}));
 vi.mock('../core/config', () => ({}));
 vi.mock('../scene/camera/camera', () => ({}));
 vi.mock('../scene/motion/vmd-loader', () => ({}));
-vi.mock('../outfit/audio', () => ({}));
+vi.mock('../outfit/audio', () => ({
+    isAudioPlaying: mockState.isAudioPlaying,
+    getAudioPath: mockState.getAudioPath,
+}));
 vi.mock('../outfit/outfit', () => ({}));
 vi.mock('../scene/env/props', () => ({}));
 vi.mock('../scene/env/env-bridge', () => ({}));
-vi.mock('../scene/motion/proc-motion-bridge', () => ({}));
+vi.mock('../scene/motion/proc-motion-bridge', () => ({
+    getProcBeatDetector: mockState.getProcBeatDetector,
+}));
 vi.mock('../scene/motion/lipsync-bridge', () => ({}));
 vi.mock('../motion-algos/procedural-motion', () => ({}));
-vi.mock('../motion-algos/lipsync', () => ({}));
+vi.mock('../motion-algos/lipsync', () => ({
+    findLipMorph: mockState.findLipMorph,
+    findAllLipMorphs: mockState.findAllLipMorphs,
+    amplitudeToWeight: mockState.amplitudeToWeight,
+}));
 
 // =====================================================================
 // SUT
@@ -75,6 +91,19 @@ beforeEach(async () => {
     });
     mockState.scene.lastObserverCallback = null;
     mockState.scene.onBeforeRenderObservable.remove.mockReset();
+    // Lip-sync mock 默认值：无音频、无 morph（各测试按需覆盖）
+    mockState.isAudioPlaying.mockReset();
+    mockState.isAudioPlaying.mockReturnValue(false);
+    mockState.getAudioPath.mockReset();
+    mockState.getAudioPath.mockReturnValue('');
+    mockState.getProcBeatDetector.mockReset();
+    mockState.getProcBeatDetector.mockReturnValue(null);
+    mockState.findLipMorph.mockReset();
+    mockState.findLipMorph.mockReturnValue(null);
+    mockState.findAllLipMorphs.mockReset();
+    mockState.findAllLipMorphs.mockReturnValue({ open: null, close: null, pucker: null, smile: null });
+    mockState.amplitudeToWeight.mockReset();
+    mockState.amplitudeToWeight.mockReturnValue(0);
 });
 
 // =====================================================================
@@ -620,5 +649,76 @@ describe('lipSync state', () => {
     it('setLipSyncIntensity 钳制 0..1', () => {
         sut.setLipSyncIntensity(2.0);
         expect(sut.getPerceptionState().lipSyncIntensity).toBe(1);
+    });
+});
+
+// =====================================================================
+// _applyLipSync 实时叠加（通过 observer 回调触发）
+// =====================================================================
+
+describe('_applyLipSync', () => {
+    beforeEach(() => {
+        vi.spyOn(performance, 'now').mockReturnValue(0);
+    });
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('lipSyncEnabled=false 时不写入任何 morph', () => {
+        const mockMorphManager = makeMockMorphManager(['あ']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        sut.setLipSyncEnabled(false);
+        sut.activatePerception('m1');
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('あ')).toBe(0);
+    });
+
+    it('开启且音频播放时写入 あ morph', () => {
+        const mockMorphManager = makeMockMorphManager(['あ']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        mockState.isAudioPlaying.mockReturnValue(true);
+        mockState.getAudioPath.mockReturnValue('/test/audio.mp3');
+        mockState.getProcBeatDetector.mockReturnValue({ getLevel: () => 0.5 });
+        mockState.findLipMorph.mockReturnValue('あ');
+        mockState.findAllLipMorphs.mockReturnValue({ open: 'あ', close: null, pucker: null, smile: null });
+        mockState.amplitudeToWeight.mockReturnValue(0.5);
+        sut.setLipSyncEnabled(true);
+        sut.activatePerception('m1');
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('あ')).toBeGreaterThan(0);
+    });
+
+    it('morph 不存在时静默跳过', () => {
+        const mockMorphManager = makeMockMorphManager([]);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        mockState.isAudioPlaying.mockReturnValue(true);
+        mockState.getAudioPath.mockReturnValue('/test/audio.mp3');
+        mockState.findLipMorph.mockReturnValue(null);
+        sut.setLipSyncEnabled(true);
+        sut.activatePerception('m1');
+        expect(() => triggerLastObserver()).not.toThrow();
+    });
+
+    it('关闭后 morph influence 归零（防残留）', () => {
+        const mockMorphManager = makeMockMorphManager(['あ']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        mockState.isAudioPlaying.mockReturnValue(true);
+        mockState.getAudioPath.mockReturnValue('/test/audio.mp3');
+        mockState.getProcBeatDetector.mockReturnValue({ getLevel: () => 0.5 });
+        mockState.findLipMorph.mockReturnValue('あ');
+        mockState.findAllLipMorphs.mockReturnValue({ open: 'あ', close: null, pucker: null, smile: null });
+        mockState.amplitudeToWeight.mockReturnValue(0.5);
+        sut.setLipSyncEnabled(true);
+        sut.activatePerception('m1');
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('あ')).toBeGreaterThan(0);
+        // 关闭
+        sut.setLipSyncEnabled(false);
+        triggerLastObserver();
+        expect(mockMorphManager.getInfluence('あ')).toBe(0);
     });
 });
