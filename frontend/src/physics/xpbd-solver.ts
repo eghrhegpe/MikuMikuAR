@@ -32,6 +32,18 @@ export interface XpbdParticle {
     angularVelocity: Float32Array;
     /** 转动惯量倒数 (1/I)，0 = 固定/无限惯量（与 invMass=0 语义对齐） */
     invInertia: number;
+    /**
+     * 外部加速度累加器 [x, y, z]，质量无关。
+     * 由弹性锚点等机制每帧注入（弹簧-阻尼力已折算为加速度），
+     * 在 Verlet 积分中作为附加加速度参与，step() 末尾清零。
+     * 可选：遗留的手动构造粒子若未提供，求解器按零值处理。
+     */
+    extAcc?: Float32Array;
+    /**
+     * 运动学标记：true 表示该粒子由外部每帧硬设位置（如弹性锚点的目标粒子），
+     * 不参与 Verlet 积分，也不参与粒子-粒子穿透求解（避免与附着约束冲突）。
+     */
+    kinematic?: boolean;
 }
 
 /** 约束类型 */
@@ -293,11 +305,31 @@ export class XpbdSolver {
             prevOrientation: new Float32Array([0, 0, 0, 1]),
             angularVelocity: new Float32Array(3),
             invInertia: invMass === 0 ? 0 : 1,
+            extAcc: new Float32Array(3),
+            kinematic: false,
         };
         const idx = this.particles.length;
         this.particles.push(particle);
         this._particleCount++;
         return idx;
+    }
+
+    /**
+     * 注入外部加速度（质量无关）。
+     * 典型用途：弹性锚点（弹簧-阻尼）将骨骼目标点的牵引力折算为加速度后注入，
+     * 在 step() 的 Verlet 积分中按 subDt 累加；step() 末尾自动清零，故每帧需重新注入。
+     */
+    addExternalAccel(idx: number, ax: number, ay: number, az: number): void {
+        const p = this.particles[idx];
+        if (!p) {
+            return;
+        }
+        if (!p.extAcc) {
+            p.extAcc = new Float32Array(3);
+        }
+        p.extAcc[0] += ax;
+        p.extAcc[1] += ay;
+        p.extAcc[2] += az;
     }
 
     /** 批量添加多个粒子 */
@@ -518,6 +550,15 @@ export class XpbdSolver {
                     vz += this.windDirection[2] * this.windStrength * subDt * flutter;
                 }
 
+                // 外部加速度（弹性锚点等）— 质量无关，作为附加加速度注入
+                // 遗留粒子可能无 extAcc，按零处理
+                const ex = p.extAcc;
+                if (ex) {
+                    vx += ex[0] * subDt;
+                    vy += ex[1] * subDt;
+                    vz += ex[2] * subDt;
+                }
+
                 // 保存旧位置
                 p.prevP[0] = px;
                 p.prevP[1] = py;
@@ -575,6 +616,13 @@ export class XpbdSolver {
             p.v[0] = (p.p[0] - p.prevP[0]) * invDt;
             p.v[1] = (p.p[1] - p.prevP[1]) * invDt;
             p.v[2] = (p.p[2] - p.prevP[2]) * invDt;
+
+            // 外部加速度累加器本帧已消费，清零以备下一帧重新注入
+            if (p.extAcc) {
+                p.extAcc[0] = 0;
+                p.extAcc[1] = 0;
+                p.extAcc[2] = 0;
+            }
         }
     }
 
@@ -846,6 +894,11 @@ export class XpbdSolver {
 
                 const pi = this.particles[i];
                 const pk = this.particles[k];
+
+                // 跳过运动学目标粒子（弹性锚点），避免与附着约束冲突
+                if (pi.kinematic || pk.kinematic) {
+                    continue;
+                }
 
                 const dx = pi.p[0] - pk.p[0];
                 const dy = pi.p[1] - pk.p[1];

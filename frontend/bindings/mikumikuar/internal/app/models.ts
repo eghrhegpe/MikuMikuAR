@@ -40,6 +40,9 @@ export interface ClothConfig {
     "totalMass": number;
     "damping": number;
     "gravityScale": number;
+    "elasticAnchor": boolean;
+    "anchorStiffness": number;
+    "anchorDamping": number;
     "bendCompliance": number;
 }
 

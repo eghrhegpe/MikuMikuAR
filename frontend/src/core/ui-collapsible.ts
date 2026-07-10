@@ -164,10 +164,10 @@ export function addPresetChip(
     label: string,
     active: boolean,
     onClick: () => void,
-    opts?: { onUpdate?: (btn: HTMLButtonElement) => void }
+    opts?: { onUpdate?: (btn: HTMLButtonElement) => void; wrap?: boolean }
 ): HTMLButtonElement {
     const btn = document.createElement('button');
-    btn.className = 'preset-chip' + (active ? ' active' : '');
+    btn.className = 'preset-chip' + (active ? ' active' : '') + (opts?.wrap ? ' wrap-2' : '');
     btn.textContent = label;
     btn.addEventListener('click', onClick);
     container.appendChild(btn);

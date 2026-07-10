@@ -910,7 +910,7 @@ export class SlideMenu {
         el.appendChild(iconSpan);
 
         const labelSpan = document.createElement('span');
-        labelSpan.className = 'slide-label';
+        labelSpan.className = 'slide-label' + (row.wrapLabel ? ' wrap-2' : '');
         labelSpan.textContent = row.label;
         el.appendChild(labelSpan);
 

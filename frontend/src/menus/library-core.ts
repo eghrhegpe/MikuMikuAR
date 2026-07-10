@@ -810,6 +810,7 @@ export function modelToRow(m: LibraryModel): PopupRow {
         model: m,
         catTag: m.category || undefined,
         editable: m.format === 'pmx',
+        wrapLabel: true,
         onAddClick: () => {
             closeAllOverlays();
             onModelRowClick(m);

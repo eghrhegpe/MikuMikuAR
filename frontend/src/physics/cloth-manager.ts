@@ -2,6 +2,8 @@
 // 从 scene-menu.ts 提取，职责: 布料创建/销毁/重建
 // UI 层通过 toggleCloth / recreateCloth 调用，不再寄生菜单文件
 
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { SdfCollider, DEFAULT_BODY_CAPSULES } from './xpbd-collider';
 import type { CapsuleSpec } from './xpbd-collider';
 import {
@@ -107,6 +109,49 @@ function _createClothForFocusedModel(): void {
 
     // Create cloth
     const cloth = createCloth(scene, cfg, collider);
+
+    // 布料网格挂到 rootMesh 下：bone.worldMatrix 是模型空间矩阵，
+    // 只有作为 rootMesh 的子节点才能正确映射到世界空间。
+    if (cloth.mesh && model?.rootMesh) {
+        cloth.mesh.parent = model.rootMesh;
+    }
+
+    // 自动检测模型裙子材质，clone 给布料网格
+    if (cloth.mesh && model?.meshes) {
+        // [debug] 输出所有 mesh/material 信息
+        console.group('[cloth-manager] 材质绑定诊断');
+        for (const m of model.meshes) {
+            const mat = m.material;
+            console.log(
+                `  mesh="${m.name}" mat="${mat?.name ?? '(none)'}" ` +
+                `type=${mat?.constructor?.name ?? '(none)'} ` +
+                `isStd=${!(mat instanceof StandardMaterial)}`,
+            );
+        }
+        // 也检查 rootMesh 的子节点
+        const children = model.rootMesh?.getChildMeshes() ?? [];
+        for (const c of children) {
+            const mat = c.material;
+            if (!model.meshes.includes(c as Mesh)) {
+                console.log(
+                    `  [child-only] mesh="${c.name}" mat="${mat?.name ?? '(none)'}" ` +
+                    `type=${mat?.constructor?.name ?? '(none)'}`,
+                );
+            }
+        }
+        // 检查 metadata 中的原始材料列表
+        const meta = (model.rootMesh as any).metadata;
+        if (meta?.materials) {
+            console.log(`  metadata.materials[${meta.materials.length}]:`, meta.materials.map((m: any) => m.name));
+        }
+        if (meta?.meshes) {
+            console.log(`  metadata.meshes[${meta.meshes.length}]:`, meta.meshes.map((m: any) => m.name));
+        }
+        console.groupEnd();
+
+        _bindSkirtMaterial(cloth.mesh, model.meshes);
+    }
+
     // 应用全局 solver substeps
     cloth.solver.substeps = envState.solverSubsteps;
     // 应用全局重力
@@ -152,6 +197,70 @@ function _destroyClothForFocusedModel(): void {
         return;
     }
     modelManager.removeCloth(id);
+}
+
+/** 裙子材质名称检测模式（日/中/英/通用） */
+const _SKIRT_NAME_PATTERNS = [
+    'skirt', 'dress',
+    'スカート', 'スカー',
+    '裙',
+    'ボトム',      // bottom
+    '下半身',
+    'フリル',      // frill
+    'apron',       // apron
+    'pinafore',    // pinafore
+];
+
+/**
+ * 从模型 meshes 中检测裙子材质，clone 后赋给布料网格。
+ * 同时检查 mesh.name 与 material.name，匹配任一即视为裙子材质。
+ * 查找优先级：_SKIRT_NAME_PATTERNS（日/中/英/通用）。
+ * 未找到时保留布料默认实心材质，并 console.warn 输出所有可用名称（调试用）。
+ */
+function _bindSkirtMaterial(clothMesh: Mesh, modelMeshes: Mesh[]): void {
+    const missed: string[] = [];
+
+    for (const m of modelMeshes) {
+        const mat = m.material;
+        if (!mat) {
+            missed.push(`mesh="${m.name}" NO_MATERIAL`);
+            continue;
+        }
+        if (!(mat instanceof StandardMaterial)) {
+            missed.push(`mesh="${m.name}" mat="${mat.name}" WRONG_TYPE=${mat.constructor?.name}`);
+            continue;
+        }
+
+        const combinedName = `${mat.name} | ${m.name}`.toLowerCase();
+        const matched = _SKIRT_NAME_PATTERNS.some((p) => combinedName.includes(p));
+
+        if (matched) {
+            console.log('[cloth-manager] ✓ 匹配裙子材质:', `mat="${mat.name}" mesh="${m.name}"`);
+
+            const cloned = mat.clone('xpbd_cloth_mat');
+            if (cloned) {
+                // 先释放布料默认实心材质
+                clothMesh.material?.dispose();
+                cloned.backFaceCulling = false;
+                // 裙子材质通常有透明度（toon 边缘描边），
+                // 保留原始 alpha，仅做下限保护
+                if (cloned.alpha < 0.01) {
+                    cloned.alpha = 0.85;
+                }
+                clothMesh.material = cloned;
+                console.log('[cloth-manager] ✓ 布料材质已替换为', cloned.name);
+            }
+            return; // matched
+        }
+
+        missed.push(`mat="${mat.name}" mesh="${m.name}"`);
+    }
+
+    // 无匹配：打印所有材质名供调试
+    console.warn(
+        '[cloth-manager] 未找到裙子材质，布料保留默认实心色。' +
+        '可用名称列表：\n  ' + missed.join('\n  '),
+    );
 }
 
 // ======== 公开 API ========

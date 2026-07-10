@@ -63,6 +63,20 @@ export interface ClothConfig {
     damping: number;
     /** 重力倍率，default 1.0 */
     gravityScale: number;
+    /**
+     * 弹性锚点开关。true=顶环通过弹簧-阻尼（外部加速度）跟随骨骼，
+     * 保留「give」与回弹；false=顶环硬钉骨骼（旧行为，无弹力）。default true。
+     */
+    elasticAnchor: boolean;
+    /**
+     * 锚点弹簧强度（归一化 0~1）。0=最软（跟随迟缓、易掉），1=最硬（近似刚性跟随）。
+     * 与「布料柔度」正交：柔度管布身，弹力管根骨与骨骼的耦合。default 0.85。
+     */
+    anchorStiffness: number;
+    /**
+     * 锚点回弹阻尼（归一化 0~1）。0=明显欠阻尼（强回弹/甩动），1=临界阻尼（无回弹）。default 0.3。
+     */
+    anchorDamping: number;
     /** 弯曲约束柔度，default = compliance * 5（比距离约束更软） */
     bendCompliance: number;
     /**
@@ -87,6 +101,12 @@ export interface ClothConfig {
     windStrength: number;
 }
 
+// 弹性锚点（附着约束方案）：
+// 每个顶环锚点配一个 invMass=0 的运动学目标粒子，每帧硬设到骨骼变换位置；
+// 锚点↔目标 之间挂 rest=0 的 soft distance 约束（compliance←弹力, damping←回弹阻尼），
+// 由求解器在子步内求解 → 质量感知、无条件稳定、子步一致，等价于 MMD 弹簧骨。
+// compliance 映射见 createCloth（弹力 1=刚性硬钉, 0=最软）。
+
 export const DEFAULT_CLOTH_CONFIG: ClothConfig = {
     anchorBone: '腰',
     topology: 'skirt',
@@ -100,6 +120,9 @@ export const DEFAULT_CLOTH_CONFIG: ClothConfig = {
     totalMass: 0.5,
     damping: 0.96,
     gravityScale: 1.0,
+    elasticAnchor: true,
+    anchorStiffness: 0.85,
+    anchorDamping: 0.3,
     bendCompliance: 0.005,
     boneFilter: [],
     windEnabled: false,
@@ -115,6 +138,8 @@ export interface ClothInstance {
     particleGrid: number[];
     /** 锚定粒子索引（最上层整环），这些粒子 mass=0 */
     anchorIndices: number[];
+    /** 弹性锚点的运动学目标粒子索引，与 anchorIndices 一一对应 */
+    anchorTargetIndices: number[];
     /** 每层粒子数 = segmentsH */
     ringSize: number;
     /** 总层数 = segmentsV */
@@ -179,7 +204,10 @@ export function createCloth(
     // ---- 粒子放置 ----
     const particleGrid: number[] = []; // ringCount × ringSize
     const anchorIndices: number[] = [];
-    const nonAnchorMass = cfg.totalMass / (ringSize * (ringCount - 1)); // 顶层固定，其余均分
+    const nonAnchorMass = cfg.totalMass / (ringSize * (ringCount - 1)); // 非锚点粒子均分质量
+    // 顶环锚点改为「有限质量 + 弹性跟随」（见 buildClothUpdateFn）。
+    // 质量略大于普通粒子，使其作为稳定根部，但保留被弹簧牵引的灵活性。
+    const anchorMass = Math.max(nonAnchorMass * 4, 1e-3);
 
     for (let row = 0; row < ringCount; row++) {
         const t = row / (ringCount - 1); // 0 (top) → 1 (bottom)
@@ -194,13 +222,38 @@ export function createCloth(
             const x = Math.cos(angle) * r;
             const z = Math.sin(angle) * r;
 
-            const mass = row === 0 ? Infinity : nonAnchorMass;
+            const mass = row === 0 ? anchorMass : nonAnchorMass;
             const idx = solver.addParticle([x, y, z], mass, cfg.particleRadius);
             particleGrid.push(idx);
 
             if (row === 0) {
                 anchorIndices.push(idx);
             }
+        }
+    }
+
+    // ---- 弹性锚点：运动学目标粒子 + 软距离约束（附着约束） ----
+    // 每个顶环锚点配一个 invMass=0 的目标粒子（kinematic），每帧由 buildClothUpdateFn
+    // 硬设到骨骼变换位置；锚点↔目标 挂 rest=0 的 soft distance 约束，
+    // compliance 由「弹力」映射（1=刚性, 0=最软）、damping 由「回弹阻尼」映射。
+    // 由求解器在子步内求解 → 质量感知、无条件稳定，等价 MMD 弹簧骨。
+    const anchorTargetIndices: number[] = [];
+    {
+        // 弹力 → 约束 stiffness（欠松弛系数），是修正量的线性缩放：
+        //   每子步锚点向目标的修正比例 = stiffness（因目标 kinematic，wSum=锚点 invMass，
+        //   base 修正为满量 → fraction 恰等于 stiffness）。
+        // 1.0=刚性硬钉、0.5=半跟随、0.1=很松，全程线性可用；欠松弛无条件稳定、零超调，
+        // 稳态下垂仅 g·subDt²/s（数量级 <1mm），不再出现塌缩。compliance 置 0。
+        const anchorStiff = Math.min(1, Math.max(0, cfg.anchorStiffness));
+        const anchorDamp = Math.min(1, Math.max(0, cfg.anchorDamping));
+        for (let i = 0; i < anchorIndices.length; i++) {
+            const aIdx = anchorIndices[i];
+            const ap = solver.particles[aIdx].p;
+            // 目标粒子：质量 0（kinematic）、半径 0（不参与穿透/碰撞）
+            const tIdx = solver.addParticle([ap[0], ap[1], ap[2]], 0, 0);
+            solver.particles[tIdx].kinematic = true;
+            anchorTargetIndices.push(tIdx);
+            solver.addDistanceConstraint(aIdx, tIdx, 0, 0, anchorStiff, anchorDamp);
         }
     }
 
@@ -261,6 +314,7 @@ export function createCloth(
         solver,
         particleGrid,
         anchorIndices,
+        anchorTargetIndices,
         ringSize,
         ringCount,
         mesh,
@@ -318,6 +372,7 @@ export function buildClothUpdateFn(
     }
 
     let _initialized = false;
+    let _debugFrameCount = 0; // [debug] 记录前 60 帧的骨骼数据
 
     return (dt: number) => {
         if (!cloth.enabled) {
@@ -333,6 +388,20 @@ export function buildClothUpdateFn(
             const tx = mat[12],
                 ty = mat[13],
                 tz = mat[14];
+
+            // [debug] 前 60 帧输出骨骼矩阵 + 锚点粒子位置
+            if (_debugFrameCount < 60) {
+                const firstAnchor = cloth.anchorIndices.length > 0 ? solver.particles[cloth.anchorIndices[0]] : null;
+                console.log(
+                    `[xpbd-cloth] #${_debugFrameCount} bone="${cloth.config.anchorBone}" ` +
+                    `mat[12..14]=(${tx.toFixed(3)}, ${ty.toFixed(3)}, ${tz.toFixed(3)}) ` +
+                    `mat[0]=${mat[0].toFixed(3)} mat[5]=${mat[5].toFixed(3)} mat[10]=${mat[10].toFixed(3)} ` +
+                    `anchor0=${firstAnchor ? `(${firstAnchor.p[0].toFixed(3)}, ${firstAnchor.p[1].toFixed(3)}, ${firstAnchor.p[2].toFixed(3)})` : '(none)'} ` +
+                    `initialized=${_initialized}` +
+                    (cloth.mesh?.parent ? ` parent="${cloth.mesh.parent.name}"` : ' NO_PARENT')
+                );
+                _debugFrameCount++;
+            }
 
             // 首帧：将所有粒子定位到骨骼世界坐标，避免从原点弹跳
             // 需等骨骼矩阵有效（平移不全为零）再执行，否则 MMD runtime 尚未更新
@@ -353,19 +422,31 @@ export function buildClothUpdateFn(
                     p.prevP[2] = p.p[2];
                 }
             } else {
-                // 后续帧：仅更新锚点粒子
+                // 后续帧：锚点跟随骨骼
+                // 目标粒子（kinematic）每帧硬设到骨骼变换位置，作为附着约束的静止点；
+                // 弹性模式由 solver 的 soft distance 约束把锚点拉向目标（有 give）；
+                // 硬钉模式则锚点本身也直接焊死在骨骼上。无论哪种，目标与锚点共享同一 localOffset。
                 for (let i = 0; i < cloth.anchorIndices.length; i++) {
                     const idx = cloth.anchorIndices[i];
+                    const tIdx = cloth.anchorTargetIndices[i];
                     const [lx, ly, lz] = localOffsets[idx];
 
                     const wx = mat[0] * lx + mat[4] * ly + mat[8] * lz + tx;
                     const wy = mat[1] * lx + mat[5] * ly + mat[9] * lz + ty;
                     const wz = mat[2] * lx + mat[6] * ly + mat[10] * lz + tz;
 
+                    const tp = solver.particles[tIdx];
+                    tp.p[0] = wx;
+                    tp.p[1] = wy;
+                    tp.p[2] = wz;
+
                     const p = solver.particles[idx];
-                    p.p[0] = wx;
-                    p.p[1] = wy;
-                    p.p[2] = wz;
+                    if (!cloth.config.elasticAnchor) {
+                        // 硬钉：顶环焊死骨骼（无弹力）
+                        p.p[0] = wx;
+                        p.p[1] = wy;
+                        p.p[2] = wz;
+                    }
                 }
             }
         } else if (!cloth._anchorMissingWarned) {

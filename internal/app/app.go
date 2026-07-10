@@ -469,6 +469,9 @@ type ClothConfig struct {
 	TotalMass      float64 `json:"totalMass"`
 	Damping        float64 `json:"damping"`
 	GravityScale   float64 `json:"gravityScale"`
+	ElasticAnchor  bool    `json:"elasticAnchor"`
+	AnchorStiffness float64 `json:"anchorStiffness"`
+	AnchorDamping  float64 `json:"anchorDamping"`
 	BendCompliance float64 `json:"bendCompliance"`
 }
 

@@ -152,6 +152,8 @@ export const zhCN: Record<string, string> = {
     'motion.bendCompliance': '弯曲柔度',
     'motion.damping': '阻尼',
     'motion.gravityScale': '重力倍率',
+    'motion.anchorElasticity': '布料弹力',
+    'motion.anchorDamping': '回弹阻尼',
     'motion.subdiv': '细分',
     'motion.segH': '水平分段',
     'motion.segV': '垂直分段',

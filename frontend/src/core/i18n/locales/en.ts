@@ -152,6 +152,8 @@ export const en: Record<string, string> = {
     'motion.bendCompliance': 'Bend Compliance',
     'motion.damping': 'Damping',
     'motion.gravityScale': 'Gravity Scale',
+    'motion.anchorElasticity': 'Cloth Elasticity',
+    'motion.anchorDamping': 'Bounce Damping',
     'motion.subdiv': 'Subdivision',
     'motion.segH': 'Horizontal Segments',
     'motion.segV': 'Vertical Segments',

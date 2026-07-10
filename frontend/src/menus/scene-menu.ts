@@ -140,6 +140,53 @@ function buildScreenshotLevel(): PopupLevel {
     };
 }
 
+// ======== Experimental Level ========
+
+/** 实验功能子页面——包含布料物理、布娃娃物理、布娃娃调试 */
+function buildExperimentalLevel(): PopupLevel {
+    return {
+        label: t('env.experimental'),
+        dir: '',
+        items: [
+            {
+                kind: 'folder',
+                label: t('scene.clothSim'),
+                icon: 'lucide:shirt',
+                target: 'scene:cloth',
+                headerToggle: {
+                    value: envState.clothEnabled,
+                    onChange: (v) => {
+                        envState.clothEnabled = v;
+                        toggleCloth(v);
+                    },
+                    bind: () => envState.clothEnabled,
+                },
+            },
+            {
+                kind: 'folder',
+                label: t('scene.ragdollPhysics'),
+                icon: 'lucide:user',
+                target: 'scene:ragdoll',
+                headerToggle: {
+                    value: envState.ragdollEnabled,
+                    onChange: (v) => {
+                        envState.ragdollEnabled = v;
+                        toggleRagdoll(v);
+                    },
+                    bind: () => envState.ragdollEnabled,
+                },
+            },
+            // Ragdoll 调试（XPBD 可视化）
+            {
+                kind: 'folder',
+                label: t('scene.ragdollDebug'),
+                icon: 'lucide:bug',
+                target: 'scene:ragdoll:debug',
+            },
+        ],
+    };
+}
+
 // ======== Scene Root ========
 
 /** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
@@ -173,41 +220,12 @@ function buildSceneRootItems(): PopupRow[] {
     });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({ kind: 'folder', label: t('scene.physics'), icon: 'lucide:atom', target: 'scene:physics' });
-items.push({
-  kind: 'folder',
-  label: t('scene.clothSim'),
-  icon: 'lucide:shirt',
-  target: 'scene:cloth',
-  headerToggle: {
-    value: envState.clothEnabled,
-    onChange: (v) => {
-      envState.clothEnabled = v;
-      toggleCloth(v);
-    },
-    bind: () => envState.clothEnabled,
-  },
-});
-items.push({
-  kind: 'folder',
-  label: t('scene.ragdollPhysics'),
-  icon: 'lucide:user',
-  target: 'scene:ragdoll',
-  headerToggle: {
-    value: envState.ragdollEnabled,
-    onChange: (v) => {
-      envState.ragdollEnabled = v;
-      toggleRagdoll(v);
-    },
-    bind: () => envState.ragdollEnabled,
-  },
-});
-// Ragdoll 调试（XPBD 可视化）
-items.push({
-  kind: 'folder',
-  label: t('scene.ragdollDebug'),
-  icon: 'lucide:bug',
-  target: 'scene:ragdoll:debug',
-});
+    items.push({
+        kind: 'folder',
+        label: t('env.experimental'),
+        icon: 'lucide:flask-conical',
+        target: 'scene:experimental',
+    });
     if (modelRegistry.size > 1) {
         items.push({
             kind: 'folder',
@@ -238,6 +256,7 @@ const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:render:stage': buildStageLevel,
     'scene:render:props': buildPropLevel,
     'scene:physics': buildPhysicsLevel,
+    'scene:experimental': buildExperimentalLevel,
     'scene:cloth': buildClothLevel,
     'scene:ragdoll': buildRagdollLevel,
     'scene:ragdoll:debug': buildRagdollDebugLevel,

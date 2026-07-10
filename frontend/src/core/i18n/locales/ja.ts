@@ -278,6 +278,8 @@ export const ja: Record<string, string> = {
     'motion.bendCompliance': '曲げ柔軟度',
     'motion.damping': 'ダンピング',
     'motion.gravityScale': '重力倍率',
+    'motion.anchorElasticity': '布地の弾性',
+    'motion.anchorDamping': '弾性減衰',
     'motion.subdiv': '細分化',
     'motion.segH': '水平分割',
     'motion.segV': '垂直分割',
