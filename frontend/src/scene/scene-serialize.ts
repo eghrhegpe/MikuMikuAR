@@ -101,6 +101,22 @@ export function resolvePathFromRef(filePath: string, libraryRef?: string): strin
     return filePath || null;
 }
 
+/** 从旧 procMotion 状态迁移为 PerceptionState（供测试与序列化共用） */
+export function migratePerceptionFromProcMotion(
+    old: Partial<ProcMotionState>,
+): Partial<PerceptionState> {
+    return {
+        eyeTrackingEnabled: old.eyeTrackingEnabled ?? true,
+        headTrackingEnabled: old.headTrackingEnabled ?? true,
+        // 旧存档：boneToggles.blink 控制眨眼，boneToggles.head 无对应感知字段（head-follow 由 gaze 接管）
+        blinkEnabled: old.boneToggles?.blink ?? true,
+        breathEnabled: true,
+        // 旧 boneToggles.emotion 语义是「启用微表情」（boolean），不映射具体情绪
+        microExpressionEnabled: old.boneToggles?.emotion ?? true,
+        emotion: 'neutral',
+    };
+}
+
 // ======== Scene File Format ========
 
 export interface SceneFile {
@@ -588,14 +604,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     if (data.perception) {
         setPerceptionState(data.perception as Partial<PerceptionState>);
     } else if (data.procMotion) {
-        const old = data.procMotion as Partial<ProcMotionState>;
-        setPerceptionState({
-            eyeTrackingEnabled: old.eyeTrackingEnabled ?? true,
-            headTrackingEnabled: old.headTrackingEnabled ?? true,
-            // 旧存档：boneToggles.blink 控制眨眼，boneToggles.head 无对应感知字段（head-follow 由 gaze 接管）
-            blinkEnabled: old.boneToggles?.blink ?? true,
-            breathEnabled: true,
-        });
+        setPerceptionState(migratePerceptionFromProcMotion(data.procMotion as Partial<ProcMotionState>));
     }
     activatePerception();
 

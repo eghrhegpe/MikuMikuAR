@@ -1,5 +1,7 @@
 // [doc:adr-071] 感知层单元测试 — 状态管理 + 生命周期
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// 迁移函数为纯函数，静态导入即可；scene-serialize 的重依赖下方统一 mock
+import { migratePerceptionFromProcMotion } from '../scene/scene-serialize';
 
 // =====================================================================
 // hoisted mock state
@@ -34,6 +36,22 @@ vi.mock('../scene/scene', () => ({
 vi.mock('../ar/ar-camera', () => ({
     isARActive: () => false,
 }));
+
+// scene-serialize 重依赖：全部空 mock（仅在函数体内使用，模块加载期不触发）
+vi.mock('../core/wails-bindings', () => ({}));
+vi.mock('../core/i18n/t', () => ({ t: (k: string) => k }));
+vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({}));
+vi.mock('../core/config', () => ({}));
+vi.mock('../scene/camera/camera', () => ({}));
+vi.mock('../scene/motion/vmd-loader', () => ({}));
+vi.mock('../outfit/audio', () => ({}));
+vi.mock('../outfit/outfit', () => ({}));
+vi.mock('../scene/env/props', () => ({}));
+vi.mock('../scene/env/env-bridge', () => ({}));
+vi.mock('../scene/motion/proc-motion-bridge', () => ({}));
+vi.mock('../scene/motion/lipsync-bridge', () => ({}));
+vi.mock('../motion-algos/procedural-motion', () => ({}));
+vi.mock('../motion-algos/lipsync', () => ({}));
 
 // =====================================================================
 // SUT
@@ -338,5 +356,33 @@ describe('_applyMicroExpression', () => {
         sut.activatePerception('m1');
         vi.mocked(performance.now).mockReturnValue(1000);
         expect(() => triggerLastObserver()).not.toThrow();
+    });
+});
+
+// =====================================================================
+// scene-serialize perception migration — 旧存档迁移
+// =====================================================================
+
+describe('scene-serialize perception migration', () => {
+    it('旧存档无 perception.emotion 时默认 neutral', () => {
+        // 旧 perception 数据缺 emotion/microExpressionEnabled 字段，setPerceptionState 合并后应取默认值
+        sut.setPerceptionState({ breathEnabled: true, blinkEnabled: true });
+        expect(sut.getPerceptionState().emotion).toBe('neutral');
+        expect(sut.getPerceptionState().microExpressionEnabled).toBe(true);
+    });
+
+    it('旧存档 procMotion.boneToggles.emotion=true 时映射为 microExpressionEnabled=true, emotion=neutral', () => {
+        // emotion toggle 的语义是「启用微表情」（boolean），不映射具体情绪
+        const oldProcMotion = { boneToggles: { emotion: true } } as any;
+        const migrated = migratePerceptionFromProcMotion(oldProcMotion);
+        expect(migrated.microExpressionEnabled).toBe(true);
+        expect(migrated.emotion).toBe('neutral');
+    });
+
+    it('旧存档 procMotion.boneToggles.emotion=false 时映射为 microExpressionEnabled=false', () => {
+        const oldProcMotion = { boneToggles: { emotion: false } } as any;
+        const migrated = migratePerceptionFromProcMotion(oldProcMotion);
+        expect(migrated.microExpressionEnabled).toBe(false);
+        expect(migrated.emotion).toBe('neutral');
     });
 });
