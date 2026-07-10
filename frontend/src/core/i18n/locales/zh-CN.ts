@@ -897,6 +897,7 @@ export const zhCN: Record<string, string> = {
     'env.foamIntensity': '泡沫强度',
     'env.animSpeed': '动画速度',
     'env.range': '范围',
+    'env.edgeFade': '边缘淡出',
     'env.underwaterEffects': '水下效果',
     'env.underwaterFogColor': '水下雾色',
     'env.fogDensity': '雾密度',

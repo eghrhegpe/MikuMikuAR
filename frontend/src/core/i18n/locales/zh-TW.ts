@@ -839,6 +839,7 @@ export const zhTW: Record<string, string> = {
     'env.foamIntensity': '泡沫強度',
     'env.animSpeed': '動畫速度',
     'env.range': '範圍',
+    'env.edgeFade': '邊緣淡出',
     'env.underwaterEffects': '水下效果',
     'env.underwaterFogColor': '水下霧色',
     'env.fogDensity': '霧密度',

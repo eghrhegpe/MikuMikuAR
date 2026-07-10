@@ -146,6 +146,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         groundTerrainOctaves: 5,
         groundLevel: 0,
         groundSize: 60,
+        groundEdgeFade: 0,
         windEnabled: false,
         windDirection: [1, 0, 0],
         windSpeed: 0,
