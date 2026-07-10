@@ -101,11 +101,30 @@ export function resolvePathFromRef(filePath: string, libraryRef?: string): strin
     return filePath || null;
 }
 
+/** 从旧 lipSync state 迁移为 PerceptionState 的 lip-sync 字段 */
+export function migrateLipSyncFromOldState(
+    old: { lipSync?: { enabled?: boolean; sensitivity?: number; intensity?: number; multiMorphEnabled?: boolean } },
+): { lipSyncEnabled: boolean; lipSyncSensitivity: number; lipSyncIntensity: number; lipSyncMultiMorphEnabled: boolean } {
+    const l = old.lipSync;
+    if (!l) {
+        // 旧存档无 lipSync 字段 → 使用默认值（false/0.2/0.8/false）
+        return { lipSyncEnabled: false, lipSyncSensitivity: 0.2, lipSyncIntensity: 0.8, lipSyncMultiMorphEnabled: false };
+    }
+    return {
+        lipSyncEnabled: l.enabled ?? false,
+        lipSyncSensitivity: l.sensitivity ?? 0.2,
+        lipSyncIntensity: l.intensity ?? 0.8,
+        lipSyncMultiMorphEnabled: l.multiMorphEnabled ?? false,
+    };
+}
+
 /** 从旧 procMotion 状态迁移为 PerceptionState（供测试与序列化共用） */
 export function migratePerceptionFromProcMotion(
     old: Partial<ProcMotionState>,
 ): Partial<PerceptionState> {
     const t = old.boneToggles;
+    // lip-sync：旧存档独立的 lipSync state 映射为 PerceptionState 字段
+    const lipSync = migrateLipSyncFromOldState(old as any);
     return {
         eyeTrackingEnabled: old.eyeTrackingEnabled ?? true,
         headTrackingEnabled: old.headTrackingEnabled ?? true,
@@ -117,6 +136,11 @@ export function migratePerceptionFromProcMotion(
         emotion: 'neutral',
         // 躯干微晃：四个 toggle 任一为 true 则开启；无 boneToggles（旧旧存档）默认开启
         balanceSwayEnabled: t ? !!(t.center || t.upper2 || t.waist || t.allParent) : true,
+        // Lip-sync 字段（从旧 lipSync state 迁移）
+        lipSyncEnabled: lipSync.lipSyncEnabled,
+        lipSyncSensitivity: lipSync.lipSyncSensitivity,
+        lipSyncIntensity: lipSync.lipSyncIntensity,
+        lipSyncMultiMorphEnabled: lipSync.lipSyncMultiMorphEnabled,
     };
 }
 
