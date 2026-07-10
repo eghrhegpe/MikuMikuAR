@@ -436,3 +436,19 @@ describe('scene-serialize perception migration', () => {
         expect(migrated.emotion).toBe('neutral');
     });
 });
+
+// =====================================================================
+// 重心微动（Balance Sway）状态
+// =====================================================================
+
+describe('balanceSway state', () => {
+    it('默认 balanceSwayEnabled 为 true', () => {
+        const state = sut.getPerceptionState();
+        expect(state.balanceSwayEnabled).toBe(true);
+    });
+
+    it('setBalanceSwayEnabled 可关闭重心微动', () => {
+        sut.setBalanceSwayEnabled(false);
+        expect(sut.getPerceptionState().balanceSwayEnabled).toBe(false);
+    });
+});

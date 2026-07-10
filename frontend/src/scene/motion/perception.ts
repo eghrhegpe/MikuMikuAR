@@ -39,6 +39,8 @@ export interface PerceptionState {
     eyeTrackingEnabled: boolean;
     microExpressionEnabled: boolean;
     emotion: Emotion;
+    /** 重心微动开关（躯干骨骼平衡微晃） */
+    balanceSwayEnabled: boolean;
 }
 
 /** Gaze 配置类型 */
@@ -51,6 +53,7 @@ const DEFAULT_PERCEPTION_STATE: PerceptionState = {
     eyeTrackingEnabled: true,
     microExpressionEnabled: true,
     emotion: 'neutral',
+    balanceSwayEnabled: true,
 };
 
 let perceptionState: PerceptionState = { ...DEFAULT_PERCEPTION_STATE };
@@ -228,6 +231,12 @@ export function setMicroExpressionEnabled(v: boolean): void {
 /** 设置情绪类型 */
 export function setEmotion(v: Emotion): void {
     perceptionState = { ...perceptionState, emotion: v };
+    triggerAutoSave();
+}
+
+/** 设置重心微动开关 */
+export function setBalanceSwayEnabled(v: boolean): void {
+    perceptionState = { ...perceptionState, balanceSwayEnabled: v };
     triggerAutoSave();
 }
 
