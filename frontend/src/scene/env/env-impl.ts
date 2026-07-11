@@ -20,6 +20,11 @@ import {
     MeshBuilder,
     GroundMesh,
     ShaderMaterial,
+    RenderTargetTexture,
+    FreeCamera,
+    Plane,
+    Matrix,
+    Vector3,
 } from '@babylonjs/core';
 import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
 import { EnvState, envState } from '@/core/config';
@@ -393,6 +398,13 @@ let _onTerrainReady: (() => void) | null = null;
 let _groundScrollU = 0;
 let _groundScrollV = 0;
 
+// === Phase B: 地面镜面反射 RT（复用 ADR-062 水面反射模式）===
+let _groundMirrorRT: RenderTargetTexture | null = null;
+let _groundMirrorCam: FreeCamera | null = null;
+let _groundMirrorFrameCount = 0;
+const RT_REFRESH_ONCE = (RenderTargetTexture as unknown as { REFRESHRATE_RENDER_ONCE?: number })
+    .REFRESHRATE_RENDER_ONCE ?? 0;
+
 function applyProceduralGround(ground: Mesh, state: EnvState): void {
     const scene = getScene();
     const canvas = document.createElement('canvas');
@@ -539,6 +551,185 @@ function _syncGroundTextureOffset(mat: StandardMaterial, state: EnvState): void 
     tex.vOffset = v;
 }
 
+/**
+ * 同步地面法线贴图（bumpTexture）。
+ * 仅 texture 模式且指定了法线路径时挂载；否则移除。
+ */
+function _syncGroundNormalTexture(mat: StandardMaterial, state: EnvState): void {
+    const scene = getScene();
+    if (state.groundNormalTexture) {
+        if (!mat.bumpTexture || (mat.bumpTexture as Texture).name !== state.groundNormalTexture) {
+            mat.bumpTexture = new Texture(resolveStaticAsset(state.groundNormalTexture), scene);
+        }
+        mat.bumpTexture.level = state.groundNormalStrength;
+    } else {
+        if (mat.bumpTexture) {
+            mat.bumpTexture.dispose();
+            mat.bumpTexture = null;
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Phase B: 地面镜面反射（复用 ADR-062 水面反射模式）
+// ══════════════════════════════════════════════════════════════
+
+/** 创建地面反射 RT。 */
+function _createGroundMirrorRT(scene: Scene, resolution: number): RenderTargetTexture {
+    const rt = new RenderTargetTexture(
+        'groundReflectionRT',
+        resolution,
+        scene,
+        false // generateMipMaps
+    );
+    rt.clearColor = new Color4(0, 0, 0, 0);
+    rt.refreshRate = RT_REFRESH_ONCE;
+    return rt;
+}
+
+/** 创建反射镜像相机。 */
+function _createGroundMirrorCam(scene: Scene): FreeCamera {
+    const cam = new FreeCamera('_groundMirrorCam', Vector3.Zero(), scene);
+    cam.minZ = 0.5;
+    cam.maxZ = 200;
+    cam.rotation.x = -Math.PI / 2; // 朝上反射
+    return cam;
+}
+
+/** 更新镜像相机位置（基于主相机关于地面平面的反射）。 */
+function _updateGroundMirrorCamera(scene: Scene, groundLevel: number): void {
+    const cam = scene.activeCamera;
+    if (!_groundMirrorCam || !cam) return;
+    const mirrorPlane = new Plane(0, 1, 0, -groundLevel);
+    const reflMatrix = Matrix.Reflection(mirrorPlane);
+    const camWorld = cam.getWorldMatrix();
+    const mirrorWorld = camWorld.multiply(reflMatrix);
+    (_groundMirrorCam as unknown as { setWorldMatrix: (m: Matrix) => void }).setWorldMatrix(mirrorWorld);
+    (_groundMirrorCam as unknown as { freezeWorldMatrix: () => void }).freezeWorldMatrix();
+    if ('fov' in cam) {
+        (_groundMirrorCam as unknown as { fov: number }).fov = (cam as unknown as { fov: number }).fov;
+    }
+}
+
+/** 填充地面反射 renderList：排除地面自身，排除地面以下几何。 */
+function _populateGroundMirrorRenderList(
+    scene: Scene,
+    rt: RenderTargetTexture,
+    groundLevel: number
+): void {
+    rt.renderList = [];
+    for (const mesh of scene.meshes) {
+        if (mesh.name === 'envGround' || mesh.name.startsWith('envGround')) {
+            continue; // 排除地面自身
+        }
+        if (!mesh.isEnabled()) {
+            continue;
+        }
+        // 排除地面以下的几何（模拟 clipPlane 效果）
+        const bounds = mesh.getBoundingInfo().boundingBox;
+        if (bounds.maximumWorld.y < groundLevel) {
+            continue;
+        }
+        rt.renderList.push(mesh);
+    }
+}
+
+/**
+ * 构建地面镜面反射：创建 RT + 镜像相机 + 挂载到材质。
+ * 若 groundReflectionQuality='off' 或 blend<=0，则销毁既有 RT。
+ * 互斥守卫：启用地面反射时关闭水面反射。
+ */
+function buildGroundReflection(state: EnvState): void {
+    const scene = getScene();
+    const shouldEnable =
+        state.groundReflectionQuality !== 'off' && state.groundReflectionBlend > 0;
+
+    if (!shouldEnable) {
+        // 销毁既有 RT
+        if (_groundMirrorRT) {
+            scene.customRenderTargets = scene.customRenderTargets.filter(
+                (t) => t !== _groundMirrorRT
+            );
+            _groundMirrorRT.dispose();
+            _groundMirrorRT = null;
+        }
+        if (_groundMirrorCam) {
+            _groundMirrorCam.dispose();
+            _groundMirrorCam = null;
+        }
+        _groundMirrorFrameCount = 0;
+        // 移除材质上的反射纹理
+        const mat = _envSys.ground.mesh?.material;
+        if (mat && mat instanceof StandardMaterial) {
+            if (mat.reflectionTexture) {
+                mat.reflectionTexture.dispose();
+                mat.reflectionTexture = null;
+            }
+        }
+        return;
+    }
+
+    // 互斥守卫：关闭水面反射
+    if (envState.planarReflectBlend > 0) {
+        envState.planarReflectBlend = 0;
+        // 触发水面模块重应用（由 env-bridge 在下一帧检测到变化时处理）
+    }
+
+    // 创建或复用 RT
+    if (!_groundMirrorRT) {
+        const resolutionMap: Record<string, number> = { high: 1024, medium: 512, low: 256, off: 0 };
+        const resolution = resolutionMap[state.groundReflectionQuality] ?? 256;
+        _groundMirrorRT = _createGroundMirrorRT(scene, resolution);
+        _groundMirrorCam = _createGroundMirrorCam(scene);
+        _groundMirrorRT.activeCamera = _groundMirrorCam;
+
+        _groundMirrorRT.onBeforeRenderObservable.add(() => {
+            for (const mesh of _groundMirrorRT!.renderList ?? []) {
+                if (mesh.material) {
+                    mesh.material.backFaceCulling = false;
+                }
+            }
+        });
+        _groundMirrorRT.onAfterRenderObservable.add(() => {
+            for (const mesh of _groundMirrorRT!.renderList ?? []) {
+                if (mesh.material) {
+                    mesh.material.backFaceCulling = true;
+                }
+            }
+        });
+
+        _populateGroundMirrorRenderList(scene, _groundMirrorRT, state.groundLevel);
+        scene.customRenderTargets.push(_groundMirrorRT);
+    }
+
+    // 挂载到地面材质
+    const mat = _envSys.ground.mesh?.material;
+    if (mat && mat instanceof StandardMaterial && _groundMirrorRT) {
+        if (mat.reflectionTexture !== _groundMirrorRT) {
+            mat.reflectionTexture = _groundMirrorRT;
+        }
+        // 用 alpha 混合反射强度
+        mat.reflectionTexture.level = state.groundReflectionBlend;
+    }
+}
+
+/** 销毁地面反射 RT（供 disposeEnv 调用）。 */
+function disposeGroundReflection(): void {
+    const scene = getScene();
+    if (_groundMirrorRT) {
+        scene.customRenderTargets = scene.customRenderTargets.filter(
+            (t) => t !== _groundMirrorRT
+        );
+        _groundMirrorRT.dispose();
+        _groundMirrorRT = null;
+    }
+    if (_groundMirrorCam) {
+        _groundMirrorCam.dispose();
+        _groundMirrorCam = null;
+    }
+    _groundMirrorFrameCount = 0;
+}
+
 export function applyGround(state: EnvState): void {
     const scene = getScene();
 
@@ -546,13 +737,13 @@ export function applyGround(state: EnvState): void {
         state.groundMode === 'heightmap'
             ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}`
             : state.groundTextureEnabled && state.groundTexture
-              ? `texture:${state.groundTexture}:${state.groundSize}`
+              ? `texture:${state.groundTexture}:${state.groundSize}:${state.groundReflectionQuality}`
               : state.groundMode === 'checker'
-                ? `checker:${state.groundPattern}:${state.groundSize}`
-                : `mode:${state.groundMode}:${state.groundSize}`;
+                ? `checker:${state.groundPattern}:${state.groundSize}:${state.groundReflectionQuality}`
+                : `mode:${state.groundMode}:${state.groundSize}:${state.groundReflectionQuality}`;
     const keyChanged = typeKey !== _currentGroundKey;
 
-    // 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放/旋转/坡度
+    // 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放/旋转/坡度/法线/反射
     if (_envSys.ground.mesh && state.groundVisible && !keyChanged) {
         const mat = _envSys.ground.mesh.material;
         if (mat) {
@@ -581,6 +772,12 @@ export function applyGround(state: EnvState): void {
                     ).vScale = 1 / Math.max(0.1, state.groundTextureScale);
                     _syncGroundTextureOffset(mat, state);
                 }
+                // 法线贴图（Phase B）
+                _syncGroundNormalTexture(mat, state);
+                // 反射 blend 实时更新（不重建 RT）
+                if (mat.reflectionTexture && _groundMirrorRT) {
+                    mat.reflectionTexture.level = state.groundReflectionBlend;
+                }
             }
             // 边缘淡出：随滑块实时更新 opacityTexture（fade<=0 时移除）
             applyGroundEdgeFade(mat as StandardMaterial | GridMaterial, state.groundEdgeFade, scene);
@@ -592,10 +789,14 @@ export function applyGround(state: EnvState): void {
             _envSys.ground.mesh.rotation.x = (state.groundPitch * Math.PI) / 180;
             _envSys.ground.mesh.rotation.z = (state.groundRoll * Math.PI) / 180;
         }
+        // 反射 RT 重建（quality 变更时由 typeKey 触发，blend 变更走上面的原地更新）
+        buildGroundReflection(state);
         return;
     }
 
     _currentGroundKey = typeKey;
+    // 销毁旧地面反射 RT（Phase B）
+    disposeGroundReflection();
     if (_envSys.ground.mesh) {
         _envSys.ground.mesh.dispose();
         _envSys.ground.mesh = null;
@@ -656,6 +857,7 @@ export function applyGround(state: EnvState): void {
         mat.backFaceCulling = false;
         ground.material = mat;
         _syncGroundTextureOffset(mat, state);
+        _syncGroundNormalTexture(mat, state); // 法线贴图（Phase B）
     } else {
         const mat = new StandardMaterial('envGroundMat', scene);
         mat.diffuseColor = new Color3(
@@ -676,6 +878,9 @@ export function applyGround(state: EnvState): void {
     // 坡度（heightmap 模式已提前 return，此处一定是非 heightmap 模式）
     ground.rotation.x = (state.groundPitch * Math.PI) / 180;
     ground.rotation.z = (state.groundRoll * Math.PI) / 180;
+
+    // Phase B: 镜面反射（创建后挂载）
+    buildGroundReflection(state);
 
     _envSys.ground.mesh = ground;
 }
@@ -791,6 +996,27 @@ export function ensureEnvUpdateObserver(): void {
             }
         }
 
+        // Phase B: 地面镜面反射渲染（分帧策略，复用水面反射模式）
+        if (_groundMirrorRT && _groundMirrorCam) {
+            _groundMirrorFrameCount++;
+            const frameSkipMap: Record<string, number> = { high: 0, medium: 1, low: 3, off: 999 };
+            const frameSkip = frameSkipMap[envState.groundReflectionQuality] ?? 999;
+            if (_groundMirrorFrameCount % (frameSkip + 1) === 0) {
+                _updateGroundMirrorCamera(scene, envState.groundLevel);
+                _populateGroundMirrorRenderList(scene, _groundMirrorRT, envState.groundLevel);
+                _groundMirrorRT.render();
+            }
+        }
+
+        // Phase B: grid 模式跟随相机（每帧重定位到相机下方）
+        if (_envSys.ground.mesh && envState.groundFollowCamera && envState.groundMode === 'grid') {
+            const cam = scene.activeCamera;
+            if (cam) {
+                _envSys.ground.mesh.position.x = cam.position.x;
+                _envSys.ground.mesh.position.z = cam.position.z;
+            }
+        }
+
         // Water wave direction is embedded in Gerstner wave shader — no per-frame wind update needed
         // Underwater post-processing (delegated to water module)
         updateUnderwaterTransition(scene, pipeline);
@@ -808,6 +1034,7 @@ export function disposeEnvUpdateObserver(): void {
         scene.onBeforeRenderObservable.remove(_envUpdateObserver);
         _envUpdateObserver = null;
     }
+    disposeGroundReflection(); // Phase B: 清理地面反射 RT
     resetUnderwaterState(scene, pipeline);
 }
 

@@ -295,6 +295,13 @@ export const envState: EnvState = reactive<EnvState>({
     groundScrollSpeedZ: 0,
     groundPattern: 'checker',
 
+    groundReflectionBlend: 0,
+    groundReflectionQuality: 'off',
+    groundNormalTexture: '',
+    groundNormalStrength: 1,
+    groundElevationColoring: false,
+    groundFollowCamera: false,
+
     windEnabled: true,
     windDirection: [0, 0, 1],
     windSpeed: 5,

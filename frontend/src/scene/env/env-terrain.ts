@@ -1,4 +1,4 @@
-import { Scene, MeshBuilder, GroundMesh, StandardMaterial, Texture, Color3 } from '@babylonjs/core';
+import { Scene, MeshBuilder, GroundMesh, StandardMaterial, Texture, Color3, VertexBuffer } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
 
 // ======== 确定性值噪声（FBM）========
@@ -118,7 +118,11 @@ export function createHeightmapGround(
     return ground;
 }
 
-/** 地形材质（与其他地面模式一致：纯色或半透明/纹理）。供 env-impl 在 onReady 与就地更新时复用。 */
+/**
+ * 地形材质（与其他地面模式一致：纯色或半透明/纹理）。
+ * Phase B: 支持 groundElevationColoring（按高程 per-vertex 着色）。
+ * 供 env-impl 在 onReady 与就地更新时复用。
+ */
 export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene: Scene): void {
     const resolve = (p: string): string => {
         if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('data:')) {
@@ -126,22 +130,27 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
         }
         return new URL(p, window.location.origin).href;
     };
+
+    // Phase B: 高程着色（覆盖纯色/纹理，优先级最高）
+    if (state.groundElevationColoring) {
+        applyElevationColoring(ground, state);
+        return;
+    }
+
     if (state.groundTextureEnabled && state.groundTexture) {
         const tex = new Texture(resolve(state.groundTexture), scene);
         tex.uScale = tex.vScale = 1 / Math.max(0.1, state.groundTextureScale);
-        if (state.groundTextureRotation !== 0) {
-            const angle = (state.groundTextureRotation * Math.PI) / 180;
-            const cos = Math.cos(angle);
-            const sin = Math.sin(angle);
-            tex.uOffset = 0.5 * (1 - cos) + 0.5 * sin;
-            tex.vOffset = 0.5 * (1 - cos) - 0.5 * sin;
-        }
         const mat = new StandardMaterial('envGroundMat', scene);
         mat.diffuseTexture = tex;
         mat.diffuseColor = new Color3(1, 1, 1);
         mat.alpha = state.groundAlpha;
         mat.backFaceCulling = false;
         ground.material = mat;
+        // Phase B: 法线贴图
+        if (state.groundNormalTexture) {
+            mat.bumpTexture = new Texture(resolve(state.groundNormalTexture), scene);
+            mat.bumpTexture.level = state.groundNormalStrength;
+        }
     } else {
         const mat = new StandardMaterial('envGroundMat', scene);
         mat.diffuseColor = new Color3(
@@ -153,4 +162,56 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
         mat.backFaceCulling = false;
         ground.material = mat;
     }
+}
+
+/**
+ * Phase B: 高程着色 — 按顶点高度插值三段色（低谷→山腰→峰顶）。
+ * 使用 VertexData.SetData 写入 colorKind=Color3 到 ground 的 vertex buffer。
+ */
+function applyElevationColoring(ground: GroundMesh, state: EnvState): void {
+    const positions = ground.getVerticesData(VertexBuffer.PositionKind);
+    if (!positions) return;
+
+    const half = state.groundTerrainHeight / 2;
+    const minH = -half;
+    const maxH = half;
+    const range = maxH - minH;
+
+    // 三段色：低谷（深绿）→ 山腰（棕）→ 峰顶（白）
+    const low = new Color3(0.2, 0.35, 0.15);
+    const mid = new Color3(0.45, 0.35, 0.2);
+    const high = new Color3(0.9, 0.9, 0.9);
+
+    const vertexCount = positions.length / 3;
+    const colors: number[] = new Array(vertexCount * 4);
+
+    for (let i = 0; i < vertexCount; i++) {
+        const y = positions[i * 3 + 1]; // 顶点高度
+        const t = Math.max(0, Math.min(1, (y - minH) / range)); // 归一化 [0,1]
+        let r: number, g: number, b: number;
+        if (t < 0.5) {
+            const k = t * 2;
+            r = low.r + (mid.r - low.r) * k;
+            g = low.g + (mid.g - low.g) * k;
+            b = low.b + (mid.b - low.b) * k;
+        } else {
+            const k = (t - 0.5) * 2;
+            r = mid.r + (high.r - mid.r) * k;
+            g = mid.g + (high.g - mid.g) * k;
+            b = mid.b + (high.b - mid.b) * k;
+        }
+        colors[i * 4] = r;
+        colors[i * 4 + 1] = g;
+        colors[i * 4 + 2] = b;
+        colors[i * 4 + 3] = 1; // alpha
+    }
+
+    ground.setVerticesData(VertexBuffer.ColorKind, colors, false);
+
+    const scene = ground.getScene();
+    const mat = new StandardMaterial('envGroundElevationMat', scene);
+    mat.diffuseColor = new Color3(1, 1, 1);
+    mat.alpha = state.groundAlpha;
+    mat.backFaceCulling = false;
+    ground.material = mat;
 }

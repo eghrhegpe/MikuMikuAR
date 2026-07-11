@@ -204,6 +204,12 @@ export interface EnvState {
     "groundScrollSpeedX": number;
     "groundScrollSpeedZ": number;
     "groundPattern": string;
+    "groundReflectionBlend": number;
+    "groundReflectionQuality": string;
+    "groundNormalTexture": string;
+    "groundNormalStrength": number;
+    "groundElevationColoring": boolean;
+    "groundFollowCamera": boolean;
     "groundLevel": number;
     "groundSize": number;
     "groundEdgeFade": number;

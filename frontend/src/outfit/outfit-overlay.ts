@@ -139,7 +139,7 @@ export async function loadOverlay(
     meshFile: string,
     scene: Scene
 ): Promise<{ meshes: Mesh[]; retargetOk: boolean }> {
-    // meshFile 必须是相对路径（相对模型目录），拒绝绝对路径
+    // meshFile 必须是相对路径（相对模型目录），拒绝绝对路径与路径穿越
     if (
         /^[A-Za-z]:[\\/]/.test(meshFile) ||
         meshFile.startsWith('/') ||
@@ -147,6 +147,13 @@ export async function loadOverlay(
     ) {
         console.error(
             `[outfit-overlay] meshFile must be a relative path (got "${meshFile}"). Use a path relative to the model directory, e.g. "subdir/dress.fbx"`
+        );
+        return { meshes: [], retargetOk: false };
+    }
+    // 防御纵深：拒绝 `..` 路径穿越（Go 侧 IsolateModelDir 已兜底，TS 侧提前拒绝便于诊断）
+    if (/(^|\/)\.\.(\/|$)/.test(meshFile.replace(/\\/g, '/'))) {
+        console.error(
+            `[outfit-overlay] meshFile must not contain parent directory traversal (got "${meshFile}")`
         );
         return { meshes: [], retargetOk: false };
     }
@@ -275,8 +282,9 @@ export function disposeOverlay(inst: ModelInstance): void {
                 meshSkeleton.dispose();
             }
             mesh.dispose();
-        } catch {
-            // ignore disposal errors
+        } catch (err) {
+            // 记录但继续释放其余 mesh，避免单个失败中断整循环
+            console.warn('[outfit-overlay] mesh dispose failed:', err);
         }
     }
     inst._overlayMeshes = undefined;

@@ -570,6 +570,91 @@ export function buildGroundLevel(): PopupLevel {
                         }
                     },
                 });
+
+                // ===== 地面反射与材质（Phase B）=====
+                addCollapsible(c, {
+                    title: t('env.groundReflection'),
+                    icon: 'lucide:reflection',
+                    defaultOpen: false,
+                    renderContent: (cc) => {
+                        // 镜面反射质量
+                        addModeSlider(
+                            cc,
+                            t('env.groundReflectQuality'),
+                            [
+                                { value: 'off', label: t('env.qualityOff') },
+                                { value: 'low', label: t('env.qualityLow') },
+                                { value: 'medium', label: t('env.qualityMedium') },
+                                { value: 'high', label: t('env.qualityHigh') },
+                            ],
+                            s.groundReflectionQuality,
+                            (v) => {
+                                setEnvState({ groundReflectionQuality: v as EnvState['groundReflectionQuality'] });
+                            },
+                            'lucide:monitor',
+                            undefined,
+                            {
+                                bind: () => envState.groundReflectionQuality,
+                            }
+                        );
+                        // 反射混合度
+                        addSliderRow(
+                            cc,
+                            t('env.groundReflectBlend'),
+                            s.groundReflectionBlend,
+                            0,
+                            1,
+                            0.05,
+                            (v) => setEnvState({ groundReflectionBlend: v }),
+                            'lucide:blend',
+                            undefined,
+                            {
+                                bind: () => envState.groundReflectionBlend,
+                            }
+                        );
+                        // 法线贴图路径
+                        addSliderRow(
+                            cc,
+                            t('env.groundNormalStrength'),
+                            s.groundNormalStrength,
+                            0,
+                            2,
+                            0.1,
+                            (v) => setEnvState({ groundNormalStrength: v }),
+                            'lucide:layers',
+                            undefined,
+                            {
+                                bind: () => envState.groundNormalStrength,
+                            }
+                        );
+                        // 高程着色开关
+                        if (s.groundMode === 'heightmap') {
+                            addToggleRow(
+                                cc,
+                                t('env.groundElevationColoring'),
+                                s.groundElevationColoring,
+                                (v) => setEnvState({ groundElevationColoring: v }),
+                                'lucide:mountain-snow',
+                                {
+                                    bind: () => envState.groundElevationColoring,
+                                }
+                            );
+                        }
+                        // 跟随相机开关（grid 模式）
+                        if (s.groundMode === 'grid') {
+                            addToggleRow(
+                                cc,
+                                t('env.groundFollowCamera'),
+                                s.groundFollowCamera,
+                                (v) => setEnvState({ groundFollowCamera: v }),
+                                'lucide:map-pin',
+                                {
+                                    bind: () => envState.groundFollowCamera,
+                                }
+                            );
+                        }
+                    },
+                });
             });
         },
     };

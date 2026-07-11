@@ -335,6 +335,14 @@ export interface EnvState {
     groundScrollSpeedZ: number;  // 纹理 Z 方向滚动速度，默认 0，范围 -2..2
     groundPattern: 'checker' | 'dots' | 'stripes' | 'radial'; // 程序化图案类型，默认 'checker'
 
+    // Phase B: 地面增强（反射/法线/高程/跟随）
+    groundReflectionBlend: number;     // 镜面反射混合度，0=无，1=全反射，默认 0
+    groundReflectionQuality: 'high' | 'medium' | 'low' | 'off'; // 反射质量，默认 'off'
+    groundNormalTexture: string;       // 法线贴图路径，默认 ''
+    groundNormalStrength: number;      // 法线强度，默认 1
+    groundElevationColoring: boolean;  // 高度图按高程着色开关，默认 false
+    groundFollowCamera: boolean;       // 网格模式跟随相机，默认 false
+
     windEnabled: boolean;
     windDirection: [number, number, number];
     windSpeed: number;
