@@ -20,16 +20,14 @@ import {
     MeshBuilder,
     GroundMesh,
     ShaderMaterial,
-    RenderTargetTexture,
-    FreeCamera,
+    MirrorTexture,
     Plane,
-    Matrix,
     Vector3,
 } from '@babylonjs/core';
-import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
 import { EnvState, envState } from '@/core/config';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
-import { disableWaterReflection } from './env-water';
+import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
+import { createCanvasTexture, getOrCreateCanvasTexture, disposeTextureCache } from './env-texture';
 
 // ======== Static Asset URL Resolver (Android 安全) ========
 /** 将相对路径转为绝对 URL，确保 Android WebView 能正确加载嵌入资源。
@@ -405,77 +403,144 @@ let _prevGroundRoll = NaN;
 let _groundScrollU = 0;
 let _groundScrollV = 0;
 
-// === Phase B: 地面镜面反射 RT（复用 ADR-062 水面反射模式）===
-let _groundMirrorRT: RenderTargetTexture | null = null;
-let _groundMirrorCam: FreeCamera | null = null;
-let _groundMirrorFrameCount = 0;
-// 反射渲染时保存材质原始 backFaceCulling 值，渲染后恢复（避免强制覆盖双面材质）
-let _groundMirrorOrigBFC: Map<number, boolean> = new Map();
-/** 地面反射 renderList 脏标记：mesh 集合或地面高度变化时重建 */
-let _groundRenderListDirty = true;
-let _lastGroundMeshCount = 0;
-let _lastGroundLevel = 0;
-const RT_REFRESH_ONCE = (RenderTargetTexture as unknown as { REFRESHRATE_RENDER_ONCE?: number })
-    .REFRESHRATE_RENDER_ONCE ?? 0;
+// === Phase B: 地面镜面反射（统一平面反射引擎，ADR-092）===
+// 地面用 mirrorTexture 模式：MirrorTexture 挂在 StandardMaterial.reflectionTexture 后由 Babylon
+// 自动渲染（不手动 .render()、不 push customRenderTargets），根除旧实现的双重驱动与镜像平面未配置问题。
+const groundReflection = new PlanarReflection({
+    name: 'ground',
+    mode: 'mirrorTexture',
+    resolutionMap: { high: 1024, medium: 512, low: 256, off: 0 },
+    getQuality: (s) => s.groundReflectionQuality,
+    getBlend: (s) => s.groundReflectionBlend,
+    getSurfaceLevel: (s) => s.groundLevel,
+    getMirrorPlane: (_s, _scene) => {
+        const mesh = _envSys.ground.mesh;
+        if (mesh) {
+            const n = Vector3.TransformNormal(Vector3.Up(), mesh.getWorldMatrix()).normalize();
+            return Plane.FromPositionAndNormal(mesh.getAbsolutePosition(), n);
+        }
+        return new Plane(0, -1, 0, 0);
+    },
+    predicate: (mesh, level) =>
+        !mesh.name.startsWith('envGround') &&
+        mesh.isEnabled() &&
+        mesh.getBoundingInfo().boundingBox.maximumWorld.y >= level,
+    getMaterial: () => _envSys.ground.mesh?.material ?? null,
+    mount: (rt) => {
+        const mat = _envSys.ground.mesh?.material as StandardMaterial | null;
+        if (mat) {
+            mat.reflectionTexture = rt as MirrorTexture | null;
+        }
+    },
+    setBlend: (b) => {
+        const mat = _envSys.ground.mesh?.material as StandardMaterial | null;
+        if (mat && mat.reflectionTexture) {
+            mat.reflectionTexture.level = b;
+        }
+    },
+});
+registerReflectionSurface('ground', groundReflection, () => groundReflection.update(envState, getScene()));
 
-function applyProceduralGround(ground: Mesh, state: EnvState): void {
-    const scene = getScene();
-    const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const tileSize = Math.max(4, Math.round(16 * state.groundGridSize));
-
+/**
+ * 统一纹理生成器：根据 groundStyle 在 canvas 上绘制图案并返回 Texture。
+ * solid → 纯色填充；grid  → 纯色底 + 网格线；
+ * checker → 棋盘格/点阵/条纹/径向图案（受 groundPattern 控制）。
+ * 返回的 Texture 可直接设为 StandardMaterial.diffuseTexture。
+ */
+function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
     const c0 = `rgb(${Math.round(state.groundColor[0] * 255)},${Math.round(state.groundColor[1] * 255)},${Math.round(state.groundColor[2] * 255)})`;
     const c1 = `rgb(${Math.round(state.groundLineColor[0] * 255)},${Math.round(state.groundLineColor[1] * 255)},${Math.round(state.groundLineColor[2] * 255)})`;
 
-    switch (state.groundPattern) {
-        case 'checker':
-            for (let y = 0; y < 128; y += tileSize) {
-                for (let x = 0; x < 128; x += tileSize) {
-                    const isWhite = (x / tileSize + y / tileSize) % 2 === 0;
-                    ctx.fillStyle = isWhite ? c0 : c1;
-                    ctx.fillRect(x, y, tileSize, tileSize);
-                }
-            }
-            break;
-        case 'dots':
-            ctx.fillStyle = c0;
-            ctx.fillRect(0, 0, 128, 128);
-            ctx.fillStyle = c1;
-            for (let y = 0; y < 128; y += tileSize) {
-                for (let x = 0; x < 128; x += tileSize) {
+    // 经统一工厂创建（优先 DynamicTexture，回退 toDataURL→Texture，受约束环境不崩）。
+    // 每次调用返回新 Texture，由 _updateGroundTexture 负责 dispose 旧贴图。
+    const size = 512;
+    const draw = (ctx: CanvasRenderingContext2D, s: number) => {
+        switch (state.groundStyle) {
+            case 'solid':
+                ctx.fillStyle = c0;
+                ctx.fillRect(0, 0, s, s);
+                break;
+            case 'grid': {
+                const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
+                ctx.fillStyle = c0;
+                ctx.fillRect(0, 0, s, s);
+                ctx.strokeStyle = c1;
+                ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
+                for (let x = tileSize; x < s; x += tileSize) {
                     ctx.beginPath();
-                    ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, s);
+                    ctx.stroke();
                 }
+                for (let y = tileSize; y < s; y += tileSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(s, y);
+                    ctx.stroke();
+                }
+                break;
             }
-            break;
-        case 'stripes':
-            for (let x = 0; x < 128; x += tileSize) {
-                const isEven = (x / tileSize) % 2 === 0;
-                ctx.fillStyle = isEven ? c0 : c1;
-                ctx.fillRect(x, 0, tileSize, 128);
+            case 'checker': {
+                const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
+                switch (state.groundPattern) {
+                    case 'checker':
+                        for (let y = 0; y < s; y += tileSize) {
+                            for (let x = 0; x < s; x += tileSize) {
+                                const isEven = (x / tileSize + y / tileSize) % 2 === 0;
+                                ctx.fillStyle = isEven ? c0 : c1;
+                                ctx.fillRect(x, y, tileSize, tileSize);
+                            }
+                        }
+                        break;
+                    case 'dots':
+                        ctx.fillStyle = c0;
+                        ctx.fillRect(0, 0, s, s);
+                        ctx.fillStyle = c1;
+                        for (let y = 0; y < s; y += tileSize) {
+                            for (let x = 0; x < s; x += tileSize) {
+                                ctx.beginPath();
+                                ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        }
+                        break;
+                    case 'stripes':
+                        for (let x = 0; x < s; x += tileSize) {
+                            const isEven = (x / tileSize) % 2 === 0;
+                            ctx.fillStyle = isEven ? c0 : c1;
+                            ctx.fillRect(x, 0, tileSize, s);
+                        }
+                        break;
+                    case 'radial': {
+                        const grad = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+                        grad.addColorStop(0, c0);
+                        grad.addColorStop(1, c1);
+                        ctx.fillStyle = grad;
+                        ctx.fillRect(0, 0, s, s);
+                        break;
+                    }
+                    default:
+                        // 未知 pattern 时兜底绘制标准棋盘格
+                        for (let y = 0; y < s; y += tileSize) {
+                            for (let x = 0; x < s; x += tileSize) {
+                                const isEven = (x / tileSize + y / tileSize) % 2 === 0;
+                                ctx.fillStyle = isEven ? c0 : c1;
+                                ctx.fillRect(x, y, tileSize, tileSize);
+                            }
+                        }
+                        break;
+                }
+                break;
             }
-            break;
-        case 'radial': {
-            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-            grad.addColorStop(0, c0);
-            grad.addColorStop(1, c1);
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 128, 128);
-            break;
+            default:
+                // 未知 groundStyle 时兜底绘制纯色
+                ctx.fillStyle = c0;
+                ctx.fillRect(0, 0, s, s);
+                break;
         }
-    }
+    };
 
-    const tex = new Texture(canvas.toDataURL(), scene);
-    const mat = new StandardMaterial('envGroundChecker', scene);
-    mat.diffuseTexture = tex;
-    mat.diffuseColor = new Color3(1, 1, 1);
-    mat.alpha = state.groundAlpha;
-    mat.backFaceCulling = false;
-    ground.material = mat;
+    return createCanvasTexture({ size, draw, scene, name: 'envGround', wrap: 'clamp' });
 }
 
 /**
@@ -548,38 +613,33 @@ export function setOnGroundChanged(cb: (() => void) | null): void {
 // ======== 地面边缘淡出（径向不透明度贴图）========
 // 生成「中心白→边缘黑」的径向渐变，作为 opacityTexture 挂到各模式材质上，
 // 使地面边缘柔和淡出而非硬方块边。fade<=0 时返回 null（保持原硬边行为）。
-// 按 fade 量化值缓存，避免拖动滑块时反复生成 canvas。
-const _edgeFadeTexCache = new Map<number, Texture>();
-
+// 按 fade 量化值经统一工厂缓存，避免拖动滑块时反复生成 canvas；
+// 缓存统一由 disposeTextureCache 在 disposeEnvUpdateObserver 时释放。
 function getGroundEdgeFadeTexture(fade: number, scene: Scene): Texture | null {
     if (fade <= 0) return null;
     const key = Math.round(fade * 100);
-    const cached = _edgeFadeTexCache.get(key);
-    if (cached) return cached;
     const S = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = S;
-    canvas.height = S;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-    // r0：保持完全不透明的内部半径占比（0..1）。fade 越大，r0 越小，淡出越广。
-    const r0 = Math.max(0, 1 - fade);
-    const grad = ctx.createRadialGradient(S / 2, S / 2, r0 * (S / 2), S / 2, S / 2, S / 2);
-    grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(1, 'rgba(0,0,0,1)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, S, S);
-    const tex = new Texture(canvas.toDataURL(), scene);
-    tex.getAlphaFromRGB = true; // 用亮度（白=不透明，黑=透明）驱动不透明度
-    tex.wrapU = Texture.CLAMP_ADDRESSMODE;
-    tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-    tex.name = 'envGroundEdgeFade';
-    _edgeFadeTexCache.set(key, tex);
-    return tex;
+    const draw = (ctx: CanvasRenderingContext2D, s: number) => {
+        // r0：保持完全不透明的内部半径占比（0..1）。fade 越大，r0 越小，淡出越广。
+        const r0 = Math.max(0, 1 - fade);
+        const grad = ctx.createRadialGradient(s / 2, s / 2, r0 * (s / 2), s / 2, s / 2, s / 2);
+        grad.addColorStop(0, 'rgba(255,255,255,1)');
+        grad.addColorStop(1, 'rgba(0,0,0,1)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, s, s);
+    };
+    return getOrCreateCanvasTexture(`env-ground-edge-fade-${key}`, {
+        size: S,
+        draw,
+        scene,
+        name: 'envGroundEdgeFade',
+        wrap: 'clamp',
+        getAlphaFromRGB: true,
+    });
 }
 
 function applyGroundEdgeFade(
-    mat: StandardMaterial | GridMaterial,
+    mat: StandardMaterial,
     fade: number,
     scene: Scene
 ): void {
@@ -610,59 +670,13 @@ function _syncGroundTextureOffset(mat: StandardMaterial, state: EnvState): void 
 }
 
 /**
- * 棋盘格/程序化纹理原地更新：重新绘制 canvas 并替换现有贴图。
+ * 所有纹理样式原地更新：重新绘制 canvas 并替换现有贴图。
  * 不重建整个 material，避免失去引用（如反射纹理、边缘 fade）。
  */
-function _updateCheckerTexture(mat: StandardMaterial, state: EnvState): void {
+function _updateGroundTexture(mat: StandardMaterial, state: EnvState): void {
     const scene = getScene();
-    const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const tileSize = Math.max(4, Math.round(16 * state.groundGridSize));
-    const c0 = `rgb(${Math.round(state.groundColor[0] * 255)},${Math.round(state.groundColor[1] * 255)},${Math.round(state.groundColor[2] * 255)})`;
-    const c1 = `rgb(${Math.round(state.groundLineColor[0] * 255)},${Math.round(state.groundLineColor[1] * 255)},${Math.round(state.groundLineColor[2] * 255)})`;
-    switch (state.groundPattern) {
-        case 'checker':
-            for (let y = 0; y < 128; y += tileSize) {
-                for (let x = 0; x < 128; x += tileSize) {
-                    const isWhite = (x / tileSize + y / tileSize) % 2 === 0;
-                    ctx.fillStyle = isWhite ? c0 : c1;
-                    ctx.fillRect(x, y, tileSize, tileSize);
-                }
-            }
-            break;
-        case 'dots':
-            ctx.fillStyle = c0;
-            ctx.fillRect(0, 0, 128, 128);
-            ctx.fillStyle = c1;
-            for (let y = 0; y < 128; y += tileSize) {
-                for (let x = 0; x < 128; x += tileSize) {
-                    ctx.beginPath();
-                    ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-            break;
-        case 'stripes':
-            for (let x = 0; x < 128; x += tileSize) {
-                const isEven = (x / tileSize) % 2 === 0;
-                ctx.fillStyle = isEven ? c0 : c1;
-                ctx.fillRect(x, 0, tileSize, 128);
-            }
-            break;
-        case 'radial': {
-            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-            grad.addColorStop(0, c0);
-            grad.addColorStop(1, c1);
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 128, 128);
-            break;
-        }
-    }
+    const newTex = _generateGroundTexture(state, scene);
     const oldTex = mat.diffuseTexture;
-    const newTex = new Texture(canvas.toDataURL(), scene);
     newTex.uScale = oldTex instanceof Texture ? oldTex.uScale : 1;
     newTex.vScale = oldTex instanceof Texture ? oldTex.vScale : 1;
     mat.diffuseTexture = newTex;
@@ -695,151 +709,17 @@ function _syncGroundNormalTexture(mat: StandardMaterial, state: EnvState): void 
 // Phase B: 地面镜面反射（复用 ADR-062 水面反射模式）
 // ══════════════════════════════════════════════════════════════
 
-/** 创建地面反射 RT。 */
-function _createGroundMirrorRT(scene: Scene, resolution: number): RenderTargetTexture {
-    const rt = new RenderTargetTexture(
-        'groundReflectionRT',
-        resolution,
-        scene,
-        false // generateMipMaps
-    );
-    rt.clearColor = new Color4(0, 0, 0, 0);
-    rt.refreshRate = RT_REFRESH_ONCE;
-    return rt;
-}
-
-/** 创建反射镜像相机（初始旋转会被 updateGroundMirrorCamera 的 worldMatrix 完全覆盖）。 */
-function _createGroundMirrorCam(scene: Scene): FreeCamera {
-    const cam = new FreeCamera('_groundMirrorCam', Vector3.Zero(), scene);
-    cam.minZ = 0.5;
-    cam.maxZ = 200;
-    return cam;
-}
-
-/** 更新镜像相机位置（基于主相机关于地面平面的反射）。 */
-function _updateGroundMirrorCamera(scene: Scene, groundLevel: number): void {
-    const cam = scene.activeCamera;
-    if (!_groundMirrorCam || !cam) return;
-    const mirrorPlane = new Plane(0, 1, 0, -groundLevel);
-    const reflMatrix = Matrix.Reflection(mirrorPlane);
-    const camWorld = cam.getWorldMatrix();
-    // 正确顺序：先做反射，再应用相机变换（M_refl * M_camWorld）
-    const mirrorWorld = reflMatrix.multiply(camWorld);
-    // TransformNode.freezeWorldMatrix / setWorldMatrix 不在 Camera 继承链上
-    // （FreeCamera → TargetCamera → Camera → Node，不经过 AbstractMesh），
-    // 直接操作 Node 基类内部属性，等价于 TransformNode.freezeWorldMatrix(matrix)
-    (_groundMirrorCam as any)._worldMatrix = mirrorWorld;
-    (_groundMirrorCam as any)._isWorldMatrixFrozen = true;
-    if ('fov' in cam) {
-        _groundMirrorCam.fov = cam.fov;
-    }
-}
-
-/** 填充地面反射 renderList：排除地面自身，排除地面以下几何。 */
-function _populateGroundMirrorRenderList(
-    scene: Scene,
-    rt: RenderTargetTexture,
-    groundLevel: number
-): void {
-    rt.renderList = [];
-    for (const mesh of scene.meshes) {
-        if (mesh.name === 'envGround' || mesh.name.startsWith('envGround')) {
-            continue; // 排除地面自身
-        }
-        if (!mesh.isEnabled()) {
-            continue;
-        }
-        // 排除地面以下的几何（模拟 clipPlane 效果）
-        const bounds = mesh.getBoundingInfo().boundingBox;
-        if (bounds.maximumWorld.y < groundLevel) {
-            continue;
-        }
-        rt.renderList.push(mesh);
-    }
-}
-
 /**
- * 构建地面镜面反射：创建 RT + 镜像相机 + 挂载到材质。
- * 若 groundReflectionQuality='off' 或 blend<=0，则销毁既有 RT。
- * 互斥守卫：启用地面反射时关闭水面反射。
+ * 构建/更新地面镜面反射：委托给统一平面反射引擎（ADR-092）。
+ * 引擎内部处理 RT 创建、BFC、renderList 脏标记、帧跳过、互斥（关地即开水）。
  */
 function buildGroundReflection(state: EnvState): void {
-    const scene = getScene();
-    const shouldEnable =
-        state.groundReflectionQuality !== 'off' && state.groundReflectionBlend > 0;
-
-    if (!shouldEnable) {
-        disposeGroundReflection();
-        return;
-    }
-
-    // 互斥守卫：关闭水面反射（调用水面模块完整 dispose，而非仅写状态变量）
-    if (envState.planarReflectBlend > 0) {
-        // 注意：envState.planarReflectBlend 归零由调用方（updateGround/applyGround）负责
-        disableWaterReflection();
-    }
-
-    // 创建或复用 RT
-    if (!_groundMirrorRT) {
-        const resolutionMap: Record<string, number> = { high: 1024, medium: 512, low: 256, off: 0 };
-        const resolution = resolutionMap[state.groundReflectionQuality] ?? 256;
-        _groundMirrorRT = _createGroundMirrorRT(scene, resolution);
-        _groundMirrorCam = _createGroundMirrorCam(scene);
-        _groundMirrorRT.activeCamera = _groundMirrorCam;
-
-        _groundMirrorRT.onBeforeRenderObservable.add(() => {
-            for (const mesh of _groundMirrorRT!.renderList ?? []) {
-                if (mesh.material) {
-                    _groundMirrorOrigBFC.set(mesh.material.uniqueId, mesh.material.backFaceCulling);
-                    mesh.material.backFaceCulling = false;
-                }
-            }
-        });
-        _groundMirrorRT.onAfterRenderObservable.add(() => {
-            for (const mesh of _groundMirrorRT!.renderList ?? []) {
-                if (mesh.material && _groundMirrorOrigBFC.has(mesh.material.uniqueId)) {
-                    mesh.material.backFaceCulling = _groundMirrorOrigBFC.get(mesh.material.uniqueId)!;
-                }
-            }
-            _groundMirrorOrigBFC.clear();
-        });
-
-        _populateGroundMirrorRenderList(scene, _groundMirrorRT, state.groundLevel);
-        scene.customRenderTargets.push(_groundMirrorRT);
-    }
-
-    // 挂载到地面材质
-    const mat = _envSys.ground.mesh?.material;
-    if (mat && mat instanceof StandardMaterial && _groundMirrorRT) {
-        if (mat.reflectionTexture !== _groundMirrorRT) {
-            mat.reflectionTexture = _groundMirrorRT;
-        }
-        // 用 alpha 混合反射强度
-        mat.reflectionTexture.level = state.groundReflectionBlend;
-    }
+    groundReflection.update(state, getScene());
 }
 
-/** 销毁地面反射 RT（供 disposeEnv 调用）。 */
+/** 销毁地面反射（供 applyGround 重建路径与 disposeEnv 调用）。 */
 function disposeGroundReflection(): void {
-    const scene = getScene();
-    if (_groundMirrorRT) {
-        scene.customRenderTargets = scene.customRenderTargets.filter(
-            (t) => t !== _groundMirrorRT
-        );
-        _groundMirrorRT.dispose();
-        _groundMirrorRT = null;
-    }
-    if (_groundMirrorCam) {
-        _groundMirrorCam.dispose();
-        _groundMirrorCam = null;
-    }
-    _groundMirrorFrameCount = 0;
-    _groundMirrorOrigBFC.clear();
-    // 清理材质上的反射纹理引用（避免悬空引用指向已 dispose 的 RT）
-    const mat = _envSys.ground.mesh?.material;
-    if (mat && mat instanceof StandardMaterial && mat.reflectionTexture) {
-        mat.reflectionTexture = null;
-    }
+    groundReflection.dispose();
 }
 
 export function applyGround(state: EnvState): void {
@@ -850,31 +730,17 @@ export function applyGround(state: EnvState): void {
             ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}`
             : state.groundTextureEnabled && state.groundTexture
               ? `texture:${state.groundTexture}:${state.groundSize}:${state.groundReflectionQuality}`
-              : state.groundStyle === 'checker'
-                ? `checker:${state.groundPattern}:${state.groundSize}:${state.groundReflectionQuality}`
-                : `mode:${state.groundStyle}:${state.groundSize}:${state.groundReflectionQuality}`;
+              : `canvas:${state.groundStyle}:${state.groundGridSize}:${state.groundColor.join(',')}:${state.groundLineColor.join(',')}:${state.groundSize}:${state.groundReflectionQuality}`;
     const keyChanged = typeKey !== _currentGroundKey;
 
     // 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放/旋转/坡度/法线/反射
     if (_envSys.ground.mesh && state.groundVisible && !keyChanged) {
         const mat = _envSys.ground.mesh.material;
         if (mat) {
-            if (mat instanceof GridMaterial) {
-                mat.mainColor = new Color3(
-                    state.groundColor[0],
-                    state.groundColor[1],
-                    state.groundColor[2]
-                );
-                mat.lineColor = new Color3(
-                    state.groundLineColor[0],
-                    state.groundLineColor[1],
-                    state.groundLineColor[2]
-                );
-                mat.gridRatio = state.groundGridSize;
-            } else if (mat instanceof StandardMaterial) {
-                // 棋盘格/程序化纹理：颜色/图案/网格大小变化时重新生成 canvas 贴图
-                if (state.groundStyle === 'checker') {
-                    _updateCheckerTexture(mat, state);
+            if (mat instanceof StandardMaterial) {
+                // 所有纹理样式（solid/grid/checker）：颜色/图案/网格大小变化时重新生成 canvas 贴图
+                if (state.groundStyle !== 'texture') {
+                    _updateGroundTexture(mat, state);
                 } else {
                     mat.diffuseColor = new Color3(
                         state.groundColor[0],
@@ -891,15 +757,9 @@ export function applyGround(state: EnvState): void {
                 }
                 // 法线贴图（Phase B）
                 _syncGroundNormalTexture(mat, state);
-                // 反射 blend 实时更新（不重建 RT）
-                if (mat.reflectionTexture && _groundMirrorRT) {
-                    mat.reflectionTexture.level = state.groundReflectionBlend;
-                }
             }
-            // 边缘淡出：随滑块实时更新 opacityTexture（fade<=0 时移除），棋盘格模式跳过的 opacityTexture 会干扰 canvas 贴图的可见性
-            if (state.groundStyle !== 'checker') {
-                applyGroundEdgeFade(mat as StandardMaterial | GridMaterial, state.groundEdgeFade, scene);
-            }
+            // 边缘淡出：随滑块实时更新 opacityTexture（fade<=0 时移除）
+            applyGroundEdgeFade(mat as StandardMaterial, state.groundEdgeFade, scene);
         }
         // 更新地面高度
         _envSys.ground.mesh.position.y = state.groundLevel;
@@ -919,8 +779,7 @@ export function applyGround(state: EnvState): void {
             _prevGroundRoll = state.groundRoll;
             _onGroundChanged?.();
         }
-        // 反射 RT 重建（quality 变更时由 typeKey 触发，blend 变更走上面的原地更新）
-        state.planarReflectBlend = 0; // 地面反射启用时关闭水面反射状态
+        // 反射 RT 重建（委托引擎：quality 变更时重建、blend 变更走原地更新、互斥自动处理）
         buildGroundReflection(state);
         return;
     }
@@ -945,6 +804,8 @@ export function applyGround(state: EnvState): void {
         const hg = createHeightmapGround(state, scene, (gm) => {
             applyTerrainMaterial(gm, state, scene);
             applyGroundEdgeFade(gm.material as StandardMaterial, state.groundEdgeFade, scene);
+            // Phase B: 地形地面材质就绪后再挂载反射（修复此前直接 return 致反射永久丢失）。
+            buildGroundReflection(state);
             _onTerrainReady?.();
         });
         _envSys.ground.mesh = hg;
@@ -963,23 +824,15 @@ export function applyGround(state: EnvState): void {
     ground.isPickable = false;
     ground.position.y = state.groundLevel;
 
-    if (state.groundStyle === 'grid') {
-        const mat = new GridMaterial('envGroundMat', scene);
-        mat.gridRatio = state.groundGridSize;
-        mat.mainColor = new Color3(
-            state.groundColor[0],
-            state.groundColor[1],
-            state.groundColor[2]
-        );
-        mat.lineColor = new Color3(
-            state.groundLineColor[0],
-            state.groundLineColor[1],
-            state.groundLineColor[2]
-        );
+    if (state.groundStyle !== 'texture') {
+        // solid / grid / checker：统一用 canvas 生成纹理
+        const tex = _generateGroundTexture(state, scene);
+        const mat = new StandardMaterial('envGroundMat', scene);
+        mat.diffuseTexture = tex;
+        mat.diffuseColor = new Color3(1, 1, 1);
+        mat.alpha = state.groundAlpha;
         mat.backFaceCulling = false;
         ground.material = mat;
-    } else if (state.groundStyle === 'checker') {
-        applyProceduralGround(ground, state);
     } else if (state.groundTextureEnabled && state.groundTexture) {
         // 纹理地面：subdivisions 保持 2（性能），纹理重复由 uScale/vScale 控制
         const tex = new Texture(resolveStaticAsset(state.groundTexture), scene);
@@ -1004,17 +857,16 @@ export function applyGround(state: EnvState): void {
         ground.material = mat;
     }
 
-    // 边缘淡出（solid/grid/texture 统一在创建后挂载；棋盘格模式跳过的 opacityTexture 会干扰 canvas 贴图的可见性）
-    if (ground.material && state.groundStyle !== 'checker') {
-        applyGroundEdgeFade(ground.material as StandardMaterial | GridMaterial, state.groundEdgeFade, scene);
+    // 边缘淡出（solid/grid/checker/texture 统一在创建后挂载）
+    if (ground.material) {
+        applyGroundEdgeFade(ground.material as StandardMaterial, state.groundEdgeFade, scene);
     }
 
     // 坡度（heightmap 模式已提前 return，此处一定是非 heightmap 模式）
     ground.rotation.x = (state.groundPitch * Math.PI) / 180;
     ground.rotation.z = (state.groundRoll * Math.PI) / 180;
 
-    // Phase B: 镜面反射（创建后挂载）
-    state.planarReflectBlend = 0; // 地面反射启用时关闭水面反射状态
+    // Phase B: 镜面反射（创建后挂载，委托引擎）
     buildGroundReflection(state);
 
     _envSys.ground.mesh = ground;
@@ -1131,33 +983,12 @@ export function ensureEnvUpdateObserver(): void {
             }
         }
 
-        // Phase B: 地面镜面反射渲染（分帧策略，复用水面反射模式）
-        if (_groundMirrorRT && _groundMirrorCam) {
-            _groundMirrorFrameCount++;
-            const frameSkipMap: Record<string, number> = { high: 0, medium: 1, low: 3, off: 999 };
-            const frameSkip = frameSkipMap[envState.groundReflectionQuality] ?? 999;
-            if (_groundMirrorFrameCount % (frameSkip + 1) === 0) {
-                _updateGroundMirrorCamera(scene, envState.groundLevel);
-                // 脏标记：仅在地面高度或 scene.meshes 集合变化时重建 renderList
-                const meshCount = scene.meshes.length;
-                if (
-                    envState.groundLevel !== _lastGroundLevel ||
-                    meshCount !== _lastGroundMeshCount
-                ) {
-                    _groundRenderListDirty = true;
-                    _lastGroundLevel = envState.groundLevel;
-                    _lastGroundMeshCount = meshCount;
-                }
-                if (_groundRenderListDirty) {
-                    _populateGroundMirrorRenderList(scene, _groundMirrorRT, envState.groundLevel);
-                    _groundRenderListDirty = false;
-                }
-                _groundMirrorRT.render();
-            }
-        }
+        // Phase B: 地面镜面反射（委托统一平面反射引擎：镜像平面跟随、renderList 脏标记、
+        // 帧跳过、异常保护、互斥均内置于引擎，ADR-092）
+        groundReflection.update(envState, scene);
 
-        // Phase B: grid 模式跟随相机（每帧重定位到相机下方）
-        if (_envSys.ground.mesh && envState.groundFollowCamera && envState.groundStyle === 'grid') {
+        // 跟随相机（每帧重定位到相机下方）。所有样式统一支持，便于观察网格/棋盘格细节
+        if (_envSys.ground.mesh && envState.groundFollowCamera) {
             const cam = scene.activeCamera;
             if (cam) {
                 _envSys.ground.mesh.position.x = cam.position.x;
@@ -1183,11 +1014,8 @@ export function disposeEnvUpdateObserver(): void {
         scene.onBeforeRenderObservable.remove(_envUpdateObserver);
         _envUpdateObserver = null;
     }
-    // 释放边缘淡出纹理缓存
-    for (const tex of _edgeFadeTexCache.values()) {
-        tex.dispose();
-    }
-    _edgeFadeTexCache.clear();
+    // 释放统一贴图工厂缓存（含地面边缘淡出等）
+    disposeTextureCache();
     disposeGroundReflection(); // Phase B: 清理地面反射 RT
     resetUnderwaterState(scene, pipeline);
 }

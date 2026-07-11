@@ -2,6 +2,7 @@ import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem } from '@ba
 import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/physics/wind-utils';
 import { _envSys, getScene, addRipple } from './env-impl';
+import { createCanvasTexture } from './env-texture';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';
@@ -54,16 +55,14 @@ function makeParticleTexture(kind: string, externalUrl?: string): Texture {
     if (cached) {
         return cached;
     }
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-        throw new Error('[env-particles] failed to get 2D canvas context');
-    }
-    drawParticleShape(ctx, kind);
-    const tex = new Texture(canvas.toDataURL(), scene, false, false);
-    tex.hasAlpha = true;
+    // 经统一工厂创建（优先 DynamicTexture，回退 toDataURL→Texture）；hasAlpha 标记自带透明通道。
+    const tex = createCanvasTexture({
+        size: 64,
+        draw: (ctx) => drawParticleShape(ctx, kind),
+        scene,
+        name: `particle-${kind}`,
+        hasAlpha: true,
+    });
     _particleTextures.set(kind, tex);
     return tex;
 }

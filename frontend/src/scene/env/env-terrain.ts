@@ -1,5 +1,6 @@
 import { Scene, MeshBuilder, GroundMesh, StandardMaterial, Texture, Color3, VertexBuffer } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
+import { createCanvasDataURL } from './env-texture';
 
 // ======== 确定性值噪声（FBM）========
 // 用整数哈希产生可复现的伪随机，seed 相同则地形一致。
@@ -43,7 +44,7 @@ export function fbm(x: number, z: number, seed: number, octaves: number, baseFre
 
 const TERRAIN_HM_SIZE = 256;
 
-/** 程序化生成灰度高度图（data URL），亮=高峰、暗=低谷。 */
+/** 程序化生成灰度高度图（data URL），亮=高峰、暗=低谷。经统一工厂创建（受约束环境返回 ''）。 */
 export function generateTerrainHeightmapURL(opts: {
     height: number;
     scale: number;
@@ -51,28 +52,25 @@ export function generateTerrainHeightmapURL(opts: {
     octaves: number;
 }): string {
     const S = TERRAIN_HM_SIZE;
-    const canvas = document.createElement('canvas');
-    canvas.width = S;
-    canvas.height = S;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '';
-    const img = ctx.createImageData(S, S);
-    const data = img.data;
-    const octaves = Math.max(1, Math.min(8, Math.round(opts.octaves)));
-    const seed = Math.max(0, Math.floor(opts.seed));
-    for (let y = 0; y < S; y++) {
-        for (let x = 0; x < S; x++) {
-            const n = fbm(x, y, seed, octaves, opts.scale); // ~[-1,1]
-            const v = Math.max(0, Math.min(255, Math.round((n * 0.5 + 0.5) * 255)));
-            const i = (y * S + x) * 4;
-            data[i] = v;
-            data[i + 1] = v;
-            data[i + 2] = v;
-            data[i + 3] = 255;
+    const draw = (ctx: CanvasRenderingContext2D, s: number) => {
+        const img = ctx.createImageData(s, s);
+        const data = img.data;
+        const octaves = Math.max(1, Math.min(8, Math.round(opts.octaves)));
+        const seed = Math.max(0, Math.floor(opts.seed));
+        for (let y = 0; y < s; y++) {
+            for (let x = 0; x < s; x++) {
+                const n = fbm(x, y, seed, octaves, opts.scale); // ~[-1,1]
+                const v = Math.max(0, Math.min(255, Math.round((n * 0.5 + 0.5) * 255)));
+                const i = (y * s + x) * 4;
+                data[i] = v;
+                data[i + 1] = v;
+                data[i + 2] = v;
+                data[i + 3] = 255;
+            }
         }
-    }
-    ctx.putImageData(img, 0, 0);
-    return canvas.toDataURL();
+        ctx.putImageData(img, 0, 0);
+    };
+    return createCanvasDataURL({ size: S, draw });
 }
 
 const TERRAIN_SUBDIVISIONS = 200;
