@@ -2,84 +2,90 @@ package app
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
-	"mikumikuar/internal/util"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
-// openPlazaWindows tracks all open model-plaza windows by unique names.
-// plazaWindowSeq provides incrementing sequence numbers so each window gets
-// a distinct name (no dedup — each call opens a separate tab).
-// Max concurrent plaza windows is capped at 5.
-var (
-	openPlazaWindowsMu sync.Mutex
-	openPlazaWindows   []string
-	plazaWindowSeq     int
-)
-
-// sweepClosedPlazaWindows removes names of windows that have been closed or
-// destroyed from the tracking list, so the 5-window cap stays accurate.
-func sweepClosedPlazaWindows(app *application.App) {
-	alive := make([]string, 0, len(openPlazaWindows))
-	for _, name := range openPlazaWindows {
-		if _, ok := app.Window.GetByName(name); ok {
-			alive = append(alive, name)
-		}
+// prewarmPlazaWindow creates a hidden WebView2 window at app startup so that
+// the expensive Chromium renderer process is already warm when the user first
+// opens a model-plaza site. Subsequent NavigatePlazaWindow calls reuse this
+// single instance (SetURL + Show), reducing perceived latency from 1–3s
+// (cold NewWithOptions) to ~200ms.
+//
+// The window intercepts WindowClosing via a RegisterHook (runs before the
+// default destroy-listener) — pressing the X button hides the window instead
+// of destroying it, keeping the renderer process alive for reuse.
+func (a *App) prewarmPlazaWindow() {
+	if a.wailsApp == nil {
+		return
 	}
-	openPlazaWindows = alive
+
+	a.plazaWinMu.Lock()
+	defer a.plazaWinMu.Unlock()
+
+	win := a.wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:          "plaza:prewarmed",
+		Title:         "模型广场",
+		URL:           "about:blank",
+		Width:         1200,
+		Height:        800,
+		Hidden:        true,
+		HideOnEscape:  true,
+		Windows: application.WindowsWindow{
+			Theme: application.SystemDefault,
+		},
+	})
+
+	if win == nil {
+		a.safeLogError("prewarmPlazaWindow: failed to create prewarmed window")
+		return
+	}
+
+	// Intercept WindowClosing: cancel the event (prevents the default
+	// destroy-listener from running) and hide the window instead. This keeps
+	// the WebView2 renderer process alive for instant reuse next time.
+	win.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		event.Cancel()
+		win.Hide()
+	})
+
+	a.plazaWin = win
+	a.safeLogInfo("prewarmPlazaWindow: prewarmed window created (name=plaza:prewarmed)")
 }
 
-// OpenPlazaWindow opens a new Wails v3 window with the given URL.
-// This provides a full Chromium WebView2 instance that bypasses
-// iframe CSP/X-Frame-Options restrictions (ADR-075 §独立浏览器窗口).
-// Each call opens an independent window (no dedup), capped at 5 concurrent.
-func (a *App) OpenPlazaWindow(targetURL string) error {
-	return util.SafeCallVoid(func() error {
-		if a.wailsApp == nil {
-			return fmt.Errorf("wails app not initialized")
-		}
-		if targetURL == "" {
-			return fmt.Errorf("empty URL")
-		}
+// NavigatePlazaWindow navigates the prewarmed WebView2 window to the given URL
+// and shows it. Reuses a single hidden window instance created at startup,
+// avoiding the 1–3s WebView2 cold-start cost of NewWithOptions per call.
+func (a *App) NavigatePlazaWindow(targetURL string) error {
+	a.plazaWinMu.Lock()
+	defer a.plazaWinMu.Unlock()
 
-		// Acquire a unique window name under the 5-window cap
-		openPlazaWindowsMu.Lock()
-		sweepClosedPlazaWindows(a.wailsApp)
-		if len(openPlazaWindows) >= 5 {
-			openPlazaWindowsMu.Unlock()
-			return fmt.Errorf("已达窗口上限（5），请先关闭已打开的模型广场窗口")
-		}
-		plazaWindowSeq++
-		name := fmt.Sprintf("plaza:%d", plazaWindowSeq)
-		openPlazaWindows = append(openPlazaWindows, name)
-		openPlazaWindowsMu.Unlock()
+	if a.plazaWin == nil {
+		return fmt.Errorf("plaza window not prewarmed")
+	}
+	if targetURL == "" {
+		return fmt.Errorf("empty URL")
+	}
 
-		win := a.wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
-			Name:   name,
-			Title:  "模型广场 — " + targetURL,
-			URL:    targetURL,
-			Width:  1200,
-			Height: 800,
-			Windows: application.WindowsWindow{
-				Theme: application.SystemDefault,
-			},
-		})
+	a.plazaWin.SetURL(targetURL)
+	a.plazaWin.SetTitle("模型广场 — " + targetURL)
+	a.plazaWin.Show()
+	a.plazaWin.Focus()
 
-		if win == nil {
-			// Creation failed — remove from tracking
-			openPlazaWindowsMu.Lock()
-			for i, n := range openPlazaWindows {
-				if n == name {
-					openPlazaWindows = append(openPlazaWindows[:i], openPlazaWindows[i+1:]...)
-					break
-				}
-			}
-			openPlazaWindowsMu.Unlock()
-			return fmt.Errorf("failed to create window")
-		}
+	a.safeLogInfo("NavigatePlazaWindow: %s", targetURL)
+	return nil
+}
 
-		a.safeLogInfo("OpenPlazaWindow: %s (name=%s, total=%d)", targetURL, name, len(openPlazaWindows))
+// ClosePlazaWindow hides the prewarmed plaza window without destroying it,
+// keeping the WebView2 renderer process warm for instant reuse.
+func (a *App) ClosePlazaWindow() error {
+	a.plazaWinMu.Lock()
+	defer a.plazaWinMu.Unlock()
+
+	if a.plazaWin == nil {
 		return nil
-	})
+	}
+	a.plazaWin.Hide()
+	return nil
 }
