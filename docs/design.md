@@ -19,6 +19,19 @@ UI 组件分布在以下源文件，统一通过 `ui-helpers.ts` barrel re-expor
 
 调用方 `import { ... } from '../core/ui-helpers'`，无需感知拆分。
 
+## 快速入口
+
+| 要做什么 | 找哪个组件 |
+|----------|-----------|
+| 加一个菜单行 | `slideRow` |
+| 加一个开关 | `addToggleRow` |
+| 加一个滑条 | `addSliderRow` / `sliderRow` |
+| 加一个模式切换 | `addModeRow` / `addModeSlider` |
+| 加一个颜色控制 | `addColorSliderRow` |
+| 加一组预设按钮 | `addPresetChip` |
+| 加一个折叠区块 | `addCollapsible` |
+| 创建 `.lcard` | `cardContainer()` |
+
 ---
 
 ### 卡片容器 `lcard`
@@ -28,11 +41,16 @@ UI 组件分布在以下源文件，统一通过 `ui-helpers.ts` barrel re-expor
 **1. `renderCustom` 菜单**：手动调用 `cardContainer()` 创建 `.lcard`。
 
 ```ts
+// 从 core/config.ts 导入：
+import { cardContainer } from '../core/config';
+
 cardContainer(container: HTMLElement, fn: (c: HTMLElement) => void): void
 // 自动移除 .render-card，创建 .lcard，注入 fn(c)
 ```
 
 **2. 纯 items 菜单**：`buildPanel()` 自动按 `divider` 分组，每组包裹一个 `.lcard`。
+
+条件：`PopupLevel` 只设置了 `items` 字段，未设置 `renderCustom`。
 
 ```
 items: [预设场景, 保存场景, divider, 后处理, 舞台, 截图, divider, 物理]
@@ -317,6 +335,7 @@ function addEmptyRow(parent: HTMLElement, text: string): HTMLElement
 ## Button / Row 类型使用分布
 
 > 统计数据不含测试文件（`__tests__/`）。
+> ⚠️ 以下数据为概览，精确数量请 `grep` 重新统计。
 
 ### 视图 A：`PopupRow.kind` 类型分布（menu 弹窗节点类型）
 
