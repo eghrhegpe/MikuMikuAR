@@ -4,7 +4,15 @@ import { signal } from '@preact/signals-core';
 const SETTINGS_UPDATED = Symbol('SETTINGS_UPDATED');
 
 type SettingsKey =
-    'volume' | 'audioOffset' | 'muted' | 'bpmQuantizeEnabled' | 'autoLoadCompanionAudio';
+    | 'volume'
+    | 'audioOffset'
+    | 'muted'
+    | 'bpmQuantizeEnabled'
+    | 'autoLoadCompanionAudio'
+    | 'sfxEnabled'
+    | 'sfxVolume'
+    | 'footstepEnabled'
+    | 'footstepVolume';
 
 type Settings = Record<SettingsKey, number | boolean>;
 
@@ -14,6 +22,10 @@ const defaults: Settings = {
     muted: false,
     bpmQuantizeEnabled: false,
     autoLoadCompanionAudio: true,
+    sfxEnabled: true,
+    sfxVolume: 0.7,
+    footstepEnabled: false,
+    footstepVolume: 0.8,
 };
 
 const state = signal<Settings>({ ...defaults });

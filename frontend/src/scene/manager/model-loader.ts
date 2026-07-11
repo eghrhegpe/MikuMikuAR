@@ -31,7 +31,7 @@ import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
 import { loadVMDMotion } from '../motion/vmd-loader';
 import { _capture } from './material';
 import { rebuildShadowCasters } from '../render/lighting';
-import { getGroundHeightAt, setOnTerrainReady } from '../env/env-impl';
+import { getGroundHeightAt, setOnTerrainReady, setOnGroundChanged } from '../env/env-impl';
 
 // ======== Loader Dependencies ========
 
@@ -56,8 +56,8 @@ export function initLoader(
     _mmdRuntime = mmdRuntime;
     _modelManager = modelManager;
     _refreshWaterRenderList = refreshWaterRenderList;
-    // 地形（heightmap）加载完成后，把所有已加载模型重新贴合到起伏地面
-    setOnTerrainReady(() => {
+    // 地形（heightmap）加载完成 或 地面高度/坡度变化 → 把所有已加载模型重新贴合到地面
+    const reGroundAllModels = (): void => {
         if (!_modelManager) {
             return;
         }
@@ -67,7 +67,9 @@ export function initLoader(
                 root.position.y = getGroundHeightAt(root.position.x, root.position.z);
             }
         }
-    });
+    };
+    setOnTerrainReady(reGroundAllModels);
+    setOnGroundChanged(reGroundAllModels);
     _tryAutoApplyPreset = tryAutoApplyPreset;
     _loadOutfits = loadOutfits;
     _rebuildOutlineState = rebuildOutlineState ?? null;
