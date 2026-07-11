@@ -23,6 +23,8 @@ import { MmdRuntimeShared } from 'babylon-mmd/esm/Runtime/mmdRuntimeShared';
 // JS 版 runtime（无 WASM 双缓冲，worldMatrix 覆写可生效）
 import { MmdRuntime } from 'babylon-mmd/esm/Runtime/mmdRuntime';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
+import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
+import type { FeetState } from '@/core/types';
 import 'babylon-mmd/esm/Runtime/Animation/mmdRuntimeModelAnimation';
 import 'babylon-mmd/esm/Loader/mmdModelLoader.default';
 import '@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader';
@@ -281,7 +283,21 @@ export async function initScene(): Promise<void> {
         addRipple(hit, 3, 0.4, 1.5, 2);
     }, PointerEventTypes.POINTERDOWN);
 
-    // 7. Bone Override 系统启动
+    // 7. 脚部调整系统启动（ADR-085）
+    // 注册在 bone-override 之前：脚 IK 为自动约束基础，手动 Override 叠加其上
+    const { startFeetAdjustment } = await import('./motion/feet-adjustment');
+    startFeetAdjustment((): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] => {
+        const out: { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] = [];
+        for (const inst of modelRegistry.values()) {
+            const bones = inst.mmdModel?.runtimeBones;
+            if (bones && bones.length > 0) {
+                out.push({ id: inst.id, feet: inst.feet, runtimeBones: bones });
+            }
+        }
+        return out;
+    }, scene);
+
+    // 8. Bone Override 系统启动
     // 注册 onBeforeRenderObservable 回调，在动画应用后逐骨骼覆盖
     const { startBoneOverride } = await import('./motion/bone-override');
     startBoneOverride(() => {
