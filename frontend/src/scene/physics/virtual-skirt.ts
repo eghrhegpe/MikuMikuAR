@@ -26,6 +26,7 @@ import { PhysicsSphereShape, PhysicsBoxShape } from 'babylon-mmd/esm/Runtime/Opt
 import { MotionType } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motionType';
 import { analyzeSkirt } from './skirt-analyzer';
 import { PerFrameUpdateRegistry, getBoneWorldPosition } from '../../physics/physics-bridge';
+import { isAndroidPlatform } from '../../core/platform';
 
 // ============================================================================
 // 配置
@@ -34,6 +35,8 @@ import { PerFrameUpdateRegistry, getBoneWorldPosition } from '../../physics/phys
 export interface VirtualSkirtConfig {
     /** 开关 */
     enabled: boolean;
+    /** 质量档位（auto 在 Android 上自动降为 low，桌面为 high） */
+    quality: VirtualSkirtQuality;
     /** 链数（4-32） */
     chains: number;
     /** 每链骨节数（4-16） */
@@ -46,14 +49,49 @@ export interface VirtualSkirtConfig {
     mass: number;
     /** 碰撞球半径（0 = 自动推算） */
     radius: number;
-    /** 顶点数上限（性能保护，默认 2000） */
+    /** 顶点数上限（性能保护，默认 2000；会被质量档位进一步收紧） */
     maxVertices: number;
     /** Y 阈值比例（裙摆区域判定） */
     skirtYRatio: number;
 }
 
+/** 质量档位：auto 按平台自动解析，其余为固定档 */
+export type VirtualSkirtQuality = 'auto' | 'high' | 'medium' | 'low';
+
+/** 质量档位 → LOD 上限 + 降频步长 + 顶点硬上限 */
+interface QualityPreset {
+    /** 链数上限（LOD：物理刚体数量上限） */
+    chainsCap: number;
+    /** 每链骨节数上限（LOD） */
+    segmentsCap: number;
+    /** 顶点回写降频：每 N 帧写回一次（1 = 每帧） */
+    throttleEvery: number;
+    /** 顶点数硬上限（超过则跳过该模型） */
+    maxVertices: number;
+}
+
+export const QUALITY_PRESETS: Record<Exclude<VirtualSkirtQuality, 'auto'>, QualityPreset> = {
+    high:   { chainsCap: 32, segmentsCap: 16, throttleEvery: 1, maxVertices: 4000 },
+    medium: { chainsCap: 16, segmentsCap: 10, throttleEvery: 2, maxVertices: 2500 },
+    low:    { chainsCap: 10, segmentsCap: 6,  throttleEvery: 3, maxVertices: 1500 },
+};
+
+/**
+ * Phase 5: 解析有效质量档位。
+ * `auto` 在 Android 上降为 `low`（低端机减负），桌面保持 `high`。
+ * 纯函数，便于单测，且不依赖运行期平台探测副作用。
+ */
+export function resolveVirtualSkirtQuality(
+    quality: VirtualSkirtQuality,
+    isAndroid: boolean,
+): Exclude<VirtualSkirtQuality, 'auto'> {
+    if (quality === 'auto') return isAndroid ? 'low' : 'high';
+    return quality;
+}
+
 export const defaultVirtualSkirtConfig: VirtualSkirtConfig = {
     enabled: false,
+    quality: 'auto',
     chains: 12,
     segmentsPerChain: 8,
     stiffness: 50,
@@ -100,6 +138,16 @@ export class VirtualSkirtController {
     private readonly _tmpArray = new Float32Array(16);
     /** 每帧回写复用的顶点工作缓冲（避免 per-frame alloc） */
     private _workBuf: Float32Array | null = null;
+    /** Phase 5: 降频帧计数器 */
+    private _frame = 0;
+    /** Phase 5: 解析后的有效质量档位 */
+    private _effectiveQuality: VirtualSkirtQuality = 'high';
+    /** Phase 5: 有效降频步长（每 N 帧写回） */
+    private _throttleEvery = 1;
+    /** Phase 5: LOD 生效后的有效链数（供状态读取） */
+    private _effectiveChains = 0;
+    /** Phase 5: LOD 生效后的有效骨节数（供状态读取） */
+    private _effectiveSegments = 0;
     private _disposed = false;
 
     constructor(
@@ -116,6 +164,18 @@ export class VirtualSkirtController {
     build(): boolean {
         if (this._disposed) return false;
 
+        // Phase 5: 质量档位解析 → LOD 上限 + 降频步长 + 顶点硬上限
+        const effQuality = resolveVirtualSkirtQuality(this.config.quality, isAndroidPlatform());
+        const preset = QUALITY_PRESETS[effQuality];
+        this._effectiveQuality = effQuality;
+        this._throttleEvery = preset.throttleEvery;
+        const effChains = Math.min(this.config.chains, preset.chainsCap);
+        const effSegments = Math.min(this.config.segmentsPerChain, preset.segmentsCap);
+        this._effectiveChains = effChains;
+        this._effectiveSegments = effSegments;
+        const maxVerts = Math.min(this.config.maxVertices, preset.maxVertices);
+        this._frame = 0;
+
         const mesh = this.model.mesh;
         const positions = mesh.getVerticesData(VertexBuffer.PositionKind);
         const rawIndices = mesh.getIndices();
@@ -123,13 +183,13 @@ export class VirtualSkirtController {
         const indices =
             rawIndices instanceof Uint32Array ? rawIndices : new Uint32Array(rawIndices);
 
-        // 顶点数上限保护
-        if (positions.length / 3 > this.config.maxVertices) return false;
+        // 顶点数上限保护（质量档位可进一步收紧）
+        if (positions.length / 3 > maxVerts) return false;
 
         const boneNames = this.model.runtimeBones?.map((b) => b.name) ?? [];
         const result = analyzeSkirt(positions, indices, {
-            chains: this.config.chains,
-            segmentsPerChain: this.config.segmentsPerChain,
+            chains: effChains,
+            segmentsPerChain: effSegments,
             skirtYRatio: this.config.skirtYRatio,
             boneNames,
             collisionRadius: this.config.radius > 0 ? this.config.radius : undefined,
@@ -265,7 +325,12 @@ export class VirtualSkirtController {
             }
         }
 
-        this._writeBackVertices();
+        // Phase 5: 降频 — 锚定体每帧跟随腰部，顶点写回按 _throttleEvery 降频
+        // (低端机每 N 帧才向 GPU 上传一次位移，物理仍在 WASM 内持续模拟)
+        if (this._frame % this._throttleEvery === 0) {
+            this._writeBackVertices();
+        }
+        this._frame++;
     }
 
     /** Phase 3：读刚体世界位移 → 按权重写回 mesh 顶点 */
@@ -344,6 +409,7 @@ export class VirtualSkirtController {
         this.analysis = null;
         this.restPositions = null;
         this._workBuf = null;
+        this._frame = 0;
     }
 
     /** 已注入的骨节总数 */
@@ -354,5 +420,25 @@ export class VirtualSkirtController {
     /** 已注入的约束总数 */
     get constraintCount(): number {
         return this.constraints.length;
+    }
+
+    /** Phase 5: 解析后的有效质量档位 */
+    get effectiveQuality(): VirtualSkirtQuality {
+        return this._effectiveQuality;
+    }
+
+    /** Phase 5: LOD 生效后的有效链数 */
+    get effectiveChains(): number {
+        return this._effectiveChains;
+    }
+
+    /** Phase 5: LOD 生效后的有效骨节数 */
+    get effectiveSegments(): number {
+        return this._effectiveSegments;
+    }
+
+    /** Phase 5: 当前降频步长（每 N 帧写回一次） */
+    get throttleEvery(): number {
+        return this._throttleEvery;
     }
 }

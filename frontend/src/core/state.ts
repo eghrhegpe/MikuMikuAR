@@ -291,7 +291,8 @@ export const envState: EnvState = reactive<EnvState>({
     envIntensity: 2,
 
     groundVisible: true,
-    groundMode: 'solid',
+    groundType: 'flat',
+    groundStyle: 'solid',
     groundColor: [0.15, 0.15, 0.18],
     groundAlpha: 0.6,
     groundTexture: '',

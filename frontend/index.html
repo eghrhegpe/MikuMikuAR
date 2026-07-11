@@ -112,10 +112,12 @@
 <!-- 模型广场：独立全屏视图层（非 SlideMenu 弹窗，见 ADR-075） -->
 <div id="webviewLayer" data-overlay></div>
 
-<!-- 状态栏 — DOM 锚点，TS 初始化后填充 -->
+<!-- FPS 时钟 — 右上角 HUD，pointer-events: none（点击穿透） -->
+<span id="fpsClock"></span>
+
+<!-- 状态栏 — 居中提示文字 -->
 <div id="statusBar">
 <span id="statusText"></span>
-<span id="fpsClock"></span>
 </div>
 
         <!-- Import Toast — DOM 锚点，TS 初始化后填充 i18n 文本 -->

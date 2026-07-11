@@ -303,7 +303,23 @@ input, textarea, [contenteditable] {
     transform: scale(1.1);
 }
 
-/* ===== 状态栏 + 加载 ===== */
+/* ===== FPS 时钟 — 右上角 HUD ===== */
+#fpsClock {
+    position: absolute;
+    top: calc(16px * var(--ui-scale));
+    right: calc(16px * var(--ui-scale));
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: calc(var(--font-time) - 1px);
+    background: rgba(0, 0, 0, 0.25);
+    padding: calc(4px * var(--ui-scale)) calc(14px * var(--ui-scale));
+    border-radius: calc(8px * var(--ui-scale));
+    pointer-events: none;
+    z-index: 500;
+    white-space: nowrap;
+}
+
+/* ===== 状态栏 ===== */
 #statusBar {
     position: absolute;
     top: calc(16px * var(--ui-scale));
@@ -311,7 +327,6 @@ input, textarea, [contenteditable] {
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: calc(20px * var(--ui-scale));
     color: rgba(255, 255, 255, 0.4);
     font-size: var(--font-time);
     background: rgba(0, 0, 0, 0.25);
@@ -324,11 +339,6 @@ input, textarea, [contenteditable] {
 #statusText {
     flex: 1;
     text-align: center;
-}
-#fpsClock {
-    font-variant-numeric: tabular-nums;
-    color: rgba(255, 255, 255, 0.35);
-    font-size: calc(var(--font-time) - 1px);
 }
 
 /* ===== 无 UI 模式 ===== */

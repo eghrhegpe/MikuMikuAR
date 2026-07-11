@@ -249,23 +249,41 @@ export function buildGroundLevel(): PopupLevel {
                 );
                 addModeSlider(
                     c,
-                    t('env.groundMode'),
+                    t('env.groundType'),
+                    [
+                        { value: 'flat', label: t('env.flat') },
+                        { value: 'terrain', label: t('env.terrain') },
+                    ],
+                    s.groundType,
+                    (v) => {
+                        setEnvState({ groundType: v });
+                        getEnvMenu()?.reRender();
+                    },
+                    'lucide:layers',
+                    undefined,
+                    {
+                        bind: () => envState.groundType,
+                    }
+                );
+                if (s.groundType === 'flat') {
+                addModeSlider(
+                    c,
+                    t('env.groundStyle'),
                     [
                         { value: 'solid', label: t('env.solid') },
                         { value: 'grid', label: t('env.grid') },
                         { value: 'checker', label: t('env.checker') },
                         { value: 'texture', label: t('env.textureMode') },
-                        { value: 'heightmap', label: t('env.heightmap') },
                     ],
-                    s.groundMode,
+                    s.groundStyle,
                     (v) => {
-                        setEnvState({ groundMode: v });
+                        setEnvState({ groundStyle: v });
                         getEnvMenu()?.reRender();
                     },
                     'lucide:square',
                     undefined,
                     {
-                        bind: () => envState.groundMode,
+                        bind: () => envState.groundStyle,
                     }
                 );
                 addColorSliderRow(
@@ -279,7 +297,7 @@ export function buildGroundLevel(): PopupLevel {
                         bind: () => envState.groundColor,
                     }
                 );
-                if (s.groundMode === 'solid' || s.groundMode === 'checker') {
+                if (s.groundStyle === 'solid' || s.groundStyle === 'checker') {
                     addSliderRow(
                         c,
                         t('env.opacity'),
@@ -292,7 +310,7 @@ export function buildGroundLevel(): PopupLevel {
                     );
                 }
                 // Grid/Checker 模式下的网格/棋盘格大小和第二颜色
-                if (s.groundMode === 'grid') {
+                if (s.groundStyle === 'grid') {
                     addSliderRow(
                         c,
                         t('env.gridSize'),
@@ -315,7 +333,7 @@ export function buildGroundLevel(): PopupLevel {
                         }
                     );
                 }
-                if (s.groundMode === 'checker') {
+                if (s.groundStyle === 'checker') {
                     addSliderRow(
                         c,
                         t('env.checkerSize'),
@@ -338,7 +356,7 @@ export function buildGroundLevel(): PopupLevel {
                         }
                     );
                 }
-                if (s.groundMode === 'texture') {
+                if (s.groundStyle === 'texture') {
                     const texturePresets = [
                         { value: '', label: t('env.none') },
                         { value: 'textures/grass.png', label: t('env.grass') },
@@ -425,7 +443,8 @@ export function buildGroundLevel(): PopupLevel {
                         'lucide:rotate-cw'
                     );
                 }
-                if (s.groundMode === 'heightmap') {
+                }
+                if (s.groundType === 'terrain') {
                     addSliderRow(
                         c,
                         t('env.terrainHeight'),
@@ -475,7 +494,7 @@ export function buildGroundLevel(): PopupLevel {
                     defaultOpen: false,
                     renderContent: (cc) => {
                         // 坡度（heightmap 模式不支持，隐藏）
-                        if (s.groundMode !== 'heightmap') {
+                        if (s.groundType !== 'terrain') {
                             addSliderRow(
                                 cc,
                                 t('env.groundPitch'),
@@ -513,8 +532,8 @@ export function buildGroundLevel(): PopupLevel {
 
                         // 纹理滚动（checker / texture 模式有效）
                         const scrollEnabled =
-                            s.groundMode === 'checker' ||
-                            (s.groundMode === 'texture' && s.groundTextureEnabled && s.groundTexture);
+                            s.groundStyle === 'checker' ||
+                            (s.groundStyle === 'texture' && s.groundTextureEnabled && s.groundTexture);
                         if (scrollEnabled) {
                             addSliderRow(
                                 cc,
@@ -547,7 +566,7 @@ export function buildGroundLevel(): PopupLevel {
                         }
 
                         // 程序化图案（仅 checker 模式）
-                        if (s.groundMode === 'checker') {
+                        if (s.groundStyle === 'checker') {
                             addModeSlider(
                                 cc,
                                 t('env.groundPattern'),
@@ -628,7 +647,7 @@ export function buildGroundLevel(): PopupLevel {
                             }
                         );
                         // 高程着色开关
-                        if (s.groundMode === 'heightmap') {
+                        if (s.groundType === 'terrain') {
                             addToggleRow(
                                 cc,
                                 t('env.groundElevationColoring'),
@@ -641,7 +660,7 @@ export function buildGroundLevel(): PopupLevel {
                             );
                         }
                         // 跟随相机开关（grid 模式）
-                        if (s.groundMode === 'grid') {
+                        if (s.groundStyle === 'grid') {
                             addToggleRow(
                                 cc,
                                 t('env.groundFollowCamera'),

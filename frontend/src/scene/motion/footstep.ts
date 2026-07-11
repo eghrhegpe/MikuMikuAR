@@ -39,9 +39,10 @@ export function resolveGroundSfxKind(): GroundSfxKind {
     if (envState.waterEnabled || envState.planarReflectBlend > 0) {
         return 'water';
     }
-    switch (envState.groundMode) {
-        case 'heightmap':
-            return 'concrete';
+    if (envState.groundType === 'terrain') {
+        return 'concrete';
+    }
+    switch (envState.groundStyle) {
         case 'texture': {
             const t = envState.groundTexture.toLowerCase();
             if (/grass|草/.test(t)) {
