@@ -27,8 +27,10 @@
 | 模式 | 流量 | 站点类型 | 登录态 |
 |------|------|----------|--------|
 | A · 内嵌 | Go 反向代理 → `iframe` | 免登录展示站 | 不需要 |
-| B · Wails 新窗口 | `OpenPlazaWindow` → 独立 WebView2 窗口 | 需轻量隔离的站 | 共享 cookiejar |
+| B · Wails 预热窗口 | `NavigatePlazaWindow` → 预热单实例 WebView2 窗口 | 需轻量隔离的站 | 共享 cookiejar |
 | C · 外链 | `Browser.OpenURL` → 系统浏览器 | 需登录 SPA | 保留 |
+
+> **B 模式优化（2026-07-11）**：原 `OpenPlazaWindow` 每次调用 `NewWithOptions` 创建新 WebView2 renderer 进程，冷启动 1–3s。改为 `SetWailsApp` 时创建隐藏预热窗口（`plaza:prewarmed`），用户点击时 `SetURL + Show`，打开延迟降至 ~200ms。`RegisterHook(WindowClosing)` 拦截关闭事件 → `Cancel + Hide`，窗口复用而非销毁。
 
 **落库闭环**：无论哪条路下载的 zip，落入用户 `Downloads/` 目录（首启自动监听，详见 `ADR-003` 方案 C），由 fsnotify 监听 → Magic Number 校验 → `ImportLocalFile` 落库。
 
@@ -83,3 +85,4 @@
 |-----|------|--------|
 | ADR-077 | Cookie 中继 — 代理层维护 cookiejar，解锁登录态站点内嵌 | P0 |
 | ADR-078 | 下载拦截 — 注入 JS 拦截下载链接，Go 端直接入库 | P0 |
+| ADR-087 | 浏览器体验增强路线图 — window 模式下载拦截（代理桥接）/ 导航控制 / URL 追踪 / 下载进度 / 拖放导入 / 键盘快捷键 | 规划中 |

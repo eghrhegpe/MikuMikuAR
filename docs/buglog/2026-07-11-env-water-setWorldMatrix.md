@@ -56,16 +56,6 @@ console.log(typeof cam._worldMatrix);         // object
 
 同时移除了 `fov` 的多余 `as any`（`fov` 声明在 `Camera` 上，`FreeCamera` 可直接访问）。
 
-## 关联改动
-
-| 文件 | 改动 |
-|------|------|
-| `env-water.ts:597-603` | 修复 `setWorldMatrix`/`freezeWorldMatrix` + 移除 `fov` 的 `as any` |
-| `env-impl.ts:610-614` | 地面反射镜像相机同样修复 |
-| `env-water.ts:972-991` | `disposeWater` 中 `getScene()` 加 null guard |
-| `env-water.ts:1011-1012` | `disableWaterReflection` 中 `getScene()` 加 null guard |
-| `env-water.test.ts:1,58-63` | `beforeAll` 返回清理函数，恢复 `document.createElement` |
-
 ## 教训
 
 1. **`as any` 可以掩盖运行时不存在的方法** — 类型系统不报错 ≠ 运行时存在
