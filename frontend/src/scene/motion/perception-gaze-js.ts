@@ -1,0 +1,96 @@
+// [doc:adr-071] 感知层 — 视线追踪 JS 路径（改 linkedBone + updateWorldMatrix）
+
+import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
+import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
+
+import type { MmdRuntimeBoneExtended } from '@/core/types';
+import { _v3, _m, _q } from './perception-shared';
+import { _updateBoneChain } from './perception-breathing';
+import { _clampHeadGazeTarget, _clampGazeTargetInParentFrame, EYE_GAZE_MAX_YAW, EYE_GAZE_MAX_PITCH } from './perception-gaze';
+
+const EYE_SMOOTH = 0.35;
+
+/** JS 模式：头部跟随 */
+export function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3): void {
+    const headPos = _v3();
+    headRuntime.getWorldTranslationToRef(headPos);
+
+    const oldHeadMat = _m().copyFrom(Matrix.FromArray(headRuntime.worldMatrix));
+    const oldHeadRotQ = _q().copyFrom(
+        Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
+    );
+
+    const lookDir = headPos.subtractToRef(gazeTarget, _v3()).normalize();
+    const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
+
+    const parentBone = headRuntime.parentBone;
+    const parentWorldInv = _m();
+    if (parentBone) {
+        const parentMat = _m().copyFrom(Matrix.FromArray(parentBone.worldMatrix));
+        parentMat.invertToRef(parentWorldInv);
+    } else {
+        Matrix.IdentityToRef(parentWorldInv);
+    }
+
+    const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
+    const parentWorldQ = _q().copyFrom(parentInvQ).invert();
+    const clampedTargetQ = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
+    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTargetQ, 0.5));
+    const localQ = _q();
+    parentInvQ.multiplyToRef(blended, localQ);
+
+    headRuntime.linkedBone.rotationQuaternion = localQ;
+
+    _updateBoneChain(headRuntime);
+}
+
+/** JS 模式：眼部跟随 */
+export function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3): void {
+    const eyeCenter = _v3();
+    for (const eyeRb of eyeRuntimes) {
+        const eb = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
+        eyeCenter.x += eb[12];
+        eyeCenter.y += eb[13];
+        eyeCenter.z += eb[14];
+    }
+    eyeCenter.scaleInPlace(1 / eyeRuntimes.length);
+
+    const lookDir = eyeCenter.subtractToRef(gazeTarget, _v3());
+    if (lookDir.lengthSquared() < 0.0001) {
+        return;
+    }
+
+    lookDir.normalize();
+    const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
+
+    for (const eyeRb of eyeRuntimes) {
+        const eyeMat = _m().copyFrom(Matrix.FromArray(eyeRb.worldMatrix));
+        const curWorldQ = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
+
+        const parentBone = eyeRb.parentBone;
+        const parentWorldInv = _m();
+        if (parentBone) {
+            const parentMat = _m().copyFrom(Matrix.FromArray(parentBone.worldMatrix));
+            parentMat.invertToRef(parentWorldInv);
+        } else {
+            Matrix.IdentityToRef(parentWorldInv);
+        }
+
+        const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
+        const parentWorldQ = _q().copyFrom(parentInvQ).invert();
+        const clampedTargetQ = _clampGazeTargetInParentFrame(
+            curWorldQ,
+            targetWorldQ,
+            parentWorldQ,
+            EYE_GAZE_MAX_YAW,
+            EYE_GAZE_MAX_PITCH
+        );
+        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTargetQ, EYE_SMOOTH));
+
+        const localQ = _q();
+        parentInvQ.multiplyToRef(newWorldQ, localQ);
+
+        eyeRb.linkedBone.rotationQuaternion = localQ;
+        (eyeRb as MmdRuntimeBoneExtended).updateWorldMatrix?.(false, false);
+    }
+}
