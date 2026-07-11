@@ -1,18 +1,19 @@
 # 🎵 MikuMikuAR
 
 > 基于 Wails v3 + Babylon.js / babylon-mmd 的跨平台 MMD 桌面播放器——
-> PMX 模型查看、VMD 动作播放、即时换装、程序化舞蹈、XPBD 布料物理，一处搞定。
+> PMX 模型查看、VMD 动作播放、即时换装、程序化舞蹈、AR 相机、卡通化渲染，一处搞定。
 
 [![CI](https://img.shields.io/github/actions/workflow/status/eghrhegpe/MikuMikuAR/ci.yml?logo=github)](https://github.com/eghrhegpe/MikuMikuAR/actions)
+[![Release](https://img.shields.io/github/v/release/eghrhegpe/MikuMikuAR?logo=github)](https://github.com/eghrhegpe/MikuMikuAR/releases)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev/)
 [![Wails](https://img.shields.io/badge/Wails-v3-DF0000?logo=wails)](https://wails.io)
-[![Babylon.js](https://img.shields.io/badge/Babylon.js-MMD-AD1F23?logo=babylondotjs)](https://babylonjs.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=nodedotjs)](https://nodejs.org/)
+[![Babylon.js](https://img.shields.io/badge/Babylon.js-9.14-AD1F23?logo=babylondotjs)](https://babylonjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs)](https://nodejs.org/)
 [![Android SDK](https://img.shields.io/badge/Android%20SDK-API%2034-34A853?logo=android)](https://developer.android.com/studio)
 [![babylon-mmd](https://img.shields.io/badge/babylon--mmd-1.2.0-FF6F00?logo=babylondotjs)](https://github.com/noname0310/babylon-mmd)
 [![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite)](https://vitejs.dev/)
-[![Vitest](https://img.shields.io/badge/Vitest-4-729B1A?logo=vitest)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-4.1-729B1A?logo=vitest)](https://vitest.dev/)
 [![WebView2](https://img.shields.io/badge/WebView2-Windows-0078D4?logo=microsoft)](https://learn.microsoft.com/edge/webview2/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -29,11 +30,14 @@
 ### 🎭 渲染与模型
 
 - **PMX/PMD 加载** — 完整 babylon-mmd 渲染管线，支持 SDEF / IK 骨骼 / Grant 权重
-- **多模型同场** — 多个 PMX 共享场景，自动排列（6 种阵型），焦点切换
+- **多模型同场** — 多个 PMX 共享场景，6 种阵型排列，焦点切换
 - **缩略图预览** — 模型加载后自动截图，库卡片即用即看
-- **逐材质调参** — 按部位（皮肤/头发/眼睛/服装/配件）批量调整 + 单材质覆盖
+- **逐材质调参** — 按部位（皮肤/头发/眼睛/服装/配件/道具）批量调整 + 单材质覆盖
+- **智能材质分类** — 自动检测皮肤/头发/眼睛/服装/配件/道具，支持自定义正则规则
 - **模型预设** — 材质/表情/变换快照，库级管理，一键应用
 - **服装变体** — `outfits.json` 描述纹理/mesh 变体，自动发现 + 一键换装
+- **卡通化渲染** — 一键 Cel-shading 后处理模式（exposure/contrast/ACES/bloom/fxaa 预设快照）
+- **Pose Studio** — 构图辅助、景深、T-pose/A-pose 转换、批量截图、水印
 
 ---
 
@@ -43,58 +47,89 @@
 - **程序化动作** — `Idle`（呼吸眨眼）、`AutoDance`（节拍驱动律动）、`Lifelike`（微动叠加）
 - **VPD 姿势导入** — 文本解析 → VMD 帧，一键摆拍（支持 UTF-8/Shift-JIS 自动识别）
 - **相机 VMD 轨道** — 加载相机 VMD，多模式自由切换
-- **LipSync** — 振幅 → 口型 morph 权重（支持あ/ア/A 等多种口型命名）
+- **程序化运镜** — 8 种自动相机预设，节拍驱动闭环
+- **LipSync** — 振幅 → 口型 morph 权重，多口型驱动（あ/い/う/え + 中/英/日候选名）
 - **节拍检测** — Web Audio 能量峰值法实时 BPM，支持多轨道
+- **Motion Layers** — 双 VMD 图层混合 + boneFilter 骨骼过滤
+- **Motion Override** — 逐骨骼旋转/位移覆写，程序化动作与 VMD 共存
 
 ---
 
 ### ⚙️ 物理
 
-- **XPBD 布料物理** — 自研 Verlet + XPBD 求解器 + SDF 胶囊身体碰撞器
 - **WASM Bullet 物理** — MMD 原生刚体 / 关节 / 柔体，与时间轴同步
 
 ---
 
 ### 🌍 环境
 
-- **水面** — Gerstner 波（4 层）+ 焦散 + 涟漪 + 水下过渡
+- **水面** — Gerstner 波（4 层）+ 焦散 + 涟漪 + 水下过渡 + 反射 RenderTarget
 - **体积云** — 3D 噪声 ray-marching + 风场驱动
 - **粒子系统** — 樱/雨/雪/烟花/萤火虫/落叶/水花 7 种，与风场联动
-- **程序化地形** — FBM 噪声高度图生成
-- **灯光与后处理** — Bloom / DOF / SSAO / SSR / 边缘渲染，性能自动降级
+- **程序化地形** — FBM 噪声高度图 + 坡度纹理滚动 + 镜面反射 + 法线贴图 + 高程着色
+- **灯光与后处理** — Bloom / DOF / SSAO / SSR / 边缘渲染 / 色调映射 / FXAA，性能自动降级
 
 ---
 
 ### 📚 库与工具
 
-- **模型库管理** — 递归扫描、8 类分类、zip 内省、标签/收藏/搜索
+- **模型库管理** — 递归扫描、zip 内省、标签/收藏/搜索、下载目录监听 + 自动导入
 - **zip 容器** — 不解压直接加载 PMX/VMD，SHA-256 cache 惰性复用
-- **场景打包** — 场景序列化为 `.mmascene`，可跨设备恢复
+- **Scene Bundle** — 场景打包为 zip（含所有引用资源），跨设备导入/导出
 - **Blender 唤起** — 自动检测 / 手动配置路径，点 ✏️ 在 Blender 中编辑 PMX（需 [mmd_tools](https://github.com/powroupi/blender_mmd_tools) 插件）
+
 ---
 
 ### 👁️ 角色感知
 
-- **视线追踪** — 视线跟随（Eye Contact），无 VMD 也能让模型"活起来"
+- **视线追踪** — Eye Contact 眼神接触，无 VMD 也能让模型"活起来"
+- **头部追踪** — 头部跟随相机/用户，增强生命力
 
 ---
 
+### 📷 AR 相机
+
+- **视频透传 + 模型叠加** — 摄像头画面作为场景背景，模型渲染在视频之上
+- **前置/后置切换** — 移动端自动选后置，桌面端默认前置
+- **Gaze 协同** — AR 模式下自动开启视线追踪，增强与真人眼神接触
+- **截图合成** — 视频背景 + 3D 模型一键合成
+- **Android 权限** — CAMERA 运行时权限原生桥接
+
+---
+
+### 🌐 国际化
+
+- **5 种语言** — 简体中文 / English / 日本語 / 한국어 / 繁體中文，热切换
+
+---
+
+## ⌨️ 键盘快捷键
+
+| 快捷键 | 行为 |
+|--------|------|
+| Ctrl+1~5 | 切换 5 个底部导航弹窗（模型/动作/场景/环境/设置） |
+| Ctrl+6 | 切换 AR 相机模式 |
+| Space | 播放/暂停 |
+| Escape | 关闭所有弹窗 |
+| ←/→ | seek ±5s |
+| ↑/↓ | 菜单项导航（弹窗内） |
+| Enter/→ | 激活选中项（弹窗内） |
+| ←（弹窗内） | 返回上层 |
+| WASD | 自由飞行相机（需开启 Freefly 模式） |
+
+---
 
 ## 📖 文档
 
 | 文档 | 内容 |
 |------|------|
-| [已实现功能](docs/status.md) | 当前状态 |
-| [关键设计决策](docs/adr/) | 技术思路 |
-| [编码奇谭 · 100+ 章节代码演化叙事](novel/README.md) | 趣味日志 |
-|-
-| [AI文档地图工作流规则](AGENTS.md) | AGENTS  |
+| [项目现状](docs/status.md) | 当前状态 + 已完成功能 |
 | [架构方案](docs/architecture.md) | 全功能汇总 |
+| [设计决策](docs/adr/) | 80+ ADR 技术思路 |
 | [需求与选型](docs/requirements.md) | P0-P4 优先级 + 技术选型理由 |
-| [路线图](docs/roadmap.md) | 阶段规划 + DanceXR 对标 |
-| [项目地基](docs/foundation.md) | 好用框架 |
-| [故障排查](docs/troubleshooting.md) | CORS / WASM 404 / 纹理不显示 |
-| [修复流程](docs/fix-cycle.md) | Bug 修复验收契约模板 |
+| [竞品分析](docs/competitive-analysis.md) | 23 个项目调研 |
+| [编码奇谭](novel/README.md) | 100+ 章节代码演化叙事 |
+| [AI 工作流规则](AGENTS.md) | AI 协作指南 |
 
 ---
 
@@ -105,7 +140,7 @@
 | 依赖 | 版本 | 说明 |
 |------|------|------|
 | **Go** | 1.25+ | Go 后端 + Wails 编译 |
-| **Node.js** | 22+ | 前端构建（CI 用 24，别用 18） |
+| **Node.js** | 24+ | 前端构建 |
 | **npm** | 10+ | 前端包管理 |
 | **Git** | 任意 | 代码克隆 |
 | **Wails v3 CLI** | 最新 | 热重载开发必需：`go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
@@ -127,8 +162,6 @@ cd frontend && npm install
 # 启动热重载开发（Go 后端 + Vite 前端同时跑）
 wails3 dev -config ./build/config.yml -port 9245
 ```
-
-> **改前端不重启应用**：`build/config.yml` 的 `dev_mode.watched_extension` 改为只监听 `*.go`，
 
 #### 进阶：手动拆分（最大控制力）
 
@@ -162,6 +195,9 @@ npm run test:watch     # 监听模式
 # E2E 测试（需先启动 wails3 dev 或 5173+9222 端口）
 npm run test:e2e
 npm run test:e2e:headed   # 有界面调试
+
+# 校验 116 个 Go 绑定函数存在性 + FNV-1a method ID
+npm run test -- src/__tests__/bindings/app.contract.test.ts
 ```
 
 ### 生产构建
@@ -182,18 +218,20 @@ bash scripts/build-linux.sh --production
 
 | 终端 | 模型 | 角色 |
 |---------|------|------|
-| **Trae**|**GLM5.2+doubao2.1**| 首席架构师· 代码生成 · 审查  |
-| **Workbuddy**|**hy3** | 任务规划 · 进度追踪 · 技能辅助 |
-| **OpenCode**|**NVidia/mistral-samll-4** |  前端 UI 开发 · 后端调试 |
-| **Reasonix**|**Deepseek-v4-flash** | git push |
-| **Mimocode**|**Mimo-v2.5** | 文档生成 · 推理分析 · 问题定位  |
+| **Trae** | GLM5.2+doubao2.1 | 首席架构师 · 代码生成 · 审查 |
+| **Workbuddy** | hy3 | 任务规划 · 进度追踪 · 技能辅助 |
+| **OpenCode** | NVidia/mistral-small-4 | 前端 UI 开发 · 后端调试 |
+| **Reasonix** | Deepseek-v4-flash | git push |
+| **Mimocode** | Mimo-v2.5 | 文档生成 · 推理分析 · 问题定位 |
+
+---
 
 ## 📁 项目结构
 
 ```
 MikuMikuAR/
 ├── main.go / main_android.gen.go   # Wails 应用入口（桌面 + Android）
-├── internal/               # Go 内部包，需wails3 显示指定go目录。
+├── internal/               # Go 内部包
 │   ├── app/               # 核心业务（文件IO / HTTP服务器 / 扫描 / 下载 / Blender / 预设 / 缩略图）
 │   ├── dialogs/           # 文件对话框
 │   ├── thumbnail/         # 缩略图生成
@@ -201,18 +239,20 @@ MikuMikuAR/
 ├── build/                  # 各平台构建配置（windows/darwin/linux/ios/android）
 ├── scripts/                # 构建 / E2E 脚本
 ├── frontend/src/
-│   ├── core/               # 入口 / 共享状态 / 文件URL / 图标 / 响应式
+│   ├── core/               # 入口 / 共享状态 / 文件URL / 图标 / 响应式 / i18n
 │   ├── scene/              # 3D 场景编排
+│   │   ├── ar/             # AR 相机模式
 │   │   ├── camera/         # 相机模式
 │   │   ├── motion/         # VMD 桥接 / 程序化动作 / LipSync / 播放控制
 │   │   ├── manager/        # ModelManager / 材质 / 加载 / 操作
 │   │   ├── env/            # 环境（天空/水面/云/粒子/光照/风场）
+│   │   ├── pose/           # Pose Studio / 构图辅助
 │   │   └── render/         # 渲染管线 / 灯光 / 性能降级
 │   ├── menus/              # SlideMenu 弹窗系统（库/模型/动作/环境/设置）
 │   ├── motion-algos/       # 动作算法（无 Babylon 依赖，供 scene/motion/ 调用）
 │   ├── outfit/             # 换装系统 + 音频
-│   └── physics/            # XPBD 求解器 / 布料 / SDF碰撞器
-└── docs/                   # 项目文档（架构 / 状态 / 路线图 / ADR / 修复流程）
+│   └── __tests__/          # 单元测试 + 绑定契约测试
+└── docs/                   # 项目文档（架构 / 状态 / ADR / 修复流程）
 ```
 
 ---
@@ -223,7 +263,10 @@ MikuMikuAR/
 - **Blender 编辑** — 需用户自行安装 [mmd_tools](https://github.com/powroupi/blender_mmd_tools) 插件，否则 Blender 无法打开 PMX
 - **Android 实验** — `main_android.gen.go` 用 c-shared 模式 + WebView，文件访问受 Scoped Storage 约束
 - **跨平台路径** — Blender 自动检测仅覆盖 Windows，macOS/Linux 需在设置中手动配置
+- **SSS 次表面散射** — 依赖 babylon-mmd 支持 PBR 材质，上游阻塞中
+- **Windows 目录选择** — Wails v3 `CanChooseDirectories` 缺陷，实际弹出文件选择器
 
+---
 
 ## 🔍 竞品分析
 
