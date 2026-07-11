@@ -98,6 +98,14 @@ export function ClearThumbnailCache(): $CancellablePromise<void> {
 }
 
 /**
+ * ClosePlazaWindow hides the prewarmed plaza window without destroying it,
+ * keeping the WebView2 renderer process warm for instant reuse.
+ */
+export function ClosePlazaWindow(): $CancellablePromise<void> {
+    return $Call.ByID(972069669);
+}
+
+/**
  * DeleteDanceSet deletes a dance set by id.
  */
 export function DeleteDanceSet(id: string): $CancellablePromise<void> {
@@ -427,6 +435,15 @@ export function LoadSceneFile(path: string): $CancellablePromise<string> {
 }
 
 /**
+ * NavigatePlazaWindow navigates the prewarmed WebView2 window to the given URL
+ * and shows it. Reuses a single hidden window instance created at startup,
+ * avoiding the 1–3s WebView2 cold-start cost of NewWithOptions per call.
+ */
+export function NavigatePlazaWindow(targetURL: string): $CancellablePromise<void> {
+    return $Call.ByID(2118540546, targetURL);
+}
+
+/**
  * OpenInBlender launches Blender and opens the specified model file.
  */
 export function OpenInBlender(modelPath: string): $CancellablePromise<void> {
@@ -438,16 +455,6 @@ export function OpenInBlender(modelPath: string): $CancellablePromise<void> {
  */
 export function OpenInMMD(modelPath: string): $CancellablePromise<void> {
     return $Call.ByID(1122153542, modelPath);
-}
-
-/**
- * OpenPlazaWindow opens a new Wails v3 window with the given URL.
- * This provides a full Chromium WebView2 instance that bypasses
- * iframe CSP/X-Frame-Options restrictions (ADR-075 §独立浏览器窗口).
- * Each call opens an independent window (no dedup), capped at 5 concurrent.
- */
-export function OpenPlazaWindow(targetURL: string): $CancellablePromise<void> {
-    return $Call.ByID(499016787, targetURL);
 }
 
 /**
@@ -515,6 +522,15 @@ export function SaveDanceSet(id: string, ds: $models.DanceSet): $CancellableProm
  */
 export function SaveEnvPreset(name: string, jsonStr: string): $CancellablePromise<void> {
     return $Call.ByID(1971888366, name, jsonStr);
+}
+
+/**
+ * SaveEnvPresetAuto writes a .env JSON file under env-presets/<NNN>.env,
+ * auto-numbered to avoid name collisions. Returns the generated name without
+ * extension (e.g. "001", "002"). Mirrors SaveScenePreset's behaviour.
+ */
+export function SaveEnvPresetAuto(jsonStr: string): $CancellablePromise<string> {
+    return $Call.ByID(3692206065, jsonStr);
 }
 
 /**

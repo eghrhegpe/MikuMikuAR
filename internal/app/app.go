@@ -59,6 +59,12 @@ type App struct {
 	watchMu      sync.Mutex
 	watchTimer   *time.Timer         // debounce 定时器
 	watchPending map[string]struct{} // debounce 期间暂存的文件路径
+
+	// 模型广场预热窗口（ADR-075 §预热单实例）
+	// App 启动时创建隐藏 WebView2 窗口，用户点击站点时 Show + SetURL，
+	// 避免 NewWithOptions 的 WebView2 冷启动（1–3s → 200ms）。
+	plazaWin   *application.WebviewWindow
+	plazaWinMu sync.Mutex
 }
 
 type httpServerInfo struct {
@@ -117,6 +123,7 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 // ServiceShutdown implements application.ServiceShutdown interface.
 func (a *App) SetWailsApp(wailsApp *application.App) {
 	a.wailsApp = wailsApp
+	a.prewarmPlazaWindow()
 }
 
 func (a *App) ServiceShutdown() error {
