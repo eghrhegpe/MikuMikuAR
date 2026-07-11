@@ -43,6 +43,11 @@ interface _ModelCache {
 const _cache = new Map<string, _ModelCache>();
 let _observerHandle: (() => void) | null = null;
 
+// TEMP DEBUG (ADR-085 验证用): 验证后改为 false 或整块删除以关闭诊断日志
+const FEET_DEBUG = true;
+let _feetDbgFrame = 0;
+let _feetTick = 0;
+
 // 大腿根候选（用于估算髋位置与腿长）
 const BONE_THIGH_L = ['左足', 'left leg', 'LeftLeg'];
 const BONE_THIGH_R = ['右足', 'right leg', 'RightLeg'];
@@ -119,6 +124,13 @@ function _adjustFoot(
         feet,
     });
 
+    if (FEET_DEBUG && (_feetDbgFrame++ % 60 === 0)) {
+        console.log(
+            `[feet] ${side} footY=${_vFoot.y.toFixed(3)} groundY=${groundY.toFixed(3)} ` +
+                `targetY=${res.targetY.toFixed(3)} skip=${res.skip} ik=${ikName}`
+        );
+    }
+
     if (res.skip) {
         if (side === 'L') {
             cache.lTargetY = null;
@@ -165,6 +177,12 @@ export function startFeetAdjustment(
     }
 
     const callback = () => {
+        if (FEET_DEBUG && (_feetTick++ % 90 === 0)) {
+            const summary = [...getModels()]
+                .map((m) => `${m.id}:en=${m.feet.enabled},n=${m.runtimeBones.length}`)
+                .join(' ');
+            console.log('[feet] models', summary);
+        }
         for (const m of getModels()) {
             const cache = _getCache(m.id);
             const feet = m.feet;
@@ -179,6 +197,15 @@ export function startFeetAdjustment(
                 const names = m.runtimeBones.map((b) => b.name);
                 cache.lName = matchBone(names, BONE_LEG_IK_L_CANDIDATES);
                 cache.rName = matchBone(names, BONE_LEG_IK_R_CANDIDATES);
+                if (FEET_DEBUG && (cache.lName === null || cache.rName === null)) {
+                    const hints = names
+                        .filter((n) => /足|ＩＫ|IK|Leg|leg|Foot|foot/.test(n))
+                        .slice(0, 16);
+                    console.warn(
+                        `[feet] IK bone not matched for ${m.id} (L=${cache.lName} R=${cache.rName}). leg/IK bones in model:`,
+                        hints
+                    );
+                }
             }
             _adjustFoot(m.runtimeBones, cache.lName, 'L', cache, feet);
             _adjustFoot(m.runtimeBones, cache.rName, 'R', cache, feet);

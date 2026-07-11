@@ -109,4 +109,24 @@ describe('solveFootTarget', () => {
         );
         expect(r.skip).toBe(false);
     });
+
+    it('相对阈值：高地形坡顶脚落回应贴地（不误判抬脚）', () => {
+        // groundY=3.0 的山坡，脚落回 footY=3.0，相对高度 0 < 0.5 → 不跳过
+        const r = solveFootTarget(
+            input({ footY: 3.0, groundY: 3.0, feet: defaultFeet({ jumpThreshold: 0.5 }) })
+        );
+        expect(r.skip).toBe(false);
+        expect(r.grounded).toBe(true);
+        // desiredY = groundY + soleHeight = 3.0
+        expect(r.targetY).toBeCloseTo(3.0);
+    });
+
+    it('相对阈值：高地形上脚真正抬起仍跳过', () => {
+        // groundY=3.0 的山坡，脚抬到 footY=5.5，相对高度 2.5 > 0.5 → 跳过
+        const r = solveFootTarget(
+            input({ footY: 5.5, groundY: 3.0, feet: defaultFeet({ jumpThreshold: 0.5 }) })
+        );
+        expect(r.skip).toBe(true);
+        expect(r.targetY).toBe(5.5);
+    });
 });

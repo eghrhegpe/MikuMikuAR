@@ -45,7 +45,9 @@ function clamp01(v: number): number {
 export function solveFootTarget(input: SolveFootInput): SolveFootOutput {
     const { footY, groundY, feet, prevTargetY, hipToFootDist, legLength } = input;
 
-    if (footY > feet.jumpThreshold) {
+    // 相对地面高度判定：脚离地超过 jumpThreshold 视为有意抬脚/跳跃，跳过校正。
+    // 用 footY - groundY 而非绝对 footY，避免高地形/高平台上脚被误判为"抬脚"而失效。
+    if (footY - groundY > feet.jumpThreshold) {
         return { skip: true, targetY: footY, grounded: false };
     }
 

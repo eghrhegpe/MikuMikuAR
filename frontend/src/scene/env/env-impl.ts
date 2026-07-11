@@ -596,12 +596,11 @@ function _createGroundMirrorRT(scene: Scene, resolution: number): RenderTargetTe
     return rt;
 }
 
-/** 创建反射镜像相机。 */
+/** 创建反射镜像相机（初始旋转会被 updateGroundMirrorCamera 的 worldMatrix 完全覆盖）。 */
 function _createGroundMirrorCam(scene: Scene): FreeCamera {
     const cam = new FreeCamera('_groundMirrorCam', Vector3.Zero(), scene);
     cam.minZ = 0.5;
     cam.maxZ = 200;
-    cam.rotation.x = -Math.PI / 2; // 朝上反射
     return cam;
 }
 
@@ -612,7 +611,8 @@ function _updateGroundMirrorCamera(scene: Scene, groundLevel: number): void {
     const mirrorPlane = new Plane(0, 1, 0, -groundLevel);
     const reflMatrix = Matrix.Reflection(mirrorPlane);
     const camWorld = cam.getWorldMatrix();
-    const mirrorWorld = camWorld.multiply(reflMatrix);
+    // 正确顺序：先做反射，再应用相机变换（M_refl * M_camWorld）
+    const mirrorWorld = reflMatrix.multiply(camWorld);
     // TransformNode.freezeWorldMatrix / setWorldMatrix 不在 Camera 继承链上
     // （FreeCamera → TargetCamera → Camera → Node，不经过 AbstractMesh），
     // 直接操作 Node 基类内部属性，等价于 TransformNode.freezeWorldMatrix(matrix)
