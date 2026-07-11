@@ -583,7 +583,8 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
             return;
         }
 
-        // JS 运行时：MmdCompositeAnimation 可直接绑定
+        // MmdCompositeAnimation 运行时实现了 IMmdBindableModelAnimation 接口
+        // 但 babylon-mmd 类型声明未暴露此继承关系，需要双重 cast
         const runtimeAnimation =
             composite as unknown as import('babylon-mmd/esm/Runtime/Animation/IMmdBindableAnimation').IMmdBindableModelAnimation;
 
