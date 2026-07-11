@@ -182,6 +182,9 @@ export function initLighting(
     _updateIndicator(_stageLights.get(def.id)!);
 }
 
+// _createStageLight / _createIndicator / _createDirLine 均仅在 addStageLight
+// 中调用，而 addStageLight 在 _scene === null 时 early return，
+// 故此处 _scene! 断言安全。
 function _createStageLight(
     type: StageLightType,
     state: StageLightState
@@ -483,11 +486,16 @@ export function transitionLighting(
         }
         setLightState(interpState);
         if (t >= 1) {
+            // 动画结束，移除自身 observer
+            _scene?.onBeforeRenderObservable.remove(animLoopObs);
             if (onComplete) {
                 onComplete();
             }
         }
     };
+
+    // 注册到渲染循环，每帧驱动插值
+    const animLoopObs = _scene.onBeforeRenderObservable.add(animLoop);
 }
 
 // ======== Sun Disc ========
@@ -737,6 +745,48 @@ export function removeStageLight(id: string): boolean {
         triggerAutoSave();
     }
     return true;
+}
+
+/** 整体清理光照模块（场景销毁时调用） */
+export function disposeLighting(): void {
+    _cancelAllLightingTweens();
+    // 清理舞台灯
+    for (const [lid, entry] of _stageLights) {
+        _disposeIndicator(entry);
+        entry.light.dispose();
+        // 清理阴影
+        const sg = _stageShadows.get(lid);
+        if (sg) {
+            sg.dispose();
+        }
+    }
+    _stageLights.clear();
+    _stageShadows.clear();
+    _stageLightCounter = 0;
+    _activeStageLightId = null;
+    // 清理主灯光
+    if (hemiLight) {
+        hemiLight.dispose();
+        (hemiLight as any) = null as any;
+    }
+    if (dirLight) {
+        dirLight.dispose();
+        (dirLight as any) = null as any;
+    }
+    // 清理太阳盘
+    if (_sunDisc) {
+        _sunDisc.dispose();
+        _sunDisc = null;
+    }
+    // 清理场景灯光的阴影生成器
+    if (_envSysShadow?.generator) {
+        _envSysShadow.generator.dispose();
+        _envSysShadow.generator = null;
+    }
+    _scene = null;
+    triggerAutoSave = null;
+    _modelRegistry = null;
+    _propRegistry = null;
 }
 
 /** 批量加载舞台灯（反序列化用），会清空现有灯 */
@@ -1068,6 +1118,9 @@ function _tweenValue(
         onUpdate(from + (to - from) * eased);
         if (t >= 1) {
             _activeTweens.delete(id);
+        } else {
+            // 未完成时重新注册下一帧
+            _scene?.onBeforeRenderObservable.addOnce(tick);
         }
     };
 
