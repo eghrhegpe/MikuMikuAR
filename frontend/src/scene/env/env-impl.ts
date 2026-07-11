@@ -610,6 +610,69 @@ function _syncGroundTextureOffset(mat: StandardMaterial, state: EnvState): void 
 }
 
 /**
+ * 棋盘格/程序化纹理原地更新：重新绘制 canvas 并替换现有贴图。
+ * 不重建整个 material，避免失去引用（如反射纹理、边缘 fade）。
+ */
+function _updateCheckerTexture(mat: StandardMaterial, state: EnvState): void {
+    const scene = getScene();
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const tileSize = Math.max(4, Math.round(16 * state.groundGridSize));
+    const c0 = `rgb(${Math.round(state.groundColor[0] * 255)},${Math.round(state.groundColor[1] * 255)},${Math.round(state.groundColor[2] * 255)})`;
+    const c1 = `rgb(${Math.round(state.groundLineColor[0] * 255)},${Math.round(state.groundLineColor[1] * 255)},${Math.round(state.groundLineColor[2] * 255)})`;
+    switch (state.groundPattern) {
+        case 'checker':
+            for (let y = 0; y < 128; y += tileSize) {
+                for (let x = 0; x < 128; x += tileSize) {
+                    const isWhite = (x / tileSize + y / tileSize) % 2 === 0;
+                    ctx.fillStyle = isWhite ? c0 : c1;
+                    ctx.fillRect(x, y, tileSize, tileSize);
+                }
+            }
+            break;
+        case 'dots':
+            ctx.fillStyle = c0;
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.fillStyle = c1;
+            for (let y = 0; y < 128; y += tileSize) {
+                for (let x = 0; x < 128; x += tileSize) {
+                    ctx.beginPath();
+                    ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            break;
+        case 'stripes':
+            for (let x = 0; x < 128; x += tileSize) {
+                const isEven = (x / tileSize) % 2 === 0;
+                ctx.fillStyle = isEven ? c0 : c1;
+                ctx.fillRect(x, 0, tileSize, 128);
+            }
+            break;
+        case 'radial': {
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, c0);
+            grad.addColorStop(1, c1);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+            break;
+        }
+    }
+    const oldTex = mat.diffuseTexture;
+    const newTex = new Texture(canvas.toDataURL(), scene);
+    newTex.uScale = oldTex instanceof Texture ? oldTex.uScale : 1;
+    newTex.vScale = oldTex instanceof Texture ? oldTex.vScale : 1;
+    mat.diffuseTexture = newTex;
+    mat.diffuseColor = new Color3(1, 1, 1);
+    if (oldTex) {
+        oldTex.dispose();
+    }
+}
+
+/**
  * 同步地面法线贴图（bumpTexture）。
  * 仅 texture 模式且指定了法线路径时挂载；否则移除。
  */
@@ -809,11 +872,16 @@ export function applyGround(state: EnvState): void {
                 );
                 mat.gridRatio = state.groundGridSize;
             } else if (mat instanceof StandardMaterial) {
-                mat.diffuseColor = new Color3(
-                    state.groundColor[0],
-                    state.groundColor[1],
-                    state.groundColor[2]
-                );
+                // 棋盘格/程序化纹理：颜色/图案/网格大小变化时重新生成 canvas 贴图
+                if (state.groundStyle === 'checker') {
+                    _updateCheckerTexture(mat, state);
+                } else {
+                    mat.diffuseColor = new Color3(
+                        state.groundColor[0],
+                        state.groundColor[1],
+                        state.groundColor[2]
+                    );
+                }
                 mat.alpha = state.groundAlpha;
                 if (mat.diffuseTexture && mat.diffuseTexture instanceof Texture) {
                     (mat.diffuseTexture as Texture).uScale = (
@@ -828,8 +896,10 @@ export function applyGround(state: EnvState): void {
                     mat.reflectionTexture.level = state.groundReflectionBlend;
                 }
             }
-            // 边缘淡出：随滑块实时更新 opacityTexture（fade<=0 时移除）
-            applyGroundEdgeFade(mat as StandardMaterial | GridMaterial, state.groundEdgeFade, scene);
+            // 边缘淡出：随滑块实时更新 opacityTexture（fade<=0 时移除），棋盘格模式跳过的 opacityTexture 会干扰 canvas 贴图的可见性
+            if (state.groundStyle !== 'checker') {
+                applyGroundEdgeFade(mat as StandardMaterial | GridMaterial, state.groundEdgeFade, scene);
+            }
         }
         // 更新地面高度
         _envSys.ground.mesh.position.y = state.groundLevel;
@@ -856,6 +926,9 @@ export function applyGround(state: EnvState): void {
     }
 
     _currentGroundKey = typeKey;
+    // 样式切换时重置滚动偏移，避免旧样式的累积偏移影响新样式
+    _groundScrollU = 0;
+    _groundScrollV = 0;
     // 销毁旧地面反射 RT（Phase B）
     disposeGroundReflection();
     if (_envSys.ground.mesh) {
@@ -931,8 +1004,8 @@ export function applyGround(state: EnvState): void {
         ground.material = mat;
     }
 
-    // 边缘淡出（solid/grid/checker/texture 统一在创建后挂载）
-    if (ground.material) {
+    // 边缘淡出（solid/grid/texture 统一在创建后挂载；棋盘格模式跳过的 opacityTexture 会干扰 canvas 贴图的可见性）
+    if (ground.material && state.groundStyle !== 'checker') {
         applyGroundEdgeFade(ground.material as StandardMaterial | GridMaterial, state.groundEdgeFade, scene);
     }
 
