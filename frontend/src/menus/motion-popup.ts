@@ -66,7 +66,9 @@ import {
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
 import { buildBoneOverrideLevel } from './motion-override-levels';
+import { buildFeetLevel } from './motion-feet-levels'; // [doc:adr-085]
 import { buildPoseStudioLevel } from './motion-pose-levels';
+import { buildVirtualSkirtLevel } from './motion-cloth-levels'; // [doc:adr-084]
 import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 
@@ -399,7 +401,9 @@ const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'motion:procmotion': buildProcMotionLevel,
     'motion:gaze': buildGazeTrackingLevel,
     'motion:boneOverride': buildBoneOverrideLevel,
+    'motion:feet': buildFeetLevel,
     'motion:poseStudio': buildPoseStudioLevel,
+    'motion:virtualSkirt': buildVirtualSkirtLevel,
     'procmotion:mode': buildProcMotionModeLevel,
     'lipsync:menu': buildLipSyncLevel,
 };
@@ -748,9 +752,21 @@ function buildMotionRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
+        label: t('motion.feet.title'),
+        icon: 'lucide:footprints',
+        target: 'motion:feet',
+    });
+    items.push({
+        kind: 'folder',
         label: t('motion.poseStudio.title'),
         icon: 'lucide:camera',
         target: 'motion:poseStudio',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('cloth.title'),
+        icon: 'lucide:shirt',
+        target: 'motion:virtualSkirt',
     });
     return items;
 }

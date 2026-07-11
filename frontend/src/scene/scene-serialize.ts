@@ -60,6 +60,10 @@ import {
     LightState,
     StageLightState,
     RenderState,
+    FormationType,
+    getActiveFormation,
+    getActiveFormationSpacing,
+    setModelFormation,
 } from './scene';
 import { removeProp, loadProp, setPropTransform, setPropOrbit } from './env/props';
 import { setEnvState, setEnvSunAngle, flushEnvState, flushUIState } from './env/env-bridge';
@@ -75,7 +79,7 @@ import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { DEFAULT_LIPSYNC_STATE } from '../motion-algos/lipsync';
 import type { ProcMotionState } from '../motion-algos/procedural-motion';
 import type { LipSyncState as LipSyncStateType } from '../motion-algos/lipsync';
-import type { BoneOverrideEntry } from '../core/types';
+import type { BoneOverrideEntry, FeetState } from '../core/types';
 import {
     getPerceptionState,
     setPerceptionState,
@@ -214,6 +218,8 @@ export interface SceneFile {
         orbitDistance?: number;
         /** [doc:adr-061] Motion Override — 逐骨骼覆盖条目 */
         boneOverrides?: BoneOverrideEntry[];
+        /** [doc:adr-085] 脚部地面跟随状态（按模型） */
+        feet?: FeetState;
     }>;
     camera: CameraState;
     lights: LightState;
@@ -261,6 +267,11 @@ export interface SceneFile {
         boneRotation?: [number, number, number];
     }>;
     gravityStrength?: number;
+    /** [doc:adr-054] Active formation preset (re-computed on load). */
+    formation?: {
+        type: FormationType;
+        spacing: number;
+    };
     stageLight?: StageLightState;
     stageLights?: StageLightState[];
 }
@@ -327,6 +338,7 @@ export function serializeScene(): SceneFile {
             orbitElevation: inst.orbitElevation,
             orbitDistance: inst.orbitDistance,
             boneOverrides: inst.boneOverrides.length > 0 ? inst.boneOverrides : undefined,
+            feet: inst.feet,
         };
     });
     return {
@@ -389,6 +401,9 @@ export function serializeScene(): SceneFile {
             };
         }),
         gravityStrength: getGravityStrength(),
+        formation: getActiveFormation()
+            ? { type: getActiveFormation()!, spacing: getActiveFormationSpacing() }
+            : undefined,
         stageLights: getStageLights(),
     };
 }
@@ -499,6 +514,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     enabled: b.enabled ?? true,
                 }));
             }
+            // 恢复脚部调整状态（合并默认值，向前兼容缺字段的旧存档）
+            if (m.feet) {
+                Object.assign(inst.feet, m.feet);
+            }
             if (inst.visible === false) {
                 for (const mesh of inst.meshes) {
                     mesh.setEnabled(false);
@@ -594,6 +613,15 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             } catch (err) {
                 console.warn(`场景恢复: 模型 ${m.name} 骨骼覆盖恢复失败:`, err);
             }
+        }
+    }
+
+    // --- Formation: re-apply if saved ---
+    if (data.formation && modelManager) {
+        try {
+            setModelFormation(data.formation.type, data.formation.spacing);
+        } catch (err) {
+            console.warn('场景恢复: 队形恢复失败:', err);
         }
     }
 

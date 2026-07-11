@@ -64,8 +64,16 @@ export function arrangeModels(): void {
     modelManager?.arrange();
 }
 
-export function setModelFormation(type: FormationType): void {
-    modelManager?.setFormation(type);
+export function setModelFormation(type: FormationType, spacing?: number): void {
+    modelManager?.setFormation(type, spacing);
+}
+
+export function getActiveFormation(): FormationType | null {
+    return modelManager?.getActiveFormation() ?? null;
+}
+
+export function getActiveFormationSpacing(): number {
+    return modelManager?.getActiveFormationSpacing() ?? 3;
 }
 
 export { getFormationLabels };

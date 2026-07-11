@@ -177,6 +177,11 @@ export class ModelManager {
     >();
     private _boneUpdateObserver: Nullable<Observer<Scene>> = null;
 
+    /** Currently active formation type, or null if custom/manual arrangement. */
+    private _activeFormation: FormationType | null = null;
+    /** Currently active formation spacing (default 3). */
+    private _activeFormationSpacing: number = 3;
+
     /** Cleanup callback invoked by removeModel for external per-model state. */
     onRemoveModel: ((id: string) => void) | null = null;
 
@@ -327,8 +332,9 @@ export class ModelManager {
         this.triggerAutoSave();
     }
 
-    /** Arrange all models in a horizontal row. */
+    /** Arrange all models in a horizontal row. Clears the active formation. */
     arrange(): void {
+        this._activeFormation = null;
         const models = Array.from(this.modelRegistry.values());
         const spacing = 3;
         models.forEach((inst, i) => {
@@ -340,20 +346,32 @@ export class ModelManager {
         this.triggerAutoSave();
     }
 
+    /** Return the currently active formation type, or null if manually arranged. */
+    getActiveFormation(): FormationType | null {
+        return this._activeFormation;
+    }
+
+    /** Return the currently active formation spacing (default 3). */
+    getActiveFormationSpacing(): number {
+        return this._activeFormationSpacing;
+    }
+
     /** Apply a formation preset to all models. */
-    setFormation(type: FormationType): void {
+    setFormation(type: FormationType, spacing?: number): void {
+        this._activeFormation = type;
+        this._activeFormationSpacing = spacing ?? 3;
         const models = Array.from(this.modelRegistry.values());
         const n = models.length;
         if (n === 0) {
             return;
         }
-        const spacing = 3;
+        const s = this._activeFormationSpacing;
         for (let i = 0; i < n; i++) {
             const inst = models[i];
             if (inst.meshes.length === 0) {
                 continue;
             }
-            const pos = _computeFormationPos(type, i, n, spacing);
+            const pos = _computeFormationPos(type, i, n, s);
             inst.meshes[0].position.set(pos[0], pos[1], pos[2]);
         }
         this.triggerAutoSave();
