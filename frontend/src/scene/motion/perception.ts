@@ -21,14 +21,7 @@ import {
     MORPH_BLINK_CANDIDATES,
     matchBone,
 } from '../../motion-algos/proc-motion-shared';
-
-// ── WASM/JS 运行时差异的本地类型声明 ──
-// babylon-mmd 的 IMmdRuntimeBone 接口未声明 worldMatrix 和 updateWorldMatrix，
-// 但 WASM 与 JS 运行时在运行时均提供这些成员。
-interface MmdRuntimeBoneExtended extends IMmdRuntimeBone {
-    worldMatrix: Float32Array;
-    updateWorldMatrix(updateAbsoluteTransform: boolean, updateLocalTransform: boolean): void;
-}
+import type { MmdRuntimeBoneExtended } from '@/core/types';
 
 interface MeshMetadata {
     skeleton?: { _markAsDirty?(): void };
@@ -1117,9 +1110,6 @@ export function onPerceptionModelRemoved(id: string): void {
         deactivatePerception();
     }
 }
-
-/** 导出类型供 wasm-layers-blender.ts 使用 */
-export type { MmdRuntimeBoneExtended };
 
 /** WASM 模式下的 gaze 应用（供 wasm-layers-blender.ts 调用） */
 export function applyGazeWasm(

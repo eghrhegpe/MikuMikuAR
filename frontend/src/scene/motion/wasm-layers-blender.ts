@@ -9,9 +9,9 @@ import {
     _writeMatToBuffer,
     _propagateChildrenWasm,
     applyGazeWasm,
-    type MmdRuntimeBoneExtended,
     type GazeConfig,
 } from './perception';
+import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { createVmdEvaluator, type VmdEvaluator } from '@/motion-algos/vmd-evaluator';
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 import { scene, modelManager, loadVMDMotion } from '../scene';

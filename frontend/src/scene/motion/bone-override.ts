@@ -5,6 +5,7 @@
 
 import { Quaternion, Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
+import type { MmdRuntimeBoneExtended } from '@/core/types';
 
 /** 持久化的单条骨骼覆盖配置 */
 export type BoneOverrideEntry = {
@@ -47,11 +48,6 @@ function _eulerToQuat(pitchDeg: number, yawDeg: number, rollDeg: number): Quater
 }
 
 // ── WASM 运行时辅助 ──
-
-interface MmdRuntimeBoneExtended extends IMmdRuntimeBone {
-    worldMatrix: Float32Array;
-    updateWorldMatrix(updateAbsoluteTransform: boolean, updateLocalTransform: boolean): void;
-}
 
 function _isWasmRuntime(bone: IMmdRuntimeBone): boolean {
     return !('updateWorldMatrix' in bone);
@@ -226,7 +222,8 @@ export function startBoneOverride(
                 }
                 _propagateChildrenWasm(rb, oldMat, newMat);
             } else {
-                // JS 模式：写 linkedBone.rotationQuaternion
+                // JS 模式：linkedBone 是 MmdRuntimeBone 的伪私有属性，
+                // 类型声明未暴露，运行时 JS 模式下一定存在
                 const linked = (
                     rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone }
                 ).linkedBone;
