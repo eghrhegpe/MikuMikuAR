@@ -90,6 +90,12 @@ let _waterUpdateObserver: Observer<Scene> | null = null;
 let _mirrorRT: RenderTargetTexture | null = null;
 let _mirrorCam: FreeCamera | null = null;
 let _mirrorFrameCount = 0;
+/** 水面反射 BFC 原始值恢复映射（防 onBeforeRender 关闭 BFC 后永久丢失） */
+let _mirrorOrigBFC: Map<number, boolean> = new Map();
+/** 水面反射 renderList 脏标记：mesh 集合或水面高度变化时重建 */
+let _mirrorRenderListDirty = true;
+let _lastMeshCount = 0;
+let _lastMirrorWaterLevel = 0;
 
 // ======== 涟漪系统（Interaction Ripples）========
 const MAX_RIPPLES = 8;
@@ -645,16 +651,18 @@ function _setupMirrorRT(scene: Scene, state: EnvState): void {
     _mirrorRT.onBeforeRenderObservable.add(() => {
         for (const mesh of _mirrorRT!.renderList ?? []) {
             if (mesh.material) {
+                _mirrorOrigBFC.set(mesh.material.uniqueId, mesh.material.backFaceCulling);
                 mesh.material.backFaceCulling = false;
             }
         }
     });
     _mirrorRT.onAfterRenderObservable.add(() => {
         for (const mesh of _mirrorRT!.renderList ?? []) {
-            if (mesh.material) {
-                mesh.material.backFaceCulling = true;
+            if (mesh.material && _mirrorOrigBFC.has(mesh.material.uniqueId)) {
+                mesh.material.backFaceCulling = _mirrorOrigBFC.get(mesh.material.uniqueId)!;
             }
         }
+        _mirrorOrigBFC.clear();
     });
 
     _populateMirrorRenderList(scene, _mirrorRT, state.waterLevel);
@@ -912,7 +920,20 @@ export function createWater(state: EnvState): void {
                 _mirrorFrameCount % (frameSkip + 1) === 0
             ) {
                 _updateMirrorCamera(scene, envState.waterLevel);
-                _populateMirrorRenderList(scene, _mirrorRT, envState.waterLevel);
+                // 脏标记：仅在水面高度或 scene.meshes 集合变化时重建 renderList
+                const meshCount = scene.meshes.length;
+                if (
+                    envState.waterLevel !== _lastMirrorWaterLevel ||
+                    meshCount !== _lastMeshCount
+                ) {
+                    _mirrorRenderListDirty = true;
+                    _lastMirrorWaterLevel = envState.waterLevel;
+                    _lastMeshCount = meshCount;
+                }
+                if (_mirrorRenderListDirty) {
+                    _populateMirrorRenderList(scene, _mirrorRT, envState.waterLevel);
+                    _mirrorRenderListDirty = false;
+                }
                 _mirrorRT.render();
             }
             // 手动 LOD 可见性切换（按相机距离）

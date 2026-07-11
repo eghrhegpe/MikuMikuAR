@@ -126,6 +126,7 @@ vi.mock('@babylonjs/core/Materials/Textures/texture', () => {
 });
 
 import { modelRegistry, setLibraryRoot } from '../core/config';
+import { createDefaultFeetState } from '../core/state';
 
 function makeColor(r: number, g: number, b: number) {
     return {
@@ -184,6 +185,7 @@ function createBaseInstance(overrides: Record<string, any> = {}) {
         animationDuration: 0,
         vmdLayers: [],
         boneOverrides: [],
+        feet: createDefaultFeetState(),
         modelDir: '/models',
         outfitFile: undefined,
         activeVariant: undefined,

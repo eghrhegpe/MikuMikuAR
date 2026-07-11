@@ -405,6 +405,10 @@ let _groundMirrorCam: FreeCamera | null = null;
 let _groundMirrorFrameCount = 0;
 // 反射渲染时保存材质原始 backFaceCulling 值，渲染后恢复（避免强制覆盖双面材质）
 let _groundMirrorOrigBFC: Map<number, boolean> = new Map();
+/** 地面反射 renderList 脏标记：mesh 集合或地面高度变化时重建 */
+let _groundRenderListDirty = true;
+let _lastGroundMeshCount = 0;
+let _lastGroundLevel = 0;
 const RT_REFRESH_ONCE = (RenderTargetTexture as unknown as { REFRESHRATE_RENDER_ONCE?: number })
     .REFRESHRATE_RENDER_ONCE ?? 0;
 
@@ -659,7 +663,7 @@ function buildGroundReflection(state: EnvState): void {
 
     // 互斥守卫：关闭水面反射（调用水面模块完整 dispose，而非仅写状态变量）
     if (envState.planarReflectBlend > 0) {
-        envState.planarReflectBlend = 0;
+        // 注意：envState.planarReflectBlend 归零由调用方（updateGround/applyGround）负责
         disableWaterReflection();
     }
 
@@ -786,6 +790,7 @@ export function applyGround(state: EnvState): void {
             _envSys.ground.mesh.rotation.z = (state.groundRoll * Math.PI) / 180;
         }
         // 反射 RT 重建（quality 变更时由 typeKey 触发，blend 变更走上面的原地更新）
+        state.planarReflectBlend = 0; // 地面反射启用时关闭水面反射状态
         buildGroundReflection(state);
         return;
     }
@@ -876,6 +881,7 @@ export function applyGround(state: EnvState): void {
     ground.rotation.z = (state.groundRoll * Math.PI) / 180;
 
     // Phase B: 镜面反射（创建后挂载）
+    state.planarReflectBlend = 0; // 地面反射启用时关闭水面反射状态
     buildGroundReflection(state);
 
     _envSys.ground.mesh = ground;
@@ -999,7 +1005,20 @@ export function ensureEnvUpdateObserver(): void {
             const frameSkip = frameSkipMap[envState.groundReflectionQuality] ?? 999;
             if (_groundMirrorFrameCount % (frameSkip + 1) === 0) {
                 _updateGroundMirrorCamera(scene, envState.groundLevel);
-                _populateGroundMirrorRenderList(scene, _groundMirrorRT, envState.groundLevel);
+                // 脏标记：仅在地面高度或 scene.meshes 集合变化时重建 renderList
+                const meshCount = scene.meshes.length;
+                if (
+                    envState.groundLevel !== _lastGroundLevel ||
+                    meshCount !== _lastGroundMeshCount
+                ) {
+                    _groundRenderListDirty = true;
+                    _lastGroundLevel = envState.groundLevel;
+                    _lastGroundMeshCount = meshCount;
+                }
+                if (_groundRenderListDirty) {
+                    _populateGroundMirrorRenderList(scene, _groundMirrorRT, envState.groundLevel);
+                    _groundRenderListDirty = false;
+                }
                 _groundMirrorRT.render();
             }
         }

@@ -21,7 +21,7 @@ import {
 import { registerPopupMenu } from './menu-factory';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
-import { serializeScene } from '../scene/scene';
+import { serializeScene, isARModeActive, takeARScreenshot } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
 import { setModelFormation } from '../scene/scene';
@@ -255,9 +255,14 @@ export async function screenshotCurrent(): Promise<void> {
     await new Promise((r) => requestAnimationFrame(r));
     const fmt = uiState.screenshotFormat ?? 'image/png';
     const q = uiState.screenshotQuality ?? 0.9;
-    const base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
     const ts = Date.now();
     const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
+    let base64: string;
+    if (isARModeActive()) {
+        base64 = takeARScreenshot(fmt, q);
+    } else {
+        base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
+    }
     const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.${ext}`;
     const r = await tryCatchStatus(async () => {
         await SaveScreenshot(dir, filename, base64);
@@ -300,7 +305,13 @@ async function screenshotBatch(): Promise<void> {
             await new Promise((r) => requestAnimationFrame(r));
             const fmt = uiState.screenshotFormat ?? 'image/png';
             const q = uiState.screenshotQuality ?? 0.9;
-            const base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
+            let base64: string;
+            if (isARModeActive()) {
+                base64 = takeARScreenshot(fmt, q);
+            } else {
+                base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
+            }
+
             const ts = Date.now();
             const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
             const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.${ext}`;

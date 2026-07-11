@@ -8,7 +8,7 @@
 // SlideMenu 的导航机件对它纯属死重。
 
 import { Browser } from '@wailsio/runtime';
-import { StartProxy, StopProxy, OpenPlazaWindow } from '../core/wails-bindings';
+import { StartProxy, StopProxy, NavigatePlazaWindow } from '../core/wails-bindings';
 import { openExternalURL } from '../core/platform';
 import { closeAllOverlays } from '../core/utils';
 import { PLAZA_SITES, type PlazaSite } from './plaza-sites';
@@ -120,7 +120,7 @@ function openExternal(site: PlazaSite): void {
 
 function openInWindow(site: PlazaSite): void {
     setStatus(t('plaza.opening', { name: site.name }), false, true);
-    OpenPlazaWindow(site.url)
+    NavigatePlazaWindow(site.url)
         .then(() => setStatus('', false))
         .catch((e) => {
             // 不再自动降级到系统浏览器：wails 窗口失败即失败，便于单独测试该模式。

@@ -22,6 +22,7 @@ import {
     uiState,
     type RuntimeModel,
 } from '@/core/config';
+import { createDefaultFeetState } from '@/core/state';
 import { resolveFileUrl, normPath } from '@/core/fileservice';
 import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
@@ -200,6 +201,7 @@ export async function loadPMXFile(
                 scaling: 1.0,
                 rotationY: 0,
                 boneOverrides: [],
+                feet: createDefaultFeetState(),
             };
             // Register via ModelManager only — it owns the registry
             _modelManager.register(inst);
@@ -261,6 +263,7 @@ export async function loadPMXFile(
             scaling: 1.0,
             rotationY: 0,
             boneOverrides: [],
+            feet: createDefaultFeetState(),
         };
         // 默认模型自动缩放：按统一目标高度归一化（仅 actor）
         if (uiState.autoScaleModel) {

@@ -414,6 +414,35 @@ func (a *App) SaveEnvPreset(name string, jsonStr string) error {
 	})
 }
 
+// SaveEnvPresetAuto writes a .env JSON file under env-presets/<NNN>.env,
+// auto-numbered to avoid name collisions. Returns the generated name without
+// extension (e.g. "001", "002"). Mirrors SaveScenePreset's behaviour.
+func (a *App) SaveEnvPresetAuto(jsonStr string) (string, error) {
+	return util.SafeCall(func() (string, error) {
+		dir, err := a.envPresetsDir()
+		if err != nil {
+			return "", err
+		}
+		// Find the next available number
+		next := 1
+		entries, _ := os.ReadDir(dir)
+		for _, e := range entries {
+			if !e.IsDir() && strings.HasSuffix(e.Name(), ".env") {
+				var n int
+				if _, err := fmt.Sscanf(e.Name(), "%d.env", &n); err == nil && n >= next {
+					next = n + 1
+				}
+			}
+		}
+		filename := fmt.Sprintf("%03d.env", next)
+		path := filepath.Join(dir, filename)
+		if err := os.WriteFile(path, []byte(jsonStr), 0644); err != nil {
+			return "", err
+		}
+		return filename, nil
+	})
+}
+
 // LoadEnvPreset reads a .env JSON file by name.
 func (a *App) LoadEnvPreset(name string) (string, error) {
 	return util.SafeCall(func() (string, error) {
