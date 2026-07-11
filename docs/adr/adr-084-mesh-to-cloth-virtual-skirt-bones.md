@@ -1,6 +1,6 @@
 # ADR-084: Mesh-to-Cloth 虚拟裙骨生成 —— WASM Bullet 运行时刚体注入
 
-> **状态**: 实施中（Phase 1-5 POC 全链路已完成：`skirt-analyzer.ts` + `virtual-skirt.ts`(含 Phase 5 质量档位/LOD/降频) + `motion-cloth-levels.ts`(含质量档位 UI) + 37 单测全绿 + 五语言 i18n。下一步：真机/模型实测微调参数）
+> **状态**: 实施中（Phase 1-5 POC 全链路 + P2/P3 审计加固已完成：`skirt-analyzer.ts`(防穿裤误判 + 全局映射) + `virtual-skirt.ts`(异常清理 + 腰骨缓存 + 包围盒刷新) + `scene.ts`(模型卸载接入) + `motion-cloth-levels.ts`(质量档位 UI) + 单测全绿 + 五语言 i18n。下一步：真机/模型实测微调参数；P2b(A1 蒙皮天花板)/P3c(worldId 回收) 列为已知限制）
 > **关联**: ADR-054(P2 路线图)、ADR-081(XPBD 移除)、ADR-019(XPBD 布料，已废弃)、ADR-029(物理 UI 重构)、ADR-043(竞品差距分析)
 
 ---
@@ -401,3 +401,78 @@ cd frontend && npm run test
 | 🟢 P4 | ADR §3.4 | 伪代码用 `segments[i].restX`，代码用 `seg.restPosition[0]` | ADR §3.4 伪代码对齐实现：`restPosition[0/1/2]` + 嵌套链循环 + 平行数组权重 + 缓存缓冲复用；§3.3 `seg.restMatrix` 占位字段同步改为 `Matrix.Translation(restPosition)` | ✅ 已修 |
 
 **验证**：`npm run check`（改动文件零类型错误）+ `vitest` 31/31 通过。
+
+---
+
+## 九、逻辑审计修复记录（2026-07-12）
+
+### P1 — 坐标空间不一致（🔴 必修，已修复）
+
+**根因核实**：审计原建议"统一到 mesh 局部空间"。经核对 babylon-mmd 源码
+`mmdBulletPhysics.js:555-559`：
+
+```js
+// then convert the body transform to world space
+Vector3.TransformCoordinatesToRef(initialPosition, worldMatrix, initialPosition);
+Matrix.ComposeToRef(one, initialRotation, initialPosition, initialTransformMatrix);
+rbInfoList.setInitialTransform(index, initialTransformMatrix);
+```
+
+**WASM 物理世界使用的是「世界坐标」**（PMX 刚体在 `setInitialTransform` 前被
+`worldMatrix` 转到世界空间）。因此审计的"局部空间"建议不成立，正确修法是
+让本模块与世界坐标约定一致：
+
+| 环节 | 修复前 | 修复后 |
+|------|--------|--------|
+| 骨节初始化 (`setInitialTransform`) | 局部 `restPosition`（被错放在世界原点） | `localToWorld(restPosition, meshWorld)` → **世界坐标** |
+| 每帧写回 delta | `世界位移 − 局部rest`（混空间） | `世界位移 − localToWorld(restPosition, meshWorld)` 得**世界位移** → `worldDeltaToLocal(·, meshWorldInv)` 得**局部位移** → 写 `PositionKind` |
+| worldId | 复用模型 `_physicsModel._worldId`（私有字段，脆弱） | 始终分配**专用 world**（`nextWorldId++`），避免与 PMX 刚体坐标系/碰撞干扰 |
+
+引入两个可单测的纯函数（`virtual-skirt.ts` 模块级导出）：
+- `localToWorld(local, world, out)` — 局部点 → 世界点（含平移）
+- `worldDeltaToLocal(delta, worldInv, out)` — 世界位移 → 局部位移（仅旋转/缩放，忽略平移）
+
+每帧 `_update()` 刷新 `meshWorld` / `meshWorldInv`（模型可平移/旋转），写回时实时转换。
+**效果**：模型整体平移/旋转时，裙摆随模型移动而不漂移；多模型布局 / AR 叠加（ADR-055）
+下不再错位。
+
+**专项测试**（新增 6 个，共 20）：
+- `坐标转换纯函数` 4 例：平移/旋转 round-trip / 纯平移方向不变 / 端到端不漂移
+- `P1 坐标空间一致性` 2 例：骨节初始位置在世界空间（含 +10 平移）、平移 mesh 每帧写回不抛错
+
+> 注：`worldId` 分配后未显式释放（WASM 侧无直接释放 API），属已知限制，POC 阶段可接受；
+> 长期可评估复用模型自身 world 时由模型卸载统一回收。
+
+**验证**：`npm run check`（零类型错误）+ `npm run test`（全量 1272 通过，+6 P1 测试，零回归）。
+
+---
+
+## 十、P2 / P3 审计加固记录（2026-07-12）
+
+逻辑审计（§九）后，用户要求继续推进 P2/P3 剩余项。本轮落地如下：
+
+### P2 — 拓扑分析的鲁棒性（🔴/🟡 必修，已修复）
+
+| 项 | 位置 | 问题 | 修复 | 状态 |
+|----|------|------|------|------|
+| 🔴 P2a 穿裤误判 | `skirt-analyzer.ts` 底部连通分量选择 + fallback | y-threshold fallback 收集**全部** `Y ≤ 阈值` 顶点，会把裤子/腿柱误判为裙摆并生成骨节 | ① 先收集所有「底部」连通分量；若出现 **≥2 个分离底环**（左右腿洞）→ 判定非裙摆，安全跳过；② fallback 增加**径向外扩过滤**：仅保留径向距离 ≥ 35% 最大径向的顶点（裙摆为外扩锥，腿/裤为中央柱） | ✅ 已修（新增裤子 mesh 测试钉死） |
+
+**P2b 已知限制（A1 蒙皮二次变换天花板）**：策略 A1 仅做「顶点位移」，不含骨骼旋转形变，裙摆在高速甩动时「飘但不像布」。已确认为 POC 故意取舍，升级路径为策略 A2（注入虚拟 Skeleton bone + 重分配权重，由 Babylon 蒙皮管线处理旋转形变），记入 §3.5，暂不实现。
+
+### P3 — 运行时健壮性与正确性（🟡 已修复）
+
+| 项 | 位置 | 问题 | 修复 | 状态 |
+|----|------|------|------|------|
+| 🟡 P3a 异常清理 | `virtual-skirt.ts` `build()` | 注入中途抛异常会泄漏半初始化的刚体/约束/构造信息/形状 | WASM 注入块包入 `try/catch`，失败时调用 `dispose()` 释放已分配资源并返回 `false` | ✅ 已修 |
+| 🟡 P3b 卸载接入 | `scene.ts` `modelManager.onRemoveModel` | `disposeVirtualSkirtForModel` 未接到模型卸载流程 → 切换/删除模型时控制器泄漏 | 在 `onRemoveModel` 回调内动态 `import('./menus/motion-cloth-levels')` 后调用 `disposeVirtualSkirtForModel(id)`；保持 virtual-skirt 非 eager 导入约束 | ✅ 已修 |
+| 🟡 P3d 链间缝隙 | `skirt-analyzer.ts` 第 9 步 | 原「每链内顶点映射」使链边界顶点只受单一链骨节影响 → 相邻链独立位移导致撕裂 | 改为**全局跨链映射**：收集所有骨节，每个顶点取全局最近 2 个骨节 + 距离反比权重 | ✅ 已修 |
+| 🟡 P3e 腰骨缓存 | `virtual-skirt.ts` | `_update()` 每帧遍历 `runtimeBones` 查找腰骨，浪费 | `build()` 解析并缓存腰骨对象引用 `_waistBone`，`_update()` 每帧复用 | ✅ 已修 |
+| 🟡 P3f 包围盒刷新 | `virtual-skirt.ts` `_writeBackVertices` | 顶点位移后未刷新包围盒 → 视锥剔除/拾取错位 | 写完 `PositionKind` 后调用 `mesh.refreshBoundingInfo()`（带 `?.` 守卫） | ✅ 已修 |
+| 🟢 P3c worldId 回收 | `virtual-skirt.ts` | 专用 worldId 分配后无 WASM 侧释放 API | 维持 §九 已知限制：POC 可接受；长期评估复用模型自身 world 时随卸载回收 | 已知限制（文档化） |
+
+### 本轮新增测试（skirt-analyzer + virtual-skirt）
+
+- `skirt-analyzer`：**双分离底环裤子 mesh → 返回空链**（钉死 P2a 防误判）；fallback 径向过滤不误吞球体下半（既有测试仍通过）
+- `virtual-skirt`：**build() 注入异常 → 部分资源被 dispose 且无泄漏**；**腰骨缓存 `_waistBone` 被设置且 `_update` 复用**
+
+**验证**：`npm run check`（零类型错误）+ `npm run test`（全量 1272 → 1276 通过，+4 P2a/P3a/P3e 测试，零回归）。
