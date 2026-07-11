@@ -991,6 +991,30 @@ export function disposeWater(): void {
 }
 
 /**
+ * 仅关闭水面平面反射（不销毁水面本身）。
+ * 供 ADR-083 Phase B 地面反射互斥守卫调用：
+ * - 清零 shader uniform planarReflectBlend（立即停止反射混合）
+ * - 销毁 _mirrorRT + _mirrorCam（释放 GPU 资源，避免两个 RT 同时渲染）
+ */
+export function disableWaterReflection(): void {
+    const mat = _envSys.water.material as ShaderMaterial | null;
+    if (mat) {
+        mat.setFloat('planarReflectBlend', 0);
+    }
+    if (_mirrorRT) {
+        const scene = getScene();
+        scene.customRenderTargets = scene.customRenderTargets.filter((t) => t !== _mirrorRT);
+        _mirrorRT.dispose();
+        _mirrorRT = null;
+    }
+    if (_mirrorCam) {
+        _mirrorCam.dispose();
+        _mirrorCam = null;
+    }
+    _mirrorFrameCount = 0;
+}
+
+/**
  * 刷新水面渲染列表（钩子函数）
  * 当前为空实现，保留作为API接口，未来可能用于：
  * - 更新水的渲染顺序

@@ -29,6 +29,7 @@ import {
 import { GridMaterial } from '@babylonjs/materials/grid/gridMaterial';
 import { EnvState, envState } from '@/core/config';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
+import { disableWaterReflection } from './env-water';
 
 // ======== Static Asset URL Resolver (Android 安全) ========
 /** 将相对路径转为绝对 URL，确保 Android WebView 能正确加载嵌入资源。
@@ -402,6 +403,8 @@ let _groundScrollV = 0;
 let _groundMirrorRT: RenderTargetTexture | null = null;
 let _groundMirrorCam: FreeCamera | null = null;
 let _groundMirrorFrameCount = 0;
+// 反射渲染时保存材质原始 backFaceCulling 值，渲染后恢复（避免强制覆盖双面材质）
+let _groundMirrorOrigBFC: Map<number, boolean> = new Map();
 const RT_REFRESH_ONCE = (RenderTargetTexture as unknown as { REFRESHRATE_RENDER_ONCE?: number })
     .REFRESHRATE_RENDER_ONCE ?? 0;
 
@@ -645,34 +648,14 @@ function buildGroundReflection(state: EnvState): void {
         state.groundReflectionQuality !== 'off' && state.groundReflectionBlend > 0;
 
     if (!shouldEnable) {
-        // 销毁既有 RT
-        if (_groundMirrorRT) {
-            scene.customRenderTargets = scene.customRenderTargets.filter(
-                (t) => t !== _groundMirrorRT
-            );
-            _groundMirrorRT.dispose();
-            _groundMirrorRT = null;
-        }
-        if (_groundMirrorCam) {
-            _groundMirrorCam.dispose();
-            _groundMirrorCam = null;
-        }
-        _groundMirrorFrameCount = 0;
-        // 移除材质上的反射纹理
-        const mat = _envSys.ground.mesh?.material;
-        if (mat && mat instanceof StandardMaterial) {
-            if (mat.reflectionTexture) {
-                mat.reflectionTexture.dispose();
-                mat.reflectionTexture = null;
-            }
-        }
+        disposeGroundReflection();
         return;
     }
 
-    // 互斥守卫：关闭水面反射
+    // 互斥守卫：关闭水面反射（调用水面模块完整 dispose，而非仅写状态变量）
     if (envState.planarReflectBlend > 0) {
         envState.planarReflectBlend = 0;
-        // 触发水面模块重应用（由 env-bridge 在下一帧检测到变化时处理）
+        disableWaterReflection();
     }
 
     // 创建或复用 RT
@@ -686,16 +669,18 @@ function buildGroundReflection(state: EnvState): void {
         _groundMirrorRT.onBeforeRenderObservable.add(() => {
             for (const mesh of _groundMirrorRT!.renderList ?? []) {
                 if (mesh.material) {
+                    _groundMirrorOrigBFC.set(mesh.material.uniqueId, mesh.material.backFaceCulling);
                     mesh.material.backFaceCulling = false;
                 }
             }
         });
         _groundMirrorRT.onAfterRenderObservable.add(() => {
             for (const mesh of _groundMirrorRT!.renderList ?? []) {
-                if (mesh.material) {
-                    mesh.material.backFaceCulling = true;
+                if (mesh.material && _groundMirrorOrigBFC.has(mesh.material.uniqueId)) {
+                    mesh.material.backFaceCulling = _groundMirrorOrigBFC.get(mesh.material.uniqueId)!;
                 }
             }
+            _groundMirrorOrigBFC.clear();
         });
 
         _populateGroundMirrorRenderList(scene, _groundMirrorRT, state.groundLevel);
@@ -728,6 +713,12 @@ function disposeGroundReflection(): void {
         _groundMirrorCam = null;
     }
     _groundMirrorFrameCount = 0;
+    _groundMirrorOrigBFC.clear();
+    // 清理材质上的反射纹理引用（避免悬空引用指向已 dispose 的 RT）
+    const mat = _envSys.ground.mesh?.material;
+    if (mat && mat instanceof StandardMaterial && mat.reflectionTexture) {
+        mat.reflectionTexture = null;
+    }
 }
 
 export function applyGround(state: EnvState): void {
@@ -1013,6 +1004,7 @@ export function ensureEnvUpdateObserver(): void {
             const cam = scene.activeCamera;
             if (cam) {
                 _envSys.ground.mesh.position.x = cam.position.x;
+                _envSys.ground.mesh.position.y = envState.groundLevel;
                 _envSys.ground.mesh.position.z = cam.position.z;
             }
         }
