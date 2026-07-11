@@ -201,19 +201,18 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         }
     }
 
-    // 半球光 — 强度跟随当前灯光状态，颜色随天空色
-    hemiLight.intensity = getLightState().hemiIntensity;
+    // 半球光 — 强度跟随当前灯光状态，颜色随天空色（灯光未初始化时跳过）
     const skyMid = state.skyColorMid ?? [
         (state.skyColorTop[0] + state.skyColorBot[0]) / 2,
         (state.skyColorTop[1] + state.skyColorBot[1]) / 2,
         (state.skyColorTop[2] + state.skyColorBot[2]) / 2,
     ];
-    hemiLight.diffuse = new Color3(skyMid[0], skyMid[1], skyMid[2]);
-    hemiLight.groundColor = new Color3(
-        state.groundColor[0] * 0.5,
-        state.groundColor[1] * 0.5,
-        state.groundColor[2] * 0.5
-    );
+    if (hemiLight) {
+        hemiLight.intensity = getLightState().hemiIntensity;
+        hemiLight.diffuse = new Color3(skyMid[0], skyMid[1], skyMid[2]);
+        // 半球光地面色固定为中性灰，不跟随地面材质色，避免「地面色拖了灯光」的混淆。
+        hemiLight.groundColor = new Color3(0.3, 0.3, 0.4);
+    }
     // 场景环境色 — 直接影响 MMD 材质的 ambient 项，envIntensity 控制渗透力度
     // 0→0, 默认2→0.3, 3→0.45，最大不超过 0.5 以免冲淡方向光
     const ambientStrength = Math.min(state.envIntensity * 0.15, 0.5);

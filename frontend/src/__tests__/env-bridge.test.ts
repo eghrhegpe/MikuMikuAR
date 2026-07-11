@@ -594,11 +594,11 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
         expect(mockLightingHemiLight.diffuse.b).toBeCloseTo(avgB);
     });
 
-    it('sets hemiLight.groundColor scaled by 0.5', () => {
+    it('sets hemiLight.groundColor to fixed neutral', () => {
         setEnvState({});
-        expect(mockLightingHemiLight.groundColor.r).toBeCloseTo(0.15 * 0.5);
-        expect(mockLightingHemiLight.groundColor.g).toBeCloseTo(0.15 * 0.5);
-        expect(mockLightingHemiLight.groundColor.b).toBeCloseTo(0.18 * 0.5);
+        expect(mockLightingHemiLight.groundColor.r).toBeCloseTo(0.3);
+        expect(mockLightingHemiLight.groundColor.g).toBeCloseTo(0.3);
+        expect(mockLightingHemiLight.groundColor.b).toBeCloseTo(0.4);
     });
 
     it('sets scene.ambientColor based on envIntensity (capped at 0.5)', () => {

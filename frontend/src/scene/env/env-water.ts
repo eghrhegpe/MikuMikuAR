@@ -1,7 +1,6 @@
 import {
     Scene,
     Color3,
-    Color4,
     Vector3,
     Texture,
     Constants,
@@ -13,16 +12,14 @@ import {
     DefaultRenderingPipeline,
     Effect,
     PostProcess,
-    FreeCamera,
     Plane,
     Matrix,
-    RenderTargetTexture,
 } from '@babylonjs/core';
-// RenderTargetTexture 的 refreshRate 常量定义在类自身而非 Constants 上
-const RT_REFRESH_ONCE = (RenderTargetTexture as any).REFRESHRATE_RENDER_ONCE ?? 0;
 import { EnvState, envState } from '@/core/config';
 import { getWindVector, isWindActive } from '@/core/physics/wind-utils';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
+import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
+import { createCanvasTexture } from './env-texture';
 
 // PostProcess 私有属性 _enabled 的类型声明（用于控制后处理启用/禁用）
 interface PostProcessInternal {
@@ -86,16 +83,45 @@ let _waterWaveSpeed = 1; // 当前波速，供每帧相位累加使用
 // === 每帧更新水面的 observer ===
 let _waterUpdateObserver: Observer<Scene> | null = null;
 
-// === Planar Reflection RT（ADR-062 P1）===
-let _mirrorRT: RenderTargetTexture | null = null;
-let _mirrorCam: FreeCamera | null = null;
-let _mirrorFrameCount = 0;
-/** 水面反射 BFC 原始值恢复映射（防 onBeforeRender 关闭 BFC 后永久丢失） */
-let _mirrorOrigBFC: Map<number, boolean> = new Map();
-/** 水面反射 renderList 脏标记：mesh 集合或水面高度变化时重建 */
-let _mirrorRenderListDirty = true;
-let _lastMeshCount = 0;
-let _lastMirrorWaterLevel = 0;
+// === 平面反射（统一平面反射引擎，ADR-092）===
+// 水面用 screenSpace 模式：RenderTargetTexture + 镜像相机（_worldMatrix 镜像矩阵）+ ShaderMaterial 屏空采样。
+// 互斥可恢复：启用地面反射时本引擎自动停用，地面关闭后由协调器触发重建（关地即开水）。
+const waterReflection = new PlanarReflection({
+    name: 'water',
+    mode: 'screenSpace',
+    resolutionMap: { high: 512, medium: 256, low: 128, off: 0 },
+    getQuality: (s) => s.reflectionQuality,
+    getBlend: (s) => s.planarReflectBlend ?? 0.5,
+    getSurfaceLevel: (s) => s.waterLevel,
+    getMirrorCameraMatrix: (s, scene) => {
+        const cam = scene.activeCamera;
+        if (!cam) {
+            return null;
+        }
+        const plane = new Plane(0, 1, 0, -s.waterLevel);
+        return Matrix.Reflection(plane).multiply(cam.getWorldMatrix());
+    },
+    predicate: (mesh, level) =>
+        !mesh.name.startsWith('envWater') &&
+        mesh.isEnabled() &&
+        !(mesh as unknown as { _worldMatrixFrozen?: boolean })._worldMatrixFrozen &&
+        mesh.getBoundingInfo().boundingBox.maximumWorld.y >= level,
+    getMaterial: () => _envSys.water.material as ShaderMaterial | null,
+    mount: (rt) => {
+        const mat = _envSys.water.material as ShaderMaterial | null;
+        if (mat) {
+            mat.setTexture('reflectionTexture', rt as Texture | null);
+        }
+    },
+    setBlend: (b) => {
+        const mat = _envSys.water.material as ShaderMaterial | null;
+        if (mat) {
+            mat.setFloat('planarReflectBlend', b);
+        }
+    },
+    skipWhenUnderwater: true,
+});
+registerReflectionSurface('water', waterReflection, () => waterReflection.update(envState, getScene()));
 
 // ======== 涟漪系统（Interaction Ripples）========
 const MAX_RIPPLES = 8;
@@ -200,52 +226,48 @@ const CAUSTIC_TEX_SIZE = 128;
 
 function regenerateCausticTexture(scene: Scene, waterColor: [number, number, number]): void {
     const S = CAUSTIC_TEX_SIZE;
-    const canvas = document.createElement('canvas');
-    canvas.width = S;
-    canvas.height = S;
-    const ctx = canvas.getContext('2d')!;
-    const imgData = ctx.createImageData(S, S);
-    const data = imgData.data;
+    // 经统一工厂创建（优先 DynamicTexture，回退 toDataURL→Texture）。
+    const draw = (ctx: CanvasRenderingContext2D, s: number) => {
+        const imgData = ctx.createImageData(s, s);
+        const data = imgData.data;
 
-    // 用水色对灰度焦散图案着色：暗部用水色×0.5，亮部用水色
-    const [wr, wg, wb] = waterColor;
+        // 用水色对灰度焦散图案着色：暗部用水色×0.5，亮部用水色
+        const [wr, wg, wb] = waterColor;
 
-    for (let y = 0; y < S; y++) {
-        for (let x = 0; x < S; x++) {
-            const u = x / S,
-                v = y / S;
-            let n = 0,
-                total = 0,
-                amp = 1,
-                freq = 4;
-            for (let o = 0; o < 3; o++) {
-                n += amp * (Math.sin(u * freq * Math.PI) * Math.cos(v * freq * Math.PI));
-                total += amp;
-                amp *= 0.5;
-                freq *= 2;
+        for (let y = 0; y < s; y++) {
+            for (let x = 0; x < s; x++) {
+                const u = x / s,
+                    v = y / s;
+                let n = 0,
+                    total = 0,
+                    amp = 1,
+                    freq = 4;
+                for (let o = 0; o < 3; o++) {
+                    n += amp * (Math.sin(u * freq * Math.PI) * Math.cos(v * freq * Math.PI));
+                    total += amp;
+                    amp *= 0.5;
+                    freq *= 2;
+                }
+                n = (n / total) * 0.5 + 0.5; // 灰度 0~1
+
+                // 灰度映射到 [水色×0.3, 水色×1.2]，让暗部偏水色，亮部更亮
+                const i = (y * s + x) * 4;
+                const t = n; // 0=暗纹, 1=亮纹
+                data[i] = Math.min(255, Math.floor((wr * 0.3 + t * wr * 0.9) * 255));
+                data[i + 1] = Math.min(255, Math.floor((wg * 0.3 + t * wg * 0.9) * 255));
+                data[i + 2] = Math.min(255, Math.floor((wb * 0.3 + t * wb * 0.9) * 255));
+                data[i + 3] = 255;
             }
-            n = (n / total) * 0.5 + 0.5; // 灰度 0~1
-
-            // 灰度映射到 [水色×0.3, 水色×1.2]，让暗部偏水色，亮部更亮
-            const i = (y * S + x) * 4;
-            const t = n; // 0=暗纹, 1=亮纹
-            data[i] = Math.min(255, Math.floor((wr * 0.3 + t * wr * 0.9) * 255));
-            data[i + 1] = Math.min(255, Math.floor((wg * 0.3 + t * wg * 0.9) * 255));
-            data[i + 2] = Math.min(255, Math.floor((wb * 0.3 + t * wb * 0.9) * 255));
-            data[i + 3] = 255;
         }
-    }
 
-    ctx.putImageData(imgData, 0, 0);
-    const url = canvas.toDataURL();
+        ctx.putImageData(imgData, 0, 0);
+    };
+
     if (_causticTexture) {
         _causticTexture.dispose();
         _causticTexture = null;
     }
-    const tex = new Texture(url, scene, false, false);
-    tex.wrapU = Constants.TEXTURE_WRAP_ADDRESSMODE;
-    tex.wrapV = Constants.TEXTURE_WRAP_ADDRESSMODE;
-    _causticTexture = tex;
+    _causticTexture = createCanvasTexture({ size: S, draw, scene, name: 'waterCaustic', wrap: 'wrap' });
     _causticScene = scene;
     _lastCausticColor = [...waterColor];
 }
@@ -566,119 +588,12 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
 }
 
 // ══════════════════════════════════════════════════════════════
-// ADR-062 P1: Planar Reflection RT（内联实现）
+// 平面反射（ADR-062 P1）：委托统一平面反射引擎（ADR-092）
 // ══════════════════════════════════════════════════════════════
 
-function _createMirrorRT(scene: Scene, resolution: number): RenderTargetTexture {
-    const rt = new RenderTargetTexture(
-        'waterReflectionRT',
-        resolution,
-        scene,
-        false // generateMipMaps
-    );
-    rt.clearColor = new Color4(0, 0, 0, 0);
-    rt.refreshRate = RT_REFRESH_ONCE;
-    return rt;
-}
-
-function _createMirrorCam(scene: Scene): FreeCamera {
-    const cam = new FreeCamera('_mirrorCam', Vector3.Zero(), scene);
-    cam.minZ = 0.5;
-    cam.maxZ = 200;
-    cam.rotation.x = Math.PI / 2;
-    return cam;
-}
-
-function _updateMirrorCamera(scene: Scene, waterLevel: number): void {
-    const cam = scene.activeCamera;
-    if (!_mirrorCam || !cam) {
-        return;
-    }
-
-    const mirrorPlane = new Plane(0, 1, 0, -waterLevel);
-    const reflMatrix = Matrix.Reflection(mirrorPlane);
-    const camWorld = cam.getWorldMatrix();
-    const mirrorWorld = reflMatrix.multiply(camWorld);
-
-    // TransformNode.freezeWorldMatrix / setWorldMatrix 不在 Camera 继承链上
-    // （FreeCamera → TargetCamera → Camera → Node，不经过 AbstractMesh），
-    // 直接操作 Node 基类内部属性，等价于 TransformNode.freezeWorldMatrix(matrix)
-    (_mirrorCam as any)._worldMatrix = mirrorWorld;
-    (_mirrorCam as any)._isWorldMatrixFrozen = true;
-
-    if ('fov' in cam) {
-        _mirrorCam.fov = cam.fov;
-    }
-}
-
-function _populateMirrorRenderList(
-    scene: Scene,
-    rt: RenderTargetTexture,
-    waterLevel: number
-): void {
-    rt.renderList = [];
-    let skipped = 0;
-    for (const mesh of scene.meshes) {
-        if (mesh.name.startsWith('envWater')) {
-            skipped++;
-            continue;
-        }
-        if (!mesh.isEnabled() || (mesh as any)._worldMatrixFrozen) {
-            skipped++;
-            continue;
-        }
-        // 排除水面以下的几何（模拟 clipPlane 效果）
-        const bounds = mesh.getBoundingInfo().boundingBox;
-        if (bounds.maximumWorld.y < waterLevel) {
-            skipped++;
-            continue;
-        }
-        rt.renderList.push(mesh);
-    }
-    console.log(`[env-water] _populateMirrorRenderList: renderList=${rt.renderList.length}, skipped=${skipped}, sceneMeshes=${scene.meshes.length}, waterLevel=${waterLevel}`);
-}
-
+/** 初始化/更新水面平面反射：委托给统一引擎（创建 RT、镜像相机、挂载、互斥）。 */
 function _setupMirrorRT(scene: Scene, state: EnvState): void {
-    console.log(`[env-water] _setupMirrorRT: reflectionQuality=${state.reflectionQuality}, planarReflectBlend=${state.planarReflectBlend}`);
-    if (state.reflectionQuality === 'off') {
-        console.log('[env-water] _setupMirrorRT: skipped (reflectionQuality === off)');
-        return;
-    }
-
-    const resolutionMap = { high: 512, medium: 256, low: 128, off: 0 };
-    const resolution = resolutionMap[state.reflectionQuality];
-    if (!resolution) {
-        return;
-    }
-
-    _mirrorRT = _createMirrorRT(scene, resolution);
-    _mirrorCam = _createMirrorCam(scene);
-    _mirrorRT.activeCamera = _mirrorCam;
-
-    _mirrorRT.onBeforeRenderObservable.add(() => {
-        for (const mesh of _mirrorRT!.renderList ?? []) {
-            if (mesh.material) {
-                _mirrorOrigBFC.set(mesh.material.uniqueId, mesh.material.backFaceCulling);
-                mesh.material.backFaceCulling = false;
-            }
-        }
-    });
-    _mirrorRT.onAfterRenderObservable.add(() => {
-        for (const mesh of _mirrorRT!.renderList ?? []) {
-            if (mesh.material && _mirrorOrigBFC.has(mesh.material.uniqueId)) {
-                mesh.material.backFaceCulling = _mirrorOrigBFC.get(mesh.material.uniqueId)!;
-            }
-        }
-        _mirrorOrigBFC.clear();
-    });
-
-    _populateMirrorRenderList(scene, _mirrorRT, state.waterLevel);
-    scene.customRenderTargets.push(_mirrorRT);
-
-    const mat = _envSys.water.material as ShaderMaterial;
-    if (mat) {
-        mat.setTexture('reflectionTexture', _mirrorRT);
-    }
+    waterReflection.update(state, scene);
 }
 
 /**
@@ -913,36 +828,8 @@ export function createWater(state: EnvState): void {
                     _rippleDirty = true;
                 }
             }
-            // 水下判断：相机 y < waterLevel 时跳过反射渲染
-            const camY = cam?.position.y ?? 0;
-            const isUnderwater = camY < envState.waterLevel;
-
-            _mirrorFrameCount++;
-            const frameSkipMap = { high: 0, medium: 1, low: 3, off: 999 };
-            const frameSkip = frameSkipMap[envState.reflectionQuality] ?? 999;
-            if (
-                _mirrorRT &&
-                _mirrorCam &&
-                !isUnderwater &&
-                _mirrorFrameCount % (frameSkip + 1) === 0
-            ) {
-                _updateMirrorCamera(scene, envState.waterLevel);
-                // 脏标记：仅在水面高度或 scene.meshes 集合变化时重建 renderList
-                const meshCount = scene.meshes.length;
-                if (
-                    envState.waterLevel !== _lastMirrorWaterLevel ||
-                    meshCount !== _lastMeshCount
-                ) {
-                    _mirrorRenderListDirty = true;
-                    _lastMirrorWaterLevel = envState.waterLevel;
-                    _lastMeshCount = meshCount;
-                }
-                if (_mirrorRenderListDirty) {
-                    _populateMirrorRenderList(scene, _mirrorRT, envState.waterLevel);
-                    _mirrorRenderListDirty = false;
-                }
-                _mirrorRT.render();
-            }
+            // 平面反射（委托统一平面反射引擎，ADR-092：镜像相机/脏标记/帧跳过/入水跳过/互斥内聚）
+            waterReflection.update(envState, scene);
             // 手动 LOD 可见性切换（按相机距离）
             _applyWaterLOD(scene);
             if (_rippleDirty) {
@@ -1008,46 +895,17 @@ export function disposeWater(): void {
     _underwaterSavedFog = null;
     _underwaterTransitionProgress = 0;
     _underwaterTarget = false;
-    // 清理平面反射 RT
-    if (_mirrorRT) {
-        if (scene) {
-            scene.customRenderTargets = scene.customRenderTargets.filter((t) => t !== _mirrorRT);
-        }
-        _mirrorRT.dispose();
-        _mirrorRT = null;
-    }
-    if (_mirrorCam) {
-        _mirrorCam.dispose();
-        _mirrorCam = null;
-    }
-    _mirrorFrameCount = 0;
+    // 清理平面反射（委托引擎：释放 RT、镜像相机、移出 customRenderTargets、清材质引用）
+    waterReflection.dispose();
     disposeTintPostProcess();
 }
 
 /**
- * 仅关闭水面平面反射（不销毁水面本身）。
- * 供 ADR-083 Phase B 地面反射互斥守卫调用：
- * - 清零 shader uniform planarReflectBlend（立即停止反射混合）
- * - 销毁 _mirrorRT + _mirrorCam（释放 GPU 资源，避免两个 RT 同时渲染）
+ * 关闭水面平面反射（保留水面本身）。委托统一引擎释放；
+ * 互斥由协调器自动恢复——地面反射关闭时会触发本面按 envState 重建（关地即开水）。
  */
 export function disableWaterReflection(): void {
-    const mat = _envSys.water.material as ShaderMaterial | null;
-    if (mat) {
-        mat.setFloat('planarReflectBlend', 0);
-    }
-    if (_mirrorRT) {
-        const scene = getScene();
-        if (scene) {
-            scene.customRenderTargets = scene.customRenderTargets.filter((t) => t !== _mirrorRT);
-        }
-        _mirrorRT.dispose();
-        _mirrorRT = null;
-    }
-    if (_mirrorCam) {
-        _mirrorCam.dispose();
-        _mirrorCam = null;
-    }
-    _mirrorFrameCount = 0;
+    waterReflection.dispose();
 }
 
 /**

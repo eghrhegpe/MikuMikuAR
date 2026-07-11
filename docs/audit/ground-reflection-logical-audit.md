@@ -163,3 +163,30 @@ if (state.groundReflectionQuality !== 'off' && state.groundReflectionBlend > 0) 
 | ⚠️ 短期 | B2 | 镜像平面随地面 pitch/roll 构造 |
 | 中期 | C2 / D1 / D3 | 无 env 时关水用 `disableWaterReflection`；render 包 try-catch；不可挂载材质不建 RT |
 | 低 | B3 / D2 | `maxZ` 调大；澄清 RT 驱动方式 |
+
+---
+
+## 修复落地记录（2026-07-12）
+
+> 文件：`frontend/src/scene/env/env-impl.ts`
+
+| 条目 | 修复手段 | 关键改动 |
+|------|---------|---------|
+| **B1（核心）** | 地面反射 RT 由 `RenderTargetTexture` 改为 **`MirrorTexture`** | `MirrorTexture` 原生按 `mirrorPlane` 推导 planar 反射投影矩阵，根除「投影退化为单位阵」。原审计报告「方案 A」（`rt.mirrorPlane` 直挂 `RenderTargetTexture`）不可行——普通 RT 无该属性/投影逻辑，故采用 ADR-083 §2 声明的 `MirrorTexture` 路线 |
+| **B2** | 镜像平面随地面世界变换构造 | 新增 `_computeGroundMirrorPlane()`：`Plane.FromPositionAndNormal(getAbsolutePosition(), TransformNormal(Up, worldMatrix))`，每帧同步至 `rt.mirrorPlane`，倾斜地面亦对齐 |
+| **B3** | 移除独立镜像相机 `_groundMirrorCam`（其 `maxZ=200` 截断远处角色） | `MirrorTexture` 直接复用 `scene.activeCamera` 做反射，继承主相机 `maxZ`，远端角色不再截断 |
+| **C1** | 互斥守卫死代码废除 | `buildGroundReflection` 中改为**无条件** `disableWaterReflection()`（`disableWaterReflection` 幂等，内部先判 `_mirrorRT`）；不再依赖已被清零的 `envState.planarReflectBlend` |
+| **A1 / D3** | GridMaterial 等非 StandardMaterial 地面短路 | `buildGroundReflection` 在 `shouldEnable` 后先判材质可挂载性；不可挂载则 `disposeGroundReflection()` 并返回 + 一次性 `console.warn`，不再空转建/渲染 RT |
+| **A2** | 地形分支补挂反射 | `applyGround` 的 `terrain` 分支 `onReady` 回调内、`applyTerrainMaterial` 之后补调 `buildGroundReflection(state)`（此前直接 `return` 致反射永久丢失） |
+| **D1** | `_groundMirrorRT.render()` 包 try-catch | 渲染异常仅 `console.warn` 并跳过本帧，不再中断整条 `onBeforeRenderObservable` |
+
+**已删除**：`_createGroundMirrorCam`、`_updateGroundMirrorCamera`、`_groundMirrorCam` 变量及其全部引用（手动相机反射已由 `MirrorTexture` 内部接管）。
+
+### 仍需运行时验证（无法静态判定）
+1. **镜像平面符号/方向**：`MirrorTexture.mirrorPlane` 的符号约定（当前用 `FromPositionAndNormal` 取地面世界上法线）需实际渲染确认反射未上下翻转或错位。若异常，调整为向下法线 `new Plane(0,-1,0, groundLevel)` 变体。
+2. **双渲染问题**：`MirrorTexture` 挂在 `material.reflectionTexture` 后引擎可能自动渲染，叠加手动 `rt.render()`（受 `RT_REFRESH_ONCE` + 分帧控制）。若存在可见双渲染开销，可考虑移除 `scene.customRenderTargets.push` 改由引擎自动驱动。
+3. **互斥恢复**：关闭地面反射时不自动恢复此前的水面反射（行为与原实现一致，属 ADR-083 互斥的「不同存」边界，非本次回归）。是否需要「关地即开水」建议另立 ADR 决策。
+
+### 修复后编译
+- `npx tsc --noEmit` 通过（无类型错误）。
+- 未改动 `env-water.ts`（水面反射保持现状，仅被 `disableWaterReflection` 正确关闭）。
