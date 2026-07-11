@@ -18,6 +18,7 @@ import type {
     DisplayNamePriority,
     CameraMode,
     LibrarySortMode,
+    FeetState,
 } from './types';
 
 // ======== MMD Runtime ========
@@ -56,6 +57,22 @@ export function setMmdRuntimeType(v: MmdRuntimeType): void {
 export let modelRegistry = new Map<string, ModelInstance>();
 export function setModelRegistry(m: Map<string, ModelInstance>): void {
     modelRegistry = m;
+}
+
+// ======== Feet Adjustment (ADR-085) Default ========
+
+/** [doc:adr-085] 脚部地面跟随默认状态（Phase A 参数） */
+export function createDefaultFeetState(): FeetState {
+    return {
+        enabled: false,
+        intensity: 1,
+        soleHeight: 0,
+        jumpThreshold: 0.5,
+        bodySmooth: 0.5,
+        footSmooth: 0.5,
+        maxAngle: 30,
+        reachAngle: 15,
+    };
 }
 
 // ======== Prop Registry ========

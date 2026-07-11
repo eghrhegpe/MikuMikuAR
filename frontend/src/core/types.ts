@@ -3,6 +3,7 @@
 
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
+import type { IkSolver } from 'babylon-mmd/esm/Runtime/ikSolver';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { UIState as GoUIState } from './wails-bindings';
@@ -20,6 +21,28 @@ export type BoneOverrideEntry = {
     weight: number;
     /** 启用/禁用 */
     enabled: boolean;
+};
+
+// ======== Feet Adjustment (ADR-085) Types ========
+
+/** [doc:adr-085] 脚部地面跟随（按模型）状态 */
+export type FeetState = {
+    /** 总开关 */
+    enabled: boolean;
+    /** 总体强度 0–1，0=禁用 */
+    intensity: number;
+    /** 脚底高度（世界单位），默认 0，脚尖与地面间隙 */
+    soleHeight: number;
+    /** 跳跃阈值：脚踝 Y 超过此值暂停校正（允许踢腿/跳跃），默认 0.5 */
+    jumpThreshold: number;
+    /** 身体响应平滑 0–1，默认 0.5 */
+    bodySmooth: number;
+    /** 脚部响应平滑 0–1，默认 0.5 */
+    footSmooth: number;
+    /** 最大足倾角（度），默认 30，限制单帧垂直修正幅度 */
+    maxAngle: number;
+    /** 触及倾角（度），默认 15，腿够不到时趾尖额外下沉 */
+    reachAngle: number;
 };
 
 // ======== Model Types ========
@@ -108,6 +131,8 @@ export type ModelInstance = {
     _origMaterialVisibility?: Map<number, boolean>;
     /** [doc:adr-061] Motion Override — 逐骨骼覆盖条目 */
     boneOverrides: BoneOverrideEntry[];
+    /** [doc:adr-085] 脚部地面跟随状态（按模型） */
+    feet: FeetState;
     /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */
     positionMode?: 'cartesian' | 'orbit';
     /** [doc:adr-049] 水平方位角（度，-180~180），仅 positionMode==='orbit' 时生效 */
@@ -436,6 +461,8 @@ export type MmdRuntimeType = 'wasm' | 'js';
 export interface MmdRuntimeBoneExtended extends IMmdRuntimeBone {
     worldMatrix: Float32Array;
     updateWorldMatrix(updateAbsoluteTransform: boolean, updateLocalTransform: boolean): void;
+    /** babylon-mmd MmdRuntimeBone 实有：该骨骼挂载的 IK 求解器（无 IK 时为 null） */
+    ikSolver: IkSolver | null;
 }
 
 export type PendingVmd = { data: ArrayBuffer; name: string };
