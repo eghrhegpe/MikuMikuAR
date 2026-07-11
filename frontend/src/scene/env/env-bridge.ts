@@ -73,7 +73,8 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     // Guard: skip ground rebuild unless ground-related property changed
     const groundKeys = [
         'groundVisible',
-        'groundMode',
+        'groundType',
+        'groundStyle',
         'groundColor',
         'groundAlpha',
         'groundTexture',
@@ -597,10 +598,36 @@ export function applyEnvPresetObject(preset: {
 
 // ======== setEnvState (central entry point) ========
 
-export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): void {
-    Object.assign(envState, partial);
+/**
+ * 配置迁移：旧版本以单一 groundMode 枚举同时表达「几何类型」与「外观样式」两轴
+ * （solid/grid/checker/texture = 平面样式；heightmap = 程序化地形）。
+ * 现拆分为 groundType(flat|terrain) + groundStyle(solid|grid|checker|texture)。
+ * 在 setEnvState 中央入口统一转换，覆盖所有 hydrate 路径（main.ts / scene-serialize / 预设等）。
+ */
+function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
+    const raw = input as Record<string, unknown>;
+    // 仅当入参含旧字段 groundMode 时才迁移；新版本 partial 原样返回，
+    // 避免向 changed 集合注入 groundType/groundStyle 导致无关节点更新误触发 applyGround。
+    if (typeof raw.groundMode !== 'string') {
+        return input;
+    }
+    const out = { ...raw } as Record<string, unknown>;
+    const m = raw.groundMode;
+    if (m === 'heightmap') {
+        out.groundType = 'terrain';
+    } else {
+        out.groundType = 'flat';
+        out.groundStyle = m; // 'solid' | 'grid' | 'checker' | 'texture'
+    }
+    delete out.groundMode;
+    return out as Partial<EnvState>;
+}
 
-    _applyEnvStateFacade(envState, partial);
+export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): void {
+    const migrated = migrateEnvState(partial);
+    Object.assign(envState, migrated);
+
+    _applyEnvStateFacade(envState, migrated);
 
     if (partial.waterAnimSpeed !== undefined) {
         impl.updateWaterAnimSpeed(partial.waterAnimSpeed);

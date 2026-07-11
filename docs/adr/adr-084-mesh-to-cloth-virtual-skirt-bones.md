@@ -1,6 +1,6 @@
 # ADR-084: Mesh-to-Cloth 虚拟裙骨生成 —— WASM Bullet 运行时刚体注入
 
-> **状态**: 实施中（Phase 1-4 POC 已完成：`skirt-analyzer.ts` + `virtual-skirt.ts` + `motion-cloth-levels.ts`(UI 入口) + 31 单测全绿 + 五语言 i18n；Phase 5 性能/Android 适配待开始）
+> **状态**: 实施中（Phase 1-5 POC 全链路已完成：`skirt-analyzer.ts` + `virtual-skirt.ts`(含 Phase 5 质量档位/LOD/降频) + `motion-cloth-levels.ts`(含质量档位 UI) + 37 单测全绿 + 五语言 i18n。下一步：真机/模型实测微调参数）
 > **关联**: ADR-054(P2 路线图)、ADR-081(XPBD 移除)、ADR-019(XPBD 布料，已废弃)、ADR-029(物理 UI 重构)、ADR-043(竞品差距分析)
 
 ---
@@ -277,6 +277,28 @@ function writeBackVertices(
 
 **决策**：POC 先走 A1，验证裙摆飘动效果。若形变质量不足（裙摆"飘但不像布"），升级到 A2。
 
+### 3.6 Phase 5 性能 / LOD / 降频（Android 适配）
+
+让低端机（Android）也能实时裙摆，核心是把「每帧全量顶点上传」拆成可降级的三维：
+
+| 维度 | 控制点 | 档位映射（QUALITY_PRESETS） |
+|------|--------|------------------------------|
+| **LOD 链数上限** | 物理刚体数量（链式弹簧数） | high 32 / medium 16 / low 10 |
+| **LOD 骨节上限** | 单链刚体数 | high 16 / medium 10 / low 6 |
+| **降频步长** | 顶点回写间隔（每 N 帧上传 GPU） | high 1 / medium 2 / low 3 |
+| **顶点硬上限** | 超过则跳过该模型（不注入） | high 4000 / medium 2500 / low 1500 |
+
+**质量档位解析**（`resolveVirtualSkirtQuality`，纯函数）：
+- `auto`（默认）→ 桌面 `high` / Android（经 `isAndroidPlatform()`）`low`
+- `high` / `medium` / `low` 固定档，用户手动覆盖
+
+**降频实现**（不牺牲物理真实感）：
+- 物理始终在 WASM Bullet 内持续模拟（60Hz）；
+- `PerFrameUpdateRegistry` 每帧回调中：**锚定体跟随腰骨每帧执行**（保证裙摆不脱腰），顶点写回按 `_frame % _throttleEvery === 0` 降频；
+- 帧计数器 `_frame` 从 0 起，首帧必写回，避免启动瞬间的静止。
+
+**设计约束遵守**：质量档位解析抽为 `resolveVirtualSkirtQuality` 纯函数（不依赖运行期平台探测副作用），单测直接覆盖；`virtual-skirt.ts` 仍不被 `scene.ts` eager 导入。
+
 ---
 
 ## 四、实施计划
@@ -289,7 +311,7 @@ function writeBackVertices(
 | **Phase 2-POC** | WASM Bullet 注入 | `scene/physics/virtual-skirt.ts` | 无裙骨模型加载后裙骨链创建成功, 无报错 |
 | **Phase 3-POC** | 顶点回写 + 联调 | `PerFrameUpdateRegistry` 回调 | 裙摆在风力/移动下可见飘动 |
 | **Phase 4-UI** | 菜单入口 + 参数面板 | `menus/motion-skirt-levels.ts` | 开关 + 链数/刚度/阻尼滑块 |
-| **Phase 5-优化** | 性能 + Android 适配 | 顶点数上限 / 降频 / LOD | 桌面 60fps, Android 30fps |
+| **Phase 5-优化** | 性能 + Android 适配 | 质量档位 / LOD 上限 / 降频 + `motion:virtualSkirt` 质量选择 UI | 桌面 60fps, Android 降频后稳定（✅ 已实现：QUALITY_PRESETS + 帧计数器降频） |
 
 ### 4.2 文件规划
 

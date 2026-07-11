@@ -338,7 +338,8 @@ export interface EnvState {
     envIntensity: number;
 
     groundVisible: boolean;
-    groundMode: 'solid' | 'grid' | 'checker' | 'texture' | 'heightmap';
+    groundType: 'flat' | 'terrain'; // 几何类型：平面 / 程序化地形（原 heightmap）
+    groundStyle: 'solid' | 'grid' | 'checker' | 'texture'; // 仅 flat 时有效（外观样式）
     groundColor: [number, number, number];
     groundAlpha: number;
     groundTexture: string;

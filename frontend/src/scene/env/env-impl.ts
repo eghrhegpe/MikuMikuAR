@@ -521,7 +521,7 @@ export function getGroundHeightAt(x: number, z: number): number {
 
     // 高度图模式：Babylon 原生起伏采样。ADR-083 已禁用其 pitch/roll（恒水平），
     // 仅平移变换下 getHeightAtCoordinates 世界变换退化为 (0,y,0)+平移，结果正确。
-    if (envState.groundMode === 'heightmap' && typeof (m as GroundMesh).getHeightAtCoordinates === 'function') {
+    if (envState.groundType === 'terrain' && typeof (m as GroundMesh).getHeightAtCoordinates === 'function') {
         try {
             return (m as GroundMesh).getHeightAtCoordinates(x, z);
         } catch (e) {
@@ -783,13 +783,13 @@ export function applyGround(state: EnvState): void {
     const scene = getScene();
 
     const typeKey =
-        state.groundMode === 'heightmap'
+        state.groundType === 'terrain'
             ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}`
             : state.groundTextureEnabled && state.groundTexture
               ? `texture:${state.groundTexture}:${state.groundSize}:${state.groundReflectionQuality}`
-              : state.groundMode === 'checker'
+              : state.groundStyle === 'checker'
                 ? `checker:${state.groundPattern}:${state.groundSize}:${state.groundReflectionQuality}`
-                : `mode:${state.groundMode}:${state.groundSize}:${state.groundReflectionQuality}`;
+                : `mode:${state.groundStyle}:${state.groundSize}:${state.groundReflectionQuality}`;
     const keyChanged = typeKey !== _currentGroundKey;
 
     // 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放/旋转/坡度/法线/反射
@@ -834,7 +834,7 @@ export function applyGround(state: EnvState): void {
         // 更新地面高度
         _envSys.ground.mesh.position.y = state.groundLevel;
         // 更新坡度（heightmap 模式禁用，保持 0）
-        if (state.groundMode !== 'heightmap') {
+        if (state.groundType !== 'terrain') {
             _envSys.ground.mesh.rotation.x = (state.groundPitch * Math.PI) / 180;
             _envSys.ground.mesh.rotation.z = (state.groundRoll * Math.PI) / 180;
         }
@@ -868,7 +868,7 @@ export function applyGround(state: EnvState): void {
 
     // 地形模式：程序化 FBM 高度图 → 可拾取 GroundMesh（自带碰撞）。
     // onReady（图像异步加载完成后）才建材质并触发模型重贴地。
-    if (state.groundMode === 'heightmap') {
+    if (state.groundType === 'terrain') {
         const hg = createHeightmapGround(state, scene, (gm) => {
             applyTerrainMaterial(gm, state, scene);
             applyGroundEdgeFade(gm.material as StandardMaterial, state.groundEdgeFade, scene);
@@ -890,7 +890,7 @@ export function applyGround(state: EnvState): void {
     ground.isPickable = false;
     ground.position.y = state.groundLevel;
 
-    if (state.groundMode === 'grid') {
+    if (state.groundStyle === 'grid') {
         const mat = new GridMaterial('envGroundMat', scene);
         mat.gridRatio = state.groundGridSize;
         mat.mainColor = new Color3(
@@ -905,7 +905,7 @@ export function applyGround(state: EnvState): void {
         );
         mat.backFaceCulling = false;
         ground.material = mat;
-    } else if (state.groundMode === 'checker') {
+    } else if (state.groundStyle === 'checker') {
         applyProceduralGround(ground, state);
     } else if (state.groundTextureEnabled && state.groundTexture) {
         // 纹理地面：subdivisions 保持 2（性能），纹理重复由 uScale/vScale 控制
@@ -1043,8 +1043,8 @@ export function ensureEnvUpdateObserver(): void {
         if (
             _envSys.ground.mesh &&
             (envState.groundScrollSpeedX !== 0 || envState.groundScrollSpeedZ !== 0) &&
-            (envState.groundMode === 'checker' ||
-                (envState.groundMode === 'texture' && envState.groundTextureEnabled && envState.groundTexture))
+            (envState.groundStyle === 'checker' ||
+                (envState.groundStyle === 'texture' && envState.groundTextureEnabled && envState.groundTexture))
         ) {
             const mat = _envSys.ground.mesh.material;
             if (mat && mat instanceof StandardMaterial && mat.diffuseTexture) {
@@ -1084,7 +1084,7 @@ export function ensureEnvUpdateObserver(): void {
         }
 
         // Phase B: grid 模式跟随相机（每帧重定位到相机下方）
-        if (_envSys.ground.mesh && envState.groundFollowCamera && envState.groundMode === 'grid') {
+        if (_envSys.ground.mesh && envState.groundFollowCamera && envState.groundStyle === 'grid') {
             const cam = scene.activeCamera;
             if (cam) {
                 _envSys.ground.mesh.position.x = cam.position.x;

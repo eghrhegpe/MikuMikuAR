@@ -199,3 +199,11 @@ switch (state.groundPattern) {
 - ADR-052: 地面模式增强（网格/第二色/高度/纹理旋转 + heightmap）
 - ADR-062: 水面反射渲染目标（planar RT 模式复用）
 - ADR-047: 配置持久化覆盖（需追加新字段）
+
+## 8. 修订注记（2026-07-11）
+
+> **地面模式分类重构**：原 `groundMode` 单枚举（solid/grid/checker/texture/heightmap）已拆分为两轴——
+> `groundType`('flat'|'terrain') + `groundStyle`('solid'|'grid'|'checker'|'texture')。
+> 背景与方案见 **ADR-089**。
+> 本 ADR 中「heightmap 模式」一律等价于新模型的 `groundType === 'terrain'`；「非 heightmap 模式」等价于 `groundType === 'flat'`。
+> 旧配置经 `setEnvState` 内的 `migrateEnvState()` 自动映射，无需手动迁移。

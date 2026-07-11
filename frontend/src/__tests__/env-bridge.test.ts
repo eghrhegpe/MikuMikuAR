@@ -52,7 +52,8 @@ const {
         starsEnabled: false,
         envIntensity: 2,
         groundVisible: true,
-        groundMode: 'solid',
+        groundType: 'flat',
+        groundStyle: 'solid',
         groundColor: [0.15, 0.15, 0.18],
         groundAlpha: 0.6,
         windEnabled: true,
@@ -270,7 +271,8 @@ vi.mock('../core/config', () => {
         windEnabled: true,
         fogEnabled: false,
         groundVisible: true,
-        groundMode: 'solid',
+        groundType: 'flat',
+        groundStyle: 'solid',
         groundAlpha: 0.6,
         windDirection: [0, 0, 1],
         windSpeed: 5,
@@ -504,7 +506,8 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
     });
 
     it('calls all subsystems when keys from all groups change', () => {
-        setEnvState({ skyMode: 'procedural', groundMode: 'solid', fogEnabled: true });
+        setEnvState({ skyMode: 'procedural', groundType: 'flat',
+        groundStyle: 'solid', fogEnabled: true });
         expect(mockImplApplySky).toHaveBeenCalled();
         expect(mockImplApplyGround).toHaveBeenCalled();
         expect(mockImplApplyFog).toHaveBeenCalled();

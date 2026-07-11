@@ -5,7 +5,7 @@
 
 import type { PopupLevel } from '../core/config';
 import { setStatus, cardContainer } from '../core/config';
-import { addSliderRow, addToggleRow } from '../core/ui-helpers';
+import { addSliderRow, addToggleRow, addModeRow } from '../core/ui-helpers';
 import { scene, modelManager } from '../scene/scene';
 import { mmdRuntime } from '../core/state';
 import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
@@ -17,6 +17,7 @@ import { t } from '../core/i18n/t';
 // 字段稳定，UI 默认值在此声明，引擎默认值在 virtual-skirt.ts。
 const DEFAULT_SKIRT_CONFIG: VirtualSkirtConfig = {
     enabled: false,
+    quality: 'auto',
     chains: 12,
     segmentsPerChain: 8,
     stiffness: 50,
@@ -157,6 +158,22 @@ export function buildVirtualSkirtLevel(): PopupLevel {
             // === Card: 参数（仅启用时实际生效）===
             if (skirtConfig.enabled) {
                 cardContainer(container, (c) => {
+                    // Phase 5: 质量档位 → LOD + 降频
+                    addModeRow(
+                        c,
+                        t('cloth.quality'),
+                        [
+                            { value: 'auto', label: t('cloth.qualityAuto') },
+                            { value: 'high', label: t('cloth.qualityHigh') },
+                            { value: 'medium', label: t('cloth.qualityMedium') },
+                            { value: 'low', label: t('cloth.qualityLow') },
+                        ],
+                        skirtConfig.quality,
+                        (v) => {
+                            skirtConfig = { ...skirtConfig, quality: v };
+                            scheduleRebuild();
+                        },
+                    );
                     addSliderRow(
                         c,
                         t('cloth.chains'),
@@ -255,7 +272,17 @@ export function buildVirtualSkirtLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 const stat = document.createElement('div');
                 stat.className = 'cs-hint';
-                stat.textContent = t('cloth.status', { n: controllers.size });
+                const first = controllers.values().next().value;
+                if (first) {
+                    stat.textContent = t('cloth.lodInfo', {
+                        quality: t(`cloth.quality${first.effectiveQuality.charAt(0).toUpperCase()}${first.effectiveQuality.slice(1)}`),
+                        chains: first.effectiveChains,
+                        segments: first.effectiveSegments,
+                        throttle: first.throttleEvery,
+                    });
+                } else {
+                    stat.textContent = t('cloth.status', { n: 0 });
+                }
                 c.appendChild(stat);
             });
         },
