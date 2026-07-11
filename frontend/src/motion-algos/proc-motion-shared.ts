@@ -129,8 +129,23 @@ export const BONE_WAIST_CANDIDATES = ['腰', 'waist', 'Waist', 'hips', 'Hips', '
 export const BONE_ALLPARENT_CANDIDATES = ['全ての親', 'AllParent', 'all parent', 'root', 'Root'];
 export const BONE_GROOVE_CANDIDATES = ['グルーブ', 'groove', 'Groove'];
 
-export const BONE_LEG_IK_L_CANDIDATES = ['左足IK', 'left leg ik', 'LeftLegIK'];
-export const BONE_LEG_IK_R_CANDIDATES = ['右足IK', 'right leg ik', 'RightLegIK'];
+// 候选覆盖半角/全角 IK 与常见英文变体（MMD 标准名为全角「左足ＩＫ」）
+export const BONE_LEG_IK_L_CANDIDATES = [
+    '左足IK',
+    '左足ＩＫ',
+    'left leg ik',
+    'left foot ik',
+    'LeftLegIK',
+    'LeftFootIK',
+];
+export const BONE_LEG_IK_R_CANDIDATES = [
+    '右足IK',
+    '右足ＩＫ',
+    'right leg ik',
+    'right foot ik',
+    'RightLegIK',
+    'RightFootIK',
+];
 
 export function matchBone(actualBones: string[], candidates: string[]): string | null {
     for (const c of candidates) {

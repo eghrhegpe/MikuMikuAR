@@ -598,7 +598,7 @@ function _updateMirrorCamera(scene: Scene, waterLevel: number): void {
     const mirrorPlane = new Plane(0, 1, 0, -waterLevel);
     const reflMatrix = Matrix.Reflection(mirrorPlane);
     const camWorld = cam.getWorldMatrix();
-    const mirrorWorld = camWorld.multiply(reflMatrix);
+    const mirrorWorld = reflMatrix.multiply(camWorld);
 
     // TransformNode.freezeWorldMatrix / setWorldMatrix 不在 Camera 继承链上
     // （FreeCamera → TargetCamera → Camera → Node，不经过 AbstractMesh），
@@ -617,24 +617,31 @@ function _populateMirrorRenderList(
     waterLevel: number
 ): void {
     rt.renderList = [];
+    let skipped = 0;
     for (const mesh of scene.meshes) {
         if (mesh.name.startsWith('envWater')) {
+            skipped++;
             continue;
         }
         if (!mesh.isEnabled() || (mesh as any)._worldMatrixFrozen) {
+            skipped++;
             continue;
         }
         // 排除水面以下的几何（模拟 clipPlane 效果）
         const bounds = mesh.getBoundingInfo().boundingBox;
         if (bounds.maximumWorld.y < waterLevel) {
+            skipped++;
             continue;
         }
         rt.renderList.push(mesh);
     }
+    console.log(`[env-water] _populateMirrorRenderList: renderList=${rt.renderList.length}, skipped=${skipped}, sceneMeshes=${scene.meshes.length}, waterLevel=${waterLevel}`);
 }
 
 function _setupMirrorRT(scene: Scene, state: EnvState): void {
+    console.log(`[env-water] _setupMirrorRT: reflectionQuality=${state.reflectionQuality}, planarReflectBlend=${state.planarReflectBlend}`);
     if (state.reflectionQuality === 'off') {
+        console.log('[env-water] _setupMirrorRT: skipped (reflectionQuality === off)');
         return;
     }
 
