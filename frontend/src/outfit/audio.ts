@@ -116,6 +116,10 @@ export function getVolume(): number {
 }
 
 export function setAudioOffset(seconds: number): void {
+    // 拒绝 NaN / Infinity：写入 SettingsStore 后会污染同步逻辑（syncAudioPlayback 的算术运算）
+    if (!Number.isFinite(seconds)) {
+        return;
+    }
     SettingsStore.get().set('audioOffset', seconds);
 }
 

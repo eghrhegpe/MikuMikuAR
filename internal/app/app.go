@@ -372,6 +372,12 @@ type EnvState struct {
 	GroundScrollSpeedX    float64    `json:"groundScrollSpeedX"`
 	GroundScrollSpeedZ    float64    `json:"groundScrollSpeedZ"`
 	GroundPattern         string     `json:"groundPattern"`
+	GroundReflectionBlend    float64 `json:"groundReflectionBlend"`
+	GroundReflectionQuality string  `json:"groundReflectionQuality"`
+	GroundNormalTexture     string  `json:"groundNormalTexture"`
+	GroundNormalStrength    float64 `json:"groundNormalStrength"`
+	GroundElevationColoring  bool    `json:"groundElevationColoring"`
+	GroundFollowCamera      bool    `json:"groundFollowCamera"`
 	GroundLevel           float64    `json:"groundLevel"`
 	GroundSize            float64    `json:"groundSize"`
 	GroundEdgeFade        float64    `json:"groundEdgeFade"`

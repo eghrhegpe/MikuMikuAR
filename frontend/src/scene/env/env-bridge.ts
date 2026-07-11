@@ -91,6 +91,12 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         'groundScrollSpeedX',
         'groundScrollSpeedZ',
         'groundPattern',
+        'groundReflectionBlend',
+        'groundReflectionQuality',
+        'groundNormalTexture',
+        'groundNormalStrength',
+        'groundElevationColoring',
+        'groundFollowCamera',
         'groundLevel',
     ];
     if (!changed || changed.some((k) => groundKeys.includes(k))) {
