@@ -594,12 +594,14 @@ function _updateMirrorCamera(scene: Scene, waterLevel: number): void {
     const camWorld = cam.getWorldMatrix();
     const mirrorWorld = camWorld.multiply(reflMatrix);
 
-    // setWorldMatrix / freezeWorldMatrix 在 Node 基类上但类型定义可能未暴露
-    (_mirrorCam as any).setWorldMatrix(mirrorWorld);
-    (_mirrorCam as any).freezeWorldMatrix();
+    // TransformNode.freezeWorldMatrix / setWorldMatrix 不在 Camera 继承链上
+    // （FreeCamera → TargetCamera → Camera → Node，不经过 AbstractMesh），
+    // 直接操作 Node 基类内部属性，等价于 TransformNode.freezeWorldMatrix(matrix)
+    (_mirrorCam as any)._worldMatrix = mirrorWorld;
+    (_mirrorCam as any)._isWorldMatrixFrozen = true;
 
     if ('fov' in cam) {
-        (_mirrorCam as any).fov = (cam as any).fov;
+        _mirrorCam.fov = cam.fov;
     }
 }
 
@@ -967,8 +969,11 @@ export function disposeWater(): void {
     }
     _causticScene = null;
     _lastCausticColor = null;
+    const scene = getScene();
     if (_waterUpdateObserver) {
-        getScene().onBeforeRenderObservable.remove(_waterUpdateObserver);
+        if (scene) {
+            scene.onBeforeRenderObservable.remove(_waterUpdateObserver);
+        }
         _waterUpdateObserver = null;
     }
     _underwaterActive = false;
@@ -976,9 +981,10 @@ export function disposeWater(): void {
     _underwaterTransitionProgress = 0;
     _underwaterTarget = false;
     // 清理平面反射 RT
-    const scene = getScene();
     if (_mirrorRT) {
-        scene.customRenderTargets = scene.customRenderTargets.filter((t) => t !== _mirrorRT);
+        if (scene) {
+            scene.customRenderTargets = scene.customRenderTargets.filter((t) => t !== _mirrorRT);
+        }
         _mirrorRT.dispose();
         _mirrorRT = null;
     }
@@ -1003,7 +1009,9 @@ export function disableWaterReflection(): void {
     }
     if (_mirrorRT) {
         const scene = getScene();
-        scene.customRenderTargets = scene.customRenderTargets.filter((t) => t !== _mirrorRT);
+        if (scene) {
+            scene.customRenderTargets = scene.customRenderTargets.filter((t) => t !== _mirrorRT);
+        }
         _mirrorRT.dispose();
         _mirrorRT = null;
     }

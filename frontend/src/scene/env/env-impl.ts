@@ -607,10 +607,13 @@ function _updateGroundMirrorCamera(scene: Scene, groundLevel: number): void {
     const reflMatrix = Matrix.Reflection(mirrorPlane);
     const camWorld = cam.getWorldMatrix();
     const mirrorWorld = camWorld.multiply(reflMatrix);
-    (_groundMirrorCam as unknown as { setWorldMatrix: (m: Matrix) => void }).setWorldMatrix(mirrorWorld);
-    (_groundMirrorCam as unknown as { freezeWorldMatrix: () => void }).freezeWorldMatrix();
+    // TransformNode.freezeWorldMatrix / setWorldMatrix 不在 Camera 继承链上
+    // （FreeCamera → TargetCamera → Camera → Node，不经过 AbstractMesh），
+    // 直接操作 Node 基类内部属性，等价于 TransformNode.freezeWorldMatrix(matrix)
+    (_groundMirrorCam as any)._worldMatrix = mirrorWorld;
+    (_groundMirrorCam as any)._isWorldMatrixFrozen = true;
     if ('fov' in cam) {
-        (_groundMirrorCam as unknown as { fov: number }).fov = (cam as unknown as { fov: number }).fov;
+        _groundMirrorCam.fov = cam.fov;
     }
 }
 

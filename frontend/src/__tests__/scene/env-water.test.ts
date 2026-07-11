@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -58,6 +58,9 @@ beforeAll(() => {
     const origCreate = document.createElement.bind(document);
     (document as any).createElement = (tag: string) =>
         tag === 'canvas' ? (fakeCanvas as any) : origCreate(tag);
+    return () => {
+        (document as any).createElement = origCreate;
+    };
 });
 
 beforeEach(() => {
