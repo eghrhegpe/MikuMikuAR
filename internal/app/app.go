@@ -437,9 +437,9 @@ type EnvState struct {
 	FogStart   float64    `json:"fogStart"`
 	FogEnd     float64    `json:"fogEnd"`
 
-	CollisionEnabled       bool        `json:"collisionEnabled"`
-	BodyCollisionEnabled   bool        `json:"bodyCollisionEnabled"`
-	GroundCollisionEnabled bool        `json:"groundCollisionEnabled"`
+	CollisionEnabled       bool `json:"collisionEnabled"`
+	BodyCollisionEnabled   bool `json:"bodyCollisionEnabled"`
+	GroundCollisionEnabled bool `json:"groundCollisionEnabled"`
 
 	SunAngle float64 `json:"sunAngle"`
 	Azimuth  float64 `json:"azimuth"`
