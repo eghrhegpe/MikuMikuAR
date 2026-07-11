@@ -11,7 +11,6 @@ troubleshooting.md   🐛 故障排查记录
 competitive-analysis.md 🔍 竞品分析
 outfits-spec.md      👗 换装系统规格
 adr/                 📜 架构决策记录
-changelog/           📋 变更记录
 research/            🧊 调研归档
 ```
 
