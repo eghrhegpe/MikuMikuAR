@@ -901,14 +901,6 @@ export function disposeWater(): void {
 }
 
 /**
- * 关闭水面平面反射（保留水面本身）。委托统一引擎释放；
- * 互斥由协调器自动恢复——地面反射关闭时会触发本面按 envState 重建（关地即开水）。
- */
-export function disableWaterReflection(): void {
-    waterReflection.dispose();
-}
-
-/**
  * 刷新水面渲染列表（钩子函数）
  * 当前为空实现，保留作为API接口，未来可能用于：
  * - 更新水的渲染顺序

@@ -207,470 +207,161 @@ export function buildGroundLevel(): PopupLevel {
         label: t('env.ground'),
         dir: '',
         items: [],
-        renderCustom: (container) => {
+
+renderCustom: (container) => {
             const s = envState;
             cardContainer(container, (c) => {
                 addToggleRow(c, t('env.showGround'), s.groundVisible, (v) =>
                     setEnvState({ groundVisible: v })
                 );
-                addSliderRow(
-                    c,
-                    t('env.groundHeight'),
-                    s.groundLevel,
-                    -5,
-                    5,
-                    0.1,
-                    (v) => setEnvState({ groundLevel: v }),
-                    'lucide:move-vertical'
-                );
-                addSliderRow(
-                    c,
-                    t('env.range'),
-                    s.groundSize,
-                    10,
-                    200,
-                    5,
-                    (v) => setEnvState({ groundSize: v }),
-                    'lucide:maximize',
-                    undefined,
-                    { bind: () => envState.groundSize }
-                );
-                addSliderRow(
-                    c,
-                    t('env.edgeFade'),
-                    s.groundEdgeFade,
-                    0,
-                    1,
-                    0.01,
-                    (v) => setEnvState({ groundEdgeFade: v }),
-                    'lucide:droplet',
-                    undefined,
-                    { bind: () => envState.groundEdgeFade }
-                );
-                addModeSlider(
-                    c,
-                    t('env.groundType'),
-                    [
-                        { value: 'flat', label: t('env.flat') },
-                        { value: 'terrain', label: t('env.terrain') },
-                    ],
-                    s.groundType,
-                    (v) => {
-                        setEnvState({ groundType: v });
-                        getEnvMenu()?.reRender();
-                    },
-                    'lucide:layers',
-                    undefined,
-                    {
-                        bind: () => envState.groundType,
-                    }
-                );
-                if (s.groundType === 'flat') {
-                addModeSlider(
-                    c,
-                    t('env.groundStyle'),
-                    [
-                        { value: 'solid', label: t('env.solid') },
-                        { value: 'grid', label: t('env.grid') },
-                        { value: 'checker', label: t('env.checker') },
-                        { value: 'texture', label: t('env.textureMode') },
-                    ],
-                    s.groundStyle,
-                    (v) => {
-                        setEnvState({ groundStyle: v });
-                        getEnvMenu()?.reRender();
-                    },
-                    'lucide:square',
-                    undefined,
-                    {
-                        bind: () => envState.groundStyle,
-                    }
-                );
-                addColorSliderRow(
-                    c,
-                    t('env.groundColor'),
-                    s.groundColor,
-                    (v) => {
-                        setEnvState({ groundColor: v });
-                    },
-                    {
-                        bind: () => envState.groundColor,
-                    }
-                );
-                if (s.groundStyle === 'solid' || s.groundStyle === 'checker') {
-                    addSliderRow(
-                        c,
-                        t('env.opacity'),
-                        s.groundAlpha,
-                        0,
-                        1,
-                        0.05,
-                        (v) => setEnvState({ groundAlpha: v }),
-                        'lucide:eye'
-                    );
-                }
-                // Grid/Checker 模式下的网格/棋盘格大小和第二颜色
-                if (s.groundStyle === 'grid') {
-                    addSliderRow(
-                        c,
-                        t('env.gridSize'),
-                        s.groundGridSize,
-                        0.5,
-                        5,
-                        0.1,
-                        (v) => setEnvState({ groundGridSize: v }),
-                        'lucide:grid-3x3'
-                    );
-                    addColorSliderRow(
-                        c,
-                        t('env.gridLineColor'),
-                        s.groundLineColor,
-                        (v) => {
-                            setEnvState({ groundLineColor: v });
-                        },
-                        {
-                            bind: () => envState.groundLineColor,
-                        }
-                    );
-                }
-                if (s.groundStyle === 'checker') {
-                    addSliderRow(
-                        c,
-                        t('env.checkerSize'),
-                        s.groundGridSize,
-                        0.5,
-                        5,
-                        0.1,
-                        (v) => setEnvState({ groundGridSize: v }),
-                        'lucide:grid-3x3'
-                    );
-                    addColorSliderRow(
-                        c,
-                        t('env.secondColor'),
-                        s.groundLineColor,
-                        (v) => {
-                            setEnvState({ groundLineColor: v });
-                        },
-                        {
-                            bind: () => envState.groundLineColor,
-                        }
-                    );
-                }
-                if (s.groundStyle === 'texture') {
-                    const texturePresets = [
-                        { value: '', label: t('env.none') },
-                        { value: 'textures/grass.png', label: t('env.grass') },
-                        { value: 'textures/stone.png', label: t('env.stone') },
-                        { value: 'textures/sand.png', label: t('env.sand') },
-                    ];
-                    const chipRow = document.createElement('div');
-                    chipRow.className = 'preset-group';
-                    for (const tp of texturePresets) {
-                        addPresetChip(
-                            chipRow,
-                            tp.label,
-                            s.groundTexture === tp.value,
-                            () => {
-                                setEnvState({
-                                    groundTexture: tp.value,
-                                    groundTextureEnabled: !!tp.value,
-                                });
-                            },
-                            {
-                                onUpdate: (btn) => {
-                                    btn.classList.toggle(
-                                        'active',
-                                        envState.groundTexture === tp.value
-                                    );
-                                },
-                            }
-                        );
-                    }
-                    c.appendChild(chipRow);
-                    // 自定义纹理：slideRow + 库浏览
-                    const groundFileName =
-                        s.groundTexture && !s.groundTexture.startsWith('textures/')
-                            ? (s.groundTexture.split(/[/\\]/).pop() ?? t('env.notSelected'))
-                            : t('env.notSelected');
-                    slideRow(
-                        c,
-                        'lucide:image',
-                        t('env.customTexture'),
-                        false,
-                        () => {
-                            setEnvTextureBindingTarget('ground');
-                            const level = stackRegistry.buildLevel!(
-                                'environment',
-                                t('env.customTexture'),
-                                (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
-                                getEnvMenu()!
-                            );
-                            getEnvMenu()!.push(level);
-                        },
-                        groundFileName
-                    );
-                    if (s.groundTexture && !s.groundTexture.startsWith('textures/')) {
-                        const clearRow = document.createElement('div');
-                        clearRow.style.cssText =
-                            'display:flex;justify-content:flex-end;padding:0 14px 4px;';
-                        const clearBtn = document.createElement('button');
-                        clearBtn.className = 'cs-btn cs-btn-sm';
-                        clearBtn.textContent = t('env.clear');
-                        clearBtn.onclick = () => {
-                            setEnvState({ groundTexture: '', groundTextureEnabled: false });
-                        };
-                        clearRow.appendChild(clearBtn);
-                        c.appendChild(clearRow);
-                    }
-                    addSliderRow(
-                        c,
-                        t('env.textureScale'),
-                        s.groundTextureScale,
-                        0.1,
-                        5,
-                        0.1,
-                        (v) => setEnvState({ groundTextureScale: v }),
-                        'lucide:zoom-in'
-                    );
-                    addSliderRow(
-                        c,
-                        t('env.textureRotation'),
-                        s.groundTextureRotation,
-                        0,
-                        360,
-                        1,
-                        (v) => setEnvState({ groundTextureRotation: v }),
-                        'lucide:rotate-cw'
-                    );
-                }
-                }
-                if (s.groundType === 'terrain') {
-                    addSliderRow(
-                        c,
-                        t('env.terrainHeight'),
-                        s.groundTerrainHeight,
-                        0,
-                        15,
-                        0.1,
-                        (v) => setEnvState({ groundTerrainHeight: v }),
-                        'lucide:mountain'
-                    );
-                    addSliderRow(
-                        c,
-                        t('env.terrainScale'),
-                        s.groundTerrainScale,
-                        0.01,
-                        0.2,
-                        0.005,
-                        (v) => setEnvState({ groundTerrainScale: v }),
-                        'lucide:ruler'
-                    );
-                    addSliderRow(
-                        c,
-                        t('env.terrainSeed'),
-                        s.groundTerrainSeed,
-                        0,
-                        9999,
-                        1,
-                        (v) => setEnvState({ groundTerrainSeed: v }),
-                        'lucide:dice-5'
-                    );
-                    addSliderRow(
-                        c,
-                        t('env.terrainOctaves'),
-                        s.groundTerrainOctaves,
-                        1,
-                        8,
-                        1,
-                        (v) => setEnvState({ groundTerrainOctaves: v }),
-                        'lucide:layers'
-                    );
-                }
 
-                // ===== 坡度与增强（Phase A）=====
+                // ===== 基础设置 =====
+                addCollapsible(c, {
+                    title: t('env.baseSettings'),
+                    icon: 'lucide:settings-2',
+                    defaultOpen: true,
+                    renderContent: (cc) => {
+                        addColorSliderRow(cc, t('env.groundColor'), s.groundColor, (v) => setEnvState({ groundColor: v }), { bind: () => envState.groundColor });
+                        addSliderRow(cc, t('env.opacity'), s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), 'lucide:eye');
+                        addSliderRow(cc, t('env.groundHeight'), s.groundLevel, -5, 5, 0.1, (v) => setEnvState({ groundLevel: v }), 'lucide:move-vertical');
+                        addSliderRow(cc, t('env.range'), s.groundSize, 10, 200, 5, (v) => setEnvState({ groundSize: v }), 'lucide:maximize', undefined, { bind: () => envState.groundSize });
+                        addSliderRow(cc, t('env.edgeFade'), s.groundEdgeFade, 0, 1, 0.01, (v) => setEnvState({ groundEdgeFade: v }), 'lucide:droplet', undefined, { bind: () => envState.groundEdgeFade });
+                    },
+                });
+
+                // ===== 贴图 =====
+                addCollapsible(c, {
+                    title: t('env.textureMode'),
+                    icon: 'lucide:image',
+                    defaultOpen: false,
+                    headerToggle: {
+                        value: s.groundTextureEnabled,
+                        onChange: (v) => setEnvState({ groundTextureEnabled: v }),
+                        bind: () => envState.groundTextureEnabled,
+                    },
+                    renderContent: (cc) => {
+                        const texturePresets = [
+                            { value: '', label: t('env.none') },
+                            { value: 'textures/grass.png', label: t('env.grass') },
+                            { value: 'textures/stone.png', label: t('env.stone') },
+                            { value: 'textures/sand.png', label: t('env.sand') },
+                        ];
+                        const chipRow = document.createElement('div');
+                        chipRow.className = 'preset-group';
+                        for (const tp of texturePresets) {
+                            addPresetChip(chipRow, tp.label, s.groundTexture === tp.value, () => {
+                                setEnvState({ groundTexture: tp.value, groundTextureEnabled: !!tp.value });
+                            }, { onUpdate: (btn) => { btn.classList.toggle('active', envState.groundTexture === tp.value); } });
+                        }
+                        cc.appendChild(chipRow);
+                        const groundFileName = s.groundTexture && !s.groundTexture.startsWith('textures/') ? (s.groundTexture.split(/[/\\]/).pop() ?? t('env.notSelected')) : t('env.notSelected');
+                        slideRow(cc, 'lucide:image', t('env.customTexture'), false, () => {
+                            setEnvTextureBindingTarget('ground');
+                            const level = stackRegistry.buildLevel!('environment', t('env.customTexture'), (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format), getEnvMenu()!);
+                            getEnvMenu()!.push(level);
+                        }, groundFileName);
+                        if (s.groundTexture && !s.groundTexture.startsWith('textures/')) {
+                            const clearRow = document.createElement('div');
+                            clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+                            const clearBtn = document.createElement('button');
+                            clearBtn.className = 'cs-btn cs-btn-sm';
+                            clearBtn.textContent = t('env.clear');
+                            clearBtn.onclick = () => { setEnvState({ groundTexture: '', groundTextureEnabled: false }); };
+                            clearRow.appendChild(clearBtn);
+                            cc.appendChild(clearRow);
+                        }
+                        addSliderRow(cc, t('env.textureScale'), s.groundTextureScale, 0.1, 5, 0.1, (v) => setEnvState({ groundTextureScale: v }), 'lucide:zoom-in');
+                        addSliderRow(cc, t('env.textureRotation'), s.groundTextureRotation, 0, 360, 1, (v) => setEnvState({ groundTextureRotation: v }), 'lucide:rotate-cw');
+                    },
+                });
+
+                // ===== 装饰 =====
+                addCollapsible(c, {
+                    title: t('env.decoration'),
+                    icon: 'lucide:grid-3x3',
+                    defaultOpen: true,
+                    headerToggle: {
+                        value: s.groundDecoStyle !== 'none',
+                        onChange: (v) => setEnvState({ groundDecoStyle: v ? 'grid' : 'none' }),
+                        bind: () => envState.groundDecoStyle !== 'none',
+                    },
+                    renderContent: (cc) => {
+                        addModeSlider(cc, t('env.style'), [
+                            { value: 'grid', label: t('env.grid') },
+                            { value: 'checker', label: t('env.checker') },
+                        ], s.groundDecoStyle !== 'none' ? s.groundDecoStyle : 'grid', (v) => {
+                            setEnvState({ groundDecoStyle: v as 'grid' | 'checker' });
+                        }, 'lucide:square', undefined, { bind: () => envState.groundDecoStyle !== 'none' ? envState.groundDecoStyle : 'grid' });
+                        addSliderRow(cc, t('env.gridSize'), s.groundGridSize, 0.5, 5, 0.1, (v) => setEnvState({ groundGridSize: v }), 'lucide:grid-3x3');
+                        addColorSliderRow(cc, t('env.gridLineColor'), s.groundLineColor, (v) => setEnvState({ groundLineColor: v }), { bind: () => envState.groundLineColor });
+                        if (s.groundDecoStyle === 'checker') {
+                            addModeSlider(cc, t('env.groundPattern'), [
+                                { value: 'checker', label: t('env.checker') },
+                                { value: 'dots', label: t('env.dots') },
+                                { value: 'stripes', label: t('env.stripes') },
+                                { value: 'radial', label: t('env.radial') },
+                            ], s.groundPattern, (v) => {
+                                setEnvState({ groundPattern: v as EnvState['groundPattern'] });
+                            }, 'lucide:grid-3x3', undefined, { bind: () => envState.groundPattern });
+                        }
+                    },
+                });
+
+                // ===== 地形 =====
+                addCollapsible(c, {
+                    title: t('env.terrain'),
+                    icon: 'lucide:mountain',
+                    defaultOpen: false,
+                    headerToggle: {
+                        value: s.groundType === 'terrain',
+                        onChange: (v) => setEnvState({ groundType: v ? 'terrain' : 'flat' }),
+                        bind: () => envState.groundType === 'terrain',
+                    },
+                    renderContent: (cc) => {
+                        addSliderRow(cc, t('env.terrainHeight'), s.groundTerrainHeight, 0, 15, 0.1, (v) => setEnvState({ groundTerrainHeight: v }), 'lucide:mountain');
+                        addSliderRow(cc, t('env.terrainScale'), s.groundTerrainScale, 0.01, 5, 0.05, (v) => setEnvState({ groundTerrainScale: v }), 'lucide:ruler');
+                        addSliderRow(cc, t('env.terrainSeed'), s.groundTerrainSeed, 0, 9999, 1, (v) => setEnvState({ groundTerrainSeed: v }), 'lucide:hash');
+                        addSliderRow(cc, t('env.terrainOctaves'), s.groundTerrainOctaves, 1, 8, 1, (v) => setEnvState({ groundTerrainOctaves: v }), 'lucide:layers');
+                    },
+                });
+
+                // ===== 地面增强 =====
                 addCollapsible(c, {
                     title: t('env.groundEnhance'),
                     icon: 'lucide:sliders-horizontal',
                     defaultOpen: false,
                     renderContent: (cc) => {
-                        // 坡度（heightmap 模式不支持，隐藏）
                         if (s.groundType !== 'terrain') {
-                            addSliderRow(
-                                cc,
-                                t('env.groundPitch'),
-                                s.groundPitch,
-                                -45,
-                                45,
-                                1,
-                                (v) => setEnvState({ groundPitch: v }),
-                                'lucide:arrow-up-down',
-                                undefined,
-                                {
-                                    bind: () => envState.groundPitch,
-                                }
-                            );
-                            addSliderRow(
-                                cc,
-                                t('env.groundRoll'),
-                                s.groundRoll,
-                                -45,
-                                45,
-                                1,
-                                (v) => setEnvState({ groundRoll: v }),
-                                'lucide:rotate-cw',
-                                undefined,
-                                {
-                                    bind: () => envState.groundRoll,
-                                }
-                            );
-                        } else {
-                            const hint = document.createElement('div');
-                            hint.className = 'hint-text';
-                            hint.textContent = t('env.heightmapNoTilt');
-                            cc.appendChild(hint);
+                            addSliderRow(cc, t('env.groundPitch'), s.groundPitch, -45, 45, 1, (v) => setEnvState({ groundPitch: v }), 'lucide:arrow-up-down', undefined, { bind: () => envState.groundPitch });
+                            addSliderRow(cc, t('env.groundRoll'), s.groundRoll, -45, 45, 1, (v) => setEnvState({ groundRoll: v }), 'lucide:rotate-cw', undefined, { bind: () => envState.groundRoll });
                         }
-
-                        // 纹理滚动（checker / texture 模式有效）
-                        const scrollEnabled =
-                            s.groundStyle === 'checker' ||
-                            (s.groundStyle === 'texture' && s.groundTextureEnabled && s.groundTexture);
-                        if (scrollEnabled) {
-                            addSliderRow(
-                                cc,
-                                t('env.groundScrollX'),
-                                s.groundScrollSpeedX,
-                                -2,
-                                2,
-                                0.05,
-                                (v) => setEnvState({ groundScrollSpeedX: v }),
-                                'lucide:move-horizontal',
-                                undefined,
-                                {
-                                    bind: () => envState.groundScrollSpeedX,
-                                }
-                            );
-                            addSliderRow(
-                                cc,
-                                t('env.groundScrollZ'),
-                                s.groundScrollSpeedZ,
-                                -2,
-                                2,
-                                0.05,
-                                (v) => setEnvState({ groundScrollSpeedZ: v }),
-                                'lucide:move-vertical',
-                                undefined,
-                                {
-                                    bind: () => envState.groundScrollSpeedZ,
-                                }
-                            );
+                        const canScroll = s.groundDecoStyle === 'checker' || (s.groundTextureEnabled && s.groundTexture);
+                        if (canScroll) {
+                            addSliderRow(cc, t('env.groundScrollX'), s.groundScrollSpeedX, -2, 2, 0.1, (v) => setEnvState({ groundScrollSpeedX: v }), 'lucide:move-right', undefined, { bind: () => envState.groundScrollSpeedX });
+                            addSliderRow(cc, t('env.groundScrollZ'), s.groundScrollSpeedZ, -2, 2, 0.1, (v) => setEnvState({ groundScrollSpeedZ: v }), 'lucide:move-down', undefined, { bind: () => envState.groundScrollSpeedZ });
                         }
-
-                        // 程序化图案（仅 checker 模式）
-                        if (s.groundStyle === 'checker') {
-                            addModeSlider(
-                                cc,
-                                t('env.groundPattern'),
-                                [
-                                    { value: 'checker', label: t('env.patternChecker') },
-                                    { value: 'dots', label: t('env.patternDots') },
-                                    { value: 'stripes', label: t('env.patternStripes') },
-                                    { value: 'radial', label: t('env.patternRadial') },
-                                ],
-                                s.groundPattern,
-                                (v) => {
-                                    setEnvState({ groundPattern: v as EnvState['groundPattern'] });
-                                },
-                                'lucide:grid-3x3',
-                                undefined,
-                                {
-                                    bind: () => envState.groundPattern,
-                                }
-                            );
-                        }
+                        addToggleRow(cc, t('env.groundFollowCamera'), s.groundFollowCamera, (v) => setEnvState({ groundFollowCamera: v }), 'lucide:map-pin');
                     },
                 });
 
-                // ===== 地面反射与材质（Phase B）=====
+                // ===== 地面反射 =====
                 addCollapsible(c, {
                     title: t('env.groundReflection'),
                     icon: 'lucide:reflection',
                     defaultOpen: false,
                     renderContent: (cc) => {
-                        // 镜面反射质量
-                        addModeSlider(
-                            cc,
-                            t('env.groundReflectQuality'),
-                            [
-                                { value: 'off', label: t('env.qualityOff') },
-                                { value: 'low', label: t('env.qualityLow') },
-                                { value: 'medium', label: t('env.qualityMedium') },
-                                { value: 'high', label: t('env.qualityHigh') },
-                            ],
-                            s.groundReflectionQuality,
-                            (v) => {
-                                setEnvState({ groundReflectionQuality: v as EnvState['groundReflectionQuality'] });
-                            },
-                            'lucide:monitor',
-                            undefined,
-                            {
-                                bind: () => envState.groundReflectionQuality,
-                            }
-                        );
-                        // 反射混合度
-                        addSliderRow(
-                            cc,
-                            t('env.groundReflectBlend'),
-                            s.groundReflectionBlend,
-                            0,
-                            1,
-                            0.05,
-                            (v) => setEnvState({ groundReflectionBlend: v }),
-                            'lucide:blend',
-                            undefined,
-                            {
-                                bind: () => envState.groundReflectionBlend,
-                            }
-                        );
-                        // 法线贴图路径
-                        addSliderRow(
-                            cc,
-                            t('env.groundNormalStrength'),
-                            s.groundNormalStrength,
-                            0,
-                            2,
-                            0.1,
-                            (v) => setEnvState({ groundNormalStrength: v }),
-                            'lucide:layers',
-                            undefined,
-                            {
-                                bind: () => envState.groundNormalStrength,
-                            }
-                        );
-                        // 高程着色开关
+                        addModeSlider(cc, t('env.groundReflectQuality'), [
+                            { value: 'off', label: t('env.off') },
+                            { value: 'low', label: t('env.low') },
+                            { value: 'medium', label: t('env.medium') },
+                            { value: 'high', label: t('env.high') },
+                        ], s.groundReflectionQuality, (v) => {
+                            setEnvState({ groundReflectionQuality: v as EnvState['groundReflectionQuality'] });
+                        }, 'lucide:monitor', undefined, { bind: () => envState.groundReflectionQuality });
+                        addSliderRow(cc, t('env.groundReflectBlend'), s.groundReflectionBlend, 0, 1, 0.05, (v) => setEnvState({ groundReflectionBlend: v }), 'lucide:blend', undefined, { bind: () => envState.groundReflectionBlend });
+                        addSliderRow(cc, t('env.groundNormalStrength'), s.groundNormalStrength, 0, 2, 0.05, (v) => setEnvState({ groundNormalStrength: v }), 'lucide:layers', undefined, { bind: () => envState.groundNormalStrength });
                         if (s.groundType === 'terrain') {
-                            addToggleRow(
-                                cc,
-                                t('env.groundElevationColoring'),
-                                s.groundElevationColoring,
-                                (v) => setEnvState({ groundElevationColoring: v }),
-                                'lucide:mountain-snow',
-                                {
-                                    bind: () => envState.groundElevationColoring,
-                                }
-                            );
-                        }
-                        // 跟随相机开关（grid 模式）
-                        if (s.groundStyle === 'grid') {
-                            addToggleRow(
-                                cc,
-                                t('env.groundFollowCamera'),
-                                s.groundFollowCamera,
-                                (v) => setEnvState({ groundFollowCamera: v }),
-                                'lucide:map-pin',
-                                {
-                                    bind: () => envState.groundFollowCamera,
-                                }
-                            );
+                            addToggleRow(cc, t('env.groundElevationColoring'), s.groundElevationColoring, (v) => setEnvState({ groundElevationColoring: v }), 'lucide:mountain-snow', { bind: () => envState.groundElevationColoring });
                         }
                     },
                 });
