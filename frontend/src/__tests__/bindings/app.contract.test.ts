@@ -1,5 +1,5 @@
 // [doc:test-strategy] Binding 契约测试
-// 锁住 16 个项目自有 interface 的形状 + 116 个函数导出存在性 + 116 个 FNV-1a method ID。
+// 锁住 16 个项目自有 interface 的形状 + 117 个函数导出存在性 + 117 个 FNV-1a method ID。
 // Go 端改 struct 时此处 test 会 fail，防止静默破坏 Go↔TS 边界。
 // 新增 Go 方法后：在 expectedFunctions 加条目，手写绑定后用此测试验证 method ID。
 
@@ -321,6 +321,7 @@ describe('binding contract: function exports', () => {
         'ClearAllCaches',
         'ClearExtractCache',
         'ClearThumbnailCache',
+        'ClosePlazaWindow',
         'DeleteDanceSet',
         'DeleteEnvPreset',
         'DeleteModelPreset',
@@ -364,9 +365,9 @@ describe('binding contract: function exports', () => {
         'LoadModelPresetFromLib',
         'LoadOutfitFile',
         'LoadSceneFile',
+        'NavigatePlazaWindow',
         'OpenInBlender',
         'OpenInMMD',
-        'OpenPlazaWindow',
         'OpenScreenshotDir',
         'OpenWithSoftware',
         'RemoveCustomSoftware',
@@ -460,6 +461,7 @@ describe('binding contract: method IDs', () => {
         'ClearAllCaches',
         'ClearExtractCache',
         'ClearThumbnailCache',
+        'ClosePlazaWindow',
         'DeleteDanceSet',
         'DeleteEnvPreset',
         'DeleteModelPreset',
@@ -503,9 +505,9 @@ describe('binding contract: method IDs', () => {
         'LoadModelPresetFromLib',
         'LoadOutfitFile',
         'LoadSceneFile',
+        'NavigatePlazaWindow',
         'OpenInBlender',
         'OpenInMMD',
-        'OpenPlazaWindow',
         'OpenScreenshotDir',
         'OpenWithSoftware',
         'RemoveCustomSoftware',
