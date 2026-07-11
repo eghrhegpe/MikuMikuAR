@@ -119,14 +119,16 @@ export function setOnFootLand(cb: ((e: FootLandEvent) => void) | null): void;
 ```ts
 // footstep.ts 内
 type GroundSfxKind = 'concrete' | 'grass' | 'wood' | 'water' | 'default';
-// 依据 envState.groundMode / groundTexture 推断音色类别
+// 依据 envState.groundType / envState.groundStyle / groundTexture 推断音色类别
 function resolveGroundSfxKind(): GroundSfxKind;
 ```
 
-- `heightmap`/`solid` → `concrete`（默认硬地）
-- `grid`/`checker` → `default`（中性）
-- `texture` → 按 `groundTexture` 文件名关键字（grass/wood/... ）推断，兜底 `default`
+- `groundType === 'terrain'`（原 `heightmap`）→ `concrete`（默认硬地）
+- `groundType === 'flat'` + `groundStyle` 为 `solid`/`grid`/`checker` → `default`（中性）
+- `groundType === 'flat'` + `groundStyle === 'texture'` → 按 `groundTexture` 文件名关键字（grass/wood/...）推断，兜底 `default`
 - 水面（`planarReflectBlend > 0` 或水体激活）→ `water`（溅水声）
+
+> 注：地面模式分类已在 ADR-089 拆分为 `groundType`(flat|terrain) + `groundStyle`(solid|grid|checker|texture) 两轴，本节的"原 `groundMode`"表述作废。详见 §10。
 
 每类音色对应 1–N 个采样（多采样随机选 + 音高随机化，避免机械重复感）。采样文件放 `frontend/public/audio/footsteps/<kind>/*.ogg`（或 Web Audio 程序化合成，见 §6 权衡）。
 
@@ -261,3 +263,37 @@ settings.footstep.title / settings.footstep.enabled / settings.footstep.volume
 | 类型检查 | `npm run check` | ✅ exit 0 |
 | 单元测试 | `npm run test` | ✅ 43 文件 / **1260** 用例全绿（含新 7 例）|
 | 生产构建 | `npm run build` | ✅ exit 0 |
+
+---
+
+## 10. 修订注记（地面模式拆分后，2026-07-12）
+
+> 关联 **ADR-089**（地面模式分类重构：`groundMode` → `groundType` + `groundStyle`）。
+
+### 10.1 对 Phase A 的影响：零回归
+
+地面模式分类重构（ADR-089）将单枚举 `groundMode` 拆分为几何类型 `groundType`(`flat`|`terrain`) 与外观样式 `groundStyle`(`solid`|`grid`|`checker`|`texture`) 两轴。`resolveGroundSfxKind()` 已随之迁移，音色映射语义**逐条等价、零行为回归**：
+
+| 旧 `groundMode` | 旧音色 | 新两轴 | 新音色 |
+|----------------|--------|--------|--------|
+| `heightmap` | `concrete` | `groundType==='terrain'` | `concrete` |
+| `texture` | grass/wood/default | `flat`+`texture` | grass/wood/default |
+| `solid` | `default` | `flat`+`solid` | `default` |
+| `grid` | `default` | `flat`+`grid` | `default` |
+| `checker` | `default` | `flat`+`checker` | `default` |
+| 水面激活 | `water` | 同（`planarReflectBlend>0`/水体） | `water` |
+
+`SYNTH_CFG` 的 5 项音色配置（concrete/grass/wood/water/default）完整保留，未删减。
+
+### 10.2 审核发现与处置（ADR-088 Phase A 审核，2026-07-11）
+
+| 项 | 结论 | 处置 |
+|----|------|------|
+| 🟡 P3 `FEET_DEBUG = true` | `feet-adjustment.ts` 诊断日志每 60/90 帧 `console.log`，生产环境刷屏风险 | ✅ **已改为 `false`**（feet-adjustment.ts:62，2026-07-12） |
+| 🟢 P4 dispose 链缺失 | `disposeRenderer()` 未调用 `stopFootstep`/`stopFeetAdjustment`/`disposeAudioBus`；当前 Wails 刷新场景全灭无影响，但 Phase B 引入热重载会累积缓存 | ⏸️ 保持开放，建议 Phase B 顺手在 `disposeRenderer()` 末尾接入调用链 |
+| 类型安全 | `webkitAudioContext`、`linkedBone` 转型均有业务理由（Safari polyfill / babylon-mmd 内部脏标记） | ✅ 不受影响 |
+| 数据流无幽灵路径 | `_cache`(feet-adjustment)、`_synthCache`(footstep) 生命周期受控，拆分未触碰 | ✅ 不受影响 |
+
+### 10.3 文档措辞同步
+
+§3.3「地面材质 → 音色映射」已据两轴方案改写，原 `groundMode` 表述作废。Phase B 预告（§5）中"地面材质 → 音色映射"同理按两轴理解；降级路径（§3.2 末、§5-B.4）为独立新增文件，与本次拆分正交。

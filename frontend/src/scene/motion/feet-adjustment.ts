@@ -58,8 +58,8 @@ let _lastTickTime = 0;
 // 同脚两次落地最小间隔（ms），去抖防抖动误触发
 const FOOT_STEP_MIN_INTERVAL = 120;
 
-// TEMP DEBUG (ADR-085 验证用): 验证后改为 false 或整块删除以关闭诊断日志
-const FEET_DEBUG = true;
+// 诊断日志开关（ADR-085 验证用，验证后已关闭）。改 true 可重新开启帧/落地诊断。
+const FEET_DEBUG = false;
 let _feetDbgFrame = 0;
 let _feetTick = 0;
 

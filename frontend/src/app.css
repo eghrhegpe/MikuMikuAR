@@ -900,7 +900,7 @@ input, textarea, [contenteditable] {
     gap: calc(2px * var(--ui-scale));
     position: relative;
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     color: var(--white-50);
     font-size: calc(20px * var(--ui-scale));
     cursor: pointer;
@@ -919,10 +919,13 @@ input, textarea, [contenteditable] {
 }
 .nav-tab:hover {
     color: var(--white-85);
-    background: var(--white-04);
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 .nav-tab.active {
     color: var(--accent);
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 .nav-tab.active .nav-label {
     color: var(--accent);

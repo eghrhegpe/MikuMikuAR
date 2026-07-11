@@ -86,6 +86,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         'groundTerrainSeed',
         'groundTerrainOctaves',
         'groundSize',
+        'groundLineColor',
         'groundEdgeFade',
         'groundPitch',
         'groundRoll',
