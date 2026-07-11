@@ -15,6 +15,8 @@ UI 组件分布在以下源文件，统一通过 `ui-helpers.ts` barrel re-expor
 - `ui-collapsible.ts` — `addCollapsible`、`addSectionTitle`、`addPresetChip`
 - `ui-types.ts` — `ControlOptions`
 
+**卡片容器 `cardContainer`**：用于 `renderCustom` 回调中创建 `.lcard`，定义在 `core/utils.ts`，通过 `core/config.ts` 导出；不通过 `ui-helpers.ts` 导出。
+
 调用方 `import { ... } from '../core/ui-helpers'`，无需感知拆分。
 
 ---
@@ -73,7 +75,7 @@ CSS 样式：
 ```ts
 function addPresetChip(
     container: HTMLElement, label: string, active: boolean, onClick: () => void,
-    opts?: { onUpdate?: (btn: HTMLButtonElement) => void }
+    opts?: { onUpdate?: (btn: HTMLButtonElement) => void; wrap?: boolean }
 ): HTMLButtonElement
 ```
 
@@ -117,6 +119,7 @@ interface SlideRowExtra {
     rightLabel?: string;
     iconFactory?: () => HTMLElement;
     inlineSub?: boolean;
+    wrapLabel?: boolean;
 }
 
 function slideRow(
@@ -291,7 +294,9 @@ function addEmptyRow(parent: HTMLElement, text: string): HTMLElement
 | `.cs-bar` / `.cs-fill` / `.cs-thumb` | 滑条轨道/填充/手柄 | `addSliderRow` / `addColorSliderRow` |
 | `.clr-block` / `.clr-swatch` | 颜色选择器 | `addColorSliderRow` |
 | `.clr-row` / `.clr-channel` / `.clr-value` | 颜色行（flex row 布局） | `addColorSliderRow` |
+| `.cs-params` | 相机模式参数面板 | `motion-camera-levels.ts` |
 | `.collapsible-mat` | 材质面板折叠变体 | `addCollapsible(variant:'mat')` |
+| `.slide-label.wrap-2` / `.preset-chip.wrap-2` | 长文本换行 | `wrapLabel: true` / `opts.wrap: true` |
 
 ---
 
@@ -325,8 +330,8 @@ function addEmptyRow(parent: HTMLElement, text: string): HTMLElement
 | `toggle` | ~11 | 物理参数开关（scene-physics-levels） | ~16% |
 | `slider` | ~5 | 物理滑条（scene-physics-levels） | ~7% |
 | `model` | ~1 | 库内模型入口（library-core） | ~1% |
-| `modeSlider` | 0 | 生产代码未使用，仅 test 有 | — |
-| `chips` | 0 | 生产代码未使用，仅 test 有 | — |
+| `modeSlider` | 多个 | 相机模式、环境特征、场景渲染/灯光 | ✅ 已进入生产 |
+| `chips` | 接入 `menu.ts`，生产数据使用较少 | 预设/选项切换 | 已接入 buildPanel |
 
 **合计：~71 个 PopupRow 节点**（menu 测试文件除外）。
 
@@ -350,15 +355,15 @@ function addEmptyRow(parent: HTMLElement, text: string): HTMLElement
 |------------|------|
 | `slideRow` 是 `kind: 'slideRow'` | ❌ 错。`slideRow()` 是 UI 构建函数，`PopupRow.kind` 没有 `'slideRow'` 值 |
 | `addDangerRow` 是独立 kind | ❌ 错。`addDangerRow()` 底层就是 `slideRow(..., { variant: 'danger' })`，危险操作靠 `variant` 区分 |
-| `modeSlider` / `chips` 常用 | ❌ 错。生产代码中从未出现，仅在 test 中定义，是死代码 |
+| `modeSlider` / `chips` 是死代码 | ❌ 错。`PopupRow.kind = 'modeSlider'` 已通过 `addModeSlider()` 进入生产；`chips` 已接入 `menu.ts` 渲染路径，但生产数据较少 |
 
 ### 健康检查
 
 | 指标 | 当前状态 | 备注 |
 |------|---------|------|
-| `addDangerRow` 使用率 | 🟡 极低（1 次） | 危险操作偏少，可能缺少危险警告 |
-| `toggle` vs `action` 比例 | 🟢 合理（11:22） | 大部分菜单项是可执行 action，少量是开关 |
-| 死类型（`modeSlider`/`chips`） | 🔴 存在 | 类型定义存在但生产代码从未使用 |
+| `addDangerRow` 使用率 | 🟡 偏低 | 危险操作偏少，可能缺少危险警告，需 grep 重新确认 |
+| `toggle` vs `action` 比例 | 🟢 合理 | 大部分菜单项是可执行 action，少量是开关 |
+| 类型使用状态 | 🟢 `modeSlider` 已进入生产；🟡 `chips` 已接入但生产数据较少 | 类型定义存在且已接入渲染路径 |
 | UI 规模 | 🟢 200+ slider / 110+ toggle | 规模适中，覆盖完整 |
 
 ---
