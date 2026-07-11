@@ -115,7 +115,6 @@ const SHADER_DENSITY_THRESHOLD = CLOUD_DENSITY_THRESHOLD.toFixed(3);
 // ======== Volumetric Cloud (ShaderMaterial-on-Sphere) ========
 let _volCloudMesh: Mesh | null = null;
 let _volCloudMat: ShaderMaterial | null = null;
-let _volCloudObs: Observer<Scene> | null = null;
 let _debugCloudRing: Mesh | null = null;
 let _debugCloudMarkers: Mesh[] = [];
 
@@ -408,8 +407,8 @@ export function createClouds(state: EnvState): void {
         }
         mat.setFloat('time', (performance.now() - startTime) / 1000);
         mat.setVector3('cameraPosition', cam.position);
-        const dl = scene.getLightByName('dir') as DirectionalLight;
-        if (dl) {
+        const dl = scene.getLightByName('dir');
+        if (dl instanceof DirectionalLight) {
             mat.setVector3('sceneLightDir', dl.direction);
             mat.setColor3('sceneLightColor', dl.diffuse);
             const lightIntensity = dl.intensity * 2.0;
@@ -426,7 +425,6 @@ export function createClouds(state: EnvState): void {
     mesh.material = mat;
     _volCloudMesh = mesh;
     _volCloudMat = mat;
-    _volCloudObs = obs;
 
     ensureEnvUpdateObserver();
 
@@ -447,10 +445,6 @@ export function disposeClouds(): void {
     if (_volCloudMesh?.metadata?.followObs) {
         scene.onBeforeRenderObservable.remove(_volCloudMesh.metadata.followObs);
         _volCloudMesh.metadata.followObs = null;
-    }
-    if (_volCloudObs) {
-        scene.onBeforeRenderObservable.remove(_volCloudObs);
-        _volCloudObs = null;
     }
 
     // Dispose material before mesh (material may reference mesh)

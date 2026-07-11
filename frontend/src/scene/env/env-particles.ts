@@ -31,6 +31,9 @@ const WEATHER_BOX_XZ_HALF = 40; // XZ 半宽（80×80 覆盖区）
 const FIREFLY_HEIGHT_OFFSET = 1.5;
 const FIREWORK_HEIGHT_OFFSET = 8;
 
+// 复用的 Vector3，避免每帧 GC 分配
+const _splashPos = new Vector3();
+
 function makeParticleTexture(kind: string, externalUrl?: string): Texture {
     const scene = getScene();
 
@@ -54,7 +57,10 @@ function makeParticleTexture(kind: string, externalUrl?: string): Texture {
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        throw new Error('[env-particles] failed to get 2D canvas context');
+    }
     drawParticleShape(ctx, kind);
     const tex = new Texture(canvas.toDataURL(), scene, false, false);
     tex.hasAlpha = true;
@@ -492,7 +498,8 @@ export function createSplashEmitter(): void {
         // 在相机附近 80x80 范围内随机跳动
         const rx = cam.position.x + (Math.random() - 0.5) * 80;
         const rz = cam.position.z + (Math.random() - 0.5) * 80;
-        ps.emitter = new Vector3(rx, groundY + 0.1, rz);
+        _splashPos.set(rx, groundY + 0.1, rz);
+        ps.emitter = _splashPos;
 
         // 雨滴落水涟漪：水面开启时，溅射位置在水面范围内则概率触发
         if (envState.waterEnabled) {
