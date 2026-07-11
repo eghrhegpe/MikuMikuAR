@@ -1063,10 +1063,7 @@ function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3): v
 
 // ── WASM 辅助：把 Matrix 写回 Float32Array(16) ──
 export function _writeMatToBuffer(buf: Float32Array, m: Matrix): void {
-    const a = m.asArray();
-    for (let i = 0; i < 16; ++i) {
-        buf[i] = a[i];
-    }
+    buf.set(m.asArray());
 }
 
 // ── WASM 辅助：递归传播子骨骼 worldMatrix ──
