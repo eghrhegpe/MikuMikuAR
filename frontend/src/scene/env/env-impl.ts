@@ -413,7 +413,8 @@ function applyProceduralGround(ground: Mesh, state: EnvState): void {
     const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const tileSize = Math.max(4, Math.round(16 * state.groundGridSize));
 
     const c0 = `rgb(${Math.round(state.groundColor[0] * 255)},${Math.round(state.groundColor[1] * 255)},${Math.round(state.groundColor[2] * 255)})`;
@@ -506,7 +507,8 @@ function getGroundEdgeFadeTexture(fade: number, scene: Scene): Texture | null {
     const canvas = document.createElement('canvas');
     canvas.width = S;
     canvas.height = S;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
     // r0：保持完全不透明的内部半径占比（0..1）。fade 越大，r0 越小，淡出越广。
     const r0 = Math.max(0, 1 - fade);
     const grad = ctx.createRadialGradient(S / 2, S / 2, r0 * (S / 2), S / 2, S / 2, S / 2);
@@ -1029,6 +1031,11 @@ export function disposeEnvUpdateObserver(): void {
         scene.onBeforeRenderObservable.remove(_envUpdateObserver);
         _envUpdateObserver = null;
     }
+    // 释放边缘淡出纹理缓存
+    for (const tex of _edgeFadeTexCache.values()) {
+        tex.dispose();
+    }
+    _edgeFadeTexCache.clear();
     disposeGroundReflection(); // Phase B: 清理地面反射 RT
     resetUnderwaterState(scene, pipeline);
 }

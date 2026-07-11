@@ -54,7 +54,8 @@ export function generateTerrainHeightmapURL(opts: {
     const canvas = document.createElement('canvas');
     canvas.width = S;
     canvas.height = S;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
     const img = ctx.createImageData(S, S);
     const data = img.data;
     const octaves = Math.max(1, Math.min(8, Math.round(opts.octaves)));
@@ -176,6 +177,7 @@ function applyElevationColoring(ground: GroundMesh, state: EnvState): void {
     const minH = -half;
     const maxH = half;
     const range = maxH - minH;
+    if (range < 0.01) return;
 
     // 三段色：低谷（深绿）→ 山腰（棕）→ 峰顶（白）
     const low = new Color3(0.2, 0.35, 0.15);
