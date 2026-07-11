@@ -252,9 +252,10 @@ export function analyzeSkirt(
     // 连通分量分组
     const components = uf.components();
 
-    // 选出 Y 最低的连通分量作为裙边环
-    let hemComponent: number[] | null = null;
-    let hemAvgY = Infinity;
+    // P2a 防误判（穿裤模型）：先收集所有「底部」连通分量（Y 均值 ≤ 裙摆阈值且规模达标）。
+    // 真实裙摆底部为单个连续环（开放 hem）；裤子/连体衣底部为 ≥2 个分离环（左右腿洞）。
+    // 多环 → 判定非裙摆，安全跳过自动生成，避免对腿部误注入虚拟裙骨。
+    const bottomComponents: number[][] = [];
     for (const [, verts] of components) {
         if (verts.length < MIN_COMPONENT_SIZE) continue;
         let sumY = 0;
@@ -262,11 +263,17 @@ export function analyzeSkirt(
             sumY += posArr[v * 3 + 1];
         }
         const avgY = sumY / verts.length;
-        if (avgY < hemAvgY) {
-            hemAvgY = avgY;
-            hemComponent = verts;
+        if (avgY <= skirtYThreshold) {
+            bottomComponents.push(verts);
         }
     }
+    if (bottomComponents.length >= 2) {
+        // 多底部环 → 裤子/连体衣，非裙摆，安全跳过
+        return { ...empty, boundaryEdgeCount: boundaryEdges.length, hasExistingSkirtBones: false };
+    }
+    // 取唯一的底部连通分量作为裙边环（无底部环则进入 fallback）
+    const hemComponent: number[] | null = bottomComponents.length === 1 ? bottomComponents[0] : null;
+    const hemAvgY = hemComponent ? skirtYThreshold : Infinity;
 
     // --- 6. 确定裙摆区域顶点 ---
     let skirtVertices: number[];
@@ -309,11 +316,40 @@ export function analyzeSkirt(
         skirtVertices = Array.from(visited);
         method = 'boundary-edge';
     } else {
-        // fallback: Y 阈值法
+        // fallback: Y 阈值法（无清晰底部 boundary edge 时）
+        // P2a 防误判：仅取「外扩裙摆」区域，排除中央腿/裤柱。
+        // 计算该 Y 带内顶点在 XZ 平面的质心与最大径向距离，
+        // 仅保留径向距离 ≥ 35% 最大径向的顶点（裙摆为外扩锥，腿/裤为中央柱）。
+        let bcx = 0, bcz = 0, bandCount = 0;
+        for (let i = 0; i < vertexCount; i++) {
+            if (posArr[i * 3 + 1] <= skirtYThreshold) {
+                bcx += posArr[i * 3];
+                bcz += posArr[i * 3 + 2];
+                bandCount++;
+            }
+        }
+        if (bandCount > 0) {
+            bcx /= bandCount;
+            bcz /= bandCount;
+        }
+        let maxRadial = 1e-6;
+        for (let i = 0; i < vertexCount; i++) {
+            if (posArr[i * 3 + 1] <= skirtYThreshold) {
+                const dx = posArr[i * 3] - bcx;
+                const dz = posArr[i * 3 + 2] - bcz;
+                const r = Math.sqrt(dx * dx + dz * dz);
+                if (r > maxRadial) maxRadial = r;
+            }
+        }
+        const radialCut = maxRadial * 0.35;
         skirtVertices = [];
         for (let i = 0; i < vertexCount; i++) {
             if (posArr[i * 3 + 1] <= skirtYThreshold) {
-                skirtVertices.push(i);
+                const dx = posArr[i * 3] - bcx;
+                const dz = posArr[i * 3 + 2] - bcz;
+                if (Math.sqrt(dx * dx + dz * dz) >= radialCut) {
+                    skirtVertices.push(i);
+                }
             }
         }
         method = 'y-threshold';
@@ -358,6 +394,8 @@ export function analyzeSkirt(
 
     // --- 8. 每链分层 → 骨节 ---
     const chains: SkirtChain[] = [];
+    // P3d: 收集所有骨节（跨链），用于第 9 步全局顶点映射，消除链间缝隙
+    const allSegments: SkirtSegment[] = [];
 
     for (const group of chainGroups) {
         if (group.length === 0) {
@@ -392,50 +430,54 @@ export function analyzeSkirt(
                 sz / segVertices.length,
             ];
 
-            segments.push({
+            const seg: SkirtSegment = {
                 restPosition,
                 vertexIndices: [],
                 weights: [],
                 radius: collisionRadius,
-            });
-        }
-
-        // --- 9. 顶点→骨节映射（最近邻 + 距离衰减） ---
-        for (const v of group) {
-            const vx = posArr[v * 3];
-            const vy = posArr[v * 3 + 1];
-            const vz = posArr[v * 3 + 2];
-
-            // 找最近的 2 个骨节
-            const distances = segments.map((seg, idx) => {
-                const dx = vx - seg.restPosition[0];
-                const dy = vy - seg.restPosition[1];
-                const dz = vz - seg.restPosition[2];
-                return { idx, dist: Math.sqrt(dx * dx + dy * dy + dz * dz) };
-            });
-            distances.sort((a, b) => a.dist - b.dist);
-
-            // 取最近 2 个（或 1 个如果只有 1 个骨节）
-            const k = Math.min(2, distances.length);
-            let totalInvDist = 0;
-            const invDists: number[] = [];
-            for (let i = 0; i < k; i++) {
-                const d = Math.max(distances[i].dist, 1e-6);
-                const inv = 1 / d;
-                invDists.push(inv);
-                totalInvDist += inv;
-            }
-
-            for (let i = 0; i < k; i++) {
-                const segIdx = distances[i].idx;
-                const weight = invDists[i] / totalInvDist;
-                const seg = segments[segIdx];
-                seg.vertexIndices.push(v);
-                seg.weights.push(weight);
-            }
+            };
+            segments.push(seg);
+            allSegments.push(seg); // P3d: 跨链收集同一引用
         }
 
         chains.push({ segments });
+    }
+
+    // --- 9. 顶点→骨节映射（全局，跨链，P3d 链间缝隙修复）---
+    // 相比原「每链内映射」，全局映射让链边界处的顶点同时受相邻两条链的骨节影响，
+    // 消除相邻链各自独立位移导致的撕裂。每个顶点取全局最近的 2 个骨节，
+    // 按距离反比分配权重（和为 1）。
+    for (const v of skirtVertices) {
+        const vx = posArr[v * 3];
+        const vy = posArr[v * 3 + 1];
+        const vz = posArr[v * 3 + 2];
+
+        // 找最近的 2 个骨节（全局）
+        const distances = allSegments.map((seg, idx) => {
+            const dx = vx - seg.restPosition[0];
+            const dy = vy - seg.restPosition[1];
+            const dz = vz - seg.restPosition[2];
+            return { idx, dist: Math.sqrt(dx * dx + dy * dy + dz * dz) };
+        });
+        distances.sort((a, b) => a.dist - b.dist);
+
+        // 取最近 2 个（或 1 个如果只有 1 个骨节）
+        const k = Math.min(2, distances.length);
+        let totalInvDist = 0;
+        const invDists: number[] = [];
+        for (let i = 0; i < k; i++) {
+            const d = Math.max(distances[i].dist, 1e-6);
+            const inv = 1 / d;
+            invDists.push(inv);
+            totalInvDist += inv;
+        }
+
+        for (let i = 0; i < k; i++) {
+            const seg = allSegments[distances[i].idx];
+            const weight = invDists[i] / totalInvDist;
+            seg.vertexIndices.push(v);
+            seg.weights.push(weight);
+        }
     }
 
     const totalSegments = chains.reduce((sum, c) => sum + c.segments.length, 0);

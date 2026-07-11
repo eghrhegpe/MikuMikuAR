@@ -340,6 +340,7 @@ export interface EnvState {
     groundVisible: boolean;
     groundType: 'flat' | 'terrain'; // 几何类型：平面 / 程序化地形（原 heightmap）
     groundStyle: 'solid' | 'grid' | 'checker' | 'texture'; // 仅 flat 时有效（外观样式）
+    groundDecoStyle: 'none' | 'grid' | 'checker'; // 装饰叠加层，独立于基础色/贴图
     groundColor: [number, number, number];
     groundAlpha: number;
     groundTexture: string;

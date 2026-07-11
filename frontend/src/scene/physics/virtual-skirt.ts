@@ -89,6 +89,35 @@ export function resolveVirtualSkirtQuality(
     return quality;
 }
 
+// ============================================================================
+// P1: 坐标空间转换纯函数（WASM 物理世界为世界坐标，mesh 顶点 Buffer 为局部坐标）
+// ============================================================================
+
+/**
+ * 局部坐标 → 世界坐标（点变换，含平移）。
+ * 用于把 Phase 1 分析得到的局部 rest 顶点位置，转到 WASM 物理世界所用的世界空间。
+ */
+export function localToWorld(local: Vector3, world: Matrix, out: Vector3): Vector3 {
+    const m = world.m;
+    out.x = m[0] * local.x + m[4] * local.y + m[8] * local.z + m[12];
+    out.y = m[1] * local.x + m[5] * local.y + m[9] * local.z + m[13];
+    out.z = m[2] * local.x + m[6] * local.y + m[10] * local.z + m[14];
+    return out;
+}
+
+/**
+ * 世界位移向量 → 局部位移向量（仅取旋转/缩放分量，忽略平移）。
+ * 用于把物理模拟得到的世界位移，还原为应写回局部顶点 Buffer 的偏移量，
+ * 从而消除模型整体平移/旋转带来的偏差（裙摆随模型移动而不漂移）。
+ */
+export function worldDeltaToLocal(delta: Vector3, worldInv: Matrix, out: Vector3): Vector3 {
+    const m = worldInv.m;
+    out.x = m[0] * delta.x + m[4] * delta.y + m[8] * delta.z;
+    out.y = m[1] * delta.x + m[5] * delta.y + m[9] * delta.z;
+    out.z = m[2] * delta.x + m[6] * delta.y + m[10] * delta.z;
+    return out;
+}
+
 export const defaultVirtualSkirtConfig: VirtualSkirtConfig = {
     enabled: false,
     quality: 'auto',
@@ -150,6 +179,19 @@ export class VirtualSkirtController {
     private _effectiveSegments = 0;
     private _disposed = false;
 
+    /** P1: mesh 世界矩阵（每帧刷新，模型可平移/旋转） */
+    private readonly _meshWorld = Matrix.Identity();
+    /** P1: mesh 世界逆矩阵（世界位移 → 局部位移 转换用） */
+    private readonly _meshWorldInv = Matrix.Identity();
+    /** P1: 复用局部向量 */
+    private readonly _tmpLocal = new Vector3();
+    /** P1: 复用世界向量（兼作 localSway 输出） */
+    private readonly _tmpVec = new Vector3();
+    /** P1: 复用世界位移向量 */
+    private readonly _tmpDelta = new Vector3();
+    /** P3e: 缓存的腰骨对象引用（build() 解析，_update() 复用，避免每帧遍历查找） */
+    private _waistBone: { name: string; worldMatrix: Float32Array } | null = null;
+
     constructor(
         private readonly model: IMmdModel,
         private readonly scene: Scene,
@@ -206,91 +248,109 @@ export class VirtualSkirtController {
         if (!impl) return false;
         this.impl = impl;
 
-        // worldId：优先复用模型自身物理世界（可碰撞模型刚体），否则分配独立 world
-        const modelWorldId = (this.model as unknown as { _physicsModel?: { _worldId?: number } })._physicsModel?._worldId;
-        this.worldId =
-            typeof modelWorldId === 'number' ? modelWorldId : (physicsRuntime.nextWorldId++);
+        // P1: 捕获 mesh 世界矩阵（WASM 物理世界为世界坐标，骨节初始位置与写回均依赖它）
+        const mw0 = this.model.mesh.getWorldMatrix();
+        this._meshWorld.copyFrom(mw0);
+        mw0.invertToRef(this._meshWorldInv);
 
-        const wasmInstance = impl.wasmInstance;
+        // worldId：始终分配专用 world（不与 PMX 刚体同 world，避免坐标系/碰撞干扰；
+        // 也规避 _physicsModel 私有字段访问的脆弱性，见 ADR-084 §九 P1 修复）
+        this.worldId = physicsRuntime.nextWorldId++;
 
-        // --- 锚定体（Kinematic 盒子，跟随腰骨） ---
-        const waistName = WAIST_BONE_CANDIDATES.find(
-            (n) => this.model.runtimeBones?.some((b) => b.name === n),
-        );
-        const waistPos = waistName
-            ? getBoneWorldPosition(this.model, waistName)
-            : null;
-        const ax = waistPos?.x ?? 0;
-        const ay = waistPos?.y ?? 0.8;
-        const az = waistPos?.z ?? 0;
+        try {
+            const wasmInstance = impl.wasmInstance;
 
-        this.anchorShape = new PhysicsBoxShape(
-            impl,
-            new Vector3(ANCHOR_HALF_SIZE, ANCHOR_HALF_SIZE * 0.5, ANCHOR_HALF_SIZE),
-        );
-        this.anchorInfo = new RigidBodyConstructionInfo(wasmInstance);
-        this.anchorInfo.shape = this.anchorShape;
-        this.anchorInfo.motionType = MotionType.Kinematic;
-        this.anchorInfo.mass = 0;
-        this.anchorInfo.setInitialTransform(Matrix.Translation(ax, ay, az));
-        this.anchorRb = new RigidBody(impl, this.anchorInfo);
-        impl.addRigidBody(this.anchorRb, this.worldId);
+            // --- 锚定体（Kinematic 盒子，跟随腰骨） ---
+            const waistName = WAIST_BONE_CANDIDATES.find(
+                (n) => this.model.runtimeBones?.some((b) => b.name === n),
+            );
+            // P3e: 解析并缓存腰骨对象引用，_update() 每帧复用，避免重复遍历 runtimeBones
+            this._waistBone = waistName
+                ? (this.model.runtimeBones?.find((b) => b.name === waistName) ?? null)
+                : null;
+            const waistPos = waistName
+                ? getBoneWorldPosition(this.model, waistName)
+                : null;
+            const ax = waistPos?.x ?? 0;
+            const ay = waistPos?.y ?? 0.8;
+            const az = waistPos?.z ?? 0;
 
-        // --- 链身：Dynamic 球体 + 弹簧约束 ---
-        const radius =
-            this.config.radius > 0
-                ? this.config.radius
-                : (this.analysis.chains[0]?.segments[0]?.radius ?? 0.02);
+            this.anchorShape = new PhysicsBoxShape(
+                impl,
+                new Vector3(ANCHOR_HALF_SIZE, ANCHOR_HALF_SIZE * 0.5, ANCHOR_HALF_SIZE),
+            );
+            this.anchorInfo = new RigidBodyConstructionInfo(wasmInstance);
+            this.anchorInfo.shape = this.anchorShape;
+            this.anchorInfo.motionType = MotionType.Kinematic;
+            this.anchorInfo.mass = 0;
+            this.anchorInfo.setInitialTransform(Matrix.Translation(ax, ay, az));
+            this.anchorRb = new RigidBody(impl, this.anchorInfo);
+            impl.addRigidBody(this.anchorRb, this.worldId);
 
-        for (const chain of this.analysis.chains) {
-            let parent: RigidBody = this.anchorRb;
-            for (const seg of chain.segments) {
-                const shape = new PhysicsSphereShape(impl, seg.radius || radius);
-                const info = new RigidBodyConstructionInfo(wasmInstance);
-                info.shape = shape;
-                info.motionType = MotionType.Dynamic;
-                info.mass = this.config.mass;
-                info.linearDamping = 0.1;
-                info.angularDamping = 0.3;
-                info.friction = 0.5;
-                info.restitution = 0.0;
-                info.disableDeactivation = true;
-                info.setInitialTransform(
-                    Matrix.Translation(seg.restPosition[0], seg.restPosition[1], seg.restPosition[2]),
-                );
-                const rb = new RigidBody(impl, info);
-                impl.addRigidBody(rb, this.worldId);
-                this.segmentRbs.push(rb);
-                this.segmentInfos.push(info);
-                this.segmentShapes.push(shape);
+            // --- 链身：Dynamic 球体 + 弹簧约束 ---
+            const radius =
+                this.config.radius > 0
+                    ? this.config.radius
+                    : (this.analysis.chains[0]?.segments[0]?.radius ?? 0.02);
 
-                const spring = new Generic6DofSpringConstraint(
-                    impl,
-                    parent,
-                    rb,
-                    Matrix.Identity(),
-                    Matrix.Identity(),
-                    false,
-                );
-                spring.enableSpring(0, true);
-                spring.setStiffness(0, this.config.stiffness);
-                spring.enableSpring(1, true);
-                spring.setStiffness(1, this.config.stiffness);
-                spring.enableSpring(2, true);
-                spring.setStiffness(2, this.config.stiffness);
-                spring.enableSpring(3, true);
-                spring.setStiffness(3, this.config.stiffness * 0.6);
-                spring.enableSpring(4, true);
-                spring.setStiffness(4, this.config.stiffness * 0.6);
-                spring.enableSpring(5, false); // Z 角锁定防扭转
-                spring.setDamping(0, this.config.damping);
-                spring.setDamping(1, this.config.damping);
-                spring.setDamping(2, this.config.damping);
-                impl.addConstraint(spring, this.worldId, true);
-                this.constraints.push(spring);
+            for (const chain of this.analysis.chains) {
+                let parent: RigidBody = this.anchorRb;
+                for (const seg of chain.segments) {
+                    const shape = new PhysicsSphereShape(impl, seg.radius || radius);
+                    const info = new RigidBodyConstructionInfo(wasmInstance);
+                    info.shape = shape;
+                    info.motionType = MotionType.Dynamic;
+                    info.mass = this.config.mass;
+                    info.linearDamping = 0.1;
+                    info.angularDamping = 0.3;
+                    info.friction = 0.5;
+                    info.restitution = 0.0;
+                    info.disableDeactivation = true;
+                    // P1: 骨节初始位置必须从局部 rest 转换到世界空间（WASM 物理世界为世界坐标）
+                    this._tmpLocal.set(seg.restPosition[0], seg.restPosition[1], seg.restPosition[2]);
+                    localToWorld(this._tmpLocal, this._meshWorld, this._tmpVec);
+                    info.setInitialTransform(
+                        Matrix.Translation(this._tmpVec.x, this._tmpVec.y, this._tmpVec.z),
+                    );
+                    const rb = new RigidBody(impl, info);
+                    impl.addRigidBody(rb, this.worldId);
+                    this.segmentRbs.push(rb);
+                    this.segmentInfos.push(info);
+                    this.segmentShapes.push(shape);
 
-                parent = rb;
+                    const spring = new Generic6DofSpringConstraint(
+                        impl,
+                        parent,
+                        rb,
+                        Matrix.Identity(),
+                        Matrix.Identity(),
+                        false,
+                    );
+                    spring.enableSpring(0, true);
+                    spring.setStiffness(0, this.config.stiffness);
+                    spring.enableSpring(1, true);
+                    spring.setStiffness(1, this.config.stiffness);
+                    spring.enableSpring(2, true);
+                    spring.setStiffness(2, this.config.stiffness);
+                    spring.enableSpring(3, true);
+                    spring.setStiffness(3, this.config.stiffness * 0.6);
+                    spring.enableSpring(4, true);
+                    spring.setStiffness(4, this.config.stiffness * 0.6);
+                    spring.enableSpring(5, false); // Z 角锁定防扭转
+                    spring.setDamping(0, this.config.damping);
+                    spring.setDamping(1, this.config.damping);
+                    spring.setDamping(2, this.config.damping);
+                    impl.addConstraint(spring, this.worldId, true);
+                    this.constraints.push(spring);
+
+                    parent = rb;
+                }
             }
+        } catch (e) {
+            // P3a: 注入中途异常 → 释放已分配的刚体/约束/构造信息/形状，避免半初始化泄漏
+            console.warn('[virtual-skirt] build failed, disposing partial resources', e);
+            this.dispose();
+            return false;
         }
 
         // --- Phase 3 准备：rest pose 快照 ---
@@ -312,17 +372,16 @@ export class VirtualSkirtController {
         }
         if (!this.impl || !this.anchorRb || !this.analysis) return;
 
-        // 锚定体跟随腰骨（Kinematic）
-        const waistName = WAIST_BONE_CANDIDATES.find(
-            (n) => this.model.runtimeBones?.some((b) => b.name === n),
-        );
-        if (waistName) {
-            const m = (this.model as unknown as { runtimeBones: { name: string; worldMatrix: Float32Array }[] })
-                .runtimeBones.find((b) => b.name === waistName)?.worldMatrix;
-            if (m) {
-                this._tmpMatrix.fromArray(m);
-                this.anchorRb.setTransformMatrix(this._tmpMatrix);
-            }
+        // P1: 每帧刷新 mesh 世界矩阵（模型可能被平移/旋转），供写回坐标转换
+        const mw = this.model.mesh.getWorldMatrix();
+        this._meshWorld.copyFrom(mw);
+        mw.invertToRef(this._meshWorldInv);
+
+        // 锚定体跟随腰骨（Kinematic）— P3e: 复用 build() 缓存的腰骨引用，不再每帧遍历查找
+        const m = this._waistBone?.worldMatrix;
+        if (m) {
+            this._tmpMatrix.fromArray(m);
+            this.anchorRb.setTransformMatrix(this._tmpMatrix);
         }
 
         // Phase 5: 降频 — 锚定体每帧跟随腰部，顶点写回按 _throttleEvery 降频
@@ -352,20 +411,32 @@ export class VirtualSkirtController {
             for (const seg of chain.segments) {
                 const rb = this.segmentRbs[rbIdx++];
                 rb.getTransformMatrixToArray(tmp, 0);
-                const dx = tmp[12] - seg.restPosition[0];
-                const dy = tmp[13] - seg.restPosition[1];
-                const dz = tmp[14] - seg.restPosition[2];
+                // P1: 世界位移 = 刚体世界坐标 − (局部 rest 经 mesh 世界矩阵转出的世界 rest)
+                this._tmpLocal.set(seg.restPosition[0], seg.restPosition[1], seg.restPosition[2]);
+                localToWorld(this._tmpLocal, this._meshWorld, this._tmpVec);
+                this._tmpDelta.set(
+                    tmp[12] - this._tmpVec.x,
+                    tmp[13] - this._tmpVec.y,
+                    tmp[14] - this._tmpVec.z,
+                );
+                // 世界位移 → 局部位移（仅旋转/缩放分量，消除模型整体变换；裙摆随模型移动不漂移）
+                worldDeltaToLocal(this._tmpDelta, this._meshWorldInv, this._tmpVec);
+                const lsx = this._tmpVec.x;
+                const lsy = this._tmpVec.y;
+                const lsz = this._tmpVec.z;
                 for (let i = 0; i < seg.vertexIndices.length; i++) {
                     const v = seg.vertexIndices[i];
                     const w = seg.weights[i];
-                    buf[v * 3] += dx * w;
-                    buf[v * 3 + 1] += dy * w;
-                    buf[v * 3 + 2] += dz * w;
+                    buf[v * 3] += lsx * w;
+                    buf[v * 3 + 1] += lsy * w;
+                    buf[v * 3 + 2] += lsz * w;
                 }
             }
         }
 
         this.model.mesh.updateVerticesData(VertexBuffer.PositionKind, buf, false, false);
+        // P3f: 顶点位移后刷新包围盒，保证视锥剔除 / 拾取在裙摆飘动后仍正确
+        this.model.mesh.refreshBoundingInfo?.();
     }
 
     /**
@@ -409,6 +480,7 @@ export class VirtualSkirtController {
         this.analysis = null;
         this.restPositions = null;
         this._workBuf = null;
+        this._waistBone = null;
         this._frame = 0;
     }
 

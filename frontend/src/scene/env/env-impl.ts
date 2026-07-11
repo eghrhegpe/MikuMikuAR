@@ -442,9 +442,11 @@ const groundReflection = new PlanarReflection({
 registerReflectionSurface('ground', groundReflection, () => groundReflection.update(envState, getScene()));
 
 /**
- * 统一纹理生成器：根据 groundStyle 在 canvas 上绘制图案并返回 Texture。
- * solid → 纯色填充；grid  → 纯色底 + 网格线；
- * checker → 棋盘格/点阵/条纹/径向图案（受 groundPattern 控制）。
+ * 统一纹理生成器：按层绘制 canvas 并返回 Texture。
+ * 分层逻辑：
+ *   1. 基础层：地面色填充（始终绘制）
+ *   2. 装饰层：网格线或棋盘格（由 groundDecoStyle 控制）
+ * 贴图层由外部单独加载（不经过 canvas），可与装饰层叠加。
  * 返回的 Texture 可直接设为 StandardMaterial.diffuseTexture。
  */
 function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
@@ -455,88 +457,77 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
     // 每次调用返回新 Texture，由 _updateGroundTexture 负责 dispose 旧贴图。
     const size = 512;
     const draw = (ctx: CanvasRenderingContext2D, s: number) => {
-        switch (state.groundStyle) {
-            case 'solid':
-                ctx.fillStyle = c0;
-                ctx.fillRect(0, 0, s, s);
-                break;
-            case 'grid': {
-                const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
-                ctx.fillStyle = c0;
-                ctx.fillRect(0, 0, s, s);
-                ctx.strokeStyle = c1;
-                ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
-                for (let x = tileSize; x < s; x += tileSize) {
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, s);
-                    ctx.stroke();
-                }
-                for (let y = tileSize; y < s; y += tileSize) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(s, y);
-                    ctx.stroke();
-                }
-                break;
+        // 第 1 层：基础色填充
+        ctx.fillStyle = c0;
+        ctx.fillRect(0, 0, s, s);
+
+        // 第 2 层：装饰叠加（网格/棋盘格）
+        if (state.groundDecoStyle === 'grid') {
+            const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
+            ctx.strokeStyle = c1;
+            ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
+            for (let x = tileSize; x < s; x += tileSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, s);
+                ctx.stroke();
             }
-            case 'checker': {
-                const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
-                switch (state.groundPattern) {
-                    case 'checker':
-                        for (let y = 0; y < s; y += tileSize) {
-                            for (let x = 0; x < s; x += tileSize) {
-                                const isEven = (x / tileSize + y / tileSize) % 2 === 0;
-                                ctx.fillStyle = isEven ? c0 : c1;
-                                ctx.fillRect(x, y, tileSize, tileSize);
-                            }
-                        }
-                        break;
-                    case 'dots':
-                        ctx.fillStyle = c0;
-                        ctx.fillRect(0, 0, s, s);
-                        ctx.fillStyle = c1;
-                        for (let y = 0; y < s; y += tileSize) {
-                            for (let x = 0; x < s; x += tileSize) {
-                                ctx.beginPath();
-                                ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
-                                ctx.fill();
-                            }
-                        }
-                        break;
-                    case 'stripes':
+            for (let y = tileSize; y < s; y += tileSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(s, y);
+                ctx.stroke();
+            }
+        } else if (state.groundDecoStyle === 'checker') {
+            const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
+            switch (state.groundPattern) {
+                case 'checker':
+                    for (let y = 0; y < s; y += tileSize) {
                         for (let x = 0; x < s; x += tileSize) {
-                            const isEven = (x / tileSize) % 2 === 0;
+                            const isEven = (x / tileSize + y / tileSize) % 2 === 0;
                             ctx.fillStyle = isEven ? c0 : c1;
-                            ctx.fillRect(x, 0, tileSize, s);
+                            ctx.fillRect(x, y, tileSize, tileSize);
                         }
-                        break;
-                    case 'radial': {
-                        const grad = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-                        grad.addColorStop(0, c0);
-                        grad.addColorStop(1, c1);
-                        ctx.fillStyle = grad;
-                        ctx.fillRect(0, 0, s, s);
-                        break;
                     }
-                    default:
-                        // 未知 pattern 时兜底绘制标准棋盘格
-                        for (let y = 0; y < s; y += tileSize) {
-                            for (let x = 0; x < s; x += tileSize) {
-                                const isEven = (x / tileSize + y / tileSize) % 2 === 0;
-                                ctx.fillStyle = isEven ? c0 : c1;
-                                ctx.fillRect(x, y, tileSize, tileSize);
-                            }
+                    break;
+                case 'dots':
+                    ctx.fillStyle = c0;
+                    ctx.fillRect(0, 0, s, s);
+                    ctx.fillStyle = c1;
+                    for (let y = 0; y < s; y += tileSize) {
+                        for (let x = 0; x < s; x += tileSize) {
+                            ctx.beginPath();
+                            ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
+                            ctx.fill();
                         }
-                        break;
+                    }
+                    break;
+                case 'stripes':
+                    for (let x = 0; x < s; x += tileSize) {
+                        const isEven = (x / tileSize) % 2 === 0;
+                        ctx.fillStyle = isEven ? c0 : c1;
+                        ctx.fillRect(x, 0, tileSize, s);
+                    }
+                    break;
+                case 'radial': {
+                    const grad = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+                    grad.addColorStop(0, c0);
+                    grad.addColorStop(1, c1);
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, s, s);
+                    break;
                 }
-                break;
+                default:
+                    // 未知 pattern 时兜底绘制标准棋盘格
+                    for (let y = 0; y < s; y += tileSize) {
+                        for (let x = 0; x < s; x += tileSize) {
+                            const isEven = (x / tileSize + y / tileSize) % 2 === 0;
+                            ctx.fillStyle = isEven ? c0 : c1;
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                        }
+                    }
+                    break;
             }
-            default:
-                // 未知 groundStyle 时兜底绘制纯色
-                ctx.fillStyle = c0;
-                ctx.fillRect(0, 0, s, s);
-                break;
         }
     };
 

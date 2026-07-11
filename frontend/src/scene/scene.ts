@@ -208,6 +208,13 @@ export async function initScene(): Promise<void> {
             .then(({ detachModelAccessories }) => detachModelAccessories(id))
             .catch(() => {});
 
+        // ADR-084 P3b: 模型卸载时释放该模型的虚拟裙骨控制器，避免 dispose 泄漏。
+        // 经动态 import（motion-cloth-levels 内部仍以 await import 加载 virtual-skirt），
+        // 不破坏 ADR-081/084 的 virtual-skirt 非 eager 导入约束。
+        import('../menus/motion-cloth-levels')
+            .then(({ disposeVirtualSkirtForModel }) => disposeVirtualSkirtForModel(id))
+            .catch(() => {});
+
         const inst = modelRegistry.get(id);
         if (inst.mmdModel && mmdRuntime) {
             try {

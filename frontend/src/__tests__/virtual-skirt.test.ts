@@ -1,8 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
-import { VirtualSkirtController, defaultVirtualSkirtConfig, resolveVirtualSkirtQuality, QUALITY_PRESETS, type VirtualSkirtConfig } from '../scene/physics/virtual-skirt';
+import {
+    VirtualSkirtController,
+    defaultVirtualSkirtConfig,
+    resolveVirtualSkirtQuality,
+    QUALITY_PRESETS,
+    localToWorld,
+    worldDeltaToLocal,
+    type VirtualSkirtConfig,
+} from '../scene/physics/virtual-skirt';
 
 // ============================================================================
 // Mock babylon-mmd 物理模块（无需 WASM 即可验证编排逻辑）
@@ -10,7 +19,9 @@ import { VirtualSkirtController, defaultVirtualSkirtConfig, resolveVirtualSkirtQ
 
 const hoisted = vi.hoisted(() => {
     const callOrder: string[] = [];
-    return { callOrder };
+    // P1: 捕获 RigidBodyConstructionInfo.setInitialTransform 传入的平移分量（m[12..14]）
+    const initialTransforms: number[][] = [];
+    return { callOrder, initialTransforms };
 });
 
 vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl', () => ({
@@ -30,7 +41,9 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBody', () => ({
         dispose = () => {
             hoisted.callOrder.push('rb.dispose');
         };
-        setTransformMatrix = vi.fn();
+        setTransformMatrix = vi.fn(() => {
+            hoisted.callOrder.push('rb.setTransformMatrix');
+        });
         getTransformMatrixToArray = (arr: Float32Array, offset = 0) => {
             arr[offset + 12] = 0.1;
             arr[offset + 13] = 0.2;
@@ -53,7 +66,9 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBodyConstructionInf
         dispose = () => {
             hoisted.callOrder.push('info.dispose');
         };
-        setInitialTransform = vi.fn();
+        setInitialTransform = (m: { m: number[] }) => {
+            hoisted.initialTransforms.push([m.m[12], m.m[13], m.m[14]]);
+        };
     },
 }));
 
@@ -130,6 +145,7 @@ function makeModel(
     mesh: MeshData,
     bones: { name: string; worldMatrix: Float32Array }[],
     withPhysicsWorld = true,
+    meshWorldMatrix?: Matrix,
 ): IMmdModel {
     const updateVerticesData = vi.fn();
     const model: Record<string, unknown> = {
@@ -137,6 +153,7 @@ function makeModel(
             getVerticesData: () => mesh.positions,
             getIndices: () => mesh.indices,
             updateVerticesData,
+            getWorldMatrix: () => meshWorldMatrix ?? Matrix.Identity(),
         },
         runtimeBones: bones,
     };
@@ -192,6 +209,7 @@ function testConfig(overrides: Partial<VirtualSkirtConfig> = {}): VirtualSkirtCo
 describe('VirtualSkirtController — Phase 2 注入', () => {
     beforeEach(() => {
         hoisted.callOrder.length = 0;
+        hoisted.initialTransforms.length = 0;
     });
 
     it('build() 成功注入：锚定体 + 每骨节一个刚体 + 每骨节一个约束', () => {
@@ -212,9 +230,9 @@ describe('VirtualSkirtController — Phase 2 注入', () => {
         expect(impl.addRigidBody).toHaveBeenCalledTimes(1 + ctrl.segmentCount);
         // addConstraint: N 骨节
         expect(impl.addConstraint).toHaveBeenCalledTimes(ctrl.segmentCount);
-        // worldId 来自模型自身物理世界（=3）
-        // 通过检验 nextWorldId 未被递增（仍为 5）间接确认
-        expect(physics.nextWorldId).toBe(5);
+        // worldId：P1 改为始终分配专用 world（不与 PMX 刚体同 world）
+        // 通过检验 nextWorldId 被递增（5 → 6）确认
+        expect(physics.nextWorldId).toBe(6);
     });
 
     it('模型无物理世界时分配独立 worldId（nextWorldId 递增）', () => {
@@ -279,6 +297,7 @@ describe('VirtualSkirtController — Phase 2 注入', () => {
 describe('VirtualSkirtController — dispose 释放链路', () => {
     beforeEach(() => {
         hoisted.callOrder.length = 0;
+        hoisted.initialTransforms.length = 0;
     });
 
     it('dispose 顺序：constraint → rb → info → shape', () => {
@@ -339,6 +358,7 @@ describe('VirtualSkirtController — dispose 释放链路', () => {
 describe('VirtualSkirtController — 每帧更新', () => {
     beforeEach(() => {
         hoisted.callOrder.length = 0;
+        hoisted.initialTransforms.length = 0;
     });
 
     it('每帧回调：锚定体跟随腰骨 + 顶点回写', () => {
@@ -368,6 +388,7 @@ describe('VirtualSkirtController — 每帧更新', () => {
 describe('VirtualSkirtController — Phase 5 性能/LOD/降频', () => {
     beforeEach(() => {
         hoisted.callOrder.length = 0;
+        hoisted.initialTransforms.length = 0;
     });
 
     it('resolveVirtualSkirtQuality: auto 桌面→high / Android→low, 固定档直透', () => {
@@ -466,5 +487,174 @@ describe('VirtualSkirtController — Phase 5 性能/LOD/降频', () => {
         for (let i = 0; i < 6; i++) getCbH()();
         const meshH = modelH.mesh as unknown as { updateVerticesData: ReturnType<typeof vi.fn> };
         expect(meshH.updateVerticesData.mock.calls.length).toBe(6);
+    });
+});
+
+describe('坐标转换纯函数 (P1)', () => {
+    it('localToWorld: 含平移的 mesh 世界矩阵 → 世界坐标', () => {
+        const world = Matrix.Translation(10, 0, 0);
+        const out = localToWorld(new Vector3(1, 2, 3), world, new Vector3());
+        expect(out.x).toBeCloseTo(11, 5);
+        expect(out.y).toBeCloseTo(2, 5);
+        expect(out.z).toBeCloseTo(3, 5);
+    });
+
+    it('worldDeltaToLocal: 旋转矩阵逆 → 还原位移方向', () => {
+        const rot = Matrix.RotationY(Math.PI / 2);
+        const inv = rot.clone();
+        inv.invert();
+        const v = new Vector3(1, 2, 3);
+        const world = localToWorld(v, rot, new Vector3()); // = rot * v（平移为 0）
+        const back = worldDeltaToLocal(world, inv, new Vector3());
+        expect(back.x).toBeCloseTo(v.x, 5);
+        expect(back.y).toBeCloseTo(v.y, 5);
+        expect(back.z).toBeCloseTo(v.z, 5);
+    });
+
+    it('worldDeltaToLocal: 纯平移 mesh → 位移方向不变（平移被忽略）', () => {
+        const inv = Matrix.Translation(10, 0, 0);
+        inv.invert(); // 仅平移 (-10,0,0)
+        const d = worldDeltaToLocal(new Vector3(5, 6, 7), inv, new Vector3());
+        expect(d.x).toBeCloseTo(5, 5);
+        expect(d.y).toBeCloseTo(6, 5);
+        expect(d.z).toBeCloseTo(7, 5);
+    });
+
+    it('端到端: 平移 mesh 下，写回局部偏移不含模型平移（裙摆随模型移动不漂移）', () => {
+        // 局部 rest (1,0,0)，mesh 平移 (10,0,0)；物理使骨节世界位 = (10.5,0,0)（仅 +0.5 偏差）
+        // 期望局部偏移 = -0.5（模型平移 +10 被抵消，仅保留物理偏差）
+        const world = Matrix.Translation(10, 0, 0);
+        const inv = world.clone();
+        inv.invert();
+        const worldRest = localToWorld(new Vector3(1, 0, 0), world, new Vector3()); // (11,0,0)
+        const worldCurrent = new Vector3(10.5, 0, 0);
+        const worldDelta = worldCurrent.subtract(worldRest); // (-0.5,0,0)
+        const localSway = worldDeltaToLocal(worldDelta, inv, new Vector3()); // (-0.5,0,0)
+        expect(localSway.x).toBeCloseTo(-0.5, 5);
+    });
+});
+
+describe('VirtualSkirtController — P1 坐标空间一致性', () => {
+    beforeEach(() => {
+        hoisted.callOrder.length = 0;
+        hoisted.initialTransforms.length = 0;
+    });
+
+    it('骨节初始位置在世界空间（含 mesh 平移），而非局部原点', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
+        const waistMatrix = new Float32Array(16); // 全零 → 腰骨世界位 (0,0,0)
+        const model = makeModel(
+            mesh,
+            [{ name: 'Waist', worldMatrix: waistMatrix }],
+            true,
+            Matrix.Translation(10, 0, 0), // mesh 整体平移 +10
+        );
+        const { physics } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene } = makeScene();
+
+        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig());
+        const ok = ctrl.build();
+        expect(ok).toBe(true);
+
+        // 所有骨节 transform 的 x 应被 mesh 平移 +10 推到 [9,11]（局部 x∈[-1,1]）
+        const segTransforms = hoisted.initialTransforms.filter((t) => t[0] > 5);
+        expect(segTransforms.length).toBe(ctrl.segmentCount);
+        // 锚定体在世界原点附近（腰骨世界位 (0,0,0)），其 x 不被 mesh 平移影响：
+        // 验证锚定体（世界）与骨节（世界）处于同一坐标系
+        const anchorTransforms = hoisted.initialTransforms.filter((t) => t[0] <= 5);
+        expect(anchorTransforms.length).toBe(1);
+        expect(anchorTransforms[0][0]).toBeCloseTo(0, 5);
+        expect(anchorTransforms[0][1]).toBeCloseTo(0, 5);
+        expect(anchorTransforms[0][2]).toBeCloseTo(0, 5);
+    });
+
+    it('每帧写回在平移 mesh 下不抛错，且顶点 Buffer 被更新', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
+        const waistMatrix = new Float32Array(16);
+        waistMatrix[0] = 1; waistMatrix[5] = 1; waistMatrix[10] = 1; waistMatrix[15] = 1;
+        const model = makeModel(
+            mesh,
+            [{ name: 'Waist', worldMatrix: waistMatrix }],
+            true,
+            Matrix.Translation(3, 0, -2),
+        );
+        const { physics } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene, getCb } = makeScene();
+
+        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig());
+        ctrl.build();
+        expect(() => getCb()()).not.toThrow();
+
+        const meshAny = model.mesh as unknown as { updateVerticesData: ReturnType<typeof vi.fn> };
+        expect(meshAny.updateVerticesData).toHaveBeenCalled();
+    });
+});
+
+describe('VirtualSkirtController — P3a build 异常清理', () => {
+    beforeEach(() => {
+        hoisted.callOrder.length = 0;
+        hoisted.initialTransforms.length = 0;
+    });
+
+    it('注入中途异常 → 部分资源被 dispose 且无泄漏, build 返回 false', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
+        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: new Float32Array(16) }]);
+        const { physics, impl } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene } = makeScene();
+
+        // 锚定体 addRigidBody 成功（第 1 次），第一个骨节 addRigidBody 抛异常（第 2 次）
+        let calls = 0;
+        impl.addRigidBody.mockImplementation(() => {
+            calls++;
+            if (calls >= 2) throw new Error('boom');
+            return true;
+        });
+
+        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig());
+        const ok = ctrl.build();
+
+        expect(ok).toBe(false);
+        expect(ctrl.segmentCount).toBe(0);
+        expect(ctrl.constraintCount).toBe(0);
+        // 锚定体（唯一成功加入的刚体）被 remove + dispose，无悬空资源
+        expect(impl.removeRigidBody).toHaveBeenCalledTimes(1);
+        expect(hoisted.callOrder.filter((c) => c === 'rb.dispose').length).toBe(1);
+        expect(hoisted.callOrder.filter((c) => c === 'info.dispose').length).toBe(1);
+        expect(hoisted.callOrder.filter((c) => c === 'shape.dispose').length).toBe(1);
+        // 清理后再次 build 直接返回 false（已 dispose，避免重复分配）
+        expect(ctrl.build()).toBe(false);
+    });
+});
+
+describe('VirtualSkirtController — P3e 腰骨缓存', () => {
+    beforeEach(() => {
+        hoisted.callOrder.length = 0;
+        hoisted.initialTransforms.length = 0;
+    });
+
+    it('build 后缓存腰骨, runtimeBones 被清空仍跟随（不每帧重查）', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
+        const waistMatrix = new Float32Array(16);
+        waistMatrix[0] = 1; waistMatrix[5] = 1; waistMatrix[10] = 1; waistMatrix[15] = 1;
+        waistMatrix[12] = 0.5; waistMatrix[13] = 1.0; waistMatrix[14] = -0.2;
+        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: waistMatrix }]);
+        const { physics } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene, getCb } = makeScene();
+
+        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig());
+        ctrl.build();
+
+        // 模拟运行时骨骼表被清空（如模型重载），但缓存仍持有原腰骨引用
+        (model as unknown as { runtimeBones: unknown[] }).runtimeBones = [];
+
+        hoisted.callOrder.length = 0; // 仅统计本次 _update 的行为
+        getCb()();
+
+        // 锚定体仍跟随原腰骨（缓存命中）→ setTransformMatrix 被调用
+        expect(hoisted.callOrder).toContain('rb.setTransformMatrix');
     });
 });

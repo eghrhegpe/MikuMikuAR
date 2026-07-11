@@ -55,8 +55,7 @@ function createOpenBottomCylinder(
 }
 
 /** 创建全封闭球体（合并极点，无 boundary edges，用于 fallback 测试） */
-function createSphere(radius: number, segs: number): MeshData {
-    const positions: number[] = [];
+function createSphere(radius: number, segs: number): MeshData {    const positions: number[] = [];
     const indices: number[] = [];
 
     // 北极顶点
@@ -110,6 +109,42 @@ function createSphere(radius: number, segs: number): MeshData {
     return { positions: new Float32Array(positions), indices: new Uint32Array(indices) };
 }
 
+/**
+ * 创建「裤子」mesh：两条相互分离、底部均开口的圆柱（左右腿），
+ * 用于验证 P2a 防误判（多底环 → 非裙摆，安全跳过）。
+ */
+function createPantsMesh(
+    radius: number,
+    height: number,
+    radialSegs: number,
+    heightSegs: number,
+    legGap: number,
+): MeshData {
+    const left = createOpenBottomCylinder(radius, height, radialSegs, heightSegs);
+    const right = createOpenBottomCylinder(radius, height, radialSegs, heightSegs);
+
+    // 右腿整体沿 +X 平移 legGap，与左腿形成两个分离的底部环
+    const rightPositions = new Float32Array(right.positions.length);
+    for (let i = 0; i < right.positions.length; i += 3) {
+        rightPositions[i] = right.positions[i] + legGap;
+        rightPositions[i + 1] = right.positions[i + 1];
+        rightPositions[i + 2] = right.positions[i + 2];
+    }
+
+    const leftCount = left.positions.length / 3;
+    const positions = new Float32Array(left.positions.length + rightPositions.length);
+    positions.set(left.positions, 0);
+    positions.set(rightPositions, left.positions.length);
+
+    const indices = new Uint32Array(left.indices.length + right.indices.length);
+    indices.set(left.indices, 0);
+    for (let i = 0; i < right.indices.length; i++) {
+        indices[left.indices.length + i] = right.indices[i] + leftCount;
+    }
+
+    return { positions, indices };
+}
+
 // ============================================================================
 // 测试
 // ============================================================================
@@ -119,6 +154,31 @@ const defaultOpts: SkirtAnalyzerOptions = {
     segmentsPerChain: 4,
     skirtYRatio: 0.5,
 };
+
+describe('skirt-analyzer — P2a 防穿裤误判', () => {
+    it('裤子 mesh（双分离底环）→ 判定非裙摆，返回空链', () => {
+        const mesh = createPantsMesh(0.15, 1.0, 12, 6, 0.4);
+        const result = analyzeSkirt(mesh.positions, mesh.indices, defaultOpts);
+
+        // 两个分离的底部环 → 多底环守卫触发，安全跳过
+        expect(result.chains.length).toBe(0);
+        expect(result.totalSegments).toBe(0);
+        expect(result.hasExistingSkirtBones).toBe(false);
+    });
+
+    it('裤子 mesh 不应误注入：与等效单裙摆对比', () => {
+        // 左腿单独作为「单底环」应被识别为裙摆（用于对照说明：多环才是裤子信号）
+        const singleLeg = createOpenBottomCylinder(0.15, 1.0, 12, 6);
+        const pants = createPantsMesh(0.15, 1.0, 12, 6, 0.4);
+
+        const singleResult = analyzeSkirt(singleLeg.positions, singleLeg.indices, defaultOpts);
+        const pantsResult = analyzeSkirt(pants.positions, pants.indices, defaultOpts);
+
+        // 单腿（单底环）生成链；裤子（双底环）跳过
+        expect(singleResult.totalSegments).toBeGreaterThan(0);
+        expect(pantsResult.totalSegments).toBe(0);
+    });
+});
 
 describe('skirt-analyzer — 基础功能', () => {
     it('开口圆柱裙: 检测到 boundary edges', () => {

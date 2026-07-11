@@ -133,6 +133,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         groundVisible: true,
         groundType: 'flat',
         groundStyle: 'solid',
+        groundDecoStyle: 'none',
         groundColor: [0.2, 0.8, 0.2],
         groundAlpha: 1,
         groundTexture: '',
