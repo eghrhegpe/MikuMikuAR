@@ -2,6 +2,7 @@
 // Extracted from config.ts — pure type definitions only, zero runtime code.
 
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
+import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { UIState as GoUIState } from './wails-bindings';
@@ -429,6 +430,13 @@ export interface EnvState {
 // ======== Miscellaneous Types ========
 
 export type MmdRuntimeType = 'wasm' | 'js';
+
+// babylon-mmd 的 IMmdRuntimeBone 接口未声明 worldMatrix 和 updateWorldMatrix，
+// 但 WASM 与 JS 运行时在运行时均提供这些成员。
+export interface MmdRuntimeBoneExtended extends IMmdRuntimeBone {
+    worldMatrix: Float32Array;
+    updateWorldMatrix(updateAbsoluteTransform: boolean, updateLocalTransform: boolean): void;
+}
 
 export type PendingVmd = { data: ArrayBuffer; name: string };
 
