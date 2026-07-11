@@ -389,25 +389,60 @@ export function applySky(state: EnvState): void {
 let _currentGroundKey: string = '';
 /** 地形（heightmap）就绪后回调，供 model-loader 重新贴地所有模型。 */
 let _onTerrainReady: (() => void) | null = null;
+/** 纹理滚动累计偏移量（每帧由 observer 累加，取模 1.0）。 */
+let _groundScrollU = 0;
+let _groundScrollV = 0;
 
-function applyCheckerGround(ground: Mesh, state: EnvState): void {
+function applyProceduralGround(ground: Mesh, state: EnvState): void {
     const scene = getScene();
     const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
     const ctx = canvas.getContext('2d')!;
     const tileSize = Math.max(4, Math.round(16 * state.groundGridSize));
-    for (let y = 0; y < 128; y += tileSize) {
-        for (let x = 0; x < 128; x += tileSize) {
-            const isWhite = (x / tileSize + y / tileSize) % 2 === 0;
-            const color = isWhite ? state.groundColor : state.groundLineColor;
-            const r = Math.round(color[0] * 255);
-            const g = Math.round(color[1] * 255);
-            const b = Math.round(color[2] * 255);
-            ctx.fillStyle = `rgb(${r},${g},${b})`;
-            ctx.fillRect(x, y, tileSize, tileSize);
+
+    const c0 = `rgb(${Math.round(state.groundColor[0] * 255)},${Math.round(state.groundColor[1] * 255)},${Math.round(state.groundColor[2] * 255)})`;
+    const c1 = `rgb(${Math.round(state.groundLineColor[0] * 255)},${Math.round(state.groundLineColor[1] * 255)},${Math.round(state.groundLineColor[2] * 255)})`;
+
+    switch (state.groundPattern) {
+        case 'checker':
+            for (let y = 0; y < 128; y += tileSize) {
+                for (let x = 0; x < 128; x += tileSize) {
+                    const isWhite = (x / tileSize + y / tileSize) % 2 === 0;
+                    ctx.fillStyle = isWhite ? c0 : c1;
+                    ctx.fillRect(x, y, tileSize, tileSize);
+                }
+            }
+            break;
+        case 'dots':
+            ctx.fillStyle = c0;
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.fillStyle = c1;
+            for (let y = 0; y < 128; y += tileSize) {
+                for (let x = 0; x < 128; x += tileSize) {
+                    ctx.beginPath();
+                    ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            break;
+        case 'stripes':
+            for (let x = 0; x < 128; x += tileSize) {
+                const isEven = (x / tileSize) % 2 === 0;
+                ctx.fillStyle = isEven ? c0 : c1;
+                ctx.fillRect(x, 0, tileSize, 128);
+            }
+            break;
+        case 'radial': {
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, c0);
+            grad.addColorStop(1, c1);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+            break;
         }
     }
+
     const tex = new Texture(canvas.toDataURL(), scene);
     const mat = new StandardMaterial('envGroundChecker', scene);
     mat.diffuseTexture = tex;
@@ -481,6 +516,29 @@ function applyGroundEdgeFade(
     mat.opacityTexture = getGroundEdgeFadeTexture(fade, scene);
 }
 
+/**
+ * 同步地面纹理的 uOffset/vOffset。
+ * 组合「纹理旋转基准偏移 + 滚动累计偏移」，两者叠加后取模 1.0。
+ * 仅适用于有 diffuseTexture 的 StandardMaterial（checker/texture 模式）。
+ */
+function _syncGroundTextureOffset(mat: StandardMaterial, state: EnvState): void {
+    const tex = mat.diffuseTexture as Texture | null;
+    if (!tex) return;
+    const angle = (state.groundTextureRotation * Math.PI) / 180;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const baseU = 0.5 * (1 - cos) + 0.5 * sin;
+    const baseV = 0.5 * (1 - cos) - 0.5 * sin;
+    let u = baseU + _groundScrollU;
+    let v = baseV + _groundScrollV;
+    u = u - Math.floor(u);
+    v = v - Math.floor(v);
+    if (u < 0) u += 1;
+    if (v < 0) v += 1;
+    tex.uOffset = u;
+    tex.vOffset = v;
+}
+
 export function applyGround(state: EnvState): void {
     const scene = getScene();
 
@@ -489,10 +547,12 @@ export function applyGround(state: EnvState): void {
             ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}`
             : state.groundTextureEnabled && state.groundTexture
               ? `texture:${state.groundTexture}:${state.groundSize}`
-              : `mode:${state.groundMode}:${state.groundSize}`;
+              : state.groundMode === 'checker'
+                ? `checker:${state.groundPattern}:${state.groundSize}`
+                : `mode:${state.groundMode}:${state.groundSize}`;
     const keyChanged = typeKey !== _currentGroundKey;
 
-    // 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放
+    // 地面已存在、可见、类型未变 → 原地更新颜色/透明度/纹理缩放/旋转/坡度
     if (_envSys.ground.mesh && state.groundVisible && !keyChanged) {
         const mat = _envSys.ground.mesh.material;
         if (mat) {
@@ -519,14 +579,7 @@ export function applyGround(state: EnvState): void {
                     (mat.diffuseTexture as Texture).uScale = (
                         mat.diffuseTexture as Texture
                     ).vScale = 1 / Math.max(0.1, state.groundTextureScale);
-                    // Update rotation
-                    if (state.groundTextureRotation !== 0) {
-                        const angle = (state.groundTextureRotation * Math.PI) / 180;
-                        const cos = Math.cos(angle);
-                        const sin = Math.sin(angle);
-                        (mat.diffuseTexture as Texture).uOffset = 0.5 * (1 - cos) + 0.5 * sin;
-                        (mat.diffuseTexture as Texture).vOffset = 0.5 * (1 - cos) - 0.5 * sin;
-                    }
+                    _syncGroundTextureOffset(mat, state);
                 }
             }
             // 边缘淡出：随滑块实时更新 opacityTexture（fade<=0 时移除）
@@ -534,6 +587,11 @@ export function applyGround(state: EnvState): void {
         }
         // 更新地面高度
         _envSys.ground.mesh.position.y = state.groundLevel;
+        // 更新坡度（heightmap 模式禁用，保持 0）
+        if (state.groundMode !== 'heightmap') {
+            _envSys.ground.mesh.rotation.x = (state.groundPitch * Math.PI) / 180;
+            _envSys.ground.mesh.rotation.z = (state.groundRoll * Math.PI) / 180;
+        }
         return;
     }
 
@@ -586,27 +644,18 @@ export function applyGround(state: EnvState): void {
         mat.backFaceCulling = false;
         ground.material = mat;
     } else if (state.groundMode === 'checker') {
-        applyCheckerGround(ground, state);
+        applyProceduralGround(ground, state);
     } else if (state.groundTextureEnabled && state.groundTexture) {
         // 纹理地面：subdivisions 保持 2（性能），纹理重复由 uScale/vScale 控制
         const tex = new Texture(resolveStaticAsset(state.groundTexture), scene);
         tex.uScale = tex.vScale = 1 / Math.max(0.1, state.groundTextureScale);
-        // Apply texture rotation via UV manipulation
-        if (state.groundTextureRotation !== 0) {
-            const angle = (state.groundTextureRotation * Math.PI) / 180;
-            // Simple rotation by adjusting UV offsets (centered rotation)
-            const cos = Math.cos(angle);
-            const sin = Math.sin(angle);
-            // Rotation matrix applied to UV
-            tex.uOffset = 0.5 * (1 - cos) + 0.5 * sin;
-            tex.vOffset = 0.5 * (1 - cos) - 0.5 * sin;
-        }
         const mat = new StandardMaterial('envGroundMat', scene);
         mat.diffuseTexture = tex;
         mat.diffuseColor = new Color3(1, 1, 1);
         mat.alpha = state.groundAlpha;
         mat.backFaceCulling = false;
         ground.material = mat;
+        _syncGroundTextureOffset(mat, state);
     } else {
         const mat = new StandardMaterial('envGroundMat', scene);
         mat.diffuseColor = new Color3(
@@ -623,6 +672,10 @@ export function applyGround(state: EnvState): void {
     if (ground.material) {
         applyGroundEdgeFade(ground.material as StandardMaterial | GridMaterial, state.groundEdgeFade, scene);
     }
+
+    // 坡度（heightmap 模式已提前 return，此处一定是非 heightmap 模式）
+    ground.rotation.x = (state.groundPitch * Math.PI) / 180;
+    ground.rotation.z = (state.groundRoll * Math.PI) / 180;
 
     _envSys.ground.mesh = ground;
 }
@@ -718,6 +771,26 @@ export function ensureEnvUpdateObserver(): void {
                 _envSys.sky.skyMesh.rotation.y += Math.PI * 2;
             }
         }
+
+        // Ground texture scroll (checker / texture 模式)
+        if (
+            _envSys.ground.mesh &&
+            (envState.groundScrollSpeedX !== 0 || envState.groundScrollSpeedZ !== 0) &&
+            (envState.groundMode === 'checker' ||
+                (envState.groundMode === 'texture' && envState.groundTextureEnabled && envState.groundTexture))
+        ) {
+            const mat = _envSys.ground.mesh.material;
+            if (mat && mat instanceof StandardMaterial && mat.diffuseTexture) {
+                _groundScrollU += envState.groundScrollSpeedX * dt;
+                _groundScrollV += envState.groundScrollSpeedZ * dt;
+                _groundScrollU = _groundScrollU - Math.floor(_groundScrollU);
+                _groundScrollV = _groundScrollV - Math.floor(_groundScrollV);
+                if (_groundScrollU < 0) _groundScrollU += 1;
+                if (_groundScrollV < 0) _groundScrollV += 1;
+                _syncGroundTextureOffset(mat, envState);
+            }
+        }
+
         // Water wave direction is embedded in Gerstner wave shader — no per-frame wind update needed
         // Underwater post-processing (delegated to water module)
         updateUnderwaterTransition(scene, pipeline);

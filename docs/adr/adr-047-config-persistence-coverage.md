@@ -30,7 +30,9 @@ config.json（settingDir 或 configDir）
 | 分类 | 字段 | 说明 |
 |------|------|------|
 | 天空 | skyMode, skyColorTop/Mid/Bot, skyTexture, skyRotationY, skyRotationSpeed, skyBrightness, starsEnabled, envIntensity | 天空外观 |
-| 地面 | groundVisible, groundMode, groundColor, groundAlpha, groundTexture, groundTextureEnabled, groundTextureScale | 地面系统 |
+| 地面 | groundVisible, groundMode, groundColor, groundAlpha, groundTexture, groundTextureEnabled, groundTextureScale, groundTextureRotation, groundGridSize, groundLineColor, groundTerrainHeight, groundTerrainScale, groundTerrainSeed, groundTerrainOctaves, groundLevel, groundSize, groundEdgeFade, groundPitch, groundRoll, groundScrollSpeedX, groundScrollSpeedZ, groundPattern | 地面系统（边缘淡出 + Phase A 增强：坡度/纹理滚动/程序化图案） |
+| 地面 Phase A | groundPitch, groundRoll, groundScrollSpeedX, groundScrollSpeedZ, groundPattern | ADR-083 第一阶段（坡度/纹理滚动/图案） |
+| 地面 Phase B | groundReflectionBlend, groundReflectionQuality, groundNormalTexture, groundNormalStrength, groundElevationColoring, groundFollowCamera | ADR-083 第二阶段（反射/法线/高程着色/跟随网格） |
 | 风 | windEnabled, windDirection, windSpeed | 风场 |
 | 粒子 | particleEnabled, particleType, particleEmitRate, particleSize, particleSpeed, particleSplash, particleCustomTexture | 粒子系统 |
 | 水面 | waterEnabled, waterLevel, waterColor, waterTransparency, waterWaveHeight, waterSize, waterAnimSpeed | 基础水面 |

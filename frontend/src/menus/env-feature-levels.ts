@@ -2,7 +2,7 @@
 // 从 env-menu.ts 拆分
 
 import { envState, cardContainer, setStatus, getBrowseDir } from '../core/config';
-import type { PopupLevel } from '../core/config';
+import type { PopupLevel, EnvState } from '../core/config';
 import { escapeHtml } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import {
@@ -467,6 +467,109 @@ export function buildGroundLevel(): PopupLevel {
                         'lucide:layers'
                     );
                 }
+
+                // ===== 坡度与增强（Phase A）=====
+                addCollapsible(c, {
+                    title: t('env.groundEnhance'),
+                    icon: 'lucide:sliders-horizontal',
+                    defaultOpen: false,
+                    renderContent: (cc) => {
+                        // 坡度（heightmap 模式不支持，隐藏）
+                        if (s.groundMode !== 'heightmap') {
+                            addSliderRow(
+                                cc,
+                                t('env.groundPitch'),
+                                s.groundPitch,
+                                -45,
+                                45,
+                                1,
+                                (v) => setEnvState({ groundPitch: v }),
+                                'lucide:arrow-up-down',
+                                undefined,
+                                {
+                                    bind: () => envState.groundPitch,
+                                }
+                            );
+                            addSliderRow(
+                                cc,
+                                t('env.groundRoll'),
+                                s.groundRoll,
+                                -45,
+                                45,
+                                1,
+                                (v) => setEnvState({ groundRoll: v }),
+                                'lucide:rotate-cw',
+                                undefined,
+                                {
+                                    bind: () => envState.groundRoll,
+                                }
+                            );
+                        } else {
+                            const hint = document.createElement('div');
+                            hint.className = 'hint-text';
+                            hint.textContent = t('env.heightmapNoTilt');
+                            cc.appendChild(hint);
+                        }
+
+                        // 纹理滚动（checker / texture 模式有效）
+                        const scrollEnabled =
+                            s.groundMode === 'checker' ||
+                            (s.groundMode === 'texture' && s.groundTextureEnabled && s.groundTexture);
+                        if (scrollEnabled) {
+                            addSliderRow(
+                                cc,
+                                t('env.groundScrollX'),
+                                s.groundScrollSpeedX,
+                                -2,
+                                2,
+                                0.05,
+                                (v) => setEnvState({ groundScrollSpeedX: v }),
+                                'lucide:move-horizontal',
+                                undefined,
+                                {
+                                    bind: () => envState.groundScrollSpeedX,
+                                }
+                            );
+                            addSliderRow(
+                                cc,
+                                t('env.groundScrollZ'),
+                                s.groundScrollSpeedZ,
+                                -2,
+                                2,
+                                0.05,
+                                (v) => setEnvState({ groundScrollSpeedZ: v }),
+                                'lucide:move-vertical',
+                                undefined,
+                                {
+                                    bind: () => envState.groundScrollSpeedZ,
+                                }
+                            );
+                        }
+
+                        // 程序化图案（仅 checker 模式）
+                        if (s.groundMode === 'checker') {
+                            addModeSlider(
+                                cc,
+                                t('env.groundPattern'),
+                                [
+                                    { value: 'checker', label: t('env.patternChecker') },
+                                    { value: 'dots', label: t('env.patternDots') },
+                                    { value: 'stripes', label: t('env.patternStripes') },
+                                    { value: 'radial', label: t('env.patternRadial') },
+                                ],
+                                s.groundPattern,
+                                (v) => {
+                                    setEnvState({ groundPattern: v as EnvState['groundPattern'] });
+                                },
+                                'lucide:grid-3x3',
+                                undefined,
+                                {
+                                    bind: () => envState.groundPattern,
+                                }
+                            );
+                        }
+                    },
+                });
             });
         },
     };

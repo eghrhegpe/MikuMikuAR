@@ -328,6 +328,13 @@ export interface EnvState {
     groundTerrainSeed: number; // 随机种子（同一种子同地形）
     groundTerrainOctaves: number; // FBM 倍频层数（1-8）
 
+    // Phase A: 地面增强
+    groundPitch: number;         // X 轴旋转（度），默认 0，范围 -45..45（heightmap 模式禁用）
+    groundRoll: number;          // Z 轴旋转（度），默认 0，范围 -45..45（heightmap 模式禁用）
+    groundScrollSpeedX: number;  // 纹理 X 方向滚动速度，默认 0，范围 -2..2
+    groundScrollSpeedZ: number;  // 纹理 Z 方向滚动速度，默认 0，范围 -2..2
+    groundPattern: 'checker' | 'dots' | 'stripes' | 'radial'; // 程序化图案类型，默认 'checker'
+
     windEnabled: boolean;
     windDirection: [number, number, number];
     windSpeed: number;

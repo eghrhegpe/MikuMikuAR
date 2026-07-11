@@ -86,6 +86,12 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         'groundTerrainOctaves',
         'groundSize',
         'groundEdgeFade',
+        'groundPitch',
+        'groundRoll',
+        'groundScrollSpeedX',
+        'groundScrollSpeedZ',
+        'groundPattern',
+        'groundLevel',
     ];
     if (!changed || changed.some((k) => groundKeys.includes(k))) {
         try {
