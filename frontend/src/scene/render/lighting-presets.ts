@@ -1,5 +1,5 @@
 // [doc:architecture] Lighting Presets — 灯光预设数据定义
-// 6 个内置预设：角色肖像 / 道具产品 / 舞台戏剧 / 舞蹈表演 / 自然日光 / 夜间场景
+// 4 个内置预设：角色肖像 / 道具产品 / 舞台戏剧 / 舞蹈表演
 
 import type { StageLightType } from './lighting';
 
