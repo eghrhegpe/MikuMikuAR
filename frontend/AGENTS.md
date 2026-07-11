@@ -117,26 +117,241 @@ frontend/src/
 ├── outfit/              # 换装系统
 │   ├── outfit.ts        # 加载/应用/重置 + 自动发现
 │   └── audio.ts         # 音频播放 + VMD 同步 + 节拍检测挂载
-├── physics/             # XPBD 物理引擎（独立目录）
-│   ├── xpbd-solver.ts    # Verlet + 约束 + 地面碰撞
-│   ├── xpbd-cloth.ts     # 布料生成 + 每帧更新
-│   ├── xpbd-collider.ts  # SDF 胶囊碰撞体
-│   ├── xpbd-renderer.ts  # 调试可视化
-│   └── cloth-manager.ts  # 创建/销毁/重建（UI 入口）
+├── physics/             # 物理辅助（XPBD 已移除，布料由 WASM Bullet 驱动）
+│   ├── physics-bridge.ts # 物理桥接
+│   └── wind-physics.ts   # 风场辅助函数
 └── app.css              # 全局样式（CSS 变量体系）
 ```
 
 ### 目录重组记录（2026-07）
 
-`scene/` 已按业务域拆分为 `camera/` / `motion/` / `manager/` / `env/` / `render/` 子目录。`physics/` 为独立目录（XPBD 引擎），`motion-algos/` 为动作算法独立目录。相机 UI 已迁移到 `motion-popup`。
+`scene/` 已按业务域拆分为 `camera/` / `motion/` / `manager/` / `env/` / `render/` 子目录。`physics/` 为独立目录（物理辅助），`motion-algos/` 为动作算法独立目录。相机 UI 已迁移到 `motion-popup`。
 
 ---
 
-## 四、维护风险清单
+## 四、功能审核计划
 
-> 2026-07-08 排查，按优先级排列。
+> 按功能模块依次遍历，每模块需同时验证 4 个维度：类型安全、资源管理、测试覆盖、功能正确性。
 
-### 4.1 已修复
+### 审核维度标准
+
+| 维度 | 检查项 | 通过标准 |
+|------|--------|---------|
+| **类型安全** | `as any` / `@ts-ignore` | 生产代码中 0 处新增；遗留需有业务理由注释 |
+| **资源管理** | `.dispose()` 配对 | 每个 `new Xxx()` Babylon / WebAudio 对象有对应释放 |
+| **测试覆盖** | 直接测试 / 间接覆盖 | 核心逻辑有单元测试；UI builder 允许无测试 |
+| **功能正确性** | 运行时隐患 | 并发守护 / undefined 守卫 / Promise 不丢弃 / 竞态处理 |
+
+### 模块风险等级
+
+| 等级 | 含义 | 模块 |
+|------|------|------|
+| 🔴 极高 | 外部契约 + 状态突变 + 难以测试 | `bindings/` · `core/wails-bindings.ts` |
+| 🟠 高 | 图形资源 / WASM / 并发写入 | `physics/` · `scene/render/` · `scene/env/` · `outfit/` |
+| 🟡 中高 | 场景状态聚合 / 桥接层 | `scene/scene.ts` · `scene/motion/` · `scene/camera/` |
+| 🟢 中 | 纯 UI builder / 算法 | `menus/` · `motion-algos/` · `core/`（不含 bindings） |
+
+---
+
+### 🔴 模块 1：Binding 契约层
+
+**优先级：最高，必须先过**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `bindings/`（自动生成，禁止手改） | 类型安全 | `app.contract.test.ts` 跑通，116 个函数 + FNV-1a ID 全部对上 |
+| `core/wails-bindings.ts` | 类型安全 | 手维护区无 `as any`；model 类型登记与 Go 侧一致 |
+| `app.contract.test.ts` | 功能正确性 | 每次 Go 侧增删方法后重跑；新增函数必须有测试覆盖 |
+
+**审核方法：** `npm run test -- src/__tests__/bindings/app.contract.test.ts`
+
+---
+
+### 🔴 模块 2：换装 + 音频系统
+
+**优先级：最高**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `outfit/outfit.ts` | 功能正确性 | `loadOutfits` 有 `_loadingOutfits` 去重；`applyOutfitVariant` 有 `_applyingVariant` 并发锁；`modelRegistry.get()` 有 undefined 守卫；`resetOutfit` 是 async + `Promise.all` |
+| `outfit/outfit.ts` | 资源管理 | `disposeOutfit` 正确释放 outfit 资源 |
+| `outfit/audio.ts` | 类型安全 | 2 处 `as any` 是 monkey-patch 运行时替换，业务上不可避免（有注释） |
+| `outfit/audio.ts` | 资源管理 | `disposeAudio` 释放 WebAudio 节点 |
+| `__tests__/outfit.test.ts` | 测试覆盖 | 覆盖 load/apply/reset 并发场景 |
+
+---
+
+### ~~🟠 模块 3：物理引擎（XPBD）~~（已移除）
+
+> **状态**：已移除（commit 530af6e）。XPBD(TS) 布料系统与 PMX 内建 WASM Bullet 物理存在功能重叠，维护成本高于收益。布料/头发摆动由 WASM Bullet 刚体驱动，不再需要独立 XPBD 求解器。
+
+---
+
+### 🟠 模块 4：渲染管线
+
+**优先级：高**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `scene/render/renderer.ts` | 资源管理 | 每帧 `new Effect()` / shader 编译有缓存或 dispose |
+| `scene/render/renderer.ts` | 类型安全 | 0 处 `as any` |
+| `scene/render/lighting.ts` | 资源管理 | `removeStageLight` + `_disposeStageShadow` + `detachLightGizmo` 有 dispose ✅ |
+| `scene/render/lighting.ts` | 类型安全 | 0 处 `as any` ✅ 已审查；`__tests__/env-lighting.test.ts` 存在 |
+| `scene/render/performance.ts` | 功能正确性 | 性能降级阈值合理；降级后不破坏核心功能 |
+| `__tests__/env-lighting.test.ts` | 测试覆盖 | 存在 ✅ |
+
+---
+
+### 🟠 模块 5：环境系统
+
+**优先级：高**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `scene/env/env.ts` + `env-impl.ts` | 资源管理 | 环境切换时旧 PostProcess / 粒子有 dispose |
+| `scene/env/env-water.ts` | 资源管理 | `disposeWater()` + `disposeTintPostProcess()` 完整 ✅ 已审查 |
+| `scene/env/env-water.ts` | 类型安全 | 0 处 `as any` ✅ 已审查；`__tests__/scene/env-water.test.ts` 20 个测试 |
+| `scene/env/env-bridge.ts` | 功能正确性 | time-of-day 与预设冲突已修复；快速切换竞态已用 `_timeOfDayBeforePreset` 守卫 |
+| `scene/env/env-bridge.ts` | 类型安全 | 0 处 `as any` ✅ 已修复 |
+| `scene/env/`（cloud/particle/lighting-preset/props） | 资源管理 | 各自 dispose 路径完整 |
+| `__tests__/env-bridge.test.ts` | 测试覆盖 | 存在 |
+| `__tests__/scene/env-water.test.ts` | 测试覆盖 | 存在，20 个测试 ✅ |
+| `__tests__/scene/env-terrain.test.ts` | 测试覆盖 | 存在 |
+
+---
+
+### 🟡 模块 6：场景编排
+
+**优先级：中高**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `scene/scene.ts` | 功能正确性 | 场景初始化/销毁链路完整；无状态残留 |
+| `scene/scene-serialize.ts` | 功能正确性 | 序列化/反序列化 round-trip 正确（E2E 覆盖） |
+| `scene/scene-serialize.ts` | 测试覆盖 | `scene-serialize.test.ts` 无直接测试（mock 成本高，建议 E2E 覆盖） |
+| `scene/pose/` | 功能正确性 | 水印/构图指导/相机角度无副作用 |
+
+---
+
+### 🟡 模块 7：动作桥接层
+
+**优先级：中高**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `scene/motion/vmd-loader.ts` | 功能正确性 | `loadVMDMotion` 有 `_vmdLoadGeneration` 防竞态 ✅ 已修复 |
+| `scene/motion/vmd-layers.ts` | 资源管理 | 异常时 `vmdLoader.dispose()` 在 `finally` 块内 ✅ 已修复 |
+| `scene/motion/vmd-layers.ts` | 功能正确性 | 闭包快照在开头捕获 ✅ 已修复 |
+| `scene/motion/proc-motion-bridge.ts` | 功能正确性 | `regeneratePending` 重试前检查 `focusedModelId` ✅ 已修复 |
+| `scene/motion/proc-motion-bridge.ts` | 类型安全 | 0 处 `as any` ✅ 已修复；`__tests__/proc-motion-bridge.test.ts` 存在 |
+| `scene/motion/wasm-layers-blender.ts` | 类型安全 | 0 处 `as any` ✅ 已修复 |
+| `scene/motion/lipsync-bridge.ts` | 功能正确性 | 振幅 → morph 权重映射正确；`__tests__/lipsync-bridge.test.ts` 存在 |
+| `__tests__/vmd-evaluator.test.ts` | 测试覆盖 | 存在 |
+| `__tests__/vmd-evaluator.regression.spec.ts` | 测试覆盖 | 存在 |
+
+---
+
+### 🟡 模块 8：相机系统
+
+**优先级：中高**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `scene/camera/camera.ts` | 资源管理 | 旧相机 `dispose()` ✅ 已修复 |
+| `scene/camera/camera.ts` | 功能正确性 | `setCameraState` 先设 preset 再切模式 ✅ 已修复；Orbit→Freefly 有 `setTarget` ✅ 已修复；AR 失败只在 `_cameraMode === 'ar'` 时还原 ✅ 已修复 |
+| `__tests__/camera.test.ts` | 测试覆盖 | 存在 |
+| `__tests__/orbit.test.ts` | 测试覆盖 | 存在 |
+
+---
+
+### 🟡 模块 9：模型管理层
+
+**优先级：中高**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `scene/manager/model-manager.ts` | 类型安全 | 0 处 `as any` ✅ 已审查 |
+| `scene/manager/model-manager.ts` | 资源管理 | 50+ 方法职责清晰；模型卸载时 dispose 完整 |
+| `scene/manager/model-manager.ts` | 测试覆盖 | `__tests__/model-manager.test.ts` 116 个测试用例 ✅ |
+| `scene/manager/material/` | 功能正确性 | 材质编辑 undo/redo 链路；`__tests__/material-editor.test.ts` 存在 |
+| `scene/manager/loader/` | 功能正确性 | PMX 加载错误处理；`__tests__/model-ops.test.ts` 存在 |
+| `__tests__/scene-model.test.ts` | 测试覆盖 | 存在 |
+
+---
+
+### 🟢 模块 10：菜单系统
+
+**优先级：中（纯 UI builder）**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `menus/menu.ts` | 功能正确性 | 菜单开/闭无状态泄漏；`__tests__/menu.test.ts` 存在 |
+| `menus/library-core.ts` | 类型安全 | 0 处 `as any`；`__tests__/library-core.test.ts` 44 个测试 ✅ |
+| `menus/model-detail.ts` | 功能正确性 | `container.isConnected` 守卫防止菜单关闭后 IPC 写 ✅ 已修复；Promise 嵌套 `.catch` 改为 `console.warn` ✅ 已修复 |
+| `menus/env-feature-levels.ts` | 类型安全 | 0 处 `as any`；1079 行是 8 个独立 builder 的自然体量，无需拆分 ✅ |
+| `menus/scene-stage-lights.ts` | 功能正确性 | 灯光删除后存在性校验 ✅ 已修复 |
+| `menus/settings*.ts`（11 个子模块） | 类型安全 | barrel 导出路径不变；各子模块 0 处 `as any` |
+| `__tests__/model-detail-ui.test.ts` | 测试覆盖 | 存在 |
+
+---
+
+### 🟢 模块 11：动作算法（无 Babylon 依赖）
+
+**优先级：中**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `motion-algos/procedural-motion.ts` | 类型安全 | barrel re-export，0 处 `as any`；`__tests__/procedural-motion.test.ts` 存在 |
+| `motion-algos/vmd-writer.ts` | 功能正确性 | Shift-JIS 骨骼名编码正确；`__tests__/vmd.test.ts` 存在 |
+| `motion-algos/vpd-parser.ts` | 功能正确性 | UTF-8/Shift-JIS 自动识别；`__tests__/vpd-parser-security.test.ts` 存在（安全边界） |
+| `motion-algos/vmd-evaluator.ts` | 功能正确性 | 多图层混合逻辑正确 |
+| `motion-algos/beat-detector.ts` | 功能正确性 | Web Audio 能量峰值计算正确；`__tests__/beat-detector.test.ts` 存在 |
+| `motion-algos/lipsync.ts` | 功能正确性 | 振幅→morph 权重映射；`__tests__/lipsync.test.ts` 存在 |
+
+---
+
+### 🟢 模块 12：核心基础设施
+
+**优先级：中**
+
+| 文件 | 验收维度 | 检查项 |
+|------|---------|--------|
+| `core/main.ts` | 类型安全 | 1 处 `as any`（E2E 调试 hook，可接受）；1 处 `@ts-ignore`（Wails v2→v3 兼容，有注释） |
+| `core/main.ts` | 功能正确性 | 事件绑定无泄漏（顶层 addEventListener 10 个，应用生命周期） |
+| `core/state.ts` | 类型安全 | 0 处 `as any` ✅ 已修复；`__tests__/env-state.test.ts` 存在 |
+| `core/fileservice.ts` | 功能正确性 | `resolveFileUrl` 覆盖 zip 内路径；`__tests__/fileservice.test.ts` 存在 |
+| `core/ui-helpers.ts` | 功能正确性 | DOM 构建工具无副作用；`__tests__/ui-helpers.test.ts` 存在 |
+| `core/reactivity.ts` | 功能正确性 | signal / effect 泄漏防护；`__tests__/config.test.ts` 有间接覆盖 |
+| `core/icons.ts` + `iconify-registry.ts` | 功能正确性 | 本地图标注册表无重复注册 |
+
+---
+
+### 审核进度
+
+| 模块 | 风险等级 | 类型安全 | 资源管理 | 测试覆盖 | 功能正确性 | 状态 |
+|------|---------|---------|---------|---------|---------|------|
+| 1. Binding 契约层 | 🔴极高 | ⬜ | ⬜ | ⬜ | ⬜ | 待审核 |
+| 2. 换装+音频 | 🔴极高 | ✅ | ⬜ | ⬜ | ⬜ | 待审核 |
+| ~~3. XPBD 物理~~ | ~~🟠高~~ | — | — | — | — | 已移除 |
+| 4. 渲染管线 | 🟠高 | ✅ 已审 | ✅ 已审 | ✅ | ⬜ | 待审核 |
+| 5. 环境系统 | 🟠高 | ✅ 已审 | ✅ 已审 | ✅ | ✅ 已修 | 部分 |
+| 6. 场景编排 | 🟡中高 | ⬜ | ⬜ | ⬜ | ⬜ | 待审核 |
+| 7. 动作桥接层 | 🟡中高 | ✅ 已修 | ✅ 已修 | ✅ | ✅ 已修 | 部分 |
+| 8. 相机系统 | 🟡中高 | ⬜ | ✅ 已修 | ✅ | ✅ 已修 | 部分 |
+| 9. 模型管理层 | 🟡中高 | ✅ 已审 | ⬜ | ✅ | ⬜ | 待审核 |
+| 10. 菜单系统 | 🟢中 | ✅ | ⬜ | ✅ | ✅ | 待审核 |
+| 11. 动作算法 | 🟢中 | ✅ | N/A | ✅ | ⬜ | 待审核 |
+| 12. 核心基础设施 | 🟢中 | ✅ | ⬜ | ✅ | ✅ | 待审核 |
+
+**图例：** ✅ 已通过 · ✅ 已修（历史修复） · ✅ 已审（历史审查） · ⬜ 待审核
+
+---
+
+## 五、历史维护记录（仅供追溯）
+
+> 以下为历史修复/审查记录，已按审核进度表标注。
+
+### 5.1 已修复
 
 | 问题 | 状态 |
 |------|------|
@@ -146,117 +361,24 @@ frontend/src/
 | `wasm-layers-blender.ts` 1 个 `as any` | ✅ 已修复（复用 `MmdRuntimeBoneExtended`） |
 | `env-bridge.ts` 1 个 `as any` | ✅ 已修复（移除冗余断言） |
 
-### 4.2 高风险文件（需关注）
+### 5.2 已审查（无需改动）
 
-#### `menus/settings.ts` — 107 行 🟢 已拆分
-
-| 维度 | 发现 |
-|------|------|
-| 状态 | 已拆分为 barrel re-export 文件（107 行），子模块：`settings-shared.ts`(200) + `settings-appearance.ts`(260) + `settings-filename.ts`(210) + `settings-paths.ts`(180) + `settings-external.ts`(90) + `settings-performance.ts`(310) + `settings-screenshot.ts`(70) + `settings-audio.ts`(80) + `settings-about.ts`(270) + `settings-shortcuts.ts`(160) + `settings-language.ts`(20) |
-| `as any` | 0 处 |
-| 测试 | 无（纯 UI 构建，无业务逻辑） |
-| 结论 | 拆分完成，各子模块职责清晰，外部消费者通过 barrel 保持路径不变 |
-
-#### `motion-algos/procedural-motion.ts` — 60 行 🟢 已拆分
-
-| 维度 | 发现 |
-|------|------|
-| 状态 | 已拆分为 barrel re-export 文件（26 行），子模块：`proc-motion-shared.ts`(146) + `proc-motion-idle.ts`(346) + `proc-motion-autodance.ts`(547) + `proc-motion-lifelike.ts`(353) |
-| `as any` | 0 处 |
-| 测试 | 有 `procedural-motion.test.ts`，但 `shouldIdle`/`shouldAutoDance` 分支未覆盖 |
-| 结论 | 拆分完成，各子模块职责清晰 |
-
-#### `scene/render/lighting.ts` — 1244 行 🟢 已审查
-
-| 维度 | 发现 |
-|------|------|
-| 可拆分区 | 灯光创建(L1-200)、阴影(L100-200)、状态读写(L200-400)、舞台灯(L400-600)、Gizmo(L600-800)、Tween(L800-1000)、预设(L1000-1150) |
-| 耦合热点 | 依赖 scene.ts 场景对象、env-bridge.ts 环境变量、state.ts 注册表 |
-| 状态泄漏 | `_stageLights`、`_envSysShadow`、`_sunDisc` 模块级 Babylon 对象引用（singleton 设计，拆分收益低） |
-| 资源泄漏 | `removeStageLight` + `_disposeStageShadow` + `detachLightGizmo` 有 dispose ✅ |
-| `as any` | 0 处（`_envSysShadow.generator` 已内联类型 `{ generator: ShadowGenerator \| null }`） |
-| 测试 | 有 `__tests__/env-lighting.test.ts` ✅ |
-| 结论 | 无需改动。结构清晰，类型安全，资源释放完整 |
-
-#### `menus/env-feature-levels.ts` — 1079 行 🟢 已审查
-
-| 维度 | 发现 |
-|------|------|
-| 结构 | 8 个独立导出函数（`buildSkyLevel` / `buildGroundLevel` / `buildWaterLevel` / `buildWindLevel` / `buildCloudLevel` / `buildExperimentalLevel` / `buildFogLevel` / `buildShadowLevel`），每个构建一个 `PopupLevel` |
-| 重复模式 | `addSliderRow` / `addColorSliderRow` / `addToggleRow` / `addCollapsible` 共 72 次调用——这是 UI 框架的设计模式，不是代码异味 |
-| `as any` | 0 处 |
-| 测试 | 无（纯 UI 构建，无业务逻辑） |
-| 结论 | 无需改动。每个函数自包含，职责清晰，1079 行是 8 个独立 UI builder 的自然体量 |
-
-#### `scene/env/env-water.ts` — 1128 行 🟢 已审查
-
-| 维度 | 发现 |
-|------|------|
-| 结构 | 自包含水面渲染系统：shader uniform 同步(`_syncWaterUniforms`)、LOD 三层、涟漪系统、水下过渡、预设应用 |
-| 可拆分区 | 波方向(L43-80)、涟漪(L86-180)、shader 代码(L88-107)、水下效果(L110-133)、创建/销毁(L200-400)、uniform 同步(L430-513)、LOD(L537-580)、预设(L800-1128) |
-| 重复模式 | `applyWaterPresetToCurrent` 有 16 个 `if (preset.xxx !== undefined)` 检查——每个映射不同 shader 方法(setFloat/setVector3/setColor3)，提取 helper 会丢失类型安全 |
-| `as any` | 0 处（`PostProcessInternal` 接口已引入） |
-| 资源泄漏 | `disposeWater()` + `disposeTintPostProcess()` 完整 ✅ |
-| 测试 | 有 `scene/env-water.test.ts`（20 个测试）✅ — dispose/ripple/underwater/preset 已覆盖 |
-| 结论 | 无需改动。水面渲染系统的固有复杂度，结构清晰，资源管理完整 |
-
-### 4.3 `as any` 重灾区（生产代码）
-
-| 文件 | 数量 | 问题 |
+| 文件 | 行数 | 结论 |
 |------|------|------|
-| ~~`scene/motion/proc-motion-bridge.ts`~~ | ~~10~~ | ✅ 已修复 |
-| ~~`scene/env/env-water.ts`~~ | ~~4~~ | ✅ 已修复 |
-| ~~`scene/motion/wasm-layers-blender.ts`~~ | ~~1~~ | ✅ 已修复 |
-| ~~`scene/env/env-bridge.ts`~~ | ~~1~~ | ✅ 已修复 |
-| ~~`scene/render/lighting.ts`~~ | ~~1~~ | ✅ 审查确认：当前 0 处 as any，无需改动 |
-| ~~`core/state.ts`~~ | ~~2~~ | ✅ 已修复 |
-| `outfit/audio.ts` | 2 | 函数 monkey-patch（`ensureAudio`/`disposeAudio`），运行时替换无法避免 |
-| `core/main.ts` | 1 | `(window as any).__scene` 调试用，可接受（另有 1 处 `@ts-ignore` 为 Wails v2→v3 过渡兼容） |
+| `menus/settings.ts` → 11 个子模块 | 107+分散 | 拆分完成，barrel 路径不变 |
+| `motion-algos/procedural-motion.ts` → 5 个子模块 | 60+分散 | 拆分完成 |
+| `scene/render/lighting.ts` | 1244 | 0 `as any`，资源释放完整，测试充分 |
+| `menus/env-feature-levels.ts` | 1079 | 8 个独立 builder，职责清晰 |
+| `scene/env/env-water.ts` | 1128 | 水面渲染固有复杂度，结构清晰 |
+| `menus/library-core.ts` | 954 | 0 `as any`，44 个测试 |
+| `scene/manager/model-manager.ts` | 989 | 50+ 方法但测试充分（116 个） |
+| `core/main.ts` | 1084 | 遗留 `as any` 有业务理由 |
 
-#### `menus/library-core.ts` — 954 行 🟢 已审查
-
-| 维度 | 发现 |
-|------|------|
-| 导出 | 4 个函数（`buildLevel` / `modelToRow` / `buildModelRootItems` / `showModelPopup`） |
-| `as any` | 0 处 |
-| 测试 | 有 `library-core.test.ts`，44 个测试用例 ✅ |
-| 结论 | 无需改动。职责清晰，测试充分 |
-
-#### `scene/manager/model-manager.ts` — 989 行 🟢 已审查
-
-| 维度 | 发现 |
-|------|------|
-| 导出 | 1 个类 `ModelManager` + 2 个辅助导出 |
-| `as any` | 0 处 |
-| 方法数 | 50+ 个（God Object 风险，但职责清晰：模型 CRUD + 属性 + 骨骼 + 物理 + Morph） |
-| 设计 | 注释明确记录：注入式 `triggerAutoSave`、无循环依赖、状态封装 |
-| 测试 | 有 `model-manager.test.ts`，116 个测试用例 ✅ |
-| 结论 | 方法多但测试充分，拆分风险高于收益 |
-
-#### `core/main.ts` — 1084 行 🟢 已审查
-
-| 维度 | 发现 |
-|------|------|
-| 导出 | 无（应用入口，事件绑定 + 快捷键 + 初始化） |
-| `as any` | 1 处（E2E 调试 hook，可接受） |
-| `@ts-ignore` | 1 处（Wails v2→v3 过渡兼容，带注释说明） |
-| 测试 | 无（入口文件，不适合单元测试） |
-| 结论 | 无需改动。类型安全问题均为合理保留 |
-
-### 4.4 结构性风险
-
-- ~~**状态双源**~~：`store/index.ts` 已删除（2026-07-08），`core/state.ts` 为唯一状态源
-- ~~**深链 import**~~：✅ 已添加 `@/` 和 `@bindings/` 别名（`tsconfig.json` + `vite.config.ts` + `vitest.config.ts`），60 处 `../../` 导入已替换
-- **Barrel re-export**：`core/config.ts` re-export 多个子模块，任一改导出名会级联报错
-- **测试覆盖**：92 个模块无直接测试（含 UI builder、i18n、工具函数），核心逻辑模块（xpbd、vmd、config）有间接覆盖
-- **资源释放**：15 个文件调用 `.dispose()`，已审查的文件（lighting、env-water）释放完整
-- ~~**事件监听器泄漏**~~：✅ 已修复（2026-07-08）。分析 31 个 `addEventListener` 文件：顶层监听器（10 个，应用生命周期）、元素附着监听器（20 个，DOM GC 自动清理）、临时自清理监听器（1 个）、动态累积监听器（1 个 `settings-about.ts`，已添加防重复注册标志）
-
-### 4.7 运行时隐患修复（2026-07-08）
+### 5.3 运行时隐患修复（2026-07-08）
 
 | 模块 | 问题 | 修复 |
 |------|------|------|
-| `outfit.ts` | `loadOutfits` / `applyOutfitVariant` 未检查 `modelRegistry.get()` | 添加 undefined 守卫 |
+| `outfit.ts` | `loadOutfits`/`applyOutfitVariant` 未检查 `modelRegistry.get()` | 添加 undefined 守卫 |
 | `outfit.ts` | `applyOutfitVariant` 无并发锁 | 添加 `_applyingVariant` Map |
 | `outfit.ts` | `resetOutfit` 丢弃异步 promise | 改为 async + await Promise.all |
 | `outfit.ts` | `loadOutfits` 无请求去重 | 添加 `_loadingOutfits` Set |
@@ -274,17 +396,18 @@ frontend/src/
 | `model-detail.ts` | 三层嵌套 Promise 静默吞错 | `.catch` 改为 console.warn |
 | `scene-stage-lights.ts` | 灯光删除后缺少存在性校验 | showConfirm 返回后重新检查 id |
 
-### 4.5 测试覆盖更新（2026-07-08）
+### 5.4 结构性风险（已解决）
 
-| 文件 | 测试数 | 新增覆盖 |
-|------|--------|---------|
-| `scene/env/env-water.test.ts` | 7→20 | dispose 资源释放、ripple 生命周期、underwater 过渡、preset 应用 |
-| `scene/scene-serialize.test.ts` | 0 | 尝试补测试 → import 链触发 babylon-mmd 装饰器初始化，mock 成本过高，放弃（建议 E2E 覆盖） |
+| 问题 | 状态 |
+|------|------|
+| **状态双源**：`store/index.ts` | ✅ 已删除，`core/state.ts` 为唯一状态源 |
+| **深链 import** | ✅ 已添加 `@/` 和 `@bindings/` 别名，60 处 `../../` 已替换 |
+| **事件监听器泄漏** | ✅ 已修复。分析 31 个 `addEventListener` 文件：动态累积监听器（1 个 `settings-about.ts`）已有防重复注册标志 |
 
-### 4.6 已拆分文件
+### 5.5 历史拆分记录
 
 | 文件 | 原行数 | 拆分结果 |
 |------|--------|----------|
-| `procedural-motion.ts` | 1496 | → `procedural-motion.ts`(60) + `proc-motion-shared.ts`(190) + `proc-motion-idle.ts`(340) + `proc-motion-autodance.ts`(570) + `proc-motion-lifelike.ts`(350) |
-| `settings.ts` | 2189 | → `settings.ts`(107) + `settings-shared.ts`(200) + `settings-appearance.ts`(260) + `settings-filename.ts`(210) + `settings-paths.ts`(180) + `settings-external.ts`(90) + `settings-performance.ts`(310) + `settings-screenshot.ts`(70) + `settings-audio.ts`(80) + `settings-about.ts`(270) + `settings-shortcuts.ts`(160) + `settings-language.ts`(20) |
+| `procedural-motion.ts` | 1496 | → `procedural-motion.ts`(60) + 4 个子模块 |
+| `settings.ts` | 2189 | → `settings.ts`(107) + 11 个子模块 |
 

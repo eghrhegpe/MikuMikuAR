@@ -1,11 +1,11 @@
 # ADR-054: 后续开发方向路线图
 
-> **状态**: 规划（2026-07-06 创建；2026-07-07 代码复核修订）
+> **状态**: 规划（2026-07-06 创建；2026-07-07 代码复核修订；2026-07-11 全量核实更新 + 正式废弃 JS 调试运行时，所有剩余功能仅面向 WASM）
 > **背景**: ADR-039 废除 `docs/roadmap.md` 后，后续方向仅以各 ADR「## 后续方向」小节碎片化存在，无优先级汇总。本 ADR 集中承载**经代码事实核实**的后续开发计划，作为"下一步做什么"的统一入口。
 
 ---
 
-## 一、核实基线（2026-07-06 代码事实）
+## 一、核实基线（2026-07-11 代码事实）
 
 经 `frontend/src` 全量 grep 核验，以下功能**已实现**（非缺口）。竞品矩阵已在 `competitive-analysis.md` 校正：
 
@@ -19,35 +19,50 @@
 | Lifelike 生命力 | `motion-algos/procedural-motion.ts` 伪随机眨眼(2~8s) + 自动呼吸 | 区别于竞品「高斯」 |
 | 渲染三件套 | `scene/render/renderer.ts` SSAO / Outline + MMD 材质 Toon（`outfit.ts`） | Toon 为材质属性，非后处理 |
 | LipSync 振幅同步 | `motion-algos/lipsync.ts` | 共振峰口型仍待增强 |
+| i18n 语言切换 | `i18n/` 全 Phase 落地 + CI 奇偶校验 | ADR-059 (2026-07-10) |
+| T-pose / A-pose 转换 | `motion-algos/pose-preset.ts` VMD 生成器 | ADR-061 (2026-07-10) |
+| Pose Studio / 拍照模式 | `scene/pose/composition-guide.ts` + `camera-angle.ts` + `watermark.ts` | ADR-061 (2026-07-10) |
+| 道具挂载 Accessory | `scene/env/accessory.ts` `attachToBone` 骨骼挂载 | ADR-061 (2026-07-10) |
+| Motion Override | `scene/motion/bone-override.ts` overrideMap + onBeforeRender | ADR-061 (2026-07-10) |
+| Soft Body / Ragdoll | `ragdoll-manager.ts` + 14 TDD Task 全绿 | ADR-061-r (2026-07-10) |
+| WASM 运行时图层 | `wasm-layers-blender.ts` + `vmd-layers.ts:534` 集成 | ADR-056 (2026-07-08) |
+| XPBD 布料模拟 | `xpbd-solver/collider/cloth/renderer` + 20 tests | ADR-019（已实施；ADR-081 移除 TS XPBD，转 WASM Bullet） |
+| Cel-Shading 后处理 | `cel-shading.ts` PostProcess | ADR-076 (2026-07-10) |
+| 水面反射 RT | `water-reflection.ts` MirrorCamera + RT | ADR-062 (2026-07-10) |
+| 球面反射 RT | `cubemap-rt-spherical-reflection.ts` | ADR-074 (2026-07-09) |
+| 全屏资源库 | Phase 1-4 全落地 | ADR-066 (2026-07-09) |
 
 ---
 
 ## 二、真实缺口（未做）
 
-### 🔴 架构裂缝（需中期决策）
+### ✅ 架构裂缝（已关闭）
 
-**WASM / JS 运行时分裂** — ✅ 已实施（ADR-056，C+B 混合方案，2026-07-07 commit）
-- 现象（已修正）：gaze 双路径已实施（ADR-016，WASM frontBuffer 直写 + JS linkedBone）。真实裂缝仅剩 `MmdCompositeAnimation` 在 WASM 不可用（`vmd-layers.ts:522` 回退单图层）；服装/头发 Bullet 物理仅 WASM 有。
-- 决策：采用 C+B 混合方案（ADR-056）——JS 帧流合并让 WASM 拿到多图层能力，B1 单图层作降级兜底。
-- 影响：高级动作功能将在默认（高性能物理）运行时生效，分裂消除。
+**WASM / JS 运行时分裂** — 已关闭（ADR-056 解决 + 2026-07-11 正式废弃 JS 调试运行时）
+- ADR-056 的 C+B 混合方案让 WASM 拿到了多图层能力，JS 运行时唯一优势消除。
+- JS 运行时从未拥有物理引擎（`new MmdRuntime(scene, null)` 传 null），仅作 gaze 行为对比调试保留。
+- **2026-07-11 决策：正式废弃 JS 调试运行时。** 所有剩余功能仅面向 WASM 运行时，不再要求 JS 兼容。
+- 后续：UI 运行时 toggle 可移除或降级为隐藏开关；`getMmdRuntimeType()` / `setMmdRuntimeType()` 可简化为常量。不急，待自然清理。
 
-### 🟡 功能缺口
+### 🟡 功能缺口（2026-07-11 核实）
 
 | 功能 | 价值 | 难度 | 依赖 / 说明 |
 |------|------|------|-------------|
 | 智能材质分类 | 中 | 中 | 自动检测皮肤/头发/眼睛/服装 |
-| 道具挂载 Accessory | 中 | 中 | 骨骼锚点 + UI |
-| Mesh-to-Cloth 自动布料 | 高 | 高 | 客观裙摆识别转 XPBD 约束，替代程序化圆锥裙 |
-| T-pose / A-pose 转换 | 高 | 中高 | 骨骼名标准化 + 姿态重定向 |
-| Pose Studio / 拍照模式 | 高 | 中 | 构图辅助线 + 景深 + 批量出图 + 水印 |
+| Mesh-to-Cloth 自动布料 | 高 | 高 | 客观裙摆识别转约束，替代程序化圆锥裙（注：TS XPBD 已由 ADR-081 移除，转 WASM Bullet） |
 | Playback Modes | 中 | 低 | 单次 / 随机 / 循环列表 |
 | Remix 跨套装音频交换 | 中 | 低 | VMD 资产复用 |
 | LipSync 共振峰口型 | 中 | 中 | 振幅 → 共振峰，HBR MMD Tools 路线 |
-| i18n 语言切换 | P0 | 中 | 打开非中文市场 |
-| 垂直同步开关 | P1 | 低 | ✅ 已实施（`settings.ts` vsync 开关） |
-| 设置导入 / 导出 | P2 | 低 | ✅ 已实施（`settings.ts` exportSettings / importSettings） |
-| 全量重置补全 | P2 | 低 | ✅ 已实施（resetAllSettings 全量重置，非仅外观/快捷键） |
-| Shift-JIS URL 编码 (`%EF%BF%BD`) | P0 | 中 | 已实施（ADR-057 主文件 + ADR-058 纹理） |
+| Formation 队形序列化 | 中 | 低 | 已有 6 预设，待序列化保存到 `.mmascene` |
+| AR 相机模式 | 高 | 中 | ADR-055 已批准待实施，Phase 1 桌面 MVP |
+| ✅ ~~道具挂载 Accessory~~ | — | — | ✅ ADR-061 (2026-07-10) |
+| ✅ ~~T-pose / A-pose 转换~~ | — | — | ✅ ADR-061 (2026-07-10) |
+| ✅ ~~Pose Studio / 拍照模式~~ | — | — | ✅ ADR-061 (2026-07-10) |
+| ✅ ~~i18n 语言切换~~ | — | — | ✅ ADR-059 (2026-07-10) |
+| ✅ ~~垂直同步开关~~ | — | — | ✅ `settings.ts` vsync 开关 |
+| ✅ ~~设置导入 / 导出~~ | — | — | ✅ `settings.ts` exportSettings / importSettings |
+| ✅ ~~全量重置补全~~ | — | — | ✅ `resetAllSettings` 全量重置 |
+| ✅ ~~Shift-JIS URL 编码~~ | — | — | ✅ ADR-057 / ADR-058 |
 
 ### 🟡 上游阻塞（卡 `babylon-mmd`，不独立启动）
 
@@ -58,42 +73,44 @@
 
 ---
 
-## 三、优先级分期
+## 三、优先级分期（2026-07-11 修订）
 
 ### P0（立即，低成本高感知）
-1. i18n 语言切换框架（唯一待做项）
+1. ~~i18n 语言切换框架~~ ✅ ADR-059 (2026-07-10)
 2. ~~垂直同步开关 + 设置导入 / 导出 + 全量重置补全~~ ✅ 已实施（2026-07-07 复核）
-3. ~~Shift-JIS URL 编码修复~~ ✅ 已实施（ADR-057 / ADR-058）
+3. ~~Shift-JIS URL 编码修复~~ ✅ ADR-057 / ADR-058
 
-> 注：高斯眨眼 / 自动呼吸 / LipSync 振幅 / Toon / 垂直同步 / 设置导入导出 / 全量重置 均已实现，不列入。
+> P0 已全部清空。
 
 ### P1（本季度，护城河 B：多模型导演台核心）
-4. Formation 队形预设（已有 6 预设，待序列化保存）
-5. Auto Camera 程序化运镜（已有 8 预设 + 节拍驱动闭环 ✅ 已实现）
-6. Playback Modes + Remix
-7. Pose Studio / 拍照模式
-8. T-pose / A-pose 转换
+1. Formation 队形预设序列化（已有 6 预设，待序列化保存）
+2. Playback Modes + Remix（单次 / 随机 / 循环列表 / VMD 资产复用）
+3. AR 相机模式 Phase 1（[ADR-055](adr/adr-055-ar-camera-mode.md) 桌面 MVP，已批准待实施）
+
+> 注：Auto Camera 程序化运镜（8 预设 + 节拍驱动闭环）已实现，不列入。
 
 ### P2（中期，深化护城河）
-9. Scene Bundle 分发（zip 内 VMD 加载债 ✅ 已清，可直接进入分发）
-10. Mesh-to-Cloth 自动布料
-11. 道具挂载 / 智能材质分类
-12. WASM 运行时图层支持 — ✅ 已实施（ADR-056，C+B 混合方案，2026-07-07 commit）
-13. AR 相机模式（[ADR-055](adr/adr-055-ar-camera-mode.md)，Phase 1 桌面 MVP → Phase 2 移动端 + Gaze 协同，状态：待实施）
+4. Mesh-to-Cloth 自动布料（客观裙摆识别转 WASM Bullet 约束）
+5. 智能材质分类（自动检测皮肤/头发/眼睛/服装）
+6. LipSync 共振峰口型（振幅 → 共振峰）
+7. Scene Bundle 分发（zip 内 VMD 加载债已清，可直接进入分发）
+8. AR 相机模式 Phase 2（移动端 + Gaze 协同，依赖 Phase 1）
 
 ### P3（远期探索）
-14. Soft Body / Ragdoll（XPBD 体积约束已预置）
-15. iOS 端
-16. SSS（待上游 PBR proxy）
-17. Lua / JS 脚本层（自动化工作流）
-18. Alembic / glTF 导出
+9. ~~Soft Body / Ragdoll~~ ✅ ADR-061-r (2026-07-10)
+10. AR 相机模式 Phase 3 / WebXR（[ADR-072](adr/adr-072-webxr-plane-detection.md)，待探针）
+11. 原生 ARCore/ARKit（[ADR-073](adr/adr-073-native-arcore-arkit.md)，远期兜底）
+12. iOS 端
+13. SSS（待上游 PBR proxy）
+14. Lua / JS 脚本层（自动化工作流）
+15. Alembic / glTF 导出
 
 ---
 
 ## 四、风险提醒
 
-- **`babylon-mmd` 单点故障**：SSS / PBR / WASM composite 全部卡在上游，需评估是否参与上游贡献。
-- **WASM / JS 分裂不解决** → 高级动作功能无法在默认运行时生效，是最高优先级架构决策。
+- **`babylon-mmd` 单点故障**：SSS / PBR 全部卡在上游，需评估是否参与上游贡献。
+- ~~WASM / JS 分裂~~ ✅ 已关闭（ADR-056 解决 + JS 调试运行时废弃，所有功能仅面向 WASM）。
 
 ---
 
@@ -103,7 +120,6 @@
 
 - ADR-017 Android 适配 → 后续方向
 - ADR-018 路径管理器抽象 → 后续方向
-- ADR-023 Android 文件访问 → 后续方向
 - ADR-024 渲染增强 Phase2 SSR / ReflectionProbe → 后续方向
 - ADR-029 物理 UI 重构 → 后续方向
 

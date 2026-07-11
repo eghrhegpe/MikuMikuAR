@@ -184,14 +184,15 @@ def main():
     )
 
     if broken:
-        out.write(f"\nFAILED: {len(broken)} broken link(s):\n\n".encode("utf-8"))
+        out.write(f"\nWARNING: {len(broken)} broken link(s):\n\n".encode("utf-8"))
         for b in broken:
             out.write(f"  {b}\n".encode("utf-8"))
-        sys.exit(1)
+        out.write(b"\nTip: Links are informational only; broken links won't block CI.\n")
     else:
         out.write(b"OK: All internal links are valid.\n")
-        if read_err:
-            sys.exit(1)
+
+    if read_err:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

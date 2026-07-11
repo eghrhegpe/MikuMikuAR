@@ -367,6 +367,11 @@ type EnvState struct {
 	GroundTerrainScale    float64    `json:"groundTerrainScale"`
 	GroundTerrainSeed     float64    `json:"groundTerrainSeed"`
 	GroundTerrainOctaves  float64    `json:"groundTerrainOctaves"`
+	GroundPitch           float64    `json:"groundPitch"`
+	GroundRoll            float64    `json:"groundRoll"`
+	GroundScrollSpeedX    float64    `json:"groundScrollSpeedX"`
+	GroundScrollSpeedZ    float64    `json:"groundScrollSpeedZ"`
+	GroundPattern         string     `json:"groundPattern"`
 	GroundLevel           float64    `json:"groundLevel"`
 	GroundSize            float64    `json:"groundSize"`
 	GroundEdgeFade        float64    `json:"groundEdgeFade"`

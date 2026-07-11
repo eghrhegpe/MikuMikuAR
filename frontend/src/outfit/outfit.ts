@@ -12,11 +12,24 @@ import {
     OutfitSlot,
     ModelInstance,
 } from '../core/config';
-import { scene } from '../scene/scene';
+import type { Scene } from '@babylonjs/core/scene';
 import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
 import { encodeFileRef } from '../core/fileservice';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
+
+// Lazy access to the active Scene — avoids a static import of '../scene/scene',
+// which would form a circular dependency (outfit → scene → scene-serialize → outfit)
+// and trigger an ESM Temporal Dead Zone under concurrent test module evaluation.
+// Mirrors the ADR-064 pattern (scene↔outfit broken via await import()).
+let _sceneCache: Scene | null = null;
+async function _getScene(): Promise<Scene> {
+    if (!_sceneCache) {
+        const mod = await import('../scene/scene');
+        _sceneCache = mod.scene;
+    }
+    return _sceneCache;
+}
 
 interface MmdStandardMaterial extends StandardMaterial {
     toonTexture: Texture | null;
@@ -220,6 +233,7 @@ async function _applySlot(
     const mmdSm = sm as MmdStandardMaterial & Record<TextureSlotKey, Texture | null>;
     const cur = mmdSm[slot];
     if (newPath) {
+        const scene = await _getScene();
         const url = `http://127.0.0.1:${port}/?f=${encodeFileRef(_encodePath(newPath))}`;
         const newTex = new Texture(url, scene);
         let loaded = false;
@@ -435,7 +449,7 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
                     restoreMaterials(inst);
                 }
                 if (variant?.meshFile) {
-                    const { meshes, retargetOk } = await loadOverlay(inst, variant.meshFile, scene);
+                    const { meshes, retargetOk } = await loadOverlay(inst, variant.meshFile, await _getScene());
                     // token 过期：说明此期间已切换到其他变体，丢弃本次结果
                     if (inst._overlayLoadToken !== token) {
                         console.info('[outfit] overlay load stale (token mismatch), discarding');

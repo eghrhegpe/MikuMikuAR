@@ -278,7 +278,7 @@ export function teardownWasmLayersBlender(modelId: string): void;
 
 - **Option A 上游推动**：若 C 方案稳定，可向上游 PR 让 `MmdWasmRuntime` 原生支持 composite，最终移除 JS 帧流合并的运行时开销
 - **图层混合 UI**：当前 Motion Layers UI 无 WASM/JS 差异提示，C 方案落地后可移除「WASM 仅支持单图层」的状态栏警告
-- **JS 运行时退役评估**：C 方案稳定后，评估是否保留 JS 运行时作为调试入口，或完全移除以降低维护成本
+- **JS 运行时退役**：✅ 已决定废弃（2026-07-11，ADR-054）。JS 运行时从未拥有物理引擎（`null` physics），C 方案稳定后唯一保留理由（gaze 对比调试）已不充分。所有新功能仅面向 WASM，不再要求 JS 兼容。UI toggle 可自然清理，不急。
 
 ---
 

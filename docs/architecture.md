@@ -417,11 +417,7 @@ MikuMikuAR/
         │   ├── outfit.ts             # 换装核心（load/apply/reset + 自动发现）
         │   └── audio.ts              # 音频播放 + VMD同步 + 节拍检测挂载
         ├── physics/
-        │   ├── xpbd-solver.ts        # XPBD 核心求解器（Verlet+约束+地面碰撞）
-        │   ├── xpbd-cloth.ts         # 布料生成 + 网格更新 + 每帧回调
-        │   ├── xpbd-collider.ts      # SDF 胶囊碰撞体
-        │   ├── xpbd-renderer.ts      # 调试可视化（粒子/约束/胶囊线框）
-        │   └── cloth-manager.ts      # 布料管理器（创建/销毁/碰撞缩放）
+        │   ├── wind-utils.ts         # 风场辅助函数（已移除 XPBD，仅保留风力）
         └── app.css                   # 全局样式（CSS 变量体系）
 ```
 
@@ -552,119 +548,9 @@ core/fileservice.ts
  └── Wails Binding    StartFileServer / IsolateModelDir
 ```
 
-### 16. XPBD 布料模拟（Phase 9）
+### 16. ~~XPBD 布料模拟~~（已移除）
 
-#### 16.1 概述
-
-基于 XPBD (Extended Position Based Dynamics) 算法的纯 TypeScript 布料模拟系统，不依赖 WASM Bullet，与 PMX 内建刚体链独立运行。
-
-核心参考：Miles Macklin "XPBD: Position-Based Simulation of Compliant Constrained Dynamics"
-
-#### 16.2 模块架构
-
-```
-physics/
-├── xpbd-solver.ts      # XPBD 核心引擎（Verlet 积分 + 子步约束求解）
-├── xpbd-collider.ts    # SDF 胶囊碰撞器（身体碰撞体积）
-├── xpbd-cloth.ts       # 程序化网格生成 + 骨骼锚定 + Mesh 更新
-└── xpbd-renderer.ts    # 调试可视化（粒子/约束/胶囊）
-
-scene/manager/model-manager.ts    # ModelManager 集成（getBoneWorldMatrix / addCloth / removeCloth）
-```
-
-#### 16.3 数据流
-
-```
-createCloth(scene, config, collider?)
-  ├─ 粒子放置：从锚骨 Y=0 向下生成 ringCount × ringSize 环状粒子
-  │   半径 = innerRadius + t * length * tan(slopeDeg)  （锥形裙摆）
-  ├─ 约束建立：
-  │   ├─ 距离约束：水平同层相邻 + 垂直上下层
-  │   └─ 弯曲约束：水平 skip-1 + 垂直 skip-1
-  ├─ 地面碰撞：默认 Y = -5
-  └─ Babylon.js Mesh：程序化生成三角网格 + StandardMaterial
-
-buildClothUpdateFn(cloth, anchorMatrixFn, collider?)
-  └─ 每帧回调（注册到 onBeforeRenderObservable）：
-     1. 锚定粒子跟随骨骼世界位置（matrix * localPos）
-     2. SDF 胶囊碰撞求解（身体穿透检测）
-     3. solver.step(dt) — Verlet 积分 + 4 子步约束求解
-     4. 更新 Mesh 顶点 + ComputeNormals 重算法线
-
-ModelManager 集成
-  └─ getBoneWorldMatrix(boneName) → 从 runtimeBones 获取世界矩阵
-  └─ addCloth(modelId, cloth, updateFn) → 注册 + 启动观察者
-  └─ removeCloth(modelId) → disposeCloth + 注销观察者（空集时）
-```
-
-#### 16.4 XPBD 求解器
-
-| 步骤 | 说明 |
-|------|------|
-| Verlet 积分 | `v = (p - prev) * damping / dt` → `v += gravity * dt` → `p += v * dt` |
-| 子步约束求解 | 每个子步遍历所有约束，用 XPBD 公式矫正：`Δλ = -(C + α̃λ) / (∇C·M⁻¹·∇C + α̃)` |
-| 速度更新 | `v = (p - prev) / dt`，固定粒子置零 |
-
-约束类型：
-- **距离约束**（2 粒子）：`C = |p_i - p_j| - restLength`
-- **弯曲约束**（3 粒子 skip-1）：`C = |p_i - p_k| - restLength`
-- **体积约束**（4 粒子四面体）：`C = 6·V - restVolume`，梯度 `grad_i = -1/6·((p_j-p_k)×(p_l-p_k))`
-
-#### 16.5 SDF 胶囊碰撞器
-
-用 13 个胶囊体近似身体碰撞体积（头/颈/胸/腰/臀 + 四肢×2）：
-
-- 胶囊 SDF：`distance = |point - nearestPointOnSegment| - radius`
-- 碰撞响应：推送穿透粒子（×stiffness） + 摩擦切向衰减
-- 每帧从骨骼世界矩阵更新胶囊端点（`updateMatrices`）
-
-#### 16.6 默认布料配置
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `anchorBone` | `"腰"` | 锚定骨骼名 |
-| `topology` | `"skirt"` | 拓扑（skirt/tube/cape/rope） |
-| `innerRadius` | `0.15` | 腰部开口半径 |
-| `length` | `0.6` | 裙长 |
-| `slope` | `15°` | 裙摆角度 |
-| `segmentsH × segmentsV` | `24 × 12` | 网格密度（288 粒子，~2000 约束） |
-| `compliance` | `0.001` | 布料柔度 |
-| `bendCompliance` | `0.005` | 弯曲柔度（= compliance × 5） |
-| `damping` | `0.96` | 速度阻尼 |
-| `particleRadius` | `0.03` | 粒子碰撞半径 |
-| `solver.substeps` | `4` | 子步数 |
-
-预期性能：~288 粒子 + ~2000 约束 + 4 子步 → CPU 约 0.5~1ms/帧。
-
-#### 16.7 生命周期
-
-```
-模型加载 → createCloth() → modelManager.addCloth(id, cloth, updateFn)
-                             └── 自动注册 onBeforeRenderObservable
-                             └── 每帧: dt = scene.deltaTime/1000 → cloth.updateFn(dt)
-
-模型删除 → modelManager.remove(id) → removeCloth(id) → disposeCloth(cloth)
-
-应用关闭 → modelManager.dispose() → 遍历所有 clothInstances → disposeCloth
-```
-
-渲染观察者按需管理：首个布料创建时注册，最后一个移除时注销，零布料时零开销。
-
-#### 16.8 调试渲染
-
-`XpbdRenderer` 提供三种可视化：
-- 粒子小球：绿色半透明球体显示粒子位置
-- 约束线条：蓝色线条显示距离/弯曲约束拓扑
-- 胶囊碰撞体：红色线框显示身体碰撞体积
-
-调试阶段可启用，上线后关闭（`showParticles(false)` 等）。
-
-#### 16.9 后续可选优化
-
-- LOD：相机远时降低 segmentsH/V
-- 风场：step 前给粒子速度加随机方向扰动
-- 混合碰撞器：布料与 PMX 刚体顶点混合碰撞检测
-- 体积约束：当前未用于裙子，已预置（四面体软体用）
+> **状态**：已移除（commit 530af6e）。XPBD(TS) 布料系统与 PMX 内建 WASM Bullet 物理存在功能重叠，维护成本高于收益。布料/头发摆动由 WASM Bullet 刚体驱动，不再需要独立 XPBD 求解器。
 
 ### 17. 换装系统（Outfit System）
 

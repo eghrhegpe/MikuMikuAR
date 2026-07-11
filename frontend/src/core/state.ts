@@ -289,6 +289,12 @@ export const envState: EnvState = reactive<EnvState>({
     groundTerrainSeed: 1337,
     groundTerrainOctaves: 5,
 
+    groundPitch: 0,
+    groundRoll: 0,
+    groundScrollSpeedX: 0,
+    groundScrollSpeedZ: 0,
+    groundPattern: 'checker',
+
     windEnabled: true,
     windDirection: [0, 0, 1],
     windSpeed: 5,

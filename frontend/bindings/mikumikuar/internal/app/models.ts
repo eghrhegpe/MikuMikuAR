@@ -199,6 +199,11 @@ export interface EnvState {
     "groundTerrainScale": number;
     "groundTerrainSeed": number;
     "groundTerrainOctaves": number;
+    "groundPitch": number;
+    "groundRoll": number;
+    "groundScrollSpeedX": number;
+    "groundScrollSpeedZ": number;
+    "groundPattern": string;
     "groundLevel": number;
     "groundSize": number;
     "groundEdgeFade": number;
