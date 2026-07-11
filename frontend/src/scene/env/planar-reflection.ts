@@ -74,8 +74,16 @@ export function registerReflectionSurface(
     _surfaces.set(name, { engine, onReleased });
 }
 
+/** @internal 测试用：重置互斥协调器状态（清除所有注册面与活跃引擎） */
+export function resetReflectionSurfaces(): void {
+    _activeEngine = null;
+    _surfaces.clear();
+}
+
 function requestExclusive(engine: PlanarReflection): void {
     if (_activeEngine && _activeEngine !== engine) {
+        // 标记被强制停用的面，阻止它在 onReleased 中主动重建
+        (_activeEngine as PlanarReflection & { _mutexDisabled: boolean })._mutexDisabled = true;
         _activeEngine.disable();
     }
     _activeEngine = engine;
@@ -86,9 +94,10 @@ function releaseExclusive(engine: PlanarReflection): void {
         return;
     }
     _activeEngine = null;
-    // 触发另一面按各自 envState 重建（可恢复互斥）
+    // 清除另一面的互斥标记并触发恢复（关地即开水、关水即开地）
     for (const entry of _surfaces.values()) {
         if (entry.engine !== engine) {
+            entry.engine._mutexDisabled = false;
             entry.onReleased();
             break;
         }
@@ -106,6 +115,8 @@ export class PlanarReflection {
     private lastMeshCount = 0;
     private lastLevel = 0;
     private enabled = false;
+    /** @internal 互斥协调器标记：被另一面强制停用时禁止主动重建，由 releaseExclusive 清除恢复。 */
+    _mutexDisabled = false;
 
     constructor(cfg: PlanarReflectionConfig) {
         this.cfg = cfg;
@@ -123,6 +134,10 @@ export class PlanarReflection {
             return;
         }
         if (!this.rt) {
+            // 被互斥强制停用时禁止主动重建（由 releaseExclusive 清除标志后恢复）
+            if (this._mutexDisabled) {
+                return;
+            }
             this.create(scene, state);
         }
         if (!this.rt) {
@@ -181,16 +196,6 @@ export class PlanarReflection {
             this.rt.render();
         } catch (e) {
             console.warn(`[planar-reflection] ${this.cfg.name} 反射 RT 渲染异常，已跳过本帧：`, e);
-        }
-    }
-
-    private shouldPopulateRenderList(state: EnvState): void {
-        const level = this.cfg.getSurfaceLevel(state);
-        const meshCount = (this.rt?.getScene().meshes.length ?? 0);
-        if (level !== this.lastLevel || meshCount !== this.lastMeshCount) {
-            this.renderListDirty = true;
-            this.lastLevel = level;
-            this.lastMeshCount = meshCount;
         }
     }
 
