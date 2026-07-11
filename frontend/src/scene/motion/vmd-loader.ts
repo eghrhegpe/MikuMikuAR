@@ -94,7 +94,9 @@ export async function loadVMDMotion(
         // Load VMD from buffer using VmdLoader
         const vmdLoader = new VmdLoader(scene);
         const mmdAnimation = await vmdLoader.loadFromBufferAsync(name, data);
-        (vmdLoader as unknown as { dispose?: () => void }).dispose?.(); // 释放解析器内部资源（API 可选）
+        // VmdLoader 类型声明未包含 dispose 方法，但运行时实现了该 API
+        // 用于释放解析器内部 ArrayBuffer 引用，避免大 VMD 文件内存驻留
+        (vmdLoader as unknown as { dispose?: () => void }).dispose?.();
 
         // 检查是否在 await 期间有新的 loadVMDMotion 调用，过期则丢弃
         if (_vmdLoadGeneration !== capturedGen) {
@@ -136,6 +138,8 @@ export async function loadVMDMotion(
         // setRuntimeAnimation(null) 仅解绑、不释放 WASM buffer；必须显式 dispose 旧
         // runtime animation（其内部 onDispose 回调触发 _destroyRuntimeAnimation，从
         // _animationHandleMap 删除并回收 WASM AnimCurve 资源），否则每次换 VMD 都泄漏一份。
+        // babylon-mmd 类型声明未暴露 currentAnimation 属性（内部实现），
+        // 需要取出旧动画句柄显式 dispose 以释放 WASM AnimCurve 资源
         const prevAnim =
             (inst.mmdModel as { currentAnimation?: { dispose?: () => void } | null })
                 .currentAnimation ?? null;

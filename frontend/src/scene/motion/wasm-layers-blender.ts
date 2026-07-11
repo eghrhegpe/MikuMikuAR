@@ -103,6 +103,7 @@ export function teardownWasmLayersBlender(modelId: string): void {
 }
 
 export function isWasmLayersBlenderActive(modelId: string): boolean {
+    // has() 守卫保证 get() 非空
     return _blenderStates.has(modelId) && _blenderStates.get(modelId)!.enabled;
 }
 
@@ -256,6 +257,8 @@ function _applyLayersBlending(modelId: string): void {
                 newMat.copyFrom(Matrix.Compose(Vector3.One(), blendedRot, pos));
             }
 
+            // perception.ts 扩展了 MmdRuntimeBone 添加 worldMatrix 属性，
+            // babylon-mmd 类型声明未包含此扩展，需类型断言
             const buf = (bone as MmdRuntimeBoneExtended).worldMatrix;
             _writeMatToBuffer(buf, newMat);
 
