@@ -4,6 +4,16 @@ import { setStatus, cardContainer } from '../core/config';
 import { t } from '../core/i18n/t';
 import { slideRow, addSliderRow, addToggleRow } from '../core/ui-helpers';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
+import {
+    getSfxEnabled,
+    setSfxEnabled,
+    getSfxVolume,
+    setSfxVolume,
+    getFootstepEnabled,
+    setFootstepEnabled,
+    getFootstepVolume,
+    setFootstepVolume,
+} from '../core/audio-bus';
 import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
 import {
     getAutoLoadCompanionAudio,
@@ -122,6 +132,86 @@ export function buildSettingsAudioLevel(getSettingsMenu: () => SettingsMenuHandl
                     },
                     'lucide:disc-3',
                     { bind: () => getAutoLoadCompanionAudio() }
+                );
+            });
+
+            cardContainer(container, (c) => {
+                addToggleRow(
+                    c,
+                    t('settings.sfx.enabled'),
+                    getSfxEnabled(),
+                    (v) => {
+                        setSfxEnabled(v);
+                        getSettingsMenu()?.updateControls();
+                    },
+                    'lucide:volume-2',
+                    { bind: () => getSfxEnabled() }
+                );
+            });
+
+            cardContainer(container, (c) => {
+                addSliderRow(
+                    c,
+                    t('settings.sfx.volume'),
+                    getSfxVolume(),
+                    0,
+                    1,
+                    0.05,
+                    (v) => {
+                        setSfxVolume(v);
+                        getSettingsMenu()?.updateControls();
+                    },
+                    'lucide:volume-2',
+                    undefined,
+                    {
+                        bind: () => getSfxVolume(),
+                        onUpdate: (el) => {
+                            const valEl = el.querySelector('.cs-value');
+                            if (valEl) {
+                                valEl.textContent = Math.round(getSfxVolume() * 100) + '%';
+                            }
+                        },
+                    }
+                );
+            });
+
+            cardContainer(container, (c) => {
+                addToggleRow(
+                    c,
+                    t('settings.footstep.enabled'),
+                    getFootstepEnabled(),
+                    (v) => {
+                        setFootstepEnabled(v);
+                        getSettingsMenu()?.updateControls();
+                    },
+                    'lucide:footprints',
+                    { bind: () => getFootstepEnabled() }
+                );
+            });
+
+            cardContainer(container, (c) => {
+                addSliderRow(
+                    c,
+                    t('settings.footstep.volume'),
+                    getFootstepVolume(),
+                    0,
+                    1,
+                    0.05,
+                    (v) => {
+                        setFootstepVolume(v);
+                        getSettingsMenu()?.updateControls();
+                    },
+                    'lucide:footprints',
+                    undefined,
+                    {
+                        bind: () => getFootstepVolume(),
+                        onUpdate: (el) => {
+                            const valEl = el.querySelector('.cs-value');
+                            if (valEl) {
+                                valEl.textContent = Math.round(getFootstepVolume() * 100) + '%';
+                            }
+                        },
+                    }
                 );
             });
         },

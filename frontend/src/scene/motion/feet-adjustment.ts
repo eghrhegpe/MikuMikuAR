@@ -21,6 +21,8 @@ import {
 } from '@/motion-algos/proc-motion-shared';
 // 纯数学解算（无 Babylon 依赖，便于单测）见 motion-algos/feet-adjustment-math.ts
 import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
+// 落地判定（无 Babylon 依赖，便于单测）见 motion-algos/footstep-detect.ts
+import { detectFootLanding } from '@/motion-algos/footstep-detect';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';
 
@@ -38,10 +40,23 @@ interface _ModelCache {
     rName: string | null;
     lTargetY: number | null;
     rTargetY: number | null;
+    // 落地事件检测状态（ADR-088）：脚 IK 贴地上升沿 + 去抖
+    lPrevGrounded: boolean;
+    rPrevGrounded: boolean;
+    lFootYPrev: number;
+    rFootYPrev: number;
+    lLastLandTime: number;
+    rLastLandTime: number;
 }
 
 const _cache = new Map<string, _ModelCache>();
 let _observerHandle: (() => void) | null = null;
+// ADR-088 落地事件回调（setOnFootLand 注入）；脚步声消费此事件
+let _onFootLand: ((e: FootLandEvent) => void) | null = null;
+// 帧间隔计时（供落地垂直速度估算）
+let _lastTickTime = 0;
+// 同脚两次落地最小间隔（ms），去抖防抖动误触发
+const FOOT_STEP_MIN_INTERVAL = 120;
 
 // TEMP DEBUG (ADR-085 验证用): 验证后改为 false 或整块删除以关闭诊断日志
 const FEET_DEBUG = true;
@@ -59,10 +74,37 @@ const _vTarget = new Vector3();
 function _getCache(id: string): _ModelCache {
     let c = _cache.get(id);
     if (!c) {
-        c = { lName: '', rName: '', lTargetY: null, rTargetY: null };
+        c = {
+            lName: '',
+            rName: '',
+            lTargetY: null,
+            rTargetY: null,
+            lPrevGrounded: false,
+            rPrevGrounded: false,
+            lFootYPrev: 0,
+            rFootYPrev: 0,
+            lLastLandTime: 0,
+            rLastLandTime: 0,
+        };
         _cache.set(id, c);
     }
     return c;
+}
+
+/** 落地事件：脚从空中接触地面的瞬间（ADR-088 供脚步声消费）。 */
+export interface FootLandEvent {
+    modelId: string;
+    foot: 'L' | 'R';
+    groundY: number;
+    /** 落地垂直速度（单位/秒），>=0，用于脚步声音量映射 */
+    impactSpeed: number;
+    worldX: number;
+    worldZ: number;
+}
+
+/** 注入落地事件回调（null 取消）。脚步声控制器调用。 */
+export function setOnFootLand(cb: ((e: FootLandEvent) => void) | null): void {
+    _onFootLand = cb;
 }
 
 /** 沿 parentBone 向上找大腿根骨骼（用于估算髋世界坐标与腿长） */
@@ -90,7 +132,9 @@ function _adjustFoot(
     ikName: string | null,
     side: 'L' | 'R',
     cache: _ModelCache,
-    feet: FeetState
+    feet: FeetState,
+    modelId: string,
+    dt: number
 ): void {
     if (!ikName) {
         return;
@@ -123,6 +167,47 @@ function _adjustFoot(
         prevTargetY: side === 'L' ? cache.lTargetY : cache.rTargetY,
         feet,
     });
+
+    // ADR-088：落地事件（贴地上升沿 + 去抖）。grounded = 本帧未跳过 IK 重解（脚被拉到地面）
+    const grounded = !res.skip;
+    const now = performance.now();
+    const footYPrev = side === 'L' ? cache.lFootYPrev : cache.rFootYPrev;
+    const prevGrounded = side === 'L' ? cache.lPrevGrounded : cache.rPrevGrounded;
+    const prevStepTime = side === 'L' ? cache.lLastLandTime : cache.rLastLandTime;
+    const det = detectFootLanding({
+        prevGrounded,
+        grounded,
+        footYPrev,
+        footY: _vFoot.y,
+        dt,
+        prevStepTime,
+        now,
+        minInterval: FOOT_STEP_MIN_INTERVAL,
+    });
+    if (det.landed && _onFootLand) {
+        _onFootLand({
+            modelId,
+            foot: side,
+            groundY,
+            impactSpeed: det.impactSpeed,
+            worldX: _vFoot.x,
+            worldZ: _vFoot.z,
+        });
+    }
+    // 更新上一帧状态（无论是否落地都更新，供下一帧上升沿判定）
+    if (side === 'L') {
+        cache.lPrevGrounded = grounded;
+        cache.lFootYPrev = _vFoot.y;
+        if (det.landed) {
+            cache.lLastLandTime = now;
+        }
+    } else {
+        cache.rPrevGrounded = grounded;
+        cache.rFootYPrev = _vFoot.y;
+        if (det.landed) {
+            cache.rLastLandTime = now;
+        }
+    }
 
     if (FEET_DEBUG && (_feetDbgFrame++ % 60 === 0)) {
         console.log(
@@ -177,6 +262,9 @@ export function startFeetAdjustment(
     }
 
     const callback = () => {
+        const now = performance.now();
+        const dt = _lastTickTime ? Math.min((now - _lastTickTime) / 1000, 0.1) : 1 / 60;
+        _lastTickTime = now;
         if (FEET_DEBUG && (_feetTick++ % 90 === 0)) {
             const summary = [...getModels()]
                 .map((m) => `${m.id}:en=${m.feet.enabled},n=${m.runtimeBones.length}`)
@@ -190,6 +278,10 @@ export function startFeetAdjustment(
                 // 禁用时清空平滑状态，避免重新启用跳变
                 cache.lTargetY = null;
                 cache.rTargetY = null;
+                cache.lPrevGrounded = false;
+                cache.rPrevGrounded = false;
+                cache.lLastLandTime = 0;
+                cache.rLastLandTime = 0;
                 continue;
             }
             // 解析 IK 骨骼名（按模型缓存，首次解析）
@@ -207,8 +299,8 @@ export function startFeetAdjustment(
                     );
                 }
             }
-            _adjustFoot(m.runtimeBones, cache.lName, 'L', cache, feet);
-            _adjustFoot(m.runtimeBones, cache.rName, 'R', cache, feet);
+            _adjustFoot(m.runtimeBones, cache.lName, 'L', cache, feet, m.id, dt);
+            _adjustFoot(m.runtimeBones, cache.rName, 'R', cache, feet, m.id, dt);
         }
     };
 

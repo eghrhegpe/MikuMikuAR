@@ -97,6 +97,20 @@ groundFollowCamera: boolean;       // 网格模式跟随相机，默认 false
 - heightmap 模式：pitch/roll 固定为 0，UI 滑块禁用并提示「高度图模式下不支持倾斜」
 - `getGroundHeightAt()` 保持现有实现，heightmap 模式下 ground 无旋转，坐标天然对齐
 
+> **修订注记（2026-07-11 补）**：平面模式的贴地 gap 已修复。
+> 根因：`GroundMesh.getHeightAtCoordinates`（groundMesh.pure.js:83）在世界变换时只对 `(0, y, 0)` 取 y 分量，
+> 丢弃局部 x/z 偏移，倾斜后只返回 `position.y`，导致脚悬空/穿模（与 5.2 中 heightmap 的坐标错位同源，
+> 但平面模式是**真实功能缺失**，非 heightmap 的规避项）。
+> 修复：`getGroundHeightAt()` 在平面模式改为按世界平面方程 `N·(X-P0)=0` 解析求高（见 `env-impl.ts`），
+> 无倾斜时退化为 `groundLevel`，与改动前一致，零回归；heightmap 仍走原生采样（恒水平，安全）。
+>
+> **配套修复（2026-07-11 补）**：仅修 `getGroundHeightAt` 不够——模型根节点 `rootMesh.position.y`
+> 只在 spawn 与 heightmap onReady 时设置（`model-loader.ts`），运行时改 groundLevel/pitch/roll 不会重贴地，
+> 故角色脚底不随地面变化（水平放置时「贴地」仅在 spawn 一刻成立，动态改高度即失效）。
+> 修复：新增 `setOnGroundChanged` 回调，`applyGround` 原地分支对 `groundLevel/pitch/roll` 做变更检测
+> （沿用 `_prevX` 模式，每帧调用但仅变化时触发），变化时 `model-loader` 重贴地所有已加载模型。
+> 此触发器是 tilt 修复与「groundLevel 滑块实时生效」共同缺失的一环。
+
 ### 5.3 跟随网格（Phase B）
 
 ```typescript

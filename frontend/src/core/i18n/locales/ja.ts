@@ -1094,6 +1094,10 @@ export const ja: Record<string, string> = {
     'settings.autoImportOff': '✓ 自動インポートをオフ',
     'settings.companionOn': '✓ 伴奏自動ロードをオン',
     'settings.companionOff': '✓ 伴奏自動ロードをオフ',
+    'settings.sfx.enabled': '効果音マスター',
+    'settings.sfx.volume': '効果音音量',
+    'settings.footstep.enabled': '足音を有効にする',
+    'settings.footstep.volume': '足音の音量',
     'settings.transformReset': '✓ {kind} 変換をリセット',
     'settings.storageModeFail': 'ストレージモード切り替え失敗: {err}',
 

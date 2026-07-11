@@ -395,6 +395,12 @@ export function applySky(state: EnvState): void {
 let _currentGroundKey: string = '';
 /** 地形（heightmap）就绪后回调，供 model-loader 重新贴地所有模型。 */
 let _onTerrainReady: (() => void) | null = null;
+/** 地面高度/坡度变化回调，供 model-loader 在 groundLevel/pitch/roll 变化时重贴地模型。 */
+let _onGroundChanged: (() => void) | null = null;
+/** 上一帧影响贴地的地面参数，用于检测变化后触发 _onGroundChanged。 */
+let _prevGroundHeight = NaN;
+let _prevGroundPitch = NaN;
+let _prevGroundRoll = NaN;
 /** 纹理滚动累计偏移量（每帧由 observer 累加，取模 1.0）。 */
 let _groundScrollU = 0;
 let _groundScrollV = 0;
@@ -478,9 +484,44 @@ function applyProceduralGround(ground: Mesh, state: EnvState): void {
  * - 其他模式：返回 groundLevel（平面参考高度）。
  * 地形尚未加载完成时回退到 groundLevel，避免模型被错误地放到 0。
  */
+// 平面模式解析求高用的复用临时量，避免每帧 allocate（feet-adjustment 按脚调用）。
+const _groundPlaneNormal = new Vector3();
+const _groundPlaneUp = new Vector3(0, 1, 0);
+const _groundPlanePoint = new Vector3();
+
+/**
+ * 平面模式（grid/checker/texture/solid）求世界坐标 (x, z) 处地面高度。
+ *
+ * 这些模式顶点局部 y≡0，但可被 pitch/roll 倾斜（ADR-083 Phase A）。
+ * Babylon `GroundMesh.getHeightAtCoordinates` 在世界变换时只对 (0, y, 0) 取 y 分量
+ * （groundMesh.pure.js:83），丢弃了局部 x/z 偏移，导致倾斜后只返回 position.y，
+ * 模型脚悬空/穿模。
+ *
+ * 改用世界平面方程解析求解 N·(X - P0) = 0，精确反映倾斜：
+ *   - 无倾斜时 normal=(0,1,0)、P0.y=groundLevel → 结果退化为 groundLevel（与原行为一致）。
+ *   - 近垂直平面（|N.y|<ε）退化回 groundLevel，防止除零。
+ */
+function getTiltedPlaneHeight(mesh: Mesh, x: number, z: number): number {
+    const world = mesh.getWorldMatrix();
+    Vector3.TransformNormalToRef(_groundPlaneUp, world, _groundPlaneNormal);
+    _groundPlaneNormal.normalize();
+    if (Math.abs(_groundPlaneNormal.y) < 1e-4) return envState.groundLevel;
+    Vector3.TransformCoordinatesFromFloatsToRef(0, 0, 0, world, _groundPlanePoint);
+    return (
+        _groundPlanePoint.y -
+        (_groundPlaneNormal.x * (x - _groundPlanePoint.x) +
+            _groundPlaneNormal.z * (z - _groundPlanePoint.z)) /
+            _groundPlaneNormal.y
+    );
+}
+
 export function getGroundHeightAt(x: number, z: number): number {
     const m = _envSys.ground.mesh;
-    if (m && typeof (m as GroundMesh).getHeightAtCoordinates === 'function' && m.isReady()) {
+    if (!m || !m.isReady()) return envState.groundLevel;
+
+    // 高度图模式：Babylon 原生起伏采样。ADR-083 已禁用其 pitch/roll（恒水平），
+    // 仅平移变换下 getHeightAtCoordinates 世界变换退化为 (0,y,0)+平移，结果正确。
+    if (envState.groundMode === 'heightmap' && typeof (m as GroundMesh).getHeightAtCoordinates === 'function') {
         try {
             return (m as GroundMesh).getHeightAtCoordinates(x, z);
         } catch (e) {
@@ -488,12 +529,20 @@ export function getGroundHeightAt(x: number, z: number): number {
             return envState.groundLevel;
         }
     }
-    return envState.groundLevel;
+
+    // 平面模式（grid/checker/texture/solid）：用世界平面方程解析求真实高度，
+    // 修正 Babylon 在倾斜时丢弃旋转的问题（groundMesh.pure.js:83）。
+    return getTiltedPlaneHeight(m, x, z);
 }
 
 /** 注册地形就绪回调（由 model-loader 调用，用于在高度图加载完成后重新贴地所有模型）。 */
 export function setOnTerrainReady(cb: (() => void) | null): void {
     _onTerrainReady = cb;
+}
+
+/** 注册地面参数变化回调（由 model-loader 订阅，在 groundLevel/pitch/roll 变化时重贴地模型）。 */
+export function setOnGroundChanged(cb: (() => void) | null): void {
+    _onGroundChanged = cb;
 }
 
 // ======== 地面边缘淡出（径向不透明度贴图）========
@@ -788,6 +837,17 @@ export function applyGround(state: EnvState): void {
         if (state.groundMode !== 'heightmap') {
             _envSys.ground.mesh.rotation.x = (state.groundPitch * Math.PI) / 180;
             _envSys.ground.mesh.rotation.z = (state.groundRoll * Math.PI) / 180;
+        }
+        // 地面高度/坡度变化 → 通知模型重贴地（脚底跟随 groundLevel / 倾斜）
+        if (
+            state.groundLevel !== _prevGroundHeight ||
+            state.groundPitch !== _prevGroundPitch ||
+            state.groundRoll !== _prevGroundRoll
+        ) {
+            _prevGroundHeight = state.groundLevel;
+            _prevGroundPitch = state.groundPitch;
+            _prevGroundRoll = state.groundRoll;
+            _onGroundChanged?.();
         }
         // 反射 RT 重建（quality 变更时由 typeKey 触发，blend 变更走上面的原地更新）
         state.planarReflectBlend = 0; // 地面反射启用时关闭水面反射状态

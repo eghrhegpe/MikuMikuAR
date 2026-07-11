@@ -1,6 +1,6 @@
 # ADR-088：音效系统 — 脚步声与 SFX 总线
 
-> **状态**: 规划中
+> **状态**: 部分实现（Phase A 已完成，Phase B/C 待开发）
 > **日期**: 2026-07-11
 > **关联**: ADR-085（脚部地面跟随，提供落地事件数据源）
 
@@ -221,8 +221,43 @@ settings.footstep.title / settings.footstep.enabled / settings.footstep.volume
 
 ---
 
-## 8. 待确认（请架构师定夺）
+## 8. 决策确认（架构师已定，2026-07-11）
 
-1. **音源策略**：Phase A 用**程序化合成**（零资源、快速）还是直接引入**采样文件**？（建议前者）
-2. **音乐增强（Phase C）**是否纳入本轮？还是仅做脚步声 + SFX 总线？
-3. **默认开关**：脚步声默认关闭（`footstepEnabled: false`）是否合适？（建议默认关，用户主动开）
+1. **音源策略**：✅ **程序化合成**（零资源、快速验证链路）。`footstep.ts:synthFootstep` 用噪声脉冲 + 低频 thump + 衰减包络 + 一阶低通，按地面材质微调音色；buffer 按 kind 缓存复用。
+2. **音乐增强（Phase C）**：本轮**不做**，沿用既有单曲目播放器。
+3. **默认开关**：✅ 脚步声默认关闭（`footstepEnabled: false`），用户主动开启；SFX 总线默认开（`sfxEnabled: true`，`sfxVolume: 0.7`）。
+
+---
+
+## 9. 实现记录（Phase A）
+
+### 9.1 文件落地
+
+| 文件 | 类型 | 说明 |
+|------|------|------|
+| `core/audio-bus.ts` | 新增 | SFX 总线：共享 AudioContext + 主增益 + `playSfx`（多发 BufferSource）+ 采样/合成缓存；`sfxEnabled`/`sfxVolume`/`footstepEnabled`/`footstepVolume` 读写 |
+| `motion-algos/footstep-detect.ts` | 新增 | 纯落地判定（grounded 上升沿 + 去抖 `minInterval=120ms` + `impactSpeed` 估算），无 Babylon 依赖 |
+| `scene/motion/footstep.ts` | 新增 | 脚步声控制器：消费落地事件 → 程序化合成 → `playSfx`（音量随 `impactSpeed` 归一、±80 音分随机）|
+| `scene/motion/feet-adjustment.ts` | 修改 | 增 `FootLandEvent` + `setOnFootLand`；`_adjustFoot` 每帧计算 `grounded` 上升沿并触发回调（去抖在 detect 内）|
+| `scene/scene.ts` | 修改 | 注册 `startFootstep`（在 `startFeetAdjustment` 之后）|
+| `menus/settings-audio.ts` | 修改 | 增 SFX 总开关/音量 + 脚步声开关/音量卡片（5 语种 i18n）|
+| `lib/settings-store.ts` | 修改 | 增 `sfxEnabled`/`sfxVolume`/`footstepEnabled`/`footstepVolume` 键与默认值 |
+| `__tests__/footstep-detect.test.ts` | 新增 | 7 例纯逻辑单测（上升沿/持续贴地/抬脚/去抖/边界/impactSpeed）|
+
+### 9.2 已知约束（Phase A 范围）
+
+- **依赖脚部跟随**：脚步声的落地事件由 ADR-085 `feet-adjustment` 产生，**必须开启脚部贴地**才有声音。未开脚部跟随时无落地事件（Phase B 补独立降级检测）。
+- **物理模式**：ADR-085 已知，物理驱动腿时 IK 重解被跳过 → `grounded` 不更新 → 脚步声失效。
+- **平地无落差**：见 ADR-085——平地 `groundY=0` 且动画脚本就在 0 附近，落地事件仍触发（脚每步落回 0），只是视觉落差小。
+
+### 9.3 连带修复（正交但阻塞编译）
+
+`env-impl.ts:getTiltedPlaneHeight` 误用 `Vector3.TransformCoordinatesToRef(0,0,0,world,point)`（该签名仅 3 参），改为 `TransformCoordinatesFromFloatsToRef`（5 参）。此函数正是此前分析的「**其他地面模式（grid/checker/texture/solid）倾斜后脚步跟随失效**」的根因修复——倾斜平面现在能正确返回高度，脚部跟随与脚步声在倾斜非 heightmap 地面亦可生效。
+
+### 9.4 验证
+
+| 维度 | 命令 | 结果 |
+|------|------|------|
+| 类型检查 | `npm run check` | ✅ exit 0 |
+| 单元测试 | `npm run test` | ✅ 43 文件 / **1260** 用例全绿（含新 7 例）|
+| 生产构建 | `npm run build` | ✅ exit 0 |

@@ -1088,6 +1088,10 @@ export const ko: Record<string, string> = {
     'settings.autoImportOff': '✓ 자동 가져오기 꺼짐',
     'settings.companionOn': '✓ 반주 자동 로드 켜짐',
     'settings.companionOff': '✓ 반주 자동 로드 꺼짐',
+    'settings.sfx.enabled': '효과음 마스터',
+    'settings.sfx.volume': '효과음 볼륨',
+    'settings.footstep.enabled': '발소리 사용',
+    'settings.footstep.volume': '발소리 볼륨',
     'settings.transformReset': '✓ {kind} 변환 초기화',
     'settings.storageModeFail': '스토리지 모드 전환 실패: {err}',
 

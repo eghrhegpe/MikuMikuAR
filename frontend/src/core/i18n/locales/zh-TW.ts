@@ -1080,6 +1080,10 @@ export const zhTW: Record<string, string> = {
     'settings.autoImportOff': '✓ 自動匯入已關閉',
     'settings.companionOn': '✓ 伴音自動載入已開啟',
     'settings.companionOff': '✓ 伴音自動載入已關閉',
+    'settings.sfx.enabled': '音效總開關',
+    'settings.sfx.volume': '音效音量',
+    'settings.footstep.enabled': '啟用腳步聲',
+    'settings.footstep.volume': '腳步聲音量',
     'settings.transformReset': '✓ {kind}變換已重置',
     'settings.storageModeFail': '儲存模式切換失敗: {err}',
 

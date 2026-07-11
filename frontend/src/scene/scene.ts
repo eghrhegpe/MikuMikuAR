@@ -297,6 +297,11 @@ export async function initScene(): Promise<void> {
         return out;
     }, scene);
 
+    // 7.5 脚步声系统启动（ADR-088）：消费 feet-adjustment 落地事件发声
+    // 必须在 startFeetAdjustment 之后注册（落地事件由脚部跟随产生）
+    const { startFootstep } = await import('./motion/footstep');
+    startFootstep(scene);
+
     // 8. Bone Override 系统启动
     // 注册 onBeforeRenderObservable 回调，在动画应用后逐骨骼覆盖
     const { startBoneOverride } = await import('./motion/bone-override');
