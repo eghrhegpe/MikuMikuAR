@@ -143,9 +143,9 @@ func formatByCategory(ext, category string) string {
 
 // ZIP bomb protection thresholds for expandZipEntries.
 const (
-	maxZipEntryFileSize  = 500 * 1024 * 1024 // 500 MB — reject bloated files before zip.OpenReader
-	maxZipEntryCount     = 10000              // reject zip bombs with excessive file entries
-	maxZipTotalBytes     = 2 * 1024 * 1024 * 1024 // 2 GB — total uncompressed size limit
+	maxZipEntryFileSize = 500 * 1024 * 1024      // 500 MB — reject bloated files before zip.OpenReader
+	maxZipEntryCount    = 10000                  // reject zip bombs with excessive file entries
+	maxZipTotalBytes    = 2 * 1024 * 1024 * 1024 // 2 GB — total uncompressed size limit
 )
 
 // totalUncompressedZipSize returns the sum of all entries' UncompressedSize64.
@@ -285,6 +285,7 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 	}
 	return models, nil
 }
+
 // GetModelMeta parses the PMX header for a single PMX file and returns its metadata.
 // Returns empty meta on error (non-fatal), logs real errors.
 func (a *App) GetModelMeta(pmxPath string) (ModelMeta, error) {
@@ -345,8 +346,6 @@ func (a *App) ListSubDirs(dirPath string) ([]string, error) {
 	}
 	return dirs, nil
 }
-
-
 
 // getConfigUnsafe reads config from disk without locking.
 // Caller must hold configMu (at least RLock) if concurrent writes are possible.

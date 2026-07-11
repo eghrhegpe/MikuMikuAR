@@ -617,17 +617,17 @@ func basenameFallbackFS(root string, logFn func(string, ...interface{})) http.Ha
 					return
 				}
 				// 1. 尝试完整 relPath（支持 outfit 传来的子目录相对路径）
-			fullPath := filepath.Join(root, filepath.FromSlash(cleaned))
-			if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
-				serveFileWithSizeCheck(w, r, fullPath)
-				return
-			}
-			// 2. basename fallback（支持 resolveFileUrl 传来的单文件名）
-			reqBase := strings.ToLower(path.Base(cleaned))
-			if entry, ok := index[reqBase]; ok {
-				serveFileWithSizeCheck(w, r, filepath.Join(root, entry))
-				return
-			}
+				fullPath := filepath.Join(root, filepath.FromSlash(cleaned))
+				if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
+					serveFileWithSizeCheck(w, r, fullPath)
+					return
+				}
+				// 2. basename fallback（支持 resolveFileUrl 传来的单文件名）
+				reqBase := strings.ToLower(path.Base(cleaned))
+				if entry, ok := index[reqBase]; ok {
+					serveFileWithSizeCheck(w, r, filepath.Join(root, entry))
+					return
+				}
 				// ?f= 未命中 → 直接 404，不走路径段兜底（避免歧义）
 				http.NotFound(w, r)
 				return

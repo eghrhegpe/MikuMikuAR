@@ -206,9 +206,9 @@ func TestIsolateDir_CopiesToCacheServe(t *testing.T) {
 
 	// Verify files were copied
 	for name, want := range map[string]string{
-		"model.pmx":          "fake-pmx-data",
-		"tex.png":            "fake-texture-data",
-		"textures/face.bmp":  "face-data",
+		"model.pmx":         "fake-pmx-data",
+		"tex.png":           "fake-texture-data",
+		"textures/face.bmp": "face-data",
 	} {
 		got, err := os.ReadFile(filepath.Join(isolated, name))
 		if err != nil {
@@ -427,7 +427,7 @@ func TestBasenameFallbackFS_CorruptIndexCollisionWarning(t *testing.T) {
 
 	var logBuf strings.Builder
 	logFn := func(format string, args ...interface{}) {
-logBuf.WriteString(fmt.Sprintf(format, args...))
+		logBuf.WriteString(fmt.Sprintf(format, args...))
 	}
 
 	// The corruptIndex should contain an entry for both filenames but the second
@@ -446,8 +446,9 @@ logBuf.WriteString(fmt.Sprintf(format, args...))
 		t.Errorf("expected 'corruptIndex collision' warning, got: %s", logOutput)
 	}
 }
-	// Note: since both files might map to different corrupt strings,
-	// we just verify the indexing doesn't panic and produces logs.
+
+// Note: since both files might map to different corrupt strings,
+// we just verify the indexing doesn't panic and produces logs.
 
 func startsWith(s, prefix string) bool {
 	return len(s) >= len(prefix) && s[:len(prefix)] == prefix

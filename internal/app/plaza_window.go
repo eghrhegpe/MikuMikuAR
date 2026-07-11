@@ -37,49 +37,49 @@ func sweepClosedPlazaWindows(app *application.App) {
 func (a *App) OpenPlazaWindow(targetURL string) error {
 	return util.SafeCallVoid(func() error {
 		if a.wailsApp == nil {
-		return fmt.Errorf("wails app not initialized")
-	}
-	if targetURL == "" {
-		return fmt.Errorf("empty URL")
-	}
-
-	// Acquire a unique window name under the 5-window cap
-	openPlazaWindowsMu.Lock()
-	sweepClosedPlazaWindows(a.wailsApp)
-	if len(openPlazaWindows) >= 5 {
-		openPlazaWindowsMu.Unlock()
-		return fmt.Errorf("已达窗口上限（5），请先关闭已打开的模型广场窗口")
-	}
-	plazaWindowSeq++
-	name := fmt.Sprintf("plaza:%d", plazaWindowSeq)
-	openPlazaWindows = append(openPlazaWindows, name)
-	openPlazaWindowsMu.Unlock()
-
-	win := a.wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:   name,
-		Title:  "模型广场 — " + targetURL,
-		URL:    targetURL,
-		Width:  1200,
-		Height: 800,
-		Windows: application.WindowsWindow{
-			Theme: application.SystemDefault,
-		},
-	})
-
-	if win == nil {
-		// Creation failed — remove from tracking
-		openPlazaWindowsMu.Lock()
-		for i, n := range openPlazaWindows {
-			if n == name {
-				openPlazaWindows = append(openPlazaWindows[:i], openPlazaWindows[i+1:]...)
-				break
-			}
+			return fmt.Errorf("wails app not initialized")
 		}
-		openPlazaWindowsMu.Unlock()
-		return fmt.Errorf("failed to create window")
-	}
+		if targetURL == "" {
+			return fmt.Errorf("empty URL")
+		}
 
-	a.safeLogInfo("OpenPlazaWindow: %s (name=%s, total=%d)", targetURL, name, len(openPlazaWindows))
-	return nil
+		// Acquire a unique window name under the 5-window cap
+		openPlazaWindowsMu.Lock()
+		sweepClosedPlazaWindows(a.wailsApp)
+		if len(openPlazaWindows) >= 5 {
+			openPlazaWindowsMu.Unlock()
+			return fmt.Errorf("已达窗口上限（5），请先关闭已打开的模型广场窗口")
+		}
+		plazaWindowSeq++
+		name := fmt.Sprintf("plaza:%d", plazaWindowSeq)
+		openPlazaWindows = append(openPlazaWindows, name)
+		openPlazaWindowsMu.Unlock()
+
+		win := a.wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+			Name:   name,
+			Title:  "模型广场 — " + targetURL,
+			URL:    targetURL,
+			Width:  1200,
+			Height: 800,
+			Windows: application.WindowsWindow{
+				Theme: application.SystemDefault,
+			},
+		})
+
+		if win == nil {
+			// Creation failed — remove from tracking
+			openPlazaWindowsMu.Lock()
+			for i, n := range openPlazaWindows {
+				if n == name {
+					openPlazaWindows = append(openPlazaWindows[:i], openPlazaWindows[i+1:]...)
+					break
+				}
+			}
+			openPlazaWindowsMu.Unlock()
+			return fmt.Errorf("failed to create window")
+		}
+
+		a.safeLogInfo("OpenPlazaWindow: %s (name=%s, total=%d)", targetURL, name, len(openPlazaWindows))
+		return nil
 	})
 }

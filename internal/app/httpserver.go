@@ -83,9 +83,19 @@ func isolateDir(filePath string, logFn func(string, ...interface{})) (string, er
 				logFn("isolateDir: copyFile(%s) failed: %v [android: srcStat=%v srcDirStat=%v srcIsDir=%v srcSize=%d dirIsDir=%v dirSize=%d], falling back to original dir",
 					resolvedPath, err, statErr, dirStatErr,
 					srcInfo != nil && srcInfo.IsDir(),
-					func() int64 { if srcInfo != nil { return srcInfo.Size() }; return 0 }(),
+					func() int64 {
+						if srcInfo != nil {
+							return srcInfo.Size()
+						}
+						return 0
+					}(),
 					srcDirInfo != nil && srcDirInfo.IsDir(),
-					func() int64 { if srcDirInfo != nil { return srcDirInfo.Size() }; return 0 }(),
+					func() int64 {
+						if srcDirInfo != nil {
+							return srcDirInfo.Size()
+						}
+						return 0
+					}(),
 				)
 			} else {
 				logFn("isolateDir: copyFile(%s) failed: %v, falling back to original dir", resolvedPath, err)
