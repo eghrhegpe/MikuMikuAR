@@ -367,19 +367,19 @@ export interface EnvState {
     groundTerrainOctaves: number; // FBM 倍频层数（1-8）
 
     // Phase A: 地面增强
-    groundPitch: number;         // X 轴旋转（度），默认 0，范围 -45..45（所有模式均支持，地形模式采用坐标变换补偿高度查询）
-    groundRoll: number;          // Z 轴旋转（度），默认 0，范围 -45..45（所有模式均支持，地形模式采用坐标变换补偿高度查询）
-    groundScrollSpeedX: number;  // 纹理 X 方向滚动速度，默认 0，范围 -2..2
-    groundScrollSpeedZ: number;  // 纹理 Z 方向滚动速度，默认 0，范围 -2..2
+    groundPitch: number; // X 轴旋转（度），默认 0，范围 -45..45（所有模式均支持，地形模式采用坐标变换补偿高度查询）
+    groundRoll: number; // Z 轴旋转（度），默认 0，范围 -45..45（所有模式均支持，地形模式采用坐标变换补偿高度查询）
+    groundScrollSpeedX: number; // 纹理 X 方向滚动速度，默认 0，范围 -2..2
+    groundScrollSpeedZ: number; // 纹理 Z 方向滚动速度，默认 0，范围 -2..2
     groundPattern: 'checker' | 'dots' | 'stripes' | 'radial'; // 程序化图案类型，默认 'checker'
 
     // Phase B: 地面增强（反射/法线/高程/跟随）
-    groundReflectionBlend: number;     // 镜面反射混合度，0=无，1=全反射，默认 0
+    groundReflectionBlend: number; // 镜面反射混合度，0=无，1=全反射，默认 0
     groundReflectionQuality: 'high' | 'medium' | 'low' | 'off'; // 反射质量，默认 'off'
-    groundNormalTexture: string;       // 法线贴图路径，默认 ''
-    groundNormalStrength: number;      // 法线强度，默认 1
-    groundElevationColoring: boolean;  // 高度图按高程着色开关，默认 false
-    groundFollowCamera: boolean;       // 网格模式跟随相机，默认 false
+    groundNormalTexture: string; // 法线贴图路径，默认 ''
+    groundNormalStrength: number; // 法线强度，默认 1
+    groundElevationColoring: boolean; // 高度图按高程着色开关，默认 false
+    groundFollowCamera: boolean; // 网格模式跟随相机，默认 false
 
     windEnabled: boolean;
     windDirection: [number, number, number];

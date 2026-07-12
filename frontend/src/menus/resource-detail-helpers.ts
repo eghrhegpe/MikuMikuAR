@@ -57,8 +57,12 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
                 // — Gizmo 3D 拖拽（按 kind 派发） —
                 if (kind === 'actor' || kind === 'stage') {
                     const gizmoActive = isModelGizmoActive() && getModelGizmoTargetId() === id;
-                    slideRow(c, gizmoActive ? 'lucide:x' : 'lucide:move-3d',
-                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'), false, () => {
+                    slideRow(
+                        c,
+                        gizmoActive ? 'lucide:x' : 'lucide:move-3d',
+                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
+                        false,
+                        () => {
                             if (gizmoActive) {
                                 detachModelGizmo();
                                 setStatus(t('scene.statusExitDrag'), true);
@@ -67,11 +71,16 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
                                 setStatus(t('scene.statusDragHint'), false);
                             }
                             render();
-                        });
+                        }
+                    );
                 } else if (kind === 'prop') {
                     const gizmoActive = isPropGizmoActive() && getPropGizmoTargetId() === id;
-                    slideRow(c, gizmoActive ? 'lucide:x' : 'lucide:move-3d',
-                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'), false, () => {
+                    slideRow(
+                        c,
+                        gizmoActive ? 'lucide:x' : 'lucide:move-3d',
+                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
+                        false,
+                        () => {
                             if (gizmoActive) {
                                 detachPropGizmo();
                                 setStatus(t('scene.statusExitDrag'), true);
@@ -80,11 +89,16 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
                                 setStatus(t('scene.statusDragHint'), false);
                             }
                             render();
-                        });
+                        }
+                    );
                 } else if (kind === 'light') {
                     const gizmoActive = isLightGizmoActive() && getLightGizmoTargetId() === id;
-                    slideRow(c, gizmoActive ? 'lucide:x' : 'lucide:move-3d',
-                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'), false, () => {
+                    slideRow(
+                        c,
+                        gizmoActive ? 'lucide:x' : 'lucide:move-3d',
+                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
+                        false,
+                        () => {
                             if (gizmoActive) {
                                 detachLightGizmo();
                                 setStatus(t('scene.statusExitDrag'), true);
@@ -93,60 +107,111 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
                                 setStatus(t('scene.statusDragHint'), false);
                             }
                             render();
-                        });
+                        }
+                    );
                 }
 
                 // — 缩放倍率（按 kind 派发） —
                 if (kind === 'actor' || kind === 'stage') {
                     const inst = modelRegistry.get(id);
                     if (inst) {
-                        addSliderRow(c, '缩放倍率', inst.scaling ?? 1, 0.1, 10, 0.1,
-                            () => {}, 'lucide:maximize',
-                            (v) => setModelScaling(id, v));
+                        addSliderRow(
+                            c,
+                            '缩放倍率',
+                            inst.scaling ?? 1,
+                            0.1,
+                            10,
+                            0.1,
+                            () => {},
+                            'lucide:maximize',
+                            (v) => setModelScaling(id, v)
+                        );
                     }
                 } else if (kind === 'prop') {
                     const p = propRegistry.get(id);
                     if (p) {
-                        addSliderRow(c, '缩放倍率', p.scaling, 0.1, 10, 0.1,
-                            () => {}, 'lucide:maximize',
+                        addSliderRow(
+                            c,
+                            '缩放倍率',
+                            p.scaling,
+                            0.1,
+                            10,
+                            0.1,
+                            () => {},
+                            'lucide:maximize',
                             (v) => {
                                 p.scaling = v;
                                 setPropTransform(id, { scaling: v });
-                            });
+                            }
+                        );
                     }
                 } else if (kind === 'light') {
                     const st = getStageLightState(id);
-                    addSliderRow(c, '缩放倍率', st.indicatorScale, 0.1, 10, 0.1,
-                        () => {}, 'lucide:maximize',
-                        (v) => setStageLightState({ indicatorScale: v }, id));
+                    addSliderRow(
+                        c,
+                        '缩放倍率',
+                        st.indicatorScale,
+                        0.1,
+                        10,
+                        0.1,
+                        () => {},
+                        'lucide:maximize',
+                        (v) => setStageLightState({ indicatorScale: v }, id)
+                    );
                 }
 
                 // — 透明度（按 kind 派发） —
                 if (kind === 'actor' || kind === 'stage') {
                     const inst = modelRegistry.get(id);
                     if (inst) {
-                        addSliderRow(c, '透明度', Math.round((inst.opacity ?? 1) * 100),
-                            0, 100, 1, () => {}, 'lucide:eye',
+                        addSliderRow(
+                            c,
+                            '透明度',
+                            Math.round((inst.opacity ?? 1) * 100),
+                            0,
+                            100,
+                            1,
+                            () => {},
+                            'lucide:eye',
                             (v) => {
                                 setModelOpacity(id, v / 100);
-                                if (v > 0) setModelVisibility(id, true);
-                            });
+                                if (v > 0) {
+                                    setModelVisibility(id, true);
+                                }
+                            }
+                        );
                     }
                 } else if (kind === 'prop') {
                     const p = propRegistry.get(id);
                     if (p) {
-                        addSliderRow(c, '透明度', p.visible ? 100 : 0, 0, 100, 100,
-                            () => {}, 'lucide:eye',
+                        addSliderRow(
+                            c,
+                            '透明度',
+                            p.visible ? 100 : 0,
+                            0,
+                            100,
+                            100,
+                            () => {},
+                            'lucide:eye',
                             (v) => {
                                 p.visible = v > 0;
                                 setPropTransform(id, { visible: v > 0 });
-                            });
+                            }
+                        );
                     }
                 } else if (kind === 'light') {
                     const st = getStageLightState(id);
-                    addSliderRow(c, '透明度', Math.round(st.indicatorOpacity * 100),
-                        0, 100, 1, () => {}, 'lucide:eye',
-                        (v) => setStageLightState({ indicatorOpacity: v / 100 }, id));
+                    addSliderRow(
+                        c,
+                        '透明度',
+                        Math.round(st.indicatorOpacity * 100),
+                        0,
+                        100,
+                        1,
+                        () => {},
+                        'lucide:eye',
+                        (v) => setStageLightState({ indicatorOpacity: v / 100 }, id)
+                    );
                 }
             });
         }

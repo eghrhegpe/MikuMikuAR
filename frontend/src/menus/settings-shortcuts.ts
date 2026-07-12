@@ -76,7 +76,10 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                 _rebindingId = null;
 
                 const persisted = (uiState as Record<string, unknown>).keyBindings as
-                    | Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }>
+                    | Record<
+                          string,
+                          { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }
+                      >
                     | undefined;
                 if (persisted) {
                     loadKeyBindings(persisted);
@@ -175,8 +178,9 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                                         e.shiftKey,
                                                         e.altKey
                                                     );
-                                                    (uiState as Record<string, unknown>).keyBindings =
-                                                        exportKeyBindings();
+                                                    (
+                                                        uiState as Record<string, unknown>
+                                                    ).keyBindings = exportKeyBindings();
                                                 }
                                                 getSettingsMenu()?.reRender();
                                             });

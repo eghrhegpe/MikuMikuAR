@@ -16,7 +16,8 @@ let _master: GainNode | null = null;
 export function getAudioContext(): AudioContext {
     if (!_ctx) {
         const Ctor: typeof AudioContext =
-            window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+            window.AudioContext ??
+            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         _ctx = new Ctor();
     }
     return _ctx;

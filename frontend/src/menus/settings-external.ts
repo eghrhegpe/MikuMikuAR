@@ -57,7 +57,10 @@ function buildExternalSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                                                 newName.trim() !== ep.name
                                             ) {
                                                 const r = await tryCatchStatus(async () => {
-                                                    await RenameExternalPath(ep.path, newName.trim());
+                                                    await RenameExternalPath(
+                                                        ep.path,
+                                                        newName.trim()
+                                                    );
                                                     return true;
                                                 }, '✗ 重命名失败');
                                                 if (r) {

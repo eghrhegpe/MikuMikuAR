@@ -35,7 +35,7 @@ export const en: Record<string, string> = {
     'model-detail.transform': 'Transform',
     'model-detail.materialAdjust': 'Material',
     'model-detail.morphPreview': 'Morph Preview',
-    'model-detail.outfitVariant': 'Outfit Variant',
+    'model-detail.outfitVariant': 'Replace Textures',
     'model-detail.info': 'Info',
     'model-detail.basicInfo': 'Basic Info',
     'model-detail.boneHierarchy': 'Bone Hierarchy',
@@ -782,11 +782,11 @@ export const en: Record<string, string> = {
     'model-preset.deleted': '✓ Preset deleted',
 
     // outfit — outfit variant UI
-    'outfit.variant': 'Outfit Variants',
+    'outfit.variant': 'Replace Textures',
     'outfit.modelRemoved': 'Model removed',
     'outfit.loadConfigFailed': '⚠ Failed to load outfit config',
     'outfit.noOutfitsConfig':
-        'This model has no outfits.json. Create outfits.json in the model folder to enable outfit variants.',
+        'This model has no outfits.json. Create outfits.json in the model folder to enable texture replacement.',
     'outfit.default': 'Default',
     'outfit.switching': '⏳ Switching variant...',
     'outfit.switchFailed': '✗ Failed to switch variant',

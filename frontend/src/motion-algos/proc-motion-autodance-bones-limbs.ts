@@ -3,10 +3,7 @@
  * 四肢骨骼帧生成（Arm / Shoulder / Wrist / FootIK）
  */
 import type { BoneKeyFrame } from './vmd-writer';
-import {
-    type ProcMotionState,
-    clamp1,
-} from './proc-motion-shared';
+import { type ProcMotionState, clamp1 } from './proc-motion-shared';
 import type { TrigCache } from './proc-motion-autodance-bones';
 import { sinVal, cosVal } from './proc-motion-autodance-bones';
 
@@ -21,7 +18,9 @@ export function genArmBones(
     intensity: number
 ): BoneKeyFrame[] {
     const frames: BoneKeyFrame[] = [];
-    if (!larmBone && !rarmBone) return frames;
+    if (!larmBone && !rarmBone) {
+        return frames;
+    }
 
     const armAmpZ = 0.55 * intensity;
     const armAmpX = 0.3 * intensity;
@@ -33,17 +32,41 @@ export function genArmBones(
             const lz = clamp1(s * armAmpZ);
             const lx = clamp1(phase2 * armAmpX);
             const w = Math.sqrt(Math.max(0, 1 - lz * lz - lx * lx));
-            frames.push({ name: larmBone, frame: f, position: [0, 0, 0], rotation: [lx, 0, lz, w] });
+            frames.push({
+                name: larmBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [lx, 0, lz, w],
+            });
         }
         if (rarmBone) {
             const rz = clamp1(-s * armAmpZ);
             const rx = clamp1(phase2 * armAmpX);
             const w = Math.sqrt(Math.max(0, 1 - rz * rz - rx * rx));
-            frames.push({ name: rarmBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
+            frames.push({
+                name: rarmBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, 0, rz, w],
+            });
         }
     }
-    if (larmBone) frames.push({ name: larmBone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-    if (rarmBone) frames.push({ name: rarmBone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    if (larmBone) {
+        frames.push({
+            name: larmBone,
+            frame: cache.loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
+    }
+    if (rarmBone) {
+        frames.push({
+            name: rarmBone,
+            frame: cache.loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
+    }
     return frames;
 }
 
@@ -58,7 +81,9 @@ export function genWristBones(
     intensity: number
 ): BoneKeyFrame[] {
     const frames: BoneKeyFrame[] = [];
-    if (!lBone && !rBone) return frames;
+    if (!lBone && !rBone) {
+        return frames;
+    }
 
     const wristAmpX = 0.35 * intensity;
     const wristAmpZ = 0.15 * intensity;
@@ -70,11 +95,34 @@ export function genWristBones(
         const rzR = clamp1(-cosVal(cache, f) * wristAmpZ);
         const wL = Math.sqrt(Math.max(0, 1 - rx * rx - rzL * rzL));
         const wR = Math.sqrt(Math.max(0, 1 - rx * rx - rzR * rzR));
-        if (lBone) frames.push({ name: lBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, clamp1(rzL * wristAmpZ), wL] });
-        if (rBone) frames.push({ name: rBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rzR, wR] });
+        if (lBone) {
+            frames.push({
+                name: lBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, 0, clamp1(rzL * wristAmpZ), wL],
+            });
+        }
+        if (rBone) {
+            frames.push({ name: rBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rzR, wR] });
+        }
     }
-    if (lBone) frames.push({ name: lBone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-    if (rBone) frames.push({ name: rBone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    if (lBone) {
+        frames.push({
+            name: lBone,
+            frame: cache.loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
+    }
+    if (rBone) {
+        frames.push({
+            name: rBone,
+            frame: cache.loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
+    }
     return frames;
 }
 
@@ -89,7 +137,9 @@ export function genShoulderBones(
     intensity: number
 ): BoneKeyFrame[] {
     const frames: BoneKeyFrame[] = [];
-    if (!lBone && !rBone) return frames;
+    if (!lBone && !rBone) {
+        return frames;
+    }
 
     const shoulderUpAmp = 0.1 * intensity;
     const shoulderRotAmp = 0.15 * intensity;
@@ -99,11 +149,29 @@ export function genShoulderBones(
         const up = Math.abs(s) * shoulderUpAmp;
         const rot = clamp1(s * shoulderRotAmp);
         const w = Math.sqrt(Math.max(0, 1 - rot * rot));
-        if (lBone) frames.push({ name: lBone, frame: f, position: [0, up, 0], rotation: [0, 0, rot, w] });
-        if (rBone) frames.push({ name: rBone, frame: f, position: [0, up, 0], rotation: [0, 0, rot, w] });
+        if (lBone) {
+            frames.push({ name: lBone, frame: f, position: [0, up, 0], rotation: [0, 0, rot, w] });
+        }
+        if (rBone) {
+            frames.push({ name: rBone, frame: f, position: [0, up, 0], rotation: [0, 0, rot, w] });
+        }
     }
-    if (lBone) frames.push({ name: lBone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-    if (rBone) frames.push({ name: rBone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    if (lBone) {
+        frames.push({
+            name: lBone,
+            frame: cache.loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
+    }
+    if (rBone) {
+        frames.push({
+            name: rBone,
+            frame: cache.loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
+    }
     return frames;
 }
 
@@ -118,7 +186,9 @@ export function genFootIkBones(
     intensity: number
 ): BoneKeyFrame[] {
     const frames: BoneKeyFrame[] = [];
-    if (!lBone && !rBone) return frames;
+    if (!lBone && !rBone) {
+        return frames;
+    }
 
     const stepAmp = 0.08 * intensity;
     const liftAmp = 0.03 * intensity;
@@ -136,7 +206,21 @@ export function genFootIkBones(
             frames.push({ name: rBone, frame: f, position: [0, ry, rz], rotation: [0, 0, 0, 1] });
         }
     }
-    if (lBone) frames.push({ name: lBone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
-    if (rBone) frames.push({ name: rBone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    if (lBone) {
+        frames.push({
+            name: lBone,
+            frame: cache.loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
+    }
+    if (rBone) {
+        frames.push({
+            name: rBone,
+            frame: cache.loopFrames,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        });
+    }
     return frames;
 }

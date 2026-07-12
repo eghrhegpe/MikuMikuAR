@@ -20,7 +20,6 @@ import { setStatus } from './status-bar';
 export { showErrorToast } from './toast';
 export type { ToastAction } from './toast';
 import type { SlideMenu } from '../menus/menu';
-import { getCurrentRenderingMenu } from '../menus/menu';
 
 export { normPath };
 

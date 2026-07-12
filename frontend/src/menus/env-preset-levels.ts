@@ -2,22 +2,19 @@
 // 从 env-menu.ts 拆分
 
 import { envState, cardContainer, setStatus } from '../core/config';
-import type { PopupLevel, PopupRow } from '../core/config';
-import { createIconifyIcon } from '../core/icons';
-import { addSliderRow, addSectionTitle, addPresetChip } from '../core/ui-helpers';
+import type { PopupLevel } from '../core/config';
+import { addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
 import { t } from '../core/i18n/t';
 import {
     setEnvState,
     getEnvSunAngle,
-    setEnvSunAngle,
     applyEnvPresetObject,
     transitionRenderState,
     defaultRenderState,
 } from '../scene/scene';
-import { getLightState, transitionLighting } from '../scene/render/lighting';
+import { transitionLighting } from '../scene/render/lighting';
 import {
-    TIME_OF_DAY_PRESETS,
     exportEnvPreset,
     importEnvPreset,
     type EnvPreset,
@@ -119,10 +116,15 @@ export function renderUserEnvPresets(container: HTMLElement): void {
     saveBtn.style.flex = '1';
     saveBtn.textContent = t('env-preset.saveCurrent');
     saveBtn.addEventListener('click', async () => {
-        const autoLabel = '自定义 ' + new Date().toLocaleString('zh-CN', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit',
-        });
+        const autoLabel =
+            '自定义 ' +
+            new Date().toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
         const r = await tryCatchStatus(
             async () => {
                 const preset = snapshotCurrentEnvPreset(autoLabel);

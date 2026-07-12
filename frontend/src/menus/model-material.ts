@@ -2,7 +2,7 @@
 
 import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { cardContainer, setStatus, PopupLevel, stackRegistry, escapeHtml } from '../core/config';
+import { cardContainer, setStatus, PopupLevel, stackRegistry } from '../core/config';
 import {
     getMatCatGroups,
     getMatCatParams,
@@ -24,6 +24,8 @@ import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addCollapsible } from '../core/ui-helpers';
 import type { SlideMenu } from './menu';
 import { t } from '../core/i18n/t';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 
 let _selectedMat: { cat: string; index: number } | null = null;
 /** 参数卡片容器引用（增量更新用，避免 reRender） */
@@ -46,6 +48,145 @@ function _addGroupSeparator(panel: HTMLElement, label: string): void {
     panel.appendChild(sep);
 }
 
+function buildMatBatchSchema(id: string, _modelName: string): MenuNode[] {
+    const groups = getMatCatGroups(id);
+    const detailList = getMatDetailList(id);
+    const overrideCount = detailList.filter((d) => d.modified).length;
+
+    const CATEGORY_ICONS: Record<string, string> = {
+        皮肤: 'droplet',
+        头发: 'feather',
+        眼睛: 'eye',
+        服装: 'shirt',
+    };
+
+    return [
+        {
+            id: 'matBatch:list',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    if (overrideCount > 0) {
+                        const hint = document.createElement('div');
+                        hint.style.cssText =
+                            'font-size:11px;color:var(--warn);margin-bottom:8px;padding:4px 10px;background:var(--white-04);border-radius:6px;text-align:center;';
+                        hint.textContent = t('model-material.overrideHint', {
+                            count: overrideCount,
+                        });
+                        inner.appendChild(hint);
+                    }
+                    for (const [cat, mats] of groups) {
+                        const params = getMatCatParams(id, cat);
+                        addCollapsible(inner, {
+                            title: `${cat} (${mats.length})`,
+                            icon: CATEGORY_ICONS[cat] || 'box',
+                            defaultOpen: false,
+                            headerToggle: {
+                                value: isMatCategoryAllEnabled(id, cat),
+                                onChange: (v) => setMatCategoryEnabled(id, cat, v),
+                                bind: () => isMatCategoryAllEnabled(id, cat),
+                            },
+                            renderContent: (panel) => {
+                                addSliderRow(
+                                    panel,
+                                    t('model-material.diffuseMul'),
+                                    params.diffuseMul,
+                                    0,
+                                    2,
+                                    0.05,
+                                    (v) => setMatCatParams(id, cat, { diffuseMul: v })
+                                );
+                                addSliderRow(
+                                    panel,
+                                    t('model-material.specularMul'),
+                                    params.specularMul,
+                                    0,
+                                    2,
+                                    0.05,
+                                    (v) => setMatCatParams(id, cat, { specularMul: v })
+                                );
+                                addSliderRow(
+                                    panel,
+                                    t('model-material.shininess'),
+                                    params.shininess,
+                                    0,
+                                    200,
+                                    1,
+                                    (v) => setMatCatParams(id, cat, { shininess: v })
+                                );
+                                addSliderRow(
+                                    panel,
+                                    t('model-material.ambientMul'),
+                                    params.ambientMul,
+                                    0,
+                                    2,
+                                    0.05,
+                                    (v) => setMatCatParams(id, cat, { ambientMul: v })
+                                );
+                                addSliderRow(
+                                    panel,
+                                    t('model-material.emissiveMul'),
+                                    params.emissiveMul,
+                                    0,
+                                    2,
+                                    0.05,
+                                    (v) => setMatCatParams(id, cat, { emissiveMul: v })
+                                );
+                                _addGroupSeparator(panel, t('model-material.texLevelGroup'));
+                                addSliderRow(
+                                    panel,
+                                    t('model-material.diffuseTexLevel'),
+                                    params.diffuseTexLevel,
+                                    0,
+                                    3,
+                                    0.1,
+                                    (v) => setMatCatParams(id, cat, { diffuseTexLevel: v })
+                                );
+                                addSliderRow(
+                                    panel,
+                                    t('model-material.bumpTexLevel'),
+                                    params.bumpTexLevel,
+                                    0,
+                                    3,
+                                    0.1,
+                                    (v) => setMatCatParams(id, cat, { bumpTexLevel: v })
+                                );
+                                addSliderRow(
+                                    panel,
+                                    t('model-material.toonTexLevel'),
+                                    params.toonTexLevel,
+                                    0,
+                                    3,
+                                    0.1,
+                                    (v) => setMatCatParams(id, cat, { toonTexLevel: v })
+                                );
+                                addSliderRow(
+                                    panel,
+                                    t('model-material.sphereTexLevel'),
+                                    params.sphereTexLevel,
+                                    0,
+                                    3,
+                                    0.1,
+                                    (v) => setMatCatParams(id, cat, { sphereTexLevel: v })
+                                );
+                                addSliderRow(
+                                    panel,
+                                    t('model-material.emissiveTexLevel'),
+                                    params.emissiveTexLevel,
+                                    0,
+                                    3,
+                                    0.1,
+                                    (v) => setMatCatParams(id, cat, { emissiveTexLevel: v })
+                                );
+                            },
+                        });
+                    }
+                });
+            },
+        },
+    ];
+}
+
 export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
     const label = t('model-material.batchByPart', { name: modelName });
     return {
@@ -53,135 +194,149 @@ export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const groups = getMatCatGroups(id);
-            const detailList = getMatDetailList(id);
-            const overrideCount = detailList.filter((d) => d.modified).length;
-
-            cardContainer(container, (c) => {
-                if (overrideCount > 0) {
-                    const hint = document.createElement('div');
-                    hint.style.cssText =
-                        'font-size:11px;color:var(--warn);margin-bottom:8px;padding:4px 10px;background:var(--white-04);border-radius:6px;text-align:center;';
-                    hint.textContent = t('model-material.overrideHint', { count: overrideCount });
-                    c.appendChild(hint);
-                }
-
-                const CATEGORY_ICONS: Record<string, string> = {
-                    皮肤: 'droplet',
-                    头发: 'feather',
-                    眼睛: 'eye',
-                    服装: 'shirt',
-                };
-
-                for (const [cat, mats] of groups) {
-                    const params = getMatCatParams(id, cat);
-                    addCollapsible(c, {
-                        title: `${cat} (${mats.length})`,
-                        icon: CATEGORY_ICONS[cat] || 'box',
-                        defaultOpen: false,
-                        headerToggle: {
-                            value: isMatCategoryAllEnabled(id, cat),
-                            onChange: (v) => setMatCategoryEnabled(id, cat, v),
-                            bind: () => isMatCategoryAllEnabled(id, cat),
-                        },
-                        renderContent: (panel) => {
-                            addSliderRow(
-                                panel,
-                                t('model-material.diffuseMul'),
-                                params.diffuseMul,
-                                0,
-                                2,
-                                0.05,
-                                (v) => setMatCatParams(id, cat, { diffuseMul: v })
-                            );
-                            addSliderRow(
-                                panel,
-                                t('model-material.specularMul'),
-                                params.specularMul,
-                                0,
-                                2,
-                                0.05,
-                                (v) => setMatCatParams(id, cat, { specularMul: v })
-                            );
-                            addSliderRow(
-                                panel,
-                                t('model-material.shininess'),
-                                params.shininess,
-                                0,
-                                200,
-                                1,
-                                (v) => setMatCatParams(id, cat, { shininess: v })
-                            );
-                            addSliderRow(
-                                panel,
-                                t('model-material.ambientMul'),
-                                params.ambientMul,
-                                0,
-                                2,
-                                0.05,
-                                (v) => setMatCatParams(id, cat, { ambientMul: v })
-                            );
-                            addSliderRow(
-                                panel,
-                                t('model-material.emissiveMul'),
-                                params.emissiveMul,
-                                0,
-                                2,
-                                0.05,
-                                (v) => setMatCatParams(id, cat, { emissiveMul: v })
-                            );
-                            _addGroupSeparator(panel, t('model-material.texLevelGroup'));
-                            addSliderRow(
-                                panel,
-                                t('model-material.diffuseTexLevel'),
-                                params.diffuseTexLevel,
-                                0,
-                                3,
-                                0.1,
-                                (v) => setMatCatParams(id, cat, { diffuseTexLevel: v })
-                            );
-                            addSliderRow(
-                                panel,
-                                t('model-material.bumpTexLevel'),
-                                params.bumpTexLevel,
-                                0,
-                                3,
-                                0.1,
-                                (v) => setMatCatParams(id, cat, { bumpTexLevel: v })
-                            );
-                            addSliderRow(
-                                panel,
-                                t('model-material.toonTexLevel'),
-                                params.toonTexLevel,
-                                0,
-                                3,
-                                0.1,
-                                (v) => setMatCatParams(id, cat, { toonTexLevel: v })
-                            );
-                            addSliderRow(
-                                panel,
-                                t('model-material.sphereTexLevel'),
-                                params.sphereTexLevel,
-                                0,
-                                3,
-                                0.1,
-                                (v) => setMatCatParams(id, cat, { sphereTexLevel: v })
-                            );
-                            addSliderRow(
-                                panel,
-                                t('model-material.emissiveTexLevel'),
-                                params.emissiveTexLevel,
-                                0,
-                                3,
-                                0.1,
-                                (v) => setMatCatParams(id, cat, { emissiveTexLevel: v })
-                            );
-                        },
-                    });
-                }
-            });
+            renderMenu(buildMatBatchSchema(id, modelName), container);
         },
     };
+}
+
+function buildPerMatSchema(
+    id: string,
+    modelName: string,
+    matName: string,
+    matIndex: number,
+    targetStack?: SlideMenu | null
+): MenuNode[] {
+    const current = getMatParams(id, matIndex);
+    const params = current ?? { ...DEFAULT_MAT_PARAMS };
+    const isModified = current !== null;
+
+    return [
+        {
+            id: 'perMat:main',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const nameEl = document.createElement('div');
+                    nameEl.style.cssText =
+                        'font-size:11px;color:var(--text-dim);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                    nameEl.textContent = modelName + ' > ' + matName;
+                    inner.appendChild(nameEl);
+
+                    const stackingHint = document.createElement('div');
+                    stackingHint.style.cssText =
+                        'font-size:10px;color:var(--text-muted);margin-bottom:10px;padding:4px 8px;background:var(--accent-dim);border-radius:4px;';
+                    stackingHint.textContent = t('model-material.stackingHint');
+                    inner.appendChild(stackingHint);
+
+                    addSliderRow(
+                        inner,
+                        t('model-material.diffuseMul'),
+                        params.diffuseMul,
+                        0,
+                        2,
+                        0.05,
+                        (v) => setMatParams(id, matIndex, { diffuseMul: v })
+                    );
+                    addSliderRow(
+                        inner,
+                        t('model-material.specularMul'),
+                        params.specularMul,
+                        0,
+                        2,
+                        0.05,
+                        (v) => setMatParams(id, matIndex, { specularMul: v })
+                    );
+                    addSliderRow(
+                        inner,
+                        t('model-material.shininess'),
+                        params.shininess,
+                        0,
+                        200,
+                        1,
+                        (v) => setMatParams(id, matIndex, { shininess: v })
+                    );
+                    addSliderRow(
+                        inner,
+                        t('model-material.ambientMul'),
+                        params.ambientMul,
+                        0,
+                        2,
+                        0.05,
+                        (v) => setMatParams(id, matIndex, { ambientMul: v })
+                    );
+                    addSliderRow(
+                        inner,
+                        t('model-material.emissiveMul'),
+                        params.emissiveMul,
+                        0,
+                        2,
+                        0.05,
+                        (v) => setMatParams(id, matIndex, { emissiveMul: v })
+                    );
+                    _addGroupSeparator(inner, t('model-material.texLevelGroup'));
+                    addSliderRow(
+                        inner,
+                        t('model-material.diffuseTexLevel'),
+                        params.diffuseTexLevel,
+                        0,
+                        3,
+                        0.1,
+                        (v) => setMatParams(id, matIndex, { diffuseTexLevel: v })
+                    );
+                    addSliderRow(
+                        inner,
+                        t('model-material.bumpTexLevel'),
+                        params.bumpTexLevel,
+                        0,
+                        3,
+                        0.1,
+                        (v) => setMatParams(id, matIndex, { bumpTexLevel: v })
+                    );
+                    addSliderRow(
+                        inner,
+                        t('model-material.toonTexLevel'),
+                        params.toonTexLevel,
+                        0,
+                        3,
+                        0.1,
+                        (v) => setMatParams(id, matIndex, { toonTexLevel: v })
+                    );
+                    addSliderRow(
+                        inner,
+                        t('model-material.sphereTexLevel'),
+                        params.sphereTexLevel,
+                        0,
+                        3,
+                        0.1,
+                        (v) => setMatParams(id, matIndex, { sphereTexLevel: v })
+                    );
+                    addSliderRow(
+                        inner,
+                        t('model-material.emissiveTexLevel'),
+                        params.emissiveTexLevel,
+                        0,
+                        3,
+                        0.1,
+                        (v) => setMatParams(id, matIndex, { emissiveTexLevel: v })
+                    );
+
+                    if (isModified) {
+                        slideRow(
+                            inner,
+                            'lucide:rotate-ccw',
+                            t('model-material.resetThis'),
+                            false,
+                            () => {
+                                resetSingleMatParams(id, matIndex);
+                                (targetStack ?? stackRegistry.modelStack)?.reRender();
+                                setStatus(t('model-material.resetDone', { name: matName }), true);
+                            }
+                        );
+                    }
+                });
+            },
+        },
+    ];
 }
 
 export function buildPerMatLevel(
@@ -198,137 +353,163 @@ export function buildPerMatLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const nameEl = document.createElement('div');
-                nameEl.style.cssText =
-                    'font-size:11px;color:var(--text-dim);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-                nameEl.textContent = modelName + ' > ' + matName;
-                c.appendChild(nameEl);
-
-                const stackingHint = document.createElement('div');
-                stackingHint.style.cssText =
-                    'font-size:10px;color:var(--text-muted);margin-bottom:10px;padding:4px 8px;background:var(--accent-dim);border-radius:4px;';
-                stackingHint.textContent = t('model-material.stackingHint');
-                c.appendChild(stackingHint);
-
-                const current = getMatParams(id, matIndex);
-                const params = current ?? { ...DEFAULT_MAT_PARAMS };
-                const isModified = current !== null;
-
-                addSliderRow(
-                    c,
-                    t('model-material.diffuseMul'),
-                    params.diffuseMul,
-                    0,
-                    2,
-                    0.05,
-                    (v) => {
-                        setMatParams(id, matIndex, { diffuseMul: v });
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('model-material.specularMul'),
-                    params.specularMul,
-                    0,
-                    2,
-                    0.05,
-                    (v) => {
-                        setMatParams(id, matIndex, { specularMul: v });
-                    }
-                );
-                addSliderRow(c, t('model-material.shininess'), params.shininess, 0, 200, 1, (v) => {
-                    setMatParams(id, matIndex, { shininess: v });
-                });
-                addSliderRow(
-                    c,
-                    t('model-material.ambientMul'),
-                    params.ambientMul,
-                    0,
-                    2,
-                    0.05,
-                    (v) => {
-                        setMatParams(id, matIndex, { ambientMul: v });
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('model-material.emissiveMul'),
-                    params.emissiveMul,
-                    0,
-                    2,
-                    0.05,
-                    (v) => {
-                        setMatParams(id, matIndex, { emissiveMul: v });
-                    }
-                );
-                _addGroupSeparator(c, t('model-material.texLevelGroup'));
-                addSliderRow(
-                    c,
-                    t('model-material.diffuseTexLevel'),
-                    params.diffuseTexLevel,
-                    0,
-                    3,
-                    0.1,
-                    (v) => {
-                        setMatParams(id, matIndex, { diffuseTexLevel: v });
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('model-material.bumpTexLevel'),
-                    params.bumpTexLevel,
-                    0,
-                    3,
-                    0.1,
-                    (v) => {
-                        setMatParams(id, matIndex, { bumpTexLevel: v });
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('model-material.toonTexLevel'),
-                    params.toonTexLevel,
-                    0,
-                    3,
-                    0.1,
-                    (v) => {
-                        setMatParams(id, matIndex, { toonTexLevel: v });
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('model-material.sphereTexLevel'),
-                    params.sphereTexLevel,
-                    0,
-                    3,
-                    0.1,
-                    (v) => {
-                        setMatParams(id, matIndex, { sphereTexLevel: v });
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('model-material.emissiveTexLevel'),
-                    params.emissiveTexLevel,
-                    0,
-                    3,
-                    0.1,
-                    (v) => {
-                        setMatParams(id, matIndex, { emissiveTexLevel: v });
-                    }
-                );
-
-                if (isModified) {
-                    slideRow(c, 'lucide:rotate-ccw', t('model-material.resetThis'), false, () => {
-                        resetSingleMatParams(id, matIndex);
-                        (targetStack ?? stackRegistry.modelStack)?.reRender();
-                        setStatus(t('model-material.resetDone', { name: matName }), true);
-                    });
-                }
-            });
+            renderMenu(buildPerMatSchema(id, modelName, matName, matIndex, targetStack), container);
         },
     };
+}
+
+function buildMatRootSchema(
+    id: string,
+    modelName: string,
+    targetStack?: SlideMenu | null
+): MenuNode[] {
+    _selectedMat = null;
+    _paramCardEl = null;
+    const groups = getMatCatGroups(id);
+    const detailList = getMatDetailList(id);
+
+    return [
+        // 卡片 1：材质组（折叠列表）
+        {
+            id: 'matRoot:groups',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    if (groups.size === 0) {
+                        const empty = document.createElement('div');
+                        empty.style.cssText =
+                            'padding:12px 14px;text-align:center;font-size:11px;color:var(--text-dim);';
+                        empty.textContent = t('model-material.noMaterialData');
+                        inner.appendChild(empty);
+                        return;
+                    }
+                    for (const [cat, mats] of groups) {
+                        const count = mats.length;
+                        addCollapsible(inner, {
+                            title: `${cat} (${count})`,
+                            icon: 'lucide:layers',
+                            defaultOpen: false,
+                            headerToggle: {
+                                value: isMatCategoryAllEnabled(id, cat),
+                                onChange: (v) => setMatCategoryEnabled(id, cat, v),
+                                bind: () => isMatCategoryAllEnabled(id, cat),
+                            },
+                            renderContent: (inner2) => {
+                                for (const matInfo of mats) {
+                                    const detail = detailList.find(
+                                        (d) => d.name === matInfo.mat.name
+                                    );
+                                    const idx = detail ? detail.index : -1;
+                                    if (idx === -1) {
+                                        continue;
+                                    }
+                                    const matEnabled = isMatEnabled(id, idx);
+
+                                    const row = document.createElement('div');
+                                    row.className = `slide-item${!matEnabled ? ' mat-disabled' : ''}`;
+                                    row.style.cssText = 'padding-left: 28px;';
+                                    row.dataset.matIdx = String(idx);
+                                    row.dataset.matCat = cat;
+
+                                    const label = document.createElement('span');
+                                    label.className = 'slide-label';
+                                    label.textContent = `#${String(idx + 1).padStart(2, '0')} ${matInfo.mat.name}`;
+                                    row.appendChild(label);
+
+                                    if (detail.modified) {
+                                        const sub = document.createElement('span');
+                                        sub.className = 'slide-sublabel';
+                                        sub.style.color = 'var(--accent)';
+                                        sub.textContent = t('model-material.modified');
+                                        row.appendChild(sub);
+                                    }
+
+                                    const toggle = document.createElement('label');
+                                    toggle.className = 'toggle header-toggle';
+                                    toggle.style.marginLeft = 'auto';
+                                    const toggleInput = document.createElement('input');
+                                    toggleInput.type = 'checkbox';
+                                    toggleInput.checked = matEnabled;
+                                    const slider = document.createElement('span');
+                                    slider.className = 'slider';
+                                    toggle.appendChild(toggleInput);
+                                    toggle.appendChild(slider);
+                                    toggle.addEventListener('click', (e) => {
+                                        e.stopPropagation();
+                                        const newState = !isMatEnabled(id, idx);
+                                        setMatEnabled(id, idx, newState);
+                                        toggleInput.checked = newState;
+                                        row.classList.toggle('mat-disabled', !newState);
+                                        setStatus(
+                                            newState
+                                                ? t('model-material.shown', {
+                                                      name: matInfo.mat.name,
+                                                  })
+                                                : t('model-material.hidden', {
+                                                      name: matInfo.mat.name,
+                                                  }),
+                                            true
+                                        );
+                                    });
+                                    row.appendChild(toggle);
+
+                                    row.addEventListener('click', () => {
+                                        const prev = inner2.querySelector('.slide-focused');
+                                        if (prev) {
+                                            prev.classList.remove('slide-focused');
+                                        }
+                                        row.classList.add('slide-focused');
+                                        _selectedMat = { cat, index: idx };
+                                        _renderParamCard(
+                                            id,
+                                            modelName,
+                                            cat,
+                                            idx,
+                                            detailList,
+                                            targetStack
+                                        );
+                                    });
+                                    inner2.appendChild(row);
+                                }
+                            },
+                        });
+                    }
+                });
+            },
+        },
+        // 卡片 2：参数微调容器（占位，内容由 _renderParamCard 增量填充）
+        {
+            id: 'matRoot:paramCard',
+            kind: 'custom',
+            renderCustom: (c) => {
+                _paramCardEl = document.createElement('div');
+                c.appendChild(_paramCardEl);
+                _renderParamCard(id, modelName, null, -1, detailList, targetStack);
+            },
+        },
+        // 卡片 3：重置全部
+        {
+            id: 'matRoot:reset',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(
+                        inner,
+                        'lucide:refresh-ccw',
+                        t('model-material.resetAll'),
+                        false,
+                        () => {
+                            resetMatCatParams(id);
+                            resetAllMatParams(id);
+                            _selectedMat = null;
+                            (targetStack ?? stackRegistry.modelStack)?.reRender();
+                            setStatus(t('model-material.resetAllDone'), true);
+                        }
+                    );
+                });
+            },
+        },
+    ];
 }
 
 export function buildMatRootLevel(
@@ -336,138 +517,12 @@ export function buildMatRootLevel(
     modelName: string,
     targetStack?: SlideMenu | null
 ): PopupLevel {
-    _selectedMat = null;
-    _paramCardEl = null;
     return {
         label: t('model-material.materialAdjustTitle', { name: modelName }),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const groups = getMatCatGroups(id);
-            const detailList = getMatDetailList(id);
-
-            // 卡片 1：材质组（折叠列表）
-            cardContainer(container, (c) => {
-                if (groups.size === 0) {
-                    const empty = document.createElement('div');
-                    empty.style.cssText =
-                        'padding:12px 14px;text-align:center;font-size:11px;color:var(--text-dim);';
-                    empty.textContent = t('model-material.noMaterialData');
-                    c.appendChild(empty);
-                    return;
-                }
-
-                for (const [cat, mats] of groups) {
-                    const count = mats.length;
-                    addCollapsible(c, {
-                        title: `${cat} (${count})`,
-                        icon: 'lucide:layers',
-                        defaultOpen: false,
-                        headerToggle: {
-                            value: isMatCategoryAllEnabled(id, cat),
-                            onChange: (v) => setMatCategoryEnabled(id, cat, v),
-                            bind: () => isMatCategoryAllEnabled(id, cat),
-                        },
-                        renderContent: (inner) => {
-                            for (const matInfo of mats) {
-                                const detail = detailList.find((d) => d.name === matInfo.mat.name);
-                                const idx = detail ? detail.index : -1;
-                                if (idx === -1) {
-                                    continue;
-                                }
-                                const matEnabled = isMatEnabled(id, idx);
-                                const mat = matInfo.mat as StandardMaterial;
-
-                                const row = document.createElement('div');
-                                row.className = `slide-item${!matEnabled ? ' mat-disabled' : ''}`;
-                                row.style.cssText = 'padding-left: 28px;';
-                                row.dataset.matIdx = String(idx);
-                                row.dataset.matCat = cat;
-
-                                // Label
-                                const label = document.createElement('span');
-                                label.className = 'slide-label';
-                                label.textContent = `#${String(idx + 1).padStart(2, '0')} ${matInfo.mat.name}`;
-                                row.appendChild(label);
-
-                                if (detail.modified) {
-                                    const sub = document.createElement('span');
-                                    sub.className = 'slide-sublabel';
-                                    sub.style.color = 'var(--accent)';
-                                    sub.textContent = t('model-material.modified');
-                                    row.appendChild(sub);
-                                }
-
-                                // Standard toggle 开关（替代小圆点）
-                                const toggle = document.createElement('label');
-                                toggle.className = 'toggle header-toggle';
-                                toggle.style.marginLeft = 'auto';
-                                const toggleInput = document.createElement('input');
-                                toggleInput.type = 'checkbox';
-                                toggleInput.checked = matEnabled;
-                                const slider = document.createElement('span');
-                                slider.className = 'slider';
-                                toggle.appendChild(toggleInput);
-                                toggle.appendChild(slider);
-                                toggle.addEventListener('click', (e) => {
-                                    e.stopPropagation();
-                                    const newState = !isMatEnabled(id, idx);
-                                    setMatEnabled(id, idx, newState);
-                                    // 增量更新当前行 DOM
-                                    toggleInput.checked = newState;
-                                    row.classList.toggle('mat-disabled', !newState);
-                                    setStatus(
-                                        newState
-                                            ? t('model-material.shown', { name: matInfo.mat.name })
-                                            : t('model-material.hidden', {
-                                                  name: matInfo.mat.name,
-                                              }),
-                                        true
-                                    );
-                                });
-                                row.appendChild(toggle);
-
-                                // 行点击：只更新参数卡片，不重建列表
-                                row.addEventListener('click', () => {
-                                    // 更新选中高亮
-                                    const prev = inner.querySelector('.slide-focused');
-                                    if (prev) {
-                                        prev.classList.remove('slide-focused');
-                                    }
-                                    row.classList.add('slide-focused');
-                                    // 增量更新参数卡片
-                                    _selectedMat = { cat, index: idx };
-                                    _renderParamCard(
-                                        id,
-                                        modelName,
-                                        cat,
-                                        idx,
-                                        detailList,
-                                        targetStack
-                                    );
-                                });
-                                inner.appendChild(row);
-                            }
-                        },
-                    });
-                }
-            });
-
-            // 卡片 2：参数微调容器（占位，内容由 _renderParamCard 增量填充）
-            _paramCardEl = document.createElement('div');
-            container.appendChild(_paramCardEl);
-            _renderParamCard(id, modelName, null, -1, detailList, targetStack);
-
-            // 卡片 3：重置全部
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:refresh-ccw', t('model-material.resetAll'), false, () => {
-                    resetMatCatParams(id);
-                    resetAllMatParams(id);
-                    _selectedMat = null;
-                    (targetStack ?? stackRegistry.modelStack)?.reRender();
-                    setStatus(t('model-material.resetAllDone'), true);
-                });
-            });
+            renderMenu(buildMatRootSchema(id, modelName, targetStack), container);
         },
     };
 }
@@ -654,6 +709,94 @@ function _renderParamCard(
     _paramCardEl.appendChild(card);
 }
 
+function buildMatListSchema(
+    id: string,
+    modelName: string,
+    targetStack?: SlideMenu | null
+): MenuNode[] {
+    return [
+        {
+            id: 'matList:main',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const detailList = getMatDetailList(id);
+                cardContainer(c, (inner) => {
+                    inner.style.padding = '6px 10px';
+                    for (const detail of detailList) {
+                        const meshes = getMaterialMeshes(id);
+                        const mat = meshes?.[detail.index]?.material as StandardMaterial;
+                        if (!mat) {
+                            continue;
+                        }
+                        const matEnabled = isMatEnabled(id, detail.index);
+
+                        const row = document.createElement('div');
+                        row.className = `mat-row${detail.modified ? ' modified' : ''}${!matEnabled ? ' mat-disabled' : ''}`;
+
+                        const idxSpan = document.createElement('span');
+                        idxSpan.className = 'mat-index';
+                        idxSpan.textContent = `#${String(detail.index + 1).padStart(2, '0')}`;
+                        row.appendChild(idxSpan);
+
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'mat-name';
+                        nameSpan.title = detail.name;
+                        nameSpan.textContent = detail.name;
+                        row.appendChild(nameSpan);
+
+                        if (detail.modified) {
+                            const modSpan = document.createElement('span');
+                            modSpan.className = 'mat-modified';
+                            const icon = createIconifyIcon('check-circle');
+                            if (icon) {
+                                modSpan.appendChild(icon);
+                            }
+                            row.appendChild(modSpan);
+                        }
+
+                        const toggle = document.createElement('label');
+                        toggle.className = 'toggle header-toggle';
+                        toggle.style.marginLeft = 'auto';
+                        const toggleInput = document.createElement('input');
+                        toggleInput.type = 'checkbox';
+                        toggleInput.checked = matEnabled;
+                        const slider = document.createElement('span');
+                        slider.className = 'slider';
+                        toggle.appendChild(toggleInput);
+                        toggle.appendChild(slider);
+                        toggle.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const newState = !isMatEnabled(id, detail.index);
+                            setMatEnabled(id, detail.index, newState);
+                            toggleInput.checked = newState;
+                            row.classList.toggle('mat-disabled', !newState);
+                            setStatus(
+                                newState ? `✓ 已显示: ${detail.name}` : `✕ 已隐藏: ${detail.name}`,
+                                true
+                            );
+                        });
+                        row.appendChild(toggle);
+
+                        row.addEventListener('click', () => {
+                            (targetStack ?? stackRegistry.modelStack)?.push(
+                                buildPerMatLevel(
+                                    id,
+                                    modelName,
+                                    detail.name,
+                                    mat,
+                                    detail.index,
+                                    targetStack
+                                )
+                            );
+                        });
+                        inner.appendChild(row);
+                    }
+                });
+            },
+        },
+    ];
+}
+
 export function buildMatListLevel(
     id: string,
     modelName: string,
@@ -664,81 +807,7 @@ export function buildMatListLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const detailList = getMatDetailList(id);
-            cardContainer(container, (c) => {
-                c.style.padding = '6px 10px';
-                for (const detail of detailList) {
-                    const meshes = getMaterialMeshes(id);
-                    const mat = meshes?.[detail.index]?.material as StandardMaterial;
-                    if (!mat) {
-                        continue;
-                    }
-
-                    const matEnabled = isMatEnabled(id, detail.index);
-
-                    const row = document.createElement('div');
-                    row.className = `mat-row${detail.modified ? ' modified' : ''}${!matEnabled ? ' mat-disabled' : ''}`;
-
-                    const idxSpan = document.createElement('span');
-                    idxSpan.className = 'mat-index';
-                    idxSpan.textContent = `#${String(detail.index + 1).padStart(2, '0')}`;
-                    row.appendChild(idxSpan);
-
-                    const nameSpan = document.createElement('span');
-                    nameSpan.className = 'mat-name';
-                    nameSpan.title = detail.name;
-                    nameSpan.textContent = detail.name;
-                    row.appendChild(nameSpan);
-
-                    if (detail.modified) {
-                        const modSpan = document.createElement('span');
-                        modSpan.className = 'mat-modified';
-                        const icon = createIconifyIcon('check-circle');
-                        if (icon) {
-                            modSpan.appendChild(icon);
-                        }
-                        row.appendChild(modSpan);
-                    }
-
-                    // Standard toggle 开关（替代小圆点）
-                    const toggle = document.createElement('label');
-                    toggle.className = 'toggle header-toggle';
-                    toggle.style.marginLeft = 'auto';
-                    const toggleInput = document.createElement('input');
-                    toggleInput.type = 'checkbox';
-                    toggleInput.checked = matEnabled;
-                    const slider = document.createElement('span');
-                    slider.className = 'slider';
-                    toggle.appendChild(toggleInput);
-                    toggle.appendChild(slider);
-                    toggle.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const newState = !isMatEnabled(id, detail.index);
-                        setMatEnabled(id, detail.index, newState);
-                        toggleInput.checked = newState;
-                        row.classList.toggle('mat-disabled', !newState);
-                        setStatus(
-                            newState ? `✓ 已显示: ${detail.name}` : `✕ 已隐藏: ${detail.name}`,
-                            true
-                        );
-                    });
-                    row.appendChild(toggle);
-
-                    row.addEventListener('click', () => {
-                        (targetStack ?? stackRegistry.modelStack)?.push(
-                            buildPerMatLevel(
-                                id,
-                                modelName,
-                                detail.name,
-                                mat,
-                                detail.index,
-                                targetStack
-                            )
-                        );
-                    });
-                    c.appendChild(row);
-                }
-            });
+            renderMenu(buildMatListSchema(id, modelName, targetStack), container);
         },
     };
 }

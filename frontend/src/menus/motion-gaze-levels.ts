@@ -4,10 +4,7 @@
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import {
-    getPerceptionState,
-    activatePerception,
-} from '../scene/motion/perception';
+import { getPerceptionState, activatePerception } from '../scene/motion/perception';
 import { triggerAutoSave } from '../core/utils';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
@@ -18,7 +15,7 @@ function refreshMotionMenu(): void {
     getMotionMenu()?.updateControls();
 }
 
-function withActivate(v: unknown): void {
+function withActivate(_v: unknown): void {
     activatePerception();
     triggerAutoSave();
     refreshMotionMenu();
@@ -31,99 +28,68 @@ function withSaveOnly(_v: unknown): void {
 
 const gazeSchema: MenuNode[] = [
     {
-        id: 'perception:gaze',
-        kind: 'folder',
-        label: '',
-        defaultOpen: true,
-        children: [
-            {
-                id: 'perception:eyeFollow',
-                kind: 'toggle',
-                label: 'motion.eyeFollow',
-                control: { bind: 'perception.eyeTrackingEnabled', onChange: withActivate },
-                icon: 'lucide:eye',
-            },
-            {
-                id: 'perception:headFollow',
-                kind: 'toggle',
-                label: 'motion.headFollow',
-                control: { bind: 'perception.headTrackingEnabled', onChange: withActivate },
-                icon: 'lucide:mouse-pointer-2',
-            },
-        ],
+        id: 'perception:eyeFollow',
+        kind: 'toggle',
+        label: 'motion.eyeFollow',
+        control: { bind: 'perception.eyeTrackingEnabled', onChange: withActivate },
+        icon: 'lucide:eye',
     },
     {
-        id: 'perception:breathBlink',
-        kind: 'folder',
-        label: '',
-        defaultOpen: true,
-        children: [
-            {
-                id: 'perception:breath',
-                kind: 'toggle',
-                label: 'motion.perceptionBreath',
-                control: { bind: 'perception.breathEnabled', onChange: withSaveOnly },
-                icon: 'lucide:wind',
-            },
-            {
-                id: 'perception:blink',
-                kind: 'toggle',
-                label: 'motion.perceptionBlink',
-                control: { bind: 'perception.blinkEnabled', onChange: withSaveOnly },
-                icon: 'lucide:eye',
-            },
-        ],
+        id: 'perception:headFollow',
+        kind: 'toggle',
+        label: 'motion.headFollow',
+        control: { bind: 'perception.headTrackingEnabled', onChange: withActivate },
+        icon: 'lucide:mouse-pointer-2',
     },
     {
-        id: 'perception:expression',
-        kind: 'folder',
-        label: '',
-        defaultOpen: true,
-        children: [
-            {
-                id: 'perception:microExpr',
-                kind: 'toggle',
-                label: 'motion.microExpression',
-                control: { bind: 'perception.microExpressionEnabled', onChange: withActivate },
-                icon: 'lucide:smile',
-            },
-            {
-                id: 'perception:emotion',
-                kind: 'modeRow',
-                label: 'motion.emotion',
-                control: {
-                    bind: 'perception.emotion',
-                    onChange: withActivate,
-                    options: [
-                        { value: 'neutral', label: 'motion.emotionNeutral' },
-                        { value: 'happy', label: 'motion.emotionHappy' },
-                        { value: 'sad', label: 'motion.emotionSad' },
-                        { value: 'surprised', label: 'motion.emotionSurprised' },
-                        { value: 'angry', label: 'motion.emotionAngry' },
-                    ],
-                },
-            },
-        ],
+        id: 'perception:breath',
+        kind: 'toggle',
+        label: 'motion.perceptionBreath',
+        control: { bind: 'perception.breathEnabled', onChange: withSaveOnly },
+        icon: 'lucide:wind',
     },
     {
-        id: 'perception:balance',
-        kind: 'folder',
-        label: '',
-        defaultOpen: true,
-        children: [
-            {
-                id: 'perception:balanceSway',
-                kind: 'toggle',
-                label: 'motion.balanceSway',
-                control: { bind: 'perception.balanceSwayEnabled', onChange: withActivate },
-                icon: 'lucide:activity',
-            },
-        ],
+        id: 'perception:blink',
+        kind: 'toggle',
+        label: 'motion.perceptionBlink',
+        control: { bind: 'perception.blinkEnabled', onChange: withSaveOnly },
+        icon: 'lucide:eye',
+    },
+    {
+        id: 'perception:microExpr',
+        kind: 'toggle',
+        label: 'motion.microExpression',
+        control: { bind: 'perception.microExpressionEnabled', onChange: withActivate },
+        icon: 'lucide:smile',
+    },
+    {
+        id: 'perception:emotion',
+        kind: 'modeRow',
+        label: 'motion.emotion',
+        control: {
+            bind: 'perception.emotion',
+            onChange: withActivate,
+            options: [
+                { value: 'neutral', label: 'motion.emotionNeutral' },
+                { value: 'happy', label: 'motion.emotionHappy' },
+                { value: 'sad', label: 'motion.emotionSad' },
+                { value: 'surprised', label: 'motion.emotionSurprised' },
+                { value: 'angry', label: 'motion.emotionAngry' },
+            ],
+        },
+    },
+    {
+        id: 'perception:balanceSway',
+        kind: 'toggle',
+        label: 'motion.balanceSway',
+        control: { bind: 'perception.balanceSwayEnabled', onChange: withActivate },
+        icon: 'lucide:activity',
     },
     {
         id: 'perception:lipsync',
         kind: 'folder',
-        label: '',
+        label: 'motion.lipSync',
+        icon: 'lucide:mic',
         defaultOpen: true,
         children: [
             {

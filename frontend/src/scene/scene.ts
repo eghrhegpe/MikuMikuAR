@@ -293,16 +293,20 @@ export async function initScene(): Promise<void> {
     // 7. 脚部调整系统启动（ADR-085）
     // 注册在 bone-override 之前：脚 IK 为自动约束基础，手动 Override 叠加其上
     const { startFeetAdjustment } = await import('./motion/feet-adjustment');
-    startFeetAdjustment((): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] => {
-        const out: { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] = [];
-        for (const inst of modelRegistry.values()) {
-            const bones = inst.mmdModel?.runtimeBones;
-            if (bones && bones.length > 0) {
-                out.push({ id: inst.id, feet: inst.feet, runtimeBones: bones });
+    startFeetAdjustment(
+        (): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] => {
+            const out: { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] =
+                [];
+            for (const inst of modelRegistry.values()) {
+                const bones = inst.mmdModel?.runtimeBones;
+                if (bones && bones.length > 0) {
+                    out.push({ id: inst.id, feet: inst.feet, runtimeBones: bones });
+                }
             }
-        }
-        return out;
-    }, scene);
+            return out;
+        },
+        scene
+    );
 
     // 7.5 脚步声系统启动（ADR-088）：消费 feet-adjustment 落地事件发声
     // 必须在 startFeetAdjustment 之后注册（落地事件由脚部跟随产生）

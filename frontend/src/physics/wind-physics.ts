@@ -38,7 +38,9 @@ let _initialized = false;
  */
 function _getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl | null {
     const physics = (runtime as any).physics;
-    if (!physics) return null;
+    if (!physics) {
+        return null;
+    }
     // MmdWasmPhysicsRuntime.impl 是 public getter
     const impl = physics.impl;
     return impl ?? null;
@@ -49,14 +51,18 @@ function _getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl | null
  * 反射访问 _rigidBodyBundleMap（Map<RigidBodyBundle, number>）。
  * babylon-mmd 升级若重命名此字段，降级为空数组并 warn。
  */
-function _getBundles(impl: MmdWasmPhysicsRuntimeImpl): Iterable<{ count: number; applyCentralForce(index: number, force: Vector3): void }> {
+function _getBundles(
+    impl: MmdWasmPhysicsRuntimeImpl
+): Iterable<{ count: number; applyCentralForce(index: number, force: Vector3): void }> {
     const map = (impl as any)._rigidBodyBundleMap;
     if (map instanceof Map) {
         return map.keys();
     }
     // babylon-mmd 升级可能导致字段不存在，warn 一次
     if (map !== undefined) {
-        console.warn('[wind-physics] _rigidBodyBundleMap 类型异常，风力物理已禁用。检查 babylon-mmd 版本兼容性');
+        console.warn(
+            '[wind-physics] _rigidBodyBundleMap 类型异常，风力物理已禁用。检查 babylon-mmd 版本兼容性'
+        );
     }
     return [];
 }
@@ -66,7 +72,9 @@ function _getBundles(impl: MmdWasmPhysicsRuntimeImpl): Iterable<{ count: number;
  * 注意：Buffered 模式下此回调在锁内执行，applyCentralForce 会自动等待锁。
  */
 function _onPhysicsSync(impl: MmdWasmPhysicsRuntimeImpl): void {
-    if (!isWindActive()) return;
+    if (!isWindActive()) {
+        return;
+    }
 
     const wind = getWindVector();
     _tmpWind.copyFrom(wind).scaleInPlace(WIND_FORCE_SCALE);
@@ -89,8 +97,12 @@ function _onPhysicsSync(impl: MmdWasmPhysicsRuntimeImpl): void {
  * 安全性：幂等——重复调用不会重复 patch 或重复订阅。
  */
 export function initWindPhysics(runtime: IMmdRuntime): void {
-    if (!(runtime instanceof MmdWasmRuntimeClass)) return;
-    if (_initialized) return; // 防 double-init 破坏 restore 链
+    if (!(runtime instanceof MmdWasmRuntimeClass)) {
+        return;
+    }
+    if (_initialized) {
+        return;
+    } // 防 double-init 破坏 restore 链
 
     _initialized = true;
 
@@ -109,10 +121,14 @@ export function initWindPhysics(runtime: IMmdRuntime): void {
 }
 
 function _trySubscribe(runtime: IMmdRuntime): void {
-    if (_observer) return; // 已订阅
+    if (_observer) {
+        return;
+    } // 已订阅
 
     const impl = _getPhysicsImpl(runtime);
-    if (!impl) return;
+    if (!impl) {
+        return;
+    }
 
     _observer = impl.onSyncObservable.add(() => _onPhysicsSync(impl));
 }

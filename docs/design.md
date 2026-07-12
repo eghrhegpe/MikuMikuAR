@@ -2,10 +2,201 @@
 
 > 本文档是 UI 代码的**唯一规范**。新增 UI 代码必须遵循本文件定义的组件体系和命名约定。
 > 加菜单项的流程见 [`menu-how-to.md`](./menu-how-to.md)。
+> 声明式 Schema 架构详见 [ADR-093](./adr/adr-093-menu-declarative-schema.md)。
 
 ---
 
-## 组件体系
+## 双轨架构
+
+菜单 UI 有两种构建方式，**声明式 Schema 为推荐主路径**：
+
+| 方式 | 入口 | 适用场景 |
+|------|------|---------|
+| **声明式 Schema**（推荐） | `buildXxxSchema(): MenuNode[]` + `renderMenu()` | 表单控件、折叠分组、条件渲染、动态列表 |
+| **命令式 Builder**（保留） | `slideRow` / `addSliderRow` / `addToggleRow` … | `renderCustom` 内部、纯导航 `items`、渲染后端工具 |
+
+二者关系：**命令式 Builder 是声明式 Schema 的渲染后端**。`renderMenu` 遍历 `MenuNode[]` 后，按 `kind` 分发到 `ui-helpers` 的 builder 函数生成 DOM。新增菜单应优先用 Schema；只有当状态无法由 StatePath 表达、或为纯导航 `PopupRow` 列表时，才退回命令式。
+
+---
+
+## 声明式 Schema（ADR-093）
+
+### MenuNode 节点
+
+定义于 `frontend/src/menus/menu-schema.ts`。
+
+```ts
+type StatePath = `env.${string}` | `render.${string}` | `light.${string}` | `ui.${string}` | `perception.${string}`;
+
+type MenuKind = 'folder' | 'slider' | 'colorSlider' | 'toggle'
+              | 'modeSlider' | 'modeRow' | 'sectionTitle' | 'divider' | 'custom';
+
+interface MenuNode {
+    id: string;                      // 稳定唯一 id
+    kind: MenuKind;
+    label?: string;                  // i18n key，folder/divider 可省
+    icon?: string;
+    defaultOpen?: boolean;           // folder
+    headerToggle?: {                 // folder 折叠头部开关
+        bind: StatePath;
+        get?: (v: unknown) => boolean;   // 状态值→boolean（如 groundType='terrain'→true）
+        set?: (v: boolean) => unknown;   // boolean→状态值
+    };
+    children?: MenuNode[];           // folder
+    control?: ControlSpec;           // slider/toggle/modeSlider/modeRow/colorSlider
+    renderCustom?: (container: HTMLElement) => (() => void) | void;  // custom 逃生舱
+    visibleWhen?: () => boolean;     // 条件守卫，false 时不渲染
+}
+```
+
+### StatePath 状态路径
+
+类型化字符串，由 `menu-schema.ts` 按前缀映射到 reactive state 对象，避免内联闭包，保证可审计。
+
+| 前缀 | 读取 | 写入 |
+|------|------|------|
+| `env.` | `envState` | `setEnvState()` |
+| `render.` | `getRenderState()` | `setRenderState()` |
+| `light.` | `getLightState()` | `setLightState()` |
+| `ui.` | `uiState` | `setUIState()` |
+| `perception.` | `getPerceptionState()` | `setPerceptionState()` |
+
+### ControlSpec 控件规格
+
+```ts
+interface ControlSpec {
+    bind: StatePath;              // 状态绑定，renderMenu 自动 registerControl 增量更新
+    min?: number; max?: number; step?: number;
+    icon?: string;
+    options?: Array<{ value: string; label: string }>;  // modeSlider/modeRow
+    get?: (v: unknown) => unknown;   // 衍生控件：状态值→显示值
+    set?: (v: unknown) => unknown;   // 衍生控件：控件值→状态值
+    onChange?: (v: unknown) => void; // 值变更副作用（如重建水体）
+}
+```
+
+**衍生控件常见用法**：
+- 字符串↔角度数字（`windDirection`）
+- `undefined`→boolean 默认值（`vsync`）
+- 枚举↔boolean（`groundType='terrain'`↔true）
+
+### renderMenu 单渲染器
+
+定义于 `frontend/src/menus/render-menu.ts`。
+
+```ts
+function renderMenu(schema: MenuNode[], container: HTMLElement): () => void
+```
+
+- 遍历 `MenuNode[]`，按 `kind` 分发到 `ui-helpers`（`addSliderRow` / `addToggleRow` / `addCollapsible` …）
+- 对每个 `control.bind` 自动调用 `registerControl`，接入 reactive 管线实现状态自更新
+- 收集所有 `renderCustom` 返回的 dispose 函数，返回聚合 dispose 供层级卸载时级联释放
+
+### visibleWhen 条件守卫
+
+返回 `false` 时该节点不渲染。用于按状态条件显示子参数（如 SSR 开启时才显示 SSR 子参数、多灯时才显示删除按钮）。
+
+### renderCustom 逃生舱与 dispose 契约
+
+无法数据化的内容（动态列表、异步加载、表单交互）用 `custom` kind：
+
+```ts
+{
+    id: 'outfit:main',
+    kind: 'custom',
+    renderCustom: (c) => {
+        cardContainer(c, (inner) => { /* 自由渲染 DOM */ });
+        return () => { /* 可选 dispose：释放监听器/计时器 */ };
+    },
+}
+```
+
+**dispose 契约**（ADR-093 §5 P1 风险项）：
+- `renderCustom` 返回的函数会被 `renderMenu` 收集并在层级卸载时调用
+- 内部创建的子控件**必须**通过 `getCurrentRenderingMenu()?.registerControl(update)` 注册，使 `SlideMenu.dispose()` 能级联释放
+- 未返回 dispose 且未注册控件的 `renderCustom`，其 DOM/监听器在层级切换时泄漏
+
+### folder 节点 vs PopupRow 导航
+
+**关键区分**：schema `folder` 是折叠容器（用 `children` 展开子节点），**不是导航项**。纯导航用 `PopupRow` items + `target` 路由（`onFolderEnter` 返回 `PopupLevel`），不要转为 schema。
+
+| 用途 | 机制 |
+|------|------|
+| 折叠分组（同页面展开/收起子参数） | ✅ schema `folder` + `children` |
+| 跳转到子页面（导航栈 push） | ✅ `PopupRow` items + `target` 路由 |
+| 动态实例下钻（点击实例→详情层） | ✅ `custom` 节点 + `slideRow` + `stack.push()` |
+
+### 何时用 Schema、何时用 Builder
+
+| 场景 | 推荐方式 |
+|------|---------|
+| 状态可由 StatePath 表达的表单控件 | ✅ Schema（slider/toggle/modeSlider/modeRow/colorSlider） |
+| 折叠分组 + 子节点 | ✅ Schema（folder + children） |
+| 按状态条件显示/隐藏的子参数 | ✅ Schema（visibleWhen） |
+| 动态列表（实例数运行时变化） | ✅ Schema `custom` 节点 + 内部用 builder |
+| 异步加载内容 | ✅ Schema `custom` 节点 + `void` IIFE 包裹 async |
+| 纯导航项（folder → target 路由） | ❌ 保持 `PopupRow` items |
+| 动态列表渲染后端（如 `library-core.buildLevel`） | ❌ 保持 `PopupLevel.renderCustom` |
+
+### Schema 示例
+
+```ts
+function buildExampleSchema(): MenuNode[] {
+    return [
+        { id: 'title', kind: 'sectionTitle', label: 'section.basic' },
+        {
+            id: 'intensity',
+            kind: 'slider',
+            label: 'env.intensity',
+            icon: 'lucide:sun',
+            control: { bind: 'env.sunIntensity', min: 0, max: 4, step: 0.05 },
+        },
+        {
+            id: 'enabled',
+            kind: 'toggle',
+            label: 'env.enabled',
+            control: {
+                bind: 'env.featureEnabled',
+                get: (v) => v ?? true,     // undefined → true 默认值
+                set: (v) => v,
+            },
+        },
+        {
+            id: 'group',
+            kind: 'folder',
+            label: 'env.advanced',
+            defaultOpen: false,
+            visibleWhen: () => envState.featureEnabled,
+            children: [
+                { id: 'param', kind: 'slider', label: 'env.param',
+                  control: { bind: 'env.param', min: 0, max: 1, step: 0.01 } },
+            ],
+        },
+        {
+            id: 'list',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    for (const item of getDynamicList()) {
+                        slideRow(inner, item.icon, item.label, true, () => stack.push(...));
+                    }
+                });
+            },
+        },
+    ];
+}
+
+export function buildExampleLevel(): PopupLevel {
+    return {
+        label: '示例', dir: '', items: [],
+        renderCustom: (container) => { renderMenu(buildExampleSchema(), container); },
+    };
+}
+```
+
+---
+
+## 命令式 Builder 体系
 
 UI 组件分布在以下源文件，统一通过 `ui-helpers.ts` barrel re-export：
 
@@ -21,16 +212,20 @@ UI 组件分布在以下源文件，统一通过 `ui-helpers.ts` barrel re-expor
 
 ## 快速入口
 
-| 要做什么 | 找哪个组件 |
-|----------|-----------|
-| 加一个菜单行 | `slideRow` |
-| 加一个开关 | `addToggleRow` |
-| 加一个滑条 | `addSliderRow` / `sliderRow` |
-| 加一个模式切换 | `addModeRow` / `addModeSlider` |
-| 加一个颜色控制 | `addColorSliderRow` |
-| 加一组预设按钮 | `addPresetChip` |
-| 加一个折叠区块 | `addCollapsible` |
-| 创建 `.lcard` | `cardContainer()` |
+| 要做什么 | 优先方式 | 备选（命令式） |
+|----------|---------|---------------|
+| 加一个 schema 菜单面板 | `buildXxxSchema(): MenuNode[]` + `renderMenu()` | — |
+| 加一个滑条（绑定状态） | schema `slider` + `control.bind` | `addSliderRow` |
+| 加一个开关（绑定状态） | schema `toggle` + `control.bind` | `addToggleRow` |
+| 加一个模式切换 | schema `modeSlider` / `modeRow` | `addModeSlider` / `addModeRow` |
+| 加一个颜色控制 | schema `colorSlider` | `addColorSliderRow` |
+| 加一个折叠分组 | schema `folder` + `children` | `addCollapsible` |
+| 加一个分区标题 | schema `sectionTitle` | `addSectionTitle` |
+| 按状态条件显示/隐藏 | schema `visibleWhen` | — |
+| 加一组预设按钮 | — | `addPresetChip`（通常在 `custom` 节点内） |
+| 加一个纯导航行 | — | `slideRow`（或 `PopupRow` items + `target`） |
+| 加一个异步/动态列表 | schema `custom` 节点 + `void` IIFE | — |
+| 创建 `.lcard` | — | `cardContainer()`（在 `renderCustom` 内） |
 
 ---
 
@@ -391,7 +586,9 @@ function addEmptyRow(parent: HTMLElement, text: string): HTMLElement
 
 | 概念 | 命名 | 示例 |
 |------|------|------|
-| 组件函数（构建 UI） | `build` + 功能名 + `Level` | `buildEnvUnifiedLevel` |
+| Schema 工厂函数 | `build` + 功能名 + `Schema` | `buildExampleSchema` |
+| Schema 导出的 PopupLevel | `build` + 功能名 + `Level` | `buildExampleLevel` |
 | 路由处理函数 | `onFolderEnter` | `envOnFolderEnter` |
 | 菜单实例变量 | `xxxMenu` | `envMenu`, `sceneMenu` |
 | 操作处理函数 | `handle` + 动作 + `Action` | `handleSceneAction` |
+| MenuNode id | `<域>:<功能>[:<子>]` | `env:sky`, `scene:render:dof` |

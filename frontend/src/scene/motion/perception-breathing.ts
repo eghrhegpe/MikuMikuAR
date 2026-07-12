@@ -3,10 +3,7 @@
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
-import {
-    BONE_UPPER_CANDIDATES,
-    matchBone,
-} from '../../motion-algos/proc-motion-shared';
+import { BONE_UPPER_CANDIDATES, matchBone } from '../../motion-algos/proc-motion-shared';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { _q } from './perception-shared';
 

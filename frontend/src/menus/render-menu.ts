@@ -3,7 +3,15 @@
 
 import type { MenuNode } from './menu-schema';
 import { getStateValue, setStateValue, getBindFn } from './menu-schema';
-import { addSliderRow, addColorSliderRow, addToggleRow, addModeSlider, addModeRow, addCollapsible, addSectionTitle } from '../core/ui-helpers';
+import {
+    addSliderRow,
+    addColorSliderRow,
+    addToggleRow,
+    addModeSlider,
+    addModeRow,
+    addCollapsible,
+    addSectionTitle,
+} from '../core/ui-helpers';
 import { t } from '../core/i18n/t';
 
 /** 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 */
@@ -11,13 +19,21 @@ export function renderMenu(schema: MenuNode[], container: HTMLElement): () => vo
     const disposes: (() => void)[] = [];
     for (const node of schema) {
         const d = renderNode(node, container);
-        if (d) disposes.push(d);
+        if (d) {
+            disposes.push(d);
+        }
     }
-    return () => { for (const d of disposes) d(); };
+    return () => {
+        for (const d of disposes) {
+            d();
+        }
+    };
 }
 
 function renderNode(node: MenuNode, container: HTMLElement): (() => void) | undefined {
-    if (node.visibleWhen && !node.visibleWhen()) return undefined;
+    if (node.visibleWhen && !node.visibleWhen()) {
+        return undefined;
+    }
     switch (node.kind) {
         case 'folder':
             return renderFolder(node, container);
@@ -53,7 +69,9 @@ function renderNode(node: MenuNode, container: HTMLElement): (() => void) | unde
 
 function renderFolder(node: MenuNode, container: HTMLElement): (() => void) | undefined {
     const children: MenuNode[] = node.children ?? [];
-    if (children.length === 0 && !node.renderCustom) return undefined;
+    if (children.length === 0 && !node.renderCustom) {
+        return undefined;
+    }
 
     let childDispose: (() => void) | undefined;
 
@@ -69,7 +87,7 @@ function renderFolder(node: MenuNode, container: HTMLElement): (() => void) | un
                   onChange: (v: boolean) =>
                       setStateValue(
                           node.headerToggle!.bind,
-                          node.headerToggle!.set ? node.headerToggle!.set(v) : v,
+                          node.headerToggle!.set ? node.headerToggle!.set(v) : v
                       ),
                   bind: () => {
                       const raw = getBindFn(node.headerToggle!.bind)();
@@ -83,7 +101,10 @@ function renderFolder(node: MenuNode, container: HTMLElement): (() => void) | un
                 const d = node.renderCustom(cc);
                 if (d) {
                     const prev = childDispose;
-                    childDispose = () => { prev?.(); d(); };
+                    childDispose = () => {
+                        prev?.();
+                        d();
+                    };
                 }
             }
         },
@@ -96,7 +117,9 @@ function renderFolder(node: MenuNode, container: HTMLElement): (() => void) | un
 
 function renderSlider(node: MenuNode, container: HTMLElement): void {
     const ctrl = node.control;
-    if (!ctrl) return;
+    if (!ctrl) {
+        return;
+    }
 
     const raw = getStateValue(ctrl.bind);
     const value = ctrl.get ? (ctrl.get(raw) as number) : (raw as number);
@@ -115,7 +138,12 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
         onChange,
         node.icon ?? ctrl.icon,
         undefined,
-        { bind: () => (ctrl.get ? (ctrl.get(getBindFn(ctrl.bind)()) as number) : (getBindFn(ctrl.bind)() as number)) }
+        {
+            bind: () =>
+                ctrl.get
+                    ? (ctrl.get(getBindFn(ctrl.bind)()) as number)
+                    : (getBindFn(ctrl.bind)() as number),
+        }
     );
 }
 
@@ -123,25 +151,25 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
 
 function renderColorSlider(node: MenuNode, container: HTMLElement): void {
     const ctrl = node.control;
-    if (!ctrl) return;
+    if (!ctrl) {
+        return;
+    }
 
     const value = getStateValue(ctrl.bind) as [number, number, number];
     const onChange = (v: [number, number, number]) => setStateValue(ctrl.bind, v);
 
-    addColorSliderRow(
-        container,
-        node.label ? t(node.label) : '',
-        value,
-        onChange,
-        { bind: () => getBindFn(ctrl.bind)() as [number, number, number] }
-    );
+    addColorSliderRow(container, node.label ? t(node.label) : '', value, onChange, {
+        bind: () => getBindFn(ctrl.bind)() as [number, number, number],
+    });
 }
 
 // ======== Toggle ========
 
 function renderToggle(node: MenuNode, container: HTMLElement): void {
     const ctrl = node.control;
-    if (!ctrl) return;
+    if (!ctrl) {
+        return;
+    }
 
     const raw = getStateValue(ctrl.bind);
     const value = ctrl.get ? (ctrl.get(raw) as boolean) : (raw as boolean);
@@ -156,10 +184,12 @@ function renderToggle(node: MenuNode, container: HTMLElement): void {
         value,
         onChange,
         node.icon ?? ctrl.icon,
-        { bind: () => {
-            const r = getBindFn(ctrl.bind)();
-            return ctrl.get ? (ctrl.get(r) as boolean) : (r as boolean);
-        } }
+        {
+            bind: () => {
+                const r = getBindFn(ctrl.bind)();
+                return ctrl.get ? (ctrl.get(r) as boolean) : (r as boolean);
+            },
+        }
     );
 }
 
@@ -167,7 +197,9 @@ function renderToggle(node: MenuNode, container: HTMLElement): void {
 
 function renderModeSlider(node: MenuNode, container: HTMLElement): void {
     const ctrl = node.control;
-    if (!ctrl || !ctrl.options) return;
+    if (!ctrl || !ctrl.options) {
+        return;
+    }
 
     const value = getStateValue(ctrl.bind) as string;
     const onChange = (v: string) => {
@@ -192,7 +224,9 @@ function renderModeSlider(node: MenuNode, container: HTMLElement): void {
 
 function renderModeRow(node: MenuNode, container: HTMLElement): void {
     const ctrl = node.control;
-    if (!ctrl || !ctrl.options) return;
+    if (!ctrl || !ctrl.options) {
+        return;
+    }
 
     const value = getStateValue(ctrl.bind) as string;
     const onChange = (v: string) => {
@@ -201,18 +235,14 @@ function renderModeRow(node: MenuNode, container: HTMLElement): void {
     };
     const opts = ctrl.options.map((o) => ({ value: o.value, label: t(o.label) }));
 
-    addModeRow(
-        container,
-        node.label ? t(node.label) : '',
-        opts,
-        value,
-        onChange,
-    );
+    addModeRow(container, node.label ? t(node.label) : '', opts, value, onChange);
 }
 
 // ======== Section Title ========
 
 function renderSectionTitle(node: MenuNode, container: HTMLElement): void {
-    if (!node.label) return;
+    if (!node.label) {
+        return;
+    }
     addSectionTitle(container, t(node.label));
 }

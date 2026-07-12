@@ -339,7 +339,10 @@ vi.mock('../scene/scene', () => {
         ambientColor: { r: 0, g: 0, b: 0 },
         getAnimationRatio: () => 60,
         onBeforeRenderObservable: {
-            _callbacks: new Map<number, { cb: () => void; timerId: ReturnType<typeof setTimeout> }>(),
+            _callbacks: new Map<
+                number,
+                { cb: () => void; timerId: ReturnType<typeof setTimeout> }
+            >(),
             _nextId: 1,
             add: (cb: () => void) => {
                 const id = scene.onBeforeRenderObservable._nextId++;
@@ -506,8 +509,12 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
     });
 
     it('calls all subsystems when keys from all groups change', () => {
-        setEnvState({ skyMode: 'procedural', groundType: 'flat',
-        groundStyle: 'solid', fogEnabled: true });
+        setEnvState({
+            skyMode: 'procedural',
+            groundType: 'flat',
+            groundStyle: 'solid',
+            fogEnabled: true,
+        });
         expect(mockImplApplySky).toHaveBeenCalled();
         expect(mockImplApplyGround).toHaveBeenCalled();
         expect(mockImplApplyFog).toHaveBeenCalled();

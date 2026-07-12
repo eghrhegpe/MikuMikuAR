@@ -136,16 +136,26 @@ function buildSoftwareListSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    slideRow(inner, 'lucide:plus', t('settings.software.addCustom'), false, async () => {
-                        if (await addCustomSoftware()) {
-                            getSettingsMenu()?.reRender();
+                    slideRow(
+                        inner,
+                        'lucide:plus',
+                        t('settings.software.addCustom'),
+                        false,
+                        async () => {
+                            if (await addCustomSoftware()) {
+                                getSettingsMenu()?.reRender();
+                            }
                         }
-                    });
+                    );
                     slideRow(inner, 'lucide:folder', t('settings.software.setMmdPath'), false, () =>
                         setMMDPath()
                     );
-                    slideRow(inner, 'lucide:hexagon', t('settings.software.setBlenderPath'), false, () =>
-                        setBlenderPath()
+                    slideRow(
+                        inner,
+                        'lucide:hexagon',
+                        t('settings.software.setBlenderPath'),
+                        false,
+                        () => setBlenderPath()
                     );
                 });
             },
@@ -165,7 +175,7 @@ export function buildSettingsSoftwareLevel(): PopupLevel {
 }
 
 function buildSoftwareDetailManagedSchema(
-    entry: import('../core/wails-bindings').SoftwareEntry,
+    entry: import('../core/wails-bindings').SoftwareEntry
 ): MenuNode[] {
     return [
         {
@@ -232,24 +242,32 @@ function buildSoftwareDetailManagedSchema(
                             );
                     });
 
-                    addDangerRow(inner, 'lucide:trash-2', t('settings.software.delete'), async () => {
-                        const r = await tryCatchStatus(
-                            async () => {
-                                await RemoveCustomSoftware(entry.path);
-                                return true;
-                            },
-                            t('settings.softwareDeleteFail', { name: entry.name })
-                        );
-                        if (r) {
-                            cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
-                                (e) => e.path !== entry.path
+                    addDangerRow(
+                        inner,
+                        'lucide:trash-2',
+                        t('settings.software.delete'),
+                        async () => {
+                            const r = await tryCatchStatus(
+                                async () => {
+                                    await RemoveCustomSoftware(entry.path);
+                                    return true;
+                                },
+                                t('settings.softwareDeleteFail', { name: entry.name })
                             );
-                            setStatus(t('settings.softwareDeleted', { name: entry.name }), true);
-                            const menu = getSettingsMenu();
-                            menu?.pop();
-                            menu?.reRender();
+                            if (r) {
+                                cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
+                                    (e) => e.path !== entry.path
+                                );
+                                setStatus(
+                                    t('settings.softwareDeleted', { name: entry.name }),
+                                    true
+                                );
+                                const menu = getSettingsMenu();
+                                menu?.pop();
+                                menu?.reRender();
+                            }
                         }
-                    });
+                    );
                 });
             },
         },
@@ -257,7 +275,7 @@ function buildSoftwareDetailManagedSchema(
 }
 
 function buildSoftwareDetailAutoSchema(
-    entry: import('../core/wails-bindings').SoftwareEntry,
+    entry: import('../core/wails-bindings').SoftwareEntry
 ): MenuNode[] {
     return [
         {
@@ -312,7 +330,10 @@ function buildSoftwareDetailAutoSchema(
                             }, t('settings.software.convertFailed'));
                             if (r) {
                                 cachedSoftwareEntries = await ScanSoftwareDir();
-                                setStatus(t('settings.softwareToCustom', { name: entry.name }), true);
+                                setStatus(
+                                    t('settings.softwareToCustom', { name: entry.name }),
+                                    true
+                                );
                                 const menu = getSettingsMenu();
                                 menu?.pop();
                                 menu?.reRender();

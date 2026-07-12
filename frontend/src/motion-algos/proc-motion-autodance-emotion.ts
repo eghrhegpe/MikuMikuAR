@@ -10,23 +10,35 @@ import { FPS, type ProcMotionState } from './proc-motion-shared';
 // 黑名单模式（眨眼/口型等非情绪 morph）
 // ============================================================================
 const MORPH_BLACKLIST_PATTERNS = [
-    'まばたき', 'blink', '眨眼', 'wink', 'ウィンク',
-    'あ', 'い', 'う', 'え', 'お',
-    'a ', 'i ', 'u ', 'e ', 'o ',
+    'まばたき',
+    'blink',
+    '眨眼',
+    'wink',
+    'ウィンク',
+    'あ',
+    'い',
+    'う',
+    'え',
+    'お',
+    'a ',
+    'i ',
+    'u ',
+    'e ',
+    'o ',
 ] as const;
 
 // ============================================================================
 // 情绪分类 → 关键词（多语言）
 // ============================================================================
 export const EMOTION_CANDIDATES: Readonly<Record<string, readonly string[]>> = {
-    smile:    ['にがり', '笑い', 'smile', 'えがお', 'happy', '喜び', '嬉しい', 'よろこび'],
-    sad:      ['悲しみ', 'sad', 'cry', '泣き', '哀しみ', 'かなしみ'],
-    angry:    ['怒り', 'angry', 'いかり', 'むっ', 'まゆ'],
+    smile: ['にがり', '笑い', 'smile', 'えがお', 'happy', '喜び', '嬉しい', 'よろこび'],
+    sad: ['悲しみ', 'sad', 'cry', '泣き', '哀しみ', 'かなしみ'],
+    angry: ['怒り', 'angry', 'いかり', 'むっ', 'まゆ'],
     surprise: ['びく/', 'surprise', 'おどろき', '驚き', 'wonder', 'わお'],
-    worry:    ['困る', 'worry', 'こまる', '悩み', 'なやみ', '困惑'],
-    serious:  ['真面目', 'serious', 'まじめ', 'じと目', 'じと'],
-    shy:      ['照れ', 'shy', 'てれ', 'はにかみ', '恥ずかしい'],
-    wink:     ['ウィンク', 'wink', 'ういんく', 'win'],
+    worry: ['困る', 'worry', 'こまる', '悩み', 'なやみ', '困惑'],
+    serious: ['真面目', 'serious', 'まじめ', 'じと目', 'じと'],
+    shy: ['照れ', 'shy', 'てれ', 'はにかみ', '恥ずかしい'],
+    wink: ['ウィンク', 'wink', 'ういんく', 'win'],
 } as const;
 
 export type EmotionCategory = keyof typeof EMOTION_CANDIDATES;
@@ -63,9 +75,7 @@ export function scoreMorph(name: string, keywords: readonly string[]): number {
  * 从 morph 列表中找出最佳情绪映射
  * @returns Map<category, morphName>，不含 wink
  */
-export function findBestEmotionMorphs(
-    morphNames: readonly string[]
-): Map<EmotionCategory, string> {
+export function findBestEmotionMorphs(morphNames: readonly string[]): Map<EmotionCategory, string> {
     const emotionMorphs = new Map<EmotionCategory, string>();
 
     for (const [category, keywords] of Object.entries(EMOTION_CANDIDATES)) {
@@ -79,15 +89,15 @@ export function findBestEmotionMorphs(
                 bestName = mName;
             }
         }
-        if (bestName) emotionMorphs.set(category as EmotionCategory, bestName);
+        if (bestName) {
+            emotionMorphs.set(category as EmotionCategory, bestName);
+        }
     }
 
     // 过滤 Shift-JIS 不可编码的 morph
     for (const [k, n] of emotionMorphs) {
         if (!canEncodeName(n)) {
-            console.log(
-                `[procedural-motion] 表情 morph "${k}=${n}" 无法编码为 Shift-JIS，跳过`
-            );
+            console.log(`[procedural-motion] 表情 morph "${k}=${n}" 无法编码为 Shift-JIS，跳过`);
             emotionMorphs.delete(k);
         }
     }
@@ -111,7 +121,9 @@ export function genEmotionCycles(
 ): void {
     // wink 不参与轮播
     const foundEmotions = Array.from(emotionMorphs.entries()).filter(([k]) => k !== 'wink');
-    if (foundEmotions.length === 0) return;
+    if (foundEmotions.length === 0) {
+        return;
+    }
 
     console.log(
         `[procedural-motion] 表情 morph 匹配: [${foundEmotions.map(([k, n]) => `${k}=${n}`).join(', ')}]`
@@ -150,7 +162,9 @@ export function genAccentMorph(
     const surpriseMorph = emotionMorphs.get('surprise') ?? null;
     const winkMorph = emotionMorphs.get('wink') ?? null;
     const accentMorph = surpriseMorph ?? winkMorph;
-    if (!accentMorph) return;
+    if (!accentMorph) {
+        return;
+    }
 
     const measureCount = Math.min(4, Math.floor(loopFrames / (beatFrames * 2)));
     for (let m = 0; m < measureCount; m++) {
@@ -180,7 +194,9 @@ export function genShyMorph(
     intensity: number
 ): void {
     const shyMorph = emotionMorphs.get('shy') ?? null;
-    if (!shyMorph) return;
+    if (!shyMorph) {
+        return;
+    }
 
     const shyStart = loopFrames - beatFrames * 4;
     if (shyStart > 0) {

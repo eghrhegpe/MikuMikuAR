@@ -3,7 +3,11 @@ import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/physics/wind-utils';
 import { _envSys, getScene, ensureEnvUpdateObserver, addRipple } from './env-impl';
 import { createCanvasTexture } from './env-texture';
-import { GhostParticleSimulator, getGhostDownsample, GhostParticleConfig } from './ghost-particle-sim';
+import {
+    GhostParticleSimulator,
+    getGhostDownsample,
+    GhostParticleConfig,
+} from './ghost-particle-sim';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';
@@ -472,7 +476,9 @@ function isWeatherType(type: EnvState['particleType']): boolean {
 
 /** 初始化 splash burst 对象池（预创建 N 个小型 GPUParticleSystem） */
 function initSplashBurstPool(): void {
-    if (_splashPoolReady) return;
+    if (_splashPoolReady) {
+        return;
+    }
     const scene = getScene();
     for (let i = 0; i < SPLASH_POOL_SIZE; i++) {
         const ps = new GPUParticleSystem(`splashBurst_${i}`, { capacity: 20 }, scene);
@@ -508,7 +514,9 @@ function spawnSplashAt(x: number, y: number, z: number): void {
             break;
         }
     }
-    if (!burst) return; // 池满，跳过这次溅射
+    if (!burst) {
+        return;
+    } // 池满，跳过这次溅射
 
     burst.busy = true;
     const e = burst.system.emitter;
@@ -523,7 +531,9 @@ function spawnSplashAt(x: number, y: number, z: number): void {
     }, 50);
 
     // 0.8s 后释放回池
-    if (burst.releaseTimer) clearTimeout(burst.releaseTimer);
+    if (burst.releaseTimer) {
+        clearTimeout(burst.releaseTimer);
+    }
     burst.releaseTimer = setTimeout(() => {
         burst!.busy = false;
         burst!.releaseTimer = null;
@@ -539,12 +549,11 @@ function spawnSplashAt(x: number, y: number, z: number): void {
 }
 
 /** 初始化幽灵粒子模拟器（与 GPU 粒子同步参数，CPU 端做碰撞检测） */
-function initGhostSimulator(
-    type: EnvState['particleType'],
-    gpuPs: GPUParticleSystem
-): void {
+function initGhostSimulator(type: EnvState['particleType'], gpuPs: GPUParticleSystem): void {
     const scene = getScene();
-    if (!_initialDir1 || !_initialDir2) return;
+    if (!_initialDir1 || !_initialDir2) {
+        return;
+    }
 
     // 清理旧模拟器
     if (_ghostSim) {
@@ -591,7 +600,9 @@ export function disposeSplash(): void {
     }
     // 销毁 burst 池
     for (const b of _splashBurstPool) {
-        if (b.releaseTimer) clearTimeout(b.releaseTimer);
+        if (b.releaseTimer) {
+            clearTimeout(b.releaseTimer);
+        }
         b.system.dispose();
     }
     _splashBurstPool = [];

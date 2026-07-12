@@ -647,7 +647,7 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
             attachGizmo({
                 id: targetId,
                 node: entry.light,
-                types: (entry.state.type === 'point' ? ['position'] : ['position', 'rotation']),
+                types: entry.state.type === 'point' ? ['position'] : ['position', 'rotation'],
                 onPositionDragEnd: (n) => {
                     const v = (n as unknown as { position: Vector3 }).position;
                     setStageLightState({ posX: v.x, posY: v.y, posZ: v.z }, targetId);
@@ -657,12 +657,21 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
                     if (entry.state.type === 'spot' && entry.light instanceof SpotLight) {
                         const curDir = entry.light.direction;
                         const target = pos.add(curDir.scale(10));
-                        setStageLightState({ targetX: target.x, targetY: target.y, targetZ: target.z }, targetId);
+                        setStageLightState(
+                            { targetX: target.x, targetY: target.y, targetZ: target.z },
+                            targetId
+                        );
                     }
-                    if (entry.state.type === 'directional' && entry.light instanceof DirectionalLight) {
+                    if (
+                        entry.state.type === 'directional' &&
+                        entry.light instanceof DirectionalLight
+                    ) {
                         const dir = entry.light.direction;
                         const target = pos.add(dir.scale(10));
-                        setStageLightState({ targetX: target.x, targetY: target.y, targetZ: target.z }, targetId);
+                        setStageLightState(
+                            { targetX: target.x, targetY: target.y, targetZ: target.z },
+                            targetId
+                        );
                     }
                 },
             });
@@ -1032,10 +1041,7 @@ export function attachLightGizmo(id: string): boolean {
     // Position drag: 实时更新指示器 + 拖拽结束持久化
     const posDragEnd = () => {
         const pos = entry.light.position;
-        setStageLightState(
-            { posX: pos.x, posY: pos.y, posZ: pos.z },
-            id
-        );
+        setStageLightState({ posX: pos.x, posY: pos.y, posZ: pos.z }, id);
     };
 
     // Rotation drag end（仅 spot/directional，point 无方向）
@@ -1044,18 +1050,12 @@ export function attachLightGizmo(id: string): boolean {
         if (entry.state.type === 'spot' && entry.light instanceof SpotLight) {
             const curDir = entry.light.direction;
             const target = pos.add(curDir.scale(10));
-            setStageLightState(
-                { targetX: target.x, targetY: target.y, targetZ: target.z },
-                id
-            );
+            setStageLightState({ targetX: target.x, targetY: target.y, targetZ: target.z }, id);
         }
         if (entry.state.type === 'directional' && entry.light instanceof DirectionalLight) {
             const dir = entry.light.direction;
             const target = pos.add(dir.scale(10));
-            setStageLightState(
-                { targetX: target.x, targetY: target.y, targetZ: target.z },
-                id
-            );
+            setStageLightState({ targetX: target.x, targetY: target.y, targetZ: target.z }, id);
         }
     };
 

@@ -121,7 +121,9 @@ const waterReflection = new PlanarReflection({
     },
     skipWhenUnderwater: true,
 });
-registerReflectionSurface('water', waterReflection, () => waterReflection.update(envState, getScene()));
+registerReflectionSurface('water', waterReflection, () =>
+    waterReflection.update(envState, getScene())
+);
 
 // ======== 涟漪系统（Interaction Ripples）========
 const MAX_RIPPLES = 8;
@@ -267,7 +269,13 @@ function regenerateCausticTexture(scene: Scene, waterColor: [number, number, num
         _causticTexture.dispose();
         _causticTexture = null;
     }
-    _causticTexture = createCanvasTexture({ size: S, draw, scene, name: 'waterCaustic', wrap: 'wrap' });
+    _causticTexture = createCanvasTexture({
+        size: S,
+        draw,
+        scene,
+        name: 'waterCaustic',
+        wrap: 'wrap',
+    });
     _causticScene = scene;
     _lastCausticColor = [...waterColor];
 }

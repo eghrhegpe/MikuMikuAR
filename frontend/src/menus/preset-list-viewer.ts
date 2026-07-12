@@ -48,12 +48,11 @@ export async function presetListContent<T>(
     config: PresetListViewerConfig<T>,
     onReRender: () => void,
     /** 预加载的 items——跳过 loadItems 避免重复请求 */
-    preloadedItems?: T[],
+    preloadedItems?: T[]
 ): Promise<void> {
     container.classList.remove('render-card');
 
-    const items: T[] =
-        preloadedItems ?? (await config.loadItems?.().catch(() => [])) ?? [];
+    const items: T[] = preloadedItems ?? (await config.loadItems?.().catch(() => [])) ?? [];
 
     if (items.length === 0) {
         const empty = document.createElement('div');
@@ -89,8 +88,7 @@ export async function presetListContent<T>(
             const sub = config.getSublabel?.(item);
             if (sub) {
                 const subSpan = document.createElement('span');
-                subSpan.style.cssText =
-                    'font-size:11px;color:var(--text-dim);margin-right:4px;';
+                subSpan.style.cssText = 'font-size:11px;color:var(--text-dim);margin-right:4px;';
                 subSpan.textContent = sub;
                 row.appendChild(subSpan);
             }
@@ -113,7 +111,9 @@ export async function presetListContent<T>(
                     const msg =
                         config.deleteConfirmText?.(item) ??
                         `确定删除「${config.getLabel(item)}」？`;
-                    if (!(await showConfirm(msg))) return;
+                    if (!(await showConfirm(msg))) {
+                        return;
+                    }
                     try {
                         await config.onDelete!(item);
                         onReRender();
@@ -126,7 +126,9 @@ export async function presetListContent<T>(
 
             // Click to apply — 跳过 extraActions 内的点击（如 autoApply toggle）
             row.addEventListener('click', (ev) => {
-                if ((ev.target as HTMLElement).closest('.toggle')) return;
+                if ((ev.target as HTMLElement).closest('.toggle')) {
+                    return;
+                }
                 config.onApply(item);
             });
 
@@ -138,7 +140,7 @@ export async function presetListContent<T>(
 /** 构建完整 PopupLevel（适用于纯预设列表场景，如模型预设） */
 export function buildPresetListLevel<T>(
     config: PresetListViewerConfig<T>,
-    onReRender: () => void,
+    onReRender: () => void
 ): PopupLevel {
     return {
         label: config.label ?? '',

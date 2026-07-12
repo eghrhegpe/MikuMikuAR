@@ -3,10 +3,7 @@
  * 躯干骨骼帧生成（Center / Upper / Upper2 / Waist / Groove / AllParent）
  */
 import type { BoneKeyFrame } from './vmd-writer';
-import {
-    type ProcMotionState,
-    clamp1,
-} from './proc-motion-shared';
+import { type ProcMotionState, clamp1 } from './proc-motion-shared';
 import type { TrigCache } from './proc-motion-autodance-bones';
 import { sinVal, cosVal } from './proc-motion-autodance-bones';
 
@@ -38,7 +35,12 @@ export function genCenterBone(
             rotation: [0, ry, rz, w],
         });
     }
-    frames.push({ name: bone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    frames.push({
+        name: bone,
+        frame: cache.loopFrames,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+    });
     return frames;
 }
 
@@ -60,7 +62,12 @@ export function genUpperBone(
         const w = Math.sqrt(Math.max(0, 1 - rx * rx));
         frames.push({ name: bone, frame: f, position: [0, 0, 0], rotation: [rx, 0, 0, w] });
     }
-    frames.push({ name: bone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    frames.push({
+        name: bone,
+        frame: cache.loopFrames,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+    });
     return frames;
 }
 
@@ -82,7 +89,12 @@ export function genUpper2Bone(
         const w = Math.sqrt(Math.max(0, 1 - ry * ry));
         frames.push({ name: bone, frame: f, position: [0, 0, 0], rotation: [0, ry, 0, w] });
     }
-    frames.push({ name: bone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    frames.push({
+        name: bone,
+        frame: cache.loopFrames,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+    });
     return frames;
 }
 
@@ -104,7 +116,12 @@ export function genWaistBone(
         const w = Math.sqrt(Math.max(0, 1 - rz * rz));
         frames.push({ name: bone, frame: f, position: [0, 0, 0], rotation: [0, 0, rz, w] });
     }
-    frames.push({ name: bone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    frames.push({
+        name: bone,
+        frame: cache.loopFrames,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+    });
     return frames;
 }
 
@@ -127,7 +144,12 @@ export function genGrooveBone(
         const w = Math.sqrt(Math.max(0, 1 - ry * ry));
         frames.push({ name: bone, frame: f, position: [0, bob, 0], rotation: [0, ry, 0, w] });
     }
-    frames.push({ name: bone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    frames.push({
+        name: bone,
+        frame: cache.loopFrames,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+    });
     return frames;
 }
 
@@ -150,6 +172,11 @@ export function genAllParentBone(
         const w = Math.sqrt(Math.max(0, 1 - rx * rx - rz * rz));
         frames.push({ name: bone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
     }
-    frames.push({ name: bone, frame: cache.loopFrames, position: [0, 0, 0], rotation: [0, 0, 0, 1] });
+    frames.push({
+        name: bone,
+        frame: cache.loopFrames,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+    });
     return frames;
 }

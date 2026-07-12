@@ -108,7 +108,13 @@ export function activatePerception(modelId?: string): void {
         _applyBalanceSway(mmdModel, time, perceptionState.balanceSwayEnabled);
 
         // 5. Lip-sync（无条件调用，内部处理关闭复位）
-        _applyLipSync(mmdModel, time, perceptionState.lipSyncEnabled, perceptionModelId, perceptionState);
+        _applyLipSync(
+            mmdModel,
+            time,
+            perceptionState.lipSyncEnabled,
+            perceptionModelId,
+            perceptionState
+        );
 
         // 6. 头部跟随 + 眼部跟随（gaze）
         if (perceptionState.headTrackingEnabled || perceptionState.eyeTrackingEnabled) {
