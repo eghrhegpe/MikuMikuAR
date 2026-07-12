@@ -337,6 +337,7 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
 
 export function applySky(state: EnvState): void {
     const scene = getScene();
+    ensureEnvUpdateObserver(); // 天空自旋转等每帧逻辑依赖统一 observer（Fix: 避免隐式依赖云/水模块注册）
     if (state.skyMode === 'color') {
         disposeSky();
         scene.clearColor = new Color4(
@@ -874,6 +875,7 @@ function disposeGroundReflection(): void {
 
 export function applyGround(state: EnvState): void {
     const scene = getScene();
+    ensureEnvUpdateObserver(); // 滚动、follow-camera、反射等每帧逻辑依赖统一 observer（Fix: 避免隐式依赖云/水模块注册）
 
     const typeKey =
         state.groundType === 'terrain'

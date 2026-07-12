@@ -99,7 +99,7 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
     if (!ctrl) return;
 
     const raw = getStateValue(ctrl.bind);
-    const value = ctrl.get ? ctrl.get(raw) : (raw as number);
+    const value = ctrl.get ? (ctrl.get(raw) as number) : (raw as number);
     const onChange = (v: number) => {
         setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v);
         ctrl.onChange?.(v);
@@ -115,7 +115,7 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
         onChange,
         node.icon ?? ctrl.icon,
         undefined,
-        { bind: () => (ctrl.get ? ctrl.get(getBindFn(ctrl.bind)()) : (getBindFn(ctrl.bind)() as number)) }
+        { bind: () => (ctrl.get ? (ctrl.get(getBindFn(ctrl.bind)()) as number) : (getBindFn(ctrl.bind)() as number)) }
     );
 }
 
@@ -143,8 +143,12 @@ function renderToggle(node: MenuNode, container: HTMLElement): void {
     const ctrl = node.control;
     if (!ctrl) return;
 
-    const value = getStateValue(ctrl.bind) as boolean;
-    const onChange = (v: boolean) => setStateValue(ctrl.bind, v);
+    const raw = getStateValue(ctrl.bind);
+    const value = ctrl.get ? (ctrl.get(raw) as boolean) : (raw as boolean);
+    const onChange = (v: boolean) => {
+        setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v);
+        ctrl.onChange?.(v);
+    };
 
     addToggleRow(
         container,
@@ -152,7 +156,10 @@ function renderToggle(node: MenuNode, container: HTMLElement): void {
         value,
         onChange,
         node.icon ?? ctrl.icon,
-        { bind: () => getBindFn(ctrl.bind)() as boolean }
+        { bind: () => {
+            const r = getBindFn(ctrl.bind)();
+            return ctrl.get ? (ctrl.get(r) as boolean) : (r as boolean);
+        } }
     );
 }
 
@@ -201,4 +208,11 @@ function renderModeRow(node: MenuNode, container: HTMLElement): void {
         value,
         onChange,
     );
+}
+
+// ======== Section Title ========
+
+function renderSectionTitle(node: MenuNode, container: HTMLElement): void {
+    if (!node.label) return;
+    addSectionTitle(container, t(node.label));
 }
