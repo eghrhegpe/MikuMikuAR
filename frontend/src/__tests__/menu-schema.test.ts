@@ -354,7 +354,7 @@ describe('ADR-093 Menu Schema PoC', () => {
                             return ((Math.atan2(d[0], d[2]) * 180) / Math.PI + 360) % 360;
                         },
                         set: (angle) => {
-                            const rad = (angle * Math.PI) / 180;
+                            const rad = ((angle as number) * Math.PI) / 180;
                             return [Math.sin(rad), 0, Math.cos(rad)];
                         },
                     },
@@ -396,7 +396,7 @@ describe('ADR-093 Menu Schema PoC', () => {
                         bind: 'ui.screenshotQuality',
                         min: 50, max: 100, step: 5,
                         get: (v) => Math.round(((v as number) ?? 0.9) * 100),
-                        set: (v) => v / 100,
+                        set: (v) => (v as number) / 100,
                     },
                     icon: 'lucide:gauge',
                 }];

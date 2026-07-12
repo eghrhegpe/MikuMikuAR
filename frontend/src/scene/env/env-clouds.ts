@@ -118,6 +118,8 @@ let _volCloudMesh: Mesh | null = null;
 let _volCloudMat: ShaderMaterial | null = null;
 let _debugCloudRing: Mesh | null = null;
 let _debugCloudMarkers: Mesh[] = [];
+/** 云层位置可视化的半透明平面（调试用） */
+let _debugCloudDeck: Mesh | null = null;
 
 /** 清理所有调试可视化对象。 */
 function _clearDebugVisuals(): void {
@@ -130,6 +132,10 @@ function _clearDebugVisuals(): void {
         m.dispose();
     }
     _debugCloudMarkers = [];
+    if (_debugCloudDeck) {
+        _debugCloudDeck.dispose();
+        _debugCloudDeck = null;
+    }
 }
 
 /** 创建调试可视化对象（红色环 + 色标）。 */
@@ -166,6 +172,21 @@ function _createDebugVisuals(state: EnvState, scene: Scene): void {
         marker.material = mMat;
         _debugCloudMarkers.push(marker);
     }
+
+    // 半透明云层平面：帮助定位云层在场景中的位置
+    _debugCloudDeck = MeshBuilder.CreateGround(
+        'cloudDebugDeck',
+        { width: 2000, height: 2000, subdivisions: 1 },
+        scene
+    );
+    _debugCloudDeck.position.y = state.cloudHeight;
+    _debugCloudDeck.isPickable = false;
+    const deckMat = new StandardMaterial('cloudDebugDeckMat', scene);
+    deckMat.diffuseColor = new Color3(1, 1, 1);
+    deckMat.alpha = 0.15;
+    deckMat.backFaceCulling = false;
+    deckMat.alphaMode = Constants.ALPHA_COMBINE;
+    _debugCloudDeck.material = deckMat;
 }
 
 // Shader strings registered via Effect.ShadersStore
@@ -264,6 +285,21 @@ void main(){
     vec3 rd = normalize(vWorldPos - cameraPosition);
     float maxT = cloudVisibility;
     float dt = CLOUD_FIXED_STEP;
+
+    // Early exit: 相机在云层外且射线远离云层 → 永远碰不到云，直接跳过
+    if ((ro.y < cloudBaseY && rd.y <= 0.0) || (ro.y > cloudTopY && rd.y >= 0.0)) {
+        discard;
+        return;
+    }
+    // Early exit: 相机在云层下方但仰角太小，200 步内到不了云层
+    if (ro.y < cloudBaseY && rd.y > 0.0) {
+        float stepsNeeded = (cloudBaseY - ro.y) / (rd.y * dt);
+        if (stepsNeeded > float(CLOUD_MAX_STEPS)) {
+            discard;
+            return;
+        }
+    }
+
     float T = 1.0;
     vec3 L = vec3(0.0);
     vec3 cloudCol = vec3(0.78, 0.82, 0.92);
@@ -277,6 +313,12 @@ void main(){
         float t = startT + dt * float(i);
         if (t > maxT) break;
         vec3 p = ro + rd * t;
+
+        // 射线已穿过云层范围 → 后续不会再遇到云，提前跳出
+        if ((rd.y > 0.0 && p.y > cloudTopY) || (rd.y < 0.0 && p.y < cloudBaseY)) {
+            break;
+        }
+
         float d = getDensity(p, cloudDensity, windDirection);
         if (d > CLOUD_DENSITY_THRESHOLD) {
             float ct = max(dot(Ldir, rd), 0.0);

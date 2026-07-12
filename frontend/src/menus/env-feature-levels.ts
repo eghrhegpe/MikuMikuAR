@@ -380,7 +380,7 @@ export function buildWindLevel(): PopupLevel {
                                         return ((Math.atan2(d[0], d[2]) * 180) / Math.PI + 360) % 360;
                                     },
                                     set: (angle) => {
-                                        const rad = (angle * Math.PI) / 180;
+                                        const rad = ((angle as number) * Math.PI) / 180;
                                         return [Math.sin(rad), envState.windDirection[1], Math.cos(rad)];
                                     },
                                 },
