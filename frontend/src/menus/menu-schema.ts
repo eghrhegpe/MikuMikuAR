@@ -22,6 +22,8 @@ export interface ControlSpec {
     get?: (v: unknown) => number;
     /** 衍生控件：从控件值转状态值（如 角度→[sin,y,cos]） */
     set?: (v: number) => unknown;
+    /** 控件值变更后的副作用（如 reflectionQuality 变化后重建水体） */
+    onChange?: (v: unknown) => void;
 }
 
 export interface MenuNode {
