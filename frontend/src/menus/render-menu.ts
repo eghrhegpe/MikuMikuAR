@@ -85,7 +85,10 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
 
     const raw = getStateValue(ctrl.bind);
     const value = ctrl.get ? ctrl.get(raw) : (raw as number);
-    const onChange = (v: number) => setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v);
+    const onChange = (v: number) => {
+        setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v);
+        ctrl.onChange?.(v);
+    };
 
     addSliderRow(
         container,
@@ -145,7 +148,10 @@ function renderModeSlider(node: MenuNode, container: HTMLElement): void {
     if (!ctrl || !ctrl.options) return;
 
     const value = getStateValue(ctrl.bind) as string;
-    const onChange = (v: string) => setStateValue(ctrl.bind, v);
+    const onChange = (v: string) => {
+        setStateValue(ctrl.bind, v);
+        ctrl.onChange?.(v);
+    };
     const opts = ctrl.options.map((o) => ({ value: o.value, label: t(o.label) }));
 
     addModeSlider(
