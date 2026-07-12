@@ -870,6 +870,7 @@ export const zhCN: Record<string, string> = {
     'env.skyColorTop': '天空顶部颜色',
     'env.zenithColor': '天顶颜色',
     'env.horizonColor': '地平线颜色',
+    'env.starsTexture': '星空贴图',
     'env.stars': '星空',
     'env.shadowHint': '在「场景」→「舞台灯光」中可逐个调节灯光阴影参数',
 

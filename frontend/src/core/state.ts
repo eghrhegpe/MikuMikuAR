@@ -288,6 +288,7 @@ export const envState: EnvState = reactive<EnvState>({
     skyRotationSpeed: 0,
     skyBrightness: 1,
     starsEnabled: false,
+    starsTexture: '',
     envIntensity: 2,
 
     groundVisible: true,
@@ -358,8 +359,8 @@ export const envState: EnvState = reactive<EnvState>({
     diffuseStrength: 0.15,
     ambientStrength: 0.15,
     foamTransitionRange: 0.15,
-    rippleNormalStrength: 0.15,
-    rippleGlintStrength: 0.25,
+    rippleNormalStrength: 0.35,
+    rippleGlintStrength: 0.5,
     causticColor1: [1.0, 0.9, 0.6],
     causticColor2: [1.0, 1.0, 0.8],
     causticScrollX: 0.1,

@@ -19,7 +19,7 @@ import {
     PROC_VMD_NAME_LIFELIKE,
 } from '@/motion-algos/procedural-motion';
 import { BeatDetector } from '@/motion-algos/beat-detector';
-import { mmdRuntime, triggerAutoSave, focusedModelId } from '@/core/config';
+import { mmdRuntime, triggerAutoSave, focusedModelId, setUIState } from '@/core/config';
 import { isAudioPlaying } from '@/outfit/audio';
 import { SettingsStore } from '@/lib/settings-store';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from '../scene';
@@ -313,6 +313,7 @@ export function setBpmQuantizeEnabled(v: boolean): void {
         return;
     }
     SettingsStore.get().set('bpmQuantizeEnabled', v);
+    setUIState({ bpmQuantizeEnabled: v });
     if (procBeatDetector) {
         procBeatDetector.setBpmQuantizeEnabled(v);
     }

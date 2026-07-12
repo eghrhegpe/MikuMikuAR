@@ -232,6 +232,15 @@ export function GetDownloadWatchStatus(): $CancellablePromise<string> {
 }
 
 /**
+ * GetLastBrowseDir returns the remembered browse directory for a resource category.
+ * Used by the frontend resource library browser to resume from the last visited subdirectory.
+ * Relative paths (./...) are resolved against ResourceRoot; absolute paths returned as-is.
+ */
+export function GetLastBrowseDir(category: string): $CancellablePromise<string> {
+    return $Call.ByID(3481107494, category);
+}
+
+/**
  * GetLibraryIndex reads the last scanned index from disk.
  */
 export function GetLibraryIndex(): $CancellablePromise<$models.ModelEntry[] | null> {
@@ -749,6 +758,15 @@ export function SetDownloadWatchEnabled(enabled: boolean): $CancellablePromise<v
  */
 export function SetEnvState(env: $models.EnvState): $CancellablePromise<void> {
     return $Call.ByID(4283504689, env);
+}
+
+/**
+ * SetLastBrowseDir persists the current browse directory for a resource category.
+ * Paths under ResourceRoot are stored as relative (./...) for cross-platform portability;
+ * paths outside ResourceRoot are stored as absolute (desktop only).
+ */
+export function SetLastBrowseDir(category: string, dir: string): $CancellablePromise<void> {
+    return $Call.ByID(2938895370, category, dir);
 }
 
 /**

@@ -30,7 +30,7 @@ interface PostProcessInternal {
 const WATER_BASE_SIZE = 60; // 水面基准尺寸（世界单位），通过缩放调整最终大小
 const LOD_HIGH_DISTANCE = 30; // LOD 切换距离（近）
 const LOD_LOW_DISTANCE = 80; // LOD 切换距离（远）
-const UNDERWATER_TRANSITION_SPEED = 0.5; // 水下过渡速度（秒）
+const UNDERWATER_TRANSITION_SPEED = 0.8; // 水下过渡速度（秒）
 
 // ======== 水下状态（供 Env Update Observer 和 disposeWater 使用）========
 export let _underwaterActive = false;
@@ -404,16 +404,19 @@ uniform vec4 uRipplePosRad[8];
 uniform vec4 uRippleStrSpdLife[8];
 uniform int uRippleCount;
 
-float calcRipple(vec3 worldPos, vec3 center, float radius, float strength, float speed, float life) {
+float calcRipple(vec3 worldPos, vec3 center, float radius, float strength, float speed, float life, float maxLife) {
     vec2 delta = worldPos.xz - center.xz;
     float dist = length(delta);
-    if (dist > radius || life <= 0.0) return 0.0;
-    float phase = life * speed;
-    float ripple = sin(dist * 3.0 - phase) * exp(-dist / (radius * 0.5));
-    ripple *= strength * (1.0 - dist / radius);
-    float lifeFactor = min(1.0, life / 1.0);
-    ripple *= lifeFactor;
-    return max(0.0, ripple);
+    float elapsed = maxLife - life;
+    float expandingRadius = radius * (1.0 + elapsed * speed * 0.15);
+    if (dist > expandingRadius || life <= 0.0 || maxLife <= 0.0) return 0.0;
+    float phase = elapsed * speed * 1.0;
+    float rings = 2.0;
+    float wave = sin(dist * 6.28 * rings / expandingRadius - phase);
+    float fade = exp(-dist / (expandingRadius * 0.8));
+    float envelope = strength * (1.0 - dist / expandingRadius) * fade;
+    float lifeFactor = clamp(life / maxLife, 0.0, 1.0);
+    return wave * envelope * lifeFactor;
 }
 
 #ifdef ENV_TEXTURE
@@ -428,12 +431,12 @@ uniform float planarReflectBlend;
 void main() {
     vec3 viewDir = normalize(cameraPosition - vWorldPos);
     vec3 normal = normalize(vNormal);
-    
+
     float facing = dot(viewDir, normal);
     if (facing < 0.0) {
         normal = -normal;
     }
-    
+
     vec3 reflectDir = reflect(-viewDir, normal);
 
     vec3 reflection = vec3(0.0);
@@ -481,8 +484,8 @@ void main() {
         if (i >= uRippleCount) break;
         vec4 pr = uRipplePosRad[i];
         vec4 ssl = uRippleStrSpdLife[i];
-        if (pr.w <= 0.0 || ssl.z <= 0.0) continue;
-        float r = calcRipple(vWorldPos, pr.xyz, pr.w, ssl.x, ssl.y, ssl.z);
+        if (pr.w <= 0.0 || ssl.z <= 0.0 || ssl.w <= 0.0) continue;
+        float r = calcRipple(vWorldPos, pr.xyz, pr.w, ssl.x, ssl.y, ssl.z, ssl.w);
         rippleSum += r;
     }
     vec3 rippleN = vec3(rippleSum * rippleNormalStrength, 0.0, rippleSum * rippleNormalStrength);
@@ -842,36 +845,34 @@ export function createWater(state: EnvState): void {
                 }
                 if (!anyAlive && _ripples.length > 0) {
                     _ripples = [];
-                    _rippleDirty = true;
                 }
             }
             // 平面反射（委托统一平面反射引擎，ADR-092：镜像相机/脏标记/帧跳过/入水跳过/互斥内聚）
             waterReflection.update(envState, scene);
             // 手动 LOD 可见性切换（按相机距离）
             _applyWaterLOD(scene);
-            if (_rippleDirty) {
-                _rippleDirty = false;
-                const posRad: number[] = new Array(MAX_RIPPLES * 4).fill(0);
-                const strSpdLife: number[] = new Array(MAX_RIPPLES * 4).fill(0);
-                const count = Math.min(_ripples.length, MAX_RIPPLES);
-                for (let i = 0; i < count; i++) {
-                    const r = _ripples[i];
-                    if (r.life <= 0) {
-                        continue;
-                    }
-                    posRad[i * 4 + 0] = r.position.x;
-                    posRad[i * 4 + 1] = r.position.y;
-                    posRad[i * 4 + 2] = r.position.z;
-                    posRad[i * 4 + 3] = r.radius;
-                    strSpdLife[i * 4 + 0] = r.strength;
-                    strSpdLife[i * 4 + 1] = r.speed;
-                    strSpdLife[i * 4 + 2] = r.life;
-                    strSpdLife[i * 4 + 3] = 0;
+            // 每帧更新涟漪数据（life 逐帧变化，shader 需要最新值才能正确动画）
+            const posRad: number[] = new Array(MAX_RIPPLES * 4).fill(0);
+            const strSpdLife: number[] = new Array(MAX_RIPPLES * 4).fill(0);
+            let aliveCount = 0;
+            for (let i = 0; i < _ripples.length && aliveCount < MAX_RIPPLES; i++) {
+                const r = _ripples[i];
+                if (r.life <= 0) {
+                    continue;
                 }
-                m.setArray4('uRipplePosRad', posRad);
-                m.setArray4('uRippleStrSpdLife', strSpdLife);
-                m.setInt('uRippleCount', count);
+                posRad[aliveCount * 4 + 0] = r.position.x;
+                posRad[aliveCount * 4 + 1] = r.position.y;
+                posRad[aliveCount * 4 + 2] = r.position.z;
+                posRad[aliveCount * 4 + 3] = r.radius;
+                strSpdLife[aliveCount * 4 + 0] = r.strength;
+                strSpdLife[aliveCount * 4 + 1] = r.speed;
+                strSpdLife[aliveCount * 4 + 2] = r.life;
+                strSpdLife[aliveCount * 4 + 3] = r.maxLife;
+                aliveCount++;
             }
+            m.setArray4('uRipplePosRad', posRad);
+            m.setArray4('uRippleStrSpdLife', strSpdLife);
+            m.setInt('uRippleCount', aliveCount);
         });
     }
 }

@@ -21,6 +21,8 @@ import {
     AddRecentModel,
     GetAllTags,
     GetModelsByTag,
+    GetLastBrowseDir,
+    SetLastBrowseDir,
 } from '../core/wails-bindings';
 import {
     dom,
@@ -117,7 +119,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
     return new SlideMenu({
         container,
         onClose: closeAllOverlays,
-        onFolderEnter: (row) => {
+        onFolderEnter: async (row) => {
             if (row.target && row.target.startsWith('scene:')) {
                 setMotionBindingTargetId(null);
                 const id = row.target.replace('scene:', '');
@@ -185,9 +187,12 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     };
                 }
                 const browseDir = getBrowseDir('pmx');
-                console.log('[models:browse] browseDir:', browseDir);
+                // [doc:adr-090] 读取上次浏览子目录记忆，优先从 LastDirs["browse:pmx"] 恢复
+                const [lastDir] = await GetLastBrowseDir('pmx');
+                const startDir = (lastDir && lastDir !== browseDir) ? lastDir : browseDir;
+                console.log('[models:browse] browseDir:', browseDir, 'lastDir:', lastDir, 'startDir:', startDir);
                 return buildLevel(
-                    browseDir,
+                    startDir,
                     t('library.title'),
                     (m) => m.format === 'pmx',
                     stackRegistry.modelStack!,
@@ -244,6 +249,27 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             const hint = hints[row.target || ''];
             if (hint) {
                 setStatus(hint, false);
+            }
+        },
+        // [doc:adr-090] 持久化模型浏览器当前目录，打开时恢复上次位置
+        onLevelEnter: (level) => {
+            const dir = normPath(level.dir);
+            if (!dir || dir === '.' || dir === '/') {
+                return;
+            }
+            const browseRoot = getBrowseDir('pmx');
+            if (!browseRoot) {
+                return;
+            }
+            // 仅在 libraryRoot/PMX/ 下的子目录导航时持久化；排除根菜单、scene/model detail 等
+            if (dir === browseRoot) {
+                return;
+            }
+            const dirLower = dir.toLowerCase();
+            const rootLower = browseRoot.toLowerCase();
+            if (dirLower.startsWith(rootLower) && dirLower !== rootLower) {
+                // [doc:adr-090] 同步到后端，持久化到 LastDirs["browse:pmx"]
+                void SetLastBrowseDir('pmx', dir);
             }
         },
     });
@@ -521,6 +547,9 @@ export function buildLevel(
                 renderGridMode(container, dir, items, filter, targetStack);
             } else {
                 cardContainer(container, (card) => {
+                    // [doc:adr-066] 列表模式也显示视图切换工具栏
+                    const allResourceItems = buildResourceItemsForDir(dir, filter);
+                    addListViewToolbar(card, dir, items, filter, targetStack, allResourceItems);
                     renderItemsWithRAF(card, items, filter, targetStack);
                 });
             }
@@ -683,6 +712,93 @@ function renderFullscreenFolder(
     renderFiltered('');
 }
 
+/** [doc:adr-066] 列表模式视图切换工具栏 */
+function addListViewToolbar(
+    card: HTMLElement,
+    dir: string,
+    items: PopupRow[],
+    filter: ((m: LibraryModel) => boolean) | undefined,
+    targetStack: SlideMenu | undefined,
+    allResourceItems: ResourceItem[]
+): void {
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = `
+        display: flex;
+        gap: 8px;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--white-06);
+    `;
+
+    const gridBtn = document.createElement('button');
+    gridBtn.className = 'btn btn-ghost btn-sm' + (resourceViewMode === 'grid' ? ' btn-active' : '');
+    gridBtn.textContent = '⊞';
+    gridBtn.title = t('library.gridView');
+    gridBtn.addEventListener('click', () => {
+        setResourceViewMode('grid');
+        const stack = targetStack || stackRegistry.modelStack;
+        if (stack) {
+            const cl = stack.currentLevel;
+            if (cl) {
+                stack.replaceCurrentLevel(buildLevel(cl.dir, cl.label, cl.filter, targetStack));
+            }
+        }
+    });
+    toolbar.appendChild(gridBtn);
+
+    const listBtn = document.createElement('button');
+    listBtn.className = 'btn btn-ghost btn-sm' + (resourceViewMode === 'list' ? ' btn-active' : '');
+    listBtn.textContent = '≡';
+    listBtn.title = t('library.listView');
+    listBtn.addEventListener('click', () => {
+        setResourceViewMode('list');
+        const stack = targetStack || stackRegistry.modelStack;
+        if (stack) {
+            const cl = stack.currentLevel;
+            if (cl) {
+                stack.replaceCurrentLevel(buildLevel(cl.dir, cl.label, cl.filter, targetStack));
+            }
+        }
+    });
+    toolbar.appendChild(listBtn);
+
+    const expandBtn = document.createElement('button');
+    expandBtn.className = 'btn btn-ghost btn-sm';
+    expandBtn.textContent = '⛶';
+    expandBtn.title = t('library.fullscreen');
+    expandBtn.style.marginLeft = 'auto';
+    expandBtn.addEventListener('click', () => {
+        const currentTitle = items[0]?.label || '资源库';
+        openFullscreen({
+            title: currentTitle,
+            onBack: () => setCurrentState('EMBEDDED_GRID'),
+            renderContent: (container, navigate) => {
+                createResourcePanel(container, {
+                    items: allResourceItems,
+                    thumbnailCache: new Map(Object.entries(thumbnailCache)),
+                    onSelect: (item) => {
+                        if (item.data) {
+                            closeFullscreen();
+                            onModelRowClick(item.data as LibraryModel);
+                        }
+                    },
+                    onEnterFolder: (path) => {
+                        const folderLabel =
+                            allResourceItems.find((i) => i.id === path)?.label ||
+                            path.split('/').pop() || path;
+                        navigate(folderLabel, (c) => {
+                            renderFullscreenFolder(c, path, filter, navigate);
+                        });
+                    },
+                    layout: 'grid',
+                });
+            },
+        });
+    });
+    toolbar.appendChild(expandBtn);
+
+    card.appendChild(toolbar);
+}
+
 function renderGridMode(
     container: HTMLElement,
     dir: string,
@@ -695,6 +811,22 @@ function renderGridMode(
 
     // 复用 buildResourceItemsForDir 获取当前目录的 ResourceItem 列表
     const allResourceItems = buildResourceItemsForDir(dir, filter);
+
+    // [doc:adr-066] 预加载当前目录所有缩略图
+    const pmxPaths = allResourceItems
+        .filter((item) => !item.isFolder && item.filePath)
+        .map((item) => item.filePath);
+    if (pmxPaths.length > 0) {
+        GetThumbnailBatch(pmxPaths)
+            .then((batch) => {
+                const merged = new Map(thumbnailCache);
+                for (const [path, data] of Object.entries(batch)) {
+                    merged.set(path, data);
+                }
+                setThumbnailCache(merged);
+            })
+            .catch(() => {});
+    }
 
     // 渲染容器
     cardContainer(container, (card) => {
@@ -891,7 +1023,7 @@ function onModelRowClick(m: LibraryModel): void {
         }
     }
 
-    // ===== Replace mode: keep menu open, navigate to new model's detail page =====
+    // ===== Replace mode: after load, return to library with new model's replace mode active =====
     if (replaceId && m.format === 'pmx') {
         setModelReplaceTargetId(null);
         setPendingVmd(null);
@@ -904,10 +1036,21 @@ function onModelRowClick(m: LibraryModel): void {
                 .load({ kind: isStage ? 'stage' : 'actor', path })
                 .then((handle) => {
                     if (handle?.id) {
-                        import('./model-detail').then(({ buildModelLevel }) => {
-                            stackRegistry.modelStack?.resetToRoot();
-                            stackRegistry.modelStack?.push(buildModelLevel(handle.id));
-                        });
+                        // Auto-activate replace mode for the newly loaded model
+                        // so user can immediately pick the next replacement without navigating back
+                        setModelReplaceTargetId(handle.id);
+                        stackRegistry.modelStack?.resetToRoot();
+                        // Push library browser so user sees the model list with replace mode active
+                        const newInst = modelRegistry.get(handle.id);
+                        stackRegistry.modelStack?.push(
+                            buildLevel(
+                                getBrowseDir('pmx'),
+                                t('model-detail.replaceModelTo', { name: newInst?.name ?? handle.name }),
+                                (model) => model.format === 'pmx',
+                                stackRegistry.modelStack!,
+                                externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+                            )
+                        );
                     } else {
                         stackRegistry.modelStack?.reRender();
                     }

@@ -2,7 +2,7 @@
 // 支持 MP3/WAV/OGG，与 VMD 动画同步，含音量、进度、音频偏移控制
 
 import { resolveFileUrl } from '../core/fileservice';
-import { triggerAutoSave } from '../core/config';
+import { triggerAutoSave, setUIState } from '../core/config';
 import type { BeatDetector } from '../motion-algos/beat-detector';
 import { SettingsStore, SETTINGS_UPDATED } from '../lib/settings-store';
 
@@ -108,6 +108,7 @@ export function disposeAudio(): void {
 
 export function setVolume(v: number): void {
     SettingsStore.get().set('volume', Math.max(0, Math.min(1, v)));
+    setUIState({ volume: Math.max(0, Math.min(1, v)) });
     applyGain(); // sync beatDetector + audioElement immediately
 }
 
@@ -121,6 +122,7 @@ export function setAudioOffset(seconds: number): void {
         return;
     }
     SettingsStore.get().set('audioOffset', seconds);
+    setUIState({ audioOffset: seconds });
 }
 
 export function getAudioOffset(): number {

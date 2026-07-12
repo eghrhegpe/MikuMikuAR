@@ -43,20 +43,23 @@ export class SlideMenu {
     private _unsubscribe: (() => void) | null = null;
 
     onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
-    onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
+    onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null | Promise<PopupLevel | null>;
     onHover?: (row: PopupRow, entering: boolean) => void;
     onAfterRender?: (level: PopupLevel, menu: SlideMenu) => void;
     onClose?: () => void;
     extraButtonFactory?: () => HTMLElement[];
+    /** 每次 level 变更（push/pop）后回调，供外部持久化当前目录等状态 */
+    onLevelEnter?: (level: PopupLevel, menu: SlideMenu) => void;
 
     constructor(opts: {
         container: HTMLElement;
         onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
-        onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
+        onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null | Promise<PopupLevel | null>;
         onHover?: (row: PopupRow, entering: boolean) => void;
         onAfterRender?: (level: PopupLevel, menu: SlideMenu) => void;
         onClose?: () => void;
         extraButtonFactory?: () => HTMLElement[];
+        onLevelEnter?: (level: PopupLevel, menu: SlideMenu) => void;
     }) {
         this.container = opts.container;
         this.onItemClick = opts.onItemClick;
@@ -65,6 +68,7 @@ export class SlideMenu {
         this.onAfterRender = opts.onAfterRender;
         this.onClose = opts.onClose;
         this.extraButtonFactory = opts.extraButtonFactory;
+        this.onLevelEnter = opts.onLevelEnter;
 
         this.container.innerHTML = '';
         this.container.classList.add('slide-menu');
@@ -168,6 +172,7 @@ export class SlideMenu {
             this.updateHeader(level);
             this.setupFocus();
             this.onAfterRender?.(level, this);
+            this.onLevelEnter?.(level, this);
         });
     }
 
@@ -202,6 +207,7 @@ export class SlideMenu {
                 this.transitioning = false;
                 this.setupFocus();
                 this.onAfterRender?.(level, this);
+            this.onLevelEnter?.(level, this);
             };
             this.panel.addEventListener('transitionend', onFadeIn);
             this._pushTimeout(
@@ -212,6 +218,7 @@ export class SlideMenu {
                         this.transitioning = false;
                         this.setupFocus();
                         this.onAfterRender?.(level, this);
+                        this.onLevelEnter?.(level, this);
                     }
                 }, 200)
             );
@@ -259,6 +266,7 @@ export class SlideMenu {
                 this.transitioning = false;
                 this.setupFocus();
                 this.onAfterRender?.(prevLevel, this);
+                this.onLevelEnter?.(prevLevel, this);
             };
             this.panel.addEventListener('transitionend', onFadeIn);
             this._pushTimeout(
@@ -269,6 +277,7 @@ export class SlideMenu {
                         this.transitioning = false;
                         this.setupFocus();
                         this.onAfterRender?.(prevLevel, this);
+                        this.onLevelEnter?.(prevLevel, this);
                     }
                 }, 200)
             );
@@ -303,6 +312,7 @@ export class SlideMenu {
             this.updateHeader(level);
             this.setupFocus();
             this.onAfterRender?.(level, this);
+            this.onLevelEnter?.(level, this);
         });
     }
 
@@ -896,8 +906,8 @@ export class SlideMenu {
                 row.icon,
                 row.label,
                 true,
-                () => {
-                    const next = this.onFolderEnter(row, this);
+                async () => {
+                    const next = await this.onFolderEnter?.(row, this);
                     if (next) {
                         this.push(next);
                     }
@@ -968,11 +978,11 @@ export class SlideMenu {
         }
 
         if (row.kind === 'folder') {
-            el.addEventListener('click', (e) => {
+            el.addEventListener('click', async (e) => {
                 if ((e.target as HTMLElement).closest('.slide-add-btn')) {
                     return;
                 }
-                const next = this.onFolderEnter(row, this);
+                const next = await this.onFolderEnter?.(row, this);
                 if (next) {
                     this.push(next);
                 }

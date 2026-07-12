@@ -533,7 +533,12 @@ func (a *App) DeleteEnvPreset(name string) error {
 
 // SelectSceneOpenFile opens a file dialog to pick a scene file.
 func (a *App) SelectSceneOpenFile() (string, error) {
-	return dialogs.SelectSceneOpen(a.wailsApp)
+	path, err := dialogs.SelectSceneOpen(a.wailsApp, a.getLastDir("scene"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("scene", filepath.Dir(path))
+	return path, nil
 }
 
 // SaveLastScene stores the current scene state for auto-recovery on next launch.
@@ -653,5 +658,10 @@ func _copyFileToZip(zw *zip.Writer, srcPath string, entryPath string) error {
 
 // SelectBundleSaveFile opens a save dialog for scene bundle files.
 func (a *App) SelectBundleSaveFile() (string, error) {
-	return dialogs.SelectBundleSave(a.wailsApp)
+	path, err := dialogs.SelectBundleSave(a.wailsApp, a.getLastDir("scene"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("scene", filepath.Dir(path))
+	return path, nil
 }

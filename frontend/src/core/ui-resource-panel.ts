@@ -4,6 +4,7 @@
 
 import { createIconifyIcon } from './icons';
 import { createVirtualGrid, type VirtualGridHandle } from './ui-virtual-grid';
+import { thumbnailCache as liveThumbnailCache } from './state';
 
 // ======== Types ========
 
@@ -113,17 +114,17 @@ export function createResourcePanel(
         }
     }
 
-    // 初始化观察器
+    // 初始化观察器 — 使用实时 liveThumbnailCache 引用
     observer = new IntersectionObserver(
         (entries) => {
             for (const entry of entries) {
                 if (entry.isIntersecting) {
                     const el = entry.target as HTMLElement;
                     const path = el.dataset.resourcePath;
-                    if (path && thumbnailCache.has(path)) {
-                        el.style.backgroundImage = `url(data:image/png;base64,${thumbnailCache.get(path)})`;
+                    if (path && liveThumbnailCache.has(path)) {
+                        el.style.backgroundImage = `url(data:image/png;base64,${liveThumbnailCache.get(path)})`;
                     }
-                    observer?.unobserve(el);
+                    // 不 unobserve — 等缓存加载后再试（当 liveThumbnailCache 更新后，下次观察时生效）
                 }
             }
         },

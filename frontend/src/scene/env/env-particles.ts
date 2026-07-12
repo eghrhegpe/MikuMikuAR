@@ -1,19 +1,14 @@
-import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem } from '@babylonjs/core';
+import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem, Observer, Scene } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/physics/wind-utils';
-import { _envSys, getScene, ensureEnvUpdateObserver, addRipple } from './env-impl';
+import { _envSys, getScene, ensureEnvUpdateObserver, addRipple, getGroundHeightAt } from './env-impl';
 import { createCanvasTexture } from './env-texture';
-import {
-    GhostParticleSimulator,
-    getGhostDownsample,
-    GhostParticleConfig,
-} from './ghost-particle-sim';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';
 const _particleTextures = new Map<string, Texture>();
 
-// ======== Splash System (方案B: GPU渲染 + CPU幽灵粒子碰撞联动) ========
+// ======== Splash System (方案A: CPU粒子真实碰撞 + burst对象池溅射) ========
 // splash burst 对象池：预创建多个小型 GPUParticleSystem，触地时取空闲的发射
 interface SplashBurst {
     system: GPUParticleSystem;
@@ -24,8 +19,8 @@ const SPLASH_POOL_SIZE = 6;
 let _splashBurstPool: SplashBurst[] = [];
 let _splashPoolReady = false;
 
-// CPU 幽灵粒子模拟器
-let _ghostSim: GhostParticleSimulator | null = null;
+// 碰撞检测 observer — 每帧遍历 CPU 粒子，检测地面碰撞
+let _collisionObserver: Observer<Scene> | null = null;
 
 // 保存粒子系统创建时的初始发射方向，风力基于此计算，避免叠加
 let _initialDir1: Vector3 | null = null;
@@ -209,9 +204,9 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
 
     const scene = getScene();
 
-    // capacity >= max(emitRate) * max(maxLifeTime) * 2.5
-    // 雨上限：1000 * 2 * 2.5 = 5000；particleEmitRate 放大时需要同步扩大
-    const ps = new GPUParticleSystem('envParticles', { capacity: 10000 }, scene);
+    // 方案A: CPU ParticleSystem — 真实碰撞检测，粒子触地即消失
+    // 容量 15000（支持暴雨级：emitRate 3000 × lifeTime 2s × 2.5 余量）
+    const ps = new ParticleSystem('envParticles', 15000, scene);
     ps.particleTexture = makeParticleTexture(type, envState.particleCustomTexture || undefined);
     _prevCustomTexKey = envState.particleCustomTexture
         ? `_custom_${envState.particleCustomTexture}`
@@ -252,14 +247,14 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
         }
         case 'rain': {
             ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
-            ps.emitRate = 1000;
+            ps.emitRate = 3000;
             ps.gravity = new Vector3(0, -25, 0);
             ps.minLifeTime = 1;
             ps.maxLifeTime = 2;
             ps.minEmitPower = 15;
             ps.maxEmitPower = 20;
-            ps.minSize = 0.1;
-            ps.maxSize = 0.2;
+            ps.minSize = 0.08;
+            ps.maxSize = 0.15;
             if (isWeather) {
                 ps.createBoxEmitter(
                     new Vector3(-0.1, -1, -0.1),
@@ -420,9 +415,9 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     _envSys.particles.system = ps;
     ps.start();
 
-    // 创建幽灵粒子模拟器（仅天气类型：rain/snow/sakura/leaves 需要碰撞联动）
+    // 天气类型启动地面碰撞检测（每帧遍历 particles[] 检测 y < groundHeight）
     if (isWeather) {
-        initGhostSimulator(type, ps);
+        startCollisionDetection(ps, type);
     }
 
     // 粒子类型变更后同步溅射状态（雨/雪才有溅射）
@@ -436,6 +431,10 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
 
 export function disposeParticles(): void {
     const scene = getScene();
+    if (_collisionObserver) {
+        scene.onBeforeRenderObservable.remove(_collisionObserver);
+        _collisionObserver = null;
+    }
     if (_envSys.particles.followObserver) {
         scene.onBeforeRenderObservable.remove(_envSys.particles.followObserver);
         _envSys.particles.followObserver = null;
@@ -444,7 +443,7 @@ export function disposeParticles(): void {
         _envSys.particles.system.dispose();
         _envSys.particles.system = null;
     }
-    disposeSplash(); // 粒子销毁时同步销毁溅射 + 幽灵模拟器
+    disposeSplash(); // 粒子销毁时同步销毁溅射
     stopFireworkBursts(); // 烟花 burst 清理
     // 释放粒子纹理缓存（防止 GPU 资源泄漏）
     for (const tex of _particleTextures.values()) {
@@ -539,65 +538,46 @@ function spawnSplashAt(x: number, y: number, z: number): void {
         burst!.releaseTimer = null;
     }, 800);
 
-    // 水面涟漪：溅射位置在水面范围内则触发
-    if (envState.waterEnabled) {
-        const halfSize = envState.waterSize / 2;
-        if (Math.abs(x) <= halfSize && Math.abs(z) <= halfSize) {
-            addRipple(new Vector3(x, envState.waterLevel, z), 1.5, 0.25, 1, 2);
-        }
-    }
 }
 
-/** 初始化幽灵粒子模拟器（与 GPU 粒子同步参数，CPU 端做碰撞检测） */
-function initGhostSimulator(type: EnvState['particleType'], gpuPs: GPUParticleSystem): void {
+/** 启动碰撞检测 — 每帧遍历 CPU 粒子数组，检测地面碰撞 */
+function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleType']): void {
     const scene = getScene();
-    if (!_initialDir1 || !_initialDir2) {
-        return;
+    if (_collisionObserver) {
+        scene.onBeforeRenderObservable.remove(_collisionObserver);
+        _collisionObserver = null;
     }
 
-    // 清理旧模拟器
-    if (_ghostSim) {
-        _ghostSim.dispose();
-        _ghostSim = null;
-    }
+    const splashProb = type === 'rain' ? 0.15 : type === 'snow' ? 0.3 : 0.4;
+    const frameSkip = type === 'rain' ? 4 : 2;
+    let frameIdx = 0;
 
-    const { downsample, splashProb } = getGhostDownsample(type);
-    const ghostEmitRate = gpuPs.emitRate / downsample;
+    _collisionObserver = scene.onBeforeRenderObservable.add(() => {
+        const particles = ps.particles;
+        if (!particles || particles.length === 0) return;
 
-    const config: GhostParticleConfig = {
-        emitRate: ghostEmitRate,
-        gravity: gpuPs.gravity ?? new Vector3(0, -1, 0),
-        windScale: 0.1, // 与 applyWindToParticles 中的系数一致
-        minEmitPower: gpuPs.minEmitPower,
-        maxEmitPower: gpuPs.maxEmitPower,
-        minLifeTime: gpuPs.minLifeTime,
-        maxLifeTime: gpuPs.maxLifeTime,
-        boxHalf: WEATHER_BOX_XZ_HALF,
-        boxYRange: WEATHER_BOX_Y_RANGE,
-        heightAboveGround: WEATHER_HEIGHT_ABOVE_GROUND,
-        updateSpeed: gpuPs.updateSpeed,
-        splashProbability: splashProb,
-        emitterFollowCamera: true,
-    };
+        const startIdx = frameIdx;
+        for (let i = startIdx; i < particles.length; i += frameSkip) {
+            const p = particles[i];
+            if (p.direction.y >= 0) continue;
 
-    _ghostSim = new GhostParticleSimulator(scene);
-    _ghostSim.onImpact = (x, y, z) => {
-        spawnSplashAt(x, y, z);
-    };
-    _ghostSim.start(config, _initialDir1, _initialDir2);
-
-    // 应用当前风力
-    const wind = getWindVector().scale(0.1);
-    _ghostSim.updateWind(wind);
+            const gh = getGroundHeightAt(p.position.x, p.position.z);
+            const deathY = envState.waterEnabled ? Math.max(gh, envState.waterLevel) : gh;
+            if (p.position.y <= deathY) {
+                p.age = p.lifeTime;
+                if (envState.waterEnabled && envState.waterLevel >= gh) {
+                    addRipple(new Vector3(p.position.x, envState.waterLevel, p.position.z), 2.5, 0.35, 1.2, 2);
+                } else if (envState.particleSplash && Math.random() < splashProb) {
+                    spawnSplashAt(p.position.x, gh, p.position.z);
+                }
+            }
+        }
+        frameIdx = (frameIdx + 1) % frameSkip;
+    });
 }
 
-/** 销毁 splash burst 池 + 幽灵模拟器 */
+/** 销毁 splash burst 池 */
 export function disposeSplash(): void {
-    // 销毁幽灵模拟器
-    if (_ghostSim) {
-        _ghostSim.dispose();
-        _ghostSim = null;
-    }
     // 销毁 burst 池
     for (const b of _splashBurstPool) {
         if (b.releaseTimer) {
@@ -621,10 +601,6 @@ export function syncSplashState(): void {
         envState.particleSplash && isWeatherType(_currentParticleType) && envState.particleEnabled;
     if (shouldShow && !_splashPoolReady) {
         initSplashBurstPool();
-        // 如果幽灵模拟器未运行但粒子系统已存在，重新初始化
-        if (!_ghostSim && _envSys.particles.system && _initialDir1 && _initialDir2) {
-            initGhostSimulator(_currentParticleType, _envSys.particles.system);
-        }
     } else if (!shouldShow && _splashPoolReady) {
         disposeSplash();
     }
@@ -737,7 +713,7 @@ function stopFireworkBursts(): void {
 
 // ======== Wind System ========
 // 基于初始方向计算风力，可安全多次调用（每帧调用也不会叠加）
-export function applyWindToParticles(ps: GPUParticleSystem): void {
+export function applyWindToParticles(ps: ParticleSystem): void {
     if (!_initialDir1 || !_initialDir2) {
         return;
     }
@@ -752,11 +728,6 @@ export function updateParticleWind(): void {
     if (_envSys.particles.system) {
         applyWindToParticles(_envSys.particles.system);
     }
-    // 同步幽灵模拟器风力
-    if (_ghostSim) {
-        const wind = getWindVector().scale(0.1);
-        _ghostSim.updateWind(wind);
-    }
 }
 
 /** 运行时更新粒子参数（密度/大小/速度），响应滑条变化 */
@@ -770,16 +741,6 @@ export function updateParticleParams(): void {
     ps.maxSize = _baseMaxSize * envState.particleSize;
     ps.minEmitPower = _baseMinEmitPower * envState.particleSpeed;
     ps.maxEmitPower = _baseMaxEmitPower * envState.particleSpeed;
-
-    // 同步幽灵模拟器参数
-    if (_ghostSim) {
-        const { downsample } = getGhostDownsample(_currentParticleType);
-        _ghostSim.updateConfig({
-            emitRate: Math.max(0, (_baseEmitRate * envState.particleEmitRate) / downsample),
-            minEmitPower: ps.minEmitPower,
-            maxEmitPower: ps.maxEmitPower,
-        });
-    }
 }
 
 /** 运行时更新粒子纹理（响应自定义纹理变化） */

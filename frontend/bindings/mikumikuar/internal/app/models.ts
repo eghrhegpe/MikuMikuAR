@@ -120,6 +120,11 @@ export interface Config {
      * 环境状态（天空/地面/粒子等），nil=使用前端默认
      */
     "env"?: EnvState | null;
+
+    /**
+     * 对话框最后目录记忆，优先相对路径（./前缀），详见 ADR-090
+     */
+    "last_dirs"?: { [_ in string]?: string } | null;
 }
 
 /**
@@ -324,6 +329,16 @@ export interface ExtractResult {
      * Whether cache was hit (no re-extract)
      */
     "cached": boolean;
+}
+
+/**
+ * KeyBindingOverride stores a single custom key binding override.
+ */
+export interface KeyBindingOverride {
+    "key": string;
+    "ctrl"?: boolean;
+    "shift"?: boolean;
+    "alt"?: boolean;
 }
 
 /**
@@ -614,6 +629,53 @@ export interface UIState {
      * [doc:adr-066] 资源库视图模式："list"|"grid"
      */
     "resourceViewMode"?: string;
+
+    /**
+     * --- 音频设置（持久化，避免重启后重置） ---
+     * 默认音量 0-1
+     */
+    "volume"?: number;
+
+    /**
+     * 音频偏移（秒）
+     */
+    "audioOffset"?: number;
+
+    /**
+     * BPM 量化开关
+     */
+    "bpmQuantizeEnabled"?: boolean;
+
+    /**
+     * 自动加载伴音
+     */
+    "autoLoadCompanionAudio"?: boolean;
+
+    /**
+     * SFX 开关
+     */
+    "sfxEnabled"?: boolean;
+
+    /**
+     * SFX 音量 0-1
+     */
+    "sfxVolume"?: number;
+
+    /**
+     * 脚步声开关
+     */
+    "footstepEnabled"?: boolean;
+
+    /**
+     * 脚步声音量 0-1
+     */
+    "footstepVolume"?: number;
+
+    /**
+     * --- 快捷键自定义绑定 ---
+     * 自定义快捷键覆盖
+     */
+    "keyBindings"?: { [_ in string]?: KeyBindingOverride } | null;
 }
 
 /**

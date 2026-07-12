@@ -72,6 +72,7 @@ export function isAutoLoadCompanionAudioEnabled(): boolean {
 
 export function setAutoLoadCompanionAudio(v: boolean): void {
     SettingsStore.get().set('autoLoadCompanionAudio', v);
+    setUIState({ autoLoadCompanionAudio: v });
 }
 
 export function getAutoLoadCompanionAudio(): boolean {

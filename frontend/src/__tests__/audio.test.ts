@@ -82,6 +82,7 @@ vi.mock('../core/fileservice', () => ({
 const mockTriggerAutoSave = vi.fn();
 vi.mock('../core/config', () => ({
     triggerAutoSave: (...args: unknown[]) => mockTriggerAutoSave(...args),
+    setUIState: (..._args: unknown[]) => undefined,
 }));
 
 // Self-contained mock: no hoisting needed, factory owns its own internal store

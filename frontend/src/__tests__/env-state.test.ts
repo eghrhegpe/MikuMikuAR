@@ -13,6 +13,7 @@ const defaultEnv: EnvState = {
     skyBrightness: 1,
     envIntensity: 1,
     starsEnabled: false,
+    starsTexture: '',
     groundVisible: true,
     groundType: 'flat',
     groundStyle: 'solid',
