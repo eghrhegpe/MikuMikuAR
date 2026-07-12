@@ -6,11 +6,12 @@ import { envState } from '@/core/config';
 import { setEnvState, getRenderState } from '@/scene/scene';
 import { getLightState, setLightState } from '@/scene/render/lighting';
 import { uiState, setUIState } from '@/core/state';
+import { getPerceptionState, setPerceptionState } from '@/scene/motion/perception';
 
 // 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象
-export type StatePath = `env.${string}` | `render.${string}` | `light.${string}` | `ui.${string}`;
+export type StatePath = `env.${string}` | `render.${string}` | `light.${string}` | `ui.${string}` | `perception.${string}`;
 
-export type MenuKind = 'folder' | 'slider' | 'colorSlider' | 'toggle' | 'modeSlider' | 'divider' | 'custom';
+export type MenuKind = 'folder' | 'slider' | 'colorSlider' | 'toggle' | 'modeSlider' | 'modeRow' | 'sectionTitle' | 'divider' | 'custom';
 
 export interface ControlSpec {
     bind: StatePath;
@@ -62,6 +63,8 @@ export function getStateValue(path: StatePath): unknown {
             return (getLightState() as unknown as Record<string, unknown>)[key];
         case 'ui':
             return (uiState as unknown as Record<string, unknown>)[key];
+        case 'perception':
+            return (getPerceptionState() as unknown as Record<string, unknown>)[key];
         default:
             return undefined;
     }
@@ -79,6 +82,9 @@ export function setStateValue(path: StatePath, value: unknown): void {
             break;
         case 'ui':
             setUIState({ [key]: value });
+            break;
+        case 'perception':
+            setPerceptionState({ [key]: value });
             break;
     }
 }

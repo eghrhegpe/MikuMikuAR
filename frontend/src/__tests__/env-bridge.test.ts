@@ -764,9 +764,11 @@ describe('setEnvState', () => {
         expect(mockImplApplySky).toHaveBeenCalled();
     });
 
-    it('calls updateWaterAnimSpeed when waterAnimSpeed provided', () => {
+    it('does NOT call updateWaterAnimSpeed from setEnvState (handled by _syncWaterUniforms)', () => {
         setEnvState({ waterAnimSpeed: 2 });
-        expect(mockImplUpdateWaterAnimSpeed).toHaveBeenCalledWith(2);
+        // waterAnimSpeed 由 _applyEnvStateFacade → createWater → _syncWaterUniforms 统一处理，
+        // 不再由 setEnvState 直接调用 updateWaterAnimSpeed
+        expect(mockImplUpdateWaterAnimSpeed).not.toHaveBeenCalled();
     });
 
     it('does NOT call updateWaterAnimSpeed when waterAnimSpeed is undefined', () => {

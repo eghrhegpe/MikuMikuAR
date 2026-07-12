@@ -23,6 +23,7 @@ import {
     MirrorTexture,
     Plane,
     Vector3,
+    Matrix,
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
@@ -255,11 +256,14 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
 
 function createProceduralSky(state: EnvState): void {
     const scene = getScene();
+    const cam = scene.activeCamera;
+    const farZ = cam?.maxZ ?? 10000;
+    const diameter = Math.min(20000, Math.max(2000, farZ * 1.8));
     const sphere = MeshBuilder.CreateSphere(
         'envSkySphere',
         {
-            diameter: 1000,
-            segments: 24,
+            diameter,
+            segments: 32,
             sideOrientation: Mesh.BACKSIDE,
         },
         scene
@@ -308,11 +312,14 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
     scene.clearColor = new Color4(0, 0, 0, 1);
     _envSys.sky.skyCubeTexture = cubeTex;
 
+    const cam = scene.activeCamera;
+    const farZ = cam?.maxZ ?? 10000;
+    const diameter = Math.min(20000, Math.max(2000, farZ * 1.8));
     const sphere = MeshBuilder.CreateSphere(
         'envSkyDome',
         {
-            diameter: 1000,
-            segments: 24,
+            diameter,
+            segments: 32,
             sideOrientation: Mesh.BACKSIDE,
         },
         scene
@@ -534,6 +541,137 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
     return createCanvasTexture({ size, draw, scene, name: 'envGround', wrap: 'clamp' });
 }
 
+// ======== texture 模式：异步 Image → DynamicTexture 合成路径 ========
+// 替代旧的 _gridOverlayMesh 叠加层方案。把外部贴图 + 装饰网格线合成到
+// 单一 DynamicTexture，挂为 StandardMaterial.diffuseTexture。单 mesh 单材质
+// → 反射 RT / 边缘淡出 opacityTexture / 坡度 / 相机跟随全部天然兼容。
+
+/** texture 模式 canvas 边长（与 _generateGroundTexture 一致） */
+const _TEX_GROUND_SIZE = 512;
+
+/** 已解码的外部贴图 Image 缓存（按 URL 复用，避免每次调网格参数都重新 fetch） */
+let _texGroundImg: HTMLImageElement | null = null;
+let _texGroundImgUrl: string | null = null;
+
+/** 异步加载代际守卫：贴图切换后旧 Image.onload 不再写入新状态 */
+let _texGroundGeneration = 0;
+
+/**
+ * 在 DynamicTexture 的 2D 上下文上合成「外部贴图 + 装饰网格线」。
+ * - 底层：drawImage 拉伸绘制外部贴图（与原 new Texture(url) 的 GPU 采样等价）
+ * - 上层：按 groundDecoStyle 用 lineColor 纯色替换网格/棋盘格区域像素
+ * 网格线直接画在贴图像素上 → 反射 / 淡出 / 坡度全部单材质天然兼容。
+ */
+function _drawTextureGroundCanvas(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    img: HTMLImageElement,
+    state: EnvState
+): void {
+    ctx.clearRect(0, 0, size, size);
+    ctx.drawImage(img, 0, 0, size, size);
+
+    if (state.groundDecoStyle === 'none') return;
+
+    const r = Math.round(state.groundLineColor[0] * 255);
+    const g = Math.round(state.groundLineColor[1] * 255);
+    const b = Math.round(state.groundLineColor[2] * 255);
+    const lineColor = `rgb(${r},${g},${b})`;
+    const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
+
+    if (state.groundDecoStyle === 'grid') {
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
+        for (let x = tileSize; x < size; x += tileSize) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+        }
+        for (let y = tileSize; y < size; y += tileSize) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+        }
+    } else if (state.groundDecoStyle === 'checker') {
+        // 偶数格 lineColor 覆盖，奇数格保留贴图（与旧 overlay 语义一致）
+        for (let y = 0; y < size; y += tileSize) {
+            for (let x = 0; x < size; x += tileSize) {
+                if ((x / tileSize + y / tileSize) % 2 === 0) {
+                    ctx.fillStyle = lineColor;
+                    ctx.fillRect(x, y, tileSize, tileSize);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 确保外部贴图 Image 已加载到指定 URL，加载完成后调用 onReady。
+ * - URL 已匹配且 Image 已就绪：同步调用 onReady
+ * - URL 变化或未加载：异步加载，onload 后调用 onReady
+ * generation 守卫：URL 变化时递增，旧 onload 检测到代际不匹配则丢弃。
+ */
+function _ensureTextureGroundImage(
+    url: string,
+    onReady: (img: HTMLImageElement) => void
+): void {
+    if (_texGroundImg && _texGroundImgUrl === url && _texGroundImg.complete) {
+        onReady(_texGroundImg);
+        return;
+    }
+    if (_texGroundImgUrl !== url) {
+        _texGroundImg = null;
+        _texGroundImgUrl = url;
+    }
+    const generation = ++_texGroundGeneration;
+    const img = new Image();
+    img.onload = () => {
+        if (generation !== _texGroundGeneration) return; // 已被新加载覆盖
+        _texGroundImg = img;
+        onReady(img);
+    };
+    img.onerror = () => {
+        if (generation !== _texGroundGeneration) return;
+        console.warn('[ground] texture load failed:', url);
+    };
+    img.src = url;
+}
+
+/**
+ * texture 模式：创建或更新合成 DynamicTexture。
+ * - diffuseTexture 缺失或非 envGroundTex DynamicTexture：创建新的
+ * - 图片已缓存：立即合成 canvas
+ * - 图片未缓存：异步加载，完成后合成（mat 销毁/贴图替换时 onload 自动跳过）
+ * 由 applyGround 的创建路径和更新路径共用。
+ */
+function _syncTextureGroundTexture(mat: StandardMaterial, state: EnvState, scene: Scene): void {
+    const url = state.groundTexture ? resolveStaticAsset(state.groundTexture) : null;
+    if (!url) return;
+
+    // 确保 DynamicTexture 存在且唯一
+    let dt = mat.diffuseTexture as DynamicTexture | null;
+    const needCreate = !dt || !(dt instanceof DynamicTexture) || dt.name !== 'envGroundTex';
+    if (needCreate) {
+        if (dt) dt.dispose();
+        dt = new DynamicTexture('envGroundTex', _TEX_GROUND_SIZE, scene, false);
+        dt.wrapU = dt.wrapV = Texture.WRAP_ADDRESSMODE;
+        dt.uScale = dt.vScale = 1 / Math.max(0.1, state.groundTextureScale);
+        mat.diffuseTexture = dt;
+        mat.diffuseColor = new Color3(1, 1, 1);
+    } else {
+        // 已存在 DynamicTexture：同步 uScale / offset
+        dt.uScale = dt.vScale = 1 / Math.max(0.1, state.groundTextureScale);
+    }
+    _syncGroundTextureOffset(mat, state);
+
+    // 用缓存 Image 立即合成，或启动异步加载
+    // 守卫：mat 销毁会级联 dispose 并把 diffuseTexture 置空 → cur !== dt 自动拦截
+    _ensureTextureGroundImage(url, (img) => {
+        const cur = mat.diffuseTexture as DynamicTexture | null;
+        if (!(cur instanceof DynamicTexture) || cur !== dt) return;
+        const ctx = cur.getContext() as unknown as CanvasRenderingContext2D | null;
+        if (!ctx) return;
+        _drawTextureGroundCanvas(ctx, _TEX_GROUND_SIZE, img, state);
+        cur.update(false);
+    });
+}
+
 /**
  * 查询某世界坐标 (x, z) 处的地面高度，用于把模型贴合到地面上。
  * - heightmap 模式：返回地形网格 getHeightAtCoordinates（真实起伏，world 坐标入参）。
@@ -544,6 +682,10 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
 const _groundPlaneNormal = new Vector3();
 const _groundPlaneUp = new Vector3(0, 1, 0);
 const _groundPlanePoint = new Vector3();
+// 地形倾斜变换用缓存变量，避免每帧 allocate
+const _terrainInvWorld = new Matrix();
+const _terrainLocalPos = new Vector3();
+const _terrainWorldPos = new Vector3();
 
 /**
  * 平面模式（grid/checker/texture/solid）求世界坐标 (x, z) 处地面高度。
@@ -575,11 +717,28 @@ export function getGroundHeightAt(x: number, z: number): number {
     const m = _envSys.ground.mesh;
     if (!m || !m.isReady()) return envState.groundLevel;
 
-    // 高度图模式：Babylon 原生起伏采样。ADR-083 已禁用其 pitch/roll（恒水平），
-    // 仅平移变换下 getHeightAtCoordinates 世界变换退化为 (0,y,0)+平移，结果正确。
+    // 高度图模式：Babylon 原生起伏采样。支持倾斜（pitch/roll），
+    // 有倾斜时做世界→本地坐标变换后查询，再变换回世界坐标。
     if (envState.groundType === 'terrain' && typeof (m as GroundMesh).getHeightAtCoordinates === 'function') {
         try {
-            return (m as GroundMesh).getHeightAtCoordinates(x, z);
+            const gm = m as GroundMesh;
+            // 有倾斜时：将世界坐标 (x,z) 变换到本地空间后再查询高度，
+            // 然后将本地高度变换回世界空间（getHeightAtCoordinates 基于本地顶点数据）。
+            if (Math.abs(gm.rotation.x) > 0.001 || Math.abs(gm.rotation.z) > 0.001) {
+                const worldMat = gm.getWorldMatrix();
+                worldMat.invertToRef(_terrainInvWorld);
+                Vector3.TransformCoordinatesFromFloatsToRef(x, 0, z, _terrainInvWorld, _terrainLocalPos);
+                const localHeight = gm.getHeightAtCoordinates(_terrainLocalPos.x, _terrainLocalPos.z);
+                // 即便有误差，确保不返回 NaN/Infinity
+                if (!isFinite(localHeight)) return envState.groundLevel;
+                Vector3.TransformCoordinatesFromFloatsToRef(
+                    _terrainLocalPos.x, localHeight, _terrainLocalPos.z,
+                    worldMat, _terrainWorldPos
+                );
+                return _terrainWorldPos.y;
+            }
+            // 无倾斜时直接查询（与之前一致，退化仅为平移变换）
+            return gm.getHeightAtCoordinates(x, z);
         } catch (e) {
             console.warn('[terrain] getGroundHeightAt failed', e);
             return envState.groundLevel;
@@ -729,16 +888,11 @@ export function applyGround(state: EnvState): void {
         const mat = _envSys.ground.mesh.material;
         if (mat) {
             if (mat instanceof StandardMaterial) {
-                // 所有纹理样式（solid/grid/checker）：颜色/图案/网格大小变化时重新生成 canvas 贴图
+                // 非纹理样式（solid/grid/checker）：颜色/图案/网格大小变化时重新生成 canvas 贴图
                 if (state.groundStyle !== 'texture') {
                     _updateGroundTexture(mat, state);
-                } else {
-                    mat.diffuseColor = new Color3(
-                        state.groundColor[0],
-                        state.groundColor[1],
-                        state.groundColor[2]
-                    );
                 }
+                // 纹理模式：diffuseColor 保持 (1,1,1) 让贴图正常显示，不应用 groundColor（那是 canvas 底色）
                 mat.alpha = state.groundAlpha;
                 if (mat.diffuseTexture && mat.diffuseTexture instanceof Texture) {
                     (mat.diffuseTexture as Texture).uScale = (
@@ -748,17 +902,19 @@ export function applyGround(state: EnvState): void {
                 }
                 // 法线贴图（Phase B）
                 _syncGroundNormalTexture(mat, state);
+                // 纹理模式：合成 DynamicTexture（外部贴图 + 装饰网格线）
+                if (state.groundStyle === 'texture') {
+                    _syncTextureGroundTexture(mat as StandardMaterial, state, scene);
+                }
             }
             // 边缘淡出：随滑块实时更新 opacityTexture（fade<=0 时移除）
             applyGroundEdgeFade(mat as StandardMaterial, state.groundEdgeFade, scene);
         }
         // 更新地面高度
         _envSys.ground.mesh.position.y = state.groundLevel;
-        // 更新坡度（heightmap 模式禁用，保持 0）
-        if (state.groundType !== 'terrain') {
-            _envSys.ground.mesh.rotation.x = (state.groundPitch * Math.PI) / 180;
-            _envSys.ground.mesh.rotation.z = (state.groundRoll * Math.PI) / 180;
-        }
+        // 更新坡度（平坦模式 + 地形模式均支持倾斜，地形采用坐标变换补偿高度查询）
+        _envSys.ground.mesh.rotation.x = (state.groundPitch * Math.PI) / 180;
+        _envSys.ground.mesh.rotation.z = (state.groundRoll * Math.PI) / 180;
         // 地面高度/坡度变化 → 通知模型重贴地（脚底跟随 groundLevel / 倾斜）
         if (
             state.groundLevel !== _prevGroundHeight ||
@@ -825,16 +981,13 @@ export function applyGround(state: EnvState): void {
         mat.backFaceCulling = false;
         ground.material = mat;
     } else if (state.groundTextureEnabled && state.groundTexture) {
-        // 纹理地面：subdivisions 保持 2（性能），纹理重复由 uScale/vScale 控制
-        const tex = new Texture(resolveStaticAsset(state.groundTexture), scene);
-        tex.uScale = tex.vScale = 1 / Math.max(0.1, state.groundTextureScale);
+        // 纹理地面：异步加载外部贴图 → 合成 DynamicTexture（含装饰网格线）
         const mat = new StandardMaterial('envGroundMat', scene);
-        mat.diffuseTexture = tex;
         mat.diffuseColor = new Color3(1, 1, 1);
         mat.alpha = state.groundAlpha;
         mat.backFaceCulling = false;
         ground.material = mat;
-        _syncGroundTextureOffset(mat, state);
+        _syncTextureGroundTexture(mat, state, scene);
         _syncGroundNormalTexture(mat, state); // 法线贴图（Phase B）
     } else {
         const mat = new StandardMaterial('envGroundMat', scene);
@@ -1008,6 +1161,10 @@ export function disposeEnvUpdateObserver(): void {
     // 释放统一贴图工厂缓存（含地面边缘淡出等）
     disposeTextureCache();
     disposeGroundReflection(); // Phase B: 清理地面反射 RT
+    // 清理 texture 模式贴图缓存（HTMLImageElement 不占 GPU 资源，仅释放 JS 引用）
+    _texGroundImg = null;
+    _texGroundImgUrl = null;
+    _texGroundGeneration = 0;
     resetUnderwaterState(scene, pipeline);
 }
 

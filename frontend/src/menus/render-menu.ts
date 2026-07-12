@@ -3,7 +3,7 @@
 
 import type { MenuNode } from './menu-schema';
 import { getStateValue, setStateValue, getBindFn } from './menu-schema';
-import { addSliderRow, addColorSliderRow, addToggleRow, addModeSlider, addCollapsible } from '../core/ui-helpers';
+import { addSliderRow, addColorSliderRow, addToggleRow, addModeSlider, addModeRow, addCollapsible, addSectionTitle } from '../core/ui-helpers';
 import { t } from '../core/i18n/t';
 
 /** 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 */
@@ -32,6 +32,12 @@ function renderNode(node: MenuNode, container: HTMLElement): (() => void) | unde
             return undefined;
         case 'modeSlider':
             renderModeSlider(node, container);
+            return undefined;
+        case 'modeRow':
+            renderModeRow(node, container);
+            return undefined;
+        case 'sectionTitle':
+            renderSectionTitle(node, container);
             return undefined;
         case 'divider':
             // 无操作，未来可添加分隔线 DOM
@@ -172,5 +178,27 @@ function renderModeSlider(node: MenuNode, container: HTMLElement): void {
         node.icon ?? ctrl.icon,
         undefined,
         { bind: () => getBindFn(ctrl.bind)() as string }
+    );
+}
+
+// ======== Mode Row ========
+
+function renderModeRow(node: MenuNode, container: HTMLElement): void {
+    const ctrl = node.control;
+    if (!ctrl || !ctrl.options) return;
+
+    const value = getStateValue(ctrl.bind) as string;
+    const onChange = (v: string) => {
+        setStateValue(ctrl.bind, v);
+        ctrl.onChange?.(v);
+    };
+    const opts = ctrl.options.map((o) => ({ value: o.value, label: t(o.label) }));
+
+    addModeRow(
+        container,
+        node.label ? t(node.label) : '',
+        opts,
+        value,
+        onChange,
     );
 }

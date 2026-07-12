@@ -135,7 +135,13 @@ renderCustom: (container) => {
                             chipRow.className = 'preset-group';
                             for (const tp of texturePresets) {
                                 addPresetChip(chipRow, tp.label, envState.groundTexture === tp.value, () => {
-                                    setEnvState({ groundTexture: tp.value, groundTextureEnabled: !!tp.value });
+                                    const hasTex = !!tp.value;
+                                    const patch: Record<string, unknown> = { groundTexture: tp.value, groundTextureEnabled: hasTex, groundStyle: hasTex ? 'texture' : 'solid' };
+                                    // 选贴图时若装饰未开启，自动启用 grid overlay
+                                    if (hasTex && envState.groundDecoStyle === 'none') {
+                                        patch.groundDecoStyle = 'grid';
+                                    }
+                                    setEnvState(patch as any);
                                 }, { onUpdate: (btn) => { btn.classList.toggle('active', envState.groundTexture === tp.value); } });
                             }
                             cc.appendChild(chipRow);
@@ -151,7 +157,7 @@ renderCustom: (container) => {
                                 const clearBtn = document.createElement('button');
                                 clearBtn.className = 'cs-btn cs-btn-sm';
                                 clearBtn.textContent = t('env.clear');
-                                clearBtn.onclick = () => { setEnvState({ groundTexture: '', groundTextureEnabled: false }); };
+                                clearBtn.onclick = () => { setEnvState({ groundTexture: '', groundTextureEnabled: false, groundStyle: 'solid', groundDecoStyle: 'none' }); };
                                 clearRow.appendChild(clearBtn);
                                 cc.appendChild(clearRow);
                             }
@@ -217,8 +223,8 @@ renderCustom: (container) => {
                         icon: 'lucide:sliders-horizontal',
                         defaultOpen: false,
                         children: [
-                            { id: 'env:ground:pitch', kind: 'slider', label: 'env.groundPitch', control: { bind: 'env.groundPitch', min: -45, max: 45, step: 1 }, icon: 'lucide:arrow-up-down', visibleWhen: () => envState.groundType !== 'terrain' },
-                            { id: 'env:ground:roll', kind: 'slider', label: 'env.groundRoll', control: { bind: 'env.groundRoll', min: -45, max: 45, step: 1 }, icon: 'lucide:rotate-cw', visibleWhen: () => envState.groundType !== 'terrain' },
+                            { id: 'env:ground:pitch', kind: 'slider', label: 'env.groundPitch', control: { bind: 'env.groundPitch', min: -45, max: 45, step: 1 }, icon: 'lucide:arrow-up-down' },
+                            { id: 'env:ground:roll', kind: 'slider', label: 'env.groundRoll', control: { bind: 'env.groundRoll', min: -45, max: 45, step: 1 }, icon: 'lucide:rotate-cw' },
                             { id: 'env:ground:scrollX', kind: 'slider', label: 'env.groundScrollX', control: { bind: 'env.groundScrollSpeedX', min: -2, max: 2, step: 0.1 }, icon: 'lucide:move-right', visibleWhen: () => envState.groundDecoStyle === 'checker' || (envState.groundTextureEnabled && !!envState.groundTexture) },
                             { id: 'env:ground:scrollZ', kind: 'slider', label: 'env.groundScrollZ', control: { bind: 'env.groundScrollSpeedZ', min: -2, max: 2, step: 0.1 }, icon: 'lucide:move-down', visibleWhen: () => envState.groundDecoStyle === 'checker' || (envState.groundTextureEnabled && !!envState.groundTexture) },
                             { id: 'env:ground:followCam', kind: 'toggle', label: 'env.groundFollowCamera', control: { bind: 'env.groundFollowCamera' }, icon: 'lucide:map-pin' },

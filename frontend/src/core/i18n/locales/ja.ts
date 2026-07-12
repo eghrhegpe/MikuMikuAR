@@ -832,6 +832,9 @@ export const ja: Record<string, string> = {
     // —— Ground ——
     'env.ground': '地面',
     'env.showGround': '地面を表示',
+    'env.baseSettings': '基本設定',
+    'env.decoration': '装飾',
+    'env.style': 'スタイル',
     'env.groundHeight': '地面の高さ',
     'env.groundType': '地面タイプ',
     'env.flat': '平面',

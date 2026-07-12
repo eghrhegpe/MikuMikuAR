@@ -75,6 +75,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         'groundVisible',
         'groundType',
         'groundStyle',
+        'groundDecoStyle',
         'groundColor',
         'groundAlpha',
         'groundTexture',
@@ -86,6 +87,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         'groundTerrainSeed',
         'groundTerrainOctaves',
         'groundSize',
+        'groundGridSize',
         'groundLineColor',
         'groundEdgeFade',
         'groundPitch',
@@ -628,10 +630,6 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     Object.assign(envState, migrated);
 
     _applyEnvStateFacade(envState, migrated);
-
-    if (partial.waterAnimSpeed !== undefined) {
-        impl.updateWaterAnimSpeed(partial.waterAnimSpeed);
-    }
 
     // 灯光预设变化 → 平滑过渡
     if (partial.lightingPresetName !== undefined) {

@@ -359,6 +359,7 @@ uniform vec3 cameraPosition;
 uniform vec3 waterColor;
 uniform float waterTransparency;
 uniform float waterLevel;
+uniform float waveHeight;
 uniform float time;
 uniform float envIntensity;
 uniform vec3 foamColor;
@@ -446,7 +447,11 @@ void main() {
 
     // P2: 泡沫区域反射衰减 — 提前计算 foam，用于压低反射
     float foamH = vHeight - waterLevel;
-    float foam = smoothstep(foamThreshold, foamThreshold + foamTransitionRange, foamH);
+    // 泡沫阈值随波高动态缩放：高波时泡沫只集中在波峰尖端，避免大面积白色条纹
+    float waveHeightScale = 1.0 + waveHeight * 1.0;
+    float foamStart = foamThreshold * waveHeightScale;
+    float foamEnd = foamStart + foamTransitionRange * (1.0 + waveHeight * 0.5);
+    float foam = smoothstep(foamStart, foamEnd, foamH);
     foam = clamp(foam, 0.0, 1.0);
     float foamDamp = 1.0 - foam * foamIntensity;
 
@@ -673,6 +678,10 @@ export function createWater(state: EnvState): void {
 
     // **首次创建路径**：水面不存在且启用 → 全量构建
     const scene = getScene();
+    if (!scene) {
+        console.warn('[env-water] createWater: scene not ready');
+        return;
+    }
 
     // 三级细分网格，作为兄弟根网格（非父子），由 _applyWaterLOD 按相机距离
     // 手动切换 setEnabled。避免 Babylon addLODLevel + 父子嵌套导致的多重水面重叠
@@ -913,11 +922,9 @@ export function refreshWaterRenderList(): void {}
 // ======== Water Animation Speed ========
 export function updateWaterAnimSpeed(speed: number): void {
     // 只更新累加速率：相位由每帧 observer 累加，改波速不会造成相位跳变
+    // 不直接操作材质 uniform（由 _syncWaterUniforms / 每帧 observer 统一同步），
+    // 避免与 setEnvState → _syncWaterUniforms 重复写入 _waterWaveSpeed。
     _waterWaveSpeed = speed;
-    const mat = _envSys.water.material;
-    if (mat) {
-        mat.setFloat('wavePhase', _waterPhase);
-    }
 }
 
 // ======== Underwater Transition (called by Env Update Observer) ========
