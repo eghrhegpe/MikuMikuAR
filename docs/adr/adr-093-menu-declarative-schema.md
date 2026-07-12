@@ -1,6 +1,6 @@
 # ADR-093: 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」
 
-> **状态**: 实施中（P0+P1 已完成，P2 域迁移推进中：env 域大部迁移、motion 感知层全迁移、settings 性能+截图面板迁移）
+> **状态**: 实施中（P0+P1 已完成，P2 域迁移推进中：env 域全迁移、motion 感知层全迁移、settings 性能+截图+音频+外观+外部库+文件名+快捷键面板迁移、scene 后处理面板迁移）
 
 ## 1. 背景
 
@@ -117,9 +117,15 @@ interface ControlSpec {
 | motion | 视线追踪/感知层（gaze） | ✅ 全 schema | `perception.` 状态前缀 + modeRow + onChange 副作用（activatePerception）|
 | settings | 性能（performance） | ✅ 全 schema | toggle get/set（undefined→boolean 默认值）+ custom 性能模式 + visibleWhen custom 渲染开关 |
 | settings | 截图（screenshot） | ✅ 全 schema | slider get/set 值转换（0-1↔50-100）|
+| settings | 音频（audio） | ✅ 全 schema | custom 节点（状态源分散于 audio/audio-bus/proc-motion-bridge 模块，无法用 StatePath）|
+| settings | 外观（appearance） | ✅ 全 schema | custom 节点（状态源为 CSS 变量 + Wails bindings，无法用 StatePath）|
+| settings | 外部库（external） | ✅ 全 schema | custom 节点（模块级状态 externalPaths + Wails bindings，列表渲染 + actionIcons）|
+| settings | 文件名（filename） | ✅ 全 schema | custom 节点（uiState 模块级状态 + 动态列表渲染）|
+| settings | 快捷键（shortcuts） | ✅ 全 schema | custom 节点（动态分组渲染 + 键盘事件监听 + 冲突检测）|
+| scene | 后处理（postprocess） | ✅ 全 schema | folder headerToggle（Bloom）+ slider onChange 复合状态写入（dofAperture+dofEnabled）+ custom 节点（antialiasing 复合状态 / toneMapping number modeSlider）+ visibleWhen 条件渲染（SSR/SSAO 子参数）|
 | — | schema 系统测试 | ✅ | menu-schema.test.ts: 各 kind 渲染 + visibleWhen 守卫 + renderCustom dispose 级联 |
 
-**已迁移面板数：17 个 | tsc 零错误 | 1313 测试全绿**
+**已迁移面板数：23 个 | tsc 零错误 | 1313 测试全绿**
 
 #### 迁移过程中 schema 系统的能力扩展
 
@@ -182,4 +188,4 @@ interface ControlSpec {
 | P3 | §6 缺 i18n 热切换 e2e 与内存泄漏检查 | **采纳** | 已在 §6 增补 i18n 热切换 e2e（ADR-065 收益）与 dispose 级联/泄漏 vitest。 |
 | P4 | `MenuKind` 缺 `renderCustom`/`dynamic` | **采纳** | `renderCustom` 保留为节点字段（逃生舱）；`MenuKind` 增补 `'dynamic'`（运行时 `childrenResolver` 生成子项）。 |
 
-**状态**：已进入「实施中」——P0+P1 已完成，P2 域迁移推进中。env 域全部面板、motion 感知层面板、settings 性能与截图面板已迁移为 schema 驱动。tsc 零错误，1313 测试全绿。下一批迁移目标：settings 其余子面板（外观/音频/快捷键）→ scene 渲染后期 → motion 程序化动作/布料。
+**状态**：已进入「实施中」——P0+P1 已完成，P2 域迁移推进中。env 域全部面板、motion 感知层面板、settings 性能/截图/音频面板、scene 后处理面板已迁移为 schema 驱动。tsc 零错误，1313 测试全绿。下一批迁移目标：settings 其余子面板（外观/快捷键/路径）→ scene 舞台灯光 → motion 程序化动作/布料。

@@ -13,8 +13,116 @@ import { tryCatchStatus } from '../core/utils';
 import { reloadConfig } from './library';
 import { rescanAndSync } from './library';
 import { t } from '../core/i18n/t';
+import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';
+import type { MenuNode } from './menu-schema';
 import type { SettingsMenuHandle } from './settings-shared';
+
+function buildExternalSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
+    return [
+        {
+            id: 'external:list',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    if (externalPaths.length === 0) {
+                        addEmptyRow(inner, '暂无外部库');
+                        return;
+                    }
+                    for (const ep of externalPaths) {
+                        slideRow(
+                            inner,
+                            'lucide:plug',
+                            ep.name,
+                            false,
+                            () => {},
+                            escapeHtml(ep.path),
+                            undefined,
+                            undefined,
+                            undefined,
+                            {
+                                inlineSub: true,
+                                actionIcons: [
+                                    {
+                                        icon: '✎',
+                                        title: '重命名',
+                                        onClick: async () => {
+                                            const newName = await showPrompt(
+                                                '输入新的显示名称：',
+                                                ep.name
+                                            );
+                                            if (
+                                                newName &&
+                                                newName.trim() &&
+                                                newName.trim() !== ep.name
+                                            ) {
+                                                const r = await tryCatchStatus(async () => {
+                                                    await RenameExternalPath(ep.path, newName.trim());
+                                                    return true;
+                                                }, '✗ 重命名失败');
+                                                if (r) {
+                                                    await reloadConfig();
+                                                    getSettingsMenu()?.reRender();
+                                                    setStatus(t('settings.renamed'), true);
+                                                }
+                                            }
+                                        },
+                                    },
+                                    {
+                                        icon: '✕',
+                                        danger: true,
+                                        title: '删除',
+                                        onClick: async () => {
+                                            try {
+                                                await RemoveExternalPath(ep.path);
+                                                await reloadConfig();
+                                                if (libraryRoot) {
+                                                    await rescanAndSync();
+                                                }
+                                                getSettingsMenu()?.reRender();
+                                            } catch (err) {
+                                                console.error('RemoveExternalPath error:', err);
+                                            }
+                                        },
+                                    },
+                                ],
+                            }
+                        );
+                    }
+                });
+            },
+        },
+        {
+            id: 'external:add',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(inner, 'lucide:plus', '添加外部库', false, async () => {
+                        const dir = await tryCatchStatus(async () => {
+                            const d = await SelectDir();
+                            if (!d) {
+                                return undefined;
+                            }
+                            return d;
+                        }, t('settings.externalLibFailed'));
+                        if (!dir) {
+                            return;
+                        }
+                        await tryCatchStatus(async () => {
+                            await AddExternalPath(dir);
+                            await reloadConfig();
+                            if (libraryRoot) {
+                                await rescanAndSync();
+                            }
+                            getSettingsMenu()?.reRender();
+                            setStatus(t('settings.externalLibAdded'), true);
+                        }, t('settings.externalLibFailed'));
+                    });
+                });
+            },
+        },
+    ];
+}
 
 export function buildSettingsExternalLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
@@ -22,96 +130,7 @@ export function buildSettingsExternalLevel(getSettingsMenu: () => SettingsMenuHa
         dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                if (externalPaths.length === 0) {
-                    addEmptyRow(c, '暂无外部库');
-                    return;
-                }
-                for (const ep of externalPaths) {
-                    slideRow(
-                        c,
-                        'lucide:plug',
-                        ep.name,
-                        false,
-                        () => {},
-                        escapeHtml(ep.path),
-                        undefined,
-                        undefined,
-                        undefined,
-                        {
-                            inlineSub: true,
-                            actionIcons: [
-                                {
-                                    icon: '✎',
-                                    title: '重命名',
-                                    onClick: async () => {
-                                        const newName = await showPrompt(
-                                            '输入新的显示名称：',
-                                            ep.name
-                                        );
-                                        if (
-                                            newName &&
-                                            newName.trim() &&
-                                            newName.trim() !== ep.name
-                                        ) {
-                                            const r = await tryCatchStatus(async () => {
-                                                await RenameExternalPath(ep.path, newName.trim());
-                                                return true;
-                                            }, '✗ 重命名失败');
-                                            if (r) {
-                                                await reloadConfig();
-                                                getSettingsMenu()?.reRender();
-                                                setStatus(t('settings.renamed'), true);
-                                            }
-                                        }
-                                    },
-                                },
-                                {
-                                    icon: '✕',
-                                    danger: true,
-                                    title: '删除',
-                                    onClick: async () => {
-                                        try {
-                                            await RemoveExternalPath(ep.path);
-                                            await reloadConfig();
-                                            if (libraryRoot) {
-                                                await rescanAndSync();
-                                            }
-                                            getSettingsMenu()?.reRender();
-                                        } catch (err) {
-                                            console.error('RemoveExternalPath error:', err);
-                                        }
-                                    },
-                                },
-                            ],
-                        }
-                    );
-                }
-            });
-
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plus', '添加外部库', false, async () => {
-                    const dir = await tryCatchStatus(async () => {
-                        const d = await SelectDir();
-                        if (!d) {
-                            return undefined;
-                        }
-                        return d;
-                    }, t('settings.externalLibFailed'));
-                    if (!dir) {
-                        return;
-                    }
-                    await tryCatchStatus(async () => {
-                        await AddExternalPath(dir);
-                        await reloadConfig();
-                        if (libraryRoot) {
-                            await rescanAndSync();
-                        }
-                        getSettingsMenu()?.reRender();
-                        setStatus(t('settings.externalLibAdded'), true);
-                    }, t('settings.externalLibFailed'));
-                });
-            });
+            renderMenu(buildExternalSchema(getSettingsMenu), container);
         },
     };
 }

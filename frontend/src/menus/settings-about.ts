@@ -18,7 +18,9 @@ import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { Browser } from '@wailsio/runtime';
 import { t } from '../core/i18n/t';
 import { openExternalURL } from '../core/platform';
+import { renderMenu } from './render-menu';
 import type { PopupLevel, PopupRow } from '../core/config';
+import type { MenuNode } from './menu-schema';
 import { SETTINGS_ACTION, SOFTWARE_DETAIL_PREFIX } from './settings-targets';
 import { applyUIAppearanceDom, formatBytes, type SettingsMenuHandle } from './settings-shared';
 import { setPerformanceMode } from '../scene/render/performance';
@@ -111,7 +113,7 @@ function resetAllSettings(getSettingsMenu: () => SettingsMenuHandle): void {
     setStatus(t('settings.resetToDefault'), true);
 }
 
-export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
+function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     const shortcuts: Array<{ key: string; desc: string }> = [
         { key: 'Ctrl+1', desc: t('settings.about.shortcuts.modelLib') },
         { key: 'Ctrl+2', desc: t('settings.about.shortcuts.motionPanel') },
@@ -125,248 +127,296 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
         { key: 'Q / E', desc: t('settings.about.shortcuts.freeflyUpDown') },
     ];
 
+    return [
+        // 卡片 1：版本信息
+        {
+            id: 'about:version',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const title = document.createElement('div');
+                    title.style.cssText = 'text-align:center;padding:16px 14px 8px;';
+                    title.innerHTML = `
+                        <div style="font-size:15px;font-weight:600;color:var(--text);">MikuMikuAR</div>
+                        <div data-app-version style="font-size:11px;color:var(--text-dim);margin-top:2px;">v…</div>
+                    `;
+                    inner.appendChild(title);
+                    GetBuildInfo()
+                        .then((info) => {
+                            const el = title.querySelector<HTMLElement>('[data-app-version]');
+                            if (el) {
+                                el.textContent = `v${info.version}`;
+                            }
+                            const detail = document.createElement('div');
+                            detail.style.cssText =
+                                'font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.6;font-family:monospace;';
+                            detail.innerHTML = `<div>build: ${info.buildTime}</div><div>commit: ${info.commitHash}</div><div>go: ${info.goVersion}</div>`;
+                            inner.appendChild(detail);
+                        })
+                        .catch(() => {});
+                });
+            },
+        },
+        // 卡片 2：快捷键列表
+        {
+            id: 'about:shortcuts',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.about.shortcuts'));
+                    for (const s of shortcuts) {
+                        const row = document.createElement('div');
+                        row.className = 'slide-item';
+                        row.style.cssText = 'padding:6px 14px;';
+                        row.innerHTML = `<span class="slide-label" style="flex:1;">${s.desc}</span><span style="font-family:monospace;font-size:11px;color:var(--accent);background:var(--accent-dim);padding:2px 8px;border-radius:4px;">${s.key}</span>`;
+                        inner.appendChild(row);
+                    }
+                });
+            },
+        },
+        // 卡片 3：链接
+        {
+            id: 'about:links',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.about.links'));
+                    slideRow(inner, 'lucide:github', t('about.github'), false, () => {
+                        if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR')) {
+                            Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR');
+                        }
+                    });
+                    slideRow(inner, 'lucide:scroll', t('about.license'), false, () => {
+                        if (
+                            !openExternalURL(
+                                'https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE'
+                            )
+                        ) {
+                            Browser.OpenURL(
+                                'https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE'
+                            );
+                        }
+                    });
+                    slideRow(inner, 'lucide:bug', t('about.issues'), false, () => {
+                        if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR/issues')) {
+                            Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/issues');
+                        }
+                    });
+                });
+            },
+        },
+        // 卡片 4：缓存统计
+        {
+            id: 'about:cache',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.about.cache'));
+                    const statRow = document.createElement('div');
+                    statRow.className = 'slide-item';
+                    statRow.style.cssText =
+                        'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
+                    statRow.innerHTML =
+                        '<div data-cache-total style="font-size:13px;color:var(--text);font-weight:500;">统计中…</div><div data-cache-detail style="font-size:10px;color:var(--text-dim);line-height:1.6;font-family:monospace;"></div>';
+                    inner.appendChild(statRow);
+
+                    const refreshCacheStats = () => {
+                        GetCacheStats()
+                            .then((s) => {
+                                const total = statRow.querySelector<HTMLElement>('[data-cache-total]');
+                                const detail =
+                                    statRow.querySelector<HTMLElement>('[data-cache-detail]');
+                                if (total) {
+                                    total.textContent = `${t('settings.about.cache.total')} ${formatBytes(s.totalBytes)}`;
+                                }
+                                if (detail) {
+                                    detail.innerHTML = `<div>${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div><div>${t('settings.about.cache.serve')}: ${formatBytes(s.serveBytes)} (${s.serveCount} 项)</div>`;
+                                }
+                            })
+                            .catch(() => {});
+                    };
+                    refreshCacheStats();
+                    if (!_cacheClearedListenerRegistered) {
+                        _cacheClearedListenerRegistered = true;
+                        window.addEventListener('mmar:cache-cleared', refreshCacheStats);
+                    }
+                });
+            },
+        },
+        // 卡片 5：更新
+        {
+            id: 'about:update',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.about.update'));
+                    addToggleRow(
+                        inner,
+                        t('settings.about.update.autoCheck'),
+                        uiState.autoUpdateEnabled === true,
+                        (v) => {
+                            setUIState({ autoUpdateEnabled: v });
+                            SetUIAutoUpdate(v);
+                            setStatus(
+                                t('settings.autoUpdate', {
+                                    state: v ? t('common.on') : t('common.off'),
+                                }),
+                                true
+                            );
+                        }
+                    );
+                    const resultRow = document.createElement('div');
+                    resultRow.className = 'slide-item';
+                    resultRow.style.cssText =
+                        'flex-direction:column;align-items:stretch;gap:4px;padding:8px 14px;';
+                    resultRow.innerHTML =
+                        '<div data-update-status style="font-size:12px;color:var(--text);">点击「检查更新」查看版本</div><a data-update-link href="#" style="display:none;font-size:12px;color:var(--accent);cursor:pointer;">前往下载最新版本 →</a>';
+                    inner.appendChild(resultRow);
+                    slideRow(
+                        inner,
+                        'lucide:download',
+                        t('settings.about.update.checkNow'),
+                        false,
+                        async () => {
+                            const statusEl =
+                                resultRow.querySelector<HTMLElement>('[data-update-status]');
+                            const linkEl =
+                                resultRow.querySelector<HTMLAnchorElement>('[data-update-link]');
+                            if (statusEl) {
+                                statusEl.textContent = t('settings.about.update.checking');
+                            }
+                            if (linkEl) {
+                                linkEl.style.display = 'none';
+                            }
+                            try {
+                                const r = await CheckForUpdate();
+                                if (!r) {
+                                    if (statusEl) {
+                                        statusEl.textContent = t('settings.about.update.failed');
+                                    }
+                                    return;
+                                }
+                                if (r.error) {
+                                    if (statusEl) {
+                                        statusEl.textContent = t('settings.about.update.error', {
+                                            err: r.error,
+                                        });
+                                    }
+                                    return;
+                                }
+                                if (statusEl) {
+                                    statusEl.textContent = r.available
+                                        ? t('settings.about.update.available', {
+                                              latest: r.latest,
+                                              current: r.current,
+                                          })
+                                        : t('settings.about.update.latest', { current: r.current });
+                                }
+                                if (linkEl && r.available && r.url) {
+                                    linkEl.style.display = 'inline';
+                                    linkEl.onclick = (e) => {
+                                        e.preventDefault();
+                                        if (!openExternalURL(r.url)) {
+                                            Browser.OpenURL(r.url);
+                                        }
+                                    };
+                                }
+                            } catch {
+                                if (statusEl) {
+                                    statusEl.textContent = t('settings.about.update.failed');
+                                }
+                            }
+                        }
+                    );
+                });
+            },
+        },
+        // 卡片 6：维护（缓存清理）
+        {
+            id: 'about:maintenance',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.about.maintenance'));
+                    slideRow(
+                        inner,
+                        'lucide:trash-2',
+                        t('settings.about.maintenance.clearExtract'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE,
+                            })
+                    );
+                    slideRow(
+                        inner,
+                        'lucide:image',
+                        t('settings.about.maintenance.clearThumbnail'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.CLEAR_THUMBNAIL,
+                            })
+                    );
+                    slideRow(c, 'lucide:trash', t('settings.about.maintenance.clearAll'), false, () =>
+                        handleSettingsAction({
+                            kind: 'action',
+                            label: '',
+                            icon: '',
+                            target: SETTINGS_ACTION.CLEAR_ALL_CACHE,
+                        })
+                    );
+                });
+            },
+        },
+        // 卡片 7：设置管理（导入/导出/重置）
+        {
+            id: 'about:settings-mgmt',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.about.settingsMgmt'));
+                    slideRow(inner, 'lucide:download', t('settings.about.settingsMgmt.export'), false, () =>
+                        exportSettings()
+                    );
+                    slideRow(inner, 'lucide:upload', t('settings.about.settingsMgmt.import'), false, () => {
+                        importSettings();
+                        getSettingsMenu()?.reRender();
+                    });
+                    slideRow(
+                        inner,
+                        'lucide:rotate-ccw',
+                        t('settings.about.settingsMgmt.reset'),
+                        false,
+                        () => {
+                            if (window.confirm(t('settings.about.settingsMgmt.resetConfirm'))) {
+                                resetAllSettings(getSettingsMenu);
+                            }
+                        }
+                    );
+                    const hint = document.createElement('div');
+                    hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                    hint.textContent = t('settings.about.settingsMgmt.hint');
+                    inner.appendChild(hint);
+                });
+            },
+        },
+    ];
+}
+
+export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
         label: t('settings.about.title'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.style.cssText = 'text-align:center;padding:16px 14px 8px;';
-                title.innerHTML = `
-                    <div style="font-size:15px;font-weight:600;color:var(--text);">MikuMikuAR</div>
-                    <div data-app-version style="font-size:11px;color:var(--text-dim);margin-top:2px;">v…</div>
-                `;
-                c.appendChild(title);
-                GetBuildInfo()
-                    .then((info) => {
-                        const el = title.querySelector<HTMLElement>('[data-app-version]');
-                        if (el) {
-                            el.textContent = `v${info.version}`;
-                        }
-                        const detail = document.createElement('div');
-                        detail.style.cssText =
-                            'font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.6;font-family:monospace;';
-                        detail.innerHTML = `<div>build: ${info.buildTime}</div><div>commit: ${info.commitHash}</div><div>go: ${info.goVersion}</div>`;
-                        c.appendChild(detail);
-                    })
-                    .catch(() => {});
-            });
-
-            cardContainer(container, (c) => {
-                addSectionTitle(c, t('settings.about.shortcuts'));
-                for (const s of shortcuts) {
-                    const row = document.createElement('div');
-                    row.className = 'slide-item';
-                    row.style.cssText = 'padding:6px 14px;';
-                    row.innerHTML = `<span class="slide-label" style="flex:1;">${s.desc}</span><span style="font-family:monospace;font-size:11px;color:var(--accent);background:var(--accent-dim);padding:2px 8px;border-radius:4px;">${s.key}</span>`;
-                    c.appendChild(row);
-                }
-            });
-
-            cardContainer(container, (c) => {
-                addSectionTitle(c, t('settings.about.links'));
-                slideRow(c, 'lucide:github', t('about.github'), false, () => {
-                    if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR')) {
-                        Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR');
-                    }
-                });
-                slideRow(c, 'lucide:scroll', t('about.license'), false, () => {
-                    if (
-                        !openExternalURL(
-                            'https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE'
-                        )
-                    ) {
-                        Browser.OpenURL(
-                            'https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE'
-                        );
-                    }
-                });
-                slideRow(c, 'lucide:bug', t('about.issues'), false, () => {
-                    if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR/issues')) {
-                        Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/issues');
-                    }
-                });
-            });
-
-            cardContainer(container, (c) => {
-                addSectionTitle(c, t('settings.about.cache'));
-                const statRow = document.createElement('div');
-                statRow.className = 'slide-item';
-                statRow.style.cssText =
-                    'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
-                statRow.innerHTML =
-                    '<div data-cache-total style="font-size:13px;color:var(--text);font-weight:500;">统计中…</div><div data-cache-detail style="font-size:10px;color:var(--text-dim);line-height:1.6;font-family:monospace;"></div>';
-                c.appendChild(statRow);
-
-                const refreshCacheStats = () => {
-                    GetCacheStats()
-                        .then((s) => {
-                            const total = statRow.querySelector<HTMLElement>('[data-cache-total]');
-                            const detail =
-                                statRow.querySelector<HTMLElement>('[data-cache-detail]');
-                            if (total) {
-                                total.textContent = `${t('settings.about.cache.total')} ${formatBytes(s.totalBytes)}`;
-                            }
-                            if (detail) {
-                                detail.innerHTML = `<div>${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div><div>${t('settings.about.cache.serve')}: ${formatBytes(s.serveBytes)} (${s.serveCount} 项)</div>`;
-                            }
-                        })
-                        .catch(() => {});
-                };
-                refreshCacheStats();
-                // 只注册一次，避免重复打开"关于"页面累积监听器
-                if (!_cacheClearedListenerRegistered) {
-                    _cacheClearedListenerRegistered = true;
-                    window.addEventListener('mmar:cache-cleared', refreshCacheStats);
-                }
-            });
-
-            cardContainer(container, (c) => {
-                addSectionTitle(c, t('settings.about.update'));
-                addToggleRow(
-                    c,
-                    t('settings.about.update.autoCheck'),
-                    uiState.autoUpdateEnabled === true,
-                    (v) => {
-                        setUIState({ autoUpdateEnabled: v });
-                        SetUIAutoUpdate(v);
-                        setStatus(
-                            t('settings.autoUpdate', {
-                                state: v ? t('common.on') : t('common.off'),
-                            }),
-                            true
-                        );
-                    }
-                );
-                const resultRow = document.createElement('div');
-                resultRow.className = 'slide-item';
-                resultRow.style.cssText =
-                    'flex-direction:column;align-items:stretch;gap:4px;padding:8px 14px;';
-                resultRow.innerHTML =
-                    '<div data-update-status style="font-size:12px;color:var(--text);">点击「检查更新」查看版本</div><a data-update-link href="#" style="display:none;font-size:12px;color:var(--accent);cursor:pointer;">前往下载最新版本 →</a>';
-                c.appendChild(resultRow);
-                slideRow(
-                    c,
-                    'lucide:download',
-                    t('settings.about.update.checkNow'),
-                    false,
-                    async () => {
-                        const statusEl =
-                            resultRow.querySelector<HTMLElement>('[data-update-status]');
-                        const linkEl =
-                            resultRow.querySelector<HTMLAnchorElement>('[data-update-link]');
-                        if (statusEl) {
-                            statusEl.textContent = t('settings.about.update.checking');
-                        }
-                        if (linkEl) {
-                            linkEl.style.display = 'none';
-                        }
-                        try {
-                            const r = await CheckForUpdate();
-                            if (!r) {
-                                if (statusEl) {
-                                    statusEl.textContent = t('settings.about.update.failed');
-                                }
-                                return;
-                            }
-                            if (r.error) {
-                                if (statusEl) {
-                                    statusEl.textContent = t('settings.about.update.error', {
-                                        err: r.error,
-                                    });
-                                }
-                                return;
-                            }
-                            if (statusEl) {
-                                statusEl.textContent = r.available
-                                    ? t('settings.about.update.available', {
-                                          latest: r.latest,
-                                          current: r.current,
-                                      })
-                                    : t('settings.about.update.latest', { current: r.current });
-                            }
-                            if (linkEl && r.available && r.url) {
-                                linkEl.style.display = 'inline';
-                                linkEl.onclick = (e) => {
-                                    e.preventDefault();
-                                    if (!openExternalURL(r.url)) {
-                                        Browser.OpenURL(r.url);
-                                    }
-                                };
-                            }
-                        } catch {
-                            if (statusEl) {
-                                statusEl.textContent = t('settings.about.update.failed');
-                            }
-                        }
-                    }
-                );
-            });
-
-            cardContainer(container, (c) => {
-                addSectionTitle(c, t('settings.about.maintenance'));
-                slideRow(
-                    c,
-                    'lucide:trash-2',
-                    t('settings.about.maintenance.clearExtract'),
-                    false,
-                    () =>
-                        handleSettingsAction({
-                            kind: 'action',
-                            label: '',
-                            icon: '',
-                            target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE,
-                        })
-                );
-                slideRow(
-                    c,
-                    'lucide:image',
-                    t('settings.about.maintenance.clearThumbnail'),
-                    false,
-                    () =>
-                        handleSettingsAction({
-                            kind: 'action',
-                            label: '',
-                            icon: '',
-                            target: SETTINGS_ACTION.CLEAR_THUMBNAIL,
-                        })
-                );
-                slideRow(c, 'lucide:trash', t('settings.about.maintenance.clearAll'), false, () =>
-                    handleSettingsAction({
-                        kind: 'action',
-                        label: '',
-                        icon: '',
-                        target: SETTINGS_ACTION.CLEAR_ALL_CACHE,
-                    })
-                );
-            });
-
-            cardContainer(container, (c) => {
-                addSectionTitle(c, t('settings.about.settingsMgmt'));
-                slideRow(c, 'lucide:download', t('settings.about.settingsMgmt.export'), false, () =>
-                    exportSettings()
-                );
-                slideRow(c, 'lucide:upload', t('settings.about.settingsMgmt.import'), false, () => {
-                    importSettings();
-                    getSettingsMenu()?.reRender();
-                });
-                slideRow(
-                    c,
-                    'lucide:rotate-ccw',
-                    t('settings.about.settingsMgmt.reset'),
-                    false,
-                    () => {
-                        if (window.confirm(t('settings.about.settingsMgmt.resetConfirm'))) {
-                            resetAllSettings(getSettingsMenu);
-                        }
-                    }
-                );
-                const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
-                hint.textContent = t('settings.about.settingsMgmt.hint');
-                c.appendChild(hint);
-            });
+            renderMenu(buildAboutSchema(getSettingsMenu), container);
         },
     };
 }

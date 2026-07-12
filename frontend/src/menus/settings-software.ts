@@ -16,6 +16,8 @@ import { showPrompt } from '../core/dialog';
 import { tryCatchStatus } from '../core/utils';
 import { getSettingsMenu } from './settings';
 import { t } from '../core/i18n/t';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 
 // ======== 路径设置 API（统一入口） ========
 
@@ -84,100 +86,100 @@ export async function scanSoftwareDir(): Promise<void> {
     }
 }
 
+function buildSoftwareListSchema(): MenuNode[] {
+    return [
+        {
+            id: 'software:list',
+            kind: 'custom',
+            renderCustom: async (container) => {
+                await scanSoftwareDir();
+                const entries = cachedSoftwareEntries;
+                if (entries && entries.length > 0) {
+                    cardContainer(container, (c) => {
+                        for (const entry of entries) {
+                            slideRow(
+                                c,
+                                softwareKindIcon(entry.kind),
+                                escapeHtml(entry.name),
+                                false,
+                                () => getSettingsMenu()?.push(buildSoftwareDetailLevel(entry.path)),
+                                escapeHtml(entry.kind),
+                                entry.managed ? t('settings.software.custom') : 'auto',
+                                undefined,
+                                undefined,
+                                {
+                                    actionIcon: '▶',
+                                    onActionClick: async () => {
+                                        const r = await tryCatchStatus(
+                                            async () => {
+                                                await LaunchSoftware(entry.path, entry.args || '');
+                                                return true as const;
+                                            },
+                                            t('settings.softwareStartFail', { name: entry.name })
+                                        );
+                                        if (r !== undefined) {
+                                            setStatus(
+                                                t('settings.softwareStarted', { name: entry.name }),
+                                                true
+                                            );
+                                        }
+                                    },
+                                }
+                            );
+                        }
+                    });
+                }
+            },
+        },
+        {
+            id: 'software:actions',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(inner, 'lucide:plus', t('settings.software.addCustom'), false, async () => {
+                        if (await addCustomSoftware()) {
+                            getSettingsMenu()?.reRender();
+                        }
+                    });
+                    slideRow(inner, 'lucide:folder', t('settings.software.setMmdPath'), false, () =>
+                        setMMDPath()
+                    );
+                    slideRow(inner, 'lucide:hexagon', t('settings.software.setBlenderPath'), false, () =>
+                        setBlenderPath()
+                    );
+                });
+            },
+        },
+    ];
+}
+
 export function buildSettingsSoftwareLevel(): PopupLevel {
     return {
         label: t('settings.software.title'),
         dir: '',
         items: [],
-        renderCustom: async (container) => {
-            await scanSoftwareDir();
-            const entries = cachedSoftwareEntries;
-
-            if (entries && entries.length > 0) {
-                cardContainer(container, (c) => {
-                    for (const entry of entries) {
-                        slideRow(
-                            c,
-                            softwareKindIcon(entry.kind),
-                            escapeHtml(entry.name),
-                            false,
-                            () => getSettingsMenu()?.push(buildSoftwareDetailLevel(entry.path)),
-                            escapeHtml(entry.kind),
-                            entry.managed ? t('settings.software.custom') : 'auto',
-                            undefined,
-                            undefined,
-                            {
-                                actionIcon: '▶',
-                                onActionClick: async () => {
-                                    const r = await tryCatchStatus(
-                                        async () => {
-                                            await LaunchSoftware(entry.path, entry.args || '');
-                                            return true as const;
-                                        },
-                                        t('settings.softwareStartFail', { name: entry.name })
-                                    );
-                                    if (r !== undefined) {
-                                        setStatus(
-                                            t('settings.softwareStarted', { name: entry.name }),
-                                            true
-                                        );
-                                    }
-                                },
-                            }
-                        );
-                    }
-                });
-            }
-
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plus', t('settings.software.addCustom'), false, async () => {
-                    if (await addCustomSoftware()) {
-                        getSettingsMenu()?.reRender();
-                    }
-                });
-                slideRow(c, 'lucide:folder', t('settings.software.setMmdPath'), false, () =>
-                    setMMDPath()
-                );
-                slideRow(c, 'lucide:hexagon', t('settings.software.setBlenderPath'), false, () =>
-                    setBlenderPath()
-                );
-            });
+        renderCustom: (container) => {
+            renderMenu(buildSoftwareListSchema(), container);
         },
     };
 }
 
-export function buildSoftwareDetailLevel(path: string): PopupLevel {
-    const entries = cachedSoftwareEntries || [];
-    const entry = entries.find((e) => e.path === path);
-    if (!entry) {
-        return {
-            label: t('settings.software.unknown'),
-            dir: '',
-            items: [
-                {
-                    kind: 'action',
-                    label: t('settings.software.notFound'),
-                    icon: 'alert-circle',
-                    target: '',
-                },
-            ],
-        };
-    }
-
-    if (entry.managed) {
-        return {
-            label: entry.name,
-            dir: '',
-            items: [],
-            renderCustom: async (container) => {
-                cardContainer(container, (c) => {
+function buildSoftwareDetailManagedSchema(
+    entry: import('../core/wails-bindings').SoftwareEntry,
+): MenuNode[] {
+    return [
+        {
+            id: 'software-detail:info',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
                     const fields: Array<{ label: string; value: string }> = [
                         { label: t('settings.software.name'), value: entry.name },
                         { label: t('settings.software.path'), value: entry.path },
                         { label: t('settings.software.kind'), value: entry.kind },
                     ];
                     for (const f of fields) {
-                        addFieldRow(c, f.label, escapeHtml(f.value));
+                        addFieldRow(inner, f.label, escapeHtml(f.value));
                     }
                     const argRow = document.createElement('div');
                     argRow.style.cssText = 'padding:6px 14px;';
@@ -206,11 +208,16 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     });
                     val.appendChild(input);
                     argRow.appendChild(val);
-                    c.appendChild(argRow);
+                    inner.appendChild(argRow);
                 });
-
-                cardContainer(container, (c) => {
-                    slideRow(c, 'lucide:play', t('settings.software.launch'), false, () => {
+            },
+        },
+        {
+            id: 'software-detail:actions',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(inner, 'lucide:play', t('settings.software.launch'), false, () => {
                         LaunchSoftware(entry.path, '')
                             .then(() =>
                                 setStatus(t('settings.softwareStarted', { name: entry.name }), true)
@@ -225,7 +232,7 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                             );
                     });
 
-                    addDangerRow(c, 'lucide:trash-2', t('settings.software.delete'), async () => {
+                    addDangerRow(inner, 'lucide:trash-2', t('settings.software.delete'), async () => {
                         const r = await tryCatchStatus(
                             async () => {
                                 await RemoveCustomSoftware(entry.path);
@@ -245,65 +252,107 @@ export function buildSoftwareDetailLevel(path: string): PopupLevel {
                     });
                 });
             },
+        },
+    ];
+}
+
+function buildSoftwareDetailAutoSchema(
+    entry: import('../core/wails-bindings').SoftwareEntry,
+): MenuNode[] {
+    return [
+        {
+            id: 'software-detail:info',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const fields: Array<{ label: string; value: string }> = [
+                        { label: t('settings.software.name'), value: entry.name },
+                        { label: t('settings.software.path'), value: entry.path },
+                        { label: t('settings.software.kind'), value: entry.kind },
+                    ];
+                    for (const f of fields) {
+                        addFieldRow(inner, f.label, escapeHtml(f.value));
+                    }
+                });
+            },
+        },
+        {
+            id: 'software-detail:actions',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(inner, 'lucide:play', t('settings.software.launch'), false, () => {
+                        LaunchSoftware(entry.path, entry.args)
+                            .then(() =>
+                                setStatus(t('settings.softwareStarted', { name: entry.name }), true)
+                            )
+                            .catch((err: unknown) =>
+                                setStatus(
+                                    t('status.error', {
+                                        message: err instanceof Error ? err.message : String(err),
+                                    }),
+                                    false
+                                )
+                            );
+                    });
+
+                    slideRow(
+                        inner,
+                        'lucide:plus',
+                        t('settings.software.convertToCustom'),
+                        false,
+                        async () => {
+                            const args = await showPrompt(t('settings.software.argsHint'), '');
+                            if (args === null) {
+                                return;
+                            }
+                            const r = await tryCatchStatus(async () => {
+                                await AddCustomSoftware(entry.path, entry.name, args);
+                                return true;
+                            }, t('settings.software.convertFailed'));
+                            if (r) {
+                                cachedSoftwareEntries = await ScanSoftwareDir();
+                                setStatus(t('settings.softwareToCustom', { name: entry.name }), true);
+                                const menu = getSettingsMenu();
+                                menu?.pop();
+                                menu?.reRender();
+                            }
+                        }
+                    );
+                });
+            },
+        },
+    ];
+}
+
+export function buildSoftwareDetailLevel(path: string): PopupLevel {
+    const entries = cachedSoftwareEntries || [];
+    const entry = entries.find((e) => e.path === path);
+    if (!entry) {
+        return {
+            label: t('settings.software.unknown'),
+            dir: '',
+            items: [
+                {
+                    kind: 'action',
+                    label: t('settings.software.notFound'),
+                    icon: 'alert-circle',
+                    target: '',
+                },
+            ],
         };
     }
+
+    const schema = entry.managed
+        ? buildSoftwareDetailManagedSchema(entry)
+        : buildSoftwareDetailAutoSchema(entry);
 
     return {
         label: entry.name,
         dir: '',
         items: [],
-        renderCustom: async (container) => {
-            cardContainer(container, (c) => {
-                const fields: Array<{ label: string; value: string }> = [
-                    { label: t('settings.software.name'), value: entry.name },
-                    { label: t('settings.software.path'), value: entry.path },
-                    { label: t('settings.software.kind'), value: entry.kind },
-                ];
-                for (const f of fields) {
-                    addFieldRow(c, f.label, escapeHtml(f.value));
-                }
-            });
-
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:play', t('settings.software.launch'), false, () => {
-                    LaunchSoftware(entry.path, entry.args)
-                        .then(() =>
-                            setStatus(t('settings.softwareStarted', { name: entry.name }), true)
-                        )
-                        .catch((err: unknown) =>
-                            setStatus(
-                                t('status.error', {
-                                    message: err instanceof Error ? err.message : String(err),
-                                }),
-                                false
-                            )
-                        );
-                });
-
-                slideRow(
-                    c,
-                    'lucide:plus',
-                    t('settings.software.convertToCustom'),
-                    false,
-                    async () => {
-                        const args = await showPrompt(t('settings.software.argsHint'), '');
-                        if (args === null) {
-                            return;
-                        }
-                        const r = await tryCatchStatus(async () => {
-                            await AddCustomSoftware(entry.path, entry.name, args);
-                            return true;
-                        }, t('settings.software.convertFailed'));
-                        if (r) {
-                            cachedSoftwareEntries = await ScanSoftwareDir();
-                            setStatus(t('settings.softwareToCustom', { name: entry.name }), true);
-                            const menu = getSettingsMenu();
-                            menu?.pop();
-                            menu?.reRender();
-                        }
-                    }
-                );
-            });
+        renderCustom: (container) => {
+            renderMenu(schema, container);
         },
     };
 }
