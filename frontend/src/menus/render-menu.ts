@@ -6,45 +6,50 @@ import { getStateValue, setStateValue, getBindFn } from './menu-schema';
 import { addSliderRow, addColorSliderRow, addToggleRow, addModeSlider, addCollapsible } from '../core/ui-helpers';
 import { t } from '../core/i18n/t';
 
-/** 渲染一个 MenuNode 树到 container 中 */
-export function renderMenu(schema: MenuNode[], container: HTMLElement): void {
+/** 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 */
+export function renderMenu(schema: MenuNode[], container: HTMLElement): () => void {
+    const disposes: (() => void)[] = [];
     for (const node of schema) {
-        renderNode(node, container);
+        const d = renderNode(node, container);
+        if (d) disposes.push(d);
     }
+    return () => { for (const d of disposes) d(); };
 }
 
-function renderNode(node: MenuNode, container: HTMLElement): void {
-    if (node.visibleWhen && !node.visibleWhen()) return;
+function renderNode(node: MenuNode, container: HTMLElement): (() => void) | undefined {
+    if (node.visibleWhen && !node.visibleWhen()) return undefined;
     switch (node.kind) {
         case 'folder':
-            renderFolder(node, container);
-            break;
+            return renderFolder(node, container);
         case 'slider':
             renderSlider(node, container);
-            break;
+            return undefined;
         case 'colorSlider':
             renderColorSlider(node, container);
-            break;
+            return undefined;
         case 'toggle':
             renderToggle(node, container);
-            break;
+            return undefined;
         case 'modeSlider':
             renderModeSlider(node, container);
-            break;
+            return undefined;
         case 'divider':
             // 无操作，未来可添加分隔线 DOM
-            break;
-        case 'custom':
-            if (node.renderCustom) node.renderCustom(container);
-            break;
+            return undefined;
+        case 'custom': {
+            const d = node.renderCustom?.(container);
+            return typeof d === 'function' ? d : undefined;
+        }
     }
 }
 
 // ======== Folder ========
 
-function renderFolder(node: MenuNode, container: HTMLElement): void {
+function renderFolder(node: MenuNode, container: HTMLElement): (() => void) | undefined {
     const children: MenuNode[] = node.children ?? [];
-    if (children.length === 0 && !node.renderCustom) return;
+    if (children.length === 0 && !node.renderCustom) return undefined;
+
+    let childDispose: (() => void) | undefined;
 
     addCollapsible(container, {
         title: node.label ? t(node.label) : '',
@@ -67,14 +72,18 @@ function renderFolder(node: MenuNode, container: HTMLElement): void {
               }
             : undefined,
         renderContent: (cc) => {
-            // 先渲染子节点
-            renderMenu(children, cc);
-            // 如果有自定义渲染，追加
+            childDispose = renderMenu(children, cc);
             if (node.renderCustom) {
-                node.renderCustom(cc);
+                const d = node.renderCustom(cc);
+                if (d) {
+                    const prev = childDispose;
+                    childDispose = () => { prev?.(); d(); };
+                }
             }
         },
     });
+
+    return () => childDispose?.();
 }
 
 // ======== Slider ========

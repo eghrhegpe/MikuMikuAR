@@ -41,8 +41,8 @@ export interface MenuNode {
     };
     children?: MenuNode[];  // 仅 folder
     control?: ControlSpec;  // slider/colorSlider/toggle
-    /** 逃生舱：无法数据化的内容直接渲染（接收容器参数） */
-    renderCustom?: (container: HTMLElement) => void;
+    /** 逃生舱：无法数据化的内容直接渲染。返回值（可选）为 dispose 函数，由 renderMenu 收集并级联释放 */
+    renderCustom?: (container: HTMLElement) => (() => void) | void;
     /** 条件守卫：返回 false 时该节点不渲染（如 groundType !== 'terrain' 时隐藏 pitch/roll） */
     visibleWhen?: () => boolean;
 }
