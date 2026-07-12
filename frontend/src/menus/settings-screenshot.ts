@@ -2,9 +2,11 @@
 
 import { setStatus, uiState, setUIState, cardContainer, escapeHtml } from '../core/config';
 import { t } from '../core/i18n/t';
-import { slideRow, addSliderRow, addSectionTitle, addFieldRow } from '../core/ui-helpers';
+import { slideRow, addSectionTitle, addFieldRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { SelectDir, OpenScreenshotDir } from '../core/wails-bindings';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 import type { PopupLevel } from '../core/config';
 import type { SettingsMenuHandle } from './settings-shared';
 
@@ -16,17 +18,16 @@ export function buildSettingsScreenshotLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
-            // —— 卡片 1：截图格式 ——
+            // —— 卡片 1：截图格式 ——（custom：slideRow 列表 + registerControl icon 动态更新）
             cardContainer(container, (c) => {
                 addSectionTitle(c, '截图格式');
                 const formats: Array<{
                     key: 'image/png' | 'image/jpeg' | 'image/webp';
                     label: string;
-                    icon: string;
                 }> = [
-                    { key: 'image/png', label: 'PNG', icon: 'lucide:file-image' },
-                    { key: 'image/jpeg', label: 'JPEG', icon: 'lucide:file-image' },
-                    { key: 'image/webp', label: 'WebP', icon: 'lucide:file-image' },
+                    { key: 'image/png', label: 'PNG' },
+                    { key: 'image/jpeg', label: 'JPEG' },
+                    { key: 'image/webp', label: 'WebP' },
                 ];
                 const formatRows: HTMLElement[] = [];
                 for (const f of formats) {
@@ -37,7 +38,6 @@ export function buildSettingsScreenshotLevel(
                         f.label,
                         false,
                         () => {
-                            uiState.screenshotFormat = f.key;
                             setUIState({ screenshotFormat: f.key });
                             getSettingsMenu()?.updateControls();
                             setStatus(t('settings.screenshotFormatSet', { label: f.label }), true);
@@ -68,36 +68,29 @@ export function buildSettingsScreenshotLevel(
                 });
             });
 
-            // —— 卡片 2：截图质量 ——
+            // —— 卡片 2：截图质量 ——（schema slider + ui. 前缀 + get/set 百分比转换）
             cardContainer(container, (c) => {
-                addSliderRow(
-                    c,
-                    '截图质量',
-                    uiState.screenshotQuality ?? 0.9,
-                    0.5,
-                    1.0,
-                    0.05,
-                    (v) => {
-                        uiState.screenshotQuality = v;
-                        setUIState({ screenshotQuality: v });
-                        getSettingsMenu()?.updateControls();
-                    },
-                    'lucide:gauge',
-                    undefined,
+                const qualitySchema: MenuNode[] = [
                     {
-                        bind: () => uiState.screenshotQuality ?? 0.9,
-                        onUpdate: (el) => {
-                            const valEl = el.querySelector('.cs-value');
-                            if (valEl) {
-                                valEl.textContent =
-                                    Math.round((uiState.screenshotQuality ?? 0.9) * 100) + '%';
-                            }
+                        id: 'settings:screenshot:quality',
+                        kind: 'slider',
+                        label: '截图质量',
+                        control: {
+                            bind: 'ui.screenshotQuality',
+                            min: 50,
+                            max: 100,
+                            step: 5,
+                            get: (v) => Math.round(((v as number) ?? 0.9) * 100),
+                            set: (v) => v / 100,
+                            onChange: () => getSettingsMenu()?.updateControls(),
                         },
-                    }
-                );
+                        icon: 'lucide:gauge',
+                    },
+                ];
+                renderMenu(qualitySchema, c);
             });
 
-            // —— 卡片 3：保存目录 ——
+            // —— 卡片 3：保存目录 ——（custom：文件系统操作）
             cardContainer(container, (c) => {
                 addSectionTitle(c, '保存目录');
                 const dir = uiState.screenshotDir ?? '';
@@ -108,7 +101,6 @@ export function buildSettingsScreenshotLevel(
                     if (!d) {
                         return;
                     }
-                    uiState.screenshotDir = d;
                     setUIState({ screenshotDir: d });
                     getSettingsMenu()?.reRender();
                     setStatus(t('settings.screenshotDirSet', { dir }), true);
