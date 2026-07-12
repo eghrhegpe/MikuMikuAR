@@ -357,8 +357,8 @@ export interface EnvState {
     groundTerrainOctaves: number; // FBM 倍频层数（1-8）
 
     // Phase A: 地面增强
-    groundPitch: number;         // X 轴旋转（度），默认 0，范围 -45..45（heightmap 模式禁用）
-    groundRoll: number;          // Z 轴旋转（度），默认 0，范围 -45..45（heightmap 模式禁用）
+    groundPitch: number;         // X 轴旋转（度），默认 0，范围 -45..45（所有模式均支持，地形模式采用坐标变换补偿高度查询）
+    groundRoll: number;          // Z 轴旋转（度），默认 0，范围 -45..45（所有模式均支持，地形模式采用坐标变换补偿高度查询）
     groundScrollSpeedX: number;  // 纹理 X 方向滚动速度，默认 0，范围 -2..2
     groundScrollSpeedZ: number;  // 纹理 Z 方向滚动速度，默认 0，范围 -2..2
     groundPattern: 'checker' | 'dots' | 'stripes' | 'radial'; // 程序化图案类型，默认 'checker'

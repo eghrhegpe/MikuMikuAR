@@ -107,6 +107,8 @@ export function createHeightmapGround(
                 const gm = mesh as GroundMesh;
                 gm.isPickable = true; // 碰撞/拾取：模型可站上去
                 gm.position.y = state.groundLevel;
+                gm.rotation.x = (state.groundPitch * Math.PI) / 180;
+                gm.rotation.z = (state.groundRoll * Math.PI) / 180;
                 onReady(gm);
             },
         },

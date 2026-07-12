@@ -819,6 +819,9 @@ export const zhTW: Record<string, string> = {
     // —— Ground ——
     'env.ground': '地面',
     'env.showGround': '顯示地面',
+    'env.baseSettings': '基礎設定',
+    'env.decoration': '裝飾',
+    'env.style': '樣式',
     'env.groundHeight': '地面高度',
     'env.groundType': '地面類型',
     'env.flat': '平面',

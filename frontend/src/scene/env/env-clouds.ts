@@ -11,6 +11,7 @@ import {
     Engine,
     DirectionalLight,
     RawTexture3D,
+    Constants,
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
@@ -381,6 +382,7 @@ export function createClouds(state: EnvState): void {
 
     mat.backFaceCulling = false;
     mat.disableDepthWrite = true;
+    mat.depthFunction = Constants.ALWAYS;
     mat.alpha = 1.0;
     mat.transparencyMode = 2;
     // Bind 3D noise texture (must be after mat is created)

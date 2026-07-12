@@ -1,6 +1,6 @@
 # ADR-083: 地面功能扩展 —— 反射/倾斜/纹理滚动/高程着色/跟随网格/图案扩展/法线贴图
 
-> **状态**: 已交付 — Phase A + Phase B 全部实施完成
+> **状态**: 已交付 — Phase A + Phase B 全部实施完成；terrain 倾斜于 2026-07-12 追加支持（坐标变换方案）
 
 ## 1. 背景
 
@@ -14,7 +14,7 @@
 |---|------|------|------|
 | 1 | **边缘淡出** | ✅ **已落地** | `groundEdgeFade` 参数 + 径向渐变 opacityTexture + UI 滑块 + bridge key，ADR-083 发布时已存在于代码中 |
 | 2 | **镜面反射** | ✅ **Phase B** | `MirrorTexture` planar reflection，复用 ADR-062 的水面反射模式 |
-| 3 | **坡度/倾斜** | ✅ **Phase A** | 两行代码级改动：`ground.rotation.x/z` = pitch/roll |
+| 3 | **坡度/倾斜** | ✅ **Phase A**（2026-07-12 追加 terrain 支持） | `ground.rotation.x/z` = pitch/roll；terrain 模式额外做坐标变换补偿高度查询（见 §9） |
 | 4 | **纹理滚动** | ✅ **Phase A** | 复用 `ensureEnvUpdateObserver` 的每帧循环，`uOffset/vOffset` 累加 |
 | 5 | **高度图按高程着色** | ✅ **Phase B** | 需重写 `applyTerrainMaterial` 为 gradient ramp 或 per-vertex color |
 | 6 | **无限跟随网格** | ✅ **Phase B** | Grid 模式每帧重定位到相机下方，需处理 shadow/collision Y 保持 |
@@ -53,7 +53,7 @@ groundFollowCamera: boolean;       // 网格模式跟随相机，默认 false
 | `scene/env/env-impl.ts` | `applyCheckerGround()` | 新增 pattern 分支（dots/stripes/radial）；重命名为 `applyProceduralGround` |
 | `scene/env/env-impl.ts` | typeKey | `groundPattern` 加入 typeKey（触发重建）；`groundPitch/groundRoll/groundScrollSpeedX/Z` 不加入 typeKey（走增量更新） |
 | `scene/env/env-bridge.ts` | groundKeys | +5 个 Phase A 字段 |
-| `menus/env-feature-levels.ts` | `buildGroundLevel()` | 加 4 个 slider + 1 个 modeSlider；heightmap 模式下禁用 pitch/roll 滑块 |
+| `menus/env-feature-levels.ts` | `buildGroundLevel()` | 加 4 个 slider + 1 个 modeSlider；heightmap 模式下禁用 pitch/roll 滑块（后于 2026-07-12 修订：移除禁用，所有模式均支持倾斜） |
 | `docs/adr/adr-047-config-persistence-coverage.md` | 同步 | 追加新字段到表格 |
 
 ### 4.2 Phase B（中等工作量）
@@ -177,11 +177,13 @@ switch (state.groundPattern) {
 | `groundScrollSpeedX` | ❌ 否 | 每帧动态偏移由 observer 驱动，与重建无关 |
 | `groundScrollSpeedZ` | ❌ 否 | 同上 |
 
-**heightmap 模式的 typeKey** 保持不变，不加入 pitch/roll（heightmap 模式禁用倾斜）。
+**heightmap 模式的 typeKey** 不加入 pitch/roll（pitch/roll 走原地更新分支，无需重建）。
+
+> **2026-07-12 修订**：heightmap 模式不再禁用倾斜，pitch/roll 对 terrain 同样生效，由坐标变换补偿高度查询。
 
 **原地更新分支需追加**：
-- `ground.rotation.x = groundPitch * PI / 180`（非 heightmap 模式）
-- `ground.rotation.z = groundRoll * PI / 180`（非 heightmap 模式）
+- `ground.rotation.x = groundPitch * PI / 180`（所有模式生效）
+- `ground.rotation.z = groundRoll * PI / 180`（所有模式生效）
 - texture/checker 模式下，调用 `_syncGroundTextureOffset()` 统一处理旋转+滚动偏移
 
 ## 6. 未解决的问题
@@ -191,6 +193,7 @@ switch (state.groundPattern) {
 | 高度图按高程着色精度 | per-vertex color 受 subdivisions 限制 | 可升级到 ShaderMaterial 片元级着色（无需增加顶点） |
 | WASM 碰撞摩擦/弹性 | ADR-029 §7 记录：无运行时 API | 等上游 PR 或 hack WASM 内存 |
 | 纹理旋转的实现方式 | 当前用 uOffset/vOffset 模拟旋转，非真正 UV 旋转，与滚动叠加时非严格数学正确 | 未来可改用 Texture.uAng/vAng 或自定义 UV 矩阵（需验证 Babylon 支持度） |
+| 地形倾斜后物理碰撞 | GroundMesh 自带碰撞基于本地坐标，旋转后与视觉轻微错位 | 可自行实现碰撞查询的坐标变换，或等 Babylon 上游修复 |
 
 ## 7. 引用 ADR
 
@@ -207,3 +210,26 @@ switch (state.groundPattern) {
 > 背景与方案见 **ADR-089**。
 > 本 ADR 中「heightmap 模式」一律等价于新模型的 `groundType === 'terrain'`；「非 heightmap 模式」等价于 `groundType === 'flat'`。
 > 旧配置经 `setEnvState` 内的 `migrateEnvState()` 自动映射，无需手动迁移。
+
+## 9. 修订注记（2026-07-12）
+
+> **地形倾斜追加支持**：此前 §5.2 以 3 条理由禁用 heightmap 模式的 pitch/roll，现实现坐标变换方案正式解禁：
+>
+> **核心方案**：`getGroundHeightAt()` 在 terrain 有非零 pitch/roll 时，做 **世界→本地→查询→本地→世界** 四步坐标变换：
+> 1. 求 mesh 逆世界矩阵，将世界 (x, z) 变换到本地空间
+> 2. 调用 `getHeightAtCoordinates(localX, localZ)` 获得本地高度
+> 3. 将结果点 `(localX, localHeight, localZ)` 用世界矩阵变换回世界坐标
+> 4. 返回世界 Y
+>
+> 无倾斜时退化到直接查询（零额外开销），与改动前行为一致。
+>
+> **配套变更**：
+> - `env-impl.ts`：添加 `Matrix` 导入 + 3 个模块级缓存变量（`_terrainInvWorld`/`_terrainLocalPos`/`_terrainWorldPos`），避免每帧 allocate
+> - `env-impl.ts` `applyGround()`：移除更新分支中 `groundType !== 'terrain'` 守卫，pitch/roll 原地写入所有模式
+> - `env-terrain.ts` `createHeightmapGround()`：onReady 回调中设置 `gm.rotation.x/z`
+> - `env-feature-levels.ts`：移除 pitch/roll 滑块上的 `visibleWhen: () => envState.groundType !== 'terrain'` 条件守卫
+> - 模型贴地：`setOnGroundChanged` 已检测 pitch/roll 变化并触发重贴地，`model-loader` 调用 `getGroundHeightAt()` 走坐标变换路径
+>
+> **风险与限制**：
+> 1. 物理碰撞体（GroundMesh 自带）仍基于本地坐标；旋转后碰撞查询与视觉可能轻微错位——但 terrain 本身起伏大，微小旋转下此差异可忽略；若需精确碰撞，需等 Babylon 上游修复或自行实现坐标变换
+> 2. `getHeightAtCoordinates` 每 query 做一次矩阵求逆 + 2 次坐标变换，仅在地面变化时触发，不构成性能瓶颈

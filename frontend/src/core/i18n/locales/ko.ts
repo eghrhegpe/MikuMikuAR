@@ -827,6 +827,9 @@ export const ko: Record<string, string> = {
     // —— Ground ——
     'env.ground': '지면',
     'env.showGround': '지면 표시',
+    'env.baseSettings': '기본 설정',
+    'env.decoration': '장식',
+    'env.style': '스타일',
     'env.groundHeight': '지면 높이',
     'env.groundType': '지면 종류',
     'env.flat': '평면',
