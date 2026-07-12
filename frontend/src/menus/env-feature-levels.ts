@@ -426,46 +426,41 @@ export function buildExperimentalLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                const warning = document.createElement('div');
-                warning.className = 'experimental-warning';
-                warning.innerHTML =
-                    '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' +
-                    t('env.experimentalWarn') +
-                    '</span>';
-                c.appendChild(warning);
-
-                const isWebGL2 = engine.webGLVersion >= 2;
-                slideRow(
-                    c,
-                    'lucide:cloud',
-                    t('env.volumetricCloud'),
-                    true,
-                    () => getEnvMenu()?.push(buildCloudLevel()),
-                    undefined,
-                    undefined,
-                    undefined,
+                const expSchema: MenuNode[] = [
                     {
-                        value: envState.cloudsEnabled,
-                        onChange: (v) => setEnvState({ cloudsEnabled: v }),
-                        disabled: !isWebGL2,
-                        disabledHint: t('env.volumetricCloudNeedWebGL'),
-                        onDisabledClick: () => {
-                            setStatus(
-                                t('env.volumetricCloudNeedWebGL') +
-                                    '，当前引擎版本：' +
-                                    engine.webGLVersion.toFixed(1),
-                                false
-                            );
+                        id: 'env:exp:warn',
+                        kind: 'custom',
+                        renderCustom: (cc) => {
+                            const warning = document.createElement('div');
+                            warning.className = 'experimental-warning';
+                            warning.innerHTML = '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' + t('env.experimentalWarn') + '</span>';
+                            cc.appendChild(warning);
                         },
-                    }
-                );
-
-                if (!isWebGL2) {
-                    const hint = document.createElement('div');
-                    hint.className = 'experimental-hint';
-                    hint.textContent = t('env.volumetricCloudUnsupported');
-                    c.appendChild(hint);
-                }
+                    },
+                    {
+                        id: 'env:exp:volCloud',
+                        kind: 'custom',
+                        renderCustom: (cc) => {
+                            const isWebGL2 = engine.webGLVersion >= 2;
+                            slideRow(cc, 'lucide:cloud', t('env.volumetricCloud'), true, () => getEnvMenu()?.push(buildCloudLevel()), undefined, undefined, undefined, {
+                                value: envState.cloudsEnabled,
+                                onChange: (v) => setEnvState({ cloudsEnabled: v }),
+                                disabled: !isWebGL2,
+                                disabledHint: t('env.volumetricCloudNeedWebGL'),
+                                onDisabledClick: () => {
+                                    setStatus(t('env.volumetricCloudNeedWebGL') + '，当前引擎版本：' + engine.webGLVersion.toFixed(1), false);
+                                },
+                            });
+                            if (!isWebGL2) {
+                                const hint = document.createElement('div');
+                                hint.className = 'experimental-hint';
+                                hint.textContent = t('env.volumetricCloudUnsupported');
+                                cc.appendChild(hint);
+                            }
+                        },
+                    },
+                ];
+                renderMenu(expSchema, c);
             });
         },
     };
@@ -477,106 +472,16 @@ export function buildFogLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const s = envState;
             cardContainer(container, (c) => {
-                addToggleRow(
-                    c,
-                    t('env.enableFog'),
-                    s.fogEnabled,
-                    (v) => {
-                        setEnvState({ fogEnabled: v });
-                    },
-                    'lucide:cloud-fog',
-                    {
-                        bind: () => envState.fogEnabled,
-                    }
-                );
-                addModeSlider(
-                    c,
-                    t('env.fogMode'),
-                    [
-                        { value: 'exp2', label: 'EXP2' },
-                        { value: 'exp', label: 'EXP' },
-                        { value: 'linear', label: t('env.linear') },
-                    ],
-                    s.fogMode,
-                    (v) => {
-                        setEnvState({ fogMode: v as 'exp' | 'exp2' | 'linear' });
-                    },
-                    'lucide:layers',
-                    undefined,
-                    {
-                        bind: () => envState.fogMode,
-                    }
-                );
-                addColorSliderRow(
-                    c,
-                    t('env.fogColor'),
-                    s.fogColor,
-                    (v) => {
-                        setEnvState({ fogColor: v });
-                    },
-                    {
-                        bind: () => envState.fogColor,
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('env.fogDensity'),
-                    s.fogDensity,
-                    0,
-                    0.1,
-                    0.001,
-                    (v) => {
-                        setEnvState({ fogDensity: v });
-                    },
-                    'lucide:droplets',
-                    undefined,
-                    {
-                        bind: () => envState.fogDensity,
-                        onUpdate: (el) => {
-                            el.style.display = envState.fogMode === 'linear' ? 'none' : '';
-                        },
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('env.fogStart'),
-                    s.fogStart ?? 10,
-                    0,
-                    200,
-                    1,
-                    (v) => {
-                        setEnvState({ fogStart: v });
-                    },
-                    undefined,
-                    undefined,
-                    {
-                        bind: () => envState.fogStart,
-                        onUpdate: (el) => {
-                            el.style.display = envState.fogMode === 'linear' ? '' : 'none';
-                        },
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('env.fogEnd'),
-                    s.fogEnd ?? 100,
-                    0,
-                    200,
-                    1,
-                    (v) => {
-                        setEnvState({ fogEnd: v });
-                    },
-                    undefined,
-                    undefined,
-                    {
-                        bind: () => envState.fogEnd,
-                        onUpdate: (el) => {
-                            el.style.display = envState.fogMode === 'linear' ? '' : 'none';
-                        },
-                    }
-                );
+                const fogSchema: MenuNode[] = [
+                    { id: 'env:fog:enabled', kind: 'toggle', label: 'env.enableFog', control: { bind: 'env.fogEnabled' }, icon: 'lucide:cloud-fog' },
+                    { id: 'env:fog:mode', kind: 'modeSlider', label: 'env.fogMode', control: { bind: 'env.fogMode', options: [{ value: 'exp2', label: 'EXP2' }, { value: 'exp', label: 'EXP' }, { value: 'linear', label: 'env.linear' }] }, icon: 'lucide:layers' },
+                    { id: 'env:fog:color', kind: 'colorSlider', label: 'env.fogColor', control: { bind: 'env.fogColor' } },
+                    { id: 'env:fog:density', kind: 'slider', label: 'env.fogDensity', control: { bind: 'env.fogDensity', min: 0, max: 0.1, step: 0.001 }, icon: 'lucide:droplets', visibleWhen: () => envState.fogMode !== 'linear' },
+                    { id: 'env:fog:start', kind: 'slider', label: 'env.fogStart', control: { bind: 'env.fogStart', min: 0, max: 200, step: 1, get: (v) => (v as number) ?? 10 }, visibleWhen: () => envState.fogMode === 'linear' },
+                    { id: 'env:fog:end', kind: 'slider', label: 'env.fogEnd', control: { bind: 'env.fogEnd', min: 0, max: 200, step: 1, get: (v) => (v as number) ?? 100 }, visibleWhen: () => envState.fogMode === 'linear' },
+                ];
+                renderMenu(fogSchema, c);
             });
         },
     };
@@ -588,133 +493,66 @@ export function buildShadowLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const ls = getLightState();
             cardContainer(container, (c) => {
-                // ── 环境阴影（主场景方向光阴影）──
-                addCollapsible(c, {
-                    title: t('env.envShadow'),
-                    icon: 'lucide:cloud',
-                    defaultOpen: true,
-                    headerToggle: {
-                        value: ls.shadowEnabled,
-                        onChange: (v) => {
-                            setLightingState({ shadowEnabled: v });
-                        },
-                        bind: () => getLightState().shadowEnabled,
-                    },
-                    renderContent: (inner) => {
-                        addModeSlider(
-                            inner,
-                            t('env.shadowType'),
-                            [
-                                { value: 'hard', label: t('env.hardShadow') },
-                                { value: 'soft', label: t('env.softShadow') },
-                                { value: 'pcf', label: 'PCF' },
-                            ],
-                            ls.shadowType,
-                            (v) => {
-                                setLightingState({ shadowType: v });
-                            },
-                            'lucide:cloud',
-                            undefined,
+                const shadowSchema: MenuNode[] = [
+                    {
+                        id: 'env:shadow:env',
+                        kind: 'folder',
+                        label: 'env.envShadow',
+                        icon: 'lucide:cloud',
+                        defaultOpen: true,
+                        headerToggle: { bind: 'light.shadowEnabled' },
+                        children: [
+                            { id: 'env:shadow:type', kind: 'modeSlider', label: 'env.shadowType', control: { bind: 'light.shadowType', options: [{ value: 'hard', label: 'env.hardShadow' }, { value: 'soft', label: 'env.softShadow' }, { value: 'pcf', label: 'PCF' }] }, icon: 'lucide:cloud' },
                             {
-                                bind: () => getLightState().shadowType,
-                            }
-                        );
-                        const shadowQualityRow = document.createElement('div');
-                        shadowQualityRow.className = 'preset-group';
-                        for (const sq of [
-                            { label: t('env.low'), value: 512 },
-                            { label: t('env.medium'), value: 1024 },
-                            { label: t('env.high'), value: 2048 },
-                            { label: t('env.ultra'), value: 4096 },
-                        ]) {
-                            addPresetChip(
-                                shadowQualityRow,
-                                sq.label,
-                                ls.shadowResolution === sq.value,
-                                () => {
-                                    setLightingState({ shadowResolution: sq.value });
+                                id: 'env:shadow:quality',
+                                kind: 'custom',
+                                renderCustom: (cc) => {
+                                    const row = document.createElement('div');
+                                    row.className = 'preset-group';
+                                    for (const sq of [{ label: t('env.low'), value: 512 }, { label: t('env.medium'), value: 1024 }, { label: t('env.high'), value: 2048 }, { label: t('env.ultra'), value: 4096 }]) {
+                                        addPresetChip(row, sq.label, getLightState().shadowResolution === sq.value, () => { setLightingState({ shadowResolution: sq.value }); }, { onUpdate: (btn) => { btn.classList.toggle('active', getLightState().shadowResolution === sq.value); } });
+                                    }
+                                    cc.appendChild(row);
                                 },
-                                {
-                                    onUpdate: (btn) => {
-                                        btn.classList.toggle(
-                                            'active',
-                                            getLightState().shadowResolution === sq.value
-                                        );
-                                    },
-                                }
-                            );
-                        }
-                        inner.appendChild(shadowQualityRow);
-                        addSliderRow(
-                            inner,
-                            t('env.shadowBias'),
-                            ls.shadowBias,
-                            0,
-                            0.01,
-                            0.0001,
-                            (v) => {
-                                setLightingState({ shadowBias: v });
                             },
-                            'lucide:move',
-                            undefined,
-                            {
-                                bind: () => getLightState().shadowBias,
-                            }
-                        );
-                        addSliderRow(
-                            inner,
-                            t('env.shadowCascades'),
-                            ls.shadowCascades,
-                            2,
-                            4,
-                            1,
-                            (v) => {
-                                setLightingState({ shadowCascades: v });
-                            },
-                            'lucide:layers',
-                            undefined,
-                            {
-                                bind: () => getLightState().shadowCascades,
-                            }
-                        );
+                            { id: 'env:shadow:bias', kind: 'slider', label: 'env.shadowBias', control: { bind: 'light.shadowBias', min: 0, max: 0.01, step: 0.0001 }, icon: 'lucide:move' },
+                            { id: 'env:shadow:cascades', kind: 'slider', label: 'env.shadowCascades', control: { bind: 'light.shadowCascades', min: 2, max: 4, step: 1 }, icon: 'lucide:layers' },
+                        ],
                     },
-                });
-
-                // ── 角色阴影 ──
-                const charRow = document.createElement('div');
-                charRow.className = 'slide-item';
-                charRow.style.opacity = '0.6';
-                charRow.style.cursor = 'default';
-                const ci = document.createElement('span');
-                ci.className = 'slide-icon';
-                const ce = createIconifyIcon('lucide:user');
-                if (ce) {
-                    ci.appendChild(ce);
-                }
-                charRow.appendChild(ci);
-                const cl = document.createElement('span');
-                cl.className = 'slide-label';
-                cl.textContent = t('env.characterShadow');
-                charRow.appendChild(cl);
-                const cs = document.createElement('span');
-                cs.className = 'slide-sublabel';
-                cs.textContent = t('env.characterShadowHint');
-                charRow.appendChild(cs);
-                c.appendChild(charRow);
-
-                // ── 光照阴影（舞台灯光）──
-                slideRow(
-                    c,
-                    'lucide:lightbulb',
-                    t('env.stageLightShadow'),
-                    false,
-                    () => {
-                        setStatus(t('env.shadowHint'), true);
+                    {
+                        id: 'env:shadow:charHint',
+                        kind: 'custom',
+                        renderCustom: (cc) => {
+                            const charRow = document.createElement('div');
+                            charRow.className = 'slide-item';
+                            charRow.style.opacity = '0.6';
+                            charRow.style.cursor = 'default';
+                            const ci = document.createElement('span');
+                            ci.className = 'slide-icon';
+                            const ce = createIconifyIcon('lucide:user');
+                            if (ce) ci.appendChild(ce);
+                            charRow.appendChild(ci);
+                            const cl = document.createElement('span');
+                            cl.className = 'slide-label';
+                            cl.textContent = t('env.characterShadow');
+                            charRow.appendChild(cl);
+                            const cs = document.createElement('span');
+                            cs.className = 'slide-sublabel';
+                            cs.textContent = t('env.characterShadowHint');
+                            charRow.appendChild(cs);
+                            cc.appendChild(charRow);
+                        },
                     },
-                    '→ ' + t('env.sceneMenu')
-                );
+                    {
+                        id: 'env:shadow:stageHint',
+                        kind: 'custom',
+                        renderCustom: (cc) => {
+                            slideRow(cc, 'lucide:lightbulb', t('env.stageLightShadow'), false, () => { setStatus(t('env.shadowHint'), true); }, '→ ' + t('env.sceneMenu'));
+                        },
+                    },
+                ];
+                renderMenu(shadowSchema, c);
             });
         },
     };
