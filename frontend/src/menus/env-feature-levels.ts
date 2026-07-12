@@ -649,35 +649,39 @@ export function buildWindLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const s = envState;
-            const dirAngle = (Math.atan2(s.windDirection[0], s.windDirection[2]) * 180) / Math.PI;
-            const dirAngleNorm = (dirAngle + 360) % 360;
             cardContainer(container, (c) => {
-                addSliderRow(
-                    c,
-                    t('env.windAngle'),
-                    dirAngleNorm,
-                    0,
-                    360,
-                    1,
-                    (v) => {
-                        const rad = (v * Math.PI) / 180;
-                        setEnvState({
-                            windDirection: [Math.sin(rad), s.windDirection[1], Math.cos(rad)],
-                        });
+                const windSchema: MenuNode[] = [
+                    {
+                        id: 'env:wind',
+                        kind: 'folder',
+                        label: '',
+                        defaultOpen: true,
+                        children: [
+                            {
+                                id: 'env:wind:angle',
+                                kind: 'slider',
+                                label: 'env.windAngle',
+                                control: {
+                                    bind: 'env.windDirection',
+                                    min: 0,
+                                    max: 360,
+                                    step: 1,
+                                    get: (v) => {
+                                        const d = v as [number, number, number];
+                                        return ((Math.atan2(d[0], d[2]) * 180) / Math.PI + 360) % 360;
+                                    },
+                                    set: (angle) => {
+                                        const rad = (angle * Math.PI) / 180;
+                                        return [Math.sin(rad), envState.windDirection[1], Math.cos(rad)];
+                                    },
+                                },
+                                icon: 'lucide:compass',
+                            },
+                            { id: 'env:wind:speed', kind: 'slider', label: 'env.windSpeed', control: { bind: 'env.windSpeed', min: 0, max: 10, step: 0.1 }, icon: 'lucide:gauge' },
+                        ],
                     },
-                    'lucide:compass'
-                );
-                addSliderRow(
-                    c,
-                    t('env.windSpeed'),
-                    s.windSpeed,
-                    0,
-                    10,
-                    0.1,
-                    (v) => setEnvState({ windSpeed: v }),
-                    'lucide:gauge'
-                );
+                ];
+                renderMenu(windSchema, c);
             });
         },
     };
@@ -689,68 +693,24 @@ export function buildCloudLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const s = envState;
             cardContainer(container, (c) => {
-                addSliderRow(
-                    c,
-                    t('env.cloudCover'),
-                    s.cloudCover,
-                    0,
-                    1,
-                    0.01,
-                    (v) => setEnvState({ cloudCover: v }),
-                    'lucide:cloud'
-                );
-                addSliderRow(
-                    c,
-                    t('env.cloudGap'),
-                    s.cloudGap ?? 0.5,
-                    0,
-                    1,
-                    0.01,
-                    (v) => setEnvState({ cloudGap: v }),
-                    'lucide:columns'
-                );
-                addSliderRow(
-                    c,
-                    t('env.height'),
-                    s.cloudHeight,
-                    50,
-                    800,
-                    5,
-                    (v) => setEnvState({ cloudHeight: v }),
-                    'lucide:arrow-up'
-                );
-                addSliderRow(
-                    c,
-                    t('env.scale'),
-                    s.cloudScale,
-                    0.1,
-                    1,
-                    0.05,
-                    (v) => setEnvState({ cloudScale: v }),
-                    'lucide:maximize'
-                );
-                addSliderRow(
-                    c,
-                    t('env.thickness'),
-                    s.cloudThickness ?? 15,
-                    10,
-                    50,
-                    1,
-                    (v) => setEnvState({ cloudThickness: v }),
-                    'lucide:move-vertical'
-                );
-                addSliderRow(
-                    c,
-                    t('env.visibility'),
-                    s.cloudVisibility ?? 2000,
-                    500,
-                    8000,
-                    100,
-                    (v) => setEnvState({ cloudVisibility: v }),
-                    'lucide:eye'
-                );
+                const cloudSchema: MenuNode[] = [
+                    {
+                        id: 'env:cloud',
+                        kind: 'folder',
+                        label: '',
+                        defaultOpen: true,
+                        children: [
+                            { id: 'env:cloud:cover', kind: 'slider', label: 'env.cloudCover', control: { bind: 'env.cloudCover', min: 0, max: 1, step: 0.01 }, icon: 'lucide:cloud' },
+                            { id: 'env:cloud:gap', kind: 'slider', label: 'env.cloudGap', control: { bind: 'env.cloudGap', min: 0, max: 1, step: 0.01, get: (v) => (v as number) ?? 0.5 }, icon: 'lucide:columns' },
+                            { id: 'env:cloud:height', kind: 'slider', label: 'env.height', control: { bind: 'env.cloudHeight', min: 50, max: 800, step: 5 }, icon: 'lucide:arrow-up' },
+                            { id: 'env:cloud:scale', kind: 'slider', label: 'env.scale', control: { bind: 'env.cloudScale', min: 0.1, max: 1, step: 0.05 }, icon: 'lucide:maximize' },
+                            { id: 'env:cloud:thickness', kind: 'slider', label: 'env.thickness', control: { bind: 'env.cloudThickness', min: 10, max: 50, step: 1, get: (v) => (v as number) ?? 15 }, icon: 'lucide:move-vertical' },
+                            { id: 'env:cloud:visibility', kind: 'slider', label: 'env.visibility', control: { bind: 'env.cloudVisibility', min: 500, max: 8000, step: 100, get: (v) => (v as number) ?? 2000 }, icon: 'lucide:eye' },
+                        ],
+                    },
+                ];
+                renderMenu(cloudSchema, c);
             });
         },
     };

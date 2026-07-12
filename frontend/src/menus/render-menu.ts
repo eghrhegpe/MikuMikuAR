@@ -80,8 +80,9 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
     const ctrl = node.control;
     if (!ctrl) return;
 
-    const value = getStateValue(ctrl.bind) as number;
-    const onChange = (v: number) => setStateValue(ctrl.bind, v);
+    const raw = getStateValue(ctrl.bind);
+    const value = ctrl.get ? ctrl.get(raw) : (raw as number);
+    const onChange = (v: number) => setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v);
 
     addSliderRow(
         container,
@@ -93,7 +94,7 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
         onChange,
         node.icon ?? ctrl.icon,
         undefined,
-        { bind: () => getBindFn(ctrl.bind)() as number }
+        { bind: () => (ctrl.get ? ctrl.get(getBindFn(ctrl.bind)()) : (getBindFn(ctrl.bind)() as number)) }
     );
 }
 
