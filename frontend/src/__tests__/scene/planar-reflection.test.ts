@@ -16,7 +16,7 @@ function makeState(overrides: Partial<EnvState> = {}): EnvState {
         groundReflectionQuality: 'high',
         groundLevel: 0,
         planarReflectBlend: 1,
-        waterQuality: 'high',
+        reflectionQuality: 'high',
         waterLevel: 0,
         ...overrides,
     } as EnvState;
@@ -33,7 +33,7 @@ describe('PlanarReflection — 互斥协调', () => {
             name,
             mode: 'screenSpace',
             resolutionMap: { high: 64, medium: 32, low: 16, off: 0 },
-            getQuality: (s) => s.waterQuality,
+            getQuality: (s) => s.reflectionQuality,
             getBlend: (s) => s.planarReflectBlend,
             getSurfaceLevel: (s) => s.waterLevel,
             getMirrorCameraMatrix: (s, sc) => null,
@@ -60,30 +60,30 @@ describe('PlanarReflection — 互斥协调', () => {
 
     it('创建后 isEnabled 为 true', () => {
         const ref = new PlanarReflection(makeConfig('testA'));
-        ref.update(makeState({ waterQuality: 'high', planarReflectBlend: 1 }), scene);
+        ref.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 1 }), scene);
         expect(ref.isEnabled).toBe(true);
     });
 
     it('shouldEnable=false 时 disable，isEnabled 为 false', () => {
         const ref = new PlanarReflection(makeConfig('testB'));
-        ref.update(makeState({ waterQuality: 'high', planarReflectBlend: 1 }), scene);
+        ref.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 1 }), scene);
         expect(ref.isEnabled).toBe(true);
 
         // 关闭 blend → shouldEnable=false
-        ref.update(makeState({ waterQuality: 'high', planarReflectBlend: 0 }), scene);
+        ref.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 0 }), scene);
         expect(ref.isEnabled).toBe(false);
     });
 
     it('quality=off 时 disable', () => {
         const ref = new PlanarReflection(makeConfig('testC'));
-        ref.update(makeState({ waterQuality: 'off', planarReflectBlend: 1 }), scene);
+        ref.update(makeState({ reflectionQuality: 'off', planarReflectBlend: 1 }), scene);
         expect(ref.isEnabled).toBe(false);
     });
 
     it('两 surface 同时 shouldEnable=true 时仅一面活跃（互斥）', () => {
         const refA = new PlanarReflection(makeConfig('mutexA'));
         const refB = new PlanarReflection(makeConfig('mutexB'));
-        const state = makeState({ waterQuality: 'high', planarReflectBlend: 1 });
+        const state = makeState({ reflectionQuality: 'high', planarReflectBlend: 1 });
 
         // 注册两 surface，onReleased 模拟另一面的恢复（调用 update）
         registerReflectionSurface('mutexA', refA, () => refA.update(state, scene));
@@ -103,7 +103,7 @@ describe('PlanarReflection — 互斥协调', () => {
     it('停用活跃面后另一面恢复（可恢复互斥）', () => {
         const refA = new PlanarReflection(makeConfig('recoverA'));
         const refB = new PlanarReflection(makeConfig('recoverB'));
-        const state = makeState({ waterQuality: 'high', planarReflectBlend: 1 });
+        const state = makeState({ reflectionQuality: 'high', planarReflectBlend: 1 });
 
         // 注册；onReleased 调用另一面的 update() 来完成恢复
         registerReflectionSurface('recoverA', refA, () => refA.update(state, scene));
@@ -122,7 +122,7 @@ describe('PlanarReflection — 互斥协调', () => {
         const updateSpy = vi.spyOn(refA, 'update');
 
         // 关闭 B（shouldEnable=false）→ onReleased 应直接恢复 A
-        refB.update(makeState({ waterQuality: 'high', planarReflectBlend: 0 }), scene);
+        refB.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 0 }), scene);
         expect(refB.isEnabled).toBe(false);
 
         // 验证 spy：update 被 onReleased 调用过
@@ -139,7 +139,7 @@ describe('PlanarReflection — 互斥协调', () => {
 
     it('dispose 后 isEnabled 为 false', () => {
         const ref = new PlanarReflection(makeConfig('disposeTest'));
-        ref.update(makeState({ waterQuality: 'high', planarReflectBlend: 1 }), scene);
+        ref.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 1 }), scene);
         expect(ref.isEnabled).toBe(true);
 
         ref.dispose();
