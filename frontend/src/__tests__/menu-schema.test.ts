@@ -14,6 +14,7 @@ vi.mock('@/scene/render/lighting', () => ({
 import { renderMenu } from '../menus/render-menu';
 import type { MenuNode } from '../menus/menu-schema';
 import { envState } from '../core/config';
+import { uiState, setUIState } from '../core/state';
 import { setLang, getLang } from '../core/i18n/locale';
 import type { LangCode } from '../core/i18n/locale';
 
@@ -378,6 +379,37 @@ describe('ADR-093 Menu Schema PoC', () => {
             renderMenu(schema, container);
             // 模拟用户点击 modeSlider 选项 — 验证 onChange 在渲染时注册
             expect(container.children.length).toBeGreaterThan(0);
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════
+    // §6.7 ui. StatePath 前缀（settings 域扩展）
+    // ═══════════════════════════════════════════════════════
+    describe('ui. StatePath 前缀', () => {
+        it('slider 绑定 ui.screenshotQuality 并通过 get/set 百分比转换', () => {
+            const original = uiState.screenshotQuality;
+            try {
+                uiState.screenshotQuality = 0.9;
+                const schema: MenuNode[] = [{
+                    id: 't:uiSlider', kind: 'slider', label: '截图质量',
+                    control: {
+                        bind: 'ui.screenshotQuality',
+                        min: 50, max: 100, step: 5,
+                        get: (v) => Math.round(((v as number) ?? 0.9) * 100),
+                        set: (v) => v / 100,
+                    },
+                    icon: 'lucide:gauge',
+                }];
+                renderMenu(schema, container);
+                expect(container.querySelector('.cs-row')).toBeTruthy();
+                // slider 显示值应为 90（0.9 * 100）
+                const valEl = container.querySelector('.cs-value');
+                expect(valEl?.textContent).toContain('90');
+            } finally {
+                if (original !== undefined) {
+                    setUIState({ screenshotQuality: original });
+                }
+            }
         });
     });
 
