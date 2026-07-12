@@ -3,7 +3,7 @@
 
 import type { MenuNode } from './menu-schema';
 import { getStateValue, setStateValue, getBindFn } from './menu-schema';
-import { addSliderRow, addColorSliderRow, addToggleRow, addCollapsible } from '../core/ui-helpers';
+import { addSliderRow, addColorSliderRow, addToggleRow, addModeSlider, addCollapsible } from '../core/ui-helpers';
 import { t } from '../core/i18n/t';
 
 /** 渲染一个 MenuNode 树到 container 中 */
@@ -27,6 +27,9 @@ function renderNode(node: MenuNode, container: HTMLElement): void {
         case 'toggle':
             renderToggle(node, container);
             break;
+        case 'modeSlider':
+            renderModeSlider(node, container);
+            break;
         case 'divider':
             // 无操作，未来可添加分隔线 DOM
             break;
@@ -45,9 +48,18 @@ function renderFolder(node: MenuNode, container: HTMLElement): void {
         defaultOpen: node.defaultOpen ?? false,
         headerToggle: node.headerToggle
             ? {
-                  value: !!getStateValue(node.headerToggle.bind),
-                  onChange: (v: boolean) => setStateValue(node.headerToggle!.bind, v),
-                  bind: () => !!getBindFn(node.headerToggle!.bind)(),
+                  value: node.headerToggle.get
+                      ? node.headerToggle.get(getStateValue(node.headerToggle.bind))
+                      : !!getStateValue(node.headerToggle.bind),
+                  onChange: (v: boolean) =>
+                      setStateValue(
+                          node.headerToggle!.bind,
+                          node.headerToggle!.set ? node.headerToggle!.set(v) : v,
+                      ),
+                  bind: () => {
+                      const raw = getBindFn(node.headerToggle!.bind)();
+                      return node.headerToggle!.get ? node.headerToggle!.get(raw) : !!raw;
+                  },
               }
             : undefined,
         renderContent: (cc) => {
@@ -118,5 +130,26 @@ function renderToggle(node: MenuNode, container: HTMLElement): void {
         onChange,
         node.icon ?? ctrl.icon,
         { bind: () => getBindFn(ctrl.bind)() as boolean }
+    );
+}
+
+// ======== Mode Slider ========
+
+function renderModeSlider(node: MenuNode, container: HTMLElement): void {
+    const ctrl = node.control;
+    if (!ctrl || !ctrl.options) return;
+
+    const value = getStateValue(ctrl.bind) as string;
+    const onChange = (v: string) => setStateValue(ctrl.bind, v);
+
+    addModeSlider(
+        container,
+        node.label ? t(node.label) : '',
+        ctrl.options,
+        value,
+        onChange,
+        node.icon ?? ctrl.icon,
+        undefined,
+        { bind: () => getBindFn(ctrl.bind)() as string }
     );
 }

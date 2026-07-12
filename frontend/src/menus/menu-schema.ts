@@ -2,14 +2,13 @@
 // 单一数据源 + 单渲染器，消除命令式 builder 膨胀。
 // 当前状态：PoC，仅地面面板「基础设置」试点。
 
-import type { EnvState } from '@/core/config';
-import { envState, setEnvState } from '@/core/config';
-import { getRenderState } from '@/scene/scene';
+import { envState } from '@/core/config';
+import { setEnvState, getRenderState } from '@/scene/scene';
 
 // 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象
 export type StatePath = `env.${string}` | `render.${string}`;
 
-export type MenuKind = 'folder' | 'slider' | 'colorSlider' | 'toggle' | 'divider';
+export type MenuKind = 'folder' | 'slider' | 'colorSlider' | 'toggle' | 'modeSlider' | 'divider';
 
 export interface ControlSpec {
     bind: StatePath;
@@ -17,6 +16,7 @@ export interface ControlSpec {
     max?: number;
     step?: number;
     icon?: string;
+    options?: Array<{ value: string; label: string }>;  // modeSlider 用
 }
 
 export interface MenuNode {
@@ -27,9 +27,15 @@ export interface MenuNode {
     defaultOpen?: boolean;  // 仅 folder
     headerToggle?: {
         bind: StatePath;
+        /** 将状态值转为 boolean（如 groundType='terrain'→true） */
+        get?: (v: unknown) => boolean;
+        /** 将 toggle boolean 转为状态值（如 true→'terrain'） */
+        set?: (v: boolean) => unknown;
     };
     children?: MenuNode[];  // 仅 folder
     control?: ControlSpec;  // slider/colorSlider/toggle
+    /** 逃生舱：无法数据化的内容直接渲染（接收容器参数） */
+    renderCustom?: (container: HTMLElement) => void;
 }
 
 // ======== 状态路径解析器 ========
@@ -39,9 +45,9 @@ export function getStateValue(path: StatePath): unknown {
     const [prefix, key] = path.split('.') as [string, string];
     switch (prefix) {
         case 'env':
-            return (envState as Record<string, unknown>)[key];
+            return (envState as unknown as Record<string, unknown>)[key];
         case 'render':
-            return (getRenderState() as Record<string, unknown>)[key];
+            return (getRenderState() as unknown as Record<string, unknown>)[key];
         default:
             return undefined;
     }

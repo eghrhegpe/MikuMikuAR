@@ -26,6 +26,8 @@ import {
 } from '../scene/env/env-water';
 import { SelectEnvTextureFile, SelectPMXFile } from '../core/wails-bindings';
 import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 import { stackRegistry } from '../core/config';
 import { closeAllOverlays } from '../core/utils';
 
@@ -215,19 +217,24 @@ renderCustom: (container) => {
                     setEnvState({ groundVisible: v })
                 );
 
-                // ===== 基础设置 =====
-                addCollapsible(c, {
-                    title: t('env.baseSettings'),
-                    icon: 'lucide:settings-2',
-                    defaultOpen: true,
-                    renderContent: (cc) => {
-                        addColorSliderRow(cc, t('env.groundColor'), s.groundColor, (v) => setEnvState({ groundColor: v }), { bind: () => envState.groundColor });
-                        addSliderRow(cc, t('env.opacity'), s.groundAlpha, 0, 1, 0.05, (v) => setEnvState({ groundAlpha: v }), 'lucide:eye');
-                        addSliderRow(cc, t('env.groundHeight'), s.groundLevel, -5, 5, 0.1, (v) => setEnvState({ groundLevel: v }), 'lucide:move-vertical');
-                        addSliderRow(cc, t('env.range'), s.groundSize, 10, 200, 5, (v) => setEnvState({ groundSize: v }), 'lucide:maximize', undefined, { bind: () => envState.groundSize });
-                        addSliderRow(cc, t('env.edgeFade'), s.groundEdgeFade, 0, 1, 0.01, (v) => setEnvState({ groundEdgeFade: v }), 'lucide:droplet', undefined, { bind: () => envState.groundEdgeFade });
+                // ===== 基础设置（schema 驱动，ADR-093 PoC）=====
+                const baseSchema: MenuNode[] = [
+                    {
+                        id: 'env:ground:base',
+                        kind: 'folder',
+                        label: 'env.baseSettings',
+                        icon: 'lucide:settings-2',
+                        defaultOpen: true,
+                        children: [
+                            { id: 'env:ground:color', kind: 'colorSlider', label: 'env.groundColor', control: { bind: 'env.groundColor' } },
+                            { id: 'env:ground:opacity', kind: 'slider', label: 'env.opacity', control: { bind: 'env.groundAlpha', min: 0, max: 1, step: 0.05 }, icon: 'lucide:eye' },
+                            { id: 'env:ground:height', kind: 'slider', label: 'env.groundHeight', control: { bind: 'env.groundLevel', min: -5, max: 5, step: 0.1 }, icon: 'lucide:move-vertical' },
+                            { id: 'env:ground:size', kind: 'slider', label: 'env.range', control: { bind: 'env.groundSize', min: 10, max: 200, step: 5 }, icon: 'lucide:maximize' },
+                            { id: 'env:ground:edgeFade', kind: 'slider', label: 'env.edgeFade', control: { bind: 'env.groundEdgeFade', min: 0, max: 1, step: 0.01 }, icon: 'lucide:droplet' },
+                        ],
                     },
-                });
+                ];
+                renderMenu(baseSchema, c);
 
                 // ===== 贴图 =====
                 addCollapsible(c, {
@@ -307,23 +314,28 @@ renderCustom: (container) => {
                     },
                 });
 
-                // ===== 地形 =====
-                addCollapsible(c, {
-                    title: t('env.terrain'),
-                    icon: 'lucide:mountain',
-                    defaultOpen: false,
-                    headerToggle: {
-                        value: s.groundType === 'terrain',
-                        onChange: (v) => setEnvState({ groundType: v ? 'terrain' : 'flat' }),
-                        bind: () => envState.groundType === 'terrain',
+                // ===== 地形（schema 驱动）=====
+                const terrainSchema: MenuNode[] = [
+                    {
+                        id: 'env:ground:terrain',
+                        kind: 'folder',
+                        label: 'env.terrain',
+                        icon: 'lucide:mountain',
+                        defaultOpen: false,
+                        headerToggle: {
+                            bind: 'env.groundType',
+                            get: (v) => v === 'terrain',
+                            set: (on) => (on ? 'terrain' : 'flat'),
+                        },
+                        children: [
+                            { id: 'env:ground:terrainHeight', kind: 'slider', label: 'env.terrainHeight', control: { bind: 'env.groundTerrainHeight', min: 0, max: 15, step: 0.1 }, icon: 'lucide:mountain' },
+                            { id: 'env:ground:terrainScale', kind: 'slider', label: 'env.terrainScale', control: { bind: 'env.groundTerrainScale', min: 0.01, max: 5, step: 0.05 }, icon: 'lucide:ruler' },
+                            { id: 'env:ground:terrainSeed', kind: 'slider', label: 'env.terrainSeed', control: { bind: 'env.groundTerrainSeed', min: 0, max: 9999, step: 1 }, icon: 'lucide:hash' },
+                            { id: 'env:ground:terrainOctaves', kind: 'slider', label: 'env.terrainOctaves', control: { bind: 'env.groundTerrainOctaves', min: 1, max: 8, step: 1 }, icon: 'lucide:layers' },
+                        ],
                     },
-                    renderContent: (cc) => {
-                        addSliderRow(cc, t('env.terrainHeight'), s.groundTerrainHeight, 0, 15, 0.1, (v) => setEnvState({ groundTerrainHeight: v }), 'lucide:mountain');
-                        addSliderRow(cc, t('env.terrainScale'), s.groundTerrainScale, 0.01, 5, 0.05, (v) => setEnvState({ groundTerrainScale: v }), 'lucide:ruler');
-                        addSliderRow(cc, t('env.terrainSeed'), s.groundTerrainSeed, 0, 9999, 1, (v) => setEnvState({ groundTerrainSeed: v }), 'lucide:hash');
-                        addSliderRow(cc, t('env.terrainOctaves'), s.groundTerrainOctaves, 1, 8, 1, (v) => setEnvState({ groundTerrainOctaves: v }), 'lucide:layers');
-                    },
-                });
+                ];
+                renderMenu(terrainSchema, c);
 
                 // ===== 地面增强 =====
                 addCollapsible(c, {
