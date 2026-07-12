@@ -11,6 +11,69 @@ import { SelectPMXFile } from '../core/wails-bindings';
 import { getSceneMenu } from './scene-menu';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
 import { t } from '../core/i18n/t';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
+
+function buildPropSchema(): MenuNode[] {
+    const props = getPropList();
+    return [
+        // 卡片 1：已加载道具列表
+        {
+            id: 'prop:list',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    if (props.length > 0) {
+                        for (const p of props) {
+                            const row = document.createElement('div');
+                            row.className = 'slide-item';
+                            row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(p.name)}</span><span class="slide-arrow">&gt;</span>`;
+                            row.addEventListener('click', () =>
+                                getSceneMenu()?.push(buildPropDetailLevel(p.id))
+                            );
+                            const delBtn = document.createElement('span');
+                            delBtn.className = 'slide-del-btn';
+                            delBtn.textContent = '×';
+                            delBtn.title = t('scene.deleteProp');
+                            delBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                removeProp(p.id);
+                                getSceneMenu()?.reRender();
+                            });
+                            row.appendChild(delBtn);
+                            inner.appendChild(row);
+                        }
+                    } else {
+                        const empty = document.createElement('div');
+                        empty.style.cssText =
+                            'font-size:11px;color:var(--text-dim);padding:8px 4px;text-align:center;';
+                        empty.textContent = t('scene.noProps');
+                        inner.appendChild(empty);
+                    }
+                });
+            },
+        },
+        // 卡片 2：加载入口
+        {
+            id: 'prop:add',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(inner, 'lucide:plus', t('scene.addPropFile'), false, () => {
+                        SelectPMXFile().then((path) => {
+                            if (path) {
+                                loadManager
+                                    .load({ kind: 'prop', path })
+                                    .then(() => getSceneMenu()?.reRender())
+                                    .catch(() => {});
+                            }
+                        });
+                    });
+                });
+            },
+        },
+    ];
+}
 
 export function buildPropLevel(): PopupLevel {
     return {
@@ -20,54 +83,7 @@ export function buildPropLevel(): PopupLevel {
         renderCustom: (container) => {
             container.classList.remove('render-card');
             container.style.padding = '0';
-
-            // —— 卡片 1：已加载道具列表（上）——
-            const props = getPropList();
-            if (props.length > 0) {
-                cardContainer(container, (c) => {
-                    for (const p of props) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(p.name)}</span><span class="slide-arrow">&gt;</span>`;
-                        row.addEventListener('click', () =>
-                            getSceneMenu()?.push(buildPropDetailLevel(p.id))
-                        );
-                        const delBtn = document.createElement('span');
-                        delBtn.className = 'slide-del-btn';
-                        delBtn.textContent = '×';
-                        delBtn.title = t('scene.deleteProp');
-                        delBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            removeProp(p.id);
-                            getSceneMenu()?.reRender();
-                        });
-                        row.appendChild(delBtn);
-                        c.appendChild(row);
-                    }
-                });
-            } else {
-                cardContainer(container, (c) => {
-                    const empty = document.createElement('div');
-                    empty.style.cssText =
-                        'font-size:11px;color:var(--text-dim);padding:8px 4px;text-align:center;';
-                    empty.textContent = t('scene.noProps');
-                    c.appendChild(empty);
-                });
-            }
-
-            // —— 卡片 2：加载入口（下）——
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plus', t('scene.addPropFile'), false, () => {
-                    SelectPMXFile().then((path) => {
-                        if (path) {
-                            loadManager
-                                .load({ kind: 'prop', path })
-                                .then(() => getSceneMenu()?.reRender())
-                                .catch(() => {});
-                        }
-                    });
-                });
-            });
+            renderMenu(buildPropSchema(), container);
         },
     };
 }

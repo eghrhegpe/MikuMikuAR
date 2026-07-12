@@ -7,7 +7,6 @@ import { escapeHtml } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import {
     slideRow,
-    addToggleRow,
     addSliderRow,
     addColorSliderRow,
     addModeSlider,
@@ -92,9 +91,6 @@ export function buildGroundLevel(): PopupLevel {
 renderCustom: (container) => {
             const s = envState;
             cardContainer(container, (c) => {
-                addToggleRow(c, t('env.showGround'), s.groundVisible, (v) =>
-                    setEnvState({ groundVisible: v })
-                );
 
                 // ===== 基础设置（schema 驱动，ADR-093 PoC）=====
                 const baseSchema: MenuNode[] = [
@@ -126,7 +122,6 @@ renderCustom: (container) => {
                         headerToggle: { bind: 'env.groundTextureEnabled' },
                         renderCustom: (cc) => {
                             const texturePresets = [
-                                { value: '', label: t('env.none') },
                                 { value: 'textures/grass.png', label: t('env.grass') },
                                 { value: 'textures/stone.png', label: t('env.stone') },
                                 { value: 'textures/sand.png', label: t('env.sand') },
@@ -182,7 +177,20 @@ renderCustom: (container) => {
                             set: (on) => (on ? 'grid' : 'none'),
                         },
                         children: [
-                            { id: 'env:ground:decoStyle', kind: 'modeSlider', label: 'env.style', control: { bind: 'env.groundDecoStyle', options: [{ value: 'grid', label: 'env.grid' }, { value: 'checker', label: 'env.checker' }] }, icon: 'lucide:square' },
+                            { id: 'env:ground:decoStyle', kind: 'custom', renderCustom: (cc) => {
+                                const chipRow = document.createElement('div');
+                                chipRow.className = 'preset-group';
+                                const decoPresets = [
+                                    { value: 'grid', label: t('env.grid') },
+                                    { value: 'checker', label: t('env.checker') },
+                                ] as const;
+                                for (const dp of decoPresets) {
+                                    addPresetChip(chipRow, dp.label, envState.groundDecoStyle === dp.value, () => {
+                                        setEnvState({ groundDecoStyle: dp.value });
+                                    }, { onUpdate: (btn) => { btn.classList.toggle('active', envState.groundDecoStyle === dp.value); } });
+                                }
+                                cc.appendChild(chipRow);
+                            } },
                             { id: 'env:ground:gridSize', kind: 'slider', label: 'env.gridSize', control: { bind: 'env.groundGridSize', min: 0.5, max: 5, step: 0.1 }, icon: 'lucide:grid-3x3' },
                             { id: 'env:ground:lineColor', kind: 'colorSlider', label: 'env.gridLineColor', control: { bind: 'env.groundLineColor' } },
                             { id: 'env:ground:pattern', kind: 'modeSlider', label: 'env.groundPattern', control: { bind: 'env.groundPattern', options: [{ value: 'checker', label: 'env.checker' }, { value: 'dots', label: 'env.dots' }, { value: 'stripes', label: 'env.stripes' }, { value: 'radial', label: 'env.radial' }] }, icon: 'lucide:grid-3x3', visibleWhen: () => envState.groundDecoStyle === 'checker' },
@@ -480,7 +488,6 @@ export function buildFogLevel(): PopupLevel {
         renderCustom: (container) => {
             cardContainer(container, (c) => {
                 const fogSchema: MenuNode[] = [
-                    { id: 'env:fog:enabled', kind: 'toggle', label: 'env.enableFog', control: { bind: 'env.fogEnabled' }, icon: 'lucide:cloud-fog' },
                     { id: 'env:fog:mode', kind: 'modeSlider', label: 'env.fogMode', control: { bind: 'env.fogMode', options: [{ value: 'exp2', label: 'EXP2' }, { value: 'exp', label: 'EXP' }, { value: 'linear', label: 'env.linear' }] }, icon: 'lucide:layers' },
                     { id: 'env:fog:color', kind: 'colorSlider', label: 'env.fogColor', control: { bind: 'env.fogColor' } },
                     { id: 'env:fog:density', kind: 'slider', label: 'env.fogDensity', control: { bind: 'env.fogDensity', min: 0, max: 0.1, step: 0.001 }, icon: 'lucide:droplets', visibleWhen: () => envState.fogMode !== 'linear' },
@@ -507,7 +514,6 @@ export function buildShadowLevel(): PopupLevel {
                         label: 'env.envShadow',
                         icon: 'lucide:cloud',
                         defaultOpen: true,
-                        headerToggle: { bind: 'light.shadowEnabled' },
                         children: [
                             { id: 'env:shadow:type', kind: 'modeSlider', label: 'env.shadowType', control: { bind: 'light.shadowType', options: [{ value: 'hard', label: 'env.hardShadow' }, { value: 'soft', label: 'env.softShadow' }, { value: 'pcf', label: 'PCF' }] }, icon: 'lucide:cloud' },
                             {

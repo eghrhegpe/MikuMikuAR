@@ -16,6 +16,8 @@ import {
 import { GetRenderPresets, SaveRenderPreset } from '../core/wails-bindings';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 import { t } from '../core/i18n/t';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 
 // ======== Render Presets ========
 
@@ -169,53 +171,67 @@ export function getFilterPresetName(name: string): string {
     return t(FILTER_PRESET_LABELS[name] || name);
 }
 
-export function buildPresetsLevel(): PopupLevel {
-    return {
-        label: t('scene.renderPresets'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            container.classList.remove('render-card');
-            const chipGroup = document.createElement('div');
-            chipGroup.className = 'preset-group';
-            chipGroup.style.paddingBottom = '6px';
-            for (const [key] of Object.entries(FILTER_PRESETS)) {
-                const wrapper = document.createElement('div');
-                wrapper.style.cssText =
-                    'display:flex;flex-direction:column;align-items:center;gap:2px;';
+function buildPresetsSchema(): MenuNode[] {
+    return [
+        // 内置预设芯片组
+        {
+            id: 'presets:builtin',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const chipGroup = document.createElement('div');
+                chipGroup.className = 'preset-group';
+                chipGroup.style.paddingBottom = '6px';
+                for (const [key] of Object.entries(FILTER_PRESETS)) {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.cssText =
+                        'display:flex;flex-direction:column;align-items:center;gap:2px;';
 
-                const btn = document.createElement('button');
-                btn.className = 'preset-chip';
-                btn.textContent = t(FILTER_PRESET_LABELS[key] || key);
-                btn.addEventListener('click', () => {
-                    const preset = getFilterPreset(key);
-                    if (preset) {
-                        transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
-                    }
-                    setStatus(
-                        t('scene.statusPresetApplied', { name: t(FILTER_PRESET_LABELS[key]) }),
-                        true
-                    );
-                });
-                wrapper.appendChild(btn);
+                    const btn = document.createElement('button');
+                    btn.className = 'preset-chip';
+                    btn.textContent = t(FILTER_PRESET_LABELS[key] || key);
+                    btn.addEventListener('click', () => {
+                        const preset = getFilterPreset(key);
+                        if (preset) {
+                            transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
+                        }
+                        setStatus(
+                            t('scene.statusPresetApplied', { name: t(FILTER_PRESET_LABELS[key]) }),
+                            true
+                        );
+                    });
+                    wrapper.appendChild(btn);
 
-                const desc = document.createElement('span');
-                desc.textContent = t(FILTER_PRESET_DESCS[key] || '');
-                desc.style.cssText =
-                    'font-size:9px;color:var(--text-dim);opacity:0.7;white-space:nowrap;line-height:1.2;';
-                wrapper.appendChild(desc);
+                    const desc = document.createElement('span');
+                    desc.textContent = t(FILTER_PRESET_DESCS[key] || '');
+                    desc.style.cssText =
+                        'font-size:9px;color:var(--text-dim);opacity:0.7;white-space:nowrap;line-height:1.2;';
+                    wrapper.appendChild(desc);
 
-                chipGroup.appendChild(wrapper);
-            }
-            container.appendChild(chipGroup);
-            slideRow(
-                container,
-                'lucide:save',
-                t('scene.saveCurrentAsPreset'),
-                false,
-                showPresetSaveDialog
-            );
-            if (Object.keys(USER_FILTER_PRESETS).length > 0) {
+                    chipGroup.appendChild(wrapper);
+                }
+                c.appendChild(chipGroup);
+            },
+        },
+        // 保存当前为预设
+        {
+            id: 'presets:save',
+            kind: 'custom',
+            renderCustom: (c) => {
+                slideRow(
+                    c,
+                    'lucide:save',
+                    t('scene.saveCurrentAsPreset'),
+                    false,
+                    showPresetSaveDialog
+                );
+            },
+        },
+        // 用户预设芯片组
+        {
+            id: 'presets:user',
+            kind: 'custom',
+            visibleWhen: () => Object.keys(USER_FILTER_PRESETS).length > 0,
+            renderCustom: (c) => {
                 const userChipGroup = document.createElement('div');
                 userChipGroup.className = 'preset-group';
                 userChipGroup.style.paddingBottom = '6px';
@@ -229,8 +245,20 @@ export function buildPresetsLevel(): PopupLevel {
                     });
                     userChipGroup.appendChild(btn);
                 }
-                container.appendChild(userChipGroup);
-            }
+                c.appendChild(userChipGroup);
+            },
+        },
+    ];
+}
+
+export function buildPresetsLevel(): PopupLevel {
+    return {
+        label: t('scene.renderPresets'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove('render-card');
+            renderMenu(buildPresetsSchema(), container);
         },
     };
 }

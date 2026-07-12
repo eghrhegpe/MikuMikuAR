@@ -1,6 +1,6 @@
 # ADR-093: 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」
 
-> **状态**: 实施中（P0+P1 已完成，P2 域迁移推进中：env 域全迁移、motion 感知层全迁移、settings 性能+截图+音频+外观+外部库+文件名+快捷键面板迁移、scene 后处理面板迁移）
+> **状态**: 实施中（P0+P1 已完成，P2 域迁移推进中：env 域全迁移、motion 感知层+布料+脚部+姿态工作室+骨骼覆盖+程序化动作+相机迁移、settings 性能+截图+音频+外观+外部库+文件名+快捷键+关于+软件+路径面板迁移、scene 后处理+舞台+道具面板迁移）
 
 ## 1. 背景
 
@@ -122,10 +122,21 @@ interface ControlSpec {
 | settings | 外部库（external） | ✅ 全 schema | custom 节点（模块级状态 externalPaths + Wails bindings，列表渲染 + actionIcons）|
 | settings | 文件名（filename） | ✅ 全 schema | custom 节点（uiState 模块级状态 + 动态列表渲染）|
 | settings | 快捷键（shortcuts） | ✅ 全 schema | custom 节点（动态分组渲染 + 键盘事件监听 + 冲突检测）|
+| settings | 关于（about） | ✅ 全 schema | custom 节点（异步数据加载 + 缓存统计 + 更新检查 + 导入/导出/重置）|
+| settings | 软件（software） | ✅ 全 schema | custom 节点（动态列表 + 详情页双分支 managed/auto + 异步扫描）|
+| motion | 布料物理（cloth） | ✅ 全 schema | custom 节点 + visibleWhen（模块级 skirtConfig 状态 + 防抖重建）|
+| motion | 脚部贴地（feet） | ✅ 全 schema | custom 节点（模型实例级 feet 状态 + 空状态守卫）|
+| motion | 姿态工作室（poseStudio） | ✅ 全 schema | custom 节点（构图辅助 + 姿态预设 + DOF + 相机预设 + 水印）|
+| settings | 路径（paths） | ✅ 全 schema | sectionTitle kind + custom 节点 + visibleWhen（Android/桌面端分支 + 下载监听条件渲染）|
 | scene | 后处理（postprocess） | ✅ 全 schema | folder headerToggle（Bloom）+ slider onChange 复合状态写入（dofAperture+dofEnabled）+ custom 节点（antialiasing 复合状态 / toneMapping number modeSlider）+ visibleWhen 条件渲染（SSR/SSAO 子参数）|
+| motion | 骨骼覆盖（boneOverride） | ✅ 全 schema | custom 节点 + visibleWhen（模型实例级 boneOverrides 数组 + 运行时 API 读写 + 动态列表渲染）|
+| motion | 程序化动作（procMotion） | ✅ 全 schema | custom 节点 + folder 折叠 + visibleWhen（模块级 procMotion 状态 + 骨骼分类动态渲染）|
+| motion | 相机（camera） | ✅ 全 schema | custom 节点 + visibleWhen（多模式参数条件渲染 + 模块级 expanded 状态 + VMD 操作）|
+| scene | 舞台（stage） | ✅ 全 schema | custom 节点（舞台列表 + 道具列表 + 功能入口，动态列表渲染 + 可见性切换 + 导航 push）|
+| scene | 道具（prop） | ✅ 全 schema | custom 节点（道具列表 + 加载入口，propRegistry 动态列表渲染）|
 | — | schema 系统测试 | ✅ | menu-schema.test.ts: 各 kind 渲染 + visibleWhen 守卫 + renderCustom dispose 级联 |
 
-**已迁移面板数：23 个 | tsc 零错误 | 1313 测试全绿**
+**已迁移面板数：34 个 | tsc 零错误 | 1313 测试全绿**
 
 #### 迁移过程中 schema 系统的能力扩展
 
@@ -188,4 +199,4 @@ interface ControlSpec {
 | P3 | §6 缺 i18n 热切换 e2e 与内存泄漏检查 | **采纳** | 已在 §6 增补 i18n 热切换 e2e（ADR-065 收益）与 dispose 级联/泄漏 vitest。 |
 | P4 | `MenuKind` 缺 `renderCustom`/`dynamic` | **采纳** | `renderCustom` 保留为节点字段（逃生舱）；`MenuKind` 增补 `'dynamic'`（运行时 `childrenResolver` 生成子项）。 |
 
-**状态**：已进入「实施中」——P0+P1 已完成，P2 域迁移推进中。env 域全部面板、motion 感知层面板、settings 性能/截图/音频面板、scene 后处理面板已迁移为 schema 驱动。tsc 零错误，1313 测试全绿。下一批迁移目标：settings 其余子面板（外观/快捷键/路径）→ scene 舞台灯光 → motion 程序化动作/布料。
+**状态**：已进入「实施中」——P0+P1 已完成，P2 域迁移推进中。env 域全部面板、motion 感知层/布料/脚部/姿态工作室/骨骼覆盖/程序化动作/相机面板、settings 性能/截图/音频/外观/外部库/文件名/快捷键/关于/软件/路径面板、scene 后处理/舞台/道具面板已迁移为 schema 驱动。tsc 零错误，1313 测试全绿。下一批迁移目标：scene 场景预设/渲染预设/舞台灯光 → motion 动作绑定/图层 → model 模型设置。
