@@ -12,6 +12,8 @@ import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRu
 import type { VirtualSkirtConfig } from '../scene/physics/virtual-skirt';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 
 // 与 virtual-skirt.ts 的 defaultVirtualSkirtConfig 保持同源契约；
 // 字段稳定，UI 默认值在此声明，引擎默认值在 virtual-skirt.ts。
@@ -123,44 +125,48 @@ function scheduleRebuild(): void {
     }, 200);
 }
 
-export function buildVirtualSkirtLevel(): PopupLevel {
-    return {
-        label: t('cloth.title'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            // === Card: 开关 ===
-            cardContainer(container, (c) => {
-                addToggleRow(
-                    c,
-                    t('cloth.enable'),
-                    skirtConfig.enabled,
-                    (v) => {
-                        skirtConfig = { ...skirtConfig, enabled: v };
-                        if (v) {
-                            void rebuildAll();
-                        } else {
-                            disposeAllVirtualSkirts();
-                        }
-                        refreshClothLevel();
-                    },
-                    'lucide:shirt',
-                    { bind: () => skirtConfig.enabled }
-                );
-                if (!skirtConfig.enabled) {
-                    const hint = document.createElement('div');
-                    hint.className = 'cs-hint';
-                    hint.textContent = t('cloth.hint');
-                    c.appendChild(hint);
-                }
-            });
-
-            // === Card: 参数（仅启用时实际生效）===
-            if (skirtConfig.enabled) {
-                cardContainer(container, (c) => {
-                    // Phase 5: 质量档位 → LOD + 降频
+function buildVirtualSkirtSchema(): MenuNode[] {
+    return [
+        // 卡片 1：开关
+        {
+            id: 'cloth:toggle',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addToggleRow(
+                        inner,
+                        t('cloth.enable'),
+                        skirtConfig.enabled,
+                        (v) => {
+                            skirtConfig = { ...skirtConfig, enabled: v };
+                            if (v) {
+                                void rebuildAll();
+                            } else {
+                                disposeAllVirtualSkirts();
+                            }
+                            refreshClothLevel();
+                        },
+                        'lucide:shirt',
+                        { bind: () => skirtConfig.enabled }
+                    );
+                    if (!skirtConfig.enabled) {
+                        const hint = document.createElement('div');
+                        hint.className = 'cs-hint';
+                        hint.textContent = t('cloth.hint');
+                        inner.appendChild(hint);
+                    }
+                });
+            },
+        },
+        // 卡片 2：参数（仅启用时渲染）
+        {
+            id: 'cloth:params',
+            kind: 'custom',
+            visibleWhen: () => skirtConfig.enabled,
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
                     addModeRow(
-                        c,
+                        inner,
                         t('cloth.quality'),
                         [
                             { value: 'auto', label: t('cloth.qualityAuto') },
@@ -175,7 +181,7 @@ export function buildVirtualSkirtLevel(): PopupLevel {
                         },
                     );
                     addSliderRow(
-                        c,
+                        inner,
                         t('cloth.chains'),
                         skirtConfig.chains,
                         4,
@@ -188,7 +194,7 @@ export function buildVirtualSkirtLevel(): PopupLevel {
                         'lucide:git-branch'
                     );
                     addSliderRow(
-                        c,
+                        inner,
                         t('cloth.segments'),
                         skirtConfig.segmentsPerChain,
                         4,
@@ -201,7 +207,7 @@ export function buildVirtualSkirtLevel(): PopupLevel {
                         'lucide:layers'
                     );
                     addSliderRow(
-                        c,
+                        inner,
                         t('cloth.stiffness'),
                         skirtConfig.stiffness,
                         10,
@@ -214,7 +220,7 @@ export function buildVirtualSkirtLevel(): PopupLevel {
                         'lucide:spring'
                     );
                     addSliderRow(
-                        c,
+                        inner,
                         t('cloth.damping'),
                         skirtConfig.damping,
                         0,
@@ -227,7 +233,7 @@ export function buildVirtualSkirtLevel(): PopupLevel {
                         'lucide:waves'
                     );
                     addSliderRow(
-                        c,
+                        inner,
                         t('cloth.mass'),
                         skirtConfig.mass,
                         0.01,
@@ -240,7 +246,7 @@ export function buildVirtualSkirtLevel(): PopupLevel {
                         'lucide:weight'
                     );
                     addSliderRow(
-                        c,
+                        inner,
                         t('cloth.yRatio'),
                         skirtConfig.skirtYRatio,
                         0.1,
@@ -253,7 +259,7 @@ export function buildVirtualSkirtLevel(): PopupLevel {
                         'lucide:ruler'
                     );
                     addSliderRow(
-                        c,
+                        inner,
                         t('cloth.radius'),
                         skirtConfig.radius,
                         0,
@@ -266,25 +272,41 @@ export function buildVirtualSkirtLevel(): PopupLevel {
                         'lucide:circle'
                     );
                 });
-            }
+            },
+        },
+        // 卡片 3：状态
+        {
+            id: 'cloth:status',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const stat = document.createElement('div');
+                    stat.className = 'cs-hint';
+                    const first = controllers.values().next().value;
+                    if (first) {
+                        stat.textContent = t('cloth.lodInfo', {
+                            quality: t(`cloth.quality${first.effectiveQuality.charAt(0).toUpperCase()}${first.effectiveQuality.slice(1)}`),
+                            chains: first.effectiveChains,
+                            segments: first.effectiveSegments,
+                            throttle: first.throttleEvery,
+                        });
+                    } else {
+                        stat.textContent = t('cloth.status', { n: 0 });
+                    }
+                    inner.appendChild(stat);
+                });
+            },
+        },
+    ];
+}
 
-            // === Card: 状态 ===
-            cardContainer(container, (c) => {
-                const stat = document.createElement('div');
-                stat.className = 'cs-hint';
-                const first = controllers.values().next().value;
-                if (first) {
-                    stat.textContent = t('cloth.lodInfo', {
-                        quality: t(`cloth.quality${first.effectiveQuality.charAt(0).toUpperCase()}${first.effectiveQuality.slice(1)}`),
-                        chains: first.effectiveChains,
-                        segments: first.effectiveSegments,
-                        throttle: first.throttleEvery,
-                    });
-                } else {
-                    stat.textContent = t('cloth.status', { n: 0 });
-                }
-                c.appendChild(stat);
-            });
+export function buildVirtualSkirtLevel(): PopupLevel {
+    return {
+        label: t('cloth.title'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            renderMenu(buildVirtualSkirtSchema(), container);
         },
     };
 }
