@@ -237,82 +237,74 @@ renderCustom: (container) => {
                 renderMenu(baseSchema, c);
 
                 // ===== 贴图 =====
-                addCollapsible(c, {
-                    title: t('env.textureMode'),
-                    icon: 'lucide:image',
-                    defaultOpen: false,
-                    headerToggle: {
-                        value: s.groundTextureEnabled,
-                        onChange: (v) => setEnvState({ groundTextureEnabled: v }),
-                        bind: () => envState.groundTextureEnabled,
+                const textureSchema: MenuNode[] = [
+                    {
+                        id: 'env:ground:texture',
+                        kind: 'folder',
+                        label: 'env.textureMode',
+                        icon: 'lucide:image',
+                        defaultOpen: false,
+                        headerToggle: { bind: 'env.groundTextureEnabled' },
+                        renderCustom: (cc) => {
+                            const texturePresets = [
+                                { value: '', label: t('env.none') },
+                                { value: 'textures/grass.png', label: t('env.grass') },
+                                { value: 'textures/stone.png', label: t('env.stone') },
+                                { value: 'textures/sand.png', label: t('env.sand') },
+                            ];
+                            const chipRow = document.createElement('div');
+                            chipRow.className = 'preset-group';
+                            for (const tp of texturePresets) {
+                                addPresetChip(chipRow, tp.label, envState.groundTexture === tp.value, () => {
+                                    setEnvState({ groundTexture: tp.value, groundTextureEnabled: !!tp.value });
+                                }, { onUpdate: (btn) => { btn.classList.toggle('active', envState.groundTexture === tp.value); } });
+                            }
+                            cc.appendChild(chipRow);
+                            const groundFileName = envState.groundTexture && !envState.groundTexture.startsWith('textures/') ? (envState.groundTexture.split(/[/\\]/).pop() ?? t('env.notSelected')) : t('env.notSelected');
+                            slideRow(cc, 'lucide:image', t('env.customTexture'), false, () => {
+                                setEnvTextureBindingTarget('ground');
+                                const level = stackRegistry.buildLevel!('environment', t('env.customTexture'), (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format), getEnvMenu()!);
+                                getEnvMenu()!.push(level);
+                            }, groundFileName);
+                            if (envState.groundTexture && !envState.groundTexture.startsWith('textures/')) {
+                                const clearRow = document.createElement('div');
+                                clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+                                const clearBtn = document.createElement('button');
+                                clearBtn.className = 'cs-btn cs-btn-sm';
+                                clearBtn.textContent = t('env.clear');
+                                clearBtn.onclick = () => { setEnvState({ groundTexture: '', groundTextureEnabled: false }); };
+                                clearRow.appendChild(clearBtn);
+                                cc.appendChild(clearRow);
+                            }
+                            addSliderRow(cc, t('env.textureScale'), envState.groundTextureScale, 0.1, 5, 0.1, (v) => setEnvState({ groundTextureScale: v }), 'lucide:zoom-in');
+                            addSliderRow(cc, t('env.textureRotation'), envState.groundTextureRotation, 0, 360, 1, (v) => setEnvState({ groundTextureRotation: v }), 'lucide:rotate-cw');
+                        },
                     },
-                    renderContent: (cc) => {
-                        const texturePresets = [
-                            { value: '', label: t('env.none') },
-                            { value: 'textures/grass.png', label: t('env.grass') },
-                            { value: 'textures/stone.png', label: t('env.stone') },
-                            { value: 'textures/sand.png', label: t('env.sand') },
-                        ];
-                        const chipRow = document.createElement('div');
-                        chipRow.className = 'preset-group';
-                        for (const tp of texturePresets) {
-                            addPresetChip(chipRow, tp.label, s.groundTexture === tp.value, () => {
-                                setEnvState({ groundTexture: tp.value, groundTextureEnabled: !!tp.value });
-                            }, { onUpdate: (btn) => { btn.classList.toggle('active', envState.groundTexture === tp.value); } });
-                        }
-                        cc.appendChild(chipRow);
-                        const groundFileName = s.groundTexture && !s.groundTexture.startsWith('textures/') ? (s.groundTexture.split(/[/\\]/).pop() ?? t('env.notSelected')) : t('env.notSelected');
-                        slideRow(cc, 'lucide:image', t('env.customTexture'), false, () => {
-                            setEnvTextureBindingTarget('ground');
-                            const level = stackRegistry.buildLevel!('environment', t('env.customTexture'), (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format), getEnvMenu()!);
-                            getEnvMenu()!.push(level);
-                        }, groundFileName);
-                        if (s.groundTexture && !s.groundTexture.startsWith('textures/')) {
-                            const clearRow = document.createElement('div');
-                            clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
-                            const clearBtn = document.createElement('button');
-                            clearBtn.className = 'cs-btn cs-btn-sm';
-                            clearBtn.textContent = t('env.clear');
-                            clearBtn.onclick = () => { setEnvState({ groundTexture: '', groundTextureEnabled: false }); };
-                            clearRow.appendChild(clearBtn);
-                            cc.appendChild(clearRow);
-                        }
-                        addSliderRow(cc, t('env.textureScale'), s.groundTextureScale, 0.1, 5, 0.1, (v) => setEnvState({ groundTextureScale: v }), 'lucide:zoom-in');
-                        addSliderRow(cc, t('env.textureRotation'), s.groundTextureRotation, 0, 360, 1, (v) => setEnvState({ groundTextureRotation: v }), 'lucide:rotate-cw');
-                    },
-                });
+                ];
+                renderMenu(textureSchema, c);
 
                 // ===== 装饰 =====
-                addCollapsible(c, {
-                    title: t('env.decoration'),
-                    icon: 'lucide:grid-3x3',
-                    defaultOpen: true,
-                    headerToggle: {
-                        value: s.groundDecoStyle !== 'none',
-                        onChange: (v) => setEnvState({ groundDecoStyle: v ? 'grid' : 'none' }),
-                        bind: () => envState.groundDecoStyle !== 'none',
+                const decoSchema: MenuNode[] = [
+                    {
+                        id: 'env:ground:deco',
+                        kind: 'folder',
+                        label: 'env.decoration',
+                        icon: 'lucide:grid-3x3',
+                        defaultOpen: true,
+                        headerToggle: {
+                            bind: 'env.groundDecoStyle',
+                            get: (v) => v !== 'none',
+                            set: (on) => (on ? 'grid' : 'none'),
+                        },
+                        children: [
+                            { id: 'env:ground:decoStyle', kind: 'modeSlider', label: 'env.style', control: { bind: 'env.groundDecoStyle', options: [{ value: 'grid', label: 'env.grid' }, { value: 'checker', label: 'env.checker' }] }, icon: 'lucide:square' },
+                            { id: 'env:ground:gridSize', kind: 'slider', label: 'env.gridSize', control: { bind: 'env.groundGridSize', min: 0.5, max: 5, step: 0.1 }, icon: 'lucide:grid-3x3' },
+                            { id: 'env:ground:lineColor', kind: 'colorSlider', label: 'env.gridLineColor', control: { bind: 'env.groundLineColor' } },
+                            { id: 'env:ground:pattern', kind: 'modeSlider', label: 'env.groundPattern', control: { bind: 'env.groundPattern', options: [{ value: 'checker', label: 'env.checker' }, { value: 'dots', label: 'env.dots' }, { value: 'stripes', label: 'env.stripes' }, { value: 'radial', label: 'env.radial' }] }, icon: 'lucide:grid-3x3', visibleWhen: () => envState.groundDecoStyle === 'checker' },
+                        ],
                     },
-                    renderContent: (cc) => {
-                        addModeSlider(cc, t('env.style'), [
-                            { value: 'grid', label: t('env.grid') },
-                            { value: 'checker', label: t('env.checker') },
-                        ], s.groundDecoStyle !== 'none' ? s.groundDecoStyle : 'grid', (v) => {
-                            setEnvState({ groundDecoStyle: v as 'grid' | 'checker' });
-                        }, 'lucide:square', undefined, { bind: () => envState.groundDecoStyle !== 'none' ? envState.groundDecoStyle : 'grid' });
-                        addSliderRow(cc, t('env.gridSize'), s.groundGridSize, 0.5, 5, 0.1, (v) => setEnvState({ groundGridSize: v }), 'lucide:grid-3x3');
-                        addColorSliderRow(cc, t('env.gridLineColor'), s.groundLineColor, (v) => setEnvState({ groundLineColor: v }), { bind: () => envState.groundLineColor });
-                        if (s.groundDecoStyle === 'checker') {
-                            addModeSlider(cc, t('env.groundPattern'), [
-                                { value: 'checker', label: t('env.checker') },
-                                { value: 'dots', label: t('env.dots') },
-                                { value: 'stripes', label: t('env.stripes') },
-                                { value: 'radial', label: t('env.radial') },
-                            ], s.groundPattern, (v) => {
-                                setEnvState({ groundPattern: v as EnvState['groundPattern'] });
-                            }, 'lucide:grid-3x3', undefined, { bind: () => envState.groundPattern });
-                        }
-                    },
-                });
+                ];
+                renderMenu(decoSchema, c);
 
                 // ===== 地形（schema 驱动）=====
                 const terrainSchema: MenuNode[] = [
