@@ -325,6 +325,24 @@ export interface UIState {
     autoUpdateEnabled?: boolean;
     /** [doc:adr-066] 资源库视图模式：'list' | 'grid' */
     resourceViewMode?: 'list' | 'grid';
+    /** 默认音量 0-1 */
+    volume?: number;
+    /** 音频偏移（秒） */
+    audioOffset?: number;
+    /** BPM 量化开关 */
+    bpmQuantizeEnabled?: boolean;
+    /** 自动加载伴音 */
+    autoLoadCompanionAudio?: boolean;
+    /** SFX 开关 */
+    sfxEnabled?: boolean;
+    /** SFX 音量 0-1 */
+    sfxVolume?: number;
+    /** 脚步声开关 */
+    footstepEnabled?: boolean;
+    /** 脚步声音量 0-1 */
+    footstepVolume?: number;
+    /** 快捷键自定义绑定 */
+    keyBindings?: Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }>;
 }
 
 // [doc:test-strategy] Go↔TS UIState 字段同步哨兵
@@ -345,6 +363,7 @@ export interface EnvState {
     skyRotationSpeed: number;
     skyBrightness: number;
     starsEnabled: boolean;
+    starsTexture: string;
     envIntensity: number;
 
     groundVisible: boolean;

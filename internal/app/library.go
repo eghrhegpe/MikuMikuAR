@@ -26,7 +26,12 @@ func (a *App) SelectDir() (string, error) {
 		}
 		return cfg.ResourceRoot, nil
 	}
-	return dialogs.SelectLibraryDir(a.wailsApp)
+	path, err := dialogs.SelectLibraryDir(a.wailsApp, a.getLastDir("library"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("library", path)
+	return path, nil
 }
 
 // ScanModelDir scans all resource directories and returns merged ModelEntry list.

@@ -56,7 +56,7 @@ export { buildPresetLevel, SCENE_PRESETS } from './env-preset-levels';
 
 // ======== Env Texture Binding Target ========
 
-type EnvTextureBindingTarget = 'ground' | 'particle' | 'sky' | null;
+type EnvTextureBindingTarget = 'ground' | 'particle' | 'sky' | 'stars' | null;
 
 let _envTextureBindingTarget: EnvTextureBindingTarget = null;
 
@@ -312,42 +312,40 @@ function buildParticleSchema(): MenuNode[] {
             id: 'env:particle:texture',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    const fileName = envState.particleCustomTexture
-                        ? (envState.particleCustomTexture.split(/[/\\]/).pop() ??
-                          t('env.notSelected'))
-                        : t('env.notSelected');
-                    slideRow(
-                        inner,
-                        'lucide:image',
-                        t('env.customTexture'),
-                        false,
-                        () => {
-                            setEnvTextureBindingTarget('particle');
-                            const level = stackRegistry.buildLevel!(
-                                getBrowseDir('environment'),
-                                t('env.customTexture'),
-                                (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
-                                getEnvMenu()!
-                            );
-                            getEnvMenu()!.push(level);
-                        },
-                        fileName
-                    );
-                    if (envState.particleCustomTexture) {
-                        const clearRow = document.createElement('div');
-                        clearRow.style.cssText =
-                            'display:flex;justify-content:flex-end;padding:0 14px 4px;';
-                        const clearBtn = document.createElement('button');
-                        clearBtn.className = 'cs-btn cs-btn-sm';
-                        clearBtn.textContent = t('env.clear');
-                        clearBtn.onclick = () => {
-                            setEnvState({ particleCustomTexture: '' });
-                        };
-                        clearRow.appendChild(clearBtn);
-                        inner.appendChild(clearRow);
-                    }
-                });
+                const fileName = envState.particleCustomTexture
+                    ? (envState.particleCustomTexture.split(/[/\\]/).pop() ??
+                      t('env.notSelected'))
+                    : t('env.notSelected');
+                slideRow(
+                    c,
+                    'lucide:image',
+                    t('env.customTexture'),
+                    false,
+                    () => {
+                        setEnvTextureBindingTarget('particle');
+                        const level = stackRegistry.buildLevel!(
+                            getBrowseDir('environment'),
+                            t('env.customTexture'),
+                            (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+                            getEnvMenu()!
+                        );
+                        getEnvMenu()!.push(level);
+                    },
+                    fileName
+                );
+                if (envState.particleCustomTexture) {
+                    const clearRow = document.createElement('div');
+                    clearRow.style.cssText =
+                        'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+                    const clearBtn = document.createElement('button');
+                    clearBtn.className = 'cs-btn cs-btn-sm';
+                    clearBtn.textContent = t('env.clear');
+                    clearBtn.onclick = () => {
+                        setEnvState({ particleCustomTexture: '' });
+                    };
+                    clearRow.appendChild(clearBtn);
+                    c.appendChild(clearRow);
+                }
             },
         },
     ];
@@ -359,7 +357,9 @@ export function buildParticleLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildParticleSchema(), container);
+            cardContainer(container, (inner) => {
+                renderMenu(buildParticleSchema(), inner);
+            });
         },
     };
 }
@@ -394,6 +394,9 @@ function envOnItemClick(row: PopupRow): void {
             break;
         case 'sky':
             setEnvState({ skyTexture: row.model.file_path });
+            break;
+        case 'stars':
+            setEnvState({ starsTexture: row.model.file_path });
             break;
         default:
             break;

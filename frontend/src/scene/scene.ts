@@ -287,7 +287,7 @@ export async function initScene(): Promise<void> {
         if (Math.abs(hit.x) > half || Math.abs(hit.z) > half) {
             return;
         }
-        addRipple(hit, 3, 0.4, 1.5, 2);
+        addRipple(hit, 5, 0.6, 2, 2.5);
     }, PointerEventTypes.POINTERDOWN);
 
     // 7. 脚部调整系统启动（ADR-085）

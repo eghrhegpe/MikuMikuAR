@@ -43,6 +43,7 @@ vi.mock('../core/config', () => ({
         return mockState.mmdRuntime;
     },
     triggerAutoSave: mockState.triggerAutoSave,
+    setUIState: (..._args: unknown[]) => undefined,
 }));
 
 vi.mock('../outfit/audio', () => ({

@@ -60,7 +60,8 @@ import {
 } from '../scene/camera/camera';
 import { syncTimeOfDayFromEnv } from '../scene/env/env-bridge';
 import 'iconify-icon';
-import { registerShortcuts, initShortcutDispatcher } from './shortcut-registry';
+import { registerShortcuts, initShortcutDispatcher, loadKeyBindings } from './shortcut-registry';
+import { SettingsStore } from '@/lib/settings-store';
 
 function _updateStaticHtmlTexts(): void {
     // Update hardcoded HTML text with i18n translations
@@ -796,6 +797,50 @@ async function restoreUIState(): Promise<void> {
     }
     if (s.materialCategoryMap !== undefined) {
         uiState.materialCategoryMap = s.materialCategoryMap;
+    }
+    // 恢复截图设置
+    if (s.screenshotFormat !== undefined) {
+        uiState.screenshotFormat = s.screenshotFormat as UIState['screenshotFormat'];
+    }
+    if (s.screenshotQuality !== undefined) {
+        uiState.screenshotQuality = s.screenshotQuality;
+    }
+    if (s.screenshotDir !== undefined) {
+        uiState.screenshotDir = s.screenshotDir;
+    }
+    // 恢复资源库视图模式
+    if (s.resourceViewMode !== undefined) {
+        uiState.resourceViewMode = s.resourceViewMode as UIState['resourceViewMode'];
+    }
+    // 恢复音频设置到 SettingsStore
+    if (s.volume !== undefined) {
+        SettingsStore.get().set('volume', s.volume);
+    }
+    if (s.audioOffset !== undefined) {
+        SettingsStore.get().set('audioOffset', s.audioOffset);
+    }
+    if (s.bpmQuantizeEnabled !== undefined) {
+        SettingsStore.get().set('bpmQuantizeEnabled', s.bpmQuantizeEnabled);
+    }
+    if (s.autoLoadCompanionAudio !== undefined) {
+        SettingsStore.get().set('autoLoadCompanionAudio', s.autoLoadCompanionAudio);
+    }
+    if (s.sfxEnabled !== undefined) {
+        SettingsStore.get().set('sfxEnabled', s.sfxEnabled);
+    }
+    if (s.sfxVolume !== undefined) {
+        SettingsStore.get().set('sfxVolume', s.sfxVolume);
+    }
+    if (s.footstepEnabled !== undefined) {
+        SettingsStore.get().set('footstepEnabled', s.footstepEnabled);
+    }
+    if (s.footstepVolume !== undefined) {
+        SettingsStore.get().set('footstepVolume', s.footstepVolume);
+    }
+    // 恢复快捷键自定义绑定
+    if (s.keyBindings !== undefined) {
+        loadKeyBindings(s.keyBindings as Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }>);
+        uiState.keyBindings = s.keyBindings;
     }
 }
 

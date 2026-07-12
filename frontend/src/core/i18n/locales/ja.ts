@@ -816,6 +816,7 @@ export const ja: Record<string, string> = {
     'env.skyColorTop': '空の天頂色',
     'env.zenithColor': '天頂色',
     'env.horizonColor': '地平線色',
+    'env.starsTexture': '星空テクスチャ',
     'env.stars': '星空',
     'env.shadowHint': '「シーン」→「ステージライト」で影パラメータを個別に調整できます',
 

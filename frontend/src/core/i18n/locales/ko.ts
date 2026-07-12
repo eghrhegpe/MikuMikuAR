@@ -811,6 +811,7 @@ export const ko: Record<string, string> = {
     'env.skyColorTop': '하늘 상단 색상',
     'env.zenithColor': '천정 색상',
     'env.horizonColor': '수평선 색상',
+    'env.starsTexture': '별 텍스처',
     'env.stars': '별',
     'env.shadowHint': '「장면」→「무대 조명」에서 개별 조명 그림자 매개변수를 조절할 수 있습니다',
 

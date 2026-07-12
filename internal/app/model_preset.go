@@ -26,12 +26,22 @@ func (a *App) LoadModelPreset(path string) (string, error) {
 
 // SelectPresetSaveFile opens a save dialog for model preset files.
 func (a *App) SelectPresetSaveFile() (string, error) {
-	return dialogs.SelectPresetSave(a.wailsApp)
+	path, err := dialogs.SelectPresetSave(a.wailsApp, a.getLastDir("preset"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("preset", filepath.Dir(path))
+	return path, nil
 }
 
 // SelectPresetOpenFile opens a file dialog to pick a model preset file.
 func (a *App) SelectPresetOpenFile() (string, error) {
-	return dialogs.SelectPresetOpen(a.wailsApp)
+	path, err := dialogs.SelectPresetOpen(a.wailsApp, a.getLastDir("preset"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("preset", filepath.Dir(path))
+	return path, nil
 }
 
 // ModelPresetEntry is a listing entry for a model preset in the library.

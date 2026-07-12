@@ -20,10 +20,15 @@ import {
     createWater,
 } from '../scene/env/env-water';
 import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu';
+import { TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
+import { applyEnvPreset } from '../scene/env/env-bridge';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { stackRegistry } from '../core/config';
 import { closeAllOverlays } from '../core/utils';
+
+/** 当前选中的天空预设 key（用于芯片高亮） */
+let _activeSkyPresetKey = 'noon';
 
 export function buildSkyLevel(): PopupLevel {
     return {
@@ -33,6 +38,33 @@ export function buildSkyLevel(): PopupLevel {
         renderCustom: (container) => {
             cardContainer(container, (c) => {
                 const skySchema: MenuNode[] = [
+                    // 时光预设芯片（黎明/正午/夕阳/夜景/阴天/霓虹）
+                    {
+                        id: 'env:sky:presets',
+                        kind: 'custom',
+                        renderCustom: (cc) => {
+                            const chipGroup = document.createElement('div');
+                            chipGroup.className = 'preset-group';
+                            chipGroup.style.paddingBottom = '6px';
+                            for (const [key, p] of Object.entries(TIME_OF_DAY_PRESETS)) {
+                                addPresetChip(
+                                    chipGroup,
+                                    p.label,
+                                    false,
+                                    () => {
+                                        _activeSkyPresetKey = key;
+                                        applyEnvPreset(key);
+                                    },
+                                    {
+                                        onUpdate: (btn) => {
+                                            btn.classList.toggle('active', _activeSkyPresetKey === key);
+                                        },
+                                    }
+                                );
+                            }
+                            cc.appendChild(chipGroup);
+                        },
+                    },
                     {
                         id: 'env:sky:mode',
                         kind: 'modeSlider',
@@ -68,21 +100,7 @@ export function buildSkyLevel(): PopupLevel {
                         control: { bind: 'env.skyColorBot' },
                         visibleWhen: () => envState.skyMode === 'procedural',
                     },
-                    {
-                        id: 'env:sky:stars',
-                        kind: 'toggle',
-                        label: 'env.stars',
-                        control: { bind: 'env.starsEnabled' },
-                        visibleWhen: () => envState.skyMode === 'procedural',
-                    },
-                    {
-                        id: 'env:sky:brightness',
-                        kind: 'slider',
-                        label: 'env.brightness',
-                        control: { bind: 'env.skyBrightness', min: 0.1, max: 5, step: 0.1 },
-                        icon: 'lucide:sun',
-                        visibleWhen: () => envState.skyMode === 'procedural',
-                    },
+
                     {
                         id: 'env:sky:textureSection',
                         kind: 'custom',
@@ -167,6 +185,61 @@ export function buildSkyLevel(): PopupLevel {
                                     set: (v) => (v as number) * 3,
                                 },
                                 icon: 'lucide:sun',
+                            },
+                            {
+                                id: 'env:sky:stars',
+                                kind: 'toggle',
+                                label: 'env.stars',
+                                control: { bind: 'env.starsEnabled' },
+                                visibleWhen: () => envState.skyMode === 'procedural',
+                            },
+                            {
+                                id: 'env:sky:brightness',
+                                kind: 'slider',
+                                label: 'env.brightness',
+                                control: { bind: 'env.skyBrightness', min: 0.1, max: 5, step: 0.1 },
+                                icon: 'lucide:sun',
+                                visibleWhen: () => envState.skyMode === 'procedural',
+                            },
+                            {
+                                id: 'env:sky:starsTexture',
+                                kind: 'custom',
+                                visibleWhen: () => envState.skyMode === 'procedural' && envState.starsEnabled,
+                                renderCustom: (cc) => {
+                                    const fileName = envState.starsTexture
+                                        ? (envState.starsTexture.split(/[/\\]/).pop() ?? t('env.notSelected'))
+                                        : t('env.notSelected');
+                                    slideRow(
+                                        cc,
+                                        'lucide:image',
+                                        t('env.starsTexture'),
+                                        false,
+                                        () => {
+                                            setEnvTextureBindingTarget('stars');
+                                            closeAllOverlays();
+                                            const level = stackRegistry.buildLevel!(
+                                                getBrowseDir('environment'),
+                                                t('env.starsTexture'),
+                                                (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+                                                getEnvMenu()!
+                                            );
+                                            getEnvMenu()!.push(level);
+                                        },
+                                        fileName
+                                    );
+                                    if (envState.starsTexture) {
+                                        const clearRow = document.createElement('div');
+                                        clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+                                        const clearBtn = document.createElement('button');
+                                        clearBtn.className = 'cs-btn cs-btn-sm';
+                                        clearBtn.textContent = t('env.clear');
+                                        clearBtn.onclick = () => {
+                                            setEnvState({ starsTexture: '' });
+                                        };
+                                        clearRow.appendChild(clearBtn);
+                                        cc.appendChild(clearRow);
+                                    }
+                                },
                             },
                         ],
                     },

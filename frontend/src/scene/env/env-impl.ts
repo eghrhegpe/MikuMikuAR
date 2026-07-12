@@ -10,12 +10,13 @@ import {
     BaseTexture,
     DynamicTexture,
     StandardMaterial,
-    GPUParticleSystem,
+    ParticleSystem,
     Observer,
     ShadowGenerator,
     CubeTexture,
     Constants,
     DefaultRenderingPipeline,
+    FresnelParameters,
     Mesh,
     MeshBuilder,
     GroundMesh,
@@ -121,7 +122,7 @@ export {
 export const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
-    particles: { system: GPUParticleSystem | null; followObserver: Observer<Scene> | null };
+    particles: { system: ParticleSystem | null; followObserver: Observer<Scene> | null };
     splash: { observer: Observer<Scene> | null };
     clouds: {
         postProcess: Mesh | null;
@@ -179,7 +180,8 @@ function drawSkyGradient(
     bot: Color3,
     brightness: number,
     sunAngle: number,
-    starsEnabled: boolean
+    starsEnabled: boolean,
+    starsTextureImg?: HTMLImageElement | null
 ): void {
     const W = SKY_TEX_SIZE,
         H = SKY_TEX_SIZE;
@@ -199,26 +201,35 @@ function drawSkyGradient(
     if (starsEnabled) {
         const starAlpha = sunAngle > 10 ? 0 : sunAngle < -5 ? 1 : (10 - sunAngle) / 15;
         if (starAlpha > 0.01) {
-            const starSeed = 12345;
-            const hash = (i: number) => {
-                let h = (i * 2654435761 + starSeed) | 0;
-                h ^= h >>> 13;
-                return (h & 0x7fffffff) / 0x7fffffff;
-            };
-            const starCount = Math.round(200 + starAlpha * 100);
-            for (let i = 0; i < starCount; i++) {
-                const sx = hash(i * 3) * W;
-                const sy = hash(i * 3 + 1) * H * 0.55;
-                const sr = 0.5 + hash(i * 3 + 2) * 2.0;
-                const sa = starAlpha * (0.3 + hash(i + 1000) * 0.7);
-                const twinkle = 0.7 + hash(i + 2000) * 0.3;
-                const r = (220 + hash(i + 3000) * 35) | 0;
-                const g = (210 + hash(i + 4000) * 45) | 0;
-                const b = (200 + hash(i + 5000) * 55) | 0;
-                ctx.fillStyle = `rgba(${r},${g},${b},${(sa * twinkle).toFixed(2)})`;
-                ctx.beginPath();
-                ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-                ctx.fill();
+            if (starsTextureImg) {
+                // 纹理合成：拉伸贴图铺满画布，用 starAlpha 控制整体透明度
+                ctx.save();
+                ctx.globalAlpha = starAlpha;
+                ctx.drawImage(starsTextureImg, 0, 0, W, H);
+                ctx.restore();
+            } else {
+                // 程序化星星（回退）
+                const starSeed = 12345;
+                const hash = (i: number) => {
+                    let h = (i * 2654435761 + starSeed) | 0;
+                    h ^= h >>> 13;
+                    return (h & 0x7fffffff) / 0x7fffffff;
+                };
+                const starCount = Math.round(200 + starAlpha * 100);
+                for (let i = 0; i < starCount; i++) {
+                    const sx = hash(i * 3) * W;
+                    const sy = hash(i * 3 + 1) * H * 0.55;
+                    const sr = 0.5 + hash(i * 3 + 2) * 2.0;
+                    const sa = starAlpha * (0.3 + hash(i + 1000) * 0.7);
+                    const twinkle = 0.7 + hash(i + 2000) * 0.3;
+                    const r = (220 + hash(i + 3000) * 35) | 0;
+                    const g = (210 + hash(i + 4000) * 45) | 0;
+                    const b = (200 + hash(i + 5000) * 55) | 0;
+                    ctx.fillStyle = `rgba(${r},${g},${b},${(sa * twinkle).toFixed(2)})`;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
         }
     }
@@ -241,6 +252,13 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
         _envSys.sky.skyDynamicTex = tex;
     }
     const ctx = tex.getContext() as CanvasRenderingContext2D;
+
+    // 检查星空贴图是否已缓存
+    let starsImg: HTMLImageElement | null = null;
+    if (state.starsTexture && _texStarsImg && _texStarsImgUrl === state.starsTexture && _texStarsImg.complete) {
+        starsImg = _texStarsImg;
+    }
+
     drawSkyGradient(
         ctx,
         new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
@@ -248,9 +266,38 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
         new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
         state.skyBrightness,
         state.sunAngle,
-        state.starsEnabled
+        state.starsEnabled,
+        starsImg
     );
     tex.update();
+
+    // 异步加载星空贴图（若未缓存），加载完成后重绘
+    if (state.starsTexture && !starsImg) {
+        const url = resolveStaticAsset(state.starsTexture);
+        _ensureStarsTextureImage(url, (img) => {
+            const cur = _envSys.sky.skyDynamicTex;
+            if (!cur) {
+                return;
+            }
+            const curCtx = cur.getContext() as CanvasRenderingContext2D | null;
+            if (!curCtx) {
+                return;
+            }
+            // 重绘渐变 + 星空贴图
+            drawSkyGradient(
+                curCtx,
+                new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
+                new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
+                new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
+                state.skyBrightness,
+                state.sunAngle,
+                state.starsEnabled,
+                img
+            );
+            cur.update();
+        });
+    }
+
     return tex;
 }
 
@@ -278,7 +325,8 @@ function createProceduralSky(state: EnvState): void {
     sphere.material = mat;
     _envSys.sky.skyMesh = sphere;
     scene.clearColor = new Color4(0, 0, 0, 1);
-    _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.starsEnabled}`;
+    const starsPhase = state.starsEnabled ? (state.sunAngle > 10 ? 'h' : 'l') : '';
+    _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
 }
 
 function loadSkyCube(path: string, rotationY: number, intensity: number): void {
@@ -362,9 +410,11 @@ export function applySky(state: EnvState): void {
             const mat = mesh.material as StandardMaterial;
 
             // Early-out: skip rebuild when gradient inputs haven't changed (Fix J)
-            // sunAngle 不参与 key：它只影响星星 alpha，time-of-day 流转时 sunAngle 每 0.4° 变化
-            // 若纳入 key 会导致纹理缓存持续失效 → 每帧 dispose+重建。星星 alpha 退化由下次颜色变化时重建补偿。
-            const skyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.starsEnabled}`;
+            // sunAngle 不直接参与 key：每 0.4° 变化若纳 key 会每帧重建。
+            // 但星星可见性依赖 sunAngle ≤ 10°，不加的话 sunAngle 从 >10° 降到 ≤10° 时
+            // 纹理不会重建，星星永远不可见。故加一个阈值标记，仅在跨过 10° 边界时触发重建。
+            const starsPhase = state.starsEnabled ? (state.sunAngle > 10 ? 'h' : 'l') : '';
+            const skyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
             if (skyKey === _lastProceduralSkyKey && _envSys.sky.skyDynamicTex) {
                 return;
             }
@@ -425,7 +475,9 @@ const groundReflection = new PlanarReflection({
         const mesh = _envSys.ground.mesh;
         if (mesh) {
             const n = Vector3.TransformNormal(Vector3.Up(), mesh.getWorldMatrix()).normalize();
-            return Plane.FromPositionAndNormal(mesh.getAbsolutePosition(), n);
+            const plane = Plane.FromPositionAndNormal(mesh.getAbsolutePosition(), n);
+            console.log(`[groundReflection] mirrorPlane normal=(${plane.normal.x.toFixed(2)}, ${plane.normal.y.toFixed(2)}, ${plane.normal.z.toFixed(2)}) d=${plane.d.toFixed(2)}`);
+            return plane;
         }
         return new Plane(0, -1, 0, 0);
     },
@@ -437,7 +489,19 @@ const groundReflection = new PlanarReflection({
     mount: (rt) => {
         const mat = _envSys.ground.mesh?.material as StandardMaterial | null;
         if (mat) {
-            mat.reflectionTexture = rt as MirrorTexture | null;
+            if (rt) {
+                // 挂载反射时：禁用菲涅尔使任意角度可见 + 提高 specular 让反射通道激活
+                mat.reflectionTexture = rt as MirrorTexture | null;
+                mat.reflectionFresnelParameters = new FresnelParameters();
+                mat.reflectionFresnelParameters.isEnabled = false;
+                mat.specularColor = new Color3(0.5, 0.5, 0.5);
+            } else {
+                // 卸载反射时：清空引用，恢复 specular 默认
+                mat.reflectionTexture = null;
+                mat.reflectionFresnelParameters = new FresnelParameters();
+                mat.reflectionFresnelParameters.isEnabled = true;
+                mat.specularColor = new Color3(0.2, 0.2, 0.2);
+            }
         }
     },
     setBlend: (b) => {
@@ -565,6 +629,11 @@ let _texGroundImgUrl: string | null = null;
 /** 异步加载代际守卫：贴图切换后旧 Image.onload 不再写入新状态 */
 let _texGroundGeneration = 0;
 
+/** 星空贴图异步加载缓存（与地面独立，避免 URL 冲突） */
+let _texStarsImg: HTMLImageElement | null = null;
+let _texStarsImgUrl: string | null = null;
+let _texStarsGeneration = 0;
+
 /**
  * 在 DynamicTexture 的 2D 上下文上合成「外部贴图 + 装饰网格线」。
  * - 底层：drawImage 拉伸绘制外部贴图（与原 new Texture(url) 的 GPU 采样等价）
@@ -647,6 +716,34 @@ function _ensureTextureGroundImage(url: string, onReady: (img: HTMLImageElement)
             return;
         }
         console.warn('[ground] texture load failed:', url);
+    };
+    img.src = url;
+}
+
+/** 异步加载星空贴图（与地面独立缓存，带 generation 守卫）。 */
+function _ensureStarsTextureImage(url: string, onReady: (img: HTMLImageElement) => void): void {
+    if (_texStarsImg && _texStarsImgUrl === url && _texStarsImg.complete) {
+        onReady(_texStarsImg);
+        return;
+    }
+    if (_texStarsImgUrl !== url) {
+        _texStarsImg = null;
+        _texStarsImgUrl = url;
+    }
+    const generation = ++_texStarsGeneration;
+    const img = new Image();
+    img.onload = () => {
+        if (generation !== _texStarsGeneration) {
+            return;
+        }
+        _texStarsImg = img;
+        onReady(img);
+    };
+    img.onerror = () => {
+        if (generation !== _texStarsGeneration) {
+            return;
+        }
+        console.warn('[stars] texture load failed:', url);
     };
     img.src = url;
 }
@@ -1227,6 +1324,10 @@ export function disposeEnvUpdateObserver(): void {
     _texGroundImg = null;
     _texGroundImgUrl = null;
     _texGroundGeneration = 0;
+    // 清理星空贴图缓存
+    _texStarsImg = null;
+    _texStarsImgUrl = null;
+    _texStarsGeneration = 0;
     resetUnderwaterState(scene, pipeline);
 }
 

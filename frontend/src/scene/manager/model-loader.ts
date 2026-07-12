@@ -20,6 +20,8 @@ import {
     triggerAutoSave,
     formatError,
     uiState,
+    thumbnailCache,
+    setThumbnailCache,
     type RuntimeModel,
 } from '@/core/config';
 import { createDefaultFeetState } from '@/core/state';
@@ -115,9 +117,18 @@ export async function captureThumbnail(filePath: string): Promise<void> {
             await new Promise((r) => requestAnimationFrame(r));
         }
 
+        // 等待两帧确保渲染完成
+        await new Promise((r) => requestAnimationFrame(r));
+        await new Promise((r) => requestAnimationFrame(r));
+
         const base64 = dom.canvas.toDataURL('image/png', 0.8);
         const raw = base64.replace(/^data:image\/png;base64,/, '');
         await SaveThumbnail(filePath, raw);
+
+        // [fix] 截图成功后更新前端缓存，使网格视图立即显示缩略图
+        const updated = new Map(thumbnailCache);
+        updated.set(filePath, raw);
+        setThumbnailCache(updated);
     } catch (err) {
         console.warn('captureThumbnail:', err);
     }

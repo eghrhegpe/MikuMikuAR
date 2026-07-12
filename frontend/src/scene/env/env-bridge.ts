@@ -53,6 +53,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         'skyRotationSpeed',
         'skyBrightness',
         'starsEnabled',
+        'starsTexture',
         'envIntensity',
         'sunAngle',
         'azimuth',

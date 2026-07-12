@@ -8,6 +8,7 @@
 // ctx.state === 'suspended' 并尝试 resume；若仍 suspended 则静默跳过（不报错、不抛异常）。
 
 import { SettingsStore } from '@/lib/settings-store';
+import { setUIState } from '@/core/state';
 
 let _ctx: AudioContext | null = null;
 let _master: GainNode | null = null;
@@ -38,6 +39,7 @@ export function getSfxMasterGain(): GainNode {
 
 export function setSfxVolume(v: number): void {
     SettingsStore.get().set('sfxVolume', Math.max(0, Math.min(1, v)));
+    setUIState({ sfxVolume: Math.max(0, Math.min(1, v)) });
 }
 
 export function getSfxVolume(): number {
@@ -46,6 +48,7 @@ export function getSfxVolume(): number {
 
 export function setSfxEnabled(on: boolean): void {
     SettingsStore.get().set('sfxEnabled', on);
+    setUIState({ sfxEnabled: on });
 }
 
 export function getSfxEnabled(): boolean {
@@ -54,6 +57,7 @@ export function getSfxEnabled(): boolean {
 
 export function setFootstepEnabled(on: boolean): void {
     SettingsStore.get().set('footstepEnabled', on);
+    setUIState({ footstepEnabled: on });
 }
 
 export function getFootstepEnabled(): boolean {
@@ -62,6 +66,7 @@ export function getFootstepEnabled(): boolean {
 
 export function setFootstepVolume(v: number): void {
     SettingsStore.get().set('footstepVolume', Math.max(0, Math.min(1, v)));
+    setUIState({ footstepVolume: Math.max(0, Math.min(1, v)) });
 }
 
 export function getFootstepVolume(): number {

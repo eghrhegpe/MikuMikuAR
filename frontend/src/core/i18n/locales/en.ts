@@ -883,6 +883,7 @@ export const en: Record<string, string> = {
     'env.skyColorTop': 'Sky Top Color',
     'env.zenithColor': 'Zenith Color',
     'env.horizonColor': 'Horizon Color',
+    'env.starsTexture': 'Stars Texture',
     'env.stars': 'Stars',
     'env.shadowHint': 'Go to Scene → Stage Lights to adjust shadow parameters individually',
 

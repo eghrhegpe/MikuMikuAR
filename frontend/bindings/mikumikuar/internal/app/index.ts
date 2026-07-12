@@ -15,6 +15,7 @@ export type {
     EnvState,
     ExternalPath,
     ExtractResult,
+    KeyBindingOverride,
     ModelEntry,
     ModelMeta,
     ModelPresetEntry,

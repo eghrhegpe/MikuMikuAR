@@ -1,6 +1,6 @@
 // settings-shortcuts.ts — 快捷键设置子菜单
 
-import { setStatus, uiState, cardContainer } from '../core/config';
+import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import {
     getAllShortcuts,
@@ -158,8 +158,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                             e.altKey
                                         );
                                         if (!('conflictId' in result)) {
-                                            (uiState as Record<string, unknown>).keyBindings =
-                                                exportKeyBindings();
+                                            setUIState({ keyBindings: exportKeyBindings() });
                                             getSettingsMenu()?.reRender();
                                         } else {
                                             const conflictId = result.conflictId;
@@ -178,9 +177,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                                         e.shiftKey,
                                                         e.altKey
                                                     );
-                                                    (
-                                                        uiState as Record<string, unknown>
-                                                    ).keyBindings = exportKeyBindings();
+                                                    setUIState({ keyBindings: exportKeyBindings() });
                                                 }
                                                 getSettingsMenu()?.reRender();
                                             });
@@ -202,7 +199,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                 cardContainer(c, (inner) => {
                     slideRow(inner, 'lucide:rotate-ccw', t('shortcuts.resetAll'), false, () => {
                         resetAllKeyBindings();
-                        (uiState as Record<string, unknown>).keyBindings = exportKeyBindings();
+                        setUIState({ keyBindings: exportKeyBindings() });
                         getSettingsMenu()?.reRender();
                         setStatus(t('settings.shortcutsReset'), true);
                     });

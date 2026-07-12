@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	stdruntime "runtime"
 	"sync"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"mikumikuar/internal/dialogs"
+	"mikumikuar/internal/util"
 )
 
 // isAndroid returns true when running on Android (GOOS=android).
@@ -193,38 +195,73 @@ func shutdownServers(ctx context.Context, servers []*http.Server) error {
 
 // SelectPMXFile opens a file dialog to select a PMX file
 func (a *App) SelectPMXFile() (string, error) {
-	return dialogs.SelectPMX(a.wailsApp)
+	path, err := dialogs.SelectPMX(a.wailsApp, a.getLastDir("model"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("model", filepath.Dir(path))
+	return path, nil
 }
 
 // SelectImportFile opens a file dialog to select PMX / ZIP / VMD files.
 // Used by the "导入文件" menu entry in library-core.ts.
 func (a *App) SelectImportFile() (string, error) {
-	return dialogs.SelectImport(a.wailsApp)
+	path, err := dialogs.SelectImport(a.wailsApp, a.getLastDir("import"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("import", filepath.Dir(path))
+	return path, nil
 }
 
 // SelectVMDMotion opens a file dialog to select a VMD motion file
 func (a *App) SelectVMDMotion() (string, error) {
-	return dialogs.SelectVMD(a.wailsApp)
+	path, err := dialogs.SelectVMD(a.wailsApp, a.getLastDir("motion"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("motion", filepath.Dir(path))
+	return path, nil
 }
 
 // SelectVPDPose opens a file dialog to select a VPD pose file
 func (a *App) SelectVPDPose() (string, error) {
-	return dialogs.SelectVPD(a.wailsApp)
+	path, err := dialogs.SelectVPD(a.wailsApp, a.getLastDir("pose"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("pose", filepath.Dir(path))
+	return path, nil
 }
 
 // SelectAudioFile opens a file dialog to select an audio file
 func (a *App) SelectAudioFile() (string, error) {
-	return dialogs.SelectAudio(a.wailsApp)
+	path, err := dialogs.SelectAudio(a.wailsApp, a.getLastDir("audio"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("audio", filepath.Dir(path))
+	return path, nil
 }
 
 // SelectEnvTextureFile opens a file dialog to select an environment/skybox texture.
 func (a *App) SelectEnvTextureFile() (string, error) {
-	return dialogs.SelectEnvTexture(a.wailsApp)
+	path, err := dialogs.SelectEnvTexture(a.wailsApp, a.getLastDir("environment"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("environment", filepath.Dir(path))
+	return path, nil
 }
 
 // SelectExeFile opens a file dialog to select an executable file.
 func (a *App) SelectExeFile() (string, error) {
-	return dialogs.SelectExe(a.wailsApp)
+	path, err := dialogs.SelectExe(a.wailsApp, a.getLastDir("exe"))
+	if err != nil || path == "" {
+		return path, err
+	}
+	a.setLastDir("exe", filepath.Dir(path))
+	return path, nil
 }
 
 // ======== Model Library Types ========
@@ -306,7 +343,28 @@ type UIState struct {
 	AutoScaleModel        bool              `json:"autoScaleModel,omitempty"`        // 新加载模型自动缩放
 	AutoCenterModel       bool              `json:"autoCenterModel,omitempty"`       // 新加载模型自动居中取景（相机对准模型）
 	MaterialCategoryMap   map[string]string `json:"materialCategoryMap,omitempty"`   // 材质分类映射
-	ResourceViewMode      string            `json:"resourceViewMode,omitempty"`      // [doc:adr-066] 资源库视图模式："list"|"grid"
+	ResourceViewMode      string                       `json:"resourceViewMode,omitempty"`      // [doc:adr-066] 资源库视图模式："list"|"grid"
+
+	// --- 音频设置（持久化，避免重启后重置） ---
+	Volume                 float64                      `json:"volume,omitempty"`                 // 默认音量 0-1
+	AudioOffset            float64                      `json:"audioOffset,omitempty"`            // 音频偏移（秒）
+	BpmQuantizeEnabled     bool                         `json:"bpmQuantizeEnabled,omitempty"`     // BPM 量化开关
+	AutoLoadCompanionAudio bool                         `json:"autoLoadCompanionAudio,omitempty"` // 自动加载伴音
+	SfxEnabled             bool                         `json:"sfxEnabled,omitempty"`             // SFX 开关
+	SfxVolume              float64                      `json:"sfxVolume,omitempty"`              // SFX 音量 0-1
+	FootstepEnabled        bool                         `json:"footstepEnabled,omitempty"`        // 脚步声开关
+	FootstepVolume         float64                      `json:"footstepVolume,omitempty"`         // 脚步声音量 0-1
+
+	// --- 快捷键自定义绑定 ---
+	KeyBindings map[string]KeyBindingOverride `json:"keyBindings,omitempty"` // 自定义快捷键覆盖
+}
+
+// KeyBindingOverride stores a single custom key binding override.
+type KeyBindingOverride struct {
+	Key   string `json:"key"`
+	Ctrl  bool   `json:"ctrl,omitempty"`
+	Shift bool   `json:"shift,omitempty"`
+	Alt   bool   `json:"alt,omitempty"`
 }
 
 // OverridePaths allows per-category path overrides.
@@ -345,6 +403,7 @@ type Config struct {
 	DanceSets                map[string]DanceSet `json:"dance_sets"`                           // 舞蹈套装，key = 套装 ID
 	RecentModels             []string            `json:"recent_models"`                        // libraryRef 数组，最近打开的模型（最多20条）
 	Env                      *EnvState           `json:"env,omitempty"`                        // 环境状态（天空/地面/粒子等），nil=使用前端默认
+	LastDirs                 map[string]string   `json:"last_dirs,omitempty"`                  // 对话框最后目录记忆，优先相对路径（./前缀），详见 ADR-090
 }
 
 // EnvState stores the full environment configuration (sky, ground, particles, fog, etc.).
@@ -573,6 +632,79 @@ func (a *App) AddRecentModel(libraryRef string) error {
 // DefaultResourceRoot returns the default resource root path for the current platform.
 func DefaultResourceRoot() string {
 	return platformPathMgr.ResourceRoot()
+}
+
+// getLastDir reads the remembered directory for a dialog category.
+// Relative paths (prefixed with "./") are resolved against ResourceRoot for portability.
+func (a *App) getLastDir(cat string) string {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg == nil || cfg.LastDirs == nil {
+		return ""
+	}
+	path := cfg.LastDirs[cat]
+	if path == "" {
+		return ""
+	}
+
+	// Relative path: ./PMX/subfolder → ResourceRoot/PMX/subfolder
+	if strings.HasPrefix(path, "./") {
+		root := cfg.ResourceRoot
+		if root == "" {
+			root = DefaultResourceRoot()
+		}
+		return filepath.Join(root, path[2:])
+	}
+
+	// Absolute path: used for external directories outside ResourceRoot
+	return path
+}
+
+// setLastDir persists the directory for a dialog category.
+// Paths under ResourceRoot are stored as relative ("./...") for cross-platform use;
+// paths outside ResourceRoot are stored as absolute (desktop only).
+func (a *App) setLastDir(cat, dir string) {
+	_ = a.updateConfig(func(cfg *Config) {
+		if cfg.LastDirs == nil {
+			cfg.LastDirs = map[string]string{}
+		}
+
+		root := cfg.ResourceRoot
+		if root == "" {
+			root = DefaultResourceRoot()
+		}
+
+		// Try to convert to relative path under ResourceRoot
+		relPath, err := filepath.Rel(root, dir)
+		if err == nil && !strings.HasPrefix(relPath, "..") {
+			cfg.LastDirs[cat] = "./" + filepath.ToSlash(relPath)
+		} else {
+			// Outside ResourceRoot — store absolute path
+			cfg.LastDirs[cat] = filepath.ToSlash(dir)
+		}
+	}, false) // rescan=false: directory memory doesn't trigger model rescan
+}
+
+// GetLastBrowseDir returns the remembered browse directory for a resource category.
+// Used by the frontend resource library browser to resume from the last visited subdirectory.
+// Relative paths (./...) are resolved against ResourceRoot; absolute paths returned as-is.
+func (a *App) GetLastBrowseDir(category string) (string, error) {
+	return util.SafeCall(func() (string, error) {
+		dir := a.getLastDir("browse:" + category)
+		if dir == "" {
+			return "", nil
+		}
+		return dir, nil
+	})
+}
+
+// SetLastBrowseDir persists the current browse directory for a resource category.
+// Paths under ResourceRoot are stored as relative (./...) for cross-platform portability;
+// paths outside ResourceRoot are stored as absolute (desktop only).
+func (a *App) SetLastBrowseDir(category, dir string) error {
+	return util.SafeCallVoid(func() error {
+		a.setLastDir("browse:" + category, dir)
+		return nil
+	})
 }
 
 // ensureResourceDirs creates the default subdirectories under ResourceRoot if they don't exist.

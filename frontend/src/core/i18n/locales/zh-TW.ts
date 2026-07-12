@@ -802,6 +802,7 @@ export const zhTW: Record<string, string> = {
     'env.skyColorTop': '天空頂部顏色',
     'env.zenithColor': '天頂顏色',
     'env.horizonColor': '地平線顏色',
+    'env.starsTexture': '星空貼圖',
     'env.stars': '星空',
     'env.shadowHint': '在「場景」→「舞台燈光」中可逐個調節燈光陰影參數',
     'env.skyTextureHint': '天空立方圖，同時作為場景反射光源（支援 .hdr / .dds / .exr）',

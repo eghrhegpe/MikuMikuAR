@@ -127,8 +127,9 @@ function _renderThemeColorInput(
     const currentAccent =
         getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4a6cf7';
 
-    container.className = 'card-container accent-input-card';
-    container.style.cssText = 'display:flex;gap:6px;padding:8px 14px;align-items:center;';
+    const card = document.createElement('div');
+    card.className = 'card-container accent-input-card';
+    card.style.cssText = 'display:flex;gap:6px;padding:8px 14px;align-items:center;';
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = '#RRGGBB';
@@ -150,8 +151,9 @@ function _renderThemeColorInput(
             setStatus(t('settings.invalidColorFormat'), false);
         }
     });
-    container.appendChild(input);
-    container.appendChild(applyBtn);
+    card.appendChild(input);
+    card.appendChild(applyBtn);
+    container.appendChild(card);
     getCurrentRenderingMenu()?.registerControl(() => {
         const accent =
             getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
