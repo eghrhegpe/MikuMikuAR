@@ -29,7 +29,9 @@ function buildBoneOverrideSchema(): MenuNode[] {
             {
                 id: 'override:empty',
                 kind: 'custom',
-                renderCustom: (c) => { addEmptyRow(c, t('motion.boneOverride.noModel')); },
+                renderCustom: (c) => {
+                    addEmptyRow(c, t('motion.boneOverride.noModel'));
+                },
             },
         ];
     }
@@ -40,7 +42,9 @@ function buildBoneOverrideSchema(): MenuNode[] {
             {
                 id: 'override:empty',
                 kind: 'custom',
-                renderCustom: (c) => { addEmptyRow(c, t('motion.boneOverride.noModel')); },
+                renderCustom: (c) => {
+                    addEmptyRow(c, t('motion.boneOverride.noModel'));
+                },
             },
         ];
     }
@@ -51,7 +55,9 @@ function buildBoneOverrideSchema(): MenuNode[] {
             {
                 id: 'override:empty',
                 kind: 'custom',
-                renderCustom: (c) => { addEmptyRow(c, t('motion.boneOverride.noBones')); },
+                renderCustom: (c) => {
+                    addEmptyRow(c, t('motion.boneOverride.noBones'));
+                },
             },
         ];
     }
@@ -113,13 +119,16 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         }
 
                         const pitch = parseFloat(
-                            (pitchSlider.querySelector('input[type="range"]') as HTMLInputElement).value
+                            (pitchSlider.querySelector('input[type="range"]') as HTMLInputElement)
+                                .value
                         );
                         const yaw = parseFloat(
-                            (yawSlider.querySelector('input[type="range"]') as HTMLInputElement).value
+                            (yawSlider.querySelector('input[type="range"]') as HTMLInputElement)
+                                .value
                         );
                         const roll = parseFloat(
-                            (rollSlider.querySelector('input[type="range"]') as HTMLInputElement).value
+                            (rollSlider.querySelector('input[type="range"]') as HTMLInputElement)
+                                .value
                         );
                         const weight = parseFloat(
                             (weightSlider.querySelector('input[type="range"]') as HTMLInputElement)

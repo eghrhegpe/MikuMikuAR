@@ -19,7 +19,7 @@ function createOpenBottomCylinder(
     radius: number,
     height: number,
     radialSegs: number,
-    heightSegs: number,
+    heightSegs: number
 ): MeshData {
     const positions: number[] = [];
     const indices: number[] = [];
@@ -37,9 +37,9 @@ function createOpenBottomCylinder(
     for (let r = 0; r < heightSegs; r++) {
         for (let a = 0; a < radialSegs; a++) {
             const v0 = r * radialSegs + a;
-            const v1 = r * radialSegs + (a + 1) % radialSegs;
+            const v1 = r * radialSegs + ((a + 1) % radialSegs);
             const v2 = (r + 1) * radialSegs + a;
-            const v3 = (r + 1) * radialSegs + (a + 1) % radialSegs;
+            const v3 = (r + 1) * radialSegs + ((a + 1) % radialSegs);
             indices.push(v0, v1, v2);
             indices.push(v1, v3, v2);
         }
@@ -47,7 +47,7 @@ function createOpenBottomCylinder(
     const topRingStart = heightSegs * radialSegs;
     for (let a = 0; a < radialSegs; a++) {
         const v0 = topRingStart + a;
-        const v1 = topRingStart + (a + 1) % radialSegs;
+        const v1 = topRingStart + ((a + 1) % radialSegs);
         indices.push(centerIdx, v1, v0);
     }
 
@@ -55,7 +55,8 @@ function createOpenBottomCylinder(
 }
 
 /** 创建全封闭球体（合并极点，无 boundary edges，用于 fallback 测试） */
-function createSphere(radius: number, segs: number): MeshData {    const positions: number[] = [];
+function createSphere(radius: number, segs: number): MeshData {
+    const positions: number[] = [];
     const indices: number[] = [];
 
     // 北极顶点
@@ -70,7 +71,7 @@ function createSphere(radius: number, segs: number): MeshData {    const positio
             positions.push(
                 radius * Math.sin(theta) * Math.cos(phi),
                 radius * Math.cos(theta),
-                radius * Math.sin(theta) * Math.sin(phi),
+                radius * Math.sin(theta) * Math.sin(phi)
             );
         }
     }
@@ -82,7 +83,7 @@ function createSphere(radius: number, segs: number): MeshData {    const positio
     // 北极 fan
     for (let lon = 0; lon < segs; lon++) {
         const v0 = 1 + lon;
-        const v1 = 1 + (lon + 1) % segs;
+        const v1 = 1 + ((lon + 1) % segs);
         indices.push(northPole, v1, v0);
     }
 
@@ -90,9 +91,9 @@ function createSphere(radius: number, segs: number): MeshData {    const positio
     for (let lat = 0; lat < segs - 2; lat++) {
         for (let lon = 0; lon < segs; lon++) {
             const v0 = 1 + lat * segs + lon;
-            const v1 = 1 + lat * segs + (lon + 1) % segs;
+            const v1 = 1 + lat * segs + ((lon + 1) % segs);
             const v2 = 1 + (lat + 1) * segs + lon;
-            const v3 = 1 + (lat + 1) * segs + (lon + 1) % segs;
+            const v3 = 1 + (lat + 1) * segs + ((lon + 1) % segs);
             indices.push(v0, v1, v2);
             indices.push(v1, v3, v2);
         }
@@ -102,7 +103,7 @@ function createSphere(radius: number, segs: number): MeshData {    const positio
     const lastRingStart = 1 + (segs - 2) * segs;
     for (let lon = 0; lon < segs; lon++) {
         const v0 = lastRingStart + lon;
-        const v1 = lastRingStart + (lon + 1) % segs;
+        const v1 = lastRingStart + ((lon + 1) % segs);
         indices.push(southPole, v0, v1);
     }
 
@@ -118,7 +119,7 @@ function createPantsMesh(
     height: number,
     radialSegs: number,
     heightSegs: number,
-    legGap: number,
+    legGap: number
 ): MeshData {
     const left = createOpenBottomCylinder(radius, height, radialSegs, heightSegs);
     const right = createOpenBottomCylinder(radius, height, radialSegs, heightSegs);
@@ -213,8 +214,9 @@ describe('skirt-analyzer — 基础功能', () => {
 
         for (const chain of result.chains) {
             for (let i = 1; i < chain.segments.length; i++) {
-                expect(chain.segments[i].restPosition[1])
-                    .toBeGreaterThanOrEqual(chain.segments[i - 1].restPosition[1]);
+                expect(chain.segments[i].restPosition[1]).toBeGreaterThanOrEqual(
+                    chain.segments[i - 1].restPosition[1]
+                );
             }
         }
     });
@@ -343,8 +345,14 @@ describe('skirt-analyzer — 退化 & 边界情况', () => {
 describe('skirt-analyzer — 参数边界', () => {
     it('chains 参数被 clamp 到 [4, 32]', () => {
         const mesh = createOpenBottomCylinder(1.0, 2.0, 24, 8);
-        const result1 = analyzeSkirt(mesh.positions, mesh.indices, { chains: 1, segmentsPerChain: 4 });
-        const result2 = analyzeSkirt(mesh.positions, mesh.indices, { chains: 100, segmentsPerChain: 4 });
+        const result1 = analyzeSkirt(mesh.positions, mesh.indices, {
+            chains: 1,
+            segmentsPerChain: 4,
+        });
+        const result2 = analyzeSkirt(mesh.positions, mesh.indices, {
+            chains: 100,
+            segmentsPerChain: 4,
+        });
 
         // chains=1 → clamped to 4
         expect(result1.chains.length).toBe(4);
@@ -421,9 +429,12 @@ describe('skirt-analyzer — 角度分链正确性', () => {
         // 每条链的骨节 rest 位置应有不同的角度
         const chainAngles: number[] = [];
         for (const chain of result.chains) {
-            if (chain.segments.length === 0) continue;
+            if (chain.segments.length === 0) {
+                continue;
+            }
             // 用所有骨节的平均角度
-            let sx = 0, sz = 0;
+            let sx = 0,
+                sz = 0;
             for (const seg of chain.segments) {
                 sx += seg.restPosition[0];
                 sz += seg.restPosition[2];

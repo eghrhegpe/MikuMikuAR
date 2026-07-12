@@ -447,7 +447,9 @@ const groundReflection = new PlanarReflection({
         }
     },
 });
-registerReflectionSurface('ground', groundReflection, () => groundReflection.update(envState, getScene()));
+registerReflectionSurface('ground', groundReflection, () =>
+    groundReflection.update(envState, getScene())
+);
 
 /**
  * 统一纹理生成器：按层绘制 canvas 并返回 Texture。
@@ -505,7 +507,13 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
                     for (let y = 0; y < s; y += tileSize) {
                         for (let x = 0; x < s; x += tileSize) {
                             ctx.beginPath();
-                            ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
+                            ctx.arc(
+                                x + tileSize / 2,
+                                y + tileSize / 2,
+                                tileSize / 3,
+                                0,
+                                Math.PI * 2
+                            );
                             ctx.fill();
                         }
                     }
@@ -572,7 +580,9 @@ function _drawTextureGroundCanvas(
     ctx.clearRect(0, 0, size, size);
     ctx.drawImage(img, 0, 0, size, size);
 
-    if (state.groundDecoStyle === 'none') return;
+    if (state.groundDecoStyle === 'none') {
+        return;
+    }
 
     const r = Math.round(state.groundLineColor[0] * 255);
     const g = Math.round(state.groundLineColor[1] * 255);
@@ -584,10 +594,16 @@ function _drawTextureGroundCanvas(
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
         for (let x = tileSize; x < size; x += tileSize) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, size);
+            ctx.stroke();
         }
         for (let y = tileSize; y < size; y += tileSize) {
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(size, y);
+            ctx.stroke();
         }
     } else if (state.groundDecoStyle === 'checker') {
         // 偶数格 lineColor 覆盖，奇数格保留贴图（与旧 overlay 语义一致）
@@ -608,10 +624,7 @@ function _drawTextureGroundCanvas(
  * - URL 变化或未加载：异步加载，onload 后调用 onReady
  * generation 守卫：URL 变化时递增，旧 onload 检测到代际不匹配则丢弃。
  */
-function _ensureTextureGroundImage(
-    url: string,
-    onReady: (img: HTMLImageElement) => void
-): void {
+function _ensureTextureGroundImage(url: string, onReady: (img: HTMLImageElement) => void): void {
     if (_texGroundImg && _texGroundImgUrl === url && _texGroundImg.complete) {
         onReady(_texGroundImg);
         return;
@@ -623,12 +636,16 @@ function _ensureTextureGroundImage(
     const generation = ++_texGroundGeneration;
     const img = new Image();
     img.onload = () => {
-        if (generation !== _texGroundGeneration) return; // 已被新加载覆盖
+        if (generation !== _texGroundGeneration) {
+            return;
+        } // 已被新加载覆盖
         _texGroundImg = img;
         onReady(img);
     };
     img.onerror = () => {
-        if (generation !== _texGroundGeneration) return;
+        if (generation !== _texGroundGeneration) {
+            return;
+        }
         console.warn('[ground] texture load failed:', url);
     };
     img.src = url;
@@ -643,13 +660,17 @@ function _ensureTextureGroundImage(
  */
 function _syncTextureGroundTexture(mat: StandardMaterial, state: EnvState, scene: Scene): void {
     const url = state.groundTexture ? resolveStaticAsset(state.groundTexture) : null;
-    if (!url) return;
+    if (!url) {
+        return;
+    }
 
     // 确保 DynamicTexture 存在且唯一
     let dt = mat.diffuseTexture as DynamicTexture | null;
     const needCreate = !dt || !(dt instanceof DynamicTexture) || dt.name !== 'envGroundTex';
     if (needCreate) {
-        if (dt) dt.dispose();
+        if (dt) {
+            dt.dispose();
+        }
         dt = new DynamicTexture('envGroundTex', _TEX_GROUND_SIZE, scene, false);
         dt.wrapU = dt.wrapV = Texture.WRAP_ADDRESSMODE;
         dt.uScale = dt.vScale = 1 / Math.max(0.1, state.groundTextureScale);
@@ -665,9 +686,13 @@ function _syncTextureGroundTexture(mat: StandardMaterial, state: EnvState, scene
     // 守卫：mat 销毁会级联 dispose 并把 diffuseTexture 置空 → cur !== dt 自动拦截
     _ensureTextureGroundImage(url, (img) => {
         const cur = mat.diffuseTexture as DynamicTexture | null;
-        if (!(cur instanceof DynamicTexture) || cur !== dt) return;
+        if (!(cur instanceof DynamicTexture) || cur !== dt) {
+            return;
+        }
         const ctx = cur.getContext() as unknown as CanvasRenderingContext2D | null;
-        if (!ctx) return;
+        if (!ctx) {
+            return;
+        }
         _drawTextureGroundCanvas(ctx, _TEX_GROUND_SIZE, img, state);
         cur.update(false);
     });
@@ -704,7 +729,9 @@ function getTiltedPlaneHeight(mesh: Mesh, x: number, z: number): number {
     const world = mesh.getWorldMatrix();
     Vector3.TransformNormalToRef(_groundPlaneUp, world, _groundPlaneNormal);
     _groundPlaneNormal.normalize();
-    if (Math.abs(_groundPlaneNormal.y) < 1e-4) return envState.groundLevel;
+    if (Math.abs(_groundPlaneNormal.y) < 1e-4) {
+        return envState.groundLevel;
+    }
     Vector3.TransformCoordinatesFromFloatsToRef(0, 0, 0, world, _groundPlanePoint);
     return (
         _groundPlanePoint.y -
@@ -716,11 +743,16 @@ function getTiltedPlaneHeight(mesh: Mesh, x: number, z: number): number {
 
 export function getGroundHeightAt(x: number, z: number): number {
     const m = _envSys.ground.mesh;
-    if (!m || !m.isReady()) return envState.groundLevel;
+    if (!m || !m.isReady()) {
+        return envState.groundLevel;
+    }
 
     // 高度图模式：Babylon 原生起伏采样。支持倾斜（pitch/roll），
     // 有倾斜时做世界→本地坐标变换后查询，再变换回世界坐标。
-    if (envState.groundType === 'terrain' && typeof (m as GroundMesh).getHeightAtCoordinates === 'function') {
+    if (
+        envState.groundType === 'terrain' &&
+        typeof (m as GroundMesh).getHeightAtCoordinates === 'function'
+    ) {
         try {
             const gm = m as GroundMesh;
             // 有倾斜时：将世界坐标 (x,z) 变换到本地空间后再查询高度，
@@ -728,13 +760,27 @@ export function getGroundHeightAt(x: number, z: number): number {
             if (Math.abs(gm.rotation.x) > 0.001 || Math.abs(gm.rotation.z) > 0.001) {
                 const worldMat = gm.getWorldMatrix();
                 worldMat.invertToRef(_terrainInvWorld);
-                Vector3.TransformCoordinatesFromFloatsToRef(x, 0, z, _terrainInvWorld, _terrainLocalPos);
-                const localHeight = gm.getHeightAtCoordinates(_terrainLocalPos.x, _terrainLocalPos.z);
-                // 即便有误差，确保不返回 NaN/Infinity
-                if (!isFinite(localHeight)) return envState.groundLevel;
                 Vector3.TransformCoordinatesFromFloatsToRef(
-                    _terrainLocalPos.x, localHeight, _terrainLocalPos.z,
-                    worldMat, _terrainWorldPos
+                    x,
+                    0,
+                    z,
+                    _terrainInvWorld,
+                    _terrainLocalPos
+                );
+                const localHeight = gm.getHeightAtCoordinates(
+                    _terrainLocalPos.x,
+                    _terrainLocalPos.z
+                );
+                // 即便有误差，确保不返回 NaN/Infinity
+                if (!isFinite(localHeight)) {
+                    return envState.groundLevel;
+                }
+                Vector3.TransformCoordinatesFromFloatsToRef(
+                    _terrainLocalPos.x,
+                    localHeight,
+                    _terrainLocalPos.z,
+                    worldMat,
+                    _terrainWorldPos
                 );
                 return _terrainWorldPos.y;
             }
@@ -767,7 +813,9 @@ export function setOnGroundChanged(cb: (() => void) | null): void {
 // 按 fade 量化值经统一工厂缓存，避免拖动滑块时反复生成 canvas；
 // 缓存统一由 disposeTextureCache 在 disposeEnvUpdateObserver 时释放。
 function getGroundEdgeFadeTexture(fade: number, scene: Scene): Texture | null {
-    if (fade <= 0) return null;
+    if (fade <= 0) {
+        return null;
+    }
     const key = Math.round(fade * 100);
     const S = 256;
     const draw = (ctx: CanvasRenderingContext2D, s: number) => {
@@ -789,11 +837,7 @@ function getGroundEdgeFadeTexture(fade: number, scene: Scene): Texture | null {
     });
 }
 
-function applyGroundEdgeFade(
-    mat: StandardMaterial,
-    fade: number,
-    scene: Scene
-): void {
+function applyGroundEdgeFade(mat: StandardMaterial, fade: number, scene: Scene): void {
     mat.opacityTexture = getGroundEdgeFadeTexture(fade, scene);
 }
 
@@ -804,7 +848,9 @@ function applyGroundEdgeFade(
  */
 function _syncGroundTextureOffset(mat: StandardMaterial, state: EnvState): void {
     const tex = mat.diffuseTexture as Texture | null;
-    if (!tex) return;
+    if (!tex) {
+        return;
+    }
     const angle = (state.groundTextureRotation * Math.PI) / 180;
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
@@ -814,8 +860,12 @@ function _syncGroundTextureOffset(mat: StandardMaterial, state: EnvState): void 
     let v = baseV + _groundScrollV;
     u = u - Math.floor(u);
     v = v - Math.floor(v);
-    if (u < 0) u += 1;
-    if (v < 0) v += 1;
+    if (u < 0) {
+        u += 1;
+    }
+    if (v < 0) {
+        v += 1;
+    }
     tex.uOffset = u;
     tex.vOffset = v;
 }
@@ -865,6 +915,7 @@ function _syncGroundNormalTexture(mat: StandardMaterial, state: EnvState): void 
  * 引擎内部处理 RT 创建、BFC、renderList 脏标记、帧跳过、互斥（关地即开水）。
  */
 function buildGroundReflection(state: EnvState): void {
+    groundReflection.markRenderListDirty(); // 强制刷新 renderList，捕获新加载的 mesh（如 MMD 角色）
     groundReflection.update(state, getScene());
 }
 
@@ -930,6 +981,7 @@ export function applyGround(state: EnvState): void {
         }
         // 反射 RT 重建（委托引擎：quality 变更时重建、blend 变更走原地更新、互斥自动处理）
         buildGroundReflection(state);
+        console.log('[groundReflection] applyGround() — flat 原地更新路径');
         return;
     }
 
@@ -955,6 +1007,7 @@ export function applyGround(state: EnvState): void {
             applyGroundEdgeFade(gm.material as StandardMaterial, state.groundEdgeFade, scene);
             // Phase B: 地形地面材质就绪后再挂载反射（修复此前直接 return 致反射永久丢失）。
             buildGroundReflection(state);
+            console.log('[groundReflection] applyGround() — terrain onReady 路径');
             _onTerrainReady?.();
         });
         _envSys.ground.mesh = hg;
@@ -1014,6 +1067,7 @@ export function applyGround(state: EnvState): void {
 
     // Phase B: 镜面反射（创建后挂载，委托引擎）
     buildGroundReflection(state);
+    console.log('[groundReflection] applyGround() — flat 新建路径');
 
     _envSys.ground.mesh = ground;
 }
@@ -1115,7 +1169,9 @@ export function ensureEnvUpdateObserver(): void {
             _envSys.ground.mesh &&
             (envState.groundScrollSpeedX !== 0 || envState.groundScrollSpeedZ !== 0) &&
             (envState.groundStyle === 'checker' ||
-                (envState.groundStyle === 'texture' && envState.groundTextureEnabled && envState.groundTexture))
+                (envState.groundStyle === 'texture' &&
+                    envState.groundTextureEnabled &&
+                    envState.groundTexture))
         ) {
             const mat = _envSys.ground.mesh.material;
             if (mat && mat instanceof StandardMaterial && mat.diffuseTexture) {
@@ -1123,8 +1179,12 @@ export function ensureEnvUpdateObserver(): void {
                 _groundScrollV += envState.groundScrollSpeedZ * dt;
                 _groundScrollU = _groundScrollU - Math.floor(_groundScrollU);
                 _groundScrollV = _groundScrollV - Math.floor(_groundScrollV);
-                if (_groundScrollU < 0) _groundScrollU += 1;
-                if (_groundScrollV < 0) _groundScrollV += 1;
+                if (_groundScrollU < 0) {
+                    _groundScrollU += 1;
+                }
+                if (_groundScrollV < 0) {
+                    _groundScrollV += 1;
+                }
                 _syncGroundTextureOffset(mat, envState);
             }
         }

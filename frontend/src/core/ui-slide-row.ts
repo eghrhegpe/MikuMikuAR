@@ -83,7 +83,6 @@ export function slideRow(
             row.appendChild(sub);
         }
 
-
         // Toggle
         const toggle = document.createElement('label');
         toggle.className = 'toggle header-toggle';
@@ -195,7 +194,6 @@ export function slideRow(
             sub.textContent = sublabel;
             row.appendChild(sub);
         }
-
 
         // 操作按钮 (actionBtn)
         if (extra?.actionIcon !== undefined) {

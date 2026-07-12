@@ -18,7 +18,12 @@ import { disposeAudio } from '@/outfit/audio';
 import { modelManager } from '../scene';
 import type { FormationType } from './model-manager';
 import { getFormationLabels } from './model-manager';
-import { attachGizmo, detachGizmo, isGizmoActive, getGizmoTargetId } from '../render/transform-gizmo';
+import {
+    attachGizmo,
+    detachGizmo,
+    isGizmoActive,
+    getGizmoTargetId,
+} from '../render/transform-gizmo';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 // ======== Model Lifecycle ========
@@ -200,7 +205,11 @@ export function attachModelGizmo(id: string): boolean {
     });
 }
 
-export { detachGizmo as detachModelGizmo, isGizmoActive as isModelGizmoActive, getGizmoTargetId as getModelGizmoTargetId };
+export {
+    detachGizmo as detachModelGizmo,
+    isGizmoActive as isModelGizmoActive,
+    getGizmoTargetId as getModelGizmoTargetId,
+};
 
 // ======== VMD ========
 

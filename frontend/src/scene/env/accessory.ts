@@ -94,7 +94,9 @@ export function attachPropToBone(
  */
 export function detachPropFromBone(propId: string): void {
     const prop = propRegistry.get(propId);
-    if (!prop) {return;}
+    if (!prop) {
+        return;
+    }
 
     // 获取当前世界矩阵，以便 detach 后保持视觉位置
     const target = prop.container ?? prop.rootMesh;
@@ -128,7 +130,9 @@ export function reattachAllAccessories(): void {
             // 先 detach 以防残留绑定
             try {
                 target.detachFromBone();
-            } catch { /* ignore */ }
+            } catch {
+                /* ignore */
+            }
 
             attachPropToBone(
                 propId,

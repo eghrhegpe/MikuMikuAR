@@ -56,7 +56,9 @@ function buildFilenameSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                         if (labelSpan) {
                             getCurrentRenderingMenu()?.registerControl(() => {
                                 labelSpan.textContent =
-                                    librarySortMode === 'name' ? '动作排序：名称' : '动作排序：默认';
+                                    librarySortMode === 'name'
+                                        ? '动作排序：名称'
+                                        : '动作排序：默认';
                             });
                         }
                     }
@@ -127,7 +129,8 @@ function buildFilenameSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                                         onClick: () => {
                                             delete uiState.materialCategoryMap![pattern];
                                             if (
-                                                Object.keys(uiState.materialCategoryMap!).length === 0
+                                                Object.keys(uiState.materialCategoryMap!).length ===
+                                                0
                                             ) {
                                                 delete uiState.materialCategoryMap;
                                             }

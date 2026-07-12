@@ -20,12 +20,7 @@ import {
     cardContainer,
     PopupRow,
 } from '../core/config';
-import {
-    slideRow,
-    addModeRow,
-    addToggleRow,
-    addWatchDirRow,
-} from '../core/ui-helpers';
+import { slideRow, addModeRow, addToggleRow, addWatchDirRow } from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
 import {
     selectResourceRoot,

@@ -1075,7 +1075,18 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
                 cardContainer(container, (c) => {
                     for (const m of matched) {
                         const row = modelToRow(m);
-                        slideRow(c, row.icon, row.label, false, () => onModelRowClick(m), undefined, undefined, undefined, undefined, { wrapLabel: true });
+                        slideRow(
+                            c,
+                            row.icon,
+                            row.label,
+                            false,
+                            () => onModelRowClick(m),
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            { wrapLabel: true }
+                        );
                     }
                 });
             } catch (err) {

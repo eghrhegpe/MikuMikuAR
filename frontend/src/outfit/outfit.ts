@@ -449,7 +449,11 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
                     restoreMaterials(inst);
                 }
                 if (variant?.meshFile) {
-                    const { meshes, retargetOk } = await loadOverlay(inst, variant.meshFile, await _getScene());
+                    const { meshes, retargetOk } = await loadOverlay(
+                        inst,
+                        variant.meshFile,
+                        await _getScene()
+                    );
                     // token 过期：说明此期间已切换到其他变体，丢弃本次结果
                     if (inst._overlayLoadToken !== token) {
                         console.info('[outfit] overlay load stale (token mismatch), discarding');

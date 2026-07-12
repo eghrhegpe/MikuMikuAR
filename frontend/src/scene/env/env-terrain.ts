@@ -1,4 +1,12 @@
-import { Scene, MeshBuilder, GroundMesh, StandardMaterial, Texture, Color3, VertexBuffer } from '@babylonjs/core';
+import {
+    Scene,
+    MeshBuilder,
+    GroundMesh,
+    StandardMaterial,
+    Texture,
+    Color3,
+    VertexBuffer,
+} from '@babylonjs/core';
 import { EnvState } from '@/core/config';
 import { createCanvasDataURL } from './env-texture';
 
@@ -171,13 +179,17 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
  */
 function applyElevationColoring(ground: GroundMesh, state: EnvState): void {
     const positions = ground.getVerticesData(VertexBuffer.PositionKind);
-    if (!positions) return;
+    if (!positions) {
+        return;
+    }
 
     const half = state.groundTerrainHeight / 2;
     const minH = -half;
     const maxH = half;
     const range = maxH - minH;
-    if (range < 0.01) return;
+    if (range < 0.01) {
+        return;
+    }
 
     // 三段色：低谷（深绿）→ 山腰（棕）→ 峰顶（白）
     const low = new Color3(0.2, 0.35, 0.15);

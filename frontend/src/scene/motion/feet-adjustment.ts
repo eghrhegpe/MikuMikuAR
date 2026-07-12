@@ -209,7 +209,7 @@ function _adjustFoot(
         }
     }
 
-    if (FEET_DEBUG && (_feetDbgFrame++ % 60 === 0)) {
+    if (FEET_DEBUG && _feetDbgFrame++ % 60 === 0) {
         console.log(
             `[feet] ${side} footY=${_vFoot.y.toFixed(3)} groundY=${groundY.toFixed(3)} ` +
                 `targetY=${res.targetY.toFixed(3)} skip=${res.skip} ik=${ikName}`
@@ -238,8 +238,9 @@ function _adjustFoot(
     }
 
     // JS 运行时：通知 skeleton 重算蒙皮（WASM 直写 worldTransformMatrices buffer，无需）
-    const lb = (ik as unknown as { linkedBone?: { getSkeleton?: () => { _markAsDirty?: () => void } } })
-        .linkedBone;
+    const lb = (
+        ik as unknown as { linkedBone?: { getSkeleton?: () => { _markAsDirty?: () => void } } }
+    ).linkedBone;
     lb?.getSkeleton?.()._markAsDirty?.();
 
     if (side === 'L') {
@@ -265,7 +266,7 @@ export function startFeetAdjustment(
         const now = performance.now();
         const dt = _lastTickTime ? Math.min((now - _lastTickTime) / 1000, 0.1) : 1 / 60;
         _lastTickTime = now;
-        if (FEET_DEBUG && (_feetTick++ % 90 === 0)) {
+        if (FEET_DEBUG && _feetTick++ % 90 === 0) {
             const summary = [...getModels()]
                 .map((m) => `${m.id}:en=${m.feet.enabled},n=${m.runtimeBones.length}`)
                 .join(' ');

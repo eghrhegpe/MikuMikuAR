@@ -633,7 +633,6 @@ export class SlideMenu {
             const container = cards[c];
             const seg = segments[c];
             const oldChildren = Array.from(container.children) as HTMLElement[];
-            const maxLen = Math.max(oldChildren.length, seg.length);
 
             // 删除多余的行
             for (let i = oldChildren.length - 1; i >= seg.length; i--) {
@@ -949,7 +948,6 @@ export class SlideMenu {
         labelSpan.className = 'slide-label' + (row.wrapLabel ? ' wrap-2' : '');
         labelSpan.textContent = row.label;
         el.appendChild(labelSpan);
-
 
         if (row.kind === 'folder') {
             const arrow = document.createElement('span');

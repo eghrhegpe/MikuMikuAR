@@ -9,9 +9,23 @@ import { uiState, setUIState } from '@/core/state';
 import { getPerceptionState, setPerceptionState } from '@/scene/motion/perception';
 
 // 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象
-export type StatePath = `env.${string}` | `render.${string}` | `light.${string}` | `ui.${string}` | `perception.${string}`;
+export type StatePath =
+    | `env.${string}`
+    | `render.${string}`
+    | `light.${string}`
+    | `ui.${string}`
+    | `perception.${string}`;
 
-export type MenuKind = 'folder' | 'slider' | 'colorSlider' | 'toggle' | 'modeSlider' | 'modeRow' | 'sectionTitle' | 'divider' | 'custom';
+export type MenuKind =
+    | 'folder'
+    | 'slider'
+    | 'colorSlider'
+    | 'toggle'
+    | 'modeSlider'
+    | 'modeRow'
+    | 'sectionTitle'
+    | 'divider'
+    | 'custom';
 
 export interface ControlSpec {
     bind: StatePath;
@@ -19,7 +33,7 @@ export interface ControlSpec {
     max?: number;
     step?: number;
     icon?: string;
-    options?: Array<{ value: string; label: string }>;  // modeSlider 用
+    options?: Array<{ value: string; label: string }>; // modeSlider 用
     /** 衍生控件：从状态值转控件显示值（如 windDirection→角度，或 vsync 默认值→boolean） */
     get?: (v: unknown) => unknown;
     /** 衍生控件：从控件值转状态值（如 角度→[sin,y,cos]，或 boolean→状态值） */
@@ -31,9 +45,9 @@ export interface ControlSpec {
 export interface MenuNode {
     id: string;
     kind: MenuKind;
-    label?: string;         // i18n key，folder/divider 不需要
+    label?: string; // i18n key，folder/divider 不需要
     icon?: string;
-    defaultOpen?: boolean;  // 仅 folder
+    defaultOpen?: boolean; // 仅 folder
     headerToggle?: {
         bind: StatePath;
         /** 将状态值转为 boolean（如 groundType='terrain'→true） */
@@ -41,8 +55,8 @@ export interface MenuNode {
         /** 将 toggle boolean 转为状态值（如 true→'terrain'） */
         set?: (v: boolean) => unknown;
     };
-    children?: MenuNode[];  // 仅 folder
-    control?: ControlSpec;  // slider/colorSlider/toggle
+    children?: MenuNode[]; // 仅 folder
+    control?: ControlSpec; // slider/colorSlider/toggle
     /** 逃生舱：无法数据化的内容直接渲染。返回值（可选）为 dispose 函数，由 renderMenu 收集并级联释放 */
     renderCustom?: (container: HTMLElement) => (() => void) | void;
     /** 条件守卫：返回 false 时该节点不渲染（如 groundType !== 'terrain' 时隐藏 pitch/roll） */

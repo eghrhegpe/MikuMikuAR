@@ -24,8 +24,9 @@ import {
 } from '@babylonjs/core';
 import type { EnvState } from '@/core/config';
 
-const RT_REFRESH_ONCE = (RenderTargetTexture as unknown as { REFRESHRATE_RENDER_ONCE?: number })
-    .REFRESHRATE_RENDER_ONCE ?? 0;
+const RT_REFRESH_ONCE =
+    (RenderTargetTexture as unknown as { REFRESHRATE_RENDER_ONCE?: number })
+        .REFRESHRATE_RENDER_ONCE ?? 0;
 
 /** 帧跳过：high 每帧、medium 每 2 帧、low 每 4 帧、off 跳帧。两模式共用。 */
 const FRAME_SKIP: Record<string, number> = { high: 0, medium: 1, low: 3, off: 999 };
@@ -118,6 +119,11 @@ export class PlanarReflection {
     /** @internal 互斥协调器标记：被另一面强制停用时禁止主动重建，由 releaseExclusive 清除恢复。 */
     _mutexDisabled = false;
 
+    /** 强制标记 renderList 为脏，下次 update() 时重新 populate。供 applyGround 原地更新路径调用。 */
+    markRenderListDirty(): void {
+        this.renderListDirty = true;
+    }
+
     constructor(cfg: PlanarReflectionConfig) {
         this.cfg = cfg;
     }
@@ -128,7 +134,12 @@ export class PlanarReflection {
 
     /** 每帧 / 状态变更时调用：根据 state 决策启用、更新或停用。 */
     update(state: EnvState, scene: Scene): void {
-        const shouldEnable = this.cfg.getQuality(state) !== 'off' && this.cfg.getBlend(state) > 0;
+        const quality = this.cfg.getQuality(state);
+        const blend = this.cfg.getBlend(state);
+        const shouldEnable = quality !== 'off' && blend > 0;
+        console.log(
+            `[groundReflection] update() shouldEnable=${shouldEnable} quality=${quality} blend=${blend}`
+        );
         if (!shouldEnable) {
             this.disable();
             return;
@@ -136,6 +147,9 @@ export class PlanarReflection {
         if (!this.rt) {
             // 被互斥强制停用时禁止主动重建（由 releaseExclusive 清除标志后恢复）
             if (this._mutexDisabled) {
+                console.log(
+                    '[groundReflection] _mutexDisabled=true — 被水面反射互斥抢占，跳过重建'
+                );
                 return;
             }
             this.create(scene, state);
@@ -182,10 +196,18 @@ export class PlanarReflection {
         if (this.cfg.getMirrorCameraMatrix) {
             const m = this.cfg.getMirrorCameraMatrix(state, scene);
             if (m && this.mirrorCam) {
-                (this.mirrorCam as unknown as { _worldMatrix: Matrix; _isWorldMatrixFrozen: boolean })._worldMatrix =
-                    m;
-                (this.mirrorCam as unknown as { _worldMatrix: Matrix; _isWorldMatrixFrozen: boolean })._isWorldMatrixFrozen =
-                    true;
+                (
+                    this.mirrorCam as unknown as {
+                        _worldMatrix: Matrix;
+                        _isWorldMatrixFrozen: boolean;
+                    }
+                )._worldMatrix = m;
+                (
+                    this.mirrorCam as unknown as {
+                        _worldMatrix: Matrix;
+                        _isWorldMatrixFrozen: boolean;
+                    }
+                )._isWorldMatrixFrozen = true;
             }
         }
         if (this.renderListDirty) {
@@ -211,10 +233,14 @@ export class PlanarReflection {
             }
         }
         this.rt.renderList = list;
+        console.log(`[groundReflection] populateRenderList() count=${list.length}`);
     }
 
     private create(scene: Scene, state: EnvState): void {
-        const resolution = this.cfg.resolutionMap[this.cfg.getQuality(state)] ?? 256;
+        const q = this.cfg.getQuality(state);
+        const resolution = this.cfg.resolutionMap[q] ?? 256;
+        const skip = FRAME_SKIP[q] ?? 999;
+        console.log(`[groundReflection] create() quality=${q} resolution=${resolution} refreshRate=${skip + 1}`);
         if (!resolution) {
             return;
         }
@@ -239,7 +265,7 @@ export class PlanarReflection {
         if (this.cfg.mode === 'mirrorTexture') {
             const rt = new MirrorTexture(`${this.cfg.name}RT`, resolution, scene, false);
             rt.clearColor = new Color4(0, 0, 0, 0);
-            rt.refreshRate = RT_REFRESH_ONCE;
+            rt.refreshRate = skip + 1; // high=1(每帧), medium=2, low=4 — Babylon 按此频率自动重渲染
             rt.mirrorPlane = this.cfg.getMirrorPlane(state, scene);
             rt.onBeforeRenderObservable.add(() => bfcSave(rt));
             rt.onAfterRenderObservable.add(() => bfcRestore(rt));

@@ -137,7 +137,9 @@ function buildStageLightSchema(): MenuNode[] {
             kind: 'custom',
             visibleWhen: () => !!state,
             renderCustom: (c) => {
-                if (!state) return;
+                if (!state) {
+                    return;
+                }
                 cardContainer(c, (inner) => {
                     addCollapsible(inner, {
                         title: state.name,
@@ -179,7 +181,8 @@ function buildStageLightSchema(): MenuNode[] {
                                     bind: () => {
                                         const lights = getStageLights();
                                         const activeId = getActiveStageLightId();
-                                        const s = lights.find((l) => l.id === activeId) ?? lights[0];
+                                        const s =
+                                            lights.find((l) => l.id === activeId) ?? lights[0];
                                         return s?.type ?? 'spot';
                                     },
                                 }
@@ -188,7 +191,9 @@ function buildStageLightSchema(): MenuNode[] {
                                 ci,
                                 t('scene.intensity'),
                                 state.intensity,
-                                0, 2, 0.05,
+                                0,
+                                2,
+                                0.05,
                                 () => {},
                                 'lucide:sun',
                                 (v) => setStageLightState({ intensity: v }, state.id),
@@ -196,7 +201,8 @@ function buildStageLightSchema(): MenuNode[] {
                                     bind: () => {
                                         const lights = getStageLights();
                                         const activeId = getActiveStageLightId();
-                                        const s = lights.find((l) => l.id === activeId) ?? lights[0];
+                                        const s =
+                                            lights.find((l) => l.id === activeId) ?? lights[0];
                                         return s?.intensity ?? 1;
                                     },
                                 }
@@ -213,7 +219,8 @@ function buildStageLightSchema(): MenuNode[] {
                                     bind: () => {
                                         const lights = getStageLights();
                                         const activeId = getActiveStageLightId();
-                                        const s = lights.find((l) => l.id === activeId) ?? lights[0];
+                                        const s =
+                                            lights.find((l) => l.id === activeId) ?? lights[0];
                                         return s?.color ?? [1, 1, 1];
                                     },
                                 }
@@ -229,23 +236,123 @@ function buildStageLightSchema(): MenuNode[] {
             kind: 'custom',
             visibleWhen: () => state?.type === 'spot',
             renderCustom: (c) => {
-                if (!state) return;
+                if (!state) {
+                    return;
+                }
                 cardContainer(c, (inner) => {
                     addCollapsible(inner, {
                         title: t('scene.params'),
                         icon: 'lucide:sliders',
                         defaultOpen: false,
                         renderContent: (ci) => {
-                            addSliderRow(ci, t('scene.coneAngle'), state.angle, 0.1, 2.0, 0.05, () => {}, 'lucide:circle', (v) => setStageLightState({ angle: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.angle ?? 1.0; } });
-                            addSliderRow(ci, t('scene.falloff'), state.exponent, 0, 4, 0.1, () => {}, 'lucide:arrow-down', (v) => setStageLightState({ exponent: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.exponent ?? 1; } });
+                            addSliderRow(
+                                ci,
+                                t('scene.coneAngle'),
+                                state.angle,
+                                0.1,
+                                2.0,
+                                0.05,
+                                () => {},
+                                'lucide:circle',
+                                (v) => setStageLightState({ angle: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.angle ?? 1.0;
+                                    },
+                                }
+                            );
+                            addSliderRow(
+                                ci,
+                                t('scene.falloff'),
+                                state.exponent,
+                                0,
+                                4,
+                                0.1,
+                                () => {},
+                                'lucide:arrow-down',
+                                (v) => setStageLightState({ exponent: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.exponent ?? 1;
+                                    },
+                                }
+                            );
                             addCollapsible(ci, {
                                 title: t('scene.targetPoint'),
                                 icon: 'lucide:target',
                                 defaultOpen: false,
                                 renderContent: (ci2) => {
-                                    addSliderRow(ci2, t('scene.targetX'), state.targetX, -10, 10, 0.1, () => {}, 'lucide:move-horizontal', (v) => setStageLightState({ targetX: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.targetX ?? 0; } });
-                                    addSliderRow(ci2, t('scene.targetY'), state.targetY, 0, 15, 0.1, () => {}, 'lucide:move-vertical', (v) => setStageLightState({ targetY: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.targetY ?? 5; } });
-                                    addSliderRow(ci2, t('scene.targetZ'), state.targetZ, -10, 10, 0.1, () => {}, 'lucide:move', (v) => setStageLightState({ targetZ: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.targetZ ?? 0; } });
+                                    addSliderRow(
+                                        ci2,
+                                        t('scene.targetX'),
+                                        state.targetX,
+                                        -10,
+                                        10,
+                                        0.1,
+                                        () => {},
+                                        'lucide:move-horizontal',
+                                        (v) => setStageLightState({ targetX: v }, state.id),
+                                        {
+                                            bind: () => {
+                                                const ls = getStageLights();
+                                                const s =
+                                                    ls.find(
+                                                        (l) => l.id === getActiveStageLightId()
+                                                    ) ?? ls[0];
+                                                return s?.targetX ?? 0;
+                                            },
+                                        }
+                                    );
+                                    addSliderRow(
+                                        ci2,
+                                        t('scene.targetY'),
+                                        state.targetY,
+                                        0,
+                                        15,
+                                        0.1,
+                                        () => {},
+                                        'lucide:move-vertical',
+                                        (v) => setStageLightState({ targetY: v }, state.id),
+                                        {
+                                            bind: () => {
+                                                const ls = getStageLights();
+                                                const s =
+                                                    ls.find(
+                                                        (l) => l.id === getActiveStageLightId()
+                                                    ) ?? ls[0];
+                                                return s?.targetY ?? 5;
+                                            },
+                                        }
+                                    );
+                                    addSliderRow(
+                                        ci2,
+                                        t('scene.targetZ'),
+                                        state.targetZ,
+                                        -10,
+                                        10,
+                                        0.1,
+                                        () => {},
+                                        'lucide:move',
+                                        (v) => setStageLightState({ targetZ: v }, state.id),
+                                        {
+                                            bind: () => {
+                                                const ls = getStageLights();
+                                                const s =
+                                                    ls.find(
+                                                        (l) => l.id === getActiveStageLightId()
+                                                    ) ?? ls[0];
+                                                return s?.targetZ ?? 0;
+                                            },
+                                        }
+                                    );
                                 },
                             });
                         },
@@ -259,14 +366,35 @@ function buildStageLightSchema(): MenuNode[] {
             kind: 'custom',
             visibleWhen: () => state?.type === 'point',
             renderCustom: (c) => {
-                if (!state) return;
+                if (!state) {
+                    return;
+                }
                 cardContainer(c, (inner) => {
                     addCollapsible(inner, {
                         title: t('scene.params'),
                         icon: 'lucide:sliders',
                         defaultOpen: false,
                         renderContent: (ci) => {
-                            addSliderRow(ci, t('scene.attenuationDist'), state.range, 1, 100, 0.5, () => {}, 'lucide:ruler', (v) => setStageLightState({ range: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.range ?? 10; } });
+                            addSliderRow(
+                                ci,
+                                t('scene.attenuationDist'),
+                                state.range,
+                                1,
+                                100,
+                                0.5,
+                                () => {},
+                                'lucide:ruler',
+                                (v) => setStageLightState({ range: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.range ?? 10;
+                                    },
+                                }
+                            );
                         },
                     });
                 });
@@ -278,16 +406,75 @@ function buildStageLightSchema(): MenuNode[] {
             kind: 'custom',
             visibleWhen: () => state?.type === 'directional',
             renderCustom: (c) => {
-                if (!state) return;
+                if (!state) {
+                    return;
+                }
                 cardContainer(c, (inner) => {
                     addCollapsible(inner, {
                         title: t('scene.directionTarget'),
                         icon: 'lucide:compass',
                         defaultOpen: false,
                         renderContent: (ci) => {
-                            addSliderRow(ci, t('scene.targetX'), state.targetX, -10, 10, 0.1, () => {}, 'lucide:move-horizontal', (v) => setStageLightState({ targetX: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.targetX ?? 0; } });
-                            addSliderRow(ci, t('scene.targetY'), state.targetY, 0, 15, 0.1, () => {}, 'lucide:move-vertical', (v) => setStageLightState({ targetY: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.targetY ?? 5; } });
-                            addSliderRow(ci, t('scene.targetZ'), state.targetZ, -10, 10, 0.1, () => {}, 'lucide:move', (v) => setStageLightState({ targetZ: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.targetZ ?? 0; } });
+                            addSliderRow(
+                                ci,
+                                t('scene.targetX'),
+                                state.targetX,
+                                -10,
+                                10,
+                                0.1,
+                                () => {},
+                                'lucide:move-horizontal',
+                                (v) => setStageLightState({ targetX: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.targetX ?? 0;
+                                    },
+                                }
+                            );
+                            addSliderRow(
+                                ci,
+                                t('scene.targetY'),
+                                state.targetY,
+                                0,
+                                15,
+                                0.1,
+                                () => {},
+                                'lucide:move-vertical',
+                                (v) => setStageLightState({ targetY: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.targetY ?? 5;
+                                    },
+                                }
+                            );
+                            addSliderRow(
+                                ci,
+                                t('scene.targetZ'),
+                                state.targetZ,
+                                -10,
+                                10,
+                                0.1,
+                                () => {},
+                                'lucide:move',
+                                (v) => setStageLightState({ targetZ: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.targetZ ?? 0;
+                                    },
+                                }
+                            );
                         },
                     });
                 });
@@ -299,7 +486,9 @@ function buildStageLightSchema(): MenuNode[] {
             kind: 'custom',
             visibleWhen: () => !!state && state.type !== 'point',
             renderCustom: (c) => {
-                if (!state) return;
+                if (!state) {
+                    return;
+                }
                 cardContainer(c, (inner) => {
                     addCollapsible(inner, {
                         title: t('scene.shadow'),
@@ -319,9 +508,73 @@ function buildStageLightSchema(): MenuNode[] {
                         },
                         renderContent: (ci) => {
                             if (state.shadowEnabled) {
-                                addModeSlider(ci, t('scene.shadowType'), [{ value: 'hard', label: t('scene.hardShadow') }, { value: 'soft', label: t('scene.softShadow') }, { value: 'pcf', label: 'PCF' }], state.shadowType, (v) => { setStageLightState({ shadowType: v as 'hard' | 'soft' | 'pcf' }, state.id); }, 'lucide:cloud', undefined, { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.shadowType ?? 'hard'; } });
-                                addSliderRow(ci, t('scene.resolution'), state.shadowResolution, 256, 4096, 256, () => {}, 'lucide:grid-3x3', (v) => setStageLightState({ shadowResolution: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.shadowResolution ?? 1024; } });
-                                addSliderRow(ci, t('scene.shadowBias'), state.shadowBias, 0, 0.01, 0.0001, () => {}, 'lucide:move', (v) => setStageLightState({ shadowBias: v }, state.id), { bind: () => { const ls = getStageLights(); const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0]; return s?.shadowBias ?? 0.001; } });
+                                addModeSlider(
+                                    ci,
+                                    t('scene.shadowType'),
+                                    [
+                                        { value: 'hard', label: t('scene.hardShadow') },
+                                        { value: 'soft', label: t('scene.softShadow') },
+                                        { value: 'pcf', label: 'PCF' },
+                                    ],
+                                    state.shadowType,
+                                    (v) => {
+                                        setStageLightState(
+                                            { shadowType: v as 'hard' | 'soft' | 'pcf' },
+                                            state.id
+                                        );
+                                    },
+                                    'lucide:cloud',
+                                    undefined,
+                                    {
+                                        bind: () => {
+                                            const ls = getStageLights();
+                                            const s =
+                                                ls.find((l) => l.id === getActiveStageLightId()) ??
+                                                ls[0];
+                                            return s?.shadowType ?? 'hard';
+                                        },
+                                    }
+                                );
+                                addSliderRow(
+                                    ci,
+                                    t('scene.resolution'),
+                                    state.shadowResolution,
+                                    256,
+                                    4096,
+                                    256,
+                                    () => {},
+                                    'lucide:grid-3x3',
+                                    (v) => setStageLightState({ shadowResolution: v }, state.id),
+                                    {
+                                        bind: () => {
+                                            const ls = getStageLights();
+                                            const s =
+                                                ls.find((l) => l.id === getActiveStageLightId()) ??
+                                                ls[0];
+                                            return s?.shadowResolution ?? 1024;
+                                        },
+                                    }
+                                );
+                                addSliderRow(
+                                    ci,
+                                    t('scene.shadowBias'),
+                                    state.shadowBias,
+                                    0,
+                                    0.01,
+                                    0.0001,
+                                    () => {},
+                                    'lucide:move',
+                                    (v) => setStageLightState({ shadowBias: v }, state.id),
+                                    {
+                                        bind: () => {
+                                            const ls = getStageLights();
+                                            const s =
+                                                ls.find((l) => l.id === getActiveStageLightId()) ??
+                                                ls[0];
+                                            return s?.shadowBias ?? 0.001;
+                                        },
+                                    }
+                                );
                             }
                         },
                     });
@@ -334,13 +587,19 @@ function buildStageLightSchema(): MenuNode[] {
             kind: 'custom',
             visibleWhen: () => !!state,
             renderCustom: (c) => {
-                if (!state) return;
+                if (!state) {
+                    return;
+                }
                 addCollapsible(c, {
                     title: '拖拽操控',
                     icon: 'lucide:move-3d',
                     defaultOpen: false,
                     renderContent: (inner) => {
-                        buildTransformCard(inner, { id: state.id, kind: 'light', name: state.name });
+                        buildTransformCard(inner, {
+                            id: state.id,
+                            kind: 'light',
+                            name: state.name,
+                        });
                     },
                 });
             },
@@ -351,14 +610,20 @@ function buildStageLightSchema(): MenuNode[] {
             kind: 'custom',
             visibleWhen: () => lights.length > 1 && !!state,
             renderCustom: (c) => {
-                if (!state) return;
+                if (!state) {
+                    return;
+                }
                 cardContainer(c, (inner) => {
                     addDangerRow(
                         inner,
                         'lucide:trash-2',
                         t('scene.deleteLight', { name: state.name }),
                         async () => {
-                            if (!(await showConfirm(t('scene.confirmDeleteLight', { name: state.name })))) {
+                            if (
+                                !(await showConfirm(
+                                    t('scene.confirmDeleteLight', { name: state.name })
+                                ))
+                            ) {
                                 return;
                             }
                             if (!getStageLights().find((l) => l.id === state.id)) {

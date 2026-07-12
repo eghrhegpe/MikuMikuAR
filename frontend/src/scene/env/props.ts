@@ -15,7 +15,12 @@ import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
 import { t } from '@/core/i18n/t';
-import { attachGizmo, detachGizmo, isGizmoActive, getGizmoTargetId } from '../render/transform-gizmo';
+import {
+    attachGizmo,
+    detachGizmo,
+    isGizmoActive,
+    getGizmoTargetId,
+} from '../render/transform-gizmo';
 
 // ======== 类型守卫 ========
 

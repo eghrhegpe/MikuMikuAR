@@ -223,7 +223,10 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
                 set: (v) => Math.round((v as number) * 100) / 100,
                 onChange: (v) => {
                     engine.setHardwareScalingLevel(1 / (v as number));
-                    setStatus(t('settings.renderScale', { pct: Math.round((v as number) * 100) }), true);
+                    setStatus(
+                        t('settings.renderScale', { pct: Math.round((v as number) * 100) }),
+                        true
+                    );
                 },
             },
             icon: 'lucide:scan',
@@ -394,8 +397,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
                     c.appendChild(row);
                 }
                 const hint = document.createElement('div');
-                hint.style.cssText =
-                    'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
                 hint.textContent = t('settings.perf.customHint');
                 c.appendChild(hint);
             },

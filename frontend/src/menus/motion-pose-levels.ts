@@ -39,7 +39,9 @@ function buildPoseStudioSchema(): MenuNode[] {
             {
                 id: 'pose:empty',
                 kind: 'custom',
-                renderCustom: (c) => { addEmptyRow(c, t('motion.poseStudio.noModel')); },
+                renderCustom: (c) => {
+                    addEmptyRow(c, t('motion.poseStudio.noModel'));
+                },
             },
         ];
     }
@@ -78,7 +80,9 @@ function buildPoseStudioSchema(): MenuNode[] {
                         btn.className = 'preset-chip';
                         btn.textContent = m.label;
                         btn.style.cssText =
-                            m.key === currentMode ? 'background:var(--accent);color:var(--text);' : '';
+                            m.key === currentMode
+                                ? 'background:var(--accent);color:var(--text);'
+                                : '';
                         btn.addEventListener('click', () => {
                             setGuideMode(m.key as any);
                             menu?.reRender();
@@ -132,7 +136,10 @@ function buildPoseStudioSchema(): MenuNode[] {
                                     mmdRuntime.pauseAnimation();
                                     setIsPlaying(false);
                                 }
-                                setStatus(t('motion.poseStudio.poseApplied', { pose: pt.label }), true);
+                                setStatus(
+                                    t('motion.poseStudio.poseApplied', { pose: pt.label }),
+                                    true
+                                );
                             } catch (err) {
                                 console.warn('[pose] apply preset failed:', err);
                                 setStatus(t('motion.poseStudio.poseFailed'), false);
@@ -184,7 +191,8 @@ function buildPoseStudioSchema(): MenuNode[] {
 
                     const presets = getAllPresets();
                     const btnGroup = document.createElement('div');
-                    btnGroup.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px;';
+                    btnGroup.style.cssText =
+                        'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px;';
                     for (const preset of presets) {
                         const btn = document.createElement('button');
                         btn.className = 'preset-chip';
@@ -243,10 +251,15 @@ function buildPoseStudioSchema(): MenuNode[] {
                     title.textContent = t('motion.poseStudio.watermark');
                     inner.appendChild(title);
 
-                    addToggleRow(inner, t('motion.poseStudio.watermarkToggle'), wmConfig.enabled, (v) => {
-                        setWatermarkConfig({ enabled: v });
-                        menu?.reRender();
-                    });
+                    addToggleRow(
+                        inner,
+                        t('motion.poseStudio.watermarkToggle'),
+                        wmConfig.enabled,
+                        (v) => {
+                            setWatermarkConfig({ enabled: v });
+                            menu?.reRender();
+                        }
+                    );
 
                     if (wmConfig.enabled) {
                         addSliderRow(

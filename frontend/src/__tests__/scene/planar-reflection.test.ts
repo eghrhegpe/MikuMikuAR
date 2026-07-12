@@ -7,7 +7,12 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
 import { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 
-import { PlanarReflection, PlanarReflectionConfig, registerReflectionSurface, resetReflectionSurfaces } from '../../scene/env/planar-reflection';
+import {
+    PlanarReflection,
+    PlanarReflectionConfig,
+    registerReflectionSurface,
+    resetReflectionSurfaces,
+} from '../../scene/env/planar-reflection';
 import type { EnvState } from '../../core/config';
 
 // 最小 envState 桩
@@ -28,7 +33,10 @@ describe('PlanarReflection — 互斥协调', () => {
     let camera: FreeCamera;
 
     /** 创建简单 mock 配置（screenSpace 模式，避免 MirrorTexture 引擎依赖） */
-    function makeConfig(name: string, overrides: Partial<PlanarReflectionConfig> = {}): PlanarReflectionConfig {
+    function makeConfig(
+        name: string,
+        overrides: Partial<PlanarReflectionConfig> = {}
+    ): PlanarReflectionConfig {
         return {
             name,
             mode: 'screenSpace',

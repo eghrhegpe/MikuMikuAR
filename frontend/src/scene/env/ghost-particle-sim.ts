@@ -57,9 +57,7 @@ const GHOST_DOWNSAMPLE: Record<string, { downsample: number; splashProb: number 
 };
 
 /** 获取降采样配置 */
-export function getGhostDownsample(
-    type: string
-): { downsample: number; splashProb: number } {
+export function getGhostDownsample(type: string): { downsample: number; splashProb: number } {
     return GHOST_DOWNSAMPLE[type] ?? { downsample: 1, splashProb: 0.3 };
 }
 
@@ -137,7 +135,9 @@ export class GhostParticleSimulator {
 
     /** 更新配置参数（响应滑条变化） */
     updateConfig(partial: Partial<GhostParticleConfig>): void {
-        if (!this._config) return;
+        if (!this._config) {
+            return;
+        }
         Object.assign(this._config, partial);
     }
 
@@ -145,7 +145,9 @@ export class GhostParticleSimulator {
 
     private _update(): void {
         const cfg = this._config;
-        if (!cfg) return;
+        if (!cfg) {
+            return;
+        }
 
         const dt = cfg.updateSpeed;
 
@@ -163,7 +165,9 @@ export class GhostParticleSimulator {
 
         for (let i = 0; i < this._particles.length; i++) {
             const p = this._particles[i];
-            if (!p.active) continue;
+            if (!p.active) {
+                continue;
+            }
 
             // 物理积分：仅施加重力（GPU 粒子 wind 通过 direction1/2 注入初始速度，非持续力）
             p.vx += gx * dt;
@@ -194,7 +198,9 @@ export class GhostParticleSimulator {
 
     private _spawn(): void {
         const cfg = this._config;
-        if (!cfg) return;
+        if (!cfg) {
+            return;
+        }
 
         // 找一个空闲粒子槽
         let p: GhostParticle | undefined;
@@ -205,7 +211,9 @@ export class GhostParticleSimulator {
             }
         }
         if (!p) {
-            if (this._particles.length >= MAX_GHOST_PARTICLES) return;
+            if (this._particles.length >= MAX_GHOST_PARTICLES) {
+                return;
+            }
             p = {
                 x: 0,
                 y: 0,
@@ -244,17 +252,14 @@ export class GhostParticleSimulator {
         const dirY = this._curDir1.y + (this._curDir2.y - this._curDir1.y) * t;
         const dirZ = this._curDir1.z + (this._curDir2.z - this._curDir1.z) * t;
 
-        const power =
-            cfg.minEmitPower + Math.random() * (cfg.maxEmitPower - cfg.minEmitPower);
+        const power = cfg.minEmitPower + Math.random() * (cfg.maxEmitPower - cfg.minEmitPower);
 
         p.vx = dirX * power;
         p.vy = dirY * power;
         p.vz = dirZ * power;
 
         // 生命值
-        p.life =
-            cfg.minLifeTime +
-            Math.random() * (cfg.maxLifeTime - cfg.minLifeTime);
+        p.life = cfg.minLifeTime + Math.random() * (cfg.maxLifeTime - cfg.minLifeTime);
 
         p.active = true;
     }

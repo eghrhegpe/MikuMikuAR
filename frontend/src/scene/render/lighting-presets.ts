@@ -163,7 +163,6 @@ export const LIGHTING_PRESETS: Record<string, LightingPreset> = {
             },
         ],
     },
-
 };
 
 /** 预设名称列表（有序） */

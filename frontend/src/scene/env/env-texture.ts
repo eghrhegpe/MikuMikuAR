@@ -132,7 +132,9 @@ export function createCanvasDataURL(opts: {
         canvas.width = opts.size;
         canvas.height = opts.size;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return '';
+        if (!ctx) {
+            return '';
+        }
         opts.draw(ctx, opts.size);
         return canvas.toDataURL();
     } catch {

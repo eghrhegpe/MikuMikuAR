@@ -3,16 +3,11 @@
 // 子文件: env-feature-levels.ts, env-preset-levels.ts
 // 道具已迁移到 scene-prop-levels.ts（舞台域）
 
-import { envState, PopupLevel, PopupRow, escapeHtml, cardContainer } from '../core/config';
+import { envState, PopupLevel, PopupRow, cardContainer } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { createIconifyIcon } from '../core/icons';
 import {
     slideRow,
-    addToggleRow,
     addSliderRow,
-    addColorSliderRow,
-    addModeSlider,
-    addCollapsible,
     addPresetChip,
 } from '../core/ui-helpers';
 import {
@@ -20,20 +15,16 @@ import {
     getEnvSunAngle,
     setEnvSunAngle,
     applyEnvPreset,
-    applyEnvPresetObject,
 } from '../scene/scene';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
 import {
     TIME_OF_DAY_PRESETS,
-    exportEnvPreset,
-    importEnvPreset,
-    type EnvPreset,
 } from '../scene/env/env-lighting';
-import { SelectEnvTextureFile } from '../core/wails-bindings';
-import { setStatus } from '../core/config';
 import { closeAllOverlays } from '../core/utils';
 import { stackRegistry, getBrowseDir } from '../core/config';
 import { t } from '../core/i18n/t';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 
 // ======== 从子文件导入 ========
 import {
@@ -48,9 +39,6 @@ import {
 } from './env-feature-levels';
 import {
     buildPresetLevel,
-    renderUserEnvPresets,
-    snapshotCurrentEnvPreset,
-    SCENE_PRESETS,
 } from './env-preset-levels';
 
 // ======== Barrel Re-Exports ========
@@ -128,200 +116,50 @@ function renderPresetChips(container: HTMLElement): void {
     container.appendChild(chipGroup);
 }
 
+function buildEnvLightingSchema(): MenuNode[] {
+    return [
+        {
+            id: 'env:lighting:presets',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    renderPresetChips(inner);
+                });
+            },
+        },
+        {
+            id: 'env:lighting:sunAngle',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSliderRow(
+                        inner,
+                        t('env.sunAngle'),
+                        getEnvSunAngle(),
+                        -15,
+                        90,
+                        1,
+                        (v) => {
+                            setEnvSunAngle(v);
+                            setEnvState({ sunAngle: v });
+                        },
+                        'lucide:sun',
+                        undefined,
+                        { bind: () => getEnvSunAngle() }
+                    );
+                });
+            },
+        },
+    ];
+}
+
 export function buildEnvLightingLevel(): PopupLevel {
-    const sunAngle = getEnvSunAngle();
     return {
         label: t('env.lighting'),
         dir: '',
-        items: [{ kind: 'divider' as const, label: '', icon: '', target: '' } as PopupRow],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                renderPresetChips(c);
-                addSliderRow(
-                    c,
-                    t('env.sunAngle'),
-                    sunAngle,
-                    -15,
-                    90,
-                    1,
-                    (v) => {
-                        setEnvSunAngle(v);
-                        setEnvState({ sunAngle: v });
-                    },
-                    'lucide:sun',
-                    undefined,
-                    {
-                        bind: () => getEnvSunAngle(),
-                    }
-                );
-            });
-        },
-    };
-}
-
-export function buildEnvUnifiedLevel(): PopupLevel {
-    const s = envState;
-    return {
-        label: t('env.sky'),
-        dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                addModeSlider(
-                    c,
-                    t('env.skyMode'),
-                    [
-                        { value: 'procedural', label: t('env.procedural') },
-                        { value: 'color', label: t('env.solid') },
-                        { value: 'texture', label: t('env.texture') },
-                    ],
-                    s.skyMode,
-                    (v) => {
-                        setEnvState({ skyMode: v });
-                    },
-                    'lucide:layers',
-                    undefined,
-                    {
-                        bind: () => envState.skyMode,
-                    }
-                );
-
-                renderPresetChips(c);
-
-                addCollapsible(c, {
-                    title: t('env.skyAppearance'),
-                    icon: 'lucide:palette',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        if (s.skyMode === 'procedural') {
-                            addColorSliderRow(
-                                inner,
-                                t('env.zenithColor'),
-                                s.skyColorTop,
-                                (v) => {
-                                    setEnvState({ skyColorTop: v });
-                                },
-                                {
-                                    bind: () => envState.skyColorTop,
-                                }
-                            );
-                            addColorSliderRow(
-                                inner,
-                                t('env.horizonColor'),
-                                s.skyColorBot,
-                                (v) => {
-                                    setEnvState({ skyColorBot: v });
-                                },
-                                {
-                                    bind: () => envState.skyColorBot,
-                                }
-                            );
-                        } else if (s.skyMode === 'color') {
-                            addColorSliderRow(
-                                inner,
-                                t('env.skyColorTop'),
-                                s.skyColorTop,
-                                (v) => {
-                                    setEnvState({ skyColorTop: v });
-                                },
-                                {
-                                    bind: () => envState.skyColorTop,
-                                }
-                            );
-                        } else if (s.skyMode === 'texture') {
-                            const fileName = s.skyTexture
-                                ? s.skyTexture.split(/[/\\]/).pop()
-                                : t('env.notSelected');
-                            slideRow(
-                                inner,
-                                'lucide:image',
-                                t('env.skyTexture'),
-                                false,
-                                async () => {
-                                    const path = await SelectEnvTextureFile().catch(() => '');
-                                    if (path) {
-                                        setEnvState({ skyTexture: path });
-                                    }
-                                },
-                                fileName
-                            );
-                        }
-                    },
-                });
-
-                addCollapsible(c, {
-                    title: t('env.advancedSky'),
-                    icon: 'lucide:settings',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        if (s.skyMode === 'procedural') {
-                            addToggleRow(
-                                inner,
-                                t('env.stars'),
-                                s.starsEnabled ?? false,
-                                (v) => {
-                                    setEnvState({ starsEnabled: v });
-                                },
-                                'lucide:sparkles',
-                                {
-                                    bind: () => !!envState.starsEnabled,
-                                }
-                            );
-                        }
-                        addSliderRow(
-                            inner,
-                            t('env.skyRotationSpeed'),
-                            s.skyRotationSpeed ?? 0,
-                            0,
-                            5,
-                            0.1,
-                            (v) => {
-                                setEnvState({ skyRotationSpeed: v });
-                            },
-                            'lucide:rotate-cw',
-                            undefined,
-                            {
-                                bind: () => envState.skyRotationSpeed ?? 0,
-                            }
-                        );
-                        addSliderRow(
-                            inner,
-                            t('env.sunAngle'),
-                            getEnvSunAngle(),
-                            -15,
-                            90,
-                            1,
-                            (v) => {
-                                setEnvSunAngle(v);
-                                setEnvState({ sunAngle: v });
-                            },
-                            'lucide:sun',
-                            undefined,
-                            {
-                                bind: () => getEnvSunAngle(),
-                            }
-                        );
-                        if (s.skyMode === 'texture') {
-                            addSliderRow(
-                                inner,
-                                t('env.rotateY'),
-                                s.skyRotationY,
-                                0,
-                                360,
-                                1,
-                                (v) => {
-                                    setEnvState({ skyRotationY: v });
-                                },
-                                'lucide:refresh-cw',
-                                undefined,
-                                {
-                                    bind: () => envState.skyRotationY,
-                                }
-                            );
-                        }
-                    },
-                });
-            });
+            renderMenu(buildEnvLightingSchema(), container);
         },
     };
 }
@@ -422,131 +260,106 @@ export function buildEnvLevel(): PopupLevel {
     };
 }
 
+function buildParticleSchema(): MenuNode[] {
+    return [
+        {
+            id: 'env:particle:type',
+            kind: 'modeSlider',
+            label: 'env.particleType',
+            icon: 'lucide:sparkles',
+            control: {
+                bind: 'env.particleType',
+                options: [
+                    { value: 'none', label: 'env.none' },
+                    { value: 'sakura', label: 'env.sakura' },
+                    { value: 'rain', label: 'env.rain' },
+                    { value: 'snow', label: 'env.snow' },
+                    { value: 'fireworks', label: 'env.fireworks' },
+                    { value: 'fireflies', label: 'env.fireflies' },
+                    { value: 'leaves', label: 'env.leaves' },
+                ],
+            },
+        },
+        {
+            id: 'env:particle:density',
+            kind: 'slider',
+            label: 'env.density',
+            icon: 'lucide:layers',
+            control: { bind: 'env.particleEmitRate', min: 0, max: 3, step: 0.1 },
+        },
+        {
+            id: 'env:particle:size',
+            kind: 'slider',
+            label: 'env.size',
+            icon: 'lucide:maximize',
+            control: { bind: 'env.particleSize', min: 0.1, max: 3, step: 0.1 },
+        },
+        {
+            id: 'env:particle:speed',
+            kind: 'slider',
+            label: 'env.speed',
+            icon: 'lucide:gauge',
+            control: { bind: 'env.particleSpeed', min: 0.1, max: 5, step: 0.1 },
+        },
+        {
+            id: 'env:particle:splash',
+            kind: 'toggle',
+            label: 'env.splash',
+            icon: 'lucide:droplets',
+            control: { bind: 'env.particleSplash' },
+        },
+        {
+            id: 'env:particle:texture',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const fileName = envState.particleCustomTexture
+                        ? (envState.particleCustomTexture.split(/[/\\]/).pop() ??
+                          t('env.notSelected'))
+                        : t('env.notSelected');
+                    slideRow(
+                        inner,
+                        'lucide:image',
+                        t('env.customTexture'),
+                        false,
+                        () => {
+                            setEnvTextureBindingTarget('particle');
+                            const level = stackRegistry.buildLevel!(
+                                getBrowseDir('environment'),
+                                t('env.customTexture'),
+                                (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+                                getEnvMenu()!
+                            );
+                            getEnvMenu()!.push(level);
+                        },
+                        fileName
+                    );
+                    if (envState.particleCustomTexture) {
+                        const clearRow = document.createElement('div');
+                        clearRow.style.cssText =
+                            'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+                        const clearBtn = document.createElement('button');
+                        clearBtn.className = 'cs-btn cs-btn-sm';
+                        clearBtn.textContent = t('env.clear');
+                        clearBtn.onclick = () => {
+                            setEnvState({ particleCustomTexture: '' });
+                        };
+                        clearRow.appendChild(clearBtn);
+                        inner.appendChild(clearRow);
+                    }
+                });
+            },
+        },
+    ];
+}
+
 export function buildParticleLevel(): PopupLevel {
     return {
         label: t('env.particle'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const s = envState;
-            cardContainer(container, (c) => {
-                addModeSlider(
-                    c,
-                    t('env.particleType'),
-                    [
-                        { value: 'none', label: t('env.none') },
-                        { value: 'sakura', label: '🌸 ' + t('env.sakura') },
-                        { value: 'rain', label: '🌧 ' + t('env.rain') },
-                        { value: 'snow', label: '❄ ' + t('env.snow') },
-                        { value: 'fireworks', label: '🎆 ' + t('env.fireworks') },
-                        { value: 'fireflies', label: '✨ ' + t('env.fireflies') },
-                        { value: 'leaves', label: '🍂 ' + t('env.leaves') },
-                    ],
-                    s.particleType,
-                    (v) => {
-                        setEnvState({ particleType: v });
-                    },
-                    'lucide:sparkles',
-                    undefined,
-                    {
-                        bind: () => envState.particleType,
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('env.density'),
-                    s.particleEmitRate,
-                    0,
-                    3,
-                    0.1,
-                    (v) => {
-                        setEnvState({ particleEmitRate: v });
-                    },
-                    'lucide:layers',
-                    undefined,
-                    {
-                        bind: () => envState.particleEmitRate,
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('env.size'),
-                    s.particleSize,
-                    0.1,
-                    3,
-                    0.1,
-                    (v) => {
-                        setEnvState({ particleSize: v });
-                    },
-                    'lucide:maximize',
-                    undefined,
-                    {
-                        bind: () => envState.particleSize,
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('env.speed'),
-                    s.particleSpeed,
-                    0.1,
-                    5,
-                    0.1,
-                    (v) => {
-                        setEnvState({ particleSpeed: v });
-                    },
-                    'lucide:gauge',
-                    undefined,
-                    {
-                        bind: () => envState.particleSpeed,
-                    }
-                );
-                addToggleRow(
-                    c,
-                    t('env.splash'),
-                    s.particleSplash,
-                    (v) => {
-                        setEnvState({ particleSplash: v });
-                    },
-                    'lucide:droplets',
-                    {
-                        bind: () => envState.particleSplash,
-                    }
-                );
-                // 自定义纹理：slideRow + 库浏览
-                const particleFileName = s.particleCustomTexture
-                    ? (s.particleCustomTexture.split(/[/\\]/).pop() ?? t('env.notSelected'))
-                    : t('env.notSelected');
-                slideRow(
-                    c,
-                    'lucide:image',
-                    t('env.customTexture'),
-                    false,
-                    () => {
-                        setEnvTextureBindingTarget('particle');
-                        const level = stackRegistry.buildLevel!(
-                            getBrowseDir('environment'),
-                            t('env.customTexture'),
-                            (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
-                            getEnvMenu()!
-                        );
-                        getEnvMenu()!.push(level);
-                    },
-                    particleFileName
-                );
-                if (s.particleCustomTexture) {
-                    const clearRow = document.createElement('div');
-                    clearRow.style.cssText =
-                        'display:flex;justify-content:flex-end;padding:0 14px 4px;';
-                    const clearBtn = document.createElement('button');
-                    clearBtn.className = 'cs-btn cs-btn-sm';
-                    clearBtn.textContent = t('env.clear');
-                    clearBtn.onclick = () => {
-                        setEnvState({ particleCustomTexture: '' });
-                    };
-                    clearRow.appendChild(clearBtn);
-                    c.appendChild(clearRow);
-                }
-            });
+            renderMenu(buildParticleSchema(), container);
         },
     };
 }
@@ -591,7 +404,7 @@ function envOnItemClick(row: PopupRow): void {
 
 // [doc:adr-065] 子层路由表：target → 纯 items 构建器；自动挂 itemBuilder 实现语言热刷新
 const ENV_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
-    'env:sky': buildEnvUnifiedLevel,
+    'env:sky': buildSkyLevel,
     'env:lighting': buildEnvLightingLevel,
     'env:ground': buildGroundLevel,
     'env:water': buildWaterLevel,

@@ -27,7 +27,7 @@ import type { MenuNode } from './menu-schema';
 // ======== UI 尺寸控件（缩放 + 弹窗宽度） ========
 function _renderUISizeControls(
     container: HTMLElement,
-    getSettingsMenu: () => SettingsMenuHandle,
+    getSettingsMenu: () => SettingsMenuHandle
 ): void {
     const initialScale =
         parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
@@ -52,9 +52,9 @@ function _renderUISizeControls(
         {
             bind: () =>
                 parseFloat(
-                    getComputedStyle(document.documentElement).getPropertyValue('--ui-scale'),
+                    getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')
                 ) || 1,
-        },
+        }
     );
     addSliderRow(
         container,
@@ -73,20 +73,19 @@ function _renderUISizeControls(
         {
             bind: () =>
                 parseInt(
-                    getComputedStyle(document.documentElement).getPropertyValue('--popup-width'),
+                    getComputedStyle(document.documentElement).getPropertyValue('--popup-width')
                 ) || 280,
-        },
+        }
     );
 }
 
 // ======== 主题色预设列表 ========
 function _renderThemePresetList(
     container: HTMLElement,
-    getSettingsMenu: () => SettingsMenuHandle,
+    getSettingsMenu: () => SettingsMenuHandle
 ): void {
     const currentAccent =
-        getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
-        '#4a6cf7';
+        getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4a6cf7';
 
     addSectionTitle(container, '主题色');
     const themeRows: HTMLElement[] = [];
@@ -106,21 +105,15 @@ function _renderThemePresetList(
     }
     getCurrentRenderingMenu()?.registerControl(() => {
         const accent =
-            getComputedStyle(document.documentElement)
-                .getPropertyValue('--accent')
-                .trim() || '#4a6cf7';
+            getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
+            '#4a6cf7';
         for (const row of themeRows) {
             const color = row.dataset.themeColor!;
             const isActive = accent.toLowerCase() === color.toLowerCase();
             row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-            const icon = row.querySelector(
-                '.slide-icon iconify-icon',
-            ) as HTMLElement | null;
+            const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
             if (icon) {
-                icon.setAttribute(
-                    'icon',
-                    `lucide:${isActive ? 'check-circle' : 'circle'}`,
-                );
+                icon.setAttribute('icon', `lucide:${isActive ? 'check-circle' : 'circle'}`);
             }
         }
     });
@@ -129,11 +122,10 @@ function _renderThemePresetList(
 // ======== 主题色自定义输入（独立卡片） ========
 function _renderThemeColorInput(
     container: HTMLElement,
-    getSettingsMenu: () => SettingsMenuHandle,
+    getSettingsMenu: () => SettingsMenuHandle
 ): void {
     const currentAccent =
-        getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
-        '#4a6cf7';
+        getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4a6cf7';
 
     container.className = 'card-container accent-input-card';
     container.style.cssText = 'display:flex;gap:6px;padding:8px 14px;align-items:center;';
@@ -162,9 +154,8 @@ function _renderThemeColorInput(
     container.appendChild(applyBtn);
     getCurrentRenderingMenu()?.registerControl(() => {
         const accent =
-            getComputedStyle(document.documentElement)
-                .getPropertyValue('--accent')
-                .trim() || '#4a6cf7';
+            getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
+            '#4a6cf7';
         input.value = accent;
     });
 }
@@ -172,11 +163,9 @@ function _renderThemeColorInput(
 // ======== 字体控件 ========
 function _renderFontControls(
     container: HTMLElement,
-    getSettingsMenu: () => SettingsMenuHandle,
+    getSettingsMenu: () => SettingsMenuHandle
 ): void {
-    const currentCss = getComputedStyle(document.documentElement)
-        .getPropertyValue('--font')
-        .trim();
+    const currentCss = getComputedStyle(document.documentElement).getPropertyValue('--font').trim();
 
     addSectionTitle(container, '字体');
     const fontRows: HTMLElement[] = [];
@@ -195,7 +184,7 @@ function _renderFontControls(
             },
             undefined,
             undefined,
-            isActive,
+            isActive
         );
         row.dataset.fontKey = key;
         fontRows.push(row);
@@ -208,9 +197,7 @@ function _renderFontControls(
             const key = row.dataset.fontKey!;
             const isActive = FONT_MAP[key] && fontCss === FONT_MAP[key].css;
             row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
-            const icon = row.querySelector(
-                '.slide-icon iconify-icon',
-            ) as HTMLElement | null;
+            const icon = row.querySelector('.slide-icon iconify-icon') as HTMLElement | null;
             if (icon) {
                 icon.setAttribute('icon', `lucide:${isActive ? 'check' : 'circle'}`);
             }
@@ -221,7 +208,7 @@ function _renderFontControls(
 // ======== 动效控件（滑动动画 + 背景模糊） ========
 function _renderAnimationControls(
     container: HTMLElement,
-    getSettingsMenu: () => SettingsMenuHandle,
+    getSettingsMenu: () => SettingsMenuHandle
 ): void {
     const initialAnim =
         getComputedStyle(document.documentElement).getPropertyValue('--ui-animations').trim() !==
@@ -234,10 +221,7 @@ function _renderAnimationControls(
         '滑动动画',
         initialAnim,
         (v) => {
-            document.documentElement.style.setProperty(
-                '--ui-animations',
-                v ? '1' : '0',
-            );
+            document.documentElement.style.setProperty('--ui-animations', v ? '1' : '0');
             SetUIAnimations(v).catch(() => {});
             getSettingsMenu()?.updateControls();
         },
@@ -247,7 +231,7 @@ function _renderAnimationControls(
                 getComputedStyle(document.documentElement)
                     .getPropertyValue('--ui-animations')
                     .trim() !== '0',
-        },
+        }
     );
     addToggleRow(
         container,
@@ -264,17 +248,16 @@ function _renderAnimationControls(
         'lucide:monitor',
         {
             bind: () =>
-                getComputedStyle(document.documentElement)
-                    .getPropertyValue('--ui-blur')
-                    .trim() !== '0',
-        },
+                getComputedStyle(document.documentElement).getPropertyValue('--ui-blur').trim() !==
+                '0',
+        }
     );
 }
 
 // ======== 恢复默认 ========
 function _renderResetButton(
     container: HTMLElement,
-    getSettingsMenu: () => SettingsMenuHandle,
+    getSettingsMenu: () => SettingsMenuHandle
 ): void {
     slideRow(container, 'lucide:rotate-ccw', '恢复默认外观', false, () => {
         const root = document.documentElement;
@@ -366,7 +349,7 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
 }
 
 export function buildSettingsAppearanceLevel(
-    getSettingsMenu: () => SettingsMenuHandle,
+    getSettingsMenu: () => SettingsMenuHandle
 ): PopupLevel {
     return {
         label: '外观',

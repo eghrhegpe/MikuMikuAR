@@ -31,7 +31,10 @@ const DEFAULT_SKIRT_CONFIG: VirtualSkirtConfig = {
 };
 
 /** 每模型一个虚拟裙骨控制器；key = ModelManager 中的 modelId */
-const controllers = new Map<string, import('../scene/physics/virtual-skirt').VirtualSkirtController>();
+const controllers = new Map<
+    string,
+    import('../scene/physics/virtual-skirt').VirtualSkirtController
+>();
 let skirtConfig: VirtualSkirtConfig = { ...DEFAULT_SKIRT_CONFIG };
 let rebuildTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -84,7 +87,6 @@ async function rebuildAll(): Promise<void> {
     const { VirtualSkirtController } = await import('../scene/physics/virtual-skirt');
 
     let injected = 0;
-    let skipped = 0;
     for (const [id, inst] of modelManager.modelRegistry) {
         if (inst.kind !== 'actor' || !inst.mmdModel) {
             continue;
@@ -94,12 +96,9 @@ async function rebuildAll(): Promise<void> {
             if (ctrl.build()) {
                 controllers.set(id, ctrl);
                 injected++;
-            } else {
-                skipped++;
             }
         } catch (e) {
             console.warn('[virtual-skirt] build failed for', id, e);
-            skipped++;
         }
     }
 
@@ -178,7 +177,7 @@ function buildVirtualSkirtSchema(): MenuNode[] {
                         (v) => {
                             skirtConfig = { ...skirtConfig, quality: v };
                             scheduleRebuild();
-                        },
+                        }
                     );
                     addSliderRow(
                         inner,
@@ -285,7 +284,9 @@ function buildVirtualSkirtSchema(): MenuNode[] {
                     const first = controllers.values().next().value;
                     if (first) {
                         stat.textContent = t('cloth.lodInfo', {
-                            quality: t(`cloth.quality${first.effectiveQuality.charAt(0).toUpperCase()}${first.effectiveQuality.slice(1)}`),
+                            quality: t(
+                                `cloth.quality${first.effectiveQuality.charAt(0).toUpperCase()}${first.effectiveQuality.slice(1)}`
+                            ),
                             chains: first.effectiveChains,
                             segments: first.effectiveSegments,
                             throttle: first.throttleEvery,

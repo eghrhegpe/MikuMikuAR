@@ -29,7 +29,7 @@ beforeAll(() => {
     };
     const origCreate = document.createElement.bind(document);
     vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
-        tag === 'canvas' ? (fakeCanvas as any) : origCreate(tag),
+        tag === 'canvas' ? (fakeCanvas as any) : origCreate(tag)
     );
     return () => {
         vi.restoreAllMocks();

@@ -2,7 +2,6 @@
 
 import {
     modelRegistry,
-    cardContainer,
     setStatus,
     PopupLevel,
     computeLibraryRef,
@@ -42,7 +41,6 @@ import {
     setVolume,
     setAudioOffset,
 } from '../outfit/audio';
-import { showConfirm } from '../core/dialog';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { buildPresetListLevel as buildGenericPresetLevel } from './preset-list-viewer';
@@ -379,15 +377,17 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
             onDelete: async (e) => {
                 const r = await tryCatchStatus(
                     () => DeleteModelPreset(e.name),
-                    t('model-preset.deleteFailed'),
+                    t('model-preset.deleteFailed')
                 );
-                if (r === undefined) throw new Error('delete failed');
+                if (r === undefined) {
+                    throw new Error('delete failed');
+                }
                 setStatus(t('model-preset.deleted'), true);
             },
             deleteConfirmText: (e) =>
                 t('model-preset.confirmDelete', { name: e.presetName || e.name }),
             emptyText: t('model-preset.noPresets'),
         },
-        reRender,
+        reRender
     );
 }

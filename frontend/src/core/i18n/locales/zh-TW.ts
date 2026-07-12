@@ -104,7 +104,7 @@ export const zhTW: Record<string, string> = {
     'model-detail.transform': '變換',
     'model-detail.materialAdjust': '材質調節',
     'model-detail.morphPreview': '表情預覽',
-    'model-detail.outfitVariant': '服裝變體',
+    'model-detail.outfitVariant': '替換紋理',
     'model-detail.info': '資訊',
     'model-detail.basicInfo': '基本資訊',
     'model-detail.boneHierarchy': '骨骼層級',
@@ -756,11 +756,11 @@ export const zhTW: Record<string, string> = {
     'library.unsupportedFormat': '不支援的檔案格式（僅限 PMX / ZIP / VMD）',
 
     // —— Outfit Variants ——
-    'outfit.variant': '服裝變體',
+    'outfit.variant': '替換紋理',
     'outfit.modelRemoved': '模型已移除',
     'outfit.loadConfigFailed': '⚠ 載入服裝設定失敗',
     'outfit.noOutfitsConfig':
-        '此模型無 outfits.json 設定。在模型所在目錄建立 outfits.json 即可啟用服裝變體。',
+        '此模型無 outfits.json 設定。在模型所在目錄建立 outfits.json 即可啟用替換紋理。',
     'outfit.default': '預設',
     'outfit.switching': '⏳ 切換變體中…',
     'outfit.switchFailed': '✗ 切換變體失敗',

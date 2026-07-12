@@ -7,12 +7,7 @@
  * - proc-motion-autodance-emotion.ts│ 情绪引擎：morph 评分 + 帧生成
  * - proc-motion-autodance.ts  ← 本文件 │ 主入口 + 插值覆写 + VMD 组装
  */
-import {
-    buildVmd,
-    INTERP_EASE_IN_OUT,
-    INTERP_EASE_OUT,
-    INTERP_SHARP,
-} from './vmd-writer';
+import { buildVmd, INTERP_EASE_IN_OUT, INTERP_EASE_OUT, INTERP_SHARP } from './vmd-writer';
 import {
     FPS,
     MAX_FRAMES,
@@ -97,7 +92,13 @@ export function generateAutoDanceVmd(
             ? genGrooveBone(resolution.grooveBone, state, cache, intensity)
             : []),
         ...(resolution.shoulderLBone && resolution.shoulderRBone && state.boneToggles.shoulder
-            ? genShoulderBones(resolution.shoulderLBone, resolution.shoulderRBone, state, cache, intensity)
+            ? genShoulderBones(
+                  resolution.shoulderLBone,
+                  resolution.shoulderRBone,
+                  state,
+                  cache,
+                  intensity
+              )
             : []),
         ...(resolution.allParentBone && state.boneToggles.allParent
             ? genAllParentBone(resolution.allParentBone, state, cache, intensity)
@@ -113,7 +114,8 @@ export function generateAutoDanceVmd(
     // ========================================================================
     // 5. 插值类型
     // ========================================================================
-    let overrideInterp: typeof INTERP_SHARP | typeof INTERP_EASE_IN_OUT | typeof INTERP_EASE_OUT | null = null;
+    let overrideInterp:
+        typeof INTERP_SHARP | typeof INTERP_EASE_IN_OUT | typeof INTERP_EASE_OUT | null = null;
     if (state.interpOverride === 'sharp') {
         overrideInterp = INTERP_SHARP;
     } else if (state.interpOverride === 'ease-in-out') {
@@ -144,4 +146,8 @@ export function generateAutoDanceVmd(
 // 保持向后兼容的导出（供 proc-motion-bridge.ts 等调用方使用）
 export type { BoneResolution, TrigCache } from './proc-motion-autodance-bones';
 export { buildTrigCache, resolveBones } from './proc-motion-autodance-bones';
-export { scoreMorph, findBestEmotionMorphs, EMOTION_CANDIDATES } from './proc-motion-autodance-emotion';
+export {
+    scoreMorph,
+    findBestEmotionMorphs,
+    EMOTION_CANDIDATES,
+} from './proc-motion-autodance-emotion';

@@ -26,7 +26,10 @@ import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 /**
  * 在模型 runtimeBones 中按名查找。WASM / JS runtime 都暴露 runtimeBones，故后端无关。
  */
-export function findRuntimeBone(model: IMmdModel | null | undefined, boneName: string): IMmdRuntimeBone | null {
+export function findRuntimeBone(
+    model: IMmdModel | null | undefined,
+    boneName: string
+): IMmdRuntimeBone | null {
     if (!model?.runtimeBones) {
         return null;
     }
@@ -34,12 +37,18 @@ export function findRuntimeBone(model: IMmdModel | null | undefined, boneName: s
 }
 
 /** 取骨骼世界矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。 */
-export function getBoneWorldMatrix(model: IMmdModel | null | undefined, boneName: string): Float32Array | null {
+export function getBoneWorldMatrix(
+    model: IMmdModel | null | undefined,
+    boneName: string
+): Float32Array | null {
     return findRuntimeBone(model, boneName)?.worldMatrix ?? null;
 }
 
 /** 从骨骼世界矩阵提取世界位置（米，场景单位）。 */
-export function getBoneWorldPosition(model: IMmdModel | null | undefined, boneName: string): Vector3 | null {
+export function getBoneWorldPosition(
+    model: IMmdModel | null | undefined,
+    boneName: string
+): Vector3 | null {
     const m = getBoneWorldMatrix(model, boneName);
     if (!m) {
         return null;
@@ -86,7 +95,10 @@ function clampInt(v: number, lo: number, hi: number): number {
  * 注意：此为与物理后端无关的几何起点。原 XPBD 的 auto-fit 算法已随删除遗失，
  * 这里基于模型高度给出合理默认；具体物理材质参数（compliance/mass/damping 等）不在此范围。
  */
-export function autoFitAttachment(anchor: AttachmentAnchors, opts?: { density?: number }): AttachmentFit {
+export function autoFitAttachment(
+    anchor: AttachmentAnchors,
+    opts?: { density?: number }
+): AttachmentFit {
     const density = opts?.density ?? 0.06; // 期望粒子间距（米）
     const h = Math.max(anchor.modelSize.y, 1e-3);
     const length = clamp(h * 0.3, 0.1, 2.0); // 挂件下垂长度 ≈ 模型高度 30%

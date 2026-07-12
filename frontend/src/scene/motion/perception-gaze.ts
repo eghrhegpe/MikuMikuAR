@@ -86,13 +86,7 @@ export function _clampEyeGazeTarget(
     targetWorldQ: Quaternion,
     parentWorldQ: Quaternion
 ): Quaternion {
-    return _clampImpl(
-        oldEyeRotQ,
-        targetWorldQ,
-        parentWorldQ,
-        EYE_GAZE_MAX_YAW,
-        EYE_GAZE_MAX_PITCH
-    );
+    return _clampImpl(oldEyeRotQ, targetWorldQ, parentWorldQ, EYE_GAZE_MAX_YAW, EYE_GAZE_MAX_PITCH);
 }
 
 /** 统一调度入口（perception.ts observer 调用） */

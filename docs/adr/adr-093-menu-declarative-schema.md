@@ -1,6 +1,6 @@
 # ADR-093: 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」
 
-> **状态**: 实施中（P0+P1 已完成，P2 域迁移推进中：env 域全迁移、motion 感知层+布料+脚部+姿态工作室+骨骼覆盖+程序化动作+相机迁移、settings 性能+截图+音频+外观+外部库+文件名+快捷键+关于+软件+路径面板迁移、scene 后处理+舞台+道具面板迁移）
+> **状态**: 实施中（P0+P1 已完成，P2 域迁移实质完成：env/motion/scene/model/settings 全域覆盖，57 个面板迁移完成；P3 收尾待推进）
 
 ## 1. 背景
 
@@ -100,7 +100,9 @@ interface ControlSpec {
 
 | 域 | 面板 | 状态 | 备注 |
 |------|------|------|------|
-| env | 天空（sky） | ✅ 全 schema | modeSlider/colorSlider/toggle + visibleWhen 守卫 + custom 贴图选择 |
+| env | 天空（sky） | ✅ 全 schema（已接路由） | modeSlider/colorSlider/toggle + visibleWhen 守卫 + custom 贴图选择；schema 版 buildSkyLevel 已替代命令式 buildEnvUnifiedLevel |
+| env | 环境光照（lighting） | ✅ 全 schema | custom 节点（preset chips DOM-direct + sunAngle 模块级变量 bind，非 StatePath）|
+| env | 粒子（particle） | ✅ 全 schema | modeSlider + 3 slider + toggle（StatePath 绑定）+ custom 节点（贴图文件选择 + 清除按钮）|
 | env | 地面基础（ground:base） | ✅ 全 schema | folder + slider/colorSlider 组合 |
 | env | 地面贴图（ground:texture） | ✅ 全 schema | headerToggle + custom 预设芯片 |
 | env | 地面装饰（ground:deco） | ✅ 全 schema | headerToggle（get/set 值映射）+ modeSlider |
@@ -116,7 +118,7 @@ interface ControlSpec {
 | env | 实验功能（experimental） | ✅ 全 schema | custom 渲染（条件禁用 + hint）|
 | motion | 视线追踪/感知层（gaze） | ✅ 全 schema | `perception.` 状态前缀 + modeRow + onChange 副作用（activatePerception）|
 | settings | 性能（performance） | ✅ 全 schema | toggle get/set（undefined→boolean 默认值）+ custom 性能模式 + visibleWhen custom 渲染开关 |
-| settings | 截图（screenshot） | ✅ 全 schema | slider get/set 值转换（0-1↔50-100）|
+| settings | 截图（screenshot） | ✅ 全 schema | 3 个 custom 节点（格式选择 registerControl 增量更新 / 质量 slider get/set 值转换 0-1↔50-100 / 保存目录文件操作）|
 | settings | 音频（audio） | ✅ 全 schema | custom 节点（状态源分散于 audio/audio-bus/proc-motion-bridge 模块，无法用 StatePath）|
 | settings | 外观（appearance） | ✅ 全 schema | custom 节点（状态源为 CSS 变量 + Wails bindings，无法用 StatePath）|
 | settings | 外部库（external） | ✅ 全 schema | custom 节点（模块级状态 externalPaths + Wails bindings，列表渲染 + actionIcons）|
@@ -134,9 +136,30 @@ interface ControlSpec {
 | motion | 相机（camera） | ✅ 全 schema | custom 节点 + visibleWhen（多模式参数条件渲染 + 模块级 expanded 状态 + VMD 操作）|
 | scene | 舞台（stage） | ✅ 全 schema | custom 节点（舞台列表 + 道具列表 + 功能入口，动态列表渲染 + 可见性切换 + 导航 push）|
 | scene | 道具（prop） | ✅ 全 schema | custom 节点（道具列表 + 加载入口，propRegistry 动态列表渲染）|
+| scene | 渲染预设（renderPresets） | ✅ 全 schema | custom 节点 + visibleWhen（内置预设芯片组 + 用户预设条件渲染 + 保存对话框）|
+| scene | 舞台灯光（stageLight） | ✅ 全 schema | custom 节点 + visibleWhen（动态灯光实例 bind 回调 + 按类型条件渲染 spot/point/directional 参数 + 阴影条件渲染 + 多灯删除守卫）|
+| motion | 播放速度（playbackSpeed） | ✅ 全 schema | custom 节点（模块级 _playbackSpeed 状态 + mmdRuntime.timeScale 同步）|
+| motion | 最近动作（recentMotions） | ✅ 全 schema | custom 节点（getRecentMotions 动态列表 + 空状态守卫）|
+| motion | 动作音乐（actionMusic） | ✅ 全 schema | custom 节点 + visibleWhen（音频加载/移除条件渲染）|
+| motion | 动作绑定（actionBinding） | ✅ 全 schema | custom 节点 + visibleWhen（动态模型实例 + 物理分类 bind 回调 + VMD 图层列表 + 权重滑条 registerControl + 图层启用/删除 + 聚焦/清除操作）|
+| scene | 预设场景（presetScenes） | ✅ 全 schema | custom 节点（异步 GetPresetScenes 加载 + loading 占位 + 导出/导入场景包 + presetListContent 列表渲染）|
+| scene | 碰撞（collision） | ✅ 全 schema | custom 节点（地面/身体碰撞 toggle + bind 回调）|
+| scene | 物理调试（physicsDebug） | ✅ 全 schema | custom 节点（线框/骨骼线/骨骼关节 toggle + bind 回调）|
+| scene | WASM 物理（wasmPhysics） | ✅ 全 schema | custom 节点（运行时切换 modeSlider + 重力 slider + 物理总开关 toggle + 类别 toggles + 空模型守卫 + 调试入口 slideRow 导航）|
+| model | 打开方式（openWith） | ✅ 全 schema | custom 节点（async 操作用 void IIFE 包裹）|
+| model | 模型详情（model） | ✅ 全 schema | custom 节点 + folder 子节点（外观/拖拽操控/工具折叠组）|
+| model | 模型信息（modelInfo） | ✅ 全 schema | custom 节点 |
+| model | 模型标签（modelTags） | ✅ 全 schema | custom 节点（收藏卡片 + 标签选择器卡片）|
+| model | 表情预览（morphPreview） | ✅ 全 schema | custom 节点 |
+| model | 骨骼层级（boneHierarchy） | ✅ 全 schema | custom 节点 |
+| model | 材质批量（matBatch） | ✅ 全 schema | custom 节点（分类折叠 + headerToggle bind + 10 参数 slider + override 提示）|
+| model | 单材质（perMat） | ✅ 全 schema | custom 节点（参数微调 slider + 重置按钮条件渲染）|
+| model | 材质根（matRoot） | ✅ 全 schema | custom 节点（材质组折叠列表 + toggle 增量更新 + _paramCardEl 增量渲染 + 重置全部）|
+| model | 材质列表（matList） | ✅ 全 schema | custom 节点（mat-row 列表 + toggle + 导航 push perMat）|
+| model | 替换纹理（outfit） | ✅ 全 schema | custom 节点（异步 loadOutfits + 变体列表 iconFactory + _loading 状态守卫 + 递归 _render 切换后刷新）|
 | — | schema 系统测试 | ✅ | menu-schema.test.ts: 各 kind 渲染 + visibleWhen 守卫 + renderCustom dispose 级联 |
 
-**已迁移面板数：34 个 | tsc 零错误 | 1313 测试全绿**
+**已迁移面板数：57 个 | tsc 零错误 | 1313 测试全绿**
 
 #### 迁移过程中 schema 系统的能力扩展
 
@@ -199,4 +222,4 @@ interface ControlSpec {
 | P3 | §6 缺 i18n 热切换 e2e 与内存泄漏检查 | **采纳** | 已在 §6 增补 i18n 热切换 e2e（ADR-065 收益）与 dispose 级联/泄漏 vitest。 |
 | P4 | `MenuKind` 缺 `renderCustom`/`dynamic` | **采纳** | `renderCustom` 保留为节点字段（逃生舱）；`MenuKind` 增补 `'dynamic'`（运行时 `childrenResolver` 生成子项）。 |
 
-**状态**：已进入「实施中」——P0+P1 已完成，P2 域迁移推进中。env 域全部面板、motion 感知层/布料/脚部/姿态工作室/骨骼覆盖/程序化动作/相机面板、settings 性能/截图/音频/外观/外部库/文件名/快捷键/关于/软件/路径面板、scene 后处理/舞台/道具面板已迁移为 schema 驱动。tsc 零错误，1313 测试全绿。下一批迁移目标：scene 场景预设/渲染预设/舞台灯光 → motion 动作绑定/图层 → model 模型设置。
+**状态**：已进入「实施中」——P0+P1 已完成，P2 域迁移推进中。env 域全部面板、motion 域全部面板、scene 域全部面板、model 域 11 个面板（打开方式/模型详情/模型信息/模型标签/表情预览/骨骼层级/材质批量/单材质/材质根/材质列表/替换纹理）、settings 域全部面板已迁移为 schema 驱动。tsc 零错误，1313 测试全绿。剩余迁移目标：settings 域 language 等纯 items 面板（纯 PopupRow 导航，不需 schema 化）+ model-preset 预设库面板（使用 generic preset-list-viewer 渲染后端）+ library 域（buildLevel 为动态列表渲染后端，类似 preset-list-viewer，非面板性质）。

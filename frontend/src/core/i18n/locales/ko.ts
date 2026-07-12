@@ -106,7 +106,7 @@ export const ko: Record<string, string> = {
     'model-detail.transform': '변환',
     'model-detail.materialAdjust': '재질 조정',
     'model-detail.morphPreview': '모프 미리보기',
-    'model-detail.outfitVariant': '의상 변형',
+    'model-detail.outfitVariant': '텍스처 교체',
     'model-detail.info': '정보',
     'model-detail.basicInfo': '기본 정보',
     'model-detail.boneHierarchy': '뼈대 계층',
@@ -251,7 +251,8 @@ export const ko: Record<string, string> = {
     'cloth.skippedAll': '모든 모델에 이미 스커트 본이 있습니다',
     'cloth.noRuntime': '물리 런타임이 준비되지 않음',
     'cloth.status': '적용 중: {n}개',
-    'cloth.hint': '스커트 본이 없는 모델에만 적용되며 실시간 물리로 스카트 흔들림을 시뮬레이션합니다',
+    'cloth.hint':
+        '스커트 본이 없는 모델에만 적용되며 실시간 물리로 스카트 흔들림을 시뮬레이션합니다',
     'cloth.quality': '품질',
     'cloth.qualityAuto': '자동',
     'cloth.qualityHigh': '높음',
@@ -764,11 +765,11 @@ export const ko: Record<string, string> = {
     'library.unsupportedFormat': '지원되지 않는 형식 (PMX / ZIP / VMD만 가능)',
 
     // —— Outfit Variants ——
-    'outfit.variant': '의상 변형',
+    'outfit.variant': '텍스처 교체',
     'outfit.modelRemoved': '모델이 제거됨',
     'outfit.loadConfigFailed': '⚠ 의상 설정 로드 실패',
     'outfit.noOutfitsConfig':
-        '이 모델에는 outfits.json이 없습니다. 모델 폴더에 outfits.json을 생성하면 의상 변형을 사용할 수 있습니다.',
+        '이 모델에는 outfits.json이 없습니다. 모델 폴더에 outfits.json을 생성하면 텍스처 교체를 사용할 수 있습니다.',
     'outfit.default': '기본',
     'outfit.switching': '⏳ 변형 전환 중...',
     'outfit.switchFailed': '✗ 변형 전환 실패',

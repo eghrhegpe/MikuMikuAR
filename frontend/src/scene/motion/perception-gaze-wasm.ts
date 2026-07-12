@@ -5,7 +5,12 @@ import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { _v3, _m, _q, _writeMatToBuffer, _propagateChildrenWasm } from './perception-shared';
-import { _clampHeadGazeTarget, _clampGazeTargetInParentFrame, EYE_GAZE_MAX_YAW, EYE_GAZE_MAX_PITCH } from './perception-gaze';
+import {
+    _clampHeadGazeTarget,
+    _clampGazeTargetInParentFrame,
+    EYE_GAZE_MAX_YAW,
+    EYE_GAZE_MAX_PITCH,
+} from './perception-gaze';
 
 const EYE_SMOOTH = 0.35;
 

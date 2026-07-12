@@ -35,7 +35,7 @@ export const zhCN: Record<string, string> = {
     'model-detail.transform': '变换',
     'model-detail.materialAdjust': '材质调节',
     'model-detail.morphPreview': '表情预览',
-    'model-detail.outfitVariant': '服装变体',
+    'model-detail.outfitVariant': '替换纹理',
     'model-detail.info': '信息',
     'model-detail.basicInfo': '基本信息',
     'model-detail.boneHierarchy': '骨骼层级',
@@ -771,11 +771,11 @@ export const zhCN: Record<string, string> = {
     'model-preset.deleted': '✓ 预设已删除',
 
     // outfit — 服装变体 UI
-    'outfit.variant': '服装变体',
+    'outfit.variant': '替换纹理',
     'outfit.modelRemoved': '模型已移除',
     'outfit.loadConfigFailed': '⚠ 加载服装配置失败',
     'outfit.noOutfitsConfig':
-        '此模型无 outfits.json 配置。在模型所在目录创建 outfits.json 即可启用服装变体。',
+        '此模型无 outfits.json 配置。在模型所在目录创建 outfits.json 即可启用替换纹理。',
     'outfit.default': '默认',
     'outfit.switching': '⏳ 切换变体中…',
     'outfit.switchFailed': '✗ 切换变体失败',

@@ -2,6 +2,7 @@
 
 > 所有弹窗统一使用 `SlideMenu` 导航栈模式（`menu.ts`）。
 > 添加新功能 = 在对应的根菜单加一行，然后实现路由分发。
+> **声明式 Schema 为推荐主路径**，详见 [design.md](./design.md) 与 [ADR-093](./adr/adr-093-menu-declarative-schema.md)。
 
 ---
 
@@ -10,15 +11,26 @@
 ```
 frontend/src/menus/
 ├── menu.ts                      # SlideMenu 核心类（导航栈 + 动画 + dispose）
+├── menu-schema.ts               # MenuNode 声明式 schema 类型 + StatePath 解析器（ADR-093）
+├── render-menu.ts               # 单渲染器 renderMenu()，遍历 MenuNode[] 分发到 ui-helpers
+├── menu-factory.ts              # registerPopupMenu 注册范式（get/refresh/show 统一）
+│
 ├── library-core.ts              # 模型库核心（扫描/搜索/层级/标签）
+├── library.ts                   # barrel re-export
 ├── model-detail.ts              # 模型详情（信息/变换/可见性/表情）
 ├── model-material.ts            # 逐材质 + 分类调参
 ├── model-preset.ts              # 模型预设保存/加载/库管理
 ├── outfit-ui.ts                 # 服装变体子菜单
+├── preset-list-viewer.ts        # 通用预设列表渲染后端
+├── resource-detail-helpers.ts    # 资源详情页辅助
 │
-├── scene-menu.ts                # 场景弹窗入口 + 路由器
-│   ├── scene-render-levels.ts   #   后处理/舞台/渲染预设
-│   └── scene-prop-levels.ts     #   道具系统
+├── scene-menu.ts                 # 场景弹窗入口 + 路由器
+│   ├── scene-render-levels.ts    #   后处理/预设场景
+│   ├── scene-render-presets.ts   #   渲染预设（滤镜/快照）
+│   ├── scene-stage-levels.ts     #   舞台
+│   ├── scene-stage-lights.ts    #   舞台灯光
+│   ├── scene-prop-levels.ts      #   道具系统
+│   └── scene-physics-levels.ts   #   物理（碰撞/WASM/调试）
 │
 ├── env-menu.ts                  # 环境弹窗入口 + 导航
 │   ├── env-feature-levels.ts    #   天空/地面/水面/风/云/实验功能
@@ -26,11 +38,30 @@ frontend/src/menus/
 │
 ├── motion-popup.ts              # 动作弹窗入口
 │   ├── motion-camera-levels.ts  #   相机模式 + 参数面板
-│   ├── motion-procmotion-levels.ts # 程序化动作 + LipSync
-│   └── motion-cloth-levels.ts   #   布料参数面板
+│   ├── motion-procmotion-levels.ts # 程序化动作
+│   ├── motion-override-levels.ts #  骨骼覆盖
+│   ├── motion-pose-levels.ts    #   姿态工作室
+│   ├── motion-cloth-levels.ts   #   布料参数面板
+│   ├── motion-feet-levels.ts    #   脚部贴地
+│   └── motion-gaze-levels.ts    #   视线追踪/感知层
 │
-└── settings.ts                  # 设置页（SlideMenu）
-    └── settings-software.ts     #   软件管理子菜单
+├── settings.ts                  # 设置页（SlideMenu）
+│   ├── settings-shared.ts       #   共享类型 + 工具
+│   ├── settings-language.ts     #   语言选择（纯 items）
+│   ├── settings-targets.ts      #   目标设置
+│   ├── settings-performance.ts  #   性能
+│   ├── settings-screenshot.ts   #   截图
+│   ├── settings-audio.ts        #   音频
+│   ├── settings-appearance.ts   #   外观
+│   ├── settings-external.ts     #   外部库
+│   ├── settings-filename.ts     #   文件名
+│   ├── settings-shortcuts.ts    #   快捷键
+│   ├── settings-paths.ts        #   路径
+│   ├── settings-about.ts        #   关于
+│   └── settings-software.ts     #   软件管理
+│
+├── plaza.ts                     # 模型广场入口
+└── plaza-sites.ts                # 广场站点列表
 ```
 
 **代码入口**：
@@ -45,38 +76,86 @@ frontend/src/menus/
 
 ## 添加一行菜单的标准流程
 
+> **推荐：声明式 Schema**（ADR-093）。仅当为纯导航或渲染后端工具时才用命令式。
+
 1. 确定功能归属弹窗（场景/环境/动作/模型/设置）
 2. 找到对应入口文件
 3. 如果是**独立功能域**（300+ 行），新建子文件：`<menu>-<feature>-levels.ts`
-4. 在根级 items 或 `renderCustom` 中加一行 `slideRow`
-5. 在路由函数（`sceneOnFolderEnter` / `onFolderEnter`）中处理新 `target`
-6. barrel re-export 新文件的 `build*Level` 函数
-7. `npm run check` 确认零新错误
+4. 在文件中新增 `buildXxxSchema(): MenuNode[]` 工厂函数
+5. 导出 `buildXxxLevel(): PopupLevel` 包装 `renderMenu(buildXxxSchema(), container)`
+6. 在根菜单的 `items` 中加 `PopupRow` 导航项（`target: '<domain>:<feature>'`）
+7. 在路由函数（`sceneOnFolderEnter` / `onFolderEnter`）中处理新 `target`
+8. barrel re-export 新文件的 `build*Level` 函数
+9. `npm run check` 确认零新错误
 
-### 示例：场景弹窗加「景深」功能
+### 示例：场景弹窗加「景深」功能（Schema 方式）
 
 ```typescript
-// scene-render-levels.ts 添加 buildDepthOfFieldLevel()
+// scene-render-levels.ts 添加 schema 工厂
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
+
+function buildDepthOfFieldSchema(): MenuNode[] {
+    return [
+        {
+            id: 'dof:focus',
+            kind: 'slider',
+            label: 'scene.dofFocus',
+            icon: 'lucide:aperture',
+            control: { bind: 'render.dofFocus', min: 0, max: 50, step: 0.5 },
+        },
+        {
+            id: 'dof:aperture',
+            kind: 'slider',
+            label: 'scene.dofAperture',
+            icon: 'lucide:circle-dot',
+            control: {
+                bind: 'render.dofAperture',
+                min: 0, max: 8, step: 0.1,
+                onChange: () => reRenderSceneMenu(),  // 复合状态副作用
+            },
+        },
+    ];
+}
+
 export function buildDepthOfFieldLevel(): PopupLevel {
     return {
-        label: '景深', dir: '', items: [],
+        label: t('scene.dof'), dir: '', items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                addSliderRow(c, '焦距', ...);
-                addSliderRow(c, '光圈', ...);
-            });
+            renderMenu(buildDepthOfFieldSchema(), container);
         },
     };
 }
 
-// scene-menu.ts 的 sceneOnFolderEnter 中加路由
+// scene-menu.ts 的路由表中加条目
 case 'scene:render:dof':
     return buildDepthOfFieldLevel();
 
-// buildSceneRoot 或 buildPostProcessLevel 中加菜单行（onClick 里手动 push）
-slideRow(c, 'lucide:aperture', '景深', true, () =>
-    getSceneMenu()!.push(buildDepthOfFieldLevel())
-);
+// buildSceneRoot 的 items 中加导航行
+items.push({
+    kind: 'folder',
+    label: t('scene.dof'),
+    icon: 'lucide:aperture',
+    target: 'scene:render:dof',
+});
+```
+
+### 命令式示例（仅用于 `custom` 节点内部或纯导航）
+
+```typescript
+// custom 节点内部用 slideRow 渲染动态列表
+{
+    id: 'list:dynamic',
+    kind: 'custom',
+    renderCustom: (c) => {
+        cardContainer(c, (inner) => {
+            for (const item of getDynamicList()) {
+                slideRow(inner, item.icon, item.label, true,
+                    () => getSceneMenu()!.push(buildItemDetailLevel(item.id)));
+            }
+        });
+    },
+}
 ```
 
 ---
@@ -160,7 +239,11 @@ PopupLevel 和 PopupRow 类型见 `menu.ts`，行 kind 支持 `folder`/`action`/
 
 ## 重要规则
 
+- **新增菜单优先用 Schema**（ADR-093）。`MenuNode` + `renderMenu()` 是推荐主路径；命令式 `slideRow` / `addSliderRow` 仅用于 `custom` 节点内部或纯导航 `items`
+- **schema `folder` ≠ 导航项**：`folder` kind 用 `children` 展开折叠子节点；纯导航用 `PopupRow` items + `target` 路由
+- **StatePath 绑定优先**：能用 `env.` / `render.` / `light.` / `ui.` / `perception.` 前缀表达的，不要用 `custom` 节点
+- **`custom` 节点须返回 dispose**：内部创建的 DOM/监听器/计时器在层级卸载时要释放，否则泄漏（ADR-093 §5 P1）
 - `extraButtonFactory` 必须是工厂函数，每次返回新 DOM 节点
 - 设置项用 `kind: "action"`，不画 `>` 箭头
-- 表单类内容用 `renderCustom`
+- 表单类内容用 `renderCustom`（或 `custom` 节点）
 - 缩略图通过 `thumbnailCache` 单独管理，不要触发 `reRender`

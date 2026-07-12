@@ -22,7 +22,10 @@ import type { MmdWasmPhysicsRuntime } from 'babylon-mmd/esm/Runtime/Optimized/Ph
 import { RigidBody } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBody';
 import { RigidBodyConstructionInfo } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBodyConstructionInfo';
 import { Generic6DofSpringConstraint } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/constraint';
-import { PhysicsSphereShape, PhysicsBoxShape } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/physicsShape';
+import {
+    PhysicsSphereShape,
+    PhysicsBoxShape,
+} from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/physicsShape';
 import { MotionType } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motionType';
 import { analyzeSkirt } from './skirt-analyzer';
 import { PerFrameUpdateRegistry, getBoneWorldPosition } from '../../physics/physics-bridge';
@@ -71,9 +74,9 @@ interface QualityPreset {
 }
 
 export const QUALITY_PRESETS: Record<Exclude<VirtualSkirtQuality, 'auto'>, QualityPreset> = {
-    high:   { chainsCap: 32, segmentsCap: 16, throttleEvery: 1, maxVertices: 4000 },
+    high: { chainsCap: 32, segmentsCap: 16, throttleEvery: 1, maxVertices: 4000 },
     medium: { chainsCap: 16, segmentsCap: 10, throttleEvery: 2, maxVertices: 2500 },
-    low:    { chainsCap: 10, segmentsCap: 6,  throttleEvery: 3, maxVertices: 1500 },
+    low: { chainsCap: 10, segmentsCap: 6, throttleEvery: 3, maxVertices: 1500 },
 };
 
 /**
@@ -83,9 +86,11 @@ export const QUALITY_PRESETS: Record<Exclude<VirtualSkirtQuality, 'auto'>, Quali
  */
 export function resolveVirtualSkirtQuality(
     quality: VirtualSkirtQuality,
-    isAndroid: boolean,
+    isAndroid: boolean
 ): Exclude<VirtualSkirtQuality, 'auto'> {
-    if (quality === 'auto') return isAndroid ? 'low' : 'high';
+    if (quality === 'auto') {
+        return isAndroid ? 'low' : 'high';
+    }
     return quality;
 }
 
@@ -196,7 +201,7 @@ export class VirtualSkirtController {
         private readonly model: IMmdModel,
         private readonly scene: Scene,
         private readonly wasmRuntime: MmdWasmRuntime,
-        private readonly config: VirtualSkirtConfig,
+        private readonly config: VirtualSkirtConfig
     ) {}
 
     /**
@@ -204,7 +209,9 @@ export class VirtualSkirtController {
      * @returns 是否成功注入（false = 模型已有裙骨 / 无裙摆 / 物理不可用）
      */
     build(): boolean {
-        if (this._disposed) return false;
+        if (this._disposed) {
+            return false;
+        }
 
         // Phase 5: 质量档位解析 → LOD 上限 + 降频步长 + 顶点硬上限
         const effQuality = resolveVirtualSkirtQuality(this.config.quality, isAndroidPlatform());
@@ -221,12 +228,16 @@ export class VirtualSkirtController {
         const mesh = this.model.mesh;
         const positions = mesh.getVerticesData(VertexBuffer.PositionKind);
         const rawIndices = mesh.getIndices();
-        if (!positions || !rawIndices) return false;
+        if (!positions || !rawIndices) {
+            return false;
+        }
         const indices =
             rawIndices instanceof Uint32Array ? rawIndices : new Uint32Array(rawIndices);
 
         // 顶点数上限保护（质量档位可进一步收紧）
-        if (positions.length / 3 > maxVerts) return false;
+        if (positions.length / 3 > maxVerts) {
+            return false;
+        }
 
         const boneNames = this.model.runtimeBones?.map((b) => b.name) ?? [];
         const result = analyzeSkirt(positions, indices, {
@@ -237,15 +248,23 @@ export class VirtualSkirtController {
             collisionRadius: this.config.radius > 0 ? this.config.radius : undefined,
         });
 
-        if (result.hasExistingSkirtBones) return false;
-        if (result.totalSegments === 0) return false;
+        if (result.hasExistingSkirtBones) {
+            return false;
+        }
+        if (result.totalSegments === 0) {
+            return false;
+        }
         this.analysis = result;
 
         // 获取物理运行时 impl
         const physicsRuntime = this.wasmRuntime.physics as MmdWasmPhysicsRuntime | null;
-        if (!physicsRuntime) return false;
+        if (!physicsRuntime) {
+            return false;
+        }
         const impl = physicsRuntime.getImpl(MmdWasmPhysicsRuntimeImpl);
-        if (!impl) return false;
+        if (!impl) {
+            return false;
+        }
         this.impl = impl;
 
         // P1: 捕获 mesh 世界矩阵（WASM 物理世界为世界坐标，骨节初始位置与写回均依赖它）
@@ -261,23 +280,21 @@ export class VirtualSkirtController {
             const wasmInstance = impl.wasmInstance;
 
             // --- 锚定体（Kinematic 盒子，跟随腰骨） ---
-            const waistName = WAIST_BONE_CANDIDATES.find(
-                (n) => this.model.runtimeBones?.some((b) => b.name === n),
+            const waistName = WAIST_BONE_CANDIDATES.find((n) =>
+                this.model.runtimeBones?.some((b) => b.name === n)
             );
             // P3e: 解析并缓存腰骨对象引用，_update() 每帧复用，避免重复遍历 runtimeBones
             this._waistBone = waistName
                 ? (this.model.runtimeBones?.find((b) => b.name === waistName) ?? null)
                 : null;
-            const waistPos = waistName
-                ? getBoneWorldPosition(this.model, waistName)
-                : null;
+            const waistPos = waistName ? getBoneWorldPosition(this.model, waistName) : null;
             const ax = waistPos?.x ?? 0;
             const ay = waistPos?.y ?? 0.8;
             const az = waistPos?.z ?? 0;
 
             this.anchorShape = new PhysicsBoxShape(
                 impl,
-                new Vector3(ANCHOR_HALF_SIZE, ANCHOR_HALF_SIZE * 0.5, ANCHOR_HALF_SIZE),
+                new Vector3(ANCHOR_HALF_SIZE, ANCHOR_HALF_SIZE * 0.5, ANCHOR_HALF_SIZE)
             );
             this.anchorInfo = new RigidBodyConstructionInfo(wasmInstance);
             this.anchorInfo.shape = this.anchorShape;
@@ -307,10 +324,14 @@ export class VirtualSkirtController {
                     info.restitution = 0.0;
                     info.disableDeactivation = true;
                     // P1: 骨节初始位置必须从局部 rest 转换到世界空间（WASM 物理世界为世界坐标）
-                    this._tmpLocal.set(seg.restPosition[0], seg.restPosition[1], seg.restPosition[2]);
+                    this._tmpLocal.set(
+                        seg.restPosition[0],
+                        seg.restPosition[1],
+                        seg.restPosition[2]
+                    );
                     localToWorld(this._tmpLocal, this._meshWorld, this._tmpVec);
                     info.setInitialTransform(
-                        Matrix.Translation(this._tmpVec.x, this._tmpVec.y, this._tmpVec.z),
+                        Matrix.Translation(this._tmpVec.x, this._tmpVec.y, this._tmpVec.z)
                     );
                     const rb = new RigidBody(impl, info);
                     impl.addRigidBody(rb, this.worldId);
@@ -324,7 +345,7 @@ export class VirtualSkirtController {
                         rb,
                         Matrix.Identity(),
                         Matrix.Identity(),
-                        false,
+                        false
                     );
                     spring.enableSpring(0, true);
                     spring.setStiffness(0, this.config.stiffness);
@@ -354,7 +375,8 @@ export class VirtualSkirtController {
         }
 
         // --- Phase 3 准备：rest pose 快照 ---
-        this.restPositions = positions instanceof Float32Array ? positions.slice() : Float32Array.from(positions);
+        this.restPositions =
+            positions instanceof Float32Array ? positions.slice() : Float32Array.from(positions);
 
         // --- 每帧更新 ---
         this.registry = new PerFrameUpdateRegistry(this.scene);
@@ -370,7 +392,9 @@ export class VirtualSkirtController {
             this.dispose();
             return;
         }
-        if (!this.impl || !this.anchorRb || !this.analysis) return;
+        if (!this.impl || !this.anchorRb || !this.analysis) {
+            return;
+        }
 
         // P1: 每帧刷新 mesh 世界矩阵（模型可能被平移/旋转），供写回坐标转换
         const mw = this.model.mesh.getWorldMatrix();
@@ -394,10 +418,14 @@ export class VirtualSkirtController {
 
     /** Phase 3：读刚体世界位移 → 按权重写回 mesh 顶点 */
     private _writeBackVertices(): void {
-        if (!this.restPositions || !this.analysis || this.segmentRbs.length === 0) return;
+        if (!this.restPositions || !this.analysis || this.segmentRbs.length === 0) {
+            return;
+        }
 
         const rest = this.restPositions;
-        if (!rest) return;
+        if (!rest) {
+            return;
+        }
         // 复用类成员工作缓冲，避免每帧 new Float32Array（GC 压力）
         if (!this._workBuf || this._workBuf.length !== rest.length) {
             this._workBuf = new Float32Array(rest.length);
@@ -417,7 +445,7 @@ export class VirtualSkirtController {
                 this._tmpDelta.set(
                     tmp[12] - this._tmpVec.x,
                     tmp[13] - this._tmpVec.y,
-                    tmp[14] - this._tmpVec.z,
+                    tmp[14] - this._tmpVec.z
                 );
                 // 世界位移 → 局部位移（仅旋转/缩放分量，消除模型整体变换；裙摆随模型移动不漂移）
                 worldDeltaToLocal(this._tmpDelta, this._meshWorldInv, this._tmpVec);
@@ -444,36 +472,60 @@ export class VirtualSkirtController {
      * removeConstraint → removeRigidBody → rb.dispose → constraint.dispose → info.dispose → shape.dispose
      */
     dispose(): void {
-        if (this._disposed) return;
+        if (this._disposed) {
+            return;
+        }
         this._disposed = true;
 
         this.registry?.unregister('virtual-skirt');
         this.registry = null;
 
         const impl = this.impl;
-        if (!impl) return;
+        if (!impl) {
+            return;
+        }
         const worldId = this.worldId;
 
-        for (const c of this.constraints) impl.removeConstraint(c, worldId);
-        for (const rb of this.segmentRbs) impl.removeRigidBody(rb, worldId);
-        if (this.anchorRb) impl.removeRigidBody(this.anchorRb, worldId);
+        for (const c of this.constraints) {
+            impl.removeConstraint(c, worldId);
+        }
+        for (const rb of this.segmentRbs) {
+            impl.removeRigidBody(rb, worldId);
+        }
+        if (this.anchorRb) {
+            impl.removeRigidBody(this.anchorRb, worldId);
+        }
 
-        for (const c of this.constraints) c.dispose();
+        for (const c of this.constraints) {
+            c.dispose();
+        }
         this.constraints.length = 0;
 
-        for (const rb of this.segmentRbs) rb.dispose();
+        for (const rb of this.segmentRbs) {
+            rb.dispose();
+        }
         this.segmentRbs.length = 0;
-        if (this.anchorRb) this.anchorRb.dispose();
+        if (this.anchorRb) {
+            this.anchorRb.dispose();
+        }
         this.anchorRb = null;
 
-        for (const info of this.segmentInfos) info.dispose();
+        for (const info of this.segmentInfos) {
+            info.dispose();
+        }
         this.segmentInfos.length = 0;
-        if (this.anchorInfo) this.anchorInfo.dispose();
+        if (this.anchorInfo) {
+            this.anchorInfo.dispose();
+        }
         this.anchorInfo = null;
 
-        for (const s of this.segmentShapes) s.dispose();
+        for (const s of this.segmentShapes) {
+            s.dispose();
+        }
         this.segmentShapes.length = 0;
-        if (this.anchorShape) this.anchorShape.dispose();
+        if (this.anchorShape) {
+            this.anchorShape.dispose();
+        }
         this.anchorShape = null;
 
         this.impl = null;

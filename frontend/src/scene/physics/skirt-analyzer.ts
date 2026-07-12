@@ -156,7 +156,7 @@ function clampInt(v: number, lo: number, hi: number): number {
 export function analyzeSkirt(
     positions: Float32Array | number[],
     indices: Uint32Array | number[] | Int32Array,
-    options?: SkirtAnalyzerOptions,
+    options?: SkirtAnalyzerOptions
 ): SkirtAnalysisResult {
     const empty: SkirtAnalysisResult = {
         chains: [],
@@ -169,16 +169,21 @@ export function analyzeSkirt(
 
     // --- 参数解析 ---
     const chainCount = clampInt(options?.chains ?? DEFAULT_CHAINS, 4, 32);
-    const segmentsPerChain = clampInt(options?.segmentsPerChain ?? DEFAULT_SEGMENTS_PER_CHAIN, 4, 16);
+    const segmentsPerChain = clampInt(
+        options?.segmentsPerChain ?? DEFAULT_SEGMENTS_PER_CHAIN,
+        4,
+        16
+    );
     const skirtYRatio = Math.min(1, Math.max(0.1, options?.skirtYRatio ?? DEFAULT_SKIRT_Y_RATIO));
 
     // --- 输入校验 ---
     const posArr = positions instanceof Float32Array ? positions : new Float32Array(positions);
-    const idxArr = indices instanceof Uint32Array
-        ? indices
-        : indices instanceof Int32Array
-            ? new Uint32Array(indices)
-            : new Uint32Array(indices);
+    const idxArr =
+        indices instanceof Uint32Array
+            ? indices
+            : indices instanceof Int32Array
+              ? new Uint32Array(indices)
+              : new Uint32Array(indices);
 
     const vertexCount = posArr.length / 3;
     const triangleCount = idxArr.length / 3;
@@ -197,18 +202,32 @@ export function analyzeSkirt(
     // --- 2. 包围盒计算 ---
     let minY = Infinity;
     let maxY = -Infinity;
-    let minX = Infinity, maxX = -Infinity;
-    let minZ = Infinity, maxZ = -Infinity;
+    let minX = Infinity,
+        maxX = -Infinity;
+    let minZ = Infinity,
+        maxZ = -Infinity;
     for (let i = 0; i < posArr.length; i += 3) {
         const x = posArr[i];
         const y = posArr[i + 1];
         const z = posArr[i + 2];
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (z < minZ) minZ = z;
-        if (z > maxZ) maxZ = z;
+        if (y < minY) {
+            minY = y;
+        }
+        if (y > maxY) {
+            maxY = y;
+        }
+        if (x < minX) {
+            minX = x;
+        }
+        if (x > maxX) {
+            maxX = x;
+        }
+        if (z < minZ) {
+            minZ = z;
+        }
+        if (z > maxZ) {
+            maxZ = z;
+        }
     }
     const modelHeight = Math.max(maxY - minY, 1e-6);
     const skirtYThreshold = minY + modelHeight * skirtYRatio;
@@ -221,7 +240,11 @@ export function analyzeSkirt(
         const i0 = idxArr[t * 3];
         const i1 = idxArr[t * 3 + 1];
         const i2 = idxArr[t * 3 + 2];
-        for (const [a, b] of [[i0, i1], [i1, i2], [i2, i0]] as const) {
+        for (const [a, b] of [
+            [i0, i1],
+            [i1, i2],
+            [i2, i0],
+        ] as const) {
             const key = edgeKey(a, b);
             edgeCounts.set(key, (edgeCounts.get(key) ?? 0) + 1);
         }
@@ -257,7 +280,9 @@ export function analyzeSkirt(
     // 多环 → 判定非裙摆，安全跳过自动生成，避免对腿部误注入虚拟裙骨。
     const bottomComponents: number[][] = [];
     for (const [, verts] of components) {
-        if (verts.length < MIN_COMPONENT_SIZE) continue;
+        if (verts.length < MIN_COMPONENT_SIZE) {
+            continue;
+        }
         let sumY = 0;
         for (const v of verts) {
             sumY += posArr[v * 3 + 1];
@@ -272,7 +297,8 @@ export function analyzeSkirt(
         return { ...empty, boundaryEdgeCount: boundaryEdges.length, hasExistingSkirtBones: false };
     }
     // 取唯一的底部连通分量作为裙边环（无底部环则进入 fallback）
-    const hemComponent: number[] | null = bottomComponents.length === 1 ? bottomComponents[0] : null;
+    const hemComponent: number[] | null =
+        bottomComponents.length === 1 ? bottomComponents[0] : null;
     const hemAvgY = hemComponent ? skirtYThreshold : Infinity;
 
     // --- 6. 确定裙摆区域顶点 ---
@@ -287,9 +313,17 @@ export function analyzeSkirt(
             const i0 = idxArr[t * 3];
             const i1 = idxArr[t * 3 + 1];
             const i2 = idxArr[t * 3 + 2];
-            for (const [a, b] of [[i0, i1], [i1, i2], [i2, i0]] as const) {
-                if (!adjacency.has(a)) adjacency.set(a, new Set());
-                if (!adjacency.has(b)) adjacency.set(b, new Set());
+            for (const [a, b] of [
+                [i0, i1],
+                [i1, i2],
+                [i2, i0],
+            ] as const) {
+                if (!adjacency.has(a)) {
+                    adjacency.set(a, new Set());
+                }
+                if (!adjacency.has(b)) {
+                    adjacency.set(b, new Set());
+                }
                 adjacency.get(a)!.add(b);
                 adjacency.get(b)!.add(a);
             }
@@ -301,13 +335,20 @@ export function analyzeSkirt(
         while (queue.length > 0) {
             const v = queue.shift()!;
             const vy = posArr[v * 3 + 1];
-            if (vy > hemMaxY) continue;
+            if (vy > hemMaxY) {
+                continue;
+            }
             const neighbors = adjacency.get(v);
-            if (!neighbors) continue;
+            if (!neighbors) {
+                continue;
+            }
             for (const n of neighbors) {
-                if (visited.has(n)) continue;
+                if (visited.has(n)) {
+                    continue;
+                }
                 const ny = posArr[n * 3 + 1];
-                if (ny >= vy - 0.001 && ny <= hemMaxY) { // 允许微小误差，向上扩展
+                if (ny >= vy - 0.001 && ny <= hemMaxY) {
+                    // 允许微小误差，向上扩展
                     visited.add(n);
                     queue.push(n);
                 }
@@ -320,7 +361,9 @@ export function analyzeSkirt(
         // P2a 防误判：仅取「外扩裙摆」区域，排除中央腿/裤柱。
         // 计算该 Y 带内顶点在 XZ 平面的质心与最大径向距离，
         // 仅保留径向距离 ≥ 35% 最大径向的顶点（裙摆为外扩锥，腿/裤为中央柱）。
-        let bcx = 0, bcz = 0, bandCount = 0;
+        let bcx = 0,
+            bcz = 0,
+            bandCount = 0;
         for (let i = 0; i < vertexCount; i++) {
             if (posArr[i * 3 + 1] <= skirtYThreshold) {
                 bcx += posArr[i * 3];
@@ -338,7 +381,9 @@ export function analyzeSkirt(
                 const dx = posArr[i * 3] - bcx;
                 const dz = posArr[i * 3 + 2] - bcz;
                 const r = Math.sqrt(dx * dx + dz * dz);
-                if (r > maxRadial) maxRadial = r;
+                if (r > maxRadial) {
+                    maxRadial = r;
+                }
             }
         }
         const radialCut = maxRadial * 0.35;
@@ -361,7 +406,8 @@ export function analyzeSkirt(
 
     // --- 7. 角度聚类 → 分链 ---
     // 计算裙摆顶点在 XZ 平面的质心
-    let cx = 0, cz = 0;
+    let cx = 0,
+        cz = 0;
     for (const v of skirtVertices) {
         cx += posArr[v * 3];
         cz += posArr[v * 3 + 2];
@@ -377,7 +423,9 @@ export function analyzeSkirt(
     }
 
     // 按角度排序
-    const sortedByAngle = [...skirtVertices].sort((a, b) => vertexAngles.get(a)! - vertexAngles.get(b)!);
+    const sortedByAngle = [...skirtVertices].sort(
+        (a, b) => vertexAngles.get(a)! - vertexAngles.get(b)!
+    );
 
     // 分成 chainCount 个组（每个组 = 一条链）
     const chainGroups: number[][] = [];
@@ -415,10 +463,14 @@ export function analyzeSkirt(
             const start = s * verticesPerSegment;
             const end = Math.min(start + verticesPerSegment, sortedByY.length);
             const segVertices = sortedByY.slice(start, end);
-            if (segVertices.length === 0) continue;
+            if (segVertices.length === 0) {
+                continue;
+            }
 
             // 骨节 rest 位置 = 该层顶点的平均位置
-            let sx = 0, sy = 0, sz = 0;
+            let sx = 0,
+                sy = 0,
+                sz = 0;
             for (const v of segVertices) {
                 sx += posArr[v * 3];
                 sy += posArr[v * 3 + 1];

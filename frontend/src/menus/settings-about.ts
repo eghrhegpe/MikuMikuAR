@@ -223,7 +223,8 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     const refreshCacheStats = () => {
                         GetCacheStats()
                             .then((s) => {
-                                const total = statRow.querySelector<HTMLElement>('[data-cache-total]');
+                                const total =
+                                    statRow.querySelector<HTMLElement>('[data-cache-total]');
                                 const detail =
                                     statRow.querySelector<HTMLElement>('[data-cache-detail]');
                                 if (total) {
@@ -364,13 +365,18 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                 target: SETTINGS_ACTION.CLEAR_THUMBNAIL,
                             })
                     );
-                    slideRow(c, 'lucide:trash', t('settings.about.maintenance.clearAll'), false, () =>
-                        handleSettingsAction({
-                            kind: 'action',
-                            label: '',
-                            icon: '',
-                            target: SETTINGS_ACTION.CLEAR_ALL_CACHE,
-                        })
+                    slideRow(
+                        c,
+                        'lucide:trash',
+                        t('settings.about.maintenance.clearAll'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.CLEAR_ALL_CACHE,
+                            })
                     );
                 });
             },
@@ -382,13 +388,23 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.about.settingsMgmt'));
-                    slideRow(inner, 'lucide:download', t('settings.about.settingsMgmt.export'), false, () =>
-                        exportSettings()
+                    slideRow(
+                        inner,
+                        'lucide:download',
+                        t('settings.about.settingsMgmt.export'),
+                        false,
+                        () => exportSettings()
                     );
-                    slideRow(inner, 'lucide:upload', t('settings.about.settingsMgmt.import'), false, () => {
-                        importSettings();
-                        getSettingsMenu()?.reRender();
-                    });
+                    slideRow(
+                        inner,
+                        'lucide:upload',
+                        t('settings.about.settingsMgmt.import'),
+                        false,
+                        () => {
+                            importSettings();
+                            getSettingsMenu()?.reRender();
+                        }
+                    );
                     slideRow(
                         inner,
                         'lucide:rotate-ccw',
@@ -401,7 +417,8 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         }
                     );
                     const hint = document.createElement('div');
-                    hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                    hint.style.cssText =
+                        'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
                     hint.textContent = t('settings.about.settingsMgmt.hint');
                     inner.appendChild(hint);
                 });

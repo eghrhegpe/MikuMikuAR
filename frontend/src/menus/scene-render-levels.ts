@@ -77,17 +77,68 @@ function _renderScenePresetList(container: HTMLElement, scenes: string[]): void 
             onDelete: async (name) => {
                 const r = await tryCatchStatus(
                     () => DeletePresetScene(name),
-                    t('scene.statusDeleteFailed'),
+                    t('scene.statusDeleteFailed')
                 );
-                if (r === undefined) throw Error('delete failed');
+                if (r === undefined) {
+                    throw Error('delete failed');
+                }
                 setStatus(t('scene.statusDeleted', { name }), true);
             },
             deleteConfirmText: (name) => t('scene.confirmDeletePreset', { name }),
             emptyText: t('scene.noPresetScenes'),
         },
         reRenderSceneMenu,
-        scenes,
+        scenes
     );
+}
+
+function buildPresetScenesSchema(): MenuNode[] {
+    return [
+        // 导出/导入场景包
+        {
+            id: 'presetScenes:bundle',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const bundleActions = document.createElement('div');
+                bundleActions.className = 'lcard';
+                slideRow(
+                    bundleActions,
+                    'lucide:file-up',
+                    t('scene.exportSceneBundle'),
+                    false,
+                    () => {
+                        void exportSceneBundle();
+                    }
+                );
+                slideRow(
+                    bundleActions,
+                    'lucide:file-down',
+                    t('scene.importSceneBundle'),
+                    false,
+                    () => {
+                        void importSceneBundle();
+                    }
+                );
+                c.appendChild(bundleActions);
+            },
+        },
+        // 预设列表（异步加载）
+        {
+            id: 'presetScenes:list',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const loadingPlaceholder = document.createElement('div');
+                loadingPlaceholder.textContent = t('common.loading');
+                loadingPlaceholder.style.cssText =
+                    'padding:14px;color:var(--text-dim);font-size:var(--font-ui-sm);';
+                c.appendChild(loadingPlaceholder);
+                void GetPresetScenes().then((scenes: string[] | null) => {
+                    c.removeChild(loadingPlaceholder);
+                    _renderScenePresetList(c, scenes || []);
+                });
+            },
+        },
+    ];
 }
 
 export function buildPresetScenesLevel(): PopupLevel {
@@ -95,28 +146,9 @@ export function buildPresetScenesLevel(): PopupLevel {
         label: t('scene.presetScenes'),
         dir: '',
         items: [],
-        renderCustom: async (container) => {
+        renderCustom: (container) => {
             container.classList.remove('render-card');
-
-            // 导出/导入场景包 action
-            const bundleActions = document.createElement('div');
-            bundleActions.className = 'lcard';
-            slideRow(bundleActions, 'lucide:file-up', t('scene.exportSceneBundle'), false, () => {
-                void exportSceneBundle();
-            });
-            slideRow(bundleActions, 'lucide:file-down', t('scene.importSceneBundle'), false, () => {
-                void importSceneBundle();
-            });
-            const bundleDivider = document.createElement('div');
-            bundleDivider.className = 'slide-divider';
-            container.appendChild(bundleActions);
-            container.appendChild(bundleDivider);
-
-            // 一次性获取数据，避免双请求
-            const scenes: string[] = (await GetPresetScenes()) || [];
-
-            // 滤镜 + 列表（通过通用组件渲染）
-            _renderScenePresetList(container, scenes);
+            renderMenu(buildPresetScenesSchema(), container);
         },
     };
 }
@@ -168,11 +200,7 @@ function _renderAntiAliasingControl(container: HTMLElement): void {
             { value: '4x', label: '4x' },
             { value: '8x', label: '8x' },
         ],
-        state.msaaSamples > 1
-            ? `${state.msaaSamples}x`
-            : state.fxaaEnabled
-              ? 'fxaa'
-              : 'off',
+        state.msaaSamples > 1 ? `${state.msaaSamples}x` : state.fxaaEnabled ? 'fxaa' : 'off',
         (v) => {
             const updates: Partial<RenderState> = {};
             if (v === 'off') {
@@ -193,13 +221,9 @@ function _renderAntiAliasingControl(container: HTMLElement): void {
         {
             bind: () => {
                 const s = getRenderState();
-                return s.msaaSamples > 1
-                    ? `${s.msaaSamples}x`
-                    : s.fxaaEnabled
-                      ? 'fxaa'
-                      : 'off';
+                return s.msaaSamples > 1 ? `${s.msaaSamples}x` : s.fxaaEnabled ? 'fxaa' : 'off';
             },
-        },
+        }
     );
 }
 
@@ -223,7 +247,7 @@ function _renderToneMappingControl(container: HTMLElement): void {
         },
         'lucide:palette',
         undefined,
-        { bind: () => getRenderState().toneMapping },
+        { bind: () => getRenderState().toneMapping }
     );
 }
 

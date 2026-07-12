@@ -105,7 +105,7 @@ export const ja: Record<string, string> = {
     'model-detail.transform': '変換',
     'model-detail.materialAdjust': 'マテリアル調整',
     'model-detail.morphPreview': 'モーフプレビュー',
-    'model-detail.outfitVariant': '衣装バリエーション',
+    'model-detail.outfitVariant': 'テクスチャ置換',
     'model-detail.info': '情報',
     'model-detail.basicInfo': '基本情報',
     'model-detail.boneHierarchy': 'ボーン階層',
@@ -251,7 +251,8 @@ export const ja: Record<string, string> = {
     'cloth.skippedAll': 'すべてのモデルに既にスカートボーンがあります',
     'cloth.noRuntime': '物理ランタイムが準備できていません',
     'cloth.status': '適用中：{n} 個',
-    'cloth.hint': 'スカートボーンを持たないモデルにのみ適用。リアルタイム物理でスカートの揺れを再現',
+    'cloth.hint':
+        'スカートボーンを持たないモデルにのみ適用。リアルタイム物理でスカートの揺れを再現',
     'cloth.quality': '品質',
     'cloth.qualityAuto': '自動',
     'cloth.qualityHigh': '高',
@@ -768,11 +769,11 @@ export const ja: Record<string, string> = {
     'library.unsupportedFormat': '未対応の形式です（PMX / ZIP / VMD のみ対応）',
 
     // —— Outfit Variants ——
-    'outfit.variant': '衣装バリエーション',
+    'outfit.variant': 'テクスチャ置換',
     'outfit.modelRemoved': 'モデルが削除されました',
     'outfit.loadConfigFailed': '⚠ 衣装設定の読み込みに失敗しました',
     'outfit.noOutfitsConfig':
-        'このモデルに outfits.json がありません。モデルフォルダに outfits.json を作成すると衣装バリエーションが使用できます。',
+        'このモデルに outfits.json がありません。モデルフォルダに outfits.json を作成するとテクスチャ置換が使用できます。',
     'outfit.default': 'デフォルト',
     'outfit.switching': '⏳ バリエーションを切り替え中...',
     'outfit.switchFailed': '✗ バリエーションの切り替えに失敗しました',

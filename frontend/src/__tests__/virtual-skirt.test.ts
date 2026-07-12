@@ -74,7 +74,14 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBodyConstructionInf
 
 vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/constraint', () => ({
     Generic6DofSpringConstraint: class {
-        constructor(_r: unknown, _a: unknown, _b: unknown, _fa: unknown, _fb: unknown, _use: unknown) {}
+        constructor(
+            _r: unknown,
+            _a: unknown,
+            _b: unknown,
+            _fa: unknown,
+            _fb: unknown,
+            _use: unknown
+        ) {}
         dispose = () => {
             hoisted.callOrder.push('constraint.dispose');
         };
@@ -112,7 +119,12 @@ interface MeshData {
     indices: Uint32Array;
 }
 
-function createOpenBottomCylinder(radius: number, height: number, radialSegs: number, heightSegs: number): MeshData {
+function createOpenBottomCylinder(
+    radius: number,
+    height: number,
+    radialSegs: number,
+    heightSegs: number
+): MeshData {
     const positions: number[] = [];
     const indices: number[] = [];
     for (let r = 0; r <= heightSegs; r++) {
@@ -127,16 +139,16 @@ function createOpenBottomCylinder(radius: number, height: number, radialSegs: nu
     for (let r = 0; r < heightSegs; r++) {
         for (let a = 0; a < radialSegs; a++) {
             const v0 = r * radialSegs + a;
-            const v1 = r * radialSegs + (a + 1) % radialSegs;
+            const v1 = r * radialSegs + ((a + 1) % radialSegs);
             const v2 = (r + 1) * radialSegs + a;
-            const v3 = (r + 1) * radialSegs + (a + 1) % radialSegs;
+            const v3 = (r + 1) * radialSegs + ((a + 1) % radialSegs);
             indices.push(v0, v1, v2);
             indices.push(v1, v3, v2);
         }
     }
     const topRingStart = heightSegs * radialSegs;
     for (let a = 0; a < radialSegs; a++) {
-        indices.push(centerIdx, topRingStart + (a + 1) % radialSegs, topRingStart + a);
+        indices.push(centerIdx, topRingStart + ((a + 1) % radialSegs), topRingStart + a);
     }
     return { positions: new Float32Array(positions), indices: new Uint32Array(indices) };
 }
@@ -145,7 +157,7 @@ function makeModel(
     mesh: MeshData,
     bones: { name: string; worldMatrix: Float32Array }[],
     withPhysicsWorld = true,
-    meshWorldMatrix?: Matrix,
+    meshWorldMatrix?: Matrix
 ): IMmdModel {
     const updateVerticesData = vi.fn();
     const model: Record<string, unknown> = {
@@ -199,7 +211,13 @@ function makeScene(): { scene: Scene; getCb: () => () => void } {
 }
 
 function testConfig(overrides: Partial<VirtualSkirtConfig> = {}): VirtualSkirtConfig {
-    return { ...defaultVirtualSkirtConfig, enabled: true, chains: 6, segmentsPerChain: 3, ...overrides };
+    return {
+        ...defaultVirtualSkirtConfig,
+        enabled: true,
+        chains: 6,
+        segmentsPerChain: 3,
+        ...overrides,
+    };
 }
 
 // ============================================================================
@@ -237,7 +255,11 @@ describe('VirtualSkirtController — Phase 2 注入', () => {
 
     it('模型无物理世界时分配独立 worldId（nextWorldId 递增）', () => {
         const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
-        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: new Float32Array(16) }], false);
+        const model = makeModel(
+            mesh,
+            [{ name: 'Waist', worldMatrix: new Float32Array(16) }],
+            false
+        );
         const { physics } = makePhysics();
         const runtime = makeRuntime(physics);
         const { scene } = makeScene();
@@ -274,7 +296,12 @@ describe('VirtualSkirtController — Phase 2 注入', () => {
         const runtime = makeRuntime(physics);
         const { scene } = makeScene();
 
-        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig({ maxVertices: 1 }));
+        const ctrl = new VirtualSkirtController(
+            model,
+            scene,
+            runtime,
+            testConfig({ maxVertices: 1 })
+        );
         const ok = ctrl.build();
 
         expect(ok).toBe(false);
@@ -330,7 +357,9 @@ describe('VirtualSkirtController — dispose 释放链路', () => {
         expect(firstShape).toBeGreaterThan(firstInfo);
 
         // 每个约束/刚体/构造信息/形状都各 dispose 一次
-        expect(hoisted.callOrder.filter((c) => c === 'constraint.dispose').length).toBe(constrCount);
+        expect(hoisted.callOrder.filter((c) => c === 'constraint.dispose').length).toBe(
+            constrCount
+        );
         expect(hoisted.callOrder.filter((c) => c === 'rb.dispose').length).toBe(1 + segCount);
         expect(hoisted.callOrder.filter((c) => c === 'info.dispose').length).toBe(1 + segCount);
         expect(hoisted.callOrder.filter((c) => c === 'shape.dispose').length).toBe(1 + segCount);
@@ -364,8 +393,13 @@ describe('VirtualSkirtController — 每帧更新', () => {
     it('每帧回调：锚定体跟随腰骨 + 顶点回写', () => {
         const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
         const waistMatrix = new Float32Array(16);
-        waistMatrix[0] = 1; waistMatrix[5] = 1; waistMatrix[10] = 1; waistMatrix[15] = 1;
-        waistMatrix[12] = 0.5; waistMatrix[13] = 1.0; waistMatrix[14] = -0.2;
+        waistMatrix[0] = 1;
+        waistMatrix[5] = 1;
+        waistMatrix[10] = 1;
+        waistMatrix[15] = 1;
+        waistMatrix[12] = 0.5;
+        waistMatrix[13] = 1.0;
+        waistMatrix[14] = -0.2;
         const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: waistMatrix }]);
         const { physics } = makePhysics();
         const runtime = makeRuntime(physics);
@@ -400,7 +434,12 @@ describe('VirtualSkirtController — Phase 5 性能/LOD/降频', () => {
     });
 
     it('QUALITY_PRESETS: LOD 上限随档位递减, low 降频最激进', () => {
-        expect(QUALITY_PRESETS.high).toEqual({ chainsCap: 32, segmentsCap: 16, throttleEvery: 1, maxVertices: 4000 });
+        expect(QUALITY_PRESETS.high).toEqual({
+            chainsCap: 32,
+            segmentsCap: 16,
+            throttleEvery: 1,
+            maxVertices: 4000,
+        });
         expect(QUALITY_PRESETS.medium.throttleEvery).toBe(2);
         expect(QUALITY_PRESETS.low.throttleEvery).toBe(3);
         expect(QUALITY_PRESETS.low.maxVertices).toBeLessThan(QUALITY_PRESETS.high.maxVertices);
@@ -417,7 +456,10 @@ describe('VirtualSkirtController — Phase 5 性能/LOD/降频', () => {
 
         // 用户选高档参数, 但 quality=low 应强制收紧
         const ctrl = new VirtualSkirtController(
-            model, scene, runtime, testConfig({ quality: 'low', chains: 32, segmentsPerChain: 16 }),
+            model,
+            scene,
+            runtime,
+            testConfig({ quality: 'low', chains: 32, segmentsPerChain: 16 })
         );
         const ok = ctrl.build();
 
@@ -436,7 +478,10 @@ describe('VirtualSkirtController — Phase 5 性能/LOD/降频', () => {
         const { scene } = makeScene();
 
         const ctrl = new VirtualSkirtController(
-            model, scene, runtime, testConfig({ quality: 'high', chains: 6, segmentsPerChain: 3 }),
+            model,
+            scene,
+            runtime,
+            testConfig({ quality: 'high', chains: 6, segmentsPerChain: 3 })
         );
         const ok = ctrl.build();
 
@@ -455,13 +500,23 @@ describe('VirtualSkirtController — Phase 5 性能/LOD/降频', () => {
         const { physics: physicsLow } = makePhysics();
         const runtimeLow = makeRuntime(physicsLow);
         const { scene: sceneLow } = makeScene();
-        const ctrlLow = new VirtualSkirtController(model, sceneLow, runtimeLow, testConfig({ quality: 'low' }));
+        const ctrlLow = new VirtualSkirtController(
+            model,
+            sceneLow,
+            runtimeLow,
+            testConfig({ quality: 'low' })
+        );
         expect(ctrlLow.build()).toBe(false);
 
         const { physics: physicsHigh } = makePhysics();
         const runtimeHigh = makeRuntime(physicsHigh);
         const { scene: sceneHigh } = makeScene();
-        const ctrlHigh = new VirtualSkirtController(model, sceneHigh, runtimeHigh, testConfig({ quality: 'high' }));
+        const ctrlHigh = new VirtualSkirtController(
+            model,
+            sceneHigh,
+            runtimeHigh,
+            testConfig({ quality: 'high' })
+        );
         expect(ctrlHigh.build()).toBe(true);
     });
 
@@ -474,7 +529,9 @@ describe('VirtualSkirtController — Phase 5 性能/LOD/降频', () => {
         const { scene: sl, getCb: getCbL } = makeScene();
         const ctrlL = new VirtualSkirtController(modelL, sl, rl, testConfig({ quality: 'low' }));
         ctrlL.build();
-        for (let i = 0; i < 6; i++) getCbL()();
+        for (let i = 0; i < 6; i++) {
+            getCbL()();
+        }
         const meshL = modelL.mesh as unknown as { updateVerticesData: ReturnType<typeof vi.fn> };
         expect(meshL.updateVerticesData.mock.calls.length).toBe(2); // 帧 0, 3
 
@@ -484,7 +541,9 @@ describe('VirtualSkirtController — Phase 5 性能/LOD/降频', () => {
         const { scene: sh, getCb: getCbH } = makeScene();
         const ctrlH = new VirtualSkirtController(modelH, sh, rh, testConfig({ quality: 'high' }));
         ctrlH.build();
-        for (let i = 0; i < 6; i++) getCbH()();
+        for (let i = 0; i < 6; i++) {
+            getCbH()();
+        }
         const meshH = modelH.mesh as unknown as { updateVerticesData: ReturnType<typeof vi.fn> };
         expect(meshH.updateVerticesData.mock.calls.length).toBe(6);
     });
@@ -547,7 +606,7 @@ describe('VirtualSkirtController — P1 坐标空间一致性', () => {
             mesh,
             [{ name: 'Waist', worldMatrix: waistMatrix }],
             true,
-            Matrix.Translation(10, 0, 0), // mesh 整体平移 +10
+            Matrix.Translation(10, 0, 0) // mesh 整体平移 +10
         );
         const { physics } = makePhysics();
         const runtime = makeRuntime(physics);
@@ -572,12 +631,15 @@ describe('VirtualSkirtController — P1 坐标空间一致性', () => {
     it('每帧写回在平移 mesh 下不抛错，且顶点 Buffer 被更新', () => {
         const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
         const waistMatrix = new Float32Array(16);
-        waistMatrix[0] = 1; waistMatrix[5] = 1; waistMatrix[10] = 1; waistMatrix[15] = 1;
+        waistMatrix[0] = 1;
+        waistMatrix[5] = 1;
+        waistMatrix[10] = 1;
+        waistMatrix[15] = 1;
         const model = makeModel(
             mesh,
             [{ name: 'Waist', worldMatrix: waistMatrix }],
             true,
-            Matrix.Translation(3, 0, -2),
+            Matrix.Translation(3, 0, -2)
         );
         const { physics } = makePhysics();
         const runtime = makeRuntime(physics);
@@ -609,7 +671,9 @@ describe('VirtualSkirtController — P3a build 异常清理', () => {
         let calls = 0;
         impl.addRigidBody.mockImplementation(() => {
             calls++;
-            if (calls >= 2) throw new Error('boom');
+            if (calls >= 2) {
+                throw new Error('boom');
+            }
             return true;
         });
 
@@ -638,8 +702,13 @@ describe('VirtualSkirtController — P3e 腰骨缓存', () => {
     it('build 后缓存腰骨, runtimeBones 被清空仍跟随（不每帧重查）', () => {
         const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
         const waistMatrix = new Float32Array(16);
-        waistMatrix[0] = 1; waistMatrix[5] = 1; waistMatrix[10] = 1; waistMatrix[15] = 1;
-        waistMatrix[12] = 0.5; waistMatrix[13] = 1.0; waistMatrix[14] = -0.2;
+        waistMatrix[0] = 1;
+        waistMatrix[5] = 1;
+        waistMatrix[10] = 1;
+        waistMatrix[15] = 1;
+        waistMatrix[12] = 0.5;
+        waistMatrix[13] = 1.0;
+        waistMatrix[14] = -0.2;
         const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: waistMatrix }]);
         const { physics } = makePhysics();
         const runtime = makeRuntime(physics);

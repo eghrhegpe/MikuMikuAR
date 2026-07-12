@@ -25,7 +25,6 @@ import {
 import { registerPopupMenu } from './menu-factory';
 import { slideRow, addToggleRow, addEmptyRow, addSliderRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
-import { createIconifyIcon } from '../core/icons';
 import { loadManager } from '../core/load-manager';
 
 import {
@@ -35,9 +34,6 @@ import {
     getPhysicsCategories,
     isPhysicsCategoryEnabled,
     setPhysicsCategory,
-    setModelWireframe,
-    setModelBoneLinesVis,
-    setModelBoneJointsVis,
     modelManager,
 } from '../scene/scene';
 import {
@@ -69,8 +65,9 @@ import { buildBoneOverrideLevel } from './motion-override-levels';
 import { buildFeetLevel } from './motion-feet-levels'; // [doc:adr-085]
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { buildVirtualSkirtLevel } from './motion-cloth-levels'; // [doc:adr-084]
-import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 
 // ======== 从子文件导入 ========
 // ======== Barrel Re-Exports ========
@@ -84,116 +81,131 @@ const CAT_KEYS: Record<string, string> = {
 
 // ======== Build action model row and binding =====
 
-function buildActionBindingLevel(id: string): PopupLevel {
+function buildActionBindingSchema(id: string): MenuNode[] {
     const inst = modelManager.get(id);
     if (!inst) {
-        return { label: t('motion.bindingTitle'), dir: '', items: [] };
+        return [];
     }
-    return {
-        label: inst.name,
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            // === Card: 更换动作（替换 Layer 0）===
-            cardContainer(container, (c) => {
-                slideRow(
-                    c,
-                    'lucide:music',
-                    t('motion.changeMotion'),
-                    true,
-                    () => {
-                        setMotionBindingTargetId(id);
+
+    const physCategories = inst.kind === 'actor' ? getPhysicsCategories(id) : [];
+
+    return [
+        // 卡片 1：更换动作 + 姿势库
+        {
+            id: 'binding:change',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(
+                        inner,
+                        'lucide:music',
+                        t('motion.changeMotion'),
+                        true,
+                        () => {
+                            setMotionBindingTargetId(id);
+                            const level = stackRegistry.buildLevel!(
+                                getBrowseDir('vmd'),
+                                t('motion.motionLibrary'),
+                                (m) => m.format === 'vmd'
+                            );
+                            level.label = t('motion.bindMotionTo', { name: inst.name });
+                            if (getMotionMenu()) {
+                                getMotionMenu()?.push(level);
+                            }
+                        },
+                        inst.vmdName || t('motion.none')
+                    );
+                    const firstRow = inner.querySelector('.slide-item');
+                    if (firstRow) {
+                        const sublabelEl = firstRow.querySelector('.slide-sublabel');
+                        if (sublabelEl) {
+                            getCurrentRenderingMenu()?.registerControl(() => {
+                                const currentInst = modelManager.get(id);
+                                if (currentInst) {
+                                    sublabelEl.textContent =
+                                        currentInst.vmdName || t('motion.none');
+                                }
+                            });
+                        }
+                    }
+                    slideRow(inner, 'lucide:user', t('motion.poseLibrary'), true, () => {
                         const level = stackRegistry.buildLevel!(
-                            getBrowseDir('vmd'),
-                            t('motion.motionLibrary'),
-                            (m) => m.format === 'vmd'
+                            getBrowseDir('vpd'),
+                            t('motion.poseLibrary'),
+                            (m) => m.format === 'vpd'
                         );
-                        level.label = t('motion.bindMotionTo', { name: inst.name });
+                        level.label = t('motion.poseTo', { name: inst.name });
                         if (getMotionMenu()) {
                             getMotionMenu()?.push(level);
                         }
-                    },
-                    inst.vmdName || t('motion.none')
-                );
-                const firstRow = c.querySelector('.slide-item');
-                if (firstRow) {
-                    const sublabelEl = firstRow.querySelector('.slide-sublabel');
-                    if (sublabelEl) {
-                        getCurrentRenderingMenu()?.registerControl(() => {
-                            const currentInst = modelManager.get(id);
-                            if (currentInst) {
-                                sublabelEl.textContent = currentInst.vmdName || t('motion.none');
+                    });
+                });
+            },
+        },
+        // 卡片 2：物理分类 toggles（条件：角色且有物理类别）
+        {
+            id: 'binding:physics',
+            kind: 'custom',
+            visibleWhen: () => physCategories.length > 0,
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    for (const cat of physCategories) {
+                        const enabled = isPhysicsCategoryEnabled(id, cat);
+                        addToggleRow(
+                            inner,
+                            t(CAT_KEYS[cat] || cat),
+                            enabled,
+                            (v) => {
+                                setPhysicsCategory(id, cat, v);
+                                getMotionMenu()?.updateControls();
+                                const catLabel = t(CAT_KEYS[cat] || cat);
+                                setStatus(
+                                    v
+                                        ? t('motion.catEnabled', { cat: catLabel })
+                                        : t('motion.catDisabled', { cat: catLabel }),
+                                    true
+                                );
+                            },
+                            'lucide:settings',
+                            {
+                                bind: () => isPhysicsCategoryEnabled(id, cat),
                             }
-                        });
-                    }
-                }
-                slideRow(c, 'lucide:user', t('motion.poseLibrary'), true, () => {
-                    const level = stackRegistry.buildLevel!(
-                        getBrowseDir('vpd'),
-                        t('motion.poseLibrary'),
-                        (m) => m.format === 'vpd'
-                    );
-                    level.label = t('motion.poseTo', { name: inst.name });
-                    if (getMotionMenu()) {
-                        getMotionMenu()?.push(level);
+                        );
                     }
                 });
-            });
-
-            // === Card: 物理分类 toggles（仅角色）===
-            if (inst.kind === 'actor') {
-                const physCategories = getPhysicsCategories(id);
-                if (physCategories.length > 0) {
-                    cardContainer(container, (c) => {
-                        for (const cat of physCategories) {
-                            const enabled = isPhysicsCategoryEnabled(id, cat);
-                            addToggleRow(
-                                c,
-                                t(CAT_KEYS[cat] || cat),
-                                enabled,
-                                (v) => {
-                                    setPhysicsCategory(id, cat, v);
-                                    getMotionMenu()?.updateControls();
-                                    const catLabel = t(CAT_KEYS[cat] || cat);
-                                    setStatus(
-                                        v
-                                            ? t('motion.catEnabled', { cat: catLabel })
-                                            : t('motion.catDisabled', { cat: catLabel }),
-                                        true
-                                    );
-                                },
-                                'lucide:settings',
-                                {
-                                    bind: () => isPhysicsCategoryEnabled(id, cat),
-                                }
-                            );
+            },
+        },
+        // 卡片 3：添加额外动作图层
+        {
+            id: 'binding:addLayer',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(inner, 'lucide:plus', t('motion.addLayer'), true, () => {
+                        setLayerBindingTargetId(id);
+                        const level = stackRegistry.buildLevel!(
+                            libraryRoot,
+                            t('motion.motionLibrary'),
+                            (m) => m.format === 'vmd'
+                        );
+                        level.label = t('motion.addLayerTo', { name: inst?.name ?? '?' });
+                        if (getMotionMenu()) {
+                            getMotionMenu()?.push(level);
                         }
                     });
-                }
-            }
-
-            // === Card: 添加额外动作 ===
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:plus', t('motion.addLayer'), true, () => {
-                    setLayerBindingTargetId(id);
-                    const level = stackRegistry.buildLevel!(
-                        libraryRoot,
-                        t('motion.motionLibrary'),
-                        (m) => m.format === 'vmd'
-                    );
-                    level.label = t('motion.addLayerTo', { name: inst?.name ?? '?' });
-                    if (getMotionMenu()) {
-                        getMotionMenu()?.push(level);
-                    }
                 });
-            });
-
-            // === Card: 图层列表 ===
-            const layers = getVmdLayers(id);
-            if (layers.length > 0) {
-                cardContainer(container, (c) => {
-                    for (let i = 0; i < layers.length; i++) {
-                        const layer = layers[i];
+            },
+        },
+        // 卡片 4：图层列表（条件：有图层）
+        {
+            id: 'binding:layers',
+            kind: 'custom',
+            visibleWhen: () => getVmdLayers(id).length > 0,
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const curLayers = getVmdLayers(id);
+                    for (let i = 0; i < curLayers.length; i++) {
+                        const layer = curLayers[i];
                         const isBase = i === 0;
                         const row = document.createElement('div');
                         row.className = 'slide-item';
@@ -217,7 +229,6 @@ function buildActionBindingLevel(id: string): PopupLevel {
                         label.style.whiteSpace = 'nowrap';
                         left.appendChild(label);
 
-                        // 权重滑条（Base 层固定 100%）
                         const sliderRow = document.createElement('div');
                         sliderRow.style.display = 'flex';
                         sliderRow.style.alignItems = 'center';
@@ -266,7 +277,6 @@ function buildActionBindingLevel(id: string): PopupLevel {
 
                         row.appendChild(left);
 
-                        // 启用/禁用 toggle（Base 层不显示）
                         if (!isBase) {
                             const toggle = document.createElement('button');
                             toggle.className = 'slide-action';
@@ -280,7 +290,6 @@ function buildActionBindingLevel(id: string): PopupLevel {
                             row.appendChild(toggle);
                         }
 
-                        // 删除按钮（Base 层不显示）
                         if (!isBase) {
                             const delBtn = document.createElement('button');
                             delBtn.className = 'slide-action';
@@ -294,80 +303,64 @@ function buildActionBindingLevel(id: string): PopupLevel {
                             row.appendChild(delBtn);
                         }
 
-                        c.appendChild(row);
+                        inner.appendChild(row);
                     }
                 });
-            }
-
-            // === Card: 聚焦模型 + 清除 VMD ===
-            cardContainer(container, (c) => {
-                const group = document.createElement('div');
-                group.className = 'preset-group';
-                group.style.padding = '0';
-                const focusBtn = document.createElement('button');
-                focusBtn.className = 'preset-chip';
-                focusBtn.innerHTML = t('motion.focusModel');
-                focusBtn.addEventListener('click', () => focusModel(id));
-                group.appendChild(focusBtn);
-                const clearBtn = document.createElement('button');
-                clearBtn.className = 'preset-chip';
-                clearBtn.textContent = t('motion.clearVmd');
-                clearBtn.addEventListener('click', async () => {
-                    if (inst && inst.mmdModel && mmdRuntime) {
-                        inst.mmdModel.setRuntimeAnimation(null);
-                        inst.vmdData = null;
-                        inst.vmdName = '';
-                        inst.vmdPath = null;
-                        inst.animationDuration = 0;
-                        await clearVmdLayers(id);
-                        if (isPlaying) {
-                            mmdRuntime.pauseAnimation();
-                            setIsPlaying(false);
-                        }
-                        updatePlaybackUI();
-                        getMotionMenu()?.reRender();
-                        setStatus(t('motion.motionCleared'), true);
-                    }
-                });
-                group.appendChild(clearBtn);
-                c.appendChild(group);
-            });
+            },
         },
-    };
+        // 卡片 5：聚焦模型 + 清除 VMD
+        {
+            id: 'binding:actions',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const group = document.createElement('div');
+                    group.className = 'preset-group';
+                    group.style.padding = '0';
+                    const focusBtn = document.createElement('button');
+                    focusBtn.className = 'preset-chip';
+                    focusBtn.innerHTML = t('motion.focusModel');
+                    focusBtn.addEventListener('click', () => focusModel(id));
+                    group.appendChild(focusBtn);
+                    const clearBtn = document.createElement('button');
+                    clearBtn.className = 'preset-chip';
+                    clearBtn.textContent = t('motion.clearVmd');
+                    clearBtn.addEventListener('click', async () => {
+                        if (inst && inst.mmdModel && mmdRuntime) {
+                            inst.mmdModel.setRuntimeAnimation(null);
+                            inst.vmdData = null;
+                            inst.vmdName = '';
+                            inst.vmdPath = null;
+                            inst.animationDuration = 0;
+                            await clearVmdLayers(id);
+                            if (isPlaying) {
+                                mmdRuntime.pauseAnimation();
+                                setIsPlaying(false);
+                            }
+                            updatePlaybackUI();
+                            getMotionMenu()?.reRender();
+                            setStatus(t('motion.motionCleared'), true);
+                        }
+                    });
+                    group.appendChild(clearBtn);
+                    inner.appendChild(group);
+                });
+            },
+        },
+    ];
 }
 
-function buildActionMusicLevel(): PopupLevel {
+function buildActionBindingLevel(id: string): PopupLevel {
+    const inst = modelManager.get(id);
+    if (!inst) {
+        return { label: t('motion.bindingTitle'), dir: '', items: [] };
+    }
     return {
-        label: t('motion.music'),
+        label: inst.name,
         dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                slideRow(
-                    c,
-                    'lucide:folder-open',
-                    t('motion.browseMusic'),
-                    true,
-                    () => {
-                        const level = stackRegistry.buildLevel!(
-                            libraryRoot,
-                            t('motion.musicLibrary'),
-                            (m) => m.format === 'audio'
-                        );
-                        if (getMotionMenu()) {
-                            getMotionMenu()?.push(level);
-                        }
-                    },
-                    getAudioName() || t('motion.noMusic')
-                );
-                if (getAudioName()) {
-                    slideRow(c, 'lucide:trash-2', t('motion.removeMusic'), false, () => {
-                        clearAudio();
-                        setStatus(t('motion.musicRemoved'), true);
-                        getMotionMenu()?.reRender();
-                    });
-                }
-            });
+            renderMenu(buildActionBindingSchema(id), container);
         },
     };
 }
@@ -611,55 +604,79 @@ export function syncPlaybackSpeedToRuntime(runtime: { timeScale: number }): void
     runtime.timeScale = _playbackSpeed;
 }
 
+function buildPlaybackSpeedSchema(): MenuNode[] {
+    return [
+        {
+            id: 'playbackSpeed:slider',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSliderRow(
+                        inner,
+                        t('motion.playbackSpeed'),
+                        _playbackSpeed,
+                        0.1,
+                        2.0,
+                        0.05,
+                        (v) => {
+                            _playbackSpeed = v;
+                            if (mmdRuntime) {
+                                mmdRuntime.timeScale = v;
+                            }
+                        },
+                        'lucide:gauge'
+                    );
+                });
+            },
+        },
+    ];
+}
+
 function buildPlaybackSpeedLevel(): PopupLevel {
     return {
         label: t('motion.playbackSpeed'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                addSliderRow(
-                    c,
-                    t('motion.playbackSpeed'),
-                    _playbackSpeed,
-                    0.1,
-                    2.0,
-                    0.05,
-                    (v) => {
-                        _playbackSpeed = v;
-                        if (mmdRuntime) {
-                            mmdRuntime.timeScale = v;
-                        }
-                    },
-                    'lucide:gauge'
-                );
-            });
+            renderMenu(buildPlaybackSpeedSchema(), container);
         },
     };
 }
 
-function buildRecentMotionsLevel(): PopupLevel {
+function buildRecentMotionsSchema(): MenuNode[] {
     const recent = getRecentMotions();
+    return [
+        {
+            id: 'recent:list',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    if (recent.length === 0) {
+                        addEmptyRow(inner, t('motion.noRecent'));
+                        return;
+                    }
+                    for (const r of recent) {
+                        slideRow(inner, 'lucide:music', r.name, false, () => {
+                            hideMotionPopup();
+                            loadManager.load({ kind: 'vmd', path: r.path }).catch((err) => {
+                                setStatus(t('motion.motionLoadFailed'), false);
+                                console.warn('recent motion load:', err);
+                            });
+                        });
+                    }
+                });
+            },
+        },
+    ];
+}
+
+function buildRecentMotionsLevel(): PopupLevel {
     return {
         label: t('motion.recent'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                if (recent.length === 0) {
-                    addEmptyRow(c, t('motion.noRecent'));
-                    return;
-                }
-                for (const r of recent) {
-                    slideRow(c, 'lucide:music', r.name, false, () => {
-                        hideMotionPopup();
-                        loadManager.load({ kind: 'vmd', path: r.path }).catch((err) => {
-                            setStatus(t('motion.motionLoadFailed'), false);
-                            console.warn('recent motion load:', err);
-                        });
-                    });
-                }
-            });
+            renderMenu(buildRecentMotionsSchema(), container);
         },
     };
 }

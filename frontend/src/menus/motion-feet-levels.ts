@@ -24,7 +24,9 @@ function buildFeetSchema(): MenuNode[] {
             {
                 id: 'feet:empty',
                 kind: 'custom',
-                renderCustom: (c) => { addEmptyRow(c, t('motion.feet.noModel')); },
+                renderCustom: (c) => {
+                    addEmptyRow(c, t('motion.feet.noModel'));
+                },
             },
         ];
     }
@@ -34,7 +36,9 @@ function buildFeetSchema(): MenuNode[] {
             {
                 id: 'feet:empty',
                 kind: 'custom',
-                renderCustom: (c) => { addEmptyRow(c, t('motion.feet.noModel')); },
+                renderCustom: (c) => {
+                    addEmptyRow(c, t('motion.feet.noModel'));
+                },
             },
         ];
     }
@@ -59,9 +63,7 @@ function buildFeetSchema(): MenuNode[] {
                         (v) => {
                             feet.enabled = v;
                             setStatus(
-                                v
-                                    ? t('motion.feet.enabled')
-                                    : t('motion.feet.disabled'),
+                                v ? t('motion.feet.enabled') : t('motion.feet.disabled'),
                                 true
                             );
                             persist();

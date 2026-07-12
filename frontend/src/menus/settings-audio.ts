@@ -41,14 +41,19 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     0,
                     1,
                     0.05,
-                    (v) => { setVolume(v); refresh(); },
+                    (v) => {
+                        setVolume(v);
+                        refresh();
+                    },
                     'lucide:volume-2',
                     undefined,
                     {
                         bind: () => getVolume(),
                         onUpdate: (el) => {
                             const valEl = el.querySelector('.cs-value');
-                            if (valEl) valEl.textContent = Math.round(getVolume() * 100) + '%';
+                            if (valEl) {
+                                valEl.textContent = Math.round(getVolume() * 100) + '%';
+                            }
                         },
                     }
                 );
@@ -65,7 +70,11 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     false,
                     (v) => {
                         muteFlag = v;
-                        if (v) { setVolume(0); } else { setVolume(1); }
+                        if (v) {
+                            setVolume(0);
+                        } else {
+                            setVolume(1);
+                        }
                         refresh();
                     },
                     'lucide:volume-x',
@@ -84,14 +93,19 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     -5,
                     5,
                     0.1,
-                    (v) => { setAudioOffset(v); refresh(); },
+                    (v) => {
+                        setAudioOffset(v);
+                        refresh();
+                    },
                     'lucide:clock',
                     undefined,
                     {
                         bind: () => getAudioOffset(),
                         onUpdate: (el) => {
                             const valEl = el.querySelector('.cs-value');
-                            if (valEl) valEl.textContent = getAudioOffset().toFixed(2);
+                            if (valEl) {
+                                valEl.textContent = getAudioOffset().toFixed(2);
+                            }
                         },
                     }
                 );
@@ -146,7 +160,10 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     c,
                     t('settings.sfx.enabled'),
                     getSfxEnabled(),
-                    (v) => { setSfxEnabled(v); refresh(); },
+                    (v) => {
+                        setSfxEnabled(v);
+                        refresh();
+                    },
                     'lucide:volume-2',
                     { bind: () => getSfxEnabled() }
                 );
@@ -163,14 +180,19 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     0,
                     1,
                     0.05,
-                    (v) => { setSfxVolume(v); refresh(); },
+                    (v) => {
+                        setSfxVolume(v);
+                        refresh();
+                    },
                     'lucide:volume-2',
                     undefined,
                     {
                         bind: () => getSfxVolume(),
                         onUpdate: (el) => {
                             const valEl = el.querySelector('.cs-value');
-                            if (valEl) valEl.textContent = Math.round(getSfxVolume() * 100) + '%';
+                            if (valEl) {
+                                valEl.textContent = Math.round(getSfxVolume() * 100) + '%';
+                            }
                         },
                     }
                 );
@@ -184,7 +206,10 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     c,
                     t('settings.footstep.enabled'),
                     getFootstepEnabled(),
-                    (v) => { setFootstepEnabled(v); refresh(); },
+                    (v) => {
+                        setFootstepEnabled(v);
+                        refresh();
+                    },
                     'lucide:footprints',
                     { bind: () => getFootstepEnabled() }
                 );
@@ -201,14 +226,19 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     0,
                     1,
                     0.05,
-                    (v) => { setFootstepVolume(v); refresh(); },
+                    (v) => {
+                        setFootstepVolume(v);
+                        refresh();
+                    },
                     'lucide:footprints',
                     undefined,
                     {
                         bind: () => getFootstepVolume(),
                         onUpdate: (el) => {
                             const valEl = el.querySelector('.cs-value');
-                            if (valEl) valEl.textContent = Math.round(getFootstepVolume() * 100) + '%';
+                            if (valEl) {
+                                valEl.textContent = Math.round(getFootstepVolume() * 100) + '%';
+                            }
                         },
                     }
                 );

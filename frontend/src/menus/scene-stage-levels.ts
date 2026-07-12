@@ -36,9 +36,7 @@ function buildStageSchema(): MenuNode[] {
     ).toLowerCase();
     const propModels = Array.from(modelManager.modelRegistry.entries()).filter(
         ([, inst]) =>
-            inst.kind === 'actor' &&
-            propDir &&
-            inst.filePath.toLowerCase().startsWith(propDir)
+            inst.kind === 'actor' && propDir && inst.filePath.toLowerCase().startsWith(propDir)
     );
     const propItems = [
         ...getPropList().map((p) => ({

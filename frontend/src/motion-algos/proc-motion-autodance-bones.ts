@@ -4,12 +4,7 @@
  * 躯干骨骼帧 → proc-motion-autodance-bones-trunk.ts
  * 四肢骨骼帧 → proc-motion-autodance-bones-limbs.ts
  */
-import {
-    type BoneKeyFrame,
-    INTERP_EASE_IN_OUT,
-    INTERP_EASE_OUT,
-    INTERP_SHARP,
-} from './vmd-writer';
+import { type BoneKeyFrame, INTERP_EASE_IN_OUT, INTERP_EASE_OUT, INTERP_SHARP } from './vmd-writer';
 import {
     BONE_CENTER_CANDIDATES,
     BONE_UPPER_CANDIDATES,
@@ -137,8 +132,13 @@ export function applyInterp(
 }
 
 /** 根据用户覆写设置应用插值类型 */
-export function applyInterpOverride(bones: BoneKeyFrame[], overrideInterp: InterpType | null): void {
-    if (!overrideInterp) return;
+export function applyInterpOverride(
+    bones: BoneKeyFrame[],
+    overrideInterp: InterpType | null
+): void {
+    if (!overrideInterp) {
+        return;
+    }
     for (const b of bones) {
         b.interp = overrideInterp;
     }
