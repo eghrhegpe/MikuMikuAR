@@ -2,7 +2,6 @@
 // 职责: 骨骼选择器 + 欧拉角编辑 + 权重滑块 + 已设覆盖管理
 // 路由: motion-popup.ts → motionOnFolderEnter → 'motion:boneOverride'
 
-import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import {
     setStatus,
     PopupLevel,
@@ -10,9 +9,8 @@ import {
     modelRegistry,
     focusedModelId,
 } from '../core/config';
-import { slideRow, addToggleRow, addSliderRow, addEmptyRow } from '../core/ui-helpers';
+import { addEmptyRow } from '../core/ui-helpers';
 import { getMotionMenu } from './motion-popup';
-import { modelManager } from '../scene/scene';
 import type { BoneOverrideEntry } from '../core/types';
 import {
     setBoneOverride,
@@ -21,122 +19,135 @@ import {
     getAllOverrides,
 } from '../scene/motion/bone-override';
 import { t } from '../core/i18n/t';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 
-// ======== 根级入口 ========
+function buildBoneOverrideSchema(): MenuNode[] {
+    const modelId = focusedModelId;
+    if (!modelId) {
+        return [
+            {
+                id: 'override:empty',
+                kind: 'custom',
+                renderCustom: (c) => { addEmptyRow(c, t('motion.boneOverride.noModel')); },
+            },
+        ];
+    }
 
-export function buildBoneOverrideLevel(): PopupLevel {
-    return {
-        label: t('motion.boneOverride.title'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            const modelId = focusedModelId;
-            if (!modelId) {
-                addEmptyRow(container, t('motion.boneOverride.noModel'));
-                return;
-            }
+    const inst = modelRegistry.get(modelId);
+    if (!inst?.mmdModel) {
+        return [
+            {
+                id: 'override:empty',
+                kind: 'custom',
+                renderCustom: (c) => { addEmptyRow(c, t('motion.boneOverride.noModel')); },
+            },
+        ];
+    }
 
-            const inst = modelRegistry.get(modelId);
-            if (!inst?.mmdModel) {
-                addEmptyRow(container, t('motion.boneOverride.noModel'));
-                return;
-            }
+    const bones = inst.mmdModel.runtimeBones;
+    if (bones.length === 0) {
+        return [
+            {
+                id: 'override:empty',
+                kind: 'custom',
+                renderCustom: (c) => { addEmptyRow(c, t('motion.boneOverride.noBones')); },
+            },
+        ];
+    }
 
-            const bones = inst.mmdModel.runtimeBones;
-            if (bones.length === 0) {
-                addEmptyRow(container, t('motion.boneOverride.noBones'));
-                return;
-            }
+    const menu = getMotionMenu();
+    const allEntries = inst.boneOverrides;
 
-            const menu = getMotionMenu();
+    return [
+        // 卡片 1：添加新覆盖
+        {
+            id: 'override:add',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const title = document.createElement('div');
+                    title.style.cssText =
+                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.textContent = t('motion.boneOverride.addOverride');
+                    inner.appendChild(title);
 
-            // —— 卡片 1：添加新覆盖 ——
-            cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.style.cssText =
-                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
-                title.textContent = t('motion.boneOverride.addOverride');
-                c.appendChild(title);
+                    const boneSelect = document.createElement('select');
+                    boneSelect.style.cssText =
+                        'width:100%;padding:6px 8px;margin:6px 0;border-radius:6px;' +
+                        'background:var(--surface2);color:var(--text);border:1px solid var(--border);' +
+                        'font-size:12px;';
 
-                // 骨骼选择器（下拉）
-                const boneSelect = document.createElement('select');
-                boneSelect.style.cssText =
-                    'width:100%;padding:6px 8px;margin:6px 0;border-radius:6px;' +
-                    'background:var(--surface2);color:var(--text);border:1px solid var(--border);' +
-                    'font-size:12px;';
-
-                // 构建骨骼选项（分组：按父级/区域分组）
-                const optGroups = _buildBoneOptions(bones);
-                for (const [groupLabel, boneNames] of optGroups) {
-                    const optGroup = document.createElement('optgroup');
-                    optGroup.label = groupLabel;
-                    for (const bn of boneNames) {
-                        const opt = document.createElement('option');
-                        opt.value = bn;
-                        opt.textContent = bn;
-                        optGroup.appendChild(opt);
+                    const optGroups = _buildBoneOptions(bones);
+                    for (const [groupLabel, boneNames] of optGroups) {
+                        const optGroup = document.createElement('optgroup');
+                        optGroup.label = groupLabel;
+                        for (const bn of boneNames) {
+                            const opt = document.createElement('option');
+                            opt.value = bn;
+                            opt.textContent = bn;
+                            optGroup.appendChild(opt);
+                        }
+                        boneSelect.appendChild(optGroup);
                     }
-                    boneSelect.appendChild(optGroup);
-                }
-                c.appendChild(boneSelect);
+                    inner.appendChild(boneSelect);
 
-                // 欧拉角滑块
-                const pitchSlider = _createSlider('Pitch (X)', -180, 180, 0, 1);
-                const yawSlider = _createSlider('Yaw (Y)', -180, 180, 0, 1);
-                const rollSlider = _createSlider('Roll (Z)', -180, 180, 0, 1);
-                c.appendChild(pitchSlider);
-                c.appendChild(yawSlider);
-                c.appendChild(rollSlider);
+                    const pitchSlider = _createSlider('Pitch (X)', -180, 180, 0, 1);
+                    const yawSlider = _createSlider('Yaw (Y)', -180, 180, 0, 1);
+                    const rollSlider = _createSlider('Roll (Z)', -180, 180, 0, 1);
+                    inner.appendChild(pitchSlider);
+                    inner.appendChild(yawSlider);
+                    inner.appendChild(rollSlider);
 
-                // 权重滑块
-                const weightSlider = _createSlider('Weight', 0, 1, 1, 0.05);
-                c.appendChild(weightSlider);
+                    const weightSlider = _createSlider('Weight', 0, 1, 1, 0.05);
+                    inner.appendChild(weightSlider);
 
-                // 应用按钮
-                const applyBtn = document.createElement('button');
-                applyBtn.className = 'preset-chip';
-                applyBtn.style.marginTop = '8px';
-                applyBtn.textContent = t('motion.boneOverride.apply');
-                applyBtn.addEventListener('click', () => {
-                    const boneName = boneSelect.value;
-                    if (!boneName) {
-                        return;
-                    }
+                    const applyBtn = document.createElement('button');
+                    applyBtn.className = 'preset-chip';
+                    applyBtn.style.marginTop = '8px';
+                    applyBtn.textContent = t('motion.boneOverride.apply');
+                    applyBtn.addEventListener('click', () => {
+                        const boneName = boneSelect.value;
+                        if (!boneName) {
+                            return;
+                        }
 
-                    const pitch = parseFloat(
-                        (pitchSlider.querySelector('input[type="range"]') as HTMLInputElement).value
-                    );
-                    const yaw = parseFloat(
-                        (yawSlider.querySelector('input[type="range"]') as HTMLInputElement).value
-                    );
-                    const roll = parseFloat(
-                        (rollSlider.querySelector('input[type="range"]') as HTMLInputElement).value
-                    );
-                    const weight = parseFloat(
-                        (weightSlider.querySelector('input[type="range"]') as HTMLInputElement)
-                            .value
-                    );
+                        const pitch = parseFloat(
+                            (pitchSlider.querySelector('input[type="range"]') as HTMLInputElement).value
+                        );
+                        const yaw = parseFloat(
+                            (yawSlider.querySelector('input[type="range"]') as HTMLInputElement).value
+                        );
+                        const roll = parseFloat(
+                            (rollSlider.querySelector('input[type="range"]') as HTMLInputElement).value
+                        );
+                        const weight = parseFloat(
+                            (weightSlider.querySelector('input[type="range"]') as HTMLInputElement)
+                                .value
+                        );
 
-                    setBoneOverride(boneName, [pitch, yaw, roll], weight, true);
+                        setBoneOverride(boneName, [pitch, yaw, roll], weight, true);
+                        _syncOverrideToInstance(modelId);
 
-                    // 持久化到 ModelInstance
-                    _syncOverrideToInstance(modelId);
-
-                    setStatus(t('motion.boneOverride.applied', { bone: boneName }), true);
-                    menu?.reRender();
+                        setStatus(t('motion.boneOverride.applied', { bone: boneName }), true);
+                        menu?.reRender();
+                    });
+                    inner.appendChild(applyBtn);
                 });
-                c.appendChild(applyBtn);
-            });
-
-            // —— 卡片 2：已存在的覆盖列表（含 disabled）——
-            const allEntries = inst.boneOverrides; // 显示全部，含 disabled
-            if (allEntries.length > 0) {
-                cardContainer(container, (c) => {
+            },
+        },
+        // 卡片 2：已存在的覆盖列表
+        {
+            id: 'override:list',
+            kind: 'custom',
+            visibleWhen: () => allEntries.length > 0,
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
                     const title = document.createElement('div');
                     title.style.cssText =
                         'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
                     title.textContent = t('motion.boneOverride.activeOverrides');
-                    c.appendChild(title);
+                    inner.appendChild(title);
 
                     for (const ov of allEntries) {
                         const row = document.createElement('div');
@@ -145,7 +156,6 @@ export function buildBoneOverrideLevel(): PopupLevel {
                         row.style.alignItems = 'center';
                         row.style.justifyContent = 'space-between';
 
-                        // enable/disable toggle
                         const toggleBtn = document.createElement('button');
                         toggleBtn.className = 'slide-action';
                         toggleBtn.textContent = ov.enabled ? '●' : '○';
@@ -196,14 +206,18 @@ export function buildBoneOverrideLevel(): PopupLevel {
 
                         row.appendChild(info);
                         row.appendChild(delBtn);
-                        c.appendChild(row);
+                        inner.appendChild(row);
                     }
                 });
-            }
-
-            // —— 卡片 3：全部清除 ——
-            if (allEntries.length > 0) {
-                cardContainer(container, (c) => {
+            },
+        },
+        // 卡片 3：全部清除
+        {
+            id: 'override:clearAll',
+            kind: 'custom',
+            visibleWhen: () => allEntries.length > 0,
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
                     const clearBtn = document.createElement('button');
                     clearBtn.className = 'preset-chip';
                     clearBtn.textContent = t('motion.boneOverride.clearAll');
@@ -214,9 +228,20 @@ export function buildBoneOverrideLevel(): PopupLevel {
                         setStatus(t('motion.boneOverride.allCleared'), true);
                         menu?.reRender();
                     });
-                    c.appendChild(clearBtn);
+                    inner.appendChild(clearBtn);
                 });
-            }
+            },
+        },
+    ];
+}
+
+export function buildBoneOverrideLevel(): PopupLevel {
+    return {
+        label: t('motion.boneOverride.title'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            renderMenu(buildBoneOverrideSchema(), container);
         },
     };
 }

@@ -272,6 +272,16 @@ export type PopupLevel = {
     itemBuilder?: () => PopupRow[];
     /** [doc:adr-066] 保留 filter 供视图切换时传递 */
     filter?: (m: LibraryModel) => boolean;
+    /**
+     * 弹窗标题旁的 headerToggle 开关。
+     * 用于替代「弹窗标题 + 内部独立开关」的重复模式。
+     */
+    headerToggle?: {
+        value: boolean;
+        onChange: (v: boolean) => void;
+        /** 自更新回调，updateControls() 时自动同步 toggle 状态 */
+        bind?: () => boolean;
+    };
 };
 
 // ======== UI State ========

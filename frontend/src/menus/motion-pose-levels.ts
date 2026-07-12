@@ -27,8 +27,245 @@ import { getAllPresets, applyCameraPreset, CameraAnglePreset } from '../scene/po
 import { getWatermarkConfig, setWatermarkConfig, applyWatermark } from '../scene/pose/watermark';
 import { screenshotCurrent } from './scene-menu';
 import { t } from '../core/i18n/t';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 
 // ======== 根级入口 ========
+
+function buildPoseStudioSchema(): MenuNode[] {
+    const modelId = focusedModelId;
+    if (!modelId || !modelRegistry.get(modelId)?.mmdModel) {
+        return [
+            {
+                id: 'pose:empty',
+                kind: 'custom',
+                renderCustom: (c) => { addEmptyRow(c, t('motion.poseStudio.noModel')); },
+            },
+        ];
+    }
+
+    const inst = modelRegistry.get(modelId)!;
+    const menu = getMotionMenu();
+    const renderState = getRenderState();
+    const wmConfig = getWatermarkConfig();
+
+    return [
+        // 卡片 1：构图辅助线
+        {
+            id: 'pose:composition',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const title = document.createElement('div');
+                    title.style.cssText =
+                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.textContent = t('motion.poseStudio.composition');
+                    inner.appendChild(title);
+
+                    const modes: Array<{ key: string; label: string }> = [
+                        { key: 'off', label: t('motion.poseStudio.off') },
+                        { key: 'ruleOfThirds', label: t('motion.poseStudio.ruleOfThirds') },
+                        { key: 'goldenRatio', label: t('motion.poseStudio.goldenRatio') },
+                        { key: 'diagonal', label: t('motion.poseStudio.diagonal') },
+                    ];
+
+                    const currentMode = getGuideMode();
+                    const btnGroup = document.createElement('div');
+                    btnGroup.style.cssText =
+                        'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px 8px;';
+                    for (const m of modes) {
+                        const btn = document.createElement('button');
+                        btn.className = 'preset-chip';
+                        btn.textContent = m.label;
+                        btn.style.cssText =
+                            m.key === currentMode ? 'background:var(--accent);color:var(--text);' : '';
+                        btn.addEventListener('click', () => {
+                            setGuideMode(m.key as any);
+                            menu?.reRender();
+                        });
+                        btnGroup.appendChild(btn);
+                    }
+                    inner.appendChild(btnGroup);
+                });
+            },
+        },
+        // 卡片 2：姿态预设
+        {
+            id: 'pose:presets',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const title = document.createElement('div');
+                    title.style.cssText =
+                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.textContent = t('motion.poseStudio.posePreset');
+                    inner.appendChild(title);
+
+                    const btnGroup = document.createElement('div');
+                    btnGroup.style.cssText = 'display:flex;gap:4px;padding:4px 14px 8px;';
+
+                    const poseTypes: Array<{ key: 'tpose' | 'apose' | 'rest'; label: string }> = [
+                        { key: 'tpose', label: t('motion.poseStudio.tPose') },
+                        { key: 'apose', label: t('motion.poseStudio.aPose') },
+                        { key: 'rest', label: t('motion.poseStudio.rest') },
+                    ];
+
+                    for (const pt of poseTypes) {
+                        const btn = document.createElement('button');
+                        btn.className = 'preset-chip';
+                        btn.textContent = pt.label;
+                        btn.addEventListener('click', async () => {
+                            if (pt.key === 'rest') {
+                                stopVMD(modelId);
+                                setStatus(t('motion.poseStudio.restApplied'), true);
+                                return;
+                            }
+                            const vmdData = generatePoseVmd(pt.key);
+                            stopVMD(modelId);
+                            try {
+                                await loadVMDMotion(
+                                    vmdData,
+                                    pt.key === 'tpose' ? 'T-Pose' : 'A-Pose',
+                                    modelId
+                                );
+                                if (mmdRuntime && isPlaying) {
+                                    mmdRuntime.pauseAnimation();
+                                    setIsPlaying(false);
+                                }
+                                setStatus(t('motion.poseStudio.poseApplied', { pose: pt.label }), true);
+                            } catch (err) {
+                                console.warn('[pose] apply preset failed:', err);
+                                setStatus(t('motion.poseStudio.poseFailed'), false);
+                            }
+                        });
+                        btnGroup.appendChild(btn);
+                    }
+                    inner.appendChild(btnGroup);
+                });
+            },
+        },
+        // 卡片 3：景深控制
+        {
+            id: 'pose:dof',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const title = document.createElement('div');
+                    title.style.cssText =
+                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.textContent = t('motion.poseStudio.depthOfField');
+                    inner.appendChild(title);
+
+                    addSliderRow(
+                        inner,
+                        t('motion.poseStudio.dofAmount'),
+                        renderState.dofAperture,
+                        0,
+                        1,
+                        0.05,
+                        (v) => {
+                            setRenderState({ dofEnabled: v > 0, dofAperture: v });
+                        }
+                    );
+                });
+            },
+        },
+        // 卡片 4：相机角度预设 + 截图
+        {
+            id: 'pose:camera',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const title = document.createElement('div');
+                    title.style.cssText =
+                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.textContent = t('motion.poseStudio.cameraPresets');
+                    inner.appendChild(title);
+
+                    const presets = getAllPresets();
+                    const btnGroup = document.createElement('div');
+                    btnGroup.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px;';
+                    for (const preset of presets) {
+                        const btn = document.createElement('button');
+                        btn.className = 'preset-chip';
+                        btn.textContent = preset.name;
+                        btn.title = preset.description;
+                        btn.addEventListener('click', () => {
+                            applyCameraPreset(preset);
+                            setStatus(
+                                t('motion.poseStudio.cameraApplied', { name: preset.name }),
+                                true
+                            );
+                            menu?.reRender();
+                        });
+                        btnGroup.appendChild(btn);
+                    }
+                    inner.appendChild(btnGroup);
+
+                    const batchRow = document.createElement('div');
+                    batchRow.style.cssText = 'display:flex;gap:6px;padding:8px 14px;';
+
+                    const singleBtn = document.createElement('button');
+                    singleBtn.className = 'preset-chip';
+                    singleBtn.textContent = '📷 ' + t('motion.poseStudio.screenshot');
+                    singleBtn.addEventListener('click', () => {
+                        screenshotCurrent();
+                    });
+                    batchRow.appendChild(singleBtn);
+
+                    const batchBtn = document.createElement('button');
+                    batchBtn.className = 'preset-chip';
+                    batchBtn.textContent = '📸 ' + t('motion.poseStudio.batchExport');
+                    batchBtn.addEventListener('click', async () => {
+                        await _batchScreenshot(presets, modelId);
+                    });
+                    batchRow.appendChild(batchBtn);
+
+                    inner.appendChild(batchRow);
+
+                    const progressEl = document.createElement('div');
+                    progressEl.id = 'pose-batch-progress';
+                    progressEl.style.cssText =
+                        'font-size:11px;color:var(--text-dim);padding:0 14px 8px;display:none;';
+                    inner.appendChild(progressEl);
+                });
+            },
+        },
+        // 卡片 5：水印配置
+        {
+            id: 'pose:watermark',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const title = document.createElement('div');
+                    title.style.cssText =
+                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.textContent = t('motion.poseStudio.watermark');
+                    inner.appendChild(title);
+
+                    addToggleRow(inner, t('motion.poseStudio.watermarkToggle'), wmConfig.enabled, (v) => {
+                        setWatermarkConfig({ enabled: v });
+                        menu?.reRender();
+                    });
+
+                    if (wmConfig.enabled) {
+                        addSliderRow(
+                            inner,
+                            t('motion.poseStudio.watermarkOpacity'),
+                            wmConfig.opacity,
+                            0,
+                            1,
+                            0.1,
+                            (v) => {
+                                setWatermarkConfig({ opacity: v });
+                            }
+                        );
+                    }
+                });
+            },
+        },
+    ];
+}
 
 export function buildPoseStudioLevel(): PopupLevel {
     return {
@@ -36,209 +273,7 @@ export function buildPoseStudioLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const modelId = focusedModelId;
-            if (!modelId || !modelRegistry.get(modelId)?.mmdModel) {
-                addEmptyRow(container, t('motion.poseStudio.noModel'));
-                return;
-            }
-
-            const inst = modelRegistry.get(modelId)!;
-            const menu = getMotionMenu();
-            const renderState = getRenderState();
-            const wmConfig = getWatermarkConfig();
-
-            // —— 卡片 1：构图辅助线 ——
-            cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.style.cssText =
-                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
-                title.textContent = t('motion.poseStudio.composition');
-                c.appendChild(title);
-
-                const modes: Array<{ key: string; label: string }> = [
-                    { key: 'off', label: t('motion.poseStudio.off') },
-                    { key: 'ruleOfThirds', label: t('motion.poseStudio.ruleOfThirds') },
-                    { key: 'goldenRatio', label: t('motion.poseStudio.goldenRatio') },
-                    { key: 'diagonal', label: t('motion.poseStudio.diagonal') },
-                ];
-
-                const currentMode = getGuideMode();
-                const btnGroup = document.createElement('div');
-                btnGroup.style.cssText =
-                    'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px 8px;';
-                for (const m of modes) {
-                    const btn = document.createElement('button');
-                    btn.className = 'preset-chip';
-                    btn.textContent = m.label;
-                    btn.style.cssText =
-                        m.key === currentMode ? 'background:var(--accent);color:var(--text);' : '';
-                    btn.addEventListener('click', () => {
-                        setGuideMode(m.key as any);
-                        menu?.reRender();
-                    });
-                    btnGroup.appendChild(btn);
-                }
-                c.appendChild(btnGroup);
-            });
-
-            // —— 卡片 2：姿态预设（T-pose / A-pose / Reset）——
-            cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.style.cssText =
-                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
-                title.textContent = t('motion.poseStudio.posePreset');
-                c.appendChild(title);
-
-                const btnGroup = document.createElement('div');
-                btnGroup.style.cssText = 'display:flex;gap:4px;padding:4px 14px 8px;';
-
-                const poseTypes: Array<{ key: 'tpose' | 'apose' | 'rest'; label: string }> = [
-                    { key: 'tpose', label: t('motion.poseStudio.tPose') },
-                    { key: 'apose', label: t('motion.poseStudio.aPose') },
-                    { key: 'rest', label: t('motion.poseStudio.rest') },
-                ];
-
-                for (const pt of poseTypes) {
-                    const btn = document.createElement('button');
-                    btn.className = 'preset-chip';
-                    btn.textContent = pt.label;
-                    btn.addEventListener('click', async () => {
-                        if (pt.key === 'rest') {
-                            // 清理姿态：停止 VMD + 重置骨骼
-                            stopVMD(modelId);
-                            setStatus(t('motion.poseStudio.restApplied'), true);
-                            return;
-                        }
-                        const vmdData = generatePoseVmd(pt.key);
-                        stopVMD(modelId);
-                        try {
-                            await loadVMDMotion(
-                                vmdData,
-                                pt.key === 'tpose' ? 'T-Pose' : 'A-Pose',
-                                modelId
-                            );
-                            // 暂停动画使其保持姿势
-                            if (mmdRuntime && isPlaying) {
-                                mmdRuntime.pauseAnimation();
-                                setIsPlaying(false);
-                            }
-                            setStatus(t('motion.poseStudio.poseApplied', { pose: pt.label }), true);
-                        } catch (err) {
-                            console.warn('[pose] apply preset failed:', err);
-                            setStatus(t('motion.poseStudio.poseFailed'), false);
-                        }
-                    });
-                    btnGroup.appendChild(btn);
-                }
-                c.appendChild(btnGroup);
-            });
-
-            // —— 卡片 3：景深控制（复用 renderer DOF）——
-            cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.style.cssText =
-                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
-                title.textContent = t('motion.poseStudio.depthOfField');
-                c.appendChild(title);
-
-                addSliderRow(
-                    c,
-                    t('motion.poseStudio.dofAmount'),
-                    renderState.dofAperture,
-                    0,
-                    1,
-                    0.05,
-                    (v) => {
-                        setRenderState({ dofEnabled: v > 0, dofAperture: v });
-                    }
-                );
-            });
-
-            // —— 卡片 4：相机角度预设 + 截图 ——
-            cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.style.cssText =
-                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
-                title.textContent = t('motion.poseStudio.cameraPresets');
-                c.appendChild(title);
-
-                const presets = getAllPresets();
-                const btnGroup = document.createElement('div');
-                btnGroup.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px;';
-                for (const preset of presets) {
-                    const btn = document.createElement('button');
-                    btn.className = 'preset-chip';
-                    btn.textContent = preset.name;
-                    btn.title = preset.description;
-                    btn.addEventListener('click', () => {
-                        applyCameraPreset(preset);
-                        setStatus(
-                            t('motion.poseStudio.cameraApplied', { name: preset.name }),
-                            true
-                        );
-                        menu?.reRender();
-                    });
-                    btnGroup.appendChild(btn);
-                }
-                c.appendChild(btnGroup);
-
-                // 批量截图按钮
-                const batchRow = document.createElement('div');
-                batchRow.style.cssText = 'display:flex;gap:6px;padding:8px 14px;';
-
-                const singleBtn = document.createElement('button');
-                singleBtn.className = 'preset-chip';
-                singleBtn.textContent = '📷 ' + t('motion.poseStudio.screenshot');
-                singleBtn.addEventListener('click', () => {
-                    screenshotCurrent();
-                });
-                batchRow.appendChild(singleBtn);
-
-                const batchBtn = document.createElement('button');
-                batchBtn.className = 'preset-chip';
-                batchBtn.textContent = '📸 ' + t('motion.poseStudio.batchExport');
-                batchBtn.addEventListener('click', async () => {
-                    await _batchScreenshot(presets, modelId);
-                });
-                batchRow.appendChild(batchBtn);
-
-                c.appendChild(batchRow);
-
-                // 批量截图进度提示
-                const progressEl = document.createElement('div');
-                progressEl.id = 'pose-batch-progress';
-                progressEl.style.cssText =
-                    'font-size:11px;color:var(--text-dim);padding:0 14px 8px;display:none;';
-                c.appendChild(progressEl);
-            });
-
-            // —— 卡片 5：水印配置 ——
-            cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.style.cssText =
-                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
-                title.textContent = t('motion.poseStudio.watermark');
-                c.appendChild(title);
-
-                addToggleRow(c, t('motion.poseStudio.watermarkToggle'), wmConfig.enabled, (v) => {
-                    setWatermarkConfig({ enabled: v });
-                    menu?.reRender();
-                });
-
-                if (wmConfig.enabled) {
-                    addSliderRow(
-                        c,
-                        t('motion.poseStudio.watermarkOpacity'),
-                        wmConfig.opacity,
-                        0,
-                        1,
-                        0.1,
-                        (v) => {
-                            setWatermarkConfig({ opacity: v });
-                        }
-                    );
-                }
-            });
+            renderMenu(buildPoseStudioSchema(), container);
         },
     };
 }

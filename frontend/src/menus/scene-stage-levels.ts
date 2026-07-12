@@ -22,125 +22,120 @@ import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resour
 
 import { buildPropDetailLevel } from './scene-prop-levels';
 import { t } from '../core/i18n/t';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 
 // ======== 舞台根面板：舞台加载、灯光、道具 ========
 
-export function buildStageLevel(): PopupLevel {
-    return {
-        label: t('scene.stage'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            container.classList.remove('render-card');
+function buildStageSchema(): MenuNode[] {
+    const stageModels = Array.from(modelRegistry.entries()).filter(
+        ([, inst]) => inst.kind === 'stage'
+    );
+    const propDir = (
+        overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')
+    ).toLowerCase();
+    const propModels = Array.from(modelManager.modelRegistry.entries()).filter(
+        ([, inst]) =>
+            inst.kind === 'actor' &&
+            propDir &&
+            inst.filePath.toLowerCase().startsWith(propDir)
+    );
+    const propItems = [
+        ...getPropList().map((p) => ({
+            id: p.id,
+            name: p.name,
+            fromPropRegistry: true,
+        })),
+        ...propModels.map(([id, inst]) => ({
+            id,
+            name: inst.name,
+            fromPropRegistry: false,
+        })),
+    ];
 
-            // —— 卡片 1：已加载舞台列表（上）——
-            const stageModels = Array.from(modelRegistry.entries()).filter(
-                ([, inst]) => inst.kind === 'stage'
-            );
+    return [
+        // 卡片 1：已加载舞台列表
+        {
+            id: 'stage:loaded',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    if (stageModels.length > 0) {
+                        addSectionTitle(inner, t('scene.loadedStages'));
+                        for (const [id, inst] of stageModels) {
+                            const row = document.createElement('div');
+                            row.className = 'slide-item';
+                            row.style.cursor = 'pointer';
 
-            if (stageModels.length > 0) {
-                cardContainer(container, (c) => {
-                    addSectionTitle(c, t('scene.loadedStages'));
-
-                    for (const [id, inst] of stageModels) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        row.style.cursor = 'pointer';
-
-                        // 眼睛 toggle
-                        const eyeSpan = document.createElement('span');
-                        eyeSpan.className = 'slide-icon';
-                        const eyeIcon = createIconifyIcon(
-                            inst.visible ? 'lucide:eye' : 'lucide:eye-off'
-                        );
-                        if (eyeIcon) {
-                            eyeSpan.appendChild(eyeIcon);
-                        }
-                        eyeSpan.style.cursor = 'pointer';
-                        eyeSpan.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const newVis = !inst.visible;
-                            setModelVisibility(id, newVis);
-                            reRenderSceneMenu();
-                            setStatus(
-                                newVis ? t('scene.stageShown') : t('scene.stageHidden'),
-                                true
+                            const eyeSpan = document.createElement('span');
+                            eyeSpan.className = 'slide-icon';
+                            const eyeIcon = createIconifyIcon(
+                                inst.visible ? 'lucide:eye' : 'lucide:eye-off'
                             );
-                        });
-                        row.appendChild(eyeSpan);
-
-                        // 名称
-                        const label = document.createElement('span');
-                        label.className = 'slide-label';
-                        label.textContent = inst.name;
-                        row.appendChild(label);
-
-                        // 箭头
-                        const arrow = document.createElement('span');
-                        arrow.className = 'slide-arrow';
-                        arrow.textContent = '>';
-                        row.appendChild(arrow);
-
-                        // 删除按钮
-                        const del = document.createElement('span');
-                        del.textContent = '✕';
-                        del.style.cssText =
-                            'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 4px;margin-left:4px;';
-                        del.title = t('scene.unloadStage');
-                        del.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            removeModel(id);
-                            reRenderSceneMenu();
-                            setStatus(t('scene.unloaded', { name: inst.name }), true);
-                        });
-                        row.appendChild(del);
-
-                        // 点击进入变换面板
-                        row.addEventListener('click', () => {
-                            const sm = getSceneMenu();
-                            if (sm) {
-                                sm.push(buildStageTransformLevel(id));
+                            if (eyeIcon) {
+                                eyeSpan.appendChild(eyeIcon);
                             }
-                        });
+                            eyeSpan.style.cursor = 'pointer';
+                            eyeSpan.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                const newVis = !inst.visible;
+                                setModelVisibility(id, newVis);
+                                reRenderSceneMenu();
+                                setStatus(
+                                    newVis ? t('scene.stageShown') : t('scene.stageHidden'),
+                                    true
+                                );
+                            });
+                            row.appendChild(eyeSpan);
 
-                        c.appendChild(row);
+                            const label = document.createElement('span');
+                            label.className = 'slide-label';
+                            label.textContent = inst.name;
+                            row.appendChild(label);
+
+                            const arrow = document.createElement('span');
+                            arrow.className = 'slide-arrow';
+                            arrow.textContent = '>';
+                            row.appendChild(arrow);
+
+                            const del = document.createElement('span');
+                            del.textContent = '✕';
+                            del.style.cssText =
+                                'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 4px;margin-left:4px;';
+                            del.title = t('scene.unloadStage');
+                            del.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                removeModel(id);
+                                reRenderSceneMenu();
+                                setStatus(t('scene.unloaded', { name: inst.name }), true);
+                            });
+                            row.appendChild(del);
+
+                            row.addEventListener('click', () => {
+                                const sm = getSceneMenu();
+                                if (sm) {
+                                    sm.push(buildStageTransformLevel(id));
+                                }
+                            });
+
+                            inner.appendChild(row);
+                        }
+                    } else {
+                        const empty = document.createElement('div');
+                        empty.style.cssText =
+                            'font-size:11px;color:var(--text-dim);text-align:center;padding:8px 0;';
+                        empty.textContent = t('scene.noLoadedStages');
+                        inner.appendChild(empty);
                     }
                 });
-            } else {
-                cardContainer(container, (c) => {
-                    const empty = document.createElement('div');
-                    empty.style.cssText =
-                        'font-size:11px;color:var(--text-dim);text-align:center;padding:8px 0;';
-                    empty.textContent = t('scene.noLoadedStages');
-                    c.appendChild(empty);
-                });
-            }
-
-            // —— 卡片 2：已加载道具列表（始终显示） ——
-            {
-                // 合并 propRegistry + modelRegistry 中 prop 目录下的模型
-                const propDir = (
-                    overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')
-                ).toLowerCase();
-                const propModels = Array.from(modelManager.modelRegistry.entries()).filter(
-                    ([, inst]) =>
-                        inst.kind === 'actor' &&
-                        propDir &&
-                        inst.filePath.toLowerCase().startsWith(propDir)
-                );
-                const propItems = [
-                    ...getPropList().map((p) => ({
-                        id: p.id,
-                        name: p.name,
-                        fromPropRegistry: true,
-                    })),
-                    ...propModels.map(([id, inst]) => ({
-                        id,
-                        name: inst.name,
-                        fromPropRegistry: false,
-                    })),
-                ];
-                cardContainer(container, (c) => {
+            },
+        },
+        // 卡片 2：已加载道具列表
+        {
+            id: 'stage:props',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
                     if (propItems.length > 0) {
                         for (const item of propItems) {
                             const row = document.createElement('div');
@@ -164,81 +159,98 @@ export function buildStageLevel(): PopupLevel {
                                 reRenderSceneMenu();
                             });
                             row.appendChild(delBtn);
-                            c.appendChild(row);
+                            inner.appendChild(row);
                         }
                     } else {
                         const empty = document.createElement('div');
                         empty.style.cssText =
                             'font-size:11px;color:var(--text-dim);text-align:center;padding:8px 0;';
                         empty.textContent = t('scene.noProps');
-                        c.appendChild(empty);
+                        inner.appendChild(empty);
                     }
                 });
-            }
+            },
+        },
+        // 卡片 3：功能入口
+        {
+            id: 'stage:actions',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(inner, 'lucide:upload', t('scene.loadStage'), true, () => {
+                        (async () => {
+                            try {
+                                const { getBrowseDir } = await import('../core/utils');
+                                const browseDir = getBrowseDir('stage');
+                                if (!browseDir) {
+                                    setStatus(t('scene.statusNoModelLib'), false);
+                                    return;
+                                }
+                                const { buildLevel } = await import('./library-core');
+                                const sm = getSceneMenu();
+                                if (!sm) {
+                                    return;
+                                }
+                                const level = buildLevel(
+                                    browseDir,
+                                    t('scene.loadStage'),
+                                    (m) => m.type === 'stage' || m.type === 'scene',
+                                    sm
+                                );
+                                sm.push(level);
+                            } catch (err) {
+                                setStatus(t('scene.statusOpenStageLibFailed'), false);
+                                console.error('Stage library error:', err);
+                            }
+                        })();
+                    });
+                    slideRow(inner, 'lucide:lightbulb', t('scene.stageLight'), true, () => {
+                        const sm = getSceneMenu();
+                        if (sm) {
+                            sm.push(buildStageLightLevel());
+                        }
+                    });
+                    slideRow(inner, 'lucide:box', t('scene.loadProp'), true, () => {
+                        (async () => {
+                            try {
+                                const { getBrowseDir } = await import('../core/utils');
+                                const browseDir = getBrowseDir('prop');
+                                if (!browseDir) {
+                                    setStatus(t('scene.statusNoPropLib'), false);
+                                    return;
+                                }
+                                const { buildLevel } = await import('./library-core');
+                                const sm = getSceneMenu();
+                                if (!sm) {
+                                    return;
+                                }
+                                const level = buildLevel(
+                                    browseDir,
+                                    t('scene.propLibrary'),
+                                    (m) => m.format === 'pmx',
+                                    sm
+                                );
+                                sm.push(level);
+                            } catch (err) {
+                                setStatus(t('scene.statusOpenPropLibFailed'), false);
+                                console.error('Prop library error:', err);
+                            }
+                        })();
+                    });
+                });
+            },
+        },
+    ];
+}
 
-            // —— 卡片 3：功能入口（下）——
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:upload', t('scene.loadStage'), true, () => {
-                    (async () => {
-                        try {
-                            const { getBrowseDir } = await import('../core/utils');
-                            const browseDir = getBrowseDir('stage');
-                            if (!browseDir) {
-                                setStatus(t('scene.statusNoModelLib'), false);
-                                return;
-                            }
-                            const { buildLevel } = await import('./library-core');
-                            const sm = getSceneMenu();
-                            if (!sm) {
-                                return;
-                            }
-                            const level = buildLevel(
-                                browseDir,
-                                t('scene.loadStage'),
-                                (m) => m.type === 'stage' || m.type === 'scene',
-                                sm
-                            );
-                            sm.push(level);
-                        } catch (err) {
-                            setStatus(t('scene.statusOpenStageLibFailed'), false);
-                            console.error('Stage library error:', err);
-                        }
-                    })();
-                });
-                slideRow(c, 'lucide:lightbulb', t('scene.stageLight'), true, () => {
-                    const sm = getSceneMenu();
-                    if (sm) {
-                        sm.push(buildStageLightLevel());
-                    }
-                });
-                slideRow(c, 'lucide:box', t('scene.loadProp'), true, () => {
-                    (async () => {
-                        try {
-                            const { getBrowseDir } = await import('../core/utils');
-                            const browseDir = getBrowseDir('prop');
-                            if (!browseDir) {
-                                setStatus(t('scene.statusNoPropLib'), false);
-                                return;
-                            }
-                            const { buildLevel } = await import('./library-core');
-                            const sm = getSceneMenu();
-                            if (!sm) {
-                                return;
-                            }
-                            const level = buildLevel(
-                                browseDir,
-                                t('scene.propLibrary'),
-                                (m) => m.format === 'pmx',
-                                sm
-                            );
-                            sm.push(level);
-                        } catch (err) {
-                            setStatus(t('scene.statusOpenPropLibFailed'), false);
-                            console.error('Prop library error:', err);
-                        }
-                    })();
-                });
-            });
+export function buildStageLevel(): PopupLevel {
+    return {
+        label: t('scene.stage'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            container.classList.remove('render-card');
+            renderMenu(buildStageSchema(), container);
         },
     };
 }

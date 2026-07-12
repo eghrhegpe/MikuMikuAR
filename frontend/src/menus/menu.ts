@@ -785,6 +785,39 @@ export class SlideMenu {
         title.textContent = level.label || '';
         this.headerEl.appendChild(title);
 
+        // === headerToggle 开关（弹窗标题旁）===
+        const ht = level.headerToggle;
+        if (ht) {
+            const toggle = document.createElement('label');
+            toggle.className = 'toggle header-toggle';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.checked = ht.value;
+            const slider = document.createElement('span');
+            slider.className = 'slider';
+            toggle.appendChild(input);
+            toggle.appendChild(slider);
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                input.checked = !input.checked;
+                ht.onChange(input.checked);
+            });
+            this.headerEl.appendChild(toggle);
+
+            // 自更新支持
+            if (ht.bind) {
+                let cached = ht.value;
+                const update = () => {
+                    const v = !!ht.bind!();
+                    if (v !== cached) {
+                        cached = v;
+                        input.checked = v;
+                    }
+                };
+                this.registerControl(update);
+            }
+        }
+
         // 复用额外按钮，避免每次重建创建新 DOM + 旧监听器泄漏
         if (!this._cachedExtraBtns) {
             this._cachedExtraBtns = this.extraButtonFactory?.() ?? [];

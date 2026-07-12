@@ -6,11 +6,9 @@ import {
     cardContainer,
     libraryRoot,
     stackRegistry,
-    motionBindingTargetId,
     setMotionBindingTargetId,
 } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
 import {
     switchCameraMode,
@@ -51,6 +49,8 @@ import {
     isARActive,
 } from '../scene/ar/ar-camera';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 
 let cameraExpandedMode: CameraMode | null = null;
 
@@ -61,84 +61,99 @@ function refreshCameraLevel(): void {
     }
 }
 
-export function buildCameraLevel(): PopupLevel {
-    return {
-        label: t('motion.cameraMode'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            const currentMode = getCameraMode();
-            const vmdLoaded = hasCameraVmd();
+function buildCameraSchema(): MenuNode[] {
+    const currentMode = getCameraMode();
+    const vmdLoaded = hasCameraVmd();
+    const modeToExpand = cameraExpandedMode ?? currentMode;
 
-            cardContainer(container, (c) => {
-                const modeOptions: Array<{ value: string; label: string }> = [
-                    { value: 'orbit', label: t('motion.camOrbit') },
-                    { value: 'freefly', label: t('motion.camFreefly') },
-                    { value: 'concert', label: t('motion.camConcert') },
-                    { value: 'surround', label: t('motion.camSurround') },
-                    { value: 'oneshot', label: t('motion.camOneshot') },
-                    { value: 'ar', label: t('motion.camAR') },
-                ];
-                if (vmdLoaded) {
-                    modeOptions.push({ value: 'vmd', label: t('motion.camVmd') });
-                }
+    return [
+        // 卡片 1：模式选择 + FOV
+        {
+            id: 'camera:main',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const modeOptions: Array<{ value: string; label: string }> = [
+                        { value: 'orbit', label: t('motion.camOrbit') },
+                        { value: 'freefly', label: t('motion.camFreefly') },
+                        { value: 'concert', label: t('motion.camConcert') },
+                        { value: 'surround', label: t('motion.camSurround') },
+                        { value: 'oneshot', label: t('motion.camOneshot') },
+                        { value: 'ar', label: t('motion.camAR') },
+                    ];
+                    if (vmdLoaded) {
+                        modeOptions.push({ value: 'vmd', label: t('motion.camVmd') });
+                    }
 
-                addModeSlider(
-                    c,
-                    t('motion.cameraMode'),
-                    modeOptions.map((o) => ({ value: o.value, label: o.label })),
-                    currentMode,
-                    (v) => {
-                        if (v === currentMode) {
-                            cameraExpandedMode = cameraExpandedMode ? null : currentMode;
-                        } else {
-                            switchCameraMode(v as CameraMode);
-                            cameraExpandedMode = v === 'oneshot' ? null : (v as CameraMode);
+                    addModeSlider(
+                        inner,
+                        t('motion.cameraMode'),
+                        modeOptions.map((o) => ({ value: o.value, label: o.label })),
+                        currentMode,
+                        (v) => {
+                            if (v === currentMode) {
+                                cameraExpandedMode = cameraExpandedMode ? null : currentMode;
+                            } else {
+                                switchCameraMode(v as CameraMode);
+                                cameraExpandedMode = v === 'oneshot' ? null : (v as CameraMode);
+                            }
+                            refreshCameraLevel();
+                        },
+                        'lucide:camera',
+                        undefined,
+                        {
+                            bind: () => getCameraMode(),
                         }
-                        refreshCameraLevel();
-                    },
-                    'lucide:camera',
-                    undefined,
-                    {
-                        bind: () => getCameraMode(),
-                    }
-                );
+                    );
 
-                addSliderRow(
-                    c,
-                    t('motion.fov'),
-                    getFov(),
-                    0.3,
-                    2,
-                    0.05,
-                    () => {},
-                    'lucide:maximize-2',
-                    (v) => {
-                        setFov(v);
-                        triggerAutoSave();
-                    }
-                );
-            });
-
-            // Auto Camera
-            cardContainer(container, (c) => {
-                addToggleRow(
-                    c,
-                    t('motion.autoCamera'),
-                    isAutoCameraEnabled(),
-                    (v) => {
-                        const bd = getProcBeatDetector();
-                        setAutoCameraEnabled(v, bd ?? undefined);
-                        refreshCameraLevel();
-                    },
-                    'lucide:video',
-                    {
-                        bind: () => isAutoCameraEnabled(),
-                    }
-                );
-                if (isAutoCameraEnabled()) {
                     addSliderRow(
-                        c,
+                        inner,
+                        t('motion.fov'),
+                        getFov(),
+                        0.3,
+                        2,
+                        0.05,
+                        () => {},
+                        'lucide:maximize-2',
+                        (v) => {
+                            setFov(v);
+                            triggerAutoSave();
+                        }
+                    );
+                });
+            },
+        },
+        // 卡片 2：自动相机
+        {
+            id: 'camera:auto',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addToggleRow(
+                        inner,
+                        t('motion.autoCamera'),
+                        isAutoCameraEnabled(),
+                        (v) => {
+                            const bd = getProcBeatDetector();
+                            setAutoCameraEnabled(v, bd ?? undefined);
+                            refreshCameraLevel();
+                        },
+                        'lucide:video',
+                        {
+                            bind: () => isAutoCameraEnabled(),
+                        }
+                    );
+                });
+            },
+        },
+        {
+            id: 'camera:autoInterval',
+            kind: 'custom',
+            visibleWhen: () => isAutoCameraEnabled(),
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSliderRow(
+                        inner,
                         t('motion.switchInterval'),
                         getAutoCameraBeatsPerSwitch(),
                         1,
@@ -151,15 +166,18 @@ export function buildCameraLevel(): PopupLevel {
                         undefined,
                         { bind: () => getAutoCameraBeatsPerSwitch() }
                     );
-                }
-            });
-
-            // Camera params + VMD
-            cardContainer(container, (c) => {
-                const paramsContainer = document.createElement('div');
-                paramsContainer.className = 'cs-params';
-                const modeToExpand = cameraExpandedMode ?? currentMode;
-                if (modeToExpand !== 'oneshot' && modeToExpand !== 'vmd') {
+                });
+            },
+        },
+        // 卡片 3：各模式参数（条件渲染）
+        {
+            id: 'camera:params',
+            kind: 'custom',
+            visibleWhen: () => modeToExpand !== 'oneshot' && modeToExpand !== 'vmd',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const paramsContainer = document.createElement('div');
+                    paramsContainer.className = 'cs-params';
                     if (modeToExpand === 'orbit') {
                         renderOrbitParams(paramsContainer);
                     } else if (modeToExpand === 'freefly') {
@@ -171,30 +189,48 @@ export function buildCameraLevel(): PopupLevel {
                     } else if (modeToExpand === 'ar') {
                         renderARParams(paramsContainer);
                     }
-                    c.appendChild(paramsContainer);
-                }
-
-                if (vmdLoaded) {
-                    slideRow(c, 'lucide:trash-2', t('motion.clearCamVmd'), false, () => {
-                        clearCameraVmd();
-                        refreshCameraLevel();
-                        setStatus(t('motion.camVmdCleared'), true);
-                    });
-                }
-
-                slideRow(c, 'lucide:upload', t('motion.loadCamVmd'), false, () => {
-                    setMotionBindingTargetId(null);
-                    const level = stackRegistry.buildLevel!(
-                        libraryRoot,
-                        t('motion.camVmdLabel'),
-                        (m) => m.format === 'vmd'
-                    );
-                    const menu = getMotionMenu();
-                    if (menu) {
-                        menu.push(level);
-                    }
+                    inner.appendChild(paramsContainer);
                 });
-            });
+            },
+        },
+        // 卡片 4：VMD 操作
+        {
+            id: 'camera:vmd',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    if (vmdLoaded) {
+                        slideRow(inner, 'lucide:trash-2', t('motion.clearCamVmd'), false, () => {
+                            clearCameraVmd();
+                            refreshCameraLevel();
+                            setStatus(t('motion.camVmdCleared'), true);
+                        });
+                    }
+                    slideRow(inner, 'lucide:upload', t('motion.loadCamVmd'), false, () => {
+                        setMotionBindingTargetId(null);
+                        const level = stackRegistry.buildLevel!(
+                            libraryRoot,
+                            t('motion.camVmdLabel'),
+                            (m) => m.format === 'vmd'
+                        );
+                        const menu = getMotionMenu();
+                        if (menu) {
+                            menu.push(level);
+                        }
+                    });
+                });
+            },
+        },
+    ];
+}
+
+export function buildCameraLevel(): PopupLevel {
+    return {
+        label: t('motion.cameraMode'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            renderMenu(buildCameraSchema(), container);
         },
     };
 }
