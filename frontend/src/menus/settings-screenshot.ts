@@ -81,7 +81,7 @@ export function buildSettingsScreenshotLevel(
                             max: 100,
                             step: 5,
                             get: (v) => Math.round(((v as number) ?? 0.9) * 100),
-                            set: (v) => v / 100,
+                            set: (v) => (v as number) / 100,
                             onChange: () => getSettingsMenu()?.updateControls(),
                         },
                         icon: 'lucide:gauge',

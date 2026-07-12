@@ -1,6 +1,6 @@
 # ADR-093: 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」
 
-> **状态**: 规划
+> **状态**: 实施中（P0+P1 已完成，P2 域迁移推进中：env 域大部迁移、motion 感知层全迁移、settings 性能+截图面板迁移）
 
 ## 1. 背景
 
@@ -96,6 +96,41 @@ interface ControlSpec {
 | **P2 域迁移** | 按域推进：scene → env → motion → model → settings → library，每域迁完保留 `ui-helpers` 作渲染后端，旧 builder 逐步退役 | P1 | 以「域」为原子迁移单位，一域一 commit，迁完即验证构建 |
 | **P3 收尾** | 移除 barrel 兼容 re-export，删除死 builder，类型化 `MenuNode` 树全量 | P2 | — |
 
+#### P2 域迁移进展（截至 2026-07-12）
+
+| 域 | 面板 | 状态 | 备注 |
+|------|------|------|------|
+| env | 天空（sky） | ✅ 全 schema | modeSlider/colorSlider/toggle + visibleWhen 守卫 + custom 贴图选择 |
+| env | 地面基础（ground:base） | ✅ 全 schema | folder + slider/colorSlider 组合 |
+| env | 地面贴图（ground:texture） | ✅ 全 schema | headerToggle + custom 预设芯片 |
+| env | 地面装饰（ground:deco） | ✅ 全 schema | headerToggle（get/set 值映射）+ modeSlider |
+| env | 地形（ground:terrain） | ✅ 全 schema | headerToggle（boolean↔string 映射）|
+| env | 地面增强（ground:enhance） | ✅ 全 schema | visibleWhen 条件渲染 |
+| env | 地面反射（ground:reflection） | ✅ 全 schema | modeSlider + slider + toggle |
+| env | 水面（water） | ✅ 全 schema | custom 预设 + folder 分组 |
+| env | 水面反射（water:reflection） | ✅ 全 schema | onChange 副作用（disposeWater+createWater）|
+| env | 风（wind） | ✅ 全 schema | get/set 值转换（角度↔向量）|
+| env | 云（cloud） | ✅ 全 schema | slider + get 默认值处理 |
+| env | 雾（fog） | ✅ 全 schema | visibleWhen 条件渲染（按 fogMode）|
+| env | 阴影（shadow） | ✅ 全 schema | headerToggle + custom 质量预设 |
+| env | 实验功能（experimental） | ✅ 全 schema | custom 渲染（条件禁用 + hint）|
+| motion | 视线追踪/感知层（gaze） | ✅ 全 schema | `perception.` 状态前缀 + modeRow + onChange 副作用（activatePerception）|
+| settings | 性能（performance） | ✅ 全 schema | toggle get/set（undefined→boolean 默认值）+ custom 性能模式 + visibleWhen custom 渲染开关 |
+| settings | 截图（screenshot） | ✅ 全 schema | slider get/set 值转换（0-1↔50-100）|
+| — | schema 系统测试 | ✅ | menu-schema.test.ts: 各 kind 渲染 + visibleWhen 守卫 + renderCustom dispose 级联 |
+
+**已迁移面板数：17 个 | tsc 零错误 | 1313 测试全绿**
+
+#### 迁移过程中 schema 系统的能力扩展
+
+| 扩展 | 变更文件 | 说明 |
+|------|------|------|
+| `perception.` 状态前缀 | menu-schema.ts | 支持感知层状态（eyeTracking/headTracking/breath/blink 等）的读写 |
+| `modeRow` kind | menu-schema.ts, render-menu.ts | 横向按钮组（emotion 选择），补充 modeSlider 无法覆盖的场景 |
+| `sectionTitle` kind | menu-schema.ts, render-menu.ts | 分组标题，纯展示无交互 |
+| ControlSpec.get/set 泛化 | menu-schema.ts | 参数/返回值从 `number` 改为 `unknown`，支持 boolean 等任意类型转换（toggle 的 undefined→true 默认值处理）|
+| toggle 支持 get/set/onChange | render-menu.ts | toggle 渲染器从直接 `as boolean` 改为支持 get/set 转换 + onChange 副作用 |
+
 ## 3. 备选方案（未采纳）
 
 | 方案 | 能否解决「大」 | 能否解决「AI 难改」 | 未采纳理由 |
@@ -147,4 +182,4 @@ interface ControlSpec {
 | P3 | §6 缺 i18n 热切换 e2e 与内存泄漏检查 | **采纳** | 已在 §6 增补 i18n 热切换 e2e（ADR-065 收益）与 dispose 级联/泄漏 vitest。 |
 | P4 | `MenuKind` 缺 `renderCustom`/`dynamic` | **采纳** | `renderCustom` 保留为节点字段（逃生舱）；`MenuKind` 增补 `'dynamic'`（运行时 `childrenResolver` 生成子项）。 |
 
-**状态**：仍为「规划」——P0–P3 尚未实施；本文档为进入实施前的设计定稿。
+**状态**：已进入「实施中」——P0+P1 已完成，P2 域迁移推进中。env 域全部面板、motion 感知层面板、settings 性能与截图面板已迁移为 schema 驱动。tsc 零错误，1313 测试全绿。下一批迁移目标：settings 其余子面板（外观/音频/快捷键）→ scene 渲染后期 → motion 程序化动作/布料。
