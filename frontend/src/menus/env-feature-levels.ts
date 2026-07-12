@@ -73,7 +73,7 @@ export function buildSkyLevel(): PopupLevel {
                         defaultOpen: false,
                         children: [
                             { id: 'env:sky:sunIntensity', kind: 'slider', label: 'env.sunIntensity', control: { bind: 'light.dirIntensity', min: 0, max: 1, step: 0.05 }, icon: 'lucide:sun' },
-                            { id: 'env:sky:skyLighting', kind: 'slider', label: 'env.skyLighting', control: { bind: 'env.envIntensity', min: 0, max: 1, step: 0.05, get: (v) => (v as number) / 3, set: (v) => v * 3 }, icon: 'lucide:sun' },
+                            { id: 'env:sky:skyLighting', kind: 'slider', label: 'env.skyLighting', control: { bind: 'env.envIntensity', min: 0, max: 1, step: 0.05, get: (v) => (v as number) / 3, set: (v) => (v as number) * 3 }, icon: 'lucide:sun' },
                         ],
                     },
                 ];

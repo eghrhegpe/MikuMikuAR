@@ -80,7 +80,7 @@ function _ensureNoiseTexture(scene: Scene): RawTexture3D {
         scene,
         false,
         false,
-        Texture.TRILINEAR_SAMPLINGMODE
+        Texture.BILINEAR_SAMPLINGMODE
     );
     _noiseTex3D.wrapU = Texture.WRAP_ADDRESSMODE;
     _noiseTex3D.wrapV = Texture.WRAP_ADDRESSMODE;

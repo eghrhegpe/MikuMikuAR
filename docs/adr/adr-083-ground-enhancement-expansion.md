@@ -233,3 +233,9 @@ switch (state.groundPattern) {
 > **风险与限制**：
 > 1. 物理碰撞体（GroundMesh 自带）仍基于本地坐标；旋转后碰撞查询与视觉可能轻微错位——但 terrain 本身起伏大，微小旋转下此差异可忽略；若需精确碰撞，需等 Babylon 上游修复或自行实现坐标变换
 > 2. `getHeightAtCoordinates` 每 query 做一次矩阵求逆 + 2 次坐标变换，仅在地面变化时触发，不构成性能瓶颈
+>
+> **配套修复：统一 observer 隐式依赖（2026-07-12 追加）**：
+> `_envUpdateObserver`（env-impl 每帧统一循环）的注册此前隐式依赖云/水/time-of-day 模块的入口函数。若三者均未启用，以下功能将完全不工作：地面纹理滚动、地面跟随相机、地面反射更新、天空自旋转、粒子风力/参数/启停检测/溅射同步。
+>
+> 修复：在 `applyGround()`、`applySky()`、`createParticleEmitter()` 入口均添加 `ensureEnvUpdateObserver()`，让每个模块自行确保 observer 存在，消除跨模块隐式依赖。
+

@@ -1,7 +1,7 @@
 import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/physics/wind-utils';
-import { _envSys, getScene, addRipple } from './env-impl';
+import { _envSys, getScene, ensureEnvUpdateObserver, addRipple } from './env-impl';
 import { createCanvasTexture } from './env-texture';
 
 // ======== Particle System ========
@@ -181,6 +181,7 @@ function drawParticleShape(ctx: CanvasRenderingContext2D, kind: string): void {
 }
 
 export function createParticleEmitter(type: EnvState['particleType'], windEnabled: boolean): void {
+    ensureEnvUpdateObserver(); // 粒子风力/参数/启停检测等每帧逻辑依赖统一 observer（Fix: 避免隐式依赖云/水模块注册）
     if (_envSys.particles.system && _currentParticleType === type) {
         return;
     }
