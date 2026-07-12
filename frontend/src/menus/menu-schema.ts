@@ -4,11 +4,12 @@
 
 import { envState } from '@/core/config';
 import { setEnvState, getRenderState } from '@/scene/scene';
+import { getLightState, setLightState } from '@/scene/render/lighting';
 
 // 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象
-export type StatePath = `env.${string}` | `render.${string}`;
+export type StatePath = `env.${string}` | `render.${string}` | `light.${string}`;
 
-export type MenuKind = 'folder' | 'slider' | 'colorSlider' | 'toggle' | 'modeSlider' | 'divider';
+export type MenuKind = 'folder' | 'slider' | 'colorSlider' | 'toggle' | 'modeSlider' | 'divider' | 'custom';
 
 export interface ControlSpec {
     bind: StatePath;
@@ -54,6 +55,8 @@ export function getStateValue(path: StatePath): unknown {
             return (envState as unknown as Record<string, unknown>)[key];
         case 'render':
             return (getRenderState() as unknown as Record<string, unknown>)[key];
+        case 'light':
+            return (getLightState() as unknown as Record<string, unknown>)[key];
         default:
             return undefined;
     }
@@ -65,6 +68,9 @@ export function setStateValue(path: StatePath, value: unknown): void {
     switch (prefix) {
         case 'env':
             setEnvState({ [key]: value });
+            break;
+        case 'light':
+            setLightState({ [key]: value });
             break;
     }
 }
