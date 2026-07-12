@@ -14,6 +14,7 @@ export function renderMenu(schema: MenuNode[], container: HTMLElement): void {
 }
 
 function renderNode(node: MenuNode, container: HTMLElement): void {
+    if (node.visibleWhen && !node.visibleWhen()) return;
     switch (node.kind) {
         case 'folder':
             renderFolder(node, container);
@@ -141,11 +142,12 @@ function renderModeSlider(node: MenuNode, container: HTMLElement): void {
 
     const value = getStateValue(ctrl.bind) as string;
     const onChange = (v: string) => setStateValue(ctrl.bind, v);
+    const opts = ctrl.options.map((o) => ({ value: o.value, label: t(o.label) }));
 
     addModeSlider(
         container,
         node.label ? t(node.label) : '',
-        ctrl.options,
+        opts,
         value,
         onChange,
         node.icon ?? ctrl.icon,

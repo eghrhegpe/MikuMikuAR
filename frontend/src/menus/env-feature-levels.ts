@@ -338,45 +338,41 @@ renderCustom: (container) => {
                 renderMenu(terrainSchema, c);
 
                 // ===== 地面增强 =====
-                addCollapsible(c, {
-                    title: t('env.groundEnhance'),
-                    icon: 'lucide:sliders-horizontal',
-                    defaultOpen: false,
-                    renderContent: (cc) => {
-                        if (s.groundType !== 'terrain') {
-                            addSliderRow(cc, t('env.groundPitch'), s.groundPitch, -45, 45, 1, (v) => setEnvState({ groundPitch: v }), 'lucide:arrow-up-down', undefined, { bind: () => envState.groundPitch });
-                            addSliderRow(cc, t('env.groundRoll'), s.groundRoll, -45, 45, 1, (v) => setEnvState({ groundRoll: v }), 'lucide:rotate-cw', undefined, { bind: () => envState.groundRoll });
-                        }
-                        const canScroll = s.groundDecoStyle === 'checker' || (s.groundTextureEnabled && s.groundTexture);
-                        if (canScroll) {
-                            addSliderRow(cc, t('env.groundScrollX'), s.groundScrollSpeedX, -2, 2, 0.1, (v) => setEnvState({ groundScrollSpeedX: v }), 'lucide:move-right', undefined, { bind: () => envState.groundScrollSpeedX });
-                            addSliderRow(cc, t('env.groundScrollZ'), s.groundScrollSpeedZ, -2, 2, 0.1, (v) => setEnvState({ groundScrollSpeedZ: v }), 'lucide:move-down', undefined, { bind: () => envState.groundScrollSpeedZ });
-                        }
-                        addToggleRow(cc, t('env.groundFollowCamera'), s.groundFollowCamera, (v) => setEnvState({ groundFollowCamera: v }), 'lucide:map-pin');
+                const enhanceSchema: MenuNode[] = [
+                    {
+                        id: 'env:ground:enhance',
+                        kind: 'folder',
+                        label: 'env.groundEnhance',
+                        icon: 'lucide:sliders-horizontal',
+                        defaultOpen: false,
+                        children: [
+                            { id: 'env:ground:pitch', kind: 'slider', label: 'env.groundPitch', control: { bind: 'env.groundPitch', min: -45, max: 45, step: 1 }, icon: 'lucide:arrow-up-down', visibleWhen: () => envState.groundType !== 'terrain' },
+                            { id: 'env:ground:roll', kind: 'slider', label: 'env.groundRoll', control: { bind: 'env.groundRoll', min: -45, max: 45, step: 1 }, icon: 'lucide:rotate-cw', visibleWhen: () => envState.groundType !== 'terrain' },
+                            { id: 'env:ground:scrollX', kind: 'slider', label: 'env.groundScrollX', control: { bind: 'env.groundScrollSpeedX', min: -2, max: 2, step: 0.1 }, icon: 'lucide:move-right', visibleWhen: () => envState.groundDecoStyle === 'checker' || (envState.groundTextureEnabled && !!envState.groundTexture) },
+                            { id: 'env:ground:scrollZ', kind: 'slider', label: 'env.groundScrollZ', control: { bind: 'env.groundScrollSpeedZ', min: -2, max: 2, step: 0.1 }, icon: 'lucide:move-down', visibleWhen: () => envState.groundDecoStyle === 'checker' || (envState.groundTextureEnabled && !!envState.groundTexture) },
+                            { id: 'env:ground:followCam', kind: 'toggle', label: 'env.groundFollowCamera', control: { bind: 'env.groundFollowCamera' }, icon: 'lucide:map-pin' },
+                        ],
                     },
-                });
+                ];
+                renderMenu(enhanceSchema, c);
 
                 // ===== 地面反射 =====
-                addCollapsible(c, {
-                    title: t('env.groundReflection'),
-                    icon: 'lucide:reflection',
-                    defaultOpen: false,
-                    renderContent: (cc) => {
-                        addModeSlider(cc, t('env.groundReflectQuality'), [
-                            { value: 'off', label: t('env.off') },
-                            { value: 'low', label: t('env.low') },
-                            { value: 'medium', label: t('env.medium') },
-                            { value: 'high', label: t('env.high') },
-                        ], s.groundReflectionQuality, (v) => {
-                            setEnvState({ groundReflectionQuality: v as EnvState['groundReflectionQuality'] });
-                        }, 'lucide:monitor', undefined, { bind: () => envState.groundReflectionQuality });
-                        addSliderRow(cc, t('env.groundReflectBlend'), s.groundReflectionBlend, 0, 1, 0.05, (v) => setEnvState({ groundReflectionBlend: v }), 'lucide:blend', undefined, { bind: () => envState.groundReflectionBlend });
-                        addSliderRow(cc, t('env.groundNormalStrength'), s.groundNormalStrength, 0, 2, 0.05, (v) => setEnvState({ groundNormalStrength: v }), 'lucide:layers', undefined, { bind: () => envState.groundNormalStrength });
-                        if (s.groundType === 'terrain') {
-                            addToggleRow(cc, t('env.groundElevationColoring'), s.groundElevationColoring, (v) => setEnvState({ groundElevationColoring: v }), 'lucide:mountain-snow', { bind: () => envState.groundElevationColoring });
-                        }
+                const reflectionSchema: MenuNode[] = [
+                    {
+                        id: 'env:ground:reflection',
+                        kind: 'folder',
+                        label: 'env.groundReflection',
+                        icon: 'lucide:reflection',
+                        defaultOpen: false,
+                        children: [
+                            { id: 'env:ground:reflectQuality', kind: 'modeSlider', label: 'env.groundReflectQuality', control: { bind: 'env.groundReflectionQuality', options: [{ value: 'off', label: 'env.off' }, { value: 'low', label: 'env.low' }, { value: 'medium', label: 'env.medium' }, { value: 'high', label: 'env.high' }] }, icon: 'lucide:monitor' },
+                            { id: 'env:ground:reflectBlend', kind: 'slider', label: 'env.groundReflectBlend', control: { bind: 'env.groundReflectionBlend', min: 0, max: 1, step: 0.05 }, icon: 'lucide:blend' },
+                            { id: 'env:ground:normalStrength', kind: 'slider', label: 'env.groundNormalStrength', control: { bind: 'env.groundNormalStrength', min: 0, max: 2, step: 0.05 }, icon: 'lucide:layers' },
+                            { id: 'env:ground:elevationColoring', kind: 'toggle', label: 'env.groundElevationColoring', control: { bind: 'env.groundElevationColoring' }, icon: 'lucide:mountain-snow', visibleWhen: () => envState.groundType === 'terrain' },
+                        ],
                     },
-                });
+                ];
+                renderMenu(reflectionSchema, c);
             });
         },
     };
