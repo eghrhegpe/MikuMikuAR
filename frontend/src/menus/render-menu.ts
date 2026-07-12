@@ -34,6 +34,9 @@ function renderNode(node: MenuNode, container: HTMLElement): void {
         case 'divider':
             // 无操作，未来可添加分隔线 DOM
             break;
+        case 'custom':
+            if (node.renderCustom) node.renderCustom(container);
+            break;
     }
 }
 

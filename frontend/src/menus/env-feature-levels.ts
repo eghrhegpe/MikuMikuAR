@@ -37,168 +37,47 @@ export function buildSkyLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            const s = envState;
             cardContainer(container, (c) => {
-                addModeSlider(
-                    c,
-                    t('env.skyMode'),
-                    [
-                        { value: 'color', label: t('env.solid') },
-                        { value: 'texture', label: t('env.texture') },
-                        { value: 'procedural', label: t('env.procedural') },
-                    ],
-                    s.skyMode,
-                    (v) => {
-                        setEnvState({ skyMode: v });
-                        getEnvMenu()?.reRender();
-                    },
-                    'lucide:sun',
-                    undefined,
+                const skySchema: MenuNode[] = [
+                    { id: 'env:sky:mode', kind: 'modeSlider', label: 'env.skyMode', control: { bind: 'env.skyMode', options: [{ value: 'color', label: 'env.solid' }, { value: 'texture', label: 'env.texture' }, { value: 'procedural', label: 'env.procedural' }] }, icon: 'lucide:sun' },
+                    { id: 'env:sky:colorTop', kind: 'colorSlider', label: 'env.skyColorTop', control: { bind: 'env.skyColorTop' }, visibleWhen: () => envState.skyMode === 'color' },
+                    { id: 'env:sky:zenith', kind: 'colorSlider', label: 'env.zenithColor', control: { bind: 'env.skyColorTop' }, visibleWhen: () => envState.skyMode === 'procedural' },
+                    { id: 'env:sky:horizon', kind: 'colorSlider', label: 'env.horizonColor', control: { bind: 'env.skyColorBot' }, visibleWhen: () => envState.skyMode === 'procedural' },
+                    { id: 'env:sky:stars', kind: 'toggle', label: 'env.stars', control: { bind: 'env.starsEnabled' }, visibleWhen: () => envState.skyMode === 'procedural' },
+                    { id: 'env:sky:brightness', kind: 'slider', label: 'env.brightness', control: { bind: 'env.skyBrightness', min: 0.1, max: 5, step: 0.1 }, icon: 'lucide:sun', visibleWhen: () => envState.skyMode === 'procedural' },
                     {
-                        bind: () => envState.skyMode,
-                    }
-                );
-
-                if (s.skyMode === 'color') {
-                    addColorSliderRow(
-                        c,
-                        t('env.skyColorTop'),
-                        s.skyColorTop,
-                        (v) => {
-                            setEnvState({ skyColorTop: v });
+                        id: 'env:sky:textureSection',
+                        kind: 'custom',
+                        visibleWhen: () => envState.skyMode === 'texture',
+                        renderCustom: (cc) => {
+                            const hint = document.createElement('div');
+                            hint.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px 0;';
+                            hint.textContent = t('env.skyTextureHint');
+                            cc.appendChild(hint);
+                            const fileName = envState.skyTexture ? envState.skyTexture.split(/[/\\]/).pop() : t('env.notSelected');
+                            slideRow(cc, 'lucide:image', t('env.skyTexture'), false, async () => {
+                                setEnvTextureBindingTarget('sky');
+                                closeAllOverlays();
+                                const level = stackRegistry.buildLevel!(getBrowseDir('environment'), t('env.skyTexture'), (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format), getEnvMenu()!);
+                                getEnvMenu()!.push(level);
+                            }, fileName);
+                            addSliderRow(cc, t('env.rotateY'), envState.skyRotationY, 0, 360, 1, (v) => setEnvState({ skyRotationY: v }), 'lucide:refresh-cw');
                         },
-                        {
-                            bind: () => envState.skyColorTop,
-                        }
-                    );
-                } else if (s.skyMode === 'procedural') {
-                    addColorSliderRow(
-                        c,
-                        t('env.zenithColor'),
-                        s.skyColorTop,
-                        (v) => {
-                            setEnvState({ skyColorTop: v });
-                        },
-                        {
-                            bind: () => envState.skyColorTop,
-                        }
-                    );
-                    addColorSliderRow(
-                        c,
-                        t('env.horizonColor'),
-                        s.skyColorBot,
-                        (v) => {
-                            setEnvState({ skyColorBot: v });
-                        },
-                        {
-                            bind: () => envState.skyColorBot,
-                        }
-                    );
-                    addToggleRow(c, t('env.stars'), s.starsEnabled ?? false, (v) =>
-                        setEnvState({ starsEnabled: v })
-                    );
-                }
-
-                if (s.skyMode === 'texture') {
-                    const hint = document.createElement('div');
-                    hint.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px 0;';
-                    hint.textContent = t('env.skyTextureHint');
-                    c.appendChild(hint);
-                    const fileName = s.skyTexture
-                        ? s.skyTexture.split(/[/\\]/).pop()
-                        : t('env.notSelected');
-                    slideRow(
-                        c,
-                        'lucide:image',
-                        t('env.skyTexture'),
-                        false,
-                        async () => {
-                            setEnvTextureBindingTarget('sky');
-                            closeAllOverlays();
-                            const level = stackRegistry.buildLevel!(
-                                getBrowseDir('environment'),
-                                t('env.skyTexture'),
-                                (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
-                                getEnvMenu()!
-                            );
-                            getEnvMenu()!.push(level);
-                        },
-                        fileName
-                    );
-                    addSliderRow(
-                        c,
-                        t('env.rotateY'),
-                        s.skyRotationY,
-                        0,
-                        360,
-                        1,
-                        (v) => setEnvState({ skyRotationY: v }),
-                        'lucide:refresh-cw'
-                    );
-                }
-                if (s.skyMode === 'procedural') {
-                    addSliderRow(
-                        c,
-                        t('env.brightness'),
-                        s.skyBrightness,
-                        0.1,
-                        5,
-                        0.1,
-                        (v) => setEnvState({ skyBrightness: v }),
-                        'lucide:sun'
-                    );
-                }
-                addSliderRow(
-                    c,
-                    t('env.skyRotationSpeed'),
-                    s.skyRotationSpeed ?? 0,
-                    0,
-                    5,
-                    0.1,
-                    (v) => setEnvState({ skyRotationSpeed: v }),
-                    'lucide:rotate-cw'
-                );
-
-                // ── 光照控制（从 buildEnvUnifiedLevel 迁入）──
-                addCollapsible(c, {
-                    title: t('env.lightControl'),
-                    icon: 'lucide:sun',
-                    defaultOpen: false,
-                    renderContent: (inner) => {
-                        addSliderRow(
-                            inner,
-                            t('env.sunIntensity'),
-                            getLightState().dirIntensity,
-                            0,
-                            1,
-                            0.05,
-                            (v) => {
-                                setLightingState({ dirIntensity: v });
-                            },
-                            'lucide:sun',
-                            undefined,
-                            {
-                                bind: () => getLightState().dirIntensity,
-                            }
-                        );
-                        addSliderRow(
-                            inner,
-                            t('env.skyLighting'),
-                            s.envIntensity / 3,
-                            0,
-                            1,
-                            0.05,
-                            (v) => {
-                                setEnvState({ envIntensity: v * 3 });
-                            },
-                            'lucide:sun',
-                            undefined,
-                            {
-                                bind: () => envState.envIntensity / 3,
-                            }
-                        );
                     },
-                });
+                    { id: 'env:sky:rotationSpeed', kind: 'slider', label: 'env.skyRotationSpeed', control: { bind: 'env.skyRotationSpeed', min: 0, max: 5, step: 0.1, get: (v) => (v as number) ?? 0 }, icon: 'lucide:rotate-cw' },
+                    {
+                        id: 'env:sky:light',
+                        kind: 'folder',
+                        label: 'env.lightControl',
+                        icon: 'lucide:sun',
+                        defaultOpen: false,
+                        children: [
+                            { id: 'env:sky:sunIntensity', kind: 'slider', label: 'env.sunIntensity', control: { bind: 'light.dirIntensity', min: 0, max: 1, step: 0.05 }, icon: 'lucide:sun' },
+                            { id: 'env:sky:skyLighting', kind: 'slider', label: 'env.skyLighting', control: { bind: 'env.envIntensity', min: 0, max: 1, step: 0.05, get: (v) => (v as number) / 3, set: (v) => v * 3 }, icon: 'lucide:sun' },
+                        ],
+                    },
+                ];
+                renderMenu(skySchema, c);
             });
         },
     };
