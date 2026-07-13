@@ -29,7 +29,10 @@ func main() {
 			application.NewService(myApp),
 		},
 		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(assets),
+			// [doc:adr-099] Wrap with COOP/COEP so the top-level
+			// document is cross-origin isolated → SharedArrayBuffer available
+			// for MmdWasmInstanceTypeMPR. Gated by VITE_MMD_WASM_MT.
+			Handler: app.CoopCoepMiddleware(application.AssetFileServerFS(assets)),
 		},
 		Windows: application.WindowsOptions{
 			// E2E hook: when MMCAR_DEBUG_PORT is set, expose the WebView2

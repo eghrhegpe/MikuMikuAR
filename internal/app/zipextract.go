@@ -504,6 +504,28 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// coopCoepMiddleware injects Cross-Origin-Opener-Policy and
+// Cross-Origin-Embedder-Policy headers to enable cross-origin isolation.
+// This is required for SharedArrayBuffer, which babylon-mmd's multi-threaded
+// WASM physics (MmdWasmInstanceTypeMPR) depends on.
+//
+// [doc:adr-099] Gated behind VITE_MMD_WASM_MT so the default single-threaded
+// (SPR) app behavior is unchanged. When enabled, cross-origin subresource
+// fetches (model/wasm asset servers) remain COEP-compliant via corsMiddleware's
+// Access-Control-Allow-Origin: * — no extra CORP header needed.
+// Applied to both the embedded asset server (top-level document, which is what
+// actually grants SharedArrayBuffer) and the runtime file servers for symmetry.
+func CoopCoepMiddleware(next http.Handler) http.Handler {
+	if os.Getenv("VITE_MMD_WASM_MT") == "" {
+		return next
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
+		w.Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
+		next.ServeHTTP(w, r)
+	})
+}
+
 // toCorruptStringShiftJIS simulates how babylon-mmd incorrectly decodes Shift-JIS bytes as UTF-8.
 // [doc:adr-058] Takes a correct UTF-8 filename, encodes to Shift-JIS, then decodes as UTF-8.
 func toCorruptStringShiftJIS(s string) string {
@@ -737,9 +759,9 @@ func (a *App) StartFileServer(dirPath string) (int, error) {
 	port := listener.Addr().(*net.TCPAddr).Port
 	a.safeLogInfo("StartFileServer: dir=%s port=%d", dirPath, port)
 
-	handler := corsMiddleware(basenameFallbackFS(dirPath, func(format string, args ...interface{}) {
+	handler := CoopCoepMiddleware(corsMiddleware(basenameFallbackFS(dirPath, func(format string, args ...interface{}) {
 		a.safeLogInfo(format, args...)
-	}))
+	})))
 
 	srv := &http.Server{Handler: handler}
 	go func() {
