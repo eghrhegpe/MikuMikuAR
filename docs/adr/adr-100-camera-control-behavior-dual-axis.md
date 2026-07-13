@@ -203,13 +203,26 @@ export interface CameraState {
 
 ### 7.2 分期
 
-| 阶段 | 内容 | 可独立验证 |
-|------|------|-----------|
-| **P1 契约 + shim** | 定义双轴类型；`switchCameraMode` 转 shim；旧枚举保留别名 | 旧测试全绿（零行为变化） |
-| **P2 运行时接线** | `beatcut` 生效条件改判 `_cameraBehavior==='beatcut'`；beatcut 与 concert/turntable 互斥（选中即停对方）；beatcut 订阅集中到 camera 内部并覆盖 restore 路径（解决「饿死」） | 单元测试 + 手动切镜 |
-| **P3 序列化迁移** | `get/setCameraState` 双写 + 迁移；旧存档往返测试 | camera.test 往返断言 |
-| **P4 UI 重构** | 控制/行为两级选择器；`自动运镜` toggle 降级为行为选项；置灰约束 | 手动 UX 走查 |
-| **P5 收尾** | `CameraMode` 别名清理评估（可延后）；ADR-070 补注记；文档同步 | check + build |
+| 阶段 | 内容 | 可独立验证 | 状态 |
+|------|------|-----------|------|
+| **P1 契约 + shim** | 定义双轴类型；`switchCameraMode` 转 shim；旧枚举保留别名 | 旧测试全绿（零行为变化） | ✅ 已完成 |
+| **P2 运行时接线** | `beatcut` 生效条件改判 `_cameraBehavior==='beatcut'`；beatcut 与 concert/turntable 互斥（选中即停对方）；beatcut 订阅集中到 camera 内部并覆盖 restore 路径（解决「饿死」） | 单元测试 + 手动切镜 | ✅ 已完成 |
+| **P3 序列化迁移** | `get/setCameraState` 双写 + 迁移；旧存档往返测试 | camera.test 往返断言 | ⬜ 待开发 |
+| **P4 UI 重构** | 控制/行为两级选择器；`自动运镜` toggle 降级为行为选项；置灰约束 | 手动 UX 走查 | ⬜ 待开发 |
+| **P5 收尾** | `CameraMode` 别名清理评估（可延后）；ADR-070 补注记；文档同步 | check + build | ⬜ 待开发 |
+
+#### P1–P2 实现落点（供 P3+ 续接）
+
+| 关注点 | 位置 |
+|--------|------|
+| 双轴类型 + `LEGACY_MODE_MAP` + `deriveLegacyMode` | `frontend/src/scene/camera/camera.ts` §Types（同步双写 `core/types.ts`）|
+| 单一写入点 `_syncAxesFromMode` + `_resolveBehavior`（beatcut 叠加/互斥派生）| `camera.ts` line ~231 |
+| 集中订阅 `_subscribeAutoCameraBeat` / `_unsubscribeAutoCameraBeat`（缺省回退 `getProcBeatDetector()`）| `camera.ts` line ~1216 |
+| restore 饿死修复 | `restoreAutoCameraState`（`camera.ts`）恢复时调 `_subscribeAutoCameraBeat()` + `_syncAxesFromMode` |
+| 门控改判 `_cameraBehavior !== 'beatcut'`（抑制期不消耗 beat 计数）| `_onAutoCameraBeat`（`camera.ts`）|
+| 单测 | `camera.test.ts` 新增 11 例（6 映射 + 5 beatcut 运行时）；mock 须用 `@/scene/scene`、`@/core/config` 别名规格匹配 camera 实际导入 |
+
+> **互斥语义（P2 实现细节）**：beatcut 作为**运行时叠加行为**，仅在 `control==='orbit' && 基底行为==='none'` 时由 `_resolveBehavior` 派生。切到 concert/turntable/scripted 时基底行为非 none → 不派生 beatcut（自动抑制，`_autoCameraEnabled` 保留、切回 orbit 自动恢复）。已知限制：在 concert 模式下开启「自动运镜」toggle 会保持挂起态直至切回 orbit——P4 UI 重构将以两级选择器从源头消除该组合。
 
 ---
 

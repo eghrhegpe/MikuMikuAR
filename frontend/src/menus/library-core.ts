@@ -27,6 +27,7 @@ import {
 import {
     dom,
     setStatus,
+    uiState,
     setLibraryRoot,
     libraryRoot,
     setResourceRoot,
@@ -100,11 +101,12 @@ export function getResourceViewMode(): ResourceViewMode {
 
 export function setResourceViewMode(mode: ResourceViewMode): void {
     resourceViewMode = mode;
-    // [doc:adr-066] 持久化到 config
+    uiState.resourceViewMode = mode;
+    // [doc:adr-066] 持久化到 config（传完整 uiState 快照，避免单字段写入清空其他字段）
     import('../core/wails-bindings').then(({ SetUIState }) => {
-        SetUIState({
-            resourceViewMode: mode,
-        } as unknown as import('../core/wails-bindings').UIState).catch(() => {});
+        SetUIState({ ...uiState } as unknown as import('../core/wails-bindings').UIState).catch(
+            () => {}
+        );
     });
 }
 
