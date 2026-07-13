@@ -82,7 +82,7 @@ import {
     setCurrentState,
 } from '../core/ui-helpers';
 import type { ResourceItem } from '../core/ui-helpers';
-import { tryCatchStatus, getBrowseDir } from '../core/utils';
+import { tryCatchStatus, getBrowseDir, isUnderRoot } from '../core/utils';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t'; // [doc:adr-059] i18n 翻译
 import { getLang } from '../core/i18n/locale'; // [doc:adr-059] 用于列表 collation 随语言切换
@@ -115,7 +115,70 @@ function isModelDirTarget(target: string | undefined): boolean {
     return !!target && !target.startsWith('models:') && !target.startsWith('__');
 }
 
+/**
+ * 计算 dir 相对 root 的子目录段数组，用于"展开栈"自动恢复上次浏览位置。
+ * - 返回 []  ：dir 与 root 相同（无需展开）
+ * - 返回 null：dir 不是 root 的严格子目录（不展开，降级为停在 root）
+ * - 否则     ：从 root 到 dir 的每一级子目录名（顺序）
+ * 必须使用路径边界匹配，禁止裸字符串前缀（与 buildLevel 同款修复：避免 "PMX" 误匹配 "PMXSub"、
+ * 或盘符残缺 "C" 切出 ":" 伪文件夹）。
+ */
+export function splitSubdirSegments(rootRaw: string, dirRaw: string): string[] | null {
+    const rootNorm = normPath(rootRaw);
+    const dirNorm = normPath(dirRaw);
+    // 比较用小写，提取段用原始大小写（避免路径大小写丢失导致展开后 buildLevel 与 m.dir 不匹配）
+    const root = rootNorm.toLowerCase();
+    const dir = dirNorm.toLowerCase();
+    // 1) 严格路径边界匹配（root + '/'），覆盖绝大多数同形态场景
+    if (dir === root) {
+        return [];
+    }
+    if (isUnderRoot(rootRaw, dirRaw)) {
+        return dirNorm.substring(rootNorm.length).replace(/^\//, '').split('/').filter(Boolean);
+    }
+    // 2) 容错：root 与 dir 的绝对前缀形态不完全一致（前端 libraryRoot 与后端 cfg.ResourceRoot
+    //    在大小写 / 末尾斜杠 / 反斜杠上存在差异），但二者位于同一盘符、且 lastDir 中能定位
+    //    root 的末段目录标记（如 "PMX"）时，从该标记之后截取相对段，基于前端一致的 root 重建路径。
+    //    这样既修复"形态不一致导致不展开"，又保留 PMX vs PMXSub 的伪文件夹防护。
+    //    跨盘（如 C:/… 记忆但当前 root 在 D:/…）绝不展开，避免记忆串台。
+    const rootDrive = root.match(/^([a-z]):/i)?.[1];
+    if (rootDrive) {
+        const dirDrive = dir.match(/^([a-z]):/i)?.[1];
+        if (dirDrive !== rootDrive) {
+            return null;
+        }
+    }
+    const marker = root.split('/').filter(Boolean).pop();
+    if (marker) {
+        const needle = '/' + marker + '/';
+        const idx = dir.lastIndexOf(needle);
+        if (idx >= 0) {
+            const rel = dirNorm.substring(idx + needle.length).replace(/^\//, '');
+            return rel ? rel.split('/').filter(Boolean) : [];
+        }
+        // dir 以标记段结尾（lastDir 指向的恰是 root 末段目录本身，等同 root）
+        if (dir.endsWith('/' + marker)) {
+            return [];
+        }
+    }
+    return null;
+}
+
+/**
+ * [doc:adr-090] 路径边界相对路径推导。
+ * 判定 mdirRaw 是否位于 baseDirRaw 之下：精确相等（忽略大小写），或前缀相等且紧随字符为 '/'。
+ * 禁止裸字符串前缀（如 ".../PMX" 误命中 ".../PMXSub" → 伪文件夹）。
+ * 命中返回相对 baseDir 的路径（去除前导 '/'），否则 null。
+ */
+export function getRelativePathUnderDir(mdirRaw: string, baseDirRaw: string): string | null {
+    const mdir = normPath(mdirRaw);
+    const base = normPath(baseDirRaw);
+    return isUnderRoot(base, mdir) ? mdir.substring(base.length).replace(/^\//, '') : null;
+}
+
 const makeModelMenu = (container: HTMLElement): SlideMenu => {
+    // [展开栈] 打开资源库时，从 root 异步串行展开到上次浏览目录的剩余子目录段
+    let pendingAutoExpand: string[] | null = null;
     return new SlideMenu({
         container,
         onClose: closeAllOverlays,
@@ -167,14 +230,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 return buildTagDetailLevel(tagName);
             }
             if (row.target === 'models:browse') {
-                console.log(
-                    '[models:browse] clicked, libraryRoot:',
-                    libraryRoot,
-                    'allModels:',
-                    allModels.length
-                );
                 if (!libraryRoot) {
-                    console.log('[models:browse] no libraryRoot, showing empty state');
                     return {
                         label: t('library.title'),
                         dir: '',
@@ -188,11 +244,13 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 }
                 const browseDir = getBrowseDir('pmx');
                 // [doc:adr-090] 读取上次浏览子目录记忆，优先从 LastDirs["browse:pmx"] 恢复
+                // [展开栈] 不再把 lastDir 直接当根（会导致导航栈单层、易迷失、且前缀不对齐时生成伪文件夹），
+                // 而是记录相对 root 的子目录段，由 onLevelEnter 从 root 逐级展开。
                 const [lastDir] = await GetLastBrowseDir('pmx');
-                const startDir = (lastDir && lastDir !== browseDir) ? lastDir : browseDir;
-                console.log('[models:browse] browseDir:', browseDir, 'lastDir:', lastDir, 'startDir:', startDir);
+                const segs = lastDir ? splitSubdirSegments(browseDir, lastDir) : null;
+                pendingAutoExpand = segs && segs.length > 0 ? segs : null;
                 return buildLevel(
-                    startDir,
+                    browseDir,
                     t('library.title'),
                     (m) => m.format === 'pmx',
                     stackRegistry.modelStack!,
@@ -252,7 +310,8 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             }
         },
         // [doc:adr-090] 持久化模型浏览器当前目录，打开时恢复上次位置
-        onLevelEnter: (level) => {
+        // [展开栈] 打开时从 root 异步串行展开到上次浏览目录（push 为动画驱动，同步多 push 会被 transitioning 拦截，故逐层交由动画结束回调驱动）
+        onLevelEnter: (level, menu) => {
             const dir = normPath(level.dir);
             if (!dir || dir === '.' || dir === '/') {
                 return;
@@ -261,13 +320,28 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             if (!browseRoot) {
                 return;
             }
+            if (pendingAutoExpand && pendingAutoExpand.length > 0) {
+                const seg = pendingAutoExpand[0];
+                const nextDir = normPath(dir + '/' + seg);
+                // 立即消费剩余段，避免本层动画结束后的 onLevelEnter 重复展开
+                pendingAutoExpand = pendingAutoExpand.length > 1 ? pendingAutoExpand.slice(1) : null;
+                // 与 root 层保持一致：第 4 参用 modelStack（即当前 SlideMenu 实例），并传入外部路径项
+                menu.push(
+                    buildLevel(
+                        nextDir,
+                        seg,
+                        (m) => m.format === 'pmx',
+                        stackRegistry.modelStack!,
+                        externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+                    )
+                );
+                return;
+            }
             // 仅在 libraryRoot/PMX/ 下的子目录导航时持久化；排除根菜单、scene/model detail 等
             if (dir === browseRoot) {
                 return;
             }
-            const dirLower = dir.toLowerCase();
-            const rootLower = browseRoot.toLowerCase();
-            if (dirLower.startsWith(rootLower) && dirLower !== rootLower) {
+            if (isUnderRoot(browseRoot, dir)) {
                 // [doc:adr-090] 同步到后端，持久化到 LastDirs["browse:pmx"]
                 void SetLastBrowseDir('pmx', dir);
             }
@@ -444,15 +518,6 @@ export function buildLevel(
     const subdirIsLeaf = new Set<string>();
 
     const modelList = allModels || [];
-    console.log('[buildLevel] dir:', dir, 'modelList.length:', modelList.length, 'isRoot:', isRoot);
-    if (modelList.length > 0) {
-        console.log(
-            '[buildLevel] sample models:',
-            modelList
-                .slice(0, 5)
-                .map((m) => ({ dir: m.dir, format: m.format, container: m.container }))
-        );
-    }
 
     // Background prefetch: warm metadata cache for all models in this level
     // so modelToRow lookups are more likely to hit in subsequent re-renders
@@ -469,14 +534,9 @@ export function buildLevel(
             continue;
         }
         const mdir = normPath(m.dir);
-        // Windows 路径不区分大小写，比较时忽略大小写
-        const mdirLower = mdir.toLowerCase();
-        const dirLower = dir.toLowerCase();
-        const rel = mdirLower.startsWith(dirLower)
-            ? mdir.substring(dir.length).replace(/^\//, '')
-            : null;
+        const rel = getRelativePathUnderDir(mdir, dir);
         if (rel === null) {
-            if (items.length === 0 && subdirs.size === 0) {
+            if (import.meta.env.DEV && items.length === 0 && subdirs.size === 0) {
                 console.log('[buildLevel] path mismatch:', { mdir, dir, sample: m.file_path });
             }
             continue;
@@ -535,7 +595,9 @@ export function buildLevel(
         });
     }
 
-    console.log('[buildLevel] items.length:', items.length, 'subdirs.size:', subdirs.size);
+    if (import.meta.env.DEV) {
+        console.log('[buildLevel] items.length:', items.length, 'subdirs.size:', subdirs.size);
+    }
     return {
         label,
         dir,
@@ -573,10 +635,10 @@ export function buildResourceItemsForDir(
             continue;
         }
         const mdir = normPath(m.dir);
-        if (!mdir.startsWith(normDir)) {
+        const rel = getRelativePathUnderDir(mdir, normDir);
+        if (rel === null) {
             continue;
         }
-        const rel = mdir.substring(normDir.length).replace(/^\//, '');
         const parts = rel.split('/').filter(Boolean);
         if (parts.length === 0) {
             const fp = m.file_path || '';
@@ -1007,10 +1069,16 @@ export function modelToRow(m: LibraryModel): PopupRow {
 }
 
 let _isExtracting = false;
+/** 链式替换加载中标记：阻止mmku:modelLoaded事件自动重置菜单 */
+let _isReplaceLoading = false;
 
 function onModelRowClick(m: LibraryModel): void {
     if (_isExtracting) {
         setStatus(t('library.extracting'), false);
+        return;
+    }
+    if (_isReplaceLoading) {
+        setStatus(t('library.loadingModel'), false);
         return;
     }
     const replaceId = modelReplaceTargetId;
@@ -1025,39 +1093,67 @@ function onModelRowClick(m: LibraryModel): void {
 
     // ===== Replace mode: after load, return to library with new model's replace mode active =====
     if (replaceId && m.format === 'pmx') {
-        setModelReplaceTargetId(null);
         setPendingVmd(null);
-        // Pop library browser — return to stale model detail (will be replaced after load)
-        stackRegistry.modelStack?.pop();
+        _isReplaceLoading = true;
 
         const doReplace = (path: string): void => {
-            removeModel(replaceId);
+            setStatus(t('library.loadingModel'), false);
+            // 确定资源类别、浏览目录、过滤器
+            let browseCategory: 'pmx' | 'stage' | 'prop' = 'pmx';
+            let loadKind: 'actor' | 'stage' | 'prop' = 'actor';
+            let filter: (model: LibraryModel) => boolean = (model) => model.format === 'pmx';
+            if (m.type === 'prop') {
+                browseCategory = 'prop';
+                loadKind = 'prop';
+                filter = (model) => model.type === 'prop';
+            } else if (m.type === 'stage' || m.type === 'scene') {
+                browseCategory = 'stage';
+                loadKind = 'stage';
+                filter = (model) => model.type === 'stage' || model.type === 'scene';
+            }
+
             loadManager
-                .load({ kind: isStage ? 'stage' : 'actor', path })
-                .then((handle) => {
+                .load({ kind: loadKind, path })
+                .then(async (handle) => {
                     if (handle?.id) {
+                        // 加载成功后再删除旧模型，失败则保留旧模型
+                        removeModel(replaceId);
                         // Auto-activate replace mode for the newly loaded model
                         // so user can immediately pick the next replacement without navigating back
                         setModelReplaceTargetId(handle.id);
                         stackRegistry.modelStack?.resetToRoot();
                         // Push library browser so user sees the model list with replace mode active
-                        const newInst = modelRegistry.get(handle.id);
+                        let newName = handle.name;
+                        if (loadKind === 'prop') {
+                            const { propRegistry } = await import('../core/config');
+                            newName = propRegistry.get(handle.id)?.name ?? handle.name;
+                        } else {
+                            newName = modelRegistry.get(handle.id)?.name ?? handle.name;
+                        }
                         stackRegistry.modelStack?.push(
                             buildLevel(
-                                getBrowseDir('pmx'),
-                                t('model-detail.replaceModelTo', { name: newInst?.name ?? handle.name }),
-                                (model) => model.format === 'pmx',
+                                getBrowseDir(browseCategory),
+                                t('model-detail.replaceModelTo', { name: newName }),
+                                filter,
                                 stackRegistry.modelStack!,
                                 externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
                             )
                         );
+                        setStatus(t('status.done'), true);
                     } else {
+                        // 加载失败恢复替换目标为旧模型，保持状态一致
+                        setModelReplaceTargetId(replaceId);
                         stackRegistry.modelStack?.reRender();
                     }
                 })
                 .catch((err) => {
+                    // 加载失败恢复替换目标为旧模型，保持状态一致
+                    setModelReplaceTargetId(replaceId);
                     setStatus(t('library.modelLoadFailed') + formatError(err), false);
                     stackRegistry.modelStack?.reRender();
+                })
+                .finally(() => {
+                    _isReplaceLoading = false;
                 });
         };
 
@@ -1070,6 +1166,8 @@ function onModelRowClick(m: LibraryModel): void {
                     doReplace(result.file_path);
                 })
                 .catch((err) => {
+                    _isReplaceLoading = false;
+                    setModelReplaceTargetId(replaceId);
                     setStatus(t('library.extractFailed') + formatError(err), false);
                 })
                 .finally(() => {
@@ -1512,7 +1610,7 @@ function hasSubdir(
             continue;
         }
         const mdir = normPath(m.dir);
-        if (!mdir.startsWith(parent + '/')) {
+        if (!isUnderRoot(parent, mdir)) {
             continue;
         }
         const rel = mdir.substring(parent.length + 1);
@@ -1537,7 +1635,7 @@ function restoreBrowsePath(pathDirs: string[]): void {
     let currentDir = rootDir;
     for (let i = 1; i < pathDirs.length; i++) {
         const targetDir = normPath(pathDirs[i]);
-        if (!targetDir.startsWith(currentDir + '/')) {
+        if (!isUnderRoot(currentDir, targetDir)) {
             break;
         }
         const childName = targetDir.substring(currentDir.length + 1).split('/')[0];
@@ -1641,6 +1739,10 @@ export async function importFile(): Promise<void> {
 // ======== Refresh on external model load (drag-drop) ========
 
 document.addEventListener('mmku:modelLoaded', () => {
+    // 链式替换加载中，不自动重置菜单，避免与替换流程的栈操作冲突
+    if (_isReplaceLoading) {
+        return;
+    }
     // 仅弹窗可见时刷新，避免干扰其他弹窗或后台操作
     if (
         !dom.sceneOverlay.classList.contains('visible') ||

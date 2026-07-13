@@ -23,6 +23,7 @@ import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resour
 import { buildPropDetailLevel } from './scene-prop-levels';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
+import { isUnderRoot } from '../core/utils';
 import type { MenuNode } from './menu-schema';
 
 // ======== 舞台根面板：舞台加载、灯光、道具 ========
@@ -36,7 +37,7 @@ function buildStageSchema(): MenuNode[] {
     ).toLowerCase();
     const propModels = Array.from(modelManager.modelRegistry.entries()).filter(
         ([, inst]) =>
-            inst.kind === 'actor' && propDir && inst.filePath.toLowerCase().startsWith(propDir)
+            inst.kind === 'actor' && isUnderRoot(propDir, inst.filePath)
     );
     const propItems = [
         ...getPropList().map((p) => ({
