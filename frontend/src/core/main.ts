@@ -43,13 +43,11 @@ import {
     seekFromEvent,
     tryRestoreLastScene,
     setEnvState,
-    applyFrameControl,
 } from '../scene/scene';
 import { hexToRgb, rgbToString } from './color-helpers';
-import { formatTimestamp } from './utils';
 import { focusModel } from '../scene/manager/model-ops';
 import { screenshotCurrent } from '../menus/scene-menu';
-import { updatePerformance, setPerformanceMode } from '../scene/render/performance';
+import { setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza, closePlaza } from '../menus/plaza';
 import { getAutoImportCached } from '../menus/settings-shared';
@@ -64,6 +62,7 @@ import 'iconify-icon';
 import { registerShortcuts, initShortcutDispatcher, loadKeyBindings } from './shortcut-registry';
 import { SettingsStore } from '@/lib/settings-store';
 import { setupE2ECapture } from './dev-hooks';
+import { startRenderLoop } from './render-loop';
 
 function _updateStaticHtmlTexts(): void {
     // Update hardcoded HTML text with i18n translations
@@ -937,62 +936,7 @@ async function handleDropFile(path: string): Promise<void> {
     }
 }
 
-// ======== Render Loop (with optional FPS limit / vsync via engine.maxFPS) ========
-applyFrameControl();
-engine.setHardwareScalingLevel(1 / (uiState.renderScale ?? 1));
-// 时间戳格式化已收敛至 utils.formatTimestamp
-let _renderBeforeTime = 0;
-scene.onBeforeRenderObservable.add(() => {
-    _renderBeforeTime = performance.now();
-});
-scene.onAfterRenderObservable.add(() => {
-    const _afterTime = performance.now();
-    const _gpuElapsed = _afterTime - _renderBeforeTime;
-    if (_gpuElapsed > 30) {
-        const _obsCount = scene.onBeforeRenderObservable.observers
-            ? scene.onBeforeRenderObservable.observers.length
-            : 0;
-        console.warn(
-            `[${formatTimestamp()}][perf:gpu] before→after render took ${_gpuElapsed.toFixed(1)}ms (observers=${_obsCount})`
-        );
-    }
-});
-engine.runRenderLoop(() => {
-    const _obsBefore = scene.onBeforeRenderObservable.observers
-        ? scene.onBeforeRenderObservable.observers.length
-        : 0;
-    const _rStart = performance.now();
-    scene.render();
-    const _rElapsed = performance.now() - _rStart;
-    const _obsAfter = scene.onBeforeRenderObservable.observers
-        ? scene.onBeforeRenderObservable.observers.length
-        : 0;
-    const _obsDelta = _obsAfter - _obsBefore;
-    if (_rElapsed > 30 || (_obsDelta > 0 && _obsAfter > 100)) {
-        console.warn(
-            `[${formatTimestamp()}][perf:render] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`
-        );
-    }
-    updatePerformance();
-});
-window.addEventListener('resize', () => {
-    engine.resize();
-});
-
-// ======== FPS + Clock ========
-let _fpsClockId: ReturnType<typeof setInterval> | null = null;
-function startFpsClock(): void {
-    if (_fpsClockId) {
-        return;
-    }
-    _fpsClockId = setInterval(() => {
-        const now = new Date();
-        const h = String(now.getHours()).padStart(2, '0');
-        const m = String(now.getMinutes()).padStart(2, '0');
-        dom.fpsClock.textContent = `${Math.round(engine.getFps())} FPS | ${h}:${m}`;
-    }, 500);
-}
-startFpsClock();
+startRenderLoop();
 
 // ======== Download Watch Notification ========
 let importToastTimer: ReturnType<typeof setTimeout> | null = null;
