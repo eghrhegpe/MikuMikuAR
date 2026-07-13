@@ -515,7 +515,40 @@ export type DisplayNamePriority = 'name_jp' | 'name_en' | 'filename';
 
 export type PhysicsCategory = 'skirt' | 'chest' | 'hair' | 'accessory';
 
+/**
+ * @deprecated ADR-100：单枚举混淆「控制方案」与「运动行为」两条正交轴。
+ * 保留为兼容别名（存档 / 旧调用点），新代码请用 {@link CameraControl} × {@link CameraBehavior}。
+ * 双写于 `scene/camera/camera.ts`，改动须两处同步。
+ */
 export type CameraMode = 'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar';
+
+/**
+ * ADR-100 轴 A — 控制方案：决定相机类 + 输入方式。
+ * - `orbit`   : ArcRotateCamera + 指针输入（可拖拽 / 缩放）
+ * - `freefly` : UniversalCamera + 键鼠飞行
+ * - `ar`      : AR 相机 + 设备传感器
+ * 双写于 `scene/camera/camera.ts`。
+ */
+export type CameraControl = 'orbit' | 'freefly' | 'ar';
+
+/**
+ * ADR-100 轴 B — 运动行为：相机如何自动运动，仅当控制轴为 `orbit`(ArcRotate) 时生效。
+ * 初版互斥（同一时刻仅一个活动行为）。
+ * - `none`      : 纯手动（今 orbit 基座，无内建自转）
+ * - `turntable` : 整圈匀速自转（今 surround）
+ * - `concert`   : 扫掠 + 上下摆动（今 concert，ADR-070 语义不变）
+ * - `beatcut`   : 节拍切镜（今 自动运镜）
+ * - `scripted`  : VMD 脚本（今 vmd / oneshot，子态见 {@link ScriptedSubMode}）
+ * 双写于 `scene/camera/camera.ts`。
+ */
+export type CameraBehavior = 'none' | 'turntable' | 'concert' | 'beatcut' | 'scripted';
+
+/**
+ * ADR-100 §6.4 — `scripted` 行为的子模式。
+ * - `loop`    : VMD 相机脚本随播放循环驱动（今 vmd）
+ * - `oneshot` : 加载 VMD 后仅取首帧定格，不随播放推进（今 oneshot）
+ */
+export type ScriptedSubMode = 'loop' | 'oneshot';
 
 export type LibrarySortMode = 'default' | 'name';
 
