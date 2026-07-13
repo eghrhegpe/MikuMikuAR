@@ -380,6 +380,10 @@ let cameraModule: {
     getCameraControl: () => string;
     getCameraBehavior: () => string;
     getScriptedSubMode: () => string;
+    getCameraState: () => any;
+    setCameraState: (s: any) => void;
+    setCameraControl: (control: string) => void;
+    setCameraBehavior: (behavior: string) => void;
     deriveLegacyMode: (control: string, behavior: string, scripted?: string) => string;
     LEGACY_MODE_MAP: Record<
         string,
@@ -881,5 +885,109 @@ describe('ADR-100 beatcut 行为派生 + 饥饿修复 (P2 运行时)', () => {
         expect(cameraModule.getCameraBehavior()).toBe('beatcut');
         // 关键：restore 路径必须订阅 beat，否则永不触发（旧实现的饥饿 bug）。
         expect(detector.onBeat).toHaveBeenCalledTimes(1);
+    });
+});
+
+// ── ADR-100：序列化双写迁移 (P3) ──────────────────────────────
+describe('ADR-100 serialization dual-write (P3)', () => {
+    beforeEach(() => {
+        cameraModule.setAutoCameraEnabled(false);
+        mockUiState.autoCameraEnabled = false;
+        mockProcBeatDetector.mockReturnValue(null);
+        vi.clearAllMocks();
+    });
+
+    it('getCameraState 双写 control/behavior/scriptedSubMode，并反查 mode', () => {
+        const st = cameraModule.getCameraState();
+        expect(st.control).toBe('orbit');
+        expect(st.behavior).toBe('none');
+        expect(st.scriptedSubMode).toBe('loop');
+        expect(st.mode).toBe('orbit'); // deriveLegacyMode(orbit, none, loop)
+    });
+
+    it('getCameraState 在 beatcut 下 mode 降级为 orbit（旧版本可读）', () => {
+        const unsub = vi.fn();
+        const detector = { onBeat: vi.fn(() => unsub) };
+        cameraModule.setAutoCameraEnabled(true, detector);
+        const st = cameraModule.getCameraState();
+        expect(st.behavior).toBe('beatcut');
+        expect(st.control).toBe('orbit');
+        expect(st.mode).toBe('orbit'); // beatcut 无旧模式，降级 orbit
+        expect(st.scriptedSubMode).toBe('loop');
+    });
+
+    it('setCameraState 新格式(control+behavior) → 正确派生双轴', () => {
+        cameraModule.setCameraState({
+            mode: 'orbit',
+            control: 'orbit',
+            behavior: 'turntable',
+            preset: cameraModule.defaultCameraPreset(),
+            alpha: 0,
+            beta: 1,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        expect(cameraModule.getCameraControl()).toBe('orbit');
+        expect(cameraModule.getCameraBehavior()).toBe('turntable');
+    });
+
+    it('setCameraState 旧格式(mode only) → 经 LEGACY_MODE_MAP 迁移为 concert', () => {
+        cameraModule.setCameraState({
+            mode: 'concert',
+            preset: cameraModule.defaultCameraPreset(),
+            alpha: 0,
+            beta: 1,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        expect(cameraModule.getCameraControl()).toBe('orbit');
+        expect(cameraModule.getCameraBehavior()).toBe('concert');
+    });
+
+    it('setCameraState 旧格式 surround → turntable', () => {
+        cameraModule.setCameraState({
+            mode: 'surround',
+            preset: cameraModule.defaultCameraPreset(),
+            alpha: 0,
+            beta: 1,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        expect(cameraModule.getCameraBehavior()).toBe('turntable');
+    });
+
+    it('setCameraState 旧存档 UIState.autoCameraEnabled → 叠加为 beatcut', () => {
+        mockUiState.autoCameraEnabled = true;
+        mockUiState.autoCameraBeatsPerSwitch = 4;
+        cameraModule.setCameraState({
+            mode: 'orbit', // 旧格式，无 control/behavior
+            preset: cameraModule.defaultCameraPreset(),
+            alpha: 0,
+            beta: 1,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        expect(cameraModule.getCameraBehavior()).toBe('beatcut');
+        expect(cameraModule.isAutoCameraEnabled()).toBe(true);
+    });
+
+    it('round-trip：setCameraState(getCameraState()) 保持双轴不变', () => {
+        const unsub = vi.fn();
+        const detector = { onBeat: vi.fn(() => unsub) };
+        cameraModule.setAutoCameraEnabled(true, detector); // → beatcut
+        const st = cameraModule.getCameraState();
+
+        cameraModule.setAutoCameraEnabled(false);
+        cameraModule.setCameraState(st);
+        expect(cameraModule.getCameraControl()).toBe('orbit');
+        expect(cameraModule.getCameraBehavior()).toBe('beatcut');
     });
 });

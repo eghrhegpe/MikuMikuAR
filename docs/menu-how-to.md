@@ -37,7 +37,7 @@ frontend/src/menus/
 │   └── env-preset-levels.ts     #   环境预设
 │
 ├── motion-popup.ts              # 动作弹窗入口
-│   ├── motion-camera-levels.ts  #   相机模式 + 参数面板
+│   ├── motion-camera-levels.ts  #   相机控制/行为双轴 + 参数面板（ADR-100）
 │   ├── motion-procmotion-levels.ts # 程序化动作
 │   ├── motion-override-levels.ts #  骨骼覆盖
 │   ├── motion-pose-levels.ts    #   姿态工作室

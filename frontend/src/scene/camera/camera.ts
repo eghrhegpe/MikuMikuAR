@@ -382,6 +382,47 @@ export function getScriptedSubMode(): ScriptedSubMode {
     return _scriptedSubMode;
 }
 
+/**
+ * ADR-100 P4 — 直接设置控制方案轴（轴 A）。
+ * freefly/ar 非 ArcRotate，行为轴强制 none 并关闭自动运镜；
+ * orbit 下保留当前行为（含 beatcut 叠加语义，由 _resolveBehavior 派生）。
+ */
+export function setCameraControl(control: CameraControl): void {
+    if (control === _cameraControl) {
+        return; // 已是该控制方案，无需重建相机
+    }
+    const baseBehavior: CameraBehavior = _cameraBehavior === 'beatcut' ? 'none' : _cameraBehavior;
+    const legacy = deriveLegacyMode(control, baseBehavior, _scriptedSubMode);
+    switchCameraMode(legacy);
+    if (control !== 'orbit') {
+        setAutoCameraEnabled(false); // 非 orbit：行为轴强制 none，自动运镜无意义
+    }
+}
+
+/**
+ * ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。
+ * 'beatcut' 开启自动运镜（_resolveBehavior 派生为 beatcut）；其余行为关闭自动运镜。
+ * 非 orbit 控制下调用非 none 行为将被忽略（行为轴对 Universal/AR 不适用）。
+ */
+export function setCameraBehavior(behavior: CameraBehavior): void {
+    if (behavior === _cameraBehavior) {
+        return;
+    }
+    if (_cameraControl !== 'orbit' && behavior !== 'none') {
+        return; // 行为轴仅对 orbit 生效，非 orbit 强制 none
+    }
+    if (behavior === 'beatcut') {
+        // 确保控制为 orbit，再开启自动运镜（_resolveBehavior 派生 beatcut）
+        const legacy = deriveLegacyMode(_cameraControl, 'none', _scriptedSubMode);
+        switchCameraMode(legacy);
+        setAutoCameraEnabled(true);
+        return;
+    }
+    setAutoCameraEnabled(false);
+    const legacy = deriveLegacyMode(_cameraControl, behavior, _scriptedSubMode);
+    switchCameraMode(legacy);
+}
+
 export function getFov(): number {
     return _fov;
 }
@@ -1093,7 +1134,10 @@ function _stopBoneLock(): void {
 // ======== Camera State Serialization ========
 
 export interface CameraState {
-    mode: CameraMode;
+    mode: CameraMode; // 保留兼容别名（旧存档 / 旧版本识别）；新存档仍写入等价值供降级
+    control?: CameraControl; // ADR-100 轴 A（新）
+    behavior?: CameraBehavior; // ADR-100 轴 B（新）
+    scriptedSubMode?: ScriptedSubMode; // ADR-100 §6.4（新，仅 scripted 行为有意义）
     preset: CameraPreset;
     fov?: number; // FOV in radians, default 0.8 (migrated from RenderState in Phase 9)
     alpha: number;
@@ -1115,7 +1159,11 @@ export function getCameraState(): CameraState {
     const radius = isArc ? cam.radius : 16;
     const target = isArc ? cam.target : null;
     return {
-        mode: _cameraMode,
+        // ADR-100 P3：双写——新双轴字段 + 反查 mode（供旧版本降级读取）
+        mode: deriveLegacyMode(_cameraControl, _cameraBehavior, _scriptedSubMode),
+        control: _cameraControl,
+        behavior: _cameraBehavior,
+        scriptedSubMode: _scriptedSubMode,
         preset: deepClone(_currentPreset),
         fov: _fov,
         alpha,
@@ -1124,9 +1172,10 @@ export function getCameraState(): CameraState {
         targetX: target?.x ?? 0,
         targetY: target?.y ?? 8,
         targetZ: target?.z ?? 0,
-        positionX: cam!.position.x,
-        positionY: cam!.position.y,
-        positionZ: cam!.position.z,
+        // 无头环境（未 initCameraSystem）下 _currentCamera 为 null，做 null 安全避免崩溃
+        positionX: cam ? cam.position.x : 0,
+        positionY: cam ? cam.position.y : 0,
+        positionZ: cam ? cam.position.z : 0,
     };
 }
 
@@ -1162,15 +1211,50 @@ export function setCameraState(s: CameraState): void {
             concert: { ...def.concert, ...(loaded.concert || {}) },
         };
     }
-    if (mode && mode !== 'ar') {
-        switchCameraMode(mode);
+
+    // ── ADR-100 P3：双轴解析（新字段优先，旧 mode 兜底）──
+    let control: CameraControl;
+    let behavior: CameraBehavior;
+    let sub: ScriptedSubMode = 'loop';
+    if (s.control && s.behavior) {
+        control = s.control;
+        behavior = s.behavior;
+        sub = s.scriptedSubMode ?? 'loop';
+    } else {
+        const m = LEGACY_MODE_MAP[mode];
+        control = m.control;
+        behavior = m.behavior;
+        sub = m.scripted ?? 'loop';
     }
+    // 旧存档仅以 UIState.autoCameraEnabled 标记自动运镜 → 叠加为 beatcut（§6.2 step3）
+    if (!s.control && uiState.autoCameraEnabled && control === 'orbit' && behavior === 'none') {
+        behavior = 'beatcut';
+    }
+    if (behavior === 'beatcut') {
+        _autoCameraEnabled = true;
+        uiState.autoCameraEnabled = true;
+        _autoCameraBeatsPerSwitch = uiState.autoCameraBeatsPerSwitch || 4;
+    }
+    const finalMode = deriveLegacyMode(control, behavior, sub);
+
+    // 直接派生双轴状态：不依赖 scene，保证无头/测试环境亦可恢复（switchCameraMode 在无 scene 时为 no-op）。
+    _syncAxesFromMode(finalMode);
+
+    // 相机生命周期（需 scene；无头环境为 no-op，但状态已就绪）
+    if (finalMode && finalMode !== 'ar') {
+        switchCameraMode(finalMode);
+    }
+
     // Restore FOV (from new scene files; old scenes store it in render.fov)
     if (s.fov !== undefined) {
         setFov(s.fov);
     }
     const cam = _currentCamera;
     if (!cam) {
+        // 无实时相机时仍恢复自动运镜订阅（beatcut 行为需要），随后返回。
+        if (_autoCameraEnabled) {
+            restoreAutoCameraState();
+        }
         return;
     }
     if (cam instanceof ArcRotateCamera) {
@@ -1188,6 +1272,10 @@ export function setCameraState(s: CameraState): void {
     // 使存档恢复后滑块仍反映「相对当前模型的偏移」，换模型时自动保持相对位置。
     if (cam instanceof ArcRotateCamera) {
         _currentPreset.orbit.targetHeight = (s.targetY ?? 8) - _focusCenterY;
+    }
+    // ADR-100 P3：订阅 beat（beatcut 行为需要）；restoreAutoCameraState 内部幂等，重复调用安全。
+    if (_autoCameraEnabled) {
+        restoreAutoCameraState();
     }
 }
 

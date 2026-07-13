@@ -405,6 +405,10 @@ export const ja: Record<string, string> = {
 
     // ===== カメラ camera =====
     'motion.cameraMode': 'カメラモード',
+    'motion.cameraControl': 'カメラ制御',
+    'motion.cameraBehavior': 'カメラ挙動',
+    'motion.behaviorNone': '静止（手動）',
+    'motion.behaviorNA': '軌道カメラのみ',
     'motion.camOrbit': 'オービット',
     'motion.camFreefly': 'フリーフライ',
     'motion.camConcert': 'コンサート',

@@ -1380,6 +1380,7 @@ function onModelRowClick(m: LibraryModel): void {
                     kind: isStage ? 'stage' : 'actor',
                     path: result.file_path,
                     libraryPath: m.file_path,
+                    innerPath: m.zip_inner,
                 });
                 }
             })

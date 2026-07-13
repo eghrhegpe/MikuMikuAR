@@ -326,6 +326,10 @@ export const en: Record<string, string> = {
 
     // ===== Camera =====
     'motion.cameraMode': 'Camera Mode',
+    'motion.cameraControl': 'Control Scheme',
+    'motion.cameraBehavior': 'Motion Behavior',
+    'motion.behaviorNone': 'Static (manual)',
+    'motion.behaviorNA': 'Only available for orbit camera',
     'motion.camOrbit': 'Orbit',
     'motion.camFreefly': 'Free Fly',
     'motion.camConcert': 'Concert',

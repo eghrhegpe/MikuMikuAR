@@ -19,6 +19,12 @@ export interface LoadRequest {
      * 故需透传原始 m.file_path，否则 zip 模型缩略图永远 miss。
      */
     libraryPath?: string;
+    /**
+     * zip 内部相对路径（用于区分同一 zip 内的不同模型变体）。
+     * 同一 zip 包内的多个 PMX 模型会共享同一个 libraryPath，
+     * 通过 innerPath 可以为每个变体生成独立的缩略图缓存。
+     */
+    innerPath?: string;
 }
 
 export interface ResourceHandle {
@@ -71,7 +77,8 @@ class LoadManager {
                         req.path,
                         req.kind === 'stage',
                         req.skipAutoApply,
-                        req.libraryPath
+                        req.libraryPath,
+                        req.innerPath
                     );
                     if (!id) {
                         return null;

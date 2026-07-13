@@ -99,10 +99,18 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Pr
     });
 }
 
-/** Captures a screenshot after model load for thumbnail cache. */
-export async function captureThumbnail(filePath: string, libraryPath?: string): Promise<void> {
+/** Captures a screenshot after model load for thumbnail cache.
+ *  @param filePath 解压后的临时路径或文件路径
+ *  @param libraryPath 库引用路径（zip包路径或文件路径）
+ *  @param innerPath zip内部相对路径（用于区分同一zip内的不同模型）
+ */
+export async function captureThumbnail(
+    filePath: string,
+    libraryPath?: string,
+    innerPath?: string
+): Promise<void> {
     try {
-        if (!_scene) {
+        if (!_scene || !_modelManager) {
             return;
         }
 
@@ -119,22 +127,136 @@ export async function captureThumbnail(filePath: string, libraryPath?: string): 
             await new Promise((r) => requestAnimationFrame(r));
         }
 
-        // 等待两帧确保渲染完成
-        await new Promise((r) => requestAnimationFrame(r));
-        await new Promise((r) => requestAnimationFrame(r));
+        const focusedInst = _modelManager.focused();
+        if (!focusedInst || !focusedInst.rootMesh) {
+            return;
+        }
 
-        const base64 = dom.canvas.toDataURL('image/png', 0.8);
-        const raw = base64.replace(/^data:image\/png;base64,/, '');
-        // [fix:thumbnail] zip 模型：filePath 是解压后的临时路径，但库查询用 zip 包路径
-        // （m.file_path）。必须以库引用路径（libraryPath）作为落盘/缓存 key，否则缩略图永远 miss。
-        // 非 zip 模型 libraryPath 为空或等同 filePath，回退用 filePath，行为不变。
-        const thumbKey = libraryPath && libraryPath !== filePath ? libraryPath : filePath;
-        await SaveThumbnail(thumbKey, raw);
+        const cam = _scene.activeCamera;
+        let savedCamState: {
+            alpha?: number;
+            beta?: number;
+            radius?: number;
+            target?: { x: number; y: number; z: number };
+            position?: { x: number; y: number; z: number };
+        } | null = null;
 
-        // [fix] 截图成功后更新前端缓存，使网格视图立即显示缩略图
-        const updated = new Map(thumbnailCache);
-        updated.set(thumbKey, raw);
-        setThumbnailCache(updated);
+        if (cam) {
+            savedCamState = {};
+            if ('alpha' in cam) {
+                savedCamState.alpha = (cam as { alpha: number }).alpha;
+            }
+            if ('beta' in cam) {
+                savedCamState.beta = (cam as { beta: number }).beta;
+            }
+            if ('radius' in cam) {
+                savedCamState.radius = (cam as { radius: number }).radius;
+            }
+            if ('target' in cam && cam.target) {
+                const t = cam.target as { x: number; y: number; z: number };
+                savedCamState.target = { x: t.x, y: t.y, z: t.z };
+            }
+            if ('position' in cam) {
+                savedCamState.position = {
+                    x: (cam as { position: { x: number; y: number; z: number } }).position.x,
+                    y: (cam as { position: { x: number; y: number; z: number } }).position.y,
+                    z: (cam as { position: { x: number; y: number; z: number } }).position.z,
+                };
+            }
+        }
+
+        const hiddenModels: string[] = [];
+        for (const inst of _modelManager.getAll()) {
+            if (inst.id !== focusedInst.id && inst.visible) {
+                inst.visible = false;
+                for (const m of inst.meshes) {
+                    m.setEnabled(false);
+                }
+                hiddenModels.push(inst.id);
+            }
+        }
+
+        try {
+            const bb = focusedInst.rootMesh.getHierarchyBoundingVectors(true);
+            const center = bb.max.add(bb.min).scale(0.5);
+            const extent = bb.max.subtract(bb.min);
+            const size = Math.max(extent.x, extent.y, extent.z);
+
+            if (cam) {
+                if ('alpha' in cam && 'beta' in cam && 'radius' in cam && 'setTarget' in cam) {
+                    (cam as { alpha: number }).alpha = -Math.PI / 2;
+                    (cam as { beta: number }).beta = Math.PI / 3;
+                    (cam as { radius: number }).radius = size * 0.8 + 2;
+                    (cam as { setTarget: (t: { x: number; y: number; z: number }) => void }).setTarget({
+                        x: center.x,
+                        y: center.y + (extent.y * 0.2),
+                        z: center.z,
+                    });
+                } else if ('position' in cam && 'setTarget' in cam) {
+                    const dist = size * 0.8 + 2;
+                    (cam as {
+                        position: { x: number; y: number; z: number };
+                    }).position = {
+                        x: center.x,
+                        y: center.y + dist * 0.5,
+                        z: center.z + dist,
+                    };
+                    (cam as { setTarget: (t: { x: number; y: number; z: number }) => void }).setTarget({
+                        x: center.x,
+                        y: center.y,
+                        z: center.z,
+                    });
+                }
+            }
+
+            await new Promise((r) => requestAnimationFrame(r));
+            await new Promise((r) => requestAnimationFrame(r));
+
+            const base64 = dom.canvas.toDataURL('image/png', 0.8);
+            const raw = base64.replace(/^data:image\/png;base64,/, '');
+
+            let thumbKey = libraryPath && libraryPath !== filePath ? libraryPath : filePath;
+            if (innerPath) {
+                thumbKey = `${thumbKey}::${innerPath}`;
+            }
+
+            await SaveThumbnail(thumbKey, raw);
+
+            const updated = new Map(thumbnailCache);
+            updated.set(thumbKey, raw);
+            setThumbnailCache(updated);
+        } finally {
+            if (cam && savedCamState) {
+                if (savedCamState.alpha !== undefined && 'alpha' in cam) {
+                    (cam as { alpha: number }).alpha = savedCamState.alpha;
+                }
+                if (savedCamState.beta !== undefined && 'beta' in cam) {
+                    (cam as { beta: number }).beta = savedCamState.beta;
+                }
+                if (savedCamState.radius !== undefined && 'radius' in cam) {
+                    (cam as { radius: number }).radius = savedCamState.radius;
+                }
+                if (savedCamState.target && 'setTarget' in cam) {
+                    (cam as { setTarget: (t: { x: number; y: number; z: number }) => void }).setTarget(
+                        savedCamState.target
+                    );
+                }
+                if (savedCamState.position && 'position' in cam) {
+                    (cam as { position: { x: number; y: number; z: number } }).position =
+                        savedCamState.position;
+                }
+            }
+
+            for (const id of hiddenModels) {
+                const inst = _modelManager.get(id);
+                if (inst) {
+                    inst.visible = true;
+                    for (const m of inst.meshes) {
+                        m.setEnabled(true);
+                    }
+                }
+            }
+        }
     } catch (err) {
         console.warn('captureThumbnail:', err);
     }
@@ -146,7 +268,8 @@ export async function loadPMXFile(
     filePath: string,
     asStage?: boolean,
     skipAutoApply?: boolean,
-    libraryPath?: string
+    libraryPath?: string,
+    innerPath?: string
 ): Promise<string | null> {
     if (!_scene || !_mmdRuntime) {
         return null;
@@ -251,7 +374,7 @@ export async function loadPMXFile(
                 // Intentionally empty — 自定义事件派发失败不影响模型加载主流程
             }
             // [fix:thumbnail] stage 同样需要缩略图（库网格含 stage 模型）；用库引用路径作 key
-            captureThumbnail(filePath, libraryPath).catch(() => {});
+            captureThumbnail(filePath, libraryPath, innerPath).catch(() => {});
             return id;
         }
 
@@ -381,7 +504,7 @@ export async function loadPMXFile(
         rebuildShadowCasters();
 
         // Auto-capture thumbnail for future popup display
-        captureThumbnail(filePath, libraryPath).catch(() => {});
+        captureThumbnail(filePath, libraryPath, innerPath).catch(() => {});
         if (!skipAutoApply) {
             _tryAutoApplyPreset(id).catch((err: unknown) =>
                 console.warn('auto-apply preset:', err)
