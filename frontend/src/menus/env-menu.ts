@@ -25,6 +25,7 @@ import { stackRegistry, getBrowseDir } from '../core/config';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { activeTimeOfDayPreset, setActiveTimeOfDayPreset } from '../core/state';
 
 // ======== 从子文件导入 ========
 import {
@@ -87,8 +88,6 @@ const {
 
 export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 
-/** 当前选中的环境氛围预设 key */
-let _activeEnvPresetKey = 'noon';
 
 /**
  * 渲染环境氛围预设芯片组（紧凑 preset-chip 布局，替代旧 slideRow 全宽行）。
@@ -103,12 +102,12 @@ function renderPresetChips(container: HTMLElement): void {
             p.label,
             false,
             () => {
-                _activeEnvPresetKey = key;
+                setActiveTimeOfDayPreset(key);
                 applyEnvPreset(key);
             },
             {
                 onUpdate: (btn) => {
-                    btn.classList.toggle('active', _activeEnvPresetKey === key);
+                    btn.classList.toggle('active', activeTimeOfDayPreset === key);
                 },
             }
         );
