@@ -414,7 +414,7 @@ describe('buildLevel', () => {
         expect(rows[0].isFolder).toBeFalsy();
     });
 
-    it('keeps leaf subdir as folder when every entry is zip', () => {
+    it('flattens leaf subdir into model rows regardless of container type', () => {
         mockState.libraryRoot = '/test/lib';
         mockState.allModels = [
             makeModel({
@@ -428,8 +428,8 @@ describe('buildLevel', () => {
         const level = buildLevel('/test/models', 'Models', (m: any) => m.format === 'pmx');
         const rows = extractLevelRows(level);
         expect(rows).toHaveLength(1);
-        expect(rows[0].label).toBe('sub');
-        expect(rows[0].isFolder).toBe(true);
+        expect(rows[0].label).toBe('a.pmx');
+        expect(rows[0].isFolder).toBeFalsy();
     });
 
     it('returns empty rows for empty directory', () => {
