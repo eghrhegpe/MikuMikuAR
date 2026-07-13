@@ -653,10 +653,88 @@ func (a *App) SetEnvState(env EnvState) error {
 	return a.updateConfig(func(cfg *Config) { cfg.Env = &env }, false)
 }
 
-// SetUIState persists the full UI state (scale, popupWidth, rendering settings, etc.).
-// Follows the same full-replace pattern as SetEnvState.
+// SetUIState merges the provided UI state fields into the persisted config.
+// Uses merge (not full-replace) so that callers passing only a subset of fields
+// (e.g. setResourceViewMode sending just {resourceViewMode}) do not wipe the
+// other persisted UI state fields.
 func (a *App) SetUIState(ui UIState) error {
-	return a.updateConfig(func(cfg *Config) { cfg.UIState = ui }, false)
+	return a.updateConfig(func(cfg *Config) { mergeUIState(&cfg.UIState, ui) }, false)
+}
+
+// mergeUIState copies only the non-zero fields from src into dst, preserving
+// any dst fields not present in src. This keeps partial updates safe.
+func mergeUIState(dst *UIState, src UIState) {
+	if src.Scale != 0 {
+		dst.Scale = src.Scale
+	}
+	if src.PopupWidth != 0 {
+		dst.PopupWidth = src.PopupWidth
+	}
+	if src.Accent != "" {
+		dst.Accent = src.Accent
+	}
+	if src.FontFamily != "" {
+		dst.FontFamily = src.FontFamily
+	}
+	// bool 字段无零值歧义，直接覆盖（false 是有效值）
+	dst.Animations = src.Animations
+	dst.BlurBg = src.BlurBg
+	if src.PerformanceMode != "" {
+		dst.PerformanceMode = src.PerformanceMode
+	}
+	if src.ScreenshotFormat != "" {
+		dst.ScreenshotFormat = src.ScreenshotFormat
+	}
+	if src.ScreenshotQuality != 0 {
+		dst.ScreenshotQuality = src.ScreenshotQuality
+	}
+	if src.ScreenshotDir != "" {
+		dst.ScreenshotDir = src.ScreenshotDir
+	}
+	dst.AutoCameraEnabled = src.AutoCameraEnabled
+	if src.AutoCameraBeatsPerSwitch != 0 {
+		dst.AutoCameraBeatsPerSwitch = src.AutoCameraBeatsPerSwitch
+	}
+	dst.AutoUpdateEnabled = src.AutoUpdateEnabled
+	if src.FpsLimit != 0 {
+		dst.FpsLimit = src.FpsLimit
+	}
+	dst.Vsync = src.Vsync
+	dst.DefaultPhysicsEnabled = src.DefaultPhysicsEnabled
+	if src.RenderScale != 0 {
+		dst.RenderScale = src.RenderScale
+	}
+	if src.CameraSensitivity != 0 {
+		dst.CameraSensitivity = src.CameraSensitivity
+	}
+	dst.InvertYAxis = src.InvertYAxis
+	dst.AutoScaleModel = src.AutoScaleModel
+	dst.AutoCenterModel = src.AutoCenterModel
+	if src.MaterialCategoryMap != nil {
+		dst.MaterialCategoryMap = src.MaterialCategoryMap
+	}
+	if src.ResourceViewMode != "" {
+		dst.ResourceViewMode = src.ResourceViewMode
+	}
+	if src.Volume != 0 {
+		dst.Volume = src.Volume
+	}
+	if src.AudioOffset != 0 {
+		dst.AudioOffset = src.AudioOffset
+	}
+	dst.BpmQuantizeEnabled = src.BpmQuantizeEnabled
+	dst.AutoLoadCompanionAudio = src.AutoLoadCompanionAudio
+	dst.SfxEnabled = src.SfxEnabled
+	if src.SfxVolume != 0 {
+		dst.SfxVolume = src.SfxVolume
+	}
+	dst.FootstepEnabled = src.FootstepEnabled
+	if src.FootstepVolume != 0 {
+		dst.FootstepVolume = src.FootstepVolume
+	}
+	if src.KeyBindings != nil {
+		dst.KeyBindings = src.KeyBindings
+	}
 }
 
 // ToggleFavorite adds or removes a libraryRef from the favorites list.

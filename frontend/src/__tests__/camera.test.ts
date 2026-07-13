@@ -288,17 +288,29 @@ vi.mock('@babylonjs/core/Maths/math.vector', () => ({
 vi.mock('@babylonjs/core/scene', () => ({ Scene: MockScene }));
 vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => ({ MmdCamera: MockMmdCamera }));
 vi.mock('babylon-mmd/esm/Loader/Animation/mmdAnimation', () => ({}));
-vi.mock('../../core/config', () => ({
+// camera.ts 用别名 `@/core/config` 导入（解析到 src/core/config）。
+// 注意：必须用 camera 实际使用的规格匹配，`../../core/config` 会误指到 frontend/core/config
+// 而无法注入 importActual 的真实 camera 模块。
+const mockUiState: Record<string, unknown> = {};
+vi.mock('@/core/config', () => ({
     focusedModelId: null,
     modelRegistry: new Map(),
+    uiState: mockUiState,
+    triggerAutoSave: vi.fn(),
+    setStatus: vi.fn(),
 }));
 
 // Mock the scene module to break the circular import dependency.
-// camera.ts imports from '../scene' and scene.ts has top-level side
-// effects that call initCameraSystem from camera.ts.
-vi.mock('../scene', () => ({
+// camera.ts imports from '../scene'（解析到 src/scene/scene.ts）——必须用 `@/scene/scene`
+// 匹配该绝对路径，否则 `../scene`（相对本测试文件）会指向无 index 的 src/scene 目录而落空。
+const mockProcBeatDetector = vi.fn<() => { onBeat: (cb: () => void) => () => void } | null>(
+    () => null
+);
+vi.mock('@/scene/scene', () => ({
     focusModel: vi.fn(),
     reattachPipeline: vi.fn(),
+    setARMode: vi.fn(),
+    getProcBeatDetector: mockProcBeatDetector,
 }));
 
 // Also mock the camera module itself with stubs so that if scene.ts
@@ -364,6 +376,21 @@ let cameraModule: {
     setConcertPaused: (p: boolean) => void;
     getSurroundPaused: () => boolean;
     setSurroundPaused: (p: boolean) => void;
+    // ADR-100 dual-axis (P1/P2)
+    getCameraControl: () => string;
+    getCameraBehavior: () => string;
+    getScriptedSubMode: () => string;
+    deriveLegacyMode: (control: string, behavior: string, scripted?: string) => string;
+    LEGACY_MODE_MAP: Record<
+        string,
+        { control: string; behavior: string; scripted?: string }
+    >;
+    isAutoCameraEnabled: () => boolean;
+    setAutoCameraEnabled: (
+        v: boolean,
+        beatDetector?: { onBeat: (cb: () => void) => () => void } | null
+    ) => void;
+    restoreAutoCameraState: () => void;
 };
 
 type CameraPreset = ReturnType<typeof cameraModule.defaultCameraPreset>;
@@ -743,5 +770,116 @@ describe('CameraMode type discrimination', () => {
         const validModes = ['orbit', 'freefly', 'surround', 'concert', 'oneshot', 'vmd'];
         const mode = cameraModule.getCameraMode();
         expect(validModes).toContain(mode);
+    });
+});
+
+// ── ADR-100：控制方案 × 运动行为 双轴（P1 契约 + P2 运行时） ──────────
+describe('ADR-100 dual-axis mapping (P1 契约)', () => {
+    it('LEGACY_MODE_MAP 覆盖全部 7 个旧模式', () => {
+        const keys = Object.keys(cameraModule.LEGACY_MODE_MAP).sort();
+        expect(keys).toEqual(
+            ['ar', 'concert', 'freefly', 'oneshot', 'orbit', 'surround', 'vmd'].sort()
+        );
+    });
+
+    it('orbit → {orbit, none}（纯手动，无内建自转）', () => {
+        expect(cameraModule.LEGACY_MODE_MAP.orbit).toEqual({ control: 'orbit', behavior: 'none' });
+    });
+
+    it('surround → turntable，concert → concert', () => {
+        expect(cameraModule.LEGACY_MODE_MAP.surround.behavior).toBe('turntable');
+        expect(cameraModule.LEGACY_MODE_MAP.concert.behavior).toBe('concert');
+    });
+
+    it('vmd/oneshot → scripted，子态区分 loop/oneshot', () => {
+        expect(cameraModule.LEGACY_MODE_MAP.vmd).toEqual({
+            control: 'orbit',
+            behavior: 'scripted',
+            scripted: 'loop',
+        });
+        expect(cameraModule.LEGACY_MODE_MAP.oneshot).toEqual({
+            control: 'orbit',
+            behavior: 'scripted',
+            scripted: 'oneshot',
+        });
+    });
+
+    it('deriveLegacyMode 反查与 LEGACY_MODE_MAP 往返一致', () => {
+        for (const [mode, axes] of Object.entries(cameraModule.LEGACY_MODE_MAP)) {
+            const back = cameraModule.deriveLegacyMode(
+                axes.control,
+                axes.behavior,
+                axes.scripted
+            );
+            expect(back).toBe(mode);
+        }
+    });
+
+    it('deriveLegacyMode 对无旧模式的 beatcut 降级为 orbit', () => {
+        expect(cameraModule.deriveLegacyMode('orbit', 'beatcut')).toBe('orbit');
+    });
+});
+
+describe('ADR-100 beatcut 行为派生 + 饥饿修复 (P2 运行时)', () => {
+    beforeEach(() => {
+        // 复位自动运镜状态（不依赖 scene）。
+        cameraModule.setAutoCameraEnabled(false);
+        mockUiState.autoCameraEnabled = false;
+        mockProcBeatDetector.mockReturnValue(null);
+        vi.clearAllMocks();
+    });
+
+    it('默认 orbit 下行为轴为 none、控制轴为 orbit', () => {
+        expect(cameraModule.getCameraControl()).toBe('orbit');
+        expect(cameraModule.getCameraBehavior()).toBe('none');
+        expect(cameraModule.isAutoCameraEnabled()).toBe(false);
+    });
+
+    it('开启自动运镜 → 行为轴叠加为 beatcut 并订阅 beat', () => {
+        const unsub = vi.fn();
+        const detector = { onBeat: vi.fn(() => unsub) };
+        cameraModule.setAutoCameraEnabled(true, detector);
+
+        expect(cameraModule.isAutoCameraEnabled()).toBe(true);
+        expect(cameraModule.getCameraBehavior()).toBe('beatcut');
+        expect(cameraModule.getCameraControl()).toBe('orbit');
+        expect(detector.onBeat).toHaveBeenCalledTimes(1);
+    });
+
+    it('关闭自动运镜 → 行为轴回落 none 并退订', () => {
+        const unsub = vi.fn();
+        const detector = { onBeat: vi.fn(() => unsub) };
+        cameraModule.setAutoCameraEnabled(true, detector);
+        cameraModule.setAutoCameraEnabled(false);
+
+        expect(cameraModule.isAutoCameraEnabled()).toBe(false);
+        expect(cameraModule.getCameraBehavior()).toBe('none');
+        expect(unsub).toHaveBeenCalledTimes(1);
+    });
+
+    it('缺省 detector 时回退到内部 procBeatDetector（集中订阅）', () => {
+        const unsub = vi.fn();
+        const detector = { onBeat: vi.fn(() => unsub) };
+        mockProcBeatDetector.mockReturnValue(detector);
+
+        cameraModule.setAutoCameraEnabled(true); // 不传 detector
+        expect(mockProcBeatDetector).toHaveBeenCalled();
+        expect(detector.onBeat).toHaveBeenCalledTimes(1);
+        expect(cameraModule.getCameraBehavior()).toBe('beatcut');
+    });
+
+    it('restoreAutoCameraState 从 UIState 恢复时重新订阅（修复饥饿）', () => {
+        const unsub = vi.fn();
+        const detector = { onBeat: vi.fn(() => unsub) };
+        mockProcBeatDetector.mockReturnValue(detector);
+        mockUiState.autoCameraEnabled = true;
+        mockUiState.autoCameraBeatsPerSwitch = 4;
+
+        cameraModule.restoreAutoCameraState();
+
+        expect(cameraModule.isAutoCameraEnabled()).toBe(true);
+        expect(cameraModule.getCameraBehavior()).toBe('beatcut');
+        // 关键：restore 路径必须订阅 beat，否则永不触发（旧实现的饥饿 bug）。
+        expect(detector.onBeat).toHaveBeenCalledTimes(1);
     });
 });

@@ -119,6 +119,7 @@ vi.mock('../core/config', () => ({
     },
     getMenuWrapper: () => document.createElement('div'),
     stackRegistry: { modelStack: null, sceneStackGetter: null, buildLevel: null },
+    uiState: {} as Record<string, unknown>,
 
     // Setters (capture calls but values are controlled via mockState)
     setStatus: vi.fn(),

@@ -227,11 +227,24 @@ let _cameraControl: CameraControl = 'orbit';
 let _cameraBehavior: CameraBehavior = 'none';
 let _scriptedSubMode: ScriptedSubMode = 'loop';
 
+/**
+ * ADR-100 §6.3 — 行为轴派生（含 beatcut 叠加与互斥）。
+ * beatcut 是运行时叠加行为：仅当自动运镜开启、且基底行为为 none(orbit) 时生效；
+ * 与 concert/turntable/scripted 互斥（这些基底行为存在时 beatcut 被抑制）。
+ */
+function _resolveBehavior(mode: CameraMode): CameraBehavior {
+    const m = LEGACY_MODE_MAP[mode];
+    if (_autoCameraEnabled && m.control === 'orbit' && m.behavior === 'none') {
+        return 'beatcut';
+    }
+    return m.behavior;
+}
+
 /** ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 */
 function _syncAxesFromMode(mode: CameraMode): void {
     const m = LEGACY_MODE_MAP[mode];
     _cameraControl = m.control;
-    _cameraBehavior = m.behavior;
+    _cameraBehavior = _resolveBehavior(mode);
     if (m.scripted) {
         _scriptedSubMode = m.scripted;
     }
@@ -1203,16 +1216,43 @@ let _autoCameraPresetIdx = 0;
 let _autoCameraBeatsPerSwitch = 4; // 每 4 拍切换一次
 let _autoCameraUnsub: (() => void) | null = null;
 
-/** 从 UIState 恢复自动机位状态 */
+/**
+ * ADR-100 P2 — 集中订阅 beat 回调。
+ * 优先用调用方传入的 detector（兼容旧签名），否则回退到内部全局 procBeatDetector。
+ * 覆盖开关路径与 restore 路径，消除 restore 后不订阅导致的「饥饿」（beat 永不触发）。
+ */
+function _subscribeAutoCameraBeat(
+    detector?: { onBeat: (cb: () => void) => () => void } | null
+): void {
+    _unsubscribeAutoCameraBeat();
+    const bd = detector ?? getProcBeatDetector();
+    if (bd) {
+        _autoCameraUnsub = bd.onBeat(_onAutoCameraBeat);
+    }
+}
+
+function _unsubscribeAutoCameraBeat(): void {
+    if (_autoCameraUnsub) {
+        _autoCameraUnsub();
+        _autoCameraUnsub = null;
+    }
+}
+
+/** 从 UIState 恢复自动机位状态。ADR-100 P2：恢复时集中订阅并派生 beatcut 行为，修复饥饿。 */
 export function restoreAutoCameraState(): void {
     const s = uiState;
     if (s.autoCameraEnabled) {
         _autoCameraEnabled = true;
         _autoCameraBeatsPerSwitch = s.autoCameraBeatsPerSwitch || 4;
+        _subscribeAutoCameraBeat();
+        _syncAxesFromMode(_cameraMode);
     }
 }
 
-/** 设置 Auto Camera 开关。启用时注册 beat 回调，禁用时移除。 */
+/**
+ * 设置 Auto Camera（beatcut）开关。ADR-100 P2：启用时集中订阅 beat、派生 beatcut 行为；
+ * 禁用时移除订阅并回落基底行为。beatDetector 参数保留兼容旧调用方，缺省时内部回退。
+ */
 export function setAutoCameraEnabled(
     v: boolean,
     beatDetector?: { onBeat: (cb: () => void) => () => void } | null
@@ -1225,15 +1265,12 @@ export function setAutoCameraEnabled(
     if (v) {
         _autoCameraBeatCount = 0;
         _autoCameraPresetIdx = 0;
-        if (beatDetector) {
-            _autoCameraUnsub = beatDetector.onBeat(_onAutoCameraBeat);
-        }
+        _subscribeAutoCameraBeat(beatDetector);
     } else {
-        if (_autoCameraUnsub) {
-            _autoCameraUnsub();
-            _autoCameraUnsub = null;
-        }
+        _unsubscribeAutoCameraBeat();
     }
+    // 重新派生行为轴：beatcut 叠加/移除（互斥由 _resolveBehavior 保证）。
+    _syncAxesFromMode(_cameraMode);
 }
 
 export function isAutoCameraEnabled(): boolean {
@@ -1251,7 +1288,10 @@ export function getAutoCameraBeatsPerSwitch(): number {
 }
 
 function _onAutoCameraBeat(): void {
-    if (!_autoCameraEnabled) {
+    // ADR-100 P2：门控改判行为轴。beatcut 与 concert/turntable/scripted 互斥，
+    // 后者激活时 _resolveBehavior 不会派生 beatcut，这里直接早退（互斥的运行时体现）。
+    // 抑制期不消耗 beat 计数，恢复 orbit 后从当前计数继续。
+    if (_cameraBehavior !== 'beatcut') {
         return;
     }
     _autoCameraBeatCount++;
@@ -1262,9 +1302,6 @@ function _onAutoCameraBeat(): void {
 
     const cam = _currentCamera;
     if (!cam || !(cam instanceof ArcRotateCamera)) {
-        return;
-    }
-    if (_cameraMode !== 'orbit' && _cameraMode !== 'concert') {
         return;
     }
 

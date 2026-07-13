@@ -858,8 +858,10 @@ export function SetUIScale(scale: number): $CancellablePromise<void> {
 }
 
 /**
- * SetUIState persists the full UI state (scale, popupWidth, rendering settings, etc.).
- * Follows the same full-replace pattern as SetEnvState.
+ * SetUIState merges the provided UI state fields into the persisted config.
+ * Uses merge (not full-replace) so that callers passing only a subset of fields
+ * (e.g. setResourceViewMode sending just {resourceViewMode}) do not wipe the
+ * other persisted UI state fields.
  */
 export function SetUIState(ui: $models.UIState): $CancellablePromise<void> {
     return $Call.ByID(1015886004, ui);
