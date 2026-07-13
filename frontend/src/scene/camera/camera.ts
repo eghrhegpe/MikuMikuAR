@@ -14,11 +14,69 @@ import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation
 import { focusedModelId, modelRegistry, triggerAutoSave, uiState, setStatus } from '@/core/config';
 import { clamp, clamp01, debounce, deepClone } from '@/core/utils';
 import { t } from '@/core/i18n/t';
-import { focusModel, reattachPipeline, setARMode } from '../scene';
+import { focusModel, reattachPipeline, setARMode, getProcBeatDetector } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
 
 // ======== Types ========
+/**
+ * @deprecated ADR-100：单枚举混淆「控制方案 × 运动行为」两轴，保留为兼容别名。
+ * 新代码请用 {@link CameraControl} × {@link CameraBehavior}。双写于 `core/types.ts`。
+ */
 export type CameraMode = 'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar';
+
+/** ADR-100 轴 A — 控制方案（相机类 + 输入）。双写于 `core/types.ts`。 */
+export type CameraControl = 'orbit' | 'freefly' | 'ar';
+
+/** ADR-100 轴 B — 运动行为（仅对 orbit/ArcRotate 生效，初版互斥）。双写于 `core/types.ts`。 */
+export type CameraBehavior = 'none' | 'turntable' | 'concert' | 'beatcut' | 'scripted';
+
+/** ADR-100 §6.4 — scripted 行为子态。 */
+export type ScriptedSubMode = 'loop' | 'oneshot';
+
+/** ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 */
+export const LEGACY_MODE_MAP: Record<
+    CameraMode,
+    { control: CameraControl; behavior: CameraBehavior; scripted?: ScriptedSubMode }
+> = {
+    orbit: { control: 'orbit', behavior: 'none' },
+    surround: { control: 'orbit', behavior: 'turntable' },
+    concert: { control: 'orbit', behavior: 'concert' },
+    vmd: { control: 'orbit', behavior: 'scripted', scripted: 'loop' },
+    oneshot: { control: 'orbit', behavior: 'scripted', scripted: 'oneshot' },
+    freefly: { control: 'freefly', behavior: 'none' },
+    ar: { control: 'ar', behavior: 'none' },
+};
+
+/**
+ * ADR-100 §6.2 — 双轴 → 旧模式反查（getCameraState 降级双写 / shim 内部路由）。
+ * beatcut 无旧模式对应，降级为 orbit（配合 UIState.autoCameraEnabled 供旧版本识别）。
+ */
+export function deriveLegacyMode(
+    control: CameraControl,
+    behavior: CameraBehavior,
+    scripted: ScriptedSubMode = 'loop'
+): CameraMode {
+    if (control === 'freefly') {
+        return 'freefly';
+    }
+    if (control === 'ar') {
+        return 'ar';
+    }
+    // control === 'orbit'
+    switch (behavior) {
+        case 'turntable':
+            return 'surround';
+        case 'concert':
+            return 'concert';
+        case 'scripted':
+            return scripted === 'oneshot' ? 'oneshot' : 'vmd';
+        case 'beatcut':
+            return 'orbit'; // 旧版本无 beatcut，降级 orbit
+        case 'none':
+        default:
+            return 'orbit';
+    }
+}
 
 /**
  * Orbit camera parameters.
@@ -163,6 +221,21 @@ let _scene: Scene | null = null;
 let _canvas: HTMLCanvasElement | null = null;
 let _cameraMode: CameraMode = 'orbit';
 let _previousMode: CameraMode = 'orbit';
+// ADR-100 双轴状态。_cameraMode 保留为兼容别名，三者由 _syncAxesFromMode 在 switchCameraMode
+// 内统一派生，保证单一写入点（避免幽灵路径）。
+let _cameraControl: CameraControl = 'orbit';
+let _cameraBehavior: CameraBehavior = 'none';
+let _scriptedSubMode: ScriptedSubMode = 'loop';
+
+/** ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 */
+function _syncAxesFromMode(mode: CameraMode): void {
+    const m = LEGACY_MODE_MAP[mode];
+    _cameraControl = m.control;
+    _cameraBehavior = m.behavior;
+    if (m.scripted) {
+        _scriptedSubMode = m.scripted;
+    }
+}
 let _currentCamera: Camera | null = null;
 let _fov = 0.8; // default FOV, migrated from RenderState in Phase 9
 // 当前聚焦模型包围盒中心的 Y。targetHeight 现表现为「相对此中心的垂直偏移」，
@@ -282,6 +355,18 @@ export function getCurrentCamera(): Camera | null {
 }
 export function getCameraMode(): CameraMode {
     return _cameraMode;
+}
+
+// ======== Dual-Axis Accessors (ADR-100) ========
+// _cameraMode 仍是兼容别名，双轴值由 _syncAxesFromMode() 单点派生。
+export function getCameraControl(): CameraControl {
+    return _cameraControl;
+}
+export function getCameraBehavior(): CameraBehavior {
+    return _cameraBehavior;
+}
+export function getScriptedSubMode(): ScriptedSubMode {
+    return _scriptedSubMode;
 }
 
 export function getFov(): number {
@@ -474,6 +559,7 @@ export function initCameraSystem(scene: Scene, canvas: HTMLCanvasElement): Camer
     const cam = createOrbitCamera(scene, canvas);
     _currentCamera = cam;
     _cameraMode = 'orbit';
+    _syncAxesFromMode('orbit');
     scene.activeCamera = cam;
     return cam;
 }
@@ -501,6 +587,7 @@ export function switchCameraMode(mode: CameraMode): void {
         // 真正的视频激活由 setARMode(true) 异步完成；若失败，仅还原模式标记，
         // 不重建相机（进入 AR 时从未切换/重建 Babylon 相机）。
         _cameraMode = 'ar';
+        _syncAxesFromMode('ar');
         _currentPreset.mode = 'ar';
         setARMode(true).then((ok) => {
             if (!ok) {
@@ -509,6 +596,7 @@ export function switchCameraMode(mode: CameraMode): void {
                     setStatus(t('scene.camera.arFailed'), false);
                 }
                 _cameraMode = _previousMode;
+                _syncAxesFromMode(_previousMode);
                 _currentPreset.mode = _previousMode;
             }
         });
@@ -600,6 +688,7 @@ export function switchCameraMode(mode: CameraMode): void {
     scene.activeCamera = newCam;
     _currentCamera = newCam;
     _cameraMode = mode;
+    _syncAxesFromMode(mode);
     // Persist camera mode for scene auto-save (skip oneshot — it's a transient action)
     if (mode !== 'oneshot') {
         _currentPreset.mode = mode;

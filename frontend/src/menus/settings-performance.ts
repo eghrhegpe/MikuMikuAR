@@ -2,7 +2,7 @@
 
 import { SetPerformanceMode } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
-import { setStatus, uiState, setUIState, cardContainer, focusedModelId } from '../core/config';
+import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import {
@@ -166,7 +166,12 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
                 get: (v) => v !== false,
                 set: (v) => v,
                 onChange: (v) => {
-                    setStatus(v ? t('settings.physOn') : t('settings.physOff'), true);
+                    const enabled = v !== false;
+                    const allModels = modelManager?.getAll() ?? [];
+                    for (const inst of allModels) {
+                        setModelPhysics(inst.id, enabled);
+                    }
+                    setStatus(enabled ? t('settings.physOn') : t('settings.physOff'), true);
                 },
             },
             icon: 'lucide:atom',
@@ -179,39 +184,6 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
                 hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
                 hint.textContent = t('settings.perf.defaultPhysicsHint');
                 c.appendChild(hint);
-            },
-        },
-        {
-            id: 'perf:modelPhysics',
-            kind: 'custom',
-            renderCustom: (c) => {
-                const id = focusedModelId;
-                const inst = id ? modelManager.get(id) : null;
-                if (!id || !inst) {
-                    return;
-                }
-                cardContainer(c, (inner) => {
-                    const label = document.createElement('div');
-                    label.style.cssText = 'font-size:12px;padding:8px 14px 4px;color:var(--text-primary);';
-                    label.textContent = t('scene.physicsParse', { name: inst.name });
-                    inner.appendChild(label);
-                    const toggleRow = document.createElement('div');
-                    toggleRow.style.cssText = 'display:flex;align-items:center;padding:8px 14px;gap:8px;';
-                    const switch_ = document.createElement('div');
-                    switch_.className = `switch ${inst.physicsEnabled ? 'on' : 'off'}`;
-                    switch_.style.cssText = 'cursor:pointer;';
-                    switch_.onclick = () => {
-                        const newValue = !inst.physicsEnabled;
-                        setModelPhysics(id, newValue);
-                        switch_.className = `switch ${newValue ? 'on' : 'off'}`;
-                        setStatus(
-                            newValue ? t('settings.physOn') : t('settings.physOff'),
-                            true
-                        );
-                    };
-                    toggleRow.appendChild(switch_);
-                    inner.appendChild(toggleRow);
-                });
             },
         },
         {

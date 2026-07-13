@@ -57,27 +57,27 @@ type CameraControl = 'orbit' | 'freefly' | 'ar';
 
 ```ts
 type CameraBehavior =
-  | 'none'        // 静止，纯手动
-  | 'autorotate'  // 慢自转（今 orbit 内建行为）
+  | 'none'        // 静止，纯手动指针控制（今 orbit / oneshot 的基座——orbit 实为手动，无内建自转）
   | 'turntable'   // 整圈匀速自转（今 surround）
   | 'concert'     // 扫掠 + 上下摆动（今 concert，ADR-070 语义不变）
   | 'beatcut'     // 节拍切镜（今 自动运镜）
-  | 'scripted';   // VMD 脚本（今 vmd）
+  | 'scripted';   // VMD 脚本（今 vmd / oneshot，含 loop / oneshot 子态，见 §6.4）
 ```
+
+> **实证更正**：`createOrbitCamera`（`camera.ts:359`）为纯手动 ArcRotate，无自动旋转循环；原草案的 `autorotate` 行为在代码中不存在，故从枚举移除，`orbit` 映射为 `behavior:'none'`。
 
 **组合语义（新架构下旧模式的等价表达）**：
 
 | 旧单模式 | = 控制 A | + 行为 B |
 |---------|---------|---------|
-| `orbit`（默认自转） | `orbit` | `autorotate` |
-| `orbit`（手动静止） | `orbit` | `none` |
+| `orbit`（手动） | `orbit` | `none` |
 | `surround` | `orbit` | `turntable` |
 | `concert` | `orbit` | `concert` |
-| `vmd` | `orbit` | `scripted` |
+| `vmd` | `orbit` | `scripted`（子态 loop） |
 | `自动运镜`（原叠加态） | `orbit` | `beatcut` |
 | `freefly` | `freefly` | `none`（行为轴对 Universal 不适用） |
 | `ar` | `ar` | `none`（行为轴对 AR 不适用） |
-| `oneshot` | `orbit` | `none`（预留脚本 → 未来映射 `scripted` 变体） |
+| `oneshot` | `orbit` | `scripted`（子态 oneshot，决策 #2） |
 
 **关键约束**：行为轴 B 仅当控制轴 A = `orbit`（ArcRotate）时可用。`freefly`(Universal) / `ar` 非 ArcRotate，选中它们时行为轴强制为 `none` 并在 UI 置灰。这正是当前 `surround`/`concert` 被 ArcRotate 绑死、`自动运镜` 又只认 `orbit`/`concert` 的深层原因——拆分后该约束显式化，不再是隐式散落的 `instanceof` 判断。
 
@@ -131,7 +131,7 @@ type CameraBehavior =
 
 ```ts
 let _cameraControl: CameraControl = 'orbit';
-let _cameraBehavior: CameraBehavior = 'autorotate';
+let _cameraBehavior: CameraBehavior = 'none';
 ```
 
 `switchCameraMode(mode)`（`camera.ts:484`）保留为**兼容 shim**，内部翻译为 `setCameraControl + setCameraBehavior`，避免一次性重写所有调用点（AR 进入/退出的 `_previousMode` 逻辑、VMD 回退等）：
@@ -139,13 +139,13 @@ let _cameraBehavior: CameraBehavior = 'autorotate';
 ```ts
 // 兼容映射表（旧 mode → {control, behavior}）
 const LEGACY_MODE_MAP: Record<CameraMode, {control: CameraControl; behavior: CameraBehavior}> = {
-  orbit:    { control: 'orbit',   behavior: 'autorotate' },
-  surround: { control: 'orbit',   behavior: 'turntable'  },
-  concert:  { control: 'orbit',   behavior: 'concert'    },
-  vmd:      { control: 'orbit',   behavior: 'scripted'   },
-  oneshot:  { control: 'orbit',   behavior: 'none'       },
-  freefly:  { control: 'freefly', behavior: 'none'       },
-  ar:       { control: 'ar',      behavior: 'none'       },
+  orbit:    { control: 'orbit',   behavior: 'none'      },
+  surround: { control: 'orbit',   behavior: 'turntable' },
+  concert:  { control: 'orbit',   behavior: 'concert'   },
+  vmd:      { control: 'orbit',   behavior: 'scripted'  }, // 子态 loop
+  oneshot:  { control: 'orbit',   behavior: 'scripted'  }, // 子态 oneshot（决策 #2）
+  freefly:  { control: 'freefly', behavior: 'none'      },
+  ar:       { control: 'ar',      behavior: 'none'      },
 };
 ```
 
@@ -206,7 +206,7 @@ export interface CameraState {
 | 阶段 | 内容 | 可独立验证 |
 |------|------|-----------|
 | **P1 契约 + shim** | 定义双轴类型；`switchCameraMode` 转 shim；旧枚举保留别名 | 旧测试全绿（零行为变化） |
-| **P2 运行时接线** | `beatcut` 生效条件改判行为轴；删 ADR-070 surround 排除；beatcut 节拍源接入（音乐/程序化动作，解决「饿死」） | 单元测试 + 手动切镜 |
+| **P2 运行时接线** | `beatcut` 生效条件改判 `_cameraBehavior==='beatcut'`；beatcut 与 concert/turntable 互斥（选中即停对方）；beatcut 订阅集中到 camera 内部并覆盖 restore 路径（解决「饿死」） | 单元测试 + 手动切镜 |
 | **P3 序列化迁移** | `get/setCameraState` 双写 + 迁移；旧存档往返测试 | camera.test 往返断言 |
 | **P4 UI 重构** | 控制/行为两级选择器；`自动运镜` toggle 降级为行为选项；置灰约束 | 手动 UX 走查 |
 | **P5 收尾** | `CameraMode` 别名清理评估（可延后）；ADR-070 补注记；文档同步 | check + build |
@@ -219,15 +219,32 @@ export interface CameraState {
 |------|------|------|
 | 一次性重写 `switchCameraMode` 所有调用点易漏（AR 进出/VMD 回退/reset） | 🟠 高 | P1 用 shim 保持旧签名，调用点零改动，行为等价先验证 |
 | 存档双写导致新旧版本互读边界 case | 🟡 中 | `get` 同时写 `mode`+`control`+`behavior`；`set` 按「新字段优先、旧字段兜底」；补往返测试 |
-| beatcut 节拍源仍「饿死」（当前只订阅 procBeatDetector） | 🟠 高 | P2 明确接入音乐/程序化动作节拍源，否则拆分后行为仍不生效 |
+| beatcut 节拍源「饿死」 | 🟠 高 | **实证更正**：`procBeatDetector` 于 scene 初始化即创建（`scene.ts:191`）并在播放时逐帧 `update()`（`playback.ts:67`），全局常驻——非「仅程序化动作时创建」。真实饿死点仅在**存档恢复**：`restoreAutoCameraState`（`camera.ts:1118`）置 `_autoCameraEnabled=true` 却从不订阅 `onBeat`。P2 将 beatcut 的订阅集中到 camera 内部（经 `getProcBeatDetector`），同时覆盖 toggle 与 restore 两条路径。 |
 | 行为叠加需求反复（是否允许 concert+beatcut 共存） | 🟢 低 | 初版明确互斥；若未来需要叠加，行为轴改为 `Set<CameraBehavior>` 是增量演进，不推翻本 ADR |
 | UI 从「1 个选择器」变「2 级」增加操作深度 | 🟡 中 | 控制轴默认 orbit，行为轴平铺在同卡片；核心路径仍 ≤3 层（符合 AGENTS UX 审核标准） |
 
 ---
 
-## 九、待决策点（提交实施前需 Ling 拍板）
+## 九、决策裁定（Ling 已拍板 2026-07-13）
 
-1. **行为是否允许叠加**：初版互斥（推荐）还是直接支持 `Set<CameraBehavior>`？
-2. **`oneshot` 归宿**：映射为 `none`（预留）还是本次直接实现为 `scripted` 的单拍变体？
-3. **`CameraMode` 别名清理时机**：P1 保留至全部调用点迁移完（推荐），还是本轮不清理、长期保留兼容别名？
-4. **落地节奏**：一次性 P1–P5，还是先 P1–P2（架构 + 接线）验证组合可行后再续 P3–P5？
+| # | 议题 | 裁定 |
+|---|------|------|
+| 1 | 行为是否允许叠加 | **互斥**：同一时刻仅一个活动行为（`_cameraBehavior` 单值），规避 ADR-070「扫掠途中硬切」不连贯。若未来需叠加，改 `Set<CameraBehavior>` 为增量演进，不推翻本 ADR。 |
+| 2 | `oneshot` 归宿 | **直接实现为 `scripted` 单拍变体**：`oneshot` 不再映射 `none`，而是 `behavior='scripted'`；`scripted` 内部区分「循环 VMD」与「单拍定格」两态（见 §6.4）。`LEGACY_MODE_MAP.oneshot` 相应改为 `{control:'orbit', behavior:'scripted'}`。 |
+| 3 | `CameraMode` 别名清理时机 | **保留兼容别名至全部调用点迁移完**（P1 不清理），别名清理评估延后至 P5。 |
+| 4 | 落地节奏 | **先 P1–P2**（契约 + shim + 运行时接线）验证组合可行，再续 P3–P5。 |
+
+### 6.4 `scripted` 单拍/循环双态（承决策 #2）
+
+`oneshot`（单拍）与 `vmd`（循环脚本）统一收敛到 `behavior='scripted'`，由子状态区分：
+
+```ts
+// scripted 行为的子模式（camera.ts 内部状态）
+type ScriptedSubMode = 'loop' | 'oneshot';
+//  loop    : VMD 相机脚本随播放循环驱动（今 vmd）
+//  oneshot : 加载 VMD 后仅取首帧/指定帧定格，不随播放推进（今 oneshot 的预留语义落地）
+```
+
+- `LEGACY_MODE_MAP`：`vmd → {orbit, scripted}`（子态 loop）；`oneshot → {orbit, scripted}`（子态 oneshot）。
+- 迁移探测：旧 `mode==='oneshot'` → `behavior='scripted'` + `scriptedSubMode='oneshot'`。
+- P1-P2 仅落地类型与映射；`oneshot` 定格的具体取帧实现随 P4 行为完善（本轮保持「加载即定格首帧」的最小语义）。
