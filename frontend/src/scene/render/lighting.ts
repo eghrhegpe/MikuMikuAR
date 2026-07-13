@@ -309,6 +309,7 @@ function _updateIndicator(entry: StageLightEntry): void {
 
 function _disposeIndicator(entry: StageLightEntry): void {
     if (entry.indicator) {
+        entry.indicator.material?.dispose();
         entry.indicator.dispose();
         entry.indicator = null;
     }
@@ -536,6 +537,7 @@ export function _updateSunDisc(): void {
 
 export function _disposeSunDisc(): void {
     if (_sunDisc) {
+        _sunDisc.material?.dispose();
         _sunDisc.dispose();
         _sunDisc = null;
     }

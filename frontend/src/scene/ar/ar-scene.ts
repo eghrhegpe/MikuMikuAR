@@ -113,7 +113,8 @@ function _createContactShadow(): void {
 function _disposeContactShadow(): void {
     if (_contactShadow) {
         const mat = _contactShadow.material;
-        if (mat) {
+        if (mat instanceof StandardMaterial) {
+            mat.diffuseTexture?.dispose();
             mat.dispose();
         }
         _contactShadow.dispose();
