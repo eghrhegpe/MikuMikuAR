@@ -2,7 +2,7 @@
 
 import { SetPerformanceMode } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
-import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
+import { setStatus, uiState, cardContainer } from '../core/config';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import {
