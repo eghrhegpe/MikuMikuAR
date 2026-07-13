@@ -44,3 +44,7 @@ export const dom = {
         this.loadingEl.style.background = 'linear-gradient(135deg, #2d1a1a 0%, #1a1a2e 100%)';
     },
 };
+
+// [doc:adr-102] Type alias for the `dom` singleton, so split modules (events.ts etc.)
+// can declare a `DomRefs` parameter without reaching for `any` (prevents 模式 #3).
+export type DomRefs = typeof dom;
