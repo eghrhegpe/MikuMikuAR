@@ -600,8 +600,8 @@ const maxRecentModels = 20
 // GetRecentModels returns the recently opened model libraryRefs (newest first).
 func (a *App) GetRecentModels() []string {
 	cfg, err := a.GetConfig()
-	if err != nil {
-		return nil
+	if err != nil || cfg.RecentModels == nil {
+		return []string{}
 	}
 	return cfg.RecentModels
 }

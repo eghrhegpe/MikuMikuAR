@@ -22,13 +22,12 @@ import {
 import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu';
 import { TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
 import { applyEnvPreset } from '../scene/env/env-bridge';
+import { activeTimeOfDayPreset, setActiveTimeOfDayPreset } from '../core/state';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { stackRegistry } from '../core/config';
 import { closeAllOverlays } from '../core/utils';
 
-/** 当前选中的天空预设 key（用于芯片高亮） */
-let _activeSkyPresetKey = 'noon';
 
 export function buildSkyLevel(): PopupLevel {
     return {
@@ -52,12 +51,12 @@ export function buildSkyLevel(): PopupLevel {
                                     p.label,
                                     false,
                                     () => {
-                                        _activeSkyPresetKey = key;
+                                        setActiveTimeOfDayPreset(key);
                                         applyEnvPreset(key);
                                     },
                                     {
                                         onUpdate: (btn) => {
-                                            btn.classList.toggle('active', _activeSkyPresetKey === key);
+                                            btn.classList.toggle('active', activeTimeOfDayPreset === key);
                                         },
                                     }
                                 );

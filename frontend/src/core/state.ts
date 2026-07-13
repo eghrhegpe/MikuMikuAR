@@ -276,6 +276,14 @@ export function setUIState(state: UIState): void {
     _uiPersistCb?.();
 }
 
+// ======== UI 派生记忆态 ========
+
+/** 当前选中的 time-of-day 预设 key。预设芯片高亮唯一来源，env-menu 顶层与 sky 子菜单共享同一状态。 */
+export let activeTimeOfDayPreset = 'noon';
+export function setActiveTimeOfDayPreset(v: string): void {
+    activeTimeOfDayPreset = v;
+}
+
 // ======== Environment State ========
 
 export const envState: EnvState = reactive<EnvState>({

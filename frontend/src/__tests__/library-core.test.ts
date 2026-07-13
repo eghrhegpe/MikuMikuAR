@@ -142,6 +142,7 @@ vi.mock('../core/config', () => ({
 import {
     modelToRow,
     buildLevel,
+    splitSubdirSegments,
     importFile,
     getResourceViewMode,
     setResourceViewMode,
@@ -508,6 +509,73 @@ describe('buildLevel', () => {
         expect(rows[0].label).toBe('b.pmx');
         expect(rows[1].label).toBe('c.pmx');
         expect(rows[2].label).toBe('a.pmx');
+    });
+
+    it('does NOT create a phantom folder when dir is a string-prefix but not a path-component boundary', () => {
+        // dir=".../PMX" 与 m.dir=".../PMXSub/..." 仅字符串前缀相同，并非真实父子路径
+        mockState.libraryRoot = '/test/root';
+        mockState.allModels = [
+            makeModel({ file_path: '/test/root/PMXSub/a.pmx', dir: '/test/root/PMXSub' }),
+        ];
+
+        const level = buildLevel('/test/root/PMX', 'PMX');
+        const rows = extractLevelRows(level);
+        expect(rows).toHaveLength(0);
+        expect(rows.some((r: any) => r.label === 'Sub')).toBe(false);
+    });
+
+    it('does NOT create a ":" phantom folder when dir is a drive-letter-only prefix', () => {
+        // 复现资源库记忆恢复时的边界场景：dir 为盘符残缺形态，会切出 ":" 段
+        mockState.libraryRoot = 'C:';
+        mockState.allModels = [
+            makeModel({ file_path: 'C:/Users/foo/Models/PMX/Sub/x.pmx', dir: 'C:/Users/foo/Models/PMX/Sub' }),
+        ];
+
+        const level = buildLevel('C', 'C');
+        const rows = extractLevelRows(level);
+        expect(rows).toHaveLength(0);
+        expect(rows.some((r: any) => r.label === ':')).toBe(false);
+    });
+});
+
+// ===================================================================
+// splitSubdirSegments（展开栈：路径边界匹配，防止伪文件夹）
+// ===================================================================
+describe('splitSubdirSegments', () => {
+    it('returns [] when dir equals root', () => {
+        expect(splitSubdirSegments('/test/PMX', '/test/PMX')).toEqual([]);
+    });
+    it('returns the single segment for a direct child', () => {
+        expect(splitSubdirSegments('/test/PMX', '/test/PMX/Sub')).toEqual(['Sub']);
+    });
+    it('returns nested segments in order', () => {
+        expect(splitSubdirSegments('/test/PMX', '/test/PMX/Sub/deep')).toEqual(['Sub', 'deep']);
+    });
+    it('rejects bare-prefix sibling (PMX vs PMXSub) as non-child', () => {
+        // 关键防护：上次 buildLevel 边界 bug 正是 "PMX" 误匹配 "PMXSub" 生成伪文件夹
+        expect(splitSubdirSegments('/test/PMX', '/test/PMXSub')).toBeNull();
+    });
+    it('rejects unrelated directory (different root)', () => {
+        expect(splitSubdirSegments('/test/PMX', '/other/X/Sub')).toBeNull();
+        expect(splitSubdirSegments('C:/Models/PMX', 'D:/Models/PMX/Sub')).toBeNull();
+    });
+    it('is case-insensitive on the path boundary', () => {
+        expect(splitSubdirSegments('C:/Models/pmx', 'C:/Models/PMX/Sub')).toEqual(['Sub']);
+    });
+    it('normalizes backslashes before comparing', () => {
+        expect(splitSubdirSegments('C:\\Models\\PMX', 'C:/Models/PMX/Sub')).toEqual(['Sub']);
+    });
+    it('falls back when root/dir differ only by case (libraryRoot vs ResourceRoot)', () => {
+        // 真实触发场景：前端 libraryRoot 与后端 cfg.ResourceRoot 大小写形态不一致，
+        // 严格前缀匹配失败，但同盘符且 lastDir 含 root 末段标记 "PMX"
+        expect(splitSubdirSegments('/test/lib/PMX', '/TEST/LIB/PMX/Sub')).toEqual(['Sub']);
+        expect(splitSubdirSegments('C:/Users/a/MikuMikuAR/PMX', 'C:/Users/a/mikumikuar/PMX/SK')).toEqual(['SK']);
+    });
+    it('falls back across mixed separators (root backslash, dir slash) on same drive', () => {
+        expect(splitSubdirSegments('C:\\Users\\a\\MikuMikuAR\\PMX', 'C:/Users/a/mikumikuar/PMX/Sub/deep')).toEqual(['Sub', 'deep']);
+    });
+    it('still rejects cross-drive memory (never expands onto wrong disk)', () => {
+        expect(splitSubdirSegments('C:/Models/PMX', 'D:/Models/PMX/Sub')).toBeNull();
     });
 });
 
