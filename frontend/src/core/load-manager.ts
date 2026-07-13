@@ -13,6 +13,12 @@ export interface LoadRequest {
     modelId?: string;
     /** 跳过自动应用（kind='actor'/'stage' 时使用） */
     skipAutoApply?: boolean;
+    /**
+     * [fix:thumbnail] 库引用路径（zip 模型的 zip 包绝对路径）。
+     * 解压加载时 path 是临时解压路径，但缩略图缓存以库引用路径为 key，
+     * 故需透传原始 m.file_path，否则 zip 模型缩略图永远 miss。
+     */
+    libraryPath?: string;
 }
 
 export interface ResourceHandle {
@@ -61,7 +67,12 @@ class LoadManager {
                 case 'actor':
                 case 'stage': {
                     const { loadPMXFile } = await import('../scene/manager/model-loader');
-                    const id = await loadPMXFile(req.path, req.kind === 'stage', req.skipAutoApply);
+                    const id = await loadPMXFile(
+                        req.path,
+                        req.kind === 'stage',
+                        req.skipAutoApply,
+                        req.libraryPath
+                    );
                     if (!id) {
                         return null;
                     }

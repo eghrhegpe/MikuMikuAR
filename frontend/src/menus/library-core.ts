@@ -801,6 +801,8 @@ function renderFullscreenFolder(
                     merged.set(path, data);
                 }
                 setThumbnailCache(merged);
+                // [fix:thumbnail] 缩略图异步返回后重绘面板，否则已渲染的卡片永远空
+                currentPanel?.updateItems(allItems);
             })
             .catch(() => {});
     }
@@ -839,7 +841,7 @@ function renderFullscreenFolder(
 
         currentPanel = createResourcePanel(panelContainer, {
             items: filtered,
-            thumbnailCache: new Map(Object.entries(thumbnailCache)),
+            thumbnailCache,
             onSelect: (item) => {
                 if (item.data) {
                     closeFullscreen();
@@ -925,7 +927,7 @@ function addListViewToolbar(
             renderContent: (container, navigate) => {
                 createResourcePanel(container, {
                     items: allResourceItems,
-                    thumbnailCache: new Map(Object.entries(thumbnailCache)),
+                    thumbnailCache,
                     onSelect: (item) => {
                         if (item.data) {
                             closeFullscreen();
@@ -960,6 +962,9 @@ function renderGridMode(
     // [doc:adr-066] 进入 grid 模式时设置状态机
     setCurrentState('EMBEDDED_GRID');
 
+    // [fix:thumbnail] 捕获面板句柄，缩略图异步加载完成后触发重绘
+    let resourcePanel: ReturnType<typeof createResourcePanel> | null = null;
+
     // 复用 buildResourceItemsForDir 获取当前目录的 ResourceItem 列表
     const allResourceItems = buildResourceItemsForDir(dir, filter);
 
@@ -975,6 +980,8 @@ function renderGridMode(
                     merged.set(path, data);
                 }
                 setThumbnailCache(merged);
+                // [fix:thumbnail] 缩略图异步返回后重绘面板，否则已渲染的卡片永远空
+                resourcePanel?.updateItems(allResourceItems);
             })
             .catch(() => {});
     }
@@ -1059,7 +1066,7 @@ function renderGridMode(
                     // 渲染全屏网格
                     createResourcePanel(container, {
                         items: allResourceItems,
-                        thumbnailCache: new Map(Object.entries(thumbnailCache)),
+                        thumbnailCache,
                         onSelect: (item) => {
                             if (item.data) {
                                 closeFullscreen();
@@ -1088,7 +1095,7 @@ function renderGridMode(
         // 资源面板
         createResourcePanel(card, {
             items: allResourceItems,
-            thumbnailCache: new Map(Object.entries(thumbnailCache)),
+            thumbnailCache,
             onSelect: (item) => {
                 if (item.data) {
                     onModelRowClick(item.data as LibraryModel);
@@ -1185,7 +1192,7 @@ function onModelRowClick(m: LibraryModel): void {
         setPendingVmd(null);
         _isReplaceLoading = true;
 
-        const doReplace = (path: string): void => {
+        const doReplace = (path: string, libraryPath?: string): void => {
             setStatus(t('library.loadingModel'), false);
             // 确定资源类别、浏览目录、过滤器
             let browseCategory: 'pmx' | 'stage' | 'prop' = 'pmx';
@@ -1202,7 +1209,7 @@ function onModelRowClick(m: LibraryModel): void {
             }
 
             loadManager
-                .load({ kind: loadKind, path })
+                .load({ kind: loadKind, path, libraryPath })
                 .then(async (handle) => {
                     if (handle?.id) {
                         // 加载成功后再删除旧模型，失败则保留旧模型
@@ -1254,7 +1261,7 @@ function onModelRowClick(m: LibraryModel): void {
             ExtractZip(m.file_path, m.zip_inner)
                 .then((result) => {
                     setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
-                    doReplace(result.file_path);
+                    doReplace(result.file_path, m.file_path);
                 })
                 .catch((err) => {
                     _isReplaceLoading = false;
@@ -1281,7 +1288,11 @@ function onModelRowClick(m: LibraryModel): void {
                 if (m.format === 'vmd') {
                     loadManager.load({ kind: 'vmd', path: result.file_path });
                 } else {
-                    loadManager.load({ kind: isStage ? 'stage' : 'actor', path: result.file_path });
+                    loadManager.load({
+                    kind: isStage ? 'stage' : 'actor',
+                    path: result.file_path,
+                    libraryPath: m.file_path,
+                });
                 }
             })
             .catch((err) => {

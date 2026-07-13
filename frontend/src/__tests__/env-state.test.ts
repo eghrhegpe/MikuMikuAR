@@ -87,6 +87,7 @@ const defaultEnv: EnvState = {
     underwaterFogMultiplier: 2,
     cloudsEnabled: false,
     debugClouds: false,
+    debugMirrorEnabled: false,
     cloudCover: 0.5,
     cloudScale: 1,
     cloudHeight: 100,

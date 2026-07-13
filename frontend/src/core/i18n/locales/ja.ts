@@ -227,6 +227,7 @@ export const ja: Record<string, string> = {
 
     // ===== モーション motion =====
     'motion.title': 'モーション',
+    'motion.advanced': '詳細設定',
     'motion.bindingTitle': 'モーションバインディング',
     'motion.changeMotion': 'モーション変更',
     'motion.motionLibrary': 'モーションライブラリ',
@@ -536,6 +537,13 @@ export const ja: Record<string, string> = {
     'scene.ssaoStrength': 'オクルージョン強度',
     'scene.ssaoRadius': 'オクルージョン半径',
     'scene.ssaoSamples': 'サンプル数',
+    'scene.debugMirror': 'デバッグミラー',
+    'scene.debugMirrorOn': '✓ デバッグミラーを有効にしました',
+    'scene.debugMirrorOff': '✓ デバッグミラーを無効にしました',
+    'scene.debugMirrorWidth': '幅',
+    'scene.debugMirrorHeight': '高さ',
+    'scene.debugMirrorResolution': '解像度',
+    'scene.debugMirrorHint': '上のスイッチでミラーを作成',
     'scene.toneMapping': 'トーンマッピング',
     'scene.exposure': '露出',
     'scene.contrast': 'コントラスト',
@@ -1306,4 +1314,12 @@ export const ja: Record<string, string> = {
     'settings.unloaded': '✓ アンロードしました: {name}',
     'status.loop': 'ループ: {state}',
     'toast.undo': '元に戻す',
+    // ===== i18n audit fixes 2026-07-13 =====
+    'boot.engineReady': '✅ エンジン準備完了',
+    'boot.readyHint': '✨ 準備完了 · 「モデル」をクリックしてPMXを読み込み',
+    'boot.initFailed': '❌ 初期化失敗: {msg}',
+    'common.empty': 'コンテンツがありません',
+    'common.apply': '適用',
+    'settings.audio.offsetHint': '正=音声先行、負=音声遅れ（全楽曲に全局適用）',
+    'props.loadingProgress': 'プロップ読み込み {pct}%',
 };

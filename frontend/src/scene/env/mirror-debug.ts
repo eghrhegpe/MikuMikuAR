@@ -12,6 +12,7 @@ import {
     Color4,
     Vector3,
     Plane,
+    Matrix,
 } from '@babylonjs/core';
 import { getScene } from './env-impl';
 
@@ -19,12 +20,16 @@ let _mirrorMesh: Mesh | null = null;
 let _mirrorRT: MirrorTexture | null = null;
 let _mirrorMat: StandardMaterial | null = null;
 
-const MIRROR_SIZE = 4;
-const MIRROR_RESOLUTION = 512;
+// 可调参数（通过 API 修改，下次 create 时生效）
+let _mirrorWidth = 6;
+let _mirrorHeight = 4;
+let _mirrorResolution = 512;
+let _mirrorPosition: [number, number, number] = [0, 1.5, 4];
+let _mirrorRotationY = 0; // 水平旋转（弧度）
 
 /**
- * 创建调试镜面：一个竖直朝向相机的平面，带 MirrorTexture 反射。
- * 用于快速验证反射管线是否正常（排除地面/水面复杂设置干扰）。
+ * 创建调试镜面：竖直平面 + MirrorTexture 反射。
+ * 反射列表包含场景全部 mesh（含天空球、地面、水面、角色）。
  */
 export function createDebugMirror(): void {
     if (_mirrorMesh) {
@@ -32,27 +37,42 @@ export function createDebugMirror(): void {
     }
     const scene = getScene();
 
-    // 创建竖直平面（正面朝 Z-）
+    // 创建竖直平面
     _mirrorMesh = MeshBuilder.CreatePlane(
         'debugMirror',
-        { width: MIRROR_SIZE, height: MIRROR_SIZE },
+        { width: _mirrorWidth, height: _mirrorHeight },
         scene
     );
-    _mirrorMesh.position = new Vector3(0, 1.5, -3);
+    // Pivot 移到底边：平面默认 y 从 -h/2 到 +h/2，bakeTransform 上移 h/2 后底边在 y=0
+    _mirrorMesh.bakeTransformIntoVertices(
+        Matrix.Translation(0, _mirrorHeight / 2, 0)
+    );
+    _mirrorMesh.position = new Vector3(
+        _mirrorPosition[0],
+        _mirrorPosition[1],
+        _mirrorPosition[2]
+    );
+    _mirrorMesh.rotation.y = _mirrorRotationY;
     _mirrorMesh.isPickable = false;
 
-    // MirrorTexture：反射场景中除自身外的所有 mesh
-    _mirrorRT = new MirrorTexture('debugMirrorRT', MIRROR_RESOLUTION, scene, false);
+    // MirrorTexture：反射全部 mesh
+    _mirrorRT = new MirrorTexture('debugMirrorRT', _mirrorResolution, scene, false);
     _mirrorRT.clearColor = new Color4(0, 0, 0, 0);
-    _mirrorRT.mirrorPlane = new Plane(0, 0, 1, 0); // 朝 Z+ 的镜面
     _mirrorRT.level = 1; // 完全反射
-    // 渲染列表：排除自身
+    _mirrorRT.adaptiveBlurKernel = 0; // 关闭模糊，锐利反射便于排查
+
+    // 镜面法线随 mesh 旋转：mesh 默认朝 Z-，镜面法线为 (0,0,-1) → Plane(0,0,1,0)
+    // 旋转后由世界矩阵自动变换，无需手动重算
+    _mirrorRT.mirrorPlane = new Plane(0, 0, 1, 0);
+
+    // 渲染列表：全部 mesh 排除自身
     _mirrorRT.renderList = scene.meshes.filter((m) => m !== _mirrorMesh);
 
-    // 简单材质：反射 + 微弱底色
+    // 材质：低反照率底色 + 强反射，便于区分反射内容
     _mirrorMat = new StandardMaterial('debugMirrorMat', scene);
-    _mirrorMat.diffuseColor = new Color3(0.1, 0.1, 0.15);
-    _mirrorMat.specularColor = new Color3(0.5, 0.5, 0.5);
+    _mirrorMat.diffuseColor = new Color3(0.05, 0.05, 0.08);
+    _mirrorMat.specularColor = new Color3(1, 1, 1);
+    _mirrorMat.specularPower = 64;
     _mirrorMat.reflectionTexture = _mirrorRT;
     _mirrorMat.backFaceCulling = false;
 
@@ -75,12 +95,10 @@ export function disposeDebugMirror(): void {
     }
 }
 
-/** 调试镜面是否已创建 */
 export function isDebugMirrorActive(): boolean {
     return _mirrorMesh !== null;
 }
 
-/** 切换调试镜面开/关 */
 export function toggleDebugMirror(): boolean {
     if (_mirrorMesh) {
         disposeDebugMirror();
@@ -90,13 +108,67 @@ export function toggleDebugMirror(): boolean {
     return true;
 }
 
-/**
- * 刷新调试镜面的渲染列表（场景 mesh 变化后调用）。
- * 用于确保新加载的模型能出现在反射中。
- */
+/** 刷新渲染列表（模型加载/卸载后调用） */
 export function refreshDebugMirrorRenderList(): void {
     if (!_mirrorRT || !_mirrorMesh) {
         return;
     }
     _mirrorRT.renderList = getScene().meshes.filter((m) => m !== _mirrorMesh);
+}
+
+// ======== 参数设置 API ========
+
+export function setDebugMirrorSize(width: number, height: number): void {
+    _mirrorWidth = Math.max(0.5, width);
+    _mirrorHeight = Math.max(0.5, height);
+    // pivot 由 bakeTransform 写入顶点，改尺寸需重建
+    if (_mirrorMesh) {
+        disposeDebugMirror();
+        createDebugMirror();
+    }
+}
+
+export function setDebugMirrorPosition(x: number, y: number, z: number): void {
+    _mirrorPosition = [x, y, z];
+    if (_mirrorMesh) {
+        _mirrorMesh.position.set(x, y, z);
+    }
+}
+
+export function setDebugMirrorRotationY(rad: number): void {
+    _mirrorRotationY = rad;
+    if (_mirrorMesh) {
+        _mirrorMesh.rotation.y = rad;
+    }
+}
+
+export function setDebugMirrorResolution(res: number): void {
+    _mirrorResolution = Math.max(64, Math.min(2048, res));
+    // 需要重建才生效，标记即可
+    if (_mirrorRT) {
+        // 简单方案：dispose 重建
+        const wasActive = isDebugMirrorActive();
+        disposeDebugMirror();
+        if (wasActive) {
+            createDebugMirror();
+        }
+    }
+}
+
+export function getDebugMirrorInfo(): {
+    active: boolean;
+    position: [number, number, number];
+    width: number;
+    height: number;
+    resolution: number;
+    meshCount: number;
+} {
+    return {
+        active: isDebugMirrorActive(),
+        position: _mirrorPosition,
+        width: _mirrorWidth,
+        height: _mirrorHeight,
+        resolution: _mirrorResolution,
+        meshCount: _mirrorRT?.renderList?.length ?? 0,
+    };
 }

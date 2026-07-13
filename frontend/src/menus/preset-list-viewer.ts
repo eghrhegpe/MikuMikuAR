@@ -9,6 +9,7 @@
 import type { PopupLevel } from '../core/config';
 import { cardContainer, setStatus } from '../core/config';
 import { showConfirm } from '../core/dialog';
+import { t } from '../core/i18n/t';
 
 export interface PresetListViewerConfig<T> {
     /** 子菜单标题（仅 buildPresetListLevel 用） */
@@ -58,7 +59,7 @@ export async function presetListContent<T>(
         const empty = document.createElement('div');
         empty.style.cssText =
             'font-size:12px;color:var(--text-dim);text-align:center;padding:24px;';
-        empty.textContent = config.emptyText || '暂无预设';
+        empty.textContent = config.emptyText || t('model-preset.noPresets');
         container.appendChild(empty);
         return;
     }

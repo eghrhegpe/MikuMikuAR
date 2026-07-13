@@ -1,6 +1,8 @@
 // [doc:architecture] DOM element references for MikuMikuAR.
 // Extracted from config.ts — pure DOM refs, zero runtime logic.
 
+import { t } from './i18n/t';
+
 export const dom = {
     canvas: document.getElementById('renderCanvas') as HTMLCanvasElement,
     statusBar: document.getElementById('statusBar') as HTMLElement,
@@ -25,20 +27,20 @@ export const dom = {
 
     /** 引擎就绪后调用：隐藏 loading 遮罩，显示主应用 UI */
     showApp(): void {
-        this.loadingText.textContent = '✅ 引擎就绪';
+        this.loadingText.textContent = t('boot.engineReady');
         // 短暂显示"就绪"再隐藏，让用户感知切换
         setTimeout(() => {
             this.loadingEl.style.display = 'none';
             this.canvas.style.visibility = 'visible';
             this.playbackBar.style.pointerEvents = 'auto';
-            this.statusText.textContent = '✨ 准备就绪 · 点击"模型"导入 PMX';
+            this.statusText.textContent = t('boot.readyHint');
         }, 150);
     },
 
     /** 引擎初始化失败时调用：保留遮罩，显示错误信息 */
     showError(msg: string): void {
         this.loadingEl.style.pointerEvents = 'auto';
-        this.loadingText.textContent = '❌ 初始化失败: ' + msg;
+        this.loadingText.textContent = t('boot.initFailed', { msg });
         this.loadingEl.style.background = 'linear-gradient(135deg, #2d1a1a 0%, #1a1a2e 100%)';
     },
 };

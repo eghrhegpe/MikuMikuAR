@@ -45,7 +45,19 @@ func Save(thumbDir string, modelPath string, rootPath string, base64PNG string) 
 }
 
 func Get(thumbDir string, modelPath string, rootPath string) (string, error) {
-	hash := CacheKey(modelPath, rootPath)
+	// 主 key：相对 rootPath（resource_root 迁移后可移植）
+	if b64, err := readThumb(thumbDir, CacheKey(modelPath, rootPath)); err == nil {
+		return b64, nil
+	}
+	// 回退 key：绝对路径（恢复 resource_root 修复前生成的缩略图——
+	// 当时 root 为 temp 目录，Rel() 以 ".." 开头被拒，key 退化为绝对路径）。
+	if b64, err := readThumb(thumbDir, CacheKey(modelPath, "")); err == nil {
+		return b64, nil
+	}
+	return "", os.ErrNotExist
+}
+
+func readThumb(thumbDir, hash string) (string, error) {
 	data, err := os.ReadFile(filepath.Join(thumbDir, hash+".png"))
 	if err != nil {
 		return "", err

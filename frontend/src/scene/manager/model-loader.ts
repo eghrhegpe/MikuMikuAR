@@ -100,7 +100,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Pr
 }
 
 /** Captures a screenshot after model load for thumbnail cache. */
-export async function captureThumbnail(filePath: string): Promise<void> {
+export async function captureThumbnail(filePath: string, libraryPath?: string): Promise<void> {
     try {
         if (!_scene) {
             return;
@@ -125,11 +125,15 @@ export async function captureThumbnail(filePath: string): Promise<void> {
 
         const base64 = dom.canvas.toDataURL('image/png', 0.8);
         const raw = base64.replace(/^data:image\/png;base64,/, '');
-        await SaveThumbnail(filePath, raw);
+        // [fix:thumbnail] zip 模型：filePath 是解压后的临时路径，但库查询用 zip 包路径
+        // （m.file_path）。必须以库引用路径（libraryPath）作为落盘/缓存 key，否则缩略图永远 miss。
+        // 非 zip 模型 libraryPath 为空或等同 filePath，回退用 filePath，行为不变。
+        const thumbKey = libraryPath && libraryPath !== filePath ? libraryPath : filePath;
+        await SaveThumbnail(thumbKey, raw);
 
         // [fix] 截图成功后更新前端缓存，使网格视图立即显示缩略图
         const updated = new Map(thumbnailCache);
-        updated.set(filePath, raw);
+        updated.set(thumbKey, raw);
         setThumbnailCache(updated);
     } catch (err) {
         console.warn('captureThumbnail:', err);
@@ -141,7 +145,8 @@ export async function captureThumbnail(filePath: string): Promise<void> {
 export async function loadPMXFile(
     filePath: string,
     asStage?: boolean,
-    skipAutoApply?: boolean
+    skipAutoApply?: boolean,
+    libraryPath?: string
 ): Promise<string | null> {
     if (!_scene || !_mmdRuntime) {
         return null;
@@ -245,6 +250,8 @@ export async function loadPMXFile(
             } catch {
                 // Intentionally empty — 自定义事件派发失败不影响模型加载主流程
             }
+            // [fix:thumbnail] stage 同样需要缩略图（库网格含 stage 模型）；用库引用路径作 key
+            captureThumbnail(filePath, libraryPath).catch(() => {});
             return id;
         }
 
@@ -374,7 +381,7 @@ export async function loadPMXFile(
         rebuildShadowCasters();
 
         // Auto-capture thumbnail for future popup display
-        captureThumbnail(filePath).catch(() => {});
+        captureThumbnail(filePath, libraryPath).catch(() => {});
         if (!skipAutoApply) {
             _tryAutoApplyPreset(id).catch((err: unknown) =>
                 console.warn('auto-apply preset:', err)

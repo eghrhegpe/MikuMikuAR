@@ -112,7 +112,7 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 const hint = document.createElement('div');
                 hint.style.cssText =
                     'font-size:10px;color:var(--text-dark);text-align:center;margin-top:4px;';
-                hint.textContent = '正=音频先播，负=音频后播（对所有音乐全局生效）';
+                hint.textContent = t('settings.audio.offsetHint');
                 c.appendChild(hint);
             },
         },

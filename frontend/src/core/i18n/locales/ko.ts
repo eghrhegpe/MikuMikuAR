@@ -227,6 +227,7 @@ export const ko: Record<string, string> = {
 
     // ===== 모션 motion =====
     'motion.title': '모션',
+    'motion.advanced': '고급',
     'motion.bindingTitle': '모션 바인딩',
     'motion.changeMotion': '모션 변경',
     'motion.motionLibrary': '모션 라이브러리',
@@ -535,6 +536,13 @@ export const ko: Record<string, string> = {
     'scene.ssaoStrength': '오클루전 강도',
     'scene.ssaoRadius': '오클루전 반경',
     'scene.ssaoSamples': '샘플 수',
+    'scene.debugMirror': '디버그 미러',
+    'scene.debugMirrorOn': '✓ 디버그 미러가 활성화되었습니다',
+    'scene.debugMirrorOff': '✓ 디버그 미러가 비활성화되었습니다',
+    'scene.debugMirrorWidth': '너비',
+    'scene.debugMirrorHeight': '높이',
+    'scene.debugMirrorResolution': '해상도',
+    'scene.debugMirrorHint': '위 스위치로 미러 생성',
     'scene.toneMapping': '톤 매핑',
     'scene.exposure': '노출',
     'scene.contrast': '대비',
@@ -1299,4 +1307,12 @@ export const ko: Record<string, string> = {
     'settings.unloaded': '✓ 언로드됨: {name}',
     'status.loop': '반복: {state}',
     'toast.undo': '실행 취소',
+    // ===== i18n audit fixes 2026-07-13 =====
+    'boot.engineReady': '✅ 엔진 준비 완료',
+    'boot.readyHint': '✨ 준비 완료 · "모델"을 클릭해 PMX 불러오기',
+    'boot.initFailed': '❌ 초기화 실패: {msg}',
+    'common.empty': '콘텐츠 없음',
+    'common.apply': '적용',
+    'settings.audio.offsetHint': '양수=오디오 먼저, 음수=오디오 나중(모든 음악에 전역 적용)',
+    'props.loadingProgress': '프로프 로딩 {pct}%',
 };

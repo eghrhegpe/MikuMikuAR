@@ -223,6 +223,7 @@ export const zhTW: Record<string, string> = {
 
     // ===== 動作 motion =====
     'motion.title': '動作',
+    'motion.advanced': '進階',
     'motion.bindingTitle': '動作綁定',
     'motion.changeMotion': '更換動作',
     'motion.motionLibrary': '動作庫',
@@ -528,6 +529,13 @@ export const zhTW: Record<string, string> = {
     'scene.ssaoStrength': '遮蔽強度',
     'scene.ssaoRadius': '遮蔽半徑',
     'scene.ssaoSamples': '取樣數',
+    'scene.debugMirror': '調試鏡面',
+    'scene.debugMirrorOn': '✓ 調試鏡面已開啟',
+    'scene.debugMirrorOff': '✓ 調試鏡面已關閉',
+    'scene.debugMirrorWidth': '寬度',
+    'scene.debugMirrorHeight': '高度',
+    'scene.debugMirrorResolution': '解析度',
+    'scene.debugMirrorHint': '開啟上方開關建立鏡面',
     'scene.waterReflectionQuality': '平面反射質量',
     'scene.waterReflectionQualityHigh': '高',
     'scene.waterReflectionQualityMedium': '中',
@@ -1281,4 +1289,12 @@ export const zhTW: Record<string, string> = {
     'settings.unloaded': '✓ 已卸載: {name}',
     'status.loop': '循環: {state}',
     'toast.undo': '撤銷',
+    // ===== i18n 審計修復 2026-07-13 =====
+    'boot.engineReady': '✅ 引擎就緒',
+    'boot.readyHint': '✨ 準備就緒 · 點擊"模型"匯入 PMX',
+    'boot.initFailed': '❌ 初始化失敗: {msg}',
+    'common.empty': '暫無內容',
+    'common.apply': '應用',
+    'settings.audio.offsetHint': '正=音訊先播，負=音訊後播（對所有音樂全域生效）',
+    'props.loadingProgress': '載入道具 {pct}%',
 };

@@ -195,6 +195,19 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         }
     }
 
+    // Debug Mirror
+    if (!changed || changed.includes('debugMirrorEnabled')) {
+        try {
+            if (state.debugMirrorEnabled && !impl.isDebugMirrorActive()) {
+                impl.createDebugMirror();
+            } else if (!state.debugMirrorEnabled && impl.isDebugMirrorActive()) {
+                impl.disposeDebugMirror();
+            }
+        } catch (e) {
+            console.warn('[env] debugMirror fail:', e);
+        }
+    }
+
     // 半球光 — 强度跟随当前灯光状态，颜色随天空色（灯光未初始化时跳过）
     const skyMid = state.skyColorMid ?? [
         (state.skyColorTop[0] + state.skyColorBot[0]) / 2,

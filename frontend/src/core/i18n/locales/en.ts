@@ -96,6 +96,7 @@ export const en: Record<string, string> = {
 
     // ===== Motion =====
     'motion.title': 'Motion',
+    'motion.advanced': 'Advanced',
     'motion.bindingTitle': 'Motion Binding',
     'motion.changeMotion': 'Change Motion',
     'motion.motionLibrary': 'Motion Library',
@@ -460,6 +461,13 @@ export const en: Record<string, string> = {
     'scene.ssaoStrength': 'Occlusion Strength',
     'scene.ssaoRadius': 'Occlusion Radius',
     'scene.ssaoSamples': 'Samples',
+    'scene.debugMirror': 'Debug Mirror',
+    'scene.debugMirrorOn': '✓ Debug mirror enabled',
+    'scene.debugMirrorOff': '✓ Debug mirror disabled',
+    'scene.debugMirrorWidth': 'Width',
+    'scene.debugMirrorHeight': 'Height',
+    'scene.debugMirrorResolution': 'Resolution',
+    'scene.debugMirrorHint': 'Toggle above to create mirror',
     'scene.waterReflectionQuality': 'Planar Reflection Quality',
     'scene.waterReflectionQualityHigh': 'High',
     'scene.waterReflectionQualityMedium': 'Medium',
@@ -1290,4 +1298,12 @@ export const en: Record<string, string> = {
     'shortcuts.resetAll': 'Reset Default Shortcuts',
     'shortcuts.custom': 'Custom',
     'settings.paths.watchDirPlaceholder': 'Select watch directory...',
+    // ===== i18n audit fixes 2026-07-13 =====
+    'boot.engineReady': '✅ Engine ready',
+    'boot.readyHint': '✨ Ready · Click "Model" to import PMX',
+    'boot.initFailed': '❌ Initialization failed: {msg}',
+    'common.empty': 'No content',
+    'common.apply': 'Apply',
+    'settings.audio.offsetHint': 'Positive = audio leads, negative = audio lags (applies globally to all music)',
+    'props.loadingProgress': 'Loading prop {pct}%',
 };

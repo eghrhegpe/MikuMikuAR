@@ -24,9 +24,6 @@ import {
     setGroundCollisionEnabled,
 } from '../scene/env/env-bridge';
 import {
-    getPhysicsCategories,
-    isPhysicsCategoryEnabled,
-    setPhysicsCategory,
     setModelPhysics,
 } from '../scene/scene';
 import { getSceneMenu, refreshSceneRoot } from './scene-menu';
@@ -183,19 +180,6 @@ function buildWasmPhysicsSchema(): MenuNode[] {
     const id = focusedModelId;
     const inst = id ? modelManager.get(id) : null;
 
-    const CAT_KEYS: Record<string, string> = {
-        skirt: 'scene.catSkirt',
-        chest: 'scene.catChest',
-        hair: 'scene.catHair',
-        accessory: 'scene.catAccessory',
-    };
-    const CAT_ICONS: Record<string, string> = {
-        skirt: 'lucide:shirt',
-        chest: 'lucide:heart',
-        hair: 'lucide:person-standing',
-        accessory: 'lucide:gem',
-    };
-
     const nodes: MenuNode[] = [
         // 运行时切换 + 重力强度
         {
@@ -259,45 +243,6 @@ function buildWasmPhysicsSchema(): MenuNode[] {
         });
         return nodes;
     }
-
-    // 模型物理总开关 + 类别
-    const categories = getPhysicsCategories(id);
-    nodes.push({
-        id: 'wasm:model',
-        kind: 'custom',
-        renderCustom: (c) => {
-            cardContainer(c, (inner) => {
-                addToggleRow(
-                    inner,
-                    t('scene.physicsParse', { name: inst.name }),
-                    inst.physicsEnabled,
-                    (v) => {
-                        setModelPhysics(id, v);
-                        _patchToggle('wasm:master', v);
-                    },
-                    'lucide:atom',
-                    { bind: () => inst.physicsEnabled }
-                );
-                if (categories.length === 0) {
-                    addEmptyRow(inner, t('scene.noRigidBody'));
-                } else {
-                    for (const cat of categories) {
-                        addToggleRow(
-                            inner,
-                            t(CAT_KEYS[cat] || cat),
-                            isPhysicsCategoryEnabled(id, cat),
-                            (v) => {
-                                setPhysicsCategory(id, cat, v);
-                                _patchToggle(`wasm:cat:${cat}`, v);
-                            },
-                            CAT_ICONS[cat] || 'lucide:settings',
-                            { bind: () => isPhysicsCategoryEnabled(id, cat) }
-                        );
-                    }
-                }
-            });
-        },
-    });
 
     // 调试入口
     nodes.push({
