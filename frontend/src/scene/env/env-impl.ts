@@ -155,6 +155,7 @@ let _lastProceduralSkyKey = '';
 export function disposeSky(): void {
     const scene = getScene();
     if (_envSys.sky.skyMesh) {
+        _envSys.sky.skyMesh.material?.dispose();
         _envSys.sky.skyMesh.dispose();
         _envSys.sky.skyMesh = null;
     }
@@ -1094,7 +1095,16 @@ export function applyGround(state: EnvState): void {
     // 销毁旧地面反射 RT（Phase B）
     disposeGroundReflection();
     if (_envSys.ground.mesh) {
-        _envSys.ground.mesh.dispose();
+        const oldMesh = _envSys.ground.mesh;
+        const oldMat = oldMesh.material;
+        if (oldMat instanceof StandardMaterial) {
+            oldMat.diffuseTexture?.dispose();
+            oldMat.bumpTexture?.dispose();
+            oldMat.opacityTexture?.dispose();
+            oldMat.reflectionTexture?.dispose();
+        }
+        oldMat?.dispose();
+        oldMesh.dispose();
         _envSys.ground.mesh = null;
     }
     if (!state.groundVisible) {
