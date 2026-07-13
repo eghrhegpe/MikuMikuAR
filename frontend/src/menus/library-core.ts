@@ -124,6 +124,10 @@ function isModelDirTarget(target: string | undefined): boolean {
  * 或盘符残缺 "C" 切出 ":" 伪文件夹）。
  */
 export function splitSubdirSegments(rootRaw: string, dirRaw: string): string[] | null {
+    // 拒绝 '..' 逃逸段：记忆/浏览路径不应含 '..'，含则视为不规范输入直接拒绝（修复 P2 场景1）
+    if (rootRaw.includes('..') || dirRaw.includes('..')) {
+        return null;
+    }
     const rootNorm = normPath(rootRaw);
     const dirNorm = normPath(dirRaw);
     // 比较用小写，提取段用原始大小写（避免路径大小写丢失导致展开后 buildLevel 与 m.dir 不匹配）
@@ -137,10 +141,9 @@ export function splitSubdirSegments(rootRaw: string, dirRaw: string): string[] |
         return dirNorm.substring(rootNorm.length).replace(/^\//, '').split('/').filter(Boolean);
     }
     // 2) 容错：root 与 dir 的绝对前缀形态不完全一致（前端 libraryRoot 与后端 cfg.ResourceRoot
-    //    在大小写 / 末尾斜杠 / 反斜杠上存在差异），但二者位于同一盘符、且 lastDir 中能定位
-    //    root 的末段目录标记（如 "PMX"）时，从该标记之后截取相对段，基于前端一致的 root 重建路径。
-    //    这样既修复"形态不一致导致不展开"，又保留 PMX vs PMXSub 的伪文件夹防护。
-    //    跨盘（如 C:/… 记忆但当前 root 在 D:/…）绝不展开，避免记忆串台。
+    //    在大小写 / 末尾斜杠 / 反斜杠上存在差异），但二者位于同一盘符且父链一致、仅末段后子路径
+    //    需恢复时，从该标记之后截取相对段。跨盘或父链不一致（同盘异父）绝不展开，避免记忆串台
+    //    （修复 P2 场景2：C:/other/PMX/Sub 不应展开到 C:/text-model/PMX/Sub）。
     const rootDrive = root.match(/^([a-z]):/i)?.[1];
     if (rootDrive) {
         const dirDrive = dir.match(/^([a-z]):/i)?.[1];
@@ -148,16 +151,24 @@ export function splitSubdirSegments(rootRaw: string, dirRaw: string): string[] |
             return null;
         }
     }
-    const marker = root.split('/').filter(Boolean).pop();
+    const rootSegs = root.split('/').filter(Boolean);
+    const dirSegs = dir.split('/').filter(Boolean);
+    const marker = rootSegs[rootSegs.length - 1];
     if (marker) {
-        const needle = '/' + marker + '/';
-        const idx = dir.lastIndexOf(needle);
-        if (idx >= 0) {
-            const rel = dirNorm.substring(idx + needle.length).replace(/^\//, '');
-            return rel ? rel.split('/').filter(Boolean) : [];
+        const mIdx = dirSegs.lastIndexOf(marker);
+        if (mIdx >= 0) {
+            // 校验 marker 之前父链与 root 父链一致（已小写），否则为同盘异父串台，拒绝展开
+            const rootPrefix = rootSegs.slice(0, -1);
+            const dirPrefix = dirSegs.slice(0, mIdx);
+            if (rootPrefix.length !== dirPrefix.length || !rootPrefix.every((s, i) => s === dirPrefix[i])) {
+                return null;
+            }
+            const dirNormSegs = dirNorm.split('/').filter(Boolean);
+            const relNormSegs = dirNormSegs.slice(mIdx + 1);
+            return relNormSegs.length ? relNormSegs : [];
         }
         // dir 以标记段结尾（lastDir 指向的恰是 root 末段目录本身，等同 root）
-        if (dir.endsWith('/' + marker)) {
+        if (dirSegs[dirSegs.length - 1] === marker) {
             return [];
         }
     }
