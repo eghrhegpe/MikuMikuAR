@@ -23,6 +23,10 @@
 | 🤖 Android | ✅ 検証済み（c-shared + WebView） |
 | 🍎 iOS / 🐧 Linux | 🟡 理論上互換（Wails v3 タスク設定済み、未テスト） |
 
+| 🌐 言語 |
+|----------|
+| [简体中文](README.md) · [English](README.en.md) · [**日本語**](README.ja.md) · [한국어](README.ko.md) · [繁體中文](README.zh-TW.md) |
+
 ---
 
 ## ✨ 機能
@@ -263,4 +267,39 @@ MikuMikuAR/
 - **Blender 編集** — ユーザーが [mmd_tools](https://github.com/powroupi/blender_mmd_tools) プラグインをインストールする必要がある、そうでないと Blender で PMX が開けない
 - **Android 実験的** — `main_android.gen.go` は c-shared モード + WebView を使用、Scoped Storage の制約を受ける
 - **クロスプラットフォームパス** — Blender 自動検出は Windows のみ対応、macOS/Linux は設定で手動設定が必要
-- **SSS サブサーフェス散乱** — babylon-mmd の PBR マテリアルサポートに依存、上流
+- **SSS サブサーフェス散乱** — babylon-mmd の PBR マテリアルサポートに依存、上流ブロック中
+- **Windows ディレクトリ選択** — Wails v3 `CanChooseDirectories` の不具合、実際はファイル選択画面が表示される
+
+---
+
+## 🔍 競合分析
+
+詳細は [docs/competitive-analysis.md](docs/competitive-analysis.md)（23 プロジェクト調査）を参照。概要：
+
+**レンダリングエンジン / ビューアー**
+- [babylon-mmd](https://github.com/noname0310/babylon-mmd) — Babylon.js MMD レンダリングエンジン（本プロジェクトはこれに基づく）
+- [mmd-viewer-js](https://github.com/pixiставь/mmd-viewer-js) — ゼロ依存 JS WebGL ビューアー、Toon シェーディング + ビデオ録画
+- [Saba](https://github.com/mmd不开心/Saba) — C++ 軽量ビューアー、Lua スクリプティング / マルチバックエンド / マクロコマンド
+
+**デスクトッププレーヤー**
+- [DanceXR](https://github.com/Chewhern/DanceXR) — アニメーション合成 / キャラクター同在 / オフラインレンダリング / VR（主要対抗）
+- [Coocoo3D](https://github.com/hkrn/coocoo3d) — C#+DX12、レイトレーシング / GI / SSAO / Decal
+- [flowerMiku](https://github.com/miku333/flowerMiku) — C++/Vulkan、PBR マテリアル
+
+**DCC ツールチェーン**
+- [mmd_tools](https://github.com/powroupi/blender_mmd_tools) — Blender PMX プラグイン（本プロジェクトの Blender 連携に必要）
+- [MMD Bridge](https://github.com/mmd-bridge/MMDBridge) — Alembic エクスポート / Python スクリプト
+
+**AR / XR**
+- [ar-mmd](https://github.com/code4fukui/ar-mmd) — WebXR AR 空間 MMD モデル再生デモ
+- [MikuMikuMixed](https://github.com/importantimport/mikumikumixed) — Experimental WebXR MMD Viewer（React-Three-Fiber + WebXR）
+- [web-mmd](https://github.com/culdo/web-mmd) — ブラウザ MMD プレーヤー、AR モード対応（スマホカメラ制御）
+
+**フレームワーク**
+- [Wails](https://wails.io) — Go + WebView デスクトップフレームワーク（本プロジェクトの選定）
+
+## 📜 ライセンス
+
+[MIT](LICENSE) — 本プロジェクトのコードは自由に使用できます。
+
+> ⚠️ 本ツールはモデル / アニメーション / テクスチャファイルの著作権を主張しません。ユーザーが読み込む PMX / VMD / テクスチャファイルはそれぞれのクリエイターのライセンス制限を受ける場合があり、本プロジェクトとは無関係です。

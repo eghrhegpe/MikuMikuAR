@@ -23,6 +23,10 @@
 | 🤖 Android | ✅ Verified (c-shared + WebView) |
 | 🍎 iOS / 🐧 Linux | 🟡 Theoretically compatible (Wails v3 tasks configured, not tested) |
 
+| 🌐 Language |
+|-------------|
+| [简体中文](README.md) · [**English**](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [繁體中文](README.zh-TW.md) |
+
 ---
 
 ## ✨ Features

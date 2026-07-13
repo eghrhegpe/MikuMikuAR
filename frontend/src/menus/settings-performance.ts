@@ -182,6 +182,39 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
             },
         },
         {
+            id: 'perf:modelPhysics',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const id = focusedModelId;
+                const inst = id ? modelManager.get(id) : null;
+                if (!id || !inst) {
+                    return;
+                }
+                cardContainer(c, (inner) => {
+                    const label = document.createElement('div');
+                    label.style.cssText = 'font-size:12px;padding:8px 14px 4px;color:var(--text-primary);';
+                    label.textContent = t('scene.physicsParse', { name: inst.name });
+                    inner.appendChild(label);
+                    const toggleRow = document.createElement('div');
+                    toggleRow.style.cssText = 'display:flex;align-items:center;padding:8px 14px;gap:8px;';
+                    const switch_ = document.createElement('div');
+                    switch_.className = `switch ${inst.physicsEnabled ? 'on' : 'off'}`;
+                    switch_.style.cssText = 'cursor:pointer;';
+                    switch_.onclick = () => {
+                        const newValue = !inst.physicsEnabled;
+                        setModelPhysics(id, newValue);
+                        switch_.className = `switch ${newValue ? 'on' : 'off'}`;
+                        setStatus(
+                            newValue ? t('settings.physOn') : t('settings.physOff'),
+                            true
+                        );
+                    };
+                    toggleRow.appendChild(switch_);
+                    inner.appendChild(toggleRow);
+                });
+            },
+        },
+        {
             id: 'perf:autoCenter',
             kind: 'toggle',
             label: 'settings.perf.autoCenter',

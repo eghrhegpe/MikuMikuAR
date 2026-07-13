@@ -297,7 +297,7 @@ func TestPlazaBindings_NoPanic(t *testing.T) {
 	if err := a.StopProxy(); err != nil {
 		t.Errorf("StopProxy() with no running proxy should be nil, got %v", err)
 	}
-	if err := a.OpenPlazaWindow(""); err == nil {
-		t.Error("OpenPlazaWindow(\"\") should return an error")
+	if err := a.NavigatePlazaWindow(""); err == nil {
+		t.Error("NavigatePlazaWindow(\"\") should return an error")
 	}
 }

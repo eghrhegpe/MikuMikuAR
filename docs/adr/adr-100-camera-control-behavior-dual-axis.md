@@ -1,0 +1,233 @@
+# ADR-100: 相机系统「控制方案 × 运动行为」双轴拆分
+
+> **状态**: 实施中
+> **关联**: ADR-055（AR 相机模式·`CameraMode` 契约）、ADR-070（演唱会/环绕拆分）
+> **编号说明**: 原议题拟用 ADR-099，但该号已被 `adr-099-mpr-coop-coep-poc.md` 占用，按「编号唯一」铁律顺延为 ADR-100。
+
+---
+
+## 一、问题
+
+当前 `CameraMode` 单枚举把**两件正交的事**塞进同一个互斥选项，导致一系列「失效 / 冲突 / 语义打架」的怪象：
+
+- **控制方案**（用哪种相机类 + 何种输入）
+- **运动行为**（相机如何自动运动）
+
+因两者共用一个枚举位，任意时刻只能选其一，无法组合，衍生出三类症状：
+
+| 症状 | 根因 |
+|------|------|
+| 演唱会已能自动运镜，`自动运镜` 开关显得多余 | `concert` 本质是「运动行为」，却与 `自动运镜` 这个第四运动行为抢同一台 ArcRotate 相机 |
+| `自动运镜` 在 `oneshot`/`surround` 下点了没反应 | 它被绑死在 `_cameraMode === 'orbit' \|\| 'concert'` 判断上，而非「ArcRotate + 有节拍源」这个真正前提（`camera.ts:1178` 区域） |
+| `surround` 被自动运镜显式排除（ADR-070 §4.1）、`concert` 却纳入 | 排除逻辑不一致，因为它们在枚举层面无法表达「基座控制 + 可叠加行为」 |
+
+---
+
+## 二、现状证据：7 个「模式」实为两轴混合
+
+`CameraMode = 'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar'`
+（双写于 `core/types.ts:518` 与 `scene/camera/camera.ts:21`）
+
+| 当前模式 | 相机类 | 输入方式 | 程序化运动 | 真实本质 |
+|---------|--------|----------|-----------|---------|
+| `orbit` 环绕 | ArcRotate | 指针可拖 | 慢自转 | **控制方案** + 默认自转行为 |
+| `freefly` 自由 | Universal | 键鼠飞行 | 无 | **控制方案** |
+| `ar` | AR(设备) | 陀螺仪/摄像头 | 无 | **控制方案** |
+| `surround` 环绕* | ArcRotate | 无 | 整圈匀速自转 | **运动行为**（转盘） |
+| `concert` 演唱会 | ArcRotate | 无 | 扫掠 + 上下摆动 | **运动行为**（跟拍） |
+| `vmd` | ArcRotate | 无 | VMD 脚本 | **运动行为**（脚本） |
+| `oneshot` 单拍 | ArcRotate | 指针 | 无（预留脚本） | 控制方案（预留） |
+
+`自动运镜`（`_autoCameraEnabled`，`camera.ts:1111`；状态存于 `UIState.autoCameraEnabled/autoCameraBeatsPerSwitch`，`types.ts:322-323`）是**第四个运动行为**（beatcut 节拍切镜），却被做成游离于枚举之外的独立开关，再硬塞进 `orbit/concert` 生效条件里——这是全部症状的结构性来源。
+
+---
+
+## 三、目标架构：两条正交轴
+
+### 轴 A — 控制方案 `CameraControl`（决定相机类 + 输入）
+
+```ts
+type CameraControl = 'orbit' | 'freefly' | 'ar';
+//  orbit   : ArcRotateCamera + 指针输入（可拖拽/缩放）
+//  freefly : UniversalCamera  + 键鼠飞行
+//  ar      : AR 相机 + 设备传感器
+```
+
+### 轴 B — 运动行为 `CameraBehavior`（仅对 ArcRotate 生效，可独立开关）
+
+```ts
+type CameraBehavior =
+  | 'none'        // 静止，纯手动
+  | 'autorotate'  // 慢自转（今 orbit 内建行为）
+  | 'turntable'   // 整圈匀速自转（今 surround）
+  | 'concert'     // 扫掠 + 上下摆动（今 concert，ADR-070 语义不变）
+  | 'beatcut'     // 节拍切镜（今 自动运镜）
+  | 'scripted';   // VMD 脚本（今 vmd）
+```
+
+**组合语义（新架构下旧模式的等价表达）**：
+
+| 旧单模式 | = 控制 A | + 行为 B |
+|---------|---------|---------|
+| `orbit`（默认自转） | `orbit` | `autorotate` |
+| `orbit`（手动静止） | `orbit` | `none` |
+| `surround` | `orbit` | `turntable` |
+| `concert` | `orbit` | `concert` |
+| `vmd` | `orbit` | `scripted` |
+| `自动运镜`（原叠加态） | `orbit` | `beatcut` |
+| `freefly` | `freefly` | `none`（行为轴对 Universal 不适用） |
+| `ar` | `ar` | `none`（行为轴对 AR 不适用） |
+| `oneshot` | `orbit` | `none`（预留脚本 → 未来映射 `scripted` 变体） |
+
+**关键约束**：行为轴 B 仅当控制轴 A = `orbit`（ArcRotate）时可用。`freefly`(Universal) / `ar` 非 ArcRotate，选中它们时行为轴强制为 `none` 并在 UI 置灰。这正是当前 `surround`/`concert` 被 ArcRotate 绑死、`自动运镜` 又只认 `orbit`/`concert` 的深层原因——拆分后该约束显式化，不再是隐式散落的 `instanceof` 判断。
+
+拆分后「互斥」问题自然消解：
+- `orbit + concert` = 今天的演唱会
+- `orbit + turntable` = 今天的环绕
+- `orbit + beatcut` = 今天的自动运镜（**不再与 concert 抢枚举位**，冲突从架构上消除）
+- 是否允许多行为叠加（如 `concert + beatcut`）由 §六 决策：**初版互斥**，只保留单一活动行为，规避 ADR-070 已知的「扫掠途中硬切」不连贯问题。
+
+---
+
+## 四、方案对比
+
+### 方案 A：维持单枚举，仅打补丁（把 beatcut 收窄为仅 orbit）
+
+```
+优点：改动最小，1 行修复
+缺点：治标不治本，双轴混淆仍在；未来加任何新行为/控制都会重蹈覆辙
+结论：❌ 仅作为 §六「过渡期」的临时兜底，非终局
+```
+
+### 方案 B：双轴拆分（本 ADR 决策）
+
+```
+优点：控制与行为正交，组合自由；beatcut 冲突从根消除；行为轴可扩展（未来加 dolly/crane 等）
+缺点：涟漪面大——契约(types×2)/序列化(CameraState)/UI(mode 选择器)/i18n/测试/存档迁移
+结论：✅ 采用，分期落地（见 §七）
+```
+
+### 方案 C：保留枚举但引入「行为叠加位」（enum + flags 混合）
+
+```
+优点：序列化改动小（enum 不变，新增可选 flags 字段）
+缺点：概念仍不清晰（orbit 既是控制又隐含 autorotate 行为）；两套心智模型并存，维护成本更高
+结论：❌ 半拉子抽象，不如一次拆干净
+```
+
+---
+
+## 五、决策
+
+采用 **方案 B**：将 `CameraMode` 单枚举拆为 `CameraControl`（控制方案）× `CameraBehavior`（运动行为）双轴，行为轴仅对 `orbit` 控制生效，初版行为互斥（单一活动行为）。
+
+---
+
+## 六、迁移路径（旧 7 模式 → 新两轴映射）
+
+### 6.1 运行时状态迁移
+
+现有 `let _cameraMode: CameraMode`（`camera.ts:164`）拆为：
+
+```ts
+let _cameraControl: CameraControl = 'orbit';
+let _cameraBehavior: CameraBehavior = 'autorotate';
+```
+
+`switchCameraMode(mode)`（`camera.ts:484`）保留为**兼容 shim**，内部翻译为 `setCameraControl + setCameraBehavior`，避免一次性重写所有调用点（AR 进入/退出的 `_previousMode` 逻辑、VMD 回退等）：
+
+```ts
+// 兼容映射表（旧 mode → {control, behavior}）
+const LEGACY_MODE_MAP: Record<CameraMode, {control: CameraControl; behavior: CameraBehavior}> = {
+  orbit:    { control: 'orbit',   behavior: 'autorotate' },
+  surround: { control: 'orbit',   behavior: 'turntable'  },
+  concert:  { control: 'orbit',   behavior: 'concert'    },
+  vmd:      { control: 'orbit',   behavior: 'scripted'   },
+  oneshot:  { control: 'orbit',   behavior: 'none'       },
+  freefly:  { control: 'freefly', behavior: 'none'       },
+  ar:       { control: 'ar',      behavior: 'none'       },
+};
+```
+
+`自动运镜` 的 `_autoCameraEnabled=true` → 迁移为 `_cameraBehavior='beatcut'`（当且仅当控制为 `orbit`）。
+
+### 6.2 存档序列化迁移（沿用 ADR-070 探测范式）
+
+`CameraState`（`camera.ts:993`）当前形态：`{ mode: CameraMode; preset: CameraPreset{orbit/freefly/surround/concert}; fov; alpha; beta; radius; target*; position* }`。
+
+新增可选字段，**保持向后兼容**（不删 `mode`，加 `control`/`behavior`）：
+
+```ts
+export interface CameraState {
+    mode?: CameraMode;          // 保留，旧存档识别用；新存档仍写入等价值供降级兼容
+    control?: CameraControl;    // 新
+    behavior?: CameraBehavior;  // 新
+    preset: CameraPreset;
+    // ...其余不变
+}
+```
+
+`setCameraState`（`camera.ts:1031`）迁移逻辑（在现有 ADR-070 `concert→surround` 探测**之后**追加）：
+
+1. 若存在 `control && behavior` → 新存档，直接用。
+2. 否则回退旧 `mode`（经 ADR-070 迁移后的值）→ 查 `LEGACY_MODE_MAP` 得到 `{control, behavior}`。
+3. 若旧存档 `UIState.autoCameraEnabled === true` 且映射结果 `control==='orbit'` → `behavior` 覆写为 `'beatcut'`。
+4. `preset` 深合并逻辑不变（防 NaN）。
+
+`getCameraState`（`camera.ts:1008`）：新存档同时写入 `control`/`behavior` **和**降级用的等价 `mode`（取 `LEGACY_MODE_MAP` 反查），保证旧版本读新档不炸。
+
+> `UIState.autoCameraEnabled/autoCameraBeatsPerSwitch`（`types.ts:322-323`）：`beatsPerSwitch` 保留为 `beatcut` 行为的参数；`autoCameraEnabled` 标记为 `@deprecated`，仅读不写，读到后按上述步骤 3 迁移。
+
+### 6.3 对 ADR-070 的影响评估
+
+- ADR-070 的**运动公式与语义完全保留**：`concert`（扫掠+摆动）、`surround`（整圈自转）原样成为行为轴的 `concert`/`turntable`。
+- ADR-070 §4.1「`surround` 不纳入自动运镜」的**特殊排除逻辑可删除**：新架构下行为互斥（同一时刻仅一个行为活动），`turntable` 与 `beatcut` 天然不会共存，无需 `if (mode !== 'surround')` 硬编码排除。
+- ADR-070 §五的 `concert→surround` 存档迁移**必须保留并前置**于本 ADR 的映射（先把旧 concert 整圈形态归位为 surround，再映射到 `turntable`）。
+- 建议在 ADR-070 文件头补一行修订注记：「运动语义于 ADR-100 升级为『运动行为轴』，本文档公式仍为权威实现来源」。
+
+---
+
+## 七、影响面与分期实施
+
+### 7.1 涟漪清单
+
+| 层 | 文件 | 改动 |
+|----|------|------|
+| 契约 | `core/types.ts`、`scene/camera/camera.ts`（双写 CameraMode） | 新增 `CameraControl`/`CameraBehavior`；`CameraMode` 降级为 `@deprecated` 兼容别名 |
+| 运行时 | `scene/camera/camera.ts` | `_cameraMode` 拆双变量；`switchCameraMode` 转 shim；`_onAutoCameraBeat` 生效条件改判 `_cameraBehavior==='beatcut'` |
+| 序列化 | `scene/camera/camera.ts` `get/setCameraState` | 新增 control/behavior 字段 + 迁移逻辑（§6.2） |
+| UI | `menus/motion-camera-levels.ts` | 模式单选（`:77-85`）拆为「控制方案」+「运动行为」两级；行为轴在非 orbit 时置灰；`自动运镜` toggle（`:134`）降级为行为轴的 `beatcut` 选项 |
+| i18n | zh-CN/zh-TW/en/ja/ko | 新增 `motion.control*`/`motion.behavior*` 系列 key；旧 `motion.autoCamera`/`camSurround` 等保留（复用为行为标签） |
+| 绑定 mock | `__tests__/mocks/binding-factories.ts` | `autoCameraEnabled/beatsPerSwitch`（`:58-59`）保留，补 control/behavior 默认 |
+| 测试 | `__tests__/camera.test.ts` | 补双轴 getter/setter、LEGACY_MODE_MAP 映射、存档往返迁移断言；旧 44 项经 shim 应全绿 |
+
+### 7.2 分期
+
+| 阶段 | 内容 | 可独立验证 |
+|------|------|-----------|
+| **P1 契约 + shim** | 定义双轴类型；`switchCameraMode` 转 shim；旧枚举保留别名 | 旧测试全绿（零行为变化） |
+| **P2 运行时接线** | `beatcut` 生效条件改判行为轴；删 ADR-070 surround 排除；beatcut 节拍源接入（音乐/程序化动作，解决「饿死」） | 单元测试 + 手动切镜 |
+| **P3 序列化迁移** | `get/setCameraState` 双写 + 迁移；旧存档往返测试 | camera.test 往返断言 |
+| **P4 UI 重构** | 控制/行为两级选择器；`自动运镜` toggle 降级为行为选项；置灰约束 | 手动 UX 走查 |
+| **P5 收尾** | `CameraMode` 别名清理评估（可延后）；ADR-070 补注记；文档同步 | check + build |
+
+---
+
+## 八、风险与权衡
+
+| 风险 | 等级 | 缓解 |
+|------|------|------|
+| 一次性重写 `switchCameraMode` 所有调用点易漏（AR 进出/VMD 回退/reset） | 🟠 高 | P1 用 shim 保持旧签名，调用点零改动，行为等价先验证 |
+| 存档双写导致新旧版本互读边界 case | 🟡 中 | `get` 同时写 `mode`+`control`+`behavior`；`set` 按「新字段优先、旧字段兜底」；补往返测试 |
+| beatcut 节拍源仍「饿死」（当前只订阅 procBeatDetector） | 🟠 高 | P2 明确接入音乐/程序化动作节拍源，否则拆分后行为仍不生效 |
+| 行为叠加需求反复（是否允许 concert+beatcut 共存） | 🟢 低 | 初版明确互斥；若未来需要叠加，行为轴改为 `Set<CameraBehavior>` 是增量演进，不推翻本 ADR |
+| UI 从「1 个选择器」变「2 级」增加操作深度 | 🟡 中 | 控制轴默认 orbit，行为轴平铺在同卡片；核心路径仍 ≤3 层（符合 AGENTS UX 审核标准） |
+
+---
+
+## 九、待决策点（提交实施前需 Ling 拍板）
+
+1. **行为是否允许叠加**：初版互斥（推荐）还是直接支持 `Set<CameraBehavior>`？
+2. **`oneshot` 归宿**：映射为 `none`（预留）还是本次直接实现为 `scripted` 的单拍变体？
+3. **`CameraMode` 别名清理时机**：P1 保留至全部调用点迁移完（推荐），还是本轮不清理、长期保留兼容别名？
+4. **落地节奏**：一次性 P1–P5，还是先 P1–P2（架构 + 接线）验证组合可行后再续 P3–P5？
