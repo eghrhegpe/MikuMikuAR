@@ -16,9 +16,8 @@ import {
     setStatus,
     triggerAutoSave,
     addRecentMotion,
-    dom,
 } from '@/core/config';
-import { getBaseName } from '@/core/utils';
+import { getBaseName, withLoadingIndicator } from '@/core/utils';
 import { normPath, encodeFileRef, fetchArrayBuffer } from '@/core/fileservice';
 import { t } from '@/core/i18n/t';
 import { loadCameraVmd } from '../camera/camera';
@@ -176,35 +175,33 @@ export async function loadVMDMotion(
 
 export async function loadVMDFromPath(path: string, targetModelId?: string): Promise<void> {
     const { focusedMmdModel, focusedModel } = await getScene();
-    dom.loadingEl.style.display = 'block';
-    dom.loadingText.textContent = t('scene.loader.vmdLoading');
-    try {
-        const { url, data: vmdData } = await fetchArrayBuffer(path);
-        const vmdName = getBaseName(path) || '';
-        const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
+    await withLoadingIndicator('scene.loader.vmdLoading', async () => {
+        try {
+            const { url, data: vmdData } = await fetchArrayBuffer(path);
+            const vmdName = getBaseName(path) || '';
+            const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
 
-        if (mmdRuntime && (targetModelId || focusedMmdModel())) {
-            await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ''), targetModelId);
-            const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
-            if (foc) {
-                foc.vmdPath = path;
+            if (mmdRuntime && (targetModelId || focusedMmdModel())) {
+                await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ''), targetModelId);
+                const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
+                if (foc) {
+                    foc.vmdPath = path;
+                }
+            } else {
+                setPendingVmd({ data: vmdData, name: vmdName.replace(/\.vmd$/i, '') });
+                setStatus(t('scene.vmd.cachedAutoApply'), false);
             }
-        } else {
-            setPendingVmd({ data: vmdData, name: vmdName.replace(/\.vmd$/i, '') });
-            setStatus(t('scene.vmd.cachedAutoApply'), false);
+
+            // 记录最近使用动作
+            addRecentMotion(path, vmdDisplayName);
+
+            // 尝试加载同目录下的同名音频文件
+            await _tryLoadCompanionAudio(path, url);
+        } catch (err) {
+            console.error('loadVMDFromPath:', err);
+            setStatus(t('scene.vmd.loadFailed'), false);
         }
-
-        // 记录最近使用动作
-        addRecentMotion(path, vmdDisplayName);
-
-        // 尝试加载同目录下的同名音频文件
-        await _tryLoadCompanionAudio(path, url);
-    } catch (err) {
-        console.error('loadVMDFromPath:', err);
-        setStatus(t('scene.vmd.loadFailed'), false);
-    } finally {
-        dom.loadingEl.style.display = 'none';
-    }
+    });
 }
 
 /** 尝试加载 VMD 同目录下的同名音频文件（.mp3/.wav/.ogg/.flac）。 */
@@ -249,60 +246,56 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
 
 export async function loadCameraVmdFromPath(path: string): Promise<void> {
     const { scene } = await getScene();
-    dom.loadingEl.style.display = 'block';
-    dom.loadingText.textContent = t('scene.loader.cameraVmdLoading');
-    try {
-        const { data: vmdData } = await fetchArrayBuffer(path);
-        const vmdName = getBaseName(path) || '';
+    await withLoadingIndicator('scene.loader.cameraVmdLoading', async () => {
+        try {
+            const { data: vmdData } = await fetchArrayBuffer(path);
+            const vmdName = getBaseName(path) || '';
 
-        const vmdLoader = new VmdLoader(scene);
-        const mmdAnimation = await vmdLoader.loadFromBufferAsync(vmdName, vmdData);
-        (vmdLoader as unknown as { dispose?: () => void }).dispose?.();
-        loadCameraVmd(mmdAnimation, path, vmdName.replace(/\.vmd$/i, ''));
-        setStatus(t('scene.vmd.cameraLoaded', { name: vmdName }), true);
-        triggerAutoSave();
-    } catch (err) {
-        console.error('loadCameraVmdFromPath:', err);
-        setStatus(t('scene.vmd.cameraLoadFailed'), false);
-    } finally {
-        dom.loadingEl.style.display = 'none';
-    }
+            const vmdLoader = new VmdLoader(scene);
+            const mmdAnimation = await vmdLoader.loadFromBufferAsync(vmdName, vmdData);
+            (vmdLoader as unknown as { dispose?: () => void }).dispose?.();
+            loadCameraVmd(mmdAnimation, path, vmdName.replace(/\.vmd$/i, ''));
+            setStatus(t('scene.vmd.cameraLoaded', { name: vmdName }), true);
+            triggerAutoSave();
+        } catch (err) {
+            console.error('loadCameraVmdFromPath:', err);
+            setStatus(t('scene.vmd.cameraLoadFailed'), false);
+        }
+    });
 }
 
 export async function loadVPDPose(path: string, targetModelId?: string): Promise<void> {
     const { focusedModel, stopProcMotion, isProcVmdActive } = await getScene();
-    dom.loadingEl.style.display = 'block';
-    dom.loadingText.textContent = t('scene.loader.vpdLoading');
-    try {
-        const { data: rawData } = await fetchArrayBuffer(path);
-        const poseName = getBaseName(path) || '';
+    await withLoadingIndicator('scene.loader.vpdLoading', async () => {
+        try {
+            const { data: rawData } = await fetchArrayBuffer(path);
+            const poseName = getBaseName(path) || '';
 
-        // 停掉程序化动作（VPD 姿势不被动画干扰）
-        if (isProcVmdActive()) {
-            stopProcMotion();
-        }
+            // 停掉程序化动作（VPD 姿势不被动画干扰）
+            if (isProcVmdActive()) {
+                stopProcMotion();
+            }
 
-        // 解析 VPD 并作为静态姿势应用（不生成 VMD 动画）
-        const { decodeVPDData, parseVPDText } = await import('../../motion-algos/vpd-parser');
-        const { applyVPDPose } = await import('../manager/model-ops');
-        const text = decodeVPDData(rawData);
-        const pose = parseVPDText(text);
-        const id = targetModelId || focusedModelId;
-        if (!id) {
-            setStatus(t('scene.vmd.loadModelFirst'), true);
-            return;
-        }
-        applyVPDPose(id, pose.bones, pose.morphs);
+            // 解析 VPD 并作为静态姿势应用（不生成 VMD 动画）
+            const { decodeVPDData, parseVPDText } = await import('../../motion-algos/vpd-parser');
+            const { applyVPDPose } = await import('../manager/model-ops');
+            const text = decodeVPDData(rawData);
+            const pose = parseVPDText(text);
+            const id = targetModelId || focusedModelId;
+            if (!id) {
+                setStatus(t('scene.vmd.loadModelFirst'), true);
+                return;
+            }
+            applyVPDPose(id, pose.bones, pose.morphs);
 
-        const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
-        if (foc) {
-            foc.vmdPath = path; // 记录姿势文件路径
+            const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
+            if (foc) {
+                foc.vmdPath = path; // 记录姿势文件路径
+            }
+            setStatus(t('scene.vmd.poseLoaded', { name: poseName }), true);
+        } catch (err) {
+            console.error('loadVPDPose:', err);
+            setStatus(t('scene.vmd.poseFailed'), false);
         }
-        setStatus(t('scene.vmd.poseLoaded', { name: poseName }), true);
-    } catch (err) {
-        console.error('loadVPDPose:', err);
-        setStatus(t('scene.vmd.poseFailed'), false);
-    } finally {
-        dom.loadingEl.style.display = 'none';
-    }
+    });
 }
