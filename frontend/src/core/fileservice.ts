@@ -60,9 +60,12 @@ export function normPath(p: string): string {
 
     let result: string;
     if (p.startsWith('content://')) {
-        result = p;
+        // content URI 去除尾部斜杠，与文件 URI 行为统一（isUnderRoot 的 b + '/' 依赖无尾部斜杠）
+        result = p.replace(/\/+$/, '');
     } else {
         result = p.replace(/\\/g, '/').replace(/\/+$/, '');
+        // 折叠 '.' 当前目录段（语义安全：/a/./b === /a/b），修复 P3 含 '.' 路径漏判
+        result = result.replace(/\/\.\//g, '/').replace(/^\.\//, '').replace(/\/\.$/, '');
     }
 
     if (_normPathCache.size >= NORM_PATH_CACHE_MAX) {

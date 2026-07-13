@@ -150,6 +150,11 @@ function isPathWithinRoot(resolved: string, rootPath: string): boolean {
 export function isUnderRoot(base: string, child: string): boolean {
     const b = normPath(base).toLowerCase();
     const c = normPath(child).toLowerCase();
+    // 拒绝 '..' 逃逸段：含 '..' 的路径不是已解析绝对路径，跨目录误判且会渲染成 '..' 文件夹。
+    // 修复 P2 场景1（如 C:/text-model/PMX/../VMD 不应判为在 PMX 之下）
+    if (c === '..' || c.startsWith('../') || c.endsWith('/..') || c.includes('/../')) {
+        return false;
+    }
     return c === b || c.startsWith(b + '/');
 }
 
