@@ -349,18 +349,17 @@ export function animateCameraVmd(frameTime: number): void {
     }
 }
 
-function createVmdCamera(scene: Scene): MmdCamera {
+function createVmdCamera(): MmdCamera {
     if (_mmdCamera) {
         return _mmdCamera;
     }
-    const cam = new MmdCamera('mmdCam', new Vector3(0, 10, 0), scene, false);
+    const cam = new MmdCamera('mmdCam', new Vector3(0, 10, 0), _scene, false);
     _mmdCamera = cam;
     return cam;
 }
 
 // Stored observer callback references so we can remove them later
 let _freeflyUpdateFn: (() => void) | null = null;
-const _concertStartFn: (() => void) | null = null;
 
 // ======== Public Getters ========
 export function getCurrentCamera(): Camera | null {
@@ -394,6 +393,10 @@ export function setCameraControl(control: CameraControl): void {
     const baseBehavior: CameraBehavior = _cameraBehavior === 'beatcut' ? 'none' : _cameraBehavior;
     const legacy = deriveLegacyMode(control, baseBehavior, _scriptedSubMode);
     switchCameraMode(legacy);
+    // ADR-100 P4：headless 下 switchCameraMode 因缺 _scene/_canvas 早退、不提交 _cameraMode 亦不派生双轴；
+    // 此处补提交并直接派生，使双轴出口对 scene 无关（与 setCameraState 一致），production 下为幂等重同步。
+    _cameraMode = legacy;
+    _syncAxesFromMode(legacy);
     if (control !== 'orbit') {
         setAutoCameraEnabled(false); // 非 orbit：行为轴强制 none，自动运镜无意义
     }
@@ -415,12 +418,16 @@ export function setCameraBehavior(behavior: CameraBehavior): void {
         // 确保控制为 orbit，再开启自动运镜（_resolveBehavior 派生 beatcut）
         const legacy = deriveLegacyMode(_cameraControl, 'none', _scriptedSubMode);
         switchCameraMode(legacy);
+        _cameraMode = legacy;
+        _syncAxesFromMode(legacy); // 同 setCameraControl：headless 下补派生，production 幂等
         setAutoCameraEnabled(true);
         return;
     }
     setAutoCameraEnabled(false);
     const legacy = deriveLegacyMode(_cameraControl, behavior, _scriptedSubMode);
     switchCameraMode(legacy);
+    _cameraMode = legacy;
+    _syncAxesFromMode(legacy); // 同 setCameraControl：headless 下补派生，production 幂等
 }
 
 export function getFov(): number {
@@ -722,7 +729,7 @@ export function switchCameraMode(mode: CameraMode): void {
                 newCam = createOrbitCamera(scene, canvas);
                 break;
             }
-            newCam = createVmdCamera(scene);
+            newCam = createVmdCamera();
             break;
         default:
             newCam = createOrbitCamera(scene, canvas);
@@ -790,10 +797,11 @@ export function autoFrame(center: Vector3, extent: number): void {
         // 叠加用户偏移偏好（相对模型中心的垂直偏移，0 = 正中）
         cam.target.y = center.y + _currentPreset.orbit.targetHeight;
         cam.radius = extent * 0.75 + 2;
+        cam.alpha = -Math.PI / 2;
         cam.beta = Math.PI / 2.2;
     } else if (cam instanceof UniversalCamera) {
         const dist = extent * 0.75 + 2;
-        cam.position = new Vector3(center.x, center.y + dist * 0.5, center.z + dist);
+        cam.position = new Vector3(center.x - dist, center.y + dist * 0.5, center.z);
         cam.setTarget(center);
     }
 }
@@ -1222,18 +1230,28 @@ export function setCameraState(s: CameraState): void {
         sub = s.scriptedSubMode ?? 'loop';
     } else {
         const m = LEGACY_MODE_MAP[mode];
-        control = m.control;
-        behavior = m.behavior;
-        sub = m.scripted ?? 'loop';
+        // ADR-100 P3 边界加固：部分新字段存档（仅 control 或仅 behavior 其一）逐字段兜底，
+        // 避免齐全判定缺失时整段回退 LEGACY_MODE_MAP 导致已提供的字段静默丢失。
+        control = s.control ?? m.control;
+        behavior = s.behavior ?? m.behavior;
+        sub = s.scriptedSubMode ?? m.scripted ?? 'loop';
     }
-    // 旧存档仅以 UIState.autoCameraEnabled 标记自动运镜 → 叠加为 beatcut（§6.2 step3）
-    if (!s.control && uiState.autoCameraEnabled && control === 'orbit' && behavior === 'none') {
+    // 旧存档仅以 UIState.autoCameraEnabled 标记自动运镜 → 叠加为 beatcut（§6.2 step3）。
+    // ADR-100 P3 收紧：仅当 control/behavior 双轴均缺失（纯旧格式）才叠加，
+    // 避免部分新字段存档（已显式声明 behavior）被陈旧 autoCameraEnabled 覆盖（P2 权威原则）。
+    if (!s.control && !s.behavior && uiState.autoCameraEnabled && control === 'orbit' && behavior === 'none') {
         behavior = 'beatcut';
     }
     if (behavior === 'beatcut') {
         _autoCameraEnabled = true;
         uiState.autoCameraEnabled = true;
         _autoCameraBeatsPerSwitch = uiState.autoCameraBeatsPerSwitch || 4;
+    } else {
+        // ADR-100 P3 边界修复：显式非 beatcut 行为须清除自动运镜标志，
+        // 否则陈旧 uiState.autoCameraEnabled（启动期 restoreAutoCameraState 先于 setCameraState 执行）
+        // 会覆盖已加载的显式行为（如 none），导致自动运镜意外开启。
+        _autoCameraEnabled = false;
+        uiState.autoCameraEnabled = false;
     }
     const finalMode = deriveLegacyMode(control, behavior, sub);
 

@@ -991,3 +991,126 @@ describe('ADR-100 serialization dual-write (P3)', () => {
         expect(cameraModule.getCameraBehavior()).toBe('beatcut');
     });
 });
+
+// ── ADR-100 P4：双轴出口（setCameraControl / setCameraBehavior）边界 ──
+describe('ADR-100 dual-axis export guards (P4)', () => {
+    beforeEach(() => {
+        // 复位到 orbit + none 的已知基线（绕过 scene，仅双轴状态）。
+        cameraModule.setAutoCameraEnabled(false);
+        mockUiState.autoCameraEnabled = false;
+        mockProcBeatDetector.mockReturnValue(null);
+        vi.clearAllMocks();
+        cameraModule.setCameraState({
+            mode: 'orbit',
+            control: 'orbit',
+            behavior: 'none',
+            preset: cameraModule.defaultCameraPreset(),
+            alpha: 0,
+            beta: 1,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+    });
+
+    it('setCameraBehavior(beatcut) 在非 orbit 控制下被忽略', () => {
+        cameraModule.setCameraControl('freefly'); // 切到非 orbit
+        expect(cameraModule.getCameraControl()).toBe('freefly');
+        cameraModule.setCameraBehavior('beatcut'); // 应被忽略
+        expect(cameraModule.getCameraBehavior()).toBe('none');
+        expect(cameraModule.isAutoCameraEnabled()).toBe(false);
+    });
+
+    it('setCameraControl(freefly) 当行为为 beatcut → 行为回落 none 且订阅退订', () => {
+        const unsub = vi.fn();
+        const detector = { onBeat: vi.fn(() => unsub) };
+        cameraModule.setCameraBehavior('beatcut'); // orbit 下开启
+        expect(cameraModule.getCameraBehavior()).toBe('beatcut');
+        expect(cameraModule.isAutoCameraEnabled()).toBe(true);
+
+        cameraModule.setCameraControl('freefly');
+        expect(cameraModule.getCameraControl()).toBe('freefly');
+        expect(cameraModule.getCameraBehavior()).toBe('none'); // 离 orbit 丢弃 beatcut
+        expect(cameraModule.isAutoCameraEnabled()).toBe(false); // P4：不自动恢复
+    });
+
+    it('setCameraBehavior(concert) 在 orbit 下生效且关闭自动运镜', () => {
+        cameraModule.setCameraBehavior('concert');
+        expect(cameraModule.getCameraBehavior()).toBe('concert');
+        expect(cameraModule.isAutoCameraEnabled()).toBe(false);
+    });
+
+    it('setCameraState 新格式 scripted+oneshot 往返一致', () => {
+        cameraModule.setCameraState({
+            mode: 'orbit',
+            control: 'orbit',
+            behavior: 'scripted',
+            scriptedSubMode: 'oneshot',
+            preset: cameraModule.defaultCameraPreset(),
+            alpha: 0,
+            beta: 1,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        expect(cameraModule.getCameraControl()).toBe('orbit');
+        expect(cameraModule.getCameraBehavior()).toBe('scripted');
+        expect(cameraModule.getScriptedSubMode()).toBe('oneshot');
+        const st = cameraModule.getCameraState();
+        expect(st.control).toBe('orbit');
+        expect(st.behavior).toBe('scripted');
+        expect(st.scriptedSubMode).toBe('oneshot');
+    });
+
+    it('setCameraState 部分新字段(仅 control) → behavior 经 LEGACY_MODE_MAP 兜底', () => {
+        cameraModule.setCameraState({
+            mode: 'orbit',
+            control: 'freefly', // 仅 control，缺 behavior
+            preset: cameraModule.defaultCameraPreset(),
+            alpha: 0,
+            beta: 1,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        expect(cameraModule.getCameraControl()).toBe('freefly'); // 提供的字段不丢
+        expect(cameraModule.getCameraBehavior()).toBe('none'); // 兜底为 LEGACY_MODE_MAP[orbit]
+    });
+
+    it('setCameraState 部分新字段(仅 behavior) → control 经 mode 兜底', () => {
+        cameraModule.setCameraState({
+            mode: 'concert',
+            behavior: 'concert', // 仅 behavior，缺 control
+            preset: cameraModule.defaultCameraPreset(),
+            alpha: 0,
+            beta: 1,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        expect(cameraModule.getCameraControl()).toBe('orbit'); // 兜底为 LEGACY_MODE_MAP[concert]
+        expect(cameraModule.getCameraBehavior()).toBe('concert');
+    });
+
+    it('setCameraState 显式 behavior:none + 陈旧 autoCameraEnabled → 不被覆盖(P2 权威)', () => {
+        mockUiState.autoCameraEnabled = true; // 陈旧旧格式标志
+        mockUiState.autoCameraBeatsPerSwitch = 4;
+        cameraModule.setCameraState({
+            mode: 'orbit',
+            behavior: 'none', // 部分新字段：声明 behavior，缺 control
+            preset: cameraModule.defaultCameraPreset(),
+            alpha: 0,
+            beta: 1,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        expect(cameraModule.getCameraBehavior()).toBe('none');
+        expect(cameraModule.isAutoCameraEnabled()).toBe(false); // P3 收紧 + P2 修复共同作用
+    });
+});

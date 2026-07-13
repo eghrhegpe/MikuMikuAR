@@ -37,7 +37,7 @@ function _renderUISizeControls(
 
     addSliderRow(
         container,
-        'UI 缩放',
+        t('settings.uiScale'),
         initialScale,
         0.8,
         1.3,
@@ -58,7 +58,7 @@ function _renderUISizeControls(
     );
     addSliderRow(
         container,
-        '弹窗宽度',
+        t('settings.popupWidth'),
         initialWidth,
         220,
         360,
@@ -87,7 +87,7 @@ function _renderThemePresetList(
     const currentAccent =
         getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4a6cf7';
 
-    addSectionTitle(container, '主题色');
+    addSectionTitle(container, t('settings.themeColor'));
     const themeRows: HTMLElement[] = [];
     for (const p of THEME_PRESETS) {
         const isActive = currentAccent.toLowerCase() === p.color.toLowerCase();
@@ -169,7 +169,7 @@ function _renderFontControls(
 ): void {
     const currentCss = getComputedStyle(document.documentElement).getPropertyValue('--font').trim();
 
-    addSectionTitle(container, '字体');
+    addSectionTitle(container, t('settings.font'));
     const fontRows: HTMLElement[] = [];
     for (const [key, f] of Object.entries(FONT_MAP)) {
         const isActive = currentCss === f.css;
@@ -220,7 +220,7 @@ function _renderAnimationControls(
 
     addToggleRow(
         container,
-        '滑动动画',
+        t('settings.slideAnimation'),
         initialAnim,
         (v) => {
             document.documentElement.style.setProperty('--ui-animations', v ? '1' : '0');
@@ -237,7 +237,7 @@ function _renderAnimationControls(
     );
     addToggleRow(
         container,
-        '背景模糊',
+        t('settings.bgBlur'),
         initialBlur,
         (v) => {
             document.documentElement.style.setProperty('--ui-blur', v ? '1' : '0');
@@ -261,7 +261,7 @@ function _renderResetButton(
     container: HTMLElement,
     getSettingsMenu: () => SettingsMenuHandle
 ): void {
-    slideRow(container, 'lucide:rotate-ccw', '恢复默认外观', false, () => {
+    slideRow(container, 'lucide:rotate-ccw', t('settings.resetAppearance'), false, () => {
         const root = document.documentElement;
         root.style.setProperty('--ui-scale', '1');
         root.style.setProperty('--popup-width', '280px');
@@ -354,7 +354,7 @@ export function buildSettingsAppearanceLevel(
     getSettingsMenu: () => SettingsMenuHandle
 ): PopupLevel {
     return {
-        label: '外观',
+        label: t('settings.appearance'),
         dir: '',
         items: [],
         renderCustom: (container) => {

@@ -224,6 +224,8 @@ export interface CameraState {
 
 > **互斥语义（P2 实现细节）**：beatcut 作为**运行时叠加行为**，仅在 `control==='orbit' && 基底行为==='none'` 时由 `_resolveBehavior` 派生。切到 concert/turntable/scripted 时基底行为非 none → 不派生 beatcut（自动抑制，`_autoCameraEnabled` 保留、切回 orbit 自动恢复）。已知限制：在 concert 模式下开启「自动运镜」toggle 会保持挂起态直至切回 orbit——P4 UI 重构将以两级选择器从源头消除该组合。
 
+> **修订（2026-07-13, P4 后）**：P4 `setCameraControl`（`camera.ts:397`）在 `control!=='orbit'` 时显式 `setAutoCameraEnabled(false)`，使 `_autoCameraEnabled` 标志在**离开 orbit 的瞬间即被清除**。因此上段「切回 orbit 自动恢复 beatcut」在 P4 交互路径下**不再成立**——离 orbit 后 beatcut 被丢弃，回 orbit 不会自动恢复，需用户在行为轴重新选择 `beatcut`。此为显性双轴模型的**预期行为**（行为轴是独立状态，而非 orbit 的隐式挂起态）。`_resolveBehavior` 的自动恢复机制仍存于代码，但 P4 的显式清除使其在该路径下不再触发。`setCameraState` 的序列化双写不受影响——显式 `behavior:'beatcut'` 仍精确还原。
+
 ---
 
 ## 八、风险与权衡

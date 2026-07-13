@@ -500,15 +500,21 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
 
 // ======== Thumbnail batch loading ========
 
+function _thumbnailKeyForModel(m: LibraryModel): string {
+    if (m.container === 'zip' && m.zip_inner) {
+        return `${m.file_path}::${m.zip_inner}`;
+    }
+    return m.file_path;
+}
+
 async function _loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
-    const pmxPaths = level.items
-        .filter((r) => r.kind === 'model' && r.model)
-        .map((r) => r.model!.file_path);
-    if (pmxPaths.length === 0) {
+    const items = level.items.filter((r) => r.kind === 'model' && r.model);
+    const keys = items.map((r) => _thumbnailKeyForModel(r.model!));
+    if (keys.length === 0) {
         return;
     }
     try {
-        const batch = await GetThumbnailBatch(pmxPaths);
+        const batch = await GetThumbnailBatch(keys);
         setThumbnailCache(new Map(Object.entries(batch)));
     } catch (err) {
         console.warn('loadThumbnailsForLevel:', err);
@@ -837,11 +843,11 @@ function renderFullscreenFolder(
     const allItems = buildResourceItemsForDir(dirPath, filter);
 
     // [doc:adr-066] 预加载当前文件夹所有缩略图
-    const pmxPaths = allItems
-        .filter((item) => !item.isFolder && item.filePath)
-        .map((item) => item.filePath);
-    if (pmxPaths.length > 0) {
-        GetThumbnailBatch(pmxPaths)
+    const thumbKeys = allItems
+        .filter((item) => !item.isFolder && item.thumbKey)
+        .map((item) => item.thumbKey!);
+    if (thumbKeys.length > 0) {
+        GetThumbnailBatch(thumbKeys)
             .then((batch) => {
                 const merged = new Map(thumbnailCache);
                 for (const [path, data] of Object.entries(batch)) {
@@ -851,7 +857,7 @@ function renderFullscreenFolder(
                 // [fix:thumbnail] 缩略图异步返回后重绘面板，否则已渲染的卡片永远空
                 currentPanel?.updateItems(allItems);
             })
-            .catch(() => {});
+            .catch((err) => console.warn('GetThumbnailBatch failed:', err));
     }
 
     // [doc:adr-066] 搜索栏
@@ -1016,11 +1022,11 @@ function renderGridMode(
     const allResourceItems = buildResourceItemsForDir(dir, filter);
 
     // [doc:adr-066] 预加载当前目录所有缩略图
-    const pmxPaths = allResourceItems
-        .filter((item) => !item.isFolder && item.filePath)
-        .map((item) => item.filePath);
-    if (pmxPaths.length > 0) {
-        GetThumbnailBatch(pmxPaths)
+    const thumbKeys2 = allResourceItems
+        .filter((item) => !item.isFolder && item.thumbKey)
+        .map((item) => item.thumbKey!);
+    if (thumbKeys2.length > 0) {
+        GetThumbnailBatch(thumbKeys2)
             .then((batch) => {
                 const merged = new Map(thumbnailCache);
                 for (const [path, data] of Object.entries(batch)) {
@@ -1030,7 +1036,7 @@ function renderGridMode(
                 // [fix:thumbnail] 缩略图异步返回后重绘面板，否则已渲染的卡片永远空
                 resourcePanel?.updateItems(allResourceItems);
             })
-            .catch(() => {});
+            .catch((err) => console.warn('GetThumbnailBatch failed:', err));
     }
 
     // 渲染容器
@@ -1245,6 +1251,7 @@ export function modelToResourceItem(m: LibraryModel): ResourceItem {
         id: fp,
         label,
         filePath: fp,
+        thumbKey: m.container === 'zip' && m.zip_inner ? `${fp}::${m.zip_inner}` : fp,
         icon,
         isFolder: false,
         sublabel: cached?.comment || m.comment || undefined,
@@ -1270,7 +1277,7 @@ function onModelRowClick(m: LibraryModel): void {
     if (m.format === 'pmx') {
         const ref = computeLibraryRef(m.file_path);
         if (ref) {
-            AddRecentModel(ref).catch(() => {});
+            AddRecentModel(ref).catch((err) => console.warn('GetThumbnailBatch failed:', err));
             setRecentModels([ref, ...recentModels.filter((r) => r !== ref)].slice(0, 20));
         }
     }

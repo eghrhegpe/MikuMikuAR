@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -19,13 +20,32 @@ import (
 )
 
 // plazaInjectScript returns an HTML script element that intercepts download
-// link clicks inside the proxied iframe and forwards them to the parent window
-// via postMessage (ADR-078). The origin parameter is passed as the postMessage
-// targetOrigin. In embed mode the parent is the Wails main window, which is a
-// different origin than the proxy iframe, so it MUST be "*" — using the proxy's
-// own URL would make the browser silently drop the message. Safety relies on the
-// listener verifying e.source (the iframe's contentWindow), not on targetOrigin.
-func plazaInjectScript(origin string) string {
+// link clicks inside the proxied page and forwards them either to the parent
+// window (embed mode, via postMessage — ADR-078) or to the local proxy
+// endpoint (window mode, via fetch to /__plaza_dl__ — ADR-087 P0).
+//
+// In embed mode the parent is the Wails main window, which is a different
+// origin than the proxy iframe, so postMessage targetOrigin MUST be "*" —
+// using the proxy's own URL would make the browser silently drop the message.
+// Safety relies on the listener verifying e.source (the iframe's
+// contentWindow), not on targetOrigin.
+//
+// In window mode the page itself lives on the proxy origin (the WebView2
+// navigates to http://127.0.0.1:PORT/), so fetch to /__plaza_dl__ is
+// same-origin; CORS headers are still sent on the endpoint for safety.
+//
+// href may be relative (e.g. "/download/123.zip"); we absolutize it with
+// new URL(href, document.baseURI) so the Go side receives a usable URL
+// (ADR-087 audit fix). Note: a.href (DOM property) is already absolute, but
+// the explicit new URL() documents intent and is a no-op for absolute input.
+func plazaInjectScript(mode string) string {
+	var forward string
+	switch mode {
+	case "window":
+		forward = `fetch(location.origin+'/__plaza_dl__',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:absUrl,filename:absUrl.split('/').pop()||'download'})}).catch(function(){})`
+	default: // "embed"
+		forward = `parent.postMessage({type:'plaza-download-request',url:absUrl,filename:absUrl.split('/').pop()||'download'},'*')`
+	}
 	return fmt.Sprintf(`<script data-plaza="1">
 (function(){
   function isDownloadLink(href){
@@ -38,10 +58,11 @@ func plazaInjectScript(origin string) string {
     if(!href||!isDownloadLink(href))return;
     e.preventDefault();
     e.stopPropagation();
-    parent.postMessage({type:'plaza-download-request',url:href,filename:href.split('/').pop()||'download'},%q);
+    var absUrl=new URL(href,document.baseURI).href;
+    %s;
   },true);
 })();
-</script>`, origin)
+</script>`, forward)
 }
 
 // proxyServerKey is the fixed key under which the model-plaza reverse proxy is
@@ -52,9 +73,19 @@ const proxyServerKey = "model-plaza-proxy"
 // proxySession holds the reverse proxy state including the cookie jar for
 // relay. The jar is in-memory only and destroyed on StopProxy.
 // mu protects concurrent access to jar from Director/ModifyResponse goroutines.
+//
+// mode is "embed" (iframe + postMessage) or "window" (WebView2 + fetch to
+// /__plaza_dl__). It decides which variant of the download-intercept script
+// is injected into HTML responses (ADR-087 P0).
+//
+// lastForwardedTarget tracks the upstream URL of the last proxied request.
+// This is used by /__plaza_url__ to return the real site URL instead of the
+// proxy URL (ADR-087 P1).
 type proxySession struct {
-	jar *cookiejar.Jar
-	mu  sync.Mutex
+	jar                *cookiejar.Jar
+	mu                 sync.Mutex
+	mode               string
+	lastForwardedTarget string
 }
 
 // getCookies returns cookies for the given URL, safe for concurrent use.
@@ -97,6 +128,45 @@ var maxPlazaHTMLBody int64 = 64 << 20 // 64 MiB
 // a hostile upstream cannot fill the disk. Exceeding it aborts and deletes the
 // partially written file.
 var maxPlazaDownloadBytes int64 = 1 << 30 // 1 GiB
+
+// progressReader wraps an io.Reader to emit progress events during DownloadFromPlaza.
+// It reports read bytes every 500ms (throttled) and emits a final completion event.
+// If Content-Length is missing, percent is 0 and only bytes read are reported.
+type progressReader struct {
+	reader   io.Reader
+	total    int64
+	read     int64
+	lastEmit time.Time
+	fileName string
+	app      *App
+}
+
+func (pr *progressReader) Read(p []byte) (int, error) {
+	n, err := pr.reader.Read(p)
+	pr.read += int64(n)
+	if pr.app.wailsApp != nil && time.Since(pr.lastEmit) > 500*time.Millisecond {
+		pr.app.wailsApp.Event.Emit("plaza:downloadProgress", map[string]any{
+			"fileName": pr.fileName,
+			"read":     pr.read,
+			"total":    pr.total,
+			"percent":  pr.total > 0 ? float64(pr.read)/float64(pr.total)*100 : 0,
+		})
+		pr.lastEmit = time.Now()
+	}
+	return n, err
+}
+
+// emitDownloadComplete emits a plaza:downloadComplete event after a successful
+// download. This is called in the deferred cleanup path of DownloadFromPlaza.
+func (a *App) emitDownloadComplete(fileName string, size int64, filePath string) {
+	if a.wailsApp != nil {
+		a.wailsApp.Event.Emit("plaza:downloadComplete", map[string]any{
+			"fileName": fileName,
+			"size":     size,
+			"filePath": filePath,
+		})
+	}
+}
 
 // init wires the SSRF-guarded transport into plazaDownloadClient while keeping
 // the default TLS / idle-connection behaviour.
@@ -160,7 +230,7 @@ func plazaSSRFGuard(ctx context.Context, network, addr string) (net.Conn, error)
 // the target that contain Set-Cookie headers are stored in the jar, and
 // subsequent requests from the iframe have matching cookies injected. This
 // enables login-gated sites to work inside the embedded iframe (ADR-077).
-func (a *App) StartProxy(target string) (string, error) {
+func (a *App) StartProxy(target, mode string) (string, error) {
 	return util.SafeCall(func() (string, error) {
 		a.httpSrvMu.Lock()
 		defer a.httpSrvMu.Unlock()
@@ -195,7 +265,10 @@ func (a *App) StartProxy(target string) (string, error) {
 		}
 
 		jar, _ := cookiejar.New(nil)
-		sess := &proxySession{jar: jar}
+		if mode == "" {
+			mode = "embed"
+		}
+		sess := &proxySession{jar: jar, mode: mode}
 
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
@@ -206,27 +279,32 @@ func (a *App) StartProxy(target string) (string, error) {
 		rp := httputil.NewSingleHostReverseProxy(targetURL)
 		baseDirector := rp.Director
 		rp.Director = func(req *http.Request) {
-			baseDirector(req)
-			// 关键：NewSingleHostReverseProxy 默认只改 req.URL.Host，不改 req.Host。
-			// 若不重写，上游收到的 HTTP Host header 仍是 127.0.0.1:PORT，GitHub/Pixiv
-			// 等按 Host 严格路由的站点会直接返回 404。必须同步 req.Host。
-			req.Host = targetURL.Host
-			// 伪装成正常浏览器直连：清理暴露代理的头，补 UA/Referer，降低被反爬拦截概率。
-			req.Header.Del("X-Forwarded-For")
-			req.Header.Set("X-Forwarded-Host", targetURL.Host)
-			if req.Header.Get("User-Agent") == "" {
-				req.Header.Set("User-Agent",
-					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "+
-						"(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
-			}
-			req.Header.Set("Referer", targetURL.Scheme+"://"+targetURL.Host+"/")
-			// 避免 br/zstd 压缩导致的下游解析异常，只接受 gzip/identity。
-			req.Header.Set("Accept-Encoding", "gzip")
-			// [ADR-077] Cookie 中继：从 jar 中取出目标域的 Cookie 注入请求
-			if cookies := sess.getCookies(targetURL); len(cookies) > 0 {
-				req.Header.Set("Cookie", cookiesToString(cookies))
-			}
+		baseDirector(req)
+		// 关键：NewSingleHostReverseProxy 默认只改 req.URL.Host，不改 req.Host。
+		// 若不重写，上游收到的 HTTP Host header 仍是 127.0.0.1:PORT，GitHub/Pixiv
+		// 等按 Host 严格路由的站点会直接返回 404。必须同步 req.Host。
+		req.Host = targetURL.Host
+		// [ADR-087 P1] 记录最后转发的目标 URL，供 /__plaza_url__ 查询真实站点地址。
+		// req.URL 已被 baseDirector 修改为上游目标 URL（含路径），直接保存。
+		sess.mu.Lock()
+		sess.lastForwardedTarget = req.URL.String()
+		sess.mu.Unlock()
+		// 伪装成正常浏览器直连：清理暴露代理的头，补 UA/Referer，降低被反爬拦截概率。
+		req.Header.Del("X-Forwarded-For")
+		req.Header.Set("X-Forwarded-Host", targetURL.Host)
+		if req.Header.Get("User-Agent") == "" {
+			req.Header.Set("User-Agent",
+				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "+
+					"(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 		}
+		req.Header.Set("Referer", targetURL.Scheme+"://"+targetURL.Host+"/")
+		// 避免 br/zstd 压缩导致的下游解析异常，只接受 gzip/identity。
+		req.Header.Set("Accept-Encoding", "gzip")
+		// [ADR-077] Cookie 中继：从 jar 中取出目标域的 Cookie 注入请求
+		if cookies := sess.getCookies(targetURL); len(cookies) > 0 {
+			req.Header.Set("Cookie", cookiesToString(cookies))
+		}
+	}
 		rp.ModifyResponse = func(resp *http.Response) error {
 			// [ADR-077] Cookie 中继：拦截 Set-Cookie 存入 jar
 			if cookies := resp.Cookies(); len(cookies) > 0 {
@@ -260,8 +338,7 @@ func (a *App) StartProxy(target string) (string, error) {
 					if err == nil {
 						html := string(body)
 						injected := false
-						origin := "*"
-						script := plazaInjectScript(origin)
+						script := plazaInjectScript(sess.mode)
 						// 优先插入 </head> 前
 						if idx := strings.LastIndex(strings.ToLower(html), "</head>"); idx != -1 {
 							html = html[:idx] + script + html[idx:]
@@ -302,8 +379,16 @@ func (a *App) StartProxy(target string) (string, error) {
 			http.Error(w, "proxy error: "+e.Error(), http.StatusBadGateway)
 		}
 
+		// [ADR-087 P0/P1] mux 包装：拦截 /__plaza_dl__（下载入库）和
+		// /__plaza_url__（URL 追踪），其余路径走反向代理。仅 window 模式会
+		// fetch 这些端点，但 mux 对 embed 模式无害。
+		mux := http.NewServeMux()
+		mux.HandleFunc("/__plaza_dl__", a.handlePlazaDownloadPost)
+		mux.HandleFunc("/__plaza_url__", a.handlePlazaUrlPost)
+		mux.Handle("/", rp)
+
 		srv := &http.Server{
-			Handler:      rp,
+			Handler:      mux,
 			ReadTimeout:  30 * time.Second,
 			WriteTimeout: 0, // 代理流式页面/内嵌媒体时不应有写入超时（上游决定节奏）
 			IdleTimeout:  120 * time.Second,
@@ -473,8 +558,20 @@ func (a *App) DownloadFromPlaza(fileURL string, fileName string) (*PlazaDownload
 		}
 		defer f.Close()
 
+		// [ADR-087 P1] 包装 resp.Body 以报告下载进度。Content-Length 可能缺失，
+		// progressReader 会在 total=0 时将 percent 设为 0，仅报告已下载字节数。
+		total := resp.ContentLength
+		pr := &progressReader{
+			reader:   resp.Body,
+			total:    total,
+			read:     0,
+			lastEmit: time.Now(),
+			fileName: fileName,
+			app:      a,
+		}
+
 		// [资源上限] 限制单文件下载大小，防止恶意上游写满磁盘。
-		n, err := io.Copy(f, io.LimitReader(resp.Body, maxPlazaDownloadBytes))
+		n, err := io.Copy(f, io.LimitReader(pr, maxPlazaDownloadBytes))
 		if err != nil {
 			f.Close()
 			os.Remove(destPath)
@@ -482,7 +579,7 @@ func (a *App) DownloadFromPlaza(fileURL string, fileName string) (*PlazaDownload
 		}
 		// 确认未被 LimitReader 截断：再多读 1 字节，若仍有数据则已超限。
 		peek := make([]byte, 1)
-		if _, perr := resp.Body.Read(peek); perr != io.EOF {
+		if _, perr := pr.Read(peek); perr != io.EOF {
 			f.Close()
 			os.Remove(destPath)
 			return nil, fmt.Errorf("download exceeds size limit (%d bytes)", maxPlazaDownloadBytes)
@@ -496,6 +593,94 @@ func (a *App) DownloadFromPlaza(fileURL string, fileName string) (*PlazaDownload
 		}
 
 		a.safeLogInfo("DownloadFromPlaza: %s → %s (%d bytes)", fileName, destPath, n)
+		a.emitDownloadComplete(fileName, n, destPath)
 		return &PlazaDownloadResult{FilePath: destPath, Size: n, FileName: fileName}, nil
 	})
+}
+
+// handlePlazaDownloadPost is the mux handler for POST /__plaza_dl__. It is the
+// window-mode counterpart of the embed-mode postMessage listener: the
+// download-intercept script (plazaInjectScript("window")) fetches this
+// endpoint with {url, filename}, and this handler forwards them to
+// DownloadFromPlaza which streams the file to disk via the SSRF-guarded,
+// cookie-relaying download client (ADR-087 P0).
+//
+// CORS is permissive: the page itself lives on the proxy origin
+// (http://127.0.0.1:PORT/) so the fetch is same-origin, but the headers are
+// sent anyway for safety in case a future caller is cross-origin.
+func (a *App) handlePlazaDownloadPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		URL      string `json:"url"`
+		Filename string `json:"filename"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	result, err := a.DownloadFromPlaza(req.URL, req.Filename)
+	if err != nil {
+		a.safeLogError("handlePlazaDownloadPost: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(result)
+}
+
+// handlePlazaUrlPost is the mux handler for POST /__plaza_url__. It is called
+// by the window-mode injected script after navigation completes to report the
+// document title. The handler combines it with the real upstream URL (tracked
+// by proxySession.lastForwardedTarget) and emits a "plaza:urlChanged" event
+// to the frontend (ADR-087 P1).
+//
+// This solves the "proxy URL pollution" problem: the page in the WebView2
+// window loads http://127.0.0.1:PORT/..., so location.href returns the proxy
+// URL, not the real site. By tracking the last forwarded target in the proxy
+// Director and returning it here, the remote panel can display the correct URL.
+func (a *App) handlePlazaUrlPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Title string `json:"title"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	a.httpSrvMu.Lock()
+	sess, hasSession := proxySessions[proxyServerKey]
+	a.httpSrvMu.Unlock()
+	var realURL string
+	if hasSession {
+		sess.mu.Lock()
+		realURL = sess.lastForwardedTarget
+		sess.mu.Unlock()
+	}
+	if a.wailsApp != nil {
+		a.wailsApp.Event.Emit("plaza:urlChanged", map[string]string{
+			"url":   realURL,
+			"title": req.Title,
+		})
+	}
+	w.WriteHeader(http.StatusOK)
 }

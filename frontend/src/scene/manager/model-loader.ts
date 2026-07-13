@@ -5,6 +5,10 @@
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
+import { RenderTargetTexture } from '@babylonjs/core/Materials/Textures/renderTargetTexture';
+import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Color4 } from '@babylonjs/core/Maths/math.color';
 import { SaveThumbnail } from '@/core/wails-bindings';
 import {
     dom,
@@ -100,6 +104,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Pr
 }
 
 /** Captures a screenshot after model load for thumbnail cache.
+ *  使用离屏渲染目标 + 独立相机，完全不触碰主相机，避免与用户操作冲突。
  *  @param filePath 解压后的临时路径或文件路径
  *  @param libraryPath 库引用路径（zip包路径或文件路径）
  *  @param innerPath zip内部相对路径（用于区分同一zip内的不同模型）
@@ -132,87 +137,57 @@ export async function captureThumbnail(
             return;
         }
 
-        const cam = _scene.activeCamera;
-        let savedCamState: {
-            alpha?: number;
-            beta?: number;
-            radius?: number;
-            target?: { x: number; y: number; z: number };
-            position?: { x: number; y: number; z: number };
-        } | null = null;
+        const bb = focusedInst.rootMesh.getHierarchyBoundingVectors(true);
+        const center = bb.max.add(bb.min).scale(0.5);
+        const extent = bb.max.subtract(bb.min);
+        const size = Math.max(extent.x, extent.y, extent.z);
+        const dist = size * 0.8 + 2;
 
-        if (cam) {
-            savedCamState = {};
-            if ('alpha' in cam) {
-                savedCamState.alpha = (cam as { alpha: number }).alpha;
-            }
-            if ('beta' in cam) {
-                savedCamState.beta = (cam as { beta: number }).beta;
-            }
-            if ('radius' in cam) {
-                savedCamState.radius = (cam as { radius: number }).radius;
-            }
-            if ('target' in cam && cam.target) {
-                const t = cam.target as { x: number; y: number; z: number };
-                savedCamState.target = { x: t.x, y: t.y, z: t.z };
-            }
-            if ('position' in cam) {
-                savedCamState.position = {
-                    x: (cam as { position: { x: number; y: number; z: number } }).position.x,
-                    y: (cam as { position: { x: number; y: number; z: number } }).position.y,
-                    z: (cam as { position: { x: number; y: number; z: number } }).position.z,
-                };
-            }
-        }
+        const thumbCam = new FreeCamera('thumbCam', Vector3.Zero(), _scene);
+        thumbCam.minZ = 0.1;
+        thumbCam.maxZ = 5000;
+        thumbCam.position.set(center.x - dist, center.y + dist * 0.5, center.z);
+        thumbCam.setTarget(new Vector3(center.x, center.y, center.z));
 
-        const hiddenModels: string[] = [];
-        for (const inst of _modelManager.getAll()) {
-            if (inst.id !== focusedInst.id && inst.visible) {
-                inst.visible = false;
-                for (const m of inst.meshes) {
-                    m.setEnabled(false);
-                }
-                hiddenModels.push(inst.id);
+        const rtSize = 512;
+        const rt = new RenderTargetTexture('thumbRT', { width: rtSize, height: rtSize }, _scene, false);
+        rt.clearColor = new Color4(0, 0, 0, 0);
+        rt.activeCamera = thumbCam;
+
+        const renderList: Mesh[] = [];
+        focusedInst.rootMesh.getChildMeshes().forEach((m) => {
+            if (m.isVisible) {
+                renderList.push(m as Mesh);
             }
+        });
+        if (focusedInst.rootMesh.isVisible) {
+            renderList.push(focusedInst.rootMesh);
         }
+        rt.renderList = renderList;
 
         try {
-            const bb = focusedInst.rootMesh.getHierarchyBoundingVectors(true);
-            const center = bb.max.add(bb.min).scale(0.5);
-            const extent = bb.max.subtract(bb.min);
-            const size = Math.max(extent.x, extent.y, extent.z);
+            rt.render();
 
-            if (cam) {
-                if ('alpha' in cam && 'beta' in cam && 'radius' in cam && 'setTarget' in cam) {
-                    (cam as { alpha: number }).alpha = -Math.PI / 2;
-                    (cam as { beta: number }).beta = Math.PI / 3;
-                    (cam as { radius: number }).radius = size * 0.8 + 2;
-                    (cam as { setTarget: (t: { x: number; y: number; z: number }) => void }).setTarget({
-                        x: center.x,
-                        y: center.y + (extent.y * 0.2),
-                        z: center.z,
-                    });
-                } else if ('position' in cam && 'setTarget' in cam) {
-                    const dist = size * 0.8 + 2;
-                    (cam as {
-                        position: { x: number; y: number; z: number };
-                    }).position = {
-                        x: center.x,
-                        y: center.y + dist * 0.5,
-                        z: center.z + dist,
-                    };
-                    (cam as { setTarget: (t: { x: number; y: number; z: number }) => void }).setTarget({
-                        x: center.x,
-                        y: center.y,
-                        z: center.z,
-                    });
-                }
+            await new Promise((r) => requestAnimationFrame(r));
+
+            const floatPixels = await _scene.getEngine().readPixels(0, 0, rtSize, rtSize, true);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = rtSize;
+            canvas.height = rtSize;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                return;
             }
 
-            await new Promise((r) => requestAnimationFrame(r));
-            await new Promise((r) => requestAnimationFrame(r));
+            const imageData = ctx.createImageData(rtSize, rtSize);
+            const pixelsArr = floatPixels as Float32Array;
+            for (let i = 0; i < pixelsArr.length; i++) {
+                imageData.data[i] = Math.min(255, Math.max(0, Math.round(pixelsArr[i] * 255)));
+            }
+            ctx.putImageData(imageData, 0, 0);
 
-            const base64 = dom.canvas.toDataURL('image/png', 0.8);
+            const base64 = canvas.toDataURL('image/png', 0.8);
             const raw = base64.replace(/^data:image\/png;base64,/, '');
 
             let thumbKey = libraryPath && libraryPath !== filePath ? libraryPath : filePath;
@@ -220,42 +195,17 @@ export async function captureThumbnail(
                 thumbKey = `${thumbKey}::${innerPath}`;
             }
 
-            await SaveThumbnail(thumbKey, raw);
-
-            const updated = new Map(thumbnailCache);
-            updated.set(thumbKey, raw);
-            setThumbnailCache(updated);
+            try {
+                await SaveThumbnail(thumbKey, raw);
+                const updated = new Map(thumbnailCache);
+                updated.set(thumbKey, raw);
+                setThumbnailCache(updated);
+            } catch (saveErr) {
+                console.warn('SaveThumbnail failed:', saveErr);
+            }
         } finally {
-            if (cam && savedCamState) {
-                if (savedCamState.alpha !== undefined && 'alpha' in cam) {
-                    (cam as { alpha: number }).alpha = savedCamState.alpha;
-                }
-                if (savedCamState.beta !== undefined && 'beta' in cam) {
-                    (cam as { beta: number }).beta = savedCamState.beta;
-                }
-                if (savedCamState.radius !== undefined && 'radius' in cam) {
-                    (cam as { radius: number }).radius = savedCamState.radius;
-                }
-                if (savedCamState.target && 'setTarget' in cam) {
-                    (cam as { setTarget: (t: { x: number; y: number; z: number }) => void }).setTarget(
-                        savedCamState.target
-                    );
-                }
-                if (savedCamState.position && 'position' in cam) {
-                    (cam as { position: { x: number; y: number; z: number } }).position =
-                        savedCamState.position;
-                }
-            }
-
-            for (const id of hiddenModels) {
-                const inst = _modelManager.get(id);
-                if (inst) {
-                    inst.visible = true;
-                    for (const m of inst.meshes) {
-                        m.setEnabled(true);
-                    }
-                }
-            }
+            rt.dispose();
+            thumbCam.dispose();
         }
     } catch (err) {
         console.warn('captureThumbnail:', err);

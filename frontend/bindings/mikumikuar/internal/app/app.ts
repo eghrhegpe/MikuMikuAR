@@ -99,7 +99,9 @@ export function ClearThumbnailCache(): $CancellablePromise<void> {
 
 /**
  * ClosePlazaWindow hides the prewarmed plaza window without destroying it,
- * keeping the WebView2 renderer process warm for instant reuse.
+ * keeping the WebView2 renderer process warm for instant reuse. It also stops
+ * the window-mode reverse proxy started by NavigatePlazaWindow so the Go
+ * http.Server and its port are released (ADR-087 P0).
  */
 export function ClosePlazaWindow(): $CancellablePromise<void> {
     return $Call.ByID(972069669);
@@ -444,9 +446,15 @@ export function LoadSceneFile(path: string): $CancellablePromise<string> {
 }
 
 /**
- * NavigatePlazaWindow navigates the prewarmed WebView2 window to the given URL
- * and shows it. Reuses a single hidden window instance created at startup,
- * avoiding the 1–3s WebView2 cold-start cost of NewWithOptions per call.
+ * NavigatePlazaWindow navigates the prewarmed WebView2 window to the given
+ * site URL and shows it. Reuses a single hidden window instance created at
+ * startup, avoiding the 1–3s WebView2 cold-start cost of NewWithOptions per
+ * call.
+ * 
+ * [ADR-087 P0] The window navigates to the local reverse-proxy URL (not the
+ * raw target) so the injected download-intercept script can fetch
+ * /__plaza_dl__ same-origin to trigger DownloadFromPlaza. StartProxy is
+ * called with mode="window" so plazaInjectScript emits the fetch variant.
  */
 export function NavigatePlazaWindow(targetURL: string): $CancellablePromise<void> {
     return $Call.ByID(2118540546, targetURL);
@@ -481,6 +489,45 @@ export function OpenScreenshotDir(): $CancellablePromise<void> {
  */
 export function OpenWithSoftware(modelPath: string, softwarePath: string, args: string): $CancellablePromise<void> {
     return $Call.ByID(3025395162, modelPath, softwarePath, args);
+}
+
+/**
+ * PlazaGoBack navigates the plaza window history backward. No-op if the
+ * window is not ready. ExecJS runs the browser's history.back() which is
+ * async and returns before navigation completes (ADR-087 P0).
+ */
+export function PlazaGoBack(): $CancellablePromise<void> {
+    return $Call.ByID(4230790282);
+}
+
+/**
+ * PlazaGoForward navigates the plaza window history forward (ADR-087 P0).
+ */
+export function PlazaGoForward(): $CancellablePromise<void> {
+    return $Call.ByID(263689650);
+}
+
+/**
+ * PlazaReload reloads the current page in the plaza window (ADR-087 P0).
+ */
+export function PlazaReload(): $CancellablePromise<void> {
+    return $Call.ByID(426071678);
+}
+
+/**
+ * PlazaZoomIn / PlazaZoomOut / PlazaZoomReset control page zoom of the plaza
+ * window. These map directly to WebView2's zoom API (ADR-087 P0).
+ */
+export function PlazaZoomIn(): $CancellablePromise<void> {
+    return $Call.ByID(3489823879);
+}
+
+export function PlazaZoomOut(): $CancellablePromise<void> {
+    return $Call.ByID(3998563052);
+}
+
+export function PlazaZoomReset(): $CancellablePromise<void> {
+    return $Call.ByID(686159255);
 }
 
 /**
@@ -896,8 +943,8 @@ export function StartFileServer(dirPath: string): $CancellablePromise<number> {
  * subsequent requests from the iframe have matching cookies injected. This
  * enables login-gated sites to work inside the embedded iframe (ADR-077).
  */
-export function StartProxy(target: string): $CancellablePromise<string> {
-    return $Call.ByID(1126463619, target);
+export function StartProxy(target: string, mode: string): $CancellablePromise<string> {
+    return $Call.ByID(1126463619, target, mode);
 }
 
 /**

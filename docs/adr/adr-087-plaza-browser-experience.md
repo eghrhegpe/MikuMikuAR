@@ -1,6 +1,6 @@
 # ADR-087: 模型广场 · 浏览器体验增强路线图
 
-> **状态**: 规划中（有条件通过 · 已纳入 2026-07-11 代码审核 5 项修正）
+> **状态**: 实施中（P0 已完成：window 模式下载拦截代理桥接 `/__plaza_dl__` + 导航控制 `PlazaGoBack/Forward/Reload/ZoomIn/ZoomOut/ZoomReset` + 遥控面板；P1/P2 待推进）
 > **关联**: ADR-075（模型广场基础架构 + 预热单实例窗口）、ADR-077（Cookie 中继）、ADR-078（下载拦截）、ADR-003（下载策略方案 C）
 > **来源**: 2026-07-11 预热窗口落地后，对 Wails v3 → go-webview2 → WebView2 COM 全链路的 API 勘察
 
