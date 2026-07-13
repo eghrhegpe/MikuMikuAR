@@ -1,9 +1,9 @@
 # ADR-090: 对话框默认目录记忆（按资源类型）—— 双端可用
 
-**日期**：2026-07-11 / 2026-07-12（双端重构）
+**日期**：2026-07-11 / 2026-07-12（双端重构 + 浏览器扩展）
 > **状态**: 已完成（2026-07-12）
 > **关联**: ADR-045（统一加载与资源管理）、ADR-018（PathManager + 文件 I/O 审计）、ADR-023（Android SAF 文件访问）、ADR-064（`*Dir` 包装维持现状）
-> **影响面**: `internal/dialogs/file_dialog.go`、`internal/app/app.go`（Config）、`internal/app/` 各 `Select*` 包装函数
+> **影响面**: `internal/dialogs/file_dialog.go`、`internal/app/app.go`（Config）、`internal/app/` 各 `Select*` 包装函数、`frontend/src/menus/menu.ts`、`frontend/src/menus/library-core.ts`
 
 ---
 
@@ -137,13 +137,15 @@ LastDirs[cat] 为空
 
 | 文件 | 改动 |
 |------|------|
-| `internal/app/app.go` | `Config` 结构体新增 `LastDirs map[string]string`（`json:"last_dirs,omitempty"`） |
+| `internal/app/app.go` | `Config` 结构体新增 `LastDirs map[string]string`（`json:"last_dirs,omitempty"`）；新增 `getLastDir` / `setLastDir` helper；新增 `GetLastBrowseDir` / `SetLastBrowseDir` binding |
 | `internal/dialogs/file_dialog.go` | `OpenFile` / `SaveFile` / `SelectDir` 增加 `startDir string` 形参；`if startDir != "" { dialog.SetDirectory(startDir) }`；所有 `Select*` 内部调用透传 |
-| `internal/app/app.go` | 新增 `getLastDir(cat)`（相对路径解析）/ `setLastDir(cat, dir)`（相对路径写入）helper |
 | `internal/app/app.go` | `SelectVMDMotion` / `SelectVPDPose` / `SelectAudioFile` / `SelectEnvTextureFile` / `SelectImportFile` / `SelectExeFile` / `SelectPMXFile`：调用前 `getLastDir` 取起始目录，成功后 `setLastDir` 写回 |
 | `internal/app/integration.go` | `SelectSceneOpenFile` / `SelectBundleSaveFile`：同样接入 |
 | `internal/app/model_preset.go` | `SelectPresetSaveFile` / `SelectPresetOpenFile`：同样接入 |
 | `internal/app/library.go` | `SelectDir`（桌面分支）成功后写 `LastDirs["library"]`；读取时优先 `LastDirs["library"]` |
+| `frontend/src/menus/menu.ts` | `SlideMenu` 新增 `onLevelEnter` 回调（level push/pop 后触发）；`onFolderEnter` 签名改为支持 `Promise` 异步返回 |
+| `frontend/src/menus/library-core.ts` | `models:browse` 入口调用 `GetLastBrowseDir('pmx')` 恢复上次目录；`onLevelEnter` 回调在导航子目录时调用 `SetLastBrowseDir` 持久化 |
+| `frontend/src/__tests__/bindings/app.contract.test.ts` | 补充 `GetLastBrowseDir` / `SetLastBrowseDir` 到预期函数列表 |
 
 ### 核心代码
 
@@ -236,17 +238,116 @@ func (a *App) SelectVMDMotion() (string, error) {
 
 ---
 
+## 浏览器目录记忆（扩展 —— 资源库浏览器也使用相同基础设施）
+
+**背景**：日常模型浏览 90% 走资源库浏览器（`library-core.ts`），而非文件对话框。浏览器每次打开均从 `getBrowseDir("pmx")` 的根目录重建，不记忆上次浏览的子目录。
+
+**方案**：复用同一套 `LastDirs` 基础设施，key 前缀 `browse:` 区分浏览器场景，与文件对话框场景互不干扰。
+
+### 后端新增 binding
+
+```go
+// GetLastBrowseDir 读取上次浏览目录，透传给前端。
+func (a *App) GetLastBrowseDir(category string) (string, error) {
+    return util.SafeCall(func() (string, error) {
+        dir := a.getLastDir("browse:" + category)
+        if dir == "" {
+            return "", nil
+        }
+        return dir, nil
+    })
+}
+
+// SetLastBrowseDir 持久化当前浏览目录。
+func (a *App) SetLastBrowseDir(category, dir string) error {
+    return util.SafeCallVoid(func() error {
+        a.setLastDir("browse:" + category, dir)
+        return nil
+    })
+}
+```
+
+### 前端读取（`models:browse` 入口）
+
+```typescript
+// library-core.ts — makeModelMenu 的 onFolderEnter 回调
+if (row.target === 'models:browse') {
+    const browseDir = getBrowseDir('pmx');
+    // 始终从 root 打开；仅记录 lastDir 相对 root 的子目录段，交由 onLevelEnter 逐级展开
+    const [lastDir] = await GetLastBrowseDir('pmx');
+    const segs = lastDir ? splitSubdirSegments(browseDir, lastDir) : null;
+    pendingAutoExpand = segs && segs.length > 0 ? segs : null;
+    return buildLevel(browseDir, ...); // 不再是 startDir = lastDir（换根）
+}
+```
+
+> **修订（展开栈）**：原方案把 `lastDir` 直接作为 `buildLevel` 起始层级（"换根"），导致导航栈单层、用户迷失，且 `lastDir` 与实时 `m.dir` 前缀不对齐时会生成 `:` 伪文件夹。改为"从 root 打开 + `onLevelEnter` 异步串行展开到 `lastDir` 各层"，既保留完整层级路径（可逐级返回），又不改变资源库读取根。
+
+### 前端写入 + 展开（`onLevelEnter` 回调）
+
+```typescript
+// library-core.ts — SlideMenu 的 onLevelEnter 选项
+onLevelEnter: (level, menu) => {
+    const dir = normPath(level.dir);
+    if (!dir || dir === '.' || dir === '/') return;
+    const browseRoot = getBrowseDir('pmx');
+    if (!browseRoot) return;
+    // [展开栈] 打开时从 root 异步串行展开到上次浏览目录（push 为动画驱动，同步多 push 会被 transitioning 拦截）
+    if (pendingAutoExpand && pendingAutoExpand.length > 0) {
+        const seg = pendingAutoExpand[0];
+        const nextDir = normPath(dir + '/' + seg);
+        pendingAutoExpand = pendingAutoExpand.length > 1 ? pendingAutoExpand.slice(1) : null;
+        menu.push(buildLevel(nextDir, seg, (m) => m.format === 'pmx', menu));
+        return;
+    }
+    if (dir === browseRoot) return; // 根目录不持久化
+    // 仅在 ResourceRoot/PMX/ 下的子目录导航时持久化
+    if (dir.toLowerCase().startsWith(browseRoot.toLowerCase())) {
+        void SetLastBrowseDir('pmx', dir);
+    }
+},
+```
+
+### SlideMenu `onLevelEnter` 回调（新增）
+
+`menu.ts` 的 `SlideMenu` 新增 `onLevelEnter` 选项，在每次 level 变更（push/pop）后触发：
+
+```typescript
+// menu.ts — SlideMenu 类新增
+onLevelEnter?: (level: PopupLevel, menu: SlideMenu) => void;
+```
+
+调用时机与 `onAfterRender` 同步，覆盖 `push()` 初始渲染、`push()` 切换完成、`pop()` 返回、`go()` 跳转。
+
+### `onFolderEnter` 改为异步兼容
+
+为支持 `models:browse` 入口调用异步 `GetLastBrowseDir`，`onFolderEnter` 签名改为支持 `Promise`：
+
+```typescript
+// 原签名
+onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null;
+// 新签名
+onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null | Promise<PopupLevel | null>;
+```
+
+`library-core.ts` 的 `makeModelMenu` 将 `onFolderEnter` 改为 `async`，`menu.ts` 的两处点击处理改为 `await`。
+
+---
+
 ## 已知缺口 / 不在范围
 
 1. **Android `SelectDir` 不生效**：Wails v3 Android 不支持目录选择器，直接返回 ResourceRoot，不写 LastDir。
 2. **测试覆盖**：建议补 `getLastDir` / `setLastDir` 的单元测试（相对路径解析、绝对路径回退、nil map 初始化），核心 UI builder 可暂不测。
 3. **多窗口 / 多实例**：当前为单 App 实例，`configMu` 已覆盖；若未来多窗口共享进程，逻辑不变。
 4. **不替代 `RecentModels`**：`RecentModels`（`app.go:346`）管「一键重开上次文件」，LastDirs 管「对话框默认位置」，二者互补不重叠，不改动 `RecentModels`。
+5. **浏览器仅记忆 PMX 目录**：当前仅 `models:browse`（PMX 模型浏览）接入目录记忆；其他类别的浏览器（如 VMD、音频）未接入，后续可按需扩展。
+6. **写入仅针对 ResourceRoot 下的子目录**：`onLevelEnter` 中检查 `dir.startsWith(browseRoot)` 排除根菜单、scene 详情等无关目录，避免误存。
 
 ---
 
 ## 验证
 
 - `go build ./...` 通过
-- `cd frontend && npm run test -- src/__tests__/bindings/app.contract.test.ts`（116 函数 + FNV-1a 契约不变）
+- `cd frontend && npm run test -- src/__tests__/bindings/app.contract.test.ts`（118 函数 + FNV-1a 契约不变）
 - 手动：连续加载两次不同目录的 VMD，第二次对话框应默认落在第一次目录；加载 PMX 不影响 VMD 目录记忆
+- 手动：在资源库浏览器中导航到 `PMX/初音未来/`，关闭弹窗后重新打开「加载模型」，应自动定位到 `PMX/初音未来/` 而非根目录
