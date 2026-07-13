@@ -67,6 +67,7 @@ import { buildPoseStudioLevel } from './motion-pose-levels';
 import { buildVirtualSkirtLevel } from './motion-cloth-levels'; // [doc:adr-084]
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
+import { isUnderRoot } from '../core/utils';
 import type { MenuNode } from './menu-schema';
 
 // ======== 从子文件导入 ========
@@ -695,8 +696,8 @@ function buildMotionRootItems(): PopupRow[] {
             if (inst.kind !== 'actor') {
                 continue;
             }
-            // 路径在 prop 目录下的视为道具，不参与动作绑定
-            if (propDir && inst.filePath.toLowerCase().startsWith(propDir)) {
+            // 路径在 prop 目录下的视为道具，不参与动作绑定（[doc:adr-090] 须路径边界判定，禁裸前缀）
+            if (isUnderRoot(propDir, inst.filePath)) {
                 continue;
             }
             items.push({

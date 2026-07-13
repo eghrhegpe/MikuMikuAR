@@ -26,6 +26,7 @@ import {
 } from '@/core/config';
 import { createDefaultFeetState } from '@/core/state';
 import { resolveFileUrl, normPath } from '@/core/fileservice';
+import { isUnderRoot } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
@@ -328,7 +329,7 @@ export async function loadPMXFile(
         const propDir = (
             overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')
         ).toLowerCase();
-        if (propDir && filePath.toLowerCase().startsWith(propDir)) {
+        if (isUnderRoot(propDir, filePath)) {
             const rootMesh = inst.meshes[0];
             propRegistry.set(id, {
                 id,

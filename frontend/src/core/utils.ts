@@ -140,6 +140,19 @@ function isPathWithinRoot(resolved: string, rootPath: string): boolean {
     return norm === root || norm.startsWith(root + '/');
 }
 
+/**
+ * [doc:adr-090][doc:adr-095] 路径归属判定（单点版，基于 normPath）。
+ * 判定 child 是否位于 base 之下：精确相等（忽略大小写），或前缀相等且紧随字符为 '/'。
+ * 禁止裸字符串前缀（如 ".../PMX" 误命中 ".../PMXSub" → 伪文件夹）。
+ * 与下方 `isPathWithinRoot`（基于 normalizePath，处理 `..`/`.`）并存属已知债，
+ * 待 ADR-095 批次 5 归一化合并后收敛为唯一实现。
+ */
+export function isUnderRoot(base: string, child: string): boolean {
+    const b = normPath(base).toLowerCase();
+    const c = normPath(child).toLowerCase();
+    return c === b || c.startsWith(b + '/');
+}
+
 export function resolveLibraryRef(libraryRef: string): string | null {
     if (!libraryRef) {
         return null;
