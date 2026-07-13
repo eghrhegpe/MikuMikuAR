@@ -4,6 +4,7 @@
 > **状态**: 规划
 > **关联**: ADR-090（路径边界判定）、ADR-018（Path Manager + 文件 I/O 审计）、ADR-045（统一加载与资源管理）、ADR-023（Android SAF 文件访问）
 > **影响面**: `frontend/src/core/fileservice.ts`(normPath)、`frontend/src/core/utils.ts`(normalizePath / isPathWithinRoot / computeLibraryRef)、`frontend/src/menus/library-core.ts`、`frontend/src/scene/scene-bundle.ts`
+> **与资源库恢复关联**: 见 ADR-097（前端 `GetLastBrowseDir` 返回单字符串被误解构为 `'C'` 的 bug 已修，属本 ADR 路径规范化背景下的前端问题）
 
 ---
 
