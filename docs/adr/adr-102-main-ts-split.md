@@ -1,6 +1,6 @@
 # ADR-102: main.ts 拆分（init / events / render-loop / dev-hooks）
 
-> **状态**: 实施中
+> **状态**: 已完成
 > **日期**: 2026-07-13
 > **作者**: Riku（首席架构师 AI）
 > **关联**: #3 main.ts 拆分（待后续重构）；ADR-033 config-split-and-dedup；ADR-100 camera-control-behavior-dual-axis；AGENTS.md「本地缓存规范」
@@ -145,3 +145,32 @@ cd frontend && npx tsc --noEmit
 1. 是否先在 `vite-env.d.ts` 补 `__MMD_ENABLE_MPR__` 使基线归零（建议：是，作为 P0 第一步）？
 2. 是否对 `@bindings` 做 camelCase 适配/重新导出层（vs 仅靠纪律约束）？需评估对现有消费的破坏性。
 3. ADR-102 由「规划」转「实施中」的触发条件：P0 完成 + 用户批准 P1 启动。
+
+---
+
+## 11. 实施日志
+
+> 每阶段独立 commit；tsc 闸门均 0 错误；禁 `git stash`，回退用 `git reset --soft HEAD~1`。
+
+| 阶段 | Commit | 动作 | 结果 |
+|------|--------|------|------|
+| **P0** | `e1bd391` | Pre-flight 硬化：抽 `core/freefly-state.ts`（`freeflyInput` 破 `camera↔events` 环）+ `dom.ts` 追加 `DomRefs` 类型别名 | ✅ 0 错误（5 files, +25/−11） |
+| **P1** | `4e70289` | 抽 `dev-hooks.ts`：`setupE2ECapture()` 承载 DEV-only E2E 捕获辅助（`window.__capture`/`__scene`） | ✅ 0 错误（2 files, +122/−110） |
+| **P2** | `e8fefa2` | 抽 `render-loop.ts`：`startRenderLoop()` 包原顶层渲染循环 + FPS 时钟副作用 | ✅ 0 错误（2 files, +69/−59） |
+| **P3** | `07754df` | 抽 `events.ts`：注册 `registerEventHandlers()`/`buildNavMaps()`/`registerAppShortcuts()`/`initDropHandler()`/`showUpdateToast()`/`importToLibrary()` + `Events.On('watch:newfile')`；`main.ts` −719 行 | ✅ 0 错误；`toggleOverlay` 升为 `export` 供 `init()` 导航按钮复用 |
+| **P4** | `196bf54` | 抽 `init.ts`（`_updateStaticHtmlTexts`/`init`/`restoreEnvState`/`restoreUIState`/Android 段 + `bootstrap()` 编排）；`main.ts` 收口为入口垫片 | ✅ 0 错误（2 files, +363/−361） |
+| **P5** | 随 P4 | `main.ts` 收口至 9 行（仅 `bootstrap()` 串联）；最终闸门：check 0 + 单测 1397 + 契约 19 全过 | ✅ 全部通过 |
+
+### 实战修订（落地时对原方案的纠偏）
+
+1. **§7 P3「menus 全改动态 import 破环」过度防御 —— 撤销。**
+   Grep 证实 `menus/*` 不反向 import `main`/`events`，故 Split↔Domain 无静态环。`events.ts` 可**静态 import** 菜单函数（`showModelPopup`/`showPlaza`/`screenshotCurrent` 等），无需全改 `await import()`。仅 `navActions[3..5]` 等按需懒加载的菜单保留动态 import。
+2. **P1 边界修订：Android 段归 P4，不随 P1。**
+   原 §5 把 `window.wails` 声明 + `storage:permissionGranted`/`android:back` 监听 + `checkAndroidStoragePermission` 同时挂在 dev-hooks 与 init.ts，造成重叠。实测：P1 仅搬纯 DEV 的 E2E 块；Android 段随 **P4** 抽入 `init.ts`。
+3. **错误日志是「化石」（§2 结论坐实）。**
+   基线现 0 错误，历史唯一错误 `__MMD_ENABLE_MPR__` 已由 ADR-099 在 `vite-env.d.ts` 落地，故 P0 第 1 步免执行。
+
+### 收尾结论（P4 / P5 已完成）
+- **最终架构**：`main.ts`(9 行入口) → `init.ts`(`bootstrap()` 编排) → Split 层 `events.ts` / `render-loop.ts` / `dev-hooks.ts` + leaf `freefly-state.ts`（破 `camera↔events` 环）。Split 层单向依赖 leaf/domain，无环。
+- **最终验证闸门**：`npm run check` 0 错误 + `npm run test` 1397 通过 + `app.contract.test.ts` 19 通过，全部绿灯。
+- **关键教训（坐实 §2）**：原 80+ 错误日志是旧代码库化石；本次基线本就 0 错误，所谓"4 类失误模式"靠「先 Grep 真实定义、整段搬迁、`npm run check` 每阶段归零」即可系统性规避，未真正触发。
