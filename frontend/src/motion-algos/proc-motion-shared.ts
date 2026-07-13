@@ -1,4 +1,5 @@
 import { canEncodeName } from './vmd-writer';
+import { clamp } from '@/core/utils';
 
 export type ProcMotionMode = 'off' | 'idle' | 'autodance';
 
@@ -176,4 +177,4 @@ export const MORPH_BLINK_CANDIDATES = [
 export const FPS = 30;
 export const MAX_FRAMES = 600;
 
-export const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
+export const clamp1 = (v: number) => clamp(v, -1, 1);

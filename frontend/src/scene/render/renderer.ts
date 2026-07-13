@@ -12,7 +12,7 @@ import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
 import type { Observer } from '@babylonjs/core/Misc/observable';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
-import { clamp, clamp01, lerp, lerpArray } from '@/core/utils';
+import { clamp, clamp01, lerp, lerpArray, setKey } from '@/core/utils';
 
 // ======== Tone Mapping Modes ========
 
@@ -89,12 +89,6 @@ let _lastProbeRefresh = 0;
 // 卡通化渲染预设状态
 let _celShadingMode = false;
 let _originalRenderState: RenderState | null = null;
-
-// ======== 数值钳制工具（clamp/clamp01 收敛至 @/core/utils）========
-
-function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
-    obj[key] = value;
-}
 
 // ======== 初始化与释放 ========
 

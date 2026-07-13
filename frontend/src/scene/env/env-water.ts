@@ -21,6 +21,7 @@ import { col3FromTriple } from '@/core/color-helpers';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture } from './env-texture';
+import { clamp01 } from '@/core/utils';
 
 // PostProcess 私有属性 _enabled 的类型声明（用于控制后处理启用/禁用）
 interface PostProcessInternal {
@@ -209,7 +210,7 @@ export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, m
     const r = _ripples[idx];
     r.position.copyFrom(pos);
     r.radius = Math.max(0.1, radius);
-    r.strength = Math.max(0, Math.min(1, strength));
+    r.strength = clamp01(strength);
     r.speed = Math.max(0.1, speed);
     r.life = maxLife > 0 ? maxLife : 9999;
     r.maxLife = maxLife;

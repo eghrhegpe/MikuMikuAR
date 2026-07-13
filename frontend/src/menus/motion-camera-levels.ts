@@ -4,12 +4,12 @@
 import {
     setStatus,
     cardContainer,
-    libraryRoot,
     stackRegistry,
     setMotionBindingTargetId,
 } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
+import { getBrowseDir } from '../core/utils';
 import {
     switchCameraMode,
     getCameraMode,
@@ -209,7 +209,7 @@ function buildCameraSchema(): MenuNode[] {
                     slideRow(inner, 'lucide:upload', t('motion.loadCamVmd'), false, () => {
                         setMotionBindingTargetId(null);
                         const level = stackRegistry.buildLevel!(
-                            libraryRoot,
+                            getBrowseDir('vmd'),
                             t('motion.camVmdLabel'),
                             (m) => m.format === 'vmd'
                         );

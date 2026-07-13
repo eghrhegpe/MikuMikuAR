@@ -10,6 +10,7 @@ import {
     findAllLipMorphs,
     amplitudeToWeight,
 } from '@/motion-algos/lipsync';
+import { clamp01 } from '@/core/utils';
 import { focusedModelId, triggerAutoSave } from '@/core/config';
 import { isAudioPlaying, getAudioPath } from '@/outfit/audio';
 import { setModelMorphWeight } from '../scene';
@@ -59,12 +60,12 @@ export function setLipSyncEnabled(on: boolean): void {
 }
 
 export function setLipSyncSensitivity(v: number): void {
-    lipSyncState.sensitivity = Math.max(0, Math.min(1, v));
+    lipSyncState.sensitivity = clamp01(v);
     triggerAutoSave();
 }
 
 export function setLipSyncIntensity(v: number): void {
-    lipSyncState.intensity = Math.max(0, Math.min(1, v));
+    lipSyncState.intensity = clamp01(v);
     triggerAutoSave();
 }
 

@@ -5,6 +5,8 @@
 // setModelMorphWeight 直写焦点模型的「あ」morph。
 // 与 procedural motion 不冲突：前者只控「まばたき」(VMD 帧)，本模块只控「あ」(实时直写)。
 
+import { clamp01 } from '@/core/utils';
+
 export interface LipSyncState {
     enabled: boolean;
     sensitivity: number; // 0..1，振幅阈值（低于此值视为静音，越大越不敏感）
@@ -85,6 +87,6 @@ export function amplitudeToWeight(
         // sensitivity=1 边界：仅振幅满时张嘴，避免口型常开
         return amplitude >= 1.0 ? intensity : 0;
     }
-    const t = Math.max(0, Math.min(1, (amplitude - sensitivity) / range));
+    const t = clamp01((amplitude - sensitivity) / range);
     return t * intensity;
 }

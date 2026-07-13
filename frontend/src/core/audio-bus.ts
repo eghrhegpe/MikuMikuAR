@@ -9,6 +9,7 @@
 
 import { SettingsStore } from '@/lib/settings-store';
 import { setUIState } from '@/core/state';
+import { clamp01 } from '@/core/utils';
 
 let _ctx: AudioContext | null = null;
 let _master: GainNode | null = null;
@@ -33,13 +34,13 @@ export function getSfxMasterGain(): GainNode {
     }
     const enabled = SettingsStore.get().get('sfxEnabled') as boolean;
     const vol = SettingsStore.get().get('sfxVolume') as number;
-    _master.gain.value = enabled ? Math.max(0, Math.min(1, vol)) : 0;
+    _master.gain.value = enabled ? clamp01(vol) : 0;
     return _master;
 }
 
 export function setSfxVolume(v: number): void {
-    SettingsStore.get().set('sfxVolume', Math.max(0, Math.min(1, v)));
-    setUIState({ sfxVolume: Math.max(0, Math.min(1, v)) });
+    SettingsStore.get().set('sfxVolume', clamp01(v));
+    setUIState({ sfxVolume: clamp01(v) });
 }
 
 export function getSfxVolume(): number {
@@ -65,8 +66,8 @@ export function getFootstepEnabled(): boolean {
 }
 
 export function setFootstepVolume(v: number): void {
-    SettingsStore.get().set('footstepVolume', Math.max(0, Math.min(1, v)));
-    setUIState({ footstepVolume: Math.max(0, Math.min(1, v)) });
+    SettingsStore.get().set('footstepVolume', clamp01(v));
+    setUIState({ footstepVolume: clamp01(v) });
 }
 
 export function getFootstepVolume(): number {
@@ -111,7 +112,7 @@ export function playSfx(buffer: AudioBuffer, opts: PlaySfxOptions = {}): void {
         src.detune.value = opts.detune;
     }
     const g = ctx.createGain();
-    g.gain.value = Math.max(0, Math.min(1, opts.volume ?? 1));
+    g.gain.value = clamp01(opts.volume ?? 1);
     src.connect(g);
     g.connect(master);
     src.start();

@@ -3,6 +3,7 @@
 
 import { resolveFileUrl } from '../core/fileservice';
 import { triggerAutoSave, setUIState } from '../core/config';
+import { clamp01 } from '@/core/utils';
 import type { BeatDetector } from '../motion-algos/beat-detector';
 import { SettingsStore, SETTINGS_UPDATED } from '../lib/settings-store';
 
@@ -107,8 +108,8 @@ export function disposeAudio(): void {
 }
 
 export function setVolume(v: number): void {
-    SettingsStore.get().set('volume', Math.max(0, Math.min(1, v)));
-    setUIState({ volume: Math.max(0, Math.min(1, v)) });
+    SettingsStore.get().set('volume', clamp01(v));
+    setUIState({ volume: clamp01(v) });
     applyGain(); // sync beatDetector + audioElement immediately
 }
 

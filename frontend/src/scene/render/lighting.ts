@@ -25,10 +25,7 @@ import {
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 import { col3FromTriple } from '@/core/color-helpers';
-
-function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
-    obj[key] = value;
-}
+import { setKey } from '@/core/utils';
 
 // ======== Light State ========
 

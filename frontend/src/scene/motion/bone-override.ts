@@ -6,6 +6,7 @@
 import { Quaternion, Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
+import { clamp01 } from '@/core/utils';
 
 /** 持久化的单条骨骼覆盖配置 */
 export type BoneOverrideEntry = {
@@ -104,7 +105,7 @@ export function setBoneOverride(
 ): void {
     _overrideMap.set(boneName, {
         quat: _eulerToQuat(euler[0], euler[1], euler[2]),
-        weight: Math.max(0, Math.min(1, weight)),
+        weight: clamp01(weight),
         enabled,
     });
 }
@@ -120,7 +121,7 @@ export function setBoneOverrideQuat(
 ): void {
     _overrideMap.set(boneName, {
         quat: quat.clone(),
-        weight: Math.max(0, Math.min(1, weight)),
+        weight: clamp01(weight),
         enabled,
     });
 }

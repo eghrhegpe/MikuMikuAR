@@ -10,7 +10,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
 import type { UIState } from '@/core/types';
-import { lerp as lerpUtil, lerpArray, formatTimestamp } from '@/core/utils';
+import { lerp as lerpUtil, lerpArray, formatTimestamp, clamp01 } from '@/core/utils';
 import { col3FromTriple } from '@/core/color-helpers';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { deriveLighting, TIME_OF_DAY_PRESETS } from './env-lighting';
@@ -25,10 +25,7 @@ import {
 import type { LightState } from '../render/lighting';
 import { applyLightingPresetFromEnv } from '../render/lighting';
 import { scene, setRenderState } from '../scene';
-
-function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
-    obj[key] = value;
-}
+import { setKey } from '@/core/utils';
 
 // 时间戳格式化已收敛至 utils.formatTimestamp
 

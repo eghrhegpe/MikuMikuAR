@@ -2,6 +2,8 @@
 // [doc:architecture] 程序化动作子系统 — 节拍检测
 // 能量峰值法：低频能量 > 1.3× 滑动均值 且 距上次 beat > 250ms → 触发
 
+import { clamp01 } from '@/core/utils';
+
 const BASS_BIN_COUNT = 10; // 前 10 个频段 (~0-430Hz @ 44100/256 fft)
 const ENERGY_HISTORY_SIZE = 43; // ~1s @ 43fps update
 const BEAT_THRESHOLD = 1.3;
@@ -90,7 +92,7 @@ export class BeatDetector {
     /** 设置输出音量 (0~1)。通过 GainNode 控制，独立于 audioElement.volume。 */
     setVolume(value: number): void {
         if (this.gain) {
-            this.gain.gain.value = Math.max(0, Math.min(1, value));
+            this.gain.gain.value = clamp01(value);
         }
     }
 

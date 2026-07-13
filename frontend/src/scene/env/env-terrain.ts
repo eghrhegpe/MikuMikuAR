@@ -9,6 +9,7 @@ import {
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
 import { createCanvasDataURL } from './env-texture';
+import { clamp01 } from '@/core/utils';
 
 // ======== 确定性值噪声（FBM）========
 // 用整数哈希产生可复现的伪随机，seed 相同则地形一致。
@@ -201,7 +202,7 @@ function applyElevationColoring(ground: GroundMesh, state: EnvState): void {
 
     for (let i = 0; i < vertexCount; i++) {
         const y = positions[i * 3 + 1]; // 顶点高度
-        const t = Math.max(0, Math.min(1, (y - minH) / range)); // 归一化 [0,1]
+        const t = clamp01((y - minH) / range); // 归一化 [0,1]
         let r: number, g: number, b: number;
         if (t < 0.5) {
             const k = t * 2;
