@@ -174,12 +174,22 @@ export async function initScene(): Promise<void> {
         // MPR（多线程）需 SharedArrayBuffer + COOP/COEP，与 Go 端 CoopCoepMiddleware 同轴门控。
         // __MMD_ENABLE_MPR__ 为构建期常量（vite define）：未定义 VITE_MMD_WASM_MT → false →
         // esbuild 消除本分支，默认构建不含 MPR worker/wasm（零回归、bundle 精简）。
-        const useMultiThread = __MMD_ENABLE_MPR__;
+        // 运行时再叠加 crossOriginIsolated 守卫：即便构建带 MPR，若启动进程未注入 COOP/COEP
+        // （漏设 VITE_MMD_WASM_MT 环境变量），也优雅回退 SPR，绝不因 SAB 不可用而崩窗。
+        const useMultiThread = __MMD_ENABLE_MPR__
+            && typeof crossOriginIsolated !== 'undefined'
+            && crossOriginIsolated;
         let wasmInstance;
         if (useMultiThread) {
-            const { MmdWasmInstanceTypeMPR } = await import('babylon-mmd/esm/Runtime/Optimized/InstanceType/multiPhysicsRelease');
-            wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeMPR());
-            console.log('[scene] 使用 WASM 版 MmdWasmRuntime（MPR 多线程物理）');
+            try {
+                const { MmdWasmInstanceTypeMPR } = await import('babylon-mmd/esm/Runtime/Optimized/InstanceType/multiPhysicsRelease');
+                wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeMPR());
+                console.log('[scene] 使用 WASM 版 MmdWasmRuntime（MPR 多线程物理）');
+            } catch (e) {
+                console.warn('[scene] MPR 初始化失败，回退 SPR 单线程物理：', e);
+                wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
+                console.log('[scene] 使用 WASM 版 MmdWasmRuntime（SPR 单线程物理，MPR 回退）');
+            }
         } else {
             wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
             console.log('[scene] 使用 WASM 版 MmdWasmRuntime（SPR 单线程物理）');

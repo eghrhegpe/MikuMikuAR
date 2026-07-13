@@ -1,6 +1,6 @@
 // settings-audio.ts — 音频设置子菜单（ADR-093 schema 驱动）
 // 状态均已存在于 uiState 中，通过 ui. 前缀绑定声明式控件；
-// onChange 调用各模块 setter 以触发 SettingsStore 同步与副作用（增益刷新等）。
+// onChange 调用各模块 setter 以触发 uiState 写入与副作用（增益刷新等）。
 
 import { setStatus, cardContainer } from '../core/config';
 import { t } from '../core/i18n/t';

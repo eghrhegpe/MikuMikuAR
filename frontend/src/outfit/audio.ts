@@ -5,7 +5,7 @@ import { resolveFileUrl } from '../core/fileservice';
 import { triggerAutoSave, setUIState } from '../core/config';
 import { clamp01 } from '@/core/utils';
 import type { BeatDetector } from '../motion-algos/beat-detector';
-import { SettingsStore, SETTINGS_UPDATED } from '../lib/settings-store';
+import { uiState } from '../core/state';
 
 let audioElement: HTMLAudioElement | null = null;
 let audioName = '';
@@ -108,26 +108,24 @@ export function disposeAudio(): void {
 }
 
 export function setVolume(v: number): void {
-    SettingsStore.get().set('volume', clamp01(v));
-    setUIState({ volume: clamp01(v) });
-    applyGain(); // sync beatDetector + audioElement immediately
+    const val = clamp01(v);
+    setUIState({ volume: val });
+    applyGain();
 }
 
 export function getVolume(): number {
-    return SettingsStore.get().get('volume') as number;
+    return uiState.volume ?? 0.7;
 }
 
 export function setAudioOffset(seconds: number): void {
-    // 拒绝 NaN / Infinity：写入 SettingsStore 后会污染同步逻辑（syncAudioPlayback 的算术运算）
     if (!Number.isFinite(seconds)) {
         return;
     }
-    SettingsStore.get().set('audioOffset', seconds);
     setUIState({ audioOffset: seconds });
 }
 
 export function getAudioOffset(): number {
-    return SettingsStore.get().get('audioOffset') as number;
+    return uiState.audioOffset ?? 0;
 }
 
 export function getCurrentTime(): number {
@@ -241,56 +239,6 @@ export function applyGain(): void {
         beatDetector.setVolume(vol);
     }
 }
-
-let cleanupSettingsListener: (() => void) | null = null;
-
-function setupSettingsListener(): void {
-    if (cleanupSettingsListener) {
-        return;
-    }
-    const handler = () => applyGain();
-    globalThis.addEventListener(SETTINGS_UPDATED.description!, handler);
-    cleanupSettingsListener = () =>
-        globalThis.removeEventListener(SETTINGS_UPDATED.description!, handler);
-}
-
-function teardownSettingsListener(): void {
-    cleanupSettingsListener?.();
-    cleanupSettingsListener = null;
-}
-
-// AO ✂️ Patch ensureAudio and disposeAudio to wire settings listener
-const origEnsureAudio = ensureAudio as () => HTMLAudioElement;
-const origDisposeAudio = disposeAudio as () => void;
-
-function patchedEnsureAudio(): HTMLAudioElement {
-    const el = origEnsureAudio();
-    setupSettingsListener();
-    return el;
-}
-
-function patchedDisposeAudio(): void {
-    teardownSettingsListener();
-    origDisposeAudio();
-    if (audioElement) {
-        audioElement.pause();
-        audioElement.src = '';
-        audioElement = null;
-    }
-    audioName = '';
-    audioPath = '';
-    if (beatDetector) {
-        beatDetector.dispose();
-        beatDetector = null;
-    }
-    beatDetectorAttached = false;
-}
-
-// Replace originals with patched versions
-// eslint-disable-next-line no-func-assign
-(ensureAudio as any) = patchedEnsureAudio;
-// eslint-disable-next-line no-func-assign
-(disposeAudio as any) = patchedDisposeAudio;
 
 /** 音频加载后通知 beat detector 重置（新曲目 BPM 估计重新开始）。 */
 export function notifyBeatDetectorReset(): void {

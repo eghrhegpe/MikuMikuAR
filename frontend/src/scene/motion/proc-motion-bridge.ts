@@ -20,8 +20,8 @@ import {
 } from '@/motion-algos/procedural-motion';
 import { BeatDetector } from '@/motion-algos/beat-detector';
 import { mmdRuntime, triggerAutoSave, focusedModelId, setUIState } from '@/core/config';
+import { uiState } from '@/core/state';
 import { isAudioPlaying } from '@/outfit/audio';
-import { SettingsStore } from '@/lib/settings-store';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from '../scene';
 import { addVmdLayer, removeVmdLayer, getVmdLayers, clearVmdLayers } from './vmd-layers';
 import {
@@ -306,14 +306,12 @@ export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']
     triggerAutoSave();
 }
 
-/** 设置 BPM 量化开关（通过 SettingsStore） */
-// AO ✂️ Replace state write with SettingsStore.set
+/** 设置 BPM 量化开关 */
 export function setBpmQuantizeEnabled(v: boolean): void {
     if (typeof v !== 'boolean') {
         console.warn('[proc-motion] setBpmQuantizeEnabled: invalid value type, expected boolean');
         return;
     }
-    SettingsStore.get().set('bpmQuantizeEnabled', v);
     setUIState({ bpmQuantizeEnabled: v });
     if (procBeatDetector) {
         procBeatDetector.setBpmQuantizeEnabled(v);
