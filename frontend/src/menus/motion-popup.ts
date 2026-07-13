@@ -185,7 +185,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                     slideRow(inner, 'lucide:plus', t('motion.addLayer'), true, () => {
                         setLayerBindingTargetId(id);
                         const level = stackRegistry.buildLevel!(
-                            libraryRoot,
+                            getBrowseDir('vmd'),
                             t('motion.motionLibrary'),
                             (m) => m.format === 'vmd'
                         );

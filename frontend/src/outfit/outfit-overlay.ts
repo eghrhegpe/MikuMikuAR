@@ -8,6 +8,7 @@ import type { Scene } from '@babylonjs/core/scene';
 
 import { type ModelInstance } from '../core/config';
 import { encodeFileRef } from '../core/fileservice';
+import { normPath } from '../core/utils';
 
 // ============================================================
 // Skeleton retargeting
@@ -151,7 +152,7 @@ export async function loadOverlay(
         return { meshes: [], retargetOk: false };
     }
     // 防御纵深：拒绝 `..` 路径穿越（Go 侧 IsolateModelDir 已兜底，TS 侧提前拒绝便于诊断）
-    if (/(^|\/)\.\.(\/|$)/.test(meshFile.replace(/\\/g, '/'))) {
+    if (/(^|\/)\.\.(\/|$)/.test(normPath(meshFile))) {
         console.error(
             `[outfit-overlay] meshFile must not contain parent directory traversal (got "${meshFile}")`
         );
@@ -159,7 +160,7 @@ export async function loadOverlay(
     }
     // [doc:adr-057] meshFile 是相对模型目录的路径（可能含子目录）
     // 先 normalize 反斜杠→正斜杠，再 base64url 编码为查询参数
-    const normalizedMeshFile = meshFile.replace(/\\/g, '/');
+    const normalizedMeshFile = normPath(meshFile);
     const url = `http://127.0.0.1:${inst.port}/?f=${encodeFileRef(normalizedMeshFile)}`;
     console.info(`[outfit-overlay] Loading FBX overlay: ${meshFile}`);
 

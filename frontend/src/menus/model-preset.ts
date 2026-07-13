@@ -41,7 +41,7 @@ import {
     setVolume,
     setAudioOffset,
 } from '../outfit/audio';
-import { tryCatchStatus, showErrorToast } from '../core/utils';
+import { tryCatchStatus, showErrorToast, getBaseName, normPath } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { buildPresetListLevel as buildGenericPresetLevel } from './preset-list-viewer';
 
@@ -261,7 +261,7 @@ export async function tryAutoApplyPreset(id: string): Promise<void> {
         if (libraryRef && e.modelRef === libraryRef) {
             return true;
         }
-        if (e.modelRef && inst.filePath.replace(/\\/g, '/').endsWith(e.modelRef)) {
+        if (e.modelRef && normPath(inst.filePath).endsWith(e.modelRef)) {
             return true;
         }
         return false;
@@ -321,8 +321,8 @@ export async function applyPresetFromLib(
                     matchedId = mid;
                     break;
                 }
-                const baseName = preset.model.filePath.replace(/\\/g, '/').split('/').pop();
-                if (baseName && inst.filePath.replace(/\\/g, '/').endsWith(baseName)) {
+                const baseName = getBaseName(preset.model.filePath);
+                if (baseName && normPath(inst.filePath).endsWith(baseName)) {
                     matchedId = mid;
                     break;
                 }
