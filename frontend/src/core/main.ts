@@ -55,11 +55,11 @@ import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '..
 import { showPlaza, closePlaza } from '../menus/plaza';
 import { getAutoImportCached } from '../menus/settings-shared';
 import {
-    freeflyInput,
     getCameraMode,
     restoreAutoCameraState,
     switchCameraMode,
 } from '../scene/camera/camera';
+import { freeflyInput } from './freefly-state';
 import { syncTimeOfDayFromEnv } from '../scene/env/env-bridge';
 import 'iconify-icon';
 import { registerShortcuts, initShortcutDispatcher, loadKeyBindings } from './shortcut-registry';

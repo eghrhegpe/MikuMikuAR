@@ -12,6 +12,7 @@ import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
 import { focusedModelId, modelRegistry, triggerAutoSave, uiState, setStatus } from '@/core/config';
+import { freeflyInput } from '@/core/freefly-state';
 import { clamp, clamp01, debounce, deepClone } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import { focusModel, reattachPipeline, setARMode, getProcBeatDetector } from '../scene';
@@ -442,15 +443,9 @@ export function setFov(v: number): void {
 }
 
 // ======== Freefly Input State ========
-// Set by main.ts keyboard handlers, consumed by the freefly render observer.
-export const freeflyInput = {
-    forward: false,
-    backward: false,
-    left: false,
-    right: false,
-    up: false,
-    down: false,
-};
+// [doc:adr-102] `freeflyInput` 定义已迁至 `@/core/freefly-state`（leaf 模块），
+// 由 camera（消费）与未来 events.ts（键盘写入）共享，破除 camera↔events 循环依赖。
+// 见上方 `import { freeflyInput } from '@/core/freefly-state';`
 
 // ======== Camera Factory Functions ========
 

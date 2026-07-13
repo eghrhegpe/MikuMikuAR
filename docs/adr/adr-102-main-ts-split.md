@@ -1,6 +1,6 @@
 # ADR-102: main.ts 拆分（init / events / render-loop / dev-hooks）
 
-> **状态**: 规划
+> **状态**: 实施中
 > **日期**: 2026-07-13
 > **作者**: Riku（首席架构师 AI）
 > **关联**: #3 main.ts 拆分（待后续重构）；ADR-033 config-split-and-dedup；ADR-100 camera-control-behavior-dual-axis；AGENTS.md「本地缓存规范」
