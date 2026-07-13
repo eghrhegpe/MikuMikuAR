@@ -19,7 +19,7 @@ import {
     dom,
 } from '@/core/config';
 import { getBaseName } from '@/core/utils';
-import { resolveFileUrl, normPath, encodeFileRef } from '@/core/fileservice';
+import { normPath, encodeFileRef, fetchArrayBuffer } from '@/core/fileservice';
 import { t } from '@/core/i18n/t';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '@/outfit/audio';
@@ -179,13 +179,8 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
     dom.loadingEl.style.display = 'block';
     dom.loadingText.textContent = t('scene.loader.vmdLoading');
     try {
-        const { url } = await resolveFileUrl(path);
+        const { url, data: vmdData } = await fetchArrayBuffer(path);
         const vmdName = getBaseName(path) || '';
-        const resp = await fetch(url);
-        if (!resp.ok) {
-            throw new Error(`HTTP ${resp.status}`);
-        }
-        const vmdData = await resp.arrayBuffer();
         const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
 
         if (mmdRuntime && (targetModelId || focusedMmdModel())) {
@@ -257,13 +252,8 @@ export async function loadCameraVmdFromPath(path: string): Promise<void> {
     dom.loadingEl.style.display = 'block';
     dom.loadingText.textContent = t('scene.loader.cameraVmdLoading');
     try {
-        const { url } = await resolveFileUrl(path);
+        const { data: vmdData } = await fetchArrayBuffer(path);
         const vmdName = getBaseName(path) || '';
-        const resp = await fetch(url);
-        if (!resp.ok) {
-            throw new Error(`HTTP ${resp.status}`);
-        }
-        const vmdData = await resp.arrayBuffer();
 
         const vmdLoader = new VmdLoader(scene);
         const mmdAnimation = await vmdLoader.loadFromBufferAsync(vmdName, vmdData);
@@ -284,13 +274,8 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
     dom.loadingEl.style.display = 'block';
     dom.loadingText.textContent = t('scene.loader.vpdLoading');
     try {
-        const { url } = await resolveFileUrl(path);
+        const { data: rawData } = await fetchArrayBuffer(path);
         const poseName = getBaseName(path) || '';
-        const resp = await fetch(url);
-        if (!resp.ok) {
-            throw new Error(`HTTP ${resp.status}`);
-        }
-        const rawData = await resp.arrayBuffer();
 
         // 停掉程序化动作（VPD 姿势不被动画干扰）
         if (isProcVmdActive()) {

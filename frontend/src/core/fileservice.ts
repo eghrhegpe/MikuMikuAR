@@ -45,6 +45,27 @@ export async function resolveFileUrl(
     return { url, port, dir: safeDir };
 }
 
+/**
+ * 通过文件服务解析 URL 并拉取文件内容为 ArrayBuffer。
+ * 统一封装 `resolveFileUrl → fetch → HTTP 状态校验 → arrayBuffer` 序列，
+ * 避免各加载器重复实现导致"改一处漏一处"（ADR-096 复用收敛）。
+ *
+ * @param filePath 模型/动作文件路径（支持正斜杠或反斜杠）
+ * @returns 解析出的 HTTP URL 与二进制内容
+ * @throws 当 HTTP 响应非 2xx 时抛出 `Error('HTTP <status>')`
+ */
+export async function fetchArrayBuffer(
+    filePath: string
+): Promise<{ url: string; data: ArrayBuffer }> {
+    const { url } = await resolveFileUrl(filePath);
+    const resp = await fetch(url);
+    if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status}`);
+    }
+    const data = await resp.arrayBuffer();
+    return { url, data };
+}
+
 // ======== normPath 缓存（buildLevel 每模型调用一次，缓存避免重复正则） ========
 const _normPathCache = new Map<string, string>();
 const NORM_PATH_CACHE_MAX = 5000;

@@ -491,6 +491,12 @@ func (a *App) SetResourceRoot(root string) error {
 		if cfg.OverridePaths.Setting == "" {
 			cfg.OverridePaths.Setting = filepath.Join(root, "setting")
 		}
+		if cfg.OverridePaths.Audio == "" {
+			cfg.OverridePaths.Audio = filepath.Join(root, "audio")
+		}
+		if cfg.OverridePaths.Prop == "" {
+			cfg.OverridePaths.Prop = filepath.Join(root, "prop")
+		}
 	}, true)
 }
 

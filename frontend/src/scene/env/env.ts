@@ -175,3 +175,11 @@ export function applyEnvState(state: EnvState): void {
         console.warn('[env] cloud fail:', e);
     }
 }
+
+// ======== Debug Mirror (反射调试工具) ========
+
+export {
+    toggleDebugMirror,
+    isDebugMirrorActive,
+    refreshDebugMirrorRenderList,
+} from './mirror-debug';

@@ -9,6 +9,9 @@ import {
     MmdCompositeAnimation,
     MmdAnimationSpan,
 } from 'babylon-mmd/esm/Runtime/Animation/mmdCompositeAnimation';
+// 导入以激活 babylon-mmd 的 module augmentation：
+// MmdCompositeAnimation 经此声明已实现 IMmdBindableModelAnimation，可直接传入 createRuntimeAnimation
+import type { MmdCompositeRuntimeModelAnimation } from 'babylon-mmd/esm/Runtime/Animation/mmdCompositeRuntimeModelAnimation';
 import type { VmdLayer } from '@/core/types';
 import {
     mmdRuntime,
@@ -17,7 +20,7 @@ import {
     setStatus,
     triggerAutoSave,
 } from '@/core/config';
-import { resolveFileUrl, normPath } from '@/core/fileservice';
+import { normPath, fetchArrayBuffer } from '@/core/fileservice';
 import { getBaseName, clamp01 } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import Encoding from 'encoding-japanese';
@@ -163,13 +166,8 @@ export async function addVmdLayerFromPath(
         return null;
     }
     try {
-        const { url } = await resolveFileUrl(path);
+        const { data } = await fetchArrayBuffer(path);
         const vmdName = getBaseName(path) || '';
-        const resp = await fetch(url);
-        if (!resp.ok) {
-            throw new Error(`HTTP ${resp.status}`);
-        }
-        const data = await resp.arrayBuffer();
         const layer = await addVmdLayer(
             data,
             vmdName.replace(/\.vmd$/i, ''),
@@ -219,13 +217,8 @@ export async function addVmdLayersFromPaths(
             continue;
         } // 跳过重复
         try {
-            const { url } = await resolveFileUrl(layer.path);
+            const { data } = await fetchArrayBuffer(layer.path);
             const vmdName = getBaseName(layer.path) || '';
-            const resp = await fetch(url);
-            if (!resp.ok) {
-                throw new Error(`HTTP ${resp.status}`);
-            }
-            const data = await resp.arrayBuffer();
             newLayers.push({
                 data,
                 name: vmdName.replace(/\.vmd$/i, ''),
@@ -584,14 +577,12 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
             return;
         }
 
-        // MmdCompositeAnimation 运行时实现了 IMmdBindableModelAnimation 接口
-        // 但 babylon-mmd 类型声明未暴露此继承关系，需要双重 cast
-        const runtimeAnimation =
-            composite as unknown as import('babylon-mmd/esm/Runtime/Animation/IMmdBindableAnimation').IMmdBindableModelAnimation;
+        // MmdCompositeAnimation 经类型增强已实现 IMmdBindableModelAnimation（babylon-mmd 在
+        // mmdCompositeRuntimeModelAnimation 中声明的 module augmentation），可直接传入，无需双重 cast
 
         // 绑定到模型
         inst.mmdModel.setRuntimeAnimation(null);
-        const handle = inst.mmdModel.createRuntimeAnimation(runtimeAnimation);
+        const handle = inst.mmdModel.createRuntimeAnimation(composite);
         inst.mmdModel.setRuntimeAnimation(handle);
 
         // 更新模型状态

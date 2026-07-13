@@ -1079,7 +1079,6 @@ export function applyGround(state: EnvState): void {
         }
         // 反射 RT 重建（委托引擎：quality 变更时重建、blend 变更走原地更新、互斥自动处理）
         buildGroundReflection(state);
-        console.log('[groundReflection] applyGround() — flat 原地更新路径');
         return;
     }
 
@@ -1103,9 +1102,8 @@ export function applyGround(state: EnvState): void {
         const hg = createHeightmapGround(state, scene, (gm) => {
             applyTerrainMaterial(gm, state, scene);
             applyGroundEdgeFade(gm.material as StandardMaterial, state.groundEdgeFade, scene);
-            // Phase B: 地形地面材质就绪后再挂载反射（修复此前直接 return 致反射永久丢失）。
+            // Phase B: 地面材质就绪后再挂载反射。
             buildGroundReflection(state);
-            console.log('[groundReflection] applyGround() — terrain onReady 路径');
             _onTerrainReady?.();
         });
         _envSys.ground.mesh = hg;
@@ -1165,7 +1163,6 @@ export function applyGround(state: EnvState): void {
 
     // Phase B: 镜面反射（创建后挂载，委托引擎）
     buildGroundReflection(state);
-    console.log('[groundReflection] applyGround() — flat 新建路径');
 
     _envSys.ground.mesh = ground;
 }
