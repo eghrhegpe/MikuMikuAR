@@ -7,8 +7,7 @@
 // 自动播放策略：浏览器/WebView2 要求首个用户手势后才能 resume。playSfx 在播放前检测
 // ctx.state === 'suspended' 并尝试 resume；若仍 suspended 则静默跳过（不报错、不抛异常）。
 
-import { SettingsStore } from '@/lib/settings-store';
-import { setUIState } from '@/core/state';
+import { uiState, setUIState } from '@/core/state';
 import { clamp01 } from '@/core/utils';
 
 let _ctx: AudioContext | null = null;
@@ -32,8 +31,8 @@ export function getAudioContext(): AudioContext {
  */
 function refreshMasterGain(): void {
     if (!_master) return;
-    const enabled = SettingsStore.get().get('sfxEnabled') as boolean;
-    const vol = SettingsStore.get().get('sfxVolume') as number;
+    const enabled = uiState.sfxEnabled !== false;
+    const vol = uiState.sfxVolume ?? 0.7;
     _master.gain.value = enabled ? clamp01(vol) : 0;
 }
 
@@ -49,43 +48,39 @@ export function getSfxMasterGain(): GainNode {
 }
 
 export function setSfxVolume(v: number): void {
-    SettingsStore.get().set('sfxVolume', clamp01(v));
-    setUIState({ sfxVolume: clamp01(v) });
-    // 已有 master 时立即同步增益，避免播放中调音延迟生效
+    const val = clamp01(v);
+    setUIState({ sfxVolume: val });
     refreshMasterGain();
 }
 
 export function getSfxVolume(): number {
-    return SettingsStore.get().get('sfxVolume') as number;
+    return uiState.sfxVolume ?? 0.7;
 }
 
 export function setSfxEnabled(on: boolean): void {
-    SettingsStore.get().set('sfxEnabled', on);
     setUIState({ sfxEnabled: on });
-    // 同上：开关切换立即作用于正在播放的音效
     refreshMasterGain();
 }
 
 export function getSfxEnabled(): boolean {
-    return SettingsStore.get().get('sfxEnabled') as boolean;
+    return uiState.sfxEnabled !== false;
 }
 
 export function setFootstepEnabled(on: boolean): void {
-    SettingsStore.get().set('footstepEnabled', on);
     setUIState({ footstepEnabled: on });
 }
 
 export function getFootstepEnabled(): boolean {
-    return SettingsStore.get().get('footstepEnabled') as boolean;
+    return uiState.footstepEnabled !== false;
 }
 
 export function setFootstepVolume(v: number): void {
-    SettingsStore.get().set('footstepVolume', clamp01(v));
-    setUIState({ footstepVolume: clamp01(v) });
+    const val = clamp01(v);
+    setUIState({ footstepVolume: val });
 }
 
 export function getFootstepVolume(): number {
-    return SettingsStore.get().get('footstepVolume') as number;
+    return uiState.footstepVolume ?? 0.8;
 }
 
 export interface PlaySfxOptions {

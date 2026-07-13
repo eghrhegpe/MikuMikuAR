@@ -1,15 +1,14 @@
 // footstep.ts — 脚步声控制器（ADR-088 Phase A）
 //
 // [doc:adr-088] 消费 feet-adjustment 的落地事件（FootLandEvent）→ 程序化合成音效 → SFX 总线发声。
-// 状态为全局配置（SettingsStore），非 per-model：一套脚步声配置作用于所有模型。
+// 状态为全局配置（uiState），非 per-model：一套脚步声配置作用于所有模型。
 // 落地事件天然要求脚部跟随（ADR-085）开启；未开脚部跟随时无落地事件（Phase B 补降级路径）。
 //
 // 程序化合成（Phase A 决策）：零音频资源，用噪声脉冲 + 低频 thump + 衰减包络 + 一阶低通合成，
 // 按地面材质微调音色。云资源/Promise 不引入。
 
 import { getAudioContext, getSfxEnabled, playSfx } from '@/core/audio-bus';
-import { SettingsStore } from '@/lib/settings-store';
-import { envState } from '@/core/state';
+import { uiState, envState } from '@/core/state';
 import { setOnFootLand, type FootLandEvent } from './feet-adjustment';
 
 type GroundSfxKind = 'concrete' | 'grass' | 'wood' | 'water' | 'default';
@@ -99,8 +98,7 @@ function synthFootstep(kind: GroundSfxKind): AudioBuffer {
 export function startFootstep(scene: import('@babylonjs/core/scene').Scene): void {
     void scene;
     setOnFootLand((e: FootLandEvent) => {
-        const footstepEnabled = SettingsStore.get().get('footstepEnabled') as boolean;
-        if (!footstepEnabled) {
+        if (!uiState.footstepEnabled) {
             return;
         }
         if (!getSfxEnabled()) {
@@ -109,9 +107,9 @@ export function startFootstep(scene: import('@babylonjs/core/scene').Scene): voi
         const kind = resolveGroundSfxKind();
         const buf = synthFootstep(kind);
         const impactVol = Math.max(0.2, Math.min(1, e.impactSpeed / REF_IMPACT_SPEED));
-        const footstepVol = SettingsStore.get().get('footstepVolume') as number;
+        const footstepVol = uiState.footstepVolume ?? 0.8;
         const vol = impactVol * footstepVol;
-        const detune = Math.random() * 160 - 80; // ±80 音分随机化，避免每步同音
+        const detune = Math.random() * 160 - 80;
         playSfx(buf, { volume: vol, detune });
     });
 }

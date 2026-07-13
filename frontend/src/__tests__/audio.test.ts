@@ -79,51 +79,31 @@ vi.mock('../core/fileservice', () => ({
     resolveFileUrl: vi.fn((path: string) => Promise.resolve({ url: 'http://mock/' + path })),
 }));
 
-const mockTriggerAutoSave = vi.fn();
-vi.mock('../core/config', () => ({
-    triggerAutoSave: (...args: unknown[]) => mockTriggerAutoSave(...args),
-    setUIState: (..._args: unknown[]) => undefined,
-}));
-
-// Self-contained mock: no hoisting needed, factory owns its own internal store
-vi.mock('../lib/settings-store', () => {
-    // mutable ref shared between factory and test body
-    const store = {
-        mockVolume: 1,
-        mockOffset: 0,
-    };
+// Mock uiState and config - initialize globals inside factory to avoid hoisting
+vi.mock('../core/state', () => {
+    if (!(globalThis as any).__audioTestUiState) {
+        (globalThis as any).__audioTestUiState = { volume: 1, audioOffset: 0 };
+    }
     return {
-        SettingsStore: {
-            get() {
-                return {
-                    get: (key: string) => {
-                        if (key === 'volume') {
-                            return store.mockVolume;
-                        }
-                        if (key === 'audioOffset') {
-                            return store.mockOffset;
-                        }
-                        return 0;
-                    },
-                    set: (_key: string, _value: unknown) => {
-                        if (_key === 'volume') {
-                            store.mockVolume = _value as number;
-                        }
-                        if (_key === 'audioOffset') {
-                            store.mockOffset = _value as number;
-                        }
-                        globalThis.dispatchEvent(
-                            new CustomEvent('SETTINGS_UPDATED', {
-                                detail: { key: _key, value: _value },
-                            })
-                        );
-                    },
-                };
-            },
+        get uiState() {
+            return (globalThis as any).__audioTestUiState;
         },
-        SETTINGS_UPDATED: Symbol('SETTINGS_UPDATED'),
     };
 });
+
+vi.mock('../core/config', () => {
+    const triggerAutoSave = vi.fn();
+    (globalThis as any).__audioTestTriggerAutoSave = triggerAutoSave;
+    return {
+        triggerAutoSave,
+        setUIState: (state: Record<string, unknown>) => {
+            Object.assign((globalThis as any).__audioTestUiState, state);
+        },
+    };
+});
+
+// Retrieve mock reference AFTER vi.mock runs (vitest hoists vi.mock but code after runs normally)
+const mockTriggerAutoSave = (globalThis as any).__audioTestTriggerAutoSave;
 
 // BeatDetector stub
 const mockBeatDetector = {
@@ -502,23 +482,20 @@ describe('notifyBeatDetectorReset', () => {
     });
 });
 
-describe('SettingsStore integration', () => {
-    it('listener on SETTINGS_UPDATED calls applyGain', () => {
+describe('audio state integration', () => {
+    it('setVolume calls applyGain to update audioElement volume', () => {
         const mockAudio = makeMockAudio();
         vi.stubGlobal('Audio', function MockAudio() {
             return mockAudio;
         });
 
-        // Simulate SettingsStore default volume = 0.7 via setVolume (writes to mocked store)
         setVolume(0.7);
         void playAudio('test.mp3', 'test');
-        expect(mockAudio.volume).toBe(0.7); // applyGain called at creation
+        expect(mockAudio.volume).toBe(0.7);
 
-        // setVolume(0.3) updates store and fires SETTINGS_UPDATED → applyGain
         setVolume(0.3);
-        expect(mockAudio.volume).toBe(0.3); // applyGain re-applies with new value
+        expect(mockAudio.volume).toBe(0.3);
 
-        // Restore and cleanup
         setVolume(1);
         vi.unstubAllGlobals();
     });

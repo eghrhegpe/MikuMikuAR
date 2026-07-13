@@ -42,7 +42,9 @@ export default defineConfig(({ command }) => {
     // false（默认）→ esbuild 消除死分支，默认构建不含 MPR，保持 bundle 精简、零回归。
     // 与 Go 端 CoopCoepMiddleware 同轴门控：构建前端与启动 App 均需 VITE_MMD_WASM_MT 才启用 MPR。
     define: {
-      __MMD_ENABLE_MPR__: process.env.VITE_MMD_WASM_MT ? 'true' : 'false',
+      // 必须是布尔字面量，不能用字符串 'true'/'false'（esbuild 替换后会变成真值字符串，
+      // 导致默认构建也走 MPR 路径）。JSON.stringify(布尔) 产出合法 JS 布尔 token。
+      __MMD_ENABLE_MPR__: JSON.stringify(!!process.env.VITE_MMD_WASM_MT),
     },
     // babylon-mmd MPR（多线程 WASM 物理）的 worker 入口 workerHelpers.js
     // 含动态 import('../../..')，强制 worker 包产出多 chunk。

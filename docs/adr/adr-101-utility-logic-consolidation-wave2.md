@@ -148,9 +148,18 @@ import('...').then(({ X }) => X(...)).catch(() => {})
 - **`logWarn`/`logError` 不改变现有日志行为**，仅统一标签格式为 `[tag] message`。
 - **`LoadingGuard` 接口设计**须覆盖 `Set` 模式和 `boolean` 模式两种使用场景（`tryEnter(key)` 返回 boolean + `leave(key)`）。
 - **`DebouncedTimer` 必须支持取消和重新调度**（`schedule(fn, ms)` + `cancel()`）。
-- **`addDisposableListener` 返回 `{ dispose(): void }`**，与项目既有 `Disposable` 接口兼容。
+- **`addDisposableListener` 返回 `{ dispose(): void }`**，与项目既有 `Disposable` 接口兼容。接口签名：
+
+```typescript
+// core/dom.ts 已有或本次补齐
+export interface Disposable {
+  dispose(): void
+}
+```
+
 - 对于**高频调用**的数学工具（`degToRad`、`clampPct`），保留函数调用方式以维持可调试性，不做过度内联优化。
 - 任何批次不得改变既有对外行为：`tsc --noEmit` 必须通过，`vitest run` 必须全绿。
+- **全仓零新增 `as any` / `@ts-ignore`**（排除测试文件），P1 迁移中若引入类型压制视为失败。
 
 ### 3.1 接口设计预览
 
@@ -224,35 +233,70 @@ export function jsonParse<T>(s: string): T | null  // JSON.parse(s) with try/cat
 
 ## 4. 执行计划
 
-### 第一阶段：P1 收错 + 异步工具（低风险，预计 1 回合）
+### 子里程碑划分
 
-| 步骤 | 动作 | 文件 | 风险 |
-|------|------|------|------|
-| 1 | 在 `utils.ts` 新增 `swallowError` / `fireAndForget` / `logWarn` / `logError` | `core/utils.ts` | 低：纯新增，无调用方 |
-| 2 | 写单测 | `__tests__/lib/utils.test.ts` | — |
-| 3 | 在 `utils.ts` 新增 `delay` / `waitForFrame` / `lazyImport` | `core/utils.ts` | 低：纯新增 |
-| 4 | 迁移 `.catch(() => {})` → `swallowError`（47+ 处） | 全仓 ~15 文件 | 中：替换须逐处确认语义，确保原 catch 确为静默 |
-| 5 | 迁移 `console.warn('[tag]'` → `logWarn(tag, ...)`（180+ 处） | 全仓 ~40 文件 | 中：高频替换，须正则扫描确保无遗漏 |
-| 6 | 迁移 `new Promise(r=>setTimeout/requestAnimationFrame)` → `delay/waitForFrame`（16+ 处） | ~7 文件 | 低：机械替换 |
-| 7 | 迁移 `import().then().catch(()=>{})` → `lazyImport` + `swallowError`（56+ 处） | ~15 文件 | 中：`lazyImport` 返回 `Promise<T>`，调用方可能需要微调 |
+Phase 1 内部按职责拆为两个子里程碑，独立验证：
 
-### 第二阶段：P2 生命周期守卫（需设计类接口，预计 1-2 回合）
+| 子里程碑 | 包含步骤 | 变更规模 | 验证门 |
+|----------|---------|----------|--------|
+| **P1-a: 异步工具（纯新增）** | §4.1 步骤 1–3 | 2 文件新增，~120 行 | `npx vitest run` 新增 6 函数单测 |
+| **P1-b: 错误处理迁移** | §4.1 步骤 4–7 | ~50 文件，~300 行变更 | `npx vitest run` 全绿 + 验收清单零残留 |
 
-| 步骤 | 动作 | 风险 |
-|------|------|------|
-| 1 | 新增 `LoadingGuard` / `DebouncedTimer` / `Abortable` 类 | 低：纯新增 |
-| 2 | 迁移 `_loading` 标志 → `LoadingGuard`（4 处） | 中：需适配 Set→tryEnter/leave 语义 |
-| 3 | 迁移 `_timer` 管理 → `DebouncedTimer`（7 处） | 低：机械替换 |
-| 4 | 迁移 `AbortController` 使用 → `Abortable`（6 处） | 中：需处理 reset 语义 |
-| 5 | 新增 `addDisposableListener`（`dom.ts`） | 低：纯新增 |
-| 6 | 迁移 `addEventListener/removeEventListener` 配对 → `addDisposableListener`（~24 文件） | 高：100+ 对，每对需确认 dispose 时机 |
+各步骤验证门：
+- **每完成一个步骤**（含新增 + 迁移）→ 执行 `npm run check`（`tsc --noEmit`）+ `npx vitest run`
+- **Phase 末尾** → 全量验收清单核对
 
-### 第三阶段：P3 纯函数（低风险，可并行）
+### 4.1 第一阶段 P1-a：异步工具新增
 
-| 步骤 | 动作 | 风险 |
-|------|------|------|
-| 1 | 新增全部 P3 纯函数（~10 个） | 低 |
-| 2 | 迁移 50+ 处数学/数据操作 | 低 |
+| 步骤 | 动作 | 变更估算 | 风险 |
+|------|------|---------|------|
+| 1 | 在 `utils.ts` 新增 `swallowError` / `fireAndForget` / `logWarn` / `logError` | 1 文件，~30 行 | 低：纯新增，无调用方 |
+| 2 | 在 `utils.ts` 新增 `delay` / `waitForFrame` / `lazyImport` | 1 文件，~20 行 | 低：纯新增 |
+| 3 | 写单测（6 函数） | 1 文件，~80 行 | — |
+| ✅ **里程碑 P1-a 完成** | `npx vitest run` 全绿 | — | 进入 P1-b |
+
+### 4.2 第一阶段 P1-b：错误处理迁移
+
+| 步骤 | 动作 | 变更估算 | 风险 |
+|------|------|---------|------|
+| **4a** | **前置扫描**：`grep -rn '\.catch(\s*\(\s*\)\s*=>\s*{}\s*)'` 全仓 → 输出 JSON 清单，人工标注"√ 静默 / ⚠ 需保留 / ⚠ 改用 try-catch"三列 | 清单文件 ~50 行 | 区分真静默 vs 意图性吞错 |
+| **4b** | 按标注结果迁移 √ 条目 → `swallowError`；非静默条目原地加注释 | ~15 文件，~47 行 | 中 |
+| **5a** | **前置扫描**：`grep -rn 'console\.warn'` 全仓 → 输出 JSON 清单，含文件:行号 + 上下文 | 清单文件 ~180 行 | 确保零遗漏 |
+| **5b** | 逐文件替换 `console.warn('[tag]' → `logWarn(tag, ...)`；每替换 5 文件执行一次 `npx vitest run`（小批量止损） | ~40 文件，~180 行 | 中：最大批次 |
+| 6 | 迁移 `new Promise(r=>setTimeout/rAF)` → `delay/waitForFrame`（16+ 处） | ~7 文件，~16 行 | 低：机械替换 |
+| **7a** | **前置扫描**：`grep -rn 'import('` → 提取动态导入模式，输出清单 | 清单文件 ~56 行 | 识别非静默路径 |
+| **7b** | 迁移 √ 条目 → `lazyImport` + `swallowError`；替换前后各跑一遍 `vitest run`，对比失败用例数 | ~15 文件，~56 行 | 中：错误处理路径变化 |
+| ✅ **里程碑 P1-b 完成** | `npx vitest run` 全绿 + 验收清单零残留 | — | 进入 Phase 2 |
+
+### 4.3 第二阶段 P2：生命周期守卫
+
+| 步骤 | 动作 | 变更估算 | 风险 |
+|------|------|---------|------|
+| 1 | 新增 `LoadingGuard` / `DebouncedTimer` / `Abortable` 类 + 单测 | 2 文件，~100 行 | 低：纯新增 |
+| 2 | 迁移 `_loading` 标志 → `LoadingGuard`（4 处） | 4 文件，~20 行 | 中：Set→tryEnter/leave 适配 |
+| 3 | 迁移 `_timer` 管理 → `DebouncedTimer`（7 处） | 7 文件，~30 行 | 低：机械替换 |
+| 4 | 迁移 `AbortController` 使用 → `Abortable`（6 处） | 6 文件，~24 行 | 中：reset 语义处理 |
+| 5 | 新增 `addDisposableListener`（`dom.ts`）+ 单测 | 2 文件，~40 行 | 低：纯新增 |
+| 6 | **按组**迁移 `addEventListener/removeEventListener`（~24 文件，100+ 对） | — | 高：见分组说明 |
+
+**Step 6 分组策略**（每组完成后独立验证后合并 commit）：
+
+| 组 | 文件 | 对数估 | 顺序 |
+|----|------|--------|------|
+| A. UI 组件 | `dialog.ts`(6)、`ui-advanced-rows.ts`(4)、`ui-collapsible.ts`(2)、`ui-slide-row.ts`(4)、`ui-resource-panel.ts`(8)、`ui-rows.ts`(4)、`ui-virtual-grid.ts`(1)、`ui-fullscreen-overlay.ts`(3) | ~32 对 | 1（无业务依赖） |
+| B. 菜单/设置 | `main.ts`(15+)、`menu.ts`(10+)、`settings-shortcuts.ts`(2)、`library-core.ts`(5)、`model-detail.ts`(5)、`model-material.ts`(3) | ~40 对 | 2 |
+| C. 场景/道具 | `camera.ts`(3)、`audio.ts`(3)、`scene-serialize.ts`(2)、`scene-prop-levels.ts`(5)、`outfit-ui.ts`(1)、`plaza.ts`(1) | ~15 对 | 3 |
+| D. 动画/其他 | `motion-*`(8)、`scene-stage-*`(5)、`shortcut-registry.ts`(1)、`settings-*`(3) | ~17 对 | 4 |
+
+每组完成后：`npm run check` + `vitest run` 通过 → commit。
+
+### 4.4 第三阶段 P3：纯函数
+
+| 步骤 | 动作 | 变更估算 | 风险 |
+|------|------|---------|------|
+| 1 | 新增全部 P3 纯函数（`clampPct`/`dist2d`/`dist3d`/`degToRad`/`radToDeg`/`ensureArray`/`filterKeys`/`Cache`/`allSettledFilter`/`jsonStringify`/`jsonParse`/`rgbString`）～12 个 | 2 文件，~150 行 | 低 |
+| 2 | 写单测 | 1 文件，~120 行 | — |
+| 3 | 迁移 50+ 处数学/数据操作 | ~15 文件，~50 行 | 低 |
 
 ---
 
@@ -261,10 +305,13 @@ export function jsonParse<T>(s: string): T | null  // JSON.parse(s) with try/cat
 | 风险 | 影响 | 缓解措施 |
 |------|------|---------|
 | `swallowError` 过度使用导致真正的错误被沉默 | 难以调试的隐式错误 | `swallowError` 内部自动调用 `logWarn`；保留按需的 `fireAndForget` 原语 |
-| `lazyImport` 的 `.catch` 被隐含后丢失错误上下文 | 错误无声消失 | `lazyImport` 不内含 `.catch`——调用方显式配合 `swallowError` 或 `try/catch` |
-| 180+ 处 `console.warn` 替换遗漏 | 新旧日志格式混用 | 替换完后 grep 全仓 `console\.warn` 确认零残留（排除测试文件） |
-| `addDisposableListener` 迁移时 dispose 时机不一致 | 内存泄漏或事件丢失 | 每对迁移后手动验证 dispose 路径（check `finally` / `dispose()` 中调用） |
+| `lazyImport` 的 `.catch` 被隐含后丢失错误上下文 | 错误无声消失 | `lazyImport` 不内含 `.catch`——调用方显式配合 `swallowError` 或 `try/catch`；替换前后各跑一次 `vitest run` 对比失败数 |
+| 180+ 处 `console.warn` 替换遗漏 | 新旧日志格式混用 | 替换前生成全量 JSON 清单 → 替换后 `grep console\.warn` 零残留（排除测试文件） |
+| `.catch(() => {})` 中部分非静默条目被误替换 | 功能性错误被沉默 | 替换前增加人工标注三列（√ 静默 / ⚠ 保留 / ⚠ 改用 try-catch），仅替换 √ 条目 |
+| `addDisposableListener` 迁移时 dispose 时机不一致 | 内存泄漏或事件丢失 | 按文件类型分组推进（A/B/C/D 四组），每组独立验证 + commit；每对手动确认 dispose 路径 |
 | `clampPct`/`degToRad` 等高频函数调用开销 | 微性能退化 | 保持函数调用——可调试性优先于微优化；后续可视热点 profile 决定是否 inline |
+| P1-b 步骤 5 是最大批次（~40 文件，180 行），疲劳作业易降质量 | 替换质量下降，遗漏/错误替换 | 每替换 5 文件执行一次 `npx vitest run` 止损；限制单次连续替换不超过 10 文件 |
+| 类型安全退化：P1 迁移中引入 `as any` 或 `@ts-ignore` 绕过类型错误 | 类型安全约束失效 | 验收标准已加入 `as any` / `@ts-ignore` 零新增检查；`tsc --noEmit` 必须通过 |
 
 ---
 
@@ -286,6 +333,9 @@ export function jsonParse<T>(s: string): T | null  // JSON.parse(s) with try/cat
 - [ ] `npx tsc --noEmit`：0 错误
 - [ ] `npx vitest run`：全部通过（含新增工具函数单测）
 - [ ] `npm run build`：构建通过
+- [ ] `git diff --stat` 每步变化距离在预期范围内（P1-b 各步骤 ≤50 文件/≤200 行）
+- [ ] `grep -r 'as any' frontend/src/ --include='*.ts'`：零新增（排除 `__tests__/`）
+- [ ] `grep -r '@ts-ignore\|@ts-expect-error' frontend/src/ --include='*.ts'`：零新增（排除 `__tests__/`）
 - [ ] 全仓 `\.catch\(\(\) => \{\}\)` / `\.catch\(\(\) => {}` 零匹配
 - [ ] 全仓 `console\.warn\(` 仅允许在 `logWarn` 实现中出现或测试文件中
 - [ ] 全仓 `new Promise\(.*setTimeout` / `new Promise\(.*requestAnimationFrame` 零匹配（测试文件除外）
