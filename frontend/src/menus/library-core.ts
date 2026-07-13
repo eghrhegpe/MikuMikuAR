@@ -82,7 +82,7 @@ import {
     setCurrentState,
 } from '../core/ui-helpers';
 import type { ResourceItem } from '../core/ui-helpers';
-import { tryCatchStatus, getBrowseDir, isUnderRoot } from '../core/utils';
+import { tryCatchStatus, getBrowseDir, isUnderRoot, getBaseName } from '../core/utils';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t'; // [doc:adr-059] i18n 翻译
 import { getLang } from '../core/i18n/locale'; // [doc:adr-059] 用于列表 collation 随语言切换
@@ -187,9 +187,28 @@ export function getRelativePathUnderDir(mdirRaw: string, baseDirRaw: string): st
     return isUnderRoot(base, mdir) ? mdir.substring(base.length).replace(/^\//, '') : null;
 }
 
+/**
+ * [doc:model-memory] 在已渲染的 level 中按 rowKey 高亮指定模型行并滚动可见。
+ * 复用键盘焦点样式 `slide-focused`；先清除既有高亮，避免与 setupFocus 默认高亮的首项重叠。
+ */
+function highlightRow(root: HTMLElement, rowKey: string): void {
+    const list = (root.querySelector('.slide-list') ?? root) as HTMLElement;
+    const rows = Array.from(list.querySelectorAll('.slide-item')) as HTMLElement[];
+    rows.forEach((r) => r.classList.remove('slide-focused'));
+    const el = rows.find((r) => r.dataset.rowKey === rowKey);
+    if (el) {
+        el.classList.add('slide-focused');
+        el.scrollIntoView({ block: 'nearest' });
+    } else if (import.meta.env.DEV) {
+        console.warn('[restore] focus row not found:', rowKey);
+    }
+}
+
 const makeModelMenu = (container: HTMLElement): SlideMenu => {
     // [展开栈] 打开资源库时，从 root 异步串行展开到上次浏览目录的剩余子目录段
     let pendingAutoExpand: string[] | null = null;
+    // [doc:model-memory] 上次加载模型的容器目录 + 目标行 key，到达该层时高亮（focus 默认，直载延后）
+    let pendingFocusModel: { dir: string; rowKey: string } | null = null;
     return new SlideMenu({
         container,
         onClose: closeAllOverlays,
@@ -254,12 +273,36 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     };
                 }
                 const browseDir = getBrowseDir('pmx');
-                // [doc:adr-090] 读取上次浏览子目录记忆，优先从 LastDirs["browse:pmx"] 恢复
-                // [展开栈] 不再把 lastDir 直接当根（会导致导航栈单层、易迷失、且前缀不对齐时生成伪文件夹），
-                // 而是记录相对 root 的子目录段，由 onLevelEnter 从 root 逐级展开。
+                // [doc:adr-090] 读取上次浏览子目录记忆（文件夹记忆，作为回退）
+                // [doc:model-memory] 优先用 RecentModels[0]（上次加载的模型）定位其容器目录；
+                //   zip 模型也能命中：expandZipEntries 已把 zip 内部条目预置进 allModels，
+                //   其 dir = <zip父目录>/<zipBase>，buildLevel 按 dir 过滤即可展开到 zip 内。
+                //   多 pmx 同 zip 时 computeLibraryRef 仅标识 zip（不含 zip_inner），取首个匹配。
                 const [lastDir] = await GetLastBrowseDir('pmx');
-                const segs = lastDir ? splitSubdirSegments(browseDir, lastDir) : null;
+                let restoreTarget: string | null = null;
+                let focusModel: LibraryModel | null = null;
+                const lastRef = recentModels[0] ?? null;
+                if (lastRef) {
+                    const m = allModels.find(
+                        (x) => x.format === 'pmx' && computeLibraryRef(x.file_path) === lastRef
+                    );
+                    if (m) {
+                        restoreTarget = normPath(m.dir);
+                        focusModel = m;
+                    }
+                }
+                if (!restoreTarget && lastDir) {
+                    restoreTarget = normPath(lastDir); // 回退：文件夹记忆
+                }
+                const segs = restoreTarget ? splitSubdirSegments(browseDir, restoreTarget) : null;
                 pendingAutoExpand = segs && segs.length > 0 ? segs : null;
+                pendingFocusModel = focusModel
+                    ? { dir: normPath(focusModel.dir), rowKey: 'model:' + focusModel.file_path }
+                    : null;
+                if (import.meta.env.DEV) {
+                    console.log('[restore] lastRef=', lastRef, 'restoreTarget=', restoreTarget,
+                        'segs=', segs, 'focusRowKey=', pendingFocusModel?.rowKey);
+                }
                 return buildLevel(
                     browseDir,
                     t('library.title'),
@@ -331,11 +374,25 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             if (!browseRoot) {
                 return;
             }
+            // [doc:model-memory] 到达上次模型的容器目录：高亮该行（focus 默认，直载延后）
+            if (pendingFocusModel && normPath(level.dir) === pendingFocusModel.dir) {
+                highlightRow(container, pendingFocusModel.rowKey);
+                pendingFocusModel = null;
+            }
             if (pendingAutoExpand && pendingAutoExpand.length > 0) {
                 const seg = pendingAutoExpand[0];
                 const nextDir = normPath(dir + '/' + seg);
                 // 立即消费剩余段，避免本层动画结束后的 onLevelEnter 重复展开
                 pendingAutoExpand = pendingAutoExpand.length > 1 ? pendingAutoExpand.slice(1) : null;
+                if (import.meta.env.DEV) {
+                    // 捕获 race：若 transitioning 为 true，下方 push 会被 menu.ts:180 静默丢弃（停在根）
+                    console.log('[restore] autoExpand push', {
+                        from: dir,
+                        seg,
+                        nextDir,
+                        transitioning: menu.isTransitioning,
+                    });
+                }
                 // 与 root 层保持一致：第 4 参用 modelStack（即当前 SlideMenu 实例），并传入外部路径项
                 menu.push(
                     buildLevel(
@@ -655,8 +712,8 @@ export function buildResourceItemsForDir(
             const fp = m.file_path || '';
             const filename =
                 m.container === 'zip' && m.zip_inner
-                    ? m.zip_inner.split('/').pop() || ''
-                    : fp.split('/').pop() || '';
+                    ? getBaseName(m.zip_inner) || ''
+                    : getBaseName(fp) || '';
             const cached = modelMetaCache.get(fp);
             let label: string;
             switch (displayNamePriority) {
@@ -772,7 +829,7 @@ function renderFullscreenFolder(
                 ? (path) => {
                       const label =
                           filtered.find((i) => i.id === path)?.label ||
-                          path.split('/').pop() ||
+                          getBaseName(path) ||
                           path;
                       navigate(label, (c) => renderFullscreenFolder(c, path, filter, navigate));
                   }
@@ -857,7 +914,7 @@ function addListViewToolbar(
                     onEnterFolder: (path) => {
                         const folderLabel =
                             allResourceItems.find((i) => i.id === path)?.label ||
-                            path.split('/').pop() || path;
+                            getBaseName(path) || path;
                         navigate(folderLabel, (c) => {
                             renderFullscreenFolder(c, path, filter, navigate);
                         });
@@ -992,7 +1049,7 @@ function renderGridMode(
                             // [doc:adr-066] 全屏内导航
                             const folderLabel =
                                 allResourceItems.find((i) => i.id === path)?.label ||
-                                path.split('/').pop() ||
+                                getBaseName(path) ||
                                 path;
                             navigate(folderLabel, (c) => {
                                 renderFullscreenFolder(c, path, filter, navigate);
@@ -1021,7 +1078,7 @@ function renderGridMode(
                 if (stack) {
                     // 找到文件夹项的 label
                     const folderItem = allResourceItems.find((fi) => fi.id === path);
-                    const folderLabel = folderItem?.label || path.split('/').pop() || path;
+                    const folderLabel = folderItem?.label || getBaseName(path) || path;
                     stack.push(buildLevel(path, folderLabel, filter, targetStack));
                 }
             },
@@ -1047,8 +1104,8 @@ export function modelToRow(m: LibraryModel): PopupRow {
     const fp = m.file_path || '';
     const filename =
         m.container === 'zip' && m.zip_inner
-            ? m.zip_inner.split('/').pop() || t('library.unknown')
-            : fp.split('/').pop() || t('library.unknown');
+            ? getBaseName(m.zip_inner) || t('library.unknown')
+            : getBaseName(fp) || t('library.unknown');
     const cached = modelMetaCache.get(fp);
     let label: string;
     switch (displayNamePriority) {

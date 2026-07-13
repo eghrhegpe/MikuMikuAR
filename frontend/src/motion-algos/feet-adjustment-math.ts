@@ -3,6 +3,7 @@
 // 引擎钩子（scene/motion/feet-adjustment.ts）负责把结果写入 IK 骨骼。
 
 import type { FeetState } from '@/core/types';
+import { clamp01 } from '@/core/utils';
 
 export interface SolveFootInput {
     /** 当前 IK 骨骼（脚踝目标）世界 Y */
@@ -28,9 +29,7 @@ export interface SolveFootOutput {
     grounded: boolean;
 }
 
-function clamp01(v: number): number {
-    return v < 0 ? 0 : v > 1 ? 1 : v;
-}
+// clamp01 已收敛至 @/core/utils
 
 /**
  * 解算单脚应处的世界 Y 坐标。

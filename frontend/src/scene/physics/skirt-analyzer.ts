@@ -15,6 +15,8 @@
  * 关联: ADR-084, ADR-081 (physics-bridge 复用)
  */
 
+import { clampInt } from '@/core/utils';
+
 // ============================================================================
 // 类型定义
 // ============================================================================
@@ -137,9 +139,7 @@ function edgeKey(a: number, b: number): string {
     return a < b ? `${a}_${b}` : `${b}_${a}`;
 }
 
-function clampInt(v: number, lo: number, hi: number): number {
-    return Math.round(Math.min(hi, Math.max(lo, v)));
-}
+// clampInt 已收敛至 @/core/utils
 
 // ============================================================================
 // 主分析函数

@@ -5,16 +5,7 @@
 import { engine } from '../scene';
 import { setLightState, setRenderState, getLightState, getRenderState } from '../scene';
 import type { LightState, RenderState } from '../scene';
-
-/** Format current wall-clock time as HH:mm:ss.SSS for log timestamps. */
-function logTime(): string {
-    const d = new Date();
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    const ss = String(d.getSeconds()).padStart(2, '0');
-    const ms = String(d.getMilliseconds()).padStart(3, '0');
-    return `${hh}:${mm}:${ss}.${ms}`;
-}
+import { formatTimestamp } from '@/core/utils';
 
 // ======== Types ========
 
@@ -247,7 +238,7 @@ function applyDegrade(level: DegradeLevel, force = false): void {
         }
         _currentLevel = 0;
         _lastRecoveryTime = now;
-        console.info(`[${logTime()}] [Performance] Restored to full quality`);
+        console.info(`[${formatTimestamp()}] [Performance] Restored to full quality`);
         return;
     }
 
@@ -286,7 +277,7 @@ function applyDegrade(level: DegradeLevel, force = false): void {
         // 实际发生了恢复
         _lastRecoveryTime = now;
     }
-    console.info(`[${logTime()}] [Performance] Level ${level}: ${LEVEL_CONFIGS[level].label}`);
+    console.info(`[${formatTimestamp()}] [Performance] Level ${level}: ${LEVEL_CONFIGS[level].label}`);
 }
 
 // ======== Thresholds with Hysteresis ========
@@ -391,7 +382,7 @@ export function setPerformanceMode(mode: PerformanceMode): void {
         // updatePerformance 已在 custom 模式下早返，不会再次降级。
         resetPerformanceSnapshot();
     }
-    console.info(`[${logTime()}] [Performance] Mode set to: ${mode}`);
+    console.info(`[${formatTimestamp()}] [Performance] Mode set to: ${mode}`);
 }
 
 export function getPerformanceMode(): PerformanceMode {

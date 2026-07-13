@@ -17,6 +17,7 @@ import {
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { getWindVector, isWindActive } from '@/core/physics/wind-utils';
+import { col3FromTriple } from '@/core/color-helpers';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture } from './env-texture';
@@ -528,7 +529,7 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('wavePhase', _waterPhase);
     mat.setColor3(
         'waterColor',
-        new Color3(state.waterColor[0], state.waterColor[1], state.waterColor[2])
+        col3FromTriple(state.waterColor)
     );
     mat.setFloat('waterTransparency', state.waterTransparency);
     mat.setFloat('waterLevel', state.waterLevel);
@@ -585,7 +586,7 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('foamOpacity', state.foamOpacity);
     mat.setColor3(
         'waterFogColor',
-        new Color3(state.waterFogColor[0], state.waterFogColor[1], state.waterFogColor[2])
+        col3FromTriple(state.waterFogColor)
     );
     mat.setFloat('waterFogDensity', state.waterFogDensity);
     mat.setFloat('waterFogOpacityInfluence', state.waterFogOpacityInfluence);
@@ -822,7 +823,7 @@ export function createWater(state: EnvState): void {
             }
             m.setColor3(
                 'waterColor',
-                new Color3(envState.waterColor[0], envState.waterColor[1], envState.waterColor[2])
+                col3FromTriple(envState.waterColor)
             );
             const dl = scene.getLightByName('dir') as DirectionalLight | null;
             if (dl) {
@@ -1234,7 +1235,7 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
     if (preset.waterFogColor !== undefined) {
         mat.setColor3(
             'waterFogColor',
-            new Color3(preset.waterFogColor[0], preset.waterFogColor[1], preset.waterFogColor[2])
+            col3FromTriple(preset.waterFogColor)
         );
     }
     if (preset.waterFogDensity !== undefined) {

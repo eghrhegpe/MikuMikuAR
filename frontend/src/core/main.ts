@@ -45,6 +45,8 @@ import {
     setEnvState,
     applyFrameControl,
 } from '../scene/scene';
+import { hexToRgb, rgbToString } from './color-helpers';
+import { formatTimestamp } from './utils';
 import { applyOutfitVariant, loadOutfits } from '../outfit/outfit';
 import { focusModel } from '../scene/manager/model-ops';
 import { screenshotCurrent } from '../menus/scene-menu';
@@ -81,13 +83,7 @@ function _updateStaticHtmlTexts(): void {
     setText('#updateToast .toast-ignore-btn', 'main.importIgnore');
 }
 
-function hexToRgb(hex: string): string {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) {
-        return '74, 108, 247';
-    }
-    return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
-}
+// hexToRgb 已下沉至 core/color-helpers（对象版 + rgbToString）
 
 // ======== Initialize hover hints for static [data-hint] elements ========
 initHints();
@@ -749,7 +745,7 @@ async function restoreUIState(): Promise<void> {
     }
     if (s.accent) {
         root.style.setProperty('--accent', s.accent);
-        root.style.setProperty('--accent-rgb', hexToRgb(s.accent));
+        root.style.setProperty('--accent-rgb', rgbToString(hexToRgb(s.accent)));
         root.style.setProperty('--accent-dim', s.accent + '33');
         const textColors = generateTextColors(s.accent);
         root.style.setProperty('--text-bright', textColors.bright);
@@ -944,14 +940,7 @@ async function handleDropFile(path: string): Promise<void> {
 // ======== Render Loop (with optional FPS limit / vsync via engine.maxFPS) ========
 applyFrameControl();
 engine.setHardwareScalingLevel(1 / (uiState.renderScale ?? 1));
-function _ts(): string {
-    const d = new Date();
-    const h = String(d.getHours()).padStart(2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
-    const s = String(d.getSeconds()).padStart(2, '0');
-    const ms = String(d.getMilliseconds()).padStart(3, '0');
-    return `${h}:${m}:${s}.${ms}`;
-}
+// 时间戳格式化已收敛至 utils.formatTimestamp
 let _renderBeforeTime = 0;
 scene.onBeforeRenderObservable.add(() => {
     _renderBeforeTime = performance.now();
@@ -964,7 +953,7 @@ scene.onAfterRenderObservable.add(() => {
             ? scene.onBeforeRenderObservable.observers.length
             : 0;
         console.warn(
-            `[${_ts()}][perf:gpu] before→after render took ${_gpuElapsed.toFixed(1)}ms (observers=${_obsCount})`
+            `[${formatTimestamp()}][perf:gpu] before→after render took ${_gpuElapsed.toFixed(1)}ms (observers=${_obsCount})`
         );
     }
 });
@@ -981,7 +970,7 @@ engine.runRenderLoop(() => {
     const _obsDelta = _obsAfter - _obsBefore;
     if (_rElapsed > 30 || (_obsDelta > 0 && _obsAfter > 100)) {
         console.warn(
-            `[${_ts()}][perf:render] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`
+            `[${formatTimestamp()}][perf:render] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`
         );
     }
     updatePerformance();

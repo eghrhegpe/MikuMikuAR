@@ -24,6 +24,7 @@ import {
 } from './transform-gizmo';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
+import { col3FromTriple } from '@/core/color-helpers';
 
 function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
     obj[key] = value;
@@ -191,7 +192,7 @@ function _createStageLight(
 ): SpotLight | PointLight | DirectionalLight {
     const pos = new Vector3(state.posX, state.posY, state.posZ);
     const target = new Vector3(state.targetX, state.targetY, state.targetZ);
-    const diffuse = new Color3(state.color[0], state.color[1], state.color[2]);
+    const diffuse = col3FromTriple(state.color);
     const intensity = state.enabled ? state.intensity : 0;
 
     if (type === 'spot') {
@@ -388,13 +389,13 @@ export function setLightState(s: Partial<LightState>): void {
         dirLight.direction = dir;
     }
     if (s.dirColor !== undefined) {
-        dirLight.diffuse = new Color3(s.dirColor[0], s.dirColor[1], s.dirColor[2]);
+        dirLight.diffuse = col3FromTriple(s.dirColor);
     }
     if (s.hemiColor !== undefined) {
-        hemiLight.diffuse = new Color3(s.hemiColor[0], s.hemiColor[1], s.hemiColor[2]);
+        hemiLight.diffuse = col3FromTriple(s.hemiColor);
     }
     if (s.groundColor !== undefined) {
-        hemiLight.groundColor = new Color3(s.groundColor[0], s.groundColor[1], s.groundColor[2]);
+        hemiLight.groundColor = col3FromTriple(s.groundColor);
     }
     if (s.shadowEnabled !== undefined) {
         _shadowEnabled = s.shadowEnabled;
@@ -893,7 +894,7 @@ function _applyStageLightParams(entry: StageLightEntry, s: Partial<StageLightSta
         light.intensity = s.intensity;
     }
     if (s.color !== undefined) {
-        light.diffuse = new Color3(s.color[0], s.color[1], s.color[2]);
+        light.diffuse = col3FromTriple(s.color);
     }
 
     if (type === 'spot' && light instanceof SpotLight) {
@@ -1247,7 +1248,7 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
                 entry.state.color[2]
             );
             const tc = pl.state.color as [number, number, number];
-            const to = new Color3(tc[0], tc[1], tc[2]);
+            const to = col3FromTriple(tc);
             _tweenColor3(from, to, 300, (c) => {
                 setStageLightState({ color: [c.r, c.g, c.b] }, ids[i]);
             });

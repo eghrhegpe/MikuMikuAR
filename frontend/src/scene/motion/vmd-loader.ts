@@ -18,6 +18,7 @@ import {
     addRecentMotion,
     dom,
 } from '@/core/config';
+import { getBaseName } from '@/core/utils';
 import { resolveFileUrl, normPath, encodeFileRef } from '@/core/fileservice';
 import { t } from '@/core/i18n/t';
 import { loadCameraVmd } from '../camera/camera';
@@ -179,7 +180,7 @@ export async function loadVMDFromPath(path: string, targetModelId?: string): Pro
     dom.loadingText.textContent = t('scene.loader.vmdLoading');
     try {
         const { url } = await resolveFileUrl(path);
-        const vmdName = normPath(path).split('/').pop() || '';
+        const vmdName = getBaseName(path) || '';
         const resp = await fetch(url);
         if (!resp.ok) {
             throw new Error(`HTTP ${resp.status}`);
@@ -229,7 +230,7 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
     // 并行 HEAD 探针，取首个成功的扩展名（Promise.any 只取最快的成功结果）
     const probes = exts.map(async (ext) => {
         const audioPath = basePath + ext;
-        const audioName = audioPath.split('/').pop() || '';
+        const audioName = getBaseName(audioPath) || '';
         const probeUrl = `${baseOrigin}/?f=${encodeFileRef(audioName)}`;
         const resp = await fetch(probeUrl, { method: 'HEAD' });
         if (!resp.ok) {
@@ -257,7 +258,7 @@ export async function loadCameraVmdFromPath(path: string): Promise<void> {
     dom.loadingText.textContent = t('scene.loader.cameraVmdLoading');
     try {
         const { url } = await resolveFileUrl(path);
-        const vmdName = normPath(path).split('/').pop() || '';
+        const vmdName = getBaseName(path) || '';
         const resp = await fetch(url);
         if (!resp.ok) {
             throw new Error(`HTTP ${resp.status}`);
@@ -284,7 +285,7 @@ export async function loadVPDPose(path: string, targetModelId?: string): Promise
     dom.loadingText.textContent = t('scene.loader.vpdLoading');
     try {
         const { url } = await resolveFileUrl(path);
-        const poseName = normPath(path).split('/').pop() || '';
+        const poseName = getBaseName(path) || '';
         const resp = await fetch(url);
         if (!resp.ok) {
             throw new Error(`HTTP ${resp.status}`);

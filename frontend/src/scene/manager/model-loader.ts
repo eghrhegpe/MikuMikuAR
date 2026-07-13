@@ -24,6 +24,7 @@ import {
     setThumbnailCache,
     type RuntimeModel,
 } from '@/core/config';
+import { getBaseName } from '@/core/utils';
 import { createDefaultFeetState } from '@/core/state';
 import { resolveFileUrl, normPath } from '@/core/fileservice';
 import { isUnderRoot } from '@/core/utils';
@@ -159,7 +160,7 @@ export async function loadPMXFile(
         }
 
         const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
-        const fileName = normPath(filePath).split('/').pop() || '';
+        const fileName = getBaseName(filePath) || '';
 
         setStatus(t('scene.loader.loading'), false);
         dom.loadingEl.style.display = 'block';

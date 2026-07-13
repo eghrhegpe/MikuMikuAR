@@ -12,6 +12,7 @@ import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
 import { focusedModelId, modelRegistry, triggerAutoSave, uiState, setStatus } from '@/core/config';
+import { clamp, debounce, deepClone } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import { focusModel, reattachPipeline, setARMode } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
@@ -92,20 +93,16 @@ export function setCameraPreset(p: CameraPreset): void {
 }
 
 // ======== Camera Persist (拖拽结束后自动保存) ========
-let _cameraPersistTimer: ReturnType<typeof setTimeout> | null = null;
+const _scheduleCameraPersist = debounce((): void => {
+    triggerAutoSave();
+}, 500);
 
 /**
  * 相机视角变化时延迟触发保存（500ms 防抖）
  * 当用户拖拽结束时，视角变化停止，500ms 后自动保存
  */
 function scheduleCameraPersist(): void {
-    if (_cameraPersistTimer !== null) {
-        clearTimeout(_cameraPersistTimer);
-    }
-    _cameraPersistTimer = setTimeout(() => {
-        _cameraPersistTimer = null;
-        triggerAutoSave();
-    }, 500);
+    _scheduleCameraPersist();
 }
 
 export function getOrbitParams(): OrbitParams {
@@ -182,7 +179,7 @@ export function isTouchDevice(): boolean {
 }
 
 function clampFov(v: number): number {
-    return Math.max(0.1, Math.min(3, v));
+    return clamp(v, 0.1, 3);
 }
 let _concertUpdateFn: (() => void) | null = null;
 let _concertT = 0;
@@ -1017,7 +1014,7 @@ export function getCameraState(): CameraState {
     const target = isArc ? cam.target : null;
     return {
         mode: _cameraMode,
-        preset: JSON.parse(JSON.stringify(_currentPreset)),
+        preset: deepClone(_currentPreset),
         fov: _fov,
         alpha,
         beta,
@@ -1039,7 +1036,7 @@ export function setCameraState(s: CameraState): void {
     // 多数浏览器会直接拒绝；用户可在加载后手动进入 AR。
     if (s.preset) {
         const def = defaultCameraPreset();
-        const loaded = JSON.parse(JSON.stringify(s.preset)) as CameraPreset;
+        const loaded = deepClone(s.preset) as CameraPreset;
         // 旧存档迁移：concert 曾是「整圈自转」形态（带 speed 字段、无 sweepAngle），
         // 现重定向为 surround（环绕/转台），concert 归位为「粉丝机位」。
         const oldConcert = loaded.concert as Record<string, any> | undefined;

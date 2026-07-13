@@ -18,6 +18,7 @@ import type { Observer } from '@babylonjs/core/Misc/observable';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
+import { clamp, clampInt } from '@/core/utils';
 
 // ============================================================================
 // 骨骼 READ 桥（锚点跟随）
@@ -82,13 +83,7 @@ export interface AttachmentFit {
     particleSpacing: number;
 }
 
-function clamp(v: number, lo: number, hi: number): number {
-    return Math.min(hi, Math.max(lo, v));
-}
-
-function clampInt(v: number, lo: number, hi: number): number {
-    return Math.round(clamp(v, lo, hi));
-}
+// clamp / clampInt 已收敛至 @/core/utils
 
 /**
  * 从模型尺寸启发式推算挂件几何参数。

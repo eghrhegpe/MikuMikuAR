@@ -4,7 +4,7 @@
 
 import { libraryRoot, externalPaths, setStatus, setLibraryRoot } from '../core/config';
 import { t } from '../core/i18n/t';
-import { computeLibraryRef, resolveLibraryRef } from '../core/utils';
+import { computeLibraryRef, resolveLibraryRef, getBaseName, getDirPath, deepClone } from '../core/utils';
 import {
     serializeScene,
     deserializeScene,
@@ -21,9 +21,8 @@ import {
 
 /** 简易 dirname。 */
 function _dirname(p: string): string {
-    const n = p.replace(/\\/g, '/');
-    const idx = n.lastIndexOf('/');
-    return idx >= 0 ? n.slice(0, idx) : '.';
+    const d = getDirPath(p);
+    return d || '.';
 }
 
 /** 简易 join。 */
@@ -100,7 +99,7 @@ async function collectModelTextures(pmxPath: string): Promise<string[]> {
 
 /** 将 SceneFile 中的 libraryRef 重写为 bundle 内部路径。 */
 function rewriteRefsForBundle(scene: SceneFile, libraryRoot: string): SceneFile {
-    const rewritten = JSON.parse(JSON.stringify(scene)) as SceneFile;
+    const rewritten = deepClone(scene);
 
     function rewritePath(
         filePath: string | undefined | null,
@@ -116,8 +115,9 @@ function rewriteRefsForBundle(scene: SceneFile, libraryRoot: string): SceneFile 
             return undefined;
         }
 
-        // 计算在 bundle assets/ 内的相对路径
-        return _bundleInternalPath(abs, libraryRoot);
+        // 计算在 bundle assets/ 内的相对路径；库外文件回退为文件名（保留原 _bundleInternalPath 语义）
+        const ref = computeLibraryRef(abs);
+        return ref ?? getBaseName(abs);
     }
 
     // Models
@@ -179,28 +179,6 @@ function rewriteRefsForBundle(scene: SceneFile, libraryRoot: string): SceneFile 
     return rewritten;
 }
 
-/** 计算资源在 bundle 内部的 libraryRef 路径。 */
-function _bundleInternalPath(absPath: string, libRoot: string): string {
-    const normalised = absPath.replace(/\\/g, '/');
-    const rootNorm = libRoot.replace(/\\/g, '/');
-
-    // 在主库内
-    if (normalised.startsWith(rootNorm + '/')) {
-        return normalised.slice(rootNorm.length + 1); // "actors/miku.pmx"
-    }
-
-    // 在外部库内
-    for (const ext of externalPaths) {
-        const extNorm = ext.path.replace(/\\/g, '/');
-        if (normalised.startsWith(extNorm + '/')) {
-            return `${ext.name}:${normalised.slice(extNorm.length + 1)}`; // "mylib:actors/miku.pmx"
-        }
-    }
-
-    // 不在任何库内 — 用文件名
-    return normalised.split('/').pop() ?? normalised;
-}
-
 // ======== Export (Pack) ========
 
 /** 导出场景为 bundle zip 文件。 */
@@ -223,7 +201,7 @@ export async function exportSceneBundle(): Promise<void> {
     setStatus(t('scene.bundle.packing'), true);
     try {
         await BundleScene(targetPath, JSON.stringify(rewritten), assetPaths);
-        setStatus(t('scene.bundle.exported', { name: targetPath.split('/').pop() }), true);
+        setStatus(t('scene.bundle.exported', { name: getBaseName(targetPath) }), true);
     } catch (err) {
         console.error('exportSceneBundle:', err);
         setStatus(t('scene.bundle.exportFailed'), false);

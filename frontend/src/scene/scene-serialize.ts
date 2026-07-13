@@ -16,6 +16,7 @@ import {
     propRegistry,
     showErrorToast,
 } from '../core/config';
+import { debounce } from '../core/utils';
 import {
     getCameraState,
     setCameraState,
@@ -846,7 +847,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
 
 // ======== Auto-save Debounce ========
 
-let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+const _autoSaveDebounced = debounce((): void => {
+    saveSceneImmediate().catch(() => {});
+}, 500);
 
 /** localStorage key for backup auto-save (sync fallback when async Go call can't complete). */
 const LOCAL_SAVE_KEY = 'mikumikuar_last_scene_backup';
@@ -860,12 +863,7 @@ function clearLocalSceneBackup(): void {
 }
 
 export function triggerAutoSaveImpl(): void {
-    if (autoSaveTimer) {
-        clearTimeout(autoSaveTimer);
-    }
-    autoSaveTimer = setTimeout(() => {
-        saveSceneImmediate().catch(() => {});
-    }, 500);
+    _autoSaveDebounced();
 }
 
 /** Save scene immediately (no debounce). Used in visibilitychange / beforeunload.
@@ -909,10 +907,7 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
 /** Clean up pending timers and save state. Must be called before window unload. */
 function cleanupAndFlushSave(): void {
     // Clear any pending debounced save — we're about to flush immediately
-    if (autoSaveTimer) {
-        clearTimeout(autoSaveTimer);
-        autoSaveTimer = null;
-    }
+    _autoSaveDebounced.cancel();
     flushEnvState();
     flushUIState();
     saveSceneImmediate(true).catch(() => {});
