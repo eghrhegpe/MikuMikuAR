@@ -10,6 +10,8 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
 import type { UIState } from '@/core/types';
+import { lerp as lerpUtil, lerpArray, formatTimestamp } from '@/core/utils';
+import { col3FromTriple } from '@/core/color-helpers';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { deriveLighting, TIME_OF_DAY_PRESETS } from './env-lighting';
 import * as impl from './env-impl';
@@ -28,15 +30,7 @@ function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]
     obj[key] = value;
 }
 
-/** 时间戳 helper：HH:mm:ss.SSS */
-function _ts(): string {
-    const d = new Date();
-    const h = String(d.getHours()).padStart(2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
-    const s = String(d.getSeconds()).padStart(2, '0');
-    const ms = String(d.getMilliseconds()).padStart(3, '0');
-    return `${h}:${m}:${s}.${ms}`;
-}
+// 时间戳格式化已收敛至 utils.formatTimestamp
 
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): void {
@@ -64,7 +58,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
             impl.applySky(state);
             const _skyElapsed = performance.now() - _skyStart;
             if (_skyElapsed > 2) {
-                console.warn(`[${_ts()}][perf:env] applySky took ${_skyElapsed.toFixed(1)}ms`);
+                console.warn(`[${formatTimestamp()}][perf:env] applySky took ${_skyElapsed.toFixed(1)}ms`);
             }
         } catch (e) {
             console.warn('[env] sky fail:', e);
@@ -212,7 +206,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     ];
     if (hemiLight) {
         hemiLight.intensity = getLightState().hemiIntensity;
-        hemiLight.diffuse = new Color3(skyMid[0], skyMid[1], skyMid[2]);
+        hemiLight.diffuse = col3FromTriple(skyMid);
         // 半球光地面色固定为中性灰，不跟随地面材质色，避免「地面色拖了灯光」的混淆。
         hemiLight.groundColor = new Color3(0.3, 0.3, 0.4);
     }
@@ -341,7 +335,7 @@ function _timeOfDayTick(): void {
         _applyEnvStateFacade(envState, { sunAngle: envSunAngle });
         if (performance.now() - _tickStart > 2) {
             console.warn(
-                `[${_ts()}][perf:tick] _applyEnvStateFacade(sunAngle) took ${performance.now() - _tickStart}ms (angle=${envSunAngle.toFixed(1)})`
+                `[${formatTimestamp()}][perf:tick] _applyEnvStateFacade(sunAngle) took ${performance.now() - _tickStart}ms (angle=${envSunAngle.toFixed(1)})`
             );
         }
     } else if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
@@ -485,7 +479,7 @@ export function applyEnvPresetObject(preset: {
         }
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / duration, 1.0);
-        const lerp = (a: number, b: number) => a + (b - a) * t;
+        const lerp = (a: number, b: number) => lerpUtil(a, b, t);
 
         const _obsStart = scene.onBeforeRenderObservable.observers
             ? scene.onBeforeRenderObservable.observers.length
@@ -525,12 +519,12 @@ export function applyEnvPresetObject(preset: {
                 true
             );
             console.warn(
-                `[${_ts()}][perf:sky] setEnvState took ${performance.now() - _skyStart}ms (t=${t.toFixed(2)})`
+                `[${formatTimestamp()}][perf:sky] setEnvState took ${performance.now() - _skyStart}ms (t=${t.toFixed(2)})`
             );
             const _obsNow = scene.onBeforeRenderObservable.observers
                 ? scene.onBeforeRenderObservable.observers.length
                 : 0;
-            console.warn(`[${_ts()}][perf:obs] observers=${_obsNow} (t=${t.toFixed(2)})`);
+            console.warn(`[${formatTimestamp()}][perf:obs] observers=${_obsNow} (t=${t.toFixed(2)})`);
             lastSkyUpdate = elapsed;
         }
 
@@ -542,14 +536,14 @@ export function applyEnvPresetObject(preset: {
             if (typeof a === 'number' && typeof b === 'number') {
                 setKey(interpLight, key, lerp(a, b) as LightState[typeof key]);
             } else if (Array.isArray(a) && Array.isArray(b)) {
-                setKey(interpLight, key, a.map((v, i) => lerp(v, b[i])) as LightState[typeof key]);
+                setKey(interpLight, key, lerpArray(a, b, t) as LightState[typeof key]);
             }
         }
         const _lightStart = performance.now();
         setLightState(interpLight);
         if (performance.now() - _lightStart > 2) {
             console.warn(
-                `[${_ts()}][perf:light] setLightState took ${performance.now() - _lightStart}ms (t=${t.toFixed(2)})`
+                `[${formatTimestamp()}][perf:light] setLightState took ${performance.now() - _lightStart}ms (t=${t.toFixed(2)})`
             );
         }
 
@@ -558,7 +552,7 @@ export function applyEnvPresetObject(preset: {
             : 0;
         if (_obsAfterLight > 100) {
             console.warn(
-                `[${_ts()}][perf:obs] animLoop Δ=${_obsAfterLight - _obsStart} (start=${_obsStart} afterLight=${_obsAfterLight} t=${t.toFixed(2)})`
+                `[${formatTimestamp()}][perf:obs] animLoop Δ=${_obsAfterLight - _obsStart} (start=${_obsStart} afterLight=${_obsAfterLight} t=${t.toFixed(2)})`
             );
         }
 
@@ -582,14 +576,14 @@ export function applyEnvPresetObject(preset: {
                 ? scene.onBeforeRenderObservable.observers.length
                 : 0;
             console.warn(
-                `[${_ts()}][perf:sky] animLoop ended: SetEnvState=${_endElapsed.toFixed(1)}ms, observers=${_obsBeforeEnd}→${_obsAfterSetEnv}, triggerAutoSave next`
+                `[${formatTimestamp()}][perf:sky] animLoop ended: SetEnvState=${_endElapsed.toFixed(1)}ms, observers=${_obsBeforeEnd}→${_obsAfterSetEnv}, triggerAutoSave next`
             );
             triggerAutoSave();
             const _obsAfterAutoSave = scene.onBeforeRenderObservable.observers
                 ? scene.onBeforeRenderObservable.observers.length
                 : 0;
             console.warn(
-                `[${_ts()}][perf:sky] after triggerAutoSave: observers=${_obsAfterAutoSave}`
+                `[${formatTimestamp()}][perf:sky] after triggerAutoSave: observers=${_obsAfterAutoSave}`
             );
             return;
         }

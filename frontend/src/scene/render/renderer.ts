@@ -12,6 +12,7 @@ import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
 import type { Observer } from '@babylonjs/core/Misc/observable';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
+import { clamp, clamp01, lerp, lerpArray } from '@/core/utils';
 
 // ======== Tone Mapping Modes ========
 
@@ -89,15 +90,7 @@ let _lastProbeRefresh = 0;
 let _celShadingMode = false;
 let _originalRenderState: RenderState | null = null;
 
-// ======== 数值钳制工具 ========
-
-function clamp(value: number, min: number, max: number): number {
-    return Math.max(min, Math.min(max, value));
-}
-
-function clampColorChannel(v: number): number {
-    return clamp(v, 0, 1);
-}
+// ======== 数值钳制工具（clamp/clamp01 收敛至 @/core/utils）========
 
 function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
     obj[key] = value;
@@ -350,9 +343,9 @@ function _applyRenderState(s: Partial<RenderState>): void {
                 }
                 if (m.edgesRenderer && outlineColorChanged) {
                     m.edgesColor = new Color4(
-                        clampColorChannel(_outlineColor[0]),
-                        clampColorChannel(_outlineColor[1]),
-                        clampColorChannel(_outlineColor[2]),
+                        clamp01(_outlineColor[0]),
+                        clamp01(_outlineColor[1]),
+                        clamp01(_outlineColor[2]),
                         1
                     );
                 }
@@ -689,7 +682,7 @@ export function transitionRenderState(
     // 枚举字段（动画结束时切换）
     const enumKeys: (keyof RenderState)[] = ['toneMapping'];
 
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    // lerp / lerpArray 已收敛至 @/core/utils
 
     /**
      * 判断布尔字段是否应在当前插值进度 t 时切换。
@@ -753,7 +746,7 @@ export function transitionRenderState(
             if (target[key] !== undefined) {
                 const a = source[key] as number[];
                 const b = target[key] as number[];
-                setKey(interp, key, a.map((v, i) => lerp(v, b[i], t)) as RenderState[typeof key]);
+                setKey(interp, key, lerpArray(a, b, t) as RenderState[typeof key]);
             }
         }
         // 布尔字段：按阈值提前切换
@@ -884,9 +877,9 @@ export function rebuildOutlineState(): void {
                 m.enableEdgesRendering();
                 if (m.edgesRenderer) {
                     m.edgesColor = new Color4(
-                        clampColorChannel(_outlineColor[0]),
-                        clampColorChannel(_outlineColor[1]),
-                        clampColorChannel(_outlineColor[2]),
+                        clamp01(_outlineColor[0]),
+                        clamp01(_outlineColor[1]),
+                        clamp01(_outlineColor[2]),
                         1
                     );
                 }

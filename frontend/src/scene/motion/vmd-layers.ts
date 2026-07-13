@@ -18,6 +18,7 @@ import {
     triggerAutoSave,
 } from '@/core/config';
 import { resolveFileUrl, normPath } from '@/core/fileservice';
+import { getBaseName } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import Encoding from 'encoding-japanese';
 
@@ -158,12 +159,12 @@ export async function addVmdLayerFromPath(
     }
     const inst = modelRegistry.get(targetId);
     if (inst?.vmdLayers?.some((l) => l.path === path)) {
-        setStatus(t('scene.vmd.layerExists', { name: normPath(path).split('/').pop() }), false);
+        setStatus(t('scene.vmd.layerExists', { name: getBaseName(path) }), false);
         return null;
     }
     try {
         const { url } = await resolveFileUrl(path);
-        const vmdName = normPath(path).split('/').pop() || '';
+        const vmdName = getBaseName(path) || '';
         const resp = await fetch(url);
         if (!resp.ok) {
             throw new Error(`HTTP ${resp.status}`);
@@ -219,7 +220,7 @@ export async function addVmdLayersFromPaths(
         } // 跳过重复
         try {
             const { url } = await resolveFileUrl(layer.path);
-            const vmdName = normPath(layer.path).split('/').pop() || '';
+            const vmdName = getBaseName(layer.path) || '';
             const resp = await fetch(url);
             if (!resp.ok) {
                 throw new Error(`HTTP ${resp.status}`);

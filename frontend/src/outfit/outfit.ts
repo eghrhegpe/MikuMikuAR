@@ -13,9 +13,12 @@ import {
     ModelInstance,
 } from '../core/config';
 import type { Scene } from '@babylonjs/core/scene';
+import { getBaseName, normPath } from '@/core/utils';
+import { col3FromTriple } from '@/core/color-helpers';
 import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
 import { encodeFileRef } from '../core/fileservice';
+import { getDirPath } from '../core/utils';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
 
 // Lazy access to the active Scene — avoids a static import of '../scene/scene',
@@ -76,7 +79,7 @@ function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
                 continue;
             }
             const url = (tex as Texture).name || (tex as Texture).url || '';
-            const base = url.split('/').pop().split('?')[0] || '';
+            const base = getBaseName(url).split('?')[0] || '';
             if (!base) {
                 continue;
             }
@@ -94,10 +97,7 @@ function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
     return result;
 }
 
-function _encodePath(path: string): string {
-    // [doc:adr-057] 复用 fileservice 的 base64url 查询参数编码
-    return path.replace(/\\/g, '/');
-}
+// _encodePath 已改为复用 normPath（@/core/utils）
 
 export async function loadOutfits(id: string): Promise<OutfitFile | null> {
     if (_loadingOutfits.has(id)) {
@@ -131,7 +131,7 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
                 inst.outfitFile = undefined;
                 return null;
             }
-            const modelDir = inst.filePath.replace(/\\/g, '/').replace(/\/[^/]*$/, '');
+            const modelDir = getDirPath(inst.filePath);
             const subdirs = await ListSubDirs(modelDir);
             if (!subdirs || subdirs.length === 0) {
                 inst.outfitFile = undefined;
@@ -149,7 +149,7 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
             for (const subdir of subdirs) {
                 for (const m of mappings) {
                     const relPath = subdir + '/' + m.basename;
-                    const url = `http://127.0.0.1:${inst.port}/?f=${encodeFileRef(_encodePath(relPath))}`;
+                    const url = `http://127.0.0.1:${inst.port}/?f=${encodeFileRef(normPath(relPath))}`;
                     if (seenUrl.has(url)) {
                         continue;
                     }
@@ -234,7 +234,7 @@ async function _applySlot(
     const cur = mmdSm[slot];
     if (newPath) {
         const scene = await _getScene();
-        const url = `http://127.0.0.1:${port}/?f=${encodeFileRef(_encodePath(newPath))}`;
+        const url = `http://127.0.0.1:${port}/?f=${encodeFileRef(normPath(newPath))}`;
         const newTex = new Texture(url, scene);
         let loaded = false;
         await new Promise<void>((resolve) => {
@@ -362,7 +362,7 @@ function _applyOutfitParams(
 }
 
 function _applyOutfitTint(sm: StandardMaterial, tint: [number, number, number]): void {
-    sm.diffuseColor.multiplyInPlace(new Color3(tint[0], tint[1], tint[2]));
+    sm.diffuseColor.multiplyInPlace(col3FromTriple(tint));
 }
 
 function _captureOrigParams(inst: ModelInstance): void {

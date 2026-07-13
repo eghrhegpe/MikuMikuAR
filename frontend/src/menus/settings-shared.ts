@@ -13,6 +13,7 @@ import {
 } from '../core/wails-bindings';
 import { setStatus, UIState, uiState, setUIState } from '../core/config';
 import { tryCatchStatus } from '../core/utils';
+import { hexToRgb, rgbToString } from '../core/color-helpers';
 import { t } from '../core/i18n/t';
 
 // ======== Auto-import state cache ========
@@ -80,22 +81,8 @@ export function getAutoLoadCompanionAudio(): boolean {
 }
 
 // ======== Color utilities ========
-
-export function hexToRgb(hex: string): { r: number; g: number; b: number } {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) {
-        return { r: 74, g: 108, b: 247 };
-    }
-    return {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-    };
-}
-
-export function rgbToString(rgb: { r: number; g: number; b: number }): string {
-    return `${rgb.r}, ${rgb.g}, ${rgb.b}`;
-}
+// 实现下沉至 @/core/color-helpers，此处 re-export 以保持对外 API 稳定。
+export { hexToRgb, rgbToString } from '../core/color-helpers';
 
 export function generateTextColors(hex: string): { bright: string; dim: string; muted: string } {
     const rgb = hexToRgb(hex);

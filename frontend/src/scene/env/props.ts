@@ -15,6 +15,7 @@ import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
 import { t } from '@/core/i18n/t';
+import { getBaseName } from '@/core/utils';
 import {
     attachGizmo,
     detachGizmo,
@@ -58,7 +59,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
         }
 
         const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
-        const fileName = normPath(filePath).split('/').pop() || '';
+        const fileName = getBaseName(filePath) || '';
         setStatus(t('props.loading'), false);
 
         // [doc:adr-057] URL 使用 ?f=base64url 形式无扩展名，需显式指定 pluginExtension

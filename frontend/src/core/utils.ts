@@ -23,6 +23,29 @@ import type { SlideMenu } from '../menus/menu';
 
 export { normPath };
 
+// ======== Path Helpers ========
+
+/**
+ * 跨平台取路径末段文件名。
+ * 基于 `normPath`（反斜杠→正斜杠、去尾斜杠、折叠 `.`、content:// 透传），
+ * 避免各模块重复手搓 `p.replace(/\\/g, '/').split('/').pop()`。
+ */
+export function getBaseName(p: string): string {
+    const norm = normPath(p);
+    const segs = norm.split('/').filter(Boolean);
+    return segs.length ? segs[segs.length - 1] : norm;
+}
+
+/**
+ * 跨平台取父目录路径。根目录（无 `/`）返回空字符串。
+ * 基于 `normPath`，是 `p.replace(/\\/g, '/').replace(/\/[^/]*$/, '')` 的归一化替代。
+ */
+export function getDirPath(p: string): string {
+    const norm = normPath(p);
+    const idx = norm.lastIndexOf('/');
+    return idx >= 0 ? norm.substring(0, idx) : '';
+}
+
 // ======== Card Container ========
 
 /** Card container helper: removes render-card bg, wraps content in an lcard. */
@@ -80,6 +103,61 @@ export function escapeHtml(s: string): string {
         .replace(/'/g, '&#39;');
 }
 
+// ======== Math Helpers ========
+
+export function clamp(v: number, lo: number, hi: number): number {
+    return Math.min(hi, Math.max(lo, v));
+}
+
+export function clampInt(v: number, lo: number, hi: number): number {
+    return Math.round(clamp(v, lo, hi));
+}
+
+export function clamp01(v: number): number {
+    return clamp(v, 0, 1);
+}
+
+export function lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+}
+
+export function lerpArray(a: number[], b: number[], t: number): number[] {
+    return a.map((v, i) => lerp(v, b[i], t));
+}
+
+export function formatTimestamp(d: Date = new Date()): string {
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    const ms = String(d.getMilliseconds()).padStart(3, '0');
+    return `${h}:${m}:${s}.${ms}`;
+}
+
+export function debounce<A extends unknown[]>(fn: (...args: A) => void, ms: number): {
+    (...args: A): void;
+    cancel(): void;
+} {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const debounced = (...args: A): void => {
+        if (timer !== null) clearTimeout(timer);
+        timer = setTimeout(() => {
+            timer = null;
+            fn(...args);
+        }, ms);
+    };
+    debounced.cancel = (): void => {
+        if (timer !== null) {
+            clearTimeout(timer);
+            timer = null;
+        }
+    };
+    return debounced;
+}
+
+export function deepClone<T>(x: T): T {
+    return JSON.parse(JSON.stringify(x)) as T;
+}
+
 // ======== Library Reference Utilities ========
 
 export const stackRegistry: {
@@ -117,35 +195,12 @@ export function computeLibraryRef(filePath: string): string | null {
     return null;
 }
 
-function normalizePath(input: string): string {
-    let p = input.replace(/\\/g, '/');
-    p = p.replace(/\/+/g, '/');
-    const parts = p.split('/').filter((s) => s !== '' && s !== '.');
-    const result: string[] = [];
-    for (const part of parts) {
-        if (part === '..') {
-            if (result.length > 0 && result[result.length - 1] !== '..') {
-                result.pop();
-            }
-        } else {
-            result.push(part);
-        }
-    }
-    return (p.startsWith('/') ? '/' : '') + result.join('/');
-}
-
-function isPathWithinRoot(resolved: string, rootPath: string): boolean {
-    const norm = normalizePath(resolved);
-    const root = normalizePath(rootPath);
-    return norm === root || norm.startsWith(root + '/');
-}
-
 /**
- * [doc:adr-090][doc:adr-095] 路径归属判定（单点版，基于 normPath）。
+ * [doc:adr-090][doc:adr-095] 路径归属判定（唯一实现，基于 normPath）。
  * 判定 child 是否位于 base 之下：精确相等（忽略大小写），或前缀相等且紧随字符为 '/'。
  * 禁止裸字符串前缀（如 ".../PMX" 误命中 ".../PMXSub" → 伪文件夹）。
- * 与下方 `isPathWithinRoot`（基于 normalizePath，处理 `..`/`.`）并存属已知债，
- * 待 ADR-095 批次 5 归一化合并后收敛为唯一实现。
+ * 含 `..` 的路径直接拒绝（目录边界判定场景，越界到 base 之外属非法输入；
+ * 与 resolveLibraryRef 的 `..` 字符串层拦截形成对称防护）。
  */
 export function isUnderRoot(base: string, child: string): boolean {
     const b = normPath(base).toLowerCase();
@@ -177,7 +232,7 @@ export function resolveLibraryRef(libraryRef: string): string | null {
         const ext = externalPaths.find((e) => e.name === source);
         if (ext) {
             const resolved = normPath(ext.path) + '/' + relPath;
-            if (!isPathWithinRoot(resolved, ext.path)) {
+            if (!isUnderRoot(ext.path, resolved)) {
                 console.warn(`[resolveLibraryRef] path traversal blocked: "${resolved}"`);
                 return null;
             }
@@ -187,7 +242,7 @@ export function resolveLibraryRef(libraryRef: string): string | null {
     }
     if (libraryRoot) {
         const resolved = normPath(libraryRoot) + '/' + libraryRef;
-        if (!isPathWithinRoot(resolved, libraryRoot)) {
+        if (!isUnderRoot(libraryRoot, resolved)) {
             console.warn(`[resolveLibraryRef] path traversal blocked: "${resolved}"`);
             return null;
         }

@@ -27,6 +27,7 @@ import {
     Matrix,
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
+import { col3FromTriple } from '@/core/color-helpers';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture, getOrCreateCanvasTexture, disposeTextureCache } from './env-texture';
@@ -261,9 +262,9 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
 
     drawSkyGradient(
         ctx,
-        new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
-        new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
-        new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
+        col3FromTriple(state.skyColorTop),
+        col3FromTriple(state.skyColorMid),
+        col3FromTriple(state.skyColorBot),
         state.skyBrightness,
         state.sunAngle,
         state.starsEnabled,
@@ -286,9 +287,9 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
             // 重绘渐变 + 星空贴图
             drawSkyGradient(
                 curCtx,
-                new Color3(state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2]),
-                new Color3(state.skyColorMid[0], state.skyColorMid[1], state.skyColorMid[2]),
-                new Color3(state.skyColorBot[0], state.skyColorBot[1], state.skyColorBot[2]),
+                col3FromTriple(state.skyColorTop),
+                col3FromTriple(state.skyColorMid),
+                col3FromTriple(state.skyColorBot),
                 state.skyBrightness,
                 state.sunAngle,
                 state.starsEnabled,
@@ -1356,7 +1357,7 @@ export function applyFog(state: EnvState): void {
                 scene.fogDensity = state.fogDensity;
                 break;
         }
-        scene.fogColor = new Color3(state.fogColor[0], state.fogColor[1], state.fogColor[2]);
+        scene.fogColor = col3FromTriple(state.fogColor);
     } else {
         scene.fogMode = Scene.FOGMODE_NONE;
     }
