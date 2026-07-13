@@ -1,4 +1,6 @@
 import { signal } from '@preact/signals-core';
+import { uiState } from '../core/state';
+import { schedulePersistUI } from '../scene/env/env-bridge';
 
 // AO ✂️ SettingsStore singleton for centralized audio settings
 const SETTINGS_UPDATED = Symbol('SETTINGS_UPDATED');
@@ -51,10 +53,14 @@ class SettingsStore {
         globalThis.dispatchEvent(
             new CustomEvent(SETTINGS_UPDATED.description!, { detail: { key, value } })
         );
+        (uiState as Record<string, unknown>)[key] = value;
+        schedulePersistUI();
     }
 
     reset(): void {
         state.value = { ...defaults };
+        Object.assign(uiState, defaults);
+        schedulePersistUI();
     }
 }
 
