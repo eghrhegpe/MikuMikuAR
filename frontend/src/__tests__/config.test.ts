@@ -14,6 +14,7 @@ import {
     setExternalPaths,
 } from '../core/config';
 import { normPath } from '../core/fileservice';
+import { getBaseName, getDirPath, isUnderRoot } from '../core/utils';
 
 describe('config pure functions', () => {
     describe('formatTime', () => {
@@ -251,6 +252,28 @@ describe('resolveLibraryRef', () => {
     it('resolves main library ref with nested path', () => {
         const result = resolveLibraryRef('a/b/c/model.pmx');
         expect(result).toContain('a/b/c/model.pmx');
+    });
+});
+
+describe('path helpers (getBaseName / getDirPath / isUnderRoot)', () => {
+    it('getBaseName extracts last segment across separators', () => {
+        expect(getBaseName('C:\\x\\y.pmx')).toBe('y.pmx');
+        expect(getBaseName('C:/x/y.pmx')).toBe('y.pmx');
+        expect(getBaseName('C:/x/y.pmx/')).toBe('y.pmx'); // 去尾斜杠
+        expect(getBaseName('foo.pmx')).toBe('foo.pmx');
+    });
+
+    it('getDirPath extracts parent directory', () => {
+        expect(getDirPath('C:/x/y.pmx')).toBe('C:/x');
+        expect(getDirPath('actors/miku.pmx')).toBe('actors');
+        expect(getDirPath('foo.pmx')).toBe(''); // 无父目录
+    });
+
+    it('isUnderRoot rejects ".." traversal segments', () => {
+        expect(isUnderRoot('C:/text-model/PMX', 'C:/text-model/PMX/../VMD/foo.pmx')).toBe(false);
+        expect(isUnderRoot('C:/text-model/PMX', 'C:/text-model/PMX/Sub')).toBe(true);
+        expect(isUnderRoot('C:/text-model/PMX', 'C:/text-model/PMXSub')).toBe(false); // 伪文件夹防护
+        expect(isUnderRoot('c:/text-model/PMX', 'C:/text-model/PMX/Sub')).toBe(true); // 盘符大小写
     });
 });
 
