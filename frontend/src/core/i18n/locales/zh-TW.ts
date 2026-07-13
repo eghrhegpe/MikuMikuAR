@@ -398,6 +398,10 @@ export const zhTW: Record<string, string> = {
 
     // ===== 相機 camera =====
     'motion.cameraMode': '相機模式',
+    'motion.cameraControl': '控制方案',
+    'motion.cameraBehavior': '運動行為',
+    'motion.behaviorNone': '静止（手動）',
+    'motion.behaviorNA': '僅軌道相機可用',
     'motion.camOrbit': '軌道',
     'motion.camFreefly': '自由飛行',
     'motion.camConcert': '演唱會',

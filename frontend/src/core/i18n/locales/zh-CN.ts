@@ -324,6 +324,10 @@ export const zhCN: Record<string, string> = {
 
     // ===== 相机 camera =====
     'motion.cameraMode': '相机模式',
+    'motion.cameraControl': '控制方案',
+    'motion.cameraBehavior': '运动行为',
+    'motion.behaviorNone': '静止（手动）',
+    'motion.behaviorNA': '仅轨道相机可用',
     'motion.camOrbit': '轨道',
     'motion.camFreefly': '自由飞行',
     'motion.camConcert': '演唱会',

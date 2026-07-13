@@ -207,9 +207,9 @@ export interface CameraState {
 |------|------|-----------|------|
 | **P1 契约 + shim** | 定义双轴类型；`switchCameraMode` 转 shim；旧枚举保留别名 | 旧测试全绿（零行为变化） | ✅ 已完成 |
 | **P2 运行时接线** | `beatcut` 生效条件改判 `_cameraBehavior==='beatcut'`；beatcut 与 concert/turntable 互斥（选中即停对方）；beatcut 订阅集中到 camera 内部并覆盖 restore 路径（解决「饿死」） | 单元测试 + 手动切镜 | ✅ 已完成 |
-| **P3 序列化迁移** | `get/setCameraState` 双写 + 迁移；旧存档往返测试 | camera.test 往返断言 | ⬜ 待开发 |
-| **P4 UI 重构** | 控制/行为两级选择器；`自动运镜` toggle 降级为行为选项；置灰约束 | 手动 UX 走查 | ⬜ 待开发 |
-| **P5 收尾** | `CameraMode` 别名清理评估（可延后）；ADR-070 补注记；文档同步 | check + build | ⬜ 待开发 |
+| **P3 序列化迁移** | `get/setCameraState` 双写 + 迁移；旧存档往返测试 | camera.test 往返断言 | ✅ 已完成 |
+| **P4 UI 重构** | 控制/行为两级选择器；`自动运镜` toggle 降级为行为选项；置灰约束 | 手动 UX 走查 | ✅ 已完成 |
+| **P5 收尾** | `CameraMode` 别名清理评估（保留别名，附理由）；ADR-070 补注记；文档同步 | check + build | ✅ 已完成 |
 
 #### P1–P2 实现落点（供 P3+ 续接）
 
@@ -261,3 +261,34 @@ type ScriptedSubMode = 'loop' | 'oneshot';
 - `LEGACY_MODE_MAP`：`vmd → {orbit, scripted}`（子态 loop）；`oneshot → {orbit, scripted}`（子态 oneshot）。
 - 迁移探测：旧 `mode==='oneshot'` → `behavior='scripted'` + `scriptedSubMode='oneshot'`。
 - P1-P2 仅落地类型与映射；`oneshot` 定格的具体取帧实现随 P4 行为完善（本轮保持「加载即定格首帧」的最小语义）。
+
+---
+
+## 十、P5 别名清理评估（`CameraMode` 兼容别名）
+
+### 10.1 现状清点（P3–P4 落地后）
+
+| 别名/旧入口 | 当前去向 | 是否仍被引用 |
+|------------|---------|-------------|
+| `CameraMode` 类型（deprecated） | 仍作为 `switchCameraMode` / `_cameraMode` / `LEGACY_MODE_MAP` 键 / `deriveLegacyMode` 反查 / `CameraState.mode` 的兼容字段 | 是（核心迁移枢纽，删除即破坏存档与 shim） |
+| `switchCameraMode(mode)` shim | 内部仍由 `_syncAxesFromMode` 派生双轴；P4 UI 已改用 `setCameraControl`/`setCameraBehavior` | 是（AR 进出、`restoreAutoCameraState`、VMD 回退等调用点仍走 shim） |
+| `UIState.autoCameraEnabled` / `autoCameraBeatsPerSwitch` | 保留为「只读兼容」：beatcut 行为的等价来源；P4 由 `behavior==='beatcut'` 表达，但旧存档仍靠此 flag 叠加 | 是（存档迁移依赖） |
+| `getCameraMode()` | 返回 `_cameraMode`（deprecated 别名）；P4 UI 改用 `getCameraControl`/`getCameraBehavior` | 是（其他遗留调用点） |
+
+### 10.2 评估结论
+
+**保留 `CameraMode` 别名与 shim，本次不清理。** 理由：
+
+1. **迁移枢纽不可断**：`LEGACY_MODE_MAP` / `deriveLegacyMode` / `CameraState.mode` 全部以 `CameraMode` 为键或兼容字段。删除别名须同步重写这三处 + 所有 `switchCameraMode` 调用点（AR 进出 / VMD 回退 / reset），属一次性大重构，与「双轴已落地、组合已验证」的当前目标正交，风险/收益比不划算。
+2. **向后兼容价值仍在**：旧存档（仅含 `mode`）经 `setCameraState` 兜底路径仍能正确迁移（P3 已验证）；旧版本读取新存档时 `CameraState.mode` 降级字段保证不炸。清理别名会切断这条降级链。
+3. **`autoCameraEnabled` flag 同理**：它是旧存档 beatcut 的唯一来源（P3 §6.2 step3），去掉后旧存档自动运镜丢失。须待「全量存档已含 `behavior` 字段」的版本普及后再评估移除。
+
+### 10.3 未来移除路径（增量演进，非阻断）
+
+当且仅当同时满足以下条件时，可启动别名清理：
+
+- 新存档格式（含 `control`/`behavior`）已通过至少一个大版本发布，旧 `mode`-only 存档在生产中可忽略；
+- 全部 `switchCameraMode` 调用点已改为 `setCameraControl`/`setCameraBehavior`（shim 内联）；
+- `UIState.autoCameraEnabled` 已确认无旧存档依赖（或提供一次性迁移脚本）。
+
+届时清理内容：删除 `CameraMode` 类型与 `CameraState.mode`；`switchCameraMode` 退化为内部 helper 或直接删除；`LEGACY_MODE_MAP`/`deriveLegacyMode` 收敛为仅存档导入期一次性探测（迁入 `setCameraState` 入口）。本 ADR 不阻塞该演进，仅明确「当前不清理」的裁定。

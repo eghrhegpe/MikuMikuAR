@@ -402,7 +402,7 @@ MikuMikuAR/
         │   ├── env-feature-levels.ts # 天空/地面/水面/风/云
         │   ├── env-preset-levels.ts  # 环境预设（内置+用户保存）
         │   ├── motion-popup.ts       # 动作弹窗入口 + 动作绑定/音乐/相机
-        │   ├── motion-camera-levels.ts   # 相机模式 + 参数面板
+        │   ├── motion-camera-levels.ts   # 相机控制/行为双轴 + 参数面板（ADR-100）
         │   ├── motion-procmotion-levels.ts # 程序化动作 + LipSync
         │   ├── motion-cloth-levels.ts    # 布料参数面板
         │   ├── settings.ts           # 设置页（UI/主题/字体/外部库）

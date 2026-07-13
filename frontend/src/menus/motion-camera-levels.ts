@@ -11,10 +11,14 @@ import type { PopupLevel } from '../core/config';
 import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
 import { getBrowseDir } from '../core/utils';
 import {
-    switchCameraMode,
-    getCameraMode,
     hasCameraVmd,
     clearCameraVmd,
+    getCameraControl,
+    getCameraBehavior,
+    getScriptedSubMode,
+    deriveLegacyMode,
+    setCameraControl,
+    setCameraBehavior,
     getOrbitParams,
     setOrbitParams,
     getFreeflyParams,
@@ -29,17 +33,16 @@ import {
     setSurroundPaused,
     getFov,
     setFov,
-    setAutoCameraEnabled,
-    isAutoCameraEnabled,
     setAutoCameraBeatsPerSwitch,
     getAutoCameraBeatsPerSwitch,
     setOrbitBoneLock,
     getOrbitBoneLock,
     getFocusedModelBoneNames,
     type CameraMode,
+    type CameraControl,
+    type CameraBehavior,
 } from '../scene/camera/camera';
 import { triggerAutoSave } from '../scene/scene';
-import { getProcBeatDetector } from '../scene/scene';
 import { getMotionMenu } from './motion-popup';
 import {
     switchARCameraFacing,
@@ -52,8 +55,6 @@ import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
-let cameraExpandedMode: CameraMode | null = null;
-
 function refreshCameraLevel(): void {
     const menu = getMotionMenu();
     if (menu) {
@@ -62,48 +63,36 @@ function refreshCameraLevel(): void {
 }
 
 function buildCameraSchema(): MenuNode[] {
-    const currentMode = getCameraMode();
+    const control = getCameraControl();
+    const behavior = getCameraBehavior();
     const vmdLoaded = hasCameraVmd();
-    const modeToExpand = cameraExpandedMode ?? currentMode;
+    const normBehavior: CameraBehavior = behavior === 'beatcut' ? 'none' : behavior;
+    const modeToExpand = deriveLegacyMode(control, normBehavior, getScriptedSubMode());
 
     return [
-        // 卡片 1：模式选择 + FOV
+        // 卡片 1：控制方案 + FOV
         {
             id: 'camera:main',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const modeOptions: Array<{ value: string; label: string }> = [
+                    const controlOptions: Array<{ value: string; label: string }> = [
                         { value: 'orbit', label: t('motion.camOrbit') },
                         { value: 'freefly', label: t('motion.camFreefly') },
-                        { value: 'concert', label: t('motion.camConcert') },
-                        { value: 'surround', label: t('motion.camSurround') },
-                        { value: 'oneshot', label: t('motion.camOneshot') },
                         { value: 'ar', label: t('motion.camAR') },
                     ];
-                    if (vmdLoaded) {
-                        modeOptions.push({ value: 'vmd', label: t('motion.camVmd') });
-                    }
-
                     addModeSlider(
                         inner,
-                        t('motion.cameraMode'),
-                        modeOptions.map((o) => ({ value: o.value, label: o.label })),
-                        currentMode,
+                        t('motion.cameraControl'),
+                        controlOptions,
+                        control,
                         (v) => {
-                            if (v === currentMode) {
-                                cameraExpandedMode = cameraExpandedMode ? null : currentMode;
-                            } else {
-                                switchCameraMode(v as CameraMode);
-                                cameraExpandedMode = v === 'oneshot' ? null : (v as CameraMode);
-                            }
+                            setCameraControl(v as CameraControl);
                             refreshCameraLevel();
                         },
                         'lucide:camera',
                         undefined,
-                        {
-                            bind: () => getCameraMode(),
-                        }
+                        { bind: () => getCameraControl() }
                     );
 
                     addSliderRow(
@@ -123,33 +112,63 @@ function buildCameraSchema(): MenuNode[] {
                 });
             },
         },
-        // 卡片 2：自动相机
+        // 卡片 2：运动行为（仅 orbit 可用）
         {
-            id: 'camera:auto',
+            id: 'camera:behavior',
             kind: 'custom',
+            visibleWhen: () => getCameraControl() === 'orbit',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    addToggleRow(
+                    const behaviorOptions: Array<{ value: string; label: string }> = [
+                        { value: 'none', label: t('motion.behaviorNone') },
+                        { value: 'turntable', label: t('motion.camSurround') },
+                        { value: 'concert', label: t('motion.camConcert') },
+                        { value: 'beatcut', label: t('motion.autoCamera') },
+                        { value: 'scripted', label: t('motion.camVmd') },
+                    ];
+                    addModeSlider(
                         inner,
-                        t('motion.autoCamera'),
-                        isAutoCameraEnabled(),
+                        t('motion.cameraBehavior'),
+                        behaviorOptions,
+                        behavior === 'beatcut' ? 'beatcut' : normBehavior,
                         (v) => {
-                            const bd = getProcBeatDetector();
-                            setAutoCameraEnabled(v, bd ?? undefined);
+                            setCameraBehavior(v as CameraBehavior);
                             refreshCameraLevel();
                         },
-                        'lucide:video',
-                        {
-                            bind: () => isAutoCameraEnabled(),
-                        }
+                        'lucide:activity',
+                        undefined,
+                        { bind: () => getCameraBehavior() }
                     );
+                });
+            },
+        },
+        // 卡片 2b：行为轴不可用提示（非 orbit 置灰）
+        {
+            id: 'camera:behaviorNA',
+            kind: 'custom',
+            visibleWhen: () => getCameraControl() !== 'orbit',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const row = document.createElement('div');
+                    row.className = 'cs-row';
+                    row.style.opacity = '0.4';
+                    row.style.pointerEvents = 'none';
+                    const lbl = document.createElement('span');
+                    lbl.className = 'cs-label';
+                    lbl.textContent = t('motion.cameraBehavior');
+                    const val = document.createElement('span');
+                    val.className = 'cs-value';
+                    val.textContent = t('motion.behaviorNA');
+                    row.appendChild(lbl);
+                    row.appendChild(val);
+                    inner.appendChild(row);
                 });
             },
         },
         {
             id: 'camera:autoInterval',
             kind: 'custom',
-            visibleWhen: () => isAutoCameraEnabled(),
+            visibleWhen: () => getCameraBehavior() === 'beatcut',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSliderRow(
