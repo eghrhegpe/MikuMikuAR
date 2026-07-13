@@ -67,7 +67,7 @@
 ### 过程发现（非本项引入，已标记交用户定夺）
 | 异常 | 位置 | 说明 |
 |------|------|------|
-| 陈旧破坏性测试 | `internal/app/proxy_test.go:300` | 引用 `a.OpenPlazaWindow("")`，但全仓库无该定义（随他人「发git」改动进 `main`）。阻断整个 `internal/app` 测试包编译。为验证本中间件，曾临时注释该 2 行 → 跑通 → **精确还原**（对他人代码零净改动）。修复权留用户。 |
+| 陈旧破坏性测试 | `internal/app/proxy_test.go:300` | 引用 `a.OpenPlazaWindow("")`，但全仓库无该定义（随他人「发git」改动进 `main`）。阻断整个 `internal/app` 测试包编译。为验证本中间件，曾临时注释该 2 行 → 跑通 → **精确还原**（对他人代码零净改动）。**已修复（2026-07-13）**：`OpenPlazaWindow` 为 ADR-075 重构前的旧名，真实方法为 `NavigatePlazaWindow(targetURL string) error`（`plaza_window.go:60`）；测试空参调用在 `NewApp` 未预创建 `plazaWin` 时返回 error，语义与断言吻合，故精确重命名为 `NavigatePlazaWindow`。`go test ./internal/app/` 全绿。 |
 | 工作区非我改动 | 发 git 提交后新写入 | i18n×5、`utils.ts`、`scene-render-levels.ts`、`vmd-loader.ts`、`env.ts`、`mirror-debug.ts`、`checksum`、`tmp-jscpd/`（copy-paste 检测器跑过）。来源/意图不明，按 scope 铁律**未并入本提交**。 |
 
 ---
@@ -88,5 +88,5 @@
 | 前端 MPR 切换 | `scene.ts` 用 `import.meta.env.VITE_MMD_WASM_MT` 门控 `new MmdWasmInstanceTypeMPR()` 替换 `SPR` | 先解决 Vite IIFE worker 构建阻断 |
 | 真机 SAB 验证 | WebView2 实测 `crossOriginIsolated` + `SharedArrayBuffer` 可用 | Go 端头注入已就绪后可做 |
 | 修正 research POC 路径 | `docs/research/babylon-mmd-api-analysis.md` 原「仅 basenameFallbackFS 注入」改为「包住 AssetFileServerFS（顶层文档）」 | 文档同步 |
-| 两项异常处置 | `proxy_test.go:300` 陈旧测试修复 / 工作区非我改动提交或搁置 | 用户指示 |
+| 两项异常处置 | `proxy_test.go:300` 陈旧测试修复（**已完成**：重命名 `OpenPlazaWindow`→`NavigatePlazaWindow`）/ 工作区非我改动提交或搁置 | 用户指示 |
 | 同源调研剩余 | `StreamAudioPlayer`（Item 3，收益低暂缓）、`AnimationRetargeter` + `HumanoidMmd`（Item 5，复用 ADR-061 骨骼映射） | 视需求排期 |
