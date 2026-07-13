@@ -189,6 +189,49 @@ export function getRelativePathUnderDir(mdirRaw: string, baseDirRaw: string): st
     return isUnderRoot(base, mdir) ? mdir.substring(base.length).replace(/^\//, '') : null;
 }
 
+export function isLeafFlattenDir(
+    dirPath: string,
+    models: LibraryModel[],
+    categoryFilter?: (m: LibraryModel) => boolean
+): boolean {
+    const normDir = normPath(dirPath);
+    const entries = models.filter((m) => {
+        if (categoryFilter && !categoryFilter(m)) return false;
+        return normPath(m.dir) === normDir;
+    });
+    if (entries.length === 0) return false;
+    const hasSubdirs = models.some((m) => {
+        if (categoryFilter && !categoryFilter(m)) return false;
+        const rel = getRelativePathUnderDir(m.dir, normDir);
+        return rel && rel.split('/').filter(Boolean).length > 1;
+    });
+    if (hasSubdirs) return false;
+    const allZip = entries.every((m) => m.container === 'zip');
+    const multiZip = allZip && entries.length > 1;
+    return !multiZip;
+}
+
+export function computeRestoreSegments(
+    browseDir: string,
+    targetDir: string,
+    models: LibraryModel[],
+    categoryFilter?: (m: LibraryModel) => boolean
+): string[] | null {
+    const segs = splitSubdirSegments(browseDir, targetDir);
+    if (!segs || segs.length === 0) return null;
+    let currentDir = normPath(browseDir);
+    let keepSegs = 0;
+    for (let i = 0; i < segs.length; i++) {
+        const subdirPath = normPath(currentDir + '/' + segs[i]);
+        if (isLeafFlattenDir(subdirPath, models, categoryFilter)) {
+            break;
+        }
+        keepSegs = i + 1;
+        currentDir = subdirPath;
+    }
+    return keepSegs > 0 ? segs.slice(0, keepSegs) : null;
+}
+
 /**
  * [doc:model-memory] 在已渲染的 level 中按 rowKey 高亮指定模型行并滚动可见。
  * 复用键盘焦点样式 `slide-focused`；先清除既有高亮，避免与 setupFocus 默认高亮的首项重叠。
@@ -221,6 +264,7 @@ export async function prepareModelRestore(
     let restoreTarget: string | null = null;
     let focusModel: LibraryModel | null = null;
     let fromRecentModel = false;
+    const categoryFilter = (m: LibraryModel) => m.format === category;
     for (const ref of recentModels) {
         const m = allModels.find(
             (x) => x.format === category && computeLibraryRef(x.file_path) === ref
@@ -238,35 +282,17 @@ export async function prepareModelRestore(
             restoreTarget = normPath(lastDir);
         }
     }
-    const segs = restoreTarget ? splitSubdirSegments(browseDir, restoreTarget) : null;
-    if (segs && segs.length > 0) {
+    if (restoreTarget) {
+        const fullSegs = splitSubdirSegments(browseDir, restoreTarget);
         if (fromRecentModel) {
-            let currentDir = normPath(browseDir);
-            let keepSegs = 0;
-            for (let i = 0; i < segs.length; i++) {
-                const subdirName = segs[i];
-                const subdirPath = normPath(currentDir + '/' + subdirName);
-                const entriesInSubdir = allModels.filter((m) => {
-                    if (m.format !== category) return false;
-                    return normPath(m.dir) === subdirPath;
-                });
-                const entriesUnderSubdir = allModels.filter((m) => {
-                    if (m.format !== category) return false;
-                    return isUnderRoot(subdirPath, m.dir) || normPath(m.dir) === subdirPath;
-                });
-                const isLeafDir = entriesUnderSubdir.length > 0 &&
-                    entriesUnderSubdir.every((m) => normPath(m.dir) === subdirPath);
-                const allZip = entriesInSubdir.length > 0 && entriesInSubdir.every((m) => m.container === 'zip');
-                const multiZip = allZip && entriesInSubdir.length > 1;
-                if (isLeafDir && !multiZip) {
-                    break;
-                }
-                keepSegs = i + 1;
-                currentDir = subdirPath;
-            }
-            pendingAutoExpand = keepSegs > 0 ? segs.slice(0, keepSegs) : null;
+            pendingAutoExpand = computeRestoreSegments(
+                browseDir,
+                restoreTarget,
+                allModels,
+                categoryFilter
+            );
         } else {
-            pendingAutoExpand = segs;
+            pendingAutoExpand = fullSegs && fullSegs.length > 0 ? fullSegs : null;
         }
     } else {
         pendingAutoExpand = null;
@@ -279,7 +305,7 @@ export async function prepareModelRestore(
             category,
             restoreTarget,
             fromRecentModel,
-            segs,
+            pendingAutoExpand,
             focusRowKey: pendingFocusModel?.rowKey,
         });
     }
@@ -679,21 +705,17 @@ export function buildLevel(
 
     for (const d of Array.from(subdirs).sort()) {
         const fullPath = dir + '/' + d;
-        if (subdirIsLeaf.has(d) && !isRoot) {
+        if (subdirIsLeaf.has(d) && !isRoot && isLeafFlattenDir(fullPath, modelList, filter)) {
             const entries = modelList.filter((m) => {
                 if (filter && !filter(m)) {
                     return false;
                 }
                 return normPath(m.dir) === fullPath;
             });
-            const allZip = entries.length > 0 && entries.every((m) => m.container === 'zip');
-            const multiZip = allZip && entries.length > 1;
-            if (!multiZip) {
-                for (const m of entries) {
-                    items.push(modelToRow(m));
-                }
-                continue;
+            for (const m of entries) {
+                items.push(modelToRow(m));
             }
+            continue;
         }
         items.unshift({
             kind: 'folder',
@@ -753,8 +775,11 @@ export function buildResourceItemsForDir(
     const normDir = normPath(dirPath);
     const items: ResourceItem[] = [];
     const subdirs = new Set<string>();
+    const subdirIsLeaf = new Set<string>();
+    const modelList = allModels || [];
+    const isRoot = filter ? false : normPath(libraryRoot) === normDir;
 
-    for (const m of allModels || []) {
+    for (const m of modelList) {
         if (filter && !filter(m)) {
             continue;
         }
@@ -765,52 +790,39 @@ export function buildResourceItemsForDir(
         }
         const parts = rel.split('/').filter(Boolean);
         if (parts.length === 0) {
-            const fp = m.file_path || '';
-            const filename =
-                m.container === 'zip' && m.zip_inner
-                    ? getBaseName(m.zip_inner) || ''
-                    : getBaseName(fp) || '';
-            const cached = modelMetaCache.get(fp);
-            let label: string;
-            switch (displayNamePriority) {
-                case 'filename':
-                    label = filename;
-                    break;
-                case 'name_en':
-                    label =
-                        cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
-                    break;
-                case 'name_jp':
-                default:
-                    label =
-                        cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
-                    break;
-            }
-            items.push({
-                id: fp,
-                label,
-                filePath: fp,
-                icon: m.format === 'vmd' ? 'music' : m.format === 'audio' ? 'volume-2' : 'box',
-                isFolder: false,
-                sublabel: cached?.comment || m.comment || undefined,
-                data: m,
-            });
+            items.push(modelToResourceItem(m));
         } else {
-            subdirs.add(parts[0]);
+            const topDir = parts[0];
+            subdirs.add(topDir);
+            if (parts.length === 1) {
+                subdirIsLeaf.add(topDir);
+            }
         }
     }
 
-    const folderItems: ResourceItem[] = Array.from(subdirs)
-        .sort()
-        .map((d) => ({
-            id: normDir + '/' + d,
+    const folderItems: ResourceItem[] = [];
+    for (const d of Array.from(subdirs).sort()) {
+        const fullPath = normDir + '/' + d;
+        if (subdirIsLeaf.has(d) && !isRoot && isLeafFlattenDir(fullPath, modelList, filter)) {
+            const entries = modelList.filter((m) => {
+                if (filter && !filter(m)) return false;
+                return normPath(m.dir) === fullPath;
+            });
+            for (const m of entries) {
+                items.push(modelToResourceItem(m));
+            }
+            continue;
+        }
+        folderItems.push({
+            id: fullPath,
             label: d,
             filePath: '',
             icon: 'folder',
             isFolder: true,
             sublabel: undefined,
             data: undefined,
-        }));
+        });
+    }
 
     return [...folderItems, ...items];
 }
@@ -1196,6 +1208,47 @@ export function modelToRow(m: LibraryModel): PopupRow {
             closeAllOverlays();
             onModelRowClick(m);
         },
+    };
+}
+
+export function modelToResourceItem(m: LibraryModel): ResourceItem {
+    const fp = m.file_path || '';
+    const filename =
+        m.container === 'zip' && m.zip_inner
+            ? getBaseName(m.zip_inner) || ''
+            : getBaseName(fp) || '';
+    const cached = modelMetaCache.get(fp);
+    let label: string;
+    switch (displayNamePriority) {
+        case 'filename':
+            label = filename;
+            break;
+        case 'name_en':
+            label = cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
+            break;
+        case 'name_jp':
+        default:
+            label = cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
+            break;
+    }
+    let icon = 'box';
+    if (m.format === 'vmd') {
+        icon = 'music';
+    } else if (m.format === 'audio') {
+        icon = 'volume-2';
+    } else if (m.format === 'vpd') {
+        icon = 'user';
+    } else if (m.container === 'zip' && m.format === 'pmx') {
+        icon = 'archive';
+    }
+    return {
+        id: fp,
+        label,
+        filePath: fp,
+        icon,
+        isFolder: false,
+        sublabel: cached?.comment || m.comment || undefined,
+        data: m,
     };
 }
 

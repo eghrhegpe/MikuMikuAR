@@ -734,9 +734,45 @@ describe('buildResourceItemsForDir', () => {
         expect(items.every((i) => !i.isFolder)).toBe(true);
     });
 
-    it('creates folder items for subdirectories', () => {
+    it('flattens leaf subdir with single model into items when not at root', () => {
         mockState.allModels = [
             makeModel({ file_path: '/test/models/sub/a.pmx', dir: '/test/models/sub' }),
+        ];
+
+        const items = buildResourceItemsForDir('/test/models');
+        expect(items).toHaveLength(1);
+        expect(items[0].isFolder).toBe(false);
+        expect(items[0].label).toBe('a.pmx');
+    });
+
+    it('mixes flattened leaf models with direct models (leaf subdir models after direct models)', () => {
+        mockState.allModels = [
+            makeModel({ file_path: '/test/models/a.pmx', dir: '/test/models' }),
+            makeModel({ file_path: '/test/models/sub/b.pmx', dir: '/test/models/sub' }),
+        ];
+
+        const items = buildResourceItemsForDir('/test/models');
+        expect(items).toHaveLength(2);
+        expect(items[0].isFolder).toBe(false);
+        expect(items[0].label).toBe('a.pmx');
+        expect(items[1].isFolder).toBe(false);
+        expect(items[1].label).toBe('b.pmx');
+    });
+
+    it('keeps leaf subdir as folder when multiple zip models inside', () => {
+        mockState.allModels = [
+            makeModel({
+                file_path: '/test/models/sub/m1.zip',
+                dir: '/test/models/sub',
+                container: 'zip',
+                zip_inner: 'm1.pmx',
+            }),
+            makeModel({
+                file_path: '/test/models/sub/m2.zip',
+                dir: '/test/models/sub',
+                container: 'zip',
+                zip_inner: 'm2.pmx',
+            }),
         ];
 
         const items = buildResourceItemsForDir('/test/models');
@@ -745,18 +781,15 @@ describe('buildResourceItemsForDir', () => {
         expect(items[0].label).toBe('sub');
     });
 
-    it('mixes folders and models with folders first', () => {
+    it('keeps non-leaf subdir as folder (has deeper subdirs)', () => {
         mockState.allModels = [
-            makeModel({ file_path: '/test/models/a.pmx', dir: '/test/models' }),
-            makeModel({ file_path: '/test/models/sub/b.pmx', dir: '/test/models/sub' }),
+            makeModel({ file_path: '/test/models/sub/deep/a.pmx', dir: '/test/models/sub/deep' }),
         ];
 
         const items = buildResourceItemsForDir('/test/models');
-        expect(items).toHaveLength(2);
+        expect(items).toHaveLength(1);
         expect(items[0].isFolder).toBe(true);
         expect(items[0].label).toBe('sub');
-        expect(items[1].isFolder).toBe(false);
-        expect(items[1].label).toBe('a.pmx');
     });
 
     it('applies filter to exclude models', () => {
