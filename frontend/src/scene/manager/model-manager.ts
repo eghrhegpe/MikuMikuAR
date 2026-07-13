@@ -921,23 +921,4 @@ export class ModelManager {
             restoreMaterials(inst);
         }
     }
-
-    // ======== Thumbnail ========
-
-    /** Captures a screenshot after model load for thumbnail cache. */
-    async captureThumbnail(
-        filePath: string,
-        canvas: HTMLCanvasElement,
-        saveFn: (path: string, data: string) => Promise<void>
-    ): Promise<void> {
-        try {
-            await new Promise((r) => requestAnimationFrame(r));
-            await new Promise((r) => requestAnimationFrame(r));
-            const base64 = canvas.toDataURL('image/png', 0.8);
-            const raw = base64.replace(/^data:image\/png;base64,/, '');
-            await saveFn(filePath, raw);
-        } catch (err) {
-            console.warn('captureThumbnail:', err);
-        }
-    }
 }

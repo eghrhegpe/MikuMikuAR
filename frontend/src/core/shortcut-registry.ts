@@ -75,6 +75,29 @@ function isInsideSlider(el: EventTarget | null): boolean {
     return !!el.closest('.cs-slider, .color-slider');
 }
 
+function getCurrentScope(el: EventTarget | null): string {
+    if (!el || !(el instanceof HTMLElement)) {
+        return 'global';
+    }
+    if (el.closest('.dialog') || el.closest('.modal')) {
+        return 'dialog';
+    }
+    if (el.closest('.slide-menu') || el.closest('.menu-container')) {
+        return 'menu';
+    }
+    if (el.closest('.cs-slider, .color-slider, .cs-bar')) {
+        return 'slider';
+    }
+    return 'global';
+}
+
+function scopeMatches(shortcutScope: string | undefined, currentScope: string): boolean {
+    if (!shortcutScope || shortcutScope === 'global') {
+        return true;
+    }
+    return shortcutScope === currentScope;
+}
+
 // ======== Public API ========
 
 /** Register ONE shortcut. */
@@ -204,8 +227,13 @@ export function initShortcutDispatcher(): void {
             return;
         }
 
+        const currentScope = getCurrentScope(e.target);
+
         // Find matching shortcut (first match wins)
         for (const def of _shortcuts.values()) {
+            if (!scopeMatches(def.scope, currentScope)) {
+                continue;
+            }
             const binding = getEffectiveBinding(def);
             if (bindingMatches(e, binding)) {
                 if (def.prevent) {

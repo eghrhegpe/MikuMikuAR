@@ -11,7 +11,7 @@ import {
     SetUIScale,
     SetPerformanceMode,
 } from '../core/wails-bindings';
-import { setStatus, UIState, uiState, setUIState } from '../core/config';
+import { setStatus, UIState } from '../core/config';
 import { tryCatchStatus, clamp01 } from '../core/utils';
 import { hexToRgb, rgbToString } from '../core/color-helpers';
 import { t } from '../core/i18n/t';
@@ -64,7 +64,6 @@ export function setDownloadWatchEnabledCached(v: boolean): void {
 
 // ======== VMD 伴音自动加载 ========
 /** 加载 VMD 动作时自动发现并加载同目录同名音频（.mp3/.wav/.ogg/.flac）。默认开启。 */
-// AO ✂️ Replace setter with SettingsStore.set
 import { SettingsStore } from '../lib/settings-store';
 
 export function isAutoLoadCompanionAudioEnabled(): boolean {
@@ -73,7 +72,6 @@ export function isAutoLoadCompanionAudioEnabled(): boolean {
 
 export function setAutoLoadCompanionAudio(v: boolean): void {
     SettingsStore.get().set('autoLoadCompanionAudio', v);
-    setUIState({ autoLoadCompanionAudio: v });
 }
 
 export function getAutoLoadCompanionAudio(): boolean {
@@ -114,6 +112,12 @@ export async function setTheme(
     hex: string,
     getSettingsMenu: () => { updateControls: () => void } | null
 ): Promise<void> {
+    const _r = await tryCatchStatus(() => SetUIAccent(hex), t('status.error'));
+    if (_r === undefined) {
+        getSettingsMenu()?.updateControls();
+        return;
+    }
+
     const root = document.documentElement;
     const textColors = generateTextColors(hex);
 
@@ -124,10 +128,7 @@ export async function setTheme(
     root.style.setProperty('--text-dim', textColors.dim);
     root.style.setProperty('--text-muted', textColors.muted);
 
-    const _r = await tryCatchStatus(() => SetUIAccent(hex), t('status.error'));
-    if (_r !== undefined) {
-        setStatus(t('settings.themeColorSet', { hex }), true);
-    }
+    setStatus(t('settings.themeColorSet', { hex }), true);
     getSettingsMenu()?.updateControls();
 }
 

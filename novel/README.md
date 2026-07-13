@@ -81,6 +81,8 @@ MenuStack、弹窗、设置页、模型库 UI、动作 UI、环境 UI、场景 U
 | 28 | [设置页的缺口](02-UI交互/28-设置页的缺口.md) |
 | 29 | [城邦的蓝图](02-UI交互/29-城邦的蓝图.md)（含 ADR-093 声明式菜单 + v1.3.1 发布 + ADR-090 对话框记忆 + ADR-094 替换模式） |
 | 30 | [账本的合并术](02-UI交互/30-账本的合并术.md)（含 SetUIState 整体替换→合并、视图模式重启持久化、3 测试失败留待后修） |
+| 31 | [目录的记忆术](02-UI交互/31-目录的记忆术.md)（含 ADR-097 路径记忆统一：isLeafFlattenDir / computeRestoreSegments / modelToResourceItem 三公共函数 + 网格视图同步 + 78→103 测试覆盖） |
+| 32 | [审核的微光](02-UI交互/32-审核的微光.md)（含联邦大面板迁移审核：i18n 硬编码清理 + visibleWhen 动态求值 + schema 测试覆盖补全 + renderFolder headerToggle 修复） |
 
 ---
 

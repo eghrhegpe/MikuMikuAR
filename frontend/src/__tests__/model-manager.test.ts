@@ -1177,65 +1177,6 @@ describe('ModelManager bone overlay', function () {
     });
 });
 
-describe('ModelManager captureThumbnail', function () {
-    let mgr, scene;
-
-    beforeEach(function () {
-        setFocusedModelId(null);
-        scene = makeObservableScene();
-        mgr = new ModelManager(scene, vi.fn(), vi.fn());
-    });
-
-    it('captures canvas to base64, strips header, calls saveFn', async function () {
-        const canvas = {
-            toDataURL: vi.fn(function () {
-                return 'data:image/png;base64,rawdata123';
-            }),
-        };
-        const saveFn = vi.fn(function () {
-            return Promise.resolve();
-        });
-
-        await mgr.captureThumbnail('/test.pmx', canvas, saveFn);
-
-        expect(canvas.toDataURL).toHaveBeenCalledWith('image/png', 0.8);
-        expect(saveFn).toHaveBeenCalledWith('/test.pmx', 'rawdata123');
-    });
-
-    it('handles saveFn rejection gracefully', async function () {
-        const spy = vi.spyOn(console, 'warn').mockImplementation(function () {});
-        const canvas = {
-            toDataURL: vi.fn(function () {
-                return 'data:image/png;base64,raw';
-            }),
-        };
-        const saveFn = vi.fn(function () {
-            return Promise.reject(new Error('save failed'));
-        });
-
-        await mgr.captureThumbnail('/test.pmx', canvas, saveFn);
-
-        expect(spy).toHaveBeenCalled();
-        spy.mockRestore();
-    });
-
-    it('handles canvas error gracefully', async function () {
-        const spy = vi.spyOn(console, 'warn').mockImplementation(function () {});
-        const canvas = {
-            toDataURL: vi.fn(function () {
-                throw new Error('canvas error');
-            }),
-        };
-        const saveFn = vi.fn();
-
-        await mgr.captureThumbnail('/test.pmx', canvas, saveFn);
-
-        expect(spy).toHaveBeenCalled();
-        expect(saveFn).not.toHaveBeenCalled();
-        spy.mockRestore();
-    });
-});
-
 describe('ModelManager dispose', function () {
     let mgr, scene, onChange;
 

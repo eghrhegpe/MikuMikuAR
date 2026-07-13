@@ -43,7 +43,14 @@ export function subscribe(fn: () => void): () => void {
 /**
  * 用 Proxy 包裹对象，拦截 set 操作。
  * 任何属性赋值都会自动触发 scheduleRefresh()。
- * 深度代理：嵌套对象也会被包裹。
+ * 深度代理：嵌套普通对象也会被包裹。
+ *
+ * ⚠️ 数组字段约定（如 envState.skyColorTop: [number, number, number]）：
+ * Proxy 不代理数组（避免包装 push/pop/splice 等方法带来的复杂度与性能开销），
+ * 因此 `envState.skyColorTop[0] = 0.5` 不会触发刷新。
+ * 写入数组字段必须用整体替换：`envState.skyColorTop = [0.5, 0.6, 0.7]`
+ * 或通过 setEnvState({ skyColorTop: [...] })（内部 Object.assign 整体赋值）。
+ * Map/Set 同理：替换整个实例，不依赖内部变更触发刷新。
  */
 export function reactive<T extends object>(obj: T): T {
     return new Proxy(obj, {

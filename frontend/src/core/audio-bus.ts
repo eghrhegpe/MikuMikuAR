@@ -25,6 +25,18 @@ export function getAudioContext(): AudioContext {
     return _ctx;
 }
 
+/**
+ * 同步刷新已存在的 master 增益值。
+ * 用于用户调音时让正在播放的音效实时跟随音量/开关变化，
+ * 而不必等下一次 playSfx 才更新（ADR-088 修复）。
+ */
+function refreshMasterGain(): void {
+    if (!_master) return;
+    const enabled = SettingsStore.get().get('sfxEnabled') as boolean;
+    const vol = SettingsStore.get().get('sfxVolume') as number;
+    _master.gain.value = enabled ? clamp01(vol) : 0;
+}
+
 /** SFX 主增益（独立于音乐音量）。增益值实时反映 sfxEnabled / sfxVolume。 */
 export function getSfxMasterGain(): GainNode {
     const ctx = getAudioContext();
@@ -32,15 +44,15 @@ export function getSfxMasterGain(): GainNode {
         _master = ctx.createGain();
         _master.connect(ctx.destination);
     }
-    const enabled = SettingsStore.get().get('sfxEnabled') as boolean;
-    const vol = SettingsStore.get().get('sfxVolume') as number;
-    _master.gain.value = enabled ? clamp01(vol) : 0;
+    refreshMasterGain();
     return _master;
 }
 
 export function setSfxVolume(v: number): void {
     SettingsStore.get().set('sfxVolume', clamp01(v));
     setUIState({ sfxVolume: clamp01(v) });
+    // 已有 master 时立即同步增益，避免播放中调音延迟生效
+    refreshMasterGain();
 }
 
 export function getSfxVolume(): number {
@@ -50,6 +62,8 @@ export function getSfxVolume(): number {
 export function setSfxEnabled(on: boolean): void {
     SettingsStore.get().set('sfxEnabled', on);
     setUIState({ sfxEnabled: on });
+    // 同上：开关切换立即作用于正在播放的音效
+    refreshMasterGain();
 }
 
 export function getSfxEnabled(): boolean {

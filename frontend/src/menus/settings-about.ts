@@ -30,8 +30,6 @@ import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/
 import { handleSettingsAction } from './settings-paths';
 import { buildSoftwareDetailLevel } from './settings-software';
 
-let _cacheClearedListenerRegistered = false;
-
 function exportSettings(): void {
     const data = JSON.stringify(uiState, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
@@ -237,10 +235,14 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                             .catch(() => {});
                     };
                     refreshCacheStats();
-                    if (!_cacheClearedListenerRegistered) {
-                        _cacheClearedListenerRegistered = true;
-                        window.addEventListener('mmar:cache-cleared', refreshCacheStats);
-                    }
+                    window.addEventListener('mmar:cache-cleared', refreshCacheStats);
+                    const cleanupObserver = new MutationObserver(() => {
+                        if (!c.isConnected) {
+                            window.removeEventListener('mmar:cache-cleared', refreshCacheStats);
+                            cleanupObserver.disconnect();
+                        }
+                    });
+                    cleanupObserver.observe(document.documentElement, { childList: true, subtree: true });
                 });
             },
         },

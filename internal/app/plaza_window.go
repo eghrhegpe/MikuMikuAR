@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -52,9 +53,14 @@ func (a *App) prewarmPlazaWindow() {
 		win.Hide()
 	})
 
-	// [ADR-087 P1] 导航完成时上报 URL 变化。ExecJS 发送 fetch 到 /__plaza_url__，
+	// [ADR-087 P1/P3] 导航完成时上报 URL 变化。ExecJS 发送 fetch 到 /__plaza_url__，
 	// Go 端 handler 取 lastForwardedTarget（真实站点 URL）合并后 Emit 给前端。
+	// 加 debounce 300ms 避免 SPA/iframe 切换高频触发。
 	win.OnWindowEvent(events.Windows.WebViewNavigationCompleted, func(event *application.WindowEvent) {
+		if time.Since(a.lastPlazaNavReport) < 300*time.Millisecond {
+			return
+		}
+		a.lastPlazaNavReport = time.Now()
 		win.ExecJS(`fetch(location.origin+'/__plaza_url__',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:document.title})}).catch(function(){})`)
 	})
 

@@ -36,7 +36,7 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             renderCustom: (c) => {
                 addSliderRow(
                     c,
-                    '默认音量',
+                    t('settings.audio.defaultVolume'),
                     getVolume(),
                     0,
                     1,
@@ -66,7 +66,7 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 let muteFlag = false;
                 addToggleRow(
                     c,
-                    '静音',
+                    t('settings.audio.mute'),
                     false,
                     (v) => {
                         muteFlag = v;
@@ -88,7 +88,7 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             renderCustom: (c) => {
                 addSliderRow(
                     c,
-                    '音频偏移',
+                    t('settings.audio.offset'),
                     getAudioOffset(),
                     -5,
                     5,
@@ -122,7 +122,7 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             renderCustom: (c) => {
                 addToggleRow(
                     c,
-                    'BPM 量化',
+                    t('settings.audio.bpmQuantize'),
                     true,
                     (v) => {
                         setBpmQuantizeEnabled(v);
@@ -140,7 +140,7 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             renderCustom: (c) => {
                 addToggleRow(
                     c,
-                    '加载动作时自动加载同目录音乐',
+                    t('settings.audio.companionAutoLoad'),
                     getAutoLoadCompanionAudio(),
                     (v) => {
                         setAutoLoadCompanionAudio(v);
@@ -249,7 +249,7 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
 
 export function buildSettingsAudioLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
-        label: '音频',
+        label: t('settings.audio'),
         dir: '',
         items: [],
         renderCustom: (container) => {

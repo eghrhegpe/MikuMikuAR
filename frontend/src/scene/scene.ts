@@ -17,6 +17,10 @@ import { RegisterDxBmpTextureLoader } from 'babylon-mmd/esm/Loader/registerDxBmp
 import 'babylon-mmd/esm/Loader/mmdOutlineRenderer';
 import { GetMmdWasmInstance } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance';
 import { MmdWasmInstanceTypeSPR } from 'babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease';
+// MPR（多线程 WASM 物理）依赖 SharedArrayBuffer + COOP/COEP 跨源隔离，
+// 仅当构建期 VITE_MMD_WASM_MT 定义时才动态拉入（与 Go 端 CoopCoepMiddleware 同轴门控）。
+// 默认未定义 → 走 SPR 单线程，且 MPR worker 不被打包（保持 bundle 精简、构建零回归）。
+// 注意：MmdWasmInstanceTypeMPR 必须动态 import，静态 import 会把 worker 拉进图导致构建失败。
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { MmdWasmPhysics } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysics';
 import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation';
@@ -167,12 +171,23 @@ export async function initScene(): Promise<void> {
         runtime = new MmdRuntime(scene, null);
         console.warn('[scene] JS 版 MmdRuntime（调试专用，无物理）— 生产请用 WASM');
     } else {
-        const wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
+        // MPR（多线程）需 SharedArrayBuffer + COOP/COEP，与 Go 端 CoopCoepMiddleware 同轴门控。
+        // __MMD_ENABLE_MPR__ 为构建期常量（vite define）：未定义 VITE_MMD_WASM_MT → false →
+        // esbuild 消除本分支，默认构建不含 MPR worker/wasm（零回归、bundle 精简）。
+        const useMultiThread = __MMD_ENABLE_MPR__;
+        let wasmInstance;
+        if (useMultiThread) {
+            const { MmdWasmInstanceTypeMPR } = await import('babylon-mmd/esm/Runtime/Optimized/InstanceType/multiPhysicsRelease');
+            wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeMPR());
+            console.log('[scene] 使用 WASM 版 MmdWasmRuntime（MPR 多线程物理）');
+        } else {
+            wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
+            console.log('[scene] 使用 WASM 版 MmdWasmRuntime（SPR 单线程物理）');
+        }
         const mmdWasmPhysics = new MmdWasmPhysics(scene);
         runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
         initWindPhysics(runtime);
         scene.onDisposeObservable.add(() => disposeWindPhysics());
-        console.log('[scene] 使用 WASM 版 MmdWasmRuntime（含物理）');
     }
     runtime.loggingEnabled = true;
     runtime.register(scene);

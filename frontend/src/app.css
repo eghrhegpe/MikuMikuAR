@@ -568,7 +568,7 @@ input, textarea, [contenteditable] {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-/* 全局打开方式分段开关：自动 / 内嵌 / 浏览器 */
+/* 全局打开方式分段开关：自动 / iframe / chrome / wails */
 .plaza-modeswitch {
     display: flex;
     align-items: center;
@@ -578,6 +578,15 @@ input, textarea, [contenteditable] {
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.25);
     border: 1px solid rgba(57, 197, 187, 0.18);
+}
+/* [ADR-087 P3-优化] 工具栏右侧全局选择器：取消左 margin（gap 已处理间距） */
+.plaza-global-mode {
+    margin-left: 0;
+}
+.plaza-global-mode-label {
+    font-size: 11px;
+    color: rgba(232, 246, 244, 0.5);
+    white-space: nowrap;
 }
 .plaza-mode-opt {
     font-size: 11px;
@@ -706,6 +715,91 @@ input, textarea, [contenteditable] {
     min-width: 88px;
     padding: 10px 16px;
     font-size: 13px;
+}
+/* [ADR-087 P1] URL 显示 */
+.plaza-remote-url {
+    font-size: 12px;
+    color: rgba(232, 246, 244, 0.5);
+    text-align: center;
+    max-width: 480px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* [ADR-087 P1] 下载进度 */
+.plaza-remote-progress {
+    font-size: 12px;
+    color: rgba(255, 215, 0, 0.9);
+    text-align: center;
+    min-height: 18px;
+}
+/* [ADR-087 P1] iframe 加载 spinner */
+.plaza-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+.plaza-spinner-ring {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(232, 246, 244, 0.2);
+    border-top-color: rgba(232, 246, 244, 0.8);
+    border-radius: 50%;
+    animation: plaza-spin 0.8s linear infinite;
+}
+@keyframes plaza-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+/* [ADR-087 P3-优化] per-site 覆写徽章：高亮表示该站有独立覆写 */
+.plaza-card-mode-overridden {
+    color: var(--accent, #39c5bb) !important;
+    font-weight: 600;
+}
+/* [ADR-087 P3-优化] 右键单站覆写弹窗 */
+.plaza-mode-popup {
+    position: fixed;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px;
+    border-radius: 10px;
+    background: rgba(10, 16, 20, 0.96);
+    border: 1px solid rgba(57, 197, 187, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.plaza-mode-popup .plaza-mode-opt {
+    font-size: 12px;
+    padding: 6px 16px;
+    border-radius: 6px;
+    text-align: left;
+    width: 100%;
+}
+.plaza-mode-popup .plaza-mode-opt:hover {
+    background: rgba(57, 197, 187, 0.12);
+}
+.plaza-mode-popup .plaza-mode-opt.active {
+    background: var(--accent, #39c5bb);
+    color: #06231f;
+}
+.plaza-mode-popup-clear {
+    font-size: 11px;
+    padding: 6px 16px;
+    border: none;
+    border-top: 1px solid rgba(57, 197, 187, 0.15);
+    border-radius: 0 0 6px 6px;
+    background: transparent;
+    color: rgba(232, 246, 244, 0.5);
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+}
+.plaza-mode-popup-clear:hover {
+    color: var(--text, #e8f6f4);
 }
 
 /* ===== 外部库 — 行内路径 ===== */

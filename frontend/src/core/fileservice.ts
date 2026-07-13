@@ -72,26 +72,26 @@ const NORM_PATH_CACHE_MAX = 5000;
 
 /** 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。
  *  注意：Android SAF URI（content://...）原样返回，不做转换。
- *  结果缓存，避免 buildLevel 遍历千级模型时重复正则替换。 */
+ *  结果缓存，避免 buildLevel 遍历千级模型时重复正则替换。
+ *  缓存键使用小写化路径，确保大小写不敏感系统（Windows/macOS）上同一文件只缓存一次。 */
 export function normPath(p: string): string {
-    const cached = _normPathCache.get(p);
+    const cacheKey = p.toLowerCase();
+    const cached = _normPathCache.get(cacheKey);
     if (cached !== undefined) {
         return cached;
     }
 
     let result: string;
     if (p.startsWith('content://')) {
-        // content URI 去除尾部斜杠，与文件 URI 行为统一（isUnderRoot 的 b + '/' 依赖无尾部斜杠）
         result = p.replace(/\/+$/, '');
     } else {
         result = p.replace(/\\/g, '/').replace(/\/+$/, '');
-        // 折叠 '.' 当前目录段（语义安全：/a/./b === /a/b），修复 P3 含 '.' 路径漏判
         result = result.replace(/\/\.\//g, '/').replace(/^\.\//, '').replace(/\/\.$/, '');
     }
 
     if (_normPathCache.size >= NORM_PATH_CACHE_MAX) {
         _normPathCache.clear();
     }
-    _normPathCache.set(p, result);
+    _normPathCache.set(cacheKey, result);
     return result;
 }

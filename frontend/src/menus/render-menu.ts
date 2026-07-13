@@ -69,7 +69,7 @@ function renderNode(node: MenuNode, container: HTMLElement): (() => void) | unde
 
 function renderFolder(node: MenuNode, container: HTMLElement): (() => void) | undefined {
     const children: MenuNode[] = node.children ?? [];
-    if (children.length === 0 && !node.renderCustom) {
+    if (children.length === 0 && !node.renderCustom && !node.headerToggle) {
         return undefined;
     }
 

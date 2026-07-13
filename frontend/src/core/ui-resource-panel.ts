@@ -77,21 +77,67 @@ export function createResourcePanel(
     let currentLayout = layout;
     let observer: IntersectionObserver | null = null;
     let virtualGrid: VirtualGridHandle<ResourceItem> | null = null;
+    let mutationObs: MutationObserver | null = null;
 
     // 创建容器
     const panel = document.createElement('div');
     panel.className = 'resource-panel';
     container.appendChild(panel);
 
-    // 清理虚拟滚动和观察器
+    // 初始化观察器 — 使用实时 liveThumbnailCache 引用，缓存命中后自动 unobserve
+    observer = new IntersectionObserver(
+        (entries) => {
+            for (const entry of entries) {
+                if (entry.isIntersecting) {
+                    const el = entry.target as HTMLElement;
+                    const path = el.dataset.resourcePath;
+                    if (path && liveThumbnailCache.has(path)) {
+                        el.style.backgroundImage = `url(data:image/png;base64,${liveThumbnailCache.get(path)})`;
+                        observer?.unobserve(el);
+                    }
+                }
+            }
+        },
+        { rootMargin: '200px' }
+    );
+
+    function applyThumbIfCached(el: HTMLElement): void {
+        const path = el.dataset.resourcePath;
+        if (!path) return;
+        if (liveThumbnailCache.has(path)) {
+            el.style.backgroundImage = `url(data:image/png;base64,${liveThumbnailCache.get(path)})`;
+            observer?.unobserve(el);
+        } else {
+            observer?.observe(el);
+        }
+    }
+
+    // MutationObserver 监听虚拟滚动 DOM 变化，自动 observe 新创建的缩略图
+    mutationObs = new MutationObserver((mutations) => {
+        for (const mut of mutations) {
+            for (let i = 0; i < mut.addedNodes.length; i++) {
+                const node = mut.addedNodes[i];
+                if (node.nodeType !== Node.ELEMENT_NODE) continue;
+                const el = node as HTMLElement;
+                // 检查节点本身是否是缩略图元素
+                if (el.classList.contains('resource-thumb') || el.classList.contains('resource-thumb-sm')) {
+                    applyThumbIfCached(el);
+                }
+                // 检查子节点中的缩略图
+                const thumbs = el.querySelectorAll('.resource-thumb, .resource-thumb-sm') as NodeListOf<HTMLElement>;
+                for (let j = 0; j < thumbs.length; j++) {
+                    applyThumbIfCached(thumbs[j]);
+                }
+            }
+        }
+    });
+    mutationObs.observe(panel, { childList: true, subtree: true });
+
+    // 清理虚拟滚动（observer 和 mutationObs 持久存在，跨 render 复用）
     function cleanup(): void {
         if (virtualGrid) {
             virtualGrid.dispose();
             virtualGrid = null;
-        }
-        if (observer) {
-            observer.disconnect();
-            observer = null;
         }
     }
 
@@ -116,23 +162,6 @@ export function createResourcePanel(
         }
     }
 
-    // 初始化观察器 — 使用实时 liveThumbnailCache 引用
-    observer = new IntersectionObserver(
-        (entries) => {
-            for (const entry of entries) {
-                if (entry.isIntersecting) {
-                    const el = entry.target as HTMLElement;
-                    const path = el.dataset.resourcePath;
-                    if (path && liveThumbnailCache.has(path)) {
-                        el.style.backgroundImage = `url(data:image/png;base64,${liveThumbnailCache.get(path)})`;
-                    }
-                    // 不 unobserve — 等缓存加载后再试（当 liveThumbnailCache 更新后，下次观察时生效）
-                }
-            }
-        },
-        { rootMargin: '200px' }
-    );
-
     // 初始渲染
     render();
 
@@ -141,14 +170,6 @@ export function createResourcePanel(
         updateItems: (newItems: ResourceItem[]) => {
             currentItems = [...newItems];
             render();
-            const els = panel.querySelectorAll('[data-resource-path]') as NodeListOf<HTMLElement>;
-            for (let i = 0; i < els.length; i++) {
-                const el = els[i];
-                const path = el.dataset.resourcePath;
-                if (path && !el.style.backgroundImage && liveThumbnailCache.has(path)) {
-                    el.style.backgroundImage = `url(data:image/png;base64,${liveThumbnailCache.get(path)})`;
-                }
-            }
         },
         setLayout: (newLayout: 'grid' | 'list') => {
             if (currentLayout !== newLayout) {
@@ -157,6 +178,14 @@ export function createResourcePanel(
             }
         },
         dispose: () => {
+            if (mutationObs) {
+                mutationObs.disconnect();
+                mutationObs = null;
+            }
+            if (observer) {
+                observer.disconnect();
+                observer = null;
+            }
             cleanup();
             panel.remove();
         },

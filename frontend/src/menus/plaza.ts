@@ -7,7 +7,7 @@
 // 不再寄生在 SlideMenu 弹窗里——浏览器是单一全屏表面，没有层级/返回栈，
 // SlideMenu 的导航机件对它纯属死重。
 
-import { Browser, EventsOn } from '@wailsio/runtime';
+import { Browser, Events } from '@wailsio/runtime';
 import {
     StartProxy,
     StopProxy,
@@ -25,6 +25,9 @@ import { closeAllOverlays } from '../core/utils';
 import { PLAZA_SITES, type PlazaSite } from './plaza-sites';
 import { setStatus } from '../core/status-bar';
 import { t } from '../core/i18n/t';
+import { showErrorToast } from '../core/toast';
+import { refreshLibrary } from './library';
+import { registerShortcuts } from '../core/shortcut-registry';
 
 const L = {
     title: '模型广场',
@@ -48,9 +51,34 @@ const L = {
 };
 
 // 打开方式：embed=内嵌 iframe；window=Wails 新窗口；external=系统浏览器。
-// [ADR-087 P1] 从全局模式改为 Per-site 模式记忆：每个站点独立保存偏好，
-// 回退到站点默认推荐模式（site.mode）。持久化到 localStorage，重启保留。
+// [ADR-087 P1→P3-优化] 存储优先级链：
+//   miku.plaza.mode.{siteName}  (per-site 覆写) → 最高
+//   miku.plaza.globalMode       (全局默认)       → 中
+//   site.mode                   (代码默认)       → 最低
+// 全局模式由工具栏分段选择器统一切换，卡片仅显示徽章；双击卡片可覆写单站。
 type OpenMode = 'embed' | 'external' | 'window';
+
+const GLOBAL_MODE_KEY = 'miku.plaza.globalMode';
+
+function loadGlobalMode(): OpenMode | null {
+    try {
+        const v = localStorage.getItem(GLOBAL_MODE_KEY);
+        if (v === 'embed' || v === 'external' || v === 'window') {
+            return v;
+        }
+    } catch {
+        /* localStorage 不可用时忽略 */
+    }
+    return null;
+}
+
+function saveGlobalMode(mode: OpenMode): void {
+    try {
+        localStorage.setItem(GLOBAL_MODE_KEY, mode);
+    } catch {
+        /* 忽略 */
+    }
+}
 
 function effectiveMode(site: PlazaSite): OpenMode {
     try {
@@ -61,6 +89,10 @@ function effectiveMode(site: PlazaSite): OpenMode {
         }
     } catch {
         /* localStorage 不可用时忽略 */
+    }
+    const global = loadGlobalMode();
+    if (global) {
+        return global;
     }
     return site.mode ?? 'embed';
 }
@@ -74,11 +106,30 @@ function saveSiteMode(site: PlazaSite, mode: OpenMode): void {
     }
 }
 
+/** 清除单站覆写，回退到全局/代码默认。用于双击菜单的「跟随全局」选项 */
+function clearSiteMode(site: PlazaSite): void {
+    try {
+        localStorage.removeItem(`miku.plaza.mode.${site.name}`);
+    } catch {
+        /* 忽略 */
+    }
+}
+
+/** 某站点是否有 per-site 覆写（用于双击菜单显示「跟随全局」选项） */
+function hasSiteOverride(site: PlazaSite): boolean {
+    try {
+        return localStorage.getItem(`miku.plaza.mode.${site.name}`) !== null;
+    } catch {
+        return false;
+    }
+}
+
 let layer: HTMLElement | null = null;
 let plazaProxyActive = false;
 let observer: MutationObserver | null = null;
 let downloadListenerInstalled = false;
 let eventListenersInstalled = false;
+let shortcutsRegistered = false;
 // [ADR-078] 持有当前内嵌 iframe 引用，供下载请求来源校验
 let plazaIframe: HTMLIFrameElement | null = null;
 // [ADR-087 P1] 遥控面板显示状态
@@ -107,6 +158,93 @@ function installDownloadListener(): void {
     });
 }
 
+// [ADR-087 P2] 注册广场窗口快捷键。只在广场层可见时生效。
+function installShortcuts(): void {
+    if (shortcutsRegistered) {
+        return;
+    }
+    shortcutsRegistered = true;
+    registerShortcuts([
+        {
+            id: 'plaza:reload',
+            label: 'shortcuts.label.plaza',
+            defaultKey: 'F5',
+            prevent: true,
+            handler: () => {
+                if (getLayer().classList.contains('visible')) {
+                    PlazaReload().catch(() => {});
+                }
+            },
+            group: 'shortcuts.group.plaza',
+        },
+        {
+            id: 'plaza:reload-ctrl',
+            label: 'shortcuts.label.plaza',
+            defaultKey: 'KeyR',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                if (getLayer().classList.contains('visible')) {
+                    PlazaReload().catch(() => {});
+                }
+            },
+            group: 'shortcuts.group.plaza',
+        },
+        {
+            id: 'plaza:goBack',
+            label: 'shortcuts.label.plaza',
+            defaultKey: 'ArrowLeft',
+            defaultAlt: true,
+            prevent: true,
+            handler: () => {
+                if (getLayer().classList.contains('visible')) {
+                    PlazaGoBack().catch(() => {});
+                }
+            },
+            group: 'shortcuts.group.plaza',
+        },
+        {
+            id: 'plaza:goForward',
+            label: 'shortcuts.label.plaza',
+            defaultKey: 'ArrowRight',
+            defaultAlt: true,
+            prevent: true,
+            handler: () => {
+                if (getLayer().classList.contains('visible')) {
+                    PlazaGoForward().catch(() => {});
+                }
+            },
+            group: 'shortcuts.group.plaza',
+        },
+        {
+            id: 'plaza:zoomIn',
+            label: 'shortcuts.label.plaza',
+            defaultKey: 'Equal',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                if (getLayer().classList.contains('visible')) {
+                    PlazaZoomIn().catch(() => {});
+                }
+            },
+            group: 'shortcuts.group.plaza',
+        },
+        {
+            id: 'plaza:zoomOut',
+            label: 'shortcuts.label.plaza',
+            defaultKey: 'Minus',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                if (getLayer().classList.contains('visible')) {
+                    PlazaZoomOut().catch(() => {});
+                }
+            },
+            group: 'shortcuts.group.plaza',
+        },
+    ]);
+}
+
 // [ADR-087 P1] 监听 Go 端发射的 plaza 事件：urlChanged（导航完成）、
 // downloadProgress（下载进度）、downloadComplete（下载完成）。
 function installEventListeners(): void {
@@ -114,21 +252,27 @@ function installEventListeners(): void {
         return;
     }
     eventListenersInstalled = true;
-    EventsOn('plaza:urlChanged', (data) => {
-        const d = data as { url: string; title: string };
+    Events.On('plaza:urlChanged', (data) => {
+        const d = data as unknown as { url: string; title: string };
         if (remoteURLDisplay) {
             remoteURLDisplay.textContent = d.title || d.url || L.loading;
         }
     });
-    EventsOn('plaza:downloadProgress', (data) => {
-        const d = data as { fileName: string; read: number; total: number; percent: number };
+    Events.On('plaza:downloadProgress', (data) => {
+        const d = data as unknown as {
+            fileName: string;
+            read: number;
+            total: number;
+            percent: number;
+        };
         if (remoteProgress) {
-            const percent = d.percent > 0 ? `${d.percent.toFixed(0)}%` : `${(d.read / 1024).toFixed(0)} KB`;
+            const percent =
+                d.percent > 0 ? `${d.percent.toFixed(0)}%` : `${(d.read / 1024).toFixed(0)} KB`;
             remoteProgress.textContent = `${L.downloading} ${d.fileName}: ${percent}`;
         }
     });
-    EventsOn('plaza:downloadComplete', (data) => {
-        const d = data as { fileName: string; size: number };
+    Events.On('plaza:downloadComplete', (data) => {
+        const d = data as unknown as { fileName: string; size: number };
         if (remoteProgress) {
             remoteProgress.textContent = `${L.downloadComplete}: ${d.fileName} (${(d.size / 1024).toFixed(1)} KB)`;
         }
@@ -137,6 +281,21 @@ function installEventListeners(): void {
                 remoteProgress.textContent = '';
             }
         }, 3000);
+        showErrorToast(
+            t('plaza.downloaded', { name: d.fileName, size: (d.size / 1024).toFixed(1) }),
+            undefined,
+            [
+                {
+                    label: t('plaza.viewLibrary'),
+                    onClick: () => {
+                        refreshLibrary().catch((err) =>
+                            console.warn('refresh after plaza download:', err)
+                        );
+                    },
+                },
+            ],
+            8000
+        );
     });
 }
 
@@ -183,6 +342,8 @@ function openInWindow(site: PlazaSite): void {
             setStatus('', false);
             // [ADR-087 P0] window 模式打开后，plaza 层切换为遥控面板：
             // 后退/前进/刷新/缩放/关闭。下载拦截由注入脚本 fetch /__plaza_dl__ 完成。
+            // [ADR-087 P3-审核] 标记代理活跃，使 Escape 路径能回收 Go 端代理。
+            plazaProxyActive = true;
             renderRemote(site);
         })
         .catch((e) => {
@@ -194,9 +355,10 @@ function openInWindow(site: PlazaSite): void {
         });
 }
 
-// [ADR-087 P0] renderRemote 在主窗口 plaza 层渲染遥控面板，控制独立打开的
+// [ADR-087 P0/P1] renderRemote 在主窗口 plaza 层渲染遥控面板，控制独立打开的
 // 广场 WebView2 窗口。代理由 NavigatePlazaWindow 在 Go 端启动，这里不调
 // StartProxy/StopProxy（ClosePlazaWindow 会回收代理）。
+// [ADR-087 P1] 显示当前页面标题/URL（由 plaza:urlChanged 事件更新）和下载进度。
 function renderRemote(site: PlazaSite): void {
     const el = getLayer();
     el.innerHTML = '';
@@ -207,10 +369,12 @@ function renderRemote(site: PlazaSite): void {
         buildToolbar({
             title: site.name,
             onBack: async () => {
+                plazaProxyActive = false;
                 await ClosePlazaWindow().catch(() => {});
                 renderHome();
             },
             onClose: async () => {
+                plazaProxyActive = false;
                 await ClosePlazaWindow().catch(() => {});
                 closePlaza();
             },
@@ -224,6 +388,17 @@ function renderRemote(site: PlazaSite): void {
     hint.className = 'plaza-remote-hint';
     hint.textContent = L.remoteHint;
     body.appendChild(hint);
+
+    const urlDisplay = document.createElement('div');
+    urlDisplay.className = 'plaza-remote-url';
+    urlDisplay.textContent = L.loading;
+    remoteURLDisplay = urlDisplay;
+    body.appendChild(urlDisplay);
+
+    const progress = document.createElement('div');
+    progress.className = 'plaza-remote-progress';
+    remoteProgress = progress;
+    body.appendChild(progress);
 
     const controls = document.createElement('div');
     controls.className = 'plaza-remote-controls';
@@ -277,26 +452,92 @@ function ensureObserver(): void {
     observer.observe(el, { attributes: true, attributeFilter: ['class'] });
 }
 
-function buildModeSwitch(site: PlazaSite): HTMLElement {
+// [ADR-087 P3-优化] 全局模式分段选择器：取代卡片内 18 个按钮，工具栏一处统一切换。
+// 「自动」= 不设全局偏好，各站用各自 site.mode 默认；选具体模式则覆写所有无 per-site 覆写的站点。
+function buildGlobalModeSwitch(): HTMLElement {
     const wrap = document.createElement('div');
-    wrap.className = 'plaza-modeswitch';
+    wrap.className = 'plaza-modeswitch plaza-global-mode';
+    const opts: { key: OpenMode | 'auto'; label: string }[] = [
+        { key: 'auto', label: '自动' },
+        { key: 'embed', label: 'iframe' },
+        { key: 'external', label: 'chrome' },
+        { key: 'window', label: 'wails' },
+    ];
+    const current = loadGlobalMode() ?? 'auto';
+    for (const o of opts) {
+        const b = document.createElement('button');
+        b.className = 'plaza-mode-opt' + (current === o.key ? ' active' : '');
+        b.textContent = o.label;
+        b.onclick = () => {
+            if (o.key === 'auto') {
+                try {
+                    localStorage.removeItem(GLOBAL_MODE_KEY);
+                } catch {
+                    /* 忽略 */
+                }
+            } else {
+                saveGlobalMode(o.key);
+            }
+            renderHome();
+        };
+        wrap.appendChild(b);
+    }
+    return wrap;
+}
+
+// [ADR-087 P3-优化] 右键卡片弹出单站覆写菜单（power user 精细控制，藏起来不干扰主流）
+function showSiteModePopup(site: PlazaSite, x: number, y: number): void {
+    const existing = document.querySelector('.plaza-mode-popup');
+    if (existing) {
+        existing.remove();
+    }
+    const popup = document.createElement('div');
+    popup.className = 'plaza-mode-popup';
+    const current = effectiveMode(site);
     const opts: { key: OpenMode; label: string }[] = [
         { key: 'embed', label: 'iframe' },
-        { key: 'window', label: 'wails' },
         { key: 'external', label: 'chrome' },
+        { key: 'window', label: 'wails' },
     ];
-    const current = effectiveMode(site);
     for (const o of opts) {
         const b = document.createElement('button');
         b.className = 'plaza-mode-opt' + (current === o.key ? ' active' : '');
         b.textContent = o.label;
         b.onclick = () => {
             saveSiteMode(site, o.key);
+            popup.remove();
             renderHome();
         };
-        wrap.appendChild(b);
+        popup.appendChild(b);
     }
-    return wrap;
+    if (hasSiteOverride(site)) {
+        const clear = document.createElement('button');
+        clear.className = 'plaza-mode-popup-clear';
+        clear.textContent = '跟随全局';
+        clear.onclick = () => {
+            clearSiteMode(site);
+            popup.remove();
+            renderHome();
+        };
+        popup.appendChild(clear);
+    }
+    // 定位：避免溢出视口右下边界
+    popup.style.left = '0';
+    popup.style.top = '0';
+    document.body.appendChild(popup);
+    const rect = popup.getBoundingClientRect();
+    const px = Math.min(x, window.innerWidth - rect.width - 8);
+    const py = Math.min(y, window.innerHeight - rect.height - 8);
+    popup.style.left = `${px}px`;
+    popup.style.top = `${py}px`;
+
+    const onDown = (e: MouseEvent): void => {
+        if (!popup.contains(e.target as Node)) {
+            popup.remove();
+            document.removeEventListener('mousedown', onDown);
+        }
+    };
+    setTimeout(() => document.addEventListener('mousedown', onDown), 0);
 }
 
 function buildToolbar(opts: {
@@ -305,7 +546,7 @@ function buildToolbar(opts: {
     onOpen?: () => void;
     onRefresh?: () => void;
     onClose: () => void;
-    modeSwitch?: HTMLElement;
+    globalModeSwitch?: HTMLElement;
 }): HTMLElement {
     const bar = document.createElement('div');
     bar.className = 'plaza-toolbar';
@@ -323,13 +564,17 @@ function buildToolbar(opts: {
     title.className = 'plaza-title';
     title.textContent = opts.title;
     left.appendChild(title);
-    if (opts.modeSwitch) {
-        left.appendChild(opts.modeSwitch);
-    }
     bar.appendChild(left);
 
     const right = document.createElement('div');
     right.className = 'plaza-toolbar-right';
+    if (opts.globalModeSwitch) {
+        right.appendChild(opts.globalModeSwitch);
+        const label = document.createElement('span');
+        label.className = 'plaza-global-mode-label';
+        label.textContent = '全局';
+        right.appendChild(label);
+    }
     if (opts.onOpen) {
         const open = document.createElement('button');
         open.className = 'plaza-btn plaza-btn-accent';
@@ -365,8 +610,8 @@ function renderHome(): void {
     root.appendChild(
         buildToolbar({
             title: L.title,
-            modeSwitch: buildModeSwitch(),
             onClose: closePlaza,
+            globalModeSwitch: buildGlobalModeSwitch(),
         })
     );
 
@@ -374,15 +619,16 @@ function renderHome(): void {
     grid.className = 'plaza-grid';
     for (const site of PLAZA_SITES) {
         const eff = effectiveMode(site);
+        const overridden = hasSiteOverride(site);
         const card = document.createElement('button');
         card.className = 'plaza-card';
+        card.title = overridden ? `${site.name}（右键切换打开方式）` : '右键切换打开方式';
         card.innerHTML =
             `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon>` +
             `<div class="plaza-card-name">${site.name}</div>` +
-            `<div class="plaza-card-mode">${
+            `<div class="plaza-card-mode${overridden ? ' plaza-card-mode-overridden' : ''}">${
                 eff === 'external' ? 'chrome' : eff === 'window' ? 'wails' : 'iframe'
-            }</div>` +
-            `<div class="plaza-card-modeswitch">${buildModeSwitch(site).innerHTML}</div>`;
+            }</div>`;
         card.onclick = () => {
             if (eff === 'external') {
                 openExternal(site);
@@ -391,6 +637,11 @@ function renderHome(): void {
             } else {
                 renderEmbed(site);
             }
+        };
+        // [ADR-087 P3-优化] 右键弹出单站覆写菜单（power user 精细控制）
+        card.oncontextmenu = (e: MouseEvent) => {
+            e.preventDefault();
+            showSiteModePopup(site, e.clientX, e.clientY);
         };
         grid.appendChild(card);
     }
@@ -407,9 +658,25 @@ function renderEmbed(site: PlazaSite): void {
 
     const body = document.createElement('div');
     body.className = 'plaza-body';
+
+    // [ADR-087 P1] 加载指示 spinner：iframe 加载完成后隐藏
+    const spinner = document.createElement('div');
+    spinner.className = 'plaza-spinner';
+    spinner.innerHTML = '<div class="plaza-spinner-ring"></div>';
+    body.appendChild(spinner);
+
     const iframe = document.createElement('iframe');
     iframe.className = 'plaza-iframe';
     iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups');
+    iframe.onload = () => {
+        spinner.style.display = 'none';
+    };
+    // [ADR-087 P2] 拖放导入：iframe 上的 dragover 必须 preventDefault，否则主窗口
+    // 的 window.drop 事件不会触发。这是 HTML5 拖放规范要求——目标元素必须显式允许
+    // 拖放才能接收 drop 事件。主窗口已在 window 级别实现 handleDropFile，这里只需
+    // 让事件能穿透到主窗口。
+    iframe.addEventListener('dragover', (e) => e.preventDefault());
+    iframe.addEventListener('drop', (e) => e.preventDefault());
     plazaIframe = iframe;
     body.appendChild(iframe);
 
@@ -420,6 +687,7 @@ function renderEmbed(site: PlazaSite): void {
             onOpen: () => openExternal(site),
             onRefresh: () => {
                 if (iframe.src) {
+                    spinner.style.display = '';
                     const src = iframe.src;
                     iframe.src = src;
                 }
@@ -438,6 +706,7 @@ function renderEmbed(site: PlazaSite): void {
         })
         .catch((e) => {
             plazaProxyActive = false;
+            spinner.style.display = 'none';
             const err = document.createElement('div');
             err.className = 'plaza-error';
             err.textContent = L.proxyError + (e instanceof Error ? e.message : String(e));
@@ -447,6 +716,8 @@ function renderEmbed(site: PlazaSite): void {
 
 export function showPlaza(): void {
     installDownloadListener();
+    installEventListeners();
+    installShortcuts();
     ensureObserver();
     renderHome();
 }

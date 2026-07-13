@@ -50,6 +50,7 @@ let _refreshWaterRenderList: (() => void) | null = null;
 let _tryAutoApplyPreset: ((id: string) => Promise<void>) | null = null;
 let _loadOutfits: ((id: string) => Promise<void>) | null = null;
 let _rebuildOutlineState: (() => void) | null = null;
+let _thumbCaptureGen = 0;
 
 export function initLoader(
     scene: import('@babylonjs/core/scene').Scene,
@@ -114,6 +115,7 @@ export async function captureThumbnail(
     libraryPath?: string,
     innerPath?: string
 ): Promise<void> {
+    const gen = ++_thumbCaptureGen;
     try {
         if (!_scene || !_modelManager) {
             return;
@@ -127,10 +129,12 @@ export async function captureThumbnail(
             THUMBNAIL_TIMEOUT_MS,
             undefined
         );
+        if (gen !== _thumbCaptureGen) return;
 
         if (!ready) {
             await new Promise((r) => requestAnimationFrame(r));
         }
+        if (gen !== _thumbCaptureGen) return;
 
         const focusedInst = _modelManager.focused();
         if (!focusedInst || !focusedInst.rootMesh) {
@@ -169,8 +173,10 @@ export async function captureThumbnail(
             rt.render();
 
             await new Promise((r) => requestAnimationFrame(r));
+            if (gen !== _thumbCaptureGen) return;
 
             const floatPixels = await _scene.getEngine().readPixels(0, 0, rtSize, rtSize, true);
+            if (gen !== _thumbCaptureGen) return;
 
             const canvas = document.createElement('canvas');
             canvas.width = rtSize;
@@ -197,6 +203,7 @@ export async function captureThumbnail(
 
             try {
                 await SaveThumbnail(thumbKey, raw);
+                if (gen !== _thumbCaptureGen) return;
                 const updated = new Map(thumbnailCache);
                 updated.set(thumbKey, raw);
                 setThumbnailCache(updated);

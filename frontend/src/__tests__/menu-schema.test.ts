@@ -674,30 +674,37 @@ describe('ADR-093 Menu Schema PoC', () => {
         });
 
         it('slider set 将百分比 0-100 逆向转换为 0-1 范围', () => {
-            const schema: MenuNode[] = [
-                {
-                    id: 't:setRev',
-                    kind: 'slider',
-                    label: 'env.groundPitch',
-                    control: {
-                        bind: 'env.skyRotationSpeed',
-                        min: 0,
-                        max: 100,
-                        step: 10,
-                        get: (v) => Math.round(((v as number) ?? 0) * 100),
-                        set: (v) => (v as number) / 100,
+            const original = envState.skyRotationSpeed;
+            try {
+                envState.skyRotationSpeed = 0.3; // 初始值 0.3 → get 后显示 30
+                const schema: MenuNode[] = [
+                    {
+                        id: 't:setRev',
+                        kind: 'slider',
+                        label: 'env.groundPitch',
+                        control: {
+                            bind: 'env.skyRotationSpeed',
+                            min: 0,
+                            max: 100,
+                            step: 10,
+                            get: (v) => Math.round(((v as number) ?? 0) * 100),
+                            set: (v) => (v as number) / 100,
+                        },
                     },
-                },
-            ];
-            renderMenu(schema, container);
-            // 模拟 slider 值变化：set 到 50 → 应逆向转换为 0.5 写入 envState
-            const bar = container.querySelector('.cs-bar') as HTMLElement;
-            expect(bar).toBeTruthy();
-            // 触发 input 事件（模拟拖动到 50%）
-            bar.dispatchEvent(new Event('mousedown', { bubbles: true }));
-            // 直接验证 set 函数逻辑：通过初始值验证 get 方向，再通过 mock 验证 set 方向
-            // 由于 slider 的 set 是在交互时调用的，我们通过 setEnvState mock 调用来验证
-            expect(setEnvState).not.toHaveBeenCalled(); // 初始渲染不触发 set
+                ];
+                renderMenu(schema, container);
+                const bar = container.querySelector('.cs-bar') as HTMLElement;
+                expect(bar).toBeTruthy();
+                // 按一次 ArrowRight → 从 30 到 40 → set 应写入 0.4
+                bar.focus();
+                bar.dispatchEvent(
+                    new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })
+                );
+                expect(setEnvState).toHaveBeenCalledWith({ skyRotationSpeed: 0.4 });
+            } finally {
+                envState.skyRotationSpeed = original;
+                vi.clearAllMocks();
+            }
         });
 
         it('headerToggle set 将 boolean 逆向映射为枚举值', () => {
@@ -719,14 +726,17 @@ describe('ADR-093 Menu Schema PoC', () => {
                     },
                 ];
                 renderMenu(schema, container);
-                const checkbox = container.querySelector(
+                const toggle = container.querySelector(
+                    '.toggle.header-toggle'
+                ) as HTMLLabelElement;
+                expect(toggle).toBeTruthy();
+                const checkbox = toggle.querySelector(
                     'input[type="checkbox"]'
                 ) as HTMLInputElement;
                 expect(checkbox).toBeTruthy();
                 expect(checkbox.checked).toBe(false); // flat → off
-                // 切换为 on → 应写入 'terrain'
-                checkbox.checked = true;
-                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                // 点击 toggle → 应切换为 on 并写入 'terrain'
+                toggle.click();
                 expect(setEnvState).toHaveBeenCalledWith({ groundType: 'terrain' });
             } finally {
                 envState.groundType = original;
