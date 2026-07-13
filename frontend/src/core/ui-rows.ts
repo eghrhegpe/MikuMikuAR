@@ -6,6 +6,7 @@ import { getCurrentRenderingMenu } from '../menus/menu';
 import { ControlOptions } from './ui-types';
 import { slideRow } from './ui-slide-row';
 import { t } from './i18n/t';
+import { clamp01 } from '@/core/utils';
 
 // ===================================================================
 // addToggleRow
@@ -220,7 +221,7 @@ export function addSliderRow(
 
     function setValueFromClientX(clientX: number, rect: DOMRect): void {
         const x = (clientX - rect.left) / rect.width;
-        const raw = min + Math.max(0, Math.min(1, x)) * range;
+        const raw = min + clamp01(x) * range;
         const snapped = snapToStep(raw);
         const clamped = Math.max(min, Math.min(max, snapped));
         if (clamped !== currentValue) {

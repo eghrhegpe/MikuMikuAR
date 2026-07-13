@@ -162,6 +162,11 @@ export class SlideMenu {
         return this.levels.length;
     }
 
+    /** 只读暴露动画中状态，供外部诊断「展开期间 push 被静默丢弃」的 race */
+    get isTransitioning(): boolean {
+        return this.transitioning;
+    }
+
     reset(level: PopupLevel): void {
         this._cancelAnim();
         this.levels = [level];

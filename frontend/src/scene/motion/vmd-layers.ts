@@ -18,7 +18,7 @@ import {
     triggerAutoSave,
 } from '@/core/config';
 import { resolveFileUrl, normPath } from '@/core/fileservice';
-import { getBaseName } from '@/core/utils';
+import { getBaseName, clamp01 } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import Encoding from 'encoding-japanese';
 
@@ -374,7 +374,7 @@ export async function setVmdLayerWeight(
         return;
     }
 
-    layer.weight = Math.max(0, Math.min(1, weight));
+    layer.weight = clamp01(weight);
     if (layer.kind === 'gaze') {
         await _applyGazeLayers(inst.id);
     } else {

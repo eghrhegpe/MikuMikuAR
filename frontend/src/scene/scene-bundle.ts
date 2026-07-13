@@ -4,7 +4,7 @@
 
 import { libraryRoot, externalPaths, setStatus, setLibraryRoot } from '../core/config';
 import { t } from '../core/i18n/t';
-import { computeLibraryRef, resolveLibraryRef, getBaseName, getDirPath, deepClone } from '../core/utils';
+import { computeLibraryRef, resolveLibraryRef, getBaseName, getDirPath, normPath, deepClone } from '../core/utils';
 import {
     serializeScene,
     deserializeScene,
@@ -20,15 +20,10 @@ import {
 } from '../core/wails-bindings';
 
 /** 简易 dirname。 */
-function _dirname(p: string): string {
-    const d = getDirPath(p);
-    return d || '.';
-}
+// _dirname 已删除，改用 getDirPath(p) || '.'
 
 /** 简易 join。 */
-function _join(...parts: string[]): string {
-    return parts.join('/').replace(/\/+/g, '/');
-}
+// _join 已删除，改用 normPath(`${a}/${b}`)
 
 // ======== Asset Collection ========
 
@@ -83,7 +78,7 @@ function collectSceneAssets(scene: SceneFile): string[] {
 async function collectModelTextures(pmxPath: string): Promise<string[]> {
     const extras: string[] = [];
     try {
-        const dir = _dirname(pmxPath);
+        const dir = getDirPath(pmxPath) || '.';
         // 使用 Go 绑定列出目录内容（如果可用）
         // 注意：ListSubDirs 只列子目录，我们需要列文件
         // 这里用简化的策略：纹理文件通常与 PMX 同目录
@@ -229,7 +224,7 @@ export async function importSceneBundle(): Promise<void> {
         const extractDir = result.dir;
 
         // 读取 scene.json
-        const sceneJsonPath = _join(extractDir, 'scene.json');
+        const sceneJsonPath = normPath(`${extractDir}/scene.json`);
         const sceneJson = await LoadSceneFile(sceneJsonPath);
         if (!sceneJson) {
             setStatus(t('scene.bundle.noSceneJson'), false);

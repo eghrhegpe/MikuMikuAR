@@ -2,6 +2,8 @@
 // [doc:architecture] 环境光照统一方案
 // skyColor → dirDiffuse + dirDirection + hemiIntensity + dirIntensity + exposure
 
+import { clamp01 } from '@/core/utils';
+
 export interface EnvPreset {
     label: string;
     skyColorTop: [number, number, number];
@@ -35,7 +37,7 @@ export function deriveLighting(
     const L = calcLuminance(skyColor);
 
     // 渐变过渡：太阳角度 0°~10° 方向光平滑衰减，-5° 以下完全关闭
-    const horizonFade = Math.max(0, Math.min(1, (sunAngle + 5) / 10)); // -5→0, 0→0.5, 5→1
+    const horizonFade = clamp01((sunAngle + 5) / 10); // -5→0, 0→0.5, 5→1
     const dirIntensity = horizonFade * Math.max(L * 1.2, 0.15);
     // 半球光：白天随方向光反向补偿，夜晚保持足够亮度
     const hemiIntensity =

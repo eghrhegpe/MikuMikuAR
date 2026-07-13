@@ -30,6 +30,7 @@ import {
     activatePerception,
     deactivatePerception,
 } from './perception';
+import { clamp01 } from '@/core/utils';
 
 let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
 let procBeatDetector: BeatDetector | null = null;
@@ -226,7 +227,7 @@ export function setProcMotionMode(mode: ProcMotionMode): void {
 }
 
 export function setProcMotionIntensity(v: number): void {
-    procState = { ...procState, intensity: Math.max(0, Math.min(1, v)) };
+    procState = { ...procState, intensity: clamp01(v) };
     triggerAutoSave();
 }
 
@@ -421,7 +422,7 @@ export async function setLifelikeEnabled(v: boolean): Promise<void> {
 
 /** 设置 lifelike 强度并重新应用。 */
 export async function setLifelikeIntensity(v: number): Promise<void> {
-    procState = { ...procState, lifelikeIntensity: Math.max(0, Math.min(1, v)) };
+    procState = { ...procState, lifelikeIntensity: clamp01(v) };
     triggerAutoSave();
     if (procState.lifelikeEnabled) {
         await _applyLifelikeLayer();

@@ -18,6 +18,7 @@ import { scene, modelManager, loadVMDMotion } from '../scene';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { Observer } from '@babylonjs/core/Misc/observable';
 import type { Scene } from '@babylonjs/core/scene';
+import { clamp01 } from '@/core/utils';
 
 export { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 
@@ -147,7 +148,7 @@ export function updateWasmLayerWeight(modelId: string, layerId: string, weight: 
 
     const layer = state.layers.get(layerId);
     if (layer) {
-        layer.weight = Math.max(0, Math.min(1, weight));
+        layer.weight = clamp01(weight);
     }
 }
 

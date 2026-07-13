@@ -12,7 +12,7 @@ import {
     SetPerformanceMode,
 } from '../core/wails-bindings';
 import { setStatus, UIState, uiState, setUIState } from '../core/config';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus, clamp01 } from '../core/utils';
 import { hexToRgb, rgbToString } from '../core/color-helpers';
 import { t } from '../core/i18n/t';
 
@@ -92,7 +92,7 @@ export function generateTextColors(hex: string): { bright: string; dim: string; 
     // 亮主题（brightness>128）→ 文字偏暗 → factor 大（更多主题色）
     // 暗主题 → 文字偏亮 → factor 小（更多白）
     const mix = (factor: number) => {
-        const f = Math.max(0, Math.min(1, factor));
+        const f = clamp01(factor);
         const r = Math.round(rgb.r * f + 255 * (1 - f));
         const g = Math.round(rgb.g * f + 255 * (1 - f));
         const b = Math.round(rgb.b * f + 255 * (1 - f));

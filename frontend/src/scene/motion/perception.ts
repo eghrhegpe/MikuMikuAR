@@ -25,6 +25,7 @@ import { _applyBreathing } from './perception-breathing';
 import { _applyBlinking } from './perception-blinking';
 import { _applyMicroExpression, _resetLastEmotionMorphName } from './perception-expression';
 import { _applyBalanceSway, _resetBalanceSwayState } from './perception-balance';
+import { clamp01 } from '@/core/utils';
 import { _applyLipSync } from './perception-lipsync';
 import {
     _applyGaze,
@@ -204,13 +205,13 @@ export function setLipSyncEnabled(enabled: boolean): void {
 
 /** 设置 lip-sync 灵敏度（钳制 0..1） */
 export function setLipSyncSensitivity(v: number): void {
-    perceptionState = { ...perceptionState, lipSyncSensitivity: Math.max(0, Math.min(1, v)) };
+    perceptionState = { ...perceptionState, lipSyncSensitivity: clamp01(v) };
     triggerAutoSave();
 }
 
 /** 设置 lip-sync 强度（钳制 0..1） */
 export function setLipSyncIntensity(v: number): void {
-    perceptionState = { ...perceptionState, lipSyncIntensity: Math.max(0, Math.min(1, v)) };
+    perceptionState = { ...perceptionState, lipSyncIntensity: clamp01(v) };
     triggerAutoSave();
 }
 

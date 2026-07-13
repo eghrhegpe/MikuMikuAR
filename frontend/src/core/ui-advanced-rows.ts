@@ -4,6 +4,7 @@
 import { createIconifyIcon } from './icons';
 import { ControlOptions } from './ui-types';
 import { initControl } from './ui-rows';
+import { clamp01 } from '@/core/utils';
 
 // ===================================================================
 // addColorSliderRow
@@ -80,7 +81,7 @@ export function addColorSliderRow(
 
         function setValueFromClientX(clientX: number, rect: DOMRect): void {
             const x = (clientX - rect.left) / rect.width;
-            const raw = Math.max(0, Math.min(1, x));
+            const raw = clamp01(x);
             const snapped = Math.round(raw * 100) / 100;
             if (snapped !== current[ci]) {
                 updateDisplay(snapped);
@@ -287,7 +288,7 @@ export function addModeSlider<T extends string | number>(
     }
 
     function setIndexFromClientX(clientX: number, rect: DOMRect): void {
-        const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        const x = clamp01((clientX - rect.left) / rect.width);
         const newIdx = total > 1 ? Math.round(x * (total - 1)) : 0;
         if (newIdx !== currentIndex) {
             updateDisplay(newIdx);

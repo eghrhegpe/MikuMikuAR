@@ -18,6 +18,7 @@ import { animateCameraVmd } from '../camera/camera';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { ModelManager } from '../manager/model-manager';
 import type { BeatDetector } from '@/motion-algos/beat-detector';
+import { clamp01 } from '@/core/utils';
 
 // ======== 辅助函数 ========
 
@@ -197,7 +198,7 @@ export function seekFromEvent(e: MouseEvent | PointerEvent): void {
         return;
     }
     const rect = dom.seekBar.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const ratio = clamp01((e.clientX - rect.left) / rect.width);
     const targetTime = ratio * duration;
     mmdRuntime.seekAnimation(targetTime, true);
     updatePlaybackUI();
