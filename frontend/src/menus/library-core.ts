@@ -239,7 +239,11 @@ export async function prepareModelRestore(
         }
     }
     const segs = restoreTarget ? splitSubdirSegments(browseDir, restoreTarget) : null;
-    pendingAutoExpand = segs && segs.length > 0 ? segs : null;
+    if (segs && segs.length === 1) {
+        pendingAutoExpand = null;
+    } else {
+        pendingAutoExpand = segs && segs.length > 0 ? segs : null;
+    }
     pendingFocusModel = focusModel
         ? { dir: normPath(focusModel.dir), rowKey: 'model:' + focusModel.file_path }
         : null;
@@ -654,13 +658,10 @@ export function buildLevel(
                 }
                 return normPath(m.dir) === fullPath;
             });
-            const allZip = entries.length > 0 && entries.every((m) => m.container === 'zip');
-            if (!allZip) {
-                for (const m of entries) {
-                    items.push(modelToRow(m));
-                }
-                continue;
+            for (const m of entries) {
+                items.push(modelToRow(m));
             }
+            continue;
         }
         items.unshift({
             kind: 'folder',
