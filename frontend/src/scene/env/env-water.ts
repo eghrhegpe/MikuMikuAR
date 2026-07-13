@@ -1,5 +1,6 @@
 import {
     Scene,
+    Camera,
     Color3,
     Vector3,
     Texture,
@@ -106,6 +107,7 @@ const waterReflection = new PlanarReflection({
     predicate: (mesh, level) =>
         !mesh.name.startsWith('envWater') &&
         mesh.isEnabled() &&
+        // _worldMatrixFrozen 是 Babylon 内部属性，冻结矩阵的 mesh 不参与反射
         !(mesh as unknown as { _worldMatrixFrozen?: boolean })._worldMatrixFrozen &&
         mesh.getBoundingInfo().boundingBox.maximumWorld.y >= level,
     getMaterial: () => _envSys.water.material as ShaderMaterial | null,
@@ -156,7 +158,7 @@ Effect.ShadersStore['underwaterTintFragmentShader'] = [
 
 let _tintPostProcess: PostProcess | null = null;
 
-function ensureTintPostProcess(camera: any): void {
+function ensureTintPostProcess(camera: Camera): void {
     if (_tintPostProcess) {
         return;
     }

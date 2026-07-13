@@ -28,6 +28,7 @@ import { FILTER_PRESET_LABELS, getFilterPreset } from './scene-render-presets';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { toggleDebugMirror, isDebugMirrorActive } from '../scene/env/env';
 
 // ======== Scene Preset ========
 
@@ -568,6 +569,27 @@ function buildPostProcessCoreSchema(): MenuNode[] {
                         max: 32,
                         step: 1,
                         onChange: () => triggerAutoSave(),
+                    },
+                },
+                // 调试镜面（反射排查工具）
+                {
+                    id: 'postprocess:env:debugMirror',
+                    kind: 'custom',
+                    renderCustom: (c) => {
+                        slideRow(
+                            c,
+                            'lucide:scan',
+                            t('scene.debugMirror'),
+                            isDebugMirrorActive(),
+                            () => {
+                                const on = toggleDebugMirror();
+                                setStatus(
+                                    on ? t('scene.debugMirrorOn') : t('scene.debugMirrorOff'),
+                                    true
+                                );
+                                reRenderSceneMenu();
+                            }
+                        );
                     },
                 },
             ],

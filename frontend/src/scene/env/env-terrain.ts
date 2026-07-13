@@ -134,6 +134,19 @@ export function createHeightmapGround(
  * 供 env-impl 在 onReady 与就地更新时复用。
  */
 export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene: Scene): void {
+    // 释放旧材质及其纹理，防止 GPU 显存泄漏
+    const oldMat = ground.material;
+    if (oldMat) {
+        if (oldMat instanceof StandardMaterial) {
+            oldMat.diffuseTexture?.dispose();
+            oldMat.bumpTexture?.dispose();
+            oldMat.opacityTexture?.dispose();
+            oldMat.reflectionTexture?.dispose();
+        }
+        oldMat.dispose();
+        ground.material = null;
+    }
+
     const resolve = (p: string): string => {
         if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('data:')) {
             return p;
@@ -224,6 +237,15 @@ function applyElevationColoring(ground: GroundMesh, state: EnvState): void {
     ground.setVerticesData(VertexBuffer.ColorKind, colors, false);
 
     const scene = ground.getScene();
+    // 释放旧材质（如有），避免高程着色反复切换时泄漏
+    const prev = ground.material;
+    if (prev) {
+        if (prev instanceof StandardMaterial) {
+            prev.diffuseTexture?.dispose();
+            prev.bumpTexture?.dispose();
+        }
+        prev.dispose();
+    }
     const mat = new StandardMaterial('envGroundElevationMat', scene);
     mat.diffuseColor = new Color3(1, 1, 1);
     mat.alpha = state.groundAlpha;
