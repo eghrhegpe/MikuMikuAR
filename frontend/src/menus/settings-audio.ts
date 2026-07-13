@@ -1,27 +1,18 @@
 // settings-audio.ts — 音频设置子菜单（ADR-093 schema 驱动）
-// 状态来源分散（audio.ts / audio-bus.ts / proc-motion-bridge.ts / settings-shared.ts），
-// 无法用 StatePath 绑定，全部用 custom 节点 + 声明式 schema 结构。
+// 状态均已存在于 uiState 中，通过 ui. 前缀绑定声明式控件；
+// onChange 调用各模块 setter 以触发 SettingsStore 同步与副作用（增益刷新等）。
 
 import { setStatus, cardContainer } from '../core/config';
 import { t } from '../core/i18n/t';
-import { addSliderRow, addToggleRow } from '../core/ui-helpers';
-import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
+import { setVolume, setAudioOffset } from '../outfit/audio';
 import {
-    getSfxEnabled,
     setSfxEnabled,
-    getSfxVolume,
     setSfxVolume,
-    getFootstepEnabled,
     setFootstepEnabled,
-    getFootstepVolume,
     setFootstepVolume,
 } from '../core/audio-bus';
-import { setBpmQuantizeEnabled, getBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
-import {
-    getAutoLoadCompanionAudio,
-    setAutoLoadCompanionAudio,
-    type SettingsMenuHandle,
-} from './settings-shared';
+import { setBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
+import { setAutoLoadCompanionAudio, type SettingsMenuHandle } from './settings-shared';
 import type { PopupLevel } from '../core/config';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -32,83 +23,58 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
     return [
         {
             id: 'audio:volume',
-            kind: 'custom',
-            renderCustom: (c) => {
-                addSliderRow(
-                    c,
-                    t('settings.audio.defaultVolume'),
-                    getVolume(),
-                    0,
-                    1,
-                    0.05,
-                    (v) => {
-                        setVolume(v);
-                        refresh();
-                    },
-                    'lucide:volume-2',
-                    undefined,
-                    {
-                        bind: () => getVolume(),
-                        onUpdate: (el) => {
-                            const valEl = el.querySelector('.cs-value');
-                            if (valEl) {
-                                valEl.textContent = Math.round(getVolume() * 100) + '%';
-                            }
-                        },
-                    }
-                );
+            kind: 'slider',
+            label: 'settings.audio.defaultVolume',
+            icon: 'lucide:volume-2',
+            control: {
+                bind: 'ui.volume',
+                min: 0,
+                max: 100,
+                step: 5,
+                get: (v) => Math.round(((v as number) ?? 0.7) * 100),
+                set: (v) => (v as number) / 100,
+                onChange: (v) => {
+                    setVolume((v as number) / 100);
+                    refresh();
+                },
             },
         },
         {
             id: 'audio:mute',
-            kind: 'custom',
-            renderCustom: (c) => {
-                let muteFlag = false;
-                addToggleRow(
-                    c,
-                    t('settings.audio.mute'),
-                    false,
-                    (v) => {
-                        muteFlag = v;
-                        if (v) {
-                            setVolume(0);
-                        } else {
-                            setVolume(1);
-                        }
-                        refresh();
-                    },
-                    'lucide:volume-x',
-                    { bind: () => getVolume() === 0 }
-                );
+            kind: 'toggle',
+            label: 'settings.audio.mute',
+            icon: 'lucide:volume-x',
+            control: {
+                bind: 'ui.volume',
+                get: (v) => (v as number) === 0,
+                set: (muted) => (muted ? 0 : 1),
+                onChange: (muted) => {
+                    setVolume(muted ? 0 : 1);
+                    refresh();
+                },
             },
         },
         {
             id: 'audio:offset',
+            kind: 'slider',
+            label: 'settings.audio.offset',
+            icon: 'lucide:clock',
+            control: {
+                bind: 'ui.audioOffset',
+                min: -5,
+                max: 5,
+                step: 0.1,
+                get: (v) => (v as number) ?? 0,
+                onChange: (v) => {
+                    setAudioOffset(v as number);
+                    refresh();
+                },
+            },
+        },
+        {
+            id: 'audio:offsetHint',
             kind: 'custom',
             renderCustom: (c) => {
-                addSliderRow(
-                    c,
-                    t('settings.audio.offset'),
-                    getAudioOffset(),
-                    -5,
-                    5,
-                    0.1,
-                    (v) => {
-                        setAudioOffset(v);
-                        refresh();
-                    },
-                    'lucide:clock',
-                    undefined,
-                    {
-                        bind: () => getAudioOffset(),
-                        onUpdate: (el) => {
-                            const valEl = el.querySelector('.cs-value');
-                            if (valEl) {
-                                valEl.textContent = getAudioOffset().toFixed(2);
-                            }
-                        },
-                    }
-                );
                 const hint = document.createElement('div');
                 hint.style.cssText =
                     'font-size:10px;color:var(--text-dark);text-align:center;margin-top:4px;';
@@ -118,130 +84,106 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
         },
         {
             id: 'audio:bpmQuant',
-            kind: 'custom',
-            renderCustom: (c) => {
-                addToggleRow(
-                    c,
-                    t('settings.audio.bpmQuantize'),
-                    true,
-                    (v) => {
-                        setBpmQuantizeEnabled(v);
-                        refresh();
-                        setStatus(v ? t('settings.bpmQuantOn') : t('settings.bpmQuantOff'), true);
-                    },
-                    'lucide:activity',
-                    { bind: () => getBpmQuantizeEnabled() }
-                );
+            kind: 'toggle',
+            label: 'settings.audio.bpmQuantize',
+            icon: 'lucide:activity',
+            control: {
+                bind: 'ui.bpmQuantizeEnabled',
+                get: (v) => v !== false,
+                set: (v) => v,
+                onChange: (v) => {
+                    setBpmQuantizeEnabled(v as boolean);
+                    refresh();
+                    setStatus(
+                        v ? t('settings.bpmQuantOn') : t('settings.bpmQuantOff'),
+                        true
+                    );
+                },
             },
         },
         {
             id: 'audio:companion',
-            kind: 'custom',
-            renderCustom: (c) => {
-                addToggleRow(
-                    c,
-                    t('settings.audio.companionAutoLoad'),
-                    getAutoLoadCompanionAudio(),
-                    (v) => {
-                        setAutoLoadCompanionAudio(v);
-                        refresh();
-                        setStatus(v ? t('settings.companionOn') : t('settings.companionOff'), true);
-                    },
-                    'lucide:disc-3',
-                    { bind: () => getAutoLoadCompanionAudio() }
-                );
+            kind: 'toggle',
+            label: 'settings.audio.companionAutoLoad',
+            icon: 'lucide:disc-3',
+            control: {
+                bind: 'ui.autoLoadCompanionAudio',
+                get: (v) => v !== false,
+                set: (v) => v,
+                onChange: (v) => {
+                    setAutoLoadCompanionAudio(v as boolean);
+                    refresh();
+                    setStatus(
+                        v ? t('settings.companionOn') : t('settings.companionOff'),
+                        true
+                    );
+                },
             },
         },
         {
             id: 'audio:sfx',
-            kind: 'custom',
-            renderCustom: (c) => {
-                addToggleRow(
-                    c,
-                    t('settings.sfx.enabled'),
-                    getSfxEnabled(),
-                    (v) => {
-                        setSfxEnabled(v);
-                        refresh();
-                    },
-                    'lucide:volume-2',
-                    { bind: () => getSfxEnabled() }
-                );
+            kind: 'toggle',
+            label: 'settings.sfx.enabled',
+            icon: 'lucide:volume-2',
+            control: {
+                bind: 'ui.sfxEnabled',
+                get: (v) => v !== false,
+                set: (v) => v,
+                onChange: (v) => {
+                    setSfxEnabled(v as boolean);
+                    refresh();
+                },
             },
         },
         {
             id: 'audio:sfxVol',
-            kind: 'custom',
-            renderCustom: (c) => {
-                addSliderRow(
-                    c,
-                    t('settings.sfx.volume'),
-                    getSfxVolume(),
-                    0,
-                    1,
-                    0.05,
-                    (v) => {
-                        setSfxVolume(v);
-                        refresh();
-                    },
-                    'lucide:volume-2',
-                    undefined,
-                    {
-                        bind: () => getSfxVolume(),
-                        onUpdate: (el) => {
-                            const valEl = el.querySelector('.cs-value');
-                            if (valEl) {
-                                valEl.textContent = Math.round(getSfxVolume() * 100) + '%';
-                            }
-                        },
-                    }
-                );
+            kind: 'slider',
+            label: 'settings.sfx.volume',
+            icon: 'lucide:volume-2',
+            control: {
+                bind: 'ui.sfxVolume',
+                min: 0,
+                max: 100,
+                step: 5,
+                get: (v) => Math.round(((v as number) ?? 0.7) * 100),
+                set: (v) => (v as number) / 100,
+                onChange: (v) => {
+                    setSfxVolume((v as number) / 100);
+                    refresh();
+                },
             },
         },
         {
             id: 'audio:footstep',
-            kind: 'custom',
-            renderCustom: (c) => {
-                addToggleRow(
-                    c,
-                    t('settings.footstep.enabled'),
-                    getFootstepEnabled(),
-                    (v) => {
-                        setFootstepEnabled(v);
-                        refresh();
-                    },
-                    'lucide:footprints',
-                    { bind: () => getFootstepEnabled() }
-                );
+            kind: 'toggle',
+            label: 'settings.footstep.enabled',
+            icon: 'lucide:footprints',
+            control: {
+                bind: 'ui.footstepEnabled',
+                get: (v) => v === true,
+                set: (v) => v,
+                onChange: (v) => {
+                    setFootstepEnabled(v as boolean);
+                    refresh();
+                },
             },
         },
         {
             id: 'audio:footstepVol',
-            kind: 'custom',
-            renderCustom: (c) => {
-                addSliderRow(
-                    c,
-                    t('settings.footstep.volume'),
-                    getFootstepVolume(),
-                    0,
-                    1,
-                    0.05,
-                    (v) => {
-                        setFootstepVolume(v);
-                        refresh();
-                    },
-                    'lucide:footprints',
-                    undefined,
-                    {
-                        bind: () => getFootstepVolume(),
-                        onUpdate: (el) => {
-                            const valEl = el.querySelector('.cs-value');
-                            if (valEl) {
-                                valEl.textContent = Math.round(getFootstepVolume() * 100) + '%';
-                            }
-                        },
-                    }
-                );
+            kind: 'slider',
+            label: 'settings.footstep.volume',
+            icon: 'lucide:footprints',
+            control: {
+                bind: 'ui.footstepVolume',
+                min: 0,
+                max: 100,
+                step: 5,
+                get: (v) => Math.round(((v as number) ?? 0.8) * 100),
+                set: (v) => (v as number) / 100,
+                onChange: (v) => {
+                    setFootstepVolume((v as number) / 100);
+                    refresh();
+                },
             },
         },
     ];
