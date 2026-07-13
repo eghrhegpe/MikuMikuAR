@@ -26,6 +26,7 @@ import {
 } from '@/core/config';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
 import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
+import { clamp01 } from '@/core/utils';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
@@ -394,7 +395,7 @@ export class ModelManager {
         if (!inst) {
             return;
         }
-        inst.opacity = Math.max(0, Math.min(1, opacity));
+        inst.opacity = clamp01(opacity);
         syncModelVisibility(inst);
         this.triggerAutoSave();
     }

@@ -204,11 +204,54 @@ function highlightRow(root: HTMLElement, rowKey: string): void {
     }
 }
 
+// [doc:model-memory] 模块级恢复状态：modelStack 即 makeModelMenu 单例（library-core.ts:1495），无并发冲突。
+// onLevelEnter（实例级）已挂好消费逻辑；以下状态由 onFolderEnter('models:browse') 与「更换模型」路径共用填充。
+let pendingAutoExpand: string[] | null = null;
+let pendingFocusModel: { dir: string; rowKey: string } | null = null;
+
+// [doc:model-memory] 计算并填充恢复计划：自动展开到上次浏览目录 + 高亮上次模型。
+// 供 onFolderEnter('models:browse') 与「更换模型」路径（model:replace 卡片 / 替换续接）共用，
+// 三者推入同一 modelStack 实例，onLevelEnter 会递归展开 + 高亮。category 决定恢复的记忆维度。
+export async function prepareModelRestore(
+    browseDir: string,
+    category: 'pmx' | 'stage' | 'prop'
+): Promise<void> {
+    let restoreTarget: string | null = null;
+    let focusModel: LibraryModel | null = null;
+    // 优先用 RecentModels 中首个「该格式且位于当前浏览根之下」的模型（zip 条目亦命中）
+    for (const ref of recentModels) {
+        const m = allModels.find(
+            (x) => x.format === category && computeLibraryRef(x.file_path) === ref
+        );
+        if (m && isUnderRoot(browseDir, m.dir)) {
+            restoreTarget = normPath(m.dir);
+            focusModel = m;
+            break;
+        }
+    }
+    // 回退：文件夹记忆（ADR-090）
+    if (!restoreTarget) {
+        const lastDir = await GetLastBrowseDir(category); // 返回单个 string（非元组），不可解构
+        if (lastDir) {
+            restoreTarget = normPath(lastDir);
+        }
+    }
+    const segs = restoreTarget ? splitSubdirSegments(browseDir, restoreTarget) : null;
+    pendingAutoExpand = segs && segs.length > 0 ? segs : null;
+    pendingFocusModel = focusModel
+        ? { dir: normPath(focusModel.dir), rowKey: 'model:' + focusModel.file_path }
+        : null;
+    if (import.meta.env.DEV) {
+        console.log('[restore] prepare', {
+            category,
+            restoreTarget,
+            segs,
+            focusRowKey: pendingFocusModel?.rowKey,
+        });
+    }
+}
+
 const makeModelMenu = (container: HTMLElement): SlideMenu => {
-    // [展开栈] 打开资源库时，从 root 异步串行展开到上次浏览目录的剩余子目录段
-    let pendingAutoExpand: string[] | null = null;
-    // [doc:model-memory] 上次加载模型的容器目录 + 目标行 key，到达该层时高亮（focus 默认，直载延后）
-    let pendingFocusModel: { dir: string; rowKey: string } | null = null;
     return new SlideMenu({
         container,
         onClose: closeAllOverlays,
@@ -278,31 +321,9 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 //   zip 模型也能命中：expandZipEntries 已把 zip 内部条目预置进 allModels，
                 //   其 dir = <zip父目录>/<zipBase>，buildLevel 按 dir 过滤即可展开到 zip 内。
                 //   多 pmx 同 zip 时 computeLibraryRef 仅标识 zip（不含 zip_inner），取首个匹配。
-                const [lastDir] = await GetLastBrowseDir('pmx');
-                let restoreTarget: string | null = null;
-                let focusModel: LibraryModel | null = null;
-                const lastRef = recentModels[0] ?? null;
-                if (lastRef) {
-                    const m = allModels.find(
-                        (x) => x.format === 'pmx' && computeLibraryRef(x.file_path) === lastRef
-                    );
-                    if (m) {
-                        restoreTarget = normPath(m.dir);
-                        focusModel = m;
-                    }
-                }
-                if (!restoreTarget && lastDir) {
-                    restoreTarget = normPath(lastDir); // 回退：文件夹记忆
-                }
-                const segs = restoreTarget ? splitSubdirSegments(browseDir, restoreTarget) : null;
-                pendingAutoExpand = segs && segs.length > 0 ? segs : null;
-                pendingFocusModel = focusModel
-                    ? { dir: normPath(focusModel.dir), rowKey: 'model:' + focusModel.file_path }
-                    : null;
-                if (import.meta.env.DEV) {
-                    console.log('[restore] lastRef=', lastRef, 'restoreTarget=', restoreTarget,
-                        'segs=', segs, 'focusRowKey=', pendingFocusModel?.rowKey);
-                }
+                // [doc:model-memory] 复用恢复逻辑：自动展开到上次浏览目录 + 高亮上次模型
+                //   （RecentModels 混存多格式时按 pmx 优先；文件夹记忆作回退，见 prepareModelRestore）
+                await prepareModelRestore(browseDir, 'pmx');
                 return buildLevel(
                     browseDir,
                     t('library.title'),
@@ -1198,6 +1219,8 @@ function onModelRowClick(m: LibraryModel): void {
                         } else {
                             newName = modelRegistry.get(handle.id)?.name ?? handle.name;
                         }
+                        // [doc:model-memory] 替换续接：打开的浏览器同样自动展开+高亮上次模型
+                        await prepareModelRestore(getBrowseDir(browseCategory), browseCategory);
                         stackRegistry.modelStack?.push(
                             buildLevel(
                                 getBrowseDir(browseCategory),

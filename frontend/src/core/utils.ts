@@ -158,6 +158,13 @@ export function deepClone<T>(x: T): T {
     return JSON.parse(JSON.stringify(x)) as T;
 }
 
+// ======== Object Helpers ========
+
+/** 泛型键值写入工具，避免大量 `obj[key] = value` 重复。 */
+export function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
+    obj[key] = value;
+}
+
 // ======== Library Reference Utilities ========
 
 export const stackRegistry: {
