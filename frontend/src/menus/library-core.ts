@@ -220,7 +220,7 @@ export async function prepareModelRestore(
 ): Promise<void> {
     let restoreTarget: string | null = null;
     let focusModel: LibraryModel | null = null;
-    // 优先用 RecentModels 中首个「该格式且位于当前浏览根之下」的模型（zip 条目亦命中）
+    let fromRecentModel = false;
     for (const ref of recentModels) {
         const m = allModels.find(
             (x) => x.format === category && computeLibraryRef(x.file_path) === ref
@@ -228,21 +228,48 @@ export async function prepareModelRestore(
         if (m && isUnderRoot(browseDir, m.dir)) {
             restoreTarget = normPath(m.dir);
             focusModel = m;
+            fromRecentModel = true;
             break;
         }
     }
-    // 回退：文件夹记忆（ADR-090）
     if (!restoreTarget) {
-        const lastDir = await GetLastBrowseDir(category); // 返回单个 string（非元组），不可解构
+        const lastDir = await GetLastBrowseDir(category);
         if (lastDir) {
             restoreTarget = normPath(lastDir);
         }
     }
     const segs = restoreTarget ? splitSubdirSegments(browseDir, restoreTarget) : null;
-    if (segs && segs.length === 1) {
-        pendingAutoExpand = null;
+    if (segs && segs.length > 0) {
+        if (fromRecentModel) {
+            let currentDir = normPath(browseDir);
+            let keepSegs = 0;
+            for (let i = 0; i < segs.length; i++) {
+                const subdirName = segs[i];
+                const subdirPath = normPath(currentDir + '/' + subdirName);
+                const entriesInSubdir = allModels.filter((m) => {
+                    if (m.format !== category) return false;
+                    return normPath(m.dir) === subdirPath;
+                });
+                const entriesUnderSubdir = allModels.filter((m) => {
+                    if (m.format !== category) return false;
+                    return isUnderRoot(subdirPath, m.dir) || normPath(m.dir) === subdirPath;
+                });
+                const isLeafDir = entriesUnderSubdir.length > 0 &&
+                    entriesUnderSubdir.every((m) => normPath(m.dir) === subdirPath);
+                const allZip = entriesInSubdir.length > 0 && entriesInSubdir.every((m) => m.container === 'zip');
+                const multiZip = allZip && entriesInSubdir.length > 1;
+                if (isLeafDir && !multiZip) {
+                    break;
+                }
+                keepSegs = i + 1;
+                currentDir = subdirPath;
+            }
+            pendingAutoExpand = keepSegs > 0 ? segs.slice(0, keepSegs) : null;
+        } else {
+            pendingAutoExpand = segs;
+        }
     } else {
-        pendingAutoExpand = segs && segs.length > 0 ? segs : null;
+        pendingAutoExpand = null;
     }
     pendingFocusModel = focusModel
         ? { dir: normPath(focusModel.dir), rowKey: 'model:' + focusModel.file_path }
@@ -251,6 +278,7 @@ export async function prepareModelRestore(
         console.log('[restore] prepare', {
             category,
             restoreTarget,
+            fromRecentModel,
             segs,
             focusRowKey: pendingFocusModel?.rowKey,
         });
@@ -658,10 +686,14 @@ export function buildLevel(
                 }
                 return normPath(m.dir) === fullPath;
             });
-            for (const m of entries) {
-                items.push(modelToRow(m));
+            const allZip = entries.length > 0 && entries.every((m) => m.container === 'zip');
+            const multiZip = allZip && entries.length > 1;
+            if (!multiZip) {
+                for (const m of entries) {
+                    items.push(modelToRow(m));
+                }
+                continue;
             }
-            continue;
         }
         items.unshift({
             kind: 'folder',
