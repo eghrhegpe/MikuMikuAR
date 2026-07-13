@@ -7,8 +7,19 @@
 // 不再寄生在 SlideMenu 弹窗里——浏览器是单一全屏表面，没有层级/返回栈，
 // SlideMenu 的导航机件对它纯属死重。
 
-import { Browser } from '@wailsio/runtime';
-import { StartProxy, StopProxy, NavigatePlazaWindow } from '../core/wails-bindings';
+import { Browser, EventsOn } from '@wailsio/runtime';
+import {
+    StartProxy,
+    StopProxy,
+    NavigatePlazaWindow,
+    ClosePlazaWindow,
+    PlazaGoBack,
+    PlazaGoForward,
+    PlazaReload,
+    PlazaZoomIn,
+    PlazaZoomOut,
+    PlazaZoomReset,
+} from '../core/wails-bindings';
 import { openExternalURL } from '../core/platform';
 import { closeAllOverlays } from '../core/utils';
 import { PLAZA_SITES, type PlazaSite } from './plaza-sites';
@@ -22,43 +33,57 @@ const L = {
     back: '返回',
     refresh: '刷新',
     proxyError: '代理启动失败：',
+    // [ADR-087 P0] 遥控面板
+    goBack: '‹ 后退',
+    goForward: '前进 ›',
+    zoomIn: '放大',
+    zoomOut: '缩小',
+    zoomReset: '重置',
+    closeWindow: '关闭窗口',
+    remoteHint: '广场窗口已打开，点击下载链接会自动入库',
+    // [ADR-087 P1] URL 追踪 + 下载进度
+    loading: '加载中...',
+    downloading: '下载中',
+    downloadComplete: '下载完成',
 };
 
-// 全局打开方式开关：embed=内嵌 iframe；window=Wails 新窗口；external=系统浏览器。
-// 三模式相互独立、不自动选路，便于单独测试各打开行为。持久化到 localStorage，重启保留。见 ADR-075。
+// 打开方式：embed=内嵌 iframe；window=Wails 新窗口；external=系统浏览器。
+// [ADR-087 P1] 从全局模式改为 Per-site 模式记忆：每个站点独立保存偏好，
+// 回退到站点默认推荐模式（site.mode）。持久化到 localStorage，重启保留。
 type OpenMode = 'embed' | 'external' | 'window';
-const OPEN_MODE_KEY = 'miku.plaza.openMode';
-let openMode: OpenMode = loadOpenMode();
 
-function loadOpenMode(): OpenMode {
+function effectiveMode(site: PlazaSite): OpenMode {
     try {
-        const v = localStorage.getItem(OPEN_MODE_KEY);
-        if (v === 'embed' || v === 'external' || v === 'window') {
-            return v;
+        const key = `miku.plaza.mode.${site.name}`;
+        const saved = localStorage.getItem(key);
+        if (saved === 'embed' || saved === 'external' || saved === 'window') {
+            return saved;
         }
     } catch {
-        /* localStorage 不可用时忽略，回退 embed */
+        /* localStorage 不可用时忽略 */
     }
-    return 'embed';
+    return site.mode ?? 'embed';
 }
-function saveOpenMode(): void {
+
+function saveSiteMode(site: PlazaSite, mode: OpenMode): void {
     try {
-        localStorage.setItem(OPEN_MODE_KEY, openMode);
+        const key = `miku.plaza.mode.${site.name}`;
+        localStorage.setItem(key, mode);
     } catch {
         /* 忽略 */
     }
-}
-/** 某站点在当前全局开关下的实际打开方式（三模式独立，无自动选路） */
-function effectiveMode(_site: PlazaSite): 'embed' | 'external' | 'window' {
-    return openMode;
 }
 
 let layer: HTMLElement | null = null;
 let plazaProxyActive = false;
 let observer: MutationObserver | null = null;
 let downloadListenerInstalled = false;
+let eventListenersInstalled = false;
 // [ADR-078] 持有当前内嵌 iframe 引用，供下载请求来源校验
 let plazaIframe: HTMLIFrameElement | null = null;
+// [ADR-087 P1] 遥控面板显示状态
+let remoteURLDisplay: HTMLElement | null = null;
+let remoteProgress: HTMLElement | null = null;
 
 // [ADR-078] 监听 iframe 内注入脚本发来的下载请求
 function installDownloadListener(): void {
@@ -79,6 +104,39 @@ function installDownloadListener(): void {
             return;
         }
         handlePlazaDownload(url, filename || 'download');
+    });
+}
+
+// [ADR-087 P1] 监听 Go 端发射的 plaza 事件：urlChanged（导航完成）、
+// downloadProgress（下载进度）、downloadComplete（下载完成）。
+function installEventListeners(): void {
+    if (eventListenersInstalled) {
+        return;
+    }
+    eventListenersInstalled = true;
+    EventsOn('plaza:urlChanged', (data) => {
+        const d = data as { url: string; title: string };
+        if (remoteURLDisplay) {
+            remoteURLDisplay.textContent = d.title || d.url || L.loading;
+        }
+    });
+    EventsOn('plaza:downloadProgress', (data) => {
+        const d = data as { fileName: string; read: number; total: number; percent: number };
+        if (remoteProgress) {
+            const percent = d.percent > 0 ? `${d.percent.toFixed(0)}%` : `${(d.read / 1024).toFixed(0)} KB`;
+            remoteProgress.textContent = `${L.downloading} ${d.fileName}: ${percent}`;
+        }
+    });
+    EventsOn('plaza:downloadComplete', (data) => {
+        const d = data as { fileName: string; size: number };
+        if (remoteProgress) {
+            remoteProgress.textContent = `${L.downloadComplete}: ${d.fileName} (${(d.size / 1024).toFixed(1)} KB)`;
+        }
+        setTimeout(() => {
+            if (remoteProgress) {
+                remoteProgress.textContent = '';
+            }
+        }, 3000);
     });
 }
 
@@ -121,7 +179,12 @@ function openExternal(site: PlazaSite): void {
 function openInWindow(site: PlazaSite): void {
     setStatus(t('plaza.opening', { name: site.name }), false, true);
     NavigatePlazaWindow(site.url)
-        .then(() => setStatus('', false))
+        .then(() => {
+            setStatus('', false);
+            // [ADR-087 P0] window 模式打开后，plaza 层切换为遥控面板：
+            // 后退/前进/刷新/缩放/关闭。下载拦截由注入脚本 fetch /__plaza_dl__ 完成。
+            renderRemote(site);
+        })
         .catch((e) => {
             // 不再自动降级到系统浏览器：wails 窗口失败即失败，便于单独测试该模式。
             setStatus(
@@ -129,6 +192,62 @@ function openInWindow(site: PlazaSite): void {
                 true
             );
         });
+}
+
+// [ADR-087 P0] renderRemote 在主窗口 plaza 层渲染遥控面板，控制独立打开的
+// 广场 WebView2 窗口。代理由 NavigatePlazaWindow 在 Go 端启动，这里不调
+// StartProxy/StopProxy（ClosePlazaWindow 会回收代理）。
+function renderRemote(site: PlazaSite): void {
+    const el = getLayer();
+    el.innerHTML = '';
+    const root = document.createElement('div');
+    root.className = 'plaza-root plaza-remote';
+
+    root.appendChild(
+        buildToolbar({
+            title: site.name,
+            onBack: async () => {
+                await ClosePlazaWindow().catch(() => {});
+                renderHome();
+            },
+            onClose: async () => {
+                await ClosePlazaWindow().catch(() => {});
+                closePlaza();
+            },
+        })
+    );
+
+    const body = document.createElement('div');
+    body.className = 'plaza-remote-body';
+
+    const hint = document.createElement('div');
+    hint.className = 'plaza-remote-hint';
+    hint.textContent = L.remoteHint;
+    body.appendChild(hint);
+
+    const controls = document.createElement('div');
+    controls.className = 'plaza-remote-controls';
+
+    const addBtn = (label: string, fn: () => Promise<unknown>): void => {
+        const b = document.createElement('button');
+        b.className = 'plaza-btn plaza-remote-btn';
+        b.textContent = label;
+        b.onclick = () => {
+            fn().catch(() => {});
+        };
+        controls.appendChild(b);
+    };
+
+    addBtn(L.goBack, () => PlazaGoBack());
+    addBtn(L.goForward, () => PlazaGoForward());
+    addBtn(L.refresh, () => PlazaReload());
+    addBtn(L.zoomIn, () => PlazaZoomIn());
+    addBtn(L.zoomOut, () => PlazaZoomOut());
+    addBtn(L.zoomReset, () => PlazaZoomReset());
+
+    body.appendChild(controls);
+    root.appendChild(body);
+    el.appendChild(root);
 }
 
 /** 回收 Go 反向代理（幂等，已停则无操作） */
@@ -158,7 +277,7 @@ function ensureObserver(): void {
     observer.observe(el, { attributes: true, attributeFilter: ['class'] });
 }
 
-function buildModeSwitch(): HTMLElement {
+function buildModeSwitch(site: PlazaSite): HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'plaza-modeswitch';
     const opts: { key: OpenMode; label: string }[] = [
@@ -166,13 +285,13 @@ function buildModeSwitch(): HTMLElement {
         { key: 'window', label: 'wails' },
         { key: 'external', label: 'chrome' },
     ];
+    const current = effectiveMode(site);
     for (const o of opts) {
         const b = document.createElement('button');
-        b.className = 'plaza-mode-opt' + (openMode === o.key ? ' active' : '');
+        b.className = 'plaza-mode-opt' + (current === o.key ? ' active' : '');
         b.textContent = o.label;
         b.onclick = () => {
-            openMode = o.key;
-            saveOpenMode();
+            saveSiteMode(site, o.key);
             renderHome();
         };
         wrap.appendChild(b);
@@ -262,7 +381,8 @@ function renderHome(): void {
             `<div class="plaza-card-name">${site.name}</div>` +
             `<div class="plaza-card-mode">${
                 eff === 'external' ? 'chrome' : eff === 'window' ? 'wails' : 'iframe'
-            }</div>`;
+            }</div>` +
+            `<div class="plaza-card-modeswitch">${buildModeSwitch(site).innerHTML}</div>`;
         card.onclick = () => {
             if (eff === 'external') {
                 openExternal(site);
@@ -312,7 +432,7 @@ function renderEmbed(site: PlazaSite): void {
     el.appendChild(root);
 
     plazaProxyActive = true;
-    StartProxy(site.url)
+    StartProxy(site.url, 'embed')
         .then((proxyUrl) => {
             iframe.src = proxyUrl;
         })

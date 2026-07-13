@@ -3,6 +3,13 @@ export const en: Record<string, string> = {
     // ===== Settings root =====
     'settings.title': 'Settings',
     'settings.appearance': 'Appearance',
+    'settings.uiScale': 'UI Scale',
+    'settings.popupWidth': 'Popup Width',
+    'settings.themeColor': 'Theme Color',
+    'settings.font': 'Font',
+    'settings.slideAnimation': 'Slide Animation',
+    'settings.bgBlur': 'Background Blur',
+    'settings.resetAppearance': 'Reset Appearance',
     'settings.filename': 'Filename',
     'settings.performance': 'Performance',
     'settings.paths': 'Paths',

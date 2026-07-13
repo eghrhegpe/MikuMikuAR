@@ -3,6 +3,13 @@ export const ja: Record<string, string> = {
     // ===== 設定ルート =====
     'settings.title': '設定',
     'settings.appearance': '外観',
+    'settings.uiScale': 'UIスケール',
+    'settings.popupWidth': 'ポップアップ幅',
+    'settings.themeColor': 'テーマカラー',
+    'settings.font': 'フォント',
+    'settings.slideAnimation': 'スライドアニメーション',
+    'settings.bgBlur': '背景ぼかし',
+    'settings.resetAppearance': '外観をリセット',
     'settings.filename': 'ファイル名',
     'settings.performance': 'パフォーマンス',
     'settings.paths': 'パス',

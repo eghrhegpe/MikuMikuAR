@@ -3,6 +3,13 @@ export const ko: Record<string, string> = {
     // ===== 설정 루트 =====
     'settings.title': '설정',
     'settings.appearance': '외관',
+    'settings.uiScale': 'UI 크기',
+    'settings.popupWidth': '팝업 너비',
+    'settings.themeColor': '테마 색상',
+    'settings.font': '글꼴',
+    'settings.slideAnimation': '슬라이드 애니메이션',
+    'settings.bgBlur': '배경 흐림',
+    'settings.resetAppearance': '외관 초기화',
     'settings.filename': '파일명',
     'settings.performance': '성능',
     'settings.paths': '경로',

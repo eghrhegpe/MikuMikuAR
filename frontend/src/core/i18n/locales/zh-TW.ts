@@ -3,6 +3,13 @@ export const zhTW: Record<string, string> = {
     // ===== 設定根級 =====
     'settings.title': '設定',
     'settings.appearance': '外觀',
+    'settings.uiScale': 'UI 縮放',
+    'settings.popupWidth': '彈窗寬度',
+    'settings.themeColor': '主題色',
+    'settings.font': '字體',
+    'settings.slideAnimation': '滑動動畫',
+    'settings.bgBlur': '背景模糊',
+    'settings.resetAppearance': '恢復預設外觀',
     'settings.filename': '檔案名稱',
     'settings.performance': '效能',
     'settings.paths': '路徑',

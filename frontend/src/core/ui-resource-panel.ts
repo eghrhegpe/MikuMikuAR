@@ -32,6 +32,8 @@ export interface ResourceItem {
     label: string;
     /** 文件路径（用于缩略图缓存） */
     filePath: string;
+    /** 缩略图缓存 key（ZIP 模型为 file_path::zip_inner，普通模型同 filePath） */
+    thumbKey?: string;
     /** 图标名称（fallback） */
     icon: string;
     /** 是否为文件夹 */
@@ -139,6 +141,14 @@ export function createResourcePanel(
         updateItems: (newItems: ResourceItem[]) => {
             currentItems = [...newItems];
             render();
+            const els = panel.querySelectorAll('[data-resource-path]') as NodeListOf<HTMLElement>;
+            for (let i = 0; i < els.length; i++) {
+                const el = els[i];
+                const path = el.dataset.resourcePath;
+                if (path && !el.style.backgroundImage && liveThumbnailCache.has(path)) {
+                    el.style.backgroundImage = `url(data:image/png;base64,${liveThumbnailCache.get(path)})`;
+                }
+            }
         },
         setLayout: (newLayout: 'grid' | 'list') => {
             if (currentLayout !== newLayout) {
@@ -226,7 +236,7 @@ function createGridCard(
     // 缩略图区域
     const thumb = document.createElement('div');
     thumb.className = 'resource-thumb';
-    thumb.dataset.resourcePath = item.filePath;
+    thumb.dataset.resourcePath = item.thumbKey ?? item.filePath;
     thumb.style.cssText = `
         width: 100%;
         height: ${itemHeight - 40}px;
@@ -239,8 +249,9 @@ function createGridCard(
     `;
 
     // 缩略图或 fallback 图标
-    if (cache.has(item.filePath)) {
-        thumb.style.backgroundImage = `url(data:image/png;base64,${cache.get(item.filePath)})`;
+    const tKey = item.thumbKey ?? item.filePath;
+    if (cache.has(tKey)) {
+        thumb.style.backgroundImage = `url(data:image/png;base64,${cache.get(tKey)})`;
     } else {
         const iconEl = createIconifyIcon(item.isFolder ? 'folder' : item.icon);
         if (iconEl) {
@@ -342,7 +353,7 @@ function createListRow(
     // 缩略图（小尺寸）
     const thumb = document.createElement('div');
     thumb.className = 'resource-thumb-sm';
-    thumb.dataset.resourcePath = item.filePath;
+    thumb.dataset.resourcePath = item.thumbKey ?? item.filePath;
     thumb.style.cssText = `
         width: 40px;
         height: 40px;
@@ -356,8 +367,9 @@ function createListRow(
         justify-content: center;
     `;
 
-    if (cache.has(item.filePath)) {
-        thumb.style.backgroundImage = `url(data:image/png;base64,${cache.get(item.filePath)})`;
+    const tKey2 = item.thumbKey ?? item.filePath;
+    if (cache.has(tKey2)) {
+        thumb.style.backgroundImage = `url(data:image/png;base64,${cache.get(tKey2)})`;
     } else {
         const iconEl = createIconifyIcon(item.isFolder ? 'folder' : item.icon);
         if (iconEl) {

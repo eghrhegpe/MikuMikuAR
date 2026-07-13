@@ -88,8 +88,6 @@ function buildActionBindingSchema(id: string): MenuNode[] {
         return [];
     }
 
-    const physCategories = inst.kind === 'actor' ? getPhysicsCategories(id) : [];
-
     return [
         // 卡片 1：更换动作 + 姿势库
         {
@@ -147,10 +145,14 @@ function buildActionBindingSchema(id: string): MenuNode[] {
         {
             id: 'binding:physics',
             kind: 'custom',
-            visibleWhen: () => physCategories.length > 0,
+            visibleWhen: () => {
+                const inst = modelManager.get(id);
+                return inst?.kind === 'actor' && getPhysicsCategories(id).length > 0;
+            },
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    for (const cat of physCategories) {
+                    const cats = getPhysicsCategories(id);
+                    for (const cat of cats) {
                         const enabled = isPhysicsCategoryEnabled(id, cat);
                         addToggleRow(
                             inner,

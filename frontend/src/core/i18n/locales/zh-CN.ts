@@ -3,6 +3,13 @@ export const zhCN: Record<string, string> = {
     // ===== 设置根级 =====
     'settings.title': '设置',
     'settings.appearance': '外观',
+    'settings.uiScale': 'UI 缩放',
+    'settings.popupWidth': '弹窗宽度',
+    'settings.themeColor': '主题色',
+    'settings.font': '字体',
+    'settings.slideAnimation': '滑动动画',
+    'settings.bgBlur': '背景模糊',
+    'settings.resetAppearance': '恢复默认外观',
     'settings.filename': '文件名',
     'settings.performance': '性能',
     'settings.paths': '路径',

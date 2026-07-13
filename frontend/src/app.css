@@ -678,6 +678,35 @@ input, textarea, [contenteditable] {
     color: #e24b4a;
     font-size: 12px;
 }
+/* [ADR-087 P0] window 模式遥控面板：主窗口控制独立广场窗口 */
+.plaza-remote-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 40px 20px;
+}
+.plaza-remote-hint {
+    font-size: 13px;
+    color: rgba(232, 246, 244, 0.7);
+    text-align: center;
+    max-width: 360px;
+    line-height: 1.6;
+}
+.plaza-remote-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    max-width: 480px;
+}
+.plaza-remote-btn {
+    min-width: 88px;
+    padding: 10px 16px;
+    font-size: 13px;
+}
 
 /* ===== 外部库 — 行内路径 ===== */
 
