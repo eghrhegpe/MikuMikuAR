@@ -110,29 +110,6 @@ function buildFormationLevel(): PopupLevel {
     };
 }
 
-function buildScreenshotLevel(): PopupLevel {
-    return {
-        label: t('scene.screenshot'),
-        dir: '',
-        items: [
-            {
-                kind: 'action',
-                label: t('scene.screenshotCurrent'),
-                icon: 'camera',
-                target: 'screenshot:current',
-                sublabel: t('scene.screenshotCurrentSub'),
-            },
-            {
-                kind: 'action',
-                label: t('scene.screenshotBatch'),
-                icon: 'images',
-                target: 'screenshot:batch',
-                sublabel: t('scene.screenshotBatchSub'),
-            },
-        ],
-    };
-}
-
 // ======== Scene Root ========
 
 /** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
@@ -162,12 +139,6 @@ function buildSceneRootItems(): PopupRow[] {
         label: t('scene.stage'),
         icon: 'lucide:monitor',
         target: 'scene:render:stage',
-    });
-    items.push({
-        kind: 'folder',
-        label: t('scene.screenshot'),
-        icon: 'lucide:camera',
-        target: 'scene:screenshot',
     });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
@@ -201,7 +172,6 @@ function buildSceneRoot(): PopupLevel {
 const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:presets': buildPresetScenesLevel,
     'scene:render': buildRenderLevel,
-    'scene:screenshot': buildScreenshotLevel,
     'scene:render:postprocess': buildPostProcessLevel,
     'scene:render:stage': buildStageLevel,
     'scene:render:props': buildPropLevel,

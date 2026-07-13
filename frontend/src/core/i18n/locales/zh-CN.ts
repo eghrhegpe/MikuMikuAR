@@ -96,6 +96,7 @@ export const zhCN: Record<string, string> = {
 
     // ===== 动作 motion =====
     'motion.title': '动作',
+    'motion.advanced': '高级',
     'motion.bindingTitle': '动作绑定',
     'motion.changeMotion': '更换动作',
     'motion.motionLibrary': '动作库',
@@ -458,6 +459,13 @@ export const zhCN: Record<string, string> = {
     'scene.ssaoStrength': '遮蔽强度',
     'scene.ssaoRadius': '遮蔽半径',
     'scene.ssaoSamples': '采样数',
+    'scene.debugMirror': '调试镜面',
+    'scene.debugMirrorOn': '✓ 调试镜面已开启',
+    'scene.debugMirrorOff': '✓ 调试镜面已关闭',
+    'scene.debugMirrorWidth': '宽度',
+    'scene.debugMirrorHeight': '高度',
+    'scene.debugMirrorResolution': '分辨率',
+    'scene.debugMirrorHint': '开启上方开关创建镜面',
     'scene.waterReflectionQuality': '平面反射质量',
     'scene.waterReflectionQualityHigh': '高',
     'scene.waterReflectionQualityMedium': '中',
@@ -1270,4 +1278,12 @@ export const zhCN: Record<string, string> = {
     'shortcuts.resetAll': '恢复默认快捷键',
     'shortcuts.custom': '自定义',
     'settings.paths.watchDirPlaceholder': '选择监听目录...',
+    // ===== i18n 审计修复 2026-07-13（硬编码串国际化）=====
+    'boot.engineReady': '✅ 引擎就绪',
+    'boot.readyHint': '✨ 准备就绪 · 点击"模型"导入 PMX',
+    'boot.initFailed': '❌ 初始化失败: {msg}',
+    'common.empty': '暂无内容',
+    'common.apply': '应用',
+    'settings.audio.offsetHint': '正=音频先播，负=音频后播（对所有音乐全局生效）',
+    'props.loadingProgress': '加载道具 {pct}%',
 };

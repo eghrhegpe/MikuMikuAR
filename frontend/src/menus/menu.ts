@@ -711,7 +711,7 @@ export class SlideMenu {
         list.className = 'slide-list';
 
         if (level.items.length === 0 && !level.renderCustom) {
-            list.innerHTML = '<div class="slide-empty">暂无内容</div>';
+            list.innerHTML = '<div class="slide-empty">' + t('common.empty') + '</div>';
         } else if (level.items.length > 0 && !level.renderCustom) {
             // 纯 items 菜单：按 divider 分组，每组包一个 lcard
             let card: HTMLElement | null = null;

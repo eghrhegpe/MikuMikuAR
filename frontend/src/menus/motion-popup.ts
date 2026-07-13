@@ -398,6 +398,7 @@ const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'motion:feet': buildFeetLevel,
     'motion:poseStudio': buildPoseStudioLevel,
     'motion:virtualSkirt': buildVirtualSkirtLevel,
+    'motion:advanced': buildAdvancedLevel,
     'procmotion:mode': buildProcMotionModeLevel,
     'lipsync:menu': buildLipSyncLevel,
 };
@@ -682,6 +683,52 @@ function buildRecentMotionsLevel(): PopupLevel {
     };
 }
 
+// ======== Advanced (收纳高级/技术向功能) ========
+
+/** 高级菜单 items：收纳程序化动作 / 视线追踪 / 骨骼覆盖 / 脚部调整 / 虚拟裙骨。 */
+function buildAdvancedItems(): PopupRow[] {
+    const items: PopupRow[] = [];
+    items.push({
+        kind: 'folder',
+        label: t('motion.procMotion'),
+        icon: 'lucide:wind',
+        target: 'motion:procmotion',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('motion.gazeTracking'),
+        icon: 'lucide:eye',
+        target: 'motion:gaze',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('motion.boneOverride.title'),
+        icon: 'tabler:bone',
+        target: 'motion:boneOverride',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('motion.feet.title'),
+        icon: 'lucide:footprints',
+        target: 'motion:feet',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('cloth.title'),
+        icon: 'lucide:shirt',
+        target: 'motion:virtualSkirt',
+    });
+    return items;
+}
+
+function buildAdvancedLevel(): PopupLevel {
+    return {
+        label: t('motion.advanced'),
+        dir: '',
+        items: buildAdvancedItems(),
+    };
+}
+
 // ======== Motion Root (items-based) ========
 
 /** 动作弹窗根级 items 构建器——动态反映 modelManager / recent / cloth 状态。 */
@@ -752,39 +799,16 @@ function buildMotionRootItems(): PopupRow[] {
     }
     items.push({
         kind: 'folder',
-        label: t('motion.procMotion'),
-        icon: 'lucide:wind',
-        target: 'motion:procmotion',
-    });
-    items.push({
-        kind: 'folder',
-        label: t('motion.gazeTracking'),
-        icon: 'lucide:eye',
-        target: 'motion:gaze',
-    });
-    items.push({
-        kind: 'folder',
-        label: t('motion.boneOverride.title'),
-        icon: 'tabler:bone',
-        target: 'motion:boneOverride',
-    });
-    items.push({
-        kind: 'folder',
-        label: t('motion.feet.title'),
-        icon: 'lucide:footprints',
-        target: 'motion:feet',
-    });
-    items.push({
-        kind: 'folder',
         label: t('motion.poseStudio.title'),
         icon: 'lucide:camera',
         target: 'motion:poseStudio',
     });
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
         kind: 'folder',
-        label: t('cloth.title'),
-        icon: 'lucide:shirt',
-        target: 'motion:virtualSkirt',
+        label: t('motion.advanced'),
+        icon: 'lucide:settings-2',
+        target: 'motion:advanced',
     });
     return items;
 }

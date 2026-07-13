@@ -46,7 +46,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
 
     try {
         dom.loadingEl.style.display = 'block';
-        updateLoadingText('加载道具 0%');
+        updateLoadingText(t('props.loadingProgress', { pct: '0' }));
 
         console.info('[props] loadProp:', filePath);
 
@@ -69,7 +69,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
             onProgress: (evt) => {
                 if (evt.lengthComputable) {
                     const pct = Math.round((evt.loaded / evt.total) * 100);
-                    updateLoadingText(`加载道具 ${pct}%`);
+                    updateLoadingText(t('props.loadingProgress', { pct: String(pct) }));
                 }
             },
         });

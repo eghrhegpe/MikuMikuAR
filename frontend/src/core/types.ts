@@ -463,6 +463,8 @@ export interface EnvState {
     cloudVisibility: number;
     cloudGap: number;
 
+    debugMirrorEnabled: boolean;
+
     fogEnabled: boolean;
     fogMode: 'exp' | 'exp2' | 'linear';
     fogColor: [number, number, number];

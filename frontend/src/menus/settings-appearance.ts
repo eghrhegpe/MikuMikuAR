@@ -137,7 +137,7 @@ function _renderThemeColorInput(
     input.value = currentAccent;
     const applyBtn = document.createElement('button');
     applyBtn.className = 'btn btn-sm btn-primary';
-    applyBtn.textContent = '应用';
+    applyBtn.textContent = t('common.apply');
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             applyBtn.click();

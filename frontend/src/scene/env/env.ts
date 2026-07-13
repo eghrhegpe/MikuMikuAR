@@ -182,4 +182,9 @@ export {
     toggleDebugMirror,
     isDebugMirrorActive,
     refreshDebugMirrorRenderList,
+    setDebugMirrorSize,
+    setDebugMirrorPosition,
+    setDebugMirrorRotationY,
+    setDebugMirrorResolution,
+    getDebugMirrorInfo,
 } from './mirror-debug';

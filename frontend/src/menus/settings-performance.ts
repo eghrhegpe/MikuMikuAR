@@ -2,7 +2,7 @@
 
 import { SetPerformanceMode } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
-import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
+import { setStatus, uiState, setUIState, cardContainer, focusedModelId } from '../core/config';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import {
@@ -12,7 +12,7 @@ import {
 } from '../scene/render/performance';
 import { getRenderState, setRenderState } from '../scene/render/renderer';
 import { getLightState, setLightState } from '../scene/render/lighting';
-import { engine, applyFrameControl } from '../scene/scene';
+import { engine, applyFrameControl, modelManager, setModelPhysics } from '../scene/scene';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import type { PopupLevel } from '../core/config';
 import type { SettingsMenuHandle } from './settings-shared';

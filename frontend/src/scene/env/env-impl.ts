@@ -98,6 +98,11 @@ export {
     _underwaterTarget,
 } from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
+export {
+    createDebugMirror,
+    disposeDebugMirror,
+    isDebugMirrorActive,
+} from './mirror-debug';
 import {
     createParticleEmitter,
     disposeParticles,

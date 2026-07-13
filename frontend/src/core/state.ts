@@ -165,7 +165,12 @@ export function setPopupOpen(v: boolean): void {
 
 export let thumbnailCache = new Map<string, string>();
 export function setThumbnailCache(m: Map<string, string>): void {
-    thumbnailCache = m;
+    // [fix:thumbnail] 原地 mutate 而非替换 Map 对象，保证所有持有 live 引用的
+    // 面板（createResourcePanel / IntersectionObserver）能感知缓存更新。
+    thumbnailCache.clear();
+    for (const [k, v] of m) {
+        thumbnailCache.set(k, v);
+    }
 }
 
 // ======== Recent Models ========
@@ -388,6 +393,8 @@ export const envState: EnvState = reactive<EnvState>({
     cloudThickness: 15,
     cloudVisibility: 3000,
     cloudGap: 0.1,
+
+    debugMirrorEnabled: false,
 
     fogEnabled: false,
     fogMode: 'exp2',

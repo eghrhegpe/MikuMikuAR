@@ -132,7 +132,7 @@ export function renderUserEnvPresets(container: HTMLElement): void {
                 const filename = await SaveEnvPresetAuto(json);
                 return filename;
             },
-            '✗ 保存预设失败',
+            t('env-preset.saveFailed'),
             (err) =>
                 showErrorToast(
                     t('env-preset.saveErrorToast'),
