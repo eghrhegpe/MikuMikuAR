@@ -8,12 +8,14 @@ export interface VirtualGridOptions<T> {
     items: T[];
     /** 每项高度（固定，px） */
     itemHeight: number;
-    /** 列数 */
+    /** 列数（初始值，ResizeObserver 会覆盖） */
     columns: number;
     /** 渲染单项的工厂函数 */
     renderItem: (item: T, index: number) => HTMLElement;
     /** 缓冲行数 */
     bufferRows?: number;
+    /** 响应式模式：单列宽度（px），容器 resize 时自动计算列数 */
+    responsiveColumnWidth?: number;
 }
 
 export interface VirtualGridHandle<T> {
@@ -33,12 +35,13 @@ export function createVirtualGrid<T>(
     container: HTMLElement,
     options: VirtualGridOptions<T>
 ): VirtualGridHandle<T> {
-    const { items: initialItems, itemHeight, columns, renderItem, bufferRows = 2 } = options;
+    const { items: initialItems, itemHeight, columns, renderItem, bufferRows = 2, responsiveColumnWidth } = options;
 
     // 状态
     let currentItems = [...initialItems];
     let currentColumns = columns;
     let scrollTop = 0;
+    let resizeObserver: ResizeObserver | null = null;
 
     // 计算
     const getRowsCount = () => Math.ceil(currentItems.length / currentColumns);
@@ -126,6 +129,29 @@ export function createVirtualGrid<T>(
         });
     });
 
+    function setColumns(newColumns: number): void {
+        if (currentColumns !== newColumns) {
+            currentColumns = newColumns;
+            content.style.height = `${getTotalHeight()}px`;
+            renderVisibleRows();
+        }
+    }
+
+    // 响应式：根据容器宽度自动计算列数
+    if (responsiveColumnWidth) {
+        const computeColumns = () => {
+            const gap = parseInt(getComputedStyle(container).getPropertyValue('--resource-gap')) || 8;
+            const availableWidth = container.clientWidth;
+            const cols = Math.max(1, Math.floor((availableWidth + gap) / (responsiveColumnWidth + gap)));
+            setColumns(cols);
+        };
+        resizeObserver = new ResizeObserver(() => {
+            computeColumns();
+        });
+        resizeObserver.observe(container);
+        computeColumns();
+    }
+
     // 初始渲染
     renderVisibleRows();
 
@@ -136,19 +162,17 @@ export function createVirtualGrid<T>(
             content.style.height = `${getTotalHeight()}px`;
             renderVisibleRows();
         },
-        setColumns: (newColumns: number) => {
-            if (currentColumns !== newColumns) {
-                currentColumns = newColumns;
-                content.style.height = `${getTotalHeight()}px`;
-                renderVisibleRows();
-            }
-        },
+        setColumns,
         scrollToTop: () => {
             wrapper.scrollTop = 0;
         },
         dispose: () => {
             if (rafId) {
                 cancelAnimationFrame(rafId);
+            }
+            if (resizeObserver) {
+                resizeObserver.disconnect();
+                resizeObserver = null;
             }
             wrapper.remove();
         },

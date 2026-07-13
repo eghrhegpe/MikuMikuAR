@@ -218,7 +218,8 @@ export function computeRestoreSegments(
     categoryFilter?: (m: LibraryModel) => boolean
 ): string[] | null {
     const segs = splitSubdirSegments(browseDir, targetDir);
-    if (!segs || segs.length === 0) return null;
+    if (!segs) return null;
+    if (segs.length === 0) return [];
     let currentDir = normPath(browseDir);
     let keepSegs = 0;
     for (let i = 0; i < segs.length; i++) {
@@ -229,7 +230,7 @@ export function computeRestoreSegments(
         keepSegs = i + 1;
         currentDir = subdirPath;
     }
-    return keepSegs > 0 ? segs.slice(0, keepSegs) : null;
+    return keepSegs > 0 ? segs.slice(0, keepSegs) : [];
 }
 
 /**
@@ -285,12 +286,13 @@ export async function prepareModelRestore(
     if (restoreTarget) {
         const fullSegs = splitSubdirSegments(browseDir, restoreTarget);
         if (fromRecentModel) {
-            pendingAutoExpand = computeRestoreSegments(
+            const result = computeRestoreSegments(
                 browseDir,
                 restoreTarget,
                 allModels,
                 categoryFilter
             );
+            pendingAutoExpand = result && result.length > 0 ? result : null;
         } else {
             pendingAutoExpand = fullSegs && fullSegs.length > 0 ? fullSegs : null;
         }
@@ -500,7 +502,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
 
 // ======== Thumbnail batch loading ========
 
-function _thumbnailKeyForModel(m: LibraryModel): string {
+export function thumbnailKeyForModel(m: LibraryModel): string {
     if (m.container === 'zip' && m.zip_inner) {
         return `${m.file_path}::${m.zip_inner}`;
     }
@@ -509,13 +511,17 @@ function _thumbnailKeyForModel(m: LibraryModel): string {
 
 async function _loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
     const items = level.items.filter((r) => r.kind === 'model' && r.model);
-    const keys = items.map((r) => _thumbnailKeyForModel(r.model!));
+    const keys = items.map((r) => thumbnailKeyForModel(r.model!));
     if (keys.length === 0) {
         return;
     }
     try {
         const batch = await GetThumbnailBatch(keys);
-        setThumbnailCache(new Map(Object.entries(batch)));
+        const merged = new Map(thumbnailCache);
+        for (const [k, v] of Object.entries(batch)) {
+            merged.set(k, v);
+        }
+        setThumbnailCache(merged);
     } catch (err) {
         console.warn('loadThumbnailsForLevel:', err);
     }
@@ -1251,7 +1257,7 @@ export function modelToResourceItem(m: LibraryModel): ResourceItem {
         id: fp,
         label,
         filePath: fp,
-        thumbKey: m.container === 'zip' && m.zip_inner ? `${fp}::${m.zip_inner}` : fp,
+        thumbKey: thumbnailKeyForModel(m),
         icon,
         isFolder: false,
         sublabel: cached?.comment || m.comment || undefined,

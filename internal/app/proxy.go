@@ -81,11 +81,15 @@ const proxyServerKey = "model-plaza-proxy"
 // lastForwardedTarget tracks the upstream URL of the last proxied request.
 // This is used by /__plaza_url__ to return the real site URL instead of the
 // proxy URL (ADR-087 P1).
+//
+// obsolete marks the session as defunct (target changed). In-flight downloads
+// should abort when obsolete=true to avoid orphaned partial files (ADR-087 P3).
 type proxySession struct {
-	jar                *cookiejar.Jar
-	mu                 sync.Mutex
-	mode               string
+	jar                 *cookiejar.Jar
+	mu                  sync.Mutex
+	mode                string
 	lastForwardedTarget string
+	obsolete            bool
 }
 
 // getCookies returns cookies for the given URL, safe for concurrent use.
@@ -145,11 +149,15 @@ func (pr *progressReader) Read(p []byte) (int, error) {
 	n, err := pr.reader.Read(p)
 	pr.read += int64(n)
 	if pr.app.wailsApp != nil && time.Since(pr.lastEmit) > 500*time.Millisecond {
+		var percent float64
+		if pr.total > 0 {
+			percent = float64(pr.read) / float64(pr.total) * 100
+		}
 		pr.app.wailsApp.Event.Emit("plaza:downloadProgress", map[string]any{
 			"fileName": pr.fileName,
 			"read":     pr.read,
 			"total":    pr.total,
-			"percent":  pr.total > 0 ? float64(pr.read)/float64(pr.total)*100 : 0,
+			"percent":  percent,
 		})
 		pr.lastEmit = time.Now()
 	}
@@ -240,6 +248,12 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 		if target != currentProxyTarget {
 			if _, ok := a.httpServers[proxyServerKey]; ok {
 				a.safeLogInfo("StartProxy: target changed from %q to %q — restarting", currentProxyTarget, target)
+				// [ADR-087 P3] 标记旧 session 为废弃，使 in-flight 下载能感知并清理
+				if oldSess, hasOld := proxySessions[proxyServerKey]; hasOld {
+					oldSess.mu.Lock()
+					oldSess.obsolete = true
+					oldSess.mu.Unlock()
+				}
 				// 手动清理（不调 StopProxy 以避免死锁：已持有 httpSrvMu）
 				info := a.httpServers[proxyServerKey]
 				delete(a.httpServers, proxyServerKey)
@@ -284,12 +298,15 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 		// 若不重写，上游收到的 HTTP Host header 仍是 127.0.0.1:PORT，GitHub/Pixiv
 		// 等按 Host 严格路由的站点会直接返回 404。必须同步 req.Host。
 		req.Host = targetURL.Host
-		// [ADR-087 P1] 记录最后转发的目标 URL，供 /__plaza_url__ 查询真实站点地址。
+		// [ADR-087 P1/P3] 记录最后转发的目标 URL，供 /__plaza_url__ 查询真实站点地址。
+		// 只更新顶级导航请求（Accept: text/html），避免子资源（CSS/JS/图片）覆盖。
 		// req.URL 已被 baseDirector 修改为上游目标 URL（含路径），直接保存。
-		sess.mu.Lock()
-		sess.lastForwardedTarget = req.URL.String()
-		sess.mu.Unlock()
-		// 伪装成正常浏览器直连：清理暴露代理的头，补 UA/Referer，降低被反爬拦截概率。
+		if req.Header.Get("Accept") != "" && strings.Contains(req.Header.Get("Accept"), "text/html") {
+			sess.mu.Lock()
+			sess.lastForwardedTarget = req.URL.String()
+			sess.mu.Unlock()
+		}
+		// 伪装为正常浏览器直连：清理暴露代理的头，补 UA/Referer，降低被反爬拦截概率。
 		req.Header.Del("X-Forwarded-For")
 		req.Header.Set("X-Forwarded-Host", targetURL.Host)
 		if req.Header.Get("User-Agent") == "" {
@@ -331,7 +348,8 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 				// [资源上限] 仅对已知且不超过上限的 HTML 注入脚本；超大响应直接
 				// 透传不注入，避免 io.ReadAll 把整响应读进内存撑爆。
 				if resp.ContentLength > maxPlazaHTMLBody {
-					// 超上限：保持原始 resp.Body 不变，直接透传。
+					// [ADR-087 P4] 超上限：保持原始 resp.Body 不变，直接透传。
+					a.safeLogInfo("StartProxy: HTML body too large (%d bytes), skip injection", resp.ContentLength)
 				} else {
 					body, err := io.ReadAll(io.LimitReader(resp.Body, maxPlazaHTMLBody))
 					resp.Body.Close()
@@ -557,6 +575,22 @@ func (a *App) DownloadFromPlaza(fileURL string, fileName string) (*PlazaDownload
 			return nil, fmt.Errorf("create file %s: %w", destPath, err)
 		}
 		defer f.Close()
+
+		// [ADR-087 P3] 检查 session 是否已废弃（target 变化）。若废弃则立即清理文件，
+		// 避免 target-change 后残留部分下载文件。
+		a.httpSrvMu.Lock()
+		sessForCheck, hasSessionForCheck := proxySessions[proxyServerKey]
+		a.httpSrvMu.Unlock()
+		if hasSessionForCheck {
+			sessForCheck.mu.Lock()
+			obsolete := sessForCheck.obsolete
+			sessForCheck.mu.Unlock()
+			if obsolete {
+				f.Close()
+				os.Remove(destPath)
+				return nil, fmt.Errorf("proxy session obsolete (target changed)")
+			}
+		}
 
 		// [ADR-087 P1] 包装 resp.Body 以报告下载进度。Content-Length 可能缺失，
 		// progressReader 会在 total=0 时将 percent 设为 0，仅报告已下载字节数。

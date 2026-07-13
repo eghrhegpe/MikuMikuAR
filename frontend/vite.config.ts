@@ -37,6 +37,21 @@ export default defineConfig(({ command }) => {
       // 强制 IPv4 监听，修复 Go ExternalAssetHandler 连 127.0.0.1 被拒的问题
       host: '127.0.0.1',
     },
+    // ADR-099: 构建期常量，控制 MPR 多线程物理是否编入 bundle。
+    // true  → esbuild 保留动态 import 分支（worker + wasm 打进包），运行时走 MPR。
+    // false（默认）→ esbuild 消除死分支，默认构建不含 MPR，保持 bundle 精简、零回归。
+    // 与 Go 端 CoopCoepMiddleware 同轴门控：构建前端与启动 App 均需 VITE_MMD_WASM_MT 才启用 MPR。
+    define: {
+      __MMD_ENABLE_MPR__: process.env.VITE_MMD_WASM_MT ? 'true' : 'false',
+    },
+    // babylon-mmd MPR（多线程 WASM 物理）的 worker 入口 workerHelpers.js
+    // 含动态 import('../../..')，强制 worker 包产出多 chunk。
+    // Rollup 禁止 iife + 多 chunk（code-splitting），故 worker 必须走 es 格式
+    // （与 worker 构造器的 type:'module' 一致）。主包仍用 iife（见 build.rollupOptions.output.format）。
+    // 注意：Vite 6 的 worker 是顶层选项，非 build.worker（后者被忽略）。
+    worker: {
+      format: 'es',
+    },
     optimizeDeps: {
       // @babylonjs/core 必须排除，ESBuild 不认识 .fx shader 文件
       // babylon-mmd 也必须排除（WASM 加载方式特殊）

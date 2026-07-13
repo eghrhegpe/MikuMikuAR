@@ -149,6 +149,9 @@ import {
     setResourceViewMode,
     buildResourceItemsForDir,
     getRelativePathUnderDir,
+    isLeafFlattenDir,
+    computeRestoreSegments,
+    modelToResourceItem,
 } from '../menus/library-core';
 import { isUnderRoot } from '../core/utils';
 import { normPath } from '../core/fileservice';
@@ -807,6 +810,278 @@ describe('buildResourceItemsForDir', () => {
         mockState.allModels = [];
         const items = buildResourceItemsForDir('/nonexistent');
         expect(items).toHaveLength(0);
+    });
+});
+
+// isLeafFlattenDir [doc:adr-090]
+// ===================================================================
+
+describe('isLeafFlattenDir', () => {
+    it('returns false for non-existent directory', () => {
+        const models = [];
+        expect(isLeafFlattenDir('/test/nonexistent', models)).toBe(false);
+    });
+
+    it('returns false for directory with no models', () => {
+        const models = [
+            makeModel({ file_path: '/test/other/a.pmx', dir: '/test/other' }),
+        ];
+        expect(isLeafFlattenDir('/test/nonexistent', models)).toBe(false);
+    });
+
+    it('returns true for leaf directory with single pmx model', () => {
+        const models = [
+            makeModel({ file_path: '/test/models/sub/a.pmx', dir: '/test/models/sub' }),
+        ];
+        expect(isLeafFlattenDir('/test/models/sub', models)).toBe(true);
+    });
+
+    it('returns true for leaf directory with single zip model', () => {
+        const models = [
+            makeModel({
+                file_path: '/test/models/sub/m.zip',
+                dir: '/test/models/sub',
+                container: 'zip',
+                zip_inner: 'm.pmx',
+            }),
+        ];
+        expect(isLeafFlattenDir('/test/models/sub', models)).toBe(true);
+    });
+
+    it('returns false for leaf directory with multiple zip models', () => {
+        const models = [
+            makeModel({
+                file_path: '/test/models/sub/m1.zip',
+                dir: '/test/models/sub',
+                container: 'zip',
+                zip_inner: 'm1.pmx',
+            }),
+            makeModel({
+                file_path: '/test/models/sub/m2.zip',
+                dir: '/test/models/sub',
+                container: 'zip',
+                zip_inner: 'm2.pmx',
+            }),
+        ];
+        expect(isLeafFlattenDir('/test/models/sub', models)).toBe(false);
+    });
+
+    it('returns false for non-leaf directory (has deeper subdirs)', () => {
+        const models = [
+            makeModel({ file_path: '/test/models/sub/deep/a.pmx', dir: '/test/models/sub/deep' }),
+        ];
+        expect(isLeafFlattenDir('/test/models/sub', models)).toBe(false);
+    });
+
+    it('returns true for leaf directory with mixed pmx and zip (single each)', () => {
+        const models = [
+            makeModel({ file_path: '/test/models/sub/a.pmx', dir: '/test/models/sub' }),
+            makeModel({
+                file_path: '/test/models/sub/b.zip',
+                dir: '/test/models/sub',
+                container: 'zip',
+                zip_inner: 'b.pmx',
+            }),
+        ];
+        expect(isLeafFlattenDir('/test/models/sub', models)).toBe(true);
+    });
+
+    it('respects category filter', () => {
+        const models = [
+            makeModel({ file_path: '/test/models/sub/a.pmx', dir: '/test/models/sub', format: 'pmx' }),
+            makeModel({ file_path: '/test/models/sub/b.vmd', dir: '/test/models/sub', format: 'vmd' }),
+        ];
+        expect(isLeafFlattenDir('/test/models/sub', models, (m) => m.format === 'pmx')).toBe(true);
+        expect(isLeafFlattenDir('/test/models/sub', models, (m) => m.format === 'vmd')).toBe(true);
+    });
+});
+
+// computeRestoreSegments [doc:adr-090]
+// ===================================================================
+
+describe('computeRestoreSegments', () => {
+    it('returns null when target not under browseDir', () => {
+        const models = [];
+        expect(computeRestoreSegments('/test/models', '/other/path', models)).toBeNull();
+    });
+
+    it('returns [] when target equals browseDir', () => {
+        const models = [];
+        expect(computeRestoreSegments('/test/models', '/test/models', models)).toEqual([]);
+    });
+
+    it('returns empty [] when target is a leaf flatten dir (single segment)', () => {
+        const models = [
+            makeModel({ file_path: '/test/models/sub/a.pmx', dir: '/test/models/sub' }),
+        ];
+        expect(computeRestoreSegments('/test/models', '/test/models/sub', models)).toEqual([]);
+    });
+
+    it('returns partial segments when passing through non-leaf dir to leaf dir', () => {
+        const models = [
+            makeModel({ file_path: '/test/models/cat/sub/a.pmx', dir: '/test/models/cat/sub' }),
+        ];
+        expect(computeRestoreSegments('/test/models', '/test/models/cat/sub', models)).toEqual(['cat']);
+    });
+
+    it('returns full segments when target is a multi-zip folder', () => {
+        const models = [
+            makeModel({
+                file_path: '/test/models/sub/m1.zip',
+                dir: '/test/models/sub',
+                container: 'zip',
+                zip_inner: 'm1.pmx',
+            }),
+            makeModel({
+                file_path: '/test/models/sub/m2.zip',
+                dir: '/test/models/sub',
+                container: 'zip',
+                zip_inner: 'm2.pmx',
+            }),
+        ];
+        expect(computeRestoreSegments('/test/models', '/test/models/sub', models)).toEqual(['sub']);
+    });
+
+    it('returns partial segments for non-leaf dir when target is one level deeper', () => {
+        const models = [
+            makeModel({ file_path: '/test/models/sub/deep/a.pmx', dir: '/test/models/sub/deep' }),
+        ];
+        expect(computeRestoreSegments('/test/models', '/test/models/sub/deep', models)).toEqual(['sub']);
+    });
+
+    it('respects category filter', () => {
+        const models = [
+            makeModel({ file_path: '/test/models/sub/a.pmx', dir: '/test/models/sub', format: 'pmx' }),
+            makeModel({ file_path: '/test/models/sub/b.vmd', dir: '/test/models/sub', format: 'vmd' }),
+        ];
+        expect(computeRestoreSegments('/test/models', '/test/models/sub', models, (m) => m.format === 'pmx')).toEqual([]);
+        expect(computeRestoreSegments('/test/models', '/test/models/sub', models, (m) => m.format === 'vmd')).toEqual([]);
+    });
+});
+
+// modelToResourceItem [doc:adr-066]
+// ===================================================================
+
+describe('modelToResourceItem', () => {
+    beforeEach(() => {
+        mockState.displayNamePriority = 'filename';
+        mockState.modelMetaCache.clear();
+    });
+
+    it('returns correct id and label for plain pmx', () => {
+        const model = makeModel({
+            file_path: '/test/a.pmx',
+            dir: '/test',
+            name_jp: '',
+            name_en: '',
+        });
+        const item = modelToResourceItem(model);
+        expect(item.id).toBe('/test/a.pmx');
+        expect(item.label).toBe('a.pmx');
+        expect(item.filePath).toBe('/test/a.pmx');
+        expect(item.isFolder).toBe(false);
+        expect(item.icon).toBe('box');
+    });
+
+    it('returns archive icon for zip+pmx', () => {
+        const model = makeModel({
+            file_path: '/test/m.zip',
+            dir: '/test',
+            container: 'zip',
+            zip_inner: 'm.pmx',
+        });
+        const item = modelToResourceItem(model);
+        expect(item.icon).toBe('archive');
+        expect(item.label).toBe('m.pmx');
+    });
+
+    it('returns music icon for vmd', () => {
+        const model = makeModel({
+            file_path: '/test/m.vmd',
+            dir: '/test',
+            format: 'vmd',
+        });
+        const item = modelToResourceItem(model);
+        expect(item.icon).toBe('music');
+    });
+
+    it('returns volume-2 icon for audio', () => {
+        const model = makeModel({
+            file_path: '/test/m.wav',
+            dir: '/test',
+            format: 'audio',
+        });
+        const item = modelToResourceItem(model);
+        expect(item.icon).toBe('volume-2');
+    });
+
+    it('returns user icon for vpd', () => {
+        const model = makeModel({
+            file_path: '/test/m.vpd',
+            dir: '/test',
+            format: 'vpd',
+        });
+        const item = modelToResourceItem(model);
+        expect(item.icon).toBe('user');
+    });
+
+    it('uses name_en when displayNamePriority is name_en', () => {
+        mockState.displayNamePriority = 'name_en';
+        const model = makeModel({
+            file_path: '/test/a.pmx',
+            dir: '/test',
+            name_en: 'English Name',
+            name_jp: '日本語名',
+        });
+        const item = modelToResourceItem(model);
+        expect(item.label).toBe('English Name');
+    });
+
+    it('uses name_jp when displayNamePriority is name_jp', () => {
+        mockState.displayNamePriority = 'name_jp';
+        const model = makeModel({
+            file_path: '/test/a.pmx',
+            dir: '/test',
+            name_en: 'English Name',
+            name_jp: '日本語名',
+        });
+        const item = modelToResourceItem(model);
+        expect(item.label).toBe('日本語名');
+    });
+
+    it('falls back to cached metadata when available', () => {
+        mockState.displayNamePriority = 'name_en';
+        mockState.modelMetaCache.set('/test/a.pmx', {
+            name_en: 'Cached English',
+            name_jp: 'Cached Japanese',
+            comment: 'Cached comment',
+        });
+        const model = makeModel({
+            file_path: '/test/a.pmx',
+            dir: '/test',
+            name_en: 'Original English',
+            name_jp: '',
+            comment: '',
+        });
+        const item = modelToResourceItem(model);
+        expect(item.label).toBe('Cached English');
+        expect(item.sublabel).toBe('Cached comment');
+    });
+
+    it('sets sublabel to undefined when both cached and model comment are empty', () => {
+        const model = makeModel({
+            file_path: '/test/a.pmx',
+            dir: '/test',
+            comment: '',
+        });
+        const item = modelToResourceItem(model);
+        expect(item.sublabel).toBeUndefined();
+    });
+
+    it('stores model reference in data field', () => {
+        const model = makeModel({ file_path: '/test/a.pmx', dir: '/test' });
+        const item = modelToResourceItem(model);
+        expect(item.data).toBe(model);
     });
 });
 
