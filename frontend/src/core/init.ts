@@ -23,6 +23,7 @@ import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
 import { initScene, tryRestoreLastScene, setEnvState } from '../scene/scene';
 import { initRuntimeBadge } from './runtime-mode';
+import { applyHudVisibility } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
 import { logWarn, fireAndForget, swallowError } from './utils';
 import { setPerformanceMode } from '../scene/render/performance';
@@ -135,6 +136,8 @@ async function init(): Promise<void> {
         await restoreEnvState();
         // Apply persisted UI state
         await restoreUIState();
+        // 应用顶部 HUD 显隐开关（在 restoreUIState 之后，确保读到持久化值）
+        applyHudVisibility();
         // 启动时自动检查更新（若用户在设置中开启）
         if (uiState.autoUpdateEnabled) {
             CheckForUpdate()
@@ -296,6 +299,13 @@ async function restoreUIState(): Promise<void> {
     if (s.keyBindings !== undefined) {
         loadKeyBindings(s.keyBindings as Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }>);
         uiState.keyBindings = s.keyBindings;
+    }
+    // 恢复顶部 HUD 显隐开关（nil/undefined=显示）
+    if (s.showFpsClock !== undefined) {
+        uiState.showFpsClock = s.showFpsClock;
+    }
+    if (s.showRuntimeBadge !== undefined) {
+        uiState.showRuntimeBadge = s.showRuntimeBadge;
     }
 }
 

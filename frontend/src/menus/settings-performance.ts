@@ -2,7 +2,7 @@
 
 import { SetPerformanceMode } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
-import { setStatus, uiState, cardContainer } from '../core/config';
+import { setStatus, uiState, cardContainer, applyHudVisibility } from '../core/config';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import { swallowError } from '../core/utils';
 import { getCurrentRenderingMenu } from './menu';
@@ -119,6 +119,48 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
                 hint.textContent = t('settings.perf.fpsHint');
                 c.appendChild(hint);
             },
+        },
+        {
+            id: 'perf:showFpsClock',
+            kind: 'toggle',
+            label: 'settings.perf.showFpsClock',
+            control: {
+                bind: 'ui.showFpsClock',
+                get: (v) => v !== false,
+                set: (v) => v,
+                onChange: (v) => {
+                    applyHudVisibility();
+                    setStatus(
+                        t('settings.toggleState', {
+                            label: t('settings.perf.showFpsClock'),
+                            state: v ? t('common.on') : t('common.off'),
+                        }),
+                        true
+                    );
+                },
+            },
+            icon: 'lucide:gauge',
+        },
+        {
+            id: 'perf:showRuntimeBadge',
+            kind: 'toggle',
+            label: 'settings.perf.showRuntimeBadge',
+            control: {
+                bind: 'ui.showRuntimeBadge',
+                get: (v) => v !== false,
+                set: (v) => v,
+                onChange: (v) => {
+                    applyHudVisibility();
+                    setStatus(
+                        t('settings.toggleState', {
+                            label: t('settings.perf.showRuntimeBadge'),
+                            state: v ? t('common.on') : t('common.off'),
+                        }),
+                        true
+                    );
+                },
+            },
+            icon: 'lucide:cpu',
         },
         {
             id: 'perf:vsync',

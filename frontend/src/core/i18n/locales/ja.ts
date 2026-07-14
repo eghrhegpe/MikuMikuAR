@@ -1079,6 +1079,8 @@ export const ja: Record<string, string> = {
     'settings.perf.customDesc': 'レンダリング/照明を個別に制御',
     'settings.perf.fpsCap': 'FPS 上限',
     'settings.perf.fpsHint': '0で無制限。モバイルでは省電力のため30推奨。',
+    'settings.perf.showFpsClock': 'FPSクロックを表示',
+    'settings.perf.showRuntimeBadge': 'マルチスレッドバッジを表示',
     'settings.perf.vsync': '垂直同期',
     'settings.perf.vsyncHintOn':
         '有効にするとrequestAnimationFrameループを使用；無効にするとFPS制限を解除しますが上限設定不可。',

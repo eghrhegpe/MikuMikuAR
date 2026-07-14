@@ -343,6 +343,10 @@ export interface UIState {
     footstepVolume?: number;
     /** 快捷键自定义绑定 */
     keyBindings?: Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }>;
+    /** 顶部 HUD：帧率时钟显隐；undefined/null=显示 */
+    showFpsClock?: boolean | null;
+    /** 顶部 HUD：多线程（MPR/SPR）徽标显隐；undefined/null=显示 */
+    showRuntimeBadge?: boolean | null;
 }
 
 // [doc:test-strategy] Go↔TS UIState 字段同步哨兵

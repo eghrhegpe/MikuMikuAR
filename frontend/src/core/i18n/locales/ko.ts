@@ -1074,6 +1074,8 @@ export const ko: Record<string, string> = {
     'settings.perf.customDesc': '렌더링/조명 개별 제어',
     'settings.perf.fpsCap': 'FPS 상한',
     'settings.perf.fpsHint': '0으로 설정 시 무제한. 모바일에서는 절전을 위해 30 권장.',
+    'settings.perf.showFpsClock': 'FPS 시계 표시',
+    'settings.perf.showRuntimeBadge': '멀티스레드 배지 표시',
     'settings.perf.vsync': '수직 동기화',
     'settings.perf.vsyncHintOn':
         '활성화 시 requestAnimationFrame 루프 사용; 비활성화 시 FPS 제한 해제 but 상한 설정 불가.',

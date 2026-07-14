@@ -367,6 +367,11 @@ type UIState struct {
 
 	// --- 快捷键自定义绑定 ---
 	KeyBindings map[string]KeyBindingOverride `json:"keyBindings,omitempty"` // 自定义快捷键覆盖
+
+	// --- 顶部 HUD 显隐开关（2026-07-14 新增）---
+	// 使用指针以区分「未设置（nil→默认显示）」与「显式关闭（false）」，确保关闭状态可持久化。
+	ShowFpsClock     *bool `json:"showFpsClock,omitempty"`     // 帧率时钟 HUD 显隐；nil=显示
+	ShowRuntimeBadge *bool `json:"showRuntimeBadge,omitempty"` // 多线程（MPR/SPR）徽标 HUD 显隐；nil=显示
 }
 
 // KeyBindingOverride stores a single custom key binding override.
