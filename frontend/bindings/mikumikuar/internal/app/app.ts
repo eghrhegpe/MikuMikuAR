@@ -531,6 +531,18 @@ export function PlazaZoomReset(): $CancellablePromise<void> {
 }
 
 /**
+ * ReadTextFile reads the entire contents of the file at path and returns it
+ * as a string. It is the Go-side counterpart of Wails v2's
+ * runtime.ReadTextFile, which was removed in v3; the frontend uses it to load
+ * user-managed text files such as the custom plaza sites list
+ * (plaza_sites.json). Returns an error if the file cannot be read (e.g. does
+ * not exist), letting the caller fall back gracefully.
+ */
+export function ReadTextFile(path: string): $CancellablePromise<string> {
+    return $Call.ByID(1828657322, path);
+}
+
+/**
  * RemoveCustomSoftware removes a user-defined software entry from the config by path.
  */
 export function RemoveCustomSoftware(path: string): $CancellablePromise<void> {

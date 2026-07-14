@@ -43,3 +43,17 @@ var fileAccessor FileAccessor
 func isContentUri(path string) bool {
 	return len(path) >= 9 && path[:9] == "content:/"
 }
+
+// ReadTextFile reads the entire contents of the file at path and returns it
+// as a string. It is the Go-side counterpart of Wails v2's
+// runtime.ReadTextFile, which was removed in v3; the frontend uses it to load
+// user-managed text files such as the custom plaza sites list
+// (plaza_sites.json). Returns an error if the file cannot be read (e.g. does
+// not exist), letting the caller fall back gracefully.
+func (a *App) ReadTextFile(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
