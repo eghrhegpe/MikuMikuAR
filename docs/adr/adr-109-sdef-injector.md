@@ -1,6 +1,6 @@
 # ADR-109: SdefInjector + SdefMesh 接入 — SDEF 球面变形
 
-**状态**: 草案 · 待立项
+**状态**: 已完成（2026-07-14 落地 — side-effect import 已加入 `scene.ts`）
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
