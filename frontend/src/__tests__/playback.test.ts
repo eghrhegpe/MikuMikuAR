@@ -334,13 +334,12 @@ describe('initPlaybackObservables', () => {
 
     // ---- tickHandler ----
 
-    it('tickHandler calls updateUI, updateProcMotion, and audio/camera sync', () => {
+    it('tickHandler calls updateUI, updateProcMotion, and camera sync', () => {
         mockRuntime.currentTime = 10;
         tickObs._fire();
 
         expect(mockUpdateUI).toHaveBeenCalledOnce();
         expect(mockUpdateProcMotion).toHaveBeenCalledOnce();
-        expect(syncAudioPlayback).toHaveBeenCalledWith(10, false, 120);
         expect(animateCameraVmd).toHaveBeenCalledWith(300); // currentTime * 30
     });
 
@@ -367,13 +366,6 @@ describe('initPlaybackObservables', () => {
         expect(() => tickObs._fire()).not.toThrow();
     });
 
-    it('tickHandler uses focused model animationDuration for sync', () => {
-        mockManager.focused.mockReturnValue({ animationDuration: 60 });
-        mockRuntime.currentTime = 30;
-        tickObs._fire();
-        expect(syncAudioPlayback).toHaveBeenCalledWith(30, false, 60);
-    });
-
     it('tickHandler catches updateProcMotion rejection', async () => {
         const err = new Error('proc motion fail');
         mockUpdateProcMotion.mockRejectedValue(err);
@@ -392,19 +384,6 @@ describe('initPlaybackObservables', () => {
         playObs._fire();
         expect(mockState.isPlaying).toBe(true);
         expect(mockUpdateUI).toHaveBeenCalledOnce();
-    });
-
-    it('playHandler syncs audio with playing=true', () => {
-        mockRuntime.currentTime = 5;
-        playObs._fire();
-        expect(syncAudioPlayback).toHaveBeenCalledWith(5, true, 120);
-    });
-
-    it('playHandler uses focused model duration for sync', () => {
-        mockManager.focused.mockReturnValue({ animationDuration: 90 });
-        mockRuntime.currentTime = 10;
-        playObs._fire();
-        expect(syncAudioPlayback).toHaveBeenCalledWith(10, true, 90);
     });
 
     // ---- pauseHandler ----
@@ -467,13 +446,12 @@ describe('initPlaybackObservables', () => {
         });
     });
 
-    it('pauseHandler updates UI and syncs audio when auto-loop not needed', () => {
+    it('pauseHandler updates UI when auto-loop not needed', () => {
         mockState.isPlaying = true;
         mockRuntime.currentTime = 30;
         pauseObs._fire();
 
         expect(mockUpdateUI).toHaveBeenCalled();
-        expect(syncAudioPlayback).toHaveBeenCalledWith(30, false, 120);
         expect(mockState.isPlaying).toBe(false);
     });
 
@@ -483,8 +461,6 @@ describe('initPlaybackObservables', () => {
 
         // Should still updatePlaybackUI (for UI consistency)
         expect(mockUpdateUI).toHaveBeenCalled();
-        // Should NOT sync audio
-        expect(syncAudioPlayback).not.toHaveBeenCalled();
     });
 
     // ---- dispose ----

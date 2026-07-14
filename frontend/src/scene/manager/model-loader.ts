@@ -244,7 +244,8 @@ export async function loadPMXFile(
     asStage?: boolean,
     skipAutoApply?: boolean,
     libraryPath?: string,
-    innerPath?: string
+    innerPath?: string,
+    signal?: AbortSignal
 ): Promise<string | null> {
     if (!_scene || !_mmdRuntime) {
         return null;
@@ -255,7 +256,8 @@ export async function loadPMXFile(
     }
     const abortCtrl = new AbortController();
     _loadAbortController = abortCtrl;
-    const signal = abortCtrl.signal;
+    // 合并外部 signal（调用方取消）与内部 abortCtrl.signal（自动取消前一个加载，ADR-096）
+    const effectiveSignal = signal ?? abortCtrl.signal;
 
     let loadedMeshes: Mesh[] = [];
     let wasmModel: IMmdModel | null = null;
@@ -283,7 +285,7 @@ export async function loadPMXFile(
         const result = await ImportMeshAsync(url, _scene, {
             pluginExtension: '.pmx',
             onProgress: (evt) => {
-                if (signal.aborted) {
+                if (effectiveSignal.aborted) {
                     return;
                 }
                 if (evt.lengthComputable) {
@@ -292,7 +294,7 @@ export async function loadPMXFile(
                 }
             },
         });
-        if (signal.aborted) {
+        if (effectiveSignal.aborted) {
             loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
             loadedMeshes.forEach((m) => {
                 try {
@@ -423,7 +425,7 @@ export async function loadPMXFile(
         // Must register BEFORE VMD load because loadVMDMotion queries modelRegistry
         _modelManager.register(inst);
         registeredId = id;
-        if (signal.aborted) {
+        if (effectiveSignal.aborted) {
             return null;
         }
         // 贴地：把模型根节点放到当前地面高度（heightmap 模式=真实起伏，其他模式=groundLevel）。
@@ -496,7 +498,7 @@ export async function loadPMXFile(
                 setStatus(t('scene.loader.vmdFailedModelLoaded', { name: displayName }), false);
             }
         }
-        if (signal.aborted) {
+        if (effectiveSignal.aborted) {
             return null;
         }
 

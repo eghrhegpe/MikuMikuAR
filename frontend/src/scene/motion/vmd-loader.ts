@@ -56,8 +56,12 @@ function isValidVmd(data: ArrayBuffer): boolean {
 export async function loadVMDMotion(
     data: ArrayBuffer,
     name: string,
-    targetModelId?: string
+    targetModelId?: string,
+    signal?: AbortSignal
 ): Promise<void> {
+    if (signal?.aborted) {
+        return;
+    }
     if (!isValidVmd(data)) {
         setStatus(t('scene.vmd.loadFailed'), false);
         logWarn('vmd-loader', 'Invalid VMD signature, rejected:', name);
@@ -70,6 +74,9 @@ export async function loadVMDMotion(
         stopProcMotion,
         focusedModel: _focusedModel,
     } = await getScene();
+    if (signal?.aborted) {
+        return;
+    }
     // If user loads a real VMD, stop procedural motion
     if (isProcVmdActive() && name !== PROC_VMD_NAME_IDLE && name !== PROC_VMD_NAME_AUTODANCE) {
         stopProcMotion();
@@ -173,16 +180,16 @@ export async function loadVMDMotion(
     }
 }
 
-export async function loadVMDFromPath(path: string, targetModelId?: string): Promise<void> {
+export async function loadVMDFromPath(path: string, targetModelId?: string, signal?: AbortSignal): Promise<void> {
     const { focusedMmdModel, focusedModel } = await getScene();
     await withLoadingIndicator('scene.loader.vmdLoading', async () => {
         try {
-            const { url, data: vmdData } = await fetchArrayBuffer(path);
+            const { url, data: vmdData } = await fetchArrayBuffer(path, signal);
             const vmdName = getBaseName(path) || '';
             const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
 
             if (mmdRuntime && (targetModelId || focusedMmdModel())) {
-                await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ''), targetModelId);
+                await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ''), targetModelId, signal);
                 const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
                 if (foc) {
                     foc.vmdPath = path;
@@ -244,11 +251,11 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
     }
 }
 
-export async function loadCameraVmdFromPath(path: string): Promise<void> {
+export async function loadCameraVmdFromPath(path: string, signal?: AbortSignal): Promise<void> {
     const { scene } = await getScene();
     await withLoadingIndicator('scene.loader.cameraVmdLoading', async () => {
         try {
-            const { data: vmdData } = await fetchArrayBuffer(path);
+            const { data: vmdData } = await fetchArrayBuffer(path, signal);
             const vmdName = getBaseName(path) || '';
 
             const vmdLoader = new VmdLoader(scene);
@@ -264,11 +271,11 @@ export async function loadCameraVmdFromPath(path: string): Promise<void> {
     });
 }
 
-export async function loadVPDPose(path: string, targetModelId?: string): Promise<void> {
+export async function loadVPDPose(path: string, targetModelId?: string, signal?: AbortSignal): Promise<void> {
     const { focusedModel, stopProcMotion, isProcVmdActive } = await getScene();
     await withLoadingIndicator('scene.loader.vpdLoading', async () => {
         try {
-            const { data: rawData } = await fetchArrayBuffer(path);
+            const { data: rawData } = await fetchArrayBuffer(path, signal);
             const poseName = getBaseName(path) || '';
 
             // 停掉程序化动作（VPD 姿势不被动画干扰）
