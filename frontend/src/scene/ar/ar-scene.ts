@@ -27,6 +27,10 @@ let _originalClearColor: Color4 | null = null;
 let _skyHidden = false;
 let _prevGazeState: { eye: boolean; head: boolean } | null = null;
 let _contactShadow: Mesh | null = null;
+/** 阴影创建时的基准半径，用于每帧按当前 AABB 等比缩放，避免重建 mesh。 */
+let _contactShadowBaseRadius = 1;
+/** 每帧更新阴影的 onBeforeRender 回调引用，便于在退出 AR 时精确注销。 */
+let _contactShadowUpdateFn: (() => void) | null = null;
 
 // ======== Internal Helpers: AR contact shadow ========
 // AR passthrough 无平面检测，模型悬浮在视频上会显「飘」。
@@ -108,9 +112,31 @@ function _createContactShadow(): void {
     ground.isPickable = false;
     ground.metadata = { arContactShadow: true };
     _contactShadow = ground;
+    _contactShadowBaseRadius = fp.radius;
+}
+
+/** 每帧依据当前聚焦模型 AABB 重定位/重设阴影尺寸，使假阴影随模型移动与换焦点。 */
+function _updateContactShadow(): void {
+    if (!_contactShadow) {
+        return;
+    }
+    const fp = _getFocusedFootprint();
+    if (!fp) {
+        _contactShadow.setEnabled(false);
+        return;
+    }
+    _contactShadow.setEnabled(true);
+    // 以创建时的基准半径做等比缩放，避免每帧重建 ground mesh。
+    const scale = fp.radius / _contactShadowBaseRadius;
+    _contactShadow.scaling.set(scale, 1, scale);
+    _contactShadow.position.set(fp.cx, fp.bottomY + 0.02, fp.cz);
 }
 
 function _disposeContactShadow(): void {
+    if (_contactShadowUpdateFn) {
+        scene.onBeforeRenderObservable.removeCallback(_contactShadowUpdateFn);
+        _contactShadowUpdateFn = null;
+    }
     if (_contactShadow) {
         const mat = _contactShadow.material;
         if (mat instanceof StandardMaterial) {
@@ -155,6 +181,11 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
         setHeadTrackingEnabled(true);
         activatePerception();
         _createContactShadow();
+        // 注册每帧更新：使接触阴影跟随聚焦模型的移动/换焦点。
+        if (!_contactShadowUpdateFn) {
+            _contactShadowUpdateFn = _updateContactShadow;
+            scene.onBeforeRenderObservable.add(_contactShadowUpdateFn);
+        }
         return true;
     } else {
         stopARCamera();

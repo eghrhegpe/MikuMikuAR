@@ -636,6 +636,27 @@ export function switchCameraMode(mode: CameraMode): void {
     const scene = _scene;
     const canvas = _canvas;
 
+    // 停止当前模式的 side-effect（覆盖所有切换，含进出 AR）。
+    // 原实现在 `mode==='ar'` 早退分支跳过了此块，导致 orbit 骨骼锁、
+    // freefly/concert/surround 的 onBeforeRender 回调在切到 AR 时残留注册
+    // （仅靠各回调内部的 _cameraMode 守卫变 no-op，属轻微泄漏，AR 审查 #5）。
+    if (_cameraMode === 'ar') {
+        setARMode(false);
+    } else {
+        if (_cameraMode === 'freefly') {
+            stopFreefly();
+        }
+        if (_cameraMode === 'concert') {
+            stopConcert();
+        }
+        if (_cameraMode === 'surround') {
+            stopSurround();
+        }
+        if (_cameraMode === 'orbit') {
+            _stopBoneLock();
+        }
+    }
+
     if (mode === 'ar') {
         if (_cameraMode !== 'ar') {
             _previousMode = _cameraMode;
@@ -659,24 +680,6 @@ export function switchCameraMode(mode: CameraMode): void {
             }
         });
         return;
-    }
-
-    if (_cameraMode === 'ar') {
-        setARMode(false);
-    }
-
-    // Stop current mode's side-effects
-    if (_cameraMode === 'freefly') {
-        stopFreefly();
-    }
-    if (_cameraMode === 'concert') {
-        stopConcert();
-    }
-    if (_cameraMode === 'surround') {
-        stopSurround();
-    }
-    if (_cameraMode === 'orbit') {
-        _stopBoneLock();
     }
 
     // Save old camera state
