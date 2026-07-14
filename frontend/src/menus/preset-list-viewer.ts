@@ -7,7 +7,7 @@
 //   presetListContent   — 渲染到现有容器（混合内容的 PopupLevel）
 
 import type { PopupLevel } from '../core/config';
-import { cardContainer, setStatus } from '../core/config';
+import { cardContainer } from '../core/config';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/utils';

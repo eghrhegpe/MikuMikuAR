@@ -8,7 +8,6 @@ import { t } from '../core/i18n/t';
 import { PopupRow, PopupLevel } from '../core/config';
 import {
     SETTINGS,
-    SETTINGS_ACTION,
     SOFTWARE_DETAIL_PREFIX,
     type SettingsFolderTarget,
 } from './settings-targets';

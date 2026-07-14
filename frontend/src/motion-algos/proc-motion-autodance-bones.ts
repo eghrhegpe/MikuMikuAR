@@ -21,7 +21,6 @@ import {
     BONE_LEG_IK_L_CANDIDATES,
     BONE_LEG_IK_R_CANDIDATES,
     matchBone,
-    type ProcMotionState,
 } from './proc-motion-shared';
 
 // ── re-export 子模块（保持外部导入路径不变） ──

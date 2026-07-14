@@ -18,7 +18,7 @@ import {
     addRecentMotion,
 } from '@/core/config';
 import { getBaseName, withLoadingIndicator, logWarn } from '@/core/utils';
-import { normPath, encodeFileRef, fetchArrayBuffer } from '@/core/fileservice';
+import { encodeFileRef, fetchArrayBuffer } from '@/core/fileservice';
 import { t } from '@/core/i18n/t';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '@/outfit/audio';
