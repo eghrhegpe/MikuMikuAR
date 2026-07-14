@@ -142,6 +142,15 @@ func (a *App) ServiceShutdown() error {
 	a.watchPending = nil
 	a.watchMu.Unlock()
 
+	// [ADR-087 P3] 关闭 plaza 预热窗口，避免应用退出后残留 WebView2 引用。
+	// WindowClosing hook 可能拦截 Close()（改为 Hide），但清空引用可防止 dangling pointer。
+	a.plazaWinMu.Lock()
+	if a.plazaWin != nil {
+		a.plazaWin.Close()
+		a.plazaWin = nil
+	}
+	a.plazaWinMu.Unlock()
+
 	a.httpSrvMu.Lock()
 	servers := make([]*http.Server, 0, len(a.httpServers))
 	for _, info := range a.httpServers {

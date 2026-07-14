@@ -5,6 +5,8 @@
 
 ---
 
+> **📌 后续注记（2026-07-14）**：本报告撰写于 ADR-092 统一平面反射引擎（`planar-reflection.ts`）落地之前。经复核，原 **P2.1（水面 BFC 恢复缺失）** 与 **P2.2（renderList 每帧重建）** 均已在统一引擎中修复——`PlanarReflection.create()` 在 mirrorTexture / screenSpace 两模式均注册 `onBefore/onAfterRenderObservable` 做 BFC 保存/恢复，`update()` 采用 level/meshCount 脏标记增量重建。原 **P3「地面模块直接写 envState」** 代码路径已随迁移消失（grep 零命中）。本报告其余亮点与架构评价仍然有效。后续收尾另见 `mirror-debug.ts` 的 mesh 增删观察者自动刷新与 `renderer.ts` 的 probe 强制刷新语义化改造。
+
 ## 总体结论
 
 **⚠️ 有条件通过** — 水面/地面平面反射架构扎实、互斥策略正确、帧跳过省帧设计合理。但存在 **2 个 P2 隐患**（水面反射 BFC 恢复缺失、renderList 每帧重建性能隐患）和 **2 个 P3**。

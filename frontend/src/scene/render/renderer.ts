@@ -125,9 +125,8 @@ export function initRenderer(
                     m.name.includes('ground') ||
                     m.name.includes('water')
             );
-            // 强制刷新：临时设置 refreshRate 为 1 触发重新渲染
-            _reflectionProbe!.refreshRate = 1;
-            _reflectionProbe!.refreshRate = 0;
+            // 强制刷新：直接渲染探针 cubeTexture 的 6 个面（语义明确，替代 refreshRate 1→0 双写黑魔法）
+            _reflectionProbe!.cubeTexture.render();
         } catch {
             // Intentionally empty — refresh 失败不影响渲染
         }

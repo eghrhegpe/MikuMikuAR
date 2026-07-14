@@ -291,7 +291,7 @@ func TestDownloadFromPlaza_SizeLimit(t *testing.T) {
 // util.SafeCall / SafeCallVoid: invalid input yields an error, never a panic.
 func TestPlazaBindings_NoPanic(t *testing.T) {
 	a := NewApp("test", "", "")
-	if _, err := a.StartProxy(""); err == nil {
+	if _, err := a.StartProxy("", ""); err == nil {
 		t.Error("StartProxy(\"\") should return an error")
 	}
 	if err := a.StopProxy(); err != nil {
