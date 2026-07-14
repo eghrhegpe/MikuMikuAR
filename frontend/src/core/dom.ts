@@ -49,3 +49,26 @@ export const dom = {
 // [doc:adr-102] Type alias for the `dom` singleton, so split modules (events.ts etc.)
 // can declare a `DomRefs` parameter without reaching for `any` (prevents 模式 #3).
 export type DomRefs = typeof dom;
+
+// [doc:adr-101] P2: Disposable pattern for event listener cleanup
+export interface Disposable {
+    dispose(): void;
+}
+
+/**
+ * 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。
+ * 与手动 addEventListener/removeEventListener 相比，确保配对不遗漏。
+ */
+export function addDisposableListener(
+    el: EventTarget,
+    event: string,
+    handler: EventListenerOrEventListenerObject,
+    options?: AddEventListenerOptions
+): Disposable {
+    el.addEventListener(event, handler, options);
+    return {
+        dispose(): void {
+            el.removeEventListener(event, handler, options);
+        },
+    };
+}
