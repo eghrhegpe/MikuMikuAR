@@ -68,9 +68,6 @@ const L = {
     downloading: '下载中',
     downloadComplete: '下载完成',
     // Tab 标签
-    tabSites: '模型站',
-    tabCreators: '创作者',
-    tabLibrary: '资源库',
 };
 
 // 打开方式：embed=内嵌 iframe；window=Wails 新窗口；external=系统浏览器。
@@ -293,54 +290,64 @@ async function ensureSitesLoaded(): Promise<void> {
     allCreators = [...PLAZA_CREATORS];
 }
 
-function buildPresetTags(site: PlazaSite): HTMLElement | null {
-    if (!site.presetSearches || site.presetSearches.length === 0) {
-        return null;
-    }
-    const wrap = document.createElement('div');
-    wrap.className = 'plaza-card-presets';
-    for (const p of site.presetSearches) {
-        const tag = document.createElement('button');
-        tag.className = 'plaza-preset-tag';
-        tag.textContent = p.label;
-        tag.onclick = (e) => {
-            e.stopPropagation();
-            const keyword = p.q || p.label;
-            const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(keyword));
-            if (url) {
-                const mode = effectiveMode(site);
-                if (mode === 'external') {
-                    openExternal({ ...site, url });
-                } else if (mode === 'window') {
-                    openInWindow({ ...site, url });
-                } else {
-                    renderEmbed({ ...site, url });
-                }
-            }
-        };
-        wrap.appendChild(tag);
-    }
-    return wrap;
-}
-
 let currentSiteId: string = '';
+
+const SITE_GROUPS: { label: string; icon: string; ids: string[] }[] = [
+    { label: '国内', icon: 'lucide:map-pin', ids: ['mzhouse', 'bilibili', 'afdian', 'github', 'cms-blueprint'] },
+    { label: '海外', icon: 'lucide:globe-2', ids: ['bowlroll', 'booth', 'nicovideo', 'deviantart', 'vroid'] },
+];
 
 function buildSiteTabs(): HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'plaza-site-tabs';
 
-    for (const site of allSites) {
-        const btn = document.createElement('button');
-        btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
-        btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
-        btn.onclick = () => {
-            if (currentSiteId === site.id) {
-                return;
-            }
-            currentSiteId = site.id;
-            renderHome();
-        };
-        wrap.appendChild(btn);
+    for (const grp of SITE_GROUPS) {
+        const grpSites = allSites.filter((s) => grp.ids.includes(s.id));
+        if (grpSites.length === 0) continue;
+
+        const grpWrap = document.createElement('div');
+        grpWrap.className = 'plaza-tab-group';
+
+        const grpLabel = document.createElement('span');
+        grpLabel.className = 'plaza-tab-group-label';
+        grpLabel.innerHTML = `<iconify-icon icon="${grp.icon}" width="11" height="11"></iconify-icon><span>${grp.label}</span>`;
+        grpWrap.appendChild(grpLabel);
+
+        const tabsRow = document.createElement('div');
+        tabsRow.className = 'plaza-tab-group-tabs';
+        for (const site of grpSites) {
+            const btn = document.createElement('button');
+            btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
+            btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
+            btn.onclick = () => {
+                if (currentSiteId === site.id) return;
+                currentSiteId = site.id;
+                renderHome();
+            };
+            tabsRow.appendChild(btn);
+        }
+        grpWrap.appendChild(tabsRow);
+        wrap.appendChild(grpWrap);
+    }
+
+    // 未分组的站点（兜底）
+    const grouped = new Set(SITE_GROUPS.flatMap((g) => g.ids));
+    const others = allSites.filter((s) => !grouped.has(s.id));
+    if (others.length > 0) {
+        const tabsRow = document.createElement('div');
+        tabsRow.className = 'plaza-tab-group-tabs';
+        for (const site of others) {
+            const btn = document.createElement('button');
+            btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
+            btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
+            btn.onclick = () => {
+                if (currentSiteId === site.id) return;
+                currentSiteId = site.id;
+                renderHome();
+            };
+            tabsRow.appendChild(btn);
+        }
+        wrap.appendChild(tabsRow);
     }
 
     return wrap;
@@ -362,6 +369,18 @@ function openSiteByMode(site: PlazaSite, url?: string): void {
     }
 }
 
+function getCustomPresets(siteId: string): { label: string; q: string }[] {
+    try {
+        return JSON.parse(localStorage.getItem(`miku.plaza.presets.${siteId}`) || '[]');
+    } catch {
+        return [];
+    }
+}
+
+function saveCustomPresets(siteId: string, presets: { label: string; q: string }[]): void {
+    localStorage.setItem(`miku.plaza.presets.${siteId}`, JSON.stringify(presets));
+}
+
 function renderSiteContent(site: PlazaSite): HTMLElement {
     const container = document.createElement('div');
     container.className = 'plaza-site-content';
@@ -374,11 +393,71 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
     searchHeader.className = 'plaza-section-header';
     const searchTitle = document.createElement('div');
     searchTitle.className = 'plaza-section-title';
-    searchTitle.innerHTML = `<iconify-icon icon="lucide:search"></iconify-icon><span>网页搜索词</span><span class="plaza-section-sub">(${presets.length})</span>`;
+
+    function updateSearchCount(): void {
+        const custom = getCustomPresets(site.id);
+        const total = custom.length + presets.length;
+        searchTitle.innerHTML = `<iconify-icon icon="lucide:search"></iconify-icon><span>网页搜索词</span><span class="plaza-section-sub">(${total})</span>`;
+    }
+    updateSearchCount();
     searchHeader.appendChild(searchTitle);
 
     const searchActions = document.createElement('div');
     searchActions.className = 'plaza-section-actions';
+
+    // ➕ 添加自定义搜索词
+    const addBtn = document.createElement('button');
+    addBtn.className = 'plaza-btn';
+    addBtn.title = '添加搜索词';
+    addBtn.innerHTML = '<iconify-icon icon="lucide:plus"></iconify-icon>';
+    addBtn.onclick = (e) => {
+        e.stopPropagation();
+        addBtn.style.display = 'none';
+        const inputRow = document.createElement('div');
+        inputRow.className = 'plaza-preset-add-row';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'plaza-preset-input';
+        input.placeholder = '输入搜索词…';
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'plaza-btn plaza-btn-primary';
+        confirmBtn.innerHTML = '<iconify-icon icon="lucide:check"></iconify-icon>';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'plaza-btn';
+        cancelBtn.innerHTML = '<iconify-icon icon="lucide:x"></iconify-icon>';
+        inputRow.append(input, confirmBtn, cancelBtn);
+        searchSection.insertBefore(inputRow, presetArea);
+
+        function commit(): void {
+            const val = input.value.trim();
+            if (val) {
+                const custom = getCustomPresets(site.id);
+                if (!custom.some((p) => p.label === val)) {
+                    custom.unshift({ label: val, q: val });
+                    saveCustomPresets(site.id, custom);
+                    rebuildPresetArea();
+                }
+            }
+            inputRow.remove();
+            addBtn.style.display = '';
+        }
+
+        confirmBtn.onclick = commit;
+        cancelBtn.onclick = () => {
+            inputRow.remove();
+            addBtn.style.display = '';
+        };
+        input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') commit();
+            if (ev.key === 'Escape') {
+                inputRow.remove();
+                addBtn.style.display = '';
+            }
+        });
+        input.focus();
+    };
+    searchActions.appendChild(addBtn);
+
     const moreBtn = document.createElement('button');
     moreBtn.className = 'plaza-btn';
     moreBtn.innerHTML = '<iconify-icon icon="lucide:more-horizontal"></iconify-icon>';
@@ -390,9 +469,43 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
     searchHeader.appendChild(searchActions);
     searchSection.appendChild(searchHeader);
 
-    if (presets.length > 0) {
-        const presetArea = document.createElement('div');
-        presetArea.className = 'plaza-preset-area';
+    const presetArea = document.createElement('div');
+    presetArea.className = 'plaza-preset-area';
+
+    function rebuildPresetArea(): void {
+        presetArea.innerHTML = '';
+        const custom = getCustomPresets(site.id);
+        const hasContent = custom.length > 0 || presets.length > 0;
+
+        if (!hasContent) {
+            const empty = document.createElement('div');
+            empty.className = 'plaza-empty';
+            empty.innerHTML =
+                '<iconify-icon icon="lucide:search-x"></iconify-icon><span>暂无搜索词，点 ➕ 添加</span>';
+            presetArea.appendChild(empty);
+            updateSearchCount();
+            return;
+        }
+
+        // 用户词靠前
+        for (const cp of custom) {
+            const btn = document.createElement('button');
+            btn.className = 'plaza-preset-btn plaza-preset-custom';
+            btn.innerHTML = `<span>${cp.label}</span><iconify-icon icon="lucide:x" class="plaza-preset-del"></iconify-icon>`;
+            btn.onclick = (ev) => {
+                if ((ev.target as HTMLElement).closest('.plaza-preset-del')) {
+                    const updated = custom.filter((p) => p.label !== cp.label);
+                    saveCustomPresets(site.id, updated);
+                    rebuildPresetArea();
+                    return;
+                }
+                const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(cp.q || cp.label));
+                if (url) openSiteByMode(site, url);
+            };
+            presetArea.appendChild(btn);
+        }
+
+        // 预置词
         for (const ps of presets) {
             const btn = document.createElement('button');
             btn.className = 'plaza-preset-btn';
@@ -400,20 +513,14 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
             btn.onclick = () => {
                 const keyword = ps.q || ps.label;
                 const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(keyword));
-                if (url) {
-                    openSiteByMode(site, url);
-                }
+                if (url) openSiteByMode(site, url);
             };
             presetArea.appendChild(btn);
         }
-        searchSection.appendChild(presetArea);
-    } else {
-        const empty = document.createElement('div');
-        empty.className = 'plaza-empty';
-        empty.innerHTML =
-            '<iconify-icon icon="lucide:search-x"></iconify-icon><span>暂无预设搜索词</span>';
-        searchSection.appendChild(empty);
+        updateSearchCount();
     }
+    rebuildPresetArea();
+    searchSection.appendChild(presetArea);
     container.appendChild(searchSection);
 
     // ── 创作者频道 ──
@@ -1062,64 +1169,6 @@ function buildGlobalModeSwitch(): HTMLElement {
 }
 
 // [ADR-087 P3-优化] 右键卡片弹出单站覆写菜单（power user 精细控制，藏起来不干扰主流）
-function showSiteModePopup(site: PlazaSite, x: number, y: number): void {
-    const existing = document.querySelector('.plaza-mode-popup');
-    if (existing) {
-        existing.remove();
-    }
-    const popup = document.createElement('div');
-    popup.className = 'plaza-mode-popup';
-    const current = effectiveMode(site);
-    const opts: { key: OpenMode; label: string }[] = [
-        { key: 'embed', label: 'iframe' },
-        { key: 'external', label: 'chrome' },
-        { key: 'window', label: 'wails' },
-    ];
-    for (const o of opts) {
-        const b = document.createElement('button');
-        b.className = 'plaza-mode-opt' + (current === o.key ? ' active' : '');
-        b.textContent = o.label;
-        b.onclick = () => {
-            saveSiteMode(site, o.key);
-            popup.remove();
-            renderHome();
-        };
-        popup.appendChild(b);
-    }
-    if (hasSiteOverride(site)) {
-        const clear = document.createElement('button');
-        clear.className = 'plaza-mode-popup-clear';
-        clear.textContent = '跟随全局';
-        clear.onclick = () => {
-            clearSiteMode(site);
-            popup.remove();
-            renderHome();
-        };
-        popup.appendChild(clear);
-    }
-    // 定位：避免溢出视口右下边界
-    popup.style.left = '0';
-    popup.style.top = '0';
-    document.body.appendChild(popup);
-    const rect = popup.getBoundingClientRect();
-    const px = Math.min(x, window.innerWidth - rect.width - 8);
-    const py = Math.min(y, window.innerHeight - rect.height - 8);
-    popup.style.left = `${px}px`;
-    popup.style.top = `${py}px`;
-
-    let onDownDisp: Disposable | null = null;
-    const onDown = (e: MouseEvent): void => {
-        if (!popup.contains(e.target as Node)) {
-            popup.remove();
-            onDownDisp?.dispose();
-            onDownDisp = null;
-        }
-    };
-    setTimeout(() => {
-        onDownDisp = addDisposableListener(document, 'mousedown', onDown);
-    }, 0);
-}
-
 function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     const existing = document.querySelector('.plaza-actions-menu');
     if (existing) {
@@ -1307,7 +1356,7 @@ function renderEmbed(site: PlazaSite): void {
     iframe.className = 'plaza-iframe';
     iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups');
     iframe.onload = () => {
-        spinner.style.display = 'none';
+        spinner.classList.add('is-hidden');
     };
     // [ADR-087 P2] 拖放导入：iframe 上的 dragover 必须 preventDefault，否则主窗口
     // 的 window.drop 事件不会触发。这是 HTML5 拖放规范要求——目标元素必须显式允许
@@ -1325,7 +1374,7 @@ function renderEmbed(site: PlazaSite): void {
             onOpen: () => openExternal(site),
             onRefresh: () => {
                 if (iframe.src) {
-                    spinner.style.display = '';
+                    spinner.classList.remove('is-hidden');
                     const src = iframe.src;
                     iframe.src = src;
                 }
@@ -1344,7 +1393,7 @@ function renderEmbed(site: PlazaSite): void {
         })
         .catch((e) => {
             plazaProxyActive = false;
-            spinner.style.display = 'none';
+            spinner.classList.add('is-hidden');
             const err = document.createElement('div');
             err.className = 'plaza-error';
             err.textContent = L.proxyError + (e instanceof Error ? e.message : String(e));
