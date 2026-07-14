@@ -15,6 +15,9 @@ import { RegisterDxBmpTextureLoader } from 'babylon-mmd/esm/Loader/registerDxBmp
 // MMD 原生描边：side-effect import，把 getMmdOutlineRenderer() 补丁挂到 Scene.prototype。
 // 之后带描边(edge)标记的 PMX 材质在 renderOutline=true 时会惰性注册描边组件并渲染轮廓线。
 import 'babylon-mmd/esm/Loader/mmdOutlineRenderer';
+// SDEF 球面变形：side-effect import，注册 SDEF 着色器变体到 MmdStandardMaterial。
+// 网格含 SDEF 顶点数据时自动启用球面变形，关节弯曲更自然；无 SDEF 顶点时零开销。
+import 'babylon-mmd/esm/Loader/sdefInjector';
 import { GetMmdWasmInstance } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance';
 import { MmdWasmInstanceTypeSPR } from 'babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease';
 // MPR（多线程 WASM 物理）依赖 SharedArrayBuffer + COOP/COEP 跨源隔离，
