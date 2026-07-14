@@ -30,6 +30,7 @@ import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/
 import { handleSettingsAction } from './settings-paths';
 import { buildSoftwareDetailLevel } from './settings-software';
 import { swallowError, logWarn } from '../core/utils';
+import { addDisposableListener } from '../core/dom';
 
 function exportSettings(): void {
     const data = JSON.stringify(uiState, null, 2);
@@ -236,10 +237,10 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                             .catch((err) => logWarn('settings-about', '', err));
                     };
                     refreshCacheStats();
-                    window.addEventListener('mmar:cache-cleared', refreshCacheStats);
+                    const refreshDisp = addDisposableListener(window, 'mmar:cache-cleared', refreshCacheStats);
                     const cleanupObserver = new MutationObserver(() => {
                         if (!c.isConnected) {
-                            window.removeEventListener('mmar:cache-cleared', refreshCacheStats);
+                            refreshDisp.dispose();
                             cleanupObserver.disconnect();
                         }
                     });

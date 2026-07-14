@@ -16,6 +16,7 @@ import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
 import type { SettingsMenuHandle } from './settings-shared';
+import { addDisposableListener, type Disposable } from '../core/dom';
 
 function _fmtKeyBinding(key: string, ctrl: boolean, shift: boolean, alt: boolean): string {
     const parts: string[] = [];
@@ -133,6 +134,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                         sublabelSpan.textContent = '';
                                     }
 
+                                    let keyDisp: Disposable | null = null;
                                     const handler = (e: KeyboardEvent) => {
                                         if (e.repeat) {
                                             return;
@@ -142,7 +144,8 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                         if (_isModifierOnly(e.code)) {
                                             return;
                                         }
-                                        document.removeEventListener('keydown', handler, true);
+                                        keyDisp?.dispose();
+                                        keyDisp = null;
                                         if (e.code === 'Escape') {
                                             _rebindingId = null;
                                             getSettingsMenu()?.reRender();
@@ -183,7 +186,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                             });
                                         }
                                     };
-                                    document.addEventListener('keydown', handler, true);
+                                    keyDisp = addDisposableListener(document, 'keydown', handler, { capture: true });
                                 },
                                 sublabel
                             );

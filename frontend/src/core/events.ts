@@ -8,6 +8,7 @@ import { freeflyInput } from './freefly-state';
 import { getCameraMode, switchCameraMode } from '../scene/camera/camera';
 import { t } from './i18n/t';
 import { openExternalURL } from './platform';
+import { addDisposableListener } from './dom';
 import { Browser } from '@wailsio/runtime';
 import { showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza, closePlaza } from '../menus/plaza';
@@ -52,14 +53,13 @@ function waitForTransition(el: HTMLElement, propertyName?: string): Promise<void
             resolve();
             return;
         }
-        const done = (e: TransitionEvent) => {
-            if (propertyName && e.propertyName !== propertyName) {
+        const disp = addDisposableListener(el, 'transitionend', (e) => {
+            if (propertyName && (e as TransitionEvent).propertyName !== propertyName) {
                 return;
             }
-            el.removeEventListener('transitionend', done);
+            disp.dispose();
             resolve();
-        };
-        el.addEventListener('transitionend', done);
+        });
         setTimeout(resolve, dur + 50);
     });
 }

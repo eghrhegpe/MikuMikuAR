@@ -3,6 +3,7 @@
 // KeyboardEvent.code is used for key matching (e.g. 'Digit1', 'Space', 'Escape', 'KeyA').
 
 import { logWarn } from './utils';
+import { addDisposableListener, type Disposable } from './dom';
 
 export interface ShortcutDef {
     id: string; // unique, e.g. 'toggle:models'
@@ -30,7 +31,8 @@ export interface KeyBindingOverride {
 const _shortcuts = new Map<string, ShortcutDef>();
 const _overrides: Record<string, KeyBindingOverride> = {};
 let _initialized = false;
-let _keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+// [doc:adr-102] 持有 keydown 监听器的 Disposable，便于在 _resetShortcutRegistry 中统一释放
+let _keydownDisposable: Disposable | null = null;
 
 // ======== Internal helpers ========
 
@@ -218,7 +220,7 @@ export function initShortcutDispatcher(): void {
     }
     _initialized = true;
 
-    _keydownHandler = (e: KeyboardEvent) => {
+    _keydownDisposable = addDisposableListener(window, 'keydown', (e: KeyboardEvent) => {
         // Skip if target is an input element
         if (isInputElement(e.target)) {
             return;
@@ -245,9 +247,7 @@ export function initShortcutDispatcher(): void {
                 return;
             }
         }
-    };
-
-    window.addEventListener('keydown', _keydownHandler);
+    });
 }
 
 // ======== Testing Support ========
@@ -261,9 +261,7 @@ export function _resetShortcutRegistry(): void {
     for (const key of Object.keys(_overrides)) {
         delete _overrides[key];
     }
-    if (_keydownHandler) {
-        window.removeEventListener('keydown', _keydownHandler);
-        _keydownHandler = null;
-    }
+    _keydownDisposable?.dispose();
+    _keydownDisposable = null;
     _initialized = false;
 }
