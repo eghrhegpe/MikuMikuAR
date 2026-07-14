@@ -678,7 +678,7 @@ export function switchCameraMode(mode: CameraMode): void {
                 _syncAxesFromMode(_previousMode);
                 _currentPreset.mode = _previousMode;
             }
-        });
+        }).catch(() => {});
         return;
     }
 
