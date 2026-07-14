@@ -103,10 +103,24 @@ function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
 
 // _encodePath 已改为复用 normPath（@/core/utils）
 
-export async function loadOutfits(id: string): Promise<OutfitFile | null> {
+export async function loadOutfits(
+    id: string,
+    signal?: AbortSignal
+): Promise<OutfitFile | null> {
     if (!_loadingOutfitsGuard.tryEnter(id)) {
         return null;
     }
+
+    // [adr-105] AbortSignal：允许外部取消；内部 AbortController 合并外部 signal
+    let abortCtrl: AbortController | undefined;
+    let effectiveSignal: AbortSignal;
+    if (signal) {
+        effectiveSignal = signal;
+    } else {
+        abortCtrl = new AbortController();
+        effectiveSignal = abortCtrl.signal;
+    }
+
     try {
         const inst = modelRegistry.get(id);
         if (!inst) {
@@ -115,6 +129,12 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
         if (!inst.filePath) {
             return null;
         }
+
+        // [adr-105] 每个 await 点前检查取消状态
+        if (effectiveSignal.aborted) {
+            return null;
+        }
+
         try {
             const json = await LoadOutfitFile(inst.filePath);
             if (json) {
@@ -126,6 +146,10 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
             }
         } catch {
             /* fall through */
+        }
+
+        if (effectiveSignal.aborted) {
+            return null;
         }
 
         try {
@@ -140,6 +164,11 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
                 inst.outfitFile = undefined;
                 return null;
             }
+
+            if (effectiveSignal.aborted) {
+                return null;
+            }
+
             interface _Probe {
                 subdir: string;
                 matName: string;
@@ -167,6 +196,7 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
             const withLimit = async <T>(fn: () => Promise<T>): Promise<T> => {
                 while (semaphore.count >= HEAD_CONCURRENCY) {
                     await delay(10);
+                    if (effectiveSignal.aborted) break;
                 }
                 semaphore.count++;
                 try {
@@ -177,18 +207,24 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
             };
             const results = await Promise.all(
                 subdirs.map(async (subdir): Promise<OutfitVariant | null> => {
+                    if (effectiveSignal.aborted) return null;
                     const byMaterial: Record<string, OutfitSlot> = {};
                     let hasAny = false;
                     const subdirProbes = probes.filter((p) => p.subdir === subdir);
                     await Promise.all(
                         subdirProbes.map(async (p) => {
+                            if (effectiveSignal.aborted) return;
                             let ok: boolean;
                             if (headCache.has(p.url)) {
                                 ok = headCache.get(p.url)!;
                             } else {
                                 ok = await withLimit(async () => {
                                     try {
-                                        const resp = await fetch(p.url, { method: 'HEAD' });
+                                        // [adr-105] HEAD 请求支持 AbortSignal 取消
+                                        const resp = await fetch(p.url, {
+                                            method: 'HEAD',
+                                            signal: effectiveSignal,
+                                        });
                                         return resp.ok;
                                     } catch {
                                         return false;
@@ -222,6 +258,7 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
             return null;
         }
     } finally {
+        abortCtrl?.abort(); // 清理内部 AbortController
         _loadingOutfitsGuard.leave(id);
     }
 }

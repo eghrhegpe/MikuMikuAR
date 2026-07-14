@@ -35,7 +35,10 @@ function isValidScaling(s: number): boolean {
 
 // ======== 加载 ========
 
-export async function loadProp(filePath: string): Promise<string | null> {
+export async function loadProp(
+    filePath: string,
+    signal?: AbortSignal
+): Promise<string | null> {
     // 使用 rAF 调度 DOM 操作，避免 onProgress 在非主线程回调中直接操作 DOM
     const updateLoadingText = (text: string) => {
         requestAnimationFrame(() => {
@@ -43,6 +46,16 @@ export async function loadProp(filePath: string): Promise<string | null> {
         });
     };
     let loadedMeshes: Mesh[] = [];
+
+    // [adr-105] AbortSignal：允许外部取消；内部 AbortController 合并外部 signal
+    let abortCtrl: AbortController | undefined;
+    let effectiveSignal: AbortSignal;
+    if (signal) {
+        effectiveSignal = signal;
+    } else {
+        abortCtrl = new AbortController();
+        effectiveSignal = abortCtrl.signal;
+    }
 
     try {
         dom.loadingEl.style.display = 'block';
@@ -59,6 +72,9 @@ export async function loadProp(filePath: string): Promise<string | null> {
         }
 
         const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
+        if (effectiveSignal.aborted) {
+            return null;
+        }
         const fileName = getBaseName(filePath) || '';
         setStatus(t('props.loading'), false);
 
@@ -67,12 +83,25 @@ export async function loadProp(filePath: string): Promise<string | null> {
         const result = await ImportMeshAsync(url, scene, {
             pluginExtension: '.pmx',
             onProgress: (evt) => {
+                if (effectiveSignal.aborted) return;
                 if (evt.lengthComputable) {
                     const pct = Math.round((evt.loaded / evt.total) * 100);
                     updateLoadingText(t('props.loadingProgress', { pct: String(pct) }));
                 }
             },
         });
+
+        // [adr-105] 取消后清理已加载资源
+        if (effectiveSignal.aborted) {
+            result.meshes.forEach((m) => {
+                try {
+                    m.dispose();
+                } catch {
+                    // ignore
+                }
+            });
+            return null;
+        }
 
         loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
 
@@ -122,7 +151,12 @@ export async function loadProp(filePath: string): Promise<string | null> {
         console.info('[props] load complete:', id, displayName);
         return id;
     } catch (err) {
-        console.error('[props] loadProp:', err);
+        // [adr-105] AbortError 不算错误：取消是正常流程，不打 console.error
+        if (err instanceof DOMException && err.name === 'AbortError') {
+            console.info('[props] loadProp aborted:', filePath);
+        } else {
+            console.error('[props] loadProp:', err);
+        }
         // 清理已加载但未注册的资源
         loadedMeshes.forEach((m) => {
             try {
@@ -134,6 +168,7 @@ export async function loadProp(filePath: string): Promise<string | null> {
         setStatus(t('props.loadFailed'), false);
         return null;
     } finally {
+        abortCtrl?.abort(); // 清理内部 AbortController
         requestAnimationFrame(() => {
             dom.loadingEl.style.display = 'none';
         });
