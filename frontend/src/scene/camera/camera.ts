@@ -17,6 +17,7 @@ import { clamp, clamp01, debounce, deepClone, logWarn } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import { focusModel, reattachPipeline, setARMode, getProcBeatDetector } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
+import { addDisposableListener, type Disposable } from '@/core/dom';
 
 // ======== Types ========
 /**
@@ -854,6 +855,8 @@ let _freeflyTouchEndHandler: (() => void) | null = null;
 let _touchPrevDist = 0;
 let _touchPrevMidX = 0;
 let _touchPrevMidY = 0;
+// [doc:adr-102] 持有 touch 监听器的 Disposable，便于在 stopFreeflyTouch 中统一释放
+let _touchDisposables: Disposable[] = [];
 
 function initFreeflyTouch(canvas: HTMLCanvasElement): void {
     if (!isTouchDevice()) {
@@ -910,19 +913,24 @@ function initFreeflyTouch(canvas: HTMLCanvasElement): void {
         _touchPrevDist = 0;
     };
 
-    canvas.addEventListener('touchmove', _freeflyTouchHandler, { passive: false });
-    canvas.addEventListener('touchend', _freeflyTouchEndHandler);
-    canvas.addEventListener('touchcancel', _freeflyTouchEndHandler);
+    _touchDisposables.push(
+        addDisposableListener(canvas, 'touchmove', _freeflyTouchHandler, { passive: false })
+    );
+    _touchDisposables.push(
+        addDisposableListener(canvas, 'touchend', _freeflyTouchEndHandler)
+    );
+    _touchDisposables.push(
+        addDisposableListener(canvas, 'touchcancel', _freeflyTouchEndHandler)
+    );
 }
 
 function stopFreeflyTouch(): void {
-    if (_canvas && _freeflyTouchHandler) {
-        _canvas.removeEventListener('touchmove', _freeflyTouchHandler);
-        _canvas.removeEventListener('touchend', _freeflyTouchEndHandler!);
-        _canvas.removeEventListener('touchcancel', _freeflyTouchEndHandler!);
-        _freeflyTouchHandler = null;
-        _freeflyTouchEndHandler = null;
+    for (const d of _touchDisposables) {
+        d.dispose();
     }
+    _touchDisposables = [];
+    _freeflyTouchHandler = null;
+    _freeflyTouchEndHandler = null;
     _touchPrevDist = 0;
 }
 

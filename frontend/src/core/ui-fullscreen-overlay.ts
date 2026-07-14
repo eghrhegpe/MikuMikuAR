@@ -3,6 +3,7 @@
 // 所有关闭入口统一调用 closeFullscreen()
 
 import { logWarn } from './utils';
+import { addDisposableListener } from './dom';
 
 // ======== Types ========
 
@@ -242,7 +243,7 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
             focused.click();
         }
     };
-    document.addEventListener('keydown', handleKeyDown);
+    const keydownDisp = addDisposableListener(document, 'keydown', handleKeyDown);
 
     // Overlay 背景点击关闭
     overlay.addEventListener('click', (e) => {
@@ -255,7 +256,7 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
 
     // 清理函数
     const cleanup = () => {
-        document.removeEventListener('keydown', handleKeyDown);
+        keydownDisp.dispose();
     };
 
     // 将 cleanup 挂载到 overlay 元素上，供外部调用

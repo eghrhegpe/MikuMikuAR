@@ -334,7 +334,7 @@ describe('seekAudio', () => {
         void playAudio('test.mp3', 'test');
         seekAudio(50);
         expect(mockCurrentTime).toBe(50);
-        expect(mockAddEventListener).toHaveBeenCalledWith('seeked', expect.any(Function));
+        expect(mockAddEventListener).toHaveBeenCalledWith('seeked', expect.any(Function), undefined);
     });
 
     it('clamps negative to 0', () => {

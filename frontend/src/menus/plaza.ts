@@ -28,6 +28,7 @@ import { t } from '../core/i18n/t';
 import { showErrorToast } from '../core/toast';
 import { refreshLibrary } from './library';
 import { registerShortcuts } from '../core/shortcut-registry';
+import { addDisposableListener, type Disposable } from '../core/dom';
 
 const L = {
     title: '模型广场',
@@ -531,13 +532,17 @@ function showSiteModePopup(site: PlazaSite, x: number, y: number): void {
     popup.style.left = `${px}px`;
     popup.style.top = `${py}px`;
 
+    let onDownDisp: Disposable | null = null;
     const onDown = (e: MouseEvent): void => {
         if (!popup.contains(e.target as Node)) {
             popup.remove();
-            document.removeEventListener('mousedown', onDown);
+            onDownDisp?.dispose();
+            onDownDisp = null;
         }
     };
-    setTimeout(() => document.addEventListener('mousedown', onDown), 0);
+    setTimeout(() => {
+        onDownDisp = addDisposableListener(document, 'mousedown', onDown);
+    }, 0);
 }
 
 function buildToolbar(opts: {

@@ -4,6 +4,7 @@ import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/utils';
+import { addDisposableListener, type Disposable } from '../core/dom';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
 const TRANSITION_DURATION = '0.15s';
@@ -38,6 +39,9 @@ export class SlideMenu {
     private _swipeStartY = 0;
     private _swipeTouchStartHandler: ((e: TouchEvent) => void) | null = null;
     private _swipeTouchEndHandler: ((e: TouchEvent) => void) | null = null;
+    private _keydownDisp: Disposable | null = null;
+    private _swipeTouchStartDisp: Disposable | null = null;
+    private _swipeTouchEndDisp: Disposable | null = null;
     /** 自更新控件注册表 — 每个元素有 update() 方法，由 updateControls() 统一调用 */
     private _controls: Array<{ update: () => void }> = [];
     /** 响应式订阅取消函数 — dispose 时调用 */
@@ -118,7 +122,7 @@ export class SlideMenu {
                     break;
             }
         };
-        this.container.addEventListener('keydown', this._keydownHandler);
+        this._keydownDisp = addDisposableListener(this.container, 'keydown', this._keydownHandler);
 
         // 触屏手势：右滑返回上一层级
         this._swipeStartX = 0;
@@ -144,10 +148,18 @@ export class SlideMenu {
                 this.pop();
             }
         };
-        this.container.addEventListener('touchstart', this._swipeTouchStartHandler, {
-            passive: true,
-        });
-        this.container.addEventListener('touchend', this._swipeTouchEndHandler, { passive: true });
+        this._swipeTouchStartDisp = addDisposableListener(
+            this.container,
+            'touchstart',
+            this._swipeTouchStartHandler,
+            { passive: true }
+        );
+        this._swipeTouchEndDisp = addDisposableListener(
+            this.container,
+            'touchend',
+            this._swipeTouchEndHandler,
+            { passive: true }
+        );
 
         // 响应式订阅：状态变更 → 自动 updateControls
         this._unsubscribe = subscribe(() => this.updateControls());
@@ -194,8 +206,10 @@ export class SlideMenu {
         this.panel.style.opacity = '0';
         this.panel.style.transform = 'translateX(-8px)';
 
+        let fadeOutDisp: Disposable | null = null;
         const onFadeOut = async () => {
-            this.panel.removeEventListener('transitionend', onFadeOut);
+            fadeOutDisp?.dispose();
+            fadeOutDisp = null;
             await this.buildPanel(level);
             this.updateHeader(level);
             // 新内容从下方淡入
@@ -207,15 +221,17 @@ export class SlideMenu {
             this.panel.style.opacity = '1';
             this.panel.style.transform = 'translateX(0)';
 
+            let fadeInDisp: Disposable | null = null;
             const onFadeIn = () => {
-                this.panel.removeEventListener('transitionend', onFadeIn);
+                fadeInDisp?.dispose();
+                fadeInDisp = null;
                 this._cancelTimeout();
                 this.transitioning = false;
                 this.setupFocus();
                 this.onAfterRender?.(level, this);
             this.onLevelEnter?.(level, this);
             };
-            this.panel.addEventListener('transitionend', onFadeIn);
+            fadeInDisp = addDisposableListener(this.panel, 'transitionend', onFadeIn);
             this._pushTimeout(
                 setTimeout(() => {
                     if (this.transitioning) {
@@ -230,7 +246,7 @@ export class SlideMenu {
             );
         };
 
-        this.panel.addEventListener('transitionend', onFadeOut);
+        fadeOutDisp = addDisposableListener(this.panel, 'transitionend', onFadeOut);
         this._pushTimeout(
             setTimeout(() => {
                 if (this.transitioning) {
@@ -254,8 +270,10 @@ export class SlideMenu {
         this.panel.style.opacity = '0';
         this.panel.style.transform = 'translateX(8px)';
 
+        let fadeOutDisp: Disposable | null = null;
         const onFadeOut = async () => {
-            this.panel.removeEventListener('transitionend', onFadeOut);
+            fadeOutDisp?.dispose();
+            fadeOutDisp = null;
             await this.buildPanel(prevLevel);
             this.updateHeader(prevLevel);
             this.panel.style.transition = 'none';
@@ -266,15 +284,17 @@ export class SlideMenu {
             this.panel.style.opacity = '1';
             this.panel.style.transform = 'translateX(0)';
 
+            let fadeInDisp: Disposable | null = null;
             const onFadeIn = () => {
-                this.panel.removeEventListener('transitionend', onFadeIn);
+                fadeInDisp?.dispose();
+                fadeInDisp = null;
                 this._cancelTimeout();
                 this.transitioning = false;
                 this.setupFocus();
                 this.onAfterRender?.(prevLevel, this);
                 this.onLevelEnter?.(prevLevel, this);
             };
-            this.panel.addEventListener('transitionend', onFadeIn);
+            fadeInDisp = addDisposableListener(this.panel, 'transitionend', onFadeIn);
             this._pushTimeout(
                 setTimeout(() => {
                     if (this.transitioning) {
@@ -289,7 +309,7 @@ export class SlideMenu {
             );
         };
 
-        this.panel.addEventListener('transitionend', onFadeOut);
+        fadeOutDisp = addDisposableListener(this.panel, 'transitionend', onFadeOut);
         this._pushTimeout(
             setTimeout(() => {
                 if (this.transitioning) {
@@ -760,18 +780,15 @@ export class SlideMenu {
             this._unsubscribe();
             this._unsubscribe = null;
         }
-        if (this._keydownHandler) {
-            this.container.removeEventListener('keydown', this._keydownHandler);
-            this._keydownHandler = null;
-        }
-        if (this._swipeTouchStartHandler) {
-            this.container.removeEventListener('touchstart', this._swipeTouchStartHandler);
-            this._swipeTouchStartHandler = null;
-        }
-        if (this._swipeTouchEndHandler) {
-            this.container.removeEventListener('touchend', this._swipeTouchEndHandler);
-            this._swipeTouchEndHandler = null;
-        }
+        this._keydownDisp?.dispose();
+        this._keydownDisp = null;
+        this._keydownHandler = null;
+        this._swipeTouchStartDisp?.dispose();
+        this._swipeTouchStartDisp = null;
+        this._swipeTouchStartHandler = null;
+        this._swipeTouchEndDisp?.dispose();
+        this._swipeTouchEndDisp = null;
+        this._swipeTouchEndHandler = null;
         this.levels = [];
         this._cachedExtraBtns = null;
     }

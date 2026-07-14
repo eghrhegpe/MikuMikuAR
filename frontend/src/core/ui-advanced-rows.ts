@@ -5,6 +5,7 @@ import { createIconifyIcon } from './icons';
 import { ControlOptions } from './ui-types';
 import { initControl } from './ui-rows';
 import { clamp01 } from '@/core/utils';
+import { addDisposableListener, type Disposable } from './dom';
 
 // ===================================================================
 // addColorSliderRow
@@ -126,6 +127,8 @@ export function addColorSliderRow(
 
         let didDrag = false;
         let dragRect: DOMRect | null = null;
+        let moveDisp: Disposable | null = null;
+        let endDisp: Disposable | null = null;
 
         function onDragMove(e: MouseEvent): void {
             if (!didDrag) {
@@ -138,8 +141,10 @@ export function addColorSliderRow(
         }
 
         function onDragEnd(e: MouseEvent): void {
-            document.removeEventListener('mousemove', onDragMove);
-            document.removeEventListener('mouseup', onDragEnd);
+            moveDisp?.dispose();
+            endDisp?.dispose();
+            moveDisp = null;
+            endDisp = null;
             if (!didDrag && dragRect) {
                 setValueFromClientX(e.clientX, dragRect);
             }
@@ -152,8 +157,8 @@ export function addColorSliderRow(
             bar.focus();
             dragRect = bar.getBoundingClientRect();
             didDrag = false;
-            document.addEventListener('mousemove', onDragMove);
-            document.addEventListener('mouseup', onDragEnd);
+            moveDisp = addDisposableListener(document, 'mousemove', onDragMove);
+            endDisp = addDisposableListener(document, 'mouseup', onDragEnd);
         });
 
         bar.addEventListener('keydown', handleKeyDown);
@@ -342,6 +347,8 @@ export function addModeSlider<T extends string | number>(
 
     let didDrag = false;
     let topDragRect: DOMRect | null = null;
+    let topMoveDisp: Disposable | null = null;
+    let topEndDisp: Disposable | null = null;
 
     function onTopDragMove(e: MouseEvent): void {
         if (!didDrag) {
@@ -354,8 +361,10 @@ export function addModeSlider<T extends string | number>(
     }
 
     function onTopDragEnd(e: MouseEvent): void {
-        document.removeEventListener('mousemove', onTopDragMove);
-        document.removeEventListener('mouseup', onTopDragEnd);
+        topMoveDisp?.dispose();
+        topEndDisp?.dispose();
+        topMoveDisp = null;
+        topEndDisp = null;
 
         if (!didDrag) {
             const rect = top.getBoundingClientRect();
@@ -387,8 +396,8 @@ export function addModeSlider<T extends string | number>(
         top.focus();
         topDragRect = top.getBoundingClientRect();
         didDrag = false;
-        document.addEventListener('mousemove', onTopDragMove);
-        document.addEventListener('mouseup', onTopDragEnd);
+        topMoveDisp = addDisposableListener(document, 'mousemove', onTopDragMove);
+        topEndDisp = addDisposableListener(document, 'mouseup', onTopDragEnd);
     });
 
     top.addEventListener('keydown', handleKeyDown);

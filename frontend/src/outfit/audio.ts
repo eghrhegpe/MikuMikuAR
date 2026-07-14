@@ -6,6 +6,7 @@ import { triggerAutoSave, setUIState } from '../core/config';
 import { clamp01, logWarn } from '@/core/utils';
 import type { BeatDetector } from '../motion-algos/beat-detector';
 import { uiState } from '../core/state';
+import { addDisposableListener } from '../core/dom';
 
 let audioElement: HTMLAudioElement | null = null;
 let audioName = '';
@@ -151,11 +152,10 @@ export function seekAudio(seconds: number): void {
         isSeeking = true;
         audioElement.currentTime = clamped;
         // 使用 seeked 事件精确重置，避免固定超时的不可靠性
-        const onSeeked = () => {
+        const disp = addDisposableListener(audioElement, 'seeked', () => {
             isSeeking = false;
-            audioElement?.removeEventListener('seeked', onSeeked);
-        };
-        audioElement.addEventListener('seeked', onSeeked);
+            disp.dispose();
+        });
     }
 }
 
