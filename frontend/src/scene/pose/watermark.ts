@@ -71,7 +71,7 @@ export function applyWatermark(base64: string, format: string, quality: number):
             ctx.textBaseline = 'bottom';
 
             const textWidth = ctx.measureText(_config.text).width;
-            const _padding = 16;
+            const padding = 16;
             const margin = 12;
 
             let x: number, y: number;

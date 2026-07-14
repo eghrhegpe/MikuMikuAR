@@ -300,5 +300,5 @@ export function applyVPDPose(id: string, bones: VPDBoneData[], morphs: VPDMorphD
         setModelMorphWeight(id, m.name, m.weight);
     }
 
-    console.log(`[applyVPDPose] 已应用 ${bones.length} 骨骼 + ${morphs.length} 表情到模型 ${id}`);
+    logWarn('applyVPDPose', `已应用 ${bones.length} 骨骼 + ${morphs.length} 表情到模型 ${id}`);
 }

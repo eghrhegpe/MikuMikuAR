@@ -48,6 +48,7 @@ import { clearAudio, getAudioName } from '../outfit/audio';
 import {
     loadAndRetargetAnimation,
     playRetargetedAnimation,
+    getBoneMapPresets,
 } from '../scene/motion/animation-retargeter';
 import { SelectImportFile } from '../core/wails-bindings';
 import {

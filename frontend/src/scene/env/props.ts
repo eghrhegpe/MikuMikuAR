@@ -9,7 +9,7 @@ import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import { propRegistry, setStatus, triggerAutoSave, dom, PropInstance } from '@/core/config';
-import { resolveFileUrl } from '@/core/fileservice';
+import { resolveFileUrl, normPath } from '@/core/fileservice';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
 import { scene } from '../scene';
 import { _envSys } from './env';

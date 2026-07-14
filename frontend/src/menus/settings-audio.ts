@@ -4,6 +4,7 @@
 
 import { setStatus, cardContainer } from '../core/config';
 import { t } from '../core/i18n/t';
+import { addSectionTitle } from '../core/ui-helpers';
 import { setVolume, setAudioOffset } from '../outfit/audio';
 import {
     setSfxEnabled,
@@ -76,8 +77,7 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
-                hint.style.cssText =
-                    'font-size:10px;color:var(--text-dark);text-align:center;margin-top:4px;';
+                hint.className = 'setting-hint-center';
                 hint.textContent = t('settings.audio.offsetHint');
                 c.appendChild(hint);
             },
@@ -190,6 +190,7 @@ export function buildSettingsAudioLevel(getSettingsMenu: () => SettingsMenuHandl
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
+                addSectionTitle(c, t('settings.audio'));
                 renderMenu(buildAudioSchema(getSettingsMenu), c);
             });
         },

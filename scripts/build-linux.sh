@@ -41,6 +41,11 @@ mkdir -p "$DIST_DIR"
 
 cd "$PROJECT_DIR"
 
+# 启用 MPR 多线程物理（ADR-099）
+# Go 侧 CoopCoepMiddleware 读取此变量注入 COOP/COEP 双头；
+# 前端 Vite define 注入 __MMD_ENABLE_MPR__ 门控 MPR/SPR 路径。
+export VITE_MMD_WASM_MT=1
+
 # 前端构建
 echo "[build-linux] 构建前端..."
 cd frontend

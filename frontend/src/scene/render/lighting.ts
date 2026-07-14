@@ -801,7 +801,7 @@ export function disposeLighting(): void {
 /** 批量加载舞台灯（反序列化用），会清空现有灯 */
 export function loadStageLights(states: StageLightState[]): void {
     // 清空旧灯
-    for (const [_lid, entry] of _stageLights) {
+    for (const [lid, entry] of _stageLights) {
         _disposeIndicator(entry);
         entry.light.dispose();
     }
@@ -1155,7 +1155,7 @@ function _tweenColor3(
 
 // ======== Lighting Preset Application ========
 
-import { LIGHTING_PRESETS } from './lighting-presets';
+import { LIGHTING_PRESETS, type LightingPresetLight } from './lighting-presets';
 
 /**
  * 应用灯光预设——复用现有灯光，平滑过渡参数。
@@ -1172,7 +1172,7 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
 
     _cancelAllLightingTweens();
 
-    const _currentIds = Array.from(_stageLights.keys());
+    const currentIds = Array.from(_stageLights.keys());
     const targetCount = preset.lights.length;
 
     // 1. 补齐灯光数量

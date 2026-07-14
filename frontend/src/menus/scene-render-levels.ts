@@ -29,6 +29,7 @@ import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import {
+    isDebugMirrorActive,
     setDebugMirrorSize,
     setDebugMirrorResolution,
     getDebugMirrorInfo,
@@ -725,10 +726,6 @@ export function buildPostProcessLevel(): PopupLevel {
             // 色彩层（色调映射）—— 独立卡片
             cardContainer(container, (c) => {
                 renderMenu(buildPostProcessColorSchema(), c);
-            });
-            // 调试镜面 —— 独立卡片
-            cardContainer(container, (c) => {
-                renderMenu(buildDebugMirrorSchema(), c);
             });
             // 滤镜预设芯片组
             _renderFilterPresetChips(container);

@@ -8,6 +8,7 @@ import { t } from '../core/i18n/t';
 import { PopupRow, PopupLevel } from '../core/config';
 import {
     SETTINGS,
+    SETTINGS_ACTION,
     SOFTWARE_DETAIL_PREFIX,
     type SettingsFolderTarget,
 } from './settings-targets';
@@ -27,7 +28,6 @@ export { getSettingsMenu, refreshSettingsRoot, showSettings };
 import { buildSettingsAppearanceLevel } from './settings-appearance';
 import { buildSettingsFilenameLevel } from './settings-filename';
 import { buildSettingsPathsLevel, handleSettingsAction } from './settings-paths';
-import { buildSettingsExternalLevel } from './settings-external';
 import { buildSettingsPerformanceLevel } from './settings-performance';
 import { buildSettingsScreenshotLevel } from './settings-screenshot';
 import { buildSettingsAudioLevel } from './settings-audio';
@@ -156,7 +156,6 @@ const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
     [SETTINGS.FILENAME]: () => buildSettingsFilenameLevel(getSettingsMenu),
     [SETTINGS.PERFORMANCE]: () => buildSettingsPerformanceLevel(getSettingsMenu),
     [SETTINGS.PATHS]: () => buildSettingsPathsLevel(getSettingsMenu),
-    [SETTINGS.EXTERNAL]: () => buildSettingsExternalLevel(getSettingsMenu),
     [SETTINGS.SOFTWARE]: () => buildSettingsSoftwareLevel(),
     [SETTINGS.SCREENSHOT]: () => buildSettingsScreenshotLevel(getSettingsMenu),
     [SETTINGS.AUDIO]: () => buildSettingsAudioLevel(getSettingsMenu),

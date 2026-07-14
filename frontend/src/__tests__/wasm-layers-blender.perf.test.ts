@@ -53,14 +53,6 @@ function findPmx(root: string): string {
     return '';
 }
 
-function percentile(sorted: number[], p: number): number {
-    if (sorted.length === 0) {
-        return 0;
-    }
-    const idx = Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length));
-    return sorted[idx];
-}
-
 // ── 忠实复刻 perception.ts / wasm-layers-blender.ts ──
 function writeMatToBuffer(buf: Float32Array, m: Matrix): void {
     const a = m.asArray();
@@ -237,10 +229,6 @@ test('bench wasm layers blender hot path', async () => {
         },
     ];
 
-    console.log(
-        `\n[BENCH] model=${pmx.split(/[\\/]/).pop()} totalBones=${totalBones} leaves=${leaves.length}`
-    );
-
     for (const tier of tiers) {
         const n = tier.names.length;
         const evaluator = await buildOverlayEvaluator(tier.names);
@@ -257,11 +245,6 @@ test('bench wasm layers blender hot path', async () => {
             samples.push(t1 - t0);
         }
         samples.sort((a, b) => a - b);
-        const p50 = percentile(samples, 50);
-        const p95 = percentile(samples, 95);
-        console.log(
-            `[BENCH] ${tier.label} | bones=${n} | P50=${p50.toFixed(4)}ms P95=${p95.toFixed(4)}ms`
-        );
         evaluator.dispose();
     }
 

@@ -2,7 +2,7 @@
 
 import type { PopupLevel, PopupRow } from '../core/config';
 import { t, AVAILABLE_LANGS } from '../core/i18n/t';
-import { getLang, SUPPORTED_LANGS } from '../core/i18n/locale';
+import { getLang, SUPPORTED_LANGS, type LangCode } from '../core/i18n/locale';
 
 export function buildSettingsLanguageLevel(): PopupLevel {
     const cur = getLang();

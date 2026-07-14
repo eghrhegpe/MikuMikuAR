@@ -26,13 +26,6 @@ export function AddCustomSoftware(path: string, name: string, args: string): $Ca
 }
 
 /**
- * AddExternalPath adds an external library path with auto-generated basename name, triggers rescan+reindex.
- */
-export function AddExternalPath(path: string): $CancellablePromise<void> {
-    return $Call.ByID(3204589026, path);
-}
-
-/**
  * AddRecentModel pushes a libraryRef to the top of the recent models list.
  * If already present, it is moved to the top. List is capped at maxRecentModels.
  */
@@ -564,24 +557,10 @@ export function RemoveCustomSoftware(path: string): $CancellablePromise<void> {
 }
 
 /**
- * RemoveExternalPath removes an external library by path, triggers rescan+reindex.
- */
-export function RemoveExternalPath(path: string): $CancellablePromise<void> {
-    return $Call.ByID(1961467951, path);
-}
-
-/**
  * RemoveTag removes a tag from a model.
  */
 export function RemoveTag(libraryRef: string, tag: string): $CancellablePromise<void> {
     return $Call.ByID(2094550809, libraryRef, tag);
-}
-
-/**
- * RenameExternalPath renames an external library display name.
- */
-export function RenameExternalPath(path: string, name: string): $CancellablePromise<void> {
-    return $Call.ByID(404682193, path, name);
 }
 
 /**
@@ -686,8 +665,8 @@ export function SaveThumbnail(modelPath: string, base64PNG: string): $Cancellabl
  * Uses ResourceRoot + OverridePaths from config; scans each category directory
  * with extension filtering (no auto-classification by directory name).
  */
-export function ScanModelDir(root: string, external: $models.ExternalPath[] | null): $CancellablePromise<$models.ModelEntry[] | null> {
-    return $Call.ByID(586056714, root, external);
+export function ScanModelDir(): $CancellablePromise<$models.ModelEntry[] | null> {
+    return $Call.ByID(586056714);
 }
 
 /**

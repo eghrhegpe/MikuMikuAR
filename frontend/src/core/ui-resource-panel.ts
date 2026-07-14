@@ -68,7 +68,7 @@ export function createResourcePanel(
         onSelect,
         onEnterFolder,
         layout = 'grid',
-        columns: _columns = 0,
+        columns = 0,
         itemHeight = 120,
     } = options;
 

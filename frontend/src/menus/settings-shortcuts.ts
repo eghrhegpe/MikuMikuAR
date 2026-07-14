@@ -98,8 +98,8 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                 }
 
                 for (const [groupName, items] of groups) {
-                    addSectionTitle(container, t(groupName));
                     cardContainer(container, (c) => {
+                        addSectionTitle(c, t(groupName));
                         for (const s of items) {
                             const combo = _fmtKeyBinding(
                                 s.currentKey,

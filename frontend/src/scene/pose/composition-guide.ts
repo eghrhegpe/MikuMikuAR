@@ -2,6 +2,7 @@
 // 职责: 在 canvas 上叠加三分法/黄金分割/对角线网格
 // 依赖: dom.canvas（获取画布尺寸），纯 CSS/SVG 实现
 
+import { dom } from '../../core/config';
 
 // ── 状态 ──
 let _overlayEl: HTMLDivElement | null = null;

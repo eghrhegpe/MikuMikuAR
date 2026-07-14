@@ -11,7 +11,6 @@ import {
     toggleExpandedFolder,
     expandedFolders,
     setLibraryRoot,
-    setExternalPaths,
 } from '../core/config';
 import { normPath } from '../core/fileservice';
 import { getBaseName, getDirPath, isUnderRoot } from '../core/utils';
@@ -171,15 +170,10 @@ describe('config pure functions', () => {
 describe('computeLibraryRef', () => {
     beforeEach(() => {
         setLibraryRoot('C:/Users/test/MMD');
-        setExternalPaths([{ path: 'D:/ExternalLib', name: 'ExtLib' }]);
     });
 
     it('returns relative path for main library file', () => {
         expect(computeLibraryRef('C:/Users/test/MMD/models/scene.pmx')).toBe('models/scene.pmx');
-    });
-
-    it('returns prefixed ref for external library file', () => {
-        expect(computeLibraryRef('D:/ExternalLib/chars/ami.pmx')).toBe('ExtLib:chars/ami.pmx');
     });
 
     it('returns null for path outside all libraries', () => {
@@ -190,18 +184,11 @@ describe('computeLibraryRef', () => {
         setLibraryRoot('');
         expect(computeLibraryRef('C:/Users/test/MMD/models/scene.pmx')).toBeNull();
     });
-
-    it('external path takes priority over main library', () => {
-        // If a path matches both, external (more specific) wins
-        setLibraryRoot('D:/ExternalLib');
-        expect(computeLibraryRef('D:/ExternalLib/chars/ami.pmx')).toBe('ExtLib:chars/ami.pmx');
-    });
 });
 
 describe('resolveLibraryRef', () => {
     beforeEach(() => {
         setLibraryRoot('C:/Users/test/MMD');
-        setExternalPaths([{ path: 'D:/ExternalLib', name: 'ExtLib' }]);
     });
 
     it('returns null for empty ref', () => {
@@ -222,10 +209,8 @@ describe('resolveLibraryRef', () => {
         expect(result).toContain('MMD');
     });
 
-    it('resolves external library ref', () => {
-        const result = resolveLibraryRef('ExtLib:chars/ami.pmx');
-        expect(result).toContain('chars/ami.pmx');
-        expect(result).toContain('ExternalLib');
+    it('rejects external library refs (no longer supported)', () => {
+        expect(resolveLibraryRef('ExtLib:chars/ami.pmx')).toBeNull();
     });
 
     it('returns null for unknown external source', () => {
@@ -235,14 +220,6 @@ describe('resolveLibraryRef', () => {
     it('returns null when libraryRoot is empty', () => {
         setLibraryRoot('');
         expect(resolveLibraryRef('models/scene.pmx')).toBeNull();
-    });
-
-    it('rejects external ref with "/" in relPath', () => {
-        expect(resolveLibraryRef('ExtLib:../etc/passwd')).toBeNull();
-    });
-
-    it('rejects external ref with ".." in relPath', () => {
-        expect(resolveLibraryRef('ExtLib:../../etc/passwd')).toBeNull();
     });
 
     it('rejects main ref with path traversal', () => {

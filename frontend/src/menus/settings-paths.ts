@@ -19,7 +19,7 @@ import {
     cardContainer,
     PopupRow,
 } from '../core/config';
-import { slideRow, addModeRow, addToggleRow, addWatchDirRow } from '../core/ui-helpers';
+import { slideRow, addModeRow, addToggleRow, addWatchDirRow, addSectionTitle } from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
 import {
     selectResourceRoot,
@@ -30,12 +30,12 @@ import {
 import { t } from '../core/i18n/t';
 import { setLang, type LangCode } from '../core/i18n/locale';
 import { CATEGORY_DIR, logWarn } from '../core/utils';
-import type { PopupLevel } from '../core/config';
-import { SETTINGS, SETTINGS_ACTION } from './settings-targets';
+import { SETTINGS_ACTION } from './settings-targets';
 import { isAndroidPlatform } from '../core/platform';
 import { buildSettingsLanguageLevel } from './settings-language';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import type { PopupLevel } from '../core/config';
 import type { SlideMenu } from './menu';
 import type { SettingsMenuHandle } from './settings-shared';
 import {
@@ -134,12 +134,6 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
     };
 
     return [
-        // sectionTitle: 存储
-        {
-            id: 'paths:storage-title',
-            kind: 'sectionTitle',
-            label: t('settings.paths.storage'),
-        },
         // Card 1: 资源根目录 / 存储位置（Android）
         {
             id: 'paths:storage',
@@ -153,6 +147,7 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         // ignore
                     }
                     cardContainer(c, (inner) => {
+                        addSectionTitle(inner, t('settings.paths.storage'));
                         addModeRow<string>(
                             inner,
                             t('settings.storageMode'),
@@ -203,6 +198,7 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     });
                 } else {
                     cardContainer(c, (inner) => {
+                        addSectionTitle(inner, t('settings.paths.storage'));
                         slideRow(
                             inner,
                             'lucide:folder',
@@ -221,18 +217,13 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 }
             },
         },
-        // sectionTitle: 资源路径覆盖
-        {
-            id: 'paths:override-title',
-            kind: 'sectionTitle',
-            label: t('settings.paths.override'),
-        },
         // Card 2: 资源路径覆盖
         {
             id: 'paths:override',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.paths.override'));
                     slideRow(
                         inner,
                         'lucide:box',
@@ -320,43 +311,14 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 });
             },
         },
-        // sectionTitle: 外部库
-        {
-            id: 'paths:external-title',
-            kind: 'sectionTitle',
-            label: t('settings.paths.externalLib'),
-        },
-        // Card 3: 外部库
-        {
-            id: 'paths:external',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    slideRow(inner, 'lucide:plug', t('settings.paths.externalLib'), true, () =>
-                        handleSettingsAction({
-                            kind: 'folder',
-                            label: '',
-                            icon: '',
-                            target: SETTINGS.EXTERNAL,
-                        })
-                    );
-                });
-            },
-        },
-        // sectionTitle: 下载监听（桌面端）
-        {
-            id: 'paths:watch-title',
-            kind: 'sectionTitle',
-            label: t('settings.paths.downloadWatch'),
-            visibleWhen: () => !isAndroidPlatform(),
-        },
-        // Card 4: 下载监听
+        // Card 4: 下载监听（桌面端）
         {
             id: 'paths:watch',
             kind: 'custom',
             visibleWhen: () => !isAndroidPlatform(),
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.paths.downloadWatch'));
                     addToggleRow(
                         inner,
                         t('settings.paths.watchDownloadDir'),

@@ -10,7 +10,6 @@ import type {
     DanceSet,
     EnvPresetEntry,
     EnvState,
-    ExternalPath,
     ExtractResult,
     ModelEntry,
     ModelMeta,
@@ -74,14 +73,6 @@ export function createMockOverridePaths(overrides?: Partial<OverridePaths>): Ove
         environment: '',
         md_dress: '',
         setting: '',
-        ...overrides,
-    };
-}
-
-export function createMockExternalPath(overrides?: Partial<ExternalPath>): ExternalPath {
-    return {
-        path: '',
-        name: '',
         ...overrides,
     };
 }
@@ -293,7 +284,6 @@ export function createMockConfig(overrides?: Partial<Config>): Config {
         resource_root: '',
         storage_mode: 'private',
         override_paths: createMockOverridePaths(),
-        external_paths: null,
         blender_path: '',
         display_name_priority: 'name_jp',
         download_watch_dir: '',

@@ -62,8 +62,7 @@ function buildMatBatchSchema(id: string, _modelName: string): MenuNode[] {
                 cardContainer(c, (inner) => {
                     if (overrideCount > 0) {
                         const hint = document.createElement('div');
-                        hint.style.cssText =
-                            'font-size:11px;color:var(--warn);margin-bottom:8px;padding:4px 10px;background:var(--white-04);border-radius:6px;text-align:center;';
+                        hint.className = 'mat-override-hint';
                         hint.textContent = t('model-material.overrideHint', {
                             count: overrideCount,
                         });
@@ -211,14 +210,12 @@ function buildPerMatSchema(
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     const nameEl = document.createElement('div');
-                    nameEl.style.cssText =
-                        'font-size:11px;color:var(--text-dim);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                    nameEl.className = 'mat-name-breadcrumb';
                     nameEl.textContent = modelName + ' > ' + matName;
                     inner.appendChild(nameEl);
 
                     const stackingHint = document.createElement('div');
-                    stackingHint.style.cssText =
-                        'font-size:10px;color:var(--text-muted);margin-bottom:10px;padding:4px 8px;background:var(--accent-dim);border-radius:4px;';
+                    stackingHint.className = 'mat-stacking-hint';
                     stackingHint.textContent = t('model-material.stackingHint');
                     inner.appendChild(stackingHint);
 
@@ -371,8 +368,7 @@ function buildMatRootSchema(
                 cardContainer(c, (inner) => {
                     if (groups.size === 0) {
                         const empty = document.createElement('div');
-                        empty.style.cssText =
-                            'padding:12px 14px;text-align:center;font-size:11px;color:var(--text-dim);';
+                        empty.className = 'mat-empty-hint';
                         empty.textContent = t('model-material.noMaterialData');
                         inner.appendChild(empty);
                         return;
@@ -400,8 +396,7 @@ function buildMatRootSchema(
                                     const matEnabled = isMatEnabled(id, idx);
 
                                     const row = document.createElement('div');
-                                    row.className = `slide-item${!matEnabled ? ' mat-disabled' : ''}`;
-                                    row.style.cssText = 'padding-left: 28px;';
+                                    row.className = `slide-item mat-row-indent${!matEnabled ? ' mat-disabled' : ''}`;
                                     row.dataset.matIdx = String(idx);
                                     row.dataset.matCat = cat;
 
@@ -412,8 +407,7 @@ function buildMatRootSchema(
 
                                     if (detail.modified) {
                                         const sub = document.createElement('span');
-                                        sub.className = 'slide-sublabel';
-                                        sub.style.color = 'var(--accent)';
+                                        sub.className = 'slide-sublabel mat-modified-mark';
                                         sub.textContent = t('model-material.modified');
                                         row.appendChild(sub);
                                     }

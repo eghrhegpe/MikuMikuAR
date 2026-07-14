@@ -11,7 +11,6 @@ import type {
     DanceSet,
     EnvPresetEntry,
     EnvState,
-    ExternalPath,
     ExtractResult,
     ModelEntry,
     ModelMeta,
@@ -29,7 +28,6 @@ import {
     createMockDanceSet,
     createMockEnvPresetEntry,
     createMockEnvState,
-    createMockExternalPath,
     createMockExtractResult,
     createMockModelEntry,
     createMockModelMeta,
@@ -95,15 +93,6 @@ describe('binding contract: interface shapes', () => {
             setting: expect.any(String),
         });
         expectTypeOf(f).toMatchTypeOf<OverridePaths>();
-    });
-
-    it('ExternalPath', () => {
-        const f = createMockExternalPath();
-        expect(f).toMatchObject({
-            path: expect.any(String),
-            name: expect.any(String),
-        });
-        expectTypeOf(f).toMatchTypeOf<ExternalPath>();
     });
 
     it('SoftwareEntry', () => {
@@ -313,7 +302,6 @@ function extractByID(fn: (...args: never[]) => unknown): number | null {
 describe('binding contract: function exports', () => {
     const expectedFunctions = [
         'AddCustomSoftware',
-        'AddExternalPath',
         'AddRecentModel',
         'AddTag',
         'BundleScene',
@@ -382,9 +370,7 @@ describe('binding contract: function exports', () => {
         'PlazaZoomOut',
         'PlazaZoomReset',
         'RemoveCustomSoftware',
-        'RemoveExternalPath',
         'RemoveTag',
-        'RenameExternalPath',
         'RenameModelPreset',
         'SaveDanceSet',
         'SaveEnvPreset',
@@ -465,7 +451,6 @@ describe('binding contract: function exports', () => {
 describe('binding contract: method IDs', () => {
     const expectedFunctions = [
         'AddCustomSoftware',
-        'AddExternalPath',
         'AddRecentModel',
         'AddTag',
         'BundleScene',
@@ -534,9 +519,7 @@ describe('binding contract: method IDs', () => {
         'PlazaZoomOut',
         'PlazaZoomReset',
         'RemoveCustomSoftware',
-        'RemoveExternalPath',
         'RemoveTag',
-        'RenameExternalPath',
         'RenameModelPreset',
         'SaveDanceSet',
         'SaveEnvPreset',

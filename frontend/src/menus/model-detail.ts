@@ -11,7 +11,6 @@ import {
     dom,
     stackRegistry,
     setModelReplaceTargetId,
-    externalPaths,
 } from '../core/config';
 import { modelManager } from '../scene/scene';
 import { getModelMorphs, setModelMorphWeight, resetModelMorphs } from '../scene/manager/model-ops';
@@ -294,7 +293,7 @@ function buildModelSchema(id: string): MenuNode[] {
                                 t('model-detail.replaceModelTo', { name: inst.name }),
                                 (model) => model.format === 'pmx',
                                 stackRegistry.modelStack!,
-                                externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+                                []
                             );
                             stackRegistry.modelStack?.push(level);
                         }
@@ -652,9 +651,8 @@ function buildMorphPreviewSchema(id: string): MenuNode[] {
                 container.classList.remove('render-card');
                 cardContainer(container, (c) => {
                     const resetBtn = document.createElement('button');
-                    resetBtn.className = 'btn btn-sm';
+                    resetBtn.className = 'btn btn-sm full-btn';
                     resetBtn.textContent = t('model-detail.resetAll');
-                    resetBtn.style.cssText = 'width:100%;margin-bottom:8px;';
                     resetBtn.addEventListener('click', () => {
                         resetModelMorphs(id);
                         c.querySelectorAll('.morph-slider').forEach((el) => {

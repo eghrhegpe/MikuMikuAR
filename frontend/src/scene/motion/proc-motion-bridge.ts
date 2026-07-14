@@ -18,15 +18,12 @@ import {
 } from '@/motion-algos/procedural-motion';
 import { BeatDetector } from '@/motion-algos/beat-detector';
 import { mmdRuntime, triggerAutoSave, focusedModelId, setUIState } from '@/core/config';
-import { uiState } from '@/core/state';
 import { isAudioPlaying } from '@/outfit/audio';
-import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion, scene } from '../scene';
-import { addVmdLayer, removeVmdLayer, getVmdLayers, clearVmdLayers } from './vmd-layers';
+import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion } from '../scene';
 import {
     setGazeConfig,
     onPerceptionModelRemoved,
     activatePerception,
-    deactivatePerception,
 } from './perception';
 import { clamp01, logWarn } from '@/core/utils';
 
@@ -76,11 +73,13 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     }
     const morphNames = modelAtStart.morph.morphs.map((m) => m.name) ?? [];
     const boneNames = modelAtStart.runtimeBones.map((b) => b.name);
-    console.log(
-        `[proc-motion] bones: [${boneNames.slice(0, 10).join(', ')}${boneNames.length > 10 ? '...' : ''}]`
+    logWarn(
+        'proc-motion',
+        `bones: [${boneNames.slice(0, 10).join(', ')}${boneNames.length > 10 ? '...' : ''}]`
     );
-    console.log(
-        `[proc-motion] morphs: [${morphNames.slice(0, 5).join(', ')}${morphNames.length > 5 ? '...' : ''}]`
+    logWarn(
+        'proc-motion',
+        `morphs: [${morphNames.slice(0, 5).join(', ')}${morphNames.length > 5 ? '...' : ''}]`
     );
     let buf: ArrayBuffer;
 
@@ -131,7 +130,7 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
             procActiveKind = 'idle';
         } else if (userVmdDuringAsync) {
             // 异步期间用户加载了真实 VMD，不覆盖 vmdData
-            console.log('[proc-motion] 异步期间用户加载了 VMD，跳过本次程序化动作');
+            logWarn('proc-motion', '异步期间用户加载了 VMD，跳过本次程序化动作');
             _procVmdActive = false;
             procModelId = null;
             procActiveKind = 'idle';

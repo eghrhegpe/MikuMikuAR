@@ -7,10 +7,8 @@ import {
     addSliderRow,
     addToggleRow,
     addModeSlider,
-    addCollapsible,
     addSectionTitle,
 } from '../core/ui-helpers';
-import { showConfirm } from '../core/dialog';
 import {
     setProcMotionMode,
     setProcMotionIntensity,
@@ -26,8 +24,6 @@ import {
 } from '../scene/scene';
 import {
     setProcMotionBoneToggle,
-    setProcMotionEyeTrackingEnabled,
-    setProcMotionHeadTrackingEnabled,
 } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
 import type { ProcMotionMode } from '../motion-algos/procedural-motion';

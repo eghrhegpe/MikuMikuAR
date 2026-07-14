@@ -5,7 +5,6 @@ export type {
     DanceSet,
     EnvPresetEntry,
     EnvState,
-    ExternalPath,
     ExtractResult,
     ModelEntry,
     ModelMeta,

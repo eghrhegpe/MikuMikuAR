@@ -104,8 +104,8 @@ export function buildSkyLevel(): PopupLevel {
                         visibleWhen: () => envState.skyMode === 'texture',
                         renderCustom: (cc) => {
                             const hint = document.createElement('div');
-                            hint.style.cssText =
-                                'font-size:11px;color:var(--text-dim);padding:4px 14px 0;';
+                            hint.className = 'info-text';
+                            hint.style.paddingTop = '4px';
                             hint.textContent = t('env.skyTextureHint');
                             cc.appendChild(hint);
                             const fileName = envState.skyTexture

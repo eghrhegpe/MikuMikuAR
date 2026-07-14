@@ -3,7 +3,7 @@
 
 import { cardContainer, escapeHtml, propRegistry, modelRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { slideRow, addCollapsible } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addCollapsible } from '../core/ui-helpers';
 import { logWarn } from '../core/utils';
 import { loadManager } from '../core/load-manager';
 import { removeProp, getPropList } from '../scene/scene';
@@ -46,8 +46,7 @@ function buildPropSchema(): MenuNode[] {
                         }
                     } else {
                         const empty = document.createElement('div');
-                        empty.style.cssText =
-                            'font-size:11px;color:var(--text-dim);padding:8px 4px;text-align:center;';
+                        empty.className = 'empty-hint';
                         empty.textContent = t('scene.noProps');
                         inner.appendChild(empty);
                     }
@@ -98,7 +97,7 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
             const p = propRegistry.get(propId);
             if (!p) {
                 const empty = document.createElement('div');
-                empty.style.cssText = 'font-size:11px;color:var(--text-dim);padding:8px 4px;';
+                empty.className = 'empty-hint';
                 empty.textContent = t('scene.propNotFound');
                 container.appendChild(empty);
                 return;
@@ -146,8 +145,8 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                     ];
                     for (const s of offsetSliders) {
                         const row = document.createElement('div');
-                        row.style.cssText =
-                            'display:flex;align-items:center;gap:6px;padding:2px 14px;';
+                        row.className = 'flex-row';
+                        row.style.padding = '2px 14px';
                         const lbl = document.createElement('label');
                         lbl.textContent = s.label;
                         lbl.style.cssText = 'font-size:11px;min-width:16px;color:var(--text-dim);';

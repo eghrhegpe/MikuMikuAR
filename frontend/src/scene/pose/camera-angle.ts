@@ -2,7 +2,7 @@
 // 职责: 定义预设相机角 + 切换逻辑（用于 Pose Studio 批量截图）
 
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
-import { setOrbitParams } from '../camera/camera';
+import { getOrbitParams, setOrbitParams } from '../camera/camera';
 import { scene } from '../scene';
 
 /** 预设角度定义 */

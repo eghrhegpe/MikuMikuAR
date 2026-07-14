@@ -59,7 +59,6 @@ export interface Config {
      * 各类型路径覆写
      */
     "override_paths": OverridePaths;
-    "external_paths": ExternalPath[] | null;
     "blender_path": string;
 
     /**
@@ -303,21 +302,6 @@ export interface EnvState {
 }
 
 /**
- * ExternalPath represents an external library mount point.
- */
-export interface ExternalPath {
-    /**
-     * Absolute path to external library root
-     */
-    "path": string;
-
-    /**
-     * Display name (default basename, user-renameable)
-     */
-    "name": string;
-}
-
-/**
  * ExtractResult holds the result of a zip extraction.
  */
 export interface ExtractResult {
@@ -407,7 +391,7 @@ export interface ModelEntry {
     "category": string;
 
     /**
-     * Source library name: empty for main lib, ExternalPath.Name for externals
+     * Source library name (empty for main lib)
      */
     "source": string;
 }

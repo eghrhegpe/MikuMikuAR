@@ -7,7 +7,6 @@ import {
     SetResourceRoot,
     SetOverridePath,
     SetStorageMode,
-    GetStorageMode,
     SelectDir,
     SelectImportFile,
     ImportZip,
@@ -33,10 +32,7 @@ import {
     setResourceRoot,
     setAllModels,
     allModels,
-    setExternalPaths,
     setOverridePaths,
-    overridePaths,
-    externalPaths,
     LibraryModel,
     PopupRow,
     PopupLevel,
@@ -69,7 +65,6 @@ import { loadManager } from '../core/load-manager';
 import { removeModel } from '../scene/scene';
 import { addVmdLayerFromPath } from '../scene/motion/vmd-layers';
 import { loadVPDPose } from '../scene/scene';
-import { SelectAudioFile, SelectVMDMotion, SelectVPDPose } from '../core/wails-bindings';
 import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
 import { SlideMenu } from './menu';
@@ -79,7 +74,6 @@ import {
     createResourcePanel,
     openFullscreen,
     closeFullscreen,
-    getCurrentState,
     setCurrentState,
 } from '../core/ui-helpers';
 import type { ResourceItem } from '../core/ui-helpers';
@@ -327,15 +321,13 @@ export async function prepareModelRestore(
     pendingFocusModel = focusModel
         ? { dir: normPath(focusModel.dir), rowKey: 'model:' + focusModel.file_path }
         : null;
-    if (import.meta.env.DEV) {
-        console.log('[restore] prepare', {
-            category,
-            restoreTarget,
-            fromRecentModel,
-            pendingAutoExpand,
-            focusRowKey: pendingFocusModel?.rowKey,
-        });
-    }
+    logWarn('library-core', '[restore] prepare', {
+        category,
+        restoreTarget,
+        fromRecentModel,
+        pendingAutoExpand,
+        focusRowKey: pendingFocusModel?.rowKey,
+    });
 }
 
 const makeModelMenu = (container: HTMLElement): SlideMenu => {
@@ -416,7 +408,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     t('library.title'),
                     (m) => m.format === 'pmx',
                     stackRegistry.modelStack!,
-                    externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+                    []
                 );
             }
             if (isModelDirTarget(row.target)) {
@@ -493,15 +485,12 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 // 立即消费剩余段，避免本层动画结束后的 onLevelEnter 重复展开
                 pendingAutoExpand =
                     pendingAutoExpand.length > 1 ? pendingAutoExpand.slice(1) : null;
-                if (import.meta.env.DEV) {
-                    // 捕获 race：若 transitioning 为 true，下方 push 会被 menu.ts:180 静默丢弃（停在根）
-                    console.log('[restore] autoExpand push', {
-                        from: dir,
-                        seg,
-                        nextDir,
-                        transitioning: menu.isTransitioning,
-                    });
-                }
+                logWarn('library-core', '[restore] autoExpand push', {
+        from: dir,
+        seg,
+        nextDir,
+        transitioning: menu.isTransitioning,
+    });
                 // 与 root 层保持一致：第 4 参用 modelStack（即当前 SlideMenu 实例），并传入外部路径项
                 menu.push(
                     buildLevel(
@@ -509,7 +498,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                         seg,
                         (m) => m.format === 'pmx',
                         stackRegistry.modelStack!,
-                        externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+                        []
                     )
                 );
                 return;
@@ -725,8 +714,8 @@ export function buildLevel(
         const mdir = normPath(m.dir);
         const rel = getRelativePathUnderDir(mdir, dir);
         if (rel === null) {
-            if (import.meta.env.DEV && items.length === 0 && subdirs.size === 0) {
-                console.log('[buildLevel] path mismatch:', { mdir, dir, sample: m.file_path });
+            if (items.length === 0 && subdirs.size === 0) {
+                logWarn('library-core', '[buildLevel] path mismatch:', { mdir, dir, sample: m.file_path });
             }
             continue;
         }
@@ -781,9 +770,7 @@ export function buildLevel(
         });
     }
 
-    if (import.meta.env.DEV) {
-        console.log('[buildLevel] items.length:', items.length, 'subdirs.size:', subdirs.size);
-    }
+    logWarn('library-core', '[buildLevel] items.length:', { itemsLength: items.length, subdirsSize: subdirs.size });
     return {
         label,
         dir,
@@ -962,12 +949,7 @@ function addListViewToolbar(
     allResourceItems: ResourceItem[]
 ): void {
     const toolbar = document.createElement('div');
-    toolbar.style.cssText = `
-        display: flex;
-        gap: 8px;
-        padding: 8px 12px;
-        border-bottom: 1px solid var(--white-06);
-    `;
+    toolbar.className = 'toolbar';
 
     const gridBtn = document.createElement('button');
     gridBtn.className = 'btn btn-ghost btn-sm' + (resourceViewMode === 'grid' ? ' btn-active' : '');
@@ -1078,12 +1060,7 @@ function renderGridMode(
     cardContainer(container, (card) => {
         // 视图切换按钮
         const toolbar = document.createElement('div');
-        toolbar.style.cssText = `
-            display: flex;
-            gap: 8px;
-            padding: 8px 12px;
-            border-bottom: 1px solid var(--white-06);
-        `;
+        toolbar.className = 'toolbar';
 
         const gridBtn = document.createElement('button');
         gridBtn.className =
@@ -1366,7 +1343,7 @@ function onModelRowClick(m: LibraryModel): void {
                                 t('model-detail.replaceModelTo', { name: newName }),
                                 filter,
                                 stackRegistry.modelStack!,
-                                externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+                                []
                             )
                         );
                         setStatus(t('status.done'), true);
@@ -1582,14 +1559,7 @@ export function buildModelRootItems(): PopupRow[] {
 
     // 已加载的角色模型
     const actors = Array.from(modelRegistry.entries()).filter(([, inst]) => inst.kind === 'actor');
-    console.log(
-        '[buildModelRootItems] actors:',
-        actors.length,
-        'allModels:',
-        allModels.length,
-        'libraryRoot:',
-        libraryRoot
-    );
+    logWarn('library-core', '[buildModelRootItems] actors:', { actorsLength: actors.length, allModelsLength: allModels.length, libraryRoot });
     for (const [id, inst] of actors) {
         items.push({
             kind: 'folder',
@@ -1676,9 +1646,7 @@ export async function initLibrary(): Promise<void> {
         }
         setLibraryRoot(cfgRoot);
         setResourceRoot(cfgRoot);
-        setExternalPaths(cfg.external_paths || []);
         setOverridePaths(cfg.override_paths || {});
-        setExternalPaths(cfg.external_paths || []);
         if (cfg.display_name_priority) {
             setDisplayNamePriority(cfg.display_name_priority as DisplayNamePriority);
         }
@@ -1771,24 +1739,24 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
     if (!isAndroidPlatform()) {
         return;
     }
-    console.log('[switchStorageMode] 1: confirm dialog');
+    logWarn('library-core', '[switchStorageMode] 1: confirm dialog');
     const ok = await showConfirm(
         mode === 'shared' ? t('library.confirmSwitchShared') : t('library.confirmSwitchPrivate'),
         t('library.confirmSwitchTitle')
     );
     if (!ok) {
-        console.log('[switchStorageMode] cancelled');
+        logWarn('library-core', '[switchStorageMode] cancelled');
         return;
     }
-    console.log('[switchStorageMode] 2: confirmed, calling SetStorageMode');
+    logWarn('library-core', '[switchStorageMode] 2: confirmed, calling SetStorageMode');
     try {
-        console.log('[switchStorageMode] 3: SetStorageMode start');
+        logWarn('library-core', '[switchStorageMode] 3: SetStorageMode start');
         await SetStorageMode(mode);
-        console.log('[switchStorageMode] 4: reloadConfig start');
+        logWarn('library-core', '[switchStorageMode] 4: reloadConfig start');
         await reloadConfig();
-        console.log('[switchStorageMode] 5: refreshLibrary start');
+        logWarn('library-core', '[switchStorageMode] 5: refreshLibrary start');
         await refreshLibrary();
-        console.log('[switchStorageMode] 6: all done');
+        logWarn('library-core', '[switchStorageMode] 6: all done');
     } catch (err) {
         console.error('[switchStorageMode] failed:', err);
         setStatus(
@@ -1797,26 +1765,25 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
         );
         throw err;
     }
-    console.log('[switchStorageMode] 8: success');
+    logWarn('library-core', '[switchStorageMode] 8: success');
 }
 
-export async function rescanAndSync(dir?: string): Promise<LibraryModel[]> {
-    const models = (await ScanModelDir('', externalPaths)) || [];
+export async function rescanAndSync(): Promise<LibraryModel[]> {
+    const models = (await ScanModelDir()) || [];
     setAllModels(models);
     return models;
 }
 
 export async function reloadConfig(): Promise<void> {
-    console.log('[reloadConfig] GetConfig start');
+    logWarn('library-core', '[reloadConfig] GetConfig start');
     const cfg = await GetConfig();
-    console.log('[reloadConfig] GetConfig done, root:', cfg?.resource_root);
+    logWarn('library-core', '[reloadConfig] GetConfig done', { root: cfg?.resource_root });
     if (cfg) {
         setResourceRoot(cfg.resource_root || '');
         setLibraryRoot(cfg.resource_root || cfg.override_paths?.pmx || '');
         setOverridePaths(cfg.override_paths || {});
-        setExternalPaths(cfg.external_paths || []);
     }
-    console.log('[reloadConfig] state updated');
+    logWarn('library-core', '[reloadConfig] state updated');
 }
 
 function getCurrentBrowsePath(): string[] {
@@ -1910,7 +1877,7 @@ export async function refreshLibrary(): Promise<void> {
                 t('library.title'),
                 (m) => m.format === 'pmx',
                 stackRegistry.modelStack!,
-                externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+                []
             );
             stackRegistry.modelStack!.push(rootLevel);
             restoreBrowsePath(prevPath);

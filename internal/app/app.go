@@ -289,7 +289,7 @@ type ModelEntry struct {
 	Container string `json:"container"` // "file" | "zip"
 	ZipInner  string `json:"zip_inner"` // Relative path inside zip (only for container=zip)
 	Category  string `json:"category"`  // DanceXR top-level category dir name (empty if none)
-	Source    string `json:"source"`    // Source library name: empty for main lib, ExternalPath.Name for externals
+	Source    string `json:"source"` // Source library name (empty for main lib)
 }
 
 // SoftwareEntry represents an executable found in the software/ directory or user-added.
@@ -308,12 +308,6 @@ type ModelMeta struct {
 	NameJp  string `json:"name_jp"`
 	NameEn  string `json:"name_en"`
 	Comment string `json:"comment"` // PMX header: local comment (truncated)
-}
-
-// ExternalPath represents an external library mount point.
-type ExternalPath struct {
-	Path string `json:"path"` // Absolute path to external library root
-	Name string `json:"name"` // Display name (default basename, user-renameable)
 }
 
 // DanceSet represents a dance set combining VMD motion, audio, and metadata.
@@ -402,8 +396,7 @@ type Config struct {
 	LibraryRoot              string              `json:"library_root,omitempty"` // 迁移后清空，保留字段用于自动迁移
 	ResourceRoot             string              `json:"resource_root"`          // 总根目录
 	StorageMode              string              `json:"storage_mode"`           // "private" | "shared" (Android only)
-	OverridePaths            OverridePaths       `json:"override_paths"`         // 各类型路径覆写
-	ExternalPaths            []ExternalPath      `json:"external_paths"`
+	OverridePaths            OverridePaths       `json:"override_paths"` // 各类型路径覆写
 	BlenderPath              string              `json:"blender_path"`
 	DisplayNamePriority      string              `json:"display_name_priority"`                // "name_jp" | "name_en" | "filename"
 	DownloadWatchDir         string              `json:"download_watch_dir"`                   // 监听目录，空则不监听
@@ -582,9 +575,13 @@ func configDir() (string, error) {
 
 // settingDir returns the setting subdirectory under the resource root, or falls back to configDir.
 // config.json and index.json are stored here when ResourceRoot is configured.
+// Respects OverridePaths.Setting if set (same behaviour as GetPath).
 func settingDir(cfg *Config) (string, error) {
 	if cfg != nil && cfg.ResourceRoot != "" {
-		d := filepath.Join(cfg.ResourceRoot, "setting")
+		d := cfg.OverridePaths.Setting
+		if d == "" {
+			d = filepath.Join(cfg.ResourceRoot, "setting")
+		}
 		if err := os.MkdirAll(d, 0755); err != nil {
 			return "", fmt.Errorf("create setting dir %s: %w", d, err)
 		}
@@ -723,15 +720,34 @@ func (a *App) SetLastBrowseDir(category, dir string) error {
 }
 
 // ensureResourceDirs creates the default subdirectories under ResourceRoot if they don't exist.
+// Only creates directories whose override path is empty — categories with explicit overrides
+// manage their own location and should not leave empty ghost folders at the default location.
 func (a *App) ensureResourceDirs(cfg *Config) {
 	root := cfg.ResourceRoot
 	if root == "" {
 		root = DefaultResourceRoot()
 		cfg.ResourceRoot = root
 	}
-	dirs := []string{"PMX", "VMD", "audio", "stage", "prop", "environment", "MD-dress", "setting"}
-	for _, d := range dirs {
-		os.MkdirAll(filepath.Join(root, d), 0755)
+	type catDef struct {
+		override *string
+		subdir   string
+	}
+	defs := []catDef{
+		{&cfg.OverridePaths.PMX, "PMX"},
+		{&cfg.OverridePaths.VMD, "VMD"},
+		{&cfg.OverridePaths.Audio, "audio"},
+		{&cfg.OverridePaths.Stage, "stage"},
+		{&cfg.OverridePaths.Prop, "prop"},
+		{&cfg.OverridePaths.Environment, "environment"},
+		{&cfg.OverridePaths.MDDress, "MD-dress"},
+		{&cfg.OverridePaths.Setting, "setting"},
+	}
+	for _, d := range defs {
+		target := *d.override
+		if target == "" {
+			target = filepath.Join(root, d.subdir)
+		}
+		os.MkdirAll(target, 0755)
 	}
 }
 
