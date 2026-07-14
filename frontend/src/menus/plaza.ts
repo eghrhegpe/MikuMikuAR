@@ -34,6 +34,12 @@ import { addDisposableListener, type Disposable } from '../core/dom';
 
 const CUSTOM_SITES_PATH = 'plaza_sites.json';
 
+function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c] ?? c);
+}
+
 const L = {
     title: '模型广场',
     openInBrowser: '在浏览器打开',
@@ -136,31 +142,81 @@ function hasSiteOverride(site: PlazaSite): boolean {
 let allSites: PlazaSite[] = [];
 let allCreators: PlazaCreator[] = [];
 
+function normalizeSite(raw: any): PlazaSite | null {
+    if (!raw || !raw.id) return null;
+    const name = raw.name || raw.label || raw.id;
+    const url = raw.url || '';
+    if (!name || !url) return null;
+    const mode: 'embed' | 'external' = raw.mode === 'embed' ? 'embed' : 'external';
+    let icon = raw.icon;
+    if (icon && /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]$/u.test(icon)) {
+        icon = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><text y=%2220%22 font-size=%2220%22>${icon}</text></svg>`;
+    }
+    return {
+        id: raw.id,
+        name,
+        url,
+        mode,
+        icon: icon || 'lucide:globe',
+        desc: raw.desc || '',
+        group: raw.group || 'search',
+        searchUrl: raw.searchUrl,
+        presetSearches: raw.presetSearches || [],
+    };
+}
+
+function normalizeCreator(raw: any): PlazaCreator | null {
+    if (!raw || !raw.name) return null;
+    const site = raw.site || raw.type || '';
+    if (!site) return null;
+    let tag = raw.tag || raw.role || 'creator';
+    if (tag === 'repo') tag = 'creator';
+    if (!['official', 'creator', 'vup', 'oc'].includes(tag)) tag = 'creator';
+    const primarySite = (site as string).split(';')[0];
+    return {
+        name: raw.name,
+        desc: raw.desc || '',
+        tag: tag as PlazaCreator['tag'],
+        tier: raw.tier || undefined,
+        site: primarySite,
+    };
+}
+
 async function loadCustomSites(): Promise<PlazaSite[]> {
     try {
         const content = await ReadTextFile(CUSTOM_SITES_PATH);
-        const json = JSON.parse(content) as PlazaSite[];
-        return json.filter((s) => s.id && s.name && s.url && s.mode);
+        const arr = JSON.parse(content) as any[];
+        return arr.map(normalizeSite).filter(Boolean) as PlazaSite[];
     } catch {
         return [];
     }
+}
+
+function mergeSites(base: PlazaSite[], extras: PlazaSite[]): PlazaSite[] {
+    const map = new Map<string, PlazaSite>();
+    for (const s of base) map.set(s.id, s);
+    for (const s of extras) {
+        if (!map.has(s.id)) map.set(s.id, s);
+    }
+    return Array.from(map.values());
 }
 
 async function loadCachedConfig(): Promise<void> {
     try {
         const [crJson, stJson] = await GetCachedPlazaConfig();
         if (stJson) {
-            const remote = JSON.parse(stJson) as PlazaSite[];
-            const builtinIds = new Set(PLAZA_SITES.map((s) => s.id));
-            const merged = [...PLAZA_SITES, ...remote.filter((s) => s.id && s.name && s.url && s.mode && !builtinIds.has(s.id))];
+            const raw = JSON.parse(stJson) as any[];
+            const remote = raw.map(normalizeSite).filter(Boolean) as PlazaSite[];
+            const merged = mergeSites(PLAZA_SITES, remote);
             if (merged.length > 0) allSites = merged;
         }
         if (crJson) {
-            const remote = JSON.parse(crJson) as PlazaCreator[];
+            const raw = JSON.parse(crJson) as any[];
+            const remote = raw.map(normalizeCreator).filter(Boolean) as PlazaCreator[];
             if (remote.length > 0) allCreators = remote;
         }
     } catch {
-        // cache miss or parse error — fall through to built-in data
+        // fall through
     }
 }
 
@@ -168,14 +224,11 @@ async function ensureSitesLoaded(): Promise<void> {
     if (allSites.length > 0) {
         return;
     }
-    // 1. try local cache from previous remote fetch
     await loadCachedConfig();
     if (allSites.length > 0) return;
 
-    // 2. fall back to built-in + custom file
     const custom = await loadCustomSites();
-    const builtinIds = new Set(PLAZA_SITES.map((s) => s.id));
-    allSites = [...PLAZA_SITES, ...custom.filter((s) => !builtinIds.has(s.id))];
+    allSites = mergeSites(PLAZA_SITES, custom);
     allCreators = [...PLAZA_CREATORS];
 }
 
@@ -191,7 +244,8 @@ function buildPresetTags(site: PlazaSite): HTMLElement | null {
         tag.textContent = p.label;
         tag.onclick = (e) => {
             e.stopPropagation();
-            const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(p.q));
+            const keyword = p.q || p.label;
+            const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(keyword));
             if (url) {
                 const mode = effectiveMode(site);
                 if (mode === 'external') {
@@ -249,137 +303,245 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
     const container = document.createElement('div');
     container.className = 'plaza-site-content';
 
-    if (site.presetSearches && site.presetSearches.length > 0) {
-        const section = document.createElement('div');
-        section.className = 'plaza-section';
+    const presets = site.presetSearches || [];
+    const searchSection = document.createElement('div');
+    searchSection.className = 'plaza-section';
 
-        const sectionHeader = document.createElement('div');
-        sectionHeader.className = 'plaza-section-header';
+    const searchHeader = document.createElement('div');
+    searchHeader.className = 'plaza-section-header';
+    const searchTitle = document.createElement('div');
+    searchTitle.className = 'plaza-section-title';
+    searchTitle.innerHTML = `<iconify-icon icon="lucide:search"></iconify-icon><span>网页搜索词</span><span class="plaza-section-sub">(${presets.length})</span>`;
+    searchHeader.appendChild(searchTitle);
 
-        const sectionTitle = document.createElement('div');
-        sectionTitle.className = 'plaza-section-title';
-        sectionTitle.innerHTML = `<iconify-icon icon="lucide:search"></iconify-icon><span>网页搜索词</span><span class="plaza-section-sub">(${site.presetSearches.length})</span>`;
-        sectionHeader.appendChild(sectionTitle);
+    const searchActions = document.createElement('div');
+    searchActions.className = 'plaza-section-actions';
+    const moreBtn = document.createElement('button');
+    moreBtn.className = 'plaza-btn';
+    moreBtn.innerHTML = `<iconify-icon icon="lucide:more-horizontal"></iconify-icon>`;
+    moreBtn.onclick = (e) => {
+        e.stopPropagation();
+        showActionsMenu(site, moreBtn);
+    };
+    searchActions.appendChild(moreBtn);
+    searchHeader.appendChild(searchActions);
+    searchSection.appendChild(searchHeader);
 
-        const sectionActions = document.createElement('div');
-        sectionActions.className = 'plaza-section-actions';
-
-        const moreBtn = document.createElement('button');
-        moreBtn.className = 'plaza-btn';
-        moreBtn.innerHTML = `<iconify-icon icon="lucide:more-horizontal"></iconify-icon>`;
-        moreBtn.onclick = (e) => {
-            e.stopPropagation();
-            showActionsMenu(site, moreBtn);
-        };
-        sectionActions.appendChild(moreBtn);
-
-        sectionHeader.appendChild(sectionActions);
-        section.appendChild(sectionHeader);
-
+    if (presets.length > 0) {
         const presetArea = document.createElement('div');
         presetArea.className = 'plaza-preset-area';
-
-        for (const ps of site.presetSearches) {
+        for (const ps of presets) {
             const btn = document.createElement('button');
             btn.className = 'plaza-preset-btn';
             btn.textContent = ps.label;
             btn.onclick = () => {
-                const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(ps.q ?? ''));
+                const keyword = ps.q || ps.label;
+                const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(keyword));
                 if (url) {
                     openSiteByMode(site, url);
                 }
             };
             presetArea.appendChild(btn);
         }
-
-        section.appendChild(presetArea);
-        container.appendChild(section);
+        searchSection.appendChild(presetArea);
+    } else {
+        const empty = document.createElement('div');
+        empty.className = 'plaza-empty';
+        empty.innerHTML = `<iconify-icon icon="lucide:search-x"></iconify-icon><span>暂无预设搜索词</span>`;
+        searchSection.appendChild(empty);
     }
+    container.appendChild(searchSection);
 
     // ── 创作者频道 ──
     const siteCreators = allCreators.filter(c => c.site === site.id);
-    if (siteCreators.length > 0) {
-        const section = document.createElement('div');
-        section.className = 'plaza-section';
+    const creatorSection = document.createElement('div');
+    creatorSection.className = 'plaza-section';
 
-        const sectionHeader = document.createElement('div');
-        sectionHeader.className = 'plaza-section-header';
+    const creatorHeader = document.createElement('div');
+    creatorHeader.className = 'plaza-section-header';
+    const creatorTitle = document.createElement('div');
+    creatorTitle.className = 'plaza-section-title';
+    creatorTitle.innerHTML = `<iconify-icon icon="lucide:users"></iconify-icon><span>活跃创作者</span><span class="plaza-section-sub">(${siteCreators.length})</span>`;
+    creatorHeader.appendChild(creatorTitle);
 
-        const sectionTitle = document.createElement('div');
-        sectionTitle.className = 'plaza-section-title';
-        sectionTitle.innerHTML = `<iconify-icon icon="lucide:users"></iconify-icon><span>活跃创作者</span><span class="plaza-section-sub">(${siteCreators.length})</span>`;
-        sectionHeader.appendChild(sectionTitle);
-
-        const sectionActions = document.createElement('div');
-        sectionActions.className = 'plaza-section-actions';
-        const updateBtn = document.createElement('button');
-        updateBtn.className = 'plaza-btn plaza-update-btn';
-        updateBtn.innerHTML = `<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>`;
-        updateBtn.onclick = async () => {
-            updateBtn.disabled = true;
-            updateBtn.innerHTML = `<iconify-icon icon="lucide:loader-2" class="plaza-spin"></iconify-icon><span>更新中...</span>`;
-            try {
-                const [crJson, stJson] = await FetchPlazaConfig();
-                if (stJson) {
-                    const remote = JSON.parse(stJson) as PlazaSite[];
-                    const builtinIds = new Set(PLAZA_SITES.map((s) => s.id));
-                    allSites = [...PLAZA_SITES, ...remote.filter((s) => s.id && s.name && s.url && s.mode && !builtinIds.has(s.id))];
-                }
-                if (crJson) {
-                    allCreators = JSON.parse(crJson) as PlazaCreator[];
-                }
-                renderHome();
-            } catch (e) {
-                showErrorToast(`更新失败: ${e instanceof Error ? e.message : String(e)}`);
-            } finally {
-                updateBtn.disabled = false;
-                updateBtn.innerHTML = `<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>`;
+    const creatorActions = document.createElement('div');
+    creatorActions.className = 'plaza-section-actions';
+    const updateBtn = document.createElement('button');
+    updateBtn.className = 'plaza-btn plaza-update-btn';
+    updateBtn.innerHTML = `<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>`;
+    updateBtn.onclick = async () => {
+        updateBtn.disabled = true;
+        updateBtn.innerHTML = `<iconify-icon icon="lucide:loader-2" class="plaza-spin"></iconify-icon><span>更新中...</span>`;
+        try {
+            const [crJson, stJson] = await FetchPlazaConfig();
+            if (stJson) {
+                const raw = JSON.parse(stJson) as any[];
+                const remote = raw.map(normalizeSite).filter(Boolean) as PlazaSite[];
+                allSites = mergeSites(PLAZA_SITES, remote);
             }
-        };
-        sectionActions.appendChild(updateBtn);
-        sectionHeader.appendChild(sectionActions);
+            if (crJson) {
+                const raw = JSON.parse(crJson) as any[];
+                allCreators = raw.map(normalizeCreator).filter(Boolean) as PlazaCreator[];
+            }
+            if (!allSites.some(s => s.id === currentSiteId)) {
+                currentSiteId = allSites[0]?.id || '';
+            }
+            renderHome();
+        } catch (e) {
+            showErrorToast(`更新失败: ${e instanceof Error ? e.message : String(e)}`);
+        } finally {
+            updateBtn.disabled = false;
+            updateBtn.innerHTML = `<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>`;
+        }
+    };
+    creatorActions.appendChild(updateBtn);
+    creatorHeader.appendChild(creatorActions);
+    creatorSection.appendChild(creatorHeader);
 
-        section.appendChild(sectionHeader);
+    if (siteCreators.length > 0) {
 
-        // tag 过滤行
-        const tags: { key: string; label: string }[] = [
-            { key: '', label: '全部' },
-            { key: 'official', label: '官方IP' },
-            { key: 'creator', label: '创作者' },
-            { key: 'vup', label: 'VUP' },
-            { key: 'oc', label: 'OC' },
+        const searchRow = document.createElement('div');
+        searchRow.className = 'plaza-creator-search-row';
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'plaza-creator-search';
+        searchInput.placeholder = '搜创作者名...';
+        searchRow.appendChild(searchInput);
+        creatorSection.appendChild(searchRow);
+
+        const tags: { key: string; label: string; icon: string }[] = [
+            { key: '', label: '全部', icon: 'lucide:target' },
+            { key: 'official', label: '官方IP', icon: 'lucide:building-2' },
+            { key: 'creator', label: '创作者', icon: 'lucide:paintbrush' },
+            { key: 'vup', label: 'VUP', icon: 'lucide:mic' },
+            { key: 'oc', label: 'OC', icon: 'lucide:sparkles' },
         ];
         const tagRow = document.createElement('div');
         tagRow.className = 'plaza-tag-filter-row';
 
         let activeTag = '';
-        const creatorArea = document.createElement('div');
-        creatorArea.className = 'plaza-creator-area';
+        let searchKw = '';
+        const creatorGrid = document.createElement('div');
+        creatorGrid.className = 'plaza-creator-grid';
+
+        function isFaved(name: string): boolean {
+            try {
+                const favs = JSON.parse(localStorage.getItem('miku.plaza.favCreators') || '[]') as string[];
+                return favs.includes(name);
+            } catch {
+                return false;
+            }
+        }
+
+        function toggleFav(name: string): boolean {
+            try {
+                const favs = JSON.parse(localStorage.getItem('miku.plaza.favCreators') || '[]') as string[];
+                const idx = favs.indexOf(name);
+                if (idx >= 0) {
+                    favs.splice(idx, 1);
+                } else {
+                    favs.unshift(name);
+                }
+                localStorage.setItem('miku.plaza.favCreators', JSON.stringify(favs));
+                return idx < 0;
+            } catch {
+                return false;
+            }
+        }
+
+        function getFilteredCreators(): PlazaCreator[] {
+            const kw = searchKw.trim().toLowerCase();
+            let list = activeTag
+                ? siteCreators.filter(c => c.tag === activeTag)
+                : [...siteCreators];
+            const favMap = new Map<string, number>();
+            list.forEach((c, i) => favMap.set(c.name, isFaved(c.name) ? 1 : 0));
+            list.sort((a, b) => {
+                const af = favMap.get(a.name) ?? 0;
+                const bf = favMap.get(b.name) ?? 0;
+                if (af !== bf) return bf - af;
+                const at = a.tier === 'gold' ? 0 : a.tier === 'silver' ? 1 : 2;
+                const bt = b.tier === 'gold' ? 0 : b.tier === 'silver' ? 1 : 2;
+                return at - bt;
+            });
+            if (kw) {
+                list = list.filter(c =>
+                    c.name.toLowerCase().includes(kw) ||
+                    c.desc.toLowerCase().includes(kw)
+                );
+            }
+            return list;
+        }
 
         function renderCreators(): void {
-            creatorArea.innerHTML = '';
-            const filtered = activeTag
-                ? siteCreators.filter(c => c.tag === activeTag)
-                : siteCreators;
+            creatorGrid.innerHTML = '';
+            const filtered = getFilteredCreators();
             for (const cr of filtered) {
-                const btn = document.createElement('button');
-                btn.className = 'plaza-creator-btn' + (cr.tier ? ` plaza-creator-${cr.tier}` : '');
-                btn.textContent = cr.name;
-                btn.title = cr.desc;
-                btn.onclick = () => {
+                const card = document.createElement('div');
+                card.className = 'plaza-cr-card';
+                if (cr.tier) card.dataset.tier = cr.tier;
+                card.dataset.tag = cr.tag;
+                card.dataset.name = cr.name;
+
+                const tierBar = cr.tier ? `<div class="plaza-cr-tier-bar"></div>` : '';
+
+                const fav = isFaved(cr.name) ? '★' : '☆';
+
+                const tagIcon = (tags.find(t => t.key === cr.tag)?.icon) ?? 'lucide:user';
+
+                card.innerHTML =
+                    tierBar +
+                    `<div class="plaza-cr-header">
+                        <div class="plaza-cr-avatar-container">
+                            <div class="plaza-cr-avatar-ring` + (cr.tier ? ` plaza-cr-ring-${cr.tier}` : '') + `"></div>
+                            <div class="plaza-cr-avatar plaza-cr-avatar-fb">${cr.name.charAt(0).toUpperCase()}</div>
+                        </div>
+                        <div class="plaza-cr-name-row">
+                            <span class="plaza-cr-name">${escapeHtml(cr.name)}</span>
+                            <span class="plaza-cr-star" data-star="${escapeHtml(cr.name)}">${fav}</span>
+                        </div>
+                    </div>
+                    <div class="plaza-cr-desc">${escapeHtml(cr.desc)}</div>
+                    <div class="plaza-cr-footer">
+                        <span class="plaza-cr-tag plaza-cr-tag-${cr.tag}">
+                            <iconify-icon icon="${tagIcon}" width="10" height="10"></iconify-icon>
+                            <span>${cr.tag}</span>
+                        </span>
+                    </div>`;
+
+                card.addEventListener('click', (e) => {
+                    if ((e.target as HTMLElement).closest('.plaza-cr-star')) return;
                     const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(cr.name));
                     if (url) {
                         openSiteByMode(site, url);
                     }
-                };
-                creatorArea.appendChild(btn);
+                });
+
+                const starBtn = card.querySelector('.plaza-cr-star');
+                starBtn?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const now = toggleFav(cr.name);
+                    (starBtn as HTMLElement).textContent = now ? '★' : '☆';
+                    card.classList.add('plaza-cr-fav-flash');
+                    setTimeout(() => card.classList.remove('plaza-cr-fav-flash'), 300);
+                });
+
+                creatorGrid.appendChild(card);
             }
+
+            const countEl = creatorSection.querySelector('.plaza-section-sub');
+            if (countEl) countEl.textContent = `(${filtered.length}/${siteCreators.length})`;
         }
+
+        searchInput.addEventListener('input', () => {
+            searchKw = searchInput.value;
+            renderCreators();
+        });
 
         for (const t of tags) {
             const btn = document.createElement('button');
             btn.className = 'plaza-tag-btn' + (t.key === '' ? ' active' : '');
-            btn.textContent = t.label;
+            btn.innerHTML = `<iconify-icon icon="${t.icon}" width="12" height="12"></iconify-icon><span>${t.label}</span>`;
             btn.onclick = () => {
                 activeTag = t.key;
                 tagRow.querySelectorAll('.plaza-tag-btn').forEach(b => b.classList.remove('active'));
@@ -389,11 +551,16 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
             tagRow.appendChild(btn);
         }
 
-        section.appendChild(tagRow);
+        creatorSection.appendChild(tagRow);
         renderCreators();
-        section.appendChild(creatorArea);
-        container.appendChild(section);
+        creatorSection.appendChild(creatorGrid);
+    } else {
+        const empty = document.createElement('div');
+        empty.className = 'plaza-empty';
+        empty.innerHTML = `<iconify-icon icon="lucide:user-x"></iconify-icon><span>暂无收录创作者，点击「更新配置」拉取</span>`;
+        creatorSection.appendChild(empty);
     }
+    container.appendChild(creatorSection);
 
     return container;
 }
@@ -573,15 +740,37 @@ function installEventListeners(): void {
     });
 }
 
-async function handlePlazaDownload(url: string, filename: string): Promise<void> {
+async function handlePlazaDownload(
+    url: string,
+    filename: string,
+    signal?: AbortSignal
+): Promise<void> {
+    // [adr-105] AbortSignal：允许外部取消；内部 AbortController 合并外部 signal
+    let abortCtrl: AbortController | undefined;
+    let effectiveSignal: AbortSignal;
+    if (signal) {
+        effectiveSignal = signal;
+    } else {
+        abortCtrl = new AbortController();
+        effectiveSignal = abortCtrl.signal;
+    }
+
     setStatus(t('plaza.downloading', { name: filename }), false, true);
     try {
         // 动态绑定导入：binding 可能尚未生成，失败即失败，不自动降级到浏览器。
         const { DownloadFromPlaza } = await import('../core/wails-bindings');
+        if (effectiveSignal.aborted) {
+            return;
+        }
         if (typeof DownloadFromPlaza !== 'function') {
             throw new Error('binding not available');
         }
+        // [adr-105] 注意：DownloadFromPlaza 是 Wails binding，不支持 AbortSignal。
+        // 取消时只能通过 abortCtrl.abort() 标记状态，让调用方感知"已放弃"。
         const result = await DownloadFromPlaza(url, filename);
+        if (effectiveSignal.aborted) {
+            return;
+        }
         setStatus(
             t('plaza.downloaded', { name: result.fileName, size: (result.size / 1024).toFixed(1) }),
             true
@@ -592,6 +781,8 @@ async function handlePlazaDownload(url: string, filename: string): Promise<void>
             t('plaza.downloadFail', { err: e instanceof Error ? e.message : String(e) }),
             true
         );
+    } finally {
+        abortCtrl?.abort(); // 清理内部 AbortController
     }
 }
 
