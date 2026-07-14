@@ -313,6 +313,14 @@ vi.mock('@/scene/scene', () => ({
     getProcBeatDetector: mockProcBeatDetector,
 }));
 
+// Mock env-bridge to cut the heavy dependency chain:
+// camera.ts imports schedulePersistUI from env-bridge,
+// which would pull in env-impl.ts (1377 lines, @babylonjs/core barrel import)
+// and lighting.ts (1282 lines, multiple Babylon sub-modules).
+vi.mock('../scene/env/env-bridge', () => ({
+    schedulePersistUI: vi.fn(),
+}));
+
 // Also mock the camera module itself with stubs so that if scene.ts
 // manages to load, its import of './camera/camera' won't trigger
 // the circular reference error. We'll use vi.importActual to get

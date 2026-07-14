@@ -138,9 +138,6 @@ export class PlanarReflection {
         const quality = this.cfg.getQuality(state);
         const blend = this.cfg.getBlend(state);
         const shouldEnable = quality !== 'off' && blend > 0;
-        console.log(
-            `[groundReflection] update() shouldEnable=${shouldEnable} quality=${quality} blend=${blend}`
-        );
         if (!shouldEnable) {
             this.disable();
             return;
@@ -148,9 +145,6 @@ export class PlanarReflection {
         if (!this.rt) {
             // 被互斥强制停用时禁止主动重建（由 releaseExclusive 清除标志后恢复）
             if (this._mutexDisabled) {
-                console.log(
-                    '[groundReflection] _mutexDisabled=true — 被水面反射互斥抢占，跳过重建'
-                );
                 return;
             }
             this.create(scene, state);
@@ -234,14 +228,12 @@ export class PlanarReflection {
             }
         }
         this.rt.renderList = list;
-        console.log(`[groundReflection] populateRenderList() count=${list.length}`);
     }
 
     private create(scene: Scene, state: EnvState): void {
         const q = this.cfg.getQuality(state);
         const resolution = this.cfg.resolutionMap[q] ?? 256;
         const skip = FRAME_SKIP[q] ?? 999;
-        console.log(`[groundReflection] create() quality=${q} resolution=${resolution} refreshRate=${skip + 1}`);
         if (!resolution) {
             return;
         }

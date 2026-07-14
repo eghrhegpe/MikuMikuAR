@@ -483,9 +483,7 @@ const groundReflection = new PlanarReflection({
         const mesh = _envSys.ground.mesh;
         if (mesh) {
             const n = Vector3.TransformNormal(Vector3.Up(), mesh.getWorldMatrix()).normalize();
-            const plane = Plane.FromPositionAndNormal(mesh.getAbsolutePosition(), n);
-            console.log(`[groundReflection] mirrorPlane normal=(${plane.normal.x.toFixed(2)}, ${plane.normal.y.toFixed(2)}, ${plane.normal.z.toFixed(2)}) d=${plane.d.toFixed(2)}`);
-            return plane;
+            return Plane.FromPositionAndNormal(mesh.getAbsolutePosition(), n);
         }
         return new Plane(0, -1, 0, 0);
     },

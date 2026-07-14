@@ -14,6 +14,7 @@ import {
     SetUIAutoUpdate,
 } from '../core/wails-bindings';
 import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
+import { schedulePersistUI } from '../scene/env/env-bridge';
 import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { Browser } from '@wailsio/runtime';
 import { t } from '../core/i18n/t';
@@ -88,6 +89,7 @@ function importSettings(): void {
                     throw new Error('文件格式不正确');
                 }
                 Object.assign(uiState, parsed);
+                schedulePersistUI();
                 reapplyImportedSettings();
                 // getSettingsMenu will be called via reRender from the caller
                 setStatus(t('settings.imported'), true);
@@ -108,6 +110,7 @@ function resetAllSettings(getSettingsMenu: () => SettingsMenuHandle): void {
     for (const k of Object.keys(uiState)) {
         delete (uiState as Record<string, unknown>)[k];
     }
+    schedulePersistUI();
     reapplyImportedSettings();
     getSettingsMenu()?.reRender();
     setStatus(t('settings.resetToDefault'), true);
