@@ -20,11 +20,7 @@ let audioPath = '';
 function ensurePlayer(): StreamAudioPlayer {
     if (!streamPlayer) {
         streamPlayer = new StreamAudioPlayer(null, { pool: false });
-        // 如果 beatDetector 已注册但错过了 attach 时机（audio.ts 初始化早于 scene.ts），
-        // 在此补桥接
-        if (beatDetector && !beatDetectorAttached) {
-            _tryAttachBeatDetector(streamPlayer);
-        }
+        streamPlayer.volume = getVolume(); // 应用存储音量
     }
     return streamPlayer;
 }
@@ -43,6 +39,10 @@ function _tryAttachBeatDetector(player: StreamAudioPlayer): void {
 export async function playAudio(url: string, name: string): Promise<void> {
     const player = ensurePlayer();
     player.source = url;
+    // _audio 在 source 设置后创建，此时桥接 BeatDetector
+    if (beatDetector && !beatDetectorAttached) {
+        _tryAttachBeatDetector(player);
+    }
     audioName = name;
     audioPath = '';
     try {
@@ -57,6 +57,10 @@ export async function loadAudioFile(filePath: string): Promise<void> {
     const fileName = filePath.split(/[\\/]/).pop() || '';
     const player = ensurePlayer();
     player.source = url;
+    // _audio 在 source 设置后创建，此时桥接 BeatDetector
+    if (beatDetector && !beatDetectorAttached) {
+        _tryAttachBeatDetector(player);
+    }
     audioName = fileName;
     audioPath = filePath;
     // StreamAudioPlayer 内部自动流式加载，无需手动 load()
