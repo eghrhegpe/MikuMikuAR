@@ -1,6 +1,6 @@
 # ADR-101: 通用逻辑模式收敛（第二波）
 
-> **状态**: 规划中
+> **状态**: 实施中（P1-a 已完成：7 函数新增 + 17 单测；P1-b 进行中）
 > **关联**: ADR-096（通用 Helper 单点收敛，第一波）、ADR-095（路径归一化收敛）
 > **影响面**: `frontend/src/core/utils.ts`、`frontend/src/core/dom.ts`、`frontend/src/core/status-bar.ts` 及全仓 ~130 个源文件中约 350+ 处重复模式
 
