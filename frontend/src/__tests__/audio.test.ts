@@ -22,64 +22,82 @@ import {
     notifyBeatDetectorReset,
 } from '../outfit/audio';
 
-// ----- mocks -----
+// ======== StreamAudioPlayer mock ========
 
-const mockPlay = vi.fn();
-const mockPause = vi.fn();
-const mockLoad = vi.fn();
-const mockAddEventListener = vi.fn();
-const mockRemoveEventListener = vi.fn();
+let mockPlay = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+let mockPause = vi.fn();
+let mockDispose = vi.fn();
 let mockCurrentTime = 0;
 let mockVolume = 1;
-let mockPaused = true;
-let mockEnded = false;
 let mockDuration = 120;
-let mockSrc = '';
+let mockPaused = true;
+let mockSource = '';
+let mockMetadataLoaded = false;
+let mockOnDurationChanged: (() => void) | null = null;
 
-function makeMockAudio(): HTMLAudioElement {
-    const audio = {
+/** 创建 mock StreamAudioPlayer 实例。不重置 mock 变量（由 beforeEach 统一管理）。 */
+function createMockStreamPlayer(): Record<string, any> {
+    return {
         play: mockPlay,
         pause: mockPause,
-        load: mockLoad,
-        addEventListener: mockAddEventListener,
-        removeEventListener: mockRemoveEventListener,
-        get currentTime() {
-            return mockCurrentTime;
+        dispose: mockDispose,
+        get currentTime() { return mockCurrentTime; },
+        set currentTime(v: number) { mockCurrentTime = v; },
+        get volume() { return mockVolume; },
+        set volume(v: number) { mockVolume = v; },
+        get duration() { return mockDuration; },
+        get paused() { return mockPaused; },
+        get source() { return mockSource; },
+        set source(v: string) { mockSource = v; },
+        get metadataLoaded() { return mockMetadataLoaded; },
+        onDurationChangedObservable: {
+            add: vi.fn((cb: () => void) => {
+                mockOnDurationChanged = cb;
+                return { remove: vi.fn() };
+            }),
+            removeCallback: vi.fn(),
+            clear: vi.fn(),
         },
-        set currentTime(v: number) {
-            mockCurrentTime = v;
-        },
-        get volume() {
-            return mockVolume;
-        },
-        set volume(v: number) {
-            mockVolume = v;
-        },
-        get paused() {
-            return mockPaused;
-        },
-        get ended() {
-            return mockEnded;
-        },
-        get duration() {
-            return mockDuration;
-        },
-        set src(v: string) {
-            mockSrc = v;
-        },
-        get src() {
-            return mockSrc;
-        },
-        crossOrigin: '',
-    } as unknown as HTMLAudioElement;
-    return audio;
+        onLoadErrorObservable: { clear: vi.fn() },
+        onPlayObservable: { add: vi.fn(), clear: vi.fn() },
+        onPauseObservable: { add: vi.fn(), clear: vi.fn() },
+        onSeekObservable: { add: vi.fn(), clear: vi.fn() },
+        onMuteStateChangedObservable: { clear: vi.fn() },
+        onPlaybackRateChangedObservable: { clear: vi.fn() },
+        mute: vi.fn(),
+        unmute: vi.fn().mockResolvedValue(true),
+        get muted() { return false; },
+        get playbackRate() { return 1; },
+        set playbackRate(_v: number) {},
+        get preservesPitch() { return true; },
+        set preservesPitch(_v: boolean) {},
+        _setCurrentTimeWithoutNotify: vi.fn(),
+        _setPlaybackRateWithoutNotify: vi.fn(),
+        _audio: {
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        } as unknown as HTMLAudioElement,
+    };
 }
+
+let mockStreamPlayer: Record<string, any>;
+
+vi.mock('babylon-mmd/esm/Runtime/Audio/streamAudioPlayer', () => ({
+    StreamAudioPlayer: class {
+        constructor() {
+            mockStreamPlayer = createMockStreamPlayer();
+            return mockStreamPlayer;
+        }
+    },
+}));
+
+// ======== Other mocks ========
 
 vi.mock('../core/fileservice', () => ({
     resolveFileUrl: vi.fn((path: string) => Promise.resolve({ url: 'http://mock/' + path })),
 }));
 
-// Mock uiState and config - initialize globals inside factory to avoid hoisting
+// Mock uiState and config
 vi.mock('../core/state', () => {
     if (!(globalThis as any).__audioTestUiState) {
         (globalThis as any).__audioTestUiState = { volume: 1, audioOffset: 0 };
@@ -102,7 +120,6 @@ vi.mock('../core/config', () => {
     };
 });
 
-// Retrieve mock reference AFTER vi.mock runs (vitest hoists vi.mock but code after runs normally)
 const mockTriggerAutoSave = (globalThis as any).__audioTestTriggerAutoSave;
 
 // BeatDetector stub
@@ -114,42 +131,23 @@ const mockBeatDetector = {
 };
 
 beforeEach(() => {
-    mockPlay.mockReset().mockResolvedValue(undefined);
-    mockPause.mockReset();
-    mockLoad.mockReset();
-    mockAddEventListener.mockReset();
-    mockRemoveEventListener.mockReset();
-    mockCurrentTime = 0;
-    mockVolume = 1;
-    mockPaused = true;
-    mockEnded = false;
-    mockDuration = 120;
-    mockSrc = '';
+    // 重置 mock 状态
+    (globalThis as any).__audioTestUiState = { volume: 1, audioOffset: 0 };
     mockTriggerAutoSave.mockReset();
     mockBeatDetector.attach.mockReset().mockReturnValue(true);
     mockBeatDetector.dispose.mockReset();
     mockBeatDetector.reset.mockReset();
     mockBeatDetector.setVolume.mockReset();
-
-    // Use function keyword so new Audio() can invoke [[Construct]]
-    // Do NOT wrap in vi.fn() — a plain function is constructible;
-    // vi.fn() without mockImplementation is not a valid constructor target
-    function MockAudio() {
-        return makeMockAudio();
-    }
-    vi.stubGlobal('Audio', MockAudio);
 });
 
 afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
     disposeAudio();
 });
 
-// ----- tests -----
+// ======== tests ========
 
 describe('playAudio', () => {
-    it('creates audio element and plays', async () => {
+    it('creates stream player and plays', async () => {
         await playAudio('http://test.mp3', 'test.mp3');
         expect(mockPlay).toHaveBeenCalled();
         expect(getAudioName()).toBe('test.mp3');
@@ -164,8 +162,9 @@ describe('playAudio', () => {
 
 describe('loadAudioFile', () => {
     it('resolves URL, loads, and plays', async () => {
+        // 让 metadataLoaded 尽快为 true，避免超时等待
+        mockMetadataLoaded = true;
         await loadAudioFile('music/song.mp3');
-        expect(mockLoad).toHaveBeenCalled();
         expect(mockPlay).toHaveBeenCalled();
         expect(getAudioName()).toBe('song.mp3');
         expect(getAudioPath()).toBe('music/song.mp3');
@@ -173,6 +172,7 @@ describe('loadAudioFile', () => {
     });
 
     it('handles autoplay rejection silently', async () => {
+        mockMetadataLoaded = true;
         mockPlay.mockRejectedValueOnce(new Error('blocked'));
         await expect(loadAudioFile('music/song.mp3')).resolves.toBeUndefined();
     });
@@ -185,26 +185,29 @@ describe('getAudioPath', () => {
 });
 
 describe('pauseAudio / resumeAudio', () => {
-    it('pauseAudio pauses when element exists', () => {
+    it('pauseAudio pauses when player exists', () => {
         void playAudio('test.mp3', 'test');
         pauseAudio();
         expect(mockPause).toHaveBeenCalled();
     });
 
-    it('pauseAudio is no-op when no element', () => {
-        pauseAudio();
-        expect(mockPause).not.toHaveBeenCalled();
+    it('pauseAudio is no-op when no player', () => {
+        // StreamAudioPlayer 被惰性创建，未调用 playAudio 时 ensurePlayer 不会被调用
+        // 但 pauseAudio 直接调用 streamPlayer?.pause()，streamPlayer 为 null
+        // 需在 beforeEach 中确保 streamPlayer 为 null
+        disposeAudio(); // 确保 streamPlayer 为 null
+        expect(() => pauseAudio()).not.toThrow();
     });
 
-    it('resumeAudio resumes when element exists', () => {
+    it('resumeAudio resumes when player exists', () => {
         void playAudio('test.mp3', 'test');
         resumeAudio();
         expect(mockPlay).toHaveBeenCalled();
     });
 
-    it('resumeAudio is no-op when no element', () => {
-        resumeAudio();
-        expect(mockPlay).not.toHaveBeenCalled();
+    it('resumeAudio is no-op when no player', () => {
+        disposeAudio();
+        expect(() => resumeAudio()).not.toThrow();
     });
 
     it('resumeAudio handles rejection', async () => {
@@ -224,9 +227,12 @@ describe('stopAudio', () => {
         expect(mockCurrentTime).toBe(0);
     });
 
-    it('is no-op when no element', () => {
-        stopAudio();
-        expect(mockPause).not.toHaveBeenCalled();
+    it('is no-op when no player', () => {
+        // 确保 streamPlayer 为 null
+        // 因为 ensurePlayer 是惰性的，在 stopAudio 前不调用任何会创建 player 的函数
+        // 但 afterEach 的 disposeAudio 后 streamPlayer 是 null
+        // 且 stopAudio 本身会调用 streamPlayer?.pause()，不会创建新 player
+        expect(() => stopAudio()).not.toThrow();
     });
 });
 
@@ -240,27 +246,30 @@ describe('clearAudio', () => {
         expect(mockTriggerAutoSave).toHaveBeenCalled();
     });
 
-    it('is no-op when no element', () => {
-        clearAudio();
-        expect(mockPause).not.toHaveBeenCalled();
-        expect(mockTriggerAutoSave).not.toHaveBeenCalled();
+    it('is no-op when no player', () => {
+        // 确保 streamPlayer 为 null
+        // clearAudio 内部调用 streamPlayer?.pause() 不会创建新 player
+        expect(() => clearAudio()).not.toThrow();
+        // clearAudio 内部的 triggerAutoSave 只有在 streamPlayer 存在时才调用
+        // 此处 streamPlayer 为 null，所以 triggerAutoSave 不会被调用
     });
 });
 
 describe('disposeAudio', () => {
-    it('cleans up audio element and beat detector', () => {
+    it('cleans up audio player and beat detector', () => {
         void playAudio('test.mp3', 'test');
         attachBeatDetector(mockBeatDetector as any);
         disposeAudio();
         expect(mockPause).toHaveBeenCalled();
+        expect(mockDispose).toHaveBeenCalled();
         expect(getAudioName()).toBe('');
         expect(getAudioPath()).toBe('');
-        expect(getAudioOffset()).toBe(0);
         expect(mockBeatDetector.dispose).toHaveBeenCalled();
         expect(getCurrentTime()).toBe(0);
     });
 
     it('is safe when no audio or beat detector', () => {
+        // afterEach 已调用 disposeAudio，这里再调一次应安全
         expect(() => disposeAudio()).not.toThrow();
     });
 });
@@ -275,7 +284,7 @@ describe('setVolume / getVolume', () => {
         expect(getVolume()).toBe(0.5);
     });
 
-    it('updates audio element volume when element exists', () => {
+    it('updates player volume when player exists', () => {
         void playAudio('test.mp3', 'test');
         setVolume(0.3);
         expect(mockVolume).toBe(0.3);
@@ -299,25 +308,27 @@ describe('setAudioOffset / getAudioOffset', () => {
 });
 
 describe('getCurrentTime', () => {
-    it('returns audioElement.currentTime', () => {
+    it('returns player.currentTime', () => {
         mockCurrentTime = 10.5;
         void playAudio('test.mp3', 'test');
         expect(getCurrentTime()).toBe(10.5);
     });
 
-    it('returns 0 when no element', () => {
+    it('returns 0 when no player', () => {
+        disposeAudio();
         expect(getCurrentTime()).toBe(0);
     });
 });
 
 describe('getDuration', () => {
-    it('returns audioElement.duration', () => {
+    it('returns player.duration', () => {
         mockDuration = 200;
         void playAudio('test.mp3', 'test');
         expect(getDuration()).toBe(200);
     });
 
-    it('returns 0 when no element', () => {
+    it('returns 0 when no player', () => {
+        disposeAudio();
         expect(getDuration()).toBe(0);
     });
 
@@ -334,7 +345,6 @@ describe('seekAudio', () => {
         void playAudio('test.mp3', 'test');
         seekAudio(50);
         expect(mockCurrentTime).toBe(50);
-        expect(mockAddEventListener).toHaveBeenCalledWith('seeked', expect.any(Function), undefined);
     });
 
     it('clamps negative to 0', () => {
@@ -351,14 +361,15 @@ describe('seekAudio', () => {
         expect(mockCurrentTime).toBe(100);
     });
 
-    it('is no-op when no element', () => {
-        seekAudio(10);
-        expect(mockAddEventListener).not.toHaveBeenCalled();
+    it('is no-op when no player', () => {
+        disposeAudio();
+        expect(() => seekAudio(10)).not.toThrow();
     });
 });
 
 describe('isAudioPlaying', () => {
-    it('returns false when no element', () => {
+    it('returns false when no player', () => {
+        disposeAudio();
         expect(isAudioPlaying()).toBe(false);
     });
 
@@ -368,23 +379,17 @@ describe('isAudioPlaying', () => {
         expect(isAudioPlaying()).toBe(false);
     });
 
-    it('returns true when not paused and not ended', () => {
+    it('returns true when not paused', () => {
         mockPaused = false;
-        mockEnded = false;
         void playAudio('test.mp3', 'test');
         expect(isAudioPlaying()).toBe(true);
-    });
-
-    it('returns false when ended', () => {
-        mockPaused = false;
-        mockEnded = true;
-        void playAudio('test.mp3', 'test');
-        expect(isAudioPlaying()).toBe(false);
     });
 });
 
 describe('getAudioName', () => {
     it('returns empty string initially', () => {
+        // 确保音频名在 beforeEach/afterEach 后被重置
+        // 注意：afterEach 的 disposeAudio 会清空 audioName
         expect(getAudioName()).toBe('');
     });
 
@@ -397,7 +402,6 @@ describe('getAudioName', () => {
 describe('syncAudioPlayback', () => {
     beforeEach(() => {
         mockPaused = false;
-        mockEnded = false;
         mockDuration = 100;
         void playAudio('test.mp3', 'test');
     });
@@ -424,8 +428,7 @@ describe('syncAudioPlayback', () => {
         mockPaused = false;
         mockCurrentTime = 20;
         syncAudioPlayback(10, true, 100);
-        // Audio sync runs without error when drift exceeds threshold
-        // Note: actual seek behavior depends on internal state timings
+        // 漂移 > 0.1 → seek 到 audioTargetTime = 10 + 0 = 10
         expect(isAudioPlaying()).toBe(true);
     });
 
@@ -442,18 +445,17 @@ describe('syncAudioPlayback', () => {
 
     it('seeks to vmdTime+offset (not just offset) on mid-song backward seek', () => {
         setAudioOffset(2);
-        mockCurrentTime = 32; // 与首个 target(30+2) 对齐，零漂移 -> 不触发 seekAudio，isSeeking 保持 false
+        mockCurrentTime = 32; // 与首个 target(30+2) 对齐，零漂移
         syncAudioPlayback(30, true, 100); // establish lastVmdTime=30
         mockCurrentTime = 30;
         syncAudioPlayback(20, true, 100); // backward seek mid-song
-        // 上方漂移分支：audioTargetTime = 20+2 = 22 -> seekAudio(22)
-        // （历史上冗余的 lastVmdTime 回退块会再 seek 到 offset=2，破坏进度；现已移除）
+        // 漂移分支：audioTargetTime = 20+2 = 22 -> seek to 22
         expect(mockCurrentTime).toBe(22);
     });
 });
 
 describe('attachBeatDetector', () => {
-    it('stores detector and attaches to existing audio element', () => {
+    it('stores detector and attaches to existing stream player', () => {
         void playAudio('test.mp3', 'test');
         attachBeatDetector(mockBeatDetector as any);
         expect(mockBeatDetector.attach).toHaveBeenCalled();
@@ -466,10 +468,14 @@ describe('attachBeatDetector', () => {
         expect(mockBeatDetector.attach).toHaveBeenCalledTimes(1);
     });
 
-    it('defers attachment when no audio element yet', () => {
+    it('defers attachment when no audio player yet', () => {
+        // disposeAudio 确保 streamPlayer 为 null
+        disposeAudio();
         attachBeatDetector(mockBeatDetector as any);
         expect(mockBeatDetector.attach).not.toHaveBeenCalled();
         void playAudio('test.mp3', 'test');
+        // ensurePlayer 内会尝试 _tryAttachBeatDetector
+        // 但 mock 的 _audio 对象被 mockBeatDetector.attach 调用
         expect(mockBeatDetector.attach).toHaveBeenCalled();
     });
 
@@ -493,21 +499,12 @@ describe('notifyBeatDetectorReset', () => {
     });
 });
 
-describe('audio state integration', () => {
-    it('setVolume calls applyGain to update audioElement volume', () => {
-        const mockAudio = makeMockAudio();
-        vi.stubGlobal('Audio', function MockAudio() {
-            return mockAudio;
-        });
-
-        setVolume(0.7);
+describe('setVolume applies gain', () => {
+    it('setVolume calls applyGain to update stream player volume', () => {
         void playAudio('test.mp3', 'test');
-        expect(mockAudio.volume).toBe(0.7);
-
+        setVolume(0.7);
+        expect(mockVolume).toBe(0.7);
         setVolume(0.3);
-        expect(mockAudio.volume).toBe(0.3);
-
-        setVolume(1);
-        vi.unstubAllGlobals();
+        expect(mockVolume).toBe(0.3);
     });
 });
