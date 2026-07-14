@@ -12,6 +12,7 @@ import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
 import { focusedModelId, modelRegistry, triggerAutoSave, uiState, setStatus } from '@/core/config';
+import { schedulePersistUI } from '../env/env-bridge';
 import { freeflyInput } from '@/core/freefly-state';
 import { clamp, clamp01, debounce, deepClone, logWarn } from '@/core/utils';
 import { t } from '@/core/i18n/t';
@@ -1372,6 +1373,7 @@ export function setAutoCameraEnabled(
     }
     _autoCameraEnabled = v;
     uiState.autoCameraEnabled = v;
+    schedulePersistUI();
     if (v) {
         _autoCameraBeatCount = 0;
         _autoCameraPresetIdx = 0;
@@ -1391,6 +1393,7 @@ export function isAutoCameraEnabled(): boolean {
 export function setAutoCameraBeatsPerSwitch(n: number): void {
     _autoCameraBeatsPerSwitch = Math.max(1, Math.min(16, Math.round(n)));
     uiState.autoCameraBeatsPerSwitch = _autoCameraBeatsPerSwitch;
+    schedulePersistUI();
 }
 
 export function getAutoCameraBeatsPerSwitch(): number {
