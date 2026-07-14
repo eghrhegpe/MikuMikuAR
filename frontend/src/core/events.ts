@@ -86,7 +86,8 @@ function waitForTransition(el: HTMLElement, propertyName?: string): Promise<void
             disp.dispose();
             resolve();
         });
-        setTimeout(resolve, dur + 50);
+        const timeout = Math.max(dur * 2, 500); // D1: 安全网 ≥ 2× 时长且下限 500ms
+        setTimeout(resolve, timeout);
     });
 }
 
