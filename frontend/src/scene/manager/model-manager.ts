@@ -39,7 +39,19 @@ const PHYSICS_CAT_RULES: Record<PhysicsCategory, string[]> = {
     skirt: ['スカート', 'skirt', 'フリル', 'frill', '裾', 'hem'],
     chest: ['胸', 'chest', 'bust', 'バスト'],
     hair: ['髪', 'hair', 'ahoge', 'bangs', 'ponytail', '前髪', '後ろ髪'],
-    accessory: ['リボン', 'ribbon', 'アクセサリ', 'accessory', '飾り', 'collar', 'ネクタイ', 'tie', '紐', 'string', '襟'],
+    accessory: [
+        'リボン',
+        'ribbon',
+        'アクセサリ',
+        'accessory',
+        '飾り',
+        'collar',
+        'ネクタイ',
+        'tie',
+        '紐',
+        'string',
+        '襟',
+    ],
 };
 
 const PHYSICS_CAT_PATTERNS: [PhysicsCategory, RegExp][] = Object.entries(PHYSICS_CAT_RULES).map(
@@ -182,7 +194,14 @@ export class ModelManager {
     private _physicsCatState = new Map<string, Map<string, boolean>>();
     private _boneOverlayMap = new Map<
         string,
-        { lineSystem: Mesh; overlay: Mesh; joints: Mesh[]; update: () => void; dirty: boolean; markDirty: () => void }
+        {
+            lineSystem: Mesh;
+            overlay: Mesh;
+            joints: Mesh[];
+            update: () => void;
+            dirty: boolean;
+            markDirty: () => void;
+        }
     >();
     private _boneUpdateObserver: Nullable<Observer<Scene>> = null;
     private _boneAnimationDirty = new Set<string>();

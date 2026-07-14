@@ -35,10 +35,7 @@ function isValidScaling(s: number): boolean {
 
 // ======== 加载 ========
 
-export async function loadProp(
-    filePath: string,
-    signal?: AbortSignal
-): Promise<string | null> {
+export async function loadProp(filePath: string, signal?: AbortSignal): Promise<string | null> {
     // 使用 rAF 调度 DOM 操作，避免 onProgress 在非主线程回调中直接操作 DOM
     const updateLoadingText = (text: string) => {
         requestAnimationFrame(() => {
@@ -83,7 +80,9 @@ export async function loadProp(
         const result = await ImportMeshAsync(url, scene, {
             pluginExtension: '.pmx',
             onProgress: (evt) => {
-                if (effectiveSignal.aborted) return;
+                if (effectiveSignal.aborted) {
+                    return;
+                }
                 if (evt.lengthComputable) {
                     const pct = Math.round((evt.loaded / evt.total) * 100);
                     updateLoadingText(t('props.loadingProgress', { pct: String(pct) }));

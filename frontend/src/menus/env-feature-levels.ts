@@ -4,11 +4,7 @@
 import { envState, cardContainer, setStatus, getBrowseDir } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import {
-    slideRow,
-    addSliderRow,
-    addPresetChip,
-} from '../core/ui-helpers';
+import { slideRow, addSliderRow, addPresetChip } from '../core/ui-helpers';
 import { setEnvState, engine } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
@@ -27,7 +23,6 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { stackRegistry } from '../core/config';
 import { closeAllOverlays } from '../core/utils';
-
 
 export function buildSkyLevel(): PopupLevel {
     return {
@@ -56,7 +51,10 @@ export function buildSkyLevel(): PopupLevel {
                                     },
                                     {
                                         onUpdate: (btn) => {
-                                            btn.classList.toggle('active', activeTimeOfDayPreset === key);
+                                            btn.classList.toggle(
+                                                'active',
+                                                activeTimeOfDayPreset === key
+                                            );
                                         },
                                     }
                                 );
@@ -203,10 +201,12 @@ export function buildSkyLevel(): PopupLevel {
                             {
                                 id: 'env:sky:starsTexture',
                                 kind: 'custom',
-                                visibleWhen: () => envState.skyMode === 'procedural' && envState.starsEnabled,
+                                visibleWhen: () =>
+                                    envState.skyMode === 'procedural' && envState.starsEnabled,
                                 renderCustom: (cc) => {
                                     const fileName = envState.starsTexture
-                                        ? (envState.starsTexture.split(/[/\\]/).pop() ?? t('env.notSelected'))
+                                        ? (envState.starsTexture.split(/[/\\]/).pop() ??
+                                          t('env.notSelected'))
                                         : t('env.notSelected');
                                     slideRow(
                                         cc,
@@ -219,7 +219,10 @@ export function buildSkyLevel(): PopupLevel {
                                             const level = stackRegistry.buildLevel!(
                                                 getBrowseDir('environment'),
                                                 t('env.starsTexture'),
-                                                (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+                                                (m) =>
+                                                    ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(
+                                                        m.format
+                                                    ),
                                                 getEnvMenu()!
                                             );
                                             getEnvMenu()!.push(level);
@@ -228,7 +231,8 @@ export function buildSkyLevel(): PopupLevel {
                                     );
                                     if (envState.starsTexture) {
                                         const clearRow = document.createElement('div');
-                                        clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+                                        clearRow.style.cssText =
+                                            'display:flex;justify-content:flex-end;padding:0 14px 4px;';
                                         const clearBtn = document.createElement('button');
                                         clearBtn.className = 'cs-btn cs-btn-sm';
                                         clearBtn.textContent = t('env.clear');
@@ -967,17 +971,11 @@ export function buildWindLevel(): PopupLevel {
                             step: 1,
                             get: (v) => {
                                 const d = v as [number, number, number];
-                                return (
-                                    ((Math.atan2(d[0], d[2]) * 180) / Math.PI + 360) % 360
-                                );
+                                return ((Math.atan2(d[0], d[2]) * 180) / Math.PI + 360) % 360;
                             },
                             set: (angle) => {
                                 const rad = ((angle as number) * Math.PI) / 180;
-                                return [
-                                    Math.sin(rad),
-                                    envState.windDirection[1],
-                                    Math.cos(rad),
-                                ];
+                                return [Math.sin(rad), envState.windDirection[1], Math.cos(rad)];
                             },
                         },
                         icon: 'lucide:compass',

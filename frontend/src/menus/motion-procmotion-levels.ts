@@ -107,7 +107,7 @@ function buildProcMotionSchema(): MenuNode[] {
                             bind: () => getLipSyncState().enabled,
                         }
                     );
-                    });
+                });
             },
         },
         // 卡片 2：强度/速度

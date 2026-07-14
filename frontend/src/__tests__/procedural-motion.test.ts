@@ -354,7 +354,9 @@ function _parseBoneFrameKeys(buf: ArrayBuffer): Map<string, number> {
     for (let i = 0; i < boneCount; i++) {
         const off = 54 + i * 111;
         const raw = new Uint8Array(buf, off, 15);
-        const name = (Encoding.convert(raw, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string)
+        const name = (
+            Encoding.convert(raw, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string
+        )
             .replace(/\0/g, '')
             .trim();
         const frame = view.getUint32(off + 15, true);
@@ -369,14 +371,14 @@ describe('重复关键帧守卫（P1 回归防护）', () => {
     // 处产生「循环末帧 + 复位帧」双关键帧。修复后循环 f < loopFrames，复位帧唯一。
     it('Idle: speed=1 时无同骨骼同帧号重复关键帧', () => {
         const buf = generateIdleVmd({ ...state, speed: 1 }, [], BONES_108_STANDARD);
-        const dups = [...(_parseBoneFrameKeys(buf).entries())].filter(([, c]) => c > 1);
+        const dups = [..._parseBoneFrameKeys(buf).entries()].filter(([, c]) => c > 1);
         expect(dups).toEqual([]);
     });
 
     it('Idle: 多种 speed 下均无重复关键帧', () => {
         for (const speed of [0.5, 1, 1.5, 2, 3]) {
             const buf = generateIdleVmd({ ...state, speed }, [], BONES_108_STANDARD);
-            const dups = [...(_parseBoneFrameKeys(buf).entries())].filter(([, c]) => c > 1);
+            const dups = [..._parseBoneFrameKeys(buf).entries()].filter(([, c]) => c > 1);
             expect(dups, `speed=${speed} 存在重复帧`).toEqual([]);
         }
     });

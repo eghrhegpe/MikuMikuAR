@@ -80,16 +80,24 @@ export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
             }
         })();
     },
-    [SETTINGS_ACTION.RESOURCE_ROOT]: () => selectResourceRoot().catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_PMX]: (row) => selectOverridePath('pmx').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_VMD]: (row) => selectOverridePath('vmd').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_AUDIO]: (row) => selectOverridePath('audio').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_PROP]: (row) => selectOverridePath('prop').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_STAGE]: (row) => selectOverridePath('stage').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.RESOURCE_ROOT]: () =>
+        selectResourceRoot().catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_PMX]: (row) =>
+        selectOverridePath('pmx').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_VMD]: (row) =>
+        selectOverridePath('vmd').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_AUDIO]: (row) =>
+        selectOverridePath('audio').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_PROP]: (row) =>
+        selectOverridePath('prop').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_STAGE]: (row) =>
+        selectOverridePath('stage').catch((err) => logWarn('paths', '', err)),
     [SETTINGS_ACTION.PATH_ENVIRONMENT]: (row) =>
         selectOverridePath('environment').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_MD_DRESS]: (row) => selectOverridePath('md_dress').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_SETTING]: (row) => selectOverridePath('setting').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_MD_DRESS]: (row) =>
+        selectOverridePath('md_dress').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_SETTING]: (row) =>
+        selectOverridePath('setting').catch((err) => logWarn('paths', '', err)),
 };
 
 export function handleSettingsAction(row: PopupRow, menu?: SlideMenu): void {

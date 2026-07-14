@@ -46,7 +46,12 @@ describe('_getBundles reflection degradation', () => {
     it('returns bundle keys when map is present', () => {
         const a = { count: 1, applyCentralForce() {} };
         const b = { count: 2, applyCentralForce() {} };
-        const impl: any = { _rigidBodyBundleMap: new Map([[a, 0], [b, 1]]) };
+        const impl: any = {
+            _rigidBodyBundleMap: new Map([
+                [a, 0],
+                [b, 1],
+            ]),
+        };
         expect([..._getBundles(impl)]).toEqual([a, b]);
     });
 });

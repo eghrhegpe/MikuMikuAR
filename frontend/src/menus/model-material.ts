@@ -34,17 +34,11 @@ let _paramCardEl: HTMLElement | null = null;
 /** 添加分组分隔线 + 小标题，将颜色乘率与贴图强度视觉分区。 */
 function _addGroupSeparator(panel: HTMLElement, label: string): void {
     const sep = document.createElement('div');
-    sep.style.cssText = 'display:flex;align-items:center;gap:6px;margin:8px 4px 4px;';
-    const leftLine = document.createElement('div');
-    leftLine.style.cssText = 'flex:1;height:1px;background:var(--border);';
+    sep.className = 'mat-group-sep';
     const text = document.createElement('span');
-    text.style.cssText = 'font-size:9px;color:var(--text-muted);white-space:nowrap;';
+    text.className = 'mat-group-sep-label';
     text.textContent = label;
-    const rightLine = document.createElement('div');
-    rightLine.style.cssText = 'flex:1;height:1px;background:var(--border);';
-    sep.appendChild(leftLine);
     sep.appendChild(text);
-    sep.appendChild(rightLine);
     panel.appendChild(sep);
 }
 
@@ -439,7 +433,9 @@ function buildMatRootSchema(
                                     // 方案：跳过 synthetic click(target===input)，并用 preventDefault 阻止原生切换造成的视觉错位。
                                     toggle.addEventListener('click', (e) => {
                                         e.stopPropagation();
-                                        if (e.target === toggleInput) return;
+                                        if (e.target === toggleInput) {
+                                            return;
+                                        }
                                         e.preventDefault();
                                         const newState = !isMatEnabled(id, idx);
                                         setMatEnabled(id, idx, newState);
@@ -574,8 +570,7 @@ function _renderParamCard(
         defaultOpen: true,
         renderContent: (panel) => {
             const breadcrumb = document.createElement('div');
-            breadcrumb.style.cssText =
-                'font-size:10px;color:var(--white-85);padding:2px 14px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            breadcrumb.className = 'mat-breadcrumb';
             breadcrumb.textContent = `${cat} > ${matName}`;
             panel.appendChild(breadcrumb);
 
@@ -751,7 +746,9 @@ function buildMatListSchema(
                         // 修复：同 matRoot，<label> 原生二次派发 click 导致 handler 双触发互相抵消。
                         toggle.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            if (e.target === toggleInput) return;
+                            if (e.target === toggleInput) {
+                                return;
+                            }
                             e.preventDefault();
                             const newState = !isMatEnabled(id, detail.index);
                             setMatEnabled(id, detail.index, newState);

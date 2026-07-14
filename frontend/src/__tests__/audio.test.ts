@@ -24,9 +24,9 @@ import {
 
 // ======== StreamAudioPlayer mock ========
 
-let mockPlay = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
-let mockPause = vi.fn();
-let mockDispose = vi.fn();
+const mockPlay = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+const mockPause = vi.fn();
+const mockDispose = vi.fn();
 let mockCurrentTime = 0;
 let mockVolume = 1;
 let mockDuration = 120;
@@ -41,15 +41,33 @@ function createMockStreamPlayer(): Record<string, any> {
         play: mockPlay,
         pause: mockPause,
         dispose: mockDispose,
-        get currentTime() { return mockCurrentTime; },
-        set currentTime(v: number) { mockCurrentTime = v; },
-        get volume() { return mockVolume; },
-        set volume(v: number) { mockVolume = v; },
-        get duration() { return mockDuration; },
-        get paused() { return mockPaused; },
-        get source() { return mockSource; },
-        set source(v: string) { mockSource = v; },
-        get metadataLoaded() { return mockMetadataLoaded; },
+        get currentTime() {
+            return mockCurrentTime;
+        },
+        set currentTime(v: number) {
+            mockCurrentTime = v;
+        },
+        get volume() {
+            return mockVolume;
+        },
+        set volume(v: number) {
+            mockVolume = v;
+        },
+        get duration() {
+            return mockDuration;
+        },
+        get paused() {
+            return mockPaused;
+        },
+        get source() {
+            return mockSource;
+        },
+        set source(v: string) {
+            mockSource = v;
+        },
+        get metadataLoaded() {
+            return mockMetadataLoaded;
+        },
         onDurationChangedObservable: {
             add: vi.fn((cb: () => void) => {
                 mockOnDurationChanged = cb;
@@ -66,10 +84,16 @@ function createMockStreamPlayer(): Record<string, any> {
         onPlaybackRateChangedObservable: { clear: vi.fn() },
         mute: vi.fn(),
         unmute: vi.fn().mockResolvedValue(true),
-        get muted() { return false; },
-        get playbackRate() { return 1; },
+        get muted() {
+            return false;
+        },
+        get playbackRate() {
+            return 1;
+        },
         set playbackRate(_v: number) {},
-        get preservesPitch() { return true; },
+        get preservesPitch() {
+            return true;
+        },
         set preservesPitch(_v: boolean) {},
         _setCurrentTimeWithoutNotify: vi.fn(),
         _setPlaybackRateWithoutNotify: vi.fn(),

@@ -532,10 +532,7 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('waveHeight', state.waterWaveHeight);
     _waterWaveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
     mat.setFloat('wavePhase', _waterPhase);
-    mat.setColor3(
-        'waterColor',
-        col3FromTriple(state.waterColor)
-    );
+    mat.setColor3('waterColor', col3FromTriple(state.waterColor));
     mat.setFloat('waterTransparency', state.waterTransparency);
     mat.setFloat('waterLevel', state.waterLevel);
     mat.setInt('uWaterFlip', state.waterFlip ? 1 : 0);
@@ -589,10 +586,7 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('causticScrollY', state.causticScrollY);
     mat.setFloat('fresnelAlphaInfluence', state.fresnelAlphaInfluence);
     mat.setFloat('foamOpacity', state.foamOpacity);
-    mat.setColor3(
-        'waterFogColor',
-        col3FromTriple(state.waterFogColor)
-    );
+    mat.setColor3('waterFogColor', col3FromTriple(state.waterFogColor));
     mat.setFloat('waterFogDensity', state.waterFogDensity);
     mat.setFloat('waterFogOpacityInfluence', state.waterFogOpacityInfluence);
 
@@ -826,10 +820,7 @@ export function createWater(state: EnvState): void {
             if (cam) {
                 m.setVector3('cameraPosition', cam.position);
             }
-            m.setColor3(
-                'waterColor',
-                col3FromTriple(envState.waterColor)
-            );
+            m.setColor3('waterColor', col3FromTriple(envState.waterColor));
             const dl = scene.getLightByName('dir') as DirectionalLight | null;
             if (dl) {
                 m.setVector3('lightDir', dl.direction);
@@ -1238,10 +1229,7 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
         mat.setFloat('foamOpacity', preset.foamOpacity);
     }
     if (preset.waterFogColor !== undefined) {
-        mat.setColor3(
-            'waterFogColor',
-            col3FromTriple(preset.waterFogColor)
-        );
+        mat.setColor3('waterFogColor', col3FromTriple(preset.waterFogColor));
     }
     if (preset.waterFogDensity !== undefined) {
         mat.setFloat('waterFogDensity', preset.waterFogDensity);

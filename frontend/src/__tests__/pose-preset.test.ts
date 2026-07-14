@@ -23,7 +23,9 @@ function decodeBoneNames(buf: ArrayBuffer): string[] {
         const off = HEADER_SIZE + i * BONE_FRAME_SIZE;
         // 截取 15 字节名字段，去除尾部 \0 填充
         let end = off;
-        while (end < off + NAME_BYTES && u8[end] !== 0) end++;
+        while (end < off + NAME_BYTES && u8[end] !== 0) {
+            end++;
+        }
         const raw = Array.from(u8.subarray(off, end));
         const decoded = Encoding.convert(raw, { from: 'SJIS', to: 'UNICODE', type: 'string' });
         names.push(decoded as string);
@@ -79,7 +81,9 @@ describe('generatePoseVmd — Shift-JIS 骨骼名编码（回归防护）', () =
         // 第 0 个骨骼帧名字段
         const off = HEADER_SIZE;
         let end = off;
-        while (end < off + NAME_BYTES && u8[end] !== 0) end++;
+        while (end < off + NAME_BYTES && u8[end] !== 0) {
+            end++;
+        }
         const decoded = Encoding.convert(Array.from(u8.subarray(off, end)), {
             from: 'SJIS',
             to: 'UNICODE',

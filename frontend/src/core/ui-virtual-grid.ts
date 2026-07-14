@@ -35,7 +35,14 @@ export function createVirtualGrid<T>(
     container: HTMLElement,
     options: VirtualGridOptions<T>
 ): VirtualGridHandle<T> {
-    const { items: initialItems, itemHeight, columns, renderItem, bufferRows = 2, responsiveColumnWidth } = options;
+    const {
+        items: initialItems,
+        itemHeight,
+        columns,
+        renderItem,
+        bufferRows = 2,
+        responsiveColumnWidth,
+    } = options;
 
     // 状态
     let currentItems = [...initialItems];
@@ -140,9 +147,13 @@ export function createVirtualGrid<T>(
     // 响应式：根据容器宽度自动计算列数
     if (responsiveColumnWidth) {
         const computeColumns = () => {
-            const gap = parseInt(getComputedStyle(container).getPropertyValue('--resource-gap')) || 8;
+            const gap =
+                parseInt(getComputedStyle(container).getPropertyValue('--resource-gap')) || 8;
             const availableWidth = container.clientWidth;
-            const cols = Math.max(1, Math.floor((availableWidth + gap) / (responsiveColumnWidth + gap)));
+            const cols = Math.max(
+                1,
+                Math.floor((availableWidth + gap) / (responsiveColumnWidth + gap))
+            );
             setColumns(cols);
         };
         resizeObserver = new ResizeObserver(() => {

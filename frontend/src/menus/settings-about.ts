@@ -241,14 +241,21 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                             .catch((err) => logWarn('settings-about', '', err));
                     };
                     refreshCacheStats();
-                    const refreshDisp = addDisposableListener(window, 'mmar:cache-cleared', refreshCacheStats);
+                    const refreshDisp = addDisposableListener(
+                        window,
+                        'mmar:cache-cleared',
+                        refreshCacheStats
+                    );
                     const cleanupObserver = new MutationObserver(() => {
                         if (!c.isConnected) {
                             refreshDisp.dispose();
                             cleanupObserver.disconnect();
                         }
                     });
-                    cleanupObserver.observe(document.documentElement, { childList: true, subtree: true });
+                    cleanupObserver.observe(document.documentElement, {
+                        childList: true,
+                        subtree: true,
+                    });
                 });
             },
         },

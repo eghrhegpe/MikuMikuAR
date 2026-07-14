@@ -72,10 +72,7 @@ export function cardContainer(container: HTMLElement, fn: (c: HTMLElement) => vo
  * @param textKey loading 文案的 i18n key
  * @param fn 加载主体（自行 try/catch 差异化错误）
  */
-export async function withLoadingIndicator<T>(
-    textKey: string,
-    fn: () => Promise<T>
-): Promise<T> {
+export async function withLoadingIndicator<T>(textKey: string, fn: () => Promise<T>): Promise<T> {
     dom.loadingEl.style.display = 'block';
     dom.loadingText.textContent = t(textKey);
     try {
@@ -161,13 +158,18 @@ export function formatTimestamp(d: Date = new Date()): string {
     return `${h}:${m}:${s}.${ms}`;
 }
 
-export function debounce<A extends unknown[]>(fn: (...args: A) => void, ms: number): {
+export function debounce<A extends unknown[]>(
+    fn: (...args: A) => void,
+    ms: number
+): {
     (...args: A): void;
     cancel(): void;
 } {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const debounced = (...args: A): void => {
-        if (timer !== null) clearTimeout(timer);
+        if (timer !== null) {
+            clearTimeout(timer);
+        }
         timer = setTimeout(() => {
             timer = null;
             fn(...args);
@@ -644,9 +646,7 @@ export async function allSettledFilter<T>(
     promises: Promise<T>[]
 ): Promise<PromiseFulfilledResult<Awaited<T>>[]> {
     const results = await Promise.allSettled(promises);
-    return results.filter(
-        (r): r is PromiseFulfilledResult<Awaited<T>> => r.status === 'fulfilled'
-    );
+    return results.filter((r): r is PromiseFulfilledResult<Awaited<T>> => r.status === 'fulfilled');
 }
 
 /** 格式化 JSON 字符串（2 空格缩进）。 */

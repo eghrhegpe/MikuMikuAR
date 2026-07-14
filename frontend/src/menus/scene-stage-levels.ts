@@ -36,8 +36,7 @@ function buildStageSchema(): MenuNode[] {
         overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')
     ).toLowerCase();
     const propModels = Array.from(modelManager.modelRegistry.entries()).filter(
-        ([, inst]) =>
-            inst.kind === 'actor' && isUnderRoot(propDir, inst.filePath)
+        ([, inst]) => inst.kind === 'actor' && isUnderRoot(propDir, inst.filePath)
     );
     const propItems = [
         ...getPropList().map((p) => ({

@@ -295,7 +295,11 @@ export function startFeetAdjustment(
                     const hints = names
                         .filter((n) => /足|ＩＫ|IK|Leg|leg|Foot|foot/.test(n))
                         .slice(0, 16);
-                    logWarn('feet', `IK bone not matched for ${m.id} (L=${cache.lName} R=${cache.rName}). leg/IK bones in model:`, hints);
+                    logWarn(
+                        'feet',
+                        `IK bone not matched for ${m.id} (L=${cache.lName} R=${cache.rName}). leg/IK bones in model:`,
+                        hints
+                    );
                 }
             }
             _adjustFoot(m.runtimeBones, cache.lName, 'L', cache, feet, m.id, dt);

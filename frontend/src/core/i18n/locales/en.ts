@@ -1321,6 +1321,7 @@ export const en: Record<string, string> = {
     'boot.initFailed': '❌ Initialization failed: {msg}',
     'common.empty': 'No content',
     'common.apply': 'Apply',
-    'settings.audio.offsetHint': 'Positive = audio leads, negative = audio lags (applies globally to all music)',
+    'settings.audio.offsetHint':
+        'Positive = audio leads, negative = audio lags (applies globally to all music)',
     'props.loadingProgress': 'Loading prop {pct}%',
 };

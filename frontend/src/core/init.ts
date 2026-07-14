@@ -107,8 +107,12 @@ async function init(): Promise<void> {
         });
         dom.btnSettings.addEventListener('click', async () => {
             const m = await import('../menus/settings');
-            await m.preloadAutoImportState().catch((err) => logWarn('init', 'preloadAutoImportState', err)); // 静默失败，避免阻塞 UI
-            await m.preloadDownloadWatchState().catch((err) => logWarn('init', 'preloadDownloadWatchState', err)); // 预加载监听开关状态
+            await m
+                .preloadAutoImportState()
+                .catch((err) => logWarn('init', 'preloadAutoImportState', err)); // 静默失败，避免阻塞 UI
+            await m
+                .preloadDownloadWatchState()
+                .catch((err) => logWarn('init', 'preloadDownloadWatchState', err)); // 预加载监听开关状态
             toggleOverlay('sceneOverlay', m.showSettings);
         });
         dom.btnPlaza.addEventListener('click', () => {
@@ -297,7 +301,12 @@ async function restoreUIState(): Promise<void> {
     }
     // 恢复快捷键自定义绑定
     if (s.keyBindings !== undefined) {
-        loadKeyBindings(s.keyBindings as Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }>);
+        loadKeyBindings(
+            s.keyBindings as Record<
+                string,
+                { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }
+            >
+        );
         uiState.keyBindings = s.keyBindings;
     }
     // 恢复顶部 HUD 显隐开关（nil/undefined=显示）

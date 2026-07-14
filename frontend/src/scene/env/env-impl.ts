@@ -99,11 +99,7 @@ export {
     _underwaterTarget,
 } from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
-export {
-    createDebugMirror,
-    disposeDebugMirror,
-    isDebugMirrorActive,
-} from './mirror-debug';
+export { createDebugMirror, disposeDebugMirror, isDebugMirrorActive } from './mirror-debug';
 import {
     createParticleEmitter,
     disposeParticles,
@@ -263,7 +259,12 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
 
     // 检查星空贴图是否已缓存
     let starsImg: HTMLImageElement | null = null;
-    if (state.starsTexture && _texStarsImg && _texStarsImgUrl === state.starsTexture && _texStarsImg.complete) {
+    if (
+        state.starsTexture &&
+        _texStarsImg &&
+        _texStarsImgUrl === state.starsTexture &&
+        _texStarsImg.complete
+    ) {
         starsImg = _texStarsImg;
     }
 

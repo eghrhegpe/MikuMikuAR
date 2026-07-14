@@ -4,7 +4,13 @@
 
 import { libraryRoot, externalPaths, setStatus, setLibraryRoot } from '../core/config';
 import { t } from '../core/i18n/t';
-import { computeLibraryRef, resolveLibraryRef, getBaseName, normPath, deepClone } from '../core/utils';
+import {
+    computeLibraryRef,
+    resolveLibraryRef,
+    getBaseName,
+    normPath,
+    deepClone,
+} from '../core/utils';
 import {
     serializeScene,
     deserializeScene,

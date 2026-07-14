@@ -83,7 +83,16 @@ import {
     setCurrentState,
 } from '../core/ui-helpers';
 import type { ResourceItem } from '../core/ui-helpers';
-import { tryCatchStatus, getBrowseDir, isUnderRoot, getBaseName, logWarn, fireAndForget, swallowError, LoadingGuard } from '../core/utils';
+import {
+    tryCatchStatus,
+    getBrowseDir,
+    isUnderRoot,
+    getBaseName,
+    logWarn,
+    fireAndForget,
+    swallowError,
+    LoadingGuard,
+} from '../core/utils';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t'; // [doc:adr-059] i18n 翻译
 import { getLang } from '../core/i18n/locale'; // [doc:adr-059] 用于列表 collation 随语言切换
@@ -163,7 +172,10 @@ export function splitSubdirSegments(rootRaw: string, dirRaw: string): string[] |
             // 校验 marker 之前父链与 root 父链一致（已小写），否则为同盘异父串台，拒绝展开
             const rootPrefix = rootSegs.slice(0, -1);
             const dirPrefix = dirSegs.slice(0, mIdx);
-            if (rootPrefix.length !== dirPrefix.length || !rootPrefix.every((s, i) => s === dirPrefix[i])) {
+            if (
+                rootPrefix.length !== dirPrefix.length ||
+                !rootPrefix.every((s, i) => s === dirPrefix[i])
+            ) {
                 return null;
             }
             const dirNormSegs = dirNorm.split('/').filter(Boolean);
@@ -197,16 +209,24 @@ export function isLeafFlattenDir(
 ): boolean {
     const normDir = normPath(dirPath);
     const entries = models.filter((m) => {
-        if (categoryFilter && !categoryFilter(m)) return false;
+        if (categoryFilter && !categoryFilter(m)) {
+            return false;
+        }
         return normPath(m.dir) === normDir;
     });
-    if (entries.length === 0) return false;
+    if (entries.length === 0) {
+        return false;
+    }
     const hasSubdirs = models.some((m) => {
-        if (categoryFilter && !categoryFilter(m)) return false;
+        if (categoryFilter && !categoryFilter(m)) {
+            return false;
+        }
         const rel = getRelativePathUnderDir(m.dir, normDir);
         return rel && rel.split('/').filter(Boolean).length > 1;
     });
-    if (hasSubdirs) return false;
+    if (hasSubdirs) {
+        return false;
+    }
     const allZip = entries.every((m) => m.container === 'zip');
     const multiZip = allZip && entries.length > 1;
     return !multiZip;
@@ -219,8 +239,12 @@ export function computeRestoreSegments(
     categoryFilter?: (m: LibraryModel) => boolean
 ): string[] | null {
     const segs = splitSubdirSegments(browseDir, targetDir);
-    if (!segs) return null;
-    if (segs.length === 0) return [];
+    if (!segs) {
+        return null;
+    }
+    if (segs.length === 0) {
+        return [];
+    }
     let currentDir = normPath(browseDir);
     let keepSegs = 0;
     for (let i = 0; i < segs.length; i++) {
@@ -467,7 +491,8 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 const seg = pendingAutoExpand[0];
                 const nextDir = normPath(dir + '/' + seg);
                 // 立即消费剩余段，避免本层动画结束后的 onLevelEnter 重复展开
-                pendingAutoExpand = pendingAutoExpand.length > 1 ? pendingAutoExpand.slice(1) : null;
+                pendingAutoExpand =
+                    pendingAutoExpand.length > 1 ? pendingAutoExpand.slice(1) : null;
                 if (import.meta.env.DEV) {
                     // 捕获 race：若 transitioning 为 true，下方 push 会被 menu.ts:180 静默丢弃（停在根）
                     console.log('[restore] autoExpand push', {
@@ -529,7 +554,9 @@ async function _loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
 }
 
 async function _ensureModelMeta(pmxPaths: string[]): Promise<void> {
-    const uncached = pmxPaths.filter((p) => !modelMetaCache.has(p) && !_pendingMetaGuard.isLoading(p));
+    const uncached = pmxPaths.filter(
+        (p) => !modelMetaCache.has(p) && !_pendingMetaGuard.isLoading(p)
+    );
     if (uncached.length === 0) {
         return;
     }
@@ -818,7 +845,9 @@ export function buildResourceItemsForDir(
         const fullPath = normDir + '/' + d;
         if (subdirIsLeaf.has(d) && !isRoot && isLeafFlattenDir(fullPath, modelList, filter)) {
             const entries = modelList.filter((m) => {
-                if (filter && !filter(m)) return false;
+                if (filter && !filter(m)) {
+                    return false;
+                }
                 return normPath(m.dir) === fullPath;
             });
             for (const m of entries) {
@@ -911,9 +940,7 @@ function renderFullscreenFolder(
             onEnterFolder: navigate
                 ? (path) => {
                       const label =
-                          filtered.find((i) => i.id === path)?.label ||
-                          getBaseName(path) ||
-                          path;
+                          filtered.find((i) => i.id === path)?.label || getBaseName(path) || path;
                       navigate(label, (c) => renderFullscreenFolder(c, path, filter, navigate));
                   }
                 : undefined,
@@ -997,7 +1024,8 @@ function addListViewToolbar(
                     onEnterFolder: (path) => {
                         const folderLabel =
                             allResourceItems.find((i) => i.id === path)?.label ||
-                            getBaseName(path) || path;
+                            getBaseName(path) ||
+                            path;
                         navigate(folderLabel, (c) => {
                             renderFullscreenFolder(c, path, filter, navigate);
                         });
@@ -1023,7 +1051,7 @@ function renderGridMode(
     setCurrentState('EMBEDDED_GRID');
 
     // [fix:thumbnail] 捕获面板句柄，缩略图异步加载完成后触发重绘
-    let resourcePanel: ReturnType<typeof createResourcePanel> | null = null;
+    const resourcePanel: ReturnType<typeof createResourcePanel> | null = null;
 
     // 复用 buildResourceItemsForDir 获取当前目录的 ResourceItem 列表
     const allResourceItems = buildResourceItemsForDir(dir, filter);
@@ -1284,7 +1312,9 @@ function onModelRowClick(m: LibraryModel): void {
     if (m.format === 'pmx') {
         const ref = computeLibraryRef(m.file_path);
         if (ref) {
-            AddRecentModel(ref).catch((err) => logWarn('library-core', 'GetThumbnailBatch failed:', err));
+            AddRecentModel(ref).catch((err) =>
+                logWarn('library-core', 'GetThumbnailBatch failed:', err)
+            );
             setRecentModels([ref, ...recentModels.filter((r) => r !== ref)].slice(0, 20));
         }
     }
@@ -1391,11 +1421,11 @@ function onModelRowClick(m: LibraryModel): void {
                     loadManager.load({ kind: 'vmd', path: result.file_path });
                 } else {
                     loadManager.load({
-                    kind: isStage ? 'stage' : 'actor',
-                    path: result.file_path,
-                    libraryPath: m.file_path,
-                    innerPath: m.zip_inner,
-                });
+                        kind: isStage ? 'stage' : 'actor',
+                        path: result.file_path,
+                        libraryPath: m.file_path,
+                        innerPath: m.zip_inner,
+                    });
                 }
             })
             .catch((err) => {
@@ -1865,7 +1895,9 @@ export async function refreshLibrary(): Promise<void> {
         return;
     }
     setStatus(t('library.entriesCount', { n: (models || []).length }), true);
-    CleanOrphanCache().catch((err) => logWarn('library-core', 'CleanOrphanCache (background):', err));
+    CleanOrphanCache().catch((err) =>
+        logWarn('library-core', 'CleanOrphanCache (background):', err)
+    );
     if (
         dom.sceneOverlay.classList.contains('visible') &&
         dom.sceneOverlay.dataset.popupType === 'model'
@@ -1915,7 +1947,9 @@ export async function importFile(): Promise<void> {
         try {
             await ImportZip(path);
             setStatus(t('library.zipImported'), true);
-            await refreshLibrary().catch((err) => logWarn('library-core', 'refresh after zip import:', err));
+            await refreshLibrary().catch((err) =>
+                logWarn('library-core', 'refresh after zip import:', err)
+            );
         } catch (err) {
             setStatus(t('library.importFailed') + formatError(err), false);
             console.error('ImportZip failed:', err);

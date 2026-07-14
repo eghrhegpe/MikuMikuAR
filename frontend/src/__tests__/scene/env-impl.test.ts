@@ -57,7 +57,9 @@ function makeGround(opts: {
     gm.position.set(0, opts.level, 0);
     gm.rotation.x = opts.rotX ?? 0;
     gm.rotation.z = opts.rotZ ?? 0;
-    if (opts.scale) gm.scaling.set(opts.scale[0], opts.scale[1], opts.scale[2]);
+    if (opts.scale) {
+        gm.scaling.set(opts.scale[0], opts.scale[1], opts.scale[2]);
+    }
     gm.isReady = () => true; // NullEngine 放行查询路径
     gm.computeWorldMatrix(true);
     if (opts.heightAt) {

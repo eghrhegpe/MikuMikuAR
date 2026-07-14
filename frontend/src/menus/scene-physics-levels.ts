@@ -23,9 +23,7 @@ import {
     getGroundCollisionEnabled,
     setGroundCollisionEnabled,
 } from '../scene/env/env-bridge';
-import {
-    setModelPhysics,
-} from '../scene/scene';
+import { setModelPhysics } from '../scene/scene';
 import { getSceneMenu, refreshSceneRoot } from './scene-menu';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';

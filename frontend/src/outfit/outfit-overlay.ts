@@ -140,10 +140,14 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
             if (anyDropped) {
                 meshDropped = true;
                 let totalW = 0;
-                for (let s = 0; s < 4; s++) totalW += newWeights[base + s];
+                for (let s = 0; s < 4; s++) {
+                    totalW += newWeights[base + s];
+                }
                 if (totalW > 1e-5) {
                     const inv = 1 / totalW;
-                    for (let s = 0; s < 4; s++) newWeights[base + s] *= inv;
+                    for (let s = 0; s < 4; s++) {
+                        newWeights[base + s] *= inv;
+                    }
                 }
             }
         }
@@ -173,7 +177,10 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
             // ignore disposal errors
         }
     } else {
-        logWarn('outfit-overlay', 'FBX skeleton still referenced by a mesh; skip dispose to avoid dangling pointer');
+        logWarn(
+            'outfit-overlay',
+            'FBX skeleton still referenced by a mesh; skip dispose to avoid dangling pointer'
+        );
     }
 
     return true;

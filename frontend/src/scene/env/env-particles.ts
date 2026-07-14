@@ -1,8 +1,22 @@
-import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem, Observer, Scene } from '@babylonjs/core';
+import {
+    Color4,
+    Vector3,
+    Texture,
+    GPUParticleSystem,
+    ParticleSystem,
+    Observer,
+    Scene,
+} from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/physics/wind-utils';
 import { logWarn } from '@/core/utils';
-import { _envSys, getScene, ensureEnvUpdateObserver, addRipple, getGroundHeightAt } from './env-impl';
+import {
+    _envSys,
+    getScene,
+    ensureEnvUpdateObserver,
+    addRipple,
+    getGroundHeightAt,
+} from './env-impl';
 import { createCanvasTexture } from './env-texture';
 
 // ======== Particle System ========
@@ -540,7 +554,6 @@ function spawnSplashAt(x: number, y: number, z: number): void {
         burst!.busy = false;
         burst!.releaseTimer = null;
     }, 800);
-
 }
 
 /** 启动碰撞检测 — 每帧遍历 CPU 粒子数组，检测地面碰撞 */
@@ -557,19 +570,29 @@ function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleTyp
 
     _collisionObserver = scene.onBeforeRenderObservable.add(() => {
         const particles = ps.particles;
-        if (!particles || particles.length === 0) return;
+        if (!particles || particles.length === 0) {
+            return;
+        }
 
         const startIdx = frameIdx;
         for (let i = startIdx; i < particles.length; i += frameSkip) {
             const p = particles[i];
-            if (p.direction.y >= 0) continue;
+            if (p.direction.y >= 0) {
+                continue;
+            }
 
             const gh = getGroundHeightAt(p.position.x, p.position.z);
             const deathY = envState.waterEnabled ? Math.max(gh, envState.waterLevel) : gh;
             if (p.position.y <= deathY) {
                 p.age = p.lifeTime;
                 if (envState.waterEnabled && envState.waterLevel >= gh) {
-                    addRipple(new Vector3(p.position.x, envState.waterLevel, p.position.z), 2.5, 0.35, 1.2, 2);
+                    addRipple(
+                        new Vector3(p.position.x, envState.waterLevel, p.position.z),
+                        2.5,
+                        0.35,
+                        1.2,
+                        2
+                    );
                 } else if (envState.particleSplash && Math.random() < splashProb) {
                     spawnSplashAt(p.position.x, gh, p.position.z);
                 }

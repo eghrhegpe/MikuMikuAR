@@ -170,22 +170,28 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                                 t('shortcuts.confirmOverride', {
                                                     label: t(conflictLabel),
                                                 })
-                                            ).then((ok) => {
-                                                if (ok) {
-                                                    resetKeyBinding(conflictId);
-                                                    setKeyBinding(
-                                                        id,
-                                                        e.code,
-                                                        e.ctrlKey,
-                                                        e.shiftKey,
-                                                        e.altKey
-                                                    );
-                                                    setUIState({ keyBindings: exportKeyBindings() });
-                                                }
-                                            }).catch(() => {});
+                                            )
+                                                .then((ok) => {
+                                                    if (ok) {
+                                                        resetKeyBinding(conflictId);
+                                                        setKeyBinding(
+                                                            id,
+                                                            e.code,
+                                                            e.ctrlKey,
+                                                            e.shiftKey,
+                                                            e.altKey
+                                                        );
+                                                        setUIState({
+                                                            keyBindings: exportKeyBindings(),
+                                                        });
+                                                    }
+                                                })
+                                                .catch(() => {});
                                         }
                                     };
-                                    keyDisp = addDisposableListener(document, 'keydown', handler, { capture: true });
+                                    keyDisp = addDisposableListener(document, 'keydown', handler, {
+                                        capture: true,
+                                    });
                                 },
                                 sublabel
                             );

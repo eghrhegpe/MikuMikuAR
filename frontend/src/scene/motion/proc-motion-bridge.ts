@@ -155,7 +155,10 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
             const bpm = procBeatDetector?.getBPM() ?? 120;
             startProcMotion(mode, mode === 'autodance' ? bpm : undefined);
         } else {
-            logWarn('proc-motion', 'Re-trigger skipped: focusedModelId changed or procModelId cleared');
+            logWarn(
+                'proc-motion',
+                'Re-trigger skipped: focusedModelId changed or procModelId cleared'
+            );
         }
     }
 }
@@ -277,7 +280,10 @@ export function setProcMotionBoneToggles(
 ): void {
     for (const [k, v] of Object.entries(bt)) {
         if (typeof v !== 'boolean') {
-            logWarn('proc-motion', `setProcMotionBoneToggles: invalid value type for key "${k}", expected boolean`);
+            logWarn(
+                'proc-motion',
+                `setProcMotionBoneToggles: invalid value type for key "${k}", expected boolean`
+            );
             return;
         }
     }
@@ -287,7 +293,10 @@ export function setProcMotionBoneToggles(
 
 export function setProcMotionVpdApplyEnabled(v: boolean): void {
     if (typeof v !== 'boolean') {
-        logWarn('proc-motion', 'setProcMotionVpdApplyEnabled: invalid value type, expected boolean');
+        logWarn(
+            'proc-motion',
+            'setProcMotionVpdApplyEnabled: invalid value type, expected boolean'
+        );
         return;
     }
     procState = { ...procState, vpdApplyEnabled: v };

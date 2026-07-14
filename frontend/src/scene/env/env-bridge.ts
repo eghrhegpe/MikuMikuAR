@@ -10,7 +10,15 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
 import type { UIState } from '@/core/types';
-import { lerp as lerpUtil, lerpArray, formatTimestamp, clamp01, swallowError, logWarn, DebouncedTimer } from '@/core/utils';
+import {
+    lerp as lerpUtil,
+    lerpArray,
+    formatTimestamp,
+    clamp01,
+    swallowError,
+    logWarn,
+    DebouncedTimer,
+} from '@/core/utils';
 import { col3FromTriple } from '@/core/color-helpers';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { deriveLighting, TIME_OF_DAY_PRESETS } from './env-lighting';
@@ -55,7 +63,10 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
             impl.applySky(state);
             const _skyElapsed = performance.now() - _skyStart;
             if (_skyElapsed > 2) {
-                logWarn('perf:env', `[${formatTimestamp()}] applySky took ${_skyElapsed.toFixed(1)}ms`);
+                logWarn(
+                    'perf:env',
+                    `[${formatTimestamp()}] applySky took ${_skyElapsed.toFixed(1)}ms`
+                );
             }
         } catch (e) {
             logWarn('env', 'sky fail:', e);

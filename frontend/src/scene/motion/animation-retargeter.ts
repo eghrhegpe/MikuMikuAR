@@ -67,7 +67,10 @@ export async function loadAndRetargetAnimation(
 ): Promise<RetargetResult | null> {
     // 1. 加载外部动画文件
     setStatus(t('motion.retarget.loading'), false);
-    let result: { meshes: import('@babylonjs/core/Meshes/abstractMesh').AbstractMesh[]; animationGroups: AnimationGroup[] };
+    let result: {
+        meshes: import('@babylonjs/core/Meshes/abstractMesh').AbstractMesh[];
+        animationGroups: AnimationGroup[];
+    };
     try {
         // 根据扩展名推断 pluginExtension
         const ext = url.split('.').pop()?.toLowerCase();
@@ -166,7 +169,9 @@ export function playRetargetedAnimation(
     // 返回 stop 函数
     let stopped = false;
     return () => {
-        if (stopped) return;
+        if (stopped) {
+            return;
+        }
         stopped = true;
         animationGroup.stop();
         animationGroup.dispose();
@@ -174,7 +179,9 @@ export function playRetargetedAnimation(
 }
 
 /** 清理加载动画时创建的临时网格。 */
-function _cleanupTempMeshes(meshes: import('@babylonjs/core/Meshes/abstractMesh').AbstractMesh[]): void {
+function _cleanupTempMeshes(
+    meshes: import('@babylonjs/core/Meshes/abstractMesh').AbstractMesh[]
+): void {
     for (const mesh of meshes) {
         mesh.dispose();
     }

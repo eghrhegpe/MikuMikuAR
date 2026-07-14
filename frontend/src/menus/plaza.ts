@@ -35,9 +35,17 @@ import { addDisposableListener, type Disposable } from '../core/dom';
 const CUSTOM_SITES_PATH = 'workshop_sites.json';
 
 function escapeHtml(s: string): string {
-    return s.replace(/[&<>"']/g, c => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    })[c] ?? c);
+    return s.replace(
+        /[&<>"']/g,
+        (c) =>
+            ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+            })[c] ?? c
+    );
 }
 
 const L = {
@@ -143,10 +151,14 @@ let allSites: PlazaSite[] = [];
 let allCreators: PlazaCreator[] = [];
 
 function normalizeSite(raw: any): PlazaSite | null {
-    if (!raw || !raw.id) return null;
+    if (!raw || !raw.id) {
+        return null;
+    }
     const name = raw.name || raw.label || raw.id;
     const url = raw.url || '';
-    if (!name || !url) return null;
+    if (!name || !url) {
+        return null;
+    }
     const mode: 'embed' | 'external' = raw.mode === 'embed' ? 'embed' : 'external';
     let icon = raw.icon;
     if (icon && /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]$/u.test(icon)) {
@@ -166,12 +178,20 @@ function normalizeSite(raw: any): PlazaSite | null {
 }
 
 function normalizeCreator(raw: any): PlazaCreator | null {
-    if (!raw || !raw.name) return null;
+    if (!raw || !raw.name) {
+        return null;
+    }
     const site = raw.site || raw.type || '';
-    if (!site) return null;
+    if (!site) {
+        return null;
+    }
     let tag = raw.tag || raw.role || 'creator';
-    if (tag === 'repo') tag = 'creator';
-    if (!['official', 'creator', 'vup', 'oc'].includes(tag)) tag = 'creator';
+    if (tag === 'repo') {
+        tag = 'creator';
+    }
+    if (!['official', 'creator', 'vup', 'oc'].includes(tag)) {
+        tag = 'creator';
+    }
     const primarySite = (site as string).split(';')[0];
     return {
         name: raw.name,
@@ -194,18 +214,32 @@ async function loadCustomSites(): Promise<PlazaSite[]> {
 
 function mergeSites(base: PlazaSite[], extras: PlazaSite[]): PlazaSite[] {
     const map = new Map<string, PlazaSite>();
-    for (const s of base) map.set(s.id, { ...s });
+    for (const s of base) {
+        map.set(s.id, { ...s });
+    }
     for (const s of extras) {
         const existing = map.get(s.id);
         if (existing) {
-            if (s.name) existing.name = s.name;
-            if (s.url) existing.url = s.url;
-            if (s.icon) existing.icon = s.icon;
-            if (s.desc) existing.desc = s.desc;
-            if (s.searchUrl) existing.searchUrl = s.searchUrl;
-            if (s.group) existing.group = s.group;
+            if (s.name) {
+                existing.name = s.name;
+            }
+            if (s.url) {
+                existing.url = s.url;
+            }
+            if (s.icon) {
+                existing.icon = s.icon;
+            }
+            if (s.desc) {
+                existing.desc = s.desc;
+            }
+            if (s.searchUrl) {
+                existing.searchUrl = s.searchUrl;
+            }
+            if (s.group) {
+                existing.group = s.group;
+            }
             if (s.presetSearches && s.presetSearches.length > 0) {
-                const seen = new Set(existing.presetSearches?.map(p => p.label) || []);
+                const seen = new Set(existing.presetSearches?.map((p) => p.label) || []);
                 const merged = [...(existing.presetSearches || [])];
                 for (const p of s.presetSearches) {
                     if (!seen.has(p.label)) {
@@ -229,12 +263,16 @@ async function loadCachedConfig(): Promise<void> {
             const raw = JSON.parse(stJson) as any[];
             const remote = raw.map(normalizeSite).filter(Boolean) as PlazaSite[];
             const merged = mergeSites(PLAZA_SITES, remote);
-            if (merged.length > 0) allSites = merged;
+            if (merged.length > 0) {
+                allSites = merged;
+            }
         }
         if (crJson) {
             const raw = JSON.parse(crJson) as any[];
             const remote = raw.map(normalizeCreator).filter(Boolean) as PlazaCreator[];
-            if (remote.length > 0) allCreators = remote;
+            if (remote.length > 0) {
+                allCreators = remote;
+            }
         }
     } catch {
         // fall through
@@ -246,7 +284,9 @@ async function ensureSitesLoaded(): Promise<void> {
         return;
     }
     await loadCachedConfig();
-    if (allSites.length > 0) return;
+    if (allSites.length > 0) {
+        return;
+    }
 
     const custom = await loadCustomSites();
     allSites = mergeSites(PLAZA_SITES, custom);
@@ -294,7 +334,9 @@ function buildSiteTabs(): HTMLElement {
         btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
         btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
         btn.onclick = () => {
-            if (currentSiteId === site.id) return;
+            if (currentSiteId === site.id) {
+                return;
+            }
             currentSiteId = site.id;
             renderHome();
         };
@@ -339,7 +381,7 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
     searchActions.className = 'plaza-section-actions';
     const moreBtn = document.createElement('button');
     moreBtn.className = 'plaza-btn';
-    moreBtn.innerHTML = `<iconify-icon icon="lucide:more-horizontal"></iconify-icon>`;
+    moreBtn.innerHTML = '<iconify-icon icon="lucide:more-horizontal"></iconify-icon>';
     moreBtn.onclick = (e) => {
         e.stopPropagation();
         showActionsMenu(site, moreBtn);
@@ -368,13 +410,14 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
     } else {
         const empty = document.createElement('div');
         empty.className = 'plaza-empty';
-        empty.innerHTML = `<iconify-icon icon="lucide:search-x"></iconify-icon><span>暂无预设搜索词</span>`;
+        empty.innerHTML =
+            '<iconify-icon icon="lucide:search-x"></iconify-icon><span>暂无预设搜索词</span>';
         searchSection.appendChild(empty);
     }
     container.appendChild(searchSection);
 
     // ── 创作者频道 ──
-    const siteCreators = allCreators.filter(c => c.site === site.id);
+    const siteCreators = allCreators.filter((c) => c.site === site.id);
     const creatorSection = document.createElement('div');
     creatorSection.className = 'plaza-section';
 
@@ -389,10 +432,12 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
     creatorActions.className = 'plaza-section-actions';
     const updateBtn = document.createElement('button');
     updateBtn.className = 'plaza-btn plaza-update-btn';
-    updateBtn.innerHTML = `<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>`;
+    updateBtn.innerHTML =
+        '<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>';
     updateBtn.onclick = async () => {
         updateBtn.disabled = true;
-        updateBtn.innerHTML = `<iconify-icon icon="lucide:loader-2" class="plaza-spin"></iconify-icon><span>更新中...</span>`;
+        updateBtn.innerHTML =
+            '<iconify-icon icon="lucide:loader-2" class="plaza-spin"></iconify-icon><span>更新中...</span>';
         try {
             const [crJson, stJson] = await FetchPlazaConfig();
             if (stJson) {
@@ -404,7 +449,7 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
                 const raw = JSON.parse(crJson) as any[];
                 allCreators = raw.map(normalizeCreator).filter(Boolean) as PlazaCreator[];
             }
-            if (!allSites.some(s => s.id === currentSiteId)) {
+            if (!allSites.some((s) => s.id === currentSiteId)) {
                 currentSiteId = allSites[0]?.id || '';
             }
             renderHome();
@@ -412,7 +457,8 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
             showErrorToast(`更新失败: ${e instanceof Error ? e.message : String(e)}`);
         } finally {
             updateBtn.disabled = false;
-            updateBtn.innerHTML = `<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>`;
+            updateBtn.innerHTML =
+                '<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>';
         }
     };
     creatorActions.appendChild(updateBtn);
@@ -420,7 +466,6 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
     creatorSection.appendChild(creatorHeader);
 
     if (siteCreators.length > 0) {
-
         const searchRow = document.createElement('div');
         searchRow.className = 'plaza-creator-search-row';
         const searchInput = document.createElement('input');
@@ -447,7 +492,9 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
 
         function isFaved(name: string): boolean {
             try {
-                const favs = JSON.parse(localStorage.getItem('miku.plaza.favCreators') || '[]') as string[];
+                const favs = JSON.parse(
+                    localStorage.getItem('miku.plaza.favCreators') || '[]'
+                ) as string[];
                 return favs.includes(name);
             } catch {
                 return false;
@@ -456,7 +503,9 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
 
         function toggleFav(name: string): boolean {
             try {
-                const favs = JSON.parse(localStorage.getItem('miku.plaza.favCreators') || '[]') as string[];
+                const favs = JSON.parse(
+                    localStorage.getItem('miku.plaza.favCreators') || '[]'
+                ) as string[];
                 const idx = favs.indexOf(name);
                 if (idx >= 0) {
                     favs.splice(idx, 1);
@@ -473,22 +522,23 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
         function getFilteredCreators(): PlazaCreator[] {
             const kw = searchKw.trim().toLowerCase();
             let list = activeTag
-                ? siteCreators.filter(c => c.tag === activeTag)
+                ? siteCreators.filter((c) => c.tag === activeTag)
                 : [...siteCreators];
             const favMap = new Map<string, number>();
             list.forEach((c, i) => favMap.set(c.name, isFaved(c.name) ? 1 : 0));
             list.sort((a, b) => {
                 const af = favMap.get(a.name) ?? 0;
                 const bf = favMap.get(b.name) ?? 0;
-                if (af !== bf) return bf - af;
+                if (af !== bf) {
+                    return bf - af;
+                }
                 const at = a.tier === 'gold' ? 0 : a.tier === 'silver' ? 1 : 2;
                 const bt = b.tier === 'gold' ? 0 : b.tier === 'silver' ? 1 : 2;
                 return at - bt;
             });
             if (kw) {
-                list = list.filter(c =>
-                    c.name.toLowerCase().includes(kw) ||
-                    c.desc.toLowerCase().includes(kw)
+                list = list.filter(
+                    (c) => c.name.toLowerCase().includes(kw) || c.desc.toLowerCase().includes(kw)
                 );
             }
             return list;
@@ -500,21 +550,25 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
             for (const cr of filtered) {
                 const card = document.createElement('div');
                 card.className = 'plaza-cr-card';
-                if (cr.tier) card.dataset.tier = cr.tier;
+                if (cr.tier) {
+                    card.dataset.tier = cr.tier;
+                }
                 card.dataset.tag = cr.tag;
                 card.dataset.name = cr.name;
 
-                const tierBar = cr.tier ? `<div class="plaza-cr-tier-bar"></div>` : '';
+                const tierBar = cr.tier ? '<div class="plaza-cr-tier-bar"></div>' : '';
 
                 const fav = isFaved(cr.name) ? '★' : '☆';
 
-                const tagIcon = (tags.find(t => t.key === cr.tag)?.icon) ?? 'lucide:user';
+                const tagIcon = tags.find((t) => t.key === cr.tag)?.icon ?? 'lucide:user';
 
                 card.innerHTML =
                     tierBar +
                     `<div class="plaza-cr-header">
                         <div class="plaza-cr-avatar-container">
-                            <div class="plaza-cr-avatar-ring` + (cr.tier ? ` plaza-cr-ring-${cr.tier}` : '') + `"></div>
+                            <div class="plaza-cr-avatar-ring` +
+                    (cr.tier ? ` plaza-cr-ring-${cr.tier}` : '') +
+                    `"></div>
                             <div class="plaza-cr-avatar plaza-cr-avatar-fb">${cr.name.charAt(0).toUpperCase()}</div>
                         </div>
                         <div class="plaza-cr-name-row">
@@ -531,7 +585,9 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
                     </div>`;
 
                 card.addEventListener('click', (e) => {
-                    if ((e.target as HTMLElement).closest('.plaza-cr-star')) return;
+                    if ((e.target as HTMLElement).closest('.plaza-cr-star')) {
+                        return;
+                    }
                     const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(cr.name));
                     if (url) {
                         openSiteByMode(site, url);
@@ -551,7 +607,9 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
             }
 
             const countEl = creatorSection.querySelector('.plaza-section-sub');
-            if (countEl) countEl.textContent = `(${filtered.length}/${siteCreators.length})`;
+            if (countEl) {
+                countEl.textContent = `(${filtered.length}/${siteCreators.length})`;
+            }
         }
 
         searchInput.addEventListener('input', () => {
@@ -565,7 +623,9 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
             btn.innerHTML = `<iconify-icon icon="${t.icon}" width="12" height="12"></iconify-icon><span>${t.label}</span>`;
             btn.onclick = () => {
                 activeTag = t.key;
-                tagRow.querySelectorAll('.plaza-tag-btn').forEach(b => b.classList.remove('active'));
+                tagRow
+                    .querySelectorAll('.plaza-tag-btn')
+                    .forEach((b) => b.classList.remove('active'));
                 btn.classList.add('active');
                 renderCreators();
             };
@@ -578,7 +638,8 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
     } else {
         const empty = document.createElement('div');
         empty.className = 'plaza-empty';
-        empty.innerHTML = `<iconify-icon icon="lucide:user-x"></iconify-icon><span>暂无收录创作者，点击「更新配置」拉取</span>`;
+        empty.innerHTML =
+            '<iconify-icon icon="lucide:user-x"></iconify-icon><span>暂无收录创作者，点击「更新配置」拉取</span>';
         creatorSection.appendChild(empty);
     }
     container.appendChild(creatorSection);
@@ -951,7 +1012,7 @@ function buildGlobalModeSwitch(): HTMLElement {
         { key: 'window', label: 'wails' },
     ];
     const current = loadGlobalMode() ?? 'auto';
-    const currentOpt = opts.find(o => o.key === current) ?? opts[0];
+    const currentOpt = opts.find((o) => o.key === current) ?? opts[0];
 
     const trigger = document.createElement('button');
     trigger.className = 'plaza-mode-trigger';
@@ -987,11 +1048,15 @@ function buildGlobalModeSwitch(): HTMLElement {
         dropdown.classList.toggle('visible');
     };
 
-    document.addEventListener('click', (e) => {
-        if (!wrap.contains(e.target as Node)) {
-            dropdown.classList.remove('visible');
-        }
-    }, { once: true });
+    document.addEventListener(
+        'click',
+        (e) => {
+            if (!wrap.contains(e.target as Node)) {
+                dropdown.classList.remove('visible');
+            }
+        },
+        { once: true }
+    );
 
     return wrap;
 }
@@ -1085,7 +1150,9 @@ function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
             if (o.key === 'auto') {
                 try {
                     localStorage.removeItem(GLOBAL_MODE_KEY);
-                } catch { /* ignore */ }
+                } catch {
+                    /* ignore */
+                }
             } else {
                 saveGlobalMode(o.key);
             }
@@ -1101,7 +1168,8 @@ function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
 
     const openBtn = document.createElement('button');
     openBtn.className = 'plaza-actions-menu-item plaza-actions-menu-item-accent';
-    openBtn.innerHTML = `<iconify-icon icon="lucide:external-link"></iconify-icon><span>打开网站</span>`;
+    openBtn.innerHTML =
+        '<iconify-icon icon="lucide:external-link"></iconify-icon><span>打开网站</span>';
     openBtn.onclick = () => {
         openSiteByMode(site);
         menu.remove();
@@ -1110,7 +1178,7 @@ function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'plaza-actions-menu-item';
-    closeBtn.innerHTML = `<iconify-icon icon="lucide:x"></iconify-icon><span>关闭</span>`;
+    closeBtn.innerHTML = '<iconify-icon icon="lucide:x"></iconify-icon><span>关闭</span>';
     closeBtn.onclick = () => {
         closePlaza();
         menu.remove();

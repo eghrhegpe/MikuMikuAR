@@ -45,7 +45,11 @@ import {
     clearVmdLayers,
 } from '../scene/motion/vmd-layers';
 import { clearAudio, getAudioName } from '../outfit/audio';
-import { loadAndRetargetAnimation, playRetargetedAnimation, getBoneMapPresets } from '../scene/motion/animation-retargeter';
+import {
+    loadAndRetargetAnimation,
+    playRetargetedAnimation,
+    getBoneMapPresets,
+} from '../scene/motion/animation-retargeter';
 import { SelectImportFile } from '../core/wails-bindings';
 import {
     setProcMotionMode,
@@ -753,9 +757,27 @@ function buildRetargetLevel(): PopupLevel {
         label: '外部动作导入',
         dir: '',
         items: [
-            { kind: 'action', label: 'Mixamo → MMD', icon: 'lucide:user', target: '__retarget_mixamo__', sublabel: 'mixamorig:XXX 骨骼' },
-            { kind: 'action', label: 'VRM → MMD', icon: 'lucide:user', target: '__retarget_vrm__', sublabel: 'VRM 标准骨骼' },
-            { kind: 'action', label: '自定义映射', icon: 'lucide:edit', target: '__retarget_custom__', sublabel: '手动配置骨骼对应' },
+            {
+                kind: 'action',
+                label: 'Mixamo → MMD',
+                icon: 'lucide:user',
+                target: '__retarget_mixamo__',
+                sublabel: 'mixamorig:XXX 骨骼',
+            },
+            {
+                kind: 'action',
+                label: 'VRM → MMD',
+                icon: 'lucide:user',
+                target: '__retarget_vrm__',
+                sublabel: 'VRM 标准骨骼',
+            },
+            {
+                kind: 'action',
+                label: '自定义映射',
+                icon: 'lucide:edit',
+                target: '__retarget_custom__',
+                sublabel: '手动配置骨骼对应',
+            },
         ],
     };
 }
@@ -868,7 +890,9 @@ export function hideMotionPopup(): void {
 // ======== 外部动作导入 ========
 
 /** 外部动作导入：选文件 → 重定向骨骼 → 播放。 */
-async function _importExternalAnimation(preset: 'mixamo' | 'vrm' | 'custom' = 'mixamo'): Promise<void> {
+async function _importExternalAnimation(
+    preset: 'mixamo' | 'vrm' | 'custom' = 'mixamo'
+): Promise<void> {
     // 1. 选文件
     let path: string;
     try {
@@ -876,7 +900,9 @@ async function _importExternalAnimation(preset: 'mixamo' | 'vrm' | 'custom' = 'm
     } catch {
         return; // 用户取消
     }
-    if (!path) return;
+    if (!path) {
+        return;
+    }
 
     // 2. 找聚焦模型
     const foc = modelManager.focused();
