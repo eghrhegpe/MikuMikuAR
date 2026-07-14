@@ -16,7 +16,7 @@ import {
     propRegistry,
     showErrorToast,
 } from '../core/config';
-import { debounce } from '../core/utils';
+import { debounce, swallowError, logWarn } from '../core/utils';
 import {
     getCameraState,
     setCameraState,
@@ -560,7 +560,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     await loadVMDFromPath(resolvedVmdPath, id);
                 }
             } catch (err) {
-                console.warn(`场景恢复: 模型 ${m.name} VMD 加载失败:`, err);
+                logWarn('scene-serialize', `场景恢复: 模型 ${m.name} VMD 加载失败:`, err);
             }
         }
         // 恢复 Motion Layers（批量添加，只触发一次 composite rebuild）
@@ -581,7 +581,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     await addVmdLayersFromPaths(resolvedLayers, id);
                 }
             } catch (err) {
-                console.warn(`场景恢复: 模型 ${m.name} 图层恢复失败:`, err);
+                logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 图层恢复失败:`, err);
             }
         }
         // 恢复 gaze 图层（程序化图层，无 VMD 数据）
@@ -594,7 +594,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                         await addGazeLayer(id, gl.name, gl.weight, gl.enabled ?? true);
                     }
                 } catch (err) {
-                    console.warn(`场景恢复: 模型 ${m.name} gaze 图层恢复失败:`, err);
+                    logWarn('scene-serialize', `场景恢复: 模型 ${m.name} gaze 图层恢复失败:`, err);
                 }
             }
         }
@@ -603,7 +603,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 await loadOutfits(id);
                 applyOutfitVariant(id, m.outfitVariant);
             } catch (err) {
-                console.warn(`场景恢复: 模型 ${m.name} 变体应用失败:`, err);
+                logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 变体应用失败:`, err);
             }
         }
         // 恢复 Bone Override 运行时状态
@@ -612,7 +612,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 const { restoreOverrides } = await import('./motion/bone-override');
                 restoreOverrides(m.boneOverrides);
             } catch (err) {
-                console.warn(`场景恢复: 模型 ${m.name} 骨骼覆盖恢复失败:`, err);
+                logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 骨骼覆盖恢复失败:`, err);
             }
         }
     }
@@ -622,7 +622,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         try {
             setModelFormation(data.formation.type, data.formation.spacing);
         } catch (err) {
-            console.warn('场景恢复: 队形恢复失败:', err);
+            logWarn('scene-serialize', '场景恢复: 队形恢复失败:', err);
         }
     }
 
@@ -710,7 +710,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 }
             }
         } catch (err) {
-            console.warn('场景恢复: 相机 VMD 加载失败:', err);
+            logWarn('scene-serialize', '场景恢复: 相机 VMD 加载失败:', err);
         }
     }
 
@@ -728,7 +728,8 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     try {
                         const ctx = window.AudioContext ? new window.AudioContext() : null;
                         if (ctx && ctx.state === 'suspended') {
-                            console.warn(
+                            logWarn(
+                                'scene-serialize',
                                 '场景恢复: 音频上下文已暂停，跳过自动播放（需用户交互后手动播放）'
                             );
                         } else {
@@ -741,7 +742,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 }
             }
         } catch (err) {
-            console.warn('场景恢复: 音频加载失败:', err);
+            logWarn('scene-serialize', '场景恢复: 音频加载失败:', err);
         }
     }
 
@@ -780,7 +781,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     }
                 }
             } catch (err) {
-                console.warn(`场景恢复: 道具 ${p.name} 加载失败:`, err);
+                logWarn('scene-serialize', `场景恢复: 道具 ${p.name} 加载失败:`, err);
             }
         }
     }
@@ -823,16 +824,16 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     p.boneRotation ?? [0, 0, 0]
                 );
             } catch (err) {
-                console.warn(`场景恢复: 道具 ${p.name} 骨骼锚定失败:`, err);
+                logWarn('scene-serialize', `场景恢复: 道具 ${p.name} 骨骼锚定失败:`, err);
             }
         }
     }
 
     // --- Report loading errors ---
     if (errors.length > 0) {
-        console.warn(`场景恢复: ${errors.length}/${data.models.length} 个模型加载失败`);
+        logWarn('scene-serialize', `场景恢复: ${errors.length}/${data.models.length} 个模型加载失败`);
         for (const err of errors) {
-            console.warn(`  - ${err}`);
+            logWarn('scene-serialize', `  - ${err}`);
         }
         // Emit a user-visible warning via a DOM event so the UI can show a toast
         if (typeof document !== 'undefined') {
@@ -848,7 +849,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
 // ======== Auto-save Debounce ========
 
 const _autoSaveDebounced = debounce((): void => {
-    saveSceneImmediate().catch(() => {});
+    swallowError(saveSceneImmediate());
 }, 500);
 
 /** localStorage key for backup auto-save (sync fallback when async Go call can't complete). */
@@ -876,8 +877,9 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
         const json = JSON.stringify(data);
         const _sJson = performance.now() - _sStart - _sSerialize;
         if (_sSerialize + _sJson > 2) {
-            console.warn(
-                `[perf:save] serialize=${_sSerialize.toFixed(1)}ms json=${_sJson.toFixed(1)}ms len=${json.length}`
+            logWarn(
+                'perf:save',
+                `serialize=${_sSerialize.toFixed(1)}ms json=${_sJson.toFixed(1)}ms len=${json.length}`
             );
         }
 
@@ -910,7 +912,7 @@ function cleanupAndFlushSave(): void {
     _autoSaveDebounced.cancel();
     flushEnvState();
     flushUIState();
-    saveSceneImmediate(true).catch(() => {});
+    swallowError(saveSceneImmediate(true));
 }
 
 // Flush save when page becomes hidden (covers app close / Alt+F4 / refresh).
@@ -985,7 +987,7 @@ export async function tryRestoreLastScene(): Promise<void> {
 
         // 防御二次序列化：parse 后仍是字符串说明数据异常
         if (!raw || typeof raw !== 'object') {
-            console.warn('场景数据格式异常（可能被二次序列化），跳过恢复');
+            logWarn('scene-serialize', '场景数据格式异常（可能被二次序列化），跳过恢复');
             clearLocalSceneBackup();
             return;
         }
@@ -995,7 +997,8 @@ export async function tryRestoreLastScene(): Promise<void> {
 
         // 版本校验 + 基础字段完整性校验
         if (!SUPPORTED_VERSIONS.includes(version)) {
-            console.warn(
+            logWarn(
+                'scene-serialize',
                 `场景文件版本 v${version} 不受支持（支持: ${SUPPORTED_VERSIONS.join(', ')}）`
             );
             clearLocalSceneBackup();
@@ -1004,7 +1007,7 @@ export async function tryRestoreLastScene(): Promise<void> {
 
         // 确保 models 字段存在且是数组
         if (!Array.isArray(data.models)) {
-            console.warn('场景数据缺少有效的 models 字段，跳过恢复');
+            logWarn('scene-serialize', '场景数据缺少有效的 models 字段，跳过恢复');
             clearLocalSceneBackup();
             return;
         }
@@ -1013,7 +1016,7 @@ export async function tryRestoreLastScene(): Promise<void> {
         logCameraAlpha(); // 记录当前 alpha 诊断
         console.info(`从 v${version} 场景文件恢复成功`);
     } catch (err) {
-        console.warn('场景恢复失败（数据可能已损坏）:', err);
+        logWarn('scene-serialize', '场景恢复失败（数据可能已损坏）:', err);
         clearLocalSceneBackup();
     }
 }

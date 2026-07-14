@@ -1,6 +1,7 @@
 import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem, Observer, Scene } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/physics/wind-utils';
+import { logWarn } from '@/core/utils';
 import { _envSys, getScene, ensureEnvUpdateObserver, addRipple, getGroundHeightAt } from './env-impl';
 import { createCanvasTexture } from './env-texture';
 
@@ -180,7 +181,7 @@ function drawParticleShape(ctx: CanvasRenderingContext2D, kind: string): void {
             break;
         }
         default: {
-            console.warn('[drawParticleShape] unknown particle kind: ' + kind);
+            logWarn('drawParticleShape', 'unknown particle kind: ' + kind);
             ctx.fillStyle = '#ff00ff';
             ctx.fillRect(0, 0, 64, 64);
             break;

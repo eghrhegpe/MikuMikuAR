@@ -21,7 +21,7 @@ import {
     PlazaZoomReset,
 } from '../core/wails-bindings';
 import { openExternalURL } from '../core/platform';
-import { closeAllOverlays } from '../core/utils';
+import { closeAllOverlays, swallowError, logWarn } from '../core/utils';
 import { PLAZA_SITES, type PlazaSite } from './plaza-sites';
 import { setStatus } from '../core/status-bar';
 import { t } from '../core/i18n/t';
@@ -172,7 +172,7 @@ function installShortcuts(): void {
             prevent: true,
             handler: () => {
                 if (getLayer().classList.contains('visible')) {
-                    PlazaReload().catch(() => {});
+                    swallowError(PlazaReload());
                 }
             },
             group: 'shortcuts.group.plaza',
@@ -185,7 +185,7 @@ function installShortcuts(): void {
             prevent: true,
             handler: () => {
                 if (getLayer().classList.contains('visible')) {
-                    PlazaReload().catch(() => {});
+                    swallowError(PlazaReload());
                 }
             },
             group: 'shortcuts.group.plaza',
@@ -198,7 +198,7 @@ function installShortcuts(): void {
             prevent: true,
             handler: () => {
                 if (getLayer().classList.contains('visible')) {
-                    PlazaGoBack().catch(() => {});
+                    swallowError(PlazaGoBack());
                 }
             },
             group: 'shortcuts.group.plaza',
@@ -211,7 +211,7 @@ function installShortcuts(): void {
             prevent: true,
             handler: () => {
                 if (getLayer().classList.contains('visible')) {
-                    PlazaGoForward().catch(() => {});
+                    swallowError(PlazaGoForward());
                 }
             },
             group: 'shortcuts.group.plaza',
@@ -224,7 +224,7 @@ function installShortcuts(): void {
             prevent: true,
             handler: () => {
                 if (getLayer().classList.contains('visible')) {
-                    PlazaZoomIn().catch(() => {});
+                    swallowError(PlazaZoomIn());
                 }
             },
             group: 'shortcuts.group.plaza',
@@ -237,7 +237,7 @@ function installShortcuts(): void {
             prevent: true,
             handler: () => {
                 if (getLayer().classList.contains('visible')) {
-                    PlazaZoomOut().catch(() => {});
+                    swallowError(PlazaZoomOut());
                 }
             },
             group: 'shortcuts.group.plaza',
@@ -289,7 +289,7 @@ function installEventListeners(): void {
                     label: t('plaza.viewLibrary'),
                     onClick: () => {
                         refreshLibrary().catch((err) =>
-                            console.warn('refresh after plaza download:', err)
+                            logWarn('plaza', 'refresh after plaza download:', err)
                         );
                     },
                 },
@@ -370,12 +370,12 @@ function renderRemote(site: PlazaSite): void {
             title: site.name,
             onBack: async () => {
                 plazaProxyActive = false;
-                await ClosePlazaWindow().catch(() => {});
+                await ClosePlazaWindow().catch((err) => logWarn('plaza', '', err));
                 renderHome();
             },
             onClose: async () => {
                 plazaProxyActive = false;
-                await ClosePlazaWindow().catch(() => {});
+                await ClosePlazaWindow().catch((err) => logWarn('plaza', '', err));
                 closePlaza();
             },
         })
@@ -408,7 +408,7 @@ function renderRemote(site: PlazaSite): void {
         b.className = 'plaza-btn plaza-remote-btn';
         b.textContent = label;
         b.onclick = () => {
-            fn().catch(() => {});
+            swallowError(fn());
         };
         controls.appendChild(b);
     };
@@ -431,7 +431,7 @@ function stopProxy(): void {
         return;
     }
     plazaProxyActive = false;
-    StopProxy().catch(() => {});
+    swallowError(StopProxy());
 }
 
 // 监听 #webviewLayer 的 visible 类移除：覆盖任何关闭路径（侧栏再点 / 交叉淡入 /

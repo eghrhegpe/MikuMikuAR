@@ -10,6 +10,7 @@ import type { PopupLevel } from '../core/config';
 import { cardContainer, setStatus } from '../core/config';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
+import { logWarn } from '../core/utils';
 
 export interface PresetListViewerConfig<T> {
     /** 子菜单标题（仅 buildPresetListLevel 用） */
@@ -119,7 +120,7 @@ export async function presetListContent<T>(
                         await config.onDelete!(item);
                         onReRender();
                     } catch (e) {
-                        console.warn('[PresetListViewer] onDelete failed:', e);
+                        logWarn('PresetListViewer', 'onDelete failed:', e);
                     }
                 });
                 row.appendChild(delBtn);

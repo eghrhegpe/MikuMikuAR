@@ -12,7 +12,7 @@ import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
 import type { Observer } from '@babylonjs/core/Misc/observable';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
-import { clamp, clamp01, lerp, lerpArray, setKey } from '@/core/utils';
+import { clamp, clamp01, lerp, lerpArray, setKey, logWarn } from '@/core/utils';
 
 // ======== Tone Mapping Modes ========
 
@@ -271,7 +271,7 @@ export function defaultRenderState(): RenderState {
  */
 function _applyRenderState(s: Partial<RenderState>): void {
     if (!pipeline || !_scene || !_modelRegistry) {
-        console.warn('[renderer] _applyRenderState: pipeline/scene 未初始化，状态更新被忽略');
+        logWarn('renderer', '_applyRenderState: pipeline/scene 未初始化，状态更新被忽略');
         return;
     }
 
@@ -425,7 +425,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
                     _ssrPipeline.samples = 1;
                     _ssrPipeline.isEnabled = true;
                 } catch (err) {
-                    console.warn('[renderer] SSR pipeline 创建失败:', err);
+                    logWarn('renderer', 'SSR pipeline 创建失败:', err);
                     _ssrPipeline = null;
                 }
             } else if (!s.ssrEnabled && _ssrPipeline) {
@@ -470,7 +470,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
                     );
                     _reflectionProbe.refreshRate = 0; // 静态环境，仅渲染一次
                 } catch (err) {
-                    console.warn('[renderer] ReflectionProbe 创建失败:', err);
+                    logWarn('renderer', 'ReflectionProbe 创建失败:', err);
                     _reflectionProbe = null;
                 }
             } else if (!s.reflectionProbeEnabled && _reflectionProbe) {
@@ -538,7 +538,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
                     _ssaoPipeline.bilateralSamples = 16;
                     _ssaoPipeline.bilateralSoften = 0.5;
                 } catch (err) {
-                    console.warn('[renderer] SSAO pipeline 创建失败:', err);
+                    logWarn('renderer', 'SSAO pipeline 创建失败:', err);
                     _ssaoPipeline = null;
                 }
             } else if (!s.ssaoEnabled && _ssaoPipeline) {
@@ -600,7 +600,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
 
 export function setRenderState(s: Partial<RenderState>): void {
     if (!pipeline || !_scene || !_modelRegistry || !_triggerAutoSave) {
-        console.warn('[renderer] setRenderState: pipeline/scene 未初始化，状态更新被忽略');
+        logWarn('renderer', 'setRenderState: pipeline/scene 未初始化，状态更新被忽略');
         return;
     }
 

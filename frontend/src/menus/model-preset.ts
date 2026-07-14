@@ -41,7 +41,7 @@ import {
     setVolume,
     setAudioOffset,
 } from '../outfit/audio';
-import { tryCatchStatus, showErrorToast, getBaseName, normPath } from '../core/utils';
+import { tryCatchStatus, showErrorToast, getBaseName, normPath, logWarn } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { buildPresetListLevel as buildGenericPresetLevel } from './preset-list-viewer';
 
@@ -186,7 +186,7 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
                 await loadManager.load({ kind: 'vmd', path: preset.vmd.path, modelId: id });
             } catch (vmdErr) {
                 setStatus(t('model-preset.vmdLoadFailed'), false);
-                console.warn('applyModelPreset: vmd load failed', vmdErr);
+                logWarn('model-preset', 'applyModelPreset: vmd load failed', vmdErr);
             }
         } else {
             stopVMD(id);

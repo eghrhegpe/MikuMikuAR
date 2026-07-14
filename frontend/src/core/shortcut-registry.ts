@@ -2,6 +2,8 @@
 // No framework dependency, pure TypeScript module-level state.
 // KeyboardEvent.code is used for key matching (e.g. 'Digit1', 'Space', 'Escape', 'KeyA').
 
+import { logWarn } from './utils';
+
 export interface ShortcutDef {
     id: string; // unique, e.g. 'toggle:models'
     label: string; // i18n key into shortcuts.label.* (e.g. 'shortcuts.label.models')
@@ -103,7 +105,7 @@ function scopeMatches(shortcutScope: string | undefined, currentScope: string): 
 /** Register ONE shortcut. */
 export function registerShortcut(def: ShortcutDef): void {
     if (!def.handler) {
-        console.warn(`[shortcut-registry] Shortcut "${def.id}" has no handler`);
+        logWarn('shortcut-registry', `Shortcut "${def.id}" has no handler`);
         return;
     }
     _shortcuts.set(def.id, def);
@@ -211,7 +213,7 @@ export function exportKeyBindings(): Record<string, KeyBindingOverride> {
  */
 export function initShortcutDispatcher(): void {
     if (_initialized) {
-        console.warn('[shortcut-registry] Dispatcher already initialized');
+        logWarn('shortcut-registry', 'Dispatcher already initialized');
         return;
     }
     _initialized = true;

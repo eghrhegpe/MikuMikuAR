@@ -11,6 +11,7 @@ import {
 } from '../core/wails-bindings';
 import { setStatus, cardContainer } from '../core/config';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
+import { swallowError } from '../core/utils';
 import { getCurrentRenderingMenu } from './menu';
 import { t } from '../core/i18n/t';
 import {
@@ -44,7 +45,7 @@ function _renderUISizeControls(
         0.05,
         (v) => {
             document.documentElement.style.setProperty('--ui-scale', String(v));
-            SetUIScale(v).catch(() => {});
+            swallowError(SetUIScale(v));
             getSettingsMenu()?.updateControls();
         },
         'lucide:maximize',
@@ -65,7 +66,7 @@ function _renderUISizeControls(
         10,
         (v) => {
             document.documentElement.style.setProperty('--popup-width', v + 'px');
-            SetUIPopupWidth(v).catch(() => {});
+            swallowError(SetUIPopupWidth(v));
             getSettingsMenu()?.updateControls();
         },
         'lucide:sidebar',
@@ -180,7 +181,7 @@ function _renderFontControls(
             false,
             () => {
                 document.documentElement.style.setProperty('--font', f.css);
-                SetUIFontFamily(key).catch(() => {});
+                swallowError(SetUIFontFamily(key));
                 getSettingsMenu()?.updateControls();
                 setStatus(t('settings.fontSet', { label: f.label }), true);
             },
@@ -224,7 +225,7 @@ function _renderAnimationControls(
         initialAnim,
         (v) => {
             document.documentElement.style.setProperty('--ui-animations', v ? '1' : '0');
-            SetUIAnimations(v).catch(() => {});
+            swallowError(SetUIAnimations(v));
             getSettingsMenu()?.updateControls();
         },
         'lucide:move',
@@ -244,7 +245,7 @@ function _renderAnimationControls(
             document
                 .querySelectorAll<HTMLElement>('.overlay')
                 .forEach((el) => el.classList.toggle('blur-bg', v));
-            SetUIBlurBg(v).catch(() => {});
+            swallowError(SetUIBlurBg(v));
             getSettingsMenu()?.updateControls();
         },
         'lucide:monitor',
@@ -274,12 +275,12 @@ function _renderResetButton(
         document
             .querySelectorAll<HTMLElement>('.overlay')
             .forEach((el) => el.classList.remove('blur-bg'));
-        SetUIScale(1).catch(() => {});
-        SetUIPopupWidth(280).catch(() => {});
-        SetUIAccent('#4a6cf7').catch(() => {});
-        SetUIFontFamily('system').catch(() => {});
-        SetUIAnimations(true).catch(() => {});
-        SetUIBlurBg(false).catch(() => {});
+        swallowError(SetUIScale(1));
+        swallowError(SetUIPopupWidth(280));
+        swallowError(SetUIAccent('#4a6cf7'));
+        swallowError(SetUIFontFamily('system'));
+        swallowError(SetUIAnimations(true));
+        swallowError(SetUIBlurBg(false));
         getSettingsMenu()?.updateControls();
         setStatus(t('settings.appearanceReset'), true);
     });

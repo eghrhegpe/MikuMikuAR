@@ -13,6 +13,7 @@
  */
 
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { logWarn } from '../core/utils';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
@@ -60,8 +61,9 @@ function _getBundles(
     }
     // babylon-mmd 升级可能导致字段不存在，warn 一次
     if (map !== undefined) {
-        console.warn(
-            '[wind-physics] _rigidBodyBundleMap 类型异常，风力物理已禁用。检查 babylon-mmd 版本兼容性'
+        logWarn(
+            'wind-physics',
+            '_rigidBodyBundleMap 类型异常，风力物理已禁用。检查 babylon-mmd 版本兼容性'
         );
     }
     return [];

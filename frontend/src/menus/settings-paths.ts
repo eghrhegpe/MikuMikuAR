@@ -30,7 +30,7 @@ import {
 } from './library-core';
 import { t } from '../core/i18n/t';
 import { setLang, type LangCode } from '../core/i18n/locale';
-import { CATEGORY_DIR } from '../core/utils';
+import { CATEGORY_DIR, logWarn } from '../core/utils';
 import type { PopupLevel } from '../core/config';
 import { SETTINGS, SETTINGS_ACTION } from './settings-targets';
 import { isAndroidPlatform } from '../core/platform';
@@ -54,7 +54,7 @@ export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
                 setStatus(t('settings.extractCacheCleared'), true);
                 window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
             })
-            .catch(console.warn);
+            .catch((err) => logWarn('paths', '', err));
     },
     [SETTINGS_ACTION.CLEAR_THUMBNAIL]: () => {
         (async () => {
@@ -64,7 +64,7 @@ export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
                         setStatus(t('settings.thumbnailCacheCleared'), true);
                         window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
                     })
-                    .catch(console.warn);
+                    .catch((err) => logWarn('paths', '', err));
             }
         })();
     },
@@ -76,20 +76,20 @@ export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
                         setStatus(t('settings.allCacheCleared'), true);
                         window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
                     })
-                    .catch(console.warn);
+                    .catch((err) => logWarn('paths', '', err));
             }
         })();
     },
-    [SETTINGS_ACTION.RESOURCE_ROOT]: () => selectResourceRoot().catch(console.warn),
-    [SETTINGS_ACTION.PATH_PMX]: (row) => selectOverridePath('pmx').catch(console.warn),
-    [SETTINGS_ACTION.PATH_VMD]: (row) => selectOverridePath('vmd').catch(console.warn),
-    [SETTINGS_ACTION.PATH_AUDIO]: (row) => selectOverridePath('audio').catch(console.warn),
-    [SETTINGS_ACTION.PATH_PROP]: (row) => selectOverridePath('prop').catch(console.warn),
-    [SETTINGS_ACTION.PATH_STAGE]: (row) => selectOverridePath('stage').catch(console.warn),
+    [SETTINGS_ACTION.RESOURCE_ROOT]: () => selectResourceRoot().catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_PMX]: (row) => selectOverridePath('pmx').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_VMD]: (row) => selectOverridePath('vmd').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_AUDIO]: (row) => selectOverridePath('audio').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_PROP]: (row) => selectOverridePath('prop').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_STAGE]: (row) => selectOverridePath('stage').catch((err) => logWarn('paths', '', err)),
     [SETTINGS_ACTION.PATH_ENVIRONMENT]: (row) =>
-        selectOverridePath('environment').catch(console.warn),
-    [SETTINGS_ACTION.PATH_MD_DRESS]: (row) => selectOverridePath('md_dress').catch(console.warn),
-    [SETTINGS_ACTION.PATH_SETTING]: (row) => selectOverridePath('setting').catch(console.warn),
+        selectOverridePath('environment').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_MD_DRESS]: (row) => selectOverridePath('md_dress').catch((err) => logWarn('paths', '', err)),
+    [SETTINGS_ACTION.PATH_SETTING]: (row) => selectOverridePath('setting').catch((err) => logWarn('paths', '', err)),
 };
 
 export function handleSettingsAction(row: PopupRow, menu?: SlideMenu): void {
@@ -169,7 +169,7 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                                 setStatus(msg, allModels.length === 0);
                                             })
                                             .catch((err) => {
-                                                console.warn('[paths] refreshLibrary failed:', err);
+                                                logWarn('paths', 'refreshLibrary failed:', err);
                                             });
                                     })
                                     .catch((err) => {
@@ -357,7 +357,7 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         (v) => {
                             setDownloadWatchEnabledCached(v);
                             SetDownloadWatchEnabled(v).catch((err) =>
-                                console.warn('[watch] SetDownloadWatchEnabled failed', err)
+                                logWarn('watch', 'SetDownloadWatchEnabled failed', err)
                             );
                             getSettingsMenu()?.updateControls();
                             setStatus(v ? t('settings.watchOn') : t('settings.watchOff'), true);
@@ -386,7 +386,7 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                 getSettingsMenu()?.updateControls();
                                 setStatus(t('settings.watchDirSet', { dir }), true);
                             } catch (err) {
-                                console.warn('[watch] SetDownloadWatchDir failed', err);
+                                logWarn('watch', 'SetDownloadWatchDir failed', err);
                                 setStatus(t('settings.watchDirFail', { err }), true);
                             }
                             return dir;
@@ -399,7 +399,7 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         (v) => {
                             setAutoImportCached(v);
                             SetDownloadAutoImport(v).catch((err) =>
-                                console.warn('[watch] SetDownloadAutoImport failed', err)
+                                logWarn('watch', 'SetDownloadAutoImport failed', err)
                             );
                             getSettingsMenu()?.updateControls();
                             setStatus(

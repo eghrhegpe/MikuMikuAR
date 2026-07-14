@@ -29,6 +29,7 @@ import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { handleSettingsAction } from './settings-paths';
 import { buildSoftwareDetailLevel } from './settings-software';
+import { swallowError, logWarn } from '../core/utils';
 
 function exportSettings(): void {
     const data = JSON.stringify(uiState, null, 2);
@@ -54,19 +55,19 @@ function reapplyImportedSettings(): void {
     applyUIAppearanceDom(uiState);
     const pm = uiState.performanceMode ?? 'auto';
     setPerformanceMode(pm);
-    SetPerformanceMode(pm).catch(() => {});
-    SetUIScale(uiState.scale ?? 1).catch(() => {});
+    swallowError(SetPerformanceMode(pm));
+    swallowError(SetUIScale(uiState.scale ?? 1));
     if (uiState.popupWidth) {
-        SetUIPopupWidth(uiState.popupWidth).catch(() => {});
+        swallowError(SetUIPopupWidth(uiState.popupWidth));
     }
     if (uiState.accent) {
-        SetUIAccent(uiState.accent).catch(() => {});
+        swallowError(SetUIAccent(uiState.accent));
     }
     if (uiState.fontFamily) {
-        SetUIFontFamily(uiState.fontFamily).catch(() => {});
+        swallowError(SetUIFontFamily(uiState.fontFamily));
     }
-    SetUIAnimations(uiState.animations !== false).catch(() => {});
-    SetUIBlurBg(!!uiState.blurBg).catch(() => {});
+    swallowError(SetUIAnimations(uiState.animations !== false));
+    swallowError(SetUIBlurBg(!!uiState.blurBg));
 }
 
 function importSettings(): void {
@@ -151,7 +152,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                             detail.innerHTML = `<div>build: ${info.buildTime}</div><div>commit: ${info.commitHash}</div><div>go: ${info.goVersion}</div>`;
                             inner.appendChild(detail);
                         })
-                        .catch(() => {});
+                        .catch((err) => logWarn('settings-about', '', err));
                 });
             },
         },
@@ -232,7 +233,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                     detail.innerHTML = `<div>${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div><div>${t('settings.about.cache.serve')}: ${formatBytes(s.serveBytes)} (${s.serveCount} 项)</div>`;
                                 }
                             })
-                            .catch(() => {});
+                            .catch((err) => logWarn('settings-about', '', err));
                     };
                     refreshCacheStats();
                     window.addEventListener('mmar:cache-cleared', refreshCacheStats);

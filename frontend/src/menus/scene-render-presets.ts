@@ -5,7 +5,7 @@ import { setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { showPrompt } from '../core/dialog';
-import { tryCatchStatus, showErrorToast } from '../core/utils';
+import { tryCatchStatus, showErrorToast, logWarn } from '../core/utils';
 import { slideRow } from '../core/ui-helpers';
 import {
     getRenderState,
@@ -310,6 +310,6 @@ export async function loadUserPresets(): Promise<void> {
             }
         }
     } catch (err) {
-        console.warn('loadUserPresets:', err);
+        logWarn('scene-render-presets', 'loadUserPresets:', err);
     }
 }

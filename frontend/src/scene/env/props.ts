@@ -15,7 +15,7 @@ import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
 import { t } from '@/core/i18n/t';
-import { getBaseName } from '@/core/utils';
+import { getBaseName, logWarn } from '@/core/utils';
 import {
     attachGizmo,
     detachGizmo,
@@ -195,7 +195,7 @@ export function setPropTransform(
 
     if (partial.position !== undefined) {
         if (!isValidPosition(partial.position)) {
-            console.warn('[props] setPropTransform: 无效的 position', partial.position);
+            logWarn('props', 'setPropTransform: 无效的 position', partial.position);
             return;
         }
         inst.position = partial.position;
@@ -207,7 +207,7 @@ export function setPropTransform(
     }
     if (partial.scaling !== undefined) {
         if (!isValidScaling(partial.scaling)) {
-            console.warn('[props] setPropTransform: 无效的 scaling', partial.scaling);
+            logWarn('props', 'setPropTransform: 无效的 scaling', partial.scaling);
             return;
         }
         inst.scaling = partial.scaling;
@@ -249,7 +249,7 @@ export function setPropOrbit(
         elevation > 90;
     const o = normalizeOrbit(azimuth, elevation, distance);
     if (invalid) {
-        console.warn('[props] setPropOrbit: 输入越界已钳制', {
+        logWarn('props', 'setPropOrbit: 输入越界已钳制', {
             azimuth,
             elevation,
             distance,

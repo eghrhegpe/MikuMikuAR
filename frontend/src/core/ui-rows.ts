@@ -6,7 +6,7 @@ import { getCurrentRenderingMenu } from '../menus/menu';
 import { ControlOptions } from './ui-types';
 import { slideRow } from './ui-slide-row';
 import { t } from './i18n/t';
-import { clamp01 } from '@/core/utils';
+import { clamp01, swallowError } from '@/core/utils';
 
 // ===================================================================
 // addToggleRow
@@ -513,7 +513,7 @@ export function addWatchDirRow(
     });
 
     // 回填初始目录
-    onRefreshStatus(async (text) => {
+    swallowError(onRefreshStatus(async (text) => {
         const prefix = t('settings.paths.watching')
             .replace(/\{dir\}/g, '')
             .replace(/\s+$/, '');
@@ -521,7 +521,7 @@ export function addWatchDirRow(
         if (match) {
             dirInput.value = match[1];
         }
-    }).catch(() => {});
+    }));
 
     dirRow.appendChild(dirInput);
     dirRow.appendChild(selectBtn);

@@ -3,7 +3,7 @@
 
 import { resolveFileUrl } from '../core/fileservice';
 import { triggerAutoSave, setUIState } from '../core/config';
-import { clamp01 } from '@/core/utils';
+import { clamp01, logWarn } from '@/core/utils';
 import type { BeatDetector } from '../motion-algos/beat-detector';
 import { uiState } from '../core/state';
 
@@ -32,7 +32,7 @@ export async function playAudio(url: string, name: string): Promise<void> {
     try {
         await audio.play();
     } catch (err) {
-        console.warn('playAudio:', err);
+        logWarn('audio', 'playAudio', err);
     }
 }
 
@@ -68,7 +68,7 @@ export function resumeAudio(): void {
     if (!audioElement) {
         return;
     }
-    audioElement.play().catch((err) => console.warn('resumeAudio:', err));
+    audioElement.play().catch((err) => logWarn('audio', 'resumeAudio', err));
 }
 
 export function stopAudio(): void {

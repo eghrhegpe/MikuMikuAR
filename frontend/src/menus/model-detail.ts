@@ -34,7 +34,7 @@ import {
     ScanSoftwareDir,
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
-import { tryCatchStatus, getBrowseDir } from '../core/utils';
+import { tryCatchStatus, getBrowseDir, logWarn } from '../core/utils';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -569,10 +569,7 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                                                         refreshTags();
                                                     })
                                                     .catch((e) =>
-                                                        console.warn(
-                                                            '[model-detail] remove tag failed:',
-                                                            e
-                                                        )
+                                                        logWarn('model-detail', 'remove tag failed:', e)
                                                     );
                                             } else {
                                                 AddTag(libRef, tag)
@@ -580,10 +577,7 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                                                         refreshTags();
                                                     })
                                                     .catch((e) =>
-                                                        console.warn(
-                                                            '[model-detail] add tag failed:',
-                                                            e
-                                                        )
+                                                        logWarn('model-detail', 'add tag failed:', e)
                                                     );
                                             }
                                         });
@@ -599,9 +593,9 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                                             '</span>';
                                     }
                                 })
-                                .catch((e) => console.warn('[model-detail] tag load failed:', e));
+                                .catch((e) => logWarn('model-detail', 'tag load failed:', e));
                         })
-                        .catch((e) => console.warn('[model-detail] tag load failed:', e));
+                        .catch((e) => logWarn('model-detail', 'tag load failed:', e));
                     c.appendChild(picker);
                 });
             },

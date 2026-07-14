@@ -5,6 +5,7 @@
  */
 import { canEncodeName, type MorphKeyFrame } from './vmd-writer';
 import { FPS, type ProcMotionState } from './proc-motion-shared';
+import { logWarn } from '../core/utils';
 
 // ============================================================================
 // 黑名单模式（眨眼/口型等非情绪 morph）
@@ -232,7 +233,7 @@ export function generateEmotionMorphs(
     const emotionMorphs = findBestEmotionMorphs(morphNames);
 
     if (emotionMorphs.size === 0) {
-        console.warn('[procedural-motion] 未找到任何表情 morph，跳过情绪轮');
+        logWarn('procedural-motion', '未找到任何表情 morph，跳过情绪轮');
         return { morphs, found: 0 };
     }
 

@@ -1,5 +1,5 @@
 import { canEncodeName } from './vmd-writer';
-import { clamp } from '@/core/utils';
+import { clamp, logWarn } from '@/core/utils';
 
 export type ProcMotionMode = 'off' | 'idle' | 'autodance';
 
@@ -154,7 +154,7 @@ export function matchBone(actualBones: string[], candidates: string[]): string |
             if (canEncodeName(c)) {
                 return c;
             }
-            console.warn(`[procedural-motion] 骨骼 "${c}" 无法编码为 Shift-JIS，跳过`);
+            logWarn('procedural-motion', `骨骼 "${c}" 无法编码为 Shift-JIS，跳过`);
             return null;
         }
     }

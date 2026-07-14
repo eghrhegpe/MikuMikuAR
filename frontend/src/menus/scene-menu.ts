@@ -23,7 +23,7 @@ import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
 import { serializeScene, isARModeActive, takeARScreenshot } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
-import { tryCatchStatus, showErrorToast } from '../core/utils';
+import { waitForFrame, tryCatchStatus, showErrorToast } from '../core/utils';
 import { setModelFormation } from '../scene/scene';
 import { focusModel } from '../scene/scene';
 import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
@@ -221,8 +221,8 @@ export async function screenshotCurrent(): Promise<void> {
         uiState.screenshotDir = dir;
         setUIState({ screenshotDir: dir });
     }
-    await new Promise((r) => requestAnimationFrame(r));
-    await new Promise((r) => requestAnimationFrame(r));
+    await waitForFrame();
+    await waitForFrame();
     const fmt = uiState.screenshotFormat ?? 'image/png';
     const q = uiState.screenshotQuality ?? 0.9;
     const ts = Date.now();
@@ -270,9 +270,9 @@ async function screenshotBatch(): Promise<void> {
         for (const [id, inst] of modelRegistry) {
             setFocusedModelId(id);
             focusModel(id);
-            await new Promise((r) => requestAnimationFrame(r));
-            await new Promise((r) => requestAnimationFrame(r));
-            await new Promise((r) => requestAnimationFrame(r));
+            await waitForFrame();
+            await waitForFrame();
+            await waitForFrame();
             const fmt = uiState.screenshotFormat ?? 'image/png';
             const q = uiState.screenshotQuality ?? 0.9;
             let base64: string;

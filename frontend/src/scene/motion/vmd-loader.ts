@@ -17,7 +17,7 @@ import {
     triggerAutoSave,
     addRecentMotion,
 } from '@/core/config';
-import { getBaseName, withLoadingIndicator } from '@/core/utils';
+import { getBaseName, withLoadingIndicator, logWarn } from '@/core/utils';
 import { normPath, encodeFileRef, fetchArrayBuffer } from '@/core/fileservice';
 import { t } from '@/core/i18n/t';
 import { loadCameraVmd } from '../camera/camera';
@@ -60,7 +60,7 @@ export async function loadVMDMotion(
 ): Promise<void> {
     if (!isValidVmd(data)) {
         setStatus(t('scene.vmd.loadFailed'), false);
-        console.warn('[vmd-loader] Invalid VMD signature, rejected:', name);
+        logWarn('vmd-loader', 'Invalid VMD signature, rejected:', name);
         return;
     }
     const {
@@ -100,7 +100,7 @@ export async function loadVMDMotion(
 
         // 检查是否在 await 期间有新的 loadVMDMotion 调用，过期则丢弃
         if (_vmdLoadGeneration !== capturedGen) {
-            console.warn('[vmd-loader] Stale loadVMDMotion result discarded:', name);
+            logWarn('vmd-loader', 'Stale loadVMDMotion result discarded:', name);
             setStatus(t('scene.vmd.loadFailed'), false);
             return;
         }

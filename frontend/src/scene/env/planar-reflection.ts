@@ -23,6 +23,7 @@ import {
     Vector3,
 } from '@babylonjs/core';
 import type { EnvState } from '@/core/config';
+import { logWarn } from '@/core/utils';
 
 const RT_REFRESH_ONCE =
     (RenderTargetTexture as unknown as { REFRESHRATE_RENDER_ONCE?: number })
@@ -217,7 +218,7 @@ export class PlanarReflection {
         try {
             this.rt.render();
         } catch (e) {
-            console.warn(`[planar-reflection] ${this.cfg.name} 反射 RT 渲染异常，已跳过本帧：`, e);
+            logWarn('planar-reflection', `${this.cfg.name} 反射 RT 渲染异常，已跳过本帧：`, e);
         }
     }
 
