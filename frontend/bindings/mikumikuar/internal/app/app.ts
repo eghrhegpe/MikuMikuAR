@@ -170,6 +170,16 @@ export function ExtractZip(zipPath: string, innerPath: string): $CancellableProm
 }
 
 /**
+ * FetchPlazaConfig fetches the latest plaza config (creators.json + plaza_sites.json)
+ * from GitHub with three-way fallback (raw → jsdelivr → GitHub API),
+ * caches the results locally, and returns the raw JSON strings.
+ * If all remotes fail, falls back to the local cache.
+ */
+export function FetchPlazaConfig(): $CancellablePromise<[string, string]> {
+    return $Call.ByID(27702931);
+}
+
+/**
  * GetAllTags returns a deduplicated list of all tags across all models.
  */
 export function GetAllTags(): $CancellablePromise<string[] | null> {
@@ -195,6 +205,13 @@ export function GetBuildInfo(): $CancellablePromise<$models.BuildInfo | null> {
  */
 export function GetCacheStats(): $CancellablePromise<$models.CacheStats | null> {
     return $Call.ByID(2256096336);
+}
+
+/**
+ * GetCachedPlazaConfig returns the locally cached config without hitting the network.
+ */
+export function GetCachedPlazaConfig(): $CancellablePromise<[string, string]> {
+    return $Call.ByID(3080419677);
 }
 
 /**

@@ -1180,6 +1180,8 @@ export const en: Record<string, string> = {
     'settings.perf.customDesc': 'Control render/lighting individually',
     'settings.perf.fpsCap': 'FPS Cap',
     'settings.perf.fpsHint': 'Set to 0 for unlimited. Mobile建议30 to save battery.',
+    'settings.perf.showFpsClock': 'Show FPS clock',
+    'settings.perf.showRuntimeBadge': 'Show multithreading badge',
     'settings.perf.vsync': 'VSync',
     'settings.perf.vsyncHintOn':
         'Enables requestAnimationFrame loop; off removes FPS cap but cannot set limit.',

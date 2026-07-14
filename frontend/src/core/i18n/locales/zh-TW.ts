@@ -1065,6 +1065,8 @@ export const zhTW: Record<string, string> = {
     'settings.perf.customDesc': '逐項獨立控制渲染/光照開關',
     'settings.perf.fpsCap': '幀率上限',
     'settings.perf.fpsHint': '設為 0 表示不限制。行動裝置建議 30 以省電。',
+    'settings.perf.showFpsClock': '顯示幀率時鐘',
+    'settings.perf.showRuntimeBadge': '顯示多執行緒徽標',
     'settings.perf.vsync': '垂直同步',
     'settings.perf.vsyncHintOn':
         '啟用後採用 requestAnimationFrame 循環；關閉後幀率不受刷新率限制，但無法設定幀率上限。',

@@ -783,7 +783,7 @@ input, textarea, [contenteditable] {
     align-items: stretch;
     gap: 0;
     padding: 0 16px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--surf, rgba(22, 22, 34, 0.9));
     border-bottom: 1px solid var(--border, rgba(57, 197, 187, 0.15));
     overflow-x: auto;
     scrollbar-width: none;
@@ -797,14 +797,14 @@ input, textarea, [contenteditable] {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 10px 14px;
+    padding: 6px 12px;
     font-size: 12px;
     border: none;
     border-bottom: 2px solid transparent;
     background: transparent;
     color: var(--text-muted, rgba(232, 246, 244, 0.6));
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
+    transition: color var(--tr-fast), border-color var(--tr-fast);
     white-space: nowrap;
     font-family: inherit;
     margin-bottom: -1px;
@@ -812,87 +812,235 @@ input, textarea, [contenteditable] {
 
 .plaza-site-tab:hover {
     color: var(--text, #e8f6f4);
+    background: var(--hover, rgba(42, 42, 66, 0.5));
 }
 
 .plaza-site-tab.active {
     color: var(--accent, #39c5bb);
     border-bottom-color: var(--accent, #39c5bb);
     font-weight: 600;
+    background: var(--bg, rgba(17, 17, 27, 0.8));
 }
 
 .plaza-site-tab iconify-icon {
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .plaza-site-content {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 16px 20px;
-}
-
-.plaza-open-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    font-size: 11px;
-    font-weight: 600;
-}
-
-.plaza-open-btn iconify-icon {
-    font-size: 12px;
+    padding: 12px 16px;
+    background: var(--bg, rgba(17, 17, 27, 0.95));
 }
 
 .plaza-section {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .plaza-section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 6px;
 }
 
 .plaza-section-title {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 13px;
+    gap: 5px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text, #e8f6f4);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
 }
 
 .plaza-section-title iconify-icon {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--accent, #39c5bb);
 }
 
 .plaza-section-sub {
-    font-size: 11px;
-    color: var(--text-muted, rgba(232, 246, 244, 0.45));
+    font-size: 10px;
+    color: var(--text-muted, rgba(232, 246, 244, 0.4));
     font-weight: 400;
+    margin-left: 2px;
 }
 
 .plaza-section-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
 }
 
+.plaza-actions-menu {
+    position: fixed;
+    z-index: 9999;
+    min-width: 170px;
+    background: var(--surf, rgba(22, 22, 34, 0.98));
+    border: 1px solid var(--border, rgba(57, 197, 187, 0.18));
+    border-radius: var(--radius-lg, 8px);
+    padding: 6px;
+    box-shadow: var(--shadow-lg, 0 4px 16px rgba(0, 0, 0, 0.15));
+}
+
+.plaza-actions-menu-title {
+    font-size: 9px;
+    color: var(--text-muted, rgba(232, 246, 244, 0.4));
+    padding: 3px 8px 5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.plaza-actions-menu-modes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: 0 3px;
+}
+
+.plaza-actions-menu-item {
+    width: calc(50% - 2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 6px;
+    font-size: 10px;
+    color: var(--text, #e8f6f4);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm, 4px);
+    cursor: pointer;
+    font-family: inherit;
+    text-align: center;
+    transition: background var(--tr-fast);
+}
+
+.plaza-actions-menu-item:hover {
+    background: var(--hover, rgba(42, 42, 66, 0.6));
+}
+
+.plaza-actions-menu-item.active {
+    background: color-mix(in srgb, var(--accent, #39c5bb) 15%, transparent);
+    color: var(--accent, #39c5bb);
+}
+
+.plaza-actions-menu-item iconify-icon {
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.plaza-actions-menu-item-accent {
+    color: var(--accent, #39c5bb);
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.plaza-actions-menu-divider ~ .plaza-actions-menu-item {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.plaza-actions-menu-divider {
+    height: 1px;
+    background: var(--border, rgba(57, 197, 187, 0.12));
+    margin: 6px 3px;
+}
+
 .plaza-preset-area {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.plaza-preset-btn {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm, 4px);
+    border: 1px solid var(--border, rgba(57, 197, 187, 0.18));
+    background: var(--card, rgba(36, 36, 62, 0.6));
+    color: var(--text-muted, rgba(232, 246, 244, 0.6));
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color var(--tr-fast), color var(--tr-fast), background var(--tr-fast);
+    white-space: nowrap;
+}
+
+.plaza-preset-btn:hover {
+    border-color: var(--accent, #39c5bb);
+    color: var(--accent, #39c5bb);
+    background: color-mix(in srgb, var(--accent, #39c5bb) 10%, transparent);
+}
+
+/* ── 创作者频道 ── */
+.plaza-update-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    padding: 3px 6px;
+}
+
+.plaza-update-btn iconify-icon {
+    font-size: 11px;
+}
+
+.plaza-spin {
+    animation: plaza-spin-anim 1s linear infinite;
+}
+
+@keyframes plaza-spin-anim {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.plaza-tag-filter-row {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.plaza-tag-btn {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm, 4px);
+    border: 1px solid var(--border, rgba(57, 197, 187, 0.18));
+    background: transparent;
+    color: var(--text-muted, rgba(232, 246, 244, 0.5));
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.plaza-tag-btn:hover {
+    border-color: var(--accent, #39c5bb);
+    color: var(--text, #e8f6f4);
+}
+
+.plaza-tag-btn.active {
+    background: rgba(57, 197, 187, 0.12);
+    border-color: var(--accent, #39c5bb);
+    color: var(--accent, #39c5bb);
+}
+
+.plaza-creator-area {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
 }
 
-.plaza-preset-btn {
-    font-size: 12px;
-    padding: 4px 12px;
-    border-radius: 8px;
+.plaza-creator-btn {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
     border: 1px solid var(--border, rgba(57, 197, 187, 0.18));
     background: rgba(10, 16, 20, 0.6);
     color: var(--text-muted, rgba(232, 246, 244, 0.6));
@@ -902,10 +1050,32 @@ input, textarea, [contenteditable] {
     white-space: nowrap;
 }
 
-.plaza-preset-btn:hover {
+.plaza-creator-btn:hover {
     border-color: var(--accent, #39c5bb);
     color: var(--accent, #39c5bb);
     background: rgba(57, 197, 187, 0.08);
+}
+
+.plaza-creator-btn.plaza-creator-gold {
+    border-color: rgba(255, 215, 0, 0.3);
+    color: rgba(255, 215, 0, 0.8);
+}
+
+.plaza-creator-btn.plaza-creator-gold:hover {
+    border-color: rgba(255, 215, 0, 0.6);
+    color: rgba(255, 215, 0, 1);
+    background: rgba(255, 215, 0, 0.06);
+}
+
+.plaza-creator-btn.plaza-creator-silver {
+    border-color: rgba(192, 192, 192, 0.25);
+    color: rgba(192, 192, 192, 0.75);
+}
+
+.plaza-creator-btn.plaza-creator-silver:hover {
+    border-color: rgba(192, 192, 192, 0.5);
+    color: rgba(192, 192, 192, 1);
+    background: rgba(192, 192, 192, 0.06);
 }
 
 /* ===== 外部库 — 行内路径 ===== */

@@ -1165,6 +1165,8 @@ export const zhCN: Record<string, string> = {
     'settings.perf.customDesc': '逐项独立控制渲染/光照开关',
     'settings.perf.fpsCap': '帧率上限',
     'settings.perf.fpsHint': '设为 0 表示不限制。移动端建议 30 以省电。',
+    'settings.perf.showFpsClock': '显示帧率时钟',
+    'settings.perf.showRuntimeBadge': '显示多线程徽标',
     'settings.perf.vsync': '垂直同步',
     'settings.perf.vsyncHintOn':
         '开启该项后，框架采用 requestAnimationFrame 循环；关闭后帧率不受刷新率限制，但无法设置帧率上限。',

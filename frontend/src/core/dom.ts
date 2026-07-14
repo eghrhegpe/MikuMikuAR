@@ -35,6 +35,7 @@ export const dom = {
             this.canvas.style.visibility = 'visible';
             this.playbackBar.style.pointerEvents = 'auto';
             this.statusText.textContent = t('boot.readyHint');
+            this.statusBar.style.display = 'flex';
         }, 150);
     },
 

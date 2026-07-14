@@ -23,6 +23,8 @@ import {
 import { openExternalURL } from '../core/platform';
 import { closeAllOverlays, swallowError, logWarn } from '../core/utils';
 import { PLAZA_SITES, type PlazaSite } from './plaza-sites';
+import { PLAZA_CREATORS, type PlazaCreator } from './plaza-creators';
+import { FetchPlazaConfig, GetCachedPlazaConfig, ReadTextFile } from '../core/wails-bindings';
 import { setStatus } from '../core/status-bar';
 import { t } from '../core/i18n/t';
 import { showErrorToast } from '../core/toast';
@@ -131,9 +133,11 @@ function hasSiteOverride(site: PlazaSite): boolean {
     }
 }
 
+let allSites: PlazaSite[] = [];
+let allCreators: PlazaCreator[] = [];
+
 async function loadCustomSites(): Promise<PlazaSite[]> {
     try {
-        const { ReadTextFile } = await import('../core/wails-bindings');
         const content = await ReadTextFile(CUSTOM_SITES_PATH);
         const json = JSON.parse(content) as PlazaSite[];
         return json.filter((s) => s.id && s.name && s.url && s.mode);
@@ -142,29 +146,37 @@ async function loadCustomSites(): Promise<PlazaSite[]> {
     }
 }
 
-let allSites: PlazaSite[] = [];
+async function loadCachedConfig(): Promise<void> {
+    try {
+        const [crJson, stJson] = await GetCachedPlazaConfig();
+        if (stJson) {
+            const remote = JSON.parse(stJson) as PlazaSite[];
+            const builtinIds = new Set(PLAZA_SITES.map((s) => s.id));
+            const merged = [...PLAZA_SITES, ...remote.filter((s) => s.id && s.name && s.url && s.mode && !builtinIds.has(s.id))];
+            if (merged.length > 0) allSites = merged;
+        }
+        if (crJson) {
+            const remote = JSON.parse(crJson) as PlazaCreator[];
+            if (remote.length > 0) allCreators = remote;
+        }
+    } catch {
+        // cache miss or parse error — fall through to built-in data
+    }
+}
 
 async function ensureSitesLoaded(): Promise<void> {
     if (allSites.length > 0) {
         return;
     }
+    // 1. try local cache from previous remote fetch
+    await loadCachedConfig();
+    if (allSites.length > 0) return;
+
+    // 2. fall back to built-in + custom file
     const custom = await loadCustomSites();
     const builtinIds = new Set(PLAZA_SITES.map((s) => s.id));
     allSites = [...PLAZA_SITES, ...custom.filter((s) => !builtinIds.has(s.id))];
-}
-
-function buildSearchBar(): HTMLElement {
-    const wrap = document.createElement('div');
-    wrap.className = 'plaza-search-bar';
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'plaza-search-input';
-    input.placeholder = '搜索站点...';
-    input.addEventListener('input', () => {
-        renderHome(input.value);
-    });
-    wrap.appendChild(input);
-    return wrap;
+    allCreators = [...PLAZA_CREATORS];
 }
 
 function buildPresetTags(site: PlazaSite): HTMLElement | null {
@@ -252,20 +264,14 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
         const sectionActions = document.createElement('div');
         sectionActions.className = 'plaza-section-actions';
 
-        const modeSwitch = buildGlobalModeSwitch();
-        sectionActions.appendChild(modeSwitch);
-
-        const openBtn = document.createElement('button');
-        openBtn.className = 'plaza-btn plaza-btn-accent plaza-open-btn';
-        openBtn.innerHTML = `<iconify-icon icon="lucide:external-link"></iconify-icon><span>打开网站</span>`;
-        openBtn.onclick = () => openSiteByMode(site);
-        sectionActions.appendChild(openBtn);
-
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'plaza-btn';
-        closeBtn.innerHTML = `<iconify-icon icon="lucide:x"></iconify-icon><span>关闭</span>`;
-        closeBtn.onclick = closePlaza;
-        sectionActions.appendChild(closeBtn);
+        const moreBtn = document.createElement('button');
+        moreBtn.className = 'plaza-btn';
+        moreBtn.innerHTML = `<iconify-icon icon="lucide:more-horizontal"></iconify-icon>`;
+        moreBtn.onclick = (e) => {
+            e.stopPropagation();
+            showActionsMenu(site, moreBtn);
+        };
+        sectionActions.appendChild(moreBtn);
 
         sectionHeader.appendChild(sectionActions);
         section.appendChild(sectionHeader);
@@ -287,6 +293,105 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
         }
 
         section.appendChild(presetArea);
+        container.appendChild(section);
+    }
+
+    // ── 创作者频道 ──
+    const siteCreators = allCreators.filter(c => c.site === site.id);
+    if (siteCreators.length > 0) {
+        const section = document.createElement('div');
+        section.className = 'plaza-section';
+
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'plaza-section-header';
+
+        const sectionTitle = document.createElement('div');
+        sectionTitle.className = 'plaza-section-title';
+        sectionTitle.innerHTML = `<iconify-icon icon="lucide:users"></iconify-icon><span>活跃创作者</span><span class="plaza-section-sub">(${siteCreators.length})</span>`;
+        sectionHeader.appendChild(sectionTitle);
+
+        const sectionActions = document.createElement('div');
+        sectionActions.className = 'plaza-section-actions';
+        const updateBtn = document.createElement('button');
+        updateBtn.className = 'plaza-btn plaza-update-btn';
+        updateBtn.innerHTML = `<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>`;
+        updateBtn.onclick = async () => {
+            updateBtn.disabled = true;
+            updateBtn.innerHTML = `<iconify-icon icon="lucide:loader-2" class="plaza-spin"></iconify-icon><span>更新中...</span>`;
+            try {
+                const [crJson, stJson] = await FetchPlazaConfig();
+                if (stJson) {
+                    const remote = JSON.parse(stJson) as PlazaSite[];
+                    const builtinIds = new Set(PLAZA_SITES.map((s) => s.id));
+                    allSites = [...PLAZA_SITES, ...remote.filter((s) => s.id && s.name && s.url && s.mode && !builtinIds.has(s.id))];
+                }
+                if (crJson) {
+                    allCreators = JSON.parse(crJson) as PlazaCreator[];
+                }
+                renderHome();
+            } catch (e) {
+                showErrorToast(`更新失败: ${e instanceof Error ? e.message : String(e)}`);
+            } finally {
+                updateBtn.disabled = false;
+                updateBtn.innerHTML = `<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>`;
+            }
+        };
+        sectionActions.appendChild(updateBtn);
+        sectionHeader.appendChild(sectionActions);
+
+        section.appendChild(sectionHeader);
+
+        // tag 过滤行
+        const tags: { key: string; label: string }[] = [
+            { key: '', label: '全部' },
+            { key: 'official', label: '官方IP' },
+            { key: 'creator', label: '创作者' },
+            { key: 'vup', label: 'VUP' },
+            { key: 'oc', label: 'OC' },
+        ];
+        const tagRow = document.createElement('div');
+        tagRow.className = 'plaza-tag-filter-row';
+
+        let activeTag = '';
+        const creatorArea = document.createElement('div');
+        creatorArea.className = 'plaza-creator-area';
+
+        function renderCreators(): void {
+            creatorArea.innerHTML = '';
+            const filtered = activeTag
+                ? siteCreators.filter(c => c.tag === activeTag)
+                : siteCreators;
+            for (const cr of filtered) {
+                const btn = document.createElement('button');
+                btn.className = 'plaza-creator-btn' + (cr.tier ? ` plaza-creator-${cr.tier}` : '');
+                btn.textContent = cr.name;
+                btn.title = cr.desc;
+                btn.onclick = () => {
+                    const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(cr.name));
+                    if (url) {
+                        openSiteByMode(site, url);
+                    }
+                };
+                creatorArea.appendChild(btn);
+            }
+        }
+
+        for (const t of tags) {
+            const btn = document.createElement('button');
+            btn.className = 'plaza-tag-btn' + (t.key === '' ? ' active' : '');
+            btn.textContent = t.label;
+            btn.onclick = () => {
+                activeTag = t.key;
+                tagRow.querySelectorAll('.plaza-tag-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderCreators();
+            };
+            tagRow.appendChild(btn);
+        }
+
+        section.appendChild(tagRow);
+        renderCreators();
+        section.appendChild(creatorArea);
         container.appendChild(section);
     }
 
@@ -626,6 +731,7 @@ function ensureObserver(): void {
 function buildGlobalModeSwitch(): HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'plaza-modeswitch plaza-global-mode';
+
     const opts: { key: OpenMode | 'auto'; label: string }[] = [
         { key: 'auto', label: '自动' },
         { key: 'embed', label: 'iframe' },
@@ -633,6 +739,15 @@ function buildGlobalModeSwitch(): HTMLElement {
         { key: 'window', label: 'wails' },
     ];
     const current = loadGlobalMode() ?? 'auto';
+    const currentOpt = opts.find(o => o.key === current) ?? opts[0];
+
+    const trigger = document.createElement('button');
+    trigger.className = 'plaza-mode-trigger';
+    trigger.innerHTML = `<span>${currentOpt.label}</span><iconify-icon icon="lucide:chevron-down"></iconify-icon>`;
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'plaza-mode-dropdown';
+
     for (const o of opts) {
         const b = document.createElement('button');
         b.className = 'plaza-mode-opt' + (current === o.key ? ' active' : '');
@@ -647,10 +762,25 @@ function buildGlobalModeSwitch(): HTMLElement {
             } else {
                 saveGlobalMode(o.key);
             }
+            dropdown.classList.remove('visible');
             renderHome();
         };
-        wrap.appendChild(b);
+        dropdown.appendChild(b);
     }
+
+    wrap.appendChild(trigger);
+    wrap.appendChild(dropdown);
+
+    trigger.onclick = () => {
+        dropdown.classList.toggle('visible');
+    };
+
+    document.addEventListener('click', (e) => {
+        if (!wrap.contains(e.target as Node)) {
+            dropdown.classList.remove('visible');
+        }
+    }, { once: true });
+
     return wrap;
 }
 
@@ -704,6 +834,89 @@ function showSiteModePopup(site: PlazaSite, x: number, y: number): void {
     const onDown = (e: MouseEvent): void => {
         if (!popup.contains(e.target as Node)) {
             popup.remove();
+            onDownDisp?.dispose();
+            onDownDisp = null;
+        }
+    };
+    setTimeout(() => {
+        onDownDisp = addDisposableListener(document, 'mousedown', onDown);
+    }, 0);
+}
+
+function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
+    const existing = document.querySelector('.plaza-actions-menu');
+    if (existing) {
+        existing.remove();
+    }
+    const menu = document.createElement('div');
+    menu.className = 'plaza-actions-menu';
+
+    const modeTitle = document.createElement('div');
+    modeTitle.className = 'plaza-actions-menu-title';
+    modeTitle.textContent = '打开方式';
+    menu.appendChild(modeTitle);
+
+    const modes = document.createElement('div');
+    modes.className = 'plaza-actions-menu-modes';
+    const opts: { key: OpenMode | 'auto'; label: string }[] = [
+        { key: 'auto', label: '自动' },
+        { key: 'embed', label: 'iframe' },
+        { key: 'external', label: 'chrome' },
+        { key: 'window', label: 'wails' },
+    ];
+    const current = loadGlobalMode() ?? 'auto';
+    for (const o of opts) {
+        const b = document.createElement('button');
+        b.className = 'plaza-actions-menu-item' + (current === o.key ? ' active' : '');
+        b.textContent = o.label;
+        b.onclick = () => {
+            if (o.key === 'auto') {
+                try {
+                    localStorage.removeItem(GLOBAL_MODE_KEY);
+                } catch { /* ignore */ }
+            } else {
+                saveGlobalMode(o.key);
+            }
+            menu.remove();
+        };
+        modes.appendChild(b);
+    }
+    menu.appendChild(modes);
+
+    const divider = document.createElement('div');
+    divider.className = 'plaza-actions-menu-divider';
+    menu.appendChild(divider);
+
+    const openBtn = document.createElement('button');
+    openBtn.className = 'plaza-actions-menu-item plaza-actions-menu-item-accent';
+    openBtn.innerHTML = `<iconify-icon icon="lucide:external-link"></iconify-icon><span>打开网站</span>`;
+    openBtn.onclick = () => {
+        openSiteByMode(site);
+        menu.remove();
+    };
+    menu.appendChild(openBtn);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'plaza-actions-menu-item';
+    closeBtn.innerHTML = `<iconify-icon icon="lucide:x"></iconify-icon><span>关闭</span>`;
+    closeBtn.onclick = () => {
+        closePlaza();
+        menu.remove();
+    };
+    menu.appendChild(closeBtn);
+
+    document.body.appendChild(menu);
+    const anchorRect = anchor.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const px = Math.min(anchorRect.right - menuRect.width, window.innerWidth - menuRect.width - 8);
+    const py = Math.min(anchorRect.bottom + 4, window.innerHeight - menuRect.height - 8);
+    menu.style.left = `${px}px`;
+    menu.style.top = `${py}px`;
+
+    let onDownDisp: Disposable | null = null;
+    const onDown = (e: MouseEvent): void => {
+        if (!menu.contains(e.target as Node)) {
+            menu.remove();
             onDownDisp?.dispose();
             onDownDisp = null;
         }
