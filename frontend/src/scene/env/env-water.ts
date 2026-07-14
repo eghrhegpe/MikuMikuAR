@@ -273,6 +273,8 @@ function regenerateCausticTexture(scene: Scene, waterColor: [number, number, num
         _causticTexture.dispose();
         _causticTexture = null;
     }
+    // 焦散纹理直调 createCanvasTexture（不经 _texCache）：水面单实例，随颜色变化重建；
+    // 重建前已 dispose 旧纹理（上方程序 272-275），水 dispose 时一并释放。
     _causticTexture = createCanvasTexture({
         size: S,
         draw,

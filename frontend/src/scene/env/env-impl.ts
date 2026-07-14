@@ -617,6 +617,9 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
         }
     };
 
+    // 直调 createCanvasTexture（不经 getOrCreateCanvasTexture 的 _texCache）：地面为单实例，
+    // 纹理仅随 applyGround 重建更换；旧纹理随旧材质在 disposeEnv / 重建路径一并 dispose，
+    // 不由 env-texture.disposeTextureCache 管理。
     return createCanvasTexture({ size, draw, scene, name: 'envGround', wrap: 'clamp' });
 }
 
@@ -1031,6 +1034,9 @@ export function applyGround(state: EnvState): void {
     const scene = getScene();
     ensureEnvUpdateObserver(); // 滚动、follow-camera、反射等每帧逻辑依赖统一 observer（Fix: 避免隐式依赖云/水模块注册）
 
+    // typeKey：地面「重建指纹」。仅当指纹变化（groundType / 地形参数 / 尺寸 / 颜色 /
+    // 纹理 / 反射质量等）才走下方重建分支；否则走原地增量更新（颜色 / 透明度 / 坡度 / 反射）。
+    // 新增任何影响网格重建的参数，必须同步纳入此 key，否则改动不会触发重建。
     const typeKey =
         state.groundType === 'terrain'
             ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}`

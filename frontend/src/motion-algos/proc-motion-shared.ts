@@ -5,7 +5,6 @@ export type ProcMotionMode = 'off' | 'idle' | 'autodance';
 
 export const PROC_VMD_NAME_IDLE = 'IdleMotion';
 export const PROC_VMD_NAME_AUTODANCE = 'AutoDance';
-export const PROC_VMD_NAME_LIFELIKE = 'LifelikeMotion';
 
 export const PROC_MOTION_BONE_CATEGORIES = [
     'center',
@@ -41,8 +40,6 @@ export interface ProcMotionState {
     multiMorphEnabled: boolean;
     eyeTrackingEnabled: boolean;
     headTrackingEnabled: boolean;
-    lifelikeEnabled: boolean;
-    lifelikeIntensity: number;
 }
 
 const _defaultBoneToggles: Record<ProcMotionBoneCategory, boolean> = {
@@ -73,8 +70,6 @@ export const DEFAULT_PROC_STATE: ProcMotionState = {
     multiMorphEnabled: false,
     eyeTrackingEnabled: true,
     headTrackingEnabled: true,
-    lifelikeEnabled: false,
-    lifelikeIntensity: 0.3,
 };
 
 export const BONE_CENTER_CANDIDATES = ['センター', '全ての親', 'center', 'Center', 'Root', 'root'];

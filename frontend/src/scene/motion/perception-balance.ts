@@ -14,15 +14,15 @@ import { _q } from './perception-shared';
 
 /** 重心微动周期（秒，从 idle loopFrames=120@60fps 转换：120/60=2s） */
 const BALANCE_SWAY_PERIOD = 2.0;
-/** 重心微动各骨骼振幅（从 idle 算法提取，intensity 固定 1.0） */
+/** 重心微动各骨骼振幅（从 idle 算法提取，已削至微动量级，intensity 固定 1.0） */
 const SWAY_AMP = {
-    center_rz: 0.1, // center 慢速摆动
-    center_rx: 0.03, // center 微动
-    center_bobY: 0.04, // center 上下浮动
-    upper2_rx: 0.015, // 上半身2 前后倾
-    waist_rz: 0.02, // 腰 左右摆
-    allParent_rx: 0.005, // 全ての親 微倾
-    allParent_rz: 0.005,
+    center_rz: 0.05, // center 慢速摆动（削半：原 0.1 → 0.05，避免 VMD 播放时过晃）
+    center_rx: 0.02, // center 微动（原 0.03）
+    center_bobY: 0.03, // center 上下浮动（原 0.04）
+    upper2_rx: 0.015, // 上半身2 前后倾（不变）
+    waist_rz: 0.015, // 腰 左右摆（原 0.02，配合 center_rz 削幅）
+    allParent_rx: 0.005, // 全ての親 微倾（不变）
+    allParent_rz: 0.005, // （不变）
 };
 
 /** 上次写入的骨骼名（用于关闭时复位 position，防止残留冻结，与微表情复位逻辑同款） */
@@ -40,6 +40,11 @@ let _lastWaistRz = 0;
 let _lastAllParentRx = 0;
 let _lastAllParentRz = 0;
 
+/** 上一次观察器调用时间戳（用于帧间隔缩放，使 delta 不依赖帧率） */
+let _lastSwayTime = 0;
+/** 旋转增量缩放系数（<1.0 使微动更柔和，保留 VMD 基准旋转） */
+const SWAY_DELTA_FACTOR = 0.6;
+
 /** 重置增量状态（activatePerception / 重激活时调用，避免跨模型残留导致塌地） */
 export function _resetBalanceSwayState(): void {
     _lastBobY = 0;
@@ -50,6 +55,7 @@ export function _resetBalanceSwayState(): void {
     _lastWaistRz = 0;
     _lastAllParentRx = 0;
     _lastAllParentRz = 0;
+    _lastSwayTime = 0;
 }
 
 export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void {
@@ -91,9 +97,10 @@ export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean)
 
             const rz = Math.sin(slowPhase) * SWAY_AMP.center_rz;
             const rx = Math.sin(phase * 0.37 + 0.5) * SWAY_AMP.center_rx;
-            // rotation 增量叠加（deltaQ * currentQ，避免 Slerp 平均吃掉基准旋转）
-            const deltaCenterRz = rz - _lastCenterRz;
-            const deltaCenterRx = rx - _lastCenterRx;
+            // rotation 增量叠加（deltaQ * currentQ × SWAY_DELTA_FACTOR，
+            // 避免 Slerp 平均吃掉非零基准旋转 / VMD 旋转，同时控制振幅感知）
+            const deltaCenterRz = (rz - _lastCenterRz) * SWAY_DELTA_FACTOR;
+            const deltaCenterRx = (rx - _lastCenterRx) * SWAY_DELTA_FACTOR;
             if (deltaCenterRz !== 0 || deltaCenterRx !== 0) {
                 const deltaQ = _q().copyFrom(
                     Quaternion.FromEulerAngles(deltaCenterRx, 0, deltaCenterRz)
@@ -113,7 +120,7 @@ export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean)
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === upper2Name);
         if (bone?.linkedBone) {
             const rx = Math.sin(phase * 0.7 + 0.3) * SWAY_AMP.upper2_rx;
-            const deltaRx = rx - _lastUpperRx;
+            const deltaRx = (rx - _lastUpperRx) * SWAY_DELTA_FACTOR;
             if (deltaRx !== 0) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaRx, 0, 0));
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
@@ -130,7 +137,7 @@ export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean)
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === waistName);
         if (bone?.linkedBone) {
             const rz = Math.sin(phase + 0.5) * SWAY_AMP.waist_rz;
-            const deltaRz = rz - _lastWaistRz;
+            const deltaRz = (rz - _lastWaistRz) * SWAY_DELTA_FACTOR;
             if (deltaRz !== 0) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(0, 0, deltaRz));
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
@@ -148,8 +155,8 @@ export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean)
         if (bone?.linkedBone) {
             const rx = Math.sin(phase * 0.2 + 1.1) * SWAY_AMP.allParent_rx;
             const rz = Math.sin(phase * 0.3 + 2.3) * SWAY_AMP.allParent_rz;
-            const deltaRx = rx - _lastAllParentRx;
-            const deltaRz = rz - _lastAllParentRz;
+            const deltaRx = (rx - _lastAllParentRx) * SWAY_DELTA_FACTOR;
+            const deltaRz = (rz - _lastAllParentRz) * SWAY_DELTA_FACTOR;
             if (deltaRx !== 0 || deltaRz !== 0) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaRx, 0, deltaRz));
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);

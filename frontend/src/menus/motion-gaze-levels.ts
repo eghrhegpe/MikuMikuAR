@@ -1,4 +1,4 @@
-// [doc:architecture] Motion Gaze Levels — 视线追踪独立弹窗层级（ADR-093 schema 驱动）
+// [doc:architecture] Motion Perception Levels — 感知表现独立弹窗层级（ADR-093 schema 驱动）
 // [doc:adr-071] 感知层统一入口：眼部跟随 / 头部跟随 / 呼吸 / 眨眼
 // 与程序化动作解耦，独立文件责任分明
 

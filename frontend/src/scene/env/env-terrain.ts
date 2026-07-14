@@ -51,6 +51,8 @@ export function fbm(x: number, z: number, seed: number, octaves: number, baseFre
     return norm > 0 ? sum / norm : 0; // ~[-1,1]
 }
 
+// 高度图分辨率：CPU 端 canvas 逐像素 FBM 生成。256² 在加载开销与地形细节间平衡良好。
+// 技术债：若需更高分辨率（≥512²）或运行时动态地形，应改 GPU 生成（计算/顶点着色器）；当前 256² 可接受。
 const TERRAIN_HM_SIZE = 256;
 
 /** 程序化生成灰度高度图（data URL），亮=高峰、暗=低谷。经统一工厂创建（受约束环境返回 ''）。 */
