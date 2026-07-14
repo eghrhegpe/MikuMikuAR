@@ -41,7 +41,7 @@ func (a *App) GetCachedPlazaConfig() (creators string, sites string) {
 // ── internal ──
 
 const (
-	plazaGitHubOwner  = "zhujieling11"
+	plazaGitHubOwner  = "eghrhegpe"
 	plazaGitHubRepo   = "MikuMikuAR"
 	plazaGitHubBranch = "main"
 )
