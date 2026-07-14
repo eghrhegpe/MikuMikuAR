@@ -3,7 +3,7 @@
 // Raises coverage of model-manager.ts from ~20% to 60%+ lines.
 // Vitest hoists vi.mock calls - the factory uses require() for shared mocks.
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // ---- Module Mocks (hoisted by vitest before all imports) ----
 
@@ -88,7 +88,6 @@ import { ModelManager } from '../scene/manager/model-manager';
 import { setFocusedModelId } from '../core/config';
 import { Scene } from '@babylonjs/core/scene';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
-import { Vector3 as MockVector3 } from '@babylonjs/core/Maths/math.vector';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 
 // ---- Helpers ----

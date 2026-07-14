@@ -12,7 +12,6 @@ import {
 const state: ProcMotionState = { ...DEFAULT_PROC_STATE, mode: 'idle', intensity: 0.5, speed: 1.0 };
 
 /** 标准 MMD 骨骼名，确保 _matchBone 能找到匹配 */
-const BONES_STANDARD = ['センター', '上半身', '頭', '左腕', '右腕'];
 const BONES_CENTER_UPPER = ['センター', '上半身'];
 const BONES_ALL = ['センター', '上半身', '頭', '左腕', '右腕'];
 

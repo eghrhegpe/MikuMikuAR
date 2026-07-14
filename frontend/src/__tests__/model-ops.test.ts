@@ -192,7 +192,7 @@ function resetState(): void {
 }
 
 const updatePlaybackUI = vi.mocked(playbackModule.updatePlaybackUI);
-const disposeModelMaterialState = vi.mocked(materialModule.disposeModelMaterialState);
+const _disposeModelMaterialState = vi.mocked(materialModule.disposeModelMaterialState);
 const refreshWaterRenderList = vi.mocked(envModule.refreshWaterRenderList);
 const disposeAudio = vi.mocked(audioModule.disposeAudio);
 const switchCameraMode = vi.mocked(cameraModule.switchCameraMode);

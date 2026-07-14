@@ -1025,7 +1025,7 @@ describe('ADR-100 dual-axis export guards (P4)', () => {
 
     it('setCameraControl(freefly) 当行为为 beatcut → 行为回落 none 且订阅退订', () => {
         const unsub = vi.fn();
-        const detector = { onBeat: vi.fn(() => unsub) };
+        const _detector = { onBeat: vi.fn(() => unsub) };
         cameraModule.setCameraBehavior('beatcut'); // orbit 下开启
         expect(cameraModule.getCameraBehavior()).toBe('beatcut');
         expect(cameraModule.isAutoCameraEnabled()).toBe(true);

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DEFAULT_PROC_STATE, PROC_MOTION_BONE_CATEGORIES } from '../motion-algos/procedural-motion';
-import { BeatDetector } from '../motion-algos/beat-detector';
 
 // =====================================================================
 // hoisted mock state — shared between vi.mock factories and test body

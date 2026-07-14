@@ -40,7 +40,7 @@ const {
     }
 
     // ── envState defaults (matches config.ts initial values) ──
-    const defaults: Record<string, any> = {
+    const _defaults: Record<string, any> = {
         skyMode: 'color',
         skyColorTop: [0.3, 0.5, 0.8],
         skyColorMid: [0.8, 0.8, 0.9],

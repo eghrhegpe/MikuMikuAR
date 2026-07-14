@@ -595,7 +595,7 @@ describe('binding contract: method IDs', () => {
         }
 
         if (failures.length > 0) {
-            const lines = failures.map(
+            const _lines = failures.map(
                 (f) => `  ❌ ${f.name}: declared=${f.declared}, expected=${f.expected}`
             );
             expect(failures).toEqual([]);

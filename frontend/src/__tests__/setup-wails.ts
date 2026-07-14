@@ -29,7 +29,7 @@ vi.mock('@wailsio/runtime', () => ({
     Create: {
         Nullable: vi.fn((type) => type),
         Array: vi.fn((type) => type),
-        Map: vi.fn((keyType, valueType) => ({})),
+        Map: vi.fn((_keyType, _valueType) => ({})),
         Any: 'any',
         Events: Object.freeze({}),
     },
