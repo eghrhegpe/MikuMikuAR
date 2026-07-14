@@ -2,6 +2,7 @@
 // 职责: 从 MD 导出的 FBX 加载叠加 mesh，绑定到 PMX skeleton，管理隐藏/恢复
 
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { Bone } from '@babylonjs/core/Bones/bone';
 import { Skeleton } from '@babylonjs/core/Bones/skeleton';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import type { Scene } from '@babylonjs/core/scene';
@@ -65,6 +66,30 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
         `[outfit-overlay] Skeleton retarget: ${matchCount}/${fbxSkeleton.bones.length} bones matched (${Math.round(matchRate * 100)}%)`
     );
 
+    // 预计算：每个 FBX bone 的有效 PMX 索引
+    // 自身已匹配 → 用自身；否则向上回溯父骨骼链寻找第一个已匹配祖先；都无 → null（权重清空）
+    const boneToIndex = new Map<Bone, number>();
+    for (let i = 0; i < fbxSkeleton.bones.length; i++) {
+        boneToIndex.set(fbxSkeleton.bones[i], i);
+    }
+    const effectivePmxIdx: (number | null)[] = new Array(fbxSkeleton.bones.length).fill(null);
+    for (let i = 0; i < fbxSkeleton.bones.length; i++) {
+        let curBone: Bone | null = fbxSkeleton.bones[i];
+        let resolved: number | null = null;
+        while (curBone) {
+            const ci = boneToIndex.get(curBone);
+            if (ci !== undefined) {
+                const pmx = fbxToPmxBoneIdx.get(ci);
+                if (pmx !== undefined) {
+                    resolved = pmx;
+                    break;
+                }
+            }
+            curBone = curBone.getParent();
+        }
+        effectivePmxIdx[i] = resolved;
+    }
+
     // 获取 PMX 的 Babylon.js skeleton（从 rootMesh metadata 获取）
     const rootMeta = inst.rootMesh.metadata as { skeleton?: Skeleton } | undefined;
     const pmxSkeleton = rootMeta?.skeleton;
@@ -86,41 +111,69 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
             continue;
         }
 
-        // 重建 matricesIndices：FBX bone index → PMX bone index
+        // 重建 matricesIndices：FBX bone index → PMX bone index（含父链回退）
+        // 无匹配祖先的权重槽置 0 并重归一化，避免误映射到根骨骼导致严重变形
         const newIndices = new Float32Array(matricesIndices.length);
+        const newWeights = new Float32Array(matricesWeights); // 复制原权重，仅供 dropped 槽重归一化
+        const vertexCount = matricesIndices.length / 4;
         let remapped = 0;
         let unmatched = 0;
-        for (let i = 0; i < matricesIndices.length; i++) {
-            const fbxIdx = matricesIndices[i];
-            const pmxIdx = fbxToPmxBoneIdx.get(fbxIdx);
-            if (pmxIdx !== undefined) {
-                newIndices[i] = pmxIdx;
-                remapped++;
-            } else {
-                // 未匹配的 bone → 映射到根 bone (index 0)
-                newIndices[i] = 0;
-                unmatched++;
+        let meshDropped = false;
+        for (let v = 0; v < vertexCount; v++) {
+            const base = v * 4;
+            let anyDropped = false;
+            for (let s = 0; s < 4; s++) {
+                const slot = base + s;
+                const fbxIdx = matricesIndices[slot];
+                const eff = effectivePmxIdx[fbxIdx];
+                if (eff !== null) {
+                    newIndices[slot] = eff;
+                    remapped++;
+                } else {
+                    // 无匹配祖先：该权重槽失效，置 0 并将骨骼指向占位（权重为 0 不影响形变）
+                    newIndices[slot] = 0;
+                    newWeights[slot] = 0;
+                    anyDropped = true;
+                    unmatched++;
+                }
+            }
+            if (anyDropped) {
+                meshDropped = true;
+                let totalW = 0;
+                for (let s = 0; s < 4; s++) totalW += newWeights[base + s];
+                if (totalW > 1e-5) {
+                    const inv = 1 / totalW;
+                    for (let s = 0; s < 4; s++) newWeights[base + s] *= inv;
+                }
             }
         }
         if (unmatched > 0) {
             logWarn(
                 'outfit-overlay',
-                `${unmatched}/${matricesIndices.length} bone weights unmatched on mesh "${mesh.name}", mapped to root bone (index 0)`
+                `${unmatched}/${matricesIndices.length} bone weights unmatched on mesh "${mesh.name}", mapped to parent chain / zeroed (no longer root bone)`
             );
         }
 
         // 更新 vertex buffer
         mesh.setVerticesData('matricesIndices', newIndices);
+        if (meshDropped) {
+            mesh.setVerticesData('matricesWeights', newWeights);
+        }
 
         // 切换 skeleton 引用
         mesh.skeleton = pmxSkeleton;
     }
 
-    // 释放 FBX 原 skeleton（不再被任何 mesh 引用）
-    try {
-        fbxSkeleton.dispose();
-    } catch {
-        // ignore disposal errors
+    // 释放 FBX 原 skeleton：仅当确认没有 mesh 仍引用它时（防止悬空指针）
+    const stillReferenced = fbxMeshes.some((m) => m.skeleton === fbxSkeleton);
+    if (!stillReferenced) {
+        try {
+            fbxSkeleton.dispose();
+        } catch {
+            // ignore disposal errors
+        }
+    } else {
+        logWarn('outfit-overlay', 'FBX skeleton still referenced by a mesh; skip dispose to avoid dangling pointer');
     }
 
     return true;

@@ -20,17 +20,22 @@ import { triggerAutoSave } from '../core/config';
 import { encodeFileRef } from '../core/fileservice';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
 
-// Lazy access to the active Scene — avoids a static import of '../scene/scene',
-// which would form a circular dependency (outfit → scene → scene-serialize → outfit)
-// and trigger an ESM Temporal Dead Zone under concurrent test module evaluation.
-// Mirrors the ADR-064 pattern (scene↔outfit broken via await import()).
-let _sceneCache: Scene | null = null;
+// [adr-104] Scene 引用注入：由 scene.ts 初始化后调用 setSceneRef() 注入，
+// 破除 outfit → scene → scene-serialize → outfit 的循环依赖（原靠动态 import 解耦，
+// 有运行时开销且难测试）。保留动态 import 作为未注入时的兜底兼容路径。
+let _sceneRef: Scene | null = null;
+
+/** 由 scene.ts 在场景初始化完成后注入当前 scene 实例 */
+export function setSceneRef(scene: Scene): void {
+    _sceneRef = scene;
+}
+
 async function _getScene(): Promise<Scene> {
-    if (!_sceneCache) {
+    if (!_sceneRef) {
         const mod = await import('../scene/scene');
-        _sceneCache = mod.scene;
+        _sceneRef = mod.scene;
     }
-    return _sceneCache;
+    return _sceneRef;
 }
 
 interface MmdStandardMaterial extends StandardMaterial {
@@ -78,7 +83,7 @@ function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
                 continue;
             }
             const url = (tex as Texture).name || (tex as Texture).url || '';
-            const base = getBaseName(url).split('?')[0] || '';
+            const base = getBaseName(url.split('?')[0]) || '';
             if (!base) {
                 continue;
             }
@@ -251,14 +256,38 @@ async function _applySlot(
                 resolve(); // 超时：loaded 保持 false
             }, 5000);
         });
-        // 仅加载成功时才替换纹理；超时则 dispose 并保留原纹理
+        // 加载成功时替换纹理
         if (loaded) {
             if (cur && cur !== origTex) {
                 cur.dispose();
             }
             mmdSm[slot] = newTex;
         } else {
-            newTex.dispose();
+            // 超时：不立即丢弃已下载的纹理，后台继续加载；
+            // 加载完成且本槽尚未被后续切换覆盖时再替换，避免重复下载浪费与孤儿纹理泄漏
+            let done = false;
+            const trySwap = (): void => {
+                if (done) {
+                    return;
+                }
+                done = true;
+                if (mmdSm[slot] === cur) {
+                    if (cur && cur !== origTex) {
+                        cur.dispose();
+                    }
+                    mmdSm[slot] = newTex;
+                } else {
+                    newTex.dispose();
+                }
+            };
+            if (newTex.isReady()) {
+                trySwap();
+            } else {
+                const obs = newTex.onLoadObservable.add(() => {
+                    newTex.onLoadObservable.remove(obs);
+                    trySwap();
+                });
+            }
         }
     } else {
         if (origTex) {
@@ -394,10 +423,33 @@ const _applyingVariantGuard = new LoadingGuard();
 // R3 去重：防止对同一模型并发执行 loadOutfits 导致重复请求
 const _loadingOutfitsGuard = new LoadingGuard();
 
+// 并发队列：快速切换变体时记录最新一次请求（last-wins），待当前应用完成后再执行，
+// 避免直接 return 导致用户点击的切换被静默丢弃
+const _pendingVariant = new Map<string, string>();
+
 export async function applyOutfitVariant(id: string, variantName: string): Promise<void> {
     if (_applyingVariantGuard.isLoading(id)) {
+        _pendingVariant.set(id, variantName);
         return;
     }
+    _applyingVariantGuard.tryEnter(id);
+    try {
+        let target = variantName;
+        for (;;) {
+            await _applyOutfitVariantCore(id, target);
+            const next = _pendingVariant.get(id);
+            if (next === undefined) {
+                break;
+            }
+            _pendingVariant.delete(id);
+            target = next;
+        }
+    } finally {
+        _applyingVariantGuard.leave(id);
+    }
+}
+
+async function _applyOutfitVariantCore(id: string, variantName: string): Promise<void> {
     const inst = modelRegistry.get(id);
     if (!inst) {
         return;
@@ -405,156 +457,151 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
     if (!inst.outfitFile) {
         return;
     }
-    _applyingVariantGuard.tryEnter(id);
-    try {
-        const variant =
-            variantName === '默认'
-                ? undefined
-                : inst.outfitFile.variants.find((v) => v.name === variantName);
-        if (!variant && variantName !== '默认') {
-            return;
-        }
+    const variant =
+        variantName === '默认'
+            ? undefined
+            : inst.outfitFile.variants.find((v) => v.name === variantName);
+    if (!variant && variantName !== '默认') {
+        return;
+    }
 
-        if (!inst._origTextures) {
-            inst._origTextures = new Map();
-            for (let mi = 0; mi < inst.meshes.length; mi++) {
-                const sm = inst.meshes[mi].material as StandardMaterial;
-                if (!sm) {
-                    continue;
-                }
-                const mmdSm = sm as MmdStandardMaterial;
-                inst._origTextures.set(mi, {
-                    diffuse: sm.diffuseTexture as Texture | null,
-                    toon: mmdSm.toonTexture,
-                    spa: mmdSm.sphereTexture,
-                    normal: sm.bumpTexture as Texture | null,
-                    emissive: sm.emissiveTexture as Texture | null,
-                });
-            }
-        }
-        _captureOrigParams(inst);
-
-        const promises: Promise<void>[] = [];
-
-        // overlay 处理（与纹理替换并行）：清理旧 overlay → 加载新 overlay → 隐藏 PMX 布料
-        // token 守卫：防止快速切换变体时，旧 loadOverlay 完成后覆盖新状态导致孤儿 mesh 泄漏
-        const token = Symbol('overlay');
-        inst._overlayLoadToken = token;
-        promises.push(
-            (async () => {
-                if (inst._overlayMeshes) {
-                    disposeOverlay(inst);
-                    restoreMaterials(inst);
-                }
-                if (variant?.meshFile) {
-                    const { meshes, retargetOk } = await loadOverlay(
-                        inst,
-                        variant.meshFile,
-                        await _getScene()
-                    );
-                    // token 过期：说明此期间已切换到其他变体，丢弃本次结果
-                    if (inst._overlayLoadToken !== token) {
-                        console.info('[outfit] overlay load stale (token mismatch), discarding');
-                        for (const m of meshes) {
-                            try {
-                                m.dispose();
-                            } catch {
-                                // ignore
-                            }
-                        }
-                        return;
-                    }
-                    // 仅在 overlay 成功加载且骨骼重定向成功时隐藏 PMX 布料；
-                    // retarget 失败（静态降级）时保留原布料，避免穿模
-                    if (meshes.length > 0 && retargetOk && variant.hideMaterials) {
-                        hideMaterials(inst, variant.hideMaterials);
-                    } else if (meshes.length > 0 && !retargetOk && variant.hideMaterials) {
-                        logWarn(
-                            'outfit',
-                            'FBX overlay retarget failed, keeping PMX materials to avoid穿模'
-                        );
-                    }
-                }
-            })()
-        );
-
+    if (!inst._origTextures) {
+        inst._origTextures = new Map();
         for (let mi = 0; mi < inst.meshes.length; mi++) {
             const sm = inst.meshes[mi].material as StandardMaterial;
             if (!sm) {
                 continue;
             }
-            const origTex = inst._origTextures.get(mi);
-            if (!origTex) {
-                continue;
-            }
-            const origParams = inst._origParams.get(mi)!;
-            const cat = _catOf(sm.name);
+            const mmdSm = sm as MmdStandardMaterial;
+            inst._origTextures.set(mi, {
+                diffuse: sm.diffuseTexture as Texture | null,
+                toon: mmdSm.toonTexture,
+                spa: mmdSm.sphereTexture,
+                normal: sm.bumpTexture as Texture | null,
+                emissive: sm.emissiveTexture as Texture | null,
+            });
+        }
+    }
+    _captureOrigParams(inst);
 
-            promises.push(
-                _applySlot(
-                    sm,
-                    'diffuseTexture',
-                    _getSlotFor(variant, sm.name, cat, 'diffuse'),
-                    origTex.diffuse,
-                    inst.port
-                )
-            );
-            promises.push(
-                _applySlot(
-                    sm,
-                    'toonTexture',
-                    _getSlotFor(variant, sm.name, cat, 'toon'),
-                    origTex.toon,
-                    inst.port
-                )
-            );
-            promises.push(
-                _applySlot(
-                    sm,
-                    'sphereTexture',
-                    _getSlotFor(variant, sm.name, cat, 'spa'),
-                    origTex.spa,
-                    inst.port
-                )
-            );
-            promises.push(
-                _applySlot(
-                    sm,
-                    'bumpTexture',
-                    _getSlotFor(variant, sm.name, cat, 'normal'),
-                    origTex.normal,
-                    inst.port
-                )
-            );
-            promises.push(
-                _applySlot(
-                    sm,
-                    'emissiveTexture',
-                    _getSlotFor(variant, sm.name, cat, 'emissive'),
-                    origTex.emissive,
-                    inst.port
-                )
-            );
+    const promises: Promise<void>[] = [];
 
-            const slotParams = _getParamsFor(variant, sm.name, cat);
-            if (slotParams) {
-                _applyOutfitParams(sm, slotParams, origParams);
+    // overlay 处理（与纹理替换并行）：清理旧 overlay → 加载新 overlay → 隐藏 PMX 布料
+    // token 守卫：防止快速切换变体时，旧 loadOverlay 完成后覆盖新状态导致孤儿 mesh 泄漏
+    const token = Symbol('overlay');
+    inst._overlayLoadToken = token;
+    promises.push(
+        (async () => {
+            if (inst._overlayMeshes) {
+                disposeOverlay(inst);
+                restoreMaterials(inst);
             }
+            if (variant?.meshFile) {
+                const { meshes, retargetOk } = await loadOverlay(
+                    inst,
+                    variant.meshFile,
+                    await _getScene()
+                );
+                // token 过期：说明此期间已切换到其他变体，丢弃本次结果
+                if (inst._overlayLoadToken !== token) {
+                    console.info('[outfit] overlay load stale (token mismatch), discarding');
+                    for (const m of meshes) {
+                        try {
+                            m.dispose();
+                        } catch {
+                            // ignore
+                        }
+                    }
+                    return;
+                }
+                // 仅在 overlay 成功加载且骨骼重定向成功时隐藏 PMX 布料；
+                // retarget 失败（静态降级）时保留原布料，避免穿模
+                if (meshes.length > 0 && retargetOk && variant.hideMaterials) {
+                    hideMaterials(inst, variant.hideMaterials);
+                } else if (meshes.length > 0 && !retargetOk && variant.hideMaterials) {
+                    logWarn(
+                        'outfit',
+                        'FBX overlay retarget failed, keeping PMX materials to avoid穿模'
+                    );
+                }
+            }
+        })()
+    );
 
-            const tint = _getTintFor(variant, sm.name, cat);
-            if (tint) {
-                _applyOutfitTint(sm, tint);
-            }
+    for (let mi = 0; mi < inst.meshes.length; mi++) {
+        const sm = inst.meshes[mi].material as StandardMaterial;
+        if (!sm) {
+            continue;
+        }
+        const origTex = inst._origTextures.get(mi);
+        if (!origTex) {
+            continue;
+        }
+        const origParams = inst._origParams.get(mi)!;
+        const cat = _catOf(sm.name);
+
+        promises.push(
+            _applySlot(
+                sm,
+                'diffuseTexture',
+                _getSlotFor(variant, sm.name, cat, 'diffuse'),
+                origTex.diffuse,
+                inst.port
+            )
+        );
+        promises.push(
+            _applySlot(
+                sm,
+                'toonTexture',
+                _getSlotFor(variant, sm.name, cat, 'toon'),
+                origTex.toon,
+                inst.port
+            )
+        );
+        promises.push(
+            _applySlot(
+                sm,
+                'sphereTexture',
+                _getSlotFor(variant, sm.name, cat, 'spa'),
+                origTex.spa,
+                inst.port
+            )
+        );
+        promises.push(
+            _applySlot(
+                sm,
+                'bumpTexture',
+                _getSlotFor(variant, sm.name, cat, 'normal'),
+                origTex.normal,
+                inst.port
+            )
+        );
+        promises.push(
+            _applySlot(
+                sm,
+                'emissiveTexture',
+                _getSlotFor(variant, sm.name, cat, 'emissive'),
+                origTex.emissive,
+                inst.port
+            )
+        );
+
+        const slotParams = _getParamsFor(variant, sm.name, cat);
+        if (slotParams) {
+            _applyOutfitParams(sm, slotParams, origParams);
         }
 
-        await Promise.all(promises);
-        inst.activeVariant = variantName;
-        const { t } = await import('../core/i18n/t');
-        setStatus(t('outfit.switched', { name: variantName }), true);
-        triggerAutoSave();
-    } finally {
-        _applyingVariantGuard.leave(id);
+        const tint = _getTintFor(variant, sm.name, cat);
+        if (tint) {
+            _applyOutfitTint(sm, tint);
+        }
     }
+
+    await Promise.all(promises);
+    inst.activeVariant = variantName;
+    const { t } = await import('../core/i18n/t');
+    setStatus(t('outfit.switched', { name: variantName }), true);
+    triggerAutoSave();
 }
 
 export async function resetOutfit(id: string): Promise<void> {

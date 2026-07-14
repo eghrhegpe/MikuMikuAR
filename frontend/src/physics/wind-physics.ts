@@ -25,13 +25,14 @@ const WIND_FORCE_SCALE = 0.15;
 /** 临时向量，避免每帧分配 */
 const _tmpWind = new Vector3();
 
-/** 已订阅的 observer，用于精确移除（不误伤其他订阅者） */
-let _observer: { remove(): void } | null = null;
-/** monkey-patch 前的原始 createMmdModel，用于 restore */
-let _origCreateModel: ((...args: any[]) => any) | null = null;
-let _patchedRuntime: IMmdRuntime | null = null;
-/** 防止 double-init 导致 restore 链断裂 */
-let _initialized = false;
+/** 每运行时订阅状态：支持多 MmdWasmRuntime 场景（多场景/多窗口） */
+interface _WindSub {
+    /** 已订阅的 observer，用于精确移除（不误伤其他订阅者） */
+    observer: { remove(): void } | null;
+}
+const _subs = new Map<IMmdRuntime, _WindSub>();
+/** 反射字段缺失/异常的一次性 warn 标记，避免每帧刷屏 */
+let _bundleWarnLogged = false;
 
 /**
  * 尝试从 MmdWasmRuntime 获取 PhysicsRuntimeImpl。
@@ -52,19 +53,28 @@ function _getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl | null
  * 反射访问 _rigidBodyBundleMap（Map<RigidBodyBundle, number>）。
  * babylon-mmd 升级若重命名此字段，降级为空数组并 warn。
  */
-function _getBundles(
+export function _getBundles(
     impl: MmdWasmPhysicsRuntimeImpl
 ): Iterable<{ count: number; applyCentralForce(index: number, force: Vector3): void }> {
     const map = (impl as any)._rigidBodyBundleMap;
     if (map instanceof Map) {
         return map.keys();
     }
-    // babylon-mmd 升级可能导致字段不存在，warn 一次
-    if (map !== undefined) {
-        logWarn(
-            'wind-physics',
-            '_rigidBodyBundleMap 类型异常，风力物理已禁用。检查 babylon-mmd 版本兼容性'
-        );
+    // babylon-mmd 升级可能重命名/移除该字段：一次性 warn，
+    // 防止字段缺失时静默失效（风力消失但用户无感知）
+    if (!_bundleWarnLogged) {
+        _bundleWarnLogged = true;
+        if (map === undefined) {
+            logWarn(
+                'wind-physics',
+                '_rigidBodyBundleMap 不存在（可能已被 babylon-mmd 重命名），风力物理已禁用。检查 babylon-mmd 版本兼容性'
+            );
+        } else {
+            logWarn(
+                'wind-physics',
+                '_rigidBodyBundleMap 类型异常，风力物理已禁用。检查 babylon-mmd 版本兼容性'
+            );
+        }
     }
     return [];
 }
@@ -93,37 +103,46 @@ function _onPhysicsSync(impl: MmdWasmPhysicsRuntimeImpl): void {
  * 初始化风力物理注入。
  * 在 scene.ts 中 MmdWasmRuntime 创建后调用。
  *
- * 由于 physics impl 延迟创建（首个模型加载时），
- * 我们在每次模型加载后重试订阅。
+ * 由于 physics impl 延迟创建（首个模型加载时），此处订阅可能失败，
+ * 由 model-loader 在模型加载成功后调用 retryWindPhysicsSubscription() 显式重试。
  *
- * 安全性：幂等——重复调用不会重复 patch 或重复订阅。
+ * 安全性：幂等——重复调用不会重复订阅。
+ *
+ * [adr-104] 已移除原 monkey-patch createMmdModel 的做法（脆弱，
+ * babylon-mmd 内部实现变更即静默失效），改为显式调用点承载。
  */
 export function initWindPhysics(runtime: IMmdRuntime): void {
     if (!(runtime instanceof MmdWasmRuntimeClass)) {
         return;
     }
-    if (_initialized) {
-        return;
-    } // 防 double-init 破坏 restore 链
-
-    _initialized = true;
-
-    // 尝试立即订阅（如果 impl 已存在）
+    let sub = _subs.get(runtime);
+    if (!sub) {
+        sub = { observer: null };
+        _subs.set(runtime, sub);
+    }
+    // 尝试立即订阅（如果 impl 已存在）；否则由 retry 在模型加载后补齐
     _trySubscribe(runtime);
+}
 
-    // 监听模型创建事件，在新模型加载后重试订阅
-    // （physics impl 在首个模型加载时创建）
-    _origCreateModel = runtime.createMmdModel.bind(runtime);
-    _patchedRuntime = runtime;
-    runtime.createMmdModel = function (...args: any[]) {
-        const result = _origCreateModel!.call(this, ...args);
+/**
+ * [adr-104] 模型加载成功后由 model-loader 显式调用，重试订阅 physics impl
+ * （此时 physics impl 已就绪）。替代原 monkey-patch createMmdModel 的脆弱做法。
+ *
+ * @param runtime 指定运行时；省略时重试所有已注册运行时（用于全局重试场景）
+ */
+export function retryWindPhysicsSubscription(runtime?: IMmdRuntime): void {
+    if (runtime) {
         _trySubscribe(runtime);
-        return result;
-    } as any;
+        return;
+    }
+    for (const rt of _subs.keys()) {
+        _trySubscribe(rt);
+    }
 }
 
 function _trySubscribe(runtime: IMmdRuntime): void {
-    if (_observer) {
+    const sub = _subs.get(runtime);
+    if (!sub || sub.observer) {
         return;
     } // 已订阅
 
@@ -132,25 +151,21 @@ function _trySubscribe(runtime: IMmdRuntime): void {
         return;
     }
 
-    _observer = impl.onSyncObservable.add(() => _onPhysicsSync(impl));
+    sub.observer = impl.onSyncObservable.add(() => _onPhysicsSync(impl));
 }
 
 /**
  * 销毁风力物理注入。
- * 仅移除自己的 observer，不影响其他 onSyncObservable 订阅者。
- * 恢复 monkey-patched createMmdModel，重置所有状态。
+ * 仅移除自己的 observer，不影响其他 onSyncObservable 订阅者。重置所有状态。
  */
 export function disposeWindPhysics(): void {
-    if (_observer) {
-        _observer.remove();
-        _observer = null;
+    for (const [, sub] of _subs) {
+        if (sub.observer) {
+            sub.observer.remove();
+        }
     }
-    if (_patchedRuntime && _origCreateModel) {
-        (_patchedRuntime as any).createMmdModel = _origCreateModel;
-        _origCreateModel = null;
-        _patchedRuntime = null;
-    }
-    _initialized = false;
+    _subs.clear();
+    _bundleWarnLogged = false;
 }
 
 /**
@@ -158,5 +173,10 @@ export function disposeWindPhysics(): void {
  * 供 UI 层判断是否需要显示"JS 运行时下 Bullet 物理不受风影响"的提示。
  */
 export function isWindPhysicsActive(): boolean {
-    return _observer !== null;
+    for (const sub of _subs.values()) {
+        if (sub.observer) {
+            return true;
+        }
+    }
+    return false;
 }
