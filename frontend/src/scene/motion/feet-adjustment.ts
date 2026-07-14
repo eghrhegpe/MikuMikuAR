@@ -149,13 +149,13 @@ function _adjustFoot(
     const groundY = getGroundHeightAt(_vFoot.x, _vFoot.z);
 
     // 估算髋世界坐标 + 腿长（用于 reachAngle / maxAngle）
-    let hipY = _vFoot.y;
+    let _hipY = _vFoot.y;
     let hipToFootDist = 0;
     let legLength = 1;
     const hip = _findHip(ik, side);
     if (hip) {
         hip.getWorldTranslationToRef(_vHip);
-        hipY = _vHip.y;
+        _hipY = _vHip.y;
         hipToFootDist = Vector3.Distance(_vFoot, _vHip);
         legLength = Math.max(hipToFootDist, 1e-3);
     }

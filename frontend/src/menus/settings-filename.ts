@@ -12,7 +12,7 @@ import {
 } from '../core/config';
 import { slideRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
-import { showPrompt, showPrompt2 } from '../core/dialog';
+import { showPrompt2 } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';

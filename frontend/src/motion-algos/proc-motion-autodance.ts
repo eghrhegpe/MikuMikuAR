@@ -17,9 +17,7 @@ import {
 
 import {
     buildTrigCache,
-    type TrigCache,
     resolveBones,
-    type BoneResolution,
     genCenterBone,
     genUpperBone,
     genUpper2Bone,

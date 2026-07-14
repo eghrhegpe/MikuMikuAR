@@ -17,7 +17,6 @@ import {
     Matrix,
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
-import { getWindVector, isWindActive } from '@/core/physics/wind-utils';
 import { col3FromTriple } from '@/core/color-helpers';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';

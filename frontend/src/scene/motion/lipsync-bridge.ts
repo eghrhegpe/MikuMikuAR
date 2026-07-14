@@ -6,15 +6,10 @@
 import {
     LipSyncState as LipSyncStateType,
     DEFAULT_LIPSYNC_STATE,
-    findLipMorph,
-    findAllLipMorphs,
-    amplitudeToWeight,
 } from '@/motion-algos/lipsync';
 import { clamp01 } from '@/core/utils';
 import { focusedModelId, triggerAutoSave } from '@/core/config';
-import { isAudioPlaying, getAudioPath } from '@/outfit/audio';
 import { setModelMorphWeight } from '../scene';
-import { getProcBeatDetector } from './proc-motion-bridge';
 
 let _modelManager: import('../manager/model-manager').ModelManager | null = null;
 
@@ -30,20 +25,6 @@ let lipSyncMorphSet: {
     pucker: string | null;
     smile: string | null;
 } | null = null;
-const lastFocusedId: string | null = null;
-
-// morphName 缓存：避免每帧 O(M) 扫描 morphs 数组 + 数组分配
-const _lastCachedModelId: string | null = null;
-const _lastMorphNames: string[] = [];
-const _lastMorphNameSet = new Set<string>();
-
-// 平滑滤波器状态（低通滤波，减少 morph 权重抖动）
-const _smoothLow = 0;
-const _smoothHigh = 0;
-
-// #10: Track last audio path to detect audio source changes
-const _lastAudioPath = '';
-
 const VOICE_BIN_START = 10;
 const VOICE_BIN_END = 50;
 // 高频频段（用于 smile morph 驱动）

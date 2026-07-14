@@ -6,7 +6,6 @@ import {
     Mesh,
     MeshBuilder,
     ShaderMaterial,
-    Observer,
     StandardMaterial,
     Engine,
     DirectionalLight,
