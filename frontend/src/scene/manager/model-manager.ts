@@ -26,7 +26,7 @@ import {
 } from '@/core/config';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
 import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
-import { clamp01, logWarn } from '@/core/utils';
+import { clamp01, logWarn, swallowError } from '@/core/utils';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
@@ -309,9 +309,9 @@ export class ModelManager {
         setFocusedModelId(id);
 
         // 焦点切换后自动激活默认视线追踪，使眼球 / 头部跟随当前焦点模型
-        import('../motion/proc-motion-bridge')
-            .then((m) => m.activateGazeTracking())
-            .catch(() => {});
+        swallowError(
+            import('../motion/proc-motion-bridge').then((m) => m.activateGazeTracking())
+        );
 
         if (frameCamera) {
             // Auto-frame camera: compute bounding box from all meshes

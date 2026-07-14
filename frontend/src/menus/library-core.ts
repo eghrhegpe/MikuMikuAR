@@ -83,7 +83,7 @@ import {
     setCurrentState,
 } from '../core/ui-helpers';
 import type { ResourceItem } from '../core/ui-helpers';
-import { tryCatchStatus, getBrowseDir, isUnderRoot, getBaseName, logWarn } from '../core/utils';
+import { tryCatchStatus, getBrowseDir, isUnderRoot, getBaseName, logWarn, fireAndForget, swallowError } from '../core/utils';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t'; // [doc:adr-059] i18n 翻译
 import { getLang } from '../core/i18n/locale'; // [doc:adr-059] 用于列表 collation 随语言切换
@@ -103,9 +103,10 @@ export function setResourceViewMode(mode: ResourceViewMode): void {
     resourceViewMode = mode;
     uiState.resourceViewMode = mode;
     // [doc:adr-066] 持久化到 config（传完整 uiState 快照，避免单字段写入清空其他字段）
-    import('../core/wails-bindings').then(({ SetUIState }) => {
-        SetUIState({ ...uiState } as unknown as import('../core/wails-bindings').UIState).catch(
-            () => {}
+    fireAndForget(async () => {
+        const { SetUIState } = await import('../core/wails-bindings');
+        swallowError(
+            SetUIState({ ...uiState } as unknown as import('../core/wails-bindings').UIState)
         );
     });
 }
