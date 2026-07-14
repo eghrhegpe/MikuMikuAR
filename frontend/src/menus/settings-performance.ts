@@ -115,7 +115,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.className = 'setting-hint';
                 hint.textContent = t('settings.perf.fpsHint');
                 c.appendChild(hint);
             },
@@ -187,15 +187,14 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
             kind: 'custom',
             renderCustom: (c) => {
                 const hintVsync = document.createElement('div');
-                hintVsync.style.cssText =
-                    'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hintVsync.className = 'setting-hint';
                 hintVsync.textContent =
                     uiState.vsync !== false
                         ? t('settings.perf.vsyncHintOn')
                         : t('settings.perf.vsyncHintOff');
                 c.appendChild(hintVsync);
                 const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.className = 'setting-hint';
                 hint.textContent = t('settings.perf.vsyncHintBrowser');
                 c.appendChild(hint);
             },
@@ -224,7 +223,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.className = 'setting-hint';
                 hint.textContent = t('settings.perf.defaultPhysicsHint');
                 c.appendChild(hint);
             },
@@ -253,7 +252,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.className = 'setting-hint';
                 hint.textContent = t('settings.perf.autoCenterHint');
                 c.appendChild(hint);
             },
@@ -284,7 +283,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.className = 'setting-hint';
                 hint.textContent = t('settings.perf.renderScaleHint');
                 c.appendChild(hint);
             },
@@ -312,7 +311,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.className = 'setting-hint';
                 hint.textContent = t('settings.perf.camSensHint');
                 c.appendChild(hint);
             },
@@ -340,7 +339,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.className = 'setting-hint';
                 hint.textContent = t('settings.perf.invertYHint');
                 c.appendChild(hint);
             },
@@ -445,7 +444,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
                     c.appendChild(row);
                 }
                 const hint = document.createElement('div');
-                hint.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                hint.className = 'setting-hint';
                 hint.textContent = t('settings.perf.customHint');
                 c.appendChild(hint);
             },
@@ -462,6 +461,7 @@ export function buildSettingsPerformanceLevel(
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
+                addSectionTitle(c, t('settings.performance.title'));
                 renderMenu(buildPerfSchema(getSettingsMenu), c);
             });
         },

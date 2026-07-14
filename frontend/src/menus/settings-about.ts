@@ -137,6 +137,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, '版本信息');
                     const title = document.createElement('div');
                     title.style.cssText = 'text-align:center;padding:16px 14px 8px;';
                     title.innerHTML = `
@@ -151,8 +152,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                 el.textContent = `v${info.version}`;
                             }
                             const detail = document.createElement('div');
-                            detail.style.cssText =
-                                'font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.6;font-family:monospace;';
+                            detail.className = 'about-version-info';
                             detail.innerHTML = `<div>build: ${info.buildTime}</div><div>commit: ${info.commitHash}</div><div>go: ${info.goVersion}</div>`;
                             inner.appendChild(detail);
                         })
@@ -435,8 +435,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         }
                     );
                     const hint = document.createElement('div');
-                    hint.style.cssText =
-                        'font-size:10px;color:var(--text-muted);padding:2px 14px 4px;';
+                    hint.className = 'setting-hint';
                     hint.textContent = t('settings.about.settingsMgmt.hint');
                     inner.appendChild(hint);
                 });
