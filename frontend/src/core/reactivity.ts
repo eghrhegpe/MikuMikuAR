@@ -41,6 +41,13 @@ export function subscribe(fn: () => void): () => void {
 }
 
 /**
+ * 清空所有刷新订阅者。供 initScene 重入时调用（ADR-106 D3 HMR 清理入口）。
+ */
+export function unsubscribeAll(): void {
+    _subscribers.clear();
+}
+
+/**
  * 用 Proxy 包裹对象，拦截 set 操作。
  * 任何属性赋值都会自动触发 scheduleRefresh()。
  * 深度代理：嵌套普通对象也会被包裹。
