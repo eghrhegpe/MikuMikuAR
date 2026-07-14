@@ -1,6 +1,6 @@
 # ADR-105: AbortSignal 传递规范与异步异常处理基线
 
-**状态**: 规划
+**状态**: 实施中（Phase 1 完成 2026-07-14，P2/P3 待续）
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
@@ -172,12 +172,12 @@ export async function loadPMXFile(filePath: string, signal?: AbortSignal) {
 
 | 文件 | 函数 | 优先级 |
 |------|------|--------|
-| `core/fileservice.ts` | `fetchArrayBuffer` | 🔴 P1 |
-| `scene/manager/model-loader.ts` | `loadPMXFile` | 🔴 P1 |
-| `scene/motion/vmd-loader.ts` | `loadVMDMotion` | 🔴 P1 |
-| `scene/motion/vmd-loader.ts` | `loadVMDFromPath` | 🔴 P1 |
-| `scene/motion/vmd-loader.ts` | `loadCameraVmdFromPath` | 🔴 P1 |
-| `scene/motion/vmd-loader.ts` | `loadVPDPose` | 🔴 P1 |
+| `core/fileservice.ts` | `fetchArrayBuffer` | 🔴 P1 | ✅ 已完成（2026-07-14） |
+| `scene/manager/model-loader.ts` | `loadPMXFile` | 🔴 P1 | ✅ 已完成（2026-07-14，合并外部 signal 与内部 abortCtrl） |
+| `scene/motion/vmd-loader.ts` | `loadVMDMotion` | 🔴 P1 | ✅ 已完成（2026-07-14） |
+| `scene/motion/vmd-loader.ts` | `loadVMDFromPath` | 🔴 P1 | ✅ 已完成（2026-07-14） |
+| `scene/motion/vmd-loader.ts` | `loadCameraVmdFromPath` | 🔴 P1 | ✅ 已完成（2026-07-14） |
+| `scene/motion/vmd-loader.ts` | `loadVPDPose` | 🔴 P1 | ✅ 已完成（2026-07-14） |
 | `scene/env/props.ts` | `loadProp` | 🟠 P2 |
 | `outfit/outfit.ts` | `loadOutfits` | 🟠 P2 |
 | `outfit/audio.ts` | `loadAudioFile` | 🟠 P2 |
@@ -205,11 +205,11 @@ export async function loadPMXFile(filePath: string, signal?: AbortSignal) {
 
 ## 实施计划
 
-### Phase 1: P1 核心函数（1-2 天）
+### Phase 1: P1 核心函数（已完成 2026-07-14）
 
-1. `core/fileservice.ts` — `fetchArrayBuffer` 添加 `signal` 参数
-2. `scene/manager/model-loader.ts` — `loadPMXFile` 暴露 `signal` 参数
-3. `scene/motion/vmd-loader.ts` — 4 个加载函数添加 `signal` 参数
+1. ✅ `core/fileservice.ts` — `fetchArrayBuffer` 添加 `signal` 参数（入口检查 + 透传 `fetch(url, { signal })`）
+2. ✅ `scene/manager/model-loader.ts` — `loadPMXFile` 暴露 `signal` 参数（合并外部 signal 与内部 abortCtrl.signal 为 effectiveSignal）
+3. ✅ `scene/motion/vmd-loader.ts` — 4 个加载函数添加 `signal` 参数并透传至 `fetchArrayBuffer` / `loadVMDMotion`
 
 ### Phase 2: P2 加载函数（3-5 天）
 

@@ -13,7 +13,7 @@ import {
     formatTime,
     mmdRuntime,
 } from '@/core/config';
-import { syncAudioPlayback, isAudioPlaying } from '@/outfit/audio';
+import { isAudioPlaying, syncAudioPlayback } from '@/outfit/audio';
 import { animateCameraVmd } from '../camera/camera';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { ModelManager } from '../manager/model-manager';
@@ -68,8 +68,6 @@ export function initPlaybackObservables(
             beatDetector.update();
         }
         updatePlaybackUI();
-        const dur = _getDuration(runtime, manager);
-        syncAudioPlayback(runtime.currentTime, isPlaying, dur);
         animateCameraVmd(runtime.currentTime * 30);
         // updateProcMotion 是 async 函数，在同步回调中 fire-and-forget
         // 添加 .catch 防止未处理的 Promise 拒绝导致静默崩溃
@@ -82,8 +80,6 @@ export function initPlaybackObservables(
     const playHandler = () => {
         setIsPlaying(true);
         updatePlaybackUI();
-        const dur = _getDuration(runtime, manager);
-        syncAudioPlayback(runtime.currentTime, true, dur);
     };
     runtime.onPlayAnimationObservable.add(playHandler);
 
@@ -141,8 +137,6 @@ export function initPlaybackObservables(
             return;
         }
         updatePlaybackUI();
-        const dur = _getDuration(runtime, manager);
-        syncAudioPlayback(runtime.currentTime, false, dur);
     };
     runtime.onPauseAnimationObservable.add(pauseHandler);
 

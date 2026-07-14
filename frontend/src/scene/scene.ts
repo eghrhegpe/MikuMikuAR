@@ -67,7 +67,7 @@ import {
     setStatus,
     focusedModelId,
 } from '../core/config';
-import { attachBeatDetector } from '../outfit/audio';
+import { attachBeatDetector, getStreamPlayer } from '../outfit/audio';
 import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../core/runtime-mode';
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
@@ -221,6 +221,13 @@ export async function initScene(): Promise<void> {
     runtime.loggingEnabled = true;
     runtime.register(scene);
     setMmdRuntime(runtime);
+    // 将 StreamAudioPlayer 接入 MMD Runtime，实现原生音画同步
+    // （play/pause/seek 由 Runtime 自动管理，无需手动 syncAudioPlayback）
+    swallowError(
+        Promise.resolve(getStreamPlayer()).then((player) => {
+            if (player) runtime.setAudioPlayer(player);
+        })
+    );
     // [adr-104] 注入 scene 引用到 outfit（破除循环依赖，替代动态 import）。
     // 动态 import + swallowError 彻底规避 scene↔outfit 静态环，与既有模式一致。
     swallowError(
