@@ -153,22 +153,30 @@ export async function captureThumbnail(
             return;
         }
 
-        const bb = focusedInst.rootMesh.getHierarchyBoundingVectors(true);
-        const center = bb.max.add(bb.min).scale(0.5);
-        const extent = bb.max.subtract(bb.min);
-        const size = Math.max(extent.x, extent.y, extent.z);
-        const dist = size * 0.8 + 2;
-
-        const thumbCam = new FreeCamera('thumbCam', Vector3.Zero(), _scene);
-        thumbCam.minZ = 0.1;
-        thumbCam.maxZ = 5000;
-        thumbCam.position.set(center.x - dist, center.y + dist * 0.5, center.z);
-        thumbCam.setTarget(new Vector3(center.x, center.y, center.z));
-
         const rtSize = 512;
         const rt = new RenderTargetTexture('thumbRT', { width: rtSize, height: rtSize }, _scene, false);
         rt.clearColor = new Color4(0, 0, 0, 0);
-        rt.activeCamera = thumbCam;
+
+        // 沿用主相机（模型加载后已 focus 到该模型，即用户实际聚焦视角），
+        // 而非临时 new 一个 FreeCamera 自算 3/4 角 —— RT 渲染只借用相机视角、不会改动主相机。
+        // 仅当无活动相机时兜底用包围盒算一个 3/4 视角。
+        let thumbCam: FreeCamera | null = null;
+        const activeCam = _scene.activeCamera;
+        if (activeCam) {
+            rt.activeCamera = activeCam;
+        } else {
+            const bb = focusedInst.rootMesh.getHierarchyBoundingVectors(true);
+            const center = bb.max.add(bb.min).scale(0.5);
+            const extent = bb.max.subtract(bb.min);
+            const size = Math.max(extent.x, extent.y, extent.z);
+            const dist = size * 0.8 + 2;
+            thumbCam = new FreeCamera('thumbCam', Vector3.Zero(), _scene);
+            thumbCam.minZ = 0.1;
+            thumbCam.maxZ = 5000;
+            thumbCam.position.set(center.x - dist, center.y + dist * 0.5, center.z);
+            thumbCam.setTarget(new Vector3(center.x, center.y, center.z));
+            rt.activeCamera = thumbCam;
+        }
 
         const renderList: Mesh[] = [];
         focusedInst.rootMesh.getChildMeshes().forEach((m) => {
@@ -205,7 +213,16 @@ export async function captureThumbnail(
                 // readPixels 返回 Uint8Array（0–255 字节），已是最终像素值，直接拷贝即可。
                 // 原代码误当作 Float32Array 再 *255，导致所有非 0 像素被饱和成 255（全白）。
                 const pixelsArr = floatPixels as Uint8Array;
-                imageData.data.set(pixelsArr);
+                // WebGL framebuffer 原点在左下角，readPixels 行序为「底→顶」；
+                // canvas putImageData 原点在左上角，需逐行上下翻转，否则缩略图上下颠倒（倒立）。
+                const rowBytes = rtSize * 4;
+                const flipped = new Uint8Array(pixelsArr.length);
+                for (let y = 0; y < rtSize; y++) {
+                    const srcStart = y * rowBytes;
+                    const dstStart = (rtSize - 1 - y) * rowBytes;
+                    flipped.set(pixelsArr.subarray(srcStart, srcStart + rowBytes), dstStart);
+                }
+                imageData.data.set(flipped);
                 ctx.putImageData(imageData, 0, 0);
 
                 const base64 = canvas.toDataURL('image/png', 0.8);
@@ -230,7 +247,7 @@ export async function captureThumbnail(
             }
         } finally {
             rt.dispose();
-            thumbCam.dispose();
+            thumbCam?.dispose();
         }
     } catch (err) {
         logWarn('model-loader', 'captureThumbnail:', err);
