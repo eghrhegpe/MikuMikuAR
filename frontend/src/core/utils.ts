@@ -186,6 +186,65 @@ export function deepClone<T>(x: T): T {
     return JSON.parse(JSON.stringify(x)) as T;
 }
 
+// ======== Error & Async Helpers (ADR-101 P1-a) ========
+
+/**
+ * 统一标签格式的警告日志：`[tag] message err`。
+ * message 为空时省略中间空格；err 为空时不传第二个参数（避免尾随空字符串）。
+ */
+export function logWarn(tag: string, message: string, err?: unknown): void {
+    const prefix = message ? `[${tag}] ${message}` : `[${tag}]`;
+    if (err !== undefined) {
+        console.warn(prefix, err);
+    } else {
+        console.warn(prefix);
+    }
+}
+
+/** 统一标签格式的错误日志（与 logWarn 对应，走 console.error）。 */
+export function logError(tag: string, message: string, err?: unknown): void {
+    const prefix = message ? `[${tag}] ${message}` : `[${tag}]`;
+    if (err !== undefined) {
+        console.error(prefix, err);
+    } else {
+        console.error(prefix);
+    }
+}
+
+/**
+ * 吞掉 promise 的异常并记录日志（比空 `.catch(() => {})` 可调试）。
+ * 不返回值——用于 fire-and-forget 场景。内部调用 logWarn，确保错误不沉默。
+ */
+export function swallowError<T>(promise: Promise<T>): void {
+    promise.catch((err) => logWarn('swallow', '', err));
+}
+
+/** 启动一个异步操作但不等待，异常由 swallowError 兜底。 */
+export function fireAndForget(fn: () => Promise<void>): void {
+    swallowError(fn());
+}
+
+/** Promise 包装的延迟。 */
+export function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Promise 包装的等待下一帧。 */
+export function waitForFrame(): Promise<void> {
+    // 用箭头函数显式忽略 rAF 的 time 参数，避免 resolve (void) 与 FrameRequestCallback (number) 类型冲突
+    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+/**
+ * 动态导入并取出指定导成名。
+ * 不内含 catch——调用方显式配合 swallowError 或 try/catch。
+ * `mod[name] as T` 是类型断言，调用方需确保 name 对应的导出类型与 T 一致。
+ */
+export async function lazyImport<T>(path: string, name: string): Promise<T> {
+    const mod = await import(path);
+    return mod[name] as T;
+}
+
 // ======== Object Helpers ========
 
 /** 泛型键值写入工具，避免大量 `obj[key] = value` 重复。 */
