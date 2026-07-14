@@ -483,13 +483,18 @@ function buildMatRootSchema(
             },
         },
         // 卡片 2：参数微调容器（占位，内容由 _renderParamCard 增量填充）
+        // 注意：renderCustom 执行时 list 尚未 appendChild 到 panel，isConnected 为 false，
+        // 因此用 requestAnimationFrame 延后首次渲染，确保 _paramCardEl 已挂入 DOM 树。
         {
             id: 'matRoot:paramCard',
             kind: 'custom',
             renderCustom: (c) => {
-                _paramCardEl = document.createElement('div');
-                c.appendChild(_paramCardEl);
-                _renderParamCard(id, modelName, null, -1, detailList, targetStack);
+                cardContainer(c, (inner) => {
+                    _paramCardEl = inner;
+                });
+                requestAnimationFrame(() => {
+                    _renderParamCard(id, modelName, null, -1, detailList, targetStack);
+                });
             },
         },
         // 卡片 3：重置全部
@@ -555,163 +560,137 @@ function _renderParamCard(
     _paramCardEl.innerHTML = '';
 
     if (index === -1 || !cat) {
-        const hint = document.createElement('div');
-        hint.style.cssText =
-            'font-size:11px;color:var(--text-dim);padding:12px 14px;text-align:center;';
-        hint.textContent = t('model-material.selectMaterialHint');
-        _paramCardEl.appendChild(hint);
         return;
     }
 
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.style.cssText =
-        'margin:8px;border-radius:var(--radius);background:var(--card-bg);padding:0;';
-
-    const title = document.createElement('div');
-    title.style.cssText = 'font-size:11px;color:var(--text-dim);padding:4px 14px;';
     const matName =
         detailList.find((d) => d.index === index)?.name || t('model-material.unknownMaterial');
-    title.textContent = t('model-material.paramTune', { cat, matName });
-    card.appendChild(title);
-
     const current = getMatParams(id, index);
     const params = current ?? { ...DEFAULT_MAT_PARAMS };
 
-    addSliderRow(
-        card,
-        t('model-material.diffuseMul'),
-        params.diffuseMul,
-        0,
-        2,
-        0.05,
-        (v) => {
-            setMatParams(id, index, { diffuseMul: v });
-        },
-        'lucide:droplet'
-    );
-    addSliderRow(
-        card,
-        t('model-material.specularMul'),
-        params.specularMul,
-        0,
-        2,
-        0.05,
-        (v) => {
-            setMatParams(id, index, { specularMul: v });
-        },
-        'lucide:sparkle'
-    );
-    addSliderRow(
-        card,
-        t('model-material.shininess'),
-        params.shininess,
-        0,
-        200,
-        1,
-        (v) => {
-            setMatParams(id, index, { shininess: v });
-        },
-        'lucide:zap'
-    );
-    addSliderRow(
-        card,
-        t('model-material.ambientMul'),
-        params.ambientMul,
-        0,
-        2,
-        0.05,
-        (v) => {
-            setMatParams(id, index, { ambientMul: v });
-        },
-        'lucide:sun'
-    );
-    addSliderRow(
-        card,
-        t('model-material.emissiveMul'),
-        params.emissiveMul,
-        0,
-        2,
-        0.05,
-        (v) => {
-            setMatParams(id, index, { emissiveMul: v });
-        },
-        'lucide:flame'
-    );
-    _addGroupSeparator(card, t('model-material.texLevelGroup'));
-    addSliderRow(
-        card,
-        t('model-material.diffuseTexLevel'),
-        params.diffuseTexLevel,
-        0,
-        3,
-        0.1,
-        (v) => {
-            setMatParams(id, index, { diffuseTexLevel: v });
-        },
-        'lucide:image'
-    );
-    addSliderRow(
-        card,
-        t('model-material.bumpTexLevel'),
-        params.bumpTexLevel,
-        0,
-        3,
-        0.1,
-        (v) => {
-            setMatParams(id, index, { bumpTexLevel: v });
-        },
-        'lucide:box'
-    );
-    addSliderRow(
-        card,
-        t('model-material.toonTexLevel'),
-        params.toonTexLevel,
-        0,
-        3,
-        0.1,
-        (v) => {
-            setMatParams(id, index, { toonTexLevel: v });
-        },
-        'lucide:palette'
-    );
-    addSliderRow(
-        card,
-        t('model-material.sphereTexLevel'),
-        params.sphereTexLevel,
-        0,
-        3,
-        0.1,
-        (v) => {
-            setMatParams(id, index, { sphereTexLevel: v });
-        },
-        'lucide:circle-dot'
-    );
-    addSliderRow(
-        card,
-        t('model-material.emissiveTexLevel'),
-        params.emissiveTexLevel,
-        0,
-        3,
-        0.1,
-        (v) => {
-            setMatParams(id, index, { emissiveTexLevel: v });
-        },
-        'lucide:sparkles'
-    );
+    addCollapsible(_paramCardEl, {
+        title: t('model-material.paramTuneTitle'),
+        icon: 'lucide:sliders-horizontal',
+        defaultOpen: true,
+        renderContent: (panel) => {
+            const breadcrumb = document.createElement('div');
+            breadcrumb.style.cssText =
+                'font-size:10px;color:var(--white-85);padding:2px 14px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            breadcrumb.textContent = `${cat} > ${matName}`;
+            panel.appendChild(breadcrumb);
 
-    if (current !== null) {
-        // 重置：批量状态变化 + 预期全量刷新，用 reRender。
-        // 色块点击：单点切换，用增量更新（内联 DOM 操作），避免 200+ 行折叠列表重建。
-        slideRow(card, 'lucide:rotate-ccw', t('model-material.resetThis'), false, () => {
-            resetSingleMatParams(id, index);
-            _selectedMat = null;
-            (targetStack ?? stackRegistry.modelStack)?.reRender();
-            setStatus(t('model.materialReset', { name: matName }), true);
-        });
-    }
+            addSliderRow(
+                panel,
+                t('model-material.diffuseMul'),
+                params.diffuseMul,
+                0,
+                2,
+                0.05,
+                (v) => setMatParams(id, index, { diffuseMul: v }),
+                'lucide:droplet'
+            );
+            addSliderRow(
+                panel,
+                t('model-material.specularMul'),
+                params.specularMul,
+                0,
+                2,
+                0.05,
+                (v) => setMatParams(id, index, { specularMul: v }),
+                'lucide:sparkle'
+            );
+            addSliderRow(
+                panel,
+                t('model-material.shininess'),
+                params.shininess,
+                0,
+                200,
+                1,
+                (v) => setMatParams(id, index, { shininess: v }),
+                'lucide:zap'
+            );
+            addSliderRow(
+                panel,
+                t('model-material.ambientMul'),
+                params.ambientMul,
+                0,
+                2,
+                0.05,
+                (v) => setMatParams(id, index, { ambientMul: v }),
+                'lucide:sun'
+            );
+            addSliderRow(
+                panel,
+                t('model-material.emissiveMul'),
+                params.emissiveMul,
+                0,
+                2,
+                0.05,
+                (v) => setMatParams(id, index, { emissiveMul: v }),
+                'lucide:flame'
+            );
+            _addGroupSeparator(panel, t('model-material.texLevelGroup'));
+            addSliderRow(
+                panel,
+                t('model-material.diffuseTexLevel'),
+                params.diffuseTexLevel,
+                0,
+                3,
+                0.1,
+                (v) => setMatParams(id, index, { diffuseTexLevel: v }),
+                'lucide:image'
+            );
+            addSliderRow(
+                panel,
+                t('model-material.bumpTexLevel'),
+                params.bumpTexLevel,
+                0,
+                3,
+                0.1,
+                (v) => setMatParams(id, index, { bumpTexLevel: v }),
+                'lucide:box'
+            );
+            addSliderRow(
+                panel,
+                t('model-material.toonTexLevel'),
+                params.toonTexLevel,
+                0,
+                3,
+                0.1,
+                (v) => setMatParams(id, index, { toonTexLevel: v }),
+                'lucide:palette'
+            );
+            addSliderRow(
+                panel,
+                t('model-material.sphereTexLevel'),
+                params.sphereTexLevel,
+                0,
+                3,
+                0.1,
+                (v) => setMatParams(id, index, { sphereTexLevel: v }),
+                'lucide:circle-dot'
+            );
+            addSliderRow(
+                panel,
+                t('model-material.emissiveTexLevel'),
+                params.emissiveTexLevel,
+                0,
+                3,
+                0.1,
+                (v) => setMatParams(id, index, { emissiveTexLevel: v }),
+                'lucide:sparkles'
+            );
 
-    _paramCardEl.appendChild(card);
+            if (current !== null) {
+                slideRow(panel, 'lucide:rotate-ccw', t('model-material.resetThis'), false, () => {
+                    resetSingleMatParams(id, index);
+                    _selectedMat = null;
+                    (targetStack ?? stackRegistry.modelStack)?.reRender();
+                    setStatus(t('model.materialReset', { name: matName }), true);
+                });
+            }
+        },
+    });
 }
 
 function buildMatListSchema(

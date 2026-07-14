@@ -291,7 +291,17 @@ type CacheStats struct {
 	ThumbnailCount int   `json:"thumbnailCount"`
 	ServeBytes     int64 `json:"serveBytes"`
 	ServeCount     int   `json:"serveCount"`
+	ResourceBytes  int64 `json:"resourceBytes"`  // user asset library (ResourceRoot categories)
+	ResourceCount  int   `json:"resourceCount"`
 	TotalBytes     int64 `json:"totalBytes"`
+}
+
+// knownResourceDirs lists the subdirectory names under ResourceRoot that constitute
+// the user's asset library ("仓库"). Includes the standard categories from
+// ensureResourceDirs plus commonly used custom directories.
+var knownResourceDirs = []string{
+	"PMX", "VMD", "audio", "stage", "prop", "environment", "MD-dress", "setting",
+	"text-model",
 }
 
 // GetCacheStats returns the total size and file count of all cache directories.
@@ -307,7 +317,16 @@ func (a *App) GetCacheStats() (*CacheStats, error) {
 	if dir, err := serveRootDir(); err == nil {
 		stats.ServeBytes, stats.ServeCount = dirSize(dir)
 	}
-	stats.TotalBytes = stats.ExtractedBytes + stats.ThumbnailBytes + stats.ServeBytes
+	// Resource root: sum sizes of known asset directories
+	if cfg, err := a.GetConfig(); err == nil && cfg != nil && cfg.ResourceRoot != "" {
+		for _, name := range knownResourceDirs {
+			dir := filepath.Join(cfg.ResourceRoot, name)
+			bytes, count := dirSize(dir)
+			stats.ResourceBytes += bytes
+			stats.ResourceCount += count
+		}
+	}
+	stats.TotalBytes = stats.ResourceBytes + stats.ExtractedBytes + stats.ThumbnailBytes
 	return &stats, nil
 }
 

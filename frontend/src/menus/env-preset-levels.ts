@@ -331,6 +331,19 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
     },
 };
 
+/** [adr-111] 快照 envState 中所有 ground/water 字段，用于预设应用后恢复。 */
+function _snapshotGroundWaterFields(
+    state: typeof envState
+): Partial<typeof envState> {
+    const snapshot: Record<string, unknown> = {};
+    for (const key of Object.keys(state) as (keyof typeof envState)[]) {
+        if (key.startsWith('ground') || key.startsWith('water')) {
+            snapshot[key] = state[key];
+        }
+    }
+    return snapshot as Partial<typeof envState>;
+}
+
 export function buildPresetLevel(): PopupLevel {
     const entries = Object.entries(SCENE_PRESETS);
     return {
@@ -358,7 +371,11 @@ export function buildPresetLevel(): PopupLevel {
                                 (envUpdate.skyColorTop[2] + envUpdate.skyColorBot[2]) / 2,
                             ] as [number, number, number];
                         }
+                        // [adr-111] 环境预设不覆盖地面/水面参数：快照后恢复
+                        const groundWaterSnapshot = _snapshotGroundWaterFields(envState);
                         setEnvState(envUpdate);
+                        // 恢复地面/水面参数，确保预设不覆盖用户手动调整的值
+                        setEnvState(groundWaterSnapshot, true);
                         if (preset.lights) {
                             transitionLighting(preset.lights, 2000);
                         }

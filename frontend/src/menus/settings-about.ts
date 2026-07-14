@@ -235,7 +235,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                     total.textContent = `${t('settings.about.cache.total')} ${formatBytes(s.totalBytes)}`;
                                 }
                                 if (detail) {
-                                    detail.innerHTML = `<div>${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div><div>${t('settings.about.cache.serve')}: ${formatBytes(s.serveBytes)} (${s.serveCount} 项)</div>`;
+                                    detail.innerHTML = `<div>${t('settings.about.cache.resource')}: ${formatBytes(s.resourceBytes)}</div><div>${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div>`;
                                 }
                             })
                             .catch((err) => logWarn('settings-about', '', err));
