@@ -66,6 +66,9 @@ export default defineConfig(({ command }) => {
       minify: 'esbuild',
       cssMinify: true,
       sourcemap: false,
+      // 桌面端（Wails）本地 bundle 无网络传输成本，1.6MB 主包属合理体量。
+      // IIFE 格式不支持 code-splitting，主包注定整块；调高阈值静音 Vite 的 Web 场景保守告警。
+      chunkSizeWarningLimit: 2000,
       rollupOptions: {
         // 外部化 Babylon 相关包（不打包进 bundle）
         // 注意：vitest 下必须 internalize，否则 vi.mock 无法解析模块
