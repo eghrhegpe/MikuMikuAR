@@ -6,7 +6,7 @@ import type { OutfitFile } from '../core/config';
 import { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
-import { tryCatchStatus, logWarn } from '../core/utils';
+import { tryCatchStatus, logWarn, LoadingGuard } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -50,7 +50,7 @@ function buildOutfitSchema(id: string): MenuNode[] {
 
                     const outfitData = outfit;
                     const active = inst.activeVariant;
-                    let _loading = false;
+                    const _loadingGuard = new LoadingGuard();
 
                     cardContainer(c, (inner) => {
                         slideRow(
@@ -59,10 +59,9 @@ function buildOutfitSchema(id: string): MenuNode[] {
                             t('outfit.default'),
                             false,
                             async () => {
-                                if (_loading) {
+                                if (!_loadingGuard.tryEnter()) {
                                     return;
                                 }
-                                _loading = true;
                                 setStatus(t('outfit.switching'), true);
                                 const _r = await tryCatchStatus(
                                     () => applyOutfitVariant(id, '默认'),
@@ -71,7 +70,7 @@ function buildOutfitSchema(id: string): MenuNode[] {
                                 if (_r !== undefined) {
                                     setStatus(t('outfit.switched'), true);
                                 }
-                                _loading = false;
+                                _loadingGuard.leave();
                                 await _render();
                             },
                             undefined,
@@ -97,10 +96,9 @@ function buildOutfitSchema(id: string): MenuNode[] {
                                 v.name,
                                 false,
                                 async () => {
-                                    if (_loading) {
+                                    if (!_loadingGuard.tryEnter()) {
                                         return;
                                     }
-                                    _loading = true;
                                     setStatus(t('outfit.switching'), true);
                                     const _r = await tryCatchStatus(
                                         () => applyOutfitVariant(id, v.name),
@@ -109,7 +107,7 @@ function buildOutfitSchema(id: string): MenuNode[] {
                                     if (_r !== undefined) {
                                         setStatus(t('outfit.switched'), true);
                                     }
-                                    _loading = false;
+                                    _loadingGuard.leave();
                                     await _render();
                                 },
                                 undefined,
@@ -132,10 +130,9 @@ function buildOutfitSchema(id: string): MenuNode[] {
                         resetBtn.textContent = t('outfit.resetAll');
                         resetBtn.style.cssText = 'width:100%;margin-top:8px;';
                         resetBtn.addEventListener('click', async () => {
-                            if (_loading) {
+                            if (!_loadingGuard.tryEnter()) {
                                 return;
                             }
-                            _loading = true;
                             setStatus(t('outfit.resetting'), true);
                             const _r = await tryCatchStatus(async () => {
                                 await resetOutfit(id);
@@ -143,7 +140,7 @@ function buildOutfitSchema(id: string): MenuNode[] {
                             if (_r !== undefined) {
                                 setStatus(t('outfit.resetDone'), true);
                             }
-                            _loading = false;
+                            _loadingGuard.leave();
                             await _render();
                         });
                         inner.appendChild(resetBtn);
