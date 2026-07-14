@@ -4,7 +4,7 @@
 
 import { libraryRoot, externalPaths, setStatus, setLibraryRoot } from '../core/config';
 import { t } from '../core/i18n/t';
-import { computeLibraryRef, resolveLibraryRef, getBaseName, getDirPath, normPath, deepClone } from '../core/utils';
+import { computeLibraryRef, resolveLibraryRef, getBaseName, normPath, deepClone } from '../core/utils';
 import {
     serializeScene,
     deserializeScene,
@@ -18,12 +18,6 @@ import {
     SelectSceneOpenFile,
     LoadSceneFile,
 } from '../core/wails-bindings';
-
-/** 简易 dirname。 */
-// _dirname 已删除，改用 getDirPath(p) || '.'
-
-/** 简易 join。 */
-// _join 已删除，改用 normPath(`${a}/${b}`)
 
 // ======== Asset Collection ========
 
@@ -72,22 +66,6 @@ function collectSceneAssets(scene: SceneFile): string[] {
     }
 
     return Array.from(paths);
-}
-
-/** 收集 PMX 模型同目录下的纹理/换装文件。 */
-async function collectModelTextures(pmxPath: string): Promise<string[]> {
-    const extras: string[] = [];
-    try {
-        const dir = getDirPath(pmxPath) || '.';
-        // 使用 Go 绑定列出目录内容（如果可用）
-        // 注意：ListSubDirs 只列子目录，我们需要列文件
-        // 这里用简化的策略：纹理文件通常与 PMX 同目录
-        // 通过 ReadFile 无法列目录，暂时只收集 PMX 本身
-        // 纹理由 PMX loader 自动处理（相对路径引用）
-    } catch {
-        // 静默失败 — 纹理收集是尽力而为
-    }
-    return extras;
 }
 
 // ======== libraryRef Rewriting ========
@@ -234,10 +212,12 @@ export async function importSceneBundle(): Promise<void> {
         // 解析场景文件
         const sceneData = JSON.parse(sceneJson) as SceneFile;
 
-        // 临时将 libraryRoot 指向解压目录
-        // resolveLibraryRef 会自动在解压目录下查找资源
+        // 临时将 libraryRoot 指向解压目录的 assets/ 子目录。
+        // BundleScene 把所有资源写入 zip 的 assets/ 前缀下（ADR-037），
+        // 而 rewriteRefsForBundle 写入的 libraryRef 不含该前缀，
+        // 故须指向 extractDir/assets 才能被 resolveLibraryRef 正确命中。
         const origRoot = libraryRoot;
-        setLibraryRoot(extractDir);
+        setLibraryRoot(normPath(extractDir + '/assets'));
 
         try {
             await deserializeScene(sceneData);

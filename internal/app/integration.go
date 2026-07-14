@@ -607,13 +607,66 @@ func (a *App) BundleScene(targetPath string, sceneJSON string, assetPaths []stri
 		libRoot = cfg.ResourceRoot
 	}
 
+	// Expand asset paths: a PMX references textures/material maps by relative
+	// paths that are NOT listed in the scene file. Walk each asset's parent
+	// directory (recursively, bounded to the model folder) and include sibling
+	// files with known texture/material extensions so the imported model keeps
+	// its textures. See AR review #2.
+	allPaths := expandBundleAssets(assetPaths)
+
 	// Write each asset file
-	for _, absPath := range assetPaths {
+	for _, absPath := range allPaths {
 		rel := _bundleRelPath(absPath, libRoot)
 		_ = _copyFileToZip(zw, absPath, "assets/"+rel)
 	}
 
 	return nil
+}
+
+// _bundleTextureExts are file extensions (lower-case, with leading dot) that a
+// PMX/model may reference as textures or material maps. When bundling we include
+// sibling files with these extensions so the imported model keeps its appearance.
+// Other unrelated files in the model folder are skipped to avoid bloating the bundle.
+var _bundleTextureExts = map[string]bool{
+	".png": true, ".jpg": true, ".jpeg": true, ".bmp": true,
+	".tga": true, ".dds": true, ".webp": true, ".svg": true,
+	".tif": true, ".tiff": true, ".spa": true, ".sph": true,
+	".toon": true,
+}
+
+// expandBundleAssets returns the input paths plus sibling texture/material files
+// found by recursively walking each path's parent directory (the model folder).
+// Results are de-duplicated. Walks are bounded to the model folder so we never
+// scan the entire library.
+func expandBundleAssets(assetPaths []string) []string {
+	seen := make(map[string]bool)
+	out := make([]string, 0, len(assetPaths))
+	add := func(p string) {
+		norm := filepath.ToSlash(p)
+		if seen[norm] {
+			return
+		}
+		seen[norm] = true
+		out = append(out, p)
+	}
+	for _, p := range assetPaths {
+		add(p)
+		dir := filepath.Dir(p)
+		_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return nil // 跳过无法访问的目录
+			}
+			if d.IsDir() {
+				return nil
+			}
+			ext := strings.ToLower(filepath.Ext(path))
+			if _bundleTextureExts[ext] {
+				add(path)
+			}
+			return nil
+		})
+	}
+	return out
 }
 
 // _bundleRelPath computes the relative path for a bundle asset.
