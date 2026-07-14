@@ -153,15 +153,28 @@ export async function captureThumbnail(
             return;
         }
 
-        const rtSize = 512;
-        const rt = new RenderTargetTexture('thumbRT', { width: rtSize, height: rtSize }, _scene, false);
+        const activeCam = _scene.activeCamera;
+        const engine = _scene.getEngine();
+        // RTT 尺寸跟随相机（聚焦主相机）宽高比，使投影宽高比与缓冲宽高比一致，
+        // 否则「16:9 投影塞进正方缓冲 → 角色横向压缩、视觉被拉高」。
+        // 卡片用 background-size:cover / object-fit:cover 再裁切，比例始终正确、绝不拉伸。
+        const camAspect = activeCam ? engine.getAspectRatio(activeCam) : 1;
+        const rtMax = 512;
+        let rtW = rtMax;
+        let rtH = rtMax;
+        if (camAspect >= 1) {
+            rtH = Math.max(1, Math.round(rtMax / camAspect));
+        } else {
+            rtW = Math.max(1, Math.round(rtMax * camAspect));
+        }
+
+        const rt = new RenderTargetTexture('thumbRT', { width: rtW, height: rtH }, _scene, false);
         rt.clearColor = new Color4(0, 0, 0, 0);
 
         // 沿用主相机（模型加载后已 focus 到该模型，即用户实际聚焦视角），
         // 而非临时 new 一个 FreeCamera 自算 3/4 角 —— RT 渲染只借用相机视角、不会改动主相机。
         // 仅当无活动相机时兜底用包围盒算一个 3/4 视角。
         let thumbCam: FreeCamera | null = null;
-        const activeCam = _scene.activeCamera;
         if (activeCam) {
             rt.activeCamera = activeCam;
         } else {
@@ -195,31 +208,30 @@ export async function captureThumbnail(
             // readPixels 读取的是「当前绑定的 framebuffer」。
             // rt.render() 结束会 unBindFramebuffer 回到默认 backbuffer，
             // 必须重新绑定 RTT 自身的 framebuffer 才能读到离屏渲染结果（否则截到的是主场景）。
-            const engine = _scene.getEngine();
             engine.bindFramebuffer(rt.renderTarget!);
             try {
-                const floatPixels = await engine.readPixels(0, 0, rtSize, rtSize, true);
+                const floatPixels = await engine.readPixels(0, 0, rtW, rtH, true);
                 if (gen !== _thumbCaptureGen) return;
 
                 const canvas = document.createElement('canvas');
-                canvas.width = rtSize;
-                canvas.height = rtSize;
+                canvas.width = rtW;
+                canvas.height = rtH;
                 const ctx = canvas.getContext('2d');
                 if (!ctx) {
                     return;
                 }
 
-                const imageData = ctx.createImageData(rtSize, rtSize);
+                const imageData = ctx.createImageData(rtW, rtH);
                 // readPixels 返回 Uint8Array（0–255 字节），已是最终像素值，直接拷贝即可。
                 // 原代码误当作 Float32Array 再 *255，导致所有非 0 像素被饱和成 255（全白）。
                 const pixelsArr = floatPixels as Uint8Array;
                 // WebGL framebuffer 原点在左下角，readPixels 行序为「底→顶」；
                 // canvas putImageData 原点在左上角，需逐行上下翻转，否则缩略图上下颠倒（倒立）。
-                const rowBytes = rtSize * 4;
+                const rowBytes = rtW * 4;
                 const flipped = new Uint8Array(pixelsArr.length);
-                for (let y = 0; y < rtSize; y++) {
+                for (let y = 0; y < rtH; y++) {
                     const srcStart = y * rowBytes;
-                    const dstStart = (rtSize - 1 - y) * rowBytes;
+                    const dstStart = (rtH - 1 - y) * rowBytes;
                     flipped.set(pixelsArr.subarray(srcStart, srcStart + rowBytes), dstStart);
                 }
                 imageData.data.set(flipped);

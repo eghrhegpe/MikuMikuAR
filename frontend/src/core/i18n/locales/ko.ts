@@ -199,6 +199,7 @@ export const ko: Record<string, string> = {
     'model-material.resetAllDone': '✓ 모든 재질 매개변수가 재설정됨',
     'model-material.selectMaterialHint': '위 목록에서 재질을 선택하여 세부 조정하세요',
     'model-material.unknownMaterial': '알 수 없는 재질',
+    'model-material.paramTuneTitle': '매개변수 조정',
     'model-material.paramTune': '매개변수 조정 — {cat} › {matName}',
     'model-material.resetThis': '이 재질 재설정',
     'model-material.perMaterial': '재질별 — {name}',

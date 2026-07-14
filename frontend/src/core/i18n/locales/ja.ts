@@ -198,6 +198,7 @@ export const ja: Record<string, string> = {
     'model-material.resetAllDone': '✓ すべてのマテリアルパラメータをリセットしました',
     'model-material.selectMaterialHint': '上部のリストからマテリアルを選択して微調整',
     'model-material.unknownMaterial': '不明なマテリアル',
+    'model-material.paramTuneTitle': 'パラメータ調整',
     'model-material.paramTune': 'パラメータ調整 — {cat} › {matName}',
     'model-material.resetThis': 'このマテリアルをリセット',
     'model-material.perMaterial': 'マテリアル個別 — {name}',

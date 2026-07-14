@@ -33,6 +33,7 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.es2022,
+        __MMD_ENABLE_MPR__: 'readonly',
       },
     },
     plugins: {
@@ -126,6 +127,7 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.es2022,
+        __MMD_ENABLE_MPR__: 'readonly',
         describe: 'readonly',
         it: 'readonly',
         test: 'readonly',

@@ -21,6 +21,12 @@ export interface CacheStats {
     "thumbnailCount": number;
     "serveBytes": number;
     "serveCount": number;
+
+    /**
+     * user asset library (ResourceRoot categories)
+     */
+    "resourceBytes": number;
+    "resourceCount": number;
     "totalBytes": number;
 }
 
