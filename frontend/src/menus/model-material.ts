@@ -434,8 +434,13 @@ function buildMatRootSchema(
                                     slider.className = 'slider';
                                     toggle.appendChild(toggleInput);
                                     toggle.appendChild(slider);
+                                    // 修复：<label> 包裹 checkbox 时浏览器会「原生二次派发 click」到 input，
+                                    // 令本 handler 双触发；因读取的是实时数据状态，两次取值相反而互相抵消（点击无反应）。
+                                    // 方案：跳过 synthetic click(target===input)，并用 preventDefault 阻止原生切换造成的视觉错位。
                                     toggle.addEventListener('click', (e) => {
                                         e.stopPropagation();
+                                        if (e.target === toggleInput) return;
+                                        e.preventDefault();
                                         const newState = !isMatEnabled(id, idx);
                                         setMatEnabled(id, idx, newState);
                                         toggleInput.checked = newState;
@@ -764,8 +769,11 @@ function buildMatListSchema(
                         slider.className = 'slider';
                         toggle.appendChild(toggleInput);
                         toggle.appendChild(slider);
+                        // 修复：同 matRoot，<label> 原生二次派发 click 导致 handler 双触发互相抵消。
                         toggle.addEventListener('click', (e) => {
                             e.stopPropagation();
+                            if (e.target === toggleInput) return;
+                            e.preventDefault();
                             const newState = !isMatEnabled(id, detail.index);
                             setMatEnabled(id, detail.index, newState);
                             toggleInput.checked = newState;
