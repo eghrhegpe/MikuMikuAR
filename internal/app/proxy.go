@@ -136,19 +136,36 @@ var maxPlazaDownloadBytes int64 = 1 << 30 // 1 GiB
 // progressReader wraps an io.Reader to emit progress events during DownloadFromPlaza.
 // It reports read bytes every 500ms (throttled) and emits a final completion event.
 // If Content-Length is missing, percent is 0 and only bytes read are reported.
+// [ADR-087 P3] 每次读取时检查 proxy session 是否已废弃（target 切换），
+// 若废弃则返回错误中断流式复制，避免残余碎片文件继续写入。
 type progressReader struct {
-	reader   io.Reader
-	total    int64
-	read     int64
-	lastEmit time.Time
-	fileName string
-	app      *App
+	reader     io.Reader
+	total      int64
+	read       int64
+	lastEmit   time.Time
+	fileName   string
+	app        *App
+	sessionKey string
 }
 
 func (pr *progressReader) Read(p []byte) (int, error) {
 	n, err := pr.reader.Read(p)
 	pr.read += int64(n)
-	if pr.app.wailsApp != nil && time.Since(pr.lastEmit) > 500*time.Millisecond {
+	// [ADR-087 P3] 流式 obsolete 检查：target 切换时实时中断下载
+	if pr.app != nil && pr.sessionKey != "" {
+		pr.app.httpSrvMu.Lock()
+		sess, ok := proxySessions[pr.sessionKey]
+		pr.app.httpSrvMu.Unlock()
+		if ok {
+			sess.mu.Lock()
+			obs := sess.obsolete
+			sess.mu.Unlock()
+			if obs {
+				return n, fmt.Errorf("proxy session obsolete (target changed)")
+			}
+		}
+	}
+	if pr.app != nil && pr.app.wailsApp != nil && time.Since(pr.lastEmit) > 500*time.Millisecond {
 		var percent float64
 		if pr.total > 0 {
 			percent = float64(pr.read) / float64(pr.total) * 100
@@ -596,12 +613,13 @@ func (a *App) DownloadFromPlaza(fileURL string, fileName string) (*PlazaDownload
 		// progressReader 会在 total=0 时将 percent 设为 0，仅报告已下载字节数。
 		total := resp.ContentLength
 		pr := &progressReader{
-			reader:   resp.Body,
-			total:    total,
-			read:     0,
-			lastEmit: time.Now(),
-			fileName: fileName,
-			app:      a,
+			reader:     resp.Body,
+			total:      total,
+			read:       0,
+			lastEmit:   time.Now(),
+			fileName:   fileName,
+			app:        a,
+			sessionKey: proxyServerKey,
 		}
 
 		// [资源上限] 限制单文件下载大小，防止恶意上游写满磁盘。

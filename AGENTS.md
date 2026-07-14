@@ -56,9 +56,9 @@ http://localhost:9222/json 实际网页一览
 
 ## 本地缓存（多 AI 协同规范）
 
-> 禁止使用 `git stash`，多进程并发 pop 会产生大量工作区冲突。
-> 本地缓存（不推送）：先git add . && git commit（AGENTS.md 既定）
-> 推送/PR：按 Safety Protocol 用具体文件名，或至少 git add -A 前先 git status 确认范围
+> 禁止使用 `git stash`，会把文件挪走，多进程并发 pop 时会产生大量误解。
+> 改完记得本地缓存：git add . && git commit 。
+> 推送/PR：建议把所有改动都提交，按 Safety Protocol 用具体文件名，或至少 git add -A 前先 git status 确认范围
 
 ```bash
 # 暂存（本地缓存）
