@@ -100,6 +100,12 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     _procVmdActive = true;
     procModelId = modelIdAtStart;
     try {
+        // D4: await 前检查焦点是否已切换，避免无意义的 VMD 加载（CPU 浪费）
+        if (focusedModelId !== modelIdAtStart) {
+            logWarn('proc-motion', '焦点已在生成期间切换，取消本次程序化动作');
+            procStarting = false;
+            return;
+        }
         await loadVMDMotion(
             buf,
             targetMode === 'autodance' && bpmValid ? PROC_VMD_NAME_AUTODANCE : PROC_VMD_NAME_IDLE

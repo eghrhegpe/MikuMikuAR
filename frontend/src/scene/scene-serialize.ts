@@ -52,7 +52,6 @@ import {
     setRenderState,
     removeModel,
     loadPMXFile,
-    focusedModel,
     modelManager,
     setModelBoneLinesVis,
     setModelBoneJointsVis,
@@ -450,20 +449,20 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 modelIds.push(null);
                 continue;
             }
-            await loadPMXFile(resolvedPath, m.kind === 'stage', true);
-            // 舞台加载后不抢焦点，需要通过 filePath 反查注册表
-            const inst =
-                m.kind === 'stage'
-                    ? (Array.from(modelManager.modelRegistry.values()).find(
-                          (i) => i.filePath === resolvedPath
-                      ) ?? focusedModel())
-                    : focusedModel();
+            // D5: 直接用 loadPMXFile 返回的运行时 ID 查询，不依赖 focusedModel() 反查
+            const loadedId = await loadPMXFile(resolvedPath, m.kind === 'stage', true);
+            if (!loadedId) {
+                errors.push(t('scene.serialize.modelNoMesh', { name: m.name }));
+                modelIds.push(null);
+                continue;
+            }
+            const inst = modelRegistry.get(loadedId);
             if (!inst || inst.meshes.length === 0) {
                 errors.push(t('scene.serialize.modelNoMesh', { name: m.name }));
                 modelIds.push(null);
                 continue;
             }
-            modelIds.push(inst.id);
+            modelIds.push(loadedId);
             // Map the persisted UUID to the runtime ID
             if (m.uuid) {
                 modelUuidMap.set(inst.id, m.uuid);
