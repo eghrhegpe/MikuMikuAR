@@ -51,7 +51,18 @@ let _refreshWaterRenderList: (() => void) | null = null;
 let _tryAutoApplyPreset: ((id: string) => Promise<void>) | null = null;
 let _loadOutfits: ((id: string) => Promise<void>) | null = null;
 let _rebuildOutlineState: (() => void) | null = null;
+let _onMeshesReady: ((meshes: Mesh[]) => void) | null = null;
+let _onModelLoaded: ((id: string) => void) | null = null;
 let _thumbCaptureGen = 0;
+let _loadAbortController: AbortController | null = null;
+
+export function setOnMeshesReady(fn: (meshes: Mesh[]) => void): void {
+    _onMeshesReady = fn;
+}
+
+export function setOnModelLoaded(fn: (id: string) => void): void {
+    _onModelLoaded = fn;
+}
 
 export function initLoader(
     scene: import('@babylonjs/core/scene').Scene,
@@ -238,6 +249,14 @@ export async function loadPMXFile(
     if (!_scene || !_mmdRuntime) {
         return null;
     }
+    // 取消之前的加载，避免竞态覆盖
+    if (_loadAbortController) {
+        _loadAbortController.abort();
+    }
+    const abortCtrl = new AbortController();
+    _loadAbortController = abortCtrl;
+    const signal = abortCtrl.signal;
+
     let loadedMeshes: Mesh[] = [];
     let wasmModel: IMmdModel | null = null;
     let registeredId: string | null = null;
@@ -264,12 +283,25 @@ export async function loadPMXFile(
         const result = await ImportMeshAsync(url, _scene, {
             pluginExtension: '.pmx',
             onProgress: (evt) => {
+                if (signal.aborted) {
+                    return;
+                }
                 if (evt.lengthComputable) {
                     const pct = Math.round((evt.loaded / evt.total) * 100);
                     dom.loadingText.textContent = t('scene.loader.loadingProgress', { pct });
                 }
             },
         });
+        if (signal.aborted) {
+            loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
+            loadedMeshes.forEach((m) => {
+                try {
+                    m.dispose();
+                } catch {
+                }
+            });
+            return null;
+        }
         loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
 
         dom.loadingEl.style.display = 'none';
@@ -320,11 +352,12 @@ export async function loadPMXFile(
                 }
             }
             // 绑定 Reflection Probe 到新材料（如果探针已启用）
-            try {
-                const { bindReflectionProbeToModel } = await import('../render/renderer');
-                bindReflectionProbeToModel(meshes);
-            } catch {
-                // Intentionally empty — renderer 未初始化时忽略
+            if (_onMeshesReady) {
+                try {
+                    _onMeshesReady(meshes);
+                } catch {
+                    // Intentionally empty — renderer 未初始化时忽略
+                }
             }
             setStatus(t('scene.loader.stageLoaded', { name: displayName }), true);
             _modelManager.arrange();
@@ -390,6 +423,9 @@ export async function loadPMXFile(
         // Must register BEFORE VMD load because loadVMDMotion queries modelRegistry
         _modelManager.register(inst);
         registeredId = id;
+        if (signal.aborted) {
+            return null;
+        }
         // 贴地：把模型根节点放到当前地面高度（heightmap 模式=真实起伏，其他模式=groundLevel）。
         // 地形尚未就绪时回退 groundLevel；地形 onReady 后会回调重新贴地所有模型。
         if (inst.rootMesh) {
@@ -405,11 +441,12 @@ export async function loadPMXFile(
             }
         }
         // 绑定 Reflection Probe 到新材料（如果探针已启用）
-        try {
-            const { bindReflectionProbeToModel } = await import('../render/renderer');
-            bindReflectionProbeToModel(meshes);
-        } catch {
-            // Intentionally empty — renderer 未初始化时忽略
+        if (_onMeshesReady) {
+            try {
+                _onMeshesReady(meshes);
+            } catch {
+                // Intentionally empty — renderer 未初始化时忽略
+            }
         }
         if (wasmModel instanceof MmdWasmModel) {
             const states = wasmModel.rigidBodyStates;
@@ -420,9 +457,9 @@ export async function loadPMXFile(
         setFocusedModelId(id);
 
         // 加载完成后自动激活默认视线追踪（眼球 + 头部），使配置立即生效
-        swallowError(
-            import('../motion/proc-motion-bridge').then((m) => m.activateGazeTracking())
-        );
+        if (_onModelLoaded) {
+            swallowError(Promise.resolve(_onModelLoaded(id)));
+        }
 
         // 道具路径下的模型同时注册到 propRegistry（兼容灯光/阴影/序列化）
         const propDir = (
@@ -458,6 +495,9 @@ export async function loadPMXFile(
                 appliedVmd = '';
                 setStatus(t('scene.loader.vmdFailedModelLoaded', { name: displayName }), false);
             }
+        }
+        if (signal.aborted) {
+            return null;
         }
 
         _modelManager.focus(id, uiState.autoCenterModel);
@@ -496,6 +536,9 @@ export async function loadPMXFile(
 
         return registeredId;
     } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+            return null;
+        }
         if (registeredId && _modelManager) {
             try {
                 _modelManager.remove(registeredId);
@@ -523,5 +566,8 @@ export async function loadPMXFile(
         return null;
     } finally {
         dom.loadingEl.style.display = 'none';
+        if (_loadAbortController === abortCtrl) {
+            _loadAbortController = null;
+        }
     }
 }

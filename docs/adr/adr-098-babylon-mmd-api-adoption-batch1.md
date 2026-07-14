@@ -74,8 +74,9 @@
 
 同源调研剩余三项，风险递增，本批次不含：
 
-| 项 | API | 阻断 / 依赖 |
-|----|-----|------------|
-| 批次二候选 | `StreamAudioPlayer` | 替换 `outfit/audio.ts` 自建管线，需保留自建 `BeatDetector` 桥接 |
-| 需 POC | `MmdWasmInstanceTypeMPR`（多线程物理） | 依赖 `SharedArrayBuffer`，需 Go 端 `basenameFallbackFS` 注入 COOP/COEP 响应头 POC，再开 feature flag |
-| 需骨骼映射复用 | `AnimationRetargeter` + `HumanoidMmd` | 解锁 Mixamo/VRM/Blender 动作源，须复用 ADR-061 统一骨骼映射，不重复造 |
+| 项 | API | 阻断 / 依赖 | 状态 |
+|----|-----|------------|------|
+| 批次二候选 | `StreamAudioPlayer` | 替换 `outfit/audio.ts` 自建管线，需保留自建 `BeatDetector` 桥接 | ⏳ 待立项 |
+| ~~需 POC~~ | ~~`MmdWasmInstanceTypeMPR`（多线程物理）~~ | ~~依赖 `SharedArrayBuffer`，需 Go 端 `basenameFallbackFS` 注入 COOP/COEP 响应头 POC~~ | ✅ ADR-099 已落地 |
+| 新增候选 | `SdefInjector` + `SdefMesh` | SDEF 球面变形，side-effect import，零风险 | ⏳ 待立项 |
+| 远期候选 | `AnimationRetargeter` + `HumanoidMmd` | 人形动画重定向，解锁 Mixamo/VRM 动作来源，须复用 ADR-061 统一骨骼映射 | ⏳ 待立项（ADR-087 关键前置） |

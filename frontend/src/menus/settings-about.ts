@@ -32,6 +32,7 @@ import { handleSettingsAction } from './settings-paths';
 import { buildSoftwareDetailLevel } from './settings-software';
 import { swallowError, logWarn, jsonStringify } from '../core/utils';
 import { addDisposableListener } from '../core/dom';
+import { showConfirm } from '../core/dialog';
 
 function exportSettings(): void {
     const data = jsonStringify(uiState);
@@ -418,9 +419,13 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         t('settings.about.settingsMgmt.reset'),
                         false,
                         () => {
-                            if (window.confirm(t('settings.about.settingsMgmt.resetConfirm'))) {
-                                resetAllSettings(getSettingsMenu);
-                            }
+                            showConfirm(t('settings.about.settingsMgmt.resetConfirm')).then(
+                                (ok) => {
+                                    if (ok) {
+                                        resetAllSettings(getSettingsMenu);
+                                    }
+                                }
+                            );
                         }
                     );
                     const hint = document.createElement('div');

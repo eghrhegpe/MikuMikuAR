@@ -818,6 +818,193 @@ input, textarea, [contenteditable] {
     color: var(--text, #e8f6f4);
 }
 
+.plaza-search-bar {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.25);
+    border-bottom: 1px solid rgba(57, 197, 187, 0.12);
+}
+
+.plaza-search-input {
+    width: 100%;
+    max-width: 320px;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 1px solid rgba(57, 197, 187, 0.22);
+    border-radius: 8px;
+    background: rgba(10, 16, 20, 0.7);
+    color: var(--text, #e8f6f4);
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.plaza-search-input::placeholder {
+    color: rgba(232, 246, 244, 0.4);
+}
+
+.plaza-search-input:focus {
+    border-color: rgba(57, 197, 187, 0.6);
+}
+
+.plaza-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 16px;
+    text-align: center;
+    border: 1px solid rgba(57, 197, 187, 0.18);
+    border-radius: 14px;
+    background: rgba(10, 16, 20, 0.6);
+    color: var(--text, #e8f6f4);
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s, background 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.plaza-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent, #39c5bb), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.plaza-card:hover {
+    border-color: rgba(57, 197, 187, 0.5);
+    background: rgba(10, 16, 20, 0.85);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(57, 197, 187, 0.15);
+}
+
+.plaza-card:hover::before {
+    opacity: 1;
+}
+
+.plaza-card iconify-icon {
+    font-size: 32px;
+    color: var(--accent, #39c5bb);
+    flex-shrink: 0;
+}
+
+.plaza-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.plaza-card-desc {
+    font-size: 11px;
+    color: rgba(232, 246, 244, 0.5);
+    line-height: 1.4;
+    height: 30px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    max-width: 100%;
+}
+
+.plaza-card-mode {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(232, 246, 244, 0.55);
+    margin-top: auto;
+}
+
+.plaza-card-presets {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.plaza-preset-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(57, 197, 187, 0.15);
+    color: rgba(57, 197, 187, 0.8);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.plaza-preset-tag:hover {
+    background: rgba(57, 197, 187, 0.3);
+    color: var(--accent, #39c5bb);
+}
+
+.plaza-tabs {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 16px 8px;
+    background: rgba(0, 0, 0, 0.15);
+    border-bottom: 1px solid rgba(57, 197, 187, 0.12);
+}
+
+.plaza-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 12px;
+    border: none;
+    border-radius: 8px 8px 0 0;
+    background: transparent;
+    color: rgba(232, 246, 244, 0.6);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.plaza-tab:hover {
+    background: rgba(57, 197, 187, 0.08);
+    color: rgba(232, 246, 244, 0.85);
+}
+
+.plaza-tab.active {
+    background: rgba(57, 197, 187, 0.15);
+    color: var(--accent, #39c5bb);
+    font-weight: 600;
+}
+
+.plaza-tab iconify-icon {
+    font-size: 14px;
+}
+
+.plaza-creators,
+.plaza-library {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.plaza-coming-soon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+    opacity: 0.8;
+}
+
 /* ===== 外部库 — 行内路径 ===== */
 
 /* ===== Phase 0: 通用组件系统 ===== */

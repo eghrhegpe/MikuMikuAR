@@ -32,12 +32,19 @@ import { disposeModelMaterialState } from './material';
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
 
-const PHYSICS_CAT_PATTERNS: [PhysicsCategory, RegExp][] = [
-    ['skirt', /スカート|skirt|フリル|frill|裾|hem/],
-    ['chest', /胸|chest|bust|バスト/],
-    ['hair', /髪|hair|ahoge|bangs|ponytail|前髪|後ろ髪/],
-    ['accessory', /リボン|ribbon|アクセサリ|accessory|飾り|collar|ネクタイ|tie|紐|string|襟/],
-];
+// ======== Configurable Physics Classification Rules ========
+// 用户可通过 uiState.physicsCategoryMap 覆盖默认规则（格式同 materialCategoryMap）
+
+const PHYSICS_CAT_RULES: Record<PhysicsCategory, string[]> = {
+    skirt: ['スカート', 'skirt', 'フリル', 'frill', '裾', 'hem'],
+    chest: ['胸', 'chest', 'bust', 'バスト'],
+    hair: ['髪', 'hair', 'ahoge', 'bangs', 'ponytail', '前髪', '後ろ髪'],
+    accessory: ['リボン', 'ribbon', 'アクセサリ', 'accessory', '飾り', 'collar', 'ネクタイ', 'tie', '紐', 'string', '襟'],
+};
+
+const PHYSICS_CAT_PATTERNS: [PhysicsCategory, RegExp][] = Object.entries(PHYSICS_CAT_RULES).map(
+    ([cat, keywords]) => [cat as PhysicsCategory, new RegExp(keywords.join('|'), 'i')]
+);
 
 function _classifyBonePhysics(name: string): PhysicsCategory | null {
     const l = name.toLowerCase();
@@ -187,6 +194,8 @@ export class ModelManager {
 
     /** Cleanup callback invoked by removeModel for external per-model state. */
     onRemoveModel: ((id: string) => void) | null = null;
+    /** Callback invoked when a model receives focus (e.g. to activate gaze tracking). */
+    onModelFocused: ((id: string) => void | Promise<void>) | null = null;
 
     constructor(
         private scene: Scene,
@@ -313,9 +322,9 @@ export class ModelManager {
         setFocusedModelId(id);
 
         // 焦点切换后自动激活默认视线追踪，使眼球 / 头部跟随当前焦点模型
-        swallowError(
-            import('../motion/proc-motion-bridge').then((m) => m.activateGazeTracking())
-        );
+        if (this.onModelFocused) {
+            swallowError(Promise.resolve(this.onModelFocused(id)));
+        }
 
         if (frameCamera) {
             const min = new Vector3(Infinity, Infinity, Infinity);

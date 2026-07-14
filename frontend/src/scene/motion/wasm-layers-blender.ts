@@ -88,6 +88,8 @@ export async function setupWasmLayersBlender(
 }
 
 export function teardownWasmLayersBlender(modelId: string): void {
+    // 契约：本函数在对应模型 destroyMmdModel 之后（微任务）被调用，只操作 _blenderStates，
+    // 绝不访问已销毁的 mmdModel 或 modelRegistry。若需模型实例须先加 modelRegistry.get(id) 守卫。
     const state = _blenderStates.get(modelId);
     if (!state) {
         return;
