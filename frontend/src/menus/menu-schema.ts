@@ -3,7 +3,7 @@
 // 当前状态：PoC，仅地面面板「基础设置」试点。
 
 import { envState } from '@/core/config';
-import { setEnvState, getRenderState } from '@/scene/scene';
+import { setEnvState, getRenderState, setRenderState } from '@/scene/scene';
 import { getLightState, setLightState } from '@/scene/render/lighting';
 import { uiState, setUIState } from '@/core/state';
 import { getPerceptionState, setPerceptionState } from '@/scene/motion/perception';
@@ -93,6 +93,9 @@ export function setStateValue(path: StatePath, value: unknown): void {
             break;
         case 'light':
             setLightState({ [key]: value });
+            break;
+        case 'render':
+            setRenderState({ [key]: value });
             break;
         case 'ui':
             setUIState({ [key]: value });

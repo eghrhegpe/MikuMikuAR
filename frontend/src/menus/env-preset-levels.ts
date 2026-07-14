@@ -57,6 +57,7 @@ export function renderUserEnvPresets(container: HTMLElement): void {
         } catch (err) {
             logWarn('env-menu', 'ListEnvPresets failed:', err);
         }
+        if (!listHost.isConnected) return; // 菜单已重渲染/卸载，放弃本次异步结果
         if (entries.length === 0) {
             const empty = document.createElement('div');
             empty.textContent = t('env-preset.noCustom');
@@ -81,6 +82,7 @@ export function renderUserEnvPresets(container: HTMLElement): void {
                         return;
                     }
                     applyEnvPresetObject(preset);
+                    getEnvMenu()?.reRender(); // 应用后刷新环境菜单高亮/绑定状态
                     return preset;
                 }, t('env-preset.loadFailed'));
                 if (r) {
