@@ -53,7 +53,6 @@ export function createVirtualGrid<T>(
     // 计算
     const getRowsCount = () => Math.ceil(currentItems.length / currentColumns);
     const getRowHeight = () => itemHeight;
-    const getVisibleRows = () => Math.ceil(container.clientHeight / getRowHeight());
     const getTotalHeight = () => getRowsCount() * getRowHeight();
 
     // 创建容器

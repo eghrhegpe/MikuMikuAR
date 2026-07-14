@@ -3,7 +3,6 @@
 // 用于快速验证反射是否正常工作（地面/水面设置项太多，排查困难）。
 
 import {
-    Scene,
     Mesh,
     MeshBuilder,
     StandardMaterial,

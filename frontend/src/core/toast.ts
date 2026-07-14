@@ -6,7 +6,6 @@ export interface ToastAction {
 }
 
 const MAX_VISIBLE_TOASTS = 5;
-const TOAST_GAP = 8;
 let _toastIdCounter = 0;
 const _activeToasts: Array<{
     id: number;
