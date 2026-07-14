@@ -821,10 +821,10 @@ function buildMotionRootItems(): PopupRow[] {
     // Card 4: 外部动作导入
     if (modelManager.size > 0) {
         items.push({
-            kind: 'action',
+            kind: 'folder',
             label: '外部动作导入',
             icon: 'lucide:upload',
-            target: '__retarget_import__',
+            target: 'motion:retarget',
         });
     }
     return items;
