@@ -27,7 +27,6 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
         return false;
     }
     // 找到第一个有 skeleton 的 FBX mesh
-    // eslint-disable-next-line eqeqeq -- 惯用法:同时排除 null 与 undefined
     const skinned = fbxMeshes.find((m) => m.skeleton != null);
     if (!skinned || !skinned.skeleton) {
         return false;

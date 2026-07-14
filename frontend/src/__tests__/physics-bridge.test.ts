@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Scene } from '@babylonjs/core/scene';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import {
     findRuntimeBone,

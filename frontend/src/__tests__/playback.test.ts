@@ -92,7 +92,7 @@ function makeObsMock() {
     };
 }
 
-function createMockRuntime() {
+function _createMockRuntime() {
     return {
         onAnimationTickObservable: makeObsMock(),
         onPlayAnimationObservable: makeObsMock(),

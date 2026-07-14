@@ -73,7 +73,7 @@ export default [
       'no-unused-vars': 'off',
       'prefer-const': 'warn',
       'no-var': 'error',
-      eqeqeq: ['warn', 'always'],
+      eqeqeq: ['warn', 'always', { null: 'ignore' }],
       curly: ['warn', 'all'],
       'brace-style': ['warn', '1tbs'],
       quotes: ['warn', 'single', { avoidEscape: true }],

@@ -33,7 +33,7 @@ let mockDuration = 120;
 let mockPaused = true;
 let mockSource = '';
 let mockMetadataLoaded = false;
-let mockOnDurationChanged: (() => void) | null = null;
+let _mockOnDurationChanged: (() => void) | null = null;
 
 /** 创建 mock StreamAudioPlayer 实例。不重置 mock 变量（由 beforeEach 统一管理）。 */
 function createMockStreamPlayer(): Record<string, any> {
@@ -70,7 +70,7 @@ function createMockStreamPlayer(): Record<string, any> {
         },
         onDurationChangedObservable: {
             add: vi.fn((cb: () => void) => {
-                mockOnDurationChanged = cb;
+                _mockOnDurationChanged = cb;
                 return { remove: vi.fn() };
             }),
             removeCallback: vi.fn(),
@@ -165,7 +165,7 @@ beforeEach(() => {
     mockPaused = true;
     mockSource = '';
     mockMetadataLoaded = false;
-    mockOnDurationChanged = null;
+    _mockOnDurationChanged = null;
     (globalThis as any).__audioTestUiState = { volume: 1, audioOffset: 0 };
     mockTriggerAutoSave.mockReset();
     mockBeatDetector.attach.mockReset().mockReturnValue(true);

@@ -230,7 +230,6 @@ test('bench wasm layers blender hot path', async () => {
     ];
 
     for (const tier of tiers) {
-        const n = tier.names.length;
         const evaluator = await buildOverlayEvaluator(tier.names);
         // warmup
         for (let f = 0; f < 50; f++) {

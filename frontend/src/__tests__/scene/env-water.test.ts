@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -361,7 +361,7 @@ describe('Water Preset — applyWaterPresetToCurrent', () => {
         applyWaterPresetToCurrent(preset);
 
         // 至少有一个水相关字段被更新（颜色或透明度等）
-        const colorChanged =
+        const _colorChanged =
             envState.waterColor[0] !== originalColor[0] ||
             envState.waterColor[1] !== originalColor[1] ||
             envState.waterColor[2] !== originalColor[2];
