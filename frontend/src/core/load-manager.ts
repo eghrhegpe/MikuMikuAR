@@ -58,7 +58,14 @@ class LoadManager {
     }
 
     private enqueue<T>(task: () => Promise<T>): Promise<T> {
-        const result = this.queue.then(task, task);
+        const result = this.queue.then(
+            task,
+            (err) => {
+                // D2: onRejected 必须显式处理，不得隐式依赖 task 忽略参数
+                console.warn('[loadManager] 上一任务失败，继续:', err);
+                return task(); // 显式重跑，不传 err
+            }
+        );
         this.queue = result.then(
             () => {},
             () => {}
