@@ -14,7 +14,7 @@ import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { logWarn } from '../core/utils';
+import { logWarn, DebouncedTimer } from '../core/utils';
 
 // 与 virtual-skirt.ts 的 defaultVirtualSkirtConfig 保持同源契约；
 // 字段稳定，UI 默认值在此声明，引擎默认值在 virtual-skirt.ts。
@@ -37,7 +37,7 @@ const controllers = new Map<
     import('../scene/physics/virtual-skirt').VirtualSkirtController
 >();
 let skirtConfig: VirtualSkirtConfig = { ...DEFAULT_SKIRT_CONFIG };
-let rebuildTimer: ReturnType<typeof setTimeout> | null = null;
+const rebuildTimer = new DebouncedTimer();
 
 function getRuntime(): MmdWasmRuntime | null {
     return (mmdRuntime as unknown as MmdWasmRuntime) ?? null;
@@ -52,10 +52,7 @@ function refreshClothLevel(): void {
 
 /** 释放全部虚拟裙骨控制器 */
 export function disposeAllVirtualSkirts(): void {
-    if (rebuildTimer !== null) {
-        clearTimeout(rebuildTimer);
-        rebuildTimer = null;
-    }
+    rebuildTimer.cancel();
     for (const ctrl of controllers.values()) {
         ctrl.dispose();
     }
@@ -116,13 +113,7 @@ function scheduleRebuild(): void {
     if (!skirtConfig.enabled) {
         return;
     }
-    if (rebuildTimer !== null) {
-        clearTimeout(rebuildTimer);
-    }
-    rebuildTimer = setTimeout(() => {
-        rebuildTimer = null;
-        void rebuildAll();
-    }, 200);
+    rebuildTimer.schedule(() => void rebuildAll(), 200);
 }
 
 function buildVirtualSkirtSchema(): MenuNode[] {

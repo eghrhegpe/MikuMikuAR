@@ -17,7 +17,7 @@ import { loadManager } from './load-manager';
 import { ImportZip, ImportLocalFile, Events } from './wails-bindings';
 import { getAutoImportCached } from '../menus/settings-shared';
 import { focusModel } from '../scene/manager/model-ops';
-import { logWarn } from './utils';
+import { logWarn, DebouncedTimer } from './utils';
 
 // ======== Module-level state ========
 const _lastOverlayFn = new Map<string, () => void>();
@@ -622,7 +622,7 @@ export function initDropHandler(): void {
 }
 
 // ======== Download Watch Notification ========
-let importToastTimer: ReturnType<typeof setTimeout> | null = null;
+const importToastTimer = new DebouncedTimer();
 
 export async function importToLibrary(path: string, displayName: string): Promise<void> {
     setStatus(t('main.importing') + ': ' + displayName, false);
@@ -647,9 +647,7 @@ Events.On('watch:newfile', (ev) => {
     }
 
     // 手动导入模式：显示 toast，用户点击导入按钮触发入库
-    if (importToastTimer) {
-        clearTimeout(importToastTimer);
-    }
+    importToastTimer.cancel();
     const toast = document.getElementById('importToast');
     if (!toast) {
         return;
@@ -680,7 +678,5 @@ Events.On('watch:newfile', (ev) => {
     }
 
     // Auto-hide after 10 seconds
-    importToastTimer = setTimeout(() => {
-        toast.classList.remove('visible');
-    }, 10000);
+    importToastTimer.schedule(() => toast.classList.remove('visible'), 10000);
 });
