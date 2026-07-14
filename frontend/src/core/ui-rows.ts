@@ -6,7 +6,7 @@ import { getCurrentRenderingMenu } from '../menus/menu';
 import { ControlOptions } from './ui-types';
 import { slideRow } from './ui-slide-row';
 import { t } from './i18n/t';
-import { clamp01, swallowError } from '@/core/utils';
+import { clamp01, clampPct, swallowError } from '@/core/utils';
 
 // ===================================================================
 // addToggleRow
@@ -192,11 +192,11 @@ export function addSliderRow(
     const fill = document.createElement('div');
     fill.className = 'cs-fill';
     const pct = ((currentValue - min) / range) * 100;
-    fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    fill.style.width = clampPct(pct) + '%';
 
     const thumb = document.createElement('div');
     thumb.className = 'cs-thumb';
-    thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
+    thumb.style.left = clampPct(pct) + '%';
 
     bar.appendChild(fill);
     bar.appendChild(thumb);
@@ -213,7 +213,7 @@ export function addSliderRow(
         currentValue = v;
         val.textContent = step < 1 ? v.toFixed(2) : String(Math.round(v));
         const newPct = ((v - min) / range) * 100;
-        const clamped = Math.max(0, Math.min(100, newPct));
+        const clamped = clampPct(newPct);
         fill.style.width = clamped + '%';
         thumb.style.left = clamped + '%';
         bar.setAttribute('aria-valuenow', String(v));

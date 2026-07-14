@@ -41,7 +41,7 @@ import {
     setVolume,
     setAudioOffset,
 } from '../outfit/audio';
-import { tryCatchStatus, showErrorToast, getBaseName, normPath, logWarn } from '../core/utils';
+import { tryCatchStatus, showErrorToast, getBaseName, normPath, logWarn, jsonStringify } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { buildPresetListLevel as buildGenericPresetLevel } from './preset-list-viewer';
 
@@ -140,7 +140,7 @@ export function serializeModelPreset(id: string, presetName?: string): string {
         materialOverrides: matState?.overrides ?? {},
         materialEnabled: matState?.enabled ?? {},
     };
-    return JSON.stringify(preset, null, 2);
+    return jsonStringify(preset);
 }
 
 export async function applyModelPreset(id: string, jsonStr: string): Promise<void> {

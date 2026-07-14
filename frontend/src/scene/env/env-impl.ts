@@ -27,7 +27,7 @@ import {
     Matrix,
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
-import { col3FromTriple } from '@/core/color-helpers';
+import { col3FromTriple, rgbString } from '@/core/color-helpers';
 import { logWarn } from '@/core/utils';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
@@ -532,8 +532,8 @@ registerReflectionSurface('ground', groundReflection, () =>
  * 返回的 Texture 可直接设为 StandardMaterial.diffuseTexture。
  */
 function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
-    const c0 = `rgb(${Math.round(state.groundColor[0] * 255)},${Math.round(state.groundColor[1] * 255)},${Math.round(state.groundColor[2] * 255)})`;
-    const c1 = `rgb(${Math.round(state.groundLineColor[0] * 255)},${Math.round(state.groundLineColor[1] * 255)},${Math.round(state.groundLineColor[2] * 255)})`;
+    const c0 = rgbString(col3FromTriple(state.groundColor));
+    const c1 = rgbString(col3FromTriple(state.groundLineColor));
 
     // 经统一工厂创建（优先 DynamicTexture，回退 toDataURL→Texture，受约束环境不崩）。
     // 每次调用返回新 Texture，由 _updateGroundTexture 负责 dispose 旧贴图。

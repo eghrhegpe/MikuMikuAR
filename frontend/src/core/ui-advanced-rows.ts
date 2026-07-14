@@ -4,8 +4,9 @@
 import { createIconifyIcon } from './icons';
 import { ControlOptions } from './ui-types';
 import { initControl } from './ui-rows';
-import { clamp01 } from '@/core/utils';
+import { clamp01, clampPct } from '@/core/utils';
 import { addDisposableListener, type Disposable } from './dom';
+import { col3FromTriple, rgbString } from './color-helpers';
 
 // ===================================================================
 // addColorSliderRow
@@ -29,7 +30,7 @@ export function addColorSliderRow(
     header.appendChild(title);
     const swatch = document.createElement('span');
     swatch.className = 'clr-swatch';
-    swatch.style.background = `rgb(${Math.round(color[0] * 255)},${Math.round(color[1] * 255)},${Math.round(color[2] * 255)})`;
+    swatch.style.background = rgbString(col3FromTriple(color));
     header.appendChild(swatch);
     block.appendChild(header);
     const channelColors = ['#f66', '#6f6', '#66f'];
@@ -76,7 +77,7 @@ export function addColorSliderRow(
             fill.style.width = v * 100 + '%';
             thumb.style.left = v * 100 + '%';
             bar.setAttribute('aria-valuenow', String(v));
-            swatch.style.background = `rgb(${Math.round(current[0] * 255)},${Math.round(current[1] * 255)},${Math.round(current[2] * 255)})`;
+            swatch.style.background = rgbString(col3FromTriple(current));
             onChange([current[0], current[1], current[2]]);
         }
 
@@ -198,7 +199,7 @@ export function addColorSliderRow(
                 }
             }
             if (changed) {
-                swatch.style.background = `rgb(${Math.round(v[0] * 255)},${Math.round(v[1] * 255)},${Math.round(v[2] * 255)})`;
+                swatch.style.background = rgbString(col3FromTriple(v));
             }
             return changed;
         });
@@ -273,11 +274,11 @@ export function addModeSlider<T extends string | number>(
     const fill = document.createElement('div');
     fill.className = 'cs-fill';
     const pct = total > 1 ? (currentIndex / (total - 1)) * 100 : 100;
-    fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    fill.style.width = clampPct(pct) + '%';
 
     const thumb = document.createElement('div');
     thumb.className = 'cs-thumb';
-    thumb.style.left = Math.max(0, Math.min(100, pct)) + '%';
+    thumb.style.left = clampPct(pct) + '%';
 
     bar.appendChild(fill);
     bar.appendChild(thumb);
@@ -286,7 +287,7 @@ export function addModeSlider<T extends string | number>(
         currentIndex = idx;
         val.textContent = options[idx].label;
         const newPct = total > 1 ? (idx / (total - 1)) * 100 : 100;
-        const clamped = Math.max(0, Math.min(100, newPct));
+        const clamped = clampPct(newPct);
         fill.style.width = clamped + '%';
         thumb.style.left = clamped + '%';
         top.setAttribute('aria-valuenow', String(idx));

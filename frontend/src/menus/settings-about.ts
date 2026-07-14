@@ -29,11 +29,11 @@ import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { handleSettingsAction } from './settings-paths';
 import { buildSoftwareDetailLevel } from './settings-software';
-import { swallowError, logWarn } from '../core/utils';
+import { swallowError, logWarn, jsonStringify } from '../core/utils';
 import { addDisposableListener } from '../core/dom';
 
 function exportSettings(): void {
-    const data = JSON.stringify(uiState, null, 2);
+    const data = jsonStringify(uiState);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
