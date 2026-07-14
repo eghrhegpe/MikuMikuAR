@@ -660,6 +660,11 @@ export function flushEnvState(): void {
     swallowError(SetEnvState(envState));
 }
 
+/** 取消挂起的 env state 防抖持久化定时器（HMR 重入清理用，见 ADR-106 D3）。 */
+export function cancelEnvPersistTimer(): void {
+    _envPersistTimer.cancel();
+}
+
 // ======== UIState Persistence ========
 
 const _uiPersistTimer = new DebouncedTimer();
