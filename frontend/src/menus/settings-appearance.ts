@@ -36,6 +36,7 @@ function _renderUISizeControls(
         parseInt(getComputedStyle(document.documentElement).getPropertyValue('--popup-width')) ||
         280;
 
+    addSectionTitle(container, 'UI 尺寸');
     addSliderRow(
         container,
         t('settings.uiScale'),
@@ -219,6 +220,7 @@ function _renderAnimationControls(
     const initialBlur =
         getComputedStyle(document.documentElement).getPropertyValue('--ui-blur').trim() !== '0';
 
+    addSectionTitle(container, '动效');
     addToggleRow(
         container,
         t('settings.slideAnimation'),

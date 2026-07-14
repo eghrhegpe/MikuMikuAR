@@ -11,7 +11,6 @@ import type {
     Config,
     EnvPresetEntry,
     EnvState,
-    ExternalPath,
     ModelEntry,
     ModelMeta,
     ModelPresetEntry,
@@ -146,10 +145,8 @@ describe('ScanModelDir signature', () => {
             $CancellablePromise<ModelEntry[] | null>
         >();
     });
-    it('takes parameters [string, ExternalPath[] | null]', () => {
-        expectTypeOf<typeof App.ScanModelDir>().parameters.toEqualTypeOf<
-            [string, ExternalPath[] | null]
-        >();
+    it('takes no parameters', () => {
+        expectTypeOf<typeof App.ScanModelDir>().parameters.toEqualTypeOf<[]>();
     });
 });
 

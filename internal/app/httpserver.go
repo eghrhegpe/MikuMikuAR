@@ -232,17 +232,12 @@ func (a *App) trustedRoots() []string {
 	if err != nil {
 		return nil
 	}
-	roots := make([]string, 0, 2+len(cfg.ExternalPaths))
+	var roots []string
 	if cfg.ResourceRoot != "" {
 		roots = append(roots, cfg.ResourceRoot)
 	}
 	if cfg.LibraryRoot != "" {
 		roots = append(roots, cfg.LibraryRoot)
-	}
-	for _, ep := range cfg.ExternalPaths {
-		if ep.Path != "" {
-			roots = append(roots, ep.Path)
-		}
 	}
 	return roots
 }

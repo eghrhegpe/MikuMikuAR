@@ -115,8 +115,7 @@ type App struct {
 
 **并行扫描**：
 - 8 个分类（model/motion/audio/pose/scene/environment/outfit/prop）
-- 每个分类 + 外部库 = 一个 goroutine
-- 结果合并后返回
+- 每个分类一个 goroutine，结果合并后返回
 
 **ZIP 展开**：
 - `expandZipEntries()` 打开 ZIP，识别内部 PMX/VMD/Audio/VPD
@@ -131,7 +130,7 @@ type App struct {
 **安全隔离**：
 - `IsolateModelDir()` — 信任目录返回原路径，外部文件复制到缓存
 - `isSafePath()` — 前缀匹配 + "/" 边界防止路径穿越
-- `trustedRoots()` — ResourceRoot + ExternalPaths
+- `trustedRoots()` — ResourceRoot + LibraryRoot
 
 **资源限制**：
 - 单文件上限 500MB（`maxIsolateFileSize`）

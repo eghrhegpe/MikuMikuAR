@@ -6,6 +6,7 @@ import { libraryRoot, setStatus, setLibraryRoot } from '../core/config';
 import { t } from '../core/i18n/t';
 import {
     computeLibraryRef,
+    resolveLibraryRef,
     getBaseName,
     normPath,
     deepClone,
@@ -76,7 +77,7 @@ function collectSceneAssets(scene: SceneFile): string[] {
 // ======== libraryRef Rewriting ========
 
 /** 将 SceneFile 中的 libraryRef 重写为 bundle 内部路径。 */
-function rewriteRefsForBundle(scene: SceneFile, _libraryRoot: string): SceneFile {
+function rewriteRefsForBundle(scene: SceneFile, libraryRoot: string): SceneFile {
     const rewritten = deepClone(scene);
 
     function rewritePath(

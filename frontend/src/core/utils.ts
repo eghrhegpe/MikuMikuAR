@@ -4,9 +4,9 @@
 // Toast notifications → toast.ts
 // UI builders → ui-helpers.ts
 
+import { createIconifyIcon } from './icons';
 import { dom } from './dom';
 import {
-    externalPaths,
     libraryRoot,
     overridePaths,
     setPopupOpen,
@@ -375,12 +375,6 @@ export const stackRegistry: {
 
 export function computeLibraryRef(filePath: string): string | null {
     const normalized = normPath(filePath);
-    for (const ext of externalPaths) {
-        const extPath = normPath(ext.path);
-        if (normalized.startsWith(extPath + '/')) {
-            return `${ext.name}:${normalized.substring(extPath.length + 1)}`;
-        }
-    }
     if (libraryRoot) {
         const root = normPath(libraryRoot);
         if (normalized.startsWith(root + '/')) {
@@ -418,21 +412,9 @@ export function resolveLibraryRef(libraryRef: string): string | null {
     }
     const colonIdx = libraryRef.indexOf(':');
     if (colonIdx > 0) {
-        const source = libraryRef.substring(0, colonIdx);
-        const relPath = libraryRef.substring(colonIdx + 1);
-        if (relPath.startsWith('/') || relPath.includes('..')) {
-            logWarn('resolveLibraryRef', `suspicious external relPath rejected: "${relPath}"`);
-            return null;
-        }
-        const ext = externalPaths.find((e) => e.name === source);
-        if (ext) {
-            const resolved = normPath(ext.path) + '/' + relPath;
-            if (!isUnderRoot(ext.path, resolved)) {
-                logWarn('resolveLibraryRef', `path traversal blocked: "${resolved}"`);
-                return null;
-            }
-            return resolved;
-        }
+        // External library refs (e.g. "MyLib:PMX/model.pmx") are no longer supported;
+        // reject any ref containing a colon that isn't a drive letter.
+        logWarn('resolveLibraryRef', `external library ref no longer supported: "${libraryRef}"`);
         return null;
     }
     if (libraryRoot) {

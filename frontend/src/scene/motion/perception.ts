@@ -6,7 +6,6 @@
 // 各功能实现见 perception-*.ts 子模块。
 
 import type { Observer } from '@babylonjs/core/Misc/observable';
-import { Camera } from '@babylonjs/core/Cameras/camera';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import { modelManager, focusedModelId, scene, triggerAutoSave } from '../scene';
@@ -129,8 +128,9 @@ export function activatePerception(modelId?: string): void {
         }
     });
 
-    console.log(
-        `[perception] 激活: 模型=${targetId} 呼吸=${perceptionState.breathEnabled} 眨眼=${perceptionState.blinkEnabled} 头=${perceptionState.headTrackingEnabled} 眼=${perceptionState.eyeTrackingEnabled}`
+    logWarn(
+        'perception',
+        `激活: 模型=${targetId} 呼吸=${perceptionState.breathEnabled} 眨眼=${perceptionState.blinkEnabled} 头=${perceptionState.headTrackingEnabled} 眼=${perceptionState.eyeTrackingEnabled}`
     );
 }
 
@@ -142,7 +142,7 @@ export function deactivatePerception(): void {
     }
     _resetLastEmotionMorphName(); // 模型切换时清空，避免旧 morph 名残留
     perceptionModelId = null;
-    console.log('[perception] 已注销');
+    logWarn('perception', '已注销');
 }
 
 /** 获取感知状态 */

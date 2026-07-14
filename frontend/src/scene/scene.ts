@@ -64,6 +64,7 @@ import {
     triggerAutoSave,
     setTriggerAutoSave,
     getMmdRuntimeType,
+    setStatus,
     focusedModelId,
 } from '../core/config';
 import { attachBeatDetector, getStreamPlayer } from '../outfit/audio';
@@ -201,22 +202,23 @@ export async function initScene(): Promise<void> {
                 const { MmdWasmInstanceTypeMPR } =
                     await import('babylon-mmd/esm/Runtime/Optimized/InstanceType/multiPhysicsRelease');
                 wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeMPR());
-                console.log('[scene] 使用 WASM 版 MmdWasmRuntime（MPR 多线程物理）');
+                logWarn('scene', '使用 WASM 版 MmdWasmRuntime（MPR 多线程物理）');
             } catch (e) {
                 logWarn('scene', 'MPR 初始化失败，回退 SPR 单线程物理：', e);
                 wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
-                console.log('[scene] 使用 WASM 版 MmdWasmRuntime（SPR 单线程物理，MPR 回退）');
+                logWarn('scene', '使用 WASM 版 MmdWasmRuntime（SPR 单线程物理，MPR 回退）');
             }
         } else {
             wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
-            console.log('[scene] 使用 WASM 版 MmdWasmRuntime（SPR 单线程物理）');
+            logWarn('scene', '使用 WASM 版 MmdWasmRuntime（SPR 单线程物理）');
         }
         // [doc:adr-099] 运行时模式徽标：检测 COI/SAB/MPR 并常驻渲染到右上角 HUD
         // （独立 DOM 元素，不被 setStatus 瞬时消息覆盖；结果持久化，刷新/导航后仍在）。
         const runtimeMode = detectRuntimeMode();
         persistRuntimeMode(runtimeMode);
         renderRuntimeBadge(runtimeMode);
-        console.log(
+        logWarn(
+            'scene',
             `[ADR-099] 验证: crossOriginIsolated=${runtimeMode.coi} SharedArrayBuffer=${runtimeMode.sab} useMultiThread=${useMultiThread} threads=${runtimeMode.threads}`
         );
         const mmdWasmPhysics = new MmdWasmPhysics(scene);

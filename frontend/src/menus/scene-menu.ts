@@ -27,7 +27,6 @@ import { t } from '../core/i18n/t';
 // ======== 从子文件导入 ========
 import {
     buildRenderLevel,
-    buildPostProcessLevel,
     buildPresetScenesLevel,
 } from './scene-render-levels';
 import { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels';
@@ -43,7 +42,6 @@ import {
 // 保持向后兼容——外部文件引用路径不变
 export {
     buildRenderLevel,
-    buildPostProcessLevel,
     buildPresetScenesLevel,
 } from './scene-render-levels';
 export { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels';
@@ -125,12 +123,6 @@ function buildSceneRootItems(): PopupRow[] {
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
         kind: 'folder',
-        label: t('scene.postProcess'),
-        icon: 'lucide:sparkles',
-        target: 'scene:render:postprocess',
-    });
-    items.push({
-        kind: 'folder',
         label: t('scene.stage'),
         icon: 'lucide:monitor',
         target: 'scene:render:stage',
@@ -167,7 +159,6 @@ function buildSceneRoot(): PopupLevel {
 const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:presets': buildPresetScenesLevel,
     'scene:render': buildRenderLevel,
-    'scene:render:postprocess': buildPostProcessLevel,
     'scene:render:stage': buildStageLevel,
     'scene:render:props': buildPropLevel,
     'scene:physics': buildPhysicsLevel,

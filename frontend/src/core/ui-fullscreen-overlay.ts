@@ -32,7 +32,7 @@ export type OverlayState = 'CLOSED' | 'EMBEDDED_GRID' | 'FULLSCREEN';
 
 let currentState: OverlayState = 'CLOSED';
 let currentOverlay: FullscreenOverlayHandle | null = null;
-let _slideMenuFrozen = false;
+let slideMenuFrozen = false;
 let frozenSlideMenuElement: HTMLElement | null = null;
 
 // ======== State Transitions ========
@@ -99,7 +99,7 @@ function freezeSlideMenu(): void {
         if (el.style.display !== 'none') {
             el.dataset.previousDisplay = el.style.display;
             el.style.display = 'none';
-            _slideMenuFrozen = true;
+            slideMenuFrozen = true;
             frozenSlideMenuElement = el;
         }
     });
@@ -110,7 +110,7 @@ function unfreezeSlideMenu(): void {
         const prevDisplay = frozenSlideMenuElement.dataset.previousDisplay || '';
         frozenSlideMenuElement.style.display = prevDisplay;
         frozenSlideMenuElement = null;
-        _slideMenuFrozen = false;
+        slideMenuFrozen = false;
     }
 }
 

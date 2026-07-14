@@ -28,6 +28,7 @@ import {
     buildShadowLevel,
 } from './env-feature-levels';
 import { buildPresetLevel } from './env-preset-levels';
+import { buildPostProcessLevel } from './scene-render-levels';
 
 // ======== Barrel Re-Exports ========
 export {
@@ -160,19 +161,8 @@ function buildEnvRootItems(): PopupRow[] {
         target: 'env:presets',
     });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    // Card 2: 环境功能入口（天空/水面/粒子/风/地面/雾/阴影/实验）
+    // Card 2: 环境功能入口（天空/粒子/风/雾/阴影/实验 — 地面/水面已迁至场景→舞台）
     items.push({ kind: 'folder', label: t('env.sky'), icon: 'lucide:sun', target: 'env:sky' });
-    items.push({
-        kind: 'folder',
-        label: t('env.water'),
-        icon: 'lucide:waves',
-        target: 'env:water',
-        headerToggle: {
-            value: envState.waterEnabled,
-            onChange: (v) => setEnvState({ waterEnabled: v }),
-            bind: () => envState.waterEnabled,
-        },
-    });
     items.push({
         kind: 'folder',
         label: t('env.particle'),
@@ -193,17 +183,6 @@ function buildEnvRootItems(): PopupRow[] {
             value: envState.windEnabled,
             onChange: (v) => setEnvState({ windEnabled: v }),
             bind: () => envState.windEnabled,
-        },
-    });
-    items.push({
-        kind: 'folder',
-        label: t('env.ground'),
-        icon: 'lucide:square',
-        target: 'env:ground',
-        headerToggle: {
-            value: envState.groundVisible,
-            onChange: (v) => setEnvState({ groundVisible: v }),
-            bind: () => envState.groundVisible,
         },
     });
     items.push({
@@ -233,6 +212,13 @@ function buildEnvRootItems(): PopupRow[] {
         label: t('env.experimental'),
         icon: 'lucide:flask-conical',
         target: 'env:experimental',
+    });
+    // [adr-111] 后处理（Bloom/DOF/色调映射）从场景菜单迁入
+    items.push({
+        kind: 'folder',
+        label: t('scene.postProcess'),
+        icon: 'lucide:sparkles',
+        target: 'env:postprocess',
     });
     return items;
 }
@@ -402,6 +388,7 @@ const ENV_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'env:shadow': buildShadowLevel,
     'env:experimental': buildExperimentalLevel,
     'env:presets': buildPresetLevel,
+    'env:postprocess': buildPostProcessLevel,
 };
 
 function envOnFolderEnter(row: PopupRow): PopupLevel | null {

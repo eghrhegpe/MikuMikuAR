@@ -149,13 +149,11 @@ function _adjustFoot(
     const groundY = getGroundHeightAt(_vFoot.x, _vFoot.z);
 
     // 估算髋世界坐标 + 腿长（用于 reachAngle / maxAngle）
-    let _hipY = _vFoot.y;
     let hipToFootDist = 0;
     let legLength = 1;
     const hip = _findHip(ik, side);
     if (hip) {
         hip.getWorldTranslationToRef(_vHip);
-        _hipY = _vHip.y;
         hipToFootDist = Vector3.Distance(_vFoot, _vHip);
         legLength = Math.max(hipToFootDist, 1e-3);
     }
@@ -211,8 +209,9 @@ function _adjustFoot(
     }
 
     if (FEET_DEBUG && _feetDbgFrame++ % 60 === 0) {
-        console.log(
-            `[feet] ${side} footY=${_vFoot.y.toFixed(3)} groundY=${groundY.toFixed(3)} ` +
+        logWarn(
+            'feet',
+            `${side} footY=${_vFoot.y.toFixed(3)} groundY=${groundY.toFixed(3)} ` +
                 `targetY=${res.targetY.toFixed(3)} skip=${res.skip} ik=${ikName}`
         );
     }
@@ -271,7 +270,7 @@ export function startFeetAdjustment(
             const summary = [...getModels()]
                 .map((m) => `${m.id}:en=${m.feet.enabled},n=${m.runtimeBones.length}`)
                 .join(' ');
-            console.log('[feet] models', summary);
+            logWarn('feet', 'models', summary);
         }
         for (const m of getModels()) {
             const cache = _getCache(m.id);

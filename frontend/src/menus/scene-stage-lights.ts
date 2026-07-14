@@ -9,6 +9,7 @@ import {
     addColorSliderRow,
     addModeSlider,
     addCollapsible,
+    slideRow,
     addSectionTitle,
     addPresetChip,
     addDangerRow,

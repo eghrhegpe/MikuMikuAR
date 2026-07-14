@@ -64,7 +64,7 @@ export function openExternalURL(url: string): boolean {
  * not available on Android. Returns true if the action should proceed,
  * false if it was blocked (Android).
  */
-export function guardExternalAction(_label: string): boolean {
+export function guardExternalAction(label: string): boolean {
     if (isAndroidPlatform()) {
         return false;
     }

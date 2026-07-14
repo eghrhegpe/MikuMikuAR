@@ -21,6 +21,7 @@ permissions:
 env:
   GO_VERSION: '1.25.0'
   NODE_VERSION: '24'
+  VITE_MMD_WASM_MT: '1'
 
 jobs:
   # ── 读取版本号 ─────────────────────────────────────────

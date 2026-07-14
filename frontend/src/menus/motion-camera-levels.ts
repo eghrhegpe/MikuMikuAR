@@ -190,20 +190,17 @@ function buildCameraSchema(): MenuNode[] {
             visibleWhen: () => modeToExpand !== 'oneshot' && modeToExpand !== 'vmd',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const paramsContainer = document.createElement('div');
-                    paramsContainer.className = 'cs-params';
                     if (modeToExpand === 'orbit') {
-                        renderOrbitParams(paramsContainer);
+                        renderOrbitParams(inner);
                     } else if (modeToExpand === 'freefly') {
-                        renderFreeflyParams(paramsContainer);
+                        renderFreeflyParams(inner);
                     } else if (modeToExpand === 'concert') {
-                        renderConcertParams(paramsContainer);
+                        renderConcertParams(inner);
                     } else if (modeToExpand === 'surround') {
-                        renderSurroundParams(paramsContainer);
+                        renderSurroundParams(inner);
                     } else if (modeToExpand === 'ar') {
-                        renderARParams(paramsContainer);
+                        renderARParams(inner);
                     }
-                    inner.appendChild(paramsContainer);
                 });
             },
         },
@@ -353,8 +350,7 @@ function renderOrbitParams(container: HTMLElement): void {
         label.textContent = t('motion.boneLockSelect');
 
         const select = document.createElement('select');
-        select.className = 'cs-select';
-        select.style.cssText = 'flex:1;padding:4px 8px;border-radius:6px;font-size:12px;';
+        select.className = 'cs-select setting-select';
 
         for (const bn of boneNames) {
             const opt = document.createElement('option');

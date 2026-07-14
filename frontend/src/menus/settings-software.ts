@@ -10,7 +10,7 @@ import {
 } from '../core/wails-bindings';
 import { setStatus, cardContainer, escapeHtml } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { slideRow, addDangerRow, addFieldRow } from '../core/ui-helpers';
+import { slideRow, addDangerRow, addFieldRow, addSectionTitle } from '../core/ui-helpers';
 import { softwareKindIcon } from '../core/icons';
 import { showPrompt } from '../core/dialog';
 import { tryCatchStatus } from '../core/utils';
@@ -96,6 +96,7 @@ function buildSoftwareListSchema(): MenuNode[] {
                 const entries = cachedSoftwareEntries;
                 if (entries && entries.length > 0) {
                     cardContainer(container, (c) => {
+                        addSectionTitle(c, t('settings.software.title'));
                         for (const entry of entries) {
                             slideRow(
                                 c,
@@ -136,6 +137,7 @@ function buildSoftwareListSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, '操作');
                     slideRow(
                         inner,
                         'lucide:plus',
@@ -183,6 +185,7 @@ function buildSoftwareDetailManagedSchema(
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, '软件信息');
                     const fields: Array<{ label: string; value: string }> = [
                         { label: t('settings.software.name'), value: entry.name },
                         { label: t('settings.software.path'), value: entry.path },
@@ -227,6 +230,7 @@ function buildSoftwareDetailManagedSchema(
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, '操作');
                     slideRow(inner, 'lucide:play', t('settings.software.launch'), false, () => {
                         LaunchSoftware(entry.path, '')
                             .then(() =>
@@ -283,6 +287,7 @@ function buildSoftwareDetailAutoSchema(
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, '软件信息');
                     const fields: Array<{ label: string; value: string }> = [
                         { label: t('settings.software.name'), value: entry.name },
                         { label: t('settings.software.path'), value: entry.path },
@@ -299,6 +304,7 @@ function buildSoftwareDetailAutoSchema(
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, '操作');
                     slideRow(inner, 'lucide:play', t('settings.software.launch'), false, () => {
                         LaunchSoftware(entry.path, entry.args)
                             .then(() =>

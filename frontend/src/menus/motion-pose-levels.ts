@@ -18,6 +18,7 @@ import {
 import { addToggleRow, addSliderRow, addEmptyRow } from '../core/ui-helpers';
 import { waitForFrame, logWarn } from '../core/utils';
 import { getMotionMenu } from './motion-popup';
+import { modelManager } from '../scene/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { setRenderState, getRenderState } from '../scene/render/renderer';
 import { getGuideMode, setGuideMode } from '../scene/pose/composition-guide';
@@ -46,7 +47,7 @@ function buildPoseStudioSchema(): MenuNode[] {
         ];
     }
 
-    const _inst = modelRegistry.get(modelId)!;
+    const inst = modelRegistry.get(modelId)!;
     const menu = getMotionMenu();
     const renderState = getRenderState();
     const wmConfig = getWatermarkConfig();
@@ -106,7 +107,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                     inner.appendChild(title);
 
                     const btnGroup = document.createElement('div');
-                    btnGroup.style.cssText = 'display:flex;gap:4px;padding:4px 14px 8px;';
+                    btnGroup.className = 'btn-group';
 
                     const poseTypes: Array<{ key: 'tpose' | 'apose' | 'rest'; label: string }> = [
                         { key: 'tpose', label: t('motion.poseStudio.tPose') },

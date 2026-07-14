@@ -1,8 +1,8 @@
 // settings-screenshot.ts — 截图设置子菜单
 
-import { setStatus, uiState, setUIState, cardContainer, escapeHtml } from '../core/config';
+import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { t } from '../core/i18n/t';
-import { slideRow, addSectionTitle, addFieldRow } from '../core/ui-helpers';
+import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { SelectDir, OpenScreenshotDir } from '../core/wails-bindings';
 import { renderMenu } from './render-menu';
@@ -76,6 +76,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, '截图质量');
                     const qualitySchema: MenuNode[] = [
                         {
                             id: 'settings:screenshot:quality',
@@ -105,11 +106,11 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, '保存目录');
                     const dir = uiState.screenshotDir ?? '';
-                    addFieldRow(
-                        inner,
-                        '当前目录',
-                        dir ? escapeHtml(dir) : '（尚未设置，截图时会选择）'
-                    );
+                    const dirSub = dir
+                        ? dir.length > 20
+                            ? '...' + dir.slice(-17)
+                            : dir
+                        : '（尚未设置，截图时会选择）';
 
                     slideRow(inner, 'lucide:folder', '选择目录', false, async () => {
                         const d = await SelectDir();
@@ -118,8 +119,8 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                         }
                         setUIState({ screenshotDir: d });
                         getSettingsMenu()?.reRender();
-                        setStatus(t('settings.screenshotDirSet', { dir }), true);
-                    });
+                        setStatus(t('settings.screenshotDirSet', { dir: d }), true);
+                    }, dirSub);
 
                     slideRow(inner, 'lucide:folder-open', '打开目录', false, () => {
                         OpenScreenshotDir().catch((err: unknown) => {

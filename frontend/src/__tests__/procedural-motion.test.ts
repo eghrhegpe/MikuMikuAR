@@ -389,11 +389,6 @@ describe('VMD 骨骼诊断', () => {
         const buf = generateIdleVmd(state, MORPHS_STANDARD, BONES_108_STANDARD);
         const bones = _parseVmdBones(buf);
         const totalFrames = Object.values(bones).reduce((a, b) => a + b, 0);
-        console.log(`[VMD诊断 - Idle] 总骨骼帧数: ${totalFrames}`);
-        console.log('[VMD诊断 - Idle] 骨骼明细:');
-        for (const [name, count] of Object.entries(bones).sort((a, b) => b[1] - a[1])) {
-            console.log(`  ${name}: ${count}帧`);
-        }
         expect(totalFrames).toBeGreaterThan(10);
         expect(Object.keys(bones).length).toBeGreaterThanOrEqual(6);
     });
@@ -402,11 +397,6 @@ describe('VMD 骨骼诊断', () => {
         const buf = generateAutoDanceVmd(state, 120, MORPHS_STANDARD, BONES_108_STANDARD);
         const bones = _parseVmdBones(buf);
         const totalFrames = Object.values(bones).reduce((a, b) => a + b, 0);
-        console.log(`[VMD诊断 - AutoDance] 总骨骼帧数: ${totalFrames}`);
-        console.log('[VMD诊断 - AutoDance] 骨骼明细:');
-        for (const [name, count] of Object.entries(bones).sort((a, b) => b[1] - a[1])) {
-            console.log(`  ${name}: ${count}帧`);
-        }
         expect(totalFrames).toBeGreaterThan(10);
         expect(Object.keys(bones).length).toBeGreaterThanOrEqual(6);
     });

@@ -37,8 +37,7 @@ func (a *App) SelectDir() (string, error) {
 // ScanModelDir scans all resource directories and returns merged ModelEntry list.
 // Uses ResourceRoot + OverridePaths from config; scans each category directory
 // with extension filtering (no auto-classification by directory name).
-func (a *App) ScanModelDir(root string, external []ExternalPath) ([]ModelEntry, error) {
-	// root and external are ignored; use config instead
+func (a *App) ScanModelDir() ([]ModelEntry, error) {
 	return util.SafeCall(func() ([]ModelEntry, error) {
 		cfg, err := a.GetConfig()
 		if err != nil {
@@ -65,23 +64,16 @@ func (a *App) scanAllCategories(cfg *Config) ([]ModelEntry, error) {
 		{"prop", []string{".pmx", ".zip"}},
 	}
 
-	// Build scan jobs: main categories + external paths
+	// Build scan jobs for each category under the resource root
 	type scanJob struct {
 		dir      string
 		category string
 		exts     []string
-		source   string
 	}
 	var jobs []scanJob
 	for _, s := range scans {
 		dir := a.GetPath(cfg, mapCategoryKey(s.Category))
-		jobs = append(jobs, scanJob{dir, s.Category, s.Exts, ""})
-	}
-	for _, ep := range cfg.ExternalPaths {
-		for _, s := range scans {
-			dir := filepath.Join(ep.Path, s.Category)
-			jobs = append(jobs, scanJob{dir, s.Category, s.Exts, ep.Name})
-		}
+		jobs = append(jobs, scanJob{dir, s.Category, s.Exts})
 	}
 
 	// Scan all jobs in parallel
@@ -94,7 +86,7 @@ func (a *App) scanAllCategories(cfg *Config) ([]ModelEntry, error) {
 		wg.Add(1)
 		go func(idx int, j scanJob) {
 			defer wg.Done()
-			entries, err := a.scanDirByExt(j.dir, j.category, j.exts, j.source)
+			entries, err := a.scanDirByExt(j.dir, j.category, j.exts, "")
 			if err != nil {
 				a.safeLogWarning("scanAllCategories: skip dir %q (category=%q): %v", j.dir, j.category, err)
 				return
@@ -560,42 +552,6 @@ func (a *App) GetStorageMode() (string, error) {
 		return "private", nil
 	}
 	return cfg.StorageMode, nil
-}
-
-// AddExternalPath adds an external library path with auto-generated basename name, triggers rescan+reindex.
-func (a *App) AddExternalPath(path string) error {
-	name := filepath.Base(path)
-	if name == "" || name == "." || name == "/" {
-		name = "external"
-	}
-	return a.updateConfig(func(cfg *Config) {
-		cfg.ExternalPaths = append(cfg.ExternalPaths, ExternalPath{Path: path, Name: name})
-	}, true)
-}
-
-// RemoveExternalPath removes an external library by path, triggers rescan+reindex.
-func (a *App) RemoveExternalPath(path string) error {
-	return a.updateConfig(func(cfg *Config) {
-		var kept []ExternalPath
-		for _, ep := range cfg.ExternalPaths {
-			if ep.Path != path {
-				kept = append(kept, ep)
-			}
-		}
-		cfg.ExternalPaths = kept
-	}, true)
-}
-
-// RenameExternalPath renames an external library display name.
-func (a *App) RenameExternalPath(path, name string) error {
-	return a.updateConfig(func(cfg *Config) {
-		for i, ep := range cfg.ExternalPaths {
-			if ep.Path == path {
-				cfg.ExternalPaths[i].Name = name
-				break
-			}
-		}
-	}, true)
 }
 
 // SetBlenderPath saves the Blender executable path to config.

@@ -149,11 +149,6 @@ export function setAllModels(m: LibraryModel[]): void {
     allModels = m;
 }
 
-export let externalPaths: { path: string; name: string }[] = [];
-export function setExternalPaths(e: { path: string; name: string }[]): void {
-    externalPaths = e;
-}
-
 // ======== Popup State ========
 
 export let popupOpen = false;

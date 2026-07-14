@@ -12,7 +12,7 @@ import {
 } from '../core/config';
 import { slideRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
-import { showPrompt2 } from '../core/dialog';
+import { showPrompt, showPrompt2 } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';
@@ -40,6 +40,7 @@ function buildFilenameSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, '排序模式');
                     slideRow(
                         inner,
                         'lucide:arrow-up-down',
@@ -72,6 +73,7 @@ function buildFilenameSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             renderCustom: (c) => {
                 const priorityIndex = PRIORITY_TO_INDEX[displayNamePriority] ?? 0;
                 cardContainer(c, (inner) => {
+                    addSectionTitle(inner, '显示名称优先级');
                     addSliderRow(
                         inner,
                         '显示名称优先级',

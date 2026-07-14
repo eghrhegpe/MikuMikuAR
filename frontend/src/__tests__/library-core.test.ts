@@ -8,7 +8,6 @@ const mockState = vi.hoisted(() => ({
     displayNamePriority: 'filename' as string,
     librarySortMode: 'default' as string,
     modelMetaCache: new Map<string, any>(),
-    externalPaths: [] as any[],
     recentModels: [] as string[],
     focusedModelId: null as string | null,
     motionBindingTargetId: null as string | null,
@@ -90,9 +89,6 @@ vi.mock('../core/config', () => ({
     get modelMetaCache() {
         return mockState.modelMetaCache;
     },
-    get externalPaths() {
-        return mockState.externalPaths;
-    },
     get recentModels() {
         return mockState.recentModels;
     },
@@ -127,7 +123,6 @@ vi.mock('../core/config', () => ({
     setResourceRoot: vi.fn(),
     setAllModels: vi.fn(),
     setDisplayNamePriority: vi.fn(),
-    setExternalPaths: vi.fn(),
     setOverridePaths: vi.fn(),
     setThumbnailCache: vi.fn(),
     setModelMetaCache: vi.fn(),

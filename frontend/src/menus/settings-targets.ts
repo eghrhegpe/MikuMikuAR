@@ -7,7 +7,6 @@ export const SETTINGS = {
     FILENAME: 'settings:filename',
     PERFORMANCE: 'settings:performance',
     PATHS: 'settings:paths',
-    EXTERNAL: 'settings:external',
     SOFTWARE: 'settings:software',
     SCREENSHOT: 'settings:screenshot',
     AUDIO: 'settings:audio',

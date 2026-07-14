@@ -17,6 +17,7 @@ import {
     pendingVmd,
     setPendingVmd,
     ModelInstance,
+    PropInstance,
     propRegistry,
     overridePaths,
     libraryRoot,
@@ -29,7 +30,7 @@ import {
 } from '@/core/config';
 import { getBaseName, swallowError, logWarn } from '@/core/utils';
 import { createDefaultFeetState } from '@/core/state';
-import { resolveFileUrl } from '@/core/fileservice';
+import { resolveFileUrl, normPath } from '@/core/fileservice';
 import { isUnderRoot } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
@@ -37,7 +38,7 @@ import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
 import { loadVMDMotion } from '../motion/vmd-loader';
 import { retryWindPhysicsSubscription } from '../../physics/wind-physics';
-import { _capture } from './material';
+import { _capture, disposeModelMaterialState } from './material';
 import { rebuildShadowCasters } from '../render/lighting';
 import { getGroundHeightAt, setOnTerrainReady, setOnGroundChanged } from '../env/env-impl';
 

@@ -325,11 +325,13 @@ function _createSlider(
     step = 1
 ): HTMLElement {
     const container = document.createElement('div');
-    container.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 0;';
+    container.className = 'flex-row';
+    container.style.padding = '3px 0';
 
     const lbl = document.createElement('label');
     lbl.textContent = label;
-    lbl.style.cssText = 'font-size:11px;min-width:60px;color:var(--text-dim);';
+    lbl.className = 'slider-label';
+    lbl.style.minWidth = '60px';
 
     const slider = document.createElement('input');
     slider.type = 'range';
@@ -341,7 +343,7 @@ function _createSlider(
 
     const valueLabel = document.createElement('span');
     valueLabel.textContent = String(defaultValue);
-    valueLabel.style.cssText = 'font-size:11px;min-width:32px;text-align:right;opacity:0.6;';
+    valueLabel.className = 'slider-value';
 
     slider.addEventListener('input', () => {
         valueLabel.textContent = parseFloat(slider.value).toFixed(step < 1 ? 2 : 0);

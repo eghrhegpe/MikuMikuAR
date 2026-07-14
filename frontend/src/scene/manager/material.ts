@@ -478,7 +478,7 @@ export function _applyAll(id: string): void {
     if (!state) {
         return;
     }
-    const _perMat = _matState.get(id) ?? new Map();
+    const perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < meshes.length; mi++) {
         _applyMaterial(id, mi);
     }
