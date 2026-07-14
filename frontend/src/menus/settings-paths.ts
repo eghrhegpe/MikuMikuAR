@@ -81,21 +81,21 @@ export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     },
     [SETTINGS_ACTION.RESOURCE_ROOT]: () =>
         selectResourceRoot().catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_PMX]: (row) =>
+    [SETTINGS_ACTION.PATH_PMX]: (_row) =>
         selectOverridePath('pmx').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_VMD]: (row) =>
+    [SETTINGS_ACTION.PATH_VMD]: (_row) =>
         selectOverridePath('vmd').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_AUDIO]: (row) =>
+    [SETTINGS_ACTION.PATH_AUDIO]: (_row) =>
         selectOverridePath('audio').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_PROP]: (row) =>
+    [SETTINGS_ACTION.PATH_PROP]: (_row) =>
         selectOverridePath('prop').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_STAGE]: (row) =>
+    [SETTINGS_ACTION.PATH_STAGE]: (_row) =>
         selectOverridePath('stage').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_ENVIRONMENT]: (row) =>
+    [SETTINGS_ACTION.PATH_ENVIRONMENT]: (_row) =>
         selectOverridePath('environment').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_MD_DRESS]: (row) =>
+    [SETTINGS_ACTION.PATH_MD_DRESS]: (_row) =>
         selectOverridePath('md_dress').catch((err) => logWarn('paths', '', err)),
-    [SETTINGS_ACTION.PATH_SETTING]: (row) =>
+    [SETTINGS_ACTION.PATH_SETTING]: (_row) =>
         selectOverridePath('setting').catch((err) => logWarn('paths', '', err)),
 };
 

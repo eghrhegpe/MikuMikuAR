@@ -180,8 +180,6 @@ export function getAudioName(): string {
 
 // ======== VMD 同步（含 audioOffset） ========
 
-let lastVmdTime = 0;
-let lastVmdDuration = 0;
 const SYNC_THRESHOLD = 0.1;
 
 export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDuration: number): void {
@@ -221,9 +219,7 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
         }
     }
 
-    lastVmdTime = vmdTime;
-    lastVmdDuration = vmdDuration;
-}
+    }
 
 // ======== Beat Detector 桥接 ========
 

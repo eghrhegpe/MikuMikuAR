@@ -1,23 +1,19 @@
-import {
-    Scene,
-    Camera,
-    Color3,
-    Vector3,
-    Texture,
-    Constants,
-    Mesh,
-    MeshBuilder,
-    ShaderMaterial,
-    Observer,
-    DirectionalLight,
-    DefaultRenderingPipeline,
-    Effect,
-    PostProcess,
-    Plane,
-    Matrix,
-} from '@babylonjs/core';
+import { Scene } from '@babylonjs/core/scene';
+import { Camera } from '@babylonjs/core/Cameras/camera';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
+import { Texture } from '@babylonjs/core/Materials/Textures/texture';
+import { Constants } from '@babylonjs/core/Engines/constants';
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
+import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
+import type { Observer } from '@babylonjs/core/Misc/observable';
+import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
+import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
+import { Effect } from '@babylonjs/core/Materials/effect';
+import { PostProcess } from '@babylonjs/core/PostProcesses/postProcess';
+import { Plane } from '@babylonjs/core/Maths/math.plane';
 import { EnvState, envState } from '@/core/config';
-import { getWindVector, isWindActive } from '@/core/physics/wind-utils';
 import { col3FromTriple } from '@/core/color-helpers';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
@@ -140,7 +136,6 @@ interface RippleSource {
     maxLife: number;
 }
 let _ripples: RippleSource[] = [];
-let _rippleDirty = true;
 
 // ======== 水下 Tint 后处理（自定义 PostProcess，替代不存在的 tintColor/tintAmount）========
 Effect.ShadersStore['underwaterTintFragmentShader'] = [
@@ -216,12 +211,10 @@ export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, m
     r.speed = Math.max(0.1, speed);
     r.life = maxLife > 0 ? maxLife : 9999;
     r.maxLife = maxLife;
-    _rippleDirty = true;
 }
 
 export function clearRipples(): void {
     _ripples = [];
-    _rippleDirty = true;
 }
 
 // ======== 焦散系统（静态纹理 + UV 滚动）========

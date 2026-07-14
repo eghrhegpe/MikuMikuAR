@@ -117,32 +117,6 @@ function effectiveMode(site: PlazaSite): OpenMode {
     return site.mode ?? 'embed';
 }
 
-function saveSiteMode(site: PlazaSite, mode: OpenMode): void {
-    try {
-        const key = `miku.plaza.mode.${site.name}`;
-        localStorage.setItem(key, mode);
-    } catch {
-        /* 忽略 */
-    }
-}
-
-/** 清除单站覆写，回退到全局/代码默认。用于双击菜单的「跟随全局」选项 */
-function clearSiteMode(site: PlazaSite): void {
-    try {
-        localStorage.removeItem(`miku.plaza.mode.${site.name}`);
-    } catch {
-        /* 忽略 */
-    }
-}
-
-/** 某站点是否有 per-site 覆写（用于双击菜单显示「跟随全局」选项） */
-function hasSiteOverride(site: PlazaSite): boolean {
-    try {
-        return localStorage.getItem(`miku.plaza.mode.${site.name}`) !== null;
-    } catch {
-        return false;
-    }
-}
 
 let allSites: PlazaSite[] = [];
 let allCreators: PlazaCreator[] = [];
@@ -632,7 +606,7 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
                 ? siteCreators.filter((c) => c.tag === activeTag)
                 : [...siteCreators];
             const favMap = new Map<string, number>();
-            list.forEach((c, i) => favMap.set(c.name, isFaved(c.name) ? 1 : 0));
+            list.forEach((c, _i) => favMap.set(c.name, isFaved(c.name) ? 1 : 0));
             list.sort((a, b) => {
                 const af = favMap.get(a.name) ?? 0;
                 const bf = favMap.get(b.name) ?? 0;
@@ -1104,68 +1078,6 @@ function ensureObserver(): void {
         }
     });
     observer.observe(el, { attributes: true, attributeFilter: ['class'] });
-}
-
-// [ADR-087 P3-优化] 全局模式分段选择器：取代卡片内 18 个按钮，工具栏一处统一切换。
-// 「自动」= 不设全局偏好，各站用各自 site.mode 默认；选具体模式则覆写所有无 per-site 覆写的站点。
-function buildGlobalModeSwitch(): HTMLElement {
-    const wrap = document.createElement('div');
-    wrap.className = 'plaza-modeswitch plaza-global-mode';
-
-    const opts: { key: OpenMode | 'auto'; label: string }[] = [
-        { key: 'auto', label: '自动' },
-        { key: 'embed', label: 'iframe' },
-        { key: 'external', label: 'chrome' },
-        { key: 'window', label: 'wails' },
-    ];
-    const current = loadGlobalMode() ?? 'auto';
-    const currentOpt = opts.find((o) => o.key === current) ?? opts[0];
-
-    const trigger = document.createElement('button');
-    trigger.className = 'plaza-mode-trigger';
-    trigger.innerHTML = `<span>${currentOpt.label}</span><iconify-icon icon="lucide:chevron-down"></iconify-icon>`;
-
-    const dropdown = document.createElement('div');
-    dropdown.className = 'plaza-mode-dropdown';
-
-    for (const o of opts) {
-        const b = document.createElement('button');
-        b.className = 'plaza-mode-opt' + (current === o.key ? ' active' : '');
-        b.textContent = o.label;
-        b.onclick = () => {
-            if (o.key === 'auto') {
-                try {
-                    localStorage.removeItem(GLOBAL_MODE_KEY);
-                } catch {
-                    /* 忽略 */
-                }
-            } else {
-                saveGlobalMode(o.key);
-            }
-            dropdown.classList.remove('visible');
-            renderHome();
-        };
-        dropdown.appendChild(b);
-    }
-
-    wrap.appendChild(trigger);
-    wrap.appendChild(dropdown);
-
-    trigger.onclick = () => {
-        dropdown.classList.toggle('visible');
-    };
-
-    document.addEventListener(
-        'click',
-        (e) => {
-            if (!wrap.contains(e.target as Node)) {
-                dropdown.classList.remove('visible');
-            }
-        },
-        { once: true }
-    );
-
-    return wrap;
 }
 
 // [ADR-087 P3-优化] 右键卡片弹出单站覆写菜单（power user 精细控制，藏起来不干扰主流）

@@ -18,7 +18,6 @@ import {
 import { addToggleRow, addSliderRow, addEmptyRow } from '../core/ui-helpers';
 import { waitForFrame, logWarn } from '../core/utils';
 import { getMotionMenu } from './motion-popup';
-import { modelManager } from '../scene/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { setRenderState, getRenderState } from '../scene/render/renderer';
 import { getGuideMode, setGuideMode } from '../scene/pose/composition-guide';
@@ -47,7 +46,6 @@ function buildPoseStudioSchema(): MenuNode[] {
         ];
     }
 
-    const inst = modelRegistry.get(modelId)!;
     const menu = getMotionMenu();
     const renderState = getRenderState();
     const wmConfig = getWatermarkConfig();

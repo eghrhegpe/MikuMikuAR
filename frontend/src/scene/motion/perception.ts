@@ -6,7 +6,6 @@
 // 各功能实现见 perception-*.ts 子模块。
 
 import type { Observer } from '@babylonjs/core/Misc/observable';
-import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import { modelManager, focusedModelId, scene, triggerAutoSave } from '../scene';
 
@@ -14,7 +13,6 @@ import {
     type Emotion,
     type PerceptionState,
     type GazeConfig,
-    type MeshMetadata,
     DEFAULT_PERCEPTION_STATE,
     _writeMatToBuffer,
     _propagateChildrenWasm,

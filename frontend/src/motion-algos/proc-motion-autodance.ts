@@ -17,9 +17,7 @@ import {
 
 import {
     buildTrigCache,
-    type TrigCache,
     resolveBones,
-    type BoneResolution,
     genCenterBone,
     genUpperBone,
     genUpper2Bone,
@@ -144,7 +142,6 @@ export function generateAutoDanceVmd(
 }
 
 // 保持向后兼容的导出（供 proc-motion-bridge.ts 等调用方使用）
-export type { BoneResolution, TrigCache } from './proc-motion-autodance-bones';
 export { buildTrigCache, resolveBones } from './proc-motion-autodance-bones';
 export {
     scoreMorph,

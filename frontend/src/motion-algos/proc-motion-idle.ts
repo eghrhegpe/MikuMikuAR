@@ -6,7 +6,6 @@ import {
     BONE_RARM_CANDIDATES,
     BONE_WRIST_L_CANDIDATES,
     BONE_WRIST_R_CANDIDATES,
-    FPS,
     MAX_FRAMES,
     matchBone,
     clamp1,
@@ -16,7 +15,7 @@ import {
 
 export function generateIdleVmd(
     state: ProcMotionState,
-    morphNames: string[] = [],
+    _morphNames: string[] = [],
     boneNames: string[] = []
 ): ArrayBuffer {
     const safeSpeed = Math.max(0.1, Math.min(10, state.speed));

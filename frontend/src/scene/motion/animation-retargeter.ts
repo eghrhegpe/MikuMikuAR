@@ -12,9 +12,7 @@ import { AnimationRetargeter } from 'babylon-mmd/esm/Loader/Util/animationRetarg
 import {
     MixamoMmdHumanoidBoneMap,
     VrmMmdHumanoidBoneMap,
-    MmdHumanoidMapper,
 } from 'babylon-mmd/esm/Loader/Util/mmdHumanoidMapper';
-import type { IMmdHumanoidBoneMap } from 'babylon-mmd/esm/Loader/Util/mmdHumanoidMapper';
 import type { AnimationGroup } from '@babylonjs/core/Animations/animationGroup';
 import { Scene } from '@babylonjs/core/scene';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
@@ -72,9 +70,6 @@ export async function loadAndRetargetAnimation(
         animationGroups: AnimationGroup[];
     };
     try {
-        // 根据扩展名推断 pluginExtension
-        const ext = url.split('.').pop()?.toLowerCase();
-        const pluginExtension = ext === 'fbx' ? '.fbx' : ext === 'glb' ? '.glb' : '.gltf';
         result = await ImportMeshAsync(url, scene, {
             onProgress: (evt) => {
                 if (evt.lengthComputable) {
@@ -157,7 +152,7 @@ export async function loadAndRetargetAnimation(
  * 返回 stop 函数，调用后停止动画并清理临时资源。
  */
 export function playRetargetedAnimation(
-    scene: Scene,
+    _scene: Scene,
     result: RetargetResult,
     loop = true
 ): () => void {

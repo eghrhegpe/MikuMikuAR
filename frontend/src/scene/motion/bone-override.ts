@@ -28,7 +28,6 @@ interface _OverrideSlot {
 
 // ── 单例管理器 ──
 
-let _observer: (() => void) | null = null;
 let _observerHandle: (() => void) | null = null; // unregister function
 const _overrideMap = new Map<string, _OverrideSlot>();
 const _qPool = [new Quaternion(), new Quaternion(), new Quaternion(), new Quaternion()];
@@ -63,8 +62,6 @@ function _propagateChildrenWasm(
     parentOldMat: Matrix,
     parentNewMat: Matrix
 ): void {
-    const parentOldInv = _q(); // 复用 temp Quaternion
-    const pQ = _q();
     // 用 Matrix.invert 太贵，改为：localMat = childOldMat × parentOld⁻¹
     // 使用 Matrix 运算
     const invMat = new Matrix().copyFrom(parentOldMat);
@@ -249,7 +246,6 @@ export function startBoneOverride(
         }
     };
 
-    _observer = callback;
     _observerHandle = () => {
         scene.onBeforeRenderObservable.removeCallback(callback);
     };
@@ -261,7 +257,6 @@ export function stopBoneOverride(): void {
     if (_observerHandle) {
         _observerHandle();
         _observerHandle = null;
-        _observer = null;
     }
     clearAllOverrides();
 }

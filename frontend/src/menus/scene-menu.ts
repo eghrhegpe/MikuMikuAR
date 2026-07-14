@@ -29,8 +29,8 @@ import {
     buildRenderLevel,
     buildPresetScenesLevel,
 } from './scene-render-levels';
-import { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels';
-import { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
+import { buildStageLevel } from './scene-stage-levels';
+import { buildPropLevel } from './scene-prop-levels';
 import {
     buildPhysicsLevel,
     buildWasmPhysicsLevel,
