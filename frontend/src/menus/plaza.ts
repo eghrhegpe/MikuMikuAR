@@ -196,26 +196,19 @@ function buildPresetTags(site: PlazaSite): HTMLElement | null {
     return wrap;
 }
 
-type PlazaTab = 'sites' | 'creators' | 'library';
-let currentTab: PlazaTab = 'sites';
+let currentSiteId: string = '';
 
-function buildTabBar(): HTMLElement {
+function buildSiteTabs(): HTMLElement {
     const wrap = document.createElement('div');
-    wrap.className = 'plaza-tabs';
+    wrap.className = 'plaza-site-tabs';
 
-    const tabs: { key: PlazaTab; label: string; icon: string }[] = [
-        { key: 'sites', label: L.tabSites, icon: 'lucide:globe' },
-        { key: 'creators', label: L.tabCreators, icon: 'lucide:users' },
-        { key: 'library', label: L.tabLibrary, icon: 'lucide:folder' },
-    ];
-
-    for (const tab of tabs) {
+    for (const site of allSites) {
         const btn = document.createElement('button');
-        btn.className = 'plaza-tab' + (currentTab === tab.key ? ' active' : '');
-        btn.innerHTML = `<iconify-icon icon="${tab.icon}"></iconify-icon><span>${tab.label}</span>`;
+        btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
+        btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
         btn.onclick = () => {
-            if (currentTab === tab.key) return;
-            currentTab = tab.key;
+            if (currentSiteId === site.id) return;
+            currentSiteId = site.id;
             renderHome();
         };
         wrap.appendChild(btn);
@@ -224,102 +217,78 @@ function buildTabBar(): HTMLElement {
     return wrap;
 }
 
-function renderSitesTab(searchQuery: string): HTMLElement {
-    const filtered = allSites.filter((site) => {
-        if (!searchQuery) {
-            return true;
-        }
-        const q = searchQuery.toLowerCase();
-        return (
-            site.name.toLowerCase().includes(q) ||
-            site.desc?.toLowerCase().includes(q) ||
-            site.group?.toLowerCase().includes(q) ||
-            site.presetSearches?.some((p) => p.label.toLowerCase().includes(q))
-        );
-    });
+function getCurrentSite(): PlazaSite | undefined {
+    return allSites.find((s) => s.id === currentSiteId);
+}
 
-    const grid = document.createElement('div');
-    grid.className = 'plaza-grid';
-    for (const site of filtered) {
-        const eff = effectiveMode(site);
-        const overridden = hasSiteOverride(site);
-        const card = document.createElement('button');
-        card.className = 'plaza-card';
-        card.title = overridden ? `${site.name}（右键切换打开方式）` : '右键切换打开方式';
-
-        const iconEl = document.createElement('iconify-icon');
-        iconEl.setAttribute('icon', site.icon ?? 'lucide:globe');
-
-        const nameEl = document.createElement('div');
-        nameEl.className = 'plaza-card-name';
-        nameEl.textContent = site.name;
-
-        const modeEl = document.createElement('div');
-        modeEl.className = `plaza-card-mode${overridden ? ' plaza-card-mode-overridden' : ''}`;
-        modeEl.textContent = eff === 'external' ? 'chrome' : eff === 'window' ? 'wails' : 'iframe';
-
-        const descEl = document.createElement('div');
-        descEl.className = 'plaza-card-desc';
-        descEl.textContent = site.desc || '';
-
-        card.appendChild(iconEl);
-        card.appendChild(nameEl);
-        card.appendChild(descEl);
-        card.appendChild(modeEl);
-
-        const presets = buildPresetTags(site);
-        if (presets) {
-            card.appendChild(presets);
-        }
-
-        card.onclick = () => {
-            if (eff === 'external') {
-                openExternal(site);
-            } else if (eff === 'window') {
-                openInWindow(site);
-            } else {
-                renderEmbed(site);
-            }
-        };
-        card.oncontextmenu = (e: MouseEvent) => {
-            e.preventDefault();
-            showSiteModePopup(site, e.clientX, e.clientY);
-        };
-        grid.appendChild(card);
+function openSiteByMode(site: PlazaSite, url?: string): void {
+    const mode = effectiveMode(site);
+    const target = url ? { ...site, url } : site;
+    if (mode === 'external') {
+        openExternal(target);
+    } else if (mode === 'window') {
+        openInWindow(target);
+    } else {
+        renderEmbed(target);
     }
-    return grid;
 }
 
-function renderCreatorsTab(): HTMLElement {
+function renderSiteContent(site: PlazaSite): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'plaza-creators';
+    container.className = 'plaza-site-content';
 
-    const comingSoon = document.createElement('div');
-    comingSoon.className = 'plaza-coming-soon';
-    comingSoon.innerHTML = `
-        <iconify-icon icon="lucide:users" style="font-size:48px;color:var(--accent);opacity:0.5"></iconify-icon>
-        <div style="font-size:14px;color:var(--text);margin-top:12px">创作者频道</div>
-        <div style="font-size:11px;color:rgba(232,246,244,0.5);margin-top:4px">敬请期待...</div>
-        <div style="font-size:10px;color:rgba(232,246,244,0.3);margin-top:8px">支持创作者订阅、作品追踪、本地模型关联</div>
-    `;
-    container.appendChild(comingSoon);
+    if (site.presetSearches && site.presetSearches.length > 0) {
+        const section = document.createElement('div');
+        section.className = 'plaza-section';
 
-    return container;
-}
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'plaza-section-header';
 
-function renderLibraryTab(): HTMLElement {
-    const container = document.createElement('div');
-    container.className = 'plaza-library';
+        const sectionTitle = document.createElement('div');
+        sectionTitle.className = 'plaza-section-title';
+        sectionTitle.innerHTML = `<iconify-icon icon="lucide:search"></iconify-icon><span>网页搜索词</span><span class="plaza-section-sub">(${site.presetSearches.length})</span>`;
+        sectionHeader.appendChild(sectionTitle);
 
-    const comingSoon = document.createElement('div');
-    comingSoon.className = 'plaza-coming-soon';
-    comingSoon.innerHTML = `
-        <iconify-icon icon="lucide:folder" style="font-size:48px;color:var(--accent);opacity:0.5"></iconify-icon>
-        <div style="font-size:14px;color:var(--text);margin-top:12px">全屏资源库</div>
-        <div style="font-size:11px;color:rgba(232,246,244,0.5);margin-top:4px">敬请期待...</div>
-        <div style="font-size:10px;color:rgba(232,246,244,0.3);margin-top:8px">全屏浏览本地模型、缩略图网格、快速搜索</div>
-    `;
-    container.appendChild(comingSoon);
+        const sectionActions = document.createElement('div');
+        sectionActions.className = 'plaza-section-actions';
+
+        const modeSwitch = buildGlobalModeSwitch();
+        sectionActions.appendChild(modeSwitch);
+
+        const openBtn = document.createElement('button');
+        openBtn.className = 'plaza-btn plaza-btn-accent plaza-open-btn';
+        openBtn.innerHTML = `<iconify-icon icon="lucide:external-link"></iconify-icon><span>打开网站</span>`;
+        openBtn.onclick = () => openSiteByMode(site);
+        sectionActions.appendChild(openBtn);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'plaza-btn';
+        closeBtn.innerHTML = `<iconify-icon icon="lucide:x"></iconify-icon><span>关闭</span>`;
+        closeBtn.onclick = closePlaza;
+        sectionActions.appendChild(closeBtn);
+
+        sectionHeader.appendChild(sectionActions);
+        section.appendChild(sectionHeader);
+
+        const presetArea = document.createElement('div');
+        presetArea.className = 'plaza-preset-area';
+
+        for (const ps of site.presetSearches) {
+            const btn = document.createElement('button');
+            btn.className = 'plaza-preset-btn';
+            btn.textContent = ps.label;
+            btn.onclick = () => {
+                const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(ps.q ?? ''));
+                if (url) {
+                    openSiteByMode(site, url);
+                }
+            };
+            presetArea.appendChild(btn);
+        }
+
+        section.appendChild(presetArea);
+        container.appendChild(section);
+    }
 
     return container;
 }
@@ -804,31 +773,22 @@ function buildToolbar(opts: {
     return bar;
 }
 
-async function renderHome(searchQuery: string = ''): Promise<void> {
+async function renderHome(): Promise<void> {
     stopProxy();
     await ensureSitesLoaded();
+    if (!currentSiteId && allSites.length > 0) {
+        currentSiteId = allSites[0].id;
+    }
     const el = getLayer();
     el.innerHTML = '';
     const root = document.createElement('div');
     root.className = 'plaza-root';
 
-    root.appendChild(
-        buildToolbar({
-            title: L.title,
-            onClose: closePlaza,
-            globalModeSwitch: currentTab === 'sites' ? buildGlobalModeSwitch() : undefined,
-        })
-    );
+    root.appendChild(buildSiteTabs());
 
-    root.appendChild(buildTabBar());
-
-    if (currentTab === 'sites') {
-        root.appendChild(buildSearchBar());
-        root.appendChild(renderSitesTab(searchQuery));
-    } else if (currentTab === 'creators') {
-        root.appendChild(renderCreatorsTab());
-    } else if (currentTab === 'library') {
-        root.appendChild(renderLibraryTab());
+    const site = getCurrentSite();
+    if (site) {
+        root.appendChild(renderSiteContent(site));
     }
 
     el.appendChild(root);
