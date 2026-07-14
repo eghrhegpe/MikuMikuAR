@@ -1,7 +1,7 @@
 # ADR-099: babylon-mmd 未利用 API 接入 · Item 4 MPR 多线程 WASM 物理（Go 端 COOP/COEP 注入 POC）
 
 **日期**：2026-07-13
-> **状态**: 实施中（Go 端 COOP/COEP 注入已提交 `c2a0734`；前端 `MmdWasmInstanceTypeMPR` 切换已落地并通过构建验证；待真机 WebView2 验证 `crossOriginIsolated` + `SharedArrayBuffer`）
+> **状态**: 已完成（Go 端 COOP/COEP 注入 `c2a0734` + 前端 MPR 切换 + 真机 WebView2 验证 `crossOriginIsolated=true` / `SharedArrayBuffer=true` / `useMultiThread=true` 全绿，2026-07-14 收口）
 > **关联**: `docs/research/babylon-mmd-api-analysis.md`（未利用 API 调研，本项来源）、ADR-098（同批 babylon-mmd 接入批次一，已提交 `b604f15`）、ADR-056（Motion Layers / WASM 物理基础）
 > **影响面**: `internal/app/zipextract.go`、`main.go`、`internal/app/coep_middleware_test.go`（Go 半侧）；`frontend/src/scene/scene.ts` + `vite-env.d.ts` + `vite.config.ts`（前端侧已落地）
 
@@ -84,13 +84,28 @@
 - `npm run build`（默认，无 flag）：退出码 0 ✅（329 模块，SPR 路径；MPR worker/wasm 在磁盘未加载）
 - `VITE_MMD_WASM_MT=1 npm run build`：退出码 0 ✅（329 模块，`workerHelpers-*.js` + 2× `index_bg-*.wasm` 产出，MPR 路径）
 
+### 真机 WebView2 验证（2026-07-14 收口 ✅）
+
+**构建链路**：`VITE_MMD_WASM_MT=1 npm run build` → `wails3 build` → 启动前同 PowerShell 会话设 `$env:VITE_MMD_WASM_MT="1"`（运行期 Go 注入 COOP/COEP 双头）。
+
+**验证方式**：DevTools 前端依赖 CDN 在本机加载不出（`localhost:9222` 空白），故改为 `scene.ts` 初始化后在状态栏直接读屏（`setStatus`），绕开 DevTools。
+
+**结果（状态栏实测）**：
+```
+[ADR-099] 验证: crossOriginIsolated=true SharedArrayBuffer=true useMultiThread=true
+```
+- `crossOriginIsolated=true` → Go `CoopCoepMiddleware` 双头注入生效（`same-origin` + `require-corp`）
+- `SharedArrayBuffer=true` → 跨源隔离下 SAB 可用，MPR 多线程物理前置条件满足
+- `useMultiThread=true` → 前端 `__MMD_ENABLE_MPR__` 构建期常量生效，实际走 `MmdWasmInstanceTypeMPR` 路径
+
+**结论**：ADR-099 全链路（Go 注入 + 前端切换 + 真机 SAB）验证通过，状态推进至「已完成」。
+
 ---
 
 ## 后续（未落地项 · 待排期）
 
 | 项 | 内容 | 阻塞 / 前置 |
 |----|------|------------|
-| 真机 SAB 验证 | WebView2 实测 `crossOriginIsolated === true` + `typeof SharedArrayBuffer !== 'undefined'`，并确认 MPR 物理实际并行解算 | 需 `VITE_MMD_WASM_MT=1` 构建 + 同 flag 启动 App（Go 注入双头） |
 | 默认构建磁盘零 MPR（可选） | 若要求默认 dist 不含 MPR worker/wasm，改用 `resolve.alias` 将 `multiPhysicsRelease` 别名到空桩模块（flag 关时），彻底避免打包 | 当前 Vite 动态 import 必打包，默认构建含 ~1.2MB 未加载 wasm；桌面 app 可接受，低优先级 |
 | 修正 research POC 路径 | `docs/research/babylon-mmd-api-analysis.md` 原「仅 basenameFallbackFS 注入」改为「包住 AssetFileServerFS（顶层文档）」 | 文档同步 |
 | 两项异常处置 | `proxy_test.go:300` 陈旧测试修复（**已完成**：重命名 `OpenPlazaWindow`→`NavigatePlazaWindow`）/ 工作区非我改动提交或搁置 | 用户指示 |

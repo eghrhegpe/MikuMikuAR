@@ -194,6 +194,14 @@ export async function initScene(): Promise<void> {
             wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
             console.log('[scene] 使用 WASM 版 MmdWasmRuntime（SPR 单线程物理）');
         }
+        // [doc:adr-099] 真机验证读屏：把 COI/SAB/MPR 状态写到状态栏，绕开 DevTools
+        // （WebView2 DevTools 前端依赖 CDN，离线/受限环境空白，但底层 CDP 协议仍可用）。
+        if (__MMD_ENABLE_MPR__) {
+            const coi = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated;
+            const sab = typeof SharedArrayBuffer === 'function';
+            setStatus(`[ADR-099] COI=${coi} SAB=${sab} MPR=${useMultiThread}`, true);
+            console.log(`[ADR-099] 验证: crossOriginIsolated=${coi} SharedArrayBuffer=${sab} useMultiThread=${useMultiThread}`);
+        }
         const mmdWasmPhysics = new MmdWasmPhysics(scene);
         runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
         initWindPhysics(runtime);

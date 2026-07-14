@@ -25,6 +25,19 @@
     `font-weight:bold;color:${pass ? '#3fb950' : '#f85149'}`);
   console.groupEnd();
 
+  // [doc:adr-099] 空白页辅助诊断：确认 DOM 是否真的没挂载
+  console.group('%c空白页诊断', 'font-weight:bold');
+  const appEl = document.getElementById('app');
+  const bodyLen = document.body ? document.body.innerHTML.length : -1;
+  const appKids = appEl ? appEl.children.length : -1;
+  const loadingEl = document.getElementById('loading');
+  console.log(`document.body.innerHTML.length = ${bodyLen}（<50 视为近乎空白）`);
+  console.log(`#app 子节点数 = ${appKids}（>0 说明静态 DOM 已渲染）`);
+  console.log(`#loading 遮罩存在 = ${!!loadingEl}（index.html 内联，必应可见）`);
+  console.log(`typeof BABYLON = ${typeof (window as any).BABYLON}（undefined → /lib/babylon.js 被 COEP 拦截）`);
+  console.groupEnd();
+  console.log('👉 若 #app 子节点数>0 但画面空白：是 CSS/渲染问题；若 bodyLen<50：主文档未渲染，查 Network 红色请求（COEP 拦截）。');
+
   if (!pass) {
     console.group('%c排障提示', 'font-weight:bold');
     if (!coi) console.log('• COI=false：主文档响应头缺 COOP/COEP → 确认「启动进程」时也设了 VITE_MMD_WASM_MT（构建期设 ≠ 运行期设，两处都要）；Network 面板查主文档 Response Headers 是否含 same-origin / require-corp。');

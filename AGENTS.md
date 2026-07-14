@@ -49,6 +49,11 @@ cd frontend && npm run test:e2e   # E2E (Playwright; 需 wails dev 或 5173+9222
 cd frontend && npm run test -- src/__tests__/bindings/app.contract.test.ts` # （校验 116 个函数存在性 + FNV-1a method ID）
 ```
 
+```html
+edge://inspect Edog网页调试
+http://localhost:9222/json 实际网页一览
+```
+
 ## 本地缓存（多 AI 协同规范）
 
 > 禁止使用 `git stash`，多进程并发 pop 会产生大量工作区冲突。
