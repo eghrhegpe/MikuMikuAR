@@ -194,9 +194,30 @@ async function loadCustomSites(): Promise<PlazaSite[]> {
 
 function mergeSites(base: PlazaSite[], extras: PlazaSite[]): PlazaSite[] {
     const map = new Map<string, PlazaSite>();
-    for (const s of base) map.set(s.id, s);
+    for (const s of base) map.set(s.id, { ...s });
     for (const s of extras) {
-        if (!map.has(s.id)) map.set(s.id, s);
+        const existing = map.get(s.id);
+        if (existing) {
+            if (s.name) existing.name = s.name;
+            if (s.url) existing.url = s.url;
+            if (s.icon) existing.icon = s.icon;
+            if (s.desc) existing.desc = s.desc;
+            if (s.searchUrl) existing.searchUrl = s.searchUrl;
+            if (s.group) existing.group = s.group;
+            if (s.presetSearches && s.presetSearches.length > 0) {
+                const seen = new Set(existing.presetSearches?.map(p => p.label) || []);
+                const merged = [...(existing.presetSearches || [])];
+                for (const p of s.presetSearches) {
+                    if (!seen.has(p.label)) {
+                        merged.push(p);
+                        seen.add(p.label);
+                    }
+                }
+                existing.presetSearches = merged;
+            }
+        } else {
+            map.set(s.id, { ...s });
+        }
     }
     return Array.from(map.values());
 }

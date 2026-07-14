@@ -4,17 +4,61 @@
     "icon": "📺",
     "label": "B站",
     "url": "https://www.bilibili.com/",
-    "desc": "搜索模型创作者和模型展示",
+    "desc": "展示模型视频的主流平台",
     "group": "search",
     "searchUrl": "https://search.bilibili.com/all?keyword={{q}}",
     "presetSearches": [
       {
-        "label": "免费模型",
-        "q": "ysm模型免费分享"
+        "label": "YSM免费模型",
+        "q": ""
       },
       {
-        "label": "付费模型",
-        "q": "ysm模型展示"
+        "label": "YSM模型展示",
+        "q": ""
+      },
+      {
+        "label": "YSM虚拟主播",
+        "q": ""
+      },
+      {
+        "label": "YSM碧蓝航线",
+        "q": ""
+      },
+      {
+        "label": "YSM东方",
+        "q": ""
+      },
+      {
+        "label": "YSM鸣潮",
+        "q": ""
+      },
+      {
+        "label": "MMD模型配布",
+        "q": ""
+      },
+      {
+        "label": "MMD模型展示",
+        "q": ""
+      },
+      {
+        "label": "VRC模型配布",
+        "q": ""
+      },
+      {
+        "label": "VRC模型展示",
+        "q": ""
+      },
+      {
+        "label": "潜渊症人物mod",
+        "q": ""
+      },
+      {
+        "label": "求生之路人物mod",
+        "q": ""
+      },
+      {
+        "label": "人物mod",
+        "q": ""
       }
     ]
   },
@@ -23,17 +67,49 @@
     "icon": "❤️",
     "label": "爱发电",
     "url": "https://afdian.com/",
-    "desc": "赞助创作者平台",
+    "desc": "赞助创作者的平台",
     "group": "search",
     "searchUrl": "https://afdian.com/search?q={{q}}",
     "presetSearches": [
       {
-        "label": "作者搜索",
-        "q": "碎de帆"
+        "label": "我的世界",
+        "q": ""
       },
       {
-        "label": "付费模型",
-        "q": "YSM"
+        "label": "战舰世界",
+        "q": ""
+      },
+      {
+        "label": "YSM",
+        "q": ""
+      },
+      {
+        "label": "MMD",
+        "q": ""
+      },
+      {
+        "label": "VRC",
+        "q": ""
+      },
+      {
+        "label": "杀戮尖塔",
+        "q": ""
+      },
+      {
+        "label": "暗黑地牢",
+        "q": ""
+      },
+      {
+        "label": "求生之路",
+        "q": ""
+      },
+      {
+        "label": "怪物猎人",
+        "q": ""
+      },
+      {
+        "label": "文明6",
+        "q": ""
       }
     ]
   },
@@ -42,9 +118,19 @@
     "icon": "🐙",
     "label": "GitHub",
     "url": "https://github.com/",
-    "desc": "免费模型仓库（前置）",
+    "desc": "浏览创作者仓库模型",
     "group": "repo",
-    "searchUrl": "https://github.com/search?q={{q}}"
+    "searchUrl": "https://github.com/search?q={{q}}",
+    "presetSearches": [
+      {
+        "label": "免费 YSM 模型仓库",
+        "q": ""
+      },
+      {
+        "label": "YSM Viewers",
+        "q": ""
+      }
+    ]
   },
   {
     "id": "mzhouse",
