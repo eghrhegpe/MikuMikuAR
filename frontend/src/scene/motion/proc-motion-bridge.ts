@@ -30,7 +30,7 @@ import {
     activatePerception,
     deactivatePerception,
 } from './perception';
-import { clamp01 } from '@/core/utils';
+import { clamp01, logWarn } from '@/core/utils';
 
 let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
 let procBeatDetector: BeatDetector | null = null;
@@ -116,7 +116,7 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         const userVmdDuringAsync =
             vmdDataAfter !== buf && vmdDataAfter !== null && vmdDataAfter !== undefined;
         if (currentId !== modelIdAtStart) {
-            console.warn('[proc-motion] 异步期间模型焦点已切换，丢弃本次程序化动作结果');
+            logWarn('proc-motion', '异步期间模型焦点已切换，丢弃本次程序化动作结果');
             // 卸载刚加载的程序化动画
             const inst = modelManager.get(currentId);
             if (inst && inst.mmdModel && mmdRuntime) {
@@ -151,9 +151,7 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
             const bpm = procBeatDetector?.getBPM() ?? 120;
             startProcMotion(mode, mode === 'autodance' ? bpm : undefined);
         } else {
-            console.warn(
-                '[proc-motion] Re-trigger skipped: focusedModelId changed or procModelId cleared'
-            );
+            logWarn('proc-motion', 'Re-trigger skipped: focusedModelId changed or procModelId cleared');
         }
     }
 }
@@ -256,11 +254,11 @@ export function setProcMotionState(s: ProcMotionState): void {
 /** 设置单个微动效果的开关 */
 export function setProcMotionBoneToggle(cat: ProcMotionBoneCategory, v: boolean): void {
     if (!PROC_MOTION_BONE_CATEGORIES.includes(cat)) {
-        console.warn(`[proc-motion] invalid bone category: ${cat}`);
+        logWarn('proc-motion', `invalid bone category: ${cat}`);
         return;
     }
     if (typeof v !== 'boolean') {
-        console.warn('[proc-motion] setProcMotionBoneToggle: invalid value type, expected boolean');
+        logWarn('proc-motion', 'setProcMotionBoneToggle: invalid value type, expected boolean');
         return;
     }
     const bt = { ...procState.boneToggles };
@@ -275,9 +273,7 @@ export function setProcMotionBoneToggles(
 ): void {
     for (const [k, v] of Object.entries(bt)) {
         if (typeof v !== 'boolean') {
-            console.warn(
-                `[proc-motion] setProcMotionBoneToggles: invalid value type for key "${k}", expected boolean`
-            );
+            logWarn('proc-motion', `setProcMotionBoneToggles: invalid value type for key "${k}", expected boolean`);
             return;
         }
     }
@@ -287,9 +283,7 @@ export function setProcMotionBoneToggles(
 
 export function setProcMotionVpdApplyEnabled(v: boolean): void {
     if (typeof v !== 'boolean') {
-        console.warn(
-            '[proc-motion] setProcMotionVpdApplyEnabled: invalid value type, expected boolean'
-        );
+        logWarn('proc-motion', 'setProcMotionVpdApplyEnabled: invalid value type, expected boolean');
         return;
     }
     procState = { ...procState, vpdApplyEnabled: v };
@@ -299,7 +293,7 @@ export function setProcMotionVpdApplyEnabled(v: boolean): void {
 export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']): void {
     const valid = ['auto', 'sharp', 'ease-in-out', 'ease-out'] as const;
     if (!valid.includes(v as (typeof valid)[number])) {
-        console.warn(`[proc-motion] setProcMotionInterpOverride: invalid value "${v}"`);
+        logWarn('proc-motion', `setProcMotionInterpOverride: invalid value "${v}"`);
         return;
     }
     procState = { ...procState, interpOverride: v };
@@ -309,7 +303,7 @@ export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']
 /** 设置 BPM 量化开关 */
 export function setBpmQuantizeEnabled(v: boolean): void {
     if (typeof v !== 'boolean') {
-        console.warn('[proc-motion] setBpmQuantizeEnabled: invalid value type, expected boolean');
+        logWarn('proc-motion', 'setBpmQuantizeEnabled: invalid value type, expected boolean');
         return;
     }
     setUIState({ bpmQuantizeEnabled: v });
@@ -433,7 +427,7 @@ export function regenerateProcMotion(): void {
     }
     // 无焦点模型时静默返回，添加警告辅助调试
     if (!focusedMmdModel()) {
-        console.warn('[proc-motion] regenerateProcMotion: 无焦点 MMD 模型，跳过');
+        logWarn('proc-motion', 'regenerateProcMotion: 无焦点 MMD 模型，跳过');
         return;
     }
     // Issue #4: 如果 regenerate 调用时正在生成，标记 deferred 重跑

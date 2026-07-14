@@ -3,6 +3,7 @@
 // External modules should ONLY import from this file.
 import * as impl from './env-impl';
 import { EnvState, envState } from '@/core/config';
+import { logWarn } from '@/core/utils';
 
 // Re-export _envSys for backward compatibility (used by scene.ts)
 export { _envSys } from './env-impl';
@@ -128,17 +129,17 @@ export function applyEnvState(state: EnvState): void {
     try {
         impl.applySky(state);
     } catch (e) {
-        console.warn('[env] sky fail:', e);
+        logWarn('env', 'sky fail:', e);
     }
     try {
         impl.applyGround(state);
     } catch (e) {
-        console.warn('[env] ground fail:', e);
+        logWarn('env', 'ground fail:', e);
     }
     try {
         impl.applyFog(state);
     } catch (e) {
-        console.warn('[env] fog fail:', e);
+        logWarn('env', 'fog fail:', e);
     }
 
     // Water
@@ -149,7 +150,7 @@ export function applyEnvState(state: EnvState): void {
             impl.disposeWater();
         }
     } catch (e) {
-        console.warn('[env] water fail:', e);
+        logWarn('env', 'water fail:', e);
     }
 
     // Particles
@@ -161,7 +162,7 @@ export function applyEnvState(state: EnvState): void {
             impl.disposeParticles();
         }
     } catch (e) {
-        console.warn('[env] particle fail:', e);
+        logWarn('env', 'particle fail:', e);
     }
 
     // Clouds
@@ -172,7 +173,7 @@ export function applyEnvState(state: EnvState): void {
             impl.disposeClouds();
         }
     } catch (e) {
-        console.warn('[env] cloud fail:', e);
+        logWarn('env', 'cloud fail:', e);
     }
 }
 

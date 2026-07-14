@@ -17,6 +17,7 @@ import { loadManager } from './load-manager';
 import { ImportZip, ImportLocalFile, Events } from './wails-bindings';
 import { getAutoImportCached } from '../menus/settings-shared';
 import { focusModel } from '../scene/manager/model-ops';
+import { logWarn } from './utils';
 
 // ======== Module-level state ========
 const _lastOverlayFn = new Map<string, () => void>();
@@ -562,7 +563,7 @@ async function handleDropFile(path: string): Promise<void> {
         try {
             await ImportZip(path);
             setStatus(t('main.zipImported'), true);
-            await refreshLibrary().catch((err) => console.warn('refresh after drop:', err));
+            await refreshLibrary().catch((err) => logWarn('events', 'refresh after drop', err));
         } catch (err) {
             setStatus(t('main.importFailedDetail') + formatError(err), false);
             console.error('ImportZip failed:', err);
@@ -628,7 +629,7 @@ export async function importToLibrary(path: string, displayName: string): Promis
     try {
         await ImportLocalFile(path);
         setStatus(t('main.imported', { name: displayName }), true);
-        refreshLibrary().catch(console.warn);
+        refreshLibrary().catch((err) => logWarn('events', 'refresh after import', err));
     } catch (err: unknown) {
         setStatus(t('main.importFailed') + ': ' + formatError(err), false);
         console.error('[watch] import failed:', err);

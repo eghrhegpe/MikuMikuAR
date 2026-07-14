@@ -10,7 +10,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
 import type { UIState } from '@/core/types';
-import { lerp as lerpUtil, lerpArray, formatTimestamp, clamp01 } from '@/core/utils';
+import { lerp as lerpUtil, lerpArray, formatTimestamp, clamp01, swallowError, logWarn } from '@/core/utils';
 import { col3FromTriple } from '@/core/color-helpers';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { deriveLighting, TIME_OF_DAY_PRESETS } from './env-lighting';
@@ -55,10 +55,10 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
             impl.applySky(state);
             const _skyElapsed = performance.now() - _skyStart;
             if (_skyElapsed > 2) {
-                console.warn(`[${formatTimestamp()}][perf:env] applySky took ${_skyElapsed.toFixed(1)}ms`);
+                logWarn('perf:env', `[${formatTimestamp()}] applySky took ${_skyElapsed.toFixed(1)}ms`);
             }
         } catch (e) {
-            console.warn('[env] sky fail:', e);
+            logWarn('env', 'sky fail:', e);
         }
     }
 
@@ -99,7 +99,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         try {
             impl.applyGround(state);
         } catch (e) {
-            console.warn('[env] ground fail:', e);
+            logWarn('env', 'ground fail:', e);
         }
     }
 
@@ -109,7 +109,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         try {
             impl.applyFog(state);
         } catch (e) {
-            console.warn('[env] fog fail:', e);
+            logWarn('env', 'fog fail:', e);
         }
     }
 
@@ -147,7 +147,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
                 impl.disposeWater();
             }
         } catch (e) {
-            console.warn('[env] water fail:', e);
+            logWarn('env', 'water fail:', e);
         }
     }
 
@@ -169,7 +169,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
                 impl.disposeParticles();
             }
         } catch (e) {
-            console.warn('[env] particle fail:', e);
+            logWarn('env', 'particle fail:', e);
         }
     }
 
@@ -191,7 +191,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
                 impl.disposeClouds();
             }
         } catch (e) {
-            console.warn('[env] cloud fail:', e);
+            logWarn('env', 'cloud fail:', e);
         }
     }
 
@@ -204,7 +204,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
                 impl.disposeDebugMirror();
             }
         } catch (e) {
-            console.warn('[env] debugMirror fail:', e);
+            logWarn('env', 'debugMirror fail:', e);
         }
     }
 
@@ -344,8 +344,9 @@ function _timeOfDayTick(): void {
         const _tickStart = performance.now();
         _applyEnvStateFacade(envState, { sunAngle: envSunAngle });
         if (performance.now() - _tickStart > 2) {
-            console.warn(
-                `[${formatTimestamp()}][perf:tick] _applyEnvStateFacade(sunAngle) took ${performance.now() - _tickStart}ms (angle=${envSunAngle.toFixed(1)})`
+            logWarn(
+                'perf:tick',
+                `[${formatTimestamp()}] _applyEnvStateFacade(sunAngle) took ${performance.now() - _tickStart}ms (angle=${envSunAngle.toFixed(1)})`
             );
         }
     } else if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
@@ -381,7 +382,7 @@ export function stopTimeOfDay(): void {
         _unregisterTimeOfDay = null;
     }
     // 持久化当前 sunAngle 到后端
-    SetEnvState(envState).catch(() => {});
+    swallowError(SetEnvState(envState));
 }
 
 export function isTimeOfDayActive(): boolean {
@@ -528,13 +529,14 @@ export function applyEnvPresetObject(preset: {
                 },
                 true
             );
-            console.warn(
-                `[${formatTimestamp()}][perf:sky] setEnvState took ${performance.now() - _skyStart}ms (t=${t.toFixed(2)})`
+            logWarn(
+                'perf:sky',
+                `[${formatTimestamp()}] setEnvState took ${performance.now() - _skyStart}ms (t=${t.toFixed(2)})`
             );
             const _obsNow = scene.onBeforeRenderObservable.observers
                 ? scene.onBeforeRenderObservable.observers.length
                 : 0;
-            console.warn(`[${formatTimestamp()}][perf:obs] observers=${_obsNow} (t=${t.toFixed(2)})`);
+            logWarn('perf:obs', `[${formatTimestamp()}] observers=${_obsNow} (t=${t.toFixed(2)})`);
             lastSkyUpdate = elapsed;
         }
 
@@ -552,8 +554,9 @@ export function applyEnvPresetObject(preset: {
         const _lightStart = performance.now();
         setLightState(interpLight);
         if (performance.now() - _lightStart > 2) {
-            console.warn(
-                `[${formatTimestamp()}][perf:light] setLightState took ${performance.now() - _lightStart}ms (t=${t.toFixed(2)})`
+            logWarn(
+                'perf:light',
+                `[${formatTimestamp()}] setLightState took ${performance.now() - _lightStart}ms (t=${t.toFixed(2)})`
             );
         }
 
@@ -561,8 +564,9 @@ export function applyEnvPresetObject(preset: {
             ? scene.onBeforeRenderObservable.observers.length
             : 0;
         if (_obsAfterLight > 100) {
-            console.warn(
-                `[${formatTimestamp()}][perf:obs] animLoop Δ=${_obsAfterLight - _obsStart} (start=${_obsStart} afterLight=${_obsAfterLight} t=${t.toFixed(2)})`
+            logWarn(
+                'perf:obs',
+                `[${formatTimestamp()}] animLoop Δ=${_obsAfterLight - _obsStart} (start=${_obsStart} afterLight=${_obsAfterLight} t=${t.toFixed(2)})`
             );
         }
 
@@ -580,20 +584,22 @@ export function applyEnvPresetObject(preset: {
                 ? scene.onBeforeRenderObservable.observers.length
                 : 0;
             const _endStart = performance.now();
-            SetEnvState(envState).catch(() => {});
+            swallowError(SetEnvState(envState));
             const _endElapsed = performance.now() - _endStart;
             const _obsAfterSetEnv = scene.onBeforeRenderObservable.observers
                 ? scene.onBeforeRenderObservable.observers.length
                 : 0;
-            console.warn(
-                `[${formatTimestamp()}][perf:sky] animLoop ended: SetEnvState=${_endElapsed.toFixed(1)}ms, observers=${_obsBeforeEnd}→${_obsAfterSetEnv}, triggerAutoSave next`
+            logWarn(
+                'perf:sky',
+                `[${formatTimestamp()}] animLoop ended: SetEnvState=${_endElapsed.toFixed(1)}ms, observers=${_obsBeforeEnd}→${_obsAfterSetEnv}, triggerAutoSave next`
             );
             triggerAutoSave();
             const _obsAfterAutoSave = scene.onBeforeRenderObservable.observers
                 ? scene.onBeforeRenderObservable.observers.length
                 : 0;
-            console.warn(
-                `[${formatTimestamp()}][perf:sky] after triggerAutoSave: observers=${_obsAfterAutoSave}`
+            logWarn(
+                'perf:sky',
+                `[${formatTimestamp()}] after triggerAutoSave: observers=${_obsAfterAutoSave}`
             );
             return;
         }
@@ -645,7 +651,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         clearTimeout(_envPersistTimer);
     }
     _envPersistTimer = setTimeout(() => {
-        SetEnvState(envState).catch(() => {});
+        swallowError(SetEnvState(envState));
     }, 500);
 
     if (!skipAutoSave) {
@@ -659,7 +665,7 @@ export function flushEnvState(): void {
         clearTimeout(_envPersistTimer);
         _envPersistTimer = null;
     }
-    SetEnvState(envState).catch(() => {});
+    swallowError(SetEnvState(envState));
 }
 
 // ======== UIState Persistence ========
@@ -702,7 +708,7 @@ export function flushUIState(): void {
     } // nothing to persist
     // Go 端 SetUIState 语义是 json.Unmarshal 合并（缺省字段保留原值），
     // 但类型声明是完整 UIState。此处强转后传入部分字段是安全的。
-    SetUIState(payload as unknown as import('../../core/wails-bindings').UIState).catch(() => {});
+    swallowError(SetUIState(payload as unknown as import('../../core/wails-bindings').UIState));
 }
 
 // 注册持久化回调（state.ts → 本模块，避免循环依赖）

@@ -28,7 +28,7 @@ import {
     setThumbnailCache,
     type RuntimeModel,
 } from '@/core/config';
-import { getBaseName } from '@/core/utils';
+import { getBaseName, swallowError, logWarn } from '@/core/utils';
 import { createDefaultFeetState } from '@/core/state';
 import { resolveFileUrl, normPath } from '@/core/fileservice';
 import { isUnderRoot } from '@/core/utils';
@@ -208,14 +208,14 @@ export async function captureThumbnail(
                 updated.set(thumbKey, raw);
                 setThumbnailCache(updated);
             } catch (saveErr) {
-                console.warn('SaveThumbnail failed:', saveErr);
+                logWarn('model-loader', 'SaveThumbnail failed:', saveErr);
             }
         } finally {
             rt.dispose();
             thumbCam.dispose();
         }
     } catch (err) {
-        console.warn('captureThumbnail:', err);
+        logWarn('model-loader', 'captureThumbnail:', err);
     }
 }
 
@@ -331,7 +331,7 @@ export async function loadPMXFile(
                 // Intentionally empty — 自定义事件派发失败不影响模型加载主流程
             }
             // [fix:thumbnail] stage 同样需要缩略图（库网格含 stage 模型）；用库引用路径作 key
-            captureThumbnail(filePath, libraryPath, innerPath).catch(() => {});
+            swallowError(captureThumbnail(filePath, libraryPath, innerPath));
             return id;
         }
 
@@ -443,7 +443,7 @@ export async function loadPMXFile(
             try {
                 await loadVMDMotion(vmdData, appliedVmd, id);
             } catch (vmdErr) {
-                console.warn('VMD 加载失败，模型已保留:', vmdErr);
+                logWarn('model-loader', 'VMD 加载失败，模型已保留:', vmdErr);
                 appliedVmd = '';
                 setStatus(t('scene.loader.vmdFailedModelLoaded', { name: displayName }), false);
             }
@@ -461,14 +461,14 @@ export async function loadPMXFile(
         rebuildShadowCasters();
 
         // Auto-capture thumbnail for future popup display
-        captureThumbnail(filePath, libraryPath, innerPath).catch(() => {});
+        swallowError(captureThumbnail(filePath, libraryPath, innerPath));
         if (!skipAutoApply) {
             _tryAutoApplyPreset(id).catch((err: unknown) =>
-                console.warn('auto-apply preset:', err)
+                logWarn('model-loader', 'auto-apply preset:', err)
             );
         }
         // Pre-load outfit file for UI entry availability
-        _loadOutfits(id).catch(() => {});
+        swallowError(_loadOutfits(id));
 
         // Re-apply outline state so new model gets edge rendering if enabled
         _rebuildOutlineState?.();
@@ -491,14 +491,14 @@ export async function loadPMXFile(
             try {
                 _mmdRuntime.destroyMmdModel(wasmModel);
             } catch (destroyErr) {
-                console.warn('destroyMmdModel in cleanup:', destroyErr);
+                logWarn('model-loader', 'destroyMmdModel in cleanup:', destroyErr);
             }
         }
         if (registeredId && _modelManager) {
             try {
                 _modelManager.remove(registeredId);
             } catch (removeErr) {
-                console.warn('Cleanup after load failure:', removeErr);
+                logWarn('model-loader', 'Cleanup after load failure:', removeErr);
             }
         } else {
             // Not yet registered — dispose meshes directly

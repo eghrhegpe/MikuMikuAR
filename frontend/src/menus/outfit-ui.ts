@@ -6,7 +6,7 @@ import type { OutfitFile } from '../core/config';
 import { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus, logWarn } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -34,7 +34,7 @@ function buildOutfitSchema(id: string): MenuNode[] {
                                 inst.outfitFile = outfit;
                             }
                         } catch (err) {
-                            console.warn('buildOutfitLevel: loadOutfits failed', err);
+                            logWarn('outfit-ui', 'buildOutfitLevel: loadOutfits failed', err);
                             c.textContent = t('outfit.loadConfigFailed');
                             return;
                         }

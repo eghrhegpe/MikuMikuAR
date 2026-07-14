@@ -13,12 +13,11 @@ import {
     ModelInstance,
 } from '../core/config';
 import type { Scene } from '@babylonjs/core/scene';
-import { getBaseName, normPath } from '@/core/utils';
+import { getBaseName, normPath, getDirPath, delay, logWarn } from '@/core/utils';
 import { col3FromTriple } from '@/core/color-helpers';
 import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
 import { encodeFileRef } from '../core/fileservice';
-import { getDirPath } from '../core/utils';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
 
 // Lazy access to the active Scene — avoids a static import of '../scene/scene',
@@ -163,7 +162,7 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
             const semaphore = { count: 0 };
             const withLimit = async <T>(fn: () => Promise<T>): Promise<T> => {
                 while (semaphore.count >= HEAD_CONCURRENCY) {
-                    await new Promise((r) => setTimeout(r, 10));
+                    await delay(10);
                 }
                 semaphore.count++;
                 try {
@@ -471,8 +470,9 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
                     if (meshes.length > 0 && retargetOk && variant.hideMaterials) {
                         hideMaterials(inst, variant.hideMaterials);
                     } else if (meshes.length > 0 && !retargetOk && variant.hideMaterials) {
-                        console.warn(
-                            '[outfit] FBX overlay retarget failed, keeping PMX materials to avoid穿模'
+                        logWarn(
+                            'outfit',
+                            'FBX overlay retarget failed, keeping PMX materials to avoid穿模'
                         );
                     }
                 }

@@ -30,6 +30,7 @@ import { MotionType } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motio
 import { analyzeSkirt } from './skirt-analyzer';
 import { PerFrameUpdateRegistry, getBoneWorldPosition } from '../../physics/physics-bridge';
 import { isAndroidPlatform } from '../../core/platform';
+import { logWarn } from '../../core/utils';
 
 // ============================================================================
 // 配置
@@ -369,7 +370,7 @@ export class VirtualSkirtController {
             }
         } catch (e) {
             // P3a: 注入中途异常 → 释放已分配的刚体/约束/构造信息/形状，避免半初始化泄漏
-            console.warn('[virtual-skirt] build failed, disposing partial resources', e);
+            logWarn('virtual-skirt', 'build failed, disposing partial resources', e);
             this.dispose();
             return false;
         }

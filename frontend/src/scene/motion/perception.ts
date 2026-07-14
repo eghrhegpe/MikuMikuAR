@@ -25,7 +25,7 @@ import { _applyBreathing } from './perception-breathing';
 import { _applyBlinking } from './perception-blinking';
 import { _applyMicroExpression, _resetLastEmotionMorphName } from './perception-expression';
 import { _applyBalanceSway, _resetBalanceSwayState } from './perception-balance';
-import { clamp01 } from '@/core/utils';
+import { clamp01, logWarn } from '@/core/utils';
 import { _applyLipSync } from './perception-lipsync';
 import {
     _applyGaze,
@@ -59,13 +59,13 @@ let perceptionObserver: Observer<any> | null = null;
 export function activatePerception(modelId?: string): void {
     const targetId = modelId ?? focusedModelId ?? null;
     if (!targetId) {
-        console.warn('[perception] activate: 无目标模型 ID');
+        logWarn('perception', 'activate: 无目标模型 ID');
         return;
     }
 
     const inst = modelManager.get(targetId);
     if (!inst?.mmdModel) {
-        console.warn('[perception] activate: 模型未加载或无 mmdModel');
+        logWarn('perception', 'activate: 模型未加载或无 mmdModel');
         return;
     }
 

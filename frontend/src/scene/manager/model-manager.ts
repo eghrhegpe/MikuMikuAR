@@ -26,7 +26,7 @@ import {
 } from '@/core/config';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
 import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
-import { clamp01 } from '@/core/utils';
+import { clamp01, logWarn } from '@/core/utils';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
@@ -480,7 +480,7 @@ export class ModelManager {
             return;
         }
         if (!Number.isFinite(scaling)) {
-            console.warn('[model-manager] setScaling: 无效值', scaling);
+            logWarn('model-manager', 'setScaling: 无效值', scaling);
             return;
         }
         inst.scaling = Math.max(0.01, scaling);
@@ -504,7 +504,7 @@ export class ModelManager {
             return;
         }
         if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
-            console.warn('[model-manager] setPosition: 无效坐标', { x, y, z });
+            logWarn('model-manager', 'setPosition: 无效坐标', { x, y, z });
             return;
         }
         if (inst.meshes.length > 0) {
@@ -538,7 +538,7 @@ export class ModelManager {
             elevation > 90;
         const o = normalizeOrbit(azimuth, elevation, distance);
         if (invalid) {
-            console.warn('[model-manager] setOrbit: 输入越界已钳制', {
+            logWarn('model-manager', 'setOrbit: 输入越界已钳制', {
                 azimuth,
                 elevation,
                 distance,

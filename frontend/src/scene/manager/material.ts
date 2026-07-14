@@ -9,6 +9,7 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 
 import { modelRegistry, uiState } from '@/core/config';
 import { triggerAutoSave } from '@/core/config';
+import { logWarn } from '../../core/utils';
 
 interface MmdStandardMaterial extends StandardMaterial {
     toonTexture: Texture | null;
@@ -467,7 +468,7 @@ export function getMatCatGroups(id: string): Map<string, { name: string; mat: Ma
 
 export function getMatCatParams(id: string, cat: string): MaterialCategoryParams {
     if (!CATEGORY_SET.has(cat)) {
-        console.warn(`[material] getMatCatParams: unknown category "${cat}"`);
+        logWarn('material', `getMatCatParams: unknown category "${cat}"`);
         return { ...DEFAULT_MAT_PARAMS };
     }
     return { ..._ensureState(id).get(cat)! };
@@ -479,7 +480,7 @@ export function setMatCatParams(
     params: Partial<MaterialCategoryParams>
 ): void {
     if (!CATEGORY_SET.has(cat)) {
-        console.warn(`[material] setMatCatParams: unknown category "${cat}"`);
+        logWarn('material', `setMatCatParams: unknown category "${cat}"`);
         return;
     }
     const target = _ensureState(id).get(cat)!;
@@ -580,7 +581,8 @@ export function setMatParams(
 ): void {
     const meshes = _getMeshesById(id);
     if (!meshes || matIndex < 0 || matIndex >= meshes.length) {
-        console.warn(
+        logWarn(
+            'material',
             `setMatParams: invalid matIndex ${matIndex} for target "${id}" (${meshes ? meshes.length : 0} meshes)`
         );
         return;
@@ -599,7 +601,7 @@ export function setMatParams(
 export function resetSingleMatParams(id: string, matIndex: number): void {
     const meshes = _getMeshesById(id);
     if (!meshes || matIndex < 0 || matIndex >= meshes.length) {
-        console.warn(`resetSingleMatParams: invalid matIndex ${matIndex} for target "${id}"`);
+        logWarn('material', `resetSingleMatParams: invalid matIndex ${matIndex} for target "${id}"`);
         return;
     }
     const modelState = _matState.get(id);

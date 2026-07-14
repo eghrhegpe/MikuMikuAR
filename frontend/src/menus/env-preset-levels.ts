@@ -4,7 +4,7 @@
 import { envState, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { addSectionTitle, addPresetChip } from '../core/ui-helpers';
-import { tryCatchStatus, showErrorToast } from '../core/utils';
+import { tryCatchStatus, showErrorToast, logWarn } from '../core/utils';
 import { t } from '../core/i18n/t';
 import {
     setEnvState,
@@ -55,7 +55,7 @@ export function renderUserEnvPresets(container: HTMLElement): void {
         try {
             entries = await ListEnvPresets();
         } catch (err) {
-            console.warn('[env-menu] ListEnvPresets failed:', err);
+            logWarn('env-menu', 'ListEnvPresets failed:', err);
         }
         if (entries.length === 0) {
             const empty = document.createElement('div');

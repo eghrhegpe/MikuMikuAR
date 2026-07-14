@@ -23,6 +23,7 @@ import {
 import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 // 落地判定（无 Babylon 依赖，便于单测）见 motion-algos/footstep-detect.ts
 import { detectFootLanding } from '@/motion-algos/footstep-detect';
+import { logWarn } from '../../core/utils';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';
 
@@ -294,10 +295,7 @@ export function startFeetAdjustment(
                     const hints = names
                         .filter((n) => /足|ＩＫ|IK|Leg|leg|Foot|foot/.test(n))
                         .slice(0, 16);
-                    console.warn(
-                        `[feet] IK bone not matched for ${m.id} (L=${cache.lName} R=${cache.rName}). leg/IK bones in model:`,
-                        hints
-                    );
+                    logWarn('feet', `IK bone not matched for ${m.id} (L=${cache.lName} R=${cache.rName}). leg/IK bones in model:`, hints);
                 }
             }
             _adjustFoot(m.runtimeBones, cache.lName, 'L', cache, feet, m.id, dt);

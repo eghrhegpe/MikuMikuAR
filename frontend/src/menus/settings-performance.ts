@@ -4,6 +4,7 @@ import { SetPerformanceMode } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
 import { setStatus, uiState, cardContainer } from '../core/config';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
+import { swallowError } from '../core/utils';
 import { getCurrentRenderingMenu } from './menu';
 import {
     setPerformanceMode,
@@ -52,7 +53,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
                         false,
                         () => {
                             setPerformanceMode(m.key);
-                            SetPerformanceMode(m.key).catch(() => {});
+                            swallowError(SetPerformanceMode(m.key));
                             if (m.key === 'custom') {
                                 getSettingsMenu()?.reRender();
                             } else {

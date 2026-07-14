@@ -67,7 +67,7 @@ import { buildPoseStudioLevel } from './motion-pose-levels';
 import { buildVirtualSkirtLevel } from './motion-cloth-levels'; // [doc:adr-084]
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
-import { isUnderRoot } from '../core/utils';
+import { isUnderRoot, logWarn } from '../core/utils';
 import type { MenuNode } from './menu-schema';
 
 // ======== 从子文件导入 ========
@@ -440,7 +440,7 @@ function motionOnItemClick(row: PopupRow): void {
                 })
                 .catch((err) => {
                     setStatus(t('motion.motionLoadFailed'), false);
-                    console.warn('motion-popup addVmdLayerFromPath:', err);
+                    logWarn('motion-popup', 'motion-popup addVmdLayerFromPath:', err);
                     getMotionMenu()?.reRender();
                 });
             return;
@@ -460,7 +460,7 @@ function motionOnItemClick(row: PopupRow): void {
                 })
                 .catch((err) => {
                     setStatus(t('motion.motionLoadFailed'), false);
-                    console.warn('motion-popup replace base VMD:', err);
+                    logWarn('motion-popup', 'motion-popup replace base VMD:', err);
                     getMotionMenu()?.reRender();
                 });
             return;
@@ -664,7 +664,7 @@ function buildRecentMotionsSchema(): MenuNode[] {
                             hideMotionPopup();
                             loadManager.load({ kind: 'vmd', path: r.path }).catch((err) => {
                                 setStatus(t('motion.motionLoadFailed'), false);
-                                console.warn('recent motion load:', err);
+                                logWarn('motion-popup', 'recent motion load:', err);
                             });
                         });
                     }

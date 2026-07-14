@@ -13,7 +13,7 @@ import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
 import { focusedModelId, modelRegistry, triggerAutoSave, uiState, setStatus } from '@/core/config';
 import { freeflyInput } from '@/core/freefly-state';
-import { clamp, clamp01, debounce, deepClone } from '@/core/utils';
+import { clamp, clamp01, debounce, deepClone, logWarn } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import { focusModel, reattachPipeline, setARMode, getProcBeatDetector } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
@@ -717,8 +717,9 @@ export function switchCameraMode(mode: CameraMode): void {
         case 'vmd':
             // Pre-check: refuse switch if no camera VMD is loaded
             if (_cameraAnimationHandle === null) {
-                console.warn(
-                    '[camera] Cannot switch to VMD mode: no camera VMD loaded, falling back to orbit'
+                logWarn(
+                    'camera',
+                    'Cannot switch to VMD mode: no camera VMD loaded, falling back to orbit'
                 );
                 mode = 'orbit';
                 newCam = createOrbitCamera(scene, canvas);

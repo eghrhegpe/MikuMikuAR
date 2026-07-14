@@ -16,6 +16,7 @@ import {
     setIsPlaying,
 } from '../core/config';
 import { addToggleRow, addSliderRow, addEmptyRow } from '../core/ui-helpers';
+import { waitForFrame, logWarn } from '../core/utils';
 import { getMotionMenu } from './motion-popup';
 import { modelManager } from '../scene/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
@@ -141,7 +142,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                                     true
                                 );
                             } catch (err) {
-                                console.warn('[pose] apply preset failed:', err);
+                                logWarn('pose', 'apply preset failed:', err);
                                 setStatus(t('motion.poseStudio.poseFailed'), false);
                             }
                         });
@@ -325,9 +326,9 @@ async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): 
         }
 
         // 等待渲染完成
-        await new Promise((r) => requestAnimationFrame(r));
-        await new Promise((r) => requestAnimationFrame(r));
-        await new Promise((r) => requestAnimationFrame(r));
+        await waitForFrame();
+        await waitForFrame();
+        await waitForFrame();
 
         // 截图
         const fmt = uiState.screenshotFormat ?? 'image/png';
@@ -356,7 +357,7 @@ async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): 
             await SaveScreenshot(dir, filename, base64);
             saved++;
         } catch (err) {
-            console.warn(`[pose] batch save failed: ${filename}`, err);
+            logWarn('pose', `batch save failed: ${filename}`, err);
         }
     }
 

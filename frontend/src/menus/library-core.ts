@@ -83,7 +83,7 @@ import {
     setCurrentState,
 } from '../core/ui-helpers';
 import type { ResourceItem } from '../core/ui-helpers';
-import { tryCatchStatus, getBrowseDir, isUnderRoot, getBaseName } from '../core/utils';
+import { tryCatchStatus, getBrowseDir, isUnderRoot, getBaseName, logWarn } from '../core/utils';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t'; // [doc:adr-059] i18n 翻译
 import { getLang } from '../core/i18n/locale'; // [doc:adr-059] 用于列表 collation 随语言切换
@@ -246,7 +246,7 @@ function highlightRow(root: HTMLElement, rowKey: string): void {
         el.classList.add('slide-focused');
         el.scrollIntoView({ block: 'nearest' });
     } else if (import.meta.env.DEV) {
-        console.warn('[restore] focus row not found:', rowKey);
+        logWarn('restore', 'focus row not found:', rowKey);
     }
 }
 
@@ -523,7 +523,7 @@ async function _loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
         }
         setThumbnailCache(merged);
     } catch (err) {
-        console.warn('loadThumbnailsForLevel:', err);
+        logWarn('library-core', 'loadThumbnailsForLevel:', err);
     }
 }
 
@@ -546,7 +546,7 @@ async function _ensureModelMeta(pmxPaths: string[]): Promise<void> {
             setModelMetaCache(merged);
         }
     } catch (err) {
-        console.warn('ensureModelMeta:', err);
+        logWarn('library-core', 'ensureModelMeta:', err);
     } finally {
         for (const p of uncached) {
             _pendingMeta.delete(p);
@@ -863,7 +863,7 @@ function renderFullscreenFolder(
                 // [fix:thumbnail] 缩略图异步返回后重绘面板，否则已渲染的卡片永远空
                 currentPanel?.updateItems(allItems);
             })
-            .catch((err) => console.warn('GetThumbnailBatch failed:', err));
+            .catch((err) => logWarn('library-core', 'GetThumbnailBatch failed:', err));
     }
 
     // [doc:adr-066] 搜索栏
@@ -1042,7 +1042,7 @@ function renderGridMode(
                 // [fix:thumbnail] 缩略图异步返回后重绘面板，否则已渲染的卡片永远空
                 resourcePanel?.updateItems(allResourceItems);
             })
-            .catch((err) => console.warn('GetThumbnailBatch failed:', err));
+            .catch((err) => logWarn('library-core', 'GetThumbnailBatch failed:', err));
     }
 
     // 渲染容器
@@ -1283,7 +1283,7 @@ function onModelRowClick(m: LibraryModel): void {
     if (m.format === 'pmx') {
         const ref = computeLibraryRef(m.file_path);
         if (ref) {
-            AddRecentModel(ref).catch((err) => console.warn('GetThumbnailBatch failed:', err));
+            AddRecentModel(ref).catch((err) => logWarn('library-core', 'GetThumbnailBatch failed:', err));
             setRecentModels([ref, ...recentModels.filter((r) => r !== ref)].slice(0, 20));
         }
     }
@@ -1489,7 +1489,7 @@ function buildTagsOverviewLevel(): PopupLevel {
                     });
                 });
             } catch (err) {
-                console.warn('buildTagsOverviewLevel:', err);
+                logWarn('library-core', 'buildTagsOverviewLevel:', err);
                 container.textContent = t('library.loadTagsFailed');
             }
         },
@@ -1535,7 +1535,7 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
                     }
                 });
             } catch (err) {
-                console.warn('buildTagDetailLevel:', err);
+                logWarn('library-core', 'buildTagDetailLevel:', err);
                 container.textContent = t('library.loadFailed');
             }
         },
@@ -1664,7 +1664,7 @@ export async function initLibrary(): Promise<void> {
                 setRecentModels(recents.slice(0, 20));
             }
         } catch (err) {
-            console.warn('Load recent models:', err);
+            logWarn('library-core', 'Load recent models:', err);
         }
         try {
             const cached = await GetLibraryIndex();
@@ -1678,12 +1678,12 @@ export async function initLibrary(): Promise<void> {
         try {
             await rescanAndSync();
         } catch (err) {
-            console.warn('ScanModelDir refresh:', err);
+            logWarn('library-core', 'ScanModelDir refresh:', err);
         }
-        CleanOrphanCache().catch((err) => console.warn('CleanOrphanCache:', err));
+        CleanOrphanCache().catch((err) => logWarn('library-core', 'CleanOrphanCache:', err));
         setStatus(t('library.browseHint2'), false);
     } catch (err) {
-        console.warn('initLibrary:', err);
+        logWarn('library-core', 'initLibrary:', err);
         setStatus(t('library.loadLibraryFailed') + formatError(err), false);
     }
 }
@@ -1864,7 +1864,7 @@ export async function refreshLibrary(): Promise<void> {
         return;
     }
     setStatus(t('library.entriesCount', { n: (models || []).length }), true);
-    CleanOrphanCache().catch((err) => console.warn('CleanOrphanCache (background):', err));
+    CleanOrphanCache().catch((err) => logWarn('library-core', 'CleanOrphanCache (background):', err));
     if (
         dom.sceneOverlay.classList.contains('visible') &&
         dom.sceneOverlay.dataset.popupType === 'model'
@@ -1914,7 +1914,7 @@ export async function importFile(): Promise<void> {
         try {
             await ImportZip(path);
             setStatus(t('library.zipImported'), true);
-            await refreshLibrary().catch((err) => console.warn('refresh after zip import:', err));
+            await refreshLibrary().catch((err) => logWarn('library-core', 'refresh after zip import:', err));
         } catch (err) {
             setStatus(t('library.importFailed') + formatError(err), false);
             console.error('ImportZip failed:', err);

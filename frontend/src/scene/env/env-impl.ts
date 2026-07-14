@@ -28,6 +28,7 @@ import {
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
+import { logWarn } from '@/core/utils';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture, getOrCreateCanvasTexture, disposeTextureCache } from './env-texture';
@@ -341,7 +342,7 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
     const ext = path.split('.').pop().toLowerCase();
     const supported = ['hdr', 'dds', 'exr'];
     if (!supported.includes(ext ?? '')) {
-        console.warn(`[sky] unsupported format .${ext}, falling back to procedural`);
+        logWarn('sky', `unsupported format .${ext}, falling back to procedural`);
         disposeSky();
         createProceduralSky(envState);
         return;
@@ -356,7 +357,7 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
         null, // onLoad
         (message?: string, exception?: any) => {
             // Texture load failed — fall back to procedural sky (Fix E)
-            console.warn(`[sky] loadSkyCube failed: ${message}`, exception);
+            logWarn('sky', `loadSkyCube failed: ${message}`, exception);
             disposeSky();
             createProceduralSky(envState);
         }
@@ -722,7 +723,7 @@ function _ensureTextureGroundImage(url: string, onReady: (img: HTMLImageElement)
         if (generation !== _texGroundGeneration) {
             return;
         }
-        console.warn('[ground] texture load failed:', url);
+        logWarn('ground', 'texture load failed:', url);
     };
     img.src = url;
 }
@@ -750,7 +751,7 @@ function _ensureStarsTextureImage(url: string, onReady: (img: HTMLImageElement) 
         if (generation !== _texStarsGeneration) {
             return;
         }
-        console.warn('[stars] texture load failed:', url);
+        logWarn('stars', 'texture load failed:', url);
     };
     img.src = url;
 }
@@ -891,7 +892,7 @@ export function getGroundHeightAt(x: number, z: number): number {
             // 无倾斜时直接查询（与之前一致，退化仅为平移变换）
             return gm.getHeightAtCoordinates(x, z);
         } catch (e) {
-            console.warn('[terrain] getGroundHeightAt failed', e);
+            logWarn('terrain', 'getGroundHeightAt failed', e);
             return envState.groundLevel;
         }
     }
@@ -1364,7 +1365,7 @@ export function applyFog(state: EnvState): void {
                 scene.fogEnd = state.fogEnd;
                 break;
             default:
-                console.warn(`[env] unknown fogMode "${fogMode}", falling back to exp2`);
+                logWarn('env', `unknown fogMode "${fogMode}", falling back to exp2`);
                 scene.fogMode = Scene.FOGMODE_EXP2;
                 scene.fogDensity = state.fogDensity;
                 break;

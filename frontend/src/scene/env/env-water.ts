@@ -22,7 +22,7 @@ import { col3FromTriple } from '@/core/color-helpers';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture } from './env-texture';
-import { clamp01 } from '@/core/utils';
+import { clamp01, logWarn } from '@/core/utils';
 
 // PostProcess 私有属性 _enabled 的类型声明（用于控制后处理启用/禁用）
 interface PostProcessInternal {
@@ -694,7 +694,7 @@ export function createWater(state: EnvState): void {
     // **首次创建路径**：水面不存在且启用 → 全量构建
     const scene = getScene();
     if (!scene) {
-        console.warn('[env-water] createWater: scene not ready');
+        logWarn('env-water', 'createWater: scene not ready');
         return;
     }
 

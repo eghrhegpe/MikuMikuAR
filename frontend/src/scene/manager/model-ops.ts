@@ -1,4 +1,5 @@
 import type { PhysicsCategory } from '@/core/types';
+import { logWarn } from '../../core/utils';
 import {
     modelRegistry,
     focusedModelId,
@@ -264,7 +265,7 @@ import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 export function applyVPDPose(id: string, bones: VPDBoneData[], morphs: VPDMorphData[]): void {
     const inst = modelRegistry.get(id);
     if (!inst || !inst.mmdModel) {
-        console.warn('[applyVPDPose] 模型未找到:', id);
+        logWarn('applyVPDPose', '模型未找到:', id);
         return;
     }
 

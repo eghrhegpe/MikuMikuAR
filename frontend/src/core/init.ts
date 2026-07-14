@@ -24,6 +24,7 @@ import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
 import { initScene, tryRestoreLastScene, setEnvState } from '../scene/scene';
 import { initRuntimeBadge } from './runtime-mode';
 import { hexToRgb, rgbToString } from './color-helpers';
+import { logWarn } from './utils';
 import { setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza, closePlaza } from '../menus/plaza';
@@ -92,8 +93,8 @@ async function init(): Promise<void> {
         });
         dom.btnSettings.addEventListener('click', async () => {
             const m = await import('../menus/settings');
-            await m.preloadAutoImportState().catch(() => {}); // 静默失败，避免阻塞 UI
-            await m.preloadDownloadWatchState().catch(() => {}); // 预加载监听开关状态
+            await m.preloadAutoImportState().catch((err) => logWarn('init', 'preloadAutoImportState', err)); // 静默失败，避免阻塞 UI
+            await m.preloadDownloadWatchState().catch((err) => logWarn('init', 'preloadDownloadWatchState', err)); // 预加载监听开关状态
             toggleOverlay('sceneOverlay', m.showSettings);
         });
         dom.btnPlaza.addEventListener('click', () => {
@@ -111,7 +112,7 @@ async function init(): Promise<void> {
         // 引擎就绪 → 隐藏加载遮罩，显示主应用 UI
         dom.showApp();
         console.info('MikuMikuAR initialized');
-        initLibrary().catch((err) => console.warn('Library init:', err));
+        initLibrary().catch((err) => logWarn('init', 'Library init', err));
         // [doc:adr-008] 启动时预加载自动导入开关，供 watch:newfile 自动导入分支判定
         import('../menus/settings')
             .then((m) => m.preloadAutoImportState().catch(() => {}))
@@ -128,13 +129,13 @@ async function init(): Promise<void> {
                         showUpdateToast(r.latest, r.url);
                     }
                 })
-                .catch(() => {});
+                .catch((err) => logWarn('init', '', err));
         }
         // Sync module-level state from persisted envState
         syncTimeOfDayFromEnv();
         restoreAutoCameraState();
         // Auto-restore last scene after library + scene init (env already restored above)
-        tryRestoreLastScene().catch((err) => console.warn('Auto-restore:', err));
+        tryRestoreLastScene().catch((err) => logWarn('init', 'Auto-restore', err));
     } catch (err) {
         console.error('Init failed:', err);
         const msg = err instanceof Error ? err.message : String(err);

@@ -7,6 +7,7 @@ import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { propRegistry, modelRegistry, setStatus, triggerAutoSave } from '../../core/config';
 import { scene } from '../scene';
 import { t } from '../../core/i18n/t';
+import { logWarn } from '../../core/utils';
 
 /**
  * 将道具挂载到指定模型的骨骼上。
@@ -26,20 +27,20 @@ export function attachPropToBone(
 ): boolean {
     const prop = propRegistry.get(propId);
     if (!prop) {
-        console.warn('[accessory] prop not found:', propId);
+        logWarn('accessory', 'prop not found:', propId);
         return false;
     }
 
     const inst = modelRegistry.get(targetModelId);
     if (!inst?.mmdModel) {
-        console.warn('[accessory] target model not found or no mmd runtime:', targetModelId);
+        logWarn('accessory', 'target model not found or no mmd runtime:', targetModelId);
         return false;
     }
 
     // 查找骨骼
     const rb = inst.mmdModel.runtimeBones.find((b) => b.name === boneName);
     if (!rb) {
-        console.warn('[accessory] bone not found:', boneName);
+        logWarn('accessory', 'bone not found:', boneName);
         setStatus(t('scene.accessory.boneNotFound', { bone: boneName }), false);
         return false;
     }
@@ -49,7 +50,7 @@ export function attachPropToBone(
     const linkedBone = (rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone })
         .linkedBone;
     if (!linkedBone) {
-        console.warn('[accessory] bone has no linkedBone (HumanoidMmd path untested):', boneName);
+        logWarn('accessory', 'bone has no linkedBone (HumanoidMmd path untested):', boneName);
         setStatus(t('scene.accessory.boneNoLink'), false);
         return false;
     }

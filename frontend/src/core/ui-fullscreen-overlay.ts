@@ -2,6 +2,8 @@
 // 状态机：CLOSED → EMBEDDED_GRID → FULLSCREEN → EMBEDDED_GRID
 // 所有关闭入口统一调用 closeFullscreen()
 
+import { logWarn } from './utils';
+
 // ======== Types ========
 
 export interface FullscreenOverlayOptions {
@@ -36,7 +38,7 @@ let frozenSlideMenuElement: HTMLElement | null = null;
 
 export function openFullscreen(options: FullscreenOverlayOptions): FullscreenOverlayHandle {
     if (currentState !== 'EMBEDDED_GRID') {
-        console.warn('[FullscreenOverlay] Cannot open: current state is', currentState);
+        logWarn('FullscreenOverlay', `Cannot open: current state is ${currentState}`);
         return { close: () => {}, getElement: () => document.createElement('div') };
     }
 

@@ -3,6 +3,7 @@ import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
+import { logWarn } from '../core/utils';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
 const TRANSITION_DURATION = '0.15s';
@@ -356,9 +357,7 @@ export class SlideMenu {
         }
         const _elapsed = performance.now() - _start;
         if (_elapsed > 4) {
-            console.warn(
-                `[perf:menu] updateControls took ${_elapsed.toFixed(1)}ms (${this._controls.length} controls, itemBuilder=${!!level?.itemBuilder})`
-            );
+            logWarn('perf:menu', `updateControls took ${_elapsed.toFixed(1)}ms (${this._controls.length} controls, itemBuilder=${!!level?.itemBuilder})`);
         }
     }
 

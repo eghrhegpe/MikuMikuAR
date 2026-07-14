@@ -6,6 +6,7 @@
 import { dom, setStatus } from '@/core/config';
 import { t } from '@/core/i18n/t';
 import { isAndroidPlatform } from '@/core/platform';
+import { logWarn } from '@/core/utils';
 
 // ======== Types ========
 export type CameraFacing = 'user' | 'environment';
@@ -188,7 +189,7 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
         _starting = false;
         return true;
     } catch (err) {
-        console.warn('[AR] startARCamera failed:', err);
+        logWarn('AR', 'startARCamera failed:', err);
         if (_stream) {
             _stream.getTracks().forEach((tr) => tr.stop());
             _stream = null;
@@ -291,7 +292,7 @@ export function captureARScreenshot(format: string = 'image/png', quality: numbe
     try {
         ctx.drawImage(video, sx, sy, sw, sh, 0, 0, cw, ch);
     } catch (e) {
-        console.warn('[AR] drawImage video failed:', e);
+        logWarn('AR', 'drawImage video failed:', e);
     }
 
     ctx.drawImage(canvas, 0, 0, cw, ch);

@@ -5,7 +5,7 @@
 import { engine, scene, applyFrameControl } from '../scene/scene';
 import { updatePerformance } from '../scene/render/performance';
 import { uiState, dom } from './config';
-import { formatTimestamp } from './utils';
+import { formatTimestamp, logWarn } from './utils';
 
 export function startRenderLoop(): void {
     applyFrameControl();
@@ -22,8 +22,9 @@ export function startRenderLoop(): void {
             const _obsCount = scene.onBeforeRenderObservable.observers
                 ? scene.onBeforeRenderObservable.observers.length
                 : 0;
-            console.warn(
-                `[${formatTimestamp()}][perf:gpu] before→after render took ${_gpuElapsed.toFixed(1)}ms (observers=${_obsCount})`
+            logWarn(
+                'perf:gpu',
+                `[${formatTimestamp()}] before→after render took ${_gpuElapsed.toFixed(1)}ms (observers=${_obsCount})`
             );
         }
     });
@@ -39,8 +40,9 @@ export function startRenderLoop(): void {
             : 0;
         const _obsDelta = _obsAfter - _obsBefore;
         if (_rElapsed > 30 || (_obsDelta > 0 && _obsAfter > 100)) {
-            console.warn(
-                `[${formatTimestamp()}][perf:render] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`
+            logWarn(
+                'perf:render',
+                `[${formatTimestamp()}] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`
             );
         }
         updatePerformance();

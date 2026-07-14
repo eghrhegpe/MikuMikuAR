@@ -2,7 +2,7 @@
 // [doc:architecture] 程序化动作子系统 — 节拍检测
 // 能量峰值法：低频能量 > 1.3× 滑动均值 且 距上次 beat > 250ms → 触发
 
-import { clamp01 } from '@/core/utils';
+import { clamp01, swallowError, logWarn } from '@/core/utils';
 
 const BASS_BIN_COUNT = 10; // 前 10 个频段 (~0-430Hz @ 44100/256 fft)
 const ENERGY_HISTORY_SIZE = 43; // ~1s @ 43fps update
@@ -53,18 +53,18 @@ export class BeatDetector {
             (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (!AudioCtx) {
             this._lastError = 'AudioContext API 不可用';
-            console.warn('BeatDetector:', this._lastError);
+            logWarn('beat-detector', 'BeatDetector:', this._lastError);
             return false;
         }
         try {
             this.ctx = new AudioCtx();
         } catch (err) {
             this._lastError = `AudioContext 创建失败: ${err}`;
-            console.warn('BeatDetector:', this._lastError);
+            logWarn('beat-detector', 'BeatDetector:', this._lastError);
             return false;
         }
         if (this.ctx.state === 'suspended') {
-            this.ctx.resume().catch(() => {});
+            swallowError(this.ctx.resume());
         }
         try {
             this.source = this.ctx.createMediaElementSource(audioElement);
@@ -82,7 +82,7 @@ export class BeatDetector {
             return true;
         } catch (err) {
             this._lastError = `音频节点连接失败: ${err}`;
-            console.warn('BeatDetector:', this._lastError);
+            logWarn('beat-detector', 'BeatDetector:', this._lastError);
             // 清理已创建的资源，防止泄露
             this.dispose();
             return false;
@@ -177,7 +177,7 @@ export class BeatDetector {
                 try {
                     cb();
                 } catch (e) {
-                    console.warn('[BeatDetector] onBeat callback error:', e);
+                    logWarn('BeatDetector', 'onBeat callback error:', e);
                 }
             }
             if (this.beatTimes.length >= 2) {

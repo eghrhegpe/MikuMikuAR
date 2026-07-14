@@ -21,7 +21,7 @@ import {
     triggerAutoSave,
 } from '@/core/config';
 import { normPath, fetchArrayBuffer } from '@/core/fileservice';
-import { getBaseName, clamp01 } from '@/core/utils';
+import { getBaseName, clamp01, logWarn } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import Encoding from 'encoding-japanese';
 
@@ -228,7 +228,7 @@ export async function addVmdLayersFromPaths(
             });
             addedCount++;
         } catch (err) {
-            console.warn(`addVmdLayersFromPaths: skip ${layer.path}`, err);
+            logWarn('vmd-layers', `addVmdLayersFromPaths: skip ${layer.path}`, err);
         }
     }
 

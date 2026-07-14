@@ -8,7 +8,7 @@ import type { Scene } from '@babylonjs/core/scene';
 
 import { type ModelInstance } from '../core/config';
 import { encodeFileRef } from '../core/fileservice';
-import { normPath } from '../core/utils';
+import { normPath, logWarn } from '../core/utils';
 
 // ============================================================
 // Skeleton retargeting
@@ -54,8 +54,9 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
 
     const matchRate = matchCount / fbxSkeleton.bones.length;
     if (matchRate < 0.5) {
-        console.warn(
-            `[outfit-overlay] Skeleton retarget failed: only ${matchCount}/${fbxSkeleton.bones.length} bones matched (${Math.round(matchRate * 100)}%)`
+        logWarn(
+            'outfit-overlay',
+            `Skeleton retarget failed: only ${matchCount}/${fbxSkeleton.bones.length} bones matched (${Math.round(matchRate * 100)}%)`
         );
         return false;
     }
@@ -68,7 +69,7 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
     const rootMeta = inst.rootMesh.metadata as { skeleton?: Skeleton } | undefined;
     const pmxSkeleton = rootMeta?.skeleton;
     if (!pmxSkeleton) {
-        console.warn('[outfit-overlay] PMX model has no skeleton in metadata');
+        logWarn('outfit-overlay', 'PMX model has no skeleton in metadata');
         return false;
     }
 
@@ -102,8 +103,9 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
             }
         }
         if (unmatched > 0) {
-            console.warn(
-                `[outfit-overlay] ${unmatched}/${matricesIndices.length} bone weights unmatched on mesh "${mesh.name}", mapped to root bone (index 0)`
+            logWarn(
+                'outfit-overlay',
+                `${unmatched}/${matricesIndices.length} bone weights unmatched on mesh "${mesh.name}", mapped to root bone (index 0)`
             );
         }
 
@@ -169,7 +171,7 @@ export async function loadOverlay(
         const meshes = result.meshes.filter((m): m is Mesh => m instanceof Mesh);
 
         if (meshes.length === 0) {
-            console.warn('[outfit-overlay] FBX loaded but no meshes found');
+            logWarn('outfit-overlay', 'FBX loaded but no meshes found');
             return { meshes: [], retargetOk: false };
         }
 
@@ -285,7 +287,7 @@ export function disposeOverlay(inst: ModelInstance): void {
             mesh.dispose();
         } catch (err) {
             // 记录但继续释放其余 mesh，避免单个失败中断整循环
-            console.warn('[outfit-overlay] mesh dispose failed:', err);
+            logWarn('outfit-overlay', 'mesh dispose failed', err);
         }
     }
     inst._overlayMeshes = undefined;

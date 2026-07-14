@@ -312,7 +312,7 @@ export function resolveLibraryRef(libraryRef: string): string | null {
         return null;
     }
     if (libraryRef.startsWith('/') || libraryRef.includes('..')) {
-        console.warn(`[resolveLibraryRef] suspicious libraryRef rejected: "${libraryRef}"`);
+        logWarn('resolveLibraryRef', `suspicious libraryRef rejected: "${libraryRef}"`);
         return null;
     }
     const colonIdx = libraryRef.indexOf(':');
@@ -320,14 +320,14 @@ export function resolveLibraryRef(libraryRef: string): string | null {
         const source = libraryRef.substring(0, colonIdx);
         const relPath = libraryRef.substring(colonIdx + 1);
         if (relPath.startsWith('/') || relPath.includes('..')) {
-            console.warn(`[resolveLibraryRef] suspicious external relPath rejected: "${relPath}"`);
+            logWarn('resolveLibraryRef', `suspicious external relPath rejected: "${relPath}"`);
             return null;
         }
         const ext = externalPaths.find((e) => e.name === source);
         if (ext) {
             const resolved = normPath(ext.path) + '/' + relPath;
             if (!isUnderRoot(ext.path, resolved)) {
-                console.warn(`[resolveLibraryRef] path traversal blocked: "${resolved}"`);
+                logWarn('resolveLibraryRef', `path traversal blocked: "${resolved}"`);
                 return null;
             }
             return resolved;
@@ -337,7 +337,7 @@ export function resolveLibraryRef(libraryRef: string): string | null {
     if (libraryRoot) {
         const resolved = normPath(libraryRoot) + '/' + libraryRef;
         if (!isUnderRoot(libraryRoot, resolved)) {
-            console.warn(`[resolveLibraryRef] path traversal blocked: "${resolved}"`);
+            logWarn('resolveLibraryRef', `path traversal blocked: "${resolved}"`);
             return null;
         }
         return resolved;
@@ -446,7 +446,7 @@ export async function tryCatchStatus<T>(
             return undefined;
         }
         setStatus(`${context}: ${msg}`, false);
-        console.warn(`[${context}]`, err);
+        logWarn(context, '', err);
         onError?.(err);
         return undefined;
     }

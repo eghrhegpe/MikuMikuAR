@@ -18,7 +18,7 @@ import type { Observer } from '@babylonjs/core/Misc/observable';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
-import { clamp, clampInt } from '@/core/utils';
+import { clamp, clampInt, logWarn } from '@/core/utils';
 
 // ============================================================================
 // 骨骼 READ 桥（锚点跟随）
@@ -149,7 +149,7 @@ export class PerFrameUpdateRegistry {
                 try {
                     fn(rawDt);
                 } catch (e) {
-                    console.warn('PerFrameUpdateRegistry update error:', e);
+                    logWarn('PerFrameUpdateRegistry', 'update error', e);
                 }
             }
         });

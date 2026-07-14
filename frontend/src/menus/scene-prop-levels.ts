@@ -4,6 +4,7 @@
 import { cardContainer, escapeHtml, propRegistry, modelRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { slideRow, addSliderRow, addCollapsible } from '../core/ui-helpers';
+import { logWarn } from '../core/utils';
 import { loadManager } from '../core/load-manager';
 import { removeProp, getPropList } from '../scene/scene';
 import { attachPropToBone, detachPropFromBone } from '../scene/env/accessory';
@@ -65,7 +66,7 @@ function buildPropSchema(): MenuNode[] {
                                 loadManager
                                     .load({ kind: 'prop', path })
                                     .then(() => getSceneMenu()?.reRender())
-                                    .catch(() => {});
+                                    .catch((err) => logWarn('scene-prop-levels', '', err));
                             }
                         });
                     });

@@ -6,6 +6,7 @@
 
 import Encoding from 'encoding-japanese';
 import { buildVmd, type BoneKeyFrame, type MorphKeyFrame } from './vmd-writer';
+import { logWarn } from '../core/utils';
 
 const MAX_VPD_SIZE = 1024 * 1024;
 
@@ -66,21 +67,21 @@ export function decodeVPDData(buffer: ArrayBuffer): string {
         try {
             return Encoding.convert(u8, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string;
         } catch (e) {
-            console.warn('[vpd-parser] Shift-JIS decode failed, falling back to UTF-8', e);
+            logWarn('vpd-parser', 'Shift-JIS decode failed, falling back to UTF-8', e);
         }
     }
     if (detected === 'UTF16' || detected === 'UTF16LE') {
         try {
             return new TextDecoder('utf-16le').decode(buffer);
         } catch (e) {
-            console.warn('[vpd-parser] UTF-16LE decode failed, falling back to UTF-8', e);
+            logWarn('vpd-parser', 'UTF-16LE decode failed, falling back to UTF-8', e);
         }
     }
     if (detected === 'UTF16BE') {
         try {
             return new TextDecoder('utf-16be').decode(buffer);
         } catch (e) {
-            console.warn('[vpd-parser] UTF-16BE decode failed, falling back to UTF-8', e);
+            logWarn('vpd-parser', 'UTF-16BE decode failed, falling back to UTF-8', e);
         }
     }
     // UTF8 / ASCII / 未知 → UTF-8

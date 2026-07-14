@@ -26,6 +26,7 @@ import { MmdWasmPhysics } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWas
 import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation';
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
 import { initWindPhysics, disposeWindPhysics } from '../physics/wind-physics';
+import { swallowError, logWarn } from '../core/utils';
 import { MmdRuntimeShared } from 'babylon-mmd/esm/Runtime/mmdRuntimeShared';
 // JS 版 runtime（无 WASM 双缓冲，worldMatrix 覆写可生效）
 import { MmdRuntime } from 'babylon-mmd/esm/Runtime/mmdRuntime';
@@ -170,7 +171,7 @@ export async function initScene(): Promise<void> {
     let runtime: IMmdRuntime;
     if (useJsRuntime) {
         runtime = new MmdRuntime(scene, null);
-        console.warn('[scene] JS 版 MmdRuntime（调试专用，无物理）— 生产请用 WASM');
+        logWarn('scene', 'JS 版 MmdRuntime（调试专用，无物理）— 生产请用 WASM');
     } else {
         // MPR（多线程）需 SharedArrayBuffer + COOP/COEP，与 Go 端 CoopCoepMiddleware 同轴门控。
         // __MMD_ENABLE_MPR__ 为构建期常量（vite define）：未定义 VITE_MMD_WASM_MT → false →
@@ -187,7 +188,7 @@ export async function initScene(): Promise<void> {
                 wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeMPR());
                 console.log('[scene] 使用 WASM 版 MmdWasmRuntime（MPR 多线程物理）');
             } catch (e) {
-                console.warn('[scene] MPR 初始化失败，回退 SPR 单线程物理：', e);
+                logWarn('scene', 'MPR 初始化失败，回退 SPR 单线程物理：', e);
                 wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
                 console.log('[scene] 使用 WASM 版 MmdWasmRuntime（SPR 单线程物理，MPR 回退）');
             }
@@ -255,7 +256,7 @@ export async function initScene(): Promise<void> {
             try {
                 mmdRuntime.destroyMmdModel(inst.mmdModel);
             } catch (e) {
-                console.warn('removeModel: destroyMmdModel failed', e);
+                logWarn('scene', 'removeModel: destroyMmdModel failed', e);
             }
         }
     };
@@ -290,7 +291,7 @@ export async function initScene(): Promise<void> {
 
     // 无 VMD 时也能驱动程序化动作和口型同步
     scene.onBeforeRenderObservable.add(() => {
-        updateProcMotion().catch(() => {});
+        swallowError(updateProcMotion());
     });
 
     // 点击水面 → 生成涟漪
