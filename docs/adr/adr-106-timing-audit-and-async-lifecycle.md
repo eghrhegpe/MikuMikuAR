@@ -167,8 +167,8 @@ const inst = focusedModel();  // 隐含假设
 |------|------|------|------|
 | `scene/motion/proc-motion-bridge.ts` | 103 | `startProcMotion` 在 `await loadVMDMotion` 前无焦点检查 | D4 |
 | `core/reactivity.ts` | 36 | `subscribe` 无 HMR 清理导出 | D3 |
-| `scene/motion/bone-override.ts` | 182 | `startBoneOverride` 无 `stopBoneOverride` 导出 | D3 |
-| `scene/motion/feet-adjustment.ts` | 262 | `startFeetAdjustment` 无 `stopFeetAdjustment` 导出 | D3 |
+| `scene/motion/bone-override.ts` | 260 | `stopBoneOverride()` 已导出（L260），HMR 清理入口具备，P2 已满足（2026-07-14 核验） | D3 |
+| `scene/motion/feet-adjustment.ts` | 313 | `stopFeetAdjustment()` 已导出（L313），HMR 清理入口具备，P2 已满足（2026-07-14 核验） | D3 |
 | `scene/scene-serialize.ts` | 455 | `deserializeScene` 用 `focusedModel()` 反查模型 | D5 |
 
 ### P3 — 规划修复
