@@ -37,6 +37,7 @@ import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
 import { loadVMDMotion } from '../motion/vmd-loader';
+import { retryWindPhysicsSubscription } from '../../physics/wind-physics';
 import { _capture } from './material';
 import { rebuildShadowCasters } from '../render/lighting';
 import { getGroundHeightAt, setOnTerrainReady, setOnGroundChanged } from '../env/env-impl';
@@ -340,6 +341,10 @@ export async function loadPMXFile(
         wasmModel = _mmdRuntime.createMmdModel(rootMesh, {
             materialProxyConstructor: MmdStandardMaterialProxy,
         });
+
+        // [adr-104] 模型创建后 physics impl 已就绪，显式重试风力订阅，
+        // 替代原 monkey-patch createMmdModel 的脆弱做法（不再拦截创建路径）
+        retryWindPhysicsSubscription(_mmdRuntime);
 
         const inst: ModelInstance = {
             id,

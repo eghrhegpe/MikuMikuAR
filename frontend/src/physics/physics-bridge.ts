@@ -142,12 +142,14 @@ export class PerFrameUpdateRegistry {
         }
         this.observer = this.scene.onBeforeRenderObservable.add(() => {
             const rawDt = this.scene.deltaTime / 1000; // ms -> s
-            if (!isFinite(rawDt) || rawDt <= 0 || rawDt > 0.5) {
-                return; // 后台标签页 / 睡眠恢复钳制
+            if (!isFinite(rawDt) || rawDt <= 0) {
+                return; // 非有限值 / 非正数：跳过
             }
+            // 钳制最大步长（50ms），避免后台标签页恢复后极大 dt 导致物理/动画失稳或脱节
+            const dt = Math.min(rawDt, 0.05);
             for (const fn of this.fns.values()) {
                 try {
-                    fn(rawDt);
+                    fn(dt);
                 } catch (e) {
                     logWarn('PerFrameUpdateRegistry', 'update error', e);
                 }

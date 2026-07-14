@@ -116,9 +116,24 @@ describe('PerFrameUpdateRegistry', () => {
         expect(fn).toHaveBeenCalledTimes(1);
     });
 
-    it('skips update when dt is non-finite or too large', () => {
+    it('clamps large dt to 0.05 and still updates (no skip)', () => {
         const scene = {
-            deltaTime: 9999, // > 0.5s -> 钳制跳过
+            deltaTime: 9999, // > 0.5s -> 钳制为 0.05 并仍调用
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        const fn = vi.fn();
+        reg.register('a', fn);
+        const cb = (scene as any).onBeforeRenderObservable.add.mock.calls[0][0];
+        cb();
+        expect(fn).toHaveBeenCalledTimes(1);
+        expect(fn).toHaveBeenCalledWith(0.05);
+        reg.unregister('a');
+    });
+
+    it('skips update when dt is non-finite', () => {
+        const scene = {
+            deltaTime: NaN,
             onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
         } as unknown as Scene;
         const reg = new PerFrameUpdateRegistry(scene as Scene);

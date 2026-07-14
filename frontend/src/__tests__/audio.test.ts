@@ -439,6 +439,17 @@ describe('syncAudioPlayback', () => {
         syncAudioPlayback(50, true, 100);
         syncAudioPlayback(0, true, 100);
     });
+
+    it('seeks to vmdTime+offset (not just offset) on mid-song backward seek', () => {
+        setAudioOffset(2);
+        mockCurrentTime = 32; // 与首个 target(30+2) 对齐，零漂移 -> 不触发 seekAudio，isSeeking 保持 false
+        syncAudioPlayback(30, true, 100); // establish lastVmdTime=30
+        mockCurrentTime = 30;
+        syncAudioPlayback(20, true, 100); // backward seek mid-song
+        // 上方漂移分支：audioTargetTime = 20+2 = 22 -> seekAudio(22)
+        // （历史上冗余的 lastVmdTime 回退块会再 seek 到 offset=2，破坏进度；现已移除）
+        expect(mockCurrentTime).toBe(22);
+    });
 });
 
 describe('attachBeatDetector', () => {

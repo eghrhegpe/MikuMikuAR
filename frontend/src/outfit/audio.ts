@@ -98,6 +98,7 @@ export function disposeAudio(): void {
         audioElement.src = '';
         audioElement = null;
     }
+    isSeeking = false;
     audioName = '';
     audioPath = '';
 
@@ -151,11 +152,19 @@ export function seekAudio(seconds: number): void {
     if (!isNaN(clamped)) {
         isSeeking = true;
         audioElement.currentTime = clamped;
-        // 使用 seeked 事件精确重置，避免固定超时的不可靠性
-        const disp = addDisposableListener(audioElement, 'seeked', () => {
+        let finished = false;
+        const finish = (): void => {
+            if (finished) {
+                return;
+            }
+            finished = true;
             isSeeking = false;
             disp.dispose();
-        });
+        };
+        // 使用 seeked 事件精确重置；若浏览器/网络异常未触发 seeked，2s 兜底强制复位，
+        // 避免 isSeeking 永久为 true 阻断后续同步逻辑
+        const disp = addDisposableListener(audioElement, 'seeked', finish);
+        setTimeout(finish, 2000);
     }
 }
 
@@ -207,9 +216,6 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
             }
         }
 
-        if (lastVmdDuration > 0 && lastVmdTime > vmdTime + 0.5 && isPlaying) {
-            seekAudio(getAudioOffset() >= 0 ? getAudioOffset() : 0);
-        }
     }
 
     lastVmdTime = vmdTime;

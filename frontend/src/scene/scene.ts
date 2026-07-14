@@ -210,6 +210,11 @@ export async function initScene(): Promise<void> {
     runtime.loggingEnabled = true;
     runtime.register(scene);
     setMmdRuntime(runtime);
+    // [adr-104] 注入 scene 引用到 outfit（破除循环依赖，替代动态 import）。
+    // 动态 import + swallowError 彻底规避 scene↔outfit 静态环，与既有模式一致。
+    swallowError(
+        import('../outfit/outfit').then((m) => m.setSceneRef(scene))
+    );
     // 同步用户记忆的播放速度到新 runtime，防状态漂移
     swallowError(
         import('../menus/motion-popup').then(({ syncPlaybackSpeedToRuntime }) =>
