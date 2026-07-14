@@ -103,7 +103,9 @@ export function createResourcePanel(
 
     function applyThumbIfCached(el: HTMLElement): void {
         const path = el.dataset.resourcePath;
-        if (!path) return;
+        if (!path) {
+            return;
+        }
         if (liveThumbnailCache.has(path)) {
             el.style.backgroundImage = `url(data:image/png;base64,${liveThumbnailCache.get(path)})`;
             observer?.unobserve(el);
@@ -117,14 +119,21 @@ export function createResourcePanel(
         for (const mut of mutations) {
             for (let i = 0; i < mut.addedNodes.length; i++) {
                 const node = mut.addedNodes[i];
-                if (node.nodeType !== Node.ELEMENT_NODE) continue;
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    continue;
+                }
                 const el = node as HTMLElement;
                 // 检查节点本身是否是缩略图元素
-                if (el.classList.contains('resource-thumb') || el.classList.contains('resource-thumb-sm')) {
+                if (
+                    el.classList.contains('resource-thumb') ||
+                    el.classList.contains('resource-thumb-sm')
+                ) {
                     applyThumbIfCached(el);
                 }
                 // 检查子节点中的缩略图
-                const thumbs = el.querySelectorAll('.resource-thumb, .resource-thumb-sm') as NodeListOf<HTMLElement>;
+                const thumbs = el.querySelectorAll(
+                    '.resource-thumb, .resource-thumb-sm'
+                ) as NodeListOf<HTMLElement>;
                 for (let j = 0; j < thumbs.length; j++) {
                     applyThumbIfCached(thumbs[j]);
                 }

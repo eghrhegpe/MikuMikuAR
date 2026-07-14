@@ -279,20 +279,26 @@ function buildModelSchema(id: string): MenuNode[] {
             kind: 'custom',
             renderCustom: (container) => {
                 cardContainer(container, (c) => {
-                    slideRow(c, 'lucide:refresh-cw', t('model-detail.replaceModel'), true, async () => {
-                        setModelReplaceTargetId(id);
-                        const m = await import('./library-core');
-                        // [doc:model-memory] 更换模型打开的浏览器同样自动展开+高亮上次模型
-                        await m.prepareModelRestore(getBrowseDir('pmx'), 'pmx');
-                        const level = m.buildLevel(
-                            getBrowseDir('pmx'),
-                            t('model-detail.replaceModelTo', { name: inst.name }),
-                            (model) => model.format === 'pmx',
-                            stackRegistry.modelStack!,
-                            externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
-                        );
-                        stackRegistry.modelStack?.push(level);
-                    });
+                    slideRow(
+                        c,
+                        'lucide:refresh-cw',
+                        t('model-detail.replaceModel'),
+                        true,
+                        async () => {
+                            setModelReplaceTargetId(id);
+                            const m = await import('./library-core');
+                            // [doc:model-memory] 更换模型打开的浏览器同样自动展开+高亮上次模型
+                            await m.prepareModelRestore(getBrowseDir('pmx'), 'pmx');
+                            const level = m.buildLevel(
+                                getBrowseDir('pmx'),
+                                t('model-detail.replaceModelTo', { name: inst.name }),
+                                (model) => model.format === 'pmx',
+                                stackRegistry.modelStack!,
+                                externalPaths.map((ep) => ({ label: ep.name, path: ep.path }))
+                            );
+                            stackRegistry.modelStack?.push(level);
+                        }
+                    );
                 });
             },
         },
@@ -569,7 +575,11 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                                                         refreshTags();
                                                     })
                                                     .catch((e) =>
-                                                        logWarn('model-detail', 'remove tag failed:', e)
+                                                        logWarn(
+                                                            'model-detail',
+                                                            'remove tag failed:',
+                                                            e
+                                                        )
                                                     );
                                             } else {
                                                 AddTag(libRef, tag)
@@ -577,7 +587,11 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                                                         refreshTags();
                                                     })
                                                     .catch((e) =>
-                                                        logWarn('model-detail', 'add tag failed:', e)
+                                                        logWarn(
+                                                            'model-detail',
+                                                            'add tag failed:',
+                                                            e
+                                                        )
                                                     );
                                             }
                                         });

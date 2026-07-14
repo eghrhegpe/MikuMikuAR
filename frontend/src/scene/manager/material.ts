@@ -203,12 +203,128 @@ export const _materialStateManager = _stateMgr;
  *  用户可通过 uiState.materialCategoryMap 覆盖默认规则。
  *  提取为命名常量便于集中维护和本地化扩展。 */
 const MATERIAL_KEYWORDS: Record<MaterialCategory, string[]> = {
-    服装: ['裙', '衣', '服', 'cloth', 'dress', 'skirt', 'sleeve', 'collar', 'belt', '袴', '袖', '襟', '帯', '外套', '胖次', '带'],
-    配件: ['帽', '鞋', '飾', 'accessory', 'acc', 'ring', 'earring', 'necklace', 'bracelet', '蝶结', '结', '星星', '领带', '扣'],
-    眼睛: ['眼', '目', 'eye', 'iris', '瞳', '白目', 'pupil', 'eyebrow', '眉', 'eyelash', '睫毛', '泪', '表情'],
-    头发: ['发', '髪', '頭', 'hair', 'ahoge', '前髪', '後髪', 'まとめ髪', 'ponytail', 'braid', '刘海', '呆毛', '辫子', '侧发', '后发', '后脑'],
-    皮肤: ['皮', '肌', '肤', 'skin', 'face', 'body', 'neck', '顔', '首', 'cheek', '頬', 'kihada', '嘴', '唇', '齿', '牙', '舌', '口', 'lip', 'tooth', 'teeth', 'tongue', '体', '臂', '指', '甲', '手', '足', '腿', '脚', '背', '胸', '腹', '腰'],
-    道具: ['武', '刀', '剑', '枪', '矛', '弓', '矢', 'weapon', 'gun', 'sword', 'shield', 'rod', 'staff', 'blade', 'axe', 'bow', 'arrow'],
+    服装: [
+        '裙',
+        '衣',
+        '服',
+        'cloth',
+        'dress',
+        'skirt',
+        'sleeve',
+        'collar',
+        'belt',
+        '袴',
+        '袖',
+        '襟',
+        '帯',
+        '外套',
+        '胖次',
+        '带',
+    ],
+    配件: [
+        '帽',
+        '鞋',
+        '飾',
+        'accessory',
+        'acc',
+        'ring',
+        'earring',
+        'necklace',
+        'bracelet',
+        '蝶结',
+        '结',
+        '星星',
+        '领带',
+        '扣',
+    ],
+    眼睛: [
+        '眼',
+        '目',
+        'eye',
+        'iris',
+        '瞳',
+        '白目',
+        'pupil',
+        'eyebrow',
+        '眉',
+        'eyelash',
+        '睫毛',
+        '泪',
+        '表情',
+    ],
+    头发: [
+        '发',
+        '髪',
+        '頭',
+        'hair',
+        'ahoge',
+        '前髪',
+        '後髪',
+        'まとめ髪',
+        'ponytail',
+        'braid',
+        '刘海',
+        '呆毛',
+        '辫子',
+        '侧发',
+        '后发',
+        '后脑',
+    ],
+    皮肤: [
+        '皮',
+        '肌',
+        '肤',
+        'skin',
+        'face',
+        'body',
+        'neck',
+        '顔',
+        '首',
+        'cheek',
+        '頬',
+        'kihada',
+        '嘴',
+        '唇',
+        '齿',
+        '牙',
+        '舌',
+        '口',
+        'lip',
+        'tooth',
+        'teeth',
+        'tongue',
+        '体',
+        '臂',
+        '指',
+        '甲',
+        '手',
+        '足',
+        '腿',
+        '脚',
+        '背',
+        '胸',
+        '腹',
+        '腰',
+    ],
+    道具: [
+        '武',
+        '刀',
+        '剑',
+        '枪',
+        '矛',
+        '弓',
+        '矢',
+        'weapon',
+        'gun',
+        'sword',
+        'shield',
+        'rod',
+        'staff',
+        'blade',
+        'axe',
+        'bow',
+        'arrow',
+    ],
 };
 
 const CATEGORY_RULES: [string[], MaterialCategory][] = Object.entries(MATERIAL_KEYWORDS).map(
@@ -223,8 +339,7 @@ function _catOfUncached(name: string): MaterialCategory {
                 if (new RegExp(pattern, 'i').test(name)) {
                     return category as MaterialCategory;
                 }
-            } catch {
-            }
+            } catch {}
         }
     }
 
@@ -564,7 +679,10 @@ export function setMatParams(
 export function resetSingleMatParams(id: string, matIndex: number): void {
     const meshes = _getMeshesById(id);
     if (!meshes || matIndex < 0 || matIndex >= meshes.length) {
-        logWarn('material', `resetSingleMatParams: invalid matIndex ${matIndex} for target "${id}"`);
+        logWarn(
+            'material',
+            `resetSingleMatParams: invalid matIndex ${matIndex} for target "${id}"`
+        );
         return;
     }
     const modelState = _matState.get(id);

@@ -48,7 +48,10 @@ export class SlideMenu {
     private _unsubscribe: (() => void) | null = null;
 
     onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
-    onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null | Promise<PopupLevel | null>;
+    onFolderEnter?: (
+        row: PopupRow,
+        menu: SlideMenu
+    ) => PopupLevel | null | Promise<PopupLevel | null>;
     onHover?: (row: PopupRow, entering: boolean) => void;
     onAfterRender?: (level: PopupLevel, menu: SlideMenu) => void;
     onClose?: () => void;
@@ -59,7 +62,10 @@ export class SlideMenu {
     constructor(opts: {
         container: HTMLElement;
         onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
-        onFolderEnter?: (row: PopupRow, menu: SlideMenu) => PopupLevel | null | Promise<PopupLevel | null>;
+        onFolderEnter?: (
+            row: PopupRow,
+            menu: SlideMenu
+        ) => PopupLevel | null | Promise<PopupLevel | null>;
         onHover?: (row: PopupRow, entering: boolean) => void;
         onAfterRender?: (level: PopupLevel, menu: SlideMenu) => void;
         onClose?: () => void;
@@ -186,12 +192,14 @@ export class SlideMenu {
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateX(0)';
-        this.buildPanel(level).then(() => {
-            this.updateHeader(level);
-            this.setupFocus();
-            this.onAfterRender?.(level, this);
-            this.onLevelEnter?.(level, this);
-        }).catch(() => {});
+        this.buildPanel(level)
+            .then(() => {
+                this.updateHeader(level);
+                this.setupFocus();
+                this.onAfterRender?.(level, this);
+                this.onLevelEnter?.(level, this);
+            })
+            .catch(() => {});
     }
 
     push(level: PopupLevel): void {
@@ -229,7 +237,7 @@ export class SlideMenu {
                 this.transitioning = false;
                 this.setupFocus();
                 this.onAfterRender?.(level, this);
-            this.onLevelEnter?.(level, this);
+                this.onLevelEnter?.(level, this);
             };
             fadeInDisp = addDisposableListener(this.panel, 'transitionend', onFadeIn);
             this._pushTimeout(
@@ -334,12 +342,14 @@ export class SlideMenu {
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateX(0)';
-        this.buildPanel(level).then(() => {
-            this.updateHeader(level);
-            this.setupFocus();
-            this.onAfterRender?.(level, this);
-            this.onLevelEnter?.(level, this);
-        }).catch(() => {});
+        this.buildPanel(level)
+            .then(() => {
+                this.updateHeader(level);
+                this.setupFocus();
+                this.onAfterRender?.(level, this);
+                this.onLevelEnter?.(level, this);
+            })
+            .catch(() => {});
     }
 
     reRender(opts?: { preserveFocus?: boolean }): void {
@@ -377,7 +387,10 @@ export class SlideMenu {
         }
         const _elapsed = performance.now() - _start;
         if (_elapsed > 4) {
-            logWarn('perf:menu', `updateControls took ${_elapsed.toFixed(1)}ms (${this._controls.length} controls, itemBuilder=${!!level?.itemBuilder})`);
+            logWarn(
+                'perf:menu',
+                `updateControls took ${_elapsed.toFixed(1)}ms (${this._controls.length} controls, itemBuilder=${!!level?.itemBuilder})`
+            );
         }
     }
 
@@ -410,13 +423,19 @@ export class SlideMenu {
                 return;
             }
             // 没有旧 DOM → 退化为全量重建
-            this.buildPanel(level).then(finalize).catch(() => {});
+            this.buildPanel(level)
+                .then(finalize)
+                .catch(() => {});
         } else if (level.renderCustom || level.items.length === 0) {
             // === 自定义渲染 / 空列表 → 全量重建 ===
-            this.buildPanel(level).then(finalize).catch(() => {});
+            this.buildPanel(level)
+                .then(finalize)
+                .catch(() => {});
         } else {
             // === 纯 items → 全量重建（card-per-divider 结构不支持增量 patch） ===
-            this.buildPanel(level).then(finalize).catch(() => {});
+            this.buildPanel(level)
+                .then(finalize)
+                .catch(() => {});
             finalize();
         }
     }

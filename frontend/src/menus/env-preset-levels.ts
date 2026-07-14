@@ -14,11 +14,7 @@ import {
     defaultRenderState,
 } from '../scene/scene';
 import { transitionLighting } from '../scene/render/lighting';
-import {
-    exportEnvPreset,
-    importEnvPreset,
-    type EnvPreset,
-} from '../scene/env/env-lighting';
+import { exportEnvPreset, importEnvPreset, type EnvPreset } from '../scene/env/env-lighting';
 import {
     SaveEnvPresetAuto,
     LoadEnvPreset,
@@ -57,7 +53,9 @@ export function renderUserEnvPresets(container: HTMLElement): void {
         } catch (err) {
             logWarn('env-menu', 'ListEnvPresets failed:', err);
         }
-        if (!listHost.isConnected) return; // 菜单已重渲染/卸载，放弃本次异步结果
+        if (!listHost.isConnected) {
+            return;
+        } // 菜单已重渲染/卸载，放弃本次异步结果
         if (entries.length === 0) {
             const empty = document.createElement('div');
             empty.textContent = t('env-preset.noCustom');
@@ -332,9 +330,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
 };
 
 /** [adr-111] 快照 envState 中所有 ground/water 字段，用于预设应用后恢复。 */
-function _snapshotGroundWaterFields(
-    state: typeof envState
-): Partial<typeof envState> {
+function _snapshotGroundWaterFields(state: typeof envState): Partial<typeof envState> {
     const snapshot: Record<string, unknown> = {};
     for (const key of Object.keys(state) as (keyof typeof envState)[]) {
         if (key.startsWith('ground') || key.startsWith('water')) {

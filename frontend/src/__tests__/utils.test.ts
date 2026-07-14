@@ -499,10 +499,7 @@ describe('ADR-101 P3: pure functions', () => {
         });
 
         it('returns all when all resolve', async () => {
-            const results = await allSettledFilter([
-                Promise.resolve(1),
-                Promise.resolve(2),
-            ]);
+            const results = await allSettledFilter([Promise.resolve(1), Promise.resolve(2)]);
             expect(results).toHaveLength(2);
             expect(results[0].value).toBe(1);
             expect(results[1].value).toBe(2);

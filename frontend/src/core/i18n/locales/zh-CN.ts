@@ -1268,7 +1268,8 @@ export const zhCN: Record<string, string> = {
     'settings.paths.storageModeDesc': '私有：仅应用沙盒可访问。共享：其他应用也可访问。',
     'settings.paths.modelsLoaded': '已加载 {count} 个模型',
     'settings.paths.noModels': '未找到模型，请在 /sdcard/MMD 下放置 PMX/VMD 文件',
-    'settings.paths.clearThumbConfirm': '确定要清除所有缩略图缓存吗？下次加载模型时将自动重新生成。',
+    'settings.paths.clearThumbConfirm':
+        '确定要清除所有缩略图缓存吗？下次加载模型时将自动重新生成。',
     'settings.paths.clearAllConfirm':
         '确定要清除全部缓存吗？包括解压缓存、缩略图。下次加载模型时将自动重新生成，不影响原始素材。',
 

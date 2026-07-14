@@ -277,7 +277,9 @@ function applyDegrade(level: DegradeLevel, force = false): void {
         // 实际发生了恢复
         _lastRecoveryTime = now;
     }
-    console.info(`[${formatTimestamp()}] [Performance] Level ${level}: ${LEVEL_CONFIGS[level].label}`);
+    console.info(
+        `[${formatTimestamp()}] [Performance] Level ${level}: ${LEVEL_CONFIGS[level].label}`
+    );
 }
 
 // ======== Thresholds with Hysteresis ========

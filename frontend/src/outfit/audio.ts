@@ -27,7 +27,9 @@ function ensurePlayer(): StreamAudioPlayer {
 
 /** 从 StreamAudioPlayer 内部取出 HTMLAudioElement，供 BeatDetector 附着。 */
 function _tryAttachBeatDetector(player: StreamAudioPlayer): void {
-    if (beatDetectorAttached || !beatDetector) return;
+    if (beatDetectorAttached || !beatDetector) {
+        return;
+    }
     const el = (player as unknown as { _audio?: HTMLAudioElement })._audio;
     if (el) {
         beatDetectorAttached = beatDetector.attach(el);
@@ -82,18 +84,24 @@ export function pauseAudio(): void {
 }
 
 export function resumeAudio(): void {
-    if (!streamPlayer) return;
+    if (!streamPlayer) {
+        return;
+    }
     streamPlayer.play().catch((err) => logWarn('audio', 'resumeAudio', err));
 }
 
 export function stopAudio(): void {
-    if (!streamPlayer) return;
+    if (!streamPlayer) {
+        return;
+    }
     streamPlayer.pause();
     streamPlayer.currentTime = 0;
 }
 
 export function clearAudio(): void {
-    if (!streamPlayer) return;
+    if (!streamPlayer) {
+        return;
+    }
     streamPlayer.pause();
     streamPlayer.source = '';
     audioName = '';
@@ -131,7 +139,9 @@ export function getVolume(): number {
 }
 
 export function setAudioOffset(seconds: number): void {
-    if (!Number.isFinite(seconds)) return;
+    if (!Number.isFinite(seconds)) {
+        return;
+    }
     setUIState({ audioOffset: seconds });
 }
 
@@ -151,7 +161,9 @@ export function getDuration(): number {
 }
 
 export function seekAudio(seconds: number): void {
-    if (!streamPlayer) return;
+    if (!streamPlayer) {
+        return;
+    }
     const clamped = Math.max(0, Math.min(getDuration(), seconds));
     if (!isNaN(clamped)) {
         streamPlayer.currentTime = clamped;
@@ -185,7 +197,9 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
         if (isPlaying && streamPlayer.paused) {
             if (audioTargetTime >= 0 && audioTargetTime < audioDur) {
                 streamPlayer.currentTime = audioTargetTime;
-                streamPlayer.play().catch(() => { /* autoplay 拦截 */ });
+                streamPlayer.play().catch(() => {
+                    /* autoplay 拦截 */
+                });
             } else if (audioTargetTime >= audioDur) {
                 streamPlayer.currentTime = 0;
                 streamPlayer.play().catch(() => {});

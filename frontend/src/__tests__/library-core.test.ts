@@ -559,7 +559,10 @@ describe('buildLevel', () => {
         // 复现资源库记忆恢复时的边界场景：dir 为盘符残缺形态，会切出 ":" 段
         mockState.libraryRoot = 'C:';
         mockState.allModels = [
-            makeModel({ file_path: 'C:/Users/foo/Models/PMX/Sub/x.pmx', dir: 'C:/Users/foo/Models/PMX/Sub' }),
+            makeModel({
+                file_path: 'C:/Users/foo/Models/PMX/Sub/x.pmx',
+                dir: 'C:/Users/foo/Models/PMX/Sub',
+            }),
         ];
 
         const level = buildLevel('C', 'C');
@@ -600,10 +603,17 @@ describe('splitSubdirSegments', () => {
         // 真实触发场景：前端 libraryRoot 与后端 cfg.ResourceRoot 大小写形态不一致，
         // 严格前缀匹配失败，但同盘符且 lastDir 含 root 末段标记 "PMX"
         expect(splitSubdirSegments('/test/lib/PMX', '/TEST/LIB/PMX/Sub')).toEqual(['Sub']);
-        expect(splitSubdirSegments('C:/Users/a/MikuMikuAR/PMX', 'C:/Users/a/mikumikuar/PMX/SK')).toEqual(['SK']);
+        expect(
+            splitSubdirSegments('C:/Users/a/MikuMikuAR/PMX', 'C:/Users/a/mikumikuar/PMX/SK')
+        ).toEqual(['SK']);
     });
     it('falls back across mixed separators (root backslash, dir slash) on same drive', () => {
-        expect(splitSubdirSegments('C:\\Users\\a\\MikuMikuAR\\PMX', 'C:/Users/a/mikumikuar/PMX/Sub/deep')).toEqual(['Sub', 'deep']);
+        expect(
+            splitSubdirSegments(
+                'C:\\Users\\a\\MikuMikuAR\\PMX',
+                'C:/Users/a/mikumikuar/PMX/Sub/deep'
+            )
+        ).toEqual(['Sub', 'deep']);
     });
     it('still rejects cross-drive memory (never expands onto wrong disk)', () => {
         expect(splitSubdirSegments('C:/Models/PMX', 'D:/Models/PMX/Sub')).toBeNull();
@@ -823,9 +833,7 @@ describe('isLeafFlattenDir', () => {
     });
 
     it('returns false for directory with no models', () => {
-        const models = [
-            makeModel({ file_path: '/test/other/a.pmx', dir: '/test/other' }),
-        ];
+        const models = [makeModel({ file_path: '/test/other/a.pmx', dir: '/test/other' })];
         expect(isLeafFlattenDir('/test/nonexistent', models)).toBe(false);
     });
 
@@ -888,8 +896,16 @@ describe('isLeafFlattenDir', () => {
 
     it('respects category filter', () => {
         const models = [
-            makeModel({ file_path: '/test/models/sub/a.pmx', dir: '/test/models/sub', format: 'pmx' }),
-            makeModel({ file_path: '/test/models/sub/b.vmd', dir: '/test/models/sub', format: 'vmd' }),
+            makeModel({
+                file_path: '/test/models/sub/a.pmx',
+                dir: '/test/models/sub',
+                format: 'pmx',
+            }),
+            makeModel({
+                file_path: '/test/models/sub/b.vmd',
+                dir: '/test/models/sub',
+                format: 'vmd',
+            }),
         ];
         expect(isLeafFlattenDir('/test/models/sub', models, (m) => m.format === 'pmx')).toBe(true);
         expect(isLeafFlattenDir('/test/models/sub', models, (m) => m.format === 'vmd')).toBe(true);
@@ -921,7 +937,9 @@ describe('computeRestoreSegments', () => {
         const models = [
             makeModel({ file_path: '/test/models/cat/sub/a.pmx', dir: '/test/models/cat/sub' }),
         ];
-        expect(computeRestoreSegments('/test/models', '/test/models/cat/sub', models)).toEqual(['cat']);
+        expect(computeRestoreSegments('/test/models', '/test/models/cat/sub', models)).toEqual([
+            'cat',
+        ]);
     });
 
     it('returns full segments when target is a multi-zip folder', () => {
@@ -946,16 +964,40 @@ describe('computeRestoreSegments', () => {
         const models = [
             makeModel({ file_path: '/test/models/sub/deep/a.pmx', dir: '/test/models/sub/deep' }),
         ];
-        expect(computeRestoreSegments('/test/models', '/test/models/sub/deep', models)).toEqual(['sub']);
+        expect(computeRestoreSegments('/test/models', '/test/models/sub/deep', models)).toEqual([
+            'sub',
+        ]);
     });
 
     it('respects category filter', () => {
         const models = [
-            makeModel({ file_path: '/test/models/sub/a.pmx', dir: '/test/models/sub', format: 'pmx' }),
-            makeModel({ file_path: '/test/models/sub/b.vmd', dir: '/test/models/sub', format: 'vmd' }),
+            makeModel({
+                file_path: '/test/models/sub/a.pmx',
+                dir: '/test/models/sub',
+                format: 'pmx',
+            }),
+            makeModel({
+                file_path: '/test/models/sub/b.vmd',
+                dir: '/test/models/sub',
+                format: 'vmd',
+            }),
         ];
-        expect(computeRestoreSegments('/test/models', '/test/models/sub', models, (m) => m.format === 'pmx')).toEqual([]);
-        expect(computeRestoreSegments('/test/models', '/test/models/sub', models, (m) => m.format === 'vmd')).toEqual([]);
+        expect(
+            computeRestoreSegments(
+                '/test/models',
+                '/test/models/sub',
+                models,
+                (m) => m.format === 'pmx'
+            )
+        ).toEqual([]);
+        expect(
+            computeRestoreSegments(
+                '/test/models',
+                '/test/models/sub',
+                models,
+                (m) => m.format === 'vmd'
+            )
+        ).toEqual([]);
     });
 });
 
@@ -1111,10 +1153,14 @@ describe('path-boundary hardening', () => {
 
     describe('getRelativePathUnderDir 拒绝 .. 逃逸段 (P2 场景1)', () => {
         it('含 .. 的路径返回 null，不把 .. 当子目录段', () => {
-            expect(getRelativePathUnderDir('C:/text-model/PMX/../VMD/foo.pmx', 'C:/text-model/PMX')).toBeNull();
+            expect(
+                getRelativePathUnderDir('C:/text-model/PMX/../VMD/foo.pmx', 'C:/text-model/PMX')
+            ).toBeNull();
         });
         it('正常子目录返回相对路径（回归保护）', () => {
-            expect(getRelativePathUnderDir('C:/text-model/PMX/Sub/foo.pmx', 'C:/text-model/PMX')).toBe('Sub/foo.pmx');
+            expect(
+                getRelativePathUnderDir('C:/text-model/PMX/Sub/foo.pmx', 'C:/text-model/PMX')
+            ).toBe('Sub/foo.pmx');
         });
         it('mdir 与 base 完全相等（同目录）返回空字符串（既有语义保持）', () => {
             expect(getRelativePathUnderDir('C:/text-model/PMX', 'C:/text-model/PMX')).toBe('');
@@ -1141,7 +1187,9 @@ describe('path-boundary hardening', () => {
 
     describe('splitSubdirSegments 加固 (P2 场景1 + P2 场景2)', () => {
         it('含 .. 的 root 或 dir 直接返回 null', () => {
-            expect(splitSubdirSegments('C:/text-model/PMX', 'C:/text-model/PMX/../VMD/Sub')).toBeNull();
+            expect(
+                splitSubdirSegments('C:/text-model/PMX', 'C:/text-model/PMX/../VMD/Sub')
+            ).toBeNull();
             expect(splitSubdirSegments('C:/text-model/PMX/..', 'C:/text-model/Sub')).toBeNull();
         });
         it('同盘异父串台拒绝展开（C:/other/PMX/Sub 不应展开到 C:/text-model/PMX/Sub）', () => {

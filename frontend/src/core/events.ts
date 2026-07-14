@@ -2,7 +2,23 @@
 // Aggregates DOM/window event listeners, navigation routing, shortcut
 // registration, drag-drop import, and update toasts. Pure Split-layer module:
 // it imports from leaf/domain layers but is never imported by them (no cycle).
-import { dom, isPlaying, setIsPlaying, autoLoop, setAutoLoop, seekDragging, setSeekDragging, mmdRuntime, closeAllOverlays, setPopupOpen, focusedModelId, stackRegistry, formatError, setStatus, setOnCloseAllOverlays } from './config';
+import {
+    dom,
+    isPlaying,
+    setIsPlaying,
+    autoLoop,
+    setAutoLoop,
+    seekDragging,
+    setSeekDragging,
+    mmdRuntime,
+    closeAllOverlays,
+    setPopupOpen,
+    focusedModelId,
+    stackRegistry,
+    formatError,
+    setStatus,
+    setOnCloseAllOverlays,
+} from './config';
 import { focusedModel, updatePlaybackUI, seekFromEvent, focusedMmdModel } from '../scene/scene';
 import { freeflyInput } from './freefly-state';
 import { getCameraMode, switchCameraMode } from '../scene/camera/camera';
@@ -19,7 +35,7 @@ function _reg(
     target: EventTarget,
     event: string,
     handler: (evt: any) => void,
-    options?: AddEventListenerOptions,
+    options?: AddEventListenerOptions
 ): void {
     _eventDisposables.push(addDisposableListener(target, event, handler, options));
 }

@@ -103,10 +103,7 @@ function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
 
 // _encodePath 已改为复用 normPath（@/core/utils）
 
-export async function loadOutfits(
-    id: string,
-    signal?: AbortSignal
-): Promise<OutfitFile | null> {
+export async function loadOutfits(id: string, signal?: AbortSignal): Promise<OutfitFile | null> {
     if (!_loadingOutfitsGuard.tryEnter(id)) {
         return null;
     }
@@ -196,7 +193,9 @@ export async function loadOutfits(
             const withLimit = async <T>(fn: () => Promise<T>): Promise<T> => {
                 while (semaphore.count >= HEAD_CONCURRENCY) {
                     await delay(10);
-                    if (effectiveSignal.aborted) break;
+                    if (effectiveSignal.aborted) {
+                        break;
+                    }
                 }
                 semaphore.count++;
                 try {
@@ -207,13 +206,17 @@ export async function loadOutfits(
             };
             const results = await Promise.all(
                 subdirs.map(async (subdir): Promise<OutfitVariant | null> => {
-                    if (effectiveSignal.aborted) return null;
+                    if (effectiveSignal.aborted) {
+                        return null;
+                    }
                     const byMaterial: Record<string, OutfitSlot> = {};
                     let hasAny = false;
                     const subdirProbes = probes.filter((p) => p.subdir === subdir);
                     await Promise.all(
                         subdirProbes.map(async (p) => {
-                            if (effectiveSignal.aborted) return;
+                            if (effectiveSignal.aborted) {
+                                return;
+                            }
                             let ok: boolean;
                             if (headCache.has(p.url)) {
                                 ok = headCache.get(p.url)!;

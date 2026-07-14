@@ -28,7 +28,12 @@ import { FILTER_PRESET_LABELS, getFilterPreset } from './scene-render-presets';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { isDebugMirrorActive, setDebugMirrorSize, setDebugMirrorResolution, getDebugMirrorInfo } from '../scene/env/env';
+import {
+    isDebugMirrorActive,
+    setDebugMirrorSize,
+    setDebugMirrorResolution,
+    getDebugMirrorInfo,
+} from '../scene/env/env';
 
 // ======== Scene Preset ========
 
@@ -133,10 +138,12 @@ function buildPresetScenesSchema(): MenuNode[] {
                 loadingPlaceholder.style.cssText =
                     'padding:14px;color:var(--text-dim);font-size:var(--font-ui-sm);';
                 c.appendChild(loadingPlaceholder);
-                swallowError(GetPresetScenes().then((scenes: string[] | null) => {
-                    c.removeChild(loadingPlaceholder);
-                    _renderScenePresetList(c, scenes || []);
-                }));
+                swallowError(
+                    GetPresetScenes().then((scenes: string[] | null) => {
+                        c.removeChild(loadingPlaceholder);
+                        _renderScenePresetList(c, scenes || []);
+                    })
+                );
             },
         },
     ];
@@ -637,7 +644,8 @@ function buildDebugMirrorSchema(): MenuNode[] {
                         );
                         const p = info.position;
                         const infoDiv = document.createElement('div');
-                        infoDiv.style.cssText = 'padding:4px 12px;font-size:11px;color:var(--text-dim);';
+                        infoDiv.style.cssText =
+                            'padding:4px 12px;font-size:11px;color:var(--text-dim);';
                         infoDiv.textContent = info.active
                             ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
                             : t('scene.debugMirrorHint');

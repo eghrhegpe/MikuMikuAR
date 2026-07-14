@@ -513,15 +513,17 @@ export function addWatchDirRow(
     });
 
     // 回填初始目录
-    swallowError(onRefreshStatus(async (text) => {
-        const prefix = t('settings.paths.watching')
-            .replace(/\{dir\}/g, '')
-            .replace(/\s+$/, '');
-        const match = text.match(new RegExp(prefix + '\\s*(.+)'));
-        if (match) {
-            dirInput.value = match[1];
-        }
-    }));
+    swallowError(
+        onRefreshStatus(async (text) => {
+            const prefix = t('settings.paths.watching')
+                .replace(/\{dir\}/g, '')
+                .replace(/\s+$/, '');
+            const match = text.match(new RegExp(prefix + '\\s*(.+)'));
+            if (match) {
+                dirInput.value = match[1];
+            }
+        })
+    );
 
     dirRow.appendChild(dirInput);
     dirRow.appendChild(selectBtn);

@@ -103,7 +103,9 @@ export function slideRow(
             // 跳过 synthetic click(target===input) 并 preventDefault 阻止原生切换造成的视觉错位。
             toggle.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (e.target === input) return;
+                if (e.target === input) {
+                    return;
+                }
                 e.preventDefault();
                 input.checked = !input.checked;
                 headerToggle.onChange(input.checked);

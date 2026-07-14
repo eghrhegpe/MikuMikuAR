@@ -90,7 +90,10 @@ export function normPath(p: string): string {
         result = p.replace(/\/+$/, '');
     } else {
         result = p.replace(/\\/g, '/').replace(/\/+$/, '');
-        result = result.replace(/\/\.\//g, '/').replace(/^\.\//, '').replace(/\/\.$/, '');
+        result = result
+            .replace(/\/\.\//g, '/')
+            .replace(/^\.\//, '')
+            .replace(/\/\.$/, '');
     }
 
     if (_normPathCache.size >= NORM_PATH_CACHE_MAX) {

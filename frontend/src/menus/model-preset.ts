@@ -41,7 +41,14 @@ import {
     setVolume,
     setAudioOffset,
 } from '../outfit/audio';
-import { tryCatchStatus, showErrorToast, getBaseName, normPath, logWarn, jsonStringify } from '../core/utils';
+import {
+    tryCatchStatus,
+    showErrorToast,
+    getBaseName,
+    normPath,
+    logWarn,
+    jsonStringify,
+} from '../core/utils';
 import { t } from '../core/i18n/t';
 import { buildPresetListLevel as buildGenericPresetLevel } from './preset-list-viewer';
 

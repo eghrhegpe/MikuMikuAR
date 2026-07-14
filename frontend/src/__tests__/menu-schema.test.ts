@@ -636,9 +636,7 @@ describe('ADR-093 Menu Schema PoC', () => {
             ];
             renderMenu(schema, container);
             // 触发 toggle 点击
-            const input = container.querySelector(
-                'input[type="checkbox"]'
-            ) as HTMLInputElement;
+            const input = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
             expect(input).toBeTruthy();
             input.checked = true;
             input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -655,9 +653,7 @@ describe('ADR-093 Menu Schema PoC', () => {
                 },
             ];
             renderMenu(schema, container);
-            const input = container.querySelector(
-                'input[type="checkbox"]'
-            ) as HTMLInputElement;
+            const input = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
             expect(input).toBeTruthy();
             input.checked = true;
             input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -726,13 +722,9 @@ describe('ADR-093 Menu Schema PoC', () => {
                     },
                 ];
                 renderMenu(schema, container);
-                const toggle = container.querySelector(
-                    '.toggle.header-toggle'
-                ) as HTMLLabelElement;
+                const toggle = container.querySelector('.toggle.header-toggle') as HTMLLabelElement;
                 expect(toggle).toBeTruthy();
-                const checkbox = toggle.querySelector(
-                    'input[type="checkbox"]'
-                ) as HTMLInputElement;
+                const checkbox = toggle.querySelector('input[type="checkbox"]') as HTMLInputElement;
                 expect(checkbox).toBeTruthy();
                 expect(checkbox.checked).toBe(false); // flat → off
                 // 点击 toggle → 应切换为 on 并写入 'terrain'

@@ -668,17 +668,19 @@ export function switchCameraMode(mode: CameraMode): void {
         _cameraMode = 'ar';
         _syncAxesFromMode('ar');
         _currentPreset.mode = 'ar';
-        setARMode(true).then((ok) => {
-            if (!ok) {
-                // 失败：若后续切换尚未把模式改走（仍在 ar），才提示并还原标记。
-                if (_cameraMode === 'ar') {
-                    setStatus(t('scene.camera.arFailed'), false);
+        setARMode(true)
+            .then((ok) => {
+                if (!ok) {
+                    // 失败：若后续切换尚未把模式改走（仍在 ar），才提示并还原标记。
+                    if (_cameraMode === 'ar') {
+                        setStatus(t('scene.camera.arFailed'), false);
+                    }
+                    _cameraMode = _previousMode;
+                    _syncAxesFromMode(_previousMode);
+                    _currentPreset.mode = _previousMode;
                 }
-                _cameraMode = _previousMode;
-                _syncAxesFromMode(_previousMode);
-                _currentPreset.mode = _previousMode;
-            }
-        }).catch(() => {});
+            })
+            .catch(() => {});
         return;
     }
 
@@ -920,12 +922,8 @@ function initFreeflyTouch(canvas: HTMLCanvasElement): void {
     _touchDisposables.push(
         addDisposableListener(canvas, 'touchmove', _freeflyTouchHandler, { passive: false })
     );
-    _touchDisposables.push(
-        addDisposableListener(canvas, 'touchend', _freeflyTouchEndHandler)
-    );
-    _touchDisposables.push(
-        addDisposableListener(canvas, 'touchcancel', _freeflyTouchEndHandler)
-    );
+    _touchDisposables.push(addDisposableListener(canvas, 'touchend', _freeflyTouchEndHandler));
+    _touchDisposables.push(addDisposableListener(canvas, 'touchcancel', _freeflyTouchEndHandler));
 }
 
 function stopFreeflyTouch(): void {
@@ -1247,7 +1245,13 @@ export function setCameraState(s: CameraState): void {
     // 旧存档仅以 UIState.autoCameraEnabled 标记自动运镜 → 叠加为 beatcut（§6.2 step3）。
     // ADR-100 P3 收紧：仅当 control/behavior 双轴均缺失（纯旧格式）才叠加，
     // 避免部分新字段存档（已显式声明 behavior）被陈旧 autoCameraEnabled 覆盖（P2 权威原则）。
-    if (!s.control && !s.behavior && uiState.autoCameraEnabled && control === 'orbit' && behavior === 'none') {
+    if (
+        !s.control &&
+        !s.behavior &&
+        uiState.autoCameraEnabled &&
+        control === 'orbit' &&
+        behavior === 'none'
+    ) {
         behavior = 'beatcut';
     }
     if (behavior === 'beatcut') {

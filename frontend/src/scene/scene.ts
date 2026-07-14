@@ -72,7 +72,12 @@ import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../co
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
 import { initLighting, _updateSunDisc } from './render/lighting';
-import { initRenderer, rebuildOutlineState, pipeline, bindReflectionProbeToModel } from './render/renderer';
+import {
+    initRenderer,
+    rebuildOutlineState,
+    pipeline,
+    bindReflectionProbeToModel,
+} from './render/renderer';
 import { initLoader, setOnMeshesReady, setOnModelLoaded } from './manager/model-loader';
 
 // Re-export material system (extracted to material.ts for file size)
@@ -189,13 +194,13 @@ export async function initScene(): Promise<void> {
         // esbuild 消除本分支，默认构建不含 MPR worker/wasm（零回归、bundle 精简）。
         // 运行时再叠加 crossOriginIsolated 守卫：即便构建带 MPR，若启动进程未注入 COOP/COEP
         // （漏设 VITE_MMD_WASM_MT 环境变量），也优雅回退 SPR，绝不因 SAB 不可用而崩窗。
-        const useMultiThread = __MMD_ENABLE_MPR__
-            && typeof crossOriginIsolated !== 'undefined'
-            && crossOriginIsolated;
+        const useMultiThread =
+            __MMD_ENABLE_MPR__ && typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated;
         let wasmInstance;
         if (useMultiThread) {
             try {
-                const { MmdWasmInstanceTypeMPR } = await import('babylon-mmd/esm/Runtime/Optimized/InstanceType/multiPhysicsRelease');
+                const { MmdWasmInstanceTypeMPR } =
+                    await import('babylon-mmd/esm/Runtime/Optimized/InstanceType/multiPhysicsRelease');
                 wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeMPR());
                 console.log('[scene] 使用 WASM 版 MmdWasmRuntime（MPR 多线程物理）');
             } catch (e) {
@@ -212,7 +217,9 @@ export async function initScene(): Promise<void> {
         const runtimeMode = detectRuntimeMode();
         persistRuntimeMode(runtimeMode);
         renderRuntimeBadge(runtimeMode);
-        console.log(`[ADR-099] 验证: crossOriginIsolated=${runtimeMode.coi} SharedArrayBuffer=${runtimeMode.sab} useMultiThread=${useMultiThread} threads=${runtimeMode.threads}`);
+        console.log(
+            `[ADR-099] 验证: crossOriginIsolated=${runtimeMode.coi} SharedArrayBuffer=${runtimeMode.sab} useMultiThread=${useMultiThread} threads=${runtimeMode.threads}`
+        );
         const mmdWasmPhysics = new MmdWasmPhysics(scene);
         runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
         initWindPhysics(runtime);
@@ -225,14 +232,14 @@ export async function initScene(): Promise<void> {
     // （play/pause/seek 由 Runtime 自动管理，无需手动 syncAudioPlayback）
     swallowError(
         Promise.resolve(getStreamPlayer()).then((player) => {
-            if (player) runtime.setAudioPlayer(player);
+            if (player) {
+                runtime.setAudioPlayer(player);
+            }
         })
     );
     // [adr-104] 注入 scene 引用到 outfit（破除循环依赖，替代动态 import）。
     // 动态 import + swallowError 彻底规避 scene↔outfit 静态环，与既有模式一致。
-    swallowError(
-        import('../outfit/outfit').then((m) => m.setSceneRef(scene))
-    );
+    swallowError(import('../outfit/outfit').then((m) => m.setSceneRef(scene)));
     // 同步用户记忆的播放速度到新 runtime，防状态漂移
     swallowError(
         import('../menus/motion-popup').then(({ syncPlaybackSpeedToRuntime }) =>

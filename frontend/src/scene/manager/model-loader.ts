@@ -141,12 +141,16 @@ export async function captureThumbnail(
             THUMBNAIL_TIMEOUT_MS,
             undefined
         );
-        if (gen !== _thumbCaptureGen) return;
+        if (gen !== _thumbCaptureGen) {
+            return;
+        }
 
         if (!ready) {
             await new Promise((r) => requestAnimationFrame(r));
         }
-        if (gen !== _thumbCaptureGen) return;
+        if (gen !== _thumbCaptureGen) {
+            return;
+        }
 
         const focusedInst = _modelManager.focused();
         if (!focusedInst || !focusedInst.rootMesh) {
@@ -211,7 +215,9 @@ export async function captureThumbnail(
             engine.bindFramebuffer(rt.renderTarget!);
             try {
                 const floatPixels = await engine.readPixels(0, 0, rtW, rtH, true);
-                if (gen !== _thumbCaptureGen) return;
+                if (gen !== _thumbCaptureGen) {
+                    return;
+                }
 
                 const canvas = document.createElement('canvas');
                 canvas.width = rtW;
@@ -247,7 +253,9 @@ export async function captureThumbnail(
 
                 try {
                     await SaveThumbnail(thumbKey, raw);
-                    if (gen !== _thumbCaptureGen) return;
+                    if (gen !== _thumbCaptureGen) {
+                        return;
+                    }
                     const updated = new Map(thumbnailCache);
                     updated.set(thumbKey, raw);
                     setThumbnailCache(updated);
@@ -287,9 +295,7 @@ export async function loadPMXFile(
     _loadAbortController = abortCtrl;
     // 合并外部 signal（调用方取消）与内部 abortCtrl.signal（自动取消前一个加载，ADR-096）
     // 两者任一 abort 即生效；用 ?? 回退会忽略内部 abortCtrl，导致 ADR-096 机制失效
-    const effectiveSignal = signal
-        ? AbortSignal.any([signal, abortCtrl.signal])
-        : abortCtrl.signal;
+    const effectiveSignal = signal ? AbortSignal.any([signal, abortCtrl.signal]) : abortCtrl.signal;
 
     let loadedMeshes: Mesh[] = [];
     let wasmModel: IMmdModel | null = null;
@@ -331,8 +337,7 @@ export async function loadPMXFile(
             loadedMeshes.forEach((m) => {
                 try {
                     m.dispose();
-                } catch {
-                }
+                } catch {}
             });
             return null;
         }
@@ -590,8 +595,7 @@ export async function loadPMXFile(
             loadedMeshes.forEach((m) => {
                 try {
                     m.dispose();
-                } catch {
-                }
+                } catch {}
             });
         }
         dom.loadingEl.style.display = 'none';

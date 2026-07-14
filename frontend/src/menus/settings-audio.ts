@@ -94,10 +94,7 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 onChange: (v) => {
                     setBpmQuantizeEnabled(v as boolean);
                     refresh();
-                    setStatus(
-                        v ? t('settings.bpmQuantOn') : t('settings.bpmQuantOff'),
-                        true
-                    );
+                    setStatus(v ? t('settings.bpmQuantOn') : t('settings.bpmQuantOff'), true);
                 },
             },
         },
@@ -113,10 +110,7 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 onChange: (v) => {
                     setAutoLoadCompanionAudio(v as boolean);
                     refresh();
-                    setStatus(
-                        v ? t('settings.companionOn') : t('settings.companionOff'),
-                        true
-                    );
+                    setStatus(v ? t('settings.companionOn') : t('settings.companionOff'), true);
                 },
             },
         },

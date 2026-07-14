@@ -49,14 +49,8 @@ export function createDebugMirror(): void {
         scene
     );
     // Pivot 移到底边：平面默认 y 从 -h/2 到 +h/2，bakeTransform 上移 h/2 后底边在 y=0
-    _mirrorMesh.bakeTransformIntoVertices(
-        Matrix.Translation(0, _mirrorHeight / 2, 0)
-    );
-    _mirrorMesh.position = new Vector3(
-        _mirrorPosition[0],
-        _mirrorPosition[1],
-        _mirrorPosition[2]
-    );
+    _mirrorMesh.bakeTransformIntoVertices(Matrix.Translation(0, _mirrorHeight / 2, 0));
+    _mirrorMesh.position = new Vector3(_mirrorPosition[0], _mirrorPosition[1], _mirrorPosition[2]);
     _mirrorMesh.rotation.y = _mirrorRotationY;
     _mirrorMesh.isPickable = false;
 
@@ -75,9 +69,7 @@ export function createDebugMirror(): void {
 
     // 场景网格增删时自动刷新反射列表（如先建镜子后加载 MMD 角色，角色需进入反射）
     _meshAddedObserver = scene.onNewMeshAddedObservable.add(() => refreshDebugMirrorRenderList());
-    _meshRemovedObserver = scene.onMeshRemovedObservable.add(() =>
-        refreshDebugMirrorRenderList()
-    );
+    _meshRemovedObserver = scene.onMeshRemovedObservable.add(() => refreshDebugMirrorRenderList());
 
     // 材质：低反照率底色 + 强反射，便于区分反射内容
     _mirrorMat = new StandardMaterial('debugMirrorMat', scene);

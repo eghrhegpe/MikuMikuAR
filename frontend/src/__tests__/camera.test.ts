@@ -393,10 +393,7 @@ let cameraModule: {
     setCameraControl: (control: string) => void;
     setCameraBehavior: (behavior: string) => void;
     deriveLegacyMode: (control: string, behavior: string, scripted?: string) => string;
-    LEGACY_MODE_MAP: Record<
-        string,
-        { control: string; behavior: string; scripted?: string }
-    >;
+    LEGACY_MODE_MAP: Record<string, { control: string; behavior: string; scripted?: string }>;
     isAutoCameraEnabled: () => boolean;
     setAutoCameraEnabled: (
         v: boolean,
@@ -818,11 +815,7 @@ describe('ADR-100 dual-axis mapping (P1 契约)', () => {
 
     it('deriveLegacyMode 反查与 LEGACY_MODE_MAP 往返一致', () => {
         for (const [mode, axes] of Object.entries(cameraModule.LEGACY_MODE_MAP)) {
-            const back = cameraModule.deriveLegacyMode(
-                axes.control,
-                axes.behavior,
-                axes.scripted
-            );
+            const back = cameraModule.deriveLegacyMode(axes.control, axes.behavior, axes.scripted);
             expect(back).toBe(mode);
         }
     });

@@ -30,7 +30,9 @@ export function getAudioContext(): AudioContext {
  * 而不必等下一次 playSfx 才更新（ADR-088 修复）。
  */
 function refreshMasterGain(): void {
-    if (!_master) return;
+    if (!_master) {
+        return;
+    }
     const enabled = uiState.sfxEnabled !== false;
     const vol = uiState.sfxVolume ?? 0.7;
     _master.gain.value = enabled ? clamp01(vol) : 0;

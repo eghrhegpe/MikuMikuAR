@@ -830,7 +830,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
 
     // --- Report loading errors ---
     if (errors.length > 0) {
-        logWarn('scene-serialize', `场景恢复: ${errors.length}/${data.models.length} 个模型加载失败`);
+        logWarn(
+            'scene-serialize',
+            `场景恢复: ${errors.length}/${data.models.length} 个模型加载失败`
+        );
         for (const err of errors) {
             logWarn('scene-serialize', `  - ${err}`);
         }

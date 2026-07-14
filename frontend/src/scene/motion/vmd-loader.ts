@@ -180,7 +180,11 @@ export async function loadVMDMotion(
     }
 }
 
-export async function loadVMDFromPath(path: string, targetModelId?: string, signal?: AbortSignal): Promise<void> {
+export async function loadVMDFromPath(
+    path: string,
+    targetModelId?: string,
+    signal?: AbortSignal
+): Promise<void> {
     const { focusedMmdModel, focusedModel } = await getScene();
     await withLoadingIndicator('scene.loader.vmdLoading', async () => {
         try {
@@ -276,7 +280,11 @@ export async function loadCameraVmdFromPath(path: string, signal?: AbortSignal):
     });
 }
 
-export async function loadVPDPose(path: string, targetModelId?: string, signal?: AbortSignal): Promise<void> {
+export async function loadVPDPose(
+    path: string,
+    targetModelId?: string,
+    signal?: AbortSignal
+): Promise<void> {
     const { focusedModel, stopProcMotion, isProcVmdActive } = await getScene();
     await withLoadingIndicator('scene.loader.vpdLoading', async () => {
         try {

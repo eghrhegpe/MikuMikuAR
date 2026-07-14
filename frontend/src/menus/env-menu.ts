@@ -5,21 +5,10 @@
 
 import { envState, PopupLevel, PopupRow, cardContainer } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import {
-    slideRow,
-    addSliderRow,
-    addPresetChip,
-} from '../core/ui-helpers';
-import {
-    setEnvState,
-    getEnvSunAngle,
-    setEnvSunAngle,
-    applyEnvPreset,
-} from '../scene/scene';
+import { slideRow, addSliderRow, addPresetChip } from '../core/ui-helpers';
+import { setEnvState, getEnvSunAngle, setEnvSunAngle, applyEnvPreset } from '../scene/scene';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
-import {
-    TIME_OF_DAY_PRESETS,
-} from '../scene/env/env-lighting';
+import { TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
 import { closeAllOverlays } from '../core/utils';
 import { stackRegistry, getBrowseDir } from '../core/config';
 import { t } from '../core/i18n/t';
@@ -38,9 +27,7 @@ import {
     buildFogLevel,
     buildShadowLevel,
 } from './env-feature-levels';
-import {
-    buildPresetLevel,
-} from './env-preset-levels';
+import { buildPresetLevel } from './env-preset-levels';
 
 // ======== Barrel Re-Exports ========
 export {
@@ -87,7 +74,6 @@ const {
 });
 
 export { getEnvMenu, refreshEnvRoot, showEnvMenu };
-
 
 /**
  * 渲染环境氛围预设芯片组（紧凑 preset-chip 布局，替代旧 slideRow 全宽行）。
@@ -312,8 +298,7 @@ function buildParticleSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 const fileName = envState.particleCustomTexture
-                    ? (envState.particleCustomTexture.split(/[/\\]/).pop() ??
-                      t('env.notSelected'))
+                    ? (envState.particleCustomTexture.split(/[/\\]/).pop() ?? t('env.notSelected'))
                     : t('env.notSelected');
                 slideRow(
                     c,
