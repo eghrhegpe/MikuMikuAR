@@ -120,18 +120,18 @@ func fetchPlazaRemote() (*plazaRemoteResult, error) {
 		{
 			name: "creators.json",
 			sources: []plazaSource{
-				{name: "raw", url: raw + "/frontend/src/menus/creators.json"},
-				{name: "jsd", url: jsd + "/frontend/src/menus/creators.json"},
-				{name: "api", url: api + "/frontend/src/menus/creators.json"},
+				{name: "raw", url: raw + "/creators.json"},
+				{name: "jsd", url: jsd + "/creators.json"},
+				{name: "api", url: api + "/creators.json"},
 			},
 			isAPI: func(url string) bool { return strings.Contains(url, "api.github.com") },
 		},
 		{
 			name: "workshop_sites.json",
 			sources: []plazaSource{
-				{name: "raw", url: raw + "/frontend/src/menus/workshop_sites.json"},
-				{name: "jsd", url: jsd + "/frontend/src/menus/workshop_sites.json"},
-				{name: "api", url: api + "/frontend/src/menus/workshop_sites.json"},
+				{name: "raw", url: raw + "/workshop_sites.json"},
+				{name: "jsd", url: jsd + "/workshop_sites.json"},
+				{name: "api", url: api + "/workshop_sites.json"},
 			},
 			isAPI: func(url string) bool { return strings.Contains(url, "api.github.com") },
 		},
