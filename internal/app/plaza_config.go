@@ -20,23 +20,21 @@ import (
 func (a *App) FetchPlazaConfig() (creators string, sites string, err error) {
 	cfg, err := fetchPlazaRemote()
 	if err != nil {
-		// all remotes failed — try local cache
 		cr, e1 := readPlazaCache("creators.json")
-		st, e2 := readPlazaCache("plaza_sites.json")
+		st, e2 := readPlazaCache("workshop_sites.json")
 		if e1 == nil && e2 == nil {
 			return string(cr), string(st), nil
 		}
 		return "", "", fmt.Errorf("remote fetch failed and no local cache: %w", err)
 	}
 	_ = writePlazaCache("creators.json", cfg.creators)
-	_ = writePlazaCache("plaza_sites.json", cfg.sites)
+	_ = writePlazaCache("workshop_sites.json", cfg.sites)
 	return string(cfg.creators), string(cfg.sites), nil
 }
 
-// GetCachedPlazaConfig returns the locally cached config without hitting the network.
 func (a *App) GetCachedPlazaConfig() (creators string, sites string) {
 	cr, _ := readPlazaCache("creators.json")
-	st, _ := readPlazaCache("plaza_sites.json")
+	st, _ := readPlazaCache("workshop_sites.json")
 	return string(cr), string(st)
 }
 
@@ -122,18 +120,18 @@ func fetchPlazaRemote() (*plazaRemoteResult, error) {
 		{
 			name: "creators.json",
 			sources: []plazaSource{
-				{name: "raw", url: raw + "/frontend/src/menus/plaza-creators.json"},
-				{name: "jsd", url: jsd + "/frontend/src/menus/plaza-creators.json"},
-				{name: "api", url: api + "/frontend/src/menus/plaza-creators.json"},
+				{name: "raw", url: raw + "/frontend/src/menus/creators.json"},
+				{name: "jsd", url: jsd + "/frontend/src/menus/creators.json"},
+				{name: "api", url: api + "/frontend/src/menus/creators.json"},
 			},
 			isAPI: func(url string) bool { return strings.Contains(url, "api.github.com") },
 		},
 		{
-			name: "plaza_sites.json",
+			name: "workshop_sites.json",
 			sources: []plazaSource{
-				{name: "raw", url: raw + "/frontend/src/menus/plaza-sites.json"},
-				{name: "jsd", url: jsd + "/frontend/src/menus/plaza-sites.json"},
-				{name: "api", url: api + "/frontend/src/menus/plaza-sites.json"},
+				{name: "raw", url: raw + "/frontend/src/menus/workshop_sites.json"},
+				{name: "jsd", url: jsd + "/frontend/src/menus/workshop_sites.json"},
+				{name: "api", url: api + "/frontend/src/menus/workshop_sites.json"},
 			},
 			isAPI: func(url string) bool { return strings.Contains(url, "api.github.com") },
 		},
@@ -163,7 +161,7 @@ func fetchPlazaRemote() (*plazaRemoteResult, error) {
 		switch f.name {
 		case "creators.json":
 			result.creators = data
-		case "plaza_sites.json":
+		case "workshop_sites.json":
 			result.sites = data
 		}
 	}

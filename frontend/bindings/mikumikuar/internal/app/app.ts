@@ -207,9 +207,6 @@ export function GetCacheStats(): $CancellablePromise<$models.CacheStats | null> 
     return $Call.ByID(2256096336);
 }
 
-/**
- * GetCachedPlazaConfig returns the locally cached config without hitting the network.
- */
 export function GetCachedPlazaConfig(): $CancellablePromise<[string, string]> {
     return $Call.ByID(3080419677);
 }

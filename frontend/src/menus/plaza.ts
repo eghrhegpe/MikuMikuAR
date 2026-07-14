@@ -32,7 +32,7 @@ import { refreshLibrary } from './library';
 import { registerShortcuts } from '../core/shortcut-registry';
 import { addDisposableListener, type Disposable } from '../core/dom';
 
-const CUSTOM_SITES_PATH = 'plaza_sites.json';
+const CUSTOM_SITES_PATH = 'workshop_sites.json';
 
 function escapeHtml(s: string): string {
     return s.replace(/[&<>"']/g, c => ({

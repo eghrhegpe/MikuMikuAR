@@ -403,6 +403,7 @@ const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'motion:poseStudio': buildPoseStudioLevel,
     'motion:virtualSkirt': buildVirtualSkirtLevel,
     'motion:advanced': buildAdvancedLevel,
+    'motion:retarget': buildRetargetLevel,
     'procmotion:mode': buildProcMotionModeLevel,
     'lipsync:menu': buildLipSyncLevel,
 };
@@ -598,8 +599,16 @@ function motionOnItemClick(row: PopupRow): void {
         }
         return;
     }
-    if (row.target === '__retarget_import__') {
-        _importExternalAnimation();
+    if (row.target === '__retarget_mixamo__') {
+        _importExternalAnimation('mixamo');
+        return;
+    }
+    if (row.target === '__retarget_vrm__') {
+        _importExternalAnimation('vrm');
+        return;
+    }
+    if (row.target === '__retarget_custom__') {
+        _importExternalAnimation('custom');
         return;
     }
 }
@@ -737,6 +746,20 @@ function buildAdvancedLevel(): PopupLevel {
     };
 }
 
+// ======== 外部动作导入 — 骨骼映射预设选择 ========
+
+function buildRetargetLevel(): PopupLevel {
+    return {
+        label: '外部动作导入',
+        dir: '',
+        items: [
+            { kind: 'action', label: 'Mixamo → MMD', icon: 'lucide:user', target: '__retarget_mixamo__', sublabel: 'mixamorig:XXX 骨骼' },
+            { kind: 'action', label: 'VRM → MMD', icon: 'lucide:user', target: '__retarget_vrm__', sublabel: 'VRM 标准骨骼' },
+            { kind: 'action', label: '自定义映射', icon: 'lucide:edit', target: '__retarget_custom__', sublabel: '手动配置骨骼对应' },
+        ],
+    };
+}
+
 // ======== Motion Root (items-based) ========
 
 /** 动作弹窗根级 items 构建器——动态反映 modelManager / recent / cloth 状态。 */
@@ -845,7 +868,7 @@ export function hideMotionPopup(): void {
 // ======== 外部动作导入 ========
 
 /** 外部动作导入：选文件 → 重定向骨骼 → 播放。 */
-async function _importExternalAnimation(): Promise<void> {
+async function _importExternalAnimation(preset: 'mixamo' | 'vrm' | 'custom' = 'mixamo'): Promise<void> {
     // 1. 选文件
     let path: string;
     try {
@@ -871,7 +894,7 @@ async function _importExternalAnimation(): Promise<void> {
 
     // 4. 加载并重定向
     const scene = mesh.getScene();
-    const result = await loadAndRetargetAnimation(scene, path, mesh.skeleton, 'mixamo');
+    const result = await loadAndRetargetAnimation(scene, path, mesh.skeleton, preset);
     if (!result) {
         // 错误已在 loadAndRetargetAnimation 中通过 setStatus 报告
         return;
@@ -880,5 +903,5 @@ async function _importExternalAnimation(): Promise<void> {
     // 5. 播放
     hideMotionPopup();
     playRetargetedAnimation(scene, result);
-    setStatus('外部动作已加载', true);
+    setStatus('外部动作已加载（' + preset + '）', true);
 }
