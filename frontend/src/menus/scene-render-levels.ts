@@ -5,7 +5,7 @@
 import { setStatus, cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus, swallowError } from '../core/utils';
 import { addModeSlider, slideRow, addPresetChip } from '../core/ui-helpers';
 import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
 import {
@@ -133,10 +133,10 @@ function buildPresetScenesSchema(): MenuNode[] {
                 loadingPlaceholder.style.cssText =
                     'padding:14px;color:var(--text-dim);font-size:var(--font-ui-sm);';
                 c.appendChild(loadingPlaceholder);
-                void GetPresetScenes().then((scenes: string[] | null) => {
+                swallowError(GetPresetScenes().then((scenes: string[] | null) => {
                     c.removeChild(loadingPlaceholder);
                     _renderScenePresetList(c, scenes || []);
-                });
+                }));
             },
         },
     ];

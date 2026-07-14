@@ -182,8 +182,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                                     );
                                                     setUIState({ keyBindings: exportKeyBindings() });
                                                 }
-                                                getSettingsMenu()?.reRender();
-                                            });
+                                            }).catch(() => {});
                                         }
                                     };
                                     keyDisp = addDisposableListener(document, 'keydown', handler, { capture: true });

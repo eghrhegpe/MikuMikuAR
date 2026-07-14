@@ -191,7 +191,7 @@ export class SlideMenu {
             this.setupFocus();
             this.onAfterRender?.(level, this);
             this.onLevelEnter?.(level, this);
-        });
+        }).catch(() => {});
     }
 
     push(level: PopupLevel): void {
@@ -339,7 +339,7 @@ export class SlideMenu {
             this.setupFocus();
             this.onAfterRender?.(level, this);
             this.onLevelEnter?.(level, this);
-        });
+        }).catch(() => {});
     }
 
     reRender(opts?: { preserveFocus?: boolean }): void {
@@ -410,13 +410,13 @@ export class SlideMenu {
                 return;
             }
             // 没有旧 DOM → 退化为全量重建
-            this.buildPanel(level).then(finalize);
+            this.buildPanel(level).then(finalize).catch(() => {});
         } else if (level.renderCustom || level.items.length === 0) {
             // === 自定义渲染 / 空列表 → 全量重建 ===
-            this.buildPanel(level).then(finalize);
+            this.buildPanel(level).then(finalize).catch(() => {});
         } else {
             // === 纯 items → 全量重建（card-per-divider 结构不支持增量 patch） ===
-            this.buildPanel(level).then(finalize);
+            this.buildPanel(level).then(finalize).catch(() => {});
             finalize();
         }
     }
