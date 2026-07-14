@@ -100,6 +100,17 @@
 
 **结论**：ADR-099 全链路（Go 注入 + 前端切换 + 真机 SAB）验证通过，状态推进至「已完成」。
 
+### 常驻运行时模式徽标（2026-07-14 增强）
+
+状态栏 `setStatus` 是**瞬时 toast**（2–5s 淡出 + 被后续调用覆盖），刷新/导航即丢，不满足「MPR 状态需常驻可见」的诉求。改为新增独立 HUD 徽标 `#runtimeBadge`（仿 `#fpsClock`，右上角、永不被覆盖）：
+
+- `frontend/src/core/runtime-mode.ts`：检测 `detectRuntimeMode()`（COI/SAB/MPR 构建 + `navigator.hardwareConcurrency` 并行度）→ `persistRuntimeMode()` 写入 `localStorage` → `renderRuntimeBadge()` 渲染。
+- `init.ts` 引导早期调 `initRuntimeBadge()`：立即渲染**上次持久化**的模式，刷新后不丢失。
+- `scene.ts` 初始化后调 `detectRuntimeMode()` + `persistRuntimeMode()` + `renderRuntimeBadge()` 刷新为真实值。
+- 徽标文案：`⚡MPR ×N`（绿，多线程激活）/ `⚠ MPR? COI✗`（琥珀，构建要 MPR 但隔离缺失已回退）/ `SPR`（灰，单线程）。hover 显示 `MPR构建/COI/SAB/并行度` 明细。
+
+**效果**：MPR 版启动后右上角常驻显示 `⚡MPR ×24`，刷新/切模型/导航均不消失；默认 SPR 版显示 `SPR`。多线程能力一目了然，不再依赖会被刷掉的弹窗。
+
 ---
 
 ## 后续（未落地项 · 待排期）

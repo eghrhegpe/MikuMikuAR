@@ -64,6 +64,7 @@ import {
     focusedModelId,
 } from '../core/config';
 import { attachBeatDetector } from '../outfit/audio';
+import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../core/runtime-mode';
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
 import { initLighting, _updateSunDisc } from './render/lighting';
@@ -194,14 +195,12 @@ export async function initScene(): Promise<void> {
             wasmInstance = await GetMmdWasmInstance(new MmdWasmInstanceTypeSPR());
             console.log('[scene] 使用 WASM 版 MmdWasmRuntime（SPR 单线程物理）');
         }
-        // [doc:adr-099] 真机验证读屏：把 COI/SAB/MPR 状态写到状态栏，绕开 DevTools
-        // （WebView2 DevTools 前端依赖 CDN，离线/受限环境空白，但底层 CDP 协议仍可用）。
-        if (__MMD_ENABLE_MPR__) {
-            const coi = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated;
-            const sab = typeof SharedArrayBuffer === 'function';
-            setStatus(`[ADR-099] COI=${coi} SAB=${sab} MPR=${useMultiThread}`, true);
-            console.log(`[ADR-099] 验证: crossOriginIsolated=${coi} SharedArrayBuffer=${sab} useMultiThread=${useMultiThread}`);
-        }
+        // [doc:adr-099] 运行时模式徽标：检测 COI/SAB/MPR 并常驻渲染到右上角 HUD
+        // （独立 DOM 元素，不被 setStatus 瞬时消息覆盖；结果持久化，刷新/导航后仍在）。
+        const runtimeMode = detectRuntimeMode();
+        persistRuntimeMode(runtimeMode);
+        renderRuntimeBadge(runtimeMode);
+        console.log(`[ADR-099] 验证: crossOriginIsolated=${runtimeMode.coi} SharedArrayBuffer=${runtimeMode.sab} useMultiThread=${useMultiThread} threads=${runtimeMode.threads}`);
         const mmdWasmPhysics = new MmdWasmPhysics(scene);
         runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
         initWindPhysics(runtime);
