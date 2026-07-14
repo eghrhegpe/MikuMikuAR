@@ -39,6 +39,8 @@ export function createMockCacheStats(overrides?: Partial<CacheStats>): CacheStat
         thumbnailCount: 0,
         serveBytes: 0,
         serveCount: 0,
+        resourceBytes: 0,
+        resourceCount: 0,
         totalBytes: 0,
         ...overrides,
     };
